@@ -3,7 +3,7 @@ status: conformance-covered
 
 **Purpose.** Opaque tokens an app mints and checks: API keys, invite links, one-time links. A fast hash is sound because every stored digest comes from `mint`, which draws 256 random bits. No password is hashed here: sign-in is the identity source's (k.user).
 
-**Extension points.** Capability registry (k.ctx): `tokens`. Schema type registry: `tokens.Digested`. Check rule registry: `@keel/std-tokens/tools` (E2201, E2202). A module that uses the package lists it in `deps`.
+**Extension points.** Capability registry (k.ctx): `tokens`. Schema type registry: `tokens.Digested`. Check rule registry: `@keel/std-tokens/tools` (E2201-E2203). A module that uses the package lists it in `deps`.
 
 **API.** `@keel/std-tokens` is client-safe; `@keel/std-tokens/server` is Node only.
 ```ts
@@ -13,9 +13,9 @@ const m = tokens(ctx).mint({ ttl: 3_600_000 })  // Result<{ token, id, digest, e
 const found = tokens(ctx).check(input.token, (id) => rows.find((t) => t.id === id))  // Result<Row, E>
 const id = tokens(ctx).idOf(input.token)  // Result<string, E>
 ```
-- `mint({ ttl })`: `ttl` is required, milliseconds as an integer from 60,000 to 31,536,000,000 (365 days), or `null` for a token that does not expire; any other value is `credentials.ttl` (data `{ min: 60000, max: 31536000000 }`). It returns the new `token` as a `Secret<string>`, its `id` (the token's non-secret part, the row's lookup key), the `digest` to store, and `expiresAt`, `ctx.clock.now()` plus `ttl`, or `null`.
+- `mint({ ttl })`: `ttl` is required, milliseconds as an integer from 60,000 to 31,536,000,000 (365 days), or `null` for a token that does not expire; any other value is `credentials.ttl` (data `{ min: 60000, max: 31536000000 }`). It returns the new `token` as a `Secret<string>`, its `id` (non-secret, the row's key), the `digest` to store, and `expiresAt`, `ctx.clock.now()` plus `ttl`, or `null`.
 - The expiry is in `digest`, so the app stores no other field for `check` to read.
-- The token leaves once: the `*.server.ts` file that sends it calls `reveal(token)`. That value in `tx`, storage, a log or a throw is E1112 (k.reveal).
+- The token leaves once, as `reveal(token)` in the `*.server.ts` file that sends it (in `tx`, storage, a log or a throw: E1112). Its `digest` never leaves (E2203).
 - `check(token, find)` reads the id from the presented `Secret<string>`, calls `find(id)` once for the row (an object with `digest: Digested`), compares in constant time (`timingSafeEqual`), then reads `ctx.clock.now()`, and returns `ok(row)`. A presented value that is not in the token form (`find` is not called), a `find` that returns `undefined`, and a digest that does not match are `credentials.mismatch`. A matching token whose digest has an expiry at or before now is `credentials.expired`. An unreadable `digest` is `credentials.malformed`, data `{ reason }`: `format` (not `Digested`), `parameters` (an id other than `sha256` or `sha256-sim`, a parameter other than `exp=<ms>`, or a digest that is not 32 bytes) or `sim` (a sim form outside sim).
 - Both are synchronous and neither throws, a throw from `find` aside. Each error is one constant per code and `reason`.
 - `idOf(token)` is `ok` with the id `check` reads, so the row can be fetched before `check`; a value `check` answers `credentials.mismatch` without calling `find` gets that constant. It reads no row, digest or clock, so `ok` means well formed, not valid. It is synchronous, never throws, and neither returns nor logs the secret.
@@ -25,7 +25,7 @@ const id = tokens(ctx).idOf(input.token)  // Result<string, E>
 
 **Modes.** Real and shell draw `id` and `secret` from `randomBytes` of `node:crypto`. Sim draws them from the capability seed and a call count and writes `keelsim_<id>_<secret>` and `$sha256-sim$...`; it reads both forms. A real or shell ctx answers `credentials.mismatch` for a sim token and `credentials.malformed` `sim` for a sim digest.
 
-**Rules.** E2201 `@keel/std-tokens/server` imported, statically or by `import()`, outside a `*.server.ts` file, tests and type-only imports aside (no fix) · E2202 that import in a module a deployable other than `node` serves, naming the deployable and its adapter (no fix). Each rule reads the file's own `import`, `export ... from` and `import()` declarations: a `require`, and a helper file that re-exports the entry, are not followed.
+**Rules.** E2201 `@keel/std-tokens/server` imported, statically or by `import()`, outside a `*.server.ts` file, tests and type-only imports aside (no fix) · E2202 that import in a module a deployable other than `node` serves, naming the deployable and its adapter (no fix). Each reads the file's own `import`, `export ... from` and `import()`; a `require` and a helper file re-exporting the entry are not followed · E2203 an `output` (`outputSchemas`, k.privacy-reads) for which `schemaHolds` of `Digested` is `'yes'` (no fix).
 
 **Conformance.**
 - Under real, `mint({ ttl: null })` gives a token of the token form whose id part is `id`, `expiresAt` `null`, and a `digest` `$sha256$<digest>` that parses with `Digested`; two mints share no `id`, `secret` or `digest`.
@@ -43,3 +43,4 @@ const id = tokens(ctx).idOf(input.token)  // Result<string, E>
 - Under real and sim, `idOf` is `ok` with `id` for a minted token, for it with one `secret` character changed, and under sim for it after expiry.
 - `idOf` of `hunter2`, `''`, a minted token with one hex letter upper-cased, and under real and shell a sim token equals `check`'s `credentials.mismatch` for `hunter2`.
 - `JSON.stringify` and `util.inspect` of `idOf` of a minted token hold no `secret`; `idOf` calls no `console` method.
+- A page `loader` `output` and an API entry `output` holding `digest: Digested` are each one E2203; a store schema holding it is none.

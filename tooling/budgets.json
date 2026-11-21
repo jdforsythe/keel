@@ -2,19 +2,19 @@
   "output": {
     "check.injected10": 600,
     "test.failing3": 400,
-    "spec.section": 1700,
-    "spec.map": 1345,
+    "spec.section": 1750,
+    "spec.map": 1350,
     "explain": 300,
     "mcp.tools-list": 1750,
     "docs.map": 1410,
-    "docs.section": 1700,
+    "docs.section": 1750,
     "docs.skill": 2500,
     "docs.for": 400,
     "docs.agents": 600
   },
   "size": {
     "@keel/check": {
-      "max": "55.25kb",
+      "max": "56.25kb",
       "platform": "node"
     },
     "@keel/check/explain": {
@@ -95,7 +95,7 @@
       "platform": "node"
     },
     "@keel/std-jobs/tools": {
-      "max": "2.75kb",
+      "max": "3.25kb",
       "platform": "node"
     },
     "@keel/std-live": "1kb",
@@ -191,7 +191,7 @@
       "platform": "node"
     },
     "@keel/std-tokens/tools": {
-      "max": "1.25kb",
+      "max": "1.5kb",
       "platform": "node"
     },
     "@keel/std-temporal": "5kb",

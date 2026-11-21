@@ -319,6 +319,21 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       ),
     ],
   },
+  W1114: {
+    opts: NO_TYPES,
+    bad: [
+      f(
+        "modules/app/Login.tsx",
+        `import { Input } from '@keel/ui'\nimport { form } from '@keel/forms'\n${SCHEMA}const f = form(s.object({ pw: s.string() }), {})\nexport default function Login() { return <Input type="password" field={f.field('pw')} label="Password" /> }\n`,
+      ),
+    ],
+    clean: [
+      f(
+        "modules/app/Login.tsx",
+        `import { Input } from '@keel/ui'\nimport { form } from '@keel/forms'\n${SCHEMA}const f = form(s.object({ pw: s.secret(s.string()) }), {})\nexport default function Login() { return <Input type="password" field={f.field('pw')} label="Password" /> }\n`,
+      ),
+    ],
+  },
   E1151: {
     opts: NO_TYPES,
     bad: [mod("b", [], []), exp("b", "Secret"), mod("a", ["b"], []), use("a", "b", "Secret")],

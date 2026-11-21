@@ -1,8 +1,9 @@
 import type { Argument, Expression, ObjectExpression, PropertyKey } from "oxc-parser";
 import type { SourceFile } from "../types/SourceFile.ts";
+import type { SchemaQuestion } from "./SchemaQuestion.ts";
 import { followValue } from "./followValue.ts";
-import { mutatedBinding } from "./mutatedBinding.ts";
 import { parseFile } from "./parseFile.ts";
+import { schemaRead } from "./schemaRead.ts";
 
 /**
  * Stdlib exports whose return value is a route schema the package guards itself (it refuses a `.pii()` mark when it
@@ -114,14 +115,11 @@ function schemaNamespace(e: Expression, file: SourceFile, project: readonly Sour
 }
 
 type Verdict = "marked" | "clean" | "unknown";
-const worst = (a: Verdict, b: Verdict): Verdict =>
-  a === "marked" || b === "marked" ? "marked" : a === "unknown" || b === "unknown" ? "unknown" : "clean";
 
 /**
- * Whether the schema expression `expr` holds a `.pii(...)` mark or a `secret(...)` call on the `@keel/schema` namespace (k.privacy E1111), read through consts, imports,
- * re-exports, namespace members, spreads, array and object arguments and schema method chains. `unknown` when a
- * part cannot be read statically: a call whose callee is not a member (a factory), a binding it cannot follow, or an
- * object literal's getter, setter or method, or a binding the file changes after its literal.
+ * Whether the schema expression `expr` holds a `.pii(...)` mark or a `secret(...)` call on the `@keel/schema` namespace
+ * (k.privacy E1111), read by `schemaRead` (the walk `schemaHolds` exports): `unknown` where a part cannot be read.
+ * A package's schema and a name the file never declares are `clean`.
  * A schema returned by a `SEARCH_FACTORIES` export (`tableSearch(columns)`, also through a namespace import) is that
  * package's, as its route table is: `clean` here, guarded by the package's own rule.
  * With `classes`, each literal class a `.pii(class)` names is added to it, the whole schema read (k.leave E1107).
@@ -133,57 +131,25 @@ export function schemaMarks(
   seen: Set<string> = new Set(),
   classes?: Set<string>,
 ): Verdict {
-  if (expr.type === "SpreadElement") return schemaMarks(expr.argument, file, project, seen, classes);
-  const at = followValue(expr, file, project);
-  if (at === "package" || at === "global") return "clean";
-  if (at === null) return "unknown";
-  const key = `${at.file.path}:${at.expr.start}:${at.expr.end}`;
-  if (seen.has(key)) return "clean";
-  seen.add(key);
-  const e = at.expr;
-  if (mutatedBinding(e, at.file)) return "unknown";
-  const sub = (x: Expression | Argument | null): Verdict =>
-    x === null ? "clean" : schemaMarks(x, at.file, project, seen, classes);
-  switch (e.type) {
-    case "CallExpression": {
+  const q: SchemaQuestion = {
+    pkg: () => "no",
+    global: "no",
+    call: (e, at, read) => {
       const c = e.callee;
-      if (c.type !== "Super" && audited(c, at.file)) return "clean";
-      if (c.type !== "MemberExpression" || c.computed) return "unknown";
+      if (c.type !== "Super" && audited(c, at)) return "no";
+      if (c.type !== "MemberExpression" || c.computed) return undefined;
       if (c.property.name === "pii") {
         const k = e.arguments[0];
-        if (classes === undefined) return "marked";
+        if (classes === undefined) return "yes";
         if (k?.type === "Literal" && typeof k.value === "string") classes.add(k.value);
-        sub(c.object);
-        return "marked";
+        read(c.object);
+        return "yes";
       }
-      if (c.property.name === "secret") {
-        const ns = schemaNamespace(c.object, at.file, project);
-        if (ns === "yes") return "marked";
-        if (ns === "unknown") return "unknown";
-      }
-      // `s.object(...)` reads `s` from a package; `X.optional()` reads `X`.
-      return e.arguments.map(sub).reduce(worst, sub(c.object));
-    }
-    case "ObjectExpression":
-      // A getter, setter or method runs code to give its field, so its schema cannot be read statically.
-      return e.properties
-        .map(
-          (p): Verdict => (p.type !== "Property" ? sub(p) : p.kind !== "init" || p.method ? "unknown" : sub(p.value)),
-        )
-        .reduce(worst, "clean");
-    case "ArrayExpression":
-      return e.elements.map((x) => (x === null ? "clean" : sub(x))).reduce(worst, "clean");
-    case "ConditionalExpression":
-      return worst(sub(e.consequent), sub(e.alternate));
-    case "MemberExpression":
-      return e.computed ? "unknown" : sub(e.object);
-    case "Literal":
-    case "TemplateLiteral":
-    case "ArrowFunctionExpression":
-    case "FunctionExpression":
-    case "UnaryExpression":
-      return "clean";
-    default:
-      return "unknown";
-  }
+      if (c.property.name !== "secret") return undefined;
+      const ns = schemaNamespace(c.object, at, project);
+      return ns === "no" ? undefined : ns;
+    },
+  };
+  const v = schemaRead(expr, file, project, q, seen);
+  return v === "yes" ? "marked" : v === "no" ? "clean" : "unknown";
 }

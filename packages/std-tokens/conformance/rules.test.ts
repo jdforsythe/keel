@@ -2,7 +2,7 @@
 // Spec: std.tokens, Rules "E2202 that import in a module a deployable other than `node` serves, naming the deployable and its adapter (no fix)."
 // Spec: std.tokens, Conformance "E2201 and E2202 each fire on a fixture and not on its clean twin; `capabilities()` lists `tokens`."
 // Spec: std.tokens, Conformance "`import('@keel/std-tokens/server')` outside a `*.server.ts` file is E2201; `import type` from it is not."
-// Spec: std.tokens, Rules "Each rule reads the file's own `import`, `export ... from` and `import()` declarations: a `require`, and a helper file that re-exports the entry, are not followed."
+// Spec: std.tokens, Rules "Each reads the file's own `import`, `export ... from` and `import()`; a `require` and a helper file re-exporting the entry are not followed."
 // Seed: 1337.
 // Assumption: as for std.db E2151, `check()` imports nothing, so the rules register by importing `@keel/std-tokens/tools`.
 // Assumption: a diagnostic is `{ code, path, line, col, message, fix?, see? }` (k.check), so "naming the deployable and its adapter" is read from `message`; there is no `data` field.

@@ -12,7 +12,7 @@ Opaque tokens for `node` deployables: API keys, invite links, one-time links. `t
     - `mint({ ttl: number | null }): Result<{ token: Secret<string>, id: string, digest: Digested, expiresAt: number | null }, credentials.ttl>`
     - `idOf(token: Secret<string>): Result<string, credentials.mismatch>`
     - `check<R extends { digest: Digested }>(token: Secret<string>, find: (id: string) => R | undefined): Result<R, credentials.mismatch | credentials.expired | credentials.malformed>`
-  - `@keel/std-tokens/tools`: `serverImport` (E2201), `nodeDeployable` (E2202).
+  - `@keel/std-tokens/tools`: `serverImport` (E2201), `nodeDeployable` (E2202), `digestOutput` (E2203).
 - **Invariants:**
   - Token: `keel_<id>_<secret>`, 16 and 64 lowercase hex characters from `randomBytes`. Digest: `$sha256$exp=<ms>$<digest>`, or `$sha256$<digest>` for `ttl: null`, the SHA-256 of the token's text in base64 without padding. `expiresAt` is the clock's whole milliseconds plus `ttl`. `ttl` is an integer from 60,000 to 31,536,000,000 or `null`.
   - `idOf` returns the id `check` passes to `find`, from the same parse, and `credentials.mismatch` for what `check` refuses before it calls `find` (a value not in the token form, and under real or shell a sim token). It reads no row, digest or clock, so `ok` means well formed, not valid; it is synchronous, never throws, and neither returns nor logs the secret part.
@@ -20,7 +20,7 @@ Opaque tokens for `node` deployables: API keys, invite links, one-time links. `t
   - An unreadable digest is `credentials.malformed` with `reason`: `format` (not `Digested`), `parameters` (an id other than `sha256` or `sha256-sim`, a parameter other than `exp=<ms>`, or a digest text that is not the canonical base64 of 32 bytes) or `sim` (a sim digest outside sim).
   - Sim forms: `keelsim_` and `$sha256-sim$`, with bytes from the capability seed and a call count. Sim reads both forms; real and shell answer `credentials.malformed` `sim` for a sim digest and `credentials.mismatch` for a sim token.
   - Each error is one frozen value per code and `reason`, and holds no part of a token or a stored digest. No method throws, a throw from `find` aside; `mint` answers `credentials.ttl` for a missing or non-object argument.
-  - Rules: E2201 and E2202 read a file's own static imports, re-exports and `import()` of `@keel/std-tokens/server`; type-only imports and re-exports pass, and a `require` or a helper file that re-exports the entry is not followed. E2201 lets through `*.test.*` and `*.spec.*` files, a top-level test directory and a test directory inside a module.
+  - Rules: E2201 and E2202 read a file's own static imports, re-exports and `import()` of `@keel/std-tokens/server`; type-only imports and re-exports pass, and a `require` or a helper file that re-exports the entry is not followed. E2201 lets through `*.test.*` and `*.spec.*` files, a top-level test directory and a test directory inside a module. E2203 is an `output` a file declares (`outputSchemas` of `@keel/check`: a `contract` entry's, a `loader` declaration's inline or through a `const`) for which `schemaHolds` of `Digested` is `'yes'`, through consts, schema files and re-exports, at the `output`; no fix. It does not see an `output` built by a factory call, given by `decl()` or taken from a package, nor a digest copied into an `s.string()` field.
 - **Dependencies:** `@keel/check`, `@keel/compiler`, `@keel/ctx`, `@keel/schema`; `randomBytes`, `createHash` and `timingSafeEqual` of `node:crypto`.
 - **Rungs:** conformance (example and property, real and sim), properties for `mint`, `idOf`, `check` and the generator.
 
@@ -49,7 +49,7 @@ if (!found.ok) return err({ code: 'keel.denied', message: 'Unknown token', data:
 
 ## Extension points
 
-Uses the **capability registry** (k.ctx `register('tokens', { real, shell, sim })`), the **schema type registry** (`tokens.Digested`) and the **check rule registry** (k.check: E2201 and E2202 from `./tools`).
+Uses the **capability registry** (k.ctx `register('tokens', { real, shell, sim })`), the **schema type registry** (`tokens.Digested`) and the **check rule registry** (k.check: E2201 to E2203 from `./tools`).
 
 ## Migration from `@keel/std-credentials`
 

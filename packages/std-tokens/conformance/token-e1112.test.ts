@@ -1,4 +1,4 @@
-// Spec: std.tokens, API "The token leaves once: the `*.server.ts` file that sends it calls `reveal(token)`. That value in `tx`, storage, a log or a throw is E1112 (k.reveal)."
+// Spec: std.tokens, API "The token leaves once, as `reveal(token)` in the `*.server.ts` file that sends it (in `tx`, storage, a log or a throw: E1112)."
 // Spec: std.tokens, Conformance "In a `*.server.ts` file, with `m` a `mint` result, `tx(t, { token: reveal(m.value.token) })` and `console.log(reveal(m.value.token))` are each one E1112; `tx(t, { id: m.value.id, digest: m.value.digest })`, `reveal(m.value.token)` in a `service` call's `body`, and `check(input.token, find)` are none."
 // Seed: 1337.
 // Assumption: as in privacy-e1112.test.ts, a finding is asserted by code, path and the line of its statement; the spec gives no column.
