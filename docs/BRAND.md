@@ -36,4 +36,4 @@ The sentence-level rules live in `docs/VOICE.md` (first person, reader as the he
 - `brandTokens` from `@keel/ui/brand` (`packages/ui/src/brand/brandTokens.ts`) holds this palette (`surface`, `surfaceLow`, `card`, `text`, `textSecondary`, `accent`, `verified`, `error`, `divider`), the two font stacks, radius `none` (0), the `hairline` size and border, and a light scheme only. The scaffold `project` template emits a `tokens.ts` that exports `brandTokens`, so every new app starts on brand. Apps: `apps/golden-1`, `apps/golden-2`, `apps/inspector`, `apps/sessions`.
 - Fonts are self-hosted (`@keel/ui/fonts`, `packages/ui/fonts/fonts.css` with the two variable woff2 files and their licenses), never fetched from a third party at runtime (THREAT-MODEL CSP).
 
-verified: a3e9b16cbfd98f85e2d8098b0a94135ee501dee6
+verified: bc1dbf6e0eff98d2e5be485efe6a9cc04a08f1af

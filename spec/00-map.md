@@ -6,7 +6,7 @@ status key: proposed | implemented | conformance-covered | frozen. Budget: file 
 Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: keel docs --for <code>.
 | block | owner | block | owner |
 |-|-|-|-|
-| E100x | k.compiler, k.boundary, k.bundle | E105x | k.cli, k.evidence, k.docs |
+| E100x | k.compiler, k.boundary, k.bundle, k.head | E105x | k.cli, k.evidence, k.docs |
 | E110x | k.schema, k.privacy, k.reveal, k.leave, k.privacy-reads | E115x | k.module |
 | E120x | k.reactive | E125x | k.runtime, k.resume, k.claim |
 | E130x | k.store | E135x | k.scaffold |
@@ -79,7 +79,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: keel docs --for <code>.
 | k.compat | Surface compatibility | conformance-covered | accepts |
 | k.api | API routes | conformance-covered | JSON |
 | k.hosting | Client hosting | implemented | servedBy |
-| k.head | Document head | conformance-covered | title |
+| k.head | Document head | implemented | title |
 | k.services | Thin services | conformance-covered | clients |
 | k.openapi | OpenAPI import | conformance-covered | clients |
 | k.module | Module manifest | conformance-covered | surface |

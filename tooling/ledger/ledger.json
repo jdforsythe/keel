@@ -14865,6 +14865,10 @@
       "rung": "example"
     },
     {
+      "item": "k.head#9",
+      "rung": "none"
+    },
+    {
       "item": "k.host-code#1",
       "rung": "example"
     },
@@ -16009,6 +16013,10 @@
       "rung": "example"
     },
     {
+      "item": "k.scaffold#15",
+      "rung": "none"
+    },
+    {
       "item": "k.schema#1",
       "rung": "probabilistic"
     },
@@ -16610,6 +16618,14 @@
     },
     {
       "item": "k.topology#11",
+      "rung": "none"
+    },
+    {
+      "item": "k.topology#12",
+      "rung": "none"
+    },
+    {
+      "item": "k.topology#13",
       "rung": "none"
     },
     {
