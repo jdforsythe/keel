@@ -12,7 +12,7 @@ import { cleanup, materialize } from "./compat-support.ts";
 import { SLOW, build, cspTxt, directivesOf, tree } from "./origins-support.ts";
 
 const TOPOLOGY =
-  "{ api: { modules: ['a'], adapter: 'node' }, w: { modules: ['c'], adapter: 'client', host: 'api', " +
+  "{ api: { modules: ['a'], adapter: 'node' }, w: { modules: ['c'], adapter: 'client', servedBy: 'api', " +
   "origins: { connect: { 'https://api.test': 'r', 'https://c.example': 'r' } } } }";
 let dir = "";
 beforeAll(() => {

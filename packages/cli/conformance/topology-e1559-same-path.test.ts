@@ -1,4 +1,4 @@
-// Spec: k.topology Conformance, "Two routes with path `/p` in modules of different deployables are one E1559 in `keel check` and in `keel build`." Rule E1559 (names both routes).
+// Spec: k.topology Conformance, "Two routes with path `/p` in modules of different deployables are one E1559 in `keel check` and in `keel build`." Rules "E1559 one path in two deployables (names both)".
 // Seed 1337 (fc.assert below). In-memory project through `run(['build'])` and `run(['check'])`, as module-std-artifact-build.test.ts.
 // ASSUMPTION: both commands report it; the diagnostic message names both route ids.
 import fs from "node:fs";

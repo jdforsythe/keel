@@ -7,7 +7,7 @@ import { type Run, cleanup, keel, materialize } from "./compat-support.ts";
 import { SLOW, build, tree } from "./origins-support.ts";
 
 const topo = (frame: string): string =>
-  `{ api: { modules: ['a'], adapter: 'node' }, w: { modules: ['c'], adapter: 'client', host: 'api', origins: { frame: { '${frame}': 'r' } } } }`;
+  `{ api: { modules: ['a'], adapter: 'node' }, w: { modules: ['c'], adapter: 'client', servedBy: 'api', origins: { frame: { '${frame}': 'r' } } } }`;
 let own = "";
 let other = "";
 beforeAll(() => {

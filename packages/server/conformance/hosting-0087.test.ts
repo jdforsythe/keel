@@ -6,7 +6,7 @@
 // Spec: k.hosting, clause "A request from an allowed origin with `sec-fetch-site: cross-site` logs W1567 once for that origin."
 // Spec: k.hosting, clause "With `servedBy: 'api'`, `node dist/api/server.mjs` answers `GET /` and `GET /no/such/page` with the client `index.html`, an unmatched runtime GET with 404, and a client asset as `immutable`; `servedBy` naming a `client` deployable is E1566."
 // Spec: k.hosting, clause "A deployable with `host: 'api'` is one E1552 naming `host` (k.topology); `topology()` throws E1552 for it."
-// Spec: k.topology Rules "E1552 ... a deployable key but `modules`, `adapter`, `servedBy`, `storage`, `shells`, `caller`."
+// Spec: k.topology Rules "A deployable key the Declaration omits is E1552 too."
 // Spec: k.hosting Rules E1565, E1566, W1567
 // Seed 1337.
 // ASSUMPTIONS: `createApp({ allow: string[] })`; `topology({ <name>: { servedBy } })`; `KEEL_ALLOW_ORIGINS` is read by the built `server.mjs`;
@@ -447,9 +447,9 @@ describe("k.hosting", () => {
     expect(() => Reflect.apply(topology, undefined, [declared])).toThrow(/^E1552/);
   }, 300_000);
 
-  test("`topology()` with a deployable key but `modules`, `adapter`, `servedBy`, `storage`, `shells`, `caller` throws a message starting E1552.", () => {
+  test("A deployable key the Declaration omits is E1552 too: `topology()` with a key but `modules`, `adapter`, `servedBy`, `storage`, `shells`, `caller`, `origins` throws a message starting E1552.", () => {
     // Seed 1337 (SEED, fixtures.ts).
-    const known = new Set(["modules", "adapter", "servedBy", "storage", "shells", "caller"]);
+    const known = new Set(["modules", "adapter", "servedBy", "storage", "shells", "caller", "origins"]);
     fc.assert(
       fc.property(
         fc.stringMatching(/^[a-z]{1,10}$/).filter((k) => !known.has(k)),
