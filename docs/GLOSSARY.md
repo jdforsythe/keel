@@ -11,6 +11,7 @@ Canonical names. Changing one requires an RFC.
 - **log**: the ordered record of transactions, navigations, and resource events; basis for undo, replay, audit, sessions.
 - **resource**: an async read with an exhaustive state union: loading, error, ready.
 - **capability**: an effect interface on `ctx` with real, shell, and simulated implementations.
+- **app data**: the records an app keeps for its users in a store of its choosing, reached through a capability; the kernel validates it at a boundary and neither stores nor fetches it (k.data).
 - **session**: a redacted, replayable event stream captured from a running app.
 - **ledger**: the verification report; each claim sits on one rung.
 - **rung**: proven, exhaustive, probabilistic, example, monitored.

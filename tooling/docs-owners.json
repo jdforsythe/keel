@@ -15,7 +15,7 @@
     "k.topology"
   ],
   "@keel/compiler": ["k.bundle", "k.compiler"],
-  "@keel/ctx": ["k.ctx", "k.owner", "k.persist", "k.sim"],
+  "@keel/ctx": ["k.ctx", "k.data", "k.owner", "k.persist", "k.sim"],
   "@keel/forms": ["k.forms"],
   "@keel/reactive": ["k.reactive"],
   "@keel/router": [
@@ -48,7 +48,7 @@
   "@keel/std-capacitor": ["std.shells"],
   "@keel/std-channels": ["std.channels"],
   "@keel/std-conflicts": ["std.conflicts"],
-  "@keel/std-db": ["std.db"],
+  "@keel/std-db": ["std.db", "std.postgres"],
   "@keel/std-geo": ["std.geo"],
   "@keel/std-headless": ["std.headless", "std.options"],
   "@keel/std-health": ["std.health"],
