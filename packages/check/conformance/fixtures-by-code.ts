@@ -25,6 +25,8 @@ const MOUNT_HEAD = "import { identityMount } from '@keel/router'\n";
 const MOUNT_SERVER =
   "import { identity } from '@keel/server'\nimport mount from './identity.ts'\nexport default identity({ identify: async () => '', handle: { path: mount.path, fn: () => new Response('') } })\n";
 const MOUNT_USE = "import mount from '../../identity.ts'\nexport const signin = mount.href('/sign-in/email')\n";
+const TOPO = (origins: string): string =>
+  `import { topology } from '@keel/server'\nexport default topology({ web: { modules: ['a'], adapter: 'node', origins: ${origins} } })\n`;
 const manifest = (id: string, extra = ""): Files[number] =>
   f(
     `modules/${id}/module.ts`,
@@ -863,6 +865,19 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       f("identity.ts", `${MOUNT_HEAD}export default identityMount('/api/auth', { links: ['/verify'] })\n`),
       f("identity.server.ts", MOUNT_SERVER),
     ],
+  },
+  E1590: {
+    opts: NO_TYPES,
+    bad: [manifest("a"), f("topology.ts", TOPO("{ img: { 'https://cdn.example/': 'r' } }"))],
+    clean: [manifest("a"), f("topology.ts", TOPO("{ img: { 'https://cdn.example': 'r' } }"))],
+  },
+  E1591: {
+    opts: NO_TYPES,
+    bad: [
+      manifest("a"),
+      f("topology.ts", TOPO("{ img: { 'https://cdn.example': 'one', 'https://cdn.example': 'two' } }")),
+    ],
+    clean: [manifest("a"), f("topology.ts", TOPO("{ img: { 'https://cdn.example': 'one' } }"))],
   },
   E1601: {
     bad: [f("src/id.ts", "export const id = () => crypto.randomUUID()\n")],

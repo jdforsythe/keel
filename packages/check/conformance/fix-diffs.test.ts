@@ -91,6 +91,8 @@ interface FixedCase {
 }
 
 const FIXED: FixedCase[] = [
+  { name: "E1590", code: "E1590", ...fixtureOf("E1590") },
+  { name: "E1591", code: "E1591", ...fixtureOf("E1591") },
   { name: "E1003", code: "E1003", ...fixtureOf("E1003") },
   {
     name: "E1005 (bytes only)",
@@ -291,6 +293,8 @@ for (const c of FIXED) {
 
 const FIX = [
   "E1003",
+  "E1590",
+  "E1591",
   "E1572",
   "E1509",
   "E1510",
