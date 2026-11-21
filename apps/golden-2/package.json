@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "keel build",
-    "dev": "AUTH_FIXTURE=dev KEEL_POSTGRES_URL=pglite:.keel-dev/postgres keel dev",
+    "dev": "AUTH_FIXTURE=dev keel dev",
     "check": "tsc --noEmit && biome check modules test && keel check --quiet",
     "test": "vitest run",
     "coverage": "node ../../tooling/coverage.mjs",

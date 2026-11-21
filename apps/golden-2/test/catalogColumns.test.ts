@@ -198,7 +198,6 @@ describe("kitchen.catalog (api)", () => {
         search: query({}),
         url: location.href,
         caller: "c1",
-        stores: {},
       },
       apiCtx(4),
     );

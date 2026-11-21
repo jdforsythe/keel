@@ -42,10 +42,13 @@ The records that grow with use live in the app's database, through `@keel/std-po
 
 Every statement names the schema its rows are parsed with (`sql(Recipe)`, `sql(Me)`, `sql(NoRows)`). `ctx.storage` keeps only Keel's own state, and the shopping list and toasts are client stores of the tab. The sign-in library's users and sessions stay in its own database (Accounts).
 
+Each database's tables are made by the `.sql` files of its module's `migrations/` folder (`modules/kitchen/migrations/`, `modules/accounts/migrations/`), numbered `0001-<name>.sql` onward, read from the app folder at the database's first query: `KEEL_APP_DIR` when set, else the working directory. `keel build` copies them to `dist/api/modules/<id>/migrations/`, and `server.mjs` sets `KEEL_APP_DIR` to its own folder, so a built server reads its copies from any working directory.
+
 `KEEL_POSTGRES_URL` says where the database is:
 - tests: none. `test/setup.ts` awaits `ready()` of `@keel/std-postgres/testing`, and each sim ctx gets migrated, empty tables in an in-memory PGlite.
-- `pnpm dev`: `pglite:.keel-dev/postgres`, PGlite in a folder, set by the `dev` script.
+- `pnpm dev`: unset, so the database is PGlite in `.keel-dev/postgres` (`keel dev` sets `KEEL_DEV_DIR` to `.keel-dev/`). Set it to use another database in dev.
 - `pnpm api`: `pglite:.api.postgres` unless the variable is set.
+- `deploy/compose.yaml`: required from the environment; `docker compose` stops before it starts without one.
 - a deployment: a `postgres:` or `postgresql:` URL of a Postgres server (a pool of 10 connections per process).
 
 The tables are made at the first query after a start.
@@ -66,10 +69,10 @@ Each module lists `@keel/std-brands` in `deps`, so `keel check` holds every id b
 1. `pnpm --filter ./apps/golden-2 build` runs `keel build`. It writes:
    - the `.keel/` artifacts, `surface.json` among them;
    - `dist/web/`, the `web` client as static files;
-   - `dist/api/`: `server.mjs`, the generated entry with every dependency bundled, beside a copy of the `web` client, `routes.json` and `std.json`;
+   - `dist/api/`: `server.mjs`, the generated entry with every dependency bundled, beside a copy of the `web` client, `routes.json`, `std.json` and each module's `modules/<id>/migrations/`;
    - `deploy/api/Dockerfile` and `deploy/compose.yaml`, from `topology.ts`.
 2. `pnpm api` runs `dist/api/server.mjs`, with `ctx.storage` in `.api.storage` and the app's database in `.api.postgres` (App data). It serves the whole app: `GET /` returns the client's `index.html`. It reads `KEEL_SECRET` (32 or more random bytes, required), `PORT` (default 8080) and `KEEL_ORIGIN` (the public origin) from the environment, and exits with E1560 when one is missing or invalid; it also needs `BETTER_AUTH_SECRET` (Accounts) and reads `KEEL_POSTGRES_URL` (App data).
 3. `GET /health` (`health.status`) answers 200 while the server runs: a page that says `ok`, or, asked for `application/json`, `{ status: 'ok', at }` with the server clock's time. It reads no storage. Point a container or load balancer probe at it.
 4. On SIGTERM or SIGINT the server stops listening and exits 0.
 
-`docker compose -f deploy/compose.yaml up` builds and runs the same entry in `node:22-slim`, with storage and `auth.sqlite` on the `api-data` volume. The generated compose file lists Keel's variables only: give `BETTER_AUTH_SECRET` and `KEEL_POSTGRES_URL` to the `api` service in an override file. `KEEL_POSTGRES_URL` is the `postgres:` URL of your database, or `pglite:/data/postgres` to keep the app's data on the same volume while one process serves it.
+`KEEL_POSTGRES_URL=postgres://... docker compose -f deploy/compose.yaml up` builds and runs the same entry in `node:22-slim`, with storage and `auth.sqlite` on the `api-data` volume. The generated compose file passes `KEEL_POSTGRES_URL` to the `api` service from the environment and holds no URL: give it the `postgres:` URL of your database, or `pglite:/data/postgres` to keep the app's data on the same volume while one process serves it. Give `BETTER_AUTH_SECRET` to the `api` service in an override file.
