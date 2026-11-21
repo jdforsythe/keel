@@ -1,4 +1,4 @@
-// Spec: k.errors, clause "Each of E1451-E1454 has a fixture that triggers it and a clean counterpart."
+// Spec: k.errors, clause "Each of E1451-E1454 has a fixture that triggers it and a clean counterpart." (E1451, E1452, E1453, E1454)
 // Seed 1337
 // Every fixture triggers exactly its code and its clean counterpart does not; which codes need one is
 // `reportedCodes()` (RFC 0065, asserted in explain-and-fixture-per-code.test.ts).

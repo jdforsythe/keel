@@ -3,7 +3,7 @@
   "unsafe": 18,
   "hostElements": 0,
   "rungs": {
-    "example": 1430,
+    "example": 1432,
     "probabilistic": 335,
     "exhaustive": 15,
     "proven": 72,
@@ -16,7 +16,7 @@
         "threshold": 70
       },
       "cli": {
-        "score": 79.7,
+        "score": 79.74,
         "threshold": 70
       },
       "compiler": {
@@ -14705,6 +14705,10 @@
       "rung": "example"
     },
     {
+      "item": "k.ledger#12",
+      "rung": "example"
+    },
+    {
       "item": "k.links#1",
       "rung": "example"
     },
@@ -16182,6 +16186,10 @@
     },
     {
       "item": "k.topology#9",
+      "rung": "example"
+    },
+    {
+      "item": "k.topology#10",
       "rung": "example"
     },
     {
