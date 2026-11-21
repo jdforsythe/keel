@@ -59,7 +59,7 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.owner | 5 | **conformance-covered** | none |
 | k.place | 5 | **conformance-covered** | none |
 | k.resume | 13 | **conformance-covered** | none |
-| k.serverlog | 6 | **conformance-covered** | none |
+| k.serverlog | 7 | **conformance-covered** | clause 7 (RFC 0164): no test yet |
 | k.user | 9 | **conformance-covered** | none |
 | k.boundary | 8 | **conformance-covered** | not audited clause by clause; the environment and limits suites run `keel build` on fixtures whose `env.d.ts` the type pass does not read |
 | std.brands | 6 | **conformance-covered** | none |
