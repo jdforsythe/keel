@@ -245,6 +245,8 @@ async function runArm(a: Extract<Args, { kind: "run" }>, now: Date, t0: number):
   });
   print(shown, a.arm, ` iter=${iterations} tokens=${input}/${output}`, isGreen, ms);
   await rm(scratch, { recursive: true, force: true });
+  await rm(parent, { recursive: true, force: true });
+  if (prepared.madeKit !== undefined) await rm(prepared.madeKit, { recursive: true, force: true });
 }
 
 async function main(now: Date): Promise<void> {

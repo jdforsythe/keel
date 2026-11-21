@@ -1,7 +1,7 @@
 # Evals
 
 ```
-pnpm eval --task <name> [--model <id>] [--runner claude|none] [--max-iter N] [--skill <name>] [--strict]
+pnpm eval --task <name> [--model <id>] [--runner claude|none] [--max-iter N] [--skill <name>] [--keel-kit <dir>] [--strict]
 pnpm eval --skill <name> [--runner claude|none]
 ```
 
@@ -13,6 +13,25 @@ Tasks live in `evals/tasks/<name>/` (`TASK.md`, `spec-slice.txt`, `pass.ts` whos
 
 **Results.** `evals/results/<date>-<task>-<model|none>.json`:
 `{task, skill, specSections, model, runner, converged, iterations, tokens:{input,output}, costUsd, unsafeCount, checkTrailer, testTrailer, checkExit, testExit, durationMs, startedAt}`. Input tokens include cache reads/writes. `unsafeCount` counts `unsafe(` under `packages/*/src` and `unsafe/`. Skill results: `<date>-skill-<skill>-<runner>.json`.
+
+## Public mode
+
+A task whose `task.json` has `"docs": "public"` (golden-3) runs as a public user's agent would: in a fresh project outside the repository, from packed `@keel/*` tarballs, reading only the scaffold's `AGENTS.md`, `CLAUDE.md`, `.claude/skills/` and `keel docs`, `keel explain` and the packages' READMEs; never `spec/`, `docs/`, source or the repo's `.claude/`. Files in `evals/public/`:
+- `pack.ts`: the pack step, one kit of `keel-<name>-<version>.tgz` for every package, used by the public mode and by the head-to-head Keel arm (`--keel-kit <dir>`, else a fresh pack). Each package's own `build` compiles it (`dist/`), `tooling/docs-pack.mjs --all` packs its `docs/`, and `npm pack` runs on a staged copy whose `package.json` is rewritten: `exports` entries `./src/x.ts` become `./dist/src/x.js` with `types` at `./dist/src/x.d.ts`, a root `./module.ts` is compiled to `./dist/module.js`, `bin` is the `publishConfig.bin`, `workspace:*` becomes the version, and `private`, `scripts` and `devDependencies` go. The repository's `package.json` files are not touched.
+- `project.ts`: a bootstrap folder installs the kit's `@keel/cli`, runs `keel scaffold project <name>` in a fresh `<tmp>/keel-public-*` folder, and the project installs with every `@keel/*` as an `overrides` entry of its `pnpm-workspace.yaml` pointing at a tarball (`pnpm install --prefer-offline`: the shared store first, the registry for a version it lacks). The project also declares `esbuild`, the optional peer `keel build` needs. `proveProject` runs `keel check`, `keel docs`, `keel test` and `keel build` in it.
+- `isolation.ts`: `V0008`, the probe: the project is inside the repo, a `CLAUDE.md`, `AGENTS.md`, `.claude`, `package.json`, `pnpm-workspace.yaml` or `node_modules` sits above it, an installed `@keel/*` resolves into the repo, or (runner `claude`) the agent's list of loaded skills and memory files names a path outside the project. `V0009`, the audit of an iteration's `stream-json` transcript: any tool call whose path (resolved against the project), command or pattern names the repo root or `~/.claude`. Permission prompts stay off, so probe and audit are the guard, not a sandbox.
+- `agent.ts`: `claude -p --output-format stream-json --setting-sources project` in the project; the CLI needs `--verbose` for `stream-json` and that is the only reason it is passed.
+- `importApp.ts`: after each iteration the project goes into `apps/<task>/` (sources, tests, config; not `node_modules`, `dist`, `reports`, `AGENTS.md`, `CLAUDE.md`, `.claude`, `pnpm-workspace.yaml`), `@keel/*` become `workspace:*`, `scripts` take `task.json` `import.scripts`, the root's biome formats `modules` and `test`, and the task's `pass.ts` runs from the repo root unchanged. A run with `--runner claude` keeps the import and the root install's lockfile change; `--runner none` removes `apps/<task>` again.
+
+The prompt is the task's `TASK.md` alone (no spec slice, no skill text); feedback comes from the project's own `pnpm check` and `pnpm test`. The result adds `docs: "public"`, `probe`, `audit` and `packed` (every `@keel/<name>@<version>`). `V0010` is a failed step of `eval:public prove` or `selftest`.
+
+```
+pnpm eval:public pack [--out <dir>] [--no-build]
+pnpm eval:public prove [--kit <dir>]
+pnpm eval:public selftest
+```
+
+`prove` runs a fresh project from the kit through check, docs, test and build and the probe. `selftest` runs the audit on a transcript that reads a forbidden path and one that does not, the pack rewrite and the import into a throwaway folder. None of the three runs an agent.
 
 ## Head to head
 
@@ -29,7 +48,7 @@ One app, built by an agent in Keel and in Next.js, scored by the same hidden sui
 - `arms.ts`, `agent.ts`, `serve.ts`: arm preparation, build and production start; the `claude` and `codex` command lines and usage parsing; a free port and a child server.
 - `stub/server.mjs`: a deliberately broken app that proves the scorer fails.
 
-**Arms.** `keel`: `keel scaffold project`, the published skills (`packages/cli/skills`) in `.claude/skills`, an `AGENTS.md` and `CLAUDE.md` naming them, and the packed `@keel/*` tarballs of `--keel-kit` as `overrides` of the scaffold's `^0.0.0` ranges (they are not on a registry); build `pnpm build`, serve `dist/<deployable>/server.mjs`. `next`: `create-next-app@<--next-version, default latest>` with TypeScript, App Router and npm; build `npm run build`, serve `npm start`. The agent (`claude -p`, or `codex exec`, permission prompts off) runs in the arm directory. Up to `--max-iter` (default 3) iterations: agent, build, start, score; a failed iteration's next prompt carries the build or start error, or only the count of failed acceptance checks, never their names.
+**Arms.** `keel`: the public mode's project (`evals/public/project.ts`: the packed `@keel/cli`'s `keel scaffold project`, which writes `AGENTS.md`, `CLAUDE.md` and the published skills) with the packed `@keel/*` tarballs of `--keel-kit` (a fresh pack when absent) as `overrides` of the scaffold's `^0.0.0` ranges (they are not on a registry); build `pnpm build`, serve `dist/<deployable>/server.mjs`. `next`: `create-next-app@<--next-version, default latest>` with TypeScript, App Router and npm; build `npm run build`, serve `npm start`. The agent (`claude -p`, or `codex exec`, permission prompts off) runs in the arm directory. Up to `--max-iter` (default 3) iterations: agent, build, start, score; a failed iteration's next prompt carries the build or start error, or only the count of failed acceptance checks, never their names.
 
 **Dry mode.** `--dry <dir>` serves a built Keel app (`pnpm --filter golden-2 build` first) and scores it, no agent; `--dry stub` scores the stub; `--url` scores a server that is already running. Nothing is spent.
 

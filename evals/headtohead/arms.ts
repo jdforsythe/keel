@@ -4,8 +4,10 @@
 // create-next-app's output.
 import { execFile } from "node:child_process";
 import { randomBytes } from "node:crypto";
-import { access, cp, readdir, readFile, writeFile } from "node:fs/promises";
+import { access, readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { ensureKit } from "../public/pack.ts";
+import { setupProject } from "../public/project.ts";
 import { type Served, serve } from "./serve.ts";
 
 export type Arm = "keel" | "next";
@@ -42,29 +44,22 @@ export function sh(
   });
 }
 
-export type Prepared = { dir: string; note: string };
+/** `dir` is the project; `madeKit` is a kit this call packed (the caller removes it). */
+export type Prepared = { dir: string; note: string; madeKit?: string };
 
-/** `keelKit` holds the packed `@keel/*` tarballs the scaffold's `^0.0.0` ranges resolve to until they are published. */
+/**
+ * The Keel arm: the public mode's project (evals/public/project.ts) from the kit of `--keel-kit`, or from a fresh
+ * pack of the repository's packages (evals/public/pack.ts) when none is given. The scaffold writes `AGENTS.md`,
+ * `CLAUDE.md` and the published skills itself.
+ */
 async function prepareKeel(parent: string, root: string, keelKit: string | undefined): Promise<Prepared> {
-  const dir = join(parent, NAME);
-  const scaffold = await sh(
-    "node",
-    [join(root, "packages", "cli", "src", "bin.ts"), "scaffold", "project", NAME],
-    parent,
-  );
-  if (!scaffold.ok) throw new Error(`scaffold failed: ${scaffold.output}`);
-  await cp(join(root, "packages", "cli", "skills"), join(dir, ".claude", "skills"), { recursive: true });
-  const note = "Keel skills are in .claude/skills; read keel/SKILL.md first, then load the skill each task names.\n";
-  await writeFile(join(dir, "AGENTS.md"), note);
-  await writeFile(join(dir, "CLAUDE.md"), note);
-  if (keelKit === undefined) throw new Error("the keel arm needs --keel-kit <dir> holding the packed @keel/* tarballs");
-  const overrides = (await readdir(keelKit))
-    .filter((f) => /^keel-.+\.tgz$/.test(f))
-    .map((f) => `  "@keel/${f.replace(/^keel-/, "").replace(/-\d.*\.tgz$/, "")}": "file:${join(keelKit, f)}"`);
-  await writeFile(join(dir, "pnpm-workspace.yaml"), `overrides:\n${overrides.join("\n")}\n`);
-  const install = await sh("pnpm", ["install"], dir);
-  if (!install.ok) throw new Error(`install failed: ${install.output}`);
-  return { dir, note: "scaffold, published skills, packed packages" };
+  const { kit, made } = await ensureKit(root, keelKit);
+  const project = await setupProject(kit, NAME, parent);
+  return {
+    dir: project.dir,
+    note: "scaffold, published skills, packed packages",
+    ...(made ? { madeKit: kit } : {}),
+  };
 }
 
 async function prepareNext(parent: string, version: string): Promise<Prepared> {
