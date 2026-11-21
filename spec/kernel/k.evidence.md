@@ -15,6 +15,8 @@ status: conformance-covered
 | `pii.json` | per `.pii()` path (file, export, path, class), each sink (k.privacy) and the rung of its clause (sessions `std.sessions#2`, inputs `k.privacy#7`, log `k.privacy#6`, bundle `k.evidence#5`): the project ledger's when it holds that item, else the kernel ledger's that `@keel/cli` ships; `coverage`, the share of (path, sink) pairs at `probabilistic` or higher; `caller` (k.user) |
 | `deps.json` | each production dependency from `pnpm list --prod --json --depth Infinity` as a CycloneDX 1.5 component (name, version, integrity, license); `advisories` from `--audit` (`pnpm audit --json` output), else `null` |
 
+Each `security.json` entry (`adapter`, `name`, then `headers` and `policy`, or `csp`) carries `origins`: `{ directive, origin, reason }` per declared origin (k.origins), directives in the order `img`, `media`, `font`, `connect`, `frame`, origins in declaration order; `[]` with none.
+
 Every file parses with a schema `@keel/cli/evidence` exports. No file holds an app value: records carry ids, codes, paths, counts and hashes. The command makes no network request.
 
 **Signing.** The key is `KEEL_EVIDENCE_KEY`, an Ed25519 private key as PKCS#8 PEM, read only from the environment. `key` is its raw public key in base64, `keyId` the first 16 hex characters of that key's SHA-256. The bundle is written whether runs fail or not; failing runs exit 1 with E1060.
