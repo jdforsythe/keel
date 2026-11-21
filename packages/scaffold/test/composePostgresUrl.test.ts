@@ -9,10 +9,16 @@ const LINE = "      KEEL_POSTGRES_URL: ${KEEL_POSTGRES_URL:?}";
 test("each node deployable listing @keel/std-postgres gets one required KEEL_POSTGRES_URL line; the rest none", () => {
   fc.assert(
     fc.property(
-      fc.array(fc.record({ pg: fc.boolean(), storage: fc.constantFrom("file" as const, "sqlite" as const, "postgres" as const) }), {
-        minLength: 1,
-        maxLength: 4,
-      }),
+      fc.array(
+        fc.record({
+          pg: fc.boolean(),
+          storage: fc.constantFrom("file" as const, "sqlite" as const, "postgres" as const),
+        }),
+        {
+          minLength: 1,
+          maxLength: 4,
+        },
+      ),
       (specs) => {
         const topology = Object.fromEntries(
           specs.map((d, i) => [
