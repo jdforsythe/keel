@@ -117,6 +117,32 @@ const proofs = {
     }
   },
 
+  /** The built server sends the `Host` node empty; in Chromium, under the document's policy, its code draws 3 bars. */
+  async "host-component"(dir) {
+    const server = await serveNode(dir, "web");
+    const browser = await chromium.launch();
+    try {
+      const res = await answer(server.base, "/");
+      const html = res === null ? "" : await res.text();
+      const served = /<div [^>]*id="app\.home\.chart"[^>]*><\/div>/.test(html) && html.includes("data-k-host");
+      const page = await browser.newPage();
+      const errors = [];
+      page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
+      page.on("pageerror", (e) => errors.push(String(e)));
+      await page.goto(`${server.base}/`);
+      const rects = page.locator('[id="app.home.chart"] svg rect');
+      await rects.nth(2).waitFor({ timeout: 15_000 });
+      const drawn = await rects.count();
+      return [
+        served && drawn === 3 && errors.length === 0,
+        `served empty ${served}, ${drawn} bars, ${errors.length} errors`,
+      ];
+    } finally {
+      await browser.close();
+      await server.stop();
+    }
+  },
+
   /** The built server's page shows what a stub of the OpenAPI document's server answered to the generated client. */
   async "openapi-import"(dir) {
     const seen = [];
