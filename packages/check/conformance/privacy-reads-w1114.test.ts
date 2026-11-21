@@ -29,7 +29,7 @@ const PLAIN = "s.object({ pw: s.string() })";
 const jsx = (attrs: string) => `export const V = () => <Input ${attrs} label="P" />`;
 const key = fc.stringMatching(/^[a-z]{1,8}$/);
 
-test.skip('`<Input type="password" field={f.field(\'pw\')} label="P" />` with `pw: s.string()` is one W1114', () => {
+test('`<Input type="password" field={f.field(\'pw\')} label="P" />` with `pw: s.string()` is one W1114', () => {
   fc.assert(
     fc.property(key, (k) => {
       const ds = w1114(project(`s.object({ ${k}: s.string() })`, [jsx(`type="password" field={f.field('${k}')}`)]));
@@ -42,29 +42,29 @@ test.skip('`<Input type="password" field={f.field(\'pw\')} label="P" />` with `p
   );
 });
 
-test.skip('`autocomplete="new-password"` without `type`, and `current-password`, is one W1114', () => {
+test('`autocomplete="new-password"` without `type`, and `current-password`, is one W1114', () => {
   for (const ac of ["new-password", "current-password", "section-a current-password"]) {
     expect(w1114(project(PLAIN, [jsx(`autocomplete="${ac}" field={f.field('pw')}`)]))).toHaveLength(1);
   }
 });
 
-test.skip("a call `Input({ type: 'password', field: f.field('pw'), label: 'P' })` with an object literal is one W1114", () => {
+test("a call `Input({ type: 'password', field: f.field('pw'), label: 'P' })` with an object literal is one W1114", () => {
   const ds = w1114(project(PLAIN, [`export const V = Input({ type: "password", field: f.field("pw"), label: "P" })`]));
   expect(ds).toHaveLength(1);
 });
 
-test.skip("W1114 reads the schema imported from a `*.schema.ts`", () => {
+test("W1114 reads the schema imported from a `*.schema.ts`", () => {
   expect(w1114(project("Login", [jsx(`type="password" field={f.field('pw')}`)]))).toHaveLength(1);
 });
 
-test.skip("W1114 reads a nested path `a.pw` and passes over trailing `.optional()` and `.pii()`", () => {
+test("W1114 reads a nested path `a.pw` and passes over trailing `.optional()` and `.pii()`", () => {
   const nested = "s.object({ a: s.object({ pw: s.string() }).optional() })";
   expect(w1114(project(nested, [jsx(`type="password" field={f.field('a.pw')}`)]))).toHaveLength(1);
   const pii = "s.object({ pw: s.string().pii().optional() })";
   expect(w1114(project(pii, [jsx(`type="password" field={f.field('pw')}`)]))).toHaveLength(1);
 });
 
-test.skip("W1114 is none for `pw: s.secret(s.string()).optional()`", () => {
+test("W1114 is none for `pw: s.secret(s.string()).optional()`", () => {
   fc.assert(
     fc.property(key, (k) => {
       const schema = `s.object({ ${k}: s.secret(s.string()).optional() })`;
@@ -74,7 +74,7 @@ test.skip("W1114 is none for `pw: s.secret(s.string()).optional()`", () => {
   );
 });
 
-test.skip("W1114 is none for `f.field(p)`, `pw: make()`, `type={t}`, a numeric segment, a computed path and a `field` held in a variable", () => {
+test("W1114 is none for `f.field(p)`, `pw: make()`, `type={t}`, a numeric segment, a computed path and a `field` held in a variable", () => {
   const none = (schema: string, body: string[]) => expect(w1114(project(schema, body))).toHaveLength(0);
   none(PLAIN, [jsx(`type="password" field={f.field(p)}`)]);
   none("s.object({ pw: make() })", [jsx(`type="password" field={f.field('pw')}`)]);
@@ -84,7 +84,7 @@ test.skip("W1114 is none for `f.field(p)`, `pw: make()`, `type={t}`, a numeric s
   none(PLAIN, [`const fld = f.field('pw')`, jsx(`type="password" field={fld}`)]);
 });
 
-test.skip("W1114 is none for an `Input` of another type with no password autocomplete", () => {
+test("W1114 is none for an `Input` of another type with no password autocomplete", () => {
   for (const attrs of [`type="text" field={f.field('pw')}`, `autocomplete="off" field={f.field('pw')}`]) {
     expect(w1114(project(PLAIN, [jsx(attrs)]))).toHaveLength(0);
   }

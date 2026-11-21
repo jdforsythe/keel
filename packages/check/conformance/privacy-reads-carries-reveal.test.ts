@@ -24,7 +24,7 @@ function answers(body: string[]): unknown {
   return run([{ path: PATH, source }], PATH, (input, nodes) => nodes.map((n) => carries(n, input)));
 }
 
-test.skip("`carriesReveal` is true for `reveal(p.k)`, `{ a: reveal(p.k) }` and a `const` bound to `` `${reveal(p.k)}` ``", () => {
+test("`carriesReveal` is true for `reveal(p.k)`, `{ a: reveal(p.k) }` and a `const` bound to `` `${reveal(p.k)}` ``", () => {
   fc.assert(
     fc.property(key, (k) => {
       const got = answers([
@@ -39,7 +39,7 @@ test.skip("`carriesReveal` is true for `reveal(p.k)`, `{ a: reveal(p.k) }` and a
   );
 });
 
-test.skip("`carriesReveal` is false for `hash(reveal(p.k))`, `reveal(p.k).length`, `reveal(p.k) === h` and a parameter", () => {
+test("`carriesReveal` is false for `hash(reveal(p.k))`, `reveal(p.k).length`, `reveal(p.k) === h` and a parameter", () => {
   fc.assert(
     fc.property(key, (k) => {
       const got = answers([
@@ -54,7 +54,7 @@ test.skip("`carriesReveal` is false for `hash(reveal(p.k))`, `reveal(p.k).length
   );
 });
 
-test.skip("`carriesReveal` reads a local's value where `node` stands: a later hash assignment ends it, an import ends it", () => {
+test("`carriesReveal` reads a local's value where `node` stands: a later hash assignment ends it, an import ends it", () => {
   const got = answers([`let a = reveal(p.k)`, `probe(a)`, `a = hash(a)`, `probe(a)`, `probe(hash)`]);
   expect(got).toEqual([true, false, false]);
 });

@@ -31,7 +31,7 @@ function listed(source: string): { text: string; line: number }[] {
 const HEAD = `import { contract } from "@keel/router/contract"\nimport { loader } from "@keel/router"\nimport { s } from "@keel/schema"\n`;
 const name = fc.stringMatching(/^[a-z]{1,8}$/);
 
-test.skip("`outputSchemas` lists the `output` of an API entry in `contract(...)`, inline and through a `const`", () => {
+test("`outputSchemas` lists the `output` of an API entry in `contract(...)`, inline and through a `const`", () => {
   fc.assert(
     fc.property(name, (n) => {
       const inline = `${HEAD}export const a = contract("a", { "a.${n}": { method: "GET", path: "/${n}", output: s.json() } })\n`;
@@ -43,7 +43,7 @@ test.skip("`outputSchemas` lists the `output` of an API entry in `contract(...)`
   );
 });
 
-test.skip("`outputSchemas` lists every entry of a `contract` call, one `output` each", () => {
+test("`outputSchemas` lists every entry of a `contract` call, one `output` each", () => {
   const src = `${HEAD}export const a = contract("a", {\n  "a.one": { method: "GET", path: "/1", output: s.json() },\n  "a.two": { method: "GET", path: "/2", output: s.string() },\n  "a.page": { path: "/p" },\n})\n`;
   expect(listed(src).map((o) => [o.text, o.line])).toEqual([
     ["s.json()", 5],
@@ -51,7 +51,7 @@ test.skip("`outputSchemas` lists every entry of a `contract` call, one `output` 
   ]);
 });
 
-test.skip("`outputSchemas` lists the `output` of a page `loader`'s declaration, inline and through a `const`", () => {
+test("`outputSchemas` lists the `output` of a page `loader`'s declaration, inline and through a `const`", () => {
   fc.assert(
     fc.property(name, (n) => {
       const inline = `${HEAD}export const l = loader(c, "a.${n}", { output: s.json() }, async () => 1)\n`;
@@ -63,12 +63,12 @@ test.skip("`outputSchemas` lists the `output` of a page `loader`'s declaration, 
   );
 });
 
-test.skip("`outputSchemas` lists nothing for a `loader` given `decl()`", () => {
+test("`outputSchemas` lists nothing for a `loader` given `decl()`", () => {
   const src = `${HEAD}declare function decl(x: unknown): unknown\nexport const l = loader(c, "a.x", decl({ output: s.json() }), async () => 1)\n`;
   expect(listed(src)).toEqual([]);
 });
 
-test.skip("`outputSchemas` does not list an `output` given another way: a spread, or a call that is not `contract` or `loader`", () => {
+test("`outputSchemas` does not list an `output` given another way: a spread, or a call that is not `contract` or `loader`", () => {
   const src = `${HEAD}const O = { output: s.json() }\nexport const x = { ...O }\nexport const y = foo({ output: s.json() })\nexport const a = contract("a", { "a.z": { method: "GET", path: "/z", ...O } })\n`;
   expect(listed(src)).toEqual([]);
 });

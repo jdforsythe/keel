@@ -39,7 +39,7 @@ function answer(body: string[], names = NAMES): unknown {
 }
 const field = fc.stringMatching(/^[a-z]{1,8}$/);
 
-test.skip("`schemaHolds` is 'yes' for `s.object({ d: Digested })`, `D.optional()` with `D` an alias of it, `t.Digested` of a namespace import, and a `const` of an imported `*.schema.ts` holding one", () => {
+test("`schemaHolds` is 'yes' for `s.object({ d: Digested })`, `D.optional()` with `D` an alias of it, `t.Digested` of a namespace import, and a `const` of an imported `*.schema.ts` holding one", () => {
   fc.assert(
     fc.property(field, (f) => {
       expect(
@@ -56,7 +56,7 @@ test.skip("`schemaHolds` is 'yes' for `s.object({ d: Digested })`, `D.optional()
   );
 });
 
-test.skip("`schemaHolds` is 'unknown' for `s.object({ d: make() })`", () => {
+test("`schemaHolds` is 'unknown' for `s.object({ d: make() })`", () => {
   fc.assert(
     fc.property(field, (f) => {
       expect(answer([`probe(s.object({ ${f}: make() }))`])).toEqual(["unknown"]);
@@ -65,7 +65,7 @@ test.skip("`schemaHolds` is 'unknown' for `s.object({ d: make() })`", () => {
   );
 });
 
-test.skip("`schemaHolds` is 'no' for `s.object({ d: s.string() })` and for a schema imported from another package", () => {
+test("`schemaHolds` is 'no' for `s.object({ d: s.string() })` and for a schema imported from another package", () => {
   fc.assert(
     fc.property(field, (f) => {
       expect(
@@ -76,7 +76,7 @@ test.skip("`schemaHolds` is 'no' for `s.object({ d: s.string() })` and for a sch
   );
 });
 
-test.skip("`schemaHolds` reads through spreads, array elements, call arguments, a call's receiver and both branches of `?:`; 'yes' wins over 'unknown'", () => {
+test("`schemaHolds` reads through spreads, array elements, call arguments, a call's receiver and both branches of `?:`; 'yes' wins over 'unknown'", () => {
   const got = answer([
     `probe(s.object({ ...Row }))`,
     `probe(s.array([Digested]))`,
@@ -88,7 +88,7 @@ test.skip("`schemaHolds` reads through spreads, array elements, call arguments, 
   expect(got).toEqual(["yes", "yes", "yes", "yes", "yes", "yes"]);
 });
 
-test.skip("`schemaHolds` is 'unknown' for a factory call, a binding it cannot follow, a computed member, an object literal's getter or method, and a binding the file changes after its literal", () => {
+test("`schemaHolds` is 'unknown' for a factory call, a binding it cannot follow, a computed member, an object literal's getter or method, and a binding the file changes after its literal", () => {
   const got = answer([
     `const mutable = s.object({ d: s.string() })`,
     `mutable.d = Digested`,
