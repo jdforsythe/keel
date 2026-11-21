@@ -147,6 +147,7 @@ Read only this file and `docs/HANDOFF.md`. Everything else is fetched when a ste
 - RFC unit: RFC, spec and ADR; then conformance by the `conformance-writer` from the spec; then the build. Conformance and build run in their own git worktree and branch, merged when green, so red tests never sit on the main line.
 - A lane that changes `@keel/check`, `@keel/compiler` or `@keel/schema` runs the cli suite too (D33).
 - After a push that carries code, watch the CI run on that head to its end before pushing again (a push cancels the run in progress); plan-only commits wait for the next code push (D80).
+- Before a push that carries code, after `pnpm build`: the smokes CI runs (`tooling/smoke/restart.mjs`, `workflow.mjs`, `dev-signin.mjs`, `resume.mjs 3`), since no package suite serves a built app in a browser (backlog 1003).
 - Before a push: `pnpm check`, `pnpm test`, both apps' `keel test`, `pnpm ledger --diff`, `node tooling/evidence-report.mjs --check` and `pnpm build` on the exact commit in a clean checkout, each gated on its own exit status. `pnpm ledger` and `pnpm evidence:report` are written from a clean tree after both apps' `keel test`.
 - One mutation run at a time (machine-wide lock). Few test-running agents at once: the machine is shared, and spawn-heavy cli conformance times out under load (backlog 0938).
 
@@ -179,7 +180,7 @@ Each lane is a subagent in a worktree under `.worktrees/` (created by the orches
 ## Lanes (2026-11-21)
 State at the last checkpoint; each lane is a subagent in its worktree. The older Lanes block above is history of 2026-11-19 and 20: where it disagrees, this one stands.
 - Pushed: 9e94c1bb (RFC 0157 and RFC 0162; before it RFC 0159, custom components, and RFC 0168; RFC 0151, 0156, 0160, 0161, 0164 to 0167, RFC 0169's first part, the `Tabs` fix, the eval harness and public mode). `.worktrees/m161`, `r160`, `r161`, `r169` are removed.
-- W13 (the module contract and the component signature) is merged and pushed (9e94c1bb; D79). `lane-r157` is kept as a branch until CI is green; its worktree is removed. `tasks/p1/w13-build.md` records how it was built.
+- W13 (the module contract and the component signature) is merged and pushed (9e94c1bb; D79). CI is green on b926699b, which adds two fixes CI asked for: a std-capacitor conformance test wrong on Linux only (D80) and a smoke script reading the old id `kitchen.recipes`. The branch `lane-r157` is deleted. `tasks/p1/w13-build.md` records how it was built.
 - RFC 0159 (custom components) is merged and pushed (f15c6700; ledger 1,675 items, 1,488 verified, 19 unsafe). `lane-r159` and `lane-r163` are kept as branches: `lane-r163` holds RFC 0163's spec text (k.library) for when the library format is built. Backlog 0998: k.host-element names k.library before it exists.
 - `.worktrees/r158` `lane-r158`: RFC 0158 written (D55). Conformance (k.data, std.postgres) waits for the W13 build. Its Migration text is still to remove (D65).
 - RFC 0169 (k.parity; D68): its first part is merged. The second part (the kind gates, S0013) follows RFC 0163. Backlog 0995: unit tests for `linkEscapes`.
