@@ -1,5 +1,5 @@
 {
-  "commit": "f6342c6b8f56bdc7df21ab2cf76d28937ae4e408",
+  "commit": "72d70a060728595ab7730dcf764e65129e59ffd4",
   "coverage": {
     "packages": {
       "apps/golden-1": {
@@ -1148,7 +1148,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-21T13:28:39.844Z",
+  "generatedAt": "2026-11-21T16:49:44.066Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -1168,7 +1168,7 @@
         "exhaustive": 6,
         "monitored": 0,
         "none": 8,
-        "probabilistic": 170,
+        "probabilistic": 173,
         "proven": 36
       },
       "sections": {
@@ -1285,7 +1285,7 @@
             "probabilistic": 0,
             "proven": 0
           },
-          "status": "implemented",
+          "status": "conformance-covered",
           "total": 19,
           "verified": 19
         },
@@ -1506,7 +1506,7 @@
             "probabilistic": 0,
             "proven": 0
           },
-          "status": "proposed",
+          "status": "implemented",
           "total": 6,
           "verified": 6
         },
@@ -1519,7 +1519,7 @@
             "probabilistic": 0,
             "proven": 0
           },
-          "status": "proposed",
+          "status": "conformance-covered",
           "total": 11,
           "verified": 11
         },
@@ -1610,7 +1610,7 @@
             "probabilistic": 1,
             "proven": 1
           },
-          "status": "proposed",
+          "status": "conformance-covered",
           "total": 8,
           "verified": 8
         },
@@ -1623,7 +1623,7 @@
             "probabilistic": 0,
             "proven": 0
           },
-          "status": "proposed",
+          "status": "implemented",
           "total": 1,
           "verified": 0
         },
@@ -1662,7 +1662,7 @@
             "probabilistic": 0,
             "proven": 1
           },
-          "status": "proposed",
+          "status": "conformance-covered",
           "total": 11,
           "verified": 11
         },
@@ -1818,7 +1818,7 @@
             "probabilistic": 0,
             "proven": 5
           },
-          "status": "proposed",
+          "status": "implemented",
           "total": 8,
           "verified": 7
         },
@@ -1948,7 +1948,7 @@
             "probabilistic": 0,
             "proven": 0
           },
-          "status": "proposed",
+          "status": "conformance-covered",
           "total": 8,
           "verified": 8
         },
@@ -2065,7 +2065,7 @@
             "probabilistic": 0,
             "proven": 0
           },
-          "status": "proposed",
+          "status": "implemented",
           "total": 6,
           "verified": 6
         },
@@ -2208,7 +2208,7 @@
             "probabilistic": 0,
             "proven": 0
           },
-          "status": "proposed",
+          "status": "conformance-covered",
           "total": 6,
           "verified": 6
         },
@@ -2416,7 +2416,7 @@
             "probabilistic": 0,
             "proven": 0
           },
-          "status": "proposed",
+          "status": "implemented",
           "total": 6,
           "verified": 6
         },
@@ -2465,12 +2465,12 @@
             "exhaustive": 0,
             "monitored": 0,
             "none": 0,
-            "probabilistic": 9,
+            "probabilistic": 12,
             "proven": 0
           },
           "status": "conformance-covered",
-          "total": 12,
-          "verified": 12
+          "total": 15,
+          "verified": 15
         },
         "std.workflows": {
           "byRung": {
@@ -2486,14 +2486,14 @@
           "verified": 8
         }
       },
-      "total": 1003,
-      "verified": 995
+      "total": 1006,
+      "verified": 998
     },
     "evidenceByRung": {
       "example": 1420,
       "exhaustive": 15,
       "monitored": 8,
-      "probabilistic": 332,
+      "probabilistic": 335,
       "proven": 72
     },
     "exports": {
@@ -3026,9 +3026,9 @@
       "total": 446,
       "verified": 411
     },
-    "items": 1729,
+    "items": 1732,
     "unsafe": 18,
-    "verified": 1524
+    "verified": 1527
   },
   "mutation": {
     "packages": {
@@ -3349,7 +3349,7 @@
         "reason": null,
         "reportDate": "2026-11-19",
         "score": 81.28,
-        "stale": 0,
+        "stale": 1,
         "threshold": 70
       },
       "packages/std-workflows": {
@@ -3385,7 +3385,7 @@
         "threshold": 70
       }
     },
-    "stale": 231
+    "stale": 232
   },
   "schema": 1,
   "tests": {
@@ -3937,18 +3937,18 @@
         "unitFiles": 2
       },
       "packages/std-tokens": {
-        "conformanceCases": 37,
-        "conformanceFiles": 6,
+        "conformanceCases": 46,
+        "conformanceFiles": 7,
         "exploreFiles": 0,
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 23,
+        "propertyCalls": 31,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 26,
-        "unitFiles": 6
+        "unitCases": 28,
+        "unitFiles": 7
       },
       "packages/std-workflows": {
         "conformanceCases": 27,
@@ -4008,18 +4008,18 @@
       }
     },
     "totals": {
-      "conformanceCases": 4692,
-      "conformanceFiles": 1131,
+      "conformanceCases": 4701,
+      "conformanceFiles": 1132,
       "exploreFiles": 17,
       "fails": 2,
       "otherCases": 0,
       "otherFiles": 0,
-      "propertyCalls": 2157,
+      "propertyCalls": 2165,
       "proveFiles": 23,
       "simulateFiles": 6,
       "skipTodo": 1,
-      "unitCases": 5184,
-      "unitFiles": 862
+      "unitCases": 5186,
+      "unitFiles": 863
     }
   },
   "tool": {
