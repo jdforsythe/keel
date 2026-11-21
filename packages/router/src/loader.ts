@@ -1,11 +1,14 @@
 import type { Ctx } from "@keel/ctx";
+import { scope } from "@keel/reactive";
 import type { Infer, KeelError, Result, Schema, Secret } from "@keel/schema";
+import { isolate } from "@keel/store";
 import type { Contract } from "./contract/types/Contract.ts";
 import type { Entries } from "./contract/types/Entries.ts";
 import { firstYield } from "./internal/firstYield.ts";
 import { isSchema } from "./internal/isSchema.ts";
 import { ownValue } from "./internal/ownValue.ts";
 import { refuseSecret } from "./internal/refuseSecret.ts";
+import { withStores } from "./internal/withStores.ts";
 import { yields } from "./internal/yields.ts";
 import type { Loader } from "./types/Loader.ts";
 import type { LoaderInput } from "./types/LoaderInput.ts";
@@ -40,7 +43,8 @@ type ViewIds<C> = {
       : never;
 }[keyof C & string];
 type Fn = (
-  args: Omit<LoaderInput, "user" | "bearer"> & {
+  args: Omit<LoaderInput, "user" | "bearer" | "stores"> & {
+    readonly stores: unknown;
     readonly user: string;
     readonly bearer: Secret<string> | undefined;
     readonly signal: AbortSignal;
@@ -91,7 +95,9 @@ export function loader(
   if (own !== undefined) refuseSecret(own);
   const { stores } = decl;
   const run = (args: LoaderInput, ctx: Ctx): Promise<Out<unknown>> =>
-    firstYield((signal) => fn({ ...args, user: args.user ?? "", bearer: args.bearer, signal }, ctx));
+    withStores(stores, args.stores, ctx, (st) =>
+      firstYield((signal) => fn({ ...args, user: args.user ?? "", bearer: args.bearer, stores: st, signal }, ctx)),
+    );
   const base = {
     kind: "keel.loader" as const,
     contract,
@@ -104,6 +110,25 @@ export function loader(
   return Object.freeze({
     ...base,
     live: (a: LoaderInput & { readonly signal: AbortSignal }, ctx: Ctx) =>
-      yields(fn({ ...a, user: a.user ?? "", bearer: a.bearer }, ctx)),
+      a.stores !== undefined || stores === undefined
+        ? yields(fn({ ...a, user: a.user ?? "", bearer: a.bearer, stores: a.stores }, ctx))
+        : liveWithStores(stores, ctx, (st) =>
+            yields(fn({ ...a, user: a.user ?? "", bearer: a.bearer, stores: st }, ctx)),
+          ),
   });
+}
+
+/** A live loader's yields with `stores` made by `factory` for `ctx` in a detached, isolated scope, disposed at its end. */
+async function* liveWithStores<R>(
+  factory: (ctx: Ctx) => unknown,
+  ctx: Ctx,
+  use: (stores: unknown) => AsyncIterable<R>,
+): AsyncGenerator<R> {
+  const sc = scope(() => undefined, { detached: true });
+  isolate(sc);
+  try {
+    yield* use(sc.run(() => factory(ctx)));
+  } finally {
+    sc.dispose();
+  }
 }
