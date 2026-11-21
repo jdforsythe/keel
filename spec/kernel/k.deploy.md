@@ -1,5 +1,5 @@
 # k.deploy: Production entry and deploy files
-status: conformance-covered
+status: implemented
 
 **Build.** `keel build` writes `dist/<name>/` per `client` deployable (k.hosting) and `node` one: the client build (k.server), `routes.json` (all modules), `std.json`, and `server.mjs`, the generated entry, bundled, with `server.mjs.map`: sources relative to the project (one outside it: `../`), no `sourcesContent`, never served. `keel build` runs Vite with `NODE_ENV=production`, whatever the shell or `.env` sets: the entries' `mode` is `'production'` and `import.meta.env.DEV` is `false`. A thrown error's `diag` `frames` (k.server Log) are its first 5 stack positions in app code (E1576's), as `<path>:<line>:<col>` relative to the folder holding `artifacts`, a `server.mjs` position read through its map; without `artifacts`, none. `KEEL_FORMAT=json` makes the server log in json (docs/OUTPUT.md). `node server.mjs` parses `process.env` with `DeployEnv`: `PORT` (default 8080), `KEEL_ORIGIN` (optional; `createApp({ origin })`, the public origin, which replaces the request's in `url`, the same-site check and `Secure`), `KEEL_SECRET` (32+ bytes, shared by the app's deployables so `caller` agrees: whoever holds it, or runs code in one deployable, can sign a caller every deployable accepts), `KEEL_PEER_<NAME>` (`my-api`: `KEEL_PEER_MY_API`), an http(s) URL, required per other `node` deployable, and `KEEL_DATABASE_URL` (Storage). A failure or unbindable `PORT` prints one E1560 naming the key, no value, and exits 1. Then it opens storage, serves `createApp` (production, real `ctx`, its routes, runners and peers) and on SIGTERM or SIGINT stops listening, awaits `close()` and exits. `keel build --target`: k.shell.
 
@@ -13,7 +13,7 @@ status: conformance-covered
 
 **Deploy files.** Derived from `topology.ts` by `@keel/scaffold`, written by `keel build` and scaffold operations that change them; read-only (E1005, fix: the regenerated file).
 - `deploy/<name>/Dockerfile` per `node` deployable: `node:22-slim` by digest, `dist/<name>/` only, user `node`, port 8080; `'file'`: volume `/data` for storage, owned by `node`, `--localstorage-file=/data/storage`; `'sqlite'`: that volume, no storage flag; `'postgres'`: no volume.
-- `deploy/compose.yaml`: a service per `node` deployable and a volume per one with a volume, `KEEL_PEER_<NAME>` set to peers' service URLs, other `DeployEnv` keys from the environment.
+- `deploy/compose.yaml`: a service per `node` deployable and a volume per one with a volume, `KEEL_PEER_<NAME>` set to peers' service URLs, other `DeployEnv` keys from the environment, and `KEEL_POSTGRES_URL` from the environment, required, for one serving a module whose `deps` list `@keel/std-postgres`.
 - `.github/workflows/ci.yml`: a job per deployable, run when its modules or shared config change: install, `keel check --base` the base branch's surface (k.compat; none there: W1568), `keel test`, `keel build`, an unpushed image build per `node` deployable; shell jobs: k.shell.
 - Shell files: k.shell.
 `DeployEnv` values are set where the image runs, in no generated file.
@@ -32,3 +32,4 @@ status: conformance-covered
 - The Dockerfile of a `'sqlite'` deployable declares `/data` and runs `server.mjs` without `--localstorage-file`; of a `'postgres'` one declares no volume; `compose.yaml` passes `KEEL_DATABASE_URL` from the environment and holds no URL.
 - `storage: 'sqlite'` without `@keel/std-db` in `dependencies` is one E1572 whose fix adds it; with it, none.
 - `keel build` under `NODE_ENV=staging`, or with `NODE_ENV=development` in `.env`, builds an entry with `mode` `'production'` and no inspect reporter.
+- With module `a` listing `@keel/std-postgres` in `deps`, served by `node` deployable `x` beside `y`, `deploy/compose.yaml` passes `KEEL_POSTGRES_URL` to `x` as a required value from the environment and to `y` not at all, and holds no URL.

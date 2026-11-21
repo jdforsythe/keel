@@ -32,7 +32,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.
 | k.reactive | Reactivity | conformance-covered | signals |
 | k.store | Store, transactions | conformance-covered | log |
 | k.component | Components | conformance-covered | props |
-| k.compiler | Compiler, artifacts | conformance-covered | JSX |
+| k.compiler | Compiler, artifacts | implemented | JSX |
 | k.boundary | Server boundary | conformance-covered | stubs |
 | k.bundle | Browser bundles | conformance-covered | workers |
 | k.runtime | DOM runtime, islands | conformance-covered | nodes |
@@ -61,7 +61,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.
 | k.prove | Proving invariants | conformance-covered | Z3 |
 | k.sim | Simulation | conformance-covered | faults |
 | k.ledger | Ledger, evidence | conformance-covered | rungs |
-| k.server | Thin server | conformance-covered | loads |
+| k.server | Thin server | implemented | loads |
 | k.leave | What a request leaves | conformance-covered | state |
 | k.user | User, caller | conformance-covered | user |
 | k.mount | Mount pages | conformance-covered | submit |
@@ -72,9 +72,9 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.
 | k.serverlog | Server log | conformance-covered | bounds |
 | k.sync | Concurrent writes | conformance-covered | heads |
 | k.persist | Storage, durable state | conformance-covered | drivers |
-| k.data | App data | conformance-covered | seam |
+| k.data | App data | implemented | seam |
 | k.topology | Deployables | conformance-covered | peers |
-| k.deploy | Entry, deploy files | conformance-covered | entry |
+| k.deploy | Entry, deploy files | implemented | entry |
 | k.shell | Native shells | conformance-covered | target |
 | k.compat | Surface compatibility | conformance-covered | accepts |
 | k.api | API routes | conformance-covered | JSON |

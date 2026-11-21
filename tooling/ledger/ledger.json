@@ -13969,6 +13969,14 @@
       "rung": "example"
     },
     {
+      "item": "k.compiler#21",
+      "rung": "none"
+    },
+    {
+      "item": "k.compiler#22",
+      "rung": "none"
+    },
+    {
       "item": "k.component#1",
       "rung": "example"
     },
@@ -14177,6 +14185,18 @@
       "rung": "example"
     },
     {
+      "item": "k.data#7",
+      "rung": "none"
+    },
+    {
+      "item": "k.data#8",
+      "rung": "none"
+    },
+    {
+      "item": "k.data#9",
+      "rung": "none"
+    },
+    {
       "item": "k.defaults#1",
       "rung": "example"
     },
@@ -14243,6 +14263,10 @@
     {
       "item": "k.deploy#11",
       "rung": "example"
+    },
+    {
+      "item": "k.deploy#12",
+      "rung": "none"
     },
     {
       "item": "k.docs#1",
@@ -15829,6 +15853,10 @@
       "rung": "example"
     },
     {
+      "item": "k.server#17",
+      "rung": "none"
+    },
+    {
       "item": "k.serverlog#1",
       "rung": "example"
     },
@@ -17071,6 +17099,22 @@
     {
       "item": "std.postgres#8",
       "rung": "example"
+    },
+    {
+      "item": "std.postgres#9",
+      "rung": "none"
+    },
+    {
+      "item": "std.postgres#10",
+      "rung": "none"
+    },
+    {
+      "item": "std.postgres#11",
+      "rung": "none"
+    },
+    {
+      "item": "std.postgres#12",
+      "rung": "none"
     },
     {
       "item": "std.report#1",
