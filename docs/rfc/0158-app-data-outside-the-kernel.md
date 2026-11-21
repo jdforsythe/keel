@@ -15,6 +15,12 @@ Status: proposed (ADR-0180), for the operator to read (W14 step 1, decision D43)
 - D10 (refining the orchestrator's first scope): "a result schema on every query" holds literally. A statement with no result rows names `NoRows`, a closed empty object, and `run` returns the count of rows changed; any row it returns fails `NoRows`. One tag, no unchecked path.
 - D11: migrations are module-local (`modules/<id>/migrations/NNNN-<kebab>.sql`) and reach the capability through Vite's `import.meta.glob(..., { query: '?raw', eager: true })`, so the SQL travels inside `server.mjs` and nothing copies files at build. Each `database` capability owns its tables and its rows of `keel_migrations`; several capabilities may share one database.
 - D12: the data URL is `KEEL_POSTGRES_URL`, distinct from `KEEL_DATABASE_URL` (Keel's own state, std.db), because a deployable may keep Keel's state in `file` or `sqlite` and its app data in Postgres. They may name one database: std.db leaves other tables alone.
+- D13: no migration (D65 of `tasks/0963-to-p1/PLAN.md`): nothing is released and the golden apps are the only apps, so there is no migration text, codemod, data copy or compatibility case; the build lane rewrites golden-2 directly (Build order).
+- D14: handlers take the shapes of RFC 0157: `loader(contract, id, decl, fn)` and `action(contract, id, decl, fn)`, bound in `routes.ts` by `manifest`; an API loader's and action's `output` is its contract entry's. A capability's accessor is reached as `<accessor>(ctx)` with `fn`'s `ctx`. A component (RFC 0162, `(props, ctx)`) holds a ctx, but a server-only capability's file is in no browser bundle (k.boundary), so app data on a `node` deployable reaches a page through its loader. No new rule.
+- D15: a capability file's one export is named for what it reaches, never the module id, since `<id>` is the module contract's export (RFC 0157 D1): `mongoNotes` in `modules/notes/mongoNotes.server.ts`, registered as `notes.mongo`.
+- D16: k.data states the accessor's per-ctx behaviour apps rely on (made at the first call on a ctx, the same object after), which `@keel/ctx` already has; a sim side "starts empty for each sim ctx" because of it.
+- D17: E1607 runs at `keel check` over calls of `@keel/ctx`'s `register` in files under `modules/<id>/`; `<name>` is one lowerCamel segment, as an API entry's (E1513); a name two files register is reported once, in the file whose path sorts later.
+- D18: `Query<T>` exposes `{ text, params }`, so the splice rule is testable without a database. Under sim each top-level `query`, `one`, `run` and each run of a transaction's `fn` takes one plan step and statements on `tx` take none, so a plan of `conflict` steps drives the rerun rule.
 
 ## Problem
 Every record golden-2 keeps lives in a server store: `kitchen.box` (every recipe), `accounts.tokens` (every API token) and `accounts.profiles` (every signed-in user's id and email). A request restores each store whole from `ctx.storage` (`keel.store.<id>`, k.persist), and an action saves its snapshot whole, log included. That is sound for bounded state and wrong for records: each request reads and writes every row, any two writes to one store conflict (409), and the storage holds one value per store, so no index, query or join exists. `docs/ARCHITECTURE.md` says "no query layer"; std.db's Postgres driver writes snapshots into `keel_kv` and "App schemas never become columns".
@@ -36,7 +42,7 @@ What Keel checks: `tsc` checks the three sides and every handler against `T` (a 
 ### Handlers (k.data Handlers)
 A loader or action calls `<accessor>(ctx)` and returns what it read or wrote. It names no `stores` for app data. A write that must be atomic is one capability call (a database transaction). An action that both saves stores and writes app data has two commits that cannot be made one, so an action writes to one of them.
 
-Assumption about RFC 0157 (the module contract, written concurrently): a handler is a function that receives the request's `ctx` and returns a `Result` its declared `output` schema encodes. Where 0157 binds it (a contract file, `routes.actions` or another place) changes nothing here; the samples below use today's `loader(...)` and `action(...)` and move with 0157 like every other handler.
+A handler is `loader(contract, id, decl, fn)` or `action(contract, id, decl, fn)` (k.server, k.contract): `fn`'s last argument is the request's `ctx`, and it returns a `Result` the entry's `output` encodes. A component (`(props, ctx)`, k.component) holds a ctx, but a server-only capability is in no browser bundle, so a page gets app data on a `node` deployable from its loader.
 
 ### Keel's own state (k.data Keel's own state; k.persist Storage)
 `ctx.storage` with `read` and `commit` stays exactly as specified, and k.persist's first sentence says what it is for: "`ctx.storage` keeps Keel's own state (k.data): stores' snapshots and what stdlib packages version through it, never app data." Heads, `keel.conflict` on stale snapshots, undo and the log (k.sync, k.store) cover stores; over app data an app that needs a stale-write check keeps a version column and answers `keel.conflict`.
@@ -101,14 +107,14 @@ export const recipeColumns = fragment`select id, title, minutes, favorite,
 import { loader } from "@keel/router";
 import { ok } from "@keel/schema";
 import { sql } from "@keel/std-postgres";
-import { Box } from "./Box.schema.ts";
 import { Recipe } from "./Recipe.schema.ts";
 import { currencyTally } from "./currencyTally.server.ts";
+import { kitchen } from "./kitchen.contract.ts";
 import { kitchenDb } from "./kitchenDb.server.ts";
 import { recipeColumns } from "./recipeColumns.ts";
 
-/** Every recipe, oldest first; the read is tallied by currency (`currencyTally`). */
-export const loadRecipes = loader({ output: Box }, async (_at, ctx) => {
+/** Every recipe, oldest first; the read is tallied by currency (`currencyTally`). The entry's `output` is `Box`. */
+export const loadRecipes = loader(kitchen, "kitchen.box", {}, async (_args, ctx) => {
   const recipes = await kitchenDb(ctx).query(sql(Recipe)`${recipeColumns} order by added_on, id`);
   if (!recipes.ok) return recipes;
   currencyTally(ctx, recipes.value);
@@ -122,20 +128,19 @@ import { action } from "@keel/router";
 import { err, ok } from "@keel/schema";
 import { NoRows, sql } from "@keel/std-postgres";
 import { UTC, instantOf, plainDateOf } from "@keel/std-temporal";
-import { Nothing } from "./Nothing.schema.ts";
-import { RecipeDraft } from "./RecipeDraft.schema.ts";
+import { kitchen } from "./kitchen.contract.ts";
 import { kitchenDb } from "./kitchenDb.server.ts";
 
 const taken = { code: "keel.fields", message: "Already in the box", data: { title: "Already in the box" } };
 
-/** Adds a draft dated today in UTC; a title already in the box (ignoring case) is a `keel.fields` error on `title`. */
-export const postRecipe = action({ input: RecipeDraft, output: Nothing }, async (input, _at, ctx) => {
+/** Adds a draft (the entry's `body`, `RecipeDraft`) dated today in UTC; a title already in the box (ignoring case) is a `keel.fields` error on `title`. */
+export const postRecipe = action(kitchen, "kitchen.add", {}, async (body, _args, ctx) => {
   const now = instantOf(ctx.clock.now());
   if (!now.ok) return err(now.error);
   const added = await kitchenDb(ctx).run(sql(NoRows)`
     insert into recipes (id, title, minutes, price_amount, price_currency, added_on)
-    values (${ctx.random.id("Recipe")}, ${input.title}, ${input.minutes}, ${input.price.amount},
-            ${input.price.currency}, ${plainDateOf(now.value, UTC)})`);
+    values (${ctx.random.id("Recipe")}, ${body.title}, ${body.minutes}, ${body.price.amount},
+            ${body.price.currency}, ${plainDateOf(now.value, UTC)})`);
   if (added.ok) return ok({});
   const dup = added.error.code === "postgres.constraint" && added.error.data.constraint === "recipes_title_key";
   return err(dup ? taken : added.error);
@@ -144,18 +149,15 @@ export const postRecipe = action({ input: RecipeDraft, output: Nothing }, async 
 
 `modules/kitchen/postFavorite.server.ts`: one statement, and an unknown id is `one`'s `keel.notFound` (404):
 ```ts
-export const postFavorite = action(
-  { input: Nothing, params: RecipeRef, output: Nothing },
-  async (_input, { params }, ctx) => {
-    const toggled = await kitchenDb(ctx).one(
-      sql(RecipeRef)`update recipes set favorite = not favorite where id = ${params.recipeId} returning id as "recipeId"`,
-    );
-    return toggled.ok ? ok({}) : err(toggled.error);
-  },
-);
+export const postFavorite = action(kitchen, "kitchen.favorite", {}, async (_body, { params }, ctx) => {
+  const toggled = await kitchenDb(ctx).one(
+    sql(RecipeRef)`update recipes set favorite = not favorite where id = ${params.recipeId} returning id as "recipeId"`,
+  );
+  return toggled.ok ? ok({}) : err(toggled.error);
+});
 ```
 
-`loadCatalog.server.ts` reads `recipeColumns` the same way and keeps `applyQuery` over the rows, so a page still holds five rows; moving the sort and filter into SQL is the app's later choice, not the seam's. `boxStores.ts`, `addRecipe.ts`, `toggleFavorite.ts` and `NewRecipe.schema.ts` go; the manifest's `capabilities` become `['clock', 'random', 'kitchen.db']` and `deps` add `@keel/std-postgres`.
+`loadCatalog.server.ts` reads `recipeColumns` the same way and keeps `applyQuery` over the rows, so a page still holds five rows; moving the sort and filter into SQL is the app's later choice, not the seam's. `routes.ts` and `kitchen.contract.ts` stay as they are: the entries and their bindings do not change, only what the handlers read. `boxStores.ts`, `addRecipe.ts`, `toggleFavorite.ts` and `NewRecipe.schema.ts` go; the module manifest's `capabilities` add `kitchen.db` and `deps` add `@keel/std-postgres`.
 
 `accounts`: `accountsDb` (`accounts.db`) with `0001-profiles.sql` (`user_id text primary key, email text not null`) and `0002-api-tokens.sql` (`id text primary key, digest text not null, user_id text not null`). `identity.server.ts` replaces its `commitStores` with one upsert:
 ```ts
@@ -164,7 +166,7 @@ const saved = await accountsDb(ctx).run(
               on conflict (user_id) do update set email = excluded.email`,
 );
 ```
-and `loadMe` reads `one(sql(Me)`select email from profiles where user_id = ${user}`)`, mapping `keel.notFound` to `keel.denied`. `postToken` inserts the minted `{ id, digest, userId }`. `bearerUser` needs the row for the presented token before `tokens(ctx).check(token, find)`, whose `find` is synchronous; see For the operator 1.
+and `loadMe` (`loader(accounts, "accounts.me", {}, ...)`) reads `one(sql(Me)`select email from profiles where user_id = ${user}`)`, mapping `keel.notFound` to `keel.denied`. `postToken` (`action(accounts, "accounts.mint", {}, ...)`) inserts the minted `{ id, digest, userId }`; neither names `stores`. `bearerUser` needs the row for the presented token before `tokens(ctx).check(token, find)`, whose `find` is synchronous; see For the operator 1.
 
 Tests: `vitest.config.ts` adds `setupFiles: ['test/setup.ts']`, a file holding `await ready()` (`@keel/std-postgres/testing`); each test's sim ctx starts with migrated, empty tables, and a test that needs recipes posts them through the route or inserts through `kitchenDb(ctx)`. `package.json`'s `dev` script adds `KEEL_POSTGRES_URL=pglite:.keel-dev/postgres`; `pnpm api` and the compose file need a `postgres:` URL. The W14 gate holds: no golden-2 record is in a server store.
 
@@ -200,7 +202,7 @@ export interface NoteStore {
 }
 ```
 
-`modules/notes/notes.server.ts`:
+`modules/notes/mongoNotes.server.ts`, its one export named for what it reaches (`notes` is the module's contract):
 ```ts
 import { register } from "@keel/ctx";
 import { attempt, err, ok } from "@keel/schema";
@@ -253,21 +255,41 @@ const sim = (): NoteStore => {
   };
 };
 
-export const notes = register<NoteStore>("notes.mongo", { real, shell: real, sim });
+export const mongoNotes = register<NoteStore>("notes.mongo", { real, shell: real, sim });
+```
+
+`modules/notes/notes.contract.ts`:
+```ts
+import { contract } from "@keel/router/contract";
+import { NoteList } from "./NoteList.schema.ts";
+
+export const notes = contract("notes", {
+  "notes.mine": { method: "GET", path: "/api/notes", output: NoteList },
+});
 ```
 
 `modules/notes/loadNotes.server.ts`:
 ```ts
 import { loader } from "@keel/router";
 import { err, ok } from "@keel/schema";
-import { NoteList } from "./NoteList.schema.ts";
-import { notes } from "./notes.server.ts";
+import { mongoNotes } from "./mongoNotes.server.ts";
+import { notes } from "./notes.contract.ts";
 
-export const loadNotes = loader({ output: NoteList }, async ({ user }, ctx) => {
+/** The signed-in user's notes; no one signed in is `keel.denied`. */
+export const loadNotes = loader(notes, "notes.mine", {}, async ({ user }, ctx) => {
   if (user === "") return err({ code: "keel.denied", message: "Sign in first", data: null });
-  const found = await notes(ctx).forOwner(user);
+  const found = await mongoNotes(ctx).forOwner(user);
   return found.ok ? ok({ notes: found.value }) : err(found.error);
 });
+```
+
+`modules/notes/routes.ts`:
+```ts
+import { manifest } from "@keel/router";
+import { loadNotes } from "./loadNotes.server.ts";
+import { notes } from "./notes.contract.ts";
+
+export const routes = manifest(notes, { "notes.mine": { loader: loadNotes } });
 ```
 
 The module's manifest lists `capabilities: ['clock', 'random', 'notes.mongo']`. Under `keel test` the sim side answers; a `plan` schema on the `register` call would let `simulate` schedule `keel.unreachable` faults, as std.postgres does. What the ledger says of it: the handlers' rungs are evidence about them over the fake; the real side has the rung of whatever test runs it against a MongoDB, and none if none does. If `sim` returned an object without `add`, or `forOwner` returned rows typed `Document`, `tsc` refuses the `register` call: that is the type line-up D43 asks for.
@@ -289,26 +311,15 @@ The module's manifest lists `capabilities: ['clock', 'random', 'notes.mongo']`. 
 - `docs/GLOSSARY.md`: **app data**.
 
 ## Conformance diff
-By the `conformance-writer`, under `rfc:0158`. k.data, in `packages/ctx/conformance/` (E1607 in `packages/check/conformance/`, the dev reload in `packages/compiler/conformance/`):
-- An app file at `modules/notes/notes.server.ts` calling `register('notes.mongo', ...)` is no E1607; `register('mongo', ...)`, `register('other.mongo', ...)`, `register(name, ...)` with `name` a variable, and a second file registering `notes.mongo` are each one E1607.
-- A capability registered as `register<T>` whose `sim` returns an object missing a member of `T` does not typecheck.
-- Under two sim ctxs of one seed, the same calls to an app-registered capability's accessor give equal answers, and a sim ctx made after another sees none of the other's writes.
-- A loader whose capability answers `err` `keel.unreachable`, `keel.conflict` or `keel.notFound` is 502, 409 or 404; a value that fails the loader's `output` is E1554.
-- Under `keel dev`, editing and saving `modules/notes/notes.server.ts` twice serves the next request with no E1602 and the edited code.
-- `capabilities()` lists an app-registered name after its file is imported.
+By the `conformance-writer`, under `rfc:0158`. k.data, in `packages/ctx/conformance/` (E1607 in `packages/check/conformance/`, the dev reload in `packages/compiler/conformance/`): the six clauses of the section, each checkable from its text: E1607's cases; the `register<T>` type line-up; the accessor once per ctx and sim isolation; the status of a capability's `err` and of an `output` failure; the dev reload with no E1602; `capabilities()`.
 
 std.postgres, in `packages/std-postgres/conformance/` (PGlite; the Postgres 17 cases on the CI service std.db already uses): the eight clauses of the section, each checkable from its text: parameters never spliced, `fragment` renumbering; schema on every row, `one` and `run`; constraint mapping and E2457; transaction reruns; migrations once across two processes, E2453, E2454; sim isolation and plan faults; value decoding on both engines; the rule fixtures and E2455.
 
-## Migration
-Kernel: no app breaks. `register` gains a name rule for app code only (no app registers today; the golden apps and scaffold templates hold no `register` call). k.persist changes no behaviour.
-
-golden-2 (W14 step 3): `kitchen.box`, `accounts.tokens` and `accounts.profiles` move to `kitchen.db` and `accounts.db` as in Worked case 1; data in an existing `.api.storage` is dropped (golden-2 has no production data; a real app with records in server stores would copy them with a one-off script reading the snapshots, which is outside this RFC). `docs/ARCHITECTURE.md`, the keel-data and keel-server skills and the guides follow, with this wording for ARCHITECTURE's Storage paragraph: "App data is the app's: Keel validates it at a boundary and neither stores nor fetches it. An app reaches its records through a capability it registers, or through `@keel/std-postgres` (`database`, `sql` with a schema on every statement, forward-only migrations, PGlite in dev, tests and simulation). `ctx.storage` keeps Keel's own state." The Borrow vs build row "Durable storage" becomes "Keel's own state: borrow `node:sqlite` and `pg`, build the driver contract; app data: the app's choice, with `pg` and PGlite in std-postgres".
-
 ## Token impact
-- k.data: new section, 1,214 tokens of 1,500.
+- k.data: new section, 1,382 tokens of 1,500.
 - std.postgres: new section, 1,496 of 1,500. Full: a later addition goes to a new section.
 - k.persist: +29 tokens, 1,343 of 1,500.
-- Map: +17 tokens, 1,223 of 1,250.
+- Map: +11 tokens, 1,341 tokens; the `spec.map` budget goes to 1,345 and `docs.map` (the installed map, 1,402) to 1,405.
 - Glossary: +45 tokens.
 - Size budgets: none for client bundles (std-postgres is server-only, E2451/E2452); `server.mjs` grows by `pg` (already bundled for `storage: 'postgres'`) and the package. PGlite is loaded by `import()` only for a `pglite:` URL and under sim, so a `postgres:` production server never loads its WASM.
 
@@ -316,7 +327,7 @@ golden-2 (W14 step 3): `kitchen.box`, `accounts.tokens` and `accounts.profiles` 
 1. This commit: RFC, ADR, spec text, glossary.
 2. `conformance-writer` from k.data and std.postgres (after W13 step 2, since handlers change shape there).
 3. Build (opus designs, sonnet builds): `tooling/docs-owners.json` lists k.data under `@keel/ctx` and, until the package exists, std.postgres under `@keel/std-db`; the build moves it to `@keel/std-postgres`. E1607 in `@keel/check`; the dev reload in `@keel/compiler`'s plugin; `packages/std-postgres` (new package, `tooling/deps.json` after `ctx`, dependencies `pg` and `@electric-sql/pglite` pinned); the scaffold's vitest setup and dev script.
-4. golden-2 moves (W14 step 3); the example with an outside library (Worked case 2) passes `keel check` and `keel test`.
+4. golden-2 is rewritten (W14 step 3): `kitchen.box`, `accounts.tokens` and `accounts.profiles` become tables of `kitchen.db` and `accounts.db` as in Worked case 1. `docs/ARCHITECTURE.md`, the keel-data and keel-server skills and the guides say it, with this wording for ARCHITECTURE's Storage paragraph: "App data is the app's: Keel validates it at a boundary and neither stores nor fetches it. An app reaches its records through a capability it registers, or through `@keel/std-postgres` (`database`, `sql` with a schema on every statement, forward-only migrations, PGlite in dev, tests and simulation). `ctx.storage` keeps Keel's own state." The Borrow vs build row "Durable storage" becomes "Keel's own state: borrow `node:sqlite` and `pg`, build the driver contract; app data: the app's choice, with `pg` and PGlite in std-postgres". The example with an outside library (Worked case 2) passes `keel check` and `keel test`.
 
 For the build lane:
 - Verify PGlite's per-ctx isolation settles in microtask rounds after `ready()`. Two routes: one PGlite per process with one schema per sim ctx and capability (migrations run with that `search_path`), or a clone of a migrated data directory per ctx. Pick the one that settles without a timer and record it.
