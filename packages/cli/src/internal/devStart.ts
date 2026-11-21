@@ -1,4 +1,5 @@
 import { setDefaultResultOrder } from "node:dns";
+import { join, resolve } from "node:path";
 import { operations } from "../operations.ts";
 import type { DevServer } from "./DevServer.ts";
 import { devPort } from "./devPort.ts";
@@ -30,7 +31,7 @@ const STOPS = [
  * input schema. The project's Vite creates the server (strict port; `--port` when given), the port it resolved is
  * probed on every address, and a port that will not bind is one E1560 line (exit 1): the server is closed and never
  * listens, so it cannot move to another port. Otherwise it listens, prints Vite's banner and URLs, and serves until
- * SIGINT or SIGTERM closes it. Undefined when the engine answers instead: flags that do not parse (E1052).
+ * SIGINT or SIGTERM closes it. `KEEL_DEV_DIR` is set to the app's `.keel-dev/` folder first (k.data Files). Undefined when the engine answers instead: flags that do not parse (E1052).
  *
  * Name lookups in this process put IPv4 first, so Vite's default host `localhost` binds 127.0.0.1. A client resolving
  * `localhost` always gets 127.0.0.1, while `::1` is left out on a machine without a non-loopback IPv6 address (address
@@ -53,6 +54,8 @@ export async function devStart(argv: readonly string[], cwd: string): Promise<De
     return { code: r.code, stdout: r.stdout, stderr: "", serving: false };
   };
   setDefaultResultOrder("ipv4first");
+  // Where a capability keeps its dev data (k.data Files), beside each deployable's storage file.
+  process.env.KEEL_DEV_DIR = join(resolve(cwd), ".keel-dev");
   let server: DevServer;
   try {
     server = await viteServer(cwd, input.port);

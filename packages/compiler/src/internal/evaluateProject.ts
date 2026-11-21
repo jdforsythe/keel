@@ -13,6 +13,11 @@ import { internalFailure } from "./internalFailure.ts";
 const UI_CSS = "@keel/ui/css";
 const ROUTER = "@keel/router";
 
+const REQUIRE_BANNER =
+  "import { createRequire as keelCreateRequire } from 'node:module'; const require = keelCreateRequire(import.meta.url);";
+
+const SERVER_ENV = JSON.stringify({ BASE_URL: "/", MODE: "production", DEV: false, PROD: true, SSR: true });
+
 const q = (s: string): string => JSON.stringify(s);
 /** An import specifier for a root-relative or absolute file. */
 const spec = (f: string): string => q(path.isAbsolute(f) ? f : `./${f}`);
@@ -94,8 +99,8 @@ function entrySource(
 
 /**
  * Evaluate the app's `tokens.ts`, contracts and `routes.ts` bindings at build time (D24): bundle a generated entry with
- * esbuild from `root` (app modules under `root` go through `compile`, as in Vite; packages are bundled as is), run it once in
- * Node, and read back the atomic CSS (`compileStyles` from `@keel/ui/css` over `usages`) and the merged
+ * esbuild from `root` (app modules under `root` go through `compile`, as in Vite; packages are bundled as is, with a
+ * `require` from `createRequire` as the server build has), run its module top levels once in Node, and read back the atomic CSS (`compileStyles` from `@keel/ui/css` over `usages`) and the merged
  * `routes.json` (`routesArtifact` from `@keel/router` per manifest). Usages with an unknown token are left out
  * of the CSS and listed in `problems` (E1801; `keel check` reports them at their source). Error mapping (k.compiler
  * Build-time evaluation): a diagnostic-shaped error keeps its `code`; `tokens.ts` throwing while it evaluates, or
@@ -130,6 +135,10 @@ export async function evaluateProject(input: {
     write: false,
     format: "esm",
     platform: "node",
+    // As the server build: a package's CommonJS `require` of a Node built-in (`pg` requires `events`) gets a real one.
+    banner: { js: REQUIRE_BANNER },
+    // As the server build: `import.meta.env` holds Vite's built-in values only (the plugin's `envPrefix` admits none).
+    define: { "import.meta.env": SERVER_ENV },
     // Node's own conditions (`node`, `import`, `default`), without esbuild's `module`: the file a package's `exports`
     // gives here is the one Node imports and the one `routeLiterals` reads.
     conditions: [],
