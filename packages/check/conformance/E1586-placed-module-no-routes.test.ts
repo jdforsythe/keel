@@ -32,8 +32,14 @@ const installPackage = (root: string, id: string, shape: Case): void => {
   const exports: Record<string, string> = { "./module": "./module.ts" };
   if (shape !== "neither") exports["./contract"] = "./contract.ts";
   if (shape === "routes-missing-file" || shape === "both") exports["./routes"] = "./routes.ts";
-  write(path.join(dir, "package.json"), JSON.stringify({ name: `@keel/std-${id}`, version: "0.0.0", type: "module", exports }));
-  write(path.join(dir, "module.ts"), `export default { id: '${id}', deps: [], capabilities: [], public: { exports: [] } }\n`);
+  write(
+    path.join(dir, "package.json"),
+    JSON.stringify({ name: `@keel/std-${id}`, version: "0.0.0", type: "module", exports }),
+  );
+  write(
+    path.join(dir, "module.ts"),
+    `export default { id: '${id}', deps: [], capabilities: [], public: { exports: [] } }\n`,
+  );
   if (shape !== "neither") write(path.join(dir, "contract.ts"), `export const ${id} = { id: '${id}' }\n`);
   if (shape === "both") write(path.join(dir, "routes.ts"), `export const routes = {}\n`);
 };
@@ -81,10 +87,16 @@ describe("k.topology: E1586", () => {
   });
 
   test.skip("both `./contract` and `./routes` resolving is none", () => {
-    fc.assert(fc.property(ID, (id) => expect(project(id, "both")).toEqual([])), { seed: SEED, numRuns: 8 });
+    fc.assert(
+      fc.property(ID, (id) => expect(project(id, "both")).toEqual([])),
+      { seed: SEED, numRuns: 8 },
+    );
   });
 
   test.skip("neither export (a runner-only module) is none and stays silent", () => {
-    fc.assert(fc.property(ID, (id) => expect(project(id, "neither")).toEqual([])), { seed: SEED, numRuns: 8 });
+    fc.assert(
+      fc.property(ID, (id) => expect(project(id, "neither")).toEqual([])),
+      { seed: SEED, numRuns: 8 },
+    );
   });
 });

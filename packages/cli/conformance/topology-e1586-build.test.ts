@@ -34,8 +34,14 @@ const install = (shape: Case): void => {
   const exports: Record<string, string> = { "./module": "./module.ts" };
   if (shape !== "neither") exports["./contract"] = "./contract.ts";
   if (shape === "routes-missing-file" || shape === "both") exports["./routes"] = "./routes.ts";
-  write(path.join(dir, "package.json"), JSON.stringify({ name: `@keel/std-${ID}`, version: "0.0.0", type: "module", exports }));
-  write(path.join(dir, "module.ts"), `export default { id: '${ID}', deps: [], capabilities: [], public: { exports: [] } }\n`);
+  write(
+    path.join(dir, "package.json"),
+    JSON.stringify({ name: `@keel/std-${ID}`, version: "0.0.0", type: "module", exports }),
+  );
+  write(
+    path.join(dir, "module.ts"),
+    `export default { id: '${ID}', deps: [], capabilities: [], public: { exports: [] } }\n`,
+  );
   if (shape !== "neither") write(path.join(dir, "contract.ts"), `export const ${ID} = { id: '${ID}' }\n`);
   if (shape === "both") write(path.join(dir, "routes.ts"), `export const routes = {}\n`);
 };
@@ -68,7 +74,7 @@ describe("k.topology: E1586 in `keel check` and `keel build`", () => {
         expect(e1586[0]).toContain('"E1586"');
         expect(e1586[0]).toContain("topology.ts");
         expect(e1586[0]).toContain(ID);
-        expect(r.status).toBe(1);
+        expect(r.code).toBe(1);
         if (command === "build") expect(wrote).toBe(false);
       }, 60_000);
     }
