@@ -4,7 +4,7 @@
 // audit on a transcript that reads a forbidden path and one that does not, the import into a throwaway `apps/`, and the
 // pack-time rewrite. Nothing here runs an agent.
 import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { emit } from "../../tooling/output.ts";
 import type { Diag } from "../../tooling/output.ts";
@@ -66,7 +66,7 @@ async function selftest(t0: number): Promise<void> {
     if (!ok) diags.push(diag("V0010", "evals/public", what));
   };
   const project = join(tmpdir(), "keel-public-selftest", "app");
-  const home = process.env["HOME"] ?? "/home/u";
+  const home = homedir();
   const call = (name: string, input: Record<string, unknown>): string =>
     line({ type: "assistant", message: { content: [{ type: "tool_use", name, input }] } });
   const clean = [
