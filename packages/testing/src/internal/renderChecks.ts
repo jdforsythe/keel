@@ -3,6 +3,7 @@ import type { Violation } from "./Violation.ts";
 import { assertArtifacts } from "./assertArtifacts.ts";
 import { axe } from "./axe.ts";
 import { contrastViolations } from "./contrastViolations.ts";
+import { insertedStatus } from "./insertedStatus.ts";
 import { piiViolations } from "./piiViolations.ts";
 import { recordCheck } from "./recordCheck.ts";
 import { violationError } from "./violationError.ts";
@@ -18,11 +19,12 @@ const mismatchIds = (e: unknown): string[] => {
 /**
  * The render checks of k.a11y, after the first render, every `fire` and `settle()`: roles and name sources against
  * `a11y.json` (E1702, with it), axe-core (E1703), render contrast (E1804, with tokens) and personal controls without
- * `autocomplete` (E1821). Every check runs and the run is recorded for `reports/a11y.json`; then the first failing
+ * `autocomplete` (E1821); after a `fire` or `settle()` that kept the page, a `status` region inserted holding text
+ * under an element the root held at the last check (E1826). Every check runs and the run is recorded for `reports/a11y.json`; then the first failing
  * check throws, in that order.
  */
 export function renderChecks(setup: CheckSetup): void {
-  const { root, page, a11y, tokens } = setup;
+  const { root, page, a11y, tokens, before } = setup;
   const rules: string[] = [];
   let artifacts: unknown;
   if (a11y !== undefined) {
@@ -39,13 +41,16 @@ export function renderChecks(setup: CheckSetup): void {
   if (tokens !== undefined) rules.push("E1804");
   const pii = piiViolations(root);
   rules.push("E1821");
+  const live: Violation[] = before === undefined ? [] : insertedStatus(root, before);
+  if (before !== undefined) rules.push("E1826");
   const violations = [
     ...mismatchIds(artifacts).map((element) => ({ rule: "E1702", element })),
-    ...[...ax.violations, ...contrast, ...pii].map(({ rule, element }) => ({ rule, element })),
+    ...[...ax.violations, ...contrast, ...pii, ...live].map(({ rule, element }) => ({ rule, element })),
   ];
   recordCheck({ ...setup.target(), rules: [...rules].sort(), violations });
   if (artifacts !== undefined) throw artifacts;
   if (ax.violations.length > 0) throw violationError("E1703", ax.violations);
   if (contrast.length > 0) throw violationError("E1804", contrast);
   if (pii.length > 0) throw violationError("E1821", pii);
+  if (live.length > 0) throw violationError("E1826", live);
 }

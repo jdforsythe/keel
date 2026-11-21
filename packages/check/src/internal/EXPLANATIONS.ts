@@ -1192,6 +1192,13 @@ const ROWS: readonly Row[] = [
     "import './chart.css' in Page.tsx -> import it in chart.ts, the Host's code file",
     "k.host-code",
   ],
+  [
+    "E1826",
+    "a status region inserted holding text (render)",
+    "A screen reader announces a status region's changes, not its arrival; one a fire or settle() inserts already filled is not heard.",
+    '{() => saved() ? <Text role="status">Saved</Text> : null} -> <Text role="status">{() => (saved() ? text.saved : "")}</Text>',
+    "k.a11y",
+  ],
   ["E1901", "input inside a <Form> without field", "", "bind the input to a form path with field(path)", "k.forms"],
   [
     "E1902",
