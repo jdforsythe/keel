@@ -1,5 +1,5 @@
 # std.tokens: Opaque tokens
-status: conformance-covered
+status: implemented
 
 **Purpose.** Opaque tokens an app mints and checks: API keys, invite links, one-time links. A fast hash is sound because every stored digest comes from `mint`, which draws 256 random bits. No password is hashed here: sign-in is the identity source's (k.user).
 
@@ -11,12 +11,14 @@ import { Digested } from '@keel/std-tokens'     // *.schema.ts: { id: s.string()
 import { tokens } from '@keel/std-tokens/server' // *.server.ts
 const m = tokens(ctx).mint({ ttl: 3_600_000 })  // Result<{ token, id, digest, expiresAt }, E>
 const found = tokens(ctx).check(input.token, (id) => rows.find((t) => t.id === id))  // Result<Row, E>
+const id = tokens(ctx).idOf(input.token)  // Result<string, E>
 ```
 - `mint({ ttl })`: `ttl` is required, milliseconds as an integer from 60,000 to 31,536,000,000 (365 days), or `null` for a token that does not expire; any other value is `credentials.ttl` (data `{ min: 60000, max: 31536000000 }`). It returns the new `token` as a `Secret<string>`, its `id` (the token's non-secret part, the row's lookup key), the `digest` to store, and `expiresAt`, `ctx.clock.now()` plus `ttl`, or `null`.
 - The expiry is in `digest`, so the app stores no other field for `check` to read.
 - The token leaves once: the `*.server.ts` file that sends it calls `reveal(token)`. That value in `tx`, storage, a log or a throw is E1112 (k.reveal).
 - `check(token, find)` reads the id from the presented `Secret<string>`, calls `find(id)` once for the row (an object with `digest: Digested`), compares in constant time (`timingSafeEqual`), then reads `ctx.clock.now()`, and returns `ok(row)`. A presented value that is not in the token form (`find` is not called), a `find` that returns `undefined`, and a digest that does not match are `credentials.mismatch`. A matching token whose digest has an expiry at or before now is `credentials.expired`. An unreadable `digest` is `credentials.malformed`, data `{ reason }`: `format` (not `Digested`), `parameters` (an id other than `sha256` or `sha256-sim`, a parameter other than `exp=<ms>`, or a digest that is not 32 bytes) or `sim` (a sim form outside sim).
 - Both are synchronous and neither throws, a throw from `find` aside. Each error is one constant per code and `reason`.
+- `idOf(token)` is `ok` with the id `check` reads, so the row can be fetched before `check`; a value `check` answers `credentials.mismatch` without calling `find` gets that constant. It reads no row, digest or clock, so `ok` means well formed, not valid. It is synchronous, never throws, and neither returns nor logs the secret.
 - `Digested` (`tokens.Digested`) is a format type over `s.string()`: `$id$digest` or `$id$params$digest`, at most 128 characters. It checks the shape only and generates sim-form strings.
 
 **Forms.** Token: `keel_<id>_<secret>`, `id` 16 and `secret` 64 lowercase hex characters (64 and 256 random bits), 86 characters. Digest: `$sha256$exp=<ms>$<digest>`, or `$sha256$<digest>` with no expiry: `<ms>` is `expiresAt` in decimal, `<digest>` the SHA-256 of the token's text in base64 without padding. There is no key.
@@ -38,3 +40,6 @@ const found = tokens(ctx).check(input.token, (id) => rows.find((t) => t.id === i
 - In a `*.server.ts` file, with `m` a `mint` result, `tx(t, { token: reveal(m.value.token) })` and `console.log(reveal(m.value.token))` are each one E1112; `tx(t, { id: m.value.id, digest: m.value.digest })`, `reveal(m.value.token)` in a `service` call's `body`, and `check(input.token, find)` are none.
 - E2201 and E2202 each fire on a fixture and not on its clean twin; `capabilities()` lists `tokens`.
 - `import('@keel/std-tokens/server')` outside a `*.server.ts` file is E2201; `import type` from it is not.
+- Under real and sim, `idOf` is `ok` with `id` for a minted token, for it with one `secret` character changed, and under sim for it after expiry.
+- `idOf` of `hunter2`, `''`, a minted token with one hex letter upper-cased, and under real and shell a sim token equals `check`'s `credentials.mismatch` for `hunter2`.
+- `JSON.stringify` and `util.inspect` of `idOf` of a minted token hold no `secret`; `idOf` calls no `console` method.

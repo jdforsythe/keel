@@ -1,6 +1,6 @@
 # Stdlib spec
 
-Sections are added per wave (see docs/ROADMAP.md). Each file: `std.<module>.md`, status line, API, Rules, Conformance, token budget 1,500 (`node tooling/budgets.mjs` measures them with the kernel sections).
+Sections are added per wave (see docs/ROADMAP.md). Each file: `std.<module>.md`, status line, API, Rules, Conformance, token budget 1,700 (`node tooling/budgets.mjs` measures them with the kernel sections).
 
 Wave 0 proves one extension point per section: std.money (schema type registry), std.brands (check rule registry), std.geo (capability registry), std.health (module manifest), std.timings (inspector hooks), std.report (output formatter registry).
 
@@ -52,4 +52,4 @@ S8 adds std.db, std.workflows, std.shells and std.tokens.
 | std.shells | Shell drivers | conformance-covered | storage and net drivers for Capacitor and Tauri shells |
 | std.capacitor | Capacitor shell target | implemented | shell target: Android and iOS files, tools, build, CI jobs |
 | std.tauri | Tauri shell target | implemented | shell target: desktop files, tools, build, CI job |
-| std.tokens | Opaque tokens | conformance-covered | capability, schema type and check rule registries: `mint` with a ttl, `check`, `Digested`, E2201-E2202 |
+| std.tokens | Opaque tokens | implemented | capability, schema type and check rule registries: `mint` with a ttl, `check`, `idOf`, `Digested`, E2201-E2202 |
