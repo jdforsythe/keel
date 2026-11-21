@@ -46,7 +46,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.
 | k.guards | Guards | conformance-covered | deny |
 | k.prefix | Path prefix | conformance-covered | enums |
 | k.forms | Forms | conformance-covered | fields |
-| k.ui | Tokens, styling | conformance-covered | CSS |
+| k.ui | Tokens, styling | implemented | CSS |
 | k.ctx | Capabilities | conformance-covered | clock |
 | k.owner | Ctx owner | conformance-covered | dispose |
 | k.errors | Results, boundaries | conformance-covered | Result |
@@ -83,7 +83,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.
 | k.services | Thin services | conformance-covered | clients |
 | k.openapi | OpenAPI import | conformance-covered | clients |
 | k.module | Module manifest | conformance-covered | surface |
-| k.a11y | Accessibility | conformance-covered | WCAG |
+| k.a11y | Accessibility | implemented | WCAG |
 | k.aria | Widget parts | conformance-covered | roles |
 | k.roles | Part roles | implemented | grid |
 | k.host-element | Host elements | conformance-covered | charts |
