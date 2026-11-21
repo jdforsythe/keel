@@ -35,7 +35,7 @@ export function sourcesOf(program: Program): { readonly value: string; readonly 
       return typeof cooked === "string" ? cooked : undefined;
     }
     if (x.type === "BinaryExpression" && x.operator === "+") {
-      const l = x.left.type === "PrivateIdentifier" ? undefined : text(x.left);
+      const l = text(x.left);
       const r = text(x.right);
       return l !== undefined && r !== undefined ? l + r : undefined;
     }

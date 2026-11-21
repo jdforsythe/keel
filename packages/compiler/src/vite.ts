@@ -612,7 +612,9 @@ export default function (): {
       // A build is the production one whatever `vite.config.ts` sets `process.env.NODE_ENV` to (k.deploy Build).
       const own = {
         envPrefix: NO_ENV,
-        ...(env.command === "build" ? { define: { "import.meta.env.DEV": "false", "import.meta.env.PROD": "true" } } : {}),
+        ...(env.command === "build"
+          ? { define: { "import.meta.env.DEV": "false", "import.meta.env.PROD": "true" } }
+          : {}),
         worker: { plugins: () => [workerPlugin()] },
       };
       if (env.command !== "build" || env.isSsrBuild === true || name === undefined || !fs.existsSync(file)) return own;

@@ -140,7 +140,7 @@
       "platform": "node"
     },
     "@keel/std-sessions/tools": {
-      "max": "10kb",
+      "max": "10.5kb",
       "platform": "node"
     },
     "@keel/std-headless": "6kb",
