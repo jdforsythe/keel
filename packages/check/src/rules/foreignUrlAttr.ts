@@ -8,7 +8,8 @@ import type { Finding } from "../types/Finding.ts";
 import type { RuleDef } from "../types/RuleDef.ts";
 
 const ATTRS = new Set(["src", "poster", "data", "srcset", "action", "formaction"]);
-const ABSOLUTE = /^\s*(?:https?:)?\/\//i;
+/** An absolute URL as a browser reads it: a backslash counts as `/` in an http(s) URL, so `/\host` and `\\host` are `//host`. */
+const ABSOLUTE = /^\s*(?:https?:)?[\\/]{2}/i;
 /** `<element> <attribute>` -> the directive whose declared origins admit it (k.origins Rules); `poster` is `img`. */
 const DIRECTIVE: Readonly<Record<string, keyof Origins>> = {
   "Image src": "img",

@@ -355,3 +355,32 @@ it("E1111 reads a schema object changed after its literal as unread, in the rout
     ),
   ).toEqual([]);
 });
+
+it("E1570 reads `/\\host` and `\\\\host` as the absolute URLs a browser makes of them, any slash mix", () => {
+  const n = (src: string) => codes(C(`<img src="${src}" />`), "E1570").length;
+  for (const src of ["/\\evil.example/x", "\\\\evil.example/x", "\\/evil.example/x", "https:\\\\evil.example/x"])
+    expect(n(src), src).toBe(1);
+  expect(n("/a.png")).toBe(0);
+  expect(n("\\a.png")).toBe(0);
+  const frame = (src: string) =>
+    codes(
+      [
+        {
+          path: "src/F.tsx",
+          source: `import { Frame } from '@keel/ui'\nexport default function F() { return <Frame src="${src}" title="v" /> }\n`,
+        },
+      ],
+      "E1570",
+    ).length;
+  expect(frame("/\\evil.example/e")).toBe(1);
+});
+
+it("E1805 on a raw <iframe> names Frame", () => {
+  const d = check(
+    [{ path: "src/F.tsx", source: 'export default function F() { return <iframe src="x" title="t" /> }\n' }],
+    {
+      types: false,
+    },
+  ).diagnostics.filter((x) => x.code === "E1805");
+  expect(d.map((x) => x.message)).toEqual(["<iframe> in app code; use <Frame> from @keel/ui"]);
+});
