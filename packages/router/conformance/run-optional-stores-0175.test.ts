@@ -33,7 +33,7 @@ const runOf = (handler: unknown): ((...a: unknown[]) => unknown) => {
   return (...a) => Reflect.apply(fn, handler, a);
 };
 
-test.skip("A loader without `stores`, called as `run({ params, search, url, caller }, ctx)`, gets `stores` `undefined`; one declaring `stores: f`, called so, gets the value `f(ctx)` returns.", async () => {
+test("A loader without `stores`, called as `run({ params, search, url, caller }, ctx)`, gets `stores` `undefined`; one declaring `stores: f`, called so, gets the value `f(ctx)` returns.", async () => {
   await fc.assert(
     fc.asyncProperty(fc.integer({ min: 1, max: 1000 }), async (seed) => {
       const ctx = createCtx({ mode: "sim", seed });
@@ -59,7 +59,7 @@ test.skip("A loader without `stores`, called as `run({ params, search, url, call
   );
 });
 
-test.skip("An action alike without `stores` or with `stores: f`, called as `run(input, { params, url, caller }, ctx)`, and after one whose `fn` runs a transaction on its stores, `ctx.storage` is unchanged.", async () => {
+test("An action alike without `stores` or with `stores: f`, called as `run(input, { params, url, caller }, ctx)`, and after one whose `fn` runs a transaction on its stores, `ctx.storage` is unchanged.", async () => {
   await fc.assert(
     fc.asyncProperty(fc.integer({ min: 1, max: 1000 }), async (n) => {
       const ctx = createCtx({ mode: "sim", seed: 1337 });
