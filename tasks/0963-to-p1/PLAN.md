@@ -152,18 +152,17 @@ Each lane is a subagent in a worktree under `.worktrees/` (created by the orches
 - Open notes: backlog 0948 is a misreading (k.shell's CI paragraph describes the generated app workflow); `stripped()` in the server's `bearerOf` never changes a real request's value; `pnpm ledger --diff` needs both apps' `keel test` reports on disk; the docs-freshness rule fires after 50 docs commits, so a busy day needs `verified:` stamps on untouched docs; `conformance/E1562-base-route-change.test.ts` sits at its 120 s limit on slow runners (D7 did not clearly help; the fix is the limit, under an `rfc:` change); a full local `pnpm test` times out cli conformance while three lanes run tests, so run it when lanes are quiet.
 
 ## Lanes (2026-11-21)
-State at the last checkpoint; each lane is a subagent in its worktree, unpushed. The older Lanes block above is history of 2026-11-19 and 20: where it disagrees, this one stands.
-- Merged to the main line today, unpushed: RFC 0151 (D61), RFC 0164 to 0167 with their conformance and build (D56), the `Tabs` click fix (0986), the head-to-head harness (W16 step 1). The ledger and evidence are stale until rewritten in `.worktrees/verify`.
-- `.worktrees/m156` `merge-0156`: a merge agent squashes `lane-w03b` (RFC 0156, k.mount-scope; D39, D60) into three commits and runs router, testing, server and compiler. Then cherry-pick its three commits to the main line, remove `.worktrees/w03b` and `m156`.
-- `.worktrees/r160` `lane-r160`: RFC 0160 written (D53), conformance committed (cf3a7a52, red), an opus build lane runs. After it: the conformance-writer tightens tests to the sentences the build made exact, a red-team pass (security lane), the merge. It conflicts with `lane-r161` in the shell policy call sites: merge r160 first.
-- `.worktrees/r161` `lane-r161`: RFC 0161 written (D54), conformance committed (884cc00b), an opus build lane runs; it also takes backlog 0988. Four biome style findings sit in its conformance files for the conformance-writer.
-- `.worktrees/r157` `lane-r157`: RFC 0157 and 0162 written (D59); a conformance-writer works through both Conformance diffs. The build waits for the operator's read of D59's list.
-- `.worktrees/r158` `lane-r158`: RFC 0158 written (D55). Conformance (k.data, std.postgres) waits for the W13 build.
-- `.worktrees/r159` `lane-r159`: RFC 0159 and 0163 written (D57). Next: conformance for k.roles, k.foreign and std.lists when a test lane frees. The `internal` seams question waits for the operator.
-- `.worktrees/w5l7` `lane-w5l7` (sonnet): W5 L7, the eval's public mode, and the packed kit both eval modes use (backlog 0987). No paid run.
+State at the last checkpoint; each lane is a subagent in its worktree. The older Lanes block above is history of 2026-11-19 and 20: where it disagrees, this one stands.
+- Pushed: e967c745 (RFC 0151, 0156, 0164 to 0167, the `Tabs` fix, the eval harness and public mode). On the main line after it, unpushed: RFC 0160 with its red-team fixes and conformance (head 6a1bf1df at the time), plans. A gate agent runs the full gate on it in `.worktrees/verify`; when GREEN, commit the two ledger files from there, run `pnpm check` on that commit there, push.
+- `.worktrees/m161` `merge-0161`: an opus agent squashes `lane-r161` (RFC 0161, the k.shell split; D54, D62) into three commits on top of RFC 0160 and runs the suites. Then cherry-pick to the main line, gate, push; remove `.worktrees/r161` and `m161`.
+- `.worktrees/r157` `lane-r157`: RFC 0157 and 0162 final in text after four author passes (D59, D64; the type prototype is at `docs/rfc/0157-prototype/`); conformance in its fourth pass. The build follows `tasks/p1/w13-build.md`: stage 0 is the rebase onto the main line once RFC 0161 and RFC 0168 have landed.
+- `.worktrees/r159` `lane-r159`: RFC 0159 and 0163 settled (D57; `Host`, k.host-element, k.host-code, k.roles, std.lists), conformance written in two passes. Next: rebase onto the main line (RFC 0160 added `Frame` to `@keel/ui` and filled k.ui), then the build in the author's order: `@keel/ui` first; then runtime-dom with testing, std-headless, and check with compiler in parallel; the cli's ledger count last. RFC 0163 (the library format) is built after the first real apps; its seams sentence points to RFC 0169.
+- `.worktrees/r158` `lane-r158`: RFC 0158 written (D55). Conformance (k.data, std.postgres) waits for the W13 build. Its Migration text is still to remove (D65).
+- `.worktrees/r168` `lane-r168`: RFC 0168 (`servedBy`; D67) written with conformance (0028a461). Next: the build (sonnet; closes the deployable object, E1552 in `reportedCodes()`, the key and `keel:servedBy`), on top of RFC 0160; it changes check and compiler, so the full cli suite.
+- `.worktrees/r169` `lane-r169`: RFC 0169 (k.parity; D68) written with conformance for its first five bullets; a sonnet lane builds part A. Part B (the kind gates, S0013) follows RFC 0163.
 - `.worktrees/verify`: the clean checkout for the gate and the ledger. Keep it.
-- Gone: `lane-w5l1` is merged (its worktree `.worktrees/w5l1` and branch can be removed once the push is green); `.worktrees/w03` and `.worktrees/w08` of the older block: check `git worktree list`.
-- The RFC lanes share `tasks/0963-to-p1/briefs/rfc-lane.md`. An RFC lane merges to the main line only with its conformance and build (D12).
+- Branches kept without a worktree: `lane-r160`, `lane-r164`, `lane-w03b`, `lane-w5l1` (merged; delete after the next green CI).
+- Still to do for D65 (no migration): RFC 0161, 0162 and 0167's Migration wording on the main line and lanes, with RFC 0158's.
 
 ## Verification
 - [x] Backlog 0956 built and conformance-covered: RFC 0147 and RFC 0150 (links into a shell), red-teamed twice.
@@ -174,10 +173,9 @@ State at the last checkpoint; each lane is a subagent in its worktree, unpushed.
 - [x] P1 and P2 plan written from `tasks/p1/INPUT.md` (backlog 0962): `tasks/p1/PLAN.md`; the operator reads its open decisions O1 to O11.
 
 ## Next action
-1. `git worktree list`, `git status --short`. If lanes were running when the context ended, their worktrees hold the state: read each branch's `git log --oneline -5` and continue from the Lanes block above.
-2. Land `merge-0156` (three commits) on the main line. Then the gate in `.worktrees/verify` on the exact head: both apps' `keel test`, `pnpm ledger` and `pnpm evidence:report` written there, committed to the main line, then the full Method gate (`pnpm check`, full `pnpm test`, `pnpm ledger --diff`, the evidence check, `pnpm build`), each read by its own last `ok` or `fail` line. Push when green; watch CI.
-3. RFC 0160: after the build, the conformance tightening, a red-team pass, the merge. RFC 0161: after the build, the merge on top of it.
-4. W13: when the operator has read D59's list, an opus lane designs the build order across services, router, server, check and scaffold and sonnet lanes build it; then both golden apps and the skills move to contracts. W14 and W15 conformance follow as test lanes free.
-5. After W5 L7: the golden-3 agent run is the operator's to start (cost, and whether it needs a container).
-6. Two weakness lanes that share no package with lanes in flight (`tasks/p1/weaknesses.md`: 06, 10 to 21). W4 scoping and vendor shortlist has not started and has the longest lead time.
-7. For the operator, in `docs/HANDOFF.md`: D59's list (before the W13 build), the `internal` seams of D57 (before it is built), and D51 to D61 to confirm or reverse.
+1. `git worktree list`, `git status --short`, CI on the pushed head. If lanes were running when the context ended, read each lane branch's `git log --oneline -5` and continue from the Lanes block.
+2. The gate order is D63's. Land in this order, each gated and pushed: RFC 0160 (on the main line now), RFC 0161 (`merge-0161`), RFC 0168's build, RFC 0169 part A.
+3. W13 (`tasks/p1/w13-build.md`): rebase `lane-r157`, convert conformance that arrived in old shapes, record the red list, then L1 (opus) and L2 (sonnet). At most three test-running lanes.
+4. W15: rebase `lane-r159`, then its build lanes. W14 conformance after W13 stage 3.
+5. Weakness lanes not yet run (06, 10 to 21), the mutation runs, W4 scoping: none started. The golden-3 agent run and the first head-to-head pair are the operator's to start.
+6. For the operator: D51 to D69 to confirm or reverse; nothing blocks.
