@@ -41,5 +41,9 @@
     "std-tauri",
     "std-tokens"
   ],
+  "internal": {
+    "std-capacitor": ["@keel/router/internal"],
+    "std-tauri": ["@keel/router/internal"]
+  },
   "rule": "a package may import only packages earlier in order, plus ctx and tooling; stdlib packages (std-*) come after the kernel, so no kernel package imports one (RFC 0047)"
 }

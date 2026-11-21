@@ -7,4 +7,4 @@
 "@keel/std-sessions": patch
 ---
 
-`@keel/schema` exports `secretPath(schema)`, the dotted object-key path of the first `s.secret` node (`""` at the root, null when none), and `sampleFormat(node, sample)`, an encoded value of a format type without fast-check (k.parity). `@keel/store`, `@keel/std-channels`, `@keel/std-jobs`, `@keel/std-offline` and `@keel/std-sessions` use them in place of `@keel/schema/internal`.
+`@keel/schema` exports `secretPath(schema)`, the dotted object-key path of the first `s.secret` node (`""` at the root, null when none), and `sampleFormat(node, sample)`, an encoded value of a format type without fast-check (k.parity). `@keel/store`, `@keel/std-channels`, `@keel/std-jobs`, `@keel/std-offline` and `@keel/std-sessions` call them in place of `@keel/schema/internal`; std-sessions writes an unapplied replay input's E2003 into its own recorder.
