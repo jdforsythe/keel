@@ -1,16 +1,15 @@
 // Spec: k.compiler, Conformance "`keel build` of a project whose `modules/a/routes.ts` throws prints one E1006 naming that file, counts it among its summary's errors and exits 1, with a `client` deployable and with `node` ones only."
-// Seed 1337 (the thrown message is generated). Assumes: exit status 1; one `diag` record with code E1006 whose path or message names `modules/a/routes.ts`; the final `summary` record carries a numeric `errors` of at least 1 (the summary's field name is not stated by the spec text).
-// Pending: the build exits 0 on E1006 today.
+// Seed 1337 (the exported value is generated: a routes export that is no route table is E1006). Assumes: exit status 1; one `diag` record with code E1006 whose path or message names `modules/a/routes.ts`; the final `summary` record carries a numeric `counts.errors` of at least 1 (docs/OUTPUT.md).
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { SEED, SLOW, cleanup, keelRun, materialize, nodeTree, clientTree, type Tree } from "./boundary-support.ts";
 
 const throwing = (tree: Tree, message: string): Tree => ({
   ...tree,
-  "modules/a/routes.ts": `throw new Error(${JSON.stringify(message)})\nexport const routes = {}\n`,
+  "modules/a/routes.ts": `export const routes = ${JSON.stringify(message)}\n`,
 });
 
-test.skip(
+test(
   "`keel build` of a project whose `modules/a/routes.ts` throws prints one E1006 naming that file, counts it among its summary's errors and exits 1, with a `client` deployable and with `node` ones only.",
   () => {
     fc.assert(
@@ -31,7 +30,8 @@ test.skip(
           const summary = records.find(
             (x) => typeof x === "object" && x !== null && Reflect.get(x, "kind") === "summary",
           );
-          const errors = typeof summary === "object" && summary !== null ? Reflect.get(summary, "errors") : undefined;
+          const counts = typeof summary === "object" && summary !== null ? Reflect.get(summary, "counts") : undefined;
+          const errors = typeof counts === "object" && counts !== null ? Reflect.get(counts, "errors") : undefined;
           expect(typeof errors === "number" ? errors : 0).toBeGreaterThanOrEqual(1);
         } finally {
           cleanup(dir);

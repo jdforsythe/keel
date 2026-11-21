@@ -1,7 +1,7 @@
 // Spec: k.compiler, Conformance "A `routes.ts` whose graph reaches a `*.server.ts` file importing a CommonJS package that `require`s `events` evaluates: `routes.json` lists its routes and no E1006 is printed."
 // Spec: k.compiler, Build-time evaluation "bundled as the server build bundles: a package's CommonJS code may `require` Node built-ins and other packages (`pg` does)."
 // Seed 1337 (the exported name is generated). Assumes: the plugin's build-time evaluation reports through the `warn` of `buildStart` as build-eval-routes.test.ts reads it; the CommonJS package is a fixture in `node_modules/cjs-events` (`pg-pool` does the same `require("events")`).
-// `routes.json` itself is written by the CLI build and is not read here: the `routes.json` half needs the CLI build. Pending: evaluation has no `require` yet.
+// `routes.json` itself is written by the CLI build and is not read here: the `routes.json` half needs the CLI build.
 import fs from "node:fs";
 import path from "node:path";
 import keel from "@keel/compiler/vite";
@@ -30,7 +30,7 @@ afterEach(() => {
   fs.rmSync(root, { recursive: true, force: true });
 });
 
-test.skip("A `routes.ts` whose graph reaches a `*.server.ts` file importing a CommonJS package that `require`s `events` evaluates: no E1006 is printed.", async () => {
+test("A `routes.ts` whose graph reaches a `*.server.ts` file importing a CommonJS package that `require`s `events` evaluates: no E1006 is printed.", async () => {
   await fc.assert(
     fc.asyncProperty(fc.stringMatching(/^[a-z]{3,8}$/), async (name) => {
       const dir = path.join(root, "modules", "m");
@@ -40,8 +40,12 @@ test.skip("A `routes.ts` whose graph reaches a `*.server.ts` file importing a Co
         'import pkg from "cjs-events";\nexport const bus: unknown = pkg.make();\n',
       );
       fs.writeFileSync(
+        path.join(dir, "m.contract.ts"),
+        'import { contract } from "@keel/router/contract";\nexport const m = contract("m", { "m.home": { path: "/" } });\n',
+      );
+      fs.writeFileSync(
         path.join(dir, "routes.ts"),
-        `import { bus } from "./${name}.server.ts";\nexport const routes = {};\nvoid bus;\n`,
+        `import { manifest } from "@keel/router";\nimport { m } from "./m.contract.ts";\nimport { bus } from "./${name}.server.ts";\nvoid bus;\nexport const routes = manifest(m, { "m.home": {} });\n`,
       );
       const warnings: string[] = [];
       const p = keel();

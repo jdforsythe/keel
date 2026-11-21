@@ -3,7 +3,7 @@
 // Seed: 1337.
 // Assumption: the working-directory half runs in a child process whose cwd is a temp app folder (a vitest worker cannot chdir); `app-dir-child.ts` prints one JSON line. The `KEEL_APP_DIR` halves run in-process, the variable set after `database(...)` ran and before its first call (files are read at the first call).
 // Assumption: `<moduleId>` is the part of the name before the dot, so `fresh().cap` (`t.db<N>`) reads `modules/t/migrations`; tables are per-process-tagged by `fresh()`; E2453 is a rejection whose `code` is "E2453" or whose text holds it.
-// Pending: `database(name)` reads no folder yet.
+// Assumption: a query on a missing table is undefined_table (SQLSTATE 42P01), an unexpected database error (std.postgres Errors), so it rejects with the SQLSTATE in its code or text.
 import { execFile } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -12,7 +12,7 @@ import { s } from "@keel/schema";
 import { sql } from "@keel/std-postgres";
 import fc from "fast-check";
 import { afterEach, beforeEach, expect, test } from "vitest";
-import { SEED, databaseFound, errOf, fresh, none, okOf, simCtx, sqlName } from "./fixtures.ts";
+import { SEED, databaseFound, fresh, none, okOf, simCtx, sqlName } from "./fixtures.ts";
 import { ready } from "@keel/std-postgres/testing";
 
 const Count = s.object({ c: s.number() });
@@ -86,15 +86,13 @@ test("a lone `0002-x.sql` rejects the first call with E2453", async () => {
   expect(await failure(db(simCtx(cap, none(20))).query(sql(Count)`select 1::int as c`))).toContain("E2453");
 });
 
-test.skip("no folder makes no table and no error", async () => {
+test("no folder makes no table and no error: the first call succeeds; a query on the missing table is an unexpected database error and throws its SQLSTATE", async () => {
   const { cap, table } = fresh();
   process.env.KEEL_APP_DIR = app;
   const ctx = simCtx(cap, none(20));
   const db = databaseFound(cap);
   expect(okOf(await db(ctx).query(sql(Count)`select 1::int as c`))[0]?.c).toBe(1);
-  expect(errOf(await db(ctx).query(sql(Count)`select count(*)::int as c from ${sqlName(table)}`)).code).not.toBe(
-    "keel.unreachable",
-  );
+  expect(await failure(db(ctx).query(sql(Count)`select count(*)::int as c from ${sqlName(table)}`))).toContain("42P01");
 });
 
 const CHILD = join(import.meta.dirname, "app-dir-child.ts");
