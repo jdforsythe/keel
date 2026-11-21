@@ -1,5 +1,5 @@
 {
-  "commit": "660bf03418779cfd5826efad0645b03e6d28d8ae",
+  "commit": "8e476f87927642ee83d5e0f70c2b62fbf4f71510",
   "coverage": {
     "packages": {
       "apps/golden-1": {
@@ -1158,7 +1158,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-21T19:46:49.695Z",
+  "generatedAt": "2026-11-21T20:08:08.160Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -3193,8 +3193,8 @@
         "claims": 104,
         "reason": null,
         "reportDate": "2026-11-19",
-        "score": 79.35,
-        "stale": 27,
+        "score": 79.73,
+        "stale": 29,
         "threshold": 70
       },
       "packages/schema": {
@@ -3454,7 +3454,7 @@
         "threshold": 70
       }
     },
-    "stale": 240
+    "stale": 242
   },
   "schema": 1,
   "tests": {
@@ -3540,7 +3540,7 @@
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 718,
+        "unitCases": 719,
         "unitFiles": 91
       },
       "packages/compiler": {
@@ -3638,8 +3638,8 @@
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 122,
-        "unitFiles": 20
+        "unitCases": 125,
+        "unitFiles": 22
       },
       "packages/schema": {
         "conformanceCases": 185,
@@ -4101,8 +4101,8 @@
       "proveFiles": 23,
       "simulateFiles": 6,
       "skipTodo": 2,
-      "unitCases": 5274,
-      "unitFiles": 889
+      "unitCases": 5278,
+      "unitFiles": 891
     }
   },
   "tool": {
