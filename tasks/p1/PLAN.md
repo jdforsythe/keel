@@ -207,7 +207,7 @@ Outcome: Keel validates at the boundary and the app owns storage and retrieval t
 
 ### W15 Custom components
 Outcome: an app writes its own component from the building blocks, from the primitives the stdlib widgets use, or around an outside library or a standard custom element, with data bound in one blessed way; charts are a library or an app's wrapper, never the framework's (D44).
-1. A design RFC: which primitives open to app code (E1822), the boundary of a wrapped component (a `Props` schema, a text alternative, a role, client-only or resumable, teardown), how data reaches it, what the harness and replay see, what the fixed policy refuses (a library that injects `<style>` or writes HTML strings) and what `unsafe/` then means; counted in the ledger and in eval results (opus).
+1. A design RFC per D48 of `tasks/0963-to-p1/PLAN.md`: `Part` open to app code, the behaviour primitives the stdlib widgets hold privately, and the host element (its contract, how data reaches it, what the harness and replay see); no drawing element. The RFC tries d3, Chart.js, uPlot, Observable Plot and ECharts under the fixed policy and records what runs (opus).
 2. Conformance, the build, and one worked example: a d3 chart in golden-2 with a data-table alternative (conformance-writer, opus, sonnet).
 - Concurrent: step 1 beside W13 and W14 step 1.
 - Gate: the worked example passes `keel check` and the a11y checks with no rule switched off.
