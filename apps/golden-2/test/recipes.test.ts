@@ -313,7 +313,12 @@ describe("client loaders, actions and guard (through the api deployable)", () =>
       { ...reqOf(RecipeParams, { locale: "de-DE", recipeId: "nope" }), search: {} },
       api.ctx,
     );
-    expect(missing.ok ? null : missing.error).toMatchObject({ code: "keel.notFound", message: "Kein Rezept nope" });
+    expect(missing.ok ? null : missing.error).toMatchObject({
+      code: "keel.notFound",
+      message: "Kein solches Rezept",
+      data: null,
+    });
+    expect(JSON.stringify(missing.ok ? null : missing.error)).not.toContain("nope");
   });
   it("createRecipe adds through the api and gives a duplicate the locale's titleTaken", async () => {
     const api = await simApi();

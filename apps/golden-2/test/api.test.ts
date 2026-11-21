@@ -126,4 +126,13 @@ describe("kitchen endpoints", () => {
     expect(gone.status).toBe(404);
     expect(JSON.stringify(gone.body)).toContain("keel.notFound");
   });
+
+  it("refuses kitchen.add for a request with no user and writes nothing", async () => {
+    const app = await apiApp(apiCtx(4), "");
+    const refused = await fetchJson(app, asJson("POST", "/api/recipes", draft("Soup", 30)));
+    expect(refused.status).toBe(403);
+    expect(JSON.stringify(refused.body)).toContain("keel.denied");
+    const listed = await fetchJson(app, asJson("GET", "/api/recipes"));
+    expect(JSON.stringify(listed.body)).not.toContain("Soup");
+  });
 });

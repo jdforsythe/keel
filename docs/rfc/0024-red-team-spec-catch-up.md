@@ -1,6 +1,6 @@
 # RFC 0024: Spec catches up with red-team batch 2
 
-Status: accepted
+Status: implemented
 
 ## Problem
 Commit 2abd442 (backlog 0071-0089) changed behavior the spec does not state (backlog 0099): form ids came from a process counter; E1003 named only `javascript:`/`data:` in four attributes while the runtime guards seven plus `srcdoc`; action bodies had no size cap; the node adapter needed a DOM global; inspect admitted an absent `Origin` for POST; the ledger's W1706 and unsafe-count E1706 were unspecified.

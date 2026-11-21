@@ -1,6 +1,6 @@
 # RFC 0166: k.leave: E1107 reads its own reach, narrower than k.boundary's
 
-Status: accepted (ADR-0188) under the RFC defaults (1: the spec is the contract; 4: privacy by default), for the orchestrator to confirm. For backlog 0880.
+Status: implemented (ADR-0188). For backlog 0880.
 
 ## Decisions
 - D1: E1107 keeps the reach `@keel/check` gives it today and k.leave states it: a `store` call in a `.tsx` or `.jsx` file not named `*.server.*`, or in a file one reaches by relative `import`, `export … from` and literal `import()` through no `*.server.*` file (D25: kept narrower and stated).

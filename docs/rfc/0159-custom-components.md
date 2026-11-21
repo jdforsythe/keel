@@ -1,6 +1,6 @@
 # RFC 0159: custom components: `Part` open to apps, the host element
 
-Status: proposed (ADR-0181), for the operator to read before the freeze flip. Workstream W15 step 1 of `tasks/p1/PLAN.md`; decisions D44, D48 and D50 of `tasks/0963-to-p1/PLAN.md`. The library format of D49 is RFC 0163 (ADR-0185).
+Status: implemented (ADR-0181). Workstream W15 step 1 of `tasks/p1/PLAN.md`; decisions D44, D48 and D50 of `tasks/0963-to-p1/PLAN.md`. The library format of D49 is RFC 0163 (ADR-0185).
 
 ## Decisions
 - D1: `Part` (`@keel/ui/aria`) is open to app code. E1822 is retired, not narrowed, and its code stays reserved and is not reused: with `Part` open there is nothing left to guard, and its `unsafe/` re-export clause guarded only a way round E1822. `ariaImport.ts` and its tests go.

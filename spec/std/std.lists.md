@@ -1,5 +1,5 @@
 # std.lists: List primitives
-status: proposed
+status: conformance-covered
 
 **Exports.** `@keel/std-headless` exports the list behaviour its widgets build on, so an app component built on `Part` (k.aria, k.roles) holds the same keyboard model: `listChart`, `stableRows` and the type `ListState`.
 

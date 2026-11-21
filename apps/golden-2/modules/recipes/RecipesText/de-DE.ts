@@ -30,7 +30,7 @@ export default RecipesText.text({
   currencyRule: "Eine Währung wählen",
   otherRule: "Diesen Wert prüfen",
   titleTaken: "Schon in der Sammlung",
-  notFound: { text: "Kein Rezept {id}" },
+  notFound: "Kein solches Rezept",
   indexTitle: "Rezepte · Keel",
   showTitle: { text: "{title} · Rezepte" },
   newTitle: "Neues Rezept · Keel",

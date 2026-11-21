@@ -1,6 +1,6 @@
 # Stdlib spec
 
-Sections are added per wave (see docs/ROADMAP.md). Each file: `std.<module>.md`, status line, API, Rules, Conformance, token budget 1,500 (`node tooling/budgets.mjs` measures them with the kernel sections).
+Sections are added per wave (see docs/ROADMAP.md). Each file: `std.<module>.md`, status line, API, Rules, Conformance, token budget 1,700 (`node tooling/budgets.mjs` measures them with the kernel sections).
 
 Wave 0 proves one extension point per section: std.money (schema type registry), std.brands (check rule registry), std.geo (capability registry), std.health (module manifest), std.timings (inspector hooks), std.report (output formatter registry).
 
@@ -45,12 +45,12 @@ S8 adds std.db, std.workflows, std.shells and std.tokens.
 | std.monitor | Production tallies | conformance-covered | std-sessions: server transaction counts as `monitored` evidence, E2009-E2010 |
 | std.headless | Headless widgets | conformance-covered | Dialog, Disclosure, Toaster, three charts, E2801 |
 | std.options | Listbox, combobox, menu and tabs | conformance-covered | Listbox, Combobox, Menu, Tabs on `optionsChart` |
-| std.lists | List primitives | proposed | `listChart`, `stableRows` for app components |
+| std.lists | List primitives | conformance-covered | `listChart`, `stableRows` for app components |
 | std.tables | Data tables | conformance-covered | columns from a schema, query in the URL, `applyQuery`, E2851-E2853 |
 | std.db | SQLite and Postgres storage | proposed | storage drivers (k.persist) and check rule registry: E2151-E2153 |
 | std.postgres | Postgres app data | proposed | capability and check rule registries: `database`, `sql` with a result schema, migrations, PGlite under sim, E2451-E2458 |
 | std.workflows | Workflows | conformance-covered | module manifest, inspector hook, check rule registry: chart instances over jobs, E2351-E2355 |
 | std.shells | Shell drivers | conformance-covered | storage and net drivers for Capacitor and Tauri shells |
-| std.capacitor | Capacitor shell target | proposed | shell target: Android and iOS files, tools, build, CI jobs |
-| std.tauri | Tauri shell target | proposed | shell target: desktop files, tools, build, CI job |
-| std.tokens | Opaque tokens | conformance-covered | capability, schema type and check rule registries: `mint` with a ttl, `check`, `Digested`, E2201-E2202 |
+| std.capacitor | Capacitor shell target | implemented | shell target: Android and iOS files, tools, build, CI jobs |
+| std.tauri | Tauri shell target | implemented | shell target: desktop files, tools, build, CI job |
+| std.tokens | Opaque tokens | conformance-covered | capability, schema type and check rule registries: `mint` with a ttl, `check`, `idOf`, `Digested`, E2201-E2202 |

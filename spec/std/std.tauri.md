@@ -1,5 +1,5 @@
 # std.tauri: Tauri shell target
-status: proposed
+status: implemented
 
 **Extension points.** Shell target (k.shell): `@keel/std-tauri/tools` calls `shellTarget('tauri', target)`. Its drivers are std.shells'. It follows Tauri 2's releases: the versions here change with this section, not the kernel's.
 

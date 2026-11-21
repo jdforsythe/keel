@@ -1,6 +1,6 @@
 # RFC 0165: k.user: a recorded session keeps no `meta.caller`, whatever the caller lifetime
 
-Status: accepted (ADR-0187) under the RFC defaults (4: privacy by default; 2: no action at a distance), for the orchestrator to confirm. For backlog 0867.
+Status: implemented (ADR-0187). For backlog 0867.
 
 ## Decisions
 - D1: a std.sessions recording keeps no transaction `meta`, under any caller lifetime. It never needs to learn the lifetime, so nothing carries `caller: { days }` to the browser.

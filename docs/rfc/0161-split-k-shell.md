@@ -1,6 +1,6 @@
 # RFC 0161: split k.shell: the kernel keeps the shell target, std.capacitor and std.tauri keep the vendors
 
-Status: proposed (ADR-0183). Decision D47 of `tasks/0963-to-p1/PLAN.md` (accepted by the operator); it removes the k.shell freeze blocker (D41).
+Status: implemented (ADR-0183). Decision D47 of `tasks/0963-to-p1/PLAN.md` (accepted by the operator); it removes the k.shell freeze blocker (D41).
 
 ## Decisions
 - D1: the kernel keeps the mechanism: `shells` on a `client` deployable, the closed set `capacitor | tauri`, each provided by one named package; `mode: 'shell'` and the driver contract; `shellMount`'s duty; the shell target contract (`shellTarget`, `ShellTarget`); the five build steps; the CI job frame; E1573, E1574, E1575 and a new E1585.
@@ -226,9 +226,6 @@ New, k.shell (in `packages/cli/conformance/`, over a fixture whose `node_modules
 - (Files) with `deploy/web/tauri/` a symlink to a folder outside the project, or `deploy/web/tauri/a.json` a symlink, `keel check` reports one E1585 and `keel build` writes nothing under `deploy/web/tauri/` or the link's target.
 
 New, std.capacitor and std.tauri: the bullets of those sections not listed above as moved (each section's last three or four).
-
-## Migration
-For an app: none. `topology.ts`, `package.json` (E1572 already requires the shell packages) and every generated file stay byte for byte; `keel build --target` takes the same flags and prints the same trailer. A project that imported `tauriHttpCapability` or `crateName` from `@keel/scaffold` imports them from `@keel/std-tauri/tools`. A script that ran `keel-capacitor-scheme` runs `keel build --target capacitor`. The build lane updates the READMEs of `@keel/cli`, `@keel/scaffold`, `@keel/std-capacitor`, `@keel/std-tauri`, the `keel-deploy` skill and the `docs/ARCHITECTURE.md` shells sentence to name `./tools`.
 
 ## What it costs
 - Tokens: k.shell 1,498 tokens (5,991 characters), std.capacitor 916, std.tauri 937, std.shells 938, k.return 1,221, k.links 1,499, k.cli 1,495; the map 1,206 of 1,250 (one word changed).

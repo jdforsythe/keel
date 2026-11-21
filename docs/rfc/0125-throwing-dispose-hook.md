@@ -1,6 +1,6 @@
 # RFC 0125: a throwing `onDispose` hook stops no disposal
 
-Status: accepted (orchestrator under the owner's standing leave, 2026-11-17). For backlog 0732. It specifies the build as 0731 left it and changes no behaviour.
+Status: implemented (orchestrator under the owner's standing leave, 2026-11-17). For backlog 0732. It specifies the build as 0731 left it and changes no behaviour.
 
 ## Problem
 k.reactive does not say what a throwing `onDispose` hook does. The code (`packages/reactive/src/internal/dispose.ts`, `disposeOwned.ts`, `runAll.ts`, `scope.ts`) does this:

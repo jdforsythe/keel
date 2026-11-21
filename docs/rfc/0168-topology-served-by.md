@@ -1,6 +1,6 @@
 # RFC 0168: k.topology: the deployable key `host` becomes `servedBy`
 
-Status: accepted (ADR-0190), decision D67 item 1 of the operator, for the build lane. Proposed spec text applied; status of the touched sections is unchanged until the build.
+Status: implemented (ADR-0190). Decision D67 item 1 of the operator.
 
 ## Decisions
 - D1: the key on a `client` deployable that names the `node` deployable serving it is `servedBy`, not `host`. Same value (a string literal naming a `node` deployable), same rules.

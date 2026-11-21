@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { appManifest } from "./appManifest.ts";
+import { manifestSource } from "./manifestSource.ts";
 
 const STD = /^@keel\/std-[a-z0-9-]+$/;
 const MANIFEST = /^module\.[cm]?[jt]s$/;
@@ -26,7 +27,7 @@ function packageDir(dir: string, dep: string): string | undefined {
 /**
  * The package directory of placed stdlib module `id` (k.topology Route table), whatever it exports: with no
  * `modules/<id>/` folder under `root`, the first `@keel/std-*` package in the `deps` of an app manifest
- * `modules/<m>/module.ts` (folders by name, then `deps` order) whose root `module.ts` has `id` `id`, as `stdExport`
+ * `modules/<m>/module.ts` (folders by name, then `deps` order) whose root manifest (its `./module` export) has `id` `id`, as `stdExport`
  * searches. Undefined for an app module or when no such package is found.
  */
 export function stdModuleDir(root: string, id: string): string | undefined {
@@ -43,7 +44,7 @@ export function stdModuleDir(root: string, id: string): string | undefined {
     const source = name === undefined ? undefined : read(path.join(dir, name));
     for (const d of (source === undefined ? null : appManifest(source))?.deps ?? []) {
       const pkg = STD.test(d.value) ? packageDir(dir, d.value) : undefined;
-      const own = pkg === undefined ? undefined : read(path.join(pkg, "module.ts"));
+      const own = pkg === undefined ? undefined : manifestSource(pkg);
       if (pkg !== undefined && own !== undefined && appManifest(own)?.id === id) return pkg;
     }
   }

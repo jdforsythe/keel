@@ -1,6 +1,6 @@
 # RFC 0156: k.mount: `identityMount` refuses a malformed `path` at run time; a router matches no page at or under its own mount, nor a path holding a `\`
 
-Status: proposed (ADR-0178), for the orchestrator to confirm. For backlog 0893 and 0894, under review decision D39.
+Status: implemented (ADR-0178). For backlog 0893 and 0894, under review decision D39.
 
 ## Decisions
 - D1: `identityMount(path)` throws E1580 when `path` is not lowercase `/` segments (`/^(\/[a-z0-9-]+)+$/`), before it records anything. `keel check` already reports a literal of another form; the throw covers a call `keel check` does not read (a `vite build` alone, a direct call, a test).

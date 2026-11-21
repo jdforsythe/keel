@@ -3,10 +3,10 @@
   "unsafe": 18,
   "hostElements": 0,
   "rungs": {
-    "example": 1432,
+    "example": 1430,
     "probabilistic": 335,
     "exhaustive": 15,
-    "proven": 73,
+    "proven": 72,
     "monitored": 8
   },
   "mutation": {
@@ -148,7 +148,7 @@
         "threshold": 70
       },
       "std-tokens": {
-        "score": 81.28,
+        "score": 76.1,
         "threshold": 70
       },
       "std-workflows": {
@@ -11712,6 +11712,12 @@
     },
     {
       "pkg": "golden-2",
+      "name": "signedIn",
+      "file": "golden-2:kitchen/signedIn.guard.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
       "name": "toggleFavorite",
       "file": "golden-2:kitchen/toggleFavorite.ts",
       "rung": "probabilistic"
@@ -12891,24 +12897,6 @@
       "name": "writeFor",
       "file": "packages/std-offline/src/writeFor.ts",
       "rung": "proven"
-    },
-    {
-      "pkg": "std-postgres",
-      "name": "NoRows",
-      "file": "packages/std-postgres/src/NoRows.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": "std-postgres",
-      "name": "fragment",
-      "file": "packages/std-postgres/src/fragment.ts",
-      "rung": "probabilistic"
-    },
-    {
-      "pkg": "std-postgres",
-      "name": "sql",
-      "file": "packages/std-postgres/src/sql.ts",
-      "rung": "probabilistic"
     },
     {
       "pkg": "std-report",
@@ -14177,30 +14165,6 @@
       "rung": "example"
     },
     {
-      "item": "k.data#1",
-      "rung": "example"
-    },
-    {
-      "item": "k.data#2",
-      "rung": "proven"
-    },
-    {
-      "item": "k.data#3",
-      "rung": "example"
-    },
-    {
-      "item": "k.data#4",
-      "rung": "example"
-    },
-    {
-      "item": "k.data#5",
-      "rung": "example"
-    },
-    {
-      "item": "k.data#6",
-      "rung": "example"
-    },
-    {
       "item": "k.defaults#1",
       "rung": "example"
     },
@@ -14286,7 +14250,7 @@
     },
     {
       "item": "k.docs#5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.docs#6",
@@ -14298,7 +14262,7 @@
     },
     {
       "item": "k.docs#8",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.docs#9",
@@ -14870,7 +14834,7 @@
     },
     {
       "item": "k.mount-scope#1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.mount#1",
@@ -15438,7 +15402,7 @@
     },
     {
       "item": "k.roles#6",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.roles#7",
@@ -15642,7 +15606,7 @@
     },
     {
       "item": "k.scaffold#11",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.scaffold#12",
@@ -15654,7 +15618,7 @@
     },
     {
       "item": "k.scaffold#14",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.schema#1",
@@ -17037,38 +17001,6 @@
       "rung": "example"
     },
     {
-      "item": "std.postgres#1",
-      "rung": "probabilistic"
-    },
-    {
-      "item": "std.postgres#2",
-      "rung": "example"
-    },
-    {
-      "item": "std.postgres#3",
-      "rung": "example"
-    },
-    {
-      "item": "std.postgres#4",
-      "rung": "example"
-    },
-    {
-      "item": "std.postgres#5",
-      "rung": "example"
-    },
-    {
-      "item": "std.postgres#6",
-      "rung": "example"
-    },
-    {
-      "item": "std.postgres#7",
-      "rung": "example"
-    },
-    {
-      "item": "std.postgres#8",
-      "rung": "none"
-    },
-    {
       "item": "std.report#1",
       "rung": "probabilistic"
     },
@@ -17535,6 +17467,18 @@
     {
       "item": "std.tokens#12",
       "rung": "example"
+    },
+    {
+      "item": "std.tokens#13",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.tokens#14",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.tokens#15",
+      "rung": "probabilistic"
     },
     {
       "item": "std.workflows#1",

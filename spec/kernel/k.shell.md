@@ -1,15 +1,15 @@
 # k.shell: Native shells
-status: proposed
+status: conformance-covered
 
 **Declaration.** A `client` deployable may name the native shells that package it: `shells: { capacitor?: { id, name }, tauri?: { id, name } }` in `topology.ts`. `id` is a reverse-DNS app id and its return links' scheme (k.return), `name` its title; the version the app's `package.json` `version`. Each shell's package provides it and must be in `dependencies` (E1572, k.deploy): `capacitor` (Android, iOS) `@keel/std-capacitor`, `tauri` (desktop) `@keel/std-tauri`. The rest: std.capacitor, std.tauri. `shells` on another adapter, or an `id` that is not reverse-DNS, is E1573.
 
 **Shell ctx.** A shell build's entry is the `client` entry with `createCtx({ mode: 'shell', drivers })`, `drivers` the package's `<shell>Drivers({ origin })`, `origin` the `KEEL_ORIGIN` URL: its `storage` and `net` (k.persist). The page loads from the shell's own origin, so the drivers keep this contract:
 - `net.fetch`: a request to the page's origin (a relative URL included) goes to the build's `KEEL_ORIGIN`, same method, path, search, headers and body, through the shell's native HTTP client, honouring `redirect: 'manual'`; another origin's request goes as given. Cookies, the caller cookie included (k.security), stay in the shell's cookie store and go only to their origin. A failure rejects with a `TypeError`. `online()` and `net` events: as real.
-- `storage`: the shell's native store, kept across app restarts, written before `set` or a `true` `commit` resolves.
+- `storage`: the shell's native store, kept across restarts, written before `set` or a `true` `commit` resolves.
 - `clock`, `random` and registered capabilities: as real, unless a capability's `shell` factory differs.
 So `modules/` run unchanged in a browser and in a shell. With `identity.ts` the entry calls the package's `shellMount(ctx, { id, origin, mount })` (`./shellMount`, `mount` from `identity.ts`) before the router starts: it opens each URL the router hands it in an external browser sharing no cookie with the app, reports the launch once, then delivers return links (k.links).
 
-**Shell target.** `keel check` and `keel build` import the `./tools` entry of each declared shell's package (a throw: E1159, k.module), which calls `shellTarget(shell, target)` (`@keel/cli`) once; a second throws E1053.
+**Shell target.** `keel check` and `keel build` import the `./tools` entry of each declared shell's package (a throw: E1159, k.module), which calls `shellTarget(shell, target)` (`@keel/cli`) once; a second is E1053.
 ```ts
 type ShellTarget = {
   platforms: readonly string[] // [] for no --platform

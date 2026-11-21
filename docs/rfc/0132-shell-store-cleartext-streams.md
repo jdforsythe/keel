@@ -1,6 +1,6 @@
 # RFC 0132: the Tauri store keeps two whole copies, a debug Android build reaches an http origin, and Capacitor streams through Keel's own native client
 
-Status: accepted (orchestrator under the owner's standing leave, 2026-11-18), ADR-0154. From the native shell runs of 2026-11-18 (`tasks/0338-s8-reach/proposed/s8-shells.md`, proposals P1 to P4).
+Status: implemented (orchestrator under the owner's standing leave, 2026-11-18), ADR-0154. From the native shell runs of 2026-11-18 (`tasks/0338-s8-reach/proposed/s8-shells.md`, proposals P1 to P4).
 
 ## Problem
 The S8 shell exit clauses were run on real shells for the first time: Tauri on macOS and Capacitor on an Android 16 emulator, each built with `keel build --target`, started against golden-1's built `api` behind a logging proxy, written to and killed mid-write. Four things came out that the spec did not say or got wrong.

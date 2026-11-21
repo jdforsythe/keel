@@ -1,6 +1,6 @@
 # RFC 0160: k.origins: declared third-party origins
 
-Status: proposed (ADR-0182), for operator decisions D46 and D41: safe by default, opened by config. It reverses k.security's "the policy has no option" and that clause of ADR-0094, so it lands before the freeze flip (W1).
+Status: implemented (ADR-0182). For operator decisions D46 and D41: safe by default, opened by config. It reverses k.security's "the policy has no option" and that clause of ADR-0094.
 
 ## Decisions
 - D1: a deployable of any adapter may set `origins` in `topology.ts`: one object per directive, `img`, `media`, `font`, `connect`, `frame`, each mapping an exact origin to its reason. It is the only input that widens a policy, and the only place: no `createApp` option, no environment variable.

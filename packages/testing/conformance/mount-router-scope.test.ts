@@ -2,7 +2,8 @@
 // Spec: k.mount-scope (rfc:0156), Test "A router matches no page at or under its own `mount` (a `createRouter` and `renderRoute` option; a build with `identity.ts` passes its `path`, `createApp` `handle.path`), nor at a path holding a raw `\`, which a URL parser reads as `/`; `%5C` in a path is an ordinary character."
 // Spec: k.mount-scope (rfc:0156), Test "At or under is read on the path's segments decoded as the matcher decodes them, joined by `/`, case-sensitive, on the client (`createRouter`, `renderRoute`) and the server alike"
 // Spec: k.mount-scope (rfc:0156), Limits "with the mount `/gate`, `/GATE` renders a page"
-// Spec: k.mount-scope (rfc:0156), Conformance "With `path` `/gate`, a router matches no page at `/gate`, `/gate/x` or `/%67ate`, nor at `/\x`; `/GATE` is matched by the table as any path"
+// Spec: k.mount-scope (rfc:0156), Conformance "With `path` `/gate`, a router matches no page at `/gate`, `/gate/x` or `/%67ate`, nor at `/\x`; `/GATE` is matched by the table as any path; the server answers `/%67ate` 404 without calling `handle`."
+// The server half of that clause is asserted in server/conformance/mount-handle-path-params.test.ts.
 // Conformance: the mount is the router's own; a path under it is a document navigation, a path beside it is a page, `\` matches no page.
 // Seed 1337 (fc.assert below). A raw `/a/\x` has no manifest `href`; `raw` below types it as an `Href` through a type predicate.
 import { createCtx } from "@keel/ctx";

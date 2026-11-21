@@ -81,6 +81,13 @@ const ROWS: readonly Row[] = [
     "k.bundle",
   ],
   [
+    "E1011",
+    "a client bundle holds an app module its service map leaves out",
+    "An alias, package name or template import() reached it; its calls would miss its deployable.",
+    "import '@/api/x' -> import '../api/x'",
+    "k.bundle",
+  ],
+  [
     "E1049",
     "internal compiler failure",
     "A Keel bug, not app code; the message is verbatim.",

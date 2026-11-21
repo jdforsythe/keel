@@ -1,5 +1,5 @@
 # k.roles: Part roles for app widgets
-status: proposed
+status: implemented
 
 **Roles.** `Part` (k.aria) also takes these roles, for the widget patterns the stdlib does not ship (a date grid, a tree, a slider, a radio group). Each is an element and its ARIA state; keyboard and focus behaviour is the component's own, through `onKey`, `focus` and `tabIndex` (k.aria).
 

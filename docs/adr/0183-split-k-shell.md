@@ -1,6 +1,6 @@
 # ADR-0183: split k.shell: the kernel keeps the shell target, std.capacitor and std.tauri keep the vendors (RFC 0161)
 
-**Status:** proposed (D47, accepted by the operator; the RFC's design for the orchestrator to confirm).
+**Status:** accepted (D47, accepted by the operator; the RFC's design for the orchestrator to confirm).
 
 **Context.** k.shell held both the mechanism an app writes against and Capacitor 8's and Tauri 2's files, tool versions, build steps and CI runners. A frozen kernel cannot follow those vendors' releases, and k.return carried the same mix.
 
