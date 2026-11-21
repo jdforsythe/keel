@@ -1,5 +1,5 @@
 {
-  "commit": "7d79a1b82893921060405de998b5822cc6f04da8",
+  "commit": "d8cbb29fd8b775a168297004ead0a575d5df8070",
   "coverage": {
     "packages": {
       "apps/golden-1": {
@@ -1158,7 +1158,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-21T19:24:08.474Z",
+  "generatedAt": "2026-11-21T19:28:27.708Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -1321,7 +1321,7 @@
             "probabilistic": 7,
             "proven": 0
           },
-          "status": "implemented",
+          "status": "conformance-covered",
           "total": 22,
           "verified": 22
         },
