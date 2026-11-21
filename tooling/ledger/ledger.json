@@ -3,7 +3,7 @@
   "unsafe": 18,
   "hostElements": 0,
   "rungs": {
-    "example": 1420,
+    "example": 1426,
     "probabilistic": 332,
     "exhaustive": 15,
     "proven": 72,
@@ -14244,7 +14244,7 @@
     },
     {
       "item": "k.docs#5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.docs#6",
@@ -14256,7 +14256,7 @@
     },
     {
       "item": "k.docs#8",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.docs#9",
@@ -14828,7 +14828,7 @@
     },
     {
       "item": "k.mount-scope#1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.mount#1",
@@ -15396,7 +15396,7 @@
     },
     {
       "item": "k.roles#6",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.roles#7",
@@ -15600,7 +15600,7 @@
     },
     {
       "item": "k.scaffold#11",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.scaffold#12",
@@ -15612,7 +15612,7 @@
     },
     {
       "item": "k.scaffold#14",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.schema#1",
