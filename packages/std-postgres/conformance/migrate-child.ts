@@ -1,6 +1,6 @@
 // Child process for migrations.test.ts (not a test file). Run with `node --experimental-strip-types`.
 // argv: <database name> <table> <variant>; env `KEEL_POSTGRES_URL`. Variant `a` is the migration `create table T (n int); insert into T values (1)`,
-// `b` the same with a trailing comment (a different digest). Prints one JSON line: `{ "ok": true, "rows": <count of T> }` or `{ "ok": false, "error": <text> }`.
+// `b` the same with a trailing comment (a different digest), `c` variant `a` plus a second file `0002-more.sql` (`select 1`). Prints one JSON line: `{ "ok": true, "rows": <count of T> }` or `{ "ok": false, "error": <text> }`.
 import { createCtx } from "@keel/ctx";
 import { s } from "@keel/schema";
 import { fragment, sql } from "@keel/std-postgres";
@@ -9,7 +9,12 @@ import { database } from "@keel/std-postgres/server";
 const [cap, table, variant] = process.argv.slice(2);
 if (cap === undefined || table === undefined) throw new Error("usage: migrate-child <name> <table> <variant>");
 const text = `create table ${table} (n int); insert into ${table} values (1)${variant === "b" ? " -- changed" : ""}`;
-const db = database(cap, { migrations: { "./migrations/0001-init.sql": text } });
+const db = database(cap, {
+  migrations: {
+    "./migrations/0001-init.sql": text,
+    ...(variant === "c" ? { "./migrations/0002-more.sql": "select 1" } : {}),
+  },
+});
 const ctx = createCtx({ mode: "real", seed: 1337 });
 const out = await (async () => {
   try {

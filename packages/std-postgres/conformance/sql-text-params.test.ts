@@ -2,7 +2,6 @@
 // Spec: std.postgres, API "Each `${value}` is a parameter, never text, numbered `$1`, ... in template order; a `fragment` value is spliced, its own parameters numbered in place; nothing else is spliced."
 // Seed: 1337.
 // Assumption: `sql` and `fragment` are pure, so tests need no ctx; `Query<T>` is `{ text, params }`; `fragment` is a template tag whose value `sql` splices.
-// Skipped until `@keel/std-postgres` exists (the package is built after its conformance).
 import { s } from "@keel/schema";
 import { fragment, sql } from "@keel/std-postgres";
 import fc from "fast-check";

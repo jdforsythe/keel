@@ -5,7 +5,6 @@
 // Assumption: the capability's plan is `plans[<database name>]` (k.sim); the first query's migration takes no step.
 // Assumption: a plan consumed past its end gives `none`; tests pad it with explicit `none` steps for the reads that check the table, so it does not matter.
 // Assumption: a throw in `fn` rejects `transaction` and rolls back; `fn` returns a `Result`, and `transaction` returns it.
-// Skipped until `@keel/std-postgres` exists.
 import { err, ok, s } from "@keel/schema";
 import { NoRows, sql } from "@keel/std-postgres";
 import { ready } from "@keel/std-postgres/testing";

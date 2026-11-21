@@ -4,7 +4,6 @@
 // Seed: 1337.
 // Assumption: the accessor's `query`, `one`, `run` return a `Result`; `one` of two rows rejects (the spec says "throws"); run on sim, PGlite and, with KEEL_TEST_POSTGRES_URL, Postgres 17.
 // Assumption: `postgres.result` data `row` is the zero-based index of the failing row and `issues` holds `{ path, rule }`; the error and its data hold no row value.
-// Skipped until `@keel/std-postgres` exists.
 import { s } from "@keel/schema";
 import { NoRows, sql } from "@keel/std-postgres";
 import fc from "fast-check";
@@ -52,7 +51,7 @@ for (const m of MODES) {
             okOf(await db(ctx).run(sql(NoRows)`insert into ${sqlName(table)} values (1, ${value})`));
             const Bad = s.object({ id: s.int(), name: s.int() });
             const e = errOf(await db(ctx).query(sql(Bad)`select id, name from ${sqlName(table)}`));
-            expect(e.code).toBe("postgres.result");
+            if (e.code !== "postgres.result") throw new Error(`expected postgres.result, got ${e.code}`);
             expect(e.data.row).toBe(0);
             expect(e.data.issues.length).toBeGreaterThan(0);
             expect(JSON.stringify(e)).not.toContain(value);

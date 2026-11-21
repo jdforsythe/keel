@@ -1,8 +1,7 @@
-// Spec: std.postgres, Conformance "... a missing `KEEL_POSTGRES_URL` is E2455."
+// Spec: std.postgres, Conformance "E2451, E2452, E2458 and W2456 each fire on a fixture, not on its clean twin; a missing `KEEL_POSTGRES_URL` is E2455."
 // Spec: std.postgres, Modes "`KEEL_POSTGRES_URL` picks the store, read at the first query ... Missing or another scheme is E2455, naming no part of the value."; Rules "E2453 to E2455 and E2457 throw"
 // Seed: 1337.
 // Assumption: on a real ctx the first query rejects (or throws) with an error whose `code` is "E2455" or whose text holds it; the value is read at the first query, not when `database` runs.
-// Skipped until `@keel/std-postgres` exists.
 import { createCtx } from "@keel/ctx";
 import { NoRows, sql } from "@keel/std-postgres";
 import { database } from "@keel/std-postgres/server";

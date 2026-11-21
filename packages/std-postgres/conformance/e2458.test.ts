@@ -1,8 +1,7 @@
 // Spec: std.postgres, Rules "E2458 a `database` name that is not a literal `<moduleId>.<name>` of its module (E1607)"
-// Spec: std.postgres, Conformance "E2451, E2452, E2458 and W2456 each fire on a fixture, not on its clean twin" (E2458 here).
+// Spec: std.postgres, Conformance "E2451, E2452, E2458 and W2456 each fire on a fixture, not on its clean twin; a missing `KEEL_POSTGRES_URL` is E2455."
 // Seed: 1337.
 // Assumption: as for E1607 (k.data), `<name>` is one lowerCamel segment and the rule reports once per bad call.
-// Skipped until `@keel/std-postgres` exists.
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { dbFile, found, project } from "./rules-fixtures.ts";

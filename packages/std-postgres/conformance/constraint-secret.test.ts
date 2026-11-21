@@ -5,10 +5,10 @@
 // Assumption: E2457 is a thrown error whose `code` is "E2457" or whose message holds it; thrown by the `sql` tag or by the query, so tests await both inside one async function.
 // Assumption: "naming its position" is the 1-based number of the parameter (`$N`), shown in the message as its digits.
 // Assumption: for foreign, check and not-null the spec gives no constraint name text beyond Postgres's own; tests name constraints explicitly.
-// Skipped until `@keel/std-postgres` exists.
 import { s } from "@keel/schema";
 import { NoRows, sql } from "@keel/std-postgres";
 import { database } from "@keel/std-postgres/server";
+import type { Database } from "@keel/std-postgres/server";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 import { MODES, SEED, errOf, fresh, migrationsOf, notesDb, okOf, sqlName } from "./fixtures.ts";
@@ -18,9 +18,10 @@ const e2457 = (e: unknown): boolean =>
 
 for (const m of MODES) {
   describe(m.name, () => {
-    test.skip("An insert breaking a unique index is `postgres.constraint` naming it, `kind` `unique`", async () => {
+    test("An insert breaking a unique index is `postgres.constraint` naming it, `kind` `unique`, and carries no parameter value", async () => {
+      // Values are upper case: the constraint name, table name, code and kind are lower case, so a value never occurs in them by chance.
       await fc.assert(
-        fc.asyncProperty(fc.stringMatching(/^[a-z]{3,10}$/), async (name) => {
+        fc.asyncProperty(fc.stringMatching(/^[A-Z]{6,12}$/), async (name) => {
           const { cap, table } = fresh();
           const mode = m.make();
           try {
@@ -51,7 +52,7 @@ for (const m of MODES) {
         });
         const ctx = await mode.ctx(cap);
         const T = sqlName(table);
-        const kind = async (q: ReturnType<typeof sql>) => errOf(await db(ctx).run(q)).data;
+        const kind = async (q: Parameters<Database["run"]>[0]) => errOf(await db(ctx).run(q)).data;
         expect(await kind(sql(NoRows)`insert into ${T} values (1, 99, 1, 1)`)).toMatchObject({
           kind: "foreign",
           constraint: `${table}_fk`,

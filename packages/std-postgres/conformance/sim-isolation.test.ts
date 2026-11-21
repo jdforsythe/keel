@@ -4,7 +4,6 @@ import { s } from "@keel/schema";
 // Seed: 1337.
 // Assumption: "equal answers" is `toEqual` on the whole `Result` of each call, including a `select random()` (the capability seed sets Postgres's `setseed`; W2456 is a lint, not a runtime error).
 // Assumption: a plan consumed past its end gives `none`; tests pad with explicit `none` steps.
-// Skipped until `@keel/std-postgres` exists.
 import { NoRows, sql } from "@keel/std-postgres";
 import { ready } from "@keel/std-postgres/testing";
 import fc from "fast-check";

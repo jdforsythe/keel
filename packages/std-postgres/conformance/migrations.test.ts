@@ -1,10 +1,9 @@
 // Spec: std.postgres, Conformance "Two processes on one `postgres:` URL apply each pending migration once; a changed applied file is E2454; `0001`, `0003` is E2453."
-// Spec: std.postgres, Migrations "`migrations` maps `./migrations/NNNN-<kebab>.sql` to its text, numbered from 0001 without a gap; another key or a gap throws E2453 when `database` runs. ... An applied migration whose file is gone or whose SHA-256 differs is E2454. After a failed pass every query of that database on the ctx rejects with its error."
+// Spec: std.postgres, Migrations "`migrations` maps `./migrations/NNNN-<kebab>.sql` to its text, numbered from 0001 without a gap; another key or a gap throws E2453 when `database` runs. ... A `keel_migrations` row of the capability whose file is gone or whose SHA-256 differs from its `digest` is E2454. After a failed pass every query of that database on the ctx rejects with its error."
 // Seed: 1337.
 // Assumption: the two-process test needs a Postgres 17 (`KEEL_TEST_POSTGRES_URL`) and is skipped without one; children are `node --experimental-strip-types` on `migrate-child.ts`, which resolves `@keel/*` through the package's node_modules.
 // Assumption: E2454 is shown on a PGlite folder by two child runs in sequence (one process at a time on PGlite); E2453 and E2454 are thrown errors whose `code` is that string or whose text holds it.
-// Assumption: E2454 for a file gone (the second run has no 0001) is not tested: it would need the 0002 file to keep the numbering, which the spec does not fix for a removed first file.
-// Skipped until `@keel/std-postgres` exists; the Postgres 17 test then becomes `test.skipIf(!hasPg17)`.
+// Assumption: a file gone is shown by a run with 0001 and 0002 (variant `c`), then a run with 0001 only: the row of 0002 has no file.
 import { execFile } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -54,6 +53,20 @@ test("a changed applied file is E2454", async () => {
     const changed = await run(url, cap, table, "b");
     expect(changed.ok).toBe(false);
     expect(changed.error).toContain("E2454");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("a `keel_migrations` row whose file is gone is E2454", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "keel-pg-"));
+  try {
+    const { cap, table } = fresh();
+    const url = `pglite:${dir}`;
+    expect(await run(url, cap, table, "c")).toEqual({ ok: true, rows: 1 });
+    const gone = await run(url, cap, table, "a");
+    expect(gone.ok).toBe(false);
+    expect(gone.error).toContain("E2454");
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

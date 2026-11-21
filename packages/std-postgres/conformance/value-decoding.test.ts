@@ -3,7 +3,6 @@
 // Seed: 1337.
 // Assumption: the row schema is `s.json()` per column so the test sees the value the driver decoded, not a schema's reshaping; an `int8` equal to 2^53 - 1 is a number, one past it a string.
 // Assumption: Postgres 17 runs when `KEEL_TEST_POSTGRES_URL` is set (MODES); PGlite as sim (in memory) and as `pglite:<folder>`.
-// Skipped until `@keel/std-postgres` exists.
 import { s } from "@keel/schema";
 import { sql } from "@keel/std-postgres";
 import { database } from "@keel/std-postgres/server";
