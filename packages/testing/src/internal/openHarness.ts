@@ -12,6 +12,7 @@ import type { Harness } from "../types/Harness.ts";
 import type { TestEvent } from "../types/TestEvent.ts";
 import type { HarnessSetup } from "./HarnessSetup.ts";
 import { asMain } from "./asMain.ts";
+import { clockStep } from "./clockStep.ts";
 import { emitOn } from "./emitOn.ts";
 import { eventFor } from "./eventFor.ts";
 import { fail } from "./fail.ts";
@@ -126,7 +127,7 @@ export function openHarness(setup: HarnessSetup): { readonly harness: Harness<Ct
     const win = document.defaultView;
     win?.addEventListener("error", onError);
     try {
-      await settle(container, act, busy, registry);
+      await settle(container, act, busy, registry, clockStep(ctx));
     } finally {
       win?.removeEventListener("error", onError);
     }
@@ -137,7 +138,7 @@ export function openHarness(setup: HarnessSetup): { readonly harness: Harness<Ct
 
   const settleNow = async (): Promise<void> => {
     live();
-    await settle(container, () => undefined, busy, registry);
+    await settle(container, () => undefined, busy, registry, clockStep(ctx));
     if (!gone) check();
   };
 

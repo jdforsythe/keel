@@ -3,6 +3,7 @@ import type { RouteTable } from "@keel/router";
 import { compileRoutes, createRouterWith, encodeHref, identityMounts, mountRequests } from "@keel/router/internal";
 import { matchHref } from "@keel/router/match";
 import { serverState } from "@keel/store/internal";
+import { clockStep } from "./internal/clockStep.ts";
 import { fail } from "./internal/fail.ts";
 import { memoryHistory } from "./internal/memoryHistory.ts";
 import { openHarness } from "./internal/openHarness.ts";
@@ -122,7 +123,7 @@ export async function renderRoute<T extends RouteTable>(
     artifacts: options.artifacts,
   });
   try {
-    await settle(document.body, () => undefined, busy);
+    await settle(document.body, () => undefined, busy, undefined, clockStep(ctx));
     check();
   } catch (error) {
     harness.dispose();

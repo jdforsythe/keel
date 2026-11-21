@@ -42,13 +42,16 @@ const logSizes = (live: ReadonlyMap<string, Store<unknown>>): string =>
  * with nothing moving waits one macrotask turn and does not count toward the 50 quiet-bound rounds; more than 50
  * moving rounds, or `MAX_BUSY_TURNS` busy turns, throws `keel.unexpected` "fire did not settle" (with the pending
  * route id; after the busy turns, naming their count and unit). Without `root` only store logs count. `registry` lists the live stores (default `stores()`; a fresh module
- * graph's own for `resumeDocument`). Deterministic: no clock, no timers.
+ * graph's own for `resumeDocument`). No timers. A busy round with nothing moving calls `step` after its macrotask turn:
+ * under `simulate` it advances the run's sim clock to its next deadline, so a loader waiting on that clock (a delayed
+ * request) finishes; elsewhere it does nothing and the clock is the test's.
  */
 export async function settle(
   root: Element | undefined,
   act: () => void,
   busy: () => string | null = () => null,
   registry: () => ReadonlyMap<string, Store<unknown>> = stores,
+  step: () => boolean = () => false,
 ): Promise<void> {
   let mutations = 0;
   const observer =
@@ -89,6 +92,7 @@ export async function settle(
             },
           );
         await drained();
+        if (!changed() && busy() !== null) step();
         quiet = 0;
         continue;
       }

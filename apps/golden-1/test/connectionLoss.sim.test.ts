@@ -142,7 +142,7 @@ describe("the live stream drops", () => {
 });
 
 describe("under generated schedules", () => {
-  // The shell's wiring (`AppShell`) in a scope, as in `offlineConflictLive.sim.test.ts`.
+  // The shell's wiring (`AppShell`) in a scope, as in `offlineConflictLive.sim.test.ts`; the run after it renders the page.
   it("a toggle sent through drops, lost answers and windows is applied at most once, and A ends showing the board", async () => {
     const T1 = TodoIdParams.parse({ todoId: "t1" });
     if (!T1.ok) throw new Error(T1.error.message);
@@ -188,6 +188,54 @@ describe("under generated schedules", () => {
         open = undefined;
       },
       { runs: 100, seed: 31 },
+    );
+  }, 300_000);
+
+  it("the rendered list page, through the same schedules, ends Live and showing the board", async () => {
+    const T1 = TodoIdParams.parse({ todoId: "t1" });
+    if (!T1.ok) throw new Error(T1.error.message);
+    const t1 = T1.value;
+    await simulate(
+      async ({ ctx, run, schedule }) => {
+        open?.dispose();
+        open = undefined;
+        fresh();
+        await seedBoard(shared);
+        browser(ctx, await apiApp());
+        const r = await renderRoute("todos.list", { routes, params: { listId: "l1" }, ctx });
+        open = r;
+        const sent = send(ctx, boardOutbox, "toggleTodo", { params: t1, body: {} }, { base: 0, owner: "" }).catch(
+          () => null,
+        );
+        await run();
+        await sent;
+        const end = Math.max(0, ...schedule.offline.map((w) => w.at + w.ms));
+        if (ctx.clock.now() < end) ctx.clock.advance(end - ctx.clock.now());
+        ctx.net.setOnline(true);
+        await run();
+        for (let i = 0; i < 20 && ctx.clock.next() !== null; i++) {
+          ctx.clock.advance(60_000);
+          await run();
+        }
+        await r.settle();
+        const applied = await commits("api.toggleTodo");
+        expect(applied).toBeLessThanOrEqual(1);
+        const board = await readBoard();
+        expect(view.get("todos")).toEqual(board.todos);
+        // A first load that faults or outlasts the 10 s service timeout shows the list's error element naming the api
+        // error, and one made offline reads the empty view the page holds, so the list is not found; any other shows
+        // the list.
+        const ids = r.a11y().flatMap(function walk(n): string[] {
+          return [n.id, ...n.children.flatMap(walk)];
+        });
+        if (ids.includes("todos.error"))
+          expect(r.find("todos.error").text).toMatch(/^(api\.(timeout|network|status)|keel\.notFound)/);
+        else expect(r.find("todos.toggle.t1").state.checked).toBe(applied === 1);
+        expect(r.find("todos.live").text).toBe("Live");
+        r.dispose();
+        open = undefined;
+      },
+      { runs: 30, seed: 37 },
     );
   }, 300_000);
 });

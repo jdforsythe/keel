@@ -124,9 +124,8 @@ describe("an offline edit and the other user's edit of the same todo", () => {
 });
 
 describe("under generated schedules", () => {
-  // The shell's wiring (`AppShell`): the board's live view and the outbox drain in one page scope. `renderRoute` is not
-  // used here: on a simulate ctx whose schedule delays the first read, it does not settle (see
-  // `renderUnderSimulate.fails.test.ts`).
+  // The shell's wiring (`AppShell`): the board's live view and the outbox drain in one page scope, so each run controls
+  // when the edit is queued; `connectionLoss.sim.test.ts` renders the list page under generated schedules.
   it("one edit is stored, the other is a visible 409 keel.conflict, and A ends showing the stored board", async () => {
     const outcomes = new Map<string, number>();
     await simulate(

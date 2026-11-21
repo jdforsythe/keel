@@ -9,6 +9,7 @@ import { fail } from "./internal/fail.ts";
 import { firstLine } from "./internal/firstLine.ts";
 import { seedFrom } from "./internal/seedFrom.ts";
 import { settle } from "./internal/settle.ts";
+import { simClocks } from "./internal/simClocks.ts";
 import type { PropertyResult } from "./types/PropertyResult.ts";
 import type { Scenario } from "./types/Scenario.ts";
 import type { SimulateOptions } from "./types/SimulateOptions.ts";
@@ -37,12 +38,18 @@ export async function simulate(scenario: Scenario, options: SimulateOptions = {}
     const ctx = createCtx({ mode: "sim", seed: simRun.seed, schedule: simRun.schedule });
     const quiet = (): Promise<void> => settle(globalThis.document?.documentElement, () => {});
     const start = ctx.clock.now();
+    /** Advance the clock to its next deadline inside the horizon; false when there is none. */
+    const step = (): boolean => {
+      const at = ctx.clock.next();
+      if (at === null || at - start > horizon) return false;
+      ctx.clock.advance(at - ctx.clock.now());
+      return true;
+    };
+    // A harness render on this ctx steps the clock while its route waits (k.sim: a page renders inside a run).
+    simClocks.set(ctx, step);
     const run = async (): Promise<void> => {
       await quiet();
-      for (let at = ctx.clock.next(); at !== null && at - start <= horizon; at = ctx.clock.next()) {
-        ctx.clock.advance(at - ctx.clock.now());
-        await quiet();
-      }
+      while (step()) await quiet();
     };
     await scenario({ ctx, seed: simRun.seed, schedule: simRun.schedule, run });
   };

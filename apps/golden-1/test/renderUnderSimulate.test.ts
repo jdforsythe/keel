@@ -1,8 +1,6 @@
-// Known failing: k.sim's own `simulate` example renders a page with `renderRoute` on the run's ctx, but a generated
-// schedule that delays the page loader's request by even 1 ms makes `renderRoute` throw `keel.unexpected fire did not
-// settle`: the harness settle waits for the loader without stepping the sim clock, and `run()` is only reachable after
-// `renderRoute` resolves. So no page renders under a schedule with a net delay at its first request. Seed 23 run 1 of
-// `offlineConflictLive.sim.test.ts` shrank to this schedule.
+// k.sim's `simulate` example renders a page with `renderRoute` on the run's ctx: while the page loader's request waits on
+// the sim clock, the harness settle steps that clock, so the page renders under a schedule that delays its first
+// request.
 import { renderRoute, simulate } from "@keel/testing";
 import { afterEach, expect, test } from "vitest";
 import { boardOutbox } from "../modules/todos/boardOutbox.ts";
@@ -22,7 +20,7 @@ afterEach(() => {
   expect(boardOutbox.restore(queued).ok).toBe(true);
 });
 
-test.fails("a page renders on a simulate ctx whose first request is delayed 1 ms", async () => {
+test("a page renders on a simulate ctx whose first request is delayed 1 ms", async () => {
   await simulate(
     async ({ ctx, run }) => {
       await seedBoard(shared);
