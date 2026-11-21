@@ -23,3 +23,11 @@ server conformance build-assets, deploy-env-keys-0092, deploy-frames-source-map,
 
 ## Budgets
 `@keel/server` 26.5 kB (27,126 B); `@keel/testing` 13.65 kB (13,943 B) before the main line's host element work is merged in.
+
+## After L3's merge into the lane (aeb1d8ed, 5bb5fe4d)
+No semantic conflict in source. `start` takes one `RouteTable` (k.routes: "A deployable serves one route table, the union of its modules' manifests"). A service client decodes the server's 422 correctly (`packages/services/test/serverFields422.test.ts`, against a real `createApp`). Failing files after the merge: server 46, testing 9, ui 8, std-headless 2, std-tables 2, std-sessions 48 (not moved yet: L8); forms, router, runtime-dom, services, std-offline, ctx 0.
+
+More conformance defects, for the conformance-writer:
+- server `host-code-styles-policy`, `host-element-document` and six testing `host-*` files arrived from the main line in old shapes (they pass once moved to a contract or given a ctx; checked on copies).
+- std-tables `select-all` declares `pickContract` twice; std-tables `fixtures.ts:129,133` has a `Loader` type error.
+- std-headless `toaster-no-ctx-given` uses `render().ctx`; `keys-e2801` passes a `Ctx | undefined`; `resume-widget-routes:92` uses the one-argument `loader`.
