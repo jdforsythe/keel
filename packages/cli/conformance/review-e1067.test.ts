@@ -1,5 +1,5 @@
 // Spec: k.review, rule "E1067 `--accept` without `--reason`, a reason out of range, or an `id` with no finding"
-// Seed: 1337 (reason lengths generated). Pending: `keel review` is not built.
+// Seed: 1337 (reason lengths generated).
 // ASSUMED: exit 2, one `diag` E1067, `keel-review.json` neither created nor changed; a reason is 10 to 200 characters.
 import { existsSync } from "node:fs";
 import { join } from "node:path";

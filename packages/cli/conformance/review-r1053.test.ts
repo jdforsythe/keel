@@ -1,5 +1,5 @@
 // Spec: k.escapes, clause "R1053 is one finding each for `import(name)`, `require(a + b)` and `import(['vi', 'test'].join(''))`; `import('./a.ts')` and `` import(`./a.ts`) `` are none."
-// Seed: n/a. Pending: `keel review` is not built. Computed specifiers live in `unsafe/review-fixtures/` (the evasion under test).
+// Seed: n/a. Computed specifiers live in `unsafe/review-fixtures/` (the evasion under test).
 import { expect, test } from "vitest";
 import { PROJECT, fixture, lineOf, ofCode, range, review, withRepo } from "./review-support.ts";
 

@@ -1,5 +1,5 @@
 // Spec: k.escapes, clause "A test file losing one `expect` call between `<base>` and `<head>` is one R1060; a test file renamed unchanged is none."
-// Seed: n/a. Pending: `keel review` is not built. A rename is a delete and an add of the same bytes (git follows it).
+// Seed: n/a. A rename is a delete and an add of the same bytes (git follows it).
 import { expect, test } from "vitest";
 import { PROJECT, fixture, ofCode, range, review, withRepo } from "./review-support.ts";
 

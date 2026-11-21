@@ -1,5 +1,5 @@
 // Spec: k.escapes, clause "R1050 fires for `x as T` in a test file, a `.d.ts`, `vite.config.ts` and `modules/m/unsafe/a.ts`; in `modules/m/a.ts`, where E1757 reports, it does not."
-// Seed: n/a. Pending: `keel review` is not built. The one cast fixture is copied to each path unchanged.
+// Seed: n/a. The one cast fixture is copied to each path unchanged.
 import { expect, test } from "vitest";
 import { PROJECT, fixture, ofCode, range, review, withRepo } from "./review-support.ts";
 

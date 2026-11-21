@@ -1,9 +1,9 @@
-// Spec: k.escapes, clause "R1052 is one finding each for the four folded forms" (the clause text continues in the test name; its directive text cannot sit in a comment, which the structure lint reads as a suppression, and is not disguised).
-// Seed: n/a. Pending: `keel review` is not built. Fixture text lives in `unsafe/review-fixtures/` (it is the evasion under test).
+// Spec: k.escapes, clause "R1052 is one finding each for a TypeScript suppression directive folded from a template with a literal substitution, from `+`, from `.join('')` of two literals and from `String.raw`; none for `'@types/node'`, or for a string holding a directive after other text."
+// Seed: n/a. Fixture text lives in `unsafe/review-fixtures/` (it is the evasion under test, and is not disguised).
 import { expect, test } from "vitest";
 import { PROJECT, fixture, lineOf, ofCode, range, review, withRepo } from "./review-support.ts";
 
-test("R1052 is one finding each for `` `@ts-${'ignore'}` ``, `'@ts' + '-ignore'`, `['@ts', '-ignore'].join('')` and `` String.raw`@ts-ignore` ``; none for `'@types/node'` or `'x @ts-ignore'`.", () => {
+test("R1052 is one finding each for a TypeScript suppression directive folded from a template with a literal substitution, from `+`, from `.join('')` of two literals and from `String.raw`; none for `'@types/node'`, or for a string holding a directive after other text.", () => {
   const folded = fixture("folded-directives.ts");
   withRepo([PROJECT, { "modules/m/f.ts": folded }], (repo) => {
     const hits = ofCode(review(repo, [range(repo, 0, 1)]), "R1052");

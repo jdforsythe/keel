@@ -1,7 +1,7 @@
 // Spec: k.review, clause "A review at a monorepo root and one of `apps/x` report the same findings for `apps/x`."
-// Seed: n/a. Pending: `keel review` is not built.
-// ASSUMED: a finding's `path` is relative to the git root in both runs, so the two are compared by everything but a
-// leading `apps/x/` the project-relative reading may drop; the spec does not say which directory `path` is relative to.
+// Seed: n/a.
+// A finding's `path` is relative to the git root in both runs (k.review Findings), so the two runs are compared whole,
+// `path` and `id` included.
 import { expect, test } from "vitest";
 import { PROJECT, fixture, findings, range, review, withRepo } from "./review-support.ts";
 import { join } from "node:path";
@@ -23,14 +23,13 @@ test("A review at a monorepo root and one of `apps/x` report the same findings f
   };
   withRepo([base, head], (repo) => {
     const r = range(repo, 0, 1);
-    const strip = (p: string): string => p.replace(/^apps\/x\//, "");
     const at = (cwd: string) =>
       findings(review(repo, [r, "--list"], cwd))
         .filter((f) => f.path.startsWith("apps/x/") || !f.path.startsWith("apps/"))
         .filter((f) => !["package.json"].includes(f.path))
         .map((f) => ({
           code: f.code,
-          path: strip(f.path),
+          path: f.path,
           line: f.line,
           col: f.col,
           danger: f.danger,
@@ -42,6 +41,7 @@ test("A review at a monorepo root and one of `apps/x` report the same findings f
       a.code + a.path < b.code + b.path ? -1 : 1;
     const root = at(repo.dir).sort(key);
     expect(root.length).toBeGreaterThanOrEqual(2);
+    expect(root.every((f) => f.path.startsWith("apps/x/"))).toBe(true);
     expect(at(join(repo.dir, "apps", "x")).sort(key)).toEqual(root);
     expect(findings(review(repo, [r], join(repo.dir, "apps", "x"))).some((f) => f.path.includes("apps/y"))).toBe(false);
   });

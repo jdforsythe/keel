@@ -1,5 +1,5 @@
 // Spec: k.review, clause "Compact prints no `list` finding without `--list`; json holds every `fail`, `warn` and `list` finding, and `count` ones with `--list`; the trailer counts all four."
-// Seed: n/a (one fixture). Pending: `keel review` is not built.
+// Seed: n/a (one fixture).
 // Fixture: <base> holds an accepted R1050 (its id read off a probe run) in `modules/m/acc.test.ts`; <head> adds a `fail` (R1053),
 // a `warn` (a new R1050 cast) and a `list` (R1001, an opt-in) finding. ASSUMED: compact trailer `fail review 1 fail, 1 warn,
 // 1 listed, 1 accepted` (k.review Trailer); json `summary.counts` is `{ fail, warn, list, accepted }`.

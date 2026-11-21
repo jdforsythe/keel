@@ -1,5 +1,5 @@
 // Spec: k.review, clause "With its `id` in `keel-review.json` at `<base>` a finding is `accepted` and counted only; the same entry added only at `<head>` leaves it `new` and adds one R1105."
-// Seed: n/a (examples). Pending: `keel review` is not built.
+// Seed: n/a (examples).
 // ASSUMED: json `summary.counts` is `{ fail, warn, list, accepted }`; an accepted finding is a `review` record with
 // `loud: "count"` and `novelty: "accepted"`, printed in json only with `--list`.
 import { expect, test } from "vitest";

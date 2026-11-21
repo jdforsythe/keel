@@ -1,5 +1,5 @@
 // Spec: k.escapes, clause "A lockfile entry moved to a `git+https:` or `file:` resolution is R1101; a `postinstall` in any tracked `package.json` is R1102."
-// Seed: n/a. Pending: `keel review` is not built.
+// Seed: n/a.
 // ASSUMED lockfile text: pnpm-lock.yaml, `packages:` keyed by `name@version` with a `resolution: {...}` flow mapping; the
 // spec names the two resolution kinds but not the lockfile format.
 import { expect, test } from "vitest";

@@ -1,5 +1,5 @@
 // Spec: k.escapes, clause "A tracked `.ts` file that does not parse is one R1150, and the other findings still print."
-// Seed: n/a. Pending: `keel review` is not built.
+// Seed: n/a.
 import { expect, test } from "vitest";
 import { PROJECT, fixture, ofCode, range, review, withRepo } from "./review-support.ts";
 

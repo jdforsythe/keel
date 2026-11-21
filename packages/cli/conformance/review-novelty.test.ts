@@ -1,8 +1,8 @@
 // Spec: k.review, clause "A finding at `<head>` only is `new`; with only its line moved, `standing`; with its `unsafe` reason edited, `changed`."
-// Seed: 1337 (whitespace runs generated). Pending: `keel review` is not built.
-// ASSUMED: `id` does not depend on where the escape is, only on its code, path and whitespace-normalised text; so a
-// range that adds a line above it, or re-spaces the escape's own text, leaves the same `id` (the spec gives the hash input,
-// not the separator, so no id is recomputed here).
+// Seed: 1337 (whitespace runs generated).
+// `id` is the first 12 hex characters of the SHA-256 of `<code>\n<path>\n<text>` (k.review Findings); it does not depend on
+// where the escape is, so a range that adds a line above it, or re-spaces its text, leaves the same `id`.
+import { createHash } from "node:crypto";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { PROJECT, SEED, fixture, ofCode, range, review, withRepo } from "./review-support.ts";
@@ -52,4 +52,24 @@ test("A finding at `<head>` only is `new`; with only its line moved, `standing`;
     }),
     { seed: SEED, numRuns: 5 },
   );
+});
+
+test("`id` is the first 12 lowercase hex characters of the SHA-256 of `<code>\n<path>\n<text>`, whitespace runs as one space, with `#<n>` for the nth repeat in a file.", () => {
+  const sha = (s: string): string => createHash("sha256").update(s, "utf8").digest("hex").slice(0, 12);
+  const one = `import { unsafe } from "@keel/ctx";\nexport const v = unsafe("a reason", () => 1);\n`;
+  withRepo([PROJECT, { "modules/m/u.ts": one }], (repo) => {
+    const hit = ofCode(review(repo, ["--all"]), "R1001");
+    expect(hit).toHaveLength(1);
+    expect(hit[0]?.id).toBe(sha('R1001\nmodules/m/u.ts\nunsafe("a reason", () => 1)'));
+  });
+  const twice = `import { unsafe } from "@keel/ctx";\nexport const v = unsafe("same", () => 1);\nexport const w = unsafe("same",   () => 1);\n`;
+  withRepo([PROJECT, { "modules/m/u.ts": twice }], (repo) => {
+    const ids = ofCode(review(repo, ["--all"]), "R1001")
+      .sort((a, b) => a.line - b.line)
+      .map((f) => f.id);
+    expect(ids).toEqual([
+      sha('R1001\nmodules/m/u.ts\nunsafe("same", () => 1)'),
+      sha('R1001\nmodules/m/u.ts\nunsafe("same", () => 1)#1'),
+    ]);
+  });
 });

@@ -1,5 +1,5 @@
 // Spec: k.escapes, clause "In a fixture git repository each code of the table is reported on its fixture by a range and not on its clean twin; with `--all`, the range codes but R1101 and R1102 are absent."
-// Seed: n/a (the table is finite; fixtures in `review-cases.ts`). Pending: `keel review` is not built.
+// Seed: n/a (the table is finite; fixtures in `review-cases.ts`).
 // Each case is a base commit and a head commit; the clean twin shares the base and changes only `modules/m/a.ts`. Under `--all`
 // the working tree (the head) is read: the range codes R1060, R1061, R1100, R1103, R1104, R1105, R1107, R1108 are absent;
 // R1101 and R1102 are read from the tree, so a head that holds them still reports them (k.escapes Range codes).

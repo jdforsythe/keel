@@ -1,5 +1,5 @@
 // Spec: k.review, clause "Each cell of Loudness, and the opt-in step, holds on a fixture; the exit is 1 exactly when a finding is `fail`, and under `--fail-on warn` also when one is `warn`."
-// Seed: n/a (the table is finite). Pending: `keel review` is not built.
+// Seed: n/a (the table is finite).
 // Per row one escape in a clean project: three commits give `new` (0..1) and `changed` (1..2); two give `standing` (the
 // escape's line moved). Loudness: critical fail fail fail; high fail fail warn; medium warn warn list; low list list list;
 // an opt-in is one step quieter (`fail` is `warn`, `warn` is `list`), so the high workaround and the high opt-in differ

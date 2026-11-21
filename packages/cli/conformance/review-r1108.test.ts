@@ -1,5 +1,5 @@
 // Spec: k.escapes, clause "A file kept by the range with one `.pii(` call fewer is one R1108."
-// Seed: n/a. Pending: `keel review` is not built.
+// Seed: n/a.
 import { expect, test } from "vitest";
 import { PROJECT, ofCode, range, review, withRepo } from "./review-support.ts";
 

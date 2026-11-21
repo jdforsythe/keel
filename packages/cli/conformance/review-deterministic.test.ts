@@ -1,5 +1,5 @@
 // Spec: k.review, clause "Two runs on one fixture print byte-equal output, and a run with no network succeeds."
-// Seed: n/a. Pending: `keel review` is not built.
+// Seed: n/a.
 // `keelRun` points every proxy variable at a closed port and gives git no network; the repository is local.
 import { expect, test } from "vitest";
 import { PROJECT, fixture, keelRun, range, review, withRepo } from "./review-support.ts";

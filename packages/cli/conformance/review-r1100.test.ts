@@ -1,5 +1,5 @@
 // Spec: k.escapes, clause "A range changing `packages/compiler/src/a.ts` and `apps/x/modules/m/a.ts` is one R1100; one changing only the first is none."
-// Seed: n/a. Pending: `keel review` is not built.
+// Seed: n/a.
 import { expect, test } from "vitest";
 import { ofCode, range, review, withRepo } from "./review-support.ts";
 
