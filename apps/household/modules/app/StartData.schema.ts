@@ -5,4 +5,6 @@ export const StartData = s.object({
   intro: s.string(),
   toList: s.string(),
   toReceipts: s.string(),
+  toSetup: s.string(),
+  toProfile: s.string(),
 });
