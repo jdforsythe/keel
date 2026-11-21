@@ -9,7 +9,7 @@ import { expect, test } from "vitest";
 import { SEED, SLOW, built, cleanup, materialize } from "./boundary-support.ts";
 import { appDataTree, withDirs } from "./app-data-support.ts";
 
-test.skip(
+test(
   "A loader answering `process.env.KEEL_APP_DIR`, from `node dist/<name>/server.mjs` started in another working directory, answers the absolute path of `dist/<name>`; with `KEEL_APP_DIR` set before start, that value.",
   async () => {
     const dir = materialize(appDataTree());

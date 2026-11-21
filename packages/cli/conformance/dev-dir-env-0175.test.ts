@@ -7,7 +7,7 @@ import { expect, test } from "vitest";
 import { SLOW, cleanup, materialize } from "./boundary-support.ts";
 import { appDataTree, withDirs } from "./app-data-support.ts";
 
-test.skip(
+test(
   "Under `keel dev`, a loader answering `process.env.KEEL_DEV_DIR` answers the absolute path of the app's `.keel-dev/`.",
   async () => {
     const dir = materialize(appDataTree());

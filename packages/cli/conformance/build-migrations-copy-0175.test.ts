@@ -8,7 +8,7 @@ import { expect, test } from "vitest";
 import { SEED, SLOW, built, cleanup, materialize } from "./boundary-support.ts";
 import { MIGRATION_BYTES, appDataTree } from "./app-data-support.ts";
 
-test.skip(
+test(
   "`keel build` of a fixture whose `node` deployable serves module `a` holding `modules/a/migrations/0001-x.sql` writes `dist/<name>/modules/a/migrations/0001-x.sql` with the same bytes, and no folder for a module of a `client` deployable.",
   () => {
     fc.assert(
