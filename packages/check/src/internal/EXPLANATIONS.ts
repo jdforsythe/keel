@@ -878,6 +878,13 @@ const ROWS: readonly Row[] = [
     "commit([{ key, expect: a }, { key, expect: b }]) -> commit([{ key, expect: a }])",
     "k.persist",
   ],
+  [
+    "E1607",
+    "register name not a string literal '<id>.<lowerCamel>' in modules/<id>/, or a name another app file registers",
+    "One name reaches one capability; the module id prefixes it so modules never collide.",
+    "register('mongo', impls) -> register('notes.mongo', impls)",
+    "k.data",
+  ],
   ["E1651", "ctx.net.fetch in app code", "", "declare an endpoint in the service and call it", "k.services"],
   [
     "E1652",

@@ -30,3 +30,12 @@ test("a namespace import calling `.register` is one; a name that only contains `
   expect(registersCapability('import * as k from "@keel/ctx";\nk.register("a.b", impls);\n')).toBe(true);
   expect(registersCapability('import { createCtx } from "@keel/ctx";\nconst registered = 1;\n')).toBe(false);
 });
+
+test("a file importing `database` from @keel/std-postgres is one; importing only `sql` is not", () => {
+  expect(
+    registersCapability(
+      'import { database } from "@keel/std-postgres";\nexport const db = database("notes.db", {});\n',
+    ),
+  ).toBe(true);
+  expect(registersCapability('import { sql } from "@keel/std-postgres";\n')).toBe(false);
+});
