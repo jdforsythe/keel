@@ -3,8 +3,8 @@
   "unsafe": 18,
   "hostElements": 0,
   "rungs": {
-    "example": 1454,
-    "probabilistic": 341,
+    "example": 1449,
+    "probabilistic": 346,
     "exhaustive": 15,
     "proven": 73,
     "monitored": 8
@@ -10892,7 +10892,7 @@
       "pkg": "golden-1",
       "name": "TodoIdParams",
       "file": "golden-1:api/TodoIdParams.schema.ts",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "pkg": "golden-1",
@@ -10946,7 +10946,7 @@
       "pkg": "golden-1",
       "name": "boardChannel",
       "file": "golden-1:api/boardChannel.schema.ts",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "pkg": "golden-1",
@@ -11066,7 +11066,7 @@
       "pkg": "golden-1",
       "name": "restore",
       "file": "golden-1:api/restore.server.ts",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "pkg": "golden-1",
@@ -11348,7 +11348,7 @@
       "pkg": "golden-1",
       "name": "todosApi",
       "file": "golden-1:todos/todosApi.ts",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "pkg": "golden-1",
@@ -11360,7 +11360,7 @@
       "pkg": "golden-1",
       "name": "view",
       "file": "golden-1:todos/view.ts",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "pkg": "golden-2",
