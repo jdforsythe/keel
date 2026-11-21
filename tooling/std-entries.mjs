@@ -2,14 +2,13 @@
 // in each `packages/std-*` package, other than `./tools`, a key under `./tools/`, `./module` and `./package.json`, is
 // bundled with esbuild (a `./*` pattern expands to its files), and the first import edge, static or dynamic, into
 // `packages/cli/`, `packages/check/` or a bare `vite`, `vitest`, `typescript` or `oxc-*` specifier is reported.
-// `@keel/testing` is not a CLI-time package: an edge into it is allowed and the walk stops there.
+// `@keel/testing` is not a CLI-time package, but the walk goes through it: its edges into a CLI-time package count.
 import fs from "node:fs";
 import path from "node:path";
 import { build } from "esbuild";
 
 const TOOL = /^(vite|vitest|typescript|oxc-[^/]+)(?:\/|$)/;
 const KEEL = /^@keel\/(cli|check)(?:\/|$)/;
-const TESTING = /^@keel\/testing(?:\/|$)/;
 const MARK = "cli-time:";
 const EXEMPT = (key) =>
   key === "./tools" || key.startsWith("./tools/") || key === "./module" || key === "./package.json";
@@ -46,14 +45,11 @@ const cliTime = (root) => ({
   name: "cli-time",
   setup(b) {
     const dirs = ["cli", "check"].map((p) => [`@keel/${p}`, path.join(root, "packages", p) + path.sep]);
-    const testing = path.join(root, "packages", "testing") + path.sep;
     b.onResolve({ filter: /.*/ }, (a) => {
-      if (TESTING.test(a.path)) return { path: a.path, external: true };
       const bare = TOOL.exec(a.path)?.[1] ?? (KEEL.test(a.path) ? `@keel/${KEEL.exec(a.path)?.[1]}` : undefined);
       if (bare !== undefined) return { path: MARK + bare, external: true };
       if (!a.path.startsWith(".")) return undefined;
       const abs = path.resolve(a.resolveDir, a.path);
-      if (abs.startsWith(testing)) return { path: abs, external: true };
       const hit = dirs.find(([, d]) => abs.startsWith(d));
       return hit ? { path: MARK + hit[0], external: true } : undefined;
     });

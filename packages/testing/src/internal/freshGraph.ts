@@ -1,4 +1,5 @@
 import type { RoutesImport } from "../types/RoutesImport.ts";
+import { vitestApi } from "./vitestApi.ts";
 
 /**
  * A client module graph of its own (k.testing Harness): the vitest module registry is reset, then `load` runs, so every
@@ -6,7 +7,7 @@ import type { RoutesImport } from "../types/RoutesImport.ts";
  * (`compileRoutes`), `resume`, `stores` and `scope` come from that graph.
  */
 export async function freshGraph(load: RoutesImport) {
-  (await import("vitest")).vi.resetModules();
+  (await vitestApi()).resetModules();
   const mod = await load();
   const routes = "default" in mod ? mod.default : mod.routes;
   // The table was made by the new graph's router, which alone has compiled it.

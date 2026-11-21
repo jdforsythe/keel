@@ -4,6 +4,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./harness": "./src/harness.ts",
     "./late": {
       "types": "./src/late.ts",
       "default": "./src/late.ts"
