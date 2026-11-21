@@ -32,6 +32,7 @@ import { islandsCode } from "./internal/islandsCode.ts";
 import { keelMark } from "./internal/keelMark.ts";
 import { listSources } from "./internal/listSources.ts";
 import { mergeArtifacts } from "./internal/mergeArtifacts.ts";
+import { noDeployable } from "./internal/noDeployable.ts";
 import { parseTopology } from "./internal/parseTopology.ts";
 import { projectHandlerUses } from "./internal/projectHandlerUses.ts";
 import { projectManifests } from "./internal/projectManifests.ts";
@@ -369,15 +370,16 @@ export default function (): {
 
   /**
    * The deployable this build serves: `want` (a dev entry's `?d=`, else `KEEL_DEPLOYABLE`), else the first `client`
-   * one by name, else every `node` one's modules.
+   * one by name, else every `node` one's modules, else the first `static` one by name.
    */
   const deployable = (
     want = process.env.KEEL_DEPLOYABLE,
   ): { name: string; modules: readonly string[]; client: boolean } | undefined => {
     if (topology === undefined) return undefined;
     const names = Object.keys(topology).sort();
-    const name = want ?? names.find((n) => topology?.[n]?.adapter === "client");
-    const node = names.filter((n) => topology?.[n]?.adapter === "node");
+    const of = (adapter: string): string[] => names.filter((n) => topology?.[n]?.adapter === adapter);
+    const node = of("node");
+    const name = want ?? of("client")[0] ?? (node.length > 0 ? undefined : of("static")[0]);
     // `keel dev` with no client deployable: one resume entry for every node deployable's islands (one origin).
     if (name === undefined && node.length > 0)
       return { name: node[0] ?? "", modules: node.flatMap((n) => topology?.[n]?.modules ?? []), client: false };
@@ -385,6 +387,15 @@ export default function (): {
     return name === undefined || d === undefined
       ? undefined
       : { name, modules: d.modules, client: d.adapter === "client" };
+  };
+  /**
+   * The deployable whose `index.html` the plugin writes when the project has none: the `client` one hosted, else, in a
+   * build, the `static` one served.
+   */
+  const page = (): string | undefined => {
+    if (hosting !== undefined || command !== "build") return hosting;
+    const d = deployable();
+    return d !== undefined && topology?.[d.name]?.adapter === "static" ? d.name : undefined;
   };
   /**
    * The routes files of the deployable's modules (every module without a topology): an app module's
@@ -807,7 +818,7 @@ export default function (): {
       if (options?.ssr === false && command === "build" && importer !== undefined && isNodeBuiltin(id))
         return { id, external: true };
       if (id === CSS_IMPORT || id === CSS_ID) return CSS_ID;
-      if (hosting !== undefined && id === path.join(root, "index.html") && !exists("index.html")) return id;
+      if (id === path.join(root, "index.html") && !exists("index.html") && page() !== undefined) return id;
       const q = keyed(id);
       if (q?.path === ENTRY_PATH || q?.path === ISLANDS_PATH) return id;
       if (id === SERVER_ENTRY) return `\0${SERVER_ENTRY}`;
@@ -824,8 +835,8 @@ export default function (): {
         const wrong = miscased(id);
         if (wrong !== undefined) throw new Error(wrong);
       }
-      if (hosting !== undefined && id === path.join(root, "index.html") && !exists("index.html"))
-        return indexHtml(hosting, ENTRY_PATH);
+      const shown = id === path.join(root, "index.html") && !exists("index.html") ? page() : undefined;
+      if (shown !== undefined) return indexHtml(shown, ENTRY_PATH);
       if (id === CSS_ID) {
         if (stale) await refresh();
         return css;
@@ -850,8 +861,7 @@ export default function (): {
         );
       if (q?.path !== ENTRY_PATH) return null;
       const d = deployable(q.d);
-      if (d === undefined)
-        throw new Error(`keel: ${ENTRY_PATH} needs a client deployable in topology.ts, or KEEL_DEPLOYABLE naming one`);
+      if (d === undefined) throw new Error(noDeployable(ENTRY_PATH, topology, q.d ?? process.env.KEEL_DEPLOYABLE));
       const mode = command === "serve" ? "dev" : "production";
       if (!d.client) return resumeEntry(q.d, mode);
       const all = topology ?? {};

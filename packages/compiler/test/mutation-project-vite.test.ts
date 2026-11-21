@@ -450,12 +450,13 @@ describe("vite: project inputs", () => {
     expect(await p.load("/@keel/entry.ts")).toBe(resumeEntry(undefined, "dev"));
     process.env.KEEL_DEPLOYABLE = "nope";
     await expect(p.load("/@keel/entry.ts")).rejects.toThrow(
-      "keel: /@keel/entry.ts needs a client deployable in topology.ts, or KEEL_DEPLOYABLE naming one",
+      "keel: /@keel/entry.ts serves no deployable nope; set KEEL_DEPLOYABLE to one of api, mid, zeta",
     );
   });
 
   it("refuses the entry without a topology; with node deployables only it is the resume entry (keel dev)", async () => {
-    const msg = "keel: /@keel/entry.ts needs a client deployable in topology.ts, or KEEL_DEPLOYABLE naming one";
+    const msg =
+      "keel: /@keel/entry.ts needs a deployable; add a client or static one to topology.ts, or set KEEL_DEPLOYABLE to one";
     const p = keel();
     p.configResolved({ root });
     await expect(p.load("/@keel/entry.ts")).rejects.toThrow(msg);
