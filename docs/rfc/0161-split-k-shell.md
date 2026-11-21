@@ -227,9 +227,6 @@ New, k.shell (in `packages/cli/conformance/`, over a fixture whose `node_modules
 
 New, std.capacitor and std.tauri: the bullets of those sections not listed above as moved (each section's last three or four).
 
-## Migration
-For an app: none. `topology.ts`, `package.json` (E1572 already requires the shell packages) and every generated file stay byte for byte; `keel build --target` takes the same flags and prints the same trailer. A project that imported `tauriHttpCapability` or `crateName` from `@keel/scaffold` imports them from `@keel/std-tauri/tools`. A script that ran `keel-capacitor-scheme` runs `keel build --target capacitor`. The build lane updates the READMEs of `@keel/cli`, `@keel/scaffold`, `@keel/std-capacitor`, `@keel/std-tauri`, the `keel-deploy` skill and the `docs/ARCHITECTURE.md` shells sentence to name `./tools`.
-
 ## What it costs
 - Tokens: k.shell 1,498 tokens (5,991 characters), std.capacitor 916, std.tauri 937, std.shells 938, k.return 1,221, k.links 1,499, k.cli 1,495; the map 1,206 of 1,250 (one word changed).
 - Size: `@keel/cli` gains a registry of a few lines (25.75kb budget); `@keel/cli/shell` (4.5kb) and `@keel/scaffold` (18.75kb) shrink. The std packages' `./tools` entries are CLI-time and unbudgeted, as every std `./tools` is.

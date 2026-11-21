@@ -53,9 +53,6 @@ By the `conformance-writer`, under `rfc:0167`:
 - `packages/cli/conformance/boundary-env.test.ts`: the probe's literal reads `import.meta.env.VITE_TEST_VALUE` and `KEEL_TEST_VALUE` become E1751, which stops `keel build`; read them as `Reflect.get(import.meta.env, 'VITE_TEST_VALUE')` (and `KEEL_TEST_VALUE`), keep `Object.keys(import.meta.env)`, and drop `REF`. The quoted spec text is unchanged.
 - `build-production-mode.test.ts` and `bundle-support.ts` may drop `REF`; with it they still pass (D3).
 
-## Migration
-None for the golden and example apps: none reads `import.meta.env` or references `vite/client`. A project that reads another key through `vite/client` gets E1751; the fix is `clientStd` (k.leave), the one way a browser gets config. A project made before the build adds `"types": ["node", "@keel/compiler/client"]` to its `tsconfig.json` for its editor; `keel check` needs nothing.
-
 ## Token impact
 k.check 1,495 tokens (unchanged); k.bundle 1,267 to 1,497, 7 Conformance clauses (`docs/freeze-review.md`). Map unchanged. `@keel/compiler` gains a `.d.ts` only, no bytes in any bundle; `@keel/check` a few lines in `typeCheck.ts` (468 bytes of headroom).
 

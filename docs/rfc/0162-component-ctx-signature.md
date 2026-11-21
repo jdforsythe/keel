@@ -9,7 +9,6 @@ Status: implemented (ADR-0184). Design RFC for workstream W13 step 1 of `tasks/p
 - D4: the kernel's runtime ops and elements (`If`, `For`, `Match`, `Case`, `Boundary`, `@keel/ui` base elements, `Part`, `Link`, `Form`) take no ctx and are still called as `Op(props)` from a `.ts` file. A stdlib or app component that declares `ctx` is called from a `.ts` file as `Comp(props, ctx)`, which the type requires.
 - D5: route `component` and `errorElement` are components: both get `(props, ctx)`.
 - D6: E1407 stays: it collides with none of the other lanes' new codes (E1590, E1591, E1585, E1607, E2451 to E2458, E1824, E1825, E1161 to E1164). The server render's ctx is the `createApp({ ctx })` object itself (k.router), which a test observes with `===`.
-- D7: no migration (D65 of `tasks/0963-to-p1/PLAN.md`): nothing is released, so the build lane rewrites the apps, fixtures and skills directly (Build order).
 
 ## Problem
 1. **`ctx` is optional, so every component that needs it handles its absence.** k.component says `ctx` "is passed by the runtime from the mount or island root and by the harness from `render`", and types it `ctx?: Ctx` (`packages/runtime-dom/src/types/Component.ts`, `testing/src/types/TestComponent.ts`, `router/src/types/RouteDef.ts`). `MountOptions.ctx` and `ResumeOptions.ctx` are optional, and `resumeIsland` takes `ctx: Ctx | undefined`.

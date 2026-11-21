@@ -12,4 +12,4 @@
 
 **Alternatives.** Keep `ctx?`; keep `slots` and make the third required; a context lookup (`useCtx()`, action at a distance); ctx on every runtime op (60 stdlib call sites for no read). RFC 0162 gives the reasons.
 
-**Consequences.** Every `ctx === undefined` branch in the stdlib and the golden apps goes. Twenty-one source files change signature, rewritten directly by the build lane with no migration step (nothing is released); 13 conformance files are rewritten under `rfc:0162`. Package budgets are measured at the build and re-based. Calling a widget from a `.ts` file passes the ctx: `Menu(props, ctx)`.
+**Consequences.** Every `ctx === undefined` branch in the stdlib and the golden apps goes. Twenty-one source files change signature, rewritten directly by the build lane; 13 conformance files are rewritten under `rfc:0162`. Package budgets are measured at the build and re-based. Calling a widget from a `.ts` file passes the ctx: `Menu(props, ctx)`.
