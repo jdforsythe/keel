@@ -1,5 +1,5 @@
 # k.sim: Schedules and simulation
-status: conformance-covered
+status: implemented
 
 Under sim (k.ctx) every capability is deterministic by seed. A schedule fixes what the seed leaves alone: how long each request takes, which requests and storage calls fail, and when the network is offline. `simulate` runs one scenario under many generated schedules, as `properties` (k.testing) runs one property under many inputs.
 
@@ -27,7 +27,7 @@ await simulate(async ({ ctx, run }) => {
   expect(t.state(serverBoard).todos).toHaveLength(3)
 }, { runs: 100, seed: 7 })
 ```
-`simulate(scenario, { runs = 100, seed?, horizon = 600000, replay? })`. Each run draws a `SimRun` `{ seed, schedule }` from fast-check, the schedule generated from `Schedule` and each registered `plan` schema, creates that sim ctx, and awaits `scenario({ ctx, seed, schedule, run })`. `run()` settles as the harness does (k.testing `settle`), then while `ctx.clock.next()` is at most `horizon` ms past the run's start it advances the clock to that deadline and settles again. Each run starts from the snapshots the live stores (`stores()`) held before `simulate`, restored after it. A scenario that throws or rejects fails the run. The seed is `seed`, else `KEEL_SEED`, else 1337; success resolves `{ seed, runs }`.
+`simulate(scenario, { runs = 100, seed?, horizon = 600000, replay? })`. Each run draws a `SimRun` `{ seed, schedule }` from fast-check, the schedule generated from `Schedule` and each registered `plan` schema, creates that sim ctx, and awaits `scenario({ ctx, seed, schedule, run })`. `run()` settles as the harness does (k.testing `settle`), then while the earlier of `ctx.clock.next()` and the next edge (`at` or `at + ms`, later than the clock) of a window in the run's `schedule.offline` is at most `horizon` ms past the run's start, it advances the clock to it and settles again: no window edge within the horizon is left ahead of the clock. Each run starts from the snapshots the live stores (`stores()`) held before `simulate`, restored after it. A scenario that throws or rejects fails the run. The seed is `seed`, else `KEEL_SEED`, else 1337; success resolves `{ seed, runs }`.
 
 **Failure.** A failing run is shrunk (fewer steps, shorter delays, fewer faults and windows) and reported as E1704 (k.testing) with the seed, the run, and the shrunk `SimRun` as JSON on the next line. `simulate(scenario, { replay: simRun })` runs that one `SimRun` once, and two runs of one `SimRun` take the same steps in the same order.
 
@@ -42,3 +42,4 @@ await simulate(async ({ ctx, run }) => {
 - A scenario that fails only when a response is `lost` fails `simulate` with E1704 whose shrunk `SimRun` holds exactly one `lost` step and no other fault; `replay` of it fails the same way.
 - Two `simulate` runs with one seed pass the same `SimRun`s to the scenario in the same order.
 - A module store written by one run holds its pre-`simulate` state when the next run starts and after `simulate` resolves.
+- `replay` of a `SimRun` whose `offline` is `[{ at: 100, ms: 50 }]`, its scenario advancing the clock to 120 with no `after` waiter pending: after `run()`, `ctx.net.online()` is true and `clock.now()` is 150; with `horizon: 130` it is still false.

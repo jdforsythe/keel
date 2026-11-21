@@ -59,7 +59,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: keel docs --for <code>.
 | k.testing | Harness, properties | conformance-covered | fire |
 | k.model | Store exploration | conformance-covered | traces |
 | k.prove | Proving invariants | conformance-covered | Z3 |
-| k.sim | Simulation | conformance-covered | faults |
+| k.sim | Simulation | implemented | faults |
 | k.ledger | Ledger, evidence | conformance-covered | rungs |
 | k.server | Thin server | conformance-covered | loads |
 | k.leave | What a request leaves | conformance-covered | state |
