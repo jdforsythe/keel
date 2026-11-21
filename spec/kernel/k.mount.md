@@ -24,7 +24,7 @@ How a page on any deployable sends the browser to the identity source's `handle`
 **Conformance.**
 - With `path` `/api/auth`, `href('/sign-in/email', { b: '2', a: 'x y' })` is `/api/auth/sign-in/email?a=x%20y&b=2` and `href()` is `/api/auth`; `'//x.example'`, `'/../x'`, `'/a/..'`, `'/a?b'`, `'/a#b'`, `'/a%2f'` and `'https://x'` each throw E1582.
 - In a router, a `Link` click, `navigate` and an action's `ok` to it each record one GET in `documents()` and keep the page; a contract's `href` link navigates client-side.
-- A `Form` POST to it with invalid input shows the errors and records nothing; valid, one POST whose body is exactly the named fields, no `_method`, with `pending()` `true`.
+- A `Form` POST to it with invalid input shows the errors and records nothing; valid, one POST whose body is the named fields, no `_method`, with `pending()` `true`.
 - One page module under `renderRoute` and served by `createApp` then `resumeDocument` records equal `documents()` for equal input.
 - A submit queued before resume is sent once when valid, never when invalid.
 - A same-origin urlencoded POST under `handle.path` reaches `fn`, a cross-site one is 403 without it; no response sets a cookie `fn` did not.

@@ -36,7 +36,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.
 | k.boundary | Server boundary | conformance-covered | stubs |
 | k.bundle | Browser bundles | conformance-covered | workers |
 | k.runtime | DOM runtime, islands | conformance-covered | nodes |
-| k.resume | Served documents, resume | conformance-covered | regions |
+| k.resume | Documents, resume | conformance-covered | regions |
 | k.claim | Claim order | conformance-covered | eager |
 | k.defaults | Queued defaults | conformance-covered | submit |
 | k.place | Placed props | conformance-covered | calls |
@@ -59,18 +59,18 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.
 | k.testing | Harness, properties | conformance-covered | fire |
 | k.model | Store exploration | conformance-covered | traces |
 | k.prove | Proving invariants | conformance-covered | Z3 |
-| k.sim | Schedules, simulation | conformance-covered | faults |
+| k.sim | Simulation | conformance-covered | faults |
 | k.ledger | Ledger, evidence | conformance-covered | rungs |
 | k.server | Thin server | conformance-covered | loads |
 | k.leave | What a request leaves | conformance-covered | state |
-| k.user | Request user, caller | conformance-covered | user |
-| k.mount | Pages to the mount | conformance-covered | submit |
-| k.mount-scope | What counts as the mount | implemented | proxy |
+| k.user | User, caller | conformance-covered | user |
+| k.mount | Mount pages | conformance-covered | submit |
+| k.mount-scope | Mount scope | implemented | proxy |
 | k.return | Shell mount | conformance-covered | net |
 | k.opening | Openings | conformance-covered | once |
 | k.links | Links in | conformance-covered | ids |
 | k.serverlog | Server log | conformance-covered | bounds |
-| k.sync | Heads, concurrent writes | conformance-covered | heads |
+| k.sync | Concurrent writes | conformance-covered | heads |
 | k.persist | Storage, durable state | conformance-covered | drivers |
 | k.topology | Deployables | conformance-covered | peers |
 | k.deploy | Entry, deploy files | conformance-covered | entry |
