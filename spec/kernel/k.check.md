@@ -11,7 +11,7 @@ Changing one file re-runs steps 1-3 for that file and its dependents only.
 
 **Diagnostics.** Exactly the OUTPUT.md model: `{ kind: 'diag', code, path, line, col, message, fix?, see? }`. `code` is E (error), W (warning), or I (info) plus four digits, never renumbered; `message` is one line under 90 chars; `fix` is a unified diff hunk that applies to the checked tree; `see` is the spec section id. Only E codes affect the exit code (k.cli). A TS error that encodes a Keel rule (a missing a11y prop, an unknown field path, a string for `Href`) is reported under that rule's code; any other TS error is E1751.
 
-**Codes.** `reportedCodes()` lists every code `keel check` produces: the pipeline's and each registered rule's. The other kernel **Rules** codes come from another command (build, cli, dev and runtime, scaffold, and harness results E1702-E1707 from `keel test`, `keel ledger`) and share this model, `explain`, and `spec --for`. Kernel codes are E1xxx; stdlib codes are E2xxx/W2xxx (spec/00-map.md).
+**Codes.** `reportedCodes()` lists every code `keel check` produces: the pipeline's and each registered rule's. The other kernel **Rules** codes come from another command (build, cli, dev and runtime, scaffold, and harness results E1702-E1707 from `keel test`, `keel ledger`) and share this model, `explain`, and `docs --for`. Kernel codes are E1xxx; stdlib codes are E2xxx/W2xxx (spec/00-map.md).
 
 **Registry** (extension point).
 ```ts
@@ -25,7 +25,7 @@ export const noRawMoney = defineRule({
 ```
 Rules are pure and deterministic: no `ctx`, no I/O beyond their inputs. A rule that throws is reported as E1756 and the other rules still run.
 
-**explain and spec.** `keel explain <code>` prints at most 120 tokens: the message, the rule's `explain` (or the spec's Rules entry for kernel codes), one fix example, and `see`. `keel spec --for <code>` prints every spec line citing the code.
+**explain and docs.** `keel explain <code>` prints at most 120 tokens: the message, the rule's `explain` (or the spec's Rules entry for kernel codes), one fix example, and `see`. `keel docs --for <code>` prints every installed spec line citing the code (k.docs).
 
 **Flags.** `--code <code>` keeps only that code (the summary still counts all) · `--limit N` sets the per-code cap (default 5), followed by `... +K more <code> (keel check --code <code>)` · `--quiet` prints the trailer only · `--format=compact|json|pretty`.
 

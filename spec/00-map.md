@@ -6,7 +6,7 @@ status key: proposed | implemented | conformance-covered | frozen. Budget: file 
 Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.
 | block | owner | block | owner |
 |-|-|-|-|
-| E100x | k.compiler, k.boundary, k.bundle | E105x | k.cli, k.evidence |
+| E100x | k.compiler, k.boundary, k.bundle | E105x | k.cli, k.evidence, k.docs |
 | E110x | k.schema, k.privacy, k.reveal, k.leave | E115x | k.module |
 | E120x | k.reactive | E125x | k.runtime, k.resume, k.claim |
 | E130x | k.store | E135x | k.scaffold |
@@ -42,7 +42,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.
 | k.place | Placed props | conformance-covered | calls |
 | k.router | Routes | conformance-covered | params |
 | k.guards | Guards | conformance-covered | deny |
-| k.prefix | Implied path prefix | conformance-covered | enums |
+| k.prefix | Path prefix | conformance-covered | enums |
 | k.forms | Forms | conformance-covered | fields |
 | k.ui | Tokens, styling | conformance-covered | CSS |
 | k.ctx | Capabilities | conformance-covered | clock |
@@ -52,6 +52,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.
 | k.explain | Explanations | conformance-covered | text |
 | k.host | Host reads | conformance-covered | zone |
 | k.cli | CLI, MCP, LSP | conformance-covered | flags |
+| k.docs | Installed docs | implemented | read |
 | k.scaffold | Scaffold, codemods | conformance-covered | edits |
 | k.testing | Harness, properties | conformance-covered | fire |
 | k.model | Store exploration | conformance-covered | traces |
@@ -60,7 +61,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.
 | k.ledger | Ledger, evidence | conformance-covered | rungs |
 | k.server | Thin server | conformance-covered | loads |
 | k.leave | What a request leaves | conformance-covered | state |
-| k.user | Request user, caller lifetime | conformance-covered | user |
+| k.user | Request user, caller | conformance-covered | user |
 | k.mount | Pages to the mount | conformance-covered | submit |
 | k.return | Shell mount | conformance-covered | net |
 | k.opening | Openings | conformance-covered | once |

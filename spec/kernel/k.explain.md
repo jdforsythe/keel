@@ -1,7 +1,7 @@
 # k.explain: Explanations
 status: conformance-covered
 
-The text `keel explain` prints (k.check **explain and spec**) lives in an entry of `@keel/check` of its own, apart from `check()`. What shows an explanation loads it: `keel explain`, the MCP `explain` tool and the LSP hover (k.cli). What checks code does not.
+The text `keel explain` prints (k.check **explain and docs**) lives in an entry of `@keel/check` of its own, apart from `check()`. What shows an explanation loads it: `keel explain`, the MCP `explain` tool and the LSP hover (k.cli). What checks code does not.
 
 **Entry.** `@keel/check/explain` exports `explain(code): string`, synchronous. A kernel code reads its row of the explanation table: the code and its Rules entry, the reason when the spec gives one, one fix example, and `see`. A code registered through `defineRule` gives the rule's message, `explain` and `see`. Any other code gets one line naming it as unknown. `@keel/check` does not export `explain`.
 - Rules registered through `defineRule` from `@keel/check` are explained by `@keel/check/explain` in the same process: the registrations live in one module both entries import. `explain` imports no kernel rule; every kernel code has a table row (k.check).
