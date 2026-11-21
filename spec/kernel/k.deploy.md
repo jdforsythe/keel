@@ -14,7 +14,7 @@ status: conformance-covered
 **Deploy files.** Derived from `topology.ts` by `@keel/scaffold`, written by `keel build` and scaffold operations that change them; read-only (E1005, fix: the regenerated file).
 - `deploy/<name>/Dockerfile` per `node` deployable: `node:22-slim` by digest, `dist/<name>/` only, user `node`, port 8080; `'file'`: volume `/data` for storage, owned by `node`, `--localstorage-file=/data/storage`; `'sqlite'`: that volume, no storage flag; `'postgres'`: no volume.
 - `deploy/compose.yaml`: a service per `node` deployable and a volume per one with a volume, `KEEL_PEER_<NAME>` set to peers' service URLs, other `DeployEnv` keys from the environment, and `KEEL_POSTGRES_URL` from the environment, required, for one serving a module whose `deps` list `@keel/std-postgres`.
-- `.github/workflows/ci.yml`: a job per deployable, run when its modules or shared config change: install, `keel check --base` the base branch's surface (k.compat; none there: W1568), `keel test`, `keel build`, an unpushed image build per `node` deployable; shell jobs: k.shell.
+- `.github/workflows/ci.yml`: a job per deployable, run when its modules or shared config change: install, `keel check --base` the base branch's surface (k.compat; none there: W1568), `keel test`, `keel build`, an unpushed image build per `node` deployable; one `review` job on a pull request (k.review CI); shell jobs: k.shell.
 - Shell files: k.shell.
 `DeployEnv` values are set where the image runs, in no generated file.
 

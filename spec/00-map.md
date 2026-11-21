@@ -3,10 +3,10 @@
 status key: proposed | implemented | conformance-covered | frozen. Budget: file 1,250 tokens, section 1,700.
 
 ## Code ranges
-Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.
+Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); owner: pnpm spec --for <code>.
 | block | owner | block | owner |
 |-|-|-|-|
-| E100x | k.compiler, k.boundary, k.bundle | E105x | k.cli, k.evidence, k.docs |
+| E100x | k.compiler, k.boundary, k.bundle | E105x | k.cli, k.evidence, k.docs, k.review |
 | E110x | k.schema, k.privacy, k.reveal, k.leave, k.privacy-reads | E115x | k.module |
 | E120x | k.reactive | E125x | k.runtime, k.resume, k.claim |
 | E130x | k.store | E135x | k.scaffold |
@@ -95,6 +95,8 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.
 | k.privacy-reads | Static privacy reads | conformance-covered | readers |
 | k.evidence | Evidence bundle | conformance-covered | bundle |
 | k.parity | Stdlib parity | proposed | seams |
+| k.review | Review of escapes | proposed | ranges |
+| k.escapes | Escape codes | proposed | R codes |
 
 ## Stdlib
 Sections: `spec/std/README.md`.

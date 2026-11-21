@@ -14373,6 +14373,42 @@
       "rung": "example"
     },
     {
+      "item": "k.escapes#1",
+      "rung": "none"
+    },
+    {
+      "item": "k.escapes#2",
+      "rung": "none"
+    },
+    {
+      "item": "k.escapes#3",
+      "rung": "none"
+    },
+    {
+      "item": "k.escapes#4",
+      "rung": "none"
+    },
+    {
+      "item": "k.escapes#5",
+      "rung": "none"
+    },
+    {
+      "item": "k.escapes#6",
+      "rung": "none"
+    },
+    {
+      "item": "k.escapes#7",
+      "rung": "none"
+    },
+    {
+      "item": "k.escapes#8",
+      "rung": "none"
+    },
+    {
+      "item": "k.escapes#9",
+      "rung": "none"
+    },
+    {
       "item": "k.evidence#1",
       "rung": "example"
     },
@@ -15435,6 +15471,38 @@
     {
       "item": "k.reveal#9",
       "rung": "probabilistic"
+    },
+    {
+      "item": "k.review#1",
+      "rung": "none"
+    },
+    {
+      "item": "k.review#2",
+      "rung": "none"
+    },
+    {
+      "item": "k.review#3",
+      "rung": "none"
+    },
+    {
+      "item": "k.review#4",
+      "rung": "none"
+    },
+    {
+      "item": "k.review#5",
+      "rung": "none"
+    },
+    {
+      "item": "k.review#6",
+      "rung": "none"
+    },
+    {
+      "item": "k.review#7",
+      "rung": "none"
+    },
+    {
+      "item": "k.review#8",
+      "rung": "none"
     },
     {
       "item": "k.roles#1",

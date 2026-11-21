@@ -7,11 +7,13 @@
     "k.compat",
     "k.docs",
     "k.errors",
+    "k.escapes",
     "k.evidence",
     "k.ledger",
     "k.module",
     "k.origins",
     "k.parity",
+    "k.review",
     "k.security",
     "k.shell",
     "k.topology"
