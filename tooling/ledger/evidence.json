@@ -1,5 +1,5 @@
 {
-  "commit": "1063dc4b4e75ba1582ba2ed564173f24e59f4e04",
+  "commit": "66d0772b33e19656d001e922e026f417e98cbcd2",
   "coverage": {
     "packages": {
       "apps/golden-1": {
@@ -53,16 +53,6 @@
           "pct": 95.29,
           "total": 1084
         }
-      },
-      "apps/household": {
-        "branches": null,
-        "commit": null,
-        "dirty": null,
-        "functions": null,
-        "lines": null,
-        "measuredAt": null,
-        "reason": "not measured",
-        "statements": null
       },
       "apps/inspector": {
         "branches": {
@@ -1168,23 +1158,23 @@
       }
     }
   },
-  "generatedAt": "2026-11-21T21:36:14.503Z",
+  "generatedAt": "2026-11-21T21:00:14.993Z",
   "ledger": {
     "a11y": {
       "byRung": {
-        "example": 246,
+        "example": 118,
         "exhaustive": 0,
         "monitored": 0,
-        "none": 294,
+        "none": 242,
         "probabilistic": 0,
         "proven": 0
       },
-      "total": 540,
-      "verified": 246
+      "total": 360,
+      "verified": 118
     },
     "clauses": {
       "byRung": {
-        "example": 820,
+        "example": 837,
         "exhaustive": 6,
         "monitored": 0,
         "none": 2,
@@ -1438,6 +1428,19 @@
           "status": "conformance-covered",
           "total": 13,
           "verified": 13
+        },
+        "k.escapes": {
+          "byRung": {
+            "example": 9,
+            "exhaustive": 0,
+            "monitored": 0,
+            "none": 0,
+            "probabilistic": 0,
+            "proven": 0
+          },
+          "status": "conformance-covered",
+          "total": 9,
+          "verified": 9
         },
         "k.evidence": {
           "byRung": {
@@ -1854,6 +1857,19 @@
           "status": "conformance-covered",
           "total": 9,
           "verified": 9
+        },
+        "k.review": {
+          "byRung": {
+            "example": 8,
+            "exhaustive": 0,
+            "monitored": 0,
+            "none": 0,
+            "probabilistic": 0,
+            "proven": 0
+          },
+          "status": "conformance-covered",
+          "total": 8,
+          "verified": 8
         },
         "k.roles": {
           "byRung": {
@@ -2545,24 +2561,24 @@
           "verified": 8
         }
       },
-      "total": 1039,
-      "verified": 1037
+      "total": 1056,
+      "verified": 1054
     },
     "evidenceByRung": {
-      "example": 1589,
+      "example": 1475,
       "exhaustive": 15,
       "monitored": 8,
-      "probabilistic": 339,
-      "proven": 74
+      "probabilistic": 331,
+      "proven": 73
     },
     "exports": {
       "byRung": {
-        "example": 242,
+        "example": 245,
         "exhaustive": 1,
         "monitored": 0,
-        "none": 87,
-        "probabilistic": 132,
-        "proven": 37
+        "none": 38,
+        "probabilistic": 125,
+        "proven": 36
       },
       "packages": {
         "check": {
@@ -2627,11 +2643,11 @@
         },
         "golden-1": {
           "byRung": {
-            "example": 65,
+            "example": 70,
             "exhaustive": 0,
             "monitored": 0,
             "none": 2,
-            "probabilistic": 17,
+            "probabilistic": 12,
             "proven": 9
           },
           "total": 93,
@@ -2648,18 +2664,6 @@
           },
           "total": 100,
           "verified": 94
-        },
-        "household": {
-          "byRung": {
-            "example": 3,
-            "exhaustive": 0,
-            "monitored": 0,
-            "none": 49,
-            "probabilistic": 1,
-            "proven": 1
-          },
-          "total": 54,
-          "verified": 5
         },
         "inspector": {
           "byRung": {
@@ -3083,11 +3087,11 @@
         },
         "testing": {
           "byRung": {
-            "example": 1,
+            "example": 2,
             "exhaustive": 0,
             "monitored": 0,
             "none": 0,
-            "probabilistic": 7,
+            "probabilistic": 6,
             "proven": 2
           },
           "total": 10,
@@ -3106,12 +3110,12 @@
           "verified": 5
         }
       },
-      "total": 499,
-      "verified": 412
+      "total": 445,
+      "verified": 407
     },
-    "items": 2078,
+    "items": 1861,
     "unsafe": 18,
-    "verified": 1695
+    "verified": 1579
   },
   "mutation": {
     "packages": {
@@ -3124,14 +3128,6 @@
         "threshold": null
       },
       "apps/golden-2": {
-        "claims": 0,
-        "reason": "no mutation run",
-        "reportDate": null,
-        "score": null,
-        "stale": null,
-        "threshold": null
-      },
-      "apps/household": {
         "claims": 0,
         "reason": "no mutation run",
         "reportDate": null,
@@ -3167,16 +3163,16 @@
         "claims": 141,
         "reason": null,
         "reportDate": "2026-11-19",
-        "score": 81.06,
-        "stale": 46,
+        "score": 80.56,
+        "stale": 47,
         "threshold": 70
       },
       "packages/compiler": {
         "claims": 105,
         "reason": null,
         "reportDate": "2026-11-19",
-        "score": 77.2,
-        "stale": 24,
+        "score": 77.3,
+        "stale": 23,
         "threshold": 70
       },
       "packages/ctx": {
@@ -3215,16 +3211,16 @@
         "claims": 68,
         "reason": null,
         "reportDate": "2026-11-19",
-        "score": 75.27,
-        "stale": 8,
+        "score": 75.03,
+        "stale": 7,
         "threshold": 70
       },
       "packages/scaffold": {
         "claims": 104,
         "reason": null,
         "reportDate": "2026-11-19",
-        "score": 79.73,
-        "stale": 29,
+        "score": 79.35,
+        "stale": 27,
         "threshold": 70
       },
       "packages/schema": {
@@ -3239,8 +3235,8 @@
         "claims": 134,
         "reason": null,
         "reportDate": "2026-11-19",
-        "score": 76.52,
-        "stale": 25,
+        "score": 77,
+        "stale": 24,
         "threshold": 70
       },
       "packages/services": {
@@ -3271,8 +3267,8 @@
         "claims": 20,
         "reason": null,
         "reportDate": "2026-11-19",
-        "score": 77.4,
-        "stale": 5,
+        "score": 77.15,
+        "stale": 4,
         "threshold": 70
       },
       "packages/std-conflicts": {
@@ -3471,8 +3467,8 @@
         "claims": 72,
         "reason": null,
         "reportDate": "2026-11-19",
-        "score": 88.37,
-        "stale": 8,
+        "score": 87.98,
+        "stale": 7,
         "threshold": 70
       },
       "packages/ui": {
@@ -3484,7 +3480,7 @@
         "threshold": 70
       }
     },
-    "stale": 247
+    "stale": 241
   },
   "schema": 1,
   "tests": {
@@ -3498,10 +3494,10 @@
         "otherFiles": 0,
         "propertyCalls": 14,
         "proveFiles": 1,
-        "simulateFiles": 5,
+        "simulateFiles": 2,
         "skipTodo": 0,
-        "unitCases": 178,
-        "unitFiles": 27
+        "unitCases": 166,
+        "unitFiles": 23
       },
       "apps/golden-2": {
         "conformanceCases": 0,
@@ -3516,20 +3512,6 @@
         "skipTodo": 0,
         "unitCases": 134,
         "unitFiles": 16
-      },
-      "apps/household": {
-        "conformanceCases": 0,
-        "conformanceFiles": 0,
-        "exploreFiles": 2,
-        "fails": 0,
-        "otherCases": 0,
-        "otherFiles": 0,
-        "propertyCalls": 5,
-        "proveFiles": 0,
-        "simulateFiles": 0,
-        "skipTodo": 0,
-        "unitCases": 21,
-        "unitFiles": 7
       },
       "apps/inspector": {
         "conformanceCases": 0,
@@ -3574,18 +3556,18 @@
         "unitFiles": 59
       },
       "packages/cli": {
-        "conformanceCases": 439,
-        "conformanceFiles": 132,
+        "conformanceCases": 459,
+        "conformanceFiles": 151,
         "exploreFiles": 0,
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 133,
+        "propertyCalls": 140,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 720,
-        "unitFiles": 92
+        "unitCases": 748,
+        "unitFiles": 95
       },
       "packages/compiler": {
         "conformanceCases": 178,
@@ -3598,8 +3580,8 @@
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 639,
-        "unitFiles": 82
+        "unitCases": 633,
+        "unitFiles": 81
       },
       "packages/ctx": {
         "conformanceCases": 152,
@@ -3682,8 +3664,8 @@
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 125,
-        "unitFiles": 22
+        "unitCases": 122,
+        "unitFiles": 20
       },
       "packages/schema": {
         "conformanceCases": 185,
@@ -3700,18 +3682,18 @@
         "unitFiles": 23
       },
       "packages/server": {
-        "conformanceCases": 627,
-        "conformanceFiles": 145,
+        "conformanceCases": 623,
+        "conformanceFiles": 144,
         "exploreFiles": 0,
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 260,
+        "propertyCalls": 258,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 605,
-        "unitFiles": 115
+        "unitCases": 603,
+        "unitFiles": 114
       },
       "packages/services": {
         "conformanceCases": 80,
@@ -3756,18 +3738,18 @@
         "unitFiles": 12
       },
       "packages/std-channels": {
-        "conformanceCases": 47,
-        "conformanceFiles": 14,
+        "conformanceCases": 46,
+        "conformanceFiles": 13,
         "exploreFiles": 0,
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 25,
+        "propertyCalls": 24,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 39,
-        "unitFiles": 16
+        "unitCases": 38,
+        "unitFiles": 15
       },
       "packages/std-conflicts": {
         "conformanceCases": 25,
@@ -3868,17 +3850,17 @@
         "unitFiles": 12
       },
       "packages/std-live": {
-        "conformanceCases": 13,
-        "conformanceFiles": 11,
+        "conformanceCases": 12,
+        "conformanceFiles": 10,
         "exploreFiles": 0,
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 13,
+        "propertyCalls": 12,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 11,
+        "unitCases": 10,
         "unitFiles": 4
       },
       "packages/std-messages": {
@@ -3918,10 +3900,10 @@
         "otherFiles": 0,
         "propertyCalls": 49,
         "proveFiles": 0,
-        "simulateFiles": 1,
+        "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 60,
-        "unitFiles": 17
+        "unitCases": 58,
+        "unitFiles": 16
       },
       "packages/std-postgres": {
         "conformanceCases": 48,
@@ -4106,18 +4088,18 @@
         "unitFiles": 26
       },
       "packages/testing": {
-        "conformanceCases": 525,
-        "conformanceFiles": 116,
+        "conformanceCases": 523,
+        "conformanceFiles": 115,
         "exploreFiles": 11,
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 180,
+        "propertyCalls": 179,
         "proveFiles": 22,
-        "simulateFiles": 6,
+        "simulateFiles": 4,
         "skipTodo": 0,
-        "unitCases": 266,
-        "unitFiles": 45
+        "unitCases": 263,
+        "unitFiles": 43
       },
       "packages/ui": {
         "conformanceCases": 175,
@@ -4135,18 +4117,18 @@
       }
     },
     "totals": {
-      "conformanceCases": 4851,
-      "conformanceFiles": 1181,
-      "exploreFiles": 19,
+      "conformanceCases": 4863,
+      "conformanceFiles": 1196,
+      "exploreFiles": 17,
       "fails": 2,
       "otherCases": 0,
       "otherFiles": 0,
-      "propertyCalls": 2252,
+      "propertyCalls": 2249,
       "proveFiles": 23,
-      "simulateFiles": 12,
+      "simulateFiles": 6,
       "skipTodo": 2,
-      "unitCases": 5327,
-      "unitFiles": 909
+      "unitCases": 5304,
+      "unitFiles": 893
     }
   },
   "tool": {

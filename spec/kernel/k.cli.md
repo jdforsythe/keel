@@ -17,6 +17,7 @@ status: conformance-covered
 | `scaffold <op>` / `codemod <op>` | structural operations (k.scaffold) |
 | `ledger` | emit and diff the ledger |
 | `evidence [--verify dir --key id]` | signed evidence bundle (k.evidence) |
+| `review [range \| --all]` | escapes by danger and novelty (k.review) |
 
 `session` runs the operation std.sessions registers with `stdCommand('session', op)` after importing the project's std `deps`; unfilled, I1055. `report`: std.report.
 
@@ -31,14 +32,14 @@ inspector({ id: 'orders.recent', schema: Recent, read: (ctx) => recent(ctx) })
 ```
 Per request each `read` gets the app's `ctx`; `sections[id]` is `{ doc, value }` (`schema.doc()`, the encoded value), or `{ doc, error }` when `read` throws or its value fails `schema` (E1057, logged).
 
-**Output.** Exactly OUTPUT.md. Default `compact` when stdout is not a TTY or `KEEL_AGENT=1`, else `pretty`. Exit codes: 0 no error diagnostics, 1 error diagnostics, 2 usage error.
+**Output.** Exactly OUTPUT.md. Exit codes: 0 no error diagnostics, 1 error diagnostics, 2 usage error.
 
 **Formatter registry** (extension point).
 ```ts
 import { formatter } from '@keel/cli'
 formatter('orders.report', { schema: Report, compact: (r) => `${r.id} ${r.total}`, pretty: (r) => table(r) })
 ```
-Every output record has a `kind`; each kind has exactly one formatter. `json` is never hand-formatted: the record encoded by its schema, one NDJSON line. Kernel kinds: `diag`, `summary`, `req`, `a11y`, `csp`, `evidence`, and k.ledger's. `@keel/cli/testing` exports `respond(records, { format? })`: renders records as a command does (E1054 included).
+Every output record has a `kind`; each kind has exactly one formatter. `json` is never hand-formatted: the record encoded by its schema, one NDJSON line. Kernel kinds: `diag`, `summary`, `req`, `a11y`, `csp`, `evidence`, `review`, and k.ledger's. `@keel/cli/testing` exports `respond(records, { format? })`: renders records as a command does (E1054 included).
 
 **Rules.** I1055 command not available in this build (info) · E1051 unknown command · E1052 unknown flag, or flag value invalid for the input schema · E1053 formatter kind, std command or shell target registered twice · E1054 record emitted with a kind that has no formatter · E1056 inspect target unreachable, not 2xx, or not an inspect document · E1057 inspector id registered twice (throws), or a section that throws or fails its schema.
 
