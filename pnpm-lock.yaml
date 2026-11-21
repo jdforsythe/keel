@@ -299,6 +299,9 @@ importers:
       '@keel/server':
         specifier: workspace:*
         version: link:../../packages/server
+      '@keel/services':
+        specifier: workspace:*
+        version: link:../../packages/services
       '@keel/std-headless':
         specifier: workspace:*
         version: link:../../packages/std-headless

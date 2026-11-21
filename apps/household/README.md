@@ -53,3 +53,25 @@ The `receipts` module is a book of what each person paid. `keel scaffold module 
 Tests: `test/receipts.test.ts` renders both locales, submits a bad and a good receipt, reads the same book in German, and runs `properties` over the page; `test/minorUnits.test.ts` covers the amount reader.
 
 A server store needs storage. Start the build with `node --experimental-webstorage --localstorage-file=<path> dist/web/server.mjs`, as `deploy/web/Dockerfile` does.
+
+## Layer 4: routes, a guard, a server API, services
+
+The list moves to the server, and both pages wait until the household has a name.
+
+- `shopping.contract.ts` gains four API entries beside the page: `GET /api/items`, `POST /api/items`, `POST /api/items/:id/toggle` and `DELETE /api/items/:id`. `routes.ts` binds each to a loader or an action in its own `*.server.ts` file; each runs over `savedStores.ts`, a server store with the list's three invariants, and answers the whole list.
+- `addTo.ts` and `toggleIn.ts` hold the list rules once, for the server transactions and their tests.
+- `shoppingApi.ts` is `service({ contract: shopping })`. `ShoppingList.tsx` calls it from the menu and the row buttons and shows the list each call answers; the page's loader reads the same store, so a reload keeps the list. The client store keeps only the tab on show.
+- The `setup` module holds the household's name: a page at `/setup` with a form, a `GET /api/household` entry, and `setUp.guard.ts`. The guard asks the household API through `setupApi` and redirects to `/setup?next=<path>` until the name is set. The list and the receipts book bind it.
+
+Tests: `test/serve.ts` serves the whole `web` deployable over a sim ctx with `createApp`, so a page under `renderRoute` and the API it calls share one storage. `test/guard.test.ts` checks the redirect, the setup form and the household API; `test/shoppingList.test.ts` drives the list through the API; `test/items.test.ts` and `test/view.test.ts` run `properties` and `explore` on the transactions.
+
+Over HTTP, with the build running on port 5211:
+
+```sh
+curl -s -o /dev/null -w '%{http_code} %{redirect_url}\n' localhost:5211/list      # 302 to /setup?next=%2Flist
+curl -s -H 'Sec-Fetch-Site: same-origin' --data-urlencode name='Elm Street' localhost:5211/setup
+curl -s -H 'accept: application/json' -H 'x-keel: 1' -H 'content-type: application/json' -d '{"name":"Bread"}' localhost:5211/api/items
+curl -s localhost:5211/api/items
+```
+
+The pages that come next, storage that survives a restart, sign-in and personal data, live updates and offline writes, attach to these modules: `savedStores.ts`, `bookStores.ts` and `householdStores.ts` are the stores a durable storage keeps, and `setUp.guard.ts` is where a signed-in user replaces the household check.

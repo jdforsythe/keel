@@ -85,3 +85,32 @@ Working file for the orchestrator; it moves to `tasks/p1/` before merge. Each fi
 
 ### L3-7 docs: no reader from typed decimal text to `Money`
 - `std.money` has `Money` in minor units and `formatMoney`, and no way to read what a person types (`12,50`) into minor units. The app writes its own (`modules/receipts/minorUnits.ts`) and keeps the amount a string in the form schema. An app author expects the parse beside the format.
+
+## Layer 4
+
+### L4-1 fault: a `tx` in a component body renders an empty page with no diagnostic
+- Tried: seeding the client list store from loader data, `run(tx(hydrate, { items: props.items }))` at the top of `ShoppingList` (the skill's "`tx` the result into a `hydrate` transaction").
+- `renderRoute("shopping.list", ...)` resolved with `route().id` `shopping.list` and `a11y()` `[]`; the next `find` failed `E1705 no element with id "shopping.heading"; the render has no ids`. No error, no alert, no diagnostic named the cause; commenting out the one line rendered the page. The component now keeps the items in a `signal` seeded from props and sets it from each API answer.
+- Expected: an error that names the write (as E1201 does for an effect), or a documented way to seed a view store from loader data.
+
+### L4-2 docs: `createApp` for tests has no documented signature
+- `keel-server` and `keel-testing` say "`createApp` (sim ctx) then `app.fetch(...)`" and name no import or options. `createApp({})` fails `tsc` (`Argument of type '{}' is not assignable to parameter of type 'AppOptions'`) and the type's fields are not in any `keel docs` section I found. The working call, `await createApp({ topology, routes: routeTable(...), ctx, deployable: "web" })` from `@keel/server`, came from `apps/golden-2/test/simApi.ts` (`test/serve.ts`).
+- `keel docs k.server` says "Apps import only `topology` and `commitStores` ... from `@keel/server`", which reads as forbidding the import tests need.
+
+### L4-3 docs: a guard's `next` cannot be followed
+- The setup guard (`modules/setup/setUp.guard.ts`) redirects to `/setup?next=%2Flist`. The setup action should send the person back to `next`, but an action's `ok` takes an `Href` and the docs give no way to turn the `next` string into one (`matchHref` gives `{ id, params, search }`, and rebuilding needs the target module's contract, which `deps` forbids here: L4-4). The action answers `ok(null)` and the page says where to go.
+
+### L4-4 rough: linking to a page that uses your guard is a dependency cycle
+- With the setup guard in the `app` module, `shopping` must list `app` in `deps` to import it, and `app`'s start page must list `shopping` to link to the list: `E1153 modules/app/module.ts:5:10 module deps cycle: app -> shopping -> app`. The guard, the household API and the setup page moved to their own `setup` module, which links to nothing.
+
+### L4-5 docs: an API GET and an API write answer different JSON shapes
+- `GET /api/items` answers `{"id":"shopping.items","results":{"shopping.items":{"ok":true,"value":{...}}}}`; `POST /api/items` answers `{"ok":true,"value":{...}}`. `keel docs k.api` states both, `keel-server` shows neither. A test or a curl reader guesses `{ ok, value }` for the GET first.
+
+### L4-6 rough: `keel check` reads scripts beside the app as app code
+- `smoke/drive.mjs` (a Playwright script) used `document.getElementById` inside `page.evaluate`: `E1252 smoke/drive.mjs:32:35 document in app code; render with JSX and base elements, effects via ctx`. The script now uses Playwright locators. Expected: `keel check` reads `modules/`, the root config files and tests, not every `.mjs` under the project.
+
+### L4-7 docs: how to test a server store factory
+- Calling `savedStores()` at a test file's top level fails `E1203 reactive primitive created outside any scope; wrap it in scope(fn)`. `scope(fn)` returns a `Scope`, not `fn`'s value; `scope(() => undefined).run(() => savedStores())` works. `keel-testing` shows `properties` and `explore` on module stores only.
+
+### L4-8 docs: a service call on a `createApp` ctx never reaches `ctx.net`
+- With `ctx.net.route("/api/*", ...)` recording requests, a page under `renderRoute` on the same ctx made its `shoppingApi.add` calls in process: the recorder saw none. Correct per `k.services` ("in process"), but `keel-server`'s "Route a client test's sim `ctx.net` `/api/*` to `app.fetch`" suggests the calls pass through the route.

@@ -1,12 +1,25 @@
-import { createCtx } from "@keel/ctx";
+import type { SimCtx } from "@keel/ctx";
 import { properties, renderRoute } from "@keel/testing";
 import { expect, it } from "vitest";
 import BookPage from "../modules/receipts/BookPage.tsx";
 import { ReceiptsText } from "../modules/receipts/ReceiptsText.schema.ts";
 import { routes } from "../modules/receipts/routes.ts";
+import { served } from "./serve.ts";
 
-const open = (locale: "en-US" | "de-DE", ctx = createCtx({ mode: "sim", seed: 5 })) =>
-  renderRoute("receipts.book", { routes, params: { locale }, ctx });
+async function setUpCtx(): Promise<SimCtx> {
+  const { ctx, fetch } = await served(5);
+  await fetch(
+    new Request("http://localhost/setup", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded", "sec-fetch-site": "same-origin" },
+      body: "name=Elm+Street",
+    }),
+  );
+  return ctx;
+}
+
+const open = async (locale: "en-US" | "de-DE", ctx?: SimCtx) =>
+  renderRoute("receipts.book", { routes, params: { locale }, ctx: ctx ?? (await setUpCtx()) });
 
 it("starts empty, in English, with a link to the German page", async () => {
   const page = await open("en-US");
@@ -36,7 +49,7 @@ it("refuses an amount with three decimals and saves nothing", async () => {
 });
 
 it("records a receipt and shows it in each locale's money format", async () => {
-  const ctx = createCtx({ mode: "sim", seed: 5 });
+  const ctx = await setUpCtx();
   const page = await open("en-US", ctx);
   await page.fire("receipts.new:shop", { type: "input", value: "Corner shop" });
   await page.fire("receipts.new:amount", { type: "input", value: "12,50" });

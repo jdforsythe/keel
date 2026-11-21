@@ -2,7 +2,7 @@ import { module } from "@keel/compiler";
 
 export default module({
   id: "shopping",
-  deps: [],
+  deps: ["setup"],
   capabilities: ["random"],
   public: { exports: [] },
 });

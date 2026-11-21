@@ -1,5 +1,6 @@
 import { type Infer, s } from "@keel/schema";
 import { Box, Heading, Link, Text } from "@keel/ui";
+import { receipts } from "../receipts/receipts.contract.ts";
 import { shopping } from "../shopping/shopping.contract.ts";
 import { StartData } from "./StartData.schema.ts";
 
@@ -14,6 +15,9 @@ export default function StartPage(props: Infer<typeof Props>) {
       <Text id="app.start.intro">{props.data.intro}</Text>
       <Link id="app.start.toList" to={shopping.href("shopping.list")}>
         {props.data.toList}
+      </Link>
+      <Link id="app.start.toReceipts" to={receipts.href("receipts.book", { locale: "en-US" })}>
+        {props.data.toReceipts}
       </Link>
     </Box>
   );
