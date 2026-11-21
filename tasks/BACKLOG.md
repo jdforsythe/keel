@@ -1083,3 +1083,10 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [ ] 0978 check (low): `keel explain` gives no answer for codes a spec section states and no rule registers: E1560, E2152, E2153, E2652, E2801, E2851, E2852, E2853; std rule codes (E2201, E2202 and fifteen more the published skills cite) are answered only when that package's tools are loaded. Add the rows, and a check that every code a section states has one · check · k.explain · P1
 - [ ] 0979 spec (low): some std sections resolve by id and have no row in the spec map or the std table (`std.shells` and others the skill lanes met); list every section file with no row and add the rows · spec · all · P1
 - [ ] 0980 schema (low): review: a `Secret` inside a `Map`, a `Set`, a symbol key or a non-enumerable key under an undeclared key of an open object still parses, since the undeclared-data scan reads own enumerable string keys; refuse a value under an undeclared key that is not plain JSON data, or state the limit · schema · k.schema · P1
+
+## RFC lanes 2026-11-21 (found while writing RFC 0157 to 0167)
+- [ ] 0981 tooling (medium): k.module measures 6,005 characters against the 6,000 limit and the budgets gate passes; find why the section limit is not enforced there and whether other sections are over · tooling · k.module
+- [ ] 0982 docs (low): the golden-2 README says a loader's imports are bundled into the browser code of the pages that use it; k.boundary says the browser build replaces server-only files with stubs. One is wrong · docs · k.boundary
+- [ ] 0983 docs (low): `spec/std/README.md` holds history ("S2 adds…"); rule 11 · docs · spec
+- [ ] 0984 std-tokens (medium): `check` takes a synchronous `find`, so tokens cannot live in a database (RFC 0158's golden-2 case); an additive `idOf(token)` in its own RFC, and std.tokens has no room left · std-tokens · std.tokens
+- [ ] 0985 ui (medium): no `Video` or `Audio` base element, and the fixed policy has no `media-src`, so same-origin media is blocked; a k.ui and k.security RFC after W15, captions required (RFC 0160) · ui, server · k.ui, k.security
