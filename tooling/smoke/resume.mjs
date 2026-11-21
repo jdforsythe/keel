@@ -1,6 +1,8 @@
 // Resume proof for served golden-2 pages in a real browser: build a copy whose `web` deployable is a `node` server
-// holding the `recipes` module, serve its `api` (golden-2's real `api` node deployable) on a web storage file and the
-// web server on free ports, seed two recipes through the api, then in headless Chromium load the recipe index, a
+// holding the `recipes` module, serve its `api` (golden-2's real `api` node deployable) on a web storage file and its
+// app database in a PGlite folder (`KEEL_POSTGRES_URL=pglite:<folder>`) and the web server on free ports, seed two
+// recipes through the api, stop the api and start it again on the same folder (both recipes are still there), then in
+// headless Chromium load the recipe index, a
 // recipe's show page, the new-recipe page and the catalog from `web` and the sign-in page from `api`. The page's
 // scripts are held until the test has typed into an input and set its caret (new-recipe, sign-in) or scrolled the
 // page (index, show, catalog; Chrome itself scrolls a page with a focused input back to the top after load); then
@@ -35,7 +37,14 @@ function serveDeployable(dir, name, port, file, peers) {
     ],
     {
       cwd: dir,
-      env: { ...process.env, PORT: String(port), KEEL_SECRET: SECRET, BETTER_AUTH_SECRET: AUTH_SECRET, ...peers },
+      env: {
+        ...process.env,
+        PORT: String(port),
+        KEEL_SECRET: SECRET,
+        BETTER_AUTH_SECRET: AUTH_SECRET,
+        KEEL_POSTGRES_URL: `pglite:${file}.postgres`,
+        ...peers,
+      },
       stdio: ["ignore", "pipe", "pipe"],
     },
   );
@@ -273,6 +282,16 @@ try {
   const seeded = await recipes(apiBase);
   const soup = seeded.find((r) => r.title === "Miso soup")?.id;
   step("seed", statuses.every((s) => s === 200) && seeded.length === 2 && typeof soup === "string", statuses.join(" "));
+  // The recipes are in the PGlite folder, not the process: a new api process on the same folder reads them.
+  await api.kill();
+  api = serveDeployable(dir, "api", apiPort, join(tmp, "api.storage"), peers);
+  const againUp = await up(`${apiBase}/api/recipes`, "application/json");
+  const kept = againUp ? await recipes(apiBase) : [];
+  step(
+    "recipes survive an api restart",
+    kept.length === 2 && kept.some((r) => r.id === soup),
+    againUp ? `${kept.length} recipes` : api.log.slice(-3).join(" | "),
+  );
   web = serveDeployable(dir, "web", webPort, join(tmp, "web.storage"), peers);
   const webUp = await up(`${webBase}/`, "text/html");
   step("serve web", webUp, webUp ? "" : web.log.slice(-3).join(" | "));
