@@ -3,7 +3,7 @@
   "unsafe": 18,
   "hostElements": 0,
   "rungs": {
-    "example": 1420,
+    "example": 1373,
     "probabilistic": 332,
     "exhaustive": 15,
     "proven": 72,
@@ -11712,6 +11712,12 @@
     },
     {
       "pkg": "golden-2",
+      "name": "signedIn",
+      "file": "golden-2:kitchen/signedIn.guard.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
       "name": "toggleFavorite",
       "file": "golden-2:kitchen/toggleFavorite.ts",
       "rung": "probabilistic"
@@ -17498,15 +17504,15 @@
   "a11y": [
     {
       "item": "a11y:todos.edit#1.1.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.edit#1.2.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.edit#1.3.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.edit#1.3.2",
@@ -17514,11 +17520,11 @@
     },
     {
       "item": "a11y:todos.edit#1.3.5",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.edit#1.4.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.edit#1.4.3",
@@ -17526,31 +17532,31 @@
     },
     {
       "item": "a11y:todos.edit#1.4.4",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.edit#1.4.12",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.edit#2.1.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.edit#2.2.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.edit#2.2.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.edit#2.4.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.edit#2.4.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.edit#2.4.3",
@@ -17558,19 +17564,19 @@
     },
     {
       "item": "a11y:todos.edit#2.4.4",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.edit#3.1.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.edit#3.1.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.edit#3.3.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.edit#4.1.2",
@@ -17578,15 +17584,15 @@
     },
     {
       "item": "a11y:todos.index#1.1.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.index#1.2.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.index#1.3.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.index#1.3.2",
@@ -17594,11 +17600,11 @@
     },
     {
       "item": "a11y:todos.index#1.3.5",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.index#1.4.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.index#1.4.3",
@@ -17606,31 +17612,31 @@
     },
     {
       "item": "a11y:todos.index#1.4.4",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.index#1.4.12",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.index#2.1.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.index#2.2.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.index#2.2.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.index#2.4.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.index#2.4.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.index#2.4.3",
@@ -17638,19 +17644,19 @@
     },
     {
       "item": "a11y:todos.index#2.4.4",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.index#3.1.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.index#3.1.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.index#3.3.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.index#4.1.2",
@@ -17658,15 +17664,15 @@
     },
     {
       "item": "a11y:todos.list#1.1.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.list#1.2.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.list#1.3.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.list#1.3.2",
@@ -17674,11 +17680,11 @@
     },
     {
       "item": "a11y:todos.list#1.3.5",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.list#1.4.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.list#1.4.3",
@@ -17686,31 +17692,31 @@
     },
     {
       "item": "a11y:todos.list#1.4.4",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.list#1.4.12",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.list#2.1.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.list#2.2.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.list#2.2.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.list#2.4.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.list#2.4.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.list#2.4.3",
@@ -17718,19 +17724,19 @@
     },
     {
       "item": "a11y:todos.list#2.4.4",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.list#3.1.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.list#3.1.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.list#3.3.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:todos.list#4.1.2",

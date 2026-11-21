@@ -27,7 +27,8 @@ async function library(ctx: Ctx) {
 
 /**
  * Who made the request: the user an `authorization` API token acts for when the header is present, else the user of
- * the library's session cookie; `''` for no one.
+ * the library's session cookie; `''` for no one. A present `authorization` header decides alone: an invalid token is no
+ * one, and the cookie is not tried in its place.
  */
 async function identify(args: { readonly request: Request }, ctx: Ctx): Promise<string> {
   const header = args.request.headers.get("authorization");

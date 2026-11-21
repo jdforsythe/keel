@@ -35,7 +35,7 @@ export const RecipesText = messages(
     currencyRule: {},
     otherRule: {},
     titleTaken: {},
-    notFound: { id: s.string() },
+    notFound: {},
     indexTitle: {},
     showTitle: { title: s.string() },
     newTitle: {},
