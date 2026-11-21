@@ -1,6 +1,6 @@
 # RFC 0171: k.ledger: a range clause holds a rung only while every code in it is named by a citing file
 
-Status: draft, for the orchestrator to accept under the RFC defaults (1: the spec is the contract); the ADR is written on acceptance. For backlog 0270 and the k.ledger half of 0531.
+Status: implemented (ADR-0194). For backlog 0270 and the k.ledger half of 0531.
 
 ## Decisions
 - D1: a range clause is a Conformance clause whose text holds the word `each` and a code range: two codes of one letter joined by `-` or ` to `, the first lower (`E2001-E2005`, `E2401 to E2406`). A clause naming a range without `each` ("reports no E1151-E1156") is an ordinary clause.

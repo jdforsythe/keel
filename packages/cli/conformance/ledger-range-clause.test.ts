@@ -1,7 +1,6 @@
 // Spec: k.ledger, clause "\"E2001-E2003 each fire.\" cited by files adding `(E2001)`, `(E2002)`, `(E2003)` is `example`; skipping one file's tests, or one file adding `(E2001-E2003)` alone, gives `none`; \"No E2001-E2003.\" cited by a file naming no code is `example`." (E2001, E2002, E2003)
 // The real `keel` binary over a temp project (OS tmpdir): one spec section whose clauses are the three cases, cited by
 // in-memory conformance files. Clause items are `<section>#<n>` (1-based Conformance sentence). Property seed: 1337.
-// PENDING: unbuilt (RFC 0171 build); every test is skipped until the range-clause reader lands in the ledger.
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { ledgerRecord } from "./ledger-fixture-kinds.ts";
@@ -36,25 +35,25 @@ const NONE = "No E2001-E2003.";
 const T = (n: number): string => `packages/m/conformance/t${n}.test.ts`;
 
 describe("k.ledger: a range clause holds a rung only while every code in it is named by a citing file", () => {
-  it.skip('"E2001-E2003 each fire." cited by files adding `(E2001)`, `(E2002)`, `(E2003)` is `example`', () => {
+  it('"E2001-E2003 each fire." cited by files adding `(E2001)`, `(E2002)`, `(E2003)` is `example`', () => {
     const tests = { [T(1)]: cite(EACH, "E2001"), [T(2)]: cite(EACH, "E2002"), [T(3)]: cite(EACH, "E2003") };
     expect(rungs([EACH], tests)).toEqual(["example"]);
   }, 60_000);
 
-  it.skip("skipping one citing file's tests gives `none`", () => {
+  it("skipping one citing file's tests gives `none`", () => {
     const tests = { [T(1)]: cite(EACH, "E2001"), [T(2)]: cite(EACH, "E2002", true), [T(3)]: cite(EACH, "E2003") };
     expect(rungs([EACH], tests)).toEqual(["none"]);
   }, 60_000);
 
-  it.skip("one file adding `(E2001-E2003)` alone gives `none`: a range names its ends, not the codes between", () => {
+  it("one file adding `(E2001-E2003)` alone gives `none`: a range names its ends, not the codes between", () => {
     expect(rungs([EACH], { [T(1)]: cite(EACH, "E2001-E2003") })).toEqual(["none"]);
   }, 60_000);
 
-  it.skip('"No E2001-E2003." cited by a file naming no code is `example`: no `each`, an ordinary clause', () => {
+  it('"No E2001-E2003." cited by a file naming no code is `example`: no `each`, an ordinary clause', () => {
     expect(rungs([NONE], { [T(1)]: cite(NONE, "") })).toEqual(["example"]);
   }, 60_000);
 
-  it.skip("for any range of one letter, every code named is `example` and any one code left out is `none`", () => {
+  it("for any range of one letter, every code named is `example` and any one code left out is `none`", () => {
     fc.assert(
       fc.property(fc.integer({ min: 2001, max: 2990 }), fc.integer({ min: 2, max: 5 }), fc.nat(), (lo, len, pick) => {
         const codes = Array.from({ length: len + 1 }, (_, i) => `E${lo + i}`);
