@@ -1,5 +1,6 @@
 // The routes module of the packaged-table suite (not a test file). The test imports it for the server side; `resumeDocument`
 // imports it again for the client side, where every module it reaches is evaluated anew, its stores included.
+import type { Ctx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
 import { type Href, type RouteProps, loader, manifest } from "@keel/router";
 import { type Infer, ok, s } from "@keel/schema";
@@ -105,19 +106,23 @@ function serverPage(props: RouteProps): Node {
 }
 
 /** `TableSearch` above a table. */
-function findPage(props: RouteProps): Node {
+function findPage(props: RouteProps, _slots?: undefined, ctx?: Ctx): Node {
   typed.uses([type]);
   return Box({
     id: "find.page",
     children: () => [
-      TableSearch({
-        id: "find",
-        label: "Search the catalog",
-        get search() {
-          return queryOf(props.search);
+      TableSearch(
+        {
+          id: "find",
+          label: "Search the catalog",
+          get search() {
+            return queryOf(props.search);
+          },
+          href: findHref,
         },
-        href: findHref,
-      }),
+        undefined,
+        ctx,
+      ),
       serverPage(props),
     ],
   });

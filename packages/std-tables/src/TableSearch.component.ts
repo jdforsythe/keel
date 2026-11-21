@@ -1,7 +1,6 @@
 import type { Ctx } from "@keel/ctx";
 import { effect, owner, signal } from "@keel/reactive";
-import type { Href } from "@keel/router";
-import { findRouter } from "@keel/router/internal";
+import { type Href, navigate } from "@keel/router";
 import { Input } from "@keel/ui";
 import type { Field } from "./Field.ts";
 import type { TableQuery } from "./TableQuery.ts";
@@ -25,8 +24,8 @@ export function TableSearch<T, S extends Field<T>, F extends Field<T>>(
   _slots?: undefined,
   ctx?: Ctx,
 ): Node {
-  const router = findRouter();
-  const clock = (ctx ?? router?.ctx)?.clock;
+  const at = owner();
+  const clock = ctx?.clock;
   const id = `${props.id}.input`;
   // The input keeps its text while `search.q` is the value it last sent (typing goes on during the load, and text past
   // `Q_MAX` stays); any other `q` (back, forward, a link) replaces it and becomes the new baseline.
@@ -35,27 +34,28 @@ export function TableSearch<T, S extends Field<T>, F extends Field<T>>(
   const shown = signal(q);
   effect(
     () => {
-      const at = props.search.q ?? "";
-      if (at !== sent) {
-        sent = at;
-        q = at;
+      const now = props.search.q ?? "";
+      if (now !== sent) {
+        sent = now;
+        q = now;
       }
       shown.set(q);
     },
     { writes: [shown] },
   );
   const timer =
-    router === null || clock === undefined
+    clock === undefined
       ? undefined
       : debounced(
           clock,
           () => props.delay ?? 300,
           () => {
             sent = q.slice(0, Q_MAX);
-            void router.navigate(props.href(withQuery(props.search, sent)), { replace: true });
+            const go = (): Promise<void> => navigate(props.href(withQuery(props.search, sent)), { replace: true });
+            void (at === undefined ? go() : at.run(go));
           },
         );
-  owner()?.onDispose(() => timer?.cancel());
+  at?.onDispose(() => timer?.cancel());
   return Input({
     id,
     get label() {

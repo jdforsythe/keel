@@ -136,18 +136,22 @@ export const routes = manifest({
     params: s.object({}),
     search: Search,
     loader: tableLoader,
-    component: (props) =>
+    component: (props, _slots, ctx) =>
       Box({
         id: "find.page",
         children: () => [
-          TableSearch({
-            id: "find",
-            label: "Search the catalog",
-            get search() {
-              return queryOf(props.search);
+          TableSearch(
+            {
+              id: "find",
+              label: "Search the catalog",
+              get search() {
+                return queryOf(props.search);
+              },
+              href: findHref,
             },
-            href: findHref,
-          }),
+            undefined,
+            ctx,
+          ),
           catalog(props, findHref),
         ],
       }),

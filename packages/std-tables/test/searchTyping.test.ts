@@ -53,18 +53,22 @@ test("text typed while a search loads stays in the input and is sent next", asyn
         if (search.q !== undefined) await new Promise<void>((r) => held.push(r));
         return ok({});
       }),
-      component: (props) =>
+      component: (props, _slots, ctx) =>
         Box({
           id: "st.page",
           children: () => [
-            TableSearch({
-              id: "find",
-              label: "Search",
-              get search() {
-                return queryOf(props.search);
+            TableSearch(
+              {
+                id: "find",
+                label: "Search",
+                get search() {
+                  return queryOf(props.search);
+                },
+                href: hrefOf,
               },
-              href: hrefOf,
-            }),
+              undefined,
+              ctx,
+            ),
           ],
         }),
     },
@@ -125,15 +129,19 @@ test.fails("a link activated while a search loads keeps the typed text (known li
         if (search.q !== undefined) await new Promise<void>((r) => held.push(r));
         return ok({});
       }),
-      component: (props) =>
-        TableSearch({
-          id: "find",
-          label: "Search",
-          get search() {
-            return queryOf(props.search);
+      component: (props, _slots, ctx) =>
+        TableSearch(
+          {
+            id: "find",
+            label: "Search",
+            get search() {
+              return queryOf(props.search);
+            },
+            href: hrefOf,
           },
-          href: hrefOf,
-        }),
+          undefined,
+          ctx,
+        ),
     },
   });
   const ctx = createCtx({ mode: "sim", seed: 1337 });
