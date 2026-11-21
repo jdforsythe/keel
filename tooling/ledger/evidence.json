@@ -1,5 +1,5 @@
 {
-  "commit": "8bc092e81b11df0b76b03dc51f61d06e1b78c54f",
+  "commit": "ebd25bb609f3e2f88265376459307897d7f02986",
   "coverage": {
     "packages": {
       "apps/golden-1": {
@@ -1158,7 +1158,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-21T18:11:09.490Z",
+  "generatedAt": "2026-11-21T18:24:25.164Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -2539,19 +2539,19 @@
       "verified": 1026
     },
     "evidenceByRung": {
-      "example": 1454,
+      "example": 1447,
       "exhaustive": 15,
       "monitored": 8,
-      "probabilistic": 341,
+      "probabilistic": 331,
       "proven": 73
     },
     "exports": {
       "byRung": {
-        "example": 246,
+        "example": 245,
         "exhaustive": 1,
         "monitored": 0,
-        "none": 35,
-        "probabilistic": 135,
+        "none": 38,
+        "probabilistic": 125,
         "proven": 36
       },
       "packages": {
@@ -2629,15 +2629,15 @@
         },
         "golden-2": {
           "byRung": {
-            "example": 87,
+            "example": 86,
             "exhaustive": 0,
             "monitored": 0,
-            "none": 3,
-            "probabilistic": 18,
+            "none": 6,
+            "probabilistic": 8,
             "proven": 0
           },
-          "total": 108,
-          "verified": 105
+          "total": 100,
+          "verified": 94
         },
         "inspector": {
           "byRung": {
@@ -3084,12 +3084,12 @@
           "verified": 5
         }
       },
-      "total": 453,
-      "verified": 418
+      "total": 445,
+      "verified": 407
     },
-    "items": 1761,
+    "items": 1753,
     "unsafe": 18,
-    "verified": 1562
+    "verified": 1551
   },
   "mutation": {
     "packages": {
@@ -3480,11 +3480,11 @@
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 16,
+        "propertyCalls": 8,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 137,
+        "unitCases": 134,
         "unitFiles": 16
       },
       "apps/inspector": {
@@ -3554,8 +3554,8 @@
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 628,
-        "unitFiles": 79
+        "unitCases": 631,
+        "unitFiles": 80
       },
       "packages/ctx": {
         "conformanceCases": 152,
@@ -4097,12 +4097,12 @@
       "fails": 2,
       "otherCases": 0,
       "otherFiles": 0,
-      "propertyCalls": 2235,
+      "propertyCalls": 2227,
       "proveFiles": 23,
       "simulateFiles": 6,
       "skipTodo": 2,
       "unitCases": 5258,
-      "unitFiles": 881
+      "unitFiles": 882
     }
   },
   "tool": {

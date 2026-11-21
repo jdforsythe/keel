@@ -3,8 +3,8 @@
   "unsafe": 18,
   "hostElements": 0,
   "rungs": {
-    "example": 1454,
-    "probabilistic": 341,
+    "example": 1447,
+    "probabilistic": 331,
     "exhaustive": 15,
     "proven": 73,
     "monitored": 8
@@ -11424,12 +11424,6 @@
     },
     {
       "pkg": "golden-2",
-      "name": "ApiTokens",
-      "file": "golden-2:accounts/ApiTokens.schema.ts",
-      "rung": "probabilistic"
-    },
-    {
-      "pkg": "golden-2",
       "name": "BearerToken",
       "file": "golden-2:accounts/BearerToken.schema.ts",
       "rung": "example"
@@ -11457,18 +11451,6 @@
       "name": "MintedToken",
       "file": "golden-2:accounts/MintedToken.schema.ts",
       "rung": "example"
-    },
-    {
-      "pkg": "golden-2",
-      "name": "Profile",
-      "file": "golden-2:accounts/Profile.schema.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": "golden-2",
-      "name": "Profiles",
-      "file": "golden-2:accounts/Profiles.schema.ts",
-      "rung": "probabilistic"
     },
     {
       "pkg": "golden-2",
@@ -11514,9 +11496,9 @@
     },
     {
       "pkg": "golden-2",
-      "name": "addToken",
-      "file": "golden-2:accounts/addToken.ts",
-      "rung": "probabilistic"
+      "name": "accountsDb",
+      "file": "golden-2:accounts/accountsDb.server.ts",
+      "rung": "example"
     },
     {
       "pkg": "golden-2",
@@ -11562,33 +11544,15 @@
     },
     {
       "pkg": "golden-2",
-      "name": "profileStores",
-      "file": "golden-2:accounts/profileStores.ts",
-      "rung": "probabilistic"
-    },
-    {
-      "pkg": "golden-2",
       "name": "readAccount",
       "file": "golden-2:accounts/readAccount.server.ts",
       "rung": "none"
     },
     {
       "pkg": "golden-2",
-      "name": "saveProfile",
-      "file": "golden-2:accounts/saveProfile.ts",
-      "rung": "probabilistic"
-    },
-    {
-      "pkg": "golden-2",
-      "name": "tokenStores",
-      "file": "golden-2:accounts/tokenStores.ts",
-      "rung": "probabilistic"
-    },
-    {
-      "pkg": "golden-2",
       "name": "Box",
       "file": "golden-2:kitchen/Box.schema.ts",
-      "rung": "probabilistic"
+      "rung": "example"
     },
     {
       "pkg": "golden-2",
@@ -11622,12 +11586,6 @@
     },
     {
       "pkg": "golden-2",
-      "name": "NewRecipe",
-      "file": "golden-2:kitchen/NewRecipe.schema.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": "golden-2",
       "name": "Nothing",
       "file": "golden-2:kitchen/Nothing.schema.ts",
       "rung": "example"
@@ -11652,18 +11610,6 @@
     },
     {
       "pkg": "golden-2",
-      "name": "addRecipe",
-      "file": "golden-2:kitchen/addRecipe.ts",
-      "rung": "probabilistic"
-    },
-    {
-      "pkg": "golden-2",
-      "name": "boxStores",
-      "file": "golden-2:kitchen/boxStores.ts",
-      "rung": "probabilistic"
-    },
-    {
-      "pkg": "golden-2",
       "name": "catalogColumns",
       "file": "golden-2:kitchen/catalogColumns.ts",
       "rung": "example"
@@ -11682,6 +11628,12 @@
     },
     {
       "pkg": "golden-2",
+      "name": "kitchenDb",
+      "file": "golden-2:kitchen/kitchenDb.server.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
       "name": "loadCatalog",
       "file": "golden-2:kitchen/loadCatalog.server.ts",
       "rung": "example"
@@ -11696,18 +11648,24 @@
       "pkg": "golden-2",
       "name": "loadRecipes",
       "file": "golden-2:kitchen/loadRecipes.server.ts",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "pkg": "golden-2",
       "name": "postFavorite",
       "file": "golden-2:kitchen/postFavorite.server.ts",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "pkg": "golden-2",
       "name": "postRecipe",
       "file": "golden-2:kitchen/postRecipe.server.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "recipeColumns",
+      "file": "golden-2:kitchen/recipeColumns.ts",
       "rung": "example"
     },
     {
@@ -11715,12 +11673,6 @@
       "name": "signedIn",
       "file": "golden-2:kitchen/signedIn.guard.ts",
       "rung": "example"
-    },
-    {
-      "pkg": "golden-2",
-      "name": "toggleFavorite",
-      "file": "golden-2:kitchen/toggleFavorite.ts",
-      "rung": "probabilistic"
     },
     {
       "pkg": "golden-2",
