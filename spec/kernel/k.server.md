@@ -1,7 +1,7 @@
 # k.server: Thin server
 status: conformance-covered
 
-**API.** Apps import only `topology` and `commitStores` (k.persist) from `@keel/server`; `loader`/`action` (`@keel/router`) run over HTTP.
+**API.** App code imports only `topology` and `commitStores` (k.persist) from `@keel/server` (a test also imports `createApp`); `loader`/`action` (`@keel/router`) run over HTTP.
 - `loader(contract, id, { output?, stores? }, fn)`: `fn` gets `{ params, search, url, caller, user, bearer, stores }` and `ctx`; returns `Promise<Result<T, KeelError>>` encoded with `output` (the entry's on an API entry, k.contract).
 - `action(contract, id, { input?, stores? }, fn)`: `fn` gets the decoded input, `{ params, url, caller, user, stores }` and `ctx`; returns `Result<Href | null, KeelError>` on a page (an API entry's `output` on one: k.api); the binding places it (k.contract).
 - A loader's `run(args, ctx)` and an action's `run(input, args, ctx)` call `fn` directly, outside a request (tests). `args.url` is the absolute request URL as a string. `args.stores` is optional: absent, `fn` gets the value the declared factory returns for `ctx` (Server state), `undefined` without one; `run` saves nothing.

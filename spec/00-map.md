@@ -3,7 +3,7 @@
 status key: proposed | implemented | conformance-covered | frozen. Budget: file 1,250 tokens, section 1,700.
 
 ## Code ranges
-Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.
+Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: `keel docs --for <code>` lists the lines citing a code.
 | block | owner | block | owner |
 |-|-|-|-|
 | E100x | k.compiler, k.boundary, k.bundle | E105x | k.cli, k.evidence, k.docs |
