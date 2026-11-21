@@ -117,6 +117,18 @@ Each lane is a subagent in a worktree under `.worktrees/` (created by the orches
   - Mutation runs of server and std-sessions, one at a time, on a quiet machine.
 - Open notes: backlog 0948 is a misreading (k.shell's CI paragraph describes the generated app workflow); `stripped()` in the server's `bearerOf` never changes a real request's value; `pnpm ledger --diff` needs both apps' `keel test` reports on disk; the docs-freshness rule fires after 50 docs commits, so a busy day needs `verified:` stamps on untouched docs; `conformance/E1562-base-route-change.test.ts` sits at its 120 s limit on slow runners (D7 did not clearly help; the fix is the limit, under an `rfc:` change); a full local `pnpm test` times out cli conformance while three lanes run tests, so run it when lanes are quiet.
 
+## Lanes (2026-11-21)
+Dispatched from 3a35d635 plus the ledger commit; each is a subagent in its worktree, unpushed. Numbers are assigned here so lanes never collide.
+- `.worktrees/r157` `lane-r157` (opus, writing): RFC 0157 / ADR-0179 the module contract, and RFC 0162 / ADR-0184 the component signature (W13 step 1; D41, D42).
+- `.worktrees/r158` `lane-r158` (opus, writing): RFC 0158 / ADR-0180 app data outside the kernel, with the Postgres module's first scope (W14 step 1; D43).
+- `.worktrees/r159` `lane-r159` (opus, writing): RFC 0159 / ADR-0181 custom components; the library format in the same RFC or as RFC 0163 / ADR-0185 (W15 step 1; D44, D48 to D50).
+- `.worktrees/r160` `lane-r160` (opus, writing): RFC 0160 / ADR-0182 declared third-party origins (D46).
+- `.worktrees/r161` `lane-r161` (opus, writing): RFC 0161 / ADR-0183 the k.shell split (D47).
+- `.worktrees/w5l1`: the conformance-writer writes RFC 0151's four symlink and E1357 bullets (step 1 of that lane's five).
+- `.worktrees/w03b` (opus): the D39 fixes and RFC 0156 / ADR-0178.
+- `.worktrees/w16` `lane-w16` (sonnet): the head-to-head harness (W16 step 1; D45); dry mode only, no paid agent run.
+- The RFC lanes share `tasks/0963-to-p1/briefs/rfc-lane.md`. Each RFC ends with "For the operator": those questions are gathered into `docs/HANDOFF.md` when the lane reports. An RFC lane merges to the main line only with its conformance (D12); until then its branch is the record.
+
 ## Verification
 - [x] Backlog 0956 built and conformance-covered: RFC 0147 and RFC 0150 (links into a shell), red-teamed twice.
 - [x] Backlog 0921: the server's mutation run finishes (78.4 against 70); findings in `tasks/0338-s8-reach/proposed/server-mutation-tail.md`; follow-ups are backlog 0966 and 0967.
