@@ -1,5 +1,5 @@
 // Spec: k.origins, Conformance "`security.json` lists each declared origin with directive and reason in order; `origins: []` with none."
-// Spec: k.origins, Evidence "Each `security.json` entry (k.evidence; `adapter`, `name`, then `headers` and `policy`, or `csp`) carries `origins`: `{ directive, origin, reason }` per declared origin, directives in the order above, origins in declaration order; `[]` with none."
+// Spec: k.evidence, Command "Each `security.json` entry (`adapter`, `name`, then `headers` and `policy`, or `csp`) carries `origins`: `{ directive, origin, reason }` per declared origin (k.origins), directives in the order `img`, `media`, `font`, `connect`, `frame`, origins in declaration order; `[]` with none."
 // Seed 1337 (no generated input: one fixture). Fixture: `node` deployable `web` declaring all five directives, written out of directive order and with `b` before `a`;
 // `client` deployable `app` declaring none. The entries are read from the `deployables` list of `security.json`, found by `name`.
 import { rmSync } from "node:fs";
