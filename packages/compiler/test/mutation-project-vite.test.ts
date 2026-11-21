@@ -390,14 +390,33 @@ describe("vite: project inputs", () => {
         ["/modules/a/routes.ts", "/modules/b/routes.ts"],
         "virtual:keel.css",
         {},
-        {
-          web: ["b", "a", "missing"],
-          api: ["x"],
-        },
+        {},
         undefined,
         "dev",
       ),
     );
+  });
+
+  it("binds service targets only for the modules the client's browser code imports", { timeout: 30000 }, async () => {
+    write(
+      "topology.ts",
+      `export default { web: { modules: ["w"], adapter: "client" }, api: { modules: ["used", "hidden", "sessions"], adapter: "node" }, other: { modules: ["unseen"], adapter: "node" } };\n`,
+    );
+    write("modules/w/routes.ts", routesTs("w"));
+    write("modules/w/call.ts", `import { c } from "../used/c.contract.ts";\nexport const x = c;\n`);
+    write("modules/w/load.server.ts", `import { h } from "../hidden/h.ts";\nexport const y = h;\n`);
+    write("modules/used/c.contract.ts", "export const c = 1;\n");
+    write("modules/hidden/h.ts", "export const h = 1;\n");
+    write("modules/unseen/u.ts", "export const u = 1;\n");
+    const p = keel();
+    p.configResolved({ root, command: "serve" });
+    await p.buildStart.call(undefined);
+    const code = await p.load("/@keel/entry.ts");
+    expect(code).toBe(
+      entryCode(["/modules/w/routes.ts"], "virtual:keel.css", {}, { api: ["used", "sessions"] }, undefined, "dev"),
+    );
+    expect(code).not.toContain("hidden");
+    expect(code).not.toContain("unseen");
   });
 
   it("picks the first client deployable by name, or KEEL_DEPLOYABLE", { timeout: 30000 }, async () => {
@@ -408,7 +427,7 @@ describe("vite: project inputs", () => {
     for (const m of ["z", "a", "m"]) write(`modules/${m}/routes.ts`, routesTs(m));
     const p = keel();
     p.configResolved({ root, command: "serve" });
-    const all = { zeta: ["z"], api: ["a"], mid: ["m"] };
+    const all = {};
     expect(await p.load("/@keel/entry.ts")).toBe(
       entryCode(["/modules/m/routes.ts"], "virtual:keel.css", {}, all, undefined, "dev"),
     );
@@ -447,7 +466,7 @@ describe("vite: project inputs", () => {
         `export default { web: { modules: ["a"], adapter: "client" }, api: { modules: ["a"], adapter: "node" } };\n`,
       );
       write("modules/a/routes.ts", routesTs("a"));
-      const all = { web: ["a"], api: ["a"] };
+      const all = {};
       const client = (mode: "dev" | "production") =>
         entryCode(["/modules/a/routes.ts"], "virtual:keel.css", {}, all, undefined, mode);
       const none = keel();

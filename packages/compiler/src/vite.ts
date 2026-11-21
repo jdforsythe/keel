@@ -18,6 +18,7 @@ import { browserBreach } from "./internal/browserBreach.ts";
 import { canonicalJson } from "./internal/canonicalJson.ts";
 import { devEntryCode } from "./internal/devEntryCode.ts";
 import { devMiddleware } from "./internal/devMiddleware.ts";
+import { calledModules } from "./internal/calledModules.ts";
 import { entryCode } from "./internal/entryCode.ts";
 import { evaluateProject } from "./internal/evaluateProject.ts";
 import { exportNames } from "./internal/exportNames.ts";
@@ -371,6 +372,41 @@ export default function (): {
     });
   };
 
+  /**
+   * The deployable -> modules map the client entry binds service targets for: the `node` deployables' modules the
+   * client's browser code imports (`calledModules`), plus every module that has no folder under `modules/` (a placed
+   * stdlib module, whose contract comes by package), so no other app module's name is in the browser build.
+   */
+  const calledByClient = (
+    all: Topology,
+    own: readonly string[],
+  ): Record<string, readonly string[]> => {
+    const called = new Set(
+      calledModules(own, {
+        read: (f) => {
+          try {
+            return fs.readFileSync(path.join(root, f), "utf8");
+          } catch {
+            return undefined;
+          }
+        },
+        list: (dir) => {
+          try {
+            return fs.readdirSync(path.join(root, dir));
+          } catch {
+            return [];
+          }
+        },
+      }),
+    );
+    const out: Record<string, readonly string[]> = {};
+    for (const [n, x] of Object.entries(all)) {
+      if (x.adapter !== "node") continue;
+      const ms = x.modules.filter((m) => called.has(m) || !exists(`modules/${m}`));
+      if (ms.length > 0) out[n] = ms;
+    }
+    return out;
+  };
   /** The module a file is in: `modules/<id>/` under the root, else the placed stdlib module whose package holds it. */
   const moduleOf = (file: string): string | undefined => {
     const rel = path.relative(root, file).split(path.sep).join("/");
@@ -782,7 +818,7 @@ export default function (): {
         routesFiles(q.d).map((f) => (path.isAbsolute(f) ? f : `/${f}`)),
         CSS_IMPORT,
         clientStdData(stdArtifact(manifests()).data, new Set(d.modules)),
-        served ? Object.fromEntries(Object.entries(all).map(([n, x]) => [n, x.modules])) : {},
+        served ? calledByClient(all, d.modules) : {},
         shellOf(exists("identity.ts") ? all[d.name]?.shells : undefined),
         mode,
         exists("identity.ts"),
