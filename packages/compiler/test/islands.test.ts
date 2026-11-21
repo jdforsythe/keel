@@ -129,7 +129,7 @@ describe("vite plugin: resume entry (RFC 0046)", () => {
     p.configResolved({ root, command: "serve" });
     expect(p.resolveId(ENTRY_PATH)).toBe(ENTRY_PATH);
     expect(p.resolveId(ISLANDS_PATH)).toBe(ISLANDS_PATH);
-    expect(await p.load(ENTRY_PATH)).toBe(resumeEntry(undefined, "dev"));
+    expect(await p.load(ENTRY_PATH)).toBe(resumeEntry(undefined, "dev", "virtual:keel.css"));
     expect(await p.load(ISLANDS_PATH)).toBe(
       'import __keelIsland0 from "/modules/a/Page.tsx";\nexport const components = { "a.page": __keelIsland0 };\n',
     );
@@ -140,7 +140,7 @@ describe("vite plugin: resume entry (RFC 0046)", () => {
     expect(RESUME_ENTRY).toContain('import { resume } from "@keel/runtime-dom/ops";');
     expect(RESUME_ENTRY).toContain('const ctx = createCtx({ mode: "real" });');
     expect(RESUME_ENTRY).toContain('const mode = "production";');
-    expect(resumeEntry(undefined, "dev")).toContain('const mode = "dev";');
+    expect(resumeEntry(undefined, "dev", "virtual:keel.css")).toContain('const mode = "dev";');
     expect(RESUME_ENTRY).not.toContain("import.meta.env");
     expect(RESUME_ENTRY).toContain(
       "  warnings = resume(document.body, components, { ctx, stores: Object.fromEntries(stores()), mode }).warnings;",
