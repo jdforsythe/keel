@@ -5,7 +5,7 @@ The recipe box, in `en-US`, `de-DE` and `ja-JP`. `topology.ts` defines two deplo
 - `web` (`client`, `servedBy: 'api'`): the browser app, built to `dist/web/` and copied into `dist/api/`, so `api` serves it.
 - `api` (`node`): the `kitchen` module at `/api/recipes`, `/api/catalog/<locale>` and `/api/tally/currency`, and the `accounts` module: its sign-up and sign-in pages, `/api/tokens` and `/api/me`, and the sign-in library at `/api/auth`; and the `health` module of `@keel/std-health` at `/health`.
 
-Each module that serves a route has one contract, `modules/<id>/<id>.contract.ts`, keyed by route id: `kitchen` holds its five API entries (`kitchen.box` and `kitchen.add` share `/api/recipes` at two methods), `accounts` its two pages and two API entries, `recipes` its layout and four pages. `routes.ts` binds every entry. `recipes` calls `kitchen` through `service({ contract: kitchen })`, and each module's pages link with its contract's `href`.
+Each module that serves a route has one contract, `modules/<id>/<id>.contract.ts`, keyed by route id: `kitchen` holds its five API entries (`kitchen.box` and `kitchen.add` share `/api/recipes` at two methods); `kitchen.add` has the `signedIn` guard, so a request with no user from a session cookie or a valid API token is 403 `keel.denied`, `accounts` its two pages and two API entries, `recipes` its layout and four pages. `routes.ts` binds every entry. `recipes` calls `kitchen` through `service({ contract: kitchen })`, and each module's pages link with its contract's `href`.
 
 ## Pages
 - `/` (`recipes.index`): every recipe, or only favorites.
@@ -16,7 +16,7 @@ Each module that serves a route has one contract, `modules/<id>/<id>.contract.ts
 ## Accounts
 Keel authenticates no one; this module is an example of plugging an established sign-in library, [Better Auth](https://www.better-auth.com) (`better-auth`, pinned), into the identity seam. Two project files beside `topology.ts` hold the wiring:
 - `identity.ts`: `identityMount('/api/auth')`, the path the pages post to.
-- `identity.server.ts`: `identify` answers who made a request, the user an `Authorization: Bearer` API token acts for or else the user of the library's session cookie; `handle` mounts the library at `/api/auth`. A JSON call passes through unchanged. A page's form post is sent to the library as JSON and answered with a 303 that carries the library's `set-cookie`: to the sign-in page on success, back to the posting page with `?error=credentials` or `?error=invalid` on a refusal. What was typed never goes into a URL.
+- `identity.server.ts`: `identify` answers who made a request, the user an `Authorization: Bearer` API token acts for or else the user of the library's session cookie (a present `Authorization` header decides alone: an invalid token is no one, never the cookie); `handle` mounts the library at `/api/auth`. A JSON call passes through unchanged. A page's form post is sent to the library as JSON and answered with a 303 that carries the library's `set-cookie`: to the sign-in page on success, back to the posting page with `?error=credentials` or `?error=invalid` on a refusal. What was typed never goes into a URL.
 
 Handlers read `user`; nothing in the app stores a password or a session.
 - `/account/signup` (`accounts.signup`): a name, an email and a password, validated in the page, then posted by the browser to `/api/auth/sign-up/email`. A sign-up does not sign in, and an email that already has an account gets the same answer as a new one.

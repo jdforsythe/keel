@@ -30,7 +30,7 @@ export default RecipesText.text({
   currencyRule: "通貨を選んでください",
   otherRule: "値を確認してください",
   titleTaken: "すでに登録されています",
-  notFound: { text: "レシピ {id} はありません" },
+  notFound: "そのレシピはありません",
   indexTitle: "レシピ · Keel",
   showTitle: { text: "{title} · レシピ" },
   newTitle: "新しいレシピ · Keel",

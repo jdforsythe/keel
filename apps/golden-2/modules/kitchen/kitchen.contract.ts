@@ -17,7 +17,7 @@ export const kitchen = contract("kitchen", {
     path: "/api/recipes",
     body: RecipeDraft,
     output: Nothing,
-    errors: { 422: ErrorReply },
+    errors: { 403: ErrorReply, 422: ErrorReply },
   },
   "kitchen.favorite": {
     method: "POST",

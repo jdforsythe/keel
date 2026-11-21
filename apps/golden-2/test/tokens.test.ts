@@ -90,6 +90,39 @@ describe("API tokens", () => {
     for (const canary of [EMAIL, PASSWORD, token]) expect(log).not.toContain(canary);
   });
 
+  it("never falls back to the session cookie when a present bearer is invalid", async () => {
+    const { b } = await signedIn(23);
+    expect((await b.json("GET", "/api/me")).status).toBe(200);
+    const bad = await b.json("GET", "/api/me", { authorization: "Bearer not-a-minted-token" });
+    expect(bad.status).toBe(403);
+    expect(deniedOf(bad.text)?.code).toBe("keel.denied");
+    const draft = { title: "Soup", minutes: 5, price: { amount: 100, currency: "EUR" } };
+    expect((await b.json("POST", "/api/recipes", { authorization: "Bearer not-a-minted-token" }, draft)).status).toBe(
+      403,
+    );
+    expect((await b.json("POST", "/api/recipes", {}, draft)).status).toBe(200);
+  });
+
+  it("admits kitchen.add for a session or a minted token and refuses it for no one", async () => {
+    const { app, b } = await signedIn(24);
+    const draft = (title: string) => ({ title, minutes: 5, price: { amount: 100, currency: "EUR" } });
+    const stranger = browser(app);
+    const refused = await stranger.json("POST", "/api/recipes", {}, draft("Pie"));
+    expect(refused.status).toBe(403);
+    expect(refused.text).toContain("keel.denied");
+    const minted = body((await b.json("POST", "/api/tokens", {}, {})).text, Minted);
+    const byToken = await stranger.json(
+      "POST",
+      "/api/recipes",
+      { authorization: `Bearer ${minted?.token ?? ""}` },
+      draft("Stew"),
+    );
+    expect(byToken.status).toBe(200);
+    const list = await stranger.json("GET", "/api/recipes");
+    expect(list.text).toContain('"title":"Stew"');
+    expect(list.text).not.toContain('"title":"Pie"');
+  });
+
   it("refuses /api/me with neither a session nor a token, and minting when signed out or by a token", async () => {
     const { app, b } = await signedIn(22);
     const stranger = browser(app);

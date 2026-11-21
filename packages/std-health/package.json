@@ -25,6 +25,30 @@
       "default": "./src/*.ts"
     }
   },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/src/index.d.ts",
+        "default": "./dist/src/index.js"
+      },
+      "./module": {
+        "types": "./dist/module.d.ts",
+        "default": "./dist/module.js"
+      },
+      "./routes": {
+        "types": "./dist/src/routes.d.ts",
+        "default": "./dist/src/routes.js"
+      },
+      "./contract": {
+        "types": "./dist/src/health.contract.d.ts",
+        "default": "./dist/src/health.contract.js"
+      },
+      "./*": {
+        "types": "./dist/src/*.d.ts",
+        "default": "./dist/src/*.js"
+      }
+    }
+  },
   "files": ["dist", "docs"],
   "scripts": {
     "check": "tsc --noEmit && biome check src test unsafe module.ts",

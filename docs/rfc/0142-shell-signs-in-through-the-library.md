@@ -1,6 +1,6 @@
 # RFC 0142: a shell signs in through the app's auth library
 
-Status: accepted (ADR-0164) by the orchestrator on the operator's leave to go ahead on its recommendation (2026-11-19), for the operator to confirm.
+Status: implemented (ADR-0164) by the orchestrator on the operator's leave to go ahead on its recommendation (2026-11-19), for the operator to confirm.
 
 ## Problem
 A page in a native shell cannot use the identity mount. Each point was read in the code and spec on 2026-11-18.

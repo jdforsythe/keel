@@ -1,6 +1,6 @@
 # RFC 0124: `keel build` writes the production client whatever `NODE_ENV` says
 
-Status: accepted (orchestrator under the owner's standing leave, 2026-11-17). For backlog 0751 (red team 5, finding 2, MEDIUM). Follows RFC 0119 and RFC 0122.
+Status: implemented (orchestrator under the owner's standing leave, 2026-11-17). For backlog 0751 (red team 5, finding 2, MEDIUM). Follows RFC 0119 and RFC 0122.
 
 ## Problem
 The generated client entry and the resume entry compute `const mode = import.meta.env?.DEV === true ? "dev" : "production"` (`packages/compiler/src/internal/entryCode.ts:73`, `packages/compiler/src/entry/resumeEntry.ts:25`), and the client entry runs the inspect reporter under `if (import.meta.env.DEV)` (`entryCode.ts:78`). Vite sets `DEV` to `NODE_ENV !== "production"` once `NODE_ENV` is set, and a project `.env` holding `NODE_ENV=development` sets it when the shell does not (vite 8.3.6, `dist/node/chunks/node.js:37539-37546,37681-37686,37802`). `keel build` hands the shell environment to `vite build` unchanged (`packages/cli/src/internal/viteRun.ts:16`; `packages/cli/src/shell/shellBuild.ts:88` for `--target`). Red team 5 built the entry's mode line with the repo's Vite:

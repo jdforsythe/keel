@@ -5,7 +5,7 @@ import "@keel/std-report/tools";
 import { describe, expect, it } from "vitest";
 import topology from "../topology.ts";
 import { apiRoutes } from "./apiRoutes.ts";
-import { apiCtx, asJson, draft } from "./simApi.ts";
+import { apiCtx, asJson, asUser, draft } from "./simApi.ts";
 
 const ID = "kitchen.box.currency";
 
@@ -17,7 +17,8 @@ const section = async (app: { fetch: (req: Request) => Response | Promise<Respon
   return typeof found === "object" && found !== null && "value" in found ? found.value : null;
 };
 
-const devApi = () => createApp({ topology, routes: apiRoutes, ctx: apiCtx(), deployable: "api", mode: "dev" });
+const devApi = () =>
+  createApp({ topology, routes: apiRoutes, ctx: apiCtx(), deployable: "api", mode: "dev", identity: asUser("tester") });
 
 describe("the kitchen's tally of the box by currency", () => {
   it("is an empty tally in the dev inspect document before any request reads the box", async () => {

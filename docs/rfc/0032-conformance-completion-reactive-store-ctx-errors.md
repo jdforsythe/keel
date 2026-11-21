@@ -1,6 +1,6 @@
 # RFC 0032: Conformance completion: k.reactive, k.store, k.ctx, k.errors
 
-Status: accepted
+Status: implemented
 
 ## Problem
 The freeze review (docs/freeze-review.md §1, backlog 0057) found clauses in these four sections asserted only in part, which blocks `conformance-covered` under the strict verdict (tasks/0034-freeze D1). Conformance edits on `implemented` sections need a numbered RFC (D5). k.errors still reads `proposed` though every API, Boundary and rule it names is implemented (review §5 item 11).

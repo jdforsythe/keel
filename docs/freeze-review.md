@@ -7,39 +7,39 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | section | clauses | status | missing tests |
 | --- | --- | --- | --- |
 | k.schema | 15 | **conformance-covered** | none |
-| k.formats | 1 | implemented | clause 1: its tests' `// Spec:` headers name k.schema |
+| k.formats | 1 | **conformance-covered** | none |
 | k.reactive | 20 | **conformance-covered** | none |
 | k.store | 23 | **conformance-covered** | none |
 | k.ctx | 18 | **conformance-covered** | none |
 | k.errors | 13 | **conformance-covered** | none |
 | k.compiler | 20 | **conformance-covered** | none |
-| k.component | 16 | **conformance-covered** | none |
+| k.component | 17 | **conformance-covered** | none |
 | k.runtime | 13 | **conformance-covered** | none |
 | k.ui | 15 | **conformance-covered** | none |
-| k.router | 15 | **conformance-covered** | none |
+| k.router | 16 | **conformance-covered** | none |
 | k.prefix | 7 | **conformance-covered** | none |
 | k.head | 8 | **conformance-covered** | none |
 | k.forms | 16 | **conformance-covered** | none |
 | k.server | 16 | **conformance-covered** | none |
 | k.topology | 9 | **conformance-covered** | none |
-| k.compat | 13 | **conformance-covered** | none |
+| k.compat | 11 | **conformance-covered** | none |
 | k.api | 14 | **conformance-covered** | none |
 | k.services | 12 | **conformance-covered** | none |
 | k.check | 13 | **conformance-covered** | none |
 | k.cli | 19 | **conformance-covered** | none |
 | k.module | 14 | **conformance-covered** | none |
-| k.scaffold | 10 | **conformance-covered** | none |
+| k.scaffold | 14 | implemented | clause 11 (`scaffold route` with `method` and no `api` is E1052) and clause 14 (the W1356 managed-block check): no cited test |
 | k.testing | 14 | **conformance-covered** | none |
 | k.model | 7 | **conformance-covered** | none |
 | k.sim | 10 | **conformance-covered** | none |
 | k.ledger | 11 | **conformance-covered** | none |
 | k.sync | 14 | **conformance-covered** | none |
 | k.deploy | 11 | **conformance-covered** | none |
-| k.bundle | 7 | **conformance-covered** | clause 7 (RFC 0167): no test yet |
+| k.bundle | 7 | **conformance-covered** | none |
 | k.explain | 4 | **conformance-covered** | none |
-| k.return | 9 | **conformance-covered** | none |
-| k.opening | 6 | **conformance-covered** | none |
-| k.hosting | 6 | **conformance-covered** | none |
+| k.return | 5 | **conformance-covered** | none |
+| k.opening | 14 | **conformance-covered** | none |
+| k.hosting | 7 | **conformance-covered** | none |
 | k.openapi | 1 | **conformance-covered** | none |
 | k.a11y | 12 | **conformance-covered** | none |
 | k.security | 13 | **conformance-covered** | none |
@@ -50,25 +50,25 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.persist | 12 | **conformance-covered** | none |
 | k.prove | 10 | **conformance-covered** | none |
 | k.reveal | 9 | **conformance-covered** | none |
-| k.shell | 7 | proposed | clause 6: the test for "the package's drivers" matches the word `drivers` only |
+| k.shell | 8 | **conformance-covered** | none |
 | k.claim | 9 | **conformance-covered** | none |
 | k.defaults | 6 | **conformance-covered** | none |
 | k.host | 5 | **conformance-covered** | none |
 | k.leave | 10 | **conformance-covered** | none |
-| k.mount | 7 | **conformance-covered** | none |
+| k.mount | 8 | **conformance-covered** | none |
 | k.owner | 5 | **conformance-covered** | none |
 | k.place | 5 | **conformance-covered** | none |
 | k.resume | 13 | **conformance-covered** | none |
-| k.serverlog | 7 | **conformance-covered** | clause 7 (RFC 0164): no test yet |
-| k.user | 10 | **conformance-covered** | clauses 8 and 9 (RFC 0165): no test quotes them yet |
+| k.serverlog | 7 | **conformance-covered** | none |
+| k.user | 10 | **conformance-covered** | none |
 | k.boundary | 8 | **conformance-covered** | not audited clause by clause; the environment and limits suites run `keel build` on fixtures whose `env.d.ts` the type pass does not read |
-| std.brands | 6 | **conformance-covered** | none |
-| std.channels | 11 | **conformance-covered** | none |
-| std.conflicts | 8 | **conformance-covered** | none |
+| std.brands | 7 | **conformance-covered** | none |
+| std.channels | 12 | **conformance-covered** | none |
+| std.conflicts | 10 | **conformance-covered** | none |
 | std.copy | 2 | **conformance-covered** | none |
 | std.db | 8 | proposed | clause 1: the Postgres path runs on PGlite only; no job sets `KEEL_TEST_POSTGRES_URL` |
 | std.outbox | 14 | **conformance-covered** | none |
-| std.outbox-owner | 3 | **conformance-covered** | not audited clause by clause |
+| std.outbox-owner | 6 | **conformance-covered** | not audited clause by clause |
 | std.geo | 5 | **conformance-covered** | none |
 | std.headless | 7 | **conformance-covered** | none |
 | std.health | 7 | **conformance-covered** | none |
@@ -79,12 +79,12 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | std.money | 7 | **conformance-covered** | none |
 | std.monitor | 7 | **conformance-covered** | none |
 | std.multi | 7 | **conformance-covered** | none |
-| std.offline | 15 | **conformance-covered** | none |
+| std.offline | 16 | **conformance-covered** | none |
 | std.options | 7 | **conformance-covered** | none |
-| std.report | 6 | **conformance-covered** | none |
+| std.report | 19 | **conformance-covered** | none |
 | std.schedules | 9 | **conformance-covered** | none |
 | std.sessions | 13 | **conformance-covered** | none |
-| std.shells | 8 | **conformance-covered** | none |
+| std.shells | 9 | **conformance-covered** | none |
 | std.statecharts | 10 | **conformance-covered** | none |
 | std.tables | 9 | **conformance-covered** | none |
 | std.temporal | 12 | **conformance-covered** | none |
@@ -92,7 +92,21 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | std.timings | 7 | **conformance-covered** | none |
 | std.tokens | 12 | **conformance-covered** | none |
 | std.workflows | 8 | **conformance-covered** | none |
-| **total** | **854** | 83 of 85 covered | |
+| k.contract | 11 | **conformance-covered** | none |
+| k.docs | 13 | implemented | clause 5 (a `docs/` link outside its package is E1066) and clause 8 (a skill's `title` from a `description` with codes): no cited test |
+| k.host-code | 6 | implemented | the Chromium clause: no browser test |
+| k.host-element | 11 | **conformance-covered** | none |
+| k.links | 11 | **conformance-covered** | none |
+| k.mount-scope | 1 | implemented | clause 1: asserted, not cited under its full text |
+| k.origins | 11 | **conformance-covered** | none |
+| k.parity | 6 | proposed | clauses 5 and 6: no test; S0013, the kind gates, is not built |
+| k.roles | 8 | implemented | clause 6: asserted in `ui/conformance/roles-grid.test.ts`, not cited under its full text |
+| k.routes | 9 | **conformance-covered** | none |
+| std.capacitor | 6 | implemented | `UNTESTABLE` toolchain lookups and capability file shape |
+| std.contracts | 7 | **conformance-covered** | none |
+| std.lists | 6 | **conformance-covered** | none |
+| std.tauri | 6 | implemented | `UNTESTABLE` toolchain lookups and capability file shape |
+| **total** | **1003** | 91 of 100 covered | |
 
 ## 2. One-way audit (principle 1)
 
@@ -139,6 +153,6 @@ Golden apps: `apps/golden-1` and `apps/golden-2` have converged evals (`evals/re
 
 ## Status
 
-No section is `frozen`. The kernel is provisionally frozen: a kernel change goes through an RFC with an ADR, a conformance update and a migration note, and the `frozen` flip waits until the stdlib stages have exercised the kernel (`tasks/0034-freeze/PLAN.md`). k.shell and std.db are `proposed`, k.formats is `implemented`; the other 83 are `conformance-covered`.
+No section is `frozen`. The kernel is provisionally frozen: a kernel change goes through an RFC with an ADR, a conformance update and a migration note, and the `frozen` flip waits until the stdlib stages have exercised the kernel (`tasks/0034-freeze/PLAN.md`). k.parity and std.db are `proposed`; k.docs, k.host-code, k.mount-scope, k.roles, k.scaffold, std.capacitor and std.tauri are `implemented`; the other 91 of 100 are `conformance-covered`.
 
-verified: 8e06a5f29c5a8fcf34eeba72b98ecbce7c4dccbd
+verified: 68d910b9bf61e79f5f3a523d5bc0c8f4b4419ccc

@@ -1,6 +1,6 @@
 # RFC 0109: cli conformance: test plumbing
 
-Status: accepted (user for the decisions, orchestrator for the choices, 2026-11-17). For backlog 0703 and 0462. ADR-0132 records it.
+Status: implemented (user for the decisions, orchestrator for the choices, 2026-11-17). For backlog 0703 and 0462. ADR-0132 records it.
 
 ## Decisions
 - D1: one `rfc:0109` commit may change `packages/cli/conformance/dev-port-0091.test.ts` and `packages/cli/conformance/topology-keel-dev-one-origin.test.ts` in their plumbing only. Every `expect` keeps its subject's meaning, its matcher and its expected value; every `// Spec:` line stays as it is; the fixtures, the spawned command and its arguments stay.
