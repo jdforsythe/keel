@@ -3,7 +3,7 @@
   "unsafe": 18,
   "hostElements": 0,
   "rungs": {
-    "example": 1447,
+    "example": 1456,
     "probabilistic": 331,
     "exhaustive": 15,
     "proven": 73,
@@ -16,7 +16,7 @@
         "threshold": 70
       },
       "cli": {
-        "score": 79.74,
+        "score": 81.06,
         "threshold": 70
       },
       "compiler": {
@@ -44,7 +44,7 @@
         "threshold": 70
       },
       "scaffold": {
-        "score": 79.31,
+        "score": 79.35,
         "threshold": 70
       },
       "schema": {
@@ -76,7 +76,7 @@
         "threshold": 70
       },
       "std-db": {
-        "score": 97.59,
+        "score": 96.49,
         "threshold": 70
       },
       "std-geo": {
@@ -14186,15 +14186,15 @@
     },
     {
       "item": "k.data#7",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.data#8",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.data#9",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.defaults#1",
@@ -14266,7 +14266,7 @@
     },
     {
       "item": "k.deploy#12",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.docs#1",
@@ -15854,7 +15854,7 @@
     },
     {
       "item": "k.server#17",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.serverlog#1",
@@ -17102,19 +17102,19 @@
     },
     {
       "item": "std.postgres#9",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.postgres#10",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.postgres#11",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.postgres#12",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.report#1",

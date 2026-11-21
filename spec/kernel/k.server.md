@@ -1,5 +1,5 @@
 # k.server: Thin server
-status: implemented
+status: conformance-covered
 
 **API.** Apps import only `topology` and `commitStores` (k.persist) from `@keel/server`; `loader`/`action` (`@keel/router`) run over HTTP.
 - `loader(contract, id, { output?, stores? }, fn)`: `fn` gets `{ params, search, url, caller, user, bearer, stores }` and `ctx`; returns `Promise<Result<T, KeelError>>` encoded with `output` (the entry's on an API entry, k.contract).

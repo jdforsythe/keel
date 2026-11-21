@@ -1,5 +1,5 @@
 # k.data: App data
-status: implemented
+status: conformance-covered
 
 **Stance.** App data is the records an app keeps for its users: recipes, orders, profiles. The kernel neither stores nor fetches it, as it signs no one in (k.user). It validates what crosses a boundary: a request by its contract entry's `params`, `search` or `query` and its `body` or `input`, an answer by its `output` (k.contract, k.server, E1554). The app keeps its data in any store through any library, reached from a capability (k.ctx `register`) whose real, shell and sim sides return one TypeScript type. `@keel/std-postgres` is one such capability (std.postgres); a library with no Keel package plugs in the same way.
 

@@ -1,6 +1,6 @@
 # RFC 0175: k.data, std.postgres: migrations found by module, a build that fails on E1006, retried migration passes, dev and compose defaults
 
-Status: review (ADR-0197 proposed). Amends RFC 0158 (D11 and the Migrations and Modes text of std.postgres). From golden-2's move onto `@keel/std-postgres`, the first app on the app-data seam.
+Status: implemented (ADR-0197). Amends RFC 0158 (D11 and the Migrations and Modes text of std.postgres). From golden-2's move onto `@keel/std-postgres`, the first app on the app-data seam.
 
 ## Decisions
 - D1: the build-time evaluation bundles as the server build does, with `require` defined for CommonJS packages. A graph that reaches `pg` evaluates; only module top levels run, as now.
