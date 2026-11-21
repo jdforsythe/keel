@@ -1,5 +1,5 @@
 {
-  "commit": "7d37c82f30a0e04c724a241ba51fe9bff2715d75",
+  "commit": "974438e94b7e84984b1d6447d6ee4425681c9c0c",
   "coverage": {
     "packages": {
       "apps/golden-1": {
@@ -1158,7 +1158,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-21T20:45:36.704Z",
+  "generatedAt": "2026-11-21T20:57:27.963Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -1174,10 +1174,10 @@
     },
     "clauses": {
       "byRung": {
-        "example": 835,
+        "example": 837,
         "exhaustive": 6,
         "monitored": 0,
-        "none": 4,
+        "none": 2,
         "probabilistic": 174,
         "proven": 37
       },
@@ -1431,16 +1431,16 @@
         },
         "k.escapes": {
           "byRung": {
-            "example": 8,
+            "example": 9,
             "exhaustive": 0,
             "monitored": 0,
-            "none": 1,
+            "none": 0,
             "probabilistic": 0,
             "proven": 0
           },
           "status": "implemented",
           "total": 9,
-          "verified": 8
+          "verified": 9
         },
         "k.evidence": {
           "byRung": {
@@ -1860,16 +1860,16 @@
         },
         "k.review": {
           "byRung": {
-            "example": 7,
+            "example": 8,
             "exhaustive": 0,
             "monitored": 0,
-            "none": 1,
+            "none": 0,
             "probabilistic": 0,
             "proven": 0
           },
           "status": "implemented",
           "total": 8,
-          "verified": 7
+          "verified": 8
         },
         "k.roles": {
           "byRung": {
@@ -2562,10 +2562,10 @@
         }
       },
       "total": 1056,
-      "verified": 1052
+      "verified": 1054
     },
     "evidenceByRung": {
-      "example": 1473,
+      "example": 1475,
       "exhaustive": 15,
       "monitored": 8,
       "probabilistic": 331,
@@ -3115,7 +3115,7 @@
     },
     "items": 1861,
     "unsafe": 18,
-    "verified": 1577
+    "verified": 1579
   },
   "mutation": {
     "packages": {
@@ -3556,7 +3556,7 @@
         "unitFiles": 59
       },
       "packages/cli": {
-        "conformanceCases": 458,
+        "conformanceCases": 459,
         "conformanceFiles": 151,
         "exploreFiles": 0,
         "fails": 0,
@@ -3565,7 +3565,7 @@
         "propertyCalls": 140,
         "proveFiles": 0,
         "simulateFiles": 0,
-        "skipTodo": 3,
+        "skipTodo": 0,
         "unitCases": 748,
         "unitFiles": 95
       },
@@ -4117,7 +4117,7 @@
       }
     },
     "totals": {
-      "conformanceCases": 4862,
+      "conformanceCases": 4863,
       "conformanceFiles": 1196,
       "exploreFiles": 17,
       "fails": 2,
@@ -4126,7 +4126,7 @@
       "propertyCalls": 2249,
       "proveFiles": 23,
       "simulateFiles": 6,
-      "skipTodo": 5,
+      "skipTodo": 2,
       "unitCases": 5304,
       "unitFiles": 893
     }
