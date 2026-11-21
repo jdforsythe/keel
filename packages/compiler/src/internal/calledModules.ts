@@ -1,15 +1,10 @@
 import path from "node:path";
+import type { ModuleFiles } from "./ModuleFiles.ts";
 import { SERVER_ONLY_NAME } from "./SERVER_ONLY_NAME.ts";
 
 const SPECIFIER = /(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)["'](\.{1,2}\/[^"']*)["']/g;
 const EXTENSIONS = ["", ".ts", ".tsx", ".js", ".jsx", ".mts", ".mjs"];
 const INDEXES = EXTENSIONS.slice(1).map((e) => `index${e}`);
-
-/** The file system a scan reads: a file's text (undefined when there is none) and a folder's file names. */
-export interface ModuleFiles {
-  readonly read: (file: string) => string | undefined;
-  readonly list: (dir: string) => readonly string[];
-}
 
 /**
  * The app modules whose files a `client` deployable's browser code imports (k.hosting Peers): the entry binds a
