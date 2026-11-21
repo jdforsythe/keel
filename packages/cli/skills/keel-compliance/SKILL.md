@@ -67,7 +67,7 @@ Store `id` and `digest` (type `Digested` from `@keel/std-tokens`) in a store; `t
 
 ## Caller
 
-`caller: { days }` on a `node` deployable in `topology.ts` (integer 1 to 400; E1578 otherwise) makes the caller cookie last that long. The caller hash is then a device identifier of class `network`, and `pii.json` records it. The caller grants nothing.
+`caller: { days }` on a `node` deployable in `topology.ts` (integer 1 to 400; E1578 otherwise) makes the caller cookie last that long. The caller hash is a device identifier of class `network`; `pii.json` records it. A std.sessions recording keeps no `meta.caller`; a caller hash in store state needs `.pii('network')`. The caller grants nothing.
 
 ## Content security policy
 

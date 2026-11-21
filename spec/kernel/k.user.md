@@ -6,7 +6,7 @@ A request has two identities. `caller` (k.server, k.security) is an anonymous pe
 **Identity source.** A project may have `identity.server.ts` beside `topology.ts`, default-exporting `identity({ identify, handle? })` (`@keel/server`); each `node` deployable's generated entry passes it as `createApp({ identity })`.
 - `identify({ request, caller }, ctx)` returns `Promise<string>`: a user id, `''` for no one. `request` is the incoming `Request` without its body.
 - It runs once per request the deployable answers on a route (page, API route, event stream), after the same-site check and before guards; never for assets, `/__keel/*`, a forwarded path or `handle`. The kernel keeps no answer across requests.
-- A throw is 500 `keel.unexpected` with a `diag` `identify threw: <name>` (the error's `name` only); an answer that is not a string of at most 256 characters is 500 with `identify returned: invalid`; past 5,000 ms on `ctx.clock`, 503 `keel.busy` (`data: { limit: 5000 }`). No guard, loader or action then runs.
+- A throw is 500 `keel.unexpected` with a `diag` `identify threw: <name>` (its `name` only); an answer that is not a string of at most 256 characters is 500 with `identify returned: invalid`; past 5,000 ms on `ctx.clock`, 503 `keel.busy` (`data: { limit: 5000 }`). No guard, loader or action then runs.
 - `handle: { path, fn }`: a request at `path` or under it goes to `fn(request, ctx)` with its body (`maxBodyBytes`), after the same-site check for a write; its `Response`, `set-cookie` included, is returned with k.security's headers added. An auth library's endpoints live here.
 
 **User.** Guards, loaders (live too) and actions get `user: string` beside `caller`: `identify`'s answer; `''` with no identity source, on a `client` deployable, or under `renderRoute` without its `user` option. An event stream keeps the `user` it opened with until it closes. No header, cookie, search or body value of the client sets `user`.
@@ -28,5 +28,5 @@ A request has two identities. `caller` (k.server, k.security) is an anonymous pe
 - A caller cookie minted with no `caller` option has no `Max-Age`; with `caller: { days: 30 }`, `Max-Age=2592000`, and a request presenting it gets no new caller cookie.
 - `caller: { days: 0 }`, `{ days: 401 }`, `{ days: 1.5 }`, `caller` on a `client` deployable, and `handle.path` `/api` with a route `/api/x` are each one diagnostic (E1578, E1579).
 - With `caller: { days: 30 }`, `pii.json` has `caller: { days: 30, class: 'network' }`; without it, `{ days: null, class: null }`.
-- With or without it, a std.sessions recording of a `tx` with `meta: { caller }` holds neither `meta` nor the hash.
+- With or without `caller`, a std.sessions recording of a `tx` with `meta: { caller }` holds neither `meta` nor the hash.
 - A `service({ module: 'b' })` header for `user: 'u1'` resent with another body or to deployable `c`, or signed 66 s ahead, is ignored and `identify` runs; resent unchanged within 60 s, `'u1'`. A 257-character `user`: `api.input` at the sender, ignored by the receiver.
