@@ -836,6 +836,7 @@ export default function (): {
         shellOf(exists("identity.ts") ? all[d.name]?.shells : undefined),
         mode,
         exists("identity.ts"),
+        served,
       );
     },
     transformIndexHtml() {

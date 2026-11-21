@@ -113,4 +113,12 @@ describe("the client build's service map", () => {
     const a = path.join(root, "modules/web/a.ts");
     expect(() => finish(p, [a, path.join(root, "modules/other/y.ts")], a)).toThrow(/^E1011 other /);
   });
+
+  it("reads the peers' keel-peer tags when the topology has a node deployable, though no module of it is called", async () => {
+    const code = await entry(setup("export const a = 1;\n"));
+    expect(code).toContain('meta[name="keel-peer"]');
+    expect(code).toContain('Symbol.for("keel.modules")');
+    expect(code.includes('"api"')).toBe(false);
+    expect(code.includes('"other"')).toBe(false);
+  });
 });
