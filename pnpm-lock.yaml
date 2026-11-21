@@ -299,6 +299,12 @@ importers:
       '@keel/server':
         specifier: workspace:*
         version: link:../../packages/server
+      '@keel/std-headless':
+        specifier: workspace:*
+        version: link:../../packages/std-headless
+      '@keel/std-statecharts':
+        specifier: workspace:*
+        version: link:../../packages/std-statecharts
       '@keel/store':
         specifier: workspace:*
         version: link:../../packages/store

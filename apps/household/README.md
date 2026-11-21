@@ -24,3 +24,18 @@ Run every command from `apps/household`.
 `keel docs` prints the map of every spec section; `keel docs k.head` prints one, and `keel explain <code>` explains a diagnostic.
 
 Check your work: `pnpm test && pnpm check && pnpm build`.
+
+## Layer 2: schema, store, component, widgets
+
+The `shopping` module holds the list. `keel scaffold module shopping`, `keel scaffold store shopping.items`, `keel scaffold transaction shopping.items.add`, `keel scaffold route shopping.list --path /list` and `keel scaffold component shopping/ShoppingList` write the files; the code fills them in.
+
+- `Item.schema.ts` and `ItemsState.schema.ts` describe one item and the list. `items.store.ts` holds the store and three invariants: at most 50 items, unique ids, and one open item per name.
+- `add`, `toggle`, `remove` and `show` are the only writes. Adding a name already on the list raises its quantity; putting a bought item back merges it into the open one.
+- `ShoppingList.tsx` uses four widgets from `@keel/std-headless`: a `Menu` of staples, `Tabs` for To buy and Bought, a `Disclosure` for help, and a `Toaster` that shows an alert when a write is refused. It takes `ctx` for `ctx.random.id("Item")`, so the module lists the `random` capability.
+- The start page links to the list with `shopping.href("shopping.list")`; the `app` module lists `shopping` in `deps`.
+
+Tests: `test/items.test.ts` runs `properties` on each transaction and a bounded `explore`; `test/shoppingList.test.ts` renders the route, opens the menu, adds a staple twice, moves it between tabs and checks the focus order. `smoke/drive.mjs <origin>` drives the built app in Chromium.
+
+The list lives in the browser in this layer: a reload empties it. Layer 4 moves it to the server.
+
+Check your work: `pnpm test && pnpm check && pnpm build`, then start the build and run `node smoke/drive.mjs http://localhost:5211`.

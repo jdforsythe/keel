@@ -1,5 +1,5 @@
 import { topology } from "@keel/server";
 
 export default topology({
-  web: { modules: ["app"], adapter: "node" },
+  web: { modules: ["app", "shopping"], adapter: "node" },
 });

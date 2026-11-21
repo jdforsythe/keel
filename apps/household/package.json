@@ -19,7 +19,9 @@
     "@keel/schema": "workspace:*",
     "@keel/server": "workspace:*",
     "@keel/store": "workspace:*",
-    "@keel/ui": "workspace:*"
+    "@keel/ui": "workspace:*",
+    "@keel/std-headless": "workspace:*",
+    "@keel/std-statecharts": "workspace:*"
   },
   "devDependencies": {
     "@keel/cli": "workspace:*",

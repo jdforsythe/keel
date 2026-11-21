@@ -35,3 +35,25 @@ Working file for the orchestrator; it moves to `tasks/p1/` before merge. Each fi
 
 ### L1-8 rough: `keel dev` and the build serve different documents for a node deployable
 - `keel dev --port 5199` on the fresh project serves the scaffold's `index.html` (a header with the mark and the literal app name, an empty `#app`, the client entry). The built `server.mjs` renders the route on the server and ignores `index.html`. The header and its literal text appear in dev only.
+
+## Layer 2
+
+### L2-1 rough: `keel check` is not clean after an edit until `keel build` runs, and `--quiet` hides why
+- After editing a component, `keel check` reports `E1005 .keel/ids.json:1:1 generated .keel/ids.json does not match its sources; run keel build` (also `a11y.json`, `deps.json`, `routes.json`, `styles.json`, `surface.json`). The app's `check` script runs `keel check --quiet`, which prints only `fail check 35 files, 1 errors, 0 warnings`, with no diagnostic line, so the reader cannot tell which file is stale.
+- Expected: `keel check` regenerates or names a single command; `--quiet` keeps error lines (OUTPUT.md quiet mode drops ok lines).
+
+### L2-2 docs: k.ui says `role` is a base-element prop; `Text` rejects it
+- Tried: `<Text id="shopping.failed" role="alert">` for an error line (`modules/shopping/ShoppingList.tsx`).
+- `tsc`: `TS2322 ... Property 'role' does not exist on type ...`. `keel docs k.ui` lists `role` among the props "read at build". Used a `Toaster` with an `alert` item instead, which the docs do describe.
+
+### L2-3 docs: what to assert after a bounded `explore`
+- `explore(txs, { depth: 5, payloads })` returns `complete: false` (the depth bound was hit), so the skill's `expect(r.complete).toBe(true)` does not apply. The skill says a broken invariant is E1708 but not whether it throws or lands in the result. I asserted `depth` and the state count (`test/items.test.ts`).
+
+### L2-4 rough: a failed test leaks its render into the next one
+- The first version of `test/shoppingList.test.ts` failed an `expect` before `page.dispose()`. The next test failed at `renderRoute` with `E1703 landmark-unique: <main id="shopping.page"> Landmarks should have a unique role`, because the first page was still in the document. The real failure was one line up in the output. Expected: the harness disposes a test's render at test end.
+
+### L2-5 rough: `fire(tab, keydown)` does nothing until the tab has focus
+- `fire("shopping.view.tab.toBuy", { type: "keydown", key: "ArrowRight" })` left the selection; a `fire(..., { type: "focus" })` first made it work. This matches APG Tabs (focus sends `open`), but `fire` could focus the target as a browser does on a key press, or the skill could say so.
+
+### L2-6 rough: a loader's literal data does not fit a schema `enum`
+- `ListText` had `key: s.enum([...])` inside an array; the loader returning `{ key: "milk", ... }` failed `tsc` with a 20-line `TS2769` (the literal widened to `string`) and `keel check` reported `E1515 shopping.list: loader does not fit the entry it is bound at` in `routes.ts`, away from the cause. Used `s.string` for the key.
