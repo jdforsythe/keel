@@ -2,7 +2,7 @@
   "version": 1,
   "unsafe": 18,
   "rungs": {
-    "example": 1310,
+    "example": 1320,
     "probabilistic": 330,
     "exhaustive": 15,
     "proven": 63,
@@ -11,11 +11,11 @@
   "mutation": {
     "packages": {
       "check": {
-        "score": 75.18,
+        "score": 75.1,
         "threshold": 70
       },
       "cli": {
-        "score": 76.99,
+        "score": 76.69,
         "threshold": 70
       },
       "compiler": {
@@ -35,7 +35,7 @@
         "threshold": 80
       },
       "router": {
-        "score": 86.92,
+        "score": 85.73,
         "threshold": 80
       },
       "runtime-dom": {
@@ -43,7 +43,7 @@
         "threshold": 70
       },
       "scaffold": {
-        "score": 79.51,
+        "score": 79.61,
         "threshold": 70
       },
       "schema": {
@@ -83,7 +83,7 @@
         "threshold": 70
       },
       "std-headless": {
-        "score": 78.36,
+        "score": 78.17,
         "threshold": 70
       },
       "std-health": {
@@ -159,7 +159,7 @@
         "threshold": 80
       },
       "testing": {
-        "score": 87.61,
+        "score": 88.12,
         "threshold": 70
       },
       "ui": {
@@ -2087,14 +2087,6 @@
         "survived": 2,
         "noCoverage": 0,
         "score": 95.24
-      },
-      {
-        "file": "packages/cli/src/internal/specCommand.ts",
-        "sha": "fce6f25c089327c4fda166cb9a821f933659c391159db39a49c4f60c60910b1c",
-        "killed": 100,
-        "survived": 4,
-        "noCoverage": 0,
-        "score": 96.15
       },
       {
         "file": "packages/cli/src/internal/specHeaders.ts",
@@ -13860,6 +13852,10 @@
       "rung": "example"
     },
     {
+      "item": "k.bundle#7",
+      "rung": "example"
+    },
+    {
       "item": "k.check#1",
       "rung": "example"
     },
@@ -14360,6 +14356,58 @@
       "rung": "example"
     },
     {
+      "item": "k.docs#1",
+      "rung": "example"
+    },
+    {
+      "item": "k.docs#2",
+      "rung": "example"
+    },
+    {
+      "item": "k.docs#3",
+      "rung": "example"
+    },
+    {
+      "item": "k.docs#4",
+      "rung": "example"
+    },
+    {
+      "item": "k.docs#5",
+      "rung": "none"
+    },
+    {
+      "item": "k.docs#6",
+      "rung": "example"
+    },
+    {
+      "item": "k.docs#7",
+      "rung": "example"
+    },
+    {
+      "item": "k.docs#8",
+      "rung": "none"
+    },
+    {
+      "item": "k.docs#9",
+      "rung": "example"
+    },
+    {
+      "item": "k.docs#10",
+      "rung": "example"
+    },
+    {
+      "item": "k.docs#11",
+      "rung": "example"
+    },
+    {
+      "item": "k.docs#12",
+      "rung": "example"
+    },
+    {
+      "item": "k.docs#13",
+      "rung": "example"
+    },
+    {
       "item": "k.errors#1",
       "rung": "probabilistic"
     },
@@ -14834,6 +14882,10 @@
     {
       "item": "k.module#14",
       "rung": "example"
+    },
+    {
+      "item": "k.mount-scope#1",
+      "rung": "none"
     },
     {
       "item": "k.mount#1",
@@ -15441,11 +15493,11 @@
     },
     {
       "item": "k.scaffold#3",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "k.scaffold#4",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "k.scaffold#5",
@@ -15453,11 +15505,11 @@
     },
     {
       "item": "k.scaffold#6",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "k.scaffold#7",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "k.scaffold#8",
@@ -15465,11 +15517,23 @@
     },
     {
       "item": "k.scaffold#9",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "k.scaffold#10",
       "rung": "example"
+    },
+    {
+      "item": "k.scaffold#11",
+      "rung": "none"
+    },
+    {
+      "item": "k.scaffold#12",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold#13",
+      "rung": "none"
     },
     {
       "item": "k.schema#1",
@@ -15669,6 +15733,10 @@
     },
     {
       "item": "k.serverlog#6",
+      "rung": "example"
+    },
+    {
+      "item": "k.serverlog#7",
       "rung": "example"
     },
     {
@@ -16121,6 +16189,10 @@
     },
     {
       "item": "k.user#9",
+      "rung": "example"
+    },
+    {
+      "item": "k.user#10",
       "rung": "example"
     },
     {
