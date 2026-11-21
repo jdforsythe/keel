@@ -116,4 +116,27 @@ describe("k.guards", () => {
     router.dispose();
     host.remove();
   });
+  // Pending (rfc:0177): replaces the case above ("... is E1508 (shown as in guard-redirect-loop-e1508.test.ts ...") once the build lands,
+  // since `manifest` then throws E1508 for the missing param when the table is built, not at the denial.
+  it.skip("a guard redirect to a route with a param the matched route lacks makes `manifest` throw E1508 naming the page, the redirect route and the field", () => {
+    const Id = s.object({ id: s.string({ min: 1, max: 8 }) });
+    const Denied = s.error("keel.denied", s.object({}));
+    const page = (): Node => document.createElement("section");
+    const w = contract("w", {
+      "w.login": { path: "/login/:id", params: Id },
+      "w.plain": { path: "/plain" },
+    });
+    let thrown: unknown;
+    try {
+      manifest(w, {
+        "w.login": { component: page },
+        "w.plain": { component: page, guard: guard({ redirect: "w.login" }, async () => err(Denied.make({}))) },
+      });
+    } catch (e) {
+      thrown = e;
+    }
+    expect(thrown).toMatchObject({ code: "E1508", message: expect.stringContaining("w.plain") });
+    expect(thrown).toMatchObject({ message: expect.stringContaining("w.login") });
+    expect(thrown).toMatchObject({ message: expect.stringContaining("id") });
+  });
 });
