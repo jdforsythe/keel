@@ -7,6 +7,7 @@ import { mount } from "@keel/runtime-dom";
 import { Box, Button, Checkbox, Heading, Image, Input, Link, Select, Text, TextArea } from "@keel/ui";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
+import { testCtx } from "./testCtx.ts";
 
 const SEED = 1337;
 const flush = async (): Promise<void> => {
@@ -23,7 +24,7 @@ const scoped = <T>(make: () => T): { value: T; dispose: () => void } => {
 };
 const render = (make: () => Node): { host: HTMLElement; dispose: () => void } => {
   const host = document.createElement("div");
-  return { host, dispose: mount(make, host) };
+  return { host, dispose: mount(make, host, { ctx: testCtx }) };
 };
 const first = (host: Element): Element => {
   const e = host.firstElementChild;
@@ -150,7 +151,9 @@ describe("base elements", () => {
       await flush();
       const host = document.createElement("div");
       document.body.append(host);
-      const dispose = mount(() => Box({ children: [Input({ label: "Email" }), Input({ label: "Email" })] }), host);
+      const dispose = mount(() => Box({ children: [Input({ label: "Email" }), Input({ label: "Email" })] }), host, {
+        ctx: testCtx,
+      });
       const ids = Array.from(host.querySelectorAll("input")).map((e) => e.id);
       dispose();
       host.remove();
@@ -240,6 +243,16 @@ describe("base elements", () => {
     expect(host.querySelector("a")?.getAttribute("href")).toBe("about:blank");
     expect(host.querySelector("img")?.getAttribute("src")).toBe("about:blank");
     dispose();
+  });
+
+  it("a Link whose `to` slipped past the type and is no Href renders about:blank", () => {
+    const slipped = (x: string): x is Href => x.length > 0;
+    for (const bad of ["//evil.example/x", "/\\evil.example", "https://evil.example/", "/a\u0001b", "/a\u0085b"]) {
+      if (!slipped(bad)) throw new Error("unreachable");
+      const { host, dispose } = render(() => Link({ to: bad, children: "l" }));
+      expect(host.querySelector("a")?.getAttribute("href"), JSON.stringify(bad)).toBe("about:blank");
+      dispose();
+    }
   });
 
   it("text children become text nodes, never markup", () => {

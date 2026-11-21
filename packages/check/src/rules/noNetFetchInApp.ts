@@ -11,7 +11,6 @@ import type { RuleDef } from "../types/RuleDef.ts";
 export const noNetFetchInApp: RuleDef = {
   code: "E1651",
   message: "ctx.net.fetch in app code; declare an endpoint in a service and call it",
-  explain: "HTTP goes through a declared endpoint, so requests are typed, decoded, and replayable under sim.",
   see: "k.services",
   check: ({ file, ast }) => {
     if (!isAppPath(file.path)) return [];

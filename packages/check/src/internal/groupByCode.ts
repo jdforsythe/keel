@@ -1,6 +1,7 @@
 import type { Diagnostic } from "../types/Diagnostic.ts";
+import { artifactRank } from "./artifactRank.ts";
 
-/** Diagnostics grouped by code, groups sorted by code, each group keeping the input order. */
+/** Diagnostics grouped by code, groups sorted by code with the stale-artifact codes last, each group keeping the input order. */
 export function groupByCode(diags: readonly Diagnostic[]): [string, Diagnostic[]][] {
   const groups = new Map<string, Diagnostic[]>();
   for (const d of diags) {
@@ -8,5 +9,5 @@ export function groupByCode(diags: readonly Diagnostic[]): [string, Diagnostic[]
     if (g === undefined) groups.set(d.code, [d]);
     else g.push(d);
   }
-  return [...groups].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+  return [...groups].sort(([a], [b]) => artifactRank(a) - artifactRank(b) || (a < b ? -1 : a > b ? 1 : 0));
 }

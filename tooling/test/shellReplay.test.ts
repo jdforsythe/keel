@@ -1,0 +1,236 @@
+import fc from "fast-check";
+import { describe, expect, it } from "vitest";
+import { actionsOf, boardDiff, labelled, linkTo, normalized, outboxIn, outboxInPairs } from "../smoke/shellReplay.mjs";
+
+/** The inputs golden-1's shell session records, with the observations between them left out. */
+const events = [
+  { at: 0, kind: "nav", href: "/lists/l1" },
+  { at: 0, kind: "tx", store: "todos.view", name: "todos.hydrate", payload: {} },
+  { at: 1, kind: "fire", id: "todos.toggle.t1", event: { type: "change" } },
+  { at: 2, kind: "nav", href: "/lists/l1/todos/t1/edit" },
+  { at: 3, kind: "fire", id: "todos.editForm:title", event: { type: "input", value: "Oat milk" } },
+  { at: 4, kind: "fire", id: "todos.save", event: { type: "click" } },
+  { at: 4, kind: "fire", id: "todos.edit", event: { type: "submit" } },
+  { at: 4, kind: "nav", href: "/lists/l1" },
+  { at: 5, kind: "fire", id: "todos.addForm:title", event: { type: "input", value: "Eggs" } },
+  { at: 6, kind: "fire", id: "todos.addTodo", event: { type: "click" } },
+  { at: 6, kind: "fire", id: "todos.list", event: { type: "submit" } },
+];
+
+const UUID_A = "cc266a02-1170-48bb-b530-d89fca7b9f71";
+const UUID_B = "8432f578-bf80-4f6c-937c-485590954203";
+const board = (todo: string, key: string, caller: string, at: number) => ({
+  head: 3,
+  log: [{ id: 3, name: "api.addTodo", payload: { id: todo, title: "Eggs" }, at, meta: { caller }, key }],
+  state: {
+    todos: [
+      { id: "t1", title: "Milk" },
+      { id: todo, title: "Eggs" },
+    ],
+  },
+  keys: [{ name: "api.addTodo", key }],
+});
+
+describe("actionsOf", () => {
+  it("maps each input to a page action and leaves out the submit and route a click makes", () => {
+    expect(actionsOf({ events })).toEqual([
+      { kind: "nav", href: "/lists/l1" },
+      { kind: "click", id: "todos.toggle.t1" },
+      { kind: "nav", href: "/lists/l1/todos/t1/edit" },
+      { kind: "type", id: "todos.editForm:title", value: "Oat milk" },
+      { kind: "click", id: "todos.save" },
+      { kind: "type", id: "todos.addForm:title", value: "Eggs" },
+      { kind: "click", id: "todos.addTodo" },
+    ]);
+  });
+  it("keeps a submit or route of its own time, and a nav after a nav", () => {
+    expect(
+      actionsOf({
+        events: [
+          { at: 0, kind: "nav", href: "/a" },
+          { at: 0, kind: "nav", href: "/b" },
+          { at: 1, kind: "fire", id: "f", event: { type: "submit" } },
+        ],
+      }),
+    ).toEqual([
+      { kind: "nav", href: "/a" },
+      { kind: "nav", href: "/b" },
+      { kind: "unsupported", event: { at: 1, kind: "fire", id: "f", event: { type: "submit" } } },
+    ]);
+  });
+  it("maps a net input to taking the server away and bringing it back", () => {
+    expect(
+      actionsOf({
+        events: [
+          { at: 1, kind: "net", online: false },
+          { at: 2, kind: "net", online: true },
+        ],
+      }),
+    ).toEqual([
+      { kind: "net", online: false },
+      { kind: "net", online: true },
+    ]);
+  });
+  it("presses known keys and marks what no page input makes", () => {
+    const focus = { at: 2, kind: "fire", id: "x", event: { type: "focus" } };
+    const chord = { at: 3, kind: "fire", id: "x", event: { type: "keydown", key: "Enter", mod: true } };
+    expect(
+      actionsOf({
+        events: [{ at: 0, kind: "fire", id: "x", event: { type: "keydown", key: "Enter" } }, focus, chord],
+      }),
+    ).toEqual([
+      { kind: "keys", id: "x", keys: "" },
+      { kind: "unsupported", event: focus },
+      { kind: "unsupported", event: chord },
+    ]);
+  });
+  it("is empty for a session without events", () => {
+    expect(actionsOf(undefined)).toEqual([]);
+    expect(actionsOf({ events: "x" })).toEqual([]);
+  });
+});
+
+describe("normalized", () => {
+  it("drops log times and numbers ids, keys and callers by first appearance", () => {
+    expect(normalized(board(UUID_A, UUID_B, "c-one", 1))).toEqual({
+      head: 3,
+      keys: [{ key: "id#2", name: "api.addTodo" }],
+      log: [
+        {
+          id: 3,
+          key: "id#2",
+          meta: { caller: "caller#1" },
+          name: "api.addTodo",
+          payload: { id: "id#1", title: "Eggs" },
+        },
+      ],
+      state: {
+        todos: [
+          { id: "t1", title: "Milk" },
+          { id: "id#1", title: "Eggs" },
+        ],
+      },
+    });
+  });
+  it("gives one result for two runs that differ only in minted values and times", () => {
+    fc.assert(
+      fc.property(fc.uuid(), fc.uuid(), fc.string(), fc.nat(), (todo, key, caller, at) => {
+        fc.pre(todo !== key);
+        expect(JSON.stringify(normalized(board(todo, key, caller, at)))).toBe(
+          JSON.stringify(normalized(board(UUID_A, UUID_B, "c-one", 1))),
+        );
+      }),
+      { seed: 1337, numRuns: 100 },
+    );
+  });
+  it("keeps a difference in written values", () => {
+    expect(normalized(board(UUID_A, UUID_B, "c", 1))).not.toEqual(
+      normalized({ ...board(UUID_A, UUID_B, "c", 1), head: 4 }),
+    );
+  });
+});
+
+describe("boardDiff", () => {
+  it("is empty for equal boards", () => {
+    const b = normalized(board(UUID_A, UUID_B, "c", 1));
+    expect(boardDiff(b, normalized(board(UUID_A, UUID_B, "d", 9)))).toEqual([]);
+  });
+  it("names each differing path with both values", () => {
+    expect(
+      boardDiff(
+        { head: 4, state: { todos: [{ title: "Milk" }] } },
+        { head: 5, state: { todos: [{ title: "Milk" }, { title: "Eggs" }] } },
+      ),
+    ).toEqual(["head: shell 4 sim 5", 'state.todos.1: shell (none) sim {"title":"Eggs"}']);
+  });
+  it("caps the lines and counts the rest", () => {
+    const many = Object.fromEntries(Array.from({ length: 12 }, (_, i) => [`k${String(i).padStart(2, "0")}`, i]));
+    const lines = boardDiff(many, {}, 10);
+    expect(lines).toHaveLength(11);
+    expect(lines.at(-1)).toBe("... +2 more");
+  });
+});
+
+describe("outboxIn", () => {
+  const file = (gen: number, entries: unknown[] | undefined) =>
+    JSON.stringify({
+      keel: {
+        gen,
+        sum: "s",
+        data: JSON.stringify(
+          entries === undefined ? { other: "1" } : { "keel.outbox.todos.outbox": JSON.stringify({ entries }) },
+        ),
+      },
+    });
+  const toggle = { key: "k1", endpoint: "toggleTodo", state: "queued" };
+  const add = { key: "k2", endpoint: "addTodo", state: "sending" };
+  it("reads the entries of the copy of the higher generation", () => {
+    expect(outboxIn([file(3, [toggle]), file(4, [toggle, add])], "todos.outbox")).toEqual([toggle, add]);
+    expect(outboxIn([file(5, [toggle]), file(4, [toggle, add])], "todos.outbox")).toEqual([toggle]);
+  });
+  it("reads the file that parses when the other is missing or cut short", () => {
+    const whole = file(2, [toggle]);
+    expect(outboxIn([undefined, whole], "todos.outbox")).toEqual([toggle]);
+    expect(outboxIn([whole.slice(0, 20), whole], "todos.outbox")).toEqual([toggle]);
+  });
+  it("is empty for a copy without the outbox, and undefined without a copy", () => {
+    expect(outboxIn([file(1, undefined)], "todos.outbox")).toEqual([]);
+    expect(outboxIn([file(1, [])], "todos.outbox")).toEqual([]);
+    expect(outboxIn([undefined, "{"], "todos.outbox")).toBeUndefined();
+    expect(outboxIn([], "todos.outbox")).toBeUndefined();
+  });
+});
+
+describe("outboxInPairs", () => {
+  const toggle = { key: "k1", endpoint: "toggleTodo", state: "queued" };
+  const doc = (entries: unknown[] | undefined) =>
+    JSON.stringify(
+      entries === undefined
+        ? [["other", "1"]]
+        : [
+            ["other", "1"],
+            ["keel.outbox.todos.outbox", JSON.stringify({ entries })],
+          ],
+    );
+  it("reads the entries of the outbox's pair", () => {
+    expect(outboxInPairs(doc([toggle]), "todos.outbox")).toEqual([toggle]);
+  });
+  it("is empty without the outbox or with one that does not parse, and undefined for another text", () => {
+    expect(outboxInPairs(doc(undefined), "todos.outbox")).toEqual([]);
+    expect(outboxInPairs(doc([]), "todos.outbox")).toEqual([]);
+    expect(outboxInPairs(JSON.stringify([["keel.outbox.todos.outbox", "{"]]), "todos.outbox")).toEqual([]);
+    expect(outboxInPairs("{", "todos.outbox")).toBeUndefined();
+    expect(outboxInPairs("{}", "todos.outbox")).toBeUndefined();
+    expect(outboxInPairs(undefined, "todos.outbox")).toBeUndefined();
+  });
+});
+
+describe("linkTo", () => {
+  it("names the list link and the edit link", () => {
+    expect(linkTo("/lists/l1")).toBe("todos.listLink.l1");
+    expect(linkTo("/lists/l1/todos/t1/edit")).toBe("todos.editLink.t1");
+  });
+  it("is undefined for another path", () => {
+    expect(linkTo("/")).toBeUndefined();
+    expect(linkTo("/lists/l1/todos/t1")).toBeUndefined();
+  });
+});
+
+describe("labelled", () => {
+  const state = { lists: [{ id: "l1", name: "Home" }], todos: [{ id: "t1", title: "Milk" }] };
+  it("names a control by role and accessible name under main", () => {
+    expect(labelled("todos.listLink.l1", state)).toEqual({ role: "link", label: "Home", within: "main" });
+    expect(labelled("todos.toggle.t1", state)).toEqual({ role: "checkbox", label: "Done: Milk", within: "main" });
+    expect(labelled("todos.editLink.t1", state)).toEqual({ role: "link", label: "Edit Milk", within: "main" });
+    expect(labelled("todos.editForm:title", state)).toEqual({ role: "field", label: "Title", within: "main" });
+    expect(labelled("todos.addForm:title", state)).toEqual({ role: "field", label: "Title", within: "main" });
+    expect(labelled("todos.save", state)).toEqual({ role: "button", label: "Save", within: "main" });
+    expect(labelled("todos.addTodo", state)).toEqual({ role: "button", label: "Add todo", within: "main" });
+  });
+  it("is undefined for an unknown id, list or todo", () => {
+    expect(labelled("todos.undo", state)).toBeUndefined();
+    expect(labelled("todos.listLink.l2", state)).toBeUndefined();
+    expect(labelled("todos.toggle.t9", state)).toBeUndefined();
+    expect(labelled("todos.toggle.t1", undefined)).toBeUndefined();
+  });
+});

@@ -1,0 +1,417 @@
+{
+  "task": "h2h-recipe-box",
+  "arm": "stub",
+  "skill": "none",
+  "specSections": [],
+  "model": "none",
+  "runner": "dry",
+  "converged": false,
+  "iterations": 0,
+  "tokens": {
+    "input": 0,
+    "output": 0
+  },
+  "tokensToGreen": null,
+  "costUsd": 0,
+  "durationMs": 158071,
+  "startedAt": "2026-11-21T06:01:02.561Z",
+  "acceptance": {
+    "passed": 3,
+    "total": 28,
+    "failed": [
+      {
+        "name": "list.empty",
+        "reason": "expect(page).toHaveTitle(expected) failed  Expected: \"Recipes · Keel\" Received: \"app\" Timeout:  6000ms  Call log:   - Expect \"toHaveTitle\" with timeout 6000ms     16 × locator resolved to <html>…</html>        - unexpected value \"app\" "
+      },
+      {
+        "name": "new.invalid-sends-nothing",
+        "reason": "locator.click: Timeout 6000ms exceeded. Call log: \u001b[2m  - waiting for locator('[id=\"recipes.save\"]')\u001b[22m "
+      },
+      {
+        "name": "new.fields-have-labels",
+        "reason": "locator.waitFor: Timeout 6000ms exceeded. Call log: \u001b[2m  - waiting for locator('[id=\"recipes.draft:title\"]')\u001b[22m "
+      },
+      {
+        "name": "new.create-and-redirect",
+        "reason": "locator.fill: Timeout 6000ms exceeded. Call log: \u001b[2m  - waiting for locator('[id=\"recipes.draft:title\"]')\u001b[22m "
+      },
+      {
+        "name": "new.duplicate-title-en",
+        "reason": "expect(page).toHaveTitle(expected) failed  Expected: \"New recipe · Keel\" Received: \"app\" Timeout:  6000ms  Call log:   - Expect \"toHaveTitle\" with timeout 6000ms     16 × locator resolved to <html>…</html>        - unexpected value \"app\" "
+      },
+      {
+        "name": "new.duplicate-title-de",
+        "reason": "expect(page).toHaveTitle(expected) failed  Expected: \"Neues Rezept · Keel\" Received: \"app\" Timeout:  6000ms  Call log:   - Expect \"toHaveTitle\" with timeout 6000ms     16 × locator resolved to <html>…</html>        - unexpected value \"app\" "
+      },
+      {
+        "name": "new.too-long-title",
+        "reason": "expect(page).toHaveTitle(expected) failed  Expected: \"New recipe · Keel\" Received: \"app\" Timeout:  6000ms  Call log:   - Expect \"toHaveTitle\" with timeout 6000ms     16 × locator resolved to <html>…</html>        - unexpected value \"app\" "
+      },
+      {
+        "name": "list.copy.en-US",
+        "reason": "expect(page).toHaveTitle(expected) failed  Expected: \"Recipes · Keel\" Received: \"app\" Timeout:  6000ms  Call log:   - Expect \"toHaveTitle\" with timeout 6000ms     16 × locator resolved to <html>…</html>        - unexpected value \"app\" "
+      },
+      {
+        "name": "list.copy.de-DE",
+        "reason": "expect(page).toHaveTitle(expected) failed  Expected: \"Rezepte · Keel\" Received: \"app\" Timeout:  6000ms  Call log:   - Expect \"toHaveTitle\" with timeout 6000ms     16 × locator resolved to <html>…</html>        - unexpected value \"app\" "
+      },
+      {
+        "name": "list.copy.ja-JP",
+        "reason": "expect(page).toHaveTitle(expected) failed  Expected: \"レシピ · Keel\" Received: \"app\" Timeout:  6000ms  Call log:   - Expect \"toHaveTitle\" with timeout 6000ms     16 × locator resolved to <html>…</html>        - unexpected value \"app\" "
+      },
+      {
+        "name": "show.copy.en-US",
+        "reason": "locator.waitFor: Timeout 6000ms exceeded. Call log: \u001b[2m  - waiting for locator('[id^=\"recipes.link.\"]').filter({ hasText: 'Pasta bake' }).first()\u001b[22m "
+      },
+      {
+        "name": "show.copy.de-DE",
+        "reason": "locator.waitFor: Timeout 6000ms exceeded. Call log: \u001b[2m  - waiting for locator('[id^=\"recipes.link.\"]').filter({ hasText: 'Pasta bake' }).first()\u001b[22m "
+      },
+      {
+        "name": "show.copy.ja-JP",
+        "reason": "locator.waitFor: Timeout 6000ms exceeded. Call log: \u001b[2m  - waiting for locator('[id^=\"recipes.link.\"]').filter({ hasText: 'Pasta bake' }).first()\u001b[22m "
+      },
+      {
+        "name": "show.unknown-id",
+        "reason": "expect(locator).toBeVisible() failed  Locator: locator('[id=\"recipes.error\"]') Expected: visible Timeout: 6000ms Error: element(s) not found  Call log:   - Expect \"toBeVisible\" locator('[id=\"recipes.error\"]') with timeout 6000ms   - waiting for locator('[id=\"recipes.error\"]') "
+      },
+      {
+        "name": "favorite.toggle-persists-and-filters",
+        "reason": "locator.waitFor: Timeout 6000ms exceeded. Call log: \u001b[2m  - waiting for locator('[id^=\"recipes.link.\"]').filter({ hasText: 'Pasta bake' }).first()\u001b[22m "
+      },
+      {
+        "name": "favorite.shared-between-visitors",
+        "reason": "locator.waitFor: Timeout 6000ms exceeded. Call log: \u001b[2m  - waiting for locator('[id^=\"recipes.link.\"]').filter({ hasText: 'Pasta bake' }).first()\u001b[22m "
+      },
+      {
+        "name": "locale.switcher",
+        "reason": "locator.waitFor: Timeout 6000ms exceeded. Call log: \u001b[2m  - waiting for locator('[id=\"recipes.list.title\"]').first()\u001b[22m "
+      },
+      {
+        "name": "nav.client-navigation",
+        "reason": "locator.waitFor: Timeout 6000ms exceeded. Call log: \u001b[2m  - waiting for locator('[id^=\"recipes.link.\"]').filter({ hasText: 'Miso soup' }).first()\u001b[22m "
+      },
+      {
+        "name": "url.en-US-prefix-redirects",
+        "reason": "locator.waitFor: Timeout 6000ms exceeded. Call log: \u001b[2m  - waiting for locator('[id^=\"recipes.link.\"]').filter({ hasText: 'Miso soup' }).first()\u001b[22m "
+      },
+      {
+        "name": "catalog.seed-and-page",
+        "reason": "locator.fill: Timeout 6000ms exceeded. Call log: \u001b[2m  - waiting for locator('[id=\"recipes.draft:title\"]')\u001b[22m "
+      },
+      {
+        "name": "catalog.sort-by-price",
+        "reason": "locator.click: Timeout 6000ms exceeded. Call log: \u001b[2m  - waiting for locator('[id=\"recipes.table.sort.price\"]')\u001b[22m "
+      },
+      {
+        "name": "catalog.sort-by-title-and-minutes",
+        "reason": "locator.click: Timeout 6000ms exceeded. Call log: \u001b[2m  - waiting for locator('[id=\"recipes.table.sort.title\"]')\u001b[22m "
+      },
+      {
+        "name": "catalog.search",
+        "reason": "locator.fill: Timeout 6000ms exceeded. Call log: \u001b[2m  - waiting for locator('[id=\"recipes.search.input\"]')\u001b[22m "
+      },
+      {
+        "name": "catalog.favorites-filter",
+        "reason": "locator.waitFor: Timeout 6000ms exceeded. Call log: \u001b[2m  - waiting for locator('[id^=\"recipes.link.\"]').filter({ hasText: 'Pasta bake' }).first()\u001b[22m "
+      },
+      {
+        "name": "catalog.shopping-list",
+        "reason": "locator.waitFor: Timeout 6000ms exceeded. Call log: \u001b[2m  - waiting for locator('[id^=\"recipes.link.\"]').filter({ hasText: 'Filler 1' }).first()\u001b[22m "
+      }
+    ]
+  },
+  "security": {
+    "defects": 40,
+    "checks": 41,
+    "found": [
+      {
+        "id": "csp /",
+        "detail": "no content-security-policy"
+      },
+      {
+        "id": "nosniff /",
+        "detail": "x-content-type-options is not nosniff"
+      },
+      {
+        "id": "framing /",
+        "detail": "no x-frame-options and no frame-ancestors"
+      },
+      {
+        "id": "referrer /",
+        "detail": "no referrer-policy"
+      },
+      {
+        "id": "permissions /",
+        "detail": "no permissions-policy"
+      },
+      {
+        "id": "x-powered-by /",
+        "detail": "x-powered-by: Stub 1.0"
+      },
+      {
+        "id": "server /",
+        "detail": "server header names a version: stub/1.0"
+      },
+      {
+        "id": "cors /",
+        "detail": "access-control-allow-origin is *"
+      },
+      {
+        "id": "cookie /",
+        "detail": "cookie without HttpOnly: sid"
+      },
+      {
+        "id": "cookie /",
+        "detail": "cookie without SameSite: sid"
+      },
+      {
+        "id": "csp /de-DE",
+        "detail": "no content-security-policy"
+      },
+      {
+        "id": "nosniff /de-DE",
+        "detail": "x-content-type-options is not nosniff"
+      },
+      {
+        "id": "framing /de-DE",
+        "detail": "no x-frame-options and no frame-ancestors"
+      },
+      {
+        "id": "referrer /de-DE",
+        "detail": "no referrer-policy"
+      },
+      {
+        "id": "permissions /de-DE",
+        "detail": "no permissions-policy"
+      },
+      {
+        "id": "x-powered-by /de-DE",
+        "detail": "x-powered-by: Stub 1.0"
+      },
+      {
+        "id": "server /de-DE",
+        "detail": "server header names a version: stub/1.0"
+      },
+      {
+        "id": "cors /de-DE",
+        "detail": "access-control-allow-origin is *"
+      },
+      {
+        "id": "cookie /de-DE",
+        "detail": "cookie without HttpOnly: sid"
+      },
+      {
+        "id": "cookie /de-DE",
+        "detail": "cookie without SameSite: sid"
+      },
+      {
+        "id": "csp /recipes/new",
+        "detail": "no content-security-policy"
+      },
+      {
+        "id": "nosniff /recipes/new",
+        "detail": "x-content-type-options is not nosniff"
+      },
+      {
+        "id": "framing /recipes/new",
+        "detail": "no x-frame-options and no frame-ancestors"
+      },
+      {
+        "id": "referrer /recipes/new",
+        "detail": "no referrer-policy"
+      },
+      {
+        "id": "permissions /recipes/new",
+        "detail": "no permissions-policy"
+      },
+      {
+        "id": "x-powered-by /recipes/new",
+        "detail": "x-powered-by: Stub 1.0"
+      },
+      {
+        "id": "server /recipes/new",
+        "detail": "server header names a version: stub/1.0"
+      },
+      {
+        "id": "cors /recipes/new",
+        "detail": "access-control-allow-origin is *"
+      },
+      {
+        "id": "cookie /recipes/new",
+        "detail": "cookie without HttpOnly: sid"
+      },
+      {
+        "id": "cookie /recipes/new",
+        "detail": "cookie without SameSite: sid"
+      },
+      {
+        "id": "csp /catalog",
+        "detail": "no content-security-policy"
+      },
+      {
+        "id": "nosniff /catalog",
+        "detail": "x-content-type-options is not nosniff"
+      },
+      {
+        "id": "framing /catalog",
+        "detail": "no x-frame-options and no frame-ancestors"
+      },
+      {
+        "id": "referrer /catalog",
+        "detail": "no referrer-policy"
+      },
+      {
+        "id": "permissions /catalog",
+        "detail": "no permissions-policy"
+      },
+      {
+        "id": "x-powered-by /catalog",
+        "detail": "x-powered-by: Stub 1.0"
+      },
+      {
+        "id": "server /catalog",
+        "detail": "server header names a version: stub/1.0"
+      },
+      {
+        "id": "cors /catalog",
+        "detail": "access-control-allow-origin is *"
+      },
+      {
+        "id": "cookie /catalog",
+        "detail": "cookie without HttpOnly: sid"
+      },
+      {
+        "id": "cookie /catalog",
+        "detail": "cookie without SameSite: sid"
+      }
+    ]
+  },
+  "a11y": {
+    "defects": 30,
+    "nodes": 40,
+    "pages": 5,
+    "found": [
+      {
+        "id": "html-has-lang /",
+        "detail": "serious, 1 node(s)"
+      },
+      {
+        "id": "image-alt /",
+        "detail": "critical, 1 node(s)"
+      },
+      {
+        "id": "label /",
+        "detail": "critical, 1 node(s)"
+      },
+      {
+        "id": "landmark-one-main /",
+        "detail": "moderate, 1 node(s)"
+      },
+      {
+        "id": "page-has-heading-one /",
+        "detail": "moderate, 1 node(s)"
+      },
+      {
+        "id": "region /",
+        "detail": "moderate, 3 node(s)"
+      },
+      {
+        "id": "html-has-lang /de-DE",
+        "detail": "serious, 1 node(s)"
+      },
+      {
+        "id": "image-alt /de-DE",
+        "detail": "critical, 1 node(s)"
+      },
+      {
+        "id": "label /de-DE",
+        "detail": "critical, 1 node(s)"
+      },
+      {
+        "id": "landmark-one-main /de-DE",
+        "detail": "moderate, 1 node(s)"
+      },
+      {
+        "id": "page-has-heading-one /de-DE",
+        "detail": "moderate, 1 node(s)"
+      },
+      {
+        "id": "region /de-DE",
+        "detail": "moderate, 3 node(s)"
+      },
+      {
+        "id": "html-has-lang /recipes/new",
+        "detail": "serious, 1 node(s)"
+      },
+      {
+        "id": "image-alt /recipes/new",
+        "detail": "critical, 1 node(s)"
+      },
+      {
+        "id": "label /recipes/new",
+        "detail": "critical, 1 node(s)"
+      },
+      {
+        "id": "landmark-one-main /recipes/new",
+        "detail": "moderate, 1 node(s)"
+      },
+      {
+        "id": "page-has-heading-one /recipes/new",
+        "detail": "moderate, 1 node(s)"
+      },
+      {
+        "id": "region /recipes/new",
+        "detail": "moderate, 3 node(s)"
+      },
+      {
+        "id": "html-has-lang /catalog",
+        "detail": "serious, 1 node(s)"
+      },
+      {
+        "id": "image-alt /catalog",
+        "detail": "critical, 1 node(s)"
+      },
+      {
+        "id": "label /catalog",
+        "detail": "critical, 1 node(s)"
+      },
+      {
+        "id": "landmark-one-main /catalog",
+        "detail": "moderate, 1 node(s)"
+      },
+      {
+        "id": "page-has-heading-one /catalog",
+        "detail": "moderate, 1 node(s)"
+      },
+      {
+        "id": "region /catalog",
+        "detail": "moderate, 3 node(s)"
+      },
+      {
+        "id": "html-has-lang /ja-JP/recipes/new",
+        "detail": "serious, 1 node(s)"
+      },
+      {
+        "id": "image-alt /ja-JP/recipes/new",
+        "detail": "critical, 1 node(s)"
+      },
+      {
+        "id": "label /ja-JP/recipes/new",
+        "detail": "critical, 1 node(s)"
+      },
+      {
+        "id": "landmark-one-main /ja-JP/recipes/new",
+        "detail": "moderate, 1 node(s)"
+      },
+      {
+        "id": "page-has-heading-one /ja-JP/recipes/new",
+        "detail": "moderate, 1 node(s)"
+      },
+      {
+        "id": "region /ja-JP/recipes/new",
+        "detail": "moderate, 3 node(s)"
+      }
+    ]
+  }
+}

@@ -2,6 +2,7 @@
 // Runtime action requests with a JSON body (a `@keel/services` client, k.services Encoding) decode like FormData.
 import { createCtx } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import { describe, expect, it } from "vitest";
 import { createApp, topology } from "../src/index.ts";
@@ -10,12 +11,13 @@ const BASE = "http://localhost";
 const Note = s.object({ note: s.string({ min: 3 }), pinned: s.boolean() });
 
 async function build(seen: unknown[]) {
-  const save = action({ input: Note }, (input) => {
+  const c = contract("app", { "app.notes": { path: "/notes" } });
+  const save = action(c, "app.notes", { input: Note }, (input) => {
     seen.push(input);
     return ok(null);
   });
-  const routes = manifest({
-    "app.notes": { path: "/notes", actions: { POST: save }, component: () => document.createElement("p") },
+  const routes = manifest(c, {
+    "app.notes": { component: () => document.createElement("p"), POST: save },
   });
   return createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
@@ -51,6 +53,6 @@ describe("JSON action bodies", () => {
   it("a document request with a JSON body still gets the 303", async () => {
     const res = await (await build([])).fetch(postJson(JSON.stringify({ note: "hello", pinned: false }), "text/html"));
     expect(res.status).toBe(303);
-    expect(res.headers.get("location")).toBe(`${BASE}/notes`);
+    expect(res.headers.get("location")).toBe("/notes");
   });
 });

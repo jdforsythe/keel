@@ -1,7 +1,7 @@
 {
   "name": "@keel/runtime-dom",
   "version": "0.0.0",
-  "private": false,
+  "private": true,
   "type": "module",
   "sideEffects": ["./src/ops/resume.ts"],
   "exports": {
@@ -13,6 +13,10 @@
       "types": "./src/ops/index.ts",
       "default": "./src/ops/index.ts"
     },
+    "./internal": {
+      "types": "./src/internal/index.ts",
+      "default": "./src/internal/index.ts"
+    },
     "./url": {
       "types": "./src/url/index.ts",
       "default": "./src/url/index.ts"
@@ -21,12 +25,14 @@
       "types": "./jsx-runtime.d.ts"
     }
   },
-  "files": ["dist", "jsx-runtime.d.ts"],
+  "files": ["dist", "jsx-runtime.d.ts", "docs"],
   "scripts": {
     "check": "tsc --noEmit && biome check src test unsafe",
     "test": "vitest run",
+    "coverage": "node ../../tooling/coverage.mjs",
     "build": "tsc -p tsconfig.build.json",
-    "mutate": "stryker run"
+    "mutate": "node ../../tooling/mutate.mjs",
+    "prepack": "node ../../tooling/docs-pack.mjs"
   },
   "dependencies": {
     "@keel/ctx": "workspace:*",
@@ -34,6 +40,7 @@
     "@keel/schema": "workspace:*"
   },
   "devDependencies": {
+    "@types/node": "^22",
     "@keel/store": "workspace:*",
     "@keel/tooling": "workspace:*"
   }

@@ -1,6 +1,7 @@
 // Seed 1337 (fast-check seed, recorded in each fc.assert below)
-// Spec: k.check, clause "Every fix a diagnostic carries applies to its fixture with `git apply`, and re-checking reports no diagnostic of that code. Fixtures of E1003, E1005 (bytes only), E1151, E1152, E1154-E1157, E1401, E1451, E1452 (`try`), E1601, E1652, E1653, E1757 (`!`, `any`, suppression), and E1805 carry one; RFC 0035 lists why the others cannot."
-// Spec: k.module, Rules, "No fix edits a file under `node_modules/`."
+// Spec: k.check, clause "Every fix a diagnostic carries applies to its fixture with `git apply`, and re-checking reports no diagnostic of that code. Fixtures of E1003, E1005 (bytes only), E1151, E1152, E1154-E1156, E1401, E1403 (`&&`, `?:` with `If` imported), E1405, E1451, E1452 (`try`), E1601, E1652, E1653, E1757 (`!`, `any`, suppression), E1805, and E1808 carry one; RFC 0035 lists why the others cannot."
+// RFC 0157 / 0162: E1157 is retired (no fixture); E1154-E1156 keep theirs; E1407, E1510 and E1515 each carry one (k.component, k.contract); E1513 and E1514 carry none. k.check's sentence still names E1157 and omits these: see the report.
+// Invariant (not a sentence of k.module now): no fix edits a file under `node_modules/`.
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -10,7 +11,7 @@ import { compile } from "@keel/compiler";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { CODE_FIXTURES } from "./fixtures-by-code.ts";
-import { FIXTURES, SEED, type Files } from "./support.ts";
+import { FIXTURES, type Files, SEED } from "./support.ts";
 
 type Options = NonNullable<Parameters<typeof check>[1]>;
 const NO_TYPES: Options = { types: false };
@@ -36,14 +37,16 @@ function applyFix(files: Files, fix: string): Files {
 
 const f = (path: string, source: string): Files[number] => ({ path, source });
 const UI = "import { Box, Text } from '@keel/ui'\n";
+/** E1403 carries a fix only where `If` is already imported (rfc:0061). */
+const IF = "import { If } from '@keel/runtime-dom'\n";
 const SERVICES = "import { endpoints } from '@keel/services'\nimport { s } from '@keel/schema'\n";
-const manifest = (id: string, deps: string[], exports: string[], routes: string[]): Files[number] => {
+const manifest = (id: string, deps: string[], exports: string[]): Files[number] => {
   const q = (xs: string[]): string => `[${xs.map((x) => `'${x}'`).join(", ")}]`;
   return f(
     `modules/${id}/module.ts`,
     `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: ${q(
       deps,
-    )}, capabilities: [], public: { exports: ${q(exports)}, routes: ${q(routes)} } })\n`,
+    )}, capabilities: [], public: { exports: ${q(exports)} } })\n`,
   );
 };
 const fixtureOf = (code: string) => {
@@ -67,20 +70,17 @@ function sortKeys(v: unknown): unknown {
 
 /** A genuine `deps.json` produced by compile(), re-indented: data and hash intact, bytes differ from canonical. */
 function reindentedArtifact(): { canonical: Files; edited: Files } {
-  const r = compile([
-    {
-      path: "C.tsx",
-      source: `${UI}export default function C(props) { return <Text>{props.a}</Text> }\n`,
-    },
-  ]);
+  // The source travels with its artifact: E1005 compares the artifact with what the sources compile to (rfc:0050).
+  const source = f("C.tsx", `${UI}export default function C(props) { return <Text>{props.a}</Text> }\n`);
+  const r = compile([source]);
   const data = r.artifacts["deps.json"];
   const hash = r.hashes["deps.json"];
   const canonical = `${JSON.stringify({ data: sortKeys(data), hash })}\n`;
   const edited = `${JSON.stringify({ data: sortKeys(data), hash }, null, 2)}\n`;
   expect(edited).not.toBe(canonical);
   return {
-    canonical: [f(".keel/deps.json", canonical)],
-    edited: [f(".keel/deps.json", edited)],
+    canonical: [f(".keel/deps.json", canonical), source],
+    edited: [f(".keel/deps.json", edited), source],
   };
 }
 
@@ -92,6 +92,8 @@ interface FixedCase {
 }
 
 const FIXED: FixedCase[] = [
+  { name: "E1590", code: "E1590", ...fixtureOf("E1590") },
+  { name: "E1591", code: "E1591", ...fixtureOf("E1591") },
   { name: "E1003", code: "E1003", ...fixtureOf("E1003") },
   {
     name: "E1005 (bytes only)",
@@ -103,9 +105,9 @@ const FIXED: FixedCase[] = [
     name: "E1151 (add to public.exports)",
     code: "E1151",
     files: [
-      manifest("b", [], [], []),
+      manifest("b", [], []),
       f("modules/b/Secret.ts", "export const Secret = 1\n"),
-      manifest("a", ["b"], [], []),
+      manifest("a", ["b"], []),
       f("modules/a/Use.ts", "import { Secret } from '../b/Secret.ts'\nexport const Use = Secret\n"),
     ],
     opts: NO_TYPES,
@@ -116,29 +118,15 @@ const FIXED: FixedCase[] = [
     name: "E1155 (route show in orders gets orders. prefix)",
     code: "E1155",
     files: [
-      manifest("orders", [], [], []),
+      manifest("orders", [], []),
       f(
-        "modules/orders/routes.ts",
-        "import { manifest } from '@keel/router'\nconst Page = () => null\nexport const routes = manifest({\n  'show': { path: '/show', component: Page },\n})\n",
+        "modules/orders/orders.contract.ts",
+        "import { contract } from '@keel/router/contract'\nexport const orders = contract('orders', { 'show': { path: '/show' } })\n",
       ),
     ],
     opts: NO_TYPES,
   },
   { name: "E1156", code: "E1156", ...fixtureOf("E1156") },
-  {
-    name: "E1157 (add b.priv to public.routes)",
-    code: "E1157",
-    files: [
-      manifest("b", [], ["routes"], ["b.pub"]),
-      f(
-        "modules/b/routes.ts",
-        "import { manifest } from '@keel/router'\nconst Page = () => null\nexport const routes = manifest({\n  'b.pub': { path: '/b/pub', component: Page },\n  'b.priv': { path: '/b/priv', component: Page },\n})\n",
-      ),
-      manifest("a", ["b"], [], []),
-      f("modules/a/Back.ts", "import { routes } from '../b/routes.ts'\nexport const Back = routes.href('b.priv')\n"),
-    ],
-    opts: NO_TYPES,
-  },
   {
     name: "E1401",
     code: "E1401",
@@ -159,14 +147,16 @@ const FIXED: FixedCase[] = [
   {
     name: "E1452 (try)",
     code: "E1452",
-    files: [f("C.tsx", `export function f() { try { return 1 } catch (e) { return 2 } }\n`)],
+    files: [f("C.tsx", "export function f() { try { return 1 } catch (e) { return 2 } }\n")],
     opts: {},
   },
-  { name: "E1507 (annotation removed)", code: "E1507", ...fixtureOf("E1507") },
+  { name: "E1407 (parameter list rewritten to (props, ctx: Ctx))", code: "E1407", ...fixtureOf("E1407") },
+  { name: "E1510 (the refused member removed)", code: "E1510", ...fixtureOf("E1510") },
+  { name: "E1515 (the extra binding key removed)", code: "E1515", ...fixtureOf("E1515") },
   {
     name: "E1601",
     code: "E1601",
-    files: [f("C.tsx", `export const stamp = () => Date.now()\n`)],
+    files: [f("C.tsx", "export const stamp = () => Date.now()\n")],
     opts: {},
   },
   {
@@ -201,10 +191,71 @@ const FIXED: FixedCase[] = [
     opts: {},
   },
   { name: "E1806 (JSX element wrapped as a thunk)", code: "E1806", ...fixtureOf("E1806") },
+  { name: "E1820 (plain direction, children reversed)", code: "E1820", ...fixtureOf("E1820") },
+  {
+    name: "E1403 (&&, rfc:0061)",
+    code: "E1403",
+    files: [
+      f("C.tsx", `${UI}${IF}export default function C(props) { return <Box>{props.a && <Text>x</Text>}</Box> }\n`),
+    ],
+    opts: {},
+  },
+  {
+    name: "E1403 (?: with element branches, rfc:0061)",
+    code: "E1403",
+    files: [
+      f(
+        "C.tsx",
+        `${UI}${IF}export default function C(props) { return <Box>{props.a ? <Text>x</Text> : <Text>y</Text>}</Box> }\n`,
+      ),
+    ],
+    opts: {},
+  },
+  {
+    name: "E1405",
+    code: "E1405",
+    files: [
+      f(
+        "C.tsx",
+        `import { Text } from '@keel/ui'\nexport default function C(props: { label: string }) { const label = props.label; return <Text>{label}</Text> }\n`,
+      ),
+    ],
+    opts: NO_TYPES,
+  },
   {
     name: "E1805",
     code: "E1805",
     files: [f("C.tsx", `${UI}export default function C() { return <Box><h2>Orders</h2></Box> }\n`)],
+    opts: {},
+  },
+  {
+    name: "E1258",
+    code: "E1258",
+    files: [
+      f(
+        "modules/app/Card.tsx",
+        `${UI}export function Card(props: { icon?: unknown }) { return <Box>{props.icon}</Box> }\n`,
+      ),
+      f("modules/app/Icon.tsx", `${UI}export function Icon() { return <Box>i</Box> }\n`),
+      f(
+        "modules/app/Page.ts",
+        `import { Card } from './Card.tsx'\nimport { Icon } from './Icon.tsx'\nexport default function Page() { return Card({ icon: Icon() }) }\n`,
+      ),
+    ],
+    opts: NO_TYPES,
+  },
+  { name: "E1107", code: "E1107", ...fixtureOf("E1107") },
+  { name: "E1406", code: "E1406", ...fixtureOf("E1406") },
+  {
+    name: "E1759",
+    code: "E1759",
+    files: fixtureOf("E1759").files,
+    opts: NO_TYPES,
+  },
+  {
+    name: "E1808",
+    code: "E1808",
+    files: [f("C.ts", `${UI}export default function C() { return Box({ children: Text({ children: "x" }) }) }\n`)],
     opts: {},
   },
 ];
@@ -231,43 +282,88 @@ for (const c of FIXED) {
 
 const FIX = [
   "E1003",
+  "E1590",
+  "E1591",
+  "E1572",
+  "E1509",
+  "E1510",
   "E1005",
+  "E1107",
   "E1151",
   "E1152",
   "E1154",
   "E1155",
   "E1156",
-  "E1157",
   "E1401",
+  "E1403",
+  "E1405",
   "E1451",
   "E1452",
-  "E1507",
   "E1601",
   "E1652",
   "E1653",
   "E1757",
   "E1805",
   "E1806",
+  "E1808",
+  "E1258",
+  "E1406",
+  "E1759",
+  "E1820",
+  "E1010",
+  "E1407",
+  "E1515",
 ];
 const NO_FIX = [
   "E1000", // a syntax error has no unique repair
   "E1001", // the key field is a choice of the author
   "E1002", // the safe replacement depends on intent (text vs. markup)
   "E1004", // moving server code is a design change
+  "E1009", // k.boundary Rules: fix none; moving the guard to a `*.guard.*` file is a file move
   "E1104", // renaming the file would break imports in other files
   "E1105", // moving to a .server file is a design change
+  "E1106", // which stdlib format type to use is the author's choice
+  "E1111", // carrying the value another way (an action input, a session) is a design change
+  "E1112", // what to derive is the author's choice
   "E1153", // which dependency edge to cut is a design choice
   "E1158", // adding the dep or dropping the entry is the author's choice
   "E1204", // the Case per resource state is the author's
+  "E1207", // whether to drop the detached scope or own it differently is a design change
   "E1251", // the JSX that replaces an op is the author's
   "E1252", // the JSX or ctx replacement is the author's
   "E1302", // moving the effect out of the transaction is a design change
-  "E1403", // the condition's wrapper is the author's choice
+  "E1303", // removing the field or the reveal call is a design change
+  "E1402", // the content of the missing Case is the author's
   "E1404", // which id to rename is the author's choice
   "E1453", // how to handle the Result is the author's choice
   "E1454", // which code to rename is the author's choice
   "E1501", // the target route id is unknown to the checker
+  "E1502", // which path to change is the author's choice
+  "E1503", // the params field is the author's to write
+  "E1504", // which field becomes optional is the author's choice
+  "E1506", // which layout the entry renders in is the author's choice
+  "E1508", // which route leaves the guarded layout is a design choice
+  "E1511", // the module's deployable is the author's choice
+  "E1552", // k.topology Rules: Fix none; the unknown key is the author's to remove or rename
+  "E1566", // which deployable hosts the client is the author's choice
   "E1551", // moving the declaration to a .server file is a design change
+  "E1567", // the module and deps edits span files
+  "E1570", // where the asset or form target lives is the author's choice
+  "E1571", // moving the call to a server file spans files
+  "E1578", // k.user Rules: Fix none; the caller days or the deployable is the author's choice
+  "E1579", // k.user Rules: Fix none; the identity export, the mount path or the route is the author's choice
+  "E1580", // k.mount Rules: Fix none; the mount path and the identity source are the author's
+  "E1581", // k.mount Rules: Fix none; moving the module or hosting the deployable is the author's choice
+  "E1582", // k.mount Rules: Fix none; the subpath is the author's
+  "E1584", // k.mount Rules: Fix none; the links entry is the author's
+  "E1586", // k.topology Rules: no fix; the package, not the app, is wrong
+  "E1576", // the public replacement is the author's
+  "E1573", // the shell's adapter and app id are the author's
+  "E1513", // k.contract Rules: no fix; the checker cannot choose the file
+  "E1514", // k.contract Rules: no fix; which import to drop is the author's choice
+  "E1562", // the fix edits the route's schema source and needs a rebuilt surface; its fixture is surface data alone
+  "E1563", // as E1562: the fix edits the store's schema source; its fixture is surface data alone
+  "E1603", // the code in the string is the author's
   "E1651", // the replacement endpoint is unknown
   "E1701", // the harness id is unknown
   "E1751", // a generic type error has no mechanical repair
@@ -275,9 +371,16 @@ const NO_FIX = [
   "E1753", // which code to rename is the author's choice
   "E1754", // the justification must be written by the author
   "E1755", // a budget breach has no source edit
+  "E1758", // the locale or time zone is an argument the caller holds
   "E1802", // the missing prop value is the author's choice
+  "E1607", // which registered name to keep is the author's choice
   "E1803", // the replacement token is the author's choice
+  "E1804", // which token pair to use is a design choice
+  "E1823", // which literal to write is the author's choice
+  "E1824", // the code prop is rewritten to the literal form by the author, who names the file and export
+  "E1825", // moving the stylesheet import to the code file is a design change
   "E1901", // the form path to bind is the author's choice
+  "W1114", // s.secret also changes how the server reads the value (reveal), which the author writes
 ];
 
 test("fix-bearing codes and no-fix codes partition exactly the fixtured codes", () => {

@@ -30,6 +30,8 @@ export function messageFor(node: Node | undefined, rule: Rule): string {
       return n?.kind === "enum" ? `Must be one of: ${n.values.join(", ")}` : "Invalid choice";
     case "discriminant":
       return "Invalid choice";
+    case "format":
+      return "Invalid value";
     case "unknown-key":
       return "Not allowed";
     case "type":

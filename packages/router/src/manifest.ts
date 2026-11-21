@@ -1,23 +1,28 @@
-import { compileRoutes } from "./internal/compileRoutes.ts";
-import { hrefIn } from "./internal/hrefIn.ts";
+import type { Contract } from "./contract/types/Contract.ts";
+import type { Entries } from "./contract/types/Entries.ts";
+import { bindTable } from "./internal/bindTable.ts";
 import { tables } from "./internal/tables.ts";
-import type { Href } from "./types/Href.ts";
+import type { Binding } from "./types/Binding.ts";
 import type { Manifest } from "./types/Manifest.ts";
-import type { RouteDef } from "./types/RouteDef.ts";
-import type { RouteFit } from "./types/RouteFit.ts";
-
-type Rec = Readonly<Record<string, unknown>>;
 
 /**
- * Declare routes (k.router Manifest). Validates only these entries (throws an Error whose `code` is E1502-E1507) and
- * compiles the manifest's own table; manifests never share validation or tables. `routes.href(id, params?, search?)`
- * links within this manifest only (RFC 0041). At compile time each loader's and action's `params`/`search` must accept
- * `Infer` of the entry's schemas (`RouteFit`): a shape they do not fit does not compile.
+ * Bind every entry of `contract` and nothing else (k.contract Binding): a page `{ component, loader?, guard?,
+ * layout?, errorElement?, title?, POST?, PUT?, PATCH?, DELETE? }`, a layout `{ component, loader?, guard?, layout?,
+ * errorElement? }`, an API GET `{ loader, guard? }`, an API write `{ action, guard? }`; each handler declared for its id. A page's
+ * `title` gets its parsed `params`, `search` and its loader's value as `data` (k.head). Throws E1515, E1510, E1508
+ * and E1506 (k.routes Where rules fire). Returns the module's route table, frozen: `{ kind: 'keel.routeTable',
+ * contract, contracts: [contract] }`; its bindings are no public member (`bindingsOf`, `@keel/router/internal`).
  */
-export function manifest<M extends Readonly<Record<string, RouteDef>>>(routes: M & RouteFit<M>): Manifest<M> {
-  const table = compileRoutes(routes);
-  const href = (id: string, params: Rec = {}, search: Rec = {}): Href => hrefIn(table, id, params, search);
-  const m: Manifest<M> = Object.freeze({ kind: "keel.manifest", routes, href });
-  tables.set(m, table);
+export function manifest<M extends string, C extends Entries, O>(
+  contract: Contract<M, C>,
+  binding: Binding<C, O, M>,
+): Manifest<M, C> {
+  const compiled = bindTable(contract, binding);
+  const m: Manifest<M, C> = Object.freeze({
+    kind: "keel.routeTable",
+    contract,
+    contracts: Object.freeze([contract]),
+  });
+  tables.set(m, compiled);
   return m;
 }

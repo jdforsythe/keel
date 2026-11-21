@@ -1,5 +1,5 @@
 import type { Schema } from "@keel/schema";
-import { Board } from "../modules/todos/Board.schema.ts";
+import { Board } from "../modules/api/Board.schema.ts";
 
 /** A `Board` from plain fixtures: their ids parse into the branded ones. */
 export const boardOf = (raw: unknown): Board => {

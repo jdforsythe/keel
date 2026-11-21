@@ -1,5 +1,6 @@
 // Shared helpers for the check conformance suite (not a test file). Public API only.
 // Seed 1337 for every property in this suite.
+import { type Dirent, readdirSync } from "node:fs";
 import type { check } from "@keel/check";
 
 export const SEED = 1337;
@@ -125,3 +126,29 @@ export function synth(code: string, i: number, path = `src/f${i}.tsx`, fix?: str
 
 export const approxTokens = (s: string): number => Math.ceil(s.length / 4);
 export const lines = (s: string): string[] => s.split("\n").filter((l) => l !== "");
+
+/**
+ * The `.ts`/`.tsx` paths under `dir`, relative and sorted. Symlinks, `node_modules` and dot entries are skipped: a
+ * std-sessions disk fixture (`conformance/.tmp-<pid>-<n>/node_modules/@keel/std-sessions`) links back to its own
+ * package, and following it (as `readdirSync({ recursive: true })` does) walks every copy inside every copy until the
+ * heap runs out. A missing `dir` is empty; any other error throws.
+ */
+export function sourceFilesUnder(dir: URL): string[] {
+  const out: string[] = [];
+  const walk = (rel: string): void => {
+    let entries: Dirent[];
+    try {
+      entries = readdirSync(new URL(rel, dir), { withFileTypes: true });
+    } catch (e) {
+      if (rel === "" && e instanceof Error && "code" in e && (e.code === "ENOENT" || e.code === "ENOTDIR")) return;
+      throw e;
+    }
+    for (const e of entries) {
+      if (e.name.startsWith(".") || e.name === "node_modules") continue;
+      if (e.isDirectory()) walk(`${rel}${e.name}/`);
+      else if (e.isFile() && /\.tsx?$/.test(e.name)) out.push(`${rel}${e.name}`);
+    }
+  };
+  walk("");
+  return out.sort();
+}

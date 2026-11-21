@@ -13,9 +13,11 @@ export type Input = {
   readonly paths?: string[];
   readonly id?: string;
   readonly for?: string;
-  readonly map?: boolean;
+  readonly sync?: boolean;
   readonly url?: string;
   readonly target?: string;
+  readonly platform?: string;
+  readonly release?: boolean;
   readonly props?: string;
   readonly op?: string;
   readonly args?: string[];
@@ -24,6 +26,7 @@ export type Input = {
   readonly adapter?: "client" | "node" | "static";
   readonly workspace?: boolean;
   readonly file?: string;
+  readonly api?: boolean;
   readonly path?: string;
   readonly openapi?: string;
   readonly to?: string;
@@ -31,4 +34,13 @@ export type Input = {
   readonly diff?: boolean;
   readonly write?: string;
   readonly scope?: string;
+  readonly failing?: boolean;
+  readonly since?: string;
+  readonly "max-runs"?: number;
+  readonly base?: string;
+  readonly port?: number;
+  readonly out?: string;
+  readonly audit?: string;
+  readonly verify?: string;
+  readonly key?: string;
 };

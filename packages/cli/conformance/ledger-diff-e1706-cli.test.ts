@@ -1,5 +1,5 @@
-// Spec: k.testing, clause "Lowering an item's rung below the committed ledger makes `keel ledger --diff` report E1706."
-// Spec: k.testing, Rules "E1706 ledger rung lower than committed, or unsafe count higher".
+// Spec: k.ledger, clause "Lowering an item's rung below the committed ledger makes `keel ledger --diff` report E1706."
+// Spec: k.ledger, Rules "E1706 ledger rung lower than committed, or unsafe count higher".
 // The real `keel` binary over a temp project (OS tmpdir). The committed ledger is the one `keel ledger --write`
 // stores at `.keel/ledger.json` while the export is `probabilistic` with no unsafe call; `--diff` reads it back.
 // Property seed: 1337 (in the fixture).
@@ -32,7 +32,7 @@ afterAll(() => {
 
 const e1706 = (run: Run): unknown[] => run.records.filter((r) => r.kind === "diag" && r.code === "E1706");
 
-describe("k.testing: `keel ledger --diff` against the committed ledger", () => {
+describe("k.ledger: `keel ledger --diff` against the committed ledger", () => {
   it("the stored ledger holds the export at `probabilistic`", () => {
     const led = keel(dir, ["ledger"]);
     expect(led.records.find((r) => r.item === ITEM)?.rung).toBe("probabilistic");

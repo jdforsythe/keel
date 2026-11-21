@@ -1,6 +1,6 @@
 # RFC 0030: Compiler error codes, E1501 scope, one a11y table
 
-Status: accepted (ADR-0019)
+Status: implemented (ADR-0019)
 
 ## Problem
 Backlog 0041, 0046, and the k.compiler part of 0100.

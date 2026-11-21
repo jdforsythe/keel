@@ -1,7 +1,7 @@
 {
   "name": "@keel/std-money",
   "version": "0.0.0",
-  "private": false,
+  "private": true,
   "type": "module",
   "exports": {
     ".": {
@@ -9,14 +9,18 @@
       "default": "./src/index.ts"
     }
   },
-  "files": ["dist"],
+  "files": ["dist", "docs"],
   "scripts": {
     "check": "tsc --noEmit && biome check src test unsafe",
     "test": "vitest run",
-    "build": "tsc -p tsconfig.build.json"
+    "coverage": "node ../../tooling/coverage.mjs",
+    "build": "tsc -p tsconfig.build.json",
+    "mutate": "node ../../tooling/mutate.mjs",
+    "prepack": "node ../../tooling/docs-pack.mjs"
   },
   "dependencies": {
-    "@keel/schema": "workspace:*"
+    "@keel/schema": "workspace:*",
+    "@keel/std-i18n": "workspace:*"
   },
   "devDependencies": {
     "@keel/tooling": "workspace:*",

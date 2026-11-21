@@ -7,7 +7,7 @@ describe("parseTopology", () => {
     const r = parseTopology(
       `import { topology } from '@keel/server'\nexport default topology({ web: { modules: ['app', 'todos'], adapter: 'client' }, 'api': { modules: [], adapter: 'node' } })\n`,
     );
-    expect(r.problems).toEqual([]);
+    expect(r.problems.map(([, m]) => m)).toEqual([]);
     expect(r.topology).toEqual({
       web: { modules: ["app", "todos"], adapter: "client" },
       api: { modules: [], adapter: "node" },
@@ -20,12 +20,12 @@ describe("parseTopology", () => {
   });
 
   it("reports what it cannot read and skips that deployable", () => {
-    expect(parseTopology("export const x = 1").problems).toEqual(["no default export"]);
-    expect(parseTopology("export default topology(").problems[0]).toMatch(/^syntax error/);
+    expect(parseTopology("export const x = 1").problems.map(([, m]) => m)).toEqual(["no default export"]);
+    expect(parseTopology("export default topology(").problems.map(([, m]) => m)[0]).toMatch(/^syntax error/);
     const r = parseTopology(
       `export default topology({ a: { modules: [m], adapter: 'client' }, b: { modules: ['x'], adapter: 'lambda' } })`,
     );
-    expect(r.problems).toEqual([
+    expect(r.problems.map(([, m]) => m)).toEqual([
       "a: module id is not a string literal",
       "b: needs modules: [...] and adapter: 'node' | 'static' | 'client'",
     ]);

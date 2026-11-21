@@ -1,0 +1,49 @@
+{
+  "name": "@keel/std-db",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./sqlite": {
+      "types": "./src/sqlite/index.ts",
+      "default": "./src/sqlite/index.ts"
+    },
+    "./postgres": {
+      "types": "./src/postgres/index.ts",
+      "default": "./src/postgres/index.ts"
+    },
+    "./tools": {
+      "types": "./src/tools/index.ts",
+      "default": "./src/tools/index.ts"
+    }
+  },
+  "engines": {
+    "node": ">=22.13"
+  },
+  "files": ["dist", "docs"],
+  "scripts": {
+    "check": "tsc --noEmit && biome check src test unsafe",
+    "test": "vitest run",
+    "coverage": "node ../../tooling/coverage.mjs",
+    "build": "tsc -p tsconfig.build.json",
+    "mutate": "node ../../tooling/mutate.mjs",
+    "prepack": "node ../../tooling/docs-pack.mjs"
+  },
+  "dependencies": {
+    "@keel/check": "workspace:*",
+    "@keel/ctx": "workspace:*",
+    "pg": "8.23.1"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.16",
+    "@keel/router": "workspace:*",
+    "@keel/schema": "workspace:*",
+    "@keel/server": "workspace:*",
+    "@keel/store": "workspace:*",
+    "@keel/testing": "workspace:*",
+    "@keel/tooling": "workspace:*",
+    "@types/node": "^22",
+    "@types/pg": "8.23.1",
+    "fast-check": "^3"
+  }
+}

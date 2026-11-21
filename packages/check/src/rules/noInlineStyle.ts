@@ -8,7 +8,6 @@ import type { RuleDef } from "../types/RuleDef.ts";
 export const noInlineStyle: RuleDef = {
   code: "E1803",
   message: () => "style attribute; use token style props",
-  explain: "Styling is token style props; no inline style.",
   see: "k.ui",
   check: ({ file, ast }) => {
     if (!isAppPath(file.path)) return [];

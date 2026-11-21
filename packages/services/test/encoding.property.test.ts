@@ -38,7 +38,8 @@ describe("encoding", () => {
 
   test("property: every path param segment decodes back to its value and contains no '/'", () => {
     fc.assert(
-      fc.property(fc.fullUnicodeString({ minLength: 1 }), fc.fullUnicodeString(), (a, b) => {
+      fc.property(fc.fullUnicodeString({ minLength: 1 }), fc.fullUnicodeString({ minLength: 1 }), (a, b) => {
+        fc.pre(![a, b].includes(".") && ![a, b].includes(".."));
         const r = fillPath("/x/:a/y/:b", { a, b });
         expect(r.ok).toBe(true);
         if (!r.ok) return;

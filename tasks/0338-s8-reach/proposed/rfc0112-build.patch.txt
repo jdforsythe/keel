@@ -1,0 +1,86 @@
+diff --git a/apps/golden-1/modules/todos/resolveEdit.ts b/apps/golden-1/modules/todos/resolveEdit.ts
+index 70e29376..30f16cef 100644
+--- a/apps/golden-1/modules/todos/resolveEdit.ts
++++ b/apps/golden-1/modules/todos/resolveEdit.ts
+@@ -19,5 +19,5 @@ export async function resolveEdit(ctx: Ctx, key: string, resolution: Resolution)
+   const chosen = tx(resolution === "mine" ? editorChart.events.mine : editorChart.events.theirs, {});
+   if (!chosen.ok) return false;
+   const applied = await resolve(ctx, boardOutbox, key, resolution);
+-  return applied && editorFollow().ok;
++  return applied !== false && editorFollow().ok;
+ }
+diff --git a/packages/std-offline/README.md b/packages/std-offline/README.md
+index 24027a81..6fcedae9 100644
+--- a/packages/std-offline/README.md
++++ b/packages/std-offline/README.md
+@@ -11,7 +11,7 @@ An outbox of writes made offline: each keeps its key and base, goes out in order
+   - `Write` (schema and type) `{ key: s.id('Write'), base: s.int({ min: 0 }) }`: the `write` field of each endpoint body an outbox sends to. The action passes it to the store: `tx(t, payload, { meta, ...input.write })`.
+   - `send(ctx, outbox, origin, endpoint, input, { base })`, `input` typed by the endpoint without `body.write`, resolves `OutboxResult<O>`: `{ state: 'sent', value }`, `{ state: 'queued' }`, `{ state: 'conflict', head }` or `{ state: 'failed', error }` (an `ApiError`, `offline.full`, or `offline.storage` when a write to `ctx.storage` rejected).
+   - `drain(ctx, outbox)`, inside a scope (E1203 outside one), loads the stored outbox, flushes, and flushes again on each `{ kind: 'net', online: true }` until the scope is disposed.
+-  - `resolve(ctx, outbox, key, 'mine' | 'theirs')` resolves `true` when it applied: `'mine'` queues a `conflict` entry again, last, with `base` set to its `head`, and flushes; `'theirs'` removes a `conflict` or `failed` entry.
++  - `resolve(ctx, outbox, key, 'mine' | 'theirs')` resolves `false` for a key with no such entry. `'mine'` queues a `conflict` entry again, last, with `base` set to its `head`, flushes, and resolves the re-sent entry's `OutboxResult` once it settles (`queued` when offline or the flush stops first; `false | OutboxResult<unknown>`); `'theirs'` removes a `conflict` or `failed` entry and resolves `true` (`boolean`). A `Resolution`-typed argument resolves the union.
+   - Schemas and types `OutboxEntry` (`{ key, endpoint, origin, input, base, at, state, head?, error? }`), `Resolution`; types `Outbox`, `OutboxResult`, `SendInput`.
+   - `./tools` (node): rule E2651, an `outbox` whose endpoints map (inline, a `const` of the same file, or one imported from a project file) has an endpoint body holding `s.secret`. No fix.
+ - **Invariants:**
+@@ -19,7 +19,7 @@ An outbox of writes made offline: each keeps its key and base, goes out in order
+   - `send` adds an entry with `body.write` `{ key: ctx.random.id('Write'), base }` and `at` from `ctx.clock`, writes `{ entries }` as JSON to `ctx.storage` `keel.outbox.<id>`, and flushes when online. An outbox holding `limit` entries, or whose encoded entries would pass `maxBytes`, refuses with `offline.full` and adds nothing. When `send`'s own write to `ctx.storage` rejects, the entry is `failed` with `offline.storage` (in memory), nothing is posted, and `send` resolves that `failed`.
+   - One flush per outbox, one request in flight, entries in the order added, each through `service({ base: origin })` with its original key, every answer read as JSON and then as a `module` service reads a route's `Result`: a 2xx `{ ok: true, value }` gives `value` decoded by `output`, an error status the err's `error` decoded by `errors[status]`; a schema that does not decode that part is tried on the whole body (a bare 2xx output, or a map whose schemas describe the whole k.server answer). 2xx removes the entry. `api.network`, `api.timeout` and a 502 `keel.unreachable` err keep it `queued` and stop the flush until the next `send`, a reconnect while draining, or a retry 1 s later doubling to 60 s on `ctx.clock` while online. A 409 `keel.conflict` err naming `data.transaction` leaves it `conflict` with `data.head`, whether or not the endpoint declares a 409; another 409 is sent once more, then `failed`. Any other status is `failed` with its `ApiError`. The flush moves on after `conflict` and `failed`.
+   - An entry naming no endpoint of the outbox's api (an own key of the map) is `failed` with `api.input`. A write to `ctx.storage` that rejects while flushing fails the entry in hand with `offline.storage` (in memory) and releases the flush, so later sends flush.
+-  - A resent entry keeps its key, so a write the server already committed commits nothing again.
++  - A resent entry keeps its key, so a write the server already committed commits nothing again while the store keeps that key: its last `logLimit` keyed writes.
+   - Every effect goes through `ctx` (`clock`, `net`, `random`, `storage`) and `observe`, so one seed and one script of sends and connectivity changes give byte-equal outbox and server logs.
+ - **Dependencies:** `@keel/check` and `oxc-parser` (tools only), `@keel/ctx`, `@keel/reactive`, `@keel/schema`, `@keel/services`, `@keel/store`.
+ - **Rungs:** conformance (examples and properties, seed 1337) for sending online, queueing offline, flush order, lost responses, 409s, resolve, a full outbox, backoff, E2651 and determinism; properties for scripts of sends, connectivity changes and lost responses that apply every entry once, in order.
+diff --git a/packages/std-offline/src/resolve.ts b/packages/std-offline/src/resolve.ts
+index a065baef..aacd6fa8 100644
+--- a/packages/std-offline/src/resolve.ts
++++ b/packages/std-offline/src/resolve.ts
+@@ -2,6 +2,7 @@ import type { Ctx } from "@keel/ctx";
+ import type { EndpointMap } from "@keel/services";
+ import { tx } from "@keel/store";
+ import type { Outbox } from "./Outbox.type.ts";
++import type { OutboxResult } from "./OutboxResult.ts";
+ import type { Resolution } from "./Resolution.schema.ts";
+ import { configOf } from "./internal/configOf.ts";
+ import { flush } from "./internal/flush.ts";
+@@ -10,16 +11,35 @@ import { persist } from "./internal/persist.ts";
+ 
+ /**
+  * Answer a refused entry (std.offline Resolve): `'mine'` queues a `conflict` entry again, last, with `base` set to its
+- * `head`, and flushes; `'theirs'` removes a `conflict` or `failed` entry. Each logs `<id>.resolve` `{ key, resolution }`
+- * and writes the outbox to `ctx.storage`, once the stored outbox has loaded. Resolves false, changing nothing, for a key with no such entry.
++ * `head`, flushes, and resolves the re-sent entry's `OutboxResult` once it settles (`queued` when offline or the flush
++ * stops first); `'theirs'` removes a `conflict` or `failed` entry and resolves true. Each logs `<id>.resolve`
++ * `{ key, resolution }` and writes the outbox to `ctx.storage`, once the stored outbox has loaded. Resolves false,
++ * changing nothing, for a key with no such entry.
+  */
+-export async function resolve(ctx: Ctx, o: Outbox<EndpointMap>, key: string, resolution: Resolution): Promise<boolean> {
++export function resolve(
++  ctx: Ctx,
++  o: Outbox<EndpointMap>,
++  key: string,
++  resolution: "mine",
++): Promise<false | OutboxResult<unknown>>;
++export function resolve(ctx: Ctx, o: Outbox<EndpointMap>, key: string, resolution: "theirs"): Promise<boolean>;
++export function resolve(
++  ctx: Ctx,
++  o: Outbox<EndpointMap>,
++  key: string,
++  resolution: Resolution,
++): Promise<boolean | OutboxResult<unknown>>;
++export async function resolve(
++  ctx: Ctx,
++  o: Outbox<EndpointMap>,
++  key: string,
++  resolution: Resolution,
++): Promise<boolean | OutboxResult<unknown>> {
+   const c = configOf(o);
+   await load(ctx, c);
+   const state = c.store.get("entries").find((e) => e.key === key)?.state;
+   if (state !== "conflict" && (resolution === "mine" || state !== "failed")) return false;
+   tx(c.resolve, { key, resolution });
+   await persist(ctx, c);
+-  if (resolution === "mine") void flush(ctx, c);
+-  return true;
++  return resolution === "mine" ? flush(ctx, c, key) : true;
+ }

@@ -1,25 +1,33 @@
 {
   "name": "@keel/store",
   "version": "0.0.0",
-  "private": false,
+  "private": true,
   "type": "module",
   "exports": {
     ".": {
       "types": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./internal": {
+      "types": "./src/internal/index.ts",
+      "default": "./src/internal/index.ts"
     }
   },
-  "files": ["dist"],
+  "files": ["dist", "docs"],
   "scripts": {
     "check": "tsc --noEmit && biome check src test unsafe",
     "test": "vitest run",
+    "coverage": "node ../../tooling/coverage.mjs",
     "build": "tsc -p tsconfig.build.json",
-    "mutate": "stryker run"
+    "mutate": "node ../../tooling/mutate.mjs",
+    "prepack": "node ../../tooling/docs-pack.mjs"
   },
   "devDependencies": {
+    "@types/node": "^22",
     "@keel/tooling": "workspace:*"
   },
   "dependencies": {
+    "@keel/ctx": "workspace:*",
     "@keel/reactive": "workspace:*",
     "@keel/schema": "workspace:*"
   }

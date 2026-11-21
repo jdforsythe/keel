@@ -1,0 +1,30 @@
+{
+  "task": "golden-2-catalog",
+  "skill": "keel",
+  "specSections": [
+    "std.headless",
+    "std.options",
+    "std.tables",
+    "k.aria",
+    "k.router",
+    "k.testing",
+    "std.messages",
+    "std.i18n",
+    "std.money",
+    "std.temporal"
+  ],
+  "model": "claude-sonnet-5-5",
+  "runner": "claude",
+  "converged": true,
+  "iterations": 1,
+  "tokens": {
+    "input": 7262449,
+    "output": 63072
+  },
+  "costUsd": 1.9848237999999996,
+  "unsafeCount": 5,
+  "checkTrailer": "ok budgets 139 measured (5.3s)",
+  "testTrailer": " ELIFECYCLE  Test failed. See above for more details.",
+  "durationMs": 912215,
+  "startedAt": "2026-11-18T14:05:55.990Z"
+}

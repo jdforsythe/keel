@@ -3,6 +3,7 @@
 // verb (native method or POST with `_method`); runtime gets `ok(null)` JSON, documents get 303.
 import { createCtx } from "@keel/ctx";
 import { type Verb, action, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -19,6 +20,8 @@ const Input = s.object({
   tag: s.string().optional(),
 });
 type In = { kind: "open" | "closed"; note: string; count: number; rush: boolean; tag?: string };
+
+const c = contract("orders", { "orders.edit": { path: "/orders/edit" } });
 
 const input: fc.Arbitrary<In> = fc
   .record({
@@ -42,15 +45,17 @@ const toForm = (v: In): FormData => {
 
 async function build() {
   const seen: unknown[] = [];
-  const act = action({ input: Input }, (v) => {
+  const act = action(c, "orders.edit", { input: Input }, (v) => {
     seen.push(v);
     return ok(null);
   });
-  const routes = manifest({
+  const routes = manifest(c, {
     "orders.edit": {
-      path: "/orders/edit",
-      actions: { POST: act, PUT: act, PATCH: act, DELETE: act },
       component: () => document.createElement("p"),
+      POST: act,
+      PUT: act,
+      PATCH: act,
+      DELETE: act,
     },
   });
   const app = await createApp({
@@ -87,7 +92,7 @@ describe("FormData round trip through an action (property)", () => {
             expect(await res.json()).toEqual({ ok: true, value: null });
           } else {
             expect(res.status).toBe(303);
-            expect(res.headers.get("location")).toBe(`${BASE}/orders/edit?x=1`);
+            expect(res.headers.get("location")).toBe("/orders/edit?x=1");
           }
         },
       ),

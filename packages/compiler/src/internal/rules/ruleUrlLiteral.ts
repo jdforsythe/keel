@@ -1,4 +1,4 @@
-import { RAW_HTML_ATTRS, URL_ATTRS, isSafeUrl } from "@keel/runtime-dom/url";
+import { RAW_HTML_ATTRS, URL_ATTRS, isRefusedAttr, isSafeUrl } from "@keel/runtime-dom/url";
 import type { JSXAttribute } from "oxc-parser";
 import type { Diagnostic } from "../../types/Diagnostic.ts";
 import type { Analysis } from "../Analysis.ts";
@@ -47,7 +47,8 @@ function removal(a: Analysis, at: JSXAttribute): string {
 
 /**
  * E1003 a literal value the runtime would render as `about:blank` (`isSafeUrl` from `@keel/runtime-dom/url`,
- * the one URL policy: scheme outside http/https/mailto/tel in a URL attribute, or any `srcdoc`), in URL attributes
+ * the one URL policy: scheme outside http/https/mailto/tel in a URL attribute, or any `srcdoc`), and any `<base>`
+ * `href` or `<meta>` `http-equiv`, literal or bound, which is never rendered (`isRefusedAttr`, rfc:0056, 0058), in URL attributes
  * of DOM elements and URL props of base elements (`Link to`, `Image src`). E1501 (k.router) a literal path in a
  * navigation attribute (`href`, `action`, `formaction`, `Link to`) that starts with `/` or matches one of the route
  * path `patterns`; asset attributes take relative URLs. Absolute URLs (allowed scheme, `//`) and `#fragment`s are not
@@ -64,6 +65,14 @@ export function ruleUrlLiteral(a: Analysis, patterns: readonly string[] = []): D
     for (const at of j.openingElement.attributes) {
       if (at.type !== "JSXAttribute") continue;
       const name = attrNameOf(at.name);
+      // A refused attribute (`<base>` `href`, `<meta>` `http-equiv`), literal or bound; `on*` is E1002's.
+      if (html && !/^on/i.test(name) && isRefusedAttr(tag, name)) {
+        const why = name.toLowerCase() === "href" ? "re-points every relative URL" : "sets a document header";
+        out.push(
+          diag(a, "E1003", at.start, `${tag} ${name} ${why}; it is never rendered`, "k.compiler", removal(a, at)),
+        );
+        continue;
+      }
       const target = urlTarget(html, base.get(tag), name);
       if (target === undefined) continue;
       const fix = target.required ? undefined : removal(a, at);

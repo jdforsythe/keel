@@ -9,3 +9,16 @@ evals/results/*.tmp
 .stryker-tmp
 packages/*/test/.tmp-*
 packages/*/conformance/.tmp-*
+.fixtures
+.keel/sessions/
+packages/*/.keel/
+.keel-dev/
+.DS_Store
+.env*
+!.env.example
+*.pem
+*.log
+!evals/results/*.log
+.cargo-target/
+.claude/settings.local.json
+packages/*/docs

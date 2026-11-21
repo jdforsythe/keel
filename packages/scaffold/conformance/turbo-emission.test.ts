@@ -1,4 +1,4 @@
-// Spec: k.scaffold, clause "After `scaffold module`, `turbo.json` equals the generator's output for the new task graph."
+// Spec: k.scaffold, clause "After `scaffold module`, `turbo.json` equals the generator's output for the new graph."
 // The generator is a pure function of the task graph, so the same module set yields the same turbo.json regardless of the order modules were added.
 // The expected graph is computed here, independently, from the tree and ADR-0009: modules = every modules/<id>/module.ts and
 // every id in topology.ts; tasks check, test, build where test and build depend on check.

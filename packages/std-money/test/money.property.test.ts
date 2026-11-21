@@ -28,11 +28,55 @@ test("addMoney is associative for one currency when every partial sum is in boun
   );
 });
 
-test("formatMoney is injective per currency: distinct amounts format differently", () => {
+const LOCALES = [
+  "de-DE",
+  "en-GB",
+  "en-US",
+  "es-ES",
+  "fr-FR",
+  "it-IT",
+  "ja-JP",
+  "ko-KR",
+  "nl-NL",
+  "pt-BR",
+  "zh-CN",
+] as const;
+
+test("formatMoney is injective per locale: distinct Money values format differently in one Locale", () => {
   fc.assert(
-    fc.property(gen(Money), gen(Money), (a, b) => {
-      if (a.currency === b.currency && a.amount !== b.amount) expect(formatMoney(a)).not.toBe(formatMoney(b));
+    fc.property(gen(Money), gen(Money), fc.constantFrom(...LOCALES), (a, b, l) => {
+      if (a.currency !== b.currency || a.amount !== b.amount) expect(formatMoney(a, l)).not.toBe(formatMoney(b, l));
     }),
-    { seed: SEED, numRuns: 100 },
+    { seed: SEED, numRuns: 200 },
+  );
+});
+
+test("formatMoney is injective per locale for near amounts: a one-minor-unit step always changes the text", () => {
+  fc.assert(
+    fc.property(
+      fc.integer({ min: -1e15, max: 1e15 - 1 }),
+      fc.constantFrom(...(["EUR", "GBP", "JPY", "USD"] as const)),
+      fc.constantFrom(...LOCALES),
+      (amount, currency, l) => {
+        expect(formatMoney({ amount, currency }, l)).not.toBe(formatMoney({ amount: amount + 1, currency }, l));
+      },
+    ),
+    { seed: SEED, numRuns: 200 },
+  );
+});
+
+test("formatMoney throws exactly when the amount is not a Money amount", () => {
+  fc.assert(
+    fc.property(
+      fc.oneof(fc.double(), fc.integer({ min: -2e15, max: 2e15 })),
+      fc.constantFrom(...(["EUR", "GBP", "JPY", "USD"] as const)),
+      (amount, currency) => {
+        const valid = Number.isSafeInteger(amount) && Math.abs(amount) <= 1e15;
+        const run = () => formatMoney({ amount, currency }, "en-US");
+        if (valid) expect(run).not.toThrow();
+        else expect(run).toThrow(/no decimal form/);
+      },
+    ),
+    { seed: SEED, numRuns: 200 },
   );
 });

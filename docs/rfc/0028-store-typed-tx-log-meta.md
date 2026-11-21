@@ -1,6 +1,6 @@
 # RFC 0028: Typed `tx` payloads, log entry `meta`, `undoWhere`
 
-Status: accepted
+Status: implemented
 
 ## Problem
 `tx<T>(t: Transaction<T, unknown>, payload: unknown)` (store PLAN D2) accepts any payload, so a wrong payload is found only at run time (backlog 0038). The server proves "this caller committed the last entry" with a side map from log entries to caller tokens (`markLogs`, `tagSince`, `Caller.tags`; finding 0082), then checks and undoes in two steps (`canUndoOwn` then `undo`); the log has no place for that fact and no conditional undo (backlog 0100, k.store part).

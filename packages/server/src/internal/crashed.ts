@@ -1,10 +1,13 @@
+import { publicError } from "@keel/router/internal";
 import type { KeelError } from "@keel/schema";
 import type { Handled } from "./Handled.ts";
 import type { Mode } from "./Mode.ts";
 import { escapeHtml } from "./escapeHtml.ts";
-import { publicError } from "./publicError.ts";
 
-/** Last resort when the request flow itself threw (a server bug): 500 `keel.unexpected`, scrubbed in production. */
+/**
+ * Last resort when the request flow itself threw (a server bug): status 500
+ * `keel.unexpected`, scrubbed in production.
+ */
 export function crashed(mode: Mode, e: KeelError<string, unknown>): Handled {
   const shown = publicError(e, mode);
   const body = `<!doctype html><html lang="en"><body><main><div role="alert" data-keel-error="${escapeHtml(shown.code)}">${escapeHtml(shown.message)}</div></main></body></html>`;

@@ -4,13 +4,16 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "tsc --noEmit && biome check modules",
+    "check": "tsc --noEmit && biome check modules test && keel check --quiet",
     "test": "vitest run",
-    "build": "node ../../packages/cli/src/bin.ts build",
-    "api": "node --experimental-webstorage --localstorage-file=.api.storage --disable-warning=ExperimentalWarning server.ts"
+    "coverage": "node ../../tooling/coverage.mjs",
+    "build": "keel build",
+    "dev": "keel dev",
+    "api": "KEEL_DATABASE_URL=file://$PWD/.api.sqlite node --disable-warning=ExperimentalWarning dist/api/server.mjs"
   },
   "dependencies": {
-    "@hono/node-server": "^2.1.6",
+    "@capacitor/core": "8.6.0",
+    "@capacitor/preferences": "8.0.1",
     "@keel/compiler": "workspace:*",
     "@keel/ctx": "workspace:*",
     "@keel/forms": "workspace:*",
@@ -20,12 +23,34 @@
     "@keel/schema": "workspace:*",
     "@keel/server": "workspace:*",
     "@keel/services": "workspace:*",
+    "@keel/std-capacitor": "workspace:*",
+    "@keel/std-channels": "workspace:*",
+    "@keel/std-db": "workspace:*",
+    "@keel/std-jobs": "workspace:*",
+    "@keel/std-live": "workspace:*",
+    "@keel/std-offline": "workspace:*",
+    "@keel/std-schedules": "workspace:*",
+    "@keel/std-sessions": "workspace:*",
+    "@keel/std-statecharts": "workspace:*",
+    "@keel/std-tauri": "workspace:*",
+    "@keel/std-workflows": "workspace:*",
     "@keel/store": "workspace:*",
-    "@keel/testing": "workspace:*",
-    "@keel/ui": "workspace:*"
+    "@keel/ui": "workspace:*",
+    "@tauri-apps/api": "2.12.4",
+    "@tauri-apps/plugin-http": "2.9.0",
+    "@tauri-apps/plugin-store": "2.5.1"
   },
   "devDependencies": {
+    "@capacitor/android": "8.6.2",
+    "@capacitor/cli": "8.6.2",
+    "@capacitor/ios": "8.6.2",
+    "@keel/cli": "workspace:*",
+    "@keel/std-conflicts": "workspace:*",
+    "@keel/testing": "workspace:*",
     "@keel/tooling": "workspace:*",
-    "vite": "^8.3.6"
+    "@tauri-apps/cli": "2.12.4",
+    "@types/node": "^22",
+    "vite": "^8.3.6",
+    "z3-solver": "5.3.3"
   }
 }

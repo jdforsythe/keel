@@ -2,7 +2,7 @@
 import { format } from "@keel/check";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { lines, SEED, synth } from "./support.ts";
+import { SEED, lines, synth } from "./support.ts";
 
 const codeLines = (out: string, code: string) => lines(out).filter((l) => l.startsWith(`${code} `));
 

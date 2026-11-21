@@ -32,13 +32,20 @@ export default function ListsPage() {
   </Box>;
 }
 `;
-const ROUTES = `import { manifest } from "@keel/router";
+const CONTRACT = `import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
+export const todos = contract("todos", {
+  "todos.index": { path: "/" },
+  "todos.list": { path: "/lists/:listId", params: s.object({ listId: s.string() }) },
+});
+`;
+const ROUTES = `import { manifest } from "@keel/router";
 import ListsPage from "./ListsPage.tsx";
 import { loadList } from "./loadList.server.ts";
-export const routes = manifest({
-  "todos.index": { path: "/", component: ListsPage },
-  "todos.list": { path: "/lists/:listId", params: s.object({ listId: s.string() }), loader: loadList, component: ListsPage },
+import { todos } from "./todos.contract.ts";
+export const routes = manifest(todos, {
+  "todos.index": { component: ListsPage },
+  "todos.list": { loader: loadList, component: ListsPage },
 });
 `;
 
@@ -69,8 +76,9 @@ export const tokens = defineTokens({
   write("modules/todos/ListsPage.tsx", PAGE);
   write(
     "modules/todos/loadList.server.ts",
-    `import { loader } from "@keel/router";\nimport { ok, s } from "@keel/schema";\nexport const loadList = loader({ output: s.object({ n: s.int() }) }, async () => ok({ n: 1 }));\n`,
+    `import { loader } from "@keel/router";\nimport { ok, s } from "@keel/schema";\nimport { todos } from "./todos.contract.ts";\nexport const loadList = loader(todos, "todos.list", { output: s.object({ n: s.int() }) }, async () => ok({ n: 1 }));\n`,
   );
+  write("modules/todos/todos.contract.ts", CONTRACT);
   write("modules/todos/routes.ts", ROUTES);
 });
 afterEach(() => {
@@ -94,12 +102,13 @@ describe("@keel/compiler/vite project inputs", () => {
       "deps.json",
       "ids.json",
       "routes.json",
+      "std.json",
       "styles.json",
     ]);
 
     const cssId = p.resolveId("virtual:keel.css");
     expect(cssId).not.toBeNull();
-    const css = (await p.load(cssId ?? "")) ?? "";
+    const css = (await p.load(typeof cssId === "string" ? cssId : "")) ?? "";
     expect(css).toContain(":root{");
     expect(css).toContain("@media (min-width: 768px)");
     const page = p.transform(PAGE, path.join(root, "modules/todos/ListsPage.tsx"))?.code ?? "";
@@ -112,12 +121,12 @@ describe("@keel/compiler/vite project inputs", () => {
     expect(entry).toContain('import "virtual:keel.css";');
     expect(entry).toContain('from "/modules/todos/routes.ts"');
     expect(entry).toContain('createCtx({ mode: "real" })');
-    expect(entry).toContain("createRouter(__keelRoutes0, { ctx, history: browserHistory() })");
-    expect(entry).toContain("mount(router.App, el, { ctx })");
+    expect(entry).toContain("createRouter(routeTable(__keelRoutes0), { ctx, history: browserHistory(), mode })");
+    expect(entry).toContain("mount(router.App, el, { ctx, mode })");
     expect(parseSync("entry.js", entry, { sourceType: "module" }).errors).toEqual([]);
   });
 
-  it("exempts client deployables from E1004 and reports it again after topology.ts changes", async () => {
+  it("leaves E1004 to keel check and E1007 under any topology, and reads topology.ts again when it changes", async () => {
     const p = keel();
     p.configResolved({ root });
     const file = path.join(root, "modules/todos/routes.ts");
@@ -125,7 +134,7 @@ describe("@keel/compiler/vite project inputs", () => {
     expect(p.transform(ROUTES, file)?.code).toContain("manifest(");
     const topo = write("topology.ts", `export default topology({ web: { modules: ["todos"], adapter: "static" } });\n`);
     p.watchChange(topo, { event: "update" });
-    expect(() => p.transform(ROUTES, file)).toThrow(/^E1004 modules\/todos\/routes.ts/);
+    expect(p.transform(ROUTES, file)?.code).toContain("manifest(");
     await expect(p.load("/@keel/entry.ts")).rejects.toThrow(/needs a client deployable/);
   });
 

@@ -16,5 +16,10 @@ export async function perform(op: Operation, input: Input, io: Io): Promise<Engi
   const r = respond(outcome.records, io, { ...input, command: op.name, code: codeFilter(op, input) });
   const writes = r.code === 0 ? outcome.writes : [];
   if (writes.length > 0) io.apply?.(writes);
-  return { result: { code: r.code, stdout: r.stdout, stderr: r.stderr }, records: r.records, writes };
+  const code = Math.max(r.code, outcome.code ?? 0);
+  return {
+    result: { code, stdout: r.stdout, stderr: `${r.stderr}${outcome.stderr ?? ""}` },
+    records: r.records,
+    writes,
+  };
 }

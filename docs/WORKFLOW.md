@@ -2,17 +2,33 @@
 
 **Unit of work.** One task from `tasks/BACKLOG.md`, sized to one context window, citing a spec section, with acceptance criteria.
 
-**Loop.** `/next` (claim, worktree, branch, PLAN.md) -> `conformance-writer` writes tests from spec -> implement -> `pnpm check` -> `pnpm test` -> `/review` -> docs, spec status, changeset -> commit -> PR -> merge flips the backlog line.
+**Loop.** `/next` (claim, worktree, branch, PLAN.md) -> `conformance-writer` writes tests from spec -> implement -> the package's own `check` -> `pnpm test` -> `pnpm build` -> `/review` -> docs, spec status, changeset -> commit -> PR -> merge flips the backlog line.
 
 **Batches.** When several tasks run in parallel subagents, the batch ends with the `reviewer` subagent over the batch diff (PRINCIPLES 1-12, VISION promises, Definition of done per RFC) and a `red-team` pass; their findings become backlog lines before the next batch starts, and the push waits for both.
 
-**Parallelism.** One worktree per task under `.worktrees/`. `HANDOFF.md` lists all active worktrees. Same-package tasks are serialized. Worktrees share one git index, so every agent stages by explicit path (never `git add -A`) and only the orchestrator commits.
+**Conformance.** The `conformance-writer` writes suites from the spec section alone; builders never edit `packages/*/conformance/**`. An RFC unit lands as three commits: RFC and spec, conformance, build (`docs/RFC.md`). A case that looks wrong goes back to a conformance writer, who judges it from the spec; it is not patched by the builder.
+
+**Parallelism.** Lanes work in place on one branch; a task that needs isolation takes a worktree under `.worktrees/`, and `HANDOFF.md` lists any active one. Same-package work is serialized. Agents stage nothing; the orchestrator commits by explicit path (never `git add -A`).
 
 **Context discipline.** Checkpoint `PLAN.md` after each step. Subagents for exploration. `pnpm spec` for retrieval. Never read `.generated/` or build output.
 
+**Gates.** A brief tells its agent to run the package's own `check` (typecheck and lint, conformance included), not only the one test file it touched. The root `pnpm check` does not run the ledger diff; the orchestrator runs `pnpm ledger --diff` with the root gates, because CI's `check` job does.
+
+**CI.** `tooling/ci.source.json` defines the jobs: `check`; six `test-shard` jobs, to one of which every package must belong (`tooling/ci-shards.mjs`); a `test` job that passes only if every shard passed; `postgres`, `built-smokes`, `build`, `budgets` and `golden-1-images`; `shell-tauri`, `shell-android`, `shell-tauri-macos` and `shell-ios`, which run when the `changes` job reports a shell change, the two macOS jobs only while the repository is public; `mutate-pr` on a pull request labelled `mutate`; and the weekly scheduled `eval`. Every job but `eval` has a time limit. Nothing is retried.
+
+**Reference files.** The orchestrator keeps `tasks/STAGES.md` (each stage's verdict and evidence) and the evidence report current: `pnpm evidence:report` generates `tooling/ledger/evidence.json`, and with `--markdown` `tasks/COVERAGE.md` from it, and `pnpm coverage` measures line and branch coverage per package.
+
 **Brand.** `docs/BRAND.md` is the one style and voice guide. New apps start from the scaffold `project` template (brand tokens, self-hosted fonts, the mark); READMEs and docs pass `tooling/voice-lint.mjs`; the lockup goes on every public page.
 
-**Humans.** Approve RFCs and ADRs, own security, decide freezes, pick design partners.
+**Format.** `pnpm check` runs `tooling/format-check.mjs` (F0001), which fails on any file in the repo that Biome would reformat, ignored generated paths aside. An agent formats only the files it edited, by path (`pnpm exec biome format --write <path>`), never a directory or the repo.
+
+**Humans.** Approve RFCs and ADRs outside the RFC defaults below, confirm or reverse the ones an orchestrator accepted under them, own security, decide freezes, pick design partners.
+
+**Point-in-time docs.** Every doc, README, spec sentence and code comment describes the present. History lives in git and `docs/rfc/`. Before the first public release the RFCs, ADRs, docs and comments are swept: superseded material goes, what remains describes 1.0, and the RFC process restarts from there for outside contributors.
+
+**RFC defaults (user, 2026-11-09).** Design agents apply these and cite the one they used instead of asking; the orchestrator accepts the RFC. 1. A stdlib need that exposes a kernel gap is met by a kernel change (RFC, ADR, conformance, migration note), not a workaround. 2. One way per thing: a new API that duplicates an existing path either replaces it everywhere or is dropped. 3. Reuse the existing execution path (the test runner, the compiler, the check pipeline) unless the new path can replace it everywhere, in which case replace it. 4. Privacy by default: anything that leaves the browser or lands in a file, issue or log is redacted unless a schema or config marks it public; secrets never persist. 5. Server-only by default: config and data reach the client only through an explicit opt-in. 6. Prefer kernel-level enforcement to documentation when a guard is possible. 7. Budgets may be re-based with the reason in the commit; thresholds are never lowered. Escalate to the user only for: new hand-written user-facing API shapes, anything that weakens privacy or auth, external integrations (GitHub, npm, cloud), and anything needing a migration for an existing golden app.
+
+**Lanes.** Stdlib stages run as lanes of disjoint packages under one orchestrator (`tasks/PROGRAM.md`): each stage opens with one design RFC, then implementation agents run in parallel per lane, each verifying its packages with `check` and `build`, one kernel agent per batch takes every kernel change, and the orchestrator owns the shared files (`spec/**`, `tooling/budgets.json`, `tooling/deps.json`, `tooling/ledger/ledger.json`, `tasks/BACKLOG.md`, `docs/HANDOFF.md`); the ledger is written only on a quiet tree, with in-progress spec edits set aside. Design RFCs for later stages may run ahead of implementation; implementation runs in stage order. Mutation runs go alone: they hold a machine-wide lock, and a second run fails E0010.
 
 **Red team.** `red-team` subagent runs on schedule against merged work and PRINCIPLES.md, filing backlog items.
 
@@ -26,4 +42,12 @@
 
 Brief every subagent with: the files it owns, the files other agents own concurrently, the spec section, the verification command, and what to report back (trailer lines, files touched, unfinished items). Independent subagents run in parallel in one turn. Subagent definitions in `.claude/agents/` carry a `model:` so the tier is the default, not a choice.
 
-verified: c7522f5e28b3cdfc1308c56d917f1698e394a635
+**The orchestrator.** The session the operator runs `/resume` in is the director of the work: it understands the goals and moves the project to its end, done right, securely, with clean code and sound process. It keeps for itself the decisions, the briefs, the review of every lane's result, the merges, the gates and the handoff records (`PLAN.md`, `docs/HANDOFF.md`), so no work or progress is lost. Everything else runs concurrently in subagents at the tier above. A subagent's claim is checked before it is relayed or merged: the lane's tests and gates are run, and security work gets a reviewer pass and a red-team pass. A lane that must not disturb a build, an eval or a mutation run on the main tree works in its own git worktree and commits there; the orchestrator cherry-picks. A batch of many lines may go to one opus sub-orchestrator in a worktree that runs its own subagents.
+
+**What the orchestrator decides.** It decides and records; it does not stop to ask. Each decision goes into the task's `PLAN.md` and `docs/HANDOFF.md` for the operator to confirm or reverse. It approves public API shapes, RFCs under the defaults and size budget re-bases (the measured size and the reason go in the commit). It brings to the operator: a security choice that does not follow plainly from the goals (fail closed, least surprise, enforce in the kernel), spending, and a mutation run. External reviews, the CI repair and full testing on devices belong to the pre-public readiness plan, not to stage work.
+
+**Mutation on a shared machine.** A mutation run needs the operator's word. The light form, `pnpm mutate:stale`, runs only the files whose claim is stale, in chunks, with three test runners and a time bound, and is the one to ask for; the whole-package form takes the machine.
+
+**Processes.** The machine is shared. A brief tells its agent to run one test file at a time, to run a whole package suite at most twice, to bound every command, and to leave no process behind. The orchestrator runs `pnpm orphans` before and after a batch and after any root run that stopped early: it lists this worktree's processes whose parent is gone (O0001), and `pnpm orphans --kill` ends them. Agents keep scratch files outside the repo. A mutation run is watched and stopped with `pnpm mutate:status` and `pnpm mutate:stop` only.
+
+verified: 4afc5913b0cc2041920660fce553519b20474b8c

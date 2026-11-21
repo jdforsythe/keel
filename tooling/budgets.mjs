@@ -4,6 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import zlib from "node:zlib";
 import { build } from "esbuild";
+import { buildDocs, listPackages, readSections } from "./docs-pack.mjs";
 import { run } from "./output.ts";
 
 const root = path.join(import.meta.dirname, "..");
@@ -77,9 +78,68 @@ await run("budgets", async () => {
   const keel = (args, input) =>
     spawnSync(process.execPath, [KEEL_BIN, ...args], { cwd: root, encoding: "utf8", env: agentEnv, input }).stdout;
   if (out.explain !== undefined) measure("explain", "keel explain E1451", keel(["explain", "E1451"]));
-  if (out["spec.for"] !== undefined) measure("spec.for", "keel spec --for E1451", keel(["spec", "--for", "E1451"]));
   if (out["mcp.tools-list"] !== undefined)
     measure("mcp.tools-list", "keel mcp tools/list", keel(["mcp"], '{"jsonrpc":"2.0","id":1,"method":"tools/list"}\n'));
+
+  // Installed docs (k.docs Budgets): every section's and skill's text, the AGENTS.md block, and the compact output
+  // of `keel docs` and `keel docs --for E1451` in a project with every package installed, its docs packed in memory
+  // from spec/ and tooling/docs-owners.json as `pnpm docs:pack` packs them.
+  const skillsDir = path.join(root, "packages", "cli", "skills");
+  const skillFiles = (fs.existsSync(skillsDir) ? fs.readdirSync(skillsDir).sort() : [])
+    .map((n) => ({ name: n, file: path.join(skillsDir, n, "SKILL.md") }))
+    .filter((s) => fs.existsSync(s.file))
+    .map((s) => ({ ...s, text: fs.readFileSync(s.file, "utf8") }));
+  const sections = readSections(path.join(root, "spec"));
+  if (out["docs.section"] !== undefined)
+    for (const s of sections) {
+      const t = tokens(s.text);
+      measured++;
+      if (t > out["docs.section"]) breach("docs.section", s.file, t, out["docs.section"], "tokens");
+    }
+  if (out["docs.skill"] !== undefined)
+    for (const s of skillFiles) {
+      const t = tokens(s.text);
+      measured++;
+      if (t > out["docs.skill"]) breach("docs.skill", relp(s.file), t, out["docs.skill"], "tokens");
+    }
+  if (out["docs.agents"] !== undefined) {
+    const { agentFiles } = await import("../packages/scaffold/src/agents/index.ts");
+    const skills = skillFiles.map((s) => ({ name: s.name, description: "", text: s.text }));
+    const agents = agentFiles(new Map(), skills);
+    const text = agents.ok ? (agents.value.find((f) => f.path === "AGENTS.md")?.want ?? "") : "";
+    measure("docs.agents", "AGENTS.md Keel block", text.trimEnd());
+  }
+  if (out["docs.map"] !== undefined || out["docs.for"] !== undefined) {
+    const { run: keelRun } = await import("../packages/cli/src/run.ts");
+    const packages = listPackages(root);
+    const owners = JSON.parse(fs.readFileSync(path.join(root, "tooling", "docs-owners.json"), "utf8"));
+    const built = buildDocs(
+      sections,
+      owners,
+      packages.map((p) => p.name),
+    );
+    const files = [
+      {
+        path: "package.json",
+        source: JSON.stringify({ dependencies: Object.fromEntries(packages.map((p) => [p.name, "*"])) }),
+      },
+      ...packages.flatMap((p) => [
+        {
+          path: `node_modules/${p.name}/package.json`,
+          source: fs.readFileSync(path.join(p.dir, "package.json"), "utf8"),
+        },
+        ...Object.entries(built.get(p.name) ?? {}).map(([rel, source]) => ({
+          path: `node_modules/${p.name}/${rel}`,
+          source,
+        })),
+      ]),
+      ...skillFiles.map((s) => ({ path: `node_modules/@keel/cli/skills/${s.name}/SKILL.md`, source: s.text })),
+    ];
+    const docs = async (args) =>
+      (await keelRun(["docs", ...args, "--format=compact"], { cwd: "/budget", files })).stdout;
+    if (out["docs.map"] !== undefined) measure("docs.map", "keel docs", await docs([]));
+    if (out["docs.for"] !== undefined) measure("docs.for", "keel docs --for E1451", await docs(["--for", "E1451"]));
+  }
 
   if (out["test.failing3"] !== undefined) {
     const fixture = "tooling/fixtures/failing3";
@@ -104,7 +164,12 @@ await run("budgets", async () => {
     const max = typeof limit === "string" ? limit : limit.max;
     const platform = typeof limit === "string" ? "browser" : (limit.platform ?? "browser");
     const m = /^(\d+(?:\.\d+)?)\s*kb$/i.exec(max);
-    const entry = path.join(root, "packages", name.replace(/^@keel\//, ""), "src", "index.ts");
+    // A subpath export (`@keel/router/match`) is its own entry: `packages/<pkg>/src/<subpath>/index.ts` (rfc:0071).
+    const [pkg, ...sub] = name.replace(/^@keel\//, "").split("/");
+    // A subpath with no folder index is the file `packages/<pkg>/src/<subpath>.ts` (`@keel/std-sessions/routes`, 0093).
+    const nested = path.join(root, "packages", pkg, "src", ...sub, "index.ts");
+    const file = path.join(root, "packages", pkg, "src", `${sub.join("/")}.ts`);
+    const entry = sub.length > 0 && !fs.existsSync(nested) ? file : nested;
     if (!m || !fs.existsSync(entry)) continue;
     const bundle = await build({
       entryPoints: [entry],

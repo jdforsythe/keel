@@ -1,11 +1,11 @@
 import type { Ctx } from "@keel/ctx";
 import { type ResourceState, resource } from "@keel/reactive";
-import { Case, For, Match, type Slots } from "@keel/runtime-dom";
+import { Case, For, Match } from "@keel/runtime-dom";
 import { type Infer, s } from "@keel/schema";
-import { type ApiError, service } from "@keel/services";
+import type { ApiError } from "@keel/services";
 import { Box, Heading, Text } from "@keel/ui";
-import type { Suggestion } from "./Suggestion.schema.ts";
-import { suggestions } from "./suggestions.service.ts";
+import type { Suggestion } from "../api/Suggestion.schema.ts";
+import { todosApi } from "./todosApi.ts";
 
 export const Props = s.object({});
 
@@ -17,14 +17,13 @@ const messageOf = (e: unknown): string => (e instanceof Error ? e.message : "Sug
 const failure = (e: ApiError): Error =>
   new Error(e.code === "api.status" ? `Suggestions failed (${e.data.status})` : "Suggestions failed");
 
-async function fetchSuggestions(ctx: Ctx | undefined): Promise<Suggestion[]> {
-  if (ctx === undefined) return Promise.reject(new Error("Suggestions need a ctx"));
-  const r = await service({ base: location.origin, schema: suggestions }).list({}, ctx);
-  return r.ok ? r.value.results["api.suggestions"].value : Promise.reject(failure(r.error));
+async function fetchSuggestions(ctx: Ctx): Promise<Suggestion[]> {
+  const r = await todosApi.suggestions({}, ctx);
+  return r.ok ? r.value : Promise.reject(failure(r.error));
 }
 
-/** Suggested titles from `GET /api/suggestions` through a typed `suggestions` client, shown by resource state. */
-export default function Suggestions(_props: Infer<typeof Props>, _slots?: Slots, ctx?: Ctx) {
+/** Suggested titles from `GET /api/suggestions` through the typed `api` client, shown by resource state. */
+export default function Suggestions(_props: Infer<typeof Props>, ctx: Ctx) {
   const list = resource(() => fetchSuggestions(ctx));
   return (
     <Box as="section" id="todos.suggestions" direction="column" gap="3">

@@ -8,7 +8,7 @@ import { build, createApp, SEED } from "./fixtures.ts";
 const run = async (adapter: "static" | "node") => {
   const { routes } = await build({});
   return createApp({
-    topology: topology({ web: { modules: ["app", "orders"], adapter } }),
+    topology: topology({ web: { modules: ["orders"], adapter } }),
     routes,
     ctx: createCtx({ mode: "sim", seed: SEED }),
   }).then(

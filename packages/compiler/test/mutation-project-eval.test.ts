@@ -1,4 +1,4 @@
-// Mutation-killing tests for evaluateProject (build-time tokens.ts / routes.ts evaluation).
+// Mutation-killing tests for evaluateProject (build-time tokens.ts, contract and routes.ts evaluation).
 import fs from "node:fs";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -27,6 +27,9 @@ afterEach(() => {
   fs.rmSync(root, { recursive: true, force: true });
 });
 
+/** A binding file whose contract sits beside it: evaluation reads it as it reads a contract file. */
+const binding = (id: string, entries: string, bound: string): string =>
+  `import { action, guard, loader, manifest } from "@keel/router";\nimport { contract } from "@keel/router/contract";\nimport { ok, s } from "@keel/schema";\nconst c = contract("${id}", { ${entries} });\nconst V = () => null;\nexport const routes = manifest(c, { ${bound} });\n`;
 const ROOT_VARS = ":root{--k-color-fg:#111;--k-color-bg:#fff;--k-space-1:4px;--k-space-2:8px}\n";
 
 describe("evaluateProject (mutation)", () => {
@@ -94,17 +97,17 @@ describe("evaluateProject (mutation)", () => {
     expect((r.problems[0] ?? "").length).toBeGreaterThan("E1807 ".length);
   });
 
-  // A route's guard is a guard value; routes.json records its `redirect` (RFC 0041). A number or a bare name is dropped.
-  it("merges route manifests sorted by id, keeping only valid entries", { timeout: 30000 }, async () => {
+  // routes.json is the router's `routesArtifact` of each binding, merged and sorted by id.
+  it("merges route tables sorted by id", { timeout: 30000 }, async () => {
     write(
       "r/a.ts",
-      `export const routes = { routes: { "z.x": { path: "/z" }, "bad.guard": { path: "/", guard: 5 }, "bad.named": { path: "/n", guard: "gg" }, "bad.redirect": { path: "/r", guard: { redirect: 5 } }, "g.ok": { path: null, guard: { redirect: "gg" }, layout: "ll" }, "g.none": { path: "/g", guard: null }, "bad.layout": { layout: 7 }, "bad.path": { path: 9 } } };`,
+      binding(
+        "z",
+        `"z.x": { path: "/z" }, "z.shell": { layout: true }, "z.box": { method: "GET", path: "/api/z", output: s.object({}) }, "z.add": { method: "POST", path: "/api/z", output: s.object({}) }`,
+        `"z.x": { component: V, layout: "z.shell", guard: guard({ redirect: "z.x" }, async () => ok(null)) }, "z.shell": { component: V }, "z.box": { loader: loader(c, "z.box", {}, async () => ok({})) }, "z.add": { action: action(c, "z.add", {}, async () => ok({})) }`,
+      ),
     );
-    write(
-      "r/b.ts",
-      `import data from "./data.ts.json";\nexport const routes = { routes: { [data.id]: { path: data.path } } };`,
-    );
-    write("r/data.ts.json", `{ "id": "a.y", "path": "/a" }`);
+    write("r/b.ts", binding("a", `"a.y": { path: "/a" }`, `"a.y": { component: V }`));
     const r = await evaluateProject({
       root,
       tokensFile: undefined,
@@ -113,8 +116,7 @@ describe("evaluateProject (mutation)", () => {
     });
     expect(r.css).toBe("");
     expect(r.problems).toEqual([]);
-    expect(Object.keys(r.routes)).toEqual(["a.y", "g.none", "g.ok", "z.x"]);
-    expect(r.routes["g.none"]?.guard).toBeNull();
+    expect(Object.keys(r.routes)).toEqual(["a.y", "z.add", "z.box", "z.shell", "z.x"]);
     expect(r.routes["a.y"]).toEqual({
       actions: [],
       guard: null,
@@ -124,19 +126,14 @@ describe("evaluateProject (mutation)", () => {
       path: "/a",
       search: null,
     });
-    expect(r.routes["g.ok"]).toEqual({
-      actions: [],
-      guard: "gg",
-      layout: "ll",
-      module: "g",
-      params: null,
-      path: null,
-      search: null,
-    });
+    expect(r.routes["z.x"]).toMatchObject({ guard: "z.x", layout: "z.shell", path: "/z" });
+    expect(r.routes["z.shell"]).toMatchObject({ path: null, layout: null });
+    expect(r.routes["z.box"]).toMatchObject({ api: true, method: "GET", actions: [], path: "/api/z" });
+    expect(r.routes["z.add"]).toMatchObject({ api: true, method: "POST", actions: ["POST"] });
   });
 
   it("evaluates tokens and routes together", { timeout: 30000 }, async () => {
-    write("r/a.ts", `export const routes = { routes: { "m.index": { path: "/" } } };`);
+    write("r/a.ts", binding("m", `"m.index": { path: "/" }`, `"m.index": { component: V }`));
     const r = await evaluateProject({
       root,
       tokensFile: "tokens.ts",
@@ -193,7 +190,7 @@ describe("evaluateProject routes.ts and syntax errors (RFC 0030)", () => {
 
   it("maps a routes.ts that throws to E1006 and keeps the other manifests", { timeout: 30000 }, async () => {
     write("r/throw.ts", `throw new Error("routes boom");\nexport const routes = {};`);
-    write("r/ok.ts", `export const routes = { routes: { "m.index": { path: "/" } } };`);
+    write("r/ok.ts", binding("m", `"m.index": { path: "/" }`, `"m.index": { component: V }`));
     const r = await routesOnly("r/throw.ts", "r/ok.ts");
     expect(r.problems).toEqual(["E1006 r/throw.ts failed to evaluate: routes boom"]);
     expect(Object.keys(r.routes)).toEqual(["m.index"]);
@@ -208,13 +205,36 @@ describe("evaluateProject routes.ts and syntax errors (RFC 0030)", () => {
     });
   });
 
+  it("maps a routes export that is no route table to E1006", { timeout: 30000 }, async () => {
+    write("r/plain.ts", `export const routes = { routes: { "m.index": { path: "/" } } };`);
+    expect((await routesOnly("r/plain.ts")).problems).toEqual(["E1006 r/plain.ts exports no route table"]);
+  });
+
+  it("maps a contract file that throws to E1006 naming it, and runs no binding of it", { timeout: 30000 }, async () => {
+    write("modules/a/a.contract.ts", `throw new Error("contract boom");\nexport const a = 1;`);
+    write("modules/a/routes.ts", `throw new Error("binding ran");\nexport const routes = {};`);
+    write("modules/b/routes.ts", binding("b", `"b.index": { path: "/" }`, `"b.index": { component: V }`));
+    const r = await routesOnly("modules/a/routes.ts", "modules/b/routes.ts");
+    expect(r.problems).toEqual(["E1006 modules/a/a.contract.ts failed to evaluate: contract boom"]);
+    expect(Object.keys(r.routes)).toEqual(["b.index"]);
+  });
+
+  it("keeps the code of a coded contract throw", { timeout: 30000 }, async () => {
+    write(
+      "modules/a/a.contract.ts",
+      `throw Object.assign(new Error("bad entry"), { code: "E1510" });\nexport const a = 1;`,
+    );
+    write("modules/a/routes.ts", "export const routes = {};");
+    expect((await routesOnly("modules/a/routes.ts")).problems).toEqual(["E1510 bad entry"]);
+  });
+
   it("keeps the code of a coded routes.ts throw", { timeout: 30000 }, async () => {
     write("r/coded.ts", `throw Object.assign(new Error("dup path"), { code: "E1502" });\nexport const routes = {};`);
     expect((await routesOnly("r/coded.ts")).problems).toEqual(["E1502 dup path"]);
   });
 
   it("treats a codeless throw while deriving the artifact as internal (E1049)", { timeout: 30000 }, async () => {
-    write("r/bad.ts", `export const routes = { get routes() { throw new Error("kaput"); } };`);
+    write("r/bad.ts", `export const routes = { get kind() { throw new Error("kaput"); } };`);
     await expect(routesOnly("r/bad.ts")).rejects.toMatchObject({
       code: "E1049",
       message: "internal compiler failure: build-time evaluation: kaput",

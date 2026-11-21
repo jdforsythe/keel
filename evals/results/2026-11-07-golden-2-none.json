@@ -1,0 +1,36 @@
+{
+  "task": "golden-2",
+  "skill": "keel",
+  "specSections": [
+    "k.schema",
+    "k.errors",
+    "k.reactive",
+    "k.store",
+    "k.ctx",
+    "k.component",
+    "k.runtime",
+    "k.router",
+    "k.server",
+    "k.services",
+    "k.forms",
+    "k.ui",
+    "k.testing",
+    "k.module",
+    "k.scaffold",
+    "k.check"
+  ],
+  "model": "none",
+  "runner": "none",
+  "converged": true,
+  "iterations": 1,
+  "tokens": {
+    "input": 0,
+    "output": 0
+  },
+  "costUsd": 0,
+  "unsafeCount": 5,
+  "checkTrailer": " ELIFECYCLE  Command failed with exit code 1.",
+  "testTrailer": "ok test 40 tasks (0.3s)",
+  "durationMs": 11255,
+  "startedAt": "2026-11-07T16:27:35.498Z"
+}

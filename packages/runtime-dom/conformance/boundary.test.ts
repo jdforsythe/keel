@@ -1,3 +1,4 @@
+import { createCtx } from "@keel/ctx";
 import { effect, signal } from "@keel/reactive";
 import { Boundary, mount } from "@keel/runtime-dom";
 import { boundary, clone, on, template } from "@keel/runtime-dom/ops";
@@ -11,6 +12,8 @@ import { boundary, clone, on, template } from "@keel/runtime-dom/ops";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { SEED, click, flush, inScope } from "./fixtures.ts";
+
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 type Caught = { code: string; message: string; data: { at: string } };
 const isCaught = (e: unknown): e is Caught =>
@@ -37,23 +40,27 @@ type Opts = {
 };
 const setup = (o: Opts) => {
   const host = document.createElement("div");
-  const dispose = mount(() => {
-    const root = node('<div id="root"><p id="before">before</p><i id="mid"></i><p id="after">after</p></div>');
-    const mid = root.querySelector("#mid");
-    if (mid === null) throw new Error("fixture: no #mid");
-    boundary(
-      mid,
-      () => {
-        const r = node('<div id="outerbody"><b id="oslot"></b></div>');
-        const slot = r.querySelector("#oslot");
-        if (slot === null) throw new Error("fixture: no #oslot");
-        boundary(slot, o.inner, o.innerFallback);
-        return r;
-      },
-      o.outerFallback ?? (() => para("outer-fallback", "OUTER")),
-    );
-    return root;
-  }, host);
+  const dispose = mount(
+    () => {
+      const root = node('<div id="root"><p id="before">before</p><i id="mid"></i><p id="after">after</p></div>');
+      const mid = root.querySelector("#mid");
+      if (mid === null) throw new Error("fixture: no #mid");
+      boundary(
+        mid,
+        () => {
+          const r = node('<div id="outerbody"><b id="oslot"></b></div>');
+          const slot = r.querySelector("#oslot");
+          if (slot === null) throw new Error("fixture: no #oslot");
+          boundary(slot, o.inner, o.innerFallback);
+          return r;
+        },
+        o.outerFallback ?? (() => para("outer-fallback", "OUTER")),
+      );
+      return root;
+    },
+    host,
+    { ctx: simCtx },
+  );
   return { host, dispose };
 };
 

@@ -1,10 +1,10 @@
-import type { Ctx } from "@keel/ctx";
-import type { KeelError, Result } from "@keel/schema";
+import type { ApiGuard } from "./ApiGuard.ts";
 
-/** A guard declared with `guard({ redirect }, fn)`; a route references the value in `guard` (RFC 0041). */
-export interface Guard {
-  readonly kind: "keel.guard";
-  /** Route id to redirect to on denial, with search `{ next: url }`. */
+/**
+ * A guard declared with `guard({ redirect }, fn)`; it fits pages, layouts and API routes, which reference the value
+ * in `guard`. A guard without `redirect` is an `ApiGuard`.
+ */
+export interface Guard extends ApiGuard {
+  /** Route id of a page to redirect to on denial, with search `{ next: url }`; never an API route (E1508). */
   readonly redirect: string;
-  run(req: { readonly url: string }, ctx: Ctx): Promise<Result<null, KeelError<"keel.denied", unknown>>>;
 }

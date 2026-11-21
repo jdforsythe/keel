@@ -46,7 +46,7 @@ function endpointsOf(g: Gen, paths: Readonly<Record<string, unknown>>): [string,
 /**
  * Generate the k.services declaration and client for an OpenAPI 3 JSON document (k.services OpenAPI, rfc:0034):
  * `schema` is `<Name>Api.schema.ts` (`<Name>Api = endpoints({...})`, one endpoint per operation keyed by `operationId`;
- * the filename equals its one export, rfc:0039) and `service` is `api.ts` (`api = service({ base: servers[0].url,
+ * the filename equals its one export, rfc:0039) and `service` is `api.server.ts` (`api = service({ base: servers[0].url,
  * schema })`, importing `./<Name>Api.schema.ts`). A document outside the supported
  * subset is `err` `schema.invalid` with one issue per problem, its path into the doc. Throws only on an invalid `name`.
  */

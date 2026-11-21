@@ -5,6 +5,7 @@
 // Seed 1337
 import { respond } from "@keel/cli/testing";
 import { tallyOf } from "@keel/std-report";
+import "@keel/std-report/tools";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 

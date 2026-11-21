@@ -1,5 +1,6 @@
 import type { Io } from "../types/Io.ts";
 import { errorText } from "./errorText.ts";
+import { fillStd } from "./fillStd.ts";
 import { isRecord } from "./isRecord.ts";
 import { mcpCall } from "./mcpCall.ts";
 import { mcpTools } from "./mcpTools.ts";
@@ -34,13 +35,22 @@ export async function mcpHandle(
       case "ping":
         return rpcReply(msg.id, {});
       case "tools/list":
+        await fillStd(provide);
         return rpcReply(msg.id, { tools: mcpTools() });
       case "tools/call":
+        if (isRecord(msg.params) && (msg.params.name === "session" || msg.params.name === "report"))
+          await fillStd(provide);
         return rpcReply(msg.id, await mcpCall(msg.params, await provide()));
       default:
-        return rpcReply(msg.id, undefined, { code: -32601, message: `method not found: ${msg.method}` });
+        return rpcReply(msg.id, undefined, {
+          code: -32601,
+          message: `method not found: ${msg.method}`,
+        });
     }
   } catch (e) {
-    return rpcReply(msg.id, undefined, { code: -32603, message: `internal error: ${errorText(e)}` });
+    return rpcReply(msg.id, undefined, {
+      code: -32603,
+      message: `internal error: ${errorText(e)}`,
+    });
   }
 }

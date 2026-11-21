@@ -1,7 +1,7 @@
 {
   "name": "@keel/compiler",
   "version": "0.0.0",
-  "private": false,
+  "private": true,
   "type": "module",
   "exports": {
     ".": {
@@ -12,11 +12,22 @@
       "types": "./src/vite.ts",
       "default": "./src/vite.ts"
     },
+    "./client": {
+      "types": "./src/client.d.ts"
+    },
+    "./routes": {
+      "types": "./src/buildRoutes.ts",
+      "default": "./src/buildRoutes.ts"
+    },
+    "./internal": {
+      "types": "./src/globals/index.ts",
+      "default": "./src/globals/index.ts"
+    },
     "./a11y": {
       "types": "./src/a11y/index.ts",
       "default": "./src/a11y/index.ts"
     },
-    "./entry/*": {
+    "./internal/entry/*": {
       "types": "./src/entry/*.ts",
       "default": "./src/entry/*.ts"
     },
@@ -24,18 +35,28 @@
       "types": "./src/inspect/*.ts",
       "default": "./src/inspect/*.ts"
     },
+    "./std/*": {
+      "types": "./src/std/*.ts",
+      "default": "./src/std/*.ts"
+    },
+    "./hosting/*": {
+      "types": "./src/hosting/*.ts",
+      "default": "./src/hosting/*.ts"
+    },
     "./testing": {
       "types": "./src/testing/evaluate.ts",
       "default": "./src/testing/evaluate.ts"
     },
     "./tsconfig.strict.json": "./tsconfig.strict.json"
   },
-  "files": ["dist", "tsconfig.strict.json"],
+  "files": ["dist", "tsconfig.strict.json", "docs"],
   "scripts": {
     "check": "tsc --noEmit && biome check src test unsafe",
     "test": "vitest run",
+    "coverage": "node ../../tooling/coverage.mjs",
     "build": "tsc -p tsconfig.build.json",
-    "mutate": "stryker run"
+    "mutate": "node ../../tooling/mutate.mjs",
+    "prepack": "node ../../tooling/docs-pack.mjs"
   },
   "dependencies": {
     "@keel/ctx": "workspace:*",

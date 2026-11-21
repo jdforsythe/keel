@@ -5,6 +5,7 @@ import { scope, signal } from "@keel/reactive";
 import { mount } from "@keel/runtime-dom";
 import { Checkbox, Input, Select, TextArea } from "@keel/ui";
 import { describe, expect, it } from "vitest";
+import { testCtx } from "./testCtx.ts";
 
 const flush = async (): Promise<void> => {
   await Promise.resolve();
@@ -53,7 +54,7 @@ describe("base controls given a field", () => {
       const f = fakeField("note.title");
       const host = document.createElement("div");
       document.body.append(host);
-      const dispose = mount(() => make(f.field), host);
+      const dispose = mount(() => make(f.field), host, { ctx: testCtx });
       const control = host.querySelector(tag);
       expect(f.bound).toEqual([control]);
       expect(control?.id).toBe("f:note.title");
@@ -78,7 +79,7 @@ describe("explicit id prop with a field (ui D26)", () => {
     const f = fakeField("note.title");
     const host = document.createElement("div");
     document.body.append(host);
-    const dispose = mount(() => Input({ label: "Title", id: "mine", field: f.field }), host);
+    const dispose = mount(() => Input({ label: "Title", id: "mine", field: f.field }), host, { ctx: testCtx });
     expect(host.querySelector("input")?.id).toBe("mine");
     expect(host.querySelector('label[for="mine"]')).not.toBeNull();
     dispose();

@@ -11,7 +11,8 @@ import { writesOf } from "../internal/writesOf.ts";
 /**
  * `If`: render `then()` before `anchor` while `when()` is truthy, else `otherwise()` (or nothing).
  * A branch re-renders only when the truthiness flips; each branch lives in its own scope, created in the
- * op's `home` scope (`home.run`) and disposed when the branch is replaced.
+ * op's `home` scope (`home.run`) and disposed when the branch is replaced. Resuming with no branch to render, the
+ * server region's content is taken out.
  */
 export function cond(anchor: Node, when: () => unknown, then: () => Node, otherwise?: () => Node): void {
   const parent = current("cond");
@@ -36,7 +37,8 @@ export function cond(anchor: Node, when: () => unknown, then: () => Node, otherw
       }
       const branch = v ? then : otherwise;
       if (branch === undefined) {
-        if (h !== null) consumed(h);
+        // State the island wrote while resuming hides what the server showed: its nodes leave the region.
+        for (const n of h?.region?.nodes ?? []) n.parentNode?.removeChild(n);
         return;
       }
       unit = home.run(() =>

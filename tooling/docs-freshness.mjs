@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
 // A doc with more than 50 commits to its scope since its last change (or `verified: <sha>` bump) fails with D0001.
+// A commit that touches only `docs/HANDOFF.md` ages no doc: that file changes at every stopping point.
 import fs from "node:fs";
 import path from "node:path";
 import { run } from "./output.ts";
@@ -30,7 +31,7 @@ await run("docs-freshness", () => {
     if (!base) continue; // untracked or new: nothing to age
     const v = /^verified:\s*([0-9a-f]{7,40})/m.exec(fs.readFileSync(path.join(root, file), "utf8"))?.[1];
     if (v && git("merge-base", "--is-ancestor", base, v).status === 0) base = v;
-    const n = Number(out("rev-list", "--count", `${base}..HEAD`, "--", scope) || 0);
+    const n = Number(out("rev-list", "--count", `${base}..HEAD`, "--", scope, ":(exclude)docs/HANDOFF.md") || 0);
     if (n > MAX)
       diags.push({
         kind: "diag",

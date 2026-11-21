@@ -4,7 +4,7 @@ const KERNEL = ["compiler", "ctx", "forms", "reactive", "router", "runtime-dom",
 
 /**
  * `package.json` of a new project. Standalone: scripts call `keel`, kernel packages as versioned dependencies,
- * `happy-dom` for the test environment `vite.config.ts` names.
+ * `happy-dom` for the test environment `vite.config.ts` names, `@types/node` for the type pass (k.check).
  * `workspace`: an app inside the Keel monorepo; only `check`/`test`/`build` scripts, `workspace:*` dependencies.
  */
 export function packageJson(name: string, workspace = false): string {
@@ -13,8 +13,16 @@ export function packageJson(name: string, workspace = false): string {
     ? { build: "vite build", check: "tsc --noEmit && biome check modules test", test: "vitest run" }
     : { build: "keel build", check: "keel check", dev: "keel dev", test: "keel test" };
   const dev = workspace
-    ? { "@keel/testing": v, "@keel/tooling": v, vite: "^8.3.6" }
-    : { "@keel/cli": v, "@keel/testing": v, "happy-dom": "^21.0.4", typescript: "^5.6", vite: "^8.3.6", vitest: "^2" };
+    ? { "@keel/testing": v, "@keel/tooling": v, "@types/node": "^22", vite: "^8.3.6" }
+    : {
+        "@keel/cli": v,
+        "@keel/testing": v,
+        "@types/node": "^22",
+        "happy-dom": "^21.0.4",
+        typescript: "^5.6",
+        vite: "^8.3.6",
+        vitest: "^4.1.12",
+      };
   const pkg = {
     name,
     version: "0.0.0",

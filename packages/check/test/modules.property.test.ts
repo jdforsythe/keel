@@ -13,7 +13,7 @@ const list = (xs: string[]): string => `[${xs.map((x) => `'${x}'`).join(", ")}]`
 const man = (m: string, exports: string[]) =>
   f(
     `modules/${m}/module.ts`,
-    `import { module } from '@keel/compiler'\nexport default module({ id: '${m}', deps: [], capabilities: [], public: { exports: ${list(exports)}, routes: [] } })\n`,
+    `import { module } from '@keel/compiler'\nexport default module({ id: '${m}', deps: [], capabilities: [], public: { exports: ${list(exports)} } })\n`,
   );
 const codes = (files: SourceFile[], code: string) =>
   check(files, { types: false }).diagnostics.filter((d) => d.code === code);

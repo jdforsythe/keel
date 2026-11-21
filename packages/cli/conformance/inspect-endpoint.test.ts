@@ -4,6 +4,7 @@
 import { createCtx } from "@keel/ctx";
 import { inspect, scope } from "@keel/reactive";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { createApp, topology } from "@keel/server";
 import { store, transaction, tx } from "@keel/store";
@@ -13,10 +14,11 @@ import { describe, expect, it } from "vitest";
 const BASE = "http://localhost";
 const SEED = 1337;
 
+const appContract = contract("app", { "app.home": { path: "/" } });
 const build = (mode: "dev" | "production") =>
   createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
-    routes: manifest({ "app.home": { path: "/", component: () => document.createElement("main") } }),
+    routes: manifest(appContract, { "app.home": { component: () => document.createElement("main") } }),
     ctx: createCtx({ mode: "sim", seed: SEED }),
     mode,
   });
@@ -102,12 +104,14 @@ describe("k.cli GET /__keel/inspect", () => {
     const app = await build("production");
     const probe = await app.fetch(new Request(`${BASE}/__keel/inspect`));
     expect(probe.status).toBe(404);
-    const body = await probe.text();
+    // A document carries a new nonce per response (k.security Policy); every other byte is equal.
+    const sameNonce = (html: string): string => html.replace(/nonce="[^"]*"/g, 'nonce="<nonce>"');
+    const body = sameNonce(await probe.text());
     for (const other of ["/__keel/nope", "/no/such/page"]) {
       const o = await app.fetch(new Request(`${BASE}${other}`));
       expect(o.status).toBe(probe.status);
       expect(o.headers.get("content-type")).toBe(probe.headers.get("content-type"));
-      expect(await o.text()).toBe(body);
+      expect(sameNonce(await o.text())).toBe(body);
     }
   });
 });

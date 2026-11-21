@@ -1,11 +1,12 @@
-import { effect } from "@keel/reactive";
 // @vitest-environment happy-dom
 // Property seed: 1337. k.runtime Conformance 1 over random trees: mount then dispose leaves no listeners.
+import { effect } from "@keel/reactive";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { mount } from "../src/index.ts";
 import { clone, cond, on, template, text } from "../src/ops/index.ts";
 import { SEED, rootSignal, trackListeners } from "./support.ts";
+import { testCtx } from "./testCtx.ts";
 
 const TYPES = ["click", "input", "keydown", "focus", "blur", "mouseenter", "scroll"];
 
@@ -36,24 +37,28 @@ describe("mount/dispose leaves no listeners over random trees", () => {
           const T = template(html(parents));
           const host = document.createElement("div");
           const base = tr.live();
-          const dispose = mount(() => {
-            const r = clone(T);
-            events.forEach((types, i) => {
-              for (const t of types) on(`e${i}`, t, () => {});
-            });
-            const slot = r.querySelector("#slot");
-            if (slot === null) throw new Error("no slot");
-            cond(
-              slot,
-              () => show.get(),
-              () => {
-                const p = clone(BRANCH);
-                for (const t of branch) on("br", t, () => {});
-                return p;
-              },
-            );
-            return r;
-          }, host);
+          const dispose = mount(
+            () => {
+              const r = clone(T);
+              events.forEach((types, i) => {
+                for (const t of types) on(`e${i}`, t, () => {});
+              });
+              const slot = r.querySelector("#slot");
+              if (slot === null) throw new Error("no slot");
+              cond(
+                slot,
+                () => show.get(),
+                () => {
+                  const p = clone(BRANCH);
+                  for (const t of branch) on("br", t, () => {});
+                  return p;
+                },
+              );
+              return r;
+            },
+            host,
+            { ctx: testCtx },
+          );
           expect(tr.live()).toBeGreaterThan(base);
           for (const v of toggles) show.set(v);
           dispose();
@@ -75,28 +80,32 @@ describe("mount/dispose leaves no listeners over random trees", () => {
         const s = rootSignal(0);
         let runs = 0;
         const host = document.createElement("div");
-        const dispose = mount(() => {
-          const r = clone(T);
-          const slot = r.querySelector("#slot");
-          if (slot === null) throw new Error("no slot");
-          text(slot, () => {
-            runs++;
-            return s.get();
-          });
-          cond(
-            slot,
-            () => s.get() >= 0,
-            () => {
-              const p = clone(P);
-              effect(() => {
-                s.get();
-                runs++;
-              });
-              return p;
-            },
-          );
-          return r;
-        }, host);
+        const dispose = mount(
+          () => {
+            const r = clone(T);
+            const slot = r.querySelector("#slot");
+            if (slot === null) throw new Error("no slot");
+            text(slot, () => {
+              runs++;
+              return s.get();
+            });
+            cond(
+              slot,
+              () => s.get() >= 0,
+              () => {
+                const p = clone(P);
+                effect(() => {
+                  s.get();
+                  runs++;
+                });
+                return p;
+              },
+            );
+            return r;
+          },
+          host,
+          { ctx: testCtx },
+        );
         dispose();
         const after = runs;
         let last = 0;

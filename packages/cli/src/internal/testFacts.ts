@@ -3,6 +3,7 @@ import type { FileFacts } from "./FileFacts.ts";
 import type { NumRef } from "./NumRef.ts";
 import type { PropRun } from "./PropRun.ts";
 import type { Use } from "./Use.ts";
+import { shadowed } from "./shadowed.ts";
 
 const TESTS = new Set(["it", "test", "xit", "xtest"]);
 const SUITES = new Set(["describe", "suite", "xdescribe"]);
@@ -22,9 +23,46 @@ const MODIFIERS = new Set([
 /** Bodies that never run, or pass only when they fail: no evidence. */
 const NOT_RUN = new Set(["skip", "todo", "fails"]);
 const FAST_CHECK = "fast-check";
-/** fast-check's default `numRuns`; `properties` (k.testing) defaults to 100 runs and seed 1337 as well. */
+/** fast-check's default `numRuns`; `properties` and `simulate` default to 100 runs and seed 1337 as well. */
 const DEFAULT_RUNS = 100;
+/** Type-level assertions (vitest), which the package's `check` type-checks: a body calling one is `proven`. */
+const TYPE_ASSERTS = new Set(["expectTypeOf", "assertType"]);
 const PROPERTIES_SEED = 1337;
+
+const KEEL_TESTING = "@keel/testing";
+/** Helpers and matchers whose argument is expected to throw or reject (`thrownSync(() => ...)`, `toThrow`). */
+const THROWS = /throw/i;
+
+/** The file name without extensions: an app file's default export is named after it. */
+const baseOf = (from: string): string => (from.split("/").pop() ?? "").split(".")[0] ?? "";
+
+const isBool = (e: ts.Expression): boolean =>
+  e.kind === ts.SyntaxKind.TrueKeyword || e.kind === ts.SyntaxKind.FalseKeyword;
+
+/** The name a callee ends in: `f` for `f(...)` and `a.b.f(...)`. */
+const calleeName = (e: ts.Expression): string =>
+  ts.isIdentifier(e) ? e.text : ts.isPropertyAccessExpression(e) ? e.name.text : "";
+
+/**
+ * A call whose outcome the test expects to be a throw or a rejection, so it is no passing run: inside a function
+ * passed to `expect(...)` (`expect(() => explore(...)).toThrow()`), inside `expect(p).rejects`, or inside an argument
+ * of a call named like `thrownSync` or `toThrow`.
+ */
+function expectedToThrow(call: ts.CallExpression): boolean {
+  let inFunction = false;
+  for (let n: ts.Node = call; n.parent !== undefined; n = n.parent) {
+    const p = n.parent;
+    if (ts.isArrowFunction(n) || ts.isFunctionExpression(n)) inFunction = true;
+    if (!ts.isCallExpression(p) || !p.arguments.some((a) => a === n)) continue;
+    const name = calleeName(p.expression);
+    if (THROWS.test(name)) return true;
+    if (name !== "expect") continue;
+    if (inFunction) return true;
+    for (let q: ts.Node = p; ts.isPropertyAccessExpression(q.parent) || ts.isCallExpression(q.parent); q = q.parent)
+      if (ts.isPropertyAccessExpression(q.parent) && q.parent.name.text === "rejects") return true;
+  }
+  return false;
+}
 
 /** `it.skip.each(t)("x", fn)` -> root `it`, modifiers, and every argument along the chain; else undefined. */
 function chainOf(call: ts.CallExpression): { root: string; mods: string[]; args: ts.Expression[] } | undefined {
@@ -144,12 +182,18 @@ export function testFacts(path: string, source: string): FileFacts {
       } else if (ts.isPropertyAssignment(p) && (ts.isIdentifier(p.name) || ts.isStringLiteral(p.name)))
         out.set(p.name.text, local(num(p.initializer)));
       else if (ts.isShorthandPropertyAssignment(p)) out.set(p.name.text, local({ ref: p.name.text }));
+      // A computed key, method or accessor could name any option: the object is not readable.
+      else return undefined;
     }
     return out;
   };
 
+  /** The import an identifier reference stands for; none when a local of the same name shadows it. */
+  const importOf = (id: ts.Identifier): { from: string; name: string } | undefined =>
+    shadowed(id) ? undefined : imports.get(id.text);
+
   const fromFastCheck = (e: ts.Expression, names: readonly string[]): boolean => {
-    const imp = ts.isIdentifier(e) ? imports.get(e.text) : undefined;
+    const imp = ts.isIdentifier(e) ? importOf(e) : undefined;
     return imp?.from === FAST_CHECK && names.includes(imp.name);
   };
 
@@ -171,7 +215,53 @@ export function testFacts(path: string, source: string): FileFacts {
   };
   visitGlobal(sf);
 
-  /** `fc.assert`/`fc.check` (or the named imports) and `properties(...)`: one property run each. */
+  /** The imported name an identifier callee stands for, else its own text; "" for any other callee. */
+  const nameOf = (ce: ts.Expression): string =>
+    ts.isIdentifier(ce) && !shadowed(ce) ? (imports.get(ce.text)?.name ?? ce.text) : "";
+  /**
+   * The `@keel/testing` export a callee is (`explore`, `ns.explore`), else "": a local of the same name is not it.
+   * Inside `packages/testing` a relative import of its own sources counts as the package.
+   */
+  const keelName = (ce: ts.Expression): string => {
+    const own = (from: string): boolean =>
+      from === KEEL_TESTING || (from.startsWith(".") && path.startsWith("packages/testing/"));
+    if (ts.isIdentifier(ce)) {
+      const imp = importOf(ce);
+      return imp !== undefined && own(imp.from) ? imp.name : "";
+    }
+    if (ts.isPropertyAccessExpression(ce) && ts.isIdentifier(ce.expression)) {
+      const imp = importOf(ce.expression);
+      return imp?.name === "*" && own(imp.from) ? ce.name.text : "";
+    }
+    return "";
+  };
+
+  /** `prove` of `@keel/testing/prove` (a named or namespace import; inside `packages/testing`, its own `prove` source). */
+  const isProve = (ce: ts.Expression): boolean => {
+    const from = (f: string): boolean =>
+      f === `${KEEL_TESTING}/prove` ||
+      (f.startsWith(".") && f.includes("prove") && path.startsWith("packages/testing/"));
+    if (ts.isIdentifier(ce)) {
+      const imp = importOf(ce);
+      return imp?.name === "prove" && from(imp.from);
+    }
+    if (!ts.isPropertyAccessExpression(ce) || !ts.isIdentifier(ce.expression) || ce.name.text !== "prove") return false;
+    const imp = importOf(ce.expression);
+    return imp?.name === "*" && from(imp.from);
+  };
+
+  /**
+   * `explore(...)`: closed-form when the options argument is absent or an object naming none of `from`, `payloads` and
+   * `depth`; options the ledger cannot read count as given. `depth` as written, when given.
+   */
+  const exploreRun = (c: ts.CallExpression): { closed: boolean; depth: NumRef } | undefined => {
+    if (keelName(c.expression) !== "explore") return undefined;
+    const o = c.arguments.some(ts.isSpreadElement) ? undefined : options(c.arguments[1], new Set());
+    if (o === undefined) return { closed: false, depth: undefined };
+    return { closed: !["from", "payloads", "depth"].some((k) => o.has(k)), depth: o.get("depth") };
+  };
+
+  /** `fc.assert`/`fc.check` (or the named imports), `properties(...)` and `simulate(...)`: one property run each. */
   const propRun = (c: ts.CallExpression): PropRun | undefined => {
     const ce = c.expression;
     const fc =
@@ -179,13 +269,13 @@ export function testFacts(path: string, source: string): FileFacts {
         ["assert", "check"].includes(ce.name.text) &&
         fromFastCheck(ce.expression, ["default", "*"])) ||
       fromFastCheck(ce, ["assert", "check"]);
-    const keel = !fc && ts.isIdentifier(ce) && (imports.get(ce.text)?.name ?? ce.text) === "properties";
+    const keel = !fc && ["properties", "simulate"].includes(keelName(ce));
     if (!fc && !keel) return undefined;
     const runsKey = fc ? "numRuns" : "runs";
     const runs = fc ? global.runs : DEFAULT_RUNS;
     const seed = fc ? global.seed : PROPERTIES_SEED;
-    const arg = c.arguments[1];
-    const imported = arg !== undefined && ts.isIdentifier(arg) && !objects.has(arg.text) && imports.has(arg.text);
+    const arg = c.arguments.some(ts.isSpreadElement) ? c.arguments[0] : c.arguments[1];
+    const imported = arg !== undefined && ts.isIdentifier(arg) && !objects.has(arg.text) && importOf(arg) !== undefined;
     if (imported) {
       const fallback = (v: NumRef): number | undefined => (typeof v === "number" ? v : undefined);
       return {
@@ -200,32 +290,64 @@ export function testFacts(path: string, source: string): FileFacts {
 
   const useOf = (nodes: readonly ts.Node[]): Use => {
     const names = new Set<string>();
+    const pins = new Set<string>();
     const calls = new Set<string>();
     const props: PropRun[] = [];
+    const explores: { closed: boolean; depth: NumRef }[] = [];
+    let typed = false;
     const visit = (n: ts.Node): void => {
       if (ts.isTypeNode(n) || ts.isImportDeclaration(n)) return;
-      if (ts.isCallExpression(n)) {
+      if (ts.isIfStatement(n) && isBool(n.expression)) {
+        visit(n.expression);
+        const live = n.expression.kind === ts.SyntaxKind.TrueKeyword ? n.thenStatement : n.elseStatement;
+        if (live !== undefined) visit(live);
+        return;
+      }
+      if (ts.isBlock(n) || ts.isSourceFile(n)) {
+        // Statements after a `return` or `throw` never run.
+        for (const st of n.statements) {
+          visit(st);
+          if (ts.isReturnStatement(st) || ts.isThrowStatement(st)) break;
+        }
+        return;
+      }
+      if (ts.isCallExpression(n) && !expectedToThrow(n)) {
         const p = propRun(n);
         if (p !== undefined) props.push(p);
+        const x = exploreRun(n);
+        if (x !== undefined) explores.push(x);
+        if (TYPE_ASSERTS.has(nameOf(n.expression))) typed = true;
       }
       if (ts.isIdentifier(n)) {
         const p = n.parent;
+        const bound = imports.get(n.text);
+        // A local of the import's name is a different binding: the reference reaches nothing exported.
+        const hidden = bound !== undefined && !(ts.isPropertyAccessExpression(p) && p.name === n) && shadowed(n);
+        if (hidden) return;
+        const own = bound;
+        // A relative import pins the name to the file it resolves to (`pins`); any other reference is by name.
+        const rel = own?.from.startsWith(".") ? own : undefined;
         if (ts.isPropertyAccessExpression(p) && p.name === n) {
           const base = p.expression;
-          if ((ts.isIdentifier(base) && imports.get(base.text)?.name === "*") || isCallee(p)) names.add(n.text);
+          const ns = ts.isIdentifier(base) ? importOf(base) : undefined;
+          if (ns?.name === "*" && ns.from.startsWith(".")) pins.add(`${ns.from}\n${n.text}`);
+          else if (ns?.name === "*" || isCallee(p)) names.add(n.text);
         } else if (
           (ts.isJsxOpeningElement(p) || ts.isJsxSelfClosingElement(p) || ts.isJsxClosingElement(p)) &&
           p.tagName === n
-        )
-          names.add(n.text);
-        else if (!isDeclName(n)) {
-          const imp = imports.get(n.text);
-          if (imp?.name === "default") {
+        ) {
+          if (rel !== undefined && rel.name !== "*")
+            pins.add(`${rel.from}\n${rel.name === "default" ? baseOf(rel.from) : rel.name}`);
+          else names.add(n.text);
+        } else if (!isDeclName(n)) {
+          if (rel !== undefined && rel.name !== "*")
+            pins.add(`${rel.from}\n${rel.name === "default" ? baseOf(rel.from) : rel.name}`);
+          else if (own?.name === "default") {
             names.add(n.text);
-            names.add((imp.from.split("/").pop() ?? "").split(".")[0] ?? "");
-          } else if (imp !== undefined && imp.name !== "*") names.add(imp.name);
+            names.add(baseOf(own.from));
+          } else if (own !== undefined && own.name !== "*") names.add(own.name);
           if (isCallee(n)) {
-            names.add(n.text);
+            if (rel === undefined) names.add(n.text);
             calls.add(n.text);
           }
         }
@@ -233,8 +355,45 @@ export function testFacts(path: string, source: string): FileFacts {
       ts.forEachChild(n, visit);
     };
     for (const n of nodes) visit(n);
-    return { names, calls, props: props.map((p) => ({ runs: local(p.runs), seed: local(p.seed) })) };
+    return {
+      names,
+      pins,
+      calls,
+      props: props.map((p) => ({ runs: local(p.runs), seed: local(p.seed) })),
+      explores: explores.map((x) => ({ closed: x.closed, depth: local(x.depth) })),
+      typed,
+      proves: false,
+    };
   };
+
+  /** An `await prove(...)`, or a bare `prove(...)` where the body returns it (`ret`). */
+  const settles = (n: ts.Node | undefined, ret: boolean): boolean => {
+    if (n === undefined) return false;
+    const awaited = ts.isAwaitExpression(n);
+    const c = awaited ? n.expression : n;
+    return (awaited || ret) && ts.isCallExpression(c) && isProve(c.expression);
+  };
+  /**
+   * A passing `prove` (k.ledger): a test function whose own statements, before any `return` or `throw`, await or return
+   * a `prove(...)` call, so the proof's rejection fails the test. One inside `expect(...)`, a `try`, a branch, a loop, a
+   * callback or a helper, or handled by `.catch` or `.then`, does not count.
+   */
+  const proves = (fns: readonly ts.Expression[]): boolean =>
+    fns.some((f) => {
+      if (!ts.isArrowFunction(f) && !ts.isFunctionExpression(f)) return false;
+      if (!ts.isBlock(f.body)) return settles(f.body, true);
+      for (const st of f.body.statements) {
+        if (ts.isReturnStatement(st)) return settles(st.expression, true);
+        if (ts.isThrowStatement(st)) return false;
+        const e = ts.isExpressionStatement(st)
+          ? st.expression
+          : ts.isVariableStatement(st)
+            ? st.declarationList.declarations[0]?.initializer
+            : undefined;
+        if (settles(e, false)) return true;
+      }
+      return false;
+    });
 
   const helpers = new Map<string, Use>();
   for (const st of sf.statements) {
@@ -268,7 +427,7 @@ export function testFacts(path: string, source: string): FileFacts {
     if (!skip && body) {
       const use = useOf(c.args);
       const named = c.args.filter((a) => ts.isIdentifier(a)).map((a) => a.text);
-      tests.push({ ...use, calls: new Set([...use.calls, ...named]) });
+      tests.push({ ...use, proves: proves(c.args), calls: new Set([...use.calls, ...named]) });
     }
   };
   walk(sf, false);

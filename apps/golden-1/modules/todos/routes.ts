@@ -3,45 +3,41 @@ import AppShell from "./AppShell.tsx";
 import EditTodoPage from "./EditTodoPage.tsx";
 import ListError from "./ListError.tsx";
 import ListPage from "./ListPage.tsx";
-import { ListParams } from "./ListParams.schema.ts";
-import { ListSearch } from "./ListSearch.schema.ts";
 import ListsPage from "./ListsPage.tsx";
-import { TodoParams } from "./TodoParams.schema.ts";
 import { createList } from "./createList.server.ts";
 import { createTodo } from "./createTodo.server.ts";
 import { editable } from "./editable.guard.ts";
 import { loadIndex } from "./loadIndex.server.ts";
 import { loadList } from "./loadList.server.ts";
 import { loadTodo } from "./loadTodo.server.ts";
+import { todos } from "./todos.contract.ts";
 import { updateTodo } from "./updateTodo.server.ts";
 
-export const routes = manifest({
+export const routes = manifest(todos, {
   "todos.shell": { component: AppShell },
   "todos.index": {
-    path: "/",
     loader: loadIndex,
-    actions: { POST: createList },
     component: ListsPage,
     layout: "todos.shell",
+    title: () => "Lists",
+    errorElement: ListError,
+    POST: createList,
   },
   "todos.list": {
-    path: "/lists/:listId",
-    params: ListParams,
-    search: ListSearch,
     loader: loadList,
-    actions: { POST: createTodo },
     component: ListPage,
     layout: "todos.shell",
+    title: (p) => p.data.name,
     errorElement: ListError,
+    POST: createTodo,
   },
   "todos.edit": {
-    path: "/lists/:listId/todos/:todoId/edit",
-    params: TodoParams,
     loader: loadTodo,
-    actions: { POST: updateTodo },
     component: EditTodoPage,
     layout: "todos.shell",
     guard: editable,
+    title: (p) => `Edit ${p.data.title}`,
     errorElement: ListError,
+    POST: updateTodo,
   },
 });

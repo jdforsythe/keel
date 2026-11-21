@@ -1,7 +1,7 @@
+import { references } from "@keel/compiler/internal";
 import { Visitor } from "oxc-parser";
 import { findingAt } from "../internal/findingAt.ts";
 import { isAppPath } from "../internal/isAppPath.ts";
-import { references } from "../internal/references.ts";
 import { str } from "../internal/str.ts";
 import type { Finding } from "../types/Finding.ts";
 import type { RuleDef } from "../types/RuleDef.ts";
@@ -34,7 +34,6 @@ const AMBIENT_MEMBERS: ReadonlySet<string> = new Set([
 export const noDomGlobal: RuleDef = {
   code: "E1252",
   message: (f) => `${str(f.data, "name")} in app code; render with JSX and base elements, effects via ctx`,
-  explain: "Components render through JSX and base elements; only the generated entry touches document.",
   see: "k.runtime",
   check: ({ file, ast }) => {
     if (!isAppPath(file.path)) return [];

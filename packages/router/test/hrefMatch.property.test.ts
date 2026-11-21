@@ -1,12 +1,14 @@
 // Properties for href and matching over generated manifests (k.router Links, Matching). Seed 1337.
 import { createCtx } from "@keel/ctx";
+import { contract } from "@keel/router/contract";
 import { type ObjectSchema, type Schema, s } from "@keel/schema";
 import { gen } from "@keel/schema/gen";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { createRouter } from "../src/createRouter.ts";
+import { isHref } from "../src/internal/isHref.ts";
 import { manifest } from "../src/manifest.ts";
-import type { RouteDef } from "../src/types/RouteDef.ts";
+import type { Href } from "../src/types/Href.ts";
 import { memoryHistory } from "./memoryHistory.ts";
 
 const opts = { seed: 1337, numRuns: 60 };
@@ -31,7 +33,8 @@ const searchField = (k: string): Schema<unknown, true> =>
         ? s.enum(["x", "y z"]).optional()
         : s.boolean().optional();
 
-type Built = { id: string; def: RouteDef; params?: ObjectSchema<unknown>; search?: ObjectSchema<unknown> };
+type Entry = { path: string; params?: ObjectSchema<unknown>; search?: ObjectSchema<unknown> };
+type Built = { id: string; def: Entry; params?: ObjectSchema<unknown>; search?: ObjectSchema<unknown> };
 function build(i: number, spec: { segs: readonly SegSpec[]; search: readonly string[] }): Built {
   const shape: Record<string, Schema<unknown>> = {};
   const parts = [`r${run}x${i}`];
@@ -45,9 +48,8 @@ function build(i: number, spec: { segs: readonly SegSpec[]; search: readonly str
   const params = Object.keys(shape).length === 0 ? undefined : s.object(shape);
   const search =
     spec.search.length === 0 ? undefined : s.object(Object.fromEntries(spec.search.map((k) => [k, searchField(k)])));
-  const def: RouteDef = {
+  const def: Entry = {
     path: `/${parts.join("/")}`,
-    component: view,
     ...(params === undefined ? {} : { params }),
     ...(search === undefined ? {} : { search }),
   };
@@ -58,6 +60,15 @@ function build(i: number, spec: { segs: readonly SegSpec[]; search: readonly str
     ...(search === undefined ? {} : { search }),
   };
 }
+
+/** `href` of a contract whose entries are generated, so its argument types are not known statically. */
+const hrefOf = (c: { href: unknown }, id: string, ...args: unknown[]): Href => {
+  const f = c.href;
+  if (typeof f !== "function") throw new Error("no href");
+  const out: unknown = Reflect.apply(f, c, [id, ...args]);
+  if (typeof out !== "string" || !isHref(out)) throw new Error(`not an Href: ${String(out)}`);
+  return out;
+};
 
 const rec = (v: unknown): Readonly<Record<string, unknown>> =>
   typeof v === "object" && v !== null ? Object.fromEntries(Object.entries(v)) : {};
@@ -76,11 +87,12 @@ describe("href and matching over generated manifests", () => {
           return fc.tuple(fc.constant(built), fc.constantFrom(...built).chain(withValues));
         }),
         async ([built, { b, p, q }]) => {
-          const routes = manifest(Object.fromEntries(built.map((x) => [x.id, x.def])));
+          const c = contract(`m${run}`, Object.fromEntries(built.map((x) => [x.id, x.def])));
+          const routes = manifest(c, Object.fromEntries(built.map((x) => [x.id, { component: view }])));
           const history = memoryHistory("/nowhere");
           const router = createRouter(routes, { ctx, history });
-          const to = routes.href(b.id, p, q);
-          expect(routes.href(b.id, p, q)).toBe(to);
+          const to = hrefOf(c, b.id, p, q);
+          expect(hrefOf(c, b.id, p, q)).toBe(to);
           await router.navigate(to);
           expect(router.route.get()).toEqual({ id: b.id, params: p, search: q, pending: false });
           expect(history.current()).toBe(to);
@@ -96,16 +108,17 @@ describe("href and matching over generated manifests", () => {
       fc.asyncProperty(word, word, fc.boolean(), async (w, u, staticFirst) => {
         fc.pre(w !== u);
         run += 1;
-        const stat: [string, RouteDef] = [`s${run}.static`, { path: `/s${run}/${w}`, component: view }];
-        const param: [string, RouteDef] = [
+        const stat: [string, Entry] = [`s${run}.static`, { path: `/s${run}/${w}` }];
+        const param: [string, Entry] = [
           `s${run}.param`,
-          { path: `/s${run}/:x`, params: s.object({ x: s.string({ min: 1 }) }), component: view },
+          { path: `/s${run}/:x`, params: s.object({ x: s.string({ min: 1 }) }) },
         ];
-        const routes = manifest(Object.fromEntries(staticFirst ? [stat, param] : [param, stat]));
+        const c = contract(`s${run}`, Object.fromEntries(staticFirst ? [stat, param] : [param, stat]));
+        const routes = manifest(c, { [stat[0]]: { component: view }, [param[0]]: { component: view } });
         const router = createRouter(routes, { ctx, history: memoryHistory("/nowhere") });
-        await router.navigate(routes.href(param[0], { x: w }));
+        await router.navigate(hrefOf(c, param[0], { x: w }));
         expect(router.route.get().id).toBe(stat[0]);
-        await router.navigate(routes.href(param[0], { x: u }));
+        await router.navigate(hrefOf(c, param[0], { x: u }));
         expect(router.route.get()).toMatchObject({ id: param[0], params: { x: u } });
         router.dispose();
       }),
@@ -118,7 +131,9 @@ describe("href and matching over generated manifests", () => {
       fc.asyncProperty(word, fc.integer({ min: 1, max: 3 }), async (w, slashes) => {
         run += 1;
         const id = `t${run}.page`;
-        const routes = manifest({ [id]: { path: `/t${run}/${w}`, component: view } });
+        const routes = manifest(contract(`t${run}`, { [id]: { path: `/t${run}/${w}` } }), {
+          [id]: { component: view },
+        });
         const history = memoryHistory("/nowhere");
         const router = createRouter(routes, { ctx, history });
         history.pop(`/t${run}/${w}${"/".repeat(slashes)}`);

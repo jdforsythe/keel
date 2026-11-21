@@ -1,6 +1,6 @@
 # RFC 0026: s.secret() and reveal
 
-Status: accepted
+Status: implemented
 
 ## Problem
 THREAT-MODEL promises "`Secret<T>` cannot serialize or log", but no spec section or code defines it (red-team 0088). Passwords, API keys and tokens parsed by a schema are plain strings that reach JSON, logs, `#k-state` and session capture like any other value.

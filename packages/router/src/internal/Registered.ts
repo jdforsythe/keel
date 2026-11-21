@@ -1,5 +1,5 @@
-import type { RouteDef } from "../types/RouteDef.ts";
+import type { Def } from "./Def.ts";
 import type { Segment } from "./Segment.ts";
 
-/** A route as registered by `manifest()`: its id, definition, and compiled path (`null` for a layout). */
-export type Registered = { readonly id: string; readonly def: RouteDef; readonly segments: readonly Segment[] | null };
+/** A route of a compiled table: its id, its `Def`, and its compiled path (`null` for a layout). */
+export type Registered = { readonly id: string; readonly def: Def; readonly segments: readonly Segment[] | null };

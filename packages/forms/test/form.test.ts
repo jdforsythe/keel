@@ -217,11 +217,11 @@ describe("field validation", () => {
     expect(r.f.errors()).toEqual({});
     r.input("title").dispatchEvent(new Event("blur"));
     expect(r.f.field("title").touched()).toBe(true);
-    expect(r.f.errors().title).toBe("Must be at least 1 character");
+    expect(r.f.errors().title).toBe("Required");
     r.type("title", "x");
     expect(r.f.errors().title).toBeUndefined();
     r.type("title", "");
-    expect(r.f.errors().title).toBe("Must be at least 1 character");
+    expect(r.f.errors().title).toBe("Required");
   });
 
   it("uncoercible number text stays in the input, is absent from values, and fails with type", () => {

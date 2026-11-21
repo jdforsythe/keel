@@ -2,7 +2,7 @@
 import { check, defineRule } from "@keel/check";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { findAll, one, SEED } from "./support.ts";
+import { SEED, findAll, one } from "./support.ts";
 
 defineRule({
   code: "E2911",

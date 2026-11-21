@@ -1,6 +1,6 @@
 // Golden-1 data lives behind the api deployable: create a list, reload, open it, add a todo, reload, toggle, undo.
 // Usage: node tooling/smoke/persist.mjs [png]  (SMOKE_URL, default http://localhost:4182/; SMOKE_API_LOG: a file
-// holding the api server's stdout, whose POST `req` lines are printed after the steps). Compact output (docs/OUTPUT.md).
+// holding the dev or api server stdout, whose POST `req` lines are printed after the steps). Compact output (docs/OUTPUT.md).
 import { readFile } from "node:fs/promises";
 import { chromium } from "@playwright/test";
 

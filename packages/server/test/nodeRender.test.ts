@@ -2,6 +2,7 @@
 // The node adapter renders documents with no DOM global: createApp installs the DOM-free server tree (backlog 0073).
 import { createCtx } from "@keel/ctx";
 import { loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import { describe, expect, it } from "vitest";
 import { createApp, topology } from "../src/index.ts";
@@ -22,17 +23,22 @@ function Board(props: { readonly data: { readonly names: readonly string[] } }):
   return ul;
 }
 
+const c = contract("api", {
+  "api.lists": { path: "/api/lists" },
+  "api.tpl": { path: "/api/tpl" },
+  "api.frag": { path: "/api/frag" },
+});
+const lists = loader(c, "api.lists", { output: Lists }, async () => ok({ names: ["a<b", "c & d"] }));
+
 const build = () =>
   createApp({
     topology: topology({ web: { modules: ["api"], adapter: "node" } }),
-    routes: manifest({
+    routes: manifest(c, {
       "api.lists": {
-        path: "/api/lists",
-        loader: loader({ output: Lists }, async () => ok({ names: ["a<b", "c & d"] })),
+        loader: lists,
         component: Board,
       },
       "api.tpl": {
-        path: "/api/tpl",
         component: () => {
           const t = document.createElement("template");
           t.innerHTML = '<p class="x" data-a=\'1\'>hi <b>there</b><br><!--c--><input value="v"></p>';
@@ -40,7 +46,6 @@ const build = () =>
         },
       },
       "api.frag": {
-        path: "/api/frag",
         component: () => {
           const f = document.createDocumentFragment();
           f.append("a<", document.createElement("i"));

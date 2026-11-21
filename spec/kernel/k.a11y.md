@@ -1,0 +1,30 @@
+# k.a11y: Accessibility
+status: conformance-covered
+
+**Target.** WCAG 2.2 Level A and AA. Each criterion is checked statically (`keel check`), at render (`keel test`) or by a person; the ledger and k.evidence say which.
+
+**Required props.** The `@keel/ui` types require (E1802): `Heading level`; `Image alt` or `decorative`; `label` on `Input`, `TextArea`, `Select`, `Checkbox`, and on `Box as` `nav` or `aside` (`aria-label`; optional on other landmarks); `Link to: Href` with text; `Button` children (text or a named `Image`; no `label`). A blank literal `label` (no visible character, as std.text `line` defines it; a `Cc` control or JSX named reference is not one) is E1802 too; a computed one is unchecked. `Input`, `TextArea` and `Select` take `autocomplete: Autofill` (the attribute): a WCAG 2.2 input-purpose autofill name or `off`.
+
+**Contrast.** Text needs 4.5:1 against its background, 3:1 when large (`fontSize` >= 24px, or >= 18.66px at `weight` >= 700), per color scheme and breakpoint; text in `states.disabled` is exempt; text without a `fontSize` token is normal size. Statically (E1804), the background is the element's `bg`, else the nearest ancestor's in its component; with neither, render checks it. At render, colors and sizes come from atomic classes and tokens (no layout): the background is the nearest painted ancestor's `bg`, else `#FFFFFF`; text without `fg` is `#000000`; only `hidden` and disabled text are exempt. `contrastTable(tokens)` (`@keel/ui`) lists each ordered pair of color tokens per scheme with its ratio, hex colors only.
+
+**Order and focus.** No base element takes `tabindex` but `Part` (k.aria), which takes only `0` or `-1`, and the style vocabulary has no `order`, `position`, `z-index` or `outline`, so sequential focus order is document order and the platform's focus indicator stays. `direction` `row-reverse` or `column-reverse` over two or more focusable base elements in its component is E1820. `focusOrder()` (harness handles): focusable element ids in order, less disabled and hidden ones. Focus after a client navigation: k.head.
+
+**Render checks** (`@keel/testing`). After the first render, after every `fire` and on `settle()`, the harness compares each element's role and name source with `a11y.json` (E1702; `keel test` passes it from `.keel/` as `render(C, { artifacts })`; absent, unchecked), then runs axe-core with tags `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, `wcag22aa` and rule `landmark-unique` over the rendered root (E1703). A `render` of a component runs element rules only; a `renderRoute` page renders its document (`<html lang>`, `<title>` per k.head, the chain inside `main` unless it renders one) and runs the document rules (`document-title`, `html-has-lang`, `landmark-one-main`, `region`, `bypass`). axe-core's `color-contrast` is replaced by the render contrast check (E1804), and a control with `data-k-pii` (k.privacy) and no `autocomplete` is E1821. An axe `incomplete` result counts as not run; a rule that throws fails the check (E1703); rules happy-dom cannot run (`label-content-name-mismatch`, `link-in-text-block`) are skipped.
+
+**Claims.** `keel test` writes each render check to `reports/a11y.json` (`A11yRun[]`: target, rules run, violations, test file, name, outcome). Per route in `routes.json` and criterion a rule maps to, `keel ledger` emits `{ kind: 'ledger', item: 'a11y:<routeId>#<criterion>', rung, evidence }`: `example` when a passing `renderRoute` test rendered the route, ran every rule mapped to the criterion with no violation, and `keel check` reports none of its static codes; else `none`. The map is axe-core's `wcag` rule tags plus: E1702 4.1.2 · E1802 1.1.1, 1.3.1, 2.4.4, 4.1.2 · E1804 1.4.3 · E1820 1.3.2, 2.4.3 · E1821 1.3.5. The evidence bundle lists the criteria no rule maps to, for a person.
+
+**Rules.** E1802 missing or blank a11y-required prop · E1804 text below its contrast threshold (static and render) · E1820 reversed `direction` over focusable elements · E1821 a control bound to a `.pii()` field without `autocomplete` (render).
+
+**Conformance.**
+- A `Text` whose `fg` is 4.4:1 against the `bg` of its nearest ancestor in the same component is E1804; at `fontSize` 18.66px and `weight` 700, or under `states.disabled`, it is not.
+- A `renderRoute` page whose text is 4.4:1 against a `bg` set in another component fails with E1804 naming the text's element id; at 4.6:1 it passes.
+- A `render` of a component reports no document rule; a `renderRoute` of a titled route reports no `document-title` or `html-has-lang` violation.
+- An unlabeled `input` made with the runtime's `element` fails its render with E1703 naming rule `label` and the element id.
+- A `Box` with `direction="row-reverse"` over two `Button`s is E1820 and its fix leaves `direction="row"` with the children reversed; over one `Button` it is clean.
+- An `Input` bound to a `.pii('contact')` field without `autocomplete` fails its render with E1821; with `autocomplete="email"` or `"off"` it passes and the attribute is in the markup.
+- `focusOrder()` lists focusable element ids in document order without disabled or hidden ones.
+- After `keel test` with one passing `renderRoute` test of route `r`, `keel ledger` gives `a11y:r#1.4.3` rung `example` and `a11y:r2#1.4.3` rung `none` for an untested route `r2`; a violation of a rule mapped to 1.4.3 on `r` makes it `none`.
+- `contrastTable(tokens)` has one entry per ordered pair of distinct color tokens per scheme, each ratio WCAG's to two decimals.
+- `keel check` without types reports E1802 for `<Box as="nav" label="">` and `Input({ label: " " })`; `label="Main"`, `label={name}` and a `store` option `label: ""` report none.
+- Without types, E1802 also fires for `<Input label={"\u{200B}"} />`, `label="&#x2800;"`, `label={"\u{301}"}` and `Input({ label: "\u{3164}\u{200D}" })`, not for `label={"a\u{200B}"}`.
+- Without types, E1802 fires for `label="&zwnj;"`, `label="&copy;"` and `Input({ label: "\u{1}" })`, not for `label="&copy;2"`.

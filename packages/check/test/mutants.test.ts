@@ -1,20 +1,20 @@
+import { canonicalJson, hashOf, references } from "@keel/compiler/internal";
 // Targeted examples pinning exact diagnostics (code, location, message, fix diff), helper edge cases, and
 // formatting. Rule output is pinned with inline snapshots of reviewed fixtures. Property parts use seed 1337.
 import fc from "fast-check";
 import { parseSync } from "oxc-parser";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
+import { explain } from "../src/explain.ts";
 import type { Budget, Diagnostic, SourceFile } from "../src/index.ts";
-import { check, defineRule, explain, format, rules } from "../src/index.ts";
+import { check, defineRule, format, rules } from "../src/index.ts";
 import { applyEdits } from "../src/internal/applyEdits.ts";
 import { budgetBreaches } from "../src/internal/budgetBreaches.ts";
-import { canonicalJson } from "../src/internal/canonicalJson.ts";
 import { clip } from "../src/internal/clip.ts";
 import { compareDiagnostics } from "../src/internal/compareDiagnostics.ts";
 import { ensureImport } from "../src/internal/ensureImport.ts";
 import { findingAt } from "../src/internal/findingAt.ts";
 import { groupByCode } from "../src/internal/groupByCode.ts";
-import { hashOf } from "../src/internal/hashOf.ts";
 import { isAppPath } from "../src/internal/isAppPath.ts";
 import { isCodePath } from "../src/internal/isCodePath.ts";
 import { isTestPath } from "../src/internal/isTestPath.ts";
@@ -23,7 +23,6 @@ import { lineCol } from "../src/internal/lineCol.ts";
 import { nodeAt } from "../src/internal/nodeAt.ts";
 import { normalize } from "../src/internal/normalize.ts";
 import { num } from "../src/internal/num.ts";
-import { references } from "../src/internal/references.ts";
 import { stemOf } from "../src/internal/stemOf.ts";
 import { str } from "../src/internal/str.ts";
 import { summarize } from "../src/internal/summarize.ts";
@@ -1219,12 +1218,6 @@ describe("E1805 noIntrinsicElement", () => {
       +export const A = () => <Box as="section" id="x">hi</Box>
       # nav
       1:25 <nav> in app code; use <Box> from @keel/ui
-      --- a/src/a.tsx
-      +++ b/src/a.tsx
-      @@ -1 +1,2 @@
-      -export const A = () => <nav id="x">hi</nav>
-      +import { Box } from "@keel/ui";
-      +export const A = () => <Box as="nav" id="x">hi</Box>
       # main
       1:25 <main> in app code; use <Box> from @keel/ui
       --- a/src/a.tsx
@@ -1251,12 +1244,6 @@ describe("E1805 noIntrinsicElement", () => {
       +export const A = () => <Box as="footer" id="x">hi</Box>
       # aside
       1:25 <aside> in app code; use <Box> from @keel/ui
-      --- a/src/a.tsx
-      +++ b/src/a.tsx
-      @@ -1 +1,2 @@
-      -export const A = () => <aside id="x">hi</aside>
-      +import { Box } from "@keel/ui";
-      +export const A = () => <Box as="aside" id="x">hi</Box>
       # article
       1:25 <article> in app code; use <Box> from @keel/ui
       --- a/src/a.tsx
@@ -1668,9 +1655,15 @@ describe("E1803 / E1701 / E1104 / E1754", () => {
       block("fake schema file", E("src/User.schemas.ts", `${head}const User = s.object({})\n`)),
       block(
         "component Props exempt",
-        E("src/A.tsx", `${head}export const Props = s.object({})\nconst Other = s.object({})\n`),
+        E(
+          "src/A.tsx",
+          `${head}export const Props = s.object({})\nconst Other = s.object({})\nexport default function A() {}\n`,
+        ),
       ),
-      block("component jsx Props", E("src/A.jsx", `${head}export const Props = s.object({})\n`)),
+      block(
+        "component jsx Props",
+        E("src/A.jsx", `${head}export const Props = s.object({})\nexport default function A() {}\n`),
+      ),
       block("ts Props not exempt", E("src/a.ts", `${head}export const Props = s.object({})\n`)),
       block("test path", E("test/a.test.ts", `${head}const User = s.object({})\n`)),
     ].join("\n");
@@ -2500,11 +2493,11 @@ describe("format", () => {
              +d
              +e
              +f
+      I2002 src/a.ts:4:2 msg 4
+      W2001 src/a.ts:3:2 msg 3
       E1005 src/a.ts:1:2 msg 1
         fix: -a
              +b
-      I2002 src/a.ts:4:2 msg 4
-      W2001 src/a.ts:3:2 msg 3
       fail 11 errors, 1 warning, 1 info
         E1001 7, E1002 1, E1003 1, E1004 1, E1005 1, I2002 1, W2001 1"
     `);
@@ -2524,11 +2517,11 @@ describe("format", () => {
              +d
              +e
              +f
+      I2002 src/a.ts:4:2 msg 4
+      W2001 src/a.ts:3:2 msg 3
       E1005 src/a.ts:1:2 msg 1
         fix: -a
              +b
-      I2002 src/a.ts:4:2 msg 4
-      W2001 src/a.ts:3:2 msg 3
       fail 11 errors, 1 warning, 1 info
         E1001 7, E1002 1, E1003 1, E1004 1, E1005 1, I2002 1, W2001 1"
     `);
@@ -2622,7 +2615,7 @@ describe("format", () => {
 describe("explain, rules, defineRule", () => {
   it("explain: kernel table, registered stdlib rule, unknown code", () => {
     expect(explain("E1001")).toMatch(/^E1001|For/);
-    expect(explain("E9999")).toBe("E9999 is not a known code; keel spec --for E9999 lists spec lines citing it.");
+    expect(explain("E9999")).toBe("E9999 is not a known code; keel docs --for E9999 lists spec lines citing it.");
     defineRule({ code: "E2951", message: "string msg", explain: "why", see: "k.check", check: () => [] });
     expect(explain("E2951")).toBe("E2951 string msg.\nwhy\nsee: k.check");
     defineRule({ code: "E2952", message: () => "fn msg", explain: "why2", check: () => [] });
@@ -2946,6 +2939,8 @@ describe("project passes", () => {
   it("E1755 budgets and E1005 generated artifacts", () => {
     const hashed = (data: unknown): string => `{"data":${JSON.stringify(data)},"hash":"${hashOf(data)}"}\n`;
     const okFile = hashed({ a: 1 });
+    const manifest = (dir = ""): SourceFile => f(`${dir}modules/m/routes.ts`, "export const routes = {}\n");
+    const COMPONENT = 'export default function C() { return <p id="c.p">x</p> }\n';
     const out = [
       block(
         "budget",
@@ -2957,10 +2952,51 @@ describe("project passes", () => {
           ],
         }),
       ),
-      block("intact", E("E1005", [f(".keel/routes.json", okFile)])),
+      block("intact", E("E1005", [f(".keel/routes.json", hashed({}))])),
+      block("forged: data changed, hash recomputed", E("E1005", [f(".keel/routes.json", okFile)])),
+      block("routes manifest: routes.json not verified", E("W1005", [f(".keel/routes.json", okFile), manifest()])),
+      block("routes manifest: W1005 only", E("E1005", [f(".keel/routes.json", okFile), manifest()])),
+      block(
+        "routes manifest: not self-consistent",
+        E("E1005", [f(".keel/routes.json", `{"data":{"a":1},"hash":"${hashOf({})}"}\n`), manifest()]),
+      ),
+      block(
+        "routes manifest: non-canonical bytes",
+        E("E1005", [f(".keel/routes.json", `{"hash":"${hashOf({})}","data":{}}`), manifest()]),
+      ),
+      block("nested dir: self-consistent", E("E1005", [f("apps/a/.keel/routes.json", okFile)])),
+      block("nested dir: genuine", E("E1005", [f("apps/a/.keel/routes.json", hashed({}))])),
+      block("nested manifest: W1005", E("W1005", [f("apps/a/.keel/routes.json", hashed({})), manifest("apps/a/")])),
+      block("root manifest: not nested", E("W1005", [f("apps/a/.keel/routes.json", hashed({})), manifest()])),
+      block(
+        "nested source: its own project",
+        E("E1005", [f("apps/a/.keel/ids.json", hashed({})), f("apps/a/src/C.tsx", COMPONENT)]),
+      ),
+      block("root source: not nested", E("E1005", [f("apps/a/.keel/ids.json", hashed({})), f("src/C.tsx", COMPONENT)])),
+      block(
+        "two projects, one compile each",
+        E("E1005", [
+          f("apps/a/.keel/ids.json", hashed({})),
+          f("apps/b/.keel/ids.json", hashed({})),
+          f("apps/b/C.tsx", COMPONENT),
+        ]),
+      ),
+      block(
+        "nested topology",
+        E("E1005", [
+          f("apps/a/.keel/ids.json", hashed({})),
+          f("apps/a/topology.ts", "export default { web: { modules: ['m'], adapter: 'client' } }\n"),
+        ]),
+      ),
+      block(
+        "forged ids.json beside its source",
+        E("E1005", [f(".keel/ids.json", hashed({})), f("src/C.tsx", COMPONENT)], {
+          types: false,
+        }),
+      ),
       block(
         "non-canonical bytes keep data",
-        E("E1005", [f(".keel/routes.json", `{"hash":"${hashOf({ a: 1 })}","data":{"a":1}}`)]),
+        E("E1005", [f(".keel/routes.json", `{"hash":"${hashOf({})}","data":{}}`)]),
       ),
       block("bad hash", E("E1005", [f(".keel/routes.json", `{"data":{"a":1},"hash":"fnv1a:00000000"}\n`)])),
       block("not json", E("E1005", [f(".keel/routes.json", "nope")])),
@@ -2969,31 +3005,22 @@ describe("project passes", () => {
       block("hash not string", E("E1005", [f(".keel/routes.json", `{"data":1,"hash":1}\n`)])),
       block("data undefined", E("E1005", [f(".keel/routes.json", `{"hash":1}\n`)])),
       block(
-        "expected hash matches",
+        "0143: hashes naming the forged hash are ignored",
         E("E1005", [f(".keel/routes.json", okFile)], {
           types: false,
           artifacts: { hashes: { "routes.json": hashOf({ a: 1 }) } },
         }),
       ),
       block(
-        "expected hash differs",
-        E("E1005", [f(".keel/routes.json", okFile)], {
-          types: false,
-          artifacts: { hashes: { "routes.json": "fnv1a:11111111" } },
-        }),
+        "0143: empty hashes are ignored",
+        E("E1005", [f(".keel/ids.json", okFile)], { types: false, artifacts: { hashes: {} } }),
       ),
       block(
-        "expected hash for other name",
-        E("E1005", [f(".keel/routes.json", okFile)], {
-          types: false,
-          artifacts: { hashes: { "other.json": "fnv1a:11111111" } },
-        }),
+        "project: sources come from it",
+        E("W1005", [f(".keel/routes.json", okFile)], { types: false, project: [manifest()] }),
       ),
-      block("hashes null", E("E1005", [f(".keel/routes.json", okFile)], { types: false, artifacts: { hashes: null } })),
-      block(
-        "hashes string",
-        E("E1005", [f(".keel/routes.json", okFile)], { types: false, artifacts: { hashes: "x" } }),
-      ),
+      block("project: empty", E("E1005", [f(".keel/routes.json", okFile)], { types: false, project: [] })),
+      block("unknown name", E("E1005", [f(".keel/x.json", hashed({}))])),
       block("nested dir", E("E1005", [f("apps/a/.keel/routes.json", "nope")])),
       block(
         "not .keel",
@@ -3011,42 +3038,76 @@ describe("project passes", () => {
       p.json:1:1 budget x exceeded: 2 bytes > 1
       # intact
 
-      # non-canonical bytes keep data
-      .keel/routes.json:1:1 hand edit to generated .keel/routes.json; revert and regenerate
+      # forged: data changed, hash recomputed
+      .keel/routes.json:1:1 generated .keel/routes.json does not match its sources; run keel build
+      # routes manifest: routes.json not verified
+      .keel/routes.json:1:1 .keel/routes.json unverified, not literal: modules/m/routes.ts
+      # routes manifest: W1005 only
+
+      # routes manifest: not self-consistent
+      .keel/routes.json:1:1 hand edit to generated .keel/routes.json; revert and run keel build
+      # routes manifest: non-canonical bytes
+      .keel/routes.json:1:1 hand edit to generated .keel/routes.json; revert and run keel build
       --- a/.keel/routes.json
       +++ b/.keel/routes.json
       @@ -1 +1 @@
-      -{"hash":"fnv1a:8b9e4511","data":{"a":1}}
+      -{"hash":"fnv1a:5465b825","data":{}}
       \\ No newline at end of file
-      +{"data":{"a":1},"hash":"fnv1a:8b9e4511"}
+      +{"data":{},"hash":"fnv1a:5465b825"}
+      # nested dir: self-consistent
+      apps/a/.keel/routes.json:1:1 generated .keel/routes.json does not match its sources; run keel build
+      # nested dir: genuine
+
+      # nested manifest: W1005
+      apps/a/.keel/routes.json:1:1 .keel/routes.json unverified, not literal: modules/m/routes.ts
+      # root manifest: not nested
+
+      # nested source: its own project
+      apps/a/.keel/ids.json:1:1 generated .keel/ids.json does not match its sources; run keel build
+      # root source: not nested
+
+      # two projects, one compile each
+      apps/b/.keel/ids.json:1:1 generated .keel/ids.json does not match its sources; run keel build
+      # nested topology
+
+      # forged ids.json beside its source
+      .keel/ids.json:1:1 generated .keel/ids.json does not match its sources; run keel build
+      # non-canonical bytes keep data
+      .keel/routes.json:1:1 hand edit to generated .keel/routes.json; revert and run keel build
+      --- a/.keel/routes.json
+      +++ b/.keel/routes.json
+      @@ -1 +1 @@
+      -{"hash":"fnv1a:5465b825","data":{}}
+      \\ No newline at end of file
+      +{"data":{},"hash":"fnv1a:5465b825"}
       # bad hash
-      .keel/routes.json:1:1 hand edit to generated .keel/routes.json; revert and regenerate
+      .keel/routes.json:1:1 hand edit to generated .keel/routes.json; revert and run keel build
       # not json
-      .keel/routes.json:1:1 hand edit to generated .keel/routes.json; revert and regenerate
+      .keel/routes.json:1:1 hand edit to generated .keel/routes.json; revert and run keel build
       # json null
-      .keel/routes.json:1:1 hand edit to generated .keel/routes.json; revert and regenerate
+      .keel/routes.json:1:1 hand edit to generated .keel/routes.json; revert and run keel build
       # json array
-      .keel/routes.json:1:1 hand edit to generated .keel/routes.json; revert and regenerate
+      .keel/routes.json:1:1 hand edit to generated .keel/routes.json; revert and run keel build
       # hash not string
-      .keel/routes.json:1:1 hand edit to generated .keel/routes.json; revert and regenerate
+      .keel/routes.json:1:1 hand edit to generated .keel/routes.json; revert and run keel build
       # data undefined
-      .keel/routes.json:1:1 hand edit to generated .keel/routes.json; revert and regenerate
-      # expected hash matches
-
-      # expected hash differs
-      .keel/routes.json:1:1 hand edit to generated .keel/routes.json; revert and regenerate
-      # expected hash for other name
-
-      # hashes null
-
-      # hashes string
-
+      .keel/routes.json:1:1 hand edit to generated .keel/routes.json; revert and run keel build
+      # 0143: hashes naming the forged hash are ignored
+      .keel/routes.json:1:1 generated .keel/routes.json does not match its sources; run keel build
+      # 0143: empty hashes are ignored
+      .keel/ids.json:1:1 generated .keel/ids.json does not match its sources; run keel build
+      # project: sources come from it
+      .keel/routes.json:1:1 .keel/routes.json unverified, not literal: modules/m/routes.ts
+      # project: empty
+      .keel/routes.json:1:1 generated .keel/routes.json does not match its sources; run keel build
+      # unknown name
+      .keel/x.json:1:1 .keel/x.json is not among the compiled artifacts; remove it
       # nested dir
-      apps/a/.keel/routes.json:1:1 hand edit to generated .keel/routes.json; revert and regenerate
+      apps/a/.keel/routes.json:1:1 hand edit to generated .keel/routes.json; revert and run keel build
       # not .keel
 
       # long name
-      .keel/nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn.json:1:1 hand edit to generated .keel/nnnnnnnnnnnnnnnnnnnnnnnnnnnnnn; revert and regenerate"
+      .keel/nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn.json:1:1 .keel/nnnnnnnnnnnnnnnnnnnnnnnnnnnnnn is not among the compiled artifacts; remove it"
     `);
   });
 
@@ -3085,6 +3146,12 @@ describe("type check mapping (E1751, E1802, E1001, E1501, E1003, E1453)", () => 
       block("link", T("src/A.tsx", `${ui}export default function A() { return <Link id="l" /> }\n`)),
       block("select", T("src/A.tsx", `${ui}export default function A() { return <Select id="s" /> }\n`)),
       block("textarea", T("src/A.tsx", `${ui}export default function A() { return <TextArea id="t" /> }\n`)),
+      block("box nav", T("src/A.tsx", `${ui}export default function A() { return <Box as="nav" id="n" /> }\n`)),
+      block(
+        "box aside label",
+        T("src/A.tsx", `${ui}export default function A() { return <Box as="aside" id="n" label="x" /> }\n`),
+      ),
+      block("box div label", T("src/A.tsx", `${ui}export default function A() { return <Box id="n" label="x" /> }\n`)),
       block("text fine", T("src/A.tsx", `${ui}export default function A() { return <Text>x</Text> }\n`)),
       block(
         "for no key",
@@ -3239,6 +3306,12 @@ describe("type check mapping (E1751, E1802, E1001, E1501, E1003, E1453)", () => 
       E1802 2:39 <Select> is missing a11y-required prop label
       # textarea
       E1802 2:39 <TextArea> is missing a11y-required prop label
+      # box nav
+      E1802 2:39 <Box> is missing a11y-required prop label
+      # box aside label
+
+      # box div label
+      E1751 2:39 TS2322 Type '{ id: string; label: string; }' is not assignable to type 'StyleValues<Co...
       # text fine
 
       # for no key
@@ -3254,10 +3327,10 @@ describe("type check mapping (E1751, E1802, E1001, E1501, E1003, E1453)", () => 
       # link data template
       E1003 2:44 to is a literal script/data URL; it renders as about:blank
       # link var
-      E1501 3:44 string path where an Href is required; use routes.href(routeId, params)
+      E1501 3:44 string path where an Href is required; use the contract's href(routeId, params)
       # link not url scheme
       E1003 2:44 to is a literal script/data URL; it renders as about:blank
-      E1501 2:44 string path where an Href is required; use routes.href(routeId, params)
+      E1501 2:44 string path where an Href is required; use the contract's href(routeId, params)
       # plain TS error
       E1751 1:14 TS2322 Type 'string' is not assignable to type 'number'.
       # two TS errors
@@ -3276,6 +3349,7 @@ describe("type check mapping (E1751, E1802, E1001, E1501, E1003, E1453)", () => 
       # implicit any in ts reported
       E1751 1:27 TS7006 Parameter 'props' implicitly has an 'any' type.
       # implicit any second param reported
+      E1407 2:38 a component is (props, ctx: Ctx): ctx required, typed Ctx, last
       E1751 2:38 TS7006 Parameter 'slots' implicitly has an 'any' type.
       # implicit any non-fn arg reported
 

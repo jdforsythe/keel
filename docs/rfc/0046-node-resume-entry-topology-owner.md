@@ -1,6 +1,6 @@
 # RFC 0046: node documents load a resume entry that exists; one owner for `Topology` and `StyleUsage`
 
-Status: accepted (ADR-0035)
+Status: implemented (ADR-0035)
 
 ## Problem
 - **Backlog 0111.** RFC 0037 made a document with an island carry `<script type="module" src="/@keel/entry.ts">`. Only the Vite plugin generated that URL, and only for a `client` deployable (the `mount` entry). For any other deployable it threw. A node `createApp` did not answer it either: the path fell through to the route table and got 404. So a node document with an island loaded a script that did not exist, and nothing called `resume`.

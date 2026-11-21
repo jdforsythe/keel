@@ -4,7 +4,7 @@ import { jsonText } from "../internal/jsonText.ts";
 export function tsconfigJson(workspace = false): string {
   const cfg = {
     extends: "@keel/compiler/tsconfig.strict.json",
-    compilerOptions: { jsxImportSource: "@keel/runtime-dom" },
+    compilerOptions: { jsxImportSource: "@keel/runtime-dom", types: ["node", "@keel/compiler/client"] },
     include: workspace
       ? ["modules", "test", "tokens.ts", "topology.ts", "vite.config.ts", "vitest.config.ts"]
       : ["tokens.ts", "topology.ts", "vite.config.ts", "modules"],

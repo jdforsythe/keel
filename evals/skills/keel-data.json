@@ -1,0 +1,20 @@
+{
+  "skill": "keel-data",
+  "maxTokens": 2000,
+  "prompt": "In a Keel app, keep a node deployable's state in SQLite, let two users write one server store at once while offline writes queue until the network returns, push changes to every open client, and run a removal workflow with an undo window.",
+  "expect": [
+    "sqlite",
+    "KEEL_DATABASE_URL",
+    "concurrent",
+    "rebase",
+    "writeFor(",
+    "outbox(",
+    "send(",
+    "drain(",
+    "channelRoute",
+    "live(",
+    "hydrate",
+    "workflow(",
+    "flows("
+  ]
+}

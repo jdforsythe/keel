@@ -1,10 +1,12 @@
 import { Writable } from "node:stream";
 import { type TestReport, testResults } from "@keel/testing";
-import { startVitest } from "vitest/node";
+import { writeA11yReport } from "@keel/testing/a11y";
+import { type Vitest, startVitest } from "vitest/node";
 import type { Input } from "../types/Input.ts";
 import type { Io } from "../types/Io.ts";
 import type { OutRecord } from "../types/OutRecord.ts";
 import { TEST_FILE } from "./TEST_FILE.ts";
+import { a11yCases } from "./a11yCases.ts";
 import { makeDiag } from "./makeDiag.ts";
 import { projectFiles } from "./projectFiles.ts";
 
@@ -13,11 +15,37 @@ const VITEST_CONFIG = /(^|\/)vitest\.config\.[cm]?[jt]s$/;
 
 const EMPTY: TestReport = { diagnostics: [], tests: 0, failed: 0, skipped: 0, errors: 0 };
 
+/** A run that ended without vitest handing over its instance: a failure, never an empty green report. */
+const NOT_STARTED: TestReport = {
+  diagnostics: [{ kind: "diag", code: "T0001", message: "vitest ended the run without starting it" }],
+  tests: 0,
+  failed: 0,
+  skipped: 0,
+  errors: 1,
+};
+
+/** A run vitest ended as not passed with no failing test to show for it (a filter that matches no file): one T0001. */
+const notPassed = (r: TestReport, reason: string): TestReport => ({
+  ...r,
+  diagnostics: [
+    ...r.diagnostics,
+    { kind: "diag", code: "T0001", message: `no test ran: vitest ended the run as ${reason}` },
+  ],
+  errors: 1,
+});
+
 async function vitestRun(root: string, filters: readonly string[]): Promise<TestReport> {
   let report = EMPTY;
+  let run: Vitest | undefined;
   const collector = {
-    onFinished: (files: readonly unknown[] = [], errors: readonly unknown[] = []): void => {
-      report = testResults(files, errors, root);
+    onInit: (vitest: Vitest): void => {
+      run = vitest;
+    },
+    onTestRunEnd: (_modules: readonly unknown[], errors: readonly unknown[], reason: string): void => {
+      const r = run === undefined ? NOT_STARTED : testResults(run.state.getFiles(), errors, root);
+      // Every render check the harness recorded, to `reports/a11y.json` (k.a11y Claims; `keel ledger` reads it).
+      if (run !== undefined) writeA11yReport(root, a11yCases(run.state.getFiles(), root));
+      report = reason === "passed" || r.failed > 0 || r.errors > 0 ? r : notPassed(r, reason);
     },
   };
   const exitCode = process.exitCode;
@@ -44,7 +72,7 @@ async function vitestRun(root: string, filters: readonly string[]): Promise<Test
  * `keel test [paths]`: vitest, programmatically, on `io.cwd` with `KEEL_TEST=1` (k.testing: ctx defaults to sim);
  * vitest's own output is discarded and `@keel/testing` `testResults` (the same walk the repository's
  * KeelReporter uses) turns results into T0001 diagnostics plus a summary (not ok when any
- * test failed). Skipped (the empty run) when `io.files` holds no test file and no vitest config, so an in-memory
+ * test failed); every render check the harness recorded goes to `reports/a11y.json` (`writeA11yReport`). Skipped (the empty run) when `io.files` holds no test file and no vitest config, so an in-memory
  * project never touches disk.
  */
 export async function testCommand(input: Input, io: Io): Promise<OutRecord[]> {

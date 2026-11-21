@@ -1,6 +1,6 @@
 # RFC 0040: Rules triage
 
-Status: accepted (ADR-0029)
+Status: implemented (ADR-0029)
 
 ## Problem
 docs/freeze-review.md §4 and backlog 0062, 0101, 0109, 0110. Kernel Rules paragraphs name codes that nothing raises, and 0110 lists Rules codes with no fixture. `fixture-per-code` accepted them because its EXPLAIN_ONLY list mixed two cases: codes another surface raises, and codes that no surface raises. k.check says `keel check` produces every Rules code except those another command raises, so an unraised code is a spec lie. Also: E1507 was runtime only, E1701 missed a destructured `container`, and E1501 missed a string passed to a parameter typed `Href` (`nav('/orders')`). E1054 has no conformance test, and inspect `graph` includes the server's own request scope. RFC 0041 replaces the free `href()` with `routes.href()`, so the module pass must read that form too.

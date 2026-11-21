@@ -52,7 +52,6 @@ export const pathParamsMatch: RuleDef = {
     str(f.data, "kind") === "missing"
       ? `path param(s) ${str(f.data, "names")} have no field in params`
       : `params field ${str(f.data, "names")} is not a :param in path`,
-  explain: "Path params and the params schema describe one set of names; each :param needs a field and the reverse.",
   see: "k.services",
   check: ({ file, ast }) => {
     if (!isAppPath(file.path)) return [];

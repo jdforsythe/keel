@@ -2,7 +2,7 @@
 import { check, rules } from "@keel/check";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { FIXTURES, one, registryEntry, SEED } from "./support.ts";
+import { FIXTURES, SEED, one, registryEntry } from "./support.ts";
 
 test("every diagnostic has a stable code matching ^[EWI]\\d{4}$, path:line:col, a message under 90 chars, and fix when the rule declares one", () => {
   fc.assert(

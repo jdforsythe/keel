@@ -189,20 +189,29 @@ describe("examples", () => {
     expect(runs).toBe(3);
   });
 
-  it("a computed that threw recomputes on the next read", () => {
+  it("a computed that threw keeps its error until a source changes, then recomputes", () => {
     let failing = true;
+    let runs = 0;
     let read: () => number = () => -1;
+    let write: (v: number) => void = () => undefined;
     scope(() => {
       const s = signal(4);
       const c = computed(() => {
+        runs++;
+        const v = s.get();
         if (failing) throw new Error("not yet");
-        return s.get();
+        return v;
       });
       read = () => c.get();
+      write = (v) => s.set(v);
     });
     expect(read).toThrow("not yet");
     failing = false;
-    expect(read()).toBe(4);
+    expect(read).toThrow("not yet");
+    expect(runs).toBe(1);
+    write(5);
+    expect(read()).toBe(5);
+    expect(runs).toBe(2);
   });
 
   it("an equal write is not a commit", () => {

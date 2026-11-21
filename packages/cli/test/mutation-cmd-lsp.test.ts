@@ -121,27 +121,29 @@ describe("lspCodeActions", () => {
 
 describe("lspHover", () => {
   const uri = "file:///w/src/x.ts";
-  it("shows the explain text of the diagnostic on the hovered line", () => {
+  it("shows the explain text of the diagnostic on the hovered line", async () => {
     const s = fresh();
     s.diags.set(uri, [d({ code: "E1451", line: 2, message: "m" })]);
-    const rec = explainCommand({ code: "E1451" }).find((r) => r.kind === "explain.text");
+    const rec = (await explainCommand({ code: "E1451" })).find((r) => r.kind === "explain.text");
     expect(typeof rec?.text).toBe("string");
-    expect(lspHover(s, { textDocument: { uri }, position: { line: 1 } })).toEqual({
+    expect(await lspHover(s, { textDocument: { uri }, position: { line: 1 } })).toEqual({
       contents: { kind: "markdown", value: rec?.text },
     });
-    expect(lspHover(s, { textDocument: { uri }, position: { line: 0 } })).toBeNull();
-    expect(lspHover(s, { textDocument: { uri }, position: { line: 2 } })).toBeNull();
+    expect(await lspHover(s, { textDocument: { uri }, position: { line: 0 } })).toBeNull();
+    expect(await lspHover(s, { textDocument: { uri }, position: { line: 2 } })).toBeNull();
   });
 
-  it("missing position, unknown uri and malformed params give null", () => {
+  it("missing position, unknown uri and malformed params give null", async () => {
     const s = fresh();
     s.diags.set("", [d({ code: "E9999", line: 2 })]);
     s.diags.set(uri, [d({ code: "E9999" })]);
-    expect(lspHover(s, {})).toBeNull();
-    expect(lspHover(s, null)).toBeNull();
-    expect(lspHover(s, { textDocument: { uri }, position: { line: "0" } })).toBeNull();
-    expect(lspHover(s, { textDocument: { uri: "file:///other" }, position: { line: 0 } })).toBeNull();
-    expect(Object(lspHover(s, { textDocument: { uri: 7 }, position: { line: 1 } })).contents.kind).toBe("markdown");
+    expect(await lspHover(s, {})).toBeNull();
+    expect(await lspHover(s, null)).toBeNull();
+    expect(await lspHover(s, { textDocument: { uri }, position: { line: "0" } })).toBeNull();
+    expect(await lspHover(s, { textDocument: { uri: "file:///other" }, position: { line: 0 } })).toBeNull();
+    expect(Object(await lspHover(s, { textDocument: { uri: 7 }, position: { line: 1 } })).contents.kind).toBe(
+      "markdown",
+    );
   });
 });
 
@@ -345,7 +347,7 @@ describe("lspHandle", () => {
       () => io,
     );
     expect(out).toEqual([
-      { jsonrpc: "2.0", id: 6, result: lspHover(s, { textDocument: { uri }, position: { line: 1 } }) },
+      { jsonrpc: "2.0", id: 6, result: await lspHover(s, { textDocument: { uri }, position: { line: 1 } }) },
     ]);
     expect(JSON.stringify(out)).toContain("E1451");
     expect(await lspHandle(msg({ method: "textDocument/hover", params: {} }), s, () => io)).toEqual([]);
@@ -365,11 +367,11 @@ describe("lspHandle", () => {
   });
 });
 
-describe("publishAll", () => {
-  it("the open document replaces the file of the same path and diagnostics carry project-relative paths", () => {
+describe("publishAll", async () => {
+  it("the open document replaces the file of the same path and diagnostics carry project-relative paths", async () => {
     const s = fresh();
     s.docs.set("file:///w/src/x.ts", TWO);
-    const out = publishAll(s, { cwd: "/w", files: [{ path: "src/x.ts", source: "export const x = 1\n" }] });
+    const out = await publishAll(s, { cwd: "/w", files: [{ path: "src/x.ts", source: "export const x = 1\n" }] });
     expect(out).toHaveLength(1);
     expect(s.diags.get("file:///w/src/x.ts")?.map((x) => [x.code, x.path])).toEqual([["E1752", "src/x.ts"]]);
     expect(out[0]).toMatchObject({
@@ -379,12 +381,12 @@ describe("publishAll", () => {
     });
   });
 
-  it("uses the state root over the io cwd, and asks the loader for the query scope", () => {
+  it("uses the state root over the io cwd, and asks the loader for the query scope", async () => {
     const s = fresh();
     s.root = "/w";
     s.docs.set("file:///w/src/x.ts", TWO);
     const scopes: string[] = [];
-    publishAll(s, {
+    await publishAll(s, {
       cwd: "/other",
       load: (scope) => {
         scopes.push(scope);
@@ -395,12 +397,12 @@ describe("publishAll", () => {
     expect(s.diags.get("file:///w/src/x.ts")?.map((x) => x.path)).toEqual(["src/x.ts"]);
   });
 
-  it("with no open document and nothing closed it publishes nothing; closed uris get empty lists after the open ones", () => {
+  it("with no open document and nothing closed it publishes nothing; closed uris get empty lists after the open ones", async () => {
     const s = fresh();
-    expect(publishAll(s, io)).toEqual([]);
+    expect(await publishAll(s, io)).toEqual([]);
     s.docs.set("file:///w/src/b.ts", TWO);
     s.diags.set("file:///w/src/a.ts", [d({ code: "E1" })]);
-    const out = publishAll(s, io, ["file:///w/src/a.ts"]);
+    const out = await publishAll(s, io, ["file:///w/src/a.ts"]);
     expect(out.map((o) => Object(o.params).uri)).toEqual(["file:///w/src/b.ts", "file:///w/src/a.ts"]);
     expect(Object(out[1]?.params).diagnostics).toEqual([]);
     expect(s.diags.has("file:///w/src/a.ts")).toBe(false);

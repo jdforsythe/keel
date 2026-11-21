@@ -1,0 +1,146 @@
+// Prototype of the proposed scrub: one Aho-Corasick automaton over every form of both sets, walked once per text.
+export const CAP = +(process.env.CAP ?? 4_000_000);
+let FOLD;
+const fold = () => {
+  if (FOLD !== undefined) return FOLD;
+  FOLD = new Uint16Array(65536);
+  for (let u = 0; u < 65536; u++) {
+    if (u >= 0xd800 && u <= 0xdfff) { FOLD[u] = u; continue; }
+    const c = String.fromCharCode(u);
+    const x = c.toUpperCase().toLowerCase();
+    const y = c.toLowerCase();
+    FOLD[u] = x.length === 1 ? x.charCodeAt(0) : y.length === 1 ? y.charCodeAt(0) : u;
+  }
+  return FOLD;
+};
+const folded = (s) => {
+  const F = fold();
+  let i = 0;
+  while (i < s.length && F[s.charCodeAt(i)] === s.charCodeAt(i)) i++;
+  if (i === s.length) return s;
+  const a = new Uint16Array(s.length);
+  for (let j = 0; j < s.length; j++) a[j] = F[s.charCodeAt(j)];
+  let o = "";
+  for (let j = 0; j < a.length; j += 8192) o += String.fromCharCode.apply(null, a.subarray(j, j + 8192));
+  return o;
+};
+
+/** forms: Map folded form -> flags (bit0 secret, bit1 pii, bits2-3 pad) */
+const formsInto = (v, markBit, into) => {
+  const bytes = Buffer.from(v);
+  const padded = bytes.toString("base64");
+  const list = [[v, 0], [JSON.stringify(v).slice(1, -1), 0]];
+  if (v.isWellFormed()) list.push([encodeURIComponent(v), 0]);
+  if (bytes.length < 8) list.push([padded, 0]);
+  else {
+    const pad = (3 - (bytes.length % 3)) % 3;
+    const b = padded.slice(0, padded.length - pad);
+    list.push([b, pad]);
+    if (/[+/]/.test(b)) list.push([b.replace(/\+/g, "-").replace(/\//g, "_"), pad]);
+  }
+  for (const [f, pad] of list) {
+    if (f === "") continue;
+    const k = folded(f);
+    into.set(k, (into.get(k) ?? 0) | markBit | (pad << 2));
+  }
+};
+
+export function build(passes, counter = { steps: 0 }) {
+  const forms = new Map();
+  passes.forEach(([values], p) => { for (const v of values) formsInto(v, p === 0 ? 1 : 2, forms); });
+  let m = 0;
+  for (const k of forms.keys()) m += k.length;
+  if (m > CAP) return { over: true, m };
+  const sorted = [...forms.keys()].sort();
+  const N = m + 1;
+  const label = new Uint16Array(N), parent = new Int32Array(N), depth = new Int32Array(N), term = new Uint8Array(N);
+  let count = 1;
+  const path = [0];
+  let prev = "";
+  for (const f of sorted) {
+    let l = 0;
+    const lim = Math.min(prev.length, f.length);
+    while (l < lim && prev.charCodeAt(l) === f.charCodeAt(l)) l++;
+    counter.steps += l + 1;
+    path.length = l + 1;
+    for (let d = l; d < f.length; d++) {
+      const id = count++;
+      label[id] = f.charCodeAt(d); parent[id] = path[d]; depth[id] = d + 1; path.push(id);
+      counter.steps++;
+    }
+    term[path[f.length]] = 1 | (forms.get(f) << 1);
+    prev = f;
+  }
+  const start = new Int32Array(count + 1), kids = new Int32Array(Math.max(count - 1, 1));
+  for (let id = 1; id < count; id++) start[parent[id] + 1]++;
+  for (let s = 0; s < count; s++) start[s + 1] += start[s];
+  const fill = start.slice(0, count);
+  for (let id = 1; id < count; id++) kids[fill[parent[id]]++] = id;
+  const go = (s, c) => {
+    let lo = start[s], hi = start[s + 1] - 1;
+    while (lo <= hi) { const mid = (lo + hi) >> 1; const x = label[kids[mid]]; if (x === c) return kids[mid]; if (x < c) lo = mid + 1; else hi = mid - 1; }
+    return -1;
+  };
+  const fail = new Int32Array(count), out = new Int32Array(count);
+  out[0] = -1;
+  const queue = new Int32Array(count);
+  let qh = 0, qt = 0;
+  for (let j = start[0]; j < start[1]; j++) queue[qt++] = kids[j];
+  while (qh < qt) {
+    const x = queue[qh++];
+    const p = parent[x], c = label[x];
+    let f = 0;
+    if (p !== 0) {
+      let g = fail[p];
+      for (;;) { counter.steps++; const h = go(g, c); if (h >= 0) { f = h; break; } if (g === 0) break; g = fail[g]; }
+    }
+    fail[x] = f;
+    out[x] = term[x] !== 0 ? x : out[f];
+    for (let j = start[x]; j < start[x + 1]; j++) queue[qt++] = kids[j];
+  }
+  return { over: false, m, nodes: count, go, fail, out, depth, term };
+}
+
+const WORD = /[\p{L}\p{N}_]/u;
+const token = (t, at, end) => !WORD.test(lastCp(t, at)) && !WORD.test(firstCp(t, end));
+const lastCp = (t, at) => { if (at === 0) return ""; const lo = t.charCodeAt(at - 1); if (lo >= 0xdc00 && lo <= 0xdfff && at >= 2) { const hi = t.charCodeAt(at - 2); if (hi >= 0xd800 && hi <= 0xdbff) return t.slice(at - 2, at); } return t[at - 1]; };
+const firstCp = (t, end) => (end >= t.length ? "" : String.fromCodePoint(t.codePointAt(end)));
+
+export function scrub(text, passes, a, counter = { steps: 0 }) {
+  const marks = passes.map(([, m]) => m);
+  if (a.over) return passes[0][0].size > 0 ? marks[0] : marks[1];
+  if (a.nodes === 1) return text;
+  const F = fold();
+  const { go, fail, out, depth, term } = a;
+  const runs = []; // flat: at, end, len, secret
+  let s = 0;
+  for (let i = 0; i < text.length; i++) {
+    const c = F[text.charCodeAt(i)];
+    for (;;) { counter.steps++; const g = go(s, c); if (g >= 0) { s = g; break; } if (s === 0) break; s = fail[s]; }
+    for (let t = out[s]; t >= 0; t = out[fail[t]]) {
+      counter.steps++;
+      const L = depth[t];
+      const at = i + 1 - L;
+      if (L < 3 && !token(text, at, i + 1)) continue;
+      const fl = term[t] >> 1;
+      const pad = fl >> 2;
+      let end = i + 1;
+      while (end - i - 1 < pad && text.charCodeAt(end) === 61) end++;
+      const sec = fl & 1;
+      let rat = at, rend = end, rsec = sec, rlen = end - at;
+      while (runs.length > 0 && rat < runs[runs.length - 3]) {
+        const tl = runs.pop(), ts = runs.pop(), te = runs.pop(), ta = runs.pop();
+        if (tl > rlen || (tl === rlen && ts >= rsec)) { rlen = tl; rsec = ts; }
+        rat = Math.min(rat, ta); rend = Math.max(rend, te);
+      }
+      runs.push(rat, rend, rsec, rlen);
+      break;
+    }
+  }
+  if (runs.length === 0) return text;
+  const o = [];
+  let last = 0;
+  for (let r = 0; r < runs.length; r += 4) { o.push(text.slice(last, runs[r]), runs[r + 2] ? marks[0] : marks[1]); last = runs[r + 1]; }
+  o.push(text.slice(last));
+  return o.join("");
+}

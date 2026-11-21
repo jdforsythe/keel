@@ -3,6 +3,7 @@
 // page (loader) or of the action's route (action), resolved against the document, so `*.server.ts` never reads
 // `location`.
 import { createCtx } from "@keel/ctx";
+import { contract } from "@keel/router/contract";
 import { mount } from "@keel/runtime-dom";
 import { ok, s } from "@keel/schema";
 import { expect, it } from "vitest";
@@ -23,28 +24,25 @@ const Q = s.object({ tab: s.string().optional() });
 
 it("loaders and actions get the absolute url of the page and of the action's route", async () => {
   const seen: string[] = [];
-  const routes = manifest({
+  const ru = contract("ru", { "ru.page": { path: "/ru/:n", params: P, search: Q } });
+  const routes = manifest(ru, {
     "ru.page": {
-      path: "/ru/:n",
-      params: P,
-      search: Q,
-      loader: loader({ output: s.object({}), params: P, search: Q }, async ({ url }) => {
+      loader: loader(ru, "ru.page", { output: s.object({}) }, async ({ url }) => {
         seen.push(`load ${url}`);
         return ok({});
       }),
-      actions: {
-        POST: action({ input: s.object({}), params: P }, async (_input, { params, url }) => {
-          seen.push(`act ${params.n} ${url}`);
-          return ok(null);
-        }),
-      },
       component: () => Form({ method: "POST", action: to("/ru/7"), children: () => "go" }),
+      POST: action(ru, "ru.page", { input: s.object({}) }, async (_input, { params, url }) => {
+        seen.push(`act ${params.n} ${url}`);
+        return ok(null);
+      }),
     },
   });
-  const router = createRouter(routes, { ctx: createCtx({ mode: "sim" }), history: memoryHistory("/ru/7?tab=a") });
+  const ctx = createCtx({ mode: "sim" });
+  const router = createRouter(routes, { ctx, history: memoryHistory("/ru/7?tab=a") });
   const host = document.createElement("div");
   document.body.append(host);
-  const unmount = mount(router.App, host);
+  const unmount = mount(router.App, host, { ctx });
   await settle();
   host.querySelector("form")?.requestSubmit();
   await settle();

@@ -1,18 +1,29 @@
 # Handoff (living)
 
-Updated by `/handoff`. Read first on every fresh start.
+Updated by `/handoff`. Read first on every fresh start. It holds the present state only; the git log and each task's `PLAN.md` hold the story.
 
 ```
 health: pnpm check && pnpm test
 active:
-  - no open task worktree; everything is on branch jdforsythe/test-impl in this Orca worktree (test-impl), pushed to https://github.com/jdforsythe/keel (main mirrors it). HEAD 33efb4f.
-  - state (2026-11-07): G1, G2 passed. G3 criteria met then re-audited: 13/18 kernel sections conformance-covered (ledger gate rfc:0049 E1707; the five short sections are backlog 0138), 6/6 extension points used by std-* wave 0, golden-1 and golden-2 agent-built (evals/results/2026-11-07-*), skills green. Freeze flip HELD by user decision (tasks/0034-freeze/PLAN.md D6). Brand (docs/BRAND.md, docs/VOICE.md) applied: ui brandTokens, self-hosted fonts, three apps restyled, scaffold template on brand, voice-lint V0003 in pnpm check (task 0121 closed).
-  - root `pnpm check` and `pnpm test` green (41/39 tasks); ledger --diff 0 lowered, 0 uncovered; unsafe 6.
-  - running for the user (after any rebuild run `pnpm --filter ./apps/golden-N build` first, then restart): golden-1 api `NODE_ENV=production node --experimental-webstorage --localstorage-file=apps/golden-1/.api.storage apps/golden-1/server.ts` (4181) + `npx vite preview --port 4180` in apps/golden-1; golden-2 the same on 4191/4190. Open with `open http://localhost:4180/` and `:4190`.
-  - mutation: check 80.6% with KERNEL_RULES.ts included (0098 closed); scaffold rerun hung and was killed, its three new tests are committed, 0097 stays open (rerun `pnpm --filter @keel/scaffold mutate` on an idle machine).
-  - next, in order (user: work until complete; each batch ends with the reviewer + red-team pass per WORKFLOW Batches before the push): (1) red-team 2026-11-07 highs 0123, 0124, then mediums 0125-0131, lows 0132-0137; (2) 0138 (flip the five sections back honestly); (3) 0114 two-phase manifest RFC (decided); (4) 0118, 0119 (stdlib loading, runtime std config), 0120 eval gaps; (5) S1 sessions 0091-0095; (6) 0097 scaffold mutate rerun. Never flip a section to frozen (D6).
-  - process: every surface follows docs/BRAND.md + docs/VOICE.md (CLAUDE rule 10); RFC commits carry `rfc:NNNN` (commit-msg hook + CI guard S0008; conformance edits need it); tests never call process.chdir; scaffold/check Stryker tuning keys on STRYKER_MUTATOR_WORKER; agents stage nothing, the orchestrator commits by explicit path; size budgets may be re-based with the reason in the commit (D7); spec sections stay under 1,500 tokens (k.server and k.cli are at the limit: trim before adding); every number in prose comes from tooling/ledger/ledger.json.
-  blockers: none
-pending decisions: none (2026-11-07: 0114 two-phase manifest; freeze held; budgets re-base allowed; next stage chosen after the user sees both golden apps)
-last updated: 2026-11-07 33efb4f (brand applied; ledger gate rfc:0049; red-team 2026-11-07 filed)
+  - task: 0963-to-p1
+    plan: tasks/0963-to-p1/PLAN.md
+    branch: jdforsythe/test-impl
+    worktree: this Orca worktree (test-impl); pull request 4 into master at https://github.com/jdforsythe/keel (public)
+  - state: pushed through b926699b; CI is green on it (run 44913048765: check, six test shards, the built-app smokes, Postgres, the Android, Tauri and iOS shell jobs). Gated locally in `.worktrees/verify` in D63's order; the ledger is at 1,729 items, 1,524 verified, 18 unsafe, 0 lowered, 0 uncovered. After any push that carries code, watch its CI run to the end before pushing again, and run the CI smokes locally first (`pnpm build`, then `node --disable-warning=ExperimentalWarning tooling/smoke/restart.mjs`, `workflow.mjs`, `dev-signin.mjs`, `resume.mjs 3`).
+  - built and on the main line since 2026-11-21: `keel docs` (RFC 0151); the router's mount scope (0156); declared third-party origins (0160); the k.shell split with shell targets (0161); the topology key `servedBy` and a closed deployable object (0168); custom components with the `Host` element (0159); the stdlib off kernel internals, first part (0169); the module contract and the component signature `(props, ctx)` across the kernel, the stdlib, the four apps, the skills and the guides (0157, 0162); four small kernel RFCs (0164 to 0167).
+  - written and not built: app data outside the kernel with a Postgres module (RFC 0158, `lane-r158`); the library format (RFC 0163, `lane-r163`).
+  - a golden app's a11y evidence is written by `keel test` (`node ../../packages/cli/src/bin.ts test` in the app), not by the app's `test` script; a package's tests are run from its folder (check's fixture conformance depends on the launch directory).
+  - stages: S1 to S5, S7 and S8 closed; S6 provisionally closed (its external reviews and the golden-3 build are P1 work). The P1 plan is `tasks/p1/PLAN.md`.
+  - first thing on resume: `git worktree list`, then `## Next action` in the active plan.
+  - before a push: the gate in `.worktrees/verify` in D63's order; read each command's own last `ok` or `fail` line.
+  - safe to clear: YES. No subagent, no gate and no CI run is in progress.
+blockers: none
+pending decisions: none blocks. To confirm or reverse, each decided on the orchestrator's recommendation and recorded in the active plan: D19 to D40, the nine questions of D25, and D51 to D79 of 2026-11-21. The ones of D79 change what an app author sees: a layout keeps `errorElement` and may belong to another module; a channel's entries are written out in the contract; `sessions.tally` is always served where std-sessions is placed, behind its guard; one loader serves one entry; the identity mount is tested on the decoded path; a link is same-origin wherever it is followed; `Frame` is a base element; the shell set is closed for 1.0; a deployable's object in `topology.ts` is closed. The operator's to start: the golden-3 agent run (`pnpm eval --task golden-3 --runner claude --model <id> --max-iter 3`, in a container or with a throwaway home, since the runner starts the agent with permission prompts off) and the first head-to-head pair. Not started: W4 (the external audit and pen test) scoping.
+last updated: b926699b 2026-11-21
 ```
+
+## Reading on resume
+Read this file and the active plan, then act. Do not read `tasks/0338-s8-reach/PLAN.md`, `tasks/BACKLOG.md`, `spec/` or `docs/rfc/` whole: the active plan says how to fetch one decision, one backlog line or one section. Subagents read what their step needs.
+
+## Running things for a person
+`pnpm --filter golden-2 dev` serves golden-2 with a dev sign-in fixture (port 5173; never port 8080). A built app: `pnpm --filter golden-<n> build`, then `dist/api/server.mjs` with `PORT`, `KEEL_SECRET` and, for golden-2, `BETTER_AUTH_SECRET`.

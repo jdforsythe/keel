@@ -7,5 +7,11 @@ import type { JsonValue, KeelError } from "@keel/schema";
 export type Rendered = {
   readonly html: string;
   readonly islands: Readonly<Record<string, JsonValue>>;
+  /** Ids of the stores an island level's render created, looked up through `stores()` or read (k.leave Snapshots). */
+  readonly touched: ReadonlySet<string>;
   readonly caught: KeelError<string, unknown> | null;
+  /** A level's render placed an element made before the op placing it (E1257). */
+  readonly eager: boolean;
+  /** A level's render had a text binding that renders nothing (E1406). */
+  readonly nothing: boolean;
 };

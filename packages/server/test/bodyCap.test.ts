@@ -2,6 +2,7 @@
 // Action bodies are capped (backlog 0089): over the cap is 413 `keel.payloadTooLarge`, the action never runs.
 import { createCtx } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import { describe, expect, it } from "vitest";
 import { createApp, topology } from "../src/index.ts";
@@ -9,17 +10,19 @@ import { readCapped } from "../src/internal/readCapped.ts";
 
 const BASE = "http://localhost";
 const Note = s.object({ note: s.string() });
+const c = contract("app", { "app.notes": { path: "/notes" } });
 
 async function build(seen: unknown[], maxBodyBytes?: number) {
-  const save = action({ input: Note }, (input) => {
+  const save = action(c, "app.notes", { input: Note }, (input) => {
     seen.push(input);
     return ok(null);
   });
+  const routes = manifest(c, {
+    "app.notes": { component: () => document.createElement("p"), POST: save },
+  });
   return createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
-    routes: manifest({
-      "app.notes": { path: "/notes", actions: { POST: save }, component: () => document.createElement("p") },
-    }),
+    routes,
     ctx: createCtx({ mode: "sim", seed: 1 }),
     ...(maxBodyBytes === undefined ? {} : { maxBodyBytes }),
   });

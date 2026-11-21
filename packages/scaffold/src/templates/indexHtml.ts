@@ -11,7 +11,7 @@ export function indexHtml(name: string): string {
     "  </head>",
     "  <body>",
     "    <header>",
-    `      <img src="/keel-mark.svg" alt="Keel" width="32" height="32" />`,
+    `      <img src="/keel-mark.svg" alt="Keel" height="32" />`,
     `      <span>${name}</span>`,
     "    </header>",
     `    <div id="app"></div>`,

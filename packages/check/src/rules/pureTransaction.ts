@@ -1,7 +1,8 @@
-import { type Program, Visitor } from "oxc-parser";
+import { references } from "@keel/compiler/internal";
+import { Visitor } from "oxc-parser";
 import { findingAt } from "../internal/findingAt.ts";
 import { isAppPath } from "../internal/isAppPath.ts";
-import { references } from "../internal/references.ts";
+import { localNames } from "../internal/modules/localNames.ts";
 import { str } from "../internal/str.ts";
 import type { Finding } from "../types/Finding.ts";
 import type { RuleDef } from "../types/RuleDef.ts";
@@ -29,29 +30,15 @@ const IMPURE: ReadonlySet<string> = new Set([
   "requestAnimationFrame",
 ]);
 
-function localName(ast: Program, exported: string, module: string): string | null {
-  for (const st of ast.body) {
-    if (st.type !== "ImportDeclaration" || st.source.value !== module) continue;
-    for (const sp of st.specifiers) {
-      if (sp.type !== "ImportSpecifier") continue;
-      const imported = sp.imported.type === "Identifier" ? sp.imported.name : sp.imported.value;
-      if (imported === exported) return sp.local.name;
-    }
-  }
-  return null;
-}
-
 /** E1302 (k.store): `ctx` or ambient global access inside a transaction function (they must be pure). */
 export const pureTransaction: RuleDef = {
   code: "E1302",
   message: (f) => `transaction ${str(f.data, "tx")} reads ${str(f.data, "name")}; transaction functions are pure`,
-  explain:
-    "A transaction is (state, payload) => state: no ctx, no globals. Do effects before tx() and pass results in.",
   see: "k.store",
   check: ({ file, ast }) => {
     if (!isAppPath(file.path)) return [];
-    const tx = localName(ast, "transaction", "@keel/store");
-    if (tx === null) return [];
+    const [tx] = localNames(ast, "transaction", "@keel/store");
+    if (tx === undefined) return [];
     const fns: { start: number; end: number; name: string }[] = [];
     const randoms: number[] = [];
     new Visitor({

@@ -1,7 +1,7 @@
 {
   "name": "@keel/cli",
   "version": "0.0.0",
-  "private": false,
+  "private": true,
   "type": "module",
   "exports": {
     ".": {
@@ -11,30 +11,49 @@
     "./testing": {
       "types": "./src/testing/respond.ts",
       "default": "./src/testing/respond.ts"
+    },
+    "./evidence": {
+      "types": "./src/evidence/index.ts",
+      "default": "./src/evidence/index.ts"
+    },
+    "./docs": {
+      "types": "./src/docs/index.ts",
+      "default": "./src/docs/index.ts"
+    },
+    "./shell": {
+      "types": "./src/shell/index.ts",
+      "default": "./src/shell/index.ts"
     }
   },
   "bin": {
-    "keel": "./dist/src/bin.js"
+    "keel": "./src/bin.ts"
   },
-  "files": ["dist"],
+  "publishConfig": {
+    "bin": {
+      "keel": "./dist/src/bin.js"
+    }
+  },
+  "files": ["dist", "docs", "skills"],
   "scripts": {
     "check": "tsc --noEmit && biome check src test unsafe",
     "test": "vitest run",
+    "coverage": "node ../../tooling/coverage.mjs",
     "build": "tsc -p tsconfig.build.json",
-    "mutate": "stryker run"
+    "mutate": "node ../../tooling/mutate.mjs",
+    "prepack": "node ../../tooling/docs-pack.mjs"
   },
   "dependencies": {
     "@keel/check": "workspace:*",
     "@keel/compiler": "workspace:*",
-    "@keel/schema": "workspace:*",
+    "@keel/ctx": "workspace:*",
     "@keel/scaffold": "workspace:*",
+    "@keel/schema": "workspace:*",
     "@keel/services": "workspace:*",
     "@keel/testing": "workspace:*",
-    "vitest": "^2",
-    "typescript": "^5.6"
+    "typescript": "^5.6",
+    "vitest": "^4.1.12"
   },
   "devDependencies": {
-    "@keel/ctx": "workspace:*",
     "@keel/reactive": "workspace:*",
     "@keel/router": "workspace:*",
     "@keel/server": "workspace:*",

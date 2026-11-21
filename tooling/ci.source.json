@@ -2,35 +2,38 @@
   "name": "ci",
   "on": {
     "push": {
-      "branches": ["main"]
+      "branches": ["master"]
     },
     "pull_request": {},
     "schedule": [
-      {
-        "cron": "0 3 * * *"
-      },
       {
         "cron": "0 4 * * 1"
       }
     ]
   },
+  "permissions": {
+    "contents": "read"
+  },
+  "concurrency": {
+    "group": "ci-${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}",
+    "cancel-in-progress": true
+  },
   "env": {
     "KEEL_AGENT": "1",
-    "TURBO_TOKEN": "${{ secrets.TURBO_TOKEN }}",
-    "TURBO_TEAM": "${{ vars.TURBO_TEAM }}"
+    "TURBO_CACHE_DIR": ".turbo/cache"
   },
   "setup": [
     {
-      "uses": "actions/checkout@v4",
+      "uses": "actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0",
       "with": {
         "fetch-depth": 0
       }
     },
     {
-      "uses": "pnpm/action-setup@v4"
+      "uses": "pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1"
     },
     {
-      "uses": "actions/setup-node@v4",
+      "uses": "actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0",
       "with": {
         "node-version": 22,
         "cache": "pnpm"
@@ -47,17 +50,406 @@
       "steps": [
         "$setup",
         {
+          "env": {
+            "TURBO_TOKEN": "${{ secrets.TURBO_TOKEN }}",
+            "TURBO_TEAM": "${{ vars.TURBO_TEAM }}"
+          },
           "run": "pnpm check"
+        },
+        {
+          "name": "golden-1 and golden-2 a11y reports for the ledger (keel test writes reports/a11y.json)",
+          "run": "pnpm --filter golden-1 exec keel test && pnpm --filter golden-2 exec keel test"
+        },
+        {
+          "run": "pnpm ledger --diff"
+        },
+        {
+          "name": "the committed ledger matches the tree, WCAG items and rung counts included (the a11y reports exist now)",
+          "run": "node tooling/ledger-fresh.mjs --a11y"
+        },
+        {
+          "name": "the committed evidence report matches the ledger and the tests (coverage is compared only where measured)",
+          "run": "pnpm evidence:report --check"
+        },
+        {
+          "name": "every test task is in exactly one test-shard",
+          "run": "node tooling/ci-shards.mjs --verify"
+        },
+        {
+          "name": "turbo cache for the jobs after this one",
+          "uses": "actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0",
+          "with": {
+            "path": ".turbo/cache",
+            "key": "turbo-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}"
+          }
+        }
+      ],
+      "timeout-minutes": 30
+    },
+    "test-shard": {
+      "needs": "check",
+      "runs-on": "ubuntu-latest",
+      "timeout-minutes": 35,
+      "strategy": {
+        "fail-fast": false,
+        "matrix": {
+          "shard": [1, 2, 3, 4, 5, 6]
+        }
+      },
+      "steps": [
+        "$setup",
+        {
+          "name": "turbo cache: the builds the check job ran",
+          "uses": "actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0",
+          "with": {
+            "path": ".turbo/cache",
+            "key": "turbo-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}",
+            "restore-keys": "turbo-${{ github.sha }}-${{ github.run_id }}-"
+          }
+        },
+        {
+          "env": {
+            "TURBO_TOKEN": "${{ secrets.TURBO_TOKEN }}",
+            "TURBO_TEAM": "${{ vars.TURBO_TEAM }}"
+          },
+          "run": "node tooling/ci-shards.mjs ${{ matrix.shard }}"
         }
       ]
     },
     "test": {
+      "if": "!cancelled() && github.event_name != 'schedule'",
+      "needs": "test-shard",
+      "runs-on": "ubuntu-latest",
+      "timeout-minutes": 5,
+      "steps": [
+        {
+          "name": "every test-shard passed",
+          "run": "test \"${{ needs.test-shard.result }}\" = success"
+        }
+      ]
+    },
+    "postgres": {
       "needs": "check",
       "runs-on": "ubuntu-latest",
+      "timeout-minutes": 25,
+      "services": {
+        "postgres": {
+          "image": "postgres:17",
+          "env": {
+            "POSTGRES_PASSWORD": "keel-ci-throwaway"
+          },
+          "ports": ["5432:5432"],
+          "options": "--health-cmd pg_isready --health-interval 2s --health-timeout 5s --health-retries 30"
+        }
+      },
+      "env": {
+        "KEEL_TEST_POSTGRES_URL": "postgres://postgres:keel-ci-throwaway@127.0.0.1:5432/postgres"
+      },
       "steps": [
         "$setup",
         {
-          "run": "pnpm test"
+          "name": "std-db files that take KEEL_TEST_POSTGRES_URL, one at a time on one database",
+          "working-directory": "packages/std-db",
+          "run": "set -e\nfor f in conformance/driver-contract.test.ts conformance/serial-commits.test.ts conformance/layout-e2152.test.ts conformance/e2153-no-value.test.ts test/model.test.ts test/postgres-server.test.ts; do pnpm exec vitest run \"$f\"; done"
+        },
+        {
+          "name": "std-postgres on Postgres 17, its files one at a time on one database",
+          "working-directory": "packages/std-postgres",
+          "run": "pnpm exec vitest run"
+        },
+        {
+          "name": "turbo cache: the builds the check job ran",
+          "uses": "actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0",
+          "with": {
+            "path": ".turbo/cache",
+            "key": "turbo-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}",
+            "restore-keys": "turbo-${{ github.sha }}-${{ github.run_id }}-"
+          }
+        },
+        {
+          "env": {
+            "TURBO_TOKEN": "${{ secrets.TURBO_TOKEN }}",
+            "TURBO_TEAM": "${{ vars.TURBO_TEAM }}"
+          },
+          "run": "pnpm build"
+        },
+        {
+          "name": "built golden-1 on SQLite and Postgres: the stored board row is byte-equal after SIGKILL and restart",
+          "run": "node --disable-warning=ExperimentalWarning evals/tasks/golden-1-api/restartProof.ts"
+        }
+      ]
+    },
+    "built-smokes": {
+      "needs": "check",
+      "runs-on": "ubuntu-latest",
+      "timeout-minutes": 25,
+      "steps": [
+        "$setup",
+        {
+          "name": "turbo cache: the builds the check job ran",
+          "uses": "actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0",
+          "with": {
+            "path": ".turbo/cache",
+            "key": "turbo-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}",
+            "restore-keys": "turbo-${{ github.sha }}-${{ github.run_id }}-"
+          }
+        },
+        {
+          "env": {
+            "TURBO_TOKEN": "${{ secrets.TURBO_TOKEN }}",
+            "TURBO_TEAM": "${{ vars.TURBO_TEAM }}"
+          },
+          "run": "pnpm build"
+        },
+        {
+          "name": "built golden-1 on SQLite: the stored board row is byte-equal after SIGKILL and restart",
+          "run": "node --disable-warning=ExperimentalWarning tooling/smoke/restart.mjs"
+        },
+        {
+          "name": "built golden-1 on SQLite: the removal workflow resumes after a SIGKILL inside a step and ends once",
+          "run": "node --disable-warning=ExperimentalWarning tooling/smoke/workflow.mjs"
+        },
+        {
+          "name": "keel dev on golden-2: sign-up and sign-in through the identity mount, stubs for the browser",
+          "run": "node --disable-warning=ExperimentalWarning tooling/smoke/dev-signin.mjs"
+        },
+        {
+          "name": "Chromium for the browser smoke",
+          "run": "pnpm exec playwright install --with-deps chromium"
+        },
+        {
+          "name": "served golden-2 pages resume in place in Chromium, three runs",
+          "run": "node --disable-warning=ExperimentalWarning tooling/smoke/resume.mjs 3"
+        }
+      ]
+    },
+    "changes": {
+      "runs-on": "ubuntu-latest",
+      "timeout-minutes": 5,
+      "outputs": {
+        "shells": "${{ steps.paths.outputs.shells }}"
+      },
+      "steps": [
+        {
+          "uses": "actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0",
+          "with": {
+            "fetch-depth": 0
+          }
+        },
+        {
+          "name": "shell jobs run on pushes, and on pull requests that change golden-1, a package or module it builds from, the smoke script, the CI files or the lockfile",
+          "id": "paths",
+          "env": {
+            "EVENT": "${{ github.event_name }}",
+            "BASE": "${{ github.event.pull_request.base.sha }}"
+          },
+          "run": "set -u\nif [ \"$EVENT\" != pull_request ]; then echo \"shells=true\" >> \"$GITHUB_OUTPUT\"; exit 0; fi\nif ! files=$(git diff --name-only \"$BASE...HEAD\"); then echo \"shells=true\" >> \"$GITHUB_OUTPUT\"; exit 0; fi\nif printf '%s\\n' \"$files\" | grep -Eq '^(apps/golden-1/|packages/|modules/|tooling/smoke/|tooling/ci|\\.github/workflows/|pnpm-lock\\.yaml$|package\\.json$)'; then\n  echo \"shells=true\" >> \"$GITHUB_OUTPUT\"\nelse\n  echo \"shells=false\" >> \"$GITHUB_OUTPUT\"\nfi"
+        }
+      ]
+    },
+    "shell-tauri": {
+      "needs": ["check", "changes"],
+      "if": "needs.changes.outputs.shells == 'true'",
+      "runs-on": "ubuntu-24.04",
+      "timeout-minutes": 30,
+      "env": {
+        "KEEL_ORIGIN": "http://localhost:4182",
+        "CARGO_TARGET_DIR": "${{ github.workspace }}/.cargo-target"
+      },
+      "steps": [
+        "$setup",
+        {
+          "name": "Tauri 2 Linux packages (WebKitGTK 4.1), WebKitWebDriver and Xvfb",
+          "run": "sudo apt-get update && sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev xvfb xauth webkit2gtk-driver"
+        },
+        {
+          "name": "Rust stable",
+          "run": "rustup toolchain install stable --profile minimal --no-self-update && rustup default stable && cargo --version"
+        },
+        {
+          "name": "cargo registry and target for golden-1's shell",
+          "uses": "actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0",
+          "with": {
+            "path": "~/.cargo/registry/index\n~/.cargo/registry/cache\n~/.cargo/git/db\n.cargo-target",
+            "key": "cargo-tauri-${{ runner.os }}-${{ hashFiles('apps/golden-1/deploy/web/tauri/Cargo.lock', 'apps/golden-1/deploy/web/tauri/Cargo.toml') }}",
+            "restore-keys": "cargo-tauri-${{ runner.os }}-"
+          }
+        },
+        {
+          "name": "tauri-driver, pinned",
+          "id": "tauri-driver",
+          "uses": "actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0",
+          "with": {
+            "path": "~/.cargo/bin/tauri-driver",
+            "key": "tauri-driver-2.1.0-${{ runner.os }}-${{ runner.arch }}"
+          }
+        },
+        {
+          "if": "steps.tauri-driver.outputs.cache-hit != 'true'",
+          "run": "cargo install tauri-driver --version 2.1.0 --locked"
+        },
+        {
+          "name": "golden-1's web as a Tauri debug binary",
+          "working-directory": "apps/golden-1",
+          "run": "pnpm exec keel build --target tauri"
+        },
+        {
+          "name": "a recorded session replayed in the shell over WebDriver gives the server board its sim replay gives",
+          "run": "xvfb-run -a node --disable-warning=ExperimentalWarning tooling/smoke/shell.mjs --shell tauri --binary .cargo-target/debug/golden-1"
+        },
+        {
+          "name": "writes queued in the shell while the server is down drain after a SIGKILL and restart, giving the board the sim replay gives",
+          "run": "xvfb-run -a node --disable-warning=ExperimentalWarning tooling/smoke/shell.mjs --shell tauri --session outbox --binary .cargo-target/debug/golden-1"
+        },
+        {
+          "uses": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2",
+          "with": {
+            "name": "golden-1-tauri-linux-debug",
+            "path": ".cargo-target/debug/golden-1",
+            "if-no-files-found": "error",
+            "retention-days": 7
+          }
+        }
+      ]
+    },
+    "shell-android": {
+      "needs": ["check", "changes"],
+      "if": "needs.changes.outputs.shells == 'true'",
+      "runs-on": "ubuntu-24.04",
+      "timeout-minutes": 25,
+      "env": {
+        "KEEL_ORIGIN": "http://localhost:4182"
+      },
+      "steps": [
+        "$setup",
+        {
+          "uses": "actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4.9.1",
+          "with": {
+            "distribution": "temurin",
+            "java-version": 21
+          }
+        },
+        {
+          "name": "Gradle caches for the Capacitor Android project",
+          "uses": "actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0",
+          "with": {
+            "path": "~/.gradle/caches\n~/.gradle/wrapper",
+            "key": "gradle-capacitor-${{ runner.os }}-${{ hashFiles('apps/golden-1/package.json') }}",
+            "restore-keys": "gradle-capacitor-${{ runner.os }}-"
+          }
+        },
+        {
+          "name": "golden-1's web as an Android debug APK (cap add, cap sync, Gradle assembleDebug)",
+          "working-directory": "apps/golden-1",
+          "run": "pnpm exec keel build --target capacitor --platform android"
+        },
+        {
+          "uses": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2",
+          "with": {
+            "name": "golden-1-android-debug",
+            "path": "apps/golden-1/dist/web/capacitor/android/app/build/outputs/apk/debug/app-debug.apk",
+            "if-no-files-found": "error",
+            "retention-days": 7
+          }
+        }
+      ]
+    },
+    "shell-tauri-macos": {
+      "needs": ["check", "changes"],
+      "if": "github.event.repository.private == false && needs.changes.outputs.shells == 'true'",
+      "runs-on": "macos-26",
+      "timeout-minutes": 30,
+      "env": {
+        "KEEL_ORIGIN": "http://localhost:4182",
+        "CARGO_TARGET_DIR": "${{ github.workspace }}/.cargo-target"
+      },
+      "steps": [
+        "$setup",
+        {
+          "name": "Rust stable",
+          "run": "rustup toolchain install stable --profile minimal --no-self-update && rustup default stable && cargo --version"
+        },
+        {
+          "name": "cargo registry and target for golden-1's shell",
+          "uses": "actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0",
+          "with": {
+            "path": "~/.cargo/registry/index\n~/.cargo/registry/cache\n~/.cargo/git/db\n.cargo-target",
+            "key": "cargo-tauri-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('apps/golden-1/deploy/web/tauri/Cargo.lock', 'apps/golden-1/deploy/web/tauri/Cargo.toml') }}",
+            "restore-keys": "cargo-tauri-${{ runner.os }}-${{ runner.arch }}-"
+          }
+        },
+        {
+          "name": "golden-1's web as a Tauri debug binary for macOS",
+          "working-directory": "apps/golden-1",
+          "run": "pnpm exec keel build --target tauri"
+        },
+        {
+          "name": "the binary starts and reads the board through its native client; a cookie with a lifetime is sent again after a SIGKILL and restart (no input is made)",
+          "run": "node --disable-warning=ExperimentalWarning tooling/smoke/shell-launch.mjs --shell tauri --binary .cargo-target/debug/golden-1"
+        },
+        {
+          "name": "a recorded session replayed in the shell through the accessibility API gives the server board its sim replay gives",
+          "run": "node --disable-warning=ExperimentalWarning tooling/smoke/shell-drive.mjs --shell tauri --binary .cargo-target/debug/golden-1"
+        },
+        {
+          "name": "writes queued in the shell while the server is down drain after a SIGKILL and restart, giving the board the sim replay gives",
+          "run": "node --disable-warning=ExperimentalWarning tooling/smoke/shell-drive.mjs --shell tauri --session outbox --binary .cargo-target/debug/golden-1"
+        },
+        {
+          "uses": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2",
+          "with": {
+            "name": "golden-1-tauri-macos-debug",
+            "path": ".cargo-target/debug/golden-1",
+            "if-no-files-found": "error",
+            "retention-days": 7
+          }
+        }
+      ]
+    },
+    "shell-ios": {
+      "needs": ["check", "changes"],
+      "if": "github.event.repository.private == false && needs.changes.outputs.shells == 'true'",
+      "runs-on": "macos-26",
+      "timeout-minutes": 45,
+      "env": {
+        "KEEL_ORIGIN": "http://localhost:4182"
+      },
+      "steps": [
+        "$setup",
+        {
+          "name": "Swift packages of the Capacitor iOS project",
+          "uses": "actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0",
+          "with": {
+            "path": "~/Library/Caches/org.swift.swiftpm",
+            "key": "swiftpm-capacitor-${{ runner.os }}-${{ hashFiles('apps/golden-1/package.json', 'packages/std-capacitor/Package.swift') }}",
+            "restore-keys": "swiftpm-capacitor-${{ runner.os }}-"
+          }
+        },
+        {
+          "name": "golden-1's web as an iOS app for the Simulator, unsigned (cap add, cap sync, xcodebuild)",
+          "working-directory": "apps/golden-1",
+          "run": "pnpm exec keel build --target capacitor --platform ios"
+        },
+        {
+          "name": "the app starts on a simulator and reads the board through its native client; a cookie with a lifetime is sent again after a force-stop and after a reboot (no input is made)",
+          "run": "node --disable-warning=ExperimentalWarning tooling/smoke/shell-launch.mjs --shell ios --reboot"
+        },
+        {
+          "name": "a recorded session replayed in the app by a UI test on the simulator gives the server board its sim replay gives",
+          "run": "node --disable-warning=ExperimentalWarning tooling/smoke/shell-drive.mjs --shell ios"
+        },
+        {
+          "name": "writes queued in the app while the server is down drain after a force-stop and restart, giving the board the sim replay gives",
+          "run": "node --disable-warning=ExperimentalWarning tooling/smoke/shell-drive.mjs --shell ios --session outbox"
+        },
+        {
+          "uses": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2",
+          "with": {
+            "name": "golden-1-ios-simulator-debug",
+            "path": "apps/golden-1/dist/web/capacitor/ios/build/Build/Products/Debug-iphonesimulator/App.app",
+            "if-no-files-found": "error",
+            "retention-days": 7
+          }
         }
       ]
     },
@@ -67,9 +459,23 @@
       "steps": [
         "$setup",
         {
+          "name": "turbo cache: the builds the check job ran",
+          "uses": "actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0",
+          "with": {
+            "path": ".turbo/cache",
+            "key": "turbo-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}",
+            "restore-keys": "turbo-${{ github.sha }}-${{ github.run_id }}-"
+          }
+        },
+        {
+          "env": {
+            "TURBO_TOKEN": "${{ secrets.TURBO_TOKEN }}",
+            "TURBO_TEAM": "${{ vars.TURBO_TEAM }}"
+          },
           "run": "pnpm build"
         }
-      ]
+      ],
+      "timeout-minutes": 20
     },
     "budgets": {
       "needs": "build",
@@ -77,59 +483,89 @@
       "steps": [
         "$setup",
         {
+          "name": "turbo cache: the builds the check job ran",
+          "uses": "actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0",
+          "with": {
+            "path": ".turbo/cache",
+            "key": "turbo-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}",
+            "restore-keys": "turbo-${{ github.sha }}-${{ github.run_id }}-"
+          }
+        },
+        {
+          "env": {
+            "TURBO_TOKEN": "${{ secrets.TURBO_TOKEN }}",
+            "TURBO_TEAM": "${{ vars.TURBO_TEAM }}"
+          },
           "run": "pnpm build"
         },
         {
           "run": "node tooling/budgets.mjs"
         }
-      ]
+      ],
+      "timeout-minutes": 20
     },
-    "ledger": {
-      "needs": "budgets",
+    "golden-1-images": {
+      "needs": "build",
       "runs-on": "ubuntu-latest",
       "steps": [
         "$setup",
         {
-          "run": "pnpm ledger --diff"
+          "name": "turbo cache: the builds the check job ran",
+          "uses": "actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0",
+          "with": {
+            "path": ".turbo/cache",
+            "key": "turbo-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}",
+            "restore-keys": "turbo-${{ github.sha }}-${{ github.run_id }}-"
+          }
+        },
+        {
+          "env": {
+            "TURBO_TOKEN": "${{ secrets.TURBO_TOKEN }}",
+            "TURBO_TEAM": "${{ vars.TURBO_TEAM }}"
+          },
+          "run": "pnpm build"
+        },
+        {
+          "name": "docker build per node deployable, never pushed",
+          "run": "for f in apps/golden-1/deploy/*/Dockerfile; do n=$(basename \"$(dirname \"$f\")\"); docker build -f \"$f\" -t \"golden-1-$n\" apps/golden-1; done"
         }
-      ]
+      ],
+      "timeout-minutes": 30
     },
     "mutate-pr": {
-      "if": "github.event_name == 'pull_request'",
+      "if": "github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'mutate')",
       "needs": "test",
       "runs-on": "ubuntu-latest",
       "steps": [
         "$setup",
         {
-          "uses": "actions/cache@v4",
+          "uses": "actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0",
           "with": {
-            "path": "packages/*/.stryker-tmp/incremental.json",
-            "key": "stryker-${{ github.base_ref || 'main' }}-${{ github.sha }}",
-            "restore-keys": "stryker-${{ github.base_ref || 'main' }}-\nstryker-main-"
+            "path": ".git/keel-mutation",
+            "key": "stryker-${{ github.base_ref || 'master' }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}",
+            "restore-keys": "stryker-${{ github.base_ref || 'master' }}-${{ github.sha }}-\nstryker-${{ github.base_ref || 'master' }}-\nstryker-master-"
           }
         },
         {
           "run": "node tooling/mutate-changed.mjs"
-        }
-      ]
-    },
-    "mutate": {
-      "if": "github.event_name == 'schedule' && github.event.schedule == '0 3 * * *'",
-      "runs-on": "ubuntu-latest",
-      "steps": [
-        "$setup",
-        {
-          "uses": "actions/cache@v4",
-          "with": {
-            "path": "packages/*/.stryker-tmp/incremental.json",
-            "key": "stryker-${{ github.base_ref || 'main' }}-${{ github.sha }}",
-            "restore-keys": "stryker-${{ github.base_ref || 'main' }}-\nstryker-main-"
-          }
         },
         {
-          "run": "pnpm mutate --filter=\"./packages/*\""
+          "name": "golden-1 and golden-2 a11y reports for the ledger (keel test writes reports/a11y.json)",
+          "run": "pnpm --filter golden-1 exec keel test && pnpm --filter golden-2 exec keel test"
+        },
+        {
+          "run": "pnpm ledger --diff"
+        },
+        {
+          "if": "always()",
+          "uses": "actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0",
+          "with": {
+            "path": ".git/keel-mutation",
+            "key": "stryker-${{ github.base_ref || 'master' }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}"
+          }
         }
-      ]
+      ],
+      "timeout-minutes": 120
     },
     "eval": {
       "if": "github.event_name == 'schedule' && github.event.schedule == '0 4 * * 1'",

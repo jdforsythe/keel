@@ -1,2 +1,2 @@
-// re-exports only (one export per file lives in src/<Export>.ts)
-export { idBrandCase } from "./idBrandCase.ts";
+// The main entry holds nothing: the package is its check rule, on `@keel/std-brands/tools`.
+export {};

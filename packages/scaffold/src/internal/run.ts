@@ -1,4 +1,5 @@
 import type { Result } from "@keel/schema";
+import type { DeployShells } from "../types/DeployShells.ts";
 import type { Edit } from "../types/Edit.ts";
 import type { Op } from "../types/Op.ts";
 import type { ScaffoldError } from "../types/ScaffoldError.ts";
@@ -7,6 +8,7 @@ import { opAddField } from "./opAddField.ts";
 import { opComponent } from "./opComponent.ts";
 import { opModule } from "./opModule.ts";
 import { opMove } from "./opMove.ts";
+import { opPlace } from "./opPlace.ts";
 import { opProject } from "./opProject.ts";
 import { opRename } from "./opRename.ts";
 import { opRoute } from "./opRoute.ts";
@@ -14,7 +16,7 @@ import { opService } from "./opService.ts";
 import { opStore } from "./opStore.ts";
 import { opTransaction } from "./opTransaction.ts";
 
-type Impl = (input: unknown, files: ReadonlyMap<string, string>) => Result<Edit, ScaffoldError>;
+type Impl = (input: unknown, files: ReadonlyMap<string, string>, shells: DeployShells) => Result<Edit, ScaffoldError>;
 
 const OPS: ReadonlyMap<string, Impl> = new Map<Op, Impl>([
   ["project", opProject],
@@ -26,6 +28,7 @@ const OPS: ReadonlyMap<string, Impl> = new Map<Op, Impl>([
   ["service", opService],
   ["rename", opRename],
   ["move", opMove],
+  ["place", opPlace],
   ["add-field", opAddField],
 ]);
 
@@ -34,9 +37,10 @@ export function run(
   op: Op,
   input: Readonly<Record<string, unknown>>,
   files: ReadonlyMap<string, string>,
+  shells: DeployShells = {},
 ): Result<Edit, ScaffoldError> {
   const impl = OPS.get(op);
   return impl === undefined
     ? fail("E1051", String(op), `unknown scaffold operation ${String(op)}`)
-    : impl(input, files);
+    : impl(input, files, shells);
 }

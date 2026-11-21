@@ -9,24 +9,93 @@ const FIXTURES: readonly Fixture[] = [
     name: "slots",
     source:
       "export default function T(props, slots) { return <div>{slots.head()}{props.children?.()}{props.body()}{slots.a?.()}{slots.x() ?? 1}{children()}{foo()}{slots[k]()}{props[k]()}{o.slots()}{a.b.slots()}{s.slots.y()}{slots.x() || 1}{(slots.p())}{props.foo?.bar()}</div> }",
-    code: 'import * as __k from "@keel/runtime-dom/ops";\nimport { scope as __kscope } from "@keel/reactive";\nconst __kscoped = (f) => { let v; __kscope(() => { v = f(); }); return v; };\nconst __kt0 = __k.template("<div id=\\"T.0\\"><!----><!----> <!----><!----><!----> <!----> <!----> <!----> <!----> <!----> <!----> <!----> </div>");\nexport default function T(props, slots) { return __kscoped(() => {  return (() => { const __kr0 = __k.clone(__kt0); const __kn1 = __kr0.childNodes[0]; const __kn2 = __kr0.childNodes[1]; const __kn3 = __kr0.childNodes[2]; const __kn4 = __kr0.childNodes[3]; const __kn5 = __kr0.childNodes[4]; const __kn6 = __kr0.childNodes[5]; const __kn7 = __kr0.childNodes[6]; const __kn8 = __kr0.childNodes[8]; const __kn9 = __kr0.childNodes[10]; const __kn10 = __kr0.childNodes[12]; const __kn11 = __kr0.childNodes[14]; const __kn12 = __kr0.childNodes[16]; const __kn13 = __kr0.childNodes[18]; const __kn14 = __kr0.childNodes[19]; const __kn15 = __kr0.childNodes[20]; __kn1.replaceWith((slots.head()) ?? ""); __kn2.replaceWith((props.children?.()) ?? ""); __k.text(__kn3, () => (props.body())); __kn4.replaceWith((slots.a?.()) ?? ""); __kn5.replaceWith((slots.x() ?? 1) ?? ""); __kn6.replaceWith((children()) ?? ""); __k.text(__kn7, () => (foo())); __k.text(__kn8, () => (slots[k]())); __k.text(__kn9, () => (props[k]())); __k.text(__kn10, () => (o.slots())); __k.text(__kn11, () => (a.b.slots())); __k.text(__kn12, () => (s.slots.y())); __k.text(__kn13, () => (slots.x() || 1)); __kn14.replaceWith((slots.p()) ?? ""); __k.text(__kn15, () => (props.foo?.bar())); return __kr0; })()  }); }',
+    code: 'import * as __k from "@keel/runtime-dom/ops";\nimport { scope as __kscope } from "@keel/reactive";\nconst __kscoped = (f) => { let v; __kscope(() => { v = f(); }); return v; };\nconst __kt0 = __k.template("<div id=\\"T.0\\"> <!----><!----> <!----> <!----> <!----> <!----> <!----> <!----> <!----> <!----> <!----> <!----> </div>");\nexport default function T(props, slots) { return __kscoped(() => {  return (() => { const __kr0 = __k.clone(__kt0); const __kn1 = __kr0.childNodes[0]; const __kn2 = __kr0.childNodes[1]; const __kn3 = __kr0.childNodes[2]; const __kn4 = __kr0.childNodes[3]; const __kn5 = __kr0.childNodes[5]; const __kn6 = __kr0.childNodes[6]; const __kn7 = __kr0.childNodes[7]; const __kn8 = __kr0.childNodes[9]; const __kn9 = __kr0.childNodes[11]; const __kn10 = __kr0.childNodes[13]; const __kn11 = __kr0.childNodes[15]; const __kn12 = __kr0.childNodes[17]; const __kn13 = __kr0.childNodes[19]; const __kn14 = __kr0.childNodes[21]; const __kn15 = __kr0.childNodes[23]; __k.text(__kn1, () => (slots.head())); __k.slot(__kn2, () => (props.children?.()) ?? ""); __k.slot(__kn3, () => (props.body()) ?? ""); __k.text(__kn4, () => (slots.a?.())); __k.text(__kn5, () => (slots.x() ?? 1)); __k.slot(__kn6, () => (children()) ?? ""); __k.text(__kn7, () => (foo())); __k.text(__kn8, () => (slots[k]())); __k.text(__kn9, () => (props[k]())); __k.text(__kn10, () => (o.slots())); __k.text(__kn11, () => (a.b.slots())); __k.text(__kn12, () => (s.slots.y())); __k.text(__kn13, () => (slots.x() || 1)); __k.text(__kn14, () => ((slots.p()))); __k.text(__kn15, () => (props.foo?.bar())); return __kr0; })()  }); }',
     deps: {
       edges: [
-        { from: "T.tsx#props.body", to: "T.0:text:#text" },
-        { from: "T.tsx#props.foo", to: "T.0:text:#text:8" },
+        {
+          from: "T.tsx#props.foo",
+          to: "T.0:text:#text:11",
+        },
       ],
       nodes: [
-        { id: "T.0:text:#text", kind: "binding", name: "text #text", file: "T.tsx" },
-        { id: "T.0:text:#text:1", kind: "binding", name: "text #text", file: "T.tsx" },
-        { id: "T.0:text:#text:2", kind: "binding", name: "text #text", file: "T.tsx" },
-        { id: "T.0:text:#text:3", kind: "binding", name: "text #text", file: "T.tsx" },
-        { id: "T.0:text:#text:4", kind: "binding", name: "text #text", file: "T.tsx" },
-        { id: "T.0:text:#text:5", kind: "binding", name: "text #text", file: "T.tsx" },
-        { id: "T.0:text:#text:6", kind: "binding", name: "text #text", file: "T.tsx" },
-        { id: "T.0:text:#text:7", kind: "binding", name: "text #text", file: "T.tsx" },
-        { id: "T.0:text:#text:8", kind: "binding", name: "text #text", file: "T.tsx" },
-        { id: "T.tsx#props.body", kind: "prop", name: "body", file: "T.tsx" },
-        { id: "T.tsx#props.foo", kind: "prop", name: "foo", file: "T.tsx" },
+        {
+          id: "T.0:text:#text",
+          kind: "binding",
+          name: "text #text",
+          file: "T.tsx",
+        },
+        {
+          id: "T.0:text:#text:1",
+          kind: "binding",
+          name: "text #text",
+          file: "T.tsx",
+        },
+        {
+          id: "T.0:text:#text:10",
+          kind: "binding",
+          name: "text #text",
+          file: "T.tsx",
+        },
+        {
+          id: "T.0:text:#text:11",
+          kind: "binding",
+          name: "text #text",
+          file: "T.tsx",
+        },
+        {
+          id: "T.0:text:#text:2",
+          kind: "binding",
+          name: "text #text",
+          file: "T.tsx",
+        },
+        {
+          id: "T.0:text:#text:3",
+          kind: "binding",
+          name: "text #text",
+          file: "T.tsx",
+        },
+        {
+          id: "T.0:text:#text:4",
+          kind: "binding",
+          name: "text #text",
+          file: "T.tsx",
+        },
+        {
+          id: "T.0:text:#text:5",
+          kind: "binding",
+          name: "text #text",
+          file: "T.tsx",
+        },
+        {
+          id: "T.0:text:#text:6",
+          kind: "binding",
+          name: "text #text",
+          file: "T.tsx",
+        },
+        {
+          id: "T.0:text:#text:7",
+          kind: "binding",
+          name: "text #text",
+          file: "T.tsx",
+        },
+        {
+          id: "T.0:text:#text:8",
+          kind: "binding",
+          name: "text #text",
+          file: "T.tsx",
+        },
+        {
+          id: "T.0:text:#text:9",
+          kind: "binding",
+          name: "text #text",
+          file: "T.tsx",
+        },
+        {
+          id: "T.tsx#props.foo",
+          kind: "prop",
+          name: "foo",
+          file: "T.tsx",
+        },
       ],
     },
   },
@@ -93,7 +162,7 @@ const FIXTURES: readonly Fixture[] = [
     name: "nest",
     source:
       "export default function T(props) { return <ul><li>a</li><p>t<div>d1</div><div>d2{props.x}</div></p><a><a>n</a></a><table><tr><td>c</td></tr></table><button><button>b</button></button><li><li>i</li></li></ul> }",
-    code: 'import * as __k from "@keel/runtime-dom/ops";\nimport { scope as __kscope } from "@keel/reactive";\nconst __kscoped = (f) => { let v; __kscope(() => { v = f(); }); return v; };\nconst __kt0 = __k.template("<div id=\\"T.3\\">d1</div>");\nconst __kt1 = __k.template("<div id=\\"T.4\\">d2<!----> </div>");\nconst __kt2 = __k.template("<a id=\\"T.6\\">n</a>");\nconst __kt3 = __k.template("<tr id=\\"T.8\\"><td id=\\"T.9\\">c</td></tr>");\nconst __kt4 = __k.template("<button id=\\"T.11\\">b</button>");\nconst __kt5 = __k.template("<li id=\\"T.13\\">i</li>");\nconst __kt6 = __k.template("<ul id=\\"T.0\\"><li id=\\"T.1\\">a</li><p id=\\"T.2\\">t<!----><!----></p><a id=\\"T.5\\"><!----></a><table id=\\"T.7\\"><!----></table><button id=\\"T.10\\"><!----></button><li id=\\"T.12\\"><!----></li></ul>");\nexport default function T(props) { return __kscoped(() => {  return (() => { const __kr0 = __k.clone(__kt6); const __ke1 = __kr0.querySelector("[id=\\"T.2\\"]"); const __kn2 = __ke1.childNodes[1]; const __kn4 = __ke1.childNodes[2]; const __ke7 = __kr0.querySelector("[id=\\"T.5\\"]"); const __kn8 = __ke7.childNodes[0]; const __ke10 = __kr0.querySelector("[id=\\"T.7\\"]"); const __kn11 = __ke10.childNodes[0]; const __ke13 = __kr0.querySelector("[id=\\"T.10\\"]"); const __kn14 = __ke13.childNodes[0]; const __ke16 = __kr0.querySelector("[id=\\"T.12\\"]"); const __kn17 = __ke16.childNodes[0]; __kn2.replaceWith(__k.clone(__kt0)); __kn4.replaceWith((() => { const __kr5 = __k.clone(__kt1); const __kn6 = __kr5.childNodes[2]; __k.text(__kn6, () => (props.x)); return __kr5; })()); __kn8.replaceWith(__k.clone(__kt2)); __kn11.replaceWith(__k.clone(__kt3)); __kn14.replaceWith(__k.clone(__kt4)); __kn17.replaceWith(__k.clone(__kt5)); return __kr0; })()  }); }',
+    code: 'import * as __k from "@keel/runtime-dom/ops";\nimport { scope as __kscope } from "@keel/reactive";\nconst __kscoped = (f) => { let v; __kscope(() => { v = f(); }); return v; };\nconst __kt0 = __k.template("<div id=\\"T.3\\">d1</div>");\nconst __kt1 = __k.template("<div id=\\"T.4\\">d2<!----> </div>");\nconst __kt2 = __k.template("<a id=\\"T.6\\">n</a>");\nconst __kt3 = __k.template("<tr id=\\"T.8\\"><td id=\\"T.9\\">c</td></tr>");\nconst __kt4 = __k.template("<button id=\\"T.11\\">b</button>");\nconst __kt5 = __k.template("<li id=\\"T.13\\">i</li>");\nconst __kt6 = __k.template("<ul id=\\"T.0\\"><li id=\\"T.1\\">a</li><p id=\\"T.2\\">t<!--+--><!--+--></p><a id=\\"T.5\\"><!--+--></a><table id=\\"T.7\\"><!--+--></table><button id=\\"T.10\\"><!--+--></button><li id=\\"T.12\\"><!--+--></li></ul>");\nexport default function T(props) { return __kscoped(() => {  return (() => { const __kr0 = __k.clone(__kt6); const __ke1 = __kr0.querySelector("[id=\\"T.2\\"]"); const __kn2 = __ke1.childNodes[1]; const __kn4 = __ke1.childNodes[2]; const __ke7 = __kr0.querySelector("[id=\\"T.5\\"]"); const __kn8 = __ke7.childNodes[0]; const __ke10 = __kr0.querySelector("[id=\\"T.7\\"]"); const __kn11 = __ke10.childNodes[0]; const __ke13 = __kr0.querySelector("[id=\\"T.10\\"]"); const __kn14 = __ke13.childNodes[0]; const __ke16 = __kr0.querySelector("[id=\\"T.12\\"]"); const __kn17 = __ke16.childNodes[0]; __k.slot(__kn2, () => __k.clone(__kt0)); __k.slot(__kn4, () => (() => { const __kr5 = __k.clone(__kt1); const __kn6 = __kr5.childNodes[2]; __k.text(__kn6, () => (props.x)); return __kr5; })()); __k.slot(__kn8, () => __k.clone(__kt2)); __k.slot(__kn11, () => __k.clone(__kt3)); __k.slot(__kn14, () => __k.clone(__kt4)); __k.slot(__kn17, () => __k.clone(__kt5)); return __kr0; })()  }); }',
     deps: {
       edges: [{ from: "T.tsx#props.x", to: "T.4:text:#text" }],
       nodes: [
@@ -106,20 +175,65 @@ const FIXTURES: readonly Fixture[] = [
     name: "a",
     source:
       'import { signal } from \'@keel/reactive\'\nconst n = signal(0)\nexport default function T(props) { return <div className="a" htmlFor="x" onDoubleClick={() => 1} {...props.rest}><span key="k" dangerouslySetInnerHTML={{__html:\'x\'}}/>{"lit"}{5}{<b/>}{props.children()}{slots.head()}{n.get()} t<i>a</i> <input value={n.get()} disabled href="javascript:alert(1)" /><a href="javascript:x" title="a&amp;b &quot;">z</a><p><div>bad</div></p>{}</div> }',
-    code: 'import * as __k from "@keel/runtime-dom/ops";\nimport { scope as __kscope } from "@keel/reactive";\nconst __kscoped = (f) => { let v; __kscope(() => { v = f(); }); return v; };\nconst __kt0 = __k.template("<b id=\\"T.2\\"></b>");\nconst __kt1 = __k.template("<div id=\\"T.7\\">bad</div>");\nconst __kt2 = __k.template("<div id=\\"T.0\\" data-k=\\"T.0\\" class=\\"a\\" for=\\"x\\"><span id=\\"T.1\\"></span>lit5<!----><!----><!----> <!----> t<i id=\\"T.3\\">a</i>  <input id=\\"T.4\\" data-k=\\"T.4\\" disabled=\\"\\" href=\\"about:blank\\"><a id=\\"T.5\\" href=\\"about:blank\\" title=\\"a&amp;b &quot;\\">z</a><p id=\\"T.6\\"><!----></p></div>");\nimport { signal } from \'@keel/reactive\'\nconst n = __kscoped(() => signal(0))\nexport default function T(props) { return __kscoped(() => {  return (() => { const __kr0 = __k.clone(__kt2); const __kn3 = __kr0.childNodes[2]; const __kn5 = __kr0.childNodes[3]; const __kn6 = __kr0.childNodes[4]; const __kn7 = __kr0.childNodes[5]; const __ke8 = __kr0.querySelector("[id=\\"T.4\\"]"); const __ke9 = __kr0.querySelector("[id=\\"T.6\\"]"); const __kn10 = __ke9.childNodes[0]; __k.on("T.0", "dblclick", (() => 1)); { const __ks1 = (props.rest); for (const __kk2 in __ks1) __k.attr(__kr0, __kk2, () => __ks1[__kk2]); } __kn3.replaceWith(__k.clone(__kt0)); __kn5.replaceWith((props.children()) ?? ""); __kn6.replaceWith((slots.head()) ?? ""); __k.text(__kn7, () => (n.get())); __k.prop(__ke8, "value", () => (n.get())); __kn10.replaceWith(__k.clone(__kt1)); return __kr0; })()  }); }',
+    code: 'import * as __k from "@keel/runtime-dom/ops";\nimport { scope as __kscope } from "@keel/reactive";\nconst __kscoped = (f) => { let v; __kscope(() => { v = f(); }); return v; };\nconst __kt0 = __k.template("<b id=\\"T.2\\"></b>");\nconst __kt1 = __k.template("<div id=\\"T.7\\">bad</div>");\nconst __kt2 = __k.template("<div id=\\"T.0\\" data-k=\\"T.0\\" class=\\"a\\" for=\\"x\\"><span id=\\"T.1\\"></span>lit5<!----><!----> <!----> <!----> t<i id=\\"T.3\\">a</i>  <input id=\\"T.4\\" data-k=\\"T.4\\" disabled=\\"\\" href=\\"about:blank\\"><a id=\\"T.5\\" href=\\"about:blank\\" title=\\"a&amp;b &quot;\\">z</a><p id=\\"T.6\\"><!--+--></p></div>");\nimport { signal } from \'@keel/reactive\'\nconst n = __kscoped(() => signal(0))\nexport default function T(props) { return __kscoped(() => {  return (() => { const __kr0 = __k.clone(__kt2); const __kn3 = __kr0.childNodes[2]; const __kn5 = __kr0.childNodes[3]; const __kn6 = __kr0.childNodes[4]; const __kn7 = __kr0.childNodes[6]; const __ke8 = __kr0.querySelector("[id=\\"T.4\\"]"); const __ke9 = __kr0.querySelector("[id=\\"T.6\\"]"); const __kn10 = __ke9.childNodes[0]; __k.on("T.0", "dblclick", (() => 1)); { const __ks1 = (props.rest); for (const __kk2 in __ks1) __k.attr(__kr0, __kk2, () => __ks1[__kk2]); } __k.slot(__kn3, () => __k.clone(__kt0)); __k.slot(__kn5, () => (props.children()) ?? ""); __k.text(__kn6, () => (slots.head())); __k.text(__kn7, () => (n.get())); __k.prop(__ke8, "value", () => (n.get())); __k.slot(__kn10, () => __k.clone(__kt1)); return __kr0; })()  }); }',
     deps: {
       edges: [
-        { from: "T.tsx#n", to: "T.0:text:#text" },
-        { from: "T.tsx#n", to: "T.4:prop:value" },
-        { from: "T.tsx#props.rest", to: "T.0:attr:..." },
+        {
+          from: "T.tsx#n",
+          to: "T.0:text:#text:1",
+        },
+        {
+          from: "T.tsx#n",
+          to: "T.4:prop:value",
+        },
+        {
+          from: "T.tsx#props.rest",
+          to: "T.0:attr:...",
+        },
       ],
       nodes: [
-        { id: "T.0:attr:...", kind: "binding", name: "attr ...", file: "T.tsx" },
-        { id: "T.0:on:dblclick", kind: "binding", name: "on dblclick", file: "T.tsx" },
-        { id: "T.0:text:#text", kind: "binding", name: "text #text", file: "T.tsx" },
-        { id: "T.4:prop:value", kind: "binding", name: "prop value", file: "T.tsx" },
-        { id: "T.tsx#n", kind: "signal", name: "n", file: "T.tsx" },
-        { id: "T.tsx#props.rest", kind: "prop", name: "rest", file: "T.tsx" },
+        {
+          id: "T.0:attr:...",
+          kind: "binding",
+          name: "attr ...",
+          file: "T.tsx",
+        },
+        {
+          id: "T.0:on:dblclick",
+          kind: "binding",
+          name: "on dblclick",
+          file: "T.tsx",
+        },
+        {
+          id: "T.0:text:#text",
+          kind: "binding",
+          name: "text #text",
+          file: "T.tsx",
+        },
+        {
+          id: "T.0:text:#text:1",
+          kind: "binding",
+          name: "text #text",
+          file: "T.tsx",
+        },
+        {
+          id: "T.4:prop:value",
+          kind: "binding",
+          name: "prop value",
+          file: "T.tsx",
+        },
+        {
+          id: "T.tsx#n",
+          kind: "signal",
+          name: "n",
+          file: "T.tsx",
+        },
+        {
+          id: "T.tsx#props.rest",
+          kind: "prop",
+          name: "rest",
+          file: "T.tsx",
+        },
       ],
     },
   },
@@ -162,7 +276,7 @@ const FIXTURES: readonly Fixture[] = [
     name: "c",
     source:
       "export function A(props) { return <a title={props.x + props.y} data-z={props.z.q}>{props.x}</a> }\nexport function B(p) { return <br title={p.k} /> }\nexport default function T(props) { return <div><A x={1}/><B/><A x={props.x}>hi</A></div> }",
-    code: 'import * as __k from "@keel/runtime-dom/ops";\nimport { scope as __kscope } from "@keel/reactive";\nconst __kscoped = (f) => { let v; __kscope(() => { v = f(); }); return v; };\nconst __kt0 = __k.template("<a id=\\"T.0\\"> </a>");\nconst __kt1 = __k.template("<br id=\\"T.1\\">");\nconst __kt2 = __k.template("<div id=\\"T.2\\"><!----><!----><!----></div>");\nexport function A(props) { return __kscoped(() => {  return (() => { const __kr0 = __k.clone(__kt0); const __kn1 = __kr0.childNodes[0]; __k.attr(__kr0, "title", () => (props.x + props.y)); __k.attr(__kr0, "data-z", () => (props.z.q)); __k.text(__kn1, () => (props.x)); return __kr0; })()  }); }\nexport function B(p) { return __kscoped(() => {  return (() => { const __kr2 = __k.clone(__kt1); __k.attr(__kr2, "title", () => (p.k)); return __kr2; })()  }); }\nexport default function T(props, __kslots, __kctx) { return __kscoped(() => {  return (() => { const __kr3 = __k.clone(__kt2); const __kn4 = __kr3.childNodes[0]; const __kn5 = __kr3.childNodes[1]; const __kn6 = __kr3.childNodes[2]; __kn4.replaceWith(A({ x: 1 }, undefined, __kctx)); __kn5.replaceWith(B({}, undefined, __kctx)); __kn6.replaceWith(A({ get x() { return (props.x); }, children: () => "hi" }, undefined, __kctx)); return __kr3; })()  }); }',
+    code: 'import * as __k from "@keel/runtime-dom/ops";\nimport { scope as __kscope } from "@keel/reactive";\nconst __kscoped = (f) => { let v; __kscope(() => { v = f(); }); return v; };\nconst __kt0 = __k.template("<a id=\\"T.0\\"> </a>");\nconst __kt1 = __k.template("<br id=\\"T.1\\">");\nconst __kt2 = __k.template("<div id=\\"T.2\\"><!--+--><!--+--><!--+--></div>");\nexport function A(props) { return __kscoped(() => {  return (() => { const __kr0 = __k.clone(__kt0); const __kn1 = __kr0.childNodes[0]; __k.attr(__kr0, "title", () => (props.x + props.y)); __k.attr(__kr0, "data-z", () => (props.z.q)); __k.text(__kn1, () => (props.x)); return __kr0; })()  }); }\nexport function B(p) { return __kscoped(() => {  return (() => { const __kr2 = __k.clone(__kt1); __k.attr(__kr2, "title", () => (p.k)); return __kr2; })()  }); }\nexport default function T(props, __kctx) { return __kscoped(() => {  return (() => { const __kr3 = __k.clone(__kt2); const __kn4 = __kr3.childNodes[0]; const __kn5 = __kr3.childNodes[1]; const __kn6 = __kr3.childNodes[2]; __k.slot(__kn4, () => A({ x: 1 }, __kctx)); __k.slot(__kn5, () => B({}, __kctx)); __k.slot(__kn6, () => A({ get x() { return (props.x); }, children: () => "hi" }, __kctx)); return __kr3; })()  }); }',
     deps: {
       edges: [
         { from: "T.tsx#props.k", to: "T.1:attr:title" },

@@ -200,7 +200,9 @@ describe("plugin wiring and dev entry", () => {
     expect(code).toContain('import { inspect } from "@keel/reactive";');
     expect(code).toContain('import { stores } from "@keel/store";');
     expect(code).toContain('import { inspectorSections } from "@keel/compiler/inspect/inspectorSections";');
-    expect(code).toContain("if (import.meta.env.DEV) {");
+    expect(code).toContain('if (mode === "dev") {');
+    expect(code).toContain('const mode = "production";');
+    expect(code).not.toContain("import.meta.env");
     expect(code).toContain('fetch("/__keel/inspect", { method: "POST"');
     expect(code).toContain(
       "JSON.stringify({ graph: inspect(), stores: live, sections: inspectorSections(ctx).sections })",

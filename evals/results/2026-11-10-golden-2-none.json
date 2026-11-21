@@ -1,0 +1,43 @@
+{
+  "task": "golden-2",
+  "skill": "keel",
+  "specSections": [
+    "k.schema",
+    "k.errors",
+    "k.reactive",
+    "k.store",
+    "k.ctx",
+    "k.component",
+    "k.runtime",
+    "k.router",
+    "k.prefix",
+    "k.head",
+    "k.server",
+    "k.services",
+    "k.forms",
+    "k.ui",
+    "k.testing",
+    "k.module",
+    "k.scaffold",
+    "k.check",
+    "std.i18n",
+    "std.money",
+    "std.temporal",
+    "std.text",
+    "std.messages"
+  ],
+  "model": "none",
+  "runner": "none",
+  "converged": true,
+  "iterations": 1,
+  "tokens": {
+    "input": 0,
+    "output": 0
+  },
+  "costUsd": 0,
+  "unsafeCount": 5,
+  "checkTrailer": "ok budgets 65 measured (4.1s)",
+  "testTrailer": "ok test 51 tasks (48.3s)",
+  "durationMs": 73773,
+  "startedAt": "2026-11-10T18:47:42.617Z"
+}

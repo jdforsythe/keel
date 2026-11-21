@@ -1,12 +1,13 @@
-import { computed, effect } from "@keel/reactive";
 // @vitest-environment happy-dom
 // Property seed: 1337. k.errors Boundaries: throws from app-level effect/computed (via k.reactive scope onError),
 // and the app root's default Boundary installed by mount.
+import { computed, effect } from "@keel/reactive";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { mount } from "../src/index.ts";
 import { boundary, clone, on, template } from "../src/ops/index.ts";
 import { SEED, fire, rootSignal } from "./support.ts";
+import { testCtx } from "./testCtx.ts";
 
 const ROOT = template('<div id="root"><p id="before">before</p><i id="mid"></i><p id="after">after</p></div>');
 const BODY = template('<div id="body">ok</div>');
@@ -53,6 +54,7 @@ describe("Boundary catches app-level effect and computed throws", () => {
             [],
           ),
           host,
+          { ctx: testCtx },
         );
         expect(host.querySelector("#body")).not.toBeNull();
         s.set(bad);
@@ -90,6 +92,7 @@ describe("Boundary catches app-level effect and computed throws", () => {
         [],
       ),
       host,
+      { ctx: testCtx },
     );
     s.set(1);
     expect(host.querySelector("#fallback")).not.toBeNull();
@@ -116,6 +119,7 @@ describe("Boundary catches app-level effect and computed throws", () => {
         resets,
       ),
       host,
+      { ctx: testCtx },
     );
     s.set(1);
     s.set(0);
@@ -130,15 +134,25 @@ describe("Boundary catches app-level effect and computed throws", () => {
 });
 
 describe("mount installs a default root Boundary", () => {
-  it("a render throw shows the message in <pre data-k-error>", () => {
-    const host = document.createElement("div");
-    const dispose = mount(() => {
-      throw new Error("app broke");
-    }, host);
-    const pre = host.querySelector("pre[data-k-error]");
-    expect(pre?.textContent).toBe("app broke");
-    dispose();
-    expect(host.childNodes.length).toBe(0);
+  it("a render throw shows keel.unexpected in <pre data-k-error>, and the message with mode dev", () => {
+    for (const [mode, text] of [
+      [undefined, "keel.unexpected"],
+      ["production", "keel.unexpected"],
+      ["dev", "app broke"],
+    ] as const) {
+      const host = document.createElement("div");
+      const dispose = mount(
+        () => {
+          throw new Error("app broke");
+        },
+        host,
+        mode === undefined ? { ctx: testCtx } : { ctx: testCtx, mode },
+      );
+      const pre = host.querySelector("pre[data-k-error]");
+      expect(pre?.textContent).toBe(text);
+      dispose();
+      expect(host.childNodes.length).toBe(0);
+    }
   });
 
   it("handler and app-effect throws outside any Boundary reach the root one", () => {
@@ -146,16 +160,20 @@ describe("mount installs a default root Boundary", () => {
     const T = template('<div id="app"><button id="go">go</button></div>');
     for (const how of ["handler", "effect"]) {
       const host = document.createElement("div");
-      const dispose = mount(() => {
-        const r = clone(T);
-        on("go", "click", () => {
-          throw new Error("handler broke");
-        });
-        effect(() => {
-          if (s.get() === 1) throw new Error("effect broke");
-        });
-        return r;
-      }, host);
+      const dispose = mount(
+        () => {
+          const r = clone(T);
+          on("go", "click", () => {
+            throw new Error("handler broke");
+          });
+          effect(() => {
+            if (s.get() === 1) throw new Error("effect broke");
+          });
+          return r;
+        },
+        host,
+        { ctx: testCtx, mode: "dev" },
+      );
       if (how === "handler") {
         const go = host.querySelector("#go");
         if (go === null) throw new Error("no #go");

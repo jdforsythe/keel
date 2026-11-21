@@ -28,7 +28,8 @@ export function stdConfig(m: ModuleInfo): Diagnostic[] {
       out.push(moduleDiag("E1158", m.file, e.start, `std config for ${k} in module ${own} is not literal JSON`));
       continue;
     }
-    const parsed = registry.get(e.key)?.parse(e.value);
+    // Checked as `.keel/std.json` will hold it, after a JSON round-trip (rfc:0066, backlog 0195).
+    const parsed = registry.get(e.key)?.parse(JSON.parse(JSON.stringify(e.value)));
     if (parsed === undefined || parsed.ok) continue;
     const issue = parsed.error.data.issues[0];
     const at = issue === undefined ? "." : pathToString(issue.path) || ".";

@@ -3,7 +3,7 @@
 // node_modules/@keel/std-x/module.ts and whose files are imported as `@keel/std-x/<File>`.
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { has, manifestFile, exportFile, pascal, SEED } from "./module-support.ts";
+import { SEED, exportFile, has, manifestFile, pascal } from "./module-support.ts";
 
 const PKG = "@keel/std-auth";
 const ROOT = "node_modules/@keel/std-auth";

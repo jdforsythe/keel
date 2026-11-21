@@ -1,10 +1,13 @@
 // @vitest-environment happy-dom
 // Spec: k.compiler, clause "Reordering a keyed `For` list preserves the DOM node identity of every row."
 // Seed 1337
+import { createCtx } from "@keel/ctx";
 import { mount } from "@keel/runtime-dom";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { load, sigOf } from "./support.ts";
+
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 const src = `
 import { signal } from '@keel/reactive'
@@ -32,7 +35,7 @@ test("Reordering a keyed For list preserves the DOM node identity of every row",
         const rec = (k: string) => ({ id: k, name: `n-${k}` });
         items.set(xs.map(rec));
         const host = document.createElement("div");
-        const dispose = mount(Rows, host);
+        const dispose = mount(Rows, host, { ctx: simCtx });
         const byName = new Map([...host.querySelectorAll("li")].map((li) => [li.textContent, li]));
         expect(byName.size).toBe(xs.length);
         items.set(perm.map(rec));

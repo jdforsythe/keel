@@ -2,7 +2,7 @@
 import { check, format } from "@keel/check";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { FIXTURES, lines, one, SEED, synth } from "./support.ts";
+import { FIXTURES, SEED, lines, one, synth } from "./support.ts";
 
 test("--limit N sets the per-code cap, followed by '... +K more <code> (keel check --code <code>)'", () => {
   fc.assert(

@@ -1,8 +1,11 @@
 // @vitest-environment happy-dom
 // Spec: k.ui Conformance 7 (RFC 0009). Real DOM events on the element found by id; handlers register via the delegated `on`.
+import { createCtx } from "@keel/ctx";
 import { mount } from "@keel/runtime-dom";
 import { Box, Button, Checkbox, Input, Select, TextArea } from "@keel/ui";
 import { describe, expect, it } from "vitest";
+
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 const host = (): HTMLElement => {
   const el = document.createElement("div");
@@ -19,7 +22,7 @@ describe("k.ui: fire click on a Button with onClick calls the handler once; chan
   it("a click on a Button with onClick calls the handler once", () => {
     const calls: number[] = [];
     const root = host();
-    const off = mount(() => Button({ id: "go", children: "Go", onClick: () => calls.push(1) }), root);
+    const off = mount(() => Button({ id: "go", children: "Go", onClick: () => calls.push(1) }), root, { ctx: simCtx });
     byId("go").dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
     expect(calls).toEqual([1]);
     off();
@@ -27,7 +30,9 @@ describe("k.ui: fire click on a Button with onClick calls the handler once; chan
   it("a change on a Checkbox with onChange passes the new checked state", () => {
     const seen: boolean[] = [];
     const root = host();
-    const off = mount(() => Checkbox({ id: "done", label: "Done", onChange: (c) => seen.push(c) }), root);
+    const off = mount(() => Checkbox({ id: "done", label: "Done", onChange: (c) => seen.push(c) }), root, {
+      ctx: simCtx,
+    });
     const box = byId("done");
     if (!(box instanceof HTMLInputElement)) throw new Error("not an input");
     box.checked = true;
@@ -58,6 +63,7 @@ describe("k.ui: fire click on a Button with onClick calls the handler once; chan
           ],
         }),
       root,
+      { ctx: simCtx },
     );
     for (const [id, v, type] of [
       ["i", "x", "input"],
@@ -74,7 +80,9 @@ describe("k.ui: fire click on a Button with onClick calls the handler once; chan
   it("disposing the mount removes the handlers", () => {
     const calls: number[] = [];
     const root = host();
-    const off = mount(() => Button({ id: "gone", children: "Go", onClick: () => calls.push(1) }), root);
+    const off = mount(() => Button({ id: "gone", children: "Go", onClick: () => calls.push(1) }), root, {
+      ctx: simCtx,
+    });
     const el = byId("gone");
     off();
     el.dispatchEvent(new MouseEvent("click", { bubbles: true }));

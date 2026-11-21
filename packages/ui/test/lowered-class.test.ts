@@ -9,6 +9,7 @@ import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { applyStyle } from "../src/internal/applyStyle.ts";
 import { classesOf } from "../src/internal/classesOf.ts";
+import { testCtx } from "./testCtx.ts";
 
 describe("compiler-lowered class", () => {
   it("applies the lowered classes after the remaining (dynamic) style props, once each", () => {
@@ -21,12 +22,16 @@ describe("compiler-lowered class", () => {
   it("keeps lowered classes when a dynamic prop switches", async () => {
     const host = document.createElement("div");
     const box: { tone?: Signal<string> } = {};
-    const dispose = mount(() => {
-      box.tone = signal("accent");
-      // the compiler's lowered call: untyped props, as `Reflect.apply` passes them
-      const lowered: Readonly<Record<string, unknown>> = { class: "k-border-hairline", fg: box.tone };
-      return Reflect.apply(Box, undefined, [lowered]);
-    }, host);
+    const dispose = mount(
+      () => {
+        box.tone = signal("accent");
+        // the compiler's lowered call: untyped props, as `Reflect.apply` passes them
+        const lowered: Readonly<Record<string, unknown>> = { class: "k-border-hairline", fg: box.tone };
+        return Reflect.apply(Box, undefined, [lowered]);
+      },
+      host,
+      { ctx: testCtx },
+    );
     const el = host.firstElementChild;
     expect(el?.getAttribute("class")).toBe("k-fg-accent k-border-hairline");
     box.tone?.set("text");

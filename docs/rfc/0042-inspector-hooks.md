@@ -1,6 +1,6 @@
 # RFC 0042: Inspector hooks, a request-scope-free inspect graph, and `@keel/cli/testing`
 
-Status: accepted (ADR-0031)
+Status: implemented (ADR-0031)
 
 ## Problem
 GLOSSARY and ARCHITECTURE list "inspector hooks" as an extension point, but it has no spec text and no API, and the inspect document (k.cli Inspect) is a closed shape (docs/freeze-review.md §3, backlog 0063). A stdlib module cannot put its own runtime state in front of `keel inspect`, the MCP `inspect` tool, or the viewer. Two more gaps sit beside it (backlog 0109). First, a dev `createApp` creates the request's isolated scope before it chooses the inspect branch, so the served `graph` contains the server's own per-request scope. Second, E1054 is raised only inside the CLI's `normalize`, and no public surface can emit a record of an unregistered kind, so E1054 has no conformance test.

@@ -1,0 +1,30 @@
+{
+  "task": "golden-2-catalog",
+  "skill": "keel",
+  "specSections": [
+    "std.headless",
+    "std.options",
+    "std.tables",
+    "k.aria",
+    "k.router",
+    "k.testing",
+    "std.messages",
+    "std.i18n",
+    "std.money",
+    "std.temporal"
+  ],
+  "model": "none",
+  "runner": "none",
+  "converged": true,
+  "iterations": 1,
+  "tokens": {
+    "input": 0,
+    "output": 0
+  },
+  "costUsd": 0,
+  "unsafeCount": 5,
+  "checkTrailer": " ELIFECYCLE  Command failed with exit code 1.",
+  "testTrailer": " ELIFECYCLE  Test failed. See above for more details.",
+  "durationMs": 168647,
+  "startedAt": "2026-11-18T13:39:01.626Z"
+}

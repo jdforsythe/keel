@@ -1,5 +1,6 @@
 import { createCtx } from "@keel/ctx";
-import { manifest } from "@keel/router";
+import { manifest, routeTable } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { type Topology, createApp, topology } from "../src/index.ts";
@@ -43,9 +44,14 @@ describe("topology", () => {
     await fc.assert(
       fc.asyncProperty(fc.stringMatching(/^[a-z]{1,6}$/), adapter, adapter, async (m, a, b) => {
         const t = topology({ x: { modules: [m], adapter: a }, y: { modules: [m, "other"], adapter: b } });
-        const routes = manifest({ [`${m}.home`]: { path: `/a/${m}`, component: () => document.createElement("p") } });
-        const other = manifest({ "other.home": { path: "/b", component: () => document.createElement("p") } });
-        const all = manifest({ ...routes.routes, ...other.routes });
+        fc.pre(m !== "other");
+        const page = () => document.createElement("p");
+        const first = contract(m, { [`${m}.home`]: { path: `/a/${m}` } });
+        const second = contract("other", { "other.home": { path: "/b" } });
+        const all = routeTable(
+          manifest(first, { [`${m}.home`]: { component: page } }),
+          manifest(second, { "other.home": { component: page } }),
+        );
         await expect(
           createApp({ topology: t, routes: all, ctx: createCtx({ mode: "sim", seed: SEED }) }),
         ).rejects.toThrow(/^E1552 module/);
@@ -56,7 +62,7 @@ describe("topology", () => {
 
   it("createApp validates only the served deployable's modules; duplicates still checked on the whole topology", async () => {
     const page = () => document.createElement("p");
-    const routes = manifest({ "api.home": { path: "/api", component: page } });
+    const routes = manifest(contract("api", { "api.home": { path: "/api" } }), { "api.home": { component: page } });
     const ctx = createCtx({ mode: "sim", seed: SEED });
     const t = topology({ web: { modules: ["todos"], adapter: "client" }, api: { modules: ["api"], adapter: "node" } });
     await expect(createApp({ topology: t, routes, ctx, deployable: "api" })).resolves.toBeDefined();
@@ -71,5 +77,23 @@ describe("topology", () => {
     expect(() => topology({ web: { modules: [], adapter: "node" } })).toThrow(/^E1552/);
     const bad = JSON.parse('{"web":{"modules":["a"],"adapter":"lambda"}}');
     expect(() => topology(bad)).toThrow(/^E1552/);
+  });
+
+  it("throws E1552 for any deployable name out of its one form, so no two names share a storage file or peer key", () => {
+    const form = /^[a-z][a-z0-9-]*$/;
+    fc.assert(
+      fc.property(fc.string({ maxLength: 10 }), (name) => {
+        fc.pre(!form.test(name));
+        expect(() => topology({ [name]: { modules: ["a"], adapter: "node" } })).toThrow(
+          new Error(`E1552 ${name}: name must be lowercase letters, digits and -, starting with a letter`),
+        );
+      }),
+      { seed: SEED },
+    );
+    for (const name of ["Web", "../x", "API", "my_api"])
+      expect(() => topology({ [name]: { modules: ["a"], adapter: "node" } }), name).toThrow(/^E1552 /);
+    expect(topology({ "edge-2": { modules: ["a"], adapter: "node" } })).toEqual({
+      "edge-2": { modules: ["a"], adapter: "node" },
+    });
   });
 });

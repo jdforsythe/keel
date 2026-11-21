@@ -8,8 +8,14 @@ export const inputs = {
     workspace: s.boolean().optional(),
   }),
   module: s.object({ id: s.string() }),
-  route: s.object({ id: s.string(), path: s.string(), file: s.string().optional() }),
-  component: s.object({ id: s.string() }),
+  route: s.object({
+    id: s.string(),
+    path: s.string(),
+    file: s.string().optional(),
+    api: s.boolean().optional(),
+    method: s.enum(["GET", "POST", "PUT", "PATCH", "DELETE"]).optional(),
+  }),
+  component: s.object({ id: s.string(), ctx: s.boolean().optional() }),
   store: s.object({ id: s.string() }),
   transaction: s.object({ id: s.string() }),
   service: s.object({ id: s.string(), schema: s.string(), service: s.string() }),
@@ -19,5 +25,10 @@ export const inputs = {
     to: s.string(),
   }),
   move: s.object({ name: s.string(), to: s.string() }),
+  place: s.object({
+    module: s.string(),
+    to: s.string(),
+    adapter: s.enum(["client", "node", "static"]).optional(),
+  }),
   "add-field": s.object({ schema: s.string(), field: s.string(), type: s.string() }),
 };

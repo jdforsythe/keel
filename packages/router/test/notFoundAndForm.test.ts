@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 // Examples: the 404 layout rule (k.router Matching) and Form finding its router through the owner chain.
 import { createCtx } from "@keel/ctx";
+import { contract } from "@keel/router/contract";
 import { mount } from "@keel/runtime-dom";
 import { ok, s } from "@keel/schema";
 import { expect, it } from "vitest";
@@ -10,7 +11,6 @@ import { createRouter } from "../src/createRouter.ts";
 import { guard } from "../src/guard.ts";
 import { loader } from "../src/loader.ts";
 import { manifest } from "../src/manifest.ts";
-import type { RouteDef } from "../src/types/RouteDef.ts";
 import { memoryHistory } from "./memoryHistory.ts";
 import { to } from "./to.ts";
 
@@ -23,38 +23,39 @@ const tag = (name: string, kids: Node[] = []): HTMLElement => {
   e.append(...kids);
   return e;
 };
-const page = (shell: Partial<RouteDef>, prefix: string) =>
-  manifest({
-    [`${prefix}.shell`]: { component: (p) => tag("shell", p.children === undefined ? [] : [p.children()]), ...shell },
-    [`${prefix}.page`]: {
-      path: `/${prefix}/:n`,
-      params: s.object({ n: s.int() }),
-      layout: `${prefix}.shell`,
+type Above = "none" | "loader" | "guard";
+const page = (above: Above) => {
+  const c = contract("nf", {
+    "nf.shell": { layout: true },
+    "nf.page": { path: "/nf/:n", params: s.object({ n: s.int() }) },
+  });
+  const shell = {
+    component: (p: { children?: () => Node }) => tag("shell", p.children === undefined ? [] : [p.children()]),
+    ...(above === "loader" ? { loader: loader(c, "nf.shell", { output: s.object({}) }, async () => ok({})) } : {}),
+    ...(above === "guard" ? { guard: guard({ redirect: "nf.never" }, async () => ok(null)) } : {}),
+  };
+  return manifest(c, {
+    "nf.shell": shell,
+    "nf.page": {
+      layout: "nf.shell",
       component: () => tag("page"),
       errorElement: ({ error }) => tag(`error:${error.code}`),
     },
   });
+};
 
-it.each<[string, Partial<RouteDef>, boolean]>([
-  ["no loader or guard above: the errorElement renders inside the layouts", {}, true],
-  [
-    "a layout with a loader: the errorElement renders alone",
-    { loader: loader({ output: s.object({}) }, async () => ok({})) },
-    false,
-  ],
-  [
-    "a layout with a guard: the errorElement renders alone",
-    { guard: guard({ redirect: "nf.never" }, async () => ({ ok: true, value: null })) },
-    false,
-  ],
-])("params failure, %s", async (_, shell, inside) => {
-  const prefix = `nf${Object.keys(shell).join("")}`;
-  const routes = page(shell, prefix);
+it.each<[string, Above, boolean]>([
+  ["no loader or guard above: the errorElement renders inside the layouts", "none", true],
+  ["a layout with a loader: the errorElement renders alone", "loader", false],
+  ["a layout with a guard: the errorElement renders alone", "guard", false],
+])("params failure, %s", async (_, above, inside) => {
+  const routes = page(above);
   const history = memoryHistory("/nowhere");
-  const router = createRouter(routes, { ctx: createCtx({ mode: "sim" }), history });
+  const ctx = createCtx({ mode: "sim" });
+  const router = createRouter(routes, { ctx, history });
   const host = document.createElement("div");
-  const unmount = mount(router.App, host);
-  history.pop(`/${prefix}/abc`);
+  const unmount = mount(router.App, host, { ctx });
+  history.pop("/nf/abc");
   await settle();
   expect(host.querySelector('[data-x="error:keel.notFound"]')).not.toBeNull();
   expect(host.querySelector('[data-x="shell"] [data-x="error:keel.notFound"]') !== null).toBe(inside);

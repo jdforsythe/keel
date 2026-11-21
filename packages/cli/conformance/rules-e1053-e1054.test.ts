@@ -1,4 +1,4 @@
-// Spec: k.cli Rules E1053 formatter kind registered twice; E1054 record emitted with a kind that has no formatter.
+// Spec: k.cli Rules E1053 formatter kind or std command registered twice; E1054 record emitted with a kind that has no formatter.
 // E1054 is driven through `respond` from '@keel/cli/testing' (RFC 0042). Seed 1337.
 // "Registered custom formatter used by name / listed" is untestable: the spec names `formatter(kind, ...)` only, with no lookup or `--format` name selection.
 // Spec: k.cli, clause "`respond` of a record of a kind with no formatter yields E1054."

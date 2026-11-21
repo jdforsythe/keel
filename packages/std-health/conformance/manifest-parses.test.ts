@@ -12,5 +12,6 @@ test("The package's `module.ts` default export parses with `ModuleSchema` and de
   expect(r.value.deps).toEqual([]);
   expect(r.value.capabilities).toEqual(["clock"]);
   expect(r.value.public.exports).toEqual(["Health", "routes"]);
-  expect(r.value.public.routes).toEqual(["health.status"]);
+  // the manifest has no `public.routes`: the contract (`./contract`) lists the route (k.module, k.contract)
+  expect(Reflect.has(r.value.public, "routes")).toBe(false);
 });

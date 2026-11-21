@@ -2,7 +2,8 @@
 // Spec: k.testing Harness (`renderRoute`) with k.router manifests, navigation, and Form actions. Seed: 1337.
 import { createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
-import { Form, type Href, action, loader, manifest } from "@keel/router";
+import { Form, action, loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import { store, transaction, tx } from "@keel/store";
 import { renderRoute } from "@keel/testing";
@@ -29,37 +30,41 @@ const el = (tag: string, attrs: Record<string, string>, text?: string): HTMLElem
 };
 
 const loads = { n: 0 };
-const routes = manifest({
+const c = contract("rt", {
+  "rt.list": { path: "/rt" },
+  "rt.show": { path: "/rt/:n", params: s.object({ n: s.int() }) },
+});
+const save = action(c, "rt.list", { input: s.object({ title: s.string() }) }, async ({ title }) => {
+  tx(add, { title });
+  return ok(c.href("rt.show", { n: list.snapshot().state.titles.length }));
+});
+const routes = manifest(c, {
   "rt.list": {
-    path: "/rt",
-    loader: loader({ output: s.object({ count: s.int() }) }, async () => {
+    POST: save,
+    loader: loader(c, "rt.list", { output: s.object({ count: s.int() }) }, async () => {
       loads.n++;
       return ok({ count: list.snapshot().state.titles.length });
     }),
-    actions: {
-      POST: action({ input: s.object({ title: s.string() }) }, async ({ title }) => {
-        tx(add, { title });
-        const to: Href = routes.href("rt.show", { n: list.snapshot().state.titles.length });
-        return ok(to);
-      }),
-    },
     component: (props) => {
       const root = el("main", { id: "rt.main" });
       const data: unknown = props.data;
       const count = typeof data === "object" && data !== null ? Reflect.get(data, "count") : undefined;
       root.append(el("p", { id: "rt.count" }, `count ${String(count)}`));
-      const label = el("label", { for: "rt.title" }, "Title");
-      const input = el("input", { id: "rt.title", name: "title" });
-      const submit = el("button", { id: "rt.save", type: "submit" }, "Save");
-      const form = Form({ method: "POST", action: routes.href("rt.list"), children: [label, input, submit] });
+      const form = Form({
+        method: "POST",
+        action: c.href("rt.list"),
+        children: () => [
+          el("label", { for: "rt.title" }, "Title"),
+          el("input", { id: "rt.title", name: "title" }),
+          el("button", { id: "rt.save", type: "submit" }, "Save"),
+        ],
+      });
       form.setAttribute("id", "rt.form");
       root.append(form);
       return root;
     },
   },
   "rt.show": {
-    path: "/rt/:n",
-    params: s.object({ n: s.int() }),
     component: (props) => {
       const n = typeof props.params === "object" && props.params !== null ? Reflect.get(props.params, "n") : undefined;
       return el("h1", { id: "rt.heading" }, `note ${String(n)}`);

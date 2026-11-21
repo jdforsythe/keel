@@ -1,26 +1,39 @@
 {
   "name": "@keel/std-report",
   "version": "0.0.0",
-  "private": false,
+  "private": true,
   "type": "module",
   "exports": {
     ".": {
       "types": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./tools": {
+      "types": "./src/tools.ts",
+      "default": "./src/tools.ts"
     }
   },
-  "files": ["dist"],
+  "files": ["dist", "docs"],
   "scripts": {
     "check": "tsc --noEmit && biome check src test unsafe",
     "test": "vitest run",
-    "build": "tsc -p tsconfig.build.json"
+    "coverage": "node ../../tooling/coverage.mjs",
+    "build": "tsc -p tsconfig.build.json",
+    "mutate": "node ../../tooling/mutate.mjs",
+    "prepack": "node ../../tooling/docs-pack.mjs"
   },
   "dependencies": {
     "@keel/cli": "workspace:*",
     "@keel/schema": "workspace:*"
   },
   "devDependencies": {
+    "@keel/compiler": "workspace:*",
+    "@keel/ctx": "workspace:*",
+    "@keel/router": "workspace:*",
+    "@keel/server": "workspace:*",
     "@keel/tooling": "workspace:*",
-    "fast-check": "^3"
+    "esbuild": "^0.28.2",
+    "fast-check": "^3",
+    "happy-dom": "^21"
   }
 }

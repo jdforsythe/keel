@@ -1,19 +1,36 @@
+/// <reference lib="es2023.intl" />
+// es2023.intl types `Intl.NumberFormat#format` over a decimal string (`StringNumericLiteral`), which every runtime runs.
+import type { Locale } from "@keel/std-i18n";
 import type { Currency } from "./Currency.ts";
 import type { Money } from "./Money.ts";
 
 const EXPONENT: Readonly<Record<Currency, number>> = { EUR: 2, GBP: 2, JPY: 0, USD: 2 };
+const DECIMAL = /^-?\d+(?:\.\d+)?$/;
 
-/**
- * `-12.34 USD` (std.money): optional sign, the absolute amount in major units with exactly the currency's exponent of
- * decimals (`.`, no grouping), a space, the code. Exact for every safe-integer amount: string arithmetic, no floats.
- */
-export function formatMoney(m: Money): string {
-  const e = EXPONENT[m.currency];
-  const digits = Math.abs(m.amount)
+/** Whether `s` is a plain decimal literal (`-0.05`, `1800`), the string form `Intl.NumberFormat` formats exactly. */
+function isDecimal(s: string): s is `${number}` {
+  return DECIMAL.test(s);
+}
+
+/** The exact decimal string of `amount` at exponent `e` (`-5`, 2 gives `-0.05`): string arithmetic, no float. */
+function decimal(amount: number, e: number): string {
+  const digits = Math.abs(amount)
     .toString()
     .padStart(e + 1, "0");
   const major = digits.slice(0, digits.length - e);
-  const minor = digits.slice(digits.length - e);
-  const sign = m.amount < 0 ? "-" : "";
-  return `${sign}${major}${e > 0 ? `.${minor}` : ""} ${m.currency}`;
+  const body = e > 0 ? `${major}.${digits.slice(digits.length - e)}` : major;
+  return amount < 0 ? `-${body}` : body;
+}
+
+/**
+ * `m` written for `locale` (std.money): `Intl.NumberFormat` in currency style over the exact decimal of `amount` at
+ * the currency's exponent, so no amount passes through a float. `{ amount: 1250, currency: 'EUR' }` is `€12.50` in
+ * `en-US` and `12,50 €` in `de-DE`. Reads no host locale.
+ */
+export function formatMoney(m: Money, locale: Locale): string {
+  if (!Number.isSafeInteger(m.amount) || Math.abs(m.amount) > 1e15)
+    throw new Error(`money amount ${m.amount} has no decimal form`);
+  const d = decimal(m.amount, EXPONENT[m.currency]);
+  if (!isDecimal(d)) throw new Error(`money amount ${m.amount} has no decimal form`);
+  return new Intl.NumberFormat(locale, { style: "currency", currency: m.currency }).format(d);
 }

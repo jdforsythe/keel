@@ -236,8 +236,23 @@ describe("analyze: identifier reads", () => {
     ].join("\n");
     const a = an(src, "T.ts");
     const names = a.idents.map((i) => i.name);
-    expect(names).toEqual(["val", "short", "comp", "obj", "obj", "idx", "fv", "cm", "x", "y", "z", "Map", "decl2"]);
-    expect(a.idents.map((i) => i.shorthand)).toEqual([false, true, ...Array(11).fill(false)]);
+    expect(names).toEqual([
+      "val",
+      "short",
+      "comp",
+      "obj",
+      "obj",
+      "idx",
+      "fv",
+      "cm",
+      "x",
+      "y",
+      "z",
+      "dflt",
+      "Map",
+      "decl2",
+    ]);
+    expect(a.idents.map((i) => i.shorthand)).toEqual([false, true, ...Array(12).fill(false)]);
     const sorted = [...a.idents].sort((p, q) => p.start - q.start);
     expect(a.idents).toEqual(sorted);
     const shortRef = a.idents.find((i) => i.name === "short");
@@ -246,10 +261,10 @@ describe("analyze: identifier reads", () => {
     expect(a.identsByName.get("val")?.map((r) => r.name)).toEqual(["val"]);
     expect(a.identsByName.has("zed")).toBe(false);
   });
-  it("dedupes identifiers that share a start and excludes those inside bindings", () => {
-    const a = an("import { a as b } from 'm'; const [c, d = e] = f; function g(h = i) {}");
-    expect(a.idents.map((i) => i.name)).toEqual(["f"]);
-    expect(a.idents.map((i) => i.shorthand)).toEqual([false]);
+  it("dedupes identifiers that share a start and excludes declared names; pattern defaults are reads", () => {
+    const a = an("import { a as b } from 'm'; const [c, d = e] = f; function g(h = i, { j = k, [l]: m } = n) {}");
+    expect(a.idents.map((i) => i.name)).toEqual(["e", "f", "i", "k", "l", "n"]);
+    expect(a.idents.map((i) => i.shorthand)).toEqual([false, false, false, false, false, false]);
   });
   it("shorthand object properties are reads flagged shorthand; destructuring shorthand is a binding", () => {
     const a = an("const o = { p }; const { q } = o; ({ r } = o);");

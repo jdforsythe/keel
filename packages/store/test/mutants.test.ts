@@ -181,7 +181,7 @@ describe("restore", () => {
     expect(last?.at).toBe(3);
   });
 
-  it("restore keeps seq/tick at least their prior maximum", () => {
+  it("restore sets the head from the snapshot and keeps the tick at least its prior maximum", () => {
     const k = makeCounter();
     tx(k.add, { by: 1 });
     tx(k.add, { by: 1 });
@@ -189,20 +189,34 @@ describe("restore", () => {
     const empty = makeCounter().c.snapshot();
     expect(k.c.restore(empty).ok).toBe(true);
     tx(k.add, { by: 1 });
-    expect(k.c.log()[0]?.id).toBe(4);
+    expect(k.c.log()[0]?.id).toBe(1);
+    expect(k.c.head()).toBe(1);
     expect(k.c.log()[0]?.at).toBe(4);
   });
 
-  it("an entry whose payload fails its schema is rejected as schema.invalid", () => {
+  it("an entry whose payload fails its schema folds: state and head kept, no entry, state as initial (k.persist)", () => {
     const k = makeCounter();
     const r = k.c.restore({
       state: { n: 1, tags: [] },
       initial: { n: 0, tags: [] },
       log: [{ id: 1, name: "counter.tag", payload: { tag: 5 }, at: 1 }],
+      head: 3,
     });
-    expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.error.code).toBe("schema.invalid");
+    expect(r.ok).toBe(true);
     expect(k.c.log()).toHaveLength(0);
+    expect(k.c.head()).toBe(3);
+    expect(k.c.snapshot().initial).toEqual({ n: 1, tags: [] });
+  });
+
+  it("an entry whose shape is wrong (an id that is not an int) stays schema.invalid", () => {
+    const k = makeCounter();
+    const r = k.c.restore({
+      state: { n: 1, tags: [] },
+      initial: { n: 0, tags: [] },
+      log: [{ id: "1", name: "counter.gone", payload: {}, at: 1 }],
+    });
+    expect(r.ok ? undefined : r.error.code).toBe("schema.invalid");
+    expect(k.c.get("n")).toBe(0);
   });
 });
 

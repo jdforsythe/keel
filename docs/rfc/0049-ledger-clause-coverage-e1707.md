@@ -1,6 +1,6 @@
 # RFC 0049: the spec map cannot outrun the ledger (clause matching, E1707)
 
-Status: accepted (ADR-0038)
+Status: implemented (ADR-0038)
 
 ## Problem
 - **Reviewer finding (2026-11-07).** `spec/00-map.md` marked all 18 kernel sections `conformance-covered`, but the committed ledger rated 114 of 179 clauses `none`. Examples: k.compiler 11 of 14, k.cli 9 of 15, k.runtime 6 of 9, k.errors 8 of 8, k.services 9 of 9.

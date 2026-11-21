@@ -1,0 +1,39 @@
+# Task 0093 + 0094 + follow-ups: S1 batch 2
+
+**Spec:** std.sessions clauses 5-8, 12-14 · k.store (0205) · k.runtime (0212) · k.ctx k.module (0216) · k.router (0218) · **Gate:** S1 · **Branch:** jdforsythe/test-impl (Orca worktree test-impl) · **Status:** closed (2026-11-09)
+
+## Deliverables
+- [x] (agent A done: `./routes` export with sessions.ingest POST /sessions (422 keel.fields, 413 keel.payloadTooLarge over 256 KiB, fingerprint recomputed) and sessions.list GET /sessions/list behind sessions.reader (302 to /sessions?next=); Archive keyed by fingerprint, 64 fingerprints × 5 sessions, 4 MiB; apps/sessions scaffolded on brand; clause 8 example; std-sessions budget 7 kB, routes subpath 3 kB; W1005 on the spread → 0219) 0093 ingest service: `@keel/std-sessions/routes` (`sessions.ingest`, `sessions.list`), `sessions.archive` store persisted via ctx.storage, `sessions.reader` guard (302 to ingest when the caller is not in `readers`), 256 KiB cap; Keel's own node deployable (apps/sessions) running it; clause 8 green
+- [x] (agent A: JSON under 192 KiB, errors keep first and last 32, rejected uploads recorded as sessions.putFailed, keepalive only under 64 KiB; masked-value set bound handed to B) 0211 recorder size bound by `limit` in bytes and events; errors list bounded; oversize upload reported, not dropped silently
+- [x] (agent B done: capture reads the dev inspect `sessions.live` section; ingest fetches /sessions/list with KEEL_SESSIONS_TOKEN; replay/minimize/to-test write a job test under .keel/sessions/, run `keel test --format=json`, read a result file, delete both; minimize = shortest reproducing prefix then ddmin, byte-equal across runs; to-test writes modules/<m>/test/session-<fp>.test.ts only when the session reproduces (E2004); root entry back to 5,910 B of 6 kB, ./tools 9 kB and ./commandJob 8 kB node entries) 0094 `keel session capture|ingest|replay|minimize|to-test` through `stdCommand`; delta-debugging minimizer (1-minimal); emitted `@keel/testing` file; E2002-E2004; clauses 5, 6, 7, 12, 13, 14 green
+- [x] (agent B: `*` any one segment incl. record keys, `\.` literal dot; E2001 resolves s.record and rejects an entry matching nothing) 0214 redact path grammar: `*` matches record keys, keys containing `.` addressable; E2001 rejects an entry that matches nothing
+- [x] (agent B: re-exports and imports through another file resolved via RuleInput.project) 0215 E2005 sees re-exports and imports through another file
+- [x] (agent C done: rfc:0071, ADR-0060; the server writes the served route into #k-state and resume reports it as the first nav, then an input per field typed before load, then queued events once) 0212 `record` on node/static deployables: the resume entry reports `nav` and inputs made before resume (runtime-dom, compiler)
+- [x] (agent C: E1156 reports an `observe` import in a module whose `capabilities` lack it, fix adds it; no runtime gate since a ctx has no module identity, stated in the RFC) 0216 `observe` is a declared capability: a module that calls `observe` names it in its manifest; E1156 covers it (ctx, module, check)
+- [x] (agent C: `@keel/router/match` exports `matchHref` and `RouteMatch`, 1,853 B of a 2 kB line; B switches imports) 0218 the router match surface std-sessions uses becomes a contract: a public `@keel/router/match` subpath (or `@keel/router/internal` header names std-sessions as a consumer with a clause)
+- [x] (agent C: payloads keep secrets in memory; snapshot() folds entries up to the last secret-holding one into initial so no secret is written; store mutation 86.1%) 0205 `tx` payloads may carry `s.secret` fields (store `copy()` structured-clones instead of encode/parse) or a check rule forbids them; decide and implement
+
+## Steps
+1. [x] PLAN; three agents in parallel: A (0093, 0211: std-sessions routes/record/archive, apps/sessions, server if needed); B (0094, 0214, 0215: std-sessions cli command/minimize/to-test/redact grammar/tools, packages/cli for the `session` command wiring); C (0212, 0216, 0218, 0205: runtime-dom, compiler entry, ctx, module, check E1156, router, store).
+2. [x] Root `ok check 44 tasks` · `ok test 42 tasks` · `ok ledger --diff 467 items, 459 verified, 6 unsafe, 0 lowered, 0 uncovered`; zero `none` clauses anywhere; std.sessions flipped to conformance-covered. Reviewer + red-team running at handoff time; their findings go to the next session.
+3. [x] Committed as one rfc:0070 rfc:0071 commit before the review reports (session closing); push after both reports; in-batch fixes from the red-team become the next session's first work. Then 0095.
+
+## Decisions
+- D1: Ownership within packages/std-sessions: A owns `src/record*`, `src/session*`, `src/routes/**`, `src/archive*`, `module.ts`; B owns `src/minimize*`, `src/toTest*`, `src/command*`, `src/redact*`, `src/tools*`, `conformance/**` headers for its clauses; both coordinate `src/index.ts` exports by appending lines only. C never edits std-sessions.
+- D2: RFC 0071 reserved for C (observe as a declared capability; router match contract; store secret payloads) since those add clauses to kernel sections.
+- D3 (A, 0093): `sessions.list` returns the spec's `Archive` (record by fingerprint, search `failing`/`since`), which `keel session ingest` (B) reads; no `{ id, route, at, ... }` summaries or `after` pagination. Archive bound: 64 fingerprints, newest 5 per fingerprint in arrival order, `first`/`last` on the ingest clock, plus 4 MiB of archive JSON (one `ctx.storage` key under node's 10 MB localStorage quota); oldest `last` evicted; store has `logLimit: 0`.
+- D4 (A, 0093): the ingest recomputes the fingerprint from `error` and the base route when no `nav` precedes the first error and `data.at` is not masked (`x` repeated); otherwise it keeps a posted 12-hex value (else recomputes), since the session does not hold the error's route or the unredacted `data.at`. `keel session replay` (E2004) is the check for those.
+- D5 (A, 0211): byte bound 192 KiB (`MAX_SESSION_BYTES`) of session JSON, counted per event as appended; past it or `limit`, cut repeatedly by the overflow rule (no-`nav` case now rebases at the oldest input after the first, dropping the least); an event alone over the bound empties the buffer and rebases to now. `errors()` keeps the first and last 32. A rejected upload becomes a `sessions.putFailed` error event recorded by the recorder itself (no `@keel/ctx/internal` import). Real `put` sends `keepalive` only up to 64 KiB (the Fetch limit).
+- D6 (A): budgets: `@keel/std-sessions` 6 -> 7 kB (7,031 B with B's `minimize`; A's share 6,387 B), `@keel/std-sessions/routes` 3 kB node (2,844 B); `budgets.mjs` falls back to `src/<sub>.ts` when `src/<sub>/index.ts` is absent. apps/sessions keeps W1005 (routes.ts spreads `sessions.routes`, not literal): a compiler follow-up could read a std package's literal.
+
+4. [x] Post-review: 0224 and 0228 fixed; the check conformance scan heap crash (symlink loop from stale std-sessions fixture copies, Node recursive readdir follows links) fixed with a type-aware walk and a regression test; stale copies removed; 0231 filed; root green; committed and pushed.
+
+## Verification
+- [ ] `pnpm check`, `pnpm test` green; `pnpm ledger --diff` 0 lowered, 0 uncovered; unsafe 6 or justified
+- [ ] std.sessions every clause cited and green → `conformance-covered`
+
+## Trailer
+`ok check 44 tasks` · `ok test 42 tasks` · `ok voice-lint 1635 files` · `ok budgets 51 measured` · `ok ledger --diff 467 items, 459 verified, 6 unsafe, 0 warnings, 0 lowered, 0 uncovered`
+
+## Next action
+Read the reviewer and red-team reports (docs/HANDOFF.md records their outcome if they landed before the session closed); fix in-batch regressions; then 0095 (GitHub Action) and the P1 colour decision.

@@ -1,5 +1,5 @@
 import type { ServerDocument } from "./ServerDocument.ts";
-import type { ServerNode } from "./ServerNode.ts";
+import { ServerNode } from "./ServerNode.ts";
 import { VOID_TAGS } from "./VOID_TAGS.ts";
 import { unescapeHtml } from "./unescapeHtml.ts";
 
@@ -8,13 +8,15 @@ const ATTR = /([^\s=/"'<>]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g
 const RAW_TEXT = new Set(["script", "style"]);
 
 /**
- * Parse `html` (compiler-hoisted templates, `innerHTML`) into children of `into`: elements with attributes,
- * text with character references decoded, comments, void elements, and raw `script`/`style` text. Not a
- * spec parser: it does no error recovery beyond ignoring stray closing tags.
+ * Parse `html` (compiler-hoisted templates, `innerHTML`) into children of `into`: elements with attributes (a
+ * `<template>`'s children go into its `content`), text with character references decoded, comments, void elements,
+ * and raw `script`/`style` text. Not a spec parser: it does no error recovery beyond ignoring stray closing tags, and a tag or attribute name the
+ * server DOM refuses (`assertName`) throws.
  */
 export function parseHtml(doc: ServerDocument, html: string, into: ServerNode): void {
-  const stack: ServerNode[] = [into];
-  const top = (): ServerNode => stack[stack.length - 1] ?? into;
+  // Open elements by tag name, each with the node its children go into (a template's `content`, as in the DOM).
+  const stack: { readonly name: string; readonly node: ServerNode }[] = [{ name: "", node: into }];
+  const top = (): ServerNode => stack[stack.length - 1]?.node ?? into;
   const text = (s: string): void => {
     if (s !== "") top().appendChild(doc.createTextNode(unescapeHtml(s)));
   };
@@ -27,7 +29,7 @@ export function parseHtml(doc: ServerDocument, html: string, into: ServerNode): 
       top().appendChild(doc.createComment(m[1]));
     } else if (m[2] !== undefined) {
       const name = m[2].toLowerCase();
-      const at = stack.map((n) => (n.nodeType === 1 ? Reflect.get(n, "localName") : null)).lastIndexOf(name);
+      const at = stack.map((n) => n.name).lastIndexOf(name);
       if (at > 0) stack.length = at;
     } else if (m[3] !== undefined) {
       const name = m[3].toLowerCase();
@@ -46,7 +48,11 @@ export function parseHtml(doc: ServerDocument, html: string, into: ServerNode): 
         last = gt < 0 ? html.length : gt + 1;
         TOKEN.lastIndex = last;
       } else if (!VOID_TAGS.has(name) && !attrs.trimEnd().endsWith("/")) {
-        stack.push(el);
+        const content: unknown = Reflect.get(el, "content");
+        stack.push({ name, node: content instanceof ServerNode ? content : el });
+        // As in HTML, one newline right after `<textarea>`, `<pre>` or `<listing>` is not content.
+        const lf = /^(textarea|pre|listing)$/.test(name) && /^\r?\n/.exec(html.slice(last, last + 2));
+        if (lf) TOKEN.lastIndex = last += lf[0].length;
       }
     }
   }

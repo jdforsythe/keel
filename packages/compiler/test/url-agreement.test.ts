@@ -1,10 +1,17 @@
 // Compiler half of the URL agreement table (red-team 0084): for every guarded attribute and literal case,
 // E1003 is reported exactly when the runtime (`@keel/runtime-dom/url`) renders about:blank, and the static
 // template carries the runtime's value. The table lives with the runtime: packages/runtime-dom/test/urlCases.ts.
+import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { compile } from "@keel/compiler";
 import { isSafeUrl, safeUrl } from "@keel/runtime-dom/url";
+import { repoRoot } from "@keel/tooling/repo-root";
 import { describe, expect, it } from "vitest";
-import { URL_CASES, URL_CASE_ATTRS, expectSafe } from "../../runtime-dom/test/urlCases.ts";
+
+const cases: typeof import("../../runtime-dom/test/urlCases.ts") = await import(
+  pathToFileURL(path.join(repoRoot(import.meta.dirname), "packages", "runtime-dom", "test", "urlCases.ts")).href
+);
+const { URL_CASES, URL_CASE_ATTRS, expectSafe } = cases;
 
 const compileOne = (source: string) => compile([{ path: "C.tsx", source }]);
 

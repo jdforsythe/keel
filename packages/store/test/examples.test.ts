@@ -37,16 +37,25 @@ describe("@keel/store examples", () => {
     const k = makeCounter();
     tx(k.add, { by: 2 });
     const before = JSON.stringify([k.c.snapshot(), k.c.log()]);
-    for (const bad of [null, {}, { state: { n: 1, tags: [] }, log: [{ id: 1, name: "nope", payload: {}, at: 1 }] }]) {
+    for (const bad of [null, {}, { state: { n: "1", tags: [] }, log: [] }, { state: { n: 1, tags: [] } }]) {
       const r = k.c.restore(bad);
       expect(r.ok ? undefined : r.error.code).toBe("schema.invalid");
     }
-    const wrongPayload = {
-      state: { n: 1, tags: [] },
-      log: [{ id: 1, name: "counter.add", payload: { by: "x" }, at: 1 }],
-    };
-    expect(k.c.restore(wrongPayload).ok).toBe(false);
     expect(JSON.stringify([k.c.snapshot(), k.c.log()])).toBe(before);
+  });
+
+  it("restore folds a log naming an undeclared transaction or a refused payload into state (k.persist)", () => {
+    for (const log of [
+      [{ id: 1, name: "nope", payload: {}, at: 1 }],
+      [{ id: 1, name: "counter.add", payload: { by: "x" }, at: 1 }],
+    ]) {
+      const k = makeCounter();
+      expect(k.c.restore({ state: { n: 1, tags: [] }, log }).ok).toBe(true);
+      expect(k.c.get("n")).toBe(1);
+      expect(k.c.head()).toBe(1);
+      expect(k.c.log()).toEqual([]);
+      expect(k.c.snapshot().initial).toEqual({ n: 1, tags: [] });
+    }
   });
 
   it("a uses declaration is dropped once its scope is disposed", () => {

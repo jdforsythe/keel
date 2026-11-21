@@ -14,6 +14,9 @@ export interface Field<T> {
   set(value: T | undefined): void;
   /** Mark touched and validate the field. */
   blur(): void;
-  /** Attach to a plain input, select, or textarea. Returns unbind; also unbound when the calling scope is disposed. */
+  /**
+   * Attach to a plain input, select, or textarea; the value at bind is also written as the markup default (`value`
+   * attribute, text, `selected`, `checked`; rfc:0062). Returns unbind; also unbound when the calling scope is disposed.
+   */
   bind(el: Bindable): () => void;
 }

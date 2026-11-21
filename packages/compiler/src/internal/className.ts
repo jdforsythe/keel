@@ -2,9 +2,15 @@
 // state segments). The compiler may not import @keel/ui (later in tooling/deps.json); keep both in step:
 // test/className.test.ts asserts they agree.
 
-type State = "hover" | "focusVisible" | "active" | "disabled";
+import type { StyleUsage } from "../types/StyleUsage.ts";
+
+type State = NonNullable<StyleUsage["state"]>;
 
 const SEGMENTS: readonly { readonly key: State; readonly segment: string }[] = [
+  { key: "selected", segment: "selected" },
+  { key: "checked", segment: "checked" },
+  { key: "expanded", segment: "expanded" },
+  { key: "highlighted", segment: "highlighted" },
   { key: "hover", segment: "hover" },
   { key: "focusVisible", segment: "focus" },
   { key: "active", segment: "active" },

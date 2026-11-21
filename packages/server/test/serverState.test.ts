@@ -1,8 +1,10 @@
 // k.server Server state (RFC 0044) under plain Node (happy-dom strips `cookie` and `set-cookie` at construction):
 // `stores` factories get a fresh instance per request, restored from and saved to `ctx.storage`; the caller token
 // rides on `tx` meta, so undo is scoped across requests and `await`s; factory stores never reach `#k-state`.
+import { createHash } from "node:crypto";
 import { type Ctx, createCtx } from "@keel/ctx";
 import { action, loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { err, ok, s } from "@keel/schema";
 import { store, transaction, tx } from "@keel/store";
 import { describe, expect, it } from "vitest";
@@ -23,51 +25,50 @@ const notesStores = () => {
 const anonymous = () => ({ notes: store(Notes, { items: [] }) });
 const denied = { code: "keel.denied", message: "Nothing of yours to undo", data: {} } as const;
 
+const c = contract("app", {
+  "app.notes": { path: "/notes" },
+  "app.undo": { path: "/undo" },
+  "app.anon": { path: "/anon" },
+});
+const notesLoad = loader(c, "app.notes", { output: NotesView, stores: notesStores }, async ({ caller, stores }) =>
+  ok({ items: stores.notes.get("items"), canUndo: stores.notes.log().at(-1)?.meta?.caller === caller }),
+);
+const anonLoad = loader(c, "app.anon", { output: s.object({}), stores: anonymous }, async () => ok({}));
+const notesPost = action(c, "app.notes", { input: Text, stores: notesStores }, (input, { caller, stores }) => {
+  const r = tx(stores.add, input, { meta: { caller } });
+  return r.ok ? ok(null) : err(r.error);
+});
+// Commits after an await: the caller still rides on the entry.
+const notesPut = action(c, "app.notes", { input: Text, stores: notesStores }, async (input, { caller, stores }) => {
+  await Promise.resolve();
+  const r = tx(stores.add, input, { meta: { caller } });
+  return r.ok ? ok(null) : err(r.error);
+});
+// Commits, then fails: nothing is saved and the re-render reads storage.
+const notesPatch = action(c, "app.notes", { input: Text, stores: notesStores }, (input, { stores }) => {
+  tx(stores.add, input);
+  return err({ code: "keel.fields", message: "bad", data: { text: "rejected" } });
+});
+const undoPost = action(c, "app.undo", { input: s.object({}), stores: notesStores }, (_, { caller, stores }) =>
+  stores.notes.undoWhere((e) => e.meta?.caller === caller) ? ok(null) : err(denied),
+);
+const routes = manifest(c, {
+  "app.notes": {
+    loader: notesLoad,
+    component: ({ data }) => {
+      const p = document.createElement("p");
+      p.textContent = JSON.stringify(data);
+      return p;
+    },
+    POST: notesPost,
+    PUT: notesPut,
+    PATCH: notesPatch,
+  },
+  "app.undo": { component: () => document.createElement("p"), POST: undoPost },
+  "app.anon": { loader: anonLoad, component: () => document.createElement("p") },
+});
+
 function build(ctx: Ctx = createCtx({ mode: "sim", seed: 1337 }), https = false) {
-  const routes = manifest({
-    "app.notes": {
-      path: "/notes",
-      loader: loader({ output: NotesView, stores: notesStores }, async ({ caller, stores }) =>
-        ok({ items: stores.notes.get("items"), canUndo: stores.notes.log().at(-1)?.meta?.caller === caller }),
-      ),
-      actions: {
-        POST: action({ input: Text, stores: notesStores }, (input, { caller, stores }) => {
-          const r = tx(stores.add, input, { meta: { caller } });
-          return r.ok ? ok(null) : err(r.error);
-        }),
-        // Commits after an await: the caller still rides on the entry.
-        PUT: action({ input: Text, stores: notesStores }, async (input, { caller, stores }) => {
-          await Promise.resolve();
-          const r = tx(stores.add, input, { meta: { caller } });
-          return r.ok ? ok(null) : err(r.error);
-        }),
-        // Commits, then fails: nothing is saved and the re-render reads storage.
-        PATCH: action({ input: Text, stores: notesStores }, (input, { stores }) => {
-          tx(stores.add, input);
-          return err({ code: "keel.fields", message: "bad", data: { text: "rejected" } });
-        }),
-      },
-      component: ({ data }) => {
-        const p = document.createElement("p");
-        p.textContent = JSON.stringify(data);
-        return p;
-      },
-    },
-    "app.undo": {
-      path: "/undo",
-      actions: {
-        POST: action({ input: s.object({}), stores: notesStores }, (_, { caller, stores }) =>
-          stores.notes.undoWhere((e) => e.meta?.caller === caller) ? ok(null) : err(denied),
-        ),
-      },
-      component: () => document.createElement("p"),
-    },
-    "app.anon": {
-      path: "/anon",
-      loader: loader({ output: s.object({}), stores: anonymous }, async () => ok({})),
-      component: () => document.createElement("p"),
-    },
-  });
   const app = createApp({ topology: topology({ web: { modules: ["app"], adapter: "node" } }), routes, ctx });
   return { ctx, app, base: https ? "https://localhost" : BASE };
 }
@@ -100,7 +101,7 @@ const saved = async (ctx: Ctx): Promise<unknown> => {
 };
 
 describe("server state (RFC 0044)", () => {
-  it("persists `snapshot({ meta: true })` under keel.store.<id>; the caller rides on the entry", async () => {
+  it("persists `snapshot({ meta: true })` under keel.store.<id>; the caller's id, never its token, rides on the entry", async () => {
     const built = build();
     const a = client(built);
     expect((await a.write("a1")).status).toBe(200);
@@ -108,19 +109,29 @@ describe("server state (RFC 0044)", () => {
     expect(await saved(built.ctx)).toMatchObject({
       state: { items: ["a1"] },
       initial: { items: [] },
-      log: [{ name: "test.add", payload: { text: "a1" }, meta: { caller: token } }],
+      log: [
+        {
+          name: "test.add",
+          payload: { text: "a1" },
+          meta: { caller: createHash("sha256").update(token).digest("base64url") },
+        },
+      ],
     });
+    // Backlog 0131: the stored snapshot never holds the cookie token.
+    expect(await built.ctx.storage.get(KEY)).not.toContain(token);
   });
 
-  it("issues the caller cookie on a first write only; Secure over https", async () => {
+  it("issues the signed caller cookie on a first write only; __Host- and Secure over https (RFC 0057)", async () => {
     const c = client(build());
     expect((await c.send("GET", "/notes")).headers.get("set-cookie")).toBeNull();
     expect((await c.write("a")).headers.get("set-cookie")).toMatch(
-      /^keel-caller=[A-Za-z0-9-]{16,64}; Path=\/; HttpOnly; SameSite=Lax$/,
+      /^keel-caller=[A-Za-z0-9-]{16,64}\.[\w-]{43}; Path=\/; HttpOnly; SameSite=Lax$/,
     );
     expect((await c.write("b")).headers.get("set-cookie")).toBeNull();
     const secure = await client(build(undefined, true)).write("c");
-    expect(secure.headers.get("set-cookie")).toMatch(/; HttpOnly; SameSite=Lax; Secure$/);
+    expect(secure.headers.get("set-cookie")).toMatch(
+      /^__Host-keel-caller=[^;]+; Path=\/; HttpOnly; SameSite=Lax; Secure$/,
+    );
   });
 
   it("two interleaving clients each undo only their own last write, across requests and after an await", async () => {
@@ -146,7 +157,18 @@ describe("server state (RFC 0044)", () => {
     const a = client(built);
     await a.write("a1");
     const app = await built.app;
-    for (const cookie of ["", "keel-caller=00000000-0000-4000-8000-000000000000", "keel-caller=<x>", "keel-caller="]) {
+    // RFC 0057: a's own token without its signature (a pre-0057 cookie), or with one character of it changed, is no caller.
+    const mine = a.cookie();
+    const flipped = `${mine.slice(0, -1)}${mine.endsWith("A") ? "B" : "A"}`;
+    const unsigned = mine.slice(0, mine.lastIndexOf("."));
+    const forged = [
+      "keel-caller=00000000-0000-4000-8000-000000000000",
+      "keel-caller=<x>",
+      "keel-caller=",
+      unsigned,
+      flipped,
+    ];
+    for (const cookie of ["", ...forged]) {
       const headers = new Headers({ accept: "application/json", "content-type": "application/json" });
       if (cookie !== "") headers.set("cookie", cookie);
       expect((await app.fetch(new Request(`${BASE}/undo`, { method: "POST", headers, body: "{}" }))).status).toBe(403);

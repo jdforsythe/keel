@@ -1,4 +1,4 @@
-import type { StyleState } from "../types/StyleState.ts";
+import type { PartState } from "../aria/PartState.ts";
 import { className } from "./className.ts";
 import { isReadable } from "./isReadable.ts";
 import { isRecord } from "./isRecord.ts";
@@ -12,7 +12,7 @@ const ATOMIC = /^k-[A-Za-z0-9_-]+$/;
 const breakpointsOf = (v: Readonly<Record<string, unknown>>): string[] =>
   Object.keys(v).sort((a, b) => (a === "base" ? -1 : b === "base" ? 1 : a < b ? -1 : a > b ? 1 : 0));
 
-function collect(src: Readonly<Record<string, unknown>>, state: StyleState | undefined, out: string[]): void {
+function collect(src: Readonly<Record<string, unknown>>, state: PartState | undefined, out: string[]): void {
   for (const prop of styleProps) {
     const v = src[prop];
     if (v === undefined) continue;

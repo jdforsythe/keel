@@ -1,6 +1,0 @@
-{
-  "skill": "keel-api",
-  "maxTokens": 600,
-  "prompt": "How do I serve a data API with per-request server stores from a node deployable and call it from a client-only deployable, keeping the client's copy in sync after a write?",
-  "expect": ["createApp", "deployable", "stores", "endpoints", "service", "hydrate", "syncAfter", "application/json"]
-}

@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 // Example: ok(null) revalidation re-commits when the current page shows a loader error and loaders now succeed.
 import { createCtx } from "@keel/ctx";
+import { contract } from "@keel/router/contract";
 import { mount } from "@keel/runtime-dom";
 import { err, ok, s } from "@keel/schema";
 import { expect, it } from "vitest";
@@ -19,16 +20,14 @@ const Gone = s.error("rv.gone", s.object({}));
 
 it("a page showing its errorElement renders the component after ok(null) when the loader recovers", async () => {
   const state = { fail: true };
-  const routes = manifest({
+  const rv = contract("rv", { "rv.page": { path: "/rv" } });
+  const routes = manifest(rv, {
     "rv.page": {
-      path: "/rv",
-      loader: loader({ output: s.object({}) }, async () => (state.fail ? err(Gone.make({})) : ok({}))),
-      actions: {
-        POST: action({ input: s.object({}) }, async () => {
-          state.fail = false;
-          return ok(null);
-        }),
-      },
+      loader: loader(rv, "rv.page", { output: s.object({}) }, async () => (state.fail ? err(Gone.make({})) : ok({}))),
+      POST: action(rv, "rv.page", { input: s.object({}) }, async () => {
+        state.fail = false;
+        return ok(null);
+      }),
       component: () => {
         const p = document.createElement("p");
         p.id = "page";
@@ -42,9 +41,10 @@ it("a page showing its errorElement renders the component after ok(null) when th
       },
     },
   });
-  const router = createRouter(routes, { ctx: createCtx({ mode: "sim" }), history: memoryHistory("/rv") });
+  const ctx = createCtx({ mode: "sim" });
+  const router = createRouter(routes, { ctx, history: memoryHistory("/rv") });
   const host = document.createElement("div");
-  const unmount = mount(router.App, host);
+  const unmount = mount(router.App, host, { ctx });
   await settle();
   expect(host.querySelector("#failed")?.textContent).toBe("rv.gone");
   host.querySelector("form")?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));

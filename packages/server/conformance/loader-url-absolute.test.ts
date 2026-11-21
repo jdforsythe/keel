@@ -3,6 +3,7 @@
 // Seed 1337.
 import { createCtx } from "@keel/ctx";
 import { loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import { createApp, topology } from "@keel/server";
 import fc from "fast-check";
@@ -12,12 +13,16 @@ const Out = s.object({ title: s.string() });
 
 async function setup() {
   const seen: string[] = [];
-  const load = loader({ output: Out }, async ({ url }) => {
+  const appContract = contract("app", {
+    "app.page": { path: "/where" },
+  });
+
+  const load = loader(appContract, "app.page", { output: Out }, async ({ url }) => {
     seen.push(url);
     return ok({ title: "t" });
   });
-  const routes = manifest({
-    "app.page": { path: "/where", loader: load, component: () => document.createElement("p") },
+  const routes = manifest(appContract, {
+    "app.page": { loader: load, component: () => document.createElement("p") },
   });
   const app = await createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),

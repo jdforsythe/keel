@@ -1,9 +1,12 @@
 // Spec: k.compiler, clause "A literal `poster="javascript:alert(1)"` is E1003, and the same value bound dynamically renders as `about:blank`."
 // @vitest-environment happy-dom
 // Seed 1337 (no generated inputs; the clause names one value).
+import { createCtx } from "@keel/ctx";
 import { mount } from "@keel/runtime-dom";
 import { expect, test } from "vitest";
 import { codes, load, sigOf } from "./support.ts";
+
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 const bound = `
 import { signal } from '@keel/reactive'
@@ -33,7 +36,7 @@ test("The same poster value bound dynamically renders as `about:blank`", () => {
   const V = load("V", bound);
   sigOf(V, "u").set("javascript:alert(1)");
   const host = document.createElement("div");
-  const dispose = mount(V, host);
+  const dispose = mount(V, host, { ctx: simCtx });
   expect(host.querySelector("video")?.getAttribute("poster")).toBe("about:blank");
   dispose();
 });

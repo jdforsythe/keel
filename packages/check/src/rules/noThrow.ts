@@ -10,7 +10,6 @@ import type { RuleDef } from "../types/RuleDef.ts";
 export const noThrow: RuleDef = {
   code: "E1451",
   message: "throw in app code; return err(...) for expected failures",
-  explain: "Expected failures are Result values: return err(...). Bugs surface at the nearest Boundary.",
   see: "k.errors",
   check: ({ file, ast }) => {
     if (!isAppPath(file.path)) return [];

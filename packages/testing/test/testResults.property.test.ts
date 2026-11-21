@@ -96,3 +96,47 @@ describe("testResults", () => {
     );
   });
 });
+
+describe("testResults: harness failures", () => {
+  it("a failure carrying E1708 or E1704 is that code at the test file's frame, its first line before the test name", () => {
+    const coded = (code: string, message: string) => ({
+      type: "test",
+      name: "explores",
+      result: {
+        state: "fail",
+        errors: [
+          {
+            code,
+            message,
+            stack: [
+              `Error: ${message}`,
+              "    at /repo/pkg/src/internal/modelError.ts:7:24",
+              "    at /repo/pkg/src/explore.ts:100:19",
+              "    at /repo/pkg/test/a.test.ts:13:24",
+            ].join("\n"),
+          },
+        ],
+      },
+    });
+    const file = {
+      file: { filepath: "/repo/pkg/test/a.test.ts" },
+      tasks: [
+        coded("E1708", "explore todos.board: todos.addTodo broke an invariant after 2 steps (5 states)"),
+        coded("E1704", 'E1704 simulate: response 0 was lost (seed 1337, run 3, shrunk)\n{"seed":0}'),
+        coded("keel.unexpected", "fire did not settle"),
+      ],
+    };
+    const r = testResults([file], [], CWD);
+    expect(r.diagnostics.map((d) => [d.code, d.path, d.line, d.message])).toEqual([
+      [
+        "E1708",
+        "test/a.test.ts",
+        13,
+        "explore todos.board: todos.addTodo broke an invariant after 2 steps (5 states) (explores)",
+      ],
+      ["E1704", "test/a.test.ts", 13, "simulate: response 0 was lost (seed 1337, run 3, shrunk) (explores)"],
+      ["T0001", "src/internal/modelError.ts", 7, "explores: fire did not settle"],
+    ]);
+    expect(r.diagnostics[0]?.fix).toBe("at src/internal/modelError.ts:7:24\nat src/explore.ts:100:19");
+  });
+});

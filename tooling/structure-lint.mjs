@@ -1,9 +1,10 @@
-// Structure lint. S0001/S0002/S0004/S0005 delegate to @keel/check (E1752/E1757/E1754); S0003, S0006 live here. Usage: node tooling/structure-lint.mjs [--root dir] [--format=..] [--quiet] [--limit N]
+// Structure lint. S0001/S0002/S0004/S0005 delegate to @keel/check (E1752/E1757/E1754); S0003, S0006, S0012 (a stdlib file names a kernel `internal` entry `deps.json` does not list, k.parity) live here; S0009 (a std package's runtime entry reaches a CLI-time package) is std-entries.mjs. Usage: node tooling/structure-lint.mjs [--root dir] [--format=..] [--quiet] [--limit N]
 import fs from "node:fs";
 import path from "node:path";
 import { check } from "../packages/check/src/index.ts";
 import { parseArgs, run } from "./output.ts";
 import { CODE_EXT, rel, scrub, walk } from "./scan.mjs";
+import { stdEntryDiags } from "./std-entries.mjs";
 
 const args = parseArgs();
 const root = path.resolve(args.values.get("root") ?? path.join(import.meta.dirname, ".."));
@@ -63,6 +64,26 @@ for (const file of files) {
     });
   }
 
+  // S0012: the stdlib reaches the kernel through public entries only (k.parity), but for the entries deps.json lists.
+  if (isPkg && pkg?.startsWith("std-") && (area === "src" || area === "unsafe")) {
+    const allowed = deps.internal?.[pkg] ?? [];
+    text.forEach((l, i) => {
+      const re = /(?:\bfrom\s*|\bimport\s*\(?\s*|\brequire\(\s*)['"](@keel\/([\w-]+)(?:\/[^'"]*)?)['"]/g;
+      for (let m = re.exec(l); m; m = re.exec(l)) {
+        const [, spec, target] = m;
+        if (!spec || !target || target.startsWith("std-") || !order.includes(target)) continue;
+        if (!spec.split("/").slice(2).includes("internal") || allowed.includes(spec)) continue;
+        add(
+          "S0012",
+          file,
+          i + 1,
+          m.index + 1,
+          `${pkg} may not import ${spec}: the stdlib holds no power a library lacks (k.parity)`,
+        );
+      }
+    });
+  }
+
   const inTest = isPkg && (area === "test" || area === "conformance");
   if (inTest) {
     code.forEach((l, i) => {
@@ -84,5 +105,7 @@ for (const d of result.diagnostics) {
   if (ok("E1752") && SRC.test(d.path ?? "")) alias = d.message.startsWith("file ") ? "S0002" : "S0001";
   if (ok("E1756") || alias) diags.push({ ...rest, message: alias ? `${alias} ${d.message}` : d.message });
 }
+
+diags.push(...(await stdEntryDiags(root)).diags);
 
 await run("structure-lint", () => ({ diags, counts: { files: files.length } }));

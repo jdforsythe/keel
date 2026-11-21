@@ -7,7 +7,7 @@ export const Props = s.object({});
 export default function Masthead(_props: Infer<typeof Props>) {
   return (
     <Box as="header" direction="row" align="center" gap="3" px={{ base: "3", md: "6" }} py="4">
-      <Image src="/keel-mark.svg" decorative w="mark" h="mark" />
+      <Image src="/keel-mark.svg" decorative h="mark" />
       <Text fontSize="lg" weight="semibold">
         Keel
       </Text>

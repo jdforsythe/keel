@@ -1,0 +1,299 @@
+diff --git a/packages/router/src/internal/createRouterWith.ts b/packages/router/src/internal/createRouterWith.ts
+index cfd04b2..da2ad25 100644
+--- a/packages/router/src/internal/createRouterWith.ts
++++ b/packages/router/src/internal/createRouterWith.ts
+@@ -40,6 +40,7 @@ import { routeActions } from "./routeActions.ts";
+ import { routers } from "./routers.ts";
+ import { runGuard } from "./runGuard.ts";
+ import { runLoaders } from "./runLoaders.ts";
++import { splitUrl } from "./splitUrl.ts";
+ import { tables } from "./tables.ts";
+ import { unexpected } from "./unexpected.ts";
+ import { withNext } from "./withNext.ts";
+@@ -369,8 +370,9 @@ export function createRouterWith<M extends Readonly<Record<string, RouteDef>>>(
+                 const v = view.get();
+                 return v === null ? [] : [v];
+               },
+-              (v) => v,
+-              (v) => renderView(v(), ctx),
++              // A page that rendered keeps its row across navigations to its path: only the search or hash differs.
++              (v) => (v.error === null ? splitUrl(v.url).path : v),
++              (v) => renderView(v, ctx),
+             );
+             return f;
+           },
+diff --git a/packages/router/src/internal/renderView.ts b/packages/router/src/internal/renderView.ts
+index 23171ca..e147be4 100644
+--- a/packages/router/src/internal/renderView.ts
++++ b/packages/router/src/internal/renderView.ts
+@@ -1,4 +1,5 @@
+ import type { Ctx } from "@keel/ctx";
++import { effect } from "@keel/reactive";
+ import { boundary } from "@keel/runtime-dom/ops";
+ import type { KeelError } from "@keel/schema";
+ import type { View } from "./View.ts";
+@@ -7,19 +8,22 @@ import { defaultError } from "./defaultError.ts";
+ const errorAt = (v: View, level: number, error: KeelError<string, unknown>): Node =>
+   v.chain[level]?.def.errorElement?.({ error }) ?? defaultError(error);
+ 
+-function componentAt(v: View, i: number, ctx: Ctx): Node {
+-  const lvl = v.chain[i];
+-  // An API route (k.api) has no component; the client never matches one.
++function componentAt(v: () => View, i: number, ctx: Ctx): Node {
++  const { chain, params, data } = v();
++  const lvl = chain[i];
++  // An API route (k.api): no component; the client never matches one.
+   if (lvl?.def.component === undefined) return document.createComment("");
+-  const cell = v.data[i];
+-  const base = { params: v.params, search: v.search };
+-  const children = i + 1 < v.chain.length ? () => levelAt(v, i + 1, ctx) : undefined;
+-  return children === undefined
++  // `search` and `data` are the kept page's current values: a search-only navigation and revalidation update them.
++  return i + 1 < chain.length
+     ? lvl.def.component(
+         {
+-          ...base,
++          params,
++          get search() {
++            return v().search;
++          },
++          children: () => levelAt(v, i + 1, ctx),
+           get data() {
+-            return cell?.get();
++            return v().data[i]?.get();
+           },
+         },
+         undefined,
+@@ -27,10 +31,12 @@ function componentAt(v: View, i: number, ctx: Ctx): Node {
+       )
+     : lvl.def.component(
+         {
+-          ...base,
+-          children,
++          params,
++          get search() {
++            return v().search;
++          },
+           get data() {
+-            return cell?.get();
++            return v().data[i]?.get();
+           },
+         },
+         undefined,
+@@ -38,17 +44,25 @@ function componentAt(v: View, i: number, ctx: Ctx): Node {
+       );
+ }
+ 
+-function levelAt(v: View, i: number, ctx: Ctx): Node {
+-  const lvl = v.chain[i];
++function levelAt(v: () => View, i: number, ctx: Ctx): Node {
++  const now = v();
++  const lvl = now.chain[i];
+   if (lvl === undefined) return document.createComment("");
+-  if (v.error !== null && v.error.level === i) return errorAt(v, i, v.error.error);
++  if (now.error !== null && now.error.level === i) return errorAt(now, i, now.error.error);
+   const render = (): Node => componentAt(v, i, ctx);
+   if (lvl.def.errorElement === undefined) return render();
+   // Every route with an errorElement is a Boundary whose fallback is that errorElement (k.errors).
+   const frag = document.createDocumentFragment();
+   const anchor = document.createComment(`keel:route ${lvl.id}`);
+   frag.append(anchor);
+-  boundary(anchor, render, (error) => errorAt(v, i, error));
++  // A kept page's next navigation retries a level whose render or binding threw.
++  boundary(anchor, render, (error, reset) => {
++    const seen = v();
++    effect(() => {
++      if (v() !== seen) reset();
++    });
++    return errorAt(now, i, error);
++  });
+   return frag;
+ }
+ 
+@@ -57,9 +71,10 @@ function levelAt(v: View, i: number, ctx: Ctx): Node {
+  * A loader error renders its level's `errorElement` with the layouts above intact; a bare error (404, guard
+  * failure) renders only the errorElement; level -1 is the root default.
+  */
+-export function renderView(v: View, ctx: Ctx): Node {
+-  const e = v.error;
++export function renderView(v: () => View, ctx: Ctx): Node {
++  const now = v();
++  const e = now.error;
+   if (e !== null && e.level < 0) return defaultError(e.error);
+-  if (e?.bare) return errorAt(v, e.level, e.error);
++  if (e?.bare) return errorAt(now, e.level, e.error);
+   return levelAt(v, 0, ctx);
+ }
+diff --git a/packages/std-tables/conformance/fixtures.ts b/packages/std-tables/conformance/fixtures.ts
+index 27a9036..f3a59df 100644
+--- a/packages/std-tables/conformance/fixtures.ts
++++ b/packages/std-tables/conformance/fixtures.ts
+@@ -110,10 +110,14 @@ const catalog = (props: RouteProps, href: (q: Query) => Href): Node =>
+     id: "cat",
+     label: "Catalog",
+     columns: catalogColumns,
+-    search: queryOf(props.search),
++    get search() {
++      return queryOf(props.search);
++    },
+     href,
+     locale: LOCALE,
+-    page: pageOf(props.data),
++    get page() {
++      return pageOf(props.data);
++    },
+     text: TEXT,
+     cells: CELLS,
+   });
+@@ -135,7 +139,14 @@ export const routes = manifest({
+       Box({
+         id: "find.page",
+         children: () => [
+-          TableSearch({ id: "find", label: "Search the catalog", search: queryOf(props.search), href: findHref }),
++          TableSearch({
++            id: "find",
++            label: "Search the catalog",
++            get search() {
++              return queryOf(props.search);
++            },
++            href: findHref,
++          }),
+           catalog(props, findHref),
+         ],
+       }),
+diff --git a/packages/std-tables/src/DataTable.ts b/packages/std-tables/src/DataTable.ts
+index ff36840..dd0d328 100644
+--- a/packages/std-tables/src/DataTable.ts
++++ b/packages/std-tables/src/DataTable.ts
+@@ -1,4 +1,4 @@
+-import { type Scope, computed, owner } from "@keel/reactive";
++import { computed, effect } from "@keel/reactive";
+ import { For, If } from "@keel/runtime-dom";
+ import { formatNumber } from "@keel/std-i18n";
+ import { type Child, Link } from "@keel/ui";
+@@ -13,9 +13,6 @@ import { nextSort } from "./internal/nextSort.ts";
+ 
+ type Key = string | number;
+ 
+-/** By table id: the pager link (`next`, `previous`) that had focus and the table that saw it, until focus moves on. */
+-const pagerFocus = new Map<string, { readonly link: string; readonly by: Scope | undefined }>();
+-
+ /** The rows before this page: a page before the last holds `pageSize` rows, so no page size is needed. */
+ const offset = (v: TablePage<unknown>): number =>
+   v.page < v.pages ? (v.page - 1) * v.rows.length : v.total - v.rows.length;
+@@ -250,22 +247,17 @@ export function DataTable<T extends object, S extends Field<T>, F extends Field<
+     tabIndex: -1,
+     children: () => computed(() => text().pageOf(view.get().page, view.get().pages)),
+   });
+-  // A pager link focused when the last page was replaced, and missing from this one, hands focus to `status`.
+-  const was = pagerFocus.get(id)?.link;
+-  pagerFocus.delete(id);
+-  const mine = owner();
+-  // A table that unmounts forgets its entry once the commit that removed it has rendered any replacement.
+-  mine?.onDispose(() =>
+-    queueMicrotask(() => {
+-      if (pagerFocus.get(id)?.by === mine) pagerFocus.delete(id);
+-    }),
+-  );
+-  const v0 = view.get();
+-  if ((was === "next" && v0.page >= v0.pages) || (was === "previous" && v0.page <= 1))
+-    queueMicrotask(() => {
+-      const lost = document.activeElement === null || document.activeElement === document.body;
+-      if (lost && status instanceof HTMLElement && status.isConnected) status.focus();
+-    });
++  // The pager link (`next`, `previous`) that has focus, until focus moves on; when a new page removes it, `status` takes
++  // focus.
++  let was = "";
++  effect(() => {
++    const v = view.get();
++    if ((was === "next" && v.page >= v.pages) || (was === "previous" && v.page <= 1))
++      queueMicrotask(() => {
++        const lost = document.activeElement === null || document.activeElement === document.body;
++        if (lost && status instanceof HTMLElement && status.isConnected) status.focus();
++      });
++  });
+   const pager = Part({
+     ...styles.pager,
+     id: `${id}.pager`,
+@@ -307,11 +299,11 @@ export function DataTable<T extends object, S extends Field<T>, F extends Field<
+     pager.addEventListener("focusin", (e) => {
+       const to = e.target instanceof Element ? e.target.id : "";
+       if (to === `${id}.next` || to === `${id}.previous`)
+-        pagerFocus.set(id, { link: to.slice(id.length + 1), by: mine });
++        was = to.slice(id.length + 1);
+     });
+     // Focus moving elsewhere forgets the link; a link removed with the page has no next target and is kept.
+     pager.addEventListener("focusout", (e) => {
+-      if (e instanceof FocusEvent && e.relatedTarget !== null) pagerFocus.delete(id);
++      if (e instanceof FocusEvent && e.relatedTarget !== null) was = "";
+     });
+   }
+   return Part({ id, role: "generic", children: () => [table, pager] });
+diff --git a/packages/std-tables/src/TableSearch.component.ts b/packages/std-tables/src/TableSearch.component.ts
+index dead47b..85002ac 100644
+--- a/packages/std-tables/src/TableSearch.component.ts
++++ b/packages/std-tables/src/TableSearch.component.ts
+@@ -9,9 +9,6 @@ import { Q_MAX } from "./internal/Q_MAX.ts";
+ import { debounced } from "./internal/debounced.ts";
+ import { withQuery } from "./internal/withQuery.ts";
+ 
+-/** By input id: text typed past `Q_MAX`, kept for the input the navigation rebuilds. */
+-const typed = new Map<string, string>();
+-
+ /**
+  * A search input for a table's `q` (std.tables TableSearch): `delay` ms (default 300, on `ctx.clock`) after the last
+  * input it replaces the history entry with `href(search)`, `q` set to the first `Q_MAX` characters (absent when
+@@ -31,13 +28,14 @@ export function TableSearch<T, S extends Field<T>, F extends Field<T>>(
+   const router = findRouter();
+   const clock = (ctx ?? router?.ctx)?.clock;
+   const id = `${props.id}.input`;
+-  // The shown text follows `search.q`, or the text typed past `Q_MAX` whose first `Q_MAX` characters it is.
++  // The input keeps its text while `search.q` is the value it last sent (typing goes on during the load); any other
++  // `q` (back, forward, a link) replaces it.
++  let q = props.search.q ?? "";
++  let sent = q;
+   const shown = computed(() => {
+-    const sent = props.search.q ?? "";
+-    const kept = typed.get(id);
+-    return kept !== undefined && kept.slice(0, Q_MAX) === sent ? kept : sent;
++    const at = props.search.q ?? "";
++    return at === sent ? q : at;
+   });
+-  let q = shown.get();
+   const timer =
+     router === null || clock === undefined
+       ? undefined
+@@ -45,9 +43,8 @@ export function TableSearch<T, S extends Field<T>, F extends Field<T>>(
+           clock,
+           () => props.delay ?? 300,
+           () => {
+-            if (q.length > Q_MAX) typed.set(id, q);
+-            else typed.delete(id);
+-            void router.navigate(props.href(withQuery(props.search, q.slice(0, Q_MAX))), { replace: true });
++            sent = q.slice(0, Q_MAX);
++            void router.navigate(props.href(withQuery(props.search, sent)), { replace: true });
+           },
+         );
+   owner()?.onDispose(() => timer?.cancel());
+diff --git a/packages/std-tables/test/review.test.ts b/packages/std-tables/test/review.test.ts
+index 79b2c10..31a1101 100644
+--- a/packages/std-tables/test/review.test.ts
++++ b/packages/std-tables/test/review.test.ts
+@@ -71,13 +71,15 @@ describe("review fixes", () => {
+       ).toBe("E2853");
+   });
+ 
+-  test("a search-only navigation rebuilds the page, so search is read fresh", async () => {
++  test("a search-only navigation keeps the page: the table and its status are the same nodes", async () => {
+     useRows(12);
+     const h = await renderRoute("tbl.find", { routes, params: {}, search: {}, ctx: simCtx() });
+     const before = document.getElementById("cat.table");
++    const status = document.getElementById("cat.status");
+     await h.fire("cat.sort.title", { type: "click" });
+     await h.settle();
+-    expect(document.getElementById("cat.table")).not.toBe(before);
++    expect(document.getElementById("cat.table")).toBe(before);
++    expect(document.getElementById("cat.status")).toBe(status);
+     expect(h.find("cat.header.title").state.sort).toBe("ascending");
+     h.dispose();
+   });

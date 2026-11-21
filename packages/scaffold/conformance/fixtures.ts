@@ -87,10 +87,10 @@ export function withOrders(): Files {
     [
       `import OrderCard from '${rel(page, card)}'`,
       `import { cart } from '${rel(page, store)}'`,
-      `import { routes } from './routes.ts'`,
+      `import { orders } from './orders.contract.ts'`,
       "export default function OrdersPage() {",
       "  const uses = [cart]",
-      `  return { uses, link: routes.href('orders.show', { id: '1' }), card: OrderCard, id: 'OrderCard-root' }`,
+      `  return { uses, link: orders.href('orders.show', { id: '1' }), card: OrderCard, id: 'OrderCard-root' }`,
       "}",
       "",
     ].join("\n"),
@@ -129,7 +129,7 @@ export function withStoreCart(): Files {
 export const GENERATED_HEADER = "// Generated from OpenAPI by `keel scaffold service` (k.services); do not edit.";
 /**
  * Sources `@keel/services/openapi` would generate for one GET endpoint of module `orders`, per the k.services spec
- * paths (rfc:0039): `OrdersApi.schema.ts` exporting `OrdersApi`, and `api.ts` importing it.
+ * paths (rfc:0039): `OrdersApi.schema.ts` exporting `OrdersApi`, and `api.server.ts` importing it.
  */
 export const ORDERS_API_SCHEMA = [
   GENERATED_HEADER,
@@ -157,7 +157,7 @@ export const ORDERS_API_SERVICE = [
 export const SERVICE_INPUT = { id: "orders", schema: ORDERS_API_SCHEMA, service: ORDERS_API_SERVICE };
 /** `<Id>Api`: the declaration name k.services gives module `id` (`orders` -> `OrdersApi`). */
 export const apiName = (id: string): string => `${id.charAt(0).toUpperCase()}${id.slice(1)}Api`;
-/** The same two sources generated for module `id`: `<Id>Api.schema.ts` exporting `<Id>Api`, and `api.ts`. */
+/** The same two sources generated for module `id`: `<Id>Api.schema.ts` exporting `<Id>Api`, and `api.server.ts`. */
 export function serviceInput(id: string): { id: string; schema: string; service: string } {
   const n = apiName(id);
   return {

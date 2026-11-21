@@ -1,0 +1,116 @@
+# _generated: edit tooling/mutate-nightly.source.json and run pnpm generate. Do not edit by hand.
+name: mutate-nightly
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch: {}
+permissions:
+  contents: read
+concurrency:
+  group: mutate-nightly
+  cancel-in-progress: false
+env:
+  KEEL_AGENT: "1"
+jobs:
+  mutate:
+    if: "github.ref == 'refs/heads/master'"
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - check
+          - cli
+          - compiler
+          - ctx
+          - forms
+          - reactive
+          - router
+          - runtime-dom
+          - scaffold
+          - schema
+          - server
+          - services
+          - std-brands
+          - std-capacitor
+          - std-channels
+          - std-conflicts
+          - std-db
+          - std-geo
+          - std-headless
+          - std-health
+          - std-i18n
+          - std-jobs
+          - std-live
+          - std-messages
+          - std-money
+          - std-offline
+          - std-postgres
+          - std-report
+          - std-schedules
+          - std-sessions
+          - std-statecharts
+          - std-tables
+          - std-tauri
+          - std-temporal
+          - std-text
+          - std-timings
+          - std-tokens
+          - std-workflows
+          - store
+          - testing
+          - ui
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: .git/keel-mutation
+          key: "stryker-${{ matrix.package }}-${{ github.run_id }}-${{ github.run_attempt }}"
+          restore-keys: "stryker-${{ matrix.package }}-"
+      - run: "pnpm --filter ./packages/${{ matrix.package }} mutate"
+      - if: "always()"
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: .git/keel-mutation
+          key: "stryker-${{ matrix.package }}-${{ github.run_id }}-${{ github.run_attempt }}"
+      - if: "always()"
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: "mutation-${{ matrix.package }}"
+          path: "packages/${{ matrix.package }}/reports/mutation/mutation.json"
+          if-no-files-found: ignore
+          retention-days: 7
+  ledger:
+    if: "!cancelled() && github.ref == 'refs/heads/master'"
+    needs: mutate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: "mutation-*"
+          path: mutation-reports
+      - name: "put each package's report where the ledger reads it"
+        run: "for d in mutation-reports/mutation-*; do pkg=\"${d##*/mutation-}\"; mkdir -p \"packages/$pkg/reports/mutation\"; cp \"$d/mutation.json\" \"packages/$pkg/reports/mutation/\"; done"
+      - name: "golden-2 a11y report for the ledger (keel test writes reports/a11y.json)"
+        run: pnpm --filter golden-2 exec keel test
+      - run: pnpm ledger
+      - run: pnpm ledger --diff

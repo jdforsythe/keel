@@ -1,7 +1,7 @@
 {
   "name": "@keel/std-health",
   "version": "0.0.0",
-  "private": false,
+  "private": true,
   "type": "module",
   "exports": {
     ".": {
@@ -12,16 +12,51 @@
       "types": "./module.ts",
       "default": "./module.ts"
     },
+    "./routes": {
+      "types": "./src/routes.ts",
+      "default": "./src/routes.ts"
+    },
+    "./contract": {
+      "types": "./src/health.contract.ts",
+      "default": "./src/health.contract.ts"
+    },
     "./*": {
       "types": "./src/*.ts",
       "default": "./src/*.ts"
     }
   },
-  "files": ["dist"],
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/src/index.d.ts",
+        "default": "./dist/src/index.js"
+      },
+      "./module": {
+        "types": "./dist/module.d.ts",
+        "default": "./dist/module.js"
+      },
+      "./routes": {
+        "types": "./dist/src/routes.d.ts",
+        "default": "./dist/src/routes.js"
+      },
+      "./contract": {
+        "types": "./dist/src/health.contract.d.ts",
+        "default": "./dist/src/health.contract.js"
+      },
+      "./*": {
+        "types": "./dist/src/*.d.ts",
+        "default": "./dist/src/*.js"
+      }
+    }
+  },
+  "files": ["dist", "docs"],
   "scripts": {
     "check": "tsc --noEmit && biome check src test unsafe module.ts",
     "test": "vitest run",
-    "build": "tsc -p tsconfig.build.json"
+    "coverage": "node ../../tooling/coverage.mjs",
+    "build": "tsc -p tsconfig.build.json",
+    "mutate": "node ../../tooling/mutate.mjs",
+    "prepack": "node ../../tooling/docs-pack.mjs"
   },
   "dependencies": {
     "@keel/compiler": "workspace:*",
@@ -34,6 +69,7 @@
     "@keel/check": "workspace:*",
     "@keel/runtime-dom": "workspace:*",
     "@keel/server": "workspace:*",
+    "@keel/testing": "workspace:*",
     "@keel/tooling": "workspace:*",
     "@types/node": "^22",
     "fast-check": "^3",

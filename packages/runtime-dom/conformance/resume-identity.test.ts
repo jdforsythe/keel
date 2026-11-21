@@ -1,10 +1,11 @@
+import { createCtx } from "@keel/ctx";
 import { mount } from "@keel/runtime-dom";
 import { resume } from "@keel/runtime-dom/ops";
 import { stores } from "@keel/store";
 // @vitest-environment happy-dom
 // Spec: k.runtime, clause "After resume, every server-rendered node keeps its identity, `state()` equals the serialized snapshot, and firing an event by id yields the same state and DOM as a client-only render."
 // ADR-0006. Property seed: 1337.
-// ASSUMPTION: resume(root, { [componentId]: Component }) maps data-k-island ids to compiled components.
+// ASSUMPTION: resume(root, { [componentId]: Component }, { ctx }) maps data-k-island ids to compiled components.
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import {
@@ -21,6 +22,8 @@ import {
   storeKState,
 } from "./fixtures.ts";
 
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
+
 const allNodes = (root: Node): Node[] => {
   const out: Node[] = [];
   const walk = (n: Node): void => {
@@ -36,7 +39,7 @@ describe("k.runtime: after resume, every server-rendered node keeps its identity
     const host = document.createElement("div");
     host.innerHTML = COUNTER_HTML + KSTATE;
     const before = allNodes(host);
-    resume(host, { Counter });
+    resume(host, { Counter }, { ctx: simCtx });
     const after = allNodes(host);
     expect(after.length).toBe(before.length);
     after.forEach((n, i) => expect(n).toBe(before[i]));
@@ -47,9 +50,9 @@ describe("k.runtime: after resume, every server-rendered node keeps its identity
       fc.asyncProperty(fc.integer({ min: 0, max: 5 }), async (clicks) => {
         const host = document.createElement("div");
         host.innerHTML = COUNTER_HTML + KSTATE;
-        resume(host, { Counter });
+        resume(host, { Counter }, { ctx: simCtx });
         const client = document.createElement("div");
-        const dispose = mount(Counter, client);
+        const dispose = mount(Counter, client, { ctx: simCtx });
         for (let i = 0; i < clicks; i++) {
           const a = host.querySelector("#inc");
           const b = client.querySelector("#inc");
@@ -76,7 +79,7 @@ describe("k.runtime: after resume, every server-rendered node keeps its identity
         const host = document.createElement("div");
         host.innerHTML = STORE_ISLAND_HTML + storeKState(snapshot);
         const before = allNodes(host);
-        const { warnings } = resume(host, { StoreCounter }, { stores: { [STORE_ID]: countStore } });
+        const { warnings } = resume(host, { StoreCounter }, { stores: { [STORE_ID]: countStore }, ctx: simCtx });
         expect(warnings).toEqual([]);
         const state: Record<string, unknown> = {};
         for (const id of [STORE_ID]) state[id] = stores().get(id)?.snapshot().state;
@@ -114,7 +117,7 @@ describe("k.runtime: after resume, every server-rendered node keeps its identity
         const snapshot = { state: { n }, log: [], initial: { n: 0 } };
         const host = document.createElement("div");
         host.innerHTML = STORE_ISLAND_HTML + storeKState(snapshot);
-        resume(host, { StoreCounter }, { stores: { [STORE_ID]: countStore } });
+        resume(host, { StoreCounter }, { stores: { [STORE_ID]: countStore }, ctx: simCtx });
         for (let i = 0; i < clicks; i++) {
           const el = host.querySelector("#sinc");
           if (el === null) throw new Error("no #sinc");
@@ -127,7 +130,7 @@ describe("k.runtime: after resume, every server-rendered node keeps its identity
 
         countStore.restore(snapshot);
         const client = document.createElement("div");
-        const dispose = mount(StoreCounter, client);
+        const dispose = mount(StoreCounter, client, { ctx: simCtx });
         for (let i = 0; i < clicks; i++) {
           const el = client.querySelector("#sinc");
           if (el === null) throw new Error("no #sinc");

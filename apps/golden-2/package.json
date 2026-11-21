@@ -4,13 +4,14 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "node ../../packages/cli/src/bin.ts build",
-    "check": "tsc --noEmit && biome check modules test",
+    "build": "keel build",
+    "dev": "AUTH_FIXTURE=dev keel dev",
+    "check": "tsc --noEmit && biome check modules test && keel check --quiet",
     "test": "vitest run",
-    "api": "node --experimental-webstorage --localstorage-file=.api.storage --disable-warning=ExperimentalWarning server.ts"
+    "coverage": "node ../../tooling/coverage.mjs",
+    "api": "node --experimental-webstorage --localstorage-file=.api.storage --disable-warning=ExperimentalWarning dist/api/server.mjs"
   },
   "dependencies": {
-    "@hono/node-server": "^2.1.6",
     "@keel/compiler": "workspace:*",
     "@keel/ctx": "workspace:*",
     "@keel/forms": "workspace:*",
@@ -20,10 +21,26 @@
     "@keel/schema": "workspace:*",
     "@keel/server": "workspace:*",
     "@keel/services": "workspace:*",
+    "@keel/std-tokens": "workspace:*",
+    "@keel/std-geo": "workspace:*",
+    "@keel/std-headless": "workspace:*",
+    "@keel/std-health": "workspace:*",
+    "@keel/std-i18n": "workspace:*",
+    "@keel/std-messages": "workspace:*",
+    "@keel/std-money": "workspace:*",
+    "@keel/std-report": "workspace:*",
+    "@keel/std-tables": "workspace:*",
+    "@keel/std-temporal": "workspace:*",
+    "@keel/std-text": "workspace:*",
+    "@keel/std-timings": "workspace:*",
     "@keel/store": "workspace:*",
-    "@keel/ui": "workspace:*"
+    "@keel/ui": "workspace:*",
+    "better-auth": "1.7.26"
   },
   "devDependencies": {
+    "@keel/cli": "workspace:*",
+    "@keel/std-brands": "workspace:*",
+    "@types/node": "^22",
     "@keel/testing": "workspace:*",
     "@keel/tooling": "workspace:*",
     "vite": "^8.3.6"

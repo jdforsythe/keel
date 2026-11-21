@@ -1,15 +1,22 @@
 import { loader } from "@keel/router";
 import { err, ok } from "@keel/schema";
-import { Recipe } from "./Recipe.schema.ts";
-import { RecipeParams } from "./RecipeParams.schema.ts";
+import { time } from "@keel/std-timings";
+import { RecipeData } from "./RecipeData.schema.ts";
+import { RecipesText } from "./RecipesText.schema.ts";
 import { kitchenApi } from "./kitchenApi.ts";
+import { recipes } from "./recipes.contract.ts";
 
-/** The recipe named by `recipeId`, else `keel.notFound`. */
-export const loadRecipe = loader({ output: Recipe, params: RecipeParams }, async ({ params, url }, ctx) => {
-  const r = await kitchenApi(new URL(url).origin).box({}, ctx);
+/** The recipe named by `recipeId` with the page's copy, else `keel.notFound` with the entry's message, which never repeats the id. */
+export const loadRecipe = loader(recipes, "recipes.show", { output: RecipeData }, async ({ params }, ctx) => {
+  const r = await time(ctx, "recipes.api.box", () => kitchenApi.box({}, ctx));
   if (!r.ok) return err(r.error);
-  const found = r.value.results["kitchen.recipes"].value.recipes.find((x) => x.id === params.recipeId);
-  return found === undefined
-    ? err({ code: "keel.notFound", message: `No recipe ${params.recipeId}`, data: { recipeId: params.recipeId } })
-    : ok(found);
+  const text = await RecipesText.load(params.locale);
+  const recipe = r.value.recipes.find((x) => x.id === params.recipeId);
+  return recipe === undefined
+    ? err({
+        code: "keel.notFound",
+        message: text.notFound,
+        data: null,
+      })
+    : ok({ recipe, text });
 });

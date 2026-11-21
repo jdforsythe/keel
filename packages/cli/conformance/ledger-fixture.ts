@@ -1,5 +1,5 @@
 // Fixture sources for the `keel ledger` conformance tests: one package `m` with one export, `clamp`. Not a test file.
-// Item key (k.testing Ledger `<file>#<name>`): `packages/m/src/clamp.ts#clamp`. Property seed: 1337.
+// Item key (k.ledger Ledger `<file>#<name>`): `packages/m/src/clamp.ts#clamp`. Property seed: 1337.
 
 export const ITEM = "packages/m/src/clamp.ts#clamp";
 export const SOURCE = "packages/m/src/clamp.ts";

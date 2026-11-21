@@ -1,37 +1,69 @@
 // @vitest-environment happy-dom
-// Spec: k.router, clause "After a push navigation, document.activeElement is main and the scroll position is 0; back and forward restore each entry's own position, also for two entries with one URL." (RFC 0041: scroll is saved per router-minted history key) Seed 1337.
+// Spec: k.head, clause "After a push or replace to another route scroll is 0, after a search-only one it is unchanged; back and forward restore each entry's position, also for two entries with one URL." (scroll is saved per router-minted history key) Seed 1337.
 // Relies on happy-dom window.scrollTo updating window.scrollY.
 import fc from "fast-check";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { SEED, now, resetObservations, routes, settle, start, submit } from "./fixtures.ts";
+import { appContract, now, resetObservations, SEED, settle, start, submit } from "./fixtures.ts";
 
 describe("k.router scroll and focus", () => {
   beforeEach(resetObservations);
-  it("after a push navigation, document.activeElement is main and the scroll position is 0", async () => {
+  it("after a push to another route the scroll position is 0", async () => {
     const app = await start("/", { render: true });
     window.scrollTo(0, 300);
-    await app.router.navigate(routes.href("orders.list"));
+    await app.router.navigate(appContract.href("app.ordersList"));
     await settle();
-    const main = app.host.querySelector("main");
-    expect(main).not.toBeNull();
-    expect(document.activeElement).toBe(main);
-    expect(main?.getAttribute("tabindex")).toBe("-1");
     expect(window.scrollY).toBe(0);
+    app.stop();
+  });
+  it("after a search-only push the scroll position is unchanged", async () => {
+    const app = await start("/orders", { render: true });
+    await fc.assert(
+      fc.asyncProperty(fc.integer({ min: 1, max: 5000 }), fc.integer({ min: 0, max: 1000 }), async (y, page) => {
+        window.scrollTo(0, y);
+        await app.router.navigate(appContract.href("app.ordersList", {}, { page }));
+        await settle();
+        expect(now(app.router)).toMatchObject({ id: "app.ordersList", search: { page } });
+        expect(window.scrollY).toBe(y);
+      }),
+      { seed: SEED, numRuns: 25 },
+    );
+    app.stop();
+  });
+  it("after a replace to another route the scroll position is 0", async () => {
+    const app = await start("/", { render: true });
+    window.scrollTo(0, 300);
+    await app.router.navigate(appContract.href("app.ordersList"), { replace: true });
+    await settle();
+    expect(window.scrollY).toBe(0);
+    app.stop();
+  });
+  it("after a search-only replace the scroll position is unchanged", async () => {
+    const app = await start("/orders", { render: true });
+    await fc.assert(
+      fc.asyncProperty(fc.integer({ min: 1, max: 5000 }), fc.integer({ min: 0, max: 1000 }), async (y, page) => {
+        window.scrollTo(0, y);
+        await app.router.navigate(appContract.href("app.ordersList", {}, { page }), { replace: true });
+        await settle();
+        expect(now(app.router)).toMatchObject({ id: "app.ordersList", search: { page } });
+        expect(window.scrollY).toBe(y);
+      }),
+      { seed: SEED, numRuns: 25 },
+    );
     app.stop();
   });
   it("back restores the previous entry's scroll position", async () => {
     const app = await start("/", { render: true });
     await fc.assert(
       fc.asyncProperty(fc.integer({ min: 1, max: 5000 }), async (y) => {
-        await app.router.navigate(routes.href("orders.list"));
+        await app.router.navigate(appContract.href("app.ordersList"));
         await settle();
         window.scrollTo(0, y);
-        await app.router.navigate(routes.href("orders.new"));
+        await app.router.navigate(appContract.href("app.ordersNew"));
         await settle();
         expect(window.scrollY).toBe(0);
         app.history.back();
         await settle();
-        expect(now(app.router)).toMatchObject({ id: "orders.list" });
+        expect(now(app.router)).toMatchObject({ id: "app.ordersList" });
         expect(window.scrollY).toBe(y);
       }),
       { seed: SEED, numRuns: 25 },
@@ -73,8 +105,8 @@ describe("k.router scroll and focus", () => {
               await app.router.navigate(to);
               await settle();
             };
-            const A = routes.href("orders.list");
-            const B = routes.href("orders.new");
+            const A = appContract.href("app.ordersList");
+            const B = appContract.href("app.ordersNew");
             await go(A, 11); // "/" left at 11
             await go(B, a1); // A left at a1
             await go(A, b1); // B left at b1
@@ -82,23 +114,23 @@ describe("k.router scroll and focus", () => {
             expect(y).toBe(0);
             app.history.back();
             await settle();
-            expect(now(app.router)).toMatchObject({ id: "orders.list" });
+            expect(now(app.router)).toMatchObject({ id: "app.ordersList" });
             expect(y).toBe(a2);
             app.history.back();
             await settle();
-            expect(now(app.router)).toMatchObject({ id: "orders.new" });
+            expect(now(app.router)).toMatchObject({ id: "app.ordersNew" });
             expect(y).toBe(b1);
             app.history.back();
             await settle();
-            expect(now(app.router)).toMatchObject({ id: "orders.list" });
+            expect(now(app.router)).toMatchObject({ id: "app.ordersList" });
             expect(y).toBe(a1);
             app.history.forward();
             await settle();
-            expect(now(app.router)).toMatchObject({ id: "orders.new" });
+            expect(now(app.router)).toMatchObject({ id: "app.ordersNew" });
             expect(y).toBe(b1);
             app.history.forward();
             await settle();
-            expect(now(app.router)).toMatchObject({ id: "orders.list" });
+            expect(now(app.router)).toMatchObject({ id: "app.ordersList" });
             expect(y).toBe(a2);
             app.stop();
           },

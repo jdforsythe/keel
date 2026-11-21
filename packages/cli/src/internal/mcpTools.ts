@@ -1,5 +1,6 @@
 import { operations } from "../operations.ts";
 import type { JsonSchema } from "./JsonSchema.ts";
+import { stdSlot } from "./stdSlot.ts";
 import { toJsonSchema } from "./toJsonSchema.ts";
 
 /**
@@ -7,8 +8,12 @@ import { toJsonSchema } from "./toJsonSchema.ts";
  * every tool returns `{ records }` of kind-tagged OUTPUT.md records, and the per-kind schema (the same for all tools)
  * would triple the size of tools/list (budget `mcp.tools-list`).
  */
-export function mcpTools(): { name: string; description: string; inputSchema: JsonSchema }[] {
-  return operations.map((op) => ({
+export function mcpTools(): {
+  name: string;
+  description: string;
+  inputSchema: JsonSchema;
+}[] {
+  return [...operations, ...stdSlot.values()].map((op) => ({
     name: op.name,
     description: op.description,
     inputSchema: toJsonSchema(op.input.node),

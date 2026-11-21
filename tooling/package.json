@@ -1,17 +1,22 @@
 {
   "name": "@keel/tooling",
   "private": true,
+  "version": "0.0.0",
   "type": "module",
   "main": "output.ts",
   "exports": {
     "./output": "./output.ts",
+    "./quick-first": "./quick-first.ts",
+    "./repo-root": "./repo-root.ts",
+    "./vitest-config": "./vitest-config.ts",
     "./vitest-reporter": "./vitest-reporter.ts"
   },
   "scripts": {
-    "check": "tsc --noEmit -p tsconfig.json"
+    "check": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
   },
   "devDependencies": {
     "@types/node": "^22",
-    "vitest": "^2"
+    "vitest": "^4.1.12"
   }
 }

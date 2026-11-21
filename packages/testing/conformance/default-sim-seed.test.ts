@@ -14,7 +14,6 @@ import { afterEach, describe, expect, it } from "vitest";
 import { ClockView, SEED } from "./fixtures.ts";
 
 const RollSchema = s.object({ r: s.number(), at: s.number() });
-type Slots = Record<string, unknown> | undefined;
 
 const build = () => {
   const roll = store(RollSchema, { r: 0, at: 0 }, { id: "sim.roll" });
@@ -35,8 +34,7 @@ const { roll, setRoll } = made;
 
 const T = template('<div><button id="sim.roll" data-k="sim.roll">roll</button><p id="sim.r"></p></div>');
 const RollView = Object.assign(
-  (_props: Record<string, never>, _slots?: Slots, ctx?: Ctx): Node => {
-    if (ctx === undefined) throw new Error("fixture: ctx not passed to component");
+  (_props: Record<string, never>, ctx: Ctx): Node => {
     roll.uses([setRoll]);
     const root = clone(T);
     const p = root instanceof Element ? root.querySelector("[id='sim.r']") : null;
@@ -119,8 +117,7 @@ describe("k.testing: a render without a ctx runs under the default sim", () => {
 const seen: { ctx: Ctx | undefined; at: number; draws: number[] } = { ctx: undefined, at: -1, draws: [] };
 const ProbeT = template("<p></p>");
 const Probe = Object.assign(
-  (_props: Record<string, never>, _slots?: Slots, ctx?: Ctx): Node => {
-    if (ctx === undefined) throw new Error("fixture: ctx not passed to component");
+  (_props: Record<string, never>, ctx: Ctx): Node => {
     seen.ctx = ctx;
     seen.at = ctx.clock.now();
     seen.draws = [ctx.random.float(), ctx.random.float(), ctx.random.float()];

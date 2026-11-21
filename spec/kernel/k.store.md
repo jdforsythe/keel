@@ -1,20 +1,24 @@
 # k.store: Store and transactions
-status: implemented
+status: conformance-covered
 
 **API.**
 ```ts
 export const cart = store(CartSchema, { items: [] })
-export const addItem = transaction(cart, 'cart.addItem', s.object({ item: Item }), (state, { item }) => ({ ...state, items: [...state.items, item] }))
+export const addItem = transaction(cart, 'cart.addItem', AddItem, (st, { item }) => ({ ...st, items: [...st.items, item] }))
 ```
-Reads: `cart.get('items')`, `cart.select(fn)` as computeds. Writes: only via `tx(addItem, payload, { meta }?)`; `payload` is typed by the transaction's schema, so a payload of another type is a compile error, while one typed `unknown` (wire data, a log entry) compiles and is validated at run time. Log: `cart.log()` ordered entries `{ name, payload, at, id, meta? }`; `cart.snapshot({ meta }?)`, `cart.restore(snap)`, `cart.undo()`, `cart.undoWhere(pred)`. `stores()` returns the live stores by id. `cart.check(state)` returns `Result<T, KeelError<'store.invariant'>>`: ok iff `state` parses with `schema` and every `invariant` holds, without committing or logging. A store exposes readonly `schema` and `id`; a transaction exposes readonly `schema` (its payload schema) and `store`. `snapshot()` is `{ state, log, initial }`.
+Reads: `cart.get('items')`, `cart.select(fn)` as computeds. Writes: only via `tx(addItem, payload, { meta, base, key }?)`; `payload` is typed by the transaction's schema, so a payload of another type is a compile error; one typed `unknown` compiles and is validated at run time. Log: `cart.log()` ordered entries `{ name, payload, at, id, meta? }`; `cart.snapshot({ meta }?)`, `cart.restore(snap)`, `cart.undo()`, `cart.undoWhere(pred)`. `cart.check(state)` returns `Result<T, KeelError<'store.invariant'>>`: ok iff `state` parses with `schema` and every `invariant` holds, without committing or logging. A store exposes readonly `schema`, `id` and `payloads`; a transaction exposes readonly `schema` and `store`. `snapshot()` is `{ state, log, initial, head, keys }`. Heads, a write's `base` and `key`, and `transaction(..., { concurrent })`: k.sync; restoring snapshots older code stored: k.persist.
 
-**Ids and invariants.** `store(schema, initial, { id, clock? })`: `id` is the stable store id `<module>.<export>`; the compiler fills it from the export name when omitted (runtime default `store.<n>` from a module counter); it keys `state()` in the harness and the `k-state` snapshot. **Registries** (RFC 0022): `isolate(scope)` gives a scope its own registry; `store()` registers in, and `stores()` reads, the registry of the nearest isolated scope on the `owner()` chain, else the module registry, so a duplicate live id throws only within one registry (the server isolates each request scope). `invariant(store, fn)` declares a predicate over state checked after every transaction; a violation returns `err` with code `store.invariant` and rolls back; it is declared once, next to the store, and `@keel/testing` runs it under generated payloads. A payload failing its schema returns `err(schema.invalid)`; an undeclared transaction returns `err` with code `store.undeclared` (runtime form of E1301). Log entry `at` comes from `clock` (default: a counter); never from `Date`.
+**Ids and invariants.** `store(schema, initial, { id, clock?, logLimit?, keyLimit? })`: `id` is the stable store id `<module>.<export>`; the compiler fills it from the export name when omitted (runtime default `store.<n>` from a module counter); it keys `state()` in the harness and the `k-state` snapshot. **Registries**: `isolate(scope)` gives a scope its own registry; `store()` registers in, and `stores()` reads, the registry of the nearest isolated scope on the `owner()` chain, else the module registry, so a duplicate live id throws only within one registry (the server isolates each request scope). `invariant(store, fn)` declares a predicate over state checked after every transaction; a violation returns `err` with code `store.invariant` and rolls back; declared once, next to the store. A payload failing its schema returns `err(schema.invalid)`; an undeclared transaction returns `err(store.undeclared)`. Log entry `at` comes from `clock` (default: a counter), never `Date`.
 
-**Log meta** (rfc:0028). `meta` is a record of JSON values with no schema (e.g. `{ caller }`), copied and frozen onto the entry; it never enters state, and non-JSON meta returns `err(schema.invalid)` with nothing committed. Snapshots reach clients (`#k-state`), so `snapshot()` drops `meta` from every entry; `snapshot({ meta: true })` keeps it and `restore` keeps the `meta` of the entries it restores: meta survives exactly when the log does. `undoWhere(pred)` undoes the latest entry when `pred(entry)` holds for it and returns whether it did; it never undoes an older matching entry, since replaying the log without a middle entry would reorder, or invalidate, the entries after it. `undo()` is unchanged.
+**Log meta**. `meta` is a record of JSON values with no schema, copied and frozen onto the entry; it never enters state, and non-JSON meta returns `err(schema.invalid)` with nothing committed. Snapshots reach clients (`#k-state`), so `snapshot()` drops `meta` from every entry; `snapshot({ meta: true })` keeps it and `restore` keeps the `meta` of the entries it restores. `undoWhere(pred)` undoes the latest entry when `pred(entry)` holds for it and returns whether it did; it never undoes an older matching entry.
 
-**Ownership.** A component declares `uses: [addItem]`, bound to the declaring scope (`owner()`); `tx` consults the declarations of the calling scope and its ancestors, and a caller with none in its chain is unrestricted. Calling an undeclared transaction from a component is E1301; loaders and actions (k.router) run outside component scopes and are unrestricted. Transaction functions must be pure: E1302 on any `ctx` or global access.
+**Log limit**. A store keeps at most `logLimit` entries (default 256; not a non-negative integer: `store` throws). A commit past it folds the oldest entry into the base `undo` replays from, which `snapshot()` returns as `initial`; `restore` folds a longer log the same way. State is unchanged. `undo` and `undoWhere` reach only kept entries: with none left they return `false` and change nothing.
 
-**Rules.** E1302 `ctx` or global access inside a transaction function (transactions are pure).
+**Secrets**. `tx` keeps a payload's `s.secret` values; `snapshot()` folds every entry up to the last holding one into `initial`. `store()` throws E1303 on a state schema holding `s.secret`. A revealed value is plain data (k.privacy).
+
+**Ownership.** A component declares `uses: [addItem]`, bound to the declaring scope (`owner()`); `tx` consults the declarations of the calling scope and its ancestors, and a caller with none in its chain is unrestricted. Calling an undeclared transaction from a component is E1301; loaders and actions (k.router) run outside component scopes and are unrestricted.
+
+**Rules.** E1302 `ctx` or global access inside a transaction function · E1303 `s.secret` in a store's state schema, or a `reveal` call in a transaction function. Partial (static): skips unresolved schemas, chains past 8 consts, `reveal` in imported helpers.
 
 **Conformance.**
 - Transactions are deterministic for equal inputs.
@@ -33,3 +37,10 @@ Reads: `cart.get('items')`, `cart.select(fn)` as computeds. Writes: only via `tx
 - Non-JSON meta is `schema.invalid` and changes nothing.
 - `snapshot()` entries carry no `meta`, and `restore(snapshot({ meta: true }))` reproduces the log with its meta.
 - `undoWhere(pred)` undoes exactly when the latest entry satisfies `pred` and otherwise changes nothing.
+- After more than `logLimit` commits, `log()` holds the latest `logLimit` entries, replaying them from `snapshot().initial` reproduces state, and `undo()` returns `true` exactly `logLimit` times.
+- `restore` of a snapshot whose log exceeds `logLimit` keeps its state and its latest `logLimit` entries.
+- An effect reading `stores()` reruns when a store is created and when its scope is disposed.
+- `payloads` maps each transaction declared on a store to that transaction's `schema` and holds no other name.
+- A payload's `s.secret` value is `reveal`able in `log()`; `snapshot()` then holds no secret and restores the same state.
+- E1303 fires on a nested `s.secret` in a state schema and on `reveal` in a transaction function, not on clean twins.
+- `store()` throws E1303 on a state schema with a nested `s.secret`, not on its clean twin.

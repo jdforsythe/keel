@@ -1,6 +1,6 @@
 # RFC 0037: `keel check` reads `.keel/` artifacts; documents load runtime JS only for islands
 
-Status: accepted (ADR-0026)
+Status: implemented (ADR-0026)
 
 ## Problem
 RFC 0033 left k.compiler at 13/14 and k.runtime at 9/10 (backlog 0105, 0106).

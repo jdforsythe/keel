@@ -5,7 +5,7 @@ import { check } from "@keel/check";
 import { s } from "@keel/schema";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { type Files, lowerId, SEED } from "./module-support.ts";
+import { type Files, SEED, lowerId } from "./module-support.ts";
 
 const NO_TYPES = { types: false } as const;
 
@@ -17,7 +17,7 @@ export default module({
   id: '${id}',
   deps: [${deps.map((d) => `'${d}'`).join(", ")}],
   capabilities: [],
-  public: { exports: [], routes: [] },
+  public: { exports: [] },
   std: ${std},
 })
 `,
@@ -49,7 +49,7 @@ test("a `std` key naming an app module reports E1158 even when the module is in 
         {
           path: "modules/other/module.ts",
           source:
-            "import { module } from '@keel/compiler'\nexport default module({ id: 'other', deps: [], capabilities: [], public: { exports: [], routes: [] } })\n",
+            "import { module } from '@keel/compiler'\nexport default module({ id: 'other', deps: [], capabilities: [], public: { exports: [] } })\n",
         },
       ];
       expect(e1158(files).length).toBe(1);

@@ -5,3 +5,4 @@ coverage
 reports
 .stryker-tmp
 .api.storage*
+auth.sqlite*

@@ -1,7 +1,7 @@
 {
   "name": "@keel/schema",
   "version": "0.0.0",
-  "private": false,
+  "private": true,
   "type": "module",
   "exports": {
     ".": {
@@ -11,19 +11,26 @@
     "./gen": {
       "types": "./src/gen.ts",
       "default": "./src/gen.ts"
+    },
+    "./internal": {
+      "types": "./src/internal/index.ts",
+      "default": "./src/internal/index.ts"
     }
   },
-  "files": ["dist"],
+  "files": ["dist", "docs"],
   "scripts": {
     "check": "tsc --noEmit && biome check src test unsafe",
     "test": "vitest run",
+    "coverage": "node ../../tooling/coverage.mjs",
     "build": "tsc -p tsconfig.build.json",
-    "mutate": "stryker run"
+    "mutate": "node ../../tooling/mutate.mjs",
+    "prepack": "node ../../tooling/docs-pack.mjs"
   },
   "peerDependencies": {
     "fast-check": "^3"
   },
   "devDependencies": {
+    "@types/node": "^22",
     "fast-check": "^3",
     "@keel/tooling": "workspace:*"
   }

@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 import { Case, Match, mount } from "../src/index.ts";
 import { clone, template } from "../src/ops/index.ts";
 import { rootSignal } from "./support.ts";
+import { testCtx } from "./testCtx.ts";
 
 type State = { state: "loading" } | { state: "ready"; value: number };
 
@@ -15,22 +16,26 @@ describe("Match without a key", () => {
     const on = rootSignal<State>({ state: "loading" });
     const host = document.createElement("div");
     let renders = 0;
-    const dispose = mount(() => {
-      renders++;
-      const d = document.createElement("div");
-      d.appendChild(
-        Match({
-          get on() {
-            return on.get();
-          },
-          children: [
-            Case<State>({ tag: "loading", children: () => clone(template("<i>l</i>")) }),
-            Case<State>({ tag: "ready", children: (v) => document.createTextNode(String(v.value)) }),
-          ],
-        }),
-      );
-      return d;
-    }, host);
+    const dispose = mount(
+      () => {
+        renders++;
+        const d = document.createElement("div");
+        d.appendChild(
+          Match({
+            get on() {
+              return on.get();
+            },
+            children: [
+              Case<State>({ tag: "loading", children: () => clone(template("<i>l</i>")) }),
+              Case<State>({ tag: "ready", children: (v) => document.createTextNode(String(v.value)) }),
+            ],
+          }),
+        );
+        return d;
+      },
+      host,
+      { ctx: testCtx },
+    );
     expect(renders).toBe(1);
     expect(host.textContent).toBe("l");
     on.set({ state: "ready", value: 7 });
@@ -43,19 +48,23 @@ describe("Match without a key", () => {
 
   it("defaults the key to `state` for loading|error|ready cases, else `tag`", () => {
     const host = document.createElement("div");
-    const dispose = mount(() => {
-      const d = document.createElement("div");
-      d.appendChild(
-        Match({
-          on: { tag: "b" },
-          children: [
-            Case<{ tag: "a" | "b" }>({ tag: "a", children: () => document.createTextNode("A") }),
-            Case<{ tag: "a" | "b" }>({ tag: "b", children: () => document.createTextNode("B") }),
-          ],
-        }),
-      );
-      return d;
-    }, host);
+    const dispose = mount(
+      () => {
+        const d = document.createElement("div");
+        d.appendChild(
+          Match({
+            on: { tag: "b" },
+            children: [
+              Case<{ tag: "a" | "b" }>({ tag: "a", children: () => document.createTextNode("A") }),
+              Case<{ tag: "a" | "b" }>({ tag: "b", children: () => document.createTextNode("B") }),
+            ],
+          }),
+        );
+        return d;
+      },
+      host,
+      { ctx: testCtx },
+    );
     expect(host.textContent).toBe("B");
     dispose();
   });

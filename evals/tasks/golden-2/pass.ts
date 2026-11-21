@@ -1,7 +1,8 @@
 // True when golden app 2 meets evals/tasks/golden-2/TASK.md acceptance: key files exist, the app's `check` script and
 // `keel check` clean (app-scoped, so other packages' work in progress cannot fail it), the app's tests green, invariant,
-// server stores and transaction properties present, unsafe count 0, and the hidden renderRoute suite
-// (acceptance.test.ts, copied into the app, run, and removed) passes.
+// server stores and transaction properties present, unsafe count 0, every golden-2 ledger item at rung example or better
+// and the ledger not regressed (backlog 0120), and the hidden renderRoute suite (acceptance.test.ts, copied into the
+// app, run, and removed) passes.
 import { execFile } from "node:child_process";
 import { access, copyFile, readFile, readdir, rm } from "node:fs/promises";
 import { dirname, join } from "node:path";
@@ -18,8 +19,10 @@ const FILES: readonly string[] = [
   "tokens.ts",
   "topology.ts",
   "modules/kitchen/module.ts",
+  "modules/kitchen/kitchen.contract.ts",
   "modules/kitchen/routes.ts",
   "modules/recipes/module.ts",
+  "modules/recipes/recipes.contract.ts",
   "modules/recipes/routes.ts",
   "modules/recipes/cook.guard.ts",
   "test/api.test.ts",
@@ -56,6 +59,27 @@ async function codeFiles(dir = "", out: string[] = []): Promise<string[]> {
   return out.sort();
 }
 
+const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
+
+/**
+ * Every golden-2 ledger item, computed now by `keel ledger --scope golden-2:` (not read from the committed ledger.json,
+ * which the agent may not edit), must be at rung example or better.
+ */
+async function ledgerItemsProven(): Promise<boolean> {
+  const r = await sh("node", [
+    join(root, "packages", "cli", "src", "bin.ts"),
+    "ledger",
+    "--format=json",
+    "--scope",
+    "golden-2:",
+  ]);
+  const items = r.stdout
+    .split("\n")
+    .filter((l) => l.includes('"kind":"ledger"'))
+    .map((l): unknown => JSON.parse(l));
+  return items.length > 0 && items.every((e) => isRecord(e) && typeof e.rung === "string" && e.rung !== "none");
+}
+
 /** Runs the hidden renderRoute suite with the app's own vitest config, then removes the copy. */
 async function acceptance(): Promise<boolean> {
   const target = join(app, ACCEPT);
@@ -90,5 +114,7 @@ export default async (): Promise<boolean> => {
   if (!(await sh("pnpm", ["--filter", "golden-2", "check"])).ok) return false;
   if (!(await sh("node", [join(root, "packages", "cli", "src", "bin.ts"), "check", "--quiet"], app)).ok) return false;
   if (!(await sh("pnpm", ["test", "--quiet", "--filter", "golden-2"])).ok) return false;
+  if (!(await sh("pnpm", ["ledger", "--diff", "--scope", "golden-2:"])).ok) return false;
+  if (!(await ledgerItemsProven())) return false;
   return acceptance();
 };
