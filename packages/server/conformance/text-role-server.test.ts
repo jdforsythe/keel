@@ -12,7 +12,7 @@ import { describe, expect, test } from "vitest";
 
 const SEED = 1337;
 
-const serverRole = async (role: string | undefined, children: string): Promise<string | null> => {
+const serverRole = async (role: "status" | "alert" | undefined, children: string): Promise<string | null> => {
   const props = role === undefined ? { id: "x", children } : { id: "x", role, children };
   const appContract = contract("app", { "app.home": { path: "/" } });
   const app = await createApp({
@@ -28,10 +28,10 @@ const serverRole = async (role: string | undefined, children: string): Promise<s
 };
 
 describe("k.ui Text role (server output)", () => {
-  test.skip('`Text role="status"` and `Text role="alert"` write that `role` attribute in server output', async () => {
+  test('`Text role="status"` and `Text role="alert"` write that `role` attribute in server output', async () => {
     await fc.assert(
       fc.asyncProperty(
-        fc.constantFrom("status", "alert"),
+        fc.constantFrom("status" as const, "alert" as const),
         fc.stringMatching(/^[a-z]{0,10}$/),
         async (role, children) => {
           expect(await serverRole(role, children)).toBe(role);

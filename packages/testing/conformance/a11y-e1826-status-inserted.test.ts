@@ -22,7 +22,7 @@ const live = (role: "status" | "alert", id: string, children: string): Node => {
 };
 // The same region whose text is a computed over a signal (a signal or computed child is bound, k.ui).
 const liveComputed = (id: string, read: () => string): Node => {
-  const props = { id, role: "status", children: computed(read) };
+  const props = { id, role: "status" as const, children: computed(read) };
   return Text(props);
 };
 

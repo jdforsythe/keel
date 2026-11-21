@@ -12,7 +12,7 @@ const SEED = 1337;
 const simCtx = createCtx({ mode: "sim", seed: 1337 });
 const roles = ["status", "alert"] as const;
 
-const clientRole = (role: string | undefined, children: string): string | null => {
+const clientRole = (role: "status" | "alert" | undefined, children: string): string | null => {
   const props = role === undefined ? { id: "x", children } : { id: "x", role, children };
   const host = document.createElement("div");
   document.body.appendChild(host);
@@ -24,7 +24,7 @@ const clientRole = (role: string | undefined, children: string): string | null =
 };
 
 describe("k.ui Text role (client output)", () => {
-  test.skip('`Text role="status"` and `Text role="alert"` write that `role` attribute in client output', () => {
+  test('`Text role="status"` and `Text role="alert"` write that `role` attribute in client output', () => {
     fc.assert(
       fc.property(fc.constantFrom(...roles), fc.stringMatching(/^[a-z]{0,10}$/), (role, children) => {
         expect(clientRole(role, children)).toBe(role);
@@ -42,7 +42,7 @@ describe("k.ui Text role (client output)", () => {
     );
   });
 
-  test.skip("any other `role` is a type error: the `role` prop is `'status' | 'alert'` and optional", () => {
+  test("any other `role` is a type error: the `role` prop is `'status' | 'alert'` and optional", () => {
     type RoleProp = Parameters<typeof Text>[0] extends { readonly role?: infer R } ? R : never;
     // Before the prop exists RoleProp is never and Expected follows it, so tsc stays green; once built it must be exactly the closed pair.
     type Expected = [RoleProp] extends [never] ? never : "status" | "alert" | undefined;
