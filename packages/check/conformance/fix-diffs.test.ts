@@ -372,6 +372,7 @@ const NO_FIX = [
   "E1755", // a budget breach has no source edit
   "E1758", // the locale or time zone is an argument the caller holds
   "E1802", // the missing prop value is the author's choice
+  "E1607", // which registered name to keep is the author's choice
   "E1803", // the replacement token is the author's choice
   "E1804", // which token pair to use is a design choice
   "E1823", // which literal to write is the author's choice

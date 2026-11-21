@@ -69,7 +69,10 @@ describe("k.data: an expected failure of a capability answers through k.server's
           const { res } = await boot(() => err(Errors[code].make({})), mode);
           expect(res.status).toBe(STATUS[code]);
           const body: unknown = await res.json();
-          const error = typeof body === "object" && body !== null ? Reflect.get(body, "error") : undefined;
+          // k.api: a GET answers `{ id, results }`; the loader's `Result` sits at `results[id]`.
+          const results = typeof body === "object" && body !== null ? Reflect.get(body, "results") : undefined;
+          const entry = typeof results === "object" && results !== null ? Reflect.get(results, "notes.get") : undefined;
+          const error = typeof entry === "object" && entry !== null ? Reflect.get(entry, "error") : undefined;
           expect(typeof error === "object" && error !== null ? Reflect.get(error, "code") : undefined).toBe(code);
         },
       ),
