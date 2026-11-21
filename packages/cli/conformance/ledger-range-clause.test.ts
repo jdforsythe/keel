@@ -56,21 +56,14 @@ describe("k.ledger: a range clause holds a rung only while every code in it is n
 
   it.skip("for any range of one letter, every code named is `example` and any one code left out is `none`", () => {
     fc.assert(
-      fc.property(
-        fc.integer({ min: 2001, max: 2990 }),
-        fc.integer({ min: 2, max: 5 }),
-        fc.nat(),
-        (lo, len, pick) => {
-          const codes = Array.from({ length: len + 1 }, (_, i) => `E${lo + i}`);
-          const clause = `E${lo}-E${lo + len} each fire.`;
-          const files = (omit: number): Record<string, string> =>
-            Object.fromEntries(
-              codes.flatMap((c, i) => (i === omit ? [] : [[T(i), cite(clause, c)] as const])),
-            );
-          expect(rungs([clause], files(-1))).toEqual(["example"]);
-          expect(rungs([clause], files(pick % codes.length))).toEqual(["none"]);
-        },
-      ),
+      fc.property(fc.integer({ min: 2001, max: 2990 }), fc.integer({ min: 2, max: 5 }), fc.nat(), (lo, len, pick) => {
+        const codes = Array.from({ length: len + 1 }, (_, i) => `E${lo + i}`);
+        const clause = `E${lo}-E${lo + len} each fire.`;
+        const files = (omit: number): Record<string, string> =>
+          Object.fromEntries(codes.flatMap((c, i) => (i === omit ? [] : [[T(i), cite(clause, c)] as const])));
+        expect(rungs([clause], files(-1))).toEqual(["example"]);
+        expect(rungs([clause], files(pick % codes.length))).toEqual(["none"]);
+      }),
       { numRuns: 5, seed: SEED },
     );
   }, 600_000);
