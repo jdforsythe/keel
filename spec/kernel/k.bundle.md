@@ -24,7 +24,7 @@ Which bundles, file names and handler uses k.boundary's stubs, Assertion and Rea
 
 **Limits.** A script a project plugin bundles in a pass of its own, or a file copied from `public/`, is not walked; it is the project's. So is a project plugin that writes the value of a variable not named `KEEL_*`.
 
-**Rules.** E1011 a client bundle holds a module its service map omits · E1010 a specifier naming a file in a case other than its name on disk (fix: the name on disk) · E1007 reasons `environment config` and `environment value`, beside k.boundary's.
+**Rules.** E1011 a client bundle holds a file of an app module of a `node` or `static` deployable that its service map (k.hosting Peers) omits · E1010 a specifier naming a file in a case other than its name on disk (fix: the name on disk) · E1007 reasons `environment config` and `environment value`, beside k.boundary's.
 
 **Conformance.**
 - In a `node` fixture whose `lib/notes.server.ts` holds a canary and `lib/w.ts` imports it: a page starting `new Worker(new URL('../../lib/w.ts', import.meta.url), { type: 'module' })`, and one importing `../../lib/w.ts?worker`, ship no canary under `dist/<name>/`; `keel check` reports E1004 at `lib/w.ts` naming the chain; a worker importing `notes.server.ts?raw` fails `vite build` with one E1007 whose chain runs through the worker.
