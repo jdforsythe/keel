@@ -571,14 +571,39 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
     bad: [apiRoutes("'a.list': { api: true, path: '/api/list' }")],
     clean: [apiRoutes("'a.list': { api: true, path: '/api/list' }")],
   },
+  E1552: {
+    opts: NO_TYPES,
+    bad: [
+      f(
+        "topology.ts",
+        "import { topology } from '@keel/server'\nexport default topology({ api: { modules: ['a'], adapter: 'node' }, web: { modules: ['w'], adapter: 'client', host: 'api' } })\n",
+      ),
+      manifest("a"),
+      manifest("w"),
+    ],
+    clean: [
+      f(
+        "topology.ts",
+        "import { topology } from '@keel/server'\nexport default topology({ api: { modules: ['a'], adapter: 'node' }, web: { modules: ['w'], adapter: 'client', servedBy: 'api' } })\n",
+      ),
+      manifest("a"),
+      manifest("w"),
+    ],
+  },
   E1566: {
     badOpts: {
       ...NO_TYPES,
-      topology: { api: { modules: ["a"], adapter: "node" }, web: { modules: ["w"], adapter: "client", host: "web" } },
+      topology: {
+        api: { modules: ["a"], adapter: "node" },
+        web: { modules: ["w"], adapter: "client", servedBy: "web" },
+      },
     },
     cleanOpts: {
       ...NO_TYPES,
-      topology: { api: { modules: ["a"], adapter: "node" }, web: { modules: ["w"], adapter: "client", host: "api" } },
+      topology: {
+        api: { modules: ["a"], adapter: "node" },
+        web: { modules: ["w"], adapter: "client", servedBy: "api" },
+      },
     },
     bad: [f("modules/w/x.ts", "export const x = 1;\n")],
     clean: [f("modules/w/x.ts", "export const x = 1;\n")],

@@ -31,7 +31,7 @@ const files: Record<string, string> = {
   "index.html":
     '<!doctype html>\n<html lang="en">\n  <head>\n    <meta charset="utf-8" />\n    <title>fx</title>\n  </head>\n  <body>\n    <div id="app"></div>\n    <script type="module" src="/@keel/entry.ts"></script>\n  </body>\n</html>\n',
   "topology.ts":
-    "import { topology } from '@keel/server'\nexport default topology({ api: { modules: ['a'], adapter: 'node' }, web: { modules: ['w'], adapter: 'client', host: 'api' } })\n",
+    "import { topology } from '@keel/server'\nexport default topology({ api: { modules: ['a'], adapter: 'node' }, web: { modules: ['w'], adapter: 'client', servedBy: 'api' } })\n",
   "modules/a/module.ts": mod("a"),
   "modules/a/Params.schema.ts":
     "import { s } from '@keel/schema'\nexport const Params = s.object({ id: s.string() })\n",

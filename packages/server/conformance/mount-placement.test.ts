@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 // Spec: k.mount, Conformance "One page module under `renderRoute` and served by `createApp` then `resumeDocument` records equal `documents()` for equal input."
-// Spec: k.mount, Origins "`href` resolves against the page's origin, which must mount `handle`: every `node` deployable does (k.user), a `client` one through its `host`."
+// Spec: k.mount, Origins "`href` resolves against the page's origin, which must mount `handle`: every `node` deployable does (k.user), a `client` one through its `servedBy`."
 // Spec: k.mount, Navigation "Without a router (a server-rendered page) links and an action's 303 are already the browser's."
 // Spec: k.mount, Testing "`renderRoute` and `resumeDocument` handles have `documents()`: the document navigations the page started, in order, `{ method, url, body }` (`body` the urlencoded text, `null` for a GET); none is made and the page stays."
 // Not testable here: "Cookies are per origin ... an app serves one public origin and forwards to peers" is a rule of deployment (no check sees the deploy's origins).
@@ -126,7 +126,7 @@ describe("k.mount: the entries a page records reach a node deployable that mount
     node: { api: { modules: ["acct", "mt"], adapter: "node" as const } },
     "client hosted by node": {
       api: { modules: ["acct"], adapter: "node" as const },
-      web: { modules: ["mt"], adapter: "client" as const, host: "api" },
+      web: { modules: ["mt"], adapter: "client" as const, servedBy: "api" },
     },
   };
 

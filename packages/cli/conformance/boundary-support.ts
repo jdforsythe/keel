@@ -143,7 +143,7 @@ export function clientTree(): Tree {
     ...nodeTree("node"),
     ...moduleW(),
     "topology.ts":
-      "import { topology } from '@keel/server'\nexport default topology({ api: { modules: ['a'], adapter: 'node' }, web: { modules: ['w'], adapter: 'client', host: 'api' } })\n",
+      "import { topology } from '@keel/server'\nexport default topology({ api: { modules: ['a'], adapter: 'node' }, web: { modules: ['w'], adapter: 'client', servedBy: 'api' } })\n",
     "index.html": HTML("/@keel/entry.ts"),
   };
 }

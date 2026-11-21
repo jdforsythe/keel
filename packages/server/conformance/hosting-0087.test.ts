@@ -4,11 +4,13 @@
 // Spec: k.hosting, clause "With `allow: ['https://app.test']`: a preflight from that origin to an API route is 204 with the six headers; a POST from it runs the action and carries the two response headers; the same requests from `https://other.test` are 405 and 403; a preflight to a page is 405."
 // Spec: k.hosting, clause "`KEEL_ALLOW_ORIGINS=*` exits 1 with one E1560 naming the key."
 // Spec: k.hosting, clause "A request from an allowed origin with `sec-fetch-site: cross-site` logs W1567 once for that origin."
-// Spec: k.hosting, clause "With `host: 'api'`, `node dist/api/server.mjs` answers `GET /` and `GET /no/such/page` with the client `index.html`, an unmatched runtime GET with 404, and a client asset as `immutable`; `host` naming a `client` deployable is E1566."
+// Spec: k.hosting, clause "With `servedBy: 'api'`, `node dist/api/server.mjs` answers `GET /` and `GET /no/such/page` with the client `index.html`, an unmatched runtime GET with 404, and a client asset as `immutable`; `servedBy` naming a `client` deployable is E1566."
+// Spec: k.hosting, clause "A deployable with `host: 'api'` is one E1552 naming `host` (k.topology); `topology()` throws E1552 for it."
+// Spec: k.topology Rules "E1552 ... a deployable key but `modules`, `adapter`, `servedBy`, `storage`, `shells`, `caller`."
 // Spec: k.hosting Rules E1565, E1566, W1567
 // Seed 1337.
-// ASSUMPTIONS: `createApp({ allow: string[] })`; `topology({ <name>: { host } })`; `KEEL_ALLOW_ORIGINS` is read by the built `server.mjs`;
-// the client artifact copy lands at `dist/<host>/index.html` and `dist/<host>/assets/`; the W1567 diag is a JSON log line with kind "diag" (dev mode sink).
+// ASSUMPTIONS: `createApp({ allow: string[] })`; `topology({ <name>: { servedBy } })`; `KEEL_ALLOW_ORIGINS` is read by the built `server.mjs`;
+// the client artifact copy lands at `dist/<servedBy>/index.html` and `dist/<servedBy>/assets/`; the W1567 diag is a JSON log line with kind "diag" (dev mode sink).
 // The `service({ module })` binding of the `keel-peer` tags is observed in packages/cli/conformance/hosting-peer-binding.test.ts.
 import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
@@ -384,9 +386,9 @@ describe("k.hosting", () => {
     expect(w1567().filter((l) => l.includes(second))).toHaveLength(1);
   });
 
-  test("With `host: 'api'`, `node dist/api/server.mjs` answers `GET /` and `GET /no/such/page` with the client `index.html`, an unmatched runtime GET with 404, and a client asset as `immutable`; `host` naming a `client` deployable is E1566.", async () => {
+  test("With `servedBy: 'api'`, `node dist/api/server.mjs` answers `GET /` and `GET /no/such/page` with the client `index.html`, an unmatched runtime GET with 404, and a client asset as `immutable`; `servedBy` naming a `client` deployable is E1566.", async () => {
     const b = buildFixture(
-      `{ api: { modules: ["api"], adapter: "node" }, web: { modules: ["app"], adapter: "client", host: "api" } }`,
+      `{ api: { modules: ["api"], adapter: "node" }, web: { modules: ["app"], adapter: "client", servedBy: "api" } }`,
     );
     expect(b.status).toBe(0);
     const index = fs.readFileSync(path.join(b.root, "dist", "web", "index.html"), "utf8");
@@ -411,17 +413,17 @@ describe("k.hosting", () => {
     });
 
     const onClient = buildFixture(
-      `{ api: { modules: ["api"], adapter: "node" }, web: { modules: ["app"], adapter: "client", host: "web" } }`,
+      `{ api: { modules: ["api"], adapter: "node" }, web: { modules: ["app"], adapter: "client", servedBy: "web" } }`,
     );
     expect(onClient.status).not.toBe(0);
     expect(onClient.out).toContain("E1566");
   }, 300_000);
 
-  test("E1566 `host` on a deployable that is not `client`, naming an unknown or non-`node` deployable, or two `client` deployables naming one host.", () => {
+  test("E1566 `servedBy` on a deployable that is not `client`, naming an unknown or non-`node` deployable, or two `client` deployables naming one.", () => {
     const bad = [
-      `{ api: { modules: ["api"], adapter: "node", host: "api" }, web: { modules: ["app"], adapter: "client" } }`,
-      `{ api: { modules: ["api"], adapter: "node" }, web: { modules: ["app"], adapter: "client", host: "nowhere" } }`,
-      `{ api: { modules: ["api"], adapter: "node" }, pre: { modules: ["app"], adapter: "static" }, web: { modules: [], adapter: "client", host: "pre" } }`,
+      `{ api: { modules: ["api"], adapter: "node", servedBy: "api" }, web: { modules: ["app"], adapter: "client" } }`,
+      `{ api: { modules: ["api"], adapter: "node" }, web: { modules: ["app"], adapter: "client", servedBy: "nowhere" } }`,
+      `{ api: { modules: ["api"], adapter: "node" }, pre: { modules: ["app"], adapter: "static" }, web: { modules: [], adapter: "client", servedBy: "pre" } }`,
     ];
     for (const t of bad) {
       const b = buildFixture(t);
@@ -429,6 +431,39 @@ describe("k.hosting", () => {
       expect(b.out, t).toContain("E1566");
     }
   }, 300_000);
+
+  test("A deployable with `host: 'api'` is one E1552 naming `host`; `topology()` throws E1552 for it.", () => {
+    const leftover = `{ api: { modules: ["api"], adapter: "node" }, web: { modules: ["app"], adapter: "client", host: "api" } }`;
+    const b = buildFixture(leftover);
+    expect(b.status).not.toBe(0);
+    expect(b.out.match(/E1552/g)?.length).toBe(1);
+    expect(b.out).toContain("host");
+    expect(fs.existsSync(path.join(b.root, "dist"))).toBe(false);
+    const declared = {
+      api: { modules: ["api"], adapter: "node" },
+      web: { modules: ["app"], adapter: "client", host: "api" },
+    };
+    // Reflect.apply: the declaration is deliberately outside `topology`'s parameter type.
+    expect(() => Reflect.apply(topology, undefined, [declared])).toThrow(/^E1552/);
+  }, 300_000);
+
+  test("`topology()` with a deployable key but `modules`, `adapter`, `servedBy`, `storage`, `shells`, `caller` throws a message starting E1552.", () => {
+    // Seed 1337 (SEED, fixtures.ts).
+    const known = new Set(["modules", "adapter", "servedBy", "storage", "shells", "caller"]);
+    fc.assert(
+      fc.property(
+        fc.stringMatching(/^[a-z]{1,10}$/).filter((k) => !known.has(k)),
+        fc.constantFrom("node", "static", "client"),
+        (key, adapter) => {
+          const web = { modules: ["app"], adapter, [key]: "api" };
+          expect(() =>
+            Reflect.apply(topology, undefined, [{ api: { modules: ["api"], adapter: "node" }, web }]),
+          ).toThrow(/^E1552/);
+        },
+      ),
+      { seed: SEED, numRuns: 25 },
+    );
+  });
 
   test("W1567 an allowed origin that is cross-site to the server: the caller cookie cannot reach it; use one registrable domain or one origin.", async () => {
     const lines: string[] = [];

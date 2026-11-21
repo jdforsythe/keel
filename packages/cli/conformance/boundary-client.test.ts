@@ -1,7 +1,7 @@
 // Spec: k.boundary, Conformance "A `client` deployable it hosts ships its own `*.server.ts` loader and none of those canaries; a `static` fixture's browser build ships none of its own."
 // Spec: k.boundary, Server-only "A server-only file is a file named `*.server.*` or `*.guard.*`, in the app or a package, unless its module is one only `client` deployables list (a file under `modules/<id>/` is module `<id>`'s, a stdlib package's file its module's; a file outside every module is server-only). In a module a `node` or `static` deployable lists, loaders and actions (E1551) and guards (E1009) live in server-only files and run only on the server or at build; no byte of a server-only file, nor of what only server-only files import, is in an asset served to a browser. In a module only `client` deployables list nothing is server-only: its `*.server.*` and `*.guard.*` files hold the loaders, actions and guards the browser runs (k.router), are browser files (k.host) and ship like any other."
 // Seed 1337 (no random input: one fixture, built once; one variant for the Node built-in). The real binary and `vite build` over a temp project with `@keel/*` linked.
-// Node `api` lists module `a`; `client` `web` (`host: 'api'`) lists module `w`, whose `*.server.ts` loader and `*.guard.ts` guard run in the browser.
+// Node `api` lists module `a`; `client` `web` (`servedBy: 'api'`) lists module `w`, whose `*.server.ts` loader and `*.guard.ts` guard run in the browser.
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import {
