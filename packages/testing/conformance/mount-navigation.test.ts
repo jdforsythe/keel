@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.mount, Navigation "`Link to`, `navigate` and an action's `ok(href)` take it as any `Href`. A router handles client-side only a path its table matches as a page; a link click, `navigate` or `ok(href)` to another path is a document navigation (`location.assign`; `replace`: `location.replace`)."
+// Spec: k.mount, Navigation "`Link to`, `navigate` and an action's `ok(href)` take it as any `Href`. A router handles client-side only a path its table matches as a page and k.mount-scope allows; a link click, `navigate` or `ok(href)` to another path is a document navigation (`location.assign`; `replace`: `location.replace`)."
 // Spec: k.mount, Conformance "In a router, a `Link` click, `navigate` and an action's `ok` to it each record one GET in `documents()` and keep the page; a `routes.href` link navigates client-side."
 // Seed 1337 (fc.assert below). Not testable through `documents()`: that `replace` uses `location.replace`, which the reading does not tell apart from `location.assign`.
 import fc from "fast-check";
