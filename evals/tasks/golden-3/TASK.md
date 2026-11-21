@@ -1,11 +1,11 @@
 # Golden app 3 (volunteer shifts, compliance)
 
-Build `apps/golden-3/`: volunteer shift sign-up for a food bank. Anyone signs up for a shift with their name, email, phone and access needs, sees their own sign-ups and cancels them; an organizer sees the roster with contact details and marks attendance. Every page is rendered by one `node` deployable, so the nonce policy covers every document, and personal data reaches every sink. Use only kernel and stdlib APIs from the spec slice; read a full section with `pnpm spec <id>`. Read `docs/COMPLIANCE.md` first: it says what Keel enforces and what the app declares. Skills `keel-server`, `keel-client`, `keel-compliance`, `keel-testing` are in `.claude/skills/<name>/SKILL.md`; the package READMEs (`packages/<name>/README.md`) of `@keel/schema`, `@keel/server`, `@keel/testing`, `@keel/cli` and `@keel/std-sessions` describe each API. Edit nothing outside `apps/golden-3/` (the root `pnpm install` lockfile change excepted). Scaffold from `apps/` with `keel scaffold project golden-3 --workspace` (keep its `index.html` and `vitest.config.ts`; replace its `app` module), then `pnpm install` at the root. If the slice leaves an API you need unspecified, stop and report `blocked: <section> <question>`; invent nothing.
+Build this project, `golden-3`: volunteer shift sign-up for a food bank. Anyone signs up for a shift with their name, email, phone and access needs, sees their own sign-ups and cancels them; an organizer sees the roster with contact details and marks attendance. Every page is rendered by one `node` deployable, so the nonce policy covers every document, and personal data reaches every sink. The project exists in the current directory (`keel scaffold project`, installed); you are a developer who has only what a Keel user has. Read `AGENTS.md` first: it names the skills in `.claude/skills/` (`keel`, then `keel-server`, `keel-client`, `keel-compliance`, `keel-testing`). Retrieve exact API text with `keel docs` (the map), `keel docs <id>` (a section), `keel docs --for <code>` and `keel explain <code>`; each package's README is in `node_modules/@keel/<name>/`. Use only kernel and stdlib APIs; invent nothing. Read the `keel-compliance` skill first: it says what Keel enforces and what the app declares. Edit only files in this project. A `@keel/*` package the app needs goes into `package.json` at `^0.0.0` and `pnpm install` resolves it from the local kit. Replace the scaffold's `app` module. If the docs leave an API you need unspecified, stop and report `blocked: <section> <question>`; invent nothing.
 
 ## Topology and package
 - `topology.ts` default export: `web` (`adapter: 'node'`, modules `shifts` and `sessions`). No `client` deployable.
 - `tokens.ts`: `export const tokens = brandTokens` (`@keel/ui/brand`). Every color pair that holds text passes 4.5:1 (k.a11y); use the brand's tokens as they are.
-- `package.json` depends on `@keel/std-text` and `@keel/std-sessions` beside the kernel packages golden-2 uses. Scripts: `check` (`tsc --noEmit && biome check modules test && keel check --quiet`), `test` (`keel test`, so `reports/a11y.json` is written), `build` (`keel build`), `dev` (`keel dev`), `web` (`node --experimental-webstorage --localstorage-file=.web.storage --disable-warning=ExperimentalWarning dist/web/server.mjs`).
+- `package.json` depends on `@keel/std-text` and `@keel/std-sessions` beside the packages the scaffold lists (add `@keel/std-headless` or others only when used). Scripts: `check` (`tsc --noEmit && keel check --quiet`), `test` (`keel test`, so `reports/a11y.json` is written), `build` (`keel build`), `dev` (`keel dev`), `web` (`node --experimental-webstorage --localstorage-file=.web.storage --disable-warning=ExperimentalWarning dist/web/server.mjs`).
 
 ## Data (`modules/shifts`, each schema in its own `*.schema.ts`)
 - `Shift { id: s.string(), title: line({ max: 80 }), when: line({ max: 80 }), slots: s.int({ min: 1, max: 50 }) }`.
@@ -35,30 +35,30 @@ Build `apps/golden-3/`: volunteer shift sign-up for a food bank. Anyone signs up
 
 ## Files (exactly these, plus what the scaffold writes)
 ```
-apps/golden-3/{package.json,tsconfig.json,vite.config.ts,tokens.ts,topology.ts}
-apps/golden-3/modules/shifts/{module,routes,board,signUpTx,cancelTx,markAttendedTx,isOrganizer,pageOrigin}.ts  and  organizer.guard.ts
-apps/golden-3/modules/shifts/{Shift,Signup,SignupDraft,Attendance,Board,ShiftParams,SignupParams}.schema.ts
-apps/golden-3/modules/shifts/{loadIndex,loadShift,loadMine,loadSignup,loadRoster,loadAttend,signUp,cancel,markAttended}.server.ts
-apps/golden-3/modules/shifts/{AppShell,IndexPage,ShiftPage,MinePage,SignupPage,RosterPage,AttendPage,ShiftError}.tsx
-apps/golden-3/test/{board,routes,server,privacy}.test.ts  and  test/webRoutes.ts
+{package.json,tsconfig.json,vite.config.ts,tokens.ts,topology.ts}
+modules/shifts/{module,routes,board,signUpTx,cancelTx,markAttendedTx,isOrganizer,pageOrigin}.ts  and  organizer.guard.ts
+modules/shifts/{Shift,Signup,SignupDraft,Attendance,Board,ShiftParams,SignupParams}.schema.ts
+modules/shifts/{loadIndex,loadShift,loadMine,loadSignup,loadRoster,loadAttend,signUp,cancel,markAttended}.server.ts
+modules/shifts/{AppShell,IndexPage,ShiftPage,MinePage,SignupPage,RosterPage,AttendPage,ShiftError}.tsx
+test/{board,routes,server,privacy}.test.ts  and  test/webRoutes.ts
 ```
 `signUpTx.ts` exports transaction factory `signUpTx` bound by `boardStores` (likewise `cancelTx`, `markAttendedTx`); `test/webRoutes.ts` exports `webRoutes = manifest({ ...shifts.routes, ...sessions.routes })`, the deployable's table as the generated entry merges it.
 
 ## Tests (`@keel/testing` only; ids only)
 - `board.test.ts`: `properties()` on the three transactions (a factory store in an isolated scope, as the k.testing slice line shows); the invariant.
-- `routes.test.ts`: a `renderRoute` test for each of the six pages (with `caller`, and a sim ctx whose storage holds the board and, for the roster pages, `shifts.organizers`): these renders make the page's accessibility claims (docs/COMPLIANCE.md). Also: sign up through the Form (`shifts.join:name` ... then `shifts.join.submit`) lands on `shifts.mine`; an invalid submit focuses `shifts.join:name`; `focusOrder()` on `shifts.show` lists `shifts.join:name`, `shifts.join:email`, `shifts.join:phone`, `shifts.join:needs`, `shifts.join.submit` in that order; after navigating from `shifts.index` to a shift, `shifts.show.title` is focused; a non-organizer on `/roster` lands on `shifts.index`; another caller's sign-up is `ShiftError`.
+- `routes.test.ts`: a `renderRoute` test for each of the six pages (with `caller`, and a sim ctx whose storage holds the board and, for the roster pages, `shifts.organizers`): these renders make the page's accessibility claims (the `keel-compliance` skill). Also: sign up through the Form (`shifts.join:name` ... then `shifts.join.submit`) lands on `shifts.mine`; an invalid submit focuses `shifts.join:name`; `focusOrder()` on `shifts.show` lists `shifts.join:name`, `shifts.join:email`, `shifts.join:phone`, `shifts.join:needs`, `shifts.join.submit` in that order; after navigating from `shifts.index` to a shift, `shifts.show.title` is focused; a non-organizer on `/roster` lands on `shifts.index`; another caller's sign-up is `ShiftError`.
 - `server.test.ts`: `createApp({ topology, routes: webRoutes, ctx, deployable: 'web', log: { format: 'json', write } })`: each page's document carries the policy with a fresh nonce and the six headers; a cancel by another caller is 404; a non-organizer's `markAttended` is 403.
-- `privacy.test.ts` (the canary test, docs/COMPLIANCE.md): fill every path of `piiPaths(SignupDraft)` with a generated value of at least 8 characters, sign up through `createApp`, then find none of the values (`piiValues`) in the log lines `write` received, in the recorder's events and in the sim `session` capability's `taken()`.
+- `privacy.test.ts` (the canary test, the `keel-compliance` skill): fill every path of `piiPaths(SignupDraft)` with a generated value of at least 8 characters, sign up through `createApp`, then find none of the values (`piiValues`) in the log lines `write` received, in the recorder's events and in the sim `session` capability's `taken()`.
 
-## Acceptance (checked by `pass.ts`)
+## Acceptance (checked by `pass.ts`, after the harness imports this project as `apps/golden-3` in the Keel repository)
 1. Every file above exists; `unsafe(` count 0; no `any`, casts, `!`, `@ts-ignore`; `.pii(` marks on `Signup` and `SignupDraft`; `autocomplete` on the four sign-up controls.
-2. `pnpm --filter golden-3 check` and `keel check` in `apps/golden-3` clean; `keel test` in `apps/golden-3` green (it writes `reports/a11y.json`).
-3. Ledger scope `golden-3:`: every item at rung example or better and `pnpm ledger --diff --scope golden-3:` clean; `properties(` covers `signUpTx`, `cancelTx`, `markAttendedTx`; every export is used in a test body (a page reached only through `renderRoute` is not evidence for its export, so `render` it too).
-4. `pnpm --filter golden-3 build` green; `dist/web/server.mjs` exists.
+2. `pnpm check` and `keel check` clean; `keel test` green (it writes `reports/a11y.json`).
+3. Ledger scope `golden-3:`: every item at rung example or better and `keel ledger` shows no regression; `properties(` covers `signUpTx`, `cancelTx`, `markAttendedTx`; every export is used in a test body (a page reached only through `renderRoute` is not evidence for its export, so `render` it too).
+4. `pnpm build` green; `dist/web/server.mjs` exists.
 5. Accessibility claims: for each of the six pages, every `a11y:<routeId>#<criterion>` item `keel ledger` emits is at `example`.
 6. The hidden suite passes: each page renders with no E1703, E1804 or E1821; `focusOrder()` on the sign-up form; focus on `shifts.show.title` after navigating from `/` to a shift; every document carries the k.security policy byte for byte with a fresh 64-character nonce and every response the six headers; the canary run finds no marked value in the log, the sessions or the session archive.
 7. An injected failure (a copy of the app whose `signUp` throws an `Error` naming the input's values) logs a `diag` holding `[pii]` and none of the values.
 8. The browser pass (`browser.ts`, Chromium and WebKit from the Playwright cache): sign up, list mine, cancel, organizer roster on the built server with no `securitypolicyviolation` event and no `csp` log record; axe-core's `color-contrast` in a second context finds no violation.
 9. `keel evidence --audit <fixture>` with a fresh `KEEL_EVIDENCE_KEY` writes a bundle; `keel evidence --verify <dir> --key <keyId>` exits 0; `pii.json` coverage is 1 and lists every marked path; `deps.json` has `advisories`; no canary value is in any bundle file or under `.keel/sessions/`.
 
-Not graded, the user's step: the external accessibility audit (WCAG 2.2 AA, a desktop and a mobile screen reader) and the pen test (OWASP ASVS level 2), given the verified bundle, its `keyId`, `docs/THREAT-MODEL.md` and an https deployment from `deploy/web/Dockerfile` (docs/COMPLIANCE.md).
+Not graded, the user's step: the external accessibility audit (WCAG 2.2 AA, a desktop and a mobile screen reader) and the pen test (OWASP ASVS level 2), given the verified bundle, its `keyId`, the threat model and an https deployment from the Dockerfile `keel build` writes (the `keel-compliance` skill).

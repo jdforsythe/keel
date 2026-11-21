@@ -1,1 +1,13 @@
-{ "skill": "keel" }
+{
+  "skill": "keel",
+  "docs": "public",
+  "import": {
+    "scripts": {
+      "check": "tsc --noEmit && biome check modules test && keel check --quiet",
+      "test": "keel test",
+      "build": "keel build",
+      "dev": "keel dev",
+      "web": "node --experimental-webstorage --localstorage-file=.web.storage --disable-warning=ExperimentalWarning dist/web/server.mjs"
+    }
+  }
+}
