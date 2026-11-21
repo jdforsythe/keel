@@ -13,7 +13,7 @@ export type Input = {
   readonly paths?: string[];
   readonly id?: string;
   readonly for?: string;
-  readonly map?: boolean;
+  readonly sync?: boolean;
   readonly url?: string;
   readonly target?: string;
   readonly platform?: "android" | "ios";

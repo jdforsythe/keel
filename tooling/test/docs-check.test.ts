@@ -11,9 +11,14 @@ import {
   checkRepoOnly,
   checkSections,
   checkShape,
+  checkTemplateCodes,
+  checkTemplateRepoOnly,
+  checkTemplateSections,
+  checkTemplateSize,
   fences,
   knownCodes,
   sectionIds,
+  templates,
   typeCheck,
   writeCopies,
 } from "../docs-check.mjs";
@@ -171,6 +176,50 @@ describe("D0013: copies", () => {
     fs.writeFileSync(path.join(d, ".claude/skills/keel/SKILL.md"), "two\n");
     fs.writeFileSync(path.join(d, ".claude/skills/keel/extra.md"), "x\n");
     expect(codes(checkCopy(d, "keel"))).toEqual(["D0013", "D0013"]);
+  });
+});
+
+describe("D0015 D0016 D0017 D0018: the scaffold templates", () => {
+  const agents = (text: string) => ({
+    file: "AGENTS.md",
+    source: "packages/scaffold/src/templates/agentsBlock.ts",
+    text,
+  });
+  it("renders AGENTS.md (the Keel block, each skill's copy path) and CLAUDE.md", () => {
+    const t = templates([{ name: "keel", text: fm("body\n") }]);
+    expect(t.map((x: { file: string }) => x.file)).toEqual(["AGENTS.md", "CLAUDE.md"]);
+    expect(t[0]?.text).toContain(".claude/skills/keel/SKILL.md");
+    expect(t[1]?.text).toBe("@AGENTS.md");
+  });
+  it("D0015 passes known codes and a range holding one, fails an unknown code and an empty range", () => {
+    const known = new Set(["E1001", "E1901"]);
+    expect(checkTemplateCodes(repo, agents("E1001, E19xx"), known)).toEqual([]);
+    expect(codes(checkTemplateCodes(repo, agents("E9999 and E77xx"), known))).toEqual(["D0015", "D0015"]);
+  });
+  it("D0016 passes a section id with a spec file, fails one without", () => {
+    const ids = new Set(["k.router"]);
+    expect(checkTemplateSections(repo, agents("`keel docs k.router`"), ids)).toEqual([]);
+    expect(codes(checkTemplateSections(repo, agents("keel docs k.nowhere"), ids))).toEqual(["D0016"]);
+  });
+  it("D0017 allows .claude/skills/ and keel docs, nothing else repo-only", () => {
+    expect(checkTemplateRepoOnly(repo, agents("`.claude/skills/keel/SKILL.md`; keel docs k.router"))).toEqual([]);
+  });
+  it.each([
+    "pnpm spec k.x",
+    "spec/kernel",
+    "docs/OUTPUT.md",
+    "apps/golden-1",
+    "packages/cli",
+    ".claude/agents",
+    "--workspace",
+  ])("D0017 fails %s", (text) => {
+    expect(codes(checkTemplateRepoOnly(repo, agents(text)))).toEqual(["D0017"]);
+  });
+  it("D0018 passes a block within docs.agents, fails one over it, at the template's source file", () => {
+    expect(checkTemplateSize(repo, agents("x".repeat(40)), 10)).toEqual([]);
+    const over = checkTemplateSize(repo, agents("x".repeat(41)), 10);
+    expect(codes(over)).toEqual(["D0018"]);
+    expect(over[0]?.path).toBe("packages/scaffold/src/templates/agentsBlock.ts");
   });
 });
 

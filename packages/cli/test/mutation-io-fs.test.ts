@@ -279,8 +279,11 @@ describe("hostIo", () => {
       expect(Object.values(io.env ?? {}).every((v) => typeof v === "string")).toBe(true);
       expect(Object.keys(io.env ?? {}).length).toBeGreaterThan(1);
       expect(io.load?.("none")).toEqual([]);
-      expect(io.load?.("query")).toEqual([{ path: "src/a.ts", source: "A" }]);
-      expect(io.load?.("tree")).toEqual([
+      // Past the project's files, a scope carries the running @keel/cli's docs and skills (hostDocs).
+      const own = (scope: "query" | "tree") =>
+        (io.load?.(scope) ?? []).filter((f) => !f.path.startsWith("node_modules/@keel/cli/"));
+      expect(own("query")).toEqual([{ path: "src/a.ts", source: "A" }]);
+      expect(own("tree")).toEqual([
         { path: "notes.txt", source: "N" },
         { path: "src/a.ts", source: "A" },
       ]);

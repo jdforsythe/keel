@@ -8,6 +8,13 @@
 // or `description` frontmatter missing; D0013 .claude/skills/<name>/ differs from the published skill; D0014 a block
 // imports a relative path no other block of the skill provides.
 //
+// The scaffold templates (`AGENTS.md` and `CLAUDE.md` as `keel scaffold project` and `keel docs --sync` write them,
+// rendered from @keel/scaffold/agents with the published skills): D0015 a cited diagnostic code in neither the explain
+// catalog nor a spec section, or a range holding none; D0016 a cited section id with no spec file; D0017 a repo-only
+// path or command; D0018 the Keel block of `AGENTS.md` over the `docs.agents` budget of tooling/budgets.json. The
+// voice lint (V0003) covers the rendered template text. A diagnostic sits at the template's source file, at the line
+// holding the rendered line's text.
+//
 // Type-checking. All blocks of all skills go through one TypeScript program under the strict profile
 // (packages/compiler/tsconfig.strict.json) in a temporary folder outside the repo whose node_modules links every
 // workspace package, and is removed afterwards. Each ts or tsx fence becomes a module (`export {}` is appended, so
@@ -17,16 +24,17 @@
 //
 // Repo-only names (D0011), matched in the whole file: `pnpm spec`; `--workspace`; and the path prefixes `spec/`, `docs/`,
 // `apps/`, `packages/`, `.claude/` when the character before is not a word character, `@`, `.`, `/` or `-`. So
-// `keel docs k.router`, `node_modules/@keel/x/docs/y` and a URL path are not hits.
+// `keel docs k.router`, `node_modules/@keel/x/docs/y` and a URL path are not hits. In the templates (D0017) the same
+// names are hits but `.claude/skills/`: the Keel block names each skill's copy at `.claude/skills/<name>/SKILL.md` by
+// design, so that one path is allowed in the templates and only there.
 //
 // Section ids (D0010) are the tokens `k.<name>` and `std.<name>` outside a longer dotted name. Codes (D0009) are
 // `E`, `W` or `I` plus four digits, and ranges of that shape ending in one or two `x`.
-//
-// Checks of the AGENTS.md template and of the packed docs/ folders belong to later lanes: see `templateChecks`.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import ts from "typescript";
+import { agentFiles } from "../packages/scaffold/src/agents/index.ts";
 import { codesIn, listPackages } from "./docs-pack.mjs";
 import { parseArgs, run } from "./output.ts";
 
@@ -333,8 +341,89 @@ export function typeCheck(repo, skills) {
   return diags;
 }
 
-/** Checks of the AGENTS.md template and of the packed docs/ folders are added here when those exist. */
-export const templateChecks = [];
+/** Source files of the scaffold templates, by the path the scaffold writes. */
+export const TEMPLATE_SOURCES = {
+  "AGENTS.md": "packages/scaffold/src/templates/agentsBlock.ts",
+  "CLAUDE.md": "packages/scaffold/src/agents/agentFiles.ts",
+};
+
+/**
+ * The templates as a new project gets them, `[{ file, source, text }]`: `AGENTS.md` (the Keel block) and
+ * `CLAUDE.md`, rendered with the given skills `[{ name, text }]`.
+ */
+export function templates(skills) {
+  const rendered = agentFiles(
+    new Map(),
+    skills.map((s) => ({ name: s.name, description: frontmatter(s.text).description ?? "", text: s.text })),
+  );
+  if (!rendered.ok) return [];
+  return Object.entries(TEMPLATE_SOURCES).flatMap(([file, source]) => {
+    const text = rendered.value.find((f) => f.path === file)?.want;
+    return typeof text === "string" ? [{ file, source, text: text.trimEnd() }] : [];
+  });
+}
+
+/** A template diagnostic at its source file, on the source line holding the rendered line's text (else line 1). */
+function atSource(repo, t, code, line, message) {
+  const want = t.text.split("\n")[line - 1]?.trim() ?? "";
+  const file = path.join(repo, t.source);
+  const lines = want && fs.existsSync(file) ? read(file).split("\n") : [];
+  const hit = lines.findIndex((l) => l.includes(want));
+  return diag(code, t.source, hit === -1 ? 1 : hit + 1, `${message} in the ${t.file} template`);
+}
+
+/** D0015: cited codes against the known set, as D0009 checks a skill. */
+export function checkTemplateCodes(repo, t, known) {
+  return checkCodes(t.file, t.text, known).map((d) => atSource(repo, t, "D0015", d.line, d.message));
+}
+
+/** D0016: cited section ids that have no spec file, as D0010 checks a skill. */
+export function checkTemplateSections(repo, t, ids) {
+  return checkSections(t.file, t.text, ids).map((d) => atSource(repo, t, "D0016", d.line, d.message));
+}
+
+/** Repo-only names in a template: those of a skill, with `.claude/skills/` allowed. */
+export const TEMPLATE_REPO_ONLY = [
+  /\bpnpm spec\b/g,
+  /--workspace\b/g,
+  /(?<![\w@./-])(?:spec|docs|apps|packages)\//g,
+  /(?<![\w@./-])\.claude\/(?!skills\/)/g,
+];
+
+/** D0017: repo-only paths and commands in a template. */
+export function checkTemplateRepoOnly(repo, t) {
+  const diags = [];
+  for (const re of TEMPLATE_REPO_ONLY)
+    for (const m of t.text.matchAll(re))
+      diags.push(atSource(repo, t, "D0017", lineOf(t.text, m.index ?? 0), `repo-only name "${m[0]}"`));
+  return diags;
+}
+
+/** D0018: the Keel block of `AGENTS.md` over the budget, in tokens (chars / 4). */
+export function checkTemplateSize(repo, t, budget) {
+  if (t.file !== "AGENTS.md" || budget === undefined) return [];
+  const tokens = Math.ceil(t.text.length / 4);
+  return tokens > budget ? [atSource(repo, t, "D0018", 0, `${tokens} tokens exceed docs.agents ${budget}`)] : [];
+}
+
+/** The `docs.agents` budget of a checkout's tooling/budgets.json. */
+export function agentsBudget(repo) {
+  const file = path.join(repo, "tooling/budgets.json");
+  return fs.existsSync(file) ? JSON.parse(read(file)).output?.["docs.agents"] : undefined;
+}
+
+/** Checks of the scaffold templates, each `(repo, skills, { known, ids }) => diags`. */
+export const templateChecks = [
+  (repo, skills, { known, ids }) => {
+    const budget = agentsBudget(repo);
+    return templates(skills).flatMap((t) => [
+      ...checkTemplateCodes(repo, t, known),
+      ...checkTemplateSections(repo, t, ids),
+      ...checkTemplateRepoOnly(repo, t),
+      ...checkTemplateSize(repo, t, budget),
+    ]);
+  },
+];
 
 /** Every check over the published skills of a checkout. */
 export function checkRepo(repo, names = Object.keys(TARGETS)) {
@@ -353,7 +442,7 @@ export function checkRepo(repo, names = Object.keys(TARGETS)) {
     );
   }
   diags.push(...typeCheck(repo, skills));
-  for (const check of templateChecks) diags.push(...check(repo));
+  for (const check of templateChecks) diags.push(...check(repo, skills, { known, ids }));
   return { diags, skills };
 }
 

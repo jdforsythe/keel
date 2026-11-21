@@ -12,7 +12,9 @@ describe("session slot, unfilled", () => {
   it("keel report reports I1055 naming the report module, exit 0", async () => {
     const r = await run(["report", "--format=compact"], { cwd: "/work/app", files: [] });
     expect(r.code).toBe(0);
-    expect(r.stdout).toBe("I1055 report not available: needs the stdlib report module\n  see: k.cli\nok report\n");
+    expect(r.stdout).toBe(
+      "I1055 report not available: needs the stdlib report module\n  see: keel docs k.cli\nok report\n",
+    );
   });
 
   it("MCP lists no session tool", async () => {

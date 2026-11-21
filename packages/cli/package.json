@@ -16,6 +16,10 @@
       "types": "./src/evidence/index.ts",
       "default": "./src/evidence/index.ts"
     },
+    "./docs": {
+      "types": "./src/docs/index.ts",
+      "default": "./src/docs/index.ts"
+    },
     "./shell": {
       "types": "./src/shell/index.ts",
       "default": "./src/shell/index.ts"

@@ -17,7 +17,8 @@ const io = (cwd: string) => ({
   cwd,
   env: {},
   tty: false,
-  load: (scope: "none" | "query" | "ledger" | "tree") => (scope === "none" ? [] : readProject(cwd, scope)),
+  load: (scope: "none" | "docs" | "query" | "ledger" | "tree") =>
+    scope === "none" || scope === "docs" ? [] : readProject(cwd, scope),
   apply: (writes: Parameters<typeof applyWrites>[1]) => applyWrites(cwd, writes),
 });
 interface Rec {

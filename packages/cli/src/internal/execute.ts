@@ -12,7 +12,6 @@ import { inspectCommand } from "./inspectCommand.ts";
 import { ledgerCommand } from "./ledgerCommand.ts";
 import { projectFiles } from "./projectFiles.ts";
 import { scaffoldCommand } from "./scaffoldCommand.ts";
-import { specCommand } from "./specCommand.ts";
 import { stdSlot } from "./stdSlot.ts";
 import { testCommand } from "./testCommand.ts";
 import { unavailable } from "./unavailable.ts";
@@ -35,8 +34,11 @@ export async function execute(op: Operation, input: Input, io: Io): Promise<Outc
       return only(await testCommand(input, io));
     case "build":
       return await buildCommand(io, input);
-    case "spec":
-      return only(specCommand(input, io));
+    case "docs": {
+      // Behind its own entry, loaded only when the command runs (`@keel/cli` size budget).
+      const { docsCommand } = await import("@keel/cli/docs");
+      return docsCommand(input, io);
+    }
     case "explain":
       return only(await explainCommand(input));
     case "ledger":
@@ -48,7 +50,7 @@ export async function execute(op: Operation, input: Input, io: Io): Promise<Outc
     }
     case "scaffold":
     case "codemod":
-      return scaffoldCommand(op.name, input, io);
+      return await scaffoldCommand(op.name, input, io);
     case "dev":
       return only(unavailable(op.name, "vite.config.ts and the keel binary (vite dev server)", "k.server"));
     case "inspect":

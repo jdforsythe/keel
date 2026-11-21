@@ -68,7 +68,7 @@ describe("scaffold command routing", () => {
     const c = await go(["codemod", "transaction", "x"]);
     expect(c.result.code).toBe(2);
     expect(c.result.stdout).toBe(
-      'E1052 unknown codemod operation "transaction"; it is keel scaffold transaction\n  see: k.scaffold\nfail codemod\n',
+      'E1052 unknown codemod operation "transaction"; it is keel scaffold transaction\n  see: keel docs k.scaffold\nfail codemod\n',
     );
   });
 
@@ -76,7 +76,8 @@ describe("scaffold command routing", () => {
     const r = await go(["scaffold", "bogusbogusbogusbogusbogusbogus"]);
     expect(r.result).toEqual({
       code: 2,
-      stdout: 'E1052 unknown scaffold operation "bogusbogusbogusbogusbogu"\n  see: k.scaffold\nfail scaffold\n',
+      stdout:
+        'E1052 unknown scaffold operation "bogusbogusbogusbogusbogu"\n  see: keel docs k.scaffold\nfail scaffold\n',
       stderr: "",
     });
     expect(r.records[0]).toEqual({
@@ -88,14 +89,14 @@ describe("scaffold command routing", () => {
     expect(r.writes).toEqual([]);
     for (const op of ["rename", "move", "add-field"])
       expect((await go(["scaffold", op, "a", "b"])).result.stdout).toBe(
-        `E1052 unknown scaffold operation "${op}"; it is keel codemod ${op}\n  see: k.scaffold\nfail scaffold\n`,
+        `E1052 unknown scaffold operation "${op}"; it is keel codemod ${op}\n  see: keel docs k.scaffold\nfail scaffold\n`,
       );
     for (const op of ["project", "module", "route", "component", "store"])
       expect((await go(["codemod", op, "a"])).result.stdout).toBe(
-        `E1052 unknown codemod operation "${op}"; it is keel scaffold ${op}\n  see: k.scaffold\nfail codemod\n`,
+        `E1052 unknown codemod operation "${op}"; it is keel scaffold ${op}\n  see: keel docs k.scaffold\nfail codemod\n`,
       );
     expect((await go(["codemod", "zzz"])).result.stdout).toBe(
-      'E1052 unknown codemod operation "zzz"\n  see: k.scaffold\nfail codemod\n',
+      'E1052 unknown codemod operation "zzz"\n  see: keel docs k.scaffold\nfail codemod\n',
     );
   });
 });
@@ -183,10 +184,10 @@ describe("codemod rename kind inference", () => {
 
   it("the last refusal is reported when no kind finds `from`", async () => {
     expect((await go(["codemod", "rename", "Nope", "Nada"])).result.stdout).toBe(
-      "E1052 Nope:1:1 no schema named Nope\n  see: k.scaffold\nfail codemod rename\n",
+      "E1052 Nope:1:1 no schema named Nope\n  see: keel docs k.scaffold\nfail codemod rename\n",
     );
     expect((await go(["codemod", "rename", "nope.x", "nope.y"])).result.stdout).toBe(
-      "E1052 nope.x:1:1 no route nope.x\n  see: k.scaffold\nfail codemod rename\n",
+      "E1052 nope.x:1:1 no route nope.x\n  see: keel docs k.scaffold\nfail codemod rename\n",
     );
   });
 
@@ -201,7 +202,7 @@ describe("codemod rename kind inference", () => {
   it("an explicit --kind is the only kind tried", async () => {
     const r = await go(["codemod", "rename", "OrderCard", "OrderTile", "--kind", "schema"]);
     expect(r.result.stdout).toBe(
-      "E1052 OrderCard:1:1 no schema named OrderCard\n  see: k.scaffold\nfail codemod rename\n",
+      "E1052 OrderCard:1:1 no schema named OrderCard\n  see: keel docs k.scaffold\nfail codemod rename\n",
     );
     expect((await go(["codemod", "rename", "OrderCard", "OrderTile", "--kind", "component"])).result.code).toBe(0);
   });

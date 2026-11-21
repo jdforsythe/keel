@@ -1,14 +1,16 @@
 import { s } from "@keel/schema";
 import { EvidenceRecord } from "./evidence/EvidenceRecord.ts";
 import { A11ySchema } from "./internal/A11ySchema.ts";
-import { CiteSchema } from "./internal/CiteSchema.ts";
+import { DocsCiteSchema } from "./internal/DocsCiteSchema.ts";
+import { DocsEntrySchema } from "./internal/DocsEntrySchema.ts";
+import { DocsSectionSchema } from "./internal/DocsSectionSchema.ts";
+import { DocsSkillSchema } from "./internal/DocsSkillSchema.ts";
 import { EditSchema } from "./internal/EditSchema.ts";
 import { ExplainSchema } from "./internal/ExplainSchema.ts";
 import { InspectSectionSchema } from "./internal/InspectSectionSchema.ts";
 import { InspectStoreSchema } from "./internal/InspectStoreSchema.ts";
 import { LedgerSchema } from "./internal/LedgerSchema.ts";
 import { ReqSchema } from "./internal/ReqSchema.ts";
-import { SectionSchema } from "./internal/SectionSchema.ts";
 import { outputOf } from "./internal/outputOf.ts";
 import type { Operation } from "./types/Operation.ts";
 
@@ -79,12 +81,12 @@ export const operations: readonly Operation[] = [
     scope: "none",
   },
   {
-    name: "spec",
-    description: "Print one spec section, sections citing a code, or the map.",
-    input: s.object({ id: s.string().optional(), for: s.string().optional(), map: s.boolean().optional(), ...common }),
-    output: outputOf(SectionSchema, CiteSchema),
+    name: "docs",
+    description: "Installed docs: the map, a section or skill, --for <code>, --sync.",
+    input: s.object({ id: s.string().optional(), for: s.string().optional(), sync: s.boolean().optional(), ...common }),
+    output: outputOf(DocsEntrySchema, DocsSectionSchema, DocsSkillSchema, DocsCiteSchema, EditSchema),
     positional: ["id"],
-    scope: "query",
+    scope: "docs",
   },
   {
     name: "explain",

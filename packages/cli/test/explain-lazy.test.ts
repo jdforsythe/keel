@@ -50,7 +50,7 @@ const loadsExplain = (r: Run): boolean => r.loaded.some((u) => u.endsWith(EXPLAI
 
 describe("explanation table", () => {
   it("is not loaded by a command other than explain", async () => {
-    const r = await keel(["spec"], "spec");
+    const r = await keel(["docs"], "docs");
     expect(r.loaded.some((u) => u.endsWith("/packages/cli/src/bin.ts"))).toBe(true);
     expect(loadsExplain(r)).toBe(false);
   }, 60_000);

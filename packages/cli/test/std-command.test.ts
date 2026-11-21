@@ -42,7 +42,7 @@ describe("stdCommand", () => {
     const unfilled = await run(["session", "capture", "--format=compact"], IO);
     expect(unfilled.code).toBe(0);
     expect(unfilled.stdout).toBe(
-      "I1055 session not available: needs the stdlib session module\n  see: k.cli\nok session\n",
+      "I1055 session not available: needs the stdlib session module\n  see: keel docs k.cli\nok session\n",
     );
   });
 

@@ -5,8 +5,12 @@
     "spec.section": 1500,
     "spec.map": 1250,
     "explain": 300,
-    "spec.for": 400,
-    "mcp.tools-list": 1750
+    "mcp.tools-list": 1750,
+    "docs.map": 1300,
+    "docs.section": 1500,
+    "docs.skill": 2000,
+    "docs.for": 400,
+    "docs.agents": 600
   },
   "size": {
     "@keel/check": {
@@ -19,6 +23,10 @@
     },
     "@keel/cli": {
       "max": "25.75kb",
+      "platform": "node"
+    },
+    "@keel/cli/docs": {
+      "max": "3kb",
       "platform": "node"
     },
     "@keel/cli/shell": {
@@ -38,6 +46,10 @@
     "@keel/runtime-dom/ops": "10kb",
     "@keel/scaffold": {
       "max": "18.75kb",
+      "platform": "node"
+    },
+    "@keel/scaffold/agents": {
+      "max": "1.5kb",
       "platform": "node"
     },
     "@keel/schema": "5.5kb",

@@ -165,6 +165,20 @@ const ROWS: readonly Row[] = [
     "k.evidence",
   ],
   [
+    "E1065",
+    "the section's package is not installed; the message names the package to add",
+    "A section is read from the package that owns it, at its installed version.",
+    "pnpm add @keel/std-tables, then keel docs std.tables",
+    "k.docs",
+  ],
+  [
+    "E1066",
+    "installed package lacks docs/<id>.md or docs/index.json, or @keel/cli lacks docs/map.json",
+    "The cli is newer than the package, or the package is a workspace link with no packed docs.",
+    "align @keel/* versions with @keel/cli, or pack the package's docs",
+    "k.docs",
+  ],
+  [
     "E1104",
     "schema declared outside a *.schema.ts file",
     "One declaration per data shape, at one address.",
@@ -404,6 +418,27 @@ const ROWS: readonly Row[] = [
     "add-field of a required field without --default while constructors exist",
     "",
     "pass --default <value> or make the field optional",
+    "k.scaffold",
+  ],
+  [
+    "E1355",
+    "Keel block not one start and one end line",
+    "keel docs --sync cannot tell where the block ends; it writes nothing.",
+    "keep one <!-- keel:start --> line and one <!-- keel:end --> line in AGENTS.md",
+    "k.scaffold",
+  ],
+  [
+    "W1356",
+    "agent file stale or block malformed",
+    "AGENTS.md or a .claude/skills copy differs from what the installed @keel/cli writes.",
+    "keel docs --sync",
+    "k.scaffold",
+  ],
+  [
+    "E1357",
+    "write through a symlink out of the project",
+    "A path the edit set writes is a symlink, or a folder on its way resolves outside the project; no file is written.",
+    "replace the link with a real folder or file inside the project",
     "k.scaffold",
   ],
   [

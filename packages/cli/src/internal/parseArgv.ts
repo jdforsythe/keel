@@ -31,7 +31,7 @@ export function parseArgv(argv: readonly string[], ops: readonly Operation[]): P
   const name = argv[0];
   const op = ops.find((o) => o.name === name);
   if (name === undefined || name.startsWith("-"))
-    return usage("keel", argv, [makeDiag("E1051", "no command given; see keel spec k.cli", { see: "k.cli" })]);
+    return usage("keel", argv, [makeDiag("E1051", "no command given; see keel docs k.cli", { see: "k.cli" })]);
   if (op === undefined) {
     const msg = `unknown command ${JSON.stringify(name.slice(0, 24))}`;
     return usage(name, argv, [makeDiag("E1051", msg, { see: "k.cli" })]);

@@ -389,7 +389,7 @@ describe("ledger command", () => {
     expect(writes).toEqual([]);
     expect(lines(r.stdout)).toEqual([
       "E1706 packages/a/src/foo.ts:1:1 ledger rung lowered: packages/a/src/foo.ts#foo exhaustive -> probabilistic",
-      "  see: k.ledger",
+      "  see: keel docs k.ledger",
       "fail ledger --diff 3 items, 2 verified, 1 unsafe, 0 warnings, 2 example, 1 probabilistic, 1 lowered, 0 uncovered",
     ]);
     const json = await run(["ledger", "--diff", "--format=json"], {

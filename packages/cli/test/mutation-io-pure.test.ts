@@ -438,7 +438,7 @@ describe("mcpCall", () => {
     expect(r.content).toEqual([
       {
         type: "text",
-        text: `E1051 unknown command "${"z".repeat(24)}"\n  see: k.cli\nfail ${"z".repeat(40)} 1 errors\n`,
+        text: `E1051 unknown command "${"z".repeat(24)}"\n  see: keel docs k.cli\nfail ${"z".repeat(40)} 1 errors\n`,
       },
     ]);
     expect(r.structuredContent.records[0]).toEqual({
@@ -450,7 +450,7 @@ describe("mcpCall", () => {
     for (const params of [undefined, null, 5, {}, { name: 5 }, []]) {
       const e = await mcpCall(params, io);
       expect(e.isError).toBe(true);
-      expect(e.content[0]?.text).toBe('E1051 unknown command ""\n  see: k.cli\nfail 1 errors\n');
+      expect(e.content[0]?.text).toBe('E1051 unknown command ""\n  see: keel docs k.cli\nfail 1 errors\n');
     }
   });
 
@@ -470,7 +470,7 @@ describe("mcpCall", () => {
     expect(pretty.content[0]?.text).toBe("check: passed (1 files, 0 errors, 0 warnings)\n");
     const bad = await mcpCall({ name: "check", arguments: { bogus: 1 } }, io);
     expect(bad.isError).toBe(true);
-    expect(bad.content[0]?.text).toBe('E1052 unknown argument "bogus"\n  see: k.cli\nfail check 1 errors\n');
+    expect(bad.content[0]?.text).toBe('E1052 unknown argument "bogus"\n  see: keel docs k.cli\nfail check 1 errors\n');
     const missingArgs = await mcpCall({ name: "check" }, io);
     expect(missingArgs.isError).toBe(false);
   });
@@ -580,8 +580,10 @@ describe("kernelFormatters", () => {
       "ledger.mutation",
       "evidence",
       "a11y",
-      "spec.section",
-      "spec.cite",
+      "docs.entry",
+      "docs.section",
+      "docs.skill",
+      "docs.cite",
       "explain.text",
       "inspect.store",
       "inspect.section",
@@ -668,14 +670,24 @@ describe("kernelFormatters", () => {
     ).toBe('button "Save" b1 [checked expanded selected invalid]');
   });
 
-  it("spec.section is the text with trailing whitespace trimmed", () => {
-    const r = { kind: "spec.section", id: "k.cli", text: "  ## Title\n\nbody  \n\n" };
-    expect(all("spec.section", r)).toEqual(["  ## Title\n\nbody", "  ## Title\n\nbody"]);
+  it("docs.section and docs.skill are the text with one final newline dropped", () => {
+    const r = { kind: "docs.section", id: "k.cli", text: "  ## Title\n\nbody  \n\n" };
+    expect(all("docs.section", r)).toEqual(["  ## Title\n\nbody  \n", "  ## Title\n\nbody  \n"]);
+    expect(all("docs.skill", { kind: "docs.skill", id: "s", text: "x" })).toEqual(["x", "x"]);
   });
 
-  it("spec.cite", () => {
-    const r = { kind: "spec.cite", code: "E1", path: "spec/a.md", line: 12, text: "cites E1" };
-    expect(all("spec.cite", r)).toEqual(["spec/a.md:12 cites E1", "spec/a.md:12\n  cites E1"]);
+  it("docs.entry: ` not installed` when the package is absent", () => {
+    const r = { kind: "docs.entry", id: "k.router", title: "Routes", package: "@keel/router", installed: true };
+    expect(all("docs.entry", r)).toEqual(["k.router Routes @keel/router", "k.router         Routes (@keel/router)"]);
+    expect(all("docs.entry", { ...r, installed: false })).toEqual([
+      "k.router Routes @keel/router not installed",
+      "k.router         Routes (@keel/router, not installed)",
+    ]);
+  });
+
+  it("docs.cite", () => {
+    const r = { kind: "docs.cite", code: "E1", id: "k.a", line: 12, text: "cites E1" };
+    expect(all("docs.cite", r)).toEqual(["k.a:12 cites E1", "k.a:12\n  cites E1"]);
   });
 
   it("explain.text prefixes the code unless the text already names it", () => {

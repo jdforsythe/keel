@@ -134,12 +134,12 @@ describe("keel binary", () => {
     const d = tmp();
     const usage = await keel(d, ["bogus"]);
     expect(usage.code).toBe(2);
-    expect(usage.stdout).toBe('E1051 unknown command "bogus"\n  see: k.cli\nfail bogus 1 errors\n');
+    expect(usage.stdout).toBe('E1051 unknown command "bogus"\n  see: keel docs k.cli\nfail bogus 1 errors\n');
     put(d, "a.ts", "export const x: = ;");
     const bad = await keel(d, ["check"]);
     expect(bad.code).toBe(1);
     expect(bad.stdout).toBe(
-      "E1000 a.ts:1:17 syntax error: Unexpected token\n  see: k.compiler\nfail check 1 files, 1 errors, 0 warnings\n",
+      "E1000 a.ts:1:17 syntax error: Unexpected token\n  see: keel docs k.compiler\nfail check 1 files, 1 errors, 0 warnings\n",
     );
   }, 30_000);
 
@@ -159,7 +159,7 @@ describe("keel binary", () => {
   it("mcp with an extra argument is a usage error, not a server", async () => {
     const r = await keel(tmp(), ["mcp", "extra"], { stdin: '{"jsonrpc":"2.0","id":1,"method":"ping"}\n' });
     expect(r.code).toBe(2);
-    expect(r.stdout).toBe("E1052 mcp takes no arguments: extra\n  see: k.cli\nfail mcp 1 errors\n");
+    expect(r.stdout).toBe("E1052 mcp takes no arguments: extra\n  see: keel docs k.cli\nfail mcp 1 errors\n");
   }, 30_000);
 
   it("lsp serves frames and the process exits at `exit` even though stdin stays open", async () => {
@@ -245,7 +245,7 @@ describe("keel binary", () => {
     const none = await keel(d, ["dev"]);
     expect(none.code).toBe(0);
     expect(none.stdout).toBe(
-      "I1055 dev not available: needs vite.config.ts and the keel binary (vite dev server)\n  see: k.server\nok dev\n",
+      "I1055 dev not available: needs vite.config.ts and the keel binary (vite dev server)\n  see: keel docs k.server\nok dev\n",
     );
     fakeViteModule(d);
     const withArg = await keel(d, ["dev", "extra"]);

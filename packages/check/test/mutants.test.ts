@@ -2627,7 +2627,7 @@ describe("format", () => {
 describe("explain, rules, defineRule", () => {
   it("explain: kernel table, registered stdlib rule, unknown code", () => {
     expect(explain("E1001")).toMatch(/^E1001|For/);
-    expect(explain("E9999")).toBe("E9999 is not a known code; keel spec --for E9999 lists spec lines citing it.");
+    expect(explain("E9999")).toBe("E9999 is not a known code; keel docs --for E9999 lists spec lines citing it.");
     defineRule({ code: "E2951", message: "string msg", explain: "why", see: "k.check", check: () => [] });
     expect(explain("E2951")).toBe("E2951 string msg.\nwhy\nsee: k.check");
     defineRule({ code: "E2952", message: () => "fn msg", explain: "why2", check: () => [] });
