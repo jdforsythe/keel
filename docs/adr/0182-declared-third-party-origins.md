@@ -1,6 +1,6 @@
 # ADR-0182: k.origins: declared third-party origins (RFC 0160)
 
-**Status:** proposed (operator decisions D46 and D41; for the operator to confirm). It reverses ADR-0094's "one policy with no option".
+**Status:** accepted (operator decisions D46 and D41; for the operator to confirm). It reverses ADR-0094's "one policy with no option".
 
 **Context.** Every Keel document carries one fixed policy: `default-src 'none'`, `'self'` for images, fonts and connections, no media or frames, a nonce with `'strict-dynamic'` for scripts, `style-src 'self'` and Trusted Types. No app can show a CDN image, use a hosted font file, post to an analytics collector or embed a video player without proxying it through its own origin. The policy's protection comes from its script, style and Trusted Types directives, which these loads do not touch.
 

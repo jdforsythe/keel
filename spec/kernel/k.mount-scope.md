@@ -1,5 +1,5 @@
 # k.mount-scope: What counts as the mount
-status: proposed
+status: implemented
 
 How a router and the server decide that a path is the identity mount's (k.mount), and what that test does not see.
 

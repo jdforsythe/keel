@@ -41,8 +41,8 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.
 | k.defaults | Queued defaults | conformance-covered | submit |
 | k.place | Placed props | conformance-covered | calls |
 | k.router | Routes | conformance-covered | params |
-| k.contract | Module contract | proposed | entries |
-| k.routes | Route table | proposed | union |
+| k.contract | Module contract | conformance-covered | entries |
+| k.routes | Route table | conformance-covered | union |
 | k.guards | Guards | conformance-covered | deny |
 | k.prefix | Path prefix | conformance-covered | enums |
 | k.forms | Forms | conformance-covered | fields |
@@ -55,7 +55,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.
 | k.host | Host reads | conformance-covered | zone |
 | k.cli | CLI, MCP, LSP | conformance-covered | flags |
 | k.docs | Installed docs | implemented | read |
-| k.scaffold | Scaffold, codemods | conformance-covered | edits |
+| k.scaffold | Scaffold, codemods | implemented | edits |
 | k.testing | Harness, properties | conformance-covered | fire |
 | k.model | Store exploration | conformance-covered | traces |
 | k.prove | Proving invariants | conformance-covered | Z3 |
@@ -65,7 +65,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.
 | k.leave | What a request leaves | conformance-covered | state |
 | k.user | Request user, caller | conformance-covered | user |
 | k.mount | Pages to the mount | conformance-covered | submit |
-| k.mount-scope | What counts as the mount | proposed | proxy |
+| k.mount-scope | What counts as the mount | implemented | proxy |
 | k.return | Shell mount | conformance-covered | net |
 | k.opening | Openings | conformance-covered | once |
 | k.links | Links in | conformance-covered | ids |
@@ -74,7 +74,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.
 | k.persist | Storage, durable state | conformance-covered | drivers |
 | k.topology | Deployables | conformance-covered | peers |
 | k.deploy | Entry, deploy files | conformance-covered | entry |
-| k.shell | Native shells | proposed | target |
+| k.shell | Native shells | conformance-covered | target |
 | k.compat | Surface compatibility | conformance-covered | accepts |
 | k.api | API routes | conformance-covered | JSON |
 | k.hosting | Client hosting | conformance-covered | servedBy |
@@ -84,11 +84,11 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.
 | k.module | Module manifest | conformance-covered | surface |
 | k.a11y | Accessibility | conformance-covered | WCAG |
 | k.aria | Widget parts | conformance-covered | roles |
-| k.roles | Part roles | proposed | grid |
-| k.host-element | Host elements | proposed | charts |
-| k.host-code | Host code | proposed | d3 |
+| k.roles | Part roles | implemented | grid |
+| k.host-element | Host elements | conformance-covered | charts |
+| k.host-code | Host code | conformance-covered | d3 |
 | k.security | Headers, CSP | conformance-covered | CSP |
-| k.origins | Declared origins | proposed | CSP |
+| k.origins | Declared origins | conformance-covered | CSP |
 | k.privacy | Secrets, personal data | conformance-covered | secrets |
 | k.reveal | Revealed values | conformance-covered | E1112 |
 | k.evidence | Evidence bundle | conformance-covered | bundle |

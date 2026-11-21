@@ -1,6 +1,6 @@
 # RFC 0164: k.privacy: the written forms the server log scrub marks
 
-Status: accepted (ADR-0186) under the RFC defaults (4: privacy by default; 1: the spec is the contract), for the orchestrator to confirm. For backlog 0690.
+Status: implemented (ADR-0186). For backlog 0690.
 
 ## Decisions
 - D1: k.privacy Sinks states every written form of a value the scrub marks, so each is a contract the conformance suite may check, not an implementation detail.

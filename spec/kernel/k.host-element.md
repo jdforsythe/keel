@@ -1,5 +1,5 @@
 # k.host-element: Host elements
-status: proposed
+status: conformance-covered
 
 **Element.** `Host` from `@keel/ui` is the one element whose node outside code owns (a chart library, d3, a custom element). A base element in every k.ui sense, rendered as an empty `div` with `data-k-host`:
 ```tsx

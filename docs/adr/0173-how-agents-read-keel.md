@@ -1,6 +1,6 @@
 # ADR-0173: how agents read Keel (decision O2)
 
-**Status:** proposed (for the orchestrator to accept; the command change goes through an RFC on k.cli and k.scaffold).
+**Status:** accepted (orchestrator, under the RFC defaults; for the operator to confirm).
 
 **Context.** An agent in a user's project has the installed packages and the scaffold output, and nothing of this repo: no `spec/`, no `.claude/skills/`, no `docs/`. Today `keel spec` reads `spec/**.md` from the project, so outside the repo it answers I1055 (nothing to read); diagnostics print `see: keel spec <id>`, which leads nowhere; the MCP `spec` tool has the same gap. The app skills live in `.claude/skills/` and ship nowhere. Each package publishes `dist` (and its README) only. Packages version on their own (no changesets `fixed` group), so a user's project can hold `@keel/router` and `@keel/std-tables` at different versions. The `keel explain` catalog already ships, in `@keel/check/explain`.
 

@@ -1,6 +1,6 @@
 # RFC 0161: split k.shell: the kernel keeps the shell target, std.capacitor and std.tauri keep the vendors
 
-Status: proposed (ADR-0183). Decision D47 of `tasks/0963-to-p1/PLAN.md` (accepted by the operator); it removes the k.shell freeze blocker (D41).
+Status: implemented (ADR-0183). Decision D47 of `tasks/0963-to-p1/PLAN.md` (accepted by the operator); it removes the k.shell freeze blocker (D41).
 
 ## Decisions
 - D1: the kernel keeps the mechanism: `shells` on a `client` deployable, the closed set `capacitor | tauri`, each provided by one named package; `mode: 'shell'` and the driver contract; `shellMount`'s duty; the shell target contract (`shellTarget`, `ShellTarget`); the five build steps; the CI job frame; E1573, E1574, E1575 and a new E1585.

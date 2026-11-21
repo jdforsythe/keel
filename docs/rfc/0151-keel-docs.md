@@ -1,6 +1,6 @@
 # RFC 0151: `keel docs` reads installed docs; the scaffold writes agent files
 
-Status: draft, for the orchestrator to accept. Implements ADR-0173 on k.cli and k.scaffold.
+Status: implemented (ADR-0173). Implements ADR-0173 on k.cli and k.scaffold.
 
 ## Problem
 An agent in a user's project has the installed packages and the scaffold output. `keel spec` reads `spec/**.md` from the project, which only the Keel repo has, so everywhere else it answers I1055. Every diagnostic prints `see: keel spec <id>` in pretty output, which leads nowhere; the MCP `spec` tool has the same gap. The app skills sit in the repo's `.claude/skills/` and ship in no package. `keel scaffold project` writes no `AGENTS.md`, no `CLAUDE.md` and no skills, so a fresh project tells its agent nothing about how to read Keel.

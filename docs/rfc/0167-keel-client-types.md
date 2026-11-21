@@ -1,6 +1,6 @@
 # RFC 0167: k.bundle: `@keel/compiler/client` types `import.meta.env` and the worker and url imports
 
-Status: accepted (ADR-0189) under the RFC defaults (1: the spec is the contract; 3: one way to do a thing), for the orchestrator to confirm. For backlog 0884.
+Status: implemented (ADR-0189). For backlog 0884.
 
 ## Decisions
 - D1: Keel owns the ambient types of what a browser build promises: a types-only entry `@keel/compiler/client` declares `import.meta.env` with exactly k.boundary's five keys, and the default imports of `*?worker`, `*?sharedworker` and `*?url` that k.bundle's Reach names.

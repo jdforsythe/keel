@@ -1,5 +1,5 @@
 # std.capacitor: Capacitor shell target
-status: proposed
+status: implemented
 
 **Extension points.** Shell target (k.shell): `@keel/std-capacitor/tools` calls `shellTarget('capacitor', target)`. Its drivers are std.shells'. It follows Capacitor 8's releases and Android's and Xcode's toolchains: the versions here change with this section, not the kernel's.
 
