@@ -1090,3 +1090,5 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [ ] 0983 docs (low): `spec/std/README.md` holds history ("S2 adds…"); rule 11 · docs · spec
 - [ ] 0984 std-tokens (medium): `check` takes a synchronous `find`, so tokens cannot live in a database (RFC 0158's golden-2 case); an additive `idOf(token)` in its own RFC, and std.tokens has no room left · std-tokens · std.tokens
 - [ ] 0985 ui (medium): no `Video` or `Audio` base element, and the fixed policy has no `media-src`, so same-origin media is blocked; a k.ui and k.security RFC after W15, captions required (RFC 0160) · ui, server · k.ui, k.security
+- [ ] 0986 std-widgets (high): a real mouse click on golden-2's catalog tabs does nothing; the keyboard and a dispatched click work (found by the head-to-head suite under Playwright, which falls back to the arrow key) · std-widgets, golden-2 · std.widgets
+- [ ] 0987 evals (medium): the head-to-head Keel arm needs a kit of packed `@keel/*` tarballs (`--keel-kit <dir>`); packages are unpublished and their exports point at `src`, and the runner's agent, build, serve and install paths are untested · evals · W16
