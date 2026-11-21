@@ -1,6 +1,6 @@
 # ADR-0172: links into a shell (RFC 0150)
 
-**Status:** proposed (for the orchestrator to accept).
+**Status:** accepted (D29 of `tasks/0963-to-p1/PLAN.md`: merged with its build, backlog 0956 closed).
 
 **Context.** A shell admits a return link only against a pending opening (ADR-0169). That ignores deep links to pages and every callback tapped in a mail app, and a sign-in page that starts its provider on render after a link lands records a fresh opening the sender's next link takes.
 

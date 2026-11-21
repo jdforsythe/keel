@@ -1,6 +1,6 @@
 # ADR-0169: a return link needs an opening (RFC 0147)
 
-**Status:** proposed (for the orchestrator to accept under the operator's agreement to the restriction).
+**Status:** accepted (D3 and D8 of `tasks/0963-to-p1/PLAN.md`: the operator agreed the restriction, the orchestrator accepted the design).
 
 **Context.** A shell registers its `id` as a URI scheme and reads each return link as a redirect on `KEEL_ORIGIN`; under the mount that is a GET with the native cookies and `x-keel: 1`. Any app or web page can open such a link, so a library endpoint that changes state on a GET under its mount is reachable from outside the app with the person's session.
 

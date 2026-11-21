@@ -1,6 +1,6 @@
 # RFC 0147: a return link needs an opening
 
-Status: draft, for the orchestrator to accept (ADR-0169). Amends RFC 0142 D3.
+Status: implemented (ADR-0169). Amends RFC 0142 D3.
 
 ## Problem
 A shell registers its `id` as a URI scheme (k.return). Any app on the device, and any web page through a link, can open `<id>:/<path>?<search>`. The shell reads every such link as a redirect: a path under `handle.path` becomes a mount request GET carrying the native cookie store's cookies and `x-keel: 1`, which passes the same-site check (k.server). An auth library that changes state on a GET under its mount (a GET sign-out, a GET that links an account or accepts an invitation) is therefore reachable from outside the app, with the person's session, without the person doing anything in the app. PKCE protects the code exchange, not other GET endpoints of the library.

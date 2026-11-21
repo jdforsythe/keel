@@ -1,6 +1,6 @@
 # RFC 0150: links into a shell
 
-Status: draft, for the orchestrator to accept (ADR-0172). Amends RFC 0147 D1 and D2.
+Status: implemented (ADR-0172). Amends RFC 0147 D1 and D2.
 
 ## Decisions
 Made in the build, for the orchestrator to confirm or reverse.
