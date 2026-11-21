@@ -1,5 +1,5 @@
 {
-  "commit": "7c366639717541bf167806ae50d2d418d642f729",
+  "commit": "41998b91cbbd044efb296f59236577b2f708fae0",
   "coverage": {
     "packages": {
       "apps/golden-1": {
@@ -1148,7 +1148,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-21T17:33:46.535Z",
+  "generatedAt": "2026-11-21T18:00:30.423Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -3475,13 +3475,13 @@
         "unitFiles": 89
       },
       "packages/compiler": {
-        "conformanceCases": 173,
-        "conformanceFiles": 40,
+        "conformanceCases": 177,
+        "conformanceFiles": 41,
         "exploreFiles": 0,
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 91,
+        "propertyCalls": 92,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
@@ -4008,13 +4008,13 @@
       }
     },
     "totals": {
-      "conformanceCases": 4726,
-      "conformanceFiles": 1139,
+      "conformanceCases": 4730,
+      "conformanceFiles": 1140,
       "exploreFiles": 17,
       "fails": 2,
       "otherCases": 0,
       "otherFiles": 0,
-      "propertyCalls": 2176,
+      "propertyCalls": 2177,
       "proveFiles": 23,
       "simulateFiles": 6,
       "skipTodo": 1,
