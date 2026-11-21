@@ -12,7 +12,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.
 | E130x | k.store | E135x | k.scaffold |
 | E140x | k.component, k.place | E145x | k.errors |
 | E150x | k.router, k.contract, k.guards, k.prefix, k.api | E155x | k.server, k.topology, k.deploy, k.shell, k.compat, k.hosting, k.security, k.origins, k.leave, k.user, k.mount |
-| E160x | k.ctx, k.sim, k.persist | E165x | k.services |
+| E160x | k.ctx, k.sim, k.persist, k.data | E165x | k.services |
 | E170x | k.testing, k.model, k.prove, k.ledger | E175x | k.check, k.host |
 | E18xx | k.ui, k.a11y, k.aria | E19xx | k.forms |
 | E200x | std.sessions, std.multi, std.monitor | E210x | std.brands |
@@ -22,7 +22,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.
 | E260x | std.channels | E265x | std.offline |
 | E270x | std.conflicts | E275x | std.statecharts |
 | E280x | std.headless | E285x | std.tables |
-| E220x | std.tokens | | |
+| E220x | std.tokens | E245x | std.postgres |
 
 ## Kernel
 | id | section | status | one line |
@@ -72,6 +72,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.
 | k.serverlog | Server log | conformance-covered | bounds |
 | k.sync | Concurrent writes | conformance-covered | heads |
 | k.persist | Storage, durable state | conformance-covered | drivers |
+| k.data | App data | conformance-covered | seam |
 | k.topology | Deployables | conformance-covered | peers |
 | k.deploy | Entry, deploy files | conformance-covered | entry |
 | k.shell | Native shells | conformance-covered | target |

@@ -34,6 +34,7 @@ import { mergeArtifacts } from "./internal/mergeArtifacts.ts";
 import { parseTopology } from "./internal/parseTopology.ts";
 import { projectHandlerUses } from "./internal/projectHandlerUses.ts";
 import { projectManifests } from "./internal/projectManifests.ts";
+import { registersCapability } from "./internal/registersCapability.ts";
 import { serverEntryCode } from "./internal/serverEntryCode.ts";
 import { stubCode } from "./internal/stubCode.ts";
 import { unmappedModule } from "./internal/unmappedModule.ts";
@@ -940,7 +941,12 @@ export default function (): {
         server?.moduleGraph.invalidateAll?.();
         reloadDev();
       }
-      if (rel !== null && devApps.length > 0 && (rel.startsWith("modules/") || PROJECT_FILE.test(rel))) reloadDev();
+      if (rel !== null && devApps.length > 0 && (rel.startsWith("modules/") || PROJECT_FILE.test(rel))) {
+        // An app file calling `register` (k.data Dev) loads the server graph again whole: the registry starts empty.
+        if (exists(rel) && registersCapability(fs.readFileSync(path.join(root, rel), "utf8")))
+          server?.moduleGraph.invalidateAll?.();
+        reloadDev();
+      }
       if (rel !== null && change.event === "delete" && modules.delete(rel)) flush();
       else if (rel !== null && MANIFEST.test(rel) && exists(rel)) {
         compileModule(rel, fs.readFileSync(path.join(root, rel), "utf8"));

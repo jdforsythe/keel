@@ -23,7 +23,7 @@ export const noRawMoney = defineRule({
   fix: (finding, { file }) => edits,                         // rendered as a unified diff
 })
 ```
-Rules are pure and deterministic: no `ctx`, no I/O beyond their inputs. A rule that throws is reported as E1756 and the other rules still run.
+An optional `sql: (file) => findings` reads each module migration, `modules/<id>/migrations/*.sql` (path and text, no fix); `check` sees code files only. Rules are pure and deterministic: no `ctx`, no I/O beyond their inputs. A rule that throws is reported as E1756 and the other rules still run.
 
 **explain and docs.** `keel explain <code>` prints at most 120 tokens: the message, the rule's `explain` (or the spec's Rules entry for kernel codes), one fix example, and `see`. `keel docs --for <code>` prints every installed spec line citing the code (k.docs).
 

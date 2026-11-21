@@ -4,20 +4,8 @@ import type { RuleDef } from "../types/RuleDef.ts";
 import type { RuleInput } from "../types/RuleInput.ts";
 import { applyEdits } from "./applyEdits.ts";
 import { clip } from "./clip.ts";
+import { ruleThrew } from "./ruleThrew.ts";
 import { unifiedDiff } from "./unifiedDiff.ts";
-
-function threw(rule: RuleDef, path: string, e: unknown): Diagnostic {
-  const why = e instanceof Error ? e.message : String(e);
-  return {
-    kind: "diag",
-    code: "E1756",
-    path,
-    line: 1,
-    col: 1,
-    message: clip(`rule ${rule.code} threw: ${clip(why, 60)}`, 89),
-    see: "k.check",
-  };
-}
 
 function toDiagnostic(rule: RuleDef, f: Finding, input: RuleInput): Diagnostic {
   const text = typeof rule.message === "string" ? rule.message : rule.message(f);
@@ -47,7 +35,7 @@ export function runRules(all: readonly RuleDef[], input: RuleInput): Diagnostic[
       const mine = rule.check(input).map((f) => toDiagnostic(rule, f, input));
       out.push(...mine);
     } catch (e) {
-      out.push(threw(rule, input.file.path, e));
+      out.push(ruleThrew(rule, input.file.path, e));
     }
   }
   return out;

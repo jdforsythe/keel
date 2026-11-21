@@ -75,6 +75,7 @@
             "std-messages",
             "std-money",
             "std-offline",
+            "std-postgres",
             "std-report",
             "std-schedules",
             "std-sessions",

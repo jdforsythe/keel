@@ -153,6 +153,11 @@
           "run": "set -e\nfor f in conformance/driver-contract.test.ts conformance/serial-commits.test.ts conformance/layout-e2152.test.ts conformance/e2153-no-value.test.ts test/model.test.ts test/postgres-server.test.ts; do pnpm exec vitest run \"$f\"; done"
         },
         {
+          "name": "std-postgres on Postgres 17, its files one at a time on one database",
+          "working-directory": "packages/std-postgres",
+          "run": "pnpm exec vitest run"
+        },
+        {
           "name": "turbo cache: the builds the check job ran",
           "uses": "actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0",
           "with": {

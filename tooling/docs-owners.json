@@ -17,7 +17,7 @@
     "k.topology"
   ],
   "@keel/compiler": ["k.bundle", "k.compiler"],
-  "@keel/ctx": ["k.ctx", "k.owner", "k.persist", "k.sim"],
+  "@keel/ctx": ["k.ctx", "k.data", "k.owner", "k.persist", "k.sim"],
   "@keel/forms": ["k.forms"],
   "@keel/reactive": ["k.reactive"],
   "@keel/router": [
@@ -63,6 +63,7 @@
   "@keel/std-messages": ["std.copy", "std.messages"],
   "@keel/std-money": ["std.money"],
   "@keel/std-offline": ["std.offline", "std.outbox", "std.outbox-owner"],
+  "@keel/std-postgres": ["std.postgres"],
   "@keel/std-report": ["std.report"],
   "@keel/std-schedules": ["std.schedules"],
   "@keel/std-sessions": ["std.monitor", "std.multi", "std.sessions"],

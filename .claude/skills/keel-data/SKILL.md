@@ -1,17 +1,21 @@
 ---
 name: keel-data
-description: "Durable Keel storage, concurrent and offline writes, conflicts, live updates and workflows: topology storage, KEEL_DATABASE_URL, commitStores, transaction concurrent, keel.conflict 409, std-offline outbox, std-conflicts, std-channels, std-live, std-workflows; E1560, E1563, E1572, E2151-E2153, E2351-E2355, E2601, E2602, E2651, E2701"
+description: "Durable Keel storage, app data (std-postgres), concurrent and offline writes, conflicts, live updates and workflows: topology storage, KEEL_DATABASE_URL, commitStores, transaction concurrent, keel.conflict 409, std-offline outbox, std-conflicts, std-channels, std-live, std-workflows; E1560, E1563, E1572, E2151-E2153, E2351-E2355, E1607, E2451-E2458, E2601, E2602, E2651, E2701"
 ---
 
 # Data: storage, writes, live views, workflows
 
-Signatures: `keel docs k.persist`, `k.sync`, `std.db`, `std.contracts`, `std.offline`, `std.outbox-owner`, `std.conflicts`, `std.channels`, `std.live`, `std.workflows`.
+Signatures: `keel docs k.persist`, `k.data`, `k.sync`, `std.db`, `std.postgres`, `std.contracts`, `std.offline`, `std.outbox-owner`, `std.conflicts`, `std.channels`, `std.live`, `std.workflows`.
 
 ## Durable storage
 
 A `node` deployable's `storage` is `'file'`, `'sqlite'` or `'postgres'`; the app lists `@keel/std-db` in `dependencies` (E1572) and never imports it (E2151). `KEEL_DATABASE_URL`: SQLite takes a `file:` URL (default `file:/data/keel.sqlite`, Node 22.13 or later); Postgres requires a `postgres:` URL. A bad or missing value is E1560, an unopenable database E2153, a newer layout E2152. `keel check --base` reports a change that breaks stored data (E1563: make an added required field `.optional()`).
 
 Outside a request (runners, jobs) use `commitStores(ctx, factory, fn)` from `@keel/server`, in `*.server.ts`; `fn` returns a `Result`, may run 3 times, and calls transactions only.
+
+## App data
+
+Records that grow are app data (k.data): Postgres through `@keel/std-postgres`, not a server store. In `modules/kitchen/kitchenDb.server.ts`, `export const kitchenDb = database('kitchen.db', { migrations: import.meta.glob<string>('./migrations/*.sql', { query: '?raw', import: 'default', eager: true }) })`. A handler calls `kitchenDb(ctx).query(sql(Recipe)`select ... where id = ${id}`)`: a row schema per statement, each `${value}` a parameter. `one` of no row is `keel.notFound`; `run(sql(NoRows)...)` counts; `transaction(fn)` reruns on serialization failure, then is `keel.conflict`. Migrations: `NNNN-<kebab>.sql`, forward only. `KEEL_POSTGRES_URL` is `postgres:`, or `pglite:<folder>` in dev. Tests await `ready()` (`@keel/std-postgres/testing`) in `setupFiles`. Other stores: `register('notes.mongo', impls)`; names are literal `<module>.<lowerCamel>`, one file each (E1607, E2458). SQL `now()` is W2456.
 
 ## Concurrent writes
 
