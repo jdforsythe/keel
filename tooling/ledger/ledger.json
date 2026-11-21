@@ -3,8 +3,8 @@
   "unsafe": 18,
   "hostElements": 0,
   "rungs": {
-    "example": 1427,
-    "probabilistic": 332,
+    "example": 1430,
+    "probabilistic": 335,
     "exhaustive": 15,
     "proven": 72,
     "monitored": 8
@@ -148,7 +148,7 @@
         "threshold": 70
       },
       "std-tokens": {
-        "score": 81.28,
+        "score": 76.1,
         "threshold": 70
       },
       "std-workflows": {
@@ -17467,6 +17467,18 @@
     {
       "item": "std.tokens#12",
       "rung": "example"
+    },
+    {
+      "item": "std.tokens#13",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.tokens#14",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.tokens#15",
+      "rung": "probabilistic"
     },
     {
       "item": "std.workflows#1",
