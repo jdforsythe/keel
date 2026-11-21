@@ -14159,6 +14159,30 @@
       "rung": "example"
     },
     {
+      "item": "k.data#1",
+      "rung": "none"
+    },
+    {
+      "item": "k.data#2",
+      "rung": "none"
+    },
+    {
+      "item": "k.data#3",
+      "rung": "none"
+    },
+    {
+      "item": "k.data#4",
+      "rung": "none"
+    },
+    {
+      "item": "k.data#5",
+      "rung": "none"
+    },
+    {
+      "item": "k.data#6",
+      "rung": "none"
+    },
+    {
       "item": "k.defaults#1",
       "rung": "example"
     },
@@ -16993,6 +17017,38 @@
     {
       "item": "std.outbox#14",
       "rung": "example"
+    },
+    {
+      "item": "std.postgres#1",
+      "rung": "none"
+    },
+    {
+      "item": "std.postgres#2",
+      "rung": "none"
+    },
+    {
+      "item": "std.postgres#3",
+      "rung": "none"
+    },
+    {
+      "item": "std.postgres#4",
+      "rung": "none"
+    },
+    {
+      "item": "std.postgres#5",
+      "rung": "none"
+    },
+    {
+      "item": "std.postgres#6",
+      "rung": "none"
+    },
+    {
+      "item": "std.postgres#7",
+      "rung": "none"
+    },
+    {
+      "item": "std.postgres#8",
+      "rung": "none"
     },
     {
       "item": "std.report#1",
