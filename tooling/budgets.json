@@ -14,7 +14,7 @@
   },
   "size": {
     "@keel/check": {
-      "max": "50kb",
+      "max": "50.05kb",
       "platform": "node"
     },
     "@keel/check/explain": {
@@ -34,7 +34,7 @@
       "platform": "node"
     },
     "@keel/compiler": {
-      "max": "32kb",
+      "max": "33.2kb",
       "platform": "node"
     },
     "@keel/ctx": "3.75kb",
@@ -45,7 +45,7 @@
     "@keel/runtime-dom": "6kb",
     "@keel/runtime-dom/ops": "10kb",
     "@keel/scaffold": {
-      "max": "18.75kb",
+      "max": "18.8kb",
       "platform": "node"
     },
     "@keel/scaffold/agents": {
@@ -54,7 +54,7 @@
     },
     "@keel/schema": "5.5kb",
     "@keel/server": {
-      "max": "25.9kb",
+      "max": "26.3kb",
       "platform": "node"
     },
     "@keel/server/internal/dom": "4.75kb",

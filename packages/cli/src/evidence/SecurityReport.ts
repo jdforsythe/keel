@@ -1,6 +1,6 @@
 import { s } from "@keel/schema";
 
-/** One declared origin (k.origins Evidence): its directive, the exact origin and the author's reason. */
+/** One declared origin (k.evidence, k.origins): its directive, the exact origin and the author's reason. */
 const Declared = s.object({
   directive: s.enum(["img", "media", "font", "connect", "frame"]),
   origin: s.string(),

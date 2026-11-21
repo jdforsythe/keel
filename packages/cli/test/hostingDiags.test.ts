@@ -19,6 +19,18 @@ describe("hostingDiags", () => {
     expect(JSON.stringify(d)).not.toContain("secret-value");
   });
 
+  it("E1590 for a frame origin equal to a KEEL_PEER_<NAME> or KEEL_ORIGIN, naming the key, at k.origins", () => {
+    const framing = (o: string) => ({ api: n, web: { ...web, origins: { frame: { [o]: "r" } } } });
+    const d = hostingDiags(framing("https://api.test"), { KEEL_PEER_API: "https://api.test" });
+    expect(d.map((x) => [x.code, x.message, x.see])).toEqual([
+      ["E1590", "web: origins.frame: https://api.test is the app's own origin (KEEL_PEER_API)", "k.origins"],
+    ]);
+    expect(hostingDiags(framing("https://shop.test"), { KEEL_ORIGIN: "https://shop.test" }).map((x) => x.code)).toEqual(
+      ["E1590"],
+    );
+    expect(hostingDiags(framing("https://v.test"), { KEEL_PEER_API: "https://api.test" })).toEqual([]);
+  });
+
   it("checks no peer without a client deployable", () => {
     expect(hostingDiags({ api: n }, { KEEL_PEER_API: "nope" })).toEqual([]);
   });
