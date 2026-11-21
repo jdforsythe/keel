@@ -57,3 +57,31 @@ Working file for the orchestrator; it moves to `tasks/p1/` before merge. Each fi
 
 ### L2-6 rough: a loader's literal data does not fit a schema `enum`
 - `ListText` had `key: s.enum([...])` inside an array; the loader returning `{ key: "milk", ... }` failed `tsc` with a 20-line `TS2769` (the literal widened to `string`) and `keel check` reported `E1515 shopping.list: loader does not fit the entry it is bound at` in `routes.ts`, away from the cause. Used `s.string` for the key.
+
+## Layer 3
+
+### L3-1 fault: a server `keel.fields` answer on a node page loses the values and shows no error
+- Tried: the receipts form (`modules/receipts/BookPage.tsx`), whose action (`recordReceipt.server.ts`) answers `err({ code: "keel.fields", data: { amount: "Write the amount ..." } })` for `12.345`.
+- Without JS: `curl -H 'Sec-Fetch-Site: same-origin' --data-urlencode shop="Corner shop" --data-urlencode amount=12.345 -d currency=EUR -d paidBy=alex localhost:5211/receipts` answers 422 with `<input type="text" id="receipts.new:amount" autocomplete="off" data-k="" name="amount">` (no `value`, no `aria-invalid`) and an empty `<span data-k="" id="receipts.new:amount:error">`. The values and the error are present only in `#k-state` (`"form":{"values":{...},"errors":{"amount":"..."}}`).
+- With JS (Chromium, `smoke/drive.mjs`): a submit the schema accepts goes out as a native document POST (Playwright `resourceType` `document`, no `x-keel` header), the 422 document loads, and after resume the field is empty with no `aria-invalid` and an empty error text. The reader sees the form cleared and no reason.
+- Expected (`keel docs k.forms`): with JS, the client submits, and on `keel.fields` "exactly those field errors are set"; without JS "the server ... re-renders the page with the submitted values ... and errors".
+- The harness disagrees with the build: the same flow in `renderRoute` (`test/receipts.test.ts`, "refuses an amount with three decimals") sets `invalid: true` on the field.
+- A schema-level error (empty shop) works with JS: the client shows `Required` and sends nothing.
+
+### L3-2 docs: the built server needs a storage flag the deploy skill does not name
+- `node dist/web/server.mjs` (the command `keel-deploy` gives) answers 500 on every page with `stores`: `keel.unexpected loader receipts.book threw: Error: ctx.storage: this runtime has no localStorage; run node with --experimental-webstorage --localstorage-file=<path>`. The error says what to do, and the generated `deploy/web/Dockerfile` passes both flags, but `keel-deploy` and `keel docs k.deploy`'s run section list only env variables. `keel build` gives no hint.
+
+### L3-3 docs: `Select` options have no documented shape
+- `keel docs k.ui`, `k.a11y`, `k.forms` and `keel-client` name `Select` but never its `options`. `{ value, text }` failed (`TS2353 ... 'text' does not exist in type 'Option'`); `{ value, label }` compiled, found by guessing.
+
+### L3-4 docs: a plural `zero` form never shows in English or German
+- `count: { plural: "n", zero: "No receipts yet", one: ..., other: ... }` renders `0 receipts` for `n = 0` in `en-US`: `plural` follows `Intl.PluralRules`, which has no `zero` category in English or German. Correct by CLDR, but `std.messages` lists `zero?` beside `one` without saying it applies only to languages that have the category, and offers no exact-match form (ICU's `=0`).
+
+### L3-5 rough: `fire(select, { type: "change", value })` does nothing
+- `fire("receipts.new:paidBy", { type: "change", value: "sam" })` type-checks and leaves the field at `alex`; `{ type: "input", value: "sam" }` sets it. A browser fires both for a select.
+
+### L3-6 docs: a form `initial` cannot hold an empty `line`
+- `form(NewReceipt, { initial: { shop: "", ... } })` fails `tsc` (`Type 'string' is not assignable to type 'Format<string, "line(1..60)">'`). Leaving `shop` out of `initial` works, which the docs do not say (`initial` reads as the whole value).
+
+### L3-7 docs: no reader from typed decimal text to `Money`
+- `std.money` has `Money` in minor units and `formatMoney`, and no way to read what a person types (`12,50`) into minor units. The app writes its own (`modules/receipts/minorUnits.ts`) and keeps the amount a string in the form schema. An app author expects the parse beside the format.

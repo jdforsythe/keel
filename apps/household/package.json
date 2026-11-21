@@ -18,10 +18,14 @@
     "@keel/runtime-dom": "workspace:*",
     "@keel/schema": "workspace:*",
     "@keel/server": "workspace:*",
-    "@keel/store": "workspace:*",
-    "@keel/ui": "workspace:*",
     "@keel/std-headless": "workspace:*",
-    "@keel/std-statecharts": "workspace:*"
+    "@keel/std-i18n": "workspace:*",
+    "@keel/std-messages": "workspace:*",
+    "@keel/std-money": "workspace:*",
+    "@keel/std-statecharts": "workspace:*",
+    "@keel/std-text": "workspace:*",
+    "@keel/store": "workspace:*",
+    "@keel/ui": "workspace:*"
   },
   "devDependencies": {
     "@keel/cli": "workspace:*",
