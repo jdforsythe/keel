@@ -20,3 +20,4 @@ export { pathToString } from "./pathToString.ts";
 export { piiPaths } from "./piiPaths.ts";
 export { piiValues } from "./piiValues.ts";
 export { reveal } from "./reveal.ts";
+export { secretPath } from "./secretPath.ts";

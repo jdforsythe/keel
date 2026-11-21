@@ -1,6 +1,5 @@
 import { owner, scope } from "@keel/reactive";
-import { s } from "@keel/schema";
-import { secretPathOf } from "@keel/schema/internal";
+import { s, secretPath } from "@keel/schema";
 import { type EndpointMap, service } from "@keel/services";
 import { store, transaction } from "@keel/store";
 import type { Outbox } from "./Outbox.type.ts";
@@ -40,7 +39,7 @@ export function outbox<const D extends EndpointMap>(
       const message = `E2652 outbox ${id} endpoint ${name} answers a stream`;
       throw Object.assign(new Error(message), { code: "E2652" });
     }
-    const at = e.body === undefined ? null : secretPathOf(e.body.node);
+    const at = e.body === undefined ? null : secretPath(e.body);
     if (at !== null) {
       const message = `E2651 outbox ${id} endpoint ${name} body holds s.secret at ${at || "(root)"}`;
       throw Object.assign(new Error(message), { code: "E2651" });

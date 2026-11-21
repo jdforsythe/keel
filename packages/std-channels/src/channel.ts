@@ -1,5 +1,4 @@
-import type { ObjectSchema, Schema } from "@keel/schema";
-import { secretPathOf } from "@keel/schema/internal";
+import { type ObjectSchema, type Schema, secretPath } from "@keel/schema";
 import type { Channel } from "./Channel.type.ts";
 
 /**
@@ -10,7 +9,7 @@ export function channel<P, M = never>(
   name: string,
   opts: { readonly path: string; readonly params: ObjectSchema<P>; readonly message?: Schema<M> },
 ): Channel<P, M> {
-  const at = opts.message === undefined ? null : secretPathOf(opts.message.node);
+  const at = opts.message === undefined ? null : secretPath(opts.message);
   if (at !== null) {
     const message = `E2602 channel ${name} message holds s.secret at ${at || "(root)"}; members receive it as sent`;
     throw Object.assign(new Error(message), { code: "E2602" });
