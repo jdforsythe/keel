@@ -203,7 +203,7 @@ One app, one lane, built in order; each layer is a tagged commit range with its 
 
 | layer | adds | proof | size |
 |-|-|-|-|
-| 1 Scaffold and a page | `keel new`, `keel dev`, `keel docs`, `title`, `k.head` | app test; `keel check` | S |
+| 1 Scaffold and a page | `keel scaffold project`, `keel dev`, `keel docs`, `title`, `k.head` | app test; `keel check` | S |
 | 2 Schema, store, component | schema, store, component, `std.headless` widgets | app tests; a11y report | S |
 | 3 Forms, text, money, messages | `k.forms`, `std.text`, `std.money`, `std.messages` | app tests; resume smoke step that submits | M |
 | 4 Routes, guard, server API, services | loaders, actions, a guard that redirects, API routes, `k.services` | app tests; built-app smoke step for the redirect | M |
