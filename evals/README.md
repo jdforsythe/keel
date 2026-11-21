@@ -13,3 +13,26 @@ Tasks live in `evals/tasks/<name>/` (`TASK.md`, `spec-slice.txt`, `pass.ts` whos
 
 **Results.** `evals/results/<date>-<task>-<model|none>.json`:
 `{task, skill, specSections, model, runner, converged, iterations, tokens:{input,output}, costUsd, unsafeCount, checkTrailer, testTrailer, checkExit, testExit, durationMs, startedAt}`. Input tokens include cache reads/writes. `unsafeCount` counts `unsafe(` under `packages/*/src` and `unsafe/`. Skill results: `<date>-skill-<skill>-<runner>.json`.
+
+## Head to head
+
+```
+pnpm eval:h2h --arm keel|next --agent claude|codex [--model <id>] [--max-iter N] [--timeout-min N] [--keel-kit <dir>] [--next-version <v>]
+pnpm eval:h2h --dry <built-app-dir|stub>
+pnpm eval:h2h --url <origin>
+```
+
+One app, built by an agent in Keel and in Next.js, scored by the same hidden suite and scans against a URL. Files in `evals/headtohead/`:
+- `brief/BRIEF.md`: the Recipe box, a stack-neutral product brief (behaviour, element ids, copy in three locales; no Keel API). Both arms receive it unchanged, after one preamble line in `evals/h2h.ts`.
+- `suite.ts`: the hidden acceptance suite, 28 black-box checks over HTTP and Chromium (Playwright from the workspace), run in order against one server that starts empty. It is never copied into an arm's directory; the arm directory is a fresh `mkdtemp` folder outside the repository.
+- `scan.ts`: the security scan (CSP quality, `nosniff`, framing, referrer and permissions policy, version-naming headers, cookie flags, CORS wildcard, stack traces on an unknown path, one stored-XSS payload through the form) and the a11y scan (axe-core's default rules on five pages, `bypassCSP` so the app's own policy does not block axe). Each defect is one line; a11y counts a rule once per page.
+- `arms.ts`, `agent.ts`, `serve.ts`: arm preparation, build and production start; the `claude` and `codex` command lines and usage parsing; a free port and a child server.
+- `stub/server.mjs`: a deliberately broken app that proves the scorer fails.
+
+**Arms.** `keel`: `keel scaffold project`, the published skills (`packages/cli/skills`) in `.claude/skills`, an `AGENTS.md` and `CLAUDE.md` naming them, and the packed `@keel/*` tarballs of `--keel-kit` as `overrides` of the scaffold's `^0.0.0` ranges (they are not on a registry); build `pnpm build`, serve `dist/<deployable>/server.mjs`. `next`: `create-next-app@<--next-version, default latest>` with TypeScript, App Router and npm; build `npm run build`, serve `npm start`. The agent (`claude -p`, or `codex exec`, permission prompts off) runs in the arm directory. Up to `--max-iter` (default 3) iterations: agent, build, start, score; a failed iteration's next prompt carries the build or start error, or only the count of failed acceptance checks, never their names.
+
+**Dry mode.** `--dry <dir>` serves a built Keel app (`pnpm --filter golden-2 build` first) and scores it, no agent; `--dry stub` scores the stub; `--url` scores a server that is already running. Nothing is spent.
+
+**Scores.** `evals/results/<date>-h2h-<arm>-<agent>-<model>.json` (`<date>-h2h-<app>-dry.json` for dry), the keys above (`task` `h2h-recipe-box`, `skill`, `specSections`, `model`, `runner`, `converged`, `iterations`, `tokens`, `costUsd`, `durationMs`, `startedAt`) plus `arm`, `agent`, `stack`, `tokensToGreen` (all tokens through the green iteration, null when not converged), `builds`, `timedOut`, `scoreMs`, `acceptance {passed,total,failed[{name,reason}]}`, `security {defects,checks,found[]}`, `a11y {defects,nodes,pages,found[]}`. `converged` means every acceptance check passed; `durationMs` excludes scoring. Output is compact per `docs/OUTPUT.md`: `V0004` a failed acceptance check, `V0005` a security defect, `V0006` an a11y defect, `V0007` a run that could not complete, then `ok h2h <label> converged=<bool> accept=<p>/<t> security=<n> a11y=<n> ... (Xs)`.
+
+**Maintenance slot.** `brief/MAINTENANCE.md` specifies a second brief kind, adding a `servings` field to an existing app, with its added checks and scores. It has no suite, flag or runner step yet.

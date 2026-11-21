@@ -18,6 +18,7 @@
     "mutate:stop": "node tooling/mutate.mjs --stop",
     "orphans": "node tooling/orphans.mjs",
     "eval": "tsx evals/run.ts",
+    "eval:h2h": "tsx evals/h2h.ts",
     "spec": "node tooling/spec.mjs",
     "ledger": "node packages/cli/src/bin.ts ledger --write tooling/ledger/ledger.json",
     "evidence:report": "node tooling/evidence-report.mjs",
