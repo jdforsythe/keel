@@ -48,6 +48,11 @@ export async function execute(op: Operation, input: Input, io: Io): Promise<Outc
       const { evidenceCommand } = await import("@keel/cli/evidence");
       return evidenceCommand(input, io);
     }
+    case "review": {
+      // Behind its own entry, loaded only when the command runs (`@keel/cli` size budget).
+      const { reviewCommand } = await import("@keel/cli/review");
+      return reviewCommand(input, io);
+    }
     case "scaffold":
     case "codemod":
       return await scaffoldCommand(op.name, input, io);
