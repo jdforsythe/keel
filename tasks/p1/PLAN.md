@@ -208,9 +208,11 @@ Outcome: Keel validates at the boundary and the app owns storage and retrieval t
 ### W15 Custom components
 Outcome: an app writes its own component from the building blocks, from the primitives the stdlib widgets use, or around an outside library or a standard custom element, with data bound in one blessed way; charts are a library or an app's wrapper, never the framework's (D44).
 1. A design RFC per D48 of `tasks/0963-to-p1/PLAN.md`: `Part` open to app code, the behaviour primitives the stdlib widgets hold privately, and the host element (its contract, how data reaches it, what the harness and replay see); no drawing element. The RFC tries d3, Chart.js, uPlot, Observable Plot and ECharts under the fixed policy and records what runs (opus).
-2. Conformance, the build, and one worked example: a d3 chart in golden-2 with a data-table alternative (conformance-writer, opus, sonnet).
+2. Conformance and the build: `Part` open with its added roles (D50), the behaviour primitives, the host element (conformance-writer, opus, sonnet).
+3. Two worked examples as app components in a golden app: a date picker on `Part` (a `Dialog` with a `grid`, full keyboard, one tab stop) and a d3 chart in the host element with a data-table alternative (sonnet).
+4. The library format of D49, built after the first real apps: source and a manifest, checked again by the app, `keel scaffold library`, the stdlib in the same format (opus designs in step 1, sonnet builds).
 - Concurrent: step 1 beside W13 and W14 step 1.
-- Gate: the worked example passes `keel check` and the a11y checks with no rule switched off.
+- Gate: both worked examples pass `keel check` and the a11y checks with no rule switched off and no file under `unsafe/`.
 - Needs a person: the operator reads the RFC.
 
 ### W16 Head to head
@@ -230,7 +232,7 @@ Outcome: a measured comparison of an agent building and changing an app in Keel 
 ## Order across workstreams
 
 Dependencies (A → B means B waits for A):
-- W13 steps 1 to 3 (contract, component signature) → W1 freeze flip.
+- W13 steps 1 to 3 (contract, component signature) → W1 freeze flip. The RFCs of W14 step 1, W15 step 1, declared origins (D46) and the k.shell split (D47) → W1 freeze flip, with whatever each changes in a kernel section built first.
 - W1 freeze flip → W6 diagrams (0220 depends on 0034) → W6 tour → W5 `public-docs` eval.
 - W5 steps 2 to 4 (docs, entry files, skills) → W5 step 7 golden-3 build → W4 reviews and the S6 exit proof.
 - W2 clearance → W4 reviews; W2 clearance → any deploy (W8 step 6, W7 hosting if any).
