@@ -2,7 +2,7 @@
   "version": 1,
   "unsafe": 18,
   "rungs": {
-    "example": 1348,
+    "example": 1349,
     "probabilistic": 333,
     "exhaustive": 15,
     "proven": 64,
@@ -19,7 +19,7 @@
         "threshold": 70
       },
       "compiler": {
-        "score": 79.2,
+        "score": 79.18,
         "threshold": 70
       },
       "ctx": {
@@ -43,7 +43,7 @@
         "threshold": 70
       },
       "scaffold": {
-        "score": 79.48,
+        "score": 79.9,
         "threshold": 70
       },
       "schema": {
@@ -51,7 +51,7 @@
         "threshold": 80
       },
       "server": {
-        "score": 77.96,
+        "score": 78.24,
         "threshold": 70
       },
       "services": {
@@ -2431,14 +2431,6 @@
         "survived": 1,
         "noCoverage": 1,
         "score": 87.5
-      },
-      {
-        "file": "packages/compiler/src/hosting/hostProblems.ts",
-        "sha": "11edf11c2c784be13043ec8b4d3e1f2557fb607ccc06deb3d67cfb7d1c33d1c7",
-        "killed": 26,
-        "survived": 5,
-        "noCoverage": 0,
-        "score": 83.87
       },
       {
         "file": "packages/compiler/src/hosting/originOf.ts",
@@ -14569,6 +14561,10 @@
     },
     {
       "item": "k.hosting#6",
+      "rung": "example"
+    },
+    {
+      "item": "k.hosting#7",
       "rung": "example"
     },
     {
