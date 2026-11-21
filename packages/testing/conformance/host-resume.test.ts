@@ -8,7 +8,7 @@ import { resume } from "@keel/runtime-dom/ops";
 import { Host } from "@keel/ui";
 import fc from "fast-check";
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { Points, SEED, flush, frames, probe } from "./host-support.ts";
+import { Points, SEED, flush, frames, probe, simCtx } from "./host-support.ts";
 import { cleanup, host } from "./host-dom.ts";
 
 afterEach(() => {
@@ -28,7 +28,7 @@ const island = (code: ReturnType<typeof probe>["code"], points: readonly number[
 
 const serverHost = (id: string, make: () => Node, props: unknown): HTMLElement => {
   const scratch = host();
-  const dispose = mount(make, scratch);
+  const dispose = mount(make, scratch, { ctx: simCtx() });
   const root = scratch.firstElementChild;
   if (root === null) throw new Error("fixture: no island root");
   root.setAttribute("data-k-island", id);
@@ -48,7 +48,7 @@ describe("k.host-element: resume", () => {
         const server = serverHost("h.chart", island(code, points), {});
         const node = server.querySelector("[data-k-host]");
         expect(node?.childElementCount).toBe(0);
-        const { warnings } = resume(server, { "h.chart": island(code, points) }, {});
+        const { warnings } = resume(server, { "h.chart": island(code, points) }, { ctx: simCtx() });
         expect(warnings).toEqual([]);
         expect(log.mounts).toHaveLength(0);
         await flush();
@@ -68,7 +68,7 @@ describe("k.host-element: resume", () => {
     const f = frames();
     const { log, code } = probe();
     const root = host();
-    mount(island(code, [1]), root);
+    mount(island(code, [1]), root, { ctx: simCtx() });
     await flush();
     expect(log.mounts).toHaveLength(0);
     expect(f.pending()).toBeGreaterThan(0);
@@ -82,7 +82,7 @@ describe("k.host-element: resume", () => {
     const server = serverHost("h.chart", island(code, [1]), {});
     const node = server.querySelector("[data-k-host]");
     node?.appendChild(document.createElement("canvas"));
-    const { warnings } = resume(server, { "h.chart": island(code, [1]) }, {});
+    const { warnings } = resume(server, { "h.chart": island(code, [1]) }, { ctx: simCtx() });
     expect(warnings).toEqual([]);
     expect(node?.querySelector("canvas")).not.toBeNull();
     f.step();

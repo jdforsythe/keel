@@ -6,7 +6,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { routesArtifact } from "@keel/router";
-import type { Manifest, RouteDef } from "@keel/router";
+import type { Manifest, RouteTable } from "@keel/router";
 import * as server from "@keel/server";
 
 export const SEED = 1337;
@@ -33,7 +33,7 @@ export async function flush(): Promise<void> {
 }
 
 /** Write `routes.json` for a manifest into a fresh directory and return it (ASSUMPTION above). */
-export function writeArtifacts(m: Manifest<Readonly<Record<string, RouteDef>>>): string {
+export function writeArtifacts(m: RouteTable | Manifest): string {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "keel-artifacts-"));
   fs.writeFileSync(path.join(dir, "routes.json"), JSON.stringify({ data: routesArtifact(m), hash: "" }));
   return dir;
@@ -64,25 +64,23 @@ export async function readChunks(res: Response, n: number): Promise<string[]> {
 
 import { createCtx } from "@keel/ctx";
 import { loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 
 const Page = s.object({ title: s.string() });
 
 /** A manifest with one GET route `<module>.show` at `path` whose loader answers `{ title }`. */
 export function pageManifest(module: string, routePath: string, title: string) {
-  const l = loader({ output: Page }, () => Promise.resolve(ok({ title })));
-  return manifest({
-    [`${module}.show`]: { path: routePath, loader: l, component: () => document.createElement("main") },
-  });
+  const id = `${module}.show`;
+  const c = contract(module, { [id]: { path: routePath } });
+  const l = loader(c, id, { output: Page }, () => Promise.resolve(ok({ title })));
+  return manifest(c, { [id]: { component: () => document.createElement("main"), loader: l } });
 }
 
 /** A sim ctx of the suite seed. */
 export const simCtx = () => createCtx({ mode: "sim", seed: SEED });
 
-/** A loader whose `fn` is an async generator (live, RFC 0080); typed loosely because `loader`'s `fn` returns a Promise today. */
-export function liveLoader(
-  output: Parameters<typeof loader>[0]["output"],
-  fn: (...a: never[]) => AsyncGenerator<unknown>,
-) {
-  return Reflect.apply(loader, undefined, [{ output }, fn]);
+/** A loader of the `events: true` API entry `id` of `c`: `decl` is `{}` (the entry holds `output`) and `fn` is an async generator (live); typed loosely, as `fn` is a generator. */
+export function liveLoader(c: unknown, id: string, fn: (...a: never[]) => AsyncGenerator<unknown>) {
+  return Reflect.apply(loader, undefined, [c, id, {}, fn]);
 }

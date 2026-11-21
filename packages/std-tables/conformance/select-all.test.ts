@@ -5,10 +5,10 @@
 // Assumption: `find(id).state.checked` is `'mixed'` for a mixed checkbox (k.testing); the A11yState type of this tree may still say boolean.
 import { type Signal, scope, signal } from "@keel/reactive";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { DataTable } from "@keel/std-tables";
 import { renderRoute } from "@keel/testing";
-import { Text } from "@keel/ui";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 import {
@@ -36,15 +36,13 @@ const selection = (() => {
   return out;
 })();
 const calls: number[][] = [];
-const links = manifest({
-  "pick.list": { path: "/pick", params: s.object({}), search: Search, component: () => Text({ children: "target" }) },
+const pickContract = contract("pick", {
+  "pick.list": { path: "/pick", params: s.object({}), search: Search },
 });
-const href = (q: Query) => links.href("pick.list", {}, q);
-const routes = manifest({
+
+const href = (q: Query) => pickContract.href("pick.list", {}, q);
+const routes = manifest(pickContract, {
   "pick.list": {
-    path: "/pick",
-    params: s.object({}),
-    search: Search,
     component: (props) =>
       DataTable({
         id: "cat",

@@ -35,6 +35,7 @@ describe("k.host-element: dispose", () => {
           children: () => element(() => Promise.resolve(code)),
         }),
       root,
+      { ctx: simCtx() },
     );
     await flush();
     f.step();
@@ -71,6 +72,7 @@ describe("k.host-element: dispose", () => {
           children: () => element(() => Promise.resolve(code)),
         }),
       host(),
+      { ctx: simCtx() },
     );
     await flush();
     f.step();
@@ -96,6 +98,7 @@ describe("k.host-element: dispose", () => {
           children: () => element(() => gate.then(() => code)),
         }),
       host(),
+      { ctx: simCtx() },
     );
     on.set(false);
     await flush();
@@ -119,6 +122,7 @@ describe("k.host-element: dispose", () => {
           children: () => element(() => Promise.resolve(code)),
         }),
       host(),
+      { ctx: simCtx() },
     );
     await flush();
     on.set(false);

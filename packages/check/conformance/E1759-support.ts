@@ -17,7 +17,7 @@ const f = (path: string, source: string): Files[number] => ({ path, source });
 const manifest = (id: string): Files[number] =>
   f(
     `modules/${id}/module.ts`,
-    `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [], routes: [] } })\n`,
+    `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [] } })\n`,
   );
 
 /** `topology.ts` declaring each deployable as `name: { modules, adapter }`. */

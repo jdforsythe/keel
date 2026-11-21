@@ -1,10 +1,10 @@
 // Shared helpers for the k.compat conformance files (not a test file). Public surface only: the `keel` binary over a temp project.
 // Seed 1337 for every property in this suite.
-// ASSUMED (spec names no fixture layout): `service({ module, schema })` as in k.services; `keel build` writes `.keel/surface.json`
-// then `keel check [--base <file>] --format=json` reads it. No git fixture is needed: `--base` reads a surface.json file (the
+// ASSUMED (spec names no fixture layout): module `y` serves a contract (k.contract) that module `a` calls with `service({ contract })`;
+// `keel build` writes `.keel/surface.json` then `keel check [--base <file>] --format=json` reads it. No git fixture is needed: `--base` reads a surface.json file (the
 // generated CI hands it the base branch's), so the base is a copy of an earlier build's artifact.
 // There is no conformance/fixtures/ directory: projects are built in the test body from the parameters below (the surface
-// needs `routes.ts` evaluated, which the in-memory `check(files)` does not do).
+// needs the contract file evaluated, which the in-memory `check(files)` does not do).
 import { spawnSync } from "node:child_process";
 import {
   mkdirSync,
@@ -109,36 +109,34 @@ export const cleanup = (dir: string): void => rmSync(dir, { recursive: true, for
 export const readText = (dir: string, path: string): string => readFileSync(join(dir, path), "utf8");
 
 export type Shape = {
-  /** Source of the route's action input schema (POST). */
-  input?: string;
-  /** Source of the route's GET loader output schema, and a value of it. */
+  /** Source of the `body` of entry `y.add` (POST); default `{ name }`. */
+  body?: string;
+  /** Source of the `output` of entry `y.load` (GET), and a value of it; default `{ id }`. */
   output?: string;
   outputValue?: string;
-  /** Endpoints of module `a` calling `y.save`: the POST body, and the GET endpoint's view of the loader output. */
-  body?: string;
-  endpointOutput?: string;
+  /** Source of the `errors[409]` schema of `y.add`. */
   errors?: string;
   /** Deployables: `x` (module a) and `y` (module y), or one deployable `x` holding both. */
   split?: boolean;
-  /** `deps` of module a, `public.routes` of module y. */
+  /** `deps` of module a. */
   deps?: string[];
-  publicRoutes?: string[];
-  /** The POST endpoint's path (default `/y/save`). */
+  /** The shared path of `y.add` and `y.load` (default `/y/save`). */
   path?: string;
 };
 
-/** The answer of an action as a `module` endpoint's `output` (k.compat): the `Result`'s `ok` value, `Href | null`. */
+/** The answer of `y.add`: the entry's `output`. */
 export const ACTION_ANSWER = "s.string().nullable()";
 
 /**
- * A two-module project: module `a` calls route `y.save` of module `y` through `service({ module: 'y' })` with two
- * endpoints: `save` (POST, `body`, output the action's answer, optional `errors`) and `load` (GET, output the loader's
- * value, `endpointOutput`, default the loader's own `output`).
+ * A two-module project: module `y` serves the contract `y` with two API entries at one path, `y.add` (POST, `body`, `output`
+ * `ACTION_ANSWER`, optional `errors`) and `y.load` (GET, `output`); module `a` calls them through `service({ contract: y })`
+ * in `modules/a/api.ts`.
  */
 export function project(sh: Shape = {}): Tree {
-  const input = sh.input ?? "s.object({ name: s.string() })";
+  const body = sh.body ?? "s.object({ name: s.string() })";
   const output = sh.output ?? "s.object({ id: s.string() })";
   const q = (xs: string[]): string => `[${xs.map((x) => `'${x}'`).join(", ")}]`;
+  const path = sh.path ?? "/y/save";
   const topo =
     sh.split === false
       ? "{ x: { modules: ['a', 'y'], adapter: 'node' } }"
@@ -147,28 +145,30 @@ export function project(sh: Shape = {}): Tree {
     "topology.ts": `import { topology } from '@keel/server'\nexport default topology(${topo})\n`,
     "modules/a/module.ts":
       `import { module } from '@keel/compiler'\n` +
-      `export default module({ id: 'a', deps: ${q(sh.deps ?? ["y"])}, capabilities: [], public: { exports: [], routes: [] } })\n`,
+      `export default module({ id: 'a', deps: ${q(sh.deps ?? ["y"])}, capabilities: [], public: { exports: [] } })\n`,
     "modules/y/module.ts":
       `import { module } from '@keel/compiler'\n` +
-      `export default module({ id: 'y', deps: [], capabilities: [], public: { exports: [], routes: ${q(sh.publicRoutes ?? ["y.save"])} } })\n`,
-    "modules/y/Page.tsx": `import { Box, Text } from '@keel/ui'\nexport default function Page() {\n  return (\n    <Box as="main">\n      <Text>y</Text>\n    </Box>\n  )\n}\n`,
-    "modules/y/load.server.ts":
-      `import { loader } from '@keel/router'\nimport { ok, s } from '@keel/schema'\n` +
-      `export const load = loader({ output: ${output} }, async () => ok(${sh.outputValue ?? "{ id: 'i' }"}))\n`,
-    "modules/y/save.server.ts":
-      `import { action } from '@keel/router'\nimport { ok, s } from '@keel/schema'\n` +
-      `export const save = action({ input: ${input} }, async () => ok(null))\n`,
-    "modules/y/routes.ts":
-      `import { manifest } from '@keel/router'\nimport Page from './Page.tsx'\nimport { load } from './load.server.ts'\nimport { save } from './save.server.ts'\n` +
-      `export const routes = manifest({ 'y.save': { path: '/y/save', loader: load, component: Page } })\n` +
-      `routes.actions({ 'y.save': { POST: save } })\n`,
-    "modules/a/api.ts":
-      `import { s } from '@keel/schema'\nimport { endpoints, service } from '@keel/services'\n` +
-      `export const api = service({ module: 'y', schema: endpoints({\n` +
-      `  save: { method: 'POST', path: '${sh.path ?? "/y/save"}', body: ${sh.body ?? input}, output: ${ACTION_ANSWER}` +
+      `export default module({ id: 'y', deps: [], capabilities: [], public: { exports: [] } })\n`,
+    "modules/y/y.contract.ts":
+      `import { contract } from '@keel/router/contract'\nimport { s } from '@keel/schema'\n` +
+      `export const y = contract('y', {\n` +
+      `  'y.add': { method: 'POST', path: '${path}', body: ${body}, output: ${ACTION_ANSWER}` +
       `${sh.errors === undefined ? "" : `, errors: { 409: ${sh.errors} }`} },\n` +
-      `  load: { method: 'GET', path: '/y/save', output: ${sh.endpointOutput ?? output} },\n` +
-      `}) })\n`,
+      `  'y.load': { method: 'GET', path: '${path}', output: ${output} },\n` +
+      `})\n`,
+    "modules/y/load.server.ts":
+      `import { loader } from '@keel/router'\nimport { ok } from '@keel/schema'\nimport { y } from './y.contract.ts'\n` +
+      `export const load = loader(y, 'y.load', {}, async () => ok(${sh.outputValue ?? "{ id: 'i' }"}))\n`,
+    "modules/y/add.server.ts":
+      `import { action } from '@keel/router'\nimport { ok } from '@keel/schema'\nimport { y } from './y.contract.ts'\n` +
+      `export const add = action(y, 'y.add', {}, async () => ok(null))\n`,
+    "modules/y/routes.ts":
+      `import { manifest } from '@keel/router'\nimport { y } from './y.contract.ts'\n` +
+      `import { add } from './add.server.ts'\nimport { load } from './load.server.ts'\n` +
+      `export const routes = manifest(y, { 'y.load': { loader: load }, 'y.add': { action: add } })\n`,
+    "modules/a/api.ts":
+      `import { service } from '@keel/services'\nimport { y } from '../y/y.contract.ts'\n` +
+      `export const api = service({ contract: y })\n`,
   };
 }
 

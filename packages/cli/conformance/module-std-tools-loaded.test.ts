@@ -20,7 +20,7 @@ const manifest = (deps: string[]): string =>
     id: "a",
     deps,
     capabilities: [],
-    public: { exports: [], routes: [] },
+    public: { exports: [] },
   })})\n`;
 
 const RULE = `import { defineRule } from "@keel/check";

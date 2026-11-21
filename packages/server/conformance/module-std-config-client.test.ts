@@ -9,7 +9,8 @@ import { bindClientStd } from "@keel/compiler/std/bindClientStd";
 import { clientStd } from "@keel/compiler/std/clientStd";
 import { stdConfig } from "@keel/compiler/std/stdConfig";
 import { createCtx } from "@keel/ctx";
-import { manifest } from "@keel/router";
+import { manifest, routeTable } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { resume } from "@keel/runtime-dom/ops";
 import { s } from "@keel/schema";
 import { createApp, topology } from "@keel/server";
@@ -48,7 +49,7 @@ const manifestSrc = (id: string, std: Record<string, unknown>): string =>
     id,
     deps: Object.keys(std),
     capabilities: [],
-    public: { exports: [], routes: [] },
+    public: { exports: [] },
     std,
   })})\n`;
 
@@ -78,7 +79,7 @@ const mkCtx = (): Ctx => createCtx({ mode: "sim", seed: 1337 });
 type Served = { stateText: string | null; bodyHtml: string; html: string };
 
 function makeComponent(seen: unknown[], island: boolean) {
-  return (_props: unknown, _slots: unknown, ctx: Ctx): Node => {
+  return (_props: unknown, ctx: Ctx): Node => {
     const cfg = stdConfig(ctx, PKG, Config);
     seen.push(cfg);
     const text = () => Text({ children: JSON.stringify(cfg) });
@@ -90,23 +91,23 @@ function makeComponent(seen: unknown[], island: boolean) {
 
 /** Serve `component` at `/` from deployable `web` (modules `app` and `ids`); deployable `other` holds `zeta`. */
 async function serve(
-  component: (p: unknown, s: unknown, c: Ctx) => Node,
+  component: (p: unknown, c: Ctx) => Node,
   ctx: Ctx,
   ids: readonly string[],
   std?: string,
 ): Promise<Served> {
-  const entries: Record<string, { path: string; component: (p: unknown, s: unknown, c: Ctx) => Node }> = {
-    "app.page": { path: "/", component },
-    [`${OTHER}.page`]: { path: `/${OTHER}`, component },
-  };
-  for (const id of ids) entries[`${id}.page`] = { path: `/${id}`, component };
+  const paths: Record<string, string> = { app: "/", [OTHER]: `/${OTHER}` };
+  for (const id of ids) paths[id] = `/${id}`;
+  const tables = Object.entries(paths).map(([m, at]) =>
+    manifest(contract(m, { [`${m}.page`]: { path: at } }), { [`${m}.page`]: { component } }),
+  );
   const app = await createApp({
     topology: topology({
       web: { modules: ["app", ...ids], adapter: "node" },
       other: { modules: [OTHER], adapter: "node" },
     }),
     deployable: "web",
-    routes: manifest(entries),
+    routes: routeTable(...tables),
     ctx,
     ...(std === undefined ? {} : { std }),
   });

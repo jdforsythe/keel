@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
-// Spec: k.topology, clause "Fixture modules `a` (its loader calls `service({ module: 'b' })`) and `b` (a runner), served in one process as `{ one: [a, b] }` and as `{ x: [a], y: [b] }` under sim ctxs of one seed: a generated request script through `one` and through `x` gets equal statuses, bodies and final store states."
+// Spec: k.topology, clause "Fixture modules `a` (its loader calls `service({ contract: b })`) and `b` (a runner), served in one process as `{ one: [a, b] }` and as `{ x: [a], y: [b] }` under sim ctxs of one seed: a generated request script through `one` and through `x` gets equal statuses, bodies and final store states."
 // Seed 1337 (fc.assert below). Both topologies run under sim ctxs of seed 1337; no wall time.
-import { manifest } from "@keel/router";
+import { routeTable } from "@keel/router";
 import { topology } from "@keel/server";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
@@ -25,7 +25,7 @@ const op = fc.record({
 });
 
 describe("k.topology: one process and split", () => {
-  test("Fixture modules `a` (its loader calls `service({ module: 'b' })`) and `b` (a runner), served in one process as `{ one: [a, b] }` and as `{ x: [a], y: [b] }` under sim ctxs of one seed: a generated request script through `one` and through `x` gets equal statuses, bodies and final store states.", async () => {
+  test("Fixture modules `a` (its loader calls `service({ contract: b })`) and `b` (a runner), served in one process as `{ one: [a, b] }` and as `{ x: [a], y: [b] }` under sim ctxs of one seed: a generated request script through `one` and through `x` gets equal statuses, bodies and final store states.", async () => {
     await fc.assert(
       fc.asyncProperty(fc.array(op, { maxLength: 8 }), async (script) => {
         const { call } = bClient();
@@ -37,7 +37,7 @@ describe("k.topology: one process and split", () => {
         const one = await createAppLoose({
           topology: topology({ one: { modules: ["a", "b"], adapter: "node" } }),
           deployable: "one",
-          routes: manifest({ ...a.routes.routes, ...b.routes.routes }),
+          routes: routeTable(a.routes, b.routes),
           ctx: oneCtx,
           ...both,
         });

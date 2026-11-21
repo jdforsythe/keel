@@ -1,4 +1,4 @@
-// Spec: k.scaffold, clause "`--dry-run` writes nothing and prints exactly the diff a following apply writes."
+// Spec: k.scaffold, clause "`--dry-run` writes nothing and prints the diff a following apply writes."
 // In-process: a dry run (scaffold, nothing written) == the following apply. Printed form: the real `keel` binary prints unified diffs; an independent applier
 // (unified-diff.ts) applies them to the before-tree and the result must equal what the following real apply writes.
 // Both forms cover every generator and codemod, transaction and service included (RFC 0039).

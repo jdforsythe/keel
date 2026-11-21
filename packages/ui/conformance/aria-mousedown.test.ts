@@ -2,9 +2,12 @@
 // Spec: k.aria, Conformance "A `mousedown` on an `option` is default-prevented."
 // Seed: 1337.
 // Behavior extras: the same for `menuitem` and `menuitemcheckbox`, so a click leaves focus where it was; not for other roles.
+import { createCtx } from "@keel/ctx";
 import { mount } from "@keel/runtime-dom";
 import { Part } from "@keel/ui/aria";
 import { afterEach, describe, expect, test } from "vitest";
+
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 const hosts: HTMLElement[] = [];
 afterEach(() => {
@@ -14,7 +17,7 @@ const render = (make: () => Node): { host: HTMLElement; off: () => void } => {
   const host = document.createElement("div");
   document.body.appendChild(host);
   hosts.push(host);
-  return { host, off: mount(make, host) };
+  return { host, off: mount(make, host, { ctx: simCtx }) };
 };
 const byId = (host: HTMLElement, id: string): Element => {
   const el = host.querySelector(`[id="${id}"]`);

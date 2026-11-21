@@ -1,6 +1,7 @@
 // Seed 1337 (fast-check seed, recorded in each fc.assert below)
-// Spec: k.check, clause "Every fix a diagnostic carries applies to its fixture with `git apply`, and re-checking reports no diagnostic of that code. Fixtures of E1003, E1005 (bytes only), E1151, E1152, E1154-E1157, E1401, E1403 (`&&`, `?:` with `If` imported), E1405, E1451, E1452 (`try`), E1601, E1652, E1653, E1757 (`!`, `any`, suppression), E1805, and E1808 carry one; RFC 0035 lists why the others cannot."
-// Spec: k.module, Rules, "No fix edits a file under `node_modules/`."
+// Spec: k.check, clause "Every fix a diagnostic carries applies to its fixture with `git apply`, and re-checking reports no diagnostic of that code. Fixtures of E1003, E1005 (bytes only), E1151, E1152, E1154-E1156, E1401, E1403 (`&&`, `?:` with `If` imported), E1405, E1451, E1452 (`try`), E1601, E1652, E1653, E1757 (`!`, `any`, suppression), E1805, and E1808 carry one; RFC 0035 lists why the others cannot."
+// RFC 0157 / 0162: E1157 is retired (no fixture); E1154-E1156 keep theirs; E1407, E1510 and E1515 each carry one (k.component, k.contract); E1513 and E1514 carry none. k.check's sentence still names E1157 and omits these: see the report.
+// Invariant (not a sentence of k.module now): no fix edits a file under `node_modules/`.
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -39,13 +40,13 @@ const UI = "import { Box, Text } from '@keel/ui'\n";
 /** E1403 carries a fix only where `If` is already imported (rfc:0061). */
 const IF = "import { If } from '@keel/runtime-dom'\n";
 const SERVICES = "import { endpoints } from '@keel/services'\nimport { s } from '@keel/schema'\n";
-const manifest = (id: string, deps: string[], exports: string[], routes: string[]): Files[number] => {
+const manifest = (id: string, deps: string[], exports: string[]): Files[number] => {
   const q = (xs: string[]): string => `[${xs.map((x) => `'${x}'`).join(", ")}]`;
   return f(
     `modules/${id}/module.ts`,
     `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: ${q(
       deps,
-    )}, capabilities: [], public: { exports: ${q(exports)}, routes: ${q(routes)} } })\n`,
+    )}, capabilities: [], public: { exports: ${q(exports)} } })\n`,
   );
 };
 const fixtureOf = (code: string) => {
@@ -104,9 +105,9 @@ const FIXED: FixedCase[] = [
     name: "E1151 (add to public.exports)",
     code: "E1151",
     files: [
-      manifest("b", [], [], []),
+      manifest("b", [], []),
       f("modules/b/Secret.ts", "export const Secret = 1\n"),
-      manifest("a", ["b"], [], []),
+      manifest("a", ["b"], []),
       f("modules/a/Use.ts", "import { Secret } from '../b/Secret.ts'\nexport const Use = Secret\n"),
     ],
     opts: NO_TYPES,
@@ -117,29 +118,15 @@ const FIXED: FixedCase[] = [
     name: "E1155 (route show in orders gets orders. prefix)",
     code: "E1155",
     files: [
-      manifest("orders", [], [], []),
+      manifest("orders", [], []),
       f(
-        "modules/orders/routes.ts",
-        "import { manifest } from '@keel/router'\nconst Page = () => null\nexport const routes = manifest({\n  'show': { path: '/show', component: Page },\n})\n",
+        "modules/orders/orders.contract.ts",
+        "import { contract } from '@keel/router/contract'\nexport const orders = contract('orders', { 'show': { path: '/show' } })\n",
       ),
     ],
     opts: NO_TYPES,
   },
   { name: "E1156", code: "E1156", ...fixtureOf("E1156") },
-  {
-    name: "E1157 (add b.priv to public.routes)",
-    code: "E1157",
-    files: [
-      manifest("b", [], ["routes"], ["b.pub"]),
-      f(
-        "modules/b/routes.ts",
-        "import { manifest } from '@keel/router'\nconst Page = () => null\nexport const routes = manifest({\n  'b.pub': { path: '/b/pub', component: Page },\n  'b.priv': { path: '/b/priv', component: Page },\n})\n",
-      ),
-      manifest("a", ["b"], [], []),
-      f("modules/a/Back.ts", "import { routes } from '../b/routes.ts'\nexport const Back = routes.href('b.priv')\n"),
-    ],
-    opts: NO_TYPES,
-  },
   {
     name: "E1401",
     code: "E1401",
@@ -163,7 +150,9 @@ const FIXED: FixedCase[] = [
     files: [f("C.tsx", "export function f() { try { return 1 } catch (e) { return 2 } }\n")],
     opts: {},
   },
-  { name: "E1507 (annotation removed)", code: "E1507", ...fixtureOf("E1507") },
+  { name: "E1407 (parameter list rewritten to (props, ctx: Ctx))", code: "E1407", ...fixtureOf("E1407") },
+  { name: "E1510 (the refused member removed)", code: "E1510", ...fixtureOf("E1510") },
+  { name: "E1515 (the extra binding key removed)", code: "E1515", ...fixtureOf("E1515") },
   {
     name: "E1601",
     code: "E1601",
@@ -305,13 +294,11 @@ const FIX = [
   "E1154",
   "E1155",
   "E1156",
-  "E1157",
   "E1401",
   "E1403",
   "E1405",
   "E1451",
   "E1452",
-  "E1507",
   "E1601",
   "E1652",
   "E1653",
@@ -324,6 +311,8 @@ const FIX = [
   "E1759",
   "E1820",
   "E1010",
+  "E1407",
+  "E1515",
 ];
 const NO_FIX = [
   "E1000", // a syntax error has no unique repair
@@ -349,13 +338,16 @@ const NO_FIX = [
   "E1453", // how to handle the Result is the author's choice
   "E1454", // which code to rename is the author's choice
   "E1501", // the target route id is unknown to the checker
+  "E1502", // which path to change is the author's choice
+  "E1503", // the params field is the author's to write
+  "E1504", // which field becomes optional is the author's choice
+  "E1506", // which layout the entry renders in is the author's choice
   "E1508", // which route leaves the guarded layout is a design choice
   "E1511", // the module's deployable is the author's choice
-  "E1512", // the fix is in the action's own file
   "E1552", // k.topology Rules: Fix none; the unknown key is the author's to remove or rename
   "E1566", // which deployable hosts the client is the author's choice
   "E1551", // moving the declaration to a .server file is a design change
-  "E1567", // the module, deps and public.routes edits span files
+  "E1567", // the module and deps edits span files
   "E1570", // where the asset or form target lives is the author's choice
   "E1571", // moving the call to a server file spans files
   "E1578", // k.user Rules: Fix none; the caller days or the deployable is the author's choice
@@ -366,7 +358,8 @@ const NO_FIX = [
   "E1584", // k.mount Rules: Fix none; the links entry is the author's
   "E1576", // the public replacement is the author's
   "E1573", // the shell's adapter and app id are the author's
-  "E1561", // choosing between the caller's and the producer's schema is a judgment
+  "E1513", // k.contract Rules: no fix; the checker cannot choose the file
+  "E1514", // k.contract Rules: no fix; which import to drop is the author's choice
   "E1562", // the fix edits the route's schema source and needs a rebuilt surface; its fixture is surface data alone
   "E1563", // as E1562: the fix edits the store's schema source; its fixture is surface data alone
   "E1603", // the code in the string is the author's

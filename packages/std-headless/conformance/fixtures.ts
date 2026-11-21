@@ -1,6 +1,6 @@
 // Shared fixtures for the std.headless and std.options conformance files (not a test file). Property seed: 1337.
 // Assumptions (the spec leaves them open):
-// - a widget is called as `Widget(props, undefined, ctx)` inside a harness component, so it reaches the sim `ctx.clock` (k.component);
+// - a widget is called as `Widget(props, ctx)` (RFC 0162) inside a harness component, so it reaches the sim `ctx.clock` (k.component);
 // - a slot such as `trigger`, `summary` or `empty` may return a string;
 // - `render(...)` is synchronous and a throw at render (E2801) surfaces from `render`.
 import type { Ctx } from "@keel/ctx";
@@ -16,13 +16,10 @@ export const SEED = 1337;
 export const simCtx = (seed = SEED) => createCtx({ mode: "sim", seed });
 
 /** A harness component with an empty `Props` schema around `view`, which receives the harness's ctx. */
-export const page = (view: (ctx: Ctx | undefined) => Node) =>
-  Object.assign(
-    (_props: Record<string, never>, _slots?: Readonly<Record<string, () => Node>>, ctx?: Ctx): Node => view(ctx),
-    {
-      Props: s.object({}),
-    },
-  );
+export const page = (view: (ctx: Ctx) => Node) =>
+  Object.assign((_props: Record<string, never>, ctx: Ctx): Node => view(ctx), {
+    Props: s.object({}),
+  });
 
 export type Rendered = ReturnType<typeof render>;
 

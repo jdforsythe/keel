@@ -3,6 +3,7 @@
 // Seed 1337
 import { scope } from "@keel/reactive";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { type Schema, s } from "@keel/schema";
 import { gen } from "@keel/schema/gen";
 import { Session, record } from "@keel/std-sessions";
@@ -65,10 +66,10 @@ async function capture(schema: Schema<unknown>, payload: unknown) {
   const ctx = simCtx();
   const rec = record(ctx);
   const built: { st: ReturnType<typeof store<{ last: string }>>; routes: ReturnType<typeof table> }[] = [];
+  const piipContract = contract("piip", { "piip.show": { path: "/piip" } });
   const table = (go: () => void) =>
-    manifest({
+    manifest(piipContract, {
       "piip.show": {
-        path: "/piip",
         component(): Node {
           return Box({
             as: "main",

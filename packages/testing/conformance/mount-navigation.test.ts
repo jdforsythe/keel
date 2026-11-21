@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 // Spec: k.mount, Navigation "`Link to`, `navigate` and an action's `ok(href)` take it as any `Href`. A router handles client-side only a path its table matches as a page and k.mount-scope allows; a link click, `navigate` or `ok(href)` to another path is a document navigation (`location.assign`; `replace`: `location.replace`)."
-// Spec: k.mount, Conformance "In a router, a `Link` click, `navigate` and an action's `ok` to it each record one GET in `documents()` and keep the page; a `routes.href` link navigates client-side."
+// Spec: k.mount, Conformance "In a router, a `Link` click, `navigate` and an action's `ok` to it each record one GET in `documents()` and keep the page; a contract's `href` link navigates client-side."
 // Seed 1337 (fc.assert below). Not testable through `documents()`: that `replace` uses `location.replace`, which the reading does not tell apart from `location.assign`.
 import fc from "fast-check";
 import { afterEach, describe, expect, it } from "vitest";
@@ -48,7 +48,7 @@ describe("k.mount: a router keeps client-side only the pages its table matches",
     h.dispose();
   });
 
-  it("a `routes.href` link navigates client-side and records nothing", async () => {
+  it("a contract's `href` link navigates client-side and records nothing", async () => {
     const h = await open("mt.home");
     await h.fire("mt.home.about", { type: "click" });
     expect(h.route().id).toBe("mt.about");

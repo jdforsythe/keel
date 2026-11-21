@@ -2,6 +2,7 @@
 // Spec: k.runtime, clause "An island rooted at a k.ui base element, or with a child component in a template, resumes without E1253, keeping every server element and the focus."
 // Spec: k.ui, clause "An `Input` bound to a signal and edited in server HTML before resume keeps the edit after resume, its server node and its markup default."
 // Property seed: 1337.
+import { createCtx } from "@keel/ctx";
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
 import * as reactive from "@keel/reactive";
@@ -10,6 +11,8 @@ import { resume } from "@keel/runtime-dom/ops";
 import * as ui from "@keel/ui";
 import * as fc from "fast-check";
 import { afterEach, describe, expect, it } from "vitest";
+
+const simCtx = () => createCtx({ mode: "sim", seed: 1337 });
 
 type Component = (p: Readonly<Record<string, unknown>>) => Node;
 
@@ -55,6 +58,7 @@ export default function FormIsland(p: { title: string }) {
 const TITLE = `
 import { signal } from "@keel/reactive";
 import { Input } from "@keel/ui";
+
 export default function TitleIsland(p: { title: string }) {
   const title = signal(p.title);
   return (
@@ -86,7 +90,7 @@ const input = (root: ParentNode): HTMLInputElement => {
 // Server HTML by mounting into a scratch host; then parse it with the k-state script into a fresh host.
 const serverHost = (id: string, component: Component, props: Record<string, unknown>): HTMLDivElement => {
   const scratch = host();
-  const dispose = mount(() => component(props), scratch);
+  const dispose = mount(() => component(props), scratch, { ctx: simCtx() });
   const root = scratch.firstElementChild;
   if (root === null) throw new Error("fixture: no island root");
   root.setAttribute("data-k-island", id);
@@ -111,7 +115,7 @@ const resumesIntact = (id: string, component: Component): void => {
   const field = input(h);
   field.focus();
   expect(document.activeElement).toBe(field);
-  const { warnings } = resume(h, { [id]: component }, {});
+  const { warnings } = resume(h, { [id]: component }, { ctx: simCtx() });
   expect(warnings).toEqual([]);
   const after = everyElement(h);
   expect(after.length).toBe(before.length);
@@ -138,7 +142,7 @@ describe("k.ui: an Input bound to a signal and edited in server HTML before resu
     expect(field.getAttribute("value")).toBe("Ada");
     field.value = edit;
     field.dispatchEvent(new Event("input", { bubbles: true }));
-    const { warnings } = resume(h, { TitleIsland: component }, {});
+    const { warnings } = resume(h, { TitleIsland: component }, { ctx: simCtx() });
     expect(warnings).toEqual([]);
     await flush();
     expect(input(h)).toBe(field);

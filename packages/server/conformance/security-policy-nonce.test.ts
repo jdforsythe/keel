@@ -1,16 +1,18 @@
 // Spec: k.security, Conformance "A production document carries the policy above, and its nonce equals the `nonce` of its module script and of `<meta property="csp-nonce">`; two documents under one sim ctx carry different 64-character nonces."
 // Seed: 1337.
 // @vitest-environment happy-dom
+import type { Ctx } from "@keel/ctx";
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import type { RouteProps } from "@keel/router";
 import { createApp, topology } from "@keel/server";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 
-type Component = (props: RouteProps) => Node;
+type Component = (props: RouteProps, ctx: Ctx) => Node;
 
 const COUNTER = `import { signal } from "@keel/reactive";
 export default function Counter() {
@@ -26,8 +28,8 @@ function compileComponent(source: string): Component {
   if (out === undefined) throw new Error("fixture: no compiler output");
   const fn = evaluate(out.code);
   if (typeof fn !== "function") throw new Error("fixture: default export is not a component");
-  return (props) => {
-    const node: unknown = fn(props);
+  return (props, ctx) => {
+    const node: unknown = fn(props, ctx);
     if (!(node instanceof Node)) throw new Error("fixture: component did not return a Node");
     return node;
   };
@@ -60,9 +62,14 @@ const directivesOf = (policy: string): string[] =>
 const nonceOfPolicy = (policy: string): string => /'nonce-([^']+)'/.exec(policy)?.[1] ?? "";
 
 async function setup(seed: number) {
-  const routes = manifest({
-    "app.counter": { path: "/counter", component: compileComponent(COUNTER) },
-    "app.plain": { path: "/plain", component: () => document.createElement("main") },
+  const appContract = contract("app", {
+    "app.counter": { path: "/counter" },
+    "app.plain": { path: "/plain" },
+  });
+
+  const routes = manifest(appContract, {
+    "app.counter": { component: compileComponent(COUNTER) },
+    "app.plain": { component: () => document.createElement("main") },
   });
   const ctx = createCtx({ mode: "sim", seed });
   const app = await createApp({

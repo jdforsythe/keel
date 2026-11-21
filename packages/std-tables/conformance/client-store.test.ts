@@ -5,6 +5,7 @@
 // the store is read as `rows: () => store.get("rows")` (a store read, k.store).
 import { scope } from "@keel/reactive";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { type Infer, s } from "@keel/schema";
 import { DataTable } from "@keel/std-tables";
 import { type Store, store, transaction, tx } from "@keel/store";
@@ -43,19 +44,19 @@ const add = transaction(made, "tbl.add", s.object({ row: CatalogRow }), (state, 
 }));
 const clear = transaction(made, "tbl.clear", s.object({}), () => ({ rows: [] }));
 
-const links = manifest({
-  "tbl.client": {
-    path: "/client",
-    params: s.object({}),
-    search: Search,
-    component: () => Text({ children: "target" }),
-  },
+const tblContract = contract("tbl", {
+  "tbl.client": { path: "/client", params: s.object({}), search: Search },
 });
-const routes = manifest({
+
+const links = manifest(tblContract, {
+  "tbl.client": { component: () => Text({ children: "target" }) },
+});
+const tbl = contract("tbl", {
+  "tbl.client": { path: "/client", params: s.object({}), search: Search },
+});
+
+const routes = manifest(tbl, {
   "tbl.client": {
-    path: "/client",
-    params: s.object({}),
-    search: Search,
     component: (props) => {
       made.uses([add, clear]);
       return DataTable({
@@ -63,7 +64,7 @@ const routes = manifest({
         label: "Catalog",
         columns: catalogColumns,
         search: queryOf(props.search),
-        href: (q) => links.href("tbl.client", {}, q),
+        href: (q) => tblContract.href("tbl.client", {}, q),
         locale: LOCALE,
         rows: () => made.get("rows"),
         pageSize: PAGE_SIZE,

@@ -6,7 +6,7 @@ import { Boundary, mount } from "@keel/runtime-dom";
 import { Host } from "@keel/ui";
 import fc from "fast-check";
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { Points, type PointsValue, SEED, flush, frames, probe } from "./host-support.ts";
+import { Points, type PointsValue, SEED, flush, frames, probe, simCtx } from "./host-support.ts";
 import { cleanup, host, signal } from "./host-dom.ts";
 
 afterEach(() => {
@@ -47,7 +47,7 @@ const setup = async (value: PointsValue | ReturnType<typeof signal<PointsValue>>
         },
       }),
     root,
-    mode === undefined ? undefined : { mode },
+    mode === undefined ? { ctx: simCtx() } : { ctx: simCtx(), mode },
   );
   await flush();
   f.step();

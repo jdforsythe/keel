@@ -8,6 +8,7 @@
 //  - A thrown rule error carries its code in `code` or in its message.
 import { createCtx } from "@keel/ctx";
 import { type Href, type RouteProps, loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { type Infer, ok, s } from "@keel/schema";
 import { DataTable, TableSearch, applyQuery, columns, tablePage, tableSearch } from "@keel/std-tables";
 import { Box, Text } from "@keel/ui";
@@ -81,13 +82,12 @@ export const CELLS = {
 
 const Out = s.object({ page: tablePage(CatalogRow) });
 const stub = (): Node => Text({ children: "link target" });
-/** Same paths and search schema as `routes`, used only to mint `Href`s without a component reading its own manifest. */
-const links = manifest({
-  "tbl.server": { path: "/catalog", params: s.object({}), search: Search, component: stub },
-  "tbl.find": { path: "/find", params: s.object({}), search: Search, component: stub },
+export const tbl = contract("tbl", {
+  "tbl.server": { path: "/catalog", params: s.object({}), search: Search },
+  "tbl.find": { path: "/find", params: s.object({}), search: Search },
 });
-export const serverHref = (q: Query): Href => links.href("tbl.server", {}, q);
-export const findHref = (q: Query): Href => links.href("tbl.find", {}, q);
+export const serverHref = (q: Query): Href => tbl.href("tbl.server", {}, q);
+export const findHref = (q: Query): Href => tbl.href("tbl.find", {}, q);
 
 export const queryOf = (raw: unknown): Query => {
   const r = Search.parse(raw);
@@ -100,10 +100,11 @@ const pageOf = (raw: unknown): Infer<typeof Out>["page"] => {
   return r.value.page;
 };
 
-const tableLoader = loader({ output: Out, search: Search }, async ({ search }) => {
-  dataset.loads += 1;
-  return ok({ page: applyQuery(catalogColumns, dataset.rows, search, { pageSize: PAGE_SIZE, locale: LOCALE }) });
-});
+const tableLoader = <I extends "tbl.server" | "tbl.find">(id: I) =>
+  loader(tbl, id, { output: Out }, async ({ search }) => {
+    dataset.loads += 1;
+    return ok({ page: applyQuery(catalogColumns, dataset.rows, search, { pageSize: PAGE_SIZE, locale: LOCALE }) });
+  });
 
 const catalog = (props: RouteProps, href: (q: Query) => Href): Node =>
   DataTable({
@@ -123,20 +124,14 @@ const catalog = (props: RouteProps, href: (q: Query) => Href): Node =>
     cells: CELLS,
   });
 
-export const routes = manifest({
+export const routes = manifest(tbl, {
   "tbl.server": {
-    path: "/catalog",
-    params: s.object({}),
-    search: Search,
-    loader: tableLoader,
+    loader: tableLoader("tbl.server"),
     component: (props) => catalog(props, serverHref),
   },
   "tbl.find": {
-    path: "/find",
-    params: s.object({}),
-    search: Search,
-    loader: tableLoader,
-    component: (props, _slots, ctx) =>
+    loader: tableLoader("tbl.find"),
+    component: (props, ctx) =>
       Box({
         id: "find.page",
         children: () => [
@@ -149,7 +144,6 @@ export const routes = manifest({
               },
               href: findHref,
             },
-            undefined,
             ctx,
           ),
           catalog(props, findHref),

@@ -6,14 +6,14 @@ import { scope } from "@keel/reactive";
 import { drain, outbox, send } from "@keel/std-offline";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { Api, MODULE, OWNER, createServer, edit, settle, simCtx, tick } from "./fixtures.ts";
+import { Api, OWNER, createServer, edit, settle, simCtx, tick } from "./fixtures.ts";
 
 let n = 0;
 const armed = async (title: string) => {
   const ctx = simCtx();
   const server = createServer();
   server.attach(ctx);
-  const o = outbox(`drainscope${++n}.outbox`, Api, { module: MODULE });
+  const o = outbox(`drainscope${++n}.outbox`, Api, {});
   server.next({ kind: "reject" });
   const sc = scope(() => {
     void drain(ctx, o, { owner: OWNER });

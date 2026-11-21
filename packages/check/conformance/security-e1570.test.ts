@@ -1,5 +1,5 @@
 // Spec: k.security, Conformance "`Image src="https://cdn.example/a.png"` and `action="https://x.example/"` are each E1570; `src="logo.png"` is not."
-// Spec: k.security, Rules "E1570 a literal absolute `http(s)` URL in `src`, `poster`, `data`, `srcset`, `action`, `formaction` or `Image src`: the policy blocks another origin (fix: none)"
+// Spec: k.security, Rules "E1570 a literal absolute `http(s)` URL in `src`, `poster`, `data`, `srcset`, `action`, `formaction` or `Image src`: the policy blocks an undeclared origin (k.origins; fix: none)"
 // Seed: 1337.
 import { check } from "@keel/check";
 import fc from "fast-check";

@@ -11,7 +11,7 @@ import { createCtx } from "@keel/ctx";
 import type { SimCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";
-import { endpoints } from "@keel/services";
+import { contract } from "@keel/router/contract";
 import { Write, drain, outbox, writeFor } from "@keel/std-offline";
 import { store, transaction, tx } from "@keel/store";
 
@@ -39,8 +39,9 @@ export const tick = async (ctx: SimCtx, ms: number): Promise<void> => {
   await settle();
 };
 
-export const Api = endpoints({
-  editTodo: {
+// The contract of module `todos` (k.contract): its API write entry `todos.editTodo`, client method `editTodo`.
+export const Api = contract("todos", {
+  "todos.editTodo": {
     method: "POST",
     path: "/todos/:todoId",
     params: s.object({ todoId: s.string() }),
@@ -169,8 +170,7 @@ let serverCounter = 0;
 
 let outboxCounter = 0;
 
-const declare = (id: string, opts: { limit?: number; maxBytes?: number }) =>
-  outbox(id, Api, { module: MODULE, ...opts });
+const declare = (id: string, opts: { limit?: number; maxBytes?: number }) => outbox(id, Api, { ...opts });
 
 /** A client: an outbox declared in its own scope (a store needs an owner). Ids are unique per call so scopes may overlap. */
 export function makeClient(opts: { limit?: number; maxBytes?: number; id?: string } = {}) {

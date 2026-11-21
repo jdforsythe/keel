@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 // Spec: k.testing, Properties "`properties(target, { runs = 100, seed? })` asserts, for a component: renders without throwing, matches `a11y.json`, no axe violations, two renders with one seed are equal. For a transaction: output parses with the store schema, every `invariant` of the store holds, equal inputs give equal outputs, `undo` restores the input."
-// Spec: k.store, Log meta "`snapshot({ meta: true })` keeps it and `restore` keeps the `meta` of the entries it restores: meta survives exactly when the log does."
+// Spec: k.store, Log meta "`snapshot({ meta: true })` keeps it and `restore` keeps the `meta` of the entries it restores." (meta survives exactly when the log does)
 // Seed: 1337 (rfc:0028, backlog 0104). properties() and a harness dispose must leave a store's log, with its meta, as they found it.
 import type { Ctx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
@@ -11,8 +11,6 @@ import { properties, render } from "@keel/testing";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { SEED, simCtx } from "./fixtures.ts";
-
-type Slots = Record<string, unknown> | undefined;
 
 const Total = s.object({ total: s.int() });
 const made = (() => {
@@ -35,7 +33,7 @@ const { st, add } = made;
 
 const T = template('<p id="meta.total.view"></p>');
 const View = Object.assign(
-  (_props: Record<string, never>, _slots?: Slots, _ctx?: Ctx): Node => {
+  (_props: Record<string, never>): Node => {
     const root = clone(T);
     text(root, () => String(st.get("total")));
     return root;

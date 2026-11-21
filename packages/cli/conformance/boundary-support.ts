@@ -30,7 +30,7 @@ export const CANARY = {
 } as const;
 
 export const manifestSrc = (id: string, extra = ""): string =>
-  `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [], routes: [] }${extra} })\n`;
+  `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [] }${extra} })\n`;
 
 const TSCONFIG = JSON.stringify({
   compilerOptions: {
@@ -51,7 +51,7 @@ export type Placement = "node" | "static" | "none";
 /**
  * Module `a`: `a.home` at `/` and `a.show` at `/a/:id` with typed params and search, a loader in `load.server.ts`
  * (which imports `helper.ts` -> `deep.ts` and `side.server.ts`), a guard in `auth.guard.ts` and, unless `actions` is
- * false, a POST action in `save.server.ts`; `Page.tsx` links and posts with `routes.href`.
+ * false, a POST action in `save.server.ts`, all named by `a.contract.ts`; `Page.tsx` links and posts with `a.href`.
  */
 export function moduleA(actions: boolean): Tree {
   const c = CANARY;
@@ -62,25 +62,27 @@ export function moduleA(actions: boolean): Tree {
     "modules/a/Search.schema.ts":
       "import { s } from '@keel/schema'\nexport const Search = s.object({ tab: s.string().optional() })\n",
     "modules/a/Out.schema.ts": "import { s } from '@keel/schema'\nexport const Out = s.object({ title: s.string() })\n",
+    "modules/a/a.contract.ts":
+      "import { contract } from '@keel/router/contract'\nimport { Params } from './Params.schema.ts'\nimport { Search } from './Search.schema.ts'\nexport const a = contract('a', {\n  'a.home': { path: '/' },\n  'a.show': { path: '/a/:id', params: Params, search: Search },\n})\n",
     "modules/a/deep.ts": `export const deep = '${c.deep}'\n`,
     "modules/a/helper.ts":
       "import { deep } from './deep.ts'\nexport const helper = (id: string): string => `${deep}:${id}`\n",
     "modules/a/side.server.ts": `Reflect.set(globalThis, 'sideRan', '${c.side}')\nexport const side = 1\n`,
-    "modules/a/load.server.ts": `import { loader } from '@keel/router'\nimport { ok } from '@keel/schema'\nimport { Out } from './Out.schema.ts'\nimport { Params } from './Params.schema.ts'\nimport { Search } from './Search.schema.ts'\nimport { helper } from './helper.ts'\nimport { side } from './side.server.ts'\nexport const load = loader({ output: Out, params: Params, search: Search }, async ({ params }) => {\n  Reflect.set(globalThis, 'loaderRan', '${c.loader}')\n  return ok({ title: \`\${helper(params.id)}\${side}\` })\n})\n`,
+    "modules/a/load.server.ts": `import { loader } from '@keel/router'\nimport { ok } from '@keel/schema'\nimport { a } from './a.contract.ts'\nimport { Out } from './Out.schema.ts'\nimport { helper } from './helper.ts'\nimport { side } from './side.server.ts'\nexport const load = loader(a, 'a.show', { output: Out }, async ({ params }) => {\n  Reflect.set(globalThis, 'loaderRan', '${c.loader}')\n  return ok({ title: \`\${helper(params.id)}\${side}\` })\n})\n`,
     "modules/a/auth.guard.ts": `import { guard } from '@keel/router'\nimport { ok } from '@keel/schema'\nexport const auth = guard({ redirect: 'a.home' }, async () => {\n  Reflect.set(globalThis, 'guardRan', '${c.guard}')\n  return ok(null)\n})\n`,
     ...(actions
       ? {
-          "modules/a/save.server.ts": `import { writeFileSync } from 'node:fs'\nimport { action } from '@keel/router'\nimport { ok, s } from '@keel/schema'\nexport const save = action({ input: s.object({ note: s.string().optional() }) }, async () => {\n  writeFileSync(process.env.K_MARK ?? '', '${c.action}')\n  return ok(null)\n})\n`,
+          "modules/a/save.server.ts": `import { writeFileSync } from 'node:fs'\nimport { action } from '@keel/router'\nimport { ok, s } from '@keel/schema'\nimport { a } from './a.contract.ts'\nexport const save = action(a, 'a.show', { input: s.object({ note: s.string().optional() }) }, async () => {\n  writeFileSync(process.env.K_MARK ?? '', '${c.action}')\n  return ok(null)\n})\n`,
         }
       : {}),
     "modules/a/Home.tsx":
       "import { Box, Text } from '@keel/ui'\nexport default function Home() {\n  return (\n    <Box as=\"main\">\n      <Text>home</Text>\n    </Box>\n  )\n}\n",
     "modules/a/Page.tsx":
-      "import { Form } from '@keel/router'\nimport { Box, Button, Link } from '@keel/ui'\nimport { routes } from './routes.ts'\n" +
+      "import { Form } from '@keel/router'\nimport { Box, Button, Link } from '@keel/ui'\nimport { a } from './a.contract.ts'\n" +
       'export default function Page() {\n  return (\n    <Box as="main">\n' +
-      "      <Link to={routes.href('a.show', { id: 'x' }, { tab: 'b' })}>Next</Link>\n" +
-      "      <Form method=\"POST\" action={routes.href('a.show', { id: 'x' })}>\n        <Button>Save</Button>\n      </Form>\n    </Box>\n  )\n}\n",
-    "modules/a/routes.ts": `import { manifest } from '@keel/router'\nimport Home from './Home.tsx'\nimport Page from './Page.tsx'\nimport { auth } from './auth.guard.ts'\nimport { load } from './load.server.ts'\n${actions ? "import { save } from './save.server.ts'\n" : ""}import { Params } from './Params.schema.ts'\nimport { Search } from './Search.schema.ts'\nexport const routes = manifest({\n  'a.home': { path: '/', component: Home },\n  'a.show': { path: '/a/:id', params: Params, search: Search, guard: auth, loader: load, component: Page },\n})\n${actions ? "routes.actions({ 'a.show': { POST: save } })\n" : ""}`,
+      "      <Link to={a.href('a.show', { id: 'x' }, { tab: 'b' })}>Next</Link>\n" +
+      "      <Form method=\"POST\" action={a.href('a.show', { id: 'x' })}>\n        <Button>Save</Button>\n      </Form>\n    </Box>\n  )\n}\n",
+    "modules/a/routes.ts": `import { manifest } from '@keel/router'\nimport Home from './Home.tsx'\nimport Page from './Page.tsx'\nimport { a } from './a.contract.ts'\nimport { auth } from './auth.guard.ts'\nimport { load } from './load.server.ts'\n${actions ? "import { save } from './save.server.ts'\n" : ""}export const routes = manifest(a, {\n  'a.home': { component: Home },\n  'a.show': { guard: auth, loader: load, component: Page${actions ? ", POST: save" : ""} },\n})\n`,
   };
 }
 
@@ -90,17 +92,19 @@ export function moduleW(): Tree {
   return {
     "modules/w/module.ts": manifestSrc("w"),
     "modules/w/Out.schema.ts": "import { s } from '@keel/schema'\nexport const Out = s.object({ title: s.string() })\n",
-    "modules/w/loadW.server.ts": `import { loader } from '@keel/router'\nimport { ok } from '@keel/schema'\nimport { Out } from './Out.schema.ts'\nexport const loadW = loader({ output: Out }, async () => {\n  Reflect.set(globalThis, 'clientLoaderRan', '${c.client}')\n  return ok({ title: 'w' })\n})\n`,
+    "modules/w/w.contract.ts":
+      "import { contract } from '@keel/router/contract'\nexport const w = contract('w', {\n  'w.home': { path: '/app' },\n  'w.login': { path: '/login' },\n})\n",
+    "modules/w/loadW.server.ts": `import { loader } from '@keel/router'\nimport { ok } from '@keel/schema'\nimport { w } from './w.contract.ts'\nimport { Out } from './Out.schema.ts'\nexport const loadW = loader(w, 'w.home', { output: Out }, async () => {\n  Reflect.set(globalThis, 'clientLoaderRan', '${c.client}')\n  return ok({ title: 'w' })\n})\n`,
     "modules/w/pick.guard.ts": `import { guard } from '@keel/router'\nimport { ok } from '@keel/schema'\nexport const pick = guard({ redirect: 'w.login' }, async () => {\n  Reflect.set(globalThis, 'clientGuardRan', '${c.clientGuard}')\n  return ok(null)\n})\n`,
     "modules/w/View.tsx":
-      "import { Box, Link } from '@keel/ui'\nimport { routes } from './routes.ts'\n" +
-      "export default function View() {\n  return (\n    <Box as=\"main\">\n      <Link to={routes.href('w.login')}>Sign in</Link>\n    </Box>\n  )\n}\n",
+      "import { Box, Link } from '@keel/ui'\nimport { w } from './w.contract.ts'\n" +
+      "export default function View() {\n  return (\n    <Box as=\"main\">\n      <Link to={w.href('w.login')}>Sign in</Link>\n    </Box>\n  )\n}\n",
     "modules/w/Login.tsx":
       "import { Box, Text } from '@keel/ui'\nexport default function Login() {\n  return (\n    <Box as=\"main\">\n      <Text>login</Text>\n    </Box>\n  )\n}\n",
     "modules/w/routes.ts":
       "import { manifest } from '@keel/router'\nimport Login from './Login.tsx'\nimport View from './View.tsx'\n" +
-      "import { loadW } from './loadW.server.ts'\nimport { pick } from './pick.guard.ts'\n" +
-      "export const routes = manifest({\n  'w.home': { path: '/app', guard: pick, loader: loadW, component: View },\n  'w.login': { path: '/login', component: Login },\n})\n",
+      "import { loadW } from './loadW.server.ts'\nimport { pick } from './pick.guard.ts'\nimport { w } from './w.contract.ts'\n" +
+      "export const routes = manifest(w, {\n  'w.home': { guard: pick, loader: loadW, component: View },\n  'w.login': { component: Login },\n})\n",
   };
 }
 
@@ -111,8 +115,8 @@ const HTML = (src: string): string =>
 
 /** A browser entry for a project the plugin builds with its own `index.html`: it reads the page and the manifest. */
 const ENTRY =
-  "import Page from './Page.tsx'\nimport { routes } from './routes.ts'\n" +
-  "Reflect.set(globalThis, 'entryPage', [Page, routes.href('a.show', { id: 'x' })])\nexport const entry = 1\n";
+  "import Page from './Page.tsx'\nimport { a } from './a.contract.ts'\nimport { routes } from './routes.ts'\n" +
+  "Reflect.set(globalThis, 'entryPage', [Page, a.href('a.show', { id: 'x' }), routes])\nexport const entry = 1\n";
 
 /** The shared project root files: package, config, tsconfig. */
 export const base = (): Tree => ({

@@ -115,7 +115,7 @@ describe("k.bundle Handlers: what is no use of a handler", () => {
       body: "import * as R from '@keel/router'\nexport const m = R.manifest\n",
     },
     "`manifest(...)` called through a named import": {
-      body: "import { manifest } from '@keel/router'\nexport const m = manifest({})\n",
+      body: "import { manifest } from '@keel/router'\ndeclare const c: never\nexport const m = manifest(c, {})\n",
     },
     "a plain function named `loader` of the file's own": {
       body: "const loader = (x: number) => x\nexport const p = loader(1)\n",

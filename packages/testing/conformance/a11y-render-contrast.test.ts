@@ -3,6 +3,7 @@
 // Seed: 1337.
 // Assumed (spec names no seam): the tokens reach `renderRoute` as `artifacts: { tokens }`, as `a11y.json` reaches `render`.
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { renderRoute } from "@keel/testing";
 import { Box, Text, defineTokens } from "@keel/ui";
 import * as fc from "fast-check";
@@ -22,16 +23,16 @@ const grayAt = (target: number): number => {
 };
 
 // The shell component sets the `bg`; the page component, another one, holds the text.
+const ctContract = contract("ct", { "ct.shell": { layout: true }, "ct.page": { path: "/ct" } });
 const routesFor = () =>
-  manifest({
+  manifest(ctContract, {
     "ct.shell": {
       component: (props) =>
         Box({ id: "ct.box", bg: "bg", children: () => (props.children === undefined ? "" : props.children()) }),
     },
     "ct.page": {
-      path: "/ct",
-      layout: "ct.shell",
       component: () => Text({ id: "ct.msg", fg: "fg", children: "hello" }),
+      layout: "ct.shell",
       title: () => "Contrast",
     },
   });
@@ -75,8 +76,9 @@ describe("k.a11y: render contrast across components (E1804)", () => {
   });
 
   it("with no painted ancestor the background is #FFFFFF", async () => {
-    const routes = manifest({
-      "ct.bare": { path: "/bare", component: () => Text({ id: "ct.bare", fg: "fg", children: "x" }) },
+    const ctContract2 = contract("ct", { "ct.bare": { path: "/bare" } });
+    const routes = manifest(ctContract2, {
+      "ct.bare": { component: () => Text({ id: "ct.bare", fg: "fg", children: "x" }) },
     });
     const g = grayAt(4.4);
     const e = await thrown(() =>

@@ -70,20 +70,21 @@ function files(sh: Shape): Record<string, string> {
     "topology.ts":
       "import { topology } from '@keel/server'\nexport default topology({ x: { modules: ['m'], adapter: 'node' } })\n",
     "modules/m/module.ts":
-      "import { module } from '@keel/compiler'\nexport default module({ id: 'm', deps: [], capabilities: [], public: { exports: [], routes: ['m.save'] } })\n",
+      "import { module } from '@keel/compiler'\nexport default module({ id: 'm', deps: [], capabilities: [], public: { exports: [] } })\n",
     "modules/m/factory.server.ts":
       "import { s } from '@keel/schema'\nimport { store, transaction } from '@keel/store'\n" +
       "export const factory = () => {\n" +
       `  const st = store(${sh.state}, ${sh.initial}, { id: 'm.s' })\n${txs}\n` +
       `  return { st${sh.txs.map((_, i) => `, t${i}`).join("")} }\n}\n`,
     "modules/m/save.server.ts":
-      "import { action } from '@keel/router'\nimport { ok, s } from '@keel/schema'\nimport { factory } from './factory.server.ts'\n" +
-      "export const save = action({ input: s.object({}), stores: factory }, async () => ok(null))\n",
+      "import { action } from '@keel/router'\nimport { ok, s } from '@keel/schema'\nimport { m } from './m.contract.ts'\nimport { factory } from './factory.server.ts'\n" +
+      "export const save = action(m, 'm.save', { input: s.object({}), stores: factory }, async () => ok(null))\n",
+    "modules/m/m.contract.ts":
+      "import { contract } from '@keel/router/contract'\nexport const m = contract('m', { 'm.save': { path: '/m/save' } })\n",
     "modules/m/routes.ts":
-      "import { manifest } from '@keel/router'\nimport { Text } from '@keel/ui'\nimport { save } from './save.server.ts'\n" +
+      "import { manifest } from '@keel/router'\nimport { Text } from '@keel/ui'\nimport { m } from './m.contract.ts'\nimport { save } from './save.server.ts'\n" +
       "const Page = () => Text({ children: 'x' })\n" +
-      "export const routes = manifest({ 'm.save': { path: '/m/save', component: Page } })\n" +
-      "routes.actions({ 'm.save': { POST: save } })\n",
+      "export const routes = manifest(m, { 'm.save': { component: Page, POST: save } })\n",
   };
 }
 

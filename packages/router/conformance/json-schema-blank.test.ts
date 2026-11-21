@@ -5,6 +5,7 @@
 // are JSON Schema, as in `routes.json`"); the spec does not name the artifact's keys, so the test reads `<id>.params.properties.<key>.pattern`
 // and `<id>.search.properties.<key>.pattern`, the shape the current artifact has. The spec does not call this output OpenAPI.
 import { loader, manifest, routesArtifact } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import { describe, expect, it } from "vitest";
 
@@ -17,15 +18,19 @@ const BLANK_CHAR = /^[\p{White_Space}\p{Default_Ignorable_Code_Point}\p{Cc}\p{Cf
 const MARK_OR_SURROGATE = /^[\p{M}\p{Cs}]$/u;
 const refusedByPattern = (c: string): boolean => BLANK_CHAR.test(c) && !MARK_OR_SURROGATE.test(c);
 
-const read = loader({ output: s.object({ n: s.int() }) }, async () => ok({ n: 1 }));
-const routes = manifest({
+const tContract = contract("t", {
   "t.one": {
+    method: "GET",
     path: "/t/:id",
-    api: true,
     params: s.object({ id: s.string({ min: 1 }) }),
-    search: s.object({ q: s.string({ min: 1 }).optional() }),
-    loader: read,
+    query: s.object({ q: s.string({ min: 1 }).optional() }),
+    output: s.object({ n: s.int() }),
   },
+});
+
+const read = loader(tContract, "t.one", {}, async () => ok({ n: 1 }));
+const routes = manifest(tContract, {
+  "t.one": { loader: read },
 });
 const artifact: unknown = routesArtifact(routes);
 

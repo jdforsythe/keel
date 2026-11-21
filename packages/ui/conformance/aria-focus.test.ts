@@ -2,6 +2,7 @@
 // Spec: k.aria, Conformance "`focus` turning true focuses the element; `focus` true at the first render, and at resume, leaves focus where it was."
 // Seed: 1337.
 // Spec: k.a11y, Order and focus "No base element takes `tabindex` but `Part` (k.aria), which takes only `0` or `-1`"
+import { createCtx } from "@keel/ctx";
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
 import * as reactive from "@keel/reactive";
@@ -12,6 +13,8 @@ import * as aria from "@keel/ui/aria";
 import { Part } from "@keel/ui/aria";
 import fc from "fast-check";
 import { afterEach, describe, expect, expectTypeOf, test } from "vitest";
+
+const simCtx = () => createCtx({ mode: "sim", seed: 1337 });
 
 /** Signals and computeds are created in a scope (k.reactive E1203). */
 const owner = scope(() => undefined);
@@ -68,7 +71,7 @@ describe("k.aria: focus", () => {
         const prior = outside();
         const focus = owned(false);
         const root = host();
-        const off = mount(() => make(kind, focus), root);
+        const off = mount(() => make(kind, focus), root, { ctx: simCtx() });
         await flush();
         expect(document.activeElement).toBe(prior);
         focus.set(true);
@@ -85,7 +88,7 @@ describe("k.aria: focus", () => {
       fc.asyncProperty(kinds, async (kind) => {
         const prior = outside();
         const root = host();
-        const off = mount(() => make(kind, true), root);
+        const off = mount(() => make(kind, true), root, { ctx: simCtx() });
         await flush();
         expect(document.activeElement).toBe(prior);
         off();
@@ -98,6 +101,7 @@ describe("k.aria: focus", () => {
     const source = `
 import { signal } from "@keel/reactive";
 import { Part } from "@keel/ui/aria";
+
 export default function FocusIsland(p: { label: string }) {
   const on = signal(true);
   return <Part id="fi.b" role="button" controls="fi.p" focus={on}>{p.label}</Part>;
@@ -113,7 +117,7 @@ export default function FocusIsland(p: { label: string }) {
     };
     const props = { label: "Go" };
     const scratch = host();
-    const dispose = mount(() => component(props), scratch);
+    const dispose = mount(() => component(props), scratch, { ctx: simCtx() });
     const root = scratch.firstElementChild;
     if (root === null) throw new Error("fixture: no island root");
     root.setAttribute("data-k-island", "FocusIsland");
@@ -122,7 +126,7 @@ export default function FocusIsland(p: { label: string }) {
     const server = host();
     server.innerHTML = `${html}<script type="application/json" id="k-state">${JSON.stringify({ stores: {}, islands: { FocusIsland: props } })}</script>`;
     const prior = outside();
-    const { warnings } = resume(server, { FocusIsland: component }, {});
+    const { warnings } = resume(server, { FocusIsland: component }, { ctx: simCtx() });
     expect(warnings).toEqual([]);
     await flush();
     expect(document.activeElement).toBe(prior);
@@ -131,7 +135,7 @@ export default function FocusIsland(p: { label: string }) {
   test("`focus` turning from true to false and true again focuses the element again", async () => {
     const focus = owned(true);
     const root = host();
-    const off = mount(() => make("button", focus), root);
+    const off = mount(() => make("button", focus), root, { ctx: simCtx() });
     await flush();
     const prior = outside();
     focus.set(false);
@@ -146,7 +150,9 @@ export default function FocusIsland(p: { label: string }) {
   test("`tabIndex` is `0` or `-1`, never positive (type)", () => {
     expectTypeOf<PartProps["tabIndex"]>().toEqualTypeOf<0 | -1 | reactive.Computed<0 | -1> | undefined>();
     const root = host();
-    const off = mount(() => Part({ id: "t", role: "generic", tabIndex: -1, children: () => "t" }), root);
+    const off = mount(() => Part({ id: "t", role: "generic", tabIndex: -1, children: () => "t" }), root, {
+      ctx: simCtx(),
+    });
     expect(byId(root, "t").getAttribute("tabindex")).toBe("-1");
     off();
   });

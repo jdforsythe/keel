@@ -2,11 +2,14 @@
 // Spec: k.aria, Conformance "Setting `activeDescendant` to an option's id gives that option `data-k-highlighted` and removes it from the one before."
 // Seed: 1337.
 // Behavior extra: the named element is scrolled into view with `block: 'nearest'`.
+import { createCtx } from "@keel/ctx";
 import { signal as newSignal, scope } from "@keel/reactive";
 import { mount } from "@keel/runtime-dom";
 import { Part } from "@keel/ui/aria";
 import fc from "fast-check";
 import { afterEach, describe, expect, test } from "vitest";
+
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 /** Signals and computeds are created in a scope (k.reactive E1203). */
 const owner = scope(() => undefined);
@@ -40,7 +43,7 @@ const setup = (initial: string): { host: HTMLElement; active: ReturnType<typeof 
   document.body.appendChild(host);
   hosts.push(host);
   const active = signal(initial);
-  return { host, active, off: mount(() => listbox(active), host) };
+  return { host, active, off: mount(() => listbox(active), host, { ctx: simCtx }) };
 };
 const highlighted = (host: ParentNode): string[] =>
   Array.from(host.querySelectorAll("[data-k-highlighted]"), (e) => e.id);

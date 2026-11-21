@@ -57,7 +57,7 @@ test(
   () => {
     fc.assert(
       fc.property(fc.constantFrom("name", "note", "qty"), (f) => {
-        const files = project({ input: `s.object({ ${f}: s.string() })`, split: true });
+        const files = project({ body: `s.object({ ${f}: s.string() })`, split: true });
         const viaCli = materialize(files);
         const viaMcp = materialize(files);
         dirs.push(viaCli, viaMcp);

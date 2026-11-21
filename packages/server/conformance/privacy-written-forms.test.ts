@@ -5,6 +5,7 @@
 // Each case runs in dev and production, in compact and json log formats; a json record is read through its parsed `message`.
 import { createCtx } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { reveal, s } from "@keel/schema";
 import { topology } from "@keel/server";
 import fc from "fast-check";
@@ -32,13 +33,13 @@ async function logged(
   secret: string,
   text: (revealed: string) => string,
 ): Promise<string[]> {
-  const act = action({ input: Nothing }, async () => {
+  const appContract = contract("app", { "app.a": { path: "/a" } });
+  const act = action(appContract, "app.a", { input: Nothing }, async () => {
     await Promise.resolve();
     const key = made(s.secret(s.string()).parse(secret));
     throw new Error(text(reveal(key)));
   });
-  const routes = manifest({ "app.a": { path: "/a", component: view } });
-  routes.actions({ "app.a": { POST: act } });
+  const routes = manifest(appContract, { "app.a": { component: view, POST: act } });
   const lines: string[] = [];
   const app = await createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),

@@ -3,12 +3,13 @@
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
 import { createCtx } from "@keel/ctx";
+import type { Ctx } from "@keel/ctx";
 import type { RouteProps } from "@keel/router";
 import { createApp, topology } from "@keel/server";
 
 export const SEED = 1337;
 
-export type Page = (props: RouteProps) => Node;
+export type Page = (props: RouteProps, ctx: Ctx) => Node;
 
 /** Compiles `source` as the default export of `<name>.tsx` and returns it as a route component; `modules` are the packages it imports beyond the kernel's. */
 export function compilePage(name: string, source: string, modules: Record<string, unknown> = {}): Page {
@@ -18,8 +19,8 @@ export function compilePage(name: string, source: string, modules: Record<string
   if (out === undefined) throw new Error("fixture: no compiler output");
   const fn = evaluate(out.code, modules);
   if (typeof fn !== "function") throw new Error("fixture: default export is not a component");
-  return (props) => {
-    const node: unknown = fn(props);
+  return (props, ctx) => {
+    const node: unknown = fn(props, ctx);
     if (!(node instanceof Node)) throw new Error("fixture: component did not return a Node");
     return node;
   };

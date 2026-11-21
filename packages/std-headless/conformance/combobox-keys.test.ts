@@ -29,7 +29,6 @@ const mount = (initial = "") => {
             chosen.push(k);
           },
         },
-        undefined,
         c,
       ),
     ),

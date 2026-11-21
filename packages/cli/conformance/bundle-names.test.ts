@@ -126,10 +126,11 @@ describe("k.bundle: a server-only file is known by its name on disk, whatever th
   const upper = () =>
     nodeWith({
       "lib/Notes.SERVER.ts": `export const notes = '${CANARY_NOTES}'\n`,
-      "modules/a/routes.ts": `import { notes } from '../../lib/Notes.SERVER.ts'\nReflect.set(globalThis, 'notes', notes)\nReflect.set(globalThis, 'alive', '${ALIVE}')\n${ROUTES}`,
+      "modules/a/Page.tsx": `${page("import { notes } from '../../lib/Notes.SERVER.ts'", "notes")}Reflect.set(globalThis, 'alive', '${ALIVE}')\n`,
+      "modules/a/routes.ts": ROUTES,
     });
 
-  test("a file on disk `Notes.SERVER.ts`, imported by `routes.ts` under that name, is stubbed: the build exits 0, its canary is in no file under `dist/api/assets` and the page code is", async () => {
+  test("a file on disk `Notes.SERVER.ts`, imported by a page component under that name, is stubbed: the build exits 0, its canary is in no file under `dist/api/assets` and the page code is", async () => {
     await inProject(upper(), (dir) => {
       const r = viteBuild(dir, "api");
       expect(r.status, r.out).toBe(0);

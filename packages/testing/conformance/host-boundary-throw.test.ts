@@ -5,7 +5,7 @@
 import { Boundary, mount } from "@keel/runtime-dom";
 import { Host, hostCode } from "@keel/ui";
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { Points, type PointsValue, flush, frames, probe } from "./host-support.ts";
+import { Points, type PointsValue, flush, frames, probe, simCtx } from "./host-support.ts";
 import { cleanup, host, signal } from "./host-dom.ts";
 
 afterEach(() => {
@@ -48,6 +48,7 @@ describe("k.host-element: throws reach the nearest Boundary", () => {
     mount(
       guarded(() => Promise.resolve(code), { points: [1] }, seen),
       root,
+      { ctx: simCtx() },
     );
     await flush();
     f.step();
@@ -63,6 +64,7 @@ describe("k.host-element: throws reach the nearest Boundary", () => {
     mount(
       guarded(() => Promise.reject(new Error("import failed")), { points: [1] }, seen),
       root,
+      { ctx: simCtx() },
     );
     await flush();
     f.step();
@@ -85,6 +87,7 @@ describe("k.host-element: throws reach the nearest Boundary", () => {
     mount(
       guarded(() => Promise.resolve(code), sig, seen),
       root,
+      { ctx: simCtx() },
     );
     await flush();
     f.step();
@@ -104,6 +107,7 @@ describe("k.host-element: throws reach the nearest Boundary", () => {
     mount(
       guarded(() => Promise.resolve(code), { points: [1] }, seen),
       root,
+      { ctx: simCtx() },
     );
     await flush();
     f.step();

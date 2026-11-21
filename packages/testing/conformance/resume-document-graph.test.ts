@@ -21,7 +21,7 @@ afterEach(() => {
 function documentAfter(times: number): string {
   for (let i = 0; i < times; i++) void tx(inc, {});
   const scratch = document.createElement("div");
-  const dispose = mount((p, _slots, ctx) => Island(Object.assign({}, p, { ctx })), scratch, { ctx: simCtx() });
+  const dispose = mount((p, ctx) => Island(Object.assign({}, p, { ctx })), scratch, { ctx: simCtx() });
   const root = scratch.firstElementChild;
   if (root === null) throw new Error("fixture: no island root");
   root.setAttribute("data-k-island", "gd.page");

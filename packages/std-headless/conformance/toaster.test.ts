@@ -28,7 +28,6 @@ const mount = (initial: readonly ToastItem[]) => {
           dismiss: "Dismiss",
           duration: 5000,
         },
-        undefined,
         c,
       ),
     ),

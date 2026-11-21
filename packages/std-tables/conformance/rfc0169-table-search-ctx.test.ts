@@ -1,10 +1,11 @@
-// Spec: k.parity, clause "`TableSearch` rendered with no `ctx` never navigates; rendered in one of two mounted routers, it navigates that one, through the public `navigate`."
+// Spec: k.parity, clause "`TableSearch` rendered in one of two mounted routers navigates that one, through the public `navigate`."
 // Seed: 1337.
 // @vitest-environment happy-dom
-// Assumption: `TableSearch(props, undefined, ctx)` is the component's call shape (its public signature); a route component built by hand passes the ctx itself.
+// Assumption: `TableSearch(props, ctx)` is the component's call shape (its public signature, rfc:0162); a route component built by hand passes the ctx itself.
 // "Through the public `navigate`" is not observable apart from its effect: the router that encloses the caller moves, the other does not.
 import { type Ctx, createCtx } from "@keel/ctx";
 import { type RouterHistory, createRouter, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { mount } from "@keel/runtime-dom";
 import { s } from "@keel/schema";
 import { TableSearch } from "@keel/std-tables";
@@ -32,32 +33,26 @@ const memoryHistory = (start: string): RouterHistory => {
   };
 };
 
-const pageOf = (id: string, ctx: Ctx | undefined, withSearch: boolean) =>
-  manifest({
+const tbl = contract("tbl", { "tbl.find": { path: "/find", params: s.object({}), search: Search } });
+
+const pageOf = (id: string, ctx: Ctx, withSearch: boolean) =>
+  manifest(tbl, {
     "tbl.find": {
-      path: "/find",
-      params: s.object({}),
-      search: Search,
       component: (props) =>
         Box({
           id: `${id}.page`,
-          children: () =>
-            withSearch
-              ? [
-                  TableSearch(
-                    {
-                      id,
-                      label: "Search",
-                      get search() {
-                        return queryOf(props.search);
-                      },
-                      href: findHref,
-                    },
-                    undefined,
-                    ctx,
-                  ),
-                ]
-              : [],
+          children: () => {
+            if (!withSearch) return [];
+            const searchProps = {
+              id,
+              label: "Search",
+              get search() {
+                return queryOf(props.search);
+              },
+              href: findHref,
+            };
+            return [TableSearch(searchProps, ctx)];
+          },
         }),
     },
   });
@@ -67,15 +62,15 @@ afterEach(() => {
   for (const h of hosts.splice(0)) h.remove();
 });
 
-function mountRouter(id: string, ctx: Ctx, withSearch: boolean, passCtx: boolean) {
-  const router = createRouter(pageOf(id, passCtx ? ctx : undefined, withSearch), {
+function mountRouter(id: string, ctx: Ctx, withSearch: boolean) {
+  const router = createRouter(pageOf(id, ctx, withSearch), {
     ctx,
     history: memoryHistory("/find"),
   });
   const host = document.createElement("div");
   document.body.append(host);
   hosts.push(host);
-  const unmount = mount(router.App, host);
+  const unmount = mount(router.App, host, { ctx });
   return { router, unmount };
 }
 
@@ -87,31 +82,14 @@ const type = (id: string, value: string): void => {
   input.dispatchEvent(new Event("input", { bubbles: true }));
 };
 
-describe("rfc:0169 conformance: TableSearch takes its clock from ctx only", () => {
-  test("rfc:0169 conformance: `TableSearch` rendered with no `ctx` never navigates", async () => {
-    await fc.assert(
-      fc.asyncProperty(fc.stringMatching(/^[a-z]{1,6}$/), fc.integer({ min: 0, max: 100_000 }), async (q, ms) => {
-        const ctx = createCtx({ mode: "sim", seed: SEED });
-        const { router, unmount } = mountRouter("solo", ctx, true, false);
-        await settle();
-        type("solo", q);
-        ctx.clock.advance(ms + 1000);
-        await settle();
-        expect(router.route.get()).toMatchObject({ id: "tbl.find", search: {} });
-        unmount();
-        router.dispose();
-      }),
-      { seed: SEED, numRuns: 20 },
-    );
-  });
-
+describe("rfc:0169 conformance: TableSearch navigates the router that encloses it", () => {
   test("rfc:0169 conformance: rendered in one of two mounted routers, it navigates that one, through the public `navigate`", async () => {
     await fc.assert(
       fc.asyncProperty(fc.boolean(), fc.stringMatching(/^[a-z]{1,6}$/), async (inFirst, q) => {
         const ctxA = createCtx({ mode: "sim", seed: SEED });
         const ctxB = createCtx({ mode: "sim", seed: SEED });
-        const a = mountRouter("a", ctxA, inFirst, true);
-        const b = mountRouter("b", ctxB, !inFirst, true);
+        const a = mountRouter("a", ctxA, inFirst);
+        const b = mountRouter("b", ctxB, !inFirst);
         await settle();
         const [own, other, ownCtx, otherCtx] = inFirst ? [a, b, ctxA, ctxB] : [b, a, ctxB, ctxA];
         type(inFirst ? "a" : "b", q);

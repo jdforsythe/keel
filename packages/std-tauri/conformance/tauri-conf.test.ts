@@ -1,4 +1,4 @@
-// Spec: k.shell, Conformance "`tauri.conf.json` holds the declared `identifier` and `productName`, the `package.json` `version`, and the deployable's policy with `ipc: http://ipc.localhost` in `connect-src`."
+// Spec: std.tauri, Conformance "`tauri.conf.json` holds the declared `identifier` and `productName`, the `package.json` `version`, and the deployable's policy with `ipc: http://ipc.localhost` in `connect-src`."
 // Seed: 1337 (identifier, name and version are generated).
 // The real binary over a temp project (`keel-cli.ts`): `keel build` writes `deploy/web/tauri/tauri.conf.json` and `dist/web/csp.txt`.
 // ASSUMPTION: `app.security.csp` is the policy as one string, as `csp.txt` is; "the deployable's policy with ... added" is read as the same directive set as `csp.txt`, `connect-src` gaining the source `ipc: http://ipc.localhost`
@@ -13,7 +13,7 @@ const SEED = 1337;
 const SLOW = 300_000;
 
 const manifestSrc = (id: string): string =>
-  `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [], routes: [] } })\n`;
+  `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [] } })\n`;
 const project = (id: string, name: string, version: string): Map<string, string> =>
   new Map([
     [
@@ -41,7 +41,11 @@ const project = (id: string, name: string, version: string): Map<string, string>
     ],
     [
       "modules/c/routes.ts",
-      "import { manifest } from '@keel/router'\nimport Page from './Page.tsx'\nexport const routes = manifest({ 'c.page': { path: '/', component: Page } })\n",
+      "import { manifest } from '@keel/router'\nimport { c } from './c.contract.ts'\nimport Page from './Page.tsx'\nexport const routes = manifest(c, { 'c.page': { component: Page } })\n",
+    ],
+    [
+      "modules/c/c.contract.ts",
+      "import { contract } from '@keel/router/contract'\nexport const c = contract('c', { 'c.page': { path: '/' } })\n",
     ],
   ]);
 

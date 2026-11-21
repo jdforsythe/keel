@@ -3,6 +3,7 @@
 // Interleavings are made deterministic with deferreds and bounded microtask yields; no timers.
 import { createCtx } from "@keel/ctx";
 import { action, loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import { createApp, topology } from "@keel/server";
 import { store, transaction, tx } from "@keel/store";
@@ -67,7 +68,8 @@ async function setupSkew() {
     return d;
   };
   // A reads lists, writes todos.
-  const actA = action({ input: Add, stores: factory }, async ({ n }, { stores }) => {
+  const appContract = contract("app", { "app.a": { path: "/a" }, "app.b": { path: "/b" } });
+  const actA = action(appContract, "app.a", { input: Add, stores: factory }, async ({ n }, { stores }) => {
     stores.lists.get("items");
     tx(stores.addTodo, { n });
     slot(arrived, "A").resolve();
@@ -75,18 +77,17 @@ async function setupSkew() {
     return ok(null);
   });
   // B writes lists.
-  const actB = action({ input: Add, stores: factory }, async ({ n }, { stores }) => {
+  const actB = action(appContract, "app.b", { input: Add, stores: factory }, async ({ n }, { stores }) => {
     tx(stores.addList, { n });
     slot(arrived, "B").resolve();
     await slot(gates, "B").promise;
     return ok(null);
   });
   const component = (): Node => document.createElement("p");
-  const routes = manifest({
-    "app.a": { path: "/a", component },
-    "app.b": { path: "/b", component },
+  const routes = manifest(appContract, {
+    "app.a": { component: component, POST: actA },
+    "app.b": { component: component, POST: actB },
   });
-  routes.actions({ "app.a": { POST: actA }, "app.b": { POST: actB } });
   const app = await createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
     routes,
@@ -171,22 +172,22 @@ async function setupSkewRead(holdKey: string, staleReturn: boolean) {
     lists: undefined,
     todos: undefined,
   };
-  const both = action({ input: Add, stores: factory }, async ({ n }, { stores }) => {
+  const appContract2 = contract("app", { "app.both": { path: "/both" } });
+  const both = action(appContract2, "app.both", { input: Add, stores: factory }, async ({ n }, { stores }) => {
     tx(stores.addList, { n });
     tx(stores.addTodo, { n });
     return ok(null);
   });
-  const read = loader({ output: Pair, stores: factory }, async ({ stores }) => {
+  const read = loader(appContract2, "app.both", { output: Pair, stores: factory }, async ({ stores }) => {
     const lists = stores.lists.get("items");
     const todos = stores.todos.get("items");
     seen.lists = lists;
     seen.todos = todos;
     return ok({ lists: [...lists], todos: [...todos] });
   });
-  const routes = manifest({
-    "app.both": { path: "/both", loader: read, component: () => document.createElement("p") },
+  const routes = manifest(appContract2, {
+    "app.both": { component: () => document.createElement("p"), loader: read, POST: both },
   });
-  routes.actions({ "app.both": { POST: both } });
   const app = await createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
     routes,

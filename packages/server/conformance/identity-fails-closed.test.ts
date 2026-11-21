@@ -1,4 +1,4 @@
-// Spec: k.user, Identity source "A throw is 500 `keel.unexpected` with a `diag` `identify threw: <name>` (the error's `name` only); an answer that is not a string of at most 256 characters is 500 with `identify returned: invalid`; past 5,000 ms on `ctx.clock`, 503 `keel.busy` (`data: { limit: 5000 }`). No guard, loader or action then runs."
+// Spec: k.user, Identity source "A throw is 500 `keel.unexpected` with a `diag` `identify threw: <name>` (its `name` only); an answer that is not a string of at most 256 characters is 500 with `identify returned: invalid`; past 5,000 ms on `ctx.clock`, 503 `keel.busy` (`data: { limit: 5000 }`). No guard, loader or action then runs."
 // Spec: k.user, Conformance "`identify` throwing `TypeError('t-123')`: 500 `keel.unexpected`, a `diag` naming `TypeError` without `t-123`, no guard, loader or action called; answering `42`: 500; never settling: 503 `keel.busy` at 5,000 ms on the sim clock."
 // Seed 1337 (fc.assert below). The bound is observed on the sim clock only (`ctx.clock.advance`), no timers.
 // @vitest-environment node

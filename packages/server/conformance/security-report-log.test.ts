@@ -3,6 +3,7 @@
 // @vitest-environment happy-dom
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { createApp, topology } from "@keel/server";
 import fc from "fast-check";
@@ -12,13 +13,8 @@ const ID = "app.item";
 
 async function setup() {
   const lines: string[] = [];
-  const routes = manifest({
-    [ID]: {
-      path: "/items/:slug",
-      params: s.object({ slug: s.string() }),
-      component: () => document.createElement("main"),
-    },
-  });
+  const item = contract("app", { [ID]: { path: "/items/:slug", params: s.object({ slug: s.string() }) } });
+  const routes = manifest(item, { [ID]: { component: () => document.createElement("main") } });
   const app = await createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
     routes,

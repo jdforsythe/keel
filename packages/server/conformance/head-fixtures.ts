@@ -3,6 +3,7 @@
 // the document is parsed inertly (template) as in document-head-0078.test.ts.
 import { createCtx } from "@keel/ctx";
 import { loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { err, ok, s } from "@keel/schema";
 import { createApp, topology } from "@keel/server";
 
@@ -21,35 +22,33 @@ const p = (text: string): Node => {
 const str = (props: { readonly params?: unknown }, key: string): string =>
   String(Reflect.get(Object(props.params), key));
 
-export const routes = manifest({
+const hContract = contract("h", {
+  "h.show": { path: "/:locale/items/:id", params: s.object({ locale: Locale, id: Id }) },
+  "h.untitled": { path: "/:locale/untitled", params: s.object({ locale: Locale }) },
+  "h.broken": { path: "/:locale/broken", params: s.object({ locale: Locale }) },
+  "h.plain": { path: "/plain" },
+  "h.ok": { path: "/ok" },
+});
+export const routes = manifest(hContract, {
   "h.show": {
-    path: "/:locale/items/:id",
-    params: s.object({ locale: Locale, id: Id }),
     component: (props) => p(`${str(props, "locale")}:${str(props, "id")}`),
     title: (props) => `Item ${str(props, "id")} <&> "q"`,
   },
-  "h.untitled": {
-    path: "/:locale/untitled",
-    params: s.object({ locale: Locale }),
-    component: (props) => p(str(props, "locale")),
-  },
+  "h.untitled": { component: (props) => p(str(props, "locale")) },
   "h.broken": {
-    path: "/:locale/broken",
-    params: s.object({ locale: Locale }),
-    loader: loader({ output: Empty }, async () => err(Broken.make({}))),
     component: () => p("never"),
+    loader: loader(hContract, "h.broken", { output: Empty }, async () => err(Broken.make({}))),
     title: () => "Never shown",
   },
-  "h.plain": { path: "/plain", component: () => p("plain"), title: () => "Plain" },
-  "h.ok": { path: "/ok", loader: loader({ output: Empty }, async () => ok({})), component: () => p("ok") },
+  "h.plain": { component: () => p("plain"), title: () => "Plain" },
+  "h.ok": { component: () => p("ok"), loader: loader(hContract, "h.ok", { output: Empty }, async () => ok({})) },
 });
 
-export const plainLocaleRoutes = manifest({
-  "h.show": {
-    path: "/:locale/items/:id",
-    params: s.object({ locale: PlainLocale, id: Id }),
-    component: (props) => p(`${str(props, "locale")}:${str(props, "id")}`),
-  },
+const hContract2 = contract("h", {
+  "h.show": { path: "/:locale/items/:id", params: s.object({ locale: PlainLocale, id: Id }) },
+});
+export const plainLocaleRoutes = manifest(hContract2, {
+  "h.show": { component: (props) => p(`${str(props, "locale")}:${str(props, "id")}`) },
 });
 
 export async function appFor(name: string, r: typeof routes | typeof plainLocaleRoutes = routes) {

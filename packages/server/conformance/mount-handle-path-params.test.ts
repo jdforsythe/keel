@@ -1,8 +1,11 @@
 // Spec: rfc:0156 (k.mount-scope names `createApp` `handle.path`), clause "`createApp` with `handle.path` `/api/auth` and a page `/:locale/:slug` starts; a GET of `/api/auth/session` reaches `handle.fn`, and a GET of `/en/about` renders the page."
+// Spec: k.mount-scope Test "with `path` `/api/auth`, `/%61pi/auth` is under it, and the server answers it 404 without `handle`."
+// Spec: k.mount-scope Conformance "the server answers `/%67ate` 404 without calling `handle`."
 // Seed 1337 (fc.assert below).
 // @vitest-environment node
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { createApp, identity, topology } from "@keel/server";
 import fc from "fast-check";
@@ -14,10 +17,11 @@ const SECRET = "conformance-secret-user-0123456789abcdef0123456789abcdef";
 
 async function start() {
   const calls: string[] = [];
-  const routes = manifest({
+  const appContract = contract("app", {
+    "app.page": { path: "/:locale/:slug", params: s.object({ locale: s.string(), slug: s.string() }) },
+  });
+  const routes = manifest(appContract, {
     "app.page": {
-      path: "/:locale/:slug",
-      params: s.object({ locale: s.string(), slug: s.string() }),
       component: () => {
         const p = document.createElement("p");
         p.textContent = "locale-slug-page";
@@ -74,6 +78,15 @@ describe("k.mount: handle.path beside a :param page", () => {
       }),
       { seed: SEED, numRuns: 20 },
     );
+    expect(calls).toEqual([]);
+  });
+
+  test("a GET of /%61pi/auth and of /api/%61uth is 404 and fn does not run", async () => {
+    const { app, calls } = await start();
+    for (const path of ["/%61pi/auth", "/api/%61uth", "/%61pi/auth/session"]) {
+      const res = await get(app, path);
+      expect(res.status, path).toBe(404);
+    }
     expect(calls).toEqual([]);
   });
 });

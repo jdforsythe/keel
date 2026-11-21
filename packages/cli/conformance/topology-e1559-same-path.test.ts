@@ -21,9 +21,11 @@ beforeAll(() => {
 afterAll(() => fs.rmSync(tmp, { recursive: true, force: true }));
 
 const manifestSrc = (id: string) =>
-  `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [], routes: [] } })\n`;
+  `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [] } })\n`;
 const routesSrc = (id: string, p: string) =>
-  `import { manifest } from '@keel/router'\nconst Page = () => null\nexport const routes = manifest({ '${id}.page': { path: '${p}', component: Page } })\n`;
+  `import { manifest } from '@keel/router'\nimport { ${id} } from './${id}.contract.ts'\nconst Page = () => null\nexport const routes = manifest(${id}, { '${id}.page': { component: Page } })\n`;
+const contractSrc = (id: string, p: string) =>
+  `import { contract } from '@keel/router/contract'\nexport const ${id} = contract('${id}', { '${id}.page': { path: '${p}' } })\n`;
 const topologySrc = (same: boolean) =>
   `import { topology } from '@keel/server'\nexport default topology({ x: { modules: ['a'${same ? ", 'b'" : ""}], adapter: 'node' }${same ? "" : ", y: { modules: ['b'], adapter: 'node' }"} })\n`;
 
@@ -35,8 +37,10 @@ const e1559 = async (command: "build" | "check", same: boolean, pa: string, pb: 
       { path: "topology.ts", source: topologySrc(same) },
       { path: "modules/a/module.ts", source: manifestSrc("a") },
       { path: "modules/a/routes.ts", source: routesSrc("a", pa) },
+      { path: "modules/a/a.contract.ts", source: contractSrc("a", pa) },
       { path: "modules/b/module.ts", source: manifestSrc("b") },
       { path: "modules/b/routes.ts", source: routesSrc("b", pb) },
+      { path: "modules/b/b.contract.ts", source: contractSrc("b", pb) },
     ],
   });
   return r.stdout.split("\n").filter((l) => l.includes('"E1559"'));

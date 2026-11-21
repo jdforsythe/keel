@@ -1,12 +1,15 @@
 // Spec: k.compiler, clause "`javascript:` in `object data`, a `srcset` candidate, or a `<set>` `to`/`<animate>` `values` item is E1003 as a literal and `about:blank` bound; any `<base>` `href` or `<meta>` `http-equiv` is E1003, never rendered."
 // @vitest-environment happy-dom
 // Seed 1337 (fc.assert seed below). RFC 0056 / backlog 0132, 0133 (compiler side of the spread repro).
+import { createCtx } from "@keel/ctx";
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
 import { mount } from "@keel/runtime-dom";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { type Mountable, codes, isMountable, load, sigOf } from "./support.ts";
+
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 const SEED = 1337;
 
@@ -46,7 +49,7 @@ function render(tag: string, attr: string, value: string, ignoreDiagnostics = fa
   const B = component(tag, attr, ignoreDiagnostics);
   sigOf(B, "u").set(value);
   const host = document.createElement("div");
-  const dispose = mount(B, host);
+  const dispose = mount(B, host, { ctx: simCtx });
   const out = host.querySelector(tag)?.getAttribute(attr) ?? null;
   dispose();
   return out;
@@ -136,7 +139,7 @@ test("A bound `<base>` `href` is never rendered, for a protocol-relative or an h
     const B = component("base", "href", true);
     sigOf(B, "u").set(v);
     const host = document.createElement("div");
-    const dispose = mount(B, host);
+    const dispose = mount(B, host, { ctx: simCtx });
     const base = host.querySelector("base");
     expect(base?.hasAttribute("href")).toBe(false);
     dispose();
@@ -149,7 +152,7 @@ function B() { return <base href="//evil.example" /> }
 export default B
 `);
   const host = document.createElement("div");
-  const dispose = mount(B, host);
+  const dispose = mount(B, host, { ctx: simCtx });
   const base = host.querySelector("base");
   expect(base?.hasAttribute("href")).toBe(false);
   dispose();
@@ -178,7 +181,7 @@ function B() { return <div id="t" {...{ onclick: 'alert(1)' }} /> }
 export default B
 `);
   const host = document.createElement("div");
-  const dispose = mount(B, host);
+  const dispose = mount(B, host, { ctx: simCtx });
   const el = host.querySelector("#t");
   expect(el).not.toBeNull();
   expect(el?.getAttributeNames().map((n) => n.toLowerCase())).not.toContain("onclick");

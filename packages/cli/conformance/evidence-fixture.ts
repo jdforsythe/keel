@@ -124,9 +124,11 @@ it("holds for one value", () => {
 `;
 
 const manifestSrc = (id: string): string =>
-  `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [], routes: [] } })\n`;
+  `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [] } })\n`;
 const routesSrc = (id: string, path: string): string =>
-  `import { manifest } from '@keel/router'\nimport { Text } from '@keel/ui'\nconst Page = () => Text({ id: '${id}.page.text', children: '${id}' })\nexport const routes = manifest({ '${id}.page': { path: '${path}', component: Page } })\n`;
+  `import { manifest } from '@keel/router'\nimport { ${id} } from './${id}.contract.ts'\nimport { Text } from '@keel/ui'\nconst Page = () => Text({ id: '${id}.page.text', children: '${id}' })\nexport const routes = manifest(${id}, { '${id}.page': { component: Page } })\n`;
+const contractSrc = (id: string, path: string): string =>
+  `import { contract } from '@keel/router/contract'\nexport const ${id} = contract('${id}', { '${id}.page': { path: '${path}' } })\n`;
 
 export type FixtureOptions = {
   /** A test that fails (one failed test in `runs`). */
@@ -159,6 +161,7 @@ export function fixtureTree(o: FixtureOptions = {}): Tree {
       "})\n",
     "modules/a/module.ts": manifestSrc("a"),
     "modules/a/routes.ts": routesSrc("a", "/a"),
+    "modules/a/a.contract.ts": contractSrc("a", "/a"),
     "modules/a/User.schema.ts": o.userSchema ?? USER_SCHEMA_SOURCE,
     "modules/a/Profile.ts": `import { store } from "@keel/store";
 import { User } from "./User.schema.ts";
@@ -171,6 +174,7 @@ export const Profile = store(
 `,
     "modules/c/module.ts": manifestSrc("c"),
     "modules/c/routes.ts": routesSrc("c", "/"),
+    "modules/c/c.contract.ts": contractSrc("c", "/"),
     "packages/m/test/profile.test.ts": `import { expect, it } from "vitest";
 
 it("keeps the profile values", () => {

@@ -7,6 +7,7 @@
 // A stale read is `keel.conflict`: the harness holds its save while `createApp` saves on the same ctx.
 import type { Ctx } from "@keel/ctx";
 import { Form, action, loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import type { RouteProps } from "@keel/router";
 import { text } from "@keel/runtime-dom/ops";
 import { Input } from "@keel/ui";
@@ -36,7 +37,13 @@ const itemsOf = (data: unknown): readonly string[] => {
   return Array.isArray(items) ? items.filter((i): i is string => typeof i === "string") : [];
 };
 
-const links = manifest({ "link.sc": { path: "/sc", component: () => el("p", "link.sc") } });
+const link = contract("link", {
+  "link.sc": { path: "/sc" },
+});
+
+const links = manifest(link, {
+  "link.sc": { component: () => el("p", "link.sc") },
+});
 const page = (props: RouteProps): Node => {
   const main = el("main", "sc.page");
   const list = el("p", "sc.items");
@@ -47,7 +54,7 @@ const page = (props: RouteProps): Node => {
   button.textContent = "save";
   const form = Form({
     method: "POST",
-    action: links.href("link.sc"),
+    action: link.href("link.sc"),
     error: (e) => {
       const p = el("p", "sc.err");
       p.textContent = e.code;
@@ -59,11 +66,16 @@ const page = (props: RouteProps): Node => {
   main.append(list, form);
   return main;
 };
-const read = loader({ output: Notes, stores: factory }, async ({ stores }) =>
+const scContract = contract("sc", {
+  "sc.page": { path: "/sc" },
+  "sc.other": { path: "/other" },
+});
+
+const read = loader(scContract, "sc.page", { output: Notes, stores: factory }, async ({ stores }) =>
   ok({ items: [...stores.notes.get("items")] }),
 );
 const control: { hold: Promise<void> | null; arrived: (() => void) | null } = { hold: null, arrived: null };
-const write = action({ input: Add, stores: factory }, async ({ text: t }, { stores }) => {
+const write = action(scContract, "sc.page", { input: Add, stores: factory }, async ({ text: t }, { stores }) => {
   const hold = control.hold;
   control.hold = null;
   tx(stores.add, { text: t });
@@ -71,11 +83,10 @@ const write = action({ input: Add, stores: factory }, async ({ text: t }, { stor
   if (hold !== null) await hold;
   return ok(null);
 });
-const routes = manifest({
-  "sc.page": { path: "/sc", loader: read, component: page },
-  "sc.other": { path: "/other", component: () => el("p", "sc.other") },
+const routes = manifest(scContract, {
+  "sc.page": { loader: read, component: page, POST: write },
+  "sc.other": { component: () => el("p", "sc.other") },
 });
-routes.actions({ "sc.page": { POST: write } });
 
 const word = fc.stringMatching(/^[a-z]{1,8}$/);
 
@@ -115,8 +126,8 @@ test("On one ctx, a save through `renderRoute` is read by `createApp`, and a sav
       await h.fire("sc.form", { type: "submit" });
       expect(await getItems(app)).toEqual([viaHarness]);
       expect((await postText(app, viaApp)).status).toBe(200);
-      await h.navigate(routes.href("sc.other"));
-      await h.navigate(routes.href("sc.page"));
+      await h.navigate(scContract.href("sc.other"));
+      await h.navigate(scContract.href("sc.page"));
       expect(h.find("sc.items").text).toBe([viaHarness, viaApp].join(","));
       h.dispose();
     }),
@@ -178,8 +189,8 @@ test("a mounted harness navigates away and back after `createApp` saved on its c
       const h = await renderRoute("sc.page", { routes, ctx });
       expect(h.find("sc.items").text).toBe(first);
       expect((await postText(app, second)).status).toBe(200);
-      await h.navigate(routes.href("sc.other"));
-      await h.navigate(routes.href("sc.page"));
+      await h.navigate(scContract.href("sc.other"));
+      await h.navigate(scContract.href("sc.page"));
       expect(h.find("sc.items").text).toBe([first, second].join(","));
       h.dispose();
     }),

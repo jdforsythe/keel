@@ -5,6 +5,7 @@
 // The route table is a server test file, outside `keel check`, so a `.pii()` `params` field (E1111) is served. Each case runs in dev and production, in compact and json log formats.
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { topology } from "@keel/server";
 import fc from "fast-check";
@@ -20,13 +21,15 @@ const SecretEmail = s.object({ email: s.secret(s.string().pii("contact")) });
 const PiiTwo = s.object({ email: s.string().pii("contact") });
 const SecretTwo = s.object({ email: s.secret(s.string()) });
 
-const pii = () => manifest({ "app.user": { path: "/u/:email", params: Email, component: view } });
-const both = () => manifest({ "app.user": { path: "/u/:email", params: SecretEmail, component: view } });
-const twoRoutes = () =>
-  manifest({
-    "app.a": { path: "/u/:email", params: PiiTwo, component: view },
-    "app.b": { path: "/u/:email/x", params: SecretTwo, component: view },
-  });
+const appContract = contract("app", { "app.user": { path: "/u/:email", params: Email } });
+const pii = () => manifest(appContract, { "app.user": { component: view } });
+const appContract2 = contract("app", { "app.user": { path: "/u/:email", params: SecretEmail } });
+const both = () => manifest(appContract2, { "app.user": { component: view } });
+const appContract3 = contract("app", {
+  "app.a": { path: "/u/:email", params: PiiTwo },
+  "app.b": { path: "/u/:email/x", params: SecretTwo },
+});
+const twoRoutes = () => manifest(appContract3, { "app.a": { component: view }, "app.b": { component: view } });
 
 async function serve(mode: "dev" | "production", format: "compact" | "json", path: string, table: unknown) {
   const lines: string[] = [];

@@ -1,12 +1,11 @@
 // @vitest-environment happy-dom
-// Spec: k.component, Slot props "A callback prop (`onChange: (d: PlainDate) => void`) is typed and kept out of the schema the same way."
+// Spec: k.component, Slot props "Slot and callback props (`onChange: (v: T) => void`) are typed with the component's props, outside its `Props` schema."
 // Seed: 1337.
 // Assumed: `render` passes a function-valued prop that `Props` does not name through to the component untouched, as it does a slot prop; the sentence says "typed", so the callback's type is checked at compile time with `expectTypeOf`.
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
 import type { Ctx } from "@keel/ctx";
 import * as reactive from "@keel/reactive";
-import type { Slots } from "@keel/runtime-dom";
 import { type Infer, s } from "@keel/schema";
 import { render } from "@keel/testing";
 import * as ui from "@keel/ui";
@@ -30,8 +29,8 @@ const build = () => {
   const fn = evaluate(r.outputs[0]?.code ?? "", { "@keel/ui": ui, "@keel/reactive": reactive });
   if (typeof fn !== "function") throw new Error("fixture: no default export");
   return Object.assign(
-    (p: { day: string; onChange: Callback }, slots?: Slots, ctx?: Ctx): Node => {
-      const node: unknown = fn(p, slots, ctx);
+    (p: { day: string; onChange: Callback }, ctx: Ctx): Node => {
+      const node: unknown = fn(p, ctx);
       if (!(node instanceof Node)) throw new Error("fixture: component did not return a Node");
       return node;
     },

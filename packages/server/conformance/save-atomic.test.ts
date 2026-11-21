@@ -3,6 +3,7 @@
 // The ctx is a real ctx over a storage driver whose `commit` is refused (resolves `false`) without storing.
 import { createCtx } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import { createApp, topology } from "@keel/server";
 import { store, transaction, tx } from "@keel/store";
@@ -62,13 +63,18 @@ function driver(refuse: boolean) {
 async function setup(refuse: boolean) {
   const d = driver(refuse);
   const ctx = createCtx({ mode: "real", drivers: { storage: d.storage } });
-  const both = action({ input: Add, stores: factory }, async ({ n }, { stores }) => {
+  const appContract = contract("app", {
+    "app.both": { path: "/both" },
+  });
+
+  const both = action(appContract, "app.both", { input: Add, stores: factory }, async ({ n }, { stores }) => {
     tx(stores.addList, { n });
     tx(stores.addTodo, { n });
     return ok(null);
   });
-  const routes = manifest({ "app.both": { path: "/both", component: (): Node => document.createElement("p") } });
-  routes.actions({ "app.both": { POST: both } });
+  const routes = manifest(appContract, {
+    "app.both": { component: (): Node => document.createElement("p"), POST: both },
+  });
   const app = await createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
     routes,

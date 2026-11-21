@@ -1,9 +1,12 @@
 // @vitest-environment happy-dom
 // Spec: k.ui, clause "`Image src` accepts a string such as `'logo.png'` (no `Href` required); a `javascript:` value renders as `about:blank`." Seed 1337.
+import { createCtx } from "@keel/ctx";
 import { mount } from "@keel/runtime-dom";
 import { Image } from "@keel/ui";
 import fc from "fast-check";
 import { describe, expect, expectTypeOf, it } from "vitest";
+
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 type ImageProps = Parameters<typeof Image>[0];
 const SEED = 1337;
@@ -11,7 +14,7 @@ const SEED = 1337;
 const srcOf = (src: string): string | null => {
   const host = document.createElement("div");
   document.body.appendChild(host);
-  const off = mount(() => Image({ id: "img", alt: "logo", src }), host);
+  const off = mount(() => Image({ id: "img", alt: "logo", src }), host, { ctx: simCtx });
   const value = document.getElementById("img")?.getAttribute("src") ?? null;
   off();
   host.remove();

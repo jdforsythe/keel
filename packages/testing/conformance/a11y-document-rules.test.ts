@@ -3,6 +3,7 @@
 // Seed: 1337.
 // Untestable here: that a document rule "is not run" for `render` beyond "does not fail"; the spec names no report accessor in the harness (the run list is in reports/a11y.json, k.a11y Claims).
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { render, renderRoute } from "@keel/testing";
 import * as fc from "fast-check";
@@ -29,8 +30,12 @@ describe("k.a11y: document rules run for a `renderRoute` page only", () => {
   });
 
   it("a `renderRoute` of a titled route reports no `document-title` or `html-has-lang` violation", async () => {
-    const routes = manifest({
-      "dr.home": { path: "/dr", component: () => paragraph("dr.home", "home"), title: () => "Home" },
+    const drContract = contract("dr", {
+      "dr.home": { path: "/dr" },
+    });
+
+    const routes = manifest(drContract, {
+      "dr.home": { component: () => paragraph("dr.home", "home"), title: () => "Home" },
     });
     const h = await renderRoute("dr.home", { routes, ctx: simCtx() });
     expect(h.find("dr.home").text).toBe("home");
@@ -40,8 +45,12 @@ describe("k.a11y: document rules run for a `renderRoute` page only", () => {
   it("any non-empty title leaves the route free of document-title and html-has-lang violations (property)", async () => {
     await fc.assert(
       fc.asyncProperty(fc.stringMatching(/^[A-Za-z][A-Za-z0-9 ]{0,20}$/), async (title) => {
-        const routes = manifest({
-          "dr.t": { path: "/t", component: () => paragraph("dr.t", "t"), title: () => title },
+        const drContract = contract("dr", {
+          "dr.t": { path: "/t" },
+        });
+
+        const routes = manifest(drContract, {
+          "dr.t": { component: () => paragraph("dr.t", "t"), title: () => title },
         });
         const e = await thrown(async () => (await renderRoute("dr.t", { routes, ctx: simCtx() })).dispose());
         expect(e === undefined ? "" : messageOf(e)).not.toMatch(/document-title|html-has-lang/);
@@ -52,13 +61,12 @@ describe("k.a11y: document rules run for a `renderRoute` page only", () => {
   });
 
   it("the route's loaded data reaches the title, and the chain renders inside `main` (no landmark-one-main violation)", async () => {
-    const routes = manifest({
-      "dr.p": {
-        path: "/p/:n",
-        params: s.object({ n: s.int() }),
-        component: () => paragraph("dr.p", "p"),
-        title: (p) => `Page ${String(p.params.n)}`,
-      },
+    const drContract = contract("dr", {
+      "dr.p": { path: "/p/:n", params: s.object({ n: s.int() }) },
+    });
+
+    const routes = manifest(drContract, {
+      "dr.p": { component: () => paragraph("dr.p", "p"), title: (p) => `Page ${String(p.params.n)}` },
     });
     const h = await renderRoute("dr.p", { routes, params: { n: 3 }, ctx: simCtx() });
     h.dispose();

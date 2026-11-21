@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 // Spec: k.host-element, Conformance "Writing the signal `value` three times in one frame calls `update` once, with the last value and the mounted value as `prev`."
 // Spec: k.host-element, Conformance "A plain `value` calls `mount` once and `update` never; writing a signal `value` to a new value and back in one frame calls no `update`."
-// Spec: k.host-code, Code "`update(state, value, prev)`: `prev` is the value the last call got. Values pass by reference, never copied: an unchanged store or loader value keeps its identity, so `value.points !== prev.points` skips work."
+// Spec: k.host-code, Code "`update(state, value, prev)`, optional: with none, a change of value calls nothing. `prev` is the value the last call got. Values pass by reference, never copied: an unchanged store or loader value keeps its identity, so `value.points !== prev.points` skips work."
 // Spec: k.host-element, Lifecycle "While mounted, a change of `value` (by `Object.is`) calls `update` at most once per animation frame, with the latest value. A change requests a frame when none is pending; in the frame `update` runs unless the latest value `Object.is` the one the last call got, so a write and its reversal in one frame call nothing."
 // Spec: k.host-element, Value "`value` is a plain value, read once; a signal or a computed, read with `get()`; or a compiled expression, the getter that `value={...}` compiles to (k.component), read again when what it reads changes. A function is a plain value, never called."
 // A compiled getter needs the Keel compiler, which a direct `Host({...})` call does not run: that form is untestable in this file.
@@ -10,7 +10,7 @@ import { mount } from "@keel/runtime-dom";
 import { Host } from "@keel/ui";
 import fc from "fast-check";
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { Points, type PointsValue, SEED, flush, frames, probe } from "./host-support.ts";
+import { Points, type PointsValue, SEED, flush, frames, probe, simCtx } from "./host-support.ts";
 import { cleanup, computed, host, signal } from "./host-dom.ts";
 
 afterEach(() => {
@@ -25,6 +25,7 @@ const mounted = async (value: ReturnType<typeof signal<PointsValue>>) => {
     () =>
       Host({ id: "h.chart", role: "img", label: "Chart", input: Points, value, code: () => Promise.resolve(p.code) }),
     host(),
+    { ctx: simCtx() },
   );
   await flush();
   f.step();
@@ -110,6 +111,7 @@ describe("k.host-element: update", () => {
               code: () => Promise.resolve(p.code),
             }),
           host(),
+          { ctx: simCtx() },
         );
         await flush();
         f.step();
@@ -151,6 +153,7 @@ describe("k.host-element: update", () => {
           code: () => Promise.resolve(p.code),
         }),
       host(),
+      { ctx: simCtx() },
     );
     await flush();
     f.step();
@@ -181,6 +184,7 @@ describe("k.host-element: update", () => {
           code: () => Promise.resolve(p.code),
         }),
       host(),
+      { ctx: simCtx() },
     );
     await flush();
     f.step();

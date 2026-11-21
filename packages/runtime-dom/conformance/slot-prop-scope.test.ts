@@ -3,6 +3,7 @@
 // Seed: 1337.
 // ASSUMPTION: the compiled `For` is the `list` op from `@keel/runtime-dom/ops` (as in for-keyed-rows-0090); the slot prop is a plain function
 // `(item, state) => Node` the component calls from its row callback; "what the call rendered" is observed through a text binding's reads.
+import { createCtx } from "@keel/ctx";
 import { scope, signal as newSignal } from "@keel/reactive";
 import type { Signal } from "@keel/reactive";
 import { mount } from "@keel/runtime-dom";
@@ -10,6 +11,8 @@ import { clone, list, template, text } from "@keel/runtime-dom/ops";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { SEED, flush } from "./fixtures.ts";
+
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 type Row = { id: string };
 type RowState = { active(): boolean; selected(): boolean };
@@ -48,7 +51,7 @@ const setup = (initial: readonly Row[]) => {
   };
   const container = document.createElement("div");
   document.body.appendChild(container);
-  const dispose = mount(() => Picker({ rows: () => rows.get(), option }), container);
+  const dispose = mount(() => Picker({ rows: () => rows.get(), option }), container, { ctx: simCtx });
   return {
     rows,
     tick,

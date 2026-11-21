@@ -1,3 +1,4 @@
+import { createCtx } from "@keel/ctx";
 import { mount } from "@keel/runtime-dom";
 import { clone, on, template } from "@keel/runtime-dom/ops";
 // @vitest-environment happy-dom
@@ -6,6 +7,7 @@ import { clone, on, template } from "@keel/runtime-dom/ops";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { SEED, click, flush, inScope } from "./fixtures.ts";
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 const T = template('<div id="root"><button id="b">x</button></div>');
 
@@ -22,7 +24,7 @@ describe("k.runtime: mount onError receives the error the root boundary rendered
               throw new Error(msg);
             },
             el,
-            { onError: (e) => seen.push(e) },
+            { onError: (e) => seen.push(e), ctx: simCtx },
           ),
         );
         expect(seen).toHaveLength(1);
@@ -52,7 +54,7 @@ describe("k.runtime: mount onError receives the error the root boundary rendered
           return r;
         },
         el,
-        { onError: (e) => seen.push(e) },
+        { onError: (e) => seen.push(e), ctx: simCtx },
       ),
     );
     expect(seen).toHaveLength(0);
@@ -79,7 +81,7 @@ describe("k.runtime: mount onError receives the error the root boundary rendered
               throw new Error(msg);
             },
             el,
-            { onError: (e) => seen.push(e), mode: "dev" },
+            { onError: (e) => seen.push(e), mode: "dev", ctx: simCtx },
           ),
         );
         expect(seen).toHaveLength(1);
@@ -98,7 +100,7 @@ describe("k.runtime: mount onError receives the error the root boundary rendered
               throw new Error(msg);
             },
             prod,
-            { onError: () => undefined },
+            { onError: () => undefined, ctx: simCtx },
           ),
         );
         expect(prod.querySelector("pre[data-k-error]")?.textContent).toBe("keel.unexpected");
@@ -114,6 +116,7 @@ describe("k.runtime: mount onError receives the error the root boundary rendered
     let calls = 0;
     const h = inScope(() =>
       mount(() => clone(T), el, {
+        ctx: simCtx,
         onError: () => {
           calls++;
         },

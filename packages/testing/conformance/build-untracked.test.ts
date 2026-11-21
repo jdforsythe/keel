@@ -9,6 +9,7 @@ import { createCtx } from "@keel/ctx";
 import { scope, signal as newSignal } from "@keel/reactive";
 import type { Signal } from "@keel/reactive";
 import { createRouter, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { mount } from "@keel/runtime-dom";
 import { text } from "@keel/runtime-dom/ops";
 import * as ui from "@keel/ui";
@@ -16,6 +17,7 @@ import * as fc from "fast-check";
 import { afterEach, describe, expect, it } from "vitest";
 
 const SEED = 1337;
+const simCtx = () => createCtx({ mode: "sim", seed: SEED });
 
 // A failed property leaves its host mounted: start each test from an empty document.
 afterEach(() => document.body.replaceChildren());
@@ -47,6 +49,7 @@ const fxOf = (env: Env) => ({
 
 const JSX_SOURCE = `import { Box, Input, Text } from "@keel/ui"
 import * as fx from "fx"
+
 export default function Reader() {
   fx.top(fx.sig.get())
   const local = fx.makeLocal()
@@ -64,11 +67,16 @@ const openJsx = (env: Env) => {
   if (typeof fn !== "function") throw new Error("fixture: default export is not a component");
   const host = document.createElement("div");
   document.body.appendChild(host);
-  const dispose = mount(() => {
-    const node: unknown = fn({}, undefined, createCtx({ mode: "sim", seed: SEED }));
-    if (!(node instanceof Node)) throw new Error("fixture: component did not return a Node");
-    return node;
-  }, host);
+  const ctx = simCtx();
+  const dispose = mount(
+    () => {
+      const node: unknown = fn({}, ctx);
+      if (!(node instanceof Node)) throw new Error("fixture: component did not return a Node");
+      return node;
+    },
+    host,
+    { ctx },
+  );
   return {
     teardown: () => {
       dispose();
@@ -96,7 +104,13 @@ const openRoute = async (env: Env) => {
     main.append(field, live, loc);
     return main;
   };
-  const routes = manifest({ "read.page": { path: "/read", component: page } });
+  const readContract = contract("read", {
+    "read.page": { path: "/read" },
+  });
+
+  const routes = manifest(readContract, {
+    "read.page": { component: page },
+  });
   const entries: string[] = ["/read"];
   const router = createRouter(routes, {
     ctx: createCtx({ mode: "sim", seed: SEED }),
@@ -113,7 +127,7 @@ const openRoute = async (env: Env) => {
   });
   const host = document.createElement("div");
   document.body.append(host);
-  const unmount = mount(router.App, host);
+  const unmount = mount(router.App, host, { ctx: simCtx() });
   await hops();
   return {
     teardown: () => {

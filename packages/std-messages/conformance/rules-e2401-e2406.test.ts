@@ -94,7 +94,9 @@ test("E2401 to E2406 each have a triggering fixture and a clean one; the fixes o
   expect(codesOf(tree({ [VIEW]: view("<main><Input label='Search' /></main>") }), "E2406").length).toBe(1);
   expect(codesOf(tree({ [VIEW]: view("<main><Image alt='A pie' /></main>") }), "E2406").length).toBe(1);
   const routes = (title: string) =>
-    `import { manifest } from '@keel/router'\nimport RecipeList from './RecipeList.tsx'\nexport const routes = manifest({ 'recipes.list': { path: '/:locale/recipes', component: RecipeList, title: ${title} } })\n`;
+    `import { manifest } from '@keel/router'\nimport { recipes } from './recipes.contract.ts'\nimport RecipeList from './RecipeList.tsx'\nexport const routes = manifest(recipes, { 'recipes.list': { component: RecipeList, title: ${title} } })\n`;
+  const contract = (title: string) =>
+    `import { contract } from '@keel/router/contract'\nexport const recipes = contract('recipes', { 'recipes.list': { path: '/:locale/recipes' } })\n`;
   expect(codesOf(tree({ "modules/recipes/routes.ts": routes("() => 'Recipes'") }), "E2406").length).toBe(1);
   // Clean twins: no letter, or not a literal.
   expect(codesOf(tree({ [VIEW]: view("<main><p>{t.title}</p><span>1 / 2</span></main>") }), "E2406")).toEqual([]);

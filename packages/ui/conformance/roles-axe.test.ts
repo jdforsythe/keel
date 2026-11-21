@@ -2,6 +2,7 @@
 // Spec: k.roles, Conformance "A `grid` with one `row` of one `gridcell`, a `tree` with one `treeitem`, a `slider` and a `radiogroup` with two `radio`s each have no axe violations."
 // Seed: 1337 (no generated inputs; every case is enumerated).
 // Real axe-core with the rule set and disabled page-level rules of aria-axe.test.ts; `color-contrast` is off because happy-dom computes no layout.
+import { createCtx } from "@keel/ctx";
 import { mount } from "@keel/runtime-dom";
 import { Part } from "@keel/ui/aria";
 import axe from "axe-core";
@@ -40,7 +41,7 @@ afterEach(() => {
 });
 
 const audit = async (make: () => Node): Promise<string[]> => {
-  const off = mount(make, container);
+  const off = mount(make, container, { ctx: createCtx({ mode: "sim", seed: 1337 }) });
   const r = await axe.run(container, config);
   off();
   return r.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.html).join(" | ")}`);

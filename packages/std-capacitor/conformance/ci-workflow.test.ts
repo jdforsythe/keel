@@ -14,7 +14,7 @@ const SEED = 1337;
 const SLOW = 300_000;
 
 const manifestSrc = (id: string): string =>
-  `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [], routes: [] } })\n`;
+  `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [] } })\n`;
 const project = (id: string, name: string): Map<string, string> =>
   new Map([
     [
@@ -42,7 +42,11 @@ const project = (id: string, name: string): Map<string, string> =>
     ],
     [
       "modules/c/routes.ts",
-      "import { manifest } from '@keel/router'\nimport Page from './Page.tsx'\nexport const routes = manifest({ 'c.page': { path: '/', component: Page } })\n",
+      "import { manifest } from '@keel/router'\nimport { c } from './c.contract.ts'\nimport Page from './Page.tsx'\nexport const routes = manifest(c, { 'c.page': { component: Page } })\n",
+    ],
+    [
+      "modules/c/c.contract.ts",
+      "import { contract } from '@keel/router/contract'\nexport const c = contract('c', { 'c.page': { path: '/' } })\n",
     ],
   ]);
 

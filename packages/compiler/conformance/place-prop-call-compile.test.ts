@@ -3,11 +3,14 @@
 // Spec: k.place, Conformance "`{props.label()}` with `label: () => 'Hi'` renders `Hi` once in its place; `{String(props.count())}` updates when the signal it reads changes."
 // Seed 1337 (the properties below). Components are compiled in memory; the emitted operations are read from the output
 // (`__k.slot` places content, `__k.text` binds text), and each case is also mounted.
+import { createCtx } from "@keel/ctx";
 import { compile } from "@keel/compiler";
 import { mount } from "@keel/runtime-dom";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 import { load, sigOf } from "./support.ts";
+
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 const SEED = 1337;
 
@@ -145,7 +148,7 @@ describe("k.place Prop calls: what a slot call places, mounted", () => {
       `${CARD("{props.icon()}")}export default function C() { return <Card icon={() => <b id="ic">i</b>} /> }\n`,
     );
     const el = host();
-    mount(C, el);
+    mount(C, el, { ctx: simCtx });
     expect(el.querySelector("section > b#ic, section b#ic")).not.toBeNull();
   });
 
@@ -156,10 +159,10 @@ describe("k.place Prop calls: what a slot call places, mounted", () => {
     );
     const absent = load("PlaceOptNone", `${CARD("{props.icon?.()}")}export default function C() { return <Card /> }\n`);
     const a = host();
-    mount(given, a);
+    mount(given, a, { ctx: simCtx });
     expect(a.querySelector("section b#ic")).not.toBeNull();
     const b = host();
-    mount(absent, b);
+    mount(absent, b, { ctx: simCtx });
     expect(b.querySelector("section")?.textContent).toBe("");
   });
 
@@ -169,7 +172,7 @@ describe("k.place Prop calls: what a slot call places, mounted", () => {
       `${CARD("{props.icon?.() ?? 'none'}")}export default function C() { return <Card /> }\n`,
     );
     const el = host();
-    mount(C, el);
+    mount(C, el, { ctx: simCtx });
     expect(el.querySelector("section")?.textContent).toBe("none");
   });
 
@@ -184,7 +187,7 @@ describe("k.place Prop calls: what a slot call places, mounted", () => {
     );
     for (const C of [arr, frag]) {
       const el = host();
-      mount(C, el);
+      mount(C, el, { ctx: simCtx });
       expect([...(el.querySelector("section")?.children ?? [])].map((c) => c.id)).toEqual(["a", "b"]);
     }
   });
@@ -195,7 +198,7 @@ describe("k.place Prop calls: what a slot call places, mounted", () => {
       `${CARD("{props.label()}")}export default function C() { return <Card label={() => 'Hi'} /> }\n`,
     );
     const el = host();
-    mount(C, el);
+    mount(C, el, { ctx: simCtx });
     expect(el.querySelector("section")?.textContent).toBe("Hi");
   });
 
@@ -210,7 +213,7 @@ export default C
     const C = load("PlaceOnce", src);
     const sig = sigOf(C, "sig");
     const el = host();
-    mount(C, el);
+    mount(C, el, { ctx: simCtx });
     expect(el.querySelector("section")?.textContent).toBe("a");
     sig.set("b");
     expect(el.querySelector("section")?.textContent).toBe("a");
@@ -230,7 +233,7 @@ export default C
       fc.property(fc.integer({ min: 1, max: 1000 }), (n) => {
         sig.set(0);
         const el = host();
-        const dispose = mount(C, el);
+        const dispose = mount(C, el, { ctx: simCtx });
         expect(el.querySelector("section")?.textContent).toBe("0");
         sig.set(n);
         expect(el.querySelector("section")?.textContent).toBe(String(n));
@@ -246,7 +249,7 @@ function Card(props) { return <section><If when={props.ok}>{props.icon()}</If></
 export default function C() { return <Card ok={true} icon={() => <b id="ic">i</b>} /> }
 `;
     const el = host();
-    mount(load("PlaceIf", src), el);
+    mount(load("PlaceIf", src), el, { ctx: simCtx });
     expect(el.querySelector("section b#ic")).not.toBeNull();
   });
 });

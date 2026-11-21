@@ -14,7 +14,6 @@ export interface Manifest {
   deps?: string[];
   capabilities?: string[];
   exports?: string[];
-  routes?: string[];
 }
 
 export const lowerId = fc.stringMatching(/^[a-z]{4,9}$/);
@@ -29,7 +28,7 @@ export default module({
   id: '${m.id}',
   deps: ${list(m.deps)},
   capabilities: ${list(m.capabilities)},
-  public: { exports: ${list(m.exports)}, routes: ${list(m.routes)} },
+  public: { exports: ${list(m.exports)} },
 })
 `;
 }
@@ -45,12 +44,21 @@ export const exportFile = (dir: string, name: string, body = "1") => ({
   source: `export const ${name} = ${body}\n`,
 });
 
-/** A routes.ts declaring the given route ids. */
-export function routesFile(id: string, ids: string[]) {
-  const entries = ids.map((r) => `  '${r}': { path: '/${r.replace(/\./g, "/")}', component: Page },`).join("\n");
+/** A module's contract file (k.contract) declaring the given page ids at `/<id with dots as slashes>`. */
+export function contractFile(id: string, ids: string[], root = `modules/${id}`) {
+  const entries = ids.map((r) => `  '${r}': { path: '/${r.replace(/\./g, "/")}' },`).join("\n");
+  return {
+    path: `${root}/${id}.contract.ts`,
+    source: `import { contract } from '@keel/router/contract'\nexport const ${id} = contract('${id}', {\n${entries}\n})\n`,
+  };
+}
+
+/** The module's `routes.ts` binding the page ids of its contract. */
+export function bindingFile(id: string, ids: string[]) {
+  const entries = ids.map((r) => `  '${r}': { component: Page },`).join("\n");
   return {
     path: `modules/${id}/routes.ts`,
-    source: `import { manifest } from '@keel/router'\nconst Page = () => null\nexport const routes = manifest({\n${entries}\n})\n`,
+    source: `import { manifest } from '@keel/router'\nimport { ${id} } from './${id}.contract.ts'\ndeclare const Page: () => Node\nexport const routes = manifest(${id}, {\n${entries}\n})\n`,
   };
 }
 

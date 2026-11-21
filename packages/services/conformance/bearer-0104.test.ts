@@ -1,12 +1,13 @@
 // Spec: k.services, API "A client method takes `{ params?, query?, body?, signal?, bearer?, user? }` and `ctx`. `bearer`, a `Secret<string>`, is sent as `authorization: Bearer <token>`; a token outside k.api's Bearer form is `api.input` at `bearer`. Requests go through `ctx.net.fetch` (k.ctx), so tests run under sim."
 // Spec: k.services, Conformance "With `bearer` a secret of `abc`, the request carries `authorization: Bearer abc`; with `a b`, the call is `api.input` with issue path `bearer` and sends no request."
-// Spec: k.privacy, Rules "E1113 an `s.secret` node in a `loader` or `action` `output`, thrown at declaration (fix: none)."
+// Spec: k.privacy, Rules "E1113 an `s.secret` in an `output`, thrown by `contract` or `loader` (k.routes; fix: none)."
 // Seed: 1337.
-// Sim net only. The call's `module` service is built through Reflect.apply (`module` is not in the visible `ServiceOptions`).
+// Sim net only. The call's contract service is `service({ contract })` over module `b`'s entries (k.contract).
 // The `endpoints` case of the RFC list (an `output` holding `s.secret` is no E1113) is here and not in packages/router: this package depends on `@keel/services`.
 import { createCtx } from "@keel/ctx";
 import { s } from "@keel/schema";
 import type { Secret } from "@keel/schema";
+import { contract } from "@keel/router/contract";
 import { endpoints, service } from "@keel/services";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -18,6 +19,16 @@ const Item = s.string().nullable();
 const schema = endpoints({
   show: { method: "GET", path: "/items/:id", params: s.object({ id: s.string() }), output: Item },
   save: {
+    method: "POST",
+    path: "/items/:id",
+    params: s.object({ id: s.string() }),
+    body: s.object({ note: s.string() }),
+    output: Item,
+  },
+});
+const bContract = contract("b", {
+  "b.show": { method: "GET", path: "/items/:id", params: s.object({ id: s.string() }), output: Item },
+  "b.save": {
     method: "POST",
     path: "/items/:id",
     params: s.object({ id: s.string() }),
@@ -62,7 +73,7 @@ function rig(origin: string, reply: (req: Request) => Response) {
   return { ctx, sent };
 }
 const baseClient = () => service({ base: BASE, schema });
-const moduleClient = (): unknown => Reflect.apply(service, undefined, [{ module: "b", schema }]);
+const moduleClient = () => service({ contract: bContract });
 async function call(api: unknown, name: string, args: unknown, ctx: unknown): Promise<unknown> {
   const m: unknown = typeof api === "object" && api !== null ? Reflect.get(api, name) : undefined;
   if (typeof m !== "function") throw new Error(`client has no ${name}`);

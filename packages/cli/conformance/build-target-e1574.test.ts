@@ -17,7 +17,7 @@ const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const BIN = join(REPO, "packages", "cli", "src", "bin.ts");
 
 const manifestSrc = (id: string): string =>
-  `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [], routes: [] } })\n`;
+  `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [] } })\n`;
 const files = (): Record<string, string> => ({
   "package.json": `${JSON.stringify({ name: "fx", private: true, type: "module", version: "1.0.0", dependencies: { "@keel/std-tauri": "workspace:*" } })}\n`,
   "vite.config.ts":
@@ -29,7 +29,9 @@ const files = (): Record<string, string> => ({
     "import { topology } from '@keel/server'\nexport default topology({\n  web: { modules: ['c'], adapter: 'client', shells: { tauri: { id: 'dev.keel.golden', name: 'Golden' } } },\n})\n",
   "modules/c/module.ts": manifestSrc("c"),
   "modules/c/routes.ts":
-    "import { manifest } from '@keel/router'\nconst Page = () => null\nexport const routes = manifest({ 'c.page': { path: '/', component: Page } })\n",
+    "import { manifest } from '@keel/router'\nimport { c } from './c.contract.ts'\nconst Page = () => null\nexport const routes = manifest(c, { 'c.page': { component: Page } })\n",
+  "modules/c/c.contract.ts":
+    "import { contract } from '@keel/router/contract'\nexport const c = contract('c', { 'c.page': { path: '/' } })\n",
 });
 
 let project = "";

@@ -5,13 +5,15 @@
 // Spec: k.origins, Policy "All read the static read's declaration: the entries pass it as `createApp({ origins })`."
 // Seed 1337 (fc.assert below; sim ctx seed 1337).
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { topology } from "@keel/server";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 import { directivesOf } from "./origins-support.ts";
 import { SEED, createAppLoose, simCtx } from "./topology-fixtures.ts";
 
-const routes = manifest({ "app.plain": { path: "/plain", component: () => document.createElement("main") } });
+const appContract = contract("app", { "app.plain": { path: "/plain" } });
+const routes = manifest(appContract, { "app.plain": { component: () => document.createElement("main") } });
 const make = (extra: Record<string, unknown>, origins: Record<string, Record<string, string>> | undefined) =>
   createAppLoose({
     topology: topology({

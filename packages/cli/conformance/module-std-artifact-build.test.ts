@@ -37,7 +37,7 @@ const manifest = (id: string, deps: string[], std?: unknown): string =>
     id,
     deps,
     capabilities: [],
-    public: { exports: [], routes: [] },
+    public: { exports: [] },
     ...(std === undefined ? {} : { std }),
   })})\n`;
 

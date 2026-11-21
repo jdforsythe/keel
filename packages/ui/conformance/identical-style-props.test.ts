@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 // Spec: k.ui, clause "Two elements with identical style props get identical class lists, and the CSS file contains each atomic rule once."
+import { createCtx } from "@keel/ctx";
 import { mount } from "@keel/runtime-dom";
 import { Box, Text } from "@keel/ui";
 import type { StyleProps, TokenName } from "@keel/ui";
@@ -8,6 +9,8 @@ import type { StyleUsage } from "@keel/ui/css";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { SEED, countRules, norm, tokens } from "./fixtures.ts";
+
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 const propSets = fc.record(
   {
@@ -98,7 +101,7 @@ describe("k.ui: Two elements with identical style props get identical class list
   const mountOne = (make: () => Node): { classes: string[]; off: () => void } => {
     const root = document.createElement("div");
     document.body.appendChild(root);
-    const off = mount(make, root);
+    const off = mount(make, root, { ctx: simCtx });
     const el = root.firstElementChild;
     if (el === null) throw new Error("nothing rendered");
     return { classes: [...el.classList], off };

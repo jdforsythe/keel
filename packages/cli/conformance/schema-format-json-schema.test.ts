@@ -30,9 +30,9 @@ function withProps(tree: unknown, names: string[], out: Dict[] = []): Dict[] {
 }
 
 function surfaceOf(output: string, value: string, imports: string): unknown {
-  const files: Tree = project({ output, outputValue: value, endpointOutput: "s.json()", split: false });
-  const load = files["modules/y/load.server.ts"] ?? "";
-  files["modules/y/load.server.ts"] = `${imports}\n${load}`;
+  const files: Tree = project({ output, outputValue: value, split: false });
+  const contract = files["modules/y/y.contract.ts"] ?? "";
+  files["modules/y/y.contract.ts"] = `${imports}\n${contract}`;
   const dir = materialize(files);
   dirs.push(dir);
   keel(dir, ["build"]);

@@ -5,14 +5,14 @@
 import { replay } from "@keel/std-sessions/replay";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { SEED, cartRoutes, play } from "./fixtures.ts";
+import { SEED, cartContract, cartRoutes, play } from "./fixtures.ts";
 
 describe("rfc:0169 conformance: a replay records its own E2003", () => {
   test("rfc:0169 conformance: a replay whose third input cannot apply records one E2003 error with data.at sessions.replay, and its reproduced is false", async () => {
     const { session } = await play(SEED, []);
     await fc.assert(
       fc.asyncProperty(fc.constantFrom("no.such.id", "x", "cart.nope"), async (id) => {
-        const href = cartRoutes().href("cart.show");
+        const href = cartContract.href("cart.show");
         const events = [
           { at: 0, kind: "nav" as const, href },
           { at: 0, kind: "nav" as const, href },

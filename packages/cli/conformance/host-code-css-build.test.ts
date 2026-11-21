@@ -18,8 +18,9 @@ const files = {
   "topology.ts":
     "import { topology } from '@keel/server'\nexport default topology({ web: { modules: ['app'], adapter: 'client' } })\n",
   "modules/app/module.ts":
-    "import { module } from '@keel/compiler'\nexport default module({ id: 'app', deps: [], capabilities: [], public: { exports: [], routes: [] } })\n",
-  "modules/app/routes.ts": `import { manifest } from "@keel/router";\nimport Page from "./Page.tsx";\nexport const routes = manifest({ "app.home": { path: "/", component: Page } });\n`,
+    "import { module } from '@keel/compiler'\nexport default module({ id: 'app', deps: [], capabilities: [], public: { exports: [] } })\n",
+  "modules/app/app.contract.ts": `import { contract } from "@keel/router/contract";\nexport const app = contract("app", { "app.home": { path: "/" } });\n`,
+  "modules/app/routes.ts": `import { manifest } from "@keel/router";\nimport { app } from "./app.contract.ts";\nimport Page from "./Page.tsx";\nexport const routes = manifest(app, { "app.home": { component: Page } });\n`,
   "modules/app/Page.tsx": `import { Host } from "@keel/ui";\nimport { shape } from "./shape.schema.ts";\nexport default function Page() { return <Host id="app.chart" role="img" label="Chart" input={shape} value={{ n: 1 }} code={() => import("./chart.ts").then((m) => m.chart)} /> }\n`,
   "modules/app/shape.schema.ts": `import { s } from "@keel/schema";\nexport const shape = s.object({ n: s.number() });\n`,
   "modules/app/chart.ts": `import { hostCode } from "@keel/ui";\nimport "./chart.css";\nexport const chart = hostCode({ mount: (node: HTMLElement) => { node.dataset.drawn = "1"; } });\n`,

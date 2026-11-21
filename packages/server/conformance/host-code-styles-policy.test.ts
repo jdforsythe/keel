@@ -4,20 +4,21 @@
 // Seed: 1337 (no generated inputs). The Chromium clause needs a real browser's computed style and is untestable under happy-dom: only the policy header that causes it is asserted here.
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { createApp, topology } from "@keel/server";
 import { Host } from "@keel/ui";
 import { describe, expect, it } from "vitest";
 
 const ctx = createCtx({ mode: "sim", seed: 1337 });
+const chart = contract("app", { "app.chart": { path: "/chart" } });
 const Input = s.object({ points: s.array(s.number()) });
 
 const headersOf = async (mode: "dev" | "production") => {
   const app = await createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
-    routes: manifest({
+    routes: manifest(chart, {
       "app.chart": {
-        path: "/chart",
         component: () =>
           Host({
             id: "app.chart.host",

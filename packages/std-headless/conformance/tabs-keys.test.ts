@@ -30,7 +30,6 @@ const mount = (start: string) => {
           },
           panel: (k) => Text({ id: `tb.body.${k}`, children: `About ${k}` }),
         },
-        undefined,
         c,
       ),
     ),

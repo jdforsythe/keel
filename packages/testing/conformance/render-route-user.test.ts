@@ -4,6 +4,7 @@
 // The createApp half is packages/server/conformance/identity-user.test.ts. Seed 1337 (fc.assert below).
 // Untestable here: `user` `''` on a `client` deployable (its loaders run in a browser; no public harness runs one beyond this renderRoute default).
 import { guard, loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { err, ok, s } from "@keel/schema";
 import { renderRoute } from "@keel/testing";
 import fc from "fast-check";
@@ -18,19 +19,19 @@ const p = (id: string): HTMLElement => {
   e.textContent = id;
   return e;
 };
-const routes = manifest({
-  "ur.login": { path: "/login", component: () => p("ur.login") },
+const urContract = contract("ur", { "ur.login": { path: "/login" }, "ur.home": { path: "/home" } });
+const routes = manifest(urContract, {
+  "ur.login": { component: () => p("ur.login") },
   "ur.home": {
-    path: "/home",
+    component: () => p("ur.home"),
+    loader: loader(urContract, "ur.home", { output: s.object({}) }, async ({ user, caller }) => {
+      seen.loader.push([user, caller]);
+      return ok({});
+    }),
     guard: guard({ redirect: "ur.login" }, async ({ user, caller }) => {
       seen.guard.push([user, caller]);
       return user === "" ? err(Denied.make({})) : ok(null);
     }),
-    loader: loader({ output: s.object({}) }, async ({ user, caller }) => {
-      seen.loader.push([user, caller]);
-      return ok({});
-    }),
-    component: () => p("ur.home"),
   },
 });
 

@@ -1,13 +1,17 @@
 // @vitest-environment happy-dom
 // Spec: k.guards, clause "A guard redirect revisiting a location, or a ninth, is E1508 (server: 500 `keel.unexpected`); no redirect nests `next`." Seed 1337.
+// The definitions below are old-style records; `run` splits each into its contract entry and its binding.
 // ASSUMPTIONS: the client shows the E1508 failure through the errorElement nearest the denying guard (at or above its level) as { code: "keel.unexpected", message containing "E1508" },
 // or through the default error alert whose text contains "E1508". The ninth-hop cap is covered by the server file (no client-only API to count hops).
 import { createCtx } from "@keel/ctx";
 import { createRouter, guard, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { mount } from "@keel/runtime-dom";
 import { err, ok, s } from "@keel/schema";
 import { describe, expect, it } from "vitest";
 import { SEED, memoryHistory, settle } from "./fixtures.ts";
+
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 const Denied = s.error("keel.denied", s.object({}));
 const Next = s.object({ next: s.string().optional() });
@@ -28,8 +32,24 @@ const shell = (p: { children?: () => Node | Node[] | string }) => {
 const errorElement = (p: { error: { code: string; message: string } }) =>
   el("p", `${p.error.code}|${p.error.message}`, { "data-error": "1" });
 
+/** The contract entry of one old-style definition: a layout without `path`, else its `path` and `search`. */
+const entryOf = (def: unknown): unknown => {
+  const path: unknown = Reflect.get(Object(def), "path");
+  if (path === undefined) return { layout: true };
+  const search: unknown = Reflect.get(Object(def), "search");
+  return search === undefined ? { path } : { path, search };
+};
+/** The binding member of one definition: everything but the contract's `path` and `search`. */
+const bindingOf = (def: unknown): unknown => {
+  const { path: _path, search: _search, ...rest } = Object(def);
+  return rest;
+};
+
 async function run(defs: Record<string, unknown>, at: string, go: string, mode?: "dev") {
-  const routes = Reflect.apply(manifest, undefined, [defs]);
+  const entries = Object.fromEntries(Object.entries(defs).map(([id, d]) => [id, entryOf(d)]));
+  const binding = Object.fromEntries(Object.entries(defs).map(([id, d]) => [id, bindingOf(d)]));
+  const c = Reflect.apply(contract, undefined, ["app", entries]);
+  const routes = Reflect.apply(manifest, undefined, [c, binding]);
   const history = memoryHistory(at);
   const router = createRouter(routes, {
     ctx: createCtx({ mode: "sim", seed: SEED }),
@@ -38,9 +58,9 @@ async function run(defs: Record<string, unknown>, at: string, go: string, mode?:
   });
   const host = document.createElement("div");
   document.body.append(host);
-  const unmount = mount(router.App, host);
+  const unmount = mount(router.App, host, { ctx: simCtx });
   await settle();
-  await router.navigate(Reflect.apply(routes.href, routes, [go]));
+  await router.navigate(Reflect.apply(c.href, c, [go]));
   await settle();
   const out = { host, url: history.current(), stop: () => (unmount(), router.dispose(), host.remove()) };
   return out;

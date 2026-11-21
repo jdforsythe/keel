@@ -2,11 +2,14 @@
 // Spec: k.aria, Conformance "`label` writes `aria-label` and `labelledBy` `aria-labelledby`; a signal bound to `expanded` changes only that attribute."
 // Seed: 1337.
 // Roles paragraph prop rules (exactly one of `label` and `labelledBy`, booleans as "true"/"false", `disabled` on `button` and `input` versus `aria-disabled`) are the extra tests below.
+import { createCtx } from "@keel/ctx";
 import { computed as newComputed, signal as newSignal, scope } from "@keel/reactive";
 import { mount } from "@keel/runtime-dom";
 import { Part } from "@keel/ui/aria";
 import fc from "fast-check";
 import { afterEach, describe, expect, expectTypeOf, test } from "vitest";
+
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 /** Signals and computeds are created in a scope (k.reactive E1203). */
 const owner = scope(() => undefined);
@@ -25,7 +28,7 @@ const render = (make: () => Node): { host: HTMLElement; off: () => void } => {
   const host = document.createElement("div");
   document.body.appendChild(host);
   hosts.push(host);
-  return { host, off: mount(make, host) };
+  return { host, off: mount(make, host, { ctx: simCtx }) };
 };
 const byId = (host: HTMLElement, id: string): Element => {
   const el = host.querySelector(`[id="${id}"]`);

@@ -2,7 +2,7 @@
 // Spec: k.head, clause "After a client navigation from a titled `en-US` route to a titled `de-DE` route, `document.title` and `document.documentElement.lang` are the second route's." (rfc:0079) Seed 1337.
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { SEED, open, pid, routes, titleOf } from "./head-fixtures.ts";
+import { SEED, headContract, open, pid, titleOf } from "./head-fixtures.ts";
 
 describe("k.head client navigation", () => {
   test("After a client navigation from a titled `en-US` route to a titled `de-DE` route, `document.title` and `document.documentElement.lang` are the second route's.", async () => {
@@ -11,10 +11,10 @@ describe("k.head client navigation", () => {
         fc.constantFrom<"home" | "about">("home", "about"),
         fc.constantFrom<"home" | "about">("home", "about"),
         async (from, to) => {
-          const app = await open(String(routes.href(pid(from), { p: "en-US" })));
+          const app = await open(String(headContract.href(pid(from), { p: "en-US" })));
           expect(document.title).toBe(titleOf("en-US", from));
           expect(document.documentElement.lang).toBe("en-US");
-          await app.router.navigate(routes.href(pid(to), { p: "de-DE" }));
+          await app.router.navigate(headContract.href(pid(to), { p: "de-DE" }));
           expect(document.title).toBe(titleOf("de-DE", to));
           expect(document.documentElement.lang).toBe("de-DE");
           app.stop();

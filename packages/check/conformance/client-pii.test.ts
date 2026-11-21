@@ -18,7 +18,7 @@ const CLASSES = ["name", "contact", "location", "identifier", "financial", "spec
 const module_ = (clientPii?: readonly string[]): Files[number] =>
   f(
     "modules/app/module.ts",
-    `import { module } from '@keel/compiler'\nexport default module({ id: 'app', deps: [], capabilities: [], public: { exports: [], routes: [] }${
+    `import { module } from '@keel/compiler'\nexport default module({ id: 'app', deps: [], capabilities: [], public: { exports: [] }${
       clientPii === undefined ? "" : `, clientPii: [${clientPii.map((c) => `'${c}'`).join(", ")}]`
     } })\n`,
   );

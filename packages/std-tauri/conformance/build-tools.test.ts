@@ -29,7 +29,7 @@ const BIN = join(REPO, "packages", "cli", "src", "bin.ts");
 const ORIGIN = "https://app.example";
 
 const manifestSrc = (id: string): string =>
-  `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [], routes: [] } })\n`;
+  `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [] } })\n`;
 const PKG = `${JSON.stringify({ name: "fx", private: true, type: "module", version: "1.0.0", dependencies: { "@keel/std-tauri": "workspace:*" }, devDependencies: { "@tauri-apps/cli": "2.0.0" } })}\n`;
 const files = (): Record<string, string> => ({
   "package.json": PKG,
@@ -44,7 +44,9 @@ const files = (): Record<string, string> => ({
   "modules/c/Page.tsx":
     "import { Box, Text } from '@keel/ui'\nexport default function Page() {\n  return (\n    <Box as=\"main\">\n      <Text>home</Text>\n    </Box>\n  )\n}\n",
   "modules/c/routes.ts":
-    "import { manifest } from '@keel/router'\nimport Page from './Page.tsx'\nexport const routes = manifest({ 'c.page': { path: '/', component: Page } })\n",
+    "import { manifest } from '@keel/router'\nimport { c } from './c.contract.ts'\nimport Page from './Page.tsx'\nexport const routes = manifest(c, { 'c.page': { component: Page } })\n",
+  "modules/c/c.contract.ts":
+    "import { contract } from '@keel/router/contract'\nexport const c = contract('c', { 'c.page': { path: '/' } })\n",
 });
 
 /** Any small valid RGB PNG (8-bit, color type 2, 1x1), so it differs from Keel's RGBA mark. */

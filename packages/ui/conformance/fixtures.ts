@@ -4,6 +4,7 @@
 // Axe, style-signal and E1804 check conformance lives in packages/testing/conformance/ui-*.test.ts (rfc:0021).
 import { scope } from "@keel/reactive";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { Text, defineTokens } from "@keel/ui";
 
@@ -19,11 +20,10 @@ export const tokens = defineTokens({
   motion: { fast: "120ms" },
 });
 
-/** One-route manifest (k.router) so `Link to` receives a real `Href`. */
-export const routes = manifest({
-  home: { path: "/", params: s.object({}), search: s.object({}), component: () => Text({ children: "home" }) },
-});
-export const home = routes.href("home", {}, {});
+/** One-page contract (k.contract) so `Link to` receives a real `Href`. */
+export const ui = contract("ui", { "ui.home": { path: "/" } });
+export const routes = manifest(ui, { "ui.home": { component: () => Text({ children: "home" }) } });
+export const home = ui.href("ui.home");
 
 /** Runs `fn` inside an ownership scope (k.reactive E1203); `dispose` frees the scope. */
 export const inScope = <T>(fn: () => T): { value: T; dispose: () => void } => {

@@ -28,7 +28,7 @@ const channelFile = (message: string): Files[number] => ({
   path: "modules/chan/boardChannel.ts",
   source: `import { channel } from "@keel/std-channels"\nimport { s } from "@keel/schema"\nexport const boardChannel = channel("chan.board", { path: "/api/board/events", params: s.object({}), message: ${message} })\n`,
 });
-const routeSource = `import { channelRoute } from "@keel/std-channels/server"\nimport { boardChannel } from "./boardChannel.ts"\nexport const boardEvents = channelRoute(boardChannel, { id: "chan.boardEvents", stores: () => ({}), member: () => true })\n`;
+const routeSource = `import { channelRoute } from "@keel/std-channels/server"\nimport { chan } from "./chan.contract.ts"\nimport { boardChannel } from "./boardChannel.ts"\nexport const boardEvents = channelRoute(chan, boardChannel, { id: "chan.boardEvents", stores: () => ({}), member: () => true })\n`;
 
 const wrap = (inner: string, depth: number, kind: "object" | "array"): string => {
   let out = inner;

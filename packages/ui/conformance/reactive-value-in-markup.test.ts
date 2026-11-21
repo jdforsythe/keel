@@ -1,9 +1,12 @@
 // @vitest-environment happy-dom
 // Spec: k.ui, clause "An `Input`, `TextArea`, `Select` or `Checkbox` given a signal for `value` or `checked` shows its first value in the markup; a later signal write changes only the property."
+import { createCtx } from "@keel/ctx";
 import { type Signal, scope, signal } from "@keel/reactive";
 import { mount } from "@keel/runtime-dom";
 import { Checkbox, Input, Select, TextArea } from "@keel/ui";
 import { expect, test } from "vitest";
+
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 const flush = async (): Promise<void> => {
   for (let i = 0; i < 10; i++) await Promise.resolve();
@@ -31,7 +34,7 @@ const find = (root: ParentNode, id: string): Element => {
 test("An Input given a signal for value shows its first value in the markup; a later signal write changes only the property", async () => {
   const v = owned("Ada");
   const root = host();
-  const off = mount(() => Input({ id: "i", label: "I", value: v }), root);
+  const off = mount(() => Input({ id: "i", label: "I", value: v }), root, { ctx: simCtx });
   await flush();
   const el = find(root, "i");
   if (!(el instanceof HTMLInputElement)) throw new Error("not input");
@@ -47,7 +50,7 @@ test("An Input given a signal for value shows its first value in the markup; a l
 test("A TextArea given a signal for value shows its first value as text; a later signal write changes only the property", async () => {
   const v = owned("notes");
   const root = host();
-  const off = mount(() => TextArea({ id: "t", label: "T", value: v }), root);
+  const off = mount(() => TextArea({ id: "t", label: "T", value: v }), root, { ctx: simCtx });
   await flush();
   const el = find(root, "t");
   if (!(el instanceof HTMLTextAreaElement)) throw new Error("not textarea");
@@ -77,6 +80,7 @@ test("A Select given a signal for value marks the matching option selected; a la
         ],
       }),
     root,
+    { ctx: simCtx },
   );
   await flush();
   const el = find(root, "s");
@@ -95,7 +99,7 @@ test("A Select given a signal for value marks the matching option selected; a la
 test("A Checkbox given a signal for checked shows checked in the markup; a later signal write changes only the property", async () => {
   const c = owned(true);
   const root = host();
-  const off = mount(() => Checkbox({ id: "c", label: "C", checked: c }), root);
+  const off = mount(() => Checkbox({ id: "c", label: "C", checked: c }), root, { ctx: simCtx });
   await flush();
   const el = find(root, "c");
   if (!(el instanceof HTMLInputElement)) throw new Error("not input");

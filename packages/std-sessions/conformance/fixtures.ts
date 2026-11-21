@@ -12,6 +12,7 @@ import type { SimCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
 import { manifest } from "@keel/router";
 import type { Href } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import type { JsonValue, KeelError } from "@keel/schema";
 import type { Session } from "@keel/std-sessions";
@@ -27,6 +28,9 @@ export const SEED = 1337;
 
 export const simCtx = (seed = SEED): SimCtx => createCtx({ mode: "sim", seed });
 
+/** The fixture's contract: one page, `cart.show`. */
+export const cartContract = contract("cart", { "cart.show": { path: "/cart" } });
+const buggyContract = contract("cart", { "cart.show": { path: "/cart", search: BugSearch } });
 const EMPTY: { items: string[]; card: string } = { items: [], card: "" };
 
 function build() {
@@ -41,9 +45,8 @@ function build() {
   }));
   // The reload link targets this table's own route; its href exists once the table does.
   const self: { href?: Href } = {};
-  const routes = manifest({
+  const routes = manifest(cartContract, {
     "cart.show": {
-      path: "/cart",
       component(): Node {
         return Box({
           as: "main",
@@ -57,7 +60,7 @@ function build() {
       },
     },
   });
-  self.href = routes.href("cart.show");
+  self.href = cartContract.href("cart.show");
   return { cart, add, pay, routes };
 }
 
@@ -109,7 +112,7 @@ export async function play(
       continue;
     }
     if ("nav" in step) {
-      await h.navigate(routes.href("cart.show"));
+      await h.navigate(cartContract.href("cart.show"));
       continue;
     }
     if (step.id === "cart.card") await h.fire(step.id, { type: "input", value: step.value });
@@ -136,7 +139,7 @@ export default module({
   id: 'cart',
   deps: ${JSON.stringify(deps)},
   capabilities: [],
-  public: { exports: [], routes: [] },
+  public: { exports: [] },
   std: { '@keel/std-sessions': { redact: ${JSON.stringify(redact)} } },
 })
 `,
@@ -210,7 +213,7 @@ function buildBuggy() {
         stamped(Button({ id: "cart.checkout", children: "Checkout", onClick: checkout }), "cart.checkout"),
       ],
     });
-  const routes = manifest({ "cart.show": { path: "/cart", search: BugSearch, component: CartPage } });
+  const routes = manifest(buggyContract, { "cart.show": { component: CartPage } });
   return { cart, routes };
 }
 
@@ -248,7 +251,7 @@ export async function buggySession(seed = SEED): Promise<Session> {
   await h.fire("cart.add", { type: "click" });
   await h.fire("cart.card", { type: "input", value: "x" });
   await h.fire("cart.card", { type: "input", value: "" });
-  await h.navigate(routes.href("cart.show"));
+  await h.navigate(buggyContract.href("cart.show"));
   await h.fire("cart.add", { type: "click" });
   await h.fire("cart.checkout", { type: "click" }).catch(() => undefined);
   const session = rec.stop();
@@ -382,7 +385,7 @@ export default module({
   id: "cart",
   deps: ["@keel/std-sessions"],
   capabilities: [],
-  public: { exports: [], routes: ["cart.show"] },
+  public: { exports: [] },
   std: { "@keel/std-sessions": { expose: ${JSON.stringify(expose)} } },
 });
 `;

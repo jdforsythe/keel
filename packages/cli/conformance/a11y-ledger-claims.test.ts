@@ -10,11 +10,19 @@ import { type CliRecord, type Run, keel, makeProject, removeProject, root } from
 const ITEM_R = "a11y:m.r#1.4.3";
 const ITEM_R2 = "a11y:m.r2#1.4.3";
 
+const CONTRACT = `import { contract } from "@keel/router/contract";
+export const m = contract("m", {
+  "m.r": { path: "/r" },
+  "m.r2": { path: "/r2" },
+});
+`;
 const ROUTES = `import { manifest } from "@keel/router";
 import { Text } from "@keel/ui";
-export const routes = manifest({
-  "m.r": { path: "/r", component: () => Text({ id: "m.r.msg", fg: "fg", children: "r" }), title: () => "R" },
-  "m.r2": { path: "/r2", component: () => Text({ id: "m.r2.msg", fg: "fg", children: "r2" }), title: () => "R2" },
+import { m } from "./m.contract.ts";
+
+export const routes = manifest(m, {
+  "m.r": { component: () => Text({ id: "m.r.msg", fg: "fg", children: "r" }), title: () => "R" },
+  "m.r2": { component: () => Text({ id: "m.r2.msg", fg: "fg", children: "r2" }), title: () => "R2" },
 });
 `;
 const tokens = (fg: string): string =>
@@ -51,6 +59,7 @@ const project = (prefix: string, fg: string, test: string): string => {
   const dir = makeProject(prefix, {
     "tokens.ts": tokens(fg),
     "topology.ts": TOPOLOGY,
+    "modules/m/m.contract.ts": CONTRACT,
     "modules/m/routes.ts": ROUTES,
     "modules/m/test/r.test.ts": test,
   });

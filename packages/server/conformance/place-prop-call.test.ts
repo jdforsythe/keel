@@ -11,7 +11,8 @@ import { CASES } from "./place-cases.ts";
 import { routes } from "./place-routes.ts";
 import { appOf } from "./resume-graph-app.ts";
 
-const MODULES = CASES.map((c) => c.key);
+// One contract, so one module: every case page belongs to `pl`.
+const MODULES = ["pl"];
 const FRESH = () => import("./place-routes.ts");
 
 async function served(path: string): Promise<{ html: string; lines: string[] }> {

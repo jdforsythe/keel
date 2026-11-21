@@ -1,6 +1,7 @@
 // The routes module of the packaged-widget suite (not a test file). The test imports it for the server side; `resumeDocument`
 // imports it again for the client side, where every module it reaches is evaluated anew.
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import * as headless from "@keel/std-headless";
 import * as ui from "@keel/ui";
 import { compilePage } from "./resume-support.ts";
@@ -89,13 +90,11 @@ export const WIDGETS = [
   },
 ] as const;
 
+const widgets = contract("w", Object.fromEntries(WIDGETS.map((w) => [`w.${w.key}`, { path: `/${w.key}` }])));
+
 export const routes = manifest(
+  widgets,
   Object.fromEntries(
-    WIDGETS.map((w) => [
-      `${w.key}.page`,
-      { path: `/${w.key}`, component: compilePage(`${w.key}.page`, w.source, MODULES) },
-    ]),
+    WIDGETS.map((w) => [`w.${w.key}`, { component: compilePage(`${w.key}.page`, w.source, MODULES) }]),
   ),
 );
-
-export default routes;

@@ -3,6 +3,7 @@
 // @vitest-environment happy-dom
 // ASSUMPTION: the compiled `Match`/`Case` is the `match` op from `@keel/runtime-dom/ops`: match(anchor, on, "tag", { [tag]: (value) => Node }),
 // where `value()` is the union's current value (as for-keyed-rows-0090 assumes for `list`).
+import { createCtx } from "@keel/ctx";
 import { scope, signal as newSignal } from "@keel/reactive";
 import type { Signal } from "@keel/reactive";
 import { mount } from "@keel/runtime-dom";
@@ -10,6 +11,8 @@ import { clone, match, template, text } from "@keel/runtime-dom/ops";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { SEED, flush } from "./fixtures.ts";
+
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 /** Signals are created in a scope (k.reactive E1203). */
 const owner = scope(() => undefined);
@@ -39,13 +42,17 @@ const open = (initial: Shape) => {
   };
   const host = document.createElement("div");
   document.body.appendChild(host);
-  const dispose = mount(() => {
-    const root = clone(HostT);
-    const anchor = root.firstChild;
-    if (anchor === null) throw new Error("fixture: template lacks anchor");
-    match(anchor, () => on.get(), "tag", { circle: caseFor("circle"), square: caseFor("square") });
-    return root;
-  }, host);
+  const dispose = mount(
+    () => {
+      const root = clone(HostT);
+      const anchor = root.firstChild;
+      if (anchor === null) throw new Error("fixture: template lacks anchor");
+      match(anchor, () => on.get(), "tag", { circle: caseFor("circle"), square: caseFor("square") });
+      return root;
+    },
+    host,
+    { ctx: simCtx },
+  );
   return {
     on,
     renders,

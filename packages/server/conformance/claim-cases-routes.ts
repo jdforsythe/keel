@@ -1,12 +1,16 @@
 // The routes module of the "In place" cases (not a test file). A test imports it for the server side; `resumeDocument`
 // imports it again for the client side, where every module it reaches is evaluated anew.
-import { manifest } from "@keel/router";
+import { manifest, routeTable } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { CASES, effectPage } from "./claim-cases.ts";
 import { compilePage } from "./claim-support.ts";
 
-const entries = Object.fromEntries(
-  CASES.map((c) => [`${c.key}.page`, { path: `/${c.key}`, component: compilePage(`${c.key}.page`, c.source) }]),
-);
+/** One module of one page, `<key>.page` at `/<key>`. */
+const modulePage = (key: string, source: string) => {
+  const id = `${key}.page`;
+  const c = contract(key, { [id]: { path: `/${key}` } });
+  return manifest(c, { [id]: { component: compilePage(id, source) } });
+};
 
 const HIDDEN_BRANCH = `<If when={on.get()}><b id="ef.a">a</b><i id="ef.b">b</i></If>`;
 // At resume the served elements are in the document; while the server renders the document holds none, so the branch is served shown.
@@ -21,13 +25,13 @@ const ROWS = effectPage(
   "",
 );
 
-export const routes = manifest({
-  ...entries,
-  "ef.page": { path: "/ef", component: compilePage("ef.page", effectPage("ef", HIDDEN_BRANCH, HIDE)) },
-  "eg.page": { path: "/eg", component: compilePage("eg.page", effectPage("ef", STATIC_BRANCH, "", PUT_BACK)) },
-  "eh.page": { path: "/eh", component: compilePage("eh.page", effectPage("ef", STATIC_BRANCH, "", TAKE_OUT)) },
-  "er.page": { path: "/er", component: compilePage("er.page", ROWS) },
-  "ek.page": { path: "/ek", component: compilePage("ek.page", effectPage("ef", STATIC_BRANCH, "")) },
-});
+export const routes = routeTable(
+  ...CASES.map((c) => modulePage(c.key, c.source)),
+  modulePage("ef", effectPage("ef", HIDDEN_BRANCH, HIDE)),
+  modulePage("eg", effectPage("ef", STATIC_BRANCH, "", PUT_BACK)),
+  modulePage("eh", effectPage("ef", STATIC_BRANCH, "", TAKE_OUT)),
+  modulePage("er", ROWS),
+  modulePage("ek", effectPage("ef", STATIC_BRANCH, "")),
+);
 
 export default routes;

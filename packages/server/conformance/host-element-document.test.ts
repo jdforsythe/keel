@@ -4,6 +4,7 @@
 // Seed: 1337. Same app shape as route-of-base-elements-island.test.ts; the element's `code` is never called on the server.
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { createApp, topology } from "@keel/server";
 import { Box, Host } from "@keel/ui";
@@ -12,14 +13,14 @@ import { describe, expect, it } from "vitest";
 
 const ctx = createCtx({ mode: "sim", seed: 1337 });
 const MODULE_SCRIPT = /<script[^>]*type=["']module["']/;
+const chart = contract("app", { "app.chart": { path: "/chart" } });
 const Input = s.object({ points: s.array(s.number()) });
 
 const documentOf = async (label: string): Promise<string> => {
   const app = await createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
-    routes: manifest({
+    routes: manifest(chart, {
       "app.chart": {
-        path: "/chart",
         component: () =>
           Box({
             children: () =>

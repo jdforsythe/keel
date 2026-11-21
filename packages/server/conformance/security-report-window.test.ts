@@ -3,6 +3,7 @@
 // @vitest-environment happy-dom
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { createApp, topology } from "@keel/server";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
@@ -11,9 +12,10 @@ import { flush } from "./topology-fixtures.ts";
 async function setup() {
   const lines: string[] = [];
   const ctx = createCtx({ mode: "sim", seed: 1337 });
+  const appContract = contract("app", { "app.home": { path: "/" } });
   const app = await createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
-    routes: manifest({ "app.home": { path: "/", component: () => document.createElement("main") } }),
+    routes: manifest(appContract, { "app.home": { component: () => document.createElement("main") } }),
     ctx,
     mode: "production",
     log: { format: "json", write: (line) => lines.push(line) },

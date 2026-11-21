@@ -2,6 +2,7 @@
 // Seed: 1337.
 // @vitest-environment happy-dom
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import { topology } from "@keel/server";
 import { describe, expect, test } from "vitest";
@@ -17,12 +18,16 @@ const directivesOf = (policy: string): string[] =>
     .filter((d) => d !== "");
 
 async function setup(mode: "dev" | "production") {
-  const live = liveLoader(Out, async function* () {
+  const appContract = contract("app", {
+    "app.live": { method: "GET", path: "/api/live", events: true, output: Out },
+    "app.plain": { path: "/plain" },
+  });
+  const live = liveLoader(appContract, "app.live", async function* () {
     yield ok({ n: 1 });
   });
-  const routes = manifest({
-    "app.live": { path: "/live", loader: live, component: () => document.createElement("main") },
-    "app.plain": { path: "/plain", component: () => document.createElement("main") },
+  const routes = manifest(appContract, {
+    "app.live": { loader: live },
+    "app.plain": { component: () => document.createElement("main") },
   });
   return createAppLoose({ topology: T(), routes, ctx: simCtx(), mode });
 }
@@ -30,7 +35,7 @@ async function setup(mode: "dev" | "production") {
 describe("k.security: dev report-only policy", () => {
   test("A dev document carries `Content-Security-Policy-Report-Only` and no enforcing `Content-Security-Policy`", async () => {
     const app = await setup("dev");
-    for (const p of ["/plain", "/live"]) {
+    for (const p of ["/plain"]) {
       const res = await app.fetch(new Request(`http://localhost${p}`));
       expect(res.status).toBe(200);
       expect(res.headers.get("content-security-policy-report-only")).not.toBeNull();
@@ -59,8 +64,12 @@ describe("k.security: dev report-only policy", () => {
   test("JSON and event-stream responses carry `default-src 'none'; frame-ancestors 'none'`", async () => {
     for (const mode of ["dev", "production"] as const) {
       const app = await setup(mode);
-      const json = await app.fetch(new Request("http://localhost/live", { headers: { accept: "application/json" } }));
-      const sse = await app.fetch(new Request("http://localhost/live", { headers: { accept: "text/event-stream" } }));
+      const json = await app.fetch(
+        new Request("http://localhost/api/live", { headers: { accept: "application/json" } }),
+      );
+      const sse = await app.fetch(
+        new Request("http://localhost/api/live", { headers: { accept: "text/event-stream" } }),
+      );
       await readChunks(sse, 1);
       for (const res of [json, sse]) {
         const policy =

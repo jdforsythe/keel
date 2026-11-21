@@ -1,7 +1,7 @@
 // Spec: k.boundary, Conformance "A page importing `./x.server.ts?raw` or `?url`, a plain file calling `loader`, or one importing `node:path` fails `vite build` with one E1007 naming the chain; `keel build` stops at `keel check`."
 // Spec: k.boundary, Build gate "`keel build` runs `keel check` first; an error ends it with exit 1 and nothing written, a warning does not. `vite build` alone runs no check; the stubs and E1007 still hold."
 // Seed 1337 (no random input). The real binary over the node fixture of boundary-support.ts with one change each; `.keel/` and `dist/` are read after the run.
-// The error is unrelated to the boundary: a Node-only global (E1759) in a browser file that nothing imports. The warning case computes a route path after one `keel build` has written `.keel/routes.json` (W1005).
+// The error is unrelated to the boundary: a Node-only global (E1759) in a browser file that nothing imports. The warning case spreads an entry into the binding after one `keel build` has written `.keel/routes.json` (W1005).
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
@@ -9,7 +9,10 @@ import { SLOW, cleanup, keelRun, linesWith, materialize, nodeTree, viteBuild, wi
 
 const BADGE =
   "import { Text } from '@keel/ui'\nexport default function Badge() {\n  return <Text>{String(process.env.X)}</Text>\n}\n";
-const WARN = (nodeTree("node")["modules/a/routes.ts"] ?? "").replace("path: '/a/:id'", "path: ['/a', ':id'].join('/')");
+const WARN = (nodeTree("node")["modules/a/routes.ts"] ?? "").replace(
+  "'a.home': { component: Home },",
+  "...{ 'a.home': { component: Home } },",
+);
 
 let errored = "";
 let warned = "";

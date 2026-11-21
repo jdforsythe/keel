@@ -13,9 +13,11 @@ const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const BIN = join(REPO, "packages", "cli", "src", "bin.ts");
 
 const manifestSrc = (id: string): string =>
-  `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [], routes: [] } })\n`;
-const routesSrc = (id: string, path: string): string =>
-  `import { manifest } from '@keel/router'\nimport { Text } from '@keel/ui'\nconst Page = () => Text({ id: '${id}.page.text', children: '${id}' })\nexport const routes = manifest({ '${id}.page': { path: '${path}', component: Page } })\n`;
+  `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [] } })\n`;
+const contractSrc = (id: string, path: string): string =>
+  `import { contract } from '@keel/router/contract'\nexport const ${id} = contract('${id}', { '${id}.page': { path: '${path}' } })\n`;
+const routesSrc = (id: string): string =>
+  `import { manifest } from '@keel/router'\nimport { Text } from '@keel/ui'\nimport { ${id} } from './${id}.contract.ts'\nconst Page = () => Text({ id: '${id}.page.text', children: '${id}' })\nexport const routes = manifest(${id}, { '${id}.page': { component: Page } })\n`;
 
 /** A project whose `topology.ts` default-exports `topology(<topologyArg>)` over module `a` (route `/a`) and module `c` (route `/`). */
 export function tree(topologyArg: string, deps: Record<string, string> = {}): Tree {
@@ -28,9 +30,11 @@ export function tree(topologyArg: string, deps: Record<string, string> = {}): Tr
     }),
     "topology.ts": `import { topology } from '@keel/server'\nexport default topology(${topologyArg})\n`,
     "modules/a/module.ts": manifestSrc("a"),
-    "modules/a/routes.ts": routesSrc("a", "/a"),
+    "modules/a/a.contract.ts": contractSrc("a", "/a"),
+    "modules/a/routes.ts": routesSrc("a"),
     "modules/c/module.ts": manifestSrc("c"),
-    "modules/c/routes.ts": routesSrc("c", "/"),
+    "modules/c/c.contract.ts": contractSrc("c", "/"),
+    "modules/c/routes.ts": routesSrc("c"),
   };
 }
 

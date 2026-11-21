@@ -6,14 +6,15 @@ import fc from "fast-check";
 import { expect, test } from "vitest";
 import { type Files, SEED } from "./support.ts";
 
-const MANIFEST = `import { module } from '@keel/compiler'\nexport default module({ id: 'a', deps: [], capabilities: [], public: { exports: [], routes: [] } })\n`;
+const MANIFEST = `import { module } from '@keel/compiler'\nexport default module({ id: 'a', deps: [], capabilities: [], public: { exports: [] } })\n`;
 const SOURCE = `import { commitStores } from '@keel/server'
 import { loader } from '@keel/router'
 declare const ctx: never
 declare const factory: never
+declare const c: never
 declare const Out: unknown
 export const save = () => commitStores(ctx, factory, () => undefined)
-export const load = loader({ output: Out }, async () => 1)
+export const load = loader(c, 'a.load', { output: Out }, async () => 1)
 `;
 
 const found = (files: Files) => check(files, { types: false }).diagnostics.filter((d) => d.code === "E1551");

@@ -5,7 +5,7 @@ import type { Files } from "./support.ts";
 export const SEED = 1337;
 
 const MANIFEST = (id: string): string =>
-  `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [], routes: [] } })\n`;
+  `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [] } })\n`;
 
 export interface Deployable {
   name: string;

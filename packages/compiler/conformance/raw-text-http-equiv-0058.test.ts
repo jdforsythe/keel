@@ -2,12 +2,15 @@
 // Spec: k.compiler, clause "`javascript:` in `object data`, a `srcset` candidate, or a `<set>` `to`/`<animate>` `values` item is E1003 as a literal and `about:blank` bound; any `<base>` `href` or `<meta>` `http-equiv` is E1003, never rendered."
 // @vitest-environment happy-dom
 // Seed 1337 (fc.assert seed below). RFC 0058 / backlog 0157 (script/style data), 0158 (meta http-equiv).
+import { createCtx } from "@keel/ctx";
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
 import { mount } from "@keel/runtime-dom";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { type Mountable, SEED, codes, isMountable, load, sigOf } from "./support.ts";
+
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 /** Compiles `jsx` as the body of a component over a string signal `u`, keeping the output despite diagnostics. */
 function build(jsx: string): { B: Mountable; diagnostics: { code: string }[] } {
@@ -32,7 +35,7 @@ export default B
 function html(B: Mountable, value: string): string {
   sigOf(B, "u").set(value);
   const host = document.createElement("div");
-  const dispose = mount(B, host);
+  const dispose = mount(B, host, { ctx: simCtx });
   const out = host.innerHTML;
   dispose();
   return out;
@@ -77,7 +80,7 @@ test("any string in a script or style child never renders (property)", () => {
       for (const B of [script, style]) {
         sigOf(B, "u").set(v);
         const host = document.createElement("div");
-        const dispose = mount(B, host);
+        const dispose = mount(B, host, { ctx: simCtx });
         const el = host.querySelector("script, style");
         expect(el?.textContent).toBe("");
         dispose();
@@ -91,7 +94,7 @@ test("a literal <style> or <script> child compiles clean and renders verbatim", 
   const css = "a > b { color: red } .x::after { content: '&amp;' }";
   const S = load("S", `export default function S() { return <div><style>{${JSON.stringify(css)}}</style></div> }`);
   const host = document.createElement("div");
-  const dispose = mount(S, host);
+  const dispose = mount(S, host, { ctx: simCtx });
   expect(host.querySelector("style")?.textContent).toBe(css);
   dispose();
   const json = '{"@type":"Thing","name":"a < b"}';
@@ -100,7 +103,7 @@ test("a literal <style> or <script> child compiles clean and renders verbatim", 
     `export default function L() { return <div><script type="application/ld+json">{${JSON.stringify(json)}}</script></div> }`,
   );
   const host2 = document.createElement("div");
-  const dispose2 = mount(L, host2);
+  const dispose2 = mount(L, host2, { ctx: simCtx });
   expect(host2.querySelector("script")?.textContent).toBe(json);
   expect(host2.querySelector("script")?.getAttribute("type")).toBe("application/ld+json");
   dispose2();
@@ -149,7 +152,7 @@ test("backlog 0168: literal SVG <style> text is text node data, escaped only by 
     `export default function S() { return <div><svg><style>{${JSON.stringify(css)}}</style></svg></div> }`,
   );
   const host = document.createElement("div");
-  const dispose = mount(S, host);
+  const dispose = mount(S, host, { ctx: simCtx });
   const style = host.querySelector("style");
   expect(style?.textContent).toBe(css);
   expect(style?.childNodes.length).toBe(1);

@@ -7,11 +7,14 @@ import { createCtx } from "@keel/ctx";
 import { form } from "@keel/forms";
 import { effect } from "@keel/reactive";
 import { Form, action, createRouter, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { mount } from "@keel/runtime-dom";
 import { ok, s } from "@keel/schema";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 import { SEED, fieldInput, memoryHistory, must, settle } from "./fixtures.ts";
+
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 const Min = s.object({ title: s.string({ min: 1 }), n: s.string({ min: 1 }).optional() });
 const Plain = s.object({ title: s.string({ min: 1 }), n: s.string().optional() });
@@ -23,7 +26,11 @@ type Run = { error: string | undefined; calls: unknown[] };
 
 async function submitWith(schema: typeof Min | typeof Plain, n: string): Promise<Run> {
   const calls: unknown[] = [];
-  const save = action({ input: schema }, async (input: unknown) => {
+  const notesContract = contract("notes", {
+    "notes.edit": { path: "/notes" },
+  });
+
+  const save = action(notesContract, "notes.edit", { input: schema }, async (input: unknown) => {
     calls.push(input);
     return ok(null);
   });
@@ -46,14 +53,15 @@ async function submitWith(schema: typeof Min | typeof Plain, n: string): Promise
     });
     const b = document.createElement("button");
     b.type = "submit";
-    return Form({ method: "POST", action: routes.href("notes.edit"), form: f, children: () => [...inputs, b] });
+    return Form({ method: "POST", action: notesContract.href("notes.edit"), form: f, children: () => [...inputs, b] });
   };
-  const routes = manifest({ "notes.edit": { path: "/notes", component: Page } });
-  routes.actions({ "notes.edit": { POST: save } });
+  const routes = manifest(notesContract, {
+    "notes.edit": { component: Page, POST: save },
+  });
   const router = createRouter(routes, { ctx: createCtx({ mode: "sim" }), history: memoryHistory("/notes") });
   const root = document.createElement("div");
   document.body.appendChild(root);
-  const dispose = mount(router.App, root);
+  const dispose = mount(router.App, root, { ctx: simCtx });
   try {
     const f = must(holder.f, "form handle");
     const type = (name: string, value: string): void => {

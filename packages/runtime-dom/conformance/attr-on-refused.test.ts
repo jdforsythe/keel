@@ -3,21 +3,28 @@
 // @vitest-environment happy-dom
 // The JSX-spread repro goes through the compiler, which is not a dependency of @keel/runtime-dom; it lives in
 // packages/compiler/conformance/url-policy-0056.test.ts. Here the lowered op `attr(el, 'onclick', fn)` is called directly.
+import { createCtx } from "@keel/ctx";
 import { mount } from "@keel/runtime-dom";
 import { attr } from "@keel/runtime-dom/ops";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { SEED, inScope } from "./fixtures.ts";
 
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
+
 type V = string | boolean;
 
 /** Binds `attr(el, name, () => value)` in a mounted component and returns the element's attribute names. */
 const bound = (el: Element, name: string, value: V): string[] => {
   const { value: unmount, dispose } = inScope(() =>
-    mount(() => {
-      attr(el, name, () => value);
-      return el;
-    }, document.createElement("div")),
+    mount(
+      () => {
+        attr(el, name, () => value);
+        return el;
+      },
+      document.createElement("div"),
+      { ctx: simCtx },
+    ),
   );
   const names = el.getAttributeNames();
   unmount();

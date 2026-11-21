@@ -8,6 +8,7 @@ import os from "node:os";
 import path from "node:path";
 import { run } from "@keel/cli";
 import { action, loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import { topology } from "@keel/server";
 import fc from "fast-check";
@@ -28,19 +29,25 @@ afterAll(() => fs.rmSync(tmp, { recursive: true, force: true }));
 type Variant = "loader-stores" | "action-stores" | "live-loader";
 const VARIANTS: readonly Variant[] = ["loader-stores", "action-stores", "live-loader"];
 
-const SERVER_FILE: Record<Variant, string> = {
-  "loader-stores": `import { loader } from '@keel/router'\nimport { ok, s } from '@keel/schema'\nexport const L = loader({ output: s.object({}), stores: () => ({}) }, async () => ok({}))\n`,
-  "action-stores": `import { action } from '@keel/router'\nimport { ok, s } from '@keel/schema'\nexport const A = action({ input: s.object({}), stores: () => ({}) }, async () => ok(null))\n`,
-  "live-loader": `import { loader } from '@keel/router'\nimport { ok, s } from '@keel/schema'\nexport const L = loader({ output: s.object({}) }, async function* () {\n  yield ok({})\n})\n`,
+const SERVER_FILE: Record<Variant, (id: string) => string> = {
+  "loader-stores": () =>
+    `import { loader } from '@keel/router'\nimport { ok, s } from '@keel/schema'\ndeclare const c: never\nexport const L = loader(c, 'a.page', { output: s.object({}), stores: () => ({}) }, async () => ok({}))\n`,
+  "action-stores": () =>
+    `import { action } from '@keel/router'\nimport { ok, s } from '@keel/schema'\ndeclare const c: never\nexport const A = action(c, 'a.page', { input: s.object({}), stores: () => ({}) }, async () => ok(null))\n`,
+  // a live loader belongs to an `events: true` API entry
+  "live-loader": (id) =>
+    `import { loader } from '@keel/router'\nimport { ok } from '@keel/schema'\ndeclare const c: never\nexport const L = loader(c, '${id}.feed', {}, async function* () {\n  yield ok({})\n})\n`,
 };
-const CLEAN_FILE = `import { loader } from '@keel/router'\nimport { ok, s } from '@keel/schema'\nexport const L = loader({ output: s.object({}) }, async () => ok({}))\n`;
+const CLEAN_FILE = `import { loader } from '@keel/router'\nimport { ok, s } from '@keel/schema'\ndeclare const c: never\nexport const L = loader(c, 'a.page', { output: s.object({}) }, async () => ok({}))\n`;
 
 const manifestSrc = (id: string) =>
-  `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [], routes: [] } })\n`;
-const routesSrc = (id: string) =>
-  `import { manifest } from '@keel/router'\nconst Page = () => null\nexport const routes = manifest({ '${id}.page': { path: '/${id}', component: Page } })\n`;
+  `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [] } })\n`;
+const routesSrc = (id: string, v: Variant | "clean") =>
+  `import { manifest } from '@keel/router'\nimport { ${id} } from './${id}.contract.ts'\n${v === "live-loader" ? `import { L } from './${id}.server.ts'\n` : ""}const Page = () => null\nexport const routes = manifest(${id}, { '${id}.page': { component: Page }${v === "live-loader" ? `, '${id}.feed': { loader: L }` : ""} })\n`;
+const contractSrc = (id: string, v: Variant | "clean") =>
+  `import { contract } from '@keel/router/contract'\nimport { s } from '@keel/schema'\nexport const ${id} = contract('${id}', { '${id}.page': { path: '/${id}' }${v === "live-loader" ? `, '${id}.feed': { method: 'GET', path: '/api/${id}/feed', output: s.object({}), events: true }` : ""} })\n`;
 
-const e1558 = async (command: "build" | "check", adapter: "client" | "node", id: string, server: string) => {
+const e1558 = async (command: "build" | "check", adapter: "client" | "node", id: string, v: Variant | "clean") => {
   const r = await run([command, "--format=json"], {
     cwd: tmp,
     env: { KEEL_AGENT: "1" },
@@ -50,8 +57,9 @@ const e1558 = async (command: "build" | "check", adapter: "client" | "node", id:
         source: `import { topology } from '@keel/server'\nexport default topology({ web: { modules: ['${id}'], adapter: '${adapter}' } })\n`,
       },
       { path: `modules/${id}/module.ts`, source: manifestSrc(id) },
-      { path: `modules/${id}/routes.ts`, source: routesSrc(id) },
-      { path: `modules/${id}/${id}.server.ts`, source: server },
+      { path: `modules/${id}/routes.ts`, source: routesSrc(id, v) },
+      { path: `modules/${id}/${id}.contract.ts`, source: contractSrc(id, v) },
+      { path: `modules/${id}/${id}.server.ts`, source: v === "clean" ? CLEAN_FILE : SERVER_FILE[v](id) },
     ],
   });
   return r.stdout.split("\n").filter((l) => l.includes('"E1558"'));
@@ -61,14 +69,14 @@ describe("k.topology: E1558 in client modules", () => {
   for (const command of ["check", "build"] as const) {
     for (const v of VARIANTS) {
       test(`${v} in a module a \`client\` deployable serves is one E1558 in \`keel ${command}\`; in a \`node\` deployable's module none`, async () => {
-        const lines = await e1558(command, "client", "a", SERVER_FILE[v]);
+        const lines = await e1558(command, "client", "a", v);
         expect(lines).toHaveLength(1);
         expect(lines[0]).toContain("modules/a/a.server.ts");
-        expect(await e1558(command, "node", "a", SERVER_FILE[v])).toEqual([]);
+        expect(await e1558(command, "node", "a", v)).toEqual([]);
       });
     }
     test(`a plain loader in a \`client\` module is not E1558 in \`keel ${command}\``, async () => {
-      expect(await e1558(command, "client", "a", CLEAN_FILE)).toEqual([]);
+      expect(await e1558(command, "client", "a", "clean")).toEqual([]);
     });
   }
 
@@ -76,8 +84,8 @@ describe("k.topology: E1558 in client modules", () => {
     await fc.assert(
       fc.asyncProperty(fc.stringMatching(/^[a-z]{3,8}$/), fc.constantFrom(...VARIANTS), async (id, v) => {
         for (const command of ["check", "build"] as const) {
-          expect(await e1558(command, "client", id, SERVER_FILE[v])).toHaveLength(1);
-          expect(await e1558(command, "node", id, SERVER_FILE[v])).toEqual([]);
+          expect(await e1558(command, "client", id, v)).toHaveLength(1);
+          expect(await e1558(command, "node", id, v)).toEqual([]);
         }
       }),
       { seed: SEED, numRuns: 4 },
@@ -85,19 +93,38 @@ describe("k.topology: E1558 in client modules", () => {
   });
 });
 
-const live = loader({ output: s.object({}) }, async function* () {
-  yield ok({});
+const appContract = contract("app", { "app.page": { path: "/" } });
+// a live loader belongs to an `events: true` API entry
+const liveContract = contract("app", {
+  "app.page": { path: "/" },
+  "app.feed": { method: "GET", path: "/api/feed", output: s.object({}), events: true },
 });
-const withStores = loader({ output: s.object({}), stores: () => ({}) }, () => Promise.resolve(ok({})));
-const actionWithStores = action({ input: s.object({}), stores: () => ({}) }, () => Promise.resolve(ok(null)));
+const live = Reflect.apply(loader, undefined, [
+  liveContract,
+  "app.feed",
+  {},
+  async function* () {
+    yield ok({});
+  },
+]);
+const withStores = loader(appContract, "app.page", { output: s.object({}), stores: () => ({}) }, () =>
+  Promise.resolve(ok({})),
+);
+const actionWithStores = action(appContract, "app.page", { input: s.object({}), stores: () => ({}) }, () =>
+  Promise.resolve(ok(null)),
+);
 
 const build = (adapter: "client" | "node", v: Variant): Promise<unknown> => {
   const view = () => document.createElement("main");
   const routes =
-    v === "action-stores"
-      ? manifest({ "app.page": { path: "/", component: view } })
-      : manifest({ "app.page": { path: "/", loader: v === "live-loader" ? live : withStores, component: view } });
-  if (v === "action-stores") routes.actions({ "app.page": { POST: actionWithStores } });
+    v === "live-loader"
+      ? manifest(liveContract, { "app.page": { component: view }, "app.feed": { loader: live } })
+      : manifest(appContract, {
+          "app.page": {
+            component: view,
+            ...(v === "action-stores" ? { POST: actionWithStores } : { loader: withStores }),
+          },
+        });
   return createAppLoose({
     topology: topology({ web: { modules: ["app"], adapter } }),
     routes,

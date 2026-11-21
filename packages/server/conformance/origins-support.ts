@@ -2,6 +2,7 @@
 // ASSUMPTION: `origins` is set on the deployable inside `topology({...})`, and `createApp` reads it from that topology (k.origins Policy).
 // Same sim seed means the same nonce for the first document of a fresh app, so two apps can be compared byte for byte.
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import { topology } from "@keel/server";
 import { createAppLoose, liveLoader, simCtx } from "./topology-fixtures.ts";
@@ -12,12 +13,16 @@ export type Origins = Record<string, Record<string, string>>;
 const Out = s.object({ n: s.int() });
 
 export async function appWith(origins: Origins | undefined, mode: "dev" | "production") {
-  const live = liveLoader(Out, async function* () {
+  const appContract = contract("app", {
+    "app.live": { method: "GET", path: "/live", events: true, output: Out },
+    "app.plain": { path: "/plain" },
+  });
+  const live = liveLoader(appContract, "app.live", async function* () {
     yield ok({ n: 1 });
   });
-  const routes = manifest({
-    "app.live": { path: "/live", loader: live, component: () => document.createElement("main") },
-    "app.plain": { path: "/plain", component: () => document.createElement("main") },
+  const routes = manifest(appContract, {
+    "app.live": { loader: live },
+    "app.plain": { component: () => document.createElement("main") },
   });
   return createAppLoose({
     topology: topology({ web: { modules: ["app"], adapter: "node", ...(origins === undefined ? {} : { origins }) } }),

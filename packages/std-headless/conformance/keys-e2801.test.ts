@@ -16,7 +16,7 @@ const codeOf = (e: unknown): string | undefined => (e instanceof Error ? /\bE\d{
 
 const options = (keys: readonly string[]) => keys.map((key) => ({ key, text: `Item ${key.length}` }));
 
-const widgets: [string, (keys: readonly string[], c: Ctx | undefined) => Node][] = [
+const widgets: [string, (keys: readonly string[], c: Ctx) => Node][] = [
   [
     "Listbox",
     (keys, c) =>
@@ -29,7 +29,6 @@ const widgets: [string, (keys: readonly string[], c: Ctx | undefined) => Node][]
           selected: () => [],
           onChange: () => {},
         },
-        undefined,
         c,
       ),
   ],
@@ -45,14 +44,12 @@ const widgets: [string, (keys: readonly string[], c: Ctx | undefined) => Node][]
           options: () => options(keys),
           onChange: () => {},
         },
-        undefined,
         c,
       ),
   ],
   [
     "Menu",
-    (keys, c) =>
-      Menu({ id: "kw", trigger: () => "Actions", items: () => options(keys), onSelect: () => {} }, undefined, c),
+    (keys, c) => Menu({ id: "kw", trigger: () => "Actions", items: () => options(keys), onSelect: () => {} }, c),
   ],
   [
     "Tabs",
@@ -66,7 +63,6 @@ const widgets: [string, (keys: readonly string[], c: Ctx | undefined) => Node][]
           onChange: () => {},
           panel: (k) => `Panel ${k.length}`,
         },
-        undefined,
         c,
       ),
   ],
@@ -81,13 +77,12 @@ const widgets: [string, (keys: readonly string[], c: Ctx | undefined) => Node][]
           dismiss: "Dismiss",
           duration: 5000,
         },
-        undefined,
         c,
       ),
   ],
 ];
 
-const run = (make: (keys: readonly string[], c: Ctx | undefined) => Node, keys: readonly string[]) =>
+const run = (make: (keys: readonly string[], c: Ctx) => Node, keys: readonly string[]) =>
   thrownSync(() =>
     render(
       page((c) => make(keys, c)),

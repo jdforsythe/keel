@@ -5,6 +5,7 @@
 // file name holds the marked `note` value, which is lowercase letters (so no unmarked text can mimic it).
 import { createCtx } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { topology } from "@keel/server";
 import fs from "node:fs";
@@ -26,11 +27,14 @@ const words = fc.stringMatching(/^[a-z]{12,20}$/);
 async function framesFor(note: string, mode: "dev" | "production"): Promise<unknown> {
   const thrown = new Error("cannot save");
   thrown.stack = `Error: cannot save\n    at save (${process.cwd()}/modules/orders/${note}.server.ts:10:4)\n    at next (${process.cwd()}/modules/orders/other.ts:3:1)`;
-  const save = action({ input: Input }, () => Promise.reject(thrown));
-  const routes = manifest({
-    "orders.show": { path: "/orders/:kind", params: Params, component: () => document.createElement("main") },
+  const orders = contract("orders", {
+    "orders.show": { path: "/orders/:kind", params: Params },
   });
-  routes.actions({ "orders.show": { POST: save } });
+
+  const save = action(orders, "orders.show", { input: Input }, () => Promise.reject(thrown));
+  const routes = manifest(orders, {
+    "orders.show": { component: () => document.createElement("main"), POST: save },
+  });
   const lines: string[] = [];
   const app = await createApp({
     topology: topology({ web: { modules: ["orders"], adapter: "node" } }),

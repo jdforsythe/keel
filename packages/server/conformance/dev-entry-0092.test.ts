@@ -1,9 +1,11 @@
 // @vitest-environment happy-dom
 // Spec: k.server, clause "With a `client` and a `node` deployable in dev, the `node` one's island document scripts `/@keel/entry.ts?d=<name>`, which resumes its islands."
 // Seed 1337 (fc.assert below). Real compiled TSX, in-process createApp in dev mode; pattern of resume-entry.test.ts.
+import type { Ctx } from "@keel/ctx";
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import type { RouteProps } from "@keel/router";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
@@ -17,14 +19,14 @@ export default function Counter() {
 }
 `;
 
-function counter(): (props: RouteProps) => Node {
+function counter(): (props: RouteProps, ctx: Ctx) => Node {
   const r = compile([{ path: "Counter.tsx", source: COUNTER }]);
   const out = r.outputs[0];
   if (out === undefined) throw new Error("fixture: no compiler output");
   const fn = evaluate(out.code);
   if (typeof fn !== "function") throw new Error("fixture: default export is not a component");
-  return (props) => {
-    const node: unknown = fn(props);
+  return (props, ctx) => {
+    const node: unknown = fn(props, ctx);
     if (!(node instanceof Node)) throw new Error("fixture: component did not return a Node");
     return node;
   };
@@ -38,10 +40,11 @@ describe("k.server: dev entry per node deployable", () => {
           ui: { modules: ["site"], adapter: "client" },
           [name]: { modules: ["app"], adapter: "node" },
         });
+        const appContract = contract("app", { "app.page": { path: "/page" } });
         const app = await createAppLoose({
           topology: t,
           deployable: name,
-          routes: manifest({ "app.page": { path: "/page", component: counter() } }),
+          routes: manifest(appContract, { "app.page": { component: counter() } }),
           ctx: simCtx(),
           mode: "dev",
         });

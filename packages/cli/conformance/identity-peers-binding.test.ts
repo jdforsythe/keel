@@ -1,4 +1,4 @@
-// Spec: k.user, Conformance "A `service({ module: 'b' })` header for `user: 'u1'` resent with another body or to deployable `c`, or signed 66 s ahead, is ignored and `identify` runs; resent unchanged within 60 s, `'u1'`. A 257-character `user`: `api.input` at the sender, ignored by the receiver."
+// Spec: k.user, Conformance "A `service({ contract: b })` header for `user: 'u1'` resent with another body or to deployable `c`, or signed 66 s ahead, is ignored and `identify` runs; resent unchanged within 60 s, `'u1'`. A 257-character `user`: `api.input` at the sender, ignored by the receiver."
 // Spec: k.user, User header "The `x-keel-user` MAC also covers the body's SHA-256 (of no bytes for none) and the receiving deployable's name (`createApp({ deployable })`, else `''`). A sender answers `api.input` for a `user` over 256 characters or a stream body. A receiver ignores it on a MAC mismatch, an expiry over 65 s ahead of its `ctx.clock`, or such a `user`. It is no sign-in credential: an assertion between the app's own deployables, never sent to a browser; until it expires it replays that one request, and plain `http` between peers exposes it."
 // Seed 1337 (fc.assert below). Split topology as identity-peers.test.ts (`x` runs module `a`, `y` runs `b`) plus a third deployable `c` under the same secret; the sim net routes `http://y.test` to `y`.
 // Every header here is one captured from a real call, except the receiver half of the 257-character clause, which signs by hand (below).
@@ -10,9 +10,10 @@ import os from "node:os";
 import path from "node:path";
 import { createCtx } from "@keel/ctx";
 import { action, loader, manifest, routesArtifact } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { err, ok, s } from "@keel/schema";
 import { createApp, identity, topology } from "@keel/server";
-import { endpoints, service } from "@keel/services";
+import { service } from "@keel/services";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 
@@ -23,15 +24,14 @@ const ORIGIN = { origin: "http://localhost" };
 const Params = s.object({ n: s.string() });
 const Item = s.object({ n: s.string(), user: s.string() });
 const Boom = s.error("a.boom", s.object({}));
-const schema = endpoints({
-  get: { method: "GET", path: "/b/:n", params: Params, output: Item },
-  put: {
-    method: "POST",
-    path: "/b/:n",
-    params: Params,
-    body: s.object({ k: s.string() }),
-    output: s.string().nullable(),
-  },
+const Put = s.object({ k: s.string() });
+const bContract = contract("b", {
+  "b.get": { method: "GET", path: "/b/:n", params: Params, output: Item },
+  "b.put": { method: "POST", path: "/b/:n", params: Params, body: Put, output: s.string().nullable() },
+});
+const cContract = contract("c", {
+  "c.get": { method: "GET", path: "/b/:n", params: Params, output: Item },
+  "c.put": { method: "POST", path: "/b/:n", params: Params, body: Put, output: s.string().nullable() },
 });
 const view = () => document.createElement("main");
 
@@ -48,8 +48,9 @@ async function bed(o: { user: string; via: "get" | "put"; body?: string }) {
   const identifiedY: Request[] = [];
   const identifiedC: Request[] = [];
   const outcomes: string[] = [];
-  const api = service({ module: "b", schema });
-  const aShow = loader({ output: Item, params: Params }, async ({ params }, ctx) => {
+  const api = service({ contract: bContract });
+  const aContract = contract("a", { "a.show": { path: "/a/:n", params: Params } });
+  const aShow = loader(aContract, "a.show", { output: Item }, async ({ params }, ctx) => {
     const r =
       o.via === "get"
         ? await api.get({ params, user: o.user }, ctx)
@@ -57,30 +58,28 @@ async function bed(o: { user: string; via: "get" | "put"; body?: string }) {
     outcomes.push(r.ok ? "ok" : r.error.code);
     return r.ok ? ok({ n: params.n, user: o.user }) : err(Boom.make({}));
   });
-  const bGet = loader({ output: Item, params: Params }, async ({ params, user }) => {
+  const bGet = loader(bContract, "b.get", {}, async ({ params, user }) => {
     seenB.get.push(user);
     return ok({ n: params.n, user });
   });
-  const bPut = action({ input: s.object({ k: s.string() }), params: Params }, async (_i, { user }) => {
+  const bPut = action(bContract, "b.put", {}, async (_body, { user }) => {
     seenB.put.push(user);
     return ok(null);
   });
-  const cGet = loader({ output: Item, params: Params }, async ({ params, user }) => {
+  const cGet = loader(cContract, "c.get", {}, async ({ params, user }) => {
     seenC.push(user);
     return ok({ n: params.n, user });
   });
   const routesB = () => {
-    const m = manifest({ "b.show": { path: "/b/:n", params: Params, loader: bGet, component: view } });
-    m.actions({ "b.show": { POST: bPut } });
+    const m = manifest(bContract, { "b.get": { loader: bGet }, "b.put": { action: bPut } });
     return m;
   };
-  const cPut = action({ input: s.object({ k: s.string() }), params: Params }, async (_i, { user }) => {
+  const cPut = action(cContract, "c.put", {}, async (_body, { user }) => {
     seenC.push(user);
     return ok(null);
   });
   const routesC = () => {
-    const m = manifest({ "c.show": { path: "/b/:n", params: Params, loader: cGet, component: view } });
-    m.actions({ "c.show": { POST: cPut } });
+    const m = manifest(cContract, { "c.get": { loader: cGet }, "c.put": { action: cPut } });
     return m;
   };
   const idOf = (log: Request[], answer: string) =>
@@ -131,7 +130,7 @@ async function bed(o: { user: string; via: "get" | "put"; body?: string }) {
   const x = await createApp({
     topology: t,
     deployable: "x",
-    routes: manifest({ "a.show": { path: "/a/:n", params: Params, loader: aShow, component: view } }),
+    routes: manifest(aContract, { "a.show": { component: view, loader: aShow } }),
     ctx: ctxX,
     mode: "production",
     secret: SECRET,
@@ -162,7 +161,7 @@ const postC = (header: string, body: string) =>
   });
 
 describe("k.user: the user header binds the body, the deployable and an expiry ceiling", () => {
-  test("a `service({ module: 'b' })` header for `user: 'u1'` resent unchanged within 60 s, body included, is `'u1'` and `identify` does not run", async () => {
+  test("a `service({ contract: b })` header for `user: 'u1'` resent unchanged within 60 s, body included, is `'u1'` and `identify` does not run", async () => {
     await fc.assert(
       fc.asyncProperty(fc.stringMatching(/^[a-z0-9]{1,12}$/), fc.integer({ min: 0, max: 59 }), async (k, secs) => {
         const t = await bed({ user: "u1", via: "put", body: k });

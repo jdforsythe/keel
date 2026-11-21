@@ -9,7 +9,7 @@ import type { Files } from "./support.ts";
 const f = (path: string, source: string): Files[number] => ({ path, source });
 const MANIFEST = f(
   "modules/accounts/module.ts",
-  "import { module } from '@keel/compiler'\nexport default module({ id: 'accounts', deps: [], capabilities: [], public: { exports: [], routes: [] } })\n",
+  "import { module } from '@keel/compiler'\nexport default module({ id: 'accounts', deps: [], capabilities: [], public: { exports: [] } })\n",
 );
 
 // The checked text names the package as a string; this file imports none of it.
@@ -18,13 +18,14 @@ const POST_TOKEN = `import { action } from "@keel/router";
 import { err, ok, reveal } from "@keel/schema";
 ${TOKENS_IMPORT}
 import { tx } from "@keel/store";
-import { NewToken } from "./NewToken.schema.ts";
-import { Nothing } from "./Nothing.schema.ts";
+import { accounts } from "./accounts.contract.ts";
 import { accountStores } from "./accountStores.ts";
 
 /** \`POST /api/tokens\`: a new API token for this caller, good for 90 days, answered once and stored as its digest. */
 export const postToken = action(
-  { input: Nothing, output: NewToken, stores: accountStores },
+  accounts,
+  "accounts.postToken",
+  { stores: accountStores },
   (_input, { caller, stores }, ctx) => {
     const minted = tokens(ctx).mint({ ttl: 90 * 86_400_000 });
     if (!minted.ok) return err(minted.error);

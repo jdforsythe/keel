@@ -10,7 +10,6 @@ import { evaluate } from "@keel/compiler/testing";
 import type { Ctx } from "@keel/ctx";
 import * as reactive from "@keel/reactive";
 import * as runtimeDom from "@keel/runtime-dom";
-import type { Slots } from "@keel/runtime-dom";
 import { type Schema, s } from "@keel/schema";
 import { render } from "@keel/testing";
 import * as ui from "@keel/ui";
@@ -64,8 +63,8 @@ const build = <P extends Record<string, unknown>>(name: string, source: string, 
   const fn = evaluate(r.outputs[0]?.code ?? "", { "@keel/reactive": reactive, "@keel/ui": ui });
   if (typeof fn !== "function") throw new Error("fixture: no default export");
   return Object.assign(
-    (p: P, slots?: Slots, ctx?: Ctx): Node => {
-      const node: unknown = fn(p, slots, ctx);
+    (p: P, ctx: Ctx): Node => {
+      const node: unknown = fn(p, ctx);
       if (!(node instanceof Node)) throw new Error("fixture: component did not return a Node");
       return node;
     },
@@ -87,8 +86,8 @@ describe("k.host-element: harness", () => {
     });
     if (typeof fn !== "function") throw new Error("fixture: no default export");
     const bad = Object.assign(
-      (p: { points: string }, slots?: Slots, ctx?: Ctx): Node => {
-        const node: unknown = fn(p, slots, ctx);
+      (p: { points: string }, ctx: Ctx): Node => {
+        const node: unknown = fn(p, ctx);
         if (!(node instanceof Node)) throw new Error("fixture: component did not return a Node");
         return node;
       },

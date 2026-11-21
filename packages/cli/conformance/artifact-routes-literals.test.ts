@@ -32,16 +32,23 @@ export default function Badge() {
   return <Text id="badge.count">3</Text>;
 }
 `;
-const ROUTES_TS = `import { manifest } from "@keel/router";
-import Page from "./Page.tsx";
-export const routes = manifest({
-  "m.home": { path: "/home", component: Page },
+const CONTRACT_TS = `import { contract } from "@keel/router/contract";
+export const m = contract("m", {
+  "m.home": { path: "/home" },
 });
 `;
-const ROUTES_TS_COMPUTED = `import { manifest } from "@keel/router";
+const CONTRACT_TS_COMPUTED = `import { contract } from "@keel/router/contract";
 const base = "/ho";
-export const routes = manifest({
-  "m.home": { path: base + "me", component: () => null },
+export const m = contract("m", {
+  "m.home": { path: base + "me" },
+});
+`;
+const ROUTES_TS = `import { manifest } from "@keel/router";
+import { m } from "./m.contract.ts";
+import Page from "./Page.tsx";
+
+export const routes = manifest(m, {
+  "m.home": { component: Page },
 });
 `;
 const TOPOLOGY_NODE = `export default { api: { modules: ["m"], adapter: "node" } };\n`;
@@ -165,15 +172,21 @@ let computedProj = "";
 let nodeProj = "";
 
 beforeAll(async () => {
-  proj = makeProject("keel-routes-lit-", { ...BASE_FILES, "modules/m/routes.ts": ROUTES_TS });
+  proj = makeProject("keel-routes-lit-", {
+    ...BASE_FILES,
+    "modules/m/m.contract.ts": CONTRACT_TS,
+    "modules/m/routes.ts": ROUTES_TS,
+  });
   computedProj = makeProject("keel-routes-lit-computed-", {
     ...BASE_FILES,
-    "modules/m/routes.ts": ROUTES_TS_COMPUTED,
+    "modules/m/m.contract.ts": CONTRACT_TS_COMPUTED,
+    "modules/m/routes.ts": ROUTES_TS,
   });
   nodeProj = makeProject("keel-routes-lit-node-", {
     ...BASE_FILES,
     "src/Badge.tsx": BADGE_UI,
     "topology.ts": TOPOLOGY_NODE,
+    "modules/m/m.contract.ts": CONTRACT_TS,
     "modules/m/routes.ts": ROUTES_TS,
   });
   created.push(proj, computedProj, nodeProj);

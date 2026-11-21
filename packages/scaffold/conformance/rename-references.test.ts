@@ -1,9 +1,13 @@
-// Spec: k.scaffold, clause "After `rename`, no import, `href()` call, `uses:` entry, or element id references the old name."
+// Spec: k.scaffold, clause "After `rename`, no import, `href()` call, `uses:` entry or element id names the old name."
 // Spec: k.scaffold, clause "`rename A B` then `rename B A` restores a byte-identical tree."
-// The page references the target through both the free `href('id')` and the manifest member `routes.href('id', p)`
-// (RFC 0039 Migration, for RFC 0041); no form may keep the old name.
+// The page references the target through both the free `href('id')` and the contract's member `orders.href('id', p)`
+// (k.scaffold: `href()` call, free or a contract's); no form may keep the old name. The route's contract entry and binding are renamed with it.
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
+
+const fail = (): never => {
+  throw new Error("fixture: missing case");
+};
 import {
   type Files,
   RUNS,
@@ -57,12 +61,29 @@ function setup(kind: Kind, name: string, spec: (typeof cases)[number]): Files {
   const t = spec.token(name);
   files.set(
     page,
-    `// refs\nimport X from './${name}.tsx'\nconst a = href('${t}')\nconst m = routes.href('${t}', { id: '1' })\nconst u = { uses: [${name}] }\nconst el = 'id="${name}-1"'\n`,
+    `// refs\nimport X from './${name}.tsx'\nconst a = href('${t}')\nconst m = orders.href('${t}', { id: '1' })\nconst u = { uses: [${name}] }\nconst el = 'id="${name}-1"'\n`,
   );
   return files;
 }
 
+/** The PascalCase form of a name, as a loader file stem spells it (`loadZqaaa.server.ts`). */
+const pascal = (n: string): string => n.slice(0, 1).toUpperCase() + n.slice(1);
+
 describe("rename", () => {
+  it("renaming a route renames its entry in `<id>.contract.ts` and its key in the binding `routes.ts`, and no other file keeps the old id", () => {
+    fc.assert(
+      fc.property(distinctPair(lowerName), ([a, b]) => {
+        const before = setup("route", a, cases[2] ?? fail());
+        const after = apply("rename", { kind: "route", from: `orders.${a}`, to: `orders.${b}` }, before).files;
+        expect(after.get("modules/orders/orders.contract.ts")).toContain(`orders.${b}`);
+        expect(after.get("modules/orders/orders.contract.ts")).not.toContain(`orders.${a}`);
+        expect(after.get("modules/orders/routes.ts")).toContain(`orders.${b}`);
+        expect(after.get("modules/orders/routes.ts")).not.toContain(`orders.${a}`);
+      }),
+      { seed: SEED, numRuns: RUNS },
+    );
+  });
+
   for (const spec of cases) {
     it(`after rename of a ${spec.kind}, the old name appears nowhere and the new name appears in every place the old did`, () => {
       fc.assert(
@@ -79,7 +100,7 @@ describe("rename", () => {
           }
           for (const [p, c] of before) {
             const had = word(a).test(c) || word(spec.token(a)).test(c);
-            const p2 = p.split(a).join(b);
+            const p2 = p.split(a).join(b).split(pascal(a)).join(pascal(b));
             if (had) {
               const c2 = after.get(p2);
               expect(c2, `moved ${p} -> ${p2}`).toBeDefined();

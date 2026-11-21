@@ -4,9 +4,12 @@
 // link written by hand, so no cast is needed.
 import { createCtx } from "@keel/ctx";
 import { type Href, createRouter, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { mount } from "@keel/runtime-dom";
 import { s } from "@keel/schema";
 import { memoryHistory, settle } from "./fixtures.ts";
+
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 export const SEED = 1337;
 export const RUNS = 50;
@@ -23,29 +26,30 @@ const page = (id: string) => (): Node => {
   return e;
 };
 
-export const prefixed = manifest({
-  "x.show": {
-    path: "/:p/items/:id",
-    params: s.object({ p: Locale, id: Item }),
-    component: page("x.show"),
-  },
-  "x.home": { path: "/:p", params: s.object({ p: Locale }), component: page("x.home") },
+export const xContract = contract("x", {
+  "x.show": { path: "/:p/items/:id", params: s.object({ p: Locale, id: Item }) },
+  "x.home": { path: "/:p", params: s.object({ p: Locale }) },
 });
 
-export const unprefixed = manifest({
-  "x.show": {
-    path: "/:p/items/:id",
-    params: s.object({ p: PlainLocale, id: Item }),
-    component: page("x.show"),
-  },
+export const prefixed = manifest(xContract, {
+  "x.show": { component: page("x.show") },
+  "x.home": { component: page("x.home") },
 });
 
-/** Hand-written links: hrefs for any URL below, minted without the prefix codec. */
-export const links = manifest({
-  "raw.plain": { path: "/items/:id", params: s.object({ id: Item }), component: page("raw.plain") },
-  "raw.de": { path: "/de-DE/items/:id", params: s.object({ id: Item }), component: page("raw.de") },
-  "raw.en": { path: "/en-US/items/:id", params: s.object({ id: Item }), component: page("raw.en") },
-  "raw.fr": { path: "/fr-FR/items/:id", params: s.object({ id: Item }), component: page("raw.fr") },
+const x = contract("x", {
+  "x.show": { path: "/:p/items/:id", params: s.object({ p: PlainLocale, id: Item }) },
+});
+
+export const unprefixed = manifest(x, {
+  "x.show": { component: page("x.show") },
+});
+
+/** Hand-written links: a contract whose hrefs are for any URL below, minted without the prefix codec. */
+export const links = contract("raw", {
+  "raw.plain": { path: "/items/:id", params: s.object({ id: Item }) },
+  "raw.de": { path: "/de-DE/items/:id", params: s.object({ id: Item }) },
+  "raw.en": { path: "/en-US/items/:id", params: s.object({ id: Item }) },
+  "raw.fr": { path: "/fr-FR/items/:id", params: s.object({ id: Item }) },
 });
 
 export type Routes = typeof prefixed;
@@ -54,7 +58,7 @@ export async function open(routes: Routes | typeof unprefixed, at: string) {
   const router = createRouter(routes, { ctx: createCtx({ mode: "sim", seed: SEED }), history });
   const host = document.createElement("div");
   document.body.append(host);
-  const unmount = mount(router.App, host);
+  const unmount = mount(router.App, host, { ctx: simCtx });
   await settle();
   return {
     router,

@@ -4,9 +4,10 @@
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
 import { createCtx } from "@keel/ctx";
-import { loader, manifest } from "@keel/router";
+import { loader, manifest, routeTable } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import type { RouteProps } from "@keel/router";
-import { ok, s } from "@keel/schema";
+import { type Infer, ok, s } from "@keel/schema";
 import { createApp, topology } from "@keel/server";
 import { expect, test } from "vitest";
 import { AppLocale } from "./fixtures/AppLocale.schema.ts";
@@ -39,25 +40,25 @@ const ISLAND = `export default function Island(props) {
 async function page(path: string): Promise<{ html: string; state: string }> {
   const { Demo } = await import("./fixtures/Demo.schema.ts");
   const Params = s.object({ locale: AppLocale });
-  const textLoader = loader({ output: s.object({ text: Demo }), params: Params }, async ({ params }) =>
-    ok({ text: await Demo.load(params.locale) }),
-  );
+  const load = async ({ params }: { params: Infer<typeof Params> }) => ok({ text: await Demo.load(params.locale) });
+  const staticC = contract("static", { "static.page": { path: "/:locale/static", params: Params } });
+  const islandC = contract("island", { "island.page": { path: "/:locale/island", params: Params } });
   const app = await createApp({
     topology: topology({ web: { modules: ["static", "island"], adapter: "node" } }),
-    routes: manifest({
-      "static.page": {
-        path: "/:locale/static",
-        params: Params,
-        component: compileComponent("Static", STATIC),
-        loader: textLoader,
-      },
-      "island.page": {
-        path: "/:locale/island",
-        params: Params,
-        component: compileComponent("Island", ISLAND),
-        loader: textLoader,
-      },
-    }),
+    routes: routeTable(
+      manifest(staticC, {
+        "static.page": {
+          component: compileComponent("Static", STATIC),
+          loader: loader(staticC, "static.page", { output: s.object({ text: Demo }) }, load),
+        },
+      }),
+      manifest(islandC, {
+        "island.page": {
+          component: compileComponent("Island", ISLAND),
+          loader: loader(islandC, "island.page", { output: s.object({ text: Demo }) }, load),
+        },
+      }),
+    ),
     ctx: createCtx({ mode: "sim", seed: 1337 }),
     mode: "production",
   });

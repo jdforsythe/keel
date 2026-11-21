@@ -1,4 +1,4 @@
-// Spec: k.scaffold, clause "`keel scaffold project <name>`, with or without `--workspace`, creates every file under `<name>/` and none beside it."
+// Spec: k.scaffold, clause "`keel scaffold project <name>`, with or without `--workspace`, writes only under `<name>/`."
 // fast-check seed 1337 (few runs: each run spawns the real `keel` binary). The helper's node_modules symlink tree is the only other top-level entry.
 import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";

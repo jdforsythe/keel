@@ -1,4 +1,4 @@
-// Spec: k.scaffold "`scaffold project` writes a <= 600-token block naming `keel docs`, `keel explain` and each skill's path, without `pnpm spec`, `spec/` or `--workspace`; `CLAUDE.md` `@AGENTS.md\n`; copies equal to `keel docs <name>`; with `--workspace`, none."
+// Spec: k.scaffold "`scaffold project` writes a <= 600-token block naming `keel docs`, `keel explain`, skill paths, without `pnpm spec`, `spec/` or `--workspace`; `CLAUDE.md` `@AGENTS.md\n`; copies equal to `keel docs <name>`; with `--workspace`, none."
 // Seed: none. Red: `scaffold project` writes no AGENTS.md, CLAUDE.md or skills; `keel docs` is absent (E1051), so the skill list is empty.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {

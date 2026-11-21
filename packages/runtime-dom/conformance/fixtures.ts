@@ -6,7 +6,12 @@ import { store, transaction, tx } from "@keel/store";
 
 export const SEED = 1337;
 
-export type Tracker = { live: () => number; liveOn: (t: EventTarget) => number; stop: () => void };
+export type Tracker = {
+  live: () => number;
+  liveOn: (t: EventTarget) => number;
+  liveBubbleOn: (t: EventTarget) => number;
+  stop: () => void;
+};
 
 // Wraps EventTarget.prototype add/removeEventListener and counts net live listeners.
 export function trackListeners(): Tracker {
@@ -45,6 +50,8 @@ export function trackListeners(): Tracker {
   return {
     live: () => [...live.values()].reduce((n, s) => n + s.size, 0),
     liveOn: (t) => live.get(t)?.size ?? 0,
+    // Bubble-phase listeners only: capture false or unset.
+    liveBubbleOn: (t) => [...(live.get(t) ?? [])].filter((k) => k.split("|")[1] === "false").length,
     stop: () => {
       proto.addEventListener = add;
       proto.removeEventListener = remove;

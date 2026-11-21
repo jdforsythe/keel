@@ -3,10 +3,13 @@
 // Seed: 1337.
 // `fire` is the @keel/testing harness call; here the same event is dispatched on the element so the delegated table (k.runtime) is the path under test.
 // Behavior extras: `KeyInput` is `{ key, shift, alt, mod }`; `onClick`, `onFocus`, `onBlur` and `onInput` on `combobox`.
+import { createCtx } from "@keel/ctx";
 import { mount } from "@keel/runtime-dom";
 import { Part } from "@keel/ui/aria";
 import fc from "fast-check";
 import { afterEach, describe, expect, test } from "vitest";
+
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 const SEED = 1337;
 type KeyInput = { key: string; shift: boolean; alt: boolean; mod: boolean };
@@ -19,7 +22,7 @@ const render = (make: () => Node): { host: HTMLElement; off: () => void } => {
   const host = document.createElement("div");
   document.body.appendChild(host);
   hosts.push(host);
-  return { host, off: mount(make, host) };
+  return { host, off: mount(make, host, { ctx: simCtx }) };
 };
 const byId = (host: HTMLElement, id: string): Element => {
   const el = host.querySelector(`[id="${id}"]`);

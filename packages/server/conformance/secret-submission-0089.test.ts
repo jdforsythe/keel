@@ -3,6 +3,7 @@
 // Seed 1337.
 import { createCtx } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import { topology } from "@keel/server";
 import fc from "fast-check";
@@ -24,18 +25,21 @@ function input(type: string, name: string): Node {
 }
 
 async function build() {
-  const act = action({ input: Login }, () => Promise.resolve(ok(null)));
-  const routes = manifest({
+  const loginContract = contract("login", {
+    "login.show": { path: "/login" },
+  });
+
+  const act = action(loginContract, "login.show", { input: Login }, () => Promise.resolve(ok(null)));
+  const routes = manifest(loginContract, {
     "login.show": {
-      path: "/login",
       component: () => {
         const f = document.createElement("form");
         f.append(input("password", "pin"), input("text", "token"), input("text", "note"));
         return f;
       },
+      POST: act,
     },
   });
-  routes.actions({ "login.show": { POST: act } });
   return createApp({
     topology: topology({ web: { modules: ["login"], adapter: "node" } }),
     routes,

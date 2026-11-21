@@ -6,7 +6,6 @@ import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
 import type { Ctx } from "@keel/ctx";
 import * as reactive from "@keel/reactive";
-import type { Slots } from "@keel/runtime-dom";
 import { s } from "@keel/schema";
 import { render } from "@keel/testing";
 import * as aria from "@keel/ui/aria";
@@ -50,8 +49,8 @@ const build = (name: string, source: string) => {
   const fn = evaluate(r.outputs[0]?.code ?? "", { "@keel/reactive": reactive, "@keel/ui/aria": aria });
   if (typeof fn !== "function") throw new Error("fixture: no default export");
   const component = Object.assign(
-    (_p: Record<string, never>, slots?: Slots, ctx?: Ctx): Node => {
-      const node: unknown = fn({}, slots, ctx);
+    (_p: Record<string, never>, ctx: Ctx): Node => {
+      const node: unknown = fn({}, ctx);
       if (!(node instanceof Node)) throw new Error("fixture: component did not return a Node");
       return node;
     },

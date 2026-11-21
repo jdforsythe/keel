@@ -5,6 +5,7 @@ import { observe } from "@keel/ctx";
 import type { CtxEvent } from "@keel/ctx";
 import { inspect, resource, signal } from "@keel/reactive";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { boundary, clone, match, on, template, text } from "@keel/runtime-dom/ops";
 import { renderRoute } from "@keel/testing";
 import fc from "fast-check";
@@ -27,9 +28,13 @@ const last = (el: Element | null): Node => {
   return a;
 };
 
-const routes = manifest({
+const obContract = contract("ob", {
+  "ob.home": { path: "/ob" },
+  "ob.next": { path: "/ob/next" },
+});
+
+const routes = manifest(obContract, {
   "ob.home": {
-    path: "/ob",
     component: () => {
       const root = clone(PAGE);
       if (!(root instanceof Element)) throw new Error("fixture: no root");
@@ -66,7 +71,6 @@ const routes = manifest({
     },
   },
   "ob.next": {
-    path: "/ob/next",
     component: () => {
       const p = document.createElement("p");
       p.id = "ob.next";
@@ -143,10 +147,10 @@ test("each navigation, fire, resource state and Boundary catch reaches observe o
         { kind: "fire", id: "ob.boom", event: { type: "click" } },
         { kind: "error", code: "keel.unexpected" },
       );
-      await h.navigate(routes.href("ob.next"));
+      await h.navigate(obContract.href("ob.next"));
       expected.push({ kind: "nav", href: "/ob/next", id: "ob.next", path: "/ob/next" });
       // Back to a page with a <main>: the router focuses it, which is kernel work and no `fire`.
-      await h.navigate(routes.href("ob.home"));
+      await h.navigate(obContract.href("ob.home"));
       expected.push(
         { kind: "nav", href: "/ob", id: "ob.home", path: "/ob" },
         { kind: "resource", state: "loading" },

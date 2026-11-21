@@ -23,7 +23,6 @@ describe("std.headless and std.options: axe violations", () => {
             selected: () => ["banana"],
             onChange: () => {},
           },
-          undefined,
           c,
         ),
       ),
@@ -54,7 +53,6 @@ describe("std.headless and std.options: axe violations", () => {
                 selected: () => [],
                 onChange: () => {},
               },
-              undefined,
               c,
             ),
           ],
@@ -80,7 +78,6 @@ describe("std.headless and std.options: axe violations", () => {
             options: () => fruit,
             onChange: () => {},
           },
-          undefined,
           c,
         ),
       ),
@@ -104,7 +101,6 @@ describe("std.headless and std.options: axe violations", () => {
             items: () => [...fruit, { key: "pin", text: "Pinned", checked: true }],
             onSelect: () => {},
           },
-          undefined,
           c,
         ),
       ),
@@ -131,7 +127,6 @@ describe("std.headless and std.options: axe violations", () => {
             onChange: (k) => picked.set(k),
             panel: (k) => Text({ id: `ax.body.${k}`, children: `About ${k}` }),
           },
-          undefined,
           c,
         ),
       ),
@@ -157,7 +152,6 @@ describe("std.headless and std.options: axe violations", () => {
               content: (close) => Button({ id: "ax.ok", children: "Close", onClick: close }),
               ...(alert === undefined ? {} : { alert: { description: alert } }),
             },
-            undefined,
             c,
           ),
         ),
@@ -176,7 +170,6 @@ describe("std.headless and std.options: axe violations", () => {
       page((c) =>
         Disclosure(
           { id: "ax", summary: () => "Details", children: () => Text({ id: "ax.body", children: "More" }) },
-          undefined,
           c,
         ),
       ),
@@ -191,9 +184,7 @@ describe("std.headless and std.options: axe violations", () => {
 
   test("Every widget ... no axe violations open and closed: Toaster empty and with both tones", async () => {
     const empty = render(
-      page((c) =>
-        Toaster({ id: "ax", items: () => [], onDismiss: () => {}, dismiss: "Dismiss", duration: 5000 }, undefined, c),
-      ),
+      page((c) => Toaster({ id: "ax", items: () => [], onDismiss: () => {}, dismiss: "Dismiss", duration: 5000 }, c)),
       { props: {}, ctx: simCtx() },
     );
     await empty.settle();
@@ -211,7 +202,6 @@ describe("std.headless and std.options: axe violations", () => {
             dismiss: "Dismiss",
             duration: 5000,
           },
-          undefined,
           c,
         ),
       ),

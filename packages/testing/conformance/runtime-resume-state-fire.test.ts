@@ -112,14 +112,14 @@ const clickById = (id: string): void => {
 
 const clientOnly =
   (props: Props) =>
-  (_p: Readonly<Record<string, unknown>>, slots?: Parameters<typeof c.component>[1], ctx?: Ctx): Node =>
-    c.component(props, slots, ctx);
+  (_p: Readonly<Record<string, unknown>>, ctx: Ctx): Node =>
+    c.component(props, ctx);
 
 // The island entry resume calls: decoded props arrive as a record.
-const island = (p: Readonly<Record<string, unknown>>, slots?: Parameters<typeof c.component>[1], ctx?: Ctx): Node => {
+const island = (p: Readonly<Record<string, unknown>>, ctx: Ctx): Node => {
   const label = p.label;
   if (typeof label !== "string") throw new Error("fixture: island props lack a label");
-  return c.component({ label }, slots, ctx);
+  return c.component({ label }, ctx);
 };
 
 describe("k.runtime: after resume, every server-rendered node keeps its identity, state() equals the serialized snapshot, and firing an event by id yields the same state and DOM as a client-only render", () => {

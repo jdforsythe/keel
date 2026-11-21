@@ -9,8 +9,6 @@ import { render } from "@keel/testing";
 import { describe, expect, it } from "vitest";
 import { simCtx } from "./fixtures.ts";
 
-type Slots = Record<string, unknown> | undefined;
-
 const T = template('<p id="late"></p>');
 
 // A resource whose promise the test resolves by hand: no timers, no events.
@@ -20,7 +18,7 @@ const makeLate = () => {
     release = r;
   });
   const Late = Object.assign(
-    (_props: Record<string, never>, _slots?: Slots, _ctx?: Ctx): Node => {
+    (_props: Record<string, never>): Node => {
       const res = resource(() => gate);
       const root = clone(T);
       text(root, () => {

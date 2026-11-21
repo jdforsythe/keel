@@ -1,38 +1,59 @@
 // @vitest-environment happy-dom
 // Spec: k.api, clause "A GET with `accept: text/html` to an API route with a loader gets the JSON body and status a runtime GET gets."
-// Spec: k.api, clause "A GET to an API route without a loader is 405 with `allow` listing its action methods."
+// Spec: k.api, Conformance "A GET to a path with only a `POST` entry is 405 with `allow: POST`; with a GET entry too, a PUT is 405 `allow: GET, HEAD, POST`, a HEAD runs the GET entry's loader and sends no body, and a plain OPTIONS is 405 with that `allow`."
+// The GET-entry half (PUT, HEAD, OPTIONS) is path-methods-allow.test.ts.
 // Spec: k.api, clause "A form POST to an API route gets the action's `Result` as JSON with no `Location`."
 // Spec: k.api, clause "A denying guard with a `redirect` answers 403 `keel.denied` and no `Location`."
 // Spec: k.api, clause "A guard without `redirect` on an API route denies with 403 `keel.denied`; on a page it does not compile and `manifest()` throws E1508."
 // Spec: k.api, clause "`createApp` for a `client` deployable serving an API route throws E1511."
 // Seed 1337.
+// One module `api` holds the pages and entries each case needs; a guard's `redirect` names a page id of its own module (k.router Links).
 // ASSUMPTION: createApp throws (rejects with a message mentioning the code) as e1553-static-params.test.ts assumes.
-import { createCtx } from "@keel/ctx";
 import { action, guard, loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { err, ok, s } from "@keel/schema";
-import { topology } from "@keel/server";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { createApp, get, post, SEED } from "./fixtures.ts";
-import { createAppLoose, simCtx } from "./topology-fixtures.ts";
+import { SEED, bodyOf, boot, form, get, getHtml } from "./contract-support.ts";
 
 const Out = s.object({ n: s.int() });
+const Note = s.object({ note: s.string() });
 const Denied = s.error("keel.denied", s.object({}));
 const page = (): Node => document.createElement("main");
-const read = loader({ output: Out }, async () => ok({ n: 7 }));
-const write = action({ input: s.object({ note: s.string() }), output: s.object({}) }, async () => ok({}));
-const deny = guard({ redirect: "ops.login" }, async () => err(Denied.make({})));
-const topo = topology({ web: { modules: ["api", "ops"], adapter: "node" } });
-const boot = (routes: Parameters<typeof createApp>[0]["routes"]) =>
-  createApp({ topology: topo, routes, ctx: createCtx({ mode: "sim", seed: SEED }), mode: "production" });
+
+const c = contract("api", {
+  "api.login": { path: "/login" },
+  "api.home": { path: "/" },
+  "api.lists": { method: "GET", path: "/api/lists", output: Out },
+  "api.addList": { method: "POST", path: "/api/lists", body: Note, output: s.object({}) },
+  "api.dropList": { method: "DELETE", path: "/api/lists", body: Note, output: s.object({}) },
+  "api.only": { method: "POST", path: "/api/only", body: Note, output: s.object({}) },
+  "api.guarded": { method: "GET", path: "/api/guarded", output: Out },
+  "api.open": { method: "GET", path: "/api/open", output: Out },
+});
+const lists = loader(c, "api.lists", {}, async () => ok({ n: 7 }));
+const add = action(c, "api.addList", {}, async () => ok({}));
+const drop = action(c, "api.dropList", {}, async () => ok({}));
+const only = action(c, "api.only", {}, async () => ok({}));
+const deny = guard({ redirect: "api.login" }, async () => err(Denied.make({})));
+const denyOpen = guard({}, async () => err(Denied.make({})));
+const guarded = loader(c, "api.guarded", {}, async () => ok({ n: 1 }));
+const open = loader(c, "api.open", {}, async () => ok({ n: 1 }));
+const table = (guards: { guarded?: typeof deny; open?: typeof denyOpen } = {}) =>
+  manifest(c, {
+    "api.login": { component: page },
+    "api.home": { component: page },
+    "api.lists": { loader: lists },
+    "api.addList": { action: add },
+    "api.dropList": { action: drop },
+    "api.only": { action: only },
+    "api.guarded": guards.guarded === undefined ? { loader: guarded } : { loader: guarded, guard: guards.guarded },
+    "api.open": guards.open === undefined ? { loader: open } : { loader: open, guard: guards.open },
+  });
 
 describe("k.api", () => {
   it("A GET with `accept: text/html` to an API route with a loader gets the JSON body and status a runtime GET gets.", async () => {
-    const routes = manifest({
-      "api.lists": { api: true, path: "/api/lists", loader: read },
-      "ops.home": { path: "/", component: page },
-    });
-    const app = await boot(routes);
+    const app = await boot(table(), ["api"]);
     const runtime = await app.fetch(get("/api/lists", { accept: "application/json" }));
     expect(runtime.status).toBe(200);
     const expected: unknown = await runtime.json();
@@ -47,28 +68,29 @@ describe("k.api", () => {
     );
   });
 
-  it("A GET to an API route without a loader is 405 with `allow` listing its action methods.", async () => {
-    const routes = manifest({
-      "api.lists": { api: true, path: "/api/lists" },
-      "ops.home": { path: "/", component: page },
-    });
-    routes.actions({ "api.lists": { POST: write, DELETE: write } });
-    const app = await boot(routes);
-    const res = await app.fetch(get("/api/lists", { accept: "application/json" }));
+  it("A GET to a path with only a `POST` entry is 405 with `allow: POST`.", async () => {
+    const app = await boot(table(), ["api"]);
+    const res = await app.fetch(get("/api/only", { accept: "application/json" }));
     expect(res.status).toBe(405);
     const allow = (res.headers.get("allow") ?? "").split(",").map((m) => m.trim());
-    expect(allow.sort()).toEqual(expect.arrayContaining(["DELETE", "POST"]));
-    expect(allow).not.toContain("GET");
+    expect(allow).toEqual(["POST"]);
+  });
+
+  it("a PATCH to a path with GET, POST and DELETE entries is 405 with `allow: GET, HEAD, POST, DELETE`, in that order", async () => {
+    const app = await boot(table(), ["api"]);
+    const res = await app.fetch(
+      new Request("http://localhost/api/lists", {
+        method: "PATCH",
+        headers: { accept: "application/json", origin: "http://localhost", "x-keel": "1" },
+      }),
+    );
+    expect(res.status).toBe(405);
+    expect(res.headers.get("allow")).toBe("GET, HEAD, POST, DELETE");
   });
 
   it("A form POST to an API route gets the action's `Result` as JSON with no `Location`.", async () => {
-    const routes = manifest({
-      "api.lists": { api: true, path: "/api/lists" },
-      "ops.home": { path: "/", component: page },
-    });
-    routes.actions({ "api.lists": { POST: write } });
-    const app = await boot(routes);
-    const res = await app.fetch(post("/api/lists", { note: "hi" }));
+    const app = await boot(table(), ["api"]);
+    const res = await app.fetch(form("/api/lists", { note: "hi" }));
     expect(res.status).not.toBe(303);
     expect(res.headers.get("location")).toBeNull();
     expect(res.headers.get("content-type") ?? "").toContain("application/json");
@@ -76,45 +98,29 @@ describe("k.api", () => {
   });
 
   it("A denying guard with a `redirect` answers 403 `keel.denied` and no `Location`.", async () => {
-    const routes = manifest({
-      "ops.login": { path: "/login", component: page },
-      "api.lists": { api: true, path: "/api/lists", loader: read, guard: deny },
-    });
-    const app = await boot(routes);
-    const res = await app.fetch(get("/api/lists", { accept: "text/html" }));
+    const app = await boot(table({ guarded: deny }), ["api"]);
+    const res = await app.fetch(getHtml("/api/guarded"));
     expect(res.status).toBe(403);
     expect(res.headers.get("location")).toBeNull();
-    expect(JSON.stringify(await res.json())).toContain("keel.denied");
+    expect(await bodyOf(res)).toContain("keel.denied");
+  });
+
+  it("A guard without `redirect` on an API route denies with 403 `keel.denied` as JSON and no `Location`.", async () => {
+    const app = await boot(table({ open: denyOpen }), ["api"]);
+    const res = await app.fetch(get("/api/open"));
+    expect(res.status).toBe(403);
+    expect(res.headers.get("location")).toBeNull();
+    expect(res.headers.get("content-type") ?? "").toContain("application/json");
+    expect(await bodyOf(res)).toContain("keel.denied");
   });
 
   it("`createApp` for a `client` deployable serving an API route throws E1511.", async () => {
-    const routes = manifest({
-      "api.lists": { api: true, path: "/api/lists", loader: read },
-      "ops.home": { path: "/", component: page },
-    });
     const run = (adapter: "client" | "node") =>
-      createAppLoose({ topology: topology({ web: { modules: ["api", "ops"], adapter } }), routes, ctx: simCtx() }).then(
+      boot(table(), ["api"], adapter).then(
         () => "built",
         (e: unknown) => (e instanceof Error ? e.message : JSON.stringify(e)),
       );
     expect(await run("client")).toContain("E1511");
     expect(await run("node")).toBe("built");
-  });
-
-  it("An API route guarded by a denying guard without `redirect` answers 403 `keel.denied` as JSON and no `Location`, for GET and a same-site POST.", async () => {
-    const denyOpen = guard({}, async () => err(Denied.make({})));
-    const routes = manifest({
-      "api.lists": { api: true, path: "/api/lists", loader: read, guard: denyOpen },
-      "ops.home": { path: "/", component: page },
-    });
-    routes.actions({ "api.lists": { POST: write } });
-    const app = await boot(routes);
-    for (const req of [get("/api/lists", { accept: "application/json" }), post("/api/lists", { note: "hi" })]) {
-      const res = await app.fetch(req);
-      expect(res.status).toBe(403);
-      expect(res.headers.get("location")).toBeNull();
-      expect(res.headers.get("content-type") ?? "").toContain("application/json");
-      expect(JSON.stringify(await res.json())).toContain("keel.denied");
-    }
   });
 });

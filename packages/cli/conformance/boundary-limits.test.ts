@@ -15,6 +15,7 @@ const tree = () =>
   withFiles(base, {
     "modules/a/Params.schema.ts": `import { s } from '@keel/schema'\nexport const Params = s.object({ id: s.enum(['x', '${HARD}']) })\n`,
     "modules/a/routes.ts": `${base["modules/a/routes.ts"] ?? ""}Reflect.set(globalThis, 'routesTop', '${TOPLEVEL}')\n`,
+    "modules/a/Page.tsx": `import './routes.ts'\n${base["modules/a/Page.tsx"] ?? ""}`,
   });
 const withDefine = () =>
   withFiles(base, {

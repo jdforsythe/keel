@@ -2,19 +2,22 @@
 // Every case serves a real document through `createApp`, puts its body into the happy-dom document and resumes it
 // with `resume` from `@keel/runtime-dom/ops`, using components compiled from the same TSX the server rendered.
 // Property seed for every property: 1337.
+import type { Ctx } from "@keel/ctx";
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
 import { createCtx } from "@keel/ctx";
-import { loader, manifest } from "@keel/router";
+import * as router from "@keel/router";
+import * as contracts from "@keel/router/contract";
 import type { RouteProps } from "@keel/router";
 import { resume } from "@keel/runtime-dom/ops";
 import { ok, s } from "@keel/schema";
-import { createApp, topology } from "@keel/server";
+import { topology } from "@keel/server";
 import { expect, vi } from "vitest";
+import { createAppLoose } from "./topology-fixtures.ts";
 
 export const SEED = 1337;
 
-export type Component = (props: RouteProps) => Node;
+export type Component = (props: RouteProps, ctx: Ctx) => Node;
 
 export function compileComponent(name: string, source: string): Component {
   const r = compile([{ path: `${name}.tsx`, source }]);
@@ -23,8 +26,8 @@ export function compileComponent(name: string, source: string): Component {
   if (out === undefined) throw new Error("fixture: no compiler output");
   const fn = evaluate(out.code);
   if (typeof fn !== "function") throw new Error("fixture: default export is not a component");
-  return (props) => {
-    const node: unknown = fn(props);
+  return (props, ctx) => {
+    const node: unknown = fn(props, ctx);
     if (!(node instanceof Node)) throw new Error("fixture: component did not return a Node");
     return node;
   };
@@ -42,9 +45,48 @@ export type Level = {
 
 const Data = s.object({ title: s.string() });
 
-/** A level's loader, or none. */
-function loaderOf(title: string | undefined) {
-  return title === undefined ? {} : { loader: loader({ output: Data }, () => Promise.resolve(ok({ title }))) };
+/** Calls the router export `name` with arguments typed by the level data, which is known only at run time. */
+const call = (from: object, name: string, args: readonly unknown[]): unknown => {
+  const f: unknown = Reflect.get(from, name);
+  if (typeof f !== "function") throw new Error(`fixture: ${name} is not exported`);
+  return Reflect.apply(f, undefined, [...args]);
+};
+
+const prefixOf = (id: string): string => id.split(".")[0] ?? id;
+
+/** The modules of an app made of `levels`: one per id prefix, holding the levels of that prefix; a layout may name a layout of another module. */
+function modulesOf(levels: readonly Level[]): ReadonlyMap<string, readonly Level[]> {
+  const modules = new Map<string, Level[]>();
+  for (const l of levels) modules.set(prefixOf(l.id), [...(modules.get(prefixOf(l.id)) ?? []), l]);
+  return modules;
+}
+
+/** One module's manifest: its levels' contract (a page with a `path`, a layout without), then `component`, `layout` and `loader` bound by id. */
+function manifestOf(module: string, levels: readonly Level[]): unknown {
+  const decl = Object.fromEntries(
+    levels.map((l) => [l.id, l.path === undefined ? { layout: true } : { path: l.path }]),
+  );
+  const c = call(contracts, "contract", [module, decl]);
+  const binding = Object.fromEntries(
+    levels.map((l) => [
+      l.id,
+      {
+        component: compileComponent(l.id, l.source),
+        ...(l.layout === undefined ? {} : { layout: l.layout }),
+        ...(l.title === undefined
+          ? {}
+          : {
+              loader: call(router, "loader", [
+                c,
+                l.id,
+                { output: Data },
+                () => Promise.resolve(ok({ title: l.title })),
+              ]),
+            }),
+      },
+    ]),
+  );
+  return call(router, "manifest", [c, binding]);
 }
 
 export type ServedDocument = {
@@ -63,13 +105,17 @@ export async function serve(
   path: string,
   options: { readonly mode?: "dev" | "production"; readonly log?: Recorded } = {},
 ): Promise<ServedDocument> {
-  const entries: Record<string, ReturnType<typeof entryOf>> = {};
-  for (const l of levels) entries[l.id] = entryOf(l);
-  const modules = [...new Set(levels.map((l) => l.id.split(".")[0] ?? l.id))];
+  const byModule = modulesOf(levels);
+  const modules = [...byModule.keys()];
+  const routes = call(
+    router,
+    "routeTable",
+    [...byModule].map(([m, ls]) => manifestOf(m, ls)),
+  );
   const log = options.log;
-  const app = await createApp({
+  const app = await createAppLoose({
     topology: topology({ web: { modules, adapter: "node" } }),
-    routes: manifest(entries),
+    routes,
     ctx: createCtx({ mode: "sim", seed: 1337 }),
     mode: options.mode ?? "production",
     ...(log === undefined ? {} : { log: { format: "compact", write: (line: string) => void log.lines.push(line) } }),
@@ -78,15 +124,6 @@ export async function serve(
   const text = await res.text();
   const body = new DOMParser().parseFromString(text, "text/html").body.innerHTML;
   return { status: res.status, text, body };
-}
-
-function entryOf(l: Level) {
-  return {
-    component: compileComponent(l.id, l.source),
-    ...(l.path === undefined ? {} : { path: l.path }),
-    ...(l.layout === undefined ? {} : { layout: l.layout }),
-    ...loaderOf(l.title),
-  };
 }
 
 /** The components `resume` takes, by route id; `override` swaps the source a level resumes with. */

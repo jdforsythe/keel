@@ -10,7 +10,7 @@ import { SEED } from "./support.ts";
 const f = (path: string, source: string): Files[number] => ({ path, source });
 const MANIFEST = f(
   "modules/app/module.ts",
-  `import { module } from '@keel/compiler'\nexport default module({ id: 'app', deps: [], capabilities: [], public: { exports: [], routes: [] } })\n`,
+  `import { module } from '@keel/compiler'\nexport default module({ id: 'app', deps: [], capabilities: [], public: { exports: [] } })\n`,
 );
 const e1207 = (files: Files) => check(files, { types: false }).diagnostics.filter((d) => d.code === "E1207");
 

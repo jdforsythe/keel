@@ -1,10 +1,11 @@
 // The routes module of the packaged `@keel/ui` and `@keel/router` suites (not a test file). A test imports it for the server side;
 // `resumeDocument` imports it again for the client side, where every module it reaches is evaluated anew.
-import { action, manifest } from "@keel/router";
+import { action, manifest, routeTable } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import { MODULES, compilePage } from "./claim-support.ts";
 
-const links = manifest({ "ul.target": { path: "/ul/target", component: () => document.createElement("main") } });
+const links = contract("ul", { "ul.target": { path: "/ul/target" } });
 const linked = { ...MODULES, links: { href: () => links.href("ul.target") } };
 
 const HEAD = `import { signal } from "@keel/reactive";
@@ -43,7 +44,11 @@ export const ELEMENTS = [
 
 /** The notes the action received in this module graph. */
 export const received: string[] = [];
-const save = action({ input: s.object({ note: s.string() }) }, (input) => {
+const fmContract = contract("fm", {
+  "fm.page": { path: "/fm" },
+  "fm.save": { path: "/fm/save" },
+});
+const save = action(fmContract, "fm.save", { input: s.object({ note: s.string() }) }, (input) => {
   received.push(input.note);
   return Promise.resolve(ok(null));
 });
@@ -62,19 +67,19 @@ export default function Page(props) {
 }
 `;
 
-const entries = Object.fromEntries(
-  ELEMENTS.map((e, i) => [
-    `ue${i}.page`,
-    { path: `/ue${i}`, component: compilePage(`ue${i}.page`, page(`ue${i}`, e.element), linked) },
-  ]),
-);
+const elementPage = (i: number, element: string) => {
+  const id = `ue${i}.page`;
+  const c = contract(`ue${i}`, { [id]: { path: `/ue${i}` } });
+  return manifest(c, { [id]: { component: compilePage(id, page(`ue${i}`, element), linked) } });
+};
 
-export const routes = manifest({
-  ...entries,
-  "fm.page": { path: "/fm", component: compilePage("fm.page", FORM, linked) },
-  "fm.save": { path: "/fm/save", component: () => document.createElement("main") },
-});
-routes.actions({ "fm.save": { POST: save } });
+export const routes = routeTable(
+  ...ELEMENTS.map((e, i) => elementPage(i, e.element)),
+  manifest(fmContract, {
+    "fm.page": { component: compilePage("fm.page", FORM, linked) },
+    "fm.save": { component: () => document.createElement("main"), POST: save },
+  }),
+);
 
 export const MODULE_IDS = [...ELEMENTS.map((_e, i) => `ue${i}`), "fm"];
 

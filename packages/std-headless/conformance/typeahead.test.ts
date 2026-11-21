@@ -24,7 +24,6 @@ const mount = () => {
     page((c) =>
       Listbox(
         { id: "ty", label: "Words", options: () => words, mode: "single", selected: () => [], onChange: () => {} },
-        undefined,
         c,
       ),
     ),
@@ -78,7 +77,7 @@ describe("std.options: typeahead", () => {
   test("a Menu takes typeahead too: after 500 ms a new buffer starts", async () => {
     const ctx = simCtx();
     const t = render(
-      page((c) => Menu({ id: "tm", trigger: () => "Words", items: () => words, onSelect: () => {} }, undefined, c)),
+      page((c) => Menu({ id: "tm", trigger: () => "Words", items: () => words, onSelect: () => {} }, c)),
       { props: {}, ctx },
     );
     await t.fire("tm.trigger", { type: "keydown", key: "Enter" });

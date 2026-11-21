@@ -8,7 +8,7 @@ import { describe, expect, test } from "vitest";
 import { type Files, SEED } from "./support.ts";
 
 const MANIFEST = (id: string): string =>
-  `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [], routes: [] } })\n`;
+  `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [] } })\n`;
 const pkg = (deps: readonly string[]): string =>
   `${JSON.stringify({ name: "fx", private: true, version: "1.0.0", dependencies: Object.fromEntries(deps.map((d) => [d, "workspace:*"])) }, null, 2)}\n`;
 

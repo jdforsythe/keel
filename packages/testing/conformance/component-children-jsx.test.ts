@@ -7,7 +7,6 @@ import { evaluate } from "@keel/compiler/testing";
 import type { Ctx } from "@keel/ctx";
 import type { Scope } from "@keel/reactive";
 import { owner } from "@keel/reactive";
-import type { Slots } from "@keel/runtime-dom";
 import { s } from "@keel/schema";
 import type { TestComponent } from "@keel/testing";
 import { render } from "@keel/testing";
@@ -49,8 +48,8 @@ function build(
   const fn = evaluate(out.code, { "@keel/ui": ui, probe: mod, fx: extra });
   if (typeof fn !== "function") throw new Error("fixture: default export is not a component");
   return Object.assign(
-    (p: Record<string, never>, slots?: Slots, ctx?: Ctx): Node => {
-      const node: unknown = fn(p, slots, ctx);
+    (p: Record<string, never>, ctx: Ctx): Node => {
+      const node: unknown = fn(p, ctx);
       if (!(node instanceof Node)) throw new Error("fixture: component did not return a Node");
       return node;
     },

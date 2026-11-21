@@ -4,6 +4,7 @@ import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
 import { scope } from "@keel/reactive";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { store, transaction, tx } from "@keel/store";
 
@@ -47,6 +48,12 @@ export function Island(props: object): Node {
   return inner(Object.assign({}, props, { n: String(count.get("n")), bump: () => void tx(inc, {}) }));
 }
 
-export const routes = manifest({ "gd.page": { path: "/gd", component: Island } });
+const gdContract = contract("gd", {
+  "gd.page": { path: "/gd" },
+});
+
+export const routes = manifest(gdContract, {
+  "gd.page": { component: Island },
+});
 
 export default routes;

@@ -2,13 +2,14 @@
 // This file is also the group's user module: `openGroup({ user })` loads it in each worker and reads `routes` and `base`.
 // Assumptions (the spec is silent, each is an ordinary reading of k.component / k.ctx / k.server):
 // - `user` is the file URL (a string) of this module;
-// - a route component receives `ctx` as its third argument (k.component Shape);
+// - a route component receives `ctx` as its second argument (k.component Shape);
 // - `ctx.storage` holds a server store as the JSON text of its `snapshot()` under `keel.store.<id>` (a parsed value is
 //   accepted on read too), and `serve(ctx)` reads and writes it through `ctx.storage` (k.server Server state);
 // - the server mints the caller cookie `keel-caller` itself (a hand-built `{ fetch }`, as createApp does, over http).
 import type { Ctx, SimCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { text } from "@keel/runtime-dom/ops";
 import { s } from "@keel/schema";
 import type { JsonValue } from "@keel/schema";
@@ -156,11 +157,10 @@ function build() {
       void tx(setStatus, { status: "offline" });
     }
   };
-  const routes = manifest({
+  const boardContract = contract("board", { "board.show": { path: "/board" } });
+  const routes = manifest(boardContract, {
     "board.show": {
-      path: "/board",
-      component(_props: unknown, _slots: unknown, ctx?: Ctx): Node {
-        if (ctx === undefined) throw new Error("fixture: the component got no ctx");
+      component(_props: unknown, ctx: Ctx): Node {
         return Box({
           as: "main",
           id: "board.page",

@@ -2,6 +2,7 @@
 // Spec: k.guards, clause "A guard's `caller` is the hash `createApp` gives loaders (`''` with no signed cookie) and under `renderRoute` its `caller` option (default `''`)." (rfc:0070)
 // The renderRoute half; packages/server/conformance/guard-caller.test.ts covers createApp. Seed 1337.
 import { guard, loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { err, ok, s } from "@keel/schema";
 import { renderRoute } from "@keel/testing";
 import fc from "fast-check";
@@ -16,19 +17,19 @@ const p = (id: string): HTMLElement => {
   e.textContent = id;
   return e;
 };
-const routes = manifest({
-  "gc.login": { path: "/login", component: () => p("gc.login") },
+const gcContract = contract("gc", { "gc.login": { path: "/login" }, "gc.home": { path: "/home" } });
+const routes = manifest(gcContract, {
+  "gc.login": { component: () => p("gc.login") },
   "gc.home": {
-    path: "/home",
+    component: () => p("gc.home"),
+    loader: loader(gcContract, "gc.home", { output: s.object({}) }, async ({ caller }) => {
+      seen.loader.push(caller);
+      return ok({});
+    }),
     guard: guard({ redirect: "gc.login" }, async ({ caller }) => {
       seen.guard.push(caller);
       return caller === "" ? err(Denied.make({})) : ok(null);
     }),
-    loader: loader({ output: s.object({}) }, async ({ caller }) => {
-      seen.loader.push(caller);
-      return ok({});
-    }),
-    component: () => p("gc.home"),
   },
 });
 

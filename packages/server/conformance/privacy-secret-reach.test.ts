@@ -6,12 +6,13 @@ import path from "node:path";
 // Spec: k.privacy, Sinks "A runner's `run` is scoped alike."
 // Spec: k.privacy, Conformance "An action throwing the revealed value of a `Secret` input or `bearer`, as a string or in an `Error` message, logs a `diag` record holding `[secret]` and not the value, in dev and production, as does a loader or action throwing one parsed after an `await` or made earlier and revealed in it, a record or `json` key in one, and a runner's; a boolean or declared field name logs as is; of two overlapping requests each marks only its own."
 // Spec: k.privacy, Sinks "Past 2,000,000 characters of these values' written forms or 100,000 secret values, a message after its prefix (`loader <id> threw: `), each frame and the path are one mark, `[secret]` if it holds a secret."
-// Spec: k.privacy, Conformance "A secret route param is `[secret]` in the `req` path. Past 100,000 secret values a loader's throw logs `loader <id> threw: [secret]`."
+// Spec: k.privacy, Conformance "A secret route param is `[secret]` in the `req` path, escaped any way, in `/%52ESET/<v>` and `//reset//<v>/`, with and without a prefix param, and forwarded to a peer; `/reset/ab/<v>` and `/confirm/a/<v>/done` (of `/confirm/:token/done`) log `/reset/[secret]` and `/confirm/[secret]`; `/en/reset/<v>` logs as sent; a failed forward logs no path. Past 100,000 secret values a loader's throw logs `loader <id> threw: [secret]`."
 // Seed: 1337.
 // A `Secret` is made with `made(s.secret(s.string()).parse(text))` inside the handler, after an `await`: the scope that marks it follows the call chain of the request.
 // The two-request case orders the requests on the sim clock (`ctx.clock.advance`), with no timers.
 import { createCtx } from "@keel/ctx";
 import { action, loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, reveal, s, type Secret } from "@keel/schema";
 import { topology } from "@keel/server";
 import fc from "fast-check";
@@ -42,19 +43,31 @@ const fieldOf = (line: string, name: string): unknown => {
   const rec: unknown = JSON.parse(line);
   return typeof rec === "object" && rec !== null ? Reflect.get(rec, name) : undefined;
 };
+const appContract = contract("app", { "app.a": { path: "/a" } });
+// A live loader belongs to an `events: true` API entry, never to a page.
+const liveContract = contract("app", {
+  "app.a": { path: "/a" },
+  "app.live": { method: "GET", path: "/api/live", events: true, output: Nothing },
+});
 const diagsOf = (lines: readonly string[]): string[] => lines.filter((l) => kind(l) === "diag");
 
 interface Parts {
   readonly loader?: ReturnType<typeof loader>;
+  readonly live?: ReturnType<typeof loader>;
   readonly act?: ReturnType<typeof action>;
   readonly artifacts?: string;
   readonly format?: "json" | "compact";
 }
 async function boot(mode: "dev" | "production", parts: Parts, ctx = createCtx({ mode: "sim", seed: SEED })) {
-  const routes = manifest({
-    "app.a": { path: "/a", component: view, ...(parts.loader ? { loader: parts.loader } : {}) },
-  });
-  if (parts.act) routes.actions({ "app.a": { POST: parts.act } });
+  const routes = parts.live
+    ? manifest(liveContract, { "app.a": { component: view }, "app.live": { loader: parts.live } })
+    : manifest(appContract, {
+        "app.a": {
+          component: view,
+          ...(parts.loader ? { loader: parts.loader } : {}),
+          ...(parts.act ? { POST: parts.act } : {}),
+        },
+      });
   const lines: string[] = [];
   const app = await createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
@@ -79,7 +92,7 @@ afterAll(() => fs.rmSync(artifacts, { recursive: true, force: true }));
 describe("k.privacy secret reach", () => {
   for (const mode of modes) {
     it(`A loader throwing the revealed value of a \`Secret\` parsed after an \`await\` logs a \`diag\` record holding \`[secret]\` and not the value, in ${mode}.`, async () => {
-      const load = loader({ output: Nothing }, async () => {
+      const load = loader(appContract, "app.a", { output: Nothing }, async () => {
         await Promise.resolve();
         const key = made(s.secret(s.string()).parse(KEY));
         throw new Error(`upstream refused ${reveal(key)}`);
@@ -93,7 +106,7 @@ describe("k.privacy secret reach", () => {
     });
 
     it(`An action throwing the revealed value of a \`Secret\` minted after an \`await\` logs a \`diag\` record holding \`[secret]\` and not the value, in ${mode}; in dev the response body does not hold it either.`, async () => {
-      const act = action({ input: Nothing }, async () => {
+      const act = action(appContract, "app.a", { input: Nothing }, async () => {
         await Promise.resolve();
         const token = made(s.secret(s.string()).parse(TOKEN));
         throw new Error(`mailer down; token ${reveal(token)}`);
@@ -109,7 +122,7 @@ describe("k.privacy secret reach", () => {
     it(`A \`Secret\` made by a helper in a second file, called after two \`await\`s, is marked in the \`diag\` record of the throw, in ${mode}.`, async () => {
       await fc.assert(
         fc.asyncProperty(fc.stringMatching(/^[a-z0-9]{12,20}$/), async (text) => {
-          const act = action({ input: Nothing }, async () => {
+          const act = action(appContract, "app.a", { input: Nothing }, async () => {
             await Promise.resolve();
             await Promise.resolve();
             const minted = await mintLater(text);
@@ -134,7 +147,7 @@ describe("k.privacy secret reach", () => {
         boolean: (o: { key: string; n: number; flag: boolean }) => `obj flag ${String(o.flag)} end`,
       };
       for (const [name, text] of Object.entries(throwers)) {
-        const act = action({ input: Nothing }, async () => {
+        const act = action(appContract, "app.a", { input: Nothing }, async () => {
           await Promise.resolve();
           const o = reveal(made(Obj.parse({ key: "tok-obj-7f3a", n: 987654, flag: true })));
           throw new Error(text(o));
@@ -157,7 +170,7 @@ describe("k.privacy secret reach", () => {
 
     it(`Each string in a \`Secret\` holding an array of strings is marked (an element in an Error message), in ${mode}.`, async () => {
       const Arr = s.secret(s.array(s.string()));
-      const act = action({ input: Nothing }, async () => {
+      const act = action(appContract, "app.a", { input: Nothing }, async () => {
         await Promise.resolve();
         const list = reveal(made(Arr.parse(["first-3c9d1a", "second-6b2e8f"])));
         throw new Error(`list ${list.join(" and ")}`);
@@ -174,7 +187,7 @@ describe("k.privacy secret reach", () => {
     it(`The scrub never fails on a secret's text: a lone surrogate in a secret input still logs exactly one \`diag\` record and writes nothing to \`console.error\`, in ${mode}.`, async () => {
       const spy = vi.spyOn(console, "error").mockImplementation(() => undefined);
       try {
-        const act = action({ input: s.object({ v: s.secret(s.string()) }) }, async () => {
+        const act = action(appContract, "app.a", { input: s.object({ v: s.secret(s.string()) }) }, async () => {
           await Promise.resolve();
           throw new Error("boom");
         });
@@ -193,7 +206,7 @@ describe("k.privacy secret reach", () => {
     });
 
     it(`A secret is never left in part: with a second secret "1234" made in the request, no line holds a piece of "abcd-1234-9876", in ${mode}.`, async () => {
-      const act = action({ input: Nothing }, async () => {
+      const act = action(appContract, "app.a", { input: Nothing }, async () => {
         await Promise.resolve();
         const whole = made(s.secret(s.string()).parse("abcd-1234-9876"));
         made(s.secret(s.string()).parse("1234"));
@@ -209,7 +222,7 @@ describe("k.privacy secret reach", () => {
     });
 
     it(`A secret is never left in part: with a personal-data input value "1234" inside the secret "abcd-1234-9876", no line holds a piece of the secret, in ${mode}.`, async () => {
-      const act = action({ input: s.object({ code: s.string().pii("contact") }) }, async () => {
+      const act = action(appContract, "app.a", { input: s.object({ code: s.string().pii("contact") }) }, async () => {
         await Promise.resolve();
         const whole = made(s.secret(s.string()).parse("abcd-1234-9876"));
         throw new Error(`whole ${reveal(whole)}`);
@@ -225,7 +238,7 @@ describe("k.privacy secret reach", () => {
   }
 
   it('A boolean `Secret` logs as is: an action throwing `Error("flag " + String(reveal(flag)))` for `{ flag: true }` logs `flag true`.', async () => {
-    const act = action({ input: s.object({ flag: s.secret(s.boolean()) }) }, async (input) => {
+    const act = action(appContract, "app.a", { input: s.object({ flag: s.secret(s.boolean()) }) }, async (input) => {
       await Promise.resolve();
       throw new Error(`flag ${String(reveal(input.flag))}`);
     });
@@ -240,7 +253,7 @@ describe("k.privacy secret reach", () => {
   it("A `Secret` number is marked: an action throwing the revealed value of a number secret logs `[secret]` and not the number.", async () => {
     await fc.assert(
       fc.asyncProperty(fc.integer({ min: 100000, max: 999999 }), async (n) => {
-        const act = action({ input: Nothing }, async () => {
+        const act = action(appContract, "app.a", { input: Nothing }, async () => {
           await Promise.resolve();
           const minted = made(s.secret(s.number()).parse(n));
           throw new Error(`count ${String(reveal(minted))}`);
@@ -264,7 +277,7 @@ describe("k.privacy secret reach", () => {
             ["alpha", { value: alpha, other: bravo, first: 10, second: 40 }],
             ["bravo", { value: bravo, other: alpha, first: 20, second: 10 }],
           ]);
-          const act = action({ input: s.object({ who: s.string() }) }, async (input) => {
+          const act = action(appContract, "app.a", { input: s.object({ who: s.string() }) }, async (input) => {
             const mine = own.get(input.who);
             if (mine === undefined) return ok(null);
             await ctx.clock.after(mine.first);
@@ -272,8 +285,7 @@ describe("k.privacy secret reach", () => {
             await ctx.clock.after(mine.second);
             throw new Error(`${input.who}: ${reveal(minted)} then ${mine.other}`);
           });
-          const routes = manifest({ "app.a": { path: "/a", component: view } });
-          routes.actions({ "app.a": { POST: act } });
+          const routes = manifest(appContract, { "app.a": { component: view, POST: act } });
           const lines: string[] = [];
           const app = await createAppLoose({
             topology: topology({ web: { modules: ["app"], adapter: "node" } }),
@@ -306,7 +318,7 @@ describe("k.privacy secret reach", () => {
   }, 60_000);
 
   it("One made at startup is marked when revealed: a `Secret` parsed at module scope and thrown revealed by an action logs `startup [secret]` and no line holds the value.", async () => {
-    const act = action({ input: Nothing }, async () => {
+    const act = action(appContract, "app.a", { input: Nothing }, async () => {
       await Promise.resolve();
       throw new Error(`startup ${reveal(STARTUP)}`);
     });
@@ -325,7 +337,7 @@ describe("k.privacy secret reach", () => {
     for (const format of formats) {
       it(`A loader throwing the revealed value of a \`Secret\` made in an earlier request and kept by the module logs \`[secret]\` and no line holds the value, in ${mode}, ${format}.`, async () => {
         let cached: Secret<string> | undefined;
-        const load = loader({ output: Nothing }, async () => {
+        const load = loader(appContract, "app.a", { output: Nothing }, async () => {
           await Promise.resolve();
           if (cached === undefined) {
             cached = made(s.secret(s.string()).parse("cache-7c1e9a"));
@@ -342,7 +354,7 @@ describe("k.privacy secret reach", () => {
       });
 
       it(`A loader that reveals a module-scope \`Secret\` and throws it logs \`[secret]\` and no line holds the value, in ${mode}, ${format}.`, async () => {
-        const load = loader({ output: Nothing }, async () => {
+        const load = loader(appContract, "app.a", { output: Nothing }, async () => {
           await Promise.resolve();
           throw new Error(`modload ${reveal(MOD_LOADER)}`);
         });
@@ -353,7 +365,7 @@ describe("k.privacy secret reach", () => {
       });
 
       it(`An action that reveals a module-scope \`Secret\` and throws it logs \`[secret]\` and no line holds the value, in ${mode}, ${format}.`, async () => {
-        const act = action({ input: Nothing }, async () => {
+        const act = action(appContract, "app.a", { input: Nothing }, async () => {
           await Promise.resolve();
           throw new Error(`modact ${reveal(MOD_ACTION)}`);
         });
@@ -366,7 +378,7 @@ describe("k.privacy secret reach", () => {
 
     it(`A value revealed in an earlier request, kept by the module as a plain string and thrown in a later request without a \`reveal\` there, logs as is, in ${mode}.`, async () => {
       let kept: string | undefined;
-      const load = loader({ output: Nothing }, async () => {
+      const load = loader(appContract, "app.a", { output: Nothing }, async () => {
         await Promise.resolve();
         if (kept === undefined) {
           kept = reveal(made(s.secret(s.string()).parse("limit-4d9b2e")));
@@ -384,7 +396,7 @@ describe("k.privacy secret reach", () => {
   it("A runner's `run` that reveals a module-scope `Secret` and rejects with it logs the `runner rejected, rerun in 1000 ms: ` line holding `modrun [secret]` and no line holds the value.", async () => {
     const ctx = createCtx({ mode: "sim", seed: SEED });
     const lines: string[] = [];
-    const routes = manifest({ "app.a": { path: "/a", component: view } });
+    const routes = manifest(appContract, { "app.a": { component: view } });
     const run = async (): Promise<void> => {
       await Promise.resolve();
       throw new Error(`modrun ${reveal(MOD_RUNNER)}`);
@@ -413,7 +425,7 @@ describe("k.privacy secret reach", () => {
       ["bravo", { first: 20, second: 10, reveals: true }],
       ["charlie", { first: 15, second: 30, reveals: false }],
     ]);
-    const act = action({ input: s.object({ who: s.string() }) }, async (input) => {
+    const act = action(appContract, "app.a", { input: s.object({ who: s.string() }) }, async (input) => {
       const mine = timing.get(input.who);
       if (mine === undefined) return ok(null);
       await ctx.clock.after(mine.first);
@@ -421,8 +433,7 @@ describe("k.privacy secret reach", () => {
       await ctx.clock.after(mine.second);
       throw new Error(`${input.who}: ${shown}`);
     });
-    const routes = manifest({ "app.a": { path: "/a", component: view } });
-    routes.actions({ "app.a": { POST: act } });
+    const routes = manifest(appContract, { "app.a": { component: view, POST: act } });
     const lines: string[] = [];
     const app = await createAppLoose({
       topology: topology({ web: { modules: ["app"], adapter: "node" } }),
@@ -450,7 +461,7 @@ describe("k.privacy secret reach", () => {
   it("One made in a runner is marked: a runner that parses a `Secret` and rejects with its revealed value logs the `runner rejected, rerun in 1000 ms: ` line holding `runner [secret]` and no line holds the value.", async () => {
     const ctx = createCtx({ mode: "sim", seed: SEED });
     const lines: string[] = [];
-    const routes = manifest({ "app.a": { path: "/a", component: view } });
+    const routes = manifest(appContract, { "app.a": { component: view } });
     const run = async (): Promise<void> => {
       await Promise.resolve();
       const minted = made(s.secret(s.string()).parse("runner-5d3c1f"));
@@ -477,7 +488,7 @@ describe("k.privacy secret reach", () => {
   it("A runner whose `run` makes 100,001 distinct secret values and rejects logs `runner rejected, rerun in 1000 ms: [secret]`.", async () => {
     const ctx = createCtx({ mode: "sim", seed: SEED });
     const lines: string[] = [];
-    const routes = manifest({ "app.a": { path: "/a", component: view } });
+    const routes = manifest(appContract, { "app.a": { component: view } });
     const run = async (): Promise<void> => {
       await Promise.resolve();
       made(s.secret(s.array(s.int())).parse(range(100_001)));
@@ -500,12 +511,17 @@ describe("k.privacy secret reach", () => {
   });
 
   const manyKeys = (n: number): string[] => Array.from({ length: n }, (_, i) => `${"@".repeat(300)}${String(i)}`);
-  const keysAction = action({ input: s.object({ keys: s.secret(s.array(s.string())) }) }, async (input) => {
-    await Promise.resolve();
-    const thrown = new Error(`refused ${String(reveal(input.keys)[0])}`);
-    thrown.stack = `Error: ${thrown.message}\n    at save (${process.cwd()}/modules/app/save.server.ts:10:4)\n    at next (${process.cwd()}/modules/app/other.ts:3:1)`;
-    throw thrown;
-  });
+  const keysAction = action(
+    appContract,
+    "app.a",
+    { input: s.object({ keys: s.secret(s.array(s.string())) }) },
+    async (input) => {
+      await Promise.resolve();
+      const thrown = new Error(`refused ${String(reveal(input.keys)[0])}`);
+      thrown.stack = `Error: ${thrown.message}\n    at save (${process.cwd()}/modules/app/save.server.ts:10:4)\n    at next (${process.cwd()}/modules/app/other.ts:3:1)`;
+      throw thrown;
+    },
+  );
   const sendKeys = (n: number): Request =>
     new Request("http://localhost/a", {
       method: "POST",
@@ -550,16 +566,23 @@ describe("k.privacy secret reach", () => {
     throw thrown;
   };
   const withFlagAction = action(
+    appContract,
+    "app.a",
     { input: s.object({ flag: s.secret(s.boolean()), notes: s.array(s.string().pii("contact")) }) },
     async (input) => {
       await Promise.resolve();
       return throwNotes(input.notes);
     },
   );
-  const notesOnlyAction = action({ input: s.object({ notes: s.array(s.string().pii("contact")) }) }, async (input) => {
-    await Promise.resolve();
-    return throwNotes(input.notes);
-  });
+  const notesOnlyAction = action(
+    appContract,
+    "app.a",
+    { input: s.object({ notes: s.array(s.string().pii("contact")) }) },
+    async (input) => {
+      await Promise.resolve();
+      return throwNotes(input.notes);
+    },
+  );
   const sendNotes = (body: Record<string, unknown>): Request =>
     new Request("http://localhost/a", {
       method: "POST",
@@ -602,7 +625,7 @@ describe("k.privacy secret reach", () => {
 
   for (const mode of modes) {
     it(`A record key in a \`Secret\` is marked: an action parsing \`s.secret(s.record(s.string()))\` with key \`acct-7f3a9c\` thrown as \`Error("got " + key)\` logs \`got [secret]\`, in ${mode}.`, async () => {
-      const act = action({ input: Nothing }, async () => {
+      const act = action(appContract, "app.a", { input: Nothing }, async () => {
         await Promise.resolve();
         const r = made(s.secret(s.record(s.string())).parse({ "acct-7f3a9c": "x" }));
         throw new Error(`got ${String(Object.keys(reveal(r))[0])}`);
@@ -614,7 +637,7 @@ describe("k.privacy secret reach", () => {
     });
 
     it(`A \`json\` key in a \`Secret\` is marked: an action parsing \`s.secret(s.json())\` with key \`jk-41b2c3\` thrown as \`Error("got " + key)\` logs \`got [secret]\`, in ${mode}.`, async () => {
-      const act = action({ input: Nothing }, async () => {
+      const act = action(appContract, "app.a", { input: Nothing }, async () => {
         await Promise.resolve();
         const value = reveal(made(s.secret(s.json()).parse({ "jk-41b2c3": 1 })));
         throw new Error(`got ${typeof value === "object" && value !== null ? Object.keys(value).join(",") : "none"}`);
@@ -632,13 +655,13 @@ describe("k.privacy secret reach", () => {
     return thrown;
   };
   const countedLoader = (n: number) =>
-    loader({ output: Nothing }, async () => {
+    loader(appContract, "app.a", { output: Nothing }, async () => {
       await Promise.resolve();
       made(s.secret(s.array(s.int())).parse(range(n)));
       throw stackOf("refused 7");
     });
   const countedLive = (n: number) =>
-    liveLoader(Nothing, async function* () {
+    liveLoader(liveContract, "app.live", async function* () {
       await Promise.resolve();
       made(s.secret(s.array(s.int())).parse(range(n)));
       yield await Promise.resolve(ok({}));
@@ -673,15 +696,15 @@ describe("k.privacy secret reach", () => {
       }
     }, 60_000);
 
-    it(`Past 100,000 secret values a live loader's throw on an event-stream GET logs one \`diag\` \`loader app.a threw: [secret]\` with each frame \`[secret]\`, in ${mode}${mode === "dev" ? "; the last `data:` line holds `[secret]` and not `refused 7`" : ""}.`, async () => {
-      const t = await boot(mode, { loader: countedLive(100_001), artifacts });
-      const text = (await readChunks(await t.app.fetch(new Request("http://localhost/a", { headers: sse })), 16)).join(
-        "",
-      );
+    it(`Past 100,000 secret values a live loader's throw on an event-stream GET logs one \`diag\` \`loader app.live threw: [secret]\` with each frame \`[secret]\`, in ${mode}${mode === "dev" ? "; the last `data:` line holds `[secret]` and not `refused 7`" : ""}.`, async () => {
+      const t = await boot(mode, { live: countedLive(100_001), artifacts });
+      const text = (
+        await readChunks(await t.app.fetch(new Request("http://localhost/api/live", { headers: sse })), 16)
+      ).join("");
       const diags = diagsOf(t.lines);
       expect(diags).toHaveLength(1);
       for (const line of diags) {
-        expect(fieldOf(line, "message")).toBe("loader app.a threw: [secret]");
+        expect(fieldOf(line, "message")).toBe("loader app.live threw: [secret]");
         expect(framesOf(line)).toEqual(["[secret]", "[secret]"]);
       }
       for (const line of t.lines) expect(line).not.toContain("refused 7");
@@ -696,13 +719,13 @@ describe("k.privacy secret reach", () => {
       }
     }, 60_000);
 
-    it(`At 100,000 secret values a live loader's throw on an event-stream GET logs a message starting \`loader app.a threw: \` and holding \`refused [secret]\`, in ${mode}.`, async () => {
-      const t = await boot(mode, { loader: countedLive(100_000), artifacts });
-      await readChunks(await t.app.fetch(new Request("http://localhost/a", { headers: sse })), 16);
+    it(`At 100,000 secret values a live loader's throw on an event-stream GET logs a message starting \`loader app.live threw: \` and holding \`refused [secret]\`, in ${mode}.`, async () => {
+      const t = await boot(mode, { live: countedLive(100_000), artifacts });
+      await readChunks(await t.app.fetch(new Request("http://localhost/api/live", { headers: sse })), 16);
       const diags = diagsOf(t.lines);
       expect(diags).toHaveLength(1);
       for (const line of diags) {
-        expect(String(fieldOf(line, "message")).startsWith("loader app.a threw: ")).toBe(true);
+        expect(String(fieldOf(line, "message")).startsWith("loader app.live threw: ")).toBe(true);
         expect(String(fieldOf(line, "message"))).toContain("refused [secret]");
       }
     }, 60_000);

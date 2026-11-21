@@ -7,6 +7,7 @@
 // unmarked ones digits, so no unmarked text can hide or mimic a marked value.
 import { createCtx } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { type ObjectSchema, type Schema, reveal, s } from "@keel/schema";
 import { topology } from "@keel/server";
 import fc from "fast-check";
@@ -71,15 +72,15 @@ describe("k.privacy server log", () => {
           const fields = Object.fromEntries(all.map((l, i) => [l.key, value(l, i)]));
           const secrets = all.flatMap((l, i) => (l.marked ? [value(l, i)] : []));
           const message = `cannot save ${Object.values(fields).join(" ")}`;
-          const save = action({ input: objectOf(spec) }, () => Promise.reject(new Error(message)));
-          const routes = manifest({
-            "orders.show": {
-              path: "/orders/:kind",
-              params: Params,
-              component: () => document.createElement("main"),
-            },
+          const ordersContract = contract("orders", {
+            "orders.show": { path: "/orders/:kind", params: Params },
           });
-          routes.actions({ "orders.show": { POST: save } });
+          const save = action(ordersContract, "orders.show", { input: objectOf(spec) }, () =>
+            Promise.reject(new Error(message)),
+          );
+          const routes = manifest(ordersContract, {
+            "orders.show": { component: () => document.createElement("main"), POST: save },
+          });
           const lines: string[] = [];
           const app = await createApp({
             topology: topology({ web: { modules: ["orders"], adapter: "node" } }),
@@ -113,17 +114,16 @@ describe("k.privacy server log", () => {
   for (const mode of ["dev", "production"] as const) {
     for (const [how, make] of Object.entries(throwers)) {
       it(`An action throwing the revealed value of a \`Secret\` input or \`bearer\`, as a string or in an \`Error\` message, logs a \`diag\` record holding \`[secret]\` and not the value, in ${mode}: it throws ${how}, and no line holds its base64 or encodeURIComponent form`, async () => {
-        const save = action({ input: s.object({ k: s.secret(s.string()) }) }, (input) =>
+        const orders = contract("orders", {
+          "orders.show": { path: "/orders/:kind", params: Params },
+        });
+
+        const save = action(orders, "orders.show", { input: s.object({ k: s.secret(s.string()) }) }, (input) =>
           Promise.reject(make(reveal(input.k))),
         );
-        const routes = manifest({
-          "orders.show": {
-            path: "/orders/:kind",
-            params: Params,
-            component: () => document.createElement("main"),
-          },
+        const routes = manifest(orders, {
+          "orders.show": { component: () => document.createElement("main"), POST: save },
         });
-        routes.actions({ "orders.show": { POST: save } });
         const lines: string[] = [];
         const app = await createApp({
           topology: topology({ web: { modules: ["orders"], adapter: "node" } }),

@@ -96,7 +96,7 @@ describe("k.user: handle", () => {
       await r.get("/who"),
       await r.post("/who"),
       await r.get("/api/who"),
-      await r.stream("/live", ac.signal),
+      await r.stream("/api/live", ac.signal),
       await r.get("/login"),
     ];
     ac.abort();

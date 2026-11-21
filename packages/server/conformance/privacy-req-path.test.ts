@@ -7,7 +7,8 @@
 // Seed: 1337.
 // The route table is a server test file, outside `keel check`, so a secret `params` field (E1111) is served. Each case runs in dev and production, in compact and json log formats.
 import { createCtx } from "@keel/ctx";
-import { loader, manifest } from "@keel/router";
+import { loader, manifest, routeTable } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import { topology } from "@keel/server";
 import fc from "fast-check";
@@ -26,23 +27,36 @@ const Org = s.object({ org: s.string(), key: s.secret(s.string()) });
 const Callback = s.object({ code: s.secret(s.string()).optional() });
 const Two = s.object({ other: s.string(), token: s.secret(s.string()) });
 const Item = s.object({ id: s.int() });
-const People = loader({ output: s.object({ name: s.string().pii("name") }) }, () =>
+const appContract = contract("app", {
+  "app.reset": { path: "/reset/:token", params: Reset },
+  "app.code": { path: "/code/:token", params: Code },
+  "app.item": { path: "/item/:id", params: Item },
+  "app.plain": { path: "/plain/:slug", params: Plain },
+  "app.person": { path: "/people/:slug", params: Plain },
+  "app.confirm": { path: "/confirm/:token/done", params: Reset },
+  "app.faq": { path: "/reset/help/faq" },
+  "app.key": { path: "/o/:org/k/:key", params: Org },
+  "app.callback": { path: "/callback", search: Callback },
+  "app.k1": { path: "/k/:token/more", params: Reset },
+  "app.k2": { path: "/k/:other/:token", params: Two },
+});
+const People = loader(appContract, "app.person", { output: s.object({ name: s.string().pii("name") }) }, () =>
   Promise.resolve(ok({ name: "ada-lovelace" })),
 );
 
 const routes = () =>
-  manifest({
-    "app.reset": { path: "/reset/:token", params: Reset, component: view },
-    "app.code": { path: "/code/:token", params: Code, component: view },
-    "app.item": { path: "/item/:id", params: Item, component: view },
-    "app.plain": { path: "/plain/:slug", params: Plain, component: view },
-    "app.person": { path: "/people/:slug", params: Plain, loader: People, component: view },
-    "app.confirm": { path: "/confirm/:token/done", params: Reset, component: view },
-    "app.faq": { path: "/reset/help/faq", component: view },
-    "app.key": { path: "/o/:org/k/:key", params: Org, component: view },
-    "app.callback": { path: "/callback", search: Callback, component: view },
-    "app.k1": { path: "/k/:token/more", params: Reset, component: view },
-    "app.k2": { path: "/k/:other/:token", params: Two, component: view },
+  manifest(appContract, {
+    "app.reset": { component: view },
+    "app.code": { component: view },
+    "app.item": { component: view },
+    "app.plain": { component: view },
+    "app.person": { component: view, loader: People },
+    "app.confirm": { component: view },
+    "app.faq": { component: view },
+    "app.key": { component: view },
+    "app.callback": { component: view },
+    "app.k1": { component: view },
+    "app.k2": { component: view },
   });
 
 async function serve(mode: "dev" | "production", format: "compact" | "json", path: string, table: unknown = routes()) {
@@ -186,13 +200,10 @@ describe("k.privacy req path: marks by the route table", () => {
 
       it(`A secret route param is \`[secret]\` with and without a prefix param (\`/:lang/acct/:token\`), ${where}.`, async () => {
         const Lang = s.enum(["en", "de"], { pathDefault: "en" });
-        const table = manifest({
-          "app.acct": {
-            path: "/:lang/acct/:token",
-            params: s.object({ lang: Lang, token: s.secret(s.string()) }),
-            component: view,
-          },
+        const appContract2 = contract("app", {
+          "app.acct": { path: "/:lang/acct/:token", params: s.object({ lang: Lang, token: s.secret(s.string()) }) },
         });
+        const table = manifest(appContract2, { "app.acct": { component: view } });
         await fc.assert(
           fc.asyncProperty(tok, async (token) => {
             const bare = await serve(mode, format, `/acct/${token}`, table);
@@ -292,9 +303,12 @@ describe("k.privacy req path: an encoded separator and an over-mark", () => {
   const Tok = s.object({ t: s.secret(s.string()) });
   const Lead = s.object({ p: s.string(), t: s.secret(s.string()) });
   const Files = s.object({ name: s.string() });
-  const lone = () => manifest({ "app.t": { path: "/:t", params: Tok, component: view } });
-  const led = () => manifest({ "app.pt": { path: "/:p/:t", params: Lead, component: view } });
-  const files = () => manifest({ "app.file": { path: "/files/:name", params: Files, component: view } });
+  const appContract3 = contract("app", { "app.t": { path: "/:t", params: Tok } });
+  const lone = () => manifest(appContract3, { "app.t": { component: view } });
+  const appContract4 = contract("app", { "app.pt": { path: "/:p/:t", params: Lead } });
+  const led = () => manifest(appContract4, { "app.pt": { component: view } });
+  const appContract5 = contract("app", { "app.file": { path: "/files/:name", params: Files } });
+  const files = () => manifest(appContract5, { "app.file": { component: view } });
 
   for (const mode of modes)
     for (const format of formats) {
@@ -333,11 +347,13 @@ describe("k.privacy req path: an encoded separator and an over-mark", () => {
 
 describe("k.privacy req path: a route of a second deployable and a failed peer", () => {
   const Api = s.object({ token: s.secret(s.string()) });
+  const appContract6 = contract("app", { "app.home": { path: "/" } });
+  const apiContract = contract("api", { "api.reset": { path: "/reset/:token", params: Api } });
   const table = () =>
-    manifest({
-      "app.home": { path: "/", component: view },
-      "api.reset": { path: "/reset/:token", params: Api, component: view },
-    });
+    routeTable(
+      manifest(appContract6, { "app.home": { component: view } }),
+      manifest(apiContract, { "api.reset": { component: view } }),
+    );
 
   async function front(
     mode: "dev" | "production",

@@ -28,7 +28,7 @@ const project = (deps: string[]): string => {
       id: "a",
       deps,
       capabilities: [],
-      public: { exports: [], routes: [] },
+      public: { exports: [] },
     })})\n`,
   );
   fs.mkdirSync(path.join(tmp, "node_modules/@keel"), { recursive: true });

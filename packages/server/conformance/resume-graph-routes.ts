@@ -1,6 +1,8 @@
 // The routes of the fresh-graph suite (not a test file). The test imports this file for the server side; `resumeDocument`
 // imports it again for the client side, where every module it reaches, `@keel/store` included, is evaluated anew.
-import { loader, manifest } from "@keel/router";
+import type { Ctx } from "@keel/ctx";
+import { loader, manifest, routeTable } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import type { RouteProps } from "@keel/router";
 import { ok, s } from "@keel/schema";
 import { store, stores, transaction, tx } from "@keel/store";
@@ -17,7 +19,10 @@ const readPage = compileComponent("gr.page", islandPage("gr"));
 const countOf = (snapshot: { readonly state: unknown }): string => String(Reflect.get(Object(snapshot.state), "n"));
 
 /** The loader creates the request store `p.local` and writes `{ n: 3 }` to it. */
-const seedLocal = loader({ output: Data }, () => {
+const glContract = contract("gl", { "gl.page": { path: "/local" } });
+const gcContract = contract("gc", { "gc.page": { path: "/created" } });
+const grContract = contract("gr", { "gr.page": { path: "/read" } });
+const seedLocal = loader(glContract, "gl.page", { output: Data }, () => {
   const local = store(Local, { n: 0 }, { id: "p.local" });
   const set = transaction(local, "p.local.set", Local, (_state, payload) => payload);
   void tx(set, { n: 3 });
@@ -25,27 +30,27 @@ const seedLocal = loader({ output: Data }, () => {
 });
 
 /** Uses the store the request holds; with none (a resumed island) it creates the store its snapshot waits for. */
-function LocalPage(props: RouteProps): Node {
+function LocalPage(props: RouteProps, ctx: Ctx): Node {
   const found = stores().get("p.local");
   const local = found ?? store(Local, { n: 0 }, { id: "p.local" });
-  return localPage(Object.assign({}, props, { data: { title: countOf(local.snapshot()) } }));
+  return localPage(Object.assign({}, props, { data: { title: countOf(local.snapshot()) } }), ctx);
 }
 
 /** Creates the store `p.created` while rendering and leaves it at its initial state. */
-function CreatedPage(props: RouteProps): Node {
+function CreatedPage(props: RouteProps, ctx: Ctx): Node {
   const created = store(Local, { n: 7 }, { id: "p.created" });
-  return createdPage(Object.assign({}, props, { data: { title: countOf(created.snapshot()) } }));
+  return createdPage(Object.assign({}, props, { data: { title: countOf(created.snapshot()) } }), ctx);
 }
 
 /** Reads the module store `rm.board` and never writes it. */
-function ReadPage(props: RouteProps): Node {
-  return readPage(Object.assign({}, props, { data: { title: board.get("rows") } }));
+function ReadPage(props: RouteProps, ctx: Ctx): Node {
+  return readPage(Object.assign({}, props, { data: { title: board.get("rows") } }), ctx);
 }
 
-export const routes = manifest({
-  "gl.page": { path: "/local", component: LocalPage, loader: seedLocal },
-  "gc.page": { path: "/created", component: CreatedPage },
-  "gr.page": { path: "/read", component: ReadPage },
-});
+export const routes = routeTable(
+  manifest(glContract, { "gl.page": { component: LocalPage, loader: seedLocal } }),
+  manifest(gcContract, { "gc.page": { component: CreatedPage } }),
+  manifest(grContract, { "gr.page": { component: ReadPage } }),
+);
 
 export default routes;

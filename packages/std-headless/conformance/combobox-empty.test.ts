@@ -23,7 +23,6 @@ const mount = (options: readonly Option<string>[]) => {
           onChange: () => {},
           empty: () => "No fruit found",
         },
-        undefined,
         c,
       ),
     ),

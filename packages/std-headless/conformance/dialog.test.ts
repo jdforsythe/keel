@@ -24,7 +24,6 @@ const mount = (alert?: string) =>
           ],
           ...(alert === undefined ? {} : { alert: { description: alert } }),
         },
-        undefined,
         c,
       ),
     ),

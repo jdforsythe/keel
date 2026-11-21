@@ -1,10 +1,10 @@
 // @vitest-environment happy-dom
-// Spec: k.hosting, clause "With `KEEL_PEER_API=https://api.test` the built `index.html` has one `keel-peer` tag for `api`, and a `service({ module })` call from the client entry under a sim ctx fetches `https://api.test` plus the path with credentials included; unset, the call goes to the document's origin; `KEEL_PEER_API=nope` fails the build with one E1565 naming the key."
+// Spec: k.hosting, clause "With `KEEL_PEER_API=https://api.test` the built `index.html` has one `keel-peer` tag for `api`, and a `service({ contract })` call from the client entry under a sim ctx fetches `https://api.test` plus the path with credentials included; unset, the call goes to the document's origin; `KEEL_PEER_API=nope` fails the build with one E1565 naming the key."
 // Seed: none (fixed fixtures, no random input).
 // The built client entry runs in happy-dom: the built `index.html`'s `keel-peer` tags are placed in the document, `globalThis.fetch` is a recorder, the entry is
-// run, and its page calls `service({ module: 'api' })` with the `ctx` it is given (a component's third argument, k.runtime). What the recorder saw is the observation.
+// run, and its page calls `service({ contract: api })` with the `ctx` it is given (a component's second argument, k.runtime). What the recorder saw is the observation.
 // ASSUMED: the entry's `ctx` sends a request through the page's `globalThis.fetch` (k.services: `ctx.net.fetch`; k.persist's browser net driver) and the router passes the
-// entry's `ctx` to a page component as its third argument.
+// entry's `ctx` to a page component as its second argument.
 // ASSUMED: the unset call is sent without `credentials: 'include'` (the spec names the flag only for another origin).
 // ASSUMED: the call is a GET `/api/ping` and the answer's body is not read by the assertions (the recorder answers 200 with an empty JSON object).
 import { spawnSync } from "node:child_process";
@@ -42,14 +42,12 @@ function link(target: string, at: string): void {
   fs.symlinkSync(target, at);
 }
 
-const PAGE = `import { s } from "@keel/schema";
-import { endpoints, service } from "@keel/services";
+const PAGE = `import type { Ctx } from "@keel/ctx";
+import { service } from "@keel/services";
 import { Box, Text } from "@keel/ui";
-const api = service({
-  module: "api",
-  schema: endpoints({ ping: { method: "GET", path: "/api/ping", output: s.json() } }),
-});
-export default function Page(_props: unknown, _slots: unknown, ctx: never) {
+import { api as apiContract } from "../api/api.contract.ts";
+const api = service({ contract: apiContract });
+export default function Page(_props: unknown, ctx: Ctx) {
   void api.ping({}, ctx);
   return <Box as="main"><Text>web</Text></Box>;
 }
@@ -102,27 +100,37 @@ function build(env: Record<string, string>): { root: string; status: number | nu
   write(
     root,
     "modules/app/module.ts",
-    'import { module } from "@keel/compiler";\nexport default module({ id: "app", deps: ["api"], capabilities: [], public: { exports: [], routes: [] } });\n',
+    'import { module } from "@keel/compiler";\nexport default module({ id: "app", deps: ["api"], capabilities: [], public: { exports: [] } });\n',
   );
   write(
     root,
     "modules/app/routes.ts",
-    'import { manifest } from "@keel/router";\nimport Page from "./Page.tsx";\nexport const routes = manifest({ "app.home": { path: "/", component: Page } });\n',
+    'import { manifest } from "@keel/router";\nimport { app } from "./app.contract.ts";\nimport Page from "./Page.tsx";\nexport const routes = manifest(app, { "app.home": { component: Page } });\n',
+  );
+  write(
+    root,
+    "modules/app/app.contract.ts",
+    'import { contract } from "@keel/router/contract";\nexport const app = contract("app", { "app.home": { path: "/" } });\n',
   );
   write(
     root,
     "modules/api/module.ts",
-    'import { module } from "@keel/compiler";\nexport default module({ id: "api", deps: [], capabilities: [], public: { exports: [], routes: ["api.ping"] } });\n',
+    'import { module } from "@keel/compiler";\nexport default module({ id: "api", deps: [], capabilities: [], public: { exports: [] } });\n',
   );
   write(
     root,
     "modules/api/routes.ts",
-    'import { manifest } from "@keel/router";\nimport { ping } from "./ping.server.ts";\nexport const routes = manifest({ "api.ping": { api: true, path: "/api/ping", loader: ping } });\n',
+    'import { manifest } from "@keel/router";\nimport { api } from "./api.contract.ts";\nimport { ping } from "./ping.server.ts";\nexport const routes = manifest(api, { "api.ping": { loader: ping } });\n',
+  );
+  write(
+    root,
+    "modules/api/api.contract.ts",
+    'import { contract } from "@keel/router/contract";\nimport { s } from "@keel/schema";\nexport const api = contract("api", { "api.ping": { method: "GET", path: "/api/ping", output: s.object({ n: s.int() }) } });\n',
   );
   write(
     root,
     "modules/api/ping.server.ts",
-    'import { loader } from "@keel/router";\nimport { ok, s } from "@keel/schema";\nexport const ping = loader({ output: s.object({ n: s.int() }) }, async () => ok({ n: 1 }));\n',
+    'import { loader } from "@keel/router";\nimport { ok } from "@keel/schema";\nimport { api } from "./api.contract.ts";\nexport const ping = loader(api, "api.ping", {}, async () => ok({ n: 1 }));\n',
   );
   const r = spawnSync(process.execPath, [path.join(REPO, "packages", "cli", "src", "bin.ts"), "build"], {
     cwd: root,
@@ -167,7 +175,7 @@ describe("k.hosting: the client entry binds keel-peer tags to its ctx", () => {
     document.head.innerHTML = "";
   });
 
-  test("With `KEEL_PEER_API=https://api.test` a `service({ module })` call from the client entry fetches `https://api.test` plus the path with credentials included", async () => {
+  test("With `KEEL_PEER_API=https://api.test` a `service({ contract })` call from the client entry fetches `https://api.test` plus the path with credentials included", async () => {
     const { root, status } = build({ KEEL_PEER_API: "https://api.test" });
     expect(status).toBe(0);
     const seen = await run(root, "https://web.test/");
@@ -178,7 +186,7 @@ describe("k.hosting: the client entry binds keel-peer tags to its ctx", () => {
     }
   }, 180_000);
 
-  test("With `KEEL_PEER_API` unset a `service({ module })` call from the client entry goes to the document's origin, without credentials included", async () => {
+  test("With `KEEL_PEER_API` unset a `service({ contract })` call from the client entry goes to the document's origin, without credentials included", async () => {
     const { root, status } = build({});
     expect(status).toBe(0);
     const html = fs.readFileSync(path.join(root, "dist", "web", "index.html"), "utf8");

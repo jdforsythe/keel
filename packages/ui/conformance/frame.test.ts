@@ -2,11 +2,13 @@
 // Spec: k.origins, Frame "`Frame` from `@keel/ui` renders `<iframe>` with `src`, a required `title` (E1802, blank too), `allow` from `autoplay`, `encrypted-media`, `fullscreen`, `picture-in-picture` (joined `; `), `loading="lazy"`, `referrerpolicy="strict-origin"` and `sandbox="allow-scripts allow-same-origin allow-popups allow-presentation"`; it takes `id`, `lang` and the style props (k.ui). A `src` not absolute `http` or `https`, relative too, or of the document's origin renders `about:blank`."
 // Spec: k.origins, Conformance "`Frame src="https://v.example/e/1" title="Demo"` renders the attributes above; without `title`, or with `title=" "`, E1802; `src="javascript:x"` renders `about:blank`; `src="/e/1"` is E1570."
 // Seed 1337 (fc.assert below). The E1802 and E1570 cases through `keel check`: packages/check/conformance/origins-e1570-directives.test.ts.
+import { createCtx } from "@keel/ctx";
 import { mount } from "@keel/runtime-dom";
 import { Box, Frame } from "@keel/ui";
 import type { StyleProps } from "@keel/ui";
 import fc from "fast-check";
 import { describe, expect, expectTypeOf, it } from "vitest";
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 type FrameProps = Parameters<typeof Frame>[0];
 type Allow = "autoplay" | "encrypted-media" | "fullscreen" | "picture-in-picture";
@@ -15,7 +17,9 @@ const SEED = 1337;
 function render(props: Record<string, unknown>): Element | null {
   const host = document.createElement("div");
   document.body.appendChild(host);
-  const off = mount(() => Reflect.apply(Frame, undefined, [{ id: "frame", title: "Demo", ...props }]), host);
+  const off = mount(() => Reflect.apply(Frame, undefined, [{ id: "frame", title: "Demo", ...props }]), host, {
+    ctx: simCtx,
+  });
   const el = document.getElementById("frame");
   const clone = el === null ? null : el.cloneNode(true);
   off();
@@ -94,7 +98,7 @@ describe("k.origins: Frame", () => {
     const style = { p: "2", bg: "accent" } satisfies StyleProps;
     const host = document.createElement("div");
     document.body.appendChild(host);
-    const off = mount(() => Box({ id: "box", ...style }), host);
+    const off = mount(() => Box({ id: "box", ...style }), host, { ctx: simCtx });
     const boxClass = document.getElementById("box")?.getAttribute("class") ?? "";
     off();
     host.remove();

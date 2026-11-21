@@ -1,12 +1,12 @@
 // Spec: k.boundary, Conformance "A route component reaching `lib/keys.server.ts` through `lib/fmt.ts` is one E1004 at `lib/fmt.ts` naming the chain, and a literal-origin `ctx.net.fetch` in `lib/fmt.ts` is E1571; none for a type-only import, a schema both sides import, a `routes.ts` value import, or a file only server-only files import."
 // Spec: k.boundary, Conformance "For generated import graphs, E1004 is reported exactly when a route component reaches a server-only file by value imports through no server-only file or `routes.ts`."
-// Spec: k.boundary, Reach "Client-reachable code (E1004, so E1107 and E1571), with a `topology.ts`: a file under `modules/<id>/`, not server-only, of a `node` or `static` module (one such a deployable lists); a file of a `client` module, for imports of another module's server-only files; and a project file outside `node_modules/` a client entry reaches by value imports, re-exports and literal `import()`, not through a server-only file. Client entries: each route `component` of a `node` or `static` module and every file of a `client` one. No `topology.ts`: every file but server-only ones. A `routes.ts` may import server-only files by value; a specifier with a query names its file; package imports are not followed (E1007 covers them). An E1004 found through a chain ends `(<entry> -> … -> <file>)`."
+// Spec: k.boundary, Reach "Client-reachable code (E1004 and E1571; E1107 has its own, k.leave), with a `topology.ts`: a file under `modules/<id>/`, not server-only, of a `node` or `static` module (one such a deployable lists); a file of a `client` module, for imports of another module's server-only files; and a project file outside `node_modules/` a client entry reaches by value imports, re-exports and literal `import()`, not through a server-only file. Client entries: each route `component` of a `node` or `static` module and every file of a `client` one. No `topology.ts`: every file but server-only ones. A `routes.ts` may import server-only files by value; a specifier with a query names its file; package imports are not followed (E1007 covers them). An E1004 found through a chain ends `(<entry> -> … -> <file>)`."
 // Seed 1337 (fc.assert below). `check` over in-memory project trees with a `topology.ts` (the type pass is off: the rule reads syntax and the topology).
 // Node `api` lists module `a`, `client` `web` lists module `w`. E1004's message ends `(<entry> -> … -> <file>)`, the chain from the route component to the server-only file.
 import { posix } from "node:path";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { type Diag, ROUTES_A, diagsOf, file, nodeA, pageOf } from "./boundary-support.ts";
+import { CONTRACT_A, type Diag, ROUTES_A, diagsOf, file, nodeA, pageOf } from "./boundary-support.ts";
 import { SEED } from "./support.ts";
 
 const FMT = (extra = ""): ReturnType<typeof file> =>
@@ -27,21 +27,21 @@ const e1004 = (files: Parameters<typeof diagsOf>[0]): Diag[] => diagsOf(files, "
 
 describe("k.boundary Reach: a route component reaching a server-only file through a plain file", () => {
   test("`Page.tsx` reaching `lib/keys.server.ts` through `lib/fmt.ts` is one E1004 at `lib/fmt.ts` naming the chain", () => {
-    const d = e1004(nodeA([ROUTES_A, PAGE_FMT, FMT(), KEYS]));
+    const d = e1004(nodeA([ROUTES_A, CONTRACT_A, PAGE_FMT, FMT(), KEYS]));
     expect(d).toHaveLength(1);
     expect(d[0]?.path).toBe("lib/fmt.ts");
     expect(d[0]?.message.endsWith("(modules/a/Page.tsx -> lib/fmt.ts -> lib/keys.server.ts)")).toBe(true);
   });
 
   test("a literal-origin `ctx.net.fetch` in `lib/fmt.ts` is one E1571", () => {
-    const files = nodeA([ROUTES_A, PAGE_FMT, FMT(FETCH), KEYS]);
+    const files = nodeA([ROUTES_A, CONTRACT_A, PAGE_FMT, FMT(FETCH), KEYS]);
     const hits = diagsOf(files, "E1571");
     expect(hits).toHaveLength(1);
     expect(hits[0]?.path).toBe("lib/fmt.ts");
   });
 
   test("the same `lib/fmt.ts` reached by no route component is no E1004 and no E1571", () => {
-    const files = nodeA([ROUTES_A, pageOf(""), FMT(), KEYS, file("lib/net.ts", FETCH)]);
+    const files = nodeA([ROUTES_A, CONTRACT_A, pageOf(""), FMT(), KEYS, file("lib/net.ts", FETCH)]);
     expect(e1004(files)).toEqual([]);
     expect(diagsOf(files, "E1571")).toEqual([]);
   });
@@ -68,7 +68,11 @@ describe("k.boundary Reach: a `client` module imports another module's server-on
         file("modules/w/loadW.server.ts", "export const loadW = () => 1\n"),
         file(
           "modules/w/routes.ts",
-          "import { manifest } from '@keel/router'\nimport { loadW } from './loadW.server.ts'\nimport View from './View.tsx'\nexport const routes = manifest({ 'w.home': { path: '/', loader: loadW, component: View } })\n",
+          "import { manifest } from '@keel/router'\nimport { w } from './w.contract.ts'\nimport { loadW } from './loadW.server.ts'\nimport View from './View.tsx'\nexport const routes = manifest(w, { 'w.home': { loader: loadW, component: View } })\n",
+        ),
+        file(
+          "modules/w/w.contract.ts",
+          "import { contract } from '@keel/router/contract'\nexport const w = contract('w', { 'w.home': { path: '/' } })\n",
         ),
         file(
           "modules/w/View.tsx",
@@ -99,6 +103,7 @@ describe("k.boundary Reach: a specifier with a query names its file", () => {
       const d = e1004(
         nodeA([
           ROUTES_A,
+          CONTRACT_A,
           RAW,
           AUTH,
           file("modules/a/Page.tsx", `${source}export default function Page() {\n  return null\n}\n`),
@@ -117,6 +122,7 @@ describe("k.boundary Reach: none", () => {
       "`import type { T } from './load.server.ts'` in `Page.tsx`",
       [
         ROUTES_A,
+        CONTRACT_A,
         LOAD,
         pageOf(
           "import type { T } from './load.server.ts'\n",
@@ -128,22 +134,23 @@ describe("k.boundary Reach: none", () => {
       "`Item.schema.ts` imported by `Page.tsx` and by `load.server.ts`",
       [
         ROUTES_A,
+        CONTRACT_A,
         SCHEMA,
         file("modules/a/load.server.ts", "import { Item } from './Item.schema.ts'\nexport const load = () => Item\n"),
         pageOf("import { Item } from './Item.schema.ts'\n", "export default function Page() {\n  return Item\n}\n"),
       ],
     ],
     [
-      "`routes.ts` importing `load` from `load.server.ts` and `Page.tsx` importing `routes.ts` for `routes.href`",
+      "`routes.ts` importing `load` from `load.server.ts` and `Page.tsx` importing `a.contract.ts` for `a.href`",
       [
         file(
           "modules/a/routes.ts",
-          "import { manifest } from '@keel/router'\nimport { load } from './load.server.ts'\nimport Page from './Page.tsx'\nexport const routes = manifest({ 'a.show': { path: '/a', loader: load, component: Page } })\n",
+          "import { manifest } from '@keel/router'\nimport { a } from './a.contract.ts'\nimport { load } from './load.server.ts'\nimport Page from './Page.tsx'\nexport const routes = manifest(a, { 'a.show': { loader: load, component: Page } })\n",
         ),
         LOAD,
         pageOf(
-          "import { routes } from './routes.ts'\n",
-          "export default function Page() {\n  return routes.href('a.show')\n}\n",
+          "import { a } from './a.contract.ts'\n",
+          "export default function Page() {\n  return a.href('a.show')\n}\n",
         ),
       ],
     ],
@@ -151,6 +158,7 @@ describe("k.boundary Reach: none", () => {
       "`lib/only.ts` imported only by `load.server.ts` and itself importing `lib/db.server.ts`",
       [
         ROUTES_A,
+        CONTRACT_A,
         pageOf(""),
         file("modules/a/load.server.ts", "import { only } from '../../lib/only.ts'\nexport const load = () => only\n"),
         file("lib/only.ts", "import { db } from './db.server.ts'\nexport const only = db\n"),
@@ -161,6 +169,7 @@ describe("k.boundary Reach: none", () => {
       "a server-only file importing another server-only file",
       [
         ROUTES_A,
+        CONTRACT_A,
         pageOf(""),
         LOAD,
         file("modules/a/other.server.ts", "import { load } from './load.server.ts'\nexport const other = load\n"),
@@ -170,6 +179,7 @@ describe("k.boundary Reach: none", () => {
       "tooling at the project root importing a server-only file",
       [
         ROUTES_A,
+        CONTRACT_A,
         pageOf(""),
         LOAD,
         file("vite.config.ts", "import { load } from './modules/a/load.server.ts'\nexport default load\n"),
@@ -261,9 +271,13 @@ describe("k.boundary Reach: generated import graphs", () => {
     const spec = (n: Node): string => posix.relative("modules/a", n.path).replace(/^(?!\.)/, "./");
     const routes = file(
       "modules/a/routes.ts",
-      `import { manifest } from '@keel/router'\n${comps.map(({ n, i }) => `import C${i} from '${spec(n)}'\n`).join("")}${servers.map((t) => `import { ${nodeAt(g, t).name} } from '${spec(nodeAt(g, t))}'\n`).join("")}${servers.map((t) => `void ${nodeAt(g, t).name}\n`).join("")}export const routes = manifest({ ${comps.map(({ i }) => `'a.p${i}': { path: '/p${i}', component: C${i} }`).join(", ")} })\n`,
+      `import { manifest } from '@keel/router'\nimport { a } from './a.contract.ts'\n${comps.map(({ n, i }) => `import C${i} from '${spec(n)}'\n`).join("")}${servers.map((t) => `import { ${nodeAt(g, t).name} } from '${spec(nodeAt(g, t))}'\n`).join("")}${servers.map((t) => `void ${nodeAt(g, t).name}\n`).join("")}export const routes = manifest(a, { ${comps.map(({ i }) => `'a.p${i}': { component: C${i} }`).join(", ")} })\n`,
     );
-    return [...out, routes];
+    const contractA = file(
+      "modules/a/a.contract.ts",
+      `import { contract } from '@keel/router/contract'\nexport const a = contract('a', { ${comps.map(({ i }) => `'a.p${i}': { path: '/p${i}' }`).join(", ")} })\n`,
+    );
+    return [...out, routes, contractA];
   }
 
   /** Reports expected by the spec: a plain or component file with a value import of a server-only file, in a module file or reached from a route component through no server-only file or `routes.ts`. */

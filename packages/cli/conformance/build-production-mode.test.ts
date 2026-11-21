@@ -16,7 +16,7 @@ const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const BIN = join(REPO, "packages", "cli", "src", "bin.ts");
 
 const manifestSrc = (id: string): string =>
-  `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [], routes: [] } })\n`;
+  `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [] } })\n`;
 const files = (): Record<string, string> => ({
   "package.json": `${JSON.stringify({ name: "fx", private: true, type: "module", version: "1.0.0" })}\n`,
   "vite.config.ts":
@@ -30,7 +30,9 @@ const files = (): Record<string, string> => ({
   "modules/c/Page.tsx":
     "/// <reference types=\"vite/client\" />\nimport { Box, Text } from '@keel/ui'\nexport default function Page() {\n  console.log('keel-always-marker-41c9')\n  if (import.meta.env.DEV) console.log('keel-dev-only-marker-7f3a')\n  return (\n    <Box as=\"main\">\n      <Text>home</Text>\n    </Box>\n  )\n}\n",
   "modules/c/routes.ts":
-    "import { manifest } from '@keel/router'\nimport Page from './Page.tsx'\nexport const routes = manifest({ 'c.page': { path: '/', component: Page } })\n",
+    "import { manifest } from '@keel/router'\nimport { c } from './c.contract.ts'\nimport Page from './Page.tsx'\nexport const routes = manifest(c, { 'c.page': { component: Page } })\n",
+  "modules/c/c.contract.ts":
+    "import { contract } from '@keel/router/contract'\nexport const c = contract('c', { 'c.page': { path: '/' } })\n",
 });
 
 let dir = "";

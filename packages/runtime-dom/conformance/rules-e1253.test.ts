@@ -1,14 +1,17 @@
 // @vitest-environment happy-dom
-// Spec: k.runtime Rules E1253. ASSUMPTION: resume(root, { [componentId]: Component }) returns { warnings: unknown[] }.
+// Spec: k.runtime Rules E1253. ASSUMPTION: resume(root, { [componentId]: Component }, { ctx }) returns { warnings: unknown[] }.
+import { createCtx } from "@keel/ctx";
 import { resume } from "@keel/runtime-dom/ops";
 import { describe, expect, it } from "vitest";
 import { Counter, KSTATE, click, flush } from "./fixtures.ts";
+
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 describe("k.runtime: E1253 server HTML does not match the compiled structure at resume", () => {
   it("E1253 resume against mismatched HTML re-renders that island on the client and emits a dev warning", async () => {
     const host = document.createElement("div");
     host.innerHTML = `<div data-k-island="Counter"><span>3</span></div>${KSTATE}`;
-    const { warnings } = resume(host, { Counter });
+    const { warnings } = resume(host, { Counter }, { ctx: simCtx });
     expect(warnings.length).toBeGreaterThanOrEqual(1);
     expect(JSON.stringify(warnings)).toContain("E1253");
     const btn = host.querySelector("#inc");

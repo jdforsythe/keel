@@ -6,7 +6,7 @@ import { replay } from "@keel/std-sessions/replay";
 import "@keel/std-sessions/tools";
 import fc from "fast-check";
 import { afterAll, describe, expect, test } from "vitest";
-import { buggySession, cartRoutes, diskFixture, play, sessionFile } from "./fixtures.ts";
+import { buggySession, cartContract, cartRoutes, diskFixture, play, sessionFile } from "./fixtures.ts";
 
 // E2003 replay cannot apply input event N (0-based; message names N) (comes from `keel session`)
 describe("std.sessions: E2003 fires on a fixture, not on its clean twin", () => {
@@ -14,7 +14,7 @@ describe("std.sessions: E2003 fires on a fixture, not on its clean twin", () => 
     const { session } = await play(1337, []);
     await fc.assert(
       fc.asyncProperty(fc.integer({ min: 0, max: 5 }), async (n) => {
-        const nav = { at: 0, kind: "nav" as const, href: cartRoutes().href("cart.show") };
+        const nav = { at: 0, kind: "nav" as const, href: cartContract.href("cart.show") };
         const events = [
           ...Array.from({ length: n }, () => nav),
           { at: 0, kind: "fire" as const, id: "no.such.id", event: { type: "click" as const } },

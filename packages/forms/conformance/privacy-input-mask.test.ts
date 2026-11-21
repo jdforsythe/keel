@@ -8,6 +8,7 @@
 import { createCtx, observe } from "@keel/ctx";
 import { form } from "@keel/forms";
 import { createRouter, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { mount } from "@keel/runtime-dom";
 import { type ObjectSchema, type Schema, s } from "@keel/schema";
 import fc from "fast-check";
@@ -75,9 +76,9 @@ describe("k.privacy input mask", () => {
       fc.asyncProperty(rootArb, texts, async (spec, pool) => {
         const all = leaves(spec, "", null);
         const text = (i: number): string => pool[i % pool.length] ?? "a";
-        const routes = manifest({
+        const pmContract = contract("pm", { "pm.show": { path: "/pm" } });
+        const routes = manifest(pmContract, {
           "pm.show": {
-            path: "/pm",
             component(): DomNode {
               const f = form(objectOf(spec));
               const main = document.createElement("main");

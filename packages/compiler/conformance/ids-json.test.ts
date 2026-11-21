@@ -1,12 +1,15 @@
 // @vitest-environment happy-dom
 // Seed 1337 (fc.assert seed below).
 // Mounted-DOM stand-in (compiler precedes testing in deps order, S0003). Resolution through the harness find(id) is packages/testing/conformance/compiler-ids-find.test.ts (rfc:0033) and component-ids-find.test.ts (rfc:0021).
+import { createCtx } from "@keel/ctx";
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
 import { mount } from "@keel/runtime-dom";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { isMountable } from "./support.ts";
+
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 function build(name: string, body: string) {
   const r = compile([{ path: `${name}.tsx`, source: `export default function ${name}() { return ${body} }` }]);
@@ -17,7 +20,7 @@ function build(name: string, body: string) {
   if (!isMountable(C)) throw new Error("not a component");
   const host = document.createElement("div");
   document.body.append(host);
-  const dispose = mount(C, host);
+  const dispose = mount(C, host, { ctx: simCtx });
   return { ids: Object.keys(r.artifacts["ids.json"]), entries: r.artifacts["ids.json"], host, dispose };
 }
 

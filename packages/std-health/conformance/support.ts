@@ -25,7 +25,7 @@ export function appFiles(deps: string[], file: string): Files {
     {
       path: "modules/orders/module.ts",
       source: `import { module } from '@keel/compiler'
-export default module({ id: 'orders', deps: [${list}], capabilities: [], public: { exports: [], routes: [] } })
+export default module({ id: 'orders', deps: [${list}], capabilities: [], public: { exports: [] } })
 `,
     },
     {

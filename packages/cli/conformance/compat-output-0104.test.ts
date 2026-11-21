@@ -1,9 +1,8 @@
-// Spec: k.compat, Surface "`keel build` writes `.keel/surface.json`, a k.compiler artifact (E1005): for each route of the app its `module`, `path`, `params`, `search`, its GET answer (its loader's `output`; none without a loader) and, per action method, its `input` and answer (its `output` on an API route, else `Href | null`); every route's error answer is a KeelError `{ code, message, data }`; for each `service({ module })` call its calling module, `module`, and each endpoint's method, `path`, `params`, `query`, `body`, `output` and `errors`; for each store a `stores` factory creates, its `id`, state schema and each transaction's payload schema (the build runs each factory once on a sim ctx)."
-// Spec: k.compat, Conformance "A POST endpoint with `output: s.string().nullable()` to an API route whose action's `output` is `s.object({ n: s.int() })` is one E1561; with that `output`, none."
-// Spec: k.compat, Rules "E1562 a route change that a base endpoint in another deployable refuses, at the route's schema, naming the endpoint; fix when the change is one added required object field: make it optional"
+// Spec: k.compat, Surface "`keel build` writes `.keel/surface.json`, a k.compiler artifact (E1005): for each contract (k.contract) its `module`, the modules that import it (`callers`), and each API entry's id, method, `path`, `params`, `query`, `body`, `output` and `errors`; for each store a `stores` factory creates, its `id`, state schema and each transaction's payload schema (the build runs each factory once on a sim ctx). Schemas are JSON Schema, as in `routes.json`; the file holds `version: 2`."
+// Spec: k.compat, Conformance "Removing an `output` field a base entry requires is one E1562 with no fix; adding a field to an open output object is none; removing a base entry is one E1562 with no fix."
+// Spec: k.compat, Rules "E1562 an entry change that a base entry with a caller in another deployable refuses, at the current entry's member, naming the id"
 // Seed: 1337. Real binary over a temp project (see compat-support.ts).
-// The surface's `answer` of an action is read as JSON text: the spec fixes that it is the output's JSON Schema (API route) or `Href | null` (page) and not the wrapper around it,
-// so the checks look for the schema's own marks (`integer` and the field name; `string` and `null`) and not for an exact tree.
+// Layout: k.compat Surface (v2). `data.contracts[<module>].entries[<id>].output` holds the entry's `output` as JSON Schema; the checks look for the schema's own marks (`integer` and the field name) and not for an exact tree.
 import fc from "fast-check";
 import { afterAll, expect, test } from "vitest";
 import {
@@ -31,62 +30,30 @@ const fresh = (files: Tree): string => {
   return dir;
 };
 
-/** Module `a` calls the API route `y.save` (`POST /y/save`, action `output` given) through a `module` endpoint with `endpointOutput`. */
-function apiProject(output: string, value: string, endpointOutput: string, split = true): Tree {
-  const base = project({ split });
-  return {
-    ...base,
-    "modules/y/save.server.ts": [
-      "import { action } from '@keel/router'",
-      "import { ok, s } from '@keel/schema'",
-      `export const save = action({ input: s.object({ name: s.string() }), output: ${output} }, async () => ok(${value}))`,
-      "",
-    ].join("\n"),
-    "modules/y/routes.ts": [
-      "import { manifest } from '@keel/router'",
-      "import { save } from './save.server.ts'",
-      "export const routes = manifest({ 'y.save': { api: true, path: '/y/save' } })",
-      "routes.actions({ 'y.save': { POST: save } })",
-      "",
-    ].join("\n"),
-    "modules/a/api.ts": [
-      "import { s } from '@keel/schema'",
-      "import { endpoints, service } from '@keel/services'",
-      "export const api = service({ module: 'y', schema: endpoints({",
-      `  save: { method: 'POST', path: '/y/save', body: s.object({ name: s.string() }), output: ${endpointOutput} },`,
-      "}) })",
-      "",
-    ].join("\n"),
-  };
-}
-const answerOf = (dir: string): string => {
+const field = (v: unknown, k: string): unknown => (typeof v === "object" && v !== null ? Reflect.get(v, k) : undefined);
+const entryOf = (dir: string, id: string): unknown => {
   const file: unknown = JSON.parse(readText(dir, ".keel/surface.json"));
-  const route = (v: unknown, k: string): unknown =>
-    typeof v === "object" && v !== null ? Reflect.get(v, k) : undefined;
-  const post = route(route(route(route(route(file, "data"), "routes"), "y.save"), "actions"), "POST");
-  return JSON.stringify(route(post, "answer"));
+  return field(field(field(field(field(file, "data"), "contracts"), "y"), "entries"), id);
 };
 
 test(
-  "`keel build` of a fixture whose API action declares `output: s.object({ n: s.int() })` records that answer as the output's JSON Schema in `.keel/surface.json`; a page action's answer is `Href | null`.",
+  "`keel build` records an API entry's `output` as its JSON Schema in `.keel/surface.json`, with the entry's method and path and the module `a` that imports the contract.",
   () => {
     fc.assert(
       fc.property(fc.constantFrom("n", "count", "total"), (name) => {
         const out = `s.object({ ${name}: s.int() })`;
-        const api = fresh(apiProject(out, `{ ${name}: 1 }`, out));
-        expect(keel(api, ["build"]).status).toBe(0);
-        const answer = answerOf(api);
+        const dir = fresh(project({ output: out, outputValue: `{ ${name}: 1 }` }));
+        expect(keel(dir, ["build"]).status).toBe(0);
+        const load = entryOf(dir, "y.load");
+        const answer = JSON.stringify(field(load, "output"));
         expect(answer).toContain(`"${name}"`);
         expect(answer).toContain("integer");
-        expect(answer).not.toContain('"null"');
-
-        const page = fresh(project());
-        expect(keel(page, ["build"]).status).toBe(0);
-        const pageAnswer = answerOf(page);
-        expect(pageAnswer).toContain("string");
-        expect(pageAnswer).toContain("null");
-        expect(pageAnswer).not.toContain("integer");
-        expect(pageAnswer).not.toContain(`"${name}"`);
+        expect(field(load, "method")).toBe("GET");
+        expect(field(load, "path")).toBe("/y/save");
+        const file: unknown = JSON.parse(readText(dir, ".keel/surface.json"));
+        expect(field(field(file, "data"), "version")).toBe(2);
+        expect(field(field(field(field(file, "data"), "contracts"), "y"), "callers")).toEqual(["a"]);
+        expect(JSON.stringify(field(entryOf(dir, "y.add"), "output"))).toContain("null");
       }),
       { seed: SEED, numRuns: 3 },
     );
@@ -95,33 +62,42 @@ test(
 );
 
 test(
-  "A POST endpoint with `output: s.string().nullable()` to an API route whose action's `output` is `s.object({ n: s.int() })` is one E1561; with that `output`, none.",
+  "With a base whose entry `output` was `{ n }` and a current `output` without `n`, and the caller in another deployable, is one E1562; in one deployable none.",
   () => {
-    const out = "s.object({ n: s.int() })";
-    const bad = diags(buildAndCheck(fresh(apiProject(out, "{ n: 1 }", "s.string().nullable()"))), "E1561");
-    expect(bad).toHaveLength(1);
-    expect(bad[0]?.path).toBe("modules/a/api.ts");
-    expect(diags(buildAndCheck(fresh(apiProject(out, "{ n: 1 }", out))), "E1561")).toEqual([]);
+    const before = "s.object({ n: s.int() })";
+    const after = "s.object({ m: s.int() })";
+    const { dir, base } = baseSurface(project({ output: before, outputValue: "{ n: 1 }" }));
+    dirs.push(dir);
+    write(dir, project({ output: after, outputValue: "{ m: 1 }" }));
+    const found = diags(buildAndCheck(dir, base), "E1562");
+    expect(found).toHaveLength(1);
+    expect(String(found[0]?.message)).toContain("y.load");
+    expect(found[0]?.fix ?? null).toBeNull();
+
+    const same = baseSurface(project({ output: before, outputValue: "{ n: 1 }", split: false }));
+    dirs.push(same.dir);
+    write(same.dir, project({ output: after, outputValue: "{ m: 1 }", split: false }));
+    expect(diags(buildAndCheck(same.dir, same.base), "E1562")).toEqual([]);
   },
   SLOW,
 );
 
 test(
-  "With a base whose answer was `{ n }` and a current `output` without `n`, and the caller in another deployable, is one E1562; in one deployable none.",
+  "Removing a base entry is one E1562 with no fix, naming its id.",
   () => {
-    const before = "s.object({ n: s.int() })";
-    const after = "s.object({ m: s.int() })";
-    const { dir, base } = baseSurface(apiProject(before, "{ n: 1 }", before));
+    const { dir, base } = baseSurface(project());
     dirs.push(dir);
-    write(dir, apiProject(after, "{ m: 1 }", after));
+    const current = project();
+    write(dir, {
+      "modules/y/y.contract.ts": (current["modules/y/y.contract.ts"] ?? "").replace(/ {2}'y\.load':[^\n]*\n/, ""),
+      "modules/y/load.server.ts": "export {};\n",
+      "modules/y/routes.ts":
+        "import { manifest } from '@keel/router'\nimport { y } from './y.contract.ts'\nimport { add } from './add.server.ts'\nexport const routes = manifest(y, { 'y.add': { action: add } })\n",
+    });
     const found = diags(buildAndCheck(dir, base), "E1562");
     expect(found).toHaveLength(1);
-    expect(found[0]?.fix ?? null).toBeNull();
-
-    const same = baseSurface(apiProject(before, "{ n: 1 }", before, false));
-    dirs.push(same.dir);
-    write(same.dir, apiProject(after, "{ m: 1 }", after, false));
-    expect(diags(buildAndCheck(same.dir, same.base), "E1562")).toEqual([]);
+    expect(String(found[0]?.message)).toContain("y.load");
+    expect(found[0]?.fix).toBeUndefined();
   },
   SLOW,
 );

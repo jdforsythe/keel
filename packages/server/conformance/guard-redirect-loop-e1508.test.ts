@@ -4,6 +4,7 @@
 // with kind "diag" that mentions the code E1508; a static manifest() E1508 (self-redirect under own guard) is also accepted in the property.
 import { createCtx } from "@keel/ctx";
 import { guard, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { err, ok, s } from "@keel/schema";
 import { topology } from "@keel/server";
 import fc from "fast-check";
@@ -27,8 +28,26 @@ const shell = (p: { children?: () => Node | string }) => {
 };
 
 type Def = Record<string, unknown>;
+const fieldOf = (v: unknown, k: string): unknown =>
+  typeof v === "object" && v !== null ? Reflect.get(v, k) : undefined;
 async function appOf(defs: Def, mode: Mode = "production", log?: { format: "json"; write(l: string): void }) {
-  const routes = Reflect.apply(manifest, undefined, [defs]);
+  // The definitions are built at run time, so the contract and its binding are made through loosely typed calls.
+  const decl = Object.fromEntries(
+    Object.entries(defs).map(([id, d]) => [
+      id,
+      fieldOf(d, "path") === undefined ? { layout: true } : { path: fieldOf(d, "path"), search: fieldOf(d, "search") },
+    ]),
+  );
+  const c: unknown = Reflect.apply(contract, undefined, ["app", decl]);
+  const binding = Object.fromEntries(
+    Object.entries(defs).map(([id, d]) => [
+      id,
+      Object.fromEntries(
+        ["component", "guard", "layout"].flatMap((k) => (fieldOf(d, k) === undefined ? [] : [[k, fieldOf(d, k)]])),
+      ),
+    ]),
+  );
+  const routes = Reflect.apply(manifest, undefined, [c, binding]);
   return createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
     routes,

@@ -1,4 +1,5 @@
 // Shared helpers for the k.host-element conformance (not a test file). Public API only. Seed: 1337.
+import { createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
 import * as reactive from "@keel/reactive";
 import { mount } from "@keel/runtime-dom";
@@ -17,7 +18,7 @@ export const host = (): HTMLElement => {
 };
 export const render = (make: () => Node): { host: HTMLElement; off: () => void } => {
   const h = host();
-  return { host: h, off: mount(make, h) };
+  return { host: h, off: mount(make, h, { ctx: createCtx({ mode: "sim", seed: SEED }) }) };
 };
 export const byId = (root: ParentNode, id: string): HTMLElement => {
   const el = root.querySelector(`[id="${id}"]`);

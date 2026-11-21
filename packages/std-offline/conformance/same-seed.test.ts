@@ -8,7 +8,7 @@ import { scope } from "@keel/reactive";
 import { drain, outbox, send } from "@keel/std-offline";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { Api, MODULE, TODOS, createServer, edit, entriesOf, settle, simCtx, stored } from "./fixtures.ts";
+import { Api, TODOS, createServer, edit, entriesOf, settle, simCtx, stored } from "./fixtures.ts";
 
 let n = 0;
 const todo = (i: number): string => TODOS[i % TODOS.length] ?? "t1";
@@ -34,7 +34,7 @@ test("With two ctxs of one seed over one outbox declared outside a scope, sendin
   await fc.assert(
     fc.asyncProperty(steps, async (plan: Step[]) => {
       const id = `same${++n}.outbox`;
-      const o = outbox(id, Api, { module: MODULE });
+      const o = outbox(id, Api, {});
       const ctxs = [simCtx(1337), simCtx(1337)] as const;
       const servers = [createServer(), createServer()] as const;
       servers[0].attach(ctxs[0]);
@@ -71,7 +71,7 @@ test("With two ctxs of one seed over one outbox declared outside a scope, sendin
 
 test("Ctx A sends offline as `a` and ctx B sends twice as `b` over one outbox of one seed: A's entry stays `queued` and B's storage holds only B's two.", async () => {
   const id = `same${++n}.outbox`;
-  const o = outbox(id, Api, { module: MODULE });
+  const o = outbox(id, Api, {});
   const a = simCtx(1337);
   const b = simCtx(1337);
   const sa = createServer();
@@ -102,7 +102,7 @@ test("Ctx A sends offline as `a` and ctx B sends twice as `b` over one outbox of
 
 test("Ctx A queues offline as `a`, ctx B sends online as `b` and gets `sent`: A's entry is still in the store, and a `drain` with `a` on A online posts it.", async () => {
   const id = `same${++n}.outbox`;
-  const o = outbox(id, Api, { module: MODULE });
+  const o = outbox(id, Api, {});
   const a = simCtx(1337);
   const b = simCtx(1337);
   const sa = createServer();

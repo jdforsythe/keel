@@ -4,6 +4,7 @@
 import { createCtx } from "@keel/ctx";
 import type { Ctx, SimCtx } from "@keel/ctx";
 import { action, guard, loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import { createApp, identity, topology } from "@keel/server";
 import { deferred } from "./fixtures.ts";
@@ -61,39 +62,48 @@ export async function rig(o: RigOptions = {}) {
     seen.order.push("guard");
     return ok(null);
   });
-  const read = loader({ output: Who, search: SearchUser }, async ({ user, caller }) => {
+  const appContract = contract("app", {
+    "app.login": { path: "/login" },
+    "app.who": { path: "/who", search: SearchUser },
+    "app.api": { method: "GET", path: "/api/who", output: Who },
+    "app.live": { method: "GET", path: "/api/live", events: true, output: Who },
+  });
+  const read = loader(appContract, "app.who", { output: Who }, async ({ user, caller }) => {
     seen.loader.push(user);
     seen.order.push("loader");
     return ok({ user, caller });
   });
-  const write = action({ input: Input }, async (_input, { user }) => {
+  const write = action(appContract, "app.who", { input: Input }, async (_input, { user }) => {
     seen.action.push(user);
     seen.order.push("action");
     return ok(null);
   });
-  const readApi = loader({ output: Who }, async ({ user, caller }) => {
+  const readApi = loader(appContract, "app.api", {}, async ({ user, caller }) => {
     seen.api.push(user);
     seen.order.push("api");
     return ok({ user, caller });
   });
   const release = deferred();
-  const live = liveLoader(Who, async function* (args: { user: string; caller: string; signal: AbortSignal }) {
-    seen.live.push(args.user);
-    seen.order.push("live");
-    yield ok({ user: args.user, caller: args.caller });
-    await Promise.race([
-      release.promise,
-      new Promise<void>((resolve) => args.signal.addEventListener("abort", () => resolve())),
-    ]);
-    if (!args.signal.aborted) yield ok({ user: args.user, caller: args.caller });
+  const live = liveLoader(
+    appContract,
+    "app.live",
+    async function* (args: { user: string; caller: string; signal: AbortSignal }) {
+      seen.live.push(args.user);
+      seen.order.push("live");
+      yield ok({ user: args.user, caller: args.caller });
+      await Promise.race([
+        release.promise,
+        new Promise<void>((resolve) => args.signal.addEventListener("abort", () => resolve())),
+      ]);
+      if (!args.signal.aborted) yield ok({ user: args.user, caller: args.caller });
+    },
+  );
+  const routes = manifest(appContract, {
+    "app.login": { component: view },
+    "app.who": { component: view, loader: read, guard: gate, POST: write },
+    "app.api": { loader: readApi },
+    "app.live": { loader: live },
   });
-  const routes = manifest({
-    "app.login": { path: "/login", component: view },
-    "app.who": { path: "/who", search: SearchUser, loader: read, guard: gate, component: view },
-    "app.api": { api: true, path: "/api/who", loader: readApi },
-    "app.live": { path: "/live", loader: live, component: view },
-  });
-  routes.actions({ "app.who": { POST: write } });
   const identify = o.identify;
   const source =
     identify === undefined

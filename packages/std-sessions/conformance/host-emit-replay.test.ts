@@ -5,7 +5,8 @@
 // Seed 1337. The element's `code` imports a file that does not exist: neither the recording nor the replay may load it.
 import { createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
-import { manifest } from "@keel/router";
+import { type RouteTable, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { Session as SessionSchema, record } from "@keel/std-sessions";
 import { replay } from "@keel/std-sessions/replay";
@@ -16,17 +17,17 @@ import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 import { SEED } from "./fixtures.ts";
 
+const chart = contract("chart", { "chart.show": { path: "/chart" } });
 const Input = s.object({ n: s.number() });
 const Emit = s.object({ at: s.number() });
 
 const built = (() => {
-  const made: { picks: ReturnType<typeof store>; routes: ReturnType<typeof manifest> }[] = [];
+  const made: { picks: ReturnType<typeof store>; routes: RouteTable }[] = [];
   scope(() => {
     const picks = store(s.object({ ats: s.array(s.number()) }), { ats: [] }, { id: "picks" });
     const pick = transaction(picks, "picks.add", Emit, (st, p) => ({ ats: [...st.ats, p.at] }));
-    const routes = manifest({
+    const routes = manifest(chart, {
       "chart.show": {
-        path: "/chart",
         component: () =>
           Box({
             as: "main",

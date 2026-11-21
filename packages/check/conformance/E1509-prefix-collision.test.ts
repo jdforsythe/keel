@@ -1,28 +1,27 @@
-// Spec: k.prefix Rules, "E1509 (k.router block), from `manifest` and from `keel check` over a deployable's route table: a static first segment equal to a value of a prefix param; a route whose first segment is another param; a prefixed route whose second segment is a param (its value could read as a locale); a route whose path is a prefixed route's path without the prefix; two prefix params in one table; a `pathDefault` param that is not first in its path. Fix: prepend `/:<p>` to the route's `path` (its params then need the field, E1503)." Conformance: "Beside `x.show`, each of `/de-DE/about`, `/:slug`, `/:p/:slug` and `/items/:id` is E1509, the fix applied leaves no E1509, and without `pathDefault` none of them is E1509." (rfc:0079)
-// Seed 1337. The `manifest` half is packages/router/conformance/prefix-e1509.test.ts. ASSUMPTION: the check reads `routes.ts` and a `*.schema.ts` file beside it, with `topology.ts` naming the module.
+// Spec: k.prefix Rules, "E1509 (k.router block), thrown by `contract` and `routeTable` and from `keel check` over a deployable's route table (k.routes): a static first segment equal to a value of a prefix param; a route whose first segment is another param; a prefixed route whose second segment is a param (its value could read as a locale); a route whose path is a prefixed route's path without the prefix; two prefix params in one table; a `pathDefault` param that is not first in its path. Fix: prepend `/:<p>` to the route's `path` (its params then need the field, E1503)." Conformance: "Beside `x.show`, each of `/de-DE/about`, `/:slug`, `/:p/:slug` and `/items/:id` is E1509, the fix applied leaves no E1509, and without `pathDefault` none of them is E1509." (rfc:0079)
+// Seed 1337. The `contract` half is packages/router/conformance/prefix-e1509.test.ts. ASSUMPTION: the check reads `x.contract.ts` and a `*.schema.ts` file beside it, with `topology.ts` naming the module.
 import { check } from "@keel/check";
 import { expect, test } from "vitest";
 
 const LOCALE = (pd: boolean): string =>
   `import { s } from '@keel/schema'\nexport const AppLocale = s.enum(['en-US', 'de-DE']${pd ? ", { pathDefault: 'en-US' }" : ""})\n`;
 const TOPO = `import { topology } from '@keel/server'\nexport default topology({ web: { modules: ['x'], adapter: 'node' } })\n`;
-const routesFile = (extra: string): string =>
-  `import { manifest } from '@keel/router'\nimport { s } from '@keel/schema'\nimport { AppLocale } from './AppLocale.schema.ts'\n` +
-  `const page = () => null\n` +
-  `export const routes = manifest({\n  'x.show': { path: '/:p/items/:id', params: s.object({ p: AppLocale, id: s.string() }), component: page },\n${extra}\n})\n`;
+const contractFile = (extra: string): string =>
+  `import { contract } from '@keel/router/contract'\nimport { s } from '@keel/schema'\nimport { AppLocale } from './AppLocale.schema.ts'\n` +
+  `export const x = contract('x', {\n  'x.show': { path: '/:p/items/:id', params: s.object({ p: AppLocale, id: s.string() }) },\n${extra}\n})\n`;
 
 const EXTRAS: Record<string, string> = {
-  "/de-DE/about": `  'x.about': { path: '/de-DE/about', component: page },`,
-  "/:slug": `  'x.slug': { path: '/:slug', params: s.object({ slug: s.string() }), component: page },`,
-  "/:p/:slug": `  'x.page': { path: '/:p/:slug', params: s.object({ p: AppLocale, slug: s.string() }), component: page },`,
-  "/items/:id": `  'x.twin': { path: '/items/:id', params: s.object({ id: s.string() }), component: page },`,
+  "/de-DE/about": `  'x.about': { path: '/de-DE/about' },`,
+  "/:slug": `  'x.slug': { path: '/:slug', params: s.object({ slug: s.string() }) },`,
+  "/:p/:slug": `  'x.page': { path: '/:p/:slug', params: s.object({ p: AppLocale, slug: s.string() }) },`,
+  "/items/:id": `  'x.twin': { path: '/items/:id', params: s.object({ id: s.string() }) },`,
 };
 const run = (pd: boolean, extra: string) =>
   check(
     [
       { path: "topology.ts", source: TOPO },
       { path: "modules/x/AppLocale.schema.ts", source: LOCALE(pd) },
-      { path: "modules/x/routes.ts", source: routesFile(extra) },
+      { path: "modules/x/x.contract.ts", source: contractFile(extra) },
     ],
     { types: false },
   ).diagnostics.filter((d) => d.code === "E1509");

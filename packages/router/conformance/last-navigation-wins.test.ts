@@ -6,6 +6,7 @@
 import { createCtx } from "@keel/ctx";
 import { createRouter, loader, manifest } from "@keel/router";
 import type { RouteProps } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { mount } from "@keel/runtime-dom";
 import { text } from "@keel/runtime-dom/ops";
 import { ok, s } from "@keel/schema";
@@ -13,18 +14,25 @@ import * as fc from "fast-check";
 import { afterEach, describe, expect, it } from "vitest";
 import { SEED, defer, memoryHistory, settle } from "./fixtures.ts";
 
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
+
 const Search = s.object({ q: s.string({ min: 1, max: 4 }).optional() });
 const Empty = s.object({});
 
 // One deferred per (route id, q); a loader with no deferred set for its key finishes at once.
 const gates = new Map<string, Promise<void>>();
 const key = (id: string, q: string | undefined): string => `${id}?${q ?? ""}`;
-const slow = (id: string) =>
-  loader({ output: Empty }, async () => {
+const slow = <I extends "w.a" | "w.b">(id: I) =>
+  loader(wContract, id, { output: Empty }, async () => {
     await gates.get(key(id, undefined));
     return ok({});
   });
-const loadSearch = loader({ output: Empty, search: Search }, async ({ search }) => {
+const wContract = contract("w", {
+  "w.a": { path: "/w/a" },
+  "w.b": { path: "/w/b" },
+  "w.s": { path: "/w/s", search: Search },
+});
+const loadSearch = loader(wContract, "w.s", { output: Empty }, async ({ search }) => {
   await gates.get(key("w.s", search.q));
   return ok({});
 });
@@ -49,10 +57,10 @@ const SearchPage = (props: RouteProps): Node => {
   return section;
 };
 
-const routes = manifest({
-  "w.a": { path: "/w/a", loader: slow("w.a"), component: mark("w.a") },
-  "w.b": { path: "/w/b", loader: slow("w.b"), component: mark("w.b") },
-  "w.s": { path: "/w/s", search: Search, loader: loadSearch, component: SearchPage },
+const routes = manifest(wContract, {
+  "w.a": { component: mark("w.a"), loader: slow("w.a") },
+  "w.b": { component: mark("w.b"), loader: slow("w.b") },
+  "w.s": { component: SearchPage, loader: loadSearch },
 });
 
 type Target = { id: "w.a" | "w.b" | "w.s"; q: string | undefined };
@@ -63,7 +71,7 @@ const targets: readonly Target[] = [
   { id: "w.s", q: "y" },
 ];
 const hrefOf = (t: Target) =>
-  t.id === "w.s" ? routes.href("w.s", {}, t.q === undefined ? {} : { q: t.q }) : routes.href(t.id);
+  t.id === "w.s" ? wContract.href("w.s", {}, t.q === undefined ? {} : { q: t.q }) : wContract.href(t.id);
 
 afterEach(() => {
   gates.clear();
@@ -86,7 +94,7 @@ describe("k.router: the last navigation started wins", () => {
           });
           const host = document.createElement("div");
           document.body.append(host);
-          const unmount = mount(router.App, host);
+          const unmount = mount(router.App, host, { ctx: simCtx });
           await settle();
           const gateFirst = defer();
           const gateLater = defer();

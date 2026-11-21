@@ -3,6 +3,7 @@
 // Overlap is made deterministic with deferreds: each action commits synchronously, signals arrival, then awaits a gate.
 import { createCtx } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { err, ok, s } from "@keel/schema";
 import { createApp, topology } from "@keel/server";
 import { store, transaction, tx } from "@keel/store";
@@ -49,42 +50,47 @@ async function setup() {
     return g;
   };
   const sawItems = new Map<number, readonly number[]>();
-  const slowWrite = action({ input: Add, stores: factory }, async ({ n }, { stores }) => {
+  const appContract = contract("app", {
+    "app.slow": { path: "/slow" },
+    "app.write": { path: "/write" },
+    "app.undo": { path: "/undo" },
+    "app.err": { path: "/err" },
+    "app.touch": { path: "/touch" },
+  });
+
+  const slowWrite = action(appContract, "app.slow", { input: Add, stores: factory }, async ({ n }, { stores }) => {
     tx(stores.add, { n });
     arrive(n).resolve();
     await gate(n).promise;
     sawItems.set(n, stores.s.get("items"));
     return ok(null);
   });
-  const write = action({ input: Add, stores: factory }, async ({ n }, { caller, stores }) => {
+  const write = action(appContract, "app.write", { input: Add, stores: factory }, async ({ n }, { caller, stores }) => {
     tx(stores.add, { n }, { meta: { caller } });
     return ok(null);
   });
-  const undo = action({ input: Nothing, stores: factory }, async (_input, { caller, stores }) =>
-    stores.s.undoWhere((e) => e.meta?.caller === caller) ? ok(null) : err(denied.make({})),
+  const undo = action(
+    appContract,
+    "app.undo",
+    { input: Nothing, stores: factory },
+    async (_input, { caller, stores }) =>
+      stores.s.undoWhere((e) => e.meta?.caller === caller) ? ok(null) : err(denied.make({})),
   );
-  const writeThenErr = action({ input: Add, stores: factory }, async ({ n }, { stores }) => {
+  const writeThenErr = action(appContract, "app.err", { input: Add, stores: factory }, async ({ n }, { stores }) => {
     tx(stores.add, { n });
     return err(Boom.make({}));
   });
-  const touch = action({ input: Nothing, stores: factory }, async (_input, { stores }) => {
+  const touch = action(appContract, "app.touch", { input: Nothing, stores: factory }, async (_input, { stores }) => {
     stores.s.get("items");
     return ok(null);
   });
   const component = (): Node => document.createElement("p");
-  const routes = manifest({
-    "app.slow": { path: "/slow", component },
-    "app.write": { path: "/write", component },
-    "app.undo": { path: "/undo", component },
-    "app.err": { path: "/err", component },
-    "app.touch": { path: "/touch", component },
-  });
-  routes.actions({
-    "app.slow": { POST: slowWrite },
-    "app.write": { POST: write },
-    "app.undo": { POST: undo },
-    "app.err": { POST: writeThenErr },
-    "app.touch": { POST: touch },
+  const routes = manifest(appContract, {
+    "app.slow": { component: component, POST: slowWrite },
+    "app.write": { component: component, POST: write },
+    "app.undo": { component: component, POST: undo },
+    "app.err": { component: component, POST: writeThenErr },
+    "app.touch": { component: component, POST: touch },
   });
   const app = await createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),

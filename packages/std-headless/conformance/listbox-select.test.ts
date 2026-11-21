@@ -31,7 +31,6 @@ const mount = (mode: "single" | "multiple", selected: readonly string[], options
             calls.push([...keys]);
           },
         },
-        undefined,
         c,
       ),
     ),

@@ -1,4 +1,4 @@
-// Spec: k.deploy Build, "`KEEL_ORIGIN` (optional ...) ... and `KEEL_PEER_<NAME>` (`my-api`: `KEEL_PEER_MY_API`), an http(s) URL, required per other `node` deployable."
+// Spec: k.deploy Build, "`KEEL_ORIGIN` (optional ...) ... `KEEL_PEER_<NAME>` (`my-api`: `KEEL_PEER_MY_API`), an http(s) URL, required per other `node` deployable"
 // Seed 1337 (fc.assert below). Spawns the built `server.mjs` of a `keel build` fixture with two `node` deployables, `web` and `my-api`;
 // a port comes from a listener on port 0 (never 8080) and the child is stopped in a `finally`.
 import { spawn, spawnSync } from "node:child_process";
@@ -61,12 +61,17 @@ function buildTwoNodeFixture(): string {
     write(
       fixture,
       `modules/${id}/module.ts`,
-      `import { module } from "@keel/compiler";\nexport default module({ id: "${id}", deps: [], capabilities: [], public: { exports: [], routes: [] } });\n`,
+      `import { module } from "@keel/compiler";\nexport default module({ id: "${id}", deps: [], capabilities: [], public: { exports: [] } });\n`,
     );
     write(
       fixture,
       `modules/${id}/routes.ts`,
-      `import { manifest } from "@keel/router";\nimport Page from "./Page.tsx";\nexport const routes = manifest({ "${id}.home": { path: "${p}", component: Page } });\n`,
+      `import { manifest } from "@keel/router";\nimport { ${id} } from "./${id}.contract.ts";\nimport Page from "./Page.tsx";\nexport const routes = manifest(${id}, { "${id}.home": { component: Page } });\n`,
+    );
+    write(
+      fixture,
+      `modules/${id}/${id}.contract.ts`,
+      `import { contract } from "@keel/router/contract";\nexport const ${id} = contract("${id}", { "${id}.home": { path: "${p}" } });\n`,
     );
   }
   const r = spawnSync(process.execPath, [path.join(REPO, "packages", "cli", "src", "bin.ts"), "build"], {

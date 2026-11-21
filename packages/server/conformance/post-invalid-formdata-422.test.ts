@@ -1,5 +1,6 @@
 import { createCtx } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import { topology } from "@keel/server";
 // @vitest-environment happy-dom
@@ -90,14 +91,17 @@ describe("k.server", () => {
 
   it("A POST with an empty JSON body to an action whose input accepts {} runs the action", async () => {
     let calls = 0;
-    const act = action({ input: s.object({ note: s.string().optional() }) }, () => {
+    const tickContract = contract("tick", {
+      "tick.show": { path: "/tick" },
+    });
+
+    const act = action(tickContract, "tick.show", { input: s.object({ note: s.string().optional() }) }, () => {
       calls++;
       return Promise.resolve(ok(null));
     });
-    const routes = manifest({
-      "tick.show": { path: "/tick", component: () => document.createElement("main") },
+    const routes = manifest(tickContract, {
+      "tick.show": { component: () => document.createElement("main"), POST: act },
     });
-    routes.actions({ "tick.show": { POST: act } });
     const app = await createApp({
       topology: topology({ web: { modules: ["tick"], adapter: "node" } }),
       routes,

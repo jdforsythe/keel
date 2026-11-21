@@ -87,10 +87,10 @@ export function withOrders(): Files {
     [
       `import OrderCard from '${rel(page, card)}'`,
       `import { cart } from '${rel(page, store)}'`,
-      `import { routes } from './routes.ts'`,
+      `import { orders } from './orders.contract.ts'`,
       "export default function OrdersPage() {",
       "  const uses = [cart]",
-      `  return { uses, link: routes.href('orders.show', { id: '1' }), card: OrderCard, id: 'OrderCard-root' }`,
+      `  return { uses, link: orders.href('orders.show', { id: '1' }), card: OrderCard, id: 'OrderCard-root' }`,
       "}",
       "",
     ].join("\n"),

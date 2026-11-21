@@ -2,17 +2,21 @@
 // rfc:0160 conformance: `Frame` with a `src` of the document's own origin renders `about:blank`.
 // Spec: k.origins, Frame "A `src` not absolute `http` or `https`, relative too, or of the document's origin renders `about:blank`."
 // Seed 1337 (fc.assert below). The document's origin is set with happy-dom's `setURL`.
+import { createCtx } from "@keel/ctx";
 import { mount } from "@keel/runtime-dom";
 import { Frame } from "@keel/ui";
 import fc from "fast-check";
 import { afterEach, describe, expect, it } from "vitest";
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 const SEED = 1337;
 
 function render(src: string): string | null {
   const host = document.createElement("div");
   document.body.appendChild(host);
-  const off = mount(() => Reflect.apply(Frame, undefined, [{ id: "frame", title: "Demo", src }]), host);
+  const off = mount(() => Reflect.apply(Frame, undefined, [{ id: "frame", title: "Demo", src }]), host, {
+    ctx: simCtx,
+  });
   const value = document.getElementById("frame")?.getAttribute("src") ?? null;
   off();
   host.remove();

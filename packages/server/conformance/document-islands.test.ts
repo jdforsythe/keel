@@ -2,10 +2,12 @@
 // Spec: k.runtime, clause "A page with no islands loads no runtime JS: its document has no `<script type="module">`, `data-k`, or `data-k-island`; a page with an event handler has all three, and `resume` attaches the handler to server nodes."
 // Spec: k.server, "Document" (route levels are the island roots, keyed by route id; RFC 0037).
 // Seed: 1337 (fc.assert seed below). Real compiled TSX (compile + evaluate), real createApp, real resume.
+import type { Ctx } from "@keel/ctx";
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
 import { createCtx } from "@keel/ctx";
-import { loader, manifest } from "@keel/router";
+import { loader, manifest, routeTable } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import type { RouteProps } from "@keel/router";
 import { resume } from "@keel/runtime-dom/ops";
 import { ok, s } from "@keel/schema";
@@ -13,7 +15,9 @@ import { createApp, topology } from "@keel/server";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 
-type Component = (props: RouteProps) => Node;
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
+
+type Component = (props: RouteProps, ctx: Ctx) => Node;
 
 function compileComponent(name: string, source: string): Component {
   const r = compile([{ path: `${name}.tsx`, source }]);
@@ -22,8 +26,8 @@ function compileComponent(name: string, source: string): Component {
   if (out === undefined) throw new Error("fixture: no compiler output");
   const fn = evaluate(out.code);
   if (typeof fn !== "function") throw new Error("fixture: default export is not a component");
-  return (props) => {
-    const node: unknown = fn(props);
+  return (props, ctx) => {
+    const node: unknown = fn(props, ctx);
     if (!(node instanceof Node)) throw new Error("fixture: component did not return a Node");
     return node;
   };
@@ -45,24 +49,47 @@ const SHELL = `export default function Shell(props) {
 `;
 
 const Page = s.object({ title: s.string() });
-const pageLoader = loader({ output: Page }, () => Promise.resolve(ok({ title: "T" })));
 const ctx = createCtx({ mode: "sim", seed: 1337 });
-const MODULES = ["static", "counter", "shell", "nested", "plain"];
+const MODULES = ["static", "counter", "nested", "plain"];
 
 async function appFor(generated?: Component) {
-  const routes = manifest({
-    "static.page": { path: "/static", component: compileComponent("Static", STATIC), loader: pageLoader },
-    "counter.page": { path: "/counter", component: compileComponent("Counter", COUNTER) },
-    "shell.layout": { component: compileComponent("Shell", SHELL) },
-    "nested.page": { path: "/nested", component: compileComponent("Counter", COUNTER), layout: "shell.layout" },
-    "plain.page": {
-      path: "/plain",
-      component: compileComponent("Static", STATIC),
-      layout: "shell.layout",
-      loader: pageLoader,
-    },
-    ...(generated === undefined ? {} : { "gen.page": { path: "/gen", component: generated, loader: pageLoader } }),
-  });
+  const staticC = contract("static", { "static.page": { path: "/static" } });
+  const counterC = contract("counter", { "counter.page": { path: "/counter" } });
+  const nestedC = contract("nested", { "nested.layout": { layout: true }, "nested.page": { path: "/nested" } });
+  const plainC = contract("plain", { "plain.layout": { layout: true }, "plain.page": { path: "/plain" } });
+  const genC = contract("gen", { "gen.page": { path: "/gen" } });
+  const tables = [
+    manifest(staticC, {
+      "static.page": {
+        component: compileComponent("Static", STATIC),
+        loader: loader(staticC, "static.page", { output: Page }, () => Promise.resolve(ok({ title: "T" }))),
+      },
+    }),
+    manifest(counterC, { "counter.page": { component: compileComponent("Counter", COUNTER) } }),
+    manifest(nestedC, {
+      "nested.layout": { component: compileComponent("Shell", SHELL) },
+      "nested.page": { component: compileComponent("Counter", COUNTER), layout: "nested.layout" },
+    }),
+    manifest(plainC, {
+      "plain.layout": { component: compileComponent("Shell", SHELL) },
+      "plain.page": {
+        component: compileComponent("Static", STATIC),
+        layout: "plain.layout",
+        loader: loader(plainC, "plain.page", { output: Page }, () => Promise.resolve(ok({ title: "T" }))),
+      },
+    }),
+    ...(generated === undefined
+      ? []
+      : [
+          manifest(genC, {
+            "gen.page": {
+              component: generated,
+              loader: loader(genC, "gen.page", { output: Page }, () => Promise.resolve(ok({ title: "T" }))),
+            },
+          }),
+        ]),
+  ];
+  const routes = routeTable(...tables);
   return createApp({
     topology: topology({ web: { modules: generated === undefined ? MODULES : [...MODULES, "gen"], adapter: "node" } }),
     routes,
@@ -136,7 +163,11 @@ describe("k.runtime: document islands (k.server documents)", () => {
     if (button === null || span === null) throw new Error("server document lacks the counter nodes");
     expect(span.textContent).toBe("0");
 
-    const { warnings } = resume(document.body, { "counter.page": compileComponent("Counter", COUNTER) });
+    const { warnings } = resume(
+      document.body,
+      { "counter.page": compileComponent("Counter", COUNTER) },
+      { ctx: simCtx },
+    );
     expect(warnings).toEqual([]);
 
     button.dispatchEvent(new MouseEvent("click", { bubbles: true }));

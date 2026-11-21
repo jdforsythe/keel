@@ -5,11 +5,14 @@
 //   region, landmark-one-main, page-has-heading-one, landmark-no-duplicate-main, landmark-unique, landmark-complementary-is-top-level,
 //   landmark-main-is-top-level, landmark-banner-is-top-level, landmark-contentinfo-is-top-level, bypass, skip-link.
 // `color-contrast` is disabled because happy-dom computes no layout or computed colors, so the rule cannot produce a verdict (E1804 covers contrast).
+import { createCtx } from "@keel/ctx";
 import { mount } from "@keel/runtime-dom";
 import { Box, Button, Checkbox, Heading, Image, Input, Link, Select, Text, TextArea } from "@keel/ui";
 import axe from "axe-core";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { home } from "./fixtures.ts";
+
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 const DISABLED = [
   "region",
@@ -70,7 +73,7 @@ const cases: [string, () => Node][] = [
 describe("k.ui: Every base element rendered with only its required props has no axe violations", () => {
   for (const [name, make] of cases) {
     it(`${name} rendered with only its required props has no axe-core violations`, async () => {
-      const off = mount(make, container);
+      const off = mount(make, container, { ctx: simCtx });
       expect(container.querySelector("#e")).not.toBeNull();
       expect(await audit()).toEqual([]);
       off();

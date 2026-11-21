@@ -7,6 +7,7 @@ import os from "node:os";
 import path from "node:path";
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { createApp, topology } from "@keel/server";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
@@ -39,9 +40,10 @@ function tmp(prefix: string): string {
 }
 
 async function appFor(assets: string): Promise<Fetcher> {
+  const appContract = contract("app", { "app.home": { path: "/" } });
   return createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
-    routes: manifest({ "app.home": { path: "/", component: () => document.createElement("p") } }),
+    routes: manifest(appContract, { "app.home": { component: () => document.createElement("p") } }),
     ctx: createCtx({ mode: "sim", seed: 1337 }),
     mode: "production",
     assets,
