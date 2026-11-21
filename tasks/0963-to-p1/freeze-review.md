@@ -4,8 +4,8 @@ Backlog 0034. This file lists what stands between the kernel spec and the `froze
 
 ## Summary
 
-- 67 kernel sections. 61 are `conformance-covered`; the five `implemented` are k.docs, k.host-code, k.mount-scope, k.roles and k.scaffold; k.parity is `proposed`.
-- 705 Conformance bullets. 697 are cited by a conformance test in the ledger (`tooling/ledger/ledger.json`, no clause at rung `none`); the 8 that are not: k.docs 5 and 8, k.mount-scope 1, k.parity 5 and 6, k.roles 6, k.scaffold 11 and 14.
+- 68 kernel sections. 62 are `conformance-covered`; the five `implemented` are k.docs, k.host-code, k.mount-scope, k.roles and k.scaffold; k.parity is `proposed`.
+- 709 Conformance bullets. 701 are cited by a conformance test in the ledger (`tooling/ledger/ledger.json`, no clause at rung `none`); the 8 that are not: k.docs 5 and 8, k.mount-scope 1, k.parity 5 and 6, k.roles 6, k.scaffold 11 and 14.
 - Tests exist for k.mount-scope 1 and k.roles 6 (`router/conformance`, `server/conformance`, `ui/conformance/roles-grid.test.ts`), but their `// Spec:` headers do not quote the whole clause, so the ledger lists them at `none`.
 - k.host-code is `implemented`: its Chromium clause needs a real browser's computed style and `server/conformance/host-code-styles-policy.test.ts` asserts the policy header only.
 - k.parity is `proposed`: S0012 (its first part) is built; S0013, the kind gates, is not (RFC 0169).
@@ -15,7 +15,7 @@ Backlog 0034. This file lists what stands between the kernel spec and the `froze
 
 ## 1. Kernel sections and status
 
-`grep -h '^status:' spec/kernel/k.*.md | sort | uniq -c`: 61 `conformance-covered`, 5 `implemented`, 1 `proposed`. `spec/00-map.md` carries the same status per row.
+`grep -h '^status:' spec/kernel/k.*.md | sort | uniq -c`: 62 `conformance-covered`, 5 `implemented`, 1 `proposed`. `spec/00-map.md` carries the same status per row.
 
 | section | status | missing |
 | --- | --- | --- |
@@ -76,6 +76,7 @@ Bullets are the lines under each section's `**Conformance.**` paragraph; "no evi
 | k.place | conformance-covered | 5 | 0 | 0 | 0 |
 | k.prefix | conformance-covered | 7 | 0 | 0 | 0 |
 | k.privacy | conformance-covered | 10 | 0 | 0 | 2 |
+| k.privacy-reads | conformance-covered | 4 | 0 | 0 | 0 |
 | k.prove | conformance-covered | 10 | 0 | 0 | 0 |
 | k.reactive | conformance-covered | 20 | 0 | 0 | 0 |
 | k.resume | conformance-covered | 13 | 0 | 0 | 0 |
@@ -134,9 +135,9 @@ k.privacy bullet 1 (`x-keel-pii`) is asserted in `cli/conformance/privacy-pii-js
 In order. Steps 1 to 3 each land as their own RFC unit (RFC, conformance, build) and change one status; step 4 is one commit tagged with the freeze RFC.
 
 1. **k.docs, k.host-code, k.mount-scope, k.roles, k.scaffold** `implemented` to `conformance-covered`, each after the test or citation its row in section 1 names, then **k.parity** `proposed` to `implemented` and `conformance-covered` after S0013 is built. Files per section: `spec/kernel/k.<id>.md` line 2; `spec/00-map.md` row `k.<id>`.
-2. **All 66 kernel sections** `conformance-covered` to `frozen`, under a freeze RFC with its ADR (RFC.md: a status rule change goes through an RFC). Files:
+2. **All 68 kernel sections** `conformance-covered` to `frozen`, under a freeze RFC with its ADR (RFC.md: a status rule change goes through an RFC). Files:
    - `docs/rfc/NNNN-kernel-freeze.md`, `docs/adr/NNNN-kernel-freeze.md`.
-   - `spec/kernel/k.*.md` line 2, 66 files: `sed -i '' '2s/^status: conformance-covered$/status: frozen/' spec/kernel/k.*.md`, then `grep -c '^status: frozen' spec/kernel/k.*.md | grep -c ':1$'` gives 66.
+   - `spec/kernel/k.*.md` line 2, 68 files: `sed -i '' '2s/^status: conformance-covered$/status: frozen/' spec/kernel/k.*.md`, then `grep -c '^status: frozen' spec/kernel/k.*.md | grep -c ':1$'` gives 68.
    - `spec/00-map.md`, the 66 rows of the Kernel table only: `sed -E -i '' '/^## Kernel/,/^## Stdlib/ s/\| conformance-covered \|/| frozen |/' spec/00-map.md`.
    - The `**Status:**` line of the 15 kernel package READMEs (`packages/{schema,reactive,store,runtime-dom,compiler,router,forms,ui,check,scaffold,testing,server,services,cli,ctx}/README.md`); today they read `implemented` (6), `proposed` (2: ui, cli) and `conformance-covered` (7).
    - `docs/freeze-review.md` (the table and Status paragraph), `docs/ROADMAP.md` (the G3 and P1 rows), `docs/GLOSSARY.md` (the kernel's "provisionally frozen core": a term definition, the operator's call), `docs/HANDOFF.md`.

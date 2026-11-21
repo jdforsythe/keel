@@ -1,5 +1,5 @@
 # k.privacy-reads: Static privacy reads
-status: implemented
+status: conformance-covered
 
 **Purpose.** How `keel check` reads a revealed value, a schema and the outputs of a file without running code, exported so a stdlib rule (k.check Registry) reads them as the kernel's rules do; and the password-control rule built on them. Each reader works by syntax on the checked file and `input.project`; where `schemaHolds` cannot read it answers `'unknown'`, and no rule here or in the stdlib reports there.
 
