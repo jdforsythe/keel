@@ -1,5 +1,4 @@
-import type { JsonValue } from "@keel/schema";
-import { sampleFormat } from "@keel/schema/internal";
+import { type JsonValue, sampleFormat } from "@keel/schema";
 import type { TypeNode } from "./TypeNode.ts";
 
 const LETTERS = "abcdefghijklmnopqrstuvwxyz";
