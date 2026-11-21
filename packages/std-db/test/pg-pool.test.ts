@@ -39,7 +39,11 @@ test("the driver's own pool holds at most 10 connections on the URL, with a 10 s
   const url = new URL("postgresql://keel:pw@db.example:6543/app?sslmode=require");
   const storage = await postgres(url);
   expect(seen.pools.length).toBe(1);
-  expect(seen.pools[0]?.options).toEqual({ connectionString: url.href, max: 10, connectionTimeoutMillis: 10_000 });
+  expect(seen.pools[0]?.options).toEqual({
+    connectionString: url.href.replace("sslmode=require", "sslmode=verify-full"),
+    max: 10,
+    connectionTimeoutMillis: 10_000,
+  });
   await storage.close();
   expect(seen.pools[0]?.ended).toBe(1);
 });
