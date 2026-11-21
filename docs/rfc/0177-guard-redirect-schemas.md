@@ -1,6 +1,6 @@
 # RFC 0177: k.guards: a guard redirect's carried params fit the target's schemas, checked when the route table is built
 
-Status: draft (ADR-0199 proposed). For backlog 0330 (work package guard-redirect-schemas, `tasks/p1/weaknesses-triage.md`).
+Status: implemented (ADR-0199). For backlog 0330 (work package guard-redirect-schemas, `tasks/p1/weaknesses-triage.md`).
 
 ## Decisions
 - D1: the check runs where the schemas are objects, not text: `manifest` (and `routeTable` for a chain it joins across modules) compares, for each page whose chain holds a page or layout guard with `redirect`, every field of the `redirect` route's `params` with the page's field of the same name. A missing field or one that does not fit throws E1508 naming the page, the `redirect` route and the field. `bindTable` already throws E1508 for a page guard without `redirect` and a redirect to an API entry; this is the same place and code.

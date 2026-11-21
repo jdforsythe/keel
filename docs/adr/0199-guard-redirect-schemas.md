@@ -1,6 +1,6 @@
 # ADR-0199: k.guards: a guard redirect's carried params fit the target's schemas, checked when the route table is built (RFC 0177)
 
-**Status:** proposed (for the orchestrator to accept).
+**Status:** accepted.
 
 **Context.** A guard denial carries the matched route's same-name params to its `redirect` route, checking presence only. A param of another `id` brand lands unchecked, and one the target's schema cannot encode is a 500 that shows only on a denial; a missing one is E1508 at the denial.
 

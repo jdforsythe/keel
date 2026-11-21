@@ -1,6 +1,6 @@
 # RFC 0176: k.ui and k.a11y: `Text role` for live regions, and E1826 for a status region inserted with its text
 
-Status: draft (ADR-0198 proposed). For backlog 0874 and 0932 (work package ui-roles-and-live, `tasks/p1/weaknesses-triage.md`).
+Status: implemented (ADR-0198). For backlog 0874 and 0932 (work package ui-roles-and-live, `tasks/p1/weaknesses-triage.md`).
 
 ## Decisions
 - D1: `Text` takes `role?: 'status' | 'alert'`, written as the `role` attribute. A closed set of the two live-region roles a line of text carries (WCAG 4.1.3). k.ui already reads `role` at build, so the role is fixed when the element is made, as a live region needs.

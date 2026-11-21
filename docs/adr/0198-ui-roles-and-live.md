@@ -1,6 +1,6 @@
 # ADR-0198: k.ui and k.a11y: `Text role` for live regions, and E1826 for a status region inserted with its text (RFC 0176)
 
-**Status:** proposed (for the orchestrator to accept).
+**Status:** accepted.
 
 **Context.** `Text` takes no `role`, so app copy that a screen reader should hear goes through `Part`, the widget surface. A result line that appears after an action is usually a conditional child; inserted with its text, a `status` region is not announced, and nothing in Keel says so or reports it.
 
