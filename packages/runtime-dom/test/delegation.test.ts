@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { mount } from "../src/index.ts";
 import { clone, on, template } from "../src/ops/index.ts";
 import { SEED, fire } from "./support.ts";
+import { testCtx } from "./testCtx.ts";
 
 const chain = (depth: number): string => {
   let html = `<i id="n${depth - 1}"></i>`;
@@ -32,15 +33,19 @@ describe("delegation order over random nesting depth", () => {
         outer.appendChild(host);
         outer.addEventListener(type, () => outside++);
         const T = template(chain(depth));
-        const dispose = mount(() => {
-          const r = clone(T);
-          for (const i of bound)
-            on(`n${i}`, type, (e) => {
-              log.push(i);
-              if (stop === i) e.stopPropagation();
-            });
-          return r;
-        }, host);
+        const dispose = mount(
+          () => {
+            const r = clone(T);
+            for (const i of bound)
+              on(`n${i}`, type, (e) => {
+                log.push(i);
+                if (stop === i) e.stopPropagation();
+              });
+            return r;
+          },
+          host,
+          { ctx: testCtx },
+        );
         const el = host.querySelector(`#n${target}`);
         if (el === null) throw new Error("no target");
         fire(el, type);
@@ -64,15 +69,19 @@ describe("delegation order over random nesting depth", () => {
         // Same element id in every row: handlers are keyed by element, not by id string.
         const host2 = document.createElement("div");
         const ROWS = Array.from({ length: n }, (_, k) => k);
-        const dispose2 = mount(() => {
-          const ul = clone(UL);
-          for (const k of ROWS) {
-            const li = clone(LI);
-            on("row.btn", "click", () => hits.push(k));
-            ul.appendChild(li);
-          }
-          return ul;
-        }, host2);
+        const dispose2 = mount(
+          () => {
+            const ul = clone(UL);
+            for (const k of ROWS) {
+              const li = clone(LI);
+              on("row.btn", "click", () => hits.push(k));
+              ul.appendChild(li);
+            }
+            return ul;
+          },
+          host2,
+          { ctx: testCtx },
+        );
         const buttons = host2.querySelectorAll("button");
         const b = buttons[pick % n];
         if (b === undefined) throw new Error("no button");
@@ -91,23 +100,31 @@ describe("delegation order over random nesting depth", () => {
         const OUTER = template('<div id="outer"><section id="slot"></section></div>');
         const INNER = template('<p id="p"><button id="btn">b</button></p>');
         const host = document.createElement("div");
-        const disposeOuter = mount(() => {
-          const r = clone(OUTER);
-          on("outer", type, () => log.push("outer"));
-          on("slot", type, () => log.push("slot"));
-          return r;
-        }, host);
+        const disposeOuter = mount(
+          () => {
+            const r = clone(OUTER);
+            on("outer", type, () => log.push("outer"));
+            on("slot", type, () => log.push("slot"));
+            return r;
+          },
+          host,
+          { ctx: testCtx },
+        );
         const slot = host.querySelector("#slot");
         if (slot === null) throw new Error("no #slot");
-        const disposeInner = mount(() => {
-          const r = clone(INNER);
-          on("btn", type, (e) => {
-            log.push("btn");
-            if (stop) e.stopPropagation();
-          });
-          on("p", type, () => log.push("p"));
-          return r;
-        }, slot);
+        const disposeInner = mount(
+          () => {
+            const r = clone(INNER);
+            on("btn", type, (e) => {
+              log.push("btn");
+              if (stop) e.stopPropagation();
+            });
+            on("p", type, () => log.push("p"));
+            return r;
+          },
+          slot,
+          { ctx: testCtx },
+        );
         const btn = host.querySelector("#btn");
         if (btn === null) throw new Error("no #btn");
         fire(btn, type);

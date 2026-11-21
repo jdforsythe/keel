@@ -15,7 +15,8 @@ import { writeCspFiles } from "./writeCspFiles.ts";
  * deployable's `csp.txt` (`writeCspFiles`, k.security). Keel-coded lines become diagnostics;
  * `stderr` is a failed step's text (a Vite build's message lines, `viteRun`). `code` is the largest step code. Keel-coded lines become
  * diagnostics (`stepNotes`); those of `routesRun` and the Vite builds are advisory: printed to stderr (W1005, E1006 for a `routes.ts`
- * that throws) and the exit code left alone, as the plugin's warning does.
+ * that throws) and the exit code left alone, as the plugin's warning does. A throwing contract file is the surface step's
+ * failing E1006, so the routes step's line for that file is dropped.
  */
 export async function hostBuild(cwd: string): Promise<{ code: number; diagnostics: readonly Diag[]; stderr: string }> {
   const topo = join(cwd, "topology.ts");
@@ -24,11 +25,13 @@ export async function hostBuild(cwd: string): Promise<{ code: number; diagnostic
   const failing: string[] = [];
   let stderr = "";
   const routes = await routesRun(cwd, topology);
-  advisory.push(...routes.notes);
   let code = routes.code;
-  if (routes.code === 0) {
+  if (routes.code !== 0) advisory.push(...routes.notes);
+  else {
     const surface = await surfaceRun(cwd);
     failing.push(...surface.notes);
+    const reported = surface.notes.flatMap((n) => /^E1006 (\S+) /.exec(n)?.[1] ?? []);
+    advisory.push(...routes.notes.filter((n) => !reported.some((f) => n.startsWith(`E1006 ${f} `))));
     code = Math.max(code, surface.code);
     for (const target of viteTargets(topology)) {
       const b = viteRun(cwd, target);

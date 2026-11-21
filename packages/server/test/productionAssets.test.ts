@@ -6,6 +6,7 @@ import os from "node:os";
 import path from "node:path";
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createApp, topology } from "../src/index.ts";
 import { nodeEnv } from "../src/internal/nodeEnv.ts";
@@ -28,12 +29,13 @@ const plain = () => {
   p.textContent = "Hello";
   return p;
 };
+const c = contract("app", { "app.counter": { path: "/counter" }, "app.plain": { path: "/plain" } });
 const app = (o: { mode?: "dev" | "production"; assets?: string }) =>
   createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
-    routes: manifest({
-      "app.counter": { path: "/counter", component: island },
-      "app.plain": { path: "/plain", component: plain },
+    routes: manifest(c, {
+      "app.counter": { component: island },
+      "app.plain": { component: plain },
     }),
     ctx: createCtx({ mode: "sim", seed: 1337 }),
     ...o,

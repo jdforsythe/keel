@@ -1,8 +1,7 @@
 import type { Ctx } from "@keel/ctx";
 import { computed, signal } from "@keel/reactive";
-import type { Slots } from "@keel/runtime-dom";
 import { record } from "@keel/std-sessions";
-import { routes as sessions } from "@keel/std-sessions/routes";
+import { sessions } from "@keel/std-sessions/contract";
 import { Box, Button, Heading, Text } from "@keel/ui";
 
 /** The archive bounds `ops.home.limits` shows, in the order the ingest applies them. */
@@ -29,8 +28,8 @@ function limitLine(limit: (typeof LIMITS)[number], width: number): string {
  * one: `record` returns the ctx's recorder and ignores a second `upload`. `ops.home.limits` shows and hides the
  * archive bounds, one per line, in `ops.home.limits.list`. Plain `.ts` (no JSX).
  */
-export default function Home(_props?: object, _slots?: Slots, ctx?: Ctx): Node {
-  const path = sessions.routes["sessions.ingest"].path;
+export default function Home(_props: object, ctx: Ctx): Node {
+  const path = sessions.entries["sessions.ingest"].path;
   const own = typeof self !== "undefined" && typeof self.origin === "string" ? self.origin : undefined;
   const origin = typeof location === "undefined" ? null : (own ?? location.origin);
   const upload = origin === null || origin === "null" ? null : URL.parse(path, origin);
@@ -38,7 +37,7 @@ export default function Home(_props?: object, _slots?: Slots, ctx?: Ctx): Node {
   const endpoint = signal<string>(upload?.href ?? path);
   const open = signal(false);
   const width = Math.max(...LIMITS.map((l) => l.label.length));
-  if (ctx !== undefined && origin !== null) record(ctx, upload === null ? {} : { upload });
+  if (origin !== null) record(ctx, upload === null ? {} : { upload });
   return Box({
     as: "main",
     id: "ops.home",

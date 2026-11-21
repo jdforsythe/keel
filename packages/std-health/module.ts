@@ -5,5 +5,5 @@ export default module({
   id: "health",
   deps: [],
   capabilities: ["clock"],
-  public: { exports: ["Health", "routes"], routes: ["health.status"] },
+  public: { exports: ["Health", "routes"] },
 });

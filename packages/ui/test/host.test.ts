@@ -2,6 +2,7 @@
 // k.host-element Element and Text alternative, k.host-code Code and customElement: what `@keel/ui` renders and makes.
 // The lifecycle (mount, update, dispose, the parse) is the runtime's; here `code` is never called by rendering.
 // Seed: 1337.
+import { createCtx } from "@keel/ctx";
 import { scope, signal } from "@keel/reactive";
 import { mount } from "@keel/runtime-dom";
 import { s } from "@keel/schema";
@@ -22,7 +23,7 @@ const render = (make: () => Node): HTMLElement => {
   const h = document.createElement("div");
   document.body.appendChild(h);
   hosts.push(h);
-  mount(make, h);
+  mount(make, h, { ctx: createCtx({ mode: "sim", seed: SEED }) });
   const el = h.querySelector("[data-k-host]");
   if (!(el instanceof HTMLElement)) throw new Error("no host element");
   return el;

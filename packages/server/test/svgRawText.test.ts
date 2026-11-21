@@ -4,6 +4,7 @@
 // text, backlog 0140) is its one escaping owner.
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
+import { createCtx } from "@keel/ctx";
 import { describe, expect, it } from "vitest";
 import { installServerDom } from "../src/internal/dom/installServerDom.ts";
 import { renderUnit } from "../src/internal/renderUnit.ts";
@@ -14,7 +15,7 @@ const render = (jsx: string): string => {
   expect(r.diagnostics).toEqual([]);
   const fn = evaluate(r.outputs[0]?.code ?? "");
   if (typeof fn !== "function") throw new Error("no default export");
-  const n = renderUnit(() => Reflect.apply(fn, undefined, [{}]));
+  const n = renderUnit(() => Reflect.apply(fn, undefined, [{}]), createCtx({ mode: "sim", seed: 1337 }));
   const html = typeof n === "object" && n !== null ? Reflect.get(n, "outerHTML") : undefined;
   return typeof html === "string" ? html : "";
 };

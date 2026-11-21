@@ -32,7 +32,7 @@ The route form reads a body that is the tally itself, as a page route or a hand-
 { "kind": "report.tally", "id": "orders.status", "rows": [{ "key": "paid", "n": 3 }, { "key": "open", "n": 1 }] }
 ```
 
-It reads an API route's loader the same way. A route `{ api: true, path: '/api/tally/orders', loader }` whose loader declares `output: Tally` answers
+It reads an API route's loader the same way. A contract entry `{ method: 'GET', path: '/api/tally/orders', output: Tally }` with a loader bound to it answers
 
 ```json
 { "id": "api.tally.orders", "results": { "api.tally.orders": { "ok": true, "value": { "kind": "report.tally", "id": "orders.status", "rows": [{ "key": "paid", "n": 3 }] } } } }

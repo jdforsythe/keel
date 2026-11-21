@@ -4,7 +4,8 @@
 // `null`-prototype object, a symbol) never makes the server's handling throw, never ends a runner, and no log line,
 // stderr or stdout write, response body or stream line holds the request's revealed secret. Seed 1337.
 import { createCtx } from "@keel/ctx";
-import { action, guard, loader, manifest } from "@keel/router";
+import { action, guard, loader, manifest, routeTable } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, reveal, s } from "@keel/schema";
 import fc from "fast-check";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -91,6 +92,14 @@ const KINDS = {
 } as const satisfies Record<string, (t: string) => unknown>;
 type Make = (t: string) => unknown;
 const kinds = fc.constantFrom(...Object.values(KINDS));
+const Out = s.object({});
+const apiC = contract("api", {
+  "api.l": { method: "GET", path: "/api/l", output: Out },
+  "api.v": { method: "GET", path: "/api/v", output: Out, events: true },
+  "api.g": { method: "GET", path: "/api/g", output: Out },
+});
+const appC = contract("app", { "app.a": { path: "/a" }, "app.c": { path: "/c" } });
+const oneC = contract("app", { "app.a": { path: "/a" } });
 const SITES = ["loader", "action", "guard", "live", "component"] as const;
 
 let written: string[] = [];
@@ -112,27 +121,24 @@ async function serve(site: (typeof SITES)[number], kind: Make, t: string, mode: 
   const raise = (): never => {
     throw kind(made(t));
   };
-  const out = s.object({});
-  const routes = manifest({
-    "api.l": { api: true, path: "/api/l", loader: loader({ output: out }, async () => raise()) },
+  const apiRoutes = manifest(apiC, {
+    "api.l": { loader: loader(apiC, "api.l", {}, async () => raise()) },
     "api.v": {
-      api: true,
-      path: "/api/v",
-      loader: loader({ output: out }, async function* () {
+      loader: loader(apiC, "api.v", {}, async function* () {
         yield ok({});
         raise();
       }),
     },
     "api.g": {
-      api: true,
-      path: "/api/g",
       guard: guard({}, async () => raise()),
-      loader: loader({ output: out }, async () => ok({})),
+      loader: loader(apiC, "api.g", {}, async () => ok({})),
     },
-    "app.a": { path: "/a", component: view },
-    "app.c": { path: "/c", component: () => raise() },
   });
-  routes.actions({ "app.a": { POST: action({ input: s.object({}) }, async () => raise()) } });
+  const appRoutes = manifest(appC, {
+    "app.a": { component: view, POST: action(appC, "app.a", { input: s.object({}) }, async () => raise()) },
+    "app.c": { component: () => raise() },
+  });
+  const routes = routeTable(apiRoutes, appRoutes);
   const app = await createApp({
     topology: topology({ web: { modules: ["api", "app"], adapter: "node" } }),
     routes,
@@ -182,7 +188,7 @@ describe("hostile thrown values", () => {
       let serving = false;
       const app = await createApp({
         topology: topology({ web: { modules: ["app"], adapter: "node" } }),
-        routes: manifest({ "app.a": { path: "/a", component: view } }),
+        routes: manifest(oneC, { "app.a": { component: view } }),
         ctx: createCtx({ mode: "sim", seed: SEED }),
         mode: "dev",
         log: {

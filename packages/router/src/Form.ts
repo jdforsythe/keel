@@ -5,6 +5,7 @@ import { codedError } from "./internal/codedError.ts";
 import { findRouter } from "./internal/findRouter.ts";
 import { formHandle } from "./internal/formHandle.ts";
 import { formSeams } from "./internal/formSeams.ts";
+import { isHref } from "./internal/isHref.ts";
 import { renderChildren } from "./internal/renderChildren.ts";
 import type { FormProps } from "./types/FormProps.ts";
 import type { Href } from "./types/Href.ts";
@@ -26,11 +27,14 @@ function slot(parent: HTMLFormElement, when: () => boolean, render: () => Node):
  * navigates, `ok(null)` revalidates); it throws E1505 when that route does not declare the method. Otherwise the
  * browser posts it: on submit `form` is validated (errors prevent the submit), a chosen file throws E1583 and sends
  * nothing, else `form.pending()` is true until a `pageshow` from the back-forward cache, or in a shell until the mount
- * request is answered (k.return).
+ * request is answered (k.return). An `action` that is no `Href` at run time (`isHref`) throws E1501.
  */
 export function Form(
   props: (FormProps & { readonly method: "POST" }) | FormProps<Href & { readonly __mount?: never }>,
 ): HTMLFormElement {
+  // An `Href` is a type; an `action` that slipped past it at run time (no `isHref`) is E1501, and no form renders.
+  if (typeof props.action !== "string" || !isHref(props.action))
+    throw codedError("E1501", "<Form action>: the value is no Href, a path of this origin");
   const core = findRouter();
   const routed = core?.accepts(props.action, props.method);
   if (routed === false)

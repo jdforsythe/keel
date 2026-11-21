@@ -102,7 +102,7 @@ Every audited surface has one way.
 | --- | --- | --- |
 | 1 | `router/src/types/RouteDef.ts`, `guard.ts` | `guard: authGuard` by reference; no name, no registry |
 | 2 | `server/src/types/AppOptions.ts`, `server/src/internal/runGuards.ts` | the route holds the guard; `createApp` has no guard table |
-| 3 | `router/src/manifest.ts`, `Form.ts` | `routes.href` typed by the manifest; `<Form action>` takes an `Href` |
+| 3 | `router/src/manifest.ts`, `Form.ts` | `<contract>.href` typed by the contract; `<Form action>` takes an `Href` |
 | 4 | `schema/src/internal/make.ts` | `parse`; there is no `decode` |
 | 5 | `ctx/src/Random.ts` | `random.id(brand)` |
 | 6 | `ui/src/index.ts` | style props; there is no `styles()` |

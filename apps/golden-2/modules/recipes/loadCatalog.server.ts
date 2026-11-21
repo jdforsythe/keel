@@ -1,15 +1,16 @@
 import { loader } from "@keel/router";
 import { err, ok } from "@keel/schema";
 import { time } from "@keel/std-timings";
-import { CatalogSearch } from "../kitchen/CatalogSearch.schema.ts";
 import { CatalogData } from "./CatalogData.schema.ts";
-import { LocaleParams } from "./LocaleParams.schema.ts";
 import { RecipesText } from "./RecipesText.schema.ts";
 import { kitchenApi } from "./kitchenApi.ts";
+import { recipes } from "./recipes.contract.ts";
 
 /** The catalog page the api answers for the query, every recipe for the finder, and the page's copy. */
 export const loadCatalog = loader(
-  { output: CatalogData, params: LocaleParams, search: CatalogSearch },
+  recipes,
+  "recipes.catalog",
+  { output: CatalogData },
   async ({ params, search }, ctx) => {
     const page = await time(ctx, "recipes.api.catalog", () =>
       kitchenApi.catalog({ params: { locale: params.locale }, query: search }, ctx),

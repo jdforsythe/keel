@@ -26,7 +26,7 @@ test("adds a todo", async () => {
   r.dispose();
 });
 ```
-- `render(Comp, { props, state: [[store, value]], ctx })` renders one component; `renderRoute(id, { routes, params, search, state, ctx, caller })` runs guards and loaders first and renders the chain; `{ url }` replaces `params` and `search`. `r.navigate(routes.href(id, params))` moves on.
+- `render(Comp, { props, state: [[store, value]], ctx })` renders one component; `renderRoute(id, { routes, params, search, state, ctx, caller })` runs guards and loaders first and renders the chain; `{ url }` replaces `params` and `search`. `r.navigate(todos.href(id, params))` moves on (`todos` is the module's contract).
 - `fire(id, event)`: `click`, `input { value }`, `change`, `keydown { key }`, `submit`, `focus`, `blur`. It resolves once effects, resources and actions are quiet (no timers). `await r.settle()` does the same with no event.
 - `find(id)` is `{ id, role, name, text, state }`, never a node. `state(store)` is a value; `state()` is every store by id. `a11y()` is the role, name and state tree; a labelled input's id comes from it. `focusOrder()` lists ids in tab order. An unknown id is E1705 (nearest ids listed). `dispose()` restores seeded stores.
 - Props and `state` parse first (`schema.invalid`, nothing renders). A loader or action naming `stores` runs over the harness `ctx.storage`, one request per navigation or submit, so a `node` page is tested like any other; `createApp` on one ctx reads its saves.

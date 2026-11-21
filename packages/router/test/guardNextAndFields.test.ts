@@ -2,6 +2,7 @@
 // Examples: guard denial redirects with ?next= whether or not the target declares it (k.guards);
 // keel.fields data holds human messages, not rule names (k.forms).
 import { createCtx } from "@keel/ctx";
+import { contract } from "@keel/router/contract";
 import { mount } from "@keel/runtime-dom";
 import { ok, s } from "@keel/schema";
 import { expect, it } from "vitest";
@@ -29,14 +30,19 @@ it.each([
     ok: false,
     error: { code: "keel.denied", message: "no", data: null },
   }));
-  const routes = manifest({
-    "gn.login": { path: "/login", ...(search === undefined ? {} : { search }), component: page },
-    "gn.secret": { path: "/secret", guard: deny, component: page },
+  const gn = contract("gn", {
+    "gn.login": { path: "/login", ...(search === undefined ? {} : { search }) },
+    "gn.secret": { path: "/secret" },
+  });
+  const routes = manifest(gn, {
+    "gn.login": { component: page },
+    "gn.secret": { guard: deny, component: page },
   });
   const history = memoryHistory("/secret?a=1");
-  const router = createRouter(routes, { ctx: createCtx({ mode: "sim" }), history });
+  const ctx = createCtx({ mode: "sim" });
+  const router = createRouter(routes, { ctx, history });
   const host = document.createElement("div");
-  const unmount = mount(router.App, host);
+  const unmount = mount(router.App, host, { ctx });
   await settle();
   expect(history.current()).toBe(`/login?next=${encodeURIComponent("/secret?a=1")}`);
   expect(router.route.get().id).toBe("gn.login");
@@ -53,18 +59,17 @@ it("an action input failure yields keel.fields with messages per path", async ()
       validate: () => ok(null),
     },
   };
-  const routes = manifest({
+  const gf = contract("gn", { "gn.form": { path: "/form" } });
+  const routes = manifest(gf, {
     "gn.form": {
-      path: "/form",
       component: () => Form({ method: "POST", action: to("/form"), form: handle }),
+      POST: action(gf, "gn.form", { input: s.object({ title: s.string({ min: 3 }) }) }, async () => ok(null)),
     },
   });
-  routes.actions({
-    "gn.form": { POST: action({ input: s.object({ title: s.string({ min: 3 }) }) }, async () => ok(null)) },
-  });
-  const router = createRouter(routes, { ctx: createCtx({ mode: "sim" }), history: memoryHistory("/form") });
+  const ctx = createCtx({ mode: "sim" });
+  const router = createRouter(routes, { ctx, history: memoryHistory("/form") });
   const host = document.createElement("div");
-  const unmount = mount(router.App, host);
+  const unmount = mount(router.App, host, { ctx });
   await settle();
   host.querySelector("form")?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
   await settle();

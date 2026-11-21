@@ -1,3 +1,4 @@
+import type { Ctx } from "@keel/ctx";
 import { mount } from "@keel/runtime-dom";
 import { made, serverMode } from "@keel/runtime-dom/internal";
 import { attempted } from "./attempted.ts";
@@ -5,7 +6,7 @@ import { attempted } from "./attempted.ts";
 /**
  * Run one route component as a render unit (k.runtime): compiled ops (`text`, `on`, `cond`, ...) need a mount
  * or resume context, so the call runs inside a `mount` on a detached host, whose root Boundary reports binding
- * errors through `onError`. The component's return value (a Node, a string, anything) is returned untouched
+ * errors through `onError`, on `ctx`. The component's return value (a Node, a string, anything) is returned untouched
  * and never inserted. Called in the request scope, the mount's scope is a child of it: stores the component
  * creates stay live for `#k-state`, and everything is disposed with the request. Units never nest (the caller
  * renders child levels first). A throw from the component or a binding is rethrown as `keel.unexpected`. The
@@ -15,6 +16,7 @@ import { attempted } from "./attempted.ts";
  */
 export function renderUnit(
   fn: () => unknown,
+  ctx: Ctx,
   seen: { eager: boolean; nothing: boolean } = { eager: false, nothing: false },
 ): unknown {
   const host = document.createElement("div");
@@ -34,6 +36,7 @@ export function renderUnit(
       },
       host,
       {
+        ctx,
         onError: (e) => {
           out.error ??= { e };
         },

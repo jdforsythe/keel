@@ -66,12 +66,12 @@ describe("route rejections", () => {
   it("duplicates by id, by path pattern, and by existing files", () => {
     expect(rej("route", { id: "orders.show", path: "/other" }, f)).toEqual({
       code: "E1351",
-      path: "modules/orders/routes.ts",
+      path: "modules/orders/orders.contract.ts",
       message: "route orders.show already exists",
     });
     expect(rej("route", { id: "orders.fresh", path: "/orders/:other" }, f)).toEqual({
       code: "E1351",
-      path: "modules/orders/routes.ts",
+      path: "modules/orders/orders.contract.ts",
       message: "path /orders/:other is already routed by orders.show",
     });
     const g = new Map(f).set("modules/orders/loadFresh.server.ts", "");
@@ -90,12 +90,18 @@ describe("route rejections", () => {
     const k = new Map(f).set("modules/users/FreshPage.tsx", "");
     expect(rej("route", { id: "orders.fresh", path: "/fresh" }, k).path).toBe("modules/users/FreshPage.tsx");
   });
-  it("a routes.ts without manifest({...})", () => {
+  it("a routes.ts without manifest(contract, {...}), a contract file without contract(id, {...})", () => {
     const g = new Map(f).set("modules/orders/routes.ts", "export const x = 1\n");
     expect(rej("route", { id: "orders.fresh", path: "/fresh" }, g)).toEqual({
       code: "E1052",
       path: "modules/orders/routes.ts",
-      message: "modules/orders/routes.ts has no manifest({...}) to add the route to",
+      message: "modules/orders/routes.ts has no manifest(orders, {...}) to add the route to",
+    });
+    const c = new Map(f).set("modules/orders/orders.contract.ts", "export const x = 1\n");
+    expect(rej("route", { id: "orders.fresh", path: "/fresh" }, c)).toEqual({
+      code: "E1052",
+      path: "modules/orders/orders.contract.ts",
+      message: 'modules/orders/orders.contract.ts has no contract("orders", {...}) to add the route to',
     });
     const h = new Map(f);
     h.delete("modules/orders/routes.ts");
@@ -117,28 +123,35 @@ describe("route effects", () => {
     expect(routes).toContain('import { loadList } from "./loadList.server.ts";');
     expect(routes).toContain("orders.list");
     expect(routes.indexOf("orders.show")).toBeLessThan(routes.indexOf("orders.list"));
-    expect(routes.match(/import \{ s \} from "@keel\/schema"/g)?.length ?? 0).toBe(1);
+    const contract = out.get("modules/orders/orders.contract.ts") ?? "";
+    expect(contract.indexOf("orders.show")).toBeLessThan(contract.indexOf("orders.list"));
+    expect(contract.match(/import \{ s \} from "@keel\/schema"/g)?.length ?? 0).toBe(1);
   });
   it("imports s once when a param route is added and s is not yet imported", () => {
     let f: Files = apply("project", { name: "shop" }, new Map());
     f = apply("module", { id: "orders" }, f);
-    f.set("modules/orders/routes.ts", "import { manifest } from '@keel/router'\nexport const routes = manifest({})\n");
-    const out = apply("route", { id: "orders.show", path: "/orders/:id" }, f);
-    expect(out.get("modules/orders/routes.ts")).toContain('import { s } from "@keel/schema";');
-    const plain = apply("route", { id: "orders.list", path: "/orders" }, f);
-    expect(plain.get("modules/orders/routes.ts")).not.toContain("@keel/schema");
-    const has = new Map(f).set(
-      "modules/orders/routes.ts",
-      "import { s, t } from '@keel/schema'\nimport { manifest } from '@keel/router'\nexport const routes = manifest({})\n",
+    const file = "modules/orders/orders.contract.ts";
+    const bare = (head: string): Files =>
+      new Map(f).set(
+        file,
+        `${head}import { contract } from '@keel/router/contract'\nexport const orders = contract('orders', {})\n`,
+      );
+    const out = apply("route", { id: "orders.show", path: "/orders/:id" }, bare(""));
+    expect(out.get(file)).toContain('import { s } from "@keel/schema";');
+    const plain = apply("route", { id: "orders.list", path: "/orders" }, bare(""));
+    expect(plain.get(file)).not.toContain("@keel/schema");
+    const has = apply(
+      "route",
+      { id: "orders.show", path: "/orders/:id" },
+      bare("import { s, t } from '@keel/schema'\n"),
     );
-    const again = apply("route", { id: "orders.show", path: "/orders/:id" }, has);
-    expect(again.get("modules/orders/routes.ts")?.match(/@keel\/schema/g)?.length).toBe(1);
-    const lookalike = new Map(f).set(
-      "modules/orders/routes.ts",
-      "import { sx } from '@keel/schema'\nimport { manifest } from '@keel/router'\nexport const routes = manifest({})\n",
+    expect(has.get(file)?.match(/@keel\/schema/g)?.length).toBe(1);
+    const both = apply(
+      "route",
+      { id: "orders.show", path: "/orders/:id" },
+      bare("import { sx } from '@keel/schema'\n"),
     );
-    const both = apply("route", { id: "orders.show", path: "/orders/:id" }, lookalike);
-    expect(both.get("modules/orders/routes.ts")).toContain('import { s } from "@keel/schema";');
+    expect(both.get(file)).toContain('import { s } from "@keel/schema";');
   });
   it("puts the test under test/ when the project has a vitest config, with a custom page file", () => {
     const f = new Map(base()).set("vitest.config.ts", "export default {}\n");
@@ -238,7 +251,7 @@ describe("rename rejections", () => {
     const g = apply("route", { id: "orders.view", path: "/view" }, f);
     expect(rej("rename", { kind: "route", from: "orders.show", to: "orders.view" }, g)).toEqual({
       code: "E1351",
-      path: "modules/orders/routes.ts",
+      path: "modules/orders/orders.contract.ts",
       message: "route orders.view already exists",
     });
   });
@@ -312,7 +325,11 @@ describe("rename effects", () => {
     expect(routes).not.toContain("orders.show");
     expect(routes).toContain("loadView");
     expect(routes).toContain("ViewPage");
-    expect(routes).toContain("/orders/:id");
+    const contract = f.get("modules/orders/orders.contract.ts") ?? "";
+    expect(contract).toContain('"orders.view"');
+    expect(contract).not.toContain("orders.show");
+    expect(contract).toContain("/orders/:id");
+    expect(f.get("modules/orders/loadView.server.ts")).toContain('loader(orders, "orders.view"');
   });
   it("module: moves files, rewrites ids, deps and topology, and test files", () => {
     let f = base();
@@ -328,6 +345,11 @@ describe("rename effects", () => {
     expect(f.get("modules/ship/module.ts")).toContain("'sales'");
     expect(f.get("modules/sales/module.ts")).toContain('id: "sales"');
     expect(f.get("modules/sales/routes.ts")).toContain("sales.show");
+    expect(f.get("modules/sales/routes.ts")).toContain("manifest(sales, ");
+    expect(f.get("modules/sales/routes.ts")).toContain('from "./sales.contract.ts"');
+    expect(f.get("modules/sales/sales.contract.ts")).toContain('export const sales = contract("sales", {');
+    expect(f.get("modules/sales/sales.contract.ts")).toContain('"sales.show"');
+    expect(f.has("modules/orders/orders.contract.ts")).toBe(false);
     expect(f.get("test/sales.misc.test.ts")).toBe("export const a = 'sales.cart'\n");
     expect(f.get("turbo.json")).toContain("sales");
     expect(f.get("turbo.json")).not.toContain("orders");

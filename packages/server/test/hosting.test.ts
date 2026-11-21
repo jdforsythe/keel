@@ -8,6 +8,7 @@ import path from "node:path";
 import type { Topology } from "@keel/compiler";
 import { createCtx } from "@keel/ctx";
 import { action, loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import fc from "fast-check";
 import { afterEach, describe, expect, it } from "vitest";
@@ -21,28 +22,27 @@ const SECRET = "s".repeat(32);
 const APP = "https://app.test";
 let ran = 0;
 
-const routes = () => {
-  const m = manifest({
-    "a.home": { path: "/", component: () => document.createElement("main") },
+const c = contract("a", {
+  "a.home": { path: "/" },
+  "a.lists": { method: "GET", path: "/api/lists", output: s.object({ n: s.int() }) },
+  "a.add": { method: "POST", path: "/api/lists", body: s.object({}), output: s.object({}) },
+});
+const routes = () =>
+  manifest(c, {
+    "a.home": { component: () => document.createElement("main") },
     "a.lists": {
-      api: true,
-      path: "/api/lists",
-      loader: loader({ output: s.object({ n: s.int() }) }, async () => {
+      loader: loader(c, "a.lists", {}, async () => {
         ran++;
         return ok({ n: 1 });
       }),
     },
-  });
-  m.actions({
-    "a.lists": {
-      POST: action({ input: s.object({}), output: s.object({}) }, async () => {
+    "a.add": {
+      action: action(c, "a.add", {}, async () => {
         ran++;
         return ok({});
       }),
     },
   });
-  return m;
-};
 const T = topology({ api: { modules: ["a"], adapter: "node" } });
 const app = (allow: readonly string[], lines: string[] = []) =>
   createApp({
@@ -313,7 +313,9 @@ describe("host fallback", () => {
     const peer = await createApp({
       topology: T2,
       deployable: "other",
-      routes: manifest({ "b.feed": { path: "/feed", component: () => document.createElement("article") } }),
+      routes: manifest(contract("b", { "b.feed": { path: "/feed" } }), {
+        "b.feed": { component: () => document.createElement("article") },
+      }),
       ctx: createCtx({ mode: "sim", seed: SEED }),
     });
     const a = await createApp({

@@ -6,6 +6,7 @@ import type { PartRole } from "@keel/ui/aria";
 import axe from "axe-core";
 import fc from "fast-check";
 import { afterEach, expect, test } from "vitest";
+import { testCtx } from "./testCtx.ts";
 
 const SEED = 1337;
 const config: axe.RunOptions = {
@@ -199,7 +200,9 @@ test("every role with generated required props has no axe violations", async () 
       document.body.innerHTML = '<main><div id="host"></div></main>';
       const host = document.getElementById("host");
       if (host === null) throw new Error("no host");
-      const off = mount(() => Part({ id: "w", role: "generic", children: () => cases[role](g) }), host);
+      const off = mount(() => Part({ id: "w", role: "generic", children: () => cases[role](g) }), host, {
+        ctx: testCtx,
+      });
       const r = await axe.run(host, config);
       expect(r.violations.map((v) => `${role}: ${v.id}`)).toEqual([]);
       off();

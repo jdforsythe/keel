@@ -1,29 +1,22 @@
 import type { Located } from "../internal/Located.ts";
 import { compileRoutes } from "../internal/compileRoutes.ts";
 import { matchUrl } from "../internal/matchUrl.ts";
-import { tables } from "../internal/tables.ts";
-import type { Manifest } from "../types/Manifest.ts";
-import type { RouteDef } from "../types/RouteDef.ts";
+import type { RouteTable } from "../types/RouteTable.ts";
 import type { RouteMatch } from "./RouteMatch.ts";
 
-/** Per manifest, its path routes for matching. Not sealed: matching here never stops `routes.actions` (E1505). */
+/** Per route table, its pages for matching. */
 const lists = new WeakMap<object, readonly Located[]>();
 
 /**
- * Match `href` against `routes` as a navigation does (k.router `@keel/router/match`, rfc:0071): static segments beat
- * `:param`, params decode by the route's schema, failing search keys drop. Returns `{ id, params, search }`, or `null`
- * when no page matches (an API route's path included, k.api) or its params fail. `routes.href(id, params, search)` is the inverse.
+ * Match `href` against route table `routes` as a navigation does (k.router `@keel/router/match`): static segments
+ * beat `:param`, params decode by the page's schema, failing search keys drop. Returns `{ id, params, search }`, or
+ * `null` when no page matches (an API entry's path included, k.api) or its params fail. A contract's
+ * `href(id, params, search)` is the inverse.
  */
-export function matchHref<M extends Readonly<Record<string, RouteDef>>>(
-  routes: Manifest<M>,
-  href: string,
-): RouteMatch | null {
+export function matchHref(routes: RouteTable, href: string): RouteMatch | null {
   let list = lists.get(routes);
   if (list === undefined) {
-    const table = tables.get(routes) ?? compileRoutes(routes.routes);
-    list = [...table.values()].flatMap(({ id, def, segments }) =>
-      segments === null || def.api ? [] : [{ id, def, segments, chain: [] }],
-    );
+    list = compileRoutes(routes).located.filter((r) => r.def.kind === "page");
     lists.set(routes, list);
   }
   const m = matchUrl(list, href);

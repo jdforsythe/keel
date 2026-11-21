@@ -87,12 +87,19 @@ describe("mountSource and mountDiags", () => {
   });
 
   it("identityDiags reads handle.path through mount.path for E1579 and adds the mount rules locally", () => {
-    const routes = {
-      path: "modules/a/routes.ts",
-      source:
-        "import { manifest } from '@keel/router'\nexport const routes = manifest({ 'a.x': { path: '/api/auth/x', component: () => null } })\n",
-    };
-    const files = [...base, { path: "modules/a/module.ts", source: "export default {}\n" }, routes];
+    const routes = [
+      {
+        path: "modules/a/a.contract.ts",
+        source:
+          "import { contract } from '@keel/router/contract'\nexport const a = contract('a', { 'a.x': { path: '/api/auth/x' } })\n",
+      },
+      {
+        path: "modules/a/routes.ts",
+        source:
+          "import { manifest } from '@keel/router'\nimport { a } from './a.contract.ts'\nexport const routes = manifest(a, { 'a.x': { component: () => null } })\n",
+      },
+    ];
+    const files = [...base, { path: "modules/a/module.ts", source: "export default {}\n" }, ...routes];
     expect(identityDiags(files).map((d) => d.code)).toContain("E1579");
     expect(identityDiags([{ path: "identity.ts", source: "" }], undefined, true).map((d) => d.code)).toEqual(["E1580"]);
   });

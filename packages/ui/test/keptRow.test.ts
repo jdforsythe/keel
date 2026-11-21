@@ -9,10 +9,11 @@ import { clone, list, template } from "@keel/runtime-dom/ops";
 import { Box, Button, Checkbox, Image, Input, Link, Select, Text, TextArea } from "@keel/ui";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
+import { testCtx } from "./testCtx.ts";
 
 const SEED = 1337;
 type Todo = { readonly id: string; readonly title: string; readonly done: boolean; readonly n: number };
-const isHref = (x: string): x is Href => x.startsWith("https://");
+const isHref = (x: string): x is Href => x.startsWith("/");
 const href = (x: string): Href => {
   if (!isHref(x)) throw new Error("not an href");
   return x;
@@ -37,7 +38,7 @@ function Row(todo: () => Todo): Node {
       }),
       Link({
         get to() {
-          return href(`https://x.test/${todo().title}`);
+          return href(`/x/${todo().title}`);
         },
         get lang() {
           return todo().done ? "fr" : "en";
@@ -108,18 +109,22 @@ const setup = (initial: Todo[]): { items: Signal<Todo[]>; host: HTMLElement; dis
   const host = document.createElement("div");
   document.body.appendChild(host);
   const items = rootSignal(initial);
-  const dispose = mount(() => {
-    const ul = clone(UL);
-    const anchor = ul.lastChild;
-    if (anchor === null) throw new Error("no anchor");
-    list(
-      anchor,
-      () => items.get(),
-      (t) => t.id,
-      (todo) => Row(todo),
-    );
-    return ul;
-  }, host);
+  const dispose = mount(
+    () => {
+      const ul = clone(UL);
+      const anchor = ul.lastChild;
+      if (anchor === null) throw new Error("no anchor");
+      list(
+        anchor,
+        () => items.get(),
+        (t) => t.id,
+        (todo) => Row(todo),
+      );
+      return ul;
+    },
+    host,
+    { ctx: testCtx },
+  );
   return { items, host, dispose };
 };
 
@@ -160,7 +165,7 @@ const expected = (t: Todo) => ({
   id: `row-${t.id}`,
   checked: t.done,
   label: t.title,
-  to: `https://x.test/${t.title}`,
+  to: `/x/${t.title}`,
   lang: t.done ? "fr" : "en",
   value: t.title,
   name: `title-${t.n}`,
@@ -221,14 +226,18 @@ describe("Select options rebuilt", () => {
   /** The select built in an untracked scope inside a mount, so its getters are read by its own bindings only. */
   const inRow = (make: () => Node): { host: HTMLElement; dispose: () => void } => {
     const host = document.createElement("div");
-    const dispose = mount(() => {
-      const box: { node?: Node } = {};
-      scope(() => {}).run(() => {
-        box.node = make();
-      });
-      if (box.node === undefined) throw new Error("no node");
-      return box.node;
-    }, host);
+    const dispose = mount(
+      () => {
+        const box: { node?: Node } = {};
+        scope(() => {}).run(() => {
+          box.node = make();
+        });
+        if (box.node === undefined) throw new Error("no node");
+        return box.node;
+      },
+      host,
+      { ctx: testCtx },
+    );
     return { host, dispose };
   };
   const settle = async (): Promise<void> => {

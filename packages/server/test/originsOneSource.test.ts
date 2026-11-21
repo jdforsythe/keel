@@ -11,6 +11,7 @@ import { declaredOrigins } from "@keel/compiler/hosting/declaredOrigins";
 import { topologyReadProblems } from "@keel/compiler/hosting/topologyReadProblems";
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import fc from "fast-check";
 import { afterEach, describe, expect, it } from "vitest";
 import { cspPolicy } from "../src/csp/cspPolicy.ts";
@@ -21,7 +22,8 @@ import { ownFrame } from "../src/internal/ownFrame.ts";
 
 const SEED = 1337;
 const EVIL = "https://evil.example";
-const routes = () => manifest({ "a.home": { path: "/", component: () => document.createElement("main") } });
+const home = contract("a", { "a.home": { path: "/" } });
+const routes = () => manifest(home, { "a.home": { component: () => document.createElement("main") } });
 const ctx = () => createCtx({ mode: "sim", seed: SEED });
 const policyOf = (res: Response): string =>
   res.headers.get("content-security-policy") ?? res.headers.get("content-security-policy-report-only") ?? "";

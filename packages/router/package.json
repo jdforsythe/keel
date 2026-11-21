@@ -8,6 +8,10 @@
       "types": "./src/index.ts",
       "default": "./src/index.ts"
     },
+    "./contract": {
+      "types": "./src/contract/index.ts",
+      "default": "./src/contract/index.ts"
+    },
     "./match": {
       "types": "./src/match/index.ts",
       "default": "./src/match/index.ts"

@@ -2,15 +2,15 @@
 // use; every use waits for the stored entries, which load within `limit` and `maxBytes`. Seed 1337.
 import { type Ctx, type SimCtx, createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
-import { endpoints } from "@keel/services";
 import { expect, test } from "vitest";
 import { Write, drain, outbox, send } from "../src/index.ts";
 
 const ORIGIN = "http://app.keel.invalid";
 const OWNER = "u1";
-const Api = endpoints({
-  add: { method: "POST", path: "/add", body: s.object({ t: s.string(), write: Write }), output: s.object({}) },
+const Api = contract("app", {
+  "app.add": { method: "POST", path: "/add", body: s.object({ t: s.string(), write: Write }), output: s.object({}) },
 });
 const sim = (): SimCtx => createCtx({ mode: "sim", seed: 1337 });
 const settle = async (): Promise<void> => {
@@ -33,7 +33,7 @@ const titles = async (ctx: Ctx, id: string): Promise<unknown[]> => {
 };
 
 test("an outbox declared outside any scope creates its store on first use, once", async () => {
-  const o = outbox("modlevel.outbox", Api, { module: "app" });
+  const o = outbox("modlevel.outbox", Api);
   const ctx = sim();
   ctx.net.setOnline(false);
   expect(o.get("entries")).toEqual([]);
@@ -47,7 +47,7 @@ test("a send before drain's load keeps the stored entries: storage ends with bot
   ctx.net.setOnline(false);
   await ctx.storage.set("keel.outbox.early.outbox", JSON.stringify({ entries: [entry(ctx, "stored")] }));
   const sc = scope(() => {
-    const o = outbox("early.outbox", Api, { module: "app" });
+    const o = outbox("early.outbox", Api);
     void send(ctx, o, "add", { body: { t: "new" } }, { base: 0, owner: OWNER });
     void drain(ctx, o, { owner: OWNER });
   });
@@ -63,7 +63,7 @@ test("drain loads at most `limit` stored entries, the first in order", async () 
   await ctx.storage.set("keel.outbox.capped.outbox", JSON.stringify({ entries: stored }));
   const held: { got?: unknown[] } = {};
   const sc = scope(() => {
-    const o = outbox("capped.outbox", Api, { module: "app", limit: 2 });
+    const o = outbox("capped.outbox", Api, { limit: 2 });
     void drain(ctx, o, { owner: OWNER }).then(() => {
       held.got = o.get("entries").map((e) => e.key);
     });
@@ -86,7 +86,7 @@ test("a stored entry naming an inherited property as its endpoint is failed and 
   );
   const held: { o?: ReturnType<typeof outbox<typeof Api>> } = {};
   const sc = scope(() => {
-    held.o = outbox("wedge.outbox", Api, { module: "app" });
+    held.o = outbox("wedge.outbox", Api);
     void drain(ctx, held.o, { owner: OWNER });
   });
   await settle();
@@ -118,7 +118,7 @@ test("a storage write that rejects mid-flush settles the pending send, and a lat
   });
   const held: { o?: ReturnType<typeof outbox<typeof Api>> } = {};
   const sc = scope(() => {
-    held.o = outbox("quota.outbox", Api, { module: "app" });
+    held.o = outbox("quota.outbox", Api);
   });
   const o = held.o;
   if (o === undefined) throw new Error("no outbox");

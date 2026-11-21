@@ -2,6 +2,7 @@
 // Property (seed 1337): the status of any err code, from a loader (GET) or an action (POST), document or runtime.
 import { createCtx } from "@keel/ctx";
 import { action, loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { type KeelError, err, ok, s } from "@keel/schema";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -48,23 +49,22 @@ const p = (text: string): Node => {
 };
 
 async function appFor(e: KeelError<string, unknown>, mode: "dev" | "production") {
-  const routes = manifest({
+  const c = contract("orders", { "orders.show": { path: "/orders" }, "orders.ok": { path: "/ok" } });
+  const show = loader(c, "orders.show", { output: Page }, () => Promise.resolve(err(e)));
+  const fine = loader(c, "orders.ok", { output: Page }, () => Promise.resolve(ok({ title: "t" })));
+  const routes = manifest(c, {
     "orders.show": {
-      path: "/orders",
-      loader: loader({ output: Page }, () => Promise.resolve(err(e))),
+      loader: show,
       component: () => p("page"),
       errorElement: ({ error }) => p(`error ${error.code}`),
+      POST: action(c, "orders.show", { input: Note }, () => err(e)),
     },
     "orders.ok": {
-      path: "/ok",
-      loader: loader({ output: Page }, () => Promise.resolve(ok({ title: "t" }))),
+      loader: fine,
       component: () => p("page"),
       errorElement: ({ error }) => p(`error ${error.code}`),
+      POST: action(c, "orders.ok", { input: Note }, () => err(e)),
     },
-  });
-  routes.actions({
-    "orders.show": { POST: action({ input: Note }, () => err(e)) },
-    "orders.ok": { POST: action({ input: Note }, () => err(e)) },
   });
   return createApp({
     topology: topology({ web: { modules: ["orders"], adapter: "node" } }),

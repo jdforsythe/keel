@@ -27,6 +27,5 @@ export default module({
       "CatalogSearch",
       "catalogColumns",
     ],
-    routes: ["kitchen.recipes", "kitchen.favorite", "kitchen.catalog"],
   },
 });

@@ -3,7 +3,8 @@
 import { describe, expect, it } from "vitest";
 import { entryCode } from "../src/internal/entryCode.ts";
 
-const ROUTER = "createRouter(__keelRoutes0, { ctx, history: browserHistory(), mode, mount: __keelIdentity.path });";
+const ROUTER =
+  "createRouter(routeTable(__keelRoutes0), { ctx, history: browserHistory(), mode, mount: __keelIdentity.path });";
 
 describe("entryCode with identity.ts", () => {
   it("imports its default export and passes its path to the router as mount", () => {
@@ -12,7 +13,7 @@ describe("entryCode with identity.ts", () => {
     expect(code).toContain(ROUTER);
     const plain = entryCode(["/r.ts"], "c.css");
     expect(plain).not.toContain("identity.ts");
-    expect(plain).toContain("createRouter(__keelRoutes0, { ctx, history: browserHistory(), mode });");
+    expect(plain).toContain("createRouter(routeTable(__keelRoutes0), { ctx, history: browserHistory(), mode });");
   });
 
   it("in a shell build with the shell's id, imports identity.ts once, as the default import", () => {

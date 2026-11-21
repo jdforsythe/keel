@@ -1,7 +1,7 @@
 import type { Origins } from "@keel/compiler";
 import type { Ctx } from "@keel/ctx";
-import type { Manifest, RouteDef } from "@keel/router";
-import type { Located } from "@keel/router/internal";
+import type { RouteTable } from "@keel/router";
+import type { Located, Table } from "@keel/router/internal";
 import type { Identity } from "../types/Identity.ts";
 import type { LogSink } from "../types/LogSink.ts";
 import type { BuiltClient } from "./BuiltClient.ts";
@@ -10,7 +10,8 @@ import type { Mode } from "./Mode.ts";
 import type { ReportWindow } from "./ReportWindow.ts";
 
 /**
- * A built deployable: its routes, `ctx`, mode, its manifest (guard redirects resolve in it), the action body cap in bytes, the extra origins the dev
+ * A built deployable: its served routes (`table`), `ctx`, mode, its route table `routes` and every route of it by id
+ * (`byId`; guard redirects resolve in it), the action body cap in bytes, the extra origins the dev
  * inspect endpoint answers, `keys`, the caller-cookie keys (`callerSigner`), and
  * `secure`, `createApp({ secure })` (undefined: each request URL's scheme decides). `built` is the production client build
  * (`createApp({ assets })`, k.server Build), undefined in dev or without `assets`. `name` is the served deployable's name, the
@@ -31,7 +32,8 @@ export type Served = {
   readonly table: readonly Located[];
   readonly ctx: Ctx;
   readonly mode: Mode;
-  readonly routes: Manifest<Readonly<Record<string, RouteDef>>>;
+  readonly routes: RouteTable;
+  readonly byId: Table;
   readonly maxBody: number;
   readonly inspectOrigins: readonly string[];
   readonly keys: CallerKeys;

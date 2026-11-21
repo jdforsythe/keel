@@ -16,6 +16,10 @@
       "types": "./src/routes.ts",
       "default": "./src/routes.ts"
     },
+    "./contract": {
+      "types": "./src/health.contract.ts",
+      "default": "./src/health.contract.ts"
+    },
     "./*": {
       "types": "./src/*.ts",
       "default": "./src/*.ts"

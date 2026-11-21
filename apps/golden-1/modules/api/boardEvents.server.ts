@@ -1,6 +1,7 @@
 import type { Ctx } from "@keel/ctx";
 import { channelRoute } from "@keel/std-channels/server";
-import { boardChannel } from "./boardChannel.ts";
+import { api } from "./api.contract.ts";
+import { boardChannel } from "./boardChannel.schema.ts";
 import { boardStores } from "./boardStores.ts";
 import { removal } from "./removal.server.ts";
 
@@ -13,7 +14,7 @@ function watched(ctx: Ctx) {
 }
 
 /** The board channel's event stream: every caller is a member, since the board is public. A save of the board or of `api.removal` reaches it. */
-export const boardEvents = channelRoute(boardChannel, {
+export const boardEvents = channelRoute(api, boardChannel, {
   id: "api.boardEvents",
   stores: watched,
   member: () => true,

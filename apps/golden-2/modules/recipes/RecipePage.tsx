@@ -9,7 +9,7 @@ import { Box, Button, Heading, Text } from "@keel/ui";
 import { Nothing } from "../kitchen/Nothing.schema.ts";
 import { RecipeData } from "./RecipeData.schema.ts";
 import { RecipeParams } from "./RecipeParams.schema.ts";
-import { routes } from "./routes.ts";
+import { recipes } from "./recipes.contract.ts";
 
 export const Props = s.object({ params: RecipeParams, data: RecipeData });
 
@@ -53,7 +53,7 @@ export default function RecipePage(props: Infer<typeof Props>) {
       </Box>
       <Form
         method="POST"
-        action={routes.href("recipes.show", props.params)}
+        action={recipes.href("recipes.show", props.params)}
         form={f}
         error={(e) => <Text fg="error">{e.message}</Text>}
       >

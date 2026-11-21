@@ -9,7 +9,7 @@ import { LocaleParams } from "./LocaleParams.schema.ts";
 import { TextData } from "./TextData.schema.ts";
 import { dismissToast } from "./dismissToast.ts";
 import { idPart } from "./idPart.ts";
-import { routes } from "./routes.ts";
+import { recipes } from "./recipes.contract.ts";
 import { servedLocales } from "./servedLocales.ts";
 import { toasts } from "./toasts.ts";
 
@@ -20,11 +20,7 @@ export const uses = [dismissToast];
 const served = servedLocales.map((id) => ({ id }));
 
 /** Layout `recipes.shell`: the page region in its locale, navigation, the locale switcher, the page in `main`, and the toasts. */
-export default function BoxShell(
-  props: Infer<typeof Props> & { readonly children?: () => Node },
-  _slots?: undefined,
-  ctx?: Ctx,
-) {
+export default function BoxShell(props: Infer<typeof Props> & { readonly children?: () => Node }, ctx: Ctx) {
   const dismiss = (id: string): void => {
     const removed = tx(dismissToast, { id });
     if (!removed.ok) return;
@@ -58,13 +54,17 @@ export default function BoxShell(
           </Text>
         </Box>
         <Box as="nav" id="recipes.nav" label={props.data.text.navLabel} direction="row" align="center" gap="4">
-          <Link id="recipes.home" to={routes.href("recipes.index", { locale: props.params.locale })} fg="text">
+          <Link id="recipes.home" to={recipes.href("recipes.index", { locale: props.params.locale })} fg="text">
             {props.data.text.home}
           </Link>
-          <Link id="recipes.newLink" to={routes.href("recipes.new", { locale: props.params.locale })} fg="text">
+          <Link id="recipes.newLink" to={recipes.href("recipes.new", { locale: props.params.locale })} fg="text">
             {props.data.text.newLink}
           </Link>
-          <Link id="recipes.catalogLink" to={routes.href("recipes.catalog", { locale: props.params.locale })} fg="text">
+          <Link
+            id="recipes.catalogLink"
+            to={recipes.href("recipes.catalog", { locale: props.params.locale })}
+            fg="text"
+          >
             {props.data.text.catalogLink}
           </Link>
         </Box>
@@ -83,7 +83,7 @@ export default function BoxShell(
               <Link
                 id={`recipes.locale.${idPart(l.id)}`}
                 lang={l.id}
-                to={routes.href("recipes.index", { locale: l.id })}
+                to={recipes.href("recipes.index", { locale: l.id })}
                 fg="textSecondary"
               >
                 {localeName(l.id)}

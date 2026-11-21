@@ -5,5 +5,5 @@ export default module({
   id: "schedules",
   deps: ["@keel/std-jobs"],
   capabilities: ["clock", "storage"],
-  public: { exports: ["schedule"], routes: [] },
+  public: { exports: ["schedule"] },
 });

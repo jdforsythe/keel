@@ -4,6 +4,7 @@ import { originListed as originMatches } from "@keel/compiler/inspect/originList
 // prototype-safe submitted values, and per-request store registries (overlapping requests, one store id).
 import { createCtx } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import { store, stores } from "@keel/store";
 import { describe, expect, it } from "vitest";
@@ -15,13 +16,15 @@ const INSPECT = `${BASE}/__keel/inspect`;
 const Note = s.object({ note: s.string() });
 const Draft = s.object({ text: s.string() });
 
+const c = contract("app", { "app.notes": { path: "/notes" } });
+
 type Calls = { verbs: string[] };
 
 type Extra = { mode?: "dev" | "production"; origins?: string[]; overlap?: { started(): void; gate: Promise<void> } };
 
 function build(calls: Calls, extra: Extra = {}) {
   const act = (verb: string) =>
-    action({ input: Note }, async (input) => {
+    action(c, "app.notes", { input: Note }, async (input) => {
       calls.verbs.push(verb);
       if (input.note === "boom") throw new Error("secret-detail");
       const overlap = extra.overlap;
@@ -33,15 +36,17 @@ function build(calls: Calls, extra: Extra = {}) {
       }
       return ok(null);
     });
-  const routes = manifest({
+  const routes = manifest(c, {
     "app.notes": {
-      path: "/notes",
       component: () => {
         throw new Error("not rendered under node");
       },
+      POST: act("POST"),
+      PUT: act("PUT"),
+      PATCH: act("PATCH"),
+      DELETE: act("DELETE"),
     },
   });
-  routes.actions({ "app.notes": { POST: act("POST"), PUT: act("PUT"), PATCH: act("PATCH"), DELETE: act("DELETE") } });
   return createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
     routes,

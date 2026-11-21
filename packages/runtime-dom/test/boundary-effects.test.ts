@@ -1,12 +1,13 @@
-import { computed, effect } from "@keel/reactive";
 // @vitest-environment happy-dom
 // Property seed: 1337. k.errors Boundaries: throws from app-level effect/computed (via k.reactive scope onError),
 // and the app root's default Boundary installed by mount.
+import { computed, effect } from "@keel/reactive";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { mount } from "../src/index.ts";
 import { boundary, clone, on, template } from "../src/ops/index.ts";
 import { SEED, fire, rootSignal } from "./support.ts";
+import { testCtx } from "./testCtx.ts";
 
 const ROOT = template('<div id="root"><p id="before">before</p><i id="mid"></i><p id="after">after</p></div>');
 const BODY = template('<div id="body">ok</div>');
@@ -53,6 +54,7 @@ describe("Boundary catches app-level effect and computed throws", () => {
             [],
           ),
           host,
+          { ctx: testCtx },
         );
         expect(host.querySelector("#body")).not.toBeNull();
         s.set(bad);
@@ -90,6 +92,7 @@ describe("Boundary catches app-level effect and computed throws", () => {
         [],
       ),
       host,
+      { ctx: testCtx },
     );
     s.set(1);
     expect(host.querySelector("#fallback")).not.toBeNull();
@@ -116,6 +119,7 @@ describe("Boundary catches app-level effect and computed throws", () => {
         resets,
       ),
       host,
+      { ctx: testCtx },
     );
     s.set(1);
     s.set(0);
@@ -142,7 +146,7 @@ describe("mount installs a default root Boundary", () => {
           throw new Error("app broke");
         },
         host,
-        mode === undefined ? {} : { mode },
+        mode === undefined ? { ctx: testCtx } : { ctx: testCtx, mode },
       );
       const pre = host.querySelector("pre[data-k-error]");
       expect(pre?.textContent).toBe(text);
@@ -168,7 +172,7 @@ describe("mount installs a default root Boundary", () => {
           return r;
         },
         host,
-        { mode: "dev" },
+        { ctx: testCtx, mode: "dev" },
       );
       if (how === "handler") {
         const go = host.querySelector("#go");

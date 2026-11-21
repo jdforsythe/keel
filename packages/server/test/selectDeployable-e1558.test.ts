@@ -3,6 +3,7 @@
 // `stores`, or whose action names `stores`, naming the route and its module; a `node` deployable serves each.
 import { createCtx } from "@keel/ctx";
 import { action, loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import { describe, expect, test } from "vitest";
 import { createApp, topology } from "../src/index.ts";
@@ -10,19 +11,22 @@ import { createApp, topology } from "../src/index.ts";
 const view = () => document.createElement("main");
 const routesWith = (kind: "loader" | "action" | "live") => {
   if (kind === "action") {
-    const r = manifest({ "shop.cart": { path: "/cart", component: view } });
-    r.actions({
-      "shop.cart": { POST: action({ input: s.object({}), stores: () => ({}) }, () => Promise.resolve(ok(null))) },
-    });
-    return r;
+    const c = contract("shop", { "shop.cart": { path: "/cart" } });
+    const save = action(c, "shop.cart", { input: s.object({}), stores: () => ({}) }, () => Promise.resolve(ok(null)));
+    return manifest(c, { "shop.cart": { component: view, POST: save } });
   }
-  const l =
-    kind === "live"
-      ? loader({ output: s.object({}) }, async function* () {
-          yield ok({});
-        })
-      : loader({ output: s.object({}), stores: () => ({}) }, () => Promise.resolve(ok({})));
-  return manifest({ "shop.cart": { path: "/cart", loader: l, component: view } });
+  if (kind === "live") {
+    const c = contract("shop", {
+      "shop.cart": { method: "GET", path: "/api/cart", output: s.object({}), events: true },
+    });
+    const watch = loader(c, "shop.cart", {}, async function* () {
+      yield ok({});
+    });
+    return manifest(c, { "shop.cart": { loader: watch } });
+  }
+  const c = contract("shop", { "shop.cart": { path: "/cart" } });
+  const load = loader(c, "shop.cart", { output: s.object({}), stores: () => ({}) }, () => Promise.resolve(ok({})));
+  return manifest(c, { "shop.cart": { loader: load, component: view } });
 };
 const outcome = (adapter: "client" | "static" | "node", kind: "loader" | "action" | "live"): Promise<string> =>
   createApp({

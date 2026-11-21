@@ -5,6 +5,7 @@ import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { render, renderRoute } from "@keel/testing";
 import { WCAG_CRITERIA, a11yRules, criteriaOf, writeA11yReport } from "@keel/testing/a11y";
@@ -75,8 +76,9 @@ describe("the harness records each render check in the test's meta", () => {
 
   it("a route render records its id, the document rules, E1804 with tokens, and a violation", async ({ task }) => {
     const tokens = defineTokens({ color: { fg: "#999999", bg: "#ffffff" } });
-    const routes = manifest({
-      "rec.page": { path: "/rec", component: () => Text({ id: "rec.msg", fg: "fg", children: "x" }), title: () => "R" },
+    const c = contract("rec", { "rec.page": { path: "/rec" } });
+    const routes = manifest(c, {
+      "rec.page": { component: () => Text({ id: "rec.msg", fg: "fg", children: "x" }), title: () => "R" },
     });
     await expect(renderRoute("rec.page", { routes, artifacts: { tokens } })).rejects.toMatchObject({ code: "E1804" });
     const recorded: unknown = Reflect.get(task.meta, "a11y");

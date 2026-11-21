@@ -2,22 +2,22 @@
 // keeps the entry `failed` in memory, as a flush does. Seed 1337.
 import { type SimCtx, createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
-import { endpoints } from "@keel/services";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { Write, outbox, send } from "../src/index.ts";
 
 const ORIGIN = "http://app.keel.invalid";
 const OWNER = "u1";
-const Api = endpoints({
-  add: { method: "POST", path: "/add", body: s.object({ t: s.string(), write: Write }), output: s.object({}) },
+const Api = contract("app", {
+  "app.add": { method: "POST", path: "/add", body: s.object({ t: s.string(), write: Write }), output: s.object({}) },
 });
 let n = 0;
 function declare() {
   const held: { o?: ReturnType<typeof outbox<typeof Api>> } = {};
   const sc = scope(() => {
-    held.o = outbox(`sendstore${++n}.outbox`, Api, { module: "app" });
+    held.o = outbox(`sendstore${++n}.outbox`, Api);
   });
   if (held.o === undefined) throw new Error("no outbox");
   return { o: held.o, sc };

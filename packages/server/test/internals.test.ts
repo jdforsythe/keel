@@ -1,7 +1,8 @@
 // @vitest-environment happy-dom
 // Unit and property tests (seed 1337) for the pure internals of the request flow.
-import type { RouteDef } from "@keel/router";
-import { compileRoutes, compileTable, needsBare, routeActions } from "@keel/router/internal";
+import { type RouteTable, action, guard, loader, manifest, routeTable } from "@keel/router";
+import { contract } from "@keel/router/contract";
+import { compileRoutes, needsBare } from "@keel/router/internal";
 import { publicError } from "@keel/router/internal";
 import { ok, s } from "@keel/schema";
 import fc from "fast-check";
@@ -27,18 +28,28 @@ import { topology } from "../src/topology.ts";
 
 const SEED = 1337;
 const p = (): Node => document.createElement("p");
-const tableOf = (routes: Record<string, RouteDef>) => compileTable(compileRoutes(routes), routes);
-const loaderStub = { kind: "keel.loader" as const, output: s.object({}), run: () => Promise.resolve(ok({})) };
+const tableOf = (routes: RouteTable) => compileRoutes(routes).located;
 
 describe("selectDeployable", () => {
-  const shop = { path: "/shop", component: p };
-  routeActions.set(shop, { POST: { kind: "keel.action", input: s.object({}), run: () => ok(null) } });
-  const table = tableOf({
-    "app.home": { path: "/", component: p },
-    "orders.show": { path: "/orders/:id", params: s.object({ id: s.string() }), component: p },
-    "shop.list": shop,
-    "blog.list": { path: "/blog", component: p, loader: loaderStub },
-  });
+  const app = contract("app", { "app.home": { path: "/" } });
+  const orders = contract("orders", { "orders.show": { path: "/orders/:id", params: s.object({ id: s.string() }) } });
+  const shop = contract("shop", { "shop.list": { path: "/shop" } });
+  const blog = contract("blog", { "blog.list": { path: "/blog" } });
+  const table = tableOf(
+    routeTable(
+      manifest(app, { "app.home": { component: p } }),
+      manifest(orders, { "orders.show": { component: p } }),
+      manifest(shop, {
+        "shop.list": { component: p, POST: action(shop, "shop.list", { input: s.object({}) }, () => ok(null)) },
+      }),
+      manifest(blog, {
+        "blog.list": {
+          component: p,
+          loader: loader(blog, "blog.list", { output: s.object({}) }, () => Promise.resolve(ok({}))),
+        },
+      }),
+    ),
+  );
   const mods = new Set(["app", "orders", "shop", "blog"]);
   const t = (def: Parameters<typeof topology>[0]) => topology(def);
 
@@ -70,7 +81,8 @@ describe("selectDeployable", () => {
     expect(() => selectDeployable(t({ w: { modules: ["shop"], adapter: "static" } }), table, mods, "w")).toThrow(
       "E1553 static deployable w: route shop.list has actions",
     );
-    const bare = tableOf({ "x.y": { path: "/y/:id", params: s.object({ id: s.string() }), component: p } });
+    const x = contract("x", { "x.y": { path: "/y/:id", params: s.object({ id: s.string() }) } });
+    const bare = tableOf(manifest(x, { "x.y": { component: p } }));
     expect(() => selectDeployable(t({ s: { modules: ["x"], adapter: "static" } }), bare, new Set(["x"]), "s")).toThrow(
       /^E1553 .* has params$/,
     );
@@ -192,19 +204,41 @@ describe("small pure helpers", () => {
   });
 
   it("needsBare and nearestErrorElement", () => {
-    const lvl = (id: string, extra: object) => ({ id, def: { component: p, ...extra } });
+    const c = contract("a", {
+      "a.a": { layout: true },
+      "a.b": { layout: true },
+      "a.c": { layout: true },
+      "a.d": { path: "/d" },
+      "a.g": { layout: true },
+      "a.h": { path: "/h" },
+      "a.e": { path: "/e" },
+    });
     const ee = () => p();
-    const chain = [lvl("a", {}), lvl("b", { loader: loaderStub }), lvl("c", { errorElement: ee }), lvl("d", {})];
+    const routes = manifest(c, {
+      "a.a": { component: p },
+      "a.b": {
+        component: p,
+        layout: "a.a",
+        loader: loader(c, "a.b", { output: s.object({}) }, () => Promise.resolve(ok({}))),
+      },
+      "a.c": { component: p, layout: "a.b", errorElement: ee },
+      "a.d": { component: p, layout: "a.c" },
+      "a.g": { component: p, guard: guard({ redirect: "a.e" }, () => Promise.resolve(ok(null))) },
+      "a.h": { component: p, layout: "a.g" },
+      "a.e": { component: p, errorElement: ee },
+    });
+    const chainOf = (id: string) => compileRoutes(routes).located.find((r) => r.id === id)?.chain ?? [];
+    const chain = chainOf("a.d");
     expect(needsBare(chain, 0)).toBe(false);
     expect(needsBare(chain, 1)).toBe(false);
     expect(needsBare(chain, 2)).toBe(true);
     expect(needsBare(chain, -1)).toBe(false);
-    expect(needsBare([lvl("a", { guard: "g" }), lvl("b", {})], 1)).toBe(true);
+    expect(needsBare(chainOf("a.h"), 1)).toBe(true);
     expect(nearestErrorElement(chain, 3)).toBe(2);
     expect(nearestErrorElement(chain, 99)).toBe(2);
     expect(nearestErrorElement(chain, 2)).toBe(2);
     expect(nearestErrorElement(chain, 1)).toBe(-1);
-    expect(nearestErrorElement([lvl("a", { errorElement: ee })], 0)).toBe(0);
+    expect(nearestErrorElement(chainOf("a.e"), 0)).toBe(0);
   });
 
   it("log lines, notFound, codedError, devMessageOf", () => {

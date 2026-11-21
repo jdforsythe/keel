@@ -44,7 +44,6 @@ const cases = (only: readonly string[]): Case[] => {
       (c) =>
         Listbox(
           { id: "w", label: "Fruit", options: () => fruit, mode: "single", selected: () => [], onChange: () => {} },
-          undefined,
           c,
         ),
       "w.list",
@@ -62,7 +61,6 @@ const cases = (only: readonly string[]): Case[] => {
             options: () => fruit,
             onChange: () => {},
           },
-          undefined,
           c,
         ),
       "w.input",
@@ -70,7 +68,7 @@ const cases = (only: readonly string[]): Case[] => {
     ],
     [
       "Menu",
-      (c) => Menu({ id: "w", trigger: () => "Fruit", items: () => fruit, onSelect: () => {} }, undefined, c),
+      (c) => Menu({ id: "w", trigger: () => "Fruit", items: () => fruit, onSelect: () => {} }, c),
       "w.trigger",
       { type: "keydown", key: "Enter" },
     ],
@@ -86,7 +84,6 @@ const cases = (only: readonly string[]): Case[] => {
             onChange: () => {},
             panel: (k) => k,
           },
-          undefined,
           c,
         ),
       "w.tab.apple",
@@ -94,13 +91,13 @@ const cases = (only: readonly string[]): Case[] => {
     ],
     [
       "Dialog",
-      (c) => Dialog({ id: "w", title: "Fruit", trigger: () => "Open", content: () => "Apple" }, undefined, c),
+      (c) => Dialog({ id: "w", title: "Fruit", trigger: () => "Open", content: () => "Apple" }, c),
       "w.trigger",
       { type: "click" },
     ],
     [
       "Disclosure",
-      (c) => Disclosure({ id: "w", summary: () => "Fruit", children: () => "Apple" }, undefined, c),
+      (c) => Disclosure({ id: "w", summary: () => "Fruit", children: () => "Apple" }, c),
       "w.button",
       { type: "click" },
     ],
@@ -117,7 +114,6 @@ const cases = (only: readonly string[]): Case[] => {
             onDismiss: () => {},
             dismiss: "Dismiss",
           },
-          undefined,
           c,
         ),
       "w.dismiss.a",

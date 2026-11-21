@@ -1,8 +1,6 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { s } from "@keel/schema";
 import { Health } from "@keel/std-health/Health";
-import { routes as health } from "@keel/std-health/routes";
+import { health } from "@keel/std-health/contract";
 import { describe, expect, it } from "vitest";
 import { NOW, apiApp, apiCtx, asJson } from "./simApi.ts";
 
@@ -12,19 +10,11 @@ const HealthBody = s.object({
   results: s.object({ "health.status": s.object({ ok: s.literal(true), value: Health }) }),
 });
 
-/** The part of `.keel/surface.json` that names each built route's module and path. */
-const Surface = s.object({
-  data: s.object({ routes: s.record(s.object({ module: s.string(), path: s.string().nullable(), file: s.string() })) }),
-});
-
 describe("the api deployable's health route", () => {
-  it("is in the built surface as the health module's route at /health", () => {
-    const surface = Surface.parse(JSON.parse(readFileSync(join(process.cwd(), ".keel", "surface.json"), "utf8")));
-    expect(surface.ok && surface.value.data.routes["health.status"]).toMatchObject({
-      module: "health",
-      path: "/health",
-      file: "@keel/std-health/routes",
-    });
+  it("is the health module's contract entry at /health", () => {
+    expect(health.module).toBe("health");
+    expect(health.entries["health.status"].path).toBe("/health");
+    expect(health.href("health.status")).toBe("/health");
   });
   it("answers GET /health with ok and the server clock's time", async () => {
     const server = apiCtx();

@@ -3,6 +3,7 @@
 // chosen file throws E1583, a back-forward cache restore clears pending; a router leaves for a path its table lacks
 // (`navigate`, `ok(href)`, a link click) and keeps the 404 for a pop. No generated inputs (seed 1337 unused).
 import { createCtx } from "@keel/ctx";
+import { contract } from "@keel/router/contract";
 import { mount } from "@keel/runtime-dom";
 import { err, ok, s } from "@keel/schema";
 import { describe, expect, it } from "vitest";
@@ -40,7 +41,7 @@ const submit = (f: Element | null): Event => {
 function host(view: () => Node) {
   const h = document.createElement("div");
   document.body.append(h);
-  const unmount = mount(view, h);
+  const unmount = mount(view, h, { ctx });
   return {
     h,
     stop: () => {
@@ -118,11 +119,10 @@ describe("a Form no router matches posts natively", () => {
 
 describe("a router keeps client-side only the pages its table matches", () => {
   const page = (): Node => document.createElement("main");
-  const act = action({ input: s.object({}) }, async () => ok(auth.href("/done")));
-  const links = manifest({ "nf.act": { path: "/act", component: page } });
-  const poster = (): Node => Form({ method: "POST", action: links.href("nf.act") });
-  const routes = manifest({ "nf.home": { path: "/", component: page }, "nf.act": { path: "/act", component: poster } });
-  routes.actions({ "nf.act": { POST: act } });
+  const nf = contract("nf", { "nf.home": { path: "/" }, "nf.act": { path: "/act" } });
+  const act = action(nf, "nf.act", { input: s.object({}) }, async () => ok(auth.href("/done")));
+  const poster = (): Node => Form({ method: "POST", action: nf.href("nf.act") });
+  const routes = manifest(nf, { "nf.home": { component: page }, "nf.act": { component: poster, POST: act } });
 
   function start(url: string) {
     const left: [string, boolean][] = [];

@@ -21,11 +21,9 @@ export function TableSearch<T, S extends Field<T>, F extends Field<T>>(
     readonly href: (search: TableQuery<T, S, F>) => Href;
     readonly delay?: number;
   },
-  _slots?: undefined,
-  ctx?: Ctx,
+  ctx: Ctx,
 ): Node {
   const at = owner();
-  const clock = ctx?.clock;
   const id = `${props.id}.input`;
   // The input keeps its text while `search.q` is the value it last sent (typing goes on during the load, and text past
   // `Q_MAX` stays); any other `q` (back, forward, a link) replaces it and becomes the new baseline.
@@ -43,19 +41,16 @@ export function TableSearch<T, S extends Field<T>, F extends Field<T>>(
     },
     { writes: [shown] },
   );
-  const timer =
-    clock === undefined
-      ? undefined
-      : debounced(
-          clock,
-          () => props.delay ?? 300,
-          () => {
-            sent = q.slice(0, Q_MAX);
-            const go = (): Promise<void> => navigate(props.href(withQuery(props.search, sent)), { replace: true });
-            void (at === undefined ? go() : at.run(go));
-          },
-        );
-  at?.onDispose(() => timer?.cancel());
+  const timer = debounced(
+    ctx.clock,
+    () => props.delay ?? 300,
+    () => {
+      sent = q.slice(0, Q_MAX);
+      const go = (): Promise<void> => navigate(props.href(withQuery(props.search, sent)), { replace: true });
+      void (at === undefined ? go() : at.run(go));
+    },
+  );
+  at?.onDispose(() => timer.cancel());
   return Input({
     id,
     get label() {
@@ -66,7 +61,7 @@ export function TableSearch<T, S extends Field<T>, F extends Field<T>>(
     onInput: (value) => {
       q = value;
       shown.set(value);
-      timer?.push();
+      timer.push();
     },
   });
 }

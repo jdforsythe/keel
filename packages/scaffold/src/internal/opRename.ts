@@ -18,6 +18,9 @@ import { routeId } from "./routeId.ts";
 import { routeTable } from "./routeTable.ts";
 import { storeId } from "./storeId.ts";
 
+/** The handler name prefixes a route can carry: a loader, or the action of an API write. */
+const HANDLERS = ["load", "post", "put", "patch", "delete"];
+
 /** Old -> new paths of the files in `dir` whose name starts with one of the `prefixes` (old -> new). */
 function renamedFiles(
   files: ReadonlyMap<string, string>,
@@ -48,7 +51,7 @@ const spec = (
 
 /**
  * `codemod rename <from> <to>` for a component, store, route or schema: the declaration, its files, every
- * import, identifier reference, `href()`/`uses:`/element-id string, test, and manifest entry.
+ * import, identifier reference, `href()`/`uses:`/element-id string, handler id, test, and a route's contract entry and binding key.
  */
 export function opRename(
   input: unknown,
@@ -110,14 +113,14 @@ export function opRename(
   const dir = dirOf(decl.file);
   const [pa, pb] = [pascal(a.leaf), pascal(b.leaf)];
   const paths = renamedFiles(files, dir, [
-    [`load${pa}.server.`, `load${pb}.server.`],
+    ...HANDLERS.map((h): [string, string] => [`${h}${pa}.server.`, `${h}${pb}.server.`]),
     [`${a.leaf}.route.`, `${b.leaf}.route.`],
     [`${pa}Page.`, `${pb}Page.`],
   ]);
   for (const [o, n] of renamedFiles(files, "test", [[`${a.mod}.${a.leaf}.route.`, `${a.mod}.${b.leaf}.route.`]]))
     paths.set(o, n);
   const names: [string, string][] = [
-    [`load${pa}`, `load${pb}`],
+    ...HANDLERS.map((h): [string, string] => [`${h}${pa}`, `${h}${pb}`]),
     [`${pa}Page`, `${pb}Page`],
   ];
   const lastOf = (id: string): string => id.slice(id.lastIndexOf(".") + 1);

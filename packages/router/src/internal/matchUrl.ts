@@ -6,6 +6,7 @@ import { parseSearch } from "./parseSearch.ts";
 import { prefixOf } from "./prefixOf.ts";
 import { splitUrl } from "./splitUrl.ts";
 import { toRecord } from "./toRecord.ts";
+import { underMount } from "./underMount.ts";
 
 const rank = (segments: readonly Segment[]): string => segments.map((s) => (s.kind === "static" ? "0" : "1")).join("");
 
@@ -15,8 +16,9 @@ const rank = (segments: readonly Segment[]): string => segments.map((s) => (s.ki
  * URL-decoded then parsed by the route's params schema; failure is `notFound`. With a prefix param (k.prefix Parse):
  * a first segment that is a non-default value matches prefixed routes only; the default value matches the rest of the
  * path, and the canonical `url` leaves it out (the server answers 308 to it); any other path matches unprefixed
- * routes and prefixed routes with the default. A path at or under `mount` (the router's identity mount path, k.mount)
- * matches nothing, nor does one holding a `\`, which a URL parser reads as `/` (so `/\x` would name the host `x`).
+ * routes and prefixed routes with the default. A path whose decoded segments, joined by `/`, are `mount` (the router's
+ * identity mount path, k.mount-scope) or lie under it matches nothing (`/%61pi/auth` under `/api/auth`; the test is
+ * case-sensitive), nor does one holding a `\`, which a URL parser reads as `/` (so `/\x` would name the host `x`).
  */
 export function matchUrl(table: readonly Located[], url: string, mount?: string): Match {
   const { path, query, hash } = splitUrl(url);
@@ -26,9 +28,9 @@ export function matchUrl(table: readonly Located[], url: string, mount?: string)
   const decoded = attempt(() =>
     trimmed === "/" || trimmed === "" ? [] : trimmed.slice(1).split("/").map(decodeURIComponent),
   );
-  if (!decoded.ok || (mount !== undefined && `${trimmed}/`.startsWith(`${mount}/`)) || trimmed.includes("\\"))
-    return { kind: "notFound", url: canonical, route: null };
+  if (!decoded.ok || trimmed.includes("\\")) return { kind: "notFound", url: canonical, route: null };
   const parts = decoded.value;
+  if (mount !== undefined && underMount(trimmed, mount)) return { kind: "notFound", url: canonical, route: null };
   const first = parts[0];
   const prefixes = table.map((r) => prefixOf(r.def, r.segments));
   const prefixed = first !== undefined && prefixes.some((x) => x?.values.includes(first) === true);

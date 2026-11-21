@@ -2,6 +2,7 @@
 // A kept page's route Boundary: a binding that throws on one search shows the `errorElement`; the next search-only
 // navigation renders the level again.
 import { createCtx } from "@keel/ctx";
+import { contract } from "@keel/router/contract";
 import { mount } from "@keel/runtime-dom";
 import { text } from "@keel/runtime-dom/ops";
 import { s } from "@keel/schema";
@@ -15,10 +16,9 @@ const settle = async (): Promise<void> => {
 };
 
 it("a level that threw on one search renders again on the next", async () => {
-  const routes = manifest({
+  const kb = contract("kb", { "kb.list": { path: "/kb", search: s.object({ q: s.string().optional() }) } });
+  const routes = manifest(kb, {
     "kb.list": {
-      path: "/kb",
-      search: s.object({ q: s.string().optional() }),
       component: (props) => {
         const p = document.createElement("p");
         p.id = "page";
@@ -38,15 +38,16 @@ it("a level that threw on one search renders again on the next", async () => {
       },
     },
   });
-  const router = createRouter(routes, { ctx: createCtx({ mode: "sim" }), history: memoryHistory("/kb?q=a") });
+  const ctx = createCtx({ mode: "sim" });
+  const router = createRouter(routes, { ctx, history: memoryHistory("/kb?q=a") });
   const host = document.createElement("div");
-  const unmount = mount(router.App, host);
+  const unmount = mount(router.App, host, { ctx });
   await settle();
   expect(host.querySelector("#page")?.textContent).toBe("a");
-  await router.navigate(routes.href("kb.list", {}, { q: "boom" }));
+  await router.navigate(kb.href("kb.list", {}, { q: "boom" }));
   await settle();
   expect(host.querySelector("#failed")).not.toBeNull();
-  await router.navigate(routes.href("kb.list", {}, { q: "b" }));
+  await router.navigate(kb.href("kb.list", {}, { q: "b" }));
   await settle();
   expect(host.querySelector("#failed")).toBeNull();
   expect(host.querySelector("#page")?.textContent).toBe("b");

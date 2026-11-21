@@ -9,7 +9,7 @@ import { AccountData } from "./AccountData.schema.ts";
 import { AccountsParams } from "./AccountsParams.schema.ts";
 import { AccountsSearch } from "./AccountsSearch.schema.ts";
 import { Credentials } from "./Credentials.schema.ts";
-import { routes } from "./routes.ts";
+import { accounts } from "./accounts.contract.ts";
 
 export const Props = s.object({ params: AccountsParams, search: AccountsSearch, data: AccountData });
 
@@ -58,7 +58,7 @@ export default function SigninPage(props: Infer<typeof Props>) {
           {props.data.text.signinSubmit}
         </Button>
       </Form>
-      <Link id="accounts.toSignup" to={routes.href("accounts.signup", { locale: props.params.locale })}>
+      <Link id="accounts.toSignup" to={accounts.href("accounts.signup", { locale: props.params.locale })}>
         {props.data.text.toSignup}
       </Link>
     </Box>

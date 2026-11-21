@@ -1,8 +1,7 @@
 import { action } from "@keel/router";
-import { err, ok, s } from "@keel/schema";
+import { err, ok } from "@keel/schema";
 import { tx } from "@keel/store";
-import { ListParams } from "./ListParams.schema.ts";
-import { Nothing } from "./Nothing.schema.ts";
+import { api } from "./api.contract.ts";
 import { removalStores } from "./removalStores.server.ts";
 
 /**
@@ -10,7 +9,9 @@ import { removalStores } from "./removalStores.server.ts";
  * caller. An unknown or already hidden list is `keel.notFound`.
  */
 export const postRemove = action(
-  { input: s.object({}), params: ListParams, output: Nothing, stores: removalStores },
+  api,
+  "api.removeList",
+  { stores: removalStores },
   (_input, { params, caller, stores }, ctx) => {
     const { listId } = params;
     const list = stores.board.get("lists").find((l) => l.id === listId);

@@ -5,10 +5,10 @@ const sameList = (a: unknown, b: readonly string[]): boolean =>
   Array.isArray(a) && a.length === b.length && a.every((x, i) => x === b[i]);
 
 /**
- * The first route id (sorted) where `routes.json` `data` differs from the literals of `routes.ts` (k.compiler
- * Artifacts), or undefined. A literal id missing from `data`, or a read field that differs (`path`, `layout`, `api`
- * (absent means not an API route), guard `redirect`, `actions`, `params`/`search` presence, `module` from the id), is a mismatch; so is an
- * id in `data` the literals lack when every id was a literal (`closed`).
+ * The first route id (sorted) where `routes.json` `data` differs from the literals of the contracts and bindings
+ * (k.compiler Artifacts), or undefined. A literal id missing from `data`, or a read field that differs (`path`,
+ * `method`, `layout`, `api` (absent means not an API entry; not compared once a part of the entry is unread), guard `redirect`, `actions`, `params`/`search` presence,
+ * `module` from the id), is a mismatch; so is an id in `data` the literals lack when every id was a literal (`closed`).
  */
 export function routesMismatch(data: unknown, literals: RouteLiterals): string | undefined {
   if (!isRecord(data)) return "";
@@ -21,8 +21,8 @@ export function routesMismatch(data: unknown, literals: RouteLiterals): string |
       got.module !== (id.split(".")[0] ?? id) ||
       (want.path !== undefined && got.path !== want.path) ||
       (want.layout !== undefined && got.layout !== want.layout) ||
-      (!literals.unread.includes(id) &&
-        !literals.unread.includes(`${id} api`) &&
+      (want.method !== undefined && got.method !== want.method) ||
+      (!literals.unread.some((u) => u === id || u.startsWith(`${id} `)) &&
         (got.api === true) !== (want.api === true)) ||
       (want.guard !== undefined && got.guard !== want.guard) ||
       (want.actions !== undefined && !sameList(got.actions, want.actions)) ||

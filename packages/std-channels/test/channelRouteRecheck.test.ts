@@ -4,6 +4,7 @@ import { type Ctx, createCtx } from "@keel/ctx";
 import { report } from "@keel/ctx/internal";
 import { scope } from "@keel/reactive";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { createApp, topology } from "@keel/server";
 import { store } from "@keel/store";
@@ -57,13 +58,23 @@ async function serve() {
       commit: (writes) => base.storage.commit(writes),
     },
   };
-  const route = channelRoute(room, {
+  const t = contract("t", {
+    "t.room": { method: "GET", path: "/api/room/events", query: room.params, events: true, output: room.events },
+    "t.publish": {
+      method: "POST",
+      path: "/api/room/events",
+      query: room.params,
+      body: room.body,
+      output: s.object({}),
+    },
+  });
+  const route = channelRoute(t, room, {
     id: "t.room",
+    publish: "t.publish",
     stores: flags,
     member: ({ params, stores }) => params.room !== "x" && stores.flag.get("on"),
   });
-  const routes = manifest({ "t.room": { api: true, path: route.path, loader: route.loader } });
-  routes.actions({ "t.room": route.actions });
+  const routes = manifest(t, { "t.room": { loader: route.loader }, "t.publish": { action: route.action } });
   const app = await createApp({
     topology: topology({ web: { modules: ["t"], adapter: "node" } }),
     routes,
@@ -72,7 +83,7 @@ async function serve() {
   });
   const open = async (search: string) => {
     const res = await app.fetch(
-      new Request(`${BASE}${route.path}${search}`, { headers: { accept: "text/event-stream" } }),
+      new Request(`${BASE}${room.path}${search}`, { headers: { accept: "text/event-stream" } }),
     );
     const lines: unknown[] = [];
     const state = { ended: false };
@@ -87,7 +98,7 @@ async function serve() {
   };
   const post = (search: string, body: unknown) =>
     app.fetch(
-      new Request(`${BASE}${route.path}${search}`, {
+      new Request(`${BASE}${room.path}${search}`, {
         method: "POST",
         body: JSON.stringify(body),
         headers: { accept: "application/json", "content-type": "application/json", "x-keel": "1", origin: BASE },

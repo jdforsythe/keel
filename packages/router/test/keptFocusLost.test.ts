@@ -3,6 +3,7 @@
 // its id, else the page's first `role="status"` region, else `main`.
 import { createCtx } from "@keel/ctx";
 import { computed } from "@keel/reactive";
+import { contract } from "@keel/router/contract";
 import { For, mount } from "@keel/runtime-dom";
 import { text } from "@keel/runtime-dom/ops";
 import { s } from "@keel/schema";
@@ -18,11 +19,10 @@ afterEach(() => {
   document.body.innerHTML = "";
 });
 
+const kf = contract("kf", { "kf.list": { path: "/kf", search: s.object({ q: s.string().optional() }) } });
 const page = (withStatus: boolean) =>
-  manifest({
+  manifest(kf, {
     "kf.list": {
-      path: "/kf",
-      search: s.object({ q: s.string().optional() }),
       component: (props) => {
         const main = document.createElement("main");
         const q = computed(() => String(Reflect.get(Object(props.search), "q") ?? ""));
@@ -63,12 +63,13 @@ const page = (withStatus: boolean) =>
 
 const open = async (withStatus: boolean) => {
   const routes = page(withStatus);
-  const router = createRouter(routes, { ctx: createCtx({ mode: "sim" }), history: memoryHistory("/kf") });
+  const ctx = createCtx({ mode: "sim" });
+  const router = createRouter(routes, { ctx, history: memoryHistory("/kf") });
   const host = document.createElement("div");
   document.body.appendChild(host);
-  const off = mount(router.App, host);
+  const off = mount(router.App, host, { ctx });
   await settle();
-  return { routes, router, host, off };
+  return { router, host, off };
 };
 const button = (label: string): HTMLElement => {
   const b = Array.from(document.querySelectorAll("button")).find((x) => x.textContent === label);
@@ -77,10 +78,10 @@ const button = (label: string): HTMLElement => {
 };
 
 it("an id-less control that leaves the results hands focus to the page's status region", async () => {
-  const { routes, router, off } = await open(true);
+  const { router, off } = await open(true);
   const main = document.querySelector("main");
   button("apple").focus();
-  await router.navigate(routes.href("kf.list", {}, { q: "pe" }));
+  await router.navigate(kf.href("kf.list", {}, { q: "pe" }));
   await settle();
   expect(document.querySelector("main")).toBe(main);
   expect(document.activeElement?.id).toBe("kf.status");
@@ -90,9 +91,9 @@ it("an id-less control that leaves the results hands focus to the page's status 
 });
 
 it("without a status region focus goes to main", async () => {
-  const { routes, router, off } = await open(false);
+  const { router, off } = await open(false);
   button("apple").focus();
-  await router.navigate(routes.href("kf.list", {}, { q: "pe" }));
+  await router.navigate(kf.href("kf.list", {}, { q: "pe" }));
   await settle();
   expect(document.activeElement?.localName).toBe("main");
   off();
@@ -100,12 +101,12 @@ it("without a status region focus goes to main", async () => {
 });
 
 it("a control with an id that is still on the page keeps focus; one gone with an id goes to the region", async () => {
-  const { routes, router, off } = await open(true);
+  const { router, off } = await open(true);
   button("pear").focus();
-  await router.navigate(routes.href("kf.list", {}, { q: "pea" }));
+  await router.navigate(kf.href("kf.list", {}, { q: "pea" }));
   await settle();
   expect(document.activeElement?.id).toBe("kf.pear");
-  await router.navigate(routes.href("kf.list", {}, { q: "app" }));
+  await router.navigate(kf.href("kf.list", {}, { q: "app" }));
   await settle();
   expect(document.activeElement?.id).toBe("kf.status");
   off();

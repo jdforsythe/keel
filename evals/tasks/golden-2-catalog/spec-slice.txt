@@ -1,4 +1,4 @@
-std.headless std.options std.tables k.aria k.router k.testing std.messages std.i18n std.money std.temporal
+std.headless std.options std.tables k.aria k.contract k.router k.testing std.messages std.i18n std.money std.temporal
 
 Key lines only. Full text: `pnpm spec <id>`.
 
@@ -30,8 +30,13 @@ k.aria
 
 k.router
 - navigate(href, { replace? }) from '@keel/router' navigates the router rendering the caller; a push or replace that changes only the search keeps scroll
-- routes.href(id, params?, search?) is the only way to an Href
-- API route (`api: true`, no component, a loader or an action): the server answers JSON; an API action declares `output` and returns ok(value) (a write with nothing to say: output: s.object({}), ok({})); a page's action declares none (ok(href) / ok(null)); the wrong kind is E1512; output holds no s.secret (E1113); its guard, loader and action get bearer: Secret<string> | undefined from Authorization: Bearer
+- <contract>.href(id, params?, search?) (recipes.href('recipes.show', { locale, recipeId })) is the only way to an Href; it takes page ids of that contract
+- API entry (an entry of the contract with method, path and output, bound to a loader or an action, no component): the server answers JSON; its handler returns ok(value) for the entry's output (a write with nothing to say: output: s.object({}), ok({})); a page's action declares input and returns ok(href) / ok(null); output holds no s.secret (E1113); its guard, loader and action get bearer: Secret<string> | undefined from Authorization: Bearer; its query may require keys (422 keel.fields when it fails)
+
+k.contract
+- kitchen.contract.ts: contract('kitchen', { ..., 'kitchen.catalog': { method: 'GET', path: '/api/catalog/:locale', params: CatalogParams, query: CatalogSearch, output: CatalogResult } }) from '@keel/router/contract'; one id per method, <module>.<name> for an API entry; imports *.schema.ts files and packages only (E1514)
+- routes.ts: manifest(kitchen, { 'kitchen.catalog': { loader: loadCatalog } }) binds every entry and nothing else (E1515); loader(kitchen, 'kitchen.catalog', { stores: boxStores }, fn) names its entry and is never annotated; a page binds component, loader, layout, title and its verbs
+- service({ contract: kitchen }) has a method per API entry named by the id after the module (api.catalog({ params, query }, ctx)); recipes.contract.ts holds the pages: 'recipes.catalog': { path: '/:locale/catalog', params: LocaleParams, search: CatalogSearch }
 
 k.testing
 - renderRoute(id, { routes, params, search?, ctx }) or renderRoute(id, { routes, url, ctx }); location() -> { entries, scrollY }

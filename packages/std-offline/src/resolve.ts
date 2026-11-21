@@ -1,6 +1,5 @@
 import type { Ctx } from "@keel/ctx";
 import { attempt } from "@keel/schema";
-import type { EndpointMap } from "@keel/services";
 import { tx } from "@keel/store";
 import { asResult } from "../unsafe/asResult.ts";
 import type { Outbox } from "./Outbox.type.ts";
@@ -23,25 +22,25 @@ import { persist } from "./internal/persist.ts";
  * `conflict` or `failed` entry, writes the outbox (once more when that write rejects) and resolves true. Each logs `<id>.resolve` `{ key, resolution }`.
  * Resolves false, changing nothing, for a key with no such entry among those the ctx added or loaded.
  */
-export function resolve<const D extends EndpointMap>(
+export function resolve<const D extends object>(
   ctx: Ctx,
   o: Outbox<D>,
   key: string,
   resolution: "mine",
 ): Promise<false | OutboxResult<Outputs<D>>>;
-export function resolve<const D extends EndpointMap>(
+export function resolve<const D extends object>(
   ctx: Ctx,
   o: Outbox<D>,
   key: string,
   resolution: "theirs",
 ): Promise<boolean>;
-export function resolve<const D extends EndpointMap>(
+export function resolve<const D extends object>(
   ctx: Ctx,
   o: Outbox<D>,
   key: string,
   resolution: Resolution,
 ): Promise<boolean | OutboxResult<Outputs<D>>>;
-export async function resolve<const D extends EndpointMap>(
+export async function resolve<const D extends object>(
   ctx: Ctx,
   o: Outbox<D>,
   key: string,

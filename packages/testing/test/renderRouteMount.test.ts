@@ -4,6 +4,7 @@
 // routes by its table. A path holding a `\` matches no page. Seed 1337.
 import { createCtx } from "@keel/ctx";
 import { type Href, identityMount, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { renderRoute } from "@keel/testing";
 import { afterEach, describe, expect, it } from "vitest";
@@ -15,10 +16,15 @@ const to = (u: string): Href => {
   return u;
 };
 const main = () => document.createElement("main");
-const routes = manifest({
-  "mo.home": { path: "/", component: main },
-  "mo.one": { path: "/:one", params: s.object({ one: s.string() }), component: main },
-  "mo.two": { path: "/:svc/:act", params: s.object({ svc: s.string(), act: s.string() }), component: main },
+const c = contract("mo", {
+  "mo.home": { path: "/" },
+  "mo.one": { path: "/:one", params: s.object({ one: s.string() }) },
+  "mo.two": { path: "/:svc/:act", params: s.object({ svc: s.string(), act: s.string() }) },
+});
+const routes = manifest(c, {
+  "mo.home": { component: main },
+  "mo.one": { component: main },
+  "mo.two": { component: main },
 });
 const get = (url: string) => ({ method: "GET", url, body: null });
 const open: { dispose(): void }[] = [];

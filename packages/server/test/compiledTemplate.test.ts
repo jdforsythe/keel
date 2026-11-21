@@ -6,6 +6,7 @@ import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
 import { createCtx } from "@keel/ctx";
 import { loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { err, s } from "@keel/schema";
 import { describe, expect, it } from "vitest";
 import { createApp, topology } from "../src/index.ts";
@@ -20,6 +21,8 @@ const compiled = (source: string): ((props: Record<string, unknown>) => unknown)
   return (props) => Reflect.apply(fn, undefined, [props]);
 };
 
+const ctx = createCtx({ mode: "sim", seed: 1337 });
+
 const outer = (n: unknown): string => {
   const html = typeof n === "object" && n !== null ? Reflect.get(n, "outerHTML") : undefined;
   return typeof html === "string" ? html : "";
@@ -30,7 +33,7 @@ describe("compiled templates render on the server DOM", () => {
     expect(typeof document).toBe("undefined");
     installServerDom();
     const A = compiled("export default function A(p:{x:string}){return <div><span>{p.x}</span></div>;}");
-    expect(outer(renderUnit(() => A({ x: "a<" })))).toBe('<div id="a.0"><span id="a.1">a&lt;</span></div>');
+    expect(outer(renderUnit(() => A({ x: "a<" }), ctx))).toBe('<div id="a.0"><span id="a.1">a&lt;</span></div>');
   });
 
   it("binds text, attributes, a user id, a conditional, a list and a handler below the root", () => {
@@ -39,7 +42,7 @@ describe("compiled templates render on the server DOM", () => {
     export default function A(p:{x:string; items: {t: string}[]; on: boolean}){
       return <div class="a"><span>{p.x}</span><p id="q" title={p.x}>hi {p.x} there</p><If when={p.on} fallback={() => <i>no</i>}>{() => <b>yes</b>}</If><ul><For each={p.items} key="t">{(i) => <li>{i.t}</li>}</For></ul><button onClick={() => undefined}>b</button></div>;
     }`);
-    const html = outer(renderUnit(() => A({ x: "v", items: [{ t: "1" }, { t: "2" }], on: true })));
+    const html = outer(renderUnit(() => A({ x: "v", items: [{ t: "1" }, { t: "2" }], on: true }), ctx));
     expect(html).toContain('<span id="a.1">v</span>');
     expect(html).toContain('title="v"');
     expect(html).toContain("hi <!---->v<!----> there");
@@ -54,7 +57,7 @@ describe("compiled templates render on the server DOM", () => {
     const A = compiled(
       'export default function A(p:{v:string}){return <form><button name="op" value={p.v}>Go</button><select value={p.v}><option value="a">A</option><option value="delete">D</option></select></form>;}',
     );
-    const form = renderUnit(() => A({ v: "delete" }));
+    const form = renderUnit(() => A({ v: "delete" }), ctx);
     expect(outer(form)).toContain('<button id="a.1" name="op" value="delete">Go</button>');
     const select = typeof form === "object" && form !== null ? Reflect.get(form, "lastChild") : null;
     expect(select).toBeInstanceOf(HTMLSelectElement);
@@ -66,15 +69,15 @@ describe("compiled templates render on the server DOM", () => {
       "export default function M(p:{error:{message:string}}){return <section><p>{p.error.message}</p></section>;}",
     );
     const Params = s.object({ id: s.string() });
+    const c = contract("app", { "app.item": { path: "/items/:id", params: Params } });
+    const load = loader(c, "app.item", { output: s.string() }, async ({ params }) =>
+      err({ code: "keel.notFound", message: `No item ${params.id}`, data: null }),
+    );
     const app = await createApp({
       topology: topology({ web: { modules: ["app"], adapter: "node" } }),
-      routes: manifest({
+      routes: manifest(c, {
         "app.item": {
-          path: "/items/:id",
-          params: Params,
-          loader: loader({ output: s.string(), params: Params }, async ({ params }) =>
-            err({ code: "keel.notFound", message: `No item ${params.id}`, data: null }),
-          ),
+          loader: load,
           component: () => document.createElement("i"),
           errorElement: (props) => {
             const n = Missing(props);

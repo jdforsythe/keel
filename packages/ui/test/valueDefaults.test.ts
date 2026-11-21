@@ -8,6 +8,7 @@ import { mount } from "@keel/runtime-dom";
 import { resume } from "@keel/runtime-dom/ops";
 import * as ui from "@keel/ui";
 import { afterEach, describe, expect, it } from "vitest";
+import { testCtx } from "./testCtx.ts";
 
 const flush = async (): Promise<void> => {
   for (let i = 0; i < 4; i++) await Promise.resolve();
@@ -62,7 +63,7 @@ const host = (): HTMLDivElement => {
 describe("ui controls bound to a form carry the first value as attribute and property (rfc:0062)", () => {
   it("Input, TextArea, Select and Checkbox: markup and property agree on first render", () => {
     const h = host();
-    const dispose = mount(() => component({ title: "Ada" }), h);
+    const dispose = mount(() => component({ title: "Ada" }), h, { ctx: testCtx });
     const input = one(h, "input[type=text]", HTMLInputElement);
     expect(input.getAttribute("value")).toBe("Ada");
     expect(input.value).toBe("Ada");
@@ -83,7 +84,7 @@ describe("resume keeps a user's edit (rfc:0062)", () => {
   it("server HTML shows the value; after resume, an edit stays in the property and the field, the default does not return", async () => {
     // Server render: the island root's HTML, with the values in the markup.
     const scratch = host();
-    const disposeScratch = mount(() => component({ title: "Ada" }), scratch);
+    const disposeScratch = mount(() => component({ title: "Ada" }), scratch, { ctx: testCtx });
     const root = scratch.firstElementChild;
     if (root === null) throw new Error("fixture: no island root");
     root.setAttribute("data-k-island", "Edit");
@@ -103,7 +104,7 @@ describe("resume keeps a user's edit (rfc:0062)", () => {
     expect(one(h, "textarea", HTMLTextAreaElement).value).toBe("line 1\nline 2");
     expect(one(h, "input[type=checkbox]", HTMLInputElement).checked).toBe(true);
 
-    resume(h, { Edit: component }, {});
+    resume(h, { Edit: component }, { ctx: testCtx });
     const input = one(h, "input[type=text]", HTMLInputElement);
     expect(input.value).toBe("Ada");
     input.value = "Adam";
@@ -150,7 +151,7 @@ const plain = (() => {
 describe("resume keeps an edit made before the page went live (backlog 0180)", () => {
   it("bind on a claimed server input adopts the typed value and the unticked box; the markup keeps the server default", async () => {
     const scratch = host();
-    const disposeScratch = mount(() => plain({ t: "Ada" }), scratch);
+    const disposeScratch = mount(() => plain({ t: "Ada" }), scratch, { ctx: testCtx });
     const root = scratch.firstElementChild;
     if (root === null) throw new Error("fixture: no island root");
     root.setAttribute("data-k-island", "Plain");
@@ -166,7 +167,7 @@ describe("resume keeps an edit made before the page went live (backlog 0180)", (
     input.value = "typed before resume";
     box.checked = false;
 
-    expect(resume(h, { Plain: plain }, {}).warnings).toEqual([]);
+    expect(resume(h, { Plain: plain }, { ctx: testCtx }).warnings).toEqual([]);
     await flush();
     expect(one(h, "input[type=text]", HTMLInputElement)).toBe(input);
     expect(input.value).toBe("typed before resume");

@@ -11,6 +11,7 @@ import { CatalogRow } from "../modules/kitchen/CatalogRow.schema.ts";
 import { CatalogSearch } from "../modules/kitchen/CatalogSearch.schema.ts";
 import { boxStores } from "../modules/kitchen/boxStores.ts";
 import { catalogColumns } from "../modules/kitchen/catalogColumns.ts";
+import { kitchen } from "../modules/kitchen/kitchen.contract.ts";
 import { loadCatalog as loadCatalogApi } from "../modules/kitchen/loadCatalog.server.ts";
 import BoxShell from "../modules/recipes/BoxShell.tsx";
 import { CatalogData } from "../modules/recipes/CatalogData.schema.ts";
@@ -25,7 +26,6 @@ import { addToList } from "../modules/recipes/addToList.ts";
 import { clearList } from "../modules/recipes/clearList.ts";
 import { currencyOptions } from "../modules/recipes/currencyOptions.ts";
 import { dismissToast } from "../modules/recipes/dismissToast.ts";
-import { kitchen } from "../modules/recipes/kitchen.service.ts";
 import { loadCatalog } from "../modules/recipes/loadCatalog.server.ts";
 import { raiseToast } from "../modules/recipes/raiseToast.ts";
 import { servedLocales } from "../modules/recipes/servedLocales.ts";
@@ -212,8 +212,8 @@ describe("kitchen.catalog (api)", () => {
     );
     expect(out).toEqual({ ok: true, value: { rows: [], total: 0, page: 1, pages: 1 } });
   });
-  it("the service names the catalog endpoint", () => {
-    expect(kitchen.catalog.path).toBe("/api/catalog/:locale");
+  it("the contract names the catalog entry", () => {
+    expect(kitchen.entries["kitchen.catalog"].path).toBe("/api/catalog/:locale");
   });
 });
 

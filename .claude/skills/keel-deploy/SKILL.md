@@ -34,7 +34,7 @@ export default topology({
 
 **Run `server.mjs`.** `node dist/<name>/server.mjs` reads these variables:
 - `PORT` (default 8080).
-- `KEEL_SECRET`, 32 bytes or more, the same in every `node` deployable of the app: it signs the caller cookie and the `x-keel-user` header of a `service({ module })` call. Whoever holds it can sign a caller every deployable accepts.
+- `KEEL_SECRET`, 32 bytes or more, the same in every `node` deployable of the app: it signs the caller cookie and the `x-keel-user` header of a `service({ contract })` call. Whoever holds it can sign a caller every deployable accepts.
 - `KEEL_ORIGIN`, the public origin (optional).
 - `KEEL_PEER_<NAME>`, an http(s) URL per other `node` deployable (`my-api` is `KEEL_PEER_MY_API`). Use `https`: a captured `x-keel-user` header replays its one request until it expires (60 s).
 - `KEEL_DATABASE_URL`, for `storage: 'sqlite'` or `'postgres'` (needs `@keel/std-db` in `dependencies`: E1572).
@@ -45,7 +45,7 @@ A bad value is one E1560 naming the key, never the value, and exit 1. An uncaugh
 
 **Serve the client from a node deployable.** `servedBy: '<node deployable>'` on the `client` deployable copies its build into `dist/<servedBy>/`, and that deployable's `GET /` returns the app. It is a string literal naming a `node` deployable, one client each (else E1566). A deployable key Keel does not list is E1552.
 
-**Host the client on a static host.** Build with `KEEL_PEER_API=<origin>`: `index.html` gets a `keel-peer` tag, and `service({ module })` in the browser calls that origin with credentials. A value that is not an http(s) origin fails the build (E1565). On the server set `KEEL_ALLOW_ORIGINS` to the client's origins, comma-separated (never `*`: E1560). Keep both on one registrable domain so the caller cookie works (else W1567). The static host returns `/index.html` with 200 for a path that is no file.
+**Host the client on a static host.** Build with `KEEL_PEER_API=<origin>`: `index.html` gets a `keel-peer` tag, and `service({ contract })` in the browser calls that origin with credentials. A value that is not an http(s) origin fails the build (E1565). On the server set `KEEL_ALLOW_ORIGINS` to the client's origins, comma-separated (never `*`: E1560). Keep both on one registrable domain so the caller cookie works (else W1567). The static host returns `/index.html` with 200 for a path that is no file.
 
 **Boundary.** A browser build that still holds server code (each worker too) fails with E1007. Browser config reaches the page through `clientStd`; `import.meta.env` has only BASE_URL, MODE, DEV, PROD and SSR, typed by `@keel/compiler/client` (in the scaffold's `tsconfig.json` `types`; no `vite/client` reference needed). A `vite.config` with `envPrefix` or `define` fails with E1007, and so does a `KEEL_*` value of 8 or more characters in an emitted file. Only `KEEL_PEER_<NAME>` and a shell's `KEEL_ORIGIN` are built in.
 

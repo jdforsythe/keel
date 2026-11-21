@@ -1,14 +1,14 @@
 // Examples for std.offline edges no conformance sentence covers. Seed 1337.
 import { type SimCtx, createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
-import { endpoints } from "@keel/services";
 import { expect, test } from "vitest";
 import { Write, drain, outbox, resolve, send } from "../src/index.ts";
 
 const OWNER = "u1";
-const Api = endpoints({
-  add: { method: "POST", path: "/add", body: s.object({ t: s.string(), write: Write }), output: s.object({}) },
+const Api = contract("app", {
+  "app.add": { method: "POST", path: "/add", body: s.object({ t: s.string(), write: Write }), output: s.object({}) },
 });
 const sim = (): SimCtx => createCtx({ mode: "sim", seed: 1337 });
 const settle = async (): Promise<void> => {
@@ -21,7 +21,7 @@ function declare(opts: { maxBytes?: number; id?: string } = {}) {
     held.o = outbox(
       opts.id ?? `unit${++n}.outbox`,
       Api,
-      opts.maxBytes === undefined ? { module: "app" } : { module: "app", maxBytes: opts.maxBytes },
+      opts.maxBytes === undefined ? {} : { maxBytes: opts.maxBytes },
     );
   });
   if (held.o === undefined) throw new Error("no outbox");
@@ -76,8 +76,8 @@ test("drain outside a scope throws E1203", async () => {
 });
 
 test("outbox throws E2651 with code and path for a secret in a body", () => {
-  const Secret = endpoints({
-    add: {
+  const Secret = contract("app", {
+    "app.add": {
       method: "POST",
       path: "/a",
       body: s.object({ pin: s.secret(s.string()), write: Write }),
@@ -85,7 +85,7 @@ test("outbox throws E2651 with code and path for a secret in a body", () => {
     },
   });
   scope(() => {
-    expect(() => outbox("sec.outbox", Secret, { module: "app" })).toThrow(
+    expect(() => outbox("sec.outbox", Secret)).toThrow(
       /^E2651 outbox sec\.outbox endpoint add body holds s\.secret at pin/,
     );
   }).dispose();

@@ -9,6 +9,7 @@ import { serverMode } from "../src/internal/serverMode.ts";
 import { mount } from "../src/mount.ts";
 import { boundary, clone, cond, list, match, resume, slot, template } from "../src/ops/index.ts";
 import { SEED } from "./support.ts";
+import { testCtx } from "./testCtx.ts";
 
 type Op =
   | { readonly k: "if"; readonly on: boolean; readonly kids: readonly Op[] }
@@ -111,10 +112,14 @@ describe("server mode regions resume", () => {
         const served: { el: Element | null } = { el: null };
         serverMode.on = true;
         try {
-          mount(() => {
-            served.el = render(tree, []);
-            return document.createComment("");
-          }, host);
+          mount(
+            () => {
+              served.el = render(tree, []);
+              return document.createComment("");
+            },
+            host,
+            { ctx: testCtx },
+          );
         } finally {
           serverMode.on = false;
         }
@@ -123,7 +128,7 @@ describe("server mode regions resume", () => {
         document.body.innerHTML = `${html}<script type="application/json" id="k-state">{"stores":{},"islands":{"T":{}}}</script>`;
         const before = [...document.body.querySelectorAll("*")];
         const flips: (() => void)[] = [];
-        const { warnings } = resume(document.body, { T: () => render(tree, flips) });
+        const { warnings } = resume(document.body, { T: () => render(tree, flips) }, { ctx: testCtx });
         expect(warnings).toEqual([]);
         const after = [...document.body.querySelectorAll("*")];
         expect(after).toEqual(before);

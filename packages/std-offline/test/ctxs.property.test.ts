@@ -2,15 +2,15 @@
 // entries that ctx added or loaded, so no ctx posts, fails or stores another's. Seeds 1337 and 7.
 import { type SimCtx, createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
-import { endpoints } from "@keel/services";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { Write, drain, outbox, resolve, send } from "../src/index.ts";
 import { field } from "../src/internal/field.ts";
 
-const Api = endpoints({
-  add: { method: "POST", path: "/add", body: s.object({ t: s.string(), write: Write }), output: s.object({}) },
+const Api = contract("app", {
+  "app.add": { method: "POST", path: "/add", body: s.object({ t: s.string(), write: Write }), output: s.object({}) },
 });
 const settle = async (): Promise<void> => {
   for (let i = 0; i < 400; i++) await Promise.resolve();
@@ -41,7 +41,7 @@ test("for any owners on two ctxs over one outbox, each ctx posts, fails and stor
       fc.constantFrom("a", "b"),
       async (writes, later) => {
         const id = `ctxs${++n}.outbox`;
-        const o = outbox(id, Api, { module: "app" });
+        const o = outbox(id, Api);
         const posts: string[][] = [[], []];
         // Two seeds: a ctx draws its write keys from its own seed.
         const ctxs = [ctxWith(posts[0] ?? [], 1337), ctxWith(posts[1] ?? [], 7)];
@@ -94,7 +94,7 @@ test("a drain whose scope ends drops the retry pending on its ctx; a later send 
     posts.push(String(field(await req.json(), "t")));
     return Response.json({ ok: true, value: {} });
   });
-  const o = outbox(`retry${++n}.outbox`, Api, { module: "app" });
+  const o = outbox(`retry${++n}.outbox`, Api);
   const sc = scope(() => void drain(ctx, o, { owner: "a" }));
   await settle();
   expect(await send(ctx, o, "add", { body: { t: "x" } }, { base: 0, owner: "a" })).toEqual({ state: "queued" });
@@ -111,14 +111,9 @@ test("a drain whose scope ends drops the retry pending on its ctx; a later send 
   expect(posts).toEqual(["x", "y"]);
 });
 
-test("outbox throws E2652 naming the endpoint for an events endpoint, and E2651 is unchanged", () => {
-  const Live = endpoints({
-    feed: { method: "GET", path: "/feed", output: s.object({}), events: true },
+test("an `events: true` entry is not an outbox endpoint: outbox declares over a contract holding one", () => {
+  const Live = contract("live", {
+    "live.feed": { method: "GET", path: "/feed", output: s.object({}), events: true },
   });
-  expect(() => outbox("live.outbox", Live, { module: "app" })).toThrow(/E2652 outbox live\.outbox endpoint feed/);
-  try {
-    outbox("live.outbox", Live, { module: "app" });
-  } catch (x) {
-    expect(field(x, "code")).toBe("E2652");
-  }
+  expect(() => outbox("live.outbox", Live)).not.toThrow();
 });

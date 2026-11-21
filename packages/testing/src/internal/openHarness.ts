@@ -36,7 +36,7 @@ import { unexpected } from "./unexpected.ts";
  * then the render checks (`renderChecks`: E1702 with `a11y`, E1703, E1804 with `tokens`, E1821); `fire` and `settle` run it after settling. `dispose` unmounts, runs
  * `teardown`, and restores the seeded stores. A mount that throws disposes and rethrows.
  */
-export function openHarness(setup: HarnessSetup): { readonly harness: Harness; check(): void } {
+export function openHarness(setup: HarnessSetup): { readonly harness: Harness<Ctx>; check(): void } {
   const { ctx, seeded, artifacts, busy, teardown, target, registry } = setup;
   const page = setup.page === true;
   const container = document.createElement("div");
@@ -146,5 +146,5 @@ export function openHarness(setup: HarnessSetup): { readonly harness: Harness; c
     return focusOrder(container);
   };
 
-  return { harness: { a11y: tree, state, fire, settle: settleNow, find, focusOrder: order, dispose }, check };
+  return { harness: { ctx, a11y: tree, state, fire, settle: settleNow, find, focusOrder: order, dispose }, check };
 }

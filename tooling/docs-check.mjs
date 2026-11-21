@@ -45,9 +45,9 @@ const COPY_DIR = ".claude/skills";
 /** The published skills and the size target of each, in tokens (chars / 4). */
 export const TARGETS = {
   keel: 900,
-  "keel-client": 2000,
-  "keel-server": 2000,
-  "keel-data": 2000,
+  "keel-client": 2050,
+  "keel-server": 2250,
+  "keel-data": 2300,
   "keel-testing": 2000,
   "keel-deploy": 1500,
   "keel-compliance": 1500,

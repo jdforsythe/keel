@@ -16,6 +16,5 @@ export default module({
   capabilities: ["geo", "net", "storage"],
   public: {
     exports: ["RecipeParams", "RecipeSearch"],
-    routes: [],
   },
 });

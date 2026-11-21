@@ -24,12 +24,12 @@ function parse(text: string): { ok: true; value: unknown } | { ok: false } {
  * E1005 and W1005 (k.compiler) for each `<dir>/.keel/<name>.json` among the checked files, except the ledger's own
  * `ledger.json` and `monitored.json` (k.ledger).
  * `expected` maps a project dir (`artifactDir`) to the hashes the compiler derives from that project's sources:
- * a string, or `null` when only evaluating `routes.ts` derives it. The file must be one the compiler writes (a name
+ * a string, or `null` when only evaluating the contracts and bindings derives it. The file must be one the compiler writes (a name
  * in `expected`), else E1005 (not among the compiled artifacts); then `{ data, hash }` in canonical JSON plus a
  * newline, with `hash` the content hash of `data`. A file with no `data` key (for example `{"hash":"abc"}`) is
  * malformed: reported, never hashed, no diff. A self-consistent file whose hash is not the expected one (forged or
- * stale) must be rebuilt by `keel build` (no diff). One whose expected hash is `null` (`routes.json` beside an evaluated
- * `routes.ts`) is compared with the manifests' literals (rfc:0059): a mismatch is E1005, and parts that are not literals
+ * stale) must be rebuilt by `keel build` (no diff). One whose expected hash is `null` (`routes.json`, evaluated from the
+ * contracts and bindings) is compared with their literals (`routesMismatch`): a mismatch is E1005, and parts that are not literals
  * are W1005, named. `surface.json` (k.compat) is derived by evaluation: intact when every source it records is unchanged
  * in `sources`. When only the bytes differ (data and hash intact) the fix restores them.
  */
@@ -80,7 +80,7 @@ export function generatedEdits(
     const message = !known
       ? `${shown} is not among the compiled artifacts; remove it`
       : off !== undefined && intact
-        ? `${shown} differs from routes.ts at "${off.slice(0, 24)}"; run keel build`
+        ? `${shown} differs from the contracts and bindings at "${off.slice(0, 24)}"; run keel build`
         : consistent && !intact
           ? `generated ${shown} does not match its sources; run keel build`
           : `hand edit to generated ${shown}; revert and run keel build`;

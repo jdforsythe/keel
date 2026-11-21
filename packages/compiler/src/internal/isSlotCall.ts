@@ -5,7 +5,7 @@ function unparen(e: Expression): Expression {
 }
 
 /**
- * A call that renders a slot: `slots.<name>()`, `<props>.children()`, a `children` binding (`children()`), or with
+ * A call that renders a slot: `<props>.children()`, a `children` binding (`children()`), or with
  * `props` (the component's first parameter) a call of its direct member (`props.icon()`, k.place); optional calls
  * too, alone or left of `??`. It returns nodes, so it is inserted as content, never bound as text.
  */
@@ -17,5 +17,5 @@ export function isSlotCall(e: Expression, props?: string): boolean {
   if (c.type === "Identifier") return c.name === "children";
   if (c.type !== "MemberExpression" || c.computed) return false;
   if (c.property.name === "children") return true;
-  return c.object.type === "Identifier" && (c.object.name === "slots" || c.object.name === props);
+  return c.object.type === "Identifier" && c.object.name === props;
 }

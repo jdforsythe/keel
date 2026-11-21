@@ -49,8 +49,9 @@ const artifact = (name: string): { data: Record<string, unknown>; hash: unknown;
   return { data: Object.fromEntries(Object.entries(data)), hash: Reflect.get(v ?? {}, "hash"), text };
 };
 
+// The contract sits in the binding's own file here: evaluation reads it as it reads a contract file.
 const routesTs = (id: string): string =>
-  `import { manifest } from "@keel/router";\nconst Page = () => null;\nexport const routes = manifest({ "${id}.index": { path: "/${id}", component: Page } });\n`;
+  `import { manifest } from "@keel/router";\nimport { contract } from "@keel/router/contract";\nconst c = contract("${id}", { "${id}.index": { path: "/${id}" } });\nconst Page = () => null;\nexport const routes = manifest(c, { "${id}.index": { component: Page } });\n`;
 const TOKENS = `import { defineTokens } from "@keel/ui";\nexport const tokens = defineTokens({ space: { 1: "4px", 2: "8px", 3: "12px" }, color: { fg: "#111" } });\n`;
 const page = (props: string): string =>
   `import { Box } from "@keel/ui";\nexport default function P() { return <Box ${props} />; }\n`;

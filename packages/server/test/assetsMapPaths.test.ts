@@ -4,11 +4,13 @@ import os from "node:os";
 import path from "node:path";
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createApp } from "../src/createApp.ts";
 import { topology } from "../src/topology.ts";
 
 const SECRET = "MAP_SOURCES_SECRET_77aa";
+const c = contract("app", { "app.home": { path: "/" } });
 let root = "";
 let app: { fetch(req: Request): Promise<Response> };
 
@@ -26,7 +28,7 @@ beforeAll(async () => {
   }
   app = await createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
-    routes: manifest({ "app.home": { path: "/", component: () => document.createElement("p") } }),
+    routes: manifest(c, { "app.home": { component: () => document.createElement("p") } }),
     ctx: createCtx({ mode: "sim", seed: 1 }),
     mode: "production",
     assets: root,

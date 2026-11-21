@@ -2,6 +2,7 @@
 // Examples: navigating away from a route leaves none of its nodes in the document (k.router, k.errors),
 // whether the route has an errorElement (a Boundary), sits under a layout, or its Boundary caught a throw.
 import { createCtx } from "@keel/ctx";
+import { contract } from "@keel/router/contract";
 import { mount } from "@keel/runtime-dom";
 import { s } from "@keel/schema";
 import { describe, expect, it } from "vitest";
@@ -21,11 +22,18 @@ const main = (name: string, kids: Node[] = []): HTMLElement => {
 };
 const error = (): Node => main("error");
 
-const routes = manifest({
-  "na.a": { path: "/na/a", component: () => main("a"), errorElement: error },
-  "na.b": { path: "/na/b", component: () => main("b") },
+const na = contract("na", {
+  "na.a": { path: "/na/a" },
+  "na.b": { path: "/na/b" },
+  "na.throws": { path: "/na/throws" },
+  "na.shell": { layout: true },
+  "na.inner": { path: "/na/inner/:n", params: s.object({ n: s.int() }) },
+  "na.flat": { path: "/na/flat" },
+});
+const routes = manifest(na, {
+  "na.a": { component: () => main("a"), errorElement: error },
+  "na.b": { component: () => main("b") },
   "na.throws": {
-    path: "/na/throws",
     component: () => {
       throw new Error("boom");
     },
@@ -40,14 +48,11 @@ const routes = manifest({
     },
   },
   "na.inner": {
-    path: "/na/inner/:n",
-    params: s.object({ n: s.int() }),
     layout: "na.shell",
     component: (p) => main(`inner${JSON.stringify(p.params)}`),
     errorElement: error,
   },
   "na.flat": {
-    path: "/na/flat",
     component: () => {
       const f = document.createDocumentFragment();
       f.append(main("flat"), document.createElement("footer"));
@@ -61,9 +66,10 @@ const mains = (host: Element): string[] =>
   [...host.querySelectorAll("main")].map((m) => m.getAttribute("data-x") ?? "");
 
 async function open(start: string): Promise<{ host: HTMLElement; go: (url: Href) => Promise<void>; done: () => void }> {
-  const router = createRouter(routes, { ctx: createCtx({ mode: "sim" }), history: memoryHistory(start) });
+  const ctx = createCtx({ mode: "sim" });
+  const router = createRouter(routes, { ctx, history: memoryHistory(start) });
   const host = document.createElement("div");
-  const unmount = mount(router.App, host);
+  const unmount = mount(router.App, host, { ctx });
   await settle();
   return {
     host,
@@ -82,9 +88,9 @@ describe("navigating away removes the old page", () => {
   it("from a top-level route with an errorElement", async () => {
     const r = await open("/na/a");
     expect(mains(r.host)).toEqual(["a"]);
-    await r.go(routes.href("na.b"));
+    await r.go(na.href("na.b"));
     expect(mains(r.host)).toEqual(["b"]);
-    await r.go(routes.href("na.a"));
+    await r.go(na.href("na.a"));
     expect(mains(r.host)).toEqual(["a"]);
     r.done();
   });
@@ -92,7 +98,7 @@ describe("navigating away removes the old page", () => {
   it("from a route whose errorElement caught a throw", async () => {
     const r = await open("/na/throws");
     expect(mains(r.host)).toEqual(["error"]);
-    await r.go(routes.href("na.b"));
+    await r.go(na.href("na.b"));
     expect(mains(r.host)).toEqual(["b"]);
     r.done();
   });
@@ -100,10 +106,10 @@ describe("navigating away removes the old page", () => {
   it("from a route with an errorElement under a layout, to a sibling and out of the layout", async () => {
     const r = await open("/na/inner/1");
     expect(mains(r.host)).toEqual(['inner{"n":1}']);
-    await r.go(routes.href("na.inner", { n: 2 }));
+    await r.go(na.href("na.inner", { n: 2 }));
     expect(mains(r.host)).toEqual(['inner{"n":2}']);
     expect(r.host.querySelectorAll('[data-x="shell"]')).toHaveLength(1);
-    await r.go(routes.href("na.b"));
+    await r.go(na.href("na.b"));
     expect(mains(r.host)).toEqual(["b"]);
     expect(r.host.querySelector('[data-x="shell"]')).toBeNull();
     r.done();
@@ -112,7 +118,7 @@ describe("navigating away removes the old page", () => {
   it("from a route with an errorElement whose component renders several top-level nodes", async () => {
     const r = await open("/na/flat");
     expect(mains(r.host)).toEqual(["flat"]);
-    await r.go(routes.href("na.b"));
+    await r.go(na.href("na.b"));
     expect(mains(r.host)).toEqual(["b"]);
     expect(r.host.querySelector("footer")).toBeNull();
     r.done();

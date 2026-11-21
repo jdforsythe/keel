@@ -4,6 +4,7 @@ import fs from "node:fs";
 import { Server, createServer } from "node:http";
 import os from "node:os";
 import path from "node:path";
+import { routeTable } from "@keel/router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { start } from "../src/internal/start.ts";
 import type { StartOptions } from "../src/types/StartOptions.ts";
@@ -11,7 +12,7 @@ import type { StartOptions } from "../src/types/StartOptions.ts";
 const options = {
   topology: { web: { modules: [], adapter: "node" } },
   deployable: "web",
-  routes: [],
+  routes: routeTable(),
   runners: {},
   dir: ".",
 } as const;

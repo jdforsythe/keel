@@ -1,7 +1,8 @@
-// k.compat Surface: `surfaceOf` lists each store a loader's or action's `stores` factory creates, with its state and
-// payload schemas, through the `storesOf` the evaluation hands it; without one, no store.
+// k.compat Surface: `surfaceOf` lists each store a bound loader's or action's `stores` factory creates, with its state
+// and payload schemas, through the `storesOf` the evaluation hands it; without one, no store.
 import { action, loader, manifest } from "@keel/router";
-import { routeActions } from "@keel/router/internal";
+import { contract } from "@keel/router/contract";
+import { bindingsOf } from "@keel/router/internal";
 import { ok, s } from "@keel/schema";
 import { store, transaction } from "@keel/store";
 import { storeShapes } from "@keel/store/internal";
@@ -15,17 +16,20 @@ const factory = () => {
 };
 
 function evaluated() {
-  const routes = manifest({
-    "m.home": {
-      path: "/m",
-      component: Page,
-      loader: loader({ output: s.object({}), stores: factory }, async () => ok({})),
-    },
+  const m = contract("m", {
+    "m.home": { path: "/m" },
+    "m.feed": { method: "GET", path: "/api/m", output: s.object({}) },
   });
-  routes.actions({ "m.home": { POST: action({ input: s.object({}), stores: factory }, async () => ok(null)) } });
-  const bound = new Map<object, unknown>([[routes.routes["m.home"], routeActions.get(routes.routes["m.home"])]]);
-  const actionsOf = (def: object): unknown => bound.get(def);
-  return { manifests: [{ file: "modules/m/routes.ts", routes }], actionsOf, services: [], sources: {} };
+  const routes = manifest(m, {
+    "m.home": {
+      component: Page,
+      loader: loader(m, "m.home", { output: s.object({}), stores: factory }, async () => ok({})),
+      POST: action(m, "m.home", { input: s.object({}), stores: factory }, async () => ok(null)),
+    },
+    "m.feed": { loader: loader(m, "m.feed", { stores: factory }, async () => ok({})) },
+  });
+  const bindings = [...bindingsOf(routes).values()].map((b) => b.binding);
+  return { contracts: routes.contracts, bindings, callers: {}, sources: {} };
 }
 
 describe("surfaceOf stores", () => {

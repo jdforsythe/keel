@@ -21,8 +21,7 @@ export function Dialog(
     readonly alert?: { readonly description: string };
     readonly styles?: { readonly trigger?: PartStyle; readonly dialog?: PartStyle };
   },
-  _slots?: undefined,
-  _ctx?: Ctx,
+  _ctx: Ctx,
 ): Node {
   const id = props.id;
   const c = instance(openChart, id);

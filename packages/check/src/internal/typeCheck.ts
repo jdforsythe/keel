@@ -148,7 +148,7 @@ export function typeCheck(
     const view = views.get(fileName) ?? { text: file.source, original: (p: number) => p };
     const syntactic = own.has("E1000") ? [] : program.getSyntacticDiagnostics(sf);
     for (const d of [...syntactic, ...program.getSemanticDiagnostics(sf)]) {
-      const mapped = mapTsDiagnostic(d, sf, file, view.original);
+      const mapped = mapTsDiagnostic(d, sf, file, view.original, checker);
       if (mapped === null || (mapped.code !== "E1751" && own.has(mapped.code))) continue;
       out.push(mapped);
     }

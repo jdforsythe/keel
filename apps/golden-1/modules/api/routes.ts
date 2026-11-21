@@ -1,8 +1,5 @@
 import { manifest } from "@keel/router";
-import { monitorRoutes } from "@keel/std-sessions/monitor";
-import { FlowParams } from "./FlowParams.schema.ts";
-import { ListParams } from "./ListParams.schema.ts";
-import { TodoIdParams } from "./TodoIdParams.schema.ts";
+import { api } from "./api.contract.ts";
 import { boardEvents } from "./boardEvents.server.ts";
 import { loadBoard } from "./loadBoard.server.ts";
 import { loadSuggestions } from "./loadSuggestions.server.ts";
@@ -15,42 +12,20 @@ import { postUndo } from "./postUndo.server.ts";
 import { postUndoRemoval } from "./postUndoRemoval.server.ts";
 
 /**
- * The `api` deployable (node): it owns the board (`api.board`); `todos` reads and writes it over HTTP and follows the
+ * The `api` deployable (node): it owns the board (`api.lists`); `todos` reads and writes it over HTTP and follows the
  * board channel (`api.boardEvents`) to re-read after each save; `api.removeList` and `api.undoRemoval` start and undo a
- * list's removal (`removal`). `sessions.tally` answers the commit counts of the
- * `monitor` runner to a caller in `readers` (`module.ts`).
+ * list's removal (`removal`). `sessions.tally` answers the commit counts of the `monitor` runner to a caller in
+ * `readers` (`module.ts`); the `sessions` module binds it.
  */
-export const routes = manifest({
-  ...monitorRoutes.routes,
-  "api.lists": { api: true, path: "/api/lists", loader: loadBoard },
-  "api.listTodos": {
-    api: true,
-    path: "/api/lists/:listId/todos",
-    params: ListParams,
-  },
-  "api.todo": {
-    api: true,
-    path: "/api/todos/:todoId",
-    params: TodoIdParams,
-  },
-  "api.todoToggle": {
-    api: true,
-    path: "/api/todos/:todoId/toggle",
-    params: TodoIdParams,
-  },
-  "api.undo": { api: true, path: "/api/undo" },
-  "api.removeList": { api: true, path: "/api/lists/:listId/remove", params: ListParams },
-  "api.undoRemoval": { api: true, path: "/api/removals/:flow/undo", params: FlowParams },
-  "api.suggestions": { api: true, path: "/api/suggestions", loader: loadSuggestions },
-  "api.boardEvents": { api: true, path: boardEvents.path, loader: boardEvents.loader },
-});
-routes.actions({
-  "api.lists": { POST: postList },
-  "api.listTodos": { POST: postTodo },
-  "api.todo": { POST: postEdit },
-  "api.todoToggle": { POST: postToggle },
-  "api.undo": { POST: postUndo },
-  "api.removeList": { POST: postRemove },
-  "api.undoRemoval": { POST: postUndoRemoval },
-  "api.boardEvents": boardEvents.actions,
+export const routes = manifest(api, {
+  "api.boardEvents": { loader: boardEvents.loader },
+  "api.lists": { loader: loadBoard },
+  "api.createList": { action: postList },
+  "api.addTodo": { action: postTodo },
+  "api.editTodo": { action: postEdit },
+  "api.toggleTodo": { action: postToggle },
+  "api.undo": { action: postUndo },
+  "api.removeList": { action: postRemove },
+  "api.undoRemoval": { action: postUndoRemoval },
+  "api.suggestions": { loader: loadSuggestions },
 });

@@ -41,8 +41,8 @@ const boardTs = (nest: Nest, hidden: string) =>
       `export const board = () => store(s.object({ lists: ${WRAP[nest]} }, { closed: true }), { lists: [] }, { id: 'api.board' })\n`,
   );
 const data = (state: unknown, sources: readonly SourceFile[]) => ({
-  routes: {},
-  services: [],
+  version: 2,
+  contracts: {},
   stores: { "api.board": { state, transactions: {} } },
   sources: Object.fromEntries(sources.map((s) => [s.path, hashOf(s.source)])),
 });

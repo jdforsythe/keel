@@ -5,6 +5,7 @@
 import { createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { store, transaction, tx } from "@keel/store";
 import { renderRoute } from "@keel/testing";
@@ -19,9 +20,8 @@ const ZERO = { n: 0 };
 function build() {
   const tally = store(s.object({ n: s.int() }), ZERO, { id: "tally" });
   const bump = transaction(tally, "tally.bump", s.object({}), (st) => ({ n: st.n + 1 }));
-  const routes = manifest({
+  const routes = manifest(contract("tally", { "tally.show": { path: "/tally" } }), {
     "tally.show": {
-      path: "/tally",
       component(): Node {
         return Box({
           as: "main",

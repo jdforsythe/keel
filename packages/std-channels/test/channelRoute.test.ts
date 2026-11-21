@@ -6,6 +6,7 @@ import { createCtx } from "@keel/ctx";
 import { report } from "@keel/ctx/internal";
 import { scope } from "@keel/reactive";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { createApp, topology } from "@keel/server";
 import { store } from "@keel/store";
@@ -17,7 +18,15 @@ import { hubOf } from "../src/server/internal/hubOf.ts";
 const BASE = "http://localhost";
 const Flag = s.object({ on: s.boolean() });
 const flags = () => ({ flag: store(Flag, { on: true }, { id: "t.flag" }) });
-const room = channel("t.room", { path: "/api/room/events", params: s.object({ room: s.string() }) });
+const room = channel("t.room", {
+  path: "/api/room/events",
+  params: s.object({ room: s.string() }),
+  message: s.object({ text: s.string() }),
+});
+const t = contract("t", {
+  "t.room": { method: "GET", path: "/api/room/events", query: room.params, events: true, output: room.events },
+  "t.publish": { method: "POST", path: "/api/room/events", query: room.params, body: room.body, output: s.object({}) },
+});
 const dirs: string[] = [];
 afterEach(() => {
   for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true });
@@ -34,9 +43,8 @@ async function serve(
   maxStreams?: number,
 ) {
   const ctx = createCtx({ mode: "sim", seed: 1337 });
-  const route = channelRoute(room, { id: "t.room", stores: flags, member });
-  const routes = manifest({ "t.room": { api: true, path: route.path, loader: route.loader } });
-  routes.actions({ "t.room": route.actions });
+  const route = channelRoute(t, room, { id: "t.room", publish: "t.publish", stores: flags, member });
+  const routes = manifest(t, { "t.room": { loader: route.loader }, "t.publish": { action: route.action } });
   let std: string | undefined;
   if (maxStreams !== undefined) {
     const dir = mkdtempSync(join(tmpdir(), "keel-channels-unit-"));
@@ -55,7 +63,7 @@ async function serve(
   const open = async (search: string, cookie?: string) => {
     const ac = new AbortController();
     const res = await app.fetch(
-      new Request(`${BASE}${route.path}${search}`, {
+      new Request(`${BASE}${room.path}${search}`, {
         headers: { accept: "text/event-stream", ...(cookie === undefined ? {} : { cookie }) },
         signal: ac.signal,
       }),
@@ -78,13 +86,13 @@ async function serve(
   };
   const post = (search: string, body: unknown) =>
     app.fetch(
-      new Request(`${BASE}${route.path}${search}`, {
+      new Request(`${BASE}${room.path}${search}`, {
         method: "POST",
         body: JSON.stringify(body),
         headers: { accept: "application/json", "content-type": "application/json", "x-keel": "1", origin: BASE },
       }),
     );
-  return { ctx, open, post };
+  return { ctx, open, post, fetch: (req: Request) => app.fetch(req) };
 }
 
 test("member is re-checked against the stores as saved when the server ctx reports a save of one of them", async () => {
@@ -114,27 +122,35 @@ test("a member predicate that throws denies, at open and at publish", async () =
   const st = await h.open("?room=a");
   await until(() => st.ended());
   expect(st.lines).toEqual([{ ok: true, value: { kind: "closed", reason: "denied" } }]);
-  expect((await h.post("?room=a", {})).status).toBe(403);
+  expect((await h.post("?room=a", { message: { text: "x" } })).status).toBe(403);
 });
 
-test("params that fail the channel's schema end the stream with keel.notFound and run no member", async () => {
+test("params that fail the channel's schema answer 422 keel.fields, to an open and to a publish, and run no member", async () => {
   let calls = 0;
   const h = await serve(() => {
     calls++;
     return true;
   });
-  const st = await h.open("?other=1");
-  await until(() => st.ended());
-  expect(st.lines).toHaveLength(1);
-  expect(JSON.stringify(st.lines[0])).toContain("keel.notFound");
+  const opened = await h.fetch(
+    new Request(`${BASE}${room.path}?other=1`, { headers: { accept: "text/event-stream" } }),
+  );
+  expect(opened.status).toBe(422);
+  const posted = await h.post("?other=1", { message: { text: "x" } });
+  expect(posted.status).toBe(422);
+  expect(await posted.text()).toContain("keel.fields");
   expect(calls).toBe(0);
 });
 
-test("a channel without a message schema refuses every publish with 403", async () => {
-  const h = await serve(() => true);
-  const res = await h.post("?room=a", { message: { text: "x" } });
-  expect(res.status).toBe(403);
-  expect(await res.text()).toContain("keel.denied");
+test("a publish whose message fails the channel's schema is 422 keel.fields and runs no member", async () => {
+  let calls = 0;
+  const h = await serve(() => {
+    calls++;
+    return true;
+  });
+  const res = await h.post("?room=a", { message: { text: 1 } });
+  expect(res.status).toBe(422);
+  expect(await res.text()).toContain("keel.fields");
+  expect(calls).toBe(0);
 });
 
 test("an open past the serving module's maxStreams gets closed full, whatever its caller", async () => {

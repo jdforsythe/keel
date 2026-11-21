@@ -1,5 +1,6 @@
-// k.topology Route table: a placed stdlib module's routes are its package's `./routes` export. One resolver
-// (`stdRoutes`) feeds the server entry, the dev entry, the evaluated `routes.json` and the static route read.
+// k.routes Union: a placed stdlib module's binding is its package's `./routes` export and its contract its `./contract`.
+// One resolver (`stdRoutes`, `stdContract`) feeds the server entry, the dev entry, the evaluated `routes.json` and the
+// static route read.
 // Examples only: fixed projects in a temp dir. No random inputs (a fast-check seed would be 1337).
 import fs from "node:fs";
 import path from "node:path";
@@ -9,6 +10,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { devEntryCode } from "../src/internal/devEntryCode.ts";
 import { projectManifests } from "../src/internal/projectManifests.ts";
 import { serverEntryCode } from "../src/internal/serverEntryCode.ts";
+import { stdContract } from "../src/std/stdContract.ts";
 import { stdRoutes } from "../src/std/stdRoutes.ts";
 import type { Topology } from "../src/types/Topology.ts";
 
@@ -35,17 +37,25 @@ beforeEach(() => {
     JSON.stringify({
       name: "@keel/std-frag",
       type: "module",
-      exports: { ".": "./src/index.ts", "./routes": { default: "./src/routes.ts" } },
+      exports: {
+        ".": "./src/index.ts",
+        "./contract": { default: "./src/contract.ts" },
+        "./routes": { default: "./src/routes.ts" },
+      },
     }),
   );
   write("node_modules/@keel/std-frag/src/index.ts", "export const x = 1;\n");
   write(
     "node_modules/@keel/std-frag/module.ts",
-    'export default { id: "frag", deps: [], capabilities: [], public: { exports: [], routes: ["frag.list"] } };\n',
+    'export default { id: "frag", deps: [], capabilities: [], public: { exports: [] } };\n',
+  );
+  write(
+    "node_modules/@keel/std-frag/src/contract.ts",
+    'import { contract } from "@keel/router/contract";\nexport const frag = contract("frag", { "frag.list": { path: "/frag" } });\n',
   );
   write(
     "node_modules/@keel/std-frag/src/routes.ts",
-    'import { manifest } from "@keel/router";\nexport const routes = manifest({ "frag.list": { api: true, path: "/frag" } });\n',
+    'import { manifest } from "@keel/router";\nimport { frag } from "./contract.ts";\nconst V = () => null;\nexport const routes = manifest(frag, { "frag.list": { component: V } });\n',
   );
   write(
     "topology.ts",
@@ -53,11 +63,15 @@ beforeEach(() => {
   );
   write(
     "modules/app/module.ts",
-    'export default { id: "app", deps: ["@keel/std-frag"], capabilities: [], public: { exports: [], routes: [] } };\n',
+    'export default { id: "app", deps: ["@keel/std-frag"], capabilities: [], public: { exports: [] } };\n',
+  );
+  write(
+    "modules/app/app.contract.ts",
+    'import { contract } from "@keel/router/contract";\nexport const app = contract("app", { "app.home": { path: "/" } });\n',
   );
   write(
     "modules/app/routes.ts",
-    'import { manifest } from "@keel/router";\nexport const routes = manifest({ "app.home": { api: true, path: "/" } });\n',
+    'import { manifest } from "@keel/router";\nimport { app } from "./app.contract.ts";\nconst V = () => null;\nexport const routes = manifest(app, { "app.home": { component: V } });\n',
   );
 });
 afterEach(() => {
@@ -73,17 +87,26 @@ describe("stdRoutes (k.topology Route table)", () => {
     ]);
   });
 
+  it("resolves the package's ./contract the same way", () => {
+    expect(stdContract(root, "frag")).toEqual([
+      fs.realpathSync(path.join(root, "node_modules/@keel/std-frag/src/contract.ts")),
+      fs.realpathSync(path.join(root, "node_modules/@keel/std-frag")),
+      "@keel/std-frag/contract",
+    ]);
+    expect(stdContract(root, "app")).toBeUndefined();
+  });
+
   it("gives nothing for an app module, an unknown id, a package not in deps, or one without ./routes", () => {
     expect(stdRoutes(root, "app")).toBeUndefined();
     expect(stdRoutes(root, "nope")).toBeUndefined();
     write(
       "modules/app/module.ts",
-      'export default { id: "app", deps: [], capabilities: [], public: { exports: [], routes: [] } };\n',
+      'export default { id: "app", deps: [], capabilities: [], public: { exports: [] } };\n',
     );
     expect(stdRoutes(root, "frag")).toBeUndefined();
     write(
       "modules/app/module.ts",
-      'export default { id: "app", deps: ["@keel/std-frag"], capabilities: [], public: { exports: [], routes: [] } };\n',
+      'export default { id: "app", deps: ["@keel/std-frag"], capabilities: [], public: { exports: [] } };\n',
     );
     write(
       "node_modules/@keel/std-frag/package.json",
@@ -97,8 +120,8 @@ describe("stdRoutes (k.topology Route table)", () => {
     expect(serverEntryCode(root, "api", ["app", "frag"])).toContain(
       `const { routes: routes1 } = await import(${file});`,
     );
-    expect(serverEntryCode(root, "api", ["app", "frag"])).toContain("routes: [routes0, routes1]");
-    expect(devEntryCode(root, topology)).toContain(`...(await import(${file})).routes.routes`);
+    expect(serverEntryCode(root, "api", ["app", "frag"])).toContain("routes: routeTable(routes0, routes1)");
+    expect(devEntryCode(root, topology)).toContain(`(await import(${file})).routes)`);
   });
 
   it("lists the stdlib file among the project's manifests in module id order", () => {
@@ -110,10 +133,12 @@ describe("stdRoutes (k.topology Route table)", () => {
   });
 
   it("reads the stdlib routes statically and evaluates them into routes.json", { timeout: 30000 }, async () => {
-    const files = ["modules/app/module.ts", "modules/app/routes.ts", "topology.ts"].map((p) => ({
-      path: p,
-      source: fs.readFileSync(path.join(root, p), "utf8"),
-    }));
+    const files = ["modules/app/module.ts", "modules/app/app.contract.ts", "modules/app/routes.ts", "topology.ts"].map(
+      (p) => ({
+        path: p,
+        source: fs.readFileSync(path.join(root, p), "utf8"),
+      }),
+    );
     const literals = routeLiterals(files, { topology, root });
     expect(Object.keys(literals?.routes ?? {}).sort()).toEqual(["app.home", "frag.list"]);
     expect(literals?.closed).toBe(true);

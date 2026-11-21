@@ -8,7 +8,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { A11yEntry } from "@keel/compiler";
 import { createCtx } from "@keel/ctx";
-import { manifest } from "@keel/router";
+import { routeTable } from "@keel/router";
 import { s } from "@keel/schema";
 import { createApp } from "@keel/server";
 import { renderRoute } from "@keel/testing";
@@ -91,7 +91,7 @@ const COPY = {
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null;
 const RecipeId = s.id("Recipe");
 
-const hasRoutes = (v: unknown): v is typeof kitchen => isRecord(v) && isRecord(v.routes);
+const hasRoutes = (v: unknown): v is typeof kitchen => isRecord(v) && v.kind === "keel.routeTable";
 
 /** What `specifier` exports, or undefined when nothing is there to import. */
 const load = (specifier: Promise<unknown>): Promise<unknown> => specifier.catch(() => undefined);
@@ -124,14 +124,14 @@ async function stdRoutes(id: string): Promise<unknown> {
  * its `modules/<id>/routes.ts` and a stdlib module's from its package. A placed module with no routes fails the suite.
  */
 async function apiRoutes() {
-  let table = { ...kitchen.routes };
+  const tables = [kitchen];
   for (const name of topology.api?.modules ?? []) {
     if (name === "kitchen") continue;
     const mod = (await load(import(`../modules/${name}/routes.ts`))) ?? (await stdRoutes(name));
     if (!isRecord(mod) || !hasRoutes(mod.routes)) throw new Error(`no routes for placed module ${name}`);
-    table = { ...mod.routes.routes, ...table };
+    tables.push(mod.routes);
   }
-  return manifest(table);
+  return routeTable(...tables);
 }
 
 /** A fresh api deployable seeded with the fixture, a client sim ctx routed to it, and each title's id. */
@@ -152,7 +152,7 @@ async function setup(seed = 1) {
     serverCtx.clock.advance(DAY);
   }
   const j: unknown = await (await call("GET", "/api/recipes")).json();
-  const results = isRecord(j) && isRecord(j.results) ? j.results["kitchen.recipes"] : undefined;
+  const results = isRecord(j) && isRecord(j.results) ? j.results["kitchen.box"] : undefined;
   const list = isRecord(results) && isRecord(results.value) ? results.value.recipes : undefined;
   const byTitle = new Map<string, string>();
   for (const r of Array.isArray(list) ? list : []) {

@@ -1,6 +1,7 @@
 // re-exports only (one export per file lives in src/<Export>.ts)
 export { artifactHashes } from "./artifactHashes.ts";
 export { compile } from "./compile.ts";
+export { contractCallers } from "./contractCallers.ts";
 export { isSourcePath } from "./internal/isSourcePath.ts";
 export { parseTopology } from "./internal/parseTopology.ts";
 export { pathCollisions } from "./pathCollisions.ts";

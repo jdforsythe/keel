@@ -10,24 +10,23 @@ import { SEED } from "./support.ts";
 const T = template('<div data-k-island="C"><p id="p">x</p></div>');
 
 describe("ctx from the root", () => {
-  it("mount(C, el, { ctx }) passes ctx as the component's third argument; without it, undefined", () => {
+  it("mount(C, el, { ctx }) passes ctx as the component's second argument", () => {
     const ctx = createCtx({ mode: "sim", seed: SEED });
-    const seen: (Ctx | undefined)[] = [];
-    const C = (_props: unknown, _slots?: unknown, c?: Ctx): Node => {
+    const seen: Ctx[] = [];
+    const C = (_props: unknown, c: Ctx): Node => {
       seen.push(c);
       return clone(T);
     };
     const host = document.createElement("div");
     mount(C, host, { ctx })();
-    mount(C, host)();
-    expect(seen).toEqual([ctx, undefined]);
+    expect(seen).toEqual([ctx]);
   });
 
   it("resume(root, components, { ctx }) passes ctx to every island root, and restores stores by id", () => {
     const ctx = createCtx({ mode: "sim", seed: SEED });
-    const seen: (Ctx | undefined)[] = [];
+    const seen: Ctx[] = [];
     const restored: unknown[] = [];
-    const C = (_props: unknown, _slots?: unknown, c?: Ctx): Node => {
+    const C = (_props: unknown, c: Ctx): Node => {
       seen.push(c);
       return clone(T);
     };

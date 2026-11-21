@@ -1,6 +1,7 @@
 import type { Ctx } from "@keel/ctx";
+import type { Contract } from "@keel/router/contract";
 import type { Infer, JsonValue } from "@keel/schema";
-import type { Client, EndpointMap } from "@keel/services";
+import type { ContractClient, EndpointMap } from "@keel/services";
 import type { Store, Transaction } from "@keel/store";
 import type { OutboxEntry } from "../OutboxEntry.schema.ts";
 import type { Resolution } from "../Resolution.schema.ts";
@@ -22,7 +23,7 @@ type Settle = {
 export interface Config {
   readonly id: string;
   readonly api: EndpointMap;
-  readonly client: Client<EndpointMap>;
+  readonly client: ContractClient<Contract>;
   readonly limit: number;
   readonly maxBytes: number;
   readonly store: Store<State>;

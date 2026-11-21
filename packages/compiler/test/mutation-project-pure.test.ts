@@ -91,7 +91,7 @@ describe("entryCode (mutation)", () => {
   const head = [
     'import "virtual:css";',
     'import { createCtx } from "@keel/ctx";',
-    'import { browserHistory, createRouter, manifest } from "@keel/router";',
+    'import { browserHistory, createRouter, routeTable } from "@keel/router";',
     'import { mount } from "@keel/runtime-dom";',
     'import { inspect } from "@keel/reactive";',
     'import { stores } from "@keel/store";',
@@ -128,20 +128,20 @@ describe("entryCode (mutation)", () => {
         ...head,
         'import { routes as __keelRoutes0 } from "/modules/a/routes.ts";',
         ...tail,
-        "const router = createRouter(__keelRoutes0, { ctx, history: browserHistory(), mode });",
+        "const router = createRouter(routeTable(__keelRoutes0), { ctx, history: browserHistory(), mode });",
         ...rest,
       ].join("\n"),
     );
   });
 
-  it("merges several routes files into one manifest", () => {
+  it("unions several routes files with routeTable", () => {
     expect(entryCode(["/a.ts", "/b.ts"], "virtual:css")).toBe(
       [
         ...head,
         'import { routes as __keelRoutes0 } from "/a.ts";',
         'import { routes as __keelRoutes1 } from "/b.ts";',
         ...tail,
-        "const router = createRouter(manifest({ ...__keelRoutes0.routes, ...__keelRoutes1.routes }), { ctx, history: browserHistory(), mode });",
+        "const router = createRouter(routeTable(__keelRoutes0, __keelRoutes1), { ctx, history: browserHistory(), mode });",
         ...rest,
       ].join("\n"),
     );
@@ -156,9 +156,9 @@ describe("entryCode (mutation)", () => {
     expect(dev).not.toContain("import.meta.env");
   });
 
-  it("falls back to an empty manifest table for no routes files", () => {
+  it("falls back to an empty route table for no routes files", () => {
     const code = entryCode([], "virtual:css");
-    expect(code).toContain("const router = createRouter(manifest({  }), { ctx, history: browserHistory(), mode });");
+    expect(code).toContain("const router = createRouter(routeTable(), { ctx, history: browserHistory(), mode });");
   });
 });
 

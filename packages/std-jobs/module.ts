@@ -5,5 +5,5 @@ export default module({
   id: "jobs",
   deps: [],
   capabilities: ["clock", "random", "storage"],
-  public: { exports: ["job", "queue"], routes: [] },
+  public: { exports: ["job", "queue"] },
 });

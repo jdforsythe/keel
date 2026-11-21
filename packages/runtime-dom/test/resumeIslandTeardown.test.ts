@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { eventQueue } from "../src/internal/eventQueue.ts";
 import { clone, on, resume, template, text } from "../src/ops/index.ts";
 import { rootSignal, trackListeners } from "./support.ts";
+import { testCtx } from "./testCtx.ts";
 
 const HTML = '<div data-k-island="T"><button id="t.boom" data-k="t.boom">x</button><span id="t.txt">0</span></div>';
 const T_TPL = template(HTML);
@@ -98,7 +99,7 @@ describe("resumed island teardown", () => {
       renders++;
       return document.createElement("div");
     };
-    const { warnings } = resume(document.body, { T: Other });
+    const { warnings } = resume(document.body, { T: Other }, { ctx: testCtx });
     expect(renders).toBe(2);
     expect(warnings).toEqual([
       'E1253 [data-k-island="T"] the component did not render the island root; re-rendered on the client',
@@ -116,7 +117,7 @@ describe("resumed island teardown", () => {
       for (const t of types) document.body.dispatchEvent(new Event(t, { bubbles: true }));
       return root;
     };
-    const { warnings } = resume(document.body, { T });
+    const { warnings } = resume(document.body, { T }, { ctx: testCtx });
     expect(warnings).toEqual([]);
     expect(seen).toEqual([]);
     expect(eventQueue.pending()).toBe(before);

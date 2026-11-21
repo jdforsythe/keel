@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { apiApp, apiCtx, asJson, draft } from "./simApi.ts";
 
-const ID = "kitchen.tally.currency";
+const ID = "kitchen.currencyTally";
 const get = async (app: { fetch: (req: Request) => Response | Promise<Response> }): Promise<unknown> => {
   const res = await app.fetch(asJson("GET", "/api/tally/currency"));
   expect(res.status).toBe(200);

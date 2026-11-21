@@ -2,9 +2,12 @@
 // Example tests for JSX lowering beyond the conformance suite.
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
+import { createCtx } from "@keel/ctx";
 import type { Signal } from "@keel/reactive";
 import { mount } from "@keel/runtime-dom";
 import { describe, expect, it } from "vitest";
+
+const simCtx = createCtx({ mode: "sim", seed: 1 });
 
 function component(source: string, path = "T.tsx"): { C: () => Node; mod: unknown } {
   const r = compile([{ path, source }]);
@@ -34,7 +37,7 @@ function sig(owner: unknown, key: string): Signal<unknown> {
 const render = (C: () => Node) => {
   const host = document.createElement("div");
   document.body.append(host);
-  const dispose = mount(C, host);
+  const dispose = mount(C, host, { ctx: simCtx });
   return {
     host,
     dispose: () => {

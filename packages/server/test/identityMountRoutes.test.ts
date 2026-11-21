@@ -4,20 +4,18 @@
 // Seed 1337.
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { createApp, identity, topology } from "@keel/server";
 import { describe, expect, it } from "vitest";
 
+const c = contract("app", {
+  "app.page": { path: "/:locale/:slug", params: s.object({ locale: s.string(), slug: s.string() }) },
+});
 const boot = () =>
   createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
-    routes: manifest({
-      "app.page": {
-        path: "/:locale/:slug",
-        params: s.object({ locale: s.string(), slug: s.string() }),
-        component: () => document.createElement("p"),
-      },
-    }),
+    routes: manifest(c, { "app.page": { component: () => document.createElement("p") } }),
     ctx: createCtx({ mode: "sim", seed: 1337 }),
     mode: "production",
     identity: identity({
@@ -40,5 +38,17 @@ describe("createApp with handle.path /api/auth beside /:locale/:slug", () => {
     const res = await (await boot()).fetch(new Request("http://localhost/en/about"));
     expect(res.headers.get("x-from")).toBeNull();
     expect(res.status).toBe(200);
+  });
+});
+
+describe("a path that decodes to the mount", () => {
+  it("is 404, reaches neither the page nor handle.fn; a case variant is any path", async () => {
+    const app = await boot();
+    for (const at of ["/%61pi/auth", "/api/%61uth", "/%61pi/auth/x", "/api%2Fauth"]) {
+      const res = await app.fetch(new Request(`http://localhost${at}`));
+      expect([at, res.status, res.headers.get("x-from")]).toEqual([at, 404, null]);
+    }
+    const upper = await app.fetch(new Request("http://localhost/API/auth"));
+    expect([upper.status, upper.headers.get("x-from")]).toEqual([200, null]);
   });
 });

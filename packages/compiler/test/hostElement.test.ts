@@ -51,8 +51,14 @@ describe("a host element code file's stylesheet at build-time evaluation", () =>
     write("modules/m/chart.css", ".x{color:red}\n");
     write("modules/m/chart.ts", 'import "./chart.css";\nexport const chart = 1;\n');
     write(
+      "modules/m/m.contract.ts",
+      'import { contract } from "@keel/router/contract";\nexport const m = contract("m", { "m.a": { path: "/a" } });\n',
+    );
+    write(
       "modules/m/routes.ts",
-      'export const load = () => import("./chart.ts").then((m) => m.chart);\nexport const routes = { routes: { "m.a": { path: "/a" } } };\n',
+      'import { manifest } from "@keel/router";\nimport { m } from "./m.contract.ts";\n' +
+        'export const load = () => import("./chart.ts").then((x) => x.chart);\n' +
+        'const V = () => null;\nexport const routes = manifest(m, { "m.a": { component: V } });\n',
     );
     const r = await evaluateProject({ root, tokensFile: undefined, routesFiles: ["modules/m/routes.ts"], usages: [] });
     expect(r.problems).toEqual([]);

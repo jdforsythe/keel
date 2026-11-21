@@ -33,8 +33,7 @@ export function Toaster(
       readonly dismiss?: PartStyle;
     };
   },
-  _slots?: undefined,
-  ctx?: Ctx,
+  ctx: Ctx,
 ): Node {
   const id = props.id;
   const items = () => {
@@ -66,7 +65,7 @@ export function Toaster(
     };
     const start = () => {
       timer?.abort();
-      if (tone !== "status" || props.duration === undefined || ctx === undefined) return;
+      if (tone !== "status" || props.duration === undefined) return;
       const run = new AbortController();
       timer = run;
       ctx.clock.after(Math.max(LEAST, props.duration), run.signal).then(

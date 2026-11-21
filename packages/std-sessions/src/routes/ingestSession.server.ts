@@ -1,10 +1,11 @@
 import { action } from "@keel/router";
-import { err, ok, s } from "@keel/schema";
+import { err, ok } from "@keel/schema";
 import { tx } from "@keel/store";
 import { Session } from "../Session.schema.ts";
 import { archiveStores } from "../archiveStores.ts";
 import { sessionFingerprint } from "../internal/sessionFingerprint.ts";
 import { utf8Length } from "../internal/utf8Length.ts";
+import { sessions } from "../sessions.contract.ts";
 import { MAX_INGEST_BYTES } from "./MAX_INGEST_BYTES.ts";
 
 /**
@@ -14,7 +15,9 @@ import { MAX_INGEST_BYTES } from "./MAX_INGEST_BYTES.ts";
  * 256 KiB of encoded JSON (over: 413 `keel.payloadTooLarge`, on top of the server's `maxBodyBytes`).
  */
 export const ingestSession = action(
-  { input: Session, output: s.object({}), stores: archiveStores },
+  sessions,
+  "sessions.ingest",
+  { stores: archiveStores },
   (posted, { stores }, ctx) => {
     const first = posted.events.find((e) => e.kind === "error");
     const error = first?.kind === "error" ? first.error : null;

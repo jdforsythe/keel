@@ -5,11 +5,10 @@ import { boundary, list } from "@keel/runtime-dom/ops";
 import { type KeelError, type Result, attempt, err, ok } from "@keel/schema";
 import type { ServerState } from "@keel/store/internal";
 import type { Href } from "../types/Href.ts";
-import type { Manifest } from "../types/Manifest.ts";
-import type { RouteDef } from "../types/RouteDef.ts";
-import type { RouteState } from "../types/RouteState.ts";
+import type { RouteTable } from "../types/RouteTable.ts";
 import type { Router } from "../types/Router.ts";
 import type { RouterHistory } from "../types/RouterHistory.ts";
+import type { StateOf } from "../types/StateOf.ts";
 import type { Verb } from "../types/Verb.ts";
 import type { Located } from "./Located.ts";
 import type { Match } from "./Match.ts";
@@ -20,14 +19,15 @@ import type { View } from "./View.ts";
 import { absoluteUrl } from "./absoluteUrl.ts";
 import { afterNavigate } from "./afterNavigate.ts";
 import { carriedParams } from "./carriedParams.ts";
+import { codedError } from "./codedError.ts";
 import { compileRoutes } from "./compileRoutes.ts";
-import { compileTable } from "./compileTable.ts";
 import { defaultError } from "./defaultError.ts";
+import { encodeHref } from "./encodeHref.ts";
 import { fieldsError } from "./fieldsError.ts";
 import { formHandle } from "./formHandle.ts";
 import { guardLoop } from "./guardLoop.ts";
 import { guardNext } from "./guardNext.ts";
-import { hrefIn } from "./hrefIn.ts";
+import { isHref } from "./isHref.ts";
 import { isRouteStateOf } from "./isRouteStateOf.ts";
 import { matchUrl } from "./matchUrl.ts";
 import { mounted } from "./mounted.ts";
@@ -37,13 +37,11 @@ import { pageHead } from "./pageHead.ts";
 import { publicError } from "./publicError.ts";
 import { renderView } from "./renderView.ts";
 import { rooted } from "./rooted.ts";
-import { routeActions } from "./routeActions.ts";
 import { routers } from "./routers.ts";
 import { runGuard } from "./runGuard.ts";
 import { runLoaders } from "./runLoaders.ts";
 import { shells } from "./shells.ts";
 import { splitUrl } from "./splitUrl.ts";
-import { tables } from "./tables.ts";
 import { unexpected } from "./unexpected.ts";
 import { withNext } from "./withNext.ts";
 import { writeHead } from "./writeHead.ts";
@@ -75,12 +73,14 @@ const nearestErrorElement = (route: Located, from: number): number => {
  * loader or action is `keel.unexpected`. Unless `mode` is `dev` (the default is `production`), every error the
  * default alert, an `errorElement` or a `Form` gets is its `publicError`; observers get the full error. A link click,
  * `navigate` or `ok(href)` to a path no page of the table matches (none matches at or under `mount`, nor a path
- * holding a `\`) is a document navigation (`leave`, k.mount); an
- * initial load or a history pop of one renders the 404. On a shell's ctx (`mountRequests`, k.return) a navigation
- * under the identity mount is a mount request and nothing leaves.
+ * holding a `\`) is a document navigation (`leave`, k.mount); an initial load or a history pop of one renders the 404.
+ * An action's `ok` value that is neither `null` nor an `Href` (`isHref`) is `keel.unexpected`, saved and followed
+ * nowhere, given to the `Form` as any action `err`; `navigate` of a value that is no `Href` once each `\` reads as `/`
+ * and any hash is dropped rejects with E1501 and nothing moves. On a shell's ctx (`mountRequests`, k.return) a
+ * navigation under the identity mount is a mount request and nothing leaves.
  */
-export function createRouterWith<M extends Readonly<Record<string, RouteDef>>>(
-  routes: Manifest<M>,
+export function createRouterWith<T extends RouteTable>(
+  routes: T,
   opts: {
     readonly ctx: Ctx;
     readonly history: RouterHistory;
@@ -93,24 +93,24 @@ export function createRouterWith<M extends Readonly<Record<string, RouteDef>>>(
     readonly mount?: string | undefined;
   },
   state?: ServerState,
-): Router<RouteState<M>> {
+): Router<StateOf<T>> {
   const { ctx, history, leave = (u, r) => location[r ? "replace" : "assign"](u) } = opts;
   const mount = shells.get(ctx);
   const who = { caller: opts.caller ?? "", user: opts.user ?? "" };
   const shownMode = opts.mode === "dev" ? "dev" : "production";
   const shown = (e: KeelError<string, unknown>): KeelError<string, unknown> => publicError(e, shownMode);
-  const own = tables.get(routes) ?? compileRoutes(routes.routes);
-  // The client matches no API route (k.api): a link to one is a document request.
-  const table = compileTable(own, routes.routes).filter((r) => !r.def.api);
+  const { table: own, located } = compileRoutes(routes);
+  // The client matches no API entry (k.api): a link to one is a document request.
+  const table = located.filter((r) => r.def.kind === "page");
   const match = (url: string): Match => matchUrl(table, url, opts.mount);
   const root = rooted(() => {
     const view = signal<View | null>(null);
     const place = signal<Place>(MISSING);
     const pending = signal(false);
-    const route = computed((): RouteState<M> => {
+    const route = computed((): StateOf<T> => {
       const state = { ...place.get(), pending: pending.get() };
-      if (isRouteStateOf(routes.routes, state)) return state;
-      throw new Error(`k.router: route id ${String(state.id)} is not in this manifest`);
+      if (isRouteStateOf<StateOf<T>>(own, state)) return state;
+      throw new Error(`k.router: route id ${String(state.id)} is not in this route table`);
     });
     return { view, place, pending, route };
   });
@@ -200,9 +200,9 @@ export function createRouterWith<M extends Readonly<Record<string, RouteDef>>>(
     params: Readonly<Record<string, unknown>>,
     visited: readonly string[],
   ): Result<string, KeelError<string, unknown>> => {
-    const carried = carriedParams(id, own?.get(id)?.def, params);
+    const carried = carriedParams(id, own.get(id)?.def, params);
     if (!carried.ok) return err(unexpected(carried.error));
-    const r = attempt(() => hrefIn(own, id, carried.value, {}));
+    const r = attempt(() => encodeHref(id, own.get(id)?.def, carried.value, {}));
     if (!r.ok) return err(unexpected(`guard redirect to "${id}" failed: ${r.error.message}`));
     const to = withNext(String(r.value), guardNext(table, url));
     const loop = guardLoop(visited, to);
@@ -295,12 +295,17 @@ export function createRouterWith<M extends Readonly<Record<string, RouteDef>>>(
   // A Form's `action` is an Href: its route and params come from matching it in this router's table.
   const actionAt = (href: Href, method: Verb) => {
     const m = match(href);
-    const act = m.kind === "route" ? routeActions.get(m.route.def)?.[method] : undefined;
+    const act = m.kind === "route" ? m.route.def.actions[method] : undefined;
     // The client router posts to pages only, whose actions declare no `output` (k.api).
     return m.kind === "route" && act !== undefined && act.output === undefined ? { act, params: m.params } : null;
   };
+  // An `Href` is a type; a value that slipped past it at run time is E1501 and goes nowhere unless it is an `Href` once
+  // each `\` reads as `/` (as a URL parser reads it) and any hash is dropped: such a path stays on the origin, and one
+  // no page matches (a raw `\`, k.mount-scope) is a document navigation there.
   const navigate = (to: Href, o?: { readonly replace?: boolean }): Promise<void> =>
-    go(to, o?.replace === true ? "replace" : "push", []);
+    typeof to === "string" && isHref(to.replaceAll("\\", "/").replace(/#.*$/s, ""))
+      ? go(to, o?.replace === true ? "replace" : "push", [])
+      : Promise.reject(codedError("E1501", "navigate: the value is no Href, a path of this origin"));
   const core: RouterCore = {
     ctx,
     navigate,
@@ -327,6 +332,9 @@ export function createRouterWith<M extends Readonly<Record<string, RouteDef>>>(
         const ran = await attempt(async () => {
           const stores = from === undefined ? undefined : await rq?.stores(from);
           const out = await act.run(decoded.value, { params, url, ...who, stores }, ctx);
+          // A link that is no `Href` is never followed: `keel.unexpected`, nothing saved, the value in no message.
+          if (out.ok && out.value !== null && (typeof out.value !== "string" || !isHref(out.value)))
+            return err(unexpected(`action ${String(req.action)} returned a link that is no path of this origin`));
           const clash = out.ok ? await rq?.save() : null;
           return clash ? err(clash) : out;
         });

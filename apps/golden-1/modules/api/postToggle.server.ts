@@ -2,15 +2,15 @@ import { action } from "@keel/router";
 import { err, ok } from "@keel/schema";
 import { writeFor } from "@keel/std-offline";
 import { tx } from "@keel/store";
-import { Nothing } from "./Nothing.schema.ts";
-import { TodoIdParams } from "./TodoIdParams.schema.ts";
-import { ToggleWrite } from "./ToggleWrite.schema.ts";
+import { api } from "./api.contract.ts";
 import { boardStores } from "./boardStores.ts";
 
 /** `POST /api/todos/:todoId/toggle`: flip `done`, with the write's key and base; an unknown todo is `keel.notFound`;
  * a write queued under an owner other than `""` (golden-1 has no sign-in) is `offline.signin`. */
 export const postToggle = action(
-  { input: ToggleWrite, params: TodoIdParams, output: Nothing, stores: boardStores },
+  api,
+  "api.toggleTodo",
+  { stores: boardStores },
   (input, { params, caller, stores }) => {
     const { todoId } = params;
     const todo = stores.board.get("todos").find((t) => t.id === todoId);

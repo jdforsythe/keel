@@ -2,15 +2,15 @@
 // settles the other's entry, whatever the keys. Seed 1337 on both.
 import { type SimCtx, createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
-import { endpoints } from "@keel/services";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { Write, drain, outbox, send } from "../src/index.ts";
 import { field } from "../src/internal/field.ts";
 
-const Api = endpoints({
-  add: { method: "POST", path: "/add", body: s.object({ t: s.string(), write: Write }), output: s.object({}) },
+const Api = contract("app", {
+  "app.add": { method: "POST", path: "/add", body: s.object({ t: s.string(), write: Write }), output: s.object({}) },
 });
 const settle = async (): Promise<void> => {
   for (let i = 0; i < 400; i++) await Promise.resolve();
@@ -34,7 +34,7 @@ const stored = async (ctx: SimCtx, id: string): Promise<string[]> => {
 
 test("a second same-seed ctx's owner change fails none of the first ctx's entries and stores none of them", async () => {
   const id = `seed${++n}.outbox`;
-  const o = outbox(id, Api, { module: "app" });
+  const o = outbox(id, Api);
   const pa: string[] = [];
   const pb: string[] = [];
   const a = ctxWith(pa);
@@ -52,7 +52,7 @@ test("a second same-seed ctx's owner change fails none of the first ctx's entrie
 
 test("a same-seed ctx's sent write removes none of the first ctx's entries, which its own drain then posts", async () => {
   const id = `seed${++n}.outbox`;
-  const o = outbox(id, Api, { module: "app" });
+  const o = outbox(id, Api);
   const pa: string[] = [];
   const pb: string[] = [];
   const a = ctxWith(pa);
@@ -74,7 +74,7 @@ test("for any interleaving of sends, owners and connectivity on two same-seed ct
   await fc.assert(
     fc.asyncProperty(fc.array(step, { minLength: 1, maxLength: 8 }), async (steps) => {
       const id = `seed${++n}.outbox`;
-      const o = outbox(id, Api, { module: "app" });
+      const o = outbox(id, Api);
       const posts: string[][] = [[], []];
       const ctxs = [ctxWith(posts[0] ?? []), ctxWith(posts[1] ?? [])];
       const mine: string[][] = [[], []];

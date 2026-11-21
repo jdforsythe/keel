@@ -7,7 +7,7 @@ import { RecipeDraft } from "../kitchen/RecipeDraft.schema.ts";
 import { LocaleParams } from "./LocaleParams.schema.ts";
 import { TextData } from "./TextData.schema.ts";
 import { fieldText } from "./fieldText.ts";
-import { routes } from "./routes.ts";
+import { recipes } from "./recipes.contract.ts";
 
 export const Props = s.object({ params: LocaleParams, data: TextData });
 
@@ -29,7 +29,7 @@ export default function NewRecipePage(props: Infer<typeof Props>) {
       </Heading>
       <Form
         method="POST"
-        action={routes.href("recipes.new", { locale: props.params.locale })}
+        action={recipes.href("recipes.new", { locale: props.params.locale })}
         form={f}
         error={(e) => <Text fg="error">{e.message}</Text>}
       >

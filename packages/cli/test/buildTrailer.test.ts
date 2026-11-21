@@ -86,7 +86,7 @@ describe("build trailer", () => {
     const root = realpathSync(mkdtempSync(join(tmpdir(), "keel-build-tool-")));
     made.push(root);
     const manifest =
-      "import { module } from '@keel/compiler'\nexport default module({ id: 'c', deps: [], capabilities: [], public: { exports: [], routes: [] } })\n";
+      "import { module } from '@keel/compiler'\nexport default module({ id: 'c', deps: [], capabilities: [], public: { exports: [] } })\n";
     const app = materialize({
       "package.json": `${JSON.stringify({ name: "fx", private: true, type: "module", version: "1.0.0", dependencies: { "@keel/std-tauri": "workspace:*" }, devDependencies: { "@tauri-apps/cli": "2.0.0" } })}\n`,
       "vite.config.ts":
@@ -99,8 +99,10 @@ describe("build trailer", () => {
       "modules/c/module.ts": manifest,
       "modules/c/Page.tsx":
         "import { Box, Text } from '@keel/ui'\nexport default function Page() {\n  return (\n    <Box as=\"main\">\n      <Text>page</Text>\n    </Box>\n  )\n}\n",
+      "modules/c/c.contract.ts":
+        "import { contract } from '@keel/router/contract'\nexport const c = contract('c', { 'c.page': { path: '/' } })\n",
       "modules/c/routes.ts":
-        "import { manifest } from '@keel/router'\nimport Page from './Page.tsx'\nexport const routes = manifest({ 'c.page': { path: '/', component: Page } })\n",
+        "import { manifest } from '@keel/router'\nimport Page from './Page.tsx'\nimport { c } from './c.contract.ts'\nexport const routes = manifest(c, { 'c.page': { component: Page } })\n",
     });
     made.push(app);
     mkdirSync(join(app, "node_modules", "@tauri-apps", "cli"), { recursive: true });

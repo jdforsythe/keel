@@ -5,6 +5,7 @@
 // happy-dom dispatches no trusted event, so a trusted one is made by defining `isTrusted` on the instance.
 // Seed 1337 for the properties.
 import { type SimCtx, createCtx } from "@keel/ctx";
+import { contract } from "@keel/router/contract";
 import { mount } from "@keel/runtime-dom";
 import fc from "fast-check";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -72,7 +73,7 @@ function shell(opts: { hold?: boolean } = {}) {
     box.append(field, a, Form({ method: "POST", action: auth.href("/start"), children: () => [button] }));
     return box;
   };
-  const routes = manifest({ "t.home": { path: "/", component: home } });
+  const routes = manifest(contract("t", { "t.home": { path: "/" } }), { "t.home": { component: home } });
   const router = createRouterWith(routes, { ctx, history: memoryHistory("/"), leave: () => undefined });
   const h = document.createElement("div");
   document.body.append(h);

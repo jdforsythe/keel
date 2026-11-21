@@ -4,6 +4,7 @@
 // Navigation). The mount is the router's own: another router in the same process, given none or another, routes as
 // its table says. A path holding a `\` matches no page.
 import { createCtx } from "@keel/ctx";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { describe, expect, it } from "vitest";
 import { identityMount } from "../src/identityMount.ts";
@@ -13,13 +14,13 @@ import { memoryHistory } from "./memoryHistory.ts";
 import { to } from "./to.ts";
 
 const gate = identityMount("/gate");
-const routes = manifest({
-  "g.any": {
-    path: "/:svc/:act",
-    params: s.object({ svc: s.string(), act: s.string() }),
-    component: () => document.createElement("main"),
-  },
-  "g.home": { path: "/", component: () => document.createElement("main") },
+const g = contract("g", {
+  "g.any": { path: "/:svc/:act", params: s.object({ svc: s.string(), act: s.string() }) },
+  "g.home": { path: "/" },
+});
+const routes = manifest(g, {
+  "g.any": { component: () => document.createElement("main") },
+  "g.home": { component: () => document.createElement("main") },
 });
 const start = (mount?: string) => {
   const left: string[] = [];
@@ -65,11 +66,12 @@ describe("two routers in one process", () => {
 });
 
 describe("a backslash in a path", () => {
-  it("matches no page, so a navigation there is a document navigation and no history entry holds it", async () => {
+  it("matches no page: navigate there is a document navigation; one a URL parser reads as naming a host is E1501", async () => {
     const { router, left, history } = start();
-    await router.navigate(to("/a/\\x"));
-    await router.navigate(to("/\\x/y"));
-    expect(left).toEqual(["/a/\\x", "/\\x/y"]);
+    // No `Href` holds a backslash (`isHref`); an untyped caller can still pass one, and `/\\x/y` names the host `x`.
+    await Reflect.apply(router.navigate, router, ["/a/\\x"]);
+    await expect(Reflect.apply(router.navigate, router, ["/\\x/y"])).rejects.toMatchObject({ code: "E1501" });
+    expect(left).toEqual(["/a/\\x"]);
     expect(history.entries.join("")).not.toContain("\\");
   });
 });

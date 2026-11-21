@@ -7,8 +7,11 @@ import fs from "node:fs";
 import path from "node:path";
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
+import { createCtx } from "@keel/ctx";
 import { mount } from "@keel/runtime-dom";
 import { describe, expect, it } from "vitest";
+
+const simCtx = createCtx({ mode: "sim", seed: 1 });
 
 type Mountable = Parameters<typeof mount>[0];
 const isMountable = (x: unknown): x is Mountable => typeof x === "function";
@@ -23,7 +26,7 @@ function build(source: string): { C: Mountable; codes: string[]; fixes: (string 
 
 function html(C: Mountable, props: Record<string, unknown>): string {
   const host = document.createElement("div");
-  const dispose = mount(() => Reflect.apply(C, undefined, [props]), host);
+  const dispose = mount(() => Reflect.apply(C, undefined, [props, simCtx]), host, { ctx: simCtx });
   const out = host.innerHTML;
   dispose();
   return out;

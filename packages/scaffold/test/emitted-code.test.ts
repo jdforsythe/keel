@@ -88,20 +88,21 @@ describe("file naming (one export per file, E1752)", () => {
 });
 
 describe("route params", () => {
-  const routes = (): string => build(true).get("modules/todos/routes.ts") ?? "";
+  const contract = (): string => build(true).get("modules/todos/todos.contract.ts") ?? "";
 
   it("`*Id` params are s.id of the entity, `id` is s.id of the module's entity, others stay strings", () => {
-    const text = routes();
+    const text = contract();
     expect(text).toContain(`params: s.object({ listId: s.id("List") }),`);
     expect(text).toContain(`params: s.object({ listId: s.id("List"), todoId: s.id("Todo") }),`);
     expect(text).toContain(`params: s.object({ id: s.id("Todos") }),`);
     expect(text).toContain("params: s.object({ slug: s.string() }),");
   });
 
-  it("imports in routes.ts are sorted", () => {
-    const imports = (routes().match(/^import .*$/gm) ?? []).map((l) => /from "([^"]+)"/.exec(l)?.[1] ?? "");
-    expect(imports.slice(0, 2)).toEqual(["@keel/router", "@keel/schema"]);
-    const rel = imports.slice(2);
+  it("imports in the contract file and routes.ts are sorted", () => {
+    const imports = (src: string): string[] =>
+      (src.match(/^import .*$/gm) ?? []).map((l) => /from "([^"]+)"/.exec(l)?.[1] ?? "");
+    expect(imports(contract())).toEqual(["@keel/router/contract", "@keel/schema"]);
+    const rel = imports(build(true).get("modules/todos/routes.ts") ?? "").slice(1);
     expect(rel).toEqual([...rel].sort());
   });
 });

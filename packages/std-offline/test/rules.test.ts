@@ -5,11 +5,11 @@ import "../src/tools/index.ts";
 
 const file = (api: string) => ({
   path: "modules/todos/boardOutbox.ts",
-  source: `import { endpoints } from "@keel/services"
+  source: `import { contract } from "@keel/router/contract"
 import { outbox, Write } from "@keel/std-offline"
 import { s } from "@keel/schema"
 const Body = s.object({ pin: s.secret(s.string()), write: Write })
-const Api = endpoints({ save: { method: "POST", path: "/s", body: Body, output: s.object({}) } })
+const Api = contract("todos", { "todos.save": { method: "POST", path: "/s", body: Body, output: s.object({}) } })
 export const boardOutbox = outbox("todos.outbox", ${api})
 `,
 });
@@ -22,7 +22,7 @@ test("E2651 follows a same-file const map and a const body", async () => {
 
 test("E2651 reads an inline map, and nothing on a clean body", async () => {
   const inline = (body: string) =>
-    `endpoints({ save: { method: "POST", path: "/s", body: ${body}, output: s.object({}) } })`;
+    `contract("todos", { "todos.save": { method: "POST", path: "/s", body: ${body}, output: s.object({}) } })`;
   expect(await found(inline("s.object({ k: s.secret(s.string()) })"))).toHaveLength(1);
   expect(await found(inline("s.object({ k: s.string() })"))).toHaveLength(0);
 });

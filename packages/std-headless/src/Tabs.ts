@@ -26,8 +26,7 @@ export function Tabs<K extends string>(
     readonly panel: (key: K) => Child;
     readonly styles?: { readonly list?: PartStyle; readonly tab?: PartStyle; readonly panel?: PartStyle };
   },
-  _slots?: undefined,
-  ctx?: Ctx,
+  ctx: Ctx,
 ): Node {
   const id = props.id;
   const l = listChart(id, "tab", props.tabs, ctx);

@@ -1,19 +1,20 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
 import mount from "../identity.ts";
+import { AccountData } from "../modules/accounts/AccountData.schema.ts";
 import { BearerToken } from "../modules/accounts/BearerToken.schema.ts";
 import { ErrorReply } from "../modules/accounts/ErrorReply.schema.ts";
 import { Me } from "../modules/accounts/Me.schema.ts";
 import { MintedToken } from "../modules/accounts/MintedToken.schema.ts";
 import { TokenRequest } from "../modules/accounts/TokenRequest.schema.ts";
-import { accounts } from "../modules/accounts/accounts.service.ts";
+import { accounts } from "../modules/accounts/accounts.contract.ts";
 import { accountsApi } from "../modules/accounts/accountsApi.ts";
 import { authOf } from "../modules/accounts/authOf.server.ts";
 import { bearerUser } from "../modules/accounts/bearerUser.server.ts";
-import { loadAccount } from "../modules/accounts/loadAccount.server.ts";
 import { loadMe } from "../modules/accounts/loadMe.server.ts";
+import { loadSignin } from "../modules/accounts/loadSignin.server.ts";
+import { loadSignup } from "../modules/accounts/loadSignup.server.ts";
 import { postToken } from "../modules/accounts/postToken.server.ts";
-import { routes as accountRoutes } from "../modules/accounts/routes.ts";
 import { EMAIL, NAME, PASSWORD, accountsApp, browser } from "./accountsApp.ts";
 import { apiCtx } from "./simApi.ts";
 
@@ -176,9 +177,9 @@ describe("the sign-in library behind the identity seam", () => {
     await first.post(mount.href("/sign-up/email"), { name: NAME, email: EMAIL, password: PASSWORD });
     const known = await first.post(mount.href("/sign-in/email"), { email: EMAIL, password: PASSWORD });
     const unknown = await second.post(mount.href("/sign-in/email"), { email: EMAIL, password: PASSWORD });
-    expect(known.posted.location).toBe(accountRoutes.href("accounts.signin", { locale: "en-US" }));
+    expect(known.posted.location).toBe(accounts.href("accounts.signin", { locale: "en-US" }));
     expect(unknown.posted.location).toBe(
-      accountRoutes.href("accounts.signin", { locale: "en-US" }, { error: "credentials" }),
+      accounts.href("accounts.signin", { locale: "en-US" }, { error: "credentials" }),
     );
     expect(meOf((await first.json("GET", "/api/me")).text)).toEqual({ email: EMAIL });
     expect((await second.json("GET", "/api/me")).status).toBe(403);
@@ -186,26 +187,29 @@ describe("the sign-in library behind the identity seam", () => {
 });
 
 describe("accounts wiring", () => {
-  it("serves the pages with loadAccount and /api/me with loadMe", () => {
-    expect(accountRoutes.routes["accounts.signin"].loader).toBe(loadAccount);
-    expect(accountRoutes.routes["accounts.signup"].loader).toBe(loadAccount);
-    expect(accountRoutes.routes["accounts.me"].loader).toBe(loadMe);
+  it("serves the pages with loadSignin and loadSignup and /api/me with loadMe", () => {
+    expect(loadSignin.output).toBe(AccountData);
+    expect(loadSignup.output).toBe(AccountData);
     expect(loadMe.output).toBe(Me);
   });
 
   it("gives the API action an output and no page an action: the pages post to the identity mount", () => {
     expect(postToken.input).toBe(TokenRequest);
     expect(postToken.output).toBe(MintedToken);
-    expect(accountRoutes.href("accounts.signin", { locale: "en-US" })).toBe("/account/signin");
+    expect(accounts.href("accounts.signin", { locale: "en-US" })).toBe("/account/signin");
     expect(mount.path).toBe("/api/auth");
   });
 
-  it("the accounts endpoints name the two API routes' paths and answers", () => {
-    expect([accounts.mint.method, accounts.mint.path, accounts.mint.output]).toEqual([
-      "POST",
-      "/api/tokens",
-      MintedToken,
-    ]);
-    expect([accounts.me.method, accounts.me.path, accounts.me.output]).toEqual(["GET", "/api/me", Me]);
+  it("the accounts contract names the two API routes' paths and answers", () => {
+    expect([
+      accounts.entries["accounts.mint"].method,
+      accounts.entries["accounts.mint"].path,
+      accounts.entries["accounts.mint"].output,
+    ]).toEqual(["POST", "/api/tokens", MintedToken]);
+    expect([
+      accounts.entries["accounts.me"].method,
+      accounts.entries["accounts.me"].path,
+      accounts.entries["accounts.me"].output,
+    ]).toEqual(["GET", "/api/me", Me]);
   });
 });

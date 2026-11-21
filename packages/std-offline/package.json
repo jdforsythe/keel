@@ -26,6 +26,7 @@
     "@keel/check": "workspace:*",
     "@keel/ctx": "workspace:*",
     "@keel/reactive": "workspace:*",
+    "@keel/router": "workspace:*",
     "@keel/schema": "workspace:*",
     "@keel/services": "workspace:*",
     "@keel/store": "workspace:*",

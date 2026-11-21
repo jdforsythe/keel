@@ -41,7 +41,7 @@ export async function catalogApi(seed = 1) {
   const body: unknown = await (await app.fetch(asJson("GET", "/api/recipes"))).json();
   const results = typeof body === "object" && body !== null && "results" in body ? body.results : null;
   const entry =
-    typeof results === "object" && results !== null && "kitchen.recipes" in results ? results["kitchen.recipes"] : null;
+    typeof results === "object" && results !== null && "kitchen.box" in results ? results["kitchen.box"] : null;
   const box = typeof entry === "object" && entry !== null && "value" in entry ? Box.parse(entry.value) : null;
   const recipes = box?.ok ? box.value.recipes : [];
   const ids = new Map<string, string>(recipes.map((r) => [r.title, r.id]));

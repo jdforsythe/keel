@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { mount } from "../src/index.ts";
 import { boundary, clone, cond, list, template, text } from "../src/ops/index.ts";
 import { rootSignal } from "./support.ts";
+import { testCtx } from "./testCtx.ts";
 
 const PAGE = template("<main>page</main>");
 const OTHER = template("<main>other</main>");
@@ -33,6 +34,7 @@ const mountSwitch = (page: () => Node): { show: (v: boolean) => void; host: HTML
         ),
       ),
     host,
+    { ctx: testCtx },
   );
   return { show: (v) => on.set(v), host, dispose };
 };
@@ -125,6 +127,7 @@ describe("unit nodes: a structural op at the top level of a unit", () => {
           ),
         ),
       host,
+      { ctx: testCtx },
     );
     const shown = (): string[] => [...host.querySelectorAll("li")].map((li) => li.textContent ?? "");
     expect(shown()).toEqual(["1", "2", "3"]);

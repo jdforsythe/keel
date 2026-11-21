@@ -34,7 +34,6 @@ test("Combobox: a replaced list keeps the active key at its new index, and Enter
           options: () => list.get(),
           onChange: (k) => chosen.push(k),
         },
-        undefined,
         c,
       ),
     ),
@@ -72,7 +71,6 @@ test("Listbox and Menu keep the active key across a replaced list; a gone key le
           selected: () => [],
           onChange: (k) => picked.push(...k),
         },
-        undefined,
         c,
       ),
     ),
@@ -90,9 +88,7 @@ test("Listbox and Menu keep the active key across a replaced list; a gone key le
   const items = held(opts("a", "b", "c"));
   const selected: string[] = [];
   const m = render(
-    page((c) =>
-      Menu({ id: "mn", trigger: () => "M", items: () => items.get(), onSelect: (k) => selected.push(k) }, undefined, c),
-    ),
+    page((c) => Menu({ id: "mn", trigger: () => "M", items: () => items.get(), onSelect: (k) => selected.push(k) }, c)),
     { props: {}, ctx: simCtx() },
   );
   await m.fire("mn.trigger", { type: "keydown", key: "Enter" });

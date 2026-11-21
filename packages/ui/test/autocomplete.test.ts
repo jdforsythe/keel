@@ -5,13 +5,14 @@ import { Input, Select, TextArea } from "@keel/ui";
 import type { Autofill } from "@keel/ui";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
+import { testCtx } from "./testCtx.ts";
 
 const NAMES: readonly Autofill[] = ["off", "name", "email", "tel", "street-address", "bday", "postal-code"];
 
 const markup = (view: () => Node): string => {
   const host = document.createElement("div");
   document.body.append(host);
-  const off = mount(view, host);
+  const off = mount(view, host, { ctx: testCtx });
   const html = host.innerHTML;
   off();
   host.remove();

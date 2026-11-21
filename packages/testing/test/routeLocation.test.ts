@@ -3,6 +3,7 @@
 // `location()` is `{ entries, scrollY }`: a search-only `replace` leaves both, a push adds one entry.
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { findRouter } from "@keel/router/internal";
 import type { RouterCore } from "@keel/router/internal";
 import { s } from "@keel/schema";
@@ -10,10 +11,15 @@ import { renderRoute } from "@keel/testing";
 import { describe, expect, it } from "vitest";
 
 const cores: (RouterCore | null)[] = [];
-const routes = manifest({
+const c = contract("loc", {
   "loc.list": {
     path: "/loc",
     search: s.object({ page: s.int().optional(), sort: s.enum(["name", "date"]).optional() }),
+  },
+  "loc.other": { path: "/other" },
+});
+const routes = manifest(c, {
+  "loc.list": {
     component: (p) => {
       cores.push(findRouter());
       const main = document.createElement("main");
@@ -24,7 +30,6 @@ const routes = manifest({
     },
   },
   "loc.other": {
-    path: "/other",
     component: () => {
       const main = document.createElement("main");
       const h = document.createElement("h1");
@@ -54,11 +59,11 @@ describe("renderRoute url and location()", () => {
     window.scrollTo(0, 240);
     const before = t.location();
     expect(before).toEqual({ entries: 1, scrollY: 240 });
-    void core().navigate(routes.href("loc.list", {}, { page: 2 }), { replace: true });
+    void core().navigate(c.href("loc.list", {}, { page: 2 }), { replace: true });
     await t.settle();
     expect(t.route()).toMatchObject({ search: { page: 2 } });
     expect(t.location()).toEqual(before);
-    await t.navigate(routes.href("loc.other"));
+    await t.navigate(c.href("loc.other"));
     expect(t.location()).toEqual({ entries: 2, scrollY: 0 });
     t.dispose();
   });

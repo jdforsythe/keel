@@ -4,6 +4,7 @@
 // value of a `Secret` in the input. Seed 1337.
 import { createCtx } from "@keel/ctx";
 import { action, loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { type Infer, attempt, ok, reveal, s } from "@keel/schema";
 import { store, transaction, tx } from "@keel/store";
 import fc from "fast-check";
@@ -22,32 +23,31 @@ const notesStores = () => {
 };
 
 async function build(lines: string[]) {
-  const routes = manifest({
-    "app.a": { path: "/a", component: () => document.createElement("main") },
-    "app.b": {
-      loader: loader({ output: s.object({ who: s.string().pii("name") }) }, async () => ok({ who: "ada lovelace" })),
-      component: () => document.createElement("div"),
-    },
-    "app.b.c": {
-      path: "/b/c",
-      layout: "app.b",
-      loader: loader({ output: s.object({}) }, async () => {
-        await Promise.resolve();
-        throw new Error("no luck for ada lovelace");
-      }),
-      component: () => document.createElement("main"),
-    },
+  const c = contract("app", {
+    "app.a": { path: "/a" },
+    "app.b": { layout: true },
+    "app.b.c": { path: "/b/c" },
   });
-  routes.actions({
-    "app.a": {
-      POST: action(
-        { input: s.object({ email: s.string().pii("contact") }), stores: notesStores },
-        (input, { stores }) => {
-          tx(stores.add, { text: "my diary entry" });
-          throw new Error(`cannot mail ${input.email} about my diary entry`);
-        },
-      ),
+  const loadB = loader(c, "app.b", { output: s.object({ who: s.string().pii("name") }) }, async () =>
+    ok({ who: "ada lovelace" }),
+  );
+  const loadC = loader(c, "app.b.c", { output: s.object({}) }, async () => {
+    await Promise.resolve();
+    throw new Error("no luck for ada lovelace");
+  });
+  const mail = action(
+    c,
+    "app.a",
+    { input: s.object({ email: s.string().pii("contact") }), stores: notesStores },
+    (input, { stores }) => {
+      tx(stores.add, { text: "my diary entry" });
+      throw new Error(`cannot mail ${input.email} about my diary entry`);
     },
+  );
+  const routes = manifest(c, {
+    "app.a": { component: () => document.createElement("main"), POST: mail },
+    "app.b": { loader: loadB, component: () => document.createElement("div") },
+    "app.b.c": { layout: "app.b", loader: loadC, component: () => document.createElement("main") },
   });
   return createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
@@ -92,15 +92,12 @@ describe("diag scrub", () => {
 describe("marked record keys", () => {
   it("a throwing action's diag drops the keys of a marked record in its input", async () => {
     const lines: string[] = [];
-    const routes = manifest({ "app.a": { path: "/a", component: () => document.createElement("main") } });
+    const c = contract("app", { "app.a": { path: "/a" } });
     const input = s.object({ notes: s.record(s.string()).pii("content") });
-    routes.actions({
-      "app.a": {
-        POST: action({ input }, (v) => {
-          throw new Error(`cannot file ${Object.keys(v.notes).join(" ")}`);
-        }),
-      },
+    const file = action(c, "app.a", { input }, (v) => {
+      throw new Error(`cannot file ${Object.keys(v.notes).join(" ")}`);
     });
+    const routes = manifest(c, { "app.a": { component: () => document.createElement("main"), POST: file } });
     const app = await createApp({
       topology: topology({ web: { modules: ["app"], adapter: "node" } }),
       routes,
@@ -242,22 +239,16 @@ describe("secret scrub over a request", () => {
   type Sent = Infer<typeof input>;
   async function run(mode: "dev" | "production", fail: (v: Sent) => unknown, accept: string) {
     const lines: string[] = [];
-    const routes = manifest({
-      "app.a": {
-        path: "/a",
-        loader: loader({ output: s.object({}) }, async () => {
-          await Promise.resolve();
-          throw new Error(`loader saw ${TOKEN}`);
-        }),
-        component: () => document.createElement("main"),
-      },
+    const c = contract("app", { "app.a": { path: "/a" } });
+    const load = loader(c, "app.a", { output: s.object({}) }, async () => {
+      await Promise.resolve();
+      throw new Error(`loader saw ${TOKEN}`);
     });
-    routes.actions({
-      "app.a": {
-        POST: action({ input }, (v) => {
-          throw fail(v);
-        }),
-      },
+    const save = action(c, "app.a", { input }, (v) => {
+      throw fail(v);
+    });
+    const routes = manifest(c, {
+      "app.a": { loader: load, component: () => document.createElement("main"), POST: save },
     });
     const app = await createApp({
       topology: topology({ web: { modules: ["app"], adapter: "node" } }),

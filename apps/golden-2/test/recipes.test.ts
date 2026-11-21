@@ -1,12 +1,13 @@
 import { properties, render } from "@keel/testing";
 import { describe, expect, it } from "vitest";
+import { ErrorReply } from "../modules/kitchen/ErrorReply.schema.ts";
 import { Nothing } from "../modules/kitchen/Nothing.schema.ts";
 import { Recipe } from "../modules/kitchen/Recipe.schema.ts";
 import { RecipeDraft } from "../modules/kitchen/RecipeDraft.schema.ts";
 import { RecipeRef } from "../modules/kitchen/RecipeRef.schema.ts";
+import { kitchen } from "../modules/kitchen/kitchen.contract.ts";
 import { AppLocale } from "../modules/recipes/AppLocale.schema.ts";
 import BoxShell from "../modules/recipes/BoxShell.tsx";
-import { ErrorReply } from "../modules/recipes/ErrorReply.schema.ts";
 import { IndexData } from "../modules/recipes/IndexData.schema.ts";
 import { KeelFields } from "../modules/recipes/KeelFields.schema.ts";
 import { LocaleParams } from "../modules/recipes/LocaleParams.schema.ts";
@@ -26,7 +27,6 @@ import { cook } from "../modules/recipes/cook.guard.ts";
 import { createRecipe } from "../modules/recipes/createRecipe.server.ts";
 import { favoriteRecipe } from "../modules/recipes/favoriteRecipe.server.ts";
 import { fieldText } from "../modules/recipes/fieldText.ts";
-import { kitchen } from "../modules/recipes/kitchen.service.ts";
 import { kitchenApi } from "../modules/recipes/kitchenApi.ts";
 import { loadIndex } from "../modules/recipes/loadIndex.server.ts";
 import { loadNew } from "../modules/recipes/loadNew.server.ts";
@@ -264,9 +264,15 @@ describe("recipe schemas", () => {
   });
 });
 
-describe("kitchen service", () => {
-  it("names the four endpoints and kitchenApi calls the kitchen module for the route's value", async () => {
-    expect(Object.keys(kitchen).sort()).toEqual(["add", "box", "catalog", "favorite"]);
+describe("kitchen contract", () => {
+  it("names the five entries and kitchenApi calls the kitchen module for the route's value", async () => {
+    expect(Object.keys(kitchen.entries).sort()).toEqual([
+      "kitchen.add",
+      "kitchen.box",
+      "kitchen.catalog",
+      "kitchen.currencyTally",
+      "kitchen.favorite",
+    ]);
     const api = await simApi();
     const r = await kitchenApi.box({}, api.ctx);
     expect(r.ok && r.value.recipes).toEqual([]);

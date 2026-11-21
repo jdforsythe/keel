@@ -5,6 +5,7 @@ import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { made } from "../src/internal/made.ts";
 import { clone, element, frag, parts, resume, slot, template } from "../src/ops/index.ts";
+import { testCtx } from "./testCtx.ts";
 
 const B = template("<b>x</b>");
 const ROOT = template('<div id="r" data-k="r"><!----></div>');
@@ -50,7 +51,7 @@ describe("frag", () => {
       });
       return r;
     };
-    const { warnings } = resume(document.body, { i: Island });
+    const { warnings } = resume(document.body, { i: Island }, { ctx: testCtx });
     seen.push(...observer.takeRecords().flatMap((r) => [...r.removedNodes]));
     observer.disconnect();
     expect(warnings).toEqual([]);

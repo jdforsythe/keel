@@ -8,13 +8,16 @@ You need TypeScript, Vite and pnpm, and the terms in `docs/GLOSSARY.md`. Nothing
 
 ## What you build
 
-golden-1 is a todo board: named lists, todos with a title, a priority and a done flag, an edit page, an undo button, a suggestions panel, and a digest that counts open and done todos every hour. Every open page follows the board live, and a write goes through an outbox that holds it while the browser is offline. It is three modules in two deployables:
+golden-1 is a todo board: named lists, todos with a title, a priority and a done flag, an edit page, an undo button, a suggestions panel, and a digest that counts open and done todos every hour. Every open page follows the board live, and a write goes through an outbox that holds it while the browser is offline. A list is removed with a ten-minute Undo, run by a workflow. The edit page keeps its status in a state chart. It is three modules in two deployables, plus the `sessions` module of a stdlib package:
 
 | Module | Deployable | Adapter | Owns |
 | --- | --- | --- | --- |
-| `todos` | `web` | `client` | the pages; it holds a copy of the board, follows the board channel and sends writes through an outbox |
-| `api` | `api` | `node` | the board itself (`api.board`), its transactions and undo log, the board channel, the suggestions |
+| `todos` | `web` | `client` | the pages; it holds a copy of the board, follows the board channel, sends writes through an outbox and keeps the edit page's chart |
+| `api` | `api` | `node` | the board itself (`api.board`), its transactions and undo log, the board channel, the suggestions, and the list removal workflow with its jobs |
 | `digest` | `api` | `node` | a job that counts the board, an hourly schedule, `GET /digest` and a live feed |
+| `sessions` (`@keel/std-sessions`) | `api` | `node` | `GET /sessions/tally`, the production commit counts the `api` runner `monitor` keeps; no file of yours |
+
+The `api` deployable keeps its state in one SQLite file. `topology.ts` also declares a Capacitor and a Tauri shell for `web`; this guide builds neither (the end of the guide).
 
 Build order follows the dependencies: project files, then `api` (the other two import its schemas and call its routes), then `todos`, then `digest`, then tests. You can run `keel check` once the three modules exist.
 
@@ -50,8 +53,8 @@ todo-by-hand/
   .gitignore
   public/keel-mark.svg
   modules/
-    todos/            pages, forms, the client's copy of the board, the outbox
-    api/              the board, its transactions, the HTTP API, the board channel
+    todos/            pages, forms, the client's copy of the board, the outbox, the edit page's chart
+    api/              the board, its transactions, the contract of its HTTP API, the board channel, the list removal workflow
     digest/           job, schedule, runners, live loader
   test/               vitest suites and their helpers
   # generated, never edited by hand:
@@ -61,7 +64,7 @@ todo-by-hand/
   dist/api/server.mjs.map  the source map beside server.mjs: project-relative paths, no source text, never served
   deploy/             Dockerfile and compose.yaml for node deployables
   .keel-dev/          storage for keel dev
-  .api.storage*       storage for the built api server
+  .api.sqlite*        storage for the built api server
 ```
 
 ## 3. Project files
@@ -77,11 +80,14 @@ todo-by-hand/
   "scripts": {
     "check": "tsc --noEmit && biome check modules test && keel check --quiet",
     "test": "vitest run",
+    "coverage": "node ../../tooling/coverage.mjs",
     "build": "keel build",
     "dev": "keel dev",
-    "api": "node --experimental-webstorage --localstorage-file=.api.storage --disable-warning=ExperimentalWarning dist/api/server.mjs"
+    "api": "KEEL_DATABASE_URL=file://$PWD/.api.sqlite node --disable-warning=ExperimentalWarning dist/api/server.mjs"
   },
   "dependencies": {
+    "@capacitor/core": "8.6.0",
+    "@capacitor/preferences": "8.0.1",
     "@keel/compiler": "workspace:*",
     "@keel/ctx": "workspace:*",
     "@keel/forms": "workspace:*",
@@ -91,22 +97,35 @@ todo-by-hand/
     "@keel/schema": "workspace:*",
     "@keel/server": "workspace:*",
     "@keel/services": "workspace:*",
+    "@keel/std-capacitor": "workspace:*",
     "@keel/std-channels": "workspace:*",
-    "@keel/std-conflicts": "workspace:*",
+    "@keel/std-db": "workspace:*",
     "@keel/std-jobs": "workspace:*",
     "@keel/std-live": "workspace:*",
     "@keel/std-offline": "workspace:*",
     "@keel/std-schedules": "workspace:*",
+    "@keel/std-sessions": "workspace:*",
+    "@keel/std-statecharts": "workspace:*",
+    "@keel/std-tauri": "workspace:*",
+    "@keel/std-workflows": "workspace:*",
     "@keel/store": "workspace:*",
-    "@keel/testing": "workspace:*",
-    "@keel/ui": "workspace:*"
+    "@keel/ui": "workspace:*",
+    "@tauri-apps/api": "2.12.4",
+    "@tauri-apps/plugin-http": "2.9.0",
+    "@tauri-apps/plugin-store": "2.5.1"
   },
   "devDependencies": {
+    "@capacitor/android": "8.6.2",
+    "@capacitor/cli": "8.6.2",
+    "@capacitor/ios": "8.6.2",
     "@keel/cli": "workspace:*",
-    "@keel/std-sessions": "workspace:*",
+    "@keel/std-conflicts": "workspace:*",
+    "@keel/testing": "workspace:*",
     "@keel/tooling": "workspace:*",
+    "@tauri-apps/cli": "2.12.4",
     "@types/node": "^22",
-    "vite": "^8.3.6"
+    "vite": "^8.3.6",
+    "z3-solver": "5.3.3"
   }
 }
 ```
@@ -116,9 +135,10 @@ The scripts:
 - `check` runs three tools in turn: `tsc --noEmit`, Biome (configured by the repo root's `biome.json`) on `modules` and `test`, and `keel check --quiet`, which prints one summary line when clean.
 - `test` runs vitest with `vitest.config.ts`. `keel test` runs the same suites through the CLI with compact output.
 - `build` is `keel build`; `dev` is `keel dev`. Both hand bundling and serving to Vite, because `vite.config.ts` exists.
-- `api` starts the built `api` deployable. Node's Web Storage flags make `localStorage` exist and persist to `.api.storage`; `ctx.storage` is that `localStorage`. It needs `KEEL_SECRET` set (section 10).
+- `coverage` runs the repo's coverage script over the app.
+- `api` starts the built `api` deployable. `KEEL_DATABASE_URL` names the SQLite file `.api.sqlite`, which holds `ctx.storage`. It needs `KEEL_SECRET` set (section 10).
 
-The dependencies are the Keel packages the app's code imports. `@keel/testing` is listed with them although only tests use it. `@keel/std-channels`, `@keel/std-live` and `@keel/std-offline` carry the board channel, the page's live status and the outbox. `@keel/std-sessions` is a dev dependency for session groups (`test/user.ts`). `@keel/tooling` is this repo's internal tooling package; the app uses it for `keelConfig` in `vitest.config.ts`. vitest, happy-dom, TypeScript and Biome are not declared here: they resolve from the repo root's devDependencies.
+The dependencies are the Keel packages the app's code imports. `@keel/testing` is listed with them although only tests use it. `@keel/std-channels`, `@keel/std-live` and `@keel/std-offline` carry the board channel, the page's live status and the outbox. `@keel/std-jobs` and `@keel/std-schedules` carry the queue and the hourly schedule, `@keel/std-statecharts` and `@keel/std-workflows` the charts and the removal workflow, `@keel/std-db` the SQLite storage, and `@keel/std-sessions` the `sessions` module and the `monitor` runner. `@keel/std-conflicts` is a dev dependency for race checks in tests, `z3-solver` for the proof in `test/board.prove.test.ts`. `@keel/std-capacitor`, `@keel/std-tauri` and the `@capacitor/*` and `@tauri-apps/*` packages serve the two native shells of `topology.ts`. `@keel/tooling` is this repo's internal tooling package; the app uses it for `keelConfig` in `vitest.config.ts`. vitest, happy-dom, TypeScript and Biome are not declared here: they resolve from the repo root's devDependencies.
 
 If you build under `apps/`, change `"name"` now and run `pnpm install` at the root.
 
@@ -128,7 +148,8 @@ If you build under `apps/`, change `"name"` now and run `pnpm install` at the ro
 {
   "extends": "@keel/compiler/tsconfig.strict.json",
   "compilerOptions": {
-    "jsxImportSource": "@keel/runtime-dom"
+    "jsxImportSource": "@keel/runtime-dom",
+    "types": ["node", "@keel/compiler/client"]
   },
   "include": ["modules", "test", "tokens.ts", "topology.ts"]
 }
@@ -217,8 +238,16 @@ Components never write CSS. They take style props whose values are token names (
 import { topology } from "@keel/server";
 
 export default topology({
-  web: { modules: ["todos"], adapter: "client", servedBy: "api" },
-  api: { modules: ["api", "digest"], adapter: "node" },
+  web: {
+    modules: ["todos"],
+    adapter: "client",
+    servedBy: "api",
+    shells: {
+      capacitor: { id: "dev.keel.golden1", name: "Golden 1" },
+      tauri: { id: "dev.keel.golden1", name: "Golden 1" },
+    },
+  },
+  api: { modules: ["api", "digest", "sessions"], adapter: "node", storage: "sqlite" },
 });
 ```
 
@@ -228,7 +257,7 @@ A deployable is a set of modules that builds to one artifact. The adapter decide
 - `node`: a server (Hono). It renders pages to HTML, answers JSON and event streams, runs runners, and ships a small resume entry for pages that have interactive parts. `keel build` writes `dist/<name>/server.mjs`.
 - `static`: prerendered HTML. golden-1 does not use it.
 
-Each module belongs to exactly one deployable, and no other file names a deployable. Splitting `digest` into its own server is a change to this file alone (section 10). The plugin reads `topology.ts` statically, so keep it a literal.
+Each module belongs to exactly one deployable, and no other file names a deployable. Splitting `digest` into its own server is a change to this file alone (section 10). `storage: "sqlite"` gives `api` a SQLite file for `ctx.storage` (`KEEL_DATABASE_URL`); `sessions` is the stdlib module that serves the tally route. `shells` names the Capacitor and Tauri apps `keel build --target` makes from `web`. The plugin reads `topology.ts` statically, so keep it a literal.
 
 ### .gitignore
 
@@ -238,6 +267,7 @@ dist
 node_modules
 .api.storage
 .api.storage*
+.api.sqlite*
 ```
 
 `.keel-dev/` (storage for `keel dev`) is ignored by the repo root's `.gitignore`. golden-1 commits `.keel/` and `deploy/`.
@@ -253,11 +283,11 @@ You write sources; the plugin and `keel build` derive everything below. Nothing 
 | `/@keel/islands.ts` | Vite plugin, in memory | each `routes.ts` | route id to component, for the resume entry |
 | `virtual:keel.css` (served as `/__keel.css`) | Vite plugin | `tokens.ts` and `.keel/styles.json` | one atomic rule per style usage |
 | `.keel/ids.json`, `a11y.json`, `deps.json`, `styles.json` | Vite plugin (dev, test, build) and `keel build` | your components | element ids with file and line; the role and name each element must have; the reactive graph; style usages |
-| `.keel/routes.json` | Vite plugin | the served deployable's `routes.ts`, evaluated in Node | path, params, search, actions, layout, guard per route; for golden-1, the `todos` routes |
-| `.keel/std.json` | Vite plugin and `keel build` | `std` entries in `module.ts` | stdlib config per package and module; `{}` in golden-1 |
-| `.keel/surface.json` | `keel build` only | every module's routes and `service({ module })` calls | the HTTP surface; `keel check --base` compares it against a deployed one |
+| `.keel/routes.json` | Vite plugin | the served deployable's `routes.ts`, evaluated in Node | path, params, search, method, actions, layout, guard per route; for golden-1, the `todos` routes |
+| `.keel/std.json` | Vite plugin and `keel build` | `std` entries in `module.ts` | stdlib config per package and module; in golden-1 the `readers` of `@keel/std-sessions` in `api` |
+| `.keel/surface.json` | `keel build` only | every module's contract | the HTTP surface: each API entry's method, path and schemas, and which modules import the contract; `keel check --base` compares it against a deployed one |
 | `dist/web/` | `keel build` (Vite) | `index.html`, the mount entry | the `web` client: static files |
-| `dist/api/` | `keel build` (Vite, `KEEL_DEPLOYABLE=api`) | the `api` and `digest` modules, and the `web` client (`servedBy: "api"`) | `server.mjs` with every dependency bundled, the resume entry and the client's `index.html` and files in `assets/`, `routes.json` (all modules' routes, for forwarding), `std.json` |
+| `dist/api/` | `keel build` (Vite, `KEEL_DEPLOYABLE=api`) | the `api`, `digest` and `sessions` modules, and the `web` client (`servedBy: "api"`) | `server.mjs` with every dependency bundled, the resume entry and the client's `index.html` and files in `assets/`, `routes.json` (all modules' routes, for forwarding), `std.json` |
 | `deploy/api/Dockerfile`, `deploy/compose.yaml` | `keel build` | `topology.ts` | one Dockerfile per `node` deployable, one compose service each |
 
 Every `.keel/` file is `{ data, hash }` JSON with sorted keys, written read-only (mode 0444). `keel check` recomputes them from your sources, and a file that differs is E1005. A project with no `.keel/` yet checks clean; once a build or test run has written it, editing a source makes `keel check` report E1005 for each stale artifact before your real error. Run `keel build` before `keel check` after edits.
@@ -273,20 +303,20 @@ Follow `http://localhost:5173/lists/l1` in `keel dev`:
    ```ts
    import "virtual:keel.css";
    import { createCtx } from "@keel/ctx";
-   import { browserHistory, createRouter } from "@keel/router";
+   import { browserHistory, createRouter, routeTable } from "@keel/router";
    import { mount } from "@keel/runtime-dom";
    import { routes as __keelRoutes0 } from "/modules/todos/routes.ts";
    const ctx = createCtx({ mode: "real" });
    const mode = "dev";
-   const router = createRouter(__keelRoutes0, { ctx, history: browserHistory(), mode });
+   const router = createRouter(routeTable(__keelRoutes0), { ctx, history: browserHistory(), mode });
    const el = document.getElementById("app");
    if (el === null) throw new Error("keel: index.html has no #app element");
    mount(router.App, el, { ctx, mode });
    ```
 
-   `keel build` writes `const mode = "production";` instead and drops the reporting block. With several modules in the deployable it merges their manifests into one table. When a module's `module.ts` sets `std` config for a client-readable stdlib package, the entry also binds it to `ctx`.
+   `keel build` writes `const mode = "production";` instead and drops the reporting block. With several modules in the deployable it joins their route tables with `routeTable(...)`. When a module's `module.ts` sets `std` config for a client-readable stdlib package, the entry also binds it to `ctx`.
 4. `virtual:keel.css` loads: the atomic classes for every style prop your components use, built from `tokens.ts`.
-5. The router matches `/lists/l1` against the manifest in `modules/todos/routes.ts`: route `todos.list`, path `/lists/:listId`. It parses the params with `ListParams` (a failure is a 404 rendered by the route's `errorElement`) and the search with `ListSearch` (failing keys are dropped).
+5. The router matches `/lists/l1` against the route table built from `modules/todos/routes.ts`: route `todos.list`, path `/lists/:listId`. It parses the params with `ListParams` (a failure is a 404 rendered by the route's `errorElement`) and the search with `ListSearch` (failing keys are dropped).
 6. It runs the chain's guards, outermost first (none here), then its loaders. `loadList` runs in the browser with the real `ctx`. It calls `GET /api/lists` through a typed client.
 7. `keel dev` answers `/api/lists` from the `api` deployable's dev server on the same origin. The `api.lists` loader restores `api.board` from storage and answers `{ id, results: { "api.lists": { ok: true, value } } }`, the board with its `head`, the count of writes it has taken.
 8. The typed client takes the `api.lists` result and decodes its `value` with the endpoint's `output`, `BoardView`. `loadList` stores the board in the client store `todos.view` (transaction `todos.hydrate`) and returns the list.
@@ -301,20 +331,19 @@ All app code lives in `modules/<id>/`. A module is a vertical slice with a manif
 - `id`: lowerCamel, equal to the folder name. It prefixes every route id, store id, transaction name and error code in the module (`todos.list`, `todos.view`, `todos.hydrate`). An unprefixed one is E1155.
 - `deps`: app modules and stdlib packages this module may import from, link to or call. Anything else is E1152.
 - `capabilities`: the `ctx` capabilities its code uses (`clock`, `random`, `storage`, `net`). Using one not listed is E1156.
-- `public.exports`: the files other modules may import (a file's name is its export). Importing anything else is E1151.
-- `public.routes`: the routes other modules may link to or call. Calling another is E1157.
+- `public.exports`: the files other modules may import (a file's name is its export). Importing anything else is E1151. Routes are not listed: a module's contract is public to every module that has it in `deps`.
 - `std` (optional): config for stdlib packages in `deps`.
 
-`routes.ts` exports `routes`, the module's route manifest. The plugin evaluates it in Node, so it must not touch the browser at import time.
+A module that serves routes also has `<id>.contract.ts`, which exports the contract, and `routes.ts`, which exports `routes`, the contract bound to its components and handlers. The plugin evaluates `routes.ts` in Node, so it must not touch the browser at import time.
 
 Keel decides what a file is from its name, and holds you to one export per file whose name equals the file name (E1752):
 
 | File | Holds | Rule |
 | --- | --- | --- |
 | `Name.schema.ts` | one schema `Name` (and its type, same name) | every `s.*` schema lives in a `*.schema.ts` file (E1104) |
-| `name.server.ts` | one `loader` or `action` | loaders and actions live only here (E1551); client-reachable code may not import them except through `routes.ts` (E1004) |
+| `<id>.contract.ts` | one `contract` of the module's id, named as the module | the file imports `*.schema.ts` files and packages only (E1514); one per module (E1513) |
+| `name.server.ts` | one `loader` or `action`, naming a contract entry | loaders and actions live only here (E1551); client-reachable code may not import them except through `routes.ts` (E1004) |
 | `name.guard.ts` | one `guard` | a convention from the Keel skills; no rule enforces the suffix |
-| `name.service.ts` | one `endpoints` declaration | golden-1's convention; k.services names this file `<Name>Api.schema.ts` |
 | `Name.tsx` | one component, default export, plus optional `Props` and `uses` | PascalCase; only a component file may export `Props` |
 | `Name.ts` (PascalCase) | a component without JSX, written as function calls | its default export takes props |
 | `name.ts` | one function, store or value | `module.ts` and `routes.ts` have fixed names |
@@ -335,12 +364,20 @@ import { module } from "@keel/compiler";
 
 export default module({
   id: "api",
-  deps: ["@keel/std-channels", "@keel/std-offline"],
+  deps: [
+    "@keel/std-channels",
+    "@keel/std-jobs",
+    "@keel/std-offline",
+    "@keel/std-sessions",
+    "@keel/std-statecharts",
+    "@keel/std-workflows",
+  ],
   capabilities: ["clock", "net", "observe", "random", "storage"],
   public: {
     exports: [
       "Board",
       "BoardView",
+      "FieldsReply",
       "ListDraft",
       "ListParams",
       "Suggestion",
@@ -351,21 +388,16 @@ export default module({
       "TodoWrite",
       "ToggleWrite",
       "boardChannel",
-    ],
-    routes: [
-      "api.lists",
-      "api.listTodos",
-      "api.todo",
-      "api.todoToggle",
-      "api.undo",
-      "api.suggestions",
-      "api.boardEvents",
+      "Removal",
+      "Nothing",
+      "WriteRefusal",
     ],
   },
+  std: { "@keel/std-sessions": { readers: [] } },
 });
 ```
 
-`api` has no app dependencies: it owns its contract. Its stdlib dependencies are `@keel/std-channels` for the board channel and `@keel/std-offline` for the `Write` schema its write bodies carry. `random` mints ids and `storage` holds the board; the channel's stream uses `clock`, `net` and `observe`. `public.exports` lists the schemas and the channel `todos` and `digest` import. `public.routes` lists every route a caller in another module uses through `service({ module: "api" })`: `digest` calls `api.lists`, and the `todos` client calls all seven, `api.boardEvents` through the board channel.
+`api` has no app dependencies: it owns its contract. Its stdlib dependencies are `@keel/std-channels` for the board channel, `@keel/std-offline` for the `Write` schema its write bodies carry, `@keel/std-statecharts`, `@keel/std-workflows` and `@keel/std-jobs` for the list removal, and `@keel/std-sessions` for the production tally. `random` mints ids and `storage` holds the board; the channel's stream uses `clock`, `net` and `observe`. `public.exports` lists the schemas and the channel `todos` and `digest` import, and `Removal`, which `BoardView` carries. Routes are not listed: every entry of `api`'s contract (below) is public to a module that has `api` in `deps`, and importing `api.contract.ts` needs `deps` only. `digest` calls `api.lists`, and the `todos` client calls the others and follows `api.boardEvents` through the board channel. The `std` entry gives `@keel/std-sessions` its `readers`, the cookie hashes allowed to read the tally; none as shipped.
 
 ### Contract schemas
 
@@ -392,10 +424,11 @@ export type Todo = s.infer<typeof Todo>;
 ```ts title="modules/api/TodoList.schema.ts"
 import { s } from "@keel/schema";
 
-/** A named list of todos. */
+/** A named list of todos; `hidden` while its removal waits (`api.hideList`, `removal`). */
 export const TodoList = s.object({
   id: s.id("TodoList"),
   name: s.string({ min: 1, max: 60 }),
+  hidden: s.boolean().optional(),
 });
 export type TodoList = s.infer<typeof TodoList>;
 ```
@@ -419,18 +452,20 @@ export type Board = s.infer<typeof Board>;
 
 ```ts title="modules/api/BoardView.schema.ts"
 import { s } from "@keel/schema";
+import { Removal } from "./Removal.schema.ts";
 import { Todo } from "./Todo.schema.ts";
 import { TodoList } from "./TodoList.schema.ts";
 
 /**
  * The board as `GET /api/lists` serves it (`api.lists` loader data) and the `todos.view` store holds it; `head` is the
- * board's head when it was read, the `base` a write names.
+ * board's head when it was read, the `base` a write names; `removals`, the removals not yet ended (`removal`).
  */
 export const BoardView = s.object({
   lists: s.array(TodoList),
   todos: s.array(Todo),
   canUndo: s.boolean(),
   head: s.int({ min: 0 }),
+  removals: s.array(Removal).optional(),
 });
 export type BoardView = s.infer<typeof BoardView>;
 ```
@@ -496,12 +531,12 @@ export type ToggleWrite = s.infer<typeof ToggleWrite>;
 
 `ListDraft` and `TodoDraft` stay the inputs of the forms; the `todos` actions send them inside these bodies.
 
-Route params and search. Loaders, actions and the route share one schema value; E1507 reports a loader whose `params` is not its route's own. Every search field must be optional (E1504).
+Route params and search. The contract entry holds them and the handlers read them from it. Every search field of a page must be optional (E1504).
 
 ```ts title="modules/api/ListParams.schema.ts"
 import { s } from "@keel/schema";
 
-/** Route params naming one list (`todos.list`, `api.listTodos`); loaders and actions type `params` as its Infer. */
+/** Route params naming one list (`todos.list`, `api.addTodo`, `api.removeList`). */
 export const ListParams = s.object({ listId: s.id("TodoList") });
 export type ListParams = s.infer<typeof ListParams>;
 ```
@@ -516,6 +551,75 @@ export const Suggestion = s.object({
 export type Suggestion = s.infer<typeof Suggestion>;
 ```
 
+### The contract
+
+`api.contract.ts` is the one file that says what the module serves. It is client-safe: it imports `*.schema.ts` files and packages and nothing else (E1514), so a browser bundle that imports it holds schemas only. Each key is a route id; an API entry has a `method`, a `path` and an `output`, and may have `params`, `query`, `body`, `errors`, `timeout` and `events`. Its id is `<module>.<name>` with `name` one lowerCamel segment, the name of its client method (E1513), so one path with two methods (`GET` and `POST /api/lists`) is two ids. The contract is read without running it: keys are literal; each entry's `method`, `path`, `layout` and `events` are literals; `params`, `search` and `query` are schemas reached through consts and imports. A spread or call in place of the entries or of an entry is W1005 and E1111. So the board channel's event stream is written out as a GET entry with `events: true`.
+
+```ts title="modules/api/api.contract.ts"
+import { contract } from "@keel/router/contract";
+import { s } from "@keel/schema";
+import { BoardView } from "./BoardView.schema.ts";
+import { FlowParams } from "./FlowParams.schema.ts";
+import { ListParams } from "./ListParams.schema.ts";
+import { ListWrite } from "./ListWrite.schema.ts";
+import { Nothing } from "./Nothing.schema.ts";
+import { Suggestion } from "./Suggestion.schema.ts";
+import { TodoIdParams } from "./TodoIdParams.schema.ts";
+import { TodoWrite } from "./TodoWrite.schema.ts";
+import { ToggleWrite } from "./ToggleWrite.schema.ts";
+import { WriteRefusal } from "./WriteRefusal.schema.ts";
+import { boardChannel } from "./boardChannel.schema.ts";
+
+/** What a refused board write answers: a 409 `keel.conflict` with the board's head, or a 422 `keel.fields`. */
+const refused = { 409: s.json(), 422: WriteRefusal };
+
+/**
+ * The `api` module's routes: the board read and its writes (each body carries the write's `key` and `base`), undo, the
+ * removal of a list and its undo, the suggested titles, and the board channel's event stream.
+ */
+export const api = contract("api", {
+  "api.boardEvents": {
+    method: "GET",
+    path: "/api/board/events",
+    query: Nothing,
+    events: true,
+    output: boardChannel.events,
+  },
+  "api.lists": { method: "GET", path: "/api/lists", output: BoardView },
+  "api.createList": { method: "POST", path: "/api/lists", body: ListWrite, output: Nothing, errors: refused },
+  "api.addTodo": {
+    method: "POST",
+    path: "/api/lists/:listId/todos",
+    params: ListParams,
+    body: TodoWrite,
+    output: Nothing,
+    errors: refused,
+  },
+  "api.editTodo": {
+    method: "POST",
+    path: "/api/todos/:todoId",
+    params: TodoIdParams,
+    body: TodoWrite,
+    output: Nothing,
+    errors: refused,
+  },
+  "api.toggleTodo": {
+    method: "POST",
+    path: "/api/todos/:todoId/toggle",
+    params: TodoIdParams,
+    body: ToggleWrite,
+    output: Nothing,
+    errors: refused,
+  },
+  "api.undo": { method: "POST", path: "/api/undo", output: Nothing },
+  "api.removeList": { method: "POST", path: "/api/lists/:listId/remove", params: ListParams, output: Nothing },
+  "api.undoRemoval": { method: "POST", path: "/api/removals/:flow/undo", params: FlowParams, output: Nothing },
+  "api.suggestions": { method: "GET", path: "/api/suggestions", output: s.array(Suggestion) },
+});
+```
+
+The contract holds the schemas of both sides, so the handlers below and every caller read one declaration: there is no second description of a route to keep in step. A write route's `output` is `Nothing` and its action answers `ok({})`.
+
 ### Server state: the board and its transactions
 
 On a `node` deployable, a loader or action can name `stores`: a factory that builds stores (with explicit ids) and transactions. Per request, Keel runs the factory once, restores each store from `ctx.storage` key `keel.store.<id>`, passes the result to `fn` as `stores`, and on an action's `ok` saves the stores that changed. Two overlapping writes to the same store: the later one is 409 `keel.conflict`.
@@ -523,9 +627,40 @@ On a `node` deployable, a loader or action can name `stores`: a factory that bui
 ```ts title="modules/api/TodoIdParams.schema.ts"
 import { s } from "@keel/schema";
 
-/** Route params of `api.todo` and `api.todoToggle`; their actions type `params` as its Infer. */
+/** Route params of `api.editTodo` and `api.toggleTodo`. */
 export const TodoIdParams = s.object({ todoId: s.id("Todo") });
 export type TodoIdParams = s.infer<typeof TodoIdParams>;
+```
+
+The answers of the write routes are schemas too: `Nothing` is the empty object an action returns when it has no data (`ok({})`), and `FieldsReply` is the error body a refused write carries, a 422 `keel.fields` with a field path to message in `data`, which `WriteRefusal` names for the outbox.
+
+```ts title="modules/api/Nothing.schema.ts"
+import { s } from "@keel/schema";
+
+/** The output of an API action that answers no data: an empty object. */
+export const Nothing = s.object({});
+
+export type Nothing = s.infer<typeof Nothing>;
+```
+
+```ts title="modules/api/FieldsReply.schema.ts"
+import { s } from "@keel/schema";
+
+/**
+ * The `api` deployable's error answer to an action (k.server): a public KeelError. A 422 carries `keel.fields`
+ * (field path to message in `data`), which the Form shows next to the field.
+ */
+export const FieldsReply = s.object({ code: s.string(), message: s.string(), data: s.json() });
+export type FieldsReply = s.infer<typeof FieldsReply>;
+```
+
+```ts title="modules/api/WriteRefusal.schema.ts"
+import type { s } from "@keel/schema";
+import { FieldsReply } from "./FieldsReply.schema.ts";
+
+/** A refused write's 422 error as the outbox reads it (the `api` write entries): the `api` action's `keel.fields` error. */
+export const WriteRefusal: typeof FieldsReply = FieldsReply;
+export type WriteRefusal = s.infer<typeof WriteRefusal>;
 ```
 
 `invariant` declares what must hold after every transaction; a transaction that breaks it is rolled back with `store.invariant`, and `properties()` in tests generates payloads to try to break it.
@@ -661,6 +796,9 @@ import { addList } from "./addList.ts";
 import { addTodo } from "./addTodo.ts";
 import { board } from "./board.ts";
 import { editTodo } from "./editTodo.ts";
+import { hideList } from "./hideList.ts";
+import { purgeList } from "./purgeList.ts";
+import { showList } from "./showList.ts";
 import { toggleTodo } from "./toggleTodo.ts";
 
 /**
@@ -670,37 +808,379 @@ import { toggleTodo } from "./toggleTodo.ts";
  */
 export function boardStores() {
   const b = board();
-  return { board: b, addList: addList(b), addTodo: addTodo(b), toggleTodo: toggleTodo(b), editTodo: editTodo(b) };
+  return {
+    board: b,
+    addList: addList(b),
+    addTodo: addTodo(b),
+    toggleTodo: toggleTodo(b),
+    editTodo: editTodo(b),
+    hideList: hideList(b),
+    showList: showList(b),
+    purgeList: purgeList(b),
+  };
 }
+```
+
+### Removing a list
+
+A list is not deleted when someone removes it. `api.removeList` hides it and starts an instance of a workflow (`@keel/std-workflows`, store `api.removal`); ten minutes later the workflow deletes the list and its todos unless `api.undoRemoval` came first. The board gets three more transactions, the schemas of the workflow's data, a state chart, two steps and a queue. `boardStores` (above) already binds the three transactions, so write them first. Each one rebases a concurrent write (`concurrent: "rebase"`), since hiding, showing or deleting carries no value the writer read.
+
+```ts title="modules/api/hideList.ts"
+import { s } from "@keel/schema";
+import { type Store, transaction } from "@keel/store";
+import type { Board } from "./Board.schema.ts";
+
+/**
+ * `api.hideList` on `board` (`boardStores`): mark list `id` hidden while its removal waits (`removal`); an unknown id
+ * leaves the board unchanged. A concurrent write rebases: hiding carries no value the writer read.
+ */
+export const hideList = (board: Store<Board>) =>
+  transaction(
+    board,
+    "api.hideList",
+    s.object({ id: s.id("TodoList") }),
+    (state, p) =>
+      state.lists.some((l) => l.id === p.id)
+        ? { ...state, lists: state.lists.map((l) => (l.id === p.id ? { ...l, hidden: true } : l)) }
+        : state,
+    { concurrent: "rebase" },
+  );
+```
+
+```ts title="modules/api/showList.ts"
+import { s } from "@keel/schema";
+import { type Store, transaction } from "@keel/store";
+import type { Board } from "./Board.schema.ts";
+
+/**
+ * `api.showList` on `board` (`boardStores`): mark list `id` shown again (a removal undone or compensated, `removal`); an
+ * unknown id leaves the board unchanged. A concurrent write rebases: showing carries no value the writer read.
+ */
+export const showList = (board: Store<Board>) =>
+  transaction(
+    board,
+    "api.showList",
+    s.object({ id: s.id("TodoList") }),
+    (state, p) =>
+      state.lists.some((l) => l.id === p.id)
+        ? { ...state, lists: state.lists.map((l) => (l.id === p.id ? { ...l, hidden: false } : l)) }
+        : state,
+    { concurrent: "rebase" },
+  );
+```
+
+```ts title="modules/api/purgeList.ts"
+import { s } from "@keel/schema";
+import { type Store, transaction } from "@keel/store";
+import type { Board } from "./Board.schema.ts";
+
+/**
+ * `api.purgeList` on `board` (`boardStores`): delete list `id` and every todo in it, the `purging` step of a removal
+ * (`purge`); an unknown id leaves the board unchanged. A concurrent write rebases: deleting carries no value the
+ * writer read.
+ */
+export const purgeList = (board: Store<Board>) =>
+  transaction(
+    board,
+    "api.purgeList",
+    s.object({ id: s.id("TodoList") }),
+    (state, p) => ({
+      lists: state.lists.filter((l) => l.id !== p.id),
+      todos: state.todos.filter((t) => t.listId !== p.id),
+    }),
+    { concurrent: "rebase" },
+  );
+```
+
+The workflow's schemas. A `Removal` is what the board read reports for a removal still running; `RemovalData` is the data of one instance; `StepFailure` is what a failed step sends the chart; `FlowParams` names an instance in a route.
+
+```ts title="modules/api/Removal.schema.ts"
+import { s } from "@keel/schema";
+
+/** A removal still running (`BoardView.removals`): its instance id, its list and its state in `removalChart`. */
+export const Removal = s.object({
+  flow: s.string({ min: 1 }),
+  list: s.id("TodoList"),
+  state: s.enum(["hidden", "purging", "restoring"]),
+});
+export type Removal = s.infer<typeof Removal>;
+```
+
+```ts title="modules/api/RemovalData.schema.ts"
+import { s } from "@keel/schema";
+
+/**
+ * The data of one removal instance (`removalChart`, `removal`): the list it removes. Optional only because a chart's
+ * own `start` holds no list; `api.removeList` always starts an instance with one.
+ */
+export const RemovalData = s.object({ list: s.id("TodoList").optional() });
+export type RemovalData = s.infer<typeof RemovalData>;
+```
+
+```ts title="modules/api/StepFailure.schema.ts"
+import { s } from "@keel/schema";
+
+/**
+ * The payload of a removal step's `failed` event (`removalChart`): `workflows.attempts` when its attempts ran out
+ * (std.workflows), else the code its step returned (`purge`, `restore`).
+ */
+export const StepFailure = s.object({ code: s.enum(["workflows.attempts", "api.purgeFailed", "api.restoreFailed"]) });
+export type StepFailure = s.infer<typeof StepFailure>;
+```
+
+```ts title="modules/api/FlowParams.schema.ts"
+import { s } from "@keel/schema";
+
+/** Route params naming one removal instance (`api.undoRemoval`). */
+export const FlowParams = s.object({ flow: s.string({ min: 1 }) });
+export type FlowParams = s.infer<typeof FlowParams>;
+```
+
+`chart` (`@keel/std-statecharts`) declares a state machine: its data, its events and their payload schemas, and for each state the events it takes. The chart is the whole life of a removal: `hidden` waits, `purging` deletes, `restoring` shows the list again, and `removed`, `kept` and `stuck` end it.
+
+```ts title="modules/api/removalChart.ts"
+import { s } from "@keel/schema";
+import { chart } from "@keel/std-statecharts";
+import { RemovalData } from "./RemovalData.schema.ts";
+import { StepFailure } from "./StepFailure.schema.ts";
+
+/**
+ * A list removal (`removal`): `hidden` until it `expired` (600,000 ms, the wait) or someone sends `undo`; `purging`
+ * deletes the list and its todos, `purged` ends it `removed`, `purgeFailed` compensates in `restoring`; `restoring`
+ * shows the list again, `restored` ends it `kept`, `restoreFailed` ends it `stuck`.
+ */
+export const removalChart = chart("api.removalChart", {
+  data: RemovalData,
+  start: {},
+  events: {
+    expired: s.object({}),
+    undo: s.object({}),
+    purged: s.object({}),
+    purgeFailed: StepFailure,
+    restored: s.object({}),
+    restoreFailed: StepFailure,
+  },
+  initial: "hidden",
+  states: {
+    hidden: { on: { expired: "purging", undo: "restoring" } },
+    purging: { on: { purged: "removed", purgeFailed: "restoring" } },
+    restoring: { on: { restored: "kept", restoreFailed: "stuck" } },
+    removed: { final: true },
+    kept: { final: true },
+    stuck: { final: true },
+  },
+});
+```
+
+A step is a function from the instance's data and `ctx` to a `Result`. `purge` and `restore` each commit one board transaction through `commitStores`; an `err` is the step's failure.
+
+```ts title="modules/api/purge.server.ts"
+import type { Ctx } from "@keel/ctx";
+import { err, ok } from "@keel/schema";
+import { commitStores } from "@keel/server";
+import { tx } from "@keel/store";
+import type { RemovalData } from "./RemovalData.schema.ts";
+import { boardStores } from "./boardStores.ts";
+
+/**
+ * The `purging` step of `removal`: delete the list and its todos in one commit of the board (`api.purgeList`). Its
+ * `ok` is the `purged` payload; any failure is `api.purgeFailed`, which `removal` retries and then compensates.
+ */
+export const purge = async (data: RemovalData, ctx: Ctx) => {
+  const id = data.list;
+  if (id === undefined) return ok({});
+  const r = await commitStores(ctx, boardStores, (S) => {
+    const t = tx(S.purgeList, { id });
+    return t.ok ? ok(null) : err(t.error);
+  });
+  return r.ok
+    ? ok({})
+    : err({ code: "api.purgeFailed", message: "The list could not be deleted", data: { cause: r.error.code } });
+};
+```
+
+```ts title="modules/api/restore.server.ts"
+import type { Ctx } from "@keel/ctx";
+import { err, ok } from "@keel/schema";
+import { commitStores } from "@keel/server";
+import { tx } from "@keel/store";
+import type { RemovalData } from "./RemovalData.schema.ts";
+import { boardStores } from "./boardStores.ts";
+
+/**
+ * The `restoring` step of `removal`, after an undo or a failed purge: show the list again in one commit of the board
+ * (`api.showList`). Its `ok` is the `restored` payload; any failure is `api.restoreFailed`.
+ */
+export const restore = async (data: RemovalData, ctx: Ctx) => {
+  const id = data.list;
+  if (id === undefined) return ok({});
+  const r = await commitStores(ctx, boardStores, (S) => {
+    const t = tx(S.showList, { id });
+    return t.ok ? ok(null) : err(t.error);
+  });
+  return r.ok
+    ? ok({})
+    : err({ code: "api.restoreFailed", message: "The list could not be shown again", data: { cause: r.error.code } });
+};
+```
+
+`workflow` joins the chart to the steps: `purging` and `restoring` run a step and send `done` or `failed` to the chart, and `hidden` waits 600,000 ms before it sends `expired`. A failed step is tried 3 times first.
+
+```ts title="modules/api/removal.server.ts"
+import { workflow } from "@keel/std-workflows";
+import { purge } from "./purge.server.ts";
+import { removalChart } from "./removalChart.ts";
+import { restore } from "./restore.server.ts";
+
+/**
+ * The list removal workflow (std.workflows), store `api.removal`: `api.removeList` hides a list and starts an
+ * instance; after 600,000 ms in `hidden` it purges the list (`purge`), and an undo, or a purge that failed 3 times,
+ * shows it again (`restore`).
+ */
+export const removal = workflow("api.removal", {
+  chart: removalChart,
+  steps: {
+    purging: { run: purge, done: "purged", failed: "purgeFailed" },
+    restoring: { run: restore, done: "restored", failed: "restoreFailed" },
+  },
+  waits: { hidden: { ms: 600_000, event: "expired" } },
+});
+```
+
+The two actions use one stores factory, the board and `api.removal` together, so hiding the list and starting its removal are one commit.
+
+```ts title="modules/api/removalStores.server.ts"
+import type { Ctx } from "@keel/ctx";
+import { boardStores } from "./boardStores.ts";
+import { removal } from "./removal.server.ts";
+
+/**
+ * The board (`boardStores`) and the removal instances (`api.removal`) as one request's server state: hiding a list and
+ * starting its removal is one `commit`, and `loadBoard` reads both from one cut.
+ */
+export function removalStores(ctx: Ctx) {
+  return { ...boardStores(), removal: removal.stores(ctx) };
+}
+```
+
+```ts title="modules/api/postRemove.server.ts"
+import { action } from "@keel/router";
+import { err, ok } from "@keel/schema";
+import { tx } from "@keel/store";
+import { api } from "./api.contract.ts";
+import { removalStores } from "./removalStores.server.ts";
+
+/**
+ * `POST /api/lists/:listId/remove`: hide the list and start its removal (`removal`) in one commit, recorded with this
+ * caller. An unknown or already hidden list is `keel.notFound`.
+ */
+export const postRemove = action(
+  api,
+  "api.removeList",
+  { stores: removalStores },
+  (_input, { params, caller, stores }, ctx) => {
+    const { listId } = params;
+    const list = stores.board.get("lists").find((l) => l.id === listId);
+    if (list === undefined || list.hidden === true)
+      return err({ code: "keel.notFound", message: `No list ${listId}`, data: { listId } });
+    const hidden = tx(stores.hideList, { id: listId }, { meta: { caller } });
+    if (!hidden.ok) return err(hidden.error);
+    const started = tx(
+      stores.removal.start,
+      { id: ctx.random.id("Flow"), data: { list: listId } },
+      { meta: { caller } },
+    );
+    return started.ok ? ok({}) : err(started.error);
+  },
+);
+```
+
+```ts title="modules/api/postUndoRemoval.server.ts"
+import { action } from "@keel/router";
+import { err, ok } from "@keel/schema";
+import { tx } from "@keel/store";
+import { api } from "./api.contract.ts";
+import { removalStores } from "./removalStores.server.ts";
+
+/**
+ * `POST /api/removals/:flow/undo`: send `undo` to a removal still `hidden`, which then shows its list again
+ * (`restore`). A removal past `hidden`, or none, is `keel.notFound`.
+ */
+export const postUndoRemoval = action(
+  api,
+  "api.undoRemoval",
+  { stores: removalStores },
+  (_input, { params, caller, stores }) => {
+    const { flow } = params;
+    const at = stores.removal.store.get("instances")[flow];
+    if (at?.state !== "hidden")
+      return err({ code: "keel.notFound", message: `No removal ${flow} to undo`, data: { flow } });
+    const r = tx(stores.removal.events.undo, { id: flow, payload: {} }, { meta: { caller } });
+    return r.ok ? ok({}) : err(r.error);
+  },
+);
+```
+
+The workflow runs its steps and waits as jobs. `jobs.server.ts` is the module's queue, and `runners.server.ts` lists what runs in the background wherever `topology.ts` places `api`: the `monitor` runner of `@keel/std-sessions` (commit counts by transaction name, for `sessions.tally`), the queue, and `flows`, which enqueues each instance's next job. Every step result is an entry of the `api.removal` log, so a restart resumes an instance where its last commit left it.
+
+```ts title="modules/api/jobs.server.ts"
+import { queue } from "@keel/std-jobs";
+import { removal } from "./removal.server.ts";
+
+/** The `api` module's job queue (std.jobs): the step, wake and forget jobs of `removal`. */
+export const jobs = queue({ ...removal.jobs });
+```
+
+```ts title="modules/api/runners.server.ts"
+import { monitor } from "@keel/std-sessions/monitor";
+import { flows } from "@keel/std-workflows";
+import { jobs } from "./jobs.server.ts";
+import { removal } from "./removal.server.ts";
+
+/**
+ * The `api` module's background work (k.topology Runners): `monitor` counts each `api.*` commit into `sessions.tally`;
+ * `jobs` runs the removal jobs that `flows` enqueues for each `api.removal` instance.
+ */
+export const runners = [monitor, jobs, flows(jobs, [removal])];
 ```
 
 ### Loaders and actions
 
-`caller` identifies the browser: a hash of a signed `keel-caller` cookie the server sets on the first write. Actions record it as transaction `meta`, so undo can stay per client. Each write action also spreads the body's `write` (`key` and `base`) into the options of `tx`, so the store takes the key and applies the policy.
+A handler names the contract entry it answers: `loader(api, "api.lists", { stores }, fn)` and `action(api, "api.createList", { stores }, fn)`. `fn` is never annotated: its `params`, `query` and body, and the `Result` it returns, are typed from the entry, and a handler written for one id and bound under another does not compile (E1515). `caller` identifies the browser: a hash of a signed `keel-caller` cookie the server sets on the first write. Actions record it as transaction `meta`, so undo can stay per client. `loadBoard` and the removal actions name `removalStores` instead, so one read or commit covers the board and the removals. Each write action also spreads the body's `write` (`key` and `base`) into the options of `tx`, so the store takes the key and applies the policy.
 
 ```ts title="modules/api/loadBoard.server.ts"
 import { loader } from "@keel/router";
 import { ok } from "@keel/schema";
-import { BoardView } from "./BoardView.schema.ts";
-import { boardStores } from "./boardStores.ts";
+import type { Removal } from "./Removal.schema.ts";
+import { api } from "./api.contract.ts";
+import { removalStores } from "./removalStores.server.ts";
 
-/** `GET /api/lists`: every list and todo, whether `POST /api/undo` would undo this caller's last write, and the head. */
-export const loadBoard = loader({ output: BoardView, stores: boardStores }, async ({ caller, stores }) => {
+/**
+ * `GET /api/lists` (`api.lists`): every list and todo, whether `POST /api/undo` would undo this caller's last write, the head, and
+ * the removals not yet ended, in one read of the board and `api.removal`.
+ */
+export const loadBoard = loader(api, "api.lists", { stores: removalStores }, async ({ caller, stores }) => {
   const { board } = stores;
   const canUndo = board.log().at(-1)?.meta?.caller === caller;
-  return ok({ lists: board.get("lists"), todos: board.get("todos"), canUndo, head: board.head() });
+  const removals: Removal[] = [];
+  for (const [flow, i] of Object.entries(stores.removal.store.get("instances"))) {
+    const list = i.data.list;
+    if (list !== undefined && (i.state === "hidden" || i.state === "purging" || i.state === "restoring"))
+      removals.push({ flow, list, state: i.state });
+  }
+  return ok({ lists: board.get("lists"), todos: board.get("todos"), canUndo, head: board.head(), removals });
 });
 ```
 
 ```ts title="modules/api/loadSuggestions.server.ts"
 import { loader } from "@keel/router";
-import { ok, s } from "@keel/schema";
-import { Suggestion } from "./Suggestion.schema.ts";
+import { ok } from "@keel/schema";
+import { api } from "./api.contract.ts";
 
 const TITLES = ["Bread", "Eggs", "Milk"];
 
 /** Suggested todo titles for `GET /api/suggestions`, sorted by title; the same list on every request. */
-export const loadSuggestions = loader({ output: s.array(Suggestion) }, async () =>
+export const loadSuggestions = loader(api, "api.suggestions", {}, async () =>
   ok([...TITLES].sort().map((title) => ({ title }))),
 );
 ```
@@ -710,18 +1190,18 @@ import { action } from "@keel/router";
 import { err, ok } from "@keel/schema";
 import { writeFor } from "@keel/std-offline";
 import { tx } from "@keel/store";
-import { ListWrite } from "./ListWrite.schema.ts";
+import { api } from "./api.contract.ts";
 import { boardStores } from "./boardStores.ts";
 
 /**
  * `POST /api/lists`: add a list with a ctx-minted id, recorded with this caller (undo, `postUndo`) and the write's key
- * and base; a write queued under an owner other than `""` (golden-1 has no sign-in) is `offline.owner`.
+ * and base; a write queued under an owner other than `""` (golden-1 has no sign-in) is `offline.signin`.
  */
-export const postList = action({ input: ListWrite, stores: boardStores }, (input, { caller, stores }, ctx) => {
+export const postList = action(api, "api.createList", { stores: boardStores }, (input, { caller, stores }, ctx) => {
   const w = writeFor(input.write, "");
   if (!w.ok) return err(w.error);
   const r = tx(stores.addList, { id: ctx.random.id("TodoList"), name: input.name }, { meta: { caller }, ...w.value });
-  return r.ok ? ok(null) : err(r.error);
+  return r.ok ? ok({}) : err(r.error);
 });
 ```
 
@@ -730,17 +1210,18 @@ import { action } from "@keel/router";
 import { err, ok } from "@keel/schema";
 import { writeFor } from "@keel/std-offline";
 import { tx } from "@keel/store";
-import { ListParams } from "./ListParams.schema.ts";
-import { TodoWrite } from "./TodoWrite.schema.ts";
+import { api } from "./api.contract.ts";
 import { boardStores } from "./boardStores.ts";
 
 /**
  * `POST /api/lists/:listId/todos`: add an open todo with a ctx-minted id, with the write's key and base; an unknown
  * list is `keel.notFound`; a write queued under an owner other than `""` (golden-1 has no sign-in) is
- * `offline.owner`.
+ * `offline.signin`.
  */
 export const postTodo = action(
-  { input: TodoWrite, params: ListParams, stores: boardStores },
+  api,
+  "api.addTodo",
+  { stores: boardStores },
   (input, { params, caller, stores }, ctx) => {
     const { listId } = params;
     if (!stores.board.get("lists").some((l) => l.id === listId))
@@ -749,7 +1230,7 @@ export const postTodo = action(
     const w = writeFor(write, "");
     if (!w.ok) return err(w.error);
     const r = tx(stores.addTodo, { ...draft, id: ctx.random.id("Todo"), listId }, { meta: { caller }, ...w.value });
-    return r.ok ? ok(null) : err(r.error);
+    return r.ok ? ok({}) : err(r.error);
   },
 );
 ```
@@ -759,16 +1240,15 @@ import { action } from "@keel/router";
 import { err, ok } from "@keel/schema";
 import { writeFor } from "@keel/std-offline";
 import { tx } from "@keel/store";
-import { TodoIdParams } from "./TodoIdParams.schema.ts";
-import { ToggleWrite } from "./ToggleWrite.schema.ts";
+import { api } from "./api.contract.ts";
 import { boardStores } from "./boardStores.ts";
 
-/**
- * `POST /api/todos/:todoId/toggle`: flip `done`, with the write's key and base; an unknown todo is `keel.notFound`; a
- * write queued under an owner other than `""` (golden-1 has no sign-in) is `offline.owner`.
- */
+/** `POST /api/todos/:todoId/toggle`: flip `done`, with the write's key and base; an unknown todo is `keel.notFound`;
+ * a write queued under an owner other than `""` (golden-1 has no sign-in) is `offline.signin`. */
 export const postToggle = action(
-  { input: ToggleWrite, params: TodoIdParams, stores: boardStores },
+  api,
+  "api.toggleTodo",
+  { stores: boardStores },
   (input, { params, caller, stores }) => {
     const { todoId } = params;
     const todo = stores.board.get("todos").find((t) => t.id === todoId);
@@ -776,7 +1256,7 @@ export const postToggle = action(
     const w = writeFor(input.write, "");
     if (!w.ok) return err(w.error);
     const r = tx(stores.toggleTodo, { id: todoId }, { meta: { caller }, ...w.value });
-    return r.ok ? ok(null) : err(r.error);
+    return r.ok ? ok({}) : err(r.error);
   },
 );
 ```
@@ -786,39 +1266,36 @@ import { action } from "@keel/router";
 import { err, ok } from "@keel/schema";
 import { writeFor } from "@keel/std-offline";
 import { tx } from "@keel/store";
-import { TodoIdParams } from "./TodoIdParams.schema.ts";
-import { TodoWrite } from "./TodoWrite.schema.ts";
+import { api } from "./api.contract.ts";
 import { boardStores } from "./boardStores.ts";
 
 /**
  * `POST /api/todos/:todoId`: replace title and priority, with the write's key and base. `keel.fields` `{ title }` when
  * another todo in the same list has the title; an unknown todo is `keel.notFound`; a write whose base is not the
  * board's head is `keel.conflict` (409, `api.editTodo` refuses concurrent writes); a write queued under an owner
- * other than `""` (golden-1 has no sign-in) is `offline.owner`.
+ * other than `""` (golden-1 has no sign-in) is `offline.signin`.
  */
-export const postEdit = action(
-  { input: TodoWrite, params: TodoIdParams, stores: boardStores },
-  (input, { params, caller, stores }) => {
-    const { todoId } = params;
-    const todos = stores.board.get("todos");
-    const todo = todos.find((t) => t.id === todoId);
-    if (todo === undefined) return err({ code: "keel.notFound", message: `No todo ${todoId}`, data: { todoId } });
-    const { write, ...draft } = input;
-    const w = writeFor(write, "");
-    if (!w.ok) return err(w.error);
-    if (todos.some((t) => t.listId === todo.listId && t.id !== todoId && t.title === draft.title))
-      return err({ code: "keel.fields", message: "Duplicate title", data: { title: "Another todo has this title" } });
-    const r = tx(stores.editTodo, { ...draft, id: todoId }, { meta: { caller }, ...w.value });
-    return r.ok ? ok(null) : err(r.error);
-  },
-);
+export const postEdit = action(api, "api.editTodo", { stores: boardStores }, (input, { params, caller, stores }) => {
+  const { todoId } = params;
+  const todos = stores.board.get("todos");
+  const todo = todos.find((t) => t.id === todoId);
+  if (todo === undefined) return err({ code: "keel.notFound", message: `No todo ${todoId}`, data: { todoId } });
+  const { write, ...draft } = input;
+  const w = writeFor(write, "");
+  if (!w.ok) return err(w.error);
+  if (todos.some((t) => t.listId === todo.listId && t.id !== todoId && t.title === draft.title))
+    return err({ code: "keel.fields", message: "Duplicate title", data: { title: "Another todo has this title" } });
+  const r = tx(stores.editTodo, { ...draft, id: todoId }, { meta: { caller }, ...w.value });
+  return r.ok ? ok({}) : err(r.error);
+});
 ```
 
 `postEdit` returns the store's `keel.conflict` as a 409 when the edit's base is not the head. `undoWhere` undoes the newest log entry only when the predicate holds:
 
 ```ts title="modules/api/postUndo.server.ts"
 import { action } from "@keel/router";
-import { err, ok, s } from "@keel/schema";
+import { err, ok } from "@keel/schema";
+import { api } from "./api.contract.ts";
 import { boardStores } from "./boardStores.ts";
 
 /**
@@ -826,96 +1303,93 @@ import { boardStores } from "./boardStores.ts";
  * entry's `meta.caller`, k.store `undoWhere`); else nothing changes and the reply is `keel.denied` (403): one client
  * never undoes another's write.
  */
-export const postUndo = action({ input: s.object({}), stores: boardStores }, (_input, { caller, stores }) =>
+export const postUndo = action(api, "api.undo", { stores: boardStores }, (_input, { caller, stores }) =>
   stores.board.undoWhere((e) => e.meta?.caller === caller)
-    ? ok(null)
+    ? ok({})
     : err({ code: "keel.denied", message: "Nothing of yours to undo", data: {} }),
 );
 ```
 
 ### The board channel
 
-A channel is a named event stream with a schema for what it carries. `boardChannel` has a name, a path and no params, and declares no message, so nothing is published on it: its one event tells a page that `api.board` was saved.
+A channel is a named event stream with a schema for what it carries. `boardChannel` has a name, a path and no params (`params: Nothing`, the empty object schema), and declares no message, so nothing is published on it: its one event tells a page that `api.board` was saved.
 
-```ts title="modules/api/boardChannel.ts"
-import { s } from "@keel/schema";
+```ts title="modules/api/boardChannel.schema.ts"
 import { channel } from "@keel/std-channels";
+import { Nothing } from "./Nothing.schema.ts";
 
 /**
  * The board's channel: `GET /api/board/events` tells every open page that `api.board` was saved, so it re-reads. It
  * declares no message, so nothing is published on it.
  */
-export const boardChannel = channel("api.board", { path: "/api/board/events", params: s.object({}) });
+export const boardChannel = channel("api.board", { path: "/api/board/events", params: Nothing });
 ```
 
-`channelRoute` builds the route that serves it: a loader for the stream at `GET /api/board/events`, and its actions. It names `stores: boardStores` so it sees the board's saves, and `member` decides per open stream whether a caller may listen. The board is public, so every caller is a member.
+The contract writes the channel's entry out: a `GET /api/board/events` entry with `events: true`, `query: Nothing` and `output: boardChannel.events`. (A channel with a message adds a POST entry with `body: boardChannel.body` and `output: s.object({})`.) `channelRoute(api, boardChannel, { id, stores, member })` takes that contract and declares the handler for the entry, returning `{ loader }`; an entry whose `method`, `path`, `events`, `query` or `output` differs from the channel's is E1515. It names the stores it watches, the board's and the removal's (below), so it sees their saves, and `member` decides per open stream whether a caller may listen. The board is public, so every caller is a member.
 
 ```ts title="modules/api/boardEvents.server.ts"
+import type { Ctx } from "@keel/ctx";
 import { channelRoute } from "@keel/std-channels/server";
-import { boardChannel } from "./boardChannel.ts";
+import { api } from "./api.contract.ts";
+import { boardChannel } from "./boardChannel.schema.ts";
 import { boardStores } from "./boardStores.ts";
+import { removal } from "./removal.server.ts";
 
-/** The board channel's event stream: every caller is a member, since the board is public. */
-export const boardEvents = channelRoute(boardChannel, {
+/**
+ * The stores the board channel watches: the board and the store of `api.removal`. `channelRoute` looks for stores among
+ * the values of this object, so the workflow's store is listed itself, not inside its `removal.stores(ctx)`.
+ */
+function watched(ctx: Ctx) {
+  return { ...boardStores(), removal: removal.stores(ctx).store };
+}
+
+/** The board channel's event stream: every caller is a member, since the board is public. A save of the board or of `api.removal` reaches it. */
+export const boardEvents = channelRoute(api, boardChannel, {
   id: "api.boardEvents",
-  stores: boardStores,
+  stores: watched,
   member: () => true,
 });
 ```
 
-### API routes
+### The binding
 
-Every `api` entry is an API route: `api: true`, a `path`, and no `component`. A request for one gets JSON whatever its `accept` says: the loader `Result` for a GET, the action `Result` for a write. A GET to a route with no loader is 405, and `routes.href`, `Link` and `navigate` do not take an API route's id. `api.boardEvents` takes its path, loader and actions from `boardEvents`, and its GET is an event stream.
-
-### Routes
+An entry of the contract is an API route: it answers JSON whatever the request's `accept` says, the loader `Result` for a GET and the action `Result` for a write, and no `component` is allowed on it (E1510). `routes.ts` binds every entry of the contract and nothing else (E1515): a GET entry takes a `loader`, a write entry an `action`, each with an optional `guard`. The loader of `api.boardEvents`, an `events: true` entry, is the only live one: an async generator that streams events. `api` has no pages, so its contract has no `href`: `href` takes a page id.
 
 ```ts title="modules/api/routes.ts"
 import { manifest } from "@keel/router";
-import { ListParams } from "./ListParams.schema.ts";
-import { TodoIdParams } from "./TodoIdParams.schema.ts";
+import { api } from "./api.contract.ts";
 import { boardEvents } from "./boardEvents.server.ts";
 import { loadBoard } from "./loadBoard.server.ts";
 import { loadSuggestions } from "./loadSuggestions.server.ts";
 import { postEdit } from "./postEdit.server.ts";
 import { postList } from "./postList.server.ts";
+import { postRemove } from "./postRemove.server.ts";
 import { postTodo } from "./postTodo.server.ts";
 import { postToggle } from "./postToggle.server.ts";
 import { postUndo } from "./postUndo.server.ts";
+import { postUndoRemoval } from "./postUndoRemoval.server.ts";
 
 /**
- * The `api` deployable (node): it owns the board (`api.board`); `todos` reads and writes it over HTTP and follows the
- * board channel (`api.boardEvents`) to re-read after each save.
+ * The `api` deployable (node): it owns the board (`api.lists`); `todos` reads and writes it over HTTP and follows the
+ * board channel (`api.boardEvents`) to re-read after each save; `api.removeList` and `api.undoRemoval` start and undo a
+ * list's removal (`removal`). `sessions.tally` answers the commit counts of the `monitor` runner to a caller in
+ * `readers` (`module.ts`); the `sessions` module binds it.
  */
-export const routes = manifest({
-  "api.lists": { api: true, path: "/api/lists", loader: loadBoard },
-  "api.listTodos": {
-    api: true,
-    path: "/api/lists/:listId/todos",
-    params: ListParams,
-  },
-  "api.todo": {
-    api: true,
-    path: "/api/todos/:todoId",
-    params: TodoIdParams,
-  },
-  "api.todoToggle": {
-    api: true,
-    path: "/api/todos/:todoId/toggle",
-    params: TodoIdParams,
-  },
-  "api.undo": { api: true, path: "/api/undo" },
-  "api.suggestions": { api: true, path: "/api/suggestions", loader: loadSuggestions },
-  "api.boardEvents": { api: true, path: boardEvents.path, loader: boardEvents.loader },
-});
-routes.actions({
-  "api.lists": { POST: postList },
-  "api.listTodos": { POST: postTodo },
-  "api.todo": { POST: postEdit },
-  "api.todoToggle": { POST: postToggle },
-  "api.undo": { POST: postUndo },
-  "api.boardEvents": boardEvents.actions,
+export const routes = manifest(api, {
+  "api.boardEvents": { loader: boardEvents.loader },
+  "api.lists": { loader: loadBoard },
+  "api.createList": { action: postList },
+  "api.addTodo": { action: postTodo },
+  "api.editTodo": { action: postEdit },
+  "api.toggleTodo": { action: postToggle },
+  "api.undo": { action: postUndo },
+  "api.removeList": { action: postRemove },
+  "api.undoRemoval": { action: postUndoRemoval },
+  "api.suggestions": { loader: loadSuggestions },
 });
 ```
+
+`boardEvents.loader` is the live loader `channelRoute` returned for `api.boardEvents`. `manifest(contract, binding)` returns the module's route table; a deployable that serves several modules joins their tables with `routeTable(...)`.
 
 ## 7. The todos module
 
@@ -928,23 +1402,23 @@ import { module } from "@keel/compiler";
 
 export default module({
   id: "todos",
-  deps: ["api"],
+  deps: ["api", "@keel/std-statecharts"],
   capabilities: ["net", "storage"],
-  public: { exports: [], routes: [] },
+  public: { exports: [] },
 });
 ```
 
-`deps: ["api"]` lets it import the contract schemas and call the `api` routes. `net` is for the HTTP calls; `storage` is for the edit guard and the outbox. Nothing is public, because nothing outside `todos` imports its files or links to its pages.
+`deps: ["api", "@keel/std-statecharts"]` lets it import `api`'s contract and schemas, call its routes and declare the editor's chart. `net` is for the HTTP calls; `storage` is for the edit guard and the outbox. Nothing is public, because nothing outside `todos` imports its files or links to its pages.
 
 ### Schemas
 
-`todos` imports the contract schemas and the channel from `api` (`Todo`, `TodoList`, `BoardView`, `ListDraft`, `TodoDraft`, `ListParams`, `ListWrite`, `TodoWrite`, `ToggleWrite`, `Suggestion`, `boardChannel`; section 6). The schemas below are its own: the route params and search of its pages, and the error answers its typed clients decode.
+`todos` imports the contract schemas and the channel from `api` (`Todo`, `TodoList`, `BoardView`, `ListDraft`, `TodoDraft`, `ListParams`, `ListWrite`, `TodoWrite`, `ToggleWrite`, `Suggestion`, `boardChannel`; section 6). The schemas below are its own: the route params and search of its pages.
 
 
 ```ts title="modules/todos/TodoParams.schema.ts"
 import { s } from "@keel/schema";
 
-/** Route params naming one todo in its list (`todos.edit`); loaders and actions type `params` as its Infer. */
+/** Route params naming one todo in its list (`todos.edit`). */
 export const TodoParams = s.object({ listId: s.id("TodoList"), todoId: s.id("Todo") });
 export type TodoParams = s.infer<typeof TodoParams>;
 ```
@@ -957,17 +1431,23 @@ export const ListSearch = s.object({ filter: s.enum(["all", "active", "done"]).o
 export type ListSearch = s.infer<typeof ListSearch>;
 ```
 
-A `module` client decodes the value each route returns, not the wire format around it: a GET endpoint's `output` is the route's loader `output` (`BoardView`), an action's is `s.string().nullable()`, the href it returns or none. The error schemas describe the error answer, a KeelError `{ code, message, data }`. A failed action input answers 422 with `keel.fields`.
+### The contract
 
-```ts title="modules/todos/FieldsReply.schema.ts"
-import { s } from "@keel/schema";
+The module's pages are a contract too. A page entry has a `path` and optional `params` and `search`; a layout is `{ layout: true }`. A page's component, loader and actions are bound in `routes.ts`, and the layout a page uses is named there, never here. The contract is also where links come from: `todos.href("todos.list", { listId })` returns an `Href` for a page of this module, and a page of another module is linked through that module's contract.
 
-/**
- * The `api` deployable's error answer to an action (k.server): a public KeelError. A 422 carries `keel.fields`
- * (field path to message in `data`), which the Form shows next to the field.
- */
-export const FieldsReply = s.object({ code: s.string(), message: s.string(), data: s.json() });
-export type FieldsReply = s.infer<typeof FieldsReply>;
+```ts title="modules/todos/todos.contract.ts"
+import { contract } from "@keel/router/contract";
+import { ListParams } from "../api/ListParams.schema.ts";
+import { ListSearch } from "./ListSearch.schema.ts";
+import { TodoParams } from "./TodoParams.schema.ts";
+
+/** The `todos` module's pages: the lists, one list and the edit page of one todo, inside the app shell. */
+export const todos = contract("todos", {
+  "todos.shell": { layout: true },
+  "todos.index": { path: "/" },
+  "todos.list": { path: "/lists/:listId", params: ListParams, search: ListSearch },
+  "todos.edit": { path: "/lists/:listId/todos/:todoId/edit", params: TodoParams },
+});
 ```
 
 ### The client store and its transaction
@@ -995,48 +1475,16 @@ export const hydrate = transaction(view, "todos.hydrate", BoardView, (_state, da
 
 ### Talking to the api deployable
 
-`endpoints` declares an HTTP API as schemas: method, path, params, body, output, and the error bodies by status. `service({ module: "api", schema })` turns it into a typed client whose methods take `({ params, body }, ctx)` and return `Result<output, ApiError>`. They never throw. `ApiError` codes are `api.status` (with `status` and the decoded error body), `api.network`, `api.timeout`, `api.decode` and `api.input`. Requests go through `ctx.net`, never `fetch` (E1601, E1651).
+`service({ contract: api })` turns the `api` contract into a typed client: one method per API entry, named by the id after the module (`api.lists` is `todosApi.lists`), taking `({ params, query, body }, ctx)` and returning `Result<output, ApiError>`. The entries' schemas are the contract's own, so the client and the handler cannot disagree, and a method of an entry the contract lacks does not compile. The methods never throw. `ApiError` codes are `api.status` (with `status` and the decoded error body), `api.network`, `api.timeout`, `api.decode` and `api.input`. Requests go through `ctx.net`, never `fetch` (E1601, E1651).
 
-`todos.service.ts` declares the two calls that go through `service({ module })`: the board read and Undo. Board writes carry a key and a base, so they have their own endpoints, sent by the outbox (below).
-
-```ts title="modules/todos/todos.service.ts"
-import { s } from "@keel/schema";
-import { endpoints } from "@keel/services";
-import { BoardView } from "../api/BoardView.schema.ts";
-
-/**
- * The board read and undo of the golden-1 `api` deployable (it owns the data), resolved by the topology
- * (`todosApi`): `lists` answers the `api.lists` loader's value, `undo` the href its action returns (or none). Board
- * writes go through `boardOutbox` (`boardWrites`).
- */
-export const todos = endpoints({
-  lists: { method: "GET", path: "/api/lists", output: BoardView },
-  undo: { method: "POST", path: "/api/undo", output: s.string().nullable() },
-});
-```
-
-```ts title="modules/todos/suggestions.service.ts"
-import { s } from "@keel/schema";
-import { endpoints } from "@keel/services";
-import { Suggestion } from "../api/Suggestion.schema.ts";
-
-/**
- * Endpoints of the golden-1 `api` deployable (`api.suggestions` in the `api` module's `public.routes`). The client is
- * `service({ module: 'api', schema: suggestions })`: the topology resolves where `api` runs.
- */
-export const suggestions = endpoints({
-  list: { method: "GET", path: "/api/suggestions", output: s.array(Suggestion) },
-});
-```
-
-`service({ module })` names no origin. The topology resolves it per call: in a browser, the origin of the `api` peer when the build sets `KEEL_PEER_API`, else the page's origin, which is the `api` origin because `api` hosts `web`; on a `ctx` that no `createApp` bound, `http://api.keel.invalid`. `keel check` compares every endpoint with the route it calls (E1561): the endpoint must name a path and method of a route in `api`'s `public.routes`, its `params` and `body` must be accepted by the route, and its `output` and `errors` must accept what the route answers. The client needs no origin, so it is one value:
+The client names no origin. The topology resolves it per call from `contract.module`: in a browser, the origin of the `api` peer when the build sets `KEEL_PEER_API`, else the page's origin, which is the `api` origin because `api` hosts `web`; on a `ctx` that no `createApp` bound, `http://api.keel.invalid`. Importing `api.contract.ts` needs `api` in `deps` (E1152). Board writes carry a key and a base, so they go through the outbox (below) instead of through the client's methods. The client is one value:
 
 ```ts title="modules/todos/todosApi.ts"
 import { service } from "@keel/services";
-import { todos } from "./todos.service.ts";
+import { api } from "../api/api.contract.ts";
 
-/** A typed client for the `api` module's board routes, resolved per call by the topology (k.services): in a browser, the page's origin or the `api` peer. */
-export const todosApi = service({ module: "api", schema: todos });
+/** A typed client for the `api` module's routes, resolved per call by the topology (k.services): in a browser, the page's origin or the `api` peer. */
+export const todosApi = service({ contract: api });
 ```
 
 Every loader and Undo end by re-reading the board into `todos.view`. Offline, the read cannot go out; `refreshView` then answers the board as last served, so a page still opens while writes wait in the outbox:
@@ -1073,91 +1521,26 @@ export async function refreshView(ctx: Ctx): Promise<Result<BoardView, KeelError
 
 An outbox holds this client's writes in the order sent. `send` posts one when the client is online and queues it when it is not; `drain` sends the waiting ones; `resolve` settles a write the server refused. The outbox keeps its entries in `ctx.storage`, so they survive a reload. Each write carries a fresh `key`, which lets the server drop a retry it already took, and a `base`, the board `head` the client last read.
 
-The outbox sends through `service({ module: "api" })`, so its endpoints describe what the route's `Result` holds, as every `api` client does. A success is the empty object the action returns. A 409 is a refusal the outbox reads itself: `keel.conflict`, with the board's head. A 422 is the `keel.fields` error.
+`outbox(id, contract)` sends the contract's API write entries through its service, so the entries describe what each route's `Result` holds, as every `api` client does. A success is the empty object the action returns. A 409 is a refusal the outbox reads itself: `keel.conflict`, with the board's head. A 422 is the `keel.fields` error. `send` names an entry by its name after the module (`"addTodo"` for `api.addTodo`); a GET entry, an `events` entry or a page does not compile.
 
 Each write also carries an owner: the signed-in user's id, so that a write one user queued is never sent under the next user's cookie. golden-1 has no sign-in, so every write's owner is `""`. An app with sign-in passes the user's id to `send` and `drain`, and a stored write of another owner becomes `failed` with `offline.owner`; its actions pass `writeFor` the id of the user the caller is signed in as, so the server refuses a write another tab queued under someone else.
-
-```ts title="modules/todos/WriteAnswer.schema.ts"
-import { s } from "@keel/schema";
-
-/** A write's answer as the outbox reads it (`boardWrites`): the empty object the `api` action returns as its `ok` value. */
-export const WriteAnswer = s.object({});
-export type WriteAnswer = s.infer<typeof WriteAnswer>;
-```
-
-```ts title="modules/todos/WriteRefusal.schema.ts"
-import type { s } from "@keel/schema";
-import { FieldsReply } from "./FieldsReply.schema.ts";
-
-/** A refused write's 422 error as the outbox reads it (`boardWrites`): the `api` action's `keel.fields` error. */
-export const WriteRefusal: typeof FieldsReply = FieldsReply;
-export type WriteRefusal = s.infer<typeof WriteRefusal>;
-```
-
-```ts title="modules/todos/boardWrites.service.ts"
-import { s } from "@keel/schema";
-import { endpoints } from "@keel/services";
-import { ListWrite } from "../api/ListWrite.schema.ts";
-import { TodoWrite } from "../api/TodoWrite.schema.ts";
-import { ToggleWrite } from "../api/ToggleWrite.schema.ts";
-import { WriteAnswer } from "./WriteAnswer.schema.ts";
-import { WriteRefusal } from "./WriteRefusal.schema.ts";
-
-/**
- * The board writes of the golden-1 `api` deployable, sent through `boardOutbox`: each body carries the write's `key`
- * and `base`. A 409 is a refusal the outbox reads (`keel.conflict` with the board's head); a 422 is `keel.fields`.
- */
-export const boardWrites = endpoints({
-  createList: {
-    method: "POST",
-    path: "/api/lists",
-    body: ListWrite,
-    output: WriteAnswer,
-    errors: { 409: s.json(), 422: WriteRefusal },
-  },
-  addTodo: {
-    method: "POST",
-    path: "/api/lists/:listId/todos",
-    params: s.object({ listId: s.id("TodoList") }),
-    body: TodoWrite,
-    output: WriteAnswer,
-    errors: { 409: s.json(), 422: WriteRefusal },
-  },
-  toggleTodo: {
-    method: "POST",
-    path: "/api/todos/:todoId/toggle",
-    params: s.object({ todoId: s.id("Todo") }),
-    body: ToggleWrite,
-    output: WriteAnswer,
-    errors: { 409: s.json(), 422: WriteRefusal },
-  },
-  editTodo: {
-    method: "POST",
-    path: "/api/todos/:todoId",
-    params: s.object({ todoId: s.id("Todo") }),
-    body: TodoWrite,
-    output: WriteAnswer,
-    errors: { 409: s.json(), 422: WriteRefusal },
-  },
-});
-```
 
 The outbox is a store, so it lives in a scope. A module-level one needs a scope of its own, and `lifetime` is it:
 
 ```ts title="modules/todos/boardOutbox.ts"
 import { scope } from "@keel/reactive";
 import { outbox } from "@keel/std-offline";
-import { boardWrites } from "./boardWrites.service.ts";
+import { api } from "../api/api.contract.ts";
 
 /** The scope the outbox lives in: as long as the module, as the compiler gives a module-level store. */
 const lifetime = scope(() => undefined);
 
 /**
  * This client's board writes, in the order sent (store `todos.outbox`, kept in `ctx.storage`), sent to the `api`
- * module's routes through its service: each waits here while the client is offline, and a write the board refused
+ * module's write routes through its service: each waits here while the client is offline, and a write the board refused
  * stays until the user keeps theirs or the other one. golden-1 has no sign-in, so every write's owner is `""`.
  */
-export const boardOutbox = lifetime.run(() => outbox("todos.outbox", boardWrites, { module: "api" }));
+export const boardOutbox = lifetime.run(() => outbox("todos.outbox", api));
 ```
 
 The live stream needs the `api` origin, which is the page's, because `api` hosts `web`. It is undefined off a browser page:
@@ -1173,7 +1556,7 @@ A Form action cannot leave a write in the outbox the way a checkbox can, because
 import type { Ctx } from "@keel/ctx";
 import { type KeelError, type Result, err, ok } from "@keel/schema";
 import { type OutboxResult, resolve } from "@keel/std-offline";
-import { WriteRefusal } from "./WriteRefusal.schema.ts";
+import { WriteRefusal } from "../api/WriteRefusal.schema.ts";
 import { boardOutbox } from "./boardOutbox.ts";
 
 /**
@@ -1200,26 +1583,27 @@ export async function formAnswer<O>(
 
 ### Loaders, actions and the guard
 
-A loader reads the data a route renders. `loader({ output, params?, search? }, fn)`: `fn` gets `({ params, search, url, caller, stores }, ctx)` and returns `Promise<Result<T, KeelError>>`. Never annotate `fn`; its argument types come from the declaration. An `err` with `keel.notFound` renders the route's `errorElement` (404 on a server); `keel.denied` is 403; other codes are 400.
+A loader reads the data a route renders. `loader(contract, id, { output, stores? }, fn)`: `fn` gets `({ params, search, url, caller, stores }, ctx)` and returns `Promise<Result<T, KeelError>>`. A page's loader declares the `output` of its view; `params` and `search` come from the contract entry. Never annotate `fn`; its argument types come from the entry and the declaration. An `err` with `keel.notFound` renders the route's `errorElement` (404 on a server); `keel.denied` is 403; other codes are 400.
 
 ```ts title="modules/todos/loadIndex.server.ts"
 import { loader } from "@keel/router";
 import { BoardView } from "../api/BoardView.schema.ts";
 import { refreshView } from "./refreshView.ts";
+import { todos } from "./todos.contract.ts";
 
 /** Loader of `todos.index`: the board from the `api` deployable, hydrated into `todos.view`. */
-export const loadIndex = loader({ output: BoardView }, async (_, ctx) => refreshView(ctx));
+export const loadIndex = loader(todos, "todos.index", { output: BoardView }, async (_, ctx) => refreshView(ctx));
 ```
 
 ```ts title="modules/todos/loadList.server.ts"
 import { loader } from "@keel/router";
 import { err, ok } from "@keel/schema";
-import { ListParams } from "../api/ListParams.schema.ts";
 import { TodoList } from "../api/TodoList.schema.ts";
 import { refreshView } from "./refreshView.ts";
+import { todos } from "./todos.contract.ts";
 
 /** The list named by `listId` from a fresh board (`refreshView`), else `keel.notFound`. */
-export const loadList = loader({ output: TodoList, params: ListParams }, async ({ params }, ctx) => {
+export const loadList = loader(todos, "todos.list", { output: TodoList }, async ({ params }, ctx) => {
   const board = await refreshView(ctx);
   if (!board.ok) return board;
   const list = board.value.lists.find((l) => l.id === params.listId);
@@ -1232,22 +1616,31 @@ export const loadList = loader({ output: TodoList, params: ListParams }, async (
 ```ts title="modules/todos/loadTodo.server.ts"
 import { loader } from "@keel/router";
 import { err, ok } from "@keel/schema";
+import { tx } from "@keel/store";
 import { Todo } from "../api/Todo.schema.ts";
-import { TodoParams } from "./TodoParams.schema.ts";
+import { editorChart } from "./editorChart.ts";
+import { editorFollow } from "./editorFollow.ts";
 import { refreshView } from "./refreshView.ts";
+import { todos } from "./todos.contract.ts";
 
-/** The todo `todoId` of list `listId` from a fresh board (`refreshView`), else `keel.notFound`. */
-export const loadTodo = loader({ output: Todo, params: TodoParams }, async ({ params }, ctx) => {
+/**
+ * The todo `todoId` of list `listId` from a fresh board (`refreshView`), else `keel.notFound`. Opening it brings
+ * `editorChart` up to the outbox (`editorFollow`), then moves it from `viewing` to `editing`.
+ */
+export const loadTodo = loader(todos, "todos.edit", { output: Todo }, async ({ params }, ctx) => {
   const board = await refreshView(ctx);
   if (!board.ok) return board;
   const todo = board.value.todos.find((t) => t.id === params.todoId && t.listId === params.listId);
-  return todo === undefined
-    ? err({ code: "keel.notFound", message: `No todo ${params.todoId} in list ${params.listId}`, data: params })
-    : ok(todo);
+  if (todo === undefined)
+    return err({ code: "keel.notFound", message: `No todo ${params.todoId} in list ${params.listId}`, data: params });
+  const followed = editorFollow();
+  if (!followed.ok) return err(followed.error);
+  const opened = tx(editorChart.events.edit, {});
+  return opened.ok ? ok(todo) : err(opened.error);
 });
 ```
 
-An action handles a form post. `action({ input, params? }, fn)`: `fn` gets `(input, { params, url, caller, stores }, ctx)`, with `input` already decoded and validated by its schema (a failure is 422 `keel.fields`, and `fn` is not called). `ok(null)` re-runs the chain's loaders once; `ok(href)` navigates there.
+An action handles a form post. `action(contract, id, { input, stores? }, fn)`: `fn` gets `(input, { params, url, caller, stores }, ctx)`, with `input` already decoded and validated by its schema (a failure is 422 `keel.fields`, and `fn` is not called). `ok(null)` re-runs the chain's loaders once; `ok(href)` navigates there.
 
 The three form actions send through the outbox: `send(ctx, boardOutbox, endpoint, call, { base, owner: "" })`, where `base` is the `head` in `todos.view`. Each ends in `formAnswer`.
 
@@ -1257,10 +1650,11 @@ import { send } from "@keel/std-offline";
 import { ListDraft } from "../api/ListDraft.schema.ts";
 import { boardOutbox } from "./boardOutbox.ts";
 import { formAnswer } from "./formAnswer.ts";
+import { todos } from "./todos.contract.ts";
 import { view } from "./view.ts";
 
 /** POST on `todos.index`: send `POST /api/lists` through the outbox, based on the board as last read; then revalidate. */
-export const createList = action({ input: ListDraft }, async (input, _req, ctx) => {
+export const createList = action(todos, "todos.index", { input: ListDraft }, async (input, _req, ctx) => {
   const r = await send(ctx, boardOutbox, "createList", { body: input }, { base: view.get("head"), owner: "" });
   return formAnswer(ctx, "createList", r);
 });
@@ -1269,42 +1663,49 @@ export const createList = action({ input: ListDraft }, async (input, _req, ctx) 
 ```ts title="modules/todos/createTodo.server.ts"
 import { action } from "@keel/router";
 import { send } from "@keel/std-offline";
-import { ListParams } from "../api/ListParams.schema.ts";
 import { TodoDraft } from "../api/TodoDraft.schema.ts";
 import { boardOutbox } from "./boardOutbox.ts";
 import { formAnswer } from "./formAnswer.ts";
+import { todos } from "./todos.contract.ts";
 import { view } from "./view.ts";
 
 /** POST on `todos.list`: send `POST /api/lists/:listId/todos` through the outbox, based on the board as last read. */
-export const createTodo = action({ input: TodoDraft, params: ListParams }, async (input, { params }, ctx) => {
+export const createTodo = action(todos, "todos.list", { input: TodoDraft }, async (input, { params }, ctx) => {
   const r = await send(ctx, boardOutbox, "addTodo", { params, body: input }, { base: view.get("head"), owner: "" });
   return formAnswer(ctx, "addTodo", r);
 });
 ```
 
-`updateTodo` shows a 422 `keel.fields` from `api` (a duplicate title) under the title field. Sent, queued or refused as a conflict, the edit returns the list's `Href`; the outbox panel shows a conflict. It imports `routes.ts` back for `routes.href`; see the import-order note in section 9.
+`updateTodo` shows a 422 `keel.fields` from `api` (a duplicate title) under the title field. Sent, queued or refused as a conflict, the edit returns the list's `Href`; the outbox panel shows a conflict. It links with `todos.href`, which reads the contract, so it never imports `routes.ts`. It also moves `editorChart` (below): `save` before the send and the outbox's answer after it. `loadTodo` brings the chart up to the outbox (`editorFollow`) and sends `edit` when the page opens.
 
 ```ts title="modules/todos/updateTodo.server.ts"
 import { action } from "@keel/router";
-import { ok } from "@keel/schema";
+import { err, ok } from "@keel/schema";
 import { send } from "@keel/std-offline";
+import { tx } from "@keel/store";
 import { TodoDraft } from "../api/TodoDraft.schema.ts";
-import { TodoParams } from "./TodoParams.schema.ts";
 import { boardOutbox } from "./boardOutbox.ts";
+import { editorChart } from "./editorChart.ts";
+import { editorOutcome } from "./editorOutcome.ts";
 import { formAnswer } from "./formAnswer.ts";
-import { routes } from "./routes.ts";
+import { todos } from "./todos.contract.ts";
 import { view } from "./view.ts";
 
 /**
- * POST on `todos.edit`: send `POST /api/todos/:todoId` through the outbox, based on the board as last read. Sent,
- * queued or refused as a conflict (the outbox panel shows it), it goes to the list; the api's 422 `keel.fields`
- * (`{ title }` when another todo in the list has the title) goes to the Form.
+ * POST on `todos.edit`: send `POST /api/todos/:todoId` through the outbox, based on the board as last read, moving
+ * `editorChart` to `saving` and then by the outbox's answer (`editorOutcome`). Sent, queued or refused as a conflict
+ * (the outbox panel shows it), it goes to the list; the api's 422 `keel.fields` (`{ title }` when another todo in the
+ * list has the title) goes to the Form.
  */
-export const updateTodo = action({ input: TodoDraft, params: TodoParams }, async (input, { params }, ctx) => {
+export const updateTodo = action(todos, "todos.edit", { input: TodoDraft }, async (input, { params }, ctx) => {
   const call = { params: { todoId: params.todoId }, body: input };
+  const saving = tx(editorChart.events.save, {});
+  if (!saving.ok) return err(saving.error);
   const r = await send(ctx, boardOutbox, "editTodo", call, { base: view.get("head"), owner: "" });
+  const moved = editorOutcome(r.state);
+  if (!moved.ok) return err(moved.error);
   const answer = await formAnswer(ctx, "editTodo", r);
-  return answer.ok ? ok(routes.href("todos.list", { listId: params.listId })) : answer;
+  return answer.ok ? ok(todos.href("todos.list", { listId: params.listId })) : answer;
 });
 ```
 
@@ -1322,14 +1723,164 @@ export const editable = guard({ redirect: "todos.index" }, async (_req, ctx) =>
 );
 ```
 
+### The editor chart
+
+The edit page keeps its status in a chart, `todos.editor`: `viewing` until a todo's edit page opens, `editing` until Save, `saving` until the outbox answers. A sent edit goes back to `viewing`, a refused one to `conflict`, a failed one to `saving` again for at most 3 sends and then `gaveUp`. The files around the chart are small. `idPart` turns a record id into one part of an element id, so a page can put it in `todos.row.<id>` safely.
+
+```ts title="modules/todos/EditorData.schema.ts"
+import { s } from "@keel/schema";
+
+/** The editor chart's own data: how many times the current edit has been sent, at most 3. */
+export const EditorData = s.object({ attempts: s.int({ min: 0, max: 3 }) });
+export type EditorData = s.infer<typeof EditorData>;
+```
+
+```ts title="modules/todos/editorChart.ts"
+import { s } from "@keel/schema";
+import { chart } from "@keel/std-statecharts";
+import { EditorData } from "./EditorData.schema.ts";
+
+/**
+ * The todo editor's status (store `todos.editor`): `viewing` until a todo's edit page opens (`edit`), `editing` until
+ * Save (`save`), `saving` until the outbox answers: `saved` back to `viewing`, `refused` to `conflict`, `failed` to
+ * `saving` again while fewer than 3 sends were made, else `gaveUp`. In `conflict` the outbox panel's Keep mine sends
+ * it again (`mine`, within the same 3) and Keep theirs drops it (`theirs`).
+ */
+export const editorChart = chart("todos.editor", {
+  data: EditorData,
+  start: { attempts: 0 },
+  events: {
+    edit: s.object({}),
+    save: s.object({}),
+    saved: s.object({}),
+    refused: s.object({}),
+    failed: s.object({}),
+    mine: s.object({}),
+    theirs: s.object({}),
+    cancel: s.object({}),
+  },
+  guards: { canRetry: (d) => d.attempts < 3 },
+  actions: { count: (d) => ({ attempts: Math.min(3, d.attempts + 1) }), reset: () => ({ attempts: 0 }) },
+  initial: "viewing",
+  states: {
+    viewing: { on: { edit: "editing" } },
+    editing: { on: { save: { to: "saving", do: "count" }, cancel: "viewing" } },
+    saving: {
+      on: {
+        saved: { to: "viewing", do: "reset" },
+        refused: "conflict",
+        failed: [{ to: "saving", guard: "canRetry", do: "count" }, { to: "gaveUp" }],
+      },
+    },
+    conflict: {
+      on: { mine: { to: "saving", guard: "canRetry", do: "count" }, theirs: { to: "viewing", do: "reset" } },
+    },
+    gaveUp: { final: true },
+  },
+});
+```
+
+`editorOutcome` moves the chart by what the outbox did with an edit. `editorFollow` brings a chart still in `saving` up to the outbox, for an edit the outbox sent after its page moved on. `editorStuck` says whether Keep mine is still allowed, and `resolveEdit` is the outbox panel's choice for an edit, made through the chart.
+
+```ts title="modules/todos/editorOutcome.ts"
+import { type KeelError, type Result, ok } from "@keel/schema";
+import type { OutboxEntry, OutboxResult } from "@keel/std-offline";
+import { tx } from "@keel/store";
+import { editorChart } from "./editorChart.ts";
+
+/**
+ * Moves `editorChart` by what the outbox did with an edit: sent is `saved`, a conflict `refused`, a failure `failed`.
+ * A queued or sending edit leaves the chart in `saving` until the outbox sends it. Answers the chart's `tx` result.
+ */
+export function editorOutcome(
+  state: OutboxResult<unknown>["state"] | OutboxEntry["state"],
+): Result<unknown, KeelError<string, unknown>> {
+  if (state === "sent") return tx(editorChart.events.saved, {});
+  if (state === "conflict") return tx(editorChart.events.refused, {});
+  if (state === "failed") return tx(editorChart.events.failed, {});
+  return ok(null);
+}
+```
+
+```ts title="modules/todos/editorFollow.ts"
+import { type KeelError, type Result, ok } from "@keel/schema";
+import { boardOutbox } from "./boardOutbox.ts";
+import { editorChart } from "./editorChart.ts";
+import { editorOutcome } from "./editorOutcome.ts";
+
+/**
+ * Brings `editorChart` up to the outbox: an edit the chart still holds in `saving` that the outbox has since sent
+ * (no edit left in it) is `saved`, one it refused `refused`, one that failed `failed`; a queued or sending edit stays
+ * `saving`. The outbox sends a queued edit, or one sent again by Keep mine, after the page that made it moved on.
+ */
+export function editorFollow(): Result<unknown, KeelError<string, unknown>> {
+  if (editorChart.store.get("state") !== "saving") return ok(null);
+  const edit = boardOutbox
+    .get("entries")
+    .filter((e) => e.endpoint === "editTodo")
+    .at(-1);
+  return editorOutcome(edit === undefined ? "sent" : edit.state);
+}
+```
+
+```ts title="modules/todos/editorStuck.ts"
+import { editorChart } from "./editorChart.ts";
+
+/** True when `editorChart` holds a refused edit that has used its 3 tries: Keep mine is off, Keep theirs remains. */
+export function editorStuck(): boolean {
+  const state = editorChart.store.get("state");
+  const now = { state, data: editorChart.store.get("data") };
+  return state === "conflict" && !editorChart.enabled(now, "mine", {});
+}
+```
+
+```ts title="modules/todos/resolveEdit.ts"
+import type { Ctx } from "@keel/ctx";
+import { type Resolution, resolve } from "@keel/std-offline";
+import { tx } from "@keel/store";
+import { boardOutbox } from "./boardOutbox.ts";
+import { editorChart } from "./editorChart.ts";
+import { editorFollow } from "./editorFollow.ts";
+import { editorStuck } from "./editorStuck.ts";
+
+/**
+ * Keep mine or Keep theirs on a refused edit (`key` in `boardOutbox`), through `editorChart`: an edit still `saving`
+ * learns of the refusal first (`refused`), then `mine` sends it again within the chart's 3 tries and `theirs` drops
+ * it. Keep mine does nothing once the edit has used its tries (`editorStuck`). Keep mine returns once the outbox has
+ * answered the re-send (or holds it queued), and the chart follows that answer (`editorFollow`). Resolves true when
+ * the outbox applied the choice.
+ */
+export async function resolveEdit(ctx: Ctx, key: string, resolution: Resolution): Promise<boolean> {
+  const refused = tx(editorChart.events.refused, {});
+  if (!refused.ok || (resolution === "mine" && editorStuck())) return false;
+  const chosen = tx(resolution === "mine" ? editorChart.events.mine : editorChart.events.theirs, {});
+  if (!chosen.ok) return false;
+  const applied = await resolve(ctx, boardOutbox, key, resolution);
+  return applied !== false && editorFollow().ok;
+}
+```
+
+```ts title="modules/todos/idPart.ts"
+/**
+ * A record id as one part of an element id: percent-encoded, so it holds no whitespace or quote and two ids stay
+ * two parts. Minted ids (uuids) and fixture ids such as `t1` pass through unchanged.
+ */
+export function idPart(id: string): string {
+  return encodeURIComponent(id);
+}
+```
+
+`loadTodo` and `updateTodo` (above) send the chart's `edit` and `save` events, `OutboxPanel` and `EditTodoPage` (below) read it.
+
 ### Components
 
-A component file has one default export, a function `(props, slots?, ctx?)`, and may also export `Props`, a schema of its props, and `uses`, the transactions it may run. The rules you will meet first:
+A component file has one default export, a function `(props)` or `(props, ctx: Ctx)`, and may also export `Props`, a schema of its props, and `uses`, the transactions it may run. The rules you will meet first:
 
 - Use the base elements from `@keel/ui` (`Box`, `Text`, `Heading`, `Button`, `Link`, `Image`, `Input`, `Select`, `Checkbox`, `TextArea`). A lowercase tag such as `<div>` is E1805; a `style` attribute is E1803.
 - Style props take token names. `px={{ base: "3", md: "6" }}` is responsive; `states={{ hover: { bg: "surfaceLow" } }}` styles states. A raw value such as `gap="12px"` fails the type check.
 - Accessibility props are required: `Heading level`, `Image alt` or `decorative`, `label` on form controls, text inside `Button` and `Link` (E1802).
-- `Link to` and `Form action` take an `Href` from `routes.href(id, params, search)`, never a string (E1501).
+- `Link to` and `Form action` take an `Href` from `<contract>.href(id, params, search)` (`todos.href(...)`), never a string (E1501).
+- A component that reaches an effect declares `ctx: Ctx` as its second parameter, never optional, defaulted or followed by another (E1407); every caller passes one. A component that reaches none is `(props)`.
 - Read props as `props.x`; destructuring them is E1401, because props are getters that stay reactive.
 - Control flow is `<If>`, `<For each key>` and `<Match on>` with one `<Case tag>` per variant, from `@keel/runtime-dom`. `{a && <X />}`, a ternary of elements, or `.map()` returning elements is E1403.
 - Children arrive as a thunk: render them with `{props.children?.()}`.
@@ -1344,18 +1895,17 @@ A component file has one default export, a function `(props, slots?, ctx?)`, and
 ```tsx title="modules/todos/AppShell.tsx"
 import type { Ctx } from "@keel/ctx";
 import { computed } from "@keel/reactive";
-import type { Slots } from "@keel/runtime-dom";
 import { type Infer, s } from "@keel/schema";
 import { type LiveStatus, live } from "@keel/std-live";
 import { drain } from "@keel/std-offline";
 import { Box, Button, Image, Link, Text } from "@keel/ui";
-import { boardChannel } from "../api/boardChannel.ts";
+import { boardChannel } from "../api/boardChannel.schema.ts";
 import OutboxPanel from "./OutboxPanel.tsx";
 import { boardOutbox } from "./boardOutbox.ts";
 import { hydrate } from "./hydrate.ts";
 import { pageOrigin } from "./pageOrigin.ts";
 import { refreshView } from "./refreshView.ts";
-import { routes } from "./routes.ts";
+import { todos } from "./todos.contract.ts";
 import { todosApi } from "./todosApi.ts";
 import { view } from "./view.ts";
 
@@ -1377,20 +1927,16 @@ const LABELS: { readonly [K in LiveStatus]: string } = {
  * (another client wrote last), so `canUndo` turns it off; it is disabled while the served board says there is
  * nothing to undo.
  */
-export default function AppShell(
-  props: Infer<typeof Props> & { readonly children?: () => Node },
-  _slots?: Slots,
-  ctx?: Ctx,
-) {
+export default function AppShell(props: Infer<typeof Props> & { readonly children?: () => Node }, ctx: Ctx) {
   const origin = pageOrigin();
   const status =
-    ctx === undefined || origin === undefined
+    origin === undefined
       ? (): LiveStatus => "connecting"
       : live(ctx, origin, boardChannel, {}, { read: (c) => todosApi.lists({}, c), hydrate });
-  if (ctx !== undefined && origin !== undefined) void drain(ctx, boardOutbox, { owner: "" });
+  if (origin !== undefined) void drain(ctx, boardOutbox, { owner: "" });
   const empty = computed(() => !view.get("canUndo"));
   const undo = (): void => {
-    if (ctx !== undefined) void todosApi.undo({}, ctx).then(() => refreshView(ctx));
+    void todosApi.undo({}, ctx).then(() => refreshView(ctx));
   };
   return (
     <Box id="todos.shell" direction="column" bg="surface" fg="text" font="serif" fontSize="md">
@@ -1424,7 +1970,7 @@ export default function AppShell(
           >
             {LABELS[status()]}
           </Text>
-          <Link id="todos.home" to={routes.href("todos.index")} fg="text">
+          <Link id="todos.home" to={todos.href("todos.index")} fg="text">
             Home
           </Link>
           <Button
@@ -1455,15 +2001,18 @@ export default function AppShell(
 }
 ```
 
-`OutboxPanel` lists the writes the outbox holds, in the order sent, and renders nothing while it is empty. A write is `queued` or `sending`, or the outbox holds it as a `conflict` (the board changed first and the server refused it) or as `failed`. A conflict offers Keep mine, which sends the write again over the newer board, and Keep theirs, which drops it. A failed write offers Dismiss. Both buttons call `resolve`. The panel reads `boardOutbox` directly, so `AppShell` mounts it with no props.
+`OutboxPanel` lists the writes the outbox holds, in the order sent, and renders nothing while it is empty. A write is `queued` or `sending`, or the outbox holds it as a `conflict` (the board changed first and the server refused it) or as `failed`. A conflict offers Keep mine, which sends the write again over the newer board, and Keep theirs, which drops it. A failed write offers Dismiss. Both buttons call `resolve`, except for an edit, whose choice goes through the editor chart (`resolveEdit`); Keep mine is off once the edit has used its 3 tries (`editorStuck`). Element ids hold the entry's key through `idPart`. The panel reads `boardOutbox` directly, so `AppShell` mounts it with no props.
 
 ```tsx title="modules/todos/OutboxPanel.tsx"
 import type { Ctx } from "@keel/ctx";
-import { For, If, type Slots } from "@keel/runtime-dom";
+import { For, If } from "@keel/runtime-dom";
 import { type Infer, s } from "@keel/schema";
 import { type OutboxEntry, type Resolution, resolve } from "@keel/std-offline";
 import { Box, Button, Heading, Text } from "@keel/ui";
 import { boardOutbox } from "./boardOutbox.ts";
+import { editorStuck } from "./editorStuck.ts";
+import { idPart } from "./idPart.ts";
+import { resolveEdit } from "./resolveEdit.ts";
 
 export const Props = s.object({});
 
@@ -1484,11 +2033,13 @@ const STATES: { readonly [K in OutboxEntry["state"]]: string } = {
 /**
  * The outbox panel (`todos.outbox`, shown while the outbox holds a write): each waiting, refused or failed board
  * write in the order sent. A refused write offers Keep mine (send it again over the newer board) and Keep theirs
- * (drop it); a failed one offers Dismiss.
+ * (drop it); a failed one offers Dismiss. An edit's choice goes through the editor chart (`resolveEdit`), which turns
+ * Keep mine off once the edit has used its 3 tries.
  */
-export default function OutboxPanel(_props: Infer<typeof Props>, _slots?: Slots, ctx?: Ctx) {
-  const choose = (key: string, resolution: Resolution): void => {
-    if (ctx !== undefined) void resolve(ctx, boardOutbox, key, resolution);
+export default function OutboxPanel(_props: Infer<typeof Props>, ctx: Ctx) {
+  const choose = (entry: OutboxEntry, resolution: Resolution): void => {
+    if (entry.endpoint === "editTodo") void resolveEdit(ctx, entry.key, resolution);
+    else void resolve(ctx, boardOutbox, entry.key, resolution);
   };
   return (
     <If when={boardOutbox.get("entries").length > 0}>
@@ -1521,7 +2072,7 @@ export default function OutboxPanel(_props: Infer<typeof Props>, _slots?: Slots,
               {(entry) => (
                 <Box
                   as="li"
-                  id={`todos.outbox.entry.${entry.key}`}
+                  id={`todos.outbox.entry.${idPart(entry.key)}`}
                   direction="row"
                   align="center"
                   justify="between"
@@ -1530,11 +2081,11 @@ export default function OutboxPanel(_props: Infer<typeof Props>, _slots?: Slots,
                   py="2"
                   bg="card"
                 >
-                  <Text id={`todos.outbox.write.${entry.key}`} font="mono" fontSize="sm">
+                  <Text id={`todos.outbox.write.${idPart(entry.key)}`} font="mono" fontSize="sm">
                     {WRITES[entry.endpoint] ?? entry.endpoint}
                   </Text>
                   <Text
-                    id={`todos.outbox.state.${entry.key}`}
+                    id={`todos.outbox.state.${idPart(entry.key)}`}
                     font="mono"
                     fontSize="xs"
                     px="2"
@@ -1548,8 +2099,9 @@ export default function OutboxPanel(_props: Infer<typeof Props>, _slots?: Slots,
                     {() => (
                       <Box direction="row" gap="2">
                         <Button
-                          id={`todos.outbox.mine.${entry.key}`}
-                          onClick={() => choose(entry.key, "mine")}
+                          id={`todos.outbox.mine.${idPart(entry.key)}`}
+                          disabled={entry.endpoint === "editTodo" && editorStuck()}
+                          onClick={() => choose(entry, "mine")}
                           font="mono"
                           fontSize="sm"
                           px="3"
@@ -1562,8 +2114,8 @@ export default function OutboxPanel(_props: Infer<typeof Props>, _slots?: Slots,
                           Keep mine
                         </Button>
                         <Button
-                          id={`todos.outbox.theirs.${entry.key}`}
-                          onClick={() => choose(entry.key, "theirs")}
+                          id={`todos.outbox.theirs.${idPart(entry.key)}`}
+                          onClick={() => choose(entry, "theirs")}
                           font="mono"
                           fontSize="sm"
                           px="3"
@@ -1581,8 +2133,8 @@ export default function OutboxPanel(_props: Infer<typeof Props>, _slots?: Slots,
                   <If when={entry.state === "failed"}>
                     {() => (
                       <Button
-                        id={`todos.outbox.theirs.${entry.key}`}
-                        onClick={() => choose(entry.key, "theirs")}
+                        id={`todos.outbox.theirs.${idPart(entry.key)}`}
+                        onClick={() => choose(entry, "theirs")}
                         font="mono"
                         fontSize="sm"
                         px="3"
@@ -1609,34 +2161,86 @@ export default function OutboxPanel(_props: Infer<typeof Props>, _slots?: Slots,
 
 `ListsPage` is the index route. `form(ListDraft)` creates a form handle; `f.field("name")` binds an `Input` to it, with validation from the schema on blur and submit. The router's `Form` posts to the route's `POST` action and shows any non-field error in its `error` slot. The page writes `<Form method="POST" action={...} form={f} error={...}>` with the controls as its JSX children; the children stay a thunk, so a served page resumes them in place.
 
+The page also removes lists. Each shown list has a Remove button, which calls `todosApi.removeList` and re-reads the board; the list is hidden at once. A bar for each removal that still waits says so and offers Undo, which calls `todosApi.undoRemoval`. The api deletes the list ten minutes later unless Undo comes first (section 6). The ids put the list's id through `idPart`.
+
 ```tsx title="modules/todos/ListsPage.tsx"
+import type { Ctx } from "@keel/ctx";
 import { form } from "@keel/forms";
 import { Form } from "@keel/router";
 import { For } from "@keel/runtime-dom";
 import { type Infer, s } from "@keel/schema";
 import { Box, Button, Heading, Input, Link, Text } from "@keel/ui";
 import { ListDraft } from "../api/ListDraft.schema.ts";
-import { routes } from "./routes.ts";
+import type { TodoList } from "../api/TodoList.schema.ts";
+import { idPart } from "./idPart.ts";
+import { refreshView } from "./refreshView.ts";
+import { todos } from "./todos.contract.ts";
+import { todosApi } from "./todosApi.ts";
 import { view } from "./view.ts";
 
 export const Props = s.object({});
 
 const openCount = (listId: string): number => view.get("todos").filter((t) => t.listId === listId && !t.done).length;
+const shown = () => view.get("lists").filter((l) => l.hidden !== true);
+const nameOf = (listId: string): string => view.get("lists").find((l) => l.id === listId)?.name ?? listId;
+/** The removals someone can still undo: their list is hidden and waits (`hidden`). */
+const waiting = () => (view.get("removals") ?? []).filter((r) => r.state === "hidden");
 
-/** Route `todos.index`: every list with its open-todo count, and a Form adding a list. */
-export default function ListsPage(_props: Infer<typeof Props>) {
+/**
+ * Route `todos.index`: every shown list with its open-todo count and a Remove button, a bar per removal that still
+ * waits with its Undo, and a Form adding a list. Remove hides the list at once; the `api` deployable deletes it 10
+ * minutes later unless Undo comes first. Both re-read the board.
+ */
+export default function ListsPage(_props: Infer<typeof Props>, ctx: Ctx) {
+  const remove = (listId: TodoList["id"]): void => {
+    void todosApi.removeList({ params: { listId } }, ctx).then(() => refreshView(ctx));
+  };
+  const undo = (flow: string): void => {
+    void todosApi.undoRemoval({ params: { flow } }, ctx).then(() => refreshView(ctx));
+  };
   const f = form(ListDraft);
   return (
     <Box as="section" id="todos.lists" direction="column" gap="5">
       <Heading id="todos.lists.title" level={1} fontSize="2xl" weight="semibold" m="0">
         Lists
       </Heading>
+      <For each={waiting()} key="flow">
+        {(r) => (
+          <Box
+            id={`todos.removal.${idPart(r.flow)}`}
+            direction="row"
+            justify="between"
+            align="center"
+            gap="3"
+            px="3"
+            py="2"
+            bg="surfaceLow"
+            border="hairline"
+          >
+            <Text fontSize="sm">{`${nameOf(r.list)} is removed in 10 minutes.`}</Text>
+            <Button
+              id={`todos.undo.${idPart(r.flow)}`}
+              onClick={() => undo(r.flow)}
+              font="mono"
+              fontSize="sm"
+              px="3"
+              py="1"
+              bg="card"
+              fg="text"
+              border="rule"
+              radius="none"
+            >
+              Undo
+            </Button>
+          </Box>
+        )}
+      </For>
       <Box as="ul" id="todos.lists.items" direction="column" gap="hairline" bg="divider" border="hairline" p="0" m="0">
-        <For each={view.get("lists")} key="id">
+        <For each={shown()} key="id">
           {(list) => (
             <Box
               as="li"
-              id={`todos.listItem.${list.id}`}
+              id={`todos.listItem.${idPart(list.id)}`}
               direction="row"
               justify="between"
               align="baseline"
@@ -1645,11 +2249,15 @@ export default function ListsPage(_props: Infer<typeof Props>) {
               py="3"
               bg="card"
             >
-              <Link id={`todos.listLink.${list.id}`} to={routes.href("todos.list", { listId: list.id })} fg="text">
+              <Link
+                id={`todos.listLink.${idPart(list.id)}`}
+                to={todos.href("todos.list", { listId: list.id })}
+                fg="text"
+              >
                 {list.name}
               </Link>
               <Text
-                id={`todos.openCount.${list.id}`}
+                id={`todos.openCount.${idPart(list.id)}`}
                 font="mono"
                 fontSize="xs"
                 fg="accent"
@@ -1657,13 +2265,27 @@ export default function ListsPage(_props: Infer<typeof Props>) {
                 px="2"
                 py="1"
               >{`${openCount(list.id)} open`}</Text>
+              <Button
+                id={`todos.remove.${idPart(list.id)}`}
+                onClick={() => remove(list.id)}
+                font="mono"
+                fontSize="xs"
+                px="2"
+                py="1"
+                bg="card"
+                fg="text"
+                border="rule"
+                radius="none"
+              >
+                Remove
+              </Button>
             </Box>
           )}
         </For>
       </Box>
       <Form
         method="POST"
-        action={routes.href("todos.index")}
+        action={todos.href("todos.index")}
         form={f}
         error={(e) => <Text fg="error">{e.message}</Text>}
       >
@@ -1702,20 +2324,20 @@ export default function ListsPage(_props: Infer<typeof Props>) {
 }
 ```
 
-`ListPage` filters by the search param, lists rows with `For`, and adds a todo with a form. `form` takes an `id` (`todos.addForm`), which prefixes the field ids in place of a hash of the schema's shape:
+`ListPage` filters by the search param, lists rows with `For` (each row in a `todos.row.<id>` list item), and adds a todo with a form. `form` takes an `id` (`todos.addForm`), which prefixes the field ids in place of a hash of the schema's shape:
 
 ```tsx title="modules/todos/ListPage.tsx"
-import type { Ctx } from "@keel/ctx";
 import { form } from "@keel/forms";
 import { Form } from "@keel/router";
-import { For, type Slots } from "@keel/runtime-dom";
+import { For } from "@keel/runtime-dom";
 import { type Infer, s } from "@keel/schema";
 import { Box, Button, Heading, Input, Link, Select, Text } from "@keel/ui";
 import { TodoDraft } from "../api/TodoDraft.schema.ts";
 import { TodoList } from "../api/TodoList.schema.ts";
 import Suggestions from "./Suggestions.tsx";
 import TodoRow from "./TodoRow.tsx";
-import { routes } from "./routes.ts";
+import { idPart } from "./idPart.ts";
+import { todos } from "./todos.contract.ts";
 import { view } from "./view.ts";
 
 export const Props = s.object({
@@ -1731,7 +2353,7 @@ const PRIORITIES = [
 ];
 
 /** Route `todos.list`: the list's todos filtered by `search.filter`, filter links, an add-todo Form, Suggestions. */
-export default function ListPage(props: Infer<typeof Props>, _slots?: Slots, ctx?: Ctx) {
+export default function ListPage(props: Infer<typeof Props>) {
   const f = form(TodoDraft, { id: "todos.addForm", initial: { priority: "normal" } });
   const shown = () =>
     view
@@ -1749,21 +2371,21 @@ export default function ListPage(props: Infer<typeof Props>, _slots?: Slots, ctx
       <Box as="section" id="todos.filters" direction="row" gap="4" font="mono" fontSize="sm">
         <Link
           id="todos.filter.all"
-          to={routes.href("todos.list", { listId: props.params.listId }, { filter: "all" })}
+          to={todos.href("todos.list", { listId: props.params.listId }, { filter: "all" })}
           fg="text"
         >
           All
         </Link>
         <Link
           id="todos.filter.active"
-          to={routes.href("todos.list", { listId: props.params.listId }, { filter: "active" })}
+          to={todos.href("todos.list", { listId: props.params.listId }, { filter: "active" })}
           fg="text"
         >
           Active
         </Link>
         <Link
           id="todos.filter.done"
-          to={routes.href("todos.list", { listId: props.params.listId }, { filter: "done" })}
+          to={todos.href("todos.list", { listId: props.params.listId }, { filter: "done" })}
           fg="text"
         >
           Done
@@ -1771,12 +2393,16 @@ export default function ListPage(props: Infer<typeof Props>, _slots?: Slots, ctx
       </Box>
       <Box as="ul" id="todos.items" direction="column" gap="hairline" bg="divider" border="hairline" p="0" m="0">
         <For each={shown()} key="id">
-          {(todo) => <TodoRow todo={todo} />}
+          {(todo) => (
+            <Box as="li" id={`todos.row.${idPart(todo.id)}`}>
+              <TodoRow todo={todo} />
+            </Box>
+          )}
         </For>
       </Box>
       <Form
         method="POST"
-        action={routes.href("todos.list", { listId: props.params.listId })}
+        action={todos.href("todos.list", { listId: props.params.listId })}
         form={f}
         error={(e) => <Text fg="error">{e.message}</Text>}
       >
@@ -1835,37 +2461,37 @@ export default function ListPage(props: Infer<typeof Props>, _slots?: Slots, ctx
 
 ```tsx title="modules/todos/TodoRow.tsx"
 import type { Ctx } from "@keel/ctx";
-import type { Slots } from "@keel/runtime-dom";
 import { type Infer, s } from "@keel/schema";
 import { send } from "@keel/std-offline";
 import { Box, Checkbox, Link, Text } from "@keel/ui";
 import { Todo } from "../api/Todo.schema.ts";
 import { boardOutbox } from "./boardOutbox.ts";
-import { routes } from "./routes.ts";
+import { idPart } from "./idPart.ts";
+import { todos } from "./todos.contract.ts";
 import { view } from "./view.ts";
 
 export const Props = s.object({ todo: Todo });
 
 /**
  * One todo: a done Checkbox (sends `/api/todos/:todoId/toggle` through the outbox, based on the board as last read;
- * the live board shows the result), priority, Edit link.
+ * the live board shows the result), priority, Edit link. The list that shows it owns the list item
+ * (`todos.row.<id>` in `ListPage`), so a row renders on its own as well.
  */
-export default function TodoRow(props: Infer<typeof Props>, _slots?: Slots, ctx?: Ctx) {
+export default function TodoRow(props: Infer<typeof Props>, ctx: Ctx) {
   const toggle = (): void => {
-    if (ctx === undefined) return;
     const call = { params: { todoId: props.todo.id }, body: {} };
     void send(ctx, boardOutbox, "toggleTodo", call, { base: view.get("head"), owner: "" });
   };
   return (
-    <Box as="li" id={`todos.row.${props.todo.id}`} direction="row" align="center" gap="3" px="3" py="2" bg="card">
+    <Box direction="row" align="center" gap="3" px="3" py="2" bg="card">
       <Checkbox
-        id={`todos.toggle.${props.todo.id}`}
+        id={`todos.toggle.${idPart(props.todo.id)}`}
         label={`Done: ${props.todo.title}`}
         checked={props.todo.done}
         onChange={toggle}
       />
       <Text
-        id={`todos.priority.${props.todo.id}`}
+        id={`todos.priority.${idPart(props.todo.id)}`}
         font="mono"
         fontSize="xs"
         px="2"
@@ -1876,8 +2502,8 @@ export default function TodoRow(props: Infer<typeof Props>, _slots?: Slots, ctx?
         {props.todo.priority}
       </Text>
       <Link
-        id={`todos.editLink.${props.todo.id}`}
-        to={routes.href("todos.edit", { listId: props.todo.listId, todoId: props.todo.id })}
+        id={`todos.editLink.${idPart(props.todo.id)}`}
+        to={todos.href("todos.edit", { listId: props.todo.listId, todoId: props.todo.id })}
         fg="text"
         fontSize="sm"
       >
@@ -1893,12 +2519,12 @@ export default function TodoRow(props: Infer<typeof Props>, _slots?: Slots, ctx?
 ```tsx title="modules/todos/Suggestions.tsx"
 import type { Ctx } from "@keel/ctx";
 import { type ResourceState, resource } from "@keel/reactive";
-import { Case, For, Match, type Slots } from "@keel/runtime-dom";
+import { Case, For, Match } from "@keel/runtime-dom";
 import { type Infer, s } from "@keel/schema";
-import { type ApiError, service } from "@keel/services";
+import type { ApiError } from "@keel/services";
 import { Box, Heading, Text } from "@keel/ui";
 import type { Suggestion } from "../api/Suggestion.schema.ts";
-import { suggestions } from "./suggestions.service.ts";
+import { todosApi } from "./todosApi.ts";
 
 export const Props = s.object({});
 
@@ -1910,14 +2536,13 @@ const messageOf = (e: unknown): string => (e instanceof Error ? e.message : "Sug
 const failure = (e: ApiError): Error =>
   new Error(e.code === "api.status" ? `Suggestions failed (${e.data.status})` : "Suggestions failed");
 
-async function fetchSuggestions(ctx: Ctx | undefined): Promise<Suggestion[]> {
-  if (ctx === undefined) return Promise.reject(new Error("Suggestions need a ctx"));
-  const r = await service({ module: "api", schema: suggestions }).list({}, ctx);
+async function fetchSuggestions(ctx: Ctx): Promise<Suggestion[]> {
+  const r = await todosApi.suggestions({}, ctx);
   return r.ok ? r.value : Promise.reject(failure(r.error));
 }
 
-/** Suggested titles from `GET /api/suggestions` through a typed `suggestions` client, shown by resource state. */
-export default function Suggestions(_props: Infer<typeof Props>, _slots?: Slots, ctx?: Ctx) {
+/** Suggested titles from `GET /api/suggestions` through the typed `api` client, shown by resource state. */
+export default function Suggestions(_props: Infer<typeof Props>, ctx: Ctx) {
   const list = resource(() => fetchSuggestions(ctx));
   return (
     <Box as="section" id="todos.suggestions" direction="column" gap="3">
@@ -1967,16 +2592,19 @@ export default function Suggestions(_props: Infer<typeof Props>, _slots?: Slots,
 }
 ```
 
-`EditTodoPage` starts its form, `todos.editForm`, from the loader's todo. The action's 422 `{ title }` lands on the title field:
+`EditTodoPage` starts its form, `todos.editForm`, from the loader's todo. The action's 422 `{ title }` lands on the title field. A status line, `todos.edit.status`, names a failed try, a refused edit or a given-up one from `editorChart`, and Save is off in `conflict` and `gaveUp`:
 
 ```tsx title="modules/todos/EditTodoPage.tsx"
 import { form } from "@keel/forms";
+import { computed } from "@keel/reactive";
 import { Form } from "@keel/router";
+import { If } from "@keel/runtime-dom";
 import { type Infer, s } from "@keel/schema";
 import { Box, Button, Heading, Input, Select, Text } from "@keel/ui";
 import { Todo } from "../api/Todo.schema.ts";
 import { TodoDraft } from "../api/TodoDraft.schema.ts";
-import { routes } from "./routes.ts";
+import { editorChart } from "./editorChart.ts";
+import { todos } from "./todos.contract.ts";
 
 export const Props = s.object({
   params: s.object({ listId: s.id("TodoList"), todoId: s.id("Todo") }),
@@ -1989,8 +2617,25 @@ const PRIORITIES = [
   { value: "high", label: "High" },
 ];
 
-/** Route `todos.edit`: a Form editing the todo's title and priority; success returns to `todos.list`. */
+/** What `todos.edit.status` says for each `editorChart` state; empty says nothing. */
+function statusOf(state: string, attempts: number): string {
+  if (state === "saving" && attempts > 1) return "Not saved. Save to try again.";
+  if (state === "conflict") return "Someone changed this todo first. Choose Keep mine or Keep theirs in the outbox.";
+  if (state === "gaveUp") return "Not saved after 3 tries. Reload the page to edit again.";
+  return "";
+}
+
+/**
+ * Route `todos.edit`: a Form editing the todo's title and priority; success returns to `todos.list`. Its status is
+ * `editorChart`'s: `todos.edit.status` names a failed try, a refused edit or a given-up one, and Save is off while
+ * the chart holds a refused edit (`conflict`) or has given up (`gaveUp`).
+ */
 export default function EditTodoPage(props: Infer<typeof Props>) {
+  const status = computed(() => statusOf(editorChart.store.get("state"), editorChart.store.get("data").attempts));
+  const blocked = computed(() => {
+    const state = editorChart.store.get("state");
+    return state === "conflict" || state === "gaveUp";
+  });
   const f = form(TodoDraft, {
     id: "todos.editForm",
     initial: { title: props.data.title, priority: props.data.priority },
@@ -2000,9 +2645,16 @@ export default function EditTodoPage(props: Infer<typeof Props>) {
       <Heading id="todos.edit.title" level={1} fontSize="2xl" weight="semibold" m="0">
         Edit todo
       </Heading>
+      <If when={status.get() !== ""}>
+        {() => (
+          <Text id="todos.edit.status" font="mono" fontSize="sm" fg="error">
+            {status.get()}
+          </Text>
+        )}
+      </If>
       <Form
         method="POST"
-        action={routes.href("todos.edit", props.params)}
+        action={todos.href("todos.edit", props.params)}
         form={f}
         error={(e) => <Text fg="error">{e.message}</Text>}
       >
@@ -2038,6 +2690,8 @@ export default function EditTodoPage(props: Infer<typeof Props>) {
         <Button
           id="todos.save"
           type="submit"
+          disabled={blocked}
+          states={{ disabled: { fg: "textSecondary", border: "control" } }}
           font="mono"
           fontSize="sm"
           px="4"
@@ -2061,7 +2715,7 @@ export default function EditTodoPage(props: Infer<typeof Props>) {
 ```tsx title="modules/todos/ListError.tsx"
 import { type Infer, s } from "@keel/schema";
 import { Box, Heading, Link, Text } from "@keel/ui";
-import { routes } from "./routes.ts";
+import { todos } from "./todos.contract.ts";
 
 export const Props = s.object({
   error: s.object({ code: s.string(), message: s.string() }),
@@ -2080,7 +2734,7 @@ export default function ListError(props: Infer<typeof Props>) {
       <Text as="p" id="todos.error.message" m="0" font="mono" fontSize="sm">
         {props.error.message}
       </Text>
-      <Link id="todos.error.home" to={routes.href("todos.index")} fg="text">
+      <Link id="todos.error.home" to={todos.href("todos.index")} fg="text">
         Back to lists
       </Link>
     </Box>
@@ -2090,61 +2744,51 @@ export default function ListError(props: Infer<typeof Props>) {
 
 ### Routes
 
-The manifest maps route ids to routes. An entry without `path` is a layout (`todos.shell`); others name it with `layout`. Actions attach afterwards with `routes.actions`, by route id and HTTP method. Two steps let an action file import `routes.ts` for `routes.href` without a cycle at declaration time.
+`manifest(todos, binding)` binds each entry of the contract and nothing else. A page binds its `component`, and optionally a `loader`, a `guard`, an `errorElement`, a `title` and its actions by verb (`POST`); the shell is a layout entry, and a page names it with `layout`, which may be a layout of this module or of another. An action file links with `todos.href`, which the contract provides, so no file imports `routes.ts` back and no declaration is circular.
 
 ```ts title="modules/todos/routes.ts"
 import { manifest } from "@keel/router";
-import { ListParams } from "../api/ListParams.schema.ts";
 import AppShell from "./AppShell.tsx";
 import EditTodoPage from "./EditTodoPage.tsx";
 import ListError from "./ListError.tsx";
 import ListPage from "./ListPage.tsx";
-import { ListSearch } from "./ListSearch.schema.ts";
 import ListsPage from "./ListsPage.tsx";
-import { TodoParams } from "./TodoParams.schema.ts";
 import { createList } from "./createList.server.ts";
 import { createTodo } from "./createTodo.server.ts";
 import { editable } from "./editable.guard.ts";
 import { loadIndex } from "./loadIndex.server.ts";
 import { loadList } from "./loadList.server.ts";
 import { loadTodo } from "./loadTodo.server.ts";
+import { todos } from "./todos.contract.ts";
 import { updateTodo } from "./updateTodo.server.ts";
 
-export const routes = manifest({
+export const routes = manifest(todos, {
   "todos.shell": { component: AppShell },
   "todos.index": {
-    path: "/",
     loader: loadIndex,
     component: ListsPage,
     layout: "todos.shell",
     title: () => "Lists",
     errorElement: ListError,
+    POST: createList,
   },
   "todos.list": {
-    path: "/lists/:listId",
-    params: ListParams,
-    search: ListSearch,
     loader: loadList,
     component: ListPage,
     layout: "todos.shell",
     title: (p) => p.data.name,
     errorElement: ListError,
+    POST: createTodo,
   },
   "todos.edit": {
-    path: "/lists/:listId/todos/:todoId/edit",
-    params: TodoParams,
     loader: loadTodo,
     component: EditTodoPage,
     layout: "todos.shell",
     guard: editable,
     title: (p) => `Edit ${p.data.title}`,
     errorElement: ListError,
+    POST: updateTodo,
   },
-});
-routes.actions({
-  "todos.index": { POST: createList },
-  "todos.list": { POST: createTodo },
-  "todos.edit": { POST: updateTodo },
 });
 ```
 
@@ -2161,7 +2805,7 @@ export default module({
   id: "digest",
   deps: ["api", "@keel/std-jobs", "@keel/std-schedules"],
   capabilities: ["clock", "random", "storage", "net"],
-  public: { exports: [], routes: [] },
+  public: { exports: [] },
 });
 ```
 
@@ -2225,29 +2869,37 @@ export async function writeLatest(ctx: Ctx, digest: Digest): Promise<void> {
 }
 ```
 
-### Calling another module
+### The contract
 
-`service({ module: "api", schema })` calls a module's routes wherever `topology.ts` puts it: in process when `api` is in the same deployable, through the peer's URL when it is not. The code is the same in both topologies. The route must be in `api`'s `public.routes` and `api` in `digest`'s `deps`.
+```ts title="modules/digest/digest.contract.ts"
+import { contract } from "@keel/router/contract";
+import { Nothing } from "../api/Nothing.schema.ts";
+import { Digest } from "./Digest.schema.ts";
+import { RecountInput } from "./RecountInput.schema.ts";
 
-```ts title="modules/digest/board.service.ts"
-import { endpoints } from "@keel/services";
-import { BoardView } from "../api/BoardView.schema.ts";
-
-/** The `api` route `digest.recount` reads: `api.lists` (in the `api` module's `public.routes`). */
-export const board = endpoints({
-  lists: { method: "GET", path: "/api/lists", output: BoardView },
+/** The `digest` module's routes: the newest digest, a request to recount, and a live feed of each new digest. */
+export const digest = contract("digest", {
+  "digest.show": { method: "GET", path: "/digest", output: Digest },
+  "digest.refresh": { method: "POST", path: "/digest/refresh", body: RecountInput, output: Nothing },
+  "digest.feed": { method: "GET", path: "/digest/feed", output: Digest, events: true },
 });
 ```
 
+`digest.feed` has `events: true`: its loader is live (below). `digest.refresh` answers `Nothing`, the empty object that `api` exports.
+
+### Calling another module
+
+`service({ contract })` calls a module's routes wherever `topology.ts` puts it: in process when `api` is in the same deployable, through the peer's URL when it is not. The code is the same in both topologies. `digest` imports `api`'s contract, which needs `api` in its `deps`, and the client has one method per entry of it:
+
 ```ts title="modules/digest/boardApi.ts"
 import { service } from "@keel/services";
-import { board } from "./board.service.ts";
+import { api } from "../api/api.contract.ts";
 
 /**
  * The `api` module's board routes, resolved per call by the topology: in process when `api` is served beside
  * `digest`, else through its peer.
  */
-export const boardApi = service({ module: "api", schema: board });
+export const boardApi = service({ contract: api });
 ```
 
 ### Job, queue, schedule, runners
@@ -2312,19 +2964,19 @@ export const runners = [jobs, schedules];
 ```ts title="modules/digest/loadDigest.server.ts"
 import { loader } from "@keel/router";
 import { ok } from "@keel/schema";
-import { Digest } from "./Digest.schema.ts";
+import { digest } from "./digest.contract.ts";
 import { readLatest } from "./readLatest.ts";
 
 /** `GET /digest`: the newest digest. */
-export const loadDigest = loader({ output: Digest }, async (_args, ctx) => ok(await readLatest(ctx)));
+export const loadDigest = loader(digest, "digest.show", {}, async (_args, ctx) => ok(await readLatest(ctx)));
 ```
 
-A loader whose `fn` is an async generator is live. A document or JSON GET takes its first yield; a GET with `accept: text/event-stream` gets every yield as a `data:` line until the request ends. Live loaders need a `node` deployable (E1558).
+The loader of an `events: true` entry is live: its `fn` is an async generator, and a plain function there is E1515. A document or JSON GET takes its first yield; a GET with `accept: text/event-stream` gets every yield as a `data:` line until the request ends. Live loaders need a `node` deployable (E1558).
 
 ```ts title="modules/digest/feedDigest.server.ts"
 import { loader } from "@keel/router";
 import { attempt, ok } from "@keel/schema";
-import { Digest } from "./Digest.schema.ts";
+import { digest } from "./digest.contract.ts";
 import { readLatest } from "./readLatest.ts";
 
 /** How often the feed reads the stored digest, in `ctx.clock` ms. */
@@ -2334,7 +2986,7 @@ const POLL_MS = 1000;
  * `GET /digest/feed`, a live loader: the newest digest, then each different digest a later count stores, read every
  * second until the request ends or the deployable closes.
  */
-export const feedDigest = loader({ output: Digest }, async function* ({ signal }, ctx) {
+export const feedDigest = loader(digest, "digest.feed", {}, async function* ({ signal }, ctx) {
   let last = await readLatest(ctx);
   yield ok(last);
   while (!signal.aborted) {
@@ -2354,32 +3006,32 @@ Another module never imports a queue; it calls the owning module's action, which
 ```ts title="modules/digest/refresh.server.ts"
 import { action } from "@keel/router";
 import { err, ok } from "@keel/schema";
-import { RecountInput } from "./RecountInput.schema.ts";
+import { digest } from "./digest.contract.ts";
 import { jobs } from "./jobs.server.ts";
 
 /** `POST /digest/refresh`: enqueue one `digest.recount`; `GET /digest` shows its count once it has run. */
-export const refresh = action({ input: RecountInput }, async (input, _args, ctx) => {
+export const refresh = action(digest, "digest.refresh", {}, async (input, _args, ctx) => {
   const r = await jobs.enqueue(ctx, "digest.recount", input);
-  return r.ok ? ok(null) : err(r.error);
+  return r.ok ? ok({}) : err(r.error);
 });
 ```
 
 ```ts title="modules/digest/routes.ts"
 import { manifest } from "@keel/router";
+import { digest } from "./digest.contract.ts";
 import { feedDigest } from "./feedDigest.server.ts";
 import { loadDigest } from "./loadDigest.server.ts";
 import { refresh } from "./refresh.server.ts";
 
 /** The `digest` module: board counts that `digest.recount` keeps, on request and every hour. */
-export const routes = manifest({
-  "digest.show": { api: true, path: "/digest", loader: loadDigest },
-  "digest.refresh": { api: true, path: "/digest/refresh" },
-  "digest.feed": { api: true, path: "/digest/feed", loader: feedDigest },
+export const routes = manifest(digest, {
+  "digest.show": { loader: loadDigest },
+  "digest.refresh": { action: refresh },
+  "digest.feed": { loader: feedDigest },
 });
-routes.actions({ "digest.refresh": { POST: refresh } });
 ```
 
-With the three modules written, `keel check` should print `ok check 72 files, 0 errors, 0 warnings`.
+With the three modules written, `keel check` should print `ok check` with `0 errors, 0 warnings`; the file count depends on the tests and artifacts present.
 
 ## 9. Tests
 
@@ -2412,15 +3064,16 @@ export function at<T>(
 }
 ```
 
-`apiRoutes.ts` merges the two `api` deployable modules' routes, as the generated server entry does:
+`apiRoutes.ts` joins the `api` deployable modules' route tables with `routeTable`, as the generated server entry does:
 
 ```ts title="test/apiRoutes.ts"
-import { manifest } from "@keel/router";
+import { routeTable } from "@keel/router";
+import { routes as sessions } from "@keel/std-sessions/routes";
 import { routes as api } from "../modules/api/routes.ts";
 import { routes as digest } from "../modules/digest/routes.ts";
 
-/** The `api` deployable's route table as its generated entry merges it: the `api` and `digest` modules' routes. */
-export const apiRoutes = manifest({ ...api.routes, ...digest.routes });
+/** The `api` deployable's route table as its generated entry merges it: the `api`, `digest` and `sessions` modules' routes. */
+export const apiRoutes = routeTable(api, digest, sessions);
 ```
 
 `simApi.ts` serves the real `api` deployable in process with `createApp`, over one sim `ctx` whose storage is the board's, and gives client code a sim `ctx` whose `/api/*` requests reach it:
@@ -2506,9 +3159,9 @@ function client(app: { fetch(req: Request): Promise<Response> }, seed: number) {
 ```ts title="test/write.ts"
 import { Write } from "@keel/std-offline";
 
-/** A `Write` (`key`, `base`) as an outbox sends it: `key` parses into the branded id. */
+/** A `Write` (`key`, `base`, owner `""`) as an outbox sends it: `key` parses into the branded id. */
 export function write(key: string, base: number): Write {
-  const r = Write.parse({ key, base });
+  const r = Write.parse({ key, base, owner: "" });
   if (!r.ok) throw new Error(r.error.message);
   return r.value;
 }
@@ -2544,6 +3197,17 @@ cp ../../apps/golden-1/test/*.test.ts test/
 | `test/writeSchemas.test.ts` | the three write-body schemas at their limits: what each accepts and refuses |
 | `test/boardEvents.test.ts` | the board channel's route, and a subscriber's `reset` then `saved` after another caller's write |
 | `test/formAnswer.test.ts` | a form action's answer for a sent, queued, conflicting and failed outbox write |
+| `test/editor.test.ts` | the edit page on `editorChart`: a sent, queued, refused, re-sent and given-up edit, `editorOutcome`, `editorFollow`, the status line |
+| `test/editorChart.test.ts` | `explore` over every state of `editorChart` and `properties` on each event's transaction |
+| `test/idPart.test.ts` | `idPart` keeps minted and fixture ids and encodes any other |
+| `test/removal.test.ts` | the removal workflow through the `api` deployable on the sim clock: the 10-minute wait, an undo, three failed purges compensated, a restart while a purge runs |
+| `test/removalParts.test.ts` | the removal's schemas, `api.purgeList`, `purge`, `restore`, the `removal` store, the `jobs` queue and the two actions, called directly |
+| `test/removalChart.explore.test.ts` | `explore` over every state of `removalChart`, no unreached or dead state |
+| `test/board.explore.test.ts` | the board's transactions explored three writes deep from a small board, each state keeping the invariant |
+| `test/board.prove.test.ts` | Z3 proves (`prove`) that each board transaction keeps the invariant from every state it allows |
+| `test/outbox.sim.test.ts` | 100 generated schedules of delays, drops, lost and unavailable requests and offline windows through `boardOutbox`: a write that left the outbox was applied once |
+| `test/monitor.test.ts` | the `api` runners: the `monitor` tallies each committed `api.*` write by name into `sessions.tally` |
+| `test/serverSqlite.test.ts` | the built `server.mjs` on `storage: "sqlite"`: it keeps the board across a restart, and exits 1 with E2153 on a file it cannot open |
 
 The shape of a route test, trimmed from the first test in `test/routes.test.ts`:
 
@@ -2560,8 +3224,6 @@ r.dispose();
 
 `renderRoute` runs guards and loaders and resolves when the page is ready; `fire` resolves once effects, resources and actions settle; `find` returns `{ id, role, name, text, state }`. After the first render and after every `fire`, the harness compares each element's role and name with `.keel/a11y.json` and runs an axe-compatible subset of rules. `properties(transaction)` checks that generated payloads keep every invariant, that equal inputs give equal outputs, and that `undo` restores the input.
 
-A test that imports a `*.server.ts` file whose module imports `routes.ts` back (`updateTodo`) must import `routes.ts` first. Otherwise `routes.actions` receives `undefined` for that action and throws E1505. `board.test.ts` and `components.test.ts` open with that import.
-
 ## 10. Run it
 
 ### Check and test
@@ -2572,7 +3234,7 @@ keel build
 keel check
 ```
 
-A clean run prints `ok 108 tests, 0 failed, 0 skipped (…)` (`keel test` prints `ok test 108 tests, 0 failed, 0 skipped`), then `ok build 79 files, 7 artifacts, 0 errors` (the first build; a later build prints `5 artifacts`, because deploy files are counted only when they change), then `ok check 104 files, 0 errors, 0 warnings`; the check counts the `.keel/` artifacts too. `pnpm check` adds `tsc` and Biome in front of `keel check --quiet`. Output follows `docs/OUTPUT.md`: one line per diagnostic, `fix:` and `see:` lines under it, a summary line last, `--format=pretty` for people. `keel explain <code>` prints what a code means and its fix pattern.
+A clean run prints `ok 166 tests, 0 failed, 0 skipped (…)` (`keel test` prints `ok test 166 tests, 0 failed, 0 skipped`), then `ok build 101 files, 14 artifacts, 0 errors`, then `ok check 139 files, 0 errors, 0 warnings`; the check counts the `.keel/` artifacts too. `pnpm check` adds `tsc` and Biome in front of `keel check --quiet`. Output follows `docs/OUTPUT.md`: one line per diagnostic, `fix:` and `see:` lines under it, a summary line last, `--format=pretty` for people. `keel explain <code>` prints what a code means and its fix pattern.
 
 ### Develop
 
@@ -2582,13 +3244,7 @@ keel dev
 
 One Vite server at `http://localhost:5173` serves the `web` client and answers every `api` and `digest` path from the `api` deployable's dev server on the same origin, with its runners. A source edit reloads the dev servers on the next request and reloads the page in the browser; there is no hot module replacement, so component state does not survive an edit. `keel dev` takes no flags, so it has no port option.
 
-The dev servers keep `ctx.storage` in Node's `localStorage`, which exists only when Node runs with `--localstorage-file`. `keel dev` does not pass it, so with a bare `keel dev` every `api` request answers 500 `keel.unexpected` "ctx.storage: localStorage is unavailable in this runtime" and the runners log the same error each second. In the browser that shows as an unstyled "status 500" on every page that needs the `api` module, while the terminal repeats the runner error every second. Pass the flags through `NODE_OPTIONS`:
-
-```sh
-mkdir -p .keel-dev
-NODE_OPTIONS="--experimental-webstorage --localstorage-file=.keel-dev/storage --disable-warning=ExperimentalWarning" \
-  pnpm keel dev
-```
+The dev servers keep `ctx.storage` in `.keel-dev/`, so a board survives a restart of `keel dev`. `.keel-dev/` is git-ignored by the repo root.
 
 ### Build and run the server
 
@@ -2601,6 +3257,7 @@ NODE_OPTIONS="--experimental-webstorage --localstorage-file=.keel-dev/storage --
 | `KEEL_SECRET` | 32 or more random bytes. It signs the caller cookie; give every deployable of the app the same value. |
 | `PORT` | default 8080 |
 | `KEEL_ORIGIN` | the public origin, such as `https://todo.example`. Loaders see it in `url`, the same-site check uses it, and on https the caller cookie becomes `Secure` (`__Host-keel-caller`). |
+| `KEEL_DATABASE_URL` | the SQLite file as a `file:` URL, default `file:/data/keel.sqlite`; `pnpm api` sets `file://$PWD/.api.sqlite`. A file that cannot be opened prints E2153 and exits 1 |
 | `KEEL_PEER_<NAME>` | the URL of each other `node` deployable; none in golden-1's topology |
 
 ```sh
@@ -2608,14 +3265,14 @@ export KEEL_SECRET=$(node -e 'console.log(require("crypto").randomBytes(32).toSt
 KEEL_ORIGIN=https://todo.example pnpm api
 ```
 
-Docker Desktop listens on 8080; if it runs, set `PORT` to another port and use it in the requests below. `ctx.storage`, which holds the board, the digest and the job queue, is the file `--localstorage-file` names (`.api.storage`): the only state that survives a restart. Each request prints one log line such as `GET /api/lists api.lists 200 2ms`. Without `KEEL_ORIGIN` it also prints W1557 at startup: the cookie is `Secure` only for https requests. With `KEEL_ORIGIN` set, `server.mjs` prints nothing at startup. On SIGTERM or SIGINT it stops listening, lets runners settle and exits 0. An uncaught exception or unhandled rejection prints one E1577 line naming the route whose work threw (never the error's text); the server then stops listening, lets requests in flight finish for at most 10 seconds, closes its storage and exits 1. Run it under a supervisor that restarts it: a container restart policy, systemd or the platform's own.
+Docker Desktop listens on 8080; if it runs, set `PORT` to another port and use it in the requests below. `ctx.storage`, which holds the board, the digest and the job queue, is the SQLite file `KEEL_DATABASE_URL` names (`.api.sqlite`): the only state that survives a restart. Each request prints one log line such as `GET /api/lists api.lists 200 2ms`. Without `KEEL_ORIGIN` it also prints W1557 at startup: the cookie is `Secure` only for https requests. With `KEEL_ORIGIN` set, `server.mjs` prints nothing at startup. On SIGTERM or SIGINT it stops listening, lets runners settle and exits 0. An uncaught exception or unhandled rejection prints one E1577 line naming the route whose work threw (never the error's text); the server then stops listening, lets requests in flight finish for at most 10 seconds, closes its storage and exits 1. Run it under a supervisor that restarts it: a container restart policy, systemd or the platform's own.
 
-Try it with curl. A write needs `x-keel: 1` with `accept: application/json` to pass the same-site check, and a `write` with a `key` of your choosing and the `base` you read (the `head` of `GET /api/lists`):
+Try it with curl. A write needs `x-keel: 1` with `accept: application/json` to pass the same-site check, and a `write` with a `key` of your choosing, the `base` you read (the `head` of `GET /api/lists`) and an `owner`, here empty:
 
 ```sh
 curl -s -H 'accept: application/json' localhost:8080/api/lists
 curl -s -X POST -H 'accept: application/json' -H 'content-type: application/json' -H 'x-keel: 1' \
-  -d '{"name":"Home","write":{"key":"w1","base":0}}' localhost:8080/api/lists
+  -d '{"name":"Home","write":{"key":"w1","base":0,"owner":""}}' localhost:8080/api/lists
 curl -s localhost:8080/api/lists          # JSON too: an API route has no document view
 ```
 
@@ -2625,10 +3282,10 @@ In a second terminal, `curl -s localhost:8080/ | head -c 15` prints `<!doctype h
 
 ### Deploy files
 
-`deploy/api/Dockerfile` builds an image from `dist/api/` alone on `node:22-slim`, runs as `node`, keeps storage on the `/data` volume and exposes 8080. `deploy/compose.yaml` runs one service per `node` deployable and takes `KEEL_SECRET` and `KEEL_ORIGIN` from your environment:
+`deploy/api/Dockerfile` builds an image from `dist/api/` alone on `node:22-slim`, runs as `node`, keeps the SQLite file on the `/data` volume and exposes 8080. `deploy/compose.yaml` runs one service per `node` deployable and takes `KEEL_SECRET`, `KEEL_ORIGIN` and `KEEL_DATABASE_URL` from your environment:
 
 ```sh
-KEEL_SECRET=… KEEL_ORIGIN=… docker compose -f deploy/compose.yaml up
+KEEL_SECRET=… KEEL_ORIGIN=… KEEL_DATABASE_URL=file:/data/keel.sqlite docker compose -f deploy/compose.yaml up
 ```
 
 Both are regenerated by every `keel build`; a hand edit is E1005.
@@ -2642,7 +3299,7 @@ api: { modules: ["api"], adapter: "node" },
 digest: { modules: ["digest"], adapter: "node" },
 ```
 
-`keel build` then writes `dist/digest/server.mjs` and `deploy/digest/Dockerfile`, and `compose.yaml` gives each service the other's URL as `KEEL_PEER_API` and `KEEL_PEER_DIGEST`. `digest`'s `service({ module: "api" })` call goes to its peer over HTTP, and `api` forwards `/digest` requests to `digest`, using the route table in `dist/api/routes.json`.
+`keel build` then writes `dist/digest/server.mjs` and `deploy/digest/Dockerfile`, and `compose.yaml` gives each service the other's URL as `KEEL_PEER_API` and `KEEL_PEER_DIGEST`. `digest`'s `service({ contract: api })` client goes to its peer over HTTP, and `api` forwards `/digest` requests to `digest`, using the route table in `dist/api/routes.json`.
 
 ## 11. Diagnostics you will meet first
 
@@ -2657,10 +3314,10 @@ Every line is `CODE path:line:col message`. Errors start with `E`, warnings with
 | E1004 | imported a `*.server.ts` file from a component | import it only from `routes.ts` |
 | E1155 | a route id, store id, transaction name or error code without the module prefix | prefix it: `todos.list` |
 | E1156 | used a `ctx` capability the manifest does not list | add it to `capabilities` (the fix line shows the edit) |
-| E1151, E1152, E1157 | imported a non-public export, from a module not in `deps`, or called a non-public route | add it to the other module's `public`, or the module to `deps` |
+| E1151, E1152 | imported a non-public export, or anything (a contract included) from a module not in `deps` | add it to the other module's `public.exports`, or the module to `deps` |
 | E1805, E1803 | `<div>` or `style` in a component | `<Box>` and style props |
 | E1802 | a `Heading` without `level`, an `Image` without `alt`, a control without `label` | add the prop |
-| E1501 | a string in `Link to` or `Form action` | `routes.href(id, params)` |
+| E1501 | a string in `Link to` or `Form action` | `todos.href(id, params)` |
 | E1401 | destructured props | `props.x` |
 | E1403 | `{cond && <X />}`, a ternary of elements, or `.map()` to elements | `<If>`, `<For>`, `<Match>` |
 | E1808 | eager children on a base element | `children: () => …` |
@@ -2669,8 +3326,9 @@ Every line is `CODE path:line:col message`. Errors start with `E`, warnings with
 | E1302 | read `ctx` or a global in a transaction | pass the value in the payload |
 | E1451, E1452 | `throw`, or `try`/`catch` | `return err(…)`, `attempt(…)` |
 | E1601 | `Date`, `Math.random`, `fetch`, `localStorage` in app code | `ctx.clock`, `ctx.random`, an endpoint, `ctx.storage` |
-| E1507 | a loader or action whose `params` or `search` is not the route's own schema, or an annotated `fn` | pass the route's schema value; leave `fn` unannotated |
-| E1505 | `routes.actions` got `undefined`, usually a test importing a `*.server.ts` before `routes.ts` | import `routes.ts` first |
+| E1515 | a binding that misses an entry of the contract, names one it lacks, or holds a handler written for another id | bind every entry once, under the id its handler names |
+| E1514 | a contract file importing a component, handler or `routes.ts` | import `*.schema.ts` files and packages only |
+| E1407 | a component's `ctx` parameter optional, defaulted or followed by another | `(props, ctx: Ctx)` |
 | E1751 | a TypeScript error with no Keel code, such as a raw style value | read the `TS` code in the message |
 | E1560 | started `server.mjs` without `KEEL_SECRET`, or with a short one | set it to 32+ random bytes |
 
@@ -2691,16 +3349,20 @@ Retrieve a spec section with `pnpm spec <id>` from the repo root; `pnpm spec --f
 | loaders, actions, server state, status codes, caller | `k.server`; `docs/adr/0033-per-request-server-stores.md` |
 | generated entries, mount and resume | `k.runtime`, `k.compiler`; `docs/adr/0006-islands-ssr.md`, `docs/adr/0035-node-resume-entry-topology-owner.md` |
 | manifests and module rules | `k.module` |
-| routes, layouts, guards, `Form`, `href` | `k.router`; `docs/adr/0004-route-manifest.md`, `docs/adr/0052-two-phase-manifest-actions.md` |
+| contracts, bindings, handlers, `href` | `k.contract`, `k.routes`, `k.api`; `docs/rfc/0157-module-contract.md` |
+| layouts, guards, `Form` | `k.router`; `docs/adr/0004-route-manifest.md` |
 | schemas, `Result`, errors | `k.schema`, `k.errors` |
 | stores, transactions, undo, invariants | `k.store`, `k.reactive`; `docs/adr/0003-transactions.md` |
 | components, JSX rules, ids | `k.component`, `k.ui` |
 | forms | `k.forms` |
-| services and `ApiError` | `k.services`; `docs/adr/0028-service-schema-filename.md` |
+| services and `ApiError` | `k.services` |
 | `ctx` and capabilities | `k.ctx`; `docs/adr/0007-ctx-capabilities.md` |
 | CLI commands and flags | `k.cli`, `k.check` |
 | test harness | `k.testing` |
 | HTTP surface compatibility | `k.compat`; `docs/adr/0077-surface-compatibility.md` |
+| statecharts and workflows | `std.statecharts`, `std.workflows` |
+| production tallies, session recording | `std.sessions` |
+| SQLite and Postgres storage | `std.db`, `k.deploy` |
 | jobs and schedules | `std.jobs`, `std.schedules`; `docs/adr/0079-jobs-and-schedules.md` |
 | live loaders | `k.server`; `docs/adr/0076-live-loaders-event-streams.md` |
 | store heads, `concurrent` policies, writes | `k.sync`; `docs/adr/0080-store-heads-concurrent-writes.md` |
@@ -2711,9 +3373,11 @@ The Keel skills in `.claude/skills/keel*/SKILL.md` are terse API cards for the s
 
 ## What this guide leaves out
 
-- The ten test suites, copied from `apps/golden-1/test/` in section 9 rather than reprinted.
+- The test suites, copied from `apps/golden-1/test/` in section 9 rather than reprinted.
 - `README.md`; golden-1's own is at `apps/golden-1/README.md`.
+- The native shells: `keel build --target tauri` and `--target capacitor` build `web` for desktop and mobile from the `shells` of `topology.ts` (`apps/golden-1/README.md`, Native shells).
+- The shell session helpers in `test/` (`shellSession.ts`, `shellOutboxSession.ts`) and the production tally check (`node tooling/smoke/monitor.mjs`).
 - Inspecting a running app (`keel inspect`, `/__keel/inspect`), recorded sessions, and `keel check --base` against a deployed `surface.json`.
 - Shipping the `web` client to a static host or across origins; `docs/guide/deploy-client.md` covers it.
 
-verified: e7eb9c0e5cf941ec5db727036f9648a4d3fcbabb
+verified: b8e3fb6c7219acfdc4bba61aebbeb0abb8a6a308

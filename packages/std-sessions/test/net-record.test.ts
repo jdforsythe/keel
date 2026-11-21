@@ -4,6 +4,7 @@
 import { createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { store, transaction, tx } from "@keel/store";
 import { renderRoute } from "@keel/testing";
@@ -18,17 +19,16 @@ import { toTest } from "../src/toTest.ts";
 function build() {
   const seen = store(s.object({ log: s.string() }), { log: "" }, { id: "seen" });
   const note = transaction(seen, "seen.note", s.object({ v: s.string() }), (st, p) => ({ log: st.log + p.v }));
-  const routes = manifest({
+  const routes = manifest(contract("net", { "net.show": { path: "/net" } }), {
     "net.show": {
-      path: "/net",
-      component(_p: unknown, _s: unknown, ctx?: { net: { online(): boolean } }): Node {
+      component(_p, ctx): Node {
         return Box({
           as: "main",
           children: () => [
             Button({
               id: "net.probe",
               children: "Probe",
-              onClick: () => void tx(note, { v: ctx?.net.online() === false ? "0" : "1" }),
+              onClick: () => void tx(note, { v: ctx.net.online() ? "1" : "0" }),
             }),
           ],
         });
@@ -85,7 +85,11 @@ describe("net events", () => {
 
   test("to-test writes each net event as a setOnline call", async () => {
     const { session } = await live([false, true]);
-    const text = toTest(session, { navs: [], stores: [], routes: [{ module: "net", from: "../routes.ts" }] });
+    const text = toTest(session, {
+      navs: [],
+      stores: [],
+      routes: [{ module: "net", from: "../routes.ts", contract: "../net.contract.ts" }],
+    });
     expect(text).toContain("ctx.net.setOnline(false);");
     expect(text).toContain("ctx.net.setOnline(true);");
     expect(text.indexOf("setOnline(false)")).toBeLessThan(text.indexOf("setOnline(true)"));

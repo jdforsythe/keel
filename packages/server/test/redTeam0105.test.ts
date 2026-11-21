@@ -4,7 +4,8 @@
 // overlapping secrets and pii values leave no part of a secret; the automaton is kept for a request's set while it has
 // not grown; a long value is marked whole; and each `createApp` puts the server's listener back in the `onSecret` slot. Seed 1337.
 import { createCtx } from "@keel/ctx";
-import { type Manifest, type RouteDef, action, loader, manifest } from "@keel/router";
+import { type RouteTable, action, loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { type ObjectSchema, ok, reveal, s } from "@keel/schema";
 import { onSecret } from "@keel/schema/internal";
 import fc from "fast-check";
@@ -22,7 +23,7 @@ const text = (v: unknown, k: string): string => {
   return typeof f === "string" ? f : "";
 };
 
-async function boot(routes: Manifest<Readonly<Record<string, RouteDef>>>, mode: "dev" | "production", module = "app") {
+async function boot(routes: RouteTable, mode: "dev" | "production", module = "app") {
   const lines: string[] = [];
   const app = await createApp({
     topology: topology({ web: { modules: [module], adapter: "node" } }),
@@ -49,8 +50,9 @@ async function actionApp<I>(
   run: (v: I) => Promise<never>,
   mode: "dev" | "production" = "production",
 ) {
-  const routes = manifest({ "app.a": { path: "/a", component: () => document.createElement("main") } });
-  routes.actions({ "app.a": { POST: action({ input }, (v) => run(v)) } });
+  const c = contract("app", { "app.a": { path: "/a" } });
+  const save = action(c, "app.a", { input }, (v) => run(v));
+  const routes = manifest(c, { "app.a": { component: () => document.createElement("main"), POST: save } });
   return boot(routes, mode);
 }
 
@@ -119,12 +121,13 @@ describe("no secret or pii value makes the scrub throw", () => {
     const printed: string[] = [];
     vi.spyOn(console, "error").mockImplementation((...a: unknown[]) => void printed.push(a.map(String).join(" ")));
     const K = s.secret(s.string());
-    const live = loader({ output: Nothing }, async function* () {
+    const c = contract("api", { "api.live": { method: "GET", path: "/api/live", output: Nothing, events: true } });
+    const live = loader(c, "api.live", {}, async function* () {
       yield ok({});
       const k = K.parse("x\ud800yz");
       if (k.ok) throw new Error(`sur ${reveal(k.value)}`);
     });
-    const t = await boot(manifest({ "api.live": { api: true, path: "/api/live", loader: live } }), "dev", "api");
+    const t = await boot(manifest(c, { "api.live": { loader: live } }), "dev", "api");
     const res = await t.app.fetch(
       new Request("http://localhost/api/live", { headers: { accept: "text/event-stream" } }),
     );

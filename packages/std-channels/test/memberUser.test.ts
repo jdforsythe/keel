@@ -2,6 +2,7 @@
 // `member` gets the request's `user` beside `caller` (k.user): the opener's at open, the publisher's at a publish.
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { createApp, identity, topology } from "@keel/server";
 import { store } from "@keel/store";
@@ -18,16 +19,26 @@ const room = channel("u.room", {
 
 test("member sees the opener's user at open and the publisher's at a publish", async () => {
   const seen: string[] = [];
-  const route = channelRoute(room, {
+  const u = contract("u", {
+    "u.room": { method: "GET", path: "/api/room/events", query: room.params, events: true, output: room.events },
+    "u.publish": {
+      method: "POST",
+      path: "/api/room/events",
+      query: room.params,
+      body: room.body,
+      output: s.object({}),
+    },
+  });
+  const route = channelRoute(u, room, {
     id: "u.room",
+    publish: "u.publish",
     stores: flags,
     member: ({ user }) => {
       seen.push(user);
       return user !== "";
     },
   });
-  const routes = manifest({ "u.room": { api: true, path: route.path, loader: route.loader } });
-  routes.actions({ "u.room": route.actions });
+  const routes = manifest(u, { "u.room": { loader: route.loader }, "u.publish": { action: route.action } });
   const app = await createApp({
     topology: topology({ web: { modules: ["u"], adapter: "node" } }),
     routes,

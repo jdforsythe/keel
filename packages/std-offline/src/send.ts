@@ -1,5 +1,4 @@
 import type { Ctx } from "@keel/ctx";
-import type { EndpointMap } from "@keel/services";
 import { tx } from "@keel/store";
 import { asResult } from "../unsafe/asResult.ts";
 import type { Outbox } from "./Outbox.type.ts";
@@ -26,7 +25,7 @@ import { own } from "./internal/own.ts";
  * (`offline.owner`); a write to `ctx.storage` that rejects leaves the entry `failed` in memory, posts nothing
  * and resolves `failed` with `offline.storage` (its message the outbox id). Throws when `input` is not JSON (a schema-typed input always is).
  */
-export async function send<const D extends EndpointMap, K extends keyof D & string>(
+export async function send<const D extends object, K extends keyof D & string>(
   ctx: Ctx,
   o: Outbox<D>,
   endpoint: K,

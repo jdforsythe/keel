@@ -30,7 +30,7 @@ const HEARTBEAT_MS = 15_000;
  * `keel.unexpected` diag written to `log`, both without the request's `.pii()` values and revealed secrets (`scrubbedCause`, `scrubbedDiag`; past a scrub cap the diag keeps `loader <id> threw: `). Written with Hono's `streamSSE`; `cache-control: no-store`. With
  * `maxStreams` streams open it is 503 `keel.busy` and opens nothing; a stream holds its place until it ends.
  */
-export function liveStream(r: Req, m: Match & { kind: "route" }, live: Loader<unknown>, c: Context): Handled {
+export function liveStream(r: Req, m: Match & { kind: "route" }, live: Loader, c: Context): Handled {
   const { sv, raw } = r;
   if (sv.streams.open >= sv.maxStreams) return { response: busy(sv.maxStreams), route: m.route.id, diags: [] };
   const rq: RequestScope = { ...r.rq, scope: scope(() => undefined, { detached: true }), held: new Map() };

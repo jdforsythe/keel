@@ -1,6 +1,6 @@
 import type { Origins, Topology } from "@keel/compiler";
 import type { Ctx } from "@keel/ctx";
-import type { Manifest, RouteDef } from "@keel/router";
+import type { RouteTable } from "@keel/router";
 import type { Identity } from "./Identity.ts";
 import type { LogSink } from "./LogSink.ts";
 import type { Runner } from "./Runner.ts";
@@ -8,7 +8,7 @@ import type { ServerApp } from "./ServerApp.ts";
 
 /**
  * Options of `createApp` (generated server entry and `keel dev` only; app code sees only `topology`).
- * `routes` is the union manifest of the deployable's modules. `deployable` names the topology entry to
+ * `routes` is the deployable's route table (k.routes): `routeTable` of its modules' manifests, or one manifest. `deployable` names the topology entry to
  * serve (required when there is more than one); guards are the values routes hold in `guard` (RFC 0041). `mode` defaults to `production`. `artifacts` is the compiler's `.keel` directory; in dev, `GET /__keel/inspect` reads `ids`, `a11y`,
  * and `routes` from it (k.cli Inspect). A throw's log `frames` are relative to the folder holding `artifacts`, a
  * `<artifacts>/server.mjs` position read through `server.mjs.map`; without `artifacts` a throw has no frames. `inspect.origins` lists the origins (`:*` for any port) besides the request's
@@ -27,7 +27,7 @@ import type { ServerApp } from "./ServerApp.ts";
  * their modules' config with `stdConfig(ctx, pkg, Config)` (k.module Std config, rfc:0066).
  * `routes` defaults to none (a deployable of runners alone). `runners` lists each module's `Runner`s; those of the
  * served deployable's modules run once after startup (k.topology Runners). `peers` names the other `node` deployables,
- * by URL or as apps in this process: `service({ module })` calls and requests for the paths they serve (by `routes.json`
+ * by URL or as apps in this process: service client calls and requests for the paths they serve (by `routes.json`
  * in `artifacts`) go to them (k.topology Calls and peers). `origin` is the public origin, which replaces the request's in
  * `url`, the same-site check and `Secure` (k.topology Build). `allow` lists the http(s) origins whose requests to API
  * routes are granted (k.hosting Allowed origins): matched exactly by scheme, host and port; an entry that is not an
@@ -43,7 +43,7 @@ import type { ServerApp } from "./ServerApp.ts";
  */
 export type AppOptions = {
   readonly topology: Topology;
-  readonly routes?: Manifest<Readonly<Record<string, RouteDef>>>;
+  readonly routes?: RouteTable;
   readonly ctx: Ctx;
   readonly mode?: "dev" | "production";
   readonly deployable?: string;

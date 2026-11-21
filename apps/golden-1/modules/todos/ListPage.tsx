@@ -1,7 +1,6 @@
-import type { Ctx } from "@keel/ctx";
 import { form } from "@keel/forms";
 import { Form } from "@keel/router";
-import { For, type Slots } from "@keel/runtime-dom";
+import { For } from "@keel/runtime-dom";
 import { type Infer, s } from "@keel/schema";
 import { Box, Button, Heading, Input, Link, Select, Text } from "@keel/ui";
 import { TodoDraft } from "../api/TodoDraft.schema.ts";
@@ -9,7 +8,7 @@ import { TodoList } from "../api/TodoList.schema.ts";
 import Suggestions from "./Suggestions.tsx";
 import TodoRow from "./TodoRow.tsx";
 import { idPart } from "./idPart.ts";
-import { routes } from "./routes.ts";
+import { todos } from "./todos.contract.ts";
 import { view } from "./view.ts";
 
 export const Props = s.object({
@@ -25,7 +24,7 @@ const PRIORITIES = [
 ];
 
 /** Route `todos.list`: the list's todos filtered by `search.filter`, filter links, an add-todo Form, Suggestions. */
-export default function ListPage(props: Infer<typeof Props>, _slots?: Slots, ctx?: Ctx) {
+export default function ListPage(props: Infer<typeof Props>) {
   const f = form(TodoDraft, { id: "todos.addForm", initial: { priority: "normal" } });
   const shown = () =>
     view
@@ -43,21 +42,21 @@ export default function ListPage(props: Infer<typeof Props>, _slots?: Slots, ctx
       <Box as="section" id="todos.filters" direction="row" gap="4" font="mono" fontSize="sm">
         <Link
           id="todos.filter.all"
-          to={routes.href("todos.list", { listId: props.params.listId }, { filter: "all" })}
+          to={todos.href("todos.list", { listId: props.params.listId }, { filter: "all" })}
           fg="text"
         >
           All
         </Link>
         <Link
           id="todos.filter.active"
-          to={routes.href("todos.list", { listId: props.params.listId }, { filter: "active" })}
+          to={todos.href("todos.list", { listId: props.params.listId }, { filter: "active" })}
           fg="text"
         >
           Active
         </Link>
         <Link
           id="todos.filter.done"
-          to={routes.href("todos.list", { listId: props.params.listId }, { filter: "done" })}
+          to={todos.href("todos.list", { listId: props.params.listId }, { filter: "done" })}
           fg="text"
         >
           Done
@@ -74,7 +73,7 @@ export default function ListPage(props: Infer<typeof Props>, _slots?: Slots, ctx
       </Box>
       <Form
         method="POST"
-        action={routes.href("todos.list", { listId: props.params.listId })}
+        action={todos.href("todos.list", { listId: props.params.listId })}
         form={f}
         error={(e) => <Text fg="error">{e.message}</Text>}
       >

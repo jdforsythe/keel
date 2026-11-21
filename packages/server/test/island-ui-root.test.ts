@@ -5,16 +5,18 @@
 import { createCtx } from "@keel/ctx";
 import { signal } from "@keel/reactive";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { Box, Button, Input, Text } from "@keel/ui";
 import { describe, expect, it } from "vitest";
 import { createApp, topology } from "../src/index.ts";
 
+const c = contract("app", { "app.form": { path: "/" } });
 const ENTRY = '<script type="module" src="/@keel/entry.ts" nonce="';
 
 async function page(component: () => Node): Promise<string> {
   const app = await createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
-    routes: manifest({ "app.form": { path: "/", component } }),
+    routes: manifest(c, { "app.form": { component } }),
     ctx: createCtx({ mode: "sim", seed: 1 }),
   });
   const res = await app.fetch(new Request("http://localhost/", { headers: { accept: "text/html" } }));

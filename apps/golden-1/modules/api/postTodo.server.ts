@@ -2,9 +2,7 @@ import { action } from "@keel/router";
 import { err, ok } from "@keel/schema";
 import { writeFor } from "@keel/std-offline";
 import { tx } from "@keel/store";
-import { ListParams } from "./ListParams.schema.ts";
-import { Nothing } from "./Nothing.schema.ts";
-import { TodoWrite } from "./TodoWrite.schema.ts";
+import { api } from "./api.contract.ts";
 import { boardStores } from "./boardStores.ts";
 
 /**
@@ -13,7 +11,9 @@ import { boardStores } from "./boardStores.ts";
  * `offline.signin`.
  */
 export const postTodo = action(
-  { input: TodoWrite, params: ListParams, output: Nothing, stores: boardStores },
+  api,
+  "api.addTodo",
+  { stores: boardStores },
   (input, { params, caller, stores }, ctx) => {
     const { listId } = params;
     if (!stores.board.get("lists").some((l) => l.id === listId))

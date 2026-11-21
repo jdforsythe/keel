@@ -13,6 +13,8 @@ import { element, host } from "../src/ops/index.ts";
 import type { HostStart } from "../src/ops/index.ts";
 import { SEED, rootSignal } from "./support.ts";
 
+const opts = () => ({ ctx: createCtx({ mode: "sim", seed: SEED }) });
+
 const Points = s.object({ points: s.array(s.number()) });
 type P = { readonly points: readonly number[] };
 const Pick = s.object({ at: s.number() });
@@ -93,7 +95,7 @@ describe("host op", () => {
         const first: P = { points: [] };
         const v = rootSignal(first);
         const { log, code } = probe();
-        const off = mount(() => chart(code, v), root());
+        const off = mount(() => chart(code, v), root(), opts());
         await flush();
         step();
         const written = ns.map((n): P => ({ points: [n] }));
@@ -121,6 +123,7 @@ describe("host op", () => {
           children: () => chart(code, { points: [1] }),
         }),
       root(),
+      opts(),
     );
     on.set(false);
     await flush();
@@ -139,7 +142,7 @@ describe("host op", () => {
     serverMode.on = true;
     try {
       const r = root();
-      mount(() => chart(code, { points: [1] }), r);
+      mount(() => chart(code, { points: [1] }), r, opts());
       const el = r.firstElementChild;
       expect(el !== null && hosts.has(el)).toBe(false);
     } finally {
@@ -207,7 +210,7 @@ describe("host op", () => {
             },
           }),
         root(),
-        { mode },
+        { ...opts(), mode },
       );
       await flush();
       step();
@@ -236,6 +239,7 @@ describe("host op", () => {
           },
         }),
       root(),
+      opts(),
     );
     await flush();
     step();

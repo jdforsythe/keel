@@ -1,4 +1,4 @@
-import { carriedParams, guardLoop, guardNext, matchUrl, withNext } from "@keel/router/internal";
+import { carriedParams, encodeHref, guardLoop, guardNext, matchUrl, withNext } from "@keel/router/internal";
 import type { Level } from "@keel/router/internal";
 import { needsBare } from "@keel/router/internal";
 import type { KeelError, Secret } from "@keel/schema";
@@ -35,7 +35,7 @@ async function step(
   rq: RequestScope,
   bearer?: Secret<string>,
 ): Promise<Step> {
-  const { routes, table } = sv;
+  const { byId, table } = sv;
   const who = { caller: rq.caller.id, user: rq.user };
   for (const [i, lvl] of chain.entries()) {
     const g = lvl.def.guard;
@@ -55,8 +55,9 @@ async function step(
     if (r.error.code !== "keel.denied") return { kind: "fail", at: i, error: r.error };
     const id = g.redirect;
     // An API route's denial is 403 (k.api): no redirect is followed, so none is resolved.
-    if (lvl.def.api || id === undefined) return { kind: "redirect", at: i, location: "" };
-    const carried = carriedParams(id, table.find((r) => r.id === id)?.def, params);
+    if (lvl.def.kind === "api" || id === undefined) return { kind: "redirect", at: i, location: "" };
+    const target = byId.get(id)?.def;
+    const carried = carriedParams(id, target, params);
     if (!carried.ok)
       return {
         kind: "fail",
@@ -64,7 +65,7 @@ async function step(
         error: unexpected(carried.error),
         diags: [{ code: "E1508", message: carried.error.slice(6, 95) }],
       };
-    const to = attempted(() => routes.href(id, carried.value));
+    const to = attempted(() => encodeHref(id, target, carried.value, {}));
     if (!to.ok)
       return {
         kind: "fail",
@@ -88,7 +89,7 @@ async function nextHop(url: string, sv: Served, rq: RequestScope): Promise<strin
  * Run every guard of `chain`, outermost first, before any loader (k.guards). `keel.denied` redirects
  * to the guard's `redirect` route with search `next` (the request path and query, or that URL's own `next` when it
  * is a guard's redirect route: never nested, `guardNext`); any other `err`, a throw fails at that level. A route's
- * `guard` is the guard value; its `redirect` resolves in the deployable's manifest `routes`.
+ * `guard` is the guard value; its `redirect` resolves in the deployable's route table (`byId`).
  * Before answering a redirect, the target's guards run here, hop by hop (the browser would follow): a location
  * visited twice or a ninth redirect is E1508, a `keel.unexpected` failure at the denying level with a diag; a guard's
  * throw fails at its level, scrubbed, with a `keel.unexpected` diag (k.server Log).

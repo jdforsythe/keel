@@ -1,4 +1,5 @@
 import { createCtx } from "@keel/ctx";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -6,11 +7,16 @@ import { endpoints, service } from "../src/index.ts";
 
 const BASE = "https://api.example.com";
 const MODULE_URL = "http://b.keel.invalid";
-const schema = endpoints({
-  get: { method: "GET", path: "/x", output: s.object({}), errors: { 502: s.object({ ok: s.boolean() }) } },
-});
+const get = {
+  method: "GET",
+  path: "/x",
+  output: s.object({}),
+  errors: { 502: s.object({ ok: s.boolean() }) },
+} as const;
+const schema = endpoints({ get });
+const b = contract("b", { "b.get": get });
 const api = service({ base: BASE, schema });
-const peer = service({ module: "b", schema });
+const peer = service({ contract: b });
 const JSON_TYPE = { "content-type": "application/json" };
 const unreachable = (message: string): string =>
   JSON.stringify({ ok: false, error: { code: "keel.unreachable", message, data: {} } });

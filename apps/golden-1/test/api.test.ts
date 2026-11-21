@@ -353,8 +353,8 @@ describe("api routes", () => {
     ).toEqual(first);
   });
   it("API routes have no view: accept text/html still gets JSON, a GET without a loader is 405", async () => {
-    expect(routes.routes["api.lists"]).toMatchObject({ api: true });
-    expect("component" in routes.routes["api.undo"]).toBe(false);
+    expect(routes.contract.entries["api.lists"]).toMatchObject({ method: "GET", path: "/api/lists" });
+    expect(routes.contract.entries["api.undo"]).toMatchObject({ method: "POST", path: "/api/undo" });
     await seedBoard(boardOf({ lists: [L], todos: [] }));
     const app = await apiApp();
     const doc = await app.fetch(new Request(`${ORIGIN}/api/lists`, { headers: { accept: "text/html" } }));

@@ -1,4 +1,4 @@
-// A nested project's route manifest spreads a `deps` package's `routes` export; check() resolves it from the project.
+// A nested project places a stdlib module; check() reads its package's `./contract` and `./routes` from the project's node_modules.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -19,11 +19,26 @@ const put = (rel: string, text: string): void => {
 
 beforeEach(() => {
   root = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), "keel-frag-root-"));
+  put(
+    "apps/a/modules/m/module.ts",
+    `export default module({ id: "m", deps: ["${PKG}"], capabilities: [], public: { exports: [], routes: [] } });\n`,
+  );
   elsewhere = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), "keel-frag-else-"));
-  put(`apps/a/node_modules/${PKG}/package.json`, JSON.stringify({ exports: { "./routes": "./src/routes.ts" } }));
+  put(
+    `apps/a/node_modules/${PKG}/package.json`,
+    JSON.stringify({ exports: { "./contract": "./src/contract.ts", "./routes": "./src/routes.ts" } }),
+  );
+  put(
+    `apps/a/node_modules/${PKG}/module.ts`,
+    `export default module({ id: "frag", capabilities: [], public: { exports: [], routes: [] } });\n`,
+  );
+  put(
+    `apps/a/node_modules/${PKG}/src/contract.ts`,
+    `import { contract } from "@keel/router/contract";\nexport const frag = contract("frag", { "frag.a": { path: "/frag" } });\n`,
+  );
   put(
     `apps/a/node_modules/${PKG}/src/routes.ts`,
-    `import { manifest } from "@keel/router";\nexport const routes = manifest({ "frag.a": { path: "/frag" } });\n`,
+    `import { manifest } from "@keel/router";\nimport { frag } from "./contract.ts";\nexport const routes = manifest(frag, { "frag.a": { component: () => null } });\n`,
   );
 });
 afterEach(() => {
@@ -43,12 +58,20 @@ const entry = (p: string, module: string) => ({
 const data = { "frag.a": entry("/frag", "frag"), "m.home": entry("/", "m") };
 const files: SourceFile[] = [
   {
+    path: "apps/a/topology.ts",
+    source: `export default { web: { modules: ["m", "frag"], adapter: "client" } };\n`,
+  },
+  {
     path: "apps/a/modules/m/module.ts",
     source: `export default module({ id: "m", deps: ["${PKG}"], capabilities: [], public: { exports: [], routes: [] } });\n`,
   },
   {
+    path: "apps/a/modules/m/m.contract.ts",
+    source: `import { contract } from "@keel/router/contract";\nexport const m = contract("m", { "m.home": { path: "/" } });\n`,
+  },
+  {
     path: "apps/a/modules/m/routes.ts",
-    source: `import { manifest } from "@keel/router";\nimport { routes as x } from "${PKG}/routes";\nexport const routes = manifest({ "m.home": { path: "/" }, ...x.routes });\n`,
+    source: `import { manifest } from "@keel/router";\nimport { m } from "./m.contract.ts";\nexport const routes = manifest(m, { "m.home": { component: () => null } });\n`,
   },
   { path: "apps/a/.keel/routes.json", source: `${canonicalJson({ data, hash: hashOf(data) })}\n` },
 ];
@@ -62,6 +85,6 @@ it("reads the fragment from the nested project's node_modules under the workspac
   expect(routesDiags(root)).toEqual([]);
 });
 
-it("keeps W1005 for the spread when the root holds no such project", () => {
+it("is W1005 for the unread stdlib module when the root holds no such project", () => {
   expect(routesDiags(elsewhere).map((d) => d.code)).toEqual(["W1005"]);
 });

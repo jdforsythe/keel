@@ -4,6 +4,7 @@
 import { type Ctx, createCtx } from "@keel/ctx";
 import { Form, action, loader, manifest } from "@keel/router";
 import type { RouteProps } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { text } from "@keel/runtime-dom/ops";
 import { ok, s } from "@keel/schema";
 import { store, transaction, tx } from "@keel/store";
@@ -29,7 +30,7 @@ const itemsOf = (data: unknown): readonly string[] => {
   const items: unknown = typeof data === "object" && data !== null ? Reflect.get(data, "items") : undefined;
   return Array.isArray(items) ? items.filter((i): i is string => typeof i === "string") : [];
 };
-const links = manifest({ "cp.link": { path: "/cp", component: () => el("p", "cp.link") } });
+const c = contract("cp", { "cp.page": { path: "/cp" }, "cp.other": { path: "/cp-other" } });
 const page = (props: RouteProps): Node => {
   const main = el("main", "cp.page");
   const list = el("p", "cp.items");
@@ -40,30 +41,23 @@ const page = (props: RouteProps): Node => {
   const button = el("button", "cp.save");
   button.setAttribute("type", "submit");
   button.textContent = "Save";
-  const form = Form({ method: "POST", action: links.href("cp.link"), children: () => [input, button] });
+  const form = Form({ method: "POST", action: c.href("cp.page"), children: () => [input, button] });
   form.id = "cp.form";
   main.append(list, form);
   return main;
 };
-const routes = manifest({
-  "cp.page": {
-    path: "/cp",
-    loader: loader({ output: Notes, stores: factory }, async ({ stores }) =>
-      ok({ items: [...stores.notes.get("items")] }),
-    ),
-    component: page,
-  },
-  "cp.other": { path: "/cp-other", component: () => el("p", "cp.other") },
+const load = loader(c, "cp.page", { output: Notes, stores: factory }, async ({ stores }) =>
+  ok({ items: [...stores.notes.get("items")] }),
+);
+const save = action(c, "cp.page", { input: Add, stores: factory }, async ({ text: t }, { stores }) => {
+  tx(stores.add, { text: t });
+  gate.arrived?.();
+  if (gate.hold !== null) await gate.hold;
+  return ok(null);
 });
-routes.actions({
-  "cp.page": {
-    POST: action({ input: Add, stores: factory }, async ({ text: t }, { stores }) => {
-      tx(stores.add, { text: t });
-      gate.arrived?.();
-      if (gate.hold !== null) await gate.hold;
-      return ok(null);
-    }),
-  },
+const routes = manifest(c, {
+  "cp.page": { loader: load, component: page, POST: save },
+  "cp.other": { component: () => el("p", "cp.other") },
 });
 
 const appOn = (ctx: Ctx) =>
@@ -93,8 +87,8 @@ describe("one saved copy per ctx.storage", () => {
     await h.fire("cp.form", { type: "submit" });
     expect(await itemsVia(app)).toEqual(["harness"]);
     expect((await post(app, "app")).status).toBe(200);
-    await h.navigate(routes.href("cp.other"));
-    await h.navigate(routes.href("cp.page"));
+    await h.navigate(c.href("cp.other"));
+    await h.navigate(c.href("cp.page"));
     expect(h.find("cp.items").text).toBe("harness,app");
     h.dispose();
     await app.close();

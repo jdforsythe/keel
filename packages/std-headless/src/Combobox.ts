@@ -32,8 +32,7 @@ export function Combobox<K extends string>(
       readonly empty?: PartStyle;
     };
   },
-  _slots?: undefined,
-  ctx?: Ctx,
+  ctx: Ctx,
 ): Node {
   const id = props.id;
   const l = listChart(id, "option", props.options, ctx);

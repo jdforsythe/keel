@@ -5,24 +5,34 @@
 // router, which reports the navigation and then the loader's error. The recorder outlives the page component, and an
 // error reported after the served route but before the page resumes still reaches it, as on first load. Seed 1337
 import { createCtx } from "@keel/ctx";
-import { manifest } from "@keel/router";
+import { loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { mount } from "@keel/runtime-dom";
+import { err, s } from "@keel/schema";
 import { record, session } from "@keel/std-sessions";
 import { renderRoute } from "@keel/testing";
 import { describe, expect, it } from "vitest";
 import Home from "../modules/ops/Home.ts";
 import { routes } from "../modules/ops/routes.ts";
-import { forcedLoader } from "./forcedLoader.server.ts";
+
+const forced = contract("ops", { "ops.home": { path: "/" }, "ops.forced": { path: "/forced" } });
+const failingContract = contract("ops", { "ops.home": { path: "/" } });
+
+/** A loader that always fails with `ops.forced`: the router reports it as an `error` event after its `nav`. */
+const fail = () => err({ code: "ops.forced", message: "forced for the test", data: null });
 
 /** The ops home page beside a route whose loader fails. */
-const withForced = manifest({
-  "ops.home": { path: "/", component: Home },
-  "ops.forced": { path: "/forced", component: Home, loader: forcedLoader },
+const withForced = manifest(forced, {
+  "ops.home": { component: Home },
+  "ops.forced": { component: Home, loader: loader(forced, "ops.forced", { output: s.string() }, async () => fail()) },
 });
 
 /** `ops.home` served with a loader that fails: the router reports its `nav`, then the loader's `error`. */
-const failing = manifest({
-  "ops.home": { path: "/", component: Home, loader: forcedLoader },
+const failing = manifest(failingContract, {
+  "ops.home": {
+    component: Home,
+    loader: loader(failingContract, "ops.home", { output: s.string() }, async () => fail()),
+  },
 });
 
 describe("ops.home recording", () => {
@@ -34,7 +44,7 @@ describe("ops.home recording", () => {
     expect(recorder.errors()).toEqual([]);
     expect(session(ctx).taken()).toEqual([]);
 
-    await page.navigate(withForced.href("ops.forced"));
+    await page.navigate(forced.href("ops.forced"));
     expect(recorder.errors().map((e) => e.code)).toEqual(["ops.forced"]);
     expect(recorder.events().map((e) => e.kind)).toEqual(["nav", "error"]);
 

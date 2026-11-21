@@ -10,8 +10,8 @@
 // outbox id), resolves so and is never posted again. Seed 1337.
 import { type SimCtx, createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
-import { endpoints } from "@keel/services";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { type OutboxResult, Write, drain, outbox, resolve, send, writeFor } from "../src/index.ts";
@@ -21,8 +21,13 @@ import { flowOf } from "../src/internal/flowOf.ts";
 const ORIGIN = "http://app.keel.invalid";
 const OWNER = "u1";
 const OWNERS = ["u1", "u2"] as const;
-const Api = endpoints({
-  add: { method: "POST", path: "/add", body: s.object({ n: s.int(), write: Write }), output: s.object({ n: s.int() }) },
+const Api = contract("app", {
+  "app.add": {
+    method: "POST",
+    path: "/add",
+    body: s.object({ n: s.int(), write: Write }),
+    output: s.object({ n: s.int() }),
+  },
 });
 
 const settle = async (): Promise<void> => {
@@ -189,7 +194,7 @@ async function run(script: readonly Step[], refuseAt: readonly boolean[]) {
     refuseAt,
   );
   const sc = scope(() => {
-    held.o = outbox(`interleave${++n}.outbox`, Api, { module: "app" });
+    held.o = outbox(`interleave${++n}.outbox`, Api);
     if (held.o !== undefined) void drain(ctx, held.o, { owner: OWNER });
   });
   const o = held.o;

@@ -28,6 +28,9 @@ function candidates(files: ReadonlyMap<string, string>, name: string): string[] 
   return sortedKeys(files.keys()).filter((p) => bases.has(p.split("/").pop() ?? ""));
 }
 
+/** A contract file: importing it needs `deps` only, never `public.exports` (k.contract). */
+const isContract = (p: string): boolean => p.endsWith(".contract.ts");
+
 const stemOf = (p: string): string => (p.split("/").pop() ?? "").split(".")[0] ?? "";
 
 /**
@@ -80,7 +83,7 @@ export function opMove(input: unknown, files: ReadonlyMap<string, string>): Resu
         const tm = moduleOf(t);
         if (target !== null && tm !== null && tm !== to) {
           change(to).addDeps.add(tm);
-          change(tm).addExports.add(stemOf(t));
+          if (!isContract(t)) change(tm).addExports.add(stemOf(t));
         }
       } else if (target === src) {
         ms.overwrite(ref.start + 1, ref.end - 1, restyleSpec(ref.spec, src, path, dest));

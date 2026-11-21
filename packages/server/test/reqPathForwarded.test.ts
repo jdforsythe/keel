@@ -7,12 +7,15 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { createCtx } from "@keel/ctx";
-import { manifest } from "@keel/router";
+import { manifest, routeTable } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { describe, expect, it } from "vitest";
 import { createApp, topology } from "../src/index.ts";
 
 const SEED = 1337;
+const ca = contract("a", { "a.home": { path: "/a" } });
+const cb = contract("b", { "b.reset": { path: "/b/reset/:token", params: s.object({ token: s.secret(s.string()) }) } });
 const PEER = "http://y.internal:8080";
 /** Never rendered: the front answers `/a` with no request here and forwards the peer's path. */
 const view = (): Node => document.createElement("p");
@@ -33,10 +36,10 @@ describe("a forwarded path in the front server's req line", () => {
     const app = await createApp({
       topology: topology({ x: { modules: ["a"], adapter: "node" }, y: { modules: ["b"], adapter: "node" } }),
       deployable: "x",
-      routes: manifest({
-        "a.home": { path: "/a", component: view },
-        "b.reset": { path: "/b/reset/:token", params: s.object({ token: s.secret(s.string()) }), component: view },
-      }),
+      routes: routeTable(
+        manifest(ca, { "a.home": { component: view } }),
+        manifest(cb, { "b.reset": { component: view } }),
+      ),
       ctx,
       peers: { y: PEER },
       artifacts: artifacts(),

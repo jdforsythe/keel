@@ -3,16 +3,16 @@
 // order, with the key it was queued under. Seed 1337.
 import { createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
-import { endpoints } from "@keel/services";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { type OutboxResult, Write, drain, outbox, send, writeFor } from "../src/index.ts";
 import { field } from "../src/internal/field.ts";
 import { outcomeOf } from "../src/internal/outcomeOf.ts";
 
-const Api = endpoints({
-  add: { method: "POST", path: "/add", body: s.object({ t: s.string(), write: Write }), output: s.object({}) },
+const Api = contract("app", {
+  "app.add": { method: "POST", path: "/add", body: s.object({ t: s.string(), write: Write }), output: s.object({}) },
 });
 const settle = async (): Promise<void> => {
   for (let i = 0; i < 400; i++) await Promise.resolve();
@@ -21,7 +21,7 @@ let n = 0;
 function declare() {
   const held: { o?: ReturnType<typeof outbox<typeof Api>> } = {};
   const sc = scope(() => {
-    held.o = outbox(`out${++n}.outbox`, Api, { module: "app" });
+    held.o = outbox(`out${++n}.outbox`, Api);
   });
   if (held.o === undefined) throw new Error("no outbox");
   return { o: held.o, sc };

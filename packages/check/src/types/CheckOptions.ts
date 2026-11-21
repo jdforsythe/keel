@@ -15,7 +15,7 @@ export type CheckOptions = {
   readonly budgets?: readonly Budget[];
   readonly artifacts?: Readonly<Record<string, unknown>>;
   readonly project?: readonly SourceFile[];
-  readonly topology?: Topology;
+  readonly topology?: Topology | undefined;
   readonly types?: boolean;
   readonly base?: unknown;
 };

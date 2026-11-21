@@ -1,5 +1,6 @@
 import { blankLabel } from "../rules/blankLabel.ts";
 import { bodyOnGetEndpoint } from "../rules/bodyOnGetEndpoint.ts";
+import { componentCtxSignature } from "../rules/componentCtxSignature.ts";
 import { fieldInForm } from "../rules/fieldInForm.ts";
 import { foreignUrlAttr } from "../rules/foreignUrlAttr.ts";
 import { foreignUrlFetch } from "../rules/foreignUrlFetch.ts";
@@ -35,7 +36,6 @@ import { resourceViaMatch } from "../rules/resourceViaMatch.ts";
 import { revealInServerFile } from "../rules/revealInServerFile.ts";
 import { revealedValue } from "../rules/revealedValue.ts";
 import { reversedFocusOrder } from "../rules/reversedFocusOrder.ts";
-import { routeSchemaInferred } from "../rules/routeSchemaInferred.ts";
 import { sameAppBaseService } from "../rules/sameAppBaseService.ts";
 import { schemaInSchemaFile } from "../rules/schemaInSchemaFile.ts";
 import { slotSignature } from "../rules/slotSignature.ts";
@@ -72,6 +72,7 @@ export const KERNEL_RULES: readonly RuleDef[] = [
   noInlineStyle,
   noIntrinsicElement,
   noEagerChild,
+  componentCtxSignature,
   noEagerElement,
   lowContrast,
   resourceViaMatch,
@@ -79,7 +80,6 @@ export const KERNEL_RULES: readonly RuleDef[] = [
   noRuntimeOpImport,
   noInternalEntry,
   noDomGlobal,
-  routeSchemaInferred,
   loaderInServerFile,
   guardInGuardFile,
   identityFile,

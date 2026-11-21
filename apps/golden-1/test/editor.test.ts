@@ -1,14 +1,12 @@
-// routes.ts first: the pages import it back (E1505 cycle otherwise).
-import "../modules/todos/routes.ts";
 import type { SimCtx } from "@keel/ctx";
 import { service } from "@keel/services";
 import { type A11yNode, render, renderRoute } from "@keel/testing";
 import { afterEach, describe, expect, it } from "vitest";
 import { TodoIdParams } from "../modules/api/TodoIdParams.schema.ts";
+import { api } from "../modules/api/api.contract.ts";
 import EditTodoPage from "../modules/todos/EditTodoPage.tsx";
 import OutboxPanel from "../modules/todos/OutboxPanel.tsx";
 import { boardOutbox } from "../modules/todos/boardOutbox.ts";
-import { boardWrites } from "../modules/todos/boardWrites.service.ts";
 import { editorChart } from "../modules/todos/editorChart.ts";
 import { editorFollow } from "../modules/todos/editorFollow.ts";
 import { editorOutcome } from "../modules/todos/editorOutcome.ts";
@@ -45,7 +43,7 @@ const chartAt = (state: "viewing" | "saving" | "conflict" | "gaveUp", attempts: 
 async function otherEdit(ctx: SimCtx) {
   if (!T1.ok) throw new Error(T1.error.message);
   const body = { title: "Oat milk", priority: "normal" as const, write: write("b1", 0) };
-  return service({ module: "api", schema: boardWrites }).editTodo({ params: T1.value, body }, ctx);
+  return service({ contract: api }).editTodo({ params: T1.value, body }, ctx);
 }
 
 /** Id of the control a form field generated, found by its accessible name. */

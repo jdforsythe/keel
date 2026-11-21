@@ -5,6 +5,7 @@
 // the route's secret param stands at is marked whole. Seed 1337.
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -13,10 +14,15 @@ import { type AppOptions, createApp, topology } from "../src/index.ts";
 const SEED = 1337;
 const view = (): Node => document.createElement("main");
 
-const ROUTES = manifest({
-  "app.reset": { path: "/reset/:token", params: s.object({ token: s.secret(s.string()) }), component: view },
-  "app.code": { path: "/code/:n/x", params: s.object({ n: s.secret(s.int()) }), component: view },
-  "app.plain": { path: "/plain/:slug", params: s.object({ slug: s.string() }), component: view },
+const FIXED = contract("app", {
+  "app.reset": { path: "/reset/:token", params: s.object({ token: s.secret(s.string()) }) },
+  "app.code": { path: "/code/:n/x", params: s.object({ n: s.secret(s.int()) }) },
+  "app.plain": { path: "/plain/:slug", params: s.object({ slug: s.string() }) },
+});
+const ROUTES = manifest(FIXED, {
+  "app.reset": { component: view },
+  "app.code": { component: view },
+  "app.plain": { component: view },
 });
 
 async function reqPath(
@@ -122,13 +128,14 @@ describe("a secret route param in the req path of a mistyped link", () => {
         async (statics, after, token, spell, h) => {
           const body = `${statics.map((x) => x.word).join("/")}/:token${after.map((w) => `/${w}`).join("")}`;
           const lang = s.enum(["en", "fr"], { pathDefault: "en" });
-          const routes = manifest({
+          const c = contract("app", {
             "app.r":
               h.lang === "none"
-                ? { path: `/${body}`, params: s.object({ token: s.secret(s.string()) }), component: view }
-                : { path: `/:lang/${body}`, params: s.object({ lang, token: s.secret(s.string()) }), component: view },
-            "app.plain": { path: "/plain/:slug", params: s.object({ slug: s.string() }), component: view },
+                ? { path: `/${body}`, params: s.object({ token: s.secret(s.string()) }) }
+                : { path: `/:lang/${body}`, params: s.object({ lang, token: s.secret(s.string()) }) },
+            "app.plain": { path: "/plain/:slug", params: s.object({ slug: s.string() }) },
           });
+          const routes = manifest(c, { "app.r": { component: view }, "app.plain": { component: view } });
           const sent = [...token].map((c, i) => spelt(c, spell[i] ?? 0)).join("");
           const parts = [
             ...(h.lang === "en" || h.lang === "fr" ? [h.lang] : []),

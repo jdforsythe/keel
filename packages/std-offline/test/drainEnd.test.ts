@@ -2,14 +2,14 @@
 // on that ctx until the next `send`, `resolve` or `drain`. Seed 1337.
 import { createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
-import { endpoints } from "@keel/services";
 import { expect, test } from "vitest";
 import { Write, drain, outbox, send } from "../src/index.ts";
 import { field } from "../src/internal/field.ts";
 
-const Api = endpoints({
-  add: { method: "POST", path: "/add", body: s.object({ t: s.string(), write: Write }), output: s.object({}) },
+const Api = contract("app", {
+  "app.add": { method: "POST", path: "/add", body: s.object({ t: s.string(), write: Write }), output: s.object({}) },
 });
 const settle = async (): Promise<void> => {
   for (let i = 0; i < 400; i++) await Promise.resolve();
@@ -27,7 +27,7 @@ test("a post held across the end of drain's scope that then fails arms no retry;
       held.fail = () => no(new TypeError("network"));
     });
   });
-  const o = outbox("drainend.outbox", Api, { module: "app" });
+  const o = outbox("drainend.outbox", Api);
   const sc = scope(() => void drain(ctx, o, { owner: "a" }));
   await settle();
   const sent = send(ctx, o, "add", { body: { t: "x" } }, { base: 0, owner: "a" });

@@ -3,15 +3,14 @@ import { INSPECT_PATH } from "@keel/compiler/inspect/INSPECT_PATH";
 import { ENTRY_PATH } from "@keel/compiler/internal/entry/ENTRY_PATH";
 import { bindStd } from "@keel/compiler/std/bindStd";
 import { scope } from "@keel/reactive";
-import { manifest } from "@keel/router";
-import { compileRoutes, compileTable, matchUrl } from "@keel/router/internal";
+import { routeTable } from "@keel/router";
+import { allowAt, compileRoutes, matchUrl } from "@keel/router/internal";
 import { isolate } from "@keel/store";
 import { Hono } from "hono";
 import { CSP_PATH } from "./internal/CSP_PATH.ts";
 import { DEFAULT_MAX_BODY } from "./internal/DEFAULT_MAX_BODY.ts";
 import { DEFAULT_MAX_STREAMS } from "./internal/DEFAULT_MAX_STREAMS.ts";
 import type { Served } from "./internal/Served.ts";
-import { allowOf } from "./internal/allowOf.ts";
 import { appFrames } from "./internal/appFrames.ts";
 import { attempted } from "./internal/attempted.ts";
 import { bearerOf } from "./internal/bearerOf.ts";
@@ -33,7 +32,6 @@ import { keepRunning } from "./internal/keepRunning.ts";
 import { loadAssets } from "./internal/loadAssets.ts";
 import { loadStd } from "./internal/loadStd.ts";
 import { logUnwritable } from "./internal/logUnwritable.ts";
-import { moduleOf } from "./internal/moduleOf.ts";
 import { nodeEnv } from "./internal/nodeEnv.ts";
 import { noteRequestSecrets } from "./internal/noteRequestSecrets.ts";
 import { ownFrame } from "./internal/ownFrame.ts";
@@ -58,6 +56,7 @@ import type { ServerApp } from "./types/ServerApp.ts";
 
 /**
  * Build one deployable of `topology` over Hono (k.server; generated server entry and `keel dev` only).
+ * `routes` is the deployable's route table (k.routes; none: an empty one).
  * Rejects with an Error whose message starts with E1552 (the served deployable names a module no route belongs to,
  * or a module is in two deployables) or E1553 (a `static` deployable has a route with params or actions) or E1511 (a `client` or
  * `static` deployable serves an API route, k.api).
@@ -98,7 +97,7 @@ import type { ServerApp } from "./types/ServerApp.ts";
  * rejects with E1160, a value failing its package's registered schema with E1158 (k.module Std config).
  * After startup each `runners` entry of the served deployable's modules runs once on `ctx` (`keepRunning`: a rejection is
  * a `diag` and a rerun 1,000 ms later on `ctx.clock`); `close()` aborts their signal and open event streams and
- * resolves when every `run` has settled. `ctx` is bound for `service({ module })` (`bindModules`). A request whose path
+ * resolves when every `run` has settled. `ctx` is bound for the module service clients (`bindModules`). A request whose path
  * no route here matches but a peer serves (by `routes.json` in `artifacts`) is forwarded to it unless it carries
  * `x-keel-forwarded` (k.topology Calls and peers; `forward`), and logs its `req` record like a served one. `origin`
  * replaces the request's origin in `url`, the same-site check and `Secure`; with it, no W1557. An `allow` entry that is
@@ -112,7 +111,7 @@ import type { ServerApp } from "./types/ServerApp.ts";
  * (`handle`), and every routed one gets the `user` `userOf` answers; a `handle.path` not of lowercase `/` segments, or
  * with a route whose literal path is at or under it, rejects with E1579; no page matches at or under it (a `:param`
  * route that would fit there is not matched). A caller cookie a deployable with `caller: { days }` mints carries
- * `Max-Age`; `service({ module })` calls made on `ctx` sign their `user` as `x-keel-user` under `secret`.
+ * `Max-Age`; service client calls made on `ctx` sign their `user` as `x-keel-user` under `secret`.
  * Every response carries the k.security headers (`secured`); every document its own nonce policy (report-only in dev),
  * any other response `default-src 'none'; frame-ancestors 'none'`. `POST /__keel/csp` takes policy reports before any
  * write check or route (`cspReport`) and logs `csp` records.
@@ -126,10 +125,10 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
   installServerDom();
   noteRequestSecrets();
   refuseModuleWrites();
-  const routes = (opts.routes ?? manifest({})).routes;
-  const table = compileTable(compileRoutes(routes), routes);
+  const routes = opts.routes ?? routeTable();
+  const { located: table, table: byId } = compileRoutes(routes);
   const runners = opts.runners ?? {};
-  const modules = new Set([...Object.keys(routes).map(moduleOf), ...Object.keys(runners)]);
+  const modules = new Set([...routes.contracts.map((c) => c.module), ...Object.keys(runners)]);
   const origin = opts.origin === undefined ? undefined : new URL(opts.origin).origin;
   const mode = opts.mode ?? "production";
   const env = nodeEnv();
@@ -195,7 +194,8 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
     table: served,
     ctx: opts.ctx,
     mode,
-    routes: opts.routes ?? manifest({}),
+    routes,
+    byId,
     maxBody: opts.maxBodyBytes ?? DEFAULT_MAX_BODY,
     inspectOrigins: opts.inspect?.origins ?? [],
     keys: await callerSigner(opts.secret, opts.deployable ?? ""),
@@ -261,7 +261,7 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
     const from = raw.headers.get("origin") ?? "";
     const known = sv.allow.has(from);
     const hit = sv.allow.size > 0 ? matched : null;
-    const api = hit?.def.api === true && known ? hit.def : undefined;
+    const api = hit?.def.kind === "api" && known ? hit : undefined;
     const cross = known && raw.headers.get("sec-fetch-site") === "cross-site" && !warned.has(from);
     if (cross) warned.add(from);
     // Inspect is answered before any request scope exists, so its graph is the app's alone.
@@ -279,7 +279,7 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
             scope: scope(() => undefined),
             caller: callerOf(raw, sv),
             user: "",
-            bearer: matched?.def.api === true ? bearerOf(raw) : undefined,
+            bearer: matched?.def.kind === "api" ? bearerOf(raw) : undefined,
             allowed: api !== undefined,
             held: new Map(),
             pii,
@@ -313,12 +313,14 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
     const h = ran.ok ? ran.value : crashed(sv.mode, scrubbedCause(ran.error, { secrets, pii }));
     // Every API-route response varies by origin once any origin is allowed, so a shared cache keeps them apart.
     const response = secured(
-      hit?.def.api !== true ? h.response : withCors(h.response, api && from, api && pre ? allowOf(api) : undefined),
+      hit?.def.kind !== "api"
+        ? h.response
+        : withCors(h.response, api && from, api && pre ? allowAt(served, api).join(", ") : undefined),
       raw,
       sv,
     );
     // A response a token may have unlocked is per-token data: nothing keeps it (k.api Bearer).
-    if (matched?.def.api === true && raw.headers.has("authorization"))
+    if (matched?.def.kind === "api" && raw.headers.has("authorization"))
       response.headers.set("cache-control", "no-store");
     if (log !== undefined) {
       if (cross)

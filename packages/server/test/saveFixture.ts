@@ -2,6 +2,7 @@
 // one-route counter app over it.
 import { type Ctx, createCtx } from "@keel/ctx";
 import { action, loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { err, ok, s } from "@keel/schema";
 import { store, transaction, tx } from "@keel/store";
 import { createApp, topology } from "../src/index.ts";
@@ -60,20 +61,16 @@ export function counterApp(storage: Ctx["storage"]) {
     const inc = transaction(count, "test.inc", s.object({}), (st) => ({ n: st.n + 1 }));
     return { count, inc };
   };
-  const routes = manifest({
-    "app.count": {
-      path: "/count",
-      loader: loader({ output: Count, stores: counter }, async ({ stores }) => ok({ n: stores.count.get("n") })),
-      component: () => document.createElement("p"),
-    },
+  const c = contract("app", { "app.count": { path: "/count" } });
+  const load = loader(c, "app.count", { output: Count, stores: counter }, async ({ stores }) =>
+    ok({ n: stores.count.get("n") }),
+  );
+  const inc = action(c, "app.count", { input: s.object({}), stores: counter }, (input, { stores }) => {
+    const r = tx(stores.inc, input);
+    return r.ok ? ok(null) : err(r.error);
   });
-  routes.actions({
-    "app.count": {
-      POST: action({ input: s.object({}), stores: counter }, (input, { stores }) => {
-        const r = tx(stores.inc, input);
-        return r.ok ? ok(null) : err(r.error);
-      }),
-    },
+  const routes = manifest(c, {
+    "app.count": { component: () => document.createElement("p"), loader: load, POST: inc },
   });
   const app = createApp({ topology: topology({ web: { modules: ["app"], adapter: "node" } }), routes, ctx });
   const send = async (method: "GET" | "POST") => {

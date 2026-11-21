@@ -5,6 +5,7 @@
 // makes a password is not one the server sees; an `s.secret` field is dropped whatever its input. Seed 1337.
 import { createCtx } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import { describe, expect, it } from "vitest";
 import { createApp, topology } from "../src/index.ts";
@@ -15,8 +16,10 @@ async function post(fields: readonly string[], make: () => Node) {
   const shape: Record<string, ReturnType<typeof s.string>> = {};
   for (const f of fields) shape[f] = s.string();
   const input = s.object({ ...shape, hidden: s.secret(s.string()), age: s.int() });
-  const routes = manifest({ "app.f": { path: "/f", component: make } });
-  routes.actions({ "app.f": { POST: action({ input }, () => ok(null)) } });
+  const c = contract("app", { "app.f": { path: "/f" } });
+  const routes = manifest(c, {
+    "app.f": { component: make, POST: action(c, "app.f", { input }, () => ok(null)) },
+  });
   const app = await createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
     routes,

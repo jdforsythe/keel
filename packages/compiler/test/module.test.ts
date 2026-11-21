@@ -4,7 +4,7 @@ import path from "node:path";
 import { module, ModuleSchema } from "@keel/compiler";
 import { describe, expect, it } from "vitest";
 
-const def = { id: "todos", deps: [], capabilities: ["net"], public: { exports: ["TodoRow"], routes: ["todos.index"] } };
+const def = { id: "todos", deps: [], capabilities: ["net"], public: { exports: ["TodoRow"] } };
 
 describe("module", () => {
   it("returns a valid manifest unchanged and frozen", () => {
@@ -34,6 +34,11 @@ describe("ModuleSchema", () => {
     expect(r.ok ? "" : r.error.message).toContain("lowerCamel");
     expect(() => ModuleSchema.encode(bad)).toThrow(/lowerCamel/);
     expect(ModuleSchema.encode(def)).toEqual(def);
+  });
+
+  it("refuses any key of public but exports, routes included", () => {
+    expect(ModuleSchema.parse({ ...def, public: { exports: [], routes: [] } }).ok).toBe(false);
+    expect(() => module({ ...def, public: { exports: [], routes: ["todos.index"] } })).toThrow(/module manifest/);
   });
 });
 

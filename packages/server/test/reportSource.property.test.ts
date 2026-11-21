@@ -4,12 +4,14 @@
 // source. reportSource: the last x-forwarded-for entry, else the node peer address. Seed 1337.
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { createApp, topology } from "../src/index.ts";
 import { reportSource } from "../src/internal/reportSource.ts";
 
 const SEED = 1337;
+const home = contract("app", { "app.home": { path: "/" } });
 const SOURCES = ["198.51.100.1", "198.51.100.2", "198.51.100.3", "2001:db8::7"];
 const body = JSON.stringify({
   "csp-report": { "document-uri": "http://localhost/", "violated-directive": "img-src", "blocked-uri": "inline" },
@@ -30,7 +32,7 @@ describe("CSP per-source cap", () => {
           const ctx = createCtx({ mode: "sim", seed: SEED });
           const app = await createApp({
             topology: topology({ web: { modules: ["app"], adapter: "node" } }),
-            routes: manifest({ "app.home": { path: "/", component: () => document.createElement("main") } }),
+            routes: manifest(home, { "app.home": { component: () => document.createElement("main") } }),
             ctx,
             mode: "production",
             log: { format: "json", write: (l) => lines.push(l) },

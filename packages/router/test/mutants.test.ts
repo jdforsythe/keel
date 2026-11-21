@@ -5,7 +5,10 @@ import { err, ok, pathToString, s } from "@keel/schema";
 import { blankPattern } from "@keel/schema/internal";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
+import { action } from "../src/action.ts";
+import { contract } from "../src/contract/contract.ts";
 import { guard } from "../src/guard.ts";
+import type { Def } from "../src/internal/Def.ts";
 import type { Level } from "../src/internal/Level.ts";
 import type { Located } from "../src/internal/Located.ts";
 import type { SchemaNode } from "../src/internal/SchemaNode.ts";
@@ -13,11 +16,10 @@ import { chainOf } from "../src/internal/chainOf.ts";
 import { codedError } from "../src/internal/codedError.ts";
 import { compilePath } from "../src/internal/compilePath.ts";
 import { compileRoutes } from "../src/internal/compileRoutes.ts";
-import { compileTable } from "../src/internal/compileTable.ts";
+import { encodeHref } from "../src/internal/encodeHref.ts";
 import { fieldsError } from "../src/internal/fieldsError.ts";
 import { fieldsOf } from "../src/internal/fieldsOf.ts";
 import { flattenJson } from "../src/internal/flattenJson.ts";
-import { hrefIn } from "../src/internal/hrefIn.ts";
 import { isRouteStateOf } from "../src/internal/isRouteStateOf.ts";
 import { jsonSchemaOf } from "../src/internal/jsonSchemaOf.ts";
 import { matchUrl } from "../src/internal/matchUrl.ts";
@@ -34,8 +36,8 @@ import { unexpected } from "../src/internal/unexpected.ts";
 import { unwrapNode } from "../src/internal/unwrapNode.ts";
 import { loader } from "../src/loader.ts";
 import { manifest } from "../src/manifest.ts";
+import { routeTable } from "../src/routeTable.ts";
 import { routesArtifact } from "../src/routesArtifact.ts";
-import type { RouteDef } from "../src/types/RouteDef.ts";
 
 fc.configureGlobal({ seed: 1337, numRuns: 100 });
 
@@ -49,7 +51,24 @@ const fail = (fn: () => unknown): { code: string; message: string } => {
   }
   return { code: "none", message: "" };
 };
-const table = (routes: Record<string, RouteDef>): readonly Located[] => compileTable(compileRoutes(routes), routes);
+/** A module `m` over `entries`, every page and layout bound to the plain view: its routable entries. */
+const table = (entries: Record<string, object>): readonly Located[] => {
+  const c = Reflect.apply(contract, undefined, ["m", entries]);
+  const binding = Object.fromEntries(Object.keys(entries).map((id) => [id, { component: view }]));
+  return compileRoutes(Reflect.apply(manifest, undefined, [c, binding])).located;
+};
+const dummy = contract("x", { "x.p": { path: "/p" }, "x.l": { layout: true } });
+/** A page `Def` of `dummy`, with `extra` members. */
+const def = (extra: Partial<Def> = {}): Def => ({
+  id: "x.p",
+  module: "x",
+  kind: "page",
+  segments: [],
+  contract: dummy,
+  actions: {},
+  component: view,
+  ...extra,
+});
 
 const str = (min: number, max?: number): SchemaNode => ({ kind: "string", min, max });
 const obj = (fields: Record<string, SchemaNode>): SchemaNode => ({ kind: "object", fields });
@@ -323,7 +342,7 @@ describe("flattenJson", () => {
 });
 
 describe("isRouteStateOf", () => {
-  const routes = { a: 1 };
+  const routes = new Map([["a", { id: "a", def: def(), segments: null }]]);
   it("needs an object with id and pending, id null or an own route key", () => {
     expect(isRouteStateOf(routes, { id: null, pending: false })).toBe(true);
     expect(isRouteStateOf(routes, { id: "a", pending: false })).toBe(true);
@@ -339,11 +358,8 @@ describe("isRouteStateOf", () => {
 });
 
 describe("needsBare", () => {
-  const lvl = (extra: Partial<Exclude<RouteDef, { readonly api: true }>>): Level => ({
-    id: "x",
-    def: { component: view, ...extra },
-  });
-  const ld = loader({ output: s.object({}) }, async () => ok({}));
+  const lvl = (extra: Partial<Def>): Level => ({ id: "x.p", def: def(extra) });
+  const ld = loader(dummy, "x.p", { output: s.object({}) }, async () => ok({}));
   it("only levels above the error level count", () => {
     const chain = [lvl({}), lvl({ loader: ld }), lvl({})];
     expect(needsBare(chain, 0)).toBe(false);
@@ -358,57 +374,61 @@ describe("needsBare", () => {
   });
 });
 
-describe("chainOf / compileRoutes messages", () => {
+describe("chainOf / contract messages", () => {
+  const defs = (rows: Record<string, Partial<Def>>): ReadonlyMap<string, Def> =>
+    new Map(Object.entries(rows).map(([id, extra]) => [id, def({ id, ...extra })]));
+  const layout = { kind: "layout" as const, segments: null };
   it("chain is layouts outermost first then the route", () => {
-    const routes = {
-      "c.a": { component: view } satisfies RouteDef,
-      "c.b": { component: view, layout: "c.a" } satisfies RouteDef,
-      "c.p": { path: "/c", component: view, layout: "c.b" } satisfies RouteDef,
-    };
-    expect(chainOf("c.p", routes["c.p"], routes).map((l) => l.id)).toEqual(["c.a", "c.b", "c.p"]);
-    expect(chainOf("c.a", routes["c.a"], routes).map((l) => l.id)).toEqual(["c.a"]);
+    const m = defs({
+      "c.a": layout,
+      "c.b": { ...layout, layout: "c.a" },
+      "c.p": { layout: "c.b" },
+    });
+    expect(chainOf("c.p", m).map((l) => l.id)).toEqual(["c.a", "c.b", "c.p"]);
+    expect(chainOf("c.a", m).map((l) => l.id)).toEqual(["c.a"]);
+    expect(chainOf("c.none", m)).toEqual([]);
   });
   it("exact E1506 messages", () => {
-    const base = { component: view };
-    const cyc = { x: { ...base, layout: "y" }, y: { ...base, layout: "x" } };
-    expect(fail(() => chainOf("x", cyc.x, cyc)).message).toBe('E1506 x: layout cycle through "x"');
-    const self = { x: { ...base, layout: "x" } };
-    expect(fail(() => chainOf("x", self.x, self)).message).toBe('E1506 x: layout cycle through "x"');
-    const unk = { x: { ...base, layout: "nope" } };
-    expect(fail(() => chainOf("x", unk.x, unk)).message).toBe('E1506 x: unknown layout "nope"');
-    const proto = { x: { ...base, layout: "toString" } };
-    expect(fail(() => chainOf("x", proto.x, proto)).message).toBe('E1506 x: unknown layout "toString"');
-    const withPath = { l: { ...base, path: "/l" }, x: { ...base, layout: "l" } };
-    expect(fail(() => chainOf("x", withPath.x, withPath)).message).toBe(
-      'E1506 x: layout "l" has a path; a layout has none',
+    const cyc = defs({ x: { ...layout, layout: "y" }, y: { ...layout, layout: "x" } });
+    expect(fail(() => chainOf("x", cyc)).message).toBe("E1506 x: layout cycle x in y in x");
+    const self = defs({ x: { ...layout, layout: "x" } });
+    expect(fail(() => chainOf("x", self)).message).toBe("E1506 x: layout cycle x in x");
+    const unk = defs({ x: { layout: "nope" } });
+    expect(fail(() => chainOf("x", unk)).message).toBe('E1506 x: layout "nope" names no entry of the route table');
+    const proto = defs({ x: { layout: "toString" } });
+    expect(fail(() => chainOf("x", proto)).message).toBe(
+      'E1506 x: layout "toString" names no entry of the route table',
     );
+    const page = defs({ l: {}, x: { layout: "l" } });
+    expect(fail(() => chainOf("x", page)).message).toBe('E1506 x: layout "l" is a page entry, no layout');
   });
   it("exact messages for the other codes", () => {
     const P = s.object({ id: s.id("X") });
-    const dup = {
-      a: { path: "/v/:id", params: P, component: view },
-      b: { path: "/v/:other", params: s.object({ other: s.string() }), component: view },
-    };
-    expect(fail(() => compileRoutes(dup)).message).toBe('E1502 b: path pattern "/v/:" is also a');
-    expect(fail(() => compileRoutes({ a: { path: "/v/:id", component: view } })).message).toBe(
-      'E1503 a: ":id" has no params field',
-    );
-    expect(fail(() => compileRoutes({ a: { path: "/v", params: P, component: view } })).message).toBe(
-      'E1503 a: params field "id" not in path',
-    );
+    const on = (entries: Record<string, object>) => fail(() => Reflect.apply(contract, undefined, ["m", entries]));
     expect(
-      fail(() => compileRoutes({ a: { path: "/v", search: s.object({ q: s.string() }), component: view } })).message,
-    ).toBe('E1504 a: search field "q" must be optional');
-    const inEntry = { a: { path: "/v", component: view, actions: { POST: {} } } };
-    expect(fail(() => Reflect.apply(compileRoutes, undefined, [inEntry])).message).toBe(
-      'E1505 a: move actions to routes.actions({ "a": {...} }) after the manifest',
+      on({
+        "m.a": { path: "/v/:id", params: P },
+        "m.b": { path: "/v/:other", params: s.object({ other: s.string() }) },
+      }).message,
+    ).toBe('E1502 m.b: path pattern "/v/:" is also m.a\'s');
+    expect(on({ "m.a": { path: "/v/:id" } }).message).toBe('E1503 m.a: ":id" has no params field');
+    expect(on({ "m.a": { path: "/v", params: P } }).message).toBe('E1503 m.a: params field "id" not in path');
+    expect(on({ "m.a": { path: "/v", search: s.object({ q: s.string() }) } }).message).toBe(
+      'E1504 m.a: search field "q" must be optional',
     );
+    expect(on({ "m.a": { path: "/v", actions: { POST: {} } } }).message).toBe(
+      'E1510 m.a: a page entry takes no "actions"',
+    );
+    expect(on({ "m.a": { layout: true, path: "/l" } }).message).toBe('E1510 m.a: a layout entry takes no "path"');
   });
   it("layouts have no segments and are not routable", () => {
-    const t = compileRoutes({ l: { component: view }, p: { path: "/p", component: view, layout: "l" } });
-    expect(t.get("l")?.segments).toBeNull();
-    expect(t.get("p")?.segments).toEqual([{ kind: "static", text: "p" }]);
-    expect(table({ l: { component: view } })).toEqual([]);
+    const c = contract("m", { "m.l": { layout: true }, "m.p": { path: "/p" } });
+    const compiled = compileRoutes(
+      manifest(c, { "m.l": { component: view }, "m.p": { component: view, layout: "m.l" } }),
+    );
+    expect(compiled.table.get("m.l")?.segments).toBeNull();
+    expect(compiled.table.get("m.p")?.segments).toEqual([{ kind: "static", text: "p" }]);
+    expect(table({ "m.l": { layout: true } })).toEqual([]);
   });
 });
 
@@ -447,36 +467,35 @@ describe("parseSearch", () => {
 });
 
 describe("matchUrl", () => {
-  const routes: Record<string, RouteDef> = {
-    root: { path: "/", component: view },
-    "u.list": { path: "/u", component: view, search: s.object({ q: s.string({ min: 1 }).optional() }) },
-    "u.me": { path: "/u/me", component: view },
-    "u.show": { path: "/u/:id", params: s.object({ id: s.int() }), component: view },
-    "u.deep": { path: "/u/:id/x/:k", params: s.object({ id: s.int(), k: s.string() }), component: view },
-  };
-  const t = table(routes);
+  const t = table({
+    "m.root": { path: "/" },
+    "m.list": { path: "/u", search: s.object({ q: s.string({ min: 1 }).optional() }) },
+    "m.me": { path: "/u/me" },
+    "m.show": { path: "/u/:id", params: s.object({ id: s.int() }) },
+    "m.deep": { path: "/u/:id/x/:k", params: s.object({ id: s.int(), k: s.string() }) },
+  });
   const idOf = (u: string): string | null => {
     const m = matchUrl(t, u);
     return m.kind === "route" ? m.route.id : null;
   };
   it("static beats param; segment counts must agree", () => {
-    expect(idOf("/")).toBe("root");
-    expect(idOf("/u")).toBe("u.list");
-    expect(idOf("/u/me")).toBe("u.me");
-    expect(idOf("/u/7")).toBe("u.show");
-    expect(idOf("/u/7/x/k")).toBe("u.deep");
+    expect(idOf("/")).toBe("m.root");
+    expect(idOf("/u")).toBe("m.list");
+    expect(idOf("/u/me")).toBe("m.me");
+    expect(idOf("/u/7")).toBe("m.show");
+    expect(idOf("/u/7/x/k")).toBe("m.deep");
     expect(idOf("/u/7/x")).toBeNull();
     expect(idOf("/nope")).toBeNull();
     expect(idOf("/u/7/y/k")).toBeNull();
   });
   it("static wins whichever order the table lists them in", () => {
-    expect(idOf("/u/me")).toBe("u.me");
+    expect(idOf("/u/me")).toBe("m.me");
     const rev = [...t].reverse();
     const m = matchUrl(rev, "/u/me");
-    expect(m.kind === "route" && m.route.id).toBe("u.me");
+    expect(m.kind === "route" && m.route.id).toBe("m.me");
   });
   it("equal rank keeps the first listed route", () => {
-    const a: Located = { id: "first", def: { component: view }, chain: [], segments: [{ kind: "param", name: "p" }] };
+    const a: Located = { id: "first", def: def(), chain: [], segments: [{ kind: "param", name: "p" }] };
     const b: Located = { ...a, id: "second", segments: [{ kind: "param", name: "q" }] };
     const m = matchUrl([a, b], "/zz");
     expect(m.kind === "route" && m.route.id).toBe("first");
@@ -498,7 +517,7 @@ describe("matchUrl", () => {
     expect(m.kind === "route" && m.params).toEqual({ id: 5, k: "a b" });
     const bad = matchUrl(t, "/u/abc");
     expect(bad.kind).toBe("notFound");
-    expect(bad.route?.id).toBe("u.show");
+    expect(bad.route?.id).toBe("m.show");
     expect(bad.url).toBe("/u/abc");
     const esc = matchUrl(t, "/u/%E0%A4%A");
     expect(esc).toEqual({ kind: "notFound", url: "/u/%E0%A4%A", route: null });
@@ -518,10 +537,10 @@ describe("matchUrl", () => {
   });
 });
 
-describe("hrefIn", () => {
-  const routes = manifest({
-    "h.root": { path: "/", component: view },
-    "h.layout": { component: view },
+describe("encodeHref", () => {
+  const entries = {
+    "h.root": { path: "/" },
+    "h.layout": { layout: true },
     "h.item": {
       path: "/h/:id/:flag",
       params: s.object({ id: s.int(), flag: s.boolean() }),
@@ -531,14 +550,18 @@ describe("hrefIn", () => {
         c: s.object({ z: s.int(), y: s.string() }).optional(),
         d: s.enum(["x y", "&"]).optional(),
       }),
-      component: view,
     },
-    "h.plain": { path: "/plain/seg", component: view },
-    "h.name": { path: "/n/:v", params: s.object({ v: s.string() }), component: view },
-  });
-  const tbl = compileRoutes(routes.routes);
+    "h.plain": { path: "/plain/seg" },
+    "h.name": { path: "/n/:v", params: s.object({ v: s.string() }) },
+  };
+  const tbl = compileRoutes(
+    Reflect.apply(manifest, undefined, [
+      Reflect.apply(contract, undefined, ["h", entries]),
+      Object.fromEntries(Object.keys(entries).map((id) => [id, { component: view }])),
+    ]),
+  ).table;
   const h = (id: string, p: Record<string, unknown> = {}, q: Record<string, unknown> = {}): string =>
-    hrefIn(tbl, id, p, q);
+    encodeHref(id, tbl.get(id)?.def, p, q);
   it("builds paths, sorts search keys, keeps repeated-key order, omits absent optionals", () => {
     expect(h("h.root")).toBe("/");
     expect(h("h.plain")).toBe("/plain/seg");
@@ -554,25 +577,20 @@ describe("hrefIn", () => {
   it("exact error codes and messages", () => {
     expect(fail(() => h("h.layout"))).toEqual({
       code: "E1501",
-      message: 'E1501 href("h.layout"): no declared page has this id',
+      message: 'E1501 href("h.layout"): no page of this contract has this id',
     });
     expect(fail(() => h("nope")).code).toBe("E1501");
-    expect(fail(() => hrefIn(undefined, "nope", {}, {})).code).toBe("E1501");
+    expect(fail(() => encodeHref("nope", undefined, {}, {})).code).toBe("E1501");
     expect(fail(() => h("h.plain", {}, { z: 1 }))).toEqual({
       code: "E1504",
-      message: 'E1504 href("h.plain"): the route declares no search',
+      message: 'E1504 href("h.plain"): the page declares no search',
     });
     expect(h("h.plain", {}, { z: undefined })).toBe("/plain/seg");
   });
   it("a param that does not encode to a scalar is E1503", () => {
-    const r = compileRoutes({
-      "w.a": {
-        path: "/w/:v",
-        params: s.object({ v: s.array(s.int()) }),
-        component: view,
-      },
-    });
-    expect(fail(() => hrefIn(r, "w.a", { v: [1] }, {}))).toEqual({
+    const c = contract("w", { "w.a": { path: "/w/:v", params: s.object({ v: s.array(s.int()) }) } });
+    const r = compileRoutes(manifest(c, { "w.a": { component: view } })).table;
+    expect(fail(() => encodeHref("w.a", r.get("w.a")?.def, { v: [1] }, {}))).toEqual({
       code: "E1503",
       message: 'E1503 href("w.a"): param "v" does not encode to a path segment',
     });
@@ -580,39 +598,34 @@ describe("hrefIn", () => {
 });
 
 describe("routesArtifact details", () => {
-  it("module is the first dotted segment, path null for layouts, actions in verb order, guard and layout names", () => {
-    const act = {
-      kind: "keel.action" as const,
-      input: s.object({}),
-      run: async () => ok(null),
-    };
-    const m = manifest({
-      "z.b.deep": { path: "/zb", component: view },
-      plain: { path: "/plain-art", component: view },
-    });
-    m.actions({ "z.b.deep": { PUT: act, POST: act, PATCH: act, DELETE: act } });
+  it("module is the contract's, path null for layouts, actions in verb order, guard and layout names", () => {
+    const z = contract("z", { "z.b.deep": { path: "/zb" } });
+    const plain = contract("plain", { "plain.home": { path: "/plain-art" } });
+    const act = action(z, "z.b.deep", { input: s.object({}) }, async () => ok(null));
+    const m = routeTable(
+      manifest(z, { "z.b.deep": { component: view, PUT: act, POST: act, PATCH: act, DELETE: act } }),
+      manifest(plain, { "plain.home": { component: view } }),
+    );
     const a = routesArtifact(m);
-    expect(Object.keys(a)).toEqual(["plain", "z.b.deep"]);
-    expect(a.plain?.module).toBe("plain");
+    expect(Object.keys(a)).toEqual(["plain.home", "z.b.deep"]);
+    expect(a["plain.home"]?.module).toBe("plain");
     expect(a["z.b.deep"]?.module).toBe("z");
     expect(a["z.b.deep"]?.actions).toEqual(["DELETE", "PATCH", "POST", "PUT"]);
     expect(a["z.b.deep"]?.guard).toBeNull();
     expect(a["z.b.deep"]?.layout).toBeNull();
     expect(a["z.b.deep"]?.params).toBeNull();
     expect(a["z.b.deep"]?.search).toBeNull();
-    expect(a.plain?.actions).toEqual([]);
+    expect(a["plain.home"]?.actions).toEqual([]);
   });
 });
 
 describe("runLoaders / runGuard", () => {
-  const lvl = (def: Partial<Exclude<RouteDef, { readonly api: true }>>): Level => ({
-    id: "l",
-    def: { component: view, ...def },
-  });
+  const lvl = (extra: Partial<Def>): Level => ({ id: "x.p", def: def(extra) });
+  const declares = <T extends Parameters<typeof s.object>[0]>(shape: T) => ({ output: s.object(shape) });
   const args = { params: {}, search: {}, url: "http://localhost/", caller: "", user: "" };
   it("no loader gives ok(undefined); a loader's value is parsed by its output schema", async () => {
     const out = await runLoaders(
-      [lvl({}), lvl({ loader: loader({ output: s.object({ n: s.int() }) }, async () => ok({ n: 1 })) })],
+      [lvl({}), lvl({ loader: loader(dummy, "x.p", declares({ n: s.int() }), async () => ok({ n: 1 })) })],
       args,
       ctx,
     );
@@ -622,13 +635,13 @@ describe("runLoaders / runGuard", () => {
     const E = s.error("rl.bad", s.object({}));
     const out = await runLoaders(
       [
-        lvl({ loader: loader({ output: s.object({}) }, async () => err(E.make({}))) }),
+        lvl({ loader: loader(dummy, "x.p", declares({}), async () => err(E.make({}))) }),
         lvl({
-          loader: loader({ output: s.object({}) }, async () => {
+          loader: loader(dummy, "x.p", declares({}), async () => {
             throw new Error("kaboom");
           }),
         }),
-        lvl({ loader: loader({ output: s.object({ n: s.int({ min: 10 }) }) }, async () => ok({ n: 1 })) }),
+        lvl({ loader: loader(dummy, "x.p", declares({ n: s.int({ min: 10 }) }), async () => ok({ n: 1 })) }),
       ],
       args,
       ctx,
@@ -642,7 +655,7 @@ describe("runLoaders / runGuard", () => {
     const order: string[] = [];
     const mk = (n: string) =>
       lvl({
-        loader: loader({ output: s.object({}) }, async () => {
+        loader: loader(dummy, "x.p", declares({}), async () => {
           order.push(`start ${n}`);
           await Promise.resolve();
           order.push(`end ${n}`);

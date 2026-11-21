@@ -121,7 +121,7 @@ describe("scaffold edits", () => {
     const mod = await go(["scaffold", "module", "billing", "--dry-run"]);
     expect(mod.writes).toEqual([]);
     const edits = mod.records.filter((r) => r.kind === "scaffold.edit");
-    expect(edits.map((r) => r.action)).toEqual(["create", "create", "change", "change", "change"]);
+    expect(edits.map((r) => r.action)).toEqual(["create", "create", "create", "change", "change", "change"]);
     const diffOf = (p: string): string => {
       const rec = edits.find((r) => r.path === p);
       return typeof rec?.diff === "string" ? rec.diff : "";
@@ -132,7 +132,7 @@ describe("scaffold edits", () => {
     const topo = diffOf("topology.ts");
     expect(topo.startsWith("--- a/topology.ts\n+++ b/topology.ts\n@@")).toBe(true);
     expect(topo).toContain("billing");
-    expect(mod.result.stdout.split("\n").at(-2)).toBe("ok scaffold module --dry-run 2 created, 3 changed, 0 removed");
+    expect(mod.result.stdout.split("\n").at(-2)).toBe("ok scaffold module --dry-run 3 created, 3 changed, 0 removed");
 
     const ren = await go(["codemod", "rename", "OrderCard", "OrderTile", "--dry-run"]);
     const gone = ren.records.filter((r) => r.kind === "scaffold.edit" && r.action === "remove");

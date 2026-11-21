@@ -7,6 +7,7 @@ import { s } from "@keel/schema";
 import { store } from "@keel/store";
 import { describe, expect, it } from "vitest";
 import { clone, resume, template } from "../src/ops/index.ts";
+import { testCtx } from "./testCtx.ts";
 
 const Count = s.object({ n: s.number() });
 const T = template('<div data-k-island="C"><p>x</p></div>');
@@ -37,7 +38,7 @@ describe("a store an island creates while it resumes", () => {
       if (calls === 1) throw new Error("claim fails");
       return clone(T);
     };
-    const { warnings } = resume(page({ "waiting.mismatch": served("waiting.mismatch", 7) }), { C });
+    const { warnings } = resume(page({ "waiting.mismatch": served("waiting.mismatch", 7) }), { C }, { ctx: testCtx });
     expect(warnings).toHaveLength(1);
     expect(warnings[0]).toMatch(/^E1253 \[data-k-island="C"\]/);
     expect(seen).toEqual([7, 7]);
@@ -50,7 +51,11 @@ describe("a store an island creates while it resumes", () => {
       seen.push(counter.get("n"));
       return clone(T);
     };
-    const { warnings } = resume(page({ "waiting.refused": { state: { n: "seven" }, log: [] } }), { C });
+    const { warnings } = resume(
+      page({ "waiting.refused": { state: { n: "seven" }, log: [] } }),
+      { C },
+      { ctx: testCtx },
+    );
     expect(seen).toEqual([0]);
     expect(warnings).toEqual(['E1253 #k-state snapshot for store "waiting.refused" does not restore']);
   });
@@ -64,7 +69,7 @@ describe("a store an island creates while it resumes", () => {
     if (known === undefined) throw new Error("fixture: store scope did not run");
     const C = (): Node => clone(T);
     const host = page({ "waiting.known": { state: { n: "seven" }, log: [], initial: { n: 7 } } });
-    const { warnings } = resume(host, { C }, { stores: { "waiting.known": known } });
+    const { warnings } = resume(host, { C }, { ctx: testCtx, stores: { "waiting.known": known } });
     expect(known.get("n")).toBe(0);
     expect(warnings).toEqual(['E1253 #k-state snapshot for store "waiting.known" does not restore']);
   });
@@ -76,7 +81,7 @@ describe("a store an island creates while it resumes", () => {
       seen.push(counter.get("n"));
       return clone(T);
     };
-    const { warnings } = resume(page({ "waiting.claimed": served("waiting.claimed", 4) }), { C });
+    const { warnings } = resume(page({ "waiting.claimed": served("waiting.claimed", 4) }), { C }, { ctx: testCtx });
     expect(warnings).toEqual([]);
     expect(seen).toEqual([4]);
   });

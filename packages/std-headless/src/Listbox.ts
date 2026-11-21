@@ -26,8 +26,7 @@ export function Listbox<K extends string>(
     readonly option?: (o: Option<K>, s: OptionState) => Child;
     readonly styles?: { readonly list?: PartStyle; readonly option?: PartStyle };
   },
-  _slots?: undefined,
-  ctx?: Ctx,
+  ctx: Ctx,
 ): Node {
   const l = listChart(props.id, "option", props.options, ctx);
   const pick = (o: Option<K> | undefined) => {

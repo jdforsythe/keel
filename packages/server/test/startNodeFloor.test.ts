@@ -2,6 +2,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { routeTable } from "@keel/router";
 import fc from "fast-check";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { start } from "../src/internal/start.ts";
@@ -67,7 +68,7 @@ const run = async (
     {
       topology: { web: { modules: [], adapter: "node", storage } },
       deployable: "web",
-      routes: [],
+      routes: routeTable(),
       runners: {},
       dir,
       ...(storage === "file" ? {} : { open }),

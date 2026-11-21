@@ -4,6 +4,7 @@
 // part of itself. Seed 1337.
 import { createCtx } from "@keel/ctx";
 import { loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, reveal, s } from "@keel/schema";
 import { describe, expect, it } from "vitest";
 import { createApp, topology } from "../src/index.ts";
@@ -15,21 +16,20 @@ async function run(url: string, lead: number) {
   const LEAD = "x".repeat(lead);
   const lines: string[] = [];
   // The loader reveals a secret and passes its text down; the component throws it at the 89-character clip.
-  const load = loader({ output: Out }, async () => {
+  const c = contract("app", { "app.c": { path: "/c" }, "app.e": { path: "/e" } });
+  const passed = async () => {
     const m = s.secret(s.string()).parse(T);
     return ok({ t: m.ok ? reveal(m.value) : "" });
-  });
-  const routes = manifest({
+  };
+  const routes = manifest(c, {
     "app.c": {
-      path: "/c",
-      loader: load,
+      loader: loader(c, "app.c", { output: Out }, passed),
       component: (p: { readonly data: { readonly t: string } }) => {
         throw new Error(`${LEAD} ${p.data.t}`);
       },
     },
     "app.e": {
-      path: "/e",
-      loader: load,
+      loader: loader(c, "app.e", { output: Out }, passed),
       component: (p: { readonly data: { readonly t: string } }) => {
         throw new Error(`${LEAD} ${p.data.t}`);
       },

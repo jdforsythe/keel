@@ -6,6 +6,7 @@ import os from "node:os";
 import path from "node:path";
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { afterEach, describe, expect, it } from "vitest";
 import { createApp, topology } from "../src/index.ts";
 import { loadAssets } from "../src/internal/loadAssets.ts";
@@ -161,11 +162,13 @@ describe("servedEntry with a client build", () => {
   });
 });
 
+const home = contract("app", { "app.home": { path: "/" } });
+
 describe("createApp({ assets })", () => {
   const app = (assets: string, mode?: "dev" | "production") =>
     createApp({
       topology: topology({ web: { modules: ["app"], adapter: "node" } }),
-      routes: manifest({ "app.home": { path: "/", component: () => document.createElement("p") } }),
+      routes: manifest(home, { "app.home": { component: () => document.createElement("p") } }),
       ctx: createCtx({ mode: "sim", seed: 1337 }),
       assets,
       ...(mode === undefined ? {} : { mode }),

@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { For, mount } from "../src/index.ts";
 import { clone, list, template, text } from "../src/ops/index.ts";
 import { SEED, rootSignal } from "./support.ts";
+import { testCtx } from "./testCtx.ts";
 
 type Todo = { readonly id: string; readonly title: string };
 
@@ -25,23 +26,27 @@ function Row(props: { readonly todo: Todo }): Node {
 }
 
 function render(items: () => readonly Todo[], host: Element): () => void {
-  return mount(() => {
-    const ul = clone(UL);
-    const anchor = ul.lastChild;
-    if (anchor === null) throw new Error("no anchor");
-    list(
-      anchor,
-      items,
-      (t) => t.id,
-      (todo) =>
-        Row({
-          get todo() {
-            return todo();
-          },
-        }),
-    );
-    return ul;
-  }, host);
+  return mount(
+    () => {
+      const ul = clone(UL);
+      const anchor = ul.lastChild;
+      if (anchor === null) throw new Error("no anchor");
+      list(
+        anchor,
+        items,
+        (t) => t.id,
+        (todo) =>
+          Row({
+            get todo() {
+              return todo();
+            },
+          }),
+      );
+      return ul;
+    },
+    host,
+    { ctx: testCtx },
+  );
 }
 
 const rowOf = (host: Element, id: string): HTMLElement => {
@@ -145,23 +150,27 @@ describe("keyed list: a surviving key keeps its element", () => {
     host = document.createElement("div");
     document.body.appendChild(host);
     const items = rootSignal<Todo[]>(todos("a"));
-    const dispose = mount(() => {
-      const ul = clone(UL);
-      const anchor = ul.lastChild;
-      if (anchor === null) throw new Error("no anchor");
-      list(
-        anchor,
-        () => items.get(),
-        (t) => t,
-        (todo) =>
-          Row({
-            get todo() {
-              return todo();
-            },
-          }),
-      );
-      return ul;
-    }, host);
+    const dispose = mount(
+      () => {
+        const ul = clone(UL);
+        const anchor = ul.lastChild;
+        if (anchor === null) throw new Error("no anchor");
+        list(
+          anchor,
+          () => items.get(),
+          (t) => t,
+          (todo) =>
+            Row({
+              get todo() {
+                return todo();
+              },
+            }),
+        );
+        return ul;
+      },
+      host,
+      { ctx: testCtx },
+    );
     const a = rowOf(host, "a");
     items.set(todos("a"));
     expect(rowOf(host, "a")).not.toBe(a);
@@ -172,19 +181,23 @@ describe("keyed list: a surviving key keeps its element", () => {
     host = document.createElement("div");
     document.body.appendChild(host);
     const items = rootSignal<Todo[]>(todos("a"));
-    const dispose = mount(() => {
-      const ul = clone(UL);
-      ul.appendChild(
-        For({
-          get each() {
-            return items.get();
-          },
-          key: "id",
-          children: (todo) => Row({ todo }),
-        }),
-      );
-      return ul;
-    }, host);
+    const dispose = mount(
+      () => {
+        const ul = clone(UL);
+        ul.appendChild(
+          For({
+            get each() {
+              return items.get();
+            },
+            key: "id",
+            children: (todo) => Row({ todo }),
+          }),
+        );
+        return ul;
+      },
+      host,
+      { ctx: testCtx },
+    );
     expect(titles(host)).toEqual(["a0"]);
     items.set([{ id: "a", title: "a1" }]);
     expect(titles(host)).toEqual(["a1"]);

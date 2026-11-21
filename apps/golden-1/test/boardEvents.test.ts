@@ -2,7 +2,7 @@
 import { createCtx } from "@keel/ctx";
 import { createApp } from "@keel/server";
 import { afterEach, describe, expect, it } from "vitest";
-import { boardEvents } from "../modules/api/boardEvents.server.ts";
+import { api } from "../modules/api/api.contract.ts";
 import { runners } from "../modules/api/runners.server.ts";
 import topology from "../topology.ts";
 import { apiRoutes } from "./apiRoutes.ts";
@@ -17,6 +17,7 @@ afterEach(async () => {
 });
 
 const ORIGIN = "http://localhost";
+const BOARD_EVENTS = api.entries["api.boardEvents"].path;
 
 /** The `data:` payloads of an event stream, read one at a time. */
 function dataLines(res: Response) {
@@ -38,16 +39,14 @@ function dataLines(res: Response) {
 }
 
 describe("boardEvents", () => {
-  it("is the api.boardEvents route at the board channel's path", () => {
-    expect([boardEvents.id, boardEvents.path]).toEqual(["api.boardEvents", "/api/board/events"]);
+  it("is the api.boardEvents entry, a live GET at the board channel's path", () => {
+    expect(api.entries["api.boardEvents"]).toMatchObject({ method: "GET", path: BOARD_EVENTS, events: true });
   });
   it("opens for a caller with no cookie: reset first, then saved after another caller's write", async () => {
     await seedBoard(boardOf({ lists: [{ id: "l1", name: "Home" }], todos: [] }));
     const app = await apiApp();
     open.push(app);
-    const res = await app.fetch(
-      new Request(`${ORIGIN}${boardEvents.path}`, { headers: { accept: "text/event-stream" } }),
-    );
+    const res = await app.fetch(new Request(`${ORIGIN}${BOARD_EVENTS}`, { headers: { accept: "text/event-stream" } }));
     expect(res.status).toBe(200);
     const next = dataLines(res);
     expect(await next()).toEqual({ ok: true, value: { kind: "reset" } });
@@ -82,9 +81,7 @@ describe("boardEvents", () => {
       }),
     );
     expect(post.status).toBe(200);
-    const res = await app.fetch(
-      new Request(`${ORIGIN}${boardEvents.path}`, { headers: { accept: "text/event-stream" } }),
-    );
+    const res = await app.fetch(new Request(`${ORIGIN}${BOARD_EVENTS}`, { headers: { accept: "text/event-stream" } }));
     const next = dataLines(res);
     expect(await next()).toEqual({ ok: true, value: { kind: "reset" } });
     // The wait ends: the instance leaves `hidden` in a save of `api.removal` alone.

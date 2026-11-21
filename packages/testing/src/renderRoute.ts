@@ -1,6 +1,6 @@
-import { createCtx } from "@keel/ctx";
-import type { Manifest, RouteDef, RouteState, Router } from "@keel/router";
-import { createRouterWith, identityMounts, mountRequests } from "@keel/router/internal";
+import { type Ctx, createCtx } from "@keel/ctx";
+import type { RouteTable } from "@keel/router";
+import { compileRoutes, createRouterWith, encodeHref, identityMounts, mountRequests } from "@keel/router/internal";
 import { matchHref } from "@keel/router/match";
 import { serverState } from "@keel/store/internal";
 import { fail } from "./internal/fail.ts";
@@ -12,11 +12,12 @@ import { settle } from "./internal/settle.ts";
 import type { DocumentNavigation } from "./types/DocumentNavigation.ts";
 import type { RouteHarness } from "./types/RouteHarness.ts";
 import type { RouteRenderOptions } from "./types/RouteRenderOptions.ts";
+import type { RouteStateOf } from "./types/RouteStateOf.ts";
 
 /**
- * Render page `id` of `options.routes` (an API route has no view: its id rejects) (k.testing Harness): seed `state`,
- * create a router on an in-memory history at `url` (a root-relative path and query matching page `id`, else E1501),
- * else `routes.href(id, params, search)`; scroll goes to the top at open and at dispose (its initial navigation runs the
+ * Render page `id` of route table `options.routes` (a manifest or `routeTable`; an id of no page, an API entry or a
+ * layout, rejects with E1501) (k.testing Harness): seed `state`, create a router on an in-memory history at `url` (a
+ * root-relative path and query matching page `id`, else E1501), else page `id`'s href of `params` and `search`; scroll goes to the top at open and at dispose (its initial navigation runs the
  * chain's guards and loaders), mount its `App`, and resolve once no navigation is pending and the DOM is quiet; then
  * the render checks run (`keel.unexpected`, then k.a11y's: E1702, E1703 with the document rules, E1804, E1821). The
  * page is a document: the chain is its `main` landmark unless it renders one, the router writes `<title>` and
@@ -33,20 +34,33 @@ import type { RouteRenderOptions } from "./types/RouteRenderOptions.ts";
  * `dispose` also disposes the router and puts the title and `lang` back. Guards, loaders and actions get
  * `options.caller` and `options.user` (each default `""`). Loaders and actions naming `stores` run their factories over `ctx.storage` as a
  * `node` deployable does (`serverState`, k.server Server state), each navigation or submit one request; `state` and
- * `state()` hold no factory store.
+ * `state()` hold no factory store. The handle's `ctx` is typed as `render`'s: `SimCtx` when none is given.
  */
-export async function renderRoute<M extends Readonly<Record<string, RouteDef>>>(
+export function renderRoute<T extends RouteTable>(
   id: string,
-  options: RouteRenderOptions<M>,
-): Promise<RouteHarness<RouteState<M>>> {
-  const routes: Manifest<Readonly<Record<string, RouteDef>>> = options.routes;
+  options: RouteRenderOptions<T> & { readonly ctx?: undefined },
+): Promise<RouteHarness<RouteStateOf<T>>>;
+export function renderRoute<T extends RouteTable, C extends Ctx>(
+  id: string,
+  options: RouteRenderOptions<T> & { readonly ctx: C },
+): Promise<RouteHarness<RouteStateOf<T>, C>>;
+export function renderRoute<T extends RouteTable>(
+  id: string,
+  options: RouteRenderOptions<T>,
+): Promise<RouteHarness<RouteStateOf<T>, Ctx>>;
+export async function renderRoute<T extends RouteTable>(
+  id: string,
+  options: RouteRenderOptions<T>,
+): Promise<RouteHarness<RouteStateOf<T>, Ctx>> {
+  const routes: RouteTable = options.routes;
   const raw = options.url;
   // A raw url is a root-relative path and query of page `id` (never another origin, scheme or route).
   if (raw !== undefined && (!/^\/(?![/\\])/.test(raw) || matchHref(routes, raw)?.id !== id))
     throw fail("E1501", `renderRoute(${JSON.stringify(id)}): url ${JSON.stringify(raw)} is not a path of this page`, {
       url: raw,
     });
-  const url = raw ?? routes.href(id, options.params ?? {}, options.search ?? {});
+  const url =
+    raw ?? encodeHref(id, compileRoutes(routes).table.get(id)?.def, options.params ?? {}, options.search ?? {});
   // Each harness starts at the top: scroll is the window's, shared with the test before.
   window.scrollTo(0, 0);
   const seeded = seedStores(options.state ?? []);
@@ -59,7 +73,7 @@ export async function renderRoute<M extends Readonly<Record<string, RouteDef>>>(
     else document.documentElement.setAttribute("lang", head.lang);
   };
   const ctx = options.ctx ?? createCtx({ mode: "sim", seed: seedFrom(undefined) });
-  let router: Router<RouteState<M>>;
+  let router: ReturnType<typeof createRouterWith<T>>;
   const history = memoryHistory(url);
   const documents: DocumentNavigation[] = [];
   const open = (to: string): void => void documents.push({ method: "GET", url: to, body: null });

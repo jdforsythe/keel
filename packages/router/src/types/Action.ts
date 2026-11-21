@@ -1,28 +1,21 @@
 import type { Ctx } from "@keel/ctx";
 import type { KeelError, ObjectSchema, Result } from "@keel/schema";
+import type { Contract } from "../contract/types/Contract.ts";
+import type { ActionInput } from "./ActionInput.ts";
 import type { Href } from "./Href.ts";
 
+type Out = Result<Href | null, KeelError<string, unknown>>;
+
 /**
- * A page's action, declared with `action({ input, params?, stores? }, fn)` (k.server); it declares no `output`
- * (k.api Output). `ok(href)` navigates, `ok(null)` revalidates. `run` gets the absolute request `url`, the request's `caller` and `user` and its instance of the `stores` factory
- * (k.server Server state; `undefined` without one). `params` is the declared schema (absent when omitted);
- * `manifest` requires it to be the route's own (E1507) and `P` to accept `Infer` of the route's `params` schema.
+ * A page's action declared with `action(contract, id, { input, stores? }, fn)` for page `Id` (k.contract Handlers),
+ * bound in its entry by verb. `ok(href)` navigates, `ok(null)` revalidates; it declares no `output` (k.api Output).
  */
-export interface Action<I, P = unknown, St = unknown> {
+export type Action<Id extends string = string> = {
   readonly kind: "keel.action";
-  readonly input: ObjectSchema<I>;
-  readonly output?: never;
-  readonly params?: ObjectSchema<P>;
-  readonly stores?: (ctx: Ctx) => St;
-  run(
-    input: I,
-    at: {
-      readonly params: P;
-      readonly url: string;
-      readonly caller: string;
-      readonly user?: string;
-      readonly stores: St;
-    },
-    ctx: Ctx,
-  ): Result<Href | null, KeelError<string, unknown>> | Promise<Result<Href | null, KeelError<string, unknown>>>;
-}
+  readonly contract: Contract;
+  readonly id: Id;
+  readonly input: ObjectSchema<unknown>;
+  readonly output?: undefined;
+  readonly stores?: (ctx: Ctx) => unknown;
+  run(input: unknown, at: ActionInput, ctx: Ctx): Out | Promise<Out>;
+};

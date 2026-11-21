@@ -13,10 +13,10 @@ import { rewriteString } from "./rewriteString.ts";
 
 type Span = { start: number; end: number };
 
-/** Starts of the `path` literal of the renamed route's entry in a routes manifest. */
+/** Starts of the `path` literal of the renamed route's entry in a contract file. */
 function routePathStarts(program: Parameters<typeof callArgObject>[0], id: string): Set<number> {
   const out = new Set<number>();
-  const obj = callArgObject(program, "manifest");
+  const obj = callArgObject(program, "contract", 1);
   for (const p of obj?.properties ?? []) {
     if (p.type !== "Property" || keyName(p) !== id || p.value.type !== "ObjectExpression") continue;
     const v = propertyValue(p.value, "path");

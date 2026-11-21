@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 // `findRouter` (`@keel/router/internal`) gives a component rendered by a router its `ctx` and its `navigate`.
 import { createCtx } from "@keel/ctx";
+import { contract } from "@keel/router/contract";
 import { mount } from "@keel/runtime-dom";
 import { s } from "@keel/schema";
 import { expect, it } from "vitest";
@@ -16,10 +17,9 @@ const settle = async (): Promise<void> => {
 
 it("a page finds its router's ctx and navigates through it, push or replace", async () => {
   const found: (RouterCore | null)[] = [];
-  const routes = manifest({
+  const fr = contract("fr", { "fr.list": { path: "/fr", search: s.object({ q: s.string().optional() }) } });
+  const routes = manifest(fr, {
     "fr.list": {
-      path: "/fr",
-      search: s.object({ q: s.string().optional() }),
       component: () => {
         found.push(findRouter());
         return document.createElement("p");
@@ -30,16 +30,16 @@ it("a page finds its router's ctx and navigates through it, push or replace", as
   const history = memoryHistory("/fr");
   const router = createRouter(routes, { ctx, history });
   const host = document.createElement("div");
-  const unmount = mount(router.App, host);
+  const unmount = mount(router.App, host, { ctx });
   await settle();
   const core = found[0];
   if (core === null || core === undefined) throw new Error("no router found");
   expect(core.ctx).toBe(ctx);
-  await core.navigate(routes.href("fr.list", {}, { q: "a" }), { replace: true });
+  await core.navigate(fr.href("fr.list", {}, { q: "a" }), { replace: true });
   await settle();
   expect(router.route.get()).toMatchObject({ id: "fr.list", search: { q: "a" } });
   expect(history.entries).toEqual(["/fr?q=a"]);
-  await core.navigate(routes.href("fr.list", {}, { q: "b" }));
+  await core.navigate(fr.href("fr.list", {}, { q: "b" }));
   await settle();
   expect(router.route.get()).toMatchObject({ search: { q: "b" } });
   expect(history.entries).toEqual(["/fr?q=a", "/fr?q=b"]);

@@ -40,7 +40,10 @@ export function buildRequest(
   const path = fillPath(e.path, params.value);
   if (!path.ok) return path;
   const qs = query.value === undefined ? "" : encodeQuery(query.value).toString();
-  const url = `${base.replace(/\/+$/, "")}${path.value}${qs === "" ? "" : `?${qs}`}`;
+  // The URL as the Request will hold it, so the `x-keel-user` signature covers the URL sent.
+  const parsed = attempt(() => new URL(`${base.replace(/\/+$/, "")}${path.value}${qs === "" ? "" : `?${qs}`}`).href);
+  if (!parsed.ok) return err(fail.network());
+  const url = parsed.value;
   const json = body.value;
   // The body is JSON text, held whole before sending, so a signed `user` covers every byte sent; no stream is built.
   const text = json === undefined ? "" : JSON.stringify(json);

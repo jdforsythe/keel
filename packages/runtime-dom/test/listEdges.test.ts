@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { mount } from "../src/index.ts";
 import { clone, list, template, text } from "../src/ops/index.ts";
 import { rootSignal } from "./support.ts";
+import { testCtx } from "./testCtx.ts";
 
 const UL = template("<ul><!----></ul>");
 const LI = template("<li></li>");
@@ -17,22 +18,26 @@ type Item = { id: string; v: string };
 
 const view = (items: () => readonly Item[], withEmpty: boolean, renders: { n: number } = { n: 0 }) => {
   const host = document.createElement("div");
-  const dispose = mount(() => {
-    const ul = clone(UL);
-    list(
-      anchorOf(ul),
-      items,
-      (i) => i.id,
-      (item) => {
-        renders.n++;
-        const li = clone(LI);
-        text(li, () => item().v);
-        return li;
-      },
-      withEmpty ? () => clone(NONE) : undefined,
-    );
-    return ul;
-  }, host);
+  const dispose = mount(
+    () => {
+      const ul = clone(UL);
+      list(
+        anchorOf(ul),
+        items,
+        (i) => i.id,
+        (item) => {
+          renders.n++;
+          const li = clone(LI);
+          text(li, () => item().v);
+          return li;
+        },
+        withEmpty ? () => clone(NONE) : undefined,
+      );
+      return ul;
+    },
+    host,
+    { ctx: testCtx },
+  );
   return { host, dispose, texts: () => [...host.querySelectorAll("li")].map((l) => l.textContent) };
 };
 
@@ -127,7 +132,7 @@ describe("list: errors", () => {
         return ul;
       },
       host,
-      { onError: (e) => seen.push(e), mode: "dev" },
+      { ctx: testCtx, onError: (e) => seen.push(e), mode: "dev" },
     );
     expect(host.querySelectorAll("li")).toHaveLength(1);
     bad.set(true);

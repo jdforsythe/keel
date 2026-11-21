@@ -4,5 +4,5 @@ export default module({
   id: "notes",
   deps: [],
   capabilities: ["net"],
-  public: { exports: [], routes: [] },
+  public: { exports: [] },
 });

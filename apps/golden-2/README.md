@@ -5,6 +5,8 @@ The recipe box, in `en-US`, `de-DE` and `ja-JP`. `topology.ts` defines two deplo
 - `web` (`client`, `servedBy: 'api'`): the browser app, built to `dist/web/` and copied into `dist/api/`, so `api` serves it.
 - `api` (`node`): the `kitchen` module at `/api/recipes`, `/api/catalog/<locale>` and `/api/tally/currency`, and the `accounts` module: its sign-up and sign-in pages, `/api/tokens` and `/api/me`, and the sign-in library at `/api/auth`; and the `health` module of `@keel/std-health` at `/health`.
 
+Each module that serves a route has one contract, `modules/<id>/<id>.contract.ts`, keyed by route id: `kitchen` holds its five API entries (`kitchen.box` and `kitchen.add` share `/api/recipes` at two methods), `accounts` its two pages and two API entries, `recipes` its layout and four pages. `routes.ts` binds every entry. `recipes` calls `kitchen` through `service({ contract: kitchen })`, and each module's pages link with its contract's `href`.
+
 ## Pages
 - `/` (`recipes.index`): every recipe, or only favorites.
 - `/recipes/<id>` (`recipes.show`): one recipe and its favorite toggle.
@@ -19,7 +21,7 @@ Keel authenticates no one; this module is an example of plugging an established 
 Handlers read `user`; nothing in the app stores a password or a session.
 - `/account/signup` (`accounts.signup`): a name, an email and a password, validated in the page, then posted by the browser to `/api/auth/sign-up/email`. A sign-up does not sign in, and an email that already has an account gets the same answer as a new one.
 - `/account/signin` (`accounts.signin`): an email and a password posted to `/api/auth/sign-in/email`; signed in, the page names the account and shows a sign-out form (a POST to `/api/auth/sign-out`).
-- `POST /api/tokens` (`accounts.tokens`): for a user signed in by cookie, mints a token with `@keel/std-tokens` that lasts 30 days and answers `{ token, id, expiresAt }`, the only time the token text leaves; the `accounts.tokens` store holds its id, digest and user. No user, or a request that presents a token, is 403 `keel.denied`.
+- `POST /api/tokens` (`accounts.mint`): for a user signed in by cookie, mints a token with `@keel/std-tokens` that lasts 30 days and answers `{ token, id, expiresAt }`, the only time the token text leaves; the `accounts.tokens` store holds its id, digest and user. No user, or a request that presents a token, is 403 `keel.denied`.
 - `GET /api/me` (`accounts.me`): the email of the request's `user`, by session cookie or by bearer token; neither, or an unknown, tampered or expired token, is 403 `keel.denied`.
 
 At each sign-in the library accepts, `identity.server.ts` saves the user's id and email in the `accounts.profiles` store, and `/api/me` reads them there. Only `identity.server.ts` imports the library: a loader's imports are bundled into the browser code of the pages that use it, so no loader or page module imports the library.
@@ -41,7 +43,7 @@ Run `pnpm dev` from `apps/golden-2`. `keel dev` serves `web` with hot reload and
 
 The `kitchen` module counts the box's recipes by price currency each time `/api/recipes`, `/api/catalog/<locale>` or `/api/tally/currency` reads the box (`currencyTally`, `tallyOf` of `@keel/std-report`) and serves the tally as the inspector section `kitchen.box.currency` of the `api` deployable's dev app. `keel report <url>` against `keel dev` prints it as `kitchen.box.currency EUR=2 JPY=1`, then `ok report 1 tallies`.
 
-`GET /api/tally/currency` (`kitchen.tally.currency`) answers the same tally from a build as well: a loader with `output: Tally`, so the body is the loader's answer holding it. Like the kitchen's other reads it has no guard and anyone may call it; the tally holds currency codes and counts, nothing of a recipe or a person. `keel report http://localhost:8080/api/tally/currency` against `pnpm api` prints `kitchen.box.currency EUR=2 JPY=1`, then `ok report 1 tallies`.
+`GET /api/tally/currency` (`kitchen.currencyTally`) answers the same tally from a build as well: an API entry of the `kitchen` contract whose `output` is `Tally`, so the body is the loader's answer holding it. Like the kitchen's other reads it has no guard and anyone may call it; the tally holds currency codes and counts, nothing of a recipe or a person. `keel report http://localhost:8080/api/tally/currency` against `pnpm api` prints `kitchen.box.currency EUR=2 JPY=1`, then `ok report 1 tallies`.
 
 Each module lists `@keel/std-brands` in `deps`, so `keel check` holds every id brand (`s.id('Recipe')`, `ctx.random.id('Recipe')`) to PascalCase (E2101, with a fix).
 

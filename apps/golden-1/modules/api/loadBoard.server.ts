@@ -1,14 +1,14 @@
 import { loader } from "@keel/router";
 import { ok } from "@keel/schema";
-import { BoardView } from "./BoardView.schema.ts";
 import type { Removal } from "./Removal.schema.ts";
+import { api } from "./api.contract.ts";
 import { removalStores } from "./removalStores.server.ts";
 
 /**
- * `GET /api/lists`: every list and todo, whether `POST /api/undo` would undo this caller's last write, the head, and
+ * `GET /api/lists` (`api.lists`): every list and todo, whether `POST /api/undo` would undo this caller's last write, the head, and
  * the removals not yet ended, in one read of the board and `api.removal`.
  */
-export const loadBoard = loader({ output: BoardView, stores: removalStores }, async ({ caller, stores }) => {
+export const loadBoard = loader(api, "api.lists", { stores: removalStores }, async ({ caller, stores }) => {
   const { board } = stores;
   const canUndo = board.log().at(-1)?.meta?.caller === caller;
   const removals: Removal[] = [];

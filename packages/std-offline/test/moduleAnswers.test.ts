@@ -3,15 +3,15 @@
 // Seed 1337.
 import { type SimCtx, createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
-import { endpoints } from "@keel/services";
 import { expect, test } from "vitest";
 import { Write, outbox, send } from "../src/index.ts";
 
 const ORIGIN = "http://app.keel.invalid";
 // The natural map for an app's own action: `output` is the action's value, `errors` the err's `error`; no 409 declared.
-const Api = endpoints({
-  edit: {
+const Api = contract("app", {
+  "app.edit": {
     method: "POST",
     path: "/edit",
     body: s.object({ t: s.string(), write: Write }),
@@ -40,7 +40,7 @@ async function sendOne(answer: string) {
   });
   const held: { o?: ReturnType<typeof outbox<typeof Api>> } = {};
   const sc = scope(() => {
-    held.o = outbox(`answers${++n}.outbox`, Api, { module: "app" });
+    held.o = outbox(`answers${++n}.outbox`, Api);
   });
   const o = held.o;
   if (o === undefined) throw new Error("no outbox");

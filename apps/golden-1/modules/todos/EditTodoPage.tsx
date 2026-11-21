@@ -7,7 +7,7 @@ import { Box, Button, Heading, Input, Select, Text } from "@keel/ui";
 import { Todo } from "../api/Todo.schema.ts";
 import { TodoDraft } from "../api/TodoDraft.schema.ts";
 import { editorChart } from "./editorChart.ts";
-import { routes } from "./routes.ts";
+import { todos } from "./todos.contract.ts";
 
 export const Props = s.object({
   params: s.object({ listId: s.id("TodoList"), todoId: s.id("Todo") }),
@@ -57,7 +57,7 @@ export default function EditTodoPage(props: Infer<typeof Props>) {
       </If>
       <Form
         method="POST"
-        action={routes.href("todos.edit", props.params)}
+        action={todos.href("todos.edit", props.params)}
         form={f}
         error={(e) => <Text fg="error">{e.message}</Text>}
       >

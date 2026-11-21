@@ -3,6 +3,7 @@
 // so a loader that takes thousands of macrotask turns beside one still settles. Seed: 1337.
 import { createCtx } from "@keel/ctx";
 import { loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import { renderRoute } from "@keel/testing";
 import { describe, expect, it } from "vitest";
@@ -18,10 +19,10 @@ const turn = (): Promise<void> =>
   });
 
 const Out = s.object({ turns: s.number() });
-const routes = manifest({
+const c = contract("clk", { "clk.slow": { path: "/slow" } });
+const routes = manifest(c, {
   "clk.slow": {
-    path: "/slow",
-    loader: loader({ output: Out }, async (_args, ctx) => {
+    loader: loader(c, "clk.slow", { output: Out }, async (_args, ctx) => {
       void ctx.clock.after(1000);
       for (let i = 0; i < 3000; i++) await turn();
       return ok({ turns: 3000 });

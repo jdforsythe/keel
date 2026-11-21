@@ -28,7 +28,7 @@ describe("golden-1 api in plain node (no DOM global)", () => {
     await seedBoard(seeded);
     const app = await apiApp();
     for (const id of ["api.lists", "api.suggestions"] as const) {
-      const path = apiRoutes.routes[id].path;
+      const path = apiRoutes.contract.entries[id].path;
       const r = await page(app.fetch, path);
       expect(r.status, path).toBe(200);
       expect(r.html, path).not.toContain("<!doctype html>");

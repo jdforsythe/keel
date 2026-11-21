@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { mount } from "../src/index.ts";
 import { attr, clone, template, text } from "../src/ops/index.ts";
 import { SEED, rootSignal } from "./support.ts";
+import { testCtx } from "./testCtx.ts";
 
 type V = string | number | boolean | null | undefined;
 const value = fc.oneof(fc.string(), fc.integer(), fc.boolean(), fc.constant(null), fc.constant(undefined));
@@ -18,11 +19,15 @@ describe("attr toggling over random value sequences", () => {
       fc.property(value, fc.array(value, { maxLength: 12 }), (initial, seq) => {
         const s = rootSignal<V>(initial);
         const host = document.createElement("div");
-        const dispose = mount(() => {
-          const p = clone(T);
-          attr(p, "data-x", () => s.get());
-          return p;
-        }, host);
+        const dispose = mount(
+          () => {
+            const p = clone(T);
+            attr(p, "data-x", () => s.get());
+            return p;
+          },
+          host,
+          { ctx: testCtx },
+        );
         const p = host.querySelector("#p");
         if (p === null) throw new Error("no #p");
         expect(p.getAttribute("data-x")).toBe(expected(initial));
@@ -53,11 +58,15 @@ describe("attr toggling over random value sequences", () => {
       fc.property(fc.array(fc.integer({ min: 0, max: 3 }), { maxLength: 10 }), (seq) => {
         const s = rootSignal(0);
         const host = document.createElement("div");
-        const dispose = mount(() => {
-          const el = clone(T);
-          text(el, () => s.get());
-          return el;
-        }, host);
+        const dispose = mount(
+          () => {
+            const el = clone(T);
+            text(el, () => s.get());
+            return el;
+          },
+          host,
+          { ctx: testCtx },
+        );
         const span = host.querySelector("#s");
         const node = span?.firstChild;
         for (const v of seq) {

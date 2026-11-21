@@ -46,7 +46,6 @@ test("Listbox: label, mode and option text follow their props; the list keeps fo
           selected: () => [],
           onChange: () => {},
         },
-        undefined,
         c,
       ),
     ),
@@ -84,7 +83,6 @@ test("Combobox: its label follows the prop while the list stays open and the inp
           options: () => fruit(""),
           onChange: () => {},
         },
-        undefined,
         c,
       ),
     ),
@@ -105,7 +103,7 @@ test("Combobox: its label follows the prop while the list stays open and the inp
 test("Menu: item text follows the items while the menu stays open and focused", async () => {
   const items = held(fruit(""));
   const t = render(
-    page((c) => Menu({ id: "mn", trigger: () => "Fruit", items: () => items.get(), onSelect: () => {} }, undefined, c)),
+    page((c) => Menu({ id: "mn", trigger: () => "Fruit", items: () => items.get(), onSelect: () => {} }, c)),
     { props: {}, ctx: simCtx() },
   );
   await t.fire("mn.trigger", { type: "keydown", key: "Enter" });
@@ -134,7 +132,6 @@ test("Tabs: label and tab text follow their props; the selected tab keeps focus"
           onChange: () => {},
           panel: (k) => k,
         },
-        undefined,
         c,
       ),
     ),
@@ -170,7 +167,6 @@ test("Dialog: title and description follow their props while it stays open", asy
             },
           },
         },
-        undefined,
         c,
       ),
     ),
@@ -190,9 +186,7 @@ test("Dialog: title and description follow their props while it stays open", asy
 test("Disclosure: a summary slot with its own binding updates while the panel stays shown", async () => {
   const summary = held("Shipping");
   const t = render(
-    page((c) =>
-      Disclosure({ id: "ds", summary: () => computed(() => summary.get()), children: () => "Two days" }, undefined, c),
-    ),
+    page((c) => Disclosure({ id: "ds", summary: () => computed(() => summary.get()), children: () => "Two days" }, c)),
     { props: {}, ctx: simCtx() },
   );
   await t.fire("ds.button", { type: "click" });
@@ -217,7 +211,6 @@ test("Toaster: the dismiss text and an item's text follow their props; the toast
             return dismiss.get();
           },
         },
-        undefined,
         c,
       ),
     ),

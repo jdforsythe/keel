@@ -7,7 +7,6 @@ export type Manifest = {
   readonly deps: ManifestList;
   readonly capabilities: ManifestList;
   readonly exports: ManifestList;
-  readonly routes: ManifestList;
   /** The `.pii()` classes its client-reachable stores may hold (k.leave Snapshots). */
   readonly clientPii: ManifestList;
   /** The end of the manifest object's last property, where a fix adds an absent list. */

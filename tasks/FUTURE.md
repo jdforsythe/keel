@@ -4,7 +4,6 @@ Ideas that come up outside the current plans. An idea is built at once only when
 
 ## Routing and server
 - A caller token for cross-site clients: the server returns the caller token in a response header, the client keeps it and sends it in a request header, so a `client` deployable on a static host that is cross-site to its API keeps one caller. RFC 0087 D3. Needs a decision on where the client stores a token that `HttpOnly` withholds today; fits an auth stdlib module.
-- Serve API handlers from the `@keel/services` `endpoints` schema: one schema per API, handlers typed from it, E1561 and E1562 gone. RFC 0086 Alternatives. Replaces `loader` and `action` for JSON; a stage of its own.
 - In-entry verbs for API routes (`{ path, GET, POST }`). RFC 0086 D2. Needs an answer to the circular initializer of ADR-0052.
 - Per-route document titles, a custom icon or extra head links, and serving all of `public/` in production. RFC 0078 Open questions; backlog 0305 (user decisions).
 - Params passed to `errorElement`. RFC 0079 Known limits. Waits for a k.router split.

@@ -6,7 +6,8 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { type Ctx, createCtx } from "@keel/ctx";
-import { type Manifest, type RouteDef, loader, manifest } from "@keel/router";
+import { type RouteTable, loader, manifest, routeTable } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -19,14 +20,10 @@ const SEED = 1337;
 const PEER = "http://y.internal:8080";
 const T = topology({ x: { modules: ["a"], adapter: "node" }, y: { modules: ["b"], adapter: "node" } });
 
-const page = (id: string, p: string): Manifest<Readonly<Record<string, RouteDef>>> =>
-  manifest({
-    [id]: {
-      path: p,
-      loader: loader({ output: s.object({ t: s.string() }) }, async () => ok({ t: id })),
-      component: () => document.createElement("p"),
-    },
-  });
+const aX = contract("a", { "a.x": { path: "/a" } });
+const aXLoad = loader(aX, "a.x", { output: s.object({ t: s.string() }) }, async () => ok({ t: "a.x" }));
+const page = (): RouteTable =>
+  manifest(aX, { "a.x": { loader: aXLoad, component: () => document.createElement("p") } });
 
 /** `routes.json` in a fresh artifacts directory: `y`'s module `b` serves `paths`. */
 function artifacts(paths: readonly string[]): string {
@@ -48,7 +45,7 @@ async function front(answer: (req: Request) => Response | Promise<Response>, max
   const app = await createApp({
     topology: T,
     deployable: "x",
-    routes: page("a.x", "/a"),
+    routes: page(),
     ctx,
     peers: { y: PEER },
     artifacts: artifacts(["/:slug", "/digest/feed", "/b/save"]),
@@ -63,7 +60,8 @@ async function served(ctx: Ctx): Promise<Served> {
     table: [],
     ctx,
     mode: "production",
-    routes: manifest({}),
+    routes: routeTable(),
+    byId: new Map(),
     maxBody: 1024,
     inspectOrigins: [],
     keys: await callerSigner(undefined),

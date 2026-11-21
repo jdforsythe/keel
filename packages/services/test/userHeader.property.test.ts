@@ -3,16 +3,22 @@
 // `"keel.user"` for the module, method, URL and body as sent, sent as `x-keel-user`; with no signer, a `user` that is
 // not a string, or one the signer refuses, `api.input` at `user` and nothing sent. Seed 1337.
 import { createCtx } from "@keel/ctx";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { endpoints } from "../src/endpoints.ts";
 import { MODULES_KEY } from "../src/internal/MODULES_KEY.ts";
 import { service } from "../src/service.ts";
 
-const schema = endpoints({
-  get: { method: "GET", path: "/b/:n", params: s.object({ n: s.string() }), output: s.json() },
-  put: { method: "POST", path: "/b/:n", params: s.object({ n: s.string() }), body: s.json(), output: s.json() },
+const c = contract("b", {
+  "b.get": { method: "GET", path: "/b/:n", params: s.object({ n: s.string() }), output: s.json() },
+  "b.put": {
+    method: "POST",
+    path: "/b/:n",
+    params: s.object({ n: s.string() }),
+    body: s.object({ v: s.json() }),
+    output: s.json(),
+  },
 });
 const decoder = new TextDecoder();
 
@@ -37,15 +43,15 @@ function bound(withSigner: boolean) {
   return { ctx, sent };
 }
 
-describe("service({ module }) user", () => {
+describe("service({ contract }) user", () => {
   test("a string `user` is sent as the signer's `x-keel-user` for that method and URL; no `user`, no header", async () => {
     await fc.assert(
       fc.asyncProperty(fc.stringMatching(/^[A-Za-z0-9]{0,8}$/), fc.json(), async (user, json) => {
         const { ctx, sent } = bound(true);
-        const api = service({ module: "b", schema });
+        const api = service({ contract: c });
         await api.get({ params: { n: "1" }, user }, ctx);
         await api.get({ params: { n: "2" } }, ctx);
-        await api.put({ params: { n: "3" }, body: JSON.parse(json), user }, ctx);
+        await api.put({ params: { n: "3" }, body: { v: JSON.parse(json) }, user }, ctx);
         const bodies = await Promise.all(sent.map((r) => r.text()));
         expect(sent.map((r) => r.headers.get("x-keel-user"))).toEqual([
           `b GET http://b.test/b/1 [${user}] |`,
@@ -65,7 +71,7 @@ describe("service({ module }) user", () => {
     ];
     for (const [withSigner, user, rule] of cases) {
       const { ctx, sent } = bound(withSigner);
-      const r: unknown = await Reflect.apply(service({ module: "b", schema }).get, undefined, [
+      const r: unknown = await Reflect.apply(service({ contract: c }).get, undefined, [
         { params: { n: "1" }, user },
         ctx,
       ]);

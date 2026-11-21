@@ -1,5 +1,6 @@
 // `user` (k.user) reaches guards, loaders and actions; a direct `run` that leaves it out gives `""`. Seed 1337.
 import { createCtx } from "@keel/ctx";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -9,6 +10,11 @@ import { runGuard } from "../src/internal/runGuard.ts";
 import { loader } from "../src/loader.ts";
 
 const ctx = createCtx({ mode: "sim", seed: 1337 });
+const u = contract("u", {
+  "u.page": { path: "/u" },
+  "u.feed": { method: "GET", path: "/api/feed", output: s.object({}), events: true },
+  "u.add": { method: "POST", path: "/api/add", output: s.object({}) },
+});
 
 describe("user", () => {
   it("runGuard, a loader's run and live and an action's run hand `user` to fn as given", async () => {
@@ -20,12 +26,12 @@ describe("user", () => {
           return ok(null);
         });
         await runGuard(g, "/u", ctx, { caller: "c", user });
-        const l = loader({ output: s.object({}) }, async (a) => {
+        const l = loader(u, "u.page", { output: s.object({}) }, async (a) => {
           seen.push(a.user);
           return ok({});
         });
         await l.run({ params: undefined, search: undefined, url: "/u", caller: "", user, stores: undefined }, ctx);
-        const a = action({ input: s.object({}) }, async (_i, at) => {
+        const a = action(u, "u.page", { input: s.object({}) }, async (_i, at) => {
           seen.push(at.user);
           return ok(null);
         });
@@ -43,7 +49,7 @@ describe("user", () => {
       return ok(null);
     });
     await g.run({ url: "/u" }, ctx);
-    const l = loader({ output: s.object({}) }, async function* (a) {
+    const l = loader(u, "u.feed", {}, async function* (a) {
       seen.push(a.user);
       yield ok({});
     });
@@ -59,7 +65,7 @@ describe("user", () => {
       ctx,
     ) ?? [])
       break;
-    const a = action({ input: s.object({}), output: s.object({}) }, async (_i, at) => {
+    const a = action(u, "u.add", {}, async (_i, at) => {
       seen.push(at.user);
       return ok({});
     });

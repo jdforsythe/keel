@@ -1,4 +1,4 @@
-import type { Manifest, RouteDef } from "@keel/router";
+import type { RouteTable } from "@keel/router";
 import type { ReplayResult } from "./ReplayResult.ts";
 import type { Session } from "./Session.schema.ts";
 import { replayRun } from "./internal/replayRun.ts";
@@ -14,9 +14,9 @@ import { replayRun } from "./internal/replayRun.ts";
  * the input it stopped at, -1 for the base, else null. `redact`: the entries the recording ctx had
  * (every module's `std['@keel/std-sessions'].redact`), so the replay recorder redacts as the live one did.
  */
-export async function replay<M extends Readonly<Record<string, RouteDef>>>(
+export async function replay(
   session: Session,
-  options: { readonly routes: Manifest<M>; readonly redact?: readonly string[] },
+  options: { readonly routes: RouteTable; readonly redact?: readonly string[] },
 ): Promise<ReplayResult> {
   return (await replayRun(session, options)).result;
 }

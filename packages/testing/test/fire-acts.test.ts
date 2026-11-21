@@ -4,15 +4,16 @@
 // no shell marks nothing. Seed 1337 for the property.
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { personActs } from "@keel/router/internal";
 import fc from "fast-check";
 import { afterEach, expect, it } from "vitest";
 import { renderRoute } from "../src/renderRoute.ts";
 import type { TestEvent } from "../src/types/TestEvent.ts";
 
-const routes = manifest({
+const c = contract("f", { "f.home": { path: "/" } });
+const routes = manifest(c, {
   "f.home": {
-    path: "/",
     component: () => {
       const main = document.createElement("main");
       const field = document.createElement("input");
@@ -62,7 +63,7 @@ it("a shell render's fire marks the ctx's act exactly for those events; the hand
         : await renderRoute("f.home", { routes, ctx });
       handles.push(h);
       await h.settle();
-      await h.navigate(routes.href("f.home"));
+      await h.navigate(c.href("f.home"));
       expect(personActs.of(ctx).acted).toBe(false);
       if (e.type === "blur") await h.fire("f.field", { type: "focus" });
       await h.fire("f.field", e);

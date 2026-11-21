@@ -1,4 +1,5 @@
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { matchHref } from "@keel/router/match";
 // `tableSearch` either refuses a table whose query could carry personal data (E2852) or builds a search schema whose
 // keys are `sort`, `dir`, `page`, `q` and unmarked enum or boolean filters. Seed 1337.
@@ -86,9 +87,8 @@ describe("tableSearch", () => {
   test("a route drops a `sort` outside the sort columns and keeps the rest of the query", () => {
     const Row = s.object({ id: s.int(), title: s.string(), on: s.boolean() });
     const Search = tableSearch(columns(Row, { key: "id", show: ["title", "on"], sort: ["title"], filter: ["on"] }));
-    const routes = manifest({
-      "t.list": { path: "/t", params: s.object({}), search: Search, component: () => document.createComment("") },
-    });
+    const t = contract("t", { "t.list": { path: "/t", params: s.object({}), search: Search } });
+    const routes = manifest(t, { "t.list": { component: () => document.createComment("") } });
     fc.assert(
       fc.property(fc.constantFrom("on", "id", "bogus", "TITLE", ""), (sort) => {
         const m = matchHref(routes, `/t?sort=${sort}&dir=desc&on=true`);

@@ -4,10 +4,16 @@ import { describe, expect, test } from "vitest";
 import { serverEntryCode } from "../src/internal/serverEntryCode.ts";
 import { pathCollisions } from "../src/pathCollisions.ts";
 
-const routes = (id: string, p: string) => ({
-  path: `modules/${id}/routes.ts`,
-  source: `import { manifest } from '@keel/router'\nconst V = () => null\nexport const routes = manifest({ '${id}.page': { path: '${p}', component: V } })\n`,
-});
+const routes = (id: string, p: string) => [
+  {
+    path: `modules/${id}/${id}.contract.ts`,
+    source: `import { contract } from '@keel/router/contract'\nexport const ${id} = contract('${id}', { '${id}.page': { path: '${p}' } })\n`,
+  },
+  {
+    path: `modules/${id}/routes.ts`,
+    source: `import { manifest } from '@keel/router'\nimport { ${id} } from './${id}.contract.ts'\nconst V = () => null\nexport const routes = manifest(${id}, { '${id}.page': { component: V } })\n`,
+  },
+];
 const seg = fc.stringMatching(/^[a-z]{1,6}$/);
 
 describe("pathCollisions", () => {
@@ -25,7 +31,7 @@ describe("pathCollisions", () => {
         (parts, other) => {
           const p = `/${parts.join("/")}`;
           const q = `/${parts.map((x) => (x.startsWith(":") ? ":other" : x)).join("/")}`;
-          const files = [routes("a", p), routes("b", q)];
+          const files = [...routes("a", p), ...routes("b", q)];
           const split = {
             x: { modules: ["a"], adapter: "node" as const },
             y: { modules: ["b"], adapter: "node" as const },
@@ -34,9 +40,9 @@ describe("pathCollisions", () => {
           expect(found.map((d) => d.code)).toEqual(["E1559"]);
           expect(found[0]?.message).toContain("a.page");
           expect(found[0]?.message).toContain("b.page");
-          expect(found[0]?.path).toBe("modules/b/routes.ts");
+          expect(found[0]?.path).toBe("modules/b/b.contract.ts");
           expect(pathCollisions(files, { one: { modules: ["a", "b"], adapter: "node" } })).toEqual([]);
-          expect(pathCollisions([routes("a", p), routes("b", `${p}/${other}`)], split)).toEqual([]);
+          expect(pathCollisions([...routes("a", p), ...routes("b", `${p}/${other}`)], split)).toEqual([]);
         },
       ),
       { seed: 1337, numRuns: 50 },
@@ -51,7 +57,9 @@ describe("pathCollisions", () => {
           x: { modules: ["a"], adapter: "node" as const },
           y: { modules: ["b"], adapter: "node" as const },
         };
-        expect(pathCollisions([routes("a", p), routes("b", `${p}/`)], split).map((d) => d.code)).toEqual(["E1559"]);
+        expect(pathCollisions([...routes("a", p), ...routes("b", `${p}/`)], split).map((d) => d.code)).toEqual([
+          "E1559",
+        ]);
       }),
       { seed: 1337, numRuns: 30 },
     );
@@ -64,5 +72,6 @@ describe("serverEntryCode", () => {
     expect(code.indexOf("installServerDom();")).toBeLessThan(code.indexOf("topology.ts"));
     expect(code).toContain('deployable: "api"');
     expect(code).toContain("dir: import.meta.dirname");
+    expect(code).toContain("routes: routeTable()");
   });
 });

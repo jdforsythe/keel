@@ -8,8 +8,10 @@ import { routesRun } from "../src/internal/routesRun.ts";
 
 const repo = repoRoot(import.meta.dirname);
 const ROUTES_TS = `import { manifest } from "@keel/router";
-export const routes = manifest({
-  "m.home": { path: "/home", component: () => null },
+import { contract } from "@keel/router/contract";
+const m = contract("m", { "m.home": { path: "/home" } });
+export const routes = manifest(m, {
+  "m.home": { component: () => null },
 });
 `;
 const NODE_TOP = 'export default topology({ api: { modules: ["m"], adapter: "node" } });\n';

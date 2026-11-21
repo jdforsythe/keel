@@ -46,7 +46,7 @@ it("E1111 follows a schema const nested in another schema file", () => {
     {
       path: "src/routes.ts",
       source:
-        "import { manifest } from '@keel/router'\nimport { Q } from './Q.schema.ts'\nconst Page = () => null\nexport const routes = manifest({ 'a.b': { path: '/b', search: Q, component: Page } })\n",
+        "import { contract } from '@keel/router/contract'\nimport { Q } from './Q.schema.ts'\nexport const a = contract('a', { 'a.b': { path: '/b', search: Q } })\n",
     },
   ];
   const ds = codes(files, "E1111");
@@ -110,7 +110,7 @@ it("E1571's explanation sends the service to a module a node deployable lists, a
   expect(text).toContain("in a module only client deployables list it ships");
 });
 
-it("E1111 reads anyOf members, spreads, namespace imports, re-exports and a const table; it reports what it cannot read", () => {
+it("E1111 reads anyOf members, spreads, namespace imports and re-exports in a schema; it reports what it cannot read, a const table too", () => {
   const S = "import { s } from '@keel/schema'\n";
   const lib: Files = [
     {
@@ -119,15 +119,11 @@ it("E1111 reads anyOf members, spreads, namespace imports, re-exports and a cons
     },
     { path: "src/index.ts", source: "export { Email as Mail } from './U.schema.ts'\n" },
   ];
-  const table = (
-    head: string,
-    search: string,
-    call = "manifest({ 'a.b': { path: '/b', search: SEARCH, component: Page } })",
-  ) => [
+  const table = (head: string, search: string, call = "contract('a', { 'a.b': { path: '/b', search: SEARCH } })") => [
     ...lib,
     {
       path: "src/routes.ts",
-      source: `import { manifest } from '@keel/router'\n${S}${head}const Page = () => null\nconst SEARCH = ${search}\nexport const routes = ${call}\n`,
+      source: `import { contract } from '@keel/router/contract'\n${S}${head}const SEARCH = ${search}\nexport const a = ${call}\n`,
     },
   ];
   const ran = (files: Files) => codes(files, "E1111").map((d) => d.message.split(";")[0]);
@@ -141,12 +137,12 @@ it("E1111 reads anyOf members, spreads, namespace imports, re-exports and a cons
   expect(
     ran(
       table(
-        "import { Email } from './U.schema.ts'\nconst TABLE = { 'a.b': { path: '/b', search: s.object({ q: Email }), component: () => null } }\n",
+        "import { Email } from './U.schema.ts'\nconst TABLE = { 'a.b': { path: '/b', search: s.object({ q: Email }) } }\n",
         "s.object({})",
-        "manifest(TABLE)",
+        "contract('a', TABLE)",
       ),
     ),
-  ).toEqual([marked]);
+  ).toEqual(["route table not readable statically"]);
   expect(ran(table("declare function make(): unknown\n", "make()"))).toEqual(["route search not readable statically"]);
   expect(ran(table("", "s.object({ q: s.string() })"))).toEqual([]);
 });
@@ -159,7 +155,7 @@ it("E1111: a search schema from std-tables' audited `tableSearch` is the package
     },
     {
       path: "src/routes.ts",
-      source: `import { manifest } from '@keel/router'\nimport { catalog } from './catalog.ts'\n${head}const Page = () => null\nexport const routes = manifest({ 'a.b': { path: '/b', search: ${search}, component: Page } })\n`,
+      source: `import { contract } from '@keel/router/contract'\nimport { catalog } from './catalog.ts'\n${head}export const a = contract('a', { 'a.b': { path: '/b', search: ${search} } })\n`,
     },
   ];
   expect(codes(routes("import { tableSearch } from '@keel/std-tables'\n", "tableSearch(catalog)"), "E1111")).toEqual(
@@ -210,30 +206,27 @@ it("E1570 reads a const, a template head, a concatenation and a protocol-relativ
   expect(n("const P = '/a.png'\n", "P")).toBe(0);
 });
 
-it("E1111: a package's route table spread into an app manifest is the package's, and a project table's `.routes` is read", () => {
+it("E1111: a spread among a contract's entries is unread at it, a package's or a project's, and the entries beside it are read", () => {
   const S = "import { s } from '@keel/schema'\n";
   const files = (spread: string, head: string): Files => [
     { path: "src/P.schema.ts", source: `${S}export const P = s.object({ e: s.string().pii('contact') })\n` },
     {
       path: "src/other.ts",
-      source: `import { manifest } from '@keel/router'\nimport { P } from './P.schema.ts'\nexport const other = manifest({ 'o.x': { path: '/o/:e', params: P, component: () => null } })\n`,
+      source: "import { P } from './P.schema.ts'\nexport const other = { 'o.x': { path: '/o/:e', params: P } }\n",
     },
     {
       path: "src/routes.ts",
-      source: `import { manifest } from '@keel/router'\n${head}export const routes = manifest({\n  ...${spread},\n  'a.b': { path: '/b', component: () => null },\n})\n`,
+      source: `import { contract } from '@keel/router/contract'\n${head}export const a = contract('a', {\n  ...${spread},\n  'a.b': { path: '/b' },\n})\n`,
     },
   ];
   const ran = (spread: string, head: string) =>
     codes(files(spread, head), "E1111")
       .filter((d) => d.path === "src/routes.ts")
       .map((d) => d.message.split(";")[0]);
-  expect(ran("monitorRoutes.routes", "import { monitorRoutes } from '@keel/std-sessions/monitor'\n")).toEqual([]);
-  expect(ran("other.routes", "import { other } from './other.ts'\n")).toEqual([
-    "personal data or a secret in route params",
-  ]);
-  expect(ran("make().routes", "declare function make(): { routes: object }\n")).toEqual([
-    "route table not readable statically",
-  ]);
+  const unread = ["route entries not readable statically"];
+  expect(ran("entries", "import { entries } from '@keel/std-sessions/contract'\n")).toEqual(unread);
+  expect(ran("other", "import { other } from './other.ts'\n")).toEqual(unread);
+  expect(ran("make()", "declare function make(): object\n")).toEqual(unread);
 });
 
 it("E1111 reports an s.secret node under wrappers and nesting, in params and search, and not in an action input", () => {
@@ -241,7 +234,7 @@ it("E1111 reports an s.secret node under wrappers and nesting, in params and sea
   const route = (def: string): Files => [
     {
       path: "src/routes.ts",
-      source: `import { manifest, action } from '@keel/router'\n${S}const Page = () => null\nexport const routes = manifest({ 'a.b': { path: '/b/:t', ${def}, component: Page } })\n`,
+      source: `import { contract } from '@keel/router/contract'\n${S}export const a = contract('a', { 'a.b': { path: '/b/:t', ${def} } })\n`,
     },
   ];
   const ran = (def: string) => codes(route(def), "E1111").map((d) => d.message);
@@ -255,11 +248,12 @@ it("E1111 reports an s.secret node under wrappers and nesting, in params and sea
   const withAction: Files = [
     {
       path: "src/save.ts",
-      source: `import { action } from '@keel/router'\n${S}export const save = action({ input: s.object({ t: s.secret(s.string()) }) }, () => null)\n`,
+      source: `import { action } from '@keel/router'\n${S}import { a } from './routes.ts'\nexport const save = action(a, 'a.b', { input: s.object({ t: s.secret(s.string()) }) }, () => null)\n`,
     },
     {
       path: "src/routes.ts",
-      source: `import { manifest } from '@keel/router'\nimport { save } from './save.ts'\nconst Page = () => null\nexport const routes = manifest({ 'a.b': { path: '/b', component: Page } })\nroutes.actions({ 'a.b': { POST: save } })\n`,
+      source:
+        "import { contract } from '@keel/router/contract'\nexport const a = contract('a', { 'a.b': { path: '/b' } })\n",
     },
   ];
   expect(codes(withAction, "E1111")).toEqual([]);
@@ -271,7 +265,7 @@ it("E1111 counts `secret` only on the @keel/schema namespace, not on any object 
       [
         {
           path: "src/routes.ts",
-          source: `import { manifest } from '@keel/router'\n${head}const Page = () => null\nexport const routes = manifest({ 'a.b': { path: '/b', search: ${search}, component: Page } })\n`,
+          source: `import { contract } from '@keel/router/contract'\n${head}export const a = contract('a', { 'a.b': { path: '/b', search: ${search} } })\n`,
         },
       ],
       "E1111",
@@ -305,7 +299,7 @@ it("E1111 reads a getter, setter or method in a schema's object literal as unrea
       [
         {
           path: "src/routes.ts",
-          source: `import { manifest } from '@keel/router'\nimport { s } from '@keel/schema'\nconst Page = () => null\nexport const routes = manifest({ 'a.b': { path: '/b/:token', params: ${params}, component: Page } })\n`,
+          source: `import { contract } from '@keel/router/contract'\nimport { s } from '@keel/schema'\nexport const a = contract('a', { 'a.b': { path: '/b/:token', params: ${params} } })\n`,
         },
       ],
       "E1111",
@@ -325,7 +319,7 @@ it("E1111 reads a schema object changed after its literal as unread, in the rout
       [
         {
           path: "src/routes.ts",
-          source: `import { manifest } from '@keel/router'\nimport { s } from '@keel/schema'\nconst Page = () => null\n${head}\nexport const routes = manifest({ 'a.b': { path: '/b', search: ${search}, component: Page } })\n${tail}`,
+          source: `import { contract } from '@keel/router/contract'\nimport { s } from '@keel/schema'\n${head}\nexport const a = contract('a', { 'a.b': { path: '/b', search: ${search} } })\n${tail}`,
         },
       ],
       "E1111",

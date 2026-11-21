@@ -11,11 +11,13 @@ import { linkSignal } from "./linkSignal.ts";
 /**
  * One client call to `target`. The timeout is `ctx.clock.after(ms, ...)`; when it is reached first the request signal
  * is aborted and the result is `api.timeout`. A late response is ignored. The input's `signal` aborts the request.
+ * At most `limit` bytes of the response body are read (`exchange`).
  */
 export async function call(
   e: Endpoint,
   target: Target,
   ms: number,
+  limit: number,
   input: unknown,
   ctx: Ctx,
 ): Promise<Result<unknown, ApiError>> {
@@ -37,7 +39,7 @@ export async function call(
     },
     () => new Promise<never>(() => {}),
   );
-  const r = await Promise.race([exchange(e, req.value, target), timedOut]);
+  const r = await Promise.race([exchange(e, req.value, target, limit), timedOut]);
   cancel.abort();
   return r;
 }

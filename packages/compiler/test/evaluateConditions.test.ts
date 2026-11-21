@@ -4,6 +4,7 @@ import path from "node:path";
 import { afterEach, beforeEach, expect, it } from "vitest";
 import { evaluateProject } from "../src/internal/evaluateProject.ts";
 import { routeLiterals } from "../src/routeLiterals.ts";
+import { stdRoutes } from "../src/std/stdRoutes.ts";
 
 const packages = path.dirname(fs.realpathSync(path.join(import.meta.dirname, "..", "node_modules", "@keel", "schema")));
 let root = "";
@@ -27,26 +28,27 @@ it("evaluates and reads the `default` file of a `module` and `default` exports m
   const pkg = "node_modules/@keel/std-cond";
   write(
     `${pkg}/package.json`,
-    JSON.stringify({ exports: { "./routes": { module: "./esm.ts", default: "./plain.ts" } } }),
+    JSON.stringify({
+      exports: { "./contract": "./contract.ts", "./routes": { module: "./esm.ts", default: "./plain.ts" } },
+    }),
   );
-  write(`${pkg}/esm.ts`, `export const routes = manifest({ "frag.a": { path: "/module" } });\n`);
-  write(`${pkg}/plain.ts`, `export const routes = manifest({ "frag.a": { path: "/default" } });\n`);
-  write(`${pkg}/manifest.ts`, "export const manifest = (routes: object) => ({ routes });\n");
-  for (const f of ["esm.ts", "plain.ts"])
-    write(
-      `${pkg}/${f}`,
-      `import { manifest } from "./manifest.ts";\n${fs.readFileSync(path.join(root, pkg, f), "utf8")}`,
-    );
-  const routes = `import { routes as x } from "@keel/std-cond/routes";\nexport const routes = { routes: { ...x.routes } };\n`;
-  write("modules/m/routes.ts", routes);
-  const r = await evaluateProject({ root, tokensFile: undefined, routesFiles: ["modules/m/routes.ts"], usages: [] });
+  write(`${pkg}/module.ts`, 'export default { id: "frag", deps: [], capabilities: [], public: { exports: [] } };\n');
+  write(
+    `${pkg}/contract.ts`,
+    'import { contract } from "@keel/router/contract";\nexport const frag = contract("frag", { "frag.a": { path: "/a" } });\n',
+  );
+  const bound = (verb: string): string =>
+    `import { action, manifest } from "@keel/router";\nimport { ok } from "@keel/schema";\nimport { frag } from "./contract.ts";\nconst V = () => null;\nexport const routes = manifest(frag, { "frag.a": { component: V${verb} } });\n`;
+  write(`${pkg}/esm.ts`, bound(`, PUT: action(frag, "frag.a", {}, async () => ok(null))`));
+  write(`${pkg}/plain.ts`, bound(`, POST: action(frag, "frag.a", {}, async () => ok(null))`));
+  const mod = `export default module({ id: "m", deps: ["@keel/std-cond"], capabilities: [], public: { exports: [] } });\n`;
+  write("modules/m/module.ts", mod);
+  const topology = { web: { modules: ["frag"], adapter: "node" as const } };
+  const file = stdRoutes(root, "frag")?.[0] ?? "";
+  expect(file.endsWith("plain.ts")).toBe(true);
+  const r = await evaluateProject({ root, tokensFile: undefined, routesFiles: [file], usages: [] });
   expect(r.problems).toEqual([]);
-  expect(r.routes["frag.a"]?.path).toBe("/default");
-  const literal = `import { routes as x } from "@keel/std-cond/routes";\nexport const routes = manifest({ ...x.routes });\n`;
-  const mod = `export default module({ id: "m", deps: ["@keel/std-cond"], capabilities: [], public: { exports: [], routes: [] } });\n`;
-  const files = [
-    { path: "modules/m/module.ts", source: mod },
-    { path: "modules/m/routes.ts", source: literal },
-  ];
-  expect(routeLiterals(files, { root })?.routes["frag.a"]?.path).toBe("/default");
+  expect(r.routes["frag.a"]?.actions).toEqual(["POST"]);
+  const files = [{ path: "modules/m/module.ts", source: mod }];
+  expect(routeLiterals(files, { root, topology })?.routes["frag.a"]?.actions).toEqual(["POST"]);
 });

@@ -20,8 +20,8 @@ const [RELOAD, DOM, UNCAUGHT, SERVER, CTX, CTX_NODE, ROUTER, ROUTER_INTERNAL] = 
  * sections registered by an earlier evaluation as carried over (`inspectorsReload`) and installing the process's
  * uncaught-error listeners (`onUncaught` in dev: each records E1577 with the thrown text and serving goes on), it creates one dev
  * `createApp` per `node` deployable of `topology`, each with its own real `ctx` whose storage is the file
- * `.keel-dev/<name>.storage.json`, its modules' routes (an app module's `routes.ts`, a stdlib module's package
- * `./routes` export: `stdRoutes`) and runners, the `.keel/` artifacts and `std.json`, the project's `identity.server.ts`
+ * `.keel-dev/<name>.storage.json`, the `routeTable` of its modules' bindings (an app module's `routes.ts`, a stdlib
+ * module's package `./routes` export: `stdRoutes`) and runners, the `.keel/` artifacts and `std.json`, the project's `identity.server.ts`
  * (k.user) when it exists, and the
  * others as in-process peers. It exports `apps`, `[name, app, served, mount]` per
  * deployable, `served(path)` telling whether a route of that deployable (an API route included) matches the path and
@@ -44,8 +44,8 @@ export function devEntryCode(root: string, topology: Topology): string {
     `const { createApp } = await import(${SERVER});`,
     `const { createCtx } = await import(${CTX});`,
     `const { fileStorage } = await import(${CTX_NODE});`,
-    `const { manifest } = await import(${ROUTER});`,
-    `const { compileRoutes, compileTable, matchUrl } = await import(${ROUTER_INTERNAL});`,
+    `const { routeTable } = await import(${ROUTER});`,
+    `const { compileRoutes, matchUrl } = await import(${ROUTER_INTERNAL});`,
     `const { default: topology } = await import(${abs("topology.ts")});`,
     "const made = {};",
     "const peers = {};",
@@ -65,14 +65,14 @@ export function devEntryCode(root: string, topology: Topology): string {
       return file === undefined ? [] : [file.split(path.sep).join("/")];
     });
     const runners = mods.filter((m) => has(`modules/${m}/runners.server.ts`));
-    const imports = files.map((f) => `...(await import(${JSON.stringify(f)})).routes.routes`);
+    const imports = files.map((f) => `(await import(${JSON.stringify(f)})).routes`);
     const run = runners.map(
       (m) => `${JSON.stringify(m)}: (await import(${abs(`modules/${m}/runners.server.ts`)})).runners`,
     );
     lines.push(
       "{",
-      `  const routes = manifest({ ${imports.join(", ")} });`,
-      "  const table = compileTable(compileRoutes(routes.routes), routes.routes);",
+      `  const routes = routeTable(${imports.join(", ")});`,
+      "  const table = compileRoutes(routes).located;",
       `  const others = Object.fromEntries(Object.entries(peers).filter(([n]) => n !== ${JSON.stringify(name)}));`,
       `  made[${JSON.stringify(name)}] = await createApp({ topology, origins: ${origins}, deployable: ${JSON.stringify(name)}, routes, ctx: createCtx({ mode: "real", drivers: { storage: fileStorage(${abs(`.keel-dev/${name}.storage.json`)}) } }), mode: "dev", runners: { ${run.join(", ")} }, peers: others, artifacts: ${abs(".keel")}${std}${id}, log });`,
       `  apps.push([${JSON.stringify(name)}, made[${JSON.stringify(name)}], (p) => matchUrl(table, p).route !== null, ${id === "" ? "undefined" : "identity.handle?.path"}]);`,

@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { join, relative } from "node:path";
-import { compile, isSourcePath, parseTopology } from "@keel/compiler";
+import { compile, contractCallers, isSourcePath, parseTopology } from "@keel/compiler";
+import { stdContract } from "@keel/compiler/std/stdContract";
 import { stdRoutes } from "@keel/compiler/std/stdRoutes";
 import { createViteServer } from "vitest/node";
 import { applyWrites } from "./applyWrites.ts";
@@ -10,25 +11,27 @@ import { isRecord } from "./isRecord.ts";
 import { readProject } from "./readProject.ts";
 import { surfaceOf } from "./surfaceOf.ts";
 
-/** The global the evaluated `service` stand-in reports each call to (build time only). */
-const RECORD = Symbol.for("keel.surface.service");
-/** Virtual `@keel/services` seen by one app file: the real module, with `service` recording its options. */
-const STUB = "\0keel-surface-services:";
+const CONTRACT = /^modules\/([^/]+)\/([^/]+)\.contract\.ts$/;
 const ROUTES = /^modules\/[^/]+\/routes\.tsx?$/;
-const CALLS = /@keel\/services/;
-const MODULE_KEY = /\bmodule\s*:/;
 const firstLine = (e: unknown): string => (e instanceof Error ? e.message : String(e)).split("\n")[0] ?? "";
+
+type Load = { readonly file: string; readonly load: string };
+
+/** The contract values among a module's exports. */
+const contractsIn = (m: Readonly<Record<string, unknown>>): unknown[] =>
+  Object.values(m).filter((v) => isRecord(v) && v.kind === "keel.contract");
 
 /**
  * Binary only: `keel build`'s `.keel/surface.json` (k.compat Surface), written read-only as `{ data, hash }`. Each
- * `modules/<m>/routes.ts`, each placed stdlib module's package `./routes` (`stdRoutes`, named by its import specifier)
- * and each app file that calls `service({ module })` from `@keel/services` is evaluated in
- * Node through a Vite SSR server rooted at `cwd` (app files compiled by `@keel/compiler`, as the build evaluates
- * them); `service` is replaced by a stand-in that records its options and calls nothing. `surfaceOf` reads the result;
- * the hash of every app file the evaluation read is recorded so `keel check` reports a stale surface (E1005). An
- * endpoints file that throws is a note `E1006 <file> failed to evaluate: <message>`, records no endpoint and fails the
- * build (code 1, no file written; a throwing `routes.ts` is reported by the routes evaluation); a failure of the
- * evaluator itself is code 1. A project with neither writes an empty surface without starting the server.
+ * app `modules/<m>/<m>.contract.ts` and `modules/<m>/routes.ts`, and each placed stdlib module's package `./contract`
+ * and `./routes` (`stdContract`, `stdRoutes`, named by the import specifier), is evaluated in Node through a Vite SSR
+ * server rooted at `cwd` (app files compiled by `@keel/compiler`, as the build evaluates them). `surfaceOf` reads the
+ * contracts, the bindings of each `routes` route table (`bindingsOf` of the evaluated `@keel/router/internal`) and
+ * the callers (`contractCallers`); the hash of every app file the evaluation read is recorded so `keel check` reports
+ * a stale surface (E1005). A contract file that throws is a note `E1006 <file> failed to evaluate: <message>`,
+ * records nothing and fails the build (code 1, no file written); a throwing `routes.ts` records nothing here (the
+ * routes evaluation reports it). A failure of the evaluator itself is code 1. A project with neither file writes an
+ * empty surface without starting the server.
  */
 export async function surfaceRun(cwd: string): Promise<{ code: number; notes: string[] }> {
   const root = realpathSync(cwd);
@@ -38,28 +41,35 @@ export async function surfaceRun(cwd: string): Promise<{ code: number; notes: st
     const r = relative(root, id.split("?")[0] ?? id);
     return text.has(r) ? r : undefined;
   };
-  const calls: { file: string; opts: unknown }[] = [];
   const sources: Record<string, string> = {};
   const notes: string[] = [];
   const topologyFile = join(root, "topology.ts");
   const placed = existsSync(topologyFile)
-    ? Object.values(parseTopology(readFileSync(topologyFile, "utf8")).topology).flatMap((d) => d.modules)
+    ? [...new Set(Object.values(parseTopology(readFileSync(topologyFile, "utf8")).topology).flatMap((d) => d.modules))]
     : [];
-  const routeFiles = [
-    ...files.filter((f) => ROUTES.test(f.path)).map((f) => ({ file: f.path, load: `/${f.path}` })),
-    ...[...new Set(placed)].flatMap((m) => {
-      const at = stdRoutes(root, m);
+  const app = (f: { path: string }): boolean => {
+    const m = CONTRACT.exec(f.path);
+    return m !== null && m[1] === m[2];
+  };
+  const std = (find: typeof stdRoutes): Load[] =>
+    placed.flatMap((m) => {
+      const at = find(root, m);
       return at === undefined ? [] : [{ file: at[2], load: at[0] }];
-    }),
+    });
+  const contractFiles: Load[] = [
+    ...files.filter(app).map((f) => ({ file: f.path, load: `/${f.path}` })),
+    ...std(stdContract),
   ];
-  const callerFiles = files.filter((f) => CALLS.test(f.source) && MODULE_KEY.test(f.source));
-  const manifests: { file: string; routes: unknown }[] = [];
-  let table: unknown;
+  const routeFiles: Load[] = [
+    ...files.filter((f) => ROUTES.test(f.path)).map((f) => ({ file: f.path, load: `/${f.path}` })),
+    ...std(stdRoutes),
+  ];
+  const contracts: unknown[] = [];
+  const bindings: unknown[] = [];
   let shapes: unknown;
-  Reflect.set(globalThis, RECORD, (file: string, opts: unknown) => void calls.push({ file, opts }));
   try {
     const server =
-      routeFiles.length + callerFiles.length === 0
+      contractFiles.length + routeFiles.length === 0
         ? undefined
         : await createViteServer({
             root,
@@ -72,15 +82,6 @@ export async function surfaceRun(cwd: string): Promise<{ code: number; notes: st
               {
                 name: "keel-surface",
                 enforce: "pre",
-                resolveId: (id, importer) =>
-                  id === "@keel/services" && importer !== undefined && rel(importer) !== undefined
-                    ? `${STUB}${importer}`
-                    : null,
-                load(id) {
-                  if (!id.startsWith(STUB)) return null;
-                  const file = JSON.stringify(rel(id.slice(STUB.length)) ?? "");
-                  return `export * from "@keel/services";\nexport const service = (opts) => (globalThis[Symbol.for("keel.surface.service")](${file}, opts), {});\n`;
-                },
                 transform(code, id) {
                   const path = rel(id);
                   if (path === undefined) return null;
@@ -95,36 +96,48 @@ export async function surfaceRun(cwd: string): Promise<{ code: number; notes: st
             ],
           });
     try {
+      const broken = new Set<string>();
+      for (const f of contractFiles) {
+        const m: unknown = await server?.ssrLoadModule(f.load).catch((e: unknown) => {
+          broken.add(f.file);
+          notes.push(`E1006 ${f.file} failed to evaluate: ${firstLine(e).slice(0, 60)}\n`);
+        });
+        if (isRecord(m)) contracts.push(...contractsIn(m));
+      }
+      const tables: unknown[] = [];
       for (const f of routeFiles) {
+        if (broken.size > 0) break;
         const m: unknown = await server?.ssrLoadModule(f.load).catch(() => undefined);
-        if (isRecord(m)) manifests.push({ file: f.file, routes: m.routes });
+        if (isRecord(m) && isRecord(m.routes) && m.routes.kind === "keel.routeTable") tables.push(m.routes);
       }
       const internal: unknown =
-        manifests.length === 0
-          ? undefined
-          : await server?.ssrLoadModule("@keel/router/internal").catch(() => undefined);
-      table = isRecord(internal) ? internal.routeActions : undefined;
-      const kept: unknown =
-        manifests.length === 0 ? undefined : await server?.ssrLoadModule("@keel/store/internal").catch(() => undefined);
-      shapes = isRecord(kept) ? kept.storeShapes : undefined;
-      for (const f of callerFiles) {
-        await server?.ssrLoadModule(`/${f.path}`).catch((e: unknown) => {
-          notes.push(`E1006 ${f.path} failed to evaluate: ${firstLine(e).slice(0, 60)}\n`);
-        });
+        tables.length === 0 ? undefined : await server?.ssrLoadModule("@keel/router/internal").catch(() => undefined);
+      const bindingsOf = isRecord(internal) ? internal.bindingsOf : undefined;
+      for (const t of tables) {
+        const cs = isRecord(t) && Array.isArray(t.contracts) ? t.contracts : [];
+        contracts.push(...cs);
+        if (typeof bindingsOf !== "function") continue;
+        let bound: unknown;
+        try {
+          bound = bindingsOf(t);
+        } catch {
+          bound = undefined;
+        }
+        if (bound instanceof Map) for (const b of bound.values()) if (isRecord(b)) bindings.push(b.binding);
       }
+      const kept: unknown =
+        bindings.length === 0 ? undefined : await server?.ssrLoadModule("@keel/store/internal").catch(() => undefined);
+      shapes = isRecord(kept) ? kept.storeShapes : undefined;
     } finally {
       await server?.close();
     }
     if (notes.length > 0) return { code: 1, notes };
-    const actionsOf = (def: object): unknown => (table instanceof WeakMap ? table.get(def) : undefined);
     const storesOf = (factory: unknown): unknown => (typeof shapes === "function" ? shapes(factory) : undefined);
-    const data = surfaceOf({ manifests, actionsOf, storesOf, services: calls, sources });
+    const data = surfaceOf({ contracts, bindings, callers: contractCallers(files), storesOf, sources });
     const content = `${canonicalJson({ data, hash: hashOf(data) })}\n`;
     applyWrites(root, [{ path: ".keel/surface.json", content, readonly: true }]);
     return { code: 0, notes };
   } catch (e) {
     return { code: 1, notes: [...notes, `${firstLine(e)}\n`] };
-  } finally {
-    Reflect.deleteProperty(globalThis, RECORD);
   }
 }

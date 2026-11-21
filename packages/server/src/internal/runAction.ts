@@ -1,12 +1,11 @@
 import type { Match } from "@keel/router/internal";
-import { fieldsError, routeActions } from "@keel/router/internal";
+import { allowAt, fieldsError, isHref } from "@keel/router/internal";
 import { publicError } from "@keel/router/internal";
 import { err, ok } from "@keel/schema";
 import { saveStores } from "@keel/store/internal";
 import type { Diag } from "./Diag.ts";
 import type { Handled } from "./Handled.ts";
 import type { Req } from "./Req.ts";
-import { allowOf } from "./allowOf.ts";
 import { attempted } from "./attempted.ts";
 import { caught } from "./caught.ts";
 import { inRequest } from "./inRequest.ts";
@@ -18,23 +17,28 @@ import { openFactory } from "./openFactory.ts";
 import { outputRefused } from "./outputRefused.ts";
 import { page } from "./page.ts";
 import { payloadTooLarge } from "./payloadTooLarge.ts";
+import { prefixedFields } from "./prefixedFields.ts";
 import { readCapped } from "./readCapped.ts";
 import { redirectResponse } from "./redirectResponse.ts";
 import { scrubbedCause } from "./scrubbedCause.ts";
 import { statusOf } from "./statusOf.ts";
 import { stringRecord } from "./stringRecord.ts";
+import { unexpected } from "./unexpected.ts";
 import { valuesOf } from "./valuesOf.ts";
 
 /**
- * POST, PUT, PATCH, DELETE (k.server Request flow): the verb is the method, or a POST's `_method` field (k.router
- * Form). A body over `maxBody` bytes is 413 `keel.payloadTooLarge`, action not called. FormData is decoded with the action's input schema; a `content-type: application/json` body (a k.services
- * client) is parsed with it instead, an empty one as `{}` (either fail: `keel.fields`, 422, action not called);
+ * POST, PUT, PATCH, DELETE (k.server Request flow): the action is the page's bound for the verb, the method or a POST's
+ * `_method` field (k.router Form), or an API write entry's (its `input` the entry's `body`); none is 405 with the
+ * pattern's `allow`. A body over `maxBody` bytes is 413 `keel.payloadTooLarge`, action not called. FormData is decoded with the action's input schema; a `content-type: application/json` body (a k.services
+ * client) is parsed with it instead, an empty one as `{}` (either fail: `keel.fields`, 422, action not called; on an API entry its paths prefixed `body`);
  * the action runs with `caller`, `user` and its `stores` instance (`openFactory`); its `ok` saves the changed stores (`saveStores`,
  * else `keel.conflict`); `ok(href)` is 303 to `href`, `ok(null)` 303 to the request URL; runtime requests get
  * the `Result` as JSON with the status of its code. An action with `output` (an API route's, k.api Output) also gets
  * the request's `bearer`; its `ok` value is parsed by `output` before any store is saved (fail: an E1554 diag naming
  * the first refused path and 500 `keel.unexpected`, nothing saved), its encoding's `.pii()` values join the request's,
- * then the stores are saved, then it answers 200 `{ ok: true, value: <encoded> }`; a conflict sends no value. A document `keel.fields` re-renders the page at 422
+ * then the stores are saved, then it answers 200 `{ ok: true, value: <encoded> }`; a conflict sends no value. A page
+ * action's `ok` value that is neither `null` nor an `Href` (`isHref`) saves nothing and is 500 `keel.unexpected` on
+ * either transport, with a `keel.unexpected` diag; neither holds the value. A document `keel.fields` re-renders the page at 422
  * with the submitted values less secrets (`valuesOf`) and messages (k.forms); any other `err` renders at the route's errorElement.
  * A throw is `keel.unexpected` plus a `keel.unexpected` diag; neither holds a `.pii()` value of the decoded input or of
  * the stores it opened, nor the revealed value of a `Secret` in the decoded input (`notePii`, `noteRequestSecrets`,
@@ -52,19 +56,22 @@ export async function runAction(r: Req, m: Match & { kind: "route" }): Promise<H
   const sent = json ? await attempted(body) : null;
   const read = json ? null : await attempted(() => typed.formData());
   const form = read?.ok === true ? read.value : new FormData();
-  const override = r.method === "POST" ? form.get("_method") : null;
+  const api = def.kind === "api";
+  const override = r.method === "POST" && !api ? form.get("_method") : null;
   const verb = typeof override === "string" ? override.toUpperCase() : r.method;
   form.delete("_method");
-  const acts = routeActions.get(def);
-  const action = isVerb(verb) ? acts?.[verb] : undefined;
+  const action = isVerb(verb) ? def.actions[verb] : undefined;
   if (action === undefined) {
-    return { response: new Response(null, { status: 405, headers: { allow: allowOf(def) } }), route: id, diags: [] };
+    const allow = allowAt(r.sv.table, m.route).join(", ");
+    return { response: new Response(null, { status: 405, headers: { allow } }), route: id, diags: [] };
   }
   const values = valuesOf(form, action.input.node);
   const decoded =
     sent === null ? action.input.decodeStrings(form) : action.input.parse(sent.ok ? sent.value : undefined);
   if (!decoded.ok) {
-    const e = fieldsError(action.input.node, decoded.error);
+    const fields = fieldsError(action.input.node, decoded.error);
+    // An API entry's body is a request part: its paths are prefixed `body` (k.api Requests).
+    const e = api ? prefixedFields("body", fields) : fields;
     if (r.runtime) return { response: jsonResponse(422, err(e)), route: id, diags: [] };
     return page(r, m, 422, null, { route: id, method: verb, values, errors: e.data });
   }
@@ -84,6 +91,13 @@ export async function runAction(r: Req, m: Match & { kind: "route" }): Promise<H
             action.run(decoded.value, rq.bearer === undefined ? at : { ...at, bearer: rq.bearer }, sv.ctx),
           );
     if (!out.ok) return out;
+    // A page action's link is checked here, once for both transports, before any save: one that is no `Href`
+    // (k.router Links) saves nothing and is `keel.unexpected`; the diag and the error hold none of it.
+    if (!api && out.value !== null && (typeof out.value !== "string" || !isHref(out.value))) {
+      const message = `action ${id} returned a link that is no path of this origin`;
+      refused = { code: "keel.unexpected", message };
+      return err(unexpected(message));
+    }
     let value = out.value;
     if (action.output !== undefined) {
       // Parsed before any save: a refused value saves nothing and is never sent.
@@ -115,7 +129,7 @@ export async function runAction(r: Req, m: Match & { kind: "route" }): Promise<H
   if (result.ok) {
     if (r.runtime) return { response: jsonResponse(200, ok(result.value)), route: id, diags: thrown };
     const to = result.value;
-    return { response: redirectResponse(303, typeof to === "string" ? to : r.url), route: id, diags: thrown };
+    return { response: redirectResponse(303, typeof to === "string" ? to : r.here), route: id, diags: thrown };
   }
   const e = result.error;
   if (r.runtime)

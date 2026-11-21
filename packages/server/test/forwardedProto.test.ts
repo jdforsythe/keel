@@ -3,12 +3,16 @@
 // downgrades one (an https URL stays https whatever the header says), and an explicit `secure` wins over both.
 import { createCtx } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import { describe, expect, it } from "vitest";
 import { createApp, topology } from "../src/index.ts";
 
-const routes = manifest({ "app.home": { path: "/", component: () => document.createElement("p") } });
-routes.actions({ "app.home": { POST: action({ input: s.object({}) }, async () => ok(null)) } });
+const c = contract("app", { "app.home": { path: "/" } });
+const save = action(c, "app.home", { input: s.object({}) }, async () => ok(null));
+const routes = manifest(c, {
+  "app.home": { component: () => document.createElement("p"), POST: save },
+});
 const app = (secure?: boolean) =>
   createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),

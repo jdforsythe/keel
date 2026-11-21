@@ -6,6 +6,7 @@ import { bindStd } from "@keel/compiler/std/bindStd";
 import { createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { store, transaction, tx } from "@keel/store";
 import { renderRoute } from "@keel/testing";
@@ -20,32 +21,38 @@ function build() {
     ...st,
     note: p.note,
   }));
-  const routes = manifest({
-    "memo.show": {
-      path: "/memo/:id",
-      params: s.object({ id: s.string() }),
-      search: s.object({ q: s.string().optional() }),
-      component(): Node {
-        return Box({
-          as: "main",
-          id: "memo.page",
-          children: [
-            Input({ id: "memo.note", label: "Note", onInput: (v) => void tx(save, { note: v, pin: "1234" }) }),
-            stamped(
-              Button({
-                id: "memo.crash",
-                children: "Crash",
-                onClick: () => {
-                  throw new Error("crash");
-                },
-              }),
-              "memo.crash",
-            ),
-          ],
-        });
+  const routes = manifest(
+    contract("memo", {
+      "memo.show": {
+        path: "/memo/:id",
+        params: s.object({ id: s.string() }),
+        search: s.object({ q: s.string().optional() }),
+      },
+    }),
+    {
+      "memo.show": {
+        component(): Node {
+          return Box({
+            as: "main",
+            id: "memo.page",
+            children: [
+              Input({ id: "memo.note", label: "Note", onInput: (v) => void tx(save, { note: v, pin: "1234" }) }),
+              stamped(
+                Button({
+                  id: "memo.crash",
+                  children: "Crash",
+                  onClick: () => {
+                    throw new Error("crash");
+                  },
+                }),
+                "memo.crash",
+              ),
+            ],
+          });
+        },
       },
     },
-  });
+  );
   return { memo, save, routes };
 }
 let made: ReturnType<typeof build> | undefined;

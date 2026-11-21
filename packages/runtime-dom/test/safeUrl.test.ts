@@ -6,6 +6,7 @@ import { mount } from "../src/index.ts";
 import { attr, clone, prop, template } from "../src/ops/index.ts";
 import { safeUrl } from "../src/url/index.ts";
 import { SEED, rootSignal } from "./support.ts";
+import { testCtx } from "./testCtx.ts";
 
 const ALLOWED = ["http", "https", "mailto", "tel"];
 const URL_ATTRS = ["href", "src", "action", "formaction", "poster", "ping", "HREF"];
@@ -86,12 +87,16 @@ describe("safeUrl: only http, https, mailto, tel survive in URL attributes", () 
       fc.property(fc.array(fc.tuple(scheme, rest), { minLength: 1, maxLength: 5 }), (seq) => {
         const s = rootSignal("");
         const host = document.createElement("div");
-        const dispose = mount(() => {
-          const a = clone(T);
-          attr(a, "href", () => s.get());
-          prop(a, "title", () => s.get());
-          return a;
-        }, host);
+        const dispose = mount(
+          () => {
+            const a = clone(T);
+            attr(a, "href", () => s.get());
+            prop(a, "title", () => s.get());
+            return a;
+          },
+          host,
+          { ctx: testCtx },
+        );
         const a = host.querySelector("a");
         for (const [sc, r] of seq) {
           s.set(`${sc}:${r}`);

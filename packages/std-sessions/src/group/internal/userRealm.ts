@@ -1,6 +1,6 @@
 import type { MessagePort } from "node:worker_threads";
 import { Schedule, type SimCtx, createCtx } from "@keel/ctx";
-import type { Manifest, RouteDef } from "@keel/router";
+import type { RouteTable } from "@keel/router";
 import { type JsonValue, s } from "@keel/schema";
 import { type RouteHarness, renderRoute } from "@keel/testing";
 import type { Recorder } from "../../Recorder.ts";
@@ -10,6 +10,7 @@ import { applyInput } from "../../internal/applyInput.ts";
 import { decoded } from "../../internal/decoded.ts";
 import { jsonOf } from "../../internal/jsonOf.ts";
 import { liveState } from "../../internal/liveState.ts";
+import { pageOf } from "../../internal/pageOf.ts";
 import { replayStep } from "../../internal/replayStep.ts";
 import { reportUnapplied } from "../../internal/reportUnapplied.ts";
 import { seededState } from "../../internal/seededState.ts";
@@ -17,7 +18,7 @@ import { record } from "../../record.ts";
 import { field } from "./field.ts";
 import { wire } from "./wire.ts";
 
-type Table = Manifest<Readonly<Record<string, RouteDef>>>;
+type Table = RouteTable;
 type Pending = {
   readonly resolve: (res: Response) => void;
   readonly reject: (error: Error) => void;
@@ -42,7 +43,7 @@ const Index = s.object({ index: s.number() });
 const EMPTY = new Set([101, 204, 205, 304]);
 
 function isTable(x: unknown): x is Table {
-  return typeof field(x, "routes") === "object" && typeof field(x, "href") === "function";
+  return field(x, "kind") === "keel.routeTable" && Array.isArray(field(x, "contracts"));
 }
 
 function parsed<T>(schema: { parse(x: unknown): { ok: true; value: T } | { ok: false } }, x: unknown, what: string): T {
@@ -159,8 +160,8 @@ export function userRealm(port: MessagePort, load: (url: string) => Promise<unkn
       return null;
     }
     const session = o.session;
-    const def = Object.hasOwn(table.routes, session.route.id) ? table.routes[session.route.id] : undefined;
-    if (def?.path === undefined) {
+    const def = pageOf(table, session.route.id);
+    if (def === undefined) {
       unapplied = -1;
       return null;
     }

@@ -1,4 +1,4 @@
-/** `modules/<id>/module.ts` (k.module): a manifest with no deps, capabilities, or public surface. */
+/** `modules/<id>/module.ts` (k.module): a manifest with no deps, capabilities, or exports; its routes are its contract's. */
 export function moduleTs(id: string): string {
   return [
     `import { module } from "@keel/compiler";`,
@@ -7,7 +7,7 @@ export function moduleTs(id: string): string {
     `  id: "${id}",`,
     "  deps: [],",
     "  capabilities: [],",
-    "  public: { exports: [], routes: [] },",
+    "  public: { exports: [] },",
     "});",
     "",
   ].join("\n");

@@ -1,4 +1,5 @@
 import type { Href } from "@keel/router";
+import { isHref } from "@keel/router/internal";
 import { appendChildren } from "../internal/appendChildren.ts";
 import { applyIdLang } from "../internal/applyIdLang.ts";
 import { applyStyle } from "../internal/applyStyle.ts";
@@ -10,7 +11,10 @@ import type { Child } from "../types/Child.ts";
 import type { Children } from "../types/Children.ts";
 import type { StyleProps } from "../types/StyleProps.ts";
 
-/** A link to `to` (an `Href`, required, E1802) named by its text. Unsafe schemes render `about:blank`. */
+/**
+ * A link to `to` (an `Href`, required, E1802) named by its text. A value that slipped past the type at run time and is
+ * no `Href` (`isHref`: a scheme, `//`, a backslash, a control character) renders `about:blank`.
+ */
 export function Link(
   props: StyleProps & {
     readonly to: Href;
@@ -20,7 +24,9 @@ export function Link(
   },
 ): Node {
   return make("a", (el) => {
-    attrOf(el, "href", isGetter(props, "to"), () => props.to);
+    attrOf(el, "href", isGetter(props, "to"), () =>
+      typeof props.to === "string" && isHref(props.to) ? props.to : "about:blank",
+    );
     applyIdLang(el, props);
     applyStyle(el, props);
     appendChildren(el, renderChildren(props.children));

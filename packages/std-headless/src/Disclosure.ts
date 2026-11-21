@@ -17,8 +17,7 @@ export function Disclosure(
     readonly children: () => Child;
     readonly styles?: { readonly button?: PartStyle; readonly panel?: PartStyle };
   },
-  _slots?: undefined,
-  _ctx?: Ctx,
+  _ctx: Ctx,
 ): Node {
   const id = props.id;
   const c = instance(openChart, id);

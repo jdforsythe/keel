@@ -5,6 +5,7 @@
 // `[secret]` mark. Seed 1337.
 import { createCtx } from "@keel/ctx";
 import { loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, reveal, s } from "@keel/schema";
 import { describe, expect, it } from "vitest";
 import { createApp, topology } from "../src/index.ts";
@@ -22,7 +23,8 @@ const madeText = (i: number, width: number): string => {
 async function stream(ticks: number, width: number): Promise<{ sizes: number[]; messages: string[] }> {
   const sizes: number[] = [];
   const lines: string[] = [];
-  const live = loader({ output: s.object({}) }, async function* () {
+  const c = contract("api", { "api.live": { method: "GET", path: "/api/live", output: s.object({}), events: true } });
+  const live = loader(c, "api.live", {}, async function* () {
     let last = "";
     for (let i = 0; i < ticks; i++) {
       last = madeText(i, width);
@@ -33,7 +35,7 @@ async function stream(ticks: number, width: number): Promise<{ sizes: number[]; 
   });
   const app = await createApp({
     topology: topology({ web: { modules: ["api"], adapter: "node" } }),
-    routes: manifest({ "api.live": { api: true, path: "/api/live", loader: live } }),
+    routes: manifest(c, { "api.live": { loader: live } }),
     ctx: createCtx({ mode: "sim", seed: 1337 }),
     mode: "production",
     log: { format: "json", write: (l) => lines.push(l) },
