@@ -4,7 +4,7 @@ Status: proposed (ADR-0191), for the operator to confirm. For decision D67 item 
 
 ## Decisions
 - D1: no `@keel/std-*` package's shipped code imports a kernel `internal` entry, but for one stated exception: `@keel/std-capacitor` and `@keel/std-tauri` import `mountRequests` from `@keel/router/internal` while the shell set is closed (D54).
-- D2: `secretPathOf` becomes public as `secretPath(schema)` in `@keel/schema` (route D). `sampleFormat` moves to a new entry `@keel/testing/sample` that imports only `@keel/schema` (route D, D67). `findRouter` and `report` leave the stdlib with no new kernel surface (route C): `TableSearch` calls the public `navigate` inside its own `owner()` scope and reads its clock from `ctx`; std-sessions writes the E2003 error into its own recorder.
+- D2: `secretPathOf` becomes public as `secretPath(schema)` in `@keel/schema` (route D). `sampleFormat` is public in `@keel/schema`, beside `secretPath` (route D, D68). `findRouter` and `report` leave the stdlib with no new kernel surface (route C): `TableSearch` calls the public `navigate` inside its own `owner()` scope and reads its clock from `ctx`; std-sessions writes the E2003 error into its own recorder.
 - D3: where the kernel gates a power on the name `@keel/std-*`, the gate becomes the package's kind (k.library's `"keel": "library"`, which the stdlib carries under RFC 0163 D8). Three closed sets stay named: shells, topology storage and the CLI command slots.
 - D4: `tooling/structure-lint.mjs` enforces it in this repository from data in `tooling/deps.json`: S0012 (a stdlib file names a kernel `internal` entry not listed) and S0013 (kernel code names `@keel/std-` in a file not listed). In an app, E1576 holds over a library's files, the stdlib's included, with the shell exception as its one allowance.
 - D5: a new section k.parity states the rule, the public forms, the by-kind reading and the exceptions. The full sections it touches (k.schema, k.module, k.reactive, std.tables) carry no new text; k.parity holds it.
@@ -75,11 +75,12 @@ const at = secretPath(j.input);
 ```
 `j.input`, `opts.message` and `e.body` are `Schema` values already (`.node` is read off them today), and `Schema<M>` is assignable to `Schema<unknown, boolean>`, as `piiPaths(schema)` is called with app schemas.
 
-**`sampleFormat`: route D, in `@keel/testing` (D67).** A library that fakes or redacts values in the browser needs a valid value of a format type it did not declare, and the format's `gen` is private to `@keel/schema`. The function moves to a new entry whose module graph is `@keel/schema` only, so a browser bundle that imports it reaches no fast-check, `@keel/check` or `oxc-parser` (S0009 holds):
+**`sampleFormat`: route D, in `@keel/schema` (D68).** A library that fakes or redacts values in the browser needs a valid value of a format type it did not declare, and the format's `gen` is private to `@keel/schema`. Its one caller, std-sessions' `fake.ts`, runs in the browser, and a runtime package must not depend on the test harness, so the function is public in `@keel/schema`, which owns the table it reads:
 ```ts
-// packages/testing/src/sample.ts, exported as "./sample"
-import type { JsonValue, Schema } from "@keel/schema";
-import { formats, toJson } from "@keel/schema/internal";
+// packages/schema/src/sampleFormat.ts, exported from the root of @keel/schema
+import type { JsonValue, Schema } from "./Schema";
+import { formats } from "./internal/formats";
+import { toJson } from "./internal/toJson";
 
 type SchemaNode = Schema<unknown, boolean>["node"];
 
@@ -95,18 +96,18 @@ export function sampleFormat(node: SchemaNode, sample: (from: SchemaNode) => Jso
   return impl.test(candidate) ? toJson(node, candidate) : undefined;
 }
 ```
-`@keel/schema/internal` exports `formats` and `toJson` in place of `sampleFormat` (kernel to kernel). The node type is named as `Schema<unknown, boolean>["node"]`, the public spelling std-sessions already uses (`TypeNode`). Stated in k.formats Format types.
+The module reads `formats` and `toJson` from the package's own files. The node type is named as `Schema<unknown, boolean>["node"]`, the public spelling std-sessions already uses (`TypeNode`). Stated in k.formats Format types.
 
 std-sessions `internal/fake.ts`:
 ```ts
 // before
 import { sampleFormat } from "@keel/schema/internal";
 // after
-import { sampleFormat } from "@keel/testing/sample";
+import { sampleFormat } from "@keel/schema";
 // the call is unchanged:
 //   case "format": return sampleFormat(node, (from) => fake(from, rand)) ?? fake(node.base, rand);
 ```
-std.sessions said its root imports no `@keel/testing`; it now says no harness, which `./sample` is not.
+std.sessions says its root imports no harness; `@keel/schema` is not one.
 
 **`report`: route C.** The error is the recorder's own fact (std.sessions: "an input it cannot apply is E2003, so the fingerprint differs"), and std-sessions owns the recorder. `Live` (internal to std-sessions) gains `note(event: CtxEvent): void`, the recorder's observer function (`recording.ts` `onEvent`; `inert.ts` a no-op), and `reportUnapplied` writes to it:
 ```ts
@@ -203,35 +204,35 @@ In an app, `keel check` holds it through E1576 over library files (RFC 0163 D4) 
 - Make all five public. `report` would let any package forge ctx events; `findRouter` would export `RouterCore`, whose `submit` and `accepts` are `Form`'s seam; `mountRequests` is the shell driver contract D54 keeps closed.
 - Keep a named list of stdlib packages in E1576 (RFC 0163's first question, its second option). The stdlib then holds powers by name, which D49 refuses.
 - `findRouter` as a public `currentRouter()`: a new name for what `owner().run` and `navigate` already give.
-- `sampleFormat` public in `@keel/schema` (`secretPath`'s route). It needs no new package entry, and `@keel/schema` owns the private table it reads. D67 puts it in `@keel/testing`; the cost is a light entry in a package whose other entries are test-time.
+- `sampleFormat` in a `@keel/testing/sample` entry. A runtime package would depend on the test harness for a function its browser code calls.
 - E1207 by kind, like E1106: a library would then make a detached scope that no count shows. A detached scope escapes `uses` and the request store registry, so it is the kind of power `unsafe/` exists to count.
 
 ## Spec diff
 - New section `spec/kernel/k.parity.md` (proposed), owner `@keel/cli` in `tooling/docs-owners.json`: Entries, By kind, Exceptions, Rules, Conformance.
-- k.formats, Format types: `sampleFormat(node, sample)` (`@keel/testing/sample`).
+- k.formats, Format types: `sampleFormat(node, sample)` (public in `@keel/schema`).
 - std.sessions, API: "the root imports no `@keel/testing`" becomes "the root imports no harness".
 - Map: row `k.parity | Stdlib parity | proposed | seams`.
 - k.schema, k.module, k.reactive, std.tables and k.security are at or near their limits; k.parity states their changes. The build updates their text where a section has room after the build of RFC 0163: k.module's Std config reads "library" for "`@keel/std-*`" (E1158 included), k.reactive's E1207 line reads "a package's `unsafe/`", k.schema's E1106 reads "a package's".
 
 ## Conformance diff
 By the `conformance-writer`, under `rfc:0169`:
-- k.parity's five bullets: `secretPath` in `packages/schema/conformance/`, `sampleFormat` in `packages/testing/conformance/`, `TableSearch` in `packages/std-tables/conformance/`, the replay in `packages/std-sessions/conformance/`. The S0012 and S0013 bullet is tooling: `tooling/test/structure-lint.test.mjs` by the build lane.
+- k.parity's five bullets: `secretPath` in `packages/schema/conformance/`, `sampleFormat` in `packages/schema/conformance/`, `TableSearch` in `packages/std-tables/conformance/`, the replay in `packages/std-sessions/conformance/`. The S0012 and S0013 bullet is tooling: `tooling/test/structure-lint.test.mjs` by the build lane.
 - std.tables: `fixtures.ts` and `resume-datatable-routes.ts` pass the route component's `ctx` to `TableSearch`. The quoted clauses are unchanged.
 - std.channels, std.jobs, std.offline: the existing E2602, E2503 and E2651 cases stand as they are; they cover the callers of `secretPath`.
 
 ## What it costs
 - k.parity 1,081 tokens of 1,500; k.formats grows one sentence; std.sessions shrinks; map one row.
-- `@keel/schema` gains `secretPath` (one export, a delegate); `@keel/testing` gains the `./sample` entry. std-sessions' browser bundle carries the same code from a different module. Sizes are measured at the build and re-based where they move (D65).
+- `@keel/schema` gains two exports, `secretPath` (a delegate) and `sampleFormat`. Sizes are measured at the build and re-based where they move (D65).
 - `unsafe` count: the four stdlib detached-scope sites move under `unsafe/`, each with a justification (the count rises by four, justified).
 
 ## Build order
 1. This commit: RFC, ADR, k.parity, the k.formats and std.sessions sentences.
 2. `conformance-writer`: the bullets above.
-3. Build A (now): `secretPath` and the store and three stdlib callers; `@keel/testing/sample` and `fake.ts`; `Live.note` and `reportUnapplied`; `TableSearch`; `deps.json` `internal` and S0012. The `@keel/schema/internal` and `@keel/router/internal` header comments drop their stdlib readers.
+3. Build A (now): `secretPath` and the store and three stdlib callers; `sampleFormat` in `@keel/schema` and `fake.ts`; `Live.note` and `reportUnapplied`; `TableSearch`; `deps.json` `internal` and S0012. The `@keel/schema/internal` and `@keel/router/internal` header comments drop their stdlib readers.
 4. Build B (after RFC 0163's build): the name gates of items 3 to 8 and 11 become kind gates; E1207's stdlib sites move to `unsafe/`; `deps.json` `names` and S0013; E1576's shell allowance over library files; the section text of Spec diff's last bullet.
 
-## For the operator
-1. `sampleFormat` lives in `@keel/testing/sample` (D67). Its one caller runs in the browser, so the entry must stay free of the harness. I recommend `@keel/schema` instead, beside `secretPath`: the function reads `@keel/schema`'s private format table, and a browser bundle then imports nothing named "testing". Built as D67 says unless you reverse it.
-2. E1106 and E1207 split under RFC 0163 D4 ("every rule runs" on a library's files): E1106 reads a library as a package, E1207 sends the detached scope to `unsafe/`. I recommend both as written; RFC 0163's author should cite k.parity for the two.
-3. Rule codes (item 15): a library's rules take E2xxx or W2xxx, the stdlib's range, so a later stdlib code can collide (E1753). I recommend k.library reserves a range for libraries (E9xxx and W9xxx), recorded in `tasks/FUTURE.md` until a library registers a rule.
-4. E1111 item 8 trusts a package's factory as it trusts its exported tables. I recommend it: under RFC 0163 the library is checked again, and the runtime refusal is the package's, as E2852 is std-tables'.
+## Decided
+- `sampleFormat` is public in `@keel/schema` (D68), not in `@keel/testing`.
+- E1106 and E1207 read a library's files as a package's.
+- E1111 trusts a schema that a package's export returns.
+- A rule-code range for libraries is recorded in `tasks/FUTURE.md`.
