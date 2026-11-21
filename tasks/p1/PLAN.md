@@ -186,6 +186,42 @@ Outcome: one step from this tree to a fresh public repository and published pack
 - Gate: the release hygiene and dry-run exit criteria.
 - Needs a person: the operator picks the licence at launch, owns the npm organization and the GitHub organization.
 
+### W13 The module contract
+Outcome: every endpoint is declared once, in a client-safe contract file its module owns; the server binds handlers to it and the client service, links and public surface derive from it (decision D42 of `tasks/0963-to-p1/PLAN.md`).
+1. The RFC: the contract's shape, what derives from it, E1561 removed and E1562 over one object, required query keys on API routes (E1504), whether `routes.actions()` goes, the rules that enforce it; with it the RFC for the component signature `(props, ctx)` (opus).
+2. Conformance from each RFC (conformance-writer), then the build across services, router, server, check and scaffold (opus designs, sonnet builds).
+3. Both golden apps and the published skills move to contracts (sonnet).
+4. Additive, after the flip if need be: `pick`, `omit`, `extend`, `partial`, a cross-field check with a field path, param names from the path, a schema family in one file; each its own RFC (sonnet after an opus RFC).
+- Concurrent: step 1 runs beside W2; step 4 beside anything.
+- Gate: no endpoint declared outside a contract in either golden app; E1561 gone from the check.
+- Needs a person: the operator reads the RFC of step 1. W1's flip waits for steps 1 to 3.
+
+### W14 App data outside the kernel
+Outcome: Keel validates at the boundary and the app owns storage and retrieval through any library; a Postgres stdlib module is the battery and the example (D43).
+1. The RFC and ADR: the stance, the capability seam on `ctx` with a real and a simulated side, what the ledger says of data access that is not simulated, and what `read` and `commit` remain for (opus).
+2. The Postgres module: the capability, a tagged `sql` template, a result schema on every query, PGlite as the simulated side, forward-only SQL migrations (conformance-writer, then opus and sonnet).
+3. golden-2's app data moves to the module; one example plugs in a library with no Keel module; `docs/ARCHITECTURE.md`, the keel-data skill and the guides follow (sonnet).
+- Concurrent: step 1 beside W13 step 1; step 2 after W13 step 2, since handlers change shape there.
+- Gate: no app data of golden-2 in a server store that holds every user's rows; the example with an outside library passes `keel check` and `keel test`.
+- Needs a person: the operator reads the RFC of step 1.
+
+### W15 Custom components
+Outcome: an app writes its own component from the building blocks, from the primitives the stdlib widgets use, or around an outside library or a standard custom element, with data bound in one blessed way; charts are a library or an app's wrapper, never the framework's (D44).
+1. A design RFC: which primitives open to app code (E1822), the boundary of a wrapped component (a `Props` schema, a text alternative, a role, client-only or resumable, teardown), how data reaches it, what the harness and replay see, what the fixed policy refuses (a library that injects `<style>` or writes HTML strings) and what `unsafe/` then means; counted in the ledger and in eval results (opus).
+2. Conformance, the build, and one worked example: a d3 chart in golden-2 with a data-table alternative (conformance-writer, opus, sonnet).
+- Concurrent: step 1 beside W13 and W14 step 1.
+- Gate: the worked example passes `keel check` and the a11y checks with no rule switched off.
+- Needs a person: the operator reads the RFC.
+
+### W16 Head to head
+Outcome: a measured comparison of an agent building and changing an app in Keel and in an incumbent stack (D45).
+1. The harness: one app spec, a hidden acceptance suite, a security and a11y scan, the scores (converged or not, tokens to green, defects) (sonnet).
+2. One pair of runs under Claude Code; read the result with the operator.
+3. Two more: the same pair under Codex, and one maintenance task. Then the operator decides the larger set.
+- Concurrent: needs no kernel work; starts at once.
+- Gate: three pairs recorded in `evals/results` with their scores.
+- Needs a person: the operator reads each result before the next step.
+
 ### P2 workstreams
 - **L1 Launch.** Create the fresh repository from the swept tree (decision O7), make the old one private, publish the 0.x preview, take the site live, announce. Tiers: sonnet for the scripts; the operator presses publish and announces.
 - **L2 Outsiders.** The RFC process restarted (`docs/RFC.md`), issue and pull request templates, a daily triage agent that labels and reproduces each issue with a session where it can (sonnet), and a security inbox a person reads.
@@ -194,6 +230,7 @@ Outcome: one step from this tree to a fresh public repository and published pack
 ## Order across workstreams
 
 Dependencies (A → B means B waits for A):
+- W13 steps 1 to 3 (contract, component signature) → W1 freeze flip.
 - W1 freeze flip → W6 diagrams (0220 depends on 0034) → W6 tour → W5 `public-docs` eval.
 - W5 steps 2 to 4 (docs, entry files, skills) → W5 step 7 golden-3 build → W4 reviews and the S6 exit proof.
 - W2 clearance → W4 reviews; W2 clearance → any deploy (W8 step 6, W7 hosting if any).
