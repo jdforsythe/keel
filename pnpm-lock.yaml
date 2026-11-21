@@ -263,6 +263,9 @@ importers:
       '@keel/std-brands':
         specifier: workspace:*
         version: link:../../packages/std-brands
+      '@keel/std-sessions':
+        specifier: workspace:*
+        version: link:../../packages/std-sessions
       '@keel/testing':
         specifier: workspace:*
         version: link:../../packages/testing
