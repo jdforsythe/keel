@@ -31,6 +31,14 @@ export interface FormState<T> {
      * under the root path `''`); focus the first invalid bound element in document order.
      */
     validate(): Result<T, SchemaError>;
+    /**
+     * Take a rejected post the page re-renders (k.forms Submit): each submitted text read for its field as an input
+     * would read it, then exactly the `keel.fields` errors.
+     */
+    restore(
+      values: Readonly<Record<string, string | readonly string[]>>,
+      errors: Readonly<Record<string, string>>,
+    ): void;
     /** Apply the action's Result (ok resets; keel.fields sets exactly those errors; other err: no change). */
     onResult(result: Result<unknown, KeelError<string, unknown>>): void;
   };

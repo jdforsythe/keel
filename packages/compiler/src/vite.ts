@@ -853,7 +853,7 @@ export default function (): {
       if (d === undefined)
         throw new Error(`keel: ${ENTRY_PATH} needs a client deployable in topology.ts, or KEEL_DEPLOYABLE naming one`);
       const mode = command === "serve" ? "dev" : "production";
-      if (!d.client) return resumeEntry(q.d, mode);
+      if (!d.client) return resumeEntry(q.d, mode, CSS_IMPORT);
       const all = topology ?? {};
       const served = Object.values(all).some((x) => x.adapter === "node");
       const targets = served ? calledByClient(all, d.modules) : {};

@@ -66,7 +66,7 @@ describe("keyed dev entries in the Vite plugin", () => {
     expect(p.resolveId(entry)).toBe(entry);
     expect(p.resolveId(islands)).toBe(islands);
     expect(p.resolveId("/@keel/other.ts?d=api")).toBeNull();
-    expect(await p.load(entry)).toBe(resumeEntry("api", "dev"));
+    expect(await p.load(entry)).toBe(resumeEntry("api", "dev", "virtual:keel.css"));
     expect(await p.load(islands)).toBe(
       'import __keelIsland0 from "/modules/a/Page.tsx";\nexport const components = { "a.page": __keelIsland0 };\n',
     );

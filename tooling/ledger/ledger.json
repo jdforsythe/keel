@@ -11963,6 +11963,330 @@
       "rung": "example"
     },
     {
+      "pkg": "household",
+      "name": "StartData",
+      "file": "household:app/StartData.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "StartPage",
+      "file": "household:app/StartPage.tsx",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "app",
+      "file": "household:app/app.contract.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "loadStart",
+      "file": "household:app/loadStart.server.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "AppLocale",
+      "file": "household:receipts/AppLocale.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "Book",
+      "file": "household:receipts/Book.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "BookData",
+      "file": "household:receipts/BookData.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "BookPage",
+      "file": "household:receipts/BookPage.tsx",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "household",
+      "name": "BookParams",
+      "file": "household:receipts/BookParams.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "Member",
+      "file": "household:receipts/Member.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "NewReceipt",
+      "file": "household:receipts/NewReceipt.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "Receipt",
+      "file": "household:receipts/Receipt.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "ReceiptsText",
+      "file": "household:receipts/ReceiptsText.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "household",
+      "name": "de-DE",
+      "file": "household:receipts/ReceiptsText/de-DE.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "en-US",
+      "file": "household:receipts/ReceiptsText/en-US.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "bookStores",
+      "file": "household:receipts/bookStores.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "loadBook",
+      "file": "household:receipts/loadBook.server.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "minorUnits",
+      "file": "household:receipts/minorUnits.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "household",
+      "name": "receipts",
+      "file": "household:receipts/receipts.contract.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "recordReceipt",
+      "file": "household:receipts/recordReceipt.server.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "Household",
+      "file": "household:setup/Household.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "SetupData",
+      "file": "household:setup/SetupData.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "SetupForm",
+      "file": "household:setup/SetupForm.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "SetupPage",
+      "file": "household:setup/SetupPage.tsx",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "SetupSearch",
+      "file": "household:setup/SetupSearch.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "getHousehold",
+      "file": "household:setup/getHousehold.server.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "householdStores",
+      "file": "household:setup/householdStores.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "loadSetup",
+      "file": "household:setup/loadSetup.server.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "saveSetup",
+      "file": "household:setup/saveSetup.server.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "setUp",
+      "file": "household:setup/setUp.guard.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "setup",
+      "file": "household:setup/setup.contract.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "setupApi",
+      "file": "household:setup/setupApi.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "AddPayload",
+      "file": "household:shopping/AddPayload.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "Item",
+      "file": "household:shopping/Item.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "ItemRef",
+      "file": "household:shopping/ItemRef.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "Items",
+      "file": "household:shopping/Items.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "ListPage",
+      "file": "household:shopping/ListPage.tsx",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "ListText",
+      "file": "household:shopping/ListText.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "NewItem",
+      "file": "household:shopping/NewItem.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "ShoppingList",
+      "file": "household:shopping/ShoppingList.tsx",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "ShowPayload",
+      "file": "household:shopping/ShowPayload.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "ViewState",
+      "file": "household:shopping/ViewState.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "addTo",
+      "file": "household:shopping/addTo.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "deleteItem",
+      "file": "household:shopping/deleteItem.server.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "getItems",
+      "file": "household:shopping/getItems.server.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "loadList",
+      "file": "household:shopping/loadList.server.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "postItem",
+      "file": "household:shopping/postItem.server.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "savedStores",
+      "file": "household:shopping/savedStores.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "shopping",
+      "file": "household:shopping/shopping.contract.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "shoppingApi",
+      "file": "household:shopping/shoppingApi.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "show",
+      "file": "household:shopping/show.transaction.ts",
+      "rung": "proven"
+    },
+    {
+      "pkg": "household",
+      "name": "toggleIn",
+      "file": "household:shopping/toggleIn.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "toggleItem",
+      "file": "household:shopping/toggleItem.server.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "view",
+      "file": "household:shopping/view.store.ts",
+      "rung": "example"
+    },
+    {
       "pkg": "inspector",
       "name": "A11yEntry",
       "file": "inspector:inspector/A11yEntry.schema.ts",

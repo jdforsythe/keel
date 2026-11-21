@@ -276,6 +276,76 @@ importers:
         specifier: ^8.3.6
         version: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)
 
+  apps/household:
+    dependencies:
+      '@keel/compiler':
+        specifier: workspace:*
+        version: link:../../packages/compiler
+      '@keel/ctx':
+        specifier: workspace:*
+        version: link:../../packages/ctx
+      '@keel/forms':
+        specifier: workspace:*
+        version: link:../../packages/forms
+      '@keel/reactive':
+        specifier: workspace:*
+        version: link:../../packages/reactive
+      '@keel/router':
+        specifier: workspace:*
+        version: link:../../packages/router
+      '@keel/runtime-dom':
+        specifier: workspace:*
+        version: link:../../packages/runtime-dom
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../../packages/schema
+      '@keel/server':
+        specifier: workspace:*
+        version: link:../../packages/server
+      '@keel/services':
+        specifier: workspace:*
+        version: link:../../packages/services
+      '@keel/std-headless':
+        specifier: workspace:*
+        version: link:../../packages/std-headless
+      '@keel/std-i18n':
+        specifier: workspace:*
+        version: link:../../packages/std-i18n
+      '@keel/std-messages':
+        specifier: workspace:*
+        version: link:../../packages/std-messages
+      '@keel/std-money':
+        specifier: workspace:*
+        version: link:../../packages/std-money
+      '@keel/std-statecharts':
+        specifier: workspace:*
+        version: link:../../packages/std-statecharts
+      '@keel/std-text':
+        specifier: workspace:*
+        version: link:../../packages/std-text
+      '@keel/store':
+        specifier: workspace:*
+        version: link:../../packages/store
+      '@keel/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+    devDependencies:
+      '@keel/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@keel/testing':
+        specifier: workspace:*
+        version: link:../../packages/testing
+      '@keel/tooling':
+        specifier: workspace:*
+        version: link:../../tooling
+      '@types/node':
+        specifier: ^22
+        version: 22.20.5
+      vite:
+        specifier: ^8.3.6
+        version: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)
+
   apps/inspector:
     dependencies:
       '@keel/compiler':

@@ -1,6 +1,7 @@
 import type { Ctx } from "@keel/ctx";
 import { report } from "@keel/ctx/internal";
 import { batch, computed, owner, scope, signal } from "@keel/reactive";
+import type { CaughtError } from "@keel/runtime-dom";
 import { boundary, list } from "@keel/runtime-dom/ops";
 import { type KeelError, type Result, attempt, err, ok } from "@keel/schema";
 import type { ServerState } from "@keel/store/internal";
@@ -77,7 +78,8 @@ const nearestErrorElement = (route: Located, from: number): number => {
  * An action's `ok` value that is neither `null` nor an `Href` (`isHref`) is `keel.unexpected`, saved and followed
  * nowhere, given to the `Form` as any action `err`; `navigate` of a value that is no `Href` once each `\` reads as `/`
  * and any hash is dropped rejects with E1501 and nothing moves. On a shell's ctx (`mountRequests`, k.return) a
- * navigation under the identity mount is a mount request and nothing leaves.
+ * navigation under the identity mount is a mount request and nothing leaves. A render throw no `errorElement` catches
+ * goes to `onError`, then the root default alert shows it.
  */
 export function createRouterWith<T extends RouteTable>(
   routes: T,
@@ -91,6 +93,8 @@ export function createRouterWith<T extends RouteTable>(
     readonly leave?: (url: string, replace: boolean) => void;
     /** The identity mount's `path` (k.mount): no page matches at or under it. */
     readonly mount?: string | undefined;
+    /** A throw no route `errorElement` caught, before the root default alert shows it; the harness raises it. */
+    readonly onError?: (error: CaughtError) => void;
   },
   state?: ServerState,
 ): Router<StateOf<T>> {
@@ -415,6 +419,7 @@ export function createRouterWith<T extends RouteTable>(
           },
           (error, reset) => {
             resetRoot = reset;
+            opts.onError?.(error);
             return defaultError(shown(error));
           },
         );

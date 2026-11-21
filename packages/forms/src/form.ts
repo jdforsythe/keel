@@ -6,6 +6,7 @@ import { asSchemaValue } from "../unsafe/asSchemaValue.ts";
 import type { Bindable } from "./internal/Bindable.ts";
 import type { Reading } from "./internal/Reading.ts";
 import { claimFormId } from "./internal/claimFormId.ts";
+import { coerceText } from "./internal/coerceText.ts";
 import { describedBy } from "./internal/describedBy.ts";
 import { documentOrder } from "./internal/documentOrder.ts";
 import { edited } from "./internal/edited.ts";
@@ -248,6 +249,29 @@ export function form<S extends ObjectSchema<object>, T extends object = Infer<S>
           if (!r.ok) focusFirstInvalid();
           return r;
         }),
+      restore: (values, errors) => {
+        // Called while its `<Form>` renders: an effect declaring the form's signals, run untracked in the caller's
+        // scope, as `bind` takes an edited control, so the writes are no undeclared ones (E1201).
+        const apply = (): void =>
+          batch(() => {
+            let v = vals.get();
+            let r = raw.get();
+            for (const [path, sent] of Object.entries(values)) {
+              const segs = splitPath(path);
+              const node = segs.length === 0 || typeof sent !== "string" ? undefined : nodeAt(root, segs);
+              if (node === undefined || typeof sent !== "string") continue;
+              const read = coerceText(node, sent);
+              if (read.kind === "raw") r = { ...r, [path]: read.text };
+              else v = setAt(root, v, segs, read.kind === "value" ? read.value : undefined);
+            }
+            vals.set(v);
+            raw.set(r);
+            setErrors(errors);
+          });
+        const home = owner();
+        if (home === undefined) apply();
+        else effect(() => home.run(apply), { writes: [vals, raw, errs] });
+      },
       onResult: (result) => {
         if (result.ok) reset();
         else if (result.error.code === "keel.fields") setErrors(fieldMessages(result.error.data));

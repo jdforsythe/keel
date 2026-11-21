@@ -5,6 +5,7 @@ import { heldChildren } from "../internal/heldChildren.ts";
 import { islandProps } from "../internal/islandProps.ts";
 import { readState } from "../internal/readState.ts";
 import { resumeIsland } from "../internal/resumeIsland.ts";
+import { servedForm } from "../internal/servedForm.ts";
 import type { Island } from "../types/Island.ts";
 import type { ResumeOptions } from "../types/ResumeOptions.ts";
 
@@ -27,7 +28,7 @@ eventQueue.install();
  * Resume server-rendered islands under `root` (generated entry only, ADR-0006): restore `options.stores`
  * from `#k-state` (a snapshot with no store there restores the store of its id an island creates while it resumes,
  * else is an E1253 warning, as is a snapshot the store refuses), report its served `route` to `options.ctx`'s observers as a `nav`, then its failed loader's `error`
- * (`code` and `data.at` only), pass `options.ctx` (k.ctx) to every island root, then for each `[data-k-island]` in
+ * (`code` and `data.at` only), hand its rejected post (`form`) to the islands' `<Form>`s (`servedForm`), pass `options.ctx` (k.ctx) to every island root, then for each `[data-k-island]` in
  * document order (an ancestor before its descendants; k.resume) attach its bindings and delegated handlers to the
  * existing nodes without re-rendering; once every island has resumed, replay the events queued before resume in the
  * order they fired, each through every enclosing island as a live one (k.resume Replay). Each island has its own props, root
@@ -64,6 +65,8 @@ export function resume(
   let thrown: { error: unknown } | null = null;
   const before: unknown = Reflect.get(globalThis, WAITING);
   Reflect.set(globalThis, WAITING, waiting);
+  // A 422 re-render's rejected post: the island's `<Form>` hands it to its form handle, as on the server (k.forms).
+  servedForm.current = state.form;
   try {
     for (const el of all) {
       const id = el.getAttribute("data-k-island") ?? "";
@@ -92,6 +95,7 @@ export function resume(
     }
   } finally {
     Reflect.set(globalThis, WAITING, before);
+    servedForm.current = null;
   }
   for (const [id, left] of waiting)
     warnings.push(left === REFUSED ? unrestored(id) : `E1253 #k-state has a snapshot for unknown store "${id}"`);

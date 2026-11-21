@@ -1,4 +1,5 @@
 import type { Ctx } from "@keel/ctx";
+import type { CaughtError } from "@keel/runtime-dom";
 import type { Snapshot, Store } from "@keel/store";
 import type { DocumentNavigation } from "../types/DocumentNavigation.ts";
 import type { HarnessArtifacts } from "../types/HarnessArtifacts.ts";
@@ -28,4 +29,6 @@ interface Shared {
   readonly registry?: () => ReadonlyMap<string, Store<unknown>>;
   /** Where the document navigations the page starts are recorded (`recordDocuments`) until `dispose`. */
   readonly documents?: DocumentNavigation[];
+  /** Catches outside the root Boundary that `check()` raises as its own (a router's root alert, `renderRoute`). */
+  readonly caught?: CaughtError[];
 }
