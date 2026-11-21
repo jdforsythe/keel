@@ -13,8 +13,7 @@ const REPO_ROOT = nodePath.resolve(
 );
 const BIN = nodePath.join(REPO_ROOT, "packages/cli/src/bin.ts");
 const ADAPTERS = ["client", "node", "static"] as const;
-/** `keel build` of a `static` deployable stops at the compiler's entry (tasks/BACKLOG.md 1011), so its scripts are run without `build`. */
-const SCRIPTS = (adapter: string): string[] => (adapter === "static" ? ["check", "test"] : ["check", "test", "build"]);
+const SCRIPTS = (_adapter: string): string[] => ["check", "test", "build"];
 
 /** A fresh project on disk with the repo's packages and tools linked in, so its scripts resolve `keel`, `tsc` and `biome` as an install would. */
 function onDisk(files: Files, dir: string): void {
