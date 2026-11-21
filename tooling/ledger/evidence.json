@@ -1,5 +1,5 @@
 {
-  "commit": "53b0b2c0be5da479c6d55a1f15ba074c8864264c",
+  "commit": "2f7f64e7ae9fa96a64c55d206c00615b30f09106",
   "coverage": {
     "packages": {
       "apps/golden-1": {
@@ -1148,7 +1148,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-19T21:54:08.103Z",
+  "generatedAt": "2026-11-21T04:53:34.714Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -2979,8 +2979,8 @@
         "claims": 135,
         "reason": null,
         "reportDate": "2026-11-19",
-        "score": 77.59,
-        "stale": 5,
+        "score": 77.65,
+        "stale": 6,
         "threshold": 70
       },
       "packages/services": {
@@ -3216,7 +3216,7 @@
         "threshold": 70
       }
     },
-    "stale": 80
+    "stale": 81
   },
   "schema": 1,
   "tests": {
@@ -3418,8 +3418,8 @@
         "unitFiles": 23
       },
       "packages/server": {
-        "conformanceCases": 540,
-        "conformanceFiles": 122,
+        "conformanceCases": 546,
+        "conformanceFiles": 123,
         "exploreFiles": 0,
         "fails": 0,
         "otherCases": 0,
@@ -3428,8 +3428,8 @@
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 571,
-        "unitFiles": 105
+        "unitCases": 577,
+        "unitFiles": 108
       },
       "packages/services": {
         "conformanceCases": 64,
@@ -3839,8 +3839,8 @@
       }
     },
     "totals": {
-      "conformanceCases": 4035,
-      "conformanceFiles": 989,
+      "conformanceCases": 4041,
+      "conformanceFiles": 990,
       "exploreFiles": 17,
       "fails": 2,
       "otherCases": 0,
@@ -3849,8 +3849,8 @@
       "proveFiles": 23,
       "simulateFiles": 6,
       "skipTodo": 1,
-      "unitCases": 4924,
-      "unitFiles": 797
+      "unitCases": 4930,
+      "unitFiles": 800
     }
   },
   "tool": {
