@@ -1,6 +1,6 @@
 # RFC 0060: `x-forwarded-proto` upgrades the caller cookie to `__Host-`, W1557, and a server DOM that answers selectors
 
-Status: accepted (ADR-0047)
+Status: implemented (ADR-0047)
 
 ## Problem
 - **Red team 0160.** `secure` defaulted to the request URL's scheme. Behind a TLS-terminating proxy that scheme is `http:`, so the default Node deployment set `keel-caller` without `Secure` and read the unprefixed name. A sibling subdomain could then plant a caller cookie: signing (RFC 0057) only means it must first get a valid value, which one POST of its own gives it.

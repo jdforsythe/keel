@@ -1,6 +1,6 @@
 # RFC 0148: std.offline: a drain's scope drops its retry, stream endpoints are refused, ctxs keep their entries apart
 
-Status: accepted (ADR-0170) under the RFC defaults (6: enforce in the library), for the orchestrator to confirm. For backlogs 0797, 0798 and 0799.
+Status: implemented (ADR-0170) under the RFC defaults (6: enforce in the library), for the orchestrator to confirm. For backlogs 0797, 0798 and 0799.
 
 ## Decisions
 - D1 (0797): when the scope of `drain` ends, the retry its ctx has pending is dropped, so nothing is posted after it on that ctx until the next `send`, `resolve` or `drain`.

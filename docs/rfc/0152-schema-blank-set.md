@@ -1,6 +1,6 @@
 # RFC 0152: k.schema: one blank set for `required`, and a JSON Schema pattern every consumer reads alike
 
-Status: accepted (ADR-0174) under the RFC defaults (6: enforce in the kernel; 1: one way per thing), for the orchestrator to confirm. For backlog 0469.
+Status: implemented (ADR-0174) under the RFC defaults (6: enforce in the kernel; 1: one way per thing), for the orchestrator to confirm. For backlog 0469.
 
 ## Decisions
 - D1: a `string` with `min` >= 1 refuses a blank value with rule `required`. Blank: no character outside `White_Space`, `Default_Ignorable_Code_Point`, the general categories `Cc`, `Cf`, `Cs` and `M`, and U+2800. This is the set `keel check` already reads as blank for an a11y-required `label` (k.a11y E1802, `packages/check/src/rules/blankLabel.ts`), so a value a person sees as empty is refused the same way in a form, a store and a label.

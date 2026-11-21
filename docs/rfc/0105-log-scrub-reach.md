@@ -1,6 +1,6 @@
 # RFC 0105: log scrub reach (every `Secret` a request makes joins its `[secret]` set)
 
-Status: accepted and built (user, 2026-11-16: the hook as proposed, booleans unmarked, no length rule); for backlog 0628 and 0642. Design in `tasks/0338-s8-reach/proposed/server-scrub.md`. Each decision cites the WORKFLOW RFC default it applies or names the user's accepted choice; what is left open is under Questions with a recommendation. ADR-0128 records it.
+Status: implemented (user, 2026-11-16: the hook as proposed, booleans unmarked, no length rule); for backlog 0628 and 0642. Design in `tasks/0338-s8-reach/proposed/server-scrub.md`. Each decision cites the WORKFLOW RFC default it applies or names the user's accepted choice; what is left open is under Questions with a recommendation. ADR-0128 records it.
 
 ## Decisions
 - D1 (the user's accepted choice): one mechanism covers every `Secret` a request makes. The server log's `[secret]` pass reads the request's `secrets` set; today only the decoded action input and `bearer` are added to it, by hand. After this RFC each `Secret` constructed while the request runs adds its revealed strings and numbers to that set: the action input, `bearer`, a loader's or action's parse after an `await`, a token from `credentials(ctx).mint` of `@keel/std-credentials`. The kernel does not import `@keel/std-credentials` and does not need to: `mint` makes its token with `s.secret(s.string()).parse`, which is the one construction point (default 4: what lands in a log is redacted).
