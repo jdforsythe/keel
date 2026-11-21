@@ -1,5 +1,5 @@
 {
-  "commit": "c1cbeb9950a8c3991ff3715ea3f898aa059ba863",
+  "commit": "fe96c4a4eee57ce307b511555bcefbd6e8a6e295",
   "coverage": {
     "packages": {
       "apps/golden-1": {
@@ -1168,7 +1168,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-21T21:45:27.916Z",
+  "generatedAt": "2026-11-21T22:00:51.107Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -3536,12 +3536,12 @@
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 8,
+        "propertyCalls": 9,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 134,
-        "unitFiles": 16
+        "unitCases": 146,
+        "unitFiles": 19
       },
       "apps/household": {
         "conformanceCases": 0,
@@ -3610,8 +3610,8 @@
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 750,
-        "unitFiles": 96
+        "unitCases": 753,
+        "unitFiles": 97
       },
       "packages/compiler": {
         "conformanceCases": 178,
@@ -3816,12 +3816,12 @@
         "fails": 1,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 15,
+        "propertyCalls": 16,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 61,
-        "unitFiles": 7
+        "unitCases": 63,
+        "unitFiles": 8
       },
       "packages/std-geo": {
         "conformanceCases": 5,
@@ -3956,12 +3956,12 @@
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 31,
+        "propertyCalls": 32,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 1,
-        "unitCases": 27,
-        "unitFiles": 6
+        "unitCases": 36,
+        "unitFiles": 7
       },
       "packages/std-report": {
         "conformanceCases": 31,
@@ -3984,12 +3984,12 @@
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 15,
+        "propertyCalls": 16,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 14,
-        "unitFiles": 6
+        "unitCases": 20,
+        "unitFiles": 7
       },
       "packages/std-sessions": {
         "conformanceCases": 107,
@@ -4167,12 +4167,12 @@
       "fails": 2,
       "otherCases": 0,
       "otherFiles": 0,
-      "propertyCalls": 2259,
+      "propertyCalls": 2263,
       "proveFiles": 23,
       "simulateFiles": 12,
       "skipTodo": 2,
-      "unitCases": 5357,
-      "unitFiles": 913
+      "unitCases": 5389,
+      "unitFiles": 920
     }
   },
   "tool": {
