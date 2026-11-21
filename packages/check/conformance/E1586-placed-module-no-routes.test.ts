@@ -63,12 +63,12 @@ const project = (id: string, shape: Case) => {
 const ID = fc.stringMatching(/^[a-z]{3,8}$/).filter((s) => s !== "a");
 
 describe("k.topology: E1586", () => {
-  test.skip("A placed stdlib module whose `./contract` export resolves and `./routes` does not is one E1586 at its `topology.ts` id in `keel check`: `./routes` absent from `exports`", () => {
+  test("A placed stdlib module whose `./contract` export resolves and `./routes` does not is one E1586 at its `topology.ts` id in `keel check`: `./routes` absent from `exports`", () => {
     fc.assert(
       fc.property(ID, (id) => {
         const d = project(id, "contract-only");
         expect(d).toHaveLength(1);
-        expect(d[0]).toMatchObject({ code: "E1586", path: "topology.ts", line: 4 });
+        expect(d[0]).toMatchObject({ code: "E1586", path: "topology.ts", line: 3 });
         expect(String(d[0]?.message)).toContain(`module "${id}": @keel/std-${id} exports ./contract and no ./routes`);
       }),
       { seed: SEED, numRuns: 8 },
@@ -86,16 +86,20 @@ describe("k.topology: E1586", () => {
     );
   });
 
-  test.skip("both `./contract` and `./routes` resolving is none", () => {
+  test("both `./contract` and `./routes` resolving is none", () => {
     fc.assert(
-      fc.property(ID, (id) => expect(project(id, "both")).toEqual([])),
+      fc.property(ID, (id) => {
+        expect(project(id, "both")).toEqual([]);
+      }),
       { seed: SEED, numRuns: 8 },
     );
   });
 
-  test.skip("neither export (a runner-only module) is none and stays silent", () => {
+  test("neither export (a runner-only module) is none and stays silent", () => {
     fc.assert(
-      fc.property(ID, (id) => expect(project(id, "neither")).toEqual([])),
+      fc.property(ID, (id) => {
+        expect(project(id, "neither")).toEqual([]);
+      }),
       { seed: SEED, numRuns: 8 },
     );
   });
