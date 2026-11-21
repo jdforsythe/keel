@@ -21,6 +21,26 @@
       "default": "./src/tools/index.ts"
     }
   },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/src/index.d.ts",
+        "default": "./dist/src/index.js"
+      },
+      "./module": {
+        "types": "./dist/module.d.ts",
+        "default": "./dist/module.js"
+      },
+      "./server": {
+        "types": "./dist/src/server/index.d.ts",
+        "default": "./dist/src/server/index.js"
+      },
+      "./tools": {
+        "types": "./dist/src/tools/index.d.ts",
+        "default": "./dist/src/tools/index.js"
+      }
+    }
+  },
   "files": ["dist", "docs"],
   "scripts": {
     "check": "tsc --noEmit && biome check src test unsafe module.ts",
