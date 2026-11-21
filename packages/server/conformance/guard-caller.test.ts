@@ -4,6 +4,7 @@
 // @vitest-environment node
 import { createCtx } from "@keel/ctx";
 import { action, guard, loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { err, ok, s } from "@keel/schema";
 import { createApp, topology } from "@keel/server";
 import { expect, test } from "vitest";
@@ -17,15 +18,18 @@ async function setup(allow: (caller: string) => boolean) {
     seen.guard.push(caller);
     return allow(caller) ? ok(null) : err(Denied.make({}));
   });
-  const read = loader({ output: Out }, async ({ caller }) => {
+  const appContract = contract("app", { "app.login": { path: "/login" }, "app.who": { path: "/who" } });
+  const read = loader(appContract, "app.who", { output: Out }, async ({ caller }) => {
     seen.loader.push(caller);
     return ok({ caller });
   });
-  const routes = manifest({
-    "app.login": { path: "/login", component: () => document.createElement("p") },
-    "app.who": { path: "/who", loader: read, guard: gate, component: () => document.createElement("p") },
+  const routes = manifest(appContract, {
+    "app.login": {
+      component: () => document.createElement("p"),
+      POST: action(appContract, "app.login", { input: s.object({}) }, async () => ok(null)),
+    },
+    "app.who": { component: () => document.createElement("p"), loader: read, guard: gate },
   });
-  routes.actions({ "app.login": { POST: action({ input: s.object({}) }, async () => ok(null)) } });
   const app = await createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
     routes,

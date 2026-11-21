@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { mount } from "../src/index.ts";
 import { attr, clone, template } from "../src/ops/index.ts";
 import { RAW_HTML_ATTRS, URL_ATTRS, isSafeUrl, safeUrl } from "../src/url/index.ts";
+import { testCtx } from "./testCtx.ts";
 import { URL_CASES, URL_CASE_ATTRS, expectSafe } from "./urlCases.ts";
 
 describe("URL agreement table: the runtime", () => {
@@ -19,11 +20,15 @@ describe("URL agreement table: the runtime", () => {
         expect(safeUrl(name, c.value)).toBe(safe ? c.value : "about:blank");
         const host = document.createElement("div");
         const T = template(`<${tag}></${tag}>`);
-        const dispose = mount(() => {
-          const el = clone(T);
-          attr(el, name, () => c.value);
-          return el;
-        }, host);
+        const dispose = mount(
+          () => {
+            const el = clone(T);
+            attr(el, name, () => c.value);
+            return el;
+          },
+          host,
+          { ctx: testCtx },
+        );
         expect(host.firstElementChild?.getAttribute(name)).toBe(safe ? c.value : "about:blank");
         dispose();
       });

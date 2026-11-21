@@ -28,7 +28,6 @@ test("Alt+ArrowDown opens a Combobox with no option active; ArrowDown then moves
           options: () => fruit,
           onChange: () => {},
         },
-        undefined,
         c,
       ),
     ),
@@ -47,7 +46,6 @@ test("a printable key with `mod` is not typeahead", async () => {
     page((c) =>
       Listbox(
         { id: "lm", label: "Fruit", options: () => fruit, mode: "single", selected: () => [], onChange: () => {} },
-        undefined,
         c,
       ),
     ),

@@ -34,7 +34,7 @@ async function seed(api: { fetch: (r: Request) => Promise<Response> }, title: st
   const body: unknown = await (await api.fetch(asJson("GET", "/api/recipes"))).json();
   const results = typeof body === "object" && body !== null && "results" in body ? body.results : null;
   const entry =
-    typeof results === "object" && results !== null && "kitchen.recipes" in results ? results["kitchen.recipes"] : null;
+    typeof results === "object" && results !== null && "kitchen.box" in results ? results["kitchen.box"] : null;
   const box = typeof entry === "object" && entry !== null && "value" in entry ? Box.parse(entry.value) : null;
   return (box?.ok ? box.value.recipes.find((r) => r.title === title)?.id : undefined) ?? "";
 }
@@ -94,6 +94,6 @@ describe("golden-2 documents in plain node (no DOM global)", () => {
     const r = await page(api.fetch, "/api/recipes");
     expect(r.status).toBe(200);
     expect(r.html).not.toContain("<!doctype html>");
-    expect(JSON.parse(r.html).id).toBe("kitchen.recipes");
+    expect(JSON.parse(r.html).id).toBe("kitchen.box");
   });
 });

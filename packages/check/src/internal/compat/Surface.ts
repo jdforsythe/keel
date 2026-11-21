@@ -1,11 +1,12 @@
-import type { SurfaceRoute } from "./SurfaceRoute.ts";
-import type { SurfaceService } from "./SurfaceService.ts";
+import type { SurfaceContract } from "./SurfaceContract.ts";
 import type { SurfaceStore } from "./SurfaceStore.ts";
 
-/** `.keel/surface.json` data as `keel check` reads it; `sources` maps each evaluated file to its content hash. */
+/**
+ * `.keel/surface.json` data (`version: 2`) as `keel check` reads it: each contract by module, each store by id, and
+ * `sources`, each evaluated file's content hash.
+ */
 export type Surface = {
-  readonly routes: readonly SurfaceRoute[];
-  readonly services: readonly SurfaceService[];
+  readonly contracts: ReadonlyMap<string, SurfaceContract>;
   readonly stores: ReadonlyMap<string, SurfaceStore>;
   readonly sources: ReadonlyMap<string, string>;
 };

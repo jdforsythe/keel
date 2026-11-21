@@ -14,7 +14,7 @@ describe("viteTargets", () => {
   it("builds each client deployable by name, before every node deployable by name", () => {
     expect(viteTargets(topo('web: { modules: ["a"], adapter: "client" }'))).toEqual(["web"]);
     const src = topo(
-      'z: { modules: ["z"], adapter: "node" }, web: { modules: ["a"], adapter: "client", host: "z" }, b: { modules: ["b"], adapter: "node" }, app: { modules: ["c"], adapter: "client" }',
+      'z: { modules: ["z"], adapter: "node" }, web: { modules: ["a"], adapter: "client", servedBy: "z" }, b: { modules: ["b"], adapter: "node" }, app: { modules: ["c"], adapter: "client" }',
     );
     expect(viteTargets(src)).toEqual(["app", "web", "b", "z"]);
   });

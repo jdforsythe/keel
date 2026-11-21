@@ -5,6 +5,7 @@
 // the request made replaced by `[secret]`, in dev and production. Seed 1337.
 import { createCtx } from "@keel/ctx";
 import { loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { type KeelError, ok, reveal, s } from "@keel/schema";
 import { describe, expect, it } from "vitest";
 import { createApp, topology } from "../src/index.ts";
@@ -31,29 +32,29 @@ const encodeThrows = (): { n: string } => {
 };
 const Out = s.object({ n: s.string() });
 
+const c = contract("app", {
+  "app.l": { method: "GET", path: "/api/l", output: Out },
+  "app.v": { method: "GET", path: "/api/v", output: Out, events: true },
+  "app.c": { path: "/c" },
+  "app.e": { path: "/e" },
+  "app.ee": { path: "/ee" },
+});
+const encodeLoad = loader(c, "app.l", {}, async () => ok(encodeThrows()));
+const encodeLive = loader(c, "app.v", {}, async function* () {
+  yield ok(encodeThrows());
+});
+
 async function run(mode: "dev" | "production", url: string, accept: string) {
   const lines: string[] = [];
-  const routes = manifest({
-    "api.l": {
-      api: true,
-      path: "/api/l",
-      loader: loader({ output: Out }, async () => ok(encodeThrows())),
-    },
-    "api.v": {
-      api: true,
-      path: "/api/v",
-      loader: loader({ output: Out }, async function* () {
-        yield ok(encodeThrows());
-      }),
-    },
+  const routes = manifest(c, {
+    "app.l": { loader: encodeLoad },
+    "app.v": { loader: encodeLive },
     "app.c": {
-      path: "/c",
       component: () => {
         throw new Error(`render ${made()}`);
       },
     },
     "app.e": {
-      path: "/e",
       component: () => {
         throw new Error(`render ${made()}`);
       },
@@ -64,7 +65,6 @@ async function run(mode: "dev" | "production", url: string, accept: string) {
       },
     },
     "app.ee": {
-      path: "/ee",
       component: () => {
         throw new Error("plain");
       },
@@ -74,7 +74,7 @@ async function run(mode: "dev" | "production", url: string, accept: string) {
     },
   });
   const app = await createApp({
-    topology: topology({ web: { modules: ["api", "app"], adapter: "node" } }),
+    topology: topology({ web: { modules: ["app"], adapter: "node" } }),
     routes,
     ctx: createCtx({ mode: "sim", seed: 1337 }),
     mode,

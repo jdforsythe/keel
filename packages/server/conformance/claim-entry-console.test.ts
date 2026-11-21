@@ -7,6 +7,7 @@ import { resumeEntry } from "@keel/compiler/internal/entry/resumeEntry";
 import { evaluate } from "@keel/compiler/testing";
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import * as ops from "@keel/runtime-dom/ops";
 import * as store from "@keel/store";
 import { Button, Text } from "@keel/ui";
@@ -58,7 +59,13 @@ function EagerIsland(): Node {
   const label = Text({ id: "ec.label", children: "go" });
   return Button({ id: "ec.btn", onClick: go, children: label });
 }
-const EAGER = manifest({ "ec.page": { path: "/ec", component: EagerIsland } });
+const ecContract = contract("ec", {
+  "ec.page": { path: "/ec" },
+});
+
+const EAGER = manifest(ecContract, {
+  "ec.page": { component: EagerIsland },
+});
 
 describe("k.claim: the resume entry writes every resume warning to console.warn", () => {
   it("a production entry over a document with one mismatching island writes exactly one line, starting E1253 and holding the island id", async () => {

@@ -35,7 +35,7 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.ledger | 11 | **conformance-covered** | none |
 | k.sync | 14 | **conformance-covered** | none |
 | k.deploy | 11 | **conformance-covered** | none |
-| k.bundle | 6 | **conformance-covered** | none |
+| k.bundle | 7 | **conformance-covered** | clause 7 (RFC 0167): no test yet |
 | k.explain | 4 | **conformance-covered** | none |
 | k.return | 9 | **conformance-covered** | none |
 | k.opening | 6 | **conformance-covered** | none |
@@ -59,8 +59,8 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.owner | 5 | **conformance-covered** | none |
 | k.place | 5 | **conformance-covered** | none |
 | k.resume | 13 | **conformance-covered** | none |
-| k.serverlog | 6 | **conformance-covered** | none |
-| k.user | 9 | **conformance-covered** | none |
+| k.serverlog | 7 | **conformance-covered** | clause 7 (RFC 0164): no test yet |
+| k.user | 10 | **conformance-covered** | clauses 8 and 9 (RFC 0165): no test quotes them yet |
 | k.boundary | 8 | **conformance-covered** | not audited clause by clause; the environment and limits suites run `keel build` on fixtures whose `env.d.ts` the type pass does not read |
 | std.brands | 6 | **conformance-covered** | none |
 | std.channels | 11 | **conformance-covered** | none |
@@ -102,7 +102,7 @@ Every audited surface has one way.
 | --- | --- | --- |
 | 1 | `router/src/types/RouteDef.ts`, `guard.ts` | `guard: authGuard` by reference; no name, no registry |
 | 2 | `server/src/types/AppOptions.ts`, `server/src/internal/runGuards.ts` | the route holds the guard; `createApp` has no guard table |
-| 3 | `router/src/manifest.ts`, `Form.ts` | `routes.href` typed by the manifest; `<Form action>` takes an `Href` |
+| 3 | `router/src/manifest.ts`, `Form.ts` | `<contract>.href` typed by the contract; `<Form action>` takes an `Href` |
 | 4 | `schema/src/internal/make.ts` | `parse`; there is no `decode` |
 | 5 | `ctx/src/Random.ts` | `random.id(brand)` |
 | 6 | `ui/src/index.ts` | style props; there is no `styles()` |

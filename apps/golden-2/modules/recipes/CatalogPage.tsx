@@ -21,7 +21,7 @@ import { clearList } from "./clearList.ts";
 import { currencyOptions } from "./currencyOptions.ts";
 import { idPart } from "./idPart.ts";
 import { raiseToast } from "./raiseToast.ts";
-import { routes } from "./routes.ts";
+import { recipes } from "./recipes.contract.ts";
 import { servedLocales } from "./servedLocales.ts";
 import { shoppingList } from "./shoppingList.ts";
 
@@ -48,11 +48,11 @@ function queryWith(
  * searched, filtered and paged through the URL, with row selection and a menu per row) with a button that adds the
  * selection to the shopping list, and the shopping list with a confirmed clear.
  */
-export default function CatalogPage(props: Infer<typeof Props>, _slots?: undefined, ctx?: Ctx) {
+export default function CatalogPage(props: Infer<typeof Props>, ctx: Ctx) {
   const typed = signal("");
   const view = signal<View>("recipes");
   const picked = signal<readonly Key[]>([]);
-  const href = (q: CatalogSearch) => routes.href("recipes.catalog", { locale: props.params.locale }, q);
+  const href = (q: CatalogSearch) => recipes.href("recipes.catalog", { locale: props.params.locale }, q);
   const refine = (keep: "currency" | "favorite", change: Pick<CatalogSearch, "currency" | "favorite">) =>
     queryWith(props.search, keep, change);
   const found = computed(() => {
@@ -166,7 +166,7 @@ export default function CatalogPage(props: Infer<typeof Props>, _slots?: undefin
             ]}
             onSelect={(key) => {
               const locale = key === "open" ? props.params.locale : key;
-              void navigate(routes.href("recipes.show", { locale, recipeId: row.id }));
+              void navigate(recipes.href("recipes.show", { locale, recipeId: row.id }));
             }}
           />
         )}
@@ -260,7 +260,7 @@ export default function CatalogPage(props: Infer<typeof Props>, _slots?: undefin
         onInput={(t) => typed.set(t)}
         options={() => found.get()}
         onChange={(recipeId) => {
-          void navigate(routes.href("recipes.show", { locale: props.params.locale, recipeId }));
+          void navigate(recipes.href("recipes.show", { locale: props.params.locale, recipeId }));
         }}
         empty={() => props.data.text.findEmpty}
       />

@@ -1,6 +1,6 @@
 # ADR-0052: actions attach with `routes.actions` after the manifest (RFC 0063)
 
-**Status:** accepted
+**Status:** superseded by ADR-0179
 
 **Context.** An action in a route entry made the type of `routes` depend on the action. An action returning `ok(routes.href(...))` then formed a circular initializer (TS7022), and authors bound `const to: Href` first (ADR-0030, ADR-0034). The user chose a two-phase manifest on 2026-11-07 (backlog 0114).
 

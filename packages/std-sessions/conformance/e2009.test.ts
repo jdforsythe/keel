@@ -1,6 +1,6 @@
 // Spec: std.monitor, Conformance "E2009 fires on a fixture and not on its clean twin."
 // Seed: 1337.
-// Spec: std.monitor, Rules "E2009 `monitor` in the runners, or `monitorRoutes` in the routes, of a non-`node` deployable"
+// Spec: std.monitor, Rules "E2009 `monitor` in the runners of a non-`node` deployable"
 // Spec: std.monitor, Rules "E2010 `session monitor`: the tally URL is unreachable, not 2xx, or not a `Tally`."
 // @vitest-environment node
 // Skipped until the rules exist. E2009 is a `check` rule (as E2005); E2010 is driven through `keel session monitor`.
@@ -13,11 +13,12 @@ import { run } from "@keel/cli";
 import { bindStd } from "@keel/compiler/std/bindStd";
 import { createCtx } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import { createApp, topology } from "@keel/server";
 import "@keel/std-sessions/tools";
 import { check } from "@keel/check";
-import { monitorRoutes } from "@keel/std-sessions/monitor";
+import { routes as sessionsRoutes } from "@keel/std-sessions/routes";
 import { store, transaction, tx } from "@keel/store";
 import fc from "fast-check";
 import { afterAll, describe, expect, test } from "vitest";
@@ -25,7 +26,7 @@ import { applyTo, cartModuleFiles, diagCodes, topologySource } from "./fixtures.
 
 // ---- fixture (shared text of the monitor-* files): a server store with two transactions, an API route table ----------
 // Assumptions (the spec is silent, each is an ordinary reading of k.server / k.router / k.api, as sync-save-observe does):
-// - `monitor` and `monitorRoutes` are both exported by `@keel/std-sessions/monitor`;
+// - `monitor` is exported by `@keel/std-sessions/monitor`;
 // - `ctx.storage` holds a server store as the JSON text of its `snapshot()` under `keel.store.<id>`, and `sessions.tally`
 //   as the JSON text of the `Tally`;
 // - an API route answers `{ results: { <route id>: Result } }` as `sessions.list` does in the ingest tests;
@@ -84,17 +85,20 @@ async function boot() {
     },
   };
   const ctx = { ...base, storage };
-  const add = action({ input: Text1, stores: factory }, async ({ text }, { stores }) => {
+  const apiContract = contract("api", { "api.add": { path: "/add" }, "api.toggle": { path: "/toggle" } });
+  const add = action(apiContract, "api.add", { input: Text1, stores: factory }, async ({ text }, { stores }) => {
     tx(stores.addTodo, { text });
     return ok(null);
   });
-  const toggle = action({ input: Text1, stores: factory }, async ({ text }, { stores }) => {
+  const toggle = action(apiContract, "api.toggle", { input: Text1, stores: factory }, async ({ text }, { stores }) => {
     tx(stores.toggleTodo, { text });
     return ok(null);
   });
   const component = (): Node => document.createElement("p");
-  const routes = manifest({ "api.add": { path: "/add", component }, "api.toggle": { path: "/toggle", component } });
-  routes.actions({ "api.add": { POST: add }, "api.toggle": { POST: toggle } });
+  const routes = manifest(apiContract, {
+    "api.add": { component: component, POST: add },
+    "api.toggle": { component: component, POST: toggle },
+  });
   const actions = await createApp({
     topology: topology({ api: { modules: ["api"], adapter: "node" } }),
     routes,
@@ -104,7 +108,7 @@ async function boot() {
   });
   const tallyApp = await createApp({
     topology: topology({ sessions: { modules: ["sessions"], adapter: "node" } }),
-    routes: monitorRoutes,
+    routes: sessionsRoutes,
     ctx,
     mode: "production",
     secret: SECRET,
@@ -224,17 +228,14 @@ const RUNNERS = (body: string) => ({
   path: "modules/cart/runners.server.ts",
   source: `import { monitor } from '@keel/std-sessions/monitor'\n${body}\n`,
 });
-const ROUTES = (body: string) => ({
-  path: "modules/cart/routes.ts",
-  source: `import { manifest } from '@keel/router'\nimport { monitorRoutes } from '@keel/std-sessions/monitor'\n${body}\n`,
-});
 const RUNNERS_PLAIN = {
   path: "modules/cart/runners.server.ts",
   source: "export const runners = []\n",
 };
 const ROUTES_PLAIN = {
   path: "modules/cart/routes.ts",
-  source: "import { manifest } from '@keel/router'\nexport const routes = manifest({})\n",
+  source:
+    "import { manifest } from '@keel/router'\nimport { cart } from './cart.contract.ts'\nexport const routes = manifest(cart, {})\n",
 };
 
 const codes = (adapter: "node" | "static" | "client", extra: { path: string; source: string }[]) =>
@@ -253,14 +254,7 @@ describe("std.monitor: E2009 fires on a fixture and not on its clean twin.", () 
     expect(codes("node", fixture)).not.toContain("E2009");
   });
 
-  test("E2009 fires on `monitorRoutes` in the routes of a non-node deployable, not of a node one", () => {
-    const fixture = [RUNNERS_PLAIN, ROUTES("export const routes = manifest({})\nexport const listed = monitorRoutes")];
-    expect(codes("static", fixture)).toContain("E2009");
-    expect(codes("client", fixture)).toContain("E2009");
-    expect(codes("node", fixture)).not.toContain("E2009");
-  });
-
-  test("E2009 does not fire on a client deployable whose runners and routes hold neither", () => {
+  test("E2009 does not fire on a client deployable whose runners hold no `monitor`", () => {
     expect(codes("client", [RUNNERS_PLAIN, ROUTES_PLAIN])).not.toContain("E2009");
   });
 });

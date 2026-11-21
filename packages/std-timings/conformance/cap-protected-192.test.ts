@@ -3,14 +3,18 @@
 // @vitest-environment happy-dom
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { createApp, topology } from "@keel/server";
 import { time, timingsOf } from "@keel/std-timings";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 
-const routes = manifest({
+const appContract = contract("app", {
+  "app.home": { path: "/" },
+});
+
+const routes = manifest(appContract, {
   "app.home": {
-    path: "/",
     component: () => {
       const e = document.createElement("main");
       e.append("home");

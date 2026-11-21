@@ -5,6 +5,7 @@
 import { createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
 import { Form, action, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import { store, transaction, tx } from "@keel/store";
 import { renderRoute } from "@keel/testing";
@@ -16,13 +17,14 @@ import { replay } from "../src/replay.ts";
 function build() {
   const count = store(s.object({ n: s.int() }), { n: 0 }, { id: "follow.count" });
   const bump = transaction(count, "follow.bump", s.object({}), (st) => ({ n: st.n + 1 }));
+  const follow = contract("follow", { "follow.home": { path: "/" }, "follow.done": { path: "/done" } });
   function Home(): Node {
     return Box({
       id: "follow.page",
       children: () => [
         Form({
           method: "POST",
-          action: routes.href("follow.home"),
+          action: follow.href("follow.home"),
           children: () => [Button({ id: "follow.save", type: "submit", children: "Save" })],
         }),
       ],
@@ -31,15 +33,14 @@ function build() {
   function Done(): Node {
     return Text({ id: "follow.n", children: () => String(count.get("n")) });
   }
-  const routes = manifest({
-    "follow.home": { path: "/", component: Home },
-    "follow.done": { path: "/done", component: Done },
-  });
-  const post = action({ input: s.object({}) }, async () => {
+  const post = action(follow, "follow.home", { input: s.object({}) }, async () => {
     await tx(bump, {});
-    return ok(routes.href("follow.done"));
+    return ok(follow.href("follow.done"));
   });
-  routes.actions({ "follow.home": { POST: post } });
+  const routes = manifest(follow, {
+    "follow.home": { component: Home, POST: post },
+    "follow.done": { component: Done },
+  });
   return { routes, count };
 }
 

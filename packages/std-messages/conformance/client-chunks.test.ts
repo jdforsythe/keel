@@ -111,12 +111,23 @@ export const Page = messages(AppLocale, { title: {} }, (locale) => import(\`./Pa
   );
   write(
     fx,
+    "modules/app/app.contract.ts",
+    `import { contract } from "@keel/router/contract";
+import { Params } from "./Params.schema.ts";
+export const app = contract("app", {
+  "app.page": { path: "/:locale", params: Params },
+});
+`,
+  );
+  write(
+    fx,
     "modules/app/pageLoader.server.ts",
     `import { loader } from "@keel/router";
 import { ok, s } from "@keel/schema";
+import { app } from "./app.contract.ts";
 import { Page } from "./Page.schema.ts";
-import { Params } from "./Params.schema.ts";
-export const pageLoader = loader({ output: s.object({ text: Page }), params: Params }, async ({ params }) => ok({ text: await Page.load(params.locale) }));
+
+export const pageLoader = loader(app, "app.page", { output: s.object({ text: Page }) }, async ({ params }) => ok({ text: await Page.load(params.locale) }));
 `,
   );
   write(
@@ -124,9 +135,11 @@ export const pageLoader = loader({ output: s.object({ text: Page }), params: Par
     "modules/app/routes.ts",
     `import { manifest } from "@keel/router";
 import PageView from "./PageView.tsx";
+import { app } from "./app.contract.ts";
 import { pageLoader } from "./pageLoader.server.ts";
-import { Params } from "./Params.schema.ts";
-export const routes = manifest({ "app.page": { path: "/:locale", params: Params, component: PageView, loader: pageLoader } });
+export const routes = manifest(app, {
+  "app.page": { component: PageView, loader: pageLoader },
+});
 `,
   );
   const r = spawnSync(process.execPath, [path.join(REPO, "packages", "cli", "src", "bin.ts"), "build"], {

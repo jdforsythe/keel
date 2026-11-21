@@ -8,6 +8,7 @@
 // the public router's refusal shows as `keel.unexpected` in the route's `errorElement`.
 import type { Ctx } from "@keel/ctx";
 import { Form, action, createRouter, loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import type { RouteProps } from "@keel/router";
 import { mount } from "@keel/runtime-dom";
 import { text } from "@keel/runtime-dom/ops";
@@ -53,7 +54,8 @@ const itemsOf = (data: unknown): readonly string[] => {
   return Array.isArray(items) ? items.filter((i): i is string => typeof i === "string") : [];
 };
 
-const links = manifest({ "link.st": { path: "/st", component: () => el("p", "link.st") } });
+const linkContract = contract("link", { "link.st": { path: "/st" } });
+const links = manifest(linkContract, { "link.st": { component: () => el("p", "link.st") } });
 
 const page = (props: RouteProps): Node => {
   const main = el("main", "st.page");
@@ -65,7 +67,7 @@ const page = (props: RouteProps): Node => {
   button.textContent = "save";
   const form = Form({
     method: "POST",
-    action: links.href("link.st"),
+    action: linkContract.href("link.st"),
     error: (e) => {
       const p = el("p", "st.err");
       p.textContent = e.code;
@@ -78,34 +80,45 @@ const page = (props: RouteProps): Node => {
   return main;
 };
 
-const read = loader({ output: Notes, stores: factory }, async ({ stores }) => {
+const stContract = contract("st", { "st.page": { path: "/st" }, "st.other": { path: "/other" } });
+const stContract2 = contract("st", { "st.page": { path: "/st" } });
+const read = loader(stContract, "st.page", { output: Notes, stores: factory }, async ({ stores }) => {
   control.loads++;
   return ok({ items: [...stores.notes.get("items")] });
 });
-const write = action({ input: Add, stores: factory }, async ({ text: t }, { stores }) => {
+const write = action(stContract, "st.page", { input: Add, stores: factory }, async ({ text: t }, { stores }) => {
   tx(stores.add, { text: t });
   if (control.mode === "throw") throw new Error("boom");
   if (control.mode === "err") return err(Boom.make({}));
   return ok(null);
 });
-const routes = manifest({
-  "st.page": { path: "/st", loader: read, component: page },
-  "st.other": { path: "/other", component: () => el("p", "st.other") },
+// The refusing manifest binds the same page under its own contract, so it needs its own loader and action.
+const read2 = loader(stContract2, "st.page", { output: Notes, stores: factory }, async ({ stores }) => {
+  control.loads++;
+  return ok({ items: [...stores.notes.get("items")] });
 });
-routes.actions({ "st.page": { POST: write } });
-const refusing = manifest({
+const write2 = action(stContract2, "st.page", { input: Add, stores: factory }, async ({ text: t }, { stores }) => {
+  tx(stores.add, { text: t });
+  if (control.mode === "throw") throw new Error("boom");
+  if (control.mode === "err") return err(Boom.make({}));
+  return ok(null);
+});
+const routes = manifest(stContract, {
+  "st.page": { component: page, loader: read, POST: write },
+  "st.other": { component: () => el("p", "st.other") },
+});
+const refusing = manifest(stContract2, {
   "st.page": {
-    path: "/st",
-    loader: read,
     component: page,
+    loader: read2,
     errorElement: ({ error }) => {
       const p = el("p", "st.refused");
       p.textContent = error.code;
       return p;
     },
+    POST: write2,
   },
 });
-refusing.actions({ "st.page": { POST: write } });
 
 const texts = fc.array(fc.stringMatching(/^[a-z]{1,8}$/), { minLength: 1, maxLength: 4 });
 
@@ -207,8 +220,8 @@ test("a navigation is one request: each run of the loader opens its stores from 
       expect(a.find("st.items").text).toBe(values.join(","));
       await submit(a, extra);
       const before = control.loads;
-      await a.navigate(routes.href("st.other"));
-      await a.navigate(routes.href("st.page"));
+      await a.navigate(stContract.href("st.other"));
+      await a.navigate(stContract.href("st.page"));
       expect(control.loads).toBe(before + 1);
       expect(a.find("st.items").text).toBe([...values, extra].join(","));
       a.dispose();
@@ -245,7 +258,7 @@ test("the public `createRouter` still refuses `stores`: the loader never runs an
   });
   const host = document.createElement("div");
   document.body.append(host);
-  const unmount = mount(router.App, host);
+  const unmount = mount(router.App, host, { ctx: simCtx() });
   await hops(50);
   expect(control.loads).toBe(0);
   expect(document.getElementById("st.items")).toBeNull();

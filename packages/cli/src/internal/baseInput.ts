@@ -7,12 +7,12 @@ import { projectFiles } from "./projectFiles.ts";
 import { relPath } from "./relPath.ts";
 
 /** The surface `version` this keel writes and compares (k.compat Surface). */
-const VERSION = 1;
+const VERSION = 2;
 
 /**
  * The base surface of `keel check --base <file>` (k.compat Base): the parsed file, from the project's files or else
  * `io.read` (the generated CI writes it outside the tree), resolved against `cwd`; `undefined` without the flag. A file
- * that is absent, not JSON, not a `surface.json` (`{ data: { routes, services } }`) or of another `version` is no base:
+ * that is absent, not JSON or not a `surface.json` (`{ data: { version: 2, contracts } }`) is no base:
  * one W1568 at the file, and no E1562 is checked.
  */
 export function baseInput(input: Input, io: Io): { readonly value: unknown; readonly warn?: Diag } {
@@ -36,7 +36,6 @@ export function baseInput(input: Input, io: Io): { readonly value: unknown; read
     return none;
   }
   const data = isRecord(value) ? value.data : undefined;
-  if (!isRecord(data) || !isRecord(data.routes) || !Array.isArray(data.services) || data.version !== VERSION)
-    return none;
+  if (!isRecord(data) || data.version !== VERSION || !isRecord(data.contracts)) return none;
   return { value };
 }

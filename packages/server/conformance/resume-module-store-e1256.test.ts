@@ -1,5 +1,6 @@
 import { createCtx } from "@keel/ctx";
 import { action, guard, loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import type { RouteProps } from "@keel/router";
 // @vitest-environment happy-dom
 // Spec: k.resume, Conformance "A loader, guard or component writing a module store fails its level with a throw starting `E1256`, the store unchanged; such an action answers 500. Two requests in turn never see each other's request stores."
@@ -35,19 +36,46 @@ const errorElement = (p: { readonly error: KeelError<string, unknown> }): Node =
   el("section", { "data-error-element": "1" }, p.error.code);
 const write = (rows: string): void => void tx(setRows, { rows });
 
-/** A loader that writes `board` before any await, or after one. */
-const writing = (late: boolean) =>
-  loader({ output: Data }, async () => {
-    if (late) await Promise.resolve();
-    write("leak");
-    return ok({ title: "t" });
-  });
+const rmContract = contract("rm", {
+  "rm.login": { path: "/login" },
+  "rm.after": { path: "/after" },
+  "rm.before": { path: "/before" },
+  "rm.afterEl": { path: "/after-el" },
+  "rm.guarded": { path: "/guarded" },
+  "rm.restore": { path: "/op-restore" },
+  "rm.undo": { path: "/op-undo" },
+  "rm.undoWhere": { path: "/op-undo-where" },
+  "rm.render": { path: "/render" },
+  "rm.act": { path: "/act" },
+  "rm.made": { path: "/made" },
+  "rm.factory": { path: "/factory" },
+  "rm.reads": { path: "/reads" },
+  "rm.data": { path: "/data/:name", params: Name },
+  "rm.store": { path: "/store/:name", params: Name },
+  "rm.requestStore": { path: "/request-store/:name", params: Name },
+});
+const rrContract = contract("rr", { "rr.page": { path: "/rr" } });
 
-const afterAwait = writing(true);
-const beforeAwait = writing(false);
+/** A loader that writes `board` before any await, or after one. */
+const writing = (late: boolean, c: typeof rmContract | typeof rrContract, id: string) =>
+  Reflect.apply(loader, undefined, [
+    c,
+    id,
+    { output: Data },
+    async () => {
+      if (late) await Promise.resolve();
+      write("leak");
+      return ok({ title: "t" });
+    },
+  ]);
+
+const afterAwait = writing(true, rmContract, "rm.after");
+const afterAwaitEl = writing(true, rmContract, "rm.afterEl");
+const afterAwaitRr = writing(true, rrContract, "rr.page");
+const beforeAwait = writing(false, rmContract, "rm.before");
 
 /** A loader that creates a store in the request and writes it: allowed. */
-const madeHere = loader({ output: Data }, () => {
+const madeHere = loader(rmContract, "rm.made", { output: Data }, () => {
   const made = store(Rows, { rows: "" }, { id: "rm.made" });
   const set = transaction(made, "rm.made.set", Rows, (_state, payload) => payload);
   void tx(set, { rows: "made" });
@@ -59,13 +87,15 @@ const factory = () => {
   const local = store(Rows, { rows: "" }, { id: "rm.factory" });
   return { local, setLocal: transaction(local, "rm.factory.set", Rows, (_state, payload) => payload) };
 };
-const viaFactory = loader({ output: Data, stores: factory }, ({ stores }) => {
+const viaFactory = loader(rmContract, "rm.factory", { output: Data, stores: factory }, ({ stores }) => {
   void tx(stores.setLocal, { rows: "factory" });
   return Promise.resolve(ok({ title: stores.local.get("rows") }));
 });
 
 /** A loader that only reads `board`. */
-const reading = loader({ output: Data }, () => Promise.resolve(ok({ title: board.get("rows") })));
+const reading = loader(rmContract, "rm.reads", { output: Data }, () =>
+  Promise.resolve(ok({ title: board.get("rows") })),
+);
 
 /** A loader that awaits, then calls one guarded operation other than `tx` on `board`. */
 const operations = {
@@ -73,12 +103,17 @@ const operations = {
   undo: () => board.undo(),
   undoWhere: () => board.undoWhere(() => true),
 } as const;
-const operating = (name: keyof typeof operations) =>
-  loader({ output: Data }, async () => {
-    await Promise.resolve();
-    operations[name]();
-    return ok({ title: "t" });
-  });
+const operating = (name: keyof typeof operations, id: string) =>
+  Reflect.apply(loader, undefined, [
+    rmContract,
+    id,
+    { output: Data },
+    async () => {
+      await Promise.resolve();
+      operations[name]();
+      return ok({ title: "t" });
+    },
+  ]);
 
 const guarded = guard({ redirect: "rm.login" }, async () => {
   await Promise.resolve();
@@ -86,17 +121,19 @@ const guarded = guard({ redirect: "rm.login" }, async () => {
   return ok(null);
 });
 
-const act = action({ input: Note }, async () => {
+const act = action(rmContract, "rm.act", { input: Note }, async () => {
   await Promise.resolve();
   write("leak");
   return ok(null);
 });
 
 /** Rows as loader data, the form the spec asks apps for. */
-const asData = loader({ output: Data, params: Name }, ({ params }) => Promise.resolve(ok({ title: params.name })));
+const asData = loader(rmContract, "rm.data", { output: Data }, ({ params }) =>
+  Promise.resolve(ok({ title: params.name })),
+);
 
 /** The same page with the loader written as an app writing a module store: it writes, then returns the rows it wrote. */
-const asStore = loader({ output: Data, params: Name }, async ({ params }) => {
+const asStore = loader(rmContract, "rm.store", { output: Data }, async ({ params }) => {
   await Promise.resolve();
   write(params.name);
   return ok({ title: board.get("rows") });
@@ -115,25 +152,24 @@ function WritingPage(): Node {
   return el("main", { "data-page": "1" }, "rendered");
 }
 
-const routes = manifest({
-  "rm.login": { path: "/login", component: () => el("main", {}, "login") },
-  "rm.after": { path: "/after", loader: afterAwait, component: shown },
-  "rm.before": { path: "/before", loader: beforeAwait, component: shown },
-  "rm.afterEl": { path: "/after-el", loader: afterAwait, component: shown, errorElement },
-  "rm.guarded": { path: "/guarded", guard: guarded, component: () => el("main", { "data-page": "1" }, "guarded") },
-  "rm.restore": { path: "/op-restore", loader: operating("restore"), component: shown },
-  "rm.undo": { path: "/op-undo", loader: operating("undo"), component: shown },
-  "rm.undoWhere": { path: "/op-undo-where", loader: operating("undoWhere"), component: shown },
-  "rm.render": { path: "/render", component: WritingPage },
-  "rm.act": { path: "/act", component: () => el("main", { "data-page": "1" }, "act") },
-  "rm.made": { path: "/made", loader: madeHere, component: shown },
-  "rm.factory": { path: "/factory", loader: viaFactory, component: shown },
-  "rm.reads": { path: "/reads", loader: reading, component: shown },
-  "rm.data": { path: "/data/:name", params: Name, loader: asData, component: shown },
-  "rm.store": { path: "/store/:name", params: Name, loader: asStore, component: shown },
-  "rm.requestStore": { path: "/request-store/:name", params: Name, component: RequestStorePage },
+const routes = manifest(rmContract, {
+  "rm.login": { component: () => el("main", {}, "login") },
+  "rm.after": { component: shown, loader: afterAwait },
+  "rm.before": { component: shown, loader: beforeAwait },
+  "rm.afterEl": { component: shown, loader: afterAwaitEl, errorElement: errorElement },
+  "rm.guarded": { component: () => el("main", { "data-page": "1" }, "guarded"), guard: guarded },
+  "rm.restore": { component: shown, loader: operating("restore", "rm.restore") },
+  "rm.undo": { component: shown, loader: operating("undo", "rm.undo") },
+  "rm.undoWhere": { component: shown, loader: operating("undoWhere", "rm.undoWhere") },
+  "rm.render": { component: WritingPage },
+  "rm.act": { component: () => el("main", { "data-page": "1" }, "act"), POST: act },
+  "rm.made": { component: shown, loader: madeHere },
+  "rm.factory": { component: shown, loader: viaFactory },
+  "rm.reads": { component: shown, loader: reading },
+  "rm.data": { component: shown, loader: asData },
+  "rm.store": { component: shown, loader: asStore },
+  "rm.requestStore": { component: RequestStorePage },
 });
-routes.actions({ "rm.act": { POST: act } });
 
 const MODULES = ["rm"];
 const MODES = ["dev", "production"] as const;
@@ -295,12 +331,8 @@ describe("k.resume: a module store written outside a request is not refused", ()
   });
 
   it("a page loader writing a module store through renderRoute is not refused", async () => {
-    const rr = manifest({
-      "rr.page": {
-        path: "/rr",
-        component: (p: RouteProps) => el("main", { id: "rr.out" }, titleOf(p)),
-        loader: afterAwait,
-      },
+    const rr = manifest(rrContract, {
+      "rr.page": { component: (p: RouteProps) => el("main", { id: "rr.out" }, titleOf(p)), loader: afterAwaitRr },
     });
     const t = await renderRoute("rr.page", { routes: rr, ctx: createCtx({ mode: "sim", seed: 1337 }) });
     expect(board.get("rows")).toBe("leak");

@@ -1,7 +1,7 @@
 import type { Ctx } from "@keel/ctx";
 import { type KeelError, type Result, err, ok } from "@keel/schema";
 import { type OutboxResult, resolve } from "@keel/std-offline";
-import { WriteRefusal } from "./WriteRefusal.schema.ts";
+import { WriteRefusal } from "../api/WriteRefusal.schema.ts";
 import { boardOutbox } from "./boardOutbox.ts";
 
 /**

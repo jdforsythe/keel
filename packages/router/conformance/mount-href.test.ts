@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.mount, Declaration "`identity.ts` beside `topology.ts` default-exports `identityMount(path)` (`@keel/router`): `{ path, href }`, `path` a literal of lowercase `/` segments."
-// Spec: k.mount, Declaration "`href(subpath?, search?)` returns a `MountHref`, an `Href` (k.router): `path`, `subpath`, then `?` and the `search` string map's keys sorted, keys and values encoded by `encodeURIComponent`; no `?` for an empty map. `subpath` is `''` or `/`-led segments of `[A-Za-z0-9._~-]`, none `.` or `..`; else (`//`, `..`, `?`, `#`, `%`, `\`, a scheme) it throws E1582. So the result is a root-relative path under `path`, never absolute or protocol-relative."
+// Spec: k.mount, Declaration "`identity.ts` beside `topology.ts` default-exports `identityMount(path, { links }?)` (`@keel/router`): `{ path, href, links }`, `path` a literal of lowercase `/` segments."
+// Spec: k.mount, Declaration "`href(subpath?, search?)` returns a `MountHref`, an `Href` (k.router): `path`, `subpath`, then `?` and the `search` string map's keys sorted, keys and values encoded by `encodeURIComponent`; no `?` for an empty map. `subpath` is `''` or `/`-led segments of `[A-Za-z0-9._~-]`, none `.` or `..`; else (`//`, `..`, `?`, `#`, `%`, `\`, a scheme) it throws E1582. So it is root-relative under `path`, never absolute or protocol-relative."
 // Spec: k.mount, Conformance "With `path` `/api/auth`, `href('/sign-in/email', { b: '2', a: 'x y' })` is `/api/auth/sign-in/email?a=x%20y&b=2` and `href()` is `/api/auth`; `'//x.example'`, `'/../x'`, `'/a/..'`, `'/a?b'`, `'/a#b'`, `'/a%2f'` and `'https://x'` each throw E1582."
 // Spec: k.mount, Form "`method` must be `'POST'` when `action` is a `MountHref` (a type error otherwise)."
 // Spec: k.mount, Navigation "`Link to`, `navigate` and an action's `ok(href)` take it as any `Href`."
@@ -14,6 +14,7 @@ import {
   identityMount,
   type navigate,
 } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import fc from "fast-check";
 import { describe, expect, expectTypeOf, it } from "vitest";
@@ -49,7 +50,8 @@ describe("k.mount: identityMount declares the mount path and mints its Hrefs", (
 
   it("`navigate` takes a MountHref, and an action's `ok(href)` of one compiles unannotated", () => {
     expectTypeOf(mount.href("/x")).toExtend<Parameters<typeof navigate>[0]>();
-    const answer = action({ input: s.object({}) }, async () => ok(mount.href("/x")));
+    const m = contract("m", { "m.x": { path: "/x" } });
+    const answer = action(m, "m.x", { input: s.object({}) }, async () => ok(mount.href("/x")));
     // The run-time effect of the returned Href (one recorded GET) is asserted in packages/testing/conformance/mount-navigation.test.ts.
     expect(answer).toBeDefined();
     expectTypeOf(ok(mount.href("/x"))).not.toBeAny();

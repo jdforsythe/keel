@@ -3,22 +3,30 @@
     "check.injected10": 600,
     "test.failing3": 400,
     "spec.section": 1500,
-    "spec.map": 1250,
+    "spec.map": 1330,
     "explain": 300,
-    "spec.for": 400,
-    "mcp.tools-list": 1750
+    "mcp.tools-list": 1750,
+    "docs.map": 1390,
+    "docs.section": 1500,
+    "docs.skill": 2300,
+    "docs.for": 400,
+    "docs.agents": 600
   },
   "size": {
     "@keel/check": {
-      "max": "50kb",
+      "max": "54.35kb",
       "platform": "node"
     },
     "@keel/check/explain": {
-      "max": "13.5kb",
+      "max": "14kb",
       "platform": "node"
     },
     "@keel/cli": {
-      "max": "25.75kb",
+      "max": "26.55kb",
+      "platform": "node"
+    },
+    "@keel/cli/docs": {
+      "max": "3kb",
       "platform": "node"
     },
     "@keel/cli/shell": {
@@ -26,23 +34,28 @@
       "platform": "node"
     },
     "@keel/compiler": {
-      "max": "32kb",
+      "max": "34.05kb",
       "platform": "node"
     },
     "@keel/ctx": "3.75kb",
     "@keel/forms": "5kb",
     "@keel/reactive": "4kb",
-    "@keel/router": "11.3kb",
+    "@keel/router": "13.4kb",
+    "@keel/router/contract": "3.2kb",
     "@keel/router/match": "2.75kb",
     "@keel/runtime-dom": "6kb",
-    "@keel/runtime-dom/ops": "10kb",
+    "@keel/runtime-dom/ops": "10.6kb",
     "@keel/scaffold": {
-      "max": "18.75kb",
+      "max": "18.8kb",
       "platform": "node"
     },
-    "@keel/schema": "5.5kb",
+    "@keel/scaffold/agents": {
+      "max": "1.5kb",
+      "platform": "node"
+    },
+    "@keel/schema": "5.65kb",
     "@keel/server": {
-      "max": "25.75kb",
+      "max": "26.75kb",
       "platform": "node"
     },
     "@keel/server/internal/dom": "4.75kb",
@@ -53,7 +66,7 @@
     "@keel/services": "3.5kb",
     "@keel/std-channels": "1.5kb",
     "@keel/std-channels/server": {
-      "max": "2kb",
+      "max": "2.1kb",
       "platform": "node"
     },
     "@keel/std-channels/tools": {
@@ -92,7 +105,7 @@
       "platform": "node"
     },
     "@keel/std-money": "1kb",
-    "@keel/std-offline": "3.7kb",
+    "@keel/std-offline": "3.75kb",
     "@keel/std-offline/tools": {
       "max": "3kb",
       "platform": "node"
@@ -176,15 +189,15 @@
       "platform": "node"
     },
     "@keel/testing": {
-      "max": "13.6kb",
+      "max": "13.85kb",
       "platform": "node"
     },
     "@keel/testing/prove": {
       "max": "8.25kb",
       "platform": "node"
     },
-    "@keel/ui": "4.25kb",
-    "@keel/ui/aria": "3.25kb"
+    "@keel/ui": "4.75kb",
+    "@keel/ui/aria": "3.5kb"
   },
   "mutate": {
     "default": 30

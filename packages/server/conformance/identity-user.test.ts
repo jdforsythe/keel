@@ -7,6 +7,7 @@
 // Runs under plain Node; every request is a runtime (JSON) request or an event stream.
 // @vitest-environment node
 import { loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import { createApp, topology } from "@keel/server";
 import fc from "fast-check";
@@ -30,7 +31,7 @@ describe("k.user: the user a request carries", () => {
     expect(r.seen.api).toEqual(["u1"]);
     expect(r.identified).toHaveLength(3);
     const ac = new AbortController();
-    const res = await r.stream("/live", ac.signal);
+    const res = await r.stream("/api/live", ac.signal);
     expect(res.status).toBe(200);
     const text = (await readChunks(res, 1)).join("");
     expect(text).toContain("u1");
@@ -61,7 +62,7 @@ describe("k.user: the user a request carries", () => {
     await r.post("/who");
     await r.get("/api/who");
     const ac = new AbortController();
-    await readChunks(await r.stream("/live", ac.signal), 1);
+    await readChunks(await r.stream("/api/live", ac.signal), 1);
     ac.abort();
     expect(r.seen.guard).toEqual(["", ""]);
     expect(r.seen.loader).toEqual([""]);
@@ -165,7 +166,7 @@ describe("k.user: the user a request carries", () => {
     let answer = "u1";
     const r = await rig({ identify: async () => answer });
     const ac = new AbortController();
-    const res = await r.stream("/live", ac.signal);
+    const res = await r.stream("/api/live", ac.signal);
     const reader = res.body?.getReader();
     const dec = new TextDecoder();
     let text = "";
@@ -194,13 +195,16 @@ describe("k.user: the user a request carries", () => {
 describe("k.user: no identity source", () => {
   test("`createApp` without `identity` serves a loader whose `user` is `''` whatever the request carries", async () => {
     const seen: string[] = [];
-    const read = loader({ output: s.object({ user: s.string() }) }, async ({ user }) => {
+    const appContract = contract("app", {
+      "app.who": { method: "GET", path: "/who", output: s.object({ user: s.string() }) },
+    });
+    const read = loader(appContract, "app.who", {}, async ({ user }) => {
       seen.push(user);
       return ok({ user });
     });
     const app = await createApp({
       topology: topology({ web: { modules: ["app"], adapter: "node" } }),
-      routes: manifest({ "app.who": { api: true, path: "/who", loader: read } }),
+      routes: manifest(appContract, { "app.who": { loader: read } }),
       ctx: simCtx(),
       mode: "production",
     });

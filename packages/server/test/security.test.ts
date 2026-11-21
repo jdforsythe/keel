@@ -7,6 +7,7 @@ import os from "node:os";
 import path from "node:path";
 import { createCtx } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import fc from "fast-check";
 import { afterAll, describe, expect, it } from "vitest";
@@ -18,6 +19,8 @@ import { peersOfIndex } from "../src/internal/peersOfIndex.ts";
 import { sameSite } from "../src/internal/sameSite.ts";
 
 const SEED = 1337;
+const ca = contract("a", { "a.home": { path: "/" } });
+const home = () => manifest(ca, { "a.home": { component: () => document.createElement("main") } });
 const dirs: string[] = [];
 afterAll(() => {
   for (const d of dirs) fs.rmSync(d, { recursive: true, force: true });
@@ -41,7 +44,7 @@ describe("nonce", () => {
   it("documents of one app each carry a fresh nonce in the header, the module script and the meta", async () => {
     const app = await createApp({
       topology: topology({ web: { modules: ["a"], adapter: "node" } }),
-      routes: manifest({ "a.home": { path: "/", component: () => document.createElement("main") } }),
+      routes: home(),
       ctx: createCtx({ mode: "sim", seed: SEED }),
       mode: "production",
     });
@@ -92,10 +95,10 @@ describe("cspPolicy and securityHeaders", () => {
     const app = await createApp({
       topology: topology({
         api: { modules: ["a"], adapter: "node" },
-        web: { modules: ["w"], adapter: "client", host: "api" },
+        web: { modules: ["w"], adapter: "client", servedBy: "api" },
       }),
       deployable: "api",
-      routes: manifest({ "a.home": { path: "/", component: () => document.createElement("main") } }),
+      routes: home(),
       ctx: createCtx({ mode: "sim", seed: SEED }),
       assets: d,
     });
@@ -110,7 +113,7 @@ describe("report endpoint", () => {
     const lines: string[] = [];
     const app = await createApp({
       topology: topology({ web: { modules: ["a"], adapter: "node" } }),
-      routes: manifest({ "a.home": { path: "/", component: () => document.createElement("main") } }),
+      routes: home(),
       ctx: createCtx({ mode: "sim", seed: SEED }),
       mode: "production",
       log: { format: "compact", write: (l) => lines.push(l) },
@@ -191,8 +194,8 @@ describe("same-site behind a TLS proxy", () => {
   });
 
   it("a write through createApp behind the proxy runs", async () => {
-    const m = manifest({ "a.home": { path: "/", component: () => document.createElement("main") } });
-    m.actions({ "a.home": { POST: action({ input: s.object({}) }, () => Promise.resolve(ok(null))) } });
+    const post = action(ca, "a.home", { input: s.object({}) }, () => Promise.resolve(ok(null)));
+    const m = manifest(ca, { "a.home": { component: () => document.createElement("main"), POST: post } });
     const app = await createApp({
       topology: topology({ web: { modules: ["a"], adapter: "node" } }),
       routes: m,

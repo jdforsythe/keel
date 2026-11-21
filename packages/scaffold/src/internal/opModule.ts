@@ -1,6 +1,8 @@
 import type { Result } from "@keel/schema";
+import { contractTs } from "../templates/contractTs.ts";
 import { moduleTs } from "../templates/moduleTs.ts";
 import { routesTs } from "../templates/routesTs.ts";
+import type { DeployShells } from "../types/DeployShells.ts";
 import type { Edit } from "../types/Edit.ts";
 import type { ScaffoldError } from "../types/ScaffoldError.ts";
 import type { Writes } from "./Writes.ts";
@@ -21,8 +23,12 @@ function addToTopology(src: string, id: string): string | null {
   return first === undefined ? null : insertItem(src, first.list, id);
 }
 
-/** `scaffold module <id>`: manifest and routes, the module added to `topology.ts`, turbo, CI and deploy files regenerated. */
-export function opModule(input: unknown, files: ReadonlyMap<string, string>): Result<Edit, ScaffoldError> {
+/** `scaffold module <id>`: manifest, contract and routes binding, the module added to `topology.ts`, turbo, CI and deploy files regenerated. */
+export function opModule(
+  input: unknown,
+  files: ReadonlyMap<string, string>,
+  shells: DeployShells = {},
+): Result<Edit, ScaffoldError> {
   const r = inputs.module.parse(input);
   if (!r.ok) return badInput("module", r.error);
   const { id } = r.value;
@@ -37,9 +43,10 @@ export function opModule(input: unknown, files: ReadonlyMap<string, string>): Re
   if (nextTopo === null) return fail("E1052", "topology.ts", "topology.ts has no deployable with a modules list");
   const writes: Writes = new Map([
     [manifest, moduleTs(id)],
-    [`modules/${id}/routes.ts`, routesTs()],
+    [`modules/${id}/${id}.contract.ts`, contractTs(id)],
+    [`modules/${id}/routes.ts`, routesTs(id)],
     ["topology.ts", nextTopo],
   ]);
-  const gen = regenerated(withWrites(files, writes));
+  const gen = regenerated(withWrites(files, writes), shells);
   return commit(files, new Map([...writes, ...gen]), [...gen.keys()]);
 }

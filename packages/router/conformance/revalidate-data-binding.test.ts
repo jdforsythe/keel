@@ -5,6 +5,7 @@
 // `children: () => Node[]`; `props.data` is read inside a binding (`text`), and shows the loader's `ok` value as the page's props hold it.
 import { createCtx } from "@keel/ctx";
 import { Form, action, createRouter, loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import type { RouteProps } from "@keel/router";
 import { mount } from "@keel/runtime-dom";
 import { text } from "@keel/runtime-dom/ops";
@@ -12,6 +13,8 @@ import { ok, s } from "@keel/schema";
 import * as fc from "fast-check";
 import { afterEach, describe, expect, it } from "vitest";
 import { SEED, settle } from "./fixtures.ts";
+
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 const Count = s.object({ n: s.int({ min: 0, max: 1000000 }) });
 const Note = s.object({ note: s.string({ min: 0, max: 20 }) });
@@ -23,7 +26,13 @@ const numberOf = (data: unknown): string => {
   return typeof n === "number" ? String(n) : "none";
 };
 
-const links = manifest({ "link.page": { path: "/rev", component: () => document.createElement("p") } });
+const link = contract("link", {
+  "link.page": { path: "/rev" },
+});
+
+const links = manifest(link, {
+  "link.page": { component: () => document.createElement("p") },
+});
 
 const page = (props: RouteProps): Node => {
   control.builds++;
@@ -44,19 +53,24 @@ const page = (props: RouteProps): Node => {
   save.id = "rev.save";
   save.setAttribute("type", "submit");
   save.textContent = "Save";
-  const form = Form({ method: "POST", action: links.href("link.page"), children: () => [note, save] });
+  const form = Form({ method: "POST", action: link.href("link.page"), children: () => [note, save] });
   form.id = "rev.form";
   main.append(shown, form);
   return main;
 };
 
-const read = loader({ output: Count }, async () => {
+const revContract = contract("rev", {
+  "rev.page": { path: "/rev" },
+});
+
+const read = loader(revContract, "rev.page", { output: Count }, async () => {
   control.loads++;
   return ok({ n: control.loads });
 });
-const write = action({ input: Note }, async () => ok(null));
-const routes = manifest({ "rev.page": { path: "/rev", loader: read, component: page } });
-routes.actions({ "rev.page": { POST: write } });
+const write = action(revContract, "rev.page", { input: Note }, async () => ok(null));
+const routes = manifest(revContract, {
+  "rev.page": { loader: read, component: page, POST: write },
+});
 
 const open = async () => {
   control.loads = 0;
@@ -78,7 +92,7 @@ const open = async () => {
   });
   const host = document.createElement("div");
   document.body.append(host);
-  const unmount = mount(router.App, host);
+  const unmount = mount(router.App, host, { ctx: simCtx });
   await settle();
   return {
     host,

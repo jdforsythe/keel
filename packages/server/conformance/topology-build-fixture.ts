@@ -62,12 +62,17 @@ export function buildNodeFixture(): string {
   write(
     fixture,
     "modules/app/module.ts",
-    'import { module } from "@keel/compiler";\nexport default module({ id: "app", deps: [], capabilities: [], public: { exports: [], routes: [] } });\n',
+    'import { module } from "@keel/compiler";\nexport default module({ id: "app", deps: [], capabilities: [], public: { exports: [] } });\n',
   );
   write(
     fixture,
     "modules/app/routes.ts",
-    'import { manifest } from "@keel/router";\nimport Counter from "./Counter.tsx";\nexport const routes = manifest({ "app.home": { path: "/", component: Counter } });\n',
+    'import { manifest } from "@keel/router";\nimport { app } from "./app.contract.ts";\nimport Counter from "./Counter.tsx";\nexport const routes = manifest(app, { "app.home": { component: Counter } });\n',
+  );
+  write(
+    fixture,
+    "modules/app/app.contract.ts",
+    'import { contract } from "@keel/router/contract";\nexport const app = contract("app", { "app.home": { path: "/" } });\n',
   );
   const r = spawnSync(process.execPath, [path.join(REPO, "packages", "cli", "src", "bin.ts"), "build"], {
     cwd: fixture,

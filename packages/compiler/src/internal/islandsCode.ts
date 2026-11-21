@@ -17,17 +17,17 @@ function keyName(k: Expression | { type: string }): string | undefined {
   return undefined;
 }
 
-/** The object literal of `manifest({...})` when `e` is that call. */
+/** The binding object literal of `manifest(contract, {...})` when `e` is that call. */
 function manifestArg(e: Expression | null): ObjectExpression | undefined {
   const c = e === null ? undefined : unwrap(e);
   if (c?.type !== "CallExpression" || c.callee.type !== "Identifier" || c.callee.name !== "manifest") return undefined;
-  const arg = c.arguments[0];
+  const arg = c.arguments[1];
   if (arg === undefined || arg.type === "SpreadElement") return undefined;
   const o = unwrap(arg);
   return o.type === "ObjectExpression" ? o : undefined;
 }
 
-/** Every `manifest({...})` literal bound at the top level (`const`, `export const`, `export default`). */
+/** Every `manifest(contract, {...})` binding literal bound at the top level (`const`, `export const`, `export default`). */
 function manifests(body: readonly Statement[]): ObjectExpression[] {
   const out: ObjectExpression[] = [];
   for (const s of body) {
@@ -51,7 +51,7 @@ function manifests(body: readonly Statement[]): ObjectExpression[] {
 /**
  * The generated `/@keel/islands.ts` (k.runtime, RFC 0046): `export const components`, route id -> the route's
  * component, for the resume entry. Static and best effort, like island marking: in each `routes.ts` (root-relative
- * `path`, or absolute for a stdlib package's), a `manifest({...})` entry with a literal route id whose `component`
+ * `path`, or absolute for a stdlib package's), a `manifest(contract, {...})` binding entry with a literal route id whose `component`
  * is an imported identifier contributes that import (relative specifiers become root-relative, `/`-prefixed). Anything else (inline components, a file that
  * does not parse) is skipped; `resume` leaves such an island static. Sorted by route id; deterministic.
  */

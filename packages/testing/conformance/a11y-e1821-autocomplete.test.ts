@@ -39,7 +39,7 @@ describe("k.a11y: E1821 a control bound to a .pii() field without autocomplete",
       t.dispose();
       const host = document.createElement("div");
       document.body.append(host);
-      const off = mount(view(value), host);
+      const off = mount(view(value), host, { ctx: simCtx() });
       expect(host.querySelector("#pii\\.email")?.getAttribute("autocomplete")).toBe(value);
       off();
       host.remove();

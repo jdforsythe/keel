@@ -16,10 +16,11 @@ const isLive = (e: Expression | null | undefined): boolean =>
 
 /**
  * E1558 (k.topology): server-only route work in a module a `client` or `static` deployable serves. In each
- * `modules/<m>/**\/*.server.ts(x)` of such a module, a call of `loader` or `action` imported from `@keel/router` (by
- * name, or as a member of an `import * as` namespace) is one E1558 at the call when its options name `stores`, when a
- * loader's `fn` is `async function*`, or when the call cannot be read: options not an object literal, or holding a
- * spread or computed key; a spread argument; a loader `fn` neither a function or arrow expression nor the name of a
+ * `modules/<m>/**\/*.server.ts(x)` of such a module, a call `loader(contract, id, decl, fn)` or
+ * `action(contract, id, decl, fn)` imported from `@keel/router` (by name, or as a member of an `import * as`
+ * namespace) is one E1558 at the call when its `decl` names `stores`, when a loader's `fn` is `async function*` (inline,
+ * or a top-level function or `const` of the file), or when the call cannot be read: `decl` not an object literal, or
+ * holding a spread or computed key; a spread argument; a loader `fn` neither a function or arrow expression nor the name of a
  * top-level function or `const` function of the file (an imported `fn` included); its message names which. Not read:
  * an alias (`const l = loader`), a destructure from a namespace import (`const { loader } = r`), a `fn` that is not
  * `async function*` but returns a generator, or a call made from another file; `createApp` still throws E1558 for
@@ -75,7 +76,8 @@ export function serverOnlyCalls(files: readonly SourceFile[], topology: Topology
               ? callee.property.name
               : undefined;
         if (kind === undefined) return;
-        const [opts, fn] = c.arguments.map((a) => (a.type === "SpreadElement" ? undefined : bare(a)));
+        // `loader(contract, id, decl, fn)` and `action(contract, id, decl, fn)` (k.contract Handlers).
+        const [, , opts, fn] = c.arguments.map((a) => (a.type === "SpreadElement" ? undefined : bare(a)));
         const props = opts?.type === "ObjectExpression" ? opts.properties : [];
         const stores = props.some(
           (p) =>
@@ -90,10 +92,10 @@ export function serverOnlyCalls(files: readonly SourceFile[], topology: Topology
           : live
             ? `is live${serve}`
             : opts?.type !== "ObjectExpression"
-              ? "options not an object literal; write one inline"
+              ? "decl not an object literal; write one inline"
               : c.arguments.some((a) => a.type === "SpreadElement") ||
                   props.some((p) => p.type === "SpreadElement" || p.computed)
-                ? "options spread or computed; write an object literal"
+                ? "decl spread or computed; write an object literal"
                 : kind === "loader" &&
                     fn?.type !== "FunctionExpression" &&
                     fn?.type !== "ArrowFunctionExpression" &&

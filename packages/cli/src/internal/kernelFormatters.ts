@@ -1,7 +1,10 @@
 import { EvidenceRecord } from "../evidence/EvidenceRecord.ts";
 import { A11ySchema } from "./A11ySchema.ts";
-import { CiteSchema } from "./CiteSchema.ts";
 import { DiagSchema } from "./DiagSchema.ts";
+import { DocsCiteSchema } from "./DocsCiteSchema.ts";
+import { DocsEntrySchema } from "./DocsEntrySchema.ts";
+import { DocsSectionSchema } from "./DocsSectionSchema.ts";
+import { DocsSkillSchema } from "./DocsSkillSchema.ts";
 import { EditSchema } from "./EditSchema.ts";
 import type { Entry } from "./Entry.ts";
 import { ExplainSchema } from "./ExplainSchema.ts";
@@ -10,7 +13,6 @@ import { InspectStoreSchema } from "./InspectStoreSchema.ts";
 import { LedgerMutationSchema } from "./LedgerMutationSchema.ts";
 import { LedgerSchema } from "./LedgerSchema.ts";
 import { ReqSchema } from "./ReqSchema.ts";
-import { SectionSchema } from "./SectionSchema.ts";
 import { SummarySchema } from "./SummarySchema.ts";
 import { countsText } from "./countsText.ts";
 import { diagCompact } from "./diagCompact.ts";
@@ -24,13 +26,15 @@ const flags = (st: Readonly<Record<string, boolean | undefined>>): string => {
   return on.length === 0 ? "" : ` [${on.join(" ")}]`;
 };
 
+/** A file's text as it is: the record's line break follows, so one final newline is dropped. */
+const verbatim = (t: string): string => (t.endsWith("\n") ? t.slice(0, -1) : t);
 const VALUE_MAX = 120;
 const clip = (s: string): string => (s.length > VALUE_MAX ? `${s.slice(0, VALUE_MAX - 3)}...` : s);
 
 /**
  * Formatters registered at startup. Kernel kinds (k.cli): diag, summary, req, a11y, evidence, and k.ledger's ledger and
  * ledger.mutation.
- * The cli's own record kinds (spec.section, spec.cite, explain.text, scaffold.edit, inspect.store, inspect.section) go through the same extension point.
+ * The cli's own record kinds (docs.entry, docs.section, docs.skill, docs.cite, explain.text, scaffold.edit, inspect.store, inspect.section) go through the same extension point.
  */
 export const kernelFormatters: readonly (readonly [string, Entry])[] = [
   ["diag", entryOf({ schema: DiagSchema, compact: diagCompact, pretty: diagPretty })],
@@ -86,15 +90,27 @@ export const kernelFormatters: readonly (readonly [string, Entry])[] = [
     }),
   ],
   [
-    "spec.section",
-    entryOf({ schema: SectionSchema, compact: (r) => r.text.trimEnd(), pretty: (r) => r.text.trimEnd() }),
+    "docs.entry",
+    entryOf({
+      schema: DocsEntrySchema,
+      compact: (r) => `${r.id} ${r.title} ${r.package}${r.installed ? "" : " not installed"}`,
+      pretty: (r) => `${r.id.padEnd(16)} ${r.title} (${r.package}${r.installed ? "" : ", not installed"})`,
+    }),
   ],
   [
-    "spec.cite",
+    "docs.section",
+    entryOf({ schema: DocsSectionSchema, compact: (r) => verbatim(r.text), pretty: (r) => verbatim(r.text) }),
+  ],
+  [
+    "docs.skill",
+    entryOf({ schema: DocsSkillSchema, compact: (r) => verbatim(r.text), pretty: (r) => verbatim(r.text) }),
+  ],
+  [
+    "docs.cite",
     entryOf({
-      schema: CiteSchema,
-      compact: (r) => `${r.path}:${r.line} ${r.text}`,
-      pretty: (r) => `${r.path}:${r.line}\n  ${r.text}`,
+      schema: DocsCiteSchema,
+      compact: (r) => `${r.id}:${r.line} ${r.text}`,
+      pretty: (r) => `${r.id}:${r.line}\n  ${r.text}`,
     }),
   ],
   [

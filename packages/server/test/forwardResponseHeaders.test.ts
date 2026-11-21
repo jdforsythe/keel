@@ -3,7 +3,7 @@
 // `content-length` (k.topology Calls and peers). A local http server the test starts and closes plays the peer.
 import http from "node:http";
 import { createCtx } from "@keel/ctx";
-import { manifest } from "@keel/router";
+import { routeTable } from "@keel/router";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import type { Served } from "../src/internal/Served.ts";
@@ -35,7 +35,8 @@ describe("forwarded response headers", () => {
         table: [],
         ctx,
         mode: "production",
-        routes: manifest({}),
+        routes: routeTable(),
+        byId: new Map(),
         maxBody: 1024,
         inspectOrigins: [],
         keys: await callerSigner(undefined),
@@ -77,7 +78,8 @@ describe("forwarded HEAD response", () => {
       table: [],
       ctx: createCtx({ mode: "real" }),
       mode: "production",
-      routes: manifest({}),
+      routes: routeTable(),
+      byId: new Map(),
       maxBody: 1024,
       inspectOrigins: [],
       keys: await callerSigner(undefined),

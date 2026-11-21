@@ -1,9 +1,10 @@
-// Spec: k.services Encoding, "a `module` service reads the route's `Result` (GET: `results[id]`, the matched route's own) and decodes its `ok` value with `output` and, on a non-2xx, its `error` with `errors[status]`."
-// Spec: k.services Conformance, "A `module` GET endpoint whose `output` is the loader's `output` yields `ok(v)` for a loader `ok(v)`; a loader `err` `keel.notFound` yields `api.status` 404 with `body` the KeelError decoded by `errors[404]`."
-// Spec: k.services API, "It follows no redirect: a 3xx is `api.status` (in a browser `status` 0, an opaque redirect)."
-// Seed 1337 (fc.assert below). Sim net only; `module` is not in the visible `ServiceOptions`, so the service is built through Reflect.apply.
+// Spec: k.services Encoding, "a `contract` service reads the route's `Result` (GET: `results[id]`, the matched route's own) and decodes its `ok` value with `output` and, on a non-2xx, its `error` with `errors[status]`."
+// Spec: k.services, clause "A `contract` GET entry yields `ok(v)` for its loader's `ok(v)`; a loader `err` `keel.notFound` yields `api.status` 404 with `body` the KeelError decoded by `errors[404]`."
+// Spec: k.services API, "Neither follows a redirect: a 3xx is `api.status` (in a browser `status` 0, an opaque redirect)."
+// Seed 1337 (fc.assert below). Sim net only; the contract service is `service({ contract })` over module `b`.
 import { createCtx } from "@keel/ctx";
 import { s } from "@keel/schema";
+import { contract } from "@keel/router/contract";
 import { endpoints, service } from "@keel/services";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -38,7 +39,24 @@ const schema = endpoints({
   },
 });
 
-const client = (): unknown => Reflect.apply(service, undefined, [{ module: "b", schema }]);
+const bContract = contract("b", {
+  "b.show": {
+    method: "GET",
+    path: "/b/:id",
+    params: s.object({ id: s.string() }),
+    output: Box,
+    errors: { 404: NotFound },
+  },
+  "b.save": {
+    method: "POST",
+    path: "/b/:id",
+    params: s.object({ id: s.string() }),
+    body: s.object({ title: s.string() }),
+    output: s.string().nullable(),
+    errors: { 409: NotFound },
+  },
+});
+const client = () => service({ contract: bContract });
 async function call(api: unknown, name: string, args: unknown, ctx: unknown): Promise<Out> {
   const m: unknown = typeof api === "object" && api !== null ? Reflect.get(api, name) : undefined;
   if (typeof m !== "function") throw new Error(`client has no ${name}`);
@@ -50,8 +68,8 @@ const getAnswer = (own: unknown, parent: unknown = { ok: true, value: "layout" }
   results: { "b.layout": parent, [ROUTE]: own },
 });
 
-describe("k.services: a module service unwraps the route's Result", () => {
-  it("A `module` GET endpoint whose `output` is the loader's `output` yields `ok(v)` for a loader `ok(v)`", async () => {
+describe("k.services: a contract service unwraps the route's Result", () => {
+  it("A `contract` GET entry whose `output` is the loader's `output` yields `ok(v)` for a loader `ok(v)`", async () => {
     await fc.assert(
       fc.asyncProperty(fc.stringMatching(/^[a-z0-9]{1,8}$/), fc.string(), fc.integer(), async (id, title, n) => {
         const ctx = createCtx({ mode: "sim", seed: 1337 });
@@ -156,7 +174,7 @@ describe("k.services: a module service unwraps the route's Result", () => {
     );
   });
 
-  it("It follows no redirect: a 3xx is `api.status`", async () => {
+  it("Neither follows a redirect: a 3xx from a `contract` service is `api.status`", async () => {
     await fc.assert(
       fc.asyncProperty(fc.constantFrom(301, 302, 303, 307, 308), async (status) => {
         const ctx = createCtx({ mode: "sim", seed: 1337 });
@@ -165,6 +183,28 @@ describe("k.services: a module service unwraps the route's Result", () => {
         expect(r.ok).toBe(false);
         expect(r.error?.code).toBe("api.status");
         expect(r.error?.data.status).toBe(status);
+      }),
+      { seed: 1337, numRuns: 10 },
+    );
+  });
+
+  it("Neither follows a redirect: a 3xx from a `base` service is `api.status` and the location is never fetched", async () => {
+    const BASE = "https://api.example.com";
+    const api = service({ base: BASE, schema });
+    await fc.assert(
+      fc.asyncProperty(fc.constantFrom(301, 302, 303, 307, 308), async (status) => {
+        const ctx = createCtx({ mode: "sim", seed: 1337 });
+        let elsewhere = 0;
+        ctx.net.route(`${BASE}/b/x`, () => new Response(null, { status, headers: { location: `${BASE}/elsewhere` } }));
+        ctx.net.route(`${BASE}/elsewhere`, () => {
+          elsewhere++;
+          return json({ title: "t", n: 1 });
+        });
+        const r = await call(api, "show", { params: { id: "x" } }, ctx);
+        expect(r.ok).toBe(false);
+        expect(r.error?.code).toBe("api.status");
+        expect(r.error?.data.status).toBe(status);
+        expect(elsewhere).toBe(0);
       }),
       { seed: 1337, numRuns: 10 },
     );

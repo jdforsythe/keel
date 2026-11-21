@@ -4,6 +4,7 @@
 // output marks is `[pii]`, and a path no request scope made a value for is written as it came. Seed 1337.
 import { createCtx } from "@keel/ctx";
 import { loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -11,20 +12,22 @@ import { createApp, topology } from "../src/index.ts";
 
 const SEED = 1337;
 const view = (): Node => document.createElement("main");
-const Person = loader({ output: s.object({ name: s.string().pii("name") }) }, () =>
+const c = contract("app", {
+  "app.reset": { path: "/reset/:token", params: s.object({ token: s.secret(s.string()) }) },
+  "app.both": {
+    path: "/both/:slug/:token",
+    params: s.object({ token: s.secret(s.string()), slug: s.string() }),
+  },
+});
+const Person = loader(c, "app.both", { output: s.object({ name: s.string().pii("name") }) }, () =>
   Promise.resolve(ok({ name: "ada-lovelace" })),
 );
 
 async function pathOf(url: string): Promise<{ path: unknown; lines: string[] }> {
   const lines: string[] = [];
-  const routes = manifest({
-    "app.reset": { path: "/reset/:token", params: s.object({ token: s.secret(s.string()) }), component: view },
-    "app.both": {
-      path: "/both/:slug/:token",
-      params: s.object({ token: s.secret(s.string()), slug: s.string() }),
-      loader: Person,
-      component: view,
-    },
+  const routes = manifest(c, {
+    "app.reset": { component: view },
+    "app.both": { loader: Person, component: view },
   });
   const app = await createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),

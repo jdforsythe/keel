@@ -8,7 +8,7 @@ import { IndexData } from "./IndexData.schema.ts";
 import { LocaleParams } from "./LocaleParams.schema.ts";
 import { RecipeSearch } from "./RecipeSearch.schema.ts";
 import { idPart } from "./idPart.ts";
-import { routes } from "./routes.ts";
+import { recipes } from "./recipes.contract.ts";
 
 export const Props = s.object({ params: LocaleParams, search: RecipeSearch, data: IndexData });
 
@@ -23,14 +23,14 @@ export default function RecipeList(props: Infer<typeof Props>) {
         <Box as="nav" id="recipes.filters" label={props.data.text.filtersLabel} direction="row" gap="4">
           <Link
             id="recipes.filter.all"
-            to={routes.href("recipes.index", { locale: props.params.locale }, { only: "all" })}
+            to={recipes.href("recipes.index", { locale: props.params.locale }, { only: "all" })}
             fg="text"
           >
             {props.data.text.filterAll}
           </Link>
           <Link
             id="recipes.filter.favorites"
-            to={routes.href("recipes.index", { locale: props.params.locale }, { only: "favorites" })}
+            to={recipes.href("recipes.index", { locale: props.params.locale }, { only: "favorites" })}
             fg="text"
           >
             {props.data.text.filterFavorites}
@@ -63,7 +63,7 @@ export default function RecipeList(props: Infer<typeof Props>) {
             >
               <Link
                 id={`recipes.link.${idPart(r.id)}`}
-                to={routes.href("recipes.show", { locale: props.params.locale, recipeId: r.id })}
+                to={recipes.href("recipes.show", { locale: props.params.locale, recipeId: r.id })}
                 fg="text"
               >
                 {r.title}

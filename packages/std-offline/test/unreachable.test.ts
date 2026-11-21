@@ -2,14 +2,15 @@
 // entry stays `queued`. Seed 1337.
 import { type SimCtx, createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
-import { endpoints, service } from "@keel/services";
+import { service } from "@keel/services";
 import { expect, test } from "vitest";
 import { Write, outbox, send } from "../src/index.ts";
 import { outcomeOf } from "../src/internal/outcomeOf.ts";
 
-const Api = endpoints({
-  save: {
+const Api = contract("api", {
+  "api.save": {
     method: "POST",
     path: "/save",
     body: s.object({ title: s.string(), write: Write }),
@@ -32,7 +33,7 @@ function ctxWith(url: string, up = (): boolean => false): SimCtx {
 
 test("through a module service a 502 keel.unreachable is api.network, so its entry stays queued", async () => {
   const ctx = ctxWith("http://api.keel.invalid/save");
-  const r = await service({ module: "api", schema: Api }).save({ body: body(ctx) }, ctx);
+  const r = await service({ contract: Api }).save({ body: body(ctx) }, ctx);
   expect(r.ok ? undefined : r.error.code).toBe("api.network");
   expect(outcomeOf(r, false, { state: "conflict", head: 0 }, { state: "queued" })).toEqual({ state: "queued" });
 });
@@ -42,7 +43,7 @@ test("an outbox leaves that entry queued, and posts it again once the server ans
   const ctx = ctxWith("http://api.keel.invalid/save", () => up);
   const held: { o?: ReturnType<typeof outbox<typeof Api>> } = {};
   const sc = scope(() => {
-    held.o = outbox("unreach.outbox", Api, { module: "api" });
+    held.o = outbox("unreach.outbox", Api);
   });
   const o = held.o;
   if (o === undefined) throw new Error("no outbox");

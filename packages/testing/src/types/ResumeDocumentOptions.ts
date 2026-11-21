@@ -1,5 +1,5 @@
 import type { Ctx } from "@keel/ctx";
-import type { Manifest, RouteDef } from "@keel/router";
+import type { RouteTable } from "@keel/router";
 import type { HarnessArtifacts } from "./HarnessArtifacts.ts";
 import type { RoutesImport } from "./RoutesImport.ts";
 
@@ -8,8 +8,8 @@ import type { RoutesImport } from "./RoutesImport.ts";
  * import of the module whose default export it is, which resumes in a module graph of its own; the ctx (default: a sim
  * ctx, as `render`) and the compiler's `a11y.json` for E1702.
  */
-export interface ResumeDocumentOptions<M extends Readonly<Record<string, RouteDef>>> {
-  readonly routes: Manifest<M> | RoutesImport;
+export interface ResumeDocumentOptions {
+  readonly routes: RouteTable | RoutesImport;
   readonly ctx?: Ctx;
   readonly artifacts?: HarnessArtifacts;
 }

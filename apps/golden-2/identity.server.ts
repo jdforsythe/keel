@@ -10,7 +10,7 @@ import { authOf } from "./modules/accounts/authOf.server.ts";
 import { authSettings } from "./modules/accounts/authSettings.server.ts";
 import { bearerUser } from "./modules/accounts/bearerUser.server.ts";
 import { profileStores } from "./modules/accounts/profileStores.ts";
-import { routes } from "./modules/accounts/routes.ts";
+import { accounts } from "./modules/accounts/accounts.contract.ts";
 
 // Fail closed: a server without the library's secret does not start.
 const settings = authSettings(process.env, process.execArgv);
@@ -85,8 +85,8 @@ async function handle(request: Request, ctx: Ctx): Promise<Response> {
   const locale = parsed.ok ? parsed.value : "en-US";
   const page = url.pathname === `${mount.path}/sign-up/email` ? "accounts.signup" : "accounts.signin";
   const to = res.ok
-    ? routes.href("accounts.signin", { locale })
-    : routes.href(page, { locale }, { error: refusal(res) });
+    ? accounts.href("accounts.signin", { locale })
+    : accounts.href(page, { locale }, { error: refusal(res) });
   const answer = new Headers({ location: to });
   for (const cookie of res.headers.getSetCookie()) answer.append("set-cookie", cookie);
   return new Response(null, { status: 303, headers: answer });

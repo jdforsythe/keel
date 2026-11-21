@@ -12,7 +12,7 @@ export const file = (path: string, source: string): Files[number] => ({ path, so
 export const manifestOf = (id: string): Files[number] =>
   file(
     `modules/${id}/module.ts`,
-    `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [], routes: [] } })\n`,
+    `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [] } })\n`,
   );
 
 /** `topology.ts` declaring each deployable as `name: { modules, adapter }`. */
@@ -34,10 +34,16 @@ export const nodeA = (extra: Files = []): Files => [
   ...extra,
 ];
 
+/** Module `a`'s contract: the page `a.show` at `/a`. */
+export const CONTRACT_A = file(
+  "modules/a/a.contract.ts",
+  "import { contract } from '@keel/router/contract'\nexport const a = contract('a', { 'a.show': { path: '/a' } })\n",
+);
+
 /** Module `a`'s `routes.ts` naming `Page.tsx` as the component of `a.show`. */
 export const ROUTES_A = file(
   "modules/a/routes.ts",
-  "import { manifest } from '@keel/router'\nimport Page from './Page.tsx'\nexport const routes = manifest({ 'a.show': { path: '/a', component: Page } })\n",
+  "import { manifest } from '@keel/router'\nimport { a } from './a.contract.ts'\nimport Page from './Page.tsx'\nexport const routes = manifest(a, { 'a.show': { component: Page } })\n",
 );
 
 /** A page component file with `body` after its imports. */

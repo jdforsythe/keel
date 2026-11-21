@@ -4,6 +4,7 @@
 import { createCtx, observe } from "@keel/ctx";
 import type { CtxEvent } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { err, ok, s } from "@keel/schema";
 import { createApp, topology } from "@keel/server";
 import { store, transaction, tx } from "@keel/store";
@@ -81,49 +82,50 @@ async function setup() {
   const gateB = deferred();
 
   // Saves both stores.
-  const both = action({ input: Add, stores: factory }, async ({ n }, { stores }) => {
+  const appContract = contract("app", {
+    "app.both": { path: "/both" },
+    "app.listOnly": { path: "/list-only" },
+    "app.fail": { path: "/fail" },
+    "app.slowA": { path: "/slow-a" },
+    "app.slowB": { path: "/slow-b" },
+  });
+
+  const both = action(appContract, "app.both", { input: Add, stores: factory }, async ({ n }, { stores }) => {
     tx(stores.addList, { n });
     tx(stores.addTodo, { n });
     return ok(null);
   });
   // Saves lists only.
-  const listOnly = action({ input: Add, stores: factory }, async ({ n }, { stores }) => {
+  const listOnly = action(appContract, "app.listOnly", { input: Add, stores: factory }, async ({ n }, { stores }) => {
     tx(stores.addList, { n });
     return ok(null);
   });
   // Changes both stores, then answers err: saves none.
-  const fail = action({ input: Add, stores: factory }, async ({ n }, { stores }) => {
+  const fail = action(appContract, "app.fail", { input: Add, stores: factory }, async ({ n }, { stores }) => {
     tx(stores.addList, { n });
     tx(stores.addTodo, { n });
     return err(Nope.make({}));
   });
   // Two overlapping instances: A (held) and B (held); the later save is 409.
-  const slowA = action({ input: Add, stores: factory }, async ({ n }, { stores }) => {
+  const slowA = action(appContract, "app.slowA", { input: Add, stores: factory }, async ({ n }, { stores }) => {
     tx(stores.addList, { n });
     arrived.resolve();
     await gate.promise;
     return ok(null);
   });
-  const slowB = action({ input: Add, stores: factory }, async ({ n }, { stores }) => {
+  const slowB = action(appContract, "app.slowB", { input: Add, stores: factory }, async ({ n }, { stores }) => {
     tx(stores.addList, { n });
     arrivedB.resolve();
     await gateB.promise;
     return ok(null);
   });
   const component = (): Node => document.createElement("p");
-  const routes = manifest({
-    "app.both": { path: "/both", component },
-    "app.listOnly": { path: "/list-only", component },
-    "app.fail": { path: "/fail", component },
-    "app.slowA": { path: "/slow-a", component },
-    "app.slowB": { path: "/slow-b", component },
-  });
-  routes.actions({
-    "app.both": { POST: both },
-    "app.listOnly": { POST: listOnly },
-    "app.fail": { POST: fail },
-    "app.slowA": { POST: slowA },
-    "app.slowB": { POST: slowB },
+  const routes = manifest(appContract, {
+    "app.both": { component: component, POST: both },
+    "app.listOnly": { component: component, POST: listOnly },
+    "app.fail": { component: component, POST: fail },
+    "app.slowA": { component: component, POST: slowA },
+    "app.slowB": { component: component, POST: slowB },
   });
   const app = await createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),

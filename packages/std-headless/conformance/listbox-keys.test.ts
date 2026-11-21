@@ -36,7 +36,6 @@ const mount = (
           onChange: () => {},
           orientation: over.orientation ?? "vertical",
         },
-        undefined,
         c,
       ),
     ),

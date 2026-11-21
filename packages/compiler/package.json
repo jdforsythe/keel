@@ -12,6 +12,9 @@
       "types": "./src/vite.ts",
       "default": "./src/vite.ts"
     },
+    "./client": {
+      "types": "./src/client.d.ts"
+    },
     "./routes": {
       "types": "./src/buildRoutes.ts",
       "default": "./src/buildRoutes.ts"

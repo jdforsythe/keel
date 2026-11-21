@@ -1,5 +1,10 @@
-/** The body of `res` as text when it is at most `limit` bytes; undefined when longer or unreadable. Stops reading past `limit`. */
-export async function readWithin(res: Response, limit: number): Promise<string | undefined> {
+import { type Result, err, ok } from "@keel/schema";
+
+/**
+ * The body of `res` as text when it is at most `limit` bytes: `err("over")` when longer (reading stops past `limit`
+ * and the body is cancelled), `err("failed")` when the body cannot be read.
+ */
+export async function readWithin(res: Response, limit: number): Promise<Result<string, "over" | "failed">> {
   const reader = res.body?.getReader();
   const decoder = new TextDecoder();
   let text = "";
@@ -9,12 +14,12 @@ export async function readWithin(res: Response, limit: number): Promise<string |
       size += part.value.length;
       if (size > limit) {
         reader?.cancel().catch(() => undefined);
-        return undefined;
+        return err("over");
       }
       text += decoder.decode(part.value, { stream: true });
     }
   } catch {
-    return undefined;
+    return err("failed");
   }
-  return text + decoder.decode();
+  return ok(text + decoder.decode());
 }

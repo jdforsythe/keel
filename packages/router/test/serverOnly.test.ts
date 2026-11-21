@@ -1,5 +1,6 @@
 // Stubs of server-only exports (k.boundary Browser builds): each throws E1008 naming itself and its file when called,
-// and `manifest` and `routes.actions` take them where a loader, action or guard goes.
+// and `manifest` takes them where a loader, action or guard goes.
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -34,36 +35,37 @@ describe("serverOnly", () => {
 });
 
 /** `manifest` over values its types refuse (stubs stand in for loaders, actions and guards in a browser build). */
-const loose: { manifest(routes: unknown): unknown } = { manifest };
-const call = (o: unknown, key: string, ...args: unknown[]): unknown => {
-  const f: unknown = Reflect.get(Object(o), key);
-  if (typeof f !== "function") throw new Error(`no ${key}`);
-  return Reflect.apply(f, o, args);
-};
+const bind = (c: unknown, binding: unknown): unknown => Reflect.apply(manifest, undefined, [c, binding]);
 
 describe("manifest with stubs", () => {
   const Params = s.object({ id: s.string() });
   const page = () => null;
+  const k = contract("a", {
+    "a.home": { path: "/" },
+    "a.show": { path: "/a/:id", params: Params },
+    "a.api": { method: "GET", path: "/api/a", output: s.object({}) },
+    "a.save": { method: "POST", path: "/api/a", output: s.object({}) },
+  });
   it("takes a stub guard, loader and action and still links", () => {
-    const routes = loose.manifest({
-      "a.home": { path: "/", component: page },
-      "a.show": {
-        path: "/a/:id",
-        params: Params,
-        guard: serverOnly("a.guard.ts", "auth"),
-        loader: serverOnly("a.server.ts", "load"),
-        component: page,
-      },
-      "a.api": { api: true, path: "/api/a", loader: serverOnly("a.server.ts", "loadApi") },
-    });
-    expect(() => call(routes, "actions", { "a.show": { POST: serverOnly("a.server.ts", "save") } })).not.toThrow();
-    expect(() => call(routes, "actions", { "a.api": { POST: serverOnly("a.server.ts", "saveApi") } })).not.toThrow();
-    expect(call(routes, "href", "a.show", { id: "q r" })).toBe("/a/q%20r");
+    expect(() =>
+      bind(k, {
+        "a.home": { component: page },
+        "a.show": {
+          component: page,
+          guard: serverOnly("a.guard.ts", "auth"),
+          loader: serverOnly("a.server.ts", "load"),
+          POST: serverOnly("a.server.ts", "save"),
+        },
+        "a.api": { loader: serverOnly("a.server.ts", "loadApi") },
+        "a.save": { action: serverOnly("a.server.ts", "saveApi") },
+      }),
+    ).not.toThrow();
+    expect(k.href("a.show", { id: "q r" })).toBe("/a/q%20r");
   });
 
   it("still refuses a plain object that is not an action", () => {
-    const routes = loose.manifest({ "b.show": { path: "/b", component: page } });
-    const e = thrown(() => call(routes, "actions", { "b.show": { POST: {} } }));
-    expect(Reflect.get(Object(e), "code")).toBe("E1505");
+    const one = contract("b", { "b.show": { path: "/b" } });
+    const e = thrown(() => bind(one, { "b.show": { component: page, POST: {} } }));
+    expect(Reflect.get(Object(e), "code")).toBe("E1515");
   });
 });

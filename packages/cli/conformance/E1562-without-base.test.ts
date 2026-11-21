@@ -12,8 +12,7 @@ afterAll(() => {
 test("`keel check` without `--base` reports no E1562", () => {
   const dir = materialize(
     project({
-      input: "s.object({ name: s.string(), note: s.string() })",
-      body: "s.object({ name: s.string() })",
+      body: "s.object({ name: s.string(), note: s.string() })",
       split: true,
     }),
   );

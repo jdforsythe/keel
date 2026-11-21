@@ -1,6 +1,6 @@
 import { bindStd } from "@keel/compiler/std/bindStd";
 import { createCtx } from "@keel/ctx";
-import type { Manifest, RouteDef } from "@keel/router";
+import type { RouteTable } from "@keel/router";
 import type { JsonValue } from "@keel/schema";
 import { renderRoute } from "@keel/testing";
 import type { ReplayResult } from "../ReplayResult.ts";
@@ -10,11 +10,10 @@ import { applyInput } from "./applyInput.ts";
 import { decoded } from "./decoded.ts";
 import { jsonOf } from "./jsonOf.ts";
 import { liveState } from "./liveState.ts";
+import { pageOf } from "./pageOf.ts";
 import { replayStep } from "./replayStep.ts";
 import { reportUnapplied } from "./reportUnapplied.ts";
 import { seededState } from "./seededState.ts";
-
-type Table = Manifest<Readonly<Record<string, RouteDef>>>;
 
 /**
  * Replay `session` (std.sessions API) under `createCtx({ mode: 'sim', seed })`: advance the clock to `at`, render the
@@ -27,11 +26,11 @@ type Table = Manifest<Readonly<Record<string, RouteDef>>>;
  * recording ctx had them. Also returns the replay recorder's whole session (`recorded`: inputs and observations in
  * occurrence order, its fingerprint), which `minimize` and `keel session` read.
  */
-export async function replayRun<M extends Readonly<Record<string, RouteDef>>>(
+export async function replayRun(
   session: Session,
-  options: { readonly routes: Manifest<M>; readonly redact?: readonly string[] },
+  options: { readonly routes: RouteTable; readonly redact?: readonly string[] },
 ): Promise<{ readonly result: ReplayResult; readonly recorded: Session }> {
-  const routes: Table = options.routes;
+  const { routes } = options;
   const ctx = createCtx({ mode: "sim", seed: session.seed ?? 0 });
   // The replay recorder redacts as the live one did, so a redacted `data.at` hashes the same.
   if (options.redact !== undefined && options.redact.length > 0)
@@ -50,14 +49,14 @@ export async function replayRun<M extends Readonly<Record<string, RouteDef>>>(
     return { result: { observed, state: json, error: out.error, reproduced, unapplied }, recorded: out };
   };
 
-  const def = Object.hasOwn(routes.routes, session.route.id) ? routes.routes[session.route.id] : undefined;
-  if (def?.path === undefined) return finish(liveState(), -1);
+  const def = pageOf(routes, session.route.id);
+  if (def === undefined) return finish(liveState(), -1);
   const state = seededState(session.state);
   const params = decoded(def.params, session.route.params);
   const search = decoded(def.search, session.route.search);
   let h: Awaited<ReturnType<typeof renderRoute>>;
   try {
-    h = await renderRoute(session.route.id, { routes: options.routes, params, search, state, ctx });
+    h = await renderRoute(session.route.id, { routes, params, search, state, ctx });
   } catch {
     return finish(liveState(), -1);
   }

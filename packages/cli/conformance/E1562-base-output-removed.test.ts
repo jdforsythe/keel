@@ -1,5 +1,5 @@
-// Spec: k.compat, clause "Removing an output field a base endpoint requires is one E1562 with no fix; adding a field to an open output object is none."
-// Seed 1337. Cross-deployable caller `a` (deployable x) of route `y.save` (deployable y).
+// Spec: k.compat, clause "Removing an `output` field a base entry requires is one E1562 with no fix; adding a field to an open output object is none."
+// Seed 1337. Cross-deployable caller `a` (deployable x) of entry `y.load` of the contract `y` (deployable y).
 import fc from "fast-check";
 import { afterAll, expect, test } from "vitest";
 import { SEED, baseSurface, buildAndCheck, cleanup, diags, project, write } from "./compat-support.ts";
@@ -14,7 +14,7 @@ afterAll(() => {
 const field = fc.constantFrom("title", "total", "status");
 
 test(
-  "Removing an output field a base endpoint requires is one E1562 with no fix; adding a field to an open output object is none.",
+  "Removing an `output` field a base entry requires is one E1562 with no fix; adding a field to an open output object is none.",
   () => {
     fc.assert(
       fc.property(field, (f) => {
@@ -24,7 +24,7 @@ test(
         const { dir, base } = baseSurface(project({ output: both, outputValue: value(true), split: true }));
         dirs.push(dir);
 
-        write(dir, project({ output: onlyId, outputValue: value(false), endpointOutput: both, split: true }));
+        write(dir, project({ output: onlyId, outputValue: value(false), split: true }));
         const removed = diags(buildAndCheck(dir, base), "E1562");
         expect(removed).toHaveLength(1);
         expect(String(removed[0]?.message)).toContain(f);
@@ -36,7 +36,6 @@ test(
           project({
             output: extra,
             outputValue: `{ id: 'i', ${f}: 'v', more: 'm' }`,
-            endpointOutput: both,
             split: true,
           }),
         );

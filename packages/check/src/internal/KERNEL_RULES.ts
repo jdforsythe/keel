@@ -1,11 +1,12 @@
-import { ariaImport } from "../rules/ariaImport.ts";
 import { blankLabel } from "../rules/blankLabel.ts";
 import { bodyOnGetEndpoint } from "../rules/bodyOnGetEndpoint.ts";
+import { componentCtxSignature } from "../rules/componentCtxSignature.ts";
 import { fieldInForm } from "../rules/fieldInForm.ts";
 import { foreignUrlAttr } from "../rules/foreignUrlAttr.ts";
 import { foreignUrlFetch } from "../rules/foreignUrlFetch.ts";
 import { formatInApp } from "../rules/formatInApp.ts";
 import { guardInGuardFile } from "../rules/guardInGuardFile.ts";
+import { hostCodeImport } from "../rules/hostCodeImport.ts";
 import { identityFile } from "../rules/identityFile.ts";
 import { loaderInServerFile } from "../rules/loaderInServerFile.ts";
 import { lowContrast } from "../rules/lowContrast.ts";
@@ -35,10 +36,10 @@ import { resourceViaMatch } from "../rules/resourceViaMatch.ts";
 import { revealInServerFile } from "../rules/revealInServerFile.ts";
 import { revealedValue } from "../rules/revealedValue.ts";
 import { reversedFocusOrder } from "../rules/reversedFocusOrder.ts";
-import { routeSchemaInferred } from "../rules/routeSchemaInferred.ts";
 import { sameAppBaseService } from "../rules/sameAppBaseService.ts";
 import { schemaInSchemaFile } from "../rules/schemaInSchemaFile.ts";
 import { slotSignature } from "../rules/slotSignature.ts";
+import { stylesheetImport } from "../rules/stylesheetImport.ts";
 import { unsafeJustified } from "../rules/unsafeJustified.ts";
 import type { RuleDef } from "../types/RuleDef.ts";
 
@@ -71,6 +72,7 @@ export const KERNEL_RULES: readonly RuleDef[] = [
   noInlineStyle,
   noIntrinsicElement,
   noEagerChild,
+  componentCtxSignature,
   noEagerElement,
   lowContrast,
   resourceViaMatch,
@@ -78,7 +80,6 @@ export const KERNEL_RULES: readonly RuleDef[] = [
   noRuntimeOpImport,
   noInternalEntry,
   noDomGlobal,
-  routeSchemaInferred,
   loaderInServerFile,
   guardInGuardFile,
   identityFile,
@@ -88,6 +89,7 @@ export const KERNEL_RULES: readonly RuleDef[] = [
   foreignUrlAttr,
   foreignUrlFetch,
   reversedFocusOrder,
-  ariaImport,
   blankLabel,
+  hostCodeImport,
+  stylesheetImport,
 ];

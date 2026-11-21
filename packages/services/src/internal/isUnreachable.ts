@@ -10,6 +10,6 @@ export async function isUnreachable(res: Response): Promise<boolean> {
     return false;
   }
   const text = await readWithin(res.clone(), LIMIT);
-  const json = text === undefined ? undefined : readJson(text);
+  const json = text.ok ? readJson(text.value) : undefined;
   return json?.ok === true && unreachable.parse(json.value).ok;
 }

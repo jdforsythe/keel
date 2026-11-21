@@ -3,17 +3,19 @@
 // Spec: k.runtime Islands: the generated resume entry imports `components` from `/@keel/islands.ts` and calls `resume(document.body, components, { ctx, stores, mode })`.
 // Spec: k.server Topology: `node` serves the resume entry.
 // Seed: 1337 (fc.assert seed below). Real compiled TSX (compile + evaluate), in-process createApp, no listening server.
+import type { Ctx } from "@keel/ctx";
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
 import { createCtx } from "@keel/ctx";
-import { loader, manifest } from "@keel/router";
+import { loader, manifest, routeTable } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import type { RouteProps } from "@keel/router";
 import { ok, s } from "@keel/schema";
 import { createApp, topology } from "@keel/server";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 
-type Component = (props: RouteProps) => Node;
+type Component = (props: RouteProps, ctx: Ctx) => Node;
 type Fetcher = { fetch(req: Request): Promise<Response> };
 
 function compileComponent(name: string, source: string): Component {
@@ -23,8 +25,8 @@ function compileComponent(name: string, source: string): Component {
   if (out === undefined) throw new Error("fixture: no compiler output");
   const fn = evaluate(out.code);
   if (typeof fn !== "function") throw new Error("fixture: default export is not a component");
-  return (props) => {
-    const node: unknown = fn(props);
+  return (props, ctx) => {
+    const node: unknown = fn(props, ctx);
     if (!(node instanceof Node)) throw new Error("fixture: component did not return a Node");
     return node;
   };
@@ -42,19 +44,24 @@ export default function Counter() {
 `;
 
 const Page = s.object({ title: s.string() });
-const pageLoader = loader({ output: Page }, () => Promise.resolve(ok({ title: "T" })));
+const staticContract = contract("static", { "static.page": { path: "/static" } });
+const pageLoader = loader(staticContract, "static.page", { output: Page }, () => Promise.resolve(ok({ title: "T" })));
 const ctx = createCtx({ mode: "sim", seed: 1337 });
 
 async function appFor(mode: "production" | "dev", modules: string[]): Promise<Fetcher> {
-  const entries: Record<string, { path: string; component: Component; loader?: typeof pageLoader }> = {
-    "static.page": { path: "/static", component: compileComponent("Static", STATIC), loader: pageLoader },
-  };
-  for (const m of modules) {
-    entries[`${m}.page`] = { path: `/${m}`, component: compileComponent("Counter", COUNTER) };
-  }
+  const tables = [
+    manifest(staticContract, {
+      "static.page": { component: compileComponent("Static", STATIC), loader: pageLoader },
+    }),
+    ...modules.map((m) =>
+      manifest(contract(m, { [`${m}.page`]: { path: `/${m}` } }), {
+        [`${m}.page`]: { component: compileComponent("Counter", COUNTER) },
+      }),
+    ),
+  ];
   return createApp({
     topology: topology({ web: { modules: ["static", ...modules], adapter: "node" } }),
-    routes: manifest(entries),
+    routes: routeTable(...tables),
     ctx,
     mode,
   });

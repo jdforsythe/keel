@@ -1,6 +1,7 @@
+import type { Origins } from "@keel/compiler";
 import type { Ctx } from "@keel/ctx";
-import type { Manifest, RouteDef } from "@keel/router";
-import type { Located } from "@keel/router/internal";
+import type { RouteTable } from "@keel/router";
+import type { Located, Table } from "@keel/router/internal";
 import type { Identity } from "../types/Identity.ts";
 import type { LogSink } from "../types/LogSink.ts";
 import type { BuiltClient } from "./BuiltClient.ts";
@@ -9,7 +10,8 @@ import type { Mode } from "./Mode.ts";
 import type { ReportWindow } from "./ReportWindow.ts";
 
 /**
- * A built deployable: its routes, `ctx`, mode, its manifest (guard redirects resolve in it), the action body cap in bytes, the extra origins the dev
+ * A built deployable: its served routes (`table`), `ctx`, mode, its route table `routes` and every route of it by id
+ * (`byId`; guard redirects resolve in it), the action body cap in bytes, the extra origins the dev
  * inspect endpoint answers, `keys`, the caller-cookie keys (`callerSigner`), and
  * `secure`, `createApp({ secure })` (undefined: each request URL's scheme decides). `built` is the production client build
  * (`createApp({ assets })`, k.server Build), undefined in dev or without `assets`. `name` is the served deployable's name, the
@@ -22,13 +24,16 @@ import type { ReportWindow } from "./ReportWindow.ts";
  * (`cspReport`). `frames` reads a throw's app frames (`appFrames` of `createApp({ artifacts })`). `log` is
  * `createApp({ log })`, for records written after the response has started (an event stream's). `eager` holds the
  * route ids that have logged E1257 (k.claim Server), once each, and `nothing` those that have logged E1406 (k.place).
- * `identity` is `createApp({ identity })` (k.user) and `days` the served deployable's `caller: { days }`.
+ * `identity` is `createApp({ identity })` (k.user) and `days` the served deployable's `caller: { days }`; `origins` its
+ * declared origins (k.origins), which its documents' policy admits, less the document's own origin under `frame`;
+ * `framed` holds each own origin a dev document has left out of `frame-src` and logged as E1590, once each.
  */
 export type Served = {
   readonly table: readonly Located[];
   readonly ctx: Ctx;
   readonly mode: Mode;
-  readonly routes: Manifest<Readonly<Record<string, RouteDef>>>;
+  readonly routes: RouteTable;
+  readonly byId: Table;
   readonly maxBody: number;
   readonly inspectOrigins: readonly string[];
   readonly keys: CallerKeys;
@@ -48,4 +53,6 @@ export type Served = {
   readonly log?: LogSink;
   readonly identity?: Identity | undefined;
   readonly days?: number | undefined;
+  readonly origins?: Origins | undefined;
+  readonly framed?: Set<string>;
 };

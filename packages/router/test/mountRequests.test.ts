@@ -3,6 +3,7 @@
 // what the external browser opens, where a redirect lands, the loop guard, and which return links are taken.
 // Seed 1337 for the properties.
 import { type SimCtx, createCtx } from "@keel/ctx";
+import { contract } from "@keel/router/contract";
 import { mount } from "@keel/runtime-dom";
 import { ok, s } from "@keel/schema";
 import fc from "fast-check";
@@ -49,7 +50,7 @@ function shell(answer: (sent: Sent, i: number) => Response | Promise<Response>, 
   });
   const opened: string[] = [];
   const left: string[] = [];
-  const { link, launch } = mountRequests(ctx, { id: ID, open: (url) => void opened.push(url), origin });
+  const { link, launch } = mountRequests(ctx, { id: ID, open: (url) => void opened.push(url), origin, mounts: [auth] });
   // An ordinary launch: the shell reports no launch link (k.links Launch).
   void launch([]);
   const home = (): Node => {
@@ -66,18 +67,21 @@ function shell(answer: (sent: Sent, i: number) => Response | Promise<Response>, 
     away.href = "/elsewhere";
     const children = () => [name, by, a, away];
     const f = Form({ method: "POST", action: auth.href("/in"), children, ...(handle ? { form: handle } : {}) });
-    const acted = Form({ method: "POST", action: routes.href("t.act") });
+    const acted = Form({ method: "POST", action: t.href("t.act") });
     acted.id = "acted";
     const box = document.createElement("div");
     box.append(f, acted);
     return box;
   };
-  const routes = manifest({
-    "t.home": { path: "/", component: home },
-    "t.done": { path: "/done", component: () => document.createElement("main") },
-    "t.act": { path: "/act", component: () => document.createElement("main") },
+  const t = contract("t", { "t.home": { path: "/" }, "t.done": { path: "/done" }, "t.act": { path: "/act" } });
+  const routes = manifest(t, {
+    "t.home": { component: home },
+    "t.done": { component: () => document.createElement("main") },
+    "t.act": {
+      component: () => document.createElement("main"),
+      POST: action(t, "t.act", { input: s.object({}) }, async () => ok(auth.href("/after"))),
+    },
   });
-  routes.actions({ "t.act": { POST: action({ input: s.object({}) }, async () => ok(auth.href("/after"))) } });
   const router = createRouterWith(routes, { ctx, history: memoryHistory("/"), leave: (u) => void left.push(u) });
   const h = document.createElement("div");
   document.body.append(h);

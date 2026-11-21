@@ -8,7 +8,7 @@ import { describe, expect, test } from "vitest";
 import { type Files, SEED } from "./support.ts";
 
 const MANIFEST = (id: string): string =>
-  `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [], routes: [] } })\n`;
+  `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [] } })\n`;
 const project = (adapter: string, caller: string): Files => [
   {
     path: "topology.ts",

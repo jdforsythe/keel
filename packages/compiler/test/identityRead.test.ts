@@ -65,13 +65,18 @@ describe("identitySource", () => {
     const files = [
       { path: "identity.server.ts", source: src("/auth") },
       {
+        path: "modules/a/a.contract.ts",
+        source:
+          "import { contract } from '@keel/router/contract'\nexport const a = contract('a', { 'a.in': { path: '/auth/x' }, 'a.out': { path: '/authx' } })\n",
+      },
+      {
         path: "modules/a/routes.ts",
         source:
-          "import { manifest } from '@keel/router'\nconst P = () => null\nexport const routes = manifest({ 'a.in': { path: '/auth/x', component: P }, 'a.out': { path: '/authx', component: P } })\n",
+          "import { manifest } from '@keel/router'\nimport { a } from './a.contract.ts'\nconst P = () => null\nexport const routes = manifest(a, { 'a.in': { component: P }, 'a.out': { component: P } })\n",
       },
     ];
     expect(identityDiags(files).map((d) => [d.code, d.path, d.message.split(" ")[1]])).toEqual([
-      ["E1579", "modules/a/routes.ts", "a.in"],
+      ["E1579", "modules/a/a.contract.ts", "a.in"],
     ]);
     const bad = [{ path: "identity.server.ts", source: "export default 1\n" }];
     expect(identityDiags(bad)).toEqual([]);

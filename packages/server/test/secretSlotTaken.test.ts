@@ -4,6 +4,7 @@
 // slot was cleared or replaced while it ran cannot know its secrets, so each of its texts is one `[secret]`. Seed 1337.
 import { createCtx } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { type ObjectSchema, reveal, s } from "@keel/schema";
 import { onSecret } from "@keel/schema/internal";
 import { describe, expect, it } from "vitest";
@@ -16,8 +17,9 @@ const field = (v: unknown, k: string): unknown => (typeof v === "object" && v !=
 
 async function actionApp<I>(input: ObjectSchema<I>, run: (v: I) => Promise<never>) {
   const lines: string[] = [];
-  const routes = manifest({ "app.a": { path: "/a", component: () => document.createElement("main") } });
-  routes.actions({ "app.a": { POST: action({ input }, (v) => run(v)) } });
+  const c = contract("app", { "app.a": { path: "/a" } });
+  const save = action(c, "app.a", { input }, (v) => run(v));
+  const routes = manifest(c, { "app.a": { component: () => document.createElement("main"), POST: save } });
   const app = await createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
     routes,

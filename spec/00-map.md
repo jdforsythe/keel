@@ -6,12 +6,12 @@ status key: proposed | implemented | conformance-covered | frozen. Budget: file 
 Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.
 | block | owner | block | owner |
 |-|-|-|-|
-| E100x | k.compiler, k.boundary, k.bundle | E105x | k.cli, k.evidence |
+| E100x | k.compiler, k.boundary, k.bundle | E105x | k.cli, k.evidence, k.docs |
 | E110x | k.schema, k.privacy, k.reveal, k.leave | E115x | k.module |
 | E120x | k.reactive | E125x | k.runtime, k.resume, k.claim |
 | E130x | k.store | E135x | k.scaffold |
 | E140x | k.component, k.place | E145x | k.errors |
-| E150x | k.router, k.guards, k.prefix, k.api | E155x | k.server, k.topology, k.deploy, k.shell, k.compat, k.hosting, k.security, k.leave, k.user, k.mount |
+| E150x | k.router, k.contract, k.guards, k.prefix, k.api | E155x | k.server, k.topology, k.deploy, k.shell, k.compat, k.hosting, k.security, k.origins, k.leave, k.user, k.mount |
 | E160x | k.ctx, k.sim, k.persist, k.data | E165x | k.services |
 | E170x | k.testing, k.model, k.prove, k.ledger | E175x | k.check, k.host |
 | E18xx | k.ui, k.a11y, k.aria | E19xx | k.forms |
@@ -41,8 +41,10 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.
 | k.defaults | Queued defaults | conformance-covered | submit |
 | k.place | Placed props | conformance-covered | calls |
 | k.router | Routes | conformance-covered | params |
+| k.contract | Module contract | proposed | entries |
+| k.routes | Route table | proposed | union |
 | k.guards | Guards | conformance-covered | deny |
-| k.prefix | Implied path prefix | conformance-covered | enums |
+| k.prefix | Path prefix | conformance-covered | enums |
 | k.forms | Forms | conformance-covered | fields |
 | k.ui | Tokens, styling | conformance-covered | CSS |
 | k.ctx | Capabilities | conformance-covered | clock |
@@ -52,6 +54,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.
 | k.explain | Explanations | conformance-covered | text |
 | k.host | Host reads | conformance-covered | zone |
 | k.cli | CLI, MCP, LSP | conformance-covered | flags |
+| k.docs | Installed docs | implemented | read |
 | k.scaffold | Scaffold, codemods | conformance-covered | edits |
 | k.testing | Harness, properties | conformance-covered | fire |
 | k.model | Store exploration | conformance-covered | traces |
@@ -60,8 +63,9 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.
 | k.ledger | Ledger, evidence | conformance-covered | rungs |
 | k.server | Thin server | conformance-covered | loads |
 | k.leave | What a request leaves | conformance-covered | state |
-| k.user | Request user, caller lifetime | conformance-covered | user |
+| k.user | Request user, caller | conformance-covered | user |
 | k.mount | Pages to the mount | conformance-covered | submit |
+| k.mount-scope | What counts as the mount | proposed | proxy |
 | k.return | Shell mount | conformance-covered | net |
 | k.opening | Openings | conformance-covered | once |
 | k.links | Links in | conformance-covered | ids |
@@ -71,20 +75,25 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.
 | k.data | App data | proposed | seam |
 | k.topology | Deployables | conformance-covered | peers |
 | k.deploy | Entry, deploy files | conformance-covered | entry |
-| k.shell | Native shells | proposed | Tauri |
+| k.shell | Native shells | proposed | target |
 | k.compat | Surface compatibility | conformance-covered | accepts |
 | k.api | API routes | conformance-covered | JSON |
-| k.hosting | Client hosting | conformance-covered | host |
+| k.hosting | Client hosting | conformance-covered | servedBy |
 | k.head | Document head | conformance-covered | title |
 | k.services | Thin services | conformance-covered | clients |
 | k.openapi | OpenAPI import | conformance-covered | clients |
 | k.module | Module manifest | conformance-covered | surface |
 | k.a11y | Accessibility | conformance-covered | WCAG |
 | k.aria | Widget parts | conformance-covered | roles |
+| k.roles | Part roles | proposed | grid |
+| k.host-element | Host elements | proposed | charts |
+| k.host-code | Host code | proposed | d3 |
 | k.security | Headers, CSP | conformance-covered | CSP |
+| k.origins | Declared origins | proposed | CSP |
 | k.privacy | Secrets, personal data | conformance-covered | secrets |
 | k.reveal | Revealed values | conformance-covered | E1112 |
 | k.evidence | Evidence bundle | conformance-covered | bundle |
+| k.parity | Stdlib parity | proposed | seams |
 
 ## Stdlib
 Sections: `spec/std/README.md`.

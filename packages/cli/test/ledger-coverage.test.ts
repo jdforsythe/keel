@@ -94,7 +94,7 @@ describe("keel ledger --diff with E1707", () => {
     expect(gap.code).toBe(1);
     expect(lines(gap.stdout)).toEqual([
       "E1707 spec/kernel/k.a.md:6:1 section k.a is conformance-covered but clause 2 has no evidence",
-      "  see: k.ledger",
+      "  see: keel docs k.ledger",
       "fail ledger --diff 2 items, 1 verified, 0 unsafe, 0 warnings, 1 example, 0 lowered, 1 uncovered",
     ]);
     const ok = await run(["ledger", "--diff"], { cwd: CWD, files: [spec, one, two] });

@@ -40,7 +40,7 @@ eventQueue.install();
 export function resume(
   root: Element,
   components: Readonly<Record<string, Island>>,
-  options: ResumeOptions = {},
+  options: ResumeOptions,
 ): { warnings: string[] } {
   const stores = options.stores ?? {};
   const warnings: string[] = [];

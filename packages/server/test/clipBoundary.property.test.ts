@@ -4,6 +4,7 @@
 // and live loader that throw it log no line holding any of its first 4 or more characters. Seed 1337.
 import { createCtx } from "@keel/ctx";
 import { action, guard, loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, reveal, s } from "@keel/schema";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -33,42 +34,47 @@ const view = () => document.createElement("main");
 
 type Kind = "loader" | "action" | "guard" | "live";
 
-/** A page route whose POST action throws at `pad`. */
-const actionRoutes = (pad: number) => {
-  const routes = manifest({ "app.a": { path: "/a", component: view } });
-  routes.actions({ "app.a": { POST: action({ input: s.object({}) }, async () => throwAt(pad)) } });
-  return routes;
+const Out = s.object({});
+const pageC = contract("app", { "app.a": { path: "/a" } });
+const guardC = contract("api", { "api.a": { method: "GET", path: "/api/a", output: Out } });
+const liveC = contract("api", { "api.a": { method: "GET", path: "/api/a", output: Out, events: true } });
+
+/** The manifest whose `kind` handler throws at `pad`. */
+const routesOf = (kind: Kind, pad: number) => {
+  if (kind === "loader")
+    return manifest(pageC, {
+      "app.a": {
+        component: view,
+        loader: loader(pageC, "app.a", { output: Out }, async () => throwAt(pad)),
+      },
+    });
+  if (kind === "action")
+    return manifest(pageC, {
+      "app.a": {
+        component: view,
+        POST: action(pageC, "app.a", { input: s.object({}) }, async () => throwAt(pad)),
+      },
+    });
+  if (kind === "guard")
+    return manifest(guardC, {
+      "api.a": {
+        guard: guard({}, async () => throwAt(pad)),
+        loader: loader(guardC, "api.a", {}, async () => ok({})),
+      },
+    });
+  return manifest(liveC, {
+    "api.a": {
+      loader: loader(liveC, "api.a", {}, async function* () {
+        yield ok({});
+        throwAt(pad);
+      }),
+    },
+  });
 };
 
 async function requestLines(kind: Kind, pad: number): Promise<string[]> {
   const lines: string[] = [];
-  const Out = s.object({});
-  const routes =
-    kind === "loader"
-      ? manifest({
-          "app.a": { path: "/a", loader: loader({ output: Out }, async () => throwAt(pad)), component: view },
-        })
-      : kind === "guard"
-        ? manifest({
-            "api.a": {
-              api: true,
-              path: "/api/a",
-              guard: guard({}, async () => throwAt(pad)),
-              loader: loader({ output: Out }, async () => ok({})),
-            },
-          })
-        : kind === "live"
-          ? manifest({
-              "api.a": {
-                api: true,
-                path: "/api/a",
-                loader: loader({ output: Out }, async function* () {
-                  yield ok({});
-                  throwAt(pad);
-                }),
-              },
-            })
-          : actionRoutes(pad);
+  const routes = routesOf(kind, pad);
   const app = await createApp({
     topology: topology({ web: { modules: kind === "guard" || kind === "live" ? ["api"] : ["app"], adapter: "node" } }),
     routes,

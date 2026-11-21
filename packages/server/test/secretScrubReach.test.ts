@@ -5,6 +5,7 @@
 // request marks only its own: an in-process peer's request and an overlapping request keep their own sets. Seed 1337.
 import { createCtx } from "@keel/ctx";
 import { action, loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok } from "@keel/schema";
 import { reveal, s } from "@keel/schema";
 import { describe, expect, it } from "vitest";
@@ -29,14 +30,14 @@ async function send(
   load?: () => Promise<never>,
 ): Promise<{ diags: Diag[]; lines: string[] }> {
   const lines: string[] = [];
-  const routes = manifest({
+  const c = contract("app", { "app.a": { path: "/a" } });
+  const routes = manifest(c, {
     "app.a": {
-      path: "/a",
-      ...(load === undefined ? {} : { loader: loader({ output: s.object({}) }, load) }),
+      ...(load === undefined ? {} : { loader: loader(c, "app.a", { output: s.object({}) }, load) }),
       component: () => document.createElement("main"),
+      POST: action(c, "app.a", { input }, (v) => run(v)),
     },
   });
-  routes.actions({ "app.a": { POST: action({ input }, (v) => run(v)) } });
   const app = await createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
     routes,
@@ -134,8 +135,13 @@ async function appOf(
   run: (input: { note: string }) => Promise<never>,
 ): Promise<{ app: Awaited<ReturnType<typeof createApp>>; lines: string[] }> {
   const lines: string[] = [];
-  const routes = manifest({ "app.a": { path: "/a", component: () => document.createElement("main") } });
-  routes.actions({ "app.a": { POST: action({ input: Note }, (v) => run(v)) } });
+  const c = contract("app", { "app.a": { path: "/a" } });
+  const routes = manifest(c, {
+    "app.a": {
+      component: () => document.createElement("main"),
+      POST: action(c, "app.a", { input: Note }, (v) => run(v)),
+    },
+  });
   const app = await createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
     routes,
@@ -211,12 +217,13 @@ describe("a live stream", () => {
   it("marks a secret its loader makes after the response started, on the stream's later diag", async () => {
     const LATE = "late-secret-4e8a2c";
     const lines: string[] = [];
-    const live = loader({ output: s.object({}) }, async function* () {
+    const c = contract("api", { "api.live": { method: "GET", path: "/api/live", output: s.object({}), events: true } });
+    const live = loader(c, "api.live", {}, async function* () {
       yield ok({});
       await Promise.resolve();
       throw new Error(`late ${madeText(LATE)}`);
     });
-    const routes = manifest({ "api.live": { api: true, path: "/api/live", loader: live } });
+    const routes = manifest(c, { "api.live": { loader: live } });
     const app = await createApp({
       topology: topology({ web: { modules: ["api"], adapter: "node" } }),
       routes,

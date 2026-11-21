@@ -22,26 +22,32 @@ const EMAIL = "alice@planted.test";
 const TIMER = ["set", "Timeout"].join("");
 
 const ROUTES = `import { action, loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 const Data = s.object({ title: s.string() });
 const Save = s.object({ email: s.string().pii("contact") });
 const Home = () => null;
 const answer = (title) => Promise.resolve(ok({ title }));
-const late = loader({ output: Data }, () => {
+const app = contract("app", {
+  "app.home": { path: "/" },
+  "app.late": { path: "/late" },
+  "app.save": { path: "/save" },
+});
+
+const late = loader(app, "app.late", { output: Data }, () => {
   ${TIMER}(() => { throw new Error(${JSON.stringify(THROWN)}); }, 30);
   return answer("late");
 });
-const quiet = loader({ output: Data }, () => answer("quiet"));
-const save = action({ input: Save }, (input) => {
+const quiet = loader(app, "app.home", { output: Data }, () => answer("quiet"));
+const save = action(app, "app.save", { input: Save }, (input) => {
   ${TIMER}(() => { throw new Error("failed for " + input.email); }, 30);
   return Promise.resolve(ok(null));
 });
-export const routes = manifest({
-  "app.home": { path: "/", component: Home, loader: quiet },
-  "app.late": { path: "/late", component: Home, loader: late },
-  "app.save": { path: "/save", component: Home },
+export const routes = manifest(app, {
+  "app.home": { component: Home, loader: quiet },
+  "app.late": { component: Home, loader: late },
+  "app.save": { component: Home, POST: save },
 });
-routes.actions({ "app.save": { POST: save } });
 `;
 
 let fixture = "";
@@ -76,7 +82,7 @@ beforeAll(() => {
   );
   write(
     "modules/app/module.ts",
-    'import { module } from "@keel/compiler";\nexport default module({ id: "app", deps: [], capabilities: [], public: { exports: [], routes: [] } });\n',
+    'import { module } from "@keel/compiler";\nexport default module({ id: "app", deps: [], capabilities: [], public: { exports: [] } });\n',
   );
   write("modules/app/routes.ts", ROUTES);
 });

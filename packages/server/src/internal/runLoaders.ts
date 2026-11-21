@@ -14,7 +14,7 @@ import { scrubbedCause } from "./scrubbedCause.ts";
 async function runOne(
   r: Req,
   id: string,
-  l: Loader<unknown>,
+  l: Loader,
   args: { params: Rec; search: Rec; url: string },
 ): Promise<LoaderOutcome> {
   const { sv, rq } = r;

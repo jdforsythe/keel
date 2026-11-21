@@ -1,4 +1,4 @@
-// re-exports only: `@keel/ui/aria` (widget parts, stdlib only)
+// re-exports only: `@keel/ui/aria` (widget parts, for stdlib and app widgets)
 export { Part } from "./Part.ts";
 export type { KeyInput } from "./KeyInput.ts";
 export type { PartProps } from "./PartProps.ts";

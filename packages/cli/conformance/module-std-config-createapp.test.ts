@@ -7,6 +7,7 @@ import { run } from "@keel/cli";
 import { stdConfig } from "@keel/compiler/std/stdConfig";
 import { createCtx } from "@keel/ctx";
 import { manifest as routeManifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { createApp, topology } from "@keel/server";
 import fc from "fast-check";
@@ -42,7 +43,7 @@ const manifestSrc = (id: string, pkg: string, config: unknown): string =>
     id,
     deps: [pkg],
     capabilities: [],
-    public: { exports: [], routes: [] },
+    public: { exports: [] },
     std: { [pkg]: config },
   })})\n`;
 
@@ -71,10 +72,11 @@ const fileOf = (text: string): string => {
   return f;
 };
 
+const appContract = contract("app", { "app.home": { path: "/" } });
 const app = (ctx: ReturnType<typeof createCtx>, std: string) =>
   createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
-    routes: routeManifest({ "app.home": { path: "/", component: () => document.createElement("main") } }),
+    routes: routeManifest(appContract, { "app.home": { component: () => document.createElement("main") } }),
     ctx,
     mode: "dev",
     std,

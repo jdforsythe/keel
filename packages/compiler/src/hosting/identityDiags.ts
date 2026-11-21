@@ -10,7 +10,7 @@ import { mountSource } from "./mountSource.ts";
  * E1579 (k.user Rules) of the project's `identity.server.ts`: with `local`, its own problem (`identitySource`) at its
  * first line; and one per route of any module (`routeLiterals`, read without evaluating) whose literal path is at or
  * under its `handle.path` (a literal, or `identity.ts`'s through `mount.path`), at that route's id in its
- * `modules/<id>/routes.ts`; with `local`, also the k.mount rules (`mountDiags`). `keel build` asks for all, `keel
+ * contract file; with `local`, also the k.mount rules (`mountDiags`). `keel build` asks for all, `keel
  * check` for the routes only (`check()` reports the rest). `root` is where package manifests resolve from. No fix.
  */
 export function identityDiags(files: readonly SourceFile[], root?: string, local = false): Diagnostic[] {
@@ -31,7 +31,8 @@ export function identityDiags(files: readonly SourceFile[], root?: string, local
   if (at === undefined) return out;
   for (const [id, r] of Object.entries(routeLiterals(files, { root })?.routes ?? {})) {
     if (typeof r.path !== "string" || !`${r.path}/`.startsWith(`${at}/`)) continue;
-    const file = `modules/${id.split(".")[0] ?? id}/routes.ts`;
+    const module = id.split(".")[0] ?? id;
+    const file = r.file ?? `modules/${module}/${module}.contract.ts`;
     const text = files.find((f) => f.path === file)?.source ?? "";
     out.push({
       code: "E1579",

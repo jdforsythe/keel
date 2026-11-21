@@ -5,12 +5,18 @@
 import { createCtx } from "@keel/ctx";
 import { signal } from "@keel/reactive";
 import { loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import { Checkbox, Input, Select, TextArea } from "@keel/ui";
 import { describe, expect, it } from "vitest";
 import { createApp, topology } from "../src/index.ts";
 
 const Todo = s.object({ title: s.string(), notes: s.string(), priority: s.string(), done: s.boolean() });
+
+const c = contract("app", { "app.edit": { path: "/edit" } });
+const load = loader(c, "app.edit", { output: Todo }, async () =>
+  ok({ title: 'Milk & "eggs"', notes: "<b>x</b>\nsecond", priority: "high", done: true }),
+);
 
 const edit = (data: s.infer<typeof Todo>): Node => {
   const main = document.createElement("main");
@@ -36,12 +42,9 @@ describe("server-rendered controls show their values (backlog 0166)", () => {
     expect(typeof document).toBe("undefined");
     const app = await createApp({
       topology: topology({ web: { modules: ["app"], adapter: "node" } }),
-      routes: manifest({
+      routes: manifest(c, {
         "app.edit": {
-          path: "/edit",
-          loader: loader({ output: Todo }, async () =>
-            ok({ title: 'Milk & "eggs"', notes: "<b>x</b>\nsecond", priority: "high", done: true }),
-          ),
+          loader: load,
           component: (props) => {
             const data = Reflect.get(Object(props), "data");
             const r = Todo.parse(data);

@@ -128,7 +128,7 @@ describe("vite plugin client entry (rfc:0069)", () => {
   };
 
   const mod = (id: string, std: Record<string, unknown>): string =>
-    `import { module } from '@keel/compiler'\nexport default module(${JSON.stringify({ id, deps: Object.keys(std), capabilities: [], public: { exports: [], routes: [] }, std })})\n`;
+    `import { module } from '@keel/compiler'\nexport default module(${JSON.stringify({ id, deps: Object.keys(std), capabilities: [], public: { exports: [] }, std })})\n`;
 
   it("a client deployable's entry binds only its own modules' clientStd config (backlog 0199)", async () => {
     write(

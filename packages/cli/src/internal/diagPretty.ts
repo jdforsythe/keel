@@ -5,6 +5,6 @@ import { where } from "./where.ts";
 export function diagPretty(d: Diag): string {
   const at = where(d);
   const fix = d.fix === undefined ? [] : ["  fix:", ...d.fix.split("\n").map((l) => `    ${l}`)];
-  const see = d.see === undefined ? [] : [`  see: keel spec ${d.see}`];
+  const see = d.see === undefined ? [] : [`  see: keel docs ${d.see}`];
   return [at === "" ? d.code : `${d.code}  ${at}`, `  ${d.message}`, ...fix, ...see].join("\n");
 }

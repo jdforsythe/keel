@@ -16,7 +16,7 @@ describe("k.router actions and revalidation", () => {
     expect(control.lastInput).toEqual({ note: "hello" });
     expect(count("loader:orders.show")).toBe(before.show + 1);
     expect(count("loader:orders.shell")).toBe(before.shell + 1);
-    expect(now(app.router)).toMatchObject({ id: "orders.show", pending: false });
+    expect(now(app.router)).toMatchObject({ id: "app.ordersShow", pending: false });
     app.stop();
   });
   it("after an ok(href) action, route().id is the target's id", async () => {
@@ -25,7 +25,7 @@ describe("k.router actions and revalidation", () => {
     await submit(app.host);
     await settle();
     expect(count("action:POST")).toBe(1);
-    expect(now(app.router)).toMatchObject({ id: "orders.list", pending: false });
+    expect(now(app.router)).toMatchObject({ id: "app.ordersList", pending: false });
     app.stop();
   });
 });

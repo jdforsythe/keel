@@ -1,15 +1,16 @@
 // @vitest-environment happy-dom
-// k.topology Calls and peers with endpoint schemas that decode a `module` service's unwrapped answers (the GET
-// loader's value, an action's `Href | null`). Seed 1337; sim ctxs only.
+// k.topology Calls and peers: module `a`'s API entries call module `b`'s through `service({ contract })`, in one
+// deployable and split across two. Seed 1337; sim ctxs only.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { type Ctx, type SimCtx, createCtx } from "@keel/ctx";
-import { action, loader, manifest, routesArtifact } from "@keel/router";
+import { action, loader, manifest, routeTable, routesArtifact } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { err, ok, s } from "@keel/schema";
 import { createApp, topology } from "@keel/server";
 import type { ServerApp } from "@keel/server";
-import { endpoints, service } from "@keel/services";
+import { service } from "@keel/services";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 
@@ -17,46 +18,35 @@ const SEED = 1337;
 const Item = s.object({ n: s.string(), count: s.int() });
 const Params = s.object({ n: s.string() });
 const Nothing = s.object({});
-const view = () => document.createElement("main");
-const B = endpoints({
-  get: {
-    method: "GET",
-    path: "/b/:n",
-    params: Params,
-    output: Item,
-  },
-  bump: {
-    method: "POST",
-    path: "/b/:n",
-    params: Params,
-    body: Nothing,
-    output: s.string().nullable(),
-  },
+const Answer = s.string().nullable();
+const bContract = contract("b", {
+  "b.get": { method: "GET", path: "/b/:n", params: Params, output: Item },
+  "b.bump": { method: "POST", path: "/b/:n", params: Params, body: Nothing, output: Answer },
 });
-const b = service({ module: "b", schema: B });
+const aContract = contract("a", {
+  "a.show": { method: "GET", path: "/a/:n", params: Params, output: Item },
+  "a.post": { method: "POST", path: "/a/:n", params: Params, body: Nothing, output: Answer },
+});
+const b = service({ contract: bContract });
 const count = async (ctx: Ctx) => Number((await ctx.storage.get("b.count")) ?? "0");
 
 function modules() {
-  const bGet = loader({ output: Item, params: Params }, async (a, ctx) =>
-    ok({ n: a.params.n, count: await count(ctx) }),
-  );
-  const bump = action({ input: Nothing, params: Params }, async (_i, _a, ctx) => {
+  const bGet = loader(bContract, "b.get", {}, async (a, ctx) => ok({ n: a.params.n, count: await count(ctx) }));
+  const bump = action(bContract, "b.bump", {}, async (_body, _a, ctx) => {
     await ctx.storage.set("b.count", String((await count(ctx)) + 1));
     return ok(null);
   });
-  const bRoutes = manifest({ "b.item": { path: "/b/:n", params: Params, loader: bGet, component: view } });
-  bRoutes.actions({ "b.item": { POST: bump } });
-  const aGet = loader({ output: Item, params: Params }, async (a, ctx) => {
+  const bRoutes = manifest(bContract, { "b.get": { loader: bGet }, "b.bump": { action: bump } });
+  const aGet = loader(aContract, "a.show", {}, async (a, ctx) => {
     const r = await b.get({ params: { n: a.params.n } }, ctx);
     return r.ok ? ok(r.value) : err(s.error("a.upstream", Nothing).make({}));
   });
-  const aPost = action({ input: Nothing, params: Params }, async (_i, a, ctx) => {
+  const aPost = action(aContract, "a.post", {}, async (_body, a, ctx) => {
     const r = await b.bump({ params: { n: a.params.n }, body: {} }, ctx);
     await ctx.storage.set("a.last", a.params.n);
     return r.ok ? ok(null) : err(s.error("a.upstream", Nothing).make({}));
   });
-  const aRoutes = manifest({ "a.show": { path: "/a/:n", params: Params, loader: aGet, component: view } });
-  aRoutes.actions({ "a.show": { POST: aPost } });
+  const aRoutes = manifest(aContract, { "a.show": { loader: aGet }, "a.post": { action: aPost } });
   const runner = { run: async (ctx: Ctx) => ctx.storage.set("b.started", "1") };
   return { aRoutes, bRoutes, runner };
 }
@@ -93,7 +83,7 @@ describe("k.topology: module calls", () => {
     });
     const one = await createApp({
       topology: topology({ one: { modules: ["a", "b"], adapter: "node" } }),
-      routes: manifest({ ...m.aRoutes.routes, ...m.bRoutes.routes }),
+      routes: routeTable(m.aRoutes, m.bRoutes),
       ctx: oneCtx,
     });
     const here = await one.fetch(request({ kind: "a", post: false, n: "7" }));
@@ -133,7 +123,7 @@ describe("k.topology: module calls", () => {
         const oneCtx = sim();
         const one = await createApp({
           topology: topology({ one: { modules: ["a", "b"], adapter: "node" } }),
-          routes: manifest({ ...m.aRoutes.routes, ...m.bRoutes.routes }),
+          routes: routeTable(m.aRoutes, m.bRoutes),
           ctx: oneCtx,
           runners,
         });

@@ -3,6 +3,7 @@ import { createApp } from "@keel/server";
 import { TimingsRecent, timingsOf } from "@keel/std-timings";
 import { renderRoute } from "@keel/testing";
 import { describe, expect, it } from "vitest";
+import { recipes } from "../modules/recipes/recipes.contract.ts";
 import { routes } from "../modules/recipes/routes.ts";
 import topology from "../topology.ts";
 import { apiRoutes } from "./apiRoutes.ts";
@@ -52,7 +53,7 @@ describe("timings of the recipes pages' api calls", () => {
       "recipes.api.box": { count: 1, totalMs: 15, maxMs: 15, lastMs: 15 },
       "recipes.api.catalog": { count: 1, totalMs: 40, maxMs: 40, lastMs: 40 },
     });
-    await r.navigate(routes.href("recipes.index", { locale: "en-US" }));
+    await r.navigate(recipes.href("recipes.index", { locale: "en-US" }));
     expect(timingsOf(ctx)["recipes.api.box"]).toEqual({ count: 2, totalMs: 30, maxMs: 15, lastMs: 15 });
     r.dispose();
   });

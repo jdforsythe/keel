@@ -8,7 +8,7 @@ import { type Files, SEED } from "./support.ts";
 
 const f = (path: string, source: string): Files[number] => ({ path, source });
 const MANIFEST = (id: string): string =>
-  `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [], routes: [] } })\n`;
+  `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [] } })\n`;
 const IDENTITY = (second: string): string =>
   `import { identityMount } from '@keel/router'\nconst v = '/verify'\nexport default identityMount('/api/auth', ${second})\n`;
 const SERVER = `import { identity } from '@keel/server'\nimport mount from './identity.ts'\nexport default identity({ identify: async () => '', handle: { path: mount.path, fn: () => new Response('') } })\n`;

@@ -18,7 +18,7 @@ const SLOW = 180_000;
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 const manifestSrc = (id: string): string =>
-  `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [], routes: [] } })\n`;
+  `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [] } })\n`;
 
 const tree = (adapter: "client" | "node"): Record<string, string> => ({
   "package.json": `${JSON.stringify({ name: "fx", private: true, type: "module", version: "1.0.0" })}\n`,
@@ -32,7 +32,9 @@ const tree = (adapter: "client" | "node"): Record<string, string> => ({
   "topology.ts": `import { topology } from '@keel/server'\nexport default topology({ web: { modules: ['c'], adapter: '${adapter}' } })\n`,
   "modules/c/module.ts": manifestSrc("c"),
   "modules/c/routes.ts":
-    "import { manifest } from '@keel/router'\nconst Page = () => null\nexport const routes = manifest({ 'c.page': { path: '/', component: Page } })\n",
+    "import { manifest } from '@keel/router'\nimport { c } from './c.contract.ts'\nconst Page = () => null\nexport const routes = manifest(c, { 'c.page': { component: Page } })\n",
+  "modules/c/c.contract.ts":
+    "import { contract } from '@keel/router/contract'\nexport const c = contract('c', { 'c.page': { path: '/' } })\n",
 });
 
 const dirs: string[] = [];

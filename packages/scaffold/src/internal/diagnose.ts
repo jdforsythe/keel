@@ -64,10 +64,11 @@ export function diagnose(files: ReadonlyMap<string, string>): ProxyDiag[] {
       const fm = manifests.get(from);
       const tm = manifests.get(to);
       if (fm === undefined || tm === undefined) continue;
+      const isContract = target.endsWith(".contract.ts");
       const name = (target.split("/").pop() ?? "").split(".")[0] ?? "";
       if (!fm.deps.includes(to))
         out.push({ code: "E1152", path, line, message: `import from module ${to}, not in ${from} deps` });
-      else if (!tm.exports.includes(name))
+      else if (!isContract && !tm.exports.includes(name))
         out.push({ code: "E1151", path, line, message: `${name} is not a public export of module ${to}` });
     }
   }

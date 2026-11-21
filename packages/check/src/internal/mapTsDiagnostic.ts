@@ -2,9 +2,10 @@ import ts from "typescript";
 import type { Diagnostic } from "../types/Diagnostic.ts";
 import type { SourceFile } from "../types/SourceFile.ts";
 import { applyEdits } from "./applyEdits.ts";
+import { bindingTypeError } from "./bindingTypeError.ts";
 import { clip } from "./clip.ts";
+import { contractTypeError } from "./contractTypeError.ts";
 import { lineCol } from "./lineCol.ts";
-import { manifestEntry } from "./manifestEntry.ts";
 import { nodeAt } from "./nodeAt.ts";
 import { unifiedDiff } from "./unifiedDiff.ts";
 
@@ -91,17 +92,20 @@ function isComponentProps(n: ts.Node, path: string): boolean {
 /**
  * Map one TS diagnostic to a Keel diagnostic (k.check): a missing a11y prop on a base element is E1802,
  * a missing `For` key is E1001, a string where `Href` is required is E1501 (E1003 when it is a literal
- * `javascript:`/`data:` URL); one at the key or `api: true` of a `manifest({...})` entry is E1510 or E1508 (`manifestEntry`, E1510 with a
- * fix removing an API route's refused members); one whose text holds a `"E1512 <message>"` type (`ActionsFit` of
- * `routes.actions`) is E1512 with that message; any other error is E1751 with
- * the message starting `TS<code>`. Returns `null` for errors Keel does not report (implicit `any` on
- * component props) and for non-error categories.
+ * `javascript:`/`data:` URL); one on the surface of the entries argument of `contract(...)` or the binding argument
+ * of `manifest(...)` (the argument, a key, a member's literal or name value; `placeIn`) is coded by its position alone
+ * (k.routes Where rules fire; `contractTypeError`, `bindingTypeError`, the binding's entry kinds read with `checker`):
+ * E1155, E1510, E1506 or E1515; any other error, one inside an inline function or a schema expression included, is
+ * E1751 with the message starting `TS<code>`. Returns `null` for errors Keel does not report (implicit `any` on
+ * component props), for a contract key without its module prefix (the k.module pass reports that E1155) and for
+ * non-error categories.
  */
 export function mapTsDiagnostic(
   d: ts.Diagnostic,
   sf: ts.SourceFile,
   file: SourceFile,
   original: (pos: number) => number,
+  checker: ts.TypeChecker,
 ): Diagnostic | null {
   if (d.category !== ts.DiagnosticCategory.Error) return null;
   const start = d.start ?? 0;
@@ -115,6 +119,8 @@ export function mapTsDiagnostic(
     return null;
   // JSX `<Boundary>` without `fallback` compiles with a default one (k.compiler).
   if (d.code === 2741 && /'fallback'/.test(text) && jsxTagOf(node) === "Boundary") return null;
+  // A JSX `Frame` without `title` is E1802 from the rule pass (`blankLabel`), which runs without types.
+  if (d.code === 2741 && /'title'/.test(text) && jsxTagOf(node) === "Frame") return null;
   const { line, col } = lineCol(file.source, pos);
   const diag = (code: string, message: string, see: string): Diagnostic => ({
     kind: "diag",
@@ -125,16 +131,15 @@ export function mapTsDiagnostic(
     message: clip(message, 89),
     see,
   });
-  const entry = manifestEntry(node, text);
-  if (entry !== null) {
-    const [code, message, edits] = entry;
-    const base = diag(code, message, code === "E1508" ? "k.guards" : "k.api");
+  const mapped = contractTypeError(node) ?? bindingTypeError(node, checker);
+  if (mapped === "reported") return null;
+  if (mapped !== null) {
+    const [code, message, edits] = mapped;
+    const base = diag(code, message, code === "E1506" ? "k.routes" : "k.contract");
     if (edits === undefined) return base;
     const moved = edits.map((e) => ({ ...e, start: original(e.start), end: original(e.end) }));
     return { ...base, fix: unifiedDiff(path, file.source, applyEdits(file.source, moved)) };
   }
-  const e1512 = /"E1512 ([^"]+)"/.exec(text)?.[1];
-  if (e1512 !== undefined) return diag("E1512", e1512, "k.api");
   const tag = jsxTagOf(node);
   const missing = /Property '(\w+)' is missing/.exec(text)?.[1];
   const required = tag === null ? undefined : A11Y.get(tag);
@@ -152,7 +157,7 @@ export function mapTsDiagnostic(
         `literal ${literal.trim().split(":")[0]?.toLowerCase()}: URL in a URL attribute`,
         "k.compiler",
       );
-    return diag("E1501", "string path where an Href is required; use routes.href(routeId, params)", "k.router");
+    return diag("E1501", "string path where an Href is required; use the contract's href(routeId, params)", "k.router");
   }
   return diag("E1751", `TS${d.code} ${text.split("\n")[0] ?? ""}`, "k.check");
 }

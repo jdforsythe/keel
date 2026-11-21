@@ -24,12 +24,14 @@
   },
   "dependencies": {
     "@keel/ctx": "workspace:*",
+    "@keel/router": "workspace:*",
     "@keel/schema": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22",
     "@keel/check": "workspace:*",
     "@keel/tooling": "workspace:*",
-    "fast-check": "^3"
+    "fast-check": "^3",
+    "@keel/server": "workspace:*"
   }
 }

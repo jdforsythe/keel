@@ -5,12 +5,14 @@
 // Seed 1337.
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createApp, topology } from "../src/index.ts";
 
 const SEED = 1337;
 const THROWN = "tok-0a1b2c3d4e5f";
+const c = contract("app", { "app.item": { path: "/item/:id", params: s.object({ id: s.string() }) } });
 const view = (): Node => document.createElement("main");
 
 let stderr: string[] = [];
@@ -28,9 +30,7 @@ async function app(fails: (line: string) => boolean) {
   const lines: string[] = [];
   const made = await createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
-    routes: manifest({
-      "app.item": { path: "/item/:id", params: s.object({ id: s.string() }), component: view },
-    }),
+    routes: manifest(c, { "app.item": { component: view } }),
     ctx: createCtx({ mode: "sim", seed: SEED }),
     mode: "dev",
     log: {

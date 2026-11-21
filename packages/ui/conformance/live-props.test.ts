@@ -1,11 +1,14 @@
 // @vitest-environment happy-dom
 // Spec: k.ui Conformance, "A getter `label` over a signal on an `Input`, `Select`, `TextArea`, `Checkbox` and `Box as="nav"` shows each write on the same element."
 // Seed: 1337.
+import { createCtx } from "@keel/ctx";
 import { type Signal, scope, signal } from "@keel/reactive";
 import { mount } from "@keel/runtime-dom";
 import { Box, Checkbox, Input, Select, TextArea } from "@keel/ui";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
+
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 const SEED = 1337;
 const flush = async (): Promise<void> => {
@@ -99,7 +102,7 @@ describe("k.ui: a getter label over a signal shows each write on the same elemen
           const label = owned(first);
           const root = document.createElement("div");
           document.body.appendChild(root);
-          const off = mount(() => build(label), root);
+          const off = mount(() => build(label), root, { ctx: simCtx });
           await flush();
           const el = root.querySelector("#x");
           expect(el).not.toBeNull();

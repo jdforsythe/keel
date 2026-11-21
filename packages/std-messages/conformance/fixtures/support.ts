@@ -13,7 +13,7 @@ export default module({
   id: 'recipes',
   deps: ['@keel/std-messages', '@keel/std-i18n'],
   capabilities: [],
-  public: { exports: [], routes: [] },
+  public: { exports: [] },
 })
 `;
 

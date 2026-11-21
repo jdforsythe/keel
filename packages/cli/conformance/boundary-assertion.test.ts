@@ -91,7 +91,8 @@ describe("k.boundary: a page importing a server-only file with a query fails `vi
 describe("k.boundary: a plain file calling `loader` in a browser build is one E1007 of reason `handler`", () => {
   const plain = (): Tree =>
     withFiles(nodeTree("node"), {
-      "modules/a/loadPlain.ts": `import { loader } from '@keel/router'\nimport { ok } from '@keel/schema'\nimport { Out } from './Out.schema.ts'\nimport { Params } from './Params.schema.ts'\nimport { Search } from './Search.schema.ts'\nexport const loadPlain = loader({ output: Out, params: Params, search: Search }, async () => {\n  Reflect.set(globalThis, 'plainRan', '${CANARY.plain}')\n  return ok({ title: 'p' })\n})\n`,
+      "modules/a/loadPlain.ts": `import { loader } from '@keel/router'\nimport { ok } from '@keel/schema'\nimport { a } from './a.contract.ts'\nimport { Out } from './Out.schema.ts'\nexport const loadPlain = loader(a, 'a.show', { output: Out }, async () => {\n  Reflect.set(globalThis, 'plainRan', '${CANARY.plain}')\n  return ok({ title: 'p' })\n})\n`,
+      "modules/a/Page.tsx": `import './routes.ts'\n${PAGE}`,
       "modules/a/routes.ts": (nodeTree("node")["modules/a/routes.ts"] ?? "")
         .replace("import { load } from './load.server.ts'", "import { loadPlain } from './loadPlain.ts'")
         .replace("loader: load,", "loader: loadPlain,"),
@@ -122,14 +123,14 @@ describe("k.boundary: a plain file calling `loader` in a browser build is one E1
 
 describe("k.boundary: a plain file calling `loader`, `action` or `guard` from `@keel/router` is the same E1007, whichever it calls", () => {
   const calls = {
-    loader: "loader({ output: s.object({}) }, async () => ok({}))",
-    action: "action({ input: s.object({}) }, async () => ok(null))",
+    loader: "loader(a, 'a.show', { output: s.object({}) }, async () => ok({}))",
+    action: "action(a, 'a.show', { input: s.object({}) }, async () => ok(null))",
     guard: "guard({ redirect: 'a.home' }, async () => ok(null))",
   } as const;
   for (const [ctor, call] of Object.entries(calls)) {
     test(`\`${ctor}\` called in \`modules/a/plain.ts\`, imported by \`Page.tsx\`, fails with reason \`handler\` and a chain ending \`modules/a/Page.tsx -> modules/a/plain.ts\``, async () => {
       const files = withFiles(nodeTree("node"), {
-        "modules/a/plain.ts": `import { ${ctor} } from '@keel/router'\nimport { ok, s } from '@keel/schema'\nexport const plain = ${call}\n`,
+        "modules/a/plain.ts": `import { ${ctor} } from '@keel/router'\nimport { ok, s } from '@keel/schema'\nimport { a } from './a.contract.ts'\nexport const plain = ${call}\n`,
         "modules/a/Page.tsx": page("import { plain } from './plain.ts'", "plain"),
       });
       await inProject(files, (dir) => {
@@ -176,8 +177,8 @@ describe("k.boundary: the assertion lets a correct project and a `client` deploy
   test("a plain file of a module a `client` deployable lists that calls `loader` builds with exit 0 and no E1007", async () => {
     const files = withFiles(clientTree(), {
       "modules/w/plainW.ts":
-        "import { loader } from '@keel/router'\nimport { ok } from '@keel/schema'\nimport { Out } from './Out.schema.ts'\n" +
-        "export const plainW = loader({ output: Out }, async () => ok({ title: 'w' }))\n",
+        "import { loader } from '@keel/router'\nimport { ok } from '@keel/schema'\nimport { w } from './w.contract.ts'\nimport { Out } from './Out.schema.ts'\n" +
+        "export const plainW = loader(w, 'w.home', { output: Out }, async () => ok({ title: 'w' }))\n",
       "modules/w/routes.ts": (clientTree()["modules/w/routes.ts"] ?? "").replace(
         "import { loadW } from './loadW.server.ts'",
         "import { plainW as loadW } from './plainW.ts'",
@@ -193,11 +194,11 @@ describe("k.boundary: the assertion lets a correct project and a `client` deploy
   test("a file of a module the `client` deployable does not list that calls `loader`, reached from its page, is one E1007 of reason `handler`", async () => {
     const files = withFiles(clientTree(), {
       "modules/a/loadPlain.ts":
-        "import { loader } from '@keel/router'\nimport { ok } from '@keel/schema'\nimport { Out } from './Out.schema.ts'\n" +
-        "export const loadPlain = loader({ output: Out }, async () => ok({ title: 'p' }))\n",
+        "import { loader } from '@keel/router'\nimport { ok } from '@keel/schema'\nimport { a } from './a.contract.ts'\nimport { Out } from './Out.schema.ts'\n" +
+        "export const loadPlain = loader(a, 'a.show', { output: Out }, async () => ok({ title: 'p' }))\n",
       "modules/w/View.tsx": (clientTree()["modules/w/View.tsx"] ?? "").replace(
-        "import { routes } from './routes.ts'",
-        "import { routes } from './routes.ts'\nimport { loadPlain } from '../a/loadPlain.ts'\nReflect.set(globalThis, 'foreign', loadPlain)",
+        "import { w } from './w.contract.ts'",
+        "import { w } from './w.contract.ts'\nimport { loadPlain } from '../a/loadPlain.ts'\nReflect.set(globalThis, 'foreign', loadPlain)",
       ),
     });
     await inProject(files, (dir) => {

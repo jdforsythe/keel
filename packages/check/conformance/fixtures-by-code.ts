@@ -17,6 +17,7 @@ export interface CodeFixture {
 }
 
 const f = (path: string, source: string): Files[number] => ({ path, source });
+const HOST_HEAD = "import { Host } from '@keel/ui'\nimport { In } from './In.schema.ts'\n";
 const UI = "import { Box, Text, Button } from '@keel/ui'\n";
 const SCHEMA = "import { s } from '@keel/schema'\n";
 const SERVICES = "import { endpoints } from '@keel/services'\n";
@@ -25,29 +26,37 @@ const MOUNT_HEAD = "import { identityMount } from '@keel/router'\n";
 const MOUNT_SERVER =
   "import { identity } from '@keel/server'\nimport mount from './identity.ts'\nexport default identity({ identify: async () => '', handle: { path: mount.path, fn: () => new Response('') } })\n";
 const MOUNT_USE = "import mount from '../../identity.ts'\nexport const signin = mount.href('/sign-in/email')\n";
+const TOPO = (origins: string): string =>
+  `import { topology } from '@keel/server'\nexport default topology({ web: { modules: ['a'], adapter: 'node', origins: ${origins} } })\n`;
 const manifest = (id: string, extra = ""): Files[number] =>
   f(
     `modules/${id}/module.ts`,
-    `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [], routes: [] }${extra} })\n`,
+    `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [] }${extra} })\n`,
   );
-const mod = (
-  id: string,
-  deps: string[],
-  exports: string[],
-  routes: string[] = [],
-  caps: string[] = [],
-): Files[number] => {
+const mod = (id: string, deps: string[], exports: string[], caps: string[] = []): Files[number] => {
   const q = (xs: string[]): string => `[${xs.map((x) => `'${x}'`).join(", ")}]`;
   return f(
     `modules/${id}/module.ts`,
-    `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: ${q(deps)}, capabilities: ${q(caps)}, public: { exports: ${q(exports)}, routes: ${q(routes)} } })\n`,
+    `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: ${q(deps)}, capabilities: ${q(caps)}, public: { exports: ${q(exports)} } })\n`,
   );
 };
-const routes = (id: string, ids: string[]): Files[number] =>
+/** A module's contract (k.contract) at `modules/<id>/<id>.contract.ts` over `entries`, source text of the entries object body. */
+const contractFile = (id: string, entries: string): Files[number] =>
+  f(
+    `modules/${id}/${id}.contract.ts`,
+    `import { contract } from '@keel/router/contract'\nimport { s } from '@keel/schema'\nexport const ${id} = contract('${id}', { ${entries} })\n`,
+  );
+/** The module's `routes.ts` binding its contract; `binding` is the source text of the binding object body. */
+const bindingFile = (id: string, binding: string): Files[number] =>
   f(
     `modules/${id}/routes.ts`,
-    `import { manifest } from '@keel/router'\nconst Page = () => null\nexport const routes = manifest({\n${ids.map((r) => `  '${r}': { path: '/${r.replace(/\./g, "/")}', component: Page },`).join("\n")}\n})\n`,
+    `import { manifest } from '@keel/router'\nimport { ${id} } from './${id}.contract.ts'\ndeclare const Page: () => Node\nexport const routes = manifest(${id}, { ${binding} })\n`,
   );
+/** A module of page ids `ids`: its contract and its binding. */
+const pages = (id: string, ids: string[]): Files[number][] => [
+  contractFile(id, ids.map((r) => `'${r}': { path: '/${r.replace(/\./g, "/")}' },`).join(" ")),
+  bindingFile(id, ids.map((r) => `'${r}': { component: Page },`).join(" ")),
+];
 const exp = (id: string, name: string): Files[number] => f(`modules/${id}/${name}.ts`, `export const ${name} = 1\n`);
 const use = (id: string, from: string, name: string): Files[number] =>
   f(`modules/${id}/Use.ts`, `import { ${name} } from '../${from}/${name}.ts'\nexport const Use = ${name}\n`);
@@ -56,17 +65,8 @@ const NO_TYPES: Options = { types: false };
 const IMPORT = "import { serverState } from '@keel/store/internal'\nexport const x = serverState\n";
 /** A root where `@keel/router` resolves, for fixtures whose rule reads real types (E1510). */
 const ROUTER_ROOT = path.join(repoRoot(import.meta.dirname), "packages", "router", path.sep);
-const apiRoutes = (entries: string): Files[number] =>
-  f(
-    "modules/a/routes.ts",
-    `import { manifest } from '@keel/router'\ndeclare const Page: () => Node\nexport const routes = manifest({ ${entries} })\n`,
-  );
-/** E1512: a manifest whose API route's POST is bound to a declared action of type `kind` (a page action, or an API action with `output`). */
-const apiActions = (kind: string, entries: string): Files[number] =>
-  f(
-    "modules/a/routes.ts",
-    `import { manifest } from '@keel/router'\nimport type { Action, ApiAction } from '@keel/router'\ndeclare const Page: () => Node\ndeclare const post: ${kind}\nexport const routes = manifest({ ${entries} })\nroutes.actions({ 'a.list': { POST: post } })\n`,
-  );
+/** A contract file of module `a` over `entries` (E1510, E1511). */
+const apiRoutes = (entries: string): Files[number] => contractFile("a", entries);
 /** A union prop for E1402 (k.component: one `Case` per variant). */
 const MATCH = `${SCHEMA}import { Match, Case } from '@keel/runtime-dom'\nexport const Props = s.object({ shape: s.union('kind', [s.object({ kind: s.literal('circle') }), s.object({ kind: s.literal('square') })]) })\n`;
 /** Color tokens for E1804: `mid` on `white` is about 3:1, `ink` on `white` passes 4.5:1 in both schemes. */
@@ -100,49 +100,35 @@ const fields = (...names: string[]) => ({
   properties: Object.fromEntries(names.map((n) => [n, { type: "string" }])),
   required: names,
 });
-/** A surface with no routes or services and one store `m.s` of state `state` and transactions `txs`. */
+/** A surface (k.compat, `version: 2`) with no contract and one store `m.s` of state `state` and transactions `txs`. */
 const storesSurface = (state: unknown, txs: Record<string, unknown>) => ({
-  routes: {},
-  services: [],
+  version: 2,
+  contracts: {},
   stores: { "m.s": { state, transactions: txs } },
 });
-/** Module `a` calls `POST /y/save` of module `y` with `body`; the route's action input is `input`. */
-const surfaceOf = (input: unknown, body: unknown) => ({
-  routes: {
-    "y.save": {
+/** A surface of contract `y`, imported by module `a`, whose API entry `y.save` is `POST /y/save` with `body`. */
+const surfaceOf = (body: unknown) => ({
+  version: 2,
+  contracts: {
+    y: {
       module: "y",
-      path: "/y/save",
-      file: "modules/y/routes.ts",
-      params: null,
-      search: null,
-      get: {},
-      actions: { POST: { input, answer: ANSWER } },
-    },
-  },
-  services: [
-    {
-      file: "modules/a/api.ts",
-      caller: "a",
-      module: "y",
-      endpoints: {
-        save: { method: "POST", path: "/y/save", params: null, query: null, body, output: ANSWER, errors: {} },
+      callers: ["a"],
+      entries: {
+        "y.save": { method: "POST", path: "/y/save", params: null, query: null, body, output: ANSWER, errors: {} },
       },
     },
-  ],
-  sources: {},
+  },
+  stores: {},
 });
 const SPLIT = {
   x: { modules: ["a"], adapter: "node" },
   y: { modules: ["y"], adapter: "node" },
 } as const;
 
-/** Module `b` serves `GET /b/pub` with a loader; module `a` calls `/b/pub` through `service({ base: <base> })`. */
+/** Module `b` serves `GET /b/pub` through its contract; module `a` calls `/b/pub` through `service({ base: <base> })`. */
 const sameAppService = (base: string): Files => [
-  mod("b", [], ["routes"], ["b.pub"]),
-  f(
-    "modules/b/routes.ts",
-    "import { manifest } from '@keel/router'\nexport const routes = manifest({ 'b.pub': { api: true, path: '/b/pub' } })\n",
-  ),
+  mod("b", [], []),
+  contractFile("b", "'b.pub': { method: 'GET', path: '/b/pub', output: s.json() },"),
   mod("a", ["b"], []),
   f(
     "modules/a/BApi.schema.ts",
@@ -255,16 +241,16 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
         `${SCHEMA}export const Params = s.object({ email: s.string().pii('contact') })\n`,
       ),
       f(
-        "modules/app/routes.ts",
-        "import { manifest } from '@keel/router'\nimport { Params } from './Params.schema.ts'\nconst Page = () => null\nexport const routes = manifest({ 'app.show': { path: '/show/:email', params: Params, component: Page } })\n",
+        "modules/app/app.contract.ts",
+        "import { contract } from '@keel/router/contract'\nimport { Params } from './Params.schema.ts'\nexport const app = contract('app', { 'app.show': { path: '/show/:email', params: Params } })\n",
       ),
     ],
     clean: [
       manifest("app"),
       f("modules/app/Params.schema.ts", `${SCHEMA}export const Params = s.object({ email: s.string() })\n`),
       f(
-        "modules/app/routes.ts",
-        "import { manifest } from '@keel/router'\nimport { Params } from './Params.schema.ts'\nconst Page = () => null\nexport const routes = manifest({ 'app.show': { path: '/show/:email', params: Params, component: Page } })\n",
+        "modules/app/app.contract.ts",
+        "import { contract } from '@keel/router/contract'\nimport { Params } from './Params.schema.ts'\nexport const app = contract('app', { 'app.show': { path: '/show/:email', params: Params } })\n",
       ),
     ],
   },
@@ -299,8 +285,8 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
   E1154: { bad: [mod("a", [], ["Ghost"])], clean: [mod("a", [], ["Ghost"]), exp("a", "Ghost")] },
   E1155: {
     opts: NO_TYPES,
-    bad: [manifest("orders"), routes("orders", ["show"])],
-    clean: [manifest("orders"), routes("orders", ["orders.show"])],
+    bad: [manifest("orders"), ...pages("orders", ["show"])],
+    clean: [manifest("orders"), ...pages("orders", ["orders.show"])],
   },
   E1156: {
     bad: [
@@ -308,23 +294,8 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       f("modules/a/Run.ts", "import type { Ctx } from '@keel/ctx'\nexport const Run = (ctx: Ctx) => ctx.clock.now()\n"),
     ],
     clean: [
-      mod("a", [], [], [], ["clock"]),
+      mod("a", [], [], ["clock"]),
       f("modules/a/Run.ts", "import type { Ctx } from '@keel/ctx'\nexport const Run = (ctx: Ctx) => ctx.clock.now()\n"),
-    ],
-  },
-  E1157: {
-    opts: NO_TYPES,
-    bad: [
-      mod("b", [], ["routes"], ["b.pub"]),
-      routes("b", ["b.pub", "b.priv"]),
-      mod("a", ["b"], []),
-      f("modules/a/Back.ts", "import { routes } from '../b/routes.ts'\nexport const Back = routes.href('b.priv')\n"),
-    ],
-    clean: [
-      mod("b", [], ["routes"], ["b.pub"]),
-      routes("b", ["b.pub", "b.priv"]),
-      mod("a", ["b"], []),
-      f("modules/a/Back.ts", "import { routes } from '../b/routes.ts'\nexport const Back = routes.href('b.pub')\n"),
     ],
   },
   E1158: {
@@ -332,13 +303,13 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
     bad: [
       f(
         "modules/a/module.ts",
-        "import { module } from '@keel/compiler'\nexport default module({ id: 'a', deps: [], capabilities: [], public: { exports: [], routes: [] }, std: { '@keel/std-fixture': { limit: 1 } } })\n",
+        "import { module } from '@keel/compiler'\nexport default module({ id: 'a', deps: [], capabilities: [], public: { exports: [] }, std: { '@keel/std-fixture': { limit: 1 } } })\n",
       ),
     ],
     clean: [
       f(
         "modules/a/module.ts",
-        "import { module } from '@keel/compiler'\nexport default module({ id: 'a', deps: ['@keel/std-fixture'], capabilities: [], public: { exports: [], routes: [] }, std: { '@keel/std-fixture': { limit: 1 } } })\n",
+        "import { module } from '@keel/compiler'\nexport default module({ id: 'a', deps: ['@keel/std-fixture'], capabilities: [], public: { exports: [] }, std: { '@keel/std-fixture': { limit: 1 } } })\n",
       ),
     ],
   },
@@ -522,61 +493,156 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       ),
     ],
     clean: [
+      mod("orders", [], []),
+      contractFile("orders", "'orders.list': { path: '/orders' }"),
       f(
-        "C.tsx",
-        `${UI}import { Link } from '@keel/ui'\nimport { manifest } from '@keel/router'\nconst Page = () => null\nconst routes = manifest({ 'orders.list': { path: '/orders', component: Page } })\nexport default function C() { return <Link to={routes.href('orders.list')}>x</Link> }\n`,
+        "modules/orders/C.tsx",
+        `${UI}import { Link } from '@keel/ui'\nimport { orders } from './orders.contract.ts'\nexport default function C() { return <Link to={orders.href('orders.list')}>x</Link> }\n`,
       ),
     ],
   },
-  E1507: {
-    opts: NO_TYPES,
-    bad: [
-      f(
-        "src/load.server.ts",
-        "import { loader } from '@keel/router'\ndeclare const Out: unknown\nexport const load = loader({ output: Out }, async ({ params }: { params: unknown }) => params)\n",
-      ),
-    ],
-    clean: [
-      f(
-        "src/load.server.ts",
-        "import { loader } from '@keel/router'\ndeclare const Out: unknown\nexport const load = loader({ output: Out }, async ({ params }) => params)\n",
-      ),
-    ],
-  },
+  // E1510 over a contract literal (k.contract): an API entry carrying `search`, a member its kind refuses; the fix removes it.
   E1510: {
     opts: { root: ROUTER_ROOT },
-    bad: [apiRoutes("'a.list': { api: true, path: '/api/list', component: Page }")],
-    clean: [apiRoutes("'a.list': { api: true, path: '/api/list' }, 'a.home': { path: '/', component: Page }")],
-  },
-  E1512: {
-    opts: { root: ROUTER_ROOT },
-    bad: [
-      apiActions(
-        "Action<unknown>",
-        "'a.list': { api: true, path: '/api/list' }, 'a.home': { path: '/', component: Page }",
-      ),
-    ],
-    clean: [
-      apiActions(
-        "ApiAction<unknown, unknown>",
-        "'a.list': { api: true, path: '/api/list' }, 'a.home': { path: '/', component: Page }",
-      ),
-    ],
+    bad: [apiRoutes("'a.list': { method: 'GET', path: '/api/list', output: s.object({}), search: s.object({}) }")],
+    clean: [apiRoutes("'a.list': { method: 'GET', path: '/api/list', output: s.object({}) }, 'a.home': { path: '/' }")],
   },
   E1511: {
     badOpts: { ...NO_TYPES, topology: { web: { modules: ["a"], adapter: "client" } } },
     cleanOpts: { ...NO_TYPES, topology: { api: { modules: ["a"], adapter: "node" } } },
-    bad: [apiRoutes("'a.list': { api: true, path: '/api/list' }")],
-    clean: [apiRoutes("'a.list': { api: true, path: '/api/list' }")],
+    bad: [apiRoutes("'a.list': { method: 'GET', path: '/api/list', output: s.object({}) }")],
+    clean: [apiRoutes("'a.list': { method: 'GET', path: '/api/list', output: s.object({}) }")],
+  },
+  // k.contract Rules. E1513: a `contract()` call outside `<id>.contract.ts` (here in `a.ts`); no fix.
+  E1513: {
+    opts: NO_TYPES,
+    bad: [
+      mod("a", [], []),
+      f(
+        "modules/a/a.ts",
+        "import { contract } from '@keel/router/contract'\nexport const a = contract('a', { 'a.home': { path: '/' } })\n",
+      ),
+    ],
+    clean: [mod("a", [], []), contractFile("a", "'a.home': { path: '/' }")],
+  },
+  // E1514: a contract file importing a file that is no `*.schema.ts`; at the import, no fix.
+  E1514: {
+    opts: NO_TYPES,
+    bad: [
+      mod("a", [], []),
+      f("modules/a/helper.ts", "export const helper = 1\n"),
+      f(
+        "modules/a/a.contract.ts",
+        "import { contract } from '@keel/router/contract'\nimport { helper } from './helper.ts'\nexport const a = contract('a', { 'a.home': { path: '/' } })\n",
+      ),
+    ],
+    clean: [
+      mod("a", [], []),
+      f("modules/a/Home.schema.ts", "export const home = '/'\n"),
+      f(
+        "modules/a/a.contract.ts",
+        "import { contract } from '@keel/router/contract'\nimport { home } from './Home.schema.ts'\nexport const a = contract('a', { 'a.home': { path: home } })\n",
+      ),
+    ],
+  },
+  // E1515: a binding with a key the contract lacks (a type error); the fix removes the extra key.
+  E1515: {
+    opts: { root: ROUTER_ROOT },
+    bad: [
+      mod("a", [], []),
+      contractFile("a", "'a.home': { path: '/' }"),
+      bindingFile("a", "'a.home': { component: Page }, 'a.extra': { component: Page }"),
+    ],
+    clean: [
+      mod("a", [], []),
+      contractFile("a", "'a.home': { path: '/' }"),
+      bindingFile("a", "'a.home': { component: Page }"),
+    ],
+  },
+  // k.routes Where rules fire. E1502: two pages of one contract on one path pattern; no fix.
+  E1502: {
+    opts: NO_TYPES,
+    bad: [mod("a", [], []), contractFile("a", "'a.one': { path: '/x' }, 'a.two': { path: '/x' }")],
+    clean: [mod("a", [], []), contractFile("a", "'a.one': { path: '/x' }, 'a.two': { path: '/y' }")],
+  },
+  // E1503: a `:name` in an entry's `path` without a `params` field; no fix.
+  E1503: {
+    opts: NO_TYPES,
+    bad: [mod("a", [], []), contractFile("a", "'a.show': { path: '/s/:id' }")],
+    clean: [mod("a", [], []), contractFile("a", "'a.show': { path: '/s/:id', params: s.object({ id: s.string() }) }")],
+  },
+  // E1504: a required field in a page's `search` schema; no fix.
+  E1504: {
+    opts: NO_TYPES,
+    bad: [mod("a", [], []), contractFile("a", "'a.list': { path: '/l', search: s.object({ q: s.string() }) }")],
+    clean: [
+      mod("a", [], []),
+      contractFile("a", "'a.list': { path: '/l', search: s.object({ q: s.string().optional() }) }"),
+    ],
+  },
+  // E1506: a binding's `layout` naming no layout of the contract (a type error read at `layout`); no fix.
+  E1506: {
+    opts: { root: ROUTER_ROOT },
+    bad: [
+      mod("a", [], []),
+      contractFile("a", "'a.shell': { layout: true }, 'a.home': { path: '/' }"),
+      bindingFile("a", "'a.shell': { component: Page }, 'a.home': { component: Page, layout: 'a.ghost' }"),
+    ],
+    clean: [
+      mod("a", [], []),
+      contractFile("a", "'a.shell': { layout: true }, 'a.home': { path: '/' }"),
+      bindingFile("a", "'a.shell': { component: Page }, 'a.home': { component: Page, layout: 'a.shell' }"),
+    ],
+  },
+  // E1407 (rfc:0162): a component's second parameter optional (or a middle `slots` parameter before it); the fix is `(props, ctx: Ctx)`.
+  E1407: {
+    opts: NO_TYPES,
+    bad: [
+      f(
+        "C.tsx",
+        `${UI}import type { Ctx } from '@keel/ctx'\nexport default function C(props: { a: string }, _slots?: undefined, ctx?: Ctx) { return <Text>{props.a}</Text> }\n`,
+      ),
+    ],
+    clean: [
+      f(
+        "C.tsx",
+        `${UI}import type { Ctx } from '@keel/ctx'\nexport default function C(props: { a: string }, ctx: Ctx) { return <Text>{props.a}</Text> }\n`,
+      ),
+    ],
+  },
+  E1552: {
+    opts: NO_TYPES,
+    bad: [
+      f(
+        "topology.ts",
+        "import { topology } from '@keel/server'\nexport default topology({ api: { modules: ['a'], adapter: 'node' }, web: { modules: ['w'], adapter: 'client', host: 'api' } })\n",
+      ),
+      manifest("a"),
+      manifest("w"),
+    ],
+    clean: [
+      f(
+        "topology.ts",
+        "import { topology } from '@keel/server'\nexport default topology({ api: { modules: ['a'], adapter: 'node' }, web: { modules: ['w'], adapter: 'client', servedBy: 'api' } })\n",
+      ),
+      manifest("a"),
+      manifest("w"),
+    ],
   },
   E1566: {
     badOpts: {
       ...NO_TYPES,
-      topology: { api: { modules: ["a"], adapter: "node" }, web: { modules: ["w"], adapter: "client", host: "web" } },
+      topology: {
+        api: { modules: ["a"], adapter: "node" },
+        web: { modules: ["w"], adapter: "client", servedBy: "web" },
+      },
     },
     cleanOpts: {
       ...NO_TYPES,
-      topology: { api: { modules: ["a"], adapter: "node" }, web: { modules: ["w"], adapter: "client", host: "api" } },
+      topology: {
+        api: { modules: ["a"], adapter: "node" },
+        web: { modules: ["w"], adapter: "client", servedBy: "api" },
+      },
     },
     bad: [f("modules/w/x.ts", "export const x = 1;\n")],
     clean: [f("modules/w/x.ts", "export const x = 1;\n")],
@@ -623,18 +689,14 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       manifest("app"),
     ],
   },
-  E1561: {
-    bad: [surfaceFile(surfaceOf(fields("name", "note"), fields("name")))],
-    clean: [surfaceFile(surfaceOf(fields("name", "note"), fields("name", "note")))],
-  },
   E1562: {
-    badOpts: { base: surfaceOf(fields("name"), fields("name")), topology: SPLIT },
+    badOpts: { base: surfaceOf(fields("name")), topology: SPLIT },
     cleanOpts: {
-      base: surfaceOf(fields("name"), fields("name")),
+      base: surfaceOf(fields("name")),
       topology: { x: { modules: ["a", "y"], adapter: "node" } },
     },
-    bad: [surfaceFile(surfaceOf(fields("name", "note"), fields("name", "note")))],
-    clean: [surfaceFile(surfaceOf(fields("name", "note"), fields("name", "note")))],
+    bad: [surfaceFile(surfaceOf(fields("name", "note")))],
+    clean: [surfaceFile(surfaceOf(fields("name", "note")))],
   },
   E1563: {
     badOpts: { base: storesSurface(fields("a"), {}) },
@@ -642,7 +704,7 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
     bad: [surfaceFile(storesSurface(fields("a", "b"), {}))],
     clean: [surfaceFile(storesSurface(fields("a"), {}))],
   },
-  // E1567 (rfc:0092 B6): module `b` serves GET `/b/pub` (loader, `public.routes`); module `a` calls it through `service({ base })`.
+  // E1567 (rfc:0092 B6): module `b` serves GET `/b/pub` (a contract entry and its loader); module `a` calls it through `service({ base })`.
   // Assumption: `a` lists `b` in `deps` so no other code reports; the callers' `schema` is a sibling `*.schema.ts` of literals, as in module-service-E1152-E1157.test.ts; the rule matches the endpoint's method and `samePath` to a route literal (the RFC does not say the route needs a loader).
   E1567: {
     opts: NO_TYPES,
@@ -652,46 +714,52 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
   E1508: {
     opts: NO_TYPES,
     bad: [
+      mod("app", [], []),
+      contractFile("app", "'app.shell': { layout: true }, 'app.login': { path: '/login' }"),
       f(
-        "src/auth.guard.ts",
+        "modules/app/auth.guard.ts",
         "import { guard } from '@keel/router'\nimport { ok } from '@keel/schema'\nexport const auth = guard({ redirect: 'app.login' }, async () => ok(null))\n",
       ),
       f(
-        "src/routes.ts",
-        "import { manifest } from '@keel/router'\nimport { auth } from './auth.guard.ts'\nconst Page = () => null\nexport const routes = manifest({\n  'app.shell': { component: Page, guard: auth },\n  'app.login': { path: '/login', component: Page, layout: 'app.shell' },\n})\n",
+        "modules/app/routes.ts",
+        "import { manifest } from '@keel/router'\nimport { app } from './app.contract.ts'\nimport { auth } from './auth.guard.ts'\ndeclare const Page: () => Node\nexport const routes = manifest(app, {\n  'app.shell': { component: Page, guard: auth },\n  'app.login': { component: Page, layout: 'app.shell' },\n})\n",
       ),
     ],
     clean: [
+      mod("app", [], []),
+      contractFile("app", "'app.shell': { layout: true }, 'app.home': { path: '/' }, 'app.login': { path: '/login' }"),
       f(
-        "src/auth.guard.ts",
+        "modules/app/auth.guard.ts",
         "import { guard } from '@keel/router'\nimport { ok } from '@keel/schema'\nexport const auth = guard({ redirect: 'app.login' }, async () => ok(null))\n",
       ),
       f(
-        "src/routes.ts",
-        "import { manifest } from '@keel/router'\nimport { auth } from './auth.guard.ts'\nconst Page = () => null\nexport const routes = manifest({\n  'app.shell': { component: Page, guard: auth },\n  'app.home': { path: '/', component: Page, layout: 'app.shell' },\n  'app.login': { path: '/login', component: Page },\n})\n",
+        "modules/app/routes.ts",
+        "import { manifest } from '@keel/router'\nimport { app } from './app.contract.ts'\nimport { auth } from './auth.guard.ts'\ndeclare const Page: () => Node\nexport const routes = manifest(app, {\n  'app.shell': { component: Page, guard: auth },\n  'app.home': { component: Page, layout: 'app.shell' },\n  'app.login': { component: Page },\n})\n",
       ),
     ],
   },
   E1509: {
     opts: NO_TYPES,
     bad: [
+      mod("app", [], []),
       f(
-        "src/Locale.schema.ts",
+        "modules/app/Locale.schema.ts",
         `${SCHEMA}export const Locale = s.enum(['en-US', 'de-DE'], { pathDefault: 'en-US' })\n`,
       ),
       f(
-        "src/routes.ts",
-        `import { manifest } from '@keel/router'\n${SCHEMA}import { Locale } from './Locale.schema.ts'\nconst Page = () => null\nexport const routes = manifest({\n  'app.home': { path: '/:locale', params: s.object({ locale: Locale }), component: Page },\n  'app.about': { path: '/about', component: Page },\n  'app.de': { path: '/de-DE/x', component: Page },\n})\n`,
+        "modules/app/app.contract.ts",
+        `import { contract } from '@keel/router/contract'\n${SCHEMA}import { Locale } from './Locale.schema.ts'\nexport const app = contract('app', {\n  'app.home': { path: '/:locale', params: s.object({ locale: Locale }) },\n  'app.about': { path: '/about' },\n  'app.de': { path: '/de-DE/x' },\n})\n`,
       ),
     ],
     clean: [
+      mod("app", [], []),
       f(
-        "src/Locale.schema.ts",
+        "modules/app/Locale.schema.ts",
         `${SCHEMA}export const Locale = s.enum(['en-US', 'de-DE'], { pathDefault: 'en-US' })\n`,
       ),
       f(
-        "src/routes.ts",
-        `import { manifest } from '@keel/router'\n${SCHEMA}import { Locale } from './Locale.schema.ts'\nconst Page = () => null\nexport const routes = manifest({\n  'app.home': { path: '/:locale', params: s.object({ locale: Locale }), component: Page },\n  'app.about': { path: '/:locale/about', params: s.object({ locale: Locale }), component: Page },\n})\n`,
+        "modules/app/app.contract.ts",
+        `import { contract } from '@keel/router/contract'\n${SCHEMA}import { Locale } from './Locale.schema.ts'\nexport const app = contract('app', {\n  'app.home': { path: '/:locale', params: s.object({ locale: Locale }) },\n  'app.about': { path: '/:locale/about', params: s.object({ locale: Locale }) },\n})\n`,
       ),
     ],
   },
@@ -863,6 +931,19 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       f("identity.ts", `${MOUNT_HEAD}export default identityMount('/api/auth', { links: ['/verify'] })\n`),
       f("identity.server.ts", MOUNT_SERVER),
     ],
+  },
+  E1590: {
+    opts: NO_TYPES,
+    bad: [manifest("a"), f("topology.ts", TOPO("{ img: { 'https://cdn.example/': 'r' } }"))],
+    clean: [manifest("a"), f("topology.ts", TOPO("{ img: { 'https://cdn.example': 'r' } }"))],
+  },
+  E1591: {
+    opts: NO_TYPES,
+    bad: [
+      manifest("a"),
+      f("topology.ts", TOPO("{ img: { 'https://cdn.example': 'one', 'https://cdn.example': 'two' } }")),
+    ],
+    clean: [manifest("a"), f("topology.ts", TOPO("{ img: { 'https://cdn.example': 'one' } }"))],
   },
   E1601: {
     bad: [f("src/id.ts", "export const id = () => crypto.randomUUID()\n")],
@@ -1064,11 +1145,6 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       ),
     ],
   },
-  E1822: {
-    opts: NO_TYPES,
-    bad: [f("modules/a/x.ts", "import { Part } from '@keel/ui/aria'\nexport const x = Part\n")],
-    clean: [f("packages/std-x/src/a.ts", "import { Part } from '@keel/ui/aria'\nexport const a = Part\n")],
-  },
   E1823: {
     opts: NO_TYPES,
     bad: [
@@ -1082,6 +1158,38 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
         "C.tsx",
         "import { DataTable } from '@keel/std-tables'\nexport default function C() { return <DataTable styles={{ table: { p: '2' } }} /> }\n",
       ),
+    ],
+  },
+  E1824: {
+    opts: NO_TYPES,
+    bad: [
+      f(
+        "C.tsx",
+        `${HOST_HEAD}const load = () => import('./chart.ts').then((m) => m.chart)\nexport default function C() { return <Host id="c.h" role="img" label="L" input={In} value={{ n: 1 }} code={load} /> }\n`,
+      ),
+    ],
+    clean: [
+      f(
+        "C.tsx",
+        `${HOST_HEAD}export default function C() { return <Host id="c.h" role="img" label="L" input={In} value={{ n: 1 }} code={() => import('./chart.ts').then((m) => m.chart)} /> }\n`,
+      ),
+    ],
+  },
+  E1825: {
+    opts: NO_TYPES,
+    bad: [
+      f(
+        "C.tsx",
+        `import 'x/a.css'\n${HOST_HEAD}export default function C() { return <Host id="c.h" role="img" label="L" input={In} value={{ n: 1 }} code={() => import('./chart.ts').then((m) => m.chart)} /> }\n`,
+      ),
+      f("chart.ts", "export const chart = undefined\n"),
+    ],
+    clean: [
+      f(
+        "C.tsx",
+        `${HOST_HEAD}export default function C() { return <Host id="c.h" role="img" label="L" input={In} value={{ n: 1 }} code={() => import('./chart.ts').then((m) => m.chart)} /> }\n`,
+      ),
+      f("chart.ts", "import 'x/a.css'\nexport const chart = undefined\n"),
     ],
   },
   E1901: {

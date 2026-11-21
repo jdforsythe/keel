@@ -1,4 +1,4 @@
-/** `@keel/ui` base elements (k.ui Base elements). */
+/** `@keel/ui` base elements (k.ui Base elements), the host element among them (k.host-element). */
 export const BASE_ELEMENTS: ReadonlySet<string> = new Set([
   "Box",
   "Text",
@@ -6,8 +6,10 @@ export const BASE_ELEMENTS: ReadonlySet<string> = new Set([
   "Button",
   "Link",
   "Image",
+  "Frame",
   "Input",
   "TextArea",
   "Select",
   "Checkbox",
+  "Host",
 ]);

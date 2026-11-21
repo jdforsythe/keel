@@ -39,42 +39,46 @@ export default function Home() {
 export const rejectOnLoad = true;
 `,
   "late.server.ts": `import { loader } from "@keel/router";
+import { app } from "./app.contract.ts";
 import { ok } from "@keel/schema";
 import { Data } from "./Data.schema.ts";
 import { throwLater } from "./unsafe/throwLater.ts";
-export const late = loader({ output: Data }, () => {
+export const late = loader(app, "app.late", { output: Data }, () => {
   throwLater(30);
   return Promise.resolve(ok({ title: "late" }));
 });
 `,
   "twice.server.ts": `import { loader } from "@keel/router";
+import { app } from "./app.contract.ts";
 import { ok } from "@keel/schema";
 import { Data } from "./Data.schema.ts";
 import { throwLater } from "./unsafe/throwLater.ts";
-export const twice = loader({ output: Data }, () => {
+export const twice = loader(app, "app.twice", { output: Data }, () => {
   throwLater(30, 40);
   return Promise.resolve(ok({ title: "twice" }));
 });
 `,
   "slow.server.ts": `import { loader } from "@keel/router";
-import { ok } from "@keel/schema";
+import { app } from "./app.contract.ts";
+import { ok, type Result } from "@keel/schema";
 import { Data } from "./Data.schema.ts";
 import { announce } from "./unsafe/announce.ts";
 import { later } from "./unsafe/later.ts";
 export const slow = loader(
-  { output: Data },
+  app, "app.slow", { output: Data },
   () =>
-    new Promise((resolve) => {
+    new Promise<Result<{ title: string }, never>>((resolve) => {
       announce("slow-started\\n");
       later(500, () => resolve(ok({ title: "slow" })));
     }),
 );
 `,
   "hang.server.ts": `import { loader } from "@keel/router";
+import { app } from "./app.contract.ts";
 import { Data } from "./Data.schema.ts";
 import { announce } from "./unsafe/announce.ts";
 export const hang = loader(
-  { output: Data },
+  app, "app.hang", { output: Data },
   () =>
     new Promise<never>(() => {
       announce("hang-started\\n");
@@ -82,24 +86,35 @@ export const hang = loader(
 );
 `,
   "quiet.server.ts": `import { loader } from "@keel/router";
+import { app } from "./app.contract.ts";
 import { ok } from "@keel/schema";
 import { Data } from "./Data.schema.ts";
 import "./unsafe/rejectOnLoad.ts";
-export const quiet = loader({ output: Data }, () => Promise.resolve(ok({ title: "quiet" })));
+export const quiet = loader(app, "app.home", { output: Data }, () => Promise.resolve(ok({ title: "quiet" })));
+`,
+  "app.contract.ts": `import { contract } from "@keel/router/contract";
+export const app = contract("app", {
+  "app.home": { path: "/" },
+  "app.late": { path: "/late" },
+  "app.twice": { path: "/twice" },
+  "app.slow": { path: "/slow" },
+  "app.hang": { path: "/hang" },
+});
 `,
   "routes.ts": `import { manifest } from "@keel/router";
+import { app } from "./app.contract.ts";
 import Home from "./Home.tsx";
 import { hang } from "./hang.server.ts";
 import { late } from "./late.server.ts";
 import { quiet } from "./quiet.server.ts";
 import { slow } from "./slow.server.ts";
 import { twice } from "./twice.server.ts";
-export const routes = manifest({
-  "app.home": { path: "/", component: Home, loader: quiet },
-  "app.late": { path: "/late", component: Home, loader: late },
-  "app.twice": { path: "/twice", component: Home, loader: twice },
-  "app.slow": { path: "/slow", component: Home, loader: slow },
-  "app.hang": { path: "/hang", component: Home, loader: hang },
+export const routes = manifest(app, {
+  "app.home": { component: Home, loader: quiet },
+  "app.late": { component: Home, loader: late },
+  "app.twice": { component: Home, loader: twice },
+  "app.slow": { component: Home, loader: slow },
+  "app.hang": { component: Home, loader: hang },
 });
 `,
 };
@@ -153,7 +168,7 @@ export function buildLeaveFixture(): string {
   write(
     fixture,
     "modules/app/module.ts",
-    'import { module } from "@keel/compiler";\nexport default module({ id: "app", deps: [], capabilities: [], public: { exports: [], routes: [] } });\n',
+    'import { module } from "@keel/compiler";\nexport default module({ id: "app", deps: [], capabilities: [], public: { exports: [] } });\n',
   );
   for (const [rel, source] of Object.entries(APP_FILES)) write(fixture, `modules/app/${rel}`, source);
   const r = spawnSync(process.execPath, [path.join(REPO, "packages", "cli", "src", "bin.ts"), "build"], {

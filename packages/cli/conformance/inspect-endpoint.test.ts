@@ -4,6 +4,7 @@
 import { createCtx } from "@keel/ctx";
 import { inspect, scope } from "@keel/reactive";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { createApp, topology } from "@keel/server";
 import { store, transaction, tx } from "@keel/store";
@@ -13,10 +14,11 @@ import { describe, expect, it } from "vitest";
 const BASE = "http://localhost";
 const SEED = 1337;
 
+const appContract = contract("app", { "app.home": { path: "/" } });
 const build = (mode: "dev" | "production") =>
   createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
-    routes: manifest({ "app.home": { path: "/", component: () => document.createElement("main") } }),
+    routes: manifest(appContract, { "app.home": { component: () => document.createElement("main") } }),
     ctx: createCtx({ mode: "sim", seed: SEED }),
     mode,
   });

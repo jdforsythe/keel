@@ -47,12 +47,12 @@ export function topologyAst(src: string): { obj: ObjectExpression; deployables: 
     const a = propertyValue(prop.value, "adapter");
     const adapter = a?.type === "Literal" ? adapterOf(a.value) : null;
     if (list?.type !== "ArrayExpression" || adapter === null) continue;
-    const h = propertyValue(prop.value, "host");
-    const host = h?.type === "Literal" && typeof h.value === "string" ? h.value : undefined;
+    const h = propertyValue(prop.value, "servedBy");
+    const servedBy = h?.type === "Literal" && typeof h.value === "string" ? h.value : undefined;
     const st = text(prop.value, "storage");
     const storage = STORAGES.find((x) => x === st);
     const shells = shellsOf(prop.value);
-    deployables.push({ name, adapter, modules: stringItems(list), host, storage, shells, prop, list });
+    deployables.push({ name, adapter, modules: stringItems(list), servedBy, storage, shells, prop, list });
   }
   return { obj, deployables };
 }

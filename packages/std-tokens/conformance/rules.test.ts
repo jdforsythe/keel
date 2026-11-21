@@ -17,7 +17,7 @@ import { SEED } from "./fixtures.ts";
 
 type Files = Parameters<typeof check>[0];
 const manifest = `import { module } from "@keel/compiler"
-export default module({ id: "a", deps: ["@keel/std-tokens"], capabilities: ["clock", "random"], public: { exports: [], routes: [] } })
+export default module({ id: "a", deps: ["@keel/std-tokens"], capabilities: ["clock", "random"], public: { exports: [] } })
 `;
 const topo = (adapter: string, name = "web") => `import { topology } from "@keel/server"
 export default topology({ ${name}: { modules: ["a"], adapter: "${adapter}" } })

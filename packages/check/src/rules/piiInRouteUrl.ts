@@ -1,67 +1,36 @@
-import { type Argument, type Expression, type ObjectExpression, Visitor } from "oxc-parser";
+import { type ContractGap, readContract } from "@keel/compiler/internal";
+import { contractCalls } from "../internal/contractCalls.ts";
 import { findingAt } from "../internal/findingAt.ts";
-import { followValue } from "../internal/followValue.ts";
 import { isAppPath } from "../internal/isAppPath.ts";
-import { keyName } from "../internal/keyName.ts";
-import { localNames } from "../internal/modules/localNames.ts";
-import { mutatedBinding } from "../internal/mutatedBinding.ts";
 import { schemaMarks } from "../internal/schemaMarks.ts";
 import { str } from "../internal/str.ts";
 import type { Finding } from "../types/Finding.ts";
 import type { RuleDef } from "../types/RuleDef.ts";
 import type { SourceFile } from "../types/SourceFile.ts";
 
-type Prop = {
-  readonly name: string | null;
-  readonly value: Expression;
-  readonly file: SourceFile;
-  readonly at: number;
+/** The URL parts of a contract entry: a page's `params` and `search`, an API entry's `params` and `query`. */
+const URL_PARTS = new Set(["params", "search", "query"]);
+
+/** The part a message names for each gap of the static reading. */
+const PART: Readonly<Record<ContractGap["part"], string>> = {
+  entries: "table",
+  spread: "entries",
+  key: "ids",
+  entry: "entry",
+  method: "method",
+  path: "path",
+  layout: "layout",
+  events: "events",
 };
 
 /**
- * The properties of the object `expr` names, spreads of followed objects expanded; a package's export (a stdlib
- * route table, checked in its own package) gives none; null when one cannot be read.
- */
-function propsOf(
-  expr: Expression | Argument,
-  file: SourceFile,
-  project: readonly SourceFile[],
-  depth = 0,
-): Prop[] | null {
-  const target = expr.type === "SpreadElement" ? expr.argument : expr;
-  const at = depth > 8 ? null : followValue(target, file, project);
-  if (at === "package") return [];
-  if (at === null || typeof at === "string") return null;
-  // `<x>.routes` of a package export (a stdlib route table) is that package's; of a project `manifest({...})`, its table.
-  if (at.expr.type === "MemberExpression" && !at.expr.computed && at.expr.property.name === "routes") {
-    const owner = followValue(at.expr.object, at.file, project);
-    if (owner === "package") return [];
-    const arg =
-      owner !== null && typeof owner !== "string" && owner.expr.type === "CallExpression"
-        ? owner.expr.arguments[0]
-        : undefined;
-    return arg === undefined || typeof owner === "string" || owner === null
-      ? null
-      : propsOf(arg, owner.file, project, depth + 1);
-  }
-  if (at.expr.type !== "ObjectExpression" || mutatedBinding(at.expr, at.file)) return null;
-  const obj: ObjectExpression = at.expr;
-  const out: Prop[] = [];
-  for (const p of obj.properties) {
-    if (p.type === "SpreadElement") {
-      const inner = propsOf(p, at.file, project, depth + 1);
-      if (inner === null) return null;
-      out.push(...inner);
-    } else out.push({ name: p.computed ? null : keyName(p), value: p.value, file: at.file, at: p.start });
-  }
-  return out;
-}
-
-/**
- * E1111 (k.privacy): a `.pii()` or `s.secret` node in the `params` or `search` schema of a `manifest(...)` entry, read through
- * consts, imports, re-exports, namespace members, spreads and schema arguments: a path or query reaches browser
- * history and proxy logs Keel cannot redact. A table, entry or schema it cannot read statically (a factory call, a
- * computed key, a binding changed after its literal) is reported too, since nothing shows it unmarked. No fix.
+ * E1111 (k.privacy): a `.pii()` or `s.secret` node in the `params` or `search` schema of a `contract(id, entries)`
+ * entry (an API entry's `params` and `query` too), the schema read through consts, imports, re-exports, namespace
+ * members, spreads and schema arguments: a path or query reaches browser history and proxy logs Keel cannot redact.
+ * An action `input` is a body, never a URL. The contract is read as `readContract` reads it, as the compiler's
+ * `routes.json` reader does (W1005): what it does not read is reported at it, since nothing shows it unmarked (the
+ * entries or an entry not written out, a spread or computed key among them, a `method`, `path`, `layout` or `events`
+ * not a literal), and the entries beside it are still read; so is a schema it cannot read. No fix.
  */
 export const piiInRouteUrl: RuleDef = {
   code: "E1111",
@@ -71,35 +40,23 @@ export const piiInRouteUrl: RuleDef = {
       : `personal data or a secret in route ${str(f.data, "part")}; a URL reaches history and logs`,
   see: "k.privacy",
   check: ({ file, ast, project }) => {
-    const names = localNames(ast, "manifest", "@keel/router");
-    if (!isAppPath(file.path) || names.size === 0) return [];
+    if (!isAppPath(file.path)) return [];
     const out: Finding[] = [];
-    const here = (p: Prop, fallback: number): number => (p.file.path === file.path ? p.at : fallback);
-    new Visitor({
-      CallExpression: (n) => {
-        const arg = n.arguments[0];
-        if (n.callee.type !== "Identifier" || !names.has(n.callee.name) || arg === undefined) return;
-        const table = propsOf(arg, file, project);
-        if (table === null) {
-          out.push(findingAt(file, n.start, { part: "table", why: "unread" }));
-          return;
+    for (const { call: n } of contractCalls(file, ast)) {
+      const arg = n.arguments[1];
+      if (arg === undefined) continue;
+      for (const item of readContract(arg)) {
+        const gaps = item.kind === "gap" ? [item] : item.gaps;
+        for (const g of gaps) out.push(findingAt(file, g.start, { part: PART[g.part], why: "unread" }));
+        if (item.kind === "gap") continue;
+        for (const [name, p] of item.members) {
+          if (!URL_PARTS.has(name)) continue;
+          const verdict = schemaMarks(p.value, file, project);
+          if (verdict === "clean") continue;
+          out.push(findingAt(file, p.start, { part: name, why: verdict === "marked" ? "marked" : "unread" }));
         }
-        for (const entry of table) {
-          const def = entry.name === null ? null : propsOf(entry.value, entry.file, project);
-          if (def === null) {
-            out.push(findingAt(file, here(entry, n.start), { part: "entry", why: "unread" }));
-            continue;
-          }
-          for (const p of def) {
-            if (p.name !== "params" && p.name !== "search") continue;
-            const verdict = schemaMarks(p.value, p.file, project);
-            if (verdict === "clean") continue;
-            const why = verdict === "marked" ? "marked" : "unread";
-            out.push(findingAt(file, here(p, here(entry, n.start)), { part: p.name, why }));
-          }
-        }
-      },
-    }).visit(ast);
+      }
+    }
     return out;
   },
 };

@@ -1,25 +1,15 @@
 import { writeFileSync } from "node:fs";
-import { type Manifest, type RouteDef, manifest } from "@keel/router";
+import { routeTable } from "@keel/router";
 import { matchHref } from "@keel/router/match";
 import type { CommandJobInput } from "./CommandJobInput.ts";
 import { Session } from "./Session.schema.ts";
 import { JobResult } from "./internal/JobResult.ts";
 import { jsonOf } from "./internal/jsonOf.ts";
 import { objectOf } from "./internal/objectOf.ts";
+import { pageOf } from "./internal/pageOf.ts";
 import { replayRun } from "./internal/replayRun.ts";
 import { minimize } from "./minimize.ts";
 import { redactSession } from "./redactSession.ts";
-
-type Table = Manifest<Readonly<Record<string, RouteDef>>>;
-
-/** The union of the serving modules' manifests (as the client entry builds it); one manifest as is. */
-function union(tables: readonly Table[]): Table {
-  const [only] = tables;
-  if (tables.length === 1 && only !== undefined) return only;
-  const all: Record<string, RouteDef> = {};
-  for (const t of tables) Object.assign(all, t.routes);
-  return manifest(all);
-}
 
 /**
  * Run one `keel session replay|minimize|to-test` job inside the project's `keel test` run (std.sessions D1: app code
@@ -34,7 +24,7 @@ export async function commandJob(job: CommandJobInput): Promise<void> {
   const parsed = Session.parse(job.session);
   if (!parsed.ok) throw new Error("keel session job: the session does not parse");
   const session = parsed.value;
-  const routes = union(job.routes);
+  const routes = routeTable(...job.routes);
   const none = { session: null, navs: [], runs: 0, minimal: false };
   const redact = job.redact ?? [];
   const first = await replayRun(session, { routes, redact });
@@ -62,7 +52,7 @@ export async function commandJob(job: CommandJobInput): Promise<void> {
   for (const [index, e] of redacted.events.entries()) {
     if (e.kind !== "nav") continue;
     const m = matchHref(routes, e.href);
-    const def = m === null ? undefined : routes.routes[m.id];
+    const def = m === null ? undefined : pageOf(routes, m.id);
     if (m === null || def === undefined) continue;
     const params = objectOf(jsonOf(m.params, def.params));
     navs.push({ index, id: m.id, params, search: objectOf(jsonOf(m.search, def.search)) });

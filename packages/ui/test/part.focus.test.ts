@@ -5,6 +5,7 @@ import { scope, signal } from "@keel/reactive";
 import { mount } from "@keel/runtime-dom";
 import { Part } from "@keel/ui/aria";
 import { expect, test } from "vitest";
+import { testCtx } from "./testCtx.ts";
 
 const flush = async (): Promise<void> => {
   for (let i = 0; i < 10; i++) await Promise.resolve();
@@ -30,6 +31,7 @@ test("a focus move whose focus and blur handlers write state reports no error", 
   const host = document.createElement("div");
   document.body.appendChild(host);
   const off = mount(() => Part({ id: "l", role: "tablist", label: "T", children: () => [tab("a"), tab("b")] }), host, {
+    ctx: testCtx,
     onError: (e) => errors.push(e),
   });
   await flush();

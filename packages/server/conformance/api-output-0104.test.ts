@@ -1,18 +1,22 @@
 // @vitest-environment happy-dom
-// Spec: k.api, Output "An API route's action declares `output`, a schema, and a page's action does not (E1512): `action({ input, output, params?, stores? }, fn)`, whose `fn` returns `Result<T, KeelError>` for `output`'s type `T`."
+// Spec: k.api, Output "An API entry's handler returns `Result<T, KeelError>` for its `output`'s type `T`; a page's action declares no `output` (k.contract Handlers)."
 // Spec: k.api, Output "An `ok` value is parsed by `output` before any store is saved (fail: E1554, nothing saved), then the stores are saved (k.server Server state), then the answer is 200 `application/json` `{ "ok": true, "value": <encoded> }`; a 409 `keel.conflict` sends no value."
 // Spec: k.api, Output "A write that answers nothing declares `output: s.object({})` and returns `ok({})`."
 // Spec: k.api, Output "Every write's answer is `Cache-Control: no-store`."
 // Spec: k.api, Conformance "An action with `output: s.object({ n: s.int() })` returning `ok({ n: 1 })` answers 200 `{ "ok": true, "value": { "n": 1 } }`, `cache-control: no-store`; returning `ok({ n: 0.5 })`, 500 and no store saved."
+// Spec: k.api, Conformance "An API action returning a value its entry's `output` refuses does not compile."
 // Spec: k.api, Conformance "A form POST to an API route gets the action's `Result` as JSON with no `Location`."
-// Spec: k.server, API "`action({ input, output?, params?, stores? }, fn)`: `fn` gets the decoded input, `{ params, url, caller, stores }` and `ctx`; returns `Result<Href | null, KeelError>` (with `output`: k.api); routes bind it by method (`routes.actions`, k.router)."
+// Spec: k.server, API "`action(contract, id, { input?, stores? }, fn)` ... returns `Result<Href | null, KeelError>` on a page (an API entry's `output` on one: k.api); the binding places it (k.contract)."
 // Spec: k.server, Rules "E1554 loader or action data fails its output schema (dev diag; production 500)"
 // Seed: 1337.
+// One module, `api`: one entry per method (`api.notes` GET, `api.add` POST, `api.replace` PUT, `api.slow` PATCH, `api.fail` DELETE) at `/api/notes`, plus a page `api.page`.
+// A handler that must return a value its entry refuses is built with `Reflect.apply`, since the type refuses it (the unchecked caller of k.api Conformance).
 // UNTESTABLE as written: that an E1554 diag "names the path, never the value" (no spec sentence says so); the record case asserts the part the spec fixes: 500, an E1554 diag in dev, and no diag holding the key.
 // UNTESTABLE as written: an action's `output` value reaching `[pii]` in a `diag` of a later throw in the same request: an API route has no layout, so no
 // loader of the request runs after an action's answer. The test checks the nearest reachable case: the pii value is answered as written and a diag of the request never holds it.
 import { createCtx } from "@keel/ctx";
 import { action, loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { err, ok, s } from "@keel/schema";
 import { topology } from "@keel/server";
 import { store, transaction, tx } from "@keel/store";
@@ -63,47 +67,69 @@ async function setup(mode: "dev" | "production" = "production") {
     arrived.set(n, g);
     return g;
   };
-  const read = loader({ output: Notes, stores: factory }, async ({ stores }) =>
+  const c = contract("api", {
+    "api.notes": { method: "GET", path: "/api/notes", output: Notes },
+    "api.add": { method: "POST", path: "/api/notes", body: Add, output: N },
+    "api.replace": { method: "PUT", path: "/api/notes", body: Add, output: N },
+    "api.slow": { method: "PATCH", path: "/api/notes", body: Add, output: N },
+    "api.fail": { method: "DELETE", path: "/api/notes", body: Add, output: N },
+    "api.contact": { method: "POST", path: "/api/contact", body: Add, output: Contact },
+    "api.contactBad": { method: "PUT", path: "/api/contact", body: Add, output: Contact },
+    "api.scores": { method: "POST", path: "/api/scores", body: Add, output: Scores },
+    "api.page": { path: "/page" },
+  });
+  const read = loader(c, "api.notes", { stores: factory }, async ({ stores }) =>
     ok({ items: [...stores.s.get("items")] }),
   );
-  const good = action({ input: Add, output: N, stores: factory }, async ({ n }, { stores }) => {
+  const good = action(c, "api.add", { stores: factory }, async ({ n }, { stores }) => {
     tx(stores.add, { n });
     return ok({ n });
   });
-  const bad = action({ input: Add, output: N, stores: factory }, async ({ n }, { stores }) => {
-    tx(stores.add, { n });
-    return ok({ n: n + 0.5 });
-  });
-  const slow = action({ input: Add, output: N, stores: factory }, async ({ n }, { stores }) => {
+  // the entry's `output` refuses `n + 0.5`: the type stops it, so these are made through the untyped `Reflect.apply`
+  const bad = Reflect.apply(action, undefined, [
+    c,
+    "api.replace",
+    { stores: factory },
+    async ({ n }: { n: number }, { stores }: { stores: ReturnType<typeof factory> }) => {
+      tx(stores.add, { n });
+      return ok({ n: n + 0.5 });
+    },
+  ]);
+  const slow = action(c, "api.slow", { stores: factory }, async ({ n }, { stores }) => {
     tx(stores.add, { n });
     arrive(n).resolve();
     await gate(n).promise;
     return ok({ n });
   });
-  const fail = action({ input: Add, output: N, stores: factory }, async ({ n }, { stores }) => {
+  const fail = action(c, "api.fail", { stores: factory }, async ({ n }, { stores }) => {
     tx(stores.add, { n });
     return err(Boom.make({ why: "no" }));
   });
-  const contact = action({ input: Add, output: Contact }, async ({ n }) => ok({ contact: `p${n}@example.test`, n }));
-  const contactBad = action({ input: Add, output: Contact }, async ({ n }) =>
-    ok({ contact: `p${n}@example.test`, n: n + 0.5 }),
-  );
-  const scores = action({ input: Add, output: Scores }, async () => ok({ "alice@example.com": 0.5 }));
-  const pageAct = action({ input: Add }, async () => ok(null));
-  const routes = manifest({
-    "api.notes": { api: true, path: "/api/notes", loader: read },
-    "api.contact": { api: true, path: "/api/contact" },
-    "api.scores": { api: true, path: "/api/scores" },
-    "app.page": { path: "/page", component: view },
-  });
-  routes.actions({
-    "api.notes": { POST: good, PUT: bad, PATCH: slow, DELETE: fail },
-    "api.contact": { POST: contact, PUT: contactBad },
-    "api.scores": { POST: scores },
-    "app.page": { POST: pageAct },
-  });
+  const contact = action(c, "api.contact", {}, async ({ n }) => ok({ contact: `p${n}@example.test`, n }));
+  const contactBad = Reflect.apply(action, undefined, [
+    c,
+    "api.contactBad",
+    {},
+    async ({ n }: { n: number }) => ok({ contact: `p${n}@example.test`, n: n + 0.5 }),
+  ]);
+  const scores = Reflect.apply(action, undefined, [c, "api.scores", {}, async () => ok({ "alice@example.com": 0.5 })]);
+  const pageAct = action(c, "api.page", { input: Add }, async () => ok(null));
+  const routes = Reflect.apply(manifest, undefined, [
+    c,
+    {
+      "api.notes": { loader: read },
+      "api.add": { action: good },
+      "api.replace": { action: bad },
+      "api.slow": { action: slow },
+      "api.fail": { action: fail },
+      "api.contact": { action: contact },
+      "api.contactBad": { action: contactBad },
+      "api.scores": { action: scores },
+      "api.page": { component: view, POST: pageAct },
+    },
+  ]);
   const app = await createApp({
-    topology: topology({ web: { modules: ["api", "app"], adapter: "node" } }),
+    topology: topology({ web: { modules: ["api"], adapter: "node" } }),
     routes,
     ctx,
     mode,
@@ -210,9 +236,9 @@ describe("k.api output", () => {
     const t = await setup();
     const res = await t.json("POST", "/api/notes", { n: 3 });
     expect(res.status).toBe(200);
-    const routes = manifest({ "api.none": { api: true, path: "/api/none" } });
-    const none = action({ input: Nothing, output: Nothing }, async () => ok({}));
-    routes.actions({ "api.none": { POST: none } });
+    const nc = contract("api", { "api.none": { method: "POST", path: "/api/none", body: Nothing, output: Nothing } });
+    const none = action(nc, "api.none", {}, async () => ok({}));
+    const routes = manifest(nc, { "api.none": { action: none } });
     const app = await createApp({
       topology: topology({ web: { modules: ["api"], adapter: "node" } }),
       routes,
@@ -242,7 +268,7 @@ describe("k.api output", () => {
     );
   });
 
-  it("An API route's action declares `output`, a schema, and a page's action does not (E1512): `action({ input, output, params?, stores? }, fn)`, whose `fn` returns `Result<T, KeelError>` for `output`'s type `T`.", async () => {
+  it("An API entry's action answers its entry's `output`, and a page's action declares none (k.contract Handlers): `fn` returns `Result<T, KeelError>` for `output`'s type `T`.", async () => {
     const t = await setup();
     const res = await t.json("DELETE", "/api/notes", { n: 4 });
     expect(res.status).toBe(400);
@@ -271,7 +297,7 @@ describe("k.api output", () => {
     );
   });
 
-  it("`action({ input, output?, params?, stores? }, fn)`: a page action's answer to a document POST is still 303.", async () => {
+  it("A page action's answer to a document POST is still 303.", async () => {
     const t = await setup();
     const res = await t.app.fetch(post("/page", { n: "1" }, { accept: "text/html" }));
     expect(res.status).toBe(303);
@@ -302,5 +328,49 @@ describe("k.api output", () => {
       if (mode === "dev") expect(t.diags().filter((d) => JSON.stringify(d).includes("E1554"))).toHaveLength(1);
       for (const line of t.lines) expect(line).not.toContain("alice@example.com");
     }
+  });
+
+  it("An API action returning a value its entry's `output` refuses does not compile", () => {
+    const c = contract("api", { "api.add": { method: "POST", path: "/api/notes", body: Add, output: N } });
+    // compile-time half: ../unsafe/conformanceNegativeTypes.ts
+    const bad = () => Reflect.apply(action, undefined, [c, "api.add", {}, async () => ok({ n: "x" })]);
+    expect(typeof bad).toBe("function");
+  });
+
+  it("An API loader returning a value that fails the entry's `output` is a compile error, and at runtime (an unchecked caller) E1554 with nothing saved", async () => {
+    const c = contract("api", { "api.notes": { method: "GET", path: "/api/notes", output: Notes } });
+    // compile-time half: ../unsafe/conformanceNegativeTypes.ts
+    const typed = () => Reflect.apply(loader, undefined, [c, "api.notes", {}, async () => ok({ items: "x" })]);
+    expect(typeof typed).toBe("function");
+    await fc.assert(
+      fc.asyncProperty(fc.integer({ min: 1, max: 99 }), async (n) => {
+        const ctx = createCtx({ mode: "sim", seed: SEED });
+        const lines: string[] = [];
+        const unchecked = Reflect.apply(loader, undefined, [
+          c,
+          "api.notes",
+          { stores: factory },
+          async ({ stores }: { stores: ReturnType<typeof factory> }) => {
+            tx(stores.add, { n });
+            return ok({ items: "x" });
+          },
+        ]);
+        const routes = Reflect.apply(manifest, undefined, [c, { "api.notes": { loader: unchecked } }]);
+        const app = await createApp({
+          topology: topology({ web: { modules: ["api"], adapter: "node" } }),
+          routes,
+          ctx,
+          mode: "dev",
+          log: { format: "json", write: (l: string) => void lines.push(l) },
+        });
+        const res = await app.fetch(
+          new Request("http://localhost/api/notes", { headers: { accept: "application/json" } }),
+        );
+        expect(res.status).toBe(500);
+        expect(lines.filter((l) => l.includes("E1554"))).toHaveLength(1);
+        expect(await ctx.storage.get(KEY)).toBeNull();
+      }),
+      { seed: SEED, numRuns: 5 },
+    );
   });
 });

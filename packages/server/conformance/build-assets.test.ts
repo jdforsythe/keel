@@ -2,6 +2,7 @@
 // Spec: k.deploy, clause "`createApp({ assets })` on a `keel build` node fixture scripts a 200 JavaScript `resume` entry, `immutable`; no manifest: E1555." (RFC 0048)
 // Spec: k.deploy Rules E1555
 // Seed: 1337 (no generated inputs; the fixture is built once through the real CLI). In-process createApp, no listening server.
+import type { Ctx } from "@keel/ctx";
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
@@ -11,11 +12,12 @@ import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import type { RouteProps } from "@keel/router";
 import { createApp, topology } from "@keel/server";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-type Component = (props: RouteProps) => Node;
+type Component = (props: RouteProps, ctx: Ctx) => Node;
 type Fetcher = { fetch(req: Request): Promise<Response> };
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -43,8 +45,8 @@ function compileComponent(source: string): Component {
   if (out === undefined) throw new Error("fixture: no compiler output");
   const fn = evaluate(out.code);
   if (typeof fn !== "function") throw new Error("fixture: default export is not a component");
-  return (props) => {
-    const node: unknown = fn(props);
+  return (props, ctx) => {
+    const node: unknown = fn(props, ctx);
     if (!(node instanceof Node)) throw new Error("fixture: component did not return a Node");
     return node;
   };
@@ -107,7 +109,12 @@ beforeAll(() => {
   write(
     fixture,
     "modules/app/routes.ts",
-    'import { manifest } from "@keel/router";\nimport Counter from "./Counter.tsx";\nexport const routes = manifest({ "app.home": { path: "/", component: Counter } });\n',
+    'import { manifest } from "@keel/router";\nimport { app } from "./app.contract.ts";\nimport Counter from "./Counter.tsx";\nexport const routes = manifest(app, { "app.home": { component: Counter } });\n',
+  );
+  write(
+    fixture,
+    "modules/app/app.contract.ts",
+    'import { contract } from "@keel/router/contract";\nexport const app = contract("app", { "app.home": { path: "/" } });\n',
   );
   const r = spawnSync(process.execPath, [path.join(REPO, "packages", "cli", "src", "bin.ts"), "build"], {
     cwd: fixture,
@@ -124,9 +131,10 @@ afterAll(() => {
 });
 
 async function appFor(assets: string, mode?: "dev" | "production"): Promise<Fetcher> {
+  const appContract = contract("app", { "app.home": { path: "/" } });
   return createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
-    routes: manifest({ "app.home": { path: "/", component: compileComponent(COUNTER) } }),
+    routes: manifest(appContract, { "app.home": { component: compileComponent(COUNTER) } }),
     ctx: createCtx({ mode: "sim", seed: 1337 }),
     assets,
     ...(mode === undefined ? {} : { mode }),

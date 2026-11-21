@@ -2,6 +2,7 @@
 // Spec: k.leave, Restore "At resume, a snapshot its store refuses (`restore` returns `err`), whether the store is in `stores` or an island creates it, is the warning `E1253 #k-state snapshot for store "<id>" does not restore`; the store keeps its initial state."
 // Spec: k.leave, Conformance "A store in `stores`, and one an island creates, each given a `#k-state` snapshot its schema refuses: `resume` warns `E1253 #k-state snapshot for store "<id>" does not restore` for each, and each store holds its initial state."
 // Seed: 1337 (the property below). Hand-built compiled islands, as fixtures.ts does; ids are made fresh for each run.
+import { createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
 import { clone, resume, template, text } from "@keel/runtime-dom/ops";
 import { s } from "@keel/schema";
@@ -9,6 +10,7 @@ import { store } from "@keel/store";
 import fc from "fast-check";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { SEED } from "./fixtures.ts";
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 const Count = s.object({ n: s.int() });
 const HTML = '<div data-k-island="Late"><b data-k="out">0</b></div>';
@@ -58,7 +60,7 @@ function run(ids: { known: string; late: string }, knownSnap: unknown, lateSnap:
     .spyOn(console, "warn")
     .mockImplementation((...a: unknown[]) => void seen.push(a.map(String).join(" ")));
   try {
-    const { warnings } = resume(document.body, { Late }, { stores: { [ids.known]: known }, mode: "dev" });
+    const { warnings } = resume(document.body, { Late }, { stores: { [ids.known]: known }, mode: "dev", ctx: simCtx });
     const all = [...warnings.map(messageOf), ...seen];
     return { warnings: all, known: known.get("n"), late: late === undefined ? Number.NaN : late.get("n") };
   } finally {

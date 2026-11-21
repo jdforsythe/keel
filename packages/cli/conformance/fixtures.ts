@@ -17,7 +17,7 @@ export const COMMANDS = [
   "test",
   "build",
   "dev",
-  "spec",
+  "docs",
   "explain",
   "inspect",
   "render",

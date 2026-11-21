@@ -2,12 +2,15 @@
 // Spec: k.a11y Required props, "`label` on ... `Box as` `nav` or `aside` (`aria-label`; optional on other landmarks)"
 // Spec: k.ui Conformance, "Two `Box as="nav"` with distinct `label`s pass axe; a `nav` without one is E1802." (axe half: packages/testing/conformance)
 // Seed 1337 (fast-check). Type-level assertions are checked by `tsc`; the runtime expects keep the file a test.
+import { createCtx } from "@keel/ctx";
 import { scope, signal } from "@keel/reactive";
 import { mount } from "@keel/runtime-dom";
 import { Box } from "@keel/ui";
 import fc from "fast-check";
 import { describe, expect, expectTypeOf, test } from "vitest";
 import { SEED, flush } from "./fixtures.ts";
+
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 type BoxP = Parameters<typeof Box>[0];
 const LANDMARKS = ["nav", "aside", "section", "main", "header", "footer"] as const;
@@ -31,7 +34,7 @@ const make = (as: (typeof LANDMARKS)[number], label: string): Node => {
 const mounted = (make: () => Node): { host: HTMLElement; off: () => void } => {
   const host = document.createElement("div");
   document.body.appendChild(host);
-  const off = mount(make, host);
+  const off = mount(make, host, { ctx: simCtx });
   return { host, off };
 };
 
@@ -74,6 +77,7 @@ describe("k.ui: Box label (RFC 0091 G)", () => {
             children: "b",
           }),
         host,
+        { ctx: simCtx },
       );
     });
     const sig = slot[0];

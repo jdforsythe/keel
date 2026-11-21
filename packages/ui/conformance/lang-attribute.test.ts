@@ -2,11 +2,14 @@
 // Spec: k.ui, clause "A base element given `lang="ja-JP"` has `lang="ja-JP"` in server and client output; without it, none." (rfc:0079)
 // Seed 1337. The client-output half; the server-output half is packages/server/conformance/lang-attribute-server.test.ts.
 // Select is not covered: its required props are not named by the spec section.
+import { createCtx } from "@keel/ctx";
 import { mount } from "@keel/runtime-dom";
 import { Box, Button, Checkbox, Heading, Image, Input, Link, Text, TextArea } from "@keel/ui";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 import { SEED, home } from "./fixtures.ts";
+
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 type Make = (lang: string | undefined) => Node;
 const withLang = (lang: string | undefined): { lang?: string } => (lang === undefined ? {} : { lang });
@@ -26,7 +29,7 @@ const makers: Record<string, Make> = {
 const clientLang = (make: Make, lang: string | undefined): string | null => {
   const host = document.createElement("div");
   document.body.appendChild(host);
-  const off = mount(() => make(lang), host);
+  const off = mount(() => make(lang), host, { ctx: simCtx });
   const value = document.getElementById("x")?.getAttribute("lang") ?? null;
   off();
   host.remove();

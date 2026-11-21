@@ -53,11 +53,11 @@ describe("keyed dev entries in the Vite plugin", () => {
     );
     write(
       "modules/a/routes.ts",
-      `import Page from "./Page.tsx";\nexport const routes = manifest({ "a.page": { path: "/", component: Page } });\n`,
+      `import Page from "./Page.tsx";\nexport const routes = manifest(c, { "a.page": { component: Page } });\n`,
     );
     write(
       "modules/w/routes.ts",
-      `import W from "./W.tsx";\nexport const routes = manifest({ "w.page": { path: "/", component: W } });\n`,
+      `import W from "./W.tsx";\nexport const routes = manifest(c, { "w.page": { component: W } });\n`,
     );
     const p = keel();
     p.configResolved({ root, command: "serve" });

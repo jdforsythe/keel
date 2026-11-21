@@ -5,6 +5,7 @@
 import { type Ctx, type CtxEvent, createCtx, observe } from "@keel/ctx";
 import { Form, action, loader, manifest } from "@keel/router";
 import type { RouteProps } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { text } from "@keel/runtime-dom/ops";
 import { err, ok, s } from "@keel/schema";
 import { store, transaction, tx } from "@keel/store";
@@ -37,7 +38,7 @@ const itemsOf = (data: unknown): readonly string[] => {
   const items: unknown = typeof data === "object" && data !== null ? Reflect.get(data, "items") : undefined;
   return Array.isArray(items) ? items.filter((i): i is string => typeof i === "string") : [];
 };
-const links = manifest({ "rs.link": { path: "/rs", component: () => el("p", "rs.link") } });
+const c = contract("rs", { "rs.page": { path: "/rs" }, "rs.other": { path: "/rs-other" } });
 const page = (props: RouteProps): Node => {
   const box = el("div", "rs.page");
   const list = el("p", "rs.items");
@@ -50,7 +51,7 @@ const page = (props: RouteProps): Node => {
   button.textContent = "Save";
   const form = Form({
     method: "POST",
-    action: links.href("rs.link"),
+    action: c.href("rs.page"),
     error: (e) => {
       const p = el("p", "rs.err");
       p.textContent = e.code;
@@ -62,19 +63,13 @@ const page = (props: RouteProps): Node => {
   box.append(list, form);
   return box;
 };
-const routes = manifest({
+const routes = manifest(c, {
   "rs.page": {
-    path: "/rs",
-    loader: loader({ output: Notes, stores: factory }, async ({ stores }) =>
+    loader: loader(c, "rs.page", { output: Notes, stores: factory }, async ({ stores }) =>
       ok({ items: [...stores.notes.get("items")] }),
     ),
     component: page,
-  },
-  "rs.other": { path: "/rs-other", component: () => el("p", "rs.other") },
-});
-routes.actions({
-  "rs.page": {
-    POST: action({ input: Add, stores: factory }, async ({ text: t }, { stores }) => {
+    POST: action(c, "rs.page", { input: Add, stores: factory }, async ({ text: t }, { stores }) => {
       tx(stores.add, { text: t });
       mode.arrived?.();
       if (mode.hold !== null) await mode.hold;
@@ -82,6 +77,7 @@ routes.actions({
       return mode.act === "err" ? err(Boom.make({})) : ok(null);
     }),
   },
+  "rs.other": { component: () => el("p", "rs.other") },
 });
 
 const sim = (): Ctx => createCtx({ mode: "sim", seed: SEED });
@@ -164,8 +160,8 @@ describe("renderRoute with server stores", () => {
     const h = await renderRoute("rs.page", { routes, ctx });
     await saveThroughRunner(ctx, "elsewhere");
     expect(h.find("rs.items").text).toBe("");
-    await h.navigate(routes.href("rs.other"));
-    await h.navigate(routes.href("rs.page"));
+    await h.navigate(c.href("rs.other"));
+    await h.navigate(c.href("rs.page"));
     expect(h.find("rs.items").text).toBe("elsewhere");
     h.dispose();
   });

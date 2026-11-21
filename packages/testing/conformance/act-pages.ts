@@ -7,6 +7,7 @@ import { evaluate } from "@keel/compiler/testing";
 import * as forms from "@keel/forms";
 import * as router from "@keel/router";
 import { action, identityMount, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import type { RouteProps } from "@keel/router";
 import { ok, s } from "@keel/schema";
 import * as schema from "@keel/schema";
@@ -17,9 +18,14 @@ export const mount = identityMount("/api/auth", { links: ["/verify"] });
 /** The opening's start request: a GET of the mount's `/login/github`. */
 export const START = "/api/auth/login/github";
 
-const links = manifest({
-  "ac.auto": { path: "/auto", component: () => document.createElement("main") },
-  "ac.act": { path: "/act", component: () => document.createElement("main") },
+const acContract = contract("ac", {
+  "ac.auto": { path: "/auto" },
+  "ac.act": { path: "/act" },
+});
+
+const links = manifest(acContract, {
+  "ac.auto": { component: () => document.createElement("main") },
+  "ac.act": { component: () => document.createElement("main") },
 });
 
 const modules: Record<string, unknown> = {
@@ -29,7 +35,7 @@ const modules: Record<string, unknown> = {
   "@keel/forms": forms,
   "@keel/schema": schema,
   identity: { __esModule: true, default: mount },
-  links: { auto: () => links.href("ac.auto"), act: () => links.href("ac.act") },
+  links: { auto: () => acContract.href("ac.auto"), act: () => acContract.href("ac.act") },
 };
 
 const HOME = `import { form } from "@keel/forms";
@@ -64,7 +70,14 @@ function page(name: string, source: string): (props: RouteProps) => Node {
 }
 
 const Empty = s.object({});
-const act = action({ input: Empty }, async () => ok(mount.href("/login/github")));
+const ac = contract("ac", {
+  "ac.home": { path: "/" },
+  "ac.auto": { path: "/auto" },
+  "ac.act": { path: "/act" },
+  "ac.about": { path: "/about" },
+});
+
+const act = action(ac, "ac.act", { input: Empty }, async () => ok(mount.href("/login/github")));
 
 const home = page("Home", HOME);
 
@@ -75,7 +88,7 @@ function homePage(props: RouteProps): Node {
   button.type = "submit";
   button.id = "ac.home.submit";
   button.textContent = "Act";
-  const f = router.Form({ method: "POST", action: links.href("ac.act"), children: () => [button] });
+  const f = router.Form({ method: "POST", action: acContract.href("ac.act"), children: () => [button] });
   f.id = "ac.home.form";
   root.appendChild(f);
   return root;
@@ -87,13 +100,12 @@ function autoPage(): Node {
   return document.createElement("main");
 }
 
-export const routes = manifest({
-  "ac.home": { path: "/", component: homePage },
-  "ac.auto": { path: "/auto", component: autoPage },
-  "ac.act": { path: "/act", component: () => document.createElement("main") },
-  "ac.about": { path: "/about", component: () => document.createElement("main") },
+export const routes = manifest(ac, {
+  "ac.home": { component: homePage },
+  "ac.auto": { component: autoPage },
+  "ac.act": { component: () => document.createElement("main"), POST: act },
+  "ac.about": { component: () => document.createElement("main") },
 });
-routes.actions({ "ac.act": { POST: act } });
 
-export const HOME_HREF = routes.href("ac.home");
-export const AUTO_HREF = routes.href("ac.auto");
+export const HOME_HREF = ac.href("ac.home");
+export const AUTO_HREF = ac.href("ac.auto");

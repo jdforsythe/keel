@@ -25,9 +25,17 @@ const PAGES = ["shifts.index", "shifts.show", "shifts.mine", "shifts.signup", "s
 
 const FILES: readonly string[] = [
   ...["package.json", "tsconfig.json", "vite.config.ts", "tokens.ts", "topology.ts"],
-  ...["module", "routes", "board", "signUpTx", "cancelTx", "markAttendedTx", "isOrganizer", "pageOrigin"].map(
-    (n) => `${mod}/${n}.ts`,
-  ),
+  ...[
+    "module",
+    "shifts.contract",
+    "routes",
+    "board",
+    "signUpTx",
+    "cancelTx",
+    "markAttendedTx",
+    "isOrganizer",
+    "pageOrigin",
+  ].map((n) => `${mod}/${n}.ts`),
   `${mod}/organizer.guard.ts`,
   ...["Shift", "Signup", "SignupDraft", "Attendance", "Board", "ShiftParams", "SignupParams"].map(
     (n) => `${mod}/${n}.schema.ts`,

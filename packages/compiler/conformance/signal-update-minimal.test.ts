@@ -1,10 +1,13 @@
 // @vitest-environment happy-dom
 // Spec: k.compiler, clause "Updating one signal changes only the DOM nodes bound to it; every other node keeps its identity."
 // Seed 1337 (fc.assert seed below).
+import { createCtx } from "@keel/ctx";
 import { mount } from "@keel/runtime-dom";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { load, sigOf } from "./support.ts";
+
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 const src = `
 import { signal } from '@keel/reactive'
@@ -24,7 +27,7 @@ test("Updating one signal changes only the DOM nodes bound to it; every other no
       count.set(0);
       const host = document.createElement("div");
       document.body.append(host);
-      const dispose = mount(C, host);
+      const dispose = mount(C, host, { ctx: simCtx });
       const all = () => [...host.querySelectorAll("*")];
       const before = all();
       const p = host.querySelector("p");

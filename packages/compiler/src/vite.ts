@@ -685,7 +685,7 @@ export default function (): {
             fs.writeFileSync(path.join(at, out, "routes.json"), artifactText(table.routes));
             if (fs.existsSync(path.join(at, ".keel", "std.json")))
               fs.copyFileSync(path.join(at, ".keel", "std.json"), path.join(at, out, "std.json"));
-            for (const c of Object.keys(top).filter((n) => top[n]?.adapter === "client" && top[n]?.host === name))
+            for (const c of Object.keys(top).filter((n) => top[n]?.adapter === "client" && top[n]?.servedBy === name))
               hostClient(path.join(at, "dist", c), path.join(at, out), c);
           },
         },
@@ -761,7 +761,15 @@ export default function (): {
       if (id === SQLITE) return SQLITE_CODE;
       const node = deployable();
       if (id === `\0${SERVER_ENTRY}` && node !== undefined)
-        return serverEntryCode(root, node.name, node.modules, topology?.[node.name]?.storage);
+        return serverEntryCode(
+          root,
+          node.name,
+          node.modules,
+          topology?.[node.name]?.storage,
+          Object.fromEntries(
+            Object.entries(topology ?? {}).flatMap(([n, d]) => (d.origins === undefined ? [] : [[n, d.origins]])),
+          ),
+        );
       if (q?.path !== ENTRY_PATH) return null;
       const d = deployable(q.d);
       if (d === undefined)
@@ -777,6 +785,7 @@ export default function (): {
         served ? Object.fromEntries(Object.entries(all).map(([n, x]) => [n, x.modules])) : {},
         shellOf(exists("identity.ts") ? all[d.name]?.shells : undefined),
         mode,
+        exists("identity.ts"),
       );
     },
     transformIndexHtml() {

@@ -1,14 +1,16 @@
 import { owner, scope } from "@keel/reactive";
-import { s } from "@keel/schema";
-import { secretPathOf } from "@keel/schema/internal";
-import { type EndpointMap, service } from "@keel/services";
+import type { Contract } from "@keel/router/contract";
+import { s, secretPath } from "@keel/schema";
+import { type Endpoint, service } from "@keel/services";
 import { store, transaction } from "@keel/store";
 import type { Outbox } from "./Outbox.type.ts";
 import { OutboxEntry } from "./OutboxEntry.schema.ts";
 import { Resolution } from "./Resolution.schema.ts";
+import type { Writes } from "./Writes.ts";
 import type { Config } from "./internal/Config.ts";
 import { OutboxState } from "./internal/OutboxState.ts";
-import { configOf } from "./internal/configOf.ts";
+import { declareConfig } from "./internal/declareConfig.ts";
+import { isWrite } from "./internal/isWrite.ts";
 
 /** `<id>.settle`: an entry's next state (`sent` removes it), with a conflict's `head` or the `error`. */
 const Settle = s.object({
@@ -21,35 +23,37 @@ const Settle = s.object({
 const Resolve = s.object({ key: s.string(), resolution: Resolution });
 
 /**
- * Declare an outbox (std.offline) over the k.services `endpoints` map of module `module`'s routes, sent through
- * `service({ module, schema: api })` with an undeclared 400 or 409 read as JSON: the client store `id` with state `{ entries }`,
- * changed only by `<id>.add`, `<id>.settle` and `<id>.resolve`. Inside a scope the store is created now and the outbox
- * stops flushing when that scope is disposed; outside one (a module-level declaration) it is created on first use and
- * lives as long as the module; each ctx that uses it reaches only the entries it added or loaded. `limit` (100) and
- * `maxBytes` (262,144 bytes of encoded entries) bound it. Throws E2652 (an Error with `code`) for an `events: true`
- * endpoint, whose answer is a stream, and E2651 when an endpoint body holds an `s.secret`: entries are stored in the
- * browser.
+ * Declare an outbox (std.offline) over the API write entries of `contract` (k.contract), sent through
+ * `service({ contract })` with an undeclared 400 or 409 read as JSON: the client store `id` with state `{ entries }`,
+ * changed only by `<id>.add`, `<id>.settle` and `<id>.resolve`. A GET, `events` or page entry is not sent. Inside a
+ * scope the store is created now and the outbox stops flushing when that scope is disposed; outside one (a
+ * module-level declaration) it is created on first use and lives as long as the module; each ctx that uses it reaches
+ * only the entries it added or loaded. `limit` (100) and `maxBytes` (262,144 bytes of encoded entries) bound it.
+ * Throws E2651 (an Error with `code`) when a write entry's body holds an `s.secret`: entries are stored in the browser.
  */
-export function outbox<const D extends EndpointMap>(
+export function outbox<const C extends Contract>(
   id: string,
-  api: D,
-  opts: { readonly module: string; readonly limit?: number; readonly maxBytes?: number },
-): Outbox<D> {
-  for (const [name, e] of Object.entries(api)) {
-    if (e.events === true) {
-      const message = `E2652 outbox ${id} endpoint ${name} answers a stream`;
-      throw Object.assign(new Error(message), { code: "E2652" });
-    }
-    const at = e.body === undefined ? null : secretPathOf(e.body.node);
+  contract: C,
+  opts: { readonly limit?: number | undefined; readonly maxBytes?: number | undefined } = {},
+): Outbox<Writes<C>> {
+  const api: Record<string, Endpoint> = {};
+  for (const [entry, e] of Object.entries(contract.entries)) {
+    if (!isWrite(e)) continue;
+    const name = entry.slice(contract.module.length + 1);
+    const at = e.body === undefined ? null : secretPath(e.body);
     if (at !== null) {
       const message = `E2651 outbox ${id} endpoint ${name} body holds s.secret at ${at || "(root)"}`;
       throw Object.assign(new Error(message), { code: "E2651" });
     }
+    api[name] = e;
   }
-  const schema: EndpointMap = Object.fromEntries(
-    Object.entries(api).map(([name, e]) => [name, { ...e, errors: { 400: s.json(), 409: s.json(), ...e.errors } }]),
+  const entries = Object.fromEntries(
+    Object.entries(contract.entries).map(([entry, e]) => [
+      entry,
+      isWrite(e) ? { ...e, errors: { 400: s.json(), 409: s.json(), ...e.errors } } : e,
+    ]),
   );
-  const client = service({ module: opts.module, schema });
+  const client = service({ contract: { ...contract, entries } });
   let c: Config | undefined;
   const make = (): Config => {
     const st = store(OutboxState, { entries: [] }, { id });
@@ -91,7 +95,7 @@ export function outbox<const D extends EndpointMap>(
   // Declared outside a scope (module level): the store lives as long as the module, as a module-level `store` does.
   const cfg = (): Config => c ?? scope(() => undefined, { detached: true }).run(make);
   const st = () => cfg().store;
-  const o: Outbox<D> = {
+  const o: Outbox<Writes<C>> = {
     id,
     get schema() {
       return st().schema;
@@ -110,6 +114,6 @@ export function outbox<const D extends EndpointMap>(
     undoWhere: (p) => st().undoWhere(p),
     uses: (t) => st().uses(t),
   };
-  configOf(o, cfg);
+  declareConfig(o, cfg);
   return o;
 }

@@ -3,6 +3,7 @@
 // Seed 1337. The server-output half; the client half is packages/ui/conformance/lang-attribute.test.ts.
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { createApp, topology } from "@keel/server";
 import { Box, Button, Heading, Image, Input, Text } from "@keel/ui";
 import fc from "fast-check";
@@ -21,9 +22,10 @@ const makers: Record<string, Make> = {
 };
 
 const serverLang = async (make: Make, lang: string | undefined): Promise<string | null> => {
+  const appContract = contract("app", { "app.home": { path: "/" } });
   const app = await createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
-    routes: manifest({ "app.home": { path: "/", component: () => make(lang) } }),
+    routes: manifest(appContract, { "app.home": { component: () => make(lang) } }),
     ctx: createCtx({ mode: "sim", seed: SEED }),
     mode: "dev",
   });

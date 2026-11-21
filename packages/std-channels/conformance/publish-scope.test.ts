@@ -12,7 +12,7 @@ const CLAUSE =
 
 const text = fc.string({ maxLength: 12 });
 
-test(`${CLAUSE} (a member's POST reaches the same params, the publisher's stream included, and answers ok(null))`, async () => {
+test(`${CLAUSE} (a member's POST reaches the same params, the publisher's stream included, and answers ok({}))`, async () => {
   await fc.assert(
     fc.asyncProperty(text, async (t) => {
       const h = await serve();

@@ -4,6 +4,7 @@
 // Seed 1337 (fc.assert below).
 import { createCtx } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { topology } from "@keel/server";
 import fc from "fast-check";
@@ -28,11 +29,14 @@ const isRaw = (code: number): boolean =>
 async function thrower(mode: Mode, format: Format) {
   const lines: string[] = [];
   let current = "";
-  const save = action({ input: s.object({}) }, () => Promise.reject(new Error(current)));
-  const routes = manifest({
-    "orders.show": { path: "/orders/:kind", params: Params, component: () => document.createElement("main") },
+  const orders = contract("orders", {
+    "orders.show": { path: "/orders/:kind", params: Params },
   });
-  routes.actions({ "orders.show": { POST: save } });
+
+  const save = action(orders, "orders.show", { input: s.object({}) }, () => Promise.reject(new Error(current)));
+  const routes = manifest(orders, {
+    "orders.show": { component: () => document.createElement("main"), POST: save },
+  });
   const app = await createApp({
     topology: topology({ web: { modules: ["orders"], adapter: "node" } }),
     routes,

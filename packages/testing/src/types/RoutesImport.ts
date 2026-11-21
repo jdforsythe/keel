@@ -1,9 +1,7 @@
-import type { RouteDef } from "@keel/router";
-
-type Table = { readonly routes: Readonly<Record<string, RouteDef>> };
+import type { RouteTable } from "@keel/router";
 
 /**
- * `() => import(path)` of a module whose default export is a route table (`manifest`), or whose `routes` export is one
- * (a `routes.ts`), for `resumeDocument`.
+ * `() => import(path)` of a module whose default export is a route table (a manifest or `routeTable`), or whose
+ * `routes` export is one (a `routes.ts`), for `resumeDocument`.
  */
-export type RoutesImport = () => Promise<{ readonly default: Table } | { readonly routes: Table }>;
+export type RoutesImport = () => Promise<{ readonly default: RouteTable } | { readonly routes: RouteTable }>;

@@ -11,10 +11,10 @@ const list = (n: unknown): unknown[] => {
   return Array.isArray(v) ? v : [];
 };
 
-/** Whether the endpoints map at `at` (an `endpoints({...})` call or an object literal) has a body holding `s.secret`. */
+/** Whether the entries at `at` (a `contract(module, {...})` call or an object literal) have a body holding `s.secret`. */
 function secretBody(at: At, project: Parameters<RuleDef["check"]>[0]["project"]): boolean {
   const map = follow(at, project);
-  const obj = get(map.node, "type") === "CallExpression" ? follow({ ...map, node: list(map.node)[0] }, project) : map;
+  const obj = get(map.node, "type") === "CallExpression" ? follow({ ...map, node: list(map.node)[1] }, project) : map;
   return list(obj.node).some((p) => {
     const e = follow({ ...obj, node: get(p, "value") }, project);
     const body = list(e.node).find(
@@ -25,16 +25,16 @@ function secretBody(at: At, project: Parameters<RuleDef["check"]>[0]["project"])
 }
 
 /**
- * E2651 (std.offline, k.check registry): an `outbox` whose endpoints map, inline, a `const` of the same file or one
- * imported from a project file, has an endpoint body holding `s.secret`. Entries are stored in the browser. No fix;
+ * E2651 (std.offline, k.check registry): an `outbox` whose contract, inline, a `const` of the same file or one
+ * imported from a project file, has an entry body holding `s.secret`. Entries are stored in the browser. No fix;
  * `outbox` also throws it.
  */
 export const secretOutboxBody: RuleDef = defineRule({
   code: "E2651",
   see: "std.offline",
-  message: "outbox endpoint body holds s.secret; outbox entries are stored in the browser",
+  message: "outbox entry body holds s.secret; outbox entries are stored in the browser",
   explain:
-    "An outbox keeps each write's input in the browser's storage until it is sent, so no endpoint body it sends holds a " +
+    "An outbox keeps each write's input in the browser's storage until it is sent, so no entry body it sends holds a " +
     "secret. Fix: send an id the action reads it by: body: s.object({ cardId: s.id('Card'), write: Write }).",
   check: ({ file, ast, project }): Finding[] =>
     callsOf(ast, "@keel/std-offline", "outbox").flatMap((c) => {

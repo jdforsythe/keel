@@ -10,7 +10,7 @@ import { SEED } from "./support.ts";
 const f = (path: string, source: string): Files[number] => ({ path, source });
 const MANIFEST = f(
   "modules/app/module.ts",
-  `import { module } from '@keel/compiler'\nexport default module({ id: 'app', deps: [], capabilities: [], public: { exports: [], routes: [] } })\n`,
+  `import { module } from '@keel/compiler'\nexport default module({ id: 'app', deps: [], capabilities: [], public: { exports: [] } })\n`,
 );
 const e1111 = (files: Files) =>
   check([MANIFEST, ...files], { types: false }).diagnostics.filter((d) => d.code === "E1111");
@@ -19,12 +19,12 @@ const S = `import { s } from '@keel/schema'\n`;
 const CLASSES = ["name", "contact", "location", "identifier", "financial", "special", "network", "content"] as const;
 const classArb = fc.constantFrom(...CLASSES);
 
-/** A route table with `params` and `search` schemas, both optional leaves so E1503/E1504 stay quiet. */
+/** A contract with `params` and `search` schemas, both optional leaves so E1503/E1504 stay quiet. */
 const routes = (extraImport: string, params: string, search: string) =>
   f(
-    "modules/app/routes.ts",
-    `import { manifest } from '@keel/router'\n${extraImport}const Page = () => null\n` +
-      `export const routes = manifest({\n  'app.show': { path: '/show/:id', params: ${params}, search: ${search}, component: Page },\n})\n`,
+    "modules/app/app.contract.ts",
+    `import { contract } from '@keel/router/contract'\n${extraImport}` +
+      `export const app = contract('app', {\n  'app.show': { path: '/show/:id', params: ${params}, search: ${search} },\n})\n`,
   );
 const PARAMS = (leaf: string) => `s.object({ id: ${leaf} })`;
 const SEARCH = (leaf: string) => `s.object({ q: ${leaf}.optional() })`;
@@ -82,18 +82,21 @@ describe("k.privacy E1111", () => {
       f("modules/app/Edit.schema.ts", `${S}export const Edit = s.object({ note: ${leaf}, email: ${leaf} })\n`);
     const save = f(
       "modules/app/save.server.ts",
-      `import { action } from '@keel/router'\nimport { ok } from '@keel/schema'\nimport { Edit } from './Edit.schema.ts'\n` +
-        `export const save = action({ input: Edit }, () => Promise.resolve(ok(null)))\n`,
+      `import { action } from '@keel/router'\nimport { ok } from '@keel/schema'\nimport { app } from './app.contract.ts'\nimport { Edit } from './Edit.schema.ts'\n` +
+        `export const save = action(app, 'app.show', { input: Edit }, () => Promise.resolve(ok(null)))\n`,
     );
     const table = f(
       "modules/app/routes.ts",
-      `import { manifest } from '@keel/router'\nimport { save } from './save.server.ts'\nconst Page = () => null\n` +
-        `export const routes = manifest({ 'app.show': { path: '/show', component: Page } })\n` +
-        `routes.actions({ 'app.show': { POST: save } })\n`,
+      `import { manifest } from '@keel/router'\nimport { app } from './app.contract.ts'\nimport { save } from './save.server.ts'\nconst Page = () => null\n` +
+        `export const routes = manifest(app, { 'app.show': { component: Page, POST: save } })\n`,
+    );
+    const entry = f(
+      "modules/app/app.contract.ts",
+      `import { contract } from '@keel/router/contract'\nexport const app = contract('app', { 'app.show': { path: '/show' } })\n`,
     );
     fc.assert(
       fc.property(classArb, (cls) => {
-        expect(e1111([Edit(`s.string().pii('${cls}')`), save, table])).toHaveLength(0);
+        expect(e1111([Edit(`s.string().pii('${cls}')`), save, table, entry])).toHaveLength(0);
       }),
       { seed: SEED, numRuns: 30 },
     );
@@ -119,10 +122,10 @@ describe("k.privacy E1111", () => {
 
   it("E1111 fires on an `s.secret` field reached through a const, an import from a `*.schema.ts` file and a namespace import of `@keel/schema`", () => {
     const viaConst = routes(S, "Id", SEARCH(PLAIN)).source.replace(
-      "const Page",
-      `const Id = s.object({ id: ${SECRET} })\nconst Page`,
+      "export const app",
+      `const Id = s.object({ id: ${SECRET} })\nexport const app`,
     );
-    expect(e1111([f("modules/app/routes.ts", viaConst)])).toHaveLength(1);
+    expect(e1111([f("modules/app/app.contract.ts", viaConst)])).toHaveLength(1);
     const schemaFile = (leaf: string) =>
       f("modules/app/Params.schema.ts", `${S}export const Params = s.object({ id: ${leaf} })\n`);
     const table = routes(`import { Params } from './Params.schema.ts'\n`, "Params", SEARCH(PLAIN));
@@ -137,15 +140,18 @@ describe("k.privacy E1111", () => {
     const Edit = f("modules/app/Edit.schema.ts", `${S}export const Edit = s.object({ token: ${SECRET} })\n`);
     const save = f(
       "modules/app/save.server.ts",
-      `import { action } from '@keel/router'\nimport { ok } from '@keel/schema'\nimport { Edit } from './Edit.schema.ts'\n` +
-        `export const save = action({ input: Edit }, () => Promise.resolve(ok(null)))\n`,
+      `import { action } from '@keel/router'\nimport { ok } from '@keel/schema'\nimport { app } from './app.contract.ts'\nimport { Edit } from './Edit.schema.ts'\n` +
+        `export const save = action(app, 'app.show', { input: Edit }, () => Promise.resolve(ok(null)))\n`,
     );
     const table = f(
       "modules/app/routes.ts",
-      `import { manifest } from '@keel/router'\nimport { save } from './save.server.ts'\nconst Page = () => null\n` +
-        `export const routes = manifest({ 'app.show': { path: '/show', component: Page } })\n` +
-        `routes.actions({ 'app.show': { POST: save } })\n`,
+      `import { manifest } from '@keel/router'\nimport { app } from './app.contract.ts'\nimport { save } from './save.server.ts'\nconst Page = () => null\n` +
+        `export const routes = manifest(app, { 'app.show': { component: Page, POST: save } })\n`,
     );
-    expect(e1111([Edit, save, table])).toHaveLength(0);
+    const entry = f(
+      "modules/app/app.contract.ts",
+      `import { contract } from '@keel/router/contract'\nexport const app = contract('app', { 'app.show': { path: '/show' } })\n`,
+    );
+    expect(e1111([Edit, save, table, entry])).toHaveLength(0);
   });
 });

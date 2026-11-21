@@ -2,13 +2,14 @@ import { check } from "@keel/check";
 // Seed 1337
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { SEED, exportFile, importer, manifestFile, routesFile } from "./module-support.ts";
+import { SEED, exportFile, importer, manifestFile, contractFile, bindingFile } from "./module-support.ts";
 
 const tree = [
-  manifestFile({ id: "catalog", exports: ["Item", "Ghost"], routes: ["catalog.show"] }),
+  manifestFile({ id: "catalog", exports: ["Item", "Ghost"] }),
   exportFile("modules/catalog", "Item"),
   exportFile("modules/catalog", "Secret"),
-  routesFile("catalog", ["show"]),
+  contractFile("catalog", ["catalog.show"]),
+  bindingFile("catalog", ["catalog.show"]),
   manifestFile({ id: "orders", deps: ["catalog", "ghosts"], capabilities: [] }),
   importer("orders", "catalog", "Secret"),
   manifestFile({ id: "ghosts", deps: ["orders"] }),

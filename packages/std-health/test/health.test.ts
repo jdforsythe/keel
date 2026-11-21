@@ -37,7 +37,7 @@ test("the page of health.status is a main with id health.status holding the stat
 });
 
 test("the route table holds health.status at /health, answering with the loader result", async () => {
-  expect(Object.keys(routes.routes)).toEqual(["health.status"]);
+  expect(routes.contracts.map((c) => Object.keys(c.entries))).toEqual([["health.status"]]);
   const app = await serve();
   const res = await app.fetch(new Request("http://localhost/health", { headers: { accept: "application/json" } }));
   const body: unknown = await res.json();
@@ -55,7 +55,7 @@ test("a freshly evaluated module set holds the schema, the loader and the route 
   expect(fresh.Health.parse({ status: "no", at: 5 }).ok).toBe(false);
   expect(fresh.Health.parse({ status: "ok", at: 5, extra: 1 }).ok).toBe(false);
   expect(fresh.Health.parse({ status: "ok", at: "5" }).ok).toBe(false);
-  expect(Object.keys(fresh.routes.routes)).toEqual(["health.status"]);
+  expect(fresh.routes.contracts.map((c) => Object.keys(c.entries))).toEqual([["health.status"]]);
   const app = await server.createApp({
     topology: server.topology({ web: { modules: ["health"], adapter: "node" } }),
     routes: fresh.routes,

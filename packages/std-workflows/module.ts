@@ -8,5 +8,5 @@ export default module({
   id: "workflows",
   deps: [],
   capabilities: ["clock", "random", "storage"],
-  public: { exports: ["workflow", "flows"], routes: [] },
+  public: { exports: ["workflow", "flows"] },
 });

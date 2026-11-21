@@ -5,8 +5,10 @@
 // `build` runs its disk half (`routes.json`, `surface.json`, the Vite builds) through the host `Io.build`, as MCP does.
 import { existsSync } from "node:fs";
 import { join } from "node:path";
+import { WriteRefused } from "./internal/WriteRefused.ts";
 import { devStart } from "./internal/devStart.ts";
 import { hostIo } from "./internal/hostIo.ts";
+import { refusedRun } from "./internal/refusedRun.ts";
 import { run } from "./run.ts";
 
 const argv = process.argv.slice(2);
@@ -23,7 +25,12 @@ if (dev !== undefined) {
     process.stderr.write(dev.stderr, () => process.stdout.write(dev.stdout, () => process.exit()));
   }
 } else {
-  const r = await run(argv, hostIo(serving));
+  const io = hostIo(serving);
+  // A write a symlink would carry out of the project refuses the edit set: E1357, nothing written (`applyWrites`).
+  const r = await run(argv, io).catch((e: unknown) => {
+    if (e instanceof WriteRefused) return refusedRun(e.paths, argv, io);
+    throw e;
+  });
   // stderr first: the trailer in stdout is the last thing a terminal shows.
   if (r.stderr !== "") process.stderr.write(r.stderr);
   if (r.stdout !== "") process.stdout.write(r.stdout);

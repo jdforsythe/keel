@@ -1,10 +1,11 @@
 import { createCtx } from "@keel/ctx";
 import { s } from "@keel/schema";
+import { contract } from "@keel/router/contract";
 import { endpoints, service } from "@keel/services";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-// Spec: k.services, clause "A rejected `fetch`, or a 502 `keel.unreachable` err to a `module` service, yields `api.network`; to a `base` service, `api.status`."
-// Spec: k.services, ApiError "`api.network` `{}`: `fetch` rejected, or a `module` service got a 502 JSON `keel.unreachable` err of at most 1 KiB."
+// Spec: k.services, clause "A rejected `fetch`, or a 502 `keel.unreachable` err to a `contract` service, yields `api.network`; to a `base` service, `api.status`."
+// Spec: k.services, ApiError "`api.network` `{}`: `fetch` rejected, or a `contract` service got a 502 JSON `keel.unreachable` err of at most 1 KiB."
 // seed 1337 (fast-check runs below pass { seed: 1337 }); no wall clock, no Math.random.
 // ASSUMPTION (public API not visible from index.ts): sim net is `ctx.net.route(url, handler)` where the
 // handler receives a request with `url`/`signal` and returns a standard Response; sim clock has `advance(ms)`.
@@ -15,10 +16,9 @@ const flush = async (): Promise<void> => {
 };
 
 const MODULE_URL = "http://b.keel.invalid";
-const Out = endpoints({ get: { method: "GET", path: "/x", output: s.object({}) } });
-// ASSUMPTION: `module` is not in the visible `ServiceOptions` type, so the client is built through Reflect.apply.
+const bContract = contract("b", { "b.get": { method: "GET", path: "/x", output: s.object({}) } });
 type Failure = { ok: boolean; error: { code: string; data: unknown } };
-const moduleService = (schema: unknown): unknown => Reflect.apply(service, undefined, [{ module: "b", schema }]);
+const moduleService = () => service({ contract: bContract });
 const call = async (api: unknown, ctx: unknown): Promise<Failure> => {
   const get: unknown = typeof api === "object" && api !== null ? Reflect.get(api, "get") : undefined;
   if (typeof get !== "function") throw new Error("client has no get");
@@ -31,7 +31,7 @@ const unreachable = (message: string): Response =>
   });
 
 describe("k.services: network failure", () => {
-  it("A rejected `fetch`, or a 502 `keel.unreachable` err to a `module` service, yields `api.network`: a rejected fetch", async () => {
+  it("A rejected `fetch`, or a 502 `keel.unreachable` err to a `contract` service, yields `api.network`: a rejected fetch", async () => {
     const api = service({
       base: BASE,
       schema: endpoints({ get: { method: "GET", path: "/x", output: s.object({}) } }),
@@ -48,8 +48,8 @@ describe("k.services: network failure", () => {
     );
   });
 
-  it("a 502 `keel.unreachable` err to a `module` service yields `api.network`", async () => {
-    const api = moduleService(Out);
+  it("a 502 `keel.unreachable` err to a `contract` service yields `api.network`", async () => {
+    const api = moduleService();
     await fc.assert(
       fc.asyncProperty(fc.string({ maxLength: 200 }), async (message) => {
         const ctx = createCtx({ mode: "sim", seed: 1337 });
@@ -104,8 +104,8 @@ describe("k.services: network failure", () => {
     );
   });
 
-  it("a 502 `keel.unreachable` err of more than 1 KiB to a `module` service is not mapped to `api.network`", async () => {
-    const api = moduleService(Out);
+  it("a 502 `keel.unreachable` err of more than 1 KiB to a `contract` service is not mapped to `api.network`", async () => {
+    const api = moduleService();
     await fc.assert(
       fc.asyncProperty(fc.integer({ min: 1025, max: 4000 }), async (len) => {
         const ctx = createCtx({ mode: "sim", seed: 1337 });

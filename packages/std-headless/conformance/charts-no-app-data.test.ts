@@ -47,7 +47,6 @@ describe("std.headless: no chart holds app data", () => {
                 selected: () => ["zk"],
                 onChange: () => {},
               },
-              undefined,
               c,
             ),
           ),
@@ -82,7 +81,6 @@ describe("std.headless: no chart holds app data", () => {
             options: () => opts,
             onChange: () => {},
           },
-          undefined,
           c,
         ),
       ),
@@ -95,7 +93,7 @@ describe("std.headless: no chart holds app data", () => {
     tc.dispose();
 
     const tm = render(
-      page((c) => Menu({ id: "nd.mn", trigger: () => "Gems", items: () => opts, onSelect: () => {} }, undefined, c)),
+      page((c) => Menu({ id: "nd.mn", trigger: () => "Gems", items: () => opts, onSelect: () => {} }, c)),
       { props: {}, ctx: simCtx() },
     );
     await tm.fire("nd.mn.trigger", { type: "keydown", key: "Enter" });
@@ -115,7 +113,6 @@ describe("std.headless: no chart holds app data", () => {
             onChange: (k) => picked.set(k),
             panel: (k) => k,
           },
-          undefined,
           c,
         ),
       ),
@@ -138,7 +135,6 @@ describe("std.headless: no chart holds app data", () => {
             trigger: () => "Open",
             content: (close) => Button({ id: "nd.dlg.ok", children: "Zinc", onClick: close }),
           },
-          undefined,
           c,
         ),
       ),
@@ -150,7 +146,7 @@ describe("std.headless: no chart holds app data", () => {
     td.dispose();
 
     const ts = render(
-      page((c) => Disclosure({ id: "nd.dsc", summary: () => "Quartz", children: () => "Zinc" }, undefined, c)),
+      page((c) => Disclosure({ id: "nd.dsc", summary: () => "Quartz", children: () => "Zinc" }, c)),
       { props: {}, ctx: simCtx() },
     );
     await ts.fire("nd.dsc.button", { type: "click" });
@@ -173,7 +169,6 @@ describe("std.headless: no chart holds app data", () => {
             dismiss: "Close",
             duration: 5000,
           },
-          undefined,
           c,
         ),
       ),

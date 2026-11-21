@@ -2,6 +2,7 @@
 // Cites k.component Conformance clause 14 (a component reading a signal at its top level keeps its nodes, focus and local signals; a binding updates): this file holds the `.ts` call form; the JSX and route page forms are in packages/testing/conformance/build-untracked.test.ts, which quotes the clause (runtime-dom may import neither the compiler nor the router).
 // Seed: 1337.
 // ASSUMPTION: the hand-built component uses the ops a compiled one lowers to (`template`, `clone`, `text`), as for-keyed-rows-0090 does.
+import { createCtx } from "@keel/ctx";
 import { scope, signal as newSignal } from "@keel/reactive";
 import type { Signal } from "@keel/reactive";
 import { mount } from "@keel/runtime-dom";
@@ -9,6 +10,8 @@ import { clone, template, text } from "@keel/runtime-dom/ops";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { SEED, flush } from "./fixtures.ts";
+
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 /** Signals are created in a scope (k.reactive E1203). */
 const owner = scope(() => undefined);
@@ -54,7 +57,7 @@ const open = (build: (env: Env) => Node) => {
   const env: Env = { sig: signal(0), builds: 0, seen: [], local: undefined };
   const host = document.createElement("div");
   document.body.appendChild(host);
-  const dispose = mount(() => build(env), host);
+  const dispose = mount(() => build(env), host, { ctx: simCtx });
   const q = (sel: string): Element => need(host, sel);
   return {
     env,

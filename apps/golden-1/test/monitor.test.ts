@@ -1,5 +1,3 @@
-// routes.ts first: an action returning a route href imports it back (E1505 cycle otherwise).
-import "../modules/api/routes.ts";
 import { createCtx } from "@keel/ctx";
 import { createApp } from "@keel/server";
 import { monitor } from "@keel/std-sessions/monitor";

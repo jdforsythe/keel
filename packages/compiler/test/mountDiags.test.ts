@@ -61,7 +61,7 @@ describe("mountSource and mountDiags", () => {
     expect(codes([...base, top("node"), page])).toEqual([]);
   });
 
-  it("E1581 for a client deployable without a host; none with a host, with or without shells", () => {
+  it("E1581 for a client deployable without servedBy; none with servedBy, with or without shells", () => {
     const top = (client: string) => ({
       path: "topology.ts",
       source: `import { topology } from '@keel/server'\nexport default topology({ api: { modules: ['b'], adapter: 'node' }, w: { modules: ['a'], adapter: 'client'${client} } })\n`,
@@ -70,8 +70,8 @@ describe("mountSource and mountDiags", () => {
     const shells = ", shells: [{ kind: 'tauri', id: 'dev.keel.app', name: 'App' }]";
     expect(codes([...base, top(""), page])).toEqual(["E1581"]);
     expect(codes([...base, top(shells), page])).toEqual(["E1581"]);
-    expect(codes([...base, top(", host: 'api'"), page])).toEqual([]);
-    expect(codes([...base, top(`, host: 'api'${shells}`), page])).toEqual([]);
+    expect(codes([...base, top(", servedBy: 'api'"), page])).toEqual([]);
+    expect(codes([...base, top(`, servedBy: 'api'${shells}`), page])).toEqual([]);
   });
 
   it("E1582 for every literal subpath with a refused character, none for accepted ones", () => {
@@ -87,12 +87,19 @@ describe("mountSource and mountDiags", () => {
   });
 
   it("identityDiags reads handle.path through mount.path for E1579 and adds the mount rules locally", () => {
-    const routes = {
-      path: "modules/a/routes.ts",
-      source:
-        "import { manifest } from '@keel/router'\nexport const routes = manifest({ 'a.x': { path: '/api/auth/x', component: () => null } })\n",
-    };
-    const files = [...base, { path: "modules/a/module.ts", source: "export default {}\n" }, routes];
+    const routes = [
+      {
+        path: "modules/a/a.contract.ts",
+        source:
+          "import { contract } from '@keel/router/contract'\nexport const a = contract('a', { 'a.x': { path: '/api/auth/x' } })\n",
+      },
+      {
+        path: "modules/a/routes.ts",
+        source:
+          "import { manifest } from '@keel/router'\nimport { a } from './a.contract.ts'\nexport const routes = manifest(a, { 'a.x': { component: () => null } })\n",
+      },
+    ];
+    const files = [...base, { path: "modules/a/module.ts", source: "export default {}\n" }, ...routes];
     expect(identityDiags(files).map((d) => d.code)).toContain("E1579");
     expect(identityDiags([{ path: "identity.ts", source: "" }], undefined, true).map((d) => d.code)).toEqual(["E1580"]);
   });

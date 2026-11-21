@@ -3,6 +3,7 @@
 // and the stream opens after it. Seed 1337
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { renderRoute } from "@keel/testing";
 import { expect, test } from "vitest";
@@ -24,11 +25,10 @@ test("a page that subscribes while it renders writes nothing while rendering, an
   });
   const seen: string[] = [];
   const held: { status?: () => ChannelStatus } = {};
-  const routes = manifest({
+  const routes = manifest(contract("t", { "t.page": { path: "/" } }), {
     "t.page": {
-      path: "/",
-      component(): Node {
-        const sub = subscribe(ctx, ORIGIN, room, {}, (e) => seen.push(e.kind));
+      component(_props, at): Node {
+        const sub = subscribe(at, ORIGIN, room, {}, (e) => seen.push(e.kind));
         held.status = sub.status;
         return document.createElement("p");
       },

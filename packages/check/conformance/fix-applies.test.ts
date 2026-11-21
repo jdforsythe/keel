@@ -38,7 +38,7 @@ const CASES: { code: string; source: string; path?: string; more?: { path: strin
       },
       {
         path: "modules/shop/module.ts",
-        source: `import { module } from '@keel/compiler'\nexport default module({ id: 'shop', deps: [], capabilities: [], public: { exports: [], routes: [] } })\n`,
+        source: `import { module } from '@keel/compiler'\nexport default module({ id: 'shop', deps: [], capabilities: [], public: { exports: [] } })\n`,
       },
     ],
   },

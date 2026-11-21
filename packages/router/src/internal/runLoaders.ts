@@ -11,7 +11,7 @@ import { unexpected } from "./unexpected.ts";
 type Outcome = Result<unknown, KeelError<string, unknown>>;
 
 async function runOne(
-  l: Loader<unknown>,
+  l: Loader,
   args: { params: Rec; search: Rec; url: string; caller: string; user: string },
   ctx: Ctx,
   rq: ServerRequest | undefined,

@@ -2,12 +2,13 @@
 // This file is also the session group's user module: `openGroup({ user })` loads it in each worker (`routes`, `base`).
 // Assumptions (the spec is silent, each is an ordinary reading of k.server / k.component / k.ctx):
 // - `stores` factories ignore their argument, so `races` may call them with any ctx;
-// - `user` is the file URL (a string) of this module; a route component receives `ctx` as its third argument;
+// - `user` is the file URL (a string) of this module; a route component receives `ctx` as its second argument;
 // - `ctx.storage` holds a server store as the JSON text of its `snapshot()` under `keel.store.<id>` (a parsed value is
 //   accepted on read too), and the hand-built server reads and writes it as k.server's Server state does.
 import type { Ctx, SimCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import type { JsonValue } from "@keel/schema";
 import type { openGroup } from "@keel/std-sessions/group";
@@ -206,11 +207,10 @@ function build() {
       void tx(setStatus, { status: "offline" });
     }
   };
-  const routes = manifest({
+  const todoContract = contract("todo", { "todo.show": { path: "/todos" } });
+  const routes = manifest(todoContract, {
     "todo.show": {
-      path: "/todos",
-      component(_props: unknown, _slots: unknown, ctx?: Ctx): Node {
-        if (ctx === undefined) throw new Error("fixture: the component got no ctx");
+      component(_props: unknown, ctx: Ctx): Node {
         return Box({
           as: "main",
           id: "todo.page",

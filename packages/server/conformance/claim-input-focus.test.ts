@@ -2,6 +2,7 @@
 // Spec: k.claim, Conformance "A focused `Input` keeps focus, typed value and caret across resume."
 // Seed: 1337 (no generated inputs). Real compiled TSX, real createApp, real resume.
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { afterEach, expect, it } from "vitest";
 import { compilePage } from "./claim-support.ts";
 import { install, q, resumeBody, settle } from "./resume-app.ts";
@@ -24,7 +25,13 @@ export default function Page() {
 
 it("A focused `Input` keeps focus, typed value and caret across resume.", async () => {
   const page = compilePage("fi.page", SOURCE);
-  const routes = manifest({ "fi.page": { path: "/fi", component: page } });
+  const fiContract = contract("fi", {
+    "fi.page": { path: "/fi" },
+  });
+
+  const routes = manifest(fiContract, {
+    "fi.page": { component: page },
+  });
   install(await serveRoutes(routes, ["fi"], "/fi"));
   const input = q("fi.input");
   if (!(input instanceof HTMLInputElement)) throw new Error("fixture: fi.input is not an input");

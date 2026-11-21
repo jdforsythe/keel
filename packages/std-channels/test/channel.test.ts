@@ -26,12 +26,13 @@ const wrap = (inner: Schema<unknown>, ws: readonly Wrap[]): Schema<unknown> => {
 };
 const wraps = fc.array(fc.constantFrom<Wrap>("object", "array", "optional", "nullable", "record"), { maxLength: 5 });
 
-test("channel returns a frozen declaration holding its name, path and schemas", () => {
+test("channel returns a frozen declaration holding its name, path, schemas, events and body", () => {
   const params = s.object({ room: s.string() });
   const message = s.object({ text: s.string() });
   const ch = channel("a.room", { path: "/api/room/events", params, message });
   expect(Object.isFrozen(ch)).toBe(true);
-  expect(ch).toEqual({ name: "a.room", path: "/api/room/events", params, message });
+  expect(ch).toMatchObject({ name: "a.room", path: "/api/room/events", params, message });
+  expect(Object.keys(ch).sort()).toEqual(["body", "events", "message", "name", "params", "path"]);
 });
 
 test("E2602 for an s.secret under any nesting of the message schema, the root included; none without it", () => {

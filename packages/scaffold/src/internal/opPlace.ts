@@ -1,5 +1,6 @@
 import { deployableNameProblem } from "@keel/compiler/hosting/deployableNameProblem";
 import type { Result } from "@keel/schema";
+import type { DeployShells } from "../types/DeployShells.ts";
 import type { Edit } from "../types/Edit.ts";
 import type { ScaffoldError } from "../types/ScaffoldError.ts";
 import type { Writes } from "./Writes.ts";
@@ -21,7 +22,11 @@ import { withWrites } from "./withWrites.ts";
  * the CI workflow and deploy files. Nothing else changes. Insertion is sorted (modules and new deployables), so
  * placing a module back restores the bytes of a sorted `topology.ts`.
  */
-export function opPlace(input: unknown, files: ReadonlyMap<string, string>): Result<Edit, ScaffoldError> {
+export function opPlace(
+  input: unknown,
+  files: ReadonlyMap<string, string>,
+  shells: DeployShells = {},
+): Result<Edit, ScaffoldError> {
   const r = inputs.place.parse(input);
   if (!r.ok) return badInput("place", r.error);
   const { module, to, adapter } = r.value;
@@ -55,7 +60,7 @@ export function opPlace(input: unknown, files: ReadonlyMap<string, string>): Res
   const next =
     left.modules.length === 1 ? removeDeployable(added, mid.obj, from.name) : removeItem(added, left.list, module);
   const own: Writes = new Map([["topology.ts", next]]);
-  const gen = regenerated(withWrites(files, own));
+  const gen = regenerated(withWrites(files, own), shells);
   gen.delete("turbo.json");
   return commit(files, new Map([...own, ...gen]), [...gen.keys()]);
 }

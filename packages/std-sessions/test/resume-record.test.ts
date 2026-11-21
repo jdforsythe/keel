@@ -5,7 +5,7 @@
 import { createCtx } from "@keel/ctx";
 import type { Ctx } from "@keel/ctx";
 import { manifest } from "@keel/router";
-import type { Slots } from "@keel/runtime-dom";
+import { contract } from "@keel/router/contract";
 import { resume } from "@keel/runtime-dom/ops";
 import { createApp, topology } from "@keel/server";
 import { Box, Button } from "@keel/ui";
@@ -14,9 +14,8 @@ import { record, session } from "../src/index.ts";
 import { stamped } from "./stamped.ts";
 
 /** A page whose button throws; in the browser it records the session with an upload to this origin. */
-function Shop(_props?: object, _slots?: Slots, ctx?: Ctx): Node {
-  if (ctx !== undefined && typeof location !== "undefined")
-    record(ctx, { upload: new URL("/sessions", location.origin) });
+function Shop(_props: object, ctx: Ctx): Node {
+  if (typeof location !== "undefined") record(ctx, { upload: new URL("/sessions", location.origin) });
   return Box({
     as: "main",
     id: "shop.page",
@@ -38,7 +37,7 @@ function Shop(_props?: object, _slots?: Slots, ctx?: Ctx): Node {
 async function serve(): Promise<void> {
   const app = await createApp({
     topology: topology({ web: { modules: ["shop"], adapter: "node" } }),
-    routes: manifest({ "shop.page": { path: "/", component: Shop } }),
+    routes: manifest(contract("shop", { "shop.page": { path: "/" } }), { "shop.page": { component: Shop } }),
     ctx: createCtx({ mode: "sim", seed: 1337 }),
   });
   const res = await app.fetch(new Request("http://localhost:3000/", { headers: { accept: "text/html" } }));

@@ -4,6 +4,7 @@
 // Seed: 1337 (fc.assert seed below). Storage `get`/`set` and request starts are ordered by `fc.scheduler`.
 import { type Ctx, createCtx } from "@keel/ctx";
 import { action, loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { err, ok, s } from "@keel/schema";
 import { store, transaction, tx } from "@keel/store";
 import fc from "fast-check";
@@ -86,29 +87,23 @@ describe("overlapping requests are serializable (property)", () => {
         };
         const ctx: Ctx = { clock: base.clock, random: base.random, net: base.net, storage };
         const seen = new Map<string, Partial<Record<Key, string>>>();
-        const routes = manifest({
-          "app.prop": {
-            path: "/prop",
-            loader: loader({ output: Cut, stores: factory }, async ({ stores }) =>
-              ok({ a: stores.a.st.get("v"), b: stores.b.st.get("v"), c: stores.c.st.get("v") }),
-            ),
-            component: () => document.createElement("p"),
-          },
+        const c = contract("app", { "app.prop": { path: "/prop" } });
+        const getCut = loader(c, "app.prop", { output: Cut, stores: factory }, async ({ stores }) =>
+          ok({ a: stores.a.st.get("v"), b: stores.b.st.get("v"), c: stores.c.st.get("v") }),
+        );
+        const write = action(c, "app.prop", { input: Op, stores: factory }, ({ id, reads, writes }, { stores }) => {
+          const saw: Partial<Record<Key, string>> = {};
+          for (const k of reads) if (isKey(k)) saw[k] = stores[k].st.get("v");
+          seen.set(id, saw);
+          for (const k of writes) {
+            if (!isKey(k)) continue;
+            const r = tx(stores[k].set, { v: id });
+            if (!r.ok) return err(r.error);
+          }
+          return ok(null);
         });
-        routes.actions({
-          "app.prop": {
-            POST: action({ input: Op, stores: factory }, ({ id, reads, writes }, { stores }) => {
-              const saw: Partial<Record<Key, string>> = {};
-              for (const k of reads) if (isKey(k)) saw[k] = stores[k].st.get("v");
-              seen.set(id, saw);
-              for (const k of writes) {
-                if (!isKey(k)) continue;
-                const r = tx(stores[k].set, { v: id });
-                if (!r.ok) return err(r.error);
-              }
-              return ok(null);
-            }),
-          },
+        const routes = manifest(c, {
+          "app.prop": { loader: getCut, component: () => document.createElement("p"), POST: write },
         });
         const app = await createApp({
           topology: topology({ web: { modules: ["app"], adapter: "node" } }),

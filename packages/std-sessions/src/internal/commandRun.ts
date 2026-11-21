@@ -131,7 +131,11 @@ export async function commandRun(op: Op, target: string, io: Io, maxRuns: number
   const source = toTest(out, {
     navs: r.navs,
     stores: storesOf(files, Object.keys(out.state), m),
-    routes: modules.map((x) => ({ module: x, from: x === m ? "../routes.ts" : `../../${x}/routes.ts` })),
+    routes: modules.map((x) => ({
+      module: x,
+      from: x === m ? "../routes.ts" : `../../${x}/routes.ts`,
+      contract: x === m ? `../${x}.contract.ts` : `../../${x}/${x}.contract.ts`,
+    })),
   });
   return done([sessionOut(out, out.error?.code ?? null, file)], [{ path: file, content: source, readonly: false }]);
 }

@@ -3,7 +3,6 @@
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
 import type { Ctx } from "@keel/ctx";
-import type { Slots } from "@keel/runtime-dom";
 import type { Schema } from "@keel/schema";
 import type { TestComponent } from "@keel/testing";
 import { expect } from "vitest";
@@ -24,8 +23,8 @@ export function compiled<P>(name: string, source: string, props: Schema<P>): Com
   const fn = evaluate(out.code);
   if (typeof fn !== "function") throw new Error("fixture: default export is not a component");
   const component = Object.assign(
-    (p: P, slots?: Slots, ctx?: Ctx): Node => {
-      const node: unknown = fn(p, slots, ctx);
+    (p: P, ctx: Ctx): Node => {
+      const node: unknown = fn(p, ctx);
       if (!(node instanceof Node)) throw new Error("fixture: component did not return a Node");
       return node;
     },

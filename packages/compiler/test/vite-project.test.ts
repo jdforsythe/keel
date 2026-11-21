@@ -32,13 +32,20 @@ export default function ListsPage() {
   </Box>;
 }
 `;
-const ROUTES = `import { manifest } from "@keel/router";
+const CONTRACT = `import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
+export const todos = contract("todos", {
+  "todos.index": { path: "/" },
+  "todos.list": { path: "/lists/:listId", params: s.object({ listId: s.string() }) },
+});
+`;
+const ROUTES = `import { manifest } from "@keel/router";
 import ListsPage from "./ListsPage.tsx";
 import { loadList } from "./loadList.server.ts";
-export const routes = manifest({
-  "todos.index": { path: "/", component: ListsPage },
-  "todos.list": { path: "/lists/:listId", params: s.object({ listId: s.string() }), loader: loadList, component: ListsPage },
+import { todos } from "./todos.contract.ts";
+export const routes = manifest(todos, {
+  "todos.index": { component: ListsPage },
+  "todos.list": { loader: loadList, component: ListsPage },
 });
 `;
 
@@ -69,8 +76,9 @@ export const tokens = defineTokens({
   write("modules/todos/ListsPage.tsx", PAGE);
   write(
     "modules/todos/loadList.server.ts",
-    `import { loader } from "@keel/router";\nimport { ok, s } from "@keel/schema";\nexport const loadList = loader({ output: s.object({ n: s.int() }) }, async () => ok({ n: 1 }));\n`,
+    `import { loader } from "@keel/router";\nimport { ok, s } from "@keel/schema";\nimport { todos } from "./todos.contract.ts";\nexport const loadList = loader(todos, "todos.list", { output: s.object({ n: s.int() }) }, async () => ok({ n: 1 }));\n`,
   );
+  write("modules/todos/todos.contract.ts", CONTRACT);
   write("modules/todos/routes.ts", ROUTES);
 });
 afterEach(() => {
@@ -113,7 +121,7 @@ describe("@keel/compiler/vite project inputs", () => {
     expect(entry).toContain('import "virtual:keel.css";');
     expect(entry).toContain('from "/modules/todos/routes.ts"');
     expect(entry).toContain('createCtx({ mode: "real" })');
-    expect(entry).toContain("createRouter(__keelRoutes0, { ctx, history: browserHistory(), mode })");
+    expect(entry).toContain("createRouter(routeTable(__keelRoutes0), { ctx, history: browserHistory(), mode })");
     expect(entry).toContain("mount(router.App, el, { ctx, mode })");
     expect(parseSync("entry.js", entry, { sourceType: "module" }).errors).toEqual([]);
   });

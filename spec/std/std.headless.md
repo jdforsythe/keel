@@ -1,7 +1,7 @@
 # std.headless: Headless widgets
 status: conformance-covered
 
-**Package.** `@keel/std-headless`, client-safe, no config, no capability, no CSS. Widgets: `Listbox`, `Combobox`, `Menu`, `Tabs` (std.options), `Dialog`, `Disclosure`, `Toaster` (here); charts `optionsChart`, `openChart`, `toastChart`; types `Option`, `ToastItem`. Each widget is a component file (`.ts`) that calls `Part` (k.aria), base elements and `For` and `If` as functions. Keyboard, focus and ARIA follow the WAI-ARIA Authoring Practices 1.2 pattern each widget names. Read once: `id`, `label` or `labelledBy`, `styles`, a Dialog's `level` and `alert`, a Menu item's role.
+**Package.** `@keel/std-headless`, client-safe, no config, no capability, no CSS. Widgets: `Listbox`, `Combobox`, `Menu`, `Tabs` (std.options), `Dialog`, `Disclosure`, `Toaster` (here); charts `optionsChart`, `openChart`, `toastChart`; `listChart`, `stableRows` (std.lists); types `Option`, `ToastItem`. Each widget is a component file (`.ts`) that calls `Part` (k.aria), base elements and `For` and `If` as functions. Keyboard, focus and ARIA follow the APG 1.2 pattern each widget names. Read once: `id`, `label` or `labelledBy`, `styles`, a Dialog's `level` and `alert`, a Menu item's role.
 
 **Ids.** A widget takes `id` and gives each part the id `<id>.<part>` from its table (k.component). Option, tab and toast keys become id segments: 1 to 64 characters of `[A-Za-z0-9_-]`, unique in the widget, else E2801 at render. Tests address parts by these ids.
 
@@ -18,6 +18,7 @@ status: conformance-covered
 Invariant of `optionsChart`: `active` is -1 or below `count`, and -1 in `closed`. Chart data hold indexes and counts only: no key, text or typed character enters a chart, its log or a session. Every instance starts at `initial` on the server and at resume.
 
 **Styling.** `styles` (k.aria) takes the parts each table names; `highlighted` marks the active option.
+
 
 **Dialog** (APG Dialog (Modal)). `{ id, title: string, level?: 2-6, trigger: () => JSX, content: (close: () => void) => JSX, alert?: { description: string } }`; `openChart`. Parts: `trigger` (`button`, `hasPopup: 'dialog'`), `dialog` (`dialog`, or `alertdialog` with `describedBy` `<id>.description`; `labelledBy` `<id>.title`, `open` while `open`), `title` (`Heading`, default level 2), `description` (`Text`). Keys: a click or Enter or Space on the trigger sends `open`; Escape in the dialog sends `close`; Tab stays in the dialog by the platform's modal behavior. Focus moves in on open and back to the trigger on close (k.aria).
 

@@ -3,11 +3,14 @@
 // Seed: 1337.
 // Behavior extras: the focus fallback, `showModal()` after the commit, platform `close`, a trigger no longer connected.
 // `onDismiss` is not in the Roles table's props for `dialog`; the Behavior paragraph names it, so it is passed here.
+import { createCtx } from "@keel/ctx";
 import { signal as newSignal, scope } from "@keel/reactive";
 import { mount } from "@keel/runtime-dom";
 import { Part } from "@keel/ui/aria";
 import fc from "fast-check";
 import { afterEach, describe, expect, test, vi } from "vitest";
+
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 /** Signals and computeds are created in a scope (k.reactive E1203). */
 const owner = scope(() => undefined);
@@ -59,7 +62,7 @@ const setup = (role: Role, content: () => Node[], open: Open = signal(false)): S
     role === "dialog"
       ? Part({ id: "dlg", role, labelledBy: "ttl", open, onDismiss, children: content })
       : Part({ id: "dlg", role, labelledBy: "ttl", describedBy: "dsc", open, onDismiss, children: content });
-  return { host, open, dismissed, off: mount(make, host) };
+  return { host, open, dismissed, off: mount(make, host, { ctx: simCtx }) };
 };
 
 describe("k.aria: dialog", () => {

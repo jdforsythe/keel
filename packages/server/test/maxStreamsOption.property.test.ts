@@ -1,14 +1,16 @@
 // `createApp({ maxStreams })` is an integer of at least 1; anything else rejects at startup with E1560.
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { createApp, topology } from "../src/index.ts";
 
+const c = contract("app", { "app.home": { path: "/" } });
 const app = (maxStreams: number) =>
   createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
-    routes: manifest({ "app.home": { path: "/", component: () => document.createElement("p") } }),
+    routes: manifest(c, { "app.home": { component: () => document.createElement("p") } }),
     ctx: createCtx({ mode: "sim", seed: 1337 }),
     mode: "dev",
     maxStreams,

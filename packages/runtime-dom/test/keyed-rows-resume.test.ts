@@ -5,6 +5,7 @@ import * as fc from "fast-check";
 import { afterEach, describe, expect, it } from "vitest";
 import { clone, list, resume, template, text } from "../src/ops/index.ts";
 import { SEED, rootSignal } from "./support.ts";
+import { testCtx } from "./testCtx.ts";
 
 type Todo = { readonly id: string; readonly title: string };
 
@@ -57,7 +58,7 @@ const resumed = (initial: Todo[]): void => {
   document.body.appendChild(host);
   host.innerHTML = serverHtml(initial);
   items.set(initial);
-  const { warnings } = resume(host, { T });
+  const { warnings } = resume(host, { T }, { ctx: testCtx });
   expect(warnings).toEqual([]);
 };
 

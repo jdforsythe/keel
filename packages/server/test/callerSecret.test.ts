@@ -6,11 +6,14 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { createCtx } from "@keel/ctx";
-import { manifest } from "@keel/router";
+import { action, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
+import { ok, s } from "@keel/schema";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createApp, topology } from "../src/index.ts";
 import { callerSigner } from "../src/internal/callerSigner.ts";
 
+const home = contract("app", { "app.home": { path: "/" } });
 const made: string[] = [];
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -38,7 +41,12 @@ const app = (o: {
 }) =>
   createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
-    routes: manifest({ "app.home": { path: "/", component: () => document.createElement("p") } }),
+    routes: manifest(home, {
+      "app.home": {
+        component: () => document.createElement("p"),
+        POST: action(home, "app.home", { input: s.object({}) }, async () => ok(null)),
+      },
+    }),
     ctx: createCtx({ mode: "sim", seed: 1337 }),
     ...(o.secret === undefined ? {} : { secret: o.secret }),
     ...(o.secure === undefined ? {} : { secure: o.secure }),

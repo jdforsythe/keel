@@ -10,12 +10,15 @@
 // Spec: k.defaults, Conformance "A `submit` on a form outside every island, or in a resumed island, is not `defaultPrevented` by the queue."
 // Seed: 1337 (the properties below). Hand-built compiled islands as fixtures.ts does. `submit` and `requestSubmit` of
 // HTMLFormElement are replaced for each test by recorders of their calls and the form data at the call.
+import { createCtx } from "@keel/ctx";
 import { on, resume, template } from "@keel/runtime-dom/ops";
 import type { Island } from "@keel/runtime-dom/ops";
 import { clone } from "@keel/runtime-dom/ops";
 import fc from "fast-check";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { SEED, flush } from "./fixtures.ts";
+
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 type Call = { readonly kind: "submit" | "requestSubmit"; readonly action: string; readonly data: [string, string][] };
 
@@ -114,7 +117,7 @@ describe("k.defaults Submit: a queued submit goes out once, as the browser would
     document.body.innerHTML = `${S.markup}${KSTATE(["S"])}`;
     const ev = submitOn(el("#f"));
     expect(ev.defaultPrevented).toBe(true);
-    resume(document.body, { S: S.component });
+    resume(document.body, { S: S.component }, { ctx: simCtx });
     await flush();
     expect(hits.n).toBe(1);
     expect(natives()).toEqual([]);
@@ -127,7 +130,7 @@ describe("k.defaults Submit: a queued submit goes out once, as the browser would
     document.body.innerHTML = `${S.markup}${KSTATE(["S"])}`;
     const ev = submitOn(el("#f"));
     expect(ev.defaultPrevented).toBe(true);
-    resume(document.body, { S: S.component });
+    resume(document.body, { S: S.component }, { ctx: simCtx });
     await flush();
     expect(hits.n).toBe(1);
     expect(natives()).toHaveLength(1);
@@ -144,7 +147,7 @@ describe("k.defaults Submit: a queued submit goes out once, as the browser would
     const S = island("S", FORM, () => on("f", "submit", (e: Event) => void seen.push(e.defaultPrevented)));
     document.body.innerHTML = `${S.markup}${KSTATE(["S"])}`;
     submitOn(el("#f"));
-    resume(document.body, { S: S.component });
+    resume(document.body, { S: S.component }, { ctx: simCtx });
     await flush();
     expect(seen).toEqual([true]);
   });
@@ -153,7 +156,7 @@ describe("k.defaults Submit: a queued submit goes out once, as the browser would
     const S = island("S", FORM, () => on("f", "submit", () => undefined));
     document.body.innerHTML = `${S.markup}${KSTATE(["S"])}`;
     submitOn(el("#f"));
-    resume(document.body, { S: S.component });
+    resume(document.body, { S: S.component }, { ctx: simCtx });
     await flush();
     expect(el("#f").getAttribute("action")).toBeNull();
     expect(new FormData(formOf("#f")).get("op")).toBeNull();
@@ -163,7 +166,7 @@ describe("k.defaults Submit: a queued submit goes out once, as the browser would
     document.body.innerHTML = `<div data-k-island="Bare">${FORM}</div>${KSTATE(["Bare"])}`;
     const ev = submitOn(el("#f"));
     expect(ev.defaultPrevented).toBe(true);
-    resume(document.body, {});
+    resume(document.body, {}, { ctx: simCtx });
     await flush();
     expect(natives()).toHaveLength(1);
     expect(natives()[0]?.data).toContainEqual(["op", "save"]);
@@ -174,7 +177,7 @@ describe("k.defaults Submit: a queued submit goes out once, as the browser would
     const M = island("M", `<p id="p">other</p>`, () => undefined);
     document.body.innerHTML = `<div data-k-island="M">${FORM}</div>${KSTATE(["M"])}`;
     submitOn(el("#f"));
-    const { warnings } = resume(document.body, { M: M.component });
+    const { warnings } = resume(document.body, { M: M.component }, { ctx: simCtx });
     await flush();
     expect(JSON.stringify(warnings)).toContain("E1253");
     expect(natives()).toEqual([]);
@@ -190,7 +193,7 @@ describe("k.defaults Submit: a queued submit goes out once, as the browser would
         const S = island("S", html, () => on("f", "submit", () => undefined));
         document.body.innerHTML = `${S.markup}${KSTATE(["S"])}`;
         submitOn(el("#f"));
-        resume(document.body, { S: S.component });
+        resume(document.body, { S: S.component }, { ctx: simCtx });
         await flush();
         expect(natives()).toHaveLength(1);
         expect(natives()[0]?.data.filter(([k, v]) => k === name && v === value)).toHaveLength(1);
@@ -203,7 +206,7 @@ describe("k.defaults Submit: a queued submit goes out once, as the browser would
     const S = island("S", FORM, () => on("f", "submit", () => undefined));
     document.body.innerHTML = `<form id="out"><button>go</button></form>${S.markup}${KSTATE(["S"])}`;
     expect(submitOn(el("#out")).defaultPrevented).toBe(false);
-    resume(document.body, { S: S.component });
+    resume(document.body, { S: S.component }, { ctx: simCtx });
     await flush();
     expect(submitOn(el("#f")).defaultPrevented).toBe(false);
     expect(natives()).toEqual([]);
@@ -218,7 +221,7 @@ describe("k.defaults Links: a link click is not queued unless it is to a fragmen
     const ev = new MouseEvent("click", { bubbles: true, cancelable: true });
     el("#l").dispatchEvent(ev);
     expect(ev.defaultPrevented).toBe(false);
-    resume(document.body, { L: L.component });
+    resume(document.body, { L: L.component }, { ctx: simCtx });
     await flush();
     expect(hits.n).toBe(0);
   });
@@ -228,7 +231,7 @@ describe("k.defaults Links: a link click is not queued unless it is to a fragmen
     const L = island("L", `<a id="l" data-k="l" href="#part">go</a>`, () => on("l", "click", hits.hit));
     document.body.innerHTML = `${L.markup}${KSTATE(["L"])}`;
     el("#l").dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
-    resume(document.body, { L: L.component });
+    resume(document.body, { L: L.component }, { ctx: simCtx });
     await flush();
     expect(hits.n).toBe(1);
   });
@@ -242,7 +245,7 @@ describe("k.defaults Links: a link click is not queued unless it is to a fragmen
     const ev = new MouseEvent("click", { bubbles: true, cancelable: true });
     el("#in").dispatchEvent(ev);
     expect(ev.defaultPrevented).toBe(false);
-    resume(document.body, { L: L.component });
+    resume(document.body, { L: L.component }, { ctx: simCtx });
     await flush();
     expect(hits.n).toBe(0);
   });
@@ -256,7 +259,7 @@ describe("k.defaults Others: every other queued event keeps the default it had w
     const box = el("#c");
     box.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
     expect(box instanceof HTMLInputElement && box.checked).toBe(true);
-    resume(document.body, { C: C.component });
+    resume(document.body, { C: C.component }, { ctx: simCtx });
     await flush();
     expect(changes.n).toBe(1);
     expect(box instanceof HTMLInputElement && box.checked).toBe(true);
@@ -269,7 +272,7 @@ describe("k.defaults Others: every other queued event keeps the default it had w
     document.body.innerHTML = `${C.markup}${KSTATE(["C"])}`;
     const box = el("#c");
     box.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
-    resume(document.body, { C: C.component });
+    resume(document.body, { C: C.component }, { ctx: simCtx });
     await flush();
     expect(box instanceof HTMLInputElement && box.checked).toBe(true);
   });
@@ -279,7 +282,7 @@ describe("k.defaults Others: every other queued event keeps the default it had w
     document.body.innerHTML = `${R.markup}${KSTATE(["R"])}`;
     const radio = el("#r");
     radio.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
-    resume(document.body, { R: R.component });
+    resume(document.body, { R: R.component }, { ctx: simCtx });
     await flush();
     expect(radio instanceof HTMLInputElement && radio.checked).toBe(true);
   });
@@ -299,7 +302,7 @@ describe("k.defaults Others: every other queued event keeps the default it had w
             : new Event(type, { bubbles: true, cancelable: true });
         el("#t").dispatchEvent(ev);
         expect(ev.defaultPrevented).toBe(false);
-        resume(document.body, { T: T.component });
+        resume(document.body, { T: T.component }, { ctx: simCtx });
         await flush();
         expect(hits.n).toBe(1);
         expect(natives()).toEqual([]);

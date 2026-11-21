@@ -34,6 +34,7 @@
       ".fixtures/**",
       "**/.keel/**",
       "packages/*/reports/**",
+      "packages/*/docs/**",
       "apps/*/reports/**",
       "tooling/reports/**",
       "**/.stryker-tmp/**",

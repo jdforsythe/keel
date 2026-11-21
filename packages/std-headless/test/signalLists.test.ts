@@ -32,7 +32,6 @@ test("typing in a Combobox narrows its options and keeps the parent's state and 
               options: () => fruit.filter((o) => o.text.toLowerCase().includes(typed.get())),
               onChange: () => {},
             },
-            undefined,
             c,
           ),
           Text({ id: "p.echo", children: () => computed(() => typed.get()) }),
@@ -64,18 +63,10 @@ test("Listbox, Menu, Tabs and Toaster lists read from a parent signal update in 
         fruit.slice(0, n.get()).map((o) => ({ id: o.key, text: o.text, tone: "alert" }));
       return Box({
         children: () => [
-          Listbox(
-            { id: "l", label: "L", options: opts, mode: "single", selected: () => [], onChange: () => {} },
-            undefined,
-            c,
-          ),
-          Menu({ id: "m", trigger: () => "M", items: opts, onSelect: () => {} }, undefined, c),
-          Tabs(
-            { id: "t", label: "T", tabs: opts, selected: () => "apple", onChange: () => {}, panel: (k) => k },
-            undefined,
-            c,
-          ),
-          Toaster({ id: "z", items: toasts, onDismiss: () => {}, dismiss: "Dismiss" }, undefined, c),
+          Listbox({ id: "l", label: "L", options: opts, mode: "single", selected: () => [], onChange: () => {} }, c),
+          Menu({ id: "m", trigger: () => "M", items: opts, onSelect: () => {} }, c),
+          Tabs({ id: "t", label: "T", tabs: opts, selected: () => "apple", onChange: () => {}, panel: (k) => k }, c),
+          Toaster({ id: "z", items: toasts, onDismiss: () => {}, dismiss: "Dismiss" }, c),
         ],
       });
     }),

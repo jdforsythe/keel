@@ -1,5 +1,5 @@
 // serverOnlyCalls (E1558, k.topology Rules): server-only route work in a module a `client` or `static` deployable
-// serves, at the call. Seed 1337.
+// serves, at the call, over `loader(contract, id, decl, fn)` and `action(contract, id, decl, fn)`. Seed 1337.
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 import { serverOnlyCalls } from "../src/serverOnlyCalls.ts";
@@ -14,54 +14,65 @@ const LOCALS =
 const CALLS = {
   loaderStores: {
     why: "names stores; serve module a from a node deployable",
-    src: "loader({ output: s.object({}), stores: () => ({}) }, async () => ok({}))",
+    src: "loader(c, 'a.x', { output: s.object({}), stores: () => ({}) }, async () => ok({}))",
   },
   actionStores: {
     why: "names stores; serve module a from a node deployable",
-    src: "action({ input: s.object({}), 'stores': () => ({}) }, async () => ok(null))",
+    src: "action(c, 'a.x', { input: s.object({}), 'stores': () => ({}) }, async () => ok(null))",
   },
   live: {
     why: "is live; serve module a from a node deployable",
-    src: "loader({ output: s.object({}) }, async function* () {\n  yield ok({})\n})",
+    src: "loader(c, 'a.x', { output: s.object({}) }, async function* () {\n  yield ok({})\n})",
   },
-  plain: { why: null, src: "loader({ output: s.object({}) }, async () => ok({}))" },
-  plainAction: { why: null, src: "action({ input: s.object({}) }, async () => ok(null))" },
-  actionNamedFn: { why: null, src: "action({ input: s.object({}) }, load)" },
-  syncGenerator: { why: null, src: "loader({ output: s.object({}) }, function* () {})" },
+  plain: { why: null, src: "loader(c, 'a.x', { output: s.object({}) }, async () => ok({}))" },
+  plainAction: { why: null, src: "action(c, 'a.x', { input: s.object({}) }, async () => ok(null))" },
+  actionNamedFn: { why: null, src: "action(c, 'a.x', { input: s.object({}) }, load)" },
+  syncGenerator: { why: null, src: "loader(c, 'a.x', { output: s.object({}) }, function* () {})" },
   namedGenerator: {
     why: "is live; serve module a from a node deployable",
-    src: "loader({ output: s.object({}) }, feed)",
+    src: "loader(c, 'a.x', { output: s.object({}) }, feed)",
   },
   namedConstGenerator: {
     why: "is live; serve module a from a node deployable",
-    src: "loader({ output: s.object({}) }, stream)",
+    src: "loader(c, 'a.x', { output: s.object({}) }, stream)",
   },
-  namedPlain: { why: null, src: "loader({ output: s.object({}) }, plain)" },
-  namedArrow: { why: null, src: "loader({ output: s.object({}) }, arrow)" },
+  emptyDeclGenerator: { why: "is live; serve module a from a node deployable", src: "loader(c, 'a.feed', {}, stream)" },
+  baseSpread: {
+    why: "decl spread or computed; write an object literal",
+    src: "loader(c, 'a.x', { ...extra, output: s.object({}) }, plain)",
+  },
+  namedPlain: { why: null, src: "loader(c, 'a.x', { output: s.object({}) }, plain)" },
+  namedArrow: { why: null, src: "loader(c, 'a.x', { output: s.object({}) }, arrow)" },
   namespaceStores: {
     why: "names stores; serve module a from a node deployable",
-    src: "r.loader({ output: s.object({}), stores: () => ({}) }, async () => ok({}))",
+    src: "r.loader(c, 'a.x', { output: s.object({}), stores: () => ({}) }, async () => ok({}))",
   },
-  namespacePlain: { why: null, src: "r.action({ input: s.object({}) }, async () => ok(null))" },
+  namespacePlain: { why: null, src: "r.action(c, 'a.x', { input: s.object({}) }, async () => ok(null))" },
   computed: {
-    why: "options spread or computed; write an object literal",
-    src: "loader({ output: s.object({}), ['stores']: () => ({}) }, async () => ok({}))",
+    why: "decl spread or computed; write an object literal",
+    src: "loader(c, 'a.x', { output: s.object({}), ['stores']: () => ({}) }, async () => ok({}))",
   },
   spread: {
-    why: "options spread or computed; write an object literal",
-    src: "loader({ output: s.object({}), ...extra }, async () => ok({}))",
+    why: "decl spread or computed; write an object literal",
+    src: "loader(c, 'a.x', { output: s.object({}), ...extra }, async () => ok({}))",
   },
   optionsIdentifier: {
-    why: "options not an object literal; write one inline",
-    src: "action(extra, async () => ok(null))",
+    why: "decl not an object literal; write one inline",
+    src: "action(c, 'a.x', extra, async () => ok(null))",
   },
   optionsCall: {
-    why: "options not an object literal; write one inline",
-    src: "loader(Object.assign({}, extra), async () => ok({}))",
+    why: "decl not an object literal; write one inline",
+    src: "loader(c, 'a.x', Object.assign({}, extra), async () => ok({}))",
   },
-  spreadArgument: { why: "options not an object literal; write one inline", src: "loader(...[extra, plain])" },
-  importedFn: { why: "fn not a function of this file; define it here", src: "loader({ output: s.object({}) }, load)" },
-  calledFn: { why: "fn not a function of this file; define it here", src: "loader({ output: s.object({}) }, make())" },
+  spreadArgument: { why: "decl not an object literal; write one inline", src: "loader(c, 'a.x', ...[extra, plain])" },
+  importedFn: {
+    why: "fn not a function of this file; define it here",
+    src: "loader(c, 'a.x', { output: s.object({}) }, load)",
+  },
+  calledFn: {
+    why: "fn not a function of this file; define it here",
+    src: "loader(c, 'a.x', { output: s.object({}) }, make())",
+  },
 } as const;
 type Kind = keyof typeof CALLS;
 const KINDS = Object.keys(CALLS).filter((k): k is Kind => k in CALLS);
@@ -98,19 +109,20 @@ describe("serverOnlyCalls", () => {
     expect(serverOnlyCalls([{ path: "modules/b/b.server.ts", source: `${HEAD}export const L = ${call}` }], t)).toEqual(
       [],
     );
-    const local = "const loader = (o: unknown, f: unknown) => [o, f]\nexport const L = loader({ stores: 1 }, 2)\n";
+    const local =
+      "const loader = (o: unknown, f: unknown) => [o, f]\nexport const L = loader(c, 'a.x', { stores: 1 }, 2)\n";
     expect(serverOnlyCalls([{ path: "modules/a/a.server.ts", source: local }], t)).toEqual([]);
-    const typeOnly = `import type { loader } from '@keel/router'\ndeclare const f: typeof loader\nexport const L = f({ stores: 1 }, 2)\n`;
+    const typeOnly = `import type { loader } from '@keel/router'\ndeclare const f: typeof loader\nexport const L = f(c, 'a.x', { stores: 1 }, 2)\n`;
     expect(serverOnlyCalls([{ path: "modules/a/a.server.ts", source: typeOnly }], t)).toEqual([]);
     const helper =
-      "import { loader } from '@keel/router'\nconst withStores = (o: object) => ({ ...o, stores: () => ({}) })\nexport const L = loader(withStores({}), async () => 1)\n";
+      "import { loader } from '@keel/router'\nconst withStores = (o: object) => ({ ...o, stores: () => ({}) })\nexport const L = loader(c, 'a.x', withStores({}), async () => 1)\n";
     expect(serverOnlyCalls([{ path: "modules/a/a.server.ts", source: helper }], t)).toEqual([
       expect.objectContaining({ code: "E1558", line: 3, col: 18 }),
     ]);
     const alias =
-      "import { loader } from '@keel/router'\nconst l = loader\nexport const L = l({ stores: 1 }, async () => 1)\n";
+      "import { loader } from '@keel/router'\nconst l = loader\nexport const L = l(c, 'a.x', { stores: 1 }, async () => 1)\n";
     expect(serverOnlyCalls([{ path: "modules/a/a.server.ts", source: alias }], t)).toEqual([]);
-    const aliased = `import { loader as l } from '@keel/router'\nexport const L = l({ stores: () => ({}) }, async () => 1)\n`;
+    const aliased = `import { loader as l } from '@keel/router'\nexport const L = l(c, 'a.x', { stores: () => ({}) }, async () => 1)\n`;
     expect(serverOnlyCalls([{ path: "modules/a/deep/x.server.tsx", source: aliased }], t)).toEqual([
       expect.objectContaining({ code: "E1558", line: 2, col: 18 }),
     ]);

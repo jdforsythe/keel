@@ -7,8 +7,8 @@ import type { Option } from "./Option.ts";
 import type { Named } from "./internal/Named.ts";
 import type { OptionState } from "./internal/OptionState.ts";
 import { content } from "./internal/content.ts";
-import { listChart } from "./internal/listChart.ts";
 import { nameOf } from "./internal/nameOf.ts";
+import { listChart } from "./listChart.ts";
 
 /**
  * A list a person picks one or several options from (std.options, APG Listbox). Parts `list` and `option.<key>`.
@@ -26,8 +26,7 @@ export function Listbox<K extends string>(
     readonly option?: (o: Option<K>, s: OptionState) => Child;
     readonly styles?: { readonly list?: PartStyle; readonly option?: PartStyle };
   },
-  _slots?: undefined,
-  ctx?: Ctx,
+  ctx: Ctx,
 ): Node {
   const l = listChart(props.id, "option", props.options, ctx);
   const pick = (o: Option<K> | undefined) => {

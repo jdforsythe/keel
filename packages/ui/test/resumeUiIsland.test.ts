@@ -10,6 +10,7 @@ import { resume } from "@keel/runtime-dom/ops";
 import * as ui from "@keel/ui";
 import * as fc from "fast-check";
 import { afterEach, describe, expect, it } from "vitest";
+import { testCtx } from "./testCtx.ts";
 
 const SEED = 1337;
 const flush = async (): Promise<void> => {
@@ -45,7 +46,7 @@ const host = (): HTMLDivElement => {
 /** Server HTML of `component` as the island `Island`, plus its #k-state, parsed into a fresh host. */
 const serve = (component: Component, props: Record<string, unknown>): HTMLDivElement => {
   const scratch = host();
-  const dispose = mount(() => component(props), scratch);
+  const dispose = mount(() => component(props), scratch, { ctx: testCtx });
   const root = scratch.firstElementChild;
   if (root === null) throw new Error("fixture: no island root");
   root.setAttribute("data-k-island", "Island");
@@ -97,7 +98,7 @@ describe("an island rooted at a ui Box resumes in place (backlog 0174)", () => {
     input.focus();
     typeInto(input, "Adam");
 
-    const { warnings } = resume(h, { Island });
+    const { warnings } = resume(h, { Island }, { ctx: testCtx });
     // The user is still typing: resume keeps the focus where it was.
     expect(document.activeElement).toBe(input);
     expect(warnings).toEqual([]);
@@ -129,7 +130,7 @@ export default function Island(p: { title: string }) {
     const input = h.querySelector("input");
     if (!(input instanceof HTMLInputElement)) throw new Error("fixture: no input");
     typeInto(input, "typed");
-    const { warnings } = resume(h, { Island });
+    const { warnings } = resume(h, { Island }, { ctx: testCtx });
     expect(warnings).toEqual([]);
     nodesOf(h).forEach((n, i) => expect(n).toBe(before[i]));
     expect(input.value).toBe("typed");
@@ -139,7 +140,7 @@ export default function Island(p: { title: string }) {
     const Island = build(REPRO);
     const h = serve(Island, { title: "Ada" });
     h.querySelector("label")?.remove();
-    const { warnings } = resume(h, { Island });
+    const { warnings } = resume(h, { Island }, { ctx: testCtx });
     expect(warnings.join("\n")).toContain("E1253");
     expect(h.querySelector("label")?.textContent).toBe("Title");
   });
@@ -185,7 +186,7 @@ export default function Island(p: { v: string }) {
         const before = nodesOf(h);
         const inputs = [...h.querySelectorAll("input")];
         for (const i of inputs) typeInto(i, typed);
-        const { warnings } = resume(h, { Island });
+        const { warnings } = resume(h, { Island }, { ctx: testCtx });
         expect(warnings).toEqual([]);
         const after = nodesOf(h);
         expect(after.length).toBe(before.length);
@@ -211,7 +212,7 @@ export default function Island(p: { a: string }) {
 }`);
     const h = serve(Island, { a: "" });
     const before = nodesOf(h);
-    const { warnings } = resume(h, { Island });
+    const { warnings } = resume(h, { Island }, { ctx: testCtx });
     expect(warnings).toEqual([]);
     nodesOf(h).forEach((n, i) => expect(n).toBe(before[i]));
     expect(h.querySelector("span")?.textContent).toBe("x");
@@ -248,7 +249,7 @@ export default function Island(p: Record<string, string>) {
         const root = h.firstElementChild;
         const text = root?.textContent;
         const before = nodesOf(h);
-        const { warnings } = resume(h, { Island });
+        const { warnings } = resume(h, { Island }, { ctx: testCtx });
         if (warnings.length === 0) nodesOf(h).forEach((n, i) => expect(n).toBe(before[i]));
         else {
           expect(warnings.join("\n")).toContain("E1253");

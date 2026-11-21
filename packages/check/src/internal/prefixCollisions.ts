@@ -1,16 +1,15 @@
 import type { Expression, ObjectExpression, StringLiteral } from "oxc-parser";
-import { Visitor } from "oxc-parser";
 import type { Diagnostic } from "../types/Diagnostic.ts";
 import type { SourceFile } from "../types/SourceFile.ts";
 import type { Checked } from "./Checked.ts";
+import type { ModuleContract } from "./ModuleContract.ts";
 import type { SchemaSource } from "./SchemaSource.ts";
 import { applyEdits } from "./applyEdits.ts";
 import { clip } from "./clip.ts";
 import { importTarget } from "./importTarget.ts";
-import { isAppPath } from "./isAppPath.ts";
 import { keyName } from "./keyName.ts";
 import { lineCol } from "./lineCol.ts";
-import { localNames } from "./modules/localNames.ts";
+import { literalPath } from "./literalPath.ts";
 import { paramsFields } from "./paramsFields.ts";
 import { parseFile } from "./parseFile.ts";
 import { propertyOf } from "./propertyOf.ts";
@@ -74,27 +73,19 @@ function enumOf(
   return { values, d: pd?.type === "Literal" && typeof pd.value === "string" ? pd.value : undefined };
 }
 
-/** Every literal-path route of every `manifest({...})` call in app code, with its `pathDefault` param enums. */
-function routesOf(files: readonly Checked[]): Route[] {
+/** Every page and API entry with a literal path in the contracts of `table`, with its `pathDefault` param enums. */
+function routesOf(table: readonly ModuleContract[], files: readonly Checked[]): Route[] {
   const all = files.map((c) => c.file);
   const out: Route[] = [];
-  for (const { file, parsed } of files) {
-    if (!isAppPath(file.path)) continue;
-    const fns = localNames(parsed.program, "manifest", "@keel/router");
-    if (fns.size === 0) continue;
-    const src = schemaSourceOf(file.path, parsed.program);
-    new Visitor({
-      CallExpression: (n) => {
-        const arg = n.arguments[0];
-        if (n.callee.type !== "Identifier" || !fns.has(n.callee.name) || arg?.type !== "ObjectExpression") return;
-        for (const p of arg.properties) {
-          const id = p.type === "Property" ? keyName(p) : null;
-          if (p.type !== "Property" || id === null || p.value.type !== "ObjectExpression") continue;
-          const route = routeOf(id, file, p.value, src, all);
-          if (route !== null) out.push(route);
-        }
-      },
-    }).visit(parsed.program);
+  for (const { contract } of table) {
+    const program = files.find((c) => c.file === contract.file)?.parsed.program;
+    if (program === undefined) continue;
+    const src = schemaSourceOf(contract.file.path, program);
+    for (const e of contract.list) {
+      if (e.obj === null || e.kind === "layout") continue;
+      const route = routeOf(e.id, contract.file, e.obj, src, all);
+      if (route !== null) out.push(route);
+    }
   }
   return out;
 }
@@ -106,12 +97,12 @@ function routeOf(
   src: SchemaSource,
   files: readonly SourceFile[],
 ): Route | null {
-  const v = propertyOf(entry, "path")?.value;
-  if (v?.type !== "Literal" || typeof v.value !== "string" || !v.value.startsWith("/")) return null;
+  const path = literalPath(entry);
+  if (path === null) return null;
   const segs =
-    v.value === "/"
+    path.text === "/"
       ? []
-      : v.value
+      : path.text
           .slice(1)
           .split("/")
           .map((t) => ({ param: t.startsWith(":"), text: t.replace(/^:/, "") }));
@@ -123,7 +114,7 @@ function routeOf(
       const e = name === null ? null : enumOf(q.value, src, files, 0);
       if (name !== null && e !== null && e.d !== undefined) enums.set(name, { name, values: e.values, d: e.d });
     }
-  return { id, file, at: v, segs, enums };
+  return { id, file, at: path.at, segs, enums };
 }
 
 const prefixOf = (r: Route): Prefix | null => {
@@ -135,13 +126,16 @@ const sameEnum = (a: Prefix, b: Prefix): boolean =>
   JSON.stringify([a.name, a.values, a.d]) === JSON.stringify([b.name, b.values, b.d]);
 
 /**
- * E1509 (k.prefix Rules), over the checked files' route table: a `pathDefault` param that is not first in its path;
+ * E1509 (k.prefix Rules), over each deployable's route table (`tables`, k.routes), its contracts' entries: a `pathDefault` param that is not first in its path;
  * a second prefix param; a prefixed route whose second segment is a param (no fix); beside a prefixed route, a route whose static first segment is a value of the prefix param,
  * whose first segment is another param, or whose path is a prefixed route's path without the prefix. Only literal
  * paths and statically resolvable params schemas are read. Fix (the last three): prepend `/:<p>` to the path.
  */
-export function prefixCollisions(files: readonly Checked[]): Diagnostic[] {
-  const routes = routesOf(files);
+export function prefixCollisions(files: readonly Checked[], tables: readonly ModuleContract[][]): Diagnostic[] {
+  return tables.flatMap((t) => collisions(routesOf(t, files)));
+}
+
+function collisions(routes: readonly Route[]): Diagnostic[] {
   const out: Diagnostic[] = [];
   const report = (r: Route, message: string, pre: Prefix | null): void => {
     const { line, col } = lineCol(r.file.source, r.at.start);

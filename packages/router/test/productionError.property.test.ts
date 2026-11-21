@@ -2,6 +2,7 @@
 // Unless `mode` is `dev`, the router shows and passes on a thrown `keel.unexpected` as the server's public form; the
 // ctx's observers still get the full error.
 import { type CtxEvent, createCtx, observe } from "@keel/ctx";
+import { contract } from "@keel/router/contract";
 import { mount } from "@keel/runtime-dom";
 import { type KeelError, ok, s } from "@keel/schema";
 import fc from "fast-check";
@@ -40,28 +41,24 @@ async function run(
     return p;
   };
   const Empty = s.object({});
+  const t = contract("t", { "t.home": { path: "/" }, "t.bad": { path: "/bad" } });
   const Page = (): Node => {
     if (where === "page") throw new Error(message);
-    if (where === "action") return Form({ method: "POST", action: routes.href("t.bad"), error: show });
+    if (where === "action") return Form({ method: "POST", action: t.href("t.bad"), error: show });
     return document.createElement("section");
   };
-  const routes = manifest({
-    "t.home": { path: "/", component: () => document.createElement("main") },
+  const routes = manifest(t, {
+    "t.home": { component: () => document.createElement("main") },
     "t.bad": {
-      path: "/bad",
       component: Page,
-      loader: loader({ output: Empty }, async () => {
+      loader: loader(t, "t.bad", { output: Empty }, async () => {
         if (where === "loader") throw new Error(message);
         return ok({});
       }),
-      ...(withErrorElement ? { errorElement: (p: { error: KeelError<string, unknown> }) => show(p.error) } : {}),
-    },
-  });
-  routes.actions({
-    "t.bad": {
-      POST: action({ input: Empty }, async () => {
+      POST: action(t, "t.bad", { input: Empty }, async () => {
         throw new Error(message);
       }),
+      ...(withErrorElement ? { errorElement: (p: { error: KeelError<string, unknown> }) => show(p.error) } : {}),
     },
   });
   const ctx = createCtx({ mode: "sim", seed: SEED });
@@ -74,7 +71,7 @@ async function run(
   document.body.append(host);
   const unmount = mount(router.App, host, { ctx });
   await settle();
-  await router.navigate(routes.href("t.bad"));
+  await router.navigate(t.href("t.bad"));
   await settle();
   if (where === "action") {
     host.querySelector("form")?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));

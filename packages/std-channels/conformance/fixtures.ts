@@ -1,6 +1,6 @@
 // Shared fixtures for std.channels conformance (not a test file). Property seed: 1337.
 // Assumptions (the spec is silent, each is an ordinary reading of k.server / k.api / k.module):
-// - the channel route is listed in a manifest as `{ api: true, path, loader }` with `routes.actions({ id: route.actions })`;
+// - the channel's entries are written out in the contract and its handlers come from `channelRoute(contract, channel, ...)`, bound as `r.loader` and `r.action` (std.contracts);
 // - params travel as the stream URL's search (`?room=a`) and a publish POSTs to the same path and search;
 // - module `std` config reaches `createApp({ std })` as a file `{ data, hash }` from `stdArtifact` (as std.jobs does);
 // - writes in tests carry `origin`, `accept: application/json` and `x-keel: 1` (the k.server same-site proof);
@@ -12,7 +12,8 @@ import { stdArtifact } from "@keel/compiler";
 import { createCtx } from "@keel/ctx";
 import type { SimCtx } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
-import { ok, s } from "@keel/schema";
+import { contract } from "@keel/router/contract";
+import { type ObjectSchema, ok, s } from "@keel/schema";
 import { createApp, topology } from "@keel/server";
 import { channel } from "@keel/std-channels";
 import { channelRoute } from "@keel/std-channels/server";
@@ -179,58 +180,69 @@ const cookieOf = (res: Response): string => {
 export async function serve(o: ServeOptions = {}): Promise<Harness> {
   const ctx = simCtx();
   const seen: string[] = [];
-  const route = channelRoute(roomChannel, {
+  const entry = <B extends ObjectSchema<object>>(path: string, body: B) =>
+    ({ method: "POST", path, body, output: s.object({}) }) as const;
+  const chan = contract("chan", {
+    "chan.room": {
+      method: "GET",
+      path: "/api/room/events",
+      query: Room,
+      events: true,
+      output: roomChannel.events,
+    },
+    "chan.publish": {
+      method: "POST",
+      path: "/api/room/events",
+      query: Room,
+      body: roomChannel.body,
+      output: s.object({}),
+    },
+    "chan.join": entry("/api/join", Nothing),
+    "chan.leave": entry("/api/leave", Nothing),
+    "chan.bump": entry("/api/bump", Nothing),
+    "chan.note": entry("/api/note", s.object({ text: s.string() })),
+    "chan.other": entry("/api/other", Nothing),
+    "chan.noop": entry("/api/noop", Nothing),
+  });
+  const room = channelRoute(chan, roomChannel, {
     id: "chan.room",
+    publish: "chan.publish",
     stores: factory,
     member: ({ caller, stores }) => {
       seen.push(caller);
       return o.member === undefined ? stores.members.get("ids").includes(caller) : o.member(caller);
     },
   });
-  const joinAction = action(
-    { input: Nothing, output: s.object({}), stores: factory },
-    async (_i, { caller, stores }) => {
-      tx(stores.join, { id: caller });
-      return ok({});
-    },
-  );
-  const leave = action({ input: Nothing, output: s.object({}), stores: factory }, async (_i, { caller, stores }) => {
+  const joinAction = action(chan, "chan.join", { stores: factory }, async (_body, { caller, stores }) => {
+    tx(stores.join, { id: caller });
+    return ok({});
+  });
+  const leave = action(chan, "chan.leave", { stores: factory }, async (_body, { caller, stores }) => {
     tx(stores.leave, { id: caller });
     return ok({});
   });
-  const bump = action({ input: Nothing, output: s.object({}), stores: factory }, async (_i, { stores }) => {
+  const bump = action(chan, "chan.bump", { stores: factory }, async (_body, { stores }) => {
     tx(stores.bump, {});
     return ok({});
   });
-  const note = action(
-    { input: s.object({ text: s.string() }), output: s.object({}), stores: factory },
-    async ({ text }, { stores }) => {
-      tx(stores.note, { text });
-      return ok({});
-    },
-  );
-  const other = action({ input: Nothing, output: s.object({}), stores: otherFactory }, async (_i, { stores }) => {
+  const note = action(chan, "chan.note", { stores: factory }, async ({ text }, { stores }) => {
+    tx(stores.note, { text });
+    return ok({});
+  });
+  const other = action(chan, "chan.other", { stores: otherFactory }, async (_body, { stores }) => {
     tx(stores.bump, {});
     return ok({});
   });
-  const noop = action({ input: Nothing, output: s.object({}) }, async () => ok({}));
-  const routes = manifest({
-    "chan.room": { api: true, path: route.path, loader: route.loader },
-    "chan.join": { api: true, path: "/api/join" },
-    "chan.leave": { api: true, path: "/api/leave" },
-    "chan.bump": { api: true, path: "/api/bump" },
-    "chan.note": { api: true, path: "/api/note" },
-    "chan.other": { api: true, path: "/api/other" },
-    "chan.noop": { api: true, path: "/api/noop" },
-  });
-  routes.actions({
-    "chan.room": route.actions,
-    "chan.join": { POST: joinAction },
-    "chan.leave": { POST: leave },
-    "chan.bump": { POST: bump },
-    "chan.note": { POST: note },
-    "chan.other": { POST: other },
-    "chan.noop": { POST: noop },
+  const noop = action(chan, "chan.noop", {}, async () => ok({}));
+  const routes = manifest(chan, {
+    "chan.room": { loader: room.loader },
+    "chan.publish": { action: room.action },
+    "chan.join": { action: joinAction },
+    "chan.leave": { action: leave },
+    "chan.bump": { action: bump },
+    "chan.note": { action: note },
+    "chan.other": { action: other },
+    "chan.noop": { action: noop },
   });
   const dir = mkdtempSync(join(tmpdir(), "keel-channels-"));
   let std: string | undefined;

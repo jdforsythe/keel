@@ -6,6 +6,7 @@
 // Skipped until a search-only navigation keeps the page.
 import { createCtx } from "@keel/ctx";
 import { createRouter, guard, loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import type { RouteProps } from "@keel/router";
 import { signal } from "@keel/reactive";
 import { mount } from "@keel/runtime-dom";
@@ -14,6 +15,8 @@ import { err, ok, s } from "@keel/schema";
 import * as fc from "fast-check";
 import { afterEach, describe, expect, it } from "vitest";
 import { SEED, memoryHistory, settle } from "./fixtures.ts";
+
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 const Params = s.object({ id: s.int({ min: 1, max: 9 }) });
 const Search = s.object({ q: s.string({ min: 1, max: 8 }).optional() });
@@ -46,11 +49,17 @@ const pageGuard = guard({ redirect: "kept.login" }, async () => {
   runs.pageGuard++;
   return ok(null);
 });
-const loadShell = loader({ output: ShellData }, async () => {
+const kept = contract("kept", {
+  "kept.shell": { layout: true },
+  "kept.login": { path: "/login" },
+  "kept.page": { path: "/k/:id", params: Params, search: Search },
+});
+
+const loadShell = loader(kept, "kept.shell", { output: ShellData }, async () => {
   runs.shellLoader++;
   return ok({ n: runs.shellLoader });
 });
-const loadPage = loader({ output: PageData, params: Params, search: Search }, async ({ search }) => {
+const loadPage = loader(kept, "kept.page", { output: PageData }, async ({ search }) => {
   runs.pageLoader++;
   const q = search.q ?? "";
   return q === "boom" ? err(Boom.make({})) : ok({ echo: q, n: runs.pageLoader });
@@ -100,19 +109,10 @@ const Page = (props: RouteProps): Node => {
   return main;
 };
 
-const routes = manifest({
+const routes = manifest(kept, {
   "kept.shell": { component: Shell, guard: shellGuard, loader: loadShell },
-  "kept.login": { path: "/login", component: () => document.createElement("p") },
-  "kept.page": {
-    path: "/k/:id",
-    params: Params,
-    search: Search,
-    layout: "kept.shell",
-    guard: pageGuard,
-    loader: loadPage,
-    component: Page,
-    errorElement: ErrorView,
-  },
+  "kept.login": { component: () => document.createElement("p") },
+  "kept.page": { layout: "kept.shell", guard: pageGuard, loader: loadPage, component: Page, errorElement: ErrorView },
 });
 
 const open = async (at: string) => {
@@ -120,7 +120,7 @@ const open = async (at: string) => {
   const router = createRouter(routes, { ctx: createCtx({ mode: "sim", seed: SEED }), history: memoryHistory(at) });
   const host = document.createElement("div");
   document.body.append(host);
-  const unmount = mount(router.App, host);
+  const unmount = mount(router.App, host, { ctx: simCtx });
   await settle();
   return {
     router,
@@ -138,7 +138,7 @@ const byId = (host: HTMLElement, id: string): HTMLElement => {
   return found;
 };
 const goTo = async (app: Awaited<ReturnType<typeof open>>, id: number, q: string | undefined): Promise<void> => {
-  await app.router.navigate(routes.href("kept.page", { id }, q === undefined ? {} : { q }));
+  await app.router.navigate(kept.href("kept.page", { id }, q === undefined ? {} : { q }));
   await settle();
 };
 // Search values that are never "boom" (that value makes the loader return err).

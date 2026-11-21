@@ -3,6 +3,7 @@
 // `diag`); json lines parse. Requests cover every branch of the flow (308, 404s, 405s, guards, actions).
 import { createCtx } from "@keel/ctx";
 import { action, guard, loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { err, ok, s } from "@keel/schema";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -18,34 +19,35 @@ async function build(format: LogSink["format"], lines: string[]) {
     Promise.resolve(err({ code: "keel.denied", message: "no", data: {} })),
   );
   const broken = guard({ redirect: "orders.list" }, () => Promise.reject(new Error("down")));
-  const routes = manifest({
-    "orders.list": { path: "/orders", component: () => document.createElement("p") },
+  const c = contract("orders", {
+    "orders.list": { path: "/orders" },
+    "orders.show": { path: "/orders/:id", params: s.object({ id: s.int({ min: 1 }) }) },
+    "orders.bad": { path: "/bad" },
+    "orders.deny": { path: "/deny" },
+    "orders.broken": { path: "/broken" },
+  });
+  const show = loader(c, "orders.show", { output: Page }, () => Promise.resolve(ok({ title: "T" })));
+  const bad = loader(c, "orders.bad", { output: Page }, () => Promise.resolve(ok(JSON.parse('{"title":1}'))));
+  const post = action(c, "orders.show", { input: Note }, () => ok(c.href("orders.list")));
+  const put = action(c, "orders.show", { input: Note }, () =>
+    err({ code: "orders.locked", message: "locked", data: {} }),
+  );
+  const routes = manifest(c, {
+    "orders.list": { component: () => document.createElement("p") },
     "orders.show": {
-      path: "/orders/:id",
-      params: s.object({ id: s.int({ min: 1 }) }),
-      loader: loader({ output: Page }, () => Promise.resolve(ok({ title: "T" }))),
+      loader: show,
       component: () => document.createElement("p"),
       errorElement: ({ error }) => {
         const e = document.createElement("em");
         e.textContent = error.code;
         return e;
       },
+      POST: post,
+      PUT: put,
     },
-    "orders.bad": {
-      path: "/bad",
-      loader: loader({ output: Page }, () => Promise.resolve(ok(JSON.parse('{"title":1}')))),
-      component: () => document.createElement("p"),
-    },
-    "orders.deny": { path: "/deny", guard: deny, component: () => document.createElement("p") },
-    "orders.broken": { path: "/broken", guard: broken, component: () => document.createElement("p") },
-  });
-  routes.actions({
-    "orders.show": {
-      POST: action({ input: Note }, () => {
-        return ok(routes.href("orders.list"));
-      }),
-      PUT: action({ input: Note }, () => err({ code: "orders.locked", message: "locked", data: {} })),
-    },
+    "orders.bad": { loader: bad, component: () => document.createElement("p") },
+    "orders.deny": { guard: deny, component: () => document.createElement("p") },
+    "orders.broken": { guard: broken, component: () => document.createElement("p") },
   });
   return createApp({
     topology: topology({ web: { modules: ["orders"], adapter: "node" } }),
@@ -164,6 +166,7 @@ describe("dev log stream", () => {
     expect(nope.status).toBe(405);
     expect(nope.headers.get("allow")).toBe("GET, HEAD, POST, PUT");
     const opt = await app.fetch(req({ method: "OPTIONS", path: "/orders/7" }));
+    expect(opt.status).toBe(405);
     expect(opt.headers.get("allow")).toBe("GET, HEAD, POST, PUT");
     const noBody = await app.fetch(new Request(`${BASE}/orders/7`, { method: "POST" }));
     expect(noBody.status).toBe(422);

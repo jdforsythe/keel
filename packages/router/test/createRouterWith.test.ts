@@ -3,6 +3,7 @@
 // each submit is one request, an action's `ok` saves and a conflict becomes its `err`, `err` or a throw saves nothing,
 // and the request ends before the router revalidates. Without one (`createRouter`) `stores` is `keel.unexpected`.
 import { createCtx } from "@keel/ctx";
+import { contract } from "@keel/router/contract";
 import { mount } from "@keel/runtime-dom";
 import { type KeelError, err, ok, s } from "@keel/schema";
 import type { ServerState } from "@keel/store/internal";
@@ -51,13 +52,20 @@ const fakeState = (clash: () => Conflict | null) => {
 const setup = (mode: { act: "ok" | "err" | "throw" }) => {
   const factory = () => ({ tag: "instance" });
   const seen: unknown[] = [];
-  const routes = manifest({
+  const rw = contract("rw", { "rw.page": { path: "/rw" } });
+  const load = loader(rw, "rw.page", { output: s.object({ tag: s.string() }), stores: factory }, async ({ stores }) => {
+    seen.push(stores);
+    return ok({ tag: stores.tag });
+  });
+  const save = action(rw, "rw.page", { input: s.object({}), stores: factory }, async (_in, { stores }) => {
+    seen.push(stores);
+    if (mode.act === "throw") throw new Error("boom");
+    return mode.act === "err" ? err(Boom.make({})) : ok(null);
+  });
+  const routes = manifest(rw, {
     "rw.page": {
-      path: "/rw",
-      loader: loader({ output: s.object({ tag: s.string() }), stores: factory }, async ({ stores }) => {
-        seen.push(stores);
-        return ok({ tag: stores.tag });
-      }),
+      loader: load,
+      POST: save,
       component: () => {
         const box = document.createElement("div");
         box.id = "page";
@@ -83,15 +91,6 @@ const setup = (mode: { act: "ok" | "err" | "throw" }) => {
       },
     },
   });
-  routes.actions({
-    "rw.page": {
-      POST: action({ input: s.object({}), stores: factory }, async (_in, { stores }) => {
-        seen.push(stores);
-        if (mode.act === "throw") throw new Error("boom");
-        return mode.act === "err" ? err(Boom.make({})) : ok(null);
-      }),
-    },
-  });
   return { routes, seen };
 };
 const submit = (host: HTMLElement): void => {
@@ -102,9 +101,10 @@ describe("createRouterWith", () => {
   it("runs each loader run and each submit as one request; an ok saves, then the request ends before revalidating", async () => {
     const { state, calls } = fakeState(() => null);
     const { routes, seen } = setup({ act: "ok" });
-    const router = createRouterWith(routes, { ctx: createCtx({ mode: "sim" }), history: memoryHistory("/rw") }, state);
+    const ctx = createCtx({ mode: "sim" });
+    const router = createRouterWith(routes, { ctx, history: memoryHistory("/rw") }, state);
     const host = document.createElement("div");
-    const unmount = mount(router.App, host);
+    const unmount = mount(router.App, host, { ctx });
     await settle();
     expect(host.querySelector("#page")).not.toBeNull();
     expect(seen).toEqual([{ tag: "instance" }]);
@@ -130,9 +130,10 @@ describe("createRouterWith", () => {
   it("answers a save conflict as the action's err and does not revalidate", async () => {
     const { state, calls } = fakeState(() => ({ code: "keel.conflict", message: "stale", data: { store: "x" } }));
     const { routes } = setup({ act: "ok" });
-    const router = createRouterWith(routes, { ctx: createCtx({ mode: "sim" }), history: memoryHistory("/rw") }, state);
+    const ctx = createCtx({ mode: "sim" });
+    const router = createRouterWith(routes, { ctx, history: memoryHistory("/rw") }, state);
     const host = document.createElement("div");
-    const unmount = mount(router.App, host);
+    const unmount = mount(router.App, host, { ctx });
     await settle();
     submit(host);
     await settle();
@@ -146,13 +147,10 @@ describe("createRouterWith", () => {
     it(`saves nothing after an action ${act} and still ends the request`, async () => {
       const { state, calls } = fakeState(() => null);
       const { routes } = setup({ act });
-      const router = createRouterWith(
-        routes,
-        { ctx: createCtx({ mode: "sim" }), history: memoryHistory("/rw") },
-        state,
-      );
+      const ctx = createCtx({ mode: "sim" });
+      const router = createRouterWith(routes, { ctx, history: memoryHistory("/rw") }, state);
       const host = document.createElement("div");
-      const unmount = mount(router.App, host);
+      const unmount = mount(router.App, host, { ctx });
       await settle();
       submit(host);
       await settle();
@@ -164,9 +162,10 @@ describe("createRouterWith", () => {
 
   it("without a ServerState (createRouter) refuses stores before the loader runs", async () => {
     const { routes, seen } = setup({ act: "ok" });
-    const router = createRouter(routes, { ctx: createCtx({ mode: "sim" }), history: memoryHistory("/rw") });
+    const ctx = createCtx({ mode: "sim" });
+    const router = createRouter(routes, { ctx, history: memoryHistory("/rw") });
     const host = document.createElement("div");
-    const unmount = mount(router.App, host);
+    const unmount = mount(router.App, host, { ctx });
     await settle();
     expect(seen).toEqual([]);
     expect(host.querySelector("#refused")?.textContent).toBe("keel.unexpected");

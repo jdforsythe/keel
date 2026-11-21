@@ -1,3 +1,4 @@
+import { createCtx } from "@keel/ctx";
 import { computed, effect, inspect, signal } from "@keel/reactive";
 import type { Computed, Signal } from "@keel/reactive";
 import { mount } from "@keel/runtime-dom";
@@ -9,6 +10,8 @@ import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { SEED, click, flush, inScope, trackListeners } from "./fixtures.ts";
 
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
+
 const T = template('<div id="root"><button id="b">x</button></div>');
 
 describe("k.runtime: mount then dispose leaves zero event listeners and zero reactive subscriptions", () => {
@@ -19,11 +22,15 @@ describe("k.runtime: mount then dispose leaves zero event listeners and zero rea
         try {
           const el = document.createElement("div");
           const base = tr.live();
-          const dispose = mount(() => {
-            const r = clone(T);
-            for (const t of types) on("b", t, () => {});
-            return r;
-          }, el);
+          const dispose = mount(
+            () => {
+              const r = clone(T);
+              for (const t of types) on("b", t, () => {});
+              return r;
+            },
+            el,
+            { ctx: simCtx },
+          );
           expect(tr.live()).toBeGreaterThan(base);
           dispose();
           expect(tr.live()).toBe(base);
@@ -43,14 +50,18 @@ describe("k.runtime: mount then dispose leaves zero event listeners and zero rea
       dispose: endScope,
     } = inScope(() => {
       const s = signal(0);
-      const dispose = mount(() => {
-        const r = clone(T);
-        text(r, () => {
-          runs++;
-          return String(s.get());
-        });
-        return r;
-      }, el);
+      const dispose = mount(
+        () => {
+          const r = clone(T);
+          text(r, () => {
+            runs++;
+            return String(s.get());
+          });
+          return r;
+        },
+        el,
+        { ctx: simCtx },
+      );
       return { s, dispose };
     });
     const before = runs;
@@ -69,11 +80,15 @@ describe("k.runtime: mount then dispose leaves zero event listeners and zero rea
   it("after dispose, a click dispatched on the old tree runs no handler", () => {
     const el = document.createElement("div");
     let hits = 0;
-    const dispose = mount(() => {
-      const r = clone(T);
-      on("b", "click", () => hits++);
-      return r;
-    }, el);
+    const dispose = mount(
+      () => {
+        const r = clone(T);
+        on("b", "click", () => hits++);
+        return r;
+      },
+      el,
+      { ctx: simCtx },
+    );
     const b = el.querySelector("#b");
     if (b === null) throw new Error("no #b");
     click(b);
@@ -118,19 +133,23 @@ describe("k.runtime: mount then dispose leaves zero event listeners and zero rea
             // Warm each computed once so its own lazy source link (owned outside the tree) is in the pre-mount set.
             for (const c of sources.all) c.get();
             const before = edgeSet();
-            const dispose = mount(() => {
-              const r = clone(T);
-              const b = r.querySelector("#b");
-              if (b === null) throw new Error("no #b");
-              effect(() => void read(0), { writes: [] });
-              for (const { kind, src } of bindings) {
-                if (kind === "text") text(b, () => String(read(src)));
-                else if (kind === "attr") attr(b, `data-a${src}`, () => String(read(src)));
-                else if (kind === "prop") prop(b, "title", () => String(read(src)));
-                else on("b", "click", () => void src);
-              }
-              return r;
-            }, el);
+            const dispose = mount(
+              () => {
+                const r = clone(T);
+                const b = r.querySelector("#b");
+                if (b === null) throw new Error("no #b");
+                effect(() => void read(0), { writes: [] });
+                for (const { kind, src } of bindings) {
+                  if (kind === "text") text(b, () => String(read(src)));
+                  else if (kind === "attr") attr(b, `data-a${src}`, () => String(read(src)));
+                  else if (kind === "prop") prop(b, "title", () => String(read(src)));
+                  else on("b", "click", () => void src);
+                }
+                return r;
+              },
+              el,
+              { ctx: simCtx },
+            );
             await flush();
             const during = edgeSet();
             expect(during.size).toBeGreaterThan(before.size);

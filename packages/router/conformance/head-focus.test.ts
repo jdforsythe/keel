@@ -4,11 +4,14 @@
 // Assumed: the router API of head-fixtures.ts (createRouter, memoryHistory, mount); a layout renders `main` around the chain; `main` receives `tabindex="-1"` as in push-focus-scroll.test.ts.
 import { createCtx } from "@keel/ctx";
 import { createRouter, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { mount } from "@keel/runtime-dom";
 import { s } from "@keel/schema";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 import { memoryHistory, settle } from "./fixtures.ts";
+
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 const SEED = 1337;
 type Kids = { children?: () => Node | Node[] | string };
@@ -24,10 +27,17 @@ const shell = (props: Kids): Node => {
   main.append(...[props.children?.() ?? ""].flat());
   return main;
 };
-const routes = manifest({
+const fContract = contract("f", {
+  "f.shell": { layout: true },
+  "f.a": { path: "/a" },
+  "f.b": { path: "/b" },
+  "f.plain": { path: "/plain" },
+  "f.s": { path: "/s", search: s.object({ q: s.int({ min: 0, max: 99 }).optional() }) },
+});
+
+const routes = manifest(fContract, {
   "f.shell": { component: shell },
   "f.a": {
-    path: "/a",
     layout: "f.shell",
     component: () => {
       const d = document.createElement("div");
@@ -35,12 +45,10 @@ const routes = manifest({
       return d;
     },
   },
-  "f.b": { path: "/b", layout: "f.shell", component: () => el("h1", "f.b.h1", "Bee") },
-  "f.plain": { path: "/plain", layout: "f.shell", component: () => el("p", "f.plain.p", "no heading") },
+  "f.b": { layout: "f.shell", component: () => el("h1", "f.b.h1", "Bee") },
+  "f.plain": { layout: "f.shell", component: () => el("p", "f.plain.p", "no heading") },
   "f.s": {
-    path: "/s",
     layout: "f.shell",
-    search: s.object({ q: s.int({ min: 0, max: 99 }).optional() }),
     component: () => {
       const d = document.createElement("div");
       const b = el("button", "f.s.btn", "Go");
@@ -54,7 +62,7 @@ const open = async (at: string) => {
   const router = createRouter(routes, { ctx: createCtx({ mode: "sim", seed: SEED }), history: memoryHistory(at) });
   const host = document.createElement("div");
   document.body.append(host);
-  const unmount = mount(router.App, host);
+  const unmount = mount(router.App, host, { ctx: simCtx });
   await settle();
   return {
     router,
@@ -66,7 +74,7 @@ const open = async (at: string) => {
     },
   };
 };
-const href = (id: Id) => routes.href(id, {}, {});
+const href = (id: Id) => fContract.href(id, {}, {});
 
 describe("k.head: focus after navigation", () => {
   test('After a client navigation to another route, the focused element is the new page\'s first `h1`, with `tabindex="-1"`', async () => {
@@ -117,7 +125,7 @@ describe("k.head: focus after navigation", () => {
         if (!(btn instanceof HTMLElement)) throw new Error("fixture: no button");
         btn.focus();
         expect(document.activeElement).toBe(btn);
-        await app.router.navigate(routes.href("f.s", {}, { q }));
+        await app.router.navigate(fContract.href("f.s", {}, { q }));
         await settle();
         expect(document.activeElement?.id).toBe("f.s.btn");
         app.stop();

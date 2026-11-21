@@ -2,16 +2,19 @@ import { type Expression, type Program, Visitor } from "oxc-parser";
 import type { Diagnostic } from "../types/Diagnostic.ts";
 import type { SourceFile } from "../types/SourceFile.ts";
 import type { Checked } from "./Checked.ts";
+import type { ContractEntry } from "./ContractEntry.ts";
+import { bindingCalls } from "./bindingCalls.ts";
 import { clip } from "./clip.ts";
+import { contractCalls } from "./contractCalls.ts";
 import { isAppPath } from "./isAppPath.ts";
-import { keyName } from "./keyName.ts";
 import { lineCol } from "./lineCol.ts";
 import { joinPath } from "./modules/joinPath.ts";
 import { localNames } from "./modules/localNames.ts";
 import { propertyOf } from "./propertyOf.ts";
 
 type GuardDecl = { readonly name: string; readonly redirect: string; readonly at: number; readonly file: SourceFile };
-type RouteFacts = { readonly layout: string | null; readonly guard: string | null; readonly api: boolean };
+type RouteFacts = { readonly layout: string | null; readonly guard: string | null };
+type Kind = ContractEntry["kind"];
 
 /** A file path without its JS/TS extension, so `./auth.guard.ts`, `./auth.guard.js`, `./auth.guard` meet. */
 const stem = (path: string): string => path.replace(/\.[cm]?[jt]sx?$/, "");
@@ -34,14 +37,33 @@ function importedFrom(program: Program, path: string): ReadonlyMap<string, strin
   return out;
 }
 
-/** Guards (`const x = guard({ redirect: 'lit' }, fn)`) and manifest routes (`manifest({ id: { layout, guard } })`). */
-function scan(c: Checked, guards: Map<string, GuardDecl>, routes: Map<string, RouteFacts>): void {
+/**
+ * Guards (`const x = guard({ redirect: 'lit' }, fn)`), binding entries (`manifest(contract, { id: { layout, guard } })`)
+ * and each contract id's kind (k.contract).
+ */
+function scan(
+  c: Checked,
+  guards: Map<string, GuardDecl>,
+  routes: Map<string, RouteFacts>,
+  kinds: Map<string, Kind>,
+): void {
   const { file, parsed } = c;
+  for (const call of contractCalls(file, parsed.program)) for (const e of call.list) kinds.set(e.id, e.kind);
   const guardFns = localNames(parsed.program, "guard", "@keel/router");
-  const manifestFns = localNames(parsed.program, "manifest", "@keel/router");
-  if (guardFns.size === 0 && manifestFns.size === 0) return;
+  const bindings = bindingCalls(file, parsed.program);
+  if (guardFns.size === 0 && bindings.length === 0) return;
   const imports = importedFrom(parsed.program, file.path);
   const ref = (name: string): string => imports.get(name) ?? `${stem(file.path)}#${name}`;
+  for (const call of bindings)
+    for (const { id, obj } of call.list) {
+      if (obj === null) continue;
+      const g = propertyOf(obj, "guard")?.value;
+      routes.set(id, {
+        layout: literal(propertyOf(obj, "layout")?.value),
+        guard: g?.type === "Identifier" ? ref(g.name) : null,
+      });
+    }
+  if (guardFns.size === 0) return;
   new Visitor({
     VariableDeclarator: (n) => {
       const init = n.init;
@@ -53,21 +75,6 @@ function scan(c: Checked, guards: Map<string, GuardDecl>, routes: Map<string, Ro
       const redirect = literal(p?.value);
       if (p === null || redirect === null) return;
       guards.set(ref(n.id.name), { name: n.id.name, redirect, at: p.value.start, file });
-    },
-    CallExpression: (n) => {
-      const arg = n.arguments[0];
-      if (n.callee.type !== "Identifier" || !manifestFns.has(n.callee.name) || arg?.type !== "ObjectExpression") return;
-      for (const p of arg.properties) {
-        const id = p.type === "Property" ? keyName(p) : null;
-        if (p.type !== "Property" || id === null || p.value.type !== "ObjectExpression") continue;
-        const g = propertyOf(p.value, "guard")?.value;
-        const api = propertyOf(p.value, "api")?.value;
-        routes.set(id, {
-          layout: literal(propertyOf(p.value, "layout")?.value),
-          guard: g?.type === "Identifier" ? ref(g.name) : null,
-          api: api?.type === "Literal" && api.value === true,
-        });
-      }
     },
   }).visit(parsed.program);
 }
@@ -86,20 +93,21 @@ function guardedBy(id: string, key: string, routes: ReadonlyMap<string, RouteFac
 }
 
 /**
- * E1508 (k.guards), static half: a guard whose literal `redirect` is an API route (k.api; a literal
- * `api: true` entry), which has no page to redirect to, or whose `redirect` route has that same guard in its chain,
- * so a denial redirects into itself. Only what the files show: a literal `redirect`, manifests' literal `layout`
- * and `guard: <identifier>` (local or a relative named import). A computed redirect, a guard reached another way,
+ * E1508 (k.guards), static half: a guard whose literal `redirect` is an API entry of a contract (k.contract), which
+ * has no page to redirect to, or whose `redirect` route has that same guard in its chain, so a denial redirects into
+ * itself. Only what the files show: a literal `redirect`, bindings' literal `layout` and `guard: <identifier>` (local
+ * or a relative named import). A computed redirect, a guard reached another way,
  * or a loop through two guards is left to the runtime half (the server and router answer E1508). No fix: which
  * route moves out of the guarded layout is a design choice.
  */
 export function guardRedirectLoops(files: readonly Checked[]): Diagnostic[] {
   const guards = new Map<string, GuardDecl>();
   const routes = new Map<string, RouteFacts>();
-  for (const c of files) if (isAppPath(c.file.path)) scan(c, guards, routes);
+  const kinds = new Map<string, Kind>();
+  for (const c of files) if (isAppPath(c.file.path)) scan(c, guards, routes, kinds);
   const out: Diagnostic[] = [];
   for (const [key, g] of guards) {
-    const api = routes.get(g.redirect)?.api === true;
+    const api = kinds.get(g.redirect) === "api";
     if (!api && !guardedBy(g.redirect, key, routes)) continue;
     const { line, col } = lineCol(g.file.source, g.at);
     const why = api ? "an API route; redirect to a page" : `which ${g.name} guards: a redirect loop`;

@@ -23,9 +23,11 @@ const write = (rel: string, content: string): void => {
   writeFileSync(file, content);
 };
 const manifestSrc = (id: string): string =>
-  `import { module } from "@keel/compiler";\nexport default module({ id: "${id}", deps: [], capabilities: [], public: { exports: [], routes: [] } });\n`;
+  `import { module } from "@keel/compiler";\nexport default module({ id: "${id}", deps: [], capabilities: [], public: { exports: [] } });\n`;
 const routesSrc = (id: string, path: string): string =>
-  `import { manifest } from "@keel/router";\nconst Page = () => null;\nexport const routes = manifest({ "${id}.home": { path: "${path}", component: Page } });\n`;
+  `import { manifest } from "@keel/router";\nimport { ${id} } from "./${id}.contract.ts";\nconst Page = () => null;\nexport const routes = manifest(${id}, { "${id}.home": { component: Page } });\n`;
+const contractSrc = (id: string, path: string): string =>
+  `import { contract } from "@keel/router/contract";\nexport const ${id} = contract("${id}", { "${id}.home": { path: "${path}" } });\n`;
 
 beforeAll(() => {
   fixture = realpathSync(mkdtempSync(join(tmpdir(), "keel-dev-origin-")));
@@ -62,6 +64,7 @@ beforeAll(() => {
   ] as const) {
     write(`modules/${id}/module.ts`, manifestSrc(id));
     write(`modules/${id}/routes.ts`, routesSrc(id, path));
+    write(`modules/${id}/${id}.contract.ts`, contractSrc(id, path));
   }
 });
 afterAll(() => rmSync(fixture, { recursive: true, force: true }));

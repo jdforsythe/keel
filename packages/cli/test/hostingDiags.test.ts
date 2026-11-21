@@ -1,4 +1,4 @@
-// `keel build`'s k.hosting errors (k.hosting Rules): E1566 per bad host; E1565 per KEEL_PEER_<NAME> that is not an
+// `keel build`'s k.hosting errors (k.hosting Rules): E1566 per bad servedBy; E1565 per KEEL_PEER_<NAME> that is not an
 // http(s) origin, only when a client deployable is built, naming the key and never the value.
 import { describe, expect, it } from "vitest";
 import { hostingDiags } from "../src/internal/hostingDiags.ts";
@@ -8,8 +8,10 @@ const n = { modules: ["a"], adapter: "node" } as const;
 const web = { modules: ["w"], adapter: "client" } as const;
 
 describe("hostingDiags", () => {
-  it("is empty for a good host and good peers", () => {
-    expect(hostingDiags({ api: n, web: { ...web, host: "api" } }, { KEEL_PEER_API: "https://api.test" })).toEqual([]);
+  it("is empty for a good servedBy and good peers", () => {
+    expect(hostingDiags({ api: n, web: { ...web, servedBy: "api" } }, { KEEL_PEER_API: "https://api.test" })).toEqual(
+      [],
+    );
   });
 
   it("E1565 names the key of a bad peer, never the value", () => {
@@ -19,22 +21,34 @@ describe("hostingDiags", () => {
     expect(JSON.stringify(d)).not.toContain("secret-value");
   });
 
+  it("E1590 for a frame origin equal to a KEEL_PEER_<NAME> or KEEL_ORIGIN, naming the key, at k.origins", () => {
+    const framing = (o: string) => ({ api: n, web: { ...web, origins: { frame: { [o]: "r" } } } });
+    const d = hostingDiags(framing("https://api.test"), { KEEL_PEER_API: "https://api.test" });
+    expect(d.map((x) => [x.code, x.message, x.see])).toEqual([
+      ["E1590", "web: origins.frame: https://api.test is the app's own origin (KEEL_PEER_API)", "k.origins"],
+    ]);
+    expect(hostingDiags(framing("https://shop.test"), { KEEL_ORIGIN: "https://shop.test" }).map((x) => x.code)).toEqual(
+      ["E1590"],
+    );
+    expect(hostingDiags(framing("https://v.test"), { KEEL_PEER_API: "https://api.test" })).toEqual([]);
+  });
+
   it("checks no peer without a client deployable", () => {
     expect(hostingDiags({ api: n }, { KEEL_PEER_API: "nope" })).toEqual([]);
   });
 
-  it("E1566 for a host on a node deployable", () => {
-    expect(hostingDiags({ api: { ...n, host: "api" } }, {}).map((x) => x.code)).toEqual(["E1566"]);
+  it("E1566 for a servedBy on a node deployable", () => {
+    expect(hostingDiags({ api: { ...n, servedBy: "api" } }, {}).map((x) => x.code)).toEqual(["E1566"]);
   });
 
-  it("E1566 for a host that is not a string literal in the source", () => {
+  it("E1566 for a servedBy that is not a string literal in the source", () => {
     const source =
-      'const H = "api";\nexport default topology({ api: { modules: ["a"], adapter: "node" }, web: { modules: ["w"], adapter: "client", host: H } })';
+      'const H = "api";\nexport default topology({ api: { modules: ["a"], adapter: "node" }, web: { modules: ["w"], adapter: "client", servedBy: H } })';
     const d = hostingDiags({ api: n, web }, {}, source);
-    expect(d.map((x) => [x.code, x.message])).toEqual([["E1566", "web: host must be a string literal"]]);
+    expect(d.map((x) => [x.code, x.message])).toEqual([["E1566", "web: servedBy must be a string literal"]]);
   });
 
-  it("fails keel build on a host that is not a string literal", async () => {
+  it("fails keel build on a servedBy that is not a string literal", async () => {
     const r = await run(["build", "--format=json"], {
       cwd: "/p",
       env: {},
@@ -42,7 +56,7 @@ describe("hostingDiags", () => {
         {
           path: "topology.ts",
           source:
-            'export default topology({ api: { modules: ["a"], adapter: "node" }, web: { modules: ["w"], adapter: "client", host: `api` } })',
+            'export default topology({ api: { modules: ["a"], adapter: "node" }, web: { modules: ["w"], adapter: "client", servedBy: `api` } })',
         },
       ],
     });

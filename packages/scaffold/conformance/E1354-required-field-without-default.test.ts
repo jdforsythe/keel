@@ -1,4 +1,4 @@
-// Spec: k.scaffold, Rules "E1354 `add-field` of a required field without `--default` while constructors exist."
+// Spec: k.scaffold, Rules "E1354 `add-field` of a required field without `--default` while constructors exist"
 import fc from "fast-check";
 import { expect, it } from "vitest";
 import { RUNS, SEED, errText, lowerName, scaffoldRaw, snap, withSchema } from "./fixtures.ts";

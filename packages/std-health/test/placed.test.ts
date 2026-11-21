@@ -3,6 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { stdContract } from "@keel/compiler/std/stdContract";
 import { stdRoutes } from "@keel/compiler/std/stdRoutes";
 import { afterEach, expect, test } from "vitest";
 
@@ -23,7 +24,7 @@ function project(deps: readonly string[]): string {
       id: "app",
       deps,
       capabilities: [],
-      public: { exports: [], routes: [] },
+      public: { exports: [] },
     })})\n`,
   );
   fs.mkdirSync(path.join(root, "node_modules/@keel"), { recursive: true });
@@ -38,4 +39,9 @@ test("a deployable that places `health` gets the package's routes file for its r
 
 test("without the package in an app module's deps, `health` names no routes", () => {
   expect(stdRoutes(project([]), "health")).toBeUndefined();
+});
+
+test("a deployable that places `health` reads its contract from the package's `./contract` file", () => {
+  const found = stdContract(project(["@keel/std-health"]), "health");
+  expect(found).toEqual([path.join(pkg, "src/health.contract.ts"), pkg, "@keel/std-health/contract"]);
 });

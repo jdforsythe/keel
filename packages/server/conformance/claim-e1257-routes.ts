@@ -1,11 +1,13 @@
 // The routes of the E1257 suite (not a test file): plain `.ts` components that make an element before the op that places it
 // starts, each with a twin that makes the element inside the thunk. `routesOf("thunk")` and `routesOf("eager")` use the same route ids and paths,
 // so their documents are comparable.
-import { Form, manifest } from "@keel/router";
+import { Form, manifest, routeTable } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { Box, Button, Text } from "@keel/ui";
 
-const targets = manifest({ "x0.target": { path: "/x0/target", component: () => document.createElement("main") } });
-const action = targets.href("x0.target");
+const x0Contract = contract("x0", { "x0.target": { path: "/x0/target" } });
+const targets = manifest(x0Contract, { "x0.target": { component: () => document.createElement("main") } });
+const action = x0Contract.href("x0.target");
 
 const go = (): void => undefined;
 
@@ -59,11 +61,14 @@ const thunkCardPage = (): Node =>
 
 export function routesOf(variant: "eager" | "thunk") {
   const eager = variant === "eager";
-  return manifest({
-    "x1.page": { path: "/x1", component: eager ? eagerForm : thunkForm },
-    "x2.page": { path: "/x2", component: eager ? eagerMember : thunkMember },
-    "x3.page": { path: "/x3", component: eager ? eagerCardPage : thunkCardPage },
-  });
+  const x1Contract = contract("x1", { "x1.page": { path: "/x1" } });
+  const x2Contract = contract("x2", { "x2.page": { path: "/x2" } });
+  const x3Contract = contract("x3", { "x3.page": { path: "/x3" } });
+  return routeTable(
+    manifest(x1Contract, { "x1.page": { component: eager ? eagerForm : thunkForm } }),
+    manifest(x2Contract, { "x2.page": { component: eager ? eagerMember : thunkMember } }),
+    manifest(x3Contract, { "x3.page": { component: eager ? eagerCardPage : thunkCardPage } }),
+  );
 }
 
 export const MODULES = ["x1", "x2", "x3"];

@@ -8,6 +8,7 @@ import { createCtx } from "@keel/ctx";
 import * as forms from "@keel/forms";
 import * as router from "@keel/router";
 import { Form, action, identityMount, loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import type { RouteProps } from "@keel/router";
 import { ok, s } from "@keel/schema";
 import * as schema from "@keel/schema";
@@ -26,13 +27,24 @@ export const INVALID = { email: "", password: "pw" } as const;
 /** What the loaders and the action of this module graph ran. */
 export const seen = { loads: 0, acts: 0 };
 
-const other = manifest({ "ob.billing": { path: "/billing", component: () => document.createElement("main") } });
-const links = manifest({
-  "mt.about": { path: "/about", component: () => document.createElement("main") },
-  "mt.act": { path: "/act", component: () => document.createElement("main") },
+const ob = contract("ob", {
+  "ob.billing": { path: "/billing" },
+});
+
+const other = manifest(ob, {
+  "ob.billing": { component: () => document.createElement("main") },
+});
+const mtContract = contract("mt", {
+  "mt.about": { path: "/about" },
+  "mt.act": { path: "/act" },
+});
+
+const links = manifest(mtContract, {
+  "mt.about": { component: () => document.createElement("main") },
+  "mt.act": { component: () => document.createElement("main") },
 });
 /** A page of another deployable's manifest, which this module's router table does not hold. */
-export const elsewhere = other.href("ob.billing");
+export const elsewhere = ob.href("ob.billing");
 
 const modules: Record<string, unknown> = {
   "@keel/ui": ui,
@@ -42,8 +54,8 @@ const modules: Record<string, unknown> = {
   "@keel/schema": schema,
   identity: { __esModule: true, default: mount },
   links: {
-    about: () => links.href("mt.about"),
-    act: () => links.href("mt.act"),
+    about: () => mtContract.href("mt.about"),
+    act: () => mtContract.href("mt.act"),
   },
 };
 
@@ -107,11 +119,19 @@ function page(name: string, source: string): (props: RouteProps) => Node {
 export const ACT_TARGET = mount.href("/x");
 
 const Empty = s.object({});
-const read = loader({ output: Empty }, async () => {
+const mt = contract("mt", {
+  "mt.home": { path: "/" },
+  "mt.signin": { path: "/sign-in" },
+  "mt.upload": { path: "/upload" },
+  "mt.about": { path: "/about" },
+  "mt.act": { path: "/act" },
+});
+
+const read = loader(mt, "mt.home", { output: Empty }, async () => {
   seen.loads += 1;
   return ok({});
 });
-const act = action({ input: Empty }, async () => {
+const act = action(mt, "mt.act", { input: Empty }, async () => {
   seen.acts += 1;
   return ok(ACT_TARGET);
 });
@@ -146,14 +166,13 @@ export const components = {
   "mt.signin": page("SignIn", SIGN_IN),
 };
 
-export const routes = manifest({
-  "mt.home": { path: "/", loader: read, component: components["mt.home"] },
-  "mt.signin": { path: "/sign-in", component: components["mt.signin"] },
-  "mt.upload": { path: "/upload", component: upload },
-  "mt.about": { path: "/about", component: () => document.createElement("main") },
-  "mt.act": { path: "/act", component: () => document.createElement("main") },
+export const routes = manifest(mt, {
+  "mt.home": { loader: read, component: components["mt.home"] },
+  "mt.signin": { component: components["mt.signin"] },
+  "mt.upload": { component: upload },
+  "mt.about": { component: () => document.createElement("main") },
+  "mt.act": { component: () => document.createElement("main"), POST: act },
 });
-routes.actions({ "mt.act": { POST: act } });
 
 /** Chooses a file in a file control, as a user does. */
 export function chooseFile(id: string): void {

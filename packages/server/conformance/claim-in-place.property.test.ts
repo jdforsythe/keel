@@ -4,6 +4,7 @@
 // multi-child branches and rows, fragments and text, a served page resumes with no element or region comment removed, no element added,
 // each served element the same object in the same region, and `detached()` 0.
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { resumeDocument } from "@keel/testing";
 import fc from "fast-check";
 import { afterEach, expect, it } from "vitest";
@@ -98,7 +99,8 @@ it("Property: over random trees of components, fragments and structural ops with
       run += 1;
       const k = `pp${run}`;
       const page = compilePage(`${k}.page`, source(k, roots));
-      const routes = manifest({ [`${k}.page`]: { path: `/${k}`, component: page } });
+      const kContract = contract(k, { [`${k}.page`]: { path: `/${k}` } });
+      const routes = manifest(kContract, { [`${k}.page`]: { component: page } });
       const doc = await serveRoutes(routes, [k], `/${k}`);
       expect(doc.status).toBe(200);
 

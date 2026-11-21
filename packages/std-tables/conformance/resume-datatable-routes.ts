@@ -1,7 +1,9 @@
 // The routes module of the packaged-table suite (not a test file). The test imports it for the server side; `resumeDocument`
 // imports it again for the client side, where every module it reaches is evaluated anew, its stores included.
+import type { Ctx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
-import { type Href, type RouteProps, loader, manifest } from "@keel/router";
+import { type Href, type RouteProps, loader, manifest, routeTable } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { type Infer, ok, s } from "@keel/schema";
 import { DataTable, TableSearch, applyQuery, tablePage } from "@keel/std-tables";
 import { type Store, store, transaction, tx } from "@keel/store";
@@ -39,16 +41,14 @@ const pick = transaction(picked, "dt.pick", Picked, (_state, payload) => payload
 const type = transaction(typed, "dt.type", Typed, (_state, payload) => payload);
 
 const stub = (): Node => Text({ children: "target" });
-const links = manifest({
-  "dtc.page": { path: "/dtc", params: s.object({}), search: Search, component: stub },
-  "dts.page": { path: "/dts", params: s.object({}), search: Search, component: stub },
-  "dtf.page": { path: "/dtf", params: s.object({}), search: Search, component: stub },
-});
-const clientHref = (q: Query): Href => links.href("dtc.page", {}, q);
-const serverHref = (q: Query): Href => links.href("dts.page", {}, q);
+const dtc = contract("dtc", { "dtc.page": { path: "/dtc", params: s.object({}), search: Search } });
+const dts = contract("dts", { "dts.page": { path: "/dts", params: s.object({}), search: Search } });
+const dtf = contract("dtf", { "dtf.page": { path: "/dtf", params: s.object({}), search: Search } });
+const clientHref = (q: Query): Href => dtc.href("dtc.page", {}, q);
+const serverHref = (q: Query): Href => dts.href("dts.page", {}, q);
 const findHref = (q: Query): Href => {
   void tx(type, { q: q.q ?? "" });
-  return links.href("dtf.page", {}, q);
+  return dtf.href("dtf.page", {}, q);
 };
 
 const Out = s.object({ page: tablePage(CatalogRow) });
@@ -57,11 +57,16 @@ const pageOf = (raw: unknown): Infer<typeof Out>["page"] => {
   if (!r.ok) throw new Error("fixture: loader data does not parse");
   return r.value.page;
 };
-const dataLoader = loader({ output: Out, search: Search }, ({ search }) =>
-  Promise.resolve(
-    ok({ page: applyQuery(catalogColumns, makeRows(12), search, { pageSize: PAGE_SIZE, locale: LOCALE }) }),
-  ),
-);
+const dataLoader = (c: typeof dts | typeof dtf, id: "dts.page" | "dtf.page") =>
+  Reflect.apply(loader, undefined, [
+    c,
+    id,
+    { output: Out },
+    ({ search }: { search: Query }) =>
+      Promise.resolve(
+        ok({ page: applyQuery(catalogColumns, makeRows(12), search, { pageSize: PAGE_SIZE, locale: LOCALE }) }),
+      ),
+  ]);
 
 /** The client source: rows from a store, `pageSize` 5, `selected`, `onSelect` and `actions` given. */
 function clientPage(props: RouteProps): Node {
@@ -105,29 +110,32 @@ function serverPage(props: RouteProps): Node {
 }
 
 /** `TableSearch` above a table. */
-function findPage(props: RouteProps): Node {
+function findPage(props: RouteProps, ctx: Ctx): Node {
   typed.uses([type]);
   return Box({
     id: "find.page",
     children: () => [
-      TableSearch({
-        id: "find",
-        label: "Search the catalog",
-        get search() {
-          return queryOf(props.search);
+      TableSearch(
+        {
+          id: "find",
+          label: "Search the catalog",
+          get search() {
+            return queryOf(props.search);
+          },
+          href: findHref,
         },
-        href: findHref,
-      }),
+        ctx,
+      ),
       serverPage(props),
     ],
   });
 }
 
-export const routes = manifest({
-  "dtc.page": { path: "/dtc", params: s.object({}), search: Search, component: clientPage },
-  "dts.page": { path: "/dts", params: s.object({}), search: Search, loader: dataLoader, component: serverPage },
-  "dtf.page": { path: "/dtf", params: s.object({}), search: Search, loader: dataLoader, component: findPage },
-});
+export const routes = routeTable(
+  manifest(dtc, { "dtc.page": { component: clientPage } }),
+  manifest(dts, { "dts.page": { loader: dataLoader(dts, "dts.page"), component: serverPage } }),
+  manifest(dtf, { "dtf.page": { loader: dataLoader(dtf, "dtf.page"), component: findPage } }),
+);
 
 export const MODULES = ["dtc", "dts", "dtf"];
 

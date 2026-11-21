@@ -5,7 +5,7 @@ import { makeDiag } from "./makeDiag.ts";
 const NOTE = /^([EWI]\d{4}) (?:([^\s:]*[/.][^\s:]*) )?(.*)$/;
 
 /**
- * A Keel-coded line of a build step (`E1006 modules/a/api.ts failed to evaluate: boom`, `W1005 .keel/routes.json
+ * A Keel-coded line of a build step (`E1006 modules/a/a.contract.ts failed to evaluate: boom`, `W1005 .keel/routes.json
  * differed ...`) as a diagnostic record: the code, the path when the second word is one, and the rest as the message.
  * A line that does not start with a code is `undefined`.
  */

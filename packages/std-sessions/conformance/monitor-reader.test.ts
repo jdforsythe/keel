@@ -1,7 +1,7 @@
 // Spec: std.monitor, Conformance "A caller outside `readers` gets 403 `keel.denied` from `sessions.tally`; a reader gets the `Tally`."
 // Seed: 1337.
 // @vitest-environment node
-// Skipped until `monitorRoutes` exists. A reader is a caller whose hash is in `readers`, as in the std.sessions ingest tests.
+// A reader is a caller whose hash is in `readers`, as in the std.sessions ingest tests.
 import { createHash } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
@@ -9,16 +9,17 @@ import path from "node:path";
 import { bindStd } from "@keel/compiler/std/bindStd";
 import { createCtx } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import { createApp, topology } from "@keel/server";
-import { monitorRoutes } from "@keel/std-sessions/monitor";
+import { routes as sessionsRoutes } from "@keel/std-sessions/routes";
 import { store, transaction, tx } from "@keel/store";
 import fc from "fast-check";
 import { afterAll, describe, expect, test } from "vitest";
 
 // ---- fixture (shared text of the monitor-* files): a server store with two transactions, an API route table ----------
 // Assumptions (the spec is silent, each is an ordinary reading of k.server / k.router / k.api, as sync-save-observe does):
-// - `monitor` and `monitorRoutes` are both exported by `@keel/std-sessions/monitor`;
+// - `monitor` is exported by `@keel/std-sessions/monitor` and the tally route is `routes` of `@keel/std-sessions/routes`;
 // - `ctx.storage` holds a server store as the JSON text of its `snapshot()` under `keel.store.<id>`, and `sessions.tally`
 //   as the JSON text of the `Tally`;
 // - an API route answers `{ results: { <route id>: Result } }` as `sessions.list` does in the ingest tests;
@@ -77,17 +78,24 @@ async function boot() {
     },
   };
   const ctx = { ...base, storage };
-  const add = action({ input: Text1, stores: factory }, async ({ text }, { stores }) => {
+  const apiContract = contract("api", {
+    "api.add": { path: "/add" },
+    "api.toggle": { path: "/toggle" },
+  });
+
+  const add = action(apiContract, "api.add", { input: Text1, stores: factory }, async ({ text }, { stores }) => {
     tx(stores.addTodo, { text });
     return ok(null);
   });
-  const toggle = action({ input: Text1, stores: factory }, async ({ text }, { stores }) => {
+  const toggle = action(apiContract, "api.toggle", { input: Text1, stores: factory }, async ({ text }, { stores }) => {
     tx(stores.toggleTodo, { text });
     return ok(null);
   });
   const component = (): Node => document.createElement("p");
-  const routes = manifest({ "api.add": { path: "/add", component }, "api.toggle": { path: "/toggle", component } });
-  routes.actions({ "api.add": { POST: add }, "api.toggle": { POST: toggle } });
+  const routes = manifest(apiContract, {
+    "api.add": { component: component, POST: add },
+    "api.toggle": { component: component, POST: toggle },
+  });
   const actions = await createApp({
     topology: topology({ api: { modules: ["api"], adapter: "node" } }),
     routes,
@@ -97,7 +105,7 @@ async function boot() {
   });
   const tallyApp = await createApp({
     topology: topology({ sessions: { modules: ["sessions"], adapter: "node" } }),
-    routes: monitorRoutes,
+    routes: sessionsRoutes,
     ctx,
     mode: "production",
     secret: SECRET,

@@ -1,7 +1,6 @@
 import type { Ctx } from "@keel/ctx";
 import type { Infer, Result, Secret } from "@keel/schema";
 import type { ApiError } from "./ApiError.ts";
-import type { EndpointMap } from "./EndpointMap.ts";
 
 type Flat<T> = { [K in keyof T]: T[K] };
 type Part<E, K extends "params" | "query" | "body"> = K extends keyof E
@@ -21,7 +20,7 @@ type Answer<E> = Result<Output<E>, ApiError<ErrorBody<E>>>;
  * `bearer` is sent as `authorization: Bearer <token>`; a `user`, as `x-keel-user` signed for a module call (k.user). An
  * `events: true` endpoint's method returns an `AsyncIterable` of results instead of one.
  */
-export type Client<D extends EndpointMap> = {
+export type Client<D> = {
   readonly [K in keyof D]: (
     input: Input<D[K]>,
     ctx: Ctx,

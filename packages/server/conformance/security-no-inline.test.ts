@@ -1,10 +1,12 @@
 // Spec: k.security, Conformance "No document of the fixture app has an inline script other than `#k-state`, a `<style>`, a `style` attribute or an `on*` attribute."
 // Seed: 1337.
 // @vitest-environment happy-dom
+import type { Ctx } from "@keel/ctx";
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import type { RouteProps } from "@keel/router";
 import { createApp, topology } from "@keel/server";
 import fc from "fast-check";
@@ -12,7 +14,7 @@ import { describe, expect, test } from "vitest";
 import { build, get } from "./fixtures.ts";
 
 const MODES: ("dev" | "production")[] = ["dev", "production"];
-type Component = (props: RouteProps) => Node;
+type Component = (props: RouteProps, ctx: Ctx) => Node;
 
 const COUNTER = `import { signal } from "@keel/reactive";
 export default function Counter() {
@@ -28,8 +30,8 @@ function compileComponent(source: string): Component {
   if (out === undefined) throw new Error("fixture: no compiler output");
   const fn = evaluate(out.code);
   if (typeof fn !== "function") throw new Error("fixture: default export is not a component");
-  return (props) => {
-    const node: unknown = fn(props);
+  return (props, ctx) => {
+    const node: unknown = fn(props, ctx);
     if (!(node instanceof Node)) throw new Error("fixture: component did not return a Node");
     return node;
   };
@@ -55,9 +57,14 @@ function inlineSources(html: string): string[] {
 }
 
 async function island(mode: "dev" | "production") {
-  const routes = manifest({
-    "app.counter": { path: "/counter", component: compileComponent(COUNTER) },
-    "app.plain": { path: "/plain", component: () => document.createElement("main") },
+  const appContract = contract("app", {
+    "app.counter": { path: "/counter" },
+    "app.plain": { path: "/plain" },
+  });
+
+  const routes = manifest(appContract, {
+    "app.counter": { component: compileComponent(COUNTER) },
+    "app.plain": { component: () => document.createElement("main") },
   });
   return createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),

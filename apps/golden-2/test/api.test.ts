@@ -14,10 +14,10 @@ import { postRecipe } from "../modules/kitchen/postRecipe.server.ts";
 import { toggleFavorite } from "../modules/kitchen/toggleFavorite.ts";
 import { apiApp, apiCtx, asJson, draft } from "./simApi.ts";
 
-/** The runtime body of `GET /api/recipes` (k.server): the `kitchen.recipes` loader `Result`. */
+/** The runtime body of `GET /api/recipes` (k.server): the `kitchen.box` loader `Result`. */
 const BoxBody = s.object({
   id: s.string(),
-  results: s.object({ "kitchen.recipes": s.object({ ok: s.literal(true), value: Box }) }),
+  results: s.object({ "kitchen.box": s.object({ ok: s.literal(true), value: Box }) }),
 });
 
 const scopes: { dispose(): void }[] = [];
@@ -86,8 +86,8 @@ describe("kitchen endpoints", () => {
     const empty = await fetchJson(app, asJson("GET", "/api/recipes"));
     expect(empty.status).toBe(200);
     expect(empty.body).toEqual({
-      id: "kitchen.recipes",
-      results: { "kitchen.recipes": { ok: true, value: { recipes: [] } } },
+      id: "kitchen.box",
+      results: { "kitchen.box": { ok: true, value: { recipes: [] } } },
     });
 
     const added = await fetchJson(app, asJson("POST", "/api/recipes", draft("Soup", 30, 1800, "JPY")));
@@ -100,7 +100,7 @@ describe("kitchen endpoints", () => {
     expect(body).toContain('"price":{"amount":1800,"currency":"JPY"}');
     expect(body).toContain('"addedOn":"2026-11-10"');
     const parsed = BoxBody.parse(listed.body);
-    const id = parsed.ok ? (parsed.value.results["kitchen.recipes"].value.recipes[0]?.id ?? "") : "";
+    const id = parsed.ok ? (parsed.value.results["kitchen.box"].value.recipes[0]?.id ?? "") : "";
     expect(id).not.toBe("");
 
     const dup = await fetchJson(app, asJson("POST", "/api/recipes", draft("SOUP", 5)));

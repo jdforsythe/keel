@@ -6,6 +6,7 @@
 // Seed: 1337 (the property below). Real createApp over the module store `rm.board` of resume-modstore.ts.
 // The timer in the action and the promise registered at module load are the fixtures the clauses name.
 import { action, loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import { store, transaction, tx } from "@keel/store";
 import { resumeDocument } from "@keel/testing";
@@ -29,7 +30,14 @@ type Op = "restore" | "undo" | "undoWhere";
 let op: Op = "restore";
 
 /** A loader that runs the guarded operation `op` on the module store. */
-const operating = loader({ output: Data }, () => {
+const lm = contract("lm", {
+  "lm.op": { path: "/op" },
+  "lm.own": { path: "/own" },
+  "lm.release": { path: "/release" },
+  "lm.timer": { path: "/timer" },
+});
+
+const operating = loader(lm, "lm.op", { output: Data }, () => {
   if (op === "restore") board.restore(PRISTINE);
   else if (op === "undo") board.undo();
   else board.undoWhere(() => true);
@@ -37,7 +45,7 @@ const operating = loader({ output: Data }, () => {
 });
 
 /** A loader that undoes and restores a store it created itself: allowed. */
-const ownStore = loader({ output: Data }, () => {
+const ownStore = loader(lm, "lm.own", { output: Data }, () => {
   const mine = store(Rows, { rows: "" }, { id: "lm.mine" });
   const set = transaction(mine, "lm.mine.set", Rows, (_state, payload) => payload);
   void tx(set, { rows: "a" });
@@ -61,7 +69,7 @@ const gated = gate.then((value) => {
   }
 });
 
-const releasing = loader({ output: Data }, () => {
+const releasing = loader(lm, "lm.release", { output: Data }, () => {
   release("via-gate");
   return Promise.resolve(ok({ title: "released" }));
 });
@@ -72,7 +80,7 @@ let fired: () => void = () => undefined;
 const timerFired = new Promise<void>((resolve) => {
   fired = resolve;
 });
-const scheduling = action({ input: Note }, () => {
+const scheduling = action(lm, "lm.timer", { input: Note }, () => {
   setTimeout(() => {
     try {
       void tx(setRows, { rows: "late" });
@@ -84,13 +92,12 @@ const scheduling = action({ input: Note }, () => {
   return Promise.resolve(ok(null));
 });
 
-const routes = manifest({
-  "lm.op": { path: "/op", loader: operating, component: page },
-  "lm.own": { path: "/own", loader: ownStore, component: page },
-  "lm.release": { path: "/release", loader: releasing, component: page },
-  "lm.timer": { path: "/timer", component: page },
+const routes = manifest(lm, {
+  "lm.op": { loader: operating, component: page },
+  "lm.own": { loader: ownStore, component: page },
+  "lm.release": { loader: releasing, component: page },
+  "lm.timer": { component: page, POST: scheduling },
 });
-routes.actions({ "lm.timer": { POST: scheduling } });
 
 describe("k.leave Module stores: restore, undo and undoWhere on a module store throw E1256 in a request", () => {
   it.each(["restore", "undo", "undoWhere"] as const)(

@@ -8,7 +8,7 @@ import type { Peer } from "./Peer.ts";
 type Sign = (to: string, method: string, url: string, user: string, body: string | Uint8Array) => string | undefined;
 
 /**
- * Bind `ctx` for `service({ module })` (k.topology Calls and peers): each module of the served deployable `name`
+ * Bind `ctx` for the modules' service clients (k.topology Calls and peers): each module of the served deployable `name`
  * answers through `self`, each module of a peer through that peer (its app in process, else its URL without a trailing
  * slash), and `"keel.user"`, no module id, holds the `x-keel-user` signer a call to a module's URL carries for a user
  * (k.user Across deployables): it signs for the deployable that serves the module, the peer's key, or `own` (this

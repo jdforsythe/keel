@@ -2,7 +2,7 @@
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { type Schema, s } from "../src/index.ts";
-import { secretPathOf } from "../src/internal/index.ts";
+import { secretPathOf } from "../src/internal/secretPathOf.ts";
 
 test("names object keys to the first secret, null when there is none", () => {
   expect(secretPathOf(s.secret(s.string()).node)).toBe("");

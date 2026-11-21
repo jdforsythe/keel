@@ -3,6 +3,7 @@
 // navigated to, with or without an `errorElement`; once disposed, a second harness in the document is alone.
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { renderRoute } from "@keel/testing";
 import { describe, expect, it } from "vitest";
 
@@ -16,15 +17,24 @@ const main = (id: string): HTMLElement => {
 };
 const error = (): Node => main("nav.error");
 
-const plain = manifest({
-  "nav.a": { path: "/a", component: () => main("nav.a") },
-  "nav.b": { path: "/b", component: () => main("nav.b") },
+const c = contract("nav", {
+  "nav.a": { path: "/a" },
+  "nav.b": { path: "/b" },
+  "nav.throws": { path: "/throws" },
 });
-const guarded = manifest({
-  "nav.a": { path: "/a", component: () => main("nav.a"), errorElement: error },
-  "nav.b": { path: "/b", component: () => main("nav.b"), errorElement: error },
+const plain = manifest(c, {
+  "nav.a": { component: () => main("nav.a") },
+  "nav.b": { component: () => main("nav.b") },
   "nav.throws": {
-    path: "/throws",
+    component: () => {
+      throw new Error("boom");
+    },
+  },
+});
+const guarded = manifest(c, {
+  "nav.a": { component: () => main("nav.a"), errorElement: error },
+  "nav.b": { component: () => main("nav.b"), errorElement: error },
+  "nav.throws": {
     component: () => {
       throw new Error("boom");
     },
@@ -42,9 +52,9 @@ describe("renderRoute navigate: the page navigated away from leaves the document
   ])("%s", async (_, routes) => {
     const h = await renderRoute("nav.a", { routes, ctx: sim() });
     expect(mains()).toEqual(["nav.a"]);
-    await h.navigate(routes.href("nav.b"));
+    await h.navigate(c.href("nav.b"));
     expect(mains()).toEqual(["nav.b"]);
-    await h.navigate(routes.href("nav.a"));
+    await h.navigate(c.href("nav.a"));
     expect(mains()).toEqual(["nav.a"]);
     h.dispose();
     expect(mains()).toEqual([]);
@@ -56,7 +66,7 @@ describe("renderRoute navigate: the page navigated away from leaves the document
   it("from a page whose errorElement caught a throw", async () => {
     const h = await renderRoute("nav.throws", { routes: guarded, ctx: sim() });
     expect(mains()).toEqual(["nav.error"]);
-    await h.navigate(guarded.href("nav.a"));
+    await h.navigate(c.href("nav.a"));
     expect(mains()).toEqual(["nav.a"]);
     h.dispose();
     expect(mains()).toEqual([]);

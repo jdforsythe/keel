@@ -1,8 +1,7 @@
 import { action } from "@keel/router";
-import { err, ok, s } from "@keel/schema";
+import { err, ok } from "@keel/schema";
 import { tx } from "@keel/store";
-import { FlowParams } from "./FlowParams.schema.ts";
-import { Nothing } from "./Nothing.schema.ts";
+import { api } from "./api.contract.ts";
 import { removalStores } from "./removalStores.server.ts";
 
 /**
@@ -10,7 +9,9 @@ import { removalStores } from "./removalStores.server.ts";
  * (`restore`). A removal past `hidden`, or none, is `keel.notFound`.
  */
 export const postUndoRemoval = action(
-  { input: s.object({}), params: FlowParams, output: Nothing, stores: removalStores },
+  api,
+  "api.undoRemoval",
+  { stores: removalStores },
   (_input, { params, caller, stores }) => {
     const { flow } = params;
     const at = stores.removal.store.get("instances")[flow];

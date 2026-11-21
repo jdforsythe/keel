@@ -1,0 +1,22 @@
+{
+  "name": "csp-trial",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@observablehq/plot": "^0.6.19",
+    "chart.js": "^4.6.1",
+    "d3": "^7.9.2",
+    "echarts": "^6.1.0",
+    "esbuild": "^0.28.2",
+    "playwright": "^1.65.0",
+    "uplot": "^1.6.32"
+  }
+}

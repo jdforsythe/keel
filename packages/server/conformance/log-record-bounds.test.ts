@@ -6,6 +6,7 @@
 // Seed 1337 (no random input: every case is a fixed large text, built once per file).
 import { createCtx } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { reveal, s } from "@keel/schema";
 import { topology } from "@keel/server";
 import { describe, expect, it } from "vitest";
@@ -58,18 +59,15 @@ const expectCutOfAs = (message: string, total: number): void => {
 type Thrower = (secret: () => string) => unknown;
 async function throwFromAction(mode: Mode, format: Format, withSecret: boolean, make: Thrower): Promise<string[]> {
   const lines: string[] = [];
-  const routes = manifest({
-    "orders.show": { path: "/orders/:kind", params: Params, component: () => document.createElement("main") },
+  const ordersContract = contract("orders", { "orders.show": { path: "/orders/:kind", params: Params } });
+  const save = withSecret
+    ? action(ordersContract, "orders.show", { input: s.object({ k: s.secret(s.string()) }) }, (input) =>
+        Promise.reject(make(() => reveal(input.k))),
+      )
+    : action(ordersContract, "orders.show", { input: s.object({}) }, () => Promise.reject(make(() => "")));
+  const routes = manifest(ordersContract, {
+    "orders.show": { component: () => document.createElement("main"), POST: save },
   });
-  if (withSecret) {
-    const save = action({ input: s.object({ k: s.secret(s.string()) }) }, (input) =>
-      Promise.reject(make(() => reveal(input.k))),
-    );
-    routes.actions({ "orders.show": { POST: save } });
-  } else {
-    const save = action({ input: s.object({}) }, () => Promise.reject(make(() => "")));
-    routes.actions({ "orders.show": { POST: save } });
-  }
   const app = await createApp({
     topology: topology({ web: { modules: ["orders"], adapter: "node" } }),
     routes,
@@ -103,10 +101,11 @@ async function rejectFromRunner(mode: Mode, format: Format, thrown: unknown): Pr
 }
 async function requestPath(mode: Mode, format: Format, path: string): Promise<string[]> {
   const lines: string[] = [];
+  const ordersContract = contract("orders", { "orders.show": { path: "/orders/:kind", params: Params } });
   const app = await createApp({
     topology: topology({ web: { modules: ["orders"], adapter: "node" } }),
-    routes: manifest({
-      "orders.show": { path: "/orders/:kind", params: Params, component: () => document.createElement("main") },
+    routes: manifest(ordersContract, {
+      "orders.show": { component: () => document.createElement("main") },
     }),
     ctx: createCtx({ mode: "sim", seed: SEED }),
     mode,

@@ -6,6 +6,7 @@ import { createCtx } from "@keel/ctx";
 import type { Ctx } from "@keel/ctx";
 import { report } from "@keel/ctx/internal";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { Session } from "@keel/std-sessions";
 import { renderRoute } from "@keel/testing";
 import { Box, Button, Input } from "@keel/ui";
@@ -14,9 +15,8 @@ import { record, session } from "../src/index.ts";
 import { stamped } from "./stamped.ts";
 
 const typed: { value: string } = { value: "" };
-const routes = manifest({
+const routes = manifest(contract("pay", { "pay.show": { path: "/pay" } }), {
   "pay.show": {
-    path: "/pay",
     component(): Node {
       return Box({
         as: "main",

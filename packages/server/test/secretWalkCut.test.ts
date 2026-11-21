@@ -4,6 +4,7 @@
 // Seed 1337.
 import { createCtx } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { describe, expect, it } from "vitest";
 import { createApp, topology } from "../src/index.ts";
@@ -29,10 +30,11 @@ describe("a secret whose read is cut", () => {
 
   it("an action that makes one and throws logs its message as one mark", async () => {
     const lines: string[] = [];
-    const routes = manifest({ "app.a": { path: "/a", component: () => document.createElement("main") } });
-    routes.actions({
+    const c = contract("app", { "app.a": { path: "/a" } });
+    const routes = manifest(c, {
       "app.a": {
-        POST: action({ input: s.object({}) }, async () => {
+        component: () => document.createElement("main"),
+        POST: action(c, "app.a", { input: s.object({}) }, async () => {
           Huge.parse(huge());
           throw new Error("refused 7");
         }),

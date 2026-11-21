@@ -1,6 +1,6 @@
-k.schema k.errors k.reactive k.store k.ctx k.component k.runtime k.router k.server k.topology k.hosting k.services k.forms k.ui k.testing k.module k.scaffold k.check k.sync std.jobs std.schedules std.channels std.live std.offline std.multi std.conflicts k.model k.sim std.statecharts std.monitor
+k.schema k.errors k.reactive k.store k.ctx k.component k.runtime k.contract k.router k.server k.topology k.hosting k.services k.forms k.ui k.testing k.module k.scaffold k.check k.sync std.jobs std.schedules std.contracts std.channels std.live std.offline std.multi std.conflicts k.model k.sim std.statecharts std.monitor
 
-Key lines only (current spec, RFCs through 0104). Full text: `pnpm spec <id>`.
+Key lines only (current spec, RFCs through 0162). Full text: `pnpm spec <id>`.
 
 k.schema
 - import { s, ok, err, attempt, type Result } from '@keel/schema'
@@ -31,33 +31,37 @@ k.ctx
 - Date.now, new Date(), Math.random, crypto.randomUUID, bare fetch, localStorage in app code: E1601
 
 k.component
-- one default export per file, filename = name: (props, slots?, ctx?) => JSX; export const Props = s.object(...); a plain .ts component (PascalCase file, no JSX, default export a function whose first parameter is typed from Props: (props: Infer<typeof Props>)) may export Props and uses too
+- one default export per file, filename = name: (props) => JSX, or (props, ctx: Ctx) => JSX when it reaches an effect (ctx never optional, defaulted or followed by a parameter: E1407; every caller passes one); export const Props = s.object(...); a plain .ts component (PascalCase file, no JSX, default export a function whose first parameter is typed from Props: (props: Infer<typeof Props>)) may export Props and uses too
 - props are getters, never destructure (E1401); <If when>, <For each key="id">, <Match on={union}><Case tag>; {a && <b/>} is E1403
 - explicit ids on everything a test touches (id="todos.addTodo", id={`todos.row.${t.id}`}); duplicates E1404
 
 k.runtime
-- import { If, For, Match, Case } from '@keel/runtime-dom'; mount is the generated entry only; no document/window in app code (E1252)
+- import { If, For, Match, Case } from '@keel/runtime-dom'; mount(Component, el, { ctx }) is the generated entry only; no document/window in app code (E1252)
+
+k.contract
+- modules/<id>/<id>.contract.ts: import { contract } from '@keel/router/contract'; export const api = contract('api', { 'api.lists': { method: 'GET', path: '/api/lists', output: BoardView }, 'api.createList': { method: 'POST', path: '/api/lists', body: ListWrite, output: Nothing, errors: { 409: s.json(), 422: WriteRefusal } }, 'api.addTodo': { method: 'POST', path: '/api/lists/:listId/todos', params: ListParams, body: TodoWrite, output: Nothing } }); one contract per module, its export named for the module (E1513); keys prefixed by the module id; an API id is <module>.<name>, one lowerCamel segment, one id per method (GET and POST at /api/lists are two ids); imports *.schema.ts files and packages only (E1514)
+- routes.ts: manifest(api, { 'api.lists': { loader: loadBoard }, 'api.createList': { action: postList } }) binds every entry and nothing else; routeTable(...tables) joins a deployable's modules; a module's contract is public to a module that lists it in deps (E1152), no public.exports needed
 
 k.router
-- API route (no component): { 'api.lists': { api: true, path: '/api/lists', loader: loadBoard } } plus routes.actions({ 'api.lists': { POST: postList } }); keeps params, search, loader, guard; refuses component, errorElement, title, layout (E1510); needs a loader or an action; the server answers it with JSON whatever accept says (GET with a loader: { id, results }; GET without one: 405 with allow; a write: the action Result as JSON (its output), never 303; a guard denial: 403 keel.denied); routes.href, Link and navigate take page ids only
-- API action: action({ input, output, params?, stores? }, fn) -> Result<T, KeelError> for output's type; output parses the ok value before any store saves (fail: E1554, nothing saved); answered 200 { ok: true, value } with Cache-Control: no-store; a write with nothing to say: output: s.object({}) and ok({}); a page's action declares no output and keeps ok(href) / ok(null); the wrong kind is E1512; output holds no s.secret (E1113: send reveal(secret) in an s.string field, reveal only in *.server.ts)
+- API entry (no component): an entry of the contract with method, path and output, bound with loader (GET) or action (write) and an optional guard; the server answers it with JSON whatever accept says (GET with a loader: { id, results }; a method with no entry at its path: 405 with allow; a write: the action Result as JSON (its output), never 303; a guard denial: 403 keel.denied); href, Link and navigate take page ids only; a component or errorElement on it is E1510; its query may require keys (422 keel.fields when it fails)
+- API action: action(api, 'api.createList', { stores }, fn(body, { params, caller, stores }, ctx)) -> Result<T, KeelError> for the entry's output; the ok value is parsed before any store saves (fail: E1554, nothing saved); answered 200 { ok: true, value } with Cache-Control: no-store; a write with nothing to say: output: s.object({}) and ok({}); a page's action declares input and keeps ok(href) / ok(null); output holds no s.secret (E1113: send reveal(secret) in an s.string field, reveal only in *.server.ts)
 - bearer: an API route's guard, loader and action get bearer: Secret<string> | undefined beside caller, from `Authorization: Bearer <token>` (scheme in any case, 1 to 4096 characters of A-Za-z0-9-._~+/ and trailing =); no header, another scheme, an empty or longer token or two headers is undefined (no error); a page's guard and loader get undefined, a page's action has none; independent of caller; a response to a request carrying authorization is no-store
 - guard({}, fn) (no redirect) guards API routes only; on a page or layout it is a type error and manifest() throws E1508
-- import { manifest, guard, loader, action, Form, type Href } from '@keel/router'
-- routes.ts: export const routes = manifest({ 'todos.shell': { component: AppShell }, 'todos.edit': { path: '/lists/:listId/todos/:todoId/edit', params: TodoParams, loader: loadTodo, component: EditTodoPage, layout: 'todos.shell', errorElement: ListError, guard: editable } }); then routes.actions({ 'todos.edit': { POST: updateTodo } }) (a statement; actions are never in an entry: E1505); an action returning ok(routes.href(...)) imports routes.ts, which imports it: import routes.ts (never the *.server.ts) first in tests
+- import { manifest, routeTable, guard, loader, action, Form, type Href } from '@keel/router'
+- todos.contract.ts: export const todos = contract('todos', { 'todos.shell': { layout: true }, 'todos.edit': { path: '/lists/:listId/todos/:todoId/edit', params: TodoParams } }); routes.ts: export const routes = manifest(todos, { 'todos.shell': { component: AppShell }, 'todos.edit': { loader: loadTodo, component: EditTodoPage, layout: 'todos.shell', errorElement: ListError, guard: editable, POST: updateTodo } }): every entry bound and nothing else (E1515), a page's actions sit in its entry by verb; an action returning ok(todos.href(...)) imports the contract, never routes.ts
 - entry without path = layout, renders {props.children?.()}; a static segment beats :param
 - component receives { params, search, data } (data = loader ok value); errorElement receives { error: KeelError }
-- links: routes.href(id, params?, search?) -> Href, typed by the manifest; Link to, navigate, Form action take Href only (E1501)
+- links: todos.href(id, params?, search?) -> Href, typed by the contract (pages only; another module's pages through its contract); Link to, navigate, Form action take Href only (E1501)
 - guards: export const editable = guard({ redirect: 'todos.index' }, async ({ url }, ctx) => ok(null) | err({ code: 'keel.denied', message, data: null })); file *.guard.ts; the route holds the value (guard: editable)
 - route() { id, params, search, pending }; navigate(href, { replace? })
-- <Form method="POST" action={routes.href(...)} form? error?>: ok(href) navigates, ok(null) revalidates the chain's loaders
+- <Form method="POST" action={todos.href(...)} form? error?>: ok(href) navigates, ok(null) revalidates the chain's loaders
 - client deployable: the router runs guards, loaders and actions in the browser; it refuses `stores`
-- E1502 duplicate path, E1503 :param without params field, E1504 required search field, E1505 undeclared verb, E1506 unknown layout, E1507 params/search typed by hand
+- E1502 duplicate path, E1503 :param without params field, E1504 required search field, E1505 undeclared verb, E1506 unknown layout
 
 k.server
-- loader({ output, params?, search?, stores? }, fn): fn({ params, search, url, caller, bearer, stores }, ctx) -> Promise<Result<T, KeelError>>
-- page action({ input, params?, stores? }, fn): fn(input, { params, url, caller, stores }, ctx) -> Result<Href | null, KeelError>; return a link as `ok(routes.href(...))`; an API route's action also takes output (API action)
-- both only in *.server.ts (E1551); params/search are the route's own schemas; never annotate fn; url is absolute; server code never reads location
+- loader(contract, id, { output?, stores? }, fn): fn({ params, search, url, caller, bearer, stores }, ctx) -> Promise<Result<T, KeelError>>; params and search come from the entry; on an API GET entry { stores? } and the entry's output
+- page action(contract, id, { input, stores? }, fn): fn(input, { params, url, caller, stores }, ctx) -> Result<Href | null, KeelError>; return a link as `ok(todos.href(...))`; an API entry's action takes { stores? } and its body is the entry's `body`
+- both only in *.server.ts (E1551); a handler bound under another id is E1515; never annotate fn; url is absolute; server code never reads location
 - stores: a factory (ctx?) => S of stores (explicit ids) and transactions bound to them; per request it runs once, its stores restore from ctx.storage `keel.store.<id>`; an action's ok saves them (409 keel.conflict if another request saved first); err saves nothing
 - topology.ts: import { topology } from '@keel/server'; export default topology({ web: { modules: ['todos'], adapter: 'client' }, api: { modules: ['api'], adapter: 'node' } }); a module is in one deployable (E1552)
 - createApp({ topology, routes, ctx, deployable: 'api', runners?, peers?, artifacts? }) from '@keel/server' -> Promise<{ fetch(req), close() }> (tests; production runs the generated entry)
@@ -66,28 +70,26 @@ k.server
 - JSON body (content-type application/json) decodes with the action input schema, an empty body as {}; fail: 422 keel.fields naming each bad or missing field, action not called
 - runtime JSON (accept: application/json): GET -> { id: routeId, results: { [routeId]: { ok: true, value } } }; page action -> { ok: true, value: null | href }; API action -> { ok: true, value: <output> } or { ok: false, error: { code, message, data } }
 - status: keel.notFound 404, keel.denied 403, keel.fields 422, keel.conflict 409, other err 400
-- a route may be action-only (an API route: `api: true`, no component; its loader or action is all it has)
+- an API entry has a loader or an action and no component; only an `events: true` entry's loader is live (an async generator)
 
 k.services
-- import { endpoints, service } from '@keel/services'; endpoints in a *.service.ts file, body/output schemas in *.schema.ts
-- export const todos = endpoints({ lists: { method: 'GET', path: '/api/lists', output: BoardView }, editTodo: { method: 'POST', path: '/api/todos/:todoId', params: TodoIdParams, body: TodoDraft, output: s.object({}), errors: { 422: FieldsReply } } })
-- service({ module: 'api', schema }): the topology resolves the origin (a browser: the peer's or the page's); the endpoints must agree with the module's public.routes (E1152, E1157, E1561: errors must accept any error answer of the route); await api.add({ params?, body?, bearer? }, ctx) -> Result<Output, ApiError>; never throws
-- a module service reads the route's Result: output is the loader's value (GET) or the action's output (an API route's; E1561 when it refuses the answer); errors[status] decodes the KeelError { code, message, data }
+- import { service } from '@keel/services'; service({ contract: api }) has one method per API entry named by the id after the module (api.lists -> client.lists, api.addTodo -> client.addTodo): the topology resolves the origin (a browser: the peer's or the page's); await client.addTodo({ params?, body?, bearer? }, ctx) -> Result<Output, ApiError>; never throws; output and errors[status] are the contract entry's, so a client and its handler cannot disagree
+- service({ base, schema: endpoints({...}) }) calls an origin no app module serves
 - ApiError: api.status { status, body } (body decoded by errors[status], else null), api.network, api.timeout, api.decode, api.input
 - pass a 422 on to the Form: if (!r.ok) return err(r.error.data.body ?? r.error)
-- in an unbound sim ctx a service({ module: 'api' }) call goes to http://api.keel.invalid plus the path; route that host with ctx.net.route
+- in an unbound sim ctx a service({ contract: api }) call goes to http://api.keel.invalid plus the path; route that host with ctx.net.route
 - ctx.net.fetch in app code is E1651; E1652 :param without params field; E1653 body on GET
-- service({ module: 'api', schema }) calls app module api's routes (api in deps, route in its public.routes): in process, a peer, a browser's document origin; on a ctx no createApp bound, http://api.keel.invalid
+- service({ contract: api }) calls app module api's routes (api in deps): in process, a peer, a browser's document origin; on a ctx no createApp bound, http://api.keel.invalid
 
 k.topology
 - each module (app or stdlib) in one deployable; a split edits topology.ts alone
 - keel build writes dist/<name>/server.mjs per node deployable (no server.ts): env PORT (8080), KEEL_SECRET (32+, one for the app), KEEL_ORIGIN, KEEL_PEER_<NAME>; E1560 names a bad key; SIGTERM awaits close() and exits
 - modules/<id>/runners.server.ts: export const runners = [jobs, schedules]; createApp({ runners: { digest: runners } }) runs them after startup; close() aborts them
-- a client deployable may carry host: 'api' (k.hosting): topology({ web: { modules: ['todos'], adapter: 'client', host: 'api' }, api: { ... adapter: 'node' } })
+- a client deployable may carry servedBy: 'api' (k.hosting): topology({ web: { modules: ['todos'], adapter: 'client', servedBy: 'api' }, api: { ... adapter: 'node' } })
 - peers: a request for a path a peer serves (routes.json in artifacts) is forwarded; deploy/<name>/Dockerfile and deploy/compose.yaml are generated (E1005)
 
 k.hosting
-- k.hosting: `host: '<node deployable>'` on a `client` deployable names the `node` deployable that serves it; keel build writes dist/<client>/ (index.html, assets/, keel-mark.svg) and copies it into dist/<host>/; the host answers a GET document request matching none of its routes with index.html (200, no-cache), an unmatched runtime or event-stream request or a path under /assets/ stays 404; KEEL_PEER_<NAME> at build adds a keel-peer meta tag, so service({ module }) in a browser calls that origin with credentials, else the document's origin; KEEL_ALLOW_ORIGINS (createApp({ allow })) lets listed origins call API routes (the preflight allows accept, authorization, content-type, x-keel); E1565 bad peer value, E1566 bad host
+- k.hosting: `servedBy: '<node deployable>'` on a `client` deployable names the `node` deployable that serves it; keel build writes dist/<client>/ (index.html, assets/, keel-mark.svg) and copies it into dist/<servedBy>/; the host answers a GET document request matching none of its routes with index.html (200, no-cache), an unmatched runtime or event-stream request or a path under /assets/ stays 404; KEEL_PEER_<NAME> at build adds a keel-peer meta tag, so service({ contract }) in a browser calls that origin with credentials, else the document's origin; KEEL_ALLOW_ORIGINS (createApp({ allow })) lets listed origins call API routes (the preflight allows accept, authorization, content-type, x-keel); E1565 bad peer value, E1566 bad host
 
 std.jobs
 - export const recount = job({ input: RecountInput }, async (input, ctx, signal) => ok(null))  // recount.server.ts; at least once, so idempotent
@@ -101,7 +103,7 @@ std.schedules
 k.forms
 - import { form } from '@keel/forms'; const f = form(TodoDraft, { initial?, id? }) in a component; f.field('title') f.values() f.errors() f.pending() f.reset()
 - field id is `<formId>:<path>` (default formId `form-<hash>`), its error element `<formId>:<path>:error`; find it from r.a11y() by label
-- <Form method="POST" action={routes.href('todos.list', { listId })} form={f} error={(e) => <Text>{e.message}</Text>}><Input field={f.field('title')} label="Title" /><Button id="todos.addTodo" type="submit">Add</Button></Form>
+- <Form method="POST" action={todos.href('todos.list', { listId })} form={f} error={(e) => <Text>{e.message}</Text>}><Input field={f.field('title')} label="Title" /><Button id="todos.addTodo" type="submit">Add</Button></Form>
 - number fields coerce from input text; invalid submit sends nothing, sets every error, focuses the first invalid field
 - action err keel.fields { [path]: message } sets exactly those errors; other err renders the error slot
 - E1901 input in a Form without field; E1902 unknown path
@@ -122,8 +124,8 @@ k.testing
 - tests address elements by id only; DOM queries E1701; unknown id E1705
 
 k.module
-- modules/<id>/module.ts: import { module } from '@keel/compiler'; export default module({ id: 'api', deps: ['todos'], capabilities: ['random', 'storage'], public: { exports: [], routes: [] } })
-- importing another module's file needs it in deps (E1152) and in its public.exports (E1151); ids, transaction names, error codes prefixed by module id (E1155); used ctx capabilities listed (E1156)
+- modules/<id>/module.ts: import { module } from '@keel/compiler'; export default module({ id: 'api', deps: ['todos'], capabilities: ['random', 'storage'], public: { exports: [] } })
+- importing another module's file needs it in deps (E1152) and in its public.exports (E1151), a contract file in deps only; ids, transaction names, error codes prefixed by module id (E1155); used ctx capabilities listed (E1156)
 
 k.scaffold
 - keel scaffold project <name> --workspace (writes <name>/; run it from apps/) | module | route | component | store | transaction; keel codemod rename|move; --dry-run
@@ -140,8 +142,8 @@ k.sync
 - after an action's save the server ctx observe gets { kind: 'save', store, head } per saved store; ctx.net.online(); sim ctx.net.setOnline(b): offline fetch rejects and open sim bodies error; observe gets { kind: 'net', online }
 
 std.channels
-- import { channel } from '@keel/std-channels'; in a shared file named for the export: export const boardChannel = channel('api.board', { path: '/api/board/events', params: s.object({}) }) (name prefixed by the declaring module; no message: nothing is published)
-- import { channelRoute } from '@keel/std-channels/server'; in a *.server.ts file (E2601): export const boardEvents = channelRoute(boardChannel, { id: 'api.boardEvents', stores: boardStores, member: () => true }); list { api: true, path: boardEvents.path, loader: boardEvents.loader } under its id and pass boardEvents.actions to routes.actions
+- import { channel } from '@keel/std-channels'; in a *.schema.ts file named for the export: export const boardChannel = channel('api.board', { path: '/api/board/events', params: BoardParams }) (BoardParams = s.object({}), exported) (name prefixed by the declaring module; no message: nothing is published); the contract writes the entry out with literal keys: 'api.boardEvents': { method: 'GET', path: '/api/board/events', query: BoardParams, events: true, output: boardChannel.events } (a spread or call for an entry is W1005 and E1111)
+- import { channelRoute } from '@keel/std-channels/server'; in a *.server.ts file (E2601): export const boardEvents = channelRoute(api, boardChannel, { id: 'api.boardEvents', stores: boardStores, member: () => true }); the binding names its loader: manifest(api, { 'api.boardEvents': { loader: boardEvents.loader }, 'api.lists': { loader: loadBoard } })
 - the stream yields { kind: 'reset' } first, then { kind: 'saved', store, head } after each save of a store its stores create, { kind: 'closed', reason: 'denied' | 'full' } before it ends; events carry no data: members re-read through their own loaders
 - a module that declares, serves or follows a channel lists '@keel/std-channels' in deps; the serving module lists capabilities clock, net, observe
 
@@ -150,9 +152,9 @@ std.live
 - one read at a time; status(): 'connecting' | 'live' | 'offline' | 'denied'
 
 std.offline
-- import { outbox, send, drain, resolve, Write, writeFor } from '@keel/std-offline'; export const boardOutbox = outbox('todos.outbox', endpointsMap, { module: 'api' }) in a client-safe file (store todos.outbox, state { entries }, kept in ctx.storage keel.outbox.<id>)
+- import { outbox, send, drain, resolve, Write, writeFor } from '@keel/std-offline'; export const boardOutbox = outbox('todos.outbox', api) in a client-safe file (store todos.outbox, state { entries }, kept in ctx.storage keel.outbox.<id>); it sends the contract's API write entries; send names an entry by its name after the module ('editTodo' for api.editTodo), and a GET, events or page id does not compile
 - an endpoint an outbox sends to has body s.object({ ..., write: Write }) and declares errors: { 409: s.json() }; its action runs const w = writeFor(input.write, owner); if (!w.ok) return err(w.error); then tx(t, payload, { meta, ...w.value }); owner is the id of the user the caller is signed in as, '' with no sign-in; Write = { key: s.id('Write'), base: s.int({ min: 0 }), owner: s.string() }; another owner's write is 400 offline.owner, nothing saved, and its entry is failed and never posted again
-- the outbox sends through service({ module, schema }): output decodes the route's ok value and errors[status] its err's error, as service({ module }) reads them
+- the outbox sends through service({ contract }): output decodes the entry's ok value and errors[status] its err's error
 - const r = await send(ctx, boardOutbox, 'editTodo', { params, body }, { base: view.get('head'), owner }): owner is the signed-in user's id, else ''; r.state 'sent' | 'queued' (offline or network) | 'conflict' (with head) | 'failed' (with error; offline.owner for another owner's entry)
 - drain(ctx, boardOutbox, { owner }) inside a scope: loads the stored outbox, fails every other owner's entry with offline.owner, and flushes the owner's, again on each reconnect; entries go in order, one at a time; resolve(ctx, boardOutbox, key, 'mine' | 'theirs'): mine re-queues a conflict last with base = its head, theirs drops a conflict or failed entry
 - entry: { key, endpoint, origin, input, base, at, state: 'queued' | 'sending' | 'conflict' | 'failed', head?, error? }
@@ -186,7 +188,7 @@ std.statecharts
 - coverage(chart, explore(Object.values(chart.events))) -> { unreached, dead }; keel check E2751 unknown state name, E2752 unreachable state, E2753 non-final state with no exit (fix: final: true), E2754 bad final/event/guard/action name, E2755 non-literal declaration
 
 std.monitor
-- import { monitor, monitorRoutes } from '@keel/std-sessions/monitor' (node): runners.server.ts export const runners = [monitor]; routes.ts manifest({ ...monitorRoutes.routes, ... }); module deps '@keel/std-sessions' with std: { '@keel/std-sessions': { readers: [] } }; the deployable lists module 'sessions'
+- import { monitor } from '@keel/std-sessions/monitor' (node): runners.server.ts export const runners = [monitor]; the entry sessions.tally is in @keel/std-sessions/contract, bound by its ./routes table (the sessions module, which the deployable lists and routeTable joins; no spread in routes.ts); module deps '@keel/std-sessions' with std: { '@keel/std-sessions': { readers: [] } }
 - monitor counts each server-store commit by transaction name into ctx.storage sessions.tally every 60000 ms and at shutdown; GET /sessions/tally answers it to a caller in readers (403 keel.denied otherwise)
 - KEEL_SESSIONS_TOKEN=<reader cookie> keel session monitor <url> writes .keel/monitored.json, read by keel ledger as the monitored rung
 

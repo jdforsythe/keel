@@ -7,6 +7,7 @@
 import { createCtx } from "@keel/ctx";
 import { form } from "@keel/forms";
 import { createRouter, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { mount } from "@keel/runtime-dom";
 import { type ObjectSchema, s } from "@keel/schema";
 import { describe, expect, it } from "vitest";
@@ -26,9 +27,9 @@ type Form = ReturnType<typeof makeForm>;
 /** Runs `fn` inside a mounted component, where `form` may create its signals; `fn` gets the form and its bound container. */
 const inComponent = async <T>(fn: (f: Form, root: Element) => T): Promise<T> => {
   const out: T[] = [];
-  const routes = manifest({
+  const plContract = contract("pl", { "pl.show": { path: "/pl" } });
+  const routes = manifest(plContract, {
     "pl.show": {
-      path: "/pl",
       component(): DomNode {
         const main = document.createElement("main");
         out.push(fn(makeForm(), main));

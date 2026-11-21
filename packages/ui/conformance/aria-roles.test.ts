@@ -2,10 +2,13 @@
 // Spec: k.aria, Conformance "`option` renders `<li role="option" aria-selected="false">`; `tab` a `<button type="button" role="tab">`; `columnheader` a `<th scope="col">` and `dialog` a `<dialog>`, neither with a `role` attribute."
 // Seed: 1337.
 // Roles paragraph (tag, ARIA props, `role` written only where it differs from the tag's implicit role) is covered by the extra tests below.
+import { createCtx } from "@keel/ctx";
 import { mount } from "@keel/runtime-dom";
 import { Part } from "@keel/ui/aria";
 import fc from "fast-check";
 import { afterEach, describe, expect, expectTypeOf, test } from "vitest";
+
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 const SEED = 1337;
 type PartProps = Parameters<typeof Part>[0];
@@ -19,7 +22,7 @@ const render = (make: () => Node): { host: HTMLElement; off: () => void } => {
   const host = document.createElement("div");
   document.body.appendChild(host);
   hosts.push(host);
-  return { host, off: mount(make, host) };
+  return { host, off: mount(make, host, { ctx: simCtx }) };
 };
 const byId = (host: HTMLElement, id: string): Element => {
   const el = host.querySelector(`[id="${id}"]`);

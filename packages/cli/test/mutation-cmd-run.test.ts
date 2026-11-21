@@ -22,7 +22,7 @@ describe("run: mcp and lsp", () => {
       const r = await run([head, long, "z"], { cwd: CWD });
       expect(r).toEqual({
         code: 2,
-        stdout: `E1052 ${head} takes no arguments: ${"y".repeat(30)}\n  see: k.cli\nfail ${head} 1 errors\n`,
+        stdout: `E1052 ${head} takes no arguments: ${"y".repeat(30)}\n  see: keel docs k.cli\nfail ${head} 1 errors\n`,
         stderr: "",
       });
     }

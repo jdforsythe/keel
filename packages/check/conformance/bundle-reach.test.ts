@@ -1,5 +1,5 @@
 // Spec: k.bundle, Conformance "In a `node` fixture whose `lib/notes.server.ts` holds a canary and `lib/w.ts` imports it: a page starting `new Worker(new URL('../../lib/w.ts', import.meta.url), { type: 'module' })`, and one importing `../../lib/w.ts?worker`, ship no canary under `dist/<name>/`; `keel check` reports E1004 at `lib/w.ts` naming the chain; a worker importing `notes.server.ts?raw` fails `vite build` with one E1007 whose chain runs through the worker."
-// Spec: k.bundle, Bundles "Reach (E1004, so E1107 and E1571) follows `new URL(<literal>, import.meta.url)` and `?worker`, `?sharedworker` and `?url` specifiers as it follows a literal `import()`; a worker file a client entry reaches is a client entry."
+// Spec: k.bundle, Bundles "Reach (E1004 and E1571) follows `new URL(<literal>, import.meta.url)` and `?worker`, `?sharedworker` and `?url` specifiers as it follows a literal `import()`; a worker file a client entry reaches is a client entry."
 // Spec: k.bundle, Conformance "`keys.server.json` and `copy.server.txt?raw` imported by a page fail `vite build` with one E1007 `server-only file` each, and are E1004 in `keel check`; a file on disk `Notes.SERVER.ts` is stubbed."
 // Spec: k.bundle, Conformance "An import `./notes.Server.ts` of `notes.server.ts` is one E1010 in `keel check`, and on a case-insensitive file system `vite build` ships no canary."
 // Spec: k.bundle, Rules "E1010 a specifier naming a file in a case other than its name on disk (fix: the name on disk) · E1007 reasons `environment config` and `environment value`, beside k.boundary's."
@@ -7,7 +7,7 @@
 // Node `api` lists module `a`, `client` `web` lists module `w`. E1004's message ends `(<entry> -> … -> <file>)`. The E1010 tests need no real disk: the in-memory file list holds the name on disk, so they hold on any file system.
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { ROUTES_A, diagsOf, file, nodeA, pageOf } from "./boundary-support.ts";
+import { CONTRACT_A, ROUTES_A, diagsOf, file, nodeA, pageOf } from "./boundary-support.ts";
 import { SEED } from "./support.ts";
 
 const NOTES = file("lib/notes.server.ts", "export const notes = 'k'\n");
@@ -35,7 +35,7 @@ describe("k.bundle Bundles: reach follows a worker the way it follows a literal 
   ];
   for (const [name, stmt, imports] of starts) {
     test(`${name} in \`Page.tsx\` makes \`lib/w.ts\` a client entry: one E1004 at \`lib/w.ts\` ending \`(modules/a/Page.tsx -> lib/w.ts -> lib/notes.server.ts)\``, () => {
-      const d = e1004(nodeA([ROUTES_A, page(stmt, imports), W, NOTES]));
+      const d = e1004(nodeA([ROUTES_A, CONTRACT_A, page(stmt, imports), W, NOTES]));
       expect(d).toHaveLength(1);
       expect(d[0]?.path).toBe("lib/w.ts");
       expect(d[0]?.message.endsWith("(modules/a/Page.tsx -> lib/w.ts -> lib/notes.server.ts)")).toBe(true);
@@ -47,6 +47,7 @@ describe("k.bundle Bundles: reach follows a worker the way it follows a literal 
     const d = e1004(
       nodeA([
         ROUTES_A,
+        CONTRACT_A,
         pageOf("import { start } from '../../lib/start.ts'\n", "export default () => start()\n"),
         start,
         W,
@@ -64,6 +65,7 @@ describe("k.bundle Bundles: reach follows a worker the way it follows a literal 
     const d = e1004(
       nodeA([
         ROUTES_A,
+        CONTRACT_A,
         page("new URL('../../lib/keys.server.ts', import.meta.url)"),
         file("lib/keys.server.ts", "export const k = 1\n"),
       ]),
@@ -73,13 +75,14 @@ describe("k.bundle Bundles: reach follows a worker the way it follows a literal 
   });
 
   test("a worker no client entry names is no E1004: `lib/w.ts` reached by nothing", () => {
-    expect(e1004(nodeA([ROUTES_A, pageOf(""), W, NOTES]))).toEqual([]);
+    expect(e1004(nodeA([ROUTES_A, CONTRACT_A, pageOf(""), W, NOTES]))).toEqual([]);
   });
 
   test("a worker that imports only plain files is no E1004", () => {
     const plain = file("lib/w.ts", "import { x } from './x.ts'\nself.postMessage(x)\n");
     const files = nodeA([
       ROUTES_A,
+      CONTRACT_A,
       page("new Worker(new URL('../../lib/w.ts', import.meta.url))"),
       plain,
       file("lib/x.ts", "export const x = 1\n"),
@@ -99,7 +102,12 @@ describe("k.bundle Names: a server-only file of any extension, named from client
   for (const [path, imports, use] of kinds) {
     test(`\`${path}\` imported by \`Page.tsx\` is one E1004 at \`modules/a/Page.tsx\` ending \`(modules/a/Page.tsx -> ${path})\``, () => {
       const d = e1004(
-        nodeA([ROUTES_A, pageOf(imports, `export default function Page() {\n  return ${use}\n}\n`), file(path, "x\n")]),
+        nodeA([
+          ROUTES_A,
+          CONTRACT_A,
+          pageOf(imports, `export default function Page() {\n  return ${use}\n}\n`),
+          file(path, "x\n"),
+        ]),
       );
       expect(d).toHaveLength(1);
       expect(d[0]?.path).toBe("modules/a/Page.tsx");
@@ -111,6 +119,7 @@ describe("k.bundle Names: a server-only file of any extension, named from client
     const d = e1004(
       nodeA([
         ROUTES_A,
+        CONTRACT_A,
         pageOf("import { n } from '../../lib/Notes.SERVER.ts'\n", "export default function Page() {\n  return n\n}\n"),
         file("lib/Notes.SERVER.ts", "export const n = 1\n"),
       ]),
@@ -122,9 +131,9 @@ describe("k.bundle Names: a server-only file of any extension, named from client
   test("a non-JS server-only file imported by `routes.ts` is none: `routes.ts` may import server-only files", () => {
     const routes = file(
       "modules/a/routes.ts",
-      "import { manifest } from '@keel/router'\nimport keys from '../../lib/keys.server.json'\nimport Page from './Page.tsx'\nReflect.set(globalThis, 'k', keys)\nexport const routes = manifest({ 'a.show': { path: '/a', component: Page } })\n",
+      "import { manifest } from '@keel/router'\nimport { a } from './a.contract.ts'\nimport keys from '../../lib/keys.server.json'\nimport Page from './Page.tsx'\nReflect.set(globalThis, 'k', keys)\nexport const routes = manifest(a, { 'a.show': { component: Page } })\n",
     );
-    expect(e1004(nodeA([routes, pageOf(""), file("lib/keys.server.json", "{}\n")]))).toEqual([]);
+    expect(e1004(nodeA([routes, CONTRACT_A, pageOf(""), file("lib/keys.server.json", "{}\n")]))).toEqual([]);
   });
 });
 
@@ -133,8 +142,9 @@ describe("k.bundle Rules: E1010 a specifier naming a file in a case other than i
     nodeA([
       file(
         "modules/a/routes.ts",
-        `import { manifest } from '@keel/router'\nimport { notes } from '${specifier}'\nimport Page from './Page.tsx'\nReflect.set(globalThis, 'n', notes)\nexport const routes = manifest({ 'a.show': { path: '/a', component: Page } })\n`,
+        `import { manifest } from '@keel/router'\nimport { a } from './a.contract.ts'\nimport { notes } from '${specifier}'\nimport Page from './Page.tsx'\nReflect.set(globalThis, 'n', notes)\nexport const routes = manifest(a, { 'a.show': { component: Page } })\n`,
       ),
+      CONTRACT_A,
       pageOf(""),
       file("modules/a/notes.server.ts", "export const notes = 'k'\n"),
     ]);
@@ -178,6 +188,7 @@ describe("k.bundle Rules: E1010 a specifier naming a file in a case other than i
           file("lib/fmt.ts", "export const fmt = 1\n"),
           pageOf(`import { fmt } from '../../${spelled}'\n`, "export default function Page() {\n  return fmt\n}\n"),
           ROUTES_A,
+          CONTRACT_A,
         ];
         expect(diagsOf(nodeA(sources), "E1010")).toHaveLength(spelled === disk ? 0 : 1);
       }),

@@ -61,7 +61,7 @@ describe("keel evidence --verify", () => {
     try {
       const other = generateKeyPairSync("ed25519");
       const otherRaw = other.publicKey.export({ format: "der", type: "spki" }).subarray(12);
-      const text = json({ v: 1, deployables: [{ adapter: "client", name: "w", csp: "default-src *" }] });
+      const text = json({ v: 1, deployables: [{ adapter: "client", name: "w", csp: "default-src *", origins: [] }] });
       writeFileSync(join(dir, "security.json"), text);
       const forged = manifest
         .replace(raw.toString("base64"), otherRaw.toString("base64"))

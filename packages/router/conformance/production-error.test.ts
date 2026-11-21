@@ -2,6 +2,7 @@
 // Spec: k.router, clause "A thrown page or loader gives an `errorElement`, and the default alert, message `unexpected` and data `{}`; with `mode: 'dev'`, its message." Seed 1337 (no random input: the cases are enumerated).
 import { type CtxEvent, createCtx, observe } from "@keel/ctx";
 import { Form, action, createRouter, loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { mount } from "@keel/runtime-dom";
 import { ok, s } from "@keel/schema";
 import { describe, expect, it } from "vitest";
@@ -13,10 +14,14 @@ type Throws = "page" | "loader";
 type Shown = { code: string; message: string; data: unknown };
 
 const Empty = s.object({});
-const throwingLoader = loader({ output: Empty }, async () => {
+const appContract = contract("app", {
+  "app.home": { path: "/" },
+  "app.bad": { path: "/bad" },
+});
+const throwingLoader = loader(appContract, "app.bad", { output: Empty }, async () => {
   throw new Error(SECRET);
 });
-const okLoader = loader({ output: Empty }, async () => ok({}));
+const okLoader = loader(appContract, "app.bad", { output: Empty }, async () => ok({}));
 const Page = (): Node => {
   throw new Error(SECRET);
 };
@@ -35,10 +40,9 @@ async function run(throws: Throws, withErrorElement: boolean, mode: Mode) {
     e.append(p.error.message);
     return e;
   };
-  const routes = manifest({
-    "app.home": { path: "/", component: Fine },
+  const routes = manifest(appContract, {
+    "app.home": { component: Fine },
     "app.bad": {
-      path: "/bad",
       component: throws === "page" ? Page : Fine,
       loader: throws === "loader" ? throwingLoader : okLoader,
       ...(withErrorElement ? { errorElement } : {}),
@@ -53,7 +57,7 @@ async function run(throws: Throws, withErrorElement: boolean, mode: Mode) {
   document.body.append(host);
   const unmount = mount(router.App, host, { ctx });
   await settle();
-  await router.navigate(routes.href("app.bad"));
+  await router.navigate(appContract.href("app.bad"));
   await settle();
   const reported = events.flatMap((e) => (e.kind === "error" ? [e.error.message] : []));
   return {
@@ -71,13 +75,14 @@ async function run(throws: Throws, withErrorElement: boolean, mode: Mode) {
 
 async function runAction(mode: Mode) {
   const seen: Shown[] = [];
-  const save = action({ input: Empty }, async () => {
+  const formContract = contract("app", { "app.form": { path: "/" } });
+  const save = action(formContract, "app.form", { input: Empty }, async () => {
     throw new Error(SECRET);
   });
   const Page = (): Node =>
     Form({
       method: "POST",
-      action: routes.href("app.form"),
+      action: formContract.href("app.form"),
       error: (e: Shown) => {
         seen.push({ code: e.code, message: e.message, data: e.data });
         const d = document.createElement("div");
@@ -87,8 +92,7 @@ async function runAction(mode: Mode) {
       },
       children: () => [document.createElement("button")],
     });
-  const routes = manifest({ "app.form": { path: "/", component: Page } });
-  routes.actions({ "app.form": { POST: save } });
+  const routes = manifest(formContract, { "app.form": { component: Page, POST: save } });
   const ctx = createCtx({ mode: "sim", seed: SEED });
   const history = memoryHistory("/");
   const router = createRouter(routes, { ctx, history, ...(mode === undefined ? {} : { mode }) });

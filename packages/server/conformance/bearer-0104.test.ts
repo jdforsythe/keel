@@ -20,7 +20,8 @@
 // `Headers.get` joins two headers with `, ` and trims each value, so a value ending in a space reads as the trimmed one.
 import { createHash } from "node:crypto";
 import { createCtx } from "@keel/ctx";
-import { action, guard, loader, manifest } from "@keel/router";
+import { action, guard, loader, manifest, routeTable } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { err, ok, reveal, s } from "@keel/schema";
 import type { Secret } from "@keel/schema";
 import { topology } from "@keel/server";
@@ -55,20 +56,42 @@ const reset = (): void => {
   users.clear();
 };
 
+const apiContract = contract("api", {
+  "api.getWho": { method: "GET", path: "/api/who", output: Nothing },
+  "api.postWho": { method: "POST", path: "/api/who", body: Nothing, output: Who },
+  "api.boom": { method: "POST", path: "/api/boom", body: Nothing, output: Nothing },
+  "api.live": { method: "GET", path: "/api/live", events: true, output: Nothing },
+  "api.getDenied": { method: "GET", path: "/api/denied", output: Nothing },
+  "api.postDenied": { method: "POST", path: "/api/denied", body: Nothing, output: Nothing },
+  "api.liveboom": { method: "GET", path: "/api/liveboom", events: true, output: Nothing },
+  "api.guardboom": { method: "GET", path: "/api/guardboom", output: Nothing },
+});
+const appContract = contract("app", {
+  "app.page": { path: "/page" },
+  "app.login": { path: "/login" },
+});
+const hopContract = contract("hop", {
+  "hop.first": { method: "GET", path: "/api/hop-first", output: Nothing },
+  "hop.second": { method: "GET", path: "/api/hop-second", output: Nothing },
+});
 const apiGuard = guard({}, async ({ bearer, caller, user }) => {
   seen("api.guard", bearer, caller);
   users.set("api.guard", user);
   return ok(null);
 });
-const apiLoad = loader({ output: Nothing }, async ({ bearer, caller }) => {
+const apiLoadWho = loader(apiContract, "api.getWho", {}, async ({ bearer, caller }) => {
   seen("api.loader", bearer, caller);
   return ok({});
 });
-const apiWrite = action({ input: Nothing, output: Who }, async (_input, { bearer, caller }) => {
+const apiLoadBoom = loader(apiContract, "api.guardboom", {}, async ({ bearer, caller }) => {
+  seen("api.loader", bearer, caller);
+  return ok({});
+});
+const apiWrite = action(apiContract, "api.postWho", {}, async (_input, { bearer, caller }) => {
   seen("api.action", bearer, caller);
   return ok({ caller });
 });
-const apiBoom = action({ input: Nothing, output: Nothing }, async (_input, { bearer }) => {
+const apiBoom = action(apiContract, "api.boom", {}, async (_input, { bearer }) => {
   if (bearer !== undefined) throw new Error(`t=${reveal(bearer)}`);
   return ok({});
 });
@@ -76,22 +99,26 @@ const apiDeny = guard({}, async ({ bearer }) => {
   seen("deny.guard", bearer, "");
   return err(Denied.make({}));
 });
-const denyRead = loader({ output: Nothing }, async () => {
+const denyRead = loader(apiContract, "api.getDenied", {}, async () => {
   seen("deny.loader", undefined, "");
   return ok({});
 });
-const denyWrite = action({ input: Nothing, output: Nothing }, async () => {
+const denyWrite = action(apiContract, "api.postDenied", {}, async () => {
   seen("deny.action", undefined, "");
   return ok({});
 });
-const live = liveLoader(Nothing, async function* (args: { bearer: Secret<string> | undefined }) {
+const live = liveLoader(apiContract, "api.live", async function* (args: { bearer: Secret<string> | undefined }) {
   seen("live.loader", args.bearer, "");
   yield ok({});
 });
-const liveBoom = liveLoader(Nothing, async function* (args: { bearer: Secret<string> | undefined }) {
-  if (args.bearer !== undefined) throw new Error(`live ${reveal(args.bearer)}`);
-  yield ok({});
-});
+const liveBoom = liveLoader(
+  apiContract,
+  "api.liveboom",
+  async function* (args: { bearer: Secret<string> | undefined }) {
+    if (args.bearer !== undefined) throw new Error(`live ${reveal(args.bearer)}`);
+    yield ok({});
+  },
+);
 const guardBoom = guard({}, async ({ bearer }) => {
   if (bearer !== undefined) throw new Error(`guard ${reveal(bearer)}`);
   return ok(null);
@@ -109,30 +136,30 @@ const pageGuard = guard({ redirect: "app.login" }, async ({ bearer, caller, user
   users.set("page.guard", user);
   return ok(null);
 });
-const pageLoad = loader({ output: Nothing }, async ({ bearer, caller }) => {
+const pageLoad = loader(appContract, "app.page", { output: Nothing }, async ({ bearer, caller }) => {
   seen("page.loader", bearer, caller);
   return ok({});
 });
-const pageWrite = action({ input: Nothing }, async () => ok(null));
+const pageWrite = action(appContract, "app.page", { input: Nothing }, async () => ok(null));
 const view = (): Node => document.createElement("main");
 
 async function boot(mode: "dev" | "production", lines?: string[]) {
-  const routes = manifest({
-    "api.who": { api: true, path: "/api/who", guard: apiGuard, loader: apiLoad },
-    "api.boom": { api: true, path: "/api/boom" },
-    "api.live": { api: true, path: "/api/live", loader: live },
-    "api.denied": { api: true, path: "/api/denied", guard: apiDeny, loader: denyRead },
-    "api.liveboom": { api: true, path: "/api/liveboom", loader: liveBoom },
-    "api.guardboom": { api: true, path: "/api/guardboom", guard: guardBoom, loader: apiLoad },
-    "app.page": { path: "/page", guard: pageGuard, loader: pageLoad, component: view },
-    "app.login": { path: "/login", component: view },
-  });
-  routes.actions({
-    "api.who": { POST: apiWrite },
-    "api.boom": { POST: apiBoom },
-    "api.denied": { POST: denyWrite },
-    "app.page": { POST: pageWrite },
-  });
+  const routes = routeTable(
+    manifest(apiContract, {
+      "api.getWho": { guard: apiGuard, loader: apiLoadWho },
+      "api.postWho": { action: apiWrite, guard: apiGuard },
+      "api.boom": { action: apiBoom },
+      "api.live": { loader: live },
+      "api.getDenied": { guard: apiDeny, loader: denyRead },
+      "api.postDenied": { action: denyWrite, guard: apiDeny },
+      "api.liveboom": { loader: liveBoom },
+      "api.guardboom": { guard: guardBoom, loader: apiLoadBoom },
+    }),
+    manifest(appContract, {
+      "app.page": { guard: pageGuard, loader: pageLoad, component: view, POST: pageWrite },
+      "app.login": { component: view },
+    }),
+  );
   return createAppLoose({
     topology: topology({ web: { modules: ["api", "app"], adapter: "node" } }),
     routes,
@@ -490,9 +517,17 @@ describe("k.api bearer", () => {
   it("`bearer` is k.api's (`undefined` off an API route; a redirect hop's guards get none): an API guard's `redirect` naming a second API route is E1508, and the second route's guard sees no bearer.", async () => {
     reset();
     const attempt = async (): Promise<void> => {
-      const routes = manifest({
-        "hop.first": { api: true, path: "/api/hop-first", guard: hopGuard, loader: apiLoad },
-        "hop.second": { api: true, path: "/api/hop-second", guard: secondGuard, loader: apiLoad },
+      const hopFirst = loader(hopContract, "hop.first", {}, async () => {
+        seen("hop.loader", undefined, "");
+        return ok({});
+      });
+      const hopSecond = loader(hopContract, "hop.second", {}, async () => {
+        seen("hop.loader", undefined, "");
+        return ok({});
+      });
+      const routes = manifest(hopContract, {
+        "hop.first": { guard: hopGuard, loader: hopFirst },
+        "hop.second": { guard: secondGuard, loader: hopSecond },
       });
       const app = await createAppLoose({
         topology: topology({ web: { modules: ["hop"], adapter: "node" } }),

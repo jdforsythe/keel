@@ -1,5 +1,5 @@
 import { service } from "@keel/services";
-import { accounts } from "./accounts.service.ts";
+import { accounts } from "./accounts.contract.ts";
 
-/** A typed client for the `accounts` API routes; the topology resolves where `accounts` runs. */
-export const accountsApi = service({ module: "accounts", schema: accounts });
+/** A typed client for the `accounts` contract's API entries; the topology resolves where `accounts` runs. */
+export const accountsApi = service({ contract: accounts });

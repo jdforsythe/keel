@@ -1,12 +1,11 @@
 import type { Ctx } from "@keel/ctx";
-import type { Slots } from "@keel/runtime-dom";
 import { type Infer, s } from "@keel/schema";
 import { send } from "@keel/std-offline";
 import { Box, Checkbox, Link, Text } from "@keel/ui";
 import { Todo } from "../api/Todo.schema.ts";
 import { boardOutbox } from "./boardOutbox.ts";
 import { idPart } from "./idPart.ts";
-import { routes } from "./routes.ts";
+import { todos } from "./todos.contract.ts";
 import { view } from "./view.ts";
 
 export const Props = s.object({ todo: Todo });
@@ -16,9 +15,8 @@ export const Props = s.object({ todo: Todo });
  * the live board shows the result), priority, Edit link. The list that shows it owns the list item
  * (`todos.row.<id>` in `ListPage`), so a row renders on its own as well.
  */
-export default function TodoRow(props: Infer<typeof Props>, _slots?: Slots, ctx?: Ctx) {
+export default function TodoRow(props: Infer<typeof Props>, ctx: Ctx) {
   const toggle = (): void => {
-    if (ctx === undefined) return;
     const call = { params: { todoId: props.todo.id }, body: {} };
     void send(ctx, boardOutbox, "toggleTodo", call, { base: view.get("head"), owner: "" });
   };
@@ -43,7 +41,7 @@ export default function TodoRow(props: Infer<typeof Props>, _slots?: Slots, ctx?
       </Text>
       <Link
         id={`todos.editLink.${idPart(props.todo.id)}`}
-        to={routes.href("todos.edit", { listId: props.todo.listId, todoId: props.todo.id })}
+        to={todos.href("todos.edit", { listId: props.todo.listId, todoId: props.todo.id })}
         fg="text"
         fontSize="sm"
       >

@@ -6,6 +6,7 @@ import os from "node:os";
 import path from "node:path";
 import { createCtx } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import { createApp, topology } from "@keel/server";
 import fc from "fast-check";
@@ -44,12 +45,16 @@ function distDir(): string {
 async function setup(
   opts: { secure?: boolean; maxBodyBytes?: number; mode?: "dev" | "production"; assets?: string } = {},
 ) {
-  const act = action({ input: Edit }, () => Promise.resolve(ok(null)));
-  const routes = manifest({
-    "app.home": { path: "/", component: () => document.createElement("main") },
-    "app.edit": { path: "/edit", component: () => document.createElement("main") },
+  const appContract = contract("app", {
+    "app.home": { path: "/" },
+    "app.edit": { path: "/edit" },
   });
-  routes.actions({ "app.edit": { POST: act } });
+
+  const act = action(appContract, "app.edit", { input: Edit }, () => Promise.resolve(ok(null)));
+  const routes = manifest(appContract, {
+    "app.home": { component: () => document.createElement("main") },
+    "app.edit": { component: () => document.createElement("main"), POST: act },
+  });
   return createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
     routes,

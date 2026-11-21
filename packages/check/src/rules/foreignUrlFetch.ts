@@ -2,6 +2,7 @@ import { type Expression, Visitor } from "oxc-parser";
 import { findingAt } from "../internal/findingAt.ts";
 import { isAppPath } from "../internal/isAppPath.ts";
 import { isClientReachable } from "../internal/isClientReachable.ts";
+import { isDeclaredUrl } from "../internal/isDeclaredUrl.ts";
 import { localNames } from "../internal/modules/localNames.ts";
 import { propertyOf } from "../internal/propertyOf.ts";
 import { urlText } from "../internal/urlText.ts";
@@ -11,9 +12,11 @@ import type { RuleDef } from "../types/RuleDef.ts";
 const ABSOLUTE = /^\s*(?:https?:)?\/\//i;
 
 /**
- * E1571 (k.security): an absolute http(s) or protocol-relative URL, read as `urlText` reads it, given to
- * `ctx.net.fetch` or as `service({ base })` in client-reachable code (`isClientReachable`, E1004's reachability). `ctx` is also `<x>.ctx` or a `const` alias of either; `net` also a name destructured as `{ net }`.
- * The policy's `connect-src` is this origin. At the argument; no fix.
+ * E1571 (k.security, k.origins): an absolute http(s) or protocol-relative URL, read as `urlText` reads it, given to
+ * `ctx.net.fetch` or as `service({ base })` in client-reachable code (`isClientReachable`, E1004's reach), unless its
+ * origin is declared under `connect` on each deployable that serves the file (`isDeclaredUrl`). `ctx` is also
+ * `<x>.ctx` or a `const` alias of either; `net` also a name destructured as `{ net }`. The policy's `connect-src` is
+ * this origin and the declared ones. At the argument; no fix.
  */
 export const foreignUrlFetch: RuleDef = {
   code: "E1571",
@@ -38,7 +41,10 @@ export const foreignUrlFetch: RuleDef = {
       },
     }).visit(ast);
     const out: Finding[] = [];
-    const absolute = (e: Parameters<typeof urlText>[0]): boolean => ABSOLUTE.test(urlText(e, file, project) ?? "");
+    const absolute = (e: Parameters<typeof urlText>[0]): boolean => {
+      const text = urlText(e, file, project) ?? "";
+      return ABSOLUTE.test(text) && !isDeclaredUrl(file.path, project, "connect", text, e?.type === "Literal");
+    };
     new Visitor({
       CallExpression: (n) => {
         const c = n.callee;

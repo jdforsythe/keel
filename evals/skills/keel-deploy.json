@@ -5,7 +5,7 @@
   "expect": [
     "keel build",
     "server.mjs",
-    "host:",
+    "servedBy:",
     "KEEL_SECRET",
     "KEEL_PEER_",
     "KEEL_ALLOW_ORIGINS",

@@ -5,11 +5,12 @@ import { createApp } from "@keel/server";
 import { service } from "@keel/services";
 import { render } from "@keel/testing";
 import { afterEach, describe, expect, it } from "vitest";
+import { api } from "../modules/api/api.contract.ts";
 import { Digest } from "../modules/digest/Digest.schema.ts";
 import { LATEST_KEY } from "../modules/digest/LATEST_KEY.ts";
 import { RecountInput } from "../modules/digest/RecountInput.schema.ts";
-import { board as boardEndpoints } from "../modules/digest/board.service.ts";
 import { boardApi } from "../modules/digest/boardApi.ts";
+import { digest } from "../modules/digest/digest.contract.ts";
 import { feedDigest } from "../modules/digest/feedDigest.server.ts";
 import { jobs } from "../modules/digest/jobs.server.ts";
 import { loadDigest } from "../modules/digest/loadDigest.server.ts";
@@ -104,11 +105,11 @@ describe("digest schemas and routes", () => {
     expect(Digest.parse({ open: -1, done: 1, at: 0 }).ok).toBe(false);
     expect(RecountInput.parse({}).ok).toBe(true);
   });
-  it("the digest routes are API routes without a view", () => {
-    for (const id of ["digest.show", "digest.refresh", "digest.feed"] as const) {
-      expect(routes.routes[id]).toMatchObject({ api: true });
-      expect("component" in routes.routes[id]).toBe(false);
-    }
+  it("the digest routes are API entries: two GETs, the feed live, and one POST", () => {
+    expect(routes.contract).toBe(digest);
+    expect(digest.entries["digest.show"]).toMatchObject({ method: "GET", path: "/digest" });
+    expect(digest.entries["digest.refresh"]).toMatchObject({ method: "POST", path: "/digest/refresh" });
+    expect(digest.entries["digest.feed"]).toMatchObject({ method: "GET", path: "/digest/feed", events: true });
   });
 });
 
@@ -136,8 +137,8 @@ describe("digest board service", () => {
     const app = await apiApp();
     const ctx = createCtx({ mode: "sim", seed: 1 });
     ctx.net.route(new URL("/api/*", location.href).href, (req) => app.fetch(req));
-    expect([boardEndpoints.lists.method, boardEndpoints.lists.path]).toEqual(["GET", "/api/lists"]);
-    const r = await service({ module: "api", schema: boardEndpoints }).lists({}, ctx);
+    expect([api.entries["api.lists"].method, api.entries["api.lists"].path]).toEqual(["GET", "/api/lists"]);
+    const r = await service({ contract: api }).lists({}, ctx);
     expect(r.ok ? r.value.todos.map((t) => [t.title, t.done]) : r.error.code).toEqual([
       ["Milk", false],
       ["Eggs", true],

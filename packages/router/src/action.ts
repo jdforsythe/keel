@@ -1,72 +1,103 @@
 import type { Ctx } from "@keel/ctx";
-import type { KeelError, ObjectSchema, Result, Schema, Secret } from "@keel/schema";
-import { refuseSecret } from "./internal/refuseSecret.ts";
+import { type Infer, type KeelError, type ObjectSchema, type Result, type Schema, type Secret, s } from "@keel/schema";
+import type { Contract } from "./contract/types/Contract.ts";
+import type { Entries } from "./contract/types/Entries.ts";
+import { isObjectSchema } from "./internal/isObjectSchema.ts";
+import { isSchema } from "./internal/isSchema.ts";
+import { ownValue } from "./internal/ownValue.ts";
 import type { Action } from "./types/Action.ts";
 import type { ApiAction } from "./types/ApiAction.ts";
 import type { Href } from "./types/Href.ts";
 
+type None = Record<string, never>;
+type InferOr<E, K extends string, D> = E extends { readonly [P in K]: infer S } ? Infer<S> : D;
 type Out<T> = Result<T, KeelError<string, unknown>>;
-type PageAt<P, St> = {
-  readonly params: P;
+type PageAt<E, St> = {
+  readonly params: InferOr<E, "params", None>;
   readonly url: string;
   readonly caller: string;
   readonly user: string;
   readonly stores: St;
 };
-type ApiAt<P, St> = PageAt<P, St> & { readonly bearer: Secret<string> | undefined };
-/** What `run` takes: a direct caller may leave out `user` and `bearer`; `fn` then gets `""` and `undefined`. */
-type RunAt<P, St> = Omit<PageAt<P, St>, "user"> & {
+type ApiAt<E, St> = PageAt<E, St> & { readonly bearer: Secret<string> | undefined };
+type Stores<St> = { readonly stores?: (ctx: Ctx) => St };
+type WriteIds<C> = {
+  [K in keyof C & string]: C[K] extends { readonly method: "POST" | "PUT" | "PATCH" | "DELETE" } ? K : never;
+}[keyof C & string];
+type PageIds<C> = {
+  [K in keyof C & string]: C[K] extends { readonly method: unknown }
+    ? never
+    : C[K] extends { readonly path: string }
+      ? K
+      : never;
+}[keyof C & string];
+type At<P, St> = {
+  readonly params: P;
+  readonly url: string;
+  readonly caller: string;
+  readonly user: string;
+  readonly bearer: Secret<string> | undefined;
+  readonly stores: St;
+};
+type RunAt<P, St> = Omit<At<P, St>, "user" | "bearer"> & {
   readonly user?: string;
   readonly bearer?: Secret<string> | undefined;
 };
-type Built<I, R, P, St> = {
+
+/** What `action` builds: a page's `Action` or an API entry's `ApiAction`. */
+type Built<I, P, St> = {
   readonly kind: "keel.action";
-  readonly input: ObjectSchema<I>;
-  readonly output?: Schema<R>;
-  readonly params?: ObjectSchema<P>;
+  readonly contract: Contract;
+  readonly id: string;
+  readonly input: ObjectSchema<unknown>;
+  readonly output?: Schema<unknown, boolean> | undefined;
   readonly stores?: (ctx: Ctx) => St;
-  run(input: I, at: RunAt<P, St>, ctx: Ctx): Out<R> | Promise<Out<R>>;
+  run(input: I, at: RunAt<P, St>, ctx: Ctx): Out<unknown> | Promise<Out<unknown>>;
 };
 
+/** The closed empty object: an API write entry's body when it declares none. */
+const EMPTY: ObjectSchema<unknown> = s.object({});
+
+/** An API write entry's action: `fn` gets the decoded `body` and answers a `Result` of the entry's `output`. */
+export function action<M extends string, C extends Entries, K extends WriteIds<C>, St = undefined>(
+  contract: Contract<M, C>,
+  id: K,
+  decl: Stores<St>,
+  fn: (
+    body: InferOr<C[K], "body", None>,
+    at: ApiAt<C[K], NoInfer<St>>,
+    ctx: Ctx,
+  ) => Out<InferOr<C[K], "output", never>> | Promise<Out<InferOr<C[K], "output", never>>>,
+): ApiAction<K, InferOr<C[K], "output", never>>;
+/** A page's action: its `input` is the form's own; it answers a page to go to, or `null` to revalidate. */
+export function action<M extends string, C extends Entries, K extends PageIds<C>, I, St = undefined>(
+  contract: Contract<M, C>,
+  id: K,
+  decl: { readonly input: ObjectSchema<I> } & Stores<St>,
+  fn: (input: I, at: PageAt<C[K], NoInfer<St>>, ctx: Ctx) => Out<Href | null> | Promise<Out<Href | null>>,
+): Action<K>;
 /**
- * Declare a route action (k.server API, k.api Output). `fn` gets the input decoded by `input`, `{ params, url, caller,
- * user, stores }`, and `ctx`. With `output` it is an API route's action: `fn` returns `ok(value)` of `output`'s type and also
- * gets `bearer` (k.api Bearer). Without it it is a page's: `ok(href)` navigates there, `ok(null)` revalidates the
- * current chain. `params` is `Infer` of the declared schema (`unknown` when omitted), which must be the referencing
- * route's own value (`manifest` throws E1507); `fn` is never annotated. `url` is the absolute request URL. `stores`
- * names a server-state factory whose per-request instance `fn` gets (k.server Server state). An `output` holding an
- * `s.secret` node throws E1113.
+ * Declare an action of entry `id` of `contract` (k.contract Handlers, k.server): `fn` is never annotated. On an API
+ * write entry `decl` is `{ stores? }`; `fn` gets the `body` decoded by the entry's schema (the closed empty object
+ * without one), `{ params, url, caller, user, bearer, stores }` and `ctx`, and answers the entry's `output` (k.api
+ * Output). On a page `decl` is `{ input, stores? }`; `fn` gets the decoded form, `{ params, url, caller, user, stores }`
+ * and `ctx`, and answers `ok(href)` or `ok(null)`; its verb is its binding key. Throws nothing.
  */
-export function action<I, O, P = unknown, St = undefined>(
-  decl: {
-    readonly input: ObjectSchema<I>;
-    readonly output: Schema<O>;
-    readonly params?: ObjectSchema<P>;
-    readonly stores?: (ctx: Ctx) => St;
-  },
-  fn: (input: I, at: ApiAt<NoInfer<P>, NoInfer<St>>, ctx: Ctx) => Out<NoInfer<O>> | Promise<Out<NoInfer<O>>>,
-): ApiAction<I, O, P, St>;
-export function action<I, P = unknown, St = undefined>(
-  decl: { readonly input: ObjectSchema<I>; readonly params?: ObjectSchema<P>; readonly stores?: (ctx: Ctx) => St },
-  fn: (input: I, at: PageAt<NoInfer<P>, NoInfer<St>>, ctx: Ctx) => Out<Href | null> | Promise<Out<Href | null>>,
-): Action<I, P, St>;
-export function action<I, R, P, St>(
-  decl: {
-    readonly input: ObjectSchema<I>;
-    readonly output?: Schema<R>;
-    readonly params?: ObjectSchema<P>;
-    readonly stores?: (ctx: Ctx) => St;
-  },
-  fn: (input: I, at: ApiAt<P, St>, ctx: Ctx) => Out<R> | Promise<Out<R>>,
-): Built<I, R, P, St> {
-  const { input, output, params, stores } = decl;
-  if (output !== undefined) refuseSecret(output);
-  return Object.freeze({
-    kind: "keel.action",
-    input,
-    ...(output === undefined ? {} : { output }),
-    ...(params === undefined ? {} : { params }),
-    ...(stores === undefined ? {} : { stores }),
-    run: (i: I, at: RunAt<P, St>, ctx: Ctx) => fn(i, { ...at, user: at.user ?? "", bearer: at.bearer }, ctx),
-  });
+export function action<I, P, St>(
+  contract: Contract,
+  id: string,
+  decl: { readonly input?: ObjectSchema<unknown>; readonly stores?: (ctx: Ctx) => St },
+  fn: (input: I, at: At<P, St>, ctx: Ctx) => Out<unknown> | Promise<Out<unknown>>,
+): Built<I, P, St> {
+  const entry = ownValue(contract.entries, id);
+  const at = typeof entry === "object" && entry !== null ? entry : {};
+  const { stores } = decl;
+  const run = (input: I, a: RunAt<P, St>, ctx: Ctx) => fn(input, { ...a, user: a.user ?? "", bearer: a.bearer }, ctx);
+  const base = { kind: "keel.action" as const, contract, id, ...(stores === undefined ? {} : { stores }), run };
+  const output = ownValue(at, "output");
+  if (decl.input === undefined && isSchema(output)) {
+    const body = ownValue(at, "body");
+    return Object.freeze({ ...base, input: isObjectSchema(body) ? body : EMPTY, output });
+  }
+  return Object.freeze({ ...base, input: decl.input ?? EMPTY });
 }

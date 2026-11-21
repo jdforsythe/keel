@@ -1,5 +1,5 @@
 import type { Topology } from "@keel/compiler";
-import { type Located, routeActions } from "@keel/router/internal";
+import type { Located } from "@keel/router/internal";
 import { codedError } from "./codedError.ts";
 import { moduleOf } from "./moduleOf.ts";
 
@@ -8,8 +8,8 @@ import { moduleOf } from "./moduleOf.ts";
  * the served deployable names a module no route or runner belongs to (other deployables' modules are ignored; they
  * may be loaded by another process). E1553: a `static` deployable contains a route with params or actions.
  * E1558 (k.topology): a non-`node` deployable serves a route whose loader is live or names `stores`, or one of whose
- * actions names `stores`. E1511: a non-`node` deployable serves an API route
- * (k.api). Returns the routes of the served deployable's modules.
+ * actions names `stores`, checked first: a live loader is an API entry's. E1511: a non-`node` deployable serves an API
+ * route (k.api). Returns the routes of the served deployable's modules.
  */
 export function selectDeployable(
   topology: Topology,
@@ -32,13 +32,10 @@ export function selectDeployable(
   for (const m of dep.modules)
     if (!known.has(m)) throw codedError("E1552", `deployable ${picked} names unknown module ${m}`);
   const served = table.filter((r) => dep.modules.includes(moduleOf(r.id)));
-  const api = served.find((r) => r.def.api);
-  if (api !== undefined && dep.adapter !== "node")
-    throw codedError("E1511", `${dep.adapter} deployable ${picked}: API route ${api.id} needs a node deployable`);
   if (dep.adapter !== "node")
     for (const r of served) {
       const l = r.def.loader;
-      const acted = Object.values(routeActions.get(r.def) ?? {}).some((a) => a?.stores !== undefined);
+      const acted = Object.values(r.def.actions).some((a) => a?.stores !== undefined);
       const what =
         l?.live !== undefined
           ? "loader is live"
@@ -53,10 +50,13 @@ export function selectDeployable(
           `${dep.adapter} deployable ${picked}: route ${r.id} ${what}; serve module ${moduleOf(r.id)} from a node deployable`,
         );
     }
+  const api = served.find((r) => r.def.kind === "api");
+  if (api !== undefined && dep.adapter !== "node")
+    throw codedError("E1511", `${dep.adapter} deployable ${picked}: API route ${api.id} needs a node deployable`);
   if (dep.adapter === "static")
     for (const r of served) {
       const params = r.def.params !== undefined || r.segments.some((s) => s.kind === "param");
-      const actions = routeActions.has(r.def);
+      const actions = Object.keys(r.def.actions).length > 0;
       if (params || actions)
         throw codedError("E1553", `static deployable ${picked}: route ${r.id} has ${params ? "params" : "actions"}`);
     }

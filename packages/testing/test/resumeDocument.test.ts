@@ -2,6 +2,7 @@
 // Spec: k.testing Harness (`resumeDocument`) and Rules (E1720); k.runtime Islands and resume. Seed: 1337.
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { mount } from "@keel/runtime-dom";
 import { resumeDocument } from "@keel/testing";
 import * as fc from "fast-check";
@@ -36,11 +37,12 @@ const FragileRoute = Object.assign(
   { Props: Fragile.Props },
 );
 
-const routes = manifest({
-  ed: { path: "/ed", component: Editor },
-  fr: { path: "/fr", component: FragileRoute },
+const c = contract("rd", { "rd.ed": { path: "/ed" }, "rd.fr": { path: "/fr" } });
+const routes = manifest(c, {
+  "rd.ed": { component: Editor },
+  "rd.fr": { component: FragileRoute },
 });
-const editor = () => islandHtml("ed", () => Editor({}));
+const editor = () => islandHtml("rd.ed", () => Editor({}));
 const snapshotWith = (text: string) => ({ ...notes.snapshot(), state: { text, focused: false, keys: [] } });
 
 const rejection = async (p: Promise<unknown>): Promise<unknown> =>
@@ -53,7 +55,7 @@ describe("resumeDocument", () => {
   it("restores the served stores, runs island handlers on the server nodes, and puts every store back on dispose", async () => {
     await fc.assert(
       fc.asyncProperty(fc.string({ maxLength: 12 }), fc.integer({ min: 0, max: 3 }), async (text, submits) => {
-        const html = page(editor(), { stores: { "test.notes": snapshotWith(text) }, islands: { ed: {} } });
+        const html = page(editor(), { stores: { "test.notes": snapshotWith(text) }, islands: { "rd.ed": {} } });
         const t = await resumeDocument(html, { routes, ctx: sim() });
         expect(t.state(notes).text).toBe(text);
         expect(t.find("ed.out").text).toBe(`${text}|0`.trim());
@@ -69,7 +71,7 @@ describe("resumeDocument", () => {
 
   it("drops every script but #k-state and resolves for a document with no islands", async () => {
     const html = page('<main><h1 id="pg.title">Static</h1></main><script id="pg.inline">1</script>', {});
-    const t = await resumeDocument(html, { routes });
+    const t = await resumeDocument(html, { routes, ctx: sim() });
     expect(t.find("pg.title").text).toBe("Static");
     expect(() => t.find("pg.inline")).toThrow(/^E1705 /);
     t.dispose();
@@ -80,7 +82,7 @@ describe("resumeDocument", () => {
       islandHtml("gone", () => Editor({})),
       { stores: { "test.notes": snapshotWith("x") } },
     );
-    const e = await rejection(resumeDocument(html, { routes }));
+    const e = await rejection(resumeDocument(html, { routes, ctx: sim() }));
     expect(e).toMatchObject({ code: "E1720", see: "k.testing" });
     expect(e instanceof Error ? e.message : "").toMatch(
       /^E1720 the document did not resume: E1253 \[data-k-island="gone"\] has no compiled component/,
@@ -91,19 +93,19 @@ describe("resumeDocument", () => {
 
   it("E1720: island state that fails the component's Props schema", async () => {
     const html = page(
-      islandHtml("fr", () => Fragile({ n: 1 })),
-      { islands: { fr: { n: "one" } } },
+      islandHtml("rd.fr", () => Fragile({ n: 1 })),
+      { islands: { "rd.fr": { n: "one" } } },
     );
-    const e = await rejection(resumeDocument(html, { routes }));
-    expect(e instanceof Error ? e.message : "").toMatch(/^E1720 .*\[data-k-island="fr"\] props do not decode/);
+    const e = await rejection(resumeDocument(html, { routes, ctx: sim() }));
+    expect(e instanceof Error ? e.message : "").toMatch(/^E1720 .*\[data-k-island="rd.fr"\] props do not decode/);
   });
 
   it("a document whose islands all resume raises no E1720", async () => {
     const html = page(
-      islandHtml("fr", () => Fragile({ n: 2 })),
-      { islands: { fr: { n: 2 } } },
+      islandHtml("rd.fr", () => Fragile({ n: 2 })),
+      { islands: { "rd.fr": { n: 2 } } },
     );
-    const t = await resumeDocument(html, { routes });
+    const t = await resumeDocument(html, { routes, ctx: sim() });
     expect(t.find("fragile").text).toBe("ok");
     t.dispose();
   });

@@ -12,9 +12,23 @@ const files = (tree: Record<string, string>) =>
   }));
 const node: Topology = { api: { modules: ["a"], adapter: "node" }, web: { modules: ["w"], adapter: "client" } };
 const ROUTES =
-  "import { manifest } from '@keel/router'\nimport Page from './Page.tsx'\nexport const routes = manifest({ 'a.p': { path: '/', component: Page } })\n";
+  "import { manifest } from '@keel/router'\nimport { a } from './a.contract.ts'\nimport Page from './Page.tsx'\nexport const routes = manifest(a, { 'a.p': { component: Page } })\n";
 
 describe("clientReach", () => {
+  it("reports a contract file's import of a server-only file: a contract is client-safe", () => {
+    const r = clientReach(
+      files({
+        "modules/a/routes.ts": ROUTES,
+        "modules/a/a.contract.ts": "import { k } from './k.server.ts'\nexport const a = k\n",
+        "modules/a/Page.tsx": "export default () => null\n",
+        "modules/a/k.server.ts": "export const k = 1\n",
+      }),
+      node,
+    );
+    expect(r.hits.map((h) => [h.path, h.source])).toEqual([["modules/a/a.contract.ts", "./k.server.ts"]]);
+    expect(r.subject.has("modules/a/a.contract.ts")).toBe(true);
+  });
+
   it("names the chain from the route component to the server-only file", () => {
     const r = clientReach(
       files({

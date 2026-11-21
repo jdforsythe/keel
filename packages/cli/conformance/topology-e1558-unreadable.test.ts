@@ -1,4 +1,4 @@
-// Spec: k.topology, Conformance "In a `client` module's `*.server.ts`, `loader({ output }, feed)` with `const feed = async function* …`, `r.loader({ output, stores })` through `import * as r`, and `loader({ ...base, output }, fn)` are each one E1558 in `keel check` and `keel build`; `loader({ output }, load)` with `load` an `async function` of the file is none."
+// Spec: k.topology, Conformance "In a `client` module's `*.server.ts`, `loader(c, 'a.feed', {}, feed)` with `const feed = async function* …`, `r.loader(c, 'a.home', { output, stores }, fn)` through `import * as r`, and `loader(c, 'a.home', { ...base, output }, fn)` are each one E1558 in `keel check` and `keel build`; `loader(c, 'a.home', { output }, load)` with `load` an `async function` of the file is none."
 // Seed: 1337.
 // In-memory project through `run(['check'])` and `run(['build'])`, as topology-e1558-client-stores-0095.test.ts.
 // ASSUMPTION: the diagnostic is reported at the call in `modules/<id>/<id>.server.ts`; each diagnostic is one line of the json stream.
@@ -24,20 +24,28 @@ afterAll(() => fs.rmSync(tmp, { recursive: true, force: true }));
 type Variant = "const-generator" | "namespace-import" | "spread-options";
 const VARIANTS: readonly Variant[] = ["const-generator", "namespace-import", "spread-options"];
 
-const HEAD = `import { loader } from '@keel/router'\nimport { ok, s } from '@keel/schema'\n`;
-const SERVER_FILE: Record<Variant, string> = {
-  "const-generator": `${HEAD}const feed = async function* () {\n  yield ok({})\n}\nexport const L = loader({ output: s.object({}) }, feed)\n`,
-  "namespace-import": `import * as r from '@keel/router'\nimport { ok, s } from '@keel/schema'\nexport const L = r.loader({ output: s.object({}), stores: () => ({}) }, async () => ok({}))\n`,
-  "spread-options": `${HEAD}const base = { params: s.object({}) }\nexport const L = loader({ ...base, output: s.object({}) }, async () => ok({}))\n`,
+// `a.feed` is an `events: true` API entry (the only kind whose loader may be live); `a.page` is a page.
+const HEAD = (id: string) =>
+  `import { loader } from '@keel/router'\nimport { ok, s } from '@keel/schema'\nimport { ${id} } from './${id}.contract.ts'\n`;
+const SERVER_FILE: Record<Variant, (id: string) => string> = {
+  "const-generator": (id) =>
+    `${HEAD(id)}const feed = async function* () {\n  yield ok({})\n}\nexport const L = loader(${id}, '${id}.feed', {}, feed)\n`,
+  "namespace-import": (id) =>
+    `import * as r from '@keel/router'\nimport { ok, s } from '@keel/schema'\nimport { ${id} } from './${id}.contract.ts'\nexport const L = r.loader(${id}, '${id}.page', { output: s.object({}), stores: () => ({}) }, async () => ok({}))\n`,
+  "spread-options": (id) =>
+    `${HEAD(id)}const base = { params: s.object({}) }\nexport const L = loader(${id}, '${id}.page', { ...base, output: s.object({}) }, async () => ok({}))\n`,
 };
-const PLAIN_ASYNC_FILE = `${HEAD}async function load() {\n  return ok({})\n}\nexport const L = loader({ output: s.object({}) }, load)\n`;
+const PLAIN_ASYNC_FILE = (id: string) =>
+  `${HEAD(id)}async function load() {\n  return ok({})\n}\nexport const L = loader(${id}, '${id}.page', { output: s.object({}) }, load)\n`;
 
 const manifestSrc = (id: string) =>
-  `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [], routes: [] } })\n`;
-const routesSrc = (id: string) =>
-  `import { manifest } from '@keel/router'\nconst Page = () => null\nexport const routes = manifest({ '${id}.page': { path: '/${id}', component: Page } })\n`;
+  `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [] } })\n`;
+const routesSrc = (id: string, v: Variant | "plain") =>
+  `import { manifest } from '@keel/router'\nimport { ${id} } from './${id}.contract.ts'\n${v === "const-generator" ? `import { L } from './${id}.server.ts'\n` : ""}const Page = () => null\nexport const routes = manifest(${id}, { '${id}.page': { component: Page }${v === "const-generator" ? `, '${id}.feed': { loader: L }` : ""} })\n`;
+const contractSrc = (id: string, v: Variant | "plain") =>
+  `import { contract } from '@keel/router/contract'\nimport { s } from '@keel/schema'\nexport const ${id} = contract('${id}', { '${id}.page': { path: '/${id}' }${v === "const-generator" ? `, '${id}.feed': { method: 'GET', path: '/api/${id}/feed', output: s.object({}), events: true }` : ""} })\n`;
 
-const e1558 = async (command: "build" | "check", adapter: "client" | "node", id: string, server: string) => {
+const e1558 = async (command: "build" | "check", adapter: "client" | "node", id: string, v: Variant | "plain") => {
   const r = await run([command, "--format=json"], {
     cwd: tmp,
     env: { KEEL_AGENT: "1" },
@@ -47,8 +55,9 @@ const e1558 = async (command: "build" | "check", adapter: "client" | "node", id:
         source: `import { topology } from '@keel/server'\nexport default topology({ web: { modules: ['${id}'], adapter: '${adapter}' } })\n`,
       },
       { path: `modules/${id}/module.ts`, source: manifestSrc(id) },
-      { path: `modules/${id}/routes.ts`, source: routesSrc(id) },
-      { path: `modules/${id}/${id}.server.ts`, source: server },
+      { path: `modules/${id}/routes.ts`, source: routesSrc(id, v) },
+      { path: `modules/${id}/${id}.contract.ts`, source: contractSrc(id, v) },
+      { path: `modules/${id}/${id}.server.ts`, source: v === "plain" ? PLAIN_ASYNC_FILE(id) : SERVER_FILE[v](id) },
     ],
   });
   return r.stdout.split("\n").filter((l) => l.includes('"E1558"'));
@@ -58,14 +67,14 @@ describe("k.topology: E1558 reads what it can and reports what it cannot", () =>
   for (const command of ["check", "build"] as const) {
     for (const v of VARIANTS) {
       test(`${v} in a \`client\` module's \`*.server.ts\` is one E1558 in \`keel ${command}\`; in a \`node\` deployable's module none`, async () => {
-        const lines = await e1558(command, "client", "a", SERVER_FILE[v]);
+        const lines = await e1558(command, "client", "a", v);
         expect(lines).toHaveLength(1);
         expect(lines[0]).toContain("modules/a/a.server.ts");
-        expect(await e1558(command, "node", "a", SERVER_FILE[v])).toEqual([]);
+        expect(await e1558(command, "node", "a", v)).toEqual([]);
       });
     }
-    test(`\`loader({ output }, load)\` with \`load\` an \`async function\` of the file is none in \`keel ${command}\``, async () => {
-      expect(await e1558(command, "client", "a", PLAIN_ASYNC_FILE)).toEqual([]);
+    test(`\`loader(c, 'a.home', { output }, load)\` with \`load\` an \`async function\` of the file is none in \`keel ${command}\``, async () => {
+      expect(await e1558(command, "client", "a", "plain")).toEqual([]);
     });
   }
 
@@ -73,8 +82,8 @@ describe("k.topology: E1558 reads what it can and reports what it cannot", () =>
     await fc.assert(
       fc.asyncProperty(fc.stringMatching(/^[a-z]{3,8}$/), fc.constantFrom(...VARIANTS), async (id, v) => {
         for (const command of ["check", "build"] as const) {
-          expect(await e1558(command, "client", id, SERVER_FILE[v])).toHaveLength(1);
-          expect(await e1558(command, "node", id, SERVER_FILE[v])).toEqual([]);
+          expect(await e1558(command, "client", id, v)).toHaveLength(1);
+          expect(await e1558(command, "node", id, v)).toEqual([]);
         }
       }),
       { seed: SEED, numRuns: 4 },

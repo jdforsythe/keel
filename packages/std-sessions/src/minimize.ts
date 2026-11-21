@@ -1,4 +1,4 @@
-import type { Manifest, RouteDef } from "@keel/router";
+import type { RouteTable } from "@keel/router";
 import { type KeelError, type Result, err, ok, s } from "@keel/schema";
 import type { Session } from "./Session.schema.ts";
 import type { SessionEvent } from "./SessionEvent.ts";
@@ -35,9 +35,9 @@ const range = (n: number): number[] => Array.from({ length: n }, (_, i) => i);
  * Every replay is deterministic under the seed and the candidate order is fixed, so two runs are equal. `redact` is
  * passed to each replay (see `replay`).
  */
-export async function minimize<M extends Readonly<Record<string, RouteDef>>>(
+export async function minimize(
   session: Session,
-  options: { readonly routes: Manifest<M>; readonly maxRuns?: number; readonly redact?: readonly string[] },
+  options: { readonly routes: RouteTable; readonly maxRuns?: number; readonly redact?: readonly string[] },
 ): Promise<
   Result<
     { session: Session; runs: number; minimal: boolean },

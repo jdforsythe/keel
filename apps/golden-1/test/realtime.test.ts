@@ -1,14 +1,12 @@
-// routes.ts first: the pages import it back (E1505 cycle otherwise).
-import "../modules/todos/routes.ts";
 import type { Ctx } from "@keel/ctx";
 import { service } from "@keel/services";
 import { type A11yNode, properties, render, renderRoute } from "@keel/testing";
 import { afterEach, describe, expect, it } from "vitest";
 import { TodoIdParams } from "../modules/api/TodoIdParams.schema.ts";
-import { boardChannel } from "../modules/api/boardChannel.ts";
+import { api } from "../modules/api/api.contract.ts";
+import { boardChannel } from "../modules/api/boardChannel.schema.ts";
 import OutboxPanel from "../modules/todos/OutboxPanel.tsx";
 import { boardOutbox } from "../modules/todos/boardOutbox.ts";
-import { boardWrites } from "../modules/todos/boardWrites.service.ts";
 import { pageOrigin } from "../modules/todos/pageOrigin.ts";
 import { routes } from "../modules/todos/routes.ts";
 import { view } from "../modules/todos/view.ts";
@@ -33,7 +31,7 @@ const ORIGIN = new URL(location.href).origin;
 const T1 = TodoIdParams.parse({ todoId: "t1" });
 
 /** The other user's browser: writes the board directly through the `api` deployable, with its own cookie. */
-const writes = service({ base: ORIGIN, schema: boardWrites });
+const writes = service({ contract: api });
 async function otherToggle(ctx: Ctx, key: string, base: number) {
   if (!T1.ok) throw new Error(T1.error.message);
   return writes.toggleTodo({ params: T1.value, body: { write: write(key, base) } }, ctx);

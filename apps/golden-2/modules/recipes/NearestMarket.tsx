@@ -21,7 +21,7 @@ type Outcome =
  * A button that reads where the device is and names the closest market with its distance, or says the location is
  * not available. The position stays in the page: nothing sends or stores it.
  */
-export default function NearestMarket(props: Infer<typeof Props>, _slots?: undefined, ctx?: Ctx) {
+export default function NearestMarket(props: Infer<typeof Props>, ctx: Ctx) {
   const outcome = signal<Outcome>({ status: "idle" });
   const nameOf = (key: MarketKey): string =>
     key === "unionSquare"
@@ -30,10 +30,6 @@ export default function NearestMarket(props: Infer<typeof Props>, _slots?: undef
         ? props.text.marketViktualien
         : props.text.marketTsukiji;
   const locate = async (): Promise<void> => {
-    if (ctx === undefined) {
-      outcome.set({ status: "unavailable" });
-      return;
-    }
     const at = await geo(ctx).position();
     outcome.set(at.ok ? { status: "found", ...nearestMarket(at.value) } : { status: "unavailable" });
   };

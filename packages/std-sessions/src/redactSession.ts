@@ -1,4 +1,4 @@
-import type { Manifest, RouteDef } from "@keel/router";
+import type { RouteTable } from "@keel/router";
 import { matchHref } from "@keel/router/match";
 import { type JsonValue, type Schema, s } from "@keel/schema";
 import { stores } from "@keel/store";
@@ -7,6 +7,7 @@ import type { SessionEvent } from "./SessionEvent.ts";
 import { hrefOf } from "./internal/hrefOf.ts";
 import { jsonOf } from "./internal/jsonOf.ts";
 import { objectOf } from "./internal/objectOf.ts";
+import { pageOf } from "./internal/pageOf.ts";
 import { parseRedactEntry } from "./internal/parseRedactEntry.ts";
 import { redact } from "./redact.ts";
 
@@ -20,11 +21,11 @@ const json = s.json();
  * and `s.literal` values stay. Schemas come from the live stores and `routes`; without one, every string goes. `id`,
  * `seed`, `at`, `fingerprint` and the route ids stay, so `replay` of the result checks the fingerprint still holds.
  */
-export function redactSession<M extends Readonly<Record<string, RouteDef>>>(
+export function redactSession(
   session: Session,
-  options: { readonly routes: Manifest<M>; readonly expose: readonly string[] },
+  options: { readonly routes: RouteTable; readonly expose: readonly string[] },
 ): Session {
-  const routes: Readonly<Record<string, RouteDef>> = options.routes.routes;
+  const { routes } = options;
   const exposed = new Map<string, string[]>();
   for (const e of options.expose) {
     const p = parseRedactEntry(e);
@@ -42,7 +43,7 @@ export function redactSession<M extends Readonly<Record<string, RouteDef>>>(
     });
   const live = stores();
   const route = (id: string, params: JsonValue, search: JsonValue) => {
-    const def = Object.hasOwn(routes, id) ? routes[id] : undefined;
+    const def = pageOf(routes, id);
     return {
       id,
       params: objectOf(strings(def?.params, params, `route:${id}`, "params.")),
@@ -61,11 +62,11 @@ export function redactSession<M extends Readonly<Record<string, RouteDef>>>(
         return { ...e, payload: strings(schema, e.payload, `tx:${e.name}`) };
       }
       case "nav": {
-        const m = matchHref(options.routes, e.href);
-        const def = m === null ? undefined : routes[m.id];
-        if (m === null || def?.path === undefined) return e;
+        const m = matchHref(routes, e.href);
+        const def = m === null ? undefined : pageOf(routes, m.id);
+        if (m === null || def === undefined) return e;
         const r = route(m.id, jsonOf(m.params, def.params), jsonOf(m.search, def.search));
-        return { ...e, href: hrefOf(def.path ?? "", r.params, r.search) };
+        return { ...e, href: hrefOf(def.path, r.params, r.search) };
       }
       case "fire": {
         const shown = keep(`el:${e.id}`).includes("value");

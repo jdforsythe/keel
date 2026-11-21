@@ -1,6 +1,5 @@
 import { type Ctx, observe } from "@keel/ctx";
 import { owner } from "@keel/reactive";
-import type { EndpointMap } from "@keel/services";
 import type { Outbox } from "./Outbox.type.ts";
 import { configOf } from "./internal/configOf.ts";
 import { flowOf } from "./internal/flowOf.ts";
@@ -15,7 +14,7 @@ import { own } from "./internal/own.ts";
  * and never posted), flush that owner's entries, and flush again on each `{ kind: 'net', online: true }` until the scope
  * is disposed, which also drops the retry pending on this ctx. Each ctx reaches only the entries it added or loaded.
  */
-export async function drain(ctx: Ctx, o: Outbox<EndpointMap>, opts: { readonly owner: string }): Promise<void> {
+export async function drain(ctx: Ctx, o: Outbox<object>, opts: { readonly owner: string }): Promise<void> {
   const sc = owner();
   if (sc === undefined) throw new Error("E1203: drain() outside a scope");
   const c = configOf(o);

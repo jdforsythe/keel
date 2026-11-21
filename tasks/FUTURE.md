@@ -4,7 +4,6 @@ Ideas that come up outside the current plans. An idea is built at once only when
 
 ## Routing and server
 - A caller token for cross-site clients: the server returns the caller token in a response header, the client keeps it and sends it in a request header, so a `client` deployable on a static host that is cross-site to its API keeps one caller. RFC 0087 D3. Needs a decision on where the client stores a token that `HttpOnly` withholds today; fits an auth stdlib module.
-- Serve API handlers from the `@keel/services` `endpoints` schema: one schema per API, handlers typed from it, E1561 and E1562 gone. RFC 0086 Alternatives. Replaces `loader` and `action` for JSON; a stage of its own.
 - In-entry verbs for API routes (`{ path, GET, POST }`). RFC 0086 D2. Needs an answer to the circular initializer of ADR-0052.
 - Per-route document titles, a custom icon or extra head links, and serving all of `public/` in production. RFC 0078 Open questions; backlog 0305 (user decisions).
 - Params passed to `errorElement`. RFC 0079 Known limits. Waits for a k.router split.
@@ -73,3 +72,4 @@ Ideas that come up outside the current plans. An idea is built at once only when
 - An app-chosen token prefix as a second `std` key of `@keel/std-tokens`; today every token starts `keel_`.
 - `prove` from any thread: Z3 in a child process that `prove` starts, so a runner on worker threads can prove; today a worker call is refused (E1721). Costs a process start and a serialised query per call.
 - A static rule for E1256: `keel check` reports a `tx` reached from a `*.server.ts` loader, guard or action whose transaction is bound to a module-level store, across imports (as `refreshView.ts` and `hydrate.ts` sit two files from the loader). Today the check is at run time only.
+- A rule-code range for Keel libraries (E9xxx, W9xxx), so a library's own check rules never collide with the kernel's or the stdlib's (RFC 0169's author; needed when the library format of RFC 0163 is built).

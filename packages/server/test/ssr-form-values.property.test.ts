@@ -3,6 +3,7 @@
 // server DOM write it into their markup so that parsing that markup back with the server DOM parser gives a control
 // whose value is the same string: escaping in attributes and text never loses or adds a character, and a textarea's
 // leading newline is written twice because the parser drops the first (backlog 0179).
+import { createCtx } from "@keel/ctx";
 import { signal } from "@keel/reactive";
 import { Input, Select, TextArea } from "@keel/ui";
 import fc from "fast-check";
@@ -11,6 +12,7 @@ import { installServerDom } from "../src/internal/dom/installServerDom.ts";
 import { renderUnit } from "../src/internal/renderUnit.ts";
 
 const SEED = 1337;
+const ctx = createCtx({ mode: "sim", seed: SEED });
 // Any UTF-16 text, markup characters and quotes weighted in.
 const text = fc.oneof(
   fc.fullUnicodeString(),
@@ -35,7 +37,7 @@ describe("a textarea value starting with a newline survives the parser's dropped
     fc.assert(
       fc.property(fc.constantFrom("\n", "\r\n", "\r", "\n\n"), text, (lead, rest) => {
         const v = `${lead}${rest}`;
-        const area = outer(renderUnit(() => TextArea({ label: "L", value: signal(v) })));
+        const area = outer(renderUnit(() => TextArea({ label: "L", value: signal(v) }), ctx));
         expect(area).toMatch(/<textarea[^>]*>\n[\r\n]/);
         expect(Reflect.get(Object(reparsed(area, "textarea")), "value")).toBe(v);
         const pre = document.createElement("pre");
@@ -51,7 +53,7 @@ describe("a textarea value starting with a newline survives the parser's dropped
     expect(Reflect.get(Object(reparsed("<textarea>\nx</textarea>", "textarea")), "value")).toBe("x");
     expect(Reflect.get(Object(reparsed("<textarea>\r\nx</textarea>", "textarea")), "value")).toBe("x");
     expect(Reflect.get(Object(reparsed("<textarea>x\n</textarea>", "textarea")), "value")).toBe("x\n");
-    expect(outer(renderUnit(() => TextArea({ label: "L", value: signal("x") })))).toMatch(
+    expect(outer(renderUnit(() => TextArea({ label: "L", value: signal("x") }), ctx))).toMatch(
       /<textarea[^>]*>x<\/textarea>/,
     );
   });
@@ -63,15 +65,15 @@ describe("server-rendered control values round-trip through the server DOM parse
     fc.assert(
       fc.property(text, text, (v, other) => {
         fc.pre(v !== other);
-        const input = outer(renderUnit(() => Input({ label: "L", value: signal(v) })));
+        const input = outer(renderUnit(() => Input({ label: "L", value: signal(v) }), ctx));
         expect(Reflect.get(Object(reparsed(input, "input")), "value")).toBe(v);
-        const area = outer(renderUnit(() => TextArea({ label: "L", value: signal(v) })));
+        const area = outer(renderUnit(() => TextArea({ label: "L", value: signal(v) }), ctx));
         expect(Reflect.get(Object(reparsed(area, "textarea")), "value")).toBe(v);
         const options = [
           { value: other, label: "other" },
           { value: v, label: "v" },
         ];
-        const select = outer(renderUnit(() => Select({ label: "L", value: signal(v), options })));
+        const select = outer(renderUnit(() => Select({ label: "L", value: signal(v), options }), ctx));
         expect(Reflect.get(Object(reparsed(select, "select")), "value")).toBe(v);
       }),
       { seed: SEED, numRuns: 200 },

@@ -5,6 +5,7 @@
 import { createCtx } from "@keel/ctx";
 import { signal } from "@keel/reactive";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { resume } from "@keel/runtime-dom/ops";
 import { Box, Button, Input, Text } from "@keel/ui";
 import * as fc from "fast-check";
@@ -13,6 +14,7 @@ import { createApp, topology } from "../src/index.ts";
 
 const SEED = 1337;
 const ctx = createCtx({ mode: "sim", seed: 1 });
+const page = contract("app", { "app.page": { path: "/" } });
 
 type Tree =
   | { readonly k: "input"; readonly on: boolean; readonly sig: boolean }
@@ -58,7 +60,7 @@ const build = (t: Tree): Node => {
 async function serve(component: () => Node): Promise<void> {
   const app = await createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
-    routes: manifest({ "app.page": { path: "/", component } }),
+    routes: manifest(page, { "app.page": { component } }),
     ctx,
   });
   const res = await app.fetch(new Request("http://localhost/", { headers: { accept: "text/html" } }));

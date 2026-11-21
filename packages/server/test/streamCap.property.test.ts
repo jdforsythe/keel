@@ -4,6 +4,7 @@
 // streams refused by a guard or a 406 take no place. Seed 1337, sim ctx, no wall time.
 import { createCtx } from "@keel/ctx";
 import { guard, loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { err, ok, s } from "@keel/schema";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -18,26 +19,28 @@ async function flush(): Promise<void> {
 
 async function app(maxStreams: number) {
   const seen = { started: 0 };
-  const hold = loader({ output: s.object({ n: s.int() }) }, async function* ({ signal }, ctx) {
+  const Count = s.object({ n: s.int() });
+  const c = contract("a", {
+    "a.live": { method: "GET", path: "/api/live", output: Count, events: true },
+    "a.shut": { method: "GET", path: "/api/shut", output: Count, events: true },
+    "a.page": { path: "/page" },
+  });
+  const hold = loader(c, "a.live", {}, async function* ({ signal }, ctx) {
     seen.started++;
     yield ok({ n: 1 });
     await ctx.clock.after(3_600_000, signal).catch(() => undefined);
   });
-  const routes = manifest({
-    "a.live": { path: "/live", loader: hold, component: () => document.createElement("main") },
+  const shut = loader(c, "a.shut", {}, async function* () {
+    yield ok({ n: 1 });
+  });
+  const page = loader(c, "a.page", { output: Count }, () => Promise.resolve(ok({ n: 1 })));
+  const routes = manifest(c, {
+    "a.live": { loader: hold },
     "a.shut": {
-      path: "/shut",
-      loader: hold,
-      guard: guard({ redirect: "a.page" }, () =>
-        Promise.resolve(err({ code: "keel.denied", message: "no", data: null })),
-      ),
-      component: () => document.createElement("main"),
+      loader: shut,
+      guard: guard({}, () => Promise.resolve(err({ code: "keel.denied", message: "no", data: null }))),
     },
-    "a.page": {
-      path: "/page",
-      loader: loader({ output: s.object({ n: s.int() }) }, () => Promise.resolve(ok({ n: 1 }))),
-      component: () => document.createElement("main"),
-    },
+    "a.page": { loader: page, component: () => document.createElement("main") },
   });
   const served = await createApp({
     topology: topology({ x: { modules: ["a"], adapter: "node" } }),
@@ -65,7 +68,7 @@ describe("open event-stream cap", () => {
         for (const isOpen of ops) {
           if (isOpen) {
             const ac = new AbortController();
-            const res = await open((r) => served.fetch(r), "/live", ac);
+            const res = await open((r) => served.fetch(r), "/api/live", ac);
             if (live.length < n) {
               expect(res.status).toBe(200);
               live.push(ac);
@@ -91,10 +94,10 @@ describe("open event-stream cap", () => {
 
   it("a stream refused by its guard or answered 406 takes no place", async () => {
     const { served } = await app(1);
-    expect((await open((r) => served.fetch(r), "/shut", new AbortController())).status).toBe(403);
+    expect((await open((r) => served.fetch(r), "/api/shut", new AbortController())).status).toBe(403);
     expect((await open((r) => served.fetch(r), "/page", new AbortController())).status).toBe(406);
-    expect((await open((r) => served.fetch(r), "/live", new AbortController())).status).toBe(200);
-    expect((await open((r) => served.fetch(r), "/live", new AbortController())).status).toBe(503);
+    expect((await open((r) => served.fetch(r), "/api/live", new AbortController())).status).toBe(200);
+    expect((await open((r) => served.fetch(r), "/api/live", new AbortController())).status).toBe(503);
     await served.close();
     await flush();
   });

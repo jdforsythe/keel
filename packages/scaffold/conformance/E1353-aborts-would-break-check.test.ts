@@ -6,7 +6,7 @@ import { expect, it } from "vitest";
 import { type Files, apply, dryRun, errText, only, rel, scaffoldRaw, snap, withOrders } from "./fixtures.ts";
 
 const manifest = (id: string, deps: string[], exports: string[]) =>
-  `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: ${JSON.stringify(deps)}, capabilities: [], public: { exports: ${JSON.stringify(exports)}, routes: [] } })\n`;
+  `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: ${JSON.stringify(deps)}, capabilities: [], public: { exports: ${JSON.stringify(exports)} } })\n`;
 
 function cyclic(): Files {
   const f = withOrders();

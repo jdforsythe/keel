@@ -1,16 +1,16 @@
 // @vitest-environment happy-dom
-// Examples: the import cycle between routes.ts and an action file that imports it (E1505 names the fix), and the
+// Examples: an action file and routes.ts share no import cycle through the contract, and the
 // client default alert for keel.notFound matching the server's markup (k.head).
 import { expect, it } from "vitest";
+import { bindingsOf } from "../src/internal/bindingsOf.ts";
 import { defaultError } from "../src/internal/defaultError.ts";
 
-it("E1505 hints import routes.ts first when an action file that imports routes.ts loads first", async () => {
-  const first = await import("./cycle/save.server.ts").then(
-    () => "",
-    (e: unknown) => (e instanceof Error ? e.message : "other"),
-  );
-  expect(first).toContain("(import routes.ts first)");
-  expect(first).toContain("cyc.page: POST action lacks kind");
+it("an action file that imports the contract loads before routes.ts and routes.ts binds it", async () => {
+  const { save } = await import("./cycle/save.server.ts");
+  const { routes } = await import("./cycle/routes.ts");
+  expect(save.id).toBe("cyc.page");
+  expect(routes.contract.module).toBe("cyc");
+  expect(bindingsOf(routes).get("cyc.page")?.binding).toMatchObject({ POST: save });
 });
 
 it("the default alert for keel.notFound is <h1>Not found</h1>; other codes print their message", () => {

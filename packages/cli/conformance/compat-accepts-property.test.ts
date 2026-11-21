@@ -1,13 +1,13 @@
 // Spec: k.compat, clause "For generated pairs of schemas, when `A` accepts `B`, every value `gen(B)` yields parses with `A`."
-// Seed 1337. `accepts` is not exported, so it is observed through E1561: the route's action input is `A`, the endpoint's body is `B`;
-// no E1561 means the check decided `A` accepts `B`. Slow (a project build per run), so numRuns is small.
+// Seed 1337. `accepts` is not exported, so it is observed through E1562: the base entry's `body` is `B`, the current entry's is `A`, the caller in
+// another deployable; no E1562 means the check decided `A` accepts `B` (k.compat Base). Slow (two project builds per run), so numRuns is small.
 // Schemas: s.string(), s.number(), s.enum([...]), s.array(x), s.object({...}), x.optional(), x.nullable(); the top level is an
-// object (an action's `input` is an object schema). The endpoint's `output` is the action's answer, so only the request decides.
+// object (an action's `input` is an object schema). Only the entry's `body` differs between base and current.
 // `gen(B)` values of an open object carry extra keys of any type (k.compat Accepts: a field an open `B` lacks is accepted only if `A`'s field accepts any value).
 import { type Schema, s } from "@keel/schema";
 import fc from "fast-check";
 import { afterAll, expect, test } from "vitest";
-import { SEED, buildAndCheck, cleanup, diags, materialize, project } from "./compat-support.ts";
+import { SEED, baseSurface, buildAndCheck, cleanup, diags, project, write } from "./compat-support.ts";
 
 /** Property runs spawn several `keel build` and `keel check` processes each. */
 const SLOW = 120_000;
@@ -148,10 +148,11 @@ const dirs: string[] = [];
 afterAll(() => {
   for (const d of dirs) cleanup(d);
 });
-const e1561 = (a: D, b: D): number => {
-  const dir = materialize(project({ input: src(a), body: src(b), split: false }));
-  dirs.push(dir);
-  return diags(buildAndCheck(dir), "E1561").length;
+const e1562 = (a: D, b: D): number => {
+  const base = baseSurface(project({ body: src(b), split: true }));
+  dirs.push(base.dir);
+  write(base.dir, project({ body: src(a), split: true }));
+  return diags(buildAndCheck(base.dir, base.base), "E1562").length;
 };
 
 test(
@@ -164,7 +165,7 @@ test(
     );
     fc.assert(
       fc.property(pairs, ([a, b]) => {
-        if (e1561(a, b) > 0) return;
+        if (e1562(a, b) > 0) return;
         accepted++;
         const target = build(a);
         fc.assert(
@@ -180,11 +181,11 @@ test(
 );
 
 test(
-  "a widening of `B` is accepted: no E1561 for A = widen(B)",
+  "a widening of `B` is accepted: no E1562 for A = widen(B)",
   () => {
     fc.assert(
       fc.property(objArb, (b) => {
-        expect(e1561(widen(b), b)).toBe(0);
+        expect(e1562(widen(b), b)).toBe(0);
       }),
       { seed: SEED, numRuns: 6 },
     );

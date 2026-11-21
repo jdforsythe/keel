@@ -40,10 +40,16 @@ describe("TopologySchema", () => {
       expect(await accepts({ web: { modules: [], adapter } })).toBe(true);
   });
 
-  it("takes host as an optional non-empty string", async () => {
-    expect(await accepts({ web: { ...node, host: "api" } })).toBe(true);
-    expect(await accepts({ web: { ...node, host: "" } })).toBe(false);
-    expect(await accepts({ web: { ...node, host: 1 } })).toBe(false);
+  it("takes servedBy as an optional non-empty string", async () => {
+    expect(await accepts({ web: { ...node, servedBy: "api" } })).toBe(true);
+    expect(await accepts({ web: { ...node, servedBy: "" } })).toBe(false);
+    expect(await accepts({ web: { ...node, servedBy: 1 } })).toBe(false);
+  });
+
+  it("is closed: a key it does not list, `host` included, is refused; origins is taken", async () => {
+    expect(await accepts({ web: { ...node, host: "api" } })).toBe(false);
+    expect(await accepts({ web: { ...node, storge: "file" } })).toBe(false);
+    expect(await accepts({ web: { ...node, origins: { img: { "https://a.example": "r" } } } })).toBe(true);
   });
 
   it("takes storage as an optional file, sqlite or postgres", async () => {
@@ -86,7 +92,7 @@ describe("TopologySchema", () => {
       web: {
         modules: ["a"],
         adapter: "client",
-        host: "api",
+        servedBy: "api",
         shells: { tauri: { id: "dev.example.app", name: "App" } },
       },
       api: { modules: ["b"], adapter: "node", storage: "sqlite", caller: { days: 7 } },

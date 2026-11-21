@@ -1,5 +1,6 @@
 // Helpers for the k.leave suites (not a test file). Public API only. Property seed for every property: 1337.
 // Pages are TSX compiled at run time; `createApp` serves them and a test reads the document it answers.
+import type { Ctx } from "@keel/ctx";
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
 import * as reactive from "@keel/reactive";
@@ -9,7 +10,7 @@ import * as storeModule from "@keel/store";
 
 export const SEED = 1337;
 
-export type Component = (props: RouteProps) => Node;
+export type Component = (props: RouteProps, ctx: Ctx) => Node;
 
 const MODULES: Record<string, unknown> = {
   "@keel/store": storeModule,
@@ -25,8 +26,8 @@ export function compileLevel(name: string, source: string): Component {
   if (out === undefined) throw new Error("fixture: no compiler output");
   const fn = evaluate(out.code, MODULES);
   if (typeof fn !== "function") throw new Error("fixture: default export is not a component");
-  return (props) => {
-    const node: unknown = fn(props);
+  return (props, ctx) => {
+    const node: unknown = fn(props, ctx);
     if (!(node instanceof Node)) throw new Error("fixture: component did not return a Node");
     return node;
   };

@@ -1,5 +1,5 @@
 # k.cli: CLI, MCP, LSP
-status: conformance-covered
+status: implemented
 
 **One engine.** `@keel/cli` defines each command once as an operation `{ name, input: Schema, output: Schema }`, served by the `keel` binary (flags parsed by `input`), `keel mcp` (one MCP tool per operation), and `keel lsp` (check diagnostics, fix diffs as code actions, `explain` as hover).
 
@@ -10,7 +10,7 @@ status: conformance-covered
 | `test [paths]` | harness under sim ctx |
 | `build` | production build per deployable |
 | `dev [--port N]` | dev server and log stream (default Vite's `server.port` or 5173; in use: E1560) |
-| `spec <id>` / `--for <code>` / `--map` | one section, sections citing a code, or the map |
+| `docs [id]` / `--for <code>` / `--sync` | installed docs (k.docs) |
 | `explain <code>` | <= 120 tokens: meaning and fix pattern |
 | `inspect [url]` | summarize a dev app's inspect document |
 | `render <routeId\|Component> [--props json]` | a11y tree of one render |
@@ -40,7 +40,7 @@ formatter('orders.report', { schema: Report, compact: (r) => `${r.id} ${r.total}
 ```
 Every output record has a `kind`; each kind has exactly one formatter. `json` is never hand-formatted: the record encoded by its schema, one NDJSON line. Kernel kinds: `diag`, `summary`, `req`, `a11y`, `csp`, `evidence`, and k.ledger's. `@keel/cli/testing` exports `respond(records, { format? })`: renders records as a command does (E1054 included).
 
-**Rules.** I1055 command not available in this build (info) · E1051 unknown command · E1052 unknown flag, or flag value invalid for the input schema · E1053 formatter kind or std command registered twice · E1054 record emitted with a kind that has no formatter · E1056 inspect target unreachable, not 2xx, or not an inspect document · E1057 inspector id registered twice (throws), or a section that throws or fails its schema.
+**Rules.** I1055 command not available in this build (info) · E1051 unknown command · E1052 unknown flag, or flag value invalid for the input schema · E1053 formatter kind, std command or shell target registered twice · E1054 record emitted with a kind that has no formatter · E1056 inspect target unreachable, not 2xx, or not an inspect document · E1057 inspector id registered twice (throws), or a section that throws or fails its schema.
 
 **Conformance.**
 - For a fixture project, `keel check --format=json`, the MCP `check` tool, and LSP diagnostics yield the same set of (code, path, line, col, message).
@@ -51,7 +51,7 @@ Every output record has a `kind`; each kind has exactly one formatter. `json` is
 - In json every line parses, has `kind`, and the last line has `kind: "summary"`.
 - With 20 diagnostics of one code, compact prints 5 plus one `... +15 more` line; `--limit 2` prints 2.
 - `keel nope` emits E1051 and exits 2.
-- `keel spec k.cli` prints <= 1,500 tokens.
+- `keel docs k.cli` prints <= 1,500 tokens.
 - `GET /__keel/inspect` on a dev `createApp` returns every live store's state and log and the `inspect()` graph; in production mode it is the route table's 404.
 - `keel dev --port <p>`, or `server.port: <p>` in the Vite config, serves on `p`; with `p` in use it prints one E1560 line and exits 1.
 - An MCP `build` writes the `.keel/` files `keel build` writes.

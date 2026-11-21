@@ -7,6 +7,7 @@ import path from "node:path";
 import { createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { store, transaction, tx } from "@keel/store";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -15,7 +16,8 @@ import { inspectResponse } from "../src/internal/inspectResponse.ts";
 
 const BASE = "http://localhost";
 const Counter = s.object({ n: s.int() });
-const routes = manifest({ "orders.list": { path: "/orders", component: () => document.createElement("p") } });
+const c = contract("orders", { "orders.list": { path: "/orders" } });
+const routes = manifest(c, { "orders.list": { component: () => document.createElement("p") } });
 
 let dir = "";
 beforeEach(() => {

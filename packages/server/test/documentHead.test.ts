@@ -6,6 +6,7 @@ import os from "node:os";
 import path from "node:path";
 import { createCtx } from "@keel/ctx";
 import { loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { err, s } from "@keel/schema";
 import fc from "fast-check";
 import { afterEach, describe, expect, it } from "vitest";
@@ -45,7 +46,6 @@ const build = (): Record<string, string> => ({
 const built = (css: readonly string[], mark: boolean): BuiltClient => ({
   entry: "/assets/e.js",
   css,
-  peers: [],
   files: new Map(mark ? [["/keel-mark.svg", { body: new Uint8Array(0), type: "", immutable: false, etag: "" }]] : []),
 });
 /** The head of a document as text, cut at `</head>` so nothing in it is parsed or loaded. */
@@ -156,13 +156,16 @@ describe("loadAssets", () => {
 });
 
 describe("createApp documents", () => {
-  const routes = manifest({
-    "app.home": { path: "/", component: () => document.createElement("p") },
-    "app.item": {
-      path: "/item",
-      component: () => document.createElement("p"),
-      loader: loader({ output: s.object({}) }, async () => err({ code: "keel.notFound", message: "gone", data: null })),
-    },
+  const c = contract("app", {
+    "app.home": { path: "/" },
+    "app.item": { path: "/item" },
+  });
+  const item = loader(c, "app.item", { output: s.object({}) }, async () =>
+    err({ code: "keel.notFound", message: "gone", data: null }),
+  );
+  const routes = manifest(c, {
+    "app.home": { component: () => document.createElement("p") },
+    "app.item": { component: () => document.createElement("p"), loader: item },
   });
   const app = (assets?: string) =>
     createApp({

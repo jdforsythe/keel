@@ -15,7 +15,7 @@ const SUBPATH = /^(\/(?!\.\.?(\/|$))[\w.~-]+)*$/;
  * export is not `identityMount('<literal>')` of lowercase `/` segments (`mountSource`), or no `identity.server.ts`
  * whose `handle.path` is `<its default import>.path` (`identitySource`). E1581: a file under `modules/<id>/`
  * importing `identity.ts` where a deployable of `topology.ts` serving `<id>` is `static`, or `client` without
- * `host`: no origin serving it mounts `handle`. E1582: `<default import>.href('<literal>')` whose subpath
+ * `servedBy`: no origin serving it mounts `handle`. E1582: `<default import>.href('<literal>')` whose subpath
  * `href` refuses. E1584: a `links` entry of `identity.ts` that is not a string literal, is `''`, is not of the subpath
  * form, or repeats one (`mountSource`), at the entry. No fix.
  */
@@ -56,7 +56,7 @@ export function mountDiags(files: readonly SourceFile[]): Diagnostic[] {
       ([, d]) =>
         id !== undefined &&
         d.modules.includes(id) &&
-        (d.adapter === "static" || (d.adapter === "client" && d.host === undefined)),
+        (d.adapter === "static" || (d.adapter === "client" && d.servedBy === undefined)),
     );
     if (bare !== undefined)
       at("E1581", first.start, `${bare[0]} (${bare[1].adapter}) serves module ${id}, whose origin mounts no handle`);

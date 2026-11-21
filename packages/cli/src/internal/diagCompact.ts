@@ -9,6 +9,6 @@ export function diagCompact(d: Diag): string {
   const hunk =
     d.fix === undefined ? [] : d.fix.split("\n").filter((l) => !l.startsWith("--- ") && !l.startsWith("+++ "));
   const fix = hunk.map((l, i) => (i === 0 ? "  fix: " : "       ") + l);
-  const see = d.see === undefined ? [] : [`  see: ${d.see}`];
+  const see = d.see === undefined ? [] : [`  see: keel docs ${d.see}`];
   return [head, ...fix, ...see].join("\n");
 }

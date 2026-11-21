@@ -1,4 +1,4 @@
-import { secretPathOf } from "@keel/schema/internal";
+import { secretPath } from "@keel/schema";
 import type { JobTable } from "./JobTable.ts";
 import type { Queue } from "./Queue.type.ts";
 import { enqueue } from "./internal/enqueue.ts";
@@ -10,7 +10,7 @@ import { runQueue } from "./internal/runQueue.ts";
  */
 export function queue<T extends JobTable>(table: T): Queue<T> {
   for (const [id, j] of Object.entries(table)) {
-    const at = secretPathOf(j.input.node);
+    const at = secretPath(j.input);
     if (at !== null)
       throw new Error(`E2503 job ${id} input holds s.secret at ${at || "(root)"}; a job's input is stored`);
   }

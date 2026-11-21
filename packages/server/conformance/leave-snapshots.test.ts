@@ -1,10 +1,11 @@
 import { scope } from "@keel/reactive";
 // @vitest-environment happy-dom
-// Spec: k.leave, Snapshots "`#k-state` `stores` holds a request store's snapshot only when an island needs it to resume: the store was created, looked up through `stores()` or read (`get`, `select`, `snapshot`, `log`, `head`) while a level's component rendered on the server, that level being an island root (k.runtime). A store only a guard, loader, action or static level touched is not in it, however much it holds; nor is a factory store (k.server). A document with no island has `stores` `{}`. `#k-state` is not a k.privacy sink: a snapshot holds the store's state and log as they are, so a `.pii()`-marked value in a store an island creates reaches the browser, as the island needs it to render. The check reports E1107 at a `store` call in a client-reachable file (E1004's reachability) whose state schema holds a `.pii(class)` node of a class its module manifest's `clientPii` (a list of `PiiClass`, default empty) does not list; the fix adds the class. No `s.secret` value reaches a snapshot: a state schema holding one throws E1303, and a snapshot folds every log entry up to the last secret payload (k.store)."
+// Spec: k.leave, Snapshots "`#k-state` `stores` holds a request store's snapshot only when an island needs it to resume: the store was created, looked up through `stores()` or read (`get`, `select`, `snapshot`, `log`, `head`) while a level's component rendered on the server, that level being an island root (k.runtime). A store only a guard, loader, action or static level touched is not in it, however much it holds; nor is a factory store (k.server). A document with no island has `stores` `{}`. `#k-state` is not a k.privacy sink: a snapshot holds the store's state and log as they are, so a `.pii()`-marked value in a store an island creates reaches the browser, as the island needs it to render. The check reports E1107 at a `store` call in a `.tsx` or `.jsx` file not named `*.server.*`, or in a file one reaches by relative `import`, `export … from` and literal `import()` through no `*.server.*` file, whose state schema holds a `.pii(class)` node of a class its module manifest's `clientPii` (a list of `PiiClass`, default empty) does not list; the fix adds the class. That reach is narrower than k.boundary's: a plain `.ts` file no component file imports, say one only loaders use, is not in it, and a store an island finds only by `stores()` id or a package import is not reported. No `s.secret` value reaches a snapshot: a state schema holding one throws E1303, and a snapshot folds every log entry up to the last secret payload (k.store)."
 // Spec: k.leave, Conformance "A route whose loader creates stores `a` (a `.pii('contact')` field) and `p`, and whose island page's component reads `p` and creates `b`, serves `#k-state` `stores` with `b` and `p` only; with a static page instead, the document has no module script and `stores` is `{}`."
 // Spec: k.leave, Conformance "A static layout whose render creates store `c`, around an island page that creates `b`: `stores` has `b`, not `c`; the value of a `.pii('contact')` field of `b` is in `#k-state` as the page rendered it."
 // Seed: 1337 (the property below). Real createApp output under a sim ctx; the documents are parsed, never hand-written.
-import { guard, loader, manifest } from "@keel/router";
+import { type Guard, type Loader, guard, loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import { store } from "@keel/store";
 import fc from "fast-check";
@@ -16,11 +17,18 @@ const Data = s.object({ title: s.string() });
 const Contact = s.object({ email: s.string().pii("contact") });
 const Count = s.object({ n: s.int() });
 const MODULES = ["ls"];
-const LOGIN = { path: "/login", component: compileLevel("ls.login", staticPage("")) };
+const LOGIN = { path: "/login", source: staticPage("") };
+// Every level the tests use is an entry of this one contract; a test binds the ones it needs and the rest get a static default.
+const lsContract = contract("ls", {
+  "ls.layout": { layout: true },
+  "ls.login": { path: "/login" },
+  "ls.page": { path: "/" },
+});
+type Ctr = typeof lsContract;
 
 /** A loader that creates `ls.a` (a contact) and `ls.p` (a count). */
-const seeding = (email: string) =>
-  loader({ output: Data }, () => {
+const seeding = (email: string) => (c: Ctr) =>
+  loader(c, "ls.page", { output: Data }, () => {
     store(Contact, { email }, { id: "ls.a" });
     store(Count, { n: 3 }, { id: "ls.p" });
     return Promise.resolve(ok({ title: "t" }));
@@ -31,32 +39,35 @@ const READS_P = 'const p = stores().get("ls.p"); const seen = p === undefined ? 
 
 const factory = () => ({ f: store(Count, { n: 7 }, { id: "ls.factory" }) });
 /** A loader with a `stores` factory: its store is not a request store of the registry. */
-const viaFactory = loader({ output: Data, stores: factory }, ({ stores }) => {
-  void stores.f.get("n");
-  return Promise.resolve(ok({ title: "t" }));
-});
+const viaFactory = (c: Ctr) =>
+  loader(c, "ls.page", { output: Data, stores: factory }, ({ stores }) => {
+    void stores.f.get("n");
+    return Promise.resolve(ok({ title: "t" }));
+  });
 
 type Level = {
   path?: string;
-  layout?: string;
+  layout?: "ls.layout";
   source: string;
-  loader?: ReturnType<typeof seeding> | typeof viaFactory;
+  guard?: Guard;
+  loader?: (c: Ctr) => Loader<"ls.page", unknown, false>;
 };
-type Levels = Record<string, Level>;
-
-function entryOf(id: string, l: Level) {
-  return {
-    component: compileLevel(id, l.source),
-    ...(l.path === undefined ? {} : { path: l.path }),
-    ...(l.layout === undefined ? {} : { layout: l.layout }),
-    ...(l.loader === undefined ? {} : { loader: l.loader }),
-  };
-}
+type Levels = Partial<Record<"ls.layout" | "ls.login" | "ls.page", Level>>;
 
 function routesOf(levels: Levels) {
-  const entries: Record<string, ReturnType<typeof entryOf>> = {};
-  for (const [id, l] of Object.entries(levels)) entries[id] = entryOf(id, l);
-  return manifest(entries);
+  const layout = levels["ls.layout"] ?? { source: staticLayout("") };
+  const login = levels["ls.login"] ?? LOGIN;
+  const page = levels["ls.page"] ?? { source: staticPage("") };
+  return manifest(lsContract, {
+    "ls.layout": { component: compileLevel("ls.layout", layout.source) },
+    "ls.login": { component: compileLevel("ls.login", login.source) },
+    "ls.page": {
+      component: compileLevel("ls.page", page.source),
+      ...(page.layout === undefined ? {} : { layout: page.layout }),
+      ...(page.guard === undefined ? {} : { guard: page.guard }),
+      ...(page.loader === undefined ? {} : { loader: page.loader(lsContract) }),
+    },
+  });
 }
 
 async function get(levels: Levels, path: string) {
@@ -153,9 +164,9 @@ describe("k.leave Snapshots: #k-state carries a request store only when an islan
       scope(() => store(Count, { n: 9 }, { id: "ls.g" }));
       return Promise.resolve(ok(null));
     });
-    const levels = manifest({
+    const levels = routesOf({
       "ls.login": LOGIN,
-      "ls.page": { path: "/", component: compileLevel("ls.page", islandPage(BOB)), guard: auth },
+      "ls.page": { path: "/", source: islandPage(BOB), guard: auth },
     });
     const doc = await serveRoutes(levels, MODULES, "/", { mode: "production" });
     expect(doc.status).toBe(200);

@@ -3,6 +3,7 @@
 // Examples only (no generated space here); packages/server/test/island-ui-root.property.test.ts has the property.
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { resume } from "@keel/runtime-dom/ops";
 import { createApp, topology } from "@keel/server";
 import { Box, Button, Input, Text } from "@keel/ui";
@@ -14,7 +15,7 @@ const MODULE_SCRIPT = /<script[^>]*type=["']module["']/;
 async function appFor(id: string, component: () => Node) {
   return createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
-    routes: manifest({ [id]: { path: "/x", component } }),
+    routes: manifest(contract("app", { [id]: { path: "/x" } }), { [id]: { component } }),
     ctx,
     mode: "production",
   });

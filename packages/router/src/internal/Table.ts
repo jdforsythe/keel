@@ -1,4 +1,4 @@
 import type { Registered } from "./Registered.ts";
 
-/** One manifest's routes by id, compiled. Each manifest owns its table; tables never merge. */
+/** A route table's routes by id, compiled. */
 export type Table = ReadonlyMap<string, Registered>;

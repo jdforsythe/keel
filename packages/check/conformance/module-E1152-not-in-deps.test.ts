@@ -11,7 +11,7 @@ import {
   lowerId,
   manifestFile,
   pascal,
-  routesFile,
+  contractFile,
 } from "./module-support.ts";
 
 const distinct = fc.tuple(lowerId, lowerId, pascal).filter(([a, b]) => a !== b);
@@ -49,20 +49,22 @@ test("E1152: listing the module in deps clears it", () => {
   );
 });
 
-test("E1152: routes.href() into a module not in deps is reported", () => {
+test("E1152: importing a module's contract (to link or to call it) from a module not in deps is reported; listing it clears it", () => {
   fc.assert(
     fc.property(distinct, ([a, b]) => {
       const route = `${b}.show`;
       const mk = (deps: string[]) => [
-        manifestFile({ id: b, exports: ["routes"], routes: [route] }),
-        routesFile(b, [route]),
+        manifestFile({ id: b }),
+        contractFile(b, [route]),
         manifestFile({ id: a, deps }),
         {
           path: `modules/${a}/Back.ts`,
-          source: `import { routes } from '../${b}/routes.ts'\nexport const Back = routes.href('${route}')\n`,
+          source: `import { ${b} } from '../${b}/${b}.contract.ts'\nexport const Back = ${b}.href('${route}')\n`,
         },
       ];
-      expect(has(mk([]), "E1152")).toBe(true);
+      const d = codesOf(mk([]), "E1152");
+      expect(d.length).toBeGreaterThanOrEqual(1);
+      expect(d[0]?.path).toBe(`modules/${a}/Back.ts`);
       expect(has(mk([b]), "E1152")).toBe(false);
     }),
     { seed: SEED, numRuns: 25 },

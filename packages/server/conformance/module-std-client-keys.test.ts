@@ -10,6 +10,7 @@ import { clientStd } from "@keel/compiler/std/clientStd";
 import { stdConfig } from "@keel/compiler/std/stdConfig";
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { createApp, topology } from "@keel/server";
 import { Box, Button, Text } from "@keel/ui";
@@ -35,7 +36,7 @@ const manifestSrc = (id: string, cfg: unknown): string =>
     id,
     deps: [PKG],
     capabilities: [],
-    public: { exports: [], routes: [] },
+    public: { exports: [] },
     std: { [PKG]: cfg },
   })})\n`;
 
@@ -50,7 +51,7 @@ async function served(
   ]);
   const file = path.join(tmp, `std-${n++}.json`);
   fs.writeFileSync(file, JSON.stringify({ data, hash }));
-  const component = (_p: unknown, _s: unknown, ctx: Ctx): Node =>
+  const component = (_p: unknown, ctx: Ctx): Node =>
     Box({
       children: () => [
         Text({ children: String(stdConfig(ctx, PKG, Config).app?.redact.length ?? 0) }),
@@ -58,9 +59,10 @@ async function served(
       ],
     });
   const ctx = mkCtx();
+  const appContract = contract("app", { "app.page": { path: "/" } });
   const app = await createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
-    routes: manifest({ "app.page": { path: "/", component } }),
+    routes: manifest(appContract, { "app.page": { component: component } }),
     ctx,
     std: file,
   });

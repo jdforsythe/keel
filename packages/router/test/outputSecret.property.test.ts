@@ -1,10 +1,10 @@
-// Properties of the E1113 walk (k.privacy): `action()` and `loader()` throw at declaration exactly when their `output`
+// Properties of the E1113 walk (k.privacy): an API entry of `contract()` and a page `loader()` throw at declaration exactly when their `output`
 // holds an `s.secret` node, naming its dotted path (`*` for an array item or record value).
 // Seed 1337.
+import { contract } from "@keel/router/contract";
 import { type Schema, ok, s } from "@keel/schema";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { action } from "../src/action.ts";
 import { loader } from "../src/loader.ts";
 
 const SEED = 1337;
@@ -63,12 +63,13 @@ function thrown(f: () => unknown): readonly [unknown, string] | null {
   return null;
 }
 
+const view = contract("o", { "o.page": { path: "/" } });
 const declare = {
-  action: (output: Schema<unknown>) => action({ input: s.object({}), output }, async () => ok({})),
-  loader: (output: Schema<unknown>) => loader({ output }, async () => ok({})),
+  contract: (output: Schema<unknown>) => contract("a", { "a.api": { method: "GET", path: "/api/a", output } }),
+  loader: (output: Schema<unknown>) => loader(view, "o.page", { output }, async () => ok({})),
 };
 
-describe("E1113: an s.secret node in a loader or action output", () => {
+describe("E1113: an s.secret node in an API entry or loader output", () => {
   it.each(Object.entries(declare))("%s throws exactly when one is present and names its path", (_name, make) => {
     fc.assert(
       fc.property(tree(5), fc.option(fc.nat()), (t, pick) => {
@@ -90,12 +91,12 @@ describe("E1113: an s.secret node in a loader or action output", () => {
   it("reads through union variants, member lists and formats; an optional s.string() is no secret", () => {
     const v = (tag: string, t: Schema<unknown>) => s.object({ kind: s.literal(tag), t });
     const tagged = s.union("kind", [v("a", s.string()), v("b", s.secret(s.string()))]);
-    expect(thrown(() => declare.action(s.object({ u: tagged })))?.[1]).toBe(
+    expect(thrown(() => declare.contract(s.object({ u: tagged })))?.[1]).toBe(
       'E1113 output holds s.secret at u.t: it would encode as "[secret]"',
     );
     expect(thrown(() => declare.loader(s.union([s.string(), s.secret(s.string())])))?.[1]).toBe(
       'E1113 output holds s.secret at (root): it would encode as "[secret]"',
     );
-    expect(thrown(() => declare.action(s.object({ when: s.string().optional() })))).toBeNull();
+    expect(thrown(() => declare.contract(s.object({ when: s.string().optional() })))).toBeNull();
   });
 });

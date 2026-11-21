@@ -22,7 +22,7 @@ test("a 64-character Toaster id shows toast after toast, past the tenth and the 
   const id = "t".repeat(64);
   const items = held();
   const t = render(
-    page((c) => Toaster({ id, items: () => items.get(), onDismiss: () => {}, dismiss: "Dismiss" }, undefined, c)),
+    page((c) => Toaster({ id, items: () => items.get(), onDismiss: () => {}, dismiss: "Dismiss" }, c)),
     { props: {}, ctx: simCtx() },
   );
   for (let n = 1; n <= 120; n++) {

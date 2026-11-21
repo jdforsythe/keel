@@ -16,9 +16,13 @@ const write = (rel: string, text: string): void => {
   fs.writeFileSync(file, text);
 };
 const page = (id: string): string => `export default function Page() { return ${JSON.stringify(id)}; }\n`;
+const contractOf = (m: string): string => `import { contract } from "@keel/router/contract";
+export const ${m} = contract("${m}", { "${m}.show": { path: "/${m}" } });
+`;
 const routesOf = (m: string): string => `import { manifest } from "@keel/router";
+import { ${m} } from "./${m}.contract.ts";
 import Page from "./Page.tsx";
-export const routes = manifest({ "${m}.show": { path: "/${m}", component: Page } });
+export const routes = manifest(${m}, { "${m}.show": { component: Page } });
 `;
 
 /** `data` of a `{ data, hash }` artifact file. */
@@ -41,6 +45,7 @@ beforeEach(() => {
   );
   for (const m of ["w", "a", "b"]) {
     write(`modules/${m}/Page.tsx`, page(m));
+    write(`modules/${m}/${m}.contract.ts`, contractOf(m));
     write(`modules/${m}/routes.ts`, routesOf(m));
   }
   write(".keel/std.json", '{"data":{},"hash":"x"}\n');

@@ -7,7 +7,7 @@ import { cartModuleFiles, diagCodes, topologySource } from "./fixtures.ts";
 
 const routesFile = (imports: string) => ({
   path: "modules/cart/routes.ts",
-  source: `import { manifest } from '@keel/router'\n${imports}\nexport const routes = manifest({})\n`,
+  source: `import { manifest } from '@keel/router'\nimport { cart } from './cart.contract.ts'\n${imports}\nexport const routes = manifest(cart, {})\n`,
 });
 const SESSIONS = "import { routes as sessions } from '@keel/std-sessions/routes'";
 const RECORD = "import { record } from '@keel/std-sessions/record'";

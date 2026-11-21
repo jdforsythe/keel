@@ -28,6 +28,7 @@ const SUGGEST: ReadonlyMap<string, string> = new Map([
   ["textarea", "TextArea"],
   ["select", "Select"],
   ["label", "Input"],
+  ["iframe", "Frame"],
 ]);
 /** Phrasing tags outside `Text as` that map to its nearest tag. */
 const TEXT_LIKE: ReadonlyMap<string, string> = new Map([

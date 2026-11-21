@@ -5,6 +5,7 @@
 // values and every field error still shows. Property (seed 1337) over secret strings with HTML and JSON metacharacters.
 import { createCtx } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -33,22 +34,19 @@ const control = (type: string, name: string): HTMLInputElement => {
 async function build() {
   const lines: string[] = [];
   let called = 0;
-  const routes = manifest({
+  const c = contract("acct", { "acct.signup": { path: "/signup" } });
+  const signup = action(c, "acct.signup", { input: Input }, () => {
+    called += 1;
+    return ok(null);
+  });
+  const routes = manifest(c, {
     "acct.signup": {
-      path: "/signup",
       component: () => {
         const f = document.createElement("form");
         f.append(control("text", "name"), control("password", "pin"), control("text", "creds.token"));
         return f;
       },
-    },
-  });
-  routes.actions({
-    "acct.signup": {
-      POST: action({ input: Input }, () => {
-        called += 1;
-        return ok(null);
-      }),
+      POST: signup,
     },
   });
   const app = await createApp({

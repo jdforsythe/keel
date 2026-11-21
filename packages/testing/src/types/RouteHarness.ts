@@ -1,9 +1,10 @@
+import type { Ctx, SimCtx } from "@keel/ctx";
 import type { Href } from "@keel/router";
 import type { DocumentNavigation } from "./DocumentNavigation.ts";
 import type { Harness } from "./Harness.ts";
 
 /** A rendered route: the `render` harness plus `route()`, the router's current match, and `navigate`. */
-export interface RouteHarness<S> extends Harness {
+export interface RouteHarness<S, C extends Ctx = SimCtx> extends Harness<C> {
   route(): S;
   /**
    * Navigate the harness's router to `href` (a push); resolves when the new route is rendered and its loaders have

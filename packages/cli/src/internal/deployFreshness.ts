@@ -1,4 +1,5 @@
-import { deployDrift } from "@keel/scaffold";
+import type { Origins } from "@keel/compiler";
+import { type DeployShells, deployDrift } from "@keel/scaffold";
 import type { SourceFile } from "../types/SourceFile.ts";
 import type { Diag } from "./Diag.ts";
 import { makeDiag } from "./makeDiag.ts";
@@ -16,9 +17,14 @@ const message = (have: string | null, want: string | null): string =>
 /**
  * E1005 for each generated deploy file (Dockerfiles, compose, shell files, the CI workflow) of each project in `project` that
  * differs from what `deployFiles` derives from its `topology.ts` (k.deploy Deploy files), with the regenerated
- * file as the fix. `policy` (`shellPolicy`) is what a Tauri shell's `tauri.conf.json` holds.
+ * file as the fix. `policy` (`shellPolicy`) and `shells` (`shellTargets`) are what the shell targets are given and are;
+ * `policy` gives the policy for a deployable's declared origins (k.origins).
  */
-export function deployFreshness(project: readonly SourceFile[], policy?: string): Diag[] {
+export function deployFreshness(
+  project: readonly SourceFile[],
+  policy: ((origins?: Origins) => string) | undefined,
+  shells: DeployShells,
+): Diag[] {
   const dirs: string[] = [];
   for (const f of project) {
     const dir = TOPOLOGY.exec(f.path)?.[1];
@@ -30,7 +36,7 @@ export function deployFreshness(project: readonly SourceFile[], policy?: string)
     const tree = new Map(
       project.filter((f) => f.path.startsWith(dir)).map((f) => [f.path.slice(dir.length), f.source]),
     );
-    for (const d of deployDrift(tree, false, policy)) {
+    for (const d of deployDrift(tree, false, policy, shells)) {
       const path = `${dir}${d.path}`;
       const fix = unifiedDiff(path, d.have, d.want);
       out.push(makeDiag("E1005", message(d.have, d.want), { path, line: 1, col: 1, fix, see: "k.deploy" }));

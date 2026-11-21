@@ -3,14 +3,14 @@
 // the owner change failing other owners' entries, the flush's owner filter, the load marking a stored origin. Seed 1337.
 import { type SimCtx, createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
-import { endpoints } from "@keel/services";
 import { expect, test } from "vitest";
 import { Write, drain, outbox, send } from "../src/index.ts";
 import { field } from "../src/internal/field.ts";
 
-const Api = endpoints({
-  add: { method: "POST", path: "/add", body: s.object({ t: s.string(), write: Write }), output: s.object({}) },
+const Api = contract("app", {
+  "app.add": { method: "POST", path: "/add", body: s.object({ t: s.string(), write: Write }), output: s.object({}) },
 });
 const settle = async (): Promise<void> => {
   for (let i = 0; i < 400; i++) await Promise.resolve();
@@ -38,7 +38,7 @@ async function queuedByA(ctx: SimCtx): Promise<void> {
 function page(ctx: SimCtx, owner: string) {
   const held: { o?: ReturnType<typeof outbox<typeof Api>> } = {};
   const sc = scope(() => {
-    held.o = outbox("shared.outbox", Api, { module: "app" });
+    held.o = outbox("shared.outbox", Api);
     void drain(ctx, held.o, { owner });
   });
   if (held.o === undefined) throw new Error("no outbox");

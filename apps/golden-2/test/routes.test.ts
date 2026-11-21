@@ -2,6 +2,7 @@ import { createCtx } from "@keel/ctx";
 import { renderRoute } from "@keel/testing";
 import { describe, expect, it } from "vitest";
 import { Box } from "../modules/kitchen/Box.schema.ts";
+import { recipes } from "../modules/recipes/recipes.contract.ts";
 import { routes } from "../modules/recipes/routes.ts";
 import { asJson, draft, simApi } from "./simApi.ts";
 
@@ -14,7 +15,7 @@ async function seed(api: Api, title: string, minutes: number, amount = 1250, cur
   const body: unknown = await res.json();
   const results = typeof body === "object" && body !== null && "results" in body ? body.results : null;
   const entry =
-    typeof results === "object" && results !== null && "kitchen.recipes" in results ? results["kitchen.recipes"] : null;
+    typeof results === "object" && results !== null && "kitchen.box" in results ? results["kitchen.box"] : null;
   const value = typeof entry === "object" && entry !== null && "value" in entry ? Box.parse(entry.value) : null;
   const found = value?.ok ? value.value.recipes.find((r) => r.title === title) : undefined;
   return found?.id ?? "";
@@ -56,10 +57,10 @@ describe("recipes.index", () => {
   });
   it("links each locale's index, and an en-US link has no prefix", () => {
     const rid = createCtx({ mode: "sim", seed: 5 }).random.id("Recipe");
-    expect(routes.href("recipes.index", { locale: "en-US" })).toBe("/");
-    expect(routes.href("recipes.index", { locale: "de-DE" })).toBe("/de-DE");
-    expect(routes.href("recipes.show", { locale: "en-US", recipeId: rid })).toBe(`/recipes/${rid}`);
-    expect(routes.href("recipes.show", { locale: "ja-JP", recipeId: rid })).toBe(`/ja-JP/recipes/${rid}`);
+    expect(recipes.href("recipes.index", { locale: "en-US" })).toBe("/");
+    expect(recipes.href("recipes.index", { locale: "de-DE" })).toBe("/de-DE");
+    expect(recipes.href("recipes.show", { locale: "en-US", recipeId: rid })).toBe(`/recipes/${rid}`);
+    expect(recipes.href("recipes.show", { locale: "ja-JP", recipeId: rid })).toBe(`/ja-JP/recipes/${rid}`);
   });
 });
 

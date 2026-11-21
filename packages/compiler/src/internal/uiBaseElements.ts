@@ -1,6 +1,6 @@
 import type { Analysis } from "./Analysis.ts";
 
-/** `@keel/ui` base elements (k.ui Base elements). */
+/** `@keel/ui` base elements (k.ui Base elements), the host element among them (k.host-element). */
 const BASE: ReadonlySet<string> = new Set([
   "Box",
   "Text",
@@ -12,6 +12,7 @@ const BASE: ReadonlySet<string> = new Set([
   "TextArea",
   "Select",
   "Checkbox",
+  "Host",
 ]);
 
 /** Local JSX name -> base element name, for value imports of base elements from `@keel/ui` in this file. */

@@ -1,10 +1,13 @@
 // @vitest-environment happy-dom
 // Spec: k.compiler, clause "A string containing `<script>` or `"><img onerror=x>` rendered as a child or attribute value appears verbatim as text or attribute value and creates no element."
 // Seed 1337 (fc.assert seed below).
+import { createCtx } from "@keel/ctx";
 import { mount } from "@keel/runtime-dom";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { load, sigOf } from "./support.ts";
+
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 const src = `
 import { signal } from '@keel/reactive'
@@ -29,7 +32,7 @@ test('A string containing <script> or "><img onerror=x> rendered as a child or a
     fc.property(hostile, (str) => {
       v.set(str);
       const host = document.createElement("div");
-      const dispose = mount(X, host);
+      const dispose = mount(X, host, { ctx: simCtx });
       const p = host.querySelector("p");
       expect(p?.textContent).toBe(str);
       expect(p?.getAttribute("title")).toBe(str);

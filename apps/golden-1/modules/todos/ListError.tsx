@@ -1,6 +1,6 @@
 import { type Infer, s } from "@keel/schema";
 import { Box, Heading, Link, Text } from "@keel/ui";
-import { routes } from "./routes.ts";
+import { todos } from "./todos.contract.ts";
 
 export const Props = s.object({
   error: s.object({ code: s.string(), message: s.string() }),
@@ -19,7 +19,7 @@ export default function ListError(props: Infer<typeof Props>) {
       <Text as="p" id="todos.error.message" m="0" font="mono" fontSize="sm">
         {props.error.message}
       </Text>
-      <Link id="todos.error.home" to={routes.href("todos.index")} fg="text">
+      <Link id="todos.error.home" to={todos.href("todos.index")} fg="text">
         Back to lists
       </Link>
     </Box>

@@ -4,6 +4,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { eventQueue } from "../src/internal/eventQueue.ts";
 import { clone, on, resume, template } from "../src/ops/index.ts";
+import { testCtx } from "./testCtx.ts";
 
 const island = (id: string, clicks: string[]) => {
   const T = template(`<div data-k-island="${id}"><button data-k="${id}.b">x</button></div>`);
@@ -37,10 +38,10 @@ describe("resume called once per root", () => {
     const b = host("B");
     click(b);
     click(a);
-    expect(resume(a, { A: island("A", clicks) }).warnings).toEqual([]);
+    expect(resume(a, { A: island("A", clicks) }, { ctx: testCtx }).warnings).toEqual([]);
     expect(clicks).toEqual(["A"]);
     expect(eventQueue.pending()).toBe(1);
-    expect(resume(b, { B: island("B", clicks) }).warnings).toEqual([]);
+    expect(resume(b, { B: island("B", clicks) }, { ctx: testCtx }).warnings).toEqual([]);
     expect(clicks).toEqual(["A", "B"]);
     expect(eventQueue.pending()).toBe(0);
   });

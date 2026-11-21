@@ -12,11 +12,13 @@ const testEvent = s.union("type", [
   o({ type: s.literal("submit") }),
   o({ type: s.literal("focus") }),
   o({ type: s.literal("blur") }),
+  o({ type: s.literal("emit"), detail: s.json() }),
 ]);
 
 /**
  * One recorded event (std.sessions): `at` is `ctx.clock.now()` when it was appended. A `nav` keeps the href as a
- * string; `replay` re-derives a typed `Href` from the route table. An `error` keeps the id of the route it fired
+ * string; `replay` re-derives a typed `Href` from the route table. A `fire` of `type: 'emit'` is a host element's report
+ * (k.host-element), `detail` encoded by its `events` schema; `replay` applies it without loading the element's code. An `error` keeps the id of the route it fired
  * under (the latest `nav`'s, else the base's), so the fingerprint is recomputable from the session alone.
  */
 export const SessionEvent = s.union("kind", [

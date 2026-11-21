@@ -6,7 +6,7 @@
 import { check } from "@keel/check";
 import { scope } from "@keel/reactive";
 import { type Schema, s } from "@keel/schema";
-import { endpoints } from "@keel/services";
+import { contract } from "@keel/router/contract";
 import { Write, outbox } from "@keel/std-offline";
 import "@keel/std-offline/tools";
 import fc from "fast-check";
@@ -31,15 +31,15 @@ function nest(leaf: Schema<unknown>, wraps: readonly Wrap[]): Schema<unknown> {
 
 let n = 0;
 const declare = (secret: boolean, wraps: readonly Wrap[]) => () => {
-  const api = endpoints({
-    save: {
+  const api = contract("todos", {
+    "todos.save": {
       method: "POST",
       path: "/save",
       body: s.object({ field: nest(secret ? s.secret(s.string()) : s.string(), wraps), write: Write }),
       output: s.object({}),
     },
   });
-  return outbox(`e2651${++n}.outbox`, api, { module: "todos" });
+  return outbox(`e2651${++n}.outbox`, api, {});
 };
 
 test("`outbox` throws E2651 for an api with a nested `s.secret` in an endpoint body, and not for its clean twin.", () => {
@@ -59,20 +59,20 @@ type Files = Parameters<typeof check>[0];
 const manifest = `import { module } from "@keel/compiler"
 export default module({ id: "todos", deps: ["@keel/std-offline"], capabilities: ["clock", "net", "random", "storage"] })
 `;
-const apiFile = (field: string) => `import { endpoints } from "@keel/services"
+const apiFile = (field: string) => `import { contract } from "@keel/router/contract"
 import { Write } from "@keel/std-offline"
 import { s } from "@keel/schema"
-export const TodosApi = endpoints({
-  editTodo: { method: "POST", path: "/todos/:todoId", params: s.object({ todoId: s.string() }), body: s.object({ ${field}, write: Write }), output: s.object({}) },
+export const todos = contract("todos", {
+  "todos.editTodo": { method: "POST", path: "/todos/:todoId", params: s.object({ todoId: s.string() }), body: s.object({ ${field}, write: Write }), output: s.object({}) },
 })
 `;
 const outboxFile = `import { outbox } from "@keel/std-offline"
-import { TodosApi } from "./TodosApi.schema.ts"
-export const boardOutbox = outbox("todos.outbox", TodosApi, { module: "todos", limit: 100 })
+import { todos } from "./todos.contract.ts"
+export const boardOutbox = outbox("todos.outbox", todos, { limit: 100 })
 `;
 const project = (field: string): Files => [
   { path: "modules/todos/module.ts", source: manifest },
-  { path: "modules/todos/TodosApi.schema.ts", source: apiFile(field) },
+  { path: "modules/todos/todos.contract.ts", source: apiFile(field) },
   { path: "modules/todos/boardOutbox.ts", source: outboxFile },
   {
     path: "topology.ts",

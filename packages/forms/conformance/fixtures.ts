@@ -8,8 +8,11 @@ import { createCtx } from "@keel/ctx";
 import { form } from "@keel/forms";
 import { effect } from "@keel/reactive";
 import { Form, type Href, action, createRouter, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { mount } from "@keel/runtime-dom";
 import { type KeelError, type Result, ok, s } from "@keel/schema";
+
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 export const SEED = 1337;
 export const RUNS = 25;
@@ -138,7 +141,11 @@ export function setup(opts: { order?: readonly Field[]; initial?: Record<string,
   const order = opts.order ?? FIELDS;
   const calls: unknown[] = [];
   const handler: Harness["handler"] = { current: () => ok(null) };
-  const save = action({ input: Note }, async (input: unknown): Promise<Outcome> => {
+  const notesContract = contract("notes", {
+    "notes.edit": { path: "/notes" },
+  });
+
+  const save = action(notesContract, "notes.edit", { input: Note }, async (input: unknown): Promise<Outcome> => {
     calls.push(input);
     return handler.current(input);
   });
@@ -149,7 +156,7 @@ export function setup(opts: { order?: readonly Field[]; initial?: Record<string,
     holder.f = f;
     return Form({
       method: "POST",
-      action: routes.href("notes.edit"),
+      action: notesContract.href("notes.edit"),
       form: f,
       error: (e: { message: string }) => {
         const d = document.createElement("div");
@@ -160,15 +167,14 @@ export function setup(opts: { order?: readonly Field[]; initial?: Record<string,
       children: () => [...order.map((n) => plainInput(f.field(n))), plainSubmit()],
     });
   };
-  const routes = manifest({
-    "notes.edit": { path: "/notes", component: Page },
+  const routes = manifest(notesContract, {
+    "notes.edit": { component: Page, POST: save },
   });
-  routes.actions({ "notes.edit": { POST: save } });
   const ctx = createCtx({ mode: "sim" });
   const router = createRouter(routes, { ctx, history: memoryHistory("/notes") });
   const root = document.createElement("div");
   document.body.appendChild(root);
-  const disposeMount = mount(router.App, root);
+  const disposeMount = mount(router.App, root, { ctx: simCtx });
   const f = must(holder.f, "form handle");
   const fire = (name: Field, type: string) =>
     fieldInput(root, name).dispatchEvent(new Event(type, { bubbles: type !== "blur" && type !== "focus" }));

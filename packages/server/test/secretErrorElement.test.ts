@@ -4,6 +4,7 @@
 // returns. Covers a loader `err` during the re-render (400) and a component throw its errorElement catches (500).
 import { createCtx } from "@keel/ctx";
 import { action, loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { err, ok, s } from "@keel/schema";
 import { describe, expect, it } from "vitest";
 import { createApp, topology } from "../src/index.ts";
@@ -11,12 +12,16 @@ import { createApp, topology } from "../src/index.ts";
 const SECRET = "PIN-SECRET-123";
 
 async function build(fail: "loader" | "throw" | "none") {
-  const routes = manifest({
+  const c = contract("acct", { "acct.pin": { path: "/pin" } });
+  const load = loader(c, "acct.pin", { output: s.object({ n: s.int() }) }, () =>
+    Promise.resolve(fail === "loader" ? err({ code: "acct.down", message: "down", data: null }) : ok({ n: 1 })),
+  );
+  const save = action(c, "acct.pin", { input: s.object({ name: s.string({ min: 3 }), pin: s.string() }) }, () =>
+    ok(null),
+  );
+  const routes = manifest(c, {
     "acct.pin": {
-      path: "/pin",
-      loader: loader({ output: s.object({ n: s.int() }) }, () =>
-        Promise.resolve(fail === "loader" ? err({ code: "acct.down", message: "down", data: null }) : ok({ n: 1 })),
-      ),
+      loader: load,
       component: () => {
         if (fail === "throw") throw new Error("page broke");
         const f = document.createElement("form");
@@ -33,10 +38,8 @@ async function build(fail: "loader" | "throw" | "none") {
         p.setAttribute("data-error", error.code);
         return p;
       },
+      POST: save,
     },
-  });
-  routes.actions({
-    "acct.pin": { POST: action({ input: s.object({ name: s.string({ min: 3 }), pin: s.string() }) }, () => ok(null)) },
   });
   return createApp({
     topology: topology({ web: { modules: ["acct"], adapter: "node" } }),

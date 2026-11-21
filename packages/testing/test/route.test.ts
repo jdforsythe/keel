@@ -3,6 +3,7 @@
 import { createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
 import { Form, action, loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import { store, transaction, tx } from "@keel/store";
 import { renderRoute } from "@keel/testing";
@@ -29,10 +30,18 @@ const el = (tag: string, attrs: Record<string, string>, text?: string): HTMLElem
 };
 
 const loads = { n: 0 };
-const routes = manifest({
+const c = contract("rt", {
+  "rt.list": { path: "/rt" },
+  "rt.show": { path: "/rt/:n", params: s.object({ n: s.int() }) },
+});
+const save = action(c, "rt.list", { input: s.object({ title: s.string() }) }, async ({ title }) => {
+  tx(add, { title });
+  return ok(c.href("rt.show", { n: list.snapshot().state.titles.length }));
+});
+const routes = manifest(c, {
   "rt.list": {
-    path: "/rt",
-    loader: loader({ output: s.object({ count: s.int() }) }, async () => {
+    POST: save,
+    loader: loader(c, "rt.list", { output: s.object({ count: s.int() }) }, async () => {
       loads.n++;
       return ok({ count: list.snapshot().state.titles.length });
     }),
@@ -43,7 +52,7 @@ const routes = manifest({
       root.append(el("p", { id: "rt.count" }, `count ${String(count)}`));
       const form = Form({
         method: "POST",
-        action: routes.href("rt.list"),
+        action: c.href("rt.list"),
         children: () => [
           el("label", { for: "rt.title" }, "Title"),
           el("input", { id: "rt.title", name: "title" }),
@@ -56,20 +65,10 @@ const routes = manifest({
     },
   },
   "rt.show": {
-    path: "/rt/:n",
-    params: s.object({ n: s.int() }),
     component: (props) => {
       const n = typeof props.params === "object" && props.params !== null ? Reflect.get(props.params, "n") : undefined;
       return el("h1", { id: "rt.heading" }, `note ${String(n)}`);
     },
-  },
-});
-routes.actions({
-  "rt.list": {
-    POST: action({ input: s.object({ title: s.string() }) }, async ({ title }) => {
-      tx(add, { title });
-      return ok(routes.href("rt.show", { n: list.snapshot().state.titles.length }));
-    }),
   },
 });
 

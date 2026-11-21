@@ -8,6 +8,7 @@ import { evaluate } from "@keel/compiler/testing";
 import { createCtx } from "@keel/ctx";
 import * as reactive from "@keel/reactive";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import * as ui from "@keel/ui";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -130,6 +131,9 @@ const level = tree.chain((t) =>
   uiOnly(t) ? fc.record({ tree: fc.constant(t), calls: fc.boolean() }) : fc.constant({ tree: t, calls: false }),
 );
 
+const pageOnly = contract("app", { "app.page": { path: "/" } });
+const withShell = contract("app", { "app.shell": { layout: true }, "app.page": { path: "/" } });
+
 const count = (html: string, id: string): number => html.split(`data-k-island="${id}"`).length - 1;
 
 describe("ui and JSX route roots are marked exactly when bound (backlog 0182)", () => {
@@ -143,10 +147,10 @@ describe("ui and JSX route roots are marked exactly when bound (backlog 0182)", 
         const page = make(pageLevel, false);
         const routes =
           shell === undefined
-            ? manifest({ "app.page": { path: "/", component: page } })
-            : manifest({
+            ? manifest(pageOnly, { "app.page": { component: page } })
+            : manifest(withShell, {
                 "app.shell": { component: make(shell, true) },
-                "app.page": { path: "/", component: page, layout: "app.shell" },
+                "app.page": { component: page, layout: "app.shell" },
               });
         const app = await createApp({
           topology: topology({ web: { modules: ["app"], adapter: "node" } }),

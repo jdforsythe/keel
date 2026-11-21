@@ -5,6 +5,7 @@ import type { LedgerItem } from "./LedgerItem.ts";
 import { TEST_FILE } from "./TEST_FILE.ts";
 import type { TestRef } from "./TestRef.ts";
 import { citesClause } from "./citesClause.ts";
+import { countHosts } from "./countHosts.ts";
 import { makeDiag } from "./makeDiag.ts";
 import { monitoredEvidence } from "./monitoredEvidence.ts";
 import { scrubCode } from "./scrubCode.ts";
@@ -22,6 +23,8 @@ const APP_MANIFESTS = new Set(["module.ts", "routes.ts"]);
 const UNSAFE_CALL = /(?<!function\s)\bunsafe\s*(?:<[^<>()]*(?:<[^<>()]*>[^<>()]*)*>)?\s*\(/g;
 const PKG = /^packages\/([^/]+)\/([^/]+)\//;
 const APP = /^apps\/([^/]+)\/(.+)$/;
+/** An app's own modules when `keel ledger` runs in the app's folder. */
+const ROOT_APP = /^modules\//;
 const OTHER_HEADER = "// Clause:";
 
 /**
@@ -57,7 +60,8 @@ const evidenceFor = (refs: readonly TestRef[], name: string, file: string): Ledg
  *   with a leading `// Spec: <id>` header block (`specHeaders`, which may wrap) that quotes the clause (`citesClause`:
  *   backticks, quote style, spacing and case aside). A `// Clause:` header is not read; it is W1706 with the fix.
  * Export items also get `monitored` evidence from `.keel/monitored.json` (`monitoredEvidence`; E1711 when it fails its
- * shape). Also the `unsafe(...)` calls in `packages/<pkg>/{src,unsafe}` and, per app, in `apps/<app>/**`. `z3` is the Z3
+ * shape). Also the `unsafe(...)` calls in `packages/<pkg>/{src,unsafe}` and, per app, in `apps/<app>/**`, and the host
+ * elements (`countHosts`) in those files and, per file, in a root `modules/**` (an app's own folder). `z3` is the Z3
  * version a `prove` call's `proven` evidence names (default: the installed `z3-solver`'s, `z3Version`).
  */
 export function buildLedger(
@@ -67,6 +71,9 @@ export function buildLedger(
   items: LedgerItem[];
   unsafe: number;
   appUnsafe: Record<string, number>;
+  hostElements: number;
+  appHosts: Record<string, number>;
+  rootHosts: Record<string, number>;
   diags: Diag[];
 } {
   const code = files.filter((f) => CODE_FILE.test(f.path));
@@ -76,13 +83,27 @@ export function buildLedger(
   };
   let unsafe = 0;
   const appUnsafe: Record<string, number> = {};
+  let hostElements = 0;
+  const appHosts: Record<string, number> = {};
+  const rootHosts: Record<string, number> = {};
   for (const f of code) {
     const p = PKG.exec(f.path);
     const a = APP.exec(f.path);
     if (p?.[1] !== undefined && (p[2] === "test" || p[2] === "conformance")) add(`packages/${p[1]}`, f);
-    if (p?.[1] !== undefined && (p[2] === "src" || p[2] === "unsafe")) unsafe += countUnsafe(f.source);
+    if (p?.[1] !== undefined && (p[2] === "src" || p[2] === "unsafe")) {
+      unsafe += countUnsafe(f.source);
+      hostElements += countHosts(f.path, f.source);
+    }
+    if (ROOT_APP.test(f.path)) {
+      const n = countHosts(f.path, f.source);
+      hostElements += n;
+      if (n > 0) rootHosts[f.path] = n;
+    }
     if (a?.[1] === undefined || a[2] === undefined) continue;
     appUnsafe[a[1]] = (appUnsafe[a[1]] ?? 0) + countUnsafe(f.source);
+    const hosts = countHosts(f.path, f.source);
+    hostElements += hosts;
+    appHosts[a[1]] = (appHosts[a[1]] ?? 0) + hosts;
     if (a[2].startsWith("test/") || (a[2].startsWith("modules/") && TEST_FILE.test(f.path))) add(`apps/${a[1]}`, f);
   }
   const known = new Set(code.map((f) => f.path));
@@ -153,5 +174,5 @@ export function buildLedger(
       .flatMap((h) => h.tests.map((t) => ({ ev: t.ev, path: t.path })));
     items.push({ item: `${id}#${n}`, evidence });
   }
-  return { items, unsafe, appUnsafe, diags };
+  return { items, unsafe, appUnsafe, hostElements, appHosts, rootHosts, diags };
 }

@@ -8,6 +8,7 @@
 import type { Ctx } from "@keel/ctx";
 import { mount } from "@keel/runtime-dom";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { resumeDocument } from "@keel/testing";
 import * as fc from "fast-check";
@@ -36,14 +37,9 @@ const c = compiled<{ readonly label: string }>("ResumeDoc", SOURCE, s.object({ l
 
 const islandHtml = (label: string): string => {
   const scratch = document.createElement("div");
-  const dispose = mount(
-    (_p: Readonly<Record<string, unknown>>, _s?: Parameters<typeof c.component>[1], ctx?: Ctx) =>
-      c.component({ label }, undefined, ctx),
-    scratch,
-    {
-      ctx: simCtx(),
-    },
-  );
+  const dispose = mount((_p: Readonly<Record<string, unknown>>, ctx: Ctx) => c.component({ label }, ctx), scratch, {
+    ctx: simCtx(),
+  });
   const root = scratch.firstElementChild;
   if (root === null) throw new Error("fixture: no island root");
   root.setAttribute("data-k-island", ROUTE);
@@ -55,12 +51,13 @@ const islandHtml = (label: string): string => {
 const documentOf = (label: string, islands: Record<string, unknown>): string =>
   `<!doctype html><html><head><title>t</title></head><body>${islandHtml(label)}<script type="application/json" id="k-state">${JSON.stringify({ stores: {}, islands })}</script></body></html>`;
 
-const island = (p: Readonly<Record<string, unknown>>, _s?: Parameters<typeof c.component>[1], ctx?: Ctx): Node => {
+const island = (p: Readonly<Record<string, unknown>>, ctx: Ctx): Node => {
   const label = p.label;
   if (typeof label !== "string") throw new Error("fixture: island props lack a label");
-  return c.component({ label }, undefined, ctx);
+  return c.component({ label }, ctx);
 };
-const routesWith = (id: string) => manifest({ [id]: { path: "/rd", component: island } });
+const routesWith = (id: string) =>
+  manifest(contract(id.split(".")[0] ?? "rd", { [id]: { path: "/rd" } }), { [id]: { component: island } });
 
 describe("k.testing: resumeDocument", () => {
   it("`resumeDocument` of an island document from `createApp` lets `fire` run the island's handlers", async () => {

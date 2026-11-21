@@ -3,6 +3,7 @@
 import { mount } from "@keel/runtime-dom";
 import { Part } from "@keel/ui/aria";
 import { expect, test } from "vitest";
+import { testCtx } from "./testCtx.ts";
 
 test("a button part renders without `controls`, and with it writes `aria-controls`", () => {
   const host = document.createElement("div");
@@ -18,6 +19,7 @@ test("a button part renders without `controls`, and with it writes `aria-control
         ],
       }),
     host,
+    { ctx: testCtx },
   );
   expect(host.querySelector("#a")?.hasAttribute("aria-controls")).toBe(false);
   expect(host.querySelector("#a")?.getAttribute("aria-haspopup")).toBe("menu");

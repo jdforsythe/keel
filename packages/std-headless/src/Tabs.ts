@@ -7,8 +7,8 @@ import type { Option } from "./Option.ts";
 import type { Named } from "./internal/Named.ts";
 import type { OptionState } from "./internal/OptionState.ts";
 import { content } from "./internal/content.ts";
-import { listChart } from "./internal/listChart.ts";
 import { nameOf } from "./internal/nameOf.ts";
+import { listChart } from "./listChart.ts";
 
 /**
  * Tabs with automatic activation (std.options, APG Tabs). Parts `list`, `tab.<key>` and `panel.<key>`. Only the
@@ -26,8 +26,7 @@ export function Tabs<K extends string>(
     readonly panel: (key: K) => Child;
     readonly styles?: { readonly list?: PartStyle; readonly tab?: PartStyle; readonly panel?: PartStyle };
   },
-  _slots?: undefined,
-  ctx?: Ctx,
+  ctx: Ctx,
 ): Node {
   const id = props.id;
   const l = listChart(id, "tab", props.tabs, ctx);
@@ -73,6 +72,13 @@ export function Tabs<K extends string>(
                 onFocus: () => l.opened(l.indexOf(key)),
                 onBlur: () => l.close(false),
                 onKey,
+                onClick: () => {
+                  const option = o.get();
+                  if (option === undefined || option.disabled === true) return;
+                  l.opened(l.indexOf(key));
+                  l.jump(l.indexOf(key));
+                  props.onChange(key);
+                },
                 children: () => content(o, props.tab, s),
               });
             },

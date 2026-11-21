@@ -7,6 +7,7 @@ import type { Ctx } from "@keel/ctx";
 import { report } from "@keel/ctx/internal";
 import { scope } from "@keel/reactive";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { store, transaction, tx } from "@keel/store";
 import { renderRoute } from "@keel/testing";
@@ -19,9 +20,8 @@ import { utf8Length } from "../src/internal/utf8Length.ts";
 function build() {
   const memo = store(s.object({ note: s.string() }), { note: "" }, { id: "memo" });
   const save = transaction(memo, "memo.save", s.object({ note: s.string() }), (st, p) => ({ ...st, note: p.note }));
-  const routes = manifest({
+  const routes = manifest(contract("memo", { "memo.edit": { path: "/memo" } }), {
     "memo.edit": {
-      path: "/memo",
       component(): Node {
         return Box({
           as: "main",

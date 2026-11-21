@@ -1,5 +1,7 @@
 // Properties of the guard redirect helpers (k.guards): `next` never nests, loops and a ninth hop are E1508.
 // Seed 1337.
+import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { err, s } from "@keel/schema";
 import fc from "fast-check";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -7,19 +9,17 @@ import { guard } from "../src/guard.ts";
 import { MAX_GUARD_HOPS } from "../src/internal/MAX_GUARD_HOPS.ts";
 import { MAX_NEXT_LENGTH } from "../src/internal/MAX_NEXT_LENGTH.ts";
 import { carriedNext } from "../src/internal/carriedNext.ts";
-import { compileRoutes, compileTable, guardLoop, guardNext, withNext } from "../src/internal/index.ts";
+import { compileRoutes, guardLoop, guardNext, withNext } from "../src/internal/index.ts";
 import { nextOf } from "../src/internal/nextOf.ts";
-import type { RouteDef } from "../src/types/RouteDef.ts";
 
 const SEED = 1337;
 const Denied = s.error("keel.denied", s.object({}));
 const auth = guard({ redirect: "app.login" }, async () => err(Denied.make({})));
 const Page = () => document.createTextNode("");
-const defs: Record<string, RouteDef> = {
-  "app.login": { path: "/login", component: Page },
-  "app.list": { path: "/list", component: Page, guard: auth },
-};
-const table = compileTable(compileRoutes(defs), defs);
+const app = contract("app", { "app.login": { path: "/login" }, "app.list": { path: "/list" } });
+const table = compileRoutes(
+  manifest(app, { "app.login": { component: Page }, "app.list": { component: Page, guard: auth } }),
+).located;
 const segment = fc.stringMatching(/^[a-z0-9]{1,6}$/);
 const appPath = fc
   .tuple(

@@ -6,7 +6,7 @@ import { scope } from "@keel/reactive";
 import { drain, outbox, resolve, send } from "@keel/std-offline";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { Api, MODULE, TODOS, createServer, edit, entriesOf, settle, simCtx, stored } from "./fixtures.ts";
+import { Api, TODOS, createServer, edit, entriesOf, settle, simCtx, stored } from "./fixtures.ts";
 
 let n = 0;
 const titles = fc.array(fc.string({ minLength: 1, maxLength: 8 }), { minLength: 1, maxLength: 3 });
@@ -15,7 +15,7 @@ test("With one outbox declared outside a scope, entries queued offline on ctx A 
   await fc.assert(
     fc.asyncProperty(titles, async (ts) => {
       const id = `ctxs${++n}.outbox`;
-      const o = outbox(id, Api, { module: MODULE });
+      const o = outbox(id, Api, {});
       const a = simCtx();
       const b = simCtx();
       const server = createServer();

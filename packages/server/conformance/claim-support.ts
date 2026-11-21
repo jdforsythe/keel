@@ -2,6 +2,7 @@
 // Pages are TSX compiled at run time (`compile` and `evaluate`); `createApp` serves them and a test resumes the served body
 // either in place (`resume`, observed by a MutationObserver) or in a module graph of its own (`resumeDocument`).
 // Property seed for every property: 1337.
+import type { Ctx } from "@keel/ctx";
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
 import * as router from "@keel/router";
@@ -11,7 +12,7 @@ import * as aria from "@keel/ui/aria";
 
 export const SEED = 1337;
 
-export type Page = (props: RouteProps) => Node;
+export type Page = (props: RouteProps, ctx: Ctx) => Node;
 
 /** The packages a compiled page imports beyond the kernel's own. */
 export const MODULES: Record<string, unknown> = { "@keel/ui": ui, "@keel/ui/aria": aria, "@keel/router": router };
@@ -24,8 +25,8 @@ export function compilePage(name: string, source: string, modules: Record<string
   if (out === undefined) throw new Error("fixture: no compiler output");
   const fn = evaluate(out.code, modules);
   if (typeof fn !== "function") throw new Error("fixture: default export is not a component");
-  return (props) => {
-    const node: unknown = fn(props);
+  return (props, ctx) => {
+    const node: unknown = fn(props, ctx);
     if (!(node instanceof Node)) throw new Error("fixture: component did not return a Node");
     return node;
   };

@@ -5,7 +5,9 @@ import { cspPolicy } from "../csp/cspPolicy.ts";
 import { CSP_PATH } from "./CSP_PATH.ts";
 import type { Rendered } from "./Rendered.ts";
 import type { Req } from "./Req.ts";
+import { diagLine } from "./diagLine.ts";
 import { documentHtml } from "./documentHtml.ts";
+import { framedApart } from "./framedApart.ts";
 import { headHtml } from "./headHtml.ts";
 import { moduleOf } from "./moduleOf.ts";
 import { nonceOf } from "./nonceOf.ts";
@@ -19,8 +21,9 @@ import { snapshotStores } from "./snapshotStores.ts";
  * (`Served.entry`) loads only when an island was rendered; then `std` carries the
  * client-readable part (`clientStdData`: `clientStd` packages, the served deployable's modules) of the `std.json` data
  * `createApp({ std })` bound, which the resume entry binds in the browser (k.module); absent when that part
- * is empty. HEAD has no body. Each document draws a fresh nonce (`nonceOf`) and carries the k.security policy with it
- * (report-only in dev) and `Reporting-Endpoints`; `cache-control: private, no-store`, since no cache may replay its nonce.
+ * is empty. HEAD has no body. Each document draws a fresh nonce (`nonceOf`) and carries the k.security policy with it,
+ * widened by the served deployable's declared origins (k.origins; report-only in dev) less the document's own origin
+ * under `frame` (in dev `http://localhost:<port>`, logged once as an E1590 `diag`), and `Reporting-Endpoints`; `cache-control: private, no-store`, since no cache may replay its nonce.
  */
 export function documentResponse(
   r: Req,
@@ -41,6 +44,17 @@ export function documentResponse(
     ...(std === undefined ? {} : { std }),
   };
   const nonce = nonceOf(r.sv.ctx);
+  const own = new URL(r.url).origin;
+  const origins = framedApart(r.sv.origins, own);
+  if (origins !== r.sv.origins && r.sv.mode === "dev" && r.sv.framed?.has(own) === false) {
+    r.sv.framed.add(own);
+    r.sv.log?.write(
+      diagLine(r.sv.log.format, {
+        code: "E1590",
+        message: `${r.sv.name}: origins.frame: ${own} is the app's own origin`,
+      }),
+    );
+  }
   const html = documentHtml(
     rendered.html,
     state,
@@ -55,7 +69,7 @@ export function documentResponse(
     headers: {
       "content-type": "text/html; charset=utf-8",
       "cache-control": "private, no-store",
-      [policyHeader(r.sv.mode)]: cspPolicy({ nonce, dev: r.sv.mode === "dev" }),
+      [policyHeader(r.sv.mode)]: cspPolicy({ nonce, dev: r.sv.mode === "dev", origins }),
       "reporting-endpoints": `keel-csp="${CSP_PATH}"`,
     },
   });

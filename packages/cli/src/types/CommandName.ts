@@ -4,7 +4,7 @@ export type CommandName =
   | "test"
   | "build"
   | "dev"
-  | "spec"
+  | "docs"
   | "explain"
   | "inspect"
   | "render"

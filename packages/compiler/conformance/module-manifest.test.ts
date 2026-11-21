@@ -13,7 +13,6 @@ const manifest = fc.record({
   capabilities: fc.uniqueArray(fc.constantFrom("clock", "random", "net", "storage"), { maxLength: 4 }),
   public: fc.record({
     exports: fc.uniqueArray(pascal, { maxLength: 4 }),
-    routes: fc.uniqueArray(lowerId, { maxLength: 3 }),
   }),
 });
 
@@ -27,7 +26,7 @@ test("ModuleSchema accepts every well-formed manifest, including stdlib package 
 });
 
 test("ModuleSchema rejects an id that is not lowerCamel", () => {
-  const base = { deps: [], capabilities: [], public: { exports: [], routes: [] } };
+  const base = { deps: [], capabilities: [], public: { exports: [] } };
   const bad = fc.oneof(
     pascal,
     fc.stringMatching(/^[a-z]{2,5}-[a-z]{2,5}$/),
@@ -44,17 +43,17 @@ test("ModuleSchema rejects an id that is not lowerCamel", () => {
 });
 
 test("ModuleSchema rejects a manifest without an id", () => {
-  expect(ModuleSchema.parse({ deps: [], capabilities: [], public: { exports: [], routes: [] } }).ok).toBe(false);
+  expect(ModuleSchema.parse({ deps: [], capabilities: [], public: { exports: [] } }).ok).toBe(false);
 });
 
 test("ModuleSchema rejects non-array or non-string deps, capabilities, and public lists", () => {
-  const base = { id: "orders", deps: [], capabilities: [], public: { exports: [], routes: [] } };
+  const base = { id: "orders", deps: [], capabilities: [], public: { exports: [] } };
   const junk = fc.oneof(fc.string(), fc.integer(), fc.constant(null), fc.array(fc.integer(), { minLength: 1 }));
   fc.assert(
     fc.property(junk, (v) => {
       expect(ModuleSchema.parse({ ...base, deps: v }).ok).toBe(false);
       expect(ModuleSchema.parse({ ...base, capabilities: v }).ok).toBe(false);
-      expect(ModuleSchema.parse({ ...base, public: { exports: v, routes: [] } }).ok).toBe(false);
+      expect(ModuleSchema.parse({ ...base, public: { exports: v } }).ok).toBe(false);
       expect(ModuleSchema.parse({ ...base, public: { exports: [], routes: v } }).ok).toBe(false);
     }),
     { seed: SEED, numRuns: 40 },
@@ -76,7 +75,7 @@ test("module() returns a manifest that keeps id, deps, capabilities, and the pub
 });
 
 test("a stdlib module's manifest is validated by the same schema as an app module's", () => {
-  const std = { id: "std-auth", deps: [], capabilities: ["net"], public: { exports: ["Session"], routes: [] } };
+  const std = { id: "std-auth", deps: [], capabilities: ["net"], public: { exports: ["Session"] } };
   const app = { ...std, id: "stdAuth" };
   // Same shape, same validator: only the id rule differs, and it differs identically for both kinds.
   expect(ModuleSchema.parse(app).ok).toBe(true);

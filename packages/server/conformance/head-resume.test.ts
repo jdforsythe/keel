@@ -3,6 +3,7 @@
 // The served document comes from createApp; its head and `<html lang>` are copied into the test document, its body is resumed with the public `resume` (as route-of-base-elements-island.test.ts does).
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { resume } from "@keel/runtime-dom/ops";
 import { s } from "@keel/schema";
 import { createApp, topology } from "@keel/server";
@@ -14,13 +15,12 @@ const SEED = 1337;
 const ctx = createCtx({ mode: "sim", seed: SEED });
 const Locale = s.enum(["en-US", "de-DE"], { pathDefault: "en-US" });
 const island = (): Node => Box({ children: () => Button({ id: "h.go", onClick: () => undefined, children: "Go" }) });
-const routes = manifest({
-  "h.island": {
-    path: "/:locale/x",
-    params: s.object({ locale: Locale }),
-    component: island,
-    title: (props) => `Island ${String(Reflect.get(Object(props.params), "locale"))}`,
-  },
+const h = contract("h", {
+  "h.island": { path: "/:locale/x", params: s.object({ locale: Locale }) },
+});
+
+const routes = manifest(h, {
+  "h.island": { component: island, title: (props) => `Island ${String(Reflect.get(Object(props.params), "locale"))}` },
 });
 
 afterEach(() => {
@@ -37,7 +37,7 @@ describe("k.head resume", () => {
     });
     await fc.assert(
       fc.asyncProperty(fc.constantFrom<"en-US" | "de-DE">("en-US", "de-DE"), async (locale) => {
-        const res = await app.fetch(new Request(`http://localhost${String(routes.href("h.island", { locale }))}`));
+        const res = await app.fetch(new Request(`http://localhost${String(h.href("h.island", { locale }))}`));
         expect(res.status).toBe(200);
         const served = new DOMParser().parseFromString(await res.text(), "text/html");
         for (const sc of served.body.querySelectorAll("script[type=module]")) sc.remove();

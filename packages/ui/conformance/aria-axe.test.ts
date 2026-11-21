@@ -3,11 +3,14 @@
 // Seed: 1337 (no generated inputs; every case is enumerated).
 // Real axe-core, same rule set and disabled page-level rules as base-elements-axe-core.test.ts; `color-contrast` is off because happy-dom computes no layout.
 // Optional props are passed alongside the required ones where the Roles table is unclear which are required.
+import { createCtx } from "@keel/ctx";
 import { mount } from "@keel/runtime-dom";
 import { Heading, Text } from "@keel/ui";
 import { Part } from "@keel/ui/aria";
 import axe from "axe-core";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
+
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 const DISABLED = [
   "region",
@@ -179,7 +182,7 @@ const cases: [string, () => Node[]][] = [
 describe("k.aria: Each role rendered with its required props, inside its required parent and children, has no axe violations", () => {
   for (const [name, make] of cases) {
     test(`${name} has no axe violations`, async () => {
-      const off = mount(() => Part({ id: "wrap", role: "generic", children: make }), container);
+      const off = mount(() => Part({ id: "wrap", role: "generic", children: make }), container, { ctx: simCtx });
       expect(await audit()).toEqual([]);
       off();
     });

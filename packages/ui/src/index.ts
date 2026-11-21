@@ -1,11 +1,15 @@
 // re-exports only (one export per file lives in src/<Export>.ts)
 export { contrastTable } from "./contrastTable.ts";
+export { customElement } from "./customElement.ts";
 export { defineTokens } from "./defineTokens.ts";
+export { hostCode } from "./hostCode.ts";
 export { TokenSchema } from "./TokenSchema.ts";
 export { Box } from "./elements/Box.ts";
 export { Button } from "./elements/Button.ts";
 export { Checkbox } from "./elements/Checkbox.ts";
 export { Heading } from "./elements/Heading.ts";
+export { Frame } from "./elements/Frame.ts";
+export { Host } from "./elements/Host.ts";
 export { Image } from "./elements/Image.ts";
 export { Input } from "./elements/Input.ts";
 export { Link } from "./elements/Link.ts";
@@ -17,6 +21,9 @@ export type { Child } from "./types/Child.ts";
 export type { ContrastRow } from "./types/ContrastRow.ts";
 export type { Children } from "./types/Children.ts";
 export type { ColorValue } from "./types/ColorValue.ts";
+export type { HostCode } from "./types/HostCode.ts";
+export type { HostOut } from "./types/HostOut.ts";
+export type { HostProps } from "./types/HostProps.ts";
 export type { Responsive } from "./types/Responsive.ts";
 export type { StandardSlots } from "./types/StandardSlots.ts";
 export type { StyleProp } from "./types/StyleProp.ts";

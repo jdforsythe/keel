@@ -9,7 +9,7 @@ export function recording(component: Component, log: string[]): Component {
   const record = (id: string): void => {
     log.push(id);
   };
-  return (props) => component(Object.assign({}, props, { record }));
+  return (props, ctx) => component(Object.assign({}, props, { record }), ctx);
 }
 
 export type LayoutOptions = {

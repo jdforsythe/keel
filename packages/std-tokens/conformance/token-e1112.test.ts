@@ -2,7 +2,7 @@
 // Spec: std.tokens, Conformance "In a `*.server.ts` file, with `m` a `mint` result, `tx(t, { token: reveal(m.value.token) })` and `console.log(reveal(m.value.token))` are each one E1112; `tx(t, { id: m.value.id, digest: m.value.digest })`, `reveal(m.value.token)` in a `service` call's `body`, and `check(input.token, find)` are none."
 // Seed: 1337.
 // Assumption: as in privacy-e1112.test.ts, a finding is asserted by code, path and the line of its statement; the spec gives no column.
-// Assumption: a `service` call is `service({ module, method, path, body })`; E1112 has no `service` sink, so its shape does not matter to the rule.
+// Assumption: a `service` call is a method of `service({ contract })`, `mail.send({ body })`; E1112 has no `service` sink, so its shape does not matter to the rule.
 // Assumption: E1105 does not fire in a `*.server.ts` file, and the fixtures hold no other file.
 import { check } from "@keel/check";
 import "@keel/std-tokens/server";
@@ -15,7 +15,7 @@ type Files = Parameters<typeof check>[0];
 const PATH = "modules/app/x.server.ts";
 const MANIFEST = {
   path: "modules/app/module.ts",
-  source: `import { module } from "@keel/compiler"\nexport default module({ id: "app", deps: ["@keel/std-tokens"], capabilities: ["clock", "random"], public: { exports: [], routes: [] } })\n`,
+  source: `import { module } from "@keel/compiler"\nexport default module({ id: "app", deps: ["@keel/std-tokens"], capabilities: ["clock", "random"], public: { exports: [] } })\n`,
 };
 const HEAD = [
   `import { reveal } from "@keel/schema"`,
@@ -57,7 +57,7 @@ test("`tx(t, { token: reveal(m.value.token) })` and `console.log(reveal(m.value.
 test("`tx(t, { id: m.value.id, digest: m.value.digest })`, `reveal(m.value.token)` in a `service` call's `body`, and `check(input.token, find)` are none.", () => {
   const clean = [
     "tx(t, { id: m.value.id, digest: m.value.digest })",
-    `await service({ module: "mail", method: "POST", path: "/send", body: { token: reveal(m.value.token) } })`,
+    `await mail.send({ body: { token: reveal(m.value.token) } })`,
     "const found = tokens(ctx).check(input.token, find)",
   ];
   for (const stmt of clean) {

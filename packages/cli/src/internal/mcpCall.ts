@@ -1,9 +1,11 @@
 import { operations } from "../operations.ts";
 import type { Io } from "../types/Io.ts";
 import type { OutRecord } from "../types/OutRecord.ts";
+import { WriteRefused } from "./WriteRefused.ts";
 import { isRecord } from "./isRecord.ts";
 import { makeDiag } from "./makeDiag.ts";
 import { perform } from "./perform.ts";
+import { refusedRun } from "./refusedRun.ts";
 import { stdSlot } from "./stdSlot.ts";
 import { usageResult } from "./usageResult.ts";
 import { validateArgs } from "./validateArgs.ts";
@@ -27,7 +29,7 @@ const result = (r: {
 /**
  * MCP `tools/call`: validate arguments with the operation's input schema, execute, render. Agents are the client,
  * so the default format is compact (not a TTY); `structuredContent.records` carries the same records as json.
- * Same `perform` as the binary: file scope from the operation, effects of a successful call to `io.apply`.
+ * Same `perform` as the binary: file scope from the operation, effects of a successful call to `io.apply`; a refused write answers E1357.
  */
 export async function mcpCall(params: unknown, io: Io): Promise<ToolResult> {
   const p = isRecord(params) ? params : {};
@@ -45,6 +47,12 @@ export async function mcpCall(params: unknown, io: Io): Promise<ToolResult> {
     );
   const v = validateArgs(op, p.arguments);
   if (!v.ok) return result(usageResult(name, v.diags, agent, undefined));
-  const e = await perform(op, v.input, agent);
-  return result({ ...e.result, records: e.records });
+  try {
+    const e = await perform(op, v.input, agent);
+    return result({ ...e.result, records: e.records });
+  } catch (e: unknown) {
+    // A write a symlink would carry out of the project: E1357 as the binary answers, nothing written.
+    if (e instanceof WriteRefused) return result(refusedRun(e.paths, [name], agent));
+    throw e;
+  }
 }

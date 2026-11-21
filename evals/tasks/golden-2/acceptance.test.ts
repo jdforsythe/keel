@@ -3,13 +3,14 @@
 // through what TASK.md pins: the default `topology`, `routes` of modules kitchen and recipes (and of each module the topology places in `api`), route ids and element ids.
 // The strings are RFC 0079's eval table; `␣` there is U+00A0 (`NBSP` here).
 import { createCtx } from "@keel/ctx";
-import { manifest } from "@keel/router";
+import { routeTable } from "@keel/router";
 import { s } from "@keel/schema";
 import { createApp, topology as testTopology } from "@keel/server";
 import { formatMoney } from "@keel/std-money";
 import { type A11yNode, renderRoute } from "@keel/testing";
 import { describe, expect, it } from "vitest";
 import { routes as kitchen } from "../modules/kitchen/routes.ts";
+import { recipes } from "../modules/recipes/recipes.contract.ts";
 import { routes } from "../modules/recipes/routes.ts";
 import topology from "../topology.ts";
 
@@ -97,7 +98,7 @@ const RecipeId = s.id("Recipe");
 
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null;
 
-const hasRoutes = (v: unknown): v is typeof kitchen => isRecord(v) && isRecord(v.routes);
+const hasRoutes = (v: unknown): v is typeof kitchen => isRecord(v) && v.kind === "keel.routeTable";
 
 /** What `specifier` exports, or undefined when nothing is there to import. */
 const load = (specifier: Promise<unknown>): Promise<unknown> => specifier.catch(() => undefined);
@@ -126,18 +127,18 @@ async function stdRoutes(id: string): Promise<unknown> {
 }
 
 /**
- * The `api` deployable's route table: `routes` of every module the app's topology places in it, an app module's from
+ * The `api` deployable's route table: `routes` (a route table) of every module the app's topology places in it, an app module's from
  * its `modules/<id>/routes.ts` and a stdlib module's from its package. A placed module with no routes fails the suite.
  */
 async function apiRoutes() {
-  let table = { ...kitchen.routes };
+  const tables = [kitchen];
   for (const name of topology.api?.modules ?? []) {
     if (name === "kitchen") continue;
     const mod = (await load(import(`../modules/${name}/routes.ts`))) ?? (await stdRoutes(name));
     if (!isRecord(mod) || !hasRoutes(mod.routes)) throw new Error(`no routes for placed module ${name}`);
-    table = { ...mod.routes.routes, ...table };
+    tables.push(mod.routes);
   }
-  return manifest(table);
+  return routeTable(...tables);
 }
 
 /** A fresh api deployable over its own sim ctx at `NOW`, a client sim ctx routed to it, and the requests it sent. */
@@ -155,7 +156,7 @@ async function setup(seed = 1) {
     );
   const recipes = async (): Promise<Recipe[]> => {
     const j: unknown = await (await call("GET", "/api/recipes")).json();
-    const results = isRecord(j) && isRecord(j.results) ? j.results["kitchen.recipes"] : undefined;
+    const results = isRecord(j) && isRecord(j.results) ? j.results["kitchen.box"] : undefined;
     const value = isRecord(results) && isRecord(results.value) ? results.value.recipes : undefined;
     return Array.isArray(value) ? value.filter((r): r is Recipe => isRecord(r) && typeof r.id === "string") : [];
   };
@@ -244,7 +245,7 @@ describe("golden-2 acceptance", () => {
       await env.ctx.storage.set("recipes.guest", "1");
       const r = await renderRoute("recipes.new", { routes, params: { locale }, ctx: env.ctx });
       expect(r.route()).toMatchObject({ id: "recipes.index", params: { locale } });
-      expect(routes.href("recipes.index", { locale })).toBe(url);
+      expect(recipes.href("recipes.index", { locale })).toBe(url);
       r.dispose();
     }
   });
@@ -339,7 +340,7 @@ describe("golden-2 acceptance", () => {
     const env = await setup();
     const { soup } = await seeded(env);
     const r = await renderRoute("recipes.index", { routes, params: { locale: "de-DE" }, ctx: env.ctx });
-    await r.navigate(routes.href("recipes.show", { locale: "de-DE", recipeId: soup }));
+    await r.navigate(recipes.href("recipes.show", { locale: "de-DE", recipeId: soup }));
     expect(document.title).toBe("Miso soup · Rezepte");
     expect(document.documentElement.lang).toBe("de-DE");
     expect(r.find("recipes.home").name).toBe("Rezepte");
@@ -353,11 +354,11 @@ describe("golden-2 acceptance", () => {
 
   it("links leave out the en-US prefix", () => {
     const id = createCtx({ mode: "sim", seed: 5 }).random.id("Recipe");
-    expect(routes.href("recipes.index", { locale: "en-US" })).toBe("/");
-    expect(routes.href("recipes.index", { locale: "de-DE" })).toBe("/de-DE");
-    expect(routes.href("recipes.index", { locale: "ja-JP" })).toBe("/ja-JP");
-    expect(routes.href("recipes.show", { locale: "en-US", recipeId: id })).toBe(`/recipes/${id}`);
-    expect(routes.href("recipes.show", { locale: "de-DE", recipeId: id })).toBe(`/de-DE/recipes/${id}`);
+    expect(recipes.href("recipes.index", { locale: "en-US" })).toBe("/");
+    expect(recipes.href("recipes.index", { locale: "de-DE" })).toBe("/de-DE");
+    expect(recipes.href("recipes.index", { locale: "ja-JP" })).toBe("/ja-JP");
+    expect(recipes.href("recipes.show", { locale: "en-US", recipeId: id })).toBe(`/recipes/${id}`);
+    expect(recipes.href("recipes.show", { locale: "de-DE", recipeId: id })).toBe(`/de-DE/recipes/${id}`);
   });
 
   it("for 20 generated prices posted through the api, the index shows formatMoney in each locale", async () => {

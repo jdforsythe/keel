@@ -1,6 +1,7 @@
 // re-exports only (one export per file lives in src/<Export>.ts)
 export { artifactHashes } from "./artifactHashes.ts";
 export { compile } from "./compile.ts";
+export { contractCallers } from "./contractCallers.ts";
 export { isSourcePath } from "./internal/isSourcePath.ts";
 export { parseTopology } from "./internal/parseTopology.ts";
 export { pathCollisions } from "./pathCollisions.ts";
@@ -20,6 +21,7 @@ export type { DepsNode } from "./types/DepsNode.ts";
 export type { Diagnostic } from "./types/Diagnostic.ts";
 export type { IdEntry } from "./types/IdEntry.ts";
 export type { ModuleDef } from "./types/ModuleDef.ts";
+export type { Origins } from "./types/Origins.ts";
 export type { Output } from "./types/Output.ts";
 export type { RouteEntry } from "./types/RouteEntry.ts";
 export type { RouteLiteral } from "./types/RouteLiteral.ts";

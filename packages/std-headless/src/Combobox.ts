@@ -7,8 +7,8 @@ import type { Option } from "./Option.ts";
 import type { Named } from "./internal/Named.ts";
 import type { OptionState } from "./internal/OptionState.ts";
 import { content } from "./internal/content.ts";
-import { listChart } from "./internal/listChart.ts";
 import { nameOf } from "./internal/nameOf.ts";
+import { listChart } from "./listChart.ts";
 
 /**
  * A text input with a list of suggestions the app filters from `text` (std.options, APG Combobox, list autocomplete,
@@ -32,8 +32,7 @@ export function Combobox<K extends string>(
       readonly empty?: PartStyle;
     };
   },
-  _slots?: undefined,
-  ctx?: Ctx,
+  ctx: Ctx,
 ): Node {
   const id = props.id;
   const l = listChart(id, "option", props.options, ctx);

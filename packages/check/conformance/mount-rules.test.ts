@@ -1,4 +1,4 @@
-// Spec: k.mount, Rules "E1580 `identity.ts` whose default export is not `identityMount('<literal>')` of lowercase `/` segments, or with no `identity.server.ts` giving `handle: { path: <its default import>.path }` (a literal there too) · E1581 a module file importing `identity.ts` where a `static` deployable, or a `client` one without `host`, serves the module: no origin serving it mounts `handle` · E1582 a `subpath` `href` refuses (`keel check` for a literal; the call throws) · E1583 a native submit with a file chosen. Fix: none."
+// Spec: k.mount, Rules "E1580 `identity.ts` whose default export is not `identityMount('<literal>')` of lowercase `/` segments, optionally with `{ links: [...] }`, or with no `identity.server.ts` giving `handle: { path: <its default import>.path }` (a literal there too) · E1581 a module file importing `identity.ts` where a `static` deployable, or a `client` one without `servedBy`, serves the module: no origin of it mounts `handle` · E1582 a `subpath` `href` refuses (`keel check` for a literal; the call throws) · E1583 a native submit with a file chosen · E1584 a `links` entry not a string literal, `''`, not of `subpath`'s form, or repeated (`keel check`; the call throws). Fix: none."
 // Spec: k.mount, Conformance "E1580, E1581 and E1582 each have a triggering fixture and a clean one; a chosen file is E1583, nothing recorded."
 // Spec: k.mount, Declaration "`identity.ts` imports nothing server-only, so a page on any deployable imports it."
 // Seed 1337 (fc.assert below). E1583 is a runtime error of a native submit: packages/testing/conformance/mount-form.test.ts. `keel build` reads the same
@@ -11,7 +11,7 @@ import { type Files, SEED } from "./support.ts";
 
 const f = (path: string, source: string): Files[number] => ({ path, source });
 const MANIFEST = (id: string): string =>
-  `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [], routes: [] } })\n`;
+  `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [] } })\n`;
 const IDENTITY = (arg: string): string =>
   `import { identityMount } from '@keel/router'\nexport default identityMount(${arg})\n`;
 const SERVER = `import { identity } from '@keel/server'\nimport mount from './identity.ts'\nexport default identity({ identify: async () => '', handle: { path: mount.path, fn: () => new Response('') } })\n`;
@@ -109,19 +109,19 @@ describe("k.mount: E1581 a module importing identity.ts where no origin mounts h
     expect(only(withTopology("web: { modules: ['a'], adapter: 'static' }"), "E1581")).toHaveLength(1);
   });
 
-  test("a module file importing `identity.ts` served by a `client` deployable without `host` is one E1581", () => {
+  test("a module file importing `identity.ts` served by a `client` deployable without `servedBy` is one E1581", () => {
     expect(only(withTopology("web: { modules: ['a'], adapter: 'client' }"), "E1581")).toHaveLength(1);
   });
 
-  test("the same module on a `node` deployable, and on a `client` deployable with `host`, with or without `shells`, is clean", () => {
+  test("the same module on a `node` deployable, and on a `client` deployable with `servedBy`, with or without `shells`, is clean", () => {
     const shelled = withTopology(
-      `api: { modules: ['b'], adapter: 'node' }, web: { modules: ['a'], adapter: 'client', host: 'api', ${SHELLS} }`,
+      `api: { modules: ['b'], adapter: 'node' }, web: { modules: ['a'], adapter: 'client', servedBy: 'api', ${SHELLS} }`,
       [f("modules/b/module.ts", MANIFEST("b"))],
     );
     expect(only(shelled, "E1581")).toEqual([]);
     expect(only(clean(), "E1581")).toEqual([]);
     const hosted = withTopology(
-      "api: { modules: ['b'], adapter: 'node' }, web: { modules: ['a'], adapter: 'client', host: 'api' }",
+      "api: { modules: ['b'], adapter: 'node' }, web: { modules: ['a'], adapter: 'client', servedBy: 'api' }",
       [f("modules/b/module.ts", MANIFEST("b"))],
     );
     expect(only(hosted, "E1581")).toEqual([]);

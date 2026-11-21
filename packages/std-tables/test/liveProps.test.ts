@@ -59,7 +59,7 @@ const view = (): Node => {
     ],
   });
 };
-const Page = Object.assign((_props: Record<string, never>, _slots?: undefined, _ctx?: Ctx): Node => view(), {
+const Page = Object.assign((_props: Record<string, never>, _ctx: Ctx): Node => view(), {
   Props: s.object({}),
 });
 
@@ -93,19 +93,22 @@ test("label, text, locale, selected, rows and search read from signals update th
 
 test("TableSearch shows the q of a search that changes while it is mounted", async () => {
   const Search = Object.assign(
-    (_props: Record<string, never>): Node => {
+    (_props: Record<string, never>, ctx: Ctx): Node => {
       const q = signal<Query>({ q: "tea" });
       return Box({
         children: () => [
           Button({ id: "set", onClick: () => q.set({ q: "rice" }), children: "Set" }),
-          TableSearch({
-            id: "find",
-            label: "Find",
-            get search() {
-              return q.get();
+          TableSearch(
+            {
+              id: "find",
+              label: "Find",
+              get search() {
+                return q.get();
+              },
+              href: serverHref,
             },
-            href: serverHref,
-          }),
+            ctx,
+          ),
         ],
       });
     },
@@ -123,20 +126,23 @@ test("TableSearch shows the q of a search that changes while it is mounted", asy
 test("TableSearch's label follows a getter label over a signal on the same input", async () => {
   let rename = (): void => {};
   const Find = Object.assign(
-    (): Node => {
+    (_props: Record<string, never>, ctx: Ctx): Node => {
       const label = signal("Search recipes");
       rename = () => label.set("Rezepte suchen");
       return Box({
         children: () => [
           Button({ id: "rn", onClick: () => rename(), children: "Rename" }),
-          TableSearch({
-            id: "find",
-            get label() {
-              return label.get();
+          TableSearch(
+            {
+              id: "find",
+              get label() {
+                return label.get();
+              },
+              search: {},
+              href: serverHref,
             },
-            search: {},
-            href: serverHref,
-          }),
+            ctx,
+          ),
         ],
       });
     },

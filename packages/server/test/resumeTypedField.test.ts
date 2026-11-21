@@ -3,6 +3,7 @@
 // inside a structural op the server rendered, resumes in place: no warning, no element removed, the typed value,
 // focus and caret kept, and the field holding the typed value. Seed: 1337 (no generated inputs).
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import * as schema from "@keel/schema";
 import { afterEach, describe, expect, it } from "vitest";
 import * as forms from "../../forms/src/index.ts";
@@ -72,7 +73,9 @@ const SHAPES: readonly Shape[] = [
 
 async function served(s: Shape): Promise<{ page: ReturnType<typeof compilePage>; input: HTMLInputElement }> {
   const page = compilePage(`${s.k}.page`, pageSource(s.k, s.wrap), IMPORTS);
-  const routes = manifest({ [`${s.k}.page`]: { path: `/${s.k}`, component: page } });
+  const routes = manifest(contract(s.k, { [`${s.k}.page`]: { path: `/${s.k}` } }), {
+    [`${s.k}.page`]: { component: page },
+  });
   install(await serveRoutes(routes, [s.k], `/${s.k}`));
   const input = document.querySelector("input");
   if (!(input instanceof HTMLInputElement)) throw new Error(`fixture: ${s.k} served no input`);
@@ -120,7 +123,7 @@ describe("a field typed into before resume, its Input inside a structural op", (
   it("an If branch hidden at server render, shown after resume, binds a fresh Input that takes typing", async () => {
     const s: Shape = { k: "th", title: "", wrap: "<If when={off.get()}>{() => {F}}</If>" };
     const page = compilePage("th.page", pageSource(s.k, s.wrap), IMPORTS);
-    const routes = manifest({ "th.page": { path: "/th", component: page } });
+    const routes = manifest(contract("th", { "th.page": { path: "/th" } }), { "th.page": { component: page } });
     install(await serveRoutes(routes, ["th"], "/th"));
     expect(document.querySelector("input")).toBe(null);
     const r = await resumed(s, page);

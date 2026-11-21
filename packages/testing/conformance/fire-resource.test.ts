@@ -12,8 +12,6 @@ import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { SEED, simCtx } from "./fixtures.ts";
 
-type Slots = Record<string, unknown> | undefined;
-
 const hops = async (n: number): Promise<void> => {
   for (let i = 0; i < n; i++) await Promise.resolve();
 };
@@ -23,7 +21,7 @@ const T = template('<div><button id="load" data-k="load">load</button><p id="res
 // Clicking #load bumps `want`; the resource re-fetches for the new value after `depth` microtask hops.
 const makeLoader = (depth: number) =>
   Object.assign(
-    (_props: Record<string, never>, _slots?: Slots, _ctx?: Ctx): Node => {
+    (_props: Record<string, never>): Node => {
       const want = signal(0);
       const res = resource(async () => {
         const n = want.get();
@@ -94,7 +92,7 @@ const T2 = template(
 // Click -> resource A (depth hops) -> resource B, which reads A and awaits depthB hops -> effect writes the store.
 const makeChain = (depthA: number, depthB: number) =>
   Object.assign(
-    (_props: Record<string, never>, _slots?: Slots, _ctx?: Ctx): Node => {
+    (_props: Record<string, never>): Node => {
       done.uses([setDone]);
       const want = signal(0);
       const a = resource(async () => {

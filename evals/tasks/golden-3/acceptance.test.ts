@@ -7,7 +7,7 @@
 import { createHash, createHmac } from "node:crypto";
 import { writeFile } from "node:fs/promises";
 import { type Ctx, createCtx } from "@keel/ctx";
-import { manifest } from "@keel/router";
+import { routeTable } from "@keel/router";
 import { piiPaths, piiValues } from "@keel/schema";
 import { createApp } from "@keel/server";
 import { record, session } from "@keel/std-sessions";
@@ -17,6 +17,7 @@ import { renderRoute } from "@keel/testing";
 import { describe, expect, it } from "vitest";
 import { SignupDraft } from "../modules/shifts/SignupDraft.schema.ts";
 import { routes } from "../modules/shifts/routes.ts";
+import { shifts } from "../modules/shifts/shifts.contract.ts";
 import { tokens } from "../tokens.ts";
 import topology from "../topology.ts";
 
@@ -66,7 +67,7 @@ const hashOf = (cookie: string): string => createHash("sha256").update(cookie).d
 const cookieOf = (token: string): string =>
   `${token}.${createHmac("sha256", SECRET).update(token).digest("base64url")}`;
 
-const webRoutes = manifest({ ...routes.routes, ...sessionsRoutes.routes });
+const webRoutes = routeTable(routes, sessionsRoutes);
 
 /** The `web` deployable over a fresh sim ctx, its log lines, and an organizer's cookie in `shifts.organizers`. */
 async function setup(seed = 1) {
@@ -180,7 +181,7 @@ describe.skipIf(TWIN !== "")("golden-3 acceptance", () => {
   it("after navigating from / to a shift, focus is on its h1", async () => {
     const env = await setup();
     const r = await renderRoute("shifts.index", { routes, ctx: env.ctx });
-    await r.navigate(routes.href("shifts.show", { shiftId: "s2" }));
+    await r.navigate(shifts.href("shifts.show", { shiftId: "s2" }));
     expect(String(r.route().id)).toBe("shifts.show");
     expect(r.find("shifts.show.title").text).toBe("Packing boxes");
     expect(r.find("shifts.show.title").state.focused).toBe(true);
@@ -270,7 +271,7 @@ describe.skipIf(TWIN !== "")("golden-3 acceptance", () => {
     const rec = record(ctx, { upload: new URL("/sessions", location.origin) });
     const r = await renderRoute("shifts.show", { routes, params: { shiftId: "s2" }, ctx });
     for (const [path, value] of Object.entries(draft)) await r.fire(`shifts.join:${path}`, { type: "input", value });
-    await r.navigate(routes.href("shifts.show", { shiftId: "no-such-shift" }));
+    await r.navigate(shifts.href("shifts.show", { shiftId: "no-such-shift" }));
     await r.settle();
     absent(JSON.stringify(rec.events()), values, "the recorded events");
     const taken = session(ctx).taken();

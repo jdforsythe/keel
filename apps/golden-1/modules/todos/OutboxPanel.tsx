@@ -1,5 +1,5 @@
 import type { Ctx } from "@keel/ctx";
-import { For, If, type Slots } from "@keel/runtime-dom";
+import { For, If } from "@keel/runtime-dom";
 import { type Infer, s } from "@keel/schema";
 import { type OutboxEntry, type Resolution, resolve } from "@keel/std-offline";
 import { Box, Button, Heading, Text } from "@keel/ui";
@@ -30,9 +30,8 @@ const STATES: { readonly [K in OutboxEntry["state"]]: string } = {
  * (drop it); a failed one offers Dismiss. An edit's choice goes through the editor chart (`resolveEdit`), which turns
  * Keep mine off once the edit has used its 3 tries.
  */
-export default function OutboxPanel(_props: Infer<typeof Props>, _slots?: Slots, ctx?: Ctx) {
+export default function OutboxPanel(_props: Infer<typeof Props>, ctx: Ctx) {
   const choose = (entry: OutboxEntry, resolution: Resolution): void => {
-    if (ctx === undefined) return;
     if (entry.endpoint === "editTodo") void resolveEdit(ctx, entry.key, resolution);
     else void resolve(ctx, boardOutbox, entry.key, resolution);
   };

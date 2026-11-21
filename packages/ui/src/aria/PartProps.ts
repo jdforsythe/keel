@@ -25,6 +25,10 @@ type Kids = { readonly children?: Children };
 type Named =
   | { readonly label: V<string>; readonly labelledBy?: never }
   | { readonly labelledBy: V<string>; readonly label?: never };
+/** At most one of `label` and `labelledBy` (`treeitem`, named by its content otherwise). */
+type MaybeNamed =
+  | { readonly label?: V<string>; readonly labelledBy?: never }
+  | { readonly labelledBy?: V<string>; readonly label?: never };
 type Off = { readonly disabled?: V<boolean> };
 type Orient = { readonly orientation?: V<"horizontal" | "vertical"> };
 type Active = { readonly activeDescendant?: V<string> };
@@ -37,7 +41,7 @@ type Dialog = {
 };
 type R<Role extends string, P = unknown> = Common & { readonly role: Role } & P;
 
-/** `Part`'s props: a union discriminated by `role`, which fixes the tag and the ARIA props it accepts (k.aria Roles). */
+/** `Part`'s props: a union discriminated by `role`, which fixes the tag and the ARIA props it accepts (k.aria Roles, k.roles). */
 export type PartProps =
   | R<"listbox", Kids & Named & Orient & Active & { readonly multiselectable?: V<boolean> }>
   | R<"menu", Kids & Named & Orient & Active>
@@ -73,10 +77,85 @@ export type PartProps =
   | R<"alert", Kids>
   | R<"generic", Kids>
   | R<"navigation", Kids & Named>
-  | R<"group", Kids & Named>
+  | R<"group", Kids & Named & { /** Renders a `ul`, the children of a `treeitem`. */ readonly list?: boolean }>
   | R<"table", Kids & Named & { readonly rowCount?: V<number | undefined> }>
   | R<"rowgroup", Kids & { readonly head?: boolean }>
   | R<"row", Kids & { readonly rowIndex?: V<number | undefined> }>
-  | R<"columnheader", Kids & { readonly sort?: V<"ascending" | "descending" | undefined> }>
+  | R<
+      "columnheader",
+      Kids & {
+        readonly sort?: V<"ascending" | "descending" | undefined>;
+        /** The full name of a short header, written as the HTML `abbr`. */
+        readonly abbr?: V<string>;
+      }
+    >
   | R<"rowheader", Kids>
-  | R<"cell", Kids & { readonly colSpan?: V<number | undefined> }>;
+  | R<"cell", Kids & { readonly colSpan?: V<number | undefined> }>
+  | R<
+      "grid",
+      Kids &
+        Named & {
+          readonly rowCount?: V<number>;
+          readonly colCount?: V<number>;
+          readonly multiselectable?: V<boolean>;
+          readonly readOnly?: V<boolean>;
+        }
+    >
+  | R<
+      "gridcell",
+      Kids &
+        Off & {
+          readonly selected?: V<boolean>;
+          readonly readOnly?: V<boolean>;
+          readonly current?: V<"date" | boolean>;
+          readonly colSpan?: V<number>;
+        }
+    >
+  | R<
+      "tree",
+      Kids &
+        Named &
+        Active & {
+          readonly multiselectable?: V<boolean>;
+          /** A `treeitem`'s, never the tree's. */
+          readonly expanded?: never;
+        }
+    >
+  | R<
+      "treeitem",
+      Kids &
+        MaybeNamed &
+        Off & {
+          /** Absent on a leaf. */
+          readonly expanded?: V<boolean>;
+          readonly selected?: V<boolean>;
+          readonly level?: V<number>;
+          readonly setSize?: V<number>;
+          readonly posInSet?: V<number>;
+        }
+    >
+  | R<
+      "slider",
+      Named &
+        Off &
+        Orient & {
+          readonly min: V<number>;
+          readonly max: V<number>;
+          readonly value: V<number>;
+          readonly step?: V<number>;
+          readonly valueText?: V<string>;
+          readonly onInput?: (value: number) => void;
+        }
+    >
+  | R<"radiogroup", Kids & Named & { readonly required?: V<boolean> }>
+  | R<
+      "radio",
+      Named &
+        Off & {
+          readonly name: V<string>;
+          readonly checked: V<boolean>;
+          readonly value?: V<string>;
+          /** Called when the radio becomes checked. */
+          readonly onChange?: () => void;
+        }
+    >;

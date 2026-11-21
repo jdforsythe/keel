@@ -3,6 +3,7 @@
 // Seed 1337 (fc.assert below). The secret is 64 characters of A-Z and 0-9; the prefix before it is lowercase ASCII, a double quote or U+0001 (six written characters), padded with `x` so the cut falls after `kept` characters of the secret, `kept` from 1 to 63.
 import { createCtx } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { reveal, s } from "@keel/schema";
 import { topology } from "@keel/server";
 import fc from "fast-check";
@@ -25,13 +26,16 @@ async function boot(mode: Mode, format: Format) {
   const lines: string[] = [];
   let prefix = "";
   let showSecret = true;
-  const save = action({ input: s.object({ k: s.secret(s.string()) }) }, (input) =>
+  const orders = contract("orders", {
+    "orders.show": { path: "/orders/:kind", params: Params },
+  });
+
+  const save = action(orders, "orders.show", { input: s.object({ k: s.secret(s.string()) }) }, (input) =>
     Promise.reject(new Error(`${prefix}${showSecret ? reveal(input.k) : ""}`)),
   );
-  const routes = manifest({
-    "orders.show": { path: "/orders/:kind", params: Params, component: () => document.createElement("main") },
+  const routes = manifest(orders, {
+    "orders.show": { component: () => document.createElement("main"), POST: save },
   });
-  routes.actions({ "orders.show": { POST: save } });
   const app = await createApp({
     topology: topology({ web: { modules: ["orders"], adapter: "node" } }),
     routes,

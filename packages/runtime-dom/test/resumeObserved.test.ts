@@ -3,6 +3,7 @@
 import { type CtxEvent, createCtx, observe } from "@keel/ctx";
 import { clone, on, resume, template } from "@keel/runtime-dom/ops";
 import { describe, expect, it } from "vitest";
+import { testCtx } from "./testCtx.ts";
 
 const HTML =
   '<div data-k-island="F"><input id="pw" data-k="pw" type="password"><textarea id="note" data-k="note">n</textarea>' +
@@ -99,7 +100,7 @@ describe("resume reports to ctx observers (rfc:0071)", () => {
     const q = el("q");
     if (!(q instanceof HTMLInputElement)) throw new Error("fixture");
     q.value = "w";
-    resume(host, { F });
+    resume(host, { F }, { ctx: testCtx });
     expect(handled).toEqual(["q=w"]);
     host.remove();
   });

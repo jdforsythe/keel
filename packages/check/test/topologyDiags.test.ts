@@ -1,5 +1,5 @@
 // E1552 and E1566 in keel check (k.topology, k.hosting Host): a part of topology.ts the static read cannot take, at
-// its deployable, and a bad `host`, on its `host`.
+// its deployable, and a bad `servedBy`, on its `servedBy`.
 import { describe, expect, it } from "vitest";
 import { check } from "../src/check.ts";
 import { explain } from "../src/explain.ts";
@@ -9,18 +9,18 @@ const SOURCE = [
   'import { topology } from "@keel/server";',
   "export default topology({",
   '  api: { modules: ["a"], adapter: "node" },',
-  '  web: { modules: ["w"], adapter: "client", host: "nowhere" },',
+  '  web: { modules: ["w"], adapter: "client", servedBy: "nowhere" },',
   "});",
   "",
 ].join("\n");
 
 describe("topologyDiags", () => {
-  it("reports E1566 on the deployable's host", () => {
+  it("reports E1566 on the deployable's servedBy", () => {
     const [d, ...rest] = topologyDiags(
       "",
       {
         api: { modules: ["a"], adapter: "node" },
-        web: { modules: ["w"], adapter: "client", host: "nowhere" },
+        web: { modules: ["w"], adapter: "client", servedBy: "nowhere" },
       },
       SOURCE,
     );
@@ -31,7 +31,7 @@ describe("topologyDiags", () => {
       4,
       45,
       "k.hosting",
-      "web: host nowhere is not a node deployable",
+      "web: servedBy nowhere is not a node deployable",
     ]);
   });
 
@@ -39,20 +39,20 @@ describe("topologyDiags", () => {
     expect(
       topologyDiags("", {
         api: { modules: ["a"], adapter: "node" },
-        web: { modules: ["w"], adapter: "client", host: "api" },
+        web: { modules: ["w"], adapter: "client", servedBy: "api" },
       }),
     ).toEqual([]);
   });
 
-  it("reports E1566 for a host that is not a string literal", () => {
-    const source = SOURCE.replace('host: "nowhere"', "host: `api`");
+  it("reports E1566 for a servedBy that is not a string literal", () => {
+    const source = SOURCE.replace('servedBy: "nowhere"', "servedBy: `api`");
     const [d, ...rest] = topologyDiags(
       "",
       { api: { modules: ["a"], adapter: "node" }, web: { modules: ["w"], adapter: "client" } },
       source,
     );
     expect(rest).toEqual([]);
-    expect([d?.code, d?.line, d?.message]).toEqual(["E1566", 4, "web: host must be a string literal"]);
+    expect([d?.code, d?.line, d?.message]).toEqual(["E1566", 4, "web: servedBy must be a string literal"]);
   });
 
   it("runs as a project pass of check()", () => {
@@ -62,10 +62,13 @@ describe("topologyDiags", () => {
     ];
     const r = check(files, {
       types: false,
-      topology: { api: { modules: ["a"], adapter: "node" }, web: { modules: ["w"], adapter: "client", host: "web" } },
+      topology: {
+        api: { modules: ["a"], adapter: "node" },
+        web: { modules: ["w"], adapter: "client", servedBy: "web" },
+      },
     });
     expect(r.diagnostics.filter((d) => d.code === "E1566").map((d) => d.message)).toEqual([
-      "web: host web is not a node deployable",
+      "web: servedBy web is not a node deployable",
     ]);
   });
 
@@ -77,7 +80,7 @@ describe("topologyDiags", () => {
       ["  web:", "  Web:", "Web: name must be lowercase letters, digits and -, starting with a letter"],
       ["  web:", '  "../x":', "../x: name must be lowercase letters, digits and -, starting with a letter"],
     ] as const) {
-      const source = SOURCE.replace('host: "nowhere"', 'host: "api"').replace(from, to);
+      const source = SOURCE.replace('servedBy: "nowhere"', 'servedBy: "api"').replace(from, to);
       const files = [{ path: "topology.ts", source }];
       const ds = check(files, { types: false, topology: {} }).diagnostics.filter((d) => d.code === "E1552");
       expect(

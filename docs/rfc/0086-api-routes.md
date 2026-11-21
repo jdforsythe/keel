@@ -4,7 +4,7 @@ Status: implemented. Accepted (2026-11-11); the user's answers are D1 and D2. De
 
 ## Decisions (user, 2026-11-11)
 - D1: the tagged entry of Proposal 1, with the member `api: true`: "tagged is the right way".
-- D2: the user asked whether an API route's actions should sit in the entry, with a verb key implying `api: true`, and was unsure it is worth it. Recorded as not taken (Alternatives, in-entry verbs): actions attach through `routes.actions` for every route. The user may reopen it.
+- D2: the user asked whether an API route's actions should sit in the entry, with a verb key implying `api: true`, and was unsure it is worth it. Recorded as not taken (Alternatives, in-entry verbs): actions attach through `routes.actions` for every route. The user may reopen it. RFC 0157 replaces it: `routes.actions` goes and each action binds with its entry in `routes.ts` (D3, D9).
 
 ## Problem
 A route in a `node` deployable that only answers JSON must still carry a view. Evidence from the code as of this RFC:

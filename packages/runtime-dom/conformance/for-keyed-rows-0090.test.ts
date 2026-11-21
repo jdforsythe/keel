@@ -1,3 +1,4 @@
+import { createCtx } from "@keel/ctx";
 import { signal } from "@keel/reactive";
 import type { Signal } from "@keel/reactive";
 import { mount } from "@keel/runtime-dom";
@@ -11,6 +12,8 @@ import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { SEED, flush } from "./fixtures.ts";
 
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
+
 type Todo = { id: string; label: string };
 
 const RowT = template('<li><input class="c"><span class="t"></span></li>');
@@ -23,29 +26,33 @@ const mountList = (initial: readonly Todo[]) => {
   const container = document.createElement("div");
   document.body.appendChild(container);
   let renders = 0;
-  const dispose = mount(() => {
-    const rows = signal<readonly Todo[]>(initial);
-    slot.rows = rows;
-    const root = clone(ListT);
-    const anchor = root.firstChild;
-    if (anchor === null) throw new Error("fixture: template lacks anchor");
-    list(
-      anchor,
-      () => rows.get(),
-      (t) => t.id,
-      (item) => {
-        renders++;
-        const row = clone(RowT);
-        const top = item(); // top-level read of the item: must not re-render the row
-        row.setAttribute("data-first", top.id);
-        const span = row.querySelector(".t");
-        if (span === null) throw new Error("fixture: template lacks .t");
-        text(span, () => item().label);
-        return row;
-      },
-    );
-    return root;
-  }, container);
+  const dispose = mount(
+    () => {
+      const rows = signal<readonly Todo[]>(initial);
+      slot.rows = rows;
+      const root = clone(ListT);
+      const anchor = root.firstChild;
+      if (anchor === null) throw new Error("fixture: template lacks anchor");
+      list(
+        anchor,
+        () => rows.get(),
+        (t) => t.id,
+        (item) => {
+          renders++;
+          const row = clone(RowT);
+          const top = item(); // top-level read of the item: must not re-render the row
+          row.setAttribute("data-first", top.id);
+          const span = row.querySelector(".t");
+          if (span === null) throw new Error("fixture: template lacks .t");
+          text(span, () => item().label);
+          return row;
+        },
+      );
+      return root;
+    },
+    container,
+    { ctx: simCtx },
+  );
   const rows = slot.rows;
   if (rows === undefined) throw new Error("fixture: component did not run");
   const host = container;

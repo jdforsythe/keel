@@ -3,9 +3,12 @@
 // document.title and document.documentElement.lang (k.head Client); layouts render a `children` thunk as in fixtures.ts.
 import { createCtx } from "@keel/ctx";
 import { createRouter, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { mount } from "@keel/runtime-dom";
 import { s } from "@keel/schema";
 import { memoryHistory, settle } from "./fixtures.ts";
+
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 export const SEED = 1337;
 export const Locale = s.enum(["en-US", "de-DE"], { pathDefault: "en-US" });
@@ -25,18 +28,20 @@ const text = (t: string): Node => {
   return e;
 };
 
-export const routes = manifest({
+export const headContract = contract("h", {
+  "h.shell": { layout: true },
+  "h.home": { path: "/:p", params: LocaleParams },
+  "h.about": { path: "/:p/about", params: LocaleParams },
+});
+
+export const routes = manifest(headContract, {
   "h.shell": { component: shell },
   "h.home": {
-    path: "/:p",
-    params: LocaleParams,
     layout: "h.shell",
     component: (props) => text(`home ${String(Reflect.get(Object(props.params), "p"))}`),
     title: (props) => `Home ${String(Reflect.get(Object(props.params), "p"))} <&>`,
   },
   "h.about": {
-    path: "/:p/about",
-    params: LocaleParams,
     layout: "h.shell",
     component: (props) => text(`about ${String(Reflect.get(Object(props.params), "p"))}`),
     title: (props) => `About ${String(Reflect.get(Object(props.params), "p"))}`,
@@ -51,7 +56,7 @@ export async function open(at: string, host?: HTMLElement) {
   const router = createRouter(routes, { ctx: createCtx({ mode: "sim", seed: SEED }), history });
   const root = host ?? document.createElement("div");
   if (host === undefined) document.body.append(root);
-  const unmount = mount(router.App, root);
+  const unmount = mount(router.App, root, { ctx: simCtx });
   await settle();
   return {
     router,

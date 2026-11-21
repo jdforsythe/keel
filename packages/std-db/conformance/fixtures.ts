@@ -268,6 +268,8 @@ export function spawnNode(script: string, env: Readonly<Record<string, string>>)
 }
 
 const pkgUrl = (pkg: string): string => new URL(`../../${pkg}/src/index.ts`, import.meta.url).href;
+// ASSUMPTION: the `@keel/router/contract` entry resolves from the package folder at `src/contract/index.ts`.
+const contractUrl = (): string => new URL("../../router/src/contract/index.ts", import.meta.url).href;
 const sqliteUrl = (): string => new URL("../src/sqlite/index.ts", import.meta.url).href;
 const postgresUrl = (): string => new URL("../src/postgres/index.ts", import.meta.url).href;
 
@@ -292,6 +294,7 @@ export function appScript(): string {
   return `import { createInterface } from "node:readline";
 import { createCtx } from "${pkgUrl("ctx")}";
 import { action, loader, manifest } from "${pkgUrl("router")}";
+import { contract } from "${contractUrl()}";
 import { ok, s } from "${pkgUrl("schema")}";
 import { createApp, topology } from "${pkgUrl("server")}";
 import { store, transaction, tx } from "${pkgUrl("store")}";
@@ -303,8 +306,9 @@ const factory = () => {
   const add = transaction(notes, "t.add", Add, (state, { text }) => ({ items: [...state.items, text] }));
   return { notes, add };
 };
+const t = contract("t", { "t.page": { path: "/notes" } });
 let gate = null;
-const write = action({ input: Add, stores: factory }, async ({ text }, { stores }) => {
+const write = action(t, "t.page", { input: Add, stores: factory }, async ({ text }, { stores }) => {
   tx(stores.add, { text });
   if (process.env.KEEL_HOLD === "1") {
     console.log("arrived");
@@ -312,9 +316,8 @@ const write = action({ input: Add, stores: factory }, async ({ text }, { stores 
   }
   return ok(null);
 });
-const read = loader({ output: Notes, stores: factory }, async ({ stores }) => ok({ items: [...stores.notes.get("items")] }));
-const routes = manifest({ "t.page": { path: "/notes", loader: read, component: () => ({}) } });
-routes.actions({ "t.page": { POST: write } });
+const read = loader(t, "t.page", { output: Notes, stores: factory }, async ({ stores }) => ok({ items: [...stores.notes.get("items")] }));
+const routes = manifest(t, { "t.page": { loader: read, component: () => ({}), POST: write } });
 const storage = await sqlite(new URL(process.env.KEEL_DATABASE_URL));
 const ctx = createCtx({ mode: "real", drivers: { storage } });
 const app = await createApp({ topology: topology({ web: { modules: ["t"], adapter: "node" } }), routes, ctx, mode: "production" });

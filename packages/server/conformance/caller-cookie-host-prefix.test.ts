@@ -4,6 +4,7 @@
 import { createHash } from "node:crypto";
 import { createCtx } from "@keel/ctx";
 import { action, loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import { createApp, topology } from "@keel/server";
 import { expect, test } from "vitest";
@@ -14,18 +15,21 @@ const hash = (value: string): string => createHash("sha256").update(value).diges
 
 async function setup(secure?: boolean) {
   const seen: { loader: string | undefined; action: string | undefined } = { loader: undefined, action: undefined };
-  const read = loader({ output: Out }, async ({ caller }) => {
+  const appContract = contract("app", {
+    "app.who": { path: "/who" },
+  });
+
+  const read = loader(appContract, "app.who", { output: Out }, async ({ caller }) => {
     seen.loader = caller;
     return ok({ caller });
   });
-  const write = action({ input: Nothing }, async (_input, { caller }) => {
+  const write = action(appContract, "app.who", { input: Nothing }, async (_input, { caller }) => {
     seen.action = caller;
     return ok(null);
   });
-  const routes = manifest({
-    "app.who": { path: "/who", loader: read, component: () => document.createElement("p") },
+  const routes = manifest(appContract, {
+    "app.who": { loader: read, component: () => document.createElement("p"), POST: write },
   });
-  routes.actions({ "app.who": { POST: write } });
   const app = await createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
     routes,

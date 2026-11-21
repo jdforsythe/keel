@@ -1,4 +1,4 @@
-// Spec: k.scaffold, clause "`place b --to y --adapter node` then `place b --to x` restores a byte-identical tree; neither writes outside `topology.ts`, `deploy/` and CI workflows."
+// Spec: k.scaffold, clause "`place b --to y --adapter node` then `place b --to x` restores a byte-identical tree; neither writes outside `topology.ts`, `deploy/`, CI workflows."
 // Seed 1337 (fast-check). Module `b` is `orders`/`catalog`, `x` is the project's first deployable, `y` a generated name.
 import fc from "fast-check";
 import { afterAll, expect, test } from "vitest";

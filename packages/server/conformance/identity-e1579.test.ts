@@ -3,20 +3,23 @@
 // @vitest-environment node
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { createApp, identity, topology } from "@keel/server";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 import { SEED } from "./identity-support.ts";
 
 const view = () => document.createElement("p");
-const boot = (path: string, route: string) =>
-  createApp({
+const boot = (path: string, route: string) => {
+  const appContract = contract("app", { "app.x": { path: route } });
+  return createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
-    routes: manifest({ "app.x": { path: route, component: view } }),
+    routes: manifest(appContract, { "app.x": { component: view } }),
     ctx: createCtx({ mode: "sim", seed: SEED }),
     mode: "production",
     identity: identity({ identify: async () => "", handle: { path, fn: () => new Response("") } }),
   });
+};
 
 describe("k.user: createApp throws E1579", () => {
   test("`createApp` with `handle.path` `/api` and a route `/api/x` throws E1579", async () => {

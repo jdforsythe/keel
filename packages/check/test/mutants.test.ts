@@ -2627,7 +2627,7 @@ describe("format", () => {
 describe("explain, rules, defineRule", () => {
   it("explain: kernel table, registered stdlib rule, unknown code", () => {
     expect(explain("E1001")).toMatch(/^E1001|For/);
-    expect(explain("E9999")).toBe("E9999 is not a known code; keel spec --for E9999 lists spec lines citing it.");
+    expect(explain("E9999")).toBe("E9999 is not a known code; keel docs --for E9999 lists spec lines citing it.");
     defineRule({ code: "E2951", message: "string msg", explain: "why", see: "k.check", check: () => [] });
     expect(explain("E2951")).toBe("E2951 string msg.\nwhy\nsee: k.check");
     defineRule({ code: "E2952", message: () => "fn msg", explain: "why2", check: () => [] });
@@ -3339,10 +3339,10 @@ describe("type check mapping (E1751, E1802, E1001, E1501, E1003, E1453)", () => 
       # link data template
       E1003 2:44 to is a literal script/data URL; it renders as about:blank
       # link var
-      E1501 3:44 string path where an Href is required; use routes.href(routeId, params)
+      E1501 3:44 string path where an Href is required; use the contract's href(routeId, params)
       # link not url scheme
       E1003 2:44 to is a literal script/data URL; it renders as about:blank
-      E1501 2:44 string path where an Href is required; use routes.href(routeId, params)
+      E1501 2:44 string path where an Href is required; use the contract's href(routeId, params)
       # plain TS error
       E1751 1:14 TS2322 Type 'string' is not assignable to type 'number'.
       # two TS errors
@@ -3361,6 +3361,7 @@ describe("type check mapping (E1751, E1802, E1001, E1501, E1003, E1453)", () => 
       # implicit any in ts reported
       E1751 1:27 TS7006 Parameter 'props' implicitly has an 'any' type.
       # implicit any second param reported
+      E1407 2:38 a component is (props, ctx: Ctx): ctx required, typed Ctx, last
       E1751 2:38 TS7006 Parameter 'slots' implicitly has an 'any' type.
       # implicit any non-fn arg reported
 

@@ -4,6 +4,7 @@
 import { createCtx } from "@keel/ctx";
 import { createRouter, loader, manifest } from "@keel/router";
 import type { Href, RouterHistory } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { mount } from "@keel/runtime-dom";
 import { type Infer, ok, s } from "@keel/schema";
 import { Box } from "@keel/ui";
@@ -17,10 +18,8 @@ const Row = s.object({ id: s.string(), title: s.string() });
 const cols = columns(Row, { key: "id", show: ["title"], search: ["title"] });
 const Search = tableSearch(cols);
 type Query = Infer<typeof Search>;
-const stub = (): Node => document.createComment("");
-/** Same path and search as the route, used to mint `Href`s without the page reading its own manifest. */
-const links = manifest({ "st.find": { path: "/st", search: Search, component: stub } });
-const hrefOf = (q: Query): Href => links.href("st.find", {}, q);
+const st = contract("st", { "st.find": { path: "/st", search: Search } });
+const hrefOf = (q: Query): Href => st.href("st.find", {}, q);
 const queryOf = (raw: unknown): Query => {
   const r = Search.parse(raw);
   return r.ok ? r.value : {};
@@ -44,27 +43,28 @@ const memory = (start: string): RouterHistory & { entries: string[] } => {
 test("text typed while a search loads stays in the input and is sent next", async () => {
   const held: (() => void)[] = [];
   const sent: string[] = [];
-  const routes = manifest({
+  const routes = manifest(st, {
     "st.find": {
-      path: "/st",
-      search: Search,
-      loader: loader({ output: s.object({}), search: Search }, async ({ search }) => {
+      loader: loader(st, "st.find", { output: s.object({}) }, async ({ search }) => {
         sent.push(String(search.q ?? ""));
         if (search.q !== undefined) await new Promise<void>((r) => held.push(r));
         return ok({});
       }),
-      component: (props) =>
+      component: (props, ctx) =>
         Box({
           id: "st.page",
           children: () => [
-            TableSearch({
-              id: "find",
-              label: "Search",
-              get search() {
-                return queryOf(props.search);
+            TableSearch(
+              {
+                id: "find",
+                label: "Search",
+                get search() {
+                  return queryOf(props.search);
+                },
+                href: hrefOf,
               },
-              href: hrefOf,
-            }),
+              ctx,
+            ),
           ],
         }),
     },
@@ -74,7 +74,7 @@ test("text typed while a search loads stays in the input and is sent next", asyn
   const router = createRouter(routes, { ctx, history });
   const host = document.createElement("div");
   document.body.appendChild(host);
-  const off = mount(router.App, host);
+  const off = mount(router.App, host, { ctx });
   await settle();
   const input = (): HTMLInputElement => {
     const el = document.getElementById("find.input");
@@ -117,30 +117,31 @@ test("text typed while a search loads stays in the input and is sent next", asyn
 // activated during a slow search load) re-applies the old `q`; the last navigation wins and the input shows it.
 test.fails("a link activated while a search loads keeps the typed text (known limit)", async () => {
   const held: (() => void)[] = [];
-  const routes = manifest({
+  const routes = manifest(st, {
     "st.find": {
-      path: "/st",
-      search: Search,
-      loader: loader({ output: s.object({}), search: Search }, async ({ search }) => {
+      loader: loader(st, "st.find", { output: s.object({}) }, async ({ search }) => {
         if (search.q !== undefined) await new Promise<void>((r) => held.push(r));
         return ok({});
       }),
-      component: (props) =>
-        TableSearch({
-          id: "find",
-          label: "Search",
-          get search() {
-            return queryOf(props.search);
+      component: (props, ctx) =>
+        TableSearch(
+          {
+            id: "find",
+            label: "Search",
+            get search() {
+              return queryOf(props.search);
+            },
+            href: hrefOf,
           },
-          href: hrefOf,
-        }),
+          ctx,
+        ),
     },
   });
   const ctx = createCtx({ mode: "sim", seed: 1337 });
   const router = createRouter(routes, { ctx, history: memory("/st") });
   const host = document.createElement("div");
   document.body.appendChild(host);
-  const off = mount(router.App, host);
+  const off = mount(router.App, host, { ctx });
   await settle();
   const input = document.getElementById("find.input");
   if (!(input instanceof HTMLInputElement)) throw new Error("no input");

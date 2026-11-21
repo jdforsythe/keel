@@ -8,7 +8,7 @@ import { exportFile, manifestFile } from "./module-support.ts";
 import { type Files, SEED } from "./support.ts";
 
 const MANIFEST = (id: string) =>
-  `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [], routes: [] } })\n`;
+  `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [] } })\n`;
 const ROOT = `import { topology } from '@keel/server'\nexport default topology({ root: { modules: ['a'], adapter: 'node' } })\n`;
 const UNREADABLE = `import { topology } from '@keel/server'\nconst t = { web: { modules: ["a"], adapter: "node" } }\nexport default topology(t)\n`;
 

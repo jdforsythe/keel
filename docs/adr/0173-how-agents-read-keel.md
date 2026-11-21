@@ -8,7 +8,7 @@
 - **Docs ship in the packages and are read from `node_modules`.** Each published package carries the spec sections it owns under `docs/` with a `docs/index.json` (section id, title line, codes cited), added to its `files`. A std section ships in its std package. A kernel section ships in the kernel package that implements it; a section with no single package (k.errors, k.boundary, k.module, k.topology, k.security, k.check, k.ledger and the like) ships in `@keel/cli`. One table, `tooling/docs-owners.json`, maps every section to one package, and `pnpm check` fails when a section has no owner or two. `@keel/cli` also ships the map (`docs/map.md`, every section with its owner package) and the published skills (`skills/<name>/SKILL.md`). The `docs/` copies are built from `spec/` at pack time and are not committed.
 - **One retrieval command, `keel docs`, replaces `keel spec`** (one way, principle 1; `docs` is the word a user's agent tries first, principle 9). It reads the version installed in the project:
   - `keel docs`: the map, with each section marked installed or not, and the skills. Budget 1,200 tokens.
-  - `keel docs <id>`: one section (`k.router`, `std.tables`) or one skill (`keel-client`). Budget 1,500 tokens for a section, 2,000 for a skill.
+  - `keel docs <id>`: one section (`k.router`, `std.tables`) or one skill (`keel-client`). Budget 1,500 tokens for a section, 2,300 for a skill.
   - `keel docs --for <code>`: the lines that cite a code, across installed packages. Budget 400.
   - `keel explain <code>`: unchanged, 300.
   - A section whose package is not installed is an error that names the package to add. A diagnostic's `see:` line prints `keel docs <id>`.

@@ -8,6 +8,7 @@ import path from "node:path";
 import type { Topology } from "@keel/compiler";
 import { createCtx } from "@keel/ctx";
 import { action, loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import fc from "fast-check";
 import { afterEach, describe, expect, it } from "vitest";
@@ -21,28 +22,27 @@ const SECRET = "s".repeat(32);
 const APP = "https://app.test";
 let ran = 0;
 
-const routes = () => {
-  const m = manifest({
-    "a.home": { path: "/", component: () => document.createElement("main") },
+const c = contract("a", {
+  "a.home": { path: "/" },
+  "a.lists": { method: "GET", path: "/api/lists", output: s.object({ n: s.int() }) },
+  "a.add": { method: "POST", path: "/api/lists", body: s.object({}), output: s.object({}) },
+});
+const routes = () =>
+  manifest(c, {
+    "a.home": { component: () => document.createElement("main") },
     "a.lists": {
-      api: true,
-      path: "/api/lists",
-      loader: loader({ output: s.object({ n: s.int() }) }, async () => {
+      loader: loader(c, "a.lists", {}, async () => {
         ran++;
         return ok({ n: 1 });
       }),
     },
-  });
-  m.actions({
-    "a.lists": {
-      POST: action({ input: s.object({}), output: s.object({}) }, async () => {
+    "a.add": {
+      action: action(c, "a.add", {}, async () => {
         ran++;
         return ok({});
       }),
     },
   });
-  return m;
-};
 const T = topology({ api: { modules: ["a"], adapter: "node" } });
 const app = (allow: readonly string[], lines: string[] = []) =>
   createApp({
@@ -210,7 +210,7 @@ describe("host fallback", () => {
     const files: Record<string, string> = {
       ".vite/manifest.json": JSON.stringify({
         e: { file: "assets/entry-abc12345.js", isEntry: true },
-        "keel:host": { file: "index.html", assets: ["assets/index-Bx_9aZ01.js"] },
+        "keel:servedBy": { file: "index.html", assets: ["assets/index-Bx_9aZ01.js"] },
       }),
       "assets/entry-abc12345.js": "resume()",
       "assets/index-Bx_9aZ01.js": "mount()",
@@ -224,7 +224,7 @@ describe("host fallback", () => {
   };
   const HOSTED = topology({
     api: { modules: ["a"], adapter: "node" },
-    web: { modules: ["w"], adapter: "client", host: "api" },
+    web: { modules: ["w"], adapter: "client", servedBy: "api" },
   });
   const host = (assets: string, opts: { peers?: Record<string, string>; artifacts?: string } = {}) =>
     createApp({
@@ -275,7 +275,7 @@ describe("host fallback", () => {
     const T2 = topology({
       api: { modules: ["a"], adapter: "node" },
       other: { modules: ["b"], adapter: "node" },
-      web: { modules: ["w"], adapter: "client", host: "api" },
+      web: { modules: ["w"], adapter: "client", servedBy: "api" },
     });
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "keel-host-art-"));
     made.push(dir);
@@ -302,7 +302,7 @@ describe("host fallback", () => {
     const T2 = topology({
       api: { modules: ["a"], adapter: "node" },
       other: { modules: ["b"], adapter: "node" },
-      web: { modules: ["w"], adapter: "client", host: "api" },
+      web: { modules: ["w"], adapter: "client", servedBy: "api" },
     });
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "keel-host-art-"));
     made.push(dir);
@@ -313,7 +313,9 @@ describe("host fallback", () => {
     const peer = await createApp({
       topology: T2,
       deployable: "other",
-      routes: manifest({ "b.feed": { path: "/feed", component: () => document.createElement("article") } }),
+      routes: manifest(contract("b", { "b.feed": { path: "/feed" } }), {
+        "b.feed": { component: () => document.createElement("article") },
+      }),
       ctx: createCtx({ mode: "sim", seed: SEED }),
     });
     const a = await createApp({
@@ -380,26 +382,30 @@ describe("KEEL_ALLOW_ORIGINS", () => {
 });
 
 describe("topology hosts", () => {
-  it("keeps host on a client naming a node deployable", () => {
+  it("keeps servedBy on a client naming a node deployable", () => {
     const t = topology({
       api: { modules: ["a"], adapter: "node" },
-      web: { modules: ["w"], adapter: "client", host: "api" },
+      web: { modules: ["w"], adapter: "client", servedBy: "api" },
     });
-    expect(t.web?.host).toBe("api");
+    expect(t.web?.servedBy).toBe("api");
     expect(Object.isFrozen(t.web)).toBe(true);
   });
 
-  it("throws E1566 for each bad host", () => {
+  it("throws E1566 for each bad servedBy", () => {
     const n: Topology[string] = { modules: ["a"], adapter: "node" };
     const bad: Topology[] = [
-      { api: { ...n, host: "api" } },
-      { api: n, web: { modules: ["w"], adapter: "client", host: "nowhere" } },
-      { api: n, pre: { modules: ["p"], adapter: "static" }, web: { modules: ["w"], adapter: "client", host: "pre" } },
-      { api: n, web: { modules: ["w"], adapter: "client", host: "web" } },
+      { api: { ...n, servedBy: "api" } },
+      { api: n, web: { modules: ["w"], adapter: "client", servedBy: "nowhere" } },
       {
         api: n,
-        one: { modules: ["o"], adapter: "client", host: "api" },
-        two: { modules: ["t"], adapter: "client", host: "api" },
+        pre: { modules: ["p"], adapter: "static" },
+        web: { modules: ["w"], adapter: "client", servedBy: "pre" },
+      },
+      { api: n, web: { modules: ["w"], adapter: "client", servedBy: "web" } },
+      {
+        api: n,
+        one: { modules: ["o"], adapter: "client", servedBy: "api" },
+        two: { modules: ["t"], adapter: "client", servedBy: "api" },
       },
     ];
     for (const def of bad) expect(() => topology(def), JSON.stringify(def)).toThrow(/^E1566 /);

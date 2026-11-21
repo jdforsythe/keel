@@ -3,6 +3,7 @@
 // Action A reads `lists` and saves `todos`; action B reads `todos` and saves `lists`; A goes to the first app, B to the second.
 import { createCtx } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import { createApp, topology } from "@keel/server";
 import { store, transaction, tx } from "@keel/store";
@@ -51,14 +52,19 @@ async function setup() {
   const ctx = createCtx({ mode: "sim", seed: 1337 });
   const arrived = { A: deferred(), B: deferred() };
   const gate = { A: deferred(), B: deferred() };
-  const actA = action({ input: Add, stores: factory }, async ({ n }, { stores }) => {
+  const appContract = contract("app", {
+    "app.a": { path: "/a" },
+    "app.b": { path: "/b" },
+  });
+
+  const actA = action(appContract, "app.a", { input: Add, stores: factory }, async ({ n }, { stores }) => {
     stores.lists.get("items");
     tx(stores.addTodo, { n });
     arrived.A.resolve();
     await gate.A.promise;
     return ok(null);
   });
-  const actB = action({ input: Add, stores: factory }, async ({ n }, { stores }) => {
+  const actB = action(appContract, "app.b", { input: Add, stores: factory }, async ({ n }, { stores }) => {
     stores.todos.get("items");
     tx(stores.addList, { n });
     arrived.B.resolve();
@@ -67,8 +73,10 @@ async function setup() {
   });
   const component = (): Node => document.createElement("p");
   const start = () => {
-    const routes = manifest({ "app.a": { path: "/a", component }, "app.b": { path: "/b", component } });
-    routes.actions({ "app.a": { POST: actA }, "app.b": { POST: actB } });
+    const routes = manifest(appContract, {
+      "app.a": { component: component, POST: actA },
+      "app.b": { component: component, POST: actB },
+    });
     return createApp({
       topology: topology({ web: { modules: ["app"], adapter: "node" } }),
       routes,

@@ -18,7 +18,8 @@ const defaultError = (e: KeelError<string, unknown>): string =>
   }</div>`;
 
 /**
- * Render a chain to HTML like the router's view (k.router, k.errors): outermost layout first, each layout
+ * Render a chain to HTML like the router's view (k.router, k.errors), each component and errorElement called
+ * `(props, ctx)` with `ctx` the app's own (`createApp({ ctx })`, the one its loaders get): outermost layout first, each layout
  * receiving the next level, rendered before it and led by a `<!--k-->` comment, as `children` (a thunk whose string form is the child HTML, so string
  * components can interpolate it; a second call throws E1255, k.resume). A failure renders its level's `errorElement` (layouts above intact unless
  * `bare`); level -1 is the default alert. A route with an `errorElement` is a boundary: a throw while
@@ -40,7 +41,7 @@ export function renderChain(input: ChainInput): Rendered {
     const shown = input.publicize(error);
     const make = el?.errorElement;
     // A render unit, as for components: a compiled errorElement's bindings need a mount context.
-    return make === undefined ? defaultError(shown) : toHtml(renderUnit(() => make({ error: shown }), seen));
+    return make === undefined ? defaultError(shown) : toHtml(renderUnit(() => make({ error: shown }, ctx), ctx, seen));
   };
 
   const componentAt = (i: number, lvl: Level): string => {
@@ -64,7 +65,7 @@ export function renderChain(input: ChainInput): Rendered {
     storeReads.note = (id) => used.add(id);
     let out: ReturnType<typeof renderUnit>;
     try {
-      out = renderUnit(() => lvl.def.component?.(last ? base : { ...base, children }, undefined, ctx) ?? "", seen);
+      out = renderUnit(() => lvl.def.component?.(last ? base : { ...base, children }, ctx) ?? "", ctx, seen);
     } finally {
       storeReads.note = null;
     }

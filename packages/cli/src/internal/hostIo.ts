@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import type { Io } from "../types/Io.ts";
 import { applyWrites } from "./applyWrites.ts";
 import { hostBuild } from "./hostBuild.ts";
+import { hostDocs } from "./hostDocs.ts";
 import { readProject } from "./readProject.ts";
 
 /**
@@ -20,7 +21,12 @@ export function hostIo(stream: boolean): Io {
     env,
     tty: process.stdout.isTTY === true,
     fetch: (url: string, init?: RequestInit) => (init === undefined ? fetch(url) : fetch(url, init)),
-    load: (scope) => (scope === "none" ? [] : readProject(cwd, scope)),
+    load: (scope) =>
+      scope === "none"
+        ? []
+        : scope === "docs"
+          ? hostDocs(cwd, scope)
+          : [...readProject(cwd, scope), ...hostDocs(cwd, scope)],
     apply: (writes) => applyWrites(cwd, writes),
     build: hostBuild,
     // Behind its own entry, loaded only for `--target` (`@keel/cli` size budget).

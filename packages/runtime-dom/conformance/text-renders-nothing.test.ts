@@ -3,12 +3,14 @@
 // Spec: k.place, Conformance "In `'dev'` mode a mounted text binding given a node, an array holding one and a function each writes one `console.warn` starting `E1406` with the element id, once over two updates, and renders `''`; in production, `''` and no line. A dev `createApp` serving such a route twice logs one `diag` E1406 with its route id; production none."
 // Seed 1337 (the property below). A hand-built component binds `text(el, () => value.get())` to an element with an id,
 // as compiled code does; `mount` takes `mode`. `console.warn` is spied.
+import { createCtx } from "@keel/ctx";
 import { signal } from "@keel/reactive";
 import { mount } from "@keel/runtime-dom";
 import { clone, template, text } from "@keel/runtime-dom/ops";
 import fc from "fast-check";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SEED, flush, inScope } from "./fixtures.ts";
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 type Value = unknown;
 type Mode = "dev" | "production";
@@ -45,7 +47,7 @@ function open(mode: Mode, first: Value, second: Value = "s") {
       return root;
     },
     host,
-    { mode },
+    { mode, ctx: simCtx },
   );
   const out = (id: string): string => host.querySelector(id)?.textContent ?? "missing";
   return { a: a.value, b: b.value, out, dispose };

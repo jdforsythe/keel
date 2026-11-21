@@ -24,7 +24,7 @@ describe("entryCode shell", () => {
     expect(cap).toContain('import { capacitorDrivers as __keelDrivers } from "@keel/std-capacitor";');
   });
 
-  it("with the shell's id (the project has identity.ts) imports identity.ts and calls shellMount before the router starts", () => {
+  it("with the shell's id (the project has identity.ts) imports identity.ts and calls shellMount with its mount before the router starts", () => {
     for (const [kind, pkg] of [
       ["tauri", "@keel/std-tauri"],
       ["capacitor", "@keel/std-capacitor"],
@@ -32,8 +32,9 @@ describe("entryCode shell", () => {
       const shell = { kind, origin: "https://app.example", id: "dev.keel.app" };
       const code = entryCode(["/r.ts"], "c.css", {}, {}, shell);
       expect(code).toContain(`import { shellMount as __keelMount } from "${pkg}/shellMount";`);
-      expect(code).toContain('import "/identity.ts";');
-      const call = '__keelMount(ctx, { id: "dev.keel.app", origin: new URL("https://app.example") });';
+      expect(code).toContain('import __keelIdentity from "/identity.ts";');
+      const call =
+        '__keelMount(ctx, { id: "dev.keel.app", origin: new URL("https://app.example"), mount: __keelIdentity });';
       expect(code).toContain(call);
       expect(code.indexOf("const ctx =")).toBeLessThan(code.indexOf(call));
       expect(code.indexOf(call)).toBeLessThan(code.indexOf("createRouter("));

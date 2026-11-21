@@ -67,7 +67,7 @@ async function up(url, accept, ms = 20_000) {
 
 /** The recipes `GET /api/recipes` lists. */
 async function recipes(base) {
-  const list = field((await get(base, "/api/recipes")).body, "results", "kitchen.recipes", "value", "recipes");
+  const list = field((await get(base, "/api/recipes")).body, "results", "kitchen.box", "value", "recipes");
   return Array.isArray(list) ? list : [];
 }
 

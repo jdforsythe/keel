@@ -2,12 +2,15 @@
 // Spec: k.component, Control flow: "Elements in a JSX child expression are E1403 and bind nothing" (rfc:0061).
 // @vitest-environment happy-dom
 // Seed 1337 (fc.assert seed below). RFC 0061.
+import { createCtx } from "@keel/ctx";
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
 import { If, mount } from "@keel/runtime-dom";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { type Mountable, SEED, isMountable, sigOf } from "./support.ts";
+
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 /** Compiles `jsx` as a component body over signals `a` (condition) and `xs` (list), keeping output despite diagnostics. */
 function build(jsx: string, imports = ""): { B: Mountable; diagnostics: { code: string }[] } {
@@ -35,7 +38,7 @@ function html(B: Mountable, a: boolean, xs: number[]): string {
   sigOf(B, "a").set(a);
   sigOf(B, "xs").set(xs);
   const host = document.createElement("div");
-  const dispose = mount(B, host);
+  const dispose = mount(B, host, { ctx: simCtx });
   const out = host.innerHTML;
   dispose();
   return out;
@@ -106,7 +109,7 @@ export default B
       for (const v of [true, false]) {
         sigOf(B, "a").set(v);
         const host = document.createElement("div");
-        const dispose = mount(B, host);
+        const dispose = mount(B, host, { ctx: simCtx });
         const out = host.innerHTML;
         dispose();
         expect(out).not.toContain("[object");

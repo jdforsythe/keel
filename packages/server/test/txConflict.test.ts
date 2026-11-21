@@ -1,5 +1,6 @@
 import { type CtxEvent, createCtx, observe } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { err, ok, s } from "@keel/schema";
 import { store, transaction, tx } from "@keel/store";
 import { describe, expect, it } from "vitest";
@@ -23,10 +24,11 @@ async function setup() {
     const inc = transaction(count, "test.inc", s.object({ base: s.int() }), (st) => ({ n: st.n + 1 }));
     return { count, inc };
   };
-  const routes = manifest({ "app.inc": { path: "/inc", component: () => document.createElement("p") } });
-  routes.actions({
+  const c = contract("app", { "app.inc": { path: "/inc" } });
+  const routes = manifest(c, {
     "app.inc": {
-      POST: action({ input: s.object({ base: s.int() }), stores: counter }, (input, { stores }) => {
+      component: () => document.createElement("p"),
+      POST: action(c, "app.inc", { input: s.object({ base: s.int() }), stores: counter }, (input, { stores }) => {
         const r = tx(stores.inc, input, { base: input.base });
         return r.ok ? ok(null) : err(r.error);
       }),

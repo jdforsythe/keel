@@ -5,6 +5,7 @@
 // The stderr line is once per process, so the always-throwing case is the first test of this file and the only one that reaches stderr. Its text and format are not in the spec; only its count is asserted.
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { topology } from "@keel/server";
 import fc from "fast-check";
@@ -13,7 +14,8 @@ import { SEED, createApp } from "./fixtures.ts";
 
 const view = (): Node => document.createElement("main");
 const Plain = s.object({ slug: s.string() });
-const routes = () => manifest({ "app.plain": { path: "/plain/:slug", params: Plain, component: view } });
+const appContract = contract("app", { "app.plain": { path: "/plain/:slug", params: Plain } });
+const routes = () => manifest(appContract, { "app.plain": { component: view } });
 const get = (path: string) => new Request(`http://localhost${path}`, { headers: { accept: "application/json" } });
 
 const isReq = (format: "compact" | "json", line: string): boolean => {

@@ -1,4 +1,4 @@
-// Spec: k.scaffold, clause "Running the same generator twice reports E1351 the second time and writes nothing."
+// Spec: k.scaffold, clause "Running a generator twice reports E1351 the second time, writing nothing."
 // Spec: k.scaffold, Rules "E1351 target id already exists (fix: use a codemod)"
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";

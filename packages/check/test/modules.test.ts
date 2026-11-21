@@ -1,14 +1,14 @@
-// k.module pass (E1151-E1157): examples, fixes, and edge cases beyond the conformance suite.
+// k.module pass (E1151-E1156): examples, fixes, and edge cases beyond the conformance suite.
 import { describe, expect, it } from "vitest";
 import { type Diagnostic, type SourceFile, check } from "../src/index.ts";
 import { applyPatch } from "./support/applyPatch.ts";
 
 const f = (path: string, source: string): SourceFile => ({ path, source });
 const list = (xs: string[]): string => `[${xs.map((x) => `'${x}'`).join(", ")}]`;
-const man = (id: string, o: { deps?: string[]; caps?: string[]; exports?: string[]; routes?: string[] } = {}) =>
+const man = (id: string, o: { deps?: string[]; caps?: string[]; exports?: string[] } = {}) =>
   f(
     `modules/${id}/module.ts`,
-    `import { module } from '@keel/compiler'\nexport default module({\n  id: '${id}',\n  deps: ${list(o.deps ?? [])},\n  capabilities: ${list(o.caps ?? [])},\n  public: { exports: ${list(o.exports ?? [])}, routes: ${list(o.routes ?? [])} },\n})\n`,
+    `import { module } from '@keel/compiler'\nexport default module({\n  id: '${id}',\n  deps: ${list(o.deps ?? [])},\n  capabilities: ${list(o.caps ?? [])},\n  public: { exports: ${list(o.exports ?? [])} },\n})\n`,
   );
 const run = (files: SourceFile[]): readonly Diagnostic[] => check(files, { types: false }).diagnostics;
 const of = (files: SourceFile[], code: string): readonly Diagnostic[] => run(files).filter((d) => d.code === code);
@@ -171,34 +171,47 @@ describe("module pass", () => {
     expect(of(files, "E1155")).toEqual([]);
   });
 
-  it("E1151 fix adds the export to the owner's public.exports; E1157 adds the route to public.routes", () => {
+  it("E1151 fix adds the export to the owner's public.exports; its contract needs deps only", () => {
     const files = [
-      man("catalog", { exports: ["Item"], routes: ["catalog.list"] }),
+      man("catalog", { exports: ["Item"] }),
       f("modules/catalog/Item.ts", "export const Item = 1\n"),
       f("modules/catalog/Secret.ts", "export const Secret = 1\n"),
       f(
-        "modules/catalog/routes.ts",
-        "import { manifest } from '@keel/router'\nconst P = () => null\nexport const routes = manifest({ 'catalog.list': { path: '/c', component: P }, 'catalog.edit': { path: '/c/e', component: P } })\n",
+        "modules/catalog/catalog.contract.ts",
+        "import { contract } from '@keel/router/contract'\nexport const catalog = contract('catalog', { 'catalog.list': { path: '/c' }, 'catalog.edit': { path: '/c/e' } })\n",
       ),
       man("orders", { deps: ["catalog"] }),
       f("modules/orders/Card.ts", "import { Secret } from '../catalog/Secret.ts'\nexport const Card = Secret\n"),
-      f("modules/orders/Back.ts", "import { href } from '@keel/router'\nexport const Back = href('catalog.edit')\n"),
+      f(
+        "modules/orders/Back.ts",
+        "import { catalog } from '../catalog/catalog.contract'\nexport const Back = catalog.href('catalog.edit')\n",
+      ),
     ];
+    expect(of(files, "E1151").map((d) => d.path)).toEqual(["modules/orders/Card.ts"]);
     const e1151 = applyFix(files, of(files, "E1151")[0]);
     expect(e1151.find((x) => x.path === "modules/catalog/module.ts")?.source).toContain("exports: ['Item', 'Secret']");
     expect(of(e1151, "E1151")).toEqual([]);
-    const e1157 = applyFix(files, of(files, "E1157")[0]);
-    const after = e1157.find((x) => x.path === "modules/catalog/module.ts")?.source;
-    expect(after).toContain("routes: ['catalog.list', 'catalog.edit']");
-    expect(of(e1157, "E1157")).toEqual([]);
+  });
+
+  it("a file of another stem ending in .contract.ts is not the module's contract", () => {
+    const files = [
+      man("catalog"),
+      f(
+        "modules/catalog/other.contract.ts",
+        "import { contract } from '@keel/router/contract'\nexport const other = contract('catalog', {})\n",
+      ),
+      man("orders", { deps: ["catalog"] }),
+      f("modules/orders/Back.ts", "import { other } from '../catalog/other.contract.ts'\nexport const Back = other\n"),
+    ];
+    expect(of(files, "E1151")).toHaveLength(1);
   });
 
   it("E1155 fix prefixes the id, keeping the quote; an identifier key becomes a quoted key", () => {
     const files = [
       man("orders"),
       f(
-        "modules/orders/routes.ts",
-        "import { manifest } from '@keel/router'\nconst P = () => null\nexport const routes = manifest({ show: { path: \"/s\", component: P } })\n",
+        "modules/orders/orders.contract.ts",
+        "import { contract } from '@keel/router/contract'\nexport const orders = contract('orders', { show: { path: \"/s\" } })\n",
       ),
       f(
         "modules/orders/Locked.ts",
@@ -206,11 +219,11 @@ describe("module pass", () => {
       ),
     ];
     const d = of(files, "E1155");
-    expect(d.map((x) => x.path)).toEqual(["modules/orders/Locked.ts", "modules/orders/routes.ts"]);
+    expect(d.map((x) => x.path)).toEqual(["modules/orders/Locked.ts", "modules/orders/orders.contract.ts"]);
     const a = applyFix(files, d[0]);
     expect(a.find((x) => x.path === "modules/orders/Locked.ts")?.source).toContain('s.error("orders.locked"');
     const b = applyFix(files, d[1]);
-    expect(b.find((x) => x.path === "modules/orders/routes.ts")?.source).toContain("manifest({ 'orders.show': {");
+    expect(b.find((x) => x.path === "modules/orders/orders.contract.ts")?.source).toContain("{ 'orders.show': {");
     expect(of(applyFix(a, of(a, "E1155")[0]), "E1155")).toEqual([]);
   });
 
@@ -218,7 +231,7 @@ describe("module pass", () => {
     const std = (src: string, name: string) => f(`node_modules/@keel/std-auth/${name}`, src);
     const files = [
       std(
-        "import { module } from '@keel/compiler'\nexport default module({ id: 'auth', deps: [], capabilities: [], public: { exports: ['Ghost'], routes: [] } })\n",
+        "import { module } from '@keel/compiler'\nexport default module({ id: 'auth', deps: [], capabilities: [], public: { exports: ['Ghost'] } })\n",
         "module.ts",
       ),
       std("export const Secret = 1\n", "Secret.ts"),
@@ -235,7 +248,7 @@ describe("module pass", () => {
   it("every module diagnostic is one line under 90 chars and cites k.module, even with long ids", () => {
     const long = "a".repeat(40);
     const files = [
-      man(long, { deps: [`${long}b`], exports: ["G".repeat(50)], routes: ["r".repeat(50)] }),
+      man(long, { deps: [`${long}b`], exports: ["G".repeat(50)] }),
       man(`${long}b`, { deps: [long] }),
       f(`modules/${long}/Run.ts`, `export const Run = (ctx: never) => ctx.${"x".repeat(50)}\n`),
     ];
@@ -253,7 +266,7 @@ describe("E1158 non-finite literals (rfc:0066, backlog 0195)", () => {
   const std = (value: string): SourceFile =>
     f(
       "modules/a/module.ts",
-      `export default module({ id: 'a', deps: ['@keel/std-free'], capabilities: [], public: { exports: [], routes: [] }, std: { '@keel/std-free': ${value} } })\n`,
+      `export default module({ id: 'a', deps: ['@keel/std-free'], capabilities: [], public: { exports: [] }, std: { '@keel/std-free': ${value} } })\n`,
     );
   it("-1e999 and 1e999 are not literal JSON; finite negatives and -0 are", () => {
     for (const v of ["-1e999", "{ n: -1e999 }", "[1e999]"])

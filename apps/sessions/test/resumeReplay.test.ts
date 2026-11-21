@@ -8,11 +8,12 @@
 import { createCtx } from "@keel/ctx";
 import type { Ctx } from "@keel/ctx";
 import { computed, effect, signal } from "@keel/reactive";
-import { type Manifest, type RouteDef, manifest } from "@keel/router";
-import type { Slots } from "@keel/runtime-dom";
+import { type RouteTable, manifest, routeTable } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { createApp } from "@keel/server";
 import type { Session } from "@keel/std-sessions";
 import { record, session } from "@keel/std-sessions";
+import { sessions as ingest } from "@keel/std-sessions/contract";
 import { replay } from "@keel/std-sessions/replay";
 import { routes as sessions } from "@keel/std-sessions/routes";
 import { resumeDocument } from "@keel/testing";
@@ -21,9 +22,9 @@ import { describe, expect, it } from "vitest";
 import topology from "../topology.ts";
 
 /** A page whose own effect reads a computed that throws once its button is clicked. */
-function Fx(_props?: object, _slots?: Slots, ctx?: Ctx): Node {
-  if (ctx !== undefined && typeof location !== "undefined")
-    record(ctx, { upload: new URL(sessions.routes["sessions.ingest"].path, location.origin) });
+function Fx(_props: object, ctx: Ctx): Node {
+  if (typeof location !== "undefined")
+    record(ctx, { upload: new URL(ingest.entries["sessions.ingest"].path, location.origin) });
   const open = signal(false);
   const width = computed(() => (open.get() ? "x".repeat(-1).length : 0));
   effect(() => {
@@ -36,9 +37,9 @@ function Fx(_props?: object, _slots?: Slots, ctx?: Ctx): Node {
   });
 }
 /** A page whose text binding reads a computed that throws once its button is clicked. */
-function Bind(_props?: object, _slots?: Slots, ctx?: Ctx): Node {
-  if (ctx !== undefined && typeof location !== "undefined")
-    record(ctx, { upload: new URL(sessions.routes["sessions.ingest"].path, location.origin) });
+function Bind(_props: object, ctx: Ctx): Node {
+  if (typeof location !== "undefined")
+    record(ctx, { upload: new URL(ingest.entries["sessions.ingest"].path, location.origin) });
   const open = signal(false);
   return Box({
     as: "main",
@@ -49,15 +50,13 @@ function Bind(_props?: object, _slots?: Slots, ctx?: Ctx): Node {
     ],
   });
 }
-const bindRoutes = manifest({ "ops.bind": { path: "/bind", component: Bind }, ...sessions.routes });
-const fxRoutes = manifest({ "ops.fx": { path: "/fx", component: Fx }, ...sessions.routes });
+const bind = contract("ops", { "ops.bind": { path: "/bind" } });
+const fx = contract("ops", { "ops.fx": { path: "/fx" } });
+const bindRoutes = routeTable(manifest(bind, { "ops.bind": { component: Bind } }), sessions);
+const fxRoutes = routeTable(manifest(fx, { "ops.fx": { component: Fx } }), sessions);
 
 /** Serve `path` with createApp, resume its island under the page's ctx, click `button`; the uploaded session. */
-async function recordedAfterResume(
-  appRoutes: Manifest<Readonly<Record<string, RouteDef>>>,
-  path: string,
-  button: string,
-): Promise<Session> {
+async function recordedAfterResume(appRoutes: RouteTable, path: string, button: string): Promise<Session> {
   const app = await createApp({
     topology,
     routes: appRoutes,

@@ -1,12 +1,13 @@
 // @vitest-environment happy-dom
 // Examples (k.api): E1510 for each arm, E1508 for a redirect-less guard on a page or layout, the href refusal,
-// matchHref and the client router matching no API route, `routes.json` marking API routes.
+// matchHref and the client router matching no API entry, `routes.json` marking API entries.
 import { createCtx } from "@keel/ctx";
 import { mount } from "@keel/runtime-dom";
 import { err, ok, s } from "@keel/schema";
 import fc from "fast-check";
-import { describe, expect, expectTypeOf, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { action } from "../src/action.ts";
+import { contract } from "../src/contract/contract.ts";
 import { createRouter } from "../src/createRouter.ts";
 import { guard } from "../src/guard.ts";
 import { createRouterWith } from "../src/internal/createRouterWith.ts";
@@ -14,16 +15,12 @@ import { loader } from "../src/loader.ts";
 import { manifest } from "../src/manifest.ts";
 import { matchHref } from "../src/match/matchHref.ts";
 import { routesArtifact } from "../src/routesArtifact.ts";
-import type { ApiGuard } from "../src/types/ApiGuard.ts";
-import type { Guard } from "../src/types/Guard.ts";
-import type { RouteDef } from "../src/types/RouteDef.ts";
 import { memoryHistory } from "./memoryHistory.ts";
 import { to } from "./to.ts";
 
 const SEED = 1337;
 const view = (): Node => document.createElement("div");
-const read = loader({ output: s.object({}) }, async () => ok({}));
-const write = action({ input: s.object({}), output: s.object({}) }, async () => ok({}));
+const Out = s.object({});
 const Denied = s.error("keel.denied", s.object({}));
 const bare = guard({}, async () => err(Denied.make({})));
 const toLogin = guard({ redirect: "t.login" }, async () => err(Denied.make({})));
@@ -36,110 +33,152 @@ const failure = (fn: () => unknown): unknown => {
   }
   return null;
 };
-const build = (routes: Readonly<Record<string, unknown>>): unknown =>
-  failure(() => Reflect.apply(manifest, undefined, [routes]));
+/** `contract` over entries its types refuse. */
+const declare = (entries: Readonly<Record<string, unknown>>): unknown =>
+  failure(() => Reflect.apply(contract, undefined, ["t", entries]));
 
-describe("E1510", () => {
-  it("an API entry with any refused member, or without path, throws E1510 naming the id", () => {
-    for (const refused of [{ component: view }, { errorElement: view }, { title: () => "t" }, { layout: "t.s" }])
-      expect(build({ "t.a": { api: true, path: "/a", loader: read, ...refused } })).toBe(
-        "E1510 t.a: needs component, or api: true with a path and no view",
-      );
-    expect(build({ "t.a": { api: true, loader: read } })).toMatch(/^E1510 t\.a: /);
+const api = contract("t", {
+  "t.read": { method: "GET", path: "/api/x", output: Out },
+  "t.write": { method: "POST", path: "/api/x", output: Out },
+  "t.login": { path: "/login" },
+  "t.home": { path: "/" },
+  "t.any": { path: "/api/:id", params: s.object({ id: s.string() }) },
+});
+const read = loader(api, "t.read", {}, async () => ok({}));
+const write = action(api, "t.write", {}, async () => ok({}));
+const full = (extra: { read?: object; home?: object } = {}) =>
+  manifest(api, {
+    "t.read": { loader: read, ...extra.read },
+    "t.write": { action: write },
+    "t.login": { component: view },
+    "t.home": { component: view, ...extra.home },
+    "t.any": { component: view },
   });
 
-  it("an entry with neither component nor api: true throws E1510; a refused member set to undefined still counts", () => {
+describe("E1510", () => {
+  it("an API entry with any refused member, or without path or output, throws E1510 naming the id", () => {
+    for (const refused of [{ component: view }, { errorElement: view }, { title: "t" }, { layout: "t.s" }])
+      expect(declare({ "t.a": { method: "GET", path: "/a", output: Out, ...refused } })).toMatch(/^E1510 t\.a: /);
+    expect(declare({ "t.a": { method: "GET", output: Out } })).toMatch(/^E1510 t\.a: /);
+    expect(declare({ "t.a": { method: "GET", path: "/a" } })).toMatch(/^E1510 t\.a: /);
+  });
+
+  it("an entry of no kind, or a page with a refused member, throws E1510", () => {
     fc.assert(
-      fc.property(fc.constantFrom("/a", "/b/c"), fc.boolean(), (path, withLoader) => {
-        const entry = withLoader ? { path, loader: read } : { path };
-        expect(build({ "t.n": entry })).toBe("E1510 t.n: needs component, or api: true with a path and no view");
+      fc.property(fc.constantFrom("/a", "/b/c"), fc.boolean(), (path, withMember) => {
+        const entry = withMember ? { path, loader: read } : { output: Out };
+        expect(declare({ "t.n": entry })).toMatch(/^E1510 t\.n: /);
       }),
       { seed: SEED, numRuns: 10 },
     );
-    expect(build({ "t.a": { api: true, path: "/a", loader: read, title: undefined } })).toMatch(/^E1510/);
   });
 
-  it("an API route with neither loader nor action throws on href, matchHref and createRouter, not before", () => {
-    const m = manifest({ "t.none": { api: true, path: "/none" }, "t.home": { path: "/", component: view } });
-    expect(failure(() => m.href("t.home"))).toBe("E1510 t.none: an API route needs a loader or an action");
-    expect(failure(() => matchHref(m, m.href("t.home")))).toMatch(/^E1510/);
-    const ctx = createCtx({ mode: "sim", seed: SEED });
-    expect(failure(() => createRouter(m, { ctx, history: memoryHistory("/") }))).toMatch(/^E1510/);
+  it("an API entry bound with a view member, or the wrong handler member, throws E1510 from manifest", () => {
+    const bad = (b: Record<string, unknown>) => failure(() => Reflect.apply(manifest, undefined, [api, b]));
+    const rest = { "t.login": { component: view }, "t.home": { component: view }, "t.any": { component: view } };
+    expect(bad({ ...rest, "t.read": { loader: read, component: view }, "t.write": { action: write } })).toMatch(
+      /^E1510 t\.read: /,
+    );
+    expect(bad({ ...rest, "t.read": { action: write }, "t.write": { action: write } })).toMatch(/^E1510 t\.read: /);
+    expect(bad({ ...rest, "t.read": { loader: read }, "t.write": { loader: read } })).toMatch(/^E1510 t\.write: /);
   });
 
-  it("an action alone or a loader alone completes an API route", () => {
-    const m = manifest({ "t.w": { api: true, path: "/w" }, "t.home": { path: "/", component: view } });
-    m.actions({ "t.w": { POST: write } });
-    expect(m.href("t.home")).toBe("/");
-    const r = manifest({ "t.r": { api: true, path: "/r", loader: read }, "t.home": { path: "/", component: view } });
-    expect(r.href("t.home")).toBe("/");
+  it("an API entry with neither loader nor action is E1515 from manifest, naming the id", () => {
+    const bad = (b: Record<string, unknown>) => failure(() => Reflect.apply(manifest, undefined, [api, b]));
+    const rest = { "t.login": { component: view }, "t.home": { component: view }, "t.any": { component: view } };
+    expect(bad({ ...rest, "t.read": {}, "t.write": { action: write } })).toBe("E1515 t.read: binds no loader");
+    expect(bad({ ...rest, "t.read": { loader: read }, "t.write": {} })).toBe("E1515 t.write: binds no action");
+  });
+
+  it("a loader alone completes an API GET entry and an action alone an API write entry", () => {
+    expect(full().contract.href("t.home")).toBe("/");
   });
 });
 
 describe("E1508 for a guard without redirect", () => {
-  it("is refused on a page and a layout by type and by manifest(); accepted on an API route", () => {
-    type Accepts<E> = [E] extends [RouteDef] ? true : false;
-    expectTypeOf<
-      Accepts<{ readonly path: "/p"; component(): Node; readonly guard: typeof bare }>
-    >().toEqualTypeOf<false>();
-    expectTypeOf<Accepts<{ component(): Node; readonly guard: typeof bare }>>().toEqualTypeOf<false>();
-    expectTypeOf<
-      Accepts<{ readonly path: "/p"; component(): Node; readonly guard: typeof toLogin }>
-    >().toEqualTypeOf<true>();
-    expectTypeOf<
-      Accepts<{ readonly api: true; readonly path: "/a"; readonly guard: typeof bare }>
-    >().toEqualTypeOf<true>();
-    expect(build({ "t.p": { path: "/p", component: view, guard: bare } })).toBe("E1508 t.p: guard without redirect");
-    expect(build({ "t.l": { component: view, guard: bare } })).toMatch(/^E1508 t\.l: /);
-    const ok1 = manifest({ "t.a": { api: true, path: "/a", loader: read, guard: bare } });
-    const ok2 = manifest({
-      "t.login": { path: "/login", component: view },
-      "t.p": { path: "/p", component: view, guard: toLogin },
-      "t.a": { api: true, path: "/a", loader: read, guard: toLogin },
+  it("is refused on a page and a layout by type and by manifest(); accepted on an API entry", () => {
+    const c = contract("t", {
+      "t.l": { layout: true },
+      "t.p": { path: "/p" },
+      "t.a": { method: "GET", path: "/a", output: Out },
     });
-    expect(ok1.kind).toBe("keel.manifest");
-    expect(ok2.href("t.p")).toBe("/p");
+    const get = loader(c, "t.a", {}, async () => ok({}));
+    expect(
+      failure(() =>
+        // The type errors are in unsafe/negativeTypes.ts; called untyped here.
+        Reflect.apply(manifest, undefined, [
+          c,
+          { "t.l": { component: view }, "t.p": { component: view, guard: bare }, "t.a": { loader: get } },
+        ]),
+      ),
+    ).toBe("E1508 t.p: guard without redirect");
+    expect(
+      failure(() =>
+        Reflect.apply(manifest, undefined, [
+          c,
+          { "t.l": { component: view, guard: bare }, "t.p": { component: view }, "t.a": { loader: get } },
+        ]),
+      ),
+    ).toMatch(/^E1508 t\.l: /);
+    const ok1 = manifest(c, {
+      "t.l": { component: view },
+      "t.p": { component: view },
+      "t.a": { loader: get, guard: bare },
+    });
+    const ok2 = manifest(c, {
+      "t.l": { component: view },
+      "t.p": { component: view, guard: toLogin },
+      "t.a": { loader: get, guard: toLogin },
+    });
+    expect(ok1.kind).toBe("keel.routeTable");
+    expect(ok2.contract.href("t.p")).toBe("/p");
     expect(Object.hasOwn(bare, "redirect")).toBe(false);
     expect(toLogin.redirect).toBe("t.login");
   });
+
+  it("a guard redirect to an API entry throws E1508 from manifest", () => {
+    const toApi = guard({ redirect: "t.read" }, async () => err(Denied.make({})));
+    expect(failure(() => full({ home: { guard: toApi } }))).toBe("E1508 t.home: guard redirect to an API entry");
+  });
 });
 
-describe("calling an API route", () => {
-  const routes = manifest({
-    "t.api": { api: true, path: "/api/x", loader: read, guard: bare },
-    "t.home": { path: "/", component: view },
-    "t.any": { path: "/api/:id", params: s.object({ id: s.string() }), component: view },
-  });
+describe("calling an API entry", () => {
+  const routes = full({ read: { guard: bare } });
 
-  it("href refuses an API id at runtime (E1501); matchHref skips the API path for a page beside it", () => {
-    expect(failure(() => Reflect.apply(routes.href, undefined, ["t.api"]))).toBe(
-      'E1501 href("t.api"): no declared page has this id',
+  it("href refuses an API id (type and E1501); matchHref skips the API path for a page beside it", () => {
+    // The type error is in unsafe/negativeTypes.ts; called untyped here.
+    expect(failure(() => Reflect.apply(api.href, api, ["t.read"]))).toBe(
+      'E1501 href("t.read"): no page of this contract has this id',
     );
-    expect(matchHref(routes, routes.href("t.home"))?.id).toBe("t.home");
-    expect(matchHref(routes, routes.href("t.any", { id: "x" }))?.id).toBe("t.any");
+    expect(matchHref(routes, api.href("t.home"))?.id).toBe("t.home");
+    expect(matchHref(routes, api.href("t.any", { id: "x" }))?.id).toBe("t.any");
+    expect(matchHref(routes, "/api/x")?.id).toBe("t.any");
   });
 
-  it("routes.json marks only API routes with api: true; a redirect-less guard is null", () => {
+  it("routes.json marks API entries with their method; a redirect-less guard is null", () => {
     const art = routesArtifact(routes);
-    expect(art["t.api"]).toMatchObject({ api: true, guard: null, layout: null, path: "/api/x" });
+    expect(art["t.read"]).toMatchObject({ api: true, method: "GET", guard: null, layout: null, path: "/api/x" });
+    expect(art["t.write"]).toMatchObject({ api: true, method: "POST", actions: ["POST"] });
     expect(art["t.home"] !== undefined && Object.hasOwn(art["t.home"], "api")).toBe(false);
   });
 
-  it("the client router matches no API route: a link to one is not intercepted, navigate loads a document", async () => {
-    const only = manifest({
-      "t.api": { api: true, path: "/api/x", loader: read },
-      "t.home": { path: "/", component: view },
+  it("the client router matches no API entry: a link to one is not intercepted, navigate loads a document", async () => {
+    const c = contract("t", { "t.api": { method: "GET", path: "/api/x", output: Out }, "t.home": { path: "/" } });
+    const only = manifest(c, {
+      "t.api": { loader: loader(c, "t.api", {}, async () => ok({})) },
+      "t.home": { component: view },
     });
     const history = memoryHistory("/");
     const left: string[] = [];
+    const ctx = createCtx({ mode: "sim", seed: SEED });
     const router = createRouterWith(only, {
-      ctx: createCtx({ mode: "sim", seed: SEED }),
+      ctx,
       history,
       leave: (url) => void left.push(url),
     });
     const host = document.createElement("div");
     document.body.append(host);
-    const unmount = mount(router.App, host);
+    const unmount = mount(router.App, host, { ctx });
     const a = document.createElement("a");
     a.setAttribute("href", "/api/x");
     host.append(a);
@@ -160,50 +199,11 @@ describe("calling an API route", () => {
     router.dispose();
     host.remove();
   });
-});
 
-describe("api other than true, and a guard redirect naming an API route", () => {
-  it("an entry whose api is anything but true throws E1510 from manifest()", () => {
-    fc.assert(
-      fc.property(fc.constantFrom<unknown>(1, "true", false, null, undefined, {}), fc.boolean(), (api, page) => {
-        const entry = page ? { api, path: "/a", component: view } : { api, path: "/a", loader: read };
-        expect(build({ "t.a": entry })).toBe("E1510 t.a: needs component, or api: true with a path and no view");
-      }),
-      { seed: SEED, numRuns: 20 },
-    );
-  });
-
-  it("a guard redirect to an API route throws E1508 on the first read of the table, not before", () => {
-    const toApi = guard({ redirect: "t.api" }, async () => err(Denied.make({})));
-    const m = manifest({
-      "t.api": { api: true, path: "/api/x", loader: read },
-      "t.p": { path: "/p", component: view, guard: toApi },
-    });
-    expect(m.kind).toBe("keel.manifest");
-    expect(failure(() => m.href("t.p"))).toBe("E1508 t.p: guard redirect to an API route");
-    const fresh = manifest({
-      "t.api": { api: true, path: "/api/x", loader: read },
-      "t.l": { component: view, guard: toApi },
-    });
+  it("createRouter takes a table with API entries", () => {
     const ctx = createCtx({ mode: "sim", seed: SEED });
-    expect(failure(() => createRouter(fresh, { ctx, history: memoryHistory("/") }))).toMatch(/^E1508 t\.l: /);
-  });
-
-  it("the exported Guard fits pages, layouts and API routes; ApiGuard fits API routes only", () => {
-    type Accepts<E> = [E] extends [RouteDef] ? true : false;
-    const g: Guard = guard({ redirect: "t.login" }, async () => ok(null));
-    const a: ApiGuard = guard({}, async () => ok(null));
-    expectTypeOf(g).toEqualTypeOf<Guard>();
-    expectTypeOf(a).toEqualTypeOf<ApiGuard>();
-    expectTypeOf<Accepts<{ readonly path: "/p"; component(): Node; readonly guard: Guard }>>().toEqualTypeOf<true>();
-    expectTypeOf<Accepts<{ component(): Node; readonly guard: Guard }>>().toEqualTypeOf<true>();
-    expectTypeOf<Accepts<{ readonly api: true; readonly path: "/a"; readonly guard: Guard }>>().toEqualTypeOf<true>();
-    expectTypeOf<
-      Accepts<{ readonly api: true; readonly path: "/a"; readonly guard: ApiGuard }>
-    >().toEqualTypeOf<true>();
-    expectTypeOf<
-      Accepts<{ readonly path: "/p"; component(): Node; readonly guard: ApiGuard }>
-    >().toEqualTypeOf<false>();
-    expect(manifest({ "t.login": { path: "/login", component: view, guard: g } }).href("t.login")).toBe("/login");
+    const router = createRouter(routes, { ctx, history: memoryHistory("/") });
+    expect(router.route.get().id).toBe("t.home");
+    router.dispose();
   });
 });

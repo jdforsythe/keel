@@ -5,6 +5,7 @@
 // receives `{ params, search, data }`. Skipped until a search-only navigation keeps the page.
 import { createCtx } from "@keel/ctx";
 import { createRouter, loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import type { RouteProps } from "@keel/router";
 import { mount } from "@keel/runtime-dom";
 import { text } from "@keel/runtime-dom/ops";
@@ -13,11 +14,17 @@ import * as fc from "fast-check";
 import { afterEach, describe, expect, it } from "vitest";
 import { SEED, memoryHistory, settle } from "./fixtures.ts";
 
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
+
 const Search = s.object({ q: s.string({ min: 1, max: 8 }).optional() });
 const Data = s.object({ echo: s.string({ min: 0, max: 8 }), n: s.int({ min: 0, max: 1000000 }) });
 
 let loads = 0;
-const load = loader({ output: Data, search: Search }, async ({ search }) => {
+const hsContract = contract("hs", {
+  "hs.page": { path: "/hs", search: Search },
+});
+
+const load = loader(hsContract, "hs.page", { output: Data }, async ({ search }) => {
   loads++;
   return ok({ echo: search.q ?? "", n: loads });
 });
@@ -47,10 +54,8 @@ const Page = (props: RouteProps): Node => {
   return main;
 };
 
-const routes = manifest({
+const routes = manifest(hsContract, {
   "hs.page": {
-    path: "/hs",
-    search: Search,
     loader: load,
     component: Page,
     title: (p) => titleFor(String(read(p.data, "echo")), Number(read(p.data, "n"))),
@@ -75,11 +80,11 @@ describe("k.head: a search-only navigation", () => {
         });
         const host = document.createElement("div");
         document.body.append(host);
-        const unmount = mount(router.App, host);
+        const unmount = mount(router.App, host, { ctx: simCtx });
         await settle();
         expect(document.title).toBe(titleFor("", 1));
         for (const [i, q] of qs.entries()) {
-          await router.navigate(routes.href("hs.page", {}, { q }));
+          await router.navigate(hsContract.href("hs.page", {}, { q }));
           await settle();
           expect(document.title).toBe(titleFor(q, i + 2));
         }
@@ -101,7 +106,7 @@ describe("k.head: a search-only navigation", () => {
         });
         const host = document.createElement("div");
         document.body.append(host);
-        const unmount = mount(router.App, host);
+        const unmount = mount(router.App, host, { ctx: simCtx });
         await settle();
         const field = host.querySelector("#hs\\.field");
         if (!(field instanceof HTMLElement)) throw new Error("fixture: no field");
@@ -109,7 +114,7 @@ describe("k.head: a search-only navigation", () => {
         const statuses = [...host.querySelectorAll('[role="status"]')];
         expect(statuses).toHaveLength(2);
         for (const q of qs) {
-          await router.navigate(routes.href("hs.page", {}, { q }));
+          await router.navigate(hsContract.href("hs.page", {}, { q }));
           await settle();
           expect(document.activeElement).toBe(field);
           const after = [...host.querySelectorAll('[role="status"]')];

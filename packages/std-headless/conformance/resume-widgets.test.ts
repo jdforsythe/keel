@@ -8,7 +8,8 @@ import { describe, expect, it } from "vitest";
 import { type Served, e1257, serve } from "./resume-support.ts";
 import { WIDGETS, routes } from "./resume-widget-routes.ts";
 
-const MODULES = WIDGETS.map((w) => w.key);
+// One contract, so one module: every widget page belongs to `w`.
+const MODULES = ["w"];
 const FRESH = () => import("./resume-widget-routes.ts");
 
 type Handle = Awaited<ReturnType<typeof resumeDocument>>;

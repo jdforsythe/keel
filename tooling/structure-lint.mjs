@@ -1,4 +1,4 @@
-// Structure lint. S0001/S0002/S0004/S0005 delegate to @keel/check (E1752/E1757/E1754); S0003, S0006 live here; S0009 (a std package's runtime entry reaches a CLI-time package) is std-entries.mjs. Usage: node tooling/structure-lint.mjs [--root dir] [--format=..] [--quiet] [--limit N]
+// Structure lint. S0001/S0002/S0004/S0005 delegate to @keel/check (E1752/E1757/E1754); S0003, S0006, S0012 (a stdlib file names a kernel `internal` entry `deps.json` does not list, k.parity) live here; S0009 (a std package's runtime entry reaches a CLI-time package) is std-entries.mjs. Usage: node tooling/structure-lint.mjs [--root dir] [--format=..] [--quiet] [--limit N]
 import fs from "node:fs";
 import path from "node:path";
 import { check } from "../packages/check/src/index.ts";
@@ -61,6 +61,26 @@ for (const file of files) {
       const ti = order.indexOf(target);
       if (me >= 0 && ti > me)
         add("S0003", file, i + 1, (m.index ?? 0) + 1, `${pkg} may not import ${target} (later in deps order)`);
+    });
+  }
+
+  // S0012: the stdlib reaches the kernel through public entries only (k.parity), but for the entries deps.json lists.
+  if (isPkg && pkg?.startsWith("std-") && (area === "src" || area === "unsafe")) {
+    const allowed = deps.internal?.[pkg] ?? [];
+    text.forEach((l, i) => {
+      const re = /(?:\bfrom\s*|\bimport\s*\(?\s*|\brequire\(\s*)['"](@keel\/([\w-]+)(?:\/[^'"]*)?)['"]/g;
+      for (let m = re.exec(l); m; m = re.exec(l)) {
+        const [, spec, target] = m;
+        if (!spec || !target || target.startsWith("std-") || !order.includes(target)) continue;
+        if (!spec.split("/").slice(2).includes("internal") || allowed.includes(spec)) continue;
+        add(
+          "S0012",
+          file,
+          i + 1,
+          m.index + 1,
+          `${pkg} may not import ${spec}: the stdlib holds no power a library lacks (k.parity)`,
+        );
+      }
     });
   }
 

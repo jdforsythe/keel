@@ -254,6 +254,7 @@ export function recording(ctx: Ctx, options: RecordOptions): Live {
   const unobserve = observe(ctx, onEvent);
 
   const live: Live = {
+    note: onEvent,
     recorder: {
       events: () => buf.slice(),
       errors: () => raw.slice(),

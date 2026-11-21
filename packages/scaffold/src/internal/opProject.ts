@@ -1,5 +1,6 @@
 import type { Result } from "@keel/schema";
 import { deployFiles } from "../deployFiles.ts";
+import { contractTs } from "../templates/contractTs.ts";
 import { indexHtml } from "../templates/indexHtml.ts";
 import { keelMarkSvg } from "../templates/keelMarkSvg.ts";
 import { moduleTs } from "../templates/moduleTs.ts";
@@ -39,7 +40,8 @@ export function opProject(input: unknown, files: ReadonlyMap<string, string>): R
     ["vite.config.ts", viteConfigTs()],
     ["public/keel-mark.svg", keelMarkSvg()],
     ["modules/app/module.ts", moduleTs("app")],
-    ["modules/app/routes.ts", routesTs()],
+    ["modules/app/app.contract.ts", contractTs("app")],
+    ["modules/app/routes.ts", routesTs("app")],
     [".gitignore", GITIGNORE],
   ]);
   if (workspace) {

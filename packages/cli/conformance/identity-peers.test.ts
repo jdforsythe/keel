@@ -1,16 +1,17 @@
-// Spec: k.user, Across deployables "A forwarded request (k.topology) keeps its headers, so the peer runs its own `identify`. A `service({ module })` method takes `user?: string`, sent as `x-keel-user`: HMAC-SHA-256 under `createApp({ secret })` over method, path, search, `user` and an expiry 60 s ahead on `ctx.clock`. A server that verifies it uses it as `user` and runs no `identify`; any other `x-keel-user` is ignored. On a ctx with no secret (a browser) `user` is `api.input`."
-// Spec: k.user, Conformance "`service({ module: 'b' })` with `user: 'u1'`, in process and split: `b`'s loader gets `'u1'` and `b`'s `identify` is not called; that header resent after 61 s, to another path or with one changed character is ignored and `identify` runs; on a ctx with no secret, `api.input`."
-// Seed 1337 (fc.assert below). Fixture modules `a` (its loader calls `service({ module: 'b' })` with a user) and `b`, served as `{ one: [a, b] }` and as `{ x: [a], y: [b] }` under one secret; the sim net routes `http://y.test` to `y`.
+// Spec: k.user, Across deployables "A forwarded request (k.topology) keeps its headers, so the peer runs its own `identify`. A `service({ contract })` method takes `user?: string`, sent as `x-keel-user`: HMAC-SHA-256 under `createApp({ secret })` over method, path, search, `user` and an expiry 60 s ahead on `ctx.clock`. A server that verifies it uses it as `user` and runs no `identify`; any other `x-keel-user` is ignored. On a ctx with no secret (a browser) `user` is `api.input`."
+// Spec: k.user, Conformance "`service({ contract: b })` with `user: 'u1'`, in process and split: `b`'s loader gets `'u1'` and `b`'s `identify` is not called; that header resent after 61 s, to another path or with one changed character is ignored and `identify` runs; on a ctx with no secret, `api.input`."
+// Seed 1337 (fc.assert below). Fixture modules `a` (its loader calls `service({ contract: b })` with a user) and `b`, served as `{ one: [a, b] }` and as `{ x: [a], y: [b] }` under one secret; the sim net routes `http://y.test` to `y`.
 // The header's format is not specified, so every header here is one `x` captured from a real call.
 // @vitest-environment node
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { createCtx } from "@keel/ctx";
-import { action, loader, manifest, routesArtifact } from "@keel/router";
+import { action, loader, manifest, routeTable, routesArtifact } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { err, ok, s } from "@keel/schema";
 import { createApp, identity, topology } from "@keel/server";
-import { endpoints, service } from "@keel/services";
+import { service } from "@keel/services";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 const SEED = 1337;
@@ -19,10 +20,11 @@ const SECRET = "conformance-secret-user-0123456789abcdef0123456789abcdef";
 const Params = s.object({ n: s.string() });
 const Item = s.object({ n: s.string(), user: s.string() });
 const Boom = s.error("a.boom", s.object({}));
-const schema = endpoints({
-  get: { method: "GET", path: "/b/:n", params: Params, output: Item },
-  put: { method: "POST", path: "/b/:n", params: Params, body: s.object({}), output: s.string().nullable() },
+const b = contract("b", {
+  "b.get": { method: "GET", path: "/b/:n", params: Params, output: Item },
+  "b.put": { method: "POST", path: "/b/:n", params: Params, body: s.object({}), output: s.string().nullable() },
 });
+const a = contract("a", { "a.show": { path: "/a/:n", params: Params } });
 const view = () => document.createElement("main");
 const userArb = fc.stringMatching(/^[A-Za-z0-9]{1,40}$/);
 
@@ -36,27 +38,25 @@ async function bed(o: { split: boolean; user?: string | undefined; yAnswer?: str
   const seenB: { get: string[]; put: string[] } = { get: [], put: [] };
   const identifiedX: Request[] = [];
   const identifiedY: Request[] = [];
-  const api = service({ module: "b", schema });
+  const api = service({ contract: b });
   const callUser = o.user;
-  const aShow = loader({ output: Item, params: Params }, async ({ params }, ctx) => {
+  const aShow = loader(a, "a.show", { output: Item }, async ({ params }, ctx) => {
     const r = await api.get({ params, ...(callUser === undefined ? {} : { user: callUser }) }, ctx);
     return r.ok ? ok(r.value) : err(Boom.make({}));
   });
-  const bGet = loader({ output: Item, params: Params }, async ({ params, user }) => {
+  const bGet = loader(b, "b.get", {}, async ({ params, user }) => {
     seenB.get.push(user);
     return ok({ n: params.n, user });
   });
-  const bPut = action({ input: s.object({}), params: Params }, async (_i, { user }) => {
+  const bPut = action(b, "b.put", {}, async (_body, { user }) => {
     seenB.put.push(user);
     return ok(null);
   });
-  const aRoute = () => ({ "a.show": { path: "/a/:n", params: Params, loader: aShow, component: view } });
-  const bRoute = () => ({ "b.show": { path: "/b/:n", params: Params, loader: bGet, component: view } });
+  const aTable = () => manifest(a, { "a.show": { loader: aShow, component: view } });
+  const bTable = () => manifest(b, { "b.get": { loader: bGet }, "b.put": { action: bPut } });
   const routesOf = (which: "a" | "b" | "both") => {
-    if (which === "a") return manifest(aRoute());
-    const m = which === "b" ? manifest(bRoute()) : manifest({ ...aRoute(), ...bRoute() });
-    m.actions({ "b.show": { POST: bPut } });
-    return m;
+    if (which === "a") return aTable();
+    return which === "b" ? bTable() : routeTable(aTable(), bTable());
   };
   const idOf = (log: Request[], answer: string) =>
     identity({
@@ -119,7 +119,7 @@ const getB = (n: string, headers: Record<string, string> = {}) =>
   new Request(`http://localhost/b/${n}`, { headers: { accept: "application/json", ...headers } });
 
 describe("k.user: user across deployables", () => {
-  test("`service({ module: 'b' })` with `user: 'u1'`, in process and split: `b`'s loader gets `'u1'` and `b`'s `identify` is not called", async () => {
+  test("`service({ contract: b })` with `user: 'u1'`, in process and split: `b`'s loader gets `'u1'` and `b`'s `identify` is not called", async () => {
     await fc.assert(
       fc.asyncProperty(userArb, fc.boolean(), async (u, split) => {
         const t = await bed({ split, user: u });
@@ -238,7 +238,7 @@ describe("k.user: user across deployables", () => {
     );
   });
 
-  test("on a ctx with no secret, a `service({ module })` call with `user` is `api.input` and sends no request", async () => {
+  test("on a ctx with no secret, a `service({ contract })` call with `user` is `api.input` and sends no request", async () => {
     await fc.assert(
       fc.asyncProperty(userArb, async (u) => {
         const ctx = createCtx({ mode: "sim", seed: SEED });
@@ -247,7 +247,7 @@ describe("k.user: user across deployables", () => {
           sent.push(req.url);
           return new Response("{}", { status: 200 });
         });
-        const r = await service({ module: "b", schema }).get({ params: { n: "1" }, user: u }, ctx);
+        const r = await service({ contract: b }).get({ params: { n: "1" }, user: u }, ctx);
         expect(r.ok).toBe(false);
         if (!r.ok) expect(r.error.code).toBe("api.input");
         expect(sent).toEqual([]);

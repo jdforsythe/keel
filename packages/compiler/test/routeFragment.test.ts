@@ -1,14 +1,18 @@
-// Seed 1337
+// k.compiler Artifacts: a placed stdlib module's routes are read statically from its package's `./contract` and
+// `./routes` files, inside its package; an app binding's spread is never followed. Seed 1337.
 import fs from "node:fs";
 import path from "node:path";
 import fc from "fast-check";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { routeLiterals } from "../src/routeLiterals.ts";
 import type { SourceFile } from "../src/types/SourceFile.ts";
+import type { Topology } from "../src/types/Topology.ts";
 
 const PKG = "@keel/std-frag";
 const M = "modules/m/routes.ts";
-const full = { layout: null, guard: null, actions: [], params: false, search: false };
+const C = `${PKG}/contract`;
+const full = { file: C, layout: null, guard: null, actions: [], params: false, search: false };
+const topology: Topology = { web: { modules: ["m", "frag"], adapter: "node" } };
 let root = "";
 
 beforeEach(() => {
@@ -24,167 +28,178 @@ function put(rel: string, text: string): void {
   fs.writeFileSync(at, text);
 }
 
-/** `@keel/std-frag` with `exports` `.` and `./routes` naming `src/routes.ts`, whose text is `source`. */
-function pkg(source: string): void {
+const contractOf = (entries: string): string =>
+  `import { contract } from "@keel/router/contract";\nexport const frag = contract("frag", { ${entries} });\n`;
+const bindingOf = (binding: string, pre = ""): string =>
+  `import { manifest } from "@keel/router";\nimport { frag } from "./contract.ts";\n${pre}\nexport const routes = manifest(frag, { ${binding} });\n`;
+
+/** `@keel/std-frag` (module id `frag`) with `./contract` and `./routes` exports and those files' texts. */
+function pkg(contract: string, routes: string, exports: Record<string, unknown> = {}): void {
   put(
     `node_modules/${PKG}/package.json`,
-    JSON.stringify({ exports: { ".": "./src/routes.ts", "./routes": "./src/routes.ts" } }),
+    JSON.stringify({ exports: { "./contract": "./src/contract.ts", "./routes": "./src/routes.ts", ...exports } }),
   );
-  put(`node_modules/${PKG}/src/routes.ts`, source);
+  put(
+    `node_modules/${PKG}/module.ts`,
+    'export default { id: "frag", deps: [], capabilities: [], public: { exports: [] } };\n',
+  );
+  put(`node_modules/${PKG}/src/contract.ts`, contract);
+  put(`node_modules/${PKG}/src/routes.ts`, routes);
 }
 
-/** The app's `modules/m/` with `deps` and a manifest whose text is `source`. */
-function app(source: string, deps: readonly string[] = [PKG]): SourceFile[] {
-  const mod = `export default module({ id: "m", deps: ${JSON.stringify(deps)}, capabilities: [], public: { exports: [], routes: [] } });\n`;
-  return [
-    { path: "modules/m/module.ts", source: mod },
-    { path: M, source },
+/** The app's `modules/m/` with the package in `deps`, a contract and a binding whose text is `binding`. */
+function app(binding = `"m.home": { component: Home }`, pre = ""): SourceFile[] {
+  const files: SourceFile[] = [
+    {
+      path: "modules/m/module.ts",
+      source: `export default module({ id: "m", deps: ["${PKG}"], capabilities: [], public: { exports: [] } });\n`,
+    },
+    {
+      path: "modules/m/m.contract.ts",
+      source: `import { contract } from "@keel/router/contract";\nexport const m = contract("m", { "m.home": { path: "/" } });\n`,
+    },
+    {
+      path: M,
+      source: `import { manifest } from "@keel/router";\nimport { m } from "./m.contract.ts";\n${pre}\nexport const routes = manifest(m, { ${binding} });\n`,
+    },
   ];
+  for (const f of files) put(f.path, f.source);
+  return files;
 }
 
-const spreading = (body: string, imp = `import { routes as x } from "${PKG}/routes";`, post = ""): string =>
-  `${imp}\nexport const routes = manifest({ ${body} });\n${post}`;
-
-describe("routeLiterals package fragments", () => {
-  it("reads a guard redirect imported from the package's relative module beside a same-named folder", () => {
+describe("routeLiterals over a placed stdlib module", () => {
+  it("reads its contract and binding, a guard imported beside a same-named folder included", () => {
     put(`node_modules/${PKG}/src/routes/keep.ts`, "export const k = 1;\n");
     put(
       `node_modules/${PKG}/src/routes/reader.guard.ts`,
       `export const reader = guard({ redirect: "frag.in" }, fn);\n`,
     );
     pkg(
-      `import { reader } from "./routes/reader.guard.ts";\nimport { k } from "./routes";\n` +
-        `export const routes = manifest({ "frag.in": { path: "/in" }, "frag.list": { path: "/list", guard: reader } });\n`,
+      contractOf(
+        `"frag.in": { path: "/in" }, "frag.list": { path: "/list", search: S }, "frag.add": { method: "POST", path: "/list", output: O }`,
+      ),
+      bindingOf(
+        `"frag.in": { component: V }, "frag.list": { component: V, guard: reader }, "frag.add": { action: add }`,
+        `import { reader } from "./routes/reader.guard.ts";\nimport { k } from "./routes";`,
+      ),
     );
-    const r = routeLiterals(app(spreading("...x.routes")), { root });
+    const r = routeLiterals(app(), { root, topology });
     expect(r).toEqual({
-      routes: { "frag.in": { ...full, path: "/in" }, "frag.list": { ...full, path: "/list", guard: "frag.in" } },
+      routes: {
+        "m.home": { ...full, file: "modules/m/m.contract.ts", path: "/" },
+        "frag.in": { ...full, path: "/in" },
+        "frag.list": { ...full, path: "/list", guard: "frag.in", search: true },
+        "frag.add": { ...full, path: "/list", api: true, method: "POST", actions: ["POST"] },
+      },
       closed: true,
       unread: [],
     });
   });
 
-  it("resolves the package's `.` export and lets later entries override earlier ones in source order", () => {
-    pkg(`export const routes = manifest({ "m.a": { path: "/frag" }, "frag.b": { path: "/b" } });\n`);
-    const files = app(
-      spreading(
-        `"m.a": { path: "/a" }, ...x.routes, "frag.b": { path: "/own" }`,
-        `import { routes as x } from "${PKG}";`,
-      ),
+  it("reads a contract the binding imports by the package's own `./contract` specifier", () => {
+    pkg(
+      contractOf(`"frag.a": { path: "/a" }`),
+      `import { manifest } from "@keel/router";\nimport { frag } from "${C}";\nexport const routes = manifest(frag, { "frag.a": { component: V } });\n`,
     );
-    const r = routeLiterals(files, { root });
-    expect(r?.routes).toEqual({ "m.a": { ...full, path: "/frag" }, "frag.b": { ...full, path: "/own" } });
-    expect(r?.closed).toBe(true);
+    expect(routeLiterals(app(), { root, topology })?.routes["frag.a"]).toEqual({ ...full, path: "/a" });
   });
 
-  it("unreads the fragment's actions when the app reads actions off the imported binding", () => {
-    pkg(`export const routes = manifest({ "frag.a": { path: "/a" } });\n`);
-    const r = routeLiterals(app(spreading("...x.routes", undefined, `x.actions({ "frag.a": { POST: f } });`)), {
-      root,
-    });
-    expect(r?.closed).toBe(true);
-    expect(r?.unread).toEqual(["frag.a actions"]);
+  it("reads nothing of a package no deployable places", () => {
+    pkg(contractOf(`"frag.a": { path: "/a" }`), bindingOf(`"frag.a": { component: V }`));
+    const r = routeLiterals(app(), { root, topology: { web: { modules: ["m"], adapter: "node" } } });
+    expect(Object.keys(r?.routes ?? {})).toEqual(["m.home"]);
   });
 
-  for (const [name, files, part] of [
-    [
-      "an export other than routes",
-      () => app(spreading("...x.routes", `import { other as x } from "${PKG}/routes";`)),
-      "...x.routes",
-    ],
-    [
-      "a package that does not resolve",
-      () => app(spreading("...x.routes", `import { routes as x } from "@keel/std-none/routes";`), ["@keel/std-none"]),
-      "...x.routes",
-    ],
-    ["a computed member", () => app(spreading(`...x["routes"]`)), `...x["routes"]`],
-    [
-      "a relative import",
-      () => app(spreading("...x.routes", `import { routes as x } from "./other.ts";`)),
-      "...x.routes",
-    ],
-  ] as const)
-    it(`opens on ${name} and names the spread`, () => {
-      pkg(`export const routes = manifest({ "frag.a": { path: "/a" } });\n`);
-      const r = routeLiterals(files(), { root });
-      expect(r).toEqual({ routes: {}, closed: false, unread: [`${M} ${part}`] });
-    });
-
-  it("opens on a spread inside the fragment", () => {
-    pkg(`import { routes as y } from "@keel/std-other";\nexport const routes = manifest({ ...y.routes });\n`);
-    const r = routeLiterals(app(spreading("...x.routes")), { root });
-    expect(r).toEqual({ routes: {}, closed: false, unread: [`${PKG}/routes ...y.routes`] });
+  it("opens on an app binding's spread of the package's routes, naming it, and reads nothing from the package", () => {
+    pkg(contractOf(`"frag.a": { path: "/a" }`), bindingOf(`"frag.a": { component: V }`));
+    const files = app(`"m.home": { component: Home }, ...x.routes`, `import { routes as x } from "${PKG}/routes";`);
+    const r = routeLiterals(files, { root, topology: { web: { modules: ["m"], adapter: "node" } } });
+    expect(r?.closed).toBe(false);
+    expect(r?.unread).toEqual(["m.home", `${M} ...x.routes`]);
+    expect(Object.keys(r?.routes ?? {})).toEqual(["m.home"]);
   });
 
-  /** `@keel/std-frag` whose `./routes` export is `target`, and a literal manifest at `<root>/outside/routes.ts`. */
-  const escaping = (target: string): SourceFile[] => {
-    put(`node_modules/${PKG}/package.json`, JSON.stringify({ exports: { "./routes": target } }));
-    put("outside/routes.ts", `export const routes = manifest({ "frag.out": { path: "/out" } });\n`);
-    return app(spreading("...x.routes"));
-  };
-
-  for (const target of ["./../../../outside/routes.ts", "../../../outside/routes.ts", "./node_modules/x/routes.ts"])
-    it(`opens on an exports target that breaks Node's target rule: ${target}`, () => {
-      const r = routeLiterals(escaping(target), { root });
-      expect(r).toEqual({ routes: {}, closed: false, unread: [`${M} ...x.routes`] });
-    });
-
-  it("opens on an exports target that is a symlink out of the package", () => {
-    const files = escaping("./src/routes.ts");
-    fs.mkdirSync(path.join(root, `node_modules/${PKG}/src`), { recursive: true });
-    fs.symlinkSync(path.join(root, "outside/routes.ts"), path.join(root, `node_modules/${PKG}/src/routes.ts`));
-    const r = routeLiterals(files, { root });
-    expect(r).toEqual({ routes: {}, closed: false, unread: [`${M} ...x.routes`] });
+  it("opens on a spread inside the package's binding, naming it by specifier", () => {
+    pkg(contractOf(`"frag.a": { path: "/a" }`), bindingOf("...more"));
+    const r = routeLiterals(app(), { root, topology });
+    expect(r?.closed).toBe(false);
+    expect(r?.unread).toEqual([`${PKG}/routes ...more`]);
   });
 
-  it("unreads a guard the fragment imports from outside its package", () => {
+  it("unreads a guard the package's binding imports from outside its package", () => {
     put("outside.ts", `export const reader = guard({ redirect: "frag.a" }, fn);\n`);
     pkg(
-      `import { reader } from "../../../../outside.ts";\n` +
-        `export const routes = manifest({ "frag.a": { path: "/a", guard: reader } });\n`,
+      contractOf(`"frag.a": { path: "/a" }`),
+      bindingOf(`"frag.a": { component: V, guard: reader }`, `import { reader } from "../../../../outside.ts";`),
     );
-    const r = routeLiterals(app(spreading("...x.routes")), { root });
-    expect(r?.routes["frag.a"]).toEqual({ path: "/a", layout: null, actions: [], params: false, search: false });
+    const r = routeLiterals(app(), { root, topology });
+    expect(r?.routes["frag.a"]).toEqual({
+      file: C,
+      path: "/a",
+      layout: null,
+      actions: [],
+      params: false,
+      search: false,
+    });
     expect(r?.unread).toEqual(["frag.a guard"]);
   });
 
-  it("reads the file Node's conditions pick from a `module` and `default` map", () => {
-    put(
-      `node_modules/${PKG}/package.json`,
-      JSON.stringify({ exports: { "./routes": { module: "./esm.ts", default: "./plain.ts" } } }),
+  it("opens on a contract its binding imports from outside the package, naming it", () => {
+    put("outside/contract.ts", contractOf(`"frag.out": { path: "/out" }`));
+    pkg(
+      contractOf(`"frag.a": { path: "/a" }`),
+      bindingOf(`"frag.out": { component: V }`).replace("./contract.ts", "../../../../outside/contract.ts"),
     );
-    put(`node_modules/${PKG}/esm.ts`, `export const routes = manifest({ "frag.a": { path: "/module" } });\n`);
-    put(`node_modules/${PKG}/plain.ts`, `export const routes = manifest({ "frag.a": { path: "/default" } });\n`);
-    const r = routeLiterals(app(spreading("...x.routes")), { root });
-    expect(r?.routes["frag.a"]?.path).toBe("/default");
+    const r = routeLiterals(app(), { root, topology });
+    expect(r?.unread).toEqual([`${PKG}/routes contract`]);
+    expect(r?.routes["frag.out"]).toBeUndefined();
   });
 
-  it("reads back exactly the fields of any generated fragment table", () => {
+  for (const target of ["./../../../outside/routes.ts", "../../../outside/routes.ts", "./node_modules/x/routes.ts"])
+    it(`places nothing for a \`./routes\` target that breaks Node's target rule: ${target}`, () => {
+      put("outside/routes.ts", bindingOf(`"frag.a": { component: V }`));
+      pkg(contractOf(`"frag.a": { path: "/a" }`), "", { "./routes": target });
+      expect(Object.keys(routeLiterals(app(), { root, topology })?.routes ?? {})).toEqual(["m.home"]);
+    });
+
+  it("reads the file Node's conditions pick from a `module` and `default` map", () => {
+    pkg(contractOf(`"frag.a": { path: "/a" }`), "", { "./routes": { module: "./esm.ts", default: "./plain.ts" } });
+    put(
+      `node_modules/${PKG}/esm.ts`,
+      bindingOf(`"frag.a": { component: V, POST: p }`).replace("./contract.ts", "./src/contract.ts"),
+    );
+    put(
+      `node_modules/${PKG}/plain.ts`,
+      bindingOf(`"frag.a": { component: V }`).replace("./contract.ts", "./src/contract.ts"),
+    );
+    expect(routeLiterals(app(), { root, topology })?.routes["frag.a"]?.actions).toEqual([]);
+  });
+
+  it("reads back exactly the fields of any generated stdlib contract and binding", () => {
     const verbs = ["DELETE", "PATCH", "POST", "PUT"] as const;
     const word = fc.stringMatching(/^[a-z]{1,6}$/);
     const entry = fc.record({ path: fc.option(word, { nil: undefined }), actions: fc.subarray([...verbs]) });
     fc.assert(
       fc.property(fc.uniqueArray(fc.tuple(word, entry), { maxLength: 6, selector: (t) => t[0] }), (table) => {
-        const body = table
-          .map(([w, e]) => `"frag.${w}": { ${e.path === undefined ? "" : `path: "/${e.path}"`} }`)
+        const entries = table
+          .map(([w, e]) => `"frag.${w}": ${e.path === undefined ? "{ layout: true }" : `{ path: "/${e.path}" }`}`)
           .join(",\n");
-        const acts = table
-          .filter(([, e]) => e.actions.length > 0)
-          .map(([w, e]) => `"frag.${w}": { ${e.actions.map((v) => `${v}: fn`).join(", ")} }`);
-        pkg(
-          `export const routes = manifest({ ${body} });\n${acts.length > 0 ? `routes.actions({ ${acts.join(", ")} });` : ""}\n`,
-        );
-        const r = routeLiterals(app(spreading("...x.routes")), { root });
-        const expected = Object.fromEntries(
-          table.map(([w, e]) => [
+        const binding = table
+          .map(([w, e]) => `"frag.${w}": { component: V${e.actions.map((v) => `, ${v}: fn`).join("")} }`)
+          .join(",\n");
+        pkg(contractOf(entries), bindingOf(binding));
+        const r = routeLiterals(app(), { root, topology });
+        const expected = Object.fromEntries([
+          ["m.home", { ...full, file: "modules/m/m.contract.ts", path: "/" }],
+          ...table.map(([w, e]) => [
             `frag.${w}`,
             {
               ...full,
               path: e.path === undefined ? null : `/${e.path}`,
-              actions: verbs.filter((v) => e.actions.includes(v)),
+              actions: e.path === undefined ? [] : verbs.filter((v) => e.actions.includes(v)),
             },
           ]),
-        );
+        ]);
         expect(r).toEqual({ routes: expected, closed: true, unread: [] });
       }),
       { seed: 1337, numRuns: 50 },

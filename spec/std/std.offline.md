@@ -5,9 +5,9 @@ status: conformance-covered
 
 **Declare.** In a client-safe file whose name is the export:
 ```ts
-export const boardOutbox = outbox('todos.outbox', BoardApi, { module: 'api', limit: 100 })
+export const boardOutbox = outbox('todos.outbox', api, { limit: 100 })
 ```
-`outbox(id, api, { module, limit = 100, maxBytes = 262144 })`, over the k.services `endpoints` of `module`'s routes, creates client store `id` (prefixed, E1155), state `{ entries: OutboxEntry[] }`, changed only by `<id>.add`, `<id>.settle` and `<id>.resolve`. `OutboxEntry` is `{ key, endpoint, owner, input, base, at, state, head?, error? }`, `state` `queued`, `sending`, `conflict` or `failed`.
+`outbox(id, contract, { limit = 100, maxBytes = 262144 })`, over the contract's API write entries (k.contract), creates client store `id` (prefixed, E1155), state `{ entries: OutboxEntry[] }`, changed only by `<id>.add`, `<id>.settle` and `<id>.resolve`. `OutboxEntry` is `{ key, endpoint, owner, input, base, at, state, head?, error? }`, `state` `queued`, `sending`, `conflict` or `failed`.
 
 **Write.** An outbox endpoint's `body` holds `write: Write`, `s.object({ key: s.id('Write'), base: s.int({ min: 0 }), owner: s.string() })`; its action passes it through `writeFor` (std.outbox-owner).
 ```ts
@@ -17,7 +17,7 @@ const r = await send(ctx, boardOutbox, 'editTodo', { params: { todoId }, body: {
 
 **Owner.** `send` and `drain` require `owner`: the signed-in user's id, else `""`; an entry holds its `send`'s. A flush posts only entries of the owner last given on the ctx. When it changes, and on load, each other owner's entry not `failed` is stored `failed` with `offline.owner`, unless the owner given is `""`, which holds them `queued` (std.outbox-owner), as is a stored entry with an `origin` or no `owner`. A `failed` entry is never posted.
 
-**Flush.** In order, one request at a time, through `service({ module, schema: api })`, answers read as `service({ module })` reads them:
+**Flush.** In order, one request at a time, through `service({ contract })`, answers read as it reads them:
 - 2xx: `sent`; the entry is removed.
 - `api.network` or `api.timeout`: it stays `queued`; flushing stops until `{ kind: 'net', online: true }`, the next `send`, or 1 s later doubling to 60 s on `ctx.clock` while `online()`.
 - 409 `keel.conflict` with `data.transaction` (k.sync): `conflict`, keeping `data.head`; the next entry goes.
@@ -28,7 +28,7 @@ const r = await send(ctx, boardOutbox, 'editTodo', { params: { todoId }, body: {
 
 **Resolve.** `resolve(ctx, outbox, key, 'mine' | 'theirs')`. `'mine'` queues a `conflict` entry last, with `base` its `head`, flushes, and resolves as `send` does. `'theirs'` removes a `conflict` or `failed` entry, `true`. Without one, each resolves `false`. The outbox log records each as `<id>.resolve` `{ key, resolution }`.
 
-**Privacy.** Entries stay in browser storage and go only to `module`'s endpoint, for their owner; E2651 keeps secrets out. Sessions record its transactions under the module's `redact`.
+**Privacy.** Entries stay in browser storage and go only to the contract's module, for their owner; E2651 keeps secrets out. Sessions record its transactions under the module's `redact`.
 
 **Rules.** E2651 an `outbox` whose api has an endpoint body holding an `s.secret`.
 

@@ -8,5 +8,5 @@ export default module({
   id: "channels",
   deps: [],
   capabilities: ["clock", "net", "observe"],
-  public: { exports: ["channel", "subscribe", "publish", "server"], routes: [] },
+  public: { exports: ["channel", "subscribe", "publish", "server"] },
 });

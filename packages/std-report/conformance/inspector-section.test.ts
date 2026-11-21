@@ -6,6 +6,7 @@ import { run } from "@keel/cli";
 import { inspector } from "@keel/compiler/inspect/inspector";
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { Tally, tallyOf } from "@keel/std-report";
 import "@keel/std-report/tools";
 import { createApp, topology } from "@keel/server";
@@ -17,9 +18,10 @@ const keys = fc.array(fc.stringMatching(/^[a-z]{0,4}$/), { maxLength: 20 });
 let seq = 0;
 
 test("A dev `createApp` with `inspector({ id, schema: Tally, read })` serves `sections[id].value` equal to the tally `read` returns, and `keel report` against it prints that tally's compact line.", async () => {
+  const appContract = contract("app", { "app.home": { path: "/" } });
   const app = await createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
-    routes: manifest({ "app.home": { path: "/", component: () => document.createElement("main") } }),
+    routes: manifest(appContract, { "app.home": { component: () => document.createElement("main") } }),
     ctx: createCtx({ mode: "sim", seed: 1337 }),
     mode: "dev",
   });

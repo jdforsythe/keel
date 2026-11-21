@@ -1,25 +1,26 @@
 {
   "version": 1,
   "unsafe": 18,
+  "hostElements": 0,
   "rungs": {
-    "example": 1310,
-    "probabilistic": 330,
+    "example": 1420,
+    "probabilistic": 332,
     "exhaustive": 15,
-    "proven": 63,
-    "monitored": 4
+    "proven": 72,
+    "monitored": 8
   },
   "mutation": {
     "packages": {
       "check": {
-        "score": 75.18,
+        "score": 74.26,
         "threshold": 70
       },
       "cli": {
-        "score": 76.99,
+        "score": 79.7,
         "threshold": 70
       },
       "compiler": {
-        "score": 79.19,
+        "score": 77.3,
         "threshold": 70
       },
       "ctx": {
@@ -35,27 +36,27 @@
         "threshold": 80
       },
       "router": {
-        "score": 86.92,
+        "score": 85.85,
         "threshold": 80
       },
       "runtime-dom": {
-        "score": 74.98,
+        "score": 75.03,
         "threshold": 70
       },
       "scaffold": {
-        "score": 79.51,
+        "score": 79.31,
         "threshold": 70
       },
       "schema": {
-        "score": 92.78,
+        "score": 92.82,
         "threshold": 80
       },
       "server": {
-        "score": 77.65,
+        "score": 77,
         "threshold": 70
       },
       "services": {
-        "score": 84.22,
+        "score": 84.3,
         "threshold": 70
       },
       "std-brands": {
@@ -67,7 +68,7 @@
         "threshold": 70
       },
       "std-channels": {
-        "score": 77.24,
+        "score": 77.15,
         "threshold": 70
       },
       "std-conflicts": {
@@ -83,7 +84,7 @@
         "threshold": 70
       },
       "std-headless": {
-        "score": 78.36,
+        "score": 77.55,
         "threshold": 70
       },
       "std-health": {
@@ -95,7 +96,7 @@
         "threshold": 70
       },
       "std-jobs": {
-        "score": 85.5,
+        "score": 85.19,
         "threshold": 70
       },
       "std-live": {
@@ -111,7 +112,7 @@
         "threshold": 70
       },
       "std-offline": {
-        "score": 71.43,
+        "score": 70.09,
         "threshold": 70
       },
       "std-report": {
@@ -127,7 +128,7 @@
         "threshold": 70
       },
       "std-tables": {
-        "score": 70.72,
+        "score": 70.66,
         "threshold": 70
       },
       "std-tauri": {
@@ -155,15 +156,15 @@
         "threshold": 70
       },
       "store": {
-        "score": 91.29,
+        "score": 91.95,
         "threshold": 80
       },
       "testing": {
-        "score": 87.61,
+        "score": 87.98,
         "threshold": 70
       },
       "ui": {
-        "score": 71.54,
+        "score": 71,
         "threshold": 70
       }
     },
@@ -289,14 +290,6 @@
         "score": 65.83
       },
       {
-        "file": "packages/check/src/internal/compat/endpointAt.ts",
-        "sha": "9fc81e009a3ee2069792fb56737ea911aab2aae867035895aed85e2bdd92cfb2",
-        "killed": 25,
-        "survived": 17,
-        "noCoverage": 1,
-        "score": 58.14
-      },
-      {
         "file": "packages/check/src/internal/compat/endpointRefs.ts",
         "sha": "cbf0203833d51e96a1ea840dd7fd2f9024e7c76023214c87562da10c41195099",
         "killed": 24,
@@ -321,14 +314,6 @@
         "score": 91.67
       },
       {
-        "file": "packages/check/src/internal/compat/keyAt.ts",
-        "sha": "84ae2ffbd5b8ed0d9939fc7604e8b24beafcd1868e42d1ccaafb48f01a85205d",
-        "killed": 0,
-        "survived": 18,
-        "noCoverage": 0,
-        "score": 0
-      },
-      {
         "file": "packages/check/src/internal/compat/memberOf.ts",
         "sha": "267adb7c3cbeceed6e2367aa1f1068ca5567cb17233cc4a5efa79ccd9e60d041",
         "killed": 13,
@@ -351,22 +336,6 @@
         "survived": 21,
         "noCoverage": 0,
         "score": 62.5
-      },
-      {
-        "file": "packages/check/src/internal/compat/routeFor.ts",
-        "sha": "b2ec9e089b91a106f0c148c38b6c86a97b4211b92f7103a8bc97b1f801166e15",
-        "killed": 15,
-        "survived": 6,
-        "noCoverage": 0,
-        "score": 71.43
-      },
-      {
-        "file": "packages/check/src/internal/compat/routeSchemaAt.ts",
-        "sha": "4811a6eee897c37bae3df96b2c152ef4d70b72c4e54a4fa31c5bf6188eeca86b",
-        "killed": 36,
-        "survived": 19,
-        "noCoverage": 2,
-        "score": 63.16
       },
       {
         "file": "packages/check/src/internal/compat/samePath.ts",
@@ -551,14 +520,6 @@
         "survived": 0,
         "noCoverage": 0,
         "score": 100
-      },
-      {
-        "file": "packages/check/src/internal/manifestEntry.ts",
-        "sha": "23971823cf12878c84aac1cdbf65551dbfacbade4c0b8a6cd7c96ff32abdfea5",
-        "killed": 108,
-        "survived": 20,
-        "noCoverage": 2,
-        "score": 83.08
       },
       {
         "file": "packages/check/src/internal/mapTsDiagnostic.ts",
@@ -929,14 +890,6 @@
         "score": 84.62
       },
       {
-        "file": "packages/check/src/rules/ariaImport.ts",
-        "sha": "83021648e218a223441b6f3a7dab4b49ec0e6e805a0caf532103ca56d442865c",
-        "killed": 29,
-        "survived": 2,
-        "noCoverage": 0,
-        "score": 93.55
-      },
-      {
         "file": "packages/check/src/rules/bodyOnGetEndpoint.ts",
         "sha": "cef1ab5bda842e350b04c42936b45949daf42fd23d3f63898237cf56f99ed737",
         "killed": 35,
@@ -1183,14 +1136,6 @@
         "survived": 20,
         "noCoverage": 2,
         "score": 75.82
-      },
-      {
-        "file": "packages/check/src/rules/routeSchemaInferred.ts",
-        "sha": "e496471911a565ce3cf737517d22294b6a58e79404bcf26a0ef3d3bb462d2f9b",
-        "killed": 46,
-        "survived": 34,
-        "noCoverage": 12,
-        "score": 50
       },
       {
         "file": "packages/check/src/rules/sameAppBaseService.ts",
@@ -2089,14 +2034,6 @@
         "score": 95.24
       },
       {
-        "file": "packages/cli/src/internal/specCommand.ts",
-        "sha": "fce6f25c089327c4fda166cb9a821f933659c391159db39a49c4f60c60910b1c",
-        "killed": 100,
-        "survived": 4,
-        "noCoverage": 0,
-        "score": 96.15
-      },
-      {
         "file": "packages/cli/src/internal/specHeaders.ts",
         "sha": "2b512142d32e7d019a697124b814b5e6f563c2331ecbf88e9ee883506e54b046",
         "killed": 37,
@@ -2305,28 +2242,12 @@
         "score": 91.23
       },
       {
-        "file": "packages/cli/src/shell/defaultIcon.ts",
-        "sha": "33136c1daec2c564e78d4dde1ae1cda819ac649eefd8bd1f261e55c6e6c1d509",
-        "killed": 49,
-        "survived": 4,
-        "noCoverage": 0,
-        "score": 92.45
-      },
-      {
         "file": "packages/cli/src/shell/hostShell.ts",
         "sha": "ea785f66bedac8c2ef81d46a20729a79762b373cab388c49b2b9e45868fe32d7",
         "killed": 0,
         "survived": 0,
         "noCoverage": 20,
         "score": 0
-      },
-      {
-        "file": "packages/cli/src/shell/metaPolicy.ts",
-        "sha": "b9db972b5ef0e29c54d9b0546b1e711e670355536a6b09983aa3b77e5c3976bc",
-        "killed": 25,
-        "survived": 8,
-        "noCoverage": 2,
-        "score": 71.43
       },
       {
         "file": "packages/cli/src/shell/shellBuild.ts",
@@ -2359,22 +2280,6 @@
         "survived": 0,
         "noCoverage": 0,
         "score": 100
-      },
-      {
-        "file": "packages/cli/src/shell/toolchain.ts",
-        "sha": "1df631151eaa30f04198ad7753437a675a5f5f50b13683256ae0cd425b0eecd4",
-        "killed": 102,
-        "survived": 30,
-        "noCoverage": 3,
-        "score": 75.56
-      },
-      {
-        "file": "packages/cli/src/shell/versionOf.ts",
-        "sha": "3ee58ce13c690548dba6a8f9df1219900f7d1cd39ec791ec68f76fb9af171ac9",
-        "killed": 10,
-        "survived": 2,
-        "noCoverage": 0,
-        "score": 83.33
       },
       {
         "file": "packages/cli/src/stdCommand.ts",
@@ -2471,14 +2376,6 @@
         "survived": 1,
         "noCoverage": 1,
         "score": 87.5
-      },
-      {
-        "file": "packages/compiler/src/hosting/hostProblems.ts",
-        "sha": "11edf11c2c784be13043ec8b4d3e1f2557fb607ccc06deb3d67cfb7d1c33d1c7",
-        "killed": 26,
-        "survived": 5,
-        "noCoverage": 0,
-        "score": 83.87
       },
       {
         "file": "packages/compiler/src/hosting/originOf.ts",
@@ -3953,22 +3850,6 @@
         "score": 79.45
       },
       {
-        "file": "packages/router/src/internal/apiComplete.ts",
-        "sha": "2a805ae79cd6b6e9f5c79697c8165b7d22c12c6597e4c971262a4db2cf6d1222",
-        "killed": 22,
-        "survived": 0,
-        "noCoverage": 0,
-        "score": 100
-      },
-      {
-        "file": "packages/router/src/internal/attachActions.ts",
-        "sha": "c9d9a230c56b491693c92ff1165c42c6805aa57e84161f0d02b96881f8d6c519",
-        "killed": 119,
-        "survived": 34,
-        "noCoverage": 3,
-        "score": 76.28
-      },
-      {
         "file": "packages/router/src/internal/carriedNext.ts",
         "sha": "44f4136c1e52994c0ff8522396deee82d1a4ec7a7469c1448f71e1e9a495cd10",
         "killed": 31,
@@ -4015,14 +3896,6 @@
         "survived": 1,
         "noCoverage": 0,
         "score": 99.03
-      },
-      {
-        "file": "packages/router/src/internal/compileTable.ts",
-        "sha": "efc62a8bbcfaf497f425ece1fa42cf46a30450cb99ede5dca6db11a41696b2b9",
-        "killed": 9,
-        "survived": 0,
-        "noCoverage": 0,
-        "score": 100
       },
       {
         "file": "packages/router/src/internal/createRouterWith.ts",
@@ -4095,14 +3968,6 @@
         "survived": 3,
         "noCoverage": 0,
         "score": 88.89
-      },
-      {
-        "file": "packages/router/src/internal/hrefIn.ts",
-        "sha": "1f411755f13da3340a2cd8923e65a3f3addb5a803e56ca8879c3d2a344d1fa3b",
-        "killed": 79,
-        "survived": 6,
-        "noCoverage": 2,
-        "score": 90.8
       },
       {
         "file": "packages/router/src/internal/isHref.ts",
@@ -4721,14 +4586,6 @@
         "score": 100
       },
       {
-        "file": "packages/runtime-dom/src/internal/toUnexpected.ts",
-        "sha": "b6bfad741d62bdaf52746ba1002e057e2b89d0adf6521bf4db2095293e039779",
-        "killed": 4,
-        "survived": 4,
-        "noCoverage": 1,
-        "score": 44.44
-      },
-      {
         "file": "packages/runtime-dom/src/internal/trustedHtml.ts",
         "sha": "164273b838c7e0256a6154174e06cf3f22b98a244dcfad7b158083a79ce789a7",
         "killed": 52,
@@ -4943,14 +4800,6 @@
         "survived": 0,
         "noCoverage": 0,
         "score": 100
-      },
-      {
-        "file": "packages/scaffold/src/crateName.ts",
-        "sha": "a1ac37015b1a617662168a16e9e4e0951238b189215c687b40b791981583dc09",
-        "killed": 31,
-        "survived": 3,
-        "noCoverage": 1,
-        "score": 88.57
       },
       {
         "file": "packages/scaffold/src/deployDrift.ts",
@@ -5601,22 +5450,6 @@
         "score": 0
       },
       {
-        "file": "packages/scaffold/src/templates/capacitorConfig.ts",
-        "sha": "5117155786202db162ec45e16b7b66f2492de32e30d3e5df65ad900a8a0445e2",
-        "killed": 4,
-        "survived": 0,
-        "noCoverage": 0,
-        "score": 100
-      },
-      {
-        "file": "packages/scaffold/src/templates/cargoToml.ts",
-        "sha": "d3f79f2e66dceb9558351c4cff79efc21843ddc873a08507012e6f7b2865aeb5",
-        "killed": 8,
-        "survived": 15,
-        "noCoverage": 0,
-        "score": 34.78
-      },
-      {
         "file": "packages/scaffold/src/templates/ciWorkflow.ts",
         "sha": "89ea34875eaf23351ce930fd4a76efc5f7d447ca82f3c329d118380aae016486",
         "killed": 146,
@@ -5697,14 +5530,6 @@
         "score": 72.41
       },
       {
-        "file": "packages/scaffold/src/templates/routeEntry.ts",
-        "sha": "fb248fca24c0e7f6940721789c77d3022bb208a1abc2c68ee24b63883681e405",
-        "killed": 46,
-        "survived": 2,
-        "noCoverage": 0,
-        "score": 95.83
-      },
-      {
         "file": "packages/scaffold/src/templates/routeTest.ts",
         "sha": "4dd46d077b0fe52368033f38ced0b8635330ac493d0c9a9e4298e57f404db6d1",
         "killed": 42,
@@ -5743,54 +5568,6 @@
         "survived": 0,
         "noCoverage": 0,
         "score": 100
-      },
-      {
-        "file": "packages/scaffold/src/templates/tauriBuildRs.ts",
-        "sha": "d35d605a4e186fa1b32e443f6c3b237547003b7e68d2536d0c201f8219a89f9a",
-        "killed": 0,
-        "survived": 8,
-        "noCoverage": 0,
-        "score": 0
-      },
-      {
-        "file": "packages/scaffold/src/templates/tauriCapability.ts",
-        "sha": "40dffa6bebc4d1ff21ee783f2f33104250d6cdb70afc8d8fd51414d3d7654332",
-        "killed": 0,
-        "survived": 10,
-        "noCoverage": 0,
-        "score": 0
-      },
-      {
-        "file": "packages/scaffold/src/templates/tauriConf.ts",
-        "sha": "33e6a3f00af1f415195219719cafe7573cabd7cf72e6cc413e6aa1020821f5c6",
-        "killed": 21,
-        "survived": 3,
-        "noCoverage": 0,
-        "score": 87.5
-      },
-      {
-        "file": "packages/scaffold/src/templates/tauriHttpCapability.ts",
-        "sha": "0c65973196ffa888dd9f60b34aced707f8ac8de4e2462914a958f6eaa1d5a35b",
-        "killed": 0,
-        "survived": 0,
-        "noCoverage": 13,
-        "score": 0
-      },
-      {
-        "file": "packages/scaffold/src/templates/tauriLibRs.ts",
-        "sha": "5f63c80ae7bbef1e98d634afa5cf218629b357c06f3b2b87c64cad986baf0a5d",
-        "killed": 0,
-        "survived": 12,
-        "noCoverage": 0,
-        "score": 0
-      },
-      {
-        "file": "packages/scaffold/src/templates/tauriMainRs.ts",
-        "sha": "5647ed34314299cb0582126add10e07d11f3cb9f52032f5764730a932ad707d4",
-        "killed": 0,
-        "survived": 10,
-        "noCoverage": 0,
-        "score": 0
       },
       {
         "file": "packages/scaffold/src/templates/tokensTs.ts",
@@ -6049,14 +5826,6 @@
         "score": 78.95
       },
       {
-        "file": "packages/schema/src/internal/sampleFormat.ts",
-        "sha": "2eec06c9dd2632c9c7c81bd8fa4471a997598acd5c1ae8f5b8eb9a6142d5a907",
-        "killed": 7,
-        "survived": 1,
-        "noCoverage": 0,
-        "score": 87.5
-      },
-      {
         "file": "packages/schema/src/internal/scanExtras.ts",
         "sha": "1422f690c1ae2aaeb3f816755ce7eb9a55ae8fc953dd1d2b578fd51e0662ad5f",
         "killed": 21,
@@ -6271,14 +6040,6 @@
         "survived": 15,
         "noCoverage": 0,
         "score": 0
-      },
-      {
-        "file": "packages/server/src/internal/allowOf.ts",
-        "sha": "b773f9169b619322e358b18e1eb43cb4c8056eeade79f973f8b04e4767807f91",
-        "killed": 12,
-        "survived": 0,
-        "noCoverage": 0,
-        "score": 100
       },
       {
         "file": "packages/server/src/internal/appFrames.ts",
@@ -8049,28 +7810,12 @@
         "score": 25
       },
       {
-        "file": "packages/std-headless/src/internal/listChart.ts",
-        "sha": "4e3ae01e9184422fcbb5cbffcd250fc48a089d31a36d0534fedc8ca1eb46e046",
-        "killed": 101,
-        "survived": 32,
-        "noCoverage": 0,
-        "score": 75.94
-      },
-      {
         "file": "packages/std-headless/src/internal/nameOf.ts",
         "sha": "4473d10d6edab19952b2593ea63a1910a21808201e9bcb4463f88adbcbdfda96",
         "killed": 10,
         "survived": 0,
         "noCoverage": 2,
         "score": 83.33
-      },
-      {
-        "file": "packages/std-headless/src/internal/stableRows.ts",
-        "sha": "d70e4c7d000127c21ac062860fae3e5b49c2093cd23d27c1568ae160fa186966",
-        "killed": 6,
-        "survived": 0,
-        "noCoverage": 0,
-        "score": 100
       },
       {
         "file": "packages/std-headless/src/internal/toastKey.ts",
@@ -11073,6 +10818,12 @@
     },
     {
       "pkg": "golden-1",
+      "name": "FieldsReply",
+      "file": "golden-1:api/FieldsReply.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
       "name": "FlowParams",
       "file": "golden-1:api/FlowParams.schema.ts",
       "rung": "probabilistic"
@@ -11163,6 +10914,12 @@
     },
     {
       "pkg": "golden-1",
+      "name": "WriteRefusal",
+      "file": "golden-1:api/WriteRefusal.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
       "name": "addList",
       "file": "golden-1:api/addList.ts",
       "rung": "proven"
@@ -11175,6 +10932,12 @@
     },
     {
       "pkg": "golden-1",
+      "name": "api",
+      "file": "golden-1:api/api.contract.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-1",
       "name": "board",
       "file": "golden-1:api/board.ts",
       "rung": "proven"
@@ -11182,14 +10945,14 @@
     {
       "pkg": "golden-1",
       "name": "boardChannel",
-      "file": "golden-1:api/boardChannel.ts",
+      "file": "golden-1:api/boardChannel.schema.ts",
       "rung": "example"
     },
     {
       "pkg": "golden-1",
       "name": "boardEvents",
       "file": "golden-1:api/boardEvents.server.ts",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "pkg": "golden-1",
@@ -11343,14 +11106,14 @@
     },
     {
       "pkg": "golden-1",
-      "name": "board",
-      "file": "golden-1:digest/board.service.ts",
+      "name": "boardApi",
+      "file": "golden-1:digest/boardApi.ts",
       "rung": "example"
     },
     {
       "pkg": "golden-1",
-      "name": "boardApi",
-      "file": "golden-1:digest/boardApi.ts",
+      "name": "digest",
+      "file": "golden-1:digest/digest.contract.ts",
       "rung": "example"
     },
     {
@@ -11427,12 +11190,6 @@
     },
     {
       "pkg": "golden-1",
-      "name": "FieldsReply",
-      "file": "golden-1:todos/FieldsReply.schema.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": "golden-1",
       "name": "ListError",
       "file": "golden-1:todos/ListError.tsx",
       "rung": "probabilistic"
@@ -11481,27 +11238,9 @@
     },
     {
       "pkg": "golden-1",
-      "name": "WriteAnswer",
-      "file": "golden-1:todos/WriteAnswer.schema.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": "golden-1",
-      "name": "WriteRefusal",
-      "file": "golden-1:todos/WriteRefusal.schema.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": "golden-1",
       "name": "boardOutbox",
       "file": "golden-1:todos/boardOutbox.ts",
       "rung": "probabilistic"
-    },
-    {
-      "pkg": "golden-1",
-      "name": "boardWrites",
-      "file": "golden-1:todos/boardWrites.service.ts",
-      "rung": "example"
     },
     {
       "pkg": "golden-1",
@@ -11601,15 +11340,9 @@
     },
     {
       "pkg": "golden-1",
-      "name": "suggestions",
-      "file": "golden-1:todos/suggestions.service.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": "golden-1",
       "name": "todos",
-      "file": "golden-1:todos/todos.service.ts",
-      "rung": "example"
+      "file": "golden-1:todos/todos.contract.ts",
+      "rung": "none"
     },
     {
       "pkg": "golden-1",
@@ -11770,7 +11503,7 @@
     {
       "pkg": "golden-2",
       "name": "accounts",
-      "file": "golden-2:accounts/accounts.service.ts",
+      "file": "golden-2:accounts/accounts.contract.ts",
       "rung": "example"
     },
     {
@@ -11805,14 +11538,20 @@
     },
     {
       "pkg": "golden-2",
-      "name": "loadAccount",
-      "file": "golden-2:accounts/loadAccount.server.ts",
+      "name": "loadMe",
+      "file": "golden-2:accounts/loadMe.server.ts",
       "rung": "example"
     },
     {
       "pkg": "golden-2",
-      "name": "loadMe",
-      "file": "golden-2:accounts/loadMe.server.ts",
+      "name": "loadSignin",
+      "file": "golden-2:accounts/loadSignin.server.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "loadSignup",
+      "file": "golden-2:accounts/loadSignup.server.ts",
       "rung": "example"
     },
     {
@@ -11826,6 +11565,12 @@
       "name": "profileStores",
       "file": "golden-2:accounts/profileStores.ts",
       "rung": "probabilistic"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "readAccount",
+      "file": "golden-2:accounts/readAccount.server.ts",
+      "rung": "none"
     },
     {
       "pkg": "golden-2",
@@ -11867,6 +11612,12 @@
       "pkg": "golden-2",
       "name": "CatalogSearch",
       "file": "golden-2:kitchen/CatalogSearch.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "ErrorReply",
+      "file": "golden-2:kitchen/ErrorReply.schema.ts",
       "rung": "example"
     },
     {
@@ -11922,6 +11673,12 @@
       "name": "currencyTally",
       "file": "golden-2:kitchen/currencyTally.server.ts",
       "rung": "none"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "kitchen",
+      "file": "golden-2:kitchen/kitchen.contract.ts",
+      "rung": "example"
     },
     {
       "pkg": "golden-2",
@@ -11981,12 +11738,6 @@
       "pkg": "golden-2",
       "name": "CatalogPage",
       "file": "golden-2:recipes/CatalogPage.tsx",
-      "rung": "example"
-    },
-    {
-      "pkg": "golden-2",
-      "name": "ErrorReply",
-      "file": "golden-2:recipes/ErrorReply.schema.ts",
       "rung": "example"
     },
     {
@@ -12177,12 +11928,6 @@
     },
     {
       "pkg": "golden-2",
-      "name": "kitchen",
-      "file": "golden-2:recipes/kitchen.service.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": "golden-2",
       "name": "kitchenApi",
       "file": "golden-2:recipes/kitchenApi.ts",
       "rung": "example"
@@ -12234,6 +11979,12 @@
       "name": "raiseToast",
       "file": "golden-2:recipes/raiseToast.ts",
       "rung": "probabilistic"
+    },
+    {
+      "pkg": "golden-2",
+      "name": "recipes",
+      "file": "golden-2:recipes/recipes.contract.ts",
+      "rung": "example"
     },
     {
       "pkg": "golden-2",
@@ -12369,6 +12120,12 @@
     },
     {
       "pkg": "inspector",
+      "name": "inspector",
+      "file": "inspector:inspector/inspector.contract.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "inspector",
       "name": "loadInspect",
       "file": "inspector:inspector/loadInspect.server.ts",
       "rung": "example"
@@ -12441,6 +12198,12 @@
     },
     {
       "pkg": "cli",
+      "name": "shellTarget",
+      "file": "packages/cli/src/shellTarget.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "cli",
       "name": "stdCommand",
       "file": "packages/cli/src/stdCommand.ts",
       "rung": "example"
@@ -12467,6 +12230,12 @@
       "pkg": "compiler",
       "name": "compile",
       "file": "packages/compiler/src/compile.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "compiler",
+      "name": "contractCallers",
+      "file": "packages/compiler/src/contractCallers.ts",
       "rung": "probabilistic"
     },
     {
@@ -12635,7 +12404,7 @@
       "pkg": "router",
       "name": "guard",
       "file": "packages/router/src/guard.ts",
-      "rung": "proven"
+      "rung": "example"
     },
     {
       "pkg": "router",
@@ -12647,7 +12416,7 @@
       "pkg": "router",
       "name": "loader",
       "file": "packages/router/src/loader.ts",
-      "rung": "example"
+      "rung": "proven"
     },
     {
       "pkg": "router",
@@ -12663,6 +12432,12 @@
     },
     {
       "pkg": "router",
+      "name": "routeTable",
+      "file": "packages/router/src/routeTable.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "router",
       "name": "routesArtifact",
       "file": "packages/router/src/routesArtifact.ts",
       "rung": "example"
@@ -12672,12 +12447,6 @@
       "name": "mount",
       "file": "packages/runtime-dom/src/mount.ts",
       "rung": "probabilistic"
-    },
-    {
-      "pkg": "scaffold",
-      "name": "crateName",
-      "file": "packages/scaffold/src/crateName.ts",
-      "rung": "none"
     },
     {
       "pkg": "scaffold",
@@ -12764,6 +12533,18 @@
       "rung": "proven"
     },
     {
+      "pkg": "schema",
+      "name": "sampleFormat",
+      "file": "packages/schema/src/sampleFormat.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "schema",
+      "name": "secretPath",
+      "file": "packages/schema/src/secretPath.ts",
+      "rung": "probabilistic"
+    },
+    {
       "pkg": "server",
       "name": "createApp",
       "file": "packages/server/src/createApp.ts",
@@ -12791,7 +12572,7 @@
       "pkg": "services",
       "name": "service",
       "file": "packages/services/src/service.ts",
-      "rung": "probabilistic"
+      "rung": "proven"
     },
     {
       "pkg": "std-brands",
@@ -12915,6 +12696,12 @@
     },
     {
       "pkg": "std-headless",
+      "name": "listChart",
+      "file": "packages/std-headless/src/listChart.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "std-headless",
       "name": "openChart",
       "file": "packages/std-headless/src/openChart.ts",
       "rung": "proven"
@@ -12927,6 +12714,12 @@
     },
     {
       "pkg": "std-headless",
+      "name": "stableRows",
+      "file": "packages/std-headless/src/stableRows.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "std-headless",
       "name": "toastChart",
       "file": "packages/std-headless/src/toastChart.ts",
       "rung": "proven"
@@ -12935,6 +12728,12 @@
       "pkg": "std-health",
       "name": "Health",
       "file": "packages/std-health/src/Health.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "std-health",
+      "name": "health",
+      "file": "packages/std-health/src/health.contract.ts",
       "rung": "example"
     },
     {
@@ -13248,6 +13047,12 @@
       "name": "session",
       "file": "packages/std-sessions/src/session.ts",
       "rung": "probabilistic"
+    },
+    {
+      "pkg": "std-sessions",
+      "name": "sessions",
+      "file": "packages/std-sessions/src/sessions.contract.ts",
+      "rung": "example"
     },
     {
       "pkg": "std-sessions",
@@ -13607,7 +13412,7 @@
       "pkg": "testing",
       "name": "render",
       "file": "packages/testing/src/render.ts",
-      "rung": "probabilistic"
+      "rung": "proven"
     },
     {
       "pkg": "testing",
@@ -13647,15 +13452,33 @@
     },
     {
       "pkg": "ui",
+      "name": "customElement",
+      "file": "packages/ui/src/customElement.ts",
+      "rung": "proven"
+    },
+    {
+      "pkg": "ui",
       "name": "defineTokens",
       "file": "packages/ui/src/defineTokens.ts",
       "rung": "probabilistic"
+    },
+    {
+      "pkg": "ui",
+      "name": "hostCode",
+      "file": "packages/ui/src/hostCode.ts",
+      "rung": "proven"
     },
     {
       "pkg": "sessions",
       "name": "Home",
       "file": "sessions:ops/Home.ts",
       "rung": "example"
+    },
+    {
+      "pkg": "sessions",
+      "name": "ops",
+      "file": "sessions:ops/ops.contract.ts",
+      "rung": "none"
     }
   ],
   "clauses": [
@@ -13709,19 +13532,19 @@
     },
     {
       "item": "k.api#1",
-      "rung": "proven"
+      "rung": "example"
     },
     {
       "item": "k.api#2",
-      "rung": "proven"
+      "rung": "example"
     },
     {
       "item": "k.api#3",
-      "rung": "proven"
+      "rung": "example"
     },
     {
       "item": "k.api#4",
-      "rung": "proven"
+      "rung": "example"
     },
     {
       "item": "k.api#5",
@@ -13741,7 +13564,7 @@
     },
     {
       "item": "k.api#9",
-      "rung": "proven"
+      "rung": "example"
     },
     {
       "item": "k.api#10",
@@ -13857,6 +13680,10 @@
     },
     {
       "item": "k.bundle#6",
+      "rung": "example"
+    },
+    {
+      "item": "k.bundle#7",
       "rung": "example"
     },
     {
@@ -14068,14 +13895,6 @@
       "rung": "example"
     },
     {
-      "item": "k.compat#12",
-      "rung": "example"
-    },
-    {
-      "item": "k.compat#13",
-      "rung": "example"
-    },
-    {
       "item": "k.compiler#1",
       "rung": "example"
     },
@@ -14220,6 +14039,54 @@
       "rung": "example"
     },
     {
+      "item": "k.component#17",
+      "rung": "example"
+    },
+    {
+      "item": "k.contract#1",
+      "rung": "example"
+    },
+    {
+      "item": "k.contract#2",
+      "rung": "example"
+    },
+    {
+      "item": "k.contract#3",
+      "rung": "example"
+    },
+    {
+      "item": "k.contract#4",
+      "rung": "proven"
+    },
+    {
+      "item": "k.contract#5",
+      "rung": "example"
+    },
+    {
+      "item": "k.contract#6",
+      "rung": "proven"
+    },
+    {
+      "item": "k.contract#7",
+      "rung": "proven"
+    },
+    {
+      "item": "k.contract#8",
+      "rung": "example"
+    },
+    {
+      "item": "k.contract#9",
+      "rung": "example"
+    },
+    {
+      "item": "k.contract#10",
+      "rung": "example"
+    },
+    {
+      "item": "k.contract#11",
+      "rung": "example"
+    },
+    {
       "item": "k.ctx#1",
       "rung": "probabilistic"
     },
@@ -14357,6 +14224,58 @@
     },
     {
       "item": "k.deploy#11",
+      "rung": "example"
+    },
+    {
+      "item": "k.docs#1",
+      "rung": "example"
+    },
+    {
+      "item": "k.docs#2",
+      "rung": "example"
+    },
+    {
+      "item": "k.docs#3",
+      "rung": "example"
+    },
+    {
+      "item": "k.docs#4",
+      "rung": "example"
+    },
+    {
+      "item": "k.docs#5",
+      "rung": "none"
+    },
+    {
+      "item": "k.docs#6",
+      "rung": "example"
+    },
+    {
+      "item": "k.docs#7",
+      "rung": "example"
+    },
+    {
+      "item": "k.docs#8",
+      "rung": "none"
+    },
+    {
+      "item": "k.docs#9",
+      "rung": "example"
+    },
+    {
+      "item": "k.docs#10",
+      "rung": "example"
+    },
+    {
+      "item": "k.docs#11",
+      "rung": "example"
+    },
+    {
+      "item": "k.docs#12",
+      "rung": "example"
+    },
+    {
+      "item": "k.docs#13",
       "rung": "example"
     },
     {
@@ -14580,6 +14499,74 @@
       "rung": "example"
     },
     {
+      "item": "k.host-code#1",
+      "rung": "example"
+    },
+    {
+      "item": "k.host-code#2",
+      "rung": "example"
+    },
+    {
+      "item": "k.host-code#3",
+      "rung": "example"
+    },
+    {
+      "item": "k.host-code#4",
+      "rung": "example"
+    },
+    {
+      "item": "k.host-code#5",
+      "rung": "example"
+    },
+    {
+      "item": "k.host-code#6",
+      "rung": "example"
+    },
+    {
+      "item": "k.host-element#1",
+      "rung": "example"
+    },
+    {
+      "item": "k.host-element#2",
+      "rung": "example"
+    },
+    {
+      "item": "k.host-element#3",
+      "rung": "example"
+    },
+    {
+      "item": "k.host-element#4",
+      "rung": "example"
+    },
+    {
+      "item": "k.host-element#5",
+      "rung": "example"
+    },
+    {
+      "item": "k.host-element#6",
+      "rung": "example"
+    },
+    {
+      "item": "k.host-element#7",
+      "rung": "example"
+    },
+    {
+      "item": "k.host-element#8",
+      "rung": "example"
+    },
+    {
+      "item": "k.host-element#9",
+      "rung": "example"
+    },
+    {
+      "item": "k.host-element#10",
+      "rung": "example"
+    },
+    {
+      "item": "k.host-element#11",
+      "rung": "example"
+    },
+    {
       "item": "k.host#1",
       "rung": "example"
     },
@@ -14621,6 +14608,10 @@
     },
     {
       "item": "k.hosting#6",
+      "rung": "example"
+    },
+    {
+      "item": "k.hosting#7",
       "rung": "example"
     },
     {
@@ -14836,6 +14827,10 @@
       "rung": "example"
     },
     {
+      "item": "k.mount-scope#1",
+      "rung": "none"
+    },
+    {
       "item": "k.mount#1",
       "rung": "proven"
     },
@@ -14928,6 +14923,50 @@
       "rung": "example"
     },
     {
+      "item": "k.origins#1",
+      "rung": "example"
+    },
+    {
+      "item": "k.origins#2",
+      "rung": "example"
+    },
+    {
+      "item": "k.origins#3",
+      "rung": "example"
+    },
+    {
+      "item": "k.origins#4",
+      "rung": "example"
+    },
+    {
+      "item": "k.origins#5",
+      "rung": "example"
+    },
+    {
+      "item": "k.origins#6",
+      "rung": "example"
+    },
+    {
+      "item": "k.origins#7",
+      "rung": "example"
+    },
+    {
+      "item": "k.origins#8",
+      "rung": "example"
+    },
+    {
+      "item": "k.origins#9",
+      "rung": "example"
+    },
+    {
+      "item": "k.origins#10",
+      "rung": "proven"
+    },
+    {
+      "item": "k.origins#11",
+      "rung": "example"
+    },
+    {
       "item": "k.owner#1",
       "rung": "example"
     },
@@ -14946,6 +14985,30 @@
     {
       "item": "k.owner#5",
       "rung": "example"
+    },
+    {
+      "item": "k.parity#1",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.parity#2",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.parity#3",
+      "rung": "example"
+    },
+    {
+      "item": "k.parity#4",
+      "rung": "example"
+    },
+    {
+      "item": "k.parity#5",
+      "rung": "none"
+    },
+    {
+      "item": "k.parity#6",
+      "rung": "none"
     },
     {
       "item": "k.persist#1",
@@ -15276,14 +15339,6 @@
       "rung": "example"
     },
     {
-      "item": "k.return#6",
-      "rung": "example"
-    },
-    {
-      "item": "k.return#7",
-      "rung": "example"
-    },
-    {
       "item": "k.reveal#1",
       "rung": "probabilistic"
     },
@@ -15318,6 +15373,38 @@
     {
       "item": "k.reveal#9",
       "rung": "probabilistic"
+    },
+    {
+      "item": "k.roles#1",
+      "rung": "proven"
+    },
+    {
+      "item": "k.roles#2",
+      "rung": "proven"
+    },
+    {
+      "item": "k.roles#3",
+      "rung": "proven"
+    },
+    {
+      "item": "k.roles#4",
+      "rung": "proven"
+    },
+    {
+      "item": "k.roles#5",
+      "rung": "proven"
+    },
+    {
+      "item": "k.roles#6",
+      "rung": "none"
+    },
+    {
+      "item": "k.roles#7",
+      "rung": "example"
+    },
+    {
+      "item": "k.roles#8",
+      "rung": "example"
     },
     {
       "item": "k.router#1",
@@ -15361,7 +15448,7 @@
     },
     {
       "item": "k.router#11",
-      "rung": "probabilistic"
+      "rung": "example"
     },
     {
       "item": "k.router#12",
@@ -15377,6 +15464,46 @@
     },
     {
       "item": "k.router#15",
+      "rung": "example"
+    },
+    {
+      "item": "k.router#16",
+      "rung": "example"
+    },
+    {
+      "item": "k.routes#1",
+      "rung": "example"
+    },
+    {
+      "item": "k.routes#2",
+      "rung": "example"
+    },
+    {
+      "item": "k.routes#3",
+      "rung": "example"
+    },
+    {
+      "item": "k.routes#4",
+      "rung": "example"
+    },
+    {
+      "item": "k.routes#5",
+      "rung": "example"
+    },
+    {
+      "item": "k.routes#6",
+      "rung": "example"
+    },
+    {
+      "item": "k.routes#7",
+      "rung": "example"
+    },
+    {
+      "item": "k.routes#8",
+      "rung": "example"
+    },
+    {
+      "item": "k.routes#9",
       "rung": "example"
     },
     {
@@ -15470,6 +15597,22 @@
     {
       "item": "k.scaffold#10",
       "rung": "example"
+    },
+    {
+      "item": "k.scaffold#11",
+      "rung": "none"
+    },
+    {
+      "item": "k.scaffold#12",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold#13",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold#14",
+      "rung": "none"
     },
     {
       "item": "k.schema#1",
@@ -15672,6 +15815,10 @@
       "rung": "example"
     },
     {
+      "item": "k.serverlog#7",
+      "rung": "example"
+    },
+    {
       "item": "k.services#1",
       "rung": "probabilistic"
     },
@@ -15713,7 +15860,7 @@
     },
     {
       "item": "k.services#11",
-      "rung": "example"
+      "rung": "proven"
     },
     {
       "item": "k.services#12",
@@ -15745,6 +15892,10 @@
     },
     {
       "item": "k.shell#7",
+      "rung": "example"
+    },
+    {
+      "item": "k.shell#8",
       "rung": "example"
     },
     {
@@ -16124,6 +16275,10 @@
       "rung": "example"
     },
     {
+      "item": "k.user#10",
+      "rung": "example"
+    },
+    {
       "item": "std.brands#1",
       "rung": "example"
     },
@@ -16149,6 +16304,30 @@
     },
     {
       "item": "std.brands#7",
+      "rung": "example"
+    },
+    {
+      "item": "std.capacitor#1",
+      "rung": "example"
+    },
+    {
+      "item": "std.capacitor#2",
+      "rung": "example"
+    },
+    {
+      "item": "std.capacitor#3",
+      "rung": "example"
+    },
+    {
+      "item": "std.capacitor#4",
+      "rung": "example"
+    },
+    {
+      "item": "std.capacitor#5",
+      "rung": "example"
+    },
+    {
+      "item": "std.capacitor#6",
       "rung": "example"
     },
     {
@@ -16237,6 +16416,34 @@
     },
     {
       "item": "std.conflicts#10",
+      "rung": "example"
+    },
+    {
+      "item": "std.contracts#1",
+      "rung": "example"
+    },
+    {
+      "item": "std.contracts#2",
+      "rung": "example"
+    },
+    {
+      "item": "std.contracts#3",
+      "rung": "example"
+    },
+    {
+      "item": "std.contracts#4",
+      "rung": "example"
+    },
+    {
+      "item": "std.contracts#5",
+      "rung": "example"
+    },
+    {
+      "item": "std.contracts#6",
+      "rung": "example"
+    },
+    {
+      "item": "std.contracts#7",
       "rung": "example"
     },
     {
@@ -16429,6 +16636,30 @@
     },
     {
       "item": "std.jobs#11",
+      "rung": "example"
+    },
+    {
+      "item": "std.lists#1",
+      "rung": "example"
+    },
+    {
+      "item": "std.lists#2",
+      "rung": "example"
+    },
+    {
+      "item": "std.lists#3",
+      "rung": "example"
+    },
+    {
+      "item": "std.lists#4",
+      "rung": "example"
+    },
+    {
+      "item": "std.lists#5",
+      "rung": "example"
+    },
+    {
+      "item": "std.lists#6",
       "rung": "example"
     },
     {
@@ -16764,10 +16995,6 @@
       "rung": "example"
     },
     {
-      "item": "std.outbox#15",
-      "rung": "example"
-    },
-    {
       "item": "std.report#1",
       "rung": "probabilistic"
     },
@@ -16964,6 +17191,10 @@
       "rung": "example"
     },
     {
+      "item": "std.shells#9",
+      "rung": "example"
+    },
+    {
       "item": "std.statecharts#1",
       "rung": "probabilistic"
     },
@@ -17037,6 +17268,30 @@
     },
     {
       "item": "std.tables#9",
+      "rung": "example"
+    },
+    {
+      "item": "std.tauri#1",
+      "rung": "example"
+    },
+    {
+      "item": "std.tauri#2",
+      "rung": "example"
+    },
+    {
+      "item": "std.tauri#3",
+      "rung": "example"
+    },
+    {
+      "item": "std.tauri#4",
+      "rung": "example"
+    },
+    {
+      "item": "std.tauri#5",
+      "rung": "example"
+    },
+    {
+      "item": "std.tauri#6",
       "rung": "example"
     },
     {
@@ -18279,6 +18534,86 @@
     },
     {
       "item": "a11y:sessions.list#4.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.tally#1.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.tally#1.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.tally#1.3.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.tally#1.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.tally#1.3.5",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.tally#1.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.tally#1.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.tally#1.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.tally#1.4.12",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.tally#2.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.tally#2.2.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.tally#2.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.tally#2.4.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.tally#2.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.tally#2.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.tally#2.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.tally#3.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.tally#3.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.tally#3.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:sessions.tally#4.1.2",
       "rung": "none"
     }
   ]

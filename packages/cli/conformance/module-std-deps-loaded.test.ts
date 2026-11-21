@@ -28,7 +28,7 @@ const manifest = (id: string, deps: string[]): string =>
     id,
     deps,
     capabilities: [],
-    public: { exports: [], routes: [] },
+    public: { exports: [] },
   })})\n`;
 
 type Diag = { code: string; message: string; path: string };

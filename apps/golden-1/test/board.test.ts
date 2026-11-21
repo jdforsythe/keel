@@ -1,5 +1,3 @@
-// routes.ts first: the *.server.ts modules import it back (E1505 cycle otherwise).
-import "../modules/todos/routes.ts";
 import { createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";
@@ -8,18 +6,18 @@ import { properties } from "@keel/testing";
 import { afterEach, describe, expect, it } from "vitest";
 import { Board } from "../modules/api/Board.schema.ts";
 import { BoardView } from "../modules/api/BoardView.schema.ts";
+import { FieldsReply } from "../modules/api/FieldsReply.schema.ts";
 import { ListDraft } from "../modules/api/ListDraft.schema.ts";
 import { ListParams } from "../modules/api/ListParams.schema.ts";
+import { Nothing } from "../modules/api/Nothing.schema.ts";
 import { Suggestion } from "../modules/api/Suggestion.schema.ts";
 import { Todo } from "../modules/api/Todo.schema.ts";
 import { TodoDraft } from "../modules/api/TodoDraft.schema.ts";
 import { TodoList } from "../modules/api/TodoList.schema.ts";
-import { FieldsReply } from "../modules/todos/FieldsReply.schema.ts";
+import { WriteRefusal } from "../modules/api/WriteRefusal.schema.ts";
+import { api } from "../modules/api/api.contract.ts";
 import { TodoParams } from "../modules/todos/TodoParams.schema.ts";
-import { WriteAnswer } from "../modules/todos/WriteAnswer.schema.ts";
-import { WriteRefusal } from "../modules/todos/WriteRefusal.schema.ts";
 import { boardOutbox } from "../modules/todos/boardOutbox.ts";
-import { boardWrites } from "../modules/todos/boardWrites.service.ts";
 import { createList } from "../modules/todos/createList.server.ts";
 import { createTodo } from "../modules/todos/createTodo.server.ts";
 import { editable } from "../modules/todos/editable.guard.ts";
@@ -28,7 +26,6 @@ import { loadIndex } from "../modules/todos/loadIndex.server.ts";
 import { loadList } from "../modules/todos/loadList.server.ts";
 import { loadTodo } from "../modules/todos/loadTodo.server.ts";
 import { refreshView } from "../modules/todos/refreshView.ts";
-import { todos } from "../modules/todos/todos.service.ts";
 import { todosApi } from "../modules/todos/todosApi.ts";
 import { updateTodo } from "../modules/todos/updateTodo.server.ts";
 import { view } from "../modules/todos/view.ts";
@@ -83,18 +80,21 @@ describe("schemas", () => {
     expect(TodoDraft.parse({ title: "", priority: "high" }).ok).toBe(false);
     expect(Suggestion.parse({ title: "Eggs" }).ok).toBe(true);
   });
-  it("the todos endpoints answer the route values: the board, and an empty object", () => {
+  it("the api entries answer the route values: the board, and an empty object", () => {
     const value = { lists: [L], todos: [], canUndo: true, head: 3 };
-    expect(todos.lists.output.parse(value).ok).toBe(true);
-    expect(todos.lists.output.parse({ id: "api.lists", results: { "api.lists": { ok: true, value } } }).ok).toBe(false);
-    expect(todos.undo.output.parse({}).ok).toBe(true);
-    expect(todos.undo.output.parse(null).ok).toBe(false);
+    expect(api.entries["api.lists"].output.parse(value).ok).toBe(true);
+    expect(
+      api.entries["api.lists"].output.parse({ id: "api.lists", results: { "api.lists": { ok: true, value } } }).ok,
+    ).toBe(false);
+    expect(api.entries["api.undo"].output.parse({}).ok).toBe(true);
+    expect(api.entries["api.undo"].output.parse(null).ok).toBe(false);
   });
   it("the board writes decode the route values: an empty object, and a 422's keel.fields error", () => {
-    expect(WriteAnswer.parse({}).ok).toBe(true);
-    expect(WriteAnswer.parse("/lists/l1").ok).toBe(false);
-    expect(WriteAnswer.parse(null).ok).toBe(false);
-    expect(boardWrites.editTodo.output).toBe(WriteAnswer);
+    expect(Nothing.parse({}).ok).toBe(true);
+    expect(Nothing.parse("/lists/l1").ok).toBe(false);
+    expect(Nothing.parse(null).ok).toBe(false);
+    expect(api.entries["api.editTodo"].output).toBe(Nothing);
+    expect(api.entries["api.editTodo"].errors[422]).toBe(WriteRefusal);
     const fields = { code: "keel.fields", message: "m", data: { title: "taken" } };
     expect(FieldsReply.parse(fields).ok).toBe(true);
     expect(WriteRefusal.parse(fields).ok).toBe(true);

@@ -12,7 +12,7 @@ import { sseData } from "./sseData.ts";
 
 /**
  * Read an `events: true` endpoint (k.services): one request with `accept: text/event-stream`; `ms` bounds the wait for
- * the response to start (`api.timeout`). A non-2xx answer is decoded as by a plain call and ends it; then each event is
+ * the response to start (`api.timeout`). A non-2xx answer is decoded as by a plain call (at most `limit` bytes) and ends it; then each event is
  * yielded (`decodeEvent`) until the stream ends, an `err` or a decode failure (yielded, then the end), the body errors
  * (`api.network`) or the input's `signal` aborts (no further result). It never reconnects; leaving it early aborts the request.
  */
@@ -20,6 +20,7 @@ export async function* events(
   e: Endpoint,
   target: Target,
   ms: number,
+  limit: number,
   input: unknown,
   ctx: Ctx,
 ): AsyncGenerator<Result<unknown, ApiError>> {
@@ -48,7 +49,7 @@ export async function* events(
     }
     const res = started.value;
     if (res.status < 200 || res.status >= 300) {
-      yield await exchange(e, req.value, { ...target, send: async () => res });
+      yield await exchange(e, req.value, { ...target, send: async () => res }, limit);
       return;
     }
     if (res.body === null) return;

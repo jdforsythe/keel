@@ -3,6 +3,7 @@
 import { mount } from "@keel/runtime-dom";
 import { Part } from "@keel/ui/aria";
 import { expect, test } from "vitest";
+import { testCtx } from "./testCtx.ts";
 
 test("a handled key stops at the part that handled it", () => {
   const seen: string[] = [];
@@ -32,6 +33,7 @@ test("a handled key stops at the part that handled it", () => {
         ],
       }),
     host,
+    { ctx: testCtx },
   );
   const m = host.querySelector("#m");
   for (const key of ["Escape", "a"])

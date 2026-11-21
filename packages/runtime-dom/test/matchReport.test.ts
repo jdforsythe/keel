@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 import { mount } from "../src/index.ts";
 import { clone, match, template } from "../src/ops/index.ts";
 import { rootSignal } from "./support.ts";
+import { testCtx } from "./testCtx.ts";
 
 const T = template('<div id="d"><!----></div>');
 const I = template("<i></i>");
@@ -141,11 +142,15 @@ describe("match: tags and errors", () => {
   it("renders nothing for a tag with no case, own properties only", () => {
     const tag = rootSignal<{ tag: string }>({ tag: "a" });
     const host = document.createElement("div");
-    const dispose = mount(() => {
-      const d = clone(T);
-      match(anchorOf(d), () => tag.get(), "tag", { a: label("A") });
-      return d;
-    }, host);
+    const dispose = mount(
+      () => {
+        const d = clone(T);
+        match(anchorOf(d), () => tag.get(), "tag", { a: label("A") });
+        return d;
+      },
+      host,
+      { ctx: testCtx },
+    );
     expect(host.textContent).toBe("A");
     for (const t of ["zzz", "constructor", "toString", "__proto__"]) {
       tag.set({ tag: t });
@@ -175,7 +180,7 @@ describe("match: tags and errors", () => {
         return d;
       },
       host,
-      { onError: (e) => seen.push(e), mode: "dev" },
+      { ctx: testCtx, onError: (e) => seen.push(e), mode: "dev" },
     );
     expect(host.textContent).toBe("A");
     boom.set(1);

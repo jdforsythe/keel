@@ -39,7 +39,7 @@ export function resumeIsland(
   component: Island,
   props: Record<string, unknown>,
   held: Held,
-  ctx: Ctx | undefined,
+  ctx: Ctx,
   mode?: "dev" | "production",
   waiting: Map<string, unknown> = new Map(),
 ): string | null {
@@ -72,7 +72,7 @@ export function resumeIsland(
     try {
       rendered.scope = scope(
         () => {
-          rendered.node = withCx(owner, claim, () => component(props, undefined, ctx));
+          rendered.node = withCx(owner, claim, () => component(props, ctx));
         },
         { onError: (error) => report(owner, error, rootAt) },
       );
@@ -131,7 +131,7 @@ export function resumeIsland(
   try {
     client.scope = scope(
       () => {
-        client.node = withCx(freshOwner, null, () => component(props, undefined, ctx));
+        client.node = withCx(freshOwner, null, () => component(props, ctx));
       },
       { onError: (error) => report(freshOwner, error, rootAt) },
     );

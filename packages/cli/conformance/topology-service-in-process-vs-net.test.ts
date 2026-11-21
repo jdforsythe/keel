@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
-// Spec: k.topology, clause "With `a` and `b` in one deployable a `service({ module: 'b' })` call makes no `ctx.net.fetch`; with `y` at `http://y.test` it makes one, to that URL."
+// Spec: k.topology, clause "With `a` and `b` in one deployable a `service({ contract: b })` call makes no `ctx.net.fetch`; with `y` at `http://y.test` it makes one, to that URL."
 // Seed 1337 (fc.assert below). Calls are observed on the sim net only.
-import { manifest } from "@keel/router";
+import { routeTable } from "@keel/router";
 import { topology } from "@keel/server";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
@@ -18,7 +18,7 @@ import {
 } from "./topology-modules.ts";
 
 describe("k.topology: module calls", () => {
-  test("With `a` and `b` in one deployable a `service({ module: 'b' })` call makes no `ctx.net.fetch`; with `y` at `http://y.test` it makes one, to that URL.", async () => {
+  test("With `a` and `b` in one deployable a `service({ contract: b })` call makes no `ctx.net.fetch`; with `y` at `http://y.test` it makes one, to that URL.", async () => {
     await fc.assert(
       fc.asyncProperty(fc.stringMatching(/^[0-9]{1,3}$/), async (n) => {
         const { call } = bClient();
@@ -34,7 +34,7 @@ describe("k.topology: module calls", () => {
         const one = await createAppLoose({
           topology: topology({ one: { modules: ["a", "b"], adapter: "node" } }),
           deployable: "one",
-          routes: manifest({ ...a.routes.routes, ...b.routes.routes }),
+          routes: routeTable(a.routes, b.routes),
           ctx: oneCtx,
         });
         await flush();

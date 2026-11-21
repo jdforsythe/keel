@@ -2,16 +2,19 @@
 // @vitest-environment node
 import { createCtx } from "@keel/ctx";
 import { loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import { describe, expect, it } from "vitest";
 import { createApp, identity, topology } from "../src/index.ts";
 
+const c = contract("app", { "app.x": { method: "GET", path: "/x", output: s.object({}) } });
+
 async function logged(thrown: () => unknown): Promise<{ status: number; lines: string[] }> {
   const lines: string[] = [];
-  const read = loader({ output: s.object({}) }, async () => ok({}));
+  const read = loader(c, "app.x", {}, async () => ok({}));
   const app = await createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
-    routes: manifest({ "app.x": { api: true, path: "/x", loader: read } }),
+    routes: manifest(c, { "app.x": { loader: read } }),
     ctx: createCtx({ mode: "sim", seed: 1337 }),
     mode: "production",
     log: { format: "json", write: (l) => void lines.push(l) },

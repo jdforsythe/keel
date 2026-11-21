@@ -3,6 +3,7 @@
 // is E1403 and binds nothing, so SSR never writes "[object Object]"; `If` with `fallback` renders either branch.
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
+import { createCtx } from "@keel/ctx";
 import { describe, expect, it } from "vitest";
 import { installServerDom } from "../src/internal/dom/installServerDom.ts";
 import { renderUnit } from "../src/internal/renderUnit.ts";
@@ -12,7 +13,7 @@ const compiled = (source: string): { render: (props: Record<string, unknown>) =>
   const fn = evaluate(r.outputs[0]?.code ?? "");
   if (typeof fn !== "function") throw new Error("no default export");
   const render = (props: Record<string, unknown>): string => {
-    const n = renderUnit(() => Reflect.apply(fn, undefined, [props]));
+    const n = renderUnit(() => Reflect.apply(fn, undefined, [props]), createCtx({ mode: "sim", seed: 1337 }));
     const html = typeof n === "object" && n !== null ? Reflect.get(n, "outerHTML") : undefined;
     return typeof html === "string" ? html : "";
   };

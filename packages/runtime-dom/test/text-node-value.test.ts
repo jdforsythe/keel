@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 import { mount } from "../src/index.ts";
 import { clone, template, text } from "../src/ops/index.ts";
 import { SEED, rootSignal } from "./support.ts";
+import { testCtx } from "./testCtx.ts";
 
 const T = template('<p id="p"> </p>');
 const node = fc.constantFrom("b", "i", "span").map((t) => document.createElement(t));
@@ -30,11 +31,15 @@ const expected = (v: unknown): string => (v === null || v === undefined || holds
 function render(seq: readonly unknown[]): string[] {
   const s = rootSignal<unknown>(seq[0]);
   const host = document.createElement("div");
-  const dispose = mount(() => {
-    const p = clone(T);
-    Reflect.apply(text, undefined, [p, () => s.get()]);
-    return p;
-  }, host);
+  const dispose = mount(
+    () => {
+      const p = clone(T);
+      Reflect.apply(text, undefined, [p, () => s.get()]);
+      return p;
+    },
+    host,
+    { ctx: testCtx },
+  );
   const out: string[] = [];
   for (const v of seq) {
     s.set(v);

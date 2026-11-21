@@ -18,7 +18,6 @@ const mount = () =>
           summary: () => "Shipping details",
           children: () => Text({ id: "dsc.body", children: "Ships in two days." }),
         },
-        undefined,
         c,
       ),
     ),

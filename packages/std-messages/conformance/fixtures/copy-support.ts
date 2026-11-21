@@ -17,7 +17,9 @@ export const component = (body: string, head = ""): string =>
 
 /** A `routes.ts` with one route whose `title` is `title`; `head` precedes the manifest. */
 export const routes = (title: string, head = ""): string =>
-  `import { manifest } from '@keel/router'\nimport RecipeList from './RecipeList.tsx'\n${head}export const routes = manifest({ 'recipes.list': { path: '/:locale/recipes', component: RecipeList, title: ${title} } })\n`;
+  `import { manifest } from '@keel/router'\nimport { recipes } from './recipes.contract.ts'\nimport RecipeList from './RecipeList.tsx'\n${head}export const routes = manifest(recipes, { 'recipes.list': { component: RecipeList, title: ${title} } })\n`;
+const contract = (title: string, head = ""): string =>
+  `import { contract } from '@keel/router/contract'\nexport const recipes = contract('recipes', { 'recipes.list': { path: '/:locale/recipes' } })\n`;
 
 /** The 1-based line of the first line of `source` holding `needle`. */
 export const lineOf = (source: string, needle: string): number =>

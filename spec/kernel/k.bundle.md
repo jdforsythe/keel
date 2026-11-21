@@ -4,7 +4,7 @@ status: conformance-covered
 Which bundles, file names and handler uses k.boundary's stubs, Assertion and Reach cover, and how a build keeps every environment value out of a browser asset.
 
 **Bundles.** Each bundle a browser build emits is a browser build for k.boundary, with the stubs and the Assertion: the entry's, each Web Worker's and shared worker's (`new Worker(new URL(<literal>, import.meta.url))`, `new SharedWorker(…)`, an import with `?worker` or `?sharedworker`) and any other chunk Vite bundles in a pass of its own. A worker's chain runs through the file that names it: `<entry> -> <page> -> <worker> -> … -> <file>`.
-- Reach (E1004, so E1107 and E1571) follows `new URL(<literal>, import.meta.url)` and `?worker`, `?sharedworker` and `?url` specifiers as it follows a literal `import()`; a worker file a client entry reaches is a client entry.
+- Reach (E1004 and E1571) follows `new URL(<literal>, import.meta.url)` and `?worker`, `?sharedworker` and `?url` specifiers as it follows a literal `import()`; a worker file a client entry reaches is a client entry.
 
 **Names.** A file is server-only by its name on disk, matched case-insensitively, whatever its extension: `notes.Server.ts`, `keys.server.json`, `copy.server.txt`, `logo.guard.svg`.
 - A server-only file named `.js`, `.jsx`, `.ts`, `.tsx`, `.mjs`, `.cjs`, `.mts` or `.cts` gets a stub. Any other (data, styles, text, an image) gets none: in a browser build's graph, with or without a query, it fails the build with E1007 reason `server-only file`; named from client-reachable code it is E1004.
@@ -20,6 +20,8 @@ Which bundles, file names and handler uses k.boundary's stubs, Assertion and Rea
 - A project config that sets `envPrefix` or `define` fails each browser build before bundling with E1007 reason `environment config`, chain `vite.config.<ext>`. A value a browser reads comes through `clientStd` (k.leave).
 - After bundling, an emitted browser file holding the value of a `KEEL_*` variable of 8 characters or more, the public origins excepted, fails the build with E1007 reason `environment value`.
 
+**Types.** `@keel/compiler/client` declares what a browser build promises: `import.meta.env` as `{ BASE_URL: string; MODE: string; DEV, PROD, SSR: boolean }` (k.boundary Environment), any other key a type error, and the default import of `*?worker` and `*?sharedworker` (a `Worker` or `SharedWorker` constructor) and of `*?url` (a `string`). `keel check` loads it when it resolves from the project root, and the scaffold's `tsconfig.json` lists it in `types` beside `node`; app code writes no reference. A `/// <reference types>` in project code adds that package's ambient types (`vite/client` adds Vite's), the app's, not Keel's promise; under it any other `import.meta.env` key is still a type error.
+
 **Limits.** A script a project plugin bundles in a pass of its own, or a file copied from `public/`, is not walked; it is the project's. So is a project plugin that writes the value of a variable not named `KEEL_*`.
 
 **Rules.** E1010 a specifier naming a file in a case other than its name on disk (fix: the name on disk) · E1007 reasons `environment config` and `environment value`, beside k.boundary's.
@@ -31,3 +33,4 @@ Which bundles, file names and handler uses k.boundary's stubs, Assertion and Rea
 - In a plain file, `R.loader(...)` through `import * as R from '@keel/router'`, `loader` re-exported through `lib/r.ts`, `const L = loader`, and `R.guard(...)`: each one E1551 (E1009 for the guard) in `keel check` and one E1007 `handler` in `vite build`.
 - A project `vite.config` with `envPrefix: ['KEEL_']`, with `envPrefix: 'KEEL_'`, or with a `define`: `vite build` fails with E1007 `environment config` and writes nothing; a project plugin writing `KEEL_TEST_VALUE`'s value into a page fails it with E1007 `environment value`.
 - A page importing `node:sqlite` fails `vite build` with E1007 `node built-in`, with or without `sqlite` in the running Node's built-in list; the server build maps it.
+- With no type reference, a page reading `import.meta.env.MODE` and `DEV` and importing `./w.ts?worker` and `./a.svg?url` checks clean; `import.meta.env.VITE_X` is one E1751, also with `/// <reference types="vite/client" />`.

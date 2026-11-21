@@ -2,6 +2,7 @@
 // Spec: k.server Request flow, "a `:` line per 15 s of `ctx.clock`". Seed 1337 (fc.assert below).
 // The 15 s are observed on the sim clock: `ctx.clock.advance` only, no timers.
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
@@ -12,12 +13,15 @@ describe("k.server: live loader heartbeat", () => {
   test("An event stream writes a `:` line per 15 s of `ctx.clock` until `fn` returns or `signal` aborts.", async () => {
     await fc.assert(
       fc.asyncProperty(fc.integer({ min: 1, max: 4 }), async (beats) => {
-        const live = liveLoader(s.object({ n: s.int() }), async function* (args: { signal: AbortSignal }) {
+        const appContract = contract("app", {
+          "app.live": { method: "GET", path: "/api/live", events: true, output: s.object({ n: s.int() }) },
+        });
+        const live = liveLoader(appContract, "app.live", async function* (args: { signal: AbortSignal }) {
           yield ok({ n: 1 });
           await new Promise<void>((resolve) => args.signal.addEventListener("abort", () => resolve()));
         });
-        const routes = manifest({
-          "app.live": { path: "/live", loader: live, component: () => document.createElement("main") },
+        const routes = manifest(appContract, {
+          "app.live": { loader: live },
         });
         const ctx = simCtx();
         const app = await createAppLoose({
@@ -26,7 +30,9 @@ describe("k.server: live loader heartbeat", () => {
           ctx,
           mode: "dev",
         });
-        const res = await app.fetch(new Request("http://localhost/live", { headers: { accept: "text/event-stream" } }));
+        const res = await app.fetch(
+          new Request("http://localhost/api/live", { headers: { accept: "text/event-stream" } }),
+        );
         const reader = res.body?.getReader();
         const dec = new TextDecoder();
         let seen = "";

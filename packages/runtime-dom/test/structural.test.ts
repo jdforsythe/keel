@@ -1,11 +1,12 @@
-import { effect } from "@keel/reactive";
 // @vitest-environment happy-dom
 // Property seed: 1337. Structural ops: keyed list moves rows, cond/match swap branches in their own scope.
+import { effect } from "@keel/reactive";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { Case, For, If, Match, mount } from "../src/index.ts";
 import { clone, cond, list, match, template, text } from "../src/ops/index.ts";
 import { SEED, rootSignal } from "./support.ts";
+import { testCtx } from "./testCtx.ts";
 
 const UL = template("<ul><!----></ul>");
 const LI = template("<li></li>");
@@ -24,21 +25,25 @@ describe("list: keyed rows", () => {
         const items = rootSignal<{ id: number; v: number }[]>([]);
         const host = document.createElement("div");
         let rowRenders = 0;
-        const dispose = mount(() => {
-          const ul = clone(UL);
-          list(
-            anchorOf(ul),
-            () => items.get(),
-            (i) => i.id,
-            (item, index) => {
-              rowRenders++;
-              const li = clone(LI);
-              text(li, () => `${item().id}:${item().v}@${index()}`);
-              return li;
-            },
-          );
-          return ul;
-        }, host);
+        const dispose = mount(
+          () => {
+            const ul = clone(UL);
+            list(
+              anchorOf(ul),
+              () => items.get(),
+              (i) => i.id,
+              (item, index) => {
+                rowRenders++;
+                const li = clone(LI);
+                text(li, () => `${item().id}:${item().v}@${index()}`);
+                return li;
+              },
+            );
+            return ul;
+          },
+          host,
+          { ctx: testCtx },
+        );
         let prev = new Map<number, Element>();
         for (const [ks, v] of steps) {
           const before = rowRenders;
@@ -69,23 +74,27 @@ describe("list: keyed rows", () => {
     const tick = rootSignal(0);
     const runs = new Map<number, number>();
     const host = document.createElement("div");
-    const dispose = mount(() => {
-      const ul = clone(UL);
-      list(
-        anchorOf(ul),
-        () => items.get(),
-        (i) => i.id,
-        (item) => {
-          const id = item().id;
-          effect(() => {
-            tick.get();
-            runs.set(id, (runs.get(id) ?? 0) + 1);
-          });
-          return clone(LI);
-        },
-      );
-      return ul;
-    }, host);
+    const dispose = mount(
+      () => {
+        const ul = clone(UL);
+        list(
+          anchorOf(ul),
+          () => items.get(),
+          (i) => i.id,
+          (item) => {
+            const id = item().id;
+            effect(() => {
+              tick.get();
+              runs.set(id, (runs.get(id) ?? 0) + 1);
+            });
+            return clone(LI);
+          },
+        );
+        return ul;
+      },
+      host,
+      { ctx: testCtx },
+    );
     items.set([two]);
     const r1 = runs.get(1);
     tick.set(1);
@@ -99,23 +108,27 @@ describe("list: keyed rows", () => {
     const b0 = { id: "b" };
     const items = rootSignal([a0, b0]);
     const host = document.createElement("div");
-    const dispose = mount(() => {
-      const ul = clone(UL);
-      ul.appendChild(
-        For({
-          get each() {
-            return items.get();
-          },
-          key: "id",
-          children: (item, index) => {
-            const li = clone(LI);
-            text(li, () => `${item.id}${index}`);
-            return li;
-          },
-        }),
-      );
-      return ul;
-    }, host);
+    const dispose = mount(
+      () => {
+        const ul = clone(UL);
+        ul.appendChild(
+          For({
+            get each() {
+              return items.get();
+            },
+            key: "id",
+            children: (item, index) => {
+              const li = clone(LI);
+              text(li, () => `${item.id}${index}`);
+              return li;
+            },
+          }),
+        );
+        return ul;
+      },
+      host,
+      { ctx: testCtx },
+    );
     const a = host.querySelector("li");
     expect(a?.textContent).toBe("a0");
     items.set([b0, a0]);
@@ -138,22 +151,26 @@ describe("cond and match", () => {
         const s = rootSignal<unknown>(true);
         let renders = 0;
         const host = document.createElement("div");
-        const dispose = mount(() => {
-          const d = clone(T);
-          cond(
-            anchorOf(d),
-            () => s.get(),
-            () => {
-              renders++;
-              return clone(A);
-            },
-            () => {
-              renders++;
-              return clone(B);
-            },
-          );
-          return d;
-        }, host);
+        const dispose = mount(
+          () => {
+            const d = clone(T);
+            cond(
+              anchorOf(d),
+              () => s.get(),
+              () => {
+                renders++;
+                return clone(A);
+              },
+              () => {
+                renders++;
+                return clone(B);
+              },
+            );
+            return d;
+          },
+          host,
+          { ctx: testCtx },
+        );
         let prev = true;
         for (const v of seq) {
           const before = renders;
@@ -182,28 +199,32 @@ describe("cond and match", () => {
       fc.property(fc.array(shapes, { minLength: 1, maxLength: 8 }), (seq) => {
         const s = rootSignal<Shape>({ kind: "circle", r: 0 });
         const host = document.createElement("div");
-        const dispose = mount(() => {
-          const d = clone(T);
-          match(anchorOf(d), () => s.get(), "kind", {
-            circle: (v) => {
-              const p = clone(P);
-              text(p, () => {
-                const x = v();
-                return x.kind === "circle" ? `c${x.r}` : "";
-              });
-              return p;
-            },
-            square: (v) => {
-              const p = clone(P);
-              text(p, () => {
-                const x = v();
-                return x.kind === "square" ? `s${x.side}` : "";
-              });
-              return p;
-            },
-          });
-          return d;
-        }, host);
+        const dispose = mount(
+          () => {
+            const d = clone(T);
+            match(anchorOf(d), () => s.get(), "kind", {
+              circle: (v) => {
+                const p = clone(P);
+                text(p, () => {
+                  const x = v();
+                  return x.kind === "circle" ? `c${x.r}` : "";
+                });
+                return p;
+              },
+              square: (v) => {
+                const p = clone(P);
+                text(p, () => {
+                  const x = v();
+                  return x.kind === "square" ? `s${x.side}` : "";
+                });
+                return p;
+              },
+            });
+            return d;
+          },
+          host,
+          { ctx: testCtx },
+        );
         for (const v of seq) {
           s.set(v);
           expect(host.querySelector("p")?.textContent).toBe(v.kind === "circle" ? `c${v.r}` : `s${v.side}`);
@@ -220,30 +241,34 @@ describe("cond and match", () => {
     const tag = rootSignal<{ tag: "x" | "y" }>({ tag: "x" });
     const host = document.createElement("div");
     const D = template('<div id="d"></div>');
-    const dispose = mount(() => {
-      const d = clone(D);
-      d.appendChild(
-        If({
-          get when() {
-            return on.get();
-          },
-          children: () => clone(template('<i id="yes">y</i>')),
-          fallback: () => clone(template('<i id="no">n</i>')),
-        }),
-      );
-      d.appendChild(
-        Match({
-          get on() {
-            return tag.get();
-          },
-          children: [
-            Case<{ tag: "x" | "y" }>({ tag: "x", children: () => clone(template('<u id="x">x</u>')) }),
-            Case<{ tag: "x" | "y" }>({ tag: "y", children: () => clone(template('<u id="y">y</u>')) }),
-          ],
-        }),
-      );
-      return d;
-    }, host);
+    const dispose = mount(
+      () => {
+        const d = clone(D);
+        d.appendChild(
+          If({
+            get when() {
+              return on.get();
+            },
+            children: () => clone(template('<i id="yes">y</i>')),
+            fallback: () => clone(template('<i id="no">n</i>')),
+          }),
+        );
+        d.appendChild(
+          Match({
+            get on() {
+              return tag.get();
+            },
+            children: [
+              Case<{ tag: "x" | "y" }>({ tag: "x", children: () => clone(template('<u id="x">x</u>')) }),
+              Case<{ tag: "x" | "y" }>({ tag: "y", children: () => clone(template('<u id="y">y</u>')) }),
+            ],
+          }),
+        );
+        return d;
+      },
+      host,
+      { ctx: testCtx },
+    );
     expect(host.querySelector("#no")).not.toBeNull();
     expect(host.querySelector("#x")).not.toBeNull();
     on.set(true);
@@ -260,25 +285,29 @@ describe("list: empty slot (runtime D28)", () => {
   it("renders while the list is empty and is removed when rows arrive, and back", () => {
     const items = rootSignal<{ id: number }[]>([]);
     const host = document.createElement("div");
-    const dispose = mount(() => {
-      const ul = clone(UL);
-      list(
-        anchorOf(ul),
-        () => items.get(),
-        (i) => i.id,
-        (item) => {
-          const li = clone(LI);
-          text(li, () => String(item().id));
-          return li;
-        },
-        () => {
-          const p = document.createElement("p");
-          p.textContent = "none";
-          return p;
-        },
-      );
-      return ul;
-    }, host);
+    const dispose = mount(
+      () => {
+        const ul = clone(UL);
+        list(
+          anchorOf(ul),
+          () => items.get(),
+          (i) => i.id,
+          (item) => {
+            const li = clone(LI);
+            text(li, () => String(item().id));
+            return li;
+          },
+          () => {
+            const p = document.createElement("p");
+            p.textContent = "none";
+            return p;
+          },
+        );
+        return ul;
+      },
+      host,
+      { ctx: testCtx },
+    );
     expect(host.querySelectorAll("p").length).toBe(1);
     items.set([{ id: 1 }]);
     expect(host.querySelectorAll("p").length).toBe(0);

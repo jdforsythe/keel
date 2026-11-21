@@ -6,6 +6,7 @@
 import { createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
 import { loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { err, s } from "@keel/schema";
 import { createApp, topology } from "@keel/server";
 import { record, session } from "@keel/std-sessions";
@@ -51,12 +52,15 @@ describe("std.sessions: no document", () => {
     vi.stubGlobal("fetch", fetched);
     const ctx = createCtx({ mode: "sim", seed: 1337 });
     const rec = record(ctx, { upload: new URL("https://example.test/sessions") });
-    const failing = loader({ output: s.object({}) }, () =>
+    const cartContract = contract("cart", {
+      "cart.show": { path: "/cart" },
+    });
+
+    const failing = loader(cartContract, "cart.show", { output: s.object({}) }, () =>
       Promise.resolve(err(s.error("cart.locked", s.object({})).make({}))),
     );
-    const routes = manifest({
+    const routes = manifest(cartContract, {
       "cart.show": {
-        path: "/cart",
         loader: failing,
         component: () => {
           throw new Error("not rendered in json mode");

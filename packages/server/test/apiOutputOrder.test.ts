@@ -4,6 +4,7 @@
 import { createCtx } from "@keel/ctx";
 import type { KeyValueStorage } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import { store, transaction, tx } from "@keel/store";
 import fc from "fast-check";
@@ -29,18 +30,17 @@ async function setup() {
   const ctx = { ...createCtx({ mode: "sim", seed: SEED }), storage };
   const factory = () => {
     const box = store(Items, { items: [] }, { id: "order.items" });
-    const add = transaction(box, "order.add", s.object({ n: s.int() }), (st, { n }) => ({ items: [...st.items, n] }));
-    return { box, add };
+    const addTx = transaction(box, "order.add", s.object({ n: s.int() }), (st, { n }) => ({ items: [...st.items, n] }));
+    return { box, add: addTx };
   };
-  const routes = manifest({ "api.add": { api: true, path: "/api/add" } });
-  routes.actions({
-    "api.add": {
-      POST: action({ input: s.object({ n: s.int() }), output: Out, stores: factory }, async ({ n }, { stores }) => {
-        tx(stores.add, { n });
-        return ok({ n, at: "here" });
-      }),
-    },
+  const c = contract("api", {
+    "api.add": { method: "POST", path: "/api/add", body: s.object({ n: s.int() }), output: Out },
   });
+  const add = action(c, "api.add", { stores: factory }, async ({ n }, { stores }) => {
+    tx(stores.add, { n });
+    return ok({ n, at: "here" });
+  });
+  const routes = manifest(c, { "api.add": { action: add } });
   const lines: string[] = [];
   const app = await createApp({
     topology: topology({ web: { modules: ["api"], adapter: "node" } }),

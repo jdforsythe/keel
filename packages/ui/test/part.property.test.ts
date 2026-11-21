@@ -6,6 +6,7 @@ import type { PartRole } from "@keel/ui/aria";
 import axe from "axe-core";
 import fc from "fast-check";
 import { afterEach, expect, test } from "vitest";
+import { testCtx } from "./testCtx.ts";
 
 const SEED = 1337;
 const config: axe.RunOptions = {
@@ -108,6 +109,82 @@ const cases: Record<PartRole, (g: Gen) => Node[]> = {
   cell: (g) => cases.table(g),
   columnheader: (g) => [table(g, () => Part({ id: "c", role: "columnheader", sort: g.sort, children: text(g) }))],
   rowheader: (g) => [table(g, () => Part({ id: "c", role: "rowheader", children: text(g) }))],
+  grid: (g) => [
+    Part({
+      id: "g",
+      role: "grid",
+      label: g.name,
+      rowCount: 1,
+      readOnly: g.on,
+      children: () => [
+        Part({
+          id: "g.b",
+          role: "rowgroup",
+          children: () => [
+            Part({
+              id: "g.r",
+              role: "row",
+              children: () => [
+                Part({ id: "g.h", role: "columnheader", abbr: g.name, children: text(g) }),
+                Part({
+                  id: "g.c",
+                  role: "gridcell",
+                  selected: g.on,
+                  current: g.on ? "date" : false,
+                  children: text(g),
+                }),
+              ],
+            }),
+          ],
+        }),
+      ],
+    }),
+  ],
+  gridcell: (g) => cases.grid(g),
+  tree: (g) => [
+    Part({
+      id: "t",
+      role: "tree",
+      label: g.name,
+      children: () => [
+        Part({
+          id: "t.a",
+          role: "treeitem",
+          expanded: true,
+          level: 1,
+          setSize: 1,
+          posInSet: 1,
+          children: () => [
+            g.name,
+            Part({
+              id: "t.a.g",
+              role: "group",
+              list: true,
+              label: g.name,
+              children: () => [Part({ id: "t.b", role: "treeitem", selected: g.on, level: 2, children: text(g) })],
+            }),
+          ],
+        }),
+      ],
+    }),
+  ],
+  treeitem: (g) => cases.tree(g),
+  slider: (g) => [
+    Part({ id: "s", role: "slider", label: g.name, min: 0, max: 10, value: 4, valueText: g.name, disabled: g.on }),
+  ],
+  radiogroup: (g) => [
+    Part({
+      id: "r",
+      role: "radiogroup",
+      label: g.name,
+      required: g.on,
+      children: () => [
+        Part({ id: "r.a", role: "radio", label: g.name, name: "n", checked: g.on, value: "a" }),
+        Part({ id: "r.b", role: "radio", label: `${g.name}b`, name: "n", checked: !g.on, value: "b" }),
+      ],
+    }),
+  ],
+  radio: (g) => cases.radiogroup(g),
 };
 
 afterEach(() => {
@@ -123,11 +200,13 @@ test("every role with generated required props has no axe violations", async () 
       document.body.innerHTML = '<main><div id="host"></div></main>';
       const host = document.getElementById("host");
       if (host === null) throw new Error("no host");
-      const off = mount(() => Part({ id: "w", role: "generic", children: () => cases[role](g) }), host);
+      const off = mount(() => Part({ id: "w", role: "generic", children: () => cases[role](g) }), host, {
+        ctx: testCtx,
+      });
       const r = await axe.run(host, config);
       expect(r.violations.map((v) => `${role}: ${v.id}`)).toEqual([]);
       off();
     }),
-    { seed: SEED, numRuns: 72 },
+    { seed: SEED, numRuns: 93 },
   );
 }, 60_000);

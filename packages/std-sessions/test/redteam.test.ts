@@ -5,6 +5,7 @@ import { createCtx } from "@keel/ctx";
 import type { Ctx } from "@keel/ctx";
 import { createRouter, manifest } from "@keel/router";
 import type { RouterHistory } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { renderRoute } from "@keel/testing";
 import { Box, Button, Input } from "@keel/ui";
@@ -16,35 +17,41 @@ import { redactSession } from "../src/redactSession.ts";
 import { replay } from "../src/replay.ts";
 
 const typed: { value: string } = { value: "" };
-const routes = manifest({
-  "pay.show": {
-    path: "/pay",
-    search: s.object({ token: s.secret(s.string()).optional(), q: s.string().optional() }),
-    component(): Node {
-      return Box({
-        as: "main",
-        id: "pay.page",
-        children: [
-          Input({
-            id: "pay.card",
-            label: "Card",
-            onInput: (v) => {
-              typed.value = v;
-            },
-          }),
-          Input({ id: "pay.pw", label: "Password", type: "password" }),
-          Button({
-            id: "pay.crash",
-            children: "Pay",
-            onClick: () => {
-              throw new Error(`card ${typed.value} declined`);
-            },
-          }),
-        ],
-      });
+const routes = manifest(
+  contract("pay", {
+    "pay.show": {
+      path: "/pay",
+      search: s.object({ token: s.secret(s.string()).optional(), q: s.string().optional() }),
+    },
+  }),
+  {
+    "pay.show": {
+      component(): Node {
+        return Box({
+          as: "main",
+          id: "pay.page",
+          children: [
+            Input({
+              id: "pay.card",
+              label: "Card",
+              onInput: (v) => {
+                typed.value = v;
+              },
+            }),
+            Input({ id: "pay.pw", label: "Password", type: "password" }),
+            Button({
+              id: "pay.crash",
+              children: "Pay",
+              onClick: () => {
+                throw new Error(`card ${typed.value} declined`);
+              },
+            }),
+          ],
+        });
+      },
     },
   },
-});
+);
 
 const text = (out: Session): string => JSON.stringify(Session.encode(out));
 

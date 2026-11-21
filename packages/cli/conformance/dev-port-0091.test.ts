@@ -1,5 +1,5 @@
 // Spec: k.cli, clause "`keel dev --port <p>`, or `server.port: <p>` in the Vite config, serves on `p`; with `p` in use it prints one E1560 line and exits 1." (rfc:0091)
-// Spec: k.cli Commands "`dev [--port N]` ... (default Vite's `server.port` or 5173; in use: E1560, exit 1)"; Rules E1052 "flag value invalid for the input schema".
+// Spec: k.cli Commands "`dev [--port N]` | dev server and log stream (default Vite's `server.port` or 5173; in use: E1560)"; Rules E1052 "flag value invalid for the input schema".
 // Seed 1337. Spawns the real binary over a temp project with `vite` linked. The wait for the server is a retry, with a fixed pause, of
 // an `http.get`, bounded by a count of pauses. Ports come from a listener on port 0 that is closed first; a busy port is held by the
 // test's own listener. Only processes the test started are signalled (the child's process group); every child is ended in `afterEach`.
@@ -51,11 +51,15 @@ beforeAll(() => {
   );
   write(
     "modules/app/module.ts",
-    'import { module } from "@keel/compiler";\nexport default module({ id: "app", deps: [], capabilities: [], public: { exports: [], routes: [] } });\n',
+    'import { module } from "@keel/compiler";\nexport default module({ id: "app", deps: [], capabilities: [], public: { exports: [] } });\n',
   );
   write(
     "modules/app/routes.ts",
-    'import { manifest } from "@keel/router";\nconst Home = () => null;\nexport const routes = manifest({ "app.home": { path: "/", component: Home } });\n',
+    'import { manifest } from "@keel/router";\nimport { app } from "./app.contract.ts";\nconst Home = () => null;\nexport const routes = manifest(app, { "app.home": { component: Home } });\n',
+  );
+  write(
+    "modules/app/app.contract.ts",
+    'import { contract } from "@keel/router/contract";\nexport const app = contract("app", { "app.home": { path: "/" } });\n',
   );
 });
 afterAll(() => rmSync(fixture, { recursive: true, force: true }));

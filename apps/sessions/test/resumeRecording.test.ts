@@ -5,10 +5,11 @@
 // accepted by this service's `sessions.ingest`. Seed 1337
 import { createCtx } from "@keel/ctx";
 import type { Ctx } from "@keel/ctx";
-import { manifest } from "@keel/router";
-import type { Slots } from "@keel/runtime-dom";
+import { manifest, routeTable } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { createApp } from "@keel/server";
 import { Session, record, session } from "@keel/std-sessions";
+import { sessions as ingest } from "@keel/std-sessions/contract";
 import { routes as sessions } from "@keel/std-sessions/routes";
 import { resumeDocument } from "@keel/testing";
 import { Box, Button } from "@keel/ui";
@@ -22,9 +23,9 @@ const stamped = (n: Node, id: string): Node => {
 };
 
 /** The fixture page: in the browser it records with an upload to this origin; its button throws. */
-function Drill(_props?: object, _slots?: Slots, ctx?: Ctx): Node {
-  if (ctx !== undefined && typeof location !== "undefined")
-    record(ctx, { upload: new URL(sessions.routes["sessions.ingest"].path, location.origin) });
+function Drill(_props: object, ctx: Ctx): Node {
+  if (typeof location !== "undefined")
+    record(ctx, { upload: new URL(ingest.entries["sessions.ingest"].path, location.origin) });
   return Box({
     as: "main",
     id: "ops.drill",
@@ -43,7 +44,8 @@ function Drill(_props?: object, _slots?: Slots, ctx?: Ctx): Node {
   });
 }
 
-const routes = manifest({ "ops.drill": { path: "/drill", component: Drill }, ...sessions.routes });
+const drill = contract("ops", { "ops.drill": { path: "/drill" } });
+const routes = routeTable(manifest(drill, { "ops.drill": { component: Drill } }), sessions);
 
 describe("ops resume recording", () => {
   it("records a handler error in a resumed island and uploads it once to this service", async () => {

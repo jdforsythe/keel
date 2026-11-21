@@ -2,7 +2,7 @@
 status: conformance-covered
 
 **Pipeline.** `keel check [paths]`: one pass, incremental, under 1s warm on golden app 1. Static only: it never evaluates app code (rendered a11y checks are k.testing).
-1. Parse (oxc) and TS strict type check. The only ambient types are Node's, loaded when `@types/node` resolves from the project root.
+1. Parse (oxc) and TS strict type check. Ambient types: Node's when `@types/node` resolves from the project root, and k.bundle's Types.
 2. Compiler diagnostics (k.compiler transform of every file). They flow through unchanged.
 3. Rule registry: kernel structure rules plus rules from stdlib modules in the project's `deps` (k.module), run on each file with read-only project artifacts (`.keel/*.json`, manifests) and `project`: the project's code files and its `topology.ts`, one shared array.
 4. Formatter: dedupe, sort by path, line, col (E1005, W1005 last), group by code, cap, render per `--format` (k.cli).
@@ -11,7 +11,7 @@ Changing one file re-runs steps 1-3 for that file and its dependents only.
 
 **Diagnostics.** Exactly the OUTPUT.md model: `{ kind: 'diag', code, path, line, col, message, fix?, see? }`. `code` is E (error), W (warning), or I (info) plus four digits, never renumbered; `message` is one line under 90 chars; `fix` is a unified diff hunk that applies to the checked tree; `see` is the spec section id. Only E codes affect the exit code (k.cli). A TS error that encodes a Keel rule (a missing a11y prop, an unknown field path, a string for `Href`) is reported under that rule's code; any other TS error is E1751.
 
-**Codes.** `reportedCodes()` lists every code `keel check` produces: the pipeline's and each registered rule's. The other kernel **Rules** codes come from another command (build, cli, dev and runtime, scaffold, and harness results E1702-E1707 from `keel test`, `keel ledger`) and share this model, `explain`, and `spec --for`. Kernel codes are E1xxx; stdlib codes are E2xxx/W2xxx (spec/00-map.md).
+**Codes.** `reportedCodes()` lists every code `keel check` produces: the pipeline's and each registered rule's. The other kernel **Rules** codes come from another command (build, cli, dev and runtime, scaffold, and harness results E1702-E1707 from `keel test`, `keel ledger`) and share this model, `explain`, and `docs --for`. Kernel codes are E1xxx; stdlib codes are E2xxx/W2xxx (spec/00-map.md).
 
 **Registry** (extension point).
 ```ts
@@ -25,7 +25,7 @@ export const noRawMoney = defineRule({
 ```
 Rules are pure and deterministic: no `ctx`, no I/O beyond their inputs. A rule that throws is reported as E1756 and the other rules still run.
 
-**explain and spec.** `keel explain <code>` prints at most 120 tokens: the message, the rule's `explain` (or the spec's Rules entry for kernel codes), one fix example, and `see`. `keel spec --for <code>` prints every spec line citing the code.
+**explain and docs.** `keel explain <code>` prints at most 120 tokens: the message, the rule's `explain` (or the spec's Rules entry for kernel codes), one fix example, and `see`. `keel docs --for <code>` prints every installed spec line citing the code (k.docs).
 
 **Flags.** `--code <code>` keeps only that code (the summary still counts all) · `--limit N` sets the per-code cap (default 5), followed by `... +K more <code> (keel check --code <code>)` · `--quiet` prints the trailer only · `--format=compact|json|pretty`.
 
@@ -35,7 +35,7 @@ Rules are pure and deterministic: no `ctx`, no I/O beyond their inputs. A rule t
 
 **Conformance.**
 - Every E code in a kernel section's Rules or in `reportedCodes()` has an `explain` entry of at most 120 tokens. Each one `check()` reports (`reportedCodes()`) has a fixture that triggers exactly that code (E1756: a registered rule that throws); each other Rules code comes from another command and a conformance test of its own package asserts it (outside comments and test titles).
-- Every fix a diagnostic carries applies to its fixture with `git apply`, and re-checking reports no diagnostic of that code. Fixtures of E1003, E1005 (bytes only), E1151, E1152, E1154-E1157, E1401, E1403 (`&&`, `?:` with `If` imported), E1405, E1451, E1452 (`try`), E1601, E1652, E1653, E1757 (`!`, `any`, suppression), E1805, and E1808 carry one; RFC 0035 lists why the others cannot.
+- Every fix a diagnostic carries applies to its fixture with `git apply`, and re-checking reports no diagnostic of that code. Fixtures of E1003, E1005 (bytes only), E1151, E1152, E1154-E1156, E1401, E1403 (`&&`, `?:` with `If` imported), E1405, E1451, E1452 (`try`), E1601, E1652, E1653, E1757 (`!`, `any`, suppression), E1805, and E1808 carry one; RFC 0035 lists why the others cannot.
 - The json diagnostic `keel check` emits for a compiler fixture is byte-identical to the one the compiler emits.
 - `check()` never evaluates app code: a module that throws at top level yields only static diagnostics.
 - Two runs on an unchanged tree produce identical output.

@@ -16,7 +16,7 @@ const FILES: readonly string[] = [
   "vite.config.ts",
   "tokens.ts",
   "topology.ts",
-  ...["module", "routes", "editable.guard"].map((n) => `${mod}/${n}.ts`),
+  ...["module", "todos.contract", "routes", "editable.guard"].map((n) => `${mod}/${n}.ts`),
   ...[
     "TodoList",
     "Todo",

@@ -1,3 +1,4 @@
+import type { Ctx } from "@keel/ctx";
 // @vitest-environment happy-dom
 // Seed 1337
 // Spec: k.compiler, clause "`<img alt="">`, an unnamed `<section>`, `<td>` and `<li>` with text render with no E1702."
@@ -5,7 +6,6 @@
 import { compile } from "@keel/compiler";
 import type { A11yEntry } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
-import type { Slots } from "@keel/runtime-dom";
 import { s } from "@keel/schema";
 import { render } from "@keel/testing";
 import type { TestComponent } from "@keel/testing";
@@ -23,8 +23,8 @@ function build(jsx: string): { component: TestComponent<Record<string, never>>; 
   const fn = evaluate(out.code);
   if (typeof fn !== "function") throw new Error("fixture: default export is not a component");
   const component: TestComponent<Record<string, never>> = Object.assign(
-    (p: Record<string, never>, slots?: Slots): Node => {
-      const node: unknown = fn(p, slots);
+    (p: Record<string, never>, ctx: Ctx): Node => {
+      const node: unknown = fn(p, ctx);
       if (!(node instanceof Node)) throw new Error("fixture: component did not return a Node");
       return node;
     },

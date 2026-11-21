@@ -1,5 +1,4 @@
 import { type Argument, type Expression, type Program, Visitor } from "oxc-parser";
-import { propertyOf } from "../propertyOf.ts";
 import type { Entry } from "./Entry.ts";
 import type { FileFacts } from "./FileFacts.ts";
 import { localNames } from "./localNames.ts";
@@ -24,31 +23,6 @@ function literal(a: Argument | Expression | undefined): Entry | null {
 const nameOf = (i: { type: string; name?: string; value?: unknown }): string | undefined =>
   i.type === "Identifier" ? i.name : typeof i.value === "string" ? i.value : undefined;
 
-/** Static string keys of a literal object argument (identifier or string-literal keys). */
-function keysOf(a: Argument | undefined): Entry[] {
-  if (a === undefined || a.type !== "ObjectExpression") return [];
-  const out: Entry[] = [];
-  for (const p of a.properties) {
-    if (p.type !== "Property" || p.computed) continue;
-    if (p.key.type === "Identifier") out.push({ value: p.key.name, start: p.key.start, end: p.key.end });
-    else {
-      const e = literal(p.key.type === "Literal" ? p.key : undefined);
-      if (e !== null) out.push(e);
-    }
-  }
-  return out;
-}
-
-/** `{ id, path }` of each entry of a literal manifest argument whose `path` is a string literal. */
-function pathsOf(a: Argument | undefined): { id: string; path: string }[] {
-  if (a === undefined || a.type !== "ObjectExpression") return [];
-  return keysOf(a).flatMap((k) => {
-    const v = propertyOf(a, k.value)?.value;
-    const p = v?.type === "ObjectExpression" ? literal(propertyOf(v, "path")?.value) : null;
-    return p === null ? [] : [{ id: k.value, path: p.value }];
-  });
-}
-
 /** The literal `id` of the last object argument (`store(schema, initial, { id })`). */
 function storeId(args: readonly Argument[]): Entry | null {
   const last = args[args.length - 1];
@@ -61,28 +35,20 @@ function storeId(args: readonly Argument[]): Entry | null {
 }
 
 /**
- * Collect a file's module facts in one AST walk (k.module): imports, route ids passed to `href()` or to the
- * manifest member form `<routes>.href('id', params?)` (rfc:0041; both during the transition), `manifest({...})` route
- * keys and literal paths, `service({ module, schema })` calls from `@keel/services`, `store(..., { id })`, `transaction(store, 'name', ...)`, `s.error('code', ...)`, `ctx.<cap>` uses, and, as capability
- * `observe` (rfc:0071), an `observe` import from `@keel/ctx` (any alias) or `<namespace>.observe`. Callees count only
- * when imported from their kernel package (`@keel/router`, `@keel/store`, `@keel/schema`).
+ * Collect a file's module facts in one AST walk (k.module): imports, `store(..., { id })`,
+ * `transaction(store, 'name', ...)`, `s.error('code', ...)`, `ctx.<cap>` uses, and, as capability `observe`, an
+ * `observe` import from `@keel/ctx` (any alias) or `<namespace>.observe`. Callees count only when imported from their
+ * kernel package (`@keel/store`, `@keel/schema`).
  */
 export function scanFile(program: Program): FileFacts {
-  const href = localNames(program, "href", "@keel/router");
-  const manifest = localNames(program, "manifest", "@keel/router");
-  const service = localNames(program, "service", "@keel/services");
   const store = localNames(program, "store", "@keel/store");
   const transaction = localNames(program, "transaction", "@keel/store");
   const schema = localNames(program, "s", "@keel/schema");
   const imports: Entry[] = [];
-  const hrefs: Entry[] = [];
-  const routes: Entry[] = [];
-  const paths: { id: string; path: string }[] = [];
-  const services: { module: Entry; schema: Expression | null }[] = [];
   const ids: IdFact[] = [];
   const ctx: Entry[] = [];
   const stores: Argument[] = [];
-  // `observe` is a capability (rfc:0071): its import from @keel/ctx (any alias), or `<namespace>.observe`.
+  // `observe` is a capability: its import from @keel/ctx (any alias), or `<namespace>.observe`.
   const spaces = new Set<string>();
   for (const st of program.body) {
     const from =
@@ -108,18 +74,7 @@ export function scanFile(program: Program): FileFacts {
       const c = n.callee;
       const a = n.arguments;
       if (c.type === "Identifier") {
-        if (href.has(c.name)) {
-          const e = literal(a[0]);
-          if (e !== null) hrefs.push(e);
-        } else if (manifest.has(c.name)) {
-          routes.push(...keysOf(a[0]));
-          paths.push(...pathsOf(a[0]));
-        } else if (service.has(c.name)) {
-          const opts = a[0]?.type === "ObjectExpression" ? a[0] : undefined;
-          const m = opts === undefined ? null : literal(propertyOf(opts, "module")?.value);
-          if (opts !== undefined && m !== null)
-            services.push({ module: m, schema: propertyOf(opts, "schema")?.value ?? null });
-        } else if (store.has(c.name)) {
+        if (store.has(c.name)) {
           const e = storeId(a);
           if (e !== null) ids.push({ ...e, kind: "store id" });
           if (a[0] !== undefined) stores.push(a[0]);
@@ -130,11 +85,6 @@ export function scanFile(program: Program): FileFacts {
         return;
       }
       if (c.type !== "MemberExpression" || c.computed) return;
-      if (c.property.name === "href") {
-        const e = literal(a[0]);
-        if (e !== null) hrefs.push(e);
-        return;
-      }
       if (c.property.name !== "error" || c.object.type !== "Identifier" || !schema.has(c.object.name)) return;
       const e = literal(a[0]);
       if (e !== null) ids.push({ ...e, kind: "error code" });
@@ -155,5 +105,5 @@ export function scanFile(program: Program): FileFacts {
       }
     },
   }).visit(program);
-  return { imports, hrefs, routes, paths, services, ids, ctx, stores };
+  return { imports, ids, ctx, stores };
 }

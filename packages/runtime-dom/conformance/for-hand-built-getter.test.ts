@@ -2,12 +2,15 @@
 // Seed: 1337.
 // @vitest-environment happy-dom
 // ASSUMPTION: `For({ each, key, children })` with `children: (item) => Node` called per row; `item` is the row's item value, not an accessor.
+import { createCtx } from "@keel/ctx";
 import { scope, signal as newSignal } from "@keel/reactive";
 import type { Signal } from "@keel/reactive";
 import { For, mount } from "@keel/runtime-dom";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { SEED, flush } from "./fixtures.ts";
+
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 /** Signals are created in a scope (k.reactive E1203). */
 const owner = scope(() => undefined);
@@ -20,30 +23,34 @@ const open = (initial: readonly Todo[]) => {
   const built = new Map<string, number>();
   const host = document.createElement("div");
   document.body.appendChild(host);
-  const dispose = mount(() => {
-    const ul = document.createElement("ul");
-    const list: unknown = For({
-      get each() {
-        return rows.get();
-      },
-      key: "id",
-      children: (item: Todo): Node => {
-        built.set(item.id, (built.get(item.id) ?? 0) + 1);
-        const li = document.createElement("li");
-        const label = document.createElement("label");
-        label.append(`${item.id} `);
-        const input = document.createElement("input");
-        label.append(input);
-        const span = document.createElement("span");
-        span.textContent = item.label;
-        li.append(label, span);
-        return li;
-      },
-    });
-    if (!(list instanceof Node)) throw new Error("fixture: For did not return a node");
-    ul.append(list);
-    return ul;
-  }, host);
+  const dispose = mount(
+    () => {
+      const ul = document.createElement("ul");
+      const list: unknown = For({
+        get each() {
+          return rows.get();
+        },
+        key: "id",
+        children: (item: Todo): Node => {
+          built.set(item.id, (built.get(item.id) ?? 0) + 1);
+          const li = document.createElement("li");
+          const label = document.createElement("label");
+          label.append(`${item.id} `);
+          const input = document.createElement("input");
+          label.append(input);
+          const span = document.createElement("span");
+          span.textContent = item.label;
+          li.append(label, span);
+          return li;
+        },
+      });
+      if (!(list instanceof Node)) throw new Error("fixture: For did not return a node");
+      ul.append(list);
+      return ul;
+    },
+    host,
+    { ctx: simCtx },
+  );
   return {
     rows,
     built,

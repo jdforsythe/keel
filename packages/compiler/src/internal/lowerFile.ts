@@ -584,7 +584,7 @@ export function lowerFile(
     const props = parts.length === 0 ? "{}" : `{ ${parts.join(", ")} }`;
     const f = componentFnAt(el.start);
     const ctx = f === undefined ? undefined : ctxNames.get(f.start);
-    const tail = ctx === undefined ? "" : `, undefined, ${ctx}`;
+    const tail = ctx === undefined ? "" : `, ${ctx}`;
     const tag = tagNameOf(el.openingElement.name);
     const id = baseIds.get(el.start);
     return `${id === undefined ? tag : `${stampOpen(id)}${tag})`}(${props}${tail})`;
@@ -623,9 +623,9 @@ export function lowerFile(
 }
 
 /**
- * For each component function that renders a child component: the name of its `ctx` (third) parameter,
- * adding `<ns>props, <ns>slots, <ns>ctx` parameters as needed (D27). A function with a rest parameter or a
- * destructured third parameter passes no ctx.
+ * For each component function that renders a child component: the name of its `ctx` (second) parameter,
+ * adding `<ns>props, <ns>ctx` parameters as needed (D27). A function with a rest parameter or a
+ * destructured second parameter passes no ctx (E1407).
  */
 function ctxParams(
   a: Analysis,
@@ -644,9 +644,9 @@ function ctxParams(
     if (f === undefined || seen.has(f.start)) continue;
     seen.add(f.start);
     const ps = f.node.params;
-    const third = ps[2];
-    if (third !== undefined) {
-      const id = third.type === "AssignmentPattern" ? third.left : third;
+    const second = ps[1];
+    if (second !== undefined) {
+      const id = second.type === "AssignmentPattern" ? second.left : second;
       if (id.type === "Identifier") out.set(f.start, id.name);
       continue;
     }
@@ -658,7 +658,7 @@ function ctxParams(
       const from = f.node.typeParameters?.end ?? (f.node.type === "ArrowFunctionExpression" ? f.start : f.node.id?.end);
       const open = src.indexOf("(", from ?? f.start);
       if (open < 0 || open >= f.end) continue;
-      edits.push({ start: open + 1, end: open + 1, text: `${ns}props, ${ns}slots, ${name}` });
+      edits.push({ start: open + 1, end: open + 1, text: `${ns}props, ${name}` });
     } else if (
       ps.length === 1 &&
       f.node.type === "ArrowFunctionExpression" &&
@@ -667,10 +667,9 @@ function ctxParams(
       edits.push({
         start: first.start,
         end: first.end,
-        text: `(${src.slice(first.start, first.end)}, ${ns}slots, ${name})`,
+        text: `(${src.slice(first.start, first.end)}, ${name})`,
       });
-    } else
-      edits.push({ start: last.end, end: last.end, text: ps.length === 1 ? `, ${ns}slots, ${name}` : `, ${name}` });
+    } else edits.push({ start: last.end, end: last.end, text: `, ${name}` });
     out.set(f.start, name);
   }
   return out;

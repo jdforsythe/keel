@@ -1,7 +1,4 @@
-// routes.ts first: the pages import it back (E1505 cycle otherwise).
-import "../modules/todos/routes.ts";
 import { createCtx } from "@keel/ctx";
-import { service } from "@keel/services";
 import { type A11yNode, properties, render, renderRoute } from "@keel/testing";
 import { afterEach, describe, expect, it } from "vitest";
 import AppShell from "../modules/todos/AppShell.tsx";
@@ -14,7 +11,7 @@ import Suggestions from "../modules/todos/Suggestions.tsx";
 import TodoRow from "../modules/todos/TodoRow.tsx";
 import { boardOutbox } from "../modules/todos/boardOutbox.ts";
 import { routes } from "../modules/todos/routes.ts";
-import { suggestions } from "../modules/todos/suggestions.service.ts";
+import { todosApi } from "../modules/todos/todosApi.ts";
 import { view } from "../modules/todos/view.ts";
 import { boardOf } from "./at.ts";
 import { readBoard, resetApi, seedBoard, simApi } from "./simApi.ts";
@@ -146,7 +143,7 @@ describe("suggestions", () => {
       accepts.push(req.headers.get("accept"));
       return served(["Milk"]);
     });
-    const r = await service({ module: "api", schema: suggestions }).list({}, ctx);
+    const r = await todosApi.suggestions({}, ctx);
     expect(r.ok && r.value).toEqual([{ title: "Milk" }]);
     expect(accepts).toEqual(["application/json"]);
   });

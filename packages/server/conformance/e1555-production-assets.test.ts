@@ -2,7 +2,8 @@
 // Spec: k.deploy Rules E1555
 // Seed: 1337 (fc.assert seed below). In-process createApp, no listening server; NODE_ENV is stubbed per test.
 import { createCtx } from "@keel/ctx";
-import { manifest } from "@keel/router";
+import { manifest, routeTable } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { createApp, topology } from "@keel/server";
 import fc from "fast-check";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -12,11 +13,14 @@ afterEach(() => {
 });
 
 const appFor = (modules: readonly string[], mode?: "dev" | "production") => {
-  const entries: Record<string, { path: string; component: () => Node }> = {};
-  for (const m of modules) entries[`${m}.page`] = { path: `/${m}`, component: () => document.createElement("p") };
+  const tables = modules.map((m) =>
+    manifest(contract(m, { [`${m}.page`]: { path: `/${m}` } }), {
+      [`${m}.page`]: { component: () => document.createElement("p") },
+    }),
+  );
   return createApp({
     topology: topology({ web: { modules: [...modules], adapter: "node" } }),
-    routes: manifest(entries),
+    routes: routeTable(...tables),
     ctx: createCtx({ mode: "sim", seed: 1337 }),
     ...(mode === undefined ? {} : { mode }),
   });

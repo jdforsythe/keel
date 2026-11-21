@@ -6,6 +6,7 @@ import { mount } from "@keel/runtime-dom";
 import { list } from "@keel/runtime-dom/ops";
 import { Part } from "@keel/ui/aria";
 import { afterEach, expect, test } from "vitest";
+import { testCtx } from "./testCtx.ts";
 
 const flush = async (): Promise<void> => {
   for (let i = 0; i < 10; i++) await Promise.resolve();
@@ -31,6 +32,7 @@ const setup = (returnFocus?: string) => {
         children: () => [Part({ id: "ok", role: "button", children: () => "OK" })],
       }),
     host,
+    { ctx: testCtx },
   );
   return { open, off };
 };
@@ -82,18 +84,22 @@ test("an open dialog removed with its trigger returns focus by the same rule", a
         }),
       ],
     });
-  const off = mount(() => {
-    const box = document.createElement("div");
-    const anchor = document.createComment("");
-    box.append(anchor);
-    list(
-      anchor,
-      () => rows.get(),
-      (r) => r.id,
-      (item) => row(item().id),
-    );
-    return box;
-  }, host);
+  const off = mount(
+    () => {
+      const box = document.createElement("div");
+      const anchor = document.createComment("");
+      box.append(anchor);
+      list(
+        anchor,
+        () => rows.get(),
+        (r) => r.id,
+        (item) => row(item().id),
+      );
+      return box;
+    },
+    host,
+    { ctx: testCtx },
+  );
   open.set(true);
   await flush();
   expect(document.activeElement?.id).toBe("r1.ok");

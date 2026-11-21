@@ -7,7 +7,6 @@ import type { A11yEntry } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
 import type { Ctx } from "@keel/ctx";
 import { signal } from "@keel/reactive";
-import type { Slots } from "@keel/runtime-dom";
 import { attr, clone, on, template } from "@keel/runtime-dom/ops";
 import { s } from "@keel/schema";
 import { render } from "@keel/testing";
@@ -28,8 +27,8 @@ const built = (() => {
   const fn = evaluate(out.code);
   if (typeof fn !== "function") throw new Error("fixture: default export is not a component");
   const component: TestComponent<Record<string, never>> = Object.assign(
-    (p: Record<string, never>, slots?: Slots): Node => {
-      const node: unknown = fn(p, slots);
+    (p: Record<string, never>, ctx: Ctx): Node => {
+      const node: unknown = fn(p, ctx);
       if (!(node instanceof Node)) throw new Error("fixture: component did not return a Node");
       return node;
     },
@@ -49,7 +48,7 @@ const patched = (patch: Partial<A11yEntry>): A11yJson => {
 // A hand-written button whose accessible-name source changes on click: text -> aria-label.
 const T = template('<div><button id="b" data-k="b">Go</button></div>');
 const Renamer = Object.assign(
-  (_props: Record<string, never>, _slots?: Slots, _ctx?: Ctx): Node => {
+  (_props: Record<string, never>): Node => {
     const root = clone(T);
     const el = root instanceof Element ? root.querySelector("#b") : null;
     if (el === null) throw new Error("fixture: no #b");

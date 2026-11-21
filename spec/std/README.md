@@ -35,7 +35,8 @@ S8 adds std.db, std.workflows, std.shells and std.tokens.
 | std.schedules | Schedules | conformance-covered | module manifest: cron in a zone, catch-up, E2551-E2553 |
 | std.channels | Channels | conformance-covered | module manifest and check rule registry: named channels over a server event stream, E2601-E2602 |
 | std.live | Live views | conformance-covered | composes std.channels: a client store re-read on every push |
-| std.offline | Outbox | conformance-covered | check rule registry: queued writes with keys and bases, resolve, E2651-E2652 |
+| std.offline | Outbox | conformance-covered | check rule registry: queued writes with keys and bases, resolve, E2651 |
+| std.contracts | Stdlib contracts | proposed | std-health, std-sessions, std-channels and std-offline over k.contract |
 | std.outbox | Outbox storage faults | conformance-covered | `@keel/std-offline`: storage writes that reject or never settle, other throws in a flush |
 | std.outbox-owner | Outbox owner check | conformance-covered | `@keel/std-offline`: `writeFor` refuses a write of another owner than the caller's, `offline.owner` |
 | std.conflicts | Races | conformance-covered | formatter registry: order-dependent rebased entries, E2701 |
@@ -44,9 +45,12 @@ S8 adds std.db, std.workflows, std.shells and std.tokens.
 | std.monitor | Production tallies | conformance-covered | std-sessions: server transaction counts as `monitored` evidence, E2009-E2010 |
 | std.headless | Headless widgets | conformance-covered | Dialog, Disclosure, Toaster, three charts, E2801 |
 | std.options | Listbox, combobox, menu and tabs | conformance-covered | Listbox, Combobox, Menu, Tabs on `optionsChart` |
+| std.lists | List primitives | proposed | `listChart`, `stableRows` for app components |
 | std.tables | Data tables | conformance-covered | columns from a schema, query in the URL, `applyQuery`, E2851-E2853 |
 | std.db | SQLite and Postgres storage | proposed | storage drivers (k.persist) and check rule registry: E2151-E2153 |
 | std.postgres | Postgres app data | proposed | capability and check rule registries: `database`, `sql` with a result schema, migrations, PGlite under sim, E2451-E2458 |
 | std.workflows | Workflows | conformance-covered | module manifest, inspector hook, check rule registry: chart instances over jobs, E2351-E2355 |
 | std.shells | Shell drivers | conformance-covered | storage and net drivers for Capacitor and Tauri shells |
+| std.capacitor | Capacitor shell target | proposed | shell target: Android and iOS files, tools, build, CI jobs |
+| std.tauri | Tauri shell target | proposed | shell target: desktop files, tools, build, CI job |
 | std.tokens | Opaque tokens | conformance-covered | capability, schema type and check rule registries: `mint` with a ttl, `check`, `Digested`, E2201-E2202 |

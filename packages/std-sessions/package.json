@@ -48,6 +48,10 @@
       "types": "./src/routes.ts",
       "default": "./src/routes.ts"
     },
+    "./contract": {
+      "types": "./src/sessions.contract.ts",
+      "default": "./src/sessions.contract.ts"
+    },
     "./action": {
       "types": "./src/action/index.ts",
       "default": "./src/action/index.ts"
@@ -100,6 +104,7 @@
   "devDependencies": {
     "@keel/runtime-dom": "workspace:*",
     "@keel/server": "workspace:*",
+    "@keel/services": "workspace:*",
     "@keel/testing": "workspace:*",
     "@keel/tooling": "workspace:*",
     "@types/node": "^22",

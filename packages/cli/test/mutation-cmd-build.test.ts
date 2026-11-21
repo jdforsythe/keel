@@ -160,16 +160,16 @@ describe("explain", () => {
 describe("operations that are not available in-process", () => {
   it("dev, inspect and render are exact I1055 results", async () => {
     expect((await run(["dev"], { cwd: CWD })).stdout).toBe(
-      "I1055 dev not available: needs vite.config.ts and the keel binary (vite dev server)\n  see: k.server\nok dev\n",
+      "I1055 dev not available: needs vite.config.ts and the keel binary (vite dev server)\n  see: keel docs k.server\nok dev\n",
     );
     expect((await run(["inspect"], { cwd: CWD })).stdout).toBe(
-      "I1055 inspect not available: needs a network (io.fetch)\n  see: k.cli\nok inspect\n",
+      "I1055 inspect not available: needs a network (io.fetch)\n  see: keel docs k.cli\nok inspect\n",
     );
     expect((await run(["render"], { cwd: CWD })).stdout).toBe(
-      "I1055 render not available: needs a compiled component or route loader\n  see: k.testing\nok render\n",
+      "I1055 render not available: needs a compiled component or route loader\n  see: keel docs k.testing\nok render\n",
     );
     expect((await run(["session"], { cwd: CWD })).stdout).toBe(
-      "I1055 session not available: needs the stdlib session module\n  see: k.cli\nok session\n",
+      "I1055 session not available: needs the stdlib session module\n  see: keel docs k.cli\nok session\n",
     );
   });
 

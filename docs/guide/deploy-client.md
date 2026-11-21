@@ -12,7 +12,7 @@ Name the `node` deployable that serves the client:
 
 ```ts title="topology.ts"
 export default topology({
-  web: { modules: ["todos"], adapter: "client", host: "api" },
+  web: { modules: ["todos"], adapter: "client", servedBy: "api" },
   api: { modules: ["api", "digest"], adapter: "node" },
 });
 ```
@@ -40,7 +40,7 @@ Put `dist/web/` on a static host at `https://app.example.com` and run `api` at `
    <meta name="keel-peer" data-deployable="api" content="https://api.example.com">
    ```
 
-   `service({ module: "api" })` in the browser then calls that origin and sends `credentials: 'include'`. With no `KEEL_PEER_API` at build it calls the page's own origin. The tag is the one unhashed file, so a deploy step can rewrite its `content` and one build serves several environments. A value that is not an http(s) origin fails the build with E1565, naming the key and no value.
+   `service({ contract })` of a module the `api` deployable serves, in the browser, then calls that origin and sends `credentials: 'include'`. With no `KEEL_PEER_API` at build it calls the page's own origin. The tag is the one unhashed file, so a deploy step can rewrite its `content` and one build serves several environments. A value that is not an http(s) origin fails the build with E1565, naming the key and no value.
 
 2. On the server, allow the client's origin:
 
@@ -102,4 +102,4 @@ TLS comes from your host or a proxy in front of it. This nginx file is a sketch 
 - One `client` deployable per host.
 - A CDN in front of a `node` deployable as a cache has not been tried.
 - `keel dev` runs one process on one origin, so none of this applies to it.
-- `host` names a `node` deployable; naming a `client` deployable, an unknown name, or one host for two clients is E1566.
+- `servedBy` names a `node` deployable; naming a `client` deployable, an unknown name, or one `node` deployable for two clients is E1566.

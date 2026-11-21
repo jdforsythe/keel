@@ -9,7 +9,7 @@ import { expect, test } from "vitest";
 import { CELLS, LOCALE, TEXT, catalogColumns, makeRows, serverHref, simCtx } from "../conformance/fixtures.ts";
 import { DataTable } from "../src/DataTable.ts";
 
-const Page = Object.assign((_props: Record<string, never>, _slots?: undefined, _ctx?: Ctx): Node => view(), {
+const Page = Object.assign((_props: Record<string, never>, _ctx: Ctx): Node => view(), {
   Props: s.object({}),
 });
 let runs = 0;

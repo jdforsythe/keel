@@ -11,9 +11,11 @@ status: conformance-covered
 | `manifest.sig` | the Ed25519 signature of `manifest.json`'s bytes, base64 |
 | `check.ndjson`, `ledger.ndjson` | the records of those runs; the ledger holds the a11y claims (k.a11y) |
 | `a11y.json` | per route and criterion its rung and rules; the criteria no rule maps to, for a person; `contrastTable(tokens)` |
-| `security.json` | per `node` deployable the headers and policy k.security sends, with `<nonce>`; per `client` or `static` one its `csp.txt` |
+| `security.json` | per `node` deployable the headers and policy k.security sends, with `<nonce>`; per `client` or `static` one its `csp.txt`; each with its declared `origins` (k.origins) |
 | `pii.json` | per `.pii()` path (file, export, path, class), each sink (k.privacy) and the rung of its clause (sessions `std.sessions#2`, inputs `k.privacy#7`, log `k.privacy#6`, bundle `k.evidence#5`): the project ledger's when it holds that item, else the kernel ledger's that `@keel/cli` ships; `coverage`, the share of (path, sink) pairs at `probabilistic` or higher; `caller` (k.user) |
 | `deps.json` | each production dependency from `pnpm list --prod --json --depth Infinity` as a CycloneDX 1.5 component (name, version, integrity, license); `advisories` from `--audit` (`pnpm audit --json` output), else `null` |
+
+Each `security.json` entry (`adapter`, `name`, then `headers` and `policy`, or `csp`) carries `origins`: `{ directive, origin, reason }` per declared origin (k.origins), directives in the order `img`, `media`, `font`, `connect`, `frame`, origins in declaration order; `[]` with none.
 
 Every file parses with a schema `@keel/cli/evidence` exports. No file holds an app value: records carry ids, codes, paths, counts and hashes. The command makes no network request.
 

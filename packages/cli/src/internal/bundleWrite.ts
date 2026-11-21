@@ -1,6 +1,7 @@
 import { sign } from "node:crypto";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { declaredOrigins } from "@keel/compiler/hosting/declaredOrigins";
 import { createCtx } from "@keel/ctx";
 import type { Infer } from "@keel/schema";
 import type { Manifest } from "../evidence/Manifest.ts";
@@ -90,6 +91,7 @@ export async function bundleWrite(input: Input, io: Io): Promise<Outcome> {
     ledger.records.flatMap((r) => (r.kind === "ledger" && isRung(r.rung) ? [[r.item, r.rung]] : [])),
   );
   const topology = projectTopology(files);
+  const topologySource = files.find((f) => f.path === "topology.ts")?.source ?? "";
   const reports: [string, string][] = [
     [
       "a11y.json",
@@ -106,7 +108,7 @@ export async function bundleWrite(input: Input, io: Io): Promise<Outcome> {
     ["deps.json", json(depsReport(io.cwd, advisories))],
     ["ledger.ndjson", ndjson(ledger.records)],
     ["pii.json", json(await piiReport(io.cwd, files, (c) => rungs.get(c) ?? KERNEL_SINK_RUNGS[c] ?? "none"))],
-    ["security.json", json(await securityReport(io.cwd, topology, env))],
+    ["security.json", json(await securityReport(io.cwd, topology, env, declaredOrigins(topologySource).origins))],
   ];
   const pkg = jsonOf(io.read?.("package.json"));
   const manifest: Infer<typeof Manifest> = {

@@ -6,7 +6,7 @@ import { type KeyInput, Part, type PartStyle } from "@keel/ui/aria";
 import type { Option } from "./Option.ts";
 import type { OptionState } from "./internal/OptionState.ts";
 import { content } from "./internal/content.ts";
-import { listChart } from "./internal/listChart.ts";
+import { listChart } from "./listChart.ts";
 
 /**
  * A button that opens a list of actions (std.options, APG Menu Button). Parts `trigger`, `menu` and `item.<key>`; an
@@ -23,8 +23,7 @@ export function Menu<K extends string>(
     readonly item?: (o: Option<K>, s: OptionState) => Child;
     readonly styles?: { readonly trigger?: PartStyle; readonly menu?: PartStyle; readonly item?: PartStyle };
   },
-  _slots?: undefined,
-  ctx?: Ctx,
+  ctx: Ctx,
 ): Node {
   const id = props.id;
   const l = listChart(id, "item", props.items, ctx);

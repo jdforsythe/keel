@@ -2,12 +2,13 @@
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
 import type { Signal } from "@keel/reactive";
-import type { mount } from "@keel/runtime-dom";
+import type { Ctx } from "@keel/ctx";
 import { expect } from "vitest";
 
 export const SEED = 1337;
 
-export type Mountable = Parameters<typeof mount>[0];
+/** A compiled component: `(props, ctx)`; the props a test passes are its own, so they are not narrowed here. */
+export type Mountable = (props: Readonly<Record<string, unknown>>, ctx: Ctx) => Node;
 
 export function isMountable(x: unknown): x is Mountable {
   return typeof x === "function";

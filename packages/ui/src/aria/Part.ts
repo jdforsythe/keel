@@ -1,14 +1,16 @@
 import { effect, owner } from "@keel/reactive";
-import { attr, on, prop } from "@keel/runtime-dom/ops";
+import { on, prop } from "@keel/runtime-dom/ops";
 import type { Value } from "@keel/runtime-dom/ops";
 import { appendChildren } from "../internal/appendChildren.ts";
 import { applyIdLang } from "../internal/applyIdLang.ts";
 import { applyStyle } from "../internal/applyStyle.ts";
+import { ariaText } from "../internal/ariaText.ts";
 import { bound } from "../internal/bound.ts";
 import { isGetter } from "../internal/isGetter.ts";
 import { isReadable } from "../internal/isReadable.ts";
 import { listen } from "../internal/listen.ts";
 import { make } from "../internal/make.ts";
+import { put } from "../internal/put.ts";
 import { renderChildren } from "../internal/renderChildren.ts";
 import type { PartProps } from "./PartProps.ts";
 import type { PartRole } from "./PartRole.ts";
@@ -40,73 +42,97 @@ const TAGS: Readonly<Record<PartRole, Tag>> = {
   columnheader: "th",
   rowheader: "th",
   cell: "td",
+  grid: "table",
+  gridcell: "td",
+  tree: "ul",
+  treeitem: "li",
+  slider: "input",
+  radiogroup: "div",
+  radio: "input",
+};
+/** The `type` of each role rendered as an `input`. */
+const INPUT_TYPES: Readonly<Partial<Record<PartRole, string>>> = {
+  checkbox: "checkbox",
+  combobox: "text",
+  slider: "range",
+  radio: "radio",
 };
 /** Roles their tag already has, so no `role` attribute is written. */
-const IMPLICIT = "button checkbox dialog generic navigation table rowgroup row columnheader rowheader cell".split(" ");
+const IMPLICIT =
+  "button checkbox dialog generic navigation table rowgroup row columnheader rowheader cell slider radio".split(" ");
 /** Props written as `aria-<lower-cased name>`. */
 const ARIA =
-  "label labelledBy describedBy controls activeDescendant orientation multiselectable selected expanded hasPopup rowCount rowIndex sort".split(
+  "label labelledBy describedBy controls activeDescendant orientation multiselectable selected expanded hasPopup rowCount colCount rowIndex sort readOnly current level setSize posInSet valueText required".split(
     " ",
   );
+/** Props of the native controls and of `columnheader` written as the HTML attribute of the same lower-cased name. */
+const HTML = "min max step name abbr".split(" ");
+/** Roles that keep focus where it is on `mousedown`. */
+const KEEP_FOCUS = "option menuitem menuitemcheckbox".split(" ");
 const FOCUSABLE = 'button,input,select,textarea,a[href],[tabindex="0"]';
 
 const read = (v: unknown): unknown => (isReadable(v) ? v.get() : v);
-/** A boolean as `"true"`/`"false"`, a string or number as itself, anything else absent. */
-const text = (v: unknown): Value =>
-  typeof v === "boolean" ? String(v) : typeof v === "string" || typeof v === "number" ? v : null;
 const flag = (v: unknown): Value => v === true;
+const plain = (v: unknown): Value => (typeof v === "string" || typeof v === "number" ? v : null);
 
 /**
- * Attribute `name` from prop `k`: a signal, a computed or a compiled getter binds it (a signal or computed marks
- * `el` bound); a plain value is written once.
+ * The control's `value` (`slider`, `radio`) from prop `k`: written as the attribute, the markup default, and when it
+ * is a signal, a computed or a getter also bound as the property, so later writes change what the control shows.
  */
-function put(
-  el: Element,
-  props: Readonly<Record<string, unknown>>,
-  k: string,
-  name: string,
-  fmt: (v: unknown) => Value,
-) {
-  if (!(k in props)) return;
-  const v = props[k];
-  if (isGetter(props, k) || isReadable(v)) {
-    if (isReadable(v)) bound(el);
-    attr(el, name, () => fmt(read(props[k])));
-  } else {
-    const s = fmt(v);
-    if (s !== null && s !== false) el.setAttribute(name, s === true ? "" : String(s));
+function controlValue(el: HTMLElement, props: Readonly<Record<string, unknown>>): void {
+  if (!("value" in props)) return;
+  const first = plain(read(props.value));
+  if (first !== null) el.setAttribute("value", String(first));
+  if (isGetter(props, "value") || isReadable(props.value)) {
+    if (isReadable(props.value)) bound(el);
+    prop(el, "value", () => {
+      const v = plain(read(props.value));
+      return v === null ? "" : String(v);
+    });
   }
 }
 
 /**
- * The one element stdlib widgets are built from (k.aria): `role` fixes the tag and the ARIA props it takes. A base
+ * The element stdlib and app widgets are built from (k.aria, k.roles): `role` fixes the tag and the ARIA props it takes. A base
  * element in every k.ui sense: built through the runtime's `element`, so it resumes in place, and bound (`data-k`)
  * when it has an event prop, a `focus` or `open`, or a signal or computed.
  */
 export function Part(props: PartProps): Node {
   const p: Readonly<Record<string, unknown>> = props;
   const role = props.role;
-  const tag = role === "rowgroup" && props.head === true ? "thead" : TAGS[role];
+  const tag =
+    role === "rowgroup" && props.head === true ? "thead" : role === "group" && props.list === true ? "ul" : TAGS[role];
   const fill = (el: HTMLElement): void => {
-    if (tag === "input") el.setAttribute("type", role === "checkbox" ? "checkbox" : "text");
+    const type = INPUT_TYPES[role];
+    if (type !== undefined) el.setAttribute("type", type);
     if (tag === "button") el.setAttribute("type", "button");
     if (tag === "th") el.setAttribute("scope", role === "columnheader" ? "col" : "row");
     applyIdLang(el, props);
     if (!IMPLICIT.includes(role)) el.setAttribute("role", role);
     if (role === "combobox") el.setAttribute("aria-autocomplete", "list");
-    for (const k of ARIA) put(el, p, k, `aria-${k.toLowerCase()}`, text);
-    put(el, p, "colSpan", "colspan", text);
+    for (const k of ARIA) put(el, p, k, `aria-${k.toLowerCase()}`, ariaText);
+    for (const k of HTML) put(el, p, k, k, plain);
+    put(el, p, "colSpan", "colspan", ariaText);
     put(el, p, "hidden", "hidden", flag);
     if (tag === "button" || tag === "input") put(el, p, "disabled", "disabled", flag);
-    else put(el, p, "disabled", "aria-disabled", text);
-    put(el, p, "tabIndex", "tabindex", text);
-    if (role === "checkbox") {
+    else put(el, p, "disabled", "aria-disabled", ariaText);
+    put(el, p, "tabIndex", "tabindex", ariaText);
+    if (role === "checkbox" || role === "radio") {
       const c = props.checked;
       if (c === true) el.setAttribute("checked", "");
       if (isReadable(c)) bound(el);
       prop(el, "checked", () => read(c) === true);
-      prop(el, "indeterminate", () => read(c) === "mixed");
-    } else put(el, p, "checked", "aria-checked", text);
+      if (role === "checkbox") prop(el, "indeterminate", () => read(c) === "mixed");
+    } else put(el, p, "checked", "aria-checked", ariaText);
+    if (role === "slider" || role === "radio") controlValue(el, p);
+    if (role === "slider") {
+      const input = props.onInput;
+      listen(el, "input", input && (() => input(Number(Reflect.get(el, "value")))));
+    }
+    if (role === "radio") {
+      const change = props.onChange;
+      listen(el, "change", change && (() => change()));
+    }
     if (role === "combobox") {
       const value = props.value;
       if (typeof value === "string") el.setAttribute("value", value);
@@ -137,7 +163,7 @@ export function Part(props: PartProps): Node {
     listen(el, "focus", focusIn && (() => focusIn()));
     const blur = props.onBlur;
     listen(el, "blur", blur && (() => blur()));
-    if (tag === "li") on(el, "mousedown", (e) => e.preventDefault());
+    if (KEEP_FOCUS.includes(role)) on(el, "mousedown", (e) => e.preventDefault());
     if (props.focus !== undefined) {
       bound(el);
       let was: boolean | undefined;

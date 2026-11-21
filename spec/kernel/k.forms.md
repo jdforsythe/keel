@@ -6,7 +6,7 @@ status: conformance-covered
 import { form } from '@keel/forms'
 import { Form } from '@keel/router'
 const f = form(OrderEdit, { initial: order }) // OrderEdit is an s.object in orders.schema.ts
-<Form method="POST" action={routes.href('orders.show', { id: order.id })} form={f} error={(e) => <Text>{e.message}</Text>}>
+<Form method="POST" action={orders.href('orders.show', { id: order.id })} form={f} error={(e) => <Text>{e.message}</Text>}>
   <Input field={f.field('note')} label="Note" />
   <Input field={f.field('address.city')} label="City" />
   <If when={f.pending()}><Text>Saving</Text></If>

@@ -6,6 +6,7 @@ import os from "node:os";
 import path from "node:path";
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { createApp, topology } from "@keel/server";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
@@ -56,9 +57,10 @@ beforeAll(async () => {
   write(path.join(dist, "assets", "chunk-Qq77Ww66.js"), "export const chunk = 1;\n");
   write(path.join(dist, "assets", "robots.txt"), "User-agent: *\n");
   for (const url of MAP_URLS) write(path.join(dist, url), MAP_TEXT);
+  const appContract = contract("app", { "app.home": { path: "/" } });
   app = await createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
-    routes: manifest({ "app.home": { path: "/", component: () => document.createElement("p") } }),
+    routes: manifest(appContract, { "app.home": { component: () => document.createElement("p") } }),
     ctx: createCtx({ mode: "sim", seed: 1337 }),
     mode: "production",
     assets: dist,

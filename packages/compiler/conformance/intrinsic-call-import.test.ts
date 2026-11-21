@@ -1,11 +1,14 @@
 // @vitest-environment happy-dom
 // Spec: k.component, clause "A plain `.ts` module calling `If` and `Boundary` imported from `@keel/runtime-dom`, or naming `If` only as a parameter or destructuring default, compiles with that import kept and renders the chosen branch; a `.tsx` module using them only as tags compiles with the import removed."
 // Seed 1337 (no random inputs: the spaces are two booleans, covered exhaustively).
+import { createCtx } from "@keel/ctx";
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
 import { mount } from "@keel/runtime-dom";
 import { expect, test } from "vitest";
 import { isMountable } from "./support.ts";
+
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 const importsIntrinsic = (code: string, name: string): boolean =>
   new RegExp(`import\\s*\\{[^}]*\\b${name}\\b[^}]*\\}\\s*from\\s*["']@keel/runtime-dom["']`).test(code);
@@ -38,7 +41,7 @@ test("a plain .ts module calling If and Boundary renders the chosen branch", () 
   if (!isMountable(c)) throw new Error("default export is not a component");
   for (const on of [true, false]) {
     const el = document.createElement("div");
-    mount(() => c({ on }), el);
+    mount(() => c({ on }, simCtx), el, { ctx: simCtx });
     expect(el.textContent).toBe(on ? "yes" : "no");
   }
 });
@@ -104,7 +107,7 @@ for (const [label, source] of defaultForms) {
     if (!isMountable(c)) throw new Error("default export is not a component");
     for (const on of [true, false]) {
       const el = document.createElement("div");
-      mount(() => c({ on }), el);
+      mount(() => c({ on }, simCtx), el, { ctx: simCtx });
       expect(el.textContent).toBe(on ? "yes" : "no");
     }
   });

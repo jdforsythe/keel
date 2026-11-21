@@ -6,6 +6,5 @@ export default module({
   capabilities: ["clock", "random", "storage"],
   public: {
     exports: ["MintedToken", "Me", "TokenRequest"],
-    routes: ["accounts.tokens", "accounts.me"],
   },
 });

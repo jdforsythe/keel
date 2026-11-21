@@ -3,7 +3,8 @@
 // Spec: k.place, Conformance "In `'dev'` mode a mounted text binding given a node, an array holding one and a function each writes one `console.warn` starting `E1406` with the element id, once over two updates, and renders `''`; in production, `''` and no line. A dev `createApp` serving such a route twice logs one `diag` E1406 with its route id; production none."
 // Seed: 1337 (no generated inputs). Each page binds a function-valued prop as text, which renders nothing; it is served
 // by `createApp` and the log lines are read (k.server Log: one line per record).
-import { manifest } from "@keel/router";
+import { manifest, routeTable } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { describe, expect, it } from "vitest";
 import { compilePage } from "./claim-support.ts";
 import { type Lines, appOf } from "./resume-graph-app.ts";
@@ -19,12 +20,16 @@ const TEXTY = (k: string): string => `${HEAD}function Card(props) { return <Box 
 export default function Page() { return <div id="${k}.root"><Card label="Hi" /></div> }
 `;
 
-const routes = manifest({
-  "d1.page": { path: "/d1", component: compilePage("d1.page", BINDS("d1")) },
-  "d2.page": { path: "/d2", component: compilePage("d2.page", BINDS("d2")) },
-  "d3.page": { path: "/d3", component: compilePage("d3.page", CLEAN("d3")) },
-  "d4.page": { path: "/d4", component: compilePage("d4.page", TEXTY("d4")) },
-});
+const d1Contract = contract("d1", { "d1.page": { path: "/d1" } });
+const d2Contract = contract("d2", { "d2.page": { path: "/d2" } });
+const d3Contract = contract("d3", { "d3.page": { path: "/d3" } });
+const d4Contract = contract("d4", { "d4.page": { path: "/d4" } });
+const routes = routeTable(
+  manifest(d1Contract, { "d1.page": { component: compilePage("d1.page", BINDS("d1")) } }),
+  manifest(d2Contract, { "d2.page": { component: compilePage("d2.page", BINDS("d2")) } }),
+  manifest(d3Contract, { "d3.page": { component: compilePage("d3.page", CLEAN("d3")) } }),
+  manifest(d4Contract, { "d4.page": { component: compilePage("d4.page", TEXTY("d4")) } }),
+);
 const MODULES = ["d1", "d2", "d3", "d4"];
 
 const e1406 = (lines: readonly string[], routeId?: string): string[] =>

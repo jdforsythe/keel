@@ -2,9 +2,12 @@
 // Property tests for compile(). Seed 1337.
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
+import { createCtx } from "@keel/ctx";
 import { mount } from "@keel/runtime-dom";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
+
+const simCtx = createCtx({ mode: "sim", seed: 1 });
 
 const SEED = 1337;
 
@@ -67,7 +70,7 @@ describe("compile properties", () => {
         if (typeof C !== "function") throw new Error("no component");
         const host = document.createElement("div");
         document.body.append(host);
-        const dispose = mount(() => C(), host);
+        const dispose = mount(() => C(), host, { ctx: simCtx });
         expect(host.querySelectorAll("*").length).toBe(ids.length);
         for (const id of ids)
           expect(document.getElementById(id)?.tagName.toLowerCase()).toBe(r.artifacts["ids.json"][id]?.tag);
@@ -102,7 +105,7 @@ describe("compile properties", () => {
         const H = evaluate(r.outputs[0]?.code ?? "");
         if (typeof H !== "function") throw new Error("no component");
         const host = document.createElement("div");
-        const dispose = mount(() => H(), host);
+        const dispose = mount(() => H(), host, { ctx: simCtx });
         const p = host.querySelector("p");
         expect(host.querySelectorAll("*").length).toBe(2);
         expect(p?.textContent).toBe(str);

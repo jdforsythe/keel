@@ -22,7 +22,7 @@ const Config = s.object({ limit: s.int({ min: 1, max: 100 }), tags: s.array(s.st
 s.register(PKG, Config);
 
 const manifest = (id: string, deps: readonly string[], std?: string): string =>
-  `import { module } from '@keel/compiler'\nexport default module({\n  id: '${id}',\n  deps: ${JSON.stringify(deps)},\n  capabilities: [],\n  public: { exports: [], routes: [] },${std === undefined ? "" : `\n  std: ${std},`}\n})\n`;
+  `import { module } from '@keel/compiler'\nexport default module({\n  id: '${id}',\n  deps: ${JSON.stringify(deps)},\n  capabilities: [],\n  public: { exports: [] },${std === undefined ? "" : `\n  std: ${std},`}\n})\n`;
 const mod = (id: string, deps: readonly string[], std?: string) => ({
   path: `modules/${id}/module.ts`,
   source: manifest(id, deps, std),

@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 // Client hosting in the compiler (k.hosting): `originOf` accepts exactly http(s) origins, `peerOrigins` turns
-// `KEEL_PEER_<NAME>` into tags (E1565 keys, never values), `hostProblems` finds every E1566 arm, `parseTopology` reads
-// `host`, the client entry binds the `keel-peer` tags, and the Vite plugin builds a `client` deployable into
-// `dist/<name>/` with a default `index.html`, the peer tags and the mark, then copies it into its host. Seed 1337.
+// `KEEL_PEER_<NAME>` into tags (E1565 keys, never values), `servedByProblems` finds every E1566 arm, `parseTopology` reads
+// `servedBy`, the client entry binds the `keel-peer` tags, and the Vite plugin builds a `client` deployable into
+// `dist/<name>/` with a default `index.html`, the peer tags and the mark, then copies it into what serves it. Seed 1337.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -10,9 +10,9 @@ import { createCtx } from "@keel/ctx";
 import { repoRoot } from "@keel/tooling/repo-root";
 import fc from "fast-check";
 import { afterEach, describe, expect, it } from "vitest";
-import { hostProblems } from "../src/hosting/hostProblems.ts";
 import { originOf } from "../src/hosting/originOf.ts";
 import { peerOrigins } from "../src/hosting/peerOrigins.ts";
+import { servedByProblems } from "../src/hosting/servedByProblems.ts";
 import { topologyReadProblems } from "../src/hosting/topologyReadProblems.ts";
 import { entryCode } from "../src/internal/entryCode.ts";
 import { hostClient } from "../src/internal/hostClient.ts";
@@ -143,43 +143,51 @@ describe("peerOrigins", () => {
   });
 });
 
-describe("hostProblems", () => {
+describe("servedByProblems", () => {
   const n = { modules: ["a"], adapter: "node" } as const;
-  it("is empty for a client naming a node deployable, or no host", () => {
-    expect(hostProblems({ api: n, web: { modules: ["w"], adapter: "client", host: "api" } })).toEqual([]);
-    expect(hostProblems({ api: n })).toEqual([]);
+  it("is empty for a client naming a node deployable, or no servedBy", () => {
+    expect(servedByProblems({ api: n, web: { modules: ["w"], adapter: "client", servedBy: "api" } })).toEqual([]);
+    expect(servedByProblems({ api: n })).toEqual([]);
   });
   it("reports each arm once, by deployable", () => {
     expect(
-      hostProblems({
-        api: { ...n, host: "api" },
-        one: { modules: ["o"], adapter: "client", host: "api" },
-        two: { modules: ["t"], adapter: "client", host: "api" },
-        three: { modules: ["x"], adapter: "client", host: "nowhere" },
-        four: { modules: ["y"], adapter: "client", host: "one" },
-        pre: { modules: ["p"], adapter: "static", host: "api" },
+      servedByProblems({
+        api: { ...n, servedBy: "api" },
+        one: { modules: ["o"], adapter: "client", servedBy: "api" },
+        two: { modules: ["t"], adapter: "client", servedBy: "api" },
+        three: { modules: ["x"], adapter: "client", servedBy: "nowhere" },
+        four: { modules: ["y"], adapter: "client", servedBy: "one" },
+        pre: { modules: ["p"], adapter: "static", servedBy: "api" },
       }).map(([name]) => name),
     ).toEqual(["api", "four", "pre", "three", "two"]);
   });
 });
 
-describe("parseTopology host", () => {
-  it("reads a literal host and omits an absent one", () => {
+describe("parseTopology servedBy", () => {
+  it("reads a literal servedBy and omits an absent one", () => {
     const { topology } = parseTopology(
-      `export default topology({ web: { modules: ["w"], adapter: "client", host: "api" }, api: { modules: ["a"], adapter: "node" } })`,
+      `export default topology({ web: { modules: ["w"], adapter: "client", servedBy: "api" }, api: { modules: ["a"], adapter: "node" } })`,
     );
-    expect(topology.web).toEqual({ modules: ["w"], adapter: "client", host: "api" });
+    expect(topology.web).toEqual({ modules: ["w"], adapter: "client", servedBy: "api" });
     expect(topology.api).toEqual({ modules: ["a"], adapter: "node" });
   });
 
-  it("reports a host that is not a string literal, as topologyReadProblems does from the source, as E1566", () => {
+  it("reports a key a deployable does not list, a leftover host included, as E1552 and keeps the rest", () => {
+    const source = `export default topology({ web: { modules: ["w"], adapter: "client", host: "api" }, api: { modules: ["a"], adapter: "node", caller: { days: 3 } } })`;
+    expect(parseTopology(source).problems).toEqual([
+      ["web", "web: host is not a deployable key; one of modules, adapter, servedBy, storage, shells, caller, origins"],
+    ]);
+    expect(topologyReadProblems(source).map(([code]) => code)).toEqual(["E1552"]);
+  });
+
+  it("reports a servedBy that is not a string literal, as topologyReadProblems does from the source, as E1566", () => {
     for (const h of ["`api`", "API", '"a" + "pi"', "`${API}`"]) {
-      const source = `const API = "api";\nexport default topology({ api: { modules: ["a"], adapter: "node" }, web: { modules: ["w"], adapter: "client", host: ${h} } })`;
+      const source = `const API = "api";\nexport default topology({ api: { modules: ["a"], adapter: "node" }, web: { modules: ["w"], adapter: "client", servedBy: ${h} } })`;
       const r = parseTopology(source);
-      expect(r.problems, h).toEqual([["web", "web: host must be a string literal"]]);
+      expect(r.problems, h).toEqual([["web", "web: servedBy must be a string literal"]]);
       expect(r.topology.web).toEqual({ modules: ["w"], adapter: "client" });
-      expect(topologyReadProblems(source)).toEqual([["E1566", "web", "web: host must be a string literal"]]);
-      expect(hostProblems(r.topology)).toEqual([]);
+      expect(topologyReadProblems(source)).toEqual([["E1566", "web", "web: servedBy must be a string literal"]]);
+      expect(servedByProblems(r.topology)).toEqual([]);
     }
   });
 });
@@ -224,7 +232,7 @@ describe("client build", () => {
     fs.writeFileSync(path.join(d, "topology.ts"), `export default topology(${top})\n`);
     return d;
   };
-  const TOP = `{ api: { modules: ["a"], adapter: "node" }, web: { modules: ["w"], adapter: "client", host: "api" } }`;
+  const TOP = `{ api: { modules: ["a"], adapter: "node" }, web: { modules: ["w"], adapter: "client", servedBy: "api" } }`;
 
   it("serves a default index.html when the project has none, with the peer tags", async () => {
     const root = project(TOP);
@@ -302,7 +310,7 @@ describe("hostClient", () => {
       const m: unknown = JSON.parse(fs.readFileSync(path.join(d, "api", ".vite", "manifest.json"), "utf8"));
       expect(m).toEqual({
         e: { file: "assets/entry-1.js", isEntry: true },
-        "keel:host": { file: "index.html", assets: ["assets/index-abc12345.js", "assets/sub/x-def67890.css"] },
+        "keel:servedBy": { file: "index.html", assets: ["assets/index-abc12345.js", "assets/sub/x-def67890.css"] },
       });
       expect(() => hostClient(path.join(d, "none"), path.join(d, "api"), "none")).toThrow(/dist\/none\/index.html/);
     } finally {

@@ -30,9 +30,8 @@ test("Escape in a Menu inside a Dialog closes the menu only and focuses its trig
           id: "d",
           title: "Edit",
           trigger: () => "Edit",
-          content: () => Menu({ id: "m", trigger: () => "More", items: () => fruit, onSelect: () => {} }, undefined, c),
+          content: () => Menu({ id: "m", trigger: () => "More", items: () => fruit, onSelect: () => {} }, c),
         },
-        undefined,
         c,
       ),
     ),
@@ -61,11 +60,9 @@ test("Escape in an open Combobox inside a Dialog closes the list only and keeps 
           content: () =>
             Combobox(
               { id: "c", label: "Fruit", text: () => "", onInput: () => {}, options: () => fruit, onChange: () => {} },
-              undefined,
               c,
             ),
         },
-        undefined,
         c,
       ),
     ),
@@ -89,10 +86,8 @@ test("Escape in a Dialog inside a Dialog closes the inner one and focuses its tr
           id: "outer",
           title: "Settings",
           trigger: () => "Settings",
-          content: () =>
-            Dialog({ id: "inner", title: "Reset", trigger: () => "Reset", content: () => "Sure?" }, undefined, c),
+          content: () => Dialog({ id: "inner", title: "Reset", trigger: () => "Reset", content: () => "Sure?" }, c),
         },
-        undefined,
         c,
       ),
     ),
@@ -110,7 +105,7 @@ test("Escape in a Dialog inside a Dialog closes the inner one and focuses its tr
 
 test("a click that left focus on body returns focus to the trigger at close", async () => {
   const t = render(
-    page((c) => Dialog({ id: "d", title: "Edit", trigger: () => "Edit", content: () => "Body" }, undefined, c)),
+    page((c) => Dialog({ id: "d", title: "Edit", trigger: () => "Edit", content: () => "Body" }, c)),
     { props: {}, ctx: simCtx() },
   );
   expect(focused()).toBe("");
@@ -149,7 +144,6 @@ test("a Dialog whose trigger is gone at close returns focus to `main`", async ()
                       },
                     }),
                 },
-                undefined,
                 c,
               ),
           }),

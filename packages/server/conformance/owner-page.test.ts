@@ -8,6 +8,7 @@ import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
 import { type CtxEvent, createCtx, observe } from "@keel/ctx";
 import { loader, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import type { RouteProps } from "@keel/router";
 import { resume } from "@keel/runtime-dom/ops";
 import { ok, s } from "@keel/schema";
@@ -21,7 +22,7 @@ const SEED = 1337;
 class StubWindow extends EventTarget {}
 
 const probe = (k: string): string => `import { signal } from "@keel/reactive";
-export default function Island(props, slots, ctx) {
+export default function Island(props, ctx) {
   const n = signal(0);
   const names = [];
   for (let o = ctx; o !== null && o !== undefined && o !== Object.prototype; o = Object.getPrototypeOf(o)) {
@@ -32,9 +33,9 @@ export default function Island(props, slots, ctx) {
 }
 `;
 
-type Island = (props: RouteProps, slots?: unknown, ctx?: ReturnType<typeof createCtx>) => Node;
+type Island = (props: RouteProps, ctx: ReturnType<typeof createCtx>) => Node;
 
-/** A component compiled from `source` that passes its second and third arguments through. */
+/** A component compiled from `source` that passes its second argument, the ctx, through. */
 function compileIsland(name: string, source: string): Island {
   const r = compile([{ path: `${name}.tsx`, source }]);
   expect(r.diagnostics).toEqual([]);
@@ -42,8 +43,8 @@ function compileIsland(name: string, source: string): Island {
   if (out === undefined) throw new Error("fixture: no compiler output");
   const fn = evaluate(out.code);
   if (typeof fn !== "function") throw new Error("fixture: default export is not a component");
-  return (props, slots, ctx) => {
-    const node: unknown = fn(props, slots, ctx);
+  return (props, ctx) => {
+    const node: unknown = fn(props, ctx);
     if (!(node instanceof Node)) throw new Error("fixture: component did not return a Node");
     return node;
   };
@@ -135,13 +136,14 @@ describe("k.owner: a served page of two islands resumed with a real ctx", () => 
 
 describe("k.owner: the generated resume entry makes the page ctx with no `signal`", () => {
   const Data = s.object({ title: s.string() });
-  const pageLoader = loader({ output: Data }, () => Promise.resolve(ok({ title: "T" })));
+  const ownContract = contract("own", { "own.page": { path: "/p" } });
+  const pageLoader = loader(ownContract, "own.page", { output: Data }, () => Promise.resolve(ok({ title: "T" })));
 
   async function entrySource(): Promise<string> {
     const app = await createApp({
       topology: topology({ web: { modules: ["own"], adapter: "node" } }),
-      routes: manifest({
-        "own.page": { path: "/p", component: compileIsland("own.page", probe("b")), loader: pageLoader },
+      routes: manifest(ownContract, {
+        "own.page": { component: compileIsland("own.page", probe("b")), loader: pageLoader },
       }),
       ctx: createCtx({ mode: "sim", seed: SEED }),
       mode: "production",

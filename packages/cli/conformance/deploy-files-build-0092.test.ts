@@ -10,9 +10,11 @@ import { SEED, diags, keel, materialize } from "./compat-support.ts";
 const SLOW = 300_000;
 
 const manifestSrc = (id: string): string =>
-  `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [], routes: [] } })\n`;
+  `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [] } })\n`;
 const routesSrc = (id: string, path: string): string =>
-  `import { manifest } from '@keel/router'\nimport Page from './Page.tsx'\nexport const routes = manifest({ '${id}.page': { path: '${path}', component: Page } })\n`;
+  `import { manifest } from '@keel/router'\nimport { ${id} } from './${id}.contract.ts'\nimport Page from './Page.tsx'\nexport const routes = manifest(${id}, { '${id}.page': { component: Page } })\n`;
+const contractSrc = (id: string, path: string): string =>
+  `import { contract } from '@keel/router/contract'\nexport const ${id} = contract('${id}', { '${id}.page': { path: '${path}' } })\n`;
 const pageSrc =
   "import { Box, Text } from '@keel/ui'\nexport default function Page() {\n  return (\n    <Box as=\"main\">\n      <Text>page</Text>\n    </Box>\n  )\n}\n";
 const topologySrc = (bIn: "x" | "y"): string =>
@@ -34,15 +36,19 @@ const files = (bIn: "x" | "y"): Record<string, string> => ({
   "modules/a/module.ts": manifestSrc("a"),
   "modules/a/Page.tsx": pageSrc,
   "modules/a/routes.ts": routesSrc("a", "/a"),
+  "modules/a/a.contract.ts": contractSrc("a", "/a"),
   "modules/b/module.ts": manifestSrc("b"),
   "modules/b/Page.tsx": pageSrc,
   "modules/b/routes.ts": routesSrc("b", "/b"),
+  "modules/b/b.contract.ts": contractSrc("b", "/b"),
   "modules/c/module.ts": manifestSrc("c"),
   "modules/c/Page.tsx": pageSrc,
   "modules/c/routes.ts": routesSrc("c", "/"),
+  "modules/c/c.contract.ts": contractSrc("c", "/"),
   "modules/d/module.ts": manifestSrc("d"),
   "modules/d/Page.tsx": pageSrc,
   "modules/d/routes.ts": routesSrc("d", "/d"),
+  "modules/d/d.contract.ts": contractSrc("d", "/d"),
 });
 
 let dir = "";

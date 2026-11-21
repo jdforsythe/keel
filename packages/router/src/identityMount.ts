@@ -1,34 +1,32 @@
 import { codedError } from "./internal/codedError.ts";
-import { mountLinks } from "./internal/mountLinks.ts";
-import { mountPaths } from "./internal/mountPaths.ts";
+import { identityMounts } from "./internal/identityMounts.ts";
 import type { IdentityMount } from "./types/IdentityMount.ts";
 import type { MountHref } from "./types/MountHref.ts";
 
-/** A root-relative path, never protocol-relative: what every accepted `href` result is. */
-const rooted = (s: string): s is MountHref => /^\/(?!\/)/.test(s);
+/** A root-relative path (`path` is validated, so never protocol-relative): what every accepted `href` result is. */
+const rooted = (s: string): s is MountHref => s.startsWith("/");
 /** `''` or `/`-led segments of `[A-Za-z0-9._~-]`, none `.` or `..`: a subpath `href` and `links` take. */
 const SUBPATH = /^(\/(?!\.\.?(\/|$))[\w.~-]+)*$/;
 
 /**
  * The identity mount at `path` (k.mount Declaration), which `identity.ts` default-exports and `identity.server.ts`
- * gives as `handle.path`. `href(subpath?, search?)` is `path`, `subpath`, then `?` and `search`'s keys sorted, keys
+ * gives as `handle.path`; a `path` that is not lowercase `/` segments throws E1580. `href(subpath?, search?)` is `path`, `subpath`, then `?` and `search`'s keys sorted, keys
  * and values `encodeURIComponent`-encoded (no `?` when empty). `subpath` is `''` or `/`-led segments of
  * `[A-Za-z0-9._~-]`, none `.` or `..`; anything else throws E1582. `options.links` (default `[]`) are subpaths of that
  * form, none `''` and none repeated, else E1584: a shell takes a return link to `path` plus one of them at any time
- * (k.links). A shell's router reads mount requests by `path` (k.return).
+ * (k.links). A shell's router reads mount requests by `path` (k.return): the mount its entry passes to `shellMount`.
  */
 export function identityMount<P extends string>(
   path: P,
   options: { readonly links?: readonly string[] } = {},
 ): IdentityMount<P> {
   const { links = [] } = options;
+  if (!/^(\/[a-z0-9-]+)+$/.test(path)) throw codedError("E1580", "path");
   links.forEach((sub, i) => {
     if (sub === "" || !SUBPATH.test(sub) || links.indexOf(sub) < i)
       throw codedError("E1584", `links ${JSON.stringify(sub)}`);
   });
-  mountPaths.add(path);
-  for (const sub of links) mountLinks.add(path + sub);
-  return {
+  const mount: IdentityMount<P> = {
     path,
     links,
     href(sub = "", search = {}) {
@@ -42,4 +40,6 @@ export function identityMount<P extends string>(
       throw codedError("E1582", `href subpath ${JSON.stringify(sub)}`);
     },
   };
+  identityMounts.add(mount);
+  return mount;
 }

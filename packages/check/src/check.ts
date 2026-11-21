@@ -9,6 +9,7 @@ import { apiWithoutServer } from "./internal/apiWithoutServer.ts";
 import { artifactDir } from "./internal/artifactDir.ts";
 import { budgetBreaches } from "./internal/budgetBreaches.ts";
 import { compatChecks } from "./internal/compat/compatChecks.ts";
+import { contractChecks } from "./internal/contractChecks.ts";
 import { duplicateErrorCodes } from "./internal/duplicateErrorCodes.ts";
 import { generatedEdits } from "./internal/generatedEdits.ts";
 import { guardRedirectLoops } from "./internal/guardRedirectLoops.ts";
@@ -16,7 +17,6 @@ import { isCodePath } from "./internal/isCodePath.ts";
 import { moduleChecks } from "./internal/modules/moduleChecks.ts";
 import { normalize } from "./internal/normalize.ts";
 import { parseFile } from "./internal/parseFile.ts";
-import { prefixCollisions } from "./internal/prefixCollisions.ts";
 import { ruleCodeDeclarations } from "./internal/ruleCodeDeclarations.ts";
 import { runRules } from "./internal/runRules.ts";
 import { summarize } from "./internal/summarize.ts";
@@ -50,7 +50,7 @@ function compatTopology(dir: string, all: readonly SourceFile[], opts: CheckOpti
  * What E1005 compares each checked `.keel/` dir's artifacts with, keyed by the dir of the project holding it (`""` for
  * the root, else `apps/a/`): the hashes the compiler derives from the sources under that dir in `opts.project`
  * (default `files`), paths made relative to it, with its own `topology.ts` (rfc:0050, rfc:0055), and, when
- * `routes.json` is evaluated, the literals of its `routes.ts` (rfc:0059). One compile per project with a checked
+ * `routes.json` is evaluated, the literals of its contracts and bindings. One compile per project with a checked
  * artifact; nothing the caller passes replaces the derivation (backlog 0143).
  */
 function expectedHashes(files: readonly SourceFile[], opts: CheckOptions): ReadonlyMap<string, Expected> {
@@ -81,7 +81,8 @@ function expectedHashes(files: readonly SourceFile[], opts: CheckOptions): Reado
  * diagnostics passed through unchanged, one compile per project (`projectDirs`: paths relative to it, its own
  * `topology.ts`; rfc:0059), (3) the rule registry on each file plus project passes (E1005
  * against the hashes the compiler derives from each artifact's project, W1005, E1454, E1508, E1511, E1566, E1580-E1582, E1584, E1753, E1755, the k.module pass
- * E1151-E1157, and the k.compat pass E1561-E1562 over `.keel/surface.json`), (4) dedupe and sort. Static only: no app code is evaluated (rendered a11y is `keel test`, rfc:0023). Pure and deterministic for equal inputs.
+ * E1151-E1158, the contract passes (E1155, E1502-E1504, E1509, E1513, E1514), and the k.compat pass E1562, E1563,
+ * W1564, W1568 over `.keel/surface.json`), (4) dedupe and sort. Static only: no app code is evaluated (rendered a11y is `keel test`, rfc:0023). Pure and deterministic for equal inputs.
  */
 export function check(files: readonly SourceFile[], opts: CheckOptions = {}): CheckResult {
   const code = files.filter((f) => isCodePath(f.path));
@@ -151,7 +152,7 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
     ...duplicateErrorCodes(checked),
     ...moduleChecks(checked),
     ...guardRedirectLoops(checked),
-    ...prefixCollisions(checked),
+    ...contractChecks(checked, all, opts.topology),
     ...ruleCodeDeclarations(checked),
     ...budgetBreaches(opts.budgets ?? []),
     ...generatedEdits(files, expectedHashes(files, opts), opts.project ?? files),

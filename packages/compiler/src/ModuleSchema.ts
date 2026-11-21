@@ -6,7 +6,7 @@ const shape = s.object({
   id: s.string({ min: 1, max: 60 }),
   deps: s.array(s.string({ min: 1 })),
   capabilities: s.array(s.string({ min: 1 })),
-  public: s.object({ exports: s.array(s.string({ min: 1 })), routes: s.array(s.string({ min: 1 })) }),
+  public: s.object({ exports: s.array(s.string({ min: 1 })) }, { closed: true }),
   std: s.record(s.json()).optional(),
   clientPii: s
     .array(s.enum(["name", "contact", "location", "identifier", "financial", "special", "network", "content"]))
@@ -25,7 +25,8 @@ function lowerCamel(r: Result<Manifest, SchemaError>): Result<Manifest, SchemaEr
 
 /**
  * Schema of a module manifest (k.module): `id` (lowerCamel, equals the folder name), `deps` (app module ids or
- * stdlib package names), `capabilities` (ctx capability names), the `public` surface (export names, route ids), and
+ * stdlib package names), `capabilities` (ctx capability names), the `public` surface (a closed
+ * object of export names only: a module's public routes are its contract's entries, k.contract), and
  * optional `std` config per stdlib package (JSON values, checked against each package's schema by E1158), and optional
  * `clientPii`, the `.pii()` classes its client-reachable stores may hold (k.leave Snapshots, E1107).
  * App and stdlib manifests use this one schema.

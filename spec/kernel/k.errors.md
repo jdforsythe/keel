@@ -1,7 +1,7 @@
 # k.errors: Results and boundaries
 status: conformance-covered
 
-**Split.** Expected failures (invalid input, not found, denied, conflict, network) are values: `Result`. Unexpected failures (bugs, broken invariants, throwing libraries) are exceptions caught by the nearest `<Boundary>`. No third way.
+**Split.** Expected failures (invalid input, not found, denied, conflict, network) are values: `Result`. Unexpected failures (bugs, broken invariants, throwing libraries) are exceptions caught by the nearest `<Boundary>`.
 
 **API.**
 ```ts
@@ -12,9 +12,9 @@ function close(o: Order): Result<Order, s.infer<typeof OrderLocked>> {
 }
 const r = close(order)
 if (r.ok) use(r.value); else show(r.error.code)
-const parsed = await attempt(() => lib.parse(text)) // Result<T, KeelError<'keel.unexpected'>>
+const parsed = await attempt(() => lib.parse(text))
 ```
-- `Result<T, E>` is `{ ok: true, value: T } | { ok: false, error: E }`. `ok` and `err` are its only constructors; no `map` or `unwrap`: narrow on `r.ok`. `s.result(T, E)` is its schema (codec for loaders, actions, services).
+- `Result<T, E>`'s only constructors are `ok` and `err`; no `map` or `unwrap`: narrow on `r.ok`. `s.result(T, E)` is its schema (codec for loaders, actions, services).
 - `KeelError<C, D>` is a serializable `{ code: C, message: string, data: D }`. `code` is a dotted string literal; app codes start with the module id (E1155). `s.error(code, data)` declares one; `.make(data, message?)` builds one (message defaults to the code).
 - Kernel codes: `keel.unexpected`, `keel.notFound`, `keel.denied`, `keel.fields` (k.forms), `keel.payloadTooLarge`, `keel.conflict`, `keel.unreachable` and `keel.busy` (k.server), `schema.invalid` (`SchemaError`, data `{ issues: { path, rule }[] }`), `api.*` (k.services). KeelError codes are data, E-codes diagnostics; they never share a namespace.
 - `attempt(fn)` is the only sanctioned catch: it runs `fn` (sync or async) and returns `err` with `keel.unexpected` if it throws or rejects. It never throws.
@@ -25,7 +25,7 @@ const parsed = await attempt(() => lib.parse(text)) // Result<T, KeelError<'keel
   <OrderPanel id={id} />
 </Boundary>
 ```
-`Boundary` (from `@keel/runtime-dom`) catches throws from render, `computed`, `effect`, and event handlers (including rejections of promises they return) in its subtree. The nearest boundary wins. On catch the subtree's scope is disposed and `fallback` renders with a `KeelError<'keel.unexpected'>` whose `data.at` is the element id where the throw surfaced; `reset()` re-renders the children in a fresh scope. Every route is a boundary whose fallback is its `errorElement`; the app root has a default one, for a `mount` tree and for each island `resume` resumes: it catches what any Boundary catches, reports the error to the ctx (k.ctx `error`) and renders `<pre data-k-error="<at>">` holding `keel.unexpected` (`mode: 'dev'`: the message) in place of that tree or island (a throw while `resume` claims an island is a mismatch, k.runtime E1253). A throw at no element of its own (the root component's own `effect`, `computed` or render) has `data.at` the `data-k` at the root's place (the `mount` element, the island's parent), else `""`. A handler's throw has `data.at` an id the compiler wrote: the id `on` registered it under, else the `data-k` of its element or of the nearest ancestor with a non-empty one (the compiler stamps a bound template element's id, and a bound k.ui base element's literal `id`), else `""`; an `id` set at runtime never is, and the `attr` op never sets `data-k`. A `resource` fetcher failure is its `error` state, not a throw (k.reactive). A transaction that throws leaves state and log unchanged.
+`Boundary` (from `@keel/runtime-dom`) catches throws from render, `computed`, `effect`, and event handlers (including rejections of promises they return) in its subtree. The nearest boundary wins. On catch the subtree's scope is disposed and `fallback` renders with a `CaughtError`: `KeelError<'keel.unexpected'>` for any throw, or `schema.invalid` (`data.issues` too) for a host element's value or `emit` detail that fails its schema (k.host-element, k.host-code); `data.at` of either is the element id where the throw surfaced; `reset()` re-renders the children in a fresh scope. Every route is a boundary whose fallback is its `errorElement`; the app root has a default one, for a `mount` tree and for each island `resume` resumes: it catches what any Boundary catches, reports the error to the ctx (k.ctx `error`) and renders `<pre data-k-error="<at>">` holding `keel.unexpected` (`mode: 'dev'`: the message) in place of that tree or island (a throw while `resume` claims an island is a mismatch, k.runtime E1253). A throw at no element of its own (the root component's own `effect`, `computed` or render) has `data.at` the `data-k` at the root's place (the `mount` element, the island's parent), else `""`. A handler's throw has `data.at` an id the compiler wrote: the id `on` registered it under, else the `data-k` of its element or of the nearest ancestor with a non-empty one (the compiler stamps a bound template element's id, and a bound k.ui base element's literal `id`), else `""`; an `id` set at runtime never is, and the `attr` op never sets `data-k`. A `resource` fetcher failure is its `error` state, not a throw (k.reactive).
 
 **Rules.** E1451 `throw` in app code (fix: `return err(...)`) · E1452 `try`/`catch` or `.catch()` in app code (fix: `attempt`) · E1453 a `Result` or `Promise<Result>` discarded as an expression statement · E1454 two `s.error` declarations with the same code.
 

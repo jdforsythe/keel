@@ -5,7 +5,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { stdArtifact } from "@keel/compiler";
 import { createCtx } from "@keel/ctx";
-import { manifest } from "@keel/router";
+import { manifest, routeTable } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { createApp, topology } from "@keel/server";
 import { channel } from "@keel/std-channels";
@@ -53,27 +54,48 @@ const moduleSource = (id: ModuleId, c: Cfg): { path: string; source: string } =>
   source: `import { module } from "@keel/compiler"\nexport default module({ id: "${id}", deps: ["@keel/std-channels"], capabilities: ["clock", "net", "observe"], std: { "@keel/std-channels": { ${given(c)} } } })\n`,
 });
 
-function routeOf(m: ModuleId) {
-  const ch = channel(`${m}.room`, { path: pathOf(m), params: s.object({}), message: Msg });
-  return channelRoute(ch, {
-    id: `${m}.room`,
+function tableA() {
+  const Params = s.object({});
+  const ch = channel("a.room", { path: pathOf("a"), params: Params, message: Msg });
+  const c = contract("a", {
+    "a.room": { method: "GET", path: "/api/a/events", query: Params, events: true, output: ch.events },
+    "a.publish": { method: "POST", path: "/api/a/events", query: Params, body: ch.body, output: s.object({}) },
+  });
+  const r = channelRoute(c, ch, {
+    id: "a.room",
+    publish: "a.publish",
     stores: () => {
-      const log = store(Counter, { n: 0 }, { id: `${m}.log` });
-      const bump = transaction(log, `${m}.bump`, Nothing, (st) => ({ n: st.n + 1 }));
+      const log = store(Counter, { n: 0 }, { id: "a.log" });
+      const bump = transaction(log, "a.bump", Nothing, (st) => ({ n: st.n + 1 }));
       return { log, bump };
     },
     member: () => true,
   });
+  return manifest(c, { "a.room": { loader: r.loader }, "a.publish": { action: r.action } });
+}
+
+function tableB() {
+  const Params = s.object({});
+  const ch = channel("b.room", { path: pathOf("b"), params: Params, message: Msg });
+  const c = contract("b", {
+    "b.room": { method: "GET", path: "/api/b/events", query: Params, events: true, output: ch.events },
+    "b.publish": { method: "POST", path: "/api/b/events", query: Params, body: ch.body, output: s.object({}) },
+  });
+  const r = channelRoute(c, ch, {
+    id: "b.room",
+    publish: "b.publish",
+    stores: () => {
+      const log = store(Counter, { n: 0 }, { id: "b.log" });
+      const bump = transaction(log, "b.bump", Nothing, (st) => ({ n: st.n + 1 }));
+      return { log, bump };
+    },
+    member: () => true,
+  });
+  return manifest(c, { "b.room": { loader: r.loader }, "b.publish": { action: r.action } });
 }
 
 export async function serveTwo(a: Cfg, b: Cfg): Promise<TwoModules> {
-  const ra = routeOf("a");
-  const rb = routeOf("b");
-  const routes = manifest({
-    "a.room": { api: true, path: ra.path, loader: ra.loader },
-    "b.room": { api: true, path: rb.path, loader: rb.loader },
-  });
-  routes.actions({ "a.room": ra.actions, "b.room": rb.actions });
+  const routes = routeTable(tableA(), tableB());
   const dir = mkdtempSync(join(tmpdir(), "keel-channels2-"));
   const std = join(dir, "std.json");
   const { data, hash } = stdArtifact([moduleSource("a", a), moduleSource("b", b)]);

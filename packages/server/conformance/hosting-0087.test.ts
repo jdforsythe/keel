@@ -1,15 +1,17 @@
 // @vitest-environment happy-dom
 // Spec: k.hosting, clause "`keel build` of a fixture with a `client` deployable `web` writes `dist/web/index.html` and hashed files under `dist/web/assets/`; no file in it holds a URL that is neither root-absolute nor absolute."
-// Spec: k.hosting, clause "With `KEEL_PEER_API=https://api.test` the built `index.html` has one `keel-peer` tag for `api`, and a `service({ module })` call from the client entry under a sim ctx fetches `https://api.test` plus the path with credentials included; unset, the call goes to the document's origin; `KEEL_PEER_API=nope` fails the build with one E1565 naming the key."
+// Spec: k.hosting, clause "With `KEEL_PEER_API=https://api.test` the built `index.html` has one `keel-peer` tag for `api`, and a `service({ contract })` call from the client entry under a sim ctx fetches `https://api.test` plus the path with credentials included; unset, the call goes to the document's origin; `KEEL_PEER_API=nope` fails the build with one E1565 naming the key."
 // Spec: k.hosting, clause "With `allow: ['https://app.test']`: a preflight from that origin to an API route is 204 with the six headers; a POST from it runs the action and carries the two response headers; the same requests from `https://other.test` are 405 and 403; a preflight to a page is 405."
 // Spec: k.hosting, clause "`KEEL_ALLOW_ORIGINS=*` exits 1 with one E1560 naming the key."
 // Spec: k.hosting, clause "A request from an allowed origin with `sec-fetch-site: cross-site` logs W1567 once for that origin."
-// Spec: k.hosting, clause "With `host: 'api'`, `node dist/api/server.mjs` answers `GET /` and `GET /no/such/page` with the client `index.html`, an unmatched runtime GET with 404, and a client asset as `immutable`; `host` naming a `client` deployable is E1566."
+// Spec: k.hosting, clause "With `servedBy: 'api'`, `node dist/api/server.mjs` answers `GET /` and `GET /no/such/page` with the client `index.html`, an unmatched runtime GET with 404, and a client asset as `immutable`; `servedBy` naming a `client` deployable is E1566."
+// Spec: k.hosting, clause "A deployable with `host: 'api'` is one E1552 naming `host` (k.topology); `topology()` throws E1552 for it."
+// Spec: k.topology Rules "A deployable key the Declaration omits is E1552 too."
 // Spec: k.hosting Rules E1565, E1566, W1567
 // Seed 1337.
-// ASSUMPTIONS: `createApp({ allow: string[] })`; `topology({ <name>: { host } })`; `KEEL_ALLOW_ORIGINS` is read by the built `server.mjs`;
-// the client artifact copy lands at `dist/<host>/index.html` and `dist/<host>/assets/`; the W1567 diag is a JSON log line with kind "diag" (dev mode sink).
-// The `service({ module })` binding of the `keel-peer` tags is observed in packages/cli/conformance/hosting-peer-binding.test.ts.
+// ASSUMPTIONS: `createApp({ allow: string[] })`; `topology({ <name>: { servedBy } })`; `KEEL_ALLOW_ORIGINS` is read by the built `server.mjs`;
+// the client artifact copy lands at `dist/<servedBy>/index.html` and `dist/<servedBy>/assets/`; the W1567 diag is a JSON log line with kind "diag" (dev mode sink).
+// The `service({ contract })` binding of the `keel-peer` tags is observed in packages/cli/conformance/hosting-peer-binding.test.ts.
 import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import http from "node:http";
@@ -17,7 +19,8 @@ import net from "node:net";
 import os from "node:os";
 import path from "node:path";
 import { topology } from "@keel/server";
-import { action, guard, loader, manifest } from "@keel/router";
+import { action, guard, loader, manifest, routeTable } from "@keel/router";
+import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import fc from "fast-check";
 import { afterAll, describe, expect, test } from "vitest";
@@ -91,27 +94,37 @@ function buildFixture(topologyArg: string, env: Record<string, string> = {}): Bu
   write(
     root,
     "modules/app/module.ts",
-    'import { module } from "@keel/compiler";\nexport default module({ id: "app", deps: [], capabilities: [], public: { exports: [], routes: [] } });\n',
+    'import { module } from "@keel/compiler";\nexport default module({ id: "app", deps: [], capabilities: [], public: { exports: [] } });\n',
   );
   write(
     root,
     "modules/app/routes.ts",
-    'import { manifest } from "@keel/router";\nimport Counter from "./Counter.tsx";\nexport const routes = manifest({ "app.home": { path: "/", component: Counter } });\n',
+    'import { manifest } from "@keel/router";\nimport { app } from "./app.contract.ts";\nimport Counter from "./Counter.tsx";\nexport const routes = manifest(app, { "app.home": { component: Counter } });\n',
+  );
+  write(
+    root,
+    "modules/app/app.contract.ts",
+    'import { contract } from "@keel/router/contract";\nexport const app = contract("app", { "app.home": { path: "/" } });\n',
   );
   write(
     root,
     "modules/api/module.ts",
-    'import { module } from "@keel/compiler";\nexport default module({ id: "api", deps: [], capabilities: [], public: { exports: [], routes: [] } });\n',
+    'import { module } from "@keel/compiler";\nexport default module({ id: "api", deps: [], capabilities: [], public: { exports: [] } });\n',
   );
   write(
     root,
     "modules/api/routes.ts",
-    'import { manifest } from "@keel/router";\nimport { ping } from "./ping.server.ts";\nexport const routes = manifest({ "api.ping": { api: true, path: "/api/ping", loader: ping } });\n',
+    'import { manifest } from "@keel/router";\nimport { api } from "./api.contract.ts";\nimport { ping } from "./ping.server.ts";\nexport const routes = manifest(api, { "api.ping": { loader: ping } });\n',
+  );
+  write(
+    root,
+    "modules/api/api.contract.ts",
+    'import { contract } from "@keel/router/contract";\nimport { s } from "@keel/schema";\nexport const api = contract("api", { "api.ping": { method: "GET", path: "/api/ping", output: s.object({ n: s.int() }) } });\n',
   );
   write(
     root,
     "modules/api/ping.server.ts",
-    'import { loader } from "@keel/router";\nimport { ok, s } from "@keel/schema";\nexport const ping = loader({ output: s.object({ n: s.int() }) }, async () => ok({ n: 1 }));\n',
+    'import { loader } from "@keel/router";\nimport { ok } from "@keel/schema";\nimport { api } from "./api.contract.ts";\nexport const ping = loader(api, "api.ping", {}, async () => ok({ n: 1 }));\n',
   );
   const r = spawnSync(process.execPath, [path.join(REPO, "packages", "cli", "src", "bin.ts"), "build"], {
     cwd: root,
@@ -189,11 +202,16 @@ const allowGuard = guard({}, async () => {
   count.guard++;
   return ok(null);
 });
-const read = loader({ output: Out }, async () => {
+const opsContract = contract("ops", { "ops.home": { path: "/" } });
+const apiContract = contract("api", {
+  "api.getLists": { method: "GET", path: "/api/lists", output: Out },
+  "api.postLists": { method: "POST", path: "/api/lists", body: s.object({ note: s.string() }), output: s.object({}) },
+});
+const read = loader(apiContract, "api.getLists", {}, async () => {
   count.loader++;
   return ok({ n: 7 });
 });
-const write2 = action({ input: s.object({ note: s.string() }), output: s.object({}) }, async () => {
+const write2 = action(apiContract, "api.postLists", {}, async () => {
   count.action++;
   return ok({});
 });
@@ -202,11 +220,13 @@ const topo = topology({ web: { modules: ["api", "ops"], adapter: "node" } });
 const ALLOWED = "https://app.test";
 
 async function boot(extra: Record<string, unknown> = {}) {
-  const routes = manifest({
-    "ops.home": { path: "/", component: page },
-    "api.lists": { api: true, path: "/api/lists", loader: read, guard: allowGuard },
-  });
-  routes.actions({ "api.lists": { POST: write2 } });
+  const routes = routeTable(
+    manifest(opsContract, { "ops.home": { component: page } }),
+    manifest(apiContract, {
+      "api.getLists": { loader: read, guard: allowGuard },
+      "api.postLists": { action: write2, guard: allowGuard },
+    }),
+  );
   return createAppLoose({ topology: topo, routes, ctx: simCtx(), mode: "production", allow: [ALLOWED], ...extra });
 }
 const reset = (): void => {
@@ -248,7 +268,7 @@ describe("k.hosting", () => {
     }
   }, 180_000);
 
-  test("E1565 / With `KEEL_PEER_API=https://api.test` the built `index.html` has one `keel-peer` tag for `api`; `service({ module })` binding (packages/cli/conformance/hosting-peer-binding.test.ts); `KEEL_PEER_API=nope` fails the build with one E1565 naming the key.", () => {
+  test("E1565 / With `KEEL_PEER_API=https://api.test` the built `index.html` has one `keel-peer` tag for `api`; `service({ contract })` binding (packages/cli/conformance/hosting-peer-binding.test.ts); `KEEL_PEER_API=nope` fails the build with one E1565 naming the key.", () => {
     const set = buildFixture(WEB_AND_API, { KEEL_PEER_API: "https://api.test" });
     expect(set.status).toBe(0);
     const html = fs.readFileSync(path.join(set.root, "dist", "web", "index.html"), "utf8");
@@ -384,9 +404,9 @@ describe("k.hosting", () => {
     expect(w1567().filter((l) => l.includes(second))).toHaveLength(1);
   });
 
-  test("With `host: 'api'`, `node dist/api/server.mjs` answers `GET /` and `GET /no/such/page` with the client `index.html`, an unmatched runtime GET with 404, and a client asset as `immutable`; `host` naming a `client` deployable is E1566.", async () => {
+  test("With `servedBy: 'api'`, `node dist/api/server.mjs` answers `GET /` and `GET /no/such/page` with the client `index.html`, an unmatched runtime GET with 404, and a client asset as `immutable`; `servedBy` naming a `client` deployable is E1566.", async () => {
     const b = buildFixture(
-      `{ api: { modules: ["api"], adapter: "node" }, web: { modules: ["app"], adapter: "client", host: "api" } }`,
+      `{ api: { modules: ["api"], adapter: "node" }, web: { modules: ["app"], adapter: "client", servedBy: "api" } }`,
     );
     expect(b.status).toBe(0);
     const index = fs.readFileSync(path.join(b.root, "dist", "web", "index.html"), "utf8");
@@ -411,17 +431,17 @@ describe("k.hosting", () => {
     });
 
     const onClient = buildFixture(
-      `{ api: { modules: ["api"], adapter: "node" }, web: { modules: ["app"], adapter: "client", host: "web" } }`,
+      `{ api: { modules: ["api"], adapter: "node" }, web: { modules: ["app"], adapter: "client", servedBy: "web" } }`,
     );
     expect(onClient.status).not.toBe(0);
     expect(onClient.out).toContain("E1566");
   }, 300_000);
 
-  test("E1566 `host` on a deployable that is not `client`, naming an unknown or non-`node` deployable, or two `client` deployables naming one host.", () => {
+  test("E1566 `servedBy` on a deployable that is not `client`, naming an unknown or non-`node` deployable, or two `client` deployables naming one.", () => {
     const bad = [
-      `{ api: { modules: ["api"], adapter: "node", host: "api" }, web: { modules: ["app"], adapter: "client" } }`,
-      `{ api: { modules: ["api"], adapter: "node" }, web: { modules: ["app"], adapter: "client", host: "nowhere" } }`,
-      `{ api: { modules: ["api"], adapter: "node" }, pre: { modules: ["app"], adapter: "static" }, web: { modules: [], adapter: "client", host: "pre" } }`,
+      `{ api: { modules: ["api"], adapter: "node", servedBy: "api" }, web: { modules: ["app"], adapter: "client" } }`,
+      `{ api: { modules: ["api"], adapter: "node" }, web: { modules: ["app"], adapter: "client", servedBy: "nowhere" } }`,
+      `{ api: { modules: ["api"], adapter: "node" }, pre: { modules: ["app"], adapter: "static" }, web: { modules: [], adapter: "client", servedBy: "pre" } }`,
     ];
     for (const t of bad) {
       const b = buildFixture(t);
@@ -429,6 +449,39 @@ describe("k.hosting", () => {
       expect(b.out, t).toContain("E1566");
     }
   }, 300_000);
+
+  test("A deployable with `host: 'api'` is one E1552 naming `host`; `topology()` throws E1552 for it.", () => {
+    const leftover = `{ api: { modules: ["api"], adapter: "node" }, web: { modules: ["app"], adapter: "client", host: "api" } }`;
+    const b = buildFixture(leftover);
+    expect(b.status).not.toBe(0);
+    expect(b.out.match(/E1552/g)?.length).toBe(1);
+    expect(b.out).toContain("host");
+    expect(fs.existsSync(path.join(b.root, "dist"))).toBe(false);
+    const declared = {
+      api: { modules: ["api"], adapter: "node" },
+      web: { modules: ["app"], adapter: "client", host: "api" },
+    };
+    // Reflect.apply: the declaration is deliberately outside `topology`'s parameter type.
+    expect(() => Reflect.apply(topology, undefined, [declared])).toThrow(/^E1552/);
+  }, 300_000);
+
+  test("A deployable key the Declaration omits is E1552 too: `topology()` with a key but `modules`, `adapter`, `servedBy`, `storage`, `shells`, `caller`, `origins` throws a message starting E1552.", () => {
+    // Seed 1337 (SEED, fixtures.ts).
+    const known = new Set(["modules", "adapter", "servedBy", "storage", "shells", "caller", "origins"]);
+    fc.assert(
+      fc.property(
+        fc.stringMatching(/^[a-z]{1,10}$/).filter((k) => !known.has(k)),
+        fc.constantFrom("node", "static", "client"),
+        (key, adapter) => {
+          const web = { modules: ["app"], adapter, [key]: "api" };
+          expect(() =>
+            Reflect.apply(topology, undefined, [{ api: { modules: ["api"], adapter: "node" }, web }]),
+          ).toThrow(/^E1552/);
+        },
+      ),
+      { seed: SEED, numRuns: 25 },
+    );
+  });
 
   test("W1567 an allowed origin that is cross-site to the server: the caller cookie cannot reach it; use one registrable domain or one origin.", async () => {
     const lines: string[] = [];

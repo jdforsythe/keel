@@ -28,7 +28,6 @@ const mount = () => {
             selected.push(k);
           },
         },
-        undefined,
         c,
       ),
     ),
@@ -134,7 +133,6 @@ describe("std.options: Menu keys", () => {
               selected.push(k);
             },
           },
-          undefined,
           c,
         ),
       ),

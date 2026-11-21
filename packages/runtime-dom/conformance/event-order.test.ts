@@ -1,3 +1,4 @@
+import { createCtx } from "@keel/ctx";
 import { mount } from "@keel/runtime-dom";
 import { clone, on, template } from "@keel/runtime-dom/ops";
 // @vitest-environment happy-dom
@@ -6,6 +7,8 @@ import { clone, on, template } from "@keel/runtime-dom/ops";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { SEED, click } from "./fixtures.ts";
+
+const simCtx = createCtx({ mode: "sim", seed: 1337 });
 
 const chain = (depth: number): string => {
   let html = `<i id="n${depth - 1}"></i>`;
@@ -18,16 +21,20 @@ const run = (depth: number, stopAt: number | null): string[] => {
   const log: string[] = [];
   const el = document.createElement("div");
   const T = template(`<div>${chain(depth)}</div>`);
-  const dispose = mount(() => {
-    const r = clone(T);
-    for (let i = 0; i < depth; i++) {
-      on(`n${i}`, "click", (e: Event) => {
-        log.push(`n${i}`);
-        if (stopAt === i) e.stopPropagation();
-      });
-    }
-    return r;
-  }, el);
+  const dispose = mount(
+    () => {
+      const r = clone(T);
+      for (let i = 0; i < depth; i++) {
+        on(`n${i}`, "click", (e: Event) => {
+          log.push(`n${i}`);
+          if (stopAt === i) e.stopPropagation();
+        });
+      }
+      return r;
+    },
+    el,
+    { ctx: simCtx },
+  );
   const target = el.querySelector(`#n${depth - 1}`);
   if (target === null) throw new Error("no target");
   click(target);

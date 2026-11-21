@@ -9,7 +9,7 @@ export type ModuleDef = {
   readonly id: string;
   readonly deps: readonly string[];
   readonly capabilities: readonly string[];
-  readonly public: { readonly exports: readonly string[]; readonly routes: readonly string[] };
+  readonly public: { readonly exports: readonly string[] };
   readonly std?: Readonly<Record<string, JsonValue>>;
   readonly clientPii?: readonly PiiClass[];
 };

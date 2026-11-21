@@ -19,14 +19,26 @@ export default function Counter() {
   return <Box><Button id="c.inc" onClick={() => n.set(n.get() + 1)}>+</Button><Text id="c.out">{n.get()}</Text></Box>
 }
 `;
+const CONTRACT_FILE = `import { contract } from "@keel/router/contract";
+export const a = contract("a", {
+  "a.home": { path: "/" },
+  "a.show": { path: "/a" },
+});
+`;
 const SERVER_FILE = `import { loader } from "@keel/router";
 import { s } from "@keel/schema";
-export const a = loader({ output: s.object({}) }, () => Promise.reject(new Error("boom")));
+import { a as aContract } from "./a.contract.ts";
+
+export const a = loader(aContract, "a.show", { output: s.object({}) }, () => Promise.reject(new Error("boom")));
 `;
 const ROUTES = `import { manifest } from "@keel/router";
 import Counter from "./Counter.tsx";
 import { a } from "./a.server.ts";
-export const routes = manifest({ "a.home": { path: "/", component: Counter }, "a.show": { path: "/a", loader: a, component: Counter } });
+import { a as aContract } from "./a.contract.ts";
+export const routes = manifest(aContract, {
+  "a.home": { component: Counter },
+  "a.show": { loader: a, component: Counter },
+});
 `;
 
 function write(root: string, rel: string, content: string): void {
@@ -72,11 +84,12 @@ function buildFixture(): string {
     }),
   );
   write(fixture, "modules/a/Counter.tsx", COUNTER);
+  write(fixture, "modules/a/a.contract.ts", CONTRACT_FILE);
   write(fixture, "modules/a/a.server.ts", SERVER_FILE);
   write(
     fixture,
     "modules/a/module.ts",
-    'import { module } from "@keel/compiler";\nexport default module({ id: "a", deps: [], capabilities: [], public: { exports: [], routes: [] } });\n',
+    'import { module } from "@keel/compiler";\nexport default module({ id: "a", deps: [], capabilities: [], public: { exports: [] } });\n',
   );
   write(fixture, "modules/a/routes.ts", ROUTES);
   const r = spawnSync(process.execPath, [path.join(REPO, "packages", "cli", "src", "bin.ts"), "build"], {

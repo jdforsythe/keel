@@ -1,7 +1,7 @@
 import type { TestEvent } from "../types/TestEvent.ts";
 
 /** The DOM event `fire` dispatches for `event`; `input` writes `value` to the element first; `mod` is `ctrlKey`. */
-export function eventFor(el: Element, event: Exclude<TestEvent, { type: "focus" | "blur" }>): Event {
+export function eventFor(el: Element, event: Exclude<TestEvent, { type: "focus" | "blur" | "emit" }>): Event {
   switch (event.type) {
     case "click":
       return new MouseEvent("click", { bubbles: true, cancelable: true, button: 0 });

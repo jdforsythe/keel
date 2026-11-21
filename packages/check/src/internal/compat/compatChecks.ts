@@ -4,76 +4,53 @@ import type { Diagnostic } from "../../types/Diagnostic.ts";
 import type { SourceFile } from "../../types/SourceFile.ts";
 import { clip } from "../clip.ts";
 import { lineCol } from "../lineCol.ts";
-import { short } from "../modules/short.ts";
 import { unifiedDiff } from "../unifiedDiff.ts";
 import type { Refusal } from "./Refusal.ts";
 import type { Spot } from "./Spot.ts";
 import type { Surface } from "./Surface.ts";
-import type { SurfaceEndpoint } from "./SurfaceEndpoint.ts";
-import type { SurfaceRoute } from "./SurfaceRoute.ts";
-import type { SurfaceService } from "./SurfaceService.ts";
+import type { SurfaceEntry } from "./SurfaceEntry.ts";
 import { accepts } from "./accepts.ts";
-import { endpointAt } from "./endpointAt.ts";
+import { entrySchemaAt } from "./entrySchemaAt.ts";
 import { fieldAt } from "./fieldAt.ts";
 import { isRecord } from "./isRecord.ts";
-import { keyAt } from "./keyAt.ts";
 import { readSurface } from "./readSurface.ts";
-import { routeFor } from "./routeFor.ts";
-import { routeSchemaAt } from "./routeSchemaAt.ts";
 import { staleSource } from "./staleSource.ts";
 import { storeSchemaAt } from "./storeSchemaAt.ts";
 
 const SURFACE = /^((?:.*\/)?)\.keel\/surface\.json$/;
-/** What an endpoint without `params`/`query`/`body` sends: nothing (an empty JSON body decodes as `{}`, k.server). */
+/** What an entry without `params`/`query`/`body` is sent: nothing (an empty JSON body decodes as `{}`, k.server). */
 const EMPTY = { type: "object", properties: {}, required: [], additionalProperties: false };
-/** Every route's error answer (k.compat Surface): a public KeelError `{ code, message, data }`. */
-const ERROR_ANSWER = {
-  type: "object",
-  properties: { code: { type: "string" }, message: { type: "string" }, data: {} },
-  required: ["code", "data", "message"],
-  additionalProperties: false,
-};
+const REQUEST = ["params", "query", "body"] as const;
 
-type Part = "params" | "search" | "input" | "output";
 type Found = {
-  readonly part: Part;
-  readonly label: string;
+  readonly part: string;
+  readonly request: boolean;
   readonly refusal: Refusal;
   readonly a: unknown;
   readonly b: unknown;
 };
-const SENT: Readonly<Record<Part, string>> = { params: "params", search: "query", input: "body", output: "output" };
 
 const show = (path: readonly string[]): string => (path.length === 0 ? "(root)" : path.join("."));
 
-/** The first part of a request `e` sends that route `r` refuses (params, search, then the action input). */
-function request(r: SurfaceRoute, e: SurfaceEndpoint): Found | null {
-  const action = r.actions.get(e.method);
-  const parts: [Part, unknown, unknown][] = [
-    ["params", r.params, e.params],
-    ["search", r.search, e.query],
-    ...(action === undefined ? [] : [["input", action.input, e.body] satisfies [Part, unknown, unknown]]),
-  ];
-  for (const [part, a, b] of parts) {
-    const refusal = a === null ? null : accepts(a, b ?? EMPTY);
-    if (refusal !== null) return { part, label: part, refusal, a, b: b ?? EMPTY };
+/**
+ * The first part of entry `now` that refuses base entry `was`: a request part (`params`, `query`, `body`) of `now`
+ * that does not accept `was`'s, else `was`'s `output` or an `errors[status]` both declare that does not accept
+ * `now`'s.
+ */
+function refused(now: SurfaceEntry, was: SurfaceEntry): Found | null {
+  for (const part of REQUEST) {
+    const a = now[part];
+    const b = was[part] ?? EMPTY;
+    const refusal = a === null ? null : accepts(a, b);
+    if (refusal !== null) return { part, request: true, refusal, a, b };
   }
-  return null;
-}
-
-/** Route `r`'s answer to `e`'s method: the GET answer, else the action's. */
-const answerOf = (r: SurfaceRoute, e: SurfaceEndpoint): unknown => r.actions.get(e.method)?.answer ?? r.get;
-
-/** The first part of `e`'s `output` or `errors` that refuses route `r`'s answer. */
-function response(r: SurfaceRoute, e: SurfaceEndpoint, withErrors: boolean): Found | null {
-  const answer = answerOf(r, e);
-  const parts: [string, unknown, unknown][] = [
-    ["output", e.output, answer],
-    ...(withErrors ? [...e.errors].map(([s, x]): [string, unknown, unknown] => [`errors[${s}]`, x, ERROR_ANSWER]) : []),
+  const answers: [string, unknown, unknown][] = [
+    ["output", was.output, now.output],
+    ...[...was.errors].map(([s, x]): [string, unknown, unknown] => [`errors.${s}`, x, now.errors.get(s) ?? null]),
   ];
-  for (const [label, a, b] of parts) {
+  for (const [part, a, b] of answers) {
     const refusal = a === null || b === null ? null : accepts(a, b);
-    if (refusal !== null) return { part: "output", label, refusal, a, b };
+    if (refusal !== null) return { part, request: false, refusal, a, b };
   }
   return null;
 }
@@ -112,85 +89,67 @@ function diag(code: string, ctx: Ctx, spot: Spot | null, path: string, message: 
   return fix === undefined ? d : { ...d, fix };
 }
 
-/** E1561 for each endpoint of `s` (k.compat Endpoints): no route at its method and path, or a refused part. */
-function endpoints(surface: Surface, s: SurfaceService, ctx: Ctx): Diagnostic[] {
-  const file = ctx.project.find((f) => f.path === `${ctx.dir}${s.file}`);
-  return s.endpoints.flatMap((e) => {
-    const ep = `${short(s.caller)}.${short(e.name)}`;
-    const spot = file === undefined ? null : endpointAt(file, s.module, e.name, ctx.project);
-    const say = (m: string) => [diag("E1561", ctx, spot, `${ctx.dir}${s.file}`, m)];
-    const r = routeFor(surface.routes, s.module, e.method, e.path);
-    if (r === undefined)
-      return say(`${ep} calls ${e.method} ${clip(e.path, 24)}, which no route of ${short(s.module)} serves`);
-    const found = request(r, e) ?? response(r, e, true);
-    if (found === null) return [];
-    const { refusal, label } = found;
-    const field = show(refusal.path);
-    const producer = `${short(r.id)} ${found.part === "output" ? `${e.method} answer` : found.part}`;
-    if (found.part !== "output" && refusal.why === "missing")
-      return say(`${ep} ${SENT[found.part]} lacks ${field}, which ${producer} requires`);
-    if (found.part !== "output")
-      return say(`${ep} ${SENT[found.part]} ${field}: ${producer} refuses it (${refusal.why})`);
-    if (refusal.why === "missing") return say(`${ep} ${label} needs ${field}, which ${producer} lacks`);
-    return say(`${ep} ${label} refuses ${producer} at ${field} (${refusal.why})`);
-  });
-}
-
 /**
- * Where route `r`'s schema for `found` is written, the refused field when the source spells it out (`exact`, the
- * only spot a fix may edit).
+ * E1562 (k.compat Base) for each API entry of each base contract with a base caller in another deployable from the
+ * contract's module (by `topology`; none: every module ships together): the entry gone from its method and path (no
+ * fix), or a part of the current entry refusing the base one (`refused`), at that member of the current contract
+ * file, with a fix when making one required field optional clears it.
  */
-function routeSpot(r: SurfaceRoute, method: string, found: Found, ctx: Ctx): (Spot & { exact?: Spot }) | null {
-  const file = ctx.project.find((f) => f.path === `${ctx.dir}${r.file}`);
-  if (file === undefined) return null;
-  const schema = routeSchemaAt(file, r.id, found.part, method, ctx.project);
-  const start = keyAt(file, r.id);
-  const exact = fieldAt(schema, found.refusal.path, ctx.project);
-  return exact === null ? (fieldAt(schema, [], ctx.project) ?? { file, start, end: start }) : { ...exact, exact };
-}
-
-/** E1562 for each base endpoint whose caller and module now sit in different deployables (k.compat Base). */
 function base(current: Surface, before: Surface, topology: Topology | undefined, ctx: Ctx): Diagnostic[] {
   const together = (a: string, b: string): boolean =>
     topology === undefined || Object.values(topology).some((d) => d.modules.includes(a) && d.modules.includes(b));
-  return before.services.flatMap((s) => {
-    if (together(s.caller, s.module)) return [];
-    return s.endpoints.flatMap((e) => {
-      const ep = `${short(s.caller)}.${short(e.name)} (base)`;
-      const r = routeFor(current.routes, s.module, e.method, e.path);
-      if (r === undefined) {
-        const m = `${ep} calls ${e.method} ${clip(e.path, 24)}; no route of ${short(s.module)} serves it now`;
-        return [diag("E1562", ctx, null, `${ctx.dir}${ctx.at}`, m)];
+  const out: Diagnostic[] = [];
+  for (const [module, was] of before.contracts) {
+    if (was.callers.every((c) => together(c, module))) continue;
+    const path = `${ctx.dir}modules/${module}/${module}.contract.ts`;
+    const file = ctx.project.find((f) => f.path === path);
+    const at = (id: string, part: string | null) =>
+      file === undefined ? null : entrySchemaAt(file, id, part, ctx.project);
+    for (const [id, e] of was.entries) {
+      const now = current.contracts.get(module)?.entries.get(id);
+      if (now === undefined || now.method !== e.method || now.path !== e.path) {
+        const m =
+          now === undefined
+            ? `${id} (base ${e.method} ${clip(e.path, 24)}) is gone; callers in other deployables use it`
+            : `${id} moved from ${e.method} ${clip(e.path, 20)} to ${now.method} ${clip(now.path, 20)}; callers use it`;
+        const entry = at(id, null);
+        const spot = entry === null ? null : { file: entry.file, start: entry.expr.start, end: entry.expr.start };
+        out.push(diag("E1562", ctx, spot, `${ctx.dir}${ctx.at}`, m));
+        continue;
       }
-      const req = request(r, e);
-      const found = req ?? response(r, e, false);
-      if (found === null) return [];
-      const spot = routeSpot(r, e.method, found, ctx);
+      const found = refused(now, e);
+      if (found === null) continue;
+      const schema = at(id, found.part);
+      const exact = found.request ? fieldAt(schema, found.refusal.path, ctx.project) : null;
+      const whole = schema === null ? null : { file: schema.file, start: schema.expr.start, end: schema.expr.end };
+      const spot = exact ?? whole;
       const field = show(found.refusal.path);
-      const id = short(r.id);
-      if (req === null) {
+      const where = spot === null ? `${ctx.dir}${ctx.at}` : spot.file.path;
+      if (!found.request) {
         const m =
           found.refusal.why === "missing"
-            ? `${ep} needs ${field}; ${id} no longer answers it`
-            : `${ep} output refuses ${id} answer at ${field} (${found.refusal.why})`;
-        return [diag("E1562", ctx, spot, `${ctx.dir}${r.file}`, m)];
+            ? `${id} ${found.part} no longer answers ${field}, which base callers need`
+            : `${id} ${found.part} at ${field}: base callers refuse it (${found.refusal.why})`;
+        out.push(diag("E1562", ctx, spot, where, m));
+        continue;
       }
-      if (found.refusal.why !== "missing")
-        return [
-          diag("E1562", ctx, spot, `${ctx.dir}${r.file}`, `${ep} ${SENT[found.part]} ${field}: ${id} refuses it`),
-        ];
-      const exact = spot?.exact;
+      if (found.refusal.why !== "missing") {
+        const m = `${id} ${found.part} ${field}: refuses what base callers send (${found.refusal.why})`;
+        out.push(diag("E1562", ctx, spot, where, m));
+        continue;
+      }
       const src = exact?.file.source ?? "";
       const end = exact?.end ?? 0;
       const fix =
-        exact !== undefined &&
+        exact !== null &&
         found.refusal.path.length > 0 &&
         accepts(loosen(found.a, found.refusal.path), found.b) === null
           ? unifiedDiff(exact.file.path, src, `${src.slice(0, end)}.optional()${src.slice(end)}`)
           : undefined;
-      return [diag("E1562", ctx, spot, `${ctx.dir}${r.file}`, `${ep} sends no ${field}; ${id} requires it`, fix)];
-    });
-  });
+      out.push(diag("E1562", ctx, spot, where, `${id} ${found.part} requires ${field}; base callers send none`, fix));
+    }
+  }
+  return out;
 }
 
 /**
@@ -229,12 +188,11 @@ function stored(current: Surface, before: Surface, ctx: Ctx): Diagnostic[] {
 }
 
 /**
- * The k.compat pass over each `<dir>.keel/surface.json` among `files` that is intact (its `hash` that of its `data`)
- * and fresh (every evaluated source unchanged in `project`; else E1005 reports it): E1561 for every `service({ module })`
- * endpoint its route does not accept or whose `output`/`errors` refuse the route's answer, at the endpoint; and, with a
- * `base` surface (`keel check --base`), E1562 for each base endpoint in another deployable (by `topologyOf(dir)`) that
- * the current route refuses, at the route's schema, with a fix when making one required field optional clears it,
- * and E1563 and W1564 for its stores (`stored`).
+ * The k.compat pass over each `<dir>.keel/surface.json` among `files` that is a `version: 2` surface, intact (its
+ * `hash` that of its `data`) and fresh (every evaluated source unchanged in `project`; else E1005 reports it). With a
+ * `base` surface (`keel check --base`): E1562 for each base API entry with a caller in another deployable (by
+ * `topologyOf(dir)`) that the current entry refuses (`base`), and E1563 and W1564 for its stores (`stored`); a `base`
+ * that is no `version: 2` surface is one W1568 and nothing is compared.
  */
 export function compatChecks(
   files: readonly SourceFile[],
@@ -244,9 +202,15 @@ export function compatChecks(
 ): Diagnostic[] {
   const out: Diagnostic[] = [];
   const before = baseValue === undefined ? null : readSurface(baseValue);
-  for (const file of files) {
-    const dir = SURFACE.exec(file.path)?.[1];
-    if (dir === undefined) continue;
+  const surfaces = files.filter((f) => SURFACE.test(f.path));
+  if (baseValue !== undefined && before === null) {
+    const path = surfaces[0]?.path ?? ".keel/surface.json";
+    const m = "--base names no surface of version 2; E1562 not checked";
+    out.push({ kind: "diag", code: "W1568", path, line: 1, col: 1, message: m, see: "k.compat" });
+  }
+  if (before === null) return out;
+  for (const file of surfaces) {
+    const dir = SURFACE.exec(file.path)?.[1] ?? "";
     let value: unknown;
     try {
       value = JSON.parse(file.source);
@@ -257,8 +221,7 @@ export function compatChecks(
     const intact = isRecord(value) && Object.hasOwn(value, "data") && value.hash === hashOf(value.data);
     if (surface === null || !intact || staleSource(surface, dir, project) !== undefined) continue;
     const ctx: Ctx = { dir, project, at: ".keel/surface.json" };
-    for (const s of surface.services) out.push(...endpoints(surface, s, ctx));
-    if (before !== null) out.push(...base(surface, before, topologyOf(dir), ctx), ...stored(surface, before, ctx));
+    out.push(...base(surface, before, topologyOf(dir), ctx), ...stored(surface, before, ctx));
   }
   return out;
 }

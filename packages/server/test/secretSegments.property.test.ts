@@ -1,8 +1,9 @@
 // k.privacy Sinks, the `req` path: a path that lines up with a secret route through the secret's segment keeps the
 // segments before it and is `[secret]` from there on, one mark for any tail; a path no route lines up with comes back
 // as it came. Seed 1337.
-import type { RouteDef } from "@keel/router";
-import { compileRoutes, compileTable } from "@keel/router/internal";
+import { type RouteTable, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
+import { compileRoutes } from "@keel/router/internal";
 import { s } from "@keel/schema";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -10,7 +11,7 @@ import { secretSegments } from "../src/internal/secretSegments.ts";
 
 const SEED = 1337;
 const view = (): Node => document.createElement("main");
-const marksOf = (routes: Record<string, RouteDef>) => secretSegments(compileTable(compileRoutes(routes), routes));
+const marksOf = (routes: RouteTable) => secretSegments(compileRoutes(routes).located);
 
 // A route led by `lead` (a static text, then static texts or plain params as `null`), then the secret, then `after`
 // static texts. A route led by a param lines up with every path one segment shorter too; its own case is below.
@@ -25,11 +26,12 @@ const shape = fc.record({
 const value = fc.stringMatching(/^[A-Z0-9]{1,12}$/);
 const tail = fc.array(fc.stringMatching(/^[A-Z0-9]{1,8}$/), { maxLength: 4 });
 
-function routeOf(lead: readonly (string | null)[], after: readonly string[]): Record<string, RouteDef> {
+function routeOf(lead: readonly (string | null)[], after: readonly string[]): RouteTable {
   const parts = lead.map((t, i) => (t === null ? `:p${i}` : t));
   const fields = Object.fromEntries(lead.flatMap((t, i) => (t === null ? [[`p${i}`, s.string()]] : [])));
   const params = s.object({ ...fields, tok: s.secret(s.string()) });
-  return { "app.r": { path: `/${[...parts, ":tok", ...after].join("/")}`, params, component: view } };
+  const c = contract("app", { "app.r": { path: `/${[...parts, ":tok", ...after].join("/")}`, params } });
+  return manifest(c, { "app.r": { component: view } });
 }
 
 describe("secretSegments", () => {
@@ -53,19 +55,19 @@ describe("secretSegments", () => {
   });
 
   it("cuts at the earliest secret and keeps a mark before it", () => {
-    const routes: Record<string, RouteDef> = {
-      "app.one": { path: "/k/:tok/more", params: s.object({ tok: s.secret(s.string()) }), component: view },
-      "app.two": {
-        path: "/k/:a/:tok",
-        params: s.object({ a: s.string(), tok: s.secret(s.string()) }),
-        component: view,
-      },
+    const c = contract("app", {
+      "app.one": { path: "/k/:tok/more", params: s.object({ tok: s.secret(s.string()) }) },
+      "app.two": { path: "/k/:a/:tok", params: s.object({ a: s.string(), tok: s.secret(s.string()) }) },
       "app.three": {
         path: "/m/:tok/:b/:c",
         params: s.object({ tok: s.secret(s.string()), b: s.string(), c: s.string() }),
-        component: view,
       },
-    };
+    });
+    const routes = manifest(c, {
+      "app.one": { component: view },
+      "app.two": { component: view },
+      "app.three": { component: view },
+    });
     const marks = marksOf(routes);
     expect(marks("/k/A/B")).toBe("/k/[secret]");
     expect(marks("/k/A")).toBe("/k/[secret]");
@@ -78,7 +80,8 @@ describe("secretSegments", () => {
         const marks = marksOf(routeOf(lead, after));
         const path = `/zz${[...lead.map((t, i) => t ?? `v${i}`), v, ...rest].join("/")}`;
         expect(marks(path)).toBe(path);
-        const plain = marksOf({ "app.p": { path: "/p/:a", params: s.object({ a: s.string() }), component: view } });
+        const pc = contract("app", { "app.p": { path: "/p/:a", params: s.object({ a: s.string() }) } });
+        const plain = marksOf(manifest(pc, { "app.p": { component: view } }));
         expect(plain(path)).toBe(path);
       }),
       { seed: SEED, numRuns: 200 },

@@ -4,12 +4,14 @@ import type { Io } from "../types/Io.ts";
 import type { OutRecord } from "../types/OutRecord.ts";
 import type { Write } from "../types/Write.ts";
 import type { Outcome } from "./Outcome.ts";
+import { loadShells } from "./loadShells.ts";
 import { makeDiag } from "./makeDiag.ts";
 import { openapiInput } from "./openapiInput.ts";
 import { projectFiles } from "./projectFiles.ts";
 import { scaffoldInput } from "./scaffoldInput.ts";
 import { summary } from "./summary.ts";
 import { unifiedDiff } from "./unifiedDiff.ts";
+import { withAgentFiles } from "./withAgentFiles.ts";
 
 const GENERATORS: readonly Op[] = ["project", "module", "route", "component", "store", "transaction", "service"];
 const CODEMODS: readonly Op[] = ["rename", "move", "add-field", "place"];
@@ -33,10 +35,11 @@ const refusal = (d: ScaffoldDiag, into: string): OutRecord[] => [
 /**
  * `keel scaffold <op> ...` / `keel codemod <op> ...` over `io.files` through `@keel/scaffold`, which is pure, so
  * `--dry-run` only skips the writes (RFC 0045). The edit set comes back as `scaffold.edit` records (unified diffs
- * under `--dry-run`) plus writes for the binary (`project <name>`: under `<name>/`); a refusal is its diagnostic (E135x, E1005, E1052), nothing written. `codemod rename` without
+ * under `--dry-run`) plus writes for the binary (`project <name>`: under `<name>/`, with the agent files of the running
+ * `@keel/cli` unless `--workspace`); a refusal is its diagnostic (E135x, E1005, E1052), nothing written. `codemod rename` without
  * `--kind` tries component then schema (PascalCase) or store then route (dotted), first one that finds `from`.
  */
-export function scaffoldCommand(name: "scaffold" | "codemod", input: Input, io: Io): Outcome {
+export async function scaffoldCommand(name: "scaffold" | "codemod", input: Input, io: Io): Promise<Outcome> {
   const opName = input.op;
   if (opName === undefined) return { records: [summary(name, [], { created: 0, changed: 0, removed: 0 })], writes: [] };
   const mine = name === "scaffold" ? GENERATORS : CODEMODS;
@@ -68,17 +71,18 @@ export function scaffoldCommand(name: "scaffold" | "codemod", input: Input, io: 
     op === "rename" && input.kind === undefined
       ? (RENAME_KINDS[/^[A-Z]/.test(from) ? "pascal" : "dotted"] ?? [])
       : [undefined];
-  let result = scaffold(op, kinds[0] === undefined ? base : { ...base, kind: kinds[0] }, files);
+  const { shells } = await loadShells(io.cwd, projectFiles(io), undefined);
+  let result = scaffold(op, kinds[0] === undefined ? base : { ...base, kind: kinds[0] }, files, shells);
   for (const k of kinds.slice(1)) {
     if (result.ok || result.error.data.code !== "E1052") break;
-    result = scaffold(op, { ...base, kind: k }, files);
+    result = scaffold(op, { ...base, kind: k }, files, shells);
   }
   const label = `${name} ${op}`;
   if (!result.ok) {
     const rs = refusal(result.error.data, into);
     return { records: [...rs, summary(label, rs, {})], writes: [] };
   }
-  const edit = result.value;
+  const edit = op === "project" && input.workspace !== true ? await withAgentFiles(result.value, io) : result.value;
   const after = (p: string): string | null => edit.files.get(p) ?? null;
   const records: OutRecord[] = [];
   const writes: Write[] = [];

@@ -1,20 +1,21 @@
-import { crateName } from "../crateName.ts";
+import type { Origins } from "@keel/compiler";
 import { deployFiles } from "../deployFiles.ts";
+import type { DeployShells } from "../types/DeployShells.ts";
 import type { Writes } from "./Writes.ts";
 import { readManifest } from "./readManifest.ts";
 import { topologyOf } from "./topologyOf.ts";
 
 const CI = ".github/workflows/ci.yml";
-/** A path the deploy generator writes: a Dockerfile, the compose file, or a shell file (not Cargo's `Cargo.lock`). */
-const DEPLOY =
-  /^deploy\/(?:[^/]+\/(?:Dockerfile|capacitor\/capacitor\.config\.json|tauri\/(?:Cargo\.toml|build\.rs|src\/(?:main|lib)\.rs|capabilities\/default\.json))|compose\.yaml)$/;
-const TAURI_CONF = /^deploy\/[^/]+\/tauri\/tauri\.conf\.json$/;
+/** A path the deploy generator writes outside the shell folders: a Dockerfile or the compose file. */
+const DEPLOY = /^deploy\/(?:[^/]+\/Dockerfile|compose\.yaml)$/;
+/** A file in a shell's folder `deploy/<name>/<shell>/`. */
+const SHELL_FILE = /^deploy\/([^/]+)\/(capacitor|tauri)\//;
 
-/** `package.json`'s `version` (undefined when absent or unreadable). */
-function versionOf(text: string | undefined): string | undefined {
+/** A string field of `package.json` (undefined when absent or unreadable). */
+function fieldOf(text: string | undefined, key: string): string | undefined {
   try {
     const pkg: unknown = JSON.parse(text ?? "null");
-    const v: unknown = typeof pkg === "object" && pkg !== null ? Reflect.get(pkg, "version") : undefined;
+    const v: unknown = typeof pkg === "object" && pkg !== null ? Reflect.get(pkg, key) : undefined;
     return typeof v === "string" ? v : undefined;
   } catch {
     return undefined;
@@ -26,11 +27,17 @@ function versionOf(text: string | undefined): string | undefined {
  * a deploy file no deployable needs. The CI workflow is kept when the tree has one; `deploy/` files when `always`,
  * when the tree has `turbo.json` (a project outside the Keel monorepo) or when it already holds a `deploy/` file.
  * A deployable's CI job runs on its modules and those they dep on, transitively (`modules/<id>/module.ts` `deps`).
- * `tauri.conf.json` is written and removed only with `policy`, the content security policy of a `client` document.
- * A tree with `identity.ts` gets the Tauri files with the plugins of k.return.
- * Empty without a readable `topology.ts`.
+ * `policy` gives the content security policy of a `client` document for a deployable's declared
+ * origins (k.origins). Shell files come from the targets in `shells`
+ * (k.shell Files): a file of a shell folder that the target gives no deployable declaring that shell is removed, and
+ * other files there (the app's own) stay. Empty without a readable `topology.ts`.
  */
-export function deployWrites(files: ReadonlyMap<string, string>, always = false, policy?: string): Writes {
+export function deployWrites(
+  files: ReadonlyMap<string, string>,
+  always = false,
+  policy?: (origins?: Origins) => string,
+  shells: DeployShells = {},
+): Writes {
   const out: Writes = new Map();
   const topology = topologyOf(files);
   if (topology === null) return out;
@@ -48,11 +55,31 @@ export function deployWrites(files: ReadonlyMap<string, string>, always = false,
   );
   const pkg = files.get("package.json");
   const identity = files.has("identity.ts");
-  const want = deployFiles(built, { ci, version: versionOf(pkg), crate: crateName(pkg), policy, identity });
+  const project = { version: fieldOf(pkg, "version") ?? "0.0.0", pkg: fieldOf(pkg, "name") ?? "", policy, identity };
+  const want = deployFiles(built, { ci, ...project, shells });
   const paths = [...files.keys()];
   const keep = always || files.has("turbo.json") || paths.some((p) => p.startsWith("deploy/"));
   for (const [p, v] of want) if (p === CI || keep) out.set(p, v);
-  const stale = (p: string): boolean => DEPLOY.test(p) || (policy !== undefined && TAURI_CONF.test(p));
+  // What each shell target gives a folder's deployable, declared there or not: a file the generator owns.
+  const owned = new Set<string>();
+  for (const p of paths) {
+    const m = SHELL_FILE.exec(p);
+    const name = m?.[1];
+    const shell = m?.[2] === "capacitor" || m?.[2] === "tauri" ? m[2] : undefined;
+    const target = shell === undefined ? undefined : shells[shell];
+    if (name === undefined || shell === undefined || target === undefined || owned.has(`${name}/${shell}`)) continue;
+    owned.add(`${name}/${shell}`);
+    const declared = topology[name]?.shells?.[shell];
+    const app = {
+      deployable: name,
+      id: declared?.id ?? "",
+      name: declared?.name ?? "",
+      ...project,
+      policy: policy?.(topology[name]?.origins),
+    };
+    for (const f of Object.keys(target.files(app))) owned.add(`deploy/${name}/${shell}/${f}`);
+  }
+  const stale = (p: string): boolean => DEPLOY.test(p) || owned.has(p);
   if (keep) for (const p of paths) if (stale(p) && !want.has(p)) out.set(p, null);
   return out;
 }

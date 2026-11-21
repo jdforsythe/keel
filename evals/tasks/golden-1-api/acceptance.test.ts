@@ -22,7 +22,8 @@ import path from "node:path";
 import { respond } from "@keel/cli/testing";
 import { type Ctx, type SimCtx, createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
-import { type Manifest, type RouteDef, manifest, routesArtifact } from "@keel/router";
+import { type RouteTable, routeTable, routesArtifact } from "@keel/router";
+import { routes as sessionsRoutes } from "@keel/std-sessions/routes";
 import { type ServerApp, topology } from "@keel/server";
 import { createApp } from "@keel/server";
 import { findRaces, raceRecords } from "@keel/std-conflicts";
@@ -63,8 +64,8 @@ const B = topology({
   api: { modules: ["api", "sessions"], adapter: "node" },
   digest: { modules: ["digest"], adapter: "node" },
 });
-type Routes = Manifest<Readonly<Record<string, RouteDef>>>;
-const both: Routes = manifest({ ...apiRoutes.routes, ...digestRoutes.routes });
+const both: RouteTable = routeTable(apiRoutes, digestRoutes, sessionsRoutes);
+const apiOnly: RouteTable = routeTable(apiRoutes, sessionsRoutes);
 
 /** The temp folders this file made and has not yet removed. */
 const made: string[] = [];
@@ -199,7 +200,7 @@ async function layoutB(): Promise<Layout> {
   made.api = await createApp({
     topology: B,
     deployable: "api",
-    routes: apiRoutes,
+    routes: apiOnly,
     ctx: g.ctx,
     peers: { digest: lazy("digest") },
     artifacts: dir,

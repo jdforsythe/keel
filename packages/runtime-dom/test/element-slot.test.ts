@@ -4,6 +4,7 @@
 import { signal } from "@keel/reactive";
 import { describe, expect, it, vi } from "vitest";
 import { clone, element, on, resume, slot, template, text } from "../src/ops/index.ts";
+import { testCtx } from "./testCtx.ts";
 
 const T = template('<div id="r" data-k="r"><span id="s"></span><!--+--><p id="after">p</p></div>');
 
@@ -56,7 +57,7 @@ describe("resume claims element and slot nodes in place (rfc:0064)", () => {
   it("a child component in a template slot keeps every server element and binds to it", () => {
     const h = serve(SERVER);
     const before = elements(h);
-    const { warnings } = resume(h, { I: Island });
+    const { warnings } = resume(h, { I: Island }, { ctx: testCtx });
     expect(warnings).toEqual([]);
     expect(elements(h)).toEqual(before);
     elements(h).forEach((e, i) => expect(e).toBe(before[i]));
@@ -68,7 +69,7 @@ describe("resume claims element and slot nodes in place (rfc:0064)", () => {
   it("an element root built with `element` is the island root", () => {
     const h = serve('<div class="card" data-k-island="I"><b>hi</b></div>');
     const root = h.firstElementChild;
-    const { warnings } = resume(h, { I: () => Card("hi") });
+    const { warnings } = resume(h, { I: () => Card("hi") }, { ctx: testCtx });
     expect(warnings).toEqual([]);
     expect(h.firstElementChild).toBe(root);
   });
@@ -81,7 +82,7 @@ describe("resume claims element and slot nodes in place (rfc:0064)", () => {
   ];
   it.each(mismatches)("%s is E1253 and re-renders the island", (_name, card, message) => {
     const h = serve(SERVER.replace('<div class="card"><b>hi</b></div>', card));
-    const { warnings } = resume(h, { I: Island });
+    const { warnings } = resume(h, { I: Island }, { ctx: testCtx });
     expect(warnings).toHaveLength(1);
     expect(warnings[0]).toContain("E1253");
     expect(warnings[0]).toContain(message);
@@ -96,7 +97,7 @@ describe("resume claims element and slot nodes in place (rfc:0064)", () => {
       slot(at, () => document.createElement("div"));
       return r;
     };
-    const { warnings } = resume(serve(SERVER), { I: Fresh });
+    const { warnings } = resume(serve(SERVER), { I: Fresh }, { ctx: testCtx });
     expect(warnings.join("\n")).toContain("a child did not render the server element in its place");
   });
 
@@ -128,7 +129,7 @@ describe("resume claims element and slot nodes in place (rfc:0064)", () => {
       });
     // Backlog 0185: giving the focus back never scrolls a user who scrolled during load.
     const spy = vi.spyOn(HTMLElement.prototype, "focus");
-    const { warnings } = resume(h, { I: Moving });
+    const { warnings } = resume(h, { I: Moving }, { ctx: testCtx });
     expect(spy).toHaveBeenCalledWith({ preventScroll: true });
     spy.mockRestore();
     expect(warnings).toEqual([]);
@@ -148,7 +149,7 @@ describe("resume claims element and slot nodes in place (rfc:0064)", () => {
     };
     const h = serve('<div id="w" data-k-island="I"><b>x</b></div>');
     const server = h.firstElementChild;
-    const { warnings } = resume(h, { I: Walk }, { mode: "dev" });
+    const { warnings } = resume(h, { I: Walk }, { ctx: testCtx, mode: "dev" });
     expect(warnings).toHaveLength(1);
     expect(warnings[0]).toContain("E1253");
     expect(warnings[0]).toContain("no anchor at childNodes[1]");
