@@ -1,5 +1,5 @@
 // Seed 1337 (no generated inputs: the clause is about fixed project files)
-// Spec: k.bundle, Conformance "With no type reference, a page reading `import.meta.env.MODE` and `DEV` and importing `./w.ts?worker` and `./a.svg?url` checks clean; `import.meta.env.VITE_X` is one E1751, also with `/// <reference types=\"vite/client\" />`."
+// Spec: k.bundle, Conformance "With no type reference, a page reading `import.meta.env.MODE` and `DEV` and importing `./w.ts?worker` and `./a.svg?url` checks clean; `import.meta.env.VITE_X` is one E1751, also with `/// <reference types="vite/client" />`."
 // Spec: k.bundle, Types "`@keel/compiler/client` declares what a browser build promises: `import.meta.env` as `{ BASE_URL: string; MODE: string; DEV, PROD, SSR: boolean }` (k.boundary Environment), any other key a type error, and the default import of `*?worker` and `*?sharedworker` (a `Worker` or `SharedWorker` constructor) and of `*?url` (a `string`)."
 // Spec: k.check, Pipeline step 1 "Ambient types: Node's when `@types/node` resolves from the project root, and k.bundle's Types."
 // The project is a temporary root whose `node_modules` resolves `@keel/compiler`, `vite` and `@types/node` (symlinks to the workspace's copies).
