@@ -90,7 +90,7 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | std.temporal | 12 | **conformance-covered** | none |
 | std.text | 11 | **conformance-covered** | none |
 | std.timings | 7 | **conformance-covered** | none |
-| std.tokens | 12 | **conformance-covered** | none |
+| std.tokens | 15 | **conformance-covered** | none |
 | std.workflows | 8 | **conformance-covered** | none |
 | k.contract | 11 | **conformance-covered** | none |
 | k.docs | 13 | implemented | clause 5 (a `docs/` link outside its package is E1066) and clause 8 (a skill's `title` from a `description` with codes): no cited test |
@@ -106,7 +106,7 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | std.contracts | 7 | **conformance-covered** | none |
 | std.lists | 6 | **conformance-covered** | none |
 | std.tauri | 6 | implemented | `UNTESTABLE` toolchain lookups and capability file shape |
-| **total** | **1003** | 91 of 100 covered | |
+| **total** | **1006** | 91 of 100 covered | |
 
 ## 2. One-way audit (principle 1)
 

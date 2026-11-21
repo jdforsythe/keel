@@ -22,7 +22,9 @@ import { parseTopology } from "../src/internal/parseTopology.ts";
 import keel from "../src/vite.ts";
 
 /** What the plugin's `config` always gives: the locked `envPrefix` and the worker bundles' plugin. */
-const OWN = { envPrefix: "\0", worker: { plugins: expect.any(Function) } };
+const SERVE = { envPrefix: "\0", worker: { plugins: expect.any(Function) } };
+/** A build defines `DEV` and `PROD` itself, whatever the project config sets `process.env.NODE_ENV` to. */
+const OWN = { ...SERVE, define: { "import.meta.env.DEV": "false", "import.meta.env.PROD": "true" } };
 
 const SEED = 1337;
 const host = fc.stringMatching(/^[a-z]([a-z0-9-]{0,9}[a-z0-9])?(\.[a-z]([a-z0-9-]{0,5}[a-z0-9])?){0,2}$/);

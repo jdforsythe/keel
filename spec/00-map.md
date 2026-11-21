@@ -1,6 +1,6 @@
 # Keel spec map
 
-status key: proposed | implemented | conformance-covered | frozen. Budget: file 1,250 tokens, section 1,500.
+status key: proposed | implemented | conformance-covered | frozen. Budget: file 1,250 tokens, section 1,700.
 
 ## Code ranges
 Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.

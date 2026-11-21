@@ -1,4 +1,4 @@
-# ADR-0192: k.privacy-reads: the checker's privacy readers for stdlib rules, and three rules on them (RFC 0170)
+# ADR-0193: k.privacy-reads: the checker's privacy readers for stdlib rules, and three rules on them (RFC 0170)
 
 **Status:** proposed (for the orchestrator to accept).
 

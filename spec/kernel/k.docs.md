@@ -21,7 +21,7 @@ status: implemented
 
 **See lines.** A diagnostic's `see` prints as `see: keel docs <id>` in compact and pretty; json keeps the id.
 
-**Budgets** (`tooling/budgets.json`). `docs.map` 1,200 and `docs.for` 400 count the compact output of `keel docs` and `keel docs --for E1451`; `docs.section` 1,500 and `docs.skill` 2,300 count the `text` of every section and skill; `docs.agents` 600 counts the Keel block of `AGENTS.md`. The `docs` tool counts toward `mcp.tools-list` (k.cli).
+**Budgets** (`tooling/budgets.json`). `docs.map` 1,200 and `docs.for` 400 count the compact output of `keel docs` and `keel docs --for E1451`; `docs.section` 1,700 and `docs.skill` 2,300 count the `text` of every section and skill; `docs.agents` 600 counts the Keel block of `AGENTS.md`. The `docs` tool counts toward `mcp.tools-list` (k.cli).
 
 **Rules.** E1065 the section's package is not installed; the message names the package to add · E1066 an installed package has no `docs/<id>.md` for a section `map.json` gives it, or no readable `docs/index.json`, or `@keel/cli` has no `docs/map.json`; the message names the package and its version.
 

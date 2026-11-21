@@ -3,8 +3,8 @@
   "unsafe": 18,
   "hostElements": 0,
   "rungs": {
-    "example": 1373,
-    "probabilistic": 332,
+    "example": 1430,
+    "probabilistic": 335,
     "exhaustive": 15,
     "proven": 72,
     "monitored": 8
@@ -148,7 +148,7 @@
         "threshold": 70
       },
       "std-tokens": {
-        "score": 81.28,
+        "score": 76.1,
         "threshold": 70
       },
       "std-workflows": {
@@ -14250,7 +14250,7 @@
     },
     {
       "item": "k.docs#5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.docs#6",
@@ -14262,7 +14262,7 @@
     },
     {
       "item": "k.docs#8",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.docs#9",
@@ -14834,7 +14834,7 @@
     },
     {
       "item": "k.mount-scope#1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.mount#1",
@@ -15418,7 +15418,7 @@
     },
     {
       "item": "k.roles#6",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.roles#7",
@@ -15622,7 +15622,7 @@
     },
     {
       "item": "k.scaffold#11",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.scaffold#12",
@@ -15634,7 +15634,7 @@
     },
     {
       "item": "k.scaffold#14",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.schema#1",
@@ -17490,6 +17490,18 @@
     },
     {
       "item": "std.tokens#13",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.tokens#14",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.tokens#15",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.tokens#16",
       "rung": "none"
     },
     {
@@ -17528,15 +17540,15 @@
   "a11y": [
     {
       "item": "a11y:todos.edit#1.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.edit#1.2.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.edit#1.3.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.edit#1.3.2",
@@ -17544,11 +17556,11 @@
     },
     {
       "item": "a11y:todos.edit#1.3.5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.edit#1.4.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.edit#1.4.3",
@@ -17556,31 +17568,31 @@
     },
     {
       "item": "a11y:todos.edit#1.4.4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.edit#1.4.12",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.edit#2.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.edit#2.2.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.edit#2.2.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.edit#2.4.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.edit#2.4.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.edit#2.4.3",
@@ -17588,19 +17600,19 @@
     },
     {
       "item": "a11y:todos.edit#2.4.4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.edit#3.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.edit#3.1.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.edit#3.3.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.edit#4.1.2",
@@ -17608,15 +17620,15 @@
     },
     {
       "item": "a11y:todos.index#1.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.index#1.2.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.index#1.3.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.index#1.3.2",
@@ -17624,11 +17636,11 @@
     },
     {
       "item": "a11y:todos.index#1.3.5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.index#1.4.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.index#1.4.3",
@@ -17636,31 +17648,31 @@
     },
     {
       "item": "a11y:todos.index#1.4.4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.index#1.4.12",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.index#2.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.index#2.2.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.index#2.2.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.index#2.4.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.index#2.4.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.index#2.4.3",
@@ -17668,19 +17680,19 @@
     },
     {
       "item": "a11y:todos.index#2.4.4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.index#3.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.index#3.1.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.index#3.3.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.index#4.1.2",
@@ -17688,15 +17700,15 @@
     },
     {
       "item": "a11y:todos.list#1.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.list#1.2.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.list#1.3.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.list#1.3.2",
@@ -17704,11 +17716,11 @@
     },
     {
       "item": "a11y:todos.list#1.3.5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.list#1.4.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.list#1.4.3",
@@ -17716,31 +17728,31 @@
     },
     {
       "item": "a11y:todos.list#1.4.4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.list#1.4.12",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.list#2.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.list#2.2.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.list#2.2.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.list#2.4.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.list#2.4.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.list#2.4.3",
@@ -17748,19 +17760,19 @@
     },
     {
       "item": "a11y:todos.list#2.4.4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.list#3.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.list#3.1.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.list#3.3.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.list#4.1.2",

@@ -15,11 +15,18 @@ const TTL_MAX = 31536000000;
 const TOKEN = /^(keel|keelsim)_([0-9a-f]{16})_[0-9a-f]{64}$/;
 const SecretText = s.secret(s.string());
 
+/** The id `check` and `idOf` read: the token's non-secret part, or `undefined` for what `check` refuses before `find`. */
+function idOfText(text: string, sim: boolean): string | undefined {
+  const m = TOKEN.exec(text);
+  if (m === null || (m[1] === "keelsim" && !sim)) return undefined;
+  return m[2];
+}
+
 const b64 = (b: Buffer): string => b.toString("base64").replaceAll("=", "");
 const sha256 = (text: string): Buffer => createHash("sha256").update(text, "utf8").digest();
 
 /**
- * `mint` and `check` over one mode's `engine` and clock `now`, each deciding its errors in the order of the API. The
+ * `mint`, `idOf` and `check` over one mode's `engine` and clock `now`, each deciding its errors in the order of the API. The
  * secret's bytes are zeroed after use; the clock is read after a token matches.
  */
 export function tokensOf(engine: Engine, now: () => number): Tokens {
@@ -44,18 +51,22 @@ export function tokensOf(engine: Engine, now: () => number): Tokens {
       if (!token.ok || !digest.ok) return TTL;
       return ok({ token: token.value, id: tokenId, digest: digest.value, expiresAt });
     },
+    idOf: (token) => {
+      const id = idOfText(textOf(token), engine.sim);
+      return id === undefined ? MISMATCH : ok(id);
+    },
     check: (token, find) => {
       const text = textOf(token);
-      const m = TOKEN.exec(text);
-      if (m === null || (m[1] === "keelsim" && !engine.sim)) return MISMATCH;
-      const row = find(m[2] ?? "");
+      const id = idOfText(text, engine.sim);
+      if (id === undefined) return MISMATCH;
+      const row = find(id);
       const got = sha256(text);
       if (typeof row !== "object" || row === null) return MISMATCH;
       const want = readDigested(row.digest);
       if (want === "format" || want === "parameters") return malformed(want);
       if (want.sim && !engine.sim) return malformed("sim");
       const same = timingSafeEqual(got, want.digest);
-      if (!same || want.sim !== (m[1] === "keelsim")) return MISMATCH;
+      if (!same || want.sim !== text.startsWith("keelsim_")) return MISMATCH;
       // An expiry the clock does not read as later than now (`NaN` included) has passed.
       if (want.expiresAt !== null && !(now() < want.expiresAt)) return EXPIRED;
       return ok(row);

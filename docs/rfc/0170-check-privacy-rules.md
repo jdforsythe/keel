@@ -1,6 +1,6 @@
 # RFC 0170: k.privacy-reads: the checker's privacy readers for stdlib rules, and three rules on them
 
-Status: proposed (ADR-0192), for the orchestrator to accept. For backlog 0616, 0617 and 0638 (work package check-privacy-rules, `tasks/p1/weaknesses-triage.md`).
+Status: proposed (ADR-0193), for the orchestrator to accept. For backlog 0616, 0617 and 0638 (work package check-privacy-rules, `tasks/p1/weaknesses-triage.md`).
 
 ## Decisions
 - D1: `@keel/check` exports three readers it already runs for its own rules: `carriesReveal` (E1112's value walk, k.reveal Flow), `schemaHolds` (E1111's schema walk, asked about named exports instead of `.pii()` and `s.secret`) and `outputSchemas` (where a file declares `output` schemas). A stdlib `./tools` rule builds on them instead of a copy. They are public, so a library's rules can use them too (k.parity, RFC 0169).
@@ -80,7 +80,7 @@ For reviewers, stated in the spec text of each rule:
 Applied in this commit:
 - **New `spec/kernel/k.privacy-reads.md`** (status `proposed`): Purpose; Readers (`carriesReveal`, `schemaHolds`, `outputSchemas`); Password controls (W1114); Rules (W1114); Conformance, four clauses.
 - **std.jobs** (status `implemented`, D7): Extension points "registers E2501-E2504 and E2506"; API, `job` bullet: "`enqueue` is given no revealed value (E2506): a job's input and `key` are stored"; Rules gains E2506 with its reach and what it does not follow; Conformance gains one clause, appended (bullet 12).
-- **std.tokens** (status `implemented`, D7): Extension points "(E2201-E2203)"; the "token leaves once" bullet gains "Its `digest` never leaves (E2203)"; Rules gains E2203; Conformance gains one clause, appended (bullet 13). To stay within the limit: `mint`'s `id` gloss is shortened, the E2201/E2202 reading sentence is tightened (same content), and Modes drops "A real or shell ctx answers `credentials.mismatch` for a sim token and `credentials.malformed` `sim` for a sim digest.", which `check`'s bullet (a value not in the token form; `sim`, a sim form outside sim) and Conformance bullet 9 already state.
+- **std.tokens** (status `implemented`, D7): Extension points "(E2201-E2203)"; the "token leaves once" bullet gains "Its `digest` never leaves (E2203)"; Rules gains E2203; Conformance gains one clause, appended (bullet 16, after the `idOf` bullets). `mint`'s `id` gloss is shortened and the E2201/E2202 reading sentence is tightened (same content). The section reaches 1,734 tokens, so `spec.section` and `docs.section` are re-based from 1,700 to 1,750.
 - **k.forms** Rules: "A password control's field: W1114 (k.privacy-reads)."
 - **Map**: block E110x lists k.privacy-reads; row `| k.privacy-reads | Static privacy reads | proposed | readers |` after k.reveal. `spec/std/README.md`: std.jobs and std.tokens rows read `implemented`, E2501-E2506 and E2201-E2203.
 
@@ -97,7 +97,7 @@ All three were free: E1114 and W1114 are unused; E2203 is the number RFC 0103 na
 By the `conformance-writer`, under `rfc:0170`, from the spec text alone:
 - `packages/check/conformance/privacy-reads.test.ts` (new): k.privacy-reads clauses 1 to 4: the readers' true, false, `'yes'`, `'unknown'` and `'no'` cases, `outputSchemas` inline, through a `const` and for `decl()`, and W1114's cases. `fixtures-by-code.ts` gains a W1114 fixture (k.check Conformance: every code `check()` reports has one).
 - `packages/std-jobs/conformance/rules.test.ts` (or its rules file): std.jobs clause 12 (E2506); the "each fire on a fixture and not on its clean twin" case extends to E2506.
-- `packages/std-tokens/conformance/rules.test.ts`: std.tokens clause 13 (E2203), with a fixture and its clean twin.
+- `packages/std-tokens/conformance/rules.test.ts`: std.tokens clause 16 (E2203), with a fixture and its clean twin.
 Spec topics: `pnpm spec k.privacy-reads`, `pnpm spec std.jobs`, `pnpm spec std.tokens`, and for the flows they cite `pnpm spec k.reveal`, `pnpm spec k.contract`.
 
 ## Build
@@ -105,7 +105,7 @@ Spec topics: `pnpm spec k.privacy-reads`, `pnpm spec std.jobs`, `pnpm spec std.t
 - `@keel/std-jobs`: `src/tools/revealedEnqueue.ts` (E2506), registered in `src/tools/index.ts`.
 - `@keel/std-tokens`: `src/tools/digestOutput.ts` (E2203), registered in `src/tools/index.ts`.
 - Docs: `docs/COMPLIANCE.md` (tokens and jobs paragraphs), the `keel-compliance` skill (its description lists W1114, E2203, E2506; one line each in Secrets and reveal), the check, std-jobs and std-tokens READMEs.
-- Ledger: the six new clauses (k.privacy-reads #1 to #4, std.jobs #12, std.tokens #13) are in `tooling/ledger/ledger.json` at `none` (this commit); the build raises them.
+- Ledger: the six new clauses (k.privacy-reads #1 to #4, std.jobs #12, std.tokens #16) are in `tooling/ledger/ledger.json` at `none` (this commit); the build raises them.
 
 ## Token impact
 k.privacy-reads 4,082 characters (1,021 tokens). std.jobs 4,991 to 5,797 characters; std.tokens 5,905 to 5,998; k.forms 5,537 to 5,590. Map: one row and one block entry, 1,345 tokens; the `spec.map` budget is re-based from 1,330 to 1,345 (`tooling/budgets.json`). `tooling/docs-owners.json` gives k.privacy-reads to `@keel/check`. The `keel-compliance` skill gains about 60 tokens.

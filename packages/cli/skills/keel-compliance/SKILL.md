@@ -70,7 +70,7 @@ export const postToken = action(accounts, "accounts.mint", {}, (_body, _args, ct
 });
 ```
 
-Store `id` and `digest` (type `Digested` from `@keel/std-tokens`) in a store; `tokens(ctx).check(bearer, (id) => row)` verifies. `@keel/std-tokens/server` imports only in `*.server.ts` files (E2201) and in `node` deployables (E2202). A secret hard-coded in a schema, contract or helper ships to the browser: read it from the environment in a `*.server.ts` file.
+Store `id` and `digest` ( `Digested` from `@keel/std-tokens`) in a store; `tokens(ctx).check(bearer, (id) => row)` verifies; `idOf` gives the id. `@keel/std-tokens/server` imports only in `*.server.ts` files (E2201) and in `node` deployables (E2202). A secret hard-coded in a schema, contract or helper ships to the browser: read it from the environment in a `*.server.ts` file.
 
 ## Caller
 

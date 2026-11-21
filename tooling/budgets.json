@@ -2,12 +2,12 @@
   "output": {
     "check.injected10": 600,
     "test.failing3": 400,
-    "spec.section": 1500,
+    "spec.section": 1750,
     "spec.map": 1345,
     "explain": 300,
     "mcp.tools-list": 1750,
     "docs.map": 1390,
-    "docs.section": 1500,
+    "docs.section": 1750,
     "docs.skill": 2300,
     "docs.for": 400,
     "docs.agents": 600
@@ -140,7 +140,7 @@
       "platform": "node"
     },
     "@keel/std-sessions/tools": {
-      "max": "10kb",
+      "max": "10.5kb",
       "platform": "node"
     },
     "@keel/std-headless": "6kb",

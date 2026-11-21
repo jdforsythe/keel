@@ -1,8 +1,8 @@
 import { canonicalJson, hashOf } from "@keel/compiler/internal";
 import { describe, expect, it } from "vitest";
-import { check } from "../src/index.ts";
 import type { SourceFile } from "../src/index.ts";
 import { applyPatch } from "./support/applyPatch.ts";
+import { checkNoThrow as check } from "./support/checkNoThrow.ts";
 
 // Built so the factory's own lint does not read fixture text as a call in this file.
 const UNSAFE = "unsafe";
@@ -193,6 +193,15 @@ describe("kernel rules", () => {
         .diagnostics.map((d) => d.code)
         .sort(),
     ).toEqual(["E1403", "E1805", "E1805"]);
+  });
+
+  it("E1805: nav and aside get no fix, since Box requires a label there", () => {
+    for (const tag of ["nav", "aside"]) {
+      const src = `export default function C() { return <${tag}>x</${tag}> }\n`;
+      const d = check([f("C.tsx", src)], {}).diagnostics.filter((x) => x.code === "E1805");
+      expect(d.length).toBe(1);
+      expect(d[0]?.fix).toBeUndefined();
+    }
   });
 
   it("E1757: suppression comments are removed by the fix; as const is not a cast", () => {
