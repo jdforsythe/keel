@@ -3,7 +3,7 @@
 // node tooling/smoke/examples.mjs [name ...]. One line per step, then the trailer; a missing proof is a failed step.
 // Every server it starts is stopped in a `finally`; nothing is written outside the examples' own build folders.
 import { execFile, spawn } from "node:child_process";
-import { createReadStream, readdirSync, statSync } from "node:fs";
+import { createReadStream, readFileSync, readdirSync, statSync } from "node:fs";
 import { createServer } from "node:http";
 import { extname, join, normalize } from "node:path";
 import { chromium } from "@playwright/test";
@@ -47,10 +47,16 @@ async function serveNode(dir, deployable, env = {}) {
   return { base: `http://127.0.0.1:${port}`, stop };
 }
 
-const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml" };
+const TYPES = {
+  ".html": "text/html",
+  ".js": "text/javascript",
+  ".css": "text/css",
+  ".svg": "image/svg+xml",
+  ".woff2": "font/woff2",
+};
 
-/** A plain static file server over `folder`: a file or 404, `/` is `index.html`; nothing Keel. */
-async function serveFiles(folder) {
+/** A plain static file server over `folder`: a file or 404, `/` is `index.html`, each answer with `headers`. */
+async function serveFiles(folder, headers = {}) {
   const port = await freePort();
   const server = createServer((req, res) => {
     const path = new URL(req.url ?? "/", "http://x").pathname;
@@ -60,7 +66,7 @@ async function serveFiles(folder) {
       res.writeHead(404).end();
       return;
     }
-    res.writeHead(200, { "content-type": TYPES[extname(file)] ?? "application/octet-stream" });
+    res.writeHead(200, { ...headers, "content-type": TYPES[extname(file)] ?? "application/octet-stream" });
     createReadStream(file).pipe(res);
   });
   await new Promise((r) => server.listen(port, "127.0.0.1", r));
@@ -107,6 +113,28 @@ const proofs = {
         `img-src ${img ?? "-"}; other origins ${others.join(",") || "none"}`,
       ];
     } finally {
+      await server.stop();
+    }
+  },
+
+  /** A plain file server sends `dist/web` with its `csp.txt` as the policy; Chromium renders the page, no errors. */
+  async "static-client"(dir) {
+    const folder = join(dir, "dist", "web");
+    const policy = readFileSync(join(folder, "csp.txt"), "utf8").trim();
+    const server = await serveFiles(folder, { "content-security-policy": policy });
+    const browser = await chromium.launch();
+    try {
+      const page = await browser.newPage();
+      const errors = [];
+      page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
+      page.on("pageerror", (e) => errors.push(String(e)));
+      await page.goto(`${server.base}/`);
+      const title = page.locator('[id="app.home.title"]');
+      await title.waitFor({ timeout: 15_000 });
+      const text = await title.textContent();
+      return [text === "Static files only" && errors.length === 0, `heading "${text}", ${errors.length} errors`];
+    } finally {
+      await browser.close();
       await server.stop();
     }
   },
