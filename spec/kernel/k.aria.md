@@ -1,7 +1,7 @@
 # k.aria: Widget parts
 status: conformance-covered
 
-**Part.** `@keel/ui/aria` exports `Part`, the element stdlib widgets build on. A base element in every k.ui sense (it resumes in place); takes `id` (required), `role`, `lang`, `hidden`, the style props and a `children` thunk; it is bound (`data-k`) when it has an event prop, a `focus` or `open`, or a signal or computed. Only kernel and stdlib code imports `@keel/ui/aria`: a file outside the root's `packages/`, `node_modules/`, `.keel/` and `unsafe/`, tests included, that imports it is E1822, as is a re-export under `unsafe/`.
+**Part.** `@keel/ui/aria` exports `Part`, the element stdlib widgets build on. A base element in every k.ui sense (it resumes in place); takes `id` (required), `role`, `lang`, `hidden`, the style props and a `children` thunk; it is bound (`data-k`) when it has an event prop, a `focus` or `open`, or a signal or computed. App code imports it as the stdlib does; the roles for app widgets (`grid`, `tree`, `slider`, `radiogroup`): k.roles.
 
 **Roles.** `role` fixes the tag and the ARIA props `Part` accepts (its props type is a union discriminated by `role`; a prop another role takes is a type error). The `role` attribute is written only where it differs from the tag's implicit role.
 
@@ -36,7 +36,7 @@ status: conformance-covered
 
 **Part styles.** `styles` on any component is `{ <part>: { <style props> } }`: the compiler collects each part's style props from that literal as a base element's (k.ui), and the component passes them to the part's `Part` or base element. Any other value, part or spread is E1823, except `props.styles` or its members, collected where written. There and on `Part`, `states` also takes `selected` (`[aria-selected="true"]`), `checked` (`[aria-checked="true"]`, `:checked`), `expanded` (`[aria-expanded="true"]`) and `highlighted` (`[data-k-highlighted]`).
 
-**Rules.** E1822 `@keel/ui/aria` in app code (no fix: a `@keel/std-headless` widget, or `unsafe/`). E1823 unreadable `styles` (no fix).
+**Rules.** E1823 unreadable `styles` (no fix).
 
 **Conformance.**
 - `option` renders `<li role="option" aria-selected="false">`; `tab` a `<button type="button" role="tab">`; `columnheader` a `<th scope="col">` and `dialog` a `<dialog>`, neither with a `role` attribute.
@@ -48,4 +48,4 @@ status: conformance-covered
 - A `dialog` given `open` true has the `open` attribute and focus on its first `button`; a `cancel` event calls `onDismiss` and leaves it open; `open` false closes it and focuses the element focused before.
 - `styles={{ option: { p: '2', states: { highlighted: { bg: 'accent' } } } }}` on a stdlib component puts the `2` rule and an `accent` rule under `[data-k-highlighted]` into the CSS file, once each.
 - Each role with its required props, parent and children (a `listbox` with one `option`, a `table` with one `row` of one `cell`) has no axe violations.
-- E1822 fires on an app file importing `@keel/ui/aria` and not on one under `packages/` or `unsafe/`.
+- An app file importing `Part` from `@keel/ui/aria` reports no diagnostic, and its `styles` are collected as a stdlib component's.

@@ -44,6 +44,7 @@ S8 adds std.db, std.workflows, std.shells and std.tokens.
 | std.monitor | Production tallies | conformance-covered | std-sessions: server transaction counts as `monitored` evidence, E2009-E2010 |
 | std.headless | Headless widgets | conformance-covered | Dialog, Disclosure, Toaster, three charts, E2801 |
 | std.options | Listbox, combobox, menu and tabs | conformance-covered | Listbox, Combobox, Menu, Tabs on `optionsChart` |
+| std.lists | List primitives | proposed | `listChart`, `stableRows` for app components |
 | std.tables | Data tables | conformance-covered | columns from a schema, query in the URL, `applyQuery`, E2851-E2853 |
 | std.db | SQLite and Postgres storage | proposed | storage drivers (k.persist) and check rule registry: E2151-E2153 |
 | std.workflows | Workflows | conformance-covered | module manifest, inspector hook, check rule registry: chart instances over jobs, E2351-E2355 |

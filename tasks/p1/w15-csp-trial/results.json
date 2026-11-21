@@ -1,0 +1,1402 @@
+{
+  "chromium": {
+    "chartjs": {
+      "line": {
+        "checks": {
+          "pixels": 0,
+          "styleEls": 0,
+          "styleAttrs": 1,
+          "canvasStyle": "display: block; box-sizing: border-box; height: 392px; width: 784px;",
+          "parentStyle": null
+        },
+        "violations": [],
+        "errors": []
+      },
+      "bar": {
+        "checks": {
+          "pixels": 0,
+          "styleEls": 0,
+          "styleAttrs": 1,
+          "canvasStyle": "display: block; box-sizing: border-box; height: 392px; width: 784px;",
+          "parentStyle": null
+        },
+        "violations": [],
+        "errors": []
+      },
+      "animation": {
+        "checks": {
+          "pixels": 118554,
+          "styleEls": 0,
+          "styleAttrs": 1,
+          "canvasStyle": "display: block; box-sizing: border-box; height: 392px; width: 784px;",
+          "parentStyle": null
+        },
+        "violations": [],
+        "errors": []
+      },
+      "tooltip_legend": {
+        "checks": {},
+        "after": {
+          "tooltipOpacity": 0,
+          "activeEls": 0,
+          "legendItems": 2,
+          "pixelsBefore": 0,
+          "pixelsAfter": 20304,
+          "styleEls": 0,
+          "styleAttrs": 1
+        },
+        "violations": [],
+        "errors": [
+          "console.warning: Canvas2D: Multiple readback operations using getImageData are faster with the willReadFrequently attribute set to true. See: https://html.spec.whatwg.org/multipage/canvas.html#concept-canvas-will-read-frequently"
+        ]
+      },
+      "responsive_resize": {
+        "checks": {
+          "pixels": 7084,
+          "styleEls": 0,
+          "styleAttrs": 2,
+          "canvasStyle": "display: block; box-sizing: border-box; height: 150px; width: 300px;",
+          "parentStyle": "width: 300px;",
+          "cssWidth": "300px",
+          "w": 300
+        },
+        "violations": [],
+        "errors": []
+      }
+    },
+    "uplot": {
+      "basic": {
+        "checks": {
+          "pixels": 0,
+          "canvasSize": "300x150",
+          "styleEls": 0,
+          "styleAttrs": 4,
+          "nodes": 30,
+          "uplotWrapStyleAttr": null,
+          "canvasStyleAttr": null
+        },
+        "violations": [],
+        "errors": []
+      },
+      "legend": {
+        "checks": {
+          "legendRows": 3,
+          "legendText": "Time--A--B--",
+          "legendDisplay": "block"
+        },
+        "violations": [],
+        "errors": []
+      },
+      "cursor": {
+        "checks": {},
+        "after": {
+          "idx": 7,
+          "legendValue": "1969-12-31 7:00pm",
+          "cursorLineDisplay": "block"
+        },
+        "violations": [],
+        "errors": []
+      },
+      "select_zoom": {
+        "checks": {},
+        "after": {
+          "xmin": 0,
+          "xmax": 6.705882352941177,
+          "selectDisplay": "block"
+        },
+        "violations": [],
+        "errors": []
+      }
+    },
+    "plot": {
+      "line_dot": {
+        "checks": {
+          "svgNodes": 52,
+          "circles": 12,
+          "paths": 15,
+          "texts": 16,
+          "styleElsInSvg": 1,
+          "styleEls": 1,
+          "styleAttrs": 0,
+          "svgStyleAttr": null,
+          "svgFont": "10px system-ui, sans-serif",
+          "textAnchor": "end"
+        },
+        "violations": [
+          {
+            "dir": "style-src-elem",
+            "blocked": "inline",
+            "file": "plot.js",
+            "line": 15575,
+            "sample": ""
+          }
+        ],
+        "errors": [
+          "console.error: Applying inline style violates the following Content Security Policy directive 'style-src 'self''. Either the 'unsafe-inline' keyword, a hash ('sha256-jSYQUrW7J0b3jPqhZP9C2Xh1PyJKHKXd4s0fpGGKrww='), or a nonce ('nonce-...') is required to enable inli"
+        ]
+      },
+      "axis": {
+        "checks": {
+          "svgNodes": 52,
+          "circles": 12,
+          "paths": 15,
+          "texts": 16,
+          "styleElsInSvg": 1,
+          "styleEls": 1,
+          "styleAttrs": 0,
+          "svgStyleAttr": null,
+          "svgFont": "10px system-ui, sans-serif",
+          "textAnchor": "middle",
+          "ticks": 6
+        },
+        "violations": [
+          {
+            "dir": "style-src-elem",
+            "blocked": "inline",
+            "file": "plot.js",
+            "line": 15580,
+            "sample": ""
+          }
+        ],
+        "errors": [
+          "console.error: Applying inline style violates the following Content Security Policy directive 'style-src 'self''. Either the 'unsafe-inline' keyword, a hash ('sha256-jSYQUrW7J0b3jPqhZP9C2Xh1PyJKHKXd4s0fpGGKrww='), or a nonce ('nonce-...') is required to enable inli"
+        ]
+      },
+      "tip": {
+        "checks": {
+          "svgNodes": 51,
+          "circles": 12,
+          "paths": 14,
+          "texts": 16,
+          "styleElsInSvg": 1,
+          "styleEls": 1,
+          "styleAttrs": 0,
+          "svgStyleAttr": null,
+          "svgFont": "10px system-ui, sans-serif",
+          "textAnchor": "end"
+        },
+        "after": {
+          "tipNodes": 1,
+          "tipText": "​x 0​y 50",
+          "styleEls": 1,
+          "styleAttrs": 0
+        },
+        "violations": [
+          {
+            "dir": "style-src-elem",
+            "blocked": "inline",
+            "file": "plot.js",
+            "line": 15585,
+            "sample": ""
+          }
+        ],
+        "errors": [
+          "console.error: Applying inline style violates the following Content Security Policy directive 'style-src 'self''. Either the 'unsafe-inline' keyword, a hash ('sha256-jSYQUrW7J0b3jPqhZP9C2Xh1PyJKHKXd4s0fpGGKrww='), or a nonce ('nonce-...') is required to enable inli"
+        ]
+      },
+      "legend": {
+        "checks": {
+          "tag": "DIV",
+          "nodes": 10,
+          "styleEls": 1,
+          "styleAttrs": 0,
+          "swatchStyleAttrs": 0,
+          "text": ":where(.plot-d6a7b5-swatches) {\n  font-family: system-ui, sans-serif;\n  font-size: 10px;\n  margin-bottom: 0.5em;\n}\n:where(.plot-d6a7b5-swatch > svg) {\n  margin-right: 0.5em;\n  overflow: visible;\n}\n:where(.plot-d6a7b5-swatches-wrap) {\n  display: flex;\n  align-items: center;\n  min-height: 33px;\n  flex-wrap: wrap;\n}\n:where(.plot-d6a7b5-swatches-wrap .plot-d6a7b5-swatch) {\n  display: inline-flex;\n  align-items: center;\n  margin-right: 1em;\n}abc",
+          "firstSwatchBg": "rgba(0, 0, 0, 0)",
+          "swatchSvgFill": "rgb(255, 0, 0)",
+          "rects": 3
+        },
+        "violations": [
+          {
+            "dir": "style-src-elem",
+            "blocked": "inline",
+            "file": "plot.js",
+            "line": 15592,
+            "sample": ""
+          }
+        ],
+        "errors": [
+          "console.error: Applying inline style violates the following Content Security Policy directive 'style-src 'self''. Either the 'unsafe-inline' keyword, a hash ('sha256-rCZUQsEQJf1DmnfnMZmlj08XC7qbIZySA6bEtitbQ00='), or a nonce ('nonce-...') is required to enable inli"
+        ]
+      },
+      "legend_ramp": {
+        "checks": {
+          "tag": "svg",
+          "nodes": 21,
+          "styleEls": 1,
+          "imgs": 1,
+          "texts": 6
+        },
+        "violations": [
+          {
+            "dir": "style-src-elem",
+            "blocked": "inline",
+            "file": "plot.js",
+            "line": 15598,
+            "sample": ""
+          },
+          {
+            "dir": "img-src",
+            "blocked": "data",
+            "file": "",
+            "line": 0,
+            "sample": ""
+          }
+        ],
+        "errors": [
+          "console.error: Applying inline style violates the following Content Security Policy directive 'style-src 'self''. Either the 'unsafe-inline' keyword, a hash ('sha256-/jg3HOQ97BIOLIR7iXhepLJanBbw11P39q1Ne1E+6Jc='), or a nonce ('nonce-...') is required to enable inli",
+          "console.error: Loading the image 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAABCAYAAAAxWXB3AAABJ2lDQ1BfAAB4nJWQP0vDQBjGf5aCf6iD6OiQsYtSFbqoSxWLTlIrWJ3SNE2FJoYkpQhufgE/hODsKEJnBwVBcBQ/gji4xicJki4dfI/37nfPPdzd+0JhBkWxAq4XBY16zThpnRrTn0xppGFaoc/kkOvnPfO+rfD/m"
+        ]
+      },
+      "plot_legend_option": {
+        "checks": {
+          "tag": "FIGURE",
+          "svgNodes": 1,
+          "circles": 0,
+          "paths": 0,
+          "texts": 0,
+          "styleElsInSvg": 0,
+          "styleEls": 2,
+          "styleAttrs": 1,
+          "svgStyleAttr": null,
+          "svgFont": "16px Times",
+          "textAnchor": null,
+          "fig": "FIGURE",
+          "styleElsInFigure": 2
+        },
+        "violations": [
+          {
+            "dir": "style-src-elem",
+            "blocked": "inline",
+            "file": "plot.js",
+            "line": 15603,
+            "sample": ""
+          },
+          {
+            "dir": "style-src-elem",
+            "blocked": "inline",
+            "file": "plot.js",
+            "line": 15603,
+            "sample": ""
+          }
+        ],
+        "errors": [
+          "console.error: Applying inline style violates the following Content Security Policy directive 'style-src 'self''. Either the 'unsafe-inline' keyword, a hash ('sha256-rCZUQsEQJf1DmnfnMZmlj08XC7qbIZySA6bEtitbQ00='), or a nonce ('nonce-...') is required to enable inli",
+          "console.error: Applying inline style violates the following Content Security Policy directive 'style-src 'self''. Either the 'unsafe-inline' keyword, a hash ('sha256-jSYQUrW7J0b3jPqhZP9C2Xh1PyJKHKXd4s0fpGGKrww='), or a nonce ('nonce-...') is required to enable inli"
+        ]
+      },
+      "style_option": {
+        "checks": {
+          "svgNodes": 52,
+          "circles": 12,
+          "paths": 15,
+          "texts": 16,
+          "styleElsInSvg": 1,
+          "styleEls": 1,
+          "styleAttrs": 1,
+          "svgStyleAttr": "background: lightyellow; color: darkgreen; font-size: 14px;",
+          "svgFont": "14px system-ui, sans-serif",
+          "textAnchor": "end",
+          "bg": "rgb(255, 255, 224)",
+          "styleAttr": "background: lightyellow; color: darkgreen; font-size: 14px;"
+        },
+        "violations": [
+          {
+            "dir": "style-src-elem",
+            "blocked": "inline",
+            "file": "plot.js",
+            "line": 15608,
+            "sample": ""
+          }
+        ],
+        "errors": [
+          "console.error: Applying inline style violates the following Content Security Policy directive 'style-src 'self''. Either the 'unsafe-inline' keyword, a hash ('sha256-jSYQUrW7J0b3jPqhZP9C2Xh1PyJKHKXd4s0fpGGKrww='), or a nonce ('nonce-...') is required to enable inli"
+        ]
+      },
+      "style_option_string": {
+        "checks": {
+          "svgNodes": 52,
+          "circles": 12,
+          "paths": 15,
+          "texts": 16,
+          "styleElsInSvg": 1,
+          "styleEls": 1,
+          "styleAttrs": 1,
+          "svgStyleAttr": "background: lightyellow; font-size: 20px;",
+          "svgFont": "20px system-ui, sans-serif",
+          "textAnchor": "end",
+          "bg": "rgb(255, 255, 224)",
+          "styleAttr": "background: lightyellow; font-size: 20px;"
+        },
+        "violations": [
+          {
+            "dir": "style-src-elem",
+            "blocked": "inline",
+            "file": "plot.js",
+            "line": 15613,
+            "sample": ""
+          }
+        ],
+        "errors": [
+          "console.error: Applying inline style violates the following Content Security Policy directive 'style-src 'self''. Either the 'unsafe-inline' keyword, a hash ('sha256-jSYQUrW7J0b3jPqhZP9C2Xh1PyJKHKXd4s0fpGGKrww='), or a nonce ('nonce-...') is required to enable inli"
+        ]
+      },
+      "render_to_html_string": {
+        "checks": {
+          "outerHTMLHasStyle": true,
+          "len": 4220,
+          "firstChild": "style"
+        },
+        "violations": [],
+        "errors": []
+      }
+    },
+    "echarts": {
+      "canvas_line": {
+        "thrown": "Failed to set the 'innerHTML' property on 'Element': This document requires 'TrustedHTML' assignment.",
+        "violations": [
+          {
+            "dir": "require-trusted-types-for",
+            "blocked": "trusted-types-sink",
+            "file": "echarts.js",
+            "line": 33296,
+            "sample": "Element innerHTML|"
+          }
+        ],
+        "errors": ["console.error: This document requires 'TrustedHTML' assignment. The action has been blocked."]
+      },
+      "svg_line": {
+        "checks": {
+          "svgNodes": 48,
+          "paths": 28,
+          "texts": "0,2,4,6,8,10,a,b,c,d,e,A,B"
+        },
+        "violations": [],
+        "errors": []
+      },
+      "legend_canvas": {
+        "thrown": "Failed to set the 'innerHTML' property on 'Element': This document requires 'TrustedHTML' assignment.",
+        "violations": [
+          {
+            "dir": "require-trusted-types-for",
+            "blocked": "trusted-types-sink",
+            "file": "echarts.js",
+            "line": 33296,
+            "sample": "Element innerHTML|"
+          }
+        ],
+        "errors": ["console.error: This document requires 'TrustedHTML' assignment. The action has been blocked."]
+      },
+      "tooltip_html_default": {
+        "thrown": "Failed to set the 'innerHTML' property on 'Element': This document requires 'TrustedHTML' assignment.",
+        "violations": [
+          {
+            "dir": "require-trusted-types-for",
+            "blocked": "trusted-types-sink",
+            "file": "echarts.js",
+            "line": 33296,
+            "sample": "Element innerHTML|"
+          }
+        ],
+        "errors": ["console.error: This document requires 'TrustedHTML' assignment. The action has been blocked."]
+      },
+      "tooltip_richText": {
+        "thrown": "Failed to set the 'innerHTML' property on 'Element': This document requires 'TrustedHTML' assignment.",
+        "violations": [
+          {
+            "dir": "require-trusted-types-for",
+            "blocked": "trusted-types-sink",
+            "file": "echarts.js",
+            "line": 33296,
+            "sample": "Element innerHTML|"
+          }
+        ],
+        "errors": ["console.error: This document requires 'TrustedHTML' assignment. The action has been blocked."]
+      },
+      "tooltip_richText_svg": {
+        "checks": {},
+        "after": {
+          "svgTexts": "0|2|4|6|8|10|a|b|c|d|e|A|B|c|  |A|3|  |B|7",
+          "tooltipDivs": 1
+        },
+        "violations": [],
+        "errors": []
+      },
+      "tooltip_html_svg": {
+        "checks": {},
+        "after": {
+          "divCount": 2,
+          "tooltipText": "0246810abcdeAB|"
+        },
+        "violations": [
+          {
+            "dir": "require-trusted-types-for",
+            "blocked": "trusted-types-sink",
+            "file": "echarts.js",
+            "line": 70636,
+            "sample": "Element innerHTML|<div style=\"margin: 0px 0 0;line-height:"
+          }
+        ],
+        "errors": [
+          "console.error: This document requires 'TrustedHTML' assignment. The action has been blocked.",
+          "pageerror: Failed to set the 'innerHTML' property on 'Element': This document requires 'TrustedHTML' assignment."
+        ]
+      },
+      "dataZoom": {
+        "thrown": "Failed to set the 'innerHTML' property on 'Element': This document requires 'TrustedHTML' assignment.",
+        "violations": [
+          {
+            "dir": "require-trusted-types-for",
+            "blocked": "trusted-types-sink",
+            "file": "echarts.js",
+            "line": 33296,
+            "sample": "Element innerHTML|"
+          }
+        ],
+        "errors": ["console.error: This document requires 'TrustedHTML' assignment. The action has been blocked."]
+      },
+      "dataZoom_wheel": {
+        "thrown": "Failed to set the 'innerHTML' property on 'Element': This document requires 'TrustedHTML' assignment.",
+        "violations": [
+          {
+            "dir": "require-trusted-types-for",
+            "blocked": "trusted-types-sink",
+            "file": "echarts.js",
+            "line": 33296,
+            "sample": "Element innerHTML|"
+          }
+        ],
+        "errors": ["console.error: This document requires 'TrustedHTML' assignment. The action has been blocked."]
+      },
+      "ssr_domparser_raw": {
+        "thrown": "Failed to execute 'parseFromString' on 'DOMParser': This document requires 'TrustedHTML' assignment.",
+        "violations": [
+          {
+            "dir": "require-trusted-types-for",
+            "blocked": "trusted-types-sink",
+            "file": "echarts.js",
+            "line": 82500,
+            "sample": "DOMParser parseFromString|<svg width=\"400\" height=\"250\" xmln"
+          }
+        ],
+        "errors": ["console.error: This document requires 'TrustedHTML' assignment. The action has been blocked."]
+      },
+      "ssr_domparser_keelpolicy": {
+        "checks": {
+          "svgLen": 7895,
+          "nodes": 49,
+          "paths": 28,
+          "styleEls": 1
+        },
+        "violations": [
+          {
+            "dir": "style-src-elem",
+            "blocked": "inline",
+            "file": "echarts.js",
+            "line": 82511,
+            "sample": ""
+          }
+        ],
+        "errors": [
+          "console.error: Applying inline style violates the following Content Security Policy directive 'style-src 'self''. Either the 'unsafe-inline' keyword, a hash ('sha256-XezmfsWSV9LBoRfVpBKC5I62dzZUSbDWA5VSaTACPiY='), or a nonce ('nonce-...') is required to enable inli"
+        ]
+      },
+      "ssr_img_same_origin": {
+        "checks": {
+          "put": 200,
+          "naturalWidth": 400,
+          "complete": true
+        },
+        "violations": [],
+        "errors": []
+      },
+      "ssr_img_blob_url": {
+        "checks": {
+          "naturalWidth": 0
+        },
+        "violations": [
+          {
+            "dir": "img-src",
+            "blocked": "blob",
+            "file": "",
+            "line": 0,
+            "sample": ""
+          }
+        ],
+        "errors": [
+          "console.error: Loading the image 'blob:http://127.0.0.1:58956/eca27e72-b12e-4d34-8db8-8a207bad590d' violates the following Content Security Policy directive: \"img-src 'self'\". The action has been blocked."
+        ]
+      },
+      "ssr_createElementNS": {
+        "checks": {
+          "note": "no non-HTML parse route used; string only",
+          "len": 7895
+        },
+        "violations": [],
+        "errors": []
+      }
+    },
+    "d3": {
+      "create_append_attr": {
+        "checks": {
+          "rects": 1,
+          "w": "100"
+        },
+        "violations": [],
+        "errors": []
+      },
+      "style_cssom": {
+        "checks": {
+          "computedFill": "rgb(0, 128, 0)",
+          "styleAttr": "fill: rgb(0, 128, 0);"
+        },
+        "violations": [],
+        "errors": []
+      },
+      "attr_style": {
+        "checks": {
+          "computedFill": "rgb(0, 0, 0)",
+          "styleAttr": "fill:rgb(0, 0, 255)"
+        },
+        "violations": [
+          {
+            "dir": "style-src-attr",
+            "blocked": "inline",
+            "file": "d3.js",
+            "line": 705,
+            "sample": ""
+          }
+        ],
+        "errors": [
+          "console.error: Applying inline style violates the following Content Security Policy directive 'style-src 'self''. Either the 'unsafe-inline' keyword, a hash ('sha256-alBGZrX8BoV3yqozpPU0BizfOVMNONBRQvN5k9/vNGs='), or a nonce ('nonce-...') is required to enable inli"
+        ]
+      },
+      "scales_axis": {
+        "checks": {
+          "ticks": 12,
+          "text": "0,1,2,3,4,5,6,7,8,9,10,11"
+        },
+        "violations": [],
+        "errors": []
+      },
+      "line_area": {
+        "checks": {
+          "paths": 2,
+          "dLen": 296
+        },
+        "violations": [],
+        "errors": []
+      },
+      "transition": {
+        "checks": {
+          "x": "200",
+          "fill": "rgb(0, 0, 255)"
+        },
+        "violations": [],
+        "errors": []
+      },
+      "zoom": {
+        "checks": {},
+        "after": {
+          "transform": "translate(-99.01758076999641,-47.44592411895661) scale(1.515716566510398)",
+          "zoomed": "translate(-99.01758076999641,-47.44592411895661) scale(1.515716566510398)"
+        },
+        "violations": [],
+        "errors": []
+      },
+      "brush": {
+        "checks": {
+          "nodes": 12
+        },
+        "after": {
+          "selection": "[[42,42],[192,142]]",
+          "brushNodes": 12,
+          "selectionRectW": "150",
+          "selectionFill": "rgb(119, 119, 119)"
+        },
+        "violations": [],
+        "errors": []
+      },
+      "html": {
+        "thrown": "Failed to set the 'innerHTML' property on 'Element': This document requires 'TrustedHTML' assignment.",
+        "violations": [
+          {
+            "dir": "require-trusted-types-for",
+            "blocked": "trusted-types-sink",
+            "file": "d3.js",
+            "line": 864,
+            "sample": "Element innerHTML|<b>x</b>"
+          }
+        ],
+        "errors": ["console.error: This document requires 'TrustedHTML' assignment. The action has been blocked."]
+      },
+      "html_text": {
+        "checks": {
+          "text": "<b>x</b>"
+        },
+        "violations": [],
+        "errors": []
+      },
+      "format": {
+        "checks": {
+          "fmt": "12,345.68",
+          "tf": "2024-01-05"
+        },
+        "violations": [],
+        "errors": []
+      }
+    }
+  },
+  "webkit": {
+    "chartjs": {
+      "line": {
+        "checks": {
+          "pixels": 0,
+          "styleEls": 0,
+          "styleAttrs": 1,
+          "canvasStyle": "display: block; box-sizing: border-box; height: 392px; width: 784px;",
+          "parentStyle": null
+        },
+        "violations": [],
+        "errors": []
+      },
+      "bar": {
+        "checks": {
+          "pixels": 0,
+          "styleEls": 0,
+          "styleAttrs": 1,
+          "canvasStyle": "display: block; box-sizing: border-box; height: 392px; width: 784px;",
+          "parentStyle": null
+        },
+        "violations": [],
+        "errors": []
+      },
+      "animation": {
+        "checks": {
+          "pixels": 118575,
+          "styleEls": 0,
+          "styleAttrs": 1,
+          "canvasStyle": "display: block; box-sizing: border-box; height: 392px; width: 784px;",
+          "parentStyle": null
+        },
+        "violations": [],
+        "errors": []
+      },
+      "tooltip_legend": {
+        "checks": {},
+        "after": {
+          "tooltipOpacity": 1,
+          "tooltipTitle": ["c"],
+          "activeEls": 1,
+          "legendItems": 2,
+          "pixelsBefore": 0,
+          "pixelsAfter": 24183,
+          "styleEls": 0,
+          "styleAttrs": 1
+        },
+        "violations": [],
+        "errors": []
+      },
+      "responsive_resize": {
+        "checks": {
+          "pixels": 7131,
+          "styleEls": 0,
+          "styleAttrs": 2,
+          "canvasStyle": "display: block; box-sizing: border-box; height: 150px; width: 300px;",
+          "parentStyle": "width: 300px;",
+          "cssWidth": "300px",
+          "w": 300
+        },
+        "violations": [],
+        "errors": []
+      }
+    },
+    "uplot": {
+      "basic": {
+        "checks": {
+          "pixels": 0,
+          "canvasSize": "300x150",
+          "styleEls": 0,
+          "styleAttrs": 4,
+          "nodes": 30,
+          "uplotWrapStyleAttr": null,
+          "canvasStyleAttr": null
+        },
+        "violations": [],
+        "errors": []
+      },
+      "legend": {
+        "checks": {
+          "legendRows": 3,
+          "legendText": "Time--A--B--",
+          "legendDisplay": "block"
+        },
+        "violations": [],
+        "errors": []
+      },
+      "cursor": {
+        "checks": {},
+        "after": {
+          "idx": 7,
+          "legendValue": "1969-12-31 7:00pm",
+          "cursorLineDisplay": "block"
+        },
+        "violations": [],
+        "errors": []
+      },
+      "select_zoom": {
+        "checks": {},
+        "after": {
+          "xmin": 0,
+          "xmax": 6.705882352941177,
+          "selectDisplay": "block"
+        },
+        "violations": [],
+        "errors": []
+      }
+    },
+    "plot": {
+      "line_dot": {
+        "checks": {
+          "svgNodes": 52,
+          "circles": 12,
+          "paths": 15,
+          "texts": 16,
+          "styleElsInSvg": 1,
+          "styleEls": 1,
+          "styleAttrs": 0,
+          "svgStyleAttr": null,
+          "svgFont": "10px system-ui, sans-serif",
+          "textAnchor": "end"
+        },
+        "violations": [
+          {
+            "dir": "style-src-elem",
+            "blocked": "inline",
+            "file": "plot.js",
+            "line": 15575,
+            "sample": ""
+          }
+        ],
+        "errors": [
+          "console.error: Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy."
+        ]
+      },
+      "axis": {
+        "checks": {
+          "svgNodes": 52,
+          "circles": 12,
+          "paths": 15,
+          "texts": 16,
+          "styleElsInSvg": 1,
+          "styleEls": 1,
+          "styleAttrs": 0,
+          "svgStyleAttr": null,
+          "svgFont": "10px system-ui, sans-serif",
+          "textAnchor": "middle",
+          "ticks": 6
+        },
+        "violations": [
+          {
+            "dir": "style-src-elem",
+            "blocked": "inline",
+            "file": "plot.js",
+            "line": 15580,
+            "sample": ""
+          }
+        ],
+        "errors": [
+          "console.error: Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy."
+        ]
+      },
+      "tip": {
+        "checks": {
+          "svgNodes": 51,
+          "circles": 12,
+          "paths": 14,
+          "texts": 16,
+          "styleElsInSvg": 1,
+          "styleEls": 1,
+          "styleAttrs": 0,
+          "svgStyleAttr": null,
+          "svgFont": "10px system-ui, sans-serif",
+          "textAnchor": "end"
+        },
+        "after": {
+          "tipNodes": 1,
+          "tipText": "​x 0​y 50",
+          "styleEls": 1,
+          "styleAttrs": 0
+        },
+        "violations": [
+          {
+            "dir": "style-src-elem",
+            "blocked": "inline",
+            "file": "plot.js",
+            "line": 15585,
+            "sample": ""
+          }
+        ],
+        "errors": [
+          "console.error: Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy."
+        ]
+      },
+      "legend": {
+        "checks": {
+          "tag": "DIV",
+          "nodes": 10,
+          "styleEls": 1,
+          "styleAttrs": 0,
+          "swatchStyleAttrs": 0,
+          "text": ":where(.plot-d6a7b5-swatches) {\n  font-family: system-ui, sans-serif;\n  font-size: 10px;\n  margin-bottom: 0.5em;\n}\n:where(.plot-d6a7b5-swatch > svg) {\n  margin-right: 0.5em;\n  overflow: visible;\n}\n:where(.plot-d6a7b5-swatches-wrap) {\n  display: flex;\n  align-items: center;\n  min-height: 33px;\n  flex-wrap: wrap;\n}\n:where(.plot-d6a7b5-swatches-wrap .plot-d6a7b5-swatch) {\n  display: inline-flex;\n  align-items: center;\n  margin-right: 1em;\n}abc",
+          "firstSwatchBg": "rgba(0, 0, 0, 0)",
+          "swatchSvgFill": "rgb(255, 0, 0)",
+          "rects": 3
+        },
+        "violations": [
+          {
+            "dir": "style-src-elem",
+            "blocked": "inline",
+            "file": "plot.js",
+            "line": 15592,
+            "sample": ""
+          }
+        ],
+        "errors": [
+          "console.error: Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy."
+        ]
+      },
+      "legend_ramp": {
+        "checks": {
+          "tag": "svg",
+          "nodes": 21,
+          "styleEls": 1,
+          "imgs": 1,
+          "texts": 6
+        },
+        "violations": [],
+        "errors": [
+          "console.error: Refused to load data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAABCAYAAAAxWXB3AAABY2lDQ1BrQ0dDb2xvclNwYWNlRGlzcGxheVAzAAAokX2QsUvDUBDGv1aloHUQHRwcMolDlJIKuji0FURxCFXB6pS+pqmQxkeSIgU3/4GC/4EKzm4Whzo6OAiik+jm5KTgouV5L4mkInqP435877vjOCA5bnBu9wOoO75b",
+          "console.error: Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy."
+        ]
+      },
+      "plot_legend_option": {
+        "checks": {
+          "tag": "FIGURE",
+          "svgNodes": 1,
+          "circles": 0,
+          "paths": 0,
+          "texts": 0,
+          "styleElsInSvg": 0,
+          "styleEls": 2,
+          "styleAttrs": 1,
+          "svgStyleAttr": null,
+          "svgFont": "16px -webkit-standard",
+          "textAnchor": null,
+          "fig": "FIGURE",
+          "styleElsInFigure": 2
+        },
+        "violations": [
+          {
+            "dir": "style-src-elem",
+            "blocked": "inline",
+            "file": "plot.js",
+            "line": 15603,
+            "sample": ""
+          },
+          {
+            "dir": "style-src-elem",
+            "blocked": "inline",
+            "file": "plot.js",
+            "line": 15603,
+            "sample": ""
+          }
+        ],
+        "errors": [
+          "console.error: Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+          "console.error: Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy."
+        ]
+      },
+      "style_option": {
+        "checks": {
+          "svgNodes": 52,
+          "circles": 12,
+          "paths": 15,
+          "texts": 16,
+          "styleElsInSvg": 1,
+          "styleEls": 1,
+          "styleAttrs": 1,
+          "svgStyleAttr": "background: lightyellow; color: darkgreen; font-size: 14px;",
+          "svgFont": "14px system-ui, sans-serif",
+          "textAnchor": "end",
+          "bg": "rgb(255, 255, 224)",
+          "styleAttr": "background: lightyellow; color: darkgreen; font-size: 14px;"
+        },
+        "violations": [
+          {
+            "dir": "style-src-elem",
+            "blocked": "inline",
+            "file": "plot.js",
+            "line": 15608,
+            "sample": ""
+          }
+        ],
+        "errors": [
+          "console.error: Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy."
+        ]
+      },
+      "style_option_string": {
+        "checks": {
+          "svgNodes": 52,
+          "circles": 12,
+          "paths": 15,
+          "texts": 16,
+          "styleElsInSvg": 1,
+          "styleEls": 1,
+          "styleAttrs": 1,
+          "svgStyleAttr": "background: lightyellow; font-size: 20px;",
+          "svgFont": "20px system-ui, sans-serif",
+          "textAnchor": "end",
+          "bg": "rgb(255, 255, 224)",
+          "styleAttr": "background: lightyellow; font-size: 20px;"
+        },
+        "violations": [
+          {
+            "dir": "style-src-elem",
+            "blocked": "inline",
+            "file": "plot.js",
+            "line": 15613,
+            "sample": ""
+          }
+        ],
+        "errors": [
+          "console.error: Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy."
+        ]
+      },
+      "render_to_html_string": {
+        "checks": {
+          "outerHTMLHasStyle": true,
+          "len": 4220,
+          "firstChild": "style"
+        },
+        "violations": [],
+        "errors": []
+      }
+    },
+    "echarts": {
+      "canvas_line": {
+        "thrown": "This assignment requires a TrustedHTML",
+        "violations": [
+          {
+            "dir": "require-trusted-types-for",
+            "blocked": "trusted-types-sink",
+            "file": "echarts.js",
+            "line": 33296,
+            "sample": "Element innerHTML|"
+          }
+        ],
+        "errors": [
+          "console.error: This requires a TrustedHTML value else it violates the following Content Security Policy directive: \"require-trusted-types-for 'script'\""
+        ]
+      },
+      "svg_line": {
+        "checks": {
+          "svgNodes": 48,
+          "paths": 28,
+          "texts": "0,2,4,6,8,10,a,b,c,d,e,A,B"
+        },
+        "violations": [],
+        "errors": []
+      },
+      "legend_canvas": {
+        "thrown": "This assignment requires a TrustedHTML",
+        "violations": [
+          {
+            "dir": "require-trusted-types-for",
+            "blocked": "trusted-types-sink",
+            "file": "echarts.js",
+            "line": 33296,
+            "sample": "Element innerHTML|"
+          }
+        ],
+        "errors": [
+          "console.error: This requires a TrustedHTML value else it violates the following Content Security Policy directive: \"require-trusted-types-for 'script'\""
+        ]
+      },
+      "tooltip_html_default": {
+        "thrown": "This assignment requires a TrustedHTML",
+        "violations": [
+          {
+            "dir": "require-trusted-types-for",
+            "blocked": "trusted-types-sink",
+            "file": "echarts.js",
+            "line": 33296,
+            "sample": "Element innerHTML|"
+          }
+        ],
+        "errors": [
+          "console.error: This requires a TrustedHTML value else it violates the following Content Security Policy directive: \"require-trusted-types-for 'script'\""
+        ]
+      },
+      "tooltip_richText": {
+        "thrown": "This assignment requires a TrustedHTML",
+        "violations": [
+          {
+            "dir": "require-trusted-types-for",
+            "blocked": "trusted-types-sink",
+            "file": "echarts.js",
+            "line": 33296,
+            "sample": "Element innerHTML|"
+          }
+        ],
+        "errors": [
+          "console.error: This requires a TrustedHTML value else it violates the following Content Security Policy directive: \"require-trusted-types-for 'script'\""
+        ]
+      },
+      "tooltip_richText_svg": {
+        "checks": {},
+        "after": {
+          "svgTexts": "0|2|4|6|8|10|a|b|c|d|e|A|B|c|  |A|3|  |B|7",
+          "tooltipDivs": 1
+        },
+        "violations": [],
+        "errors": []
+      },
+      "tooltip_html_svg": {
+        "checks": {},
+        "after": {
+          "divCount": 2,
+          "tooltipText": "0246810abcdeAB|"
+        },
+        "violations": [
+          {
+            "dir": "require-trusted-types-for",
+            "blocked": "trusted-types-sink",
+            "file": "echarts.js",
+            "line": 70636,
+            "sample": "Element innerHTML|<div style=\"margin: 0px 0 0;line-height:"
+          }
+        ],
+        "errors": [
+          "console.error: This requires a TrustedHTML value else it violates the following Content Security Policy directive: \"require-trusted-types-for 'script'\"",
+          "pageerror: This assignment requires a TrustedHTML"
+        ]
+      },
+      "dataZoom": {
+        "thrown": "This assignment requires a TrustedHTML",
+        "violations": [
+          {
+            "dir": "require-trusted-types-for",
+            "blocked": "trusted-types-sink",
+            "file": "echarts.js",
+            "line": 33296,
+            "sample": "Element innerHTML|"
+          }
+        ],
+        "errors": [
+          "console.error: This requires a TrustedHTML value else it violates the following Content Security Policy directive: \"require-trusted-types-for 'script'\""
+        ]
+      },
+      "dataZoom_wheel": {
+        "thrown": "This assignment requires a TrustedHTML",
+        "violations": [
+          {
+            "dir": "require-trusted-types-for",
+            "blocked": "trusted-types-sink",
+            "file": "echarts.js",
+            "line": 33296,
+            "sample": "Element innerHTML|"
+          }
+        ],
+        "errors": [
+          "console.error: This requires a TrustedHTML value else it violates the following Content Security Policy directive: \"require-trusted-types-for 'script'\""
+        ]
+      },
+      "ssr_domparser_raw": {
+        "thrown": "This assignment requires a TrustedHTML",
+        "violations": [
+          {
+            "dir": "require-trusted-types-for",
+            "blocked": "trusted-types-sink",
+            "file": "echarts.js",
+            "line": 82500,
+            "sample": "DOMParser parseFromString|<svg width=\"400\" height=\"250\" xmln"
+          }
+        ],
+        "errors": [
+          "console.error: This requires a TrustedHTML value else it violates the following Content Security Policy directive: \"require-trusted-types-for 'script'\""
+        ]
+      },
+      "ssr_domparser_keelpolicy": {
+        "checks": {
+          "svgLen": 7815,
+          "nodes": 49,
+          "paths": 28,
+          "styleEls": 1
+        },
+        "violations": [
+          {
+            "dir": "style-src-attr",
+            "blocked": "inline",
+            "file": "echarts.js",
+            "line": 82509,
+            "sample": ""
+          },
+          {
+            "dir": "style-src-attr",
+            "blocked": "inline",
+            "file": "echarts.js",
+            "line": 82509,
+            "sample": ""
+          },
+          {
+            "dir": "style-src-attr",
+            "blocked": "inline",
+            "file": "echarts.js",
+            "line": 82509,
+            "sample": ""
+          },
+          {
+            "dir": "style-src-attr",
+            "blocked": "inline",
+            "file": "echarts.js",
+            "line": 82509,
+            "sample": ""
+          },
+          {
+            "dir": "style-src-attr",
+            "blocked": "inline",
+            "file": "echarts.js",
+            "line": 82509,
+            "sample": ""
+          },
+          {
+            "dir": "style-src-attr",
+            "blocked": "inline",
+            "file": "echarts.js",
+            "line": 82509,
+            "sample": ""
+          },
+          {
+            "dir": "style-src-attr",
+            "blocked": "inline",
+            "file": "echarts.js",
+            "line": 82509,
+            "sample": ""
+          },
+          {
+            "dir": "style-src-attr",
+            "blocked": "inline",
+            "file": "echarts.js",
+            "line": 82509,
+            "sample": ""
+          },
+          {
+            "dir": "style-src-attr",
+            "blocked": "inline",
+            "file": "echarts.js",
+            "line": 82509,
+            "sample": ""
+          },
+          {
+            "dir": "style-src-attr",
+            "blocked": "inline",
+            "file": "echarts.js",
+            "line": 82509,
+            "sample": ""
+          },
+          {
+            "dir": "style-src-attr",
+            "blocked": "inline",
+            "file": "echarts.js",
+            "line": 82509,
+            "sample": ""
+          },
+          {
+            "dir": "style-src-attr",
+            "blocked": "inline",
+            "file": "echarts.js",
+            "line": 82509,
+            "sample": ""
+          },
+          {
+            "dir": "style-src-attr",
+            "blocked": "inline",
+            "file": "echarts.js",
+            "line": 82509,
+            "sample": ""
+          },
+          {
+            "dir": "style-src-elem",
+            "blocked": "inline",
+            "file": "echarts.js",
+            "line": 82511,
+            "sample": ""
+          }
+        ],
+        "errors": [
+          "console.error: Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+          "console.error: Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+          "console.error: Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+          "console.error: Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+          "console.error: Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+          "console.error: Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+          "console.error: Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+          "console.error: Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+          "console.error: Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+          "console.error: Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+          "console.error: Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+          "console.error: Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+          "console.error: Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy.",
+          "console.error: Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy."
+        ]
+      },
+      "ssr_img_same_origin": {
+        "checks": {
+          "put": 200,
+          "naturalWidth": 400,
+          "complete": true
+        },
+        "violations": [],
+        "errors": []
+      },
+      "ssr_img_blob_url": {
+        "checks": {
+          "naturalWidth": 0
+        },
+        "violations": [
+          {
+            "dir": "img-src",
+            "blocked": "blob",
+            "file": "echarts.js",
+            "line": 82534,
+            "sample": ""
+          }
+        ],
+        "errors": [
+          "console.error: Refused to load blob:http://127.0.0.1:58956/c726846e-192f-4b90-b0f6-04d3f559c077 because it does not appear in the img-src directive of the Content Security Policy."
+        ]
+      },
+      "ssr_createElementNS": {
+        "checks": {
+          "note": "no non-HTML parse route used; string only",
+          "len": 7815
+        },
+        "violations": [],
+        "errors": []
+      }
+    },
+    "d3": {
+      "create_append_attr": {
+        "checks": {
+          "rects": 1,
+          "w": "100"
+        },
+        "violations": [],
+        "errors": []
+      },
+      "style_cssom": {
+        "checks": {
+          "computedFill": "rgb(0, 128, 0)",
+          "styleAttr": "fill: rgb(0, 128, 0);"
+        },
+        "violations": [],
+        "errors": []
+      },
+      "attr_style": {
+        "checks": {
+          "computedFill": "rgb(0, 0, 0)",
+          "styleAttr": "fill:rgb(0, 0, 255)"
+        },
+        "violations": [
+          {
+            "dir": "style-src-attr",
+            "blocked": "inline",
+            "file": "d3.js",
+            "line": 705,
+            "sample": ""
+          }
+        ],
+        "errors": [
+          "console.error: Refused to apply a stylesheet because its hash, its nonce, or 'unsafe-inline' does not appear in the style-src directive of the Content Security Policy."
+        ]
+      },
+      "scales_axis": {
+        "checks": {
+          "ticks": 12,
+          "text": "0,1,2,3,4,5,6,7,8,9,10,11"
+        },
+        "violations": [],
+        "errors": []
+      },
+      "line_area": {
+        "checks": {
+          "paths": 2,
+          "dLen": 296
+        },
+        "violations": [],
+        "errors": []
+      },
+      "transition": {
+        "checks": {
+          "x": "200",
+          "fill": "rgb(0, 0, 255)"
+        },
+        "violations": [],
+        "errors": []
+      },
+      "zoom": {
+        "checks": {},
+        "after": {
+          "transform": "translate(-99.01758076999641,-47.44592411895661) scale(1.515716566510398)",
+          "zoomed": "translate(-99.01758076999641,-47.44592411895661) scale(1.515716566510398)"
+        },
+        "violations": [],
+        "errors": []
+      },
+      "brush": {
+        "checks": {
+          "nodes": 12
+        },
+        "after": {
+          "selection": "[[42,42],[192,142]]",
+          "brushNodes": 12,
+          "selectionRectW": "150",
+          "selectionFill": "rgb(119, 119, 119)"
+        },
+        "violations": [],
+        "errors": []
+      },
+      "html": {
+        "thrown": "This assignment requires a TrustedHTML",
+        "violations": [
+          {
+            "dir": "require-trusted-types-for",
+            "blocked": "trusted-types-sink",
+            "file": "d3.js",
+            "line": 864,
+            "sample": "Element innerHTML|<b>x</b>"
+          }
+        ],
+        "errors": [
+          "console.error: This requires a TrustedHTML value else it violates the following Content Security Policy directive: \"require-trusted-types-for 'script'\""
+        ]
+      },
+      "html_text": {
+        "checks": {
+          "text": "<b>x</b>"
+        },
+        "violations": [],
+        "errors": []
+      },
+      "format": {
+        "checks": {
+          "fmt": "12,345.68",
+          "tf": "2024-01-05"
+        },
+        "violations": [],
+        "errors": []
+      }
+    }
+  }
+}
