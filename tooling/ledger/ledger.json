@@ -16425,6 +16425,14 @@
       "rung": "example"
     },
     {
+      "item": "k.store#24",
+      "rung": "none"
+    },
+    {
+      "item": "k.store#25",
+      "rung": "none"
+    },
+    {
       "item": "k.sync#1",
       "rung": "probabilistic"
     },
