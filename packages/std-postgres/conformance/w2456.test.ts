@@ -1,7 +1,7 @@
 // Spec: std.postgres, Rules "W2456 `now()`, `current_timestamp`, `clock_timestamp()`, `random()` or `gen_random_uuid()` in a template's text or a migration, not replayed under sim (pass `ctx.clock.now()` or `ctx.random.id(brand)`)"
 // Spec: std.postgres, Conformance "E2451, E2452, E2458 and W2456 each fire on a fixture, not on its clean twin; a missing `KEEL_POSTGRES_URL` is E2455."
 // Seed: 1337.
-// Skipped: waits for `@keel/check` to pass `.sql` files to rules. Assumed API: a migration is an entry `{ path: "modules/<id>/migrations/NNNN-<kebab>.sql", source: <sql text> }` of the same `check(files)` array, and a rule reads it like a `.ts` entry (`path`, `source`), reporting W2456 once per occurrence.
+// A migration is an entry `{ path: "modules/<id>/migrations/NNNN-<kebab>.sql", source: <sql text> }` of the same `check(files)` array, and a rule reads it like a `.ts` entry (`path`, `source`), reporting W2456 once per occurrence.
 // Assumption: one warning per occurrence; a `sql` template's text is the literal parts of the tagged template; a migration is a `.sql` file under the module.
 import fc from "fast-check";
 import { expect, test } from "vitest";
@@ -23,7 +23,7 @@ test("W2456 fires on each of its five SQL calls in a template's text, not on the
   expect(found(project(P, withQuery("${1}")), "W2456").length).toBe(0);
 });
 
-test.skip("W2456 fires on each of its five SQL calls in a migration, not on a clean migration", () => {
+test("W2456 fires on each of its five SQL calls in a migration, not on a clean migration", () => {
   fc.assert(
     fc.property(fc.constantFrom(...CALLS), (c) => {
       const dirty = project(P, dbFile('"kitchen.db"'), "node", `create table t (at timestamptz default ${c})`);
