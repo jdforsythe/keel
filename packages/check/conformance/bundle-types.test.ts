@@ -48,10 +48,10 @@ test("`import.meta.env.VITE_X` with no type reference is one E1751", () => {
   expect(d[0]?.line).toBe(1);
 });
 
-test("`import.meta.env.VITE_X` with `/// <reference types=\"vite/client\" />` is still one E1751", () => {
+test('`import.meta.env.VITE_X` with `/// <reference types="vite/client" />` is still one E1751', () => {
   expect(e1751(REF + BAD)).toHaveLength(1);
 });
 
-test("the clean page stays clean with `/// <reference types=\"vite/client\" />`", () => {
+test('the clean page stays clean with `/// <reference types="vite/client" />`', () => {
   expect(e1751(REF + GOOD)).toEqual([]);
 });
