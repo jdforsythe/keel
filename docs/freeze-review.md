@@ -35,7 +35,7 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.ledger | 11 | **conformance-covered** | none |
 | k.sync | 14 | **conformance-covered** | none |
 | k.deploy | 11 | **conformance-covered** | none |
-| k.bundle | 6 | **conformance-covered** | none |
+| k.bundle | 7 | **conformance-covered** | clause 7 (RFC 0167): no test yet |
 | k.explain | 4 | **conformance-covered** | none |
 | k.return | 9 | **conformance-covered** | none |
 | k.opening | 6 | **conformance-covered** | none |
