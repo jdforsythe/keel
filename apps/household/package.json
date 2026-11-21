@@ -6,7 +6,7 @@
   "scripts": {
     "build": "keel build",
     "dev": "keel dev",
-    "check": "tsc --noEmit && biome check modules test && keel check --quiet",
+    "check": "tsc --noEmit && biome check modules test smoke && keel check --quiet",
     "test": "vitest run"
   },
   "dependencies": {

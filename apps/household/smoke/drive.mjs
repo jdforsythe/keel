@@ -6,7 +6,10 @@ const browser = await chromium.launch();
 const page = await browser.newPage();
 const errors = [];
 page.on("pageerror", (e) => errors.push(String(e)));
-page.on("console", (m) => m.type() === "error" && !m.text().startsWith("Failed to load resource") && errors.push(m.text()));
+page.on(
+  "console",
+  (m) => m.type() === "error" && !m.text().startsWith("Failed to load resource") && errors.push(m.text()),
+);
 const check = (name, ok, detail = "") => console.log(`${ok ? "ok" : "fail"} ${name}${detail ? ` ${detail}` : ""}`);
 const byId = (id) => page.locator(`[id='${id}']`);
 
@@ -30,10 +33,17 @@ await row.waitFor();
 await byId("shopping.staples.trigger").click();
 await byId("shopping.staples.item.milk").click();
 await row.filter({ hasText: "× 2" }).waitFor();
-check("menu adds through the API and raises quantity", (await row.textContent()) === "Milk × 2", await row.textContent());
+check(
+  "menu adds through the API and raises quantity",
+  (await row.textContent()) === "Milk × 2",
+  await row.textContent(),
+);
 await page.reload();
 await page.waitForLoadState("networkidle");
-check("the list survives a reload", (await page.locator("[id^='shopping.name.']").first().textContent()) === "Milk × 2");
+check(
+  "the list survives a reload",
+  (await page.locator("[id^='shopping.name.']").first().textContent()) === "Milk × 2",
+);
 await byId("shopping.help.button").click();
 check("disclosure opens", (await byId("shopping.help.button").getAttribute("aria-expanded")) === "true");
 

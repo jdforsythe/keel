@@ -114,3 +114,8 @@ Working file for the orchestrator; it moves to `tasks/p1/` before merge. Each fi
 
 ### L4-8 docs: a service call on a `createApp` ctx never reaches `ctx.net`
 - With `ctx.net.route("/api/*", ...)` recording requests, a page under `renderRoute` on the same ctx made its `shoppingApi.add` calls in process: the recorder saw none. Correct per `k.services` ("in process"), but `keel-server`'s "Route a client test's sim `ctx.net` `/api/*` to `app.fetch`" suggests the calls pass through the route.
+
+## Workspace wiring
+
+### W-1 rough (repo tooling): `pnpm ledger` in a fresh worktree rewrites more than the new app
+- `pnpm ledger` after adding the app changed 1,286 lines of `tooling/ledger/ledger.json`: the household's 52 exports, and also seven golden-1 and golden-2 export rungs, the `mutation` section and 180 `a11y` items, because this worktree holds no `reports/` from earlier runs. The committed file keeps the master entries and adds only the household's exports; `node tooling/ledger-fresh.mjs` passes on it.
