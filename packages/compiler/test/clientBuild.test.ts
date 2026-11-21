@@ -9,7 +9,9 @@ import keel from "@keel/compiler/vite";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /** What the plugin's `config` always gives: the locked `envPrefix` and the worker bundles' plugin. */
-const OWN = { envPrefix: "\0", worker: { plugins: expect.any(Function) } };
+const SERVE = { envPrefix: "\0", worker: { plugins: expect.any(Function) } };
+/** A build defines `DEV` and `PROD` itself, whatever the project config sets `process.env.NODE_ENV` to. */
+const OWN = { ...SERVE, define: { "import.meta.env.DEV": "false", "import.meta.env.PROD": "true" } };
 
 let root = "";
 const saved = process.env.KEEL_DEPLOYABLE;
@@ -68,9 +70,16 @@ describe("@keel/compiler/vite config (client build of a node deployable)", () =>
     });
   });
 
+  it("defines import.meta.env.DEV false and PROD true for every build, not for serve", () => {
+    expect(keel().config({ root }, { command: "build" })).toMatchObject({
+      define: { "import.meta.env.DEV": "false", "import.meta.env.PROD": "true" },
+    });
+    expect(keel().config({ root }, { command: "serve" })).not.toHaveProperty("define");
+  });
+
   it("keeps the project config for serve, ssr, static, unknown or unset deployables, or no topology", () => {
     process.env.KEEL_DEPLOYABLE = "api";
-    expect(keel().config({ root }, { command: "serve" })).toEqual(OWN);
+    expect(keel().config({ root }, { command: "serve" })).toEqual(SERVE);
     expect(keel().config({ root }, { command: "build", isSsrBuild: true })).toEqual(OWN);
     for (const name of ["pre", "nope"]) {
       process.env.KEEL_DEPLOYABLE = name;
