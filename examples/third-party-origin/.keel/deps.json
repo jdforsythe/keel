@@ -1,0 +1,1 @@
+{"data":{"edges":[{"from":"modules/app/HomePage.tsx#props.data","to":"modules.app.HomePage:text:#text"}],"nodes":[{"file":"modules/app/HomePage.tsx","id":"modules.app.HomePage:text:#text","kind":"binding","name":"text #text"},{"file":"modules/app/HomePage.tsx","id":"modules/app/HomePage.tsx#props.data","kind":"prop","name":"data"}]},"hash":"fnv1a:1a027ed0"}

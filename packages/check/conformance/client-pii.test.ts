@@ -2,7 +2,7 @@
 // Spec: k.leave, Rules "E1107 a `.pii()` class reaching `#k-state` that `clientPii` does not list (fix adds it)"
 // Spec: k.leave, Conformance "`store(Contact, …)` with `email: s.string().pii('contact')` in a component file is E1107 when the module has no `clientPii`, and with `clientPii: ['name']`; with `clientPii: ['contact']`, or in a `*.server.ts` file, it is not; the fix adds `'contact'`."
 // Seed 1337 (the properties below). The type pass is off: the fixtures name packages that resolve only on disk.
-// The real files are read from apps/ by realFiles; a store reached from a client file is made by adding one component file.
+// The negatives for the real golden modules are read from apps/ by realFiles.
 import { check } from "@keel/check";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
@@ -122,19 +122,26 @@ describe("k.leave Rules: E1107 a store call in a client-reachable file whose sta
     expect(e1107(realFiles("apps/golden-2/modules/recipes", "modules/recipes"))).toEqual([]);
   });
 
-  test("the real accounts profile store made reachable from a client component is E1107 for `contact` and `identifier`, and clean once the module lists them", () => {
-    const real = realFiles("apps/golden-2/modules/accounts", "modules/accounts");
+  test("a profile store module with `contact` and `identifier` pii, made reachable from a client component, is E1107 for both classes, and clean once the module lists them", () => {
+    const profile = f(
+      "modules/accounts/Profile.schema.ts",
+      "import { s } from '@keel/schema'\nexport const Profile = s.object({ userId: s.string().pii('identifier'), email: s.string().pii('contact') })\nexport const Profiles = s.object({ profiles: s.array(Profile) })\n",
+    );
+    const stores = f(
+      "modules/accounts/profileStores.ts",
+      "import { store } from '@keel/store'\nimport { Profiles } from './Profile.schema.ts'\nexport const profileStores = () => ({ profiles: store(Profiles, { profiles: [] }, { id: 'accounts.profiles' }) })\n",
+    );
+    const manifest = (clientPii: string): Files[number] =>
+      f(
+        "modules/accounts/module.ts",
+        `import { module } from '@keel/compiler'\nexport default module({ id: 'accounts', deps: [], capabilities: [], public: { exports: [] }${clientPii} })\n`,
+      );
     const panel = f(
       "modules/accounts/Panel.tsx",
       "import { profileStores } from './profileStores.ts'\nexport default function Panel() { return <p>{String(profileStores)}</p> }\n",
     );
-    const listed = real.map((x) =>
-      x.path === "modules/accounts/module.ts"
-        ? { ...x, source: x.source.replace("capabilities:", "clientPii: ['contact', 'identifier'],\n  capabilities:") }
-        : x,
-    );
-    expect(e1107([...real, panel]).length).toBeGreaterThan(0);
-    expect(e1107([...listed, panel])).toEqual([]);
+    expect(e1107([manifest(""), profile, stores, panel]).length).toBeGreaterThan(0);
+    expect(e1107([manifest(", clientPii: ['contact', 'identifier']"), profile, stores, panel])).toEqual([]);
   });
 
   test("the fix adds 'contact' to the module's `clientPii`, applies with `git apply`, and re-checking reports no E1107", () => {

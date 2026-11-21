@@ -162,11 +162,14 @@ await run("voice-lint", () => {
     ...under("docs", (r) => r.endsWith(".md") && r !== "docs/BRAND.md" && r !== "docs/VOICE.md").map((p) => [p, "md"]),
     ...under("packages", (r) => /^packages\/[^/]+\/README\.md$/.test(r)).map((p) => [p, "md"]),
     ...under("apps", (r) => /^apps\/[^/]+\/README\.md$/.test(r)).map((p) => [p, "md"]),
+    ...under("examples", (r) => /^examples\/[^/]+\/README\.md$/.test(r)).map((p) => [p, "md"]),
     ...under(".claude/skills", (r) => r.endsWith("/SKILL.md")).map((p) => [p, "md"]),
     ...under("packages/cli/skills", (r) => r.endsWith("/SKILL.md")).map((p) => [p, "md"]),
     ...under("spec", (r) => r.endsWith(".md")).map((p) => [p, "md"]),
     ...under("apps", (r) => /^apps\/[^/]+\/modules\/.*\.tsx$/.test(r)).map((p) => [p, "tsx"]),
     ...under("apps", (r) => /^apps\/[^/]+\/modules\/.*\.tsx?$/.test(r)).map((p) => [p, "comment"]),
+    ...under("examples", (r) => /^examples\/[^/]+\/modules\/.*\.tsx$/.test(r)).map((p) => [p, "tsx"]),
+    ...under("examples", (r) => /^examples\/[^/]+\/modules\/.*\.tsx?$/.test(r)).map((p) => [p, "comment"]),
     ...under("packages", (r) => /^packages\/[^/]+\/src\/.*\.ts$/.test(r)).map((p) => [p, "comment"]),
   ];
   const diags = [];

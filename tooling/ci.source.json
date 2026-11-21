@@ -232,6 +232,10 @@
         {
           "name": "served golden-2 pages resume in place in Chromium, three runs",
           "run": "node --disable-warning=ExperimentalWarning tooling/smoke/resume.mjs 3"
+        },
+        {
+          "name": "examples: check, test, build and one proof on the built output of each",
+          "run": "node --disable-warning=ExperimentalWarning tooling/smoke/examples.mjs"
         }
       ]
     },
