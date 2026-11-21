@@ -25,7 +25,7 @@ afterEach(() => {
   }
 });
 
-test.skip("With `KEEL_POSTGRES_URL` unset and `KEEL_DEV_DIR` a folder `d`, a `query` answers from PGlite in `d/postgres`, which exists after it", async () => {
+test("With `KEEL_POSTGRES_URL` unset and `KEEL_DEV_DIR` a folder `d`, a `query` answers from PGlite in `d/postgres`, which exists after it", async () => {
   await fc.assert(
     fc.asyncProperty(fc.integer({ min: 1, max: 1000 }), async (v) => {
       const d = mkdtempSync(join(tmpdir(), "keel-dev-"));

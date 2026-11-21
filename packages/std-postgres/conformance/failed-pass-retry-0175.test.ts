@@ -22,7 +22,7 @@ afterEach(() => {
 });
 const Count = s.object({ c: s.number() });
 
-test.skip("a migration referencing a table that does not exist rejects the first `query` with its error; once another database on that folder makes the table, the next `query` on the same ctx applies the migration and answers", async () => {
+test("a migration referencing a table that does not exist rejects the first `query` with its error; once another database on that folder makes the table, the next `query` on the same ctx applies the migration and answers", async () => {
   await fc.assert(
     fc.asyncProperty(fc.integer({ min: 1, max: 1000 }), async (v) => {
       const dir = mkdtempSync(join(tmpdir(), "keel-pg-"));

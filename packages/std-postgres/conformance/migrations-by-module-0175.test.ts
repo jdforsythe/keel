@@ -40,7 +40,7 @@ const failure = async (p: Promise<unknown>): Promise<string> =>
     (e: unknown) => `${String(Reflect.get(Object(e), "code"))} ${String(e)}`,
   );
 
-test.skip("`database(name)` with no `migrations`, its app folder named by `KEEL_APP_DIR`, reads `modules/<id>/migrations/*.sql` at the first sim `query` and the query reads the table it makes", async () => {
+test("`database(name)` with no `migrations`, its app folder named by `KEEL_APP_DIR`, reads `modules/<id>/migrations/*.sql` at the first sim `query` and the query reads the table it makes", async () => {
   await fc.assert(
     fc.asyncProperty(fc.integer({ min: 1, max: 50 }), async (rows) => {
       const { cap, table } = fresh();
@@ -58,7 +58,7 @@ test.skip("`database(name)` with no `migrations`, its app folder named by `KEEL_
   );
 });
 
-test.skip("with `KEEL_APP_DIR` naming another folder, that folder's file is read", async () => {
+test("with `KEEL_APP_DIR` naming another folder, that folder's file is read", async () => {
   const other = mkdtempSync(join(tmpdir(), "keel-app-other-"));
   try {
     const { cap, table } = fresh();
@@ -78,7 +78,7 @@ test.skip("with `KEEL_APP_DIR` naming another folder, that folder's file is read
   }
 });
 
-test.skip("a lone `0002-x.sql` rejects the first call with E2453", async () => {
+test("a lone `0002-x.sql` rejects the first call with E2453", async () => {
   const { cap } = fresh();
   put(app, `modules/${moduleOf(cap)}/migrations/0002-x.sql`, "select 1");
   const db = databaseFound(cap);
@@ -98,7 +98,7 @@ test.skip("no folder makes no table and no error", async () => {
 });
 
 const CHILD = join(import.meta.dirname, "app-dir-child.ts");
-test.skip("with `KEEL_APP_DIR` unset, in a working directory holding `modules/<id>/migrations/0001-notes.sql`, the first sim `query` reads the table it makes", async () => {
+test("with `KEEL_APP_DIR` unset, in a working directory holding `modules/<id>/migrations/0001-notes.sql`, the first sim `query` reads the table it makes", async () => {
   const { cap, table } = fresh();
   put(
     app,

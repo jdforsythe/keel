@@ -29,7 +29,7 @@ afterEach(() => {
   else process.env.KEEL_POSTGRES_URL = before;
 });
 
-test.skip("With `KEEL_POSTGRES_URL` a `postgres:` URL whose port refuses connections, the first `query` is `err` `keel.unreachable`", async () => {
+test("With `KEEL_POSTGRES_URL` a `postgres:` URL whose port refuses connections, the first `query` is `err` `keel.unreachable`", async () => {
   await fc.assert(
     fc.asyncProperty(fc.stringMatching(/^[a-z]{3,8}$/), fc.boolean(), async (user, withMigration) => {
       const { cap, table } = fresh();
