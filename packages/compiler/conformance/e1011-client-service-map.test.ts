@@ -2,8 +2,8 @@
 // Seed: 1337.
 // The spec text is one line, so the conditions are the rule's own: the client build fails when a file bundled into the client belongs to an app module of
 // a node or static deployable that the client's service map omits. ASSUMED: "mapped" means the client calls `service({ contract })` for the module's
-// contract; "unmapped" means a file reaches the module's file by an alias (tsconfig `paths`, which `keel check` does not resolve, hence the `@ts-ignore`
-// inside the fixture's `unsafe/` folder) and the client does not call it. A plain relative import of an uncalled module's public file built with no
+// contract; "unmapped" means a client file reaches the module's file through a bare package-style specifier (`linked-<module>`, a symlink in the fixture's
+// `node_modules` to the module's folder, so the type checker and the bundler both resolve it) and the client does not call it. A plain relative import of an uncalled module's public file built with no
 // E1011 in this fixture; that is not asserted either way. Diagnostics are read from the text `keel build` prints, the module and the file in the E1011 line.
 import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
@@ -28,7 +28,7 @@ const contractSrc = (id: string): string =>
 function tree(mod: string, variant: Variant): Record<string, string> {
   const page =
     variant === "unmapped"
-      ? `import { Box, Text } from "@keel/ui";\nimport { lib } from "./unsafe/lib.ts";\nexport default function Page() {\n  return <Box as="main"><Text>{lib}</Text></Box>;\n}\n`
+      ? `import { Box, Text } from "@keel/ui";\nimport { lib } from "linked-${mod}/lib.ts";\nexport default function Page() {\n  return <Box as="main"><Text>{lib}</Text></Box>;\n}\n`
       : variant === "relative-called"
         ? `import type { Ctx } from "@keel/ctx";\nimport { service } from "@keel/services";\nimport { Box, Text } from "@keel/ui";\nimport { ${mod} as c } from "../${mod}/${mod}.contract.ts";\nconst svc = service({ contract: c });\nexport default function Page(_props: unknown, ctx: Ctx) {\n  void svc.ping({}, ctx);\n  return <Box as="main"><Text>web</Text></Box>;\n}\n`
         : `import { Box, Text } from "@keel/ui";\nexport default function Page() {\n  return <Box as="main"><Text>web</Text></Box>;\n}\n`;
@@ -43,15 +43,14 @@ function tree(mod: string, variant: Variant): Record<string, string> {
         module: "esnext",
         target: "es2022",
         moduleResolution: "bundler",
-        baseUrl: ".",
-        paths: { "@mods/*": ["./modules/*"] },
       },
     }),
-    "modules/app/unsafe/lib.ts": `// @ts-ignore: a fixture import the type checker cannot resolve\nexport { lib } from "@mods/${mod}/lib.ts";\n`,
     "modules/app/Page.tsx": page,
     "modules/app/module.ts": `import { module } from "@keel/compiler";\nexport default module({ id: "app", deps: [${variant === "none" ? "" : `"${mod}"`}], capabilities: [], public: { exports: [] } });\n`,
-    "modules/app/routes.ts": 'import { manifest } from "@keel/router";\nimport { app } from "./app.contract.ts";\nimport Page from "./Page.tsx";\nexport const routes = manifest(app, { "app.home": { component: Page } });\n',
-    "modules/app/app.contract.ts": 'import { contract } from "@keel/router/contract";\nexport const app = contract("app", { "app.home": { path: "/" } });\n',
+    "modules/app/routes.ts":
+      'import { manifest } from "@keel/router";\nimport { app } from "./app.contract.ts";\nimport Page from "./Page.tsx";\nexport const routes = manifest(app, { "app.home": { component: Page } });\n',
+    "modules/app/app.contract.ts":
+      'import { contract } from "@keel/router/contract";\nexport const app = contract("app", { "app.home": { path: "/" } });\n',
     [`modules/${mod}/module.ts`]: `import { module } from "@keel/compiler";\nexport default module({ id: "${mod}", deps: [], capabilities: [], public: { exports: ["lib"] } });\n`,
     [`modules/${mod}/lib.ts`]: `export const lib = "x";\n`,
     [`modules/${mod}/routes.ts`]: `import { manifest } from "@keel/router";\nimport { ${mod} } from "./${mod}.contract.ts";\nimport { ping } from "./ping.server.ts";\nexport const routes = manifest(${mod}, { "${mod}.ping": { loader: ping } });\n`,
@@ -79,7 +78,9 @@ function buildFixture(mod: string, variant: Variant): { status: number | null; e
     writeFileSync(join(dir, p), c);
   }
   mkdirSync(join(dir, "node_modules/@keel"), { recursive: true });
-  for (const pkg of readdirSync(join(REPO, "packages"))) symlinkSync(join(REPO, "packages", pkg), join(dir, "node_modules/@keel", pkg));
+  for (const pkg of readdirSync(join(REPO, "packages")))
+    symlinkSync(join(REPO, "packages", pkg), join(dir, "node_modules/@keel", pkg));
+  symlinkSync(join(dir, "modules", mod), join(dir, "node_modules", `linked-${mod}`));
   symlinkSync(join(REPO, "node_modules", "vite"), join(dir, "node_modules", "vite"));
   mkdirSync(join(dir, "node_modules", ".bin"), { recursive: true });
   symlinkSync("../vite/bin/vite.js", join(dir, "node_modules", ".bin", "vite"));
@@ -102,9 +103,7 @@ describe("k.bundle: E1011 a client bundle holds a module its service map omits",
       const r = buildFixture("notes", "unmapped");
       expect(r.status).not.toBe(0);
       expect(r.e1011).toHaveLength(1);
-      expect(r.e1011[0]).toContain(
-        "E1011 notes is not in the client's service map: imported by modules/app/unsafe/lib.ts",
-      );
+      expect(r.e1011[0]).toContain("E1011 notes is not in the client's service map: imported by modules/app/Page.tsx");
     },
     SLOW,
   );
@@ -133,12 +132,15 @@ describe("k.bundle: E1011 a client bundle holds a module its service map omits",
     "property: for any module id, an unmapped import is one E1011 naming that module and an absent import is none",
     () => {
       fc.assert(
-        fc.property(fc.stringMatching(/^[a-z]{4,8}$/).filter((s) => s !== "web"), (id) => {
-          const bad = buildFixture(id, "unmapped");
-          expect(bad.e1011).toHaveLength(1);
-          expect(bad.e1011[0]).toContain(`E1011 ${id} is not in the client's service map: imported by `);
-          expect(buildFixture(id, "none").e1011).toEqual([]);
-        }),
+        fc.property(
+          fc.stringMatching(/^[a-z]{4,8}$/).filter((s) => s !== "web"),
+          (id) => {
+            const bad = buildFixture(id, "unmapped");
+            expect(bad.e1011).toHaveLength(1);
+            expect(bad.e1011[0]).toContain(`E1011 ${id} is not in the client's service map: imported by `);
+            expect(buildFixture(id, "none").e1011).toEqual([]);
+          },
+        ),
         { seed: SEED, numRuns: 2 },
       );
     },
