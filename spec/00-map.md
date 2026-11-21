@@ -86,7 +86,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.
 | k.aria | Widget parts | conformance-covered | roles |
 | k.roles | Part roles | implemented | grid |
 | k.host-element | Host elements | conformance-covered | charts |
-| k.host-code | Host code | conformance-covered | d3 |
+| k.host-code | Host code | implemented | d3 |
 | k.security | Headers, CSP | conformance-covered | CSP |
 | k.origins | Declared origins | conformance-covered | CSP |
 | k.privacy | Secrets, personal data | conformance-covered | secrets |
