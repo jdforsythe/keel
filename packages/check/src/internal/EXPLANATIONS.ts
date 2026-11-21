@@ -228,6 +228,13 @@ const ROWS: readonly Row[] = [
     "k.privacy",
   ],
   [
+    "W1114",
+    "a password control bound to a field whose schema node is not s.secret",
+    "Parsed as a plain string, the password reaches logs, stores and throws as written; s.secret keeps it from each.",
+    "password: s.string() -> password: s.secret(s.string()), read with reveal on the server",
+    "k.privacy-reads",
+  ],
+  [
     "E1151",
     "import of a non-public export of another module (its contract excepted)",
     "",

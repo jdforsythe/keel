@@ -1,6 +1,6 @@
 import type { Expression, ModuleExportName, Program } from "oxc-parser";
 import type { SourceFile } from "../types/SourceFile.ts";
-import type { Followed } from "./Followed.ts";
+import type { FollowedRef } from "./FollowedRef.ts";
 import { importTarget } from "./importTarget.ts";
 import { parseFile } from "./parseFile.ts";
 
@@ -71,7 +71,7 @@ function scopeOf(program: Program): Scope {
 }
 
 /** The export `name` of `file`: a const, a local alias, a re-export or an `export *` source. */
-function exported(name: string, file: SourceFile, project: readonly SourceFile[], hops: number): Followed {
+function exported(name: string, file: SourceFile, project: readonly SourceFile[], hops: number): FollowedRef {
   if (hops > MAX_HOPS) return null;
   const scope = scopeOf(parseFile(file).program);
   const local = scope.locals.get(name);
@@ -86,17 +86,17 @@ function exported(name: string, file: SourceFile, project: readonly SourceFile[]
   return null;
 }
 
-function imported(ref: Ref, file: SourceFile, project: readonly SourceFile[], hops: number): Followed {
-  if (!ref.source.startsWith(".")) return "package";
+function imported(ref: Ref, file: SourceFile, project: readonly SourceFile[], hops: number): FollowedRef {
+  if (!ref.source.startsWith(".")) return { package: ref.source, name: ref.name };
   const target = importTarget(file.path, ref.source, project);
   return target === undefined || ref.name === "*" ? null : exported(ref.name, target, project, hops);
 }
 
-function binding(name: string, file: SourceFile, project: readonly SourceFile[], hops: number): Followed {
+function binding(name: string, file: SourceFile, project: readonly SourceFile[], hops: number): FollowedRef {
   if (hops > MAX_HOPS) return null;
   const scope = scopeOf(parseFile(file).program);
   const init = scope.consts.get(name);
-  if (init !== undefined) return followValue(init, file, project, hops + 1);
+  if (init !== undefined) return followRef(init, file, project, hops + 1);
   const ref = scope.imports.get(name);
   if (ref !== undefined) return imported(ref, file, project, hops + 1);
   return scope.declared.has(name) ? null : "global";
@@ -105,22 +105,22 @@ function binding(name: string, file: SourceFile, project: readonly SourceFile[],
 /**
  * `expr` in `file` followed to the expression it names: parentheses and `as`/`satisfies` removed, an identifier to
  * its top-level `const` or through imports, re-exports and `export *` of project files, and `ns.Name` of a namespace
- * import to that file's export. A binding from a package is `"package"`, a name the file never
- * declares `"global"`; anything else it cannot follow is `null`.
+ * import to that file's export. A binding from a package is that package's export (`name` `*` for a namespace
+ * import), a name the file never declares `"global"`; anything else it cannot follow is `null`.
  */
-export function followValue(expr: Expression, file: SourceFile, project: readonly SourceFile[], hops = 0): Followed {
+export function followRef(expr: Expression, file: SourceFile, project: readonly SourceFile[], hops = 0): FollowedRef {
   if (hops > MAX_HOPS) return null;
   if (
     expr.type === "ParenthesizedExpression" ||
     expr.type === "TSAsExpression" ||
     expr.type === "TSSatisfiesExpression"
   )
-    return followValue(expr.expression, file, project, hops);
+    return followRef(expr.expression, file, project, hops);
   if (expr.type === "Identifier") return binding(expr.name, file, project, hops);
   if (expr.type === "MemberExpression" && !expr.computed && expr.object.type === "Identifier") {
     const ref = scopeOf(parseFile(file).program).imports.get(expr.object.name);
     if (ref?.name === "*") {
-      if (!ref.source.startsWith(".")) return "package";
+      if (!ref.source.startsWith(".")) return { package: ref.source, name: expr.property.name };
       const target = importTarget(file.path, ref.source, project);
       return target === undefined ? null : exported(expr.property.name, target, project, hops + 1);
     }

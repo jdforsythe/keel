@@ -29,6 +29,7 @@ import { noThrow } from "../rules/noThrow.ts";
 import { noTryCatch } from "../rules/noTryCatch.ts";
 import { noUnsafeSyntax } from "../rules/noUnsafeSyntax.ts";
 import { oneExport } from "../rules/oneExport.ts";
+import { passwordField } from "../rules/passwordField.ts";
 import { pathParamsMatch } from "../rules/pathParamsMatch.ts";
 import { piiInRouteUrl } from "../rules/piiInRouteUrl.ts";
 import { pureTransaction } from "../rules/pureTransaction.ts";
@@ -92,4 +93,5 @@ export const KERNEL_RULES: readonly RuleDef[] = [
   blankLabel,
   hostCodeImport,
   stylesheetImport,
+  passwordField,
 ];
