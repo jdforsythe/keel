@@ -1,4 +1,4 @@
-// Spec: k.leave, Snapshots "`#k-state` `stores` holds a request store's snapshot only when an island needs it to resume: the store was created, looked up through `stores()` or read (`get`, `select`, `snapshot`, `log`, `head`) while a level's component rendered on the server, that level being an island root (k.runtime). A store only a guard, loader, action or static level touched is not in it, however much it holds; nor is a factory store (k.server). A document with no island has `stores` `{}`. `#k-state` is not a k.privacy sink: a snapshot holds the store's state and log as they are, so a `.pii()`-marked value in a store an island creates reaches the browser, as the island needs it to render. The check reports E1107 at a `store` call in a client-reachable file (E1004's reachability) whose state schema holds a `.pii(class)` node of a class its module manifest's `clientPii` (a list of `PiiClass`, default empty) does not list; the fix adds the class. No `s.secret` value reaches a snapshot: a state schema holding one throws E1303, and a snapshot folds every log entry up to the last secret payload (k.store)."
+// Spec: k.leave, Snapshots "The check reports E1107 at a `store` call in a `.tsx` or `.jsx` file not named `*.server.*`, or in a file one reaches by relative `import`, `export … from` and literal `import()` through no `*.server.*` file, whose state schema holds a `.pii(class)` node of a class its module manifest's `clientPii` (a list of `PiiClass`, default empty) does not list; the fix adds the class. That reach is narrower than k.boundary's: a plain `.ts` file no component file imports, say one only loaders use, is not in it, and a store an island finds only by `stores()` id or a package import is not reported."
 // Spec: k.leave, Rules "E1107 a `.pii()` class reaching `#k-state` that `clientPii` does not list (fix adds it)"
 // Spec: k.leave, Conformance "`store(Contact, …)` with `email: s.string().pii('contact')` in a component file is E1107 when the module has no `clientPii`, and with `clientPii: ['name']`; with `clientPii: ['contact']`, or in a `*.server.ts` file, it is not; the fix adds `'contact'`."
 // Seed 1337 (the properties below). The type pass is off: the fixtures name packages that resolve only on disk.
@@ -8,6 +8,7 @@ import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 import { applyFix } from "./E1258-support.ts";
 import { realFiles } from "./E1406-support.ts";
+import { topologyOf } from "./boundary-support.ts";
 import { type Files, SEED } from "./support.ts";
 
 const NO_TYPES = { types: false } as const;
@@ -162,5 +163,37 @@ describe("k.leave Rules: E1107 a store call in a client-reachable file whose sta
       }),
       { seed: SEED, numRuns: 40 },
     );
+  });
+});
+
+describe("k.leave Snapshots: the reach of E1107 is narrower than k.boundary's", () => {
+  const stores = f("modules/app/stores.ts", inline("contact"));
+  const loadServer = f(
+    "modules/app/load.server.ts",
+    "import { card } from './stores.ts'\nexport const load = () => card\n",
+  );
+  const cardTsx = f(
+    "modules/app/Card.tsx",
+    "import { card } from './stores.ts'\nexport default function Card() { return <p>{String(card)}</p> }\n",
+  );
+  const topology = topologyOf({ api: { modules: ["app"], adapter: "node" } });
+
+  test("a `.pii('contact')` store in `modules/app/stores.ts` that only `load.server.ts` imports is clean without a `topology.ts`", () => {
+    expect(e1107([module_(), stores, loadServer])).toEqual([]);
+  });
+
+  test("the same file is clean with a `topology.ts` listing the module on a `node` deployable", () => {
+    expect(e1107([topology, module_(), stores, loadServer])).toEqual([]);
+  });
+
+  test("the same file imported by `Card.tsx` is one E1107 at `stores.ts`, with and without a `topology.ts`", () => {
+    for (const files of [
+      [module_(), stores, loadServer, cardTsx],
+      [topology, module_(), stores, loadServer, cardTsx],
+    ]) {
+      const ds = e1107(files);
+      expect(ds).toHaveLength(1);
+      expect(ds[0]?.path).toBe("modules/app/stores.ts");
+    }
   });
 });
