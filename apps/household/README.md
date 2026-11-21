@@ -34,11 +34,11 @@ The `shopping` module holds the list. `keel scaffold module shopping`, `keel sca
 - `ShoppingList.tsx` uses four widgets from `@keel/std-headless`: a `Menu` of staples, `Tabs` for To buy and Bought, a `Disclosure` for help, and a `Toaster` that shows an alert when a write is refused. It takes `ctx` for `ctx.random.id("Item")`, so the module lists the `random` capability.
 - The start page links to the list with `shopping.href("shopping.list")`; the `app` module lists `shopping` in `deps`.
 
-Tests: `test/items.test.ts` runs `properties` on each transaction and a bounded `explore`; `test/shoppingList.test.ts` renders the route, opens the menu, adds a staple twice, moves it between tabs and checks the focus order. `smoke/drive.mjs <origin>` drives the built app in Chromium.
+Tests: `test/items.test.ts` runs `properties` on each transaction and a bounded `explore`; `test/shoppingList.test.ts` renders the route, opens the menu, adds a staple twice, moves it between tabs and checks the focus order. `tooling/smoke/household.mjs` serves the built app and drives it in Chromium and over HTTP.
 
 The list lives in the browser in this layer: a reload empties it. Layer 4 moves it to the server.
 
-Check your work: `pnpm test && pnpm check && pnpm build`, then start the build and run `node smoke/drive.mjs http://localhost:5211`.
+Check your work: `pnpm test && pnpm check && pnpm build`, then, from the repository root, `node --disable-warning=ExperimentalWarning tooling/smoke/household.mjs`; it starts the build itself on a free port.
 
 ## Layer 3: forms, text, money, messages
 
