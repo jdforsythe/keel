@@ -1,5 +1,5 @@
 {
-  "commit": "a6bfbbd3e20c1a32ec487e511d1418d428fcc662",
+  "commit": "1d15709d621adf11c51e511fae66d8cff244f052",
   "coverage": {
     "packages": {
       "apps/golden-1": {
@@ -1168,19 +1168,19 @@
       }
     }
   },
-  "generatedAt": "2026-11-21T20:25:13.423Z",
+  "generatedAt": "2026-11-21T22:02:12.342Z",
   "ledger": {
     "a11y": {
       "byRung": {
-        "example": 246,
+        "example": 278,
         "exhaustive": 0,
         "monitored": 0,
-        "none": 294,
+        "none": 382,
         "probabilistic": 0,
         "proven": 0
       },
-      "total": 540,
-      "verified": 246
+      "total": 660,
+      "verified": 278
     },
     "clauses": {
       "byRung": {
@@ -2549,19 +2549,19 @@
       "verified": 1037
     },
     "evidenceByRung": {
-      "example": 1589,
+      "example": 1624,
       "exhaustive": 15,
       "monitored": 8,
-      "probabilistic": 339,
+      "probabilistic": 340,
       "proven": 74
     },
     "exports": {
       "byRung": {
-        "example": 242,
+        "example": 245,
         "exhaustive": 1,
         "monitored": 0,
-        "none": 87,
-        "probabilistic": 132,
+        "none": 131,
+        "probabilistic": 133,
         "proven": 37
       },
       "packages": {
@@ -2651,15 +2651,15 @@
         },
         "household": {
           "byRung": {
-            "example": 3,
+            "example": 6,
             "exhaustive": 0,
             "monitored": 0,
-            "none": 49,
-            "probabilistic": 1,
+            "none": 93,
+            "probabilistic": 2,
             "proven": 1
           },
-          "total": 54,
-          "verified": 5
+          "total": 102,
+          "verified": 9
         },
         "inspector": {
           "byRung": {
@@ -3106,12 +3106,12 @@
           "verified": 5
         }
       },
-      "total": 499,
-      "verified": 412
+      "total": 547,
+      "verified": 416
     },
-    "items": 2078,
+    "items": 2246,
     "unsafe": 18,
-    "verified": 1695
+    "verified": 1731
   },
   "mutation": {
     "packages": {
@@ -3520,16 +3520,16 @@
       "apps/household": {
         "conformanceCases": 0,
         "conformanceFiles": 0,
-        "exploreFiles": 2,
+        "exploreFiles": 1,
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 5,
+        "propertyCalls": 3,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 21,
-        "unitFiles": 7
+        "unitCases": 35,
+        "unitFiles": 10
       },
       "apps/inspector": {
         "conformanceCases": 0,
@@ -4137,16 +4137,16 @@
     "totals": {
       "conformanceCases": 4841,
       "conformanceFiles": 1175,
-      "exploreFiles": 19,
+      "exploreFiles": 18,
       "fails": 2,
       "otherCases": 0,
       "otherFiles": 0,
-      "propertyCalls": 2247,
+      "propertyCalls": 2245,
       "proveFiles": 23,
       "simulateFiles": 11,
       "skipTodo": 2,
-      "unitCases": 5327,
-      "unitFiles": 909
+      "unitCases": 5341,
+      "unitFiles": 912
     }
   },
   "tool": {
