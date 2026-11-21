@@ -1,4 +1,4 @@
-import type { Topology } from "@keel/compiler";
+import type { Origins, Topology } from "@keel/compiler";
 import type { Ctx } from "@keel/ctx";
 import type { Manifest, RouteDef } from "@keel/router";
 import type { Identity } from "./Identity.ts";
@@ -36,6 +36,10 @@ import type { ServerApp } from "./ServerApp.ts";
  * with `data: { limit }` and runs no loader; a stream frees its place when it ends for any reason.
  * `identity` is the project's identity source (k.user): `identify` answers each routed request's `user`, `handle` mounts
  * a library's endpoints; a `handle.path` not of lowercase `/` segments, or with a route at or under it, rejects with E1579.
+ * `origins` is every deployable's declaration as the static read of `topology.ts` accepted it (k.origins); the
+ * generated entries pass it, and it replaces each deployable's runtime `origins`, so no policy holds an origin the read
+ * did not see (without it, as in a test, the topology's own). A `frame` origin of the served deployable, or of the
+ * `client` it hosts, equal to `origin` or a URL peer's origin rejects with E1590.
  */
 export type AppOptions = {
   readonly topology: Topology;
@@ -57,4 +61,5 @@ export type AppOptions = {
   readonly allow?: readonly string[];
   readonly maxStreams?: number;
   readonly identity?: Identity | undefined;
+  readonly origins?: Readonly<Record<string, Origins>>;
 };

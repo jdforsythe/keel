@@ -24,7 +24,8 @@ import type { ReportWindow } from "./ReportWindow.ts";
  * `createApp({ log })`, for records written after the response has started (an event stream's). `eager` holds the
  * route ids that have logged E1257 (k.claim Server), once each, and `nothing` those that have logged E1406 (k.place).
  * `identity` is `createApp({ identity })` (k.user) and `days` the served deployable's `caller: { days }`; `origins` its
- * declared origins (k.origins), which its documents' policy admits.
+ * declared origins (k.origins), which its documents' policy admits, less the document's own origin under `frame`;
+ * `framed` holds each own origin a dev document has left out of `frame-src` and logged as E1590, once each.
  */
 export type Served = {
   readonly table: readonly Located[];
@@ -51,4 +52,5 @@ export type Served = {
   readonly identity?: Identity | undefined;
   readonly days?: number | undefined;
   readonly origins?: Origins | undefined;
+  readonly framed?: Set<string>;
 };

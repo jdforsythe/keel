@@ -21,6 +21,7 @@ import { callerSigner } from "./internal/callerSigner.ts";
 import { codedError } from "./internal/codedError.ts";
 import { crashed } from "./internal/crashed.ts";
 import { cspReport } from "./internal/cspReport.ts";
+import { declaredTopology } from "./internal/declaredTopology.ts";
 import { denied } from "./internal/denied.ts";
 import { diagLine } from "./internal/diagLine.ts";
 import { installServerDom } from "./internal/dom/installServerDom.ts";
@@ -35,6 +36,7 @@ import { logUnwritable } from "./internal/logUnwritable.ts";
 import { moduleOf } from "./internal/moduleOf.ts";
 import { nodeEnv } from "./internal/nodeEnv.ts";
 import { noteRequestSecrets } from "./internal/noteRequestSecrets.ts";
+import { ownFrame } from "./internal/ownFrame.ts";
 import { peerOf } from "./internal/peerOf.ts";
 import { peerPaths } from "./internal/peerPaths.ts";
 import { redacted } from "./internal/redacted.ts";
@@ -170,11 +172,24 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
           "secure: not set, so the caller cookie is Secure only on https; set an https KEEL_ORIGIN or pass createApp({ secure: true })",
       }),
     );
-  const served = selectDeployable(opts.topology, table, modules, opts.deployable);
+  const top = declaredTopology(opts.topology, opts.origins);
+  const served = selectDeployable(top, table, modules, opts.deployable);
   // Every route of the table, not only the served ones: a path this server forwards to a peer is marked too.
   const marks = secretSegments(table);
-  const name = opts.deployable ?? Object.keys(opts.topology)[0] ?? "";
-  const hosted = Object.values(opts.topology).find((d) => d.adapter === "client" && d.host === name);
+  const name = opts.deployable ?? Object.keys(top)[0] ?? "";
+  const hostedName = Object.keys(top).find((n) => top[n]?.adapter === "client" && top[n]?.host === name);
+  const hosted = hostedName === undefined ? undefined : top[hostedName];
+  // The app's own origins known here: the public origin and each URL peer's (k.origins Frame).
+  const ownOrigins = new Set<string>(origin === undefined ? [] : [origin]);
+  for (const p of Object.values(opts.peers ?? {}))
+    if (typeof p === "string" || p instanceof URL) {
+      const at = URL.canParse(p) ? new URL(p).origin : "null";
+      if (at !== "null") ownOrigins.add(at);
+    }
+  for (const who of [name, hostedName]) {
+    const framed = who === undefined ? undefined : ownFrame(top[who]?.origins, ownOrigins);
+    if (framed !== undefined) throw codedError("E1590", `${who}: origins.frame: ${framed} is the app's own origin`);
+  }
   const built = mode === "production" && opts.assets !== undefined ? await loadAssets(opts.assets, hosted) : undefined;
   const sv: Served = {
     table: served,
@@ -209,11 +224,12 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
     ),
     ...(log === undefined ? {} : { log }),
     identity: opts.identity,
-    days: opts.topology[name]?.caller?.days,
-    origins: opts.topology[name]?.origins,
+    days: top[name]?.caller?.days,
+    origins: top[name]?.origins,
+    framed: new Set(),
   };
   const peers = opts.peers ?? {};
-  const forwards = await peerPaths(opts.artifacts, opts.topology, Object.keys(peers));
+  const forwards = await peerPaths(opts.artifacts, top, Object.keys(peers));
   const warned = new Set<string>();
   const hono = new Hono();
   // The route id each request matched, for the last resort's record.

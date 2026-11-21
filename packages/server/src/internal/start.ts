@@ -98,6 +98,7 @@ export async function start(o: StartOptions, node = process.versions.node): Prom
   for (const m of o.routes) Object.assign(routes, m.routes);
   const app = await createApp({
     topology: o.topology,
+    origins: o.origins ?? {},
     deployable: o.deployable,
     routes: manifest(routes),
     ctx: createCtx({ mode: "real", ...(opened === undefined ? {} : { drivers: { storage: opened } }) }),
