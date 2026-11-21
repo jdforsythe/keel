@@ -1,6 +1,20 @@
 # Findings from building the examples
 
-A working file for the orchestrator. Each entry: what I tried, where, the command and its output, what I expected, and whether the docs or skills misled me. None blocked an example.
+## Status
+
+| Finding | Status |
+| --- | --- |
+| 1 | answered in the skills (keel-client, Host and hostCode): docs(skills): Host and hostCode in keel-client, client-only server files in keel-server, hostCode's three type parameters |
+| 2 | answered in the skills (keel-client, hostCode's three type parameters) |
+| 3 | answered in the skills (keel-server, client-only server files) |
+| 4 | fixed: fix(scaffold): scaffold service adds @keel/services to the project's dependencies |
+| 5 | fixed: fix(scaffold): a workspace project's scripts call keel and its package.json names @keel/cli; a fresh scaffold passes its own scripts |
+| 6 | filed as backlog 1013 |
+| 7 | fixed: fix(check): a stale surface.json names the source that changed (hashing what the build evaluated is backlog 1015) |
+
+Fixed 3, answered in the skills 3, filed as backlog 1, open 0.
+
+Each entry: what I tried, where, the command and its output, what I expected, and whether the docs or skills misled me. None blocked an example.
 
 ## Framework faults
 

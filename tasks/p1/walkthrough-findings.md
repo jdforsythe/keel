@@ -1,6 +1,43 @@
 # Walkthrough app findings
 
-Working file for the orchestrator; it moves to `tasks/p1/` before merge. Each finding: what I tried, where, the command and its output, what I expected, whether docs or skills misled. Kinds: fault (framework behaves against its spec), docs (docs or skills gap), rough (works, but an app author trips on it).
+## Status
+
+| Finding | Status |
+| --- | --- |
+| L1-1 | fixed: fix(compiler): a node deployable's resume entry imports the atomic CSS, so a built node app links its stylesheet |
+| L1-2 | fixed: fix(scaffold): a workspace project's scripts call keel and its package.json names @keel/cli; a fresh scaffold passes its own scripts |
+| L1-3 | fixed: fix(scaffold): a workspace project's scripts call keel and its package.json names @keel/cli; a fresh scaffold passes its own scripts |
+| L1-4 | fixed: fix(cli): keel explain of a stdlib code loads the project's std deps, so E2406 and its kind explain themselves |
+| L1-5 | fixed: docs(skills): createApp, Select options, storage flag, explore, scope, API shapes, plural zero, Money; spec map names keel docs |
+| L1-6 | fixed: fix(cli): keel with no command names the commands to try |
+| L1-7 | fixed: docs(skills): createApp, Select options, storage flag, explore, scope, API shapes, plural zero, Money; spec map names keel docs |
+| L1-8 | filed as backlog 1020 |
+| L2-1 | filed as backlog 1012 (the stale-artifact message names its source: fix(check): a stale surface.json names the source that changed) |
+| L2-2 | answered in the skills (keel-client A11y: no base element takes `role`) |
+| L2-3 | answered in the skills (keel-testing `explore`) |
+| L2-4 | filed as backlog 1016 |
+| L2-5 | filed as backlog 1017 |
+| L2-6 | open |
+| L3-1 | fixed: fix(forms): a keel.fields answer to a native post re-renders the bound controls with the submitted values and errors, kept at resume |
+| L3-2 | answered in the skills (keel-deploy, Run `server.mjs`) |
+| L3-3 | answered in the skills (keel-client A11y: `Select options`) |
+| L3-4 | filed as backlog 1009 (the `zero` rule is answered in keel-client) |
+| L3-5 | filed as backlog 1018 |
+| L3-6 | answered in the skills (keel-client Forms: `initial` is partial) |
+| L3-7 | filed as backlog 1010 |
+| L4-1 | fixed: fix(testing): renderRoute raises a page render throw no errorElement caught, so a tx in a component body names its E1201 |
+| L4-2 | answered in the skills (keel-server: `createApp` options) |
+| L4-3 | filed as backlog 1008 |
+| L4-4 | filed as backlog 1019 |
+| L4-5 | answered in the skills (keel-server) |
+| L4-6 | filed as backlog 1014 |
+| L4-7 | answered in the skills (keel-testing: `scope`) |
+| L4-8 | answered in the skills (keel-server: a service call runs in process) |
+| W-1 | filed as backlog 1021 |
+
+Fixed 9, answered in the skills 9, filed as backlog 11, open 1.
+
+Each finding: what I tried, where, the command and its output, what I expected, whether docs or skills misled. Kinds: fault (framework behaves against its spec), docs (docs or skills gap), rough (works, but an app author trips on it).
 
 ## Layer 1
 
