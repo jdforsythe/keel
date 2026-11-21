@@ -1,7 +1,7 @@
 # std.shells: Shell drivers
 status: conformance-covered
 
-**Extension points.** Drivers (k.persist): `@keel/std-capacitor` and `@keel/std-tauri` supply the `storage` and `net` a shell build's generated entry passes to `createCtx({ mode: 'shell', drivers })` (k.shell). App code never imports them.
+**Extension points.** Drivers (k.persist): `@keel/std-capacitor` and `@keel/std-tauri` supply the `storage` and `net` a shell build's generated entry passes to `createCtx({ mode: 'shell', drivers })` (k.shell). App code never imports them. Each package's shell target is std.capacitor's or std.tauri's.
 
 **API** (browser; one export each).
 ```ts
@@ -24,3 +24,4 @@ Each returns `{ storage, net }` keeping k.persist's and k.shell's contracts:
 - Neither package replaces the global `fetch`.
 - With `tauriDrivers`, a save cut at any byte of `keel.json` or `keel.b.json` leaves a new driver reading the earlier or the new value of every key; a copy of a lower generation or a wrong checksum is not read; with no whole copy and `keel.json` present every call rejects and both files keep their bytes.
 - With each package, a response whose body the native side sends in two chunks resolves before the second is sent and its body yields the first; aborting it cancels the native request; no `set-cookie` header reaches the page.
+- With `redirect: 'manual'`, std-capacitor's and std-tauri's `net` resolve a 303 with its `location` and no `set-cookie`, and the next request to that origin carries the cookie.

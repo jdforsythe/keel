@@ -72,7 +72,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.
 | k.persist | Storage, durable state | conformance-covered | drivers |
 | k.topology | Deployables | conformance-covered | peers |
 | k.deploy | Entry, deploy files | conformance-covered | entry |
-| k.shell | Native shells | proposed | Tauri |
+| k.shell | Native shells | proposed | target |
 | k.compat | Surface compatibility | conformance-covered | accepts |
 | k.api | API routes | conformance-covered | JSON |
 | k.hosting | Client hosting | conformance-covered | host |

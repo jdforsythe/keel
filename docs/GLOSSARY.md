@@ -21,6 +21,7 @@ Canonical names. Changing one requires an RFC.
 - **part**: `Part` from `@keel/ui/aria`, the element stdlib widgets build on; a base element whose `role` fixes its tag and ARIA props.
 - **driver**: an object passed as `createCtx({ drivers })` that supplies `storage` or `net` on a `real` or `shell` ctx and keeps that capability's contract.
 - **shell**: a native package of a `client` deployable, `capacitor` (Android, iOS) or `tauri` (desktop), declared in `topology.ts` as `shells`.
+- **shell target**: what a shell's package registers with `shellTarget(shell, target)` in its `./tools` entry: the shell's platforms, files, tools, build and CI jobs (k.shell); std.capacitor and std.tauri.
 - **workflow**: `workflow(id, spec)` from `@keel/std-workflows`: a state chart run per instance in one server store, its steps run as jobs.
 - **diagnostic**: the one output shape for every error, warning, and finding (see OUTPUT.md).
 - **identity source**: `identity.server.ts` beside `topology.ts`, default-exporting `identity({ identify, handle? })`: the app's `identify` and optional `handle` mount, through which an auth library or platform tells Keel who the user is (k.user), and `identity.ts`, its `identityMount(path, { links }?)` half that pages import (k.mount).

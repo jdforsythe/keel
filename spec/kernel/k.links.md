@@ -6,7 +6,7 @@ Which links on a shell's scheme (k.return) a shell takes, and how it reports its
 **Return links.** A return link is `<id>:/<path>?<search>`, its scheme in any case, at launch or while running; other links are ignored. Keel adds nothing to it. By its path:
 - A page the router matches: a client-side navigation there, at any time, as a web link to that page (guards run, loaders read).
 - `handle.path` plus one of the mount's `links` (k.mount), exactly, any search: a mount request GET (k.return) at any time.
-- Any other path under `handle.path` first takes the pending opening, in one `commit`, then is a mount request GET and closes the in-app Safari view. With none pending, past its deadline, or a `commit` that fails, it is ignored: no request, `keel.return` unchanged. So each opening admits one link.
+- Any other path under `handle.path` first takes the pending opening, in one `commit`, then is a mount request GET and closes the external browser. With none pending, past its deadline, or a `commit` that fails, it is ignored: no request, `keel.return` unchanged. So each opening admits one link.
 - Any other path is ignored.
 - Only the third kind takes an opening; the others leave it pending. A mount answer's redirect to `<id>:/<path>` is no delivered link: it is read by the same paths, needs no opening and takes none (k.return).
 - **Opening.** Each time a mount request opens the external browser (which ones count: k.opening), one opening is pending until `ctx.clock.now()` reaches its deadline, 600000 ms after it. It is kept in `ctx.storage` `keel.return`, written by `set`, so it survives a relaunch. A new one replaces it.
