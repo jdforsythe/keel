@@ -173,6 +173,8 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium
       - name: "served golden-2 pages resume in place in Chromium, three runs"
         run: "node --disable-warning=ExperimentalWarning tooling/smoke/resume.mjs 3"
+      - name: "built household: guard, setup, list, receipts, cross-site refusal and a rejected form, scripts on and off"
+        run: "node --disable-warning=ExperimentalWarning tooling/smoke/household.mjs"
       - name: "examples: check, test, build and one proof on the built output of each"
         run: "node --disable-warning=ExperimentalWarning tooling/smoke/examples.mjs"
   changes:
