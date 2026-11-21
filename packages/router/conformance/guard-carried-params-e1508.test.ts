@@ -3,7 +3,6 @@
 // Spec: k.guards, Carried params "every field of the `redirect` route's `params` must be a field of the page's `params` whose node fits the target's: the same node, or one of the same type with the same options (an `id` of the same brand), or one holding only values the target accepts (an `enum` or `literal` each of whose values the target's node parses; a `string`, `number` or `int` whose `min` and `max` lie within the target's of the same type, an absent bound unbounded)."
 // Spec: k.guards, Rules "E1508 ... (route table) a carried param missing or not fitting"
 // Seed 1337 (RFC 0177 clause k.guards #4). The pairs are a closed table, so no random input.
-// Pending: not built. The cases where `manifest` or `routeTable` must throw are skipped; the passing pairs run and must stay green.
 // Assumed (spec leaves open): the guard sits on the page or on a layout of the chain; message names page id, redirect route id and field.
 import { guard, manifest, routeTable } from "@keel/router";
 import { contract } from "@keel/router/contract";
@@ -94,24 +93,24 @@ const passing: readonly Pair[] = [
 ];
 
 describe("k.guards: a guard redirect's carried params are checked when the route table is built", () => {
-  it.skip("`manifest` throws E1508 naming the page, the `redirect` route and the field when a guarded page lacks a field of the `redirect` route's `params`", () => {
+  it("`manifest` throws E1508 naming the page, the `redirect` route and the field when a guarded page lacks a field of the `redirect` route's `params`", () => {
     e1508(buildMissing(), "w.page", "w.login", "f");
     e1508(buildRenamed(), "w.page", "w.login", "f");
   });
 
-  it.skip("`manifest` throws E1508 naming the page, the `redirect` route and the field for `s.id('User')` carried to `s.id('Recipe')`", () => {
+  it("`manifest` throws E1508 naming the page, the `redirect` route and the field for `s.id('User')` carried to `s.id('Recipe')`", () => {
     e1508(build(s.id("User"), s.id("Recipe")), "w.page", "w.login", "f");
   });
 
-  it.skip("`manifest` throws E1508 naming the page, the `redirect` route and the field for `s.enum(['a', 'b', 'c'])` carried to `s.enum(['a', 'b'])`", () => {
+  it("`manifest` throws E1508 naming the page, the `redirect` route and the field for `s.enum(['a', 'b', 'c'])` carried to `s.enum(['a', 'b'])`", () => {
     e1508(build(s.enum(["a", "b", "c"]), s.enum(["a", "b"])), "w.page", "w.login", "f");
   });
 
-  it.skip("`manifest` throws E1508 naming the page, the `redirect` route and the field for `s.string()` carried to `s.string({ max: 8 })`", () => {
+  it("`manifest` throws E1508 naming the page, the `redirect` route and the field for `s.string()` carried to `s.string({ max: 8 })`", () => {
     e1508(build(s.string(), s.string({ max: 8 })), "w.page", "w.login", "f");
   });
 
-  it.skip("every pair of the closed list that does not fit throws E1508 from `manifest`", () => {
+  it("every pair of the closed list that does not fit throws E1508 from `manifest`", () => {
     for (const [name, p, t] of failing) {
       const e = thrown(build(p(), t()));
       expect(e?.code, name).toBe("E1508");
@@ -153,7 +152,7 @@ describe("k.guards: a guard redirect's carried params are checked when the route
     expect(thrown(() => manifest(w, { "w.login": { component: page }, "w.page": { component: page } }))).toBeNull();
   });
 
-  it.skip("a guard on a layout of the own module checks every page under it: `manifest` throws E1508 for a page that does not fit", () => {
+  it("a guard on a layout of the own module checks every page under it: `manifest` throws E1508 for a page that does not fit", () => {
     e1508(buildLayout(s.id("User"), s.id("Recipe")), "w.page", "w.login", "f");
   });
 
@@ -179,11 +178,11 @@ const appWith = (pageParams: Node | undefined) => {
 };
 
 describe("k.guards: the route table joins a chain across modules and checks it", () => {
-  it.skip("`routeTable` throws E1508 for a page of one module under another module's guarded layout whose field does not fit", () => {
+  it("`routeTable` throws E1508 for a page of one module under another module's guarded layout whose field does not fit", () => {
     e1508(() => routeTable(shellModule, appWith(s.enum(["a", "b", "c"]))), "app.page", "shell.login", "f");
   });
 
-  it.skip("`routeTable` throws E1508 for a page of one module under another module's guarded layout that lacks the field", () => {
+  it("`routeTable` throws E1508 for a page of one module under another module's guarded layout that lacks the field", () => {
     e1508(() => routeTable(shellModule, appWith(undefined)), "app.page", "shell.login", "f");
   });
 
