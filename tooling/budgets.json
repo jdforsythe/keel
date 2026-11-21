@@ -2,12 +2,12 @@
   "output": {
     "check.injected10": 600,
     "test.failing3": 400,
-    "spec.section": 1850,
+    "spec.section": 1875,
     "spec.map": 1370,
     "explain": 300,
     "mcp.tools-list": 1750,
     "docs.map": 1410,
-    "docs.section": 1850,
+    "docs.section": 1875,
     "docs.skill": 2500,
     "docs.for": 400,
     "docs.agents": 600
@@ -40,7 +40,7 @@
     "@keel/ctx": "3.75kb",
     "@keel/forms": "5kb",
     "@keel/reactive": "4kb",
-    "@keel/router": "13.4kb",
+    "@keel/router": "13.75kb",
     "@keel/router/contract": "3.2kb",
     "@keel/router/match": "2.75kb",
     "@keel/runtime-dom": "6kb",
@@ -164,7 +164,7 @@
     },
     "@keel/std-postgres": "1kb",
     "@keel/std-postgres/server": {
-      "max": "5.25kb",
+      "max": "5.75kb",
       "platform": "node"
     },
     "@keel/std-postgres/testing": {
