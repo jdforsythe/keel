@@ -1,11 +1,9 @@
 // The pure part of `pnpm mutate:stale`: which mutated `src` files have a stale or missing mutation claim, and how they
 // are cut into chunks. Reads nothing; tooling/mutate-stale.mjs feeds it the ledger's claims and the files' hashes.
-
-/** The path rule of a mutated file, package-relative (the one `mutate-changed` and Stryker's `mutate` globs use). */
-export const MUTATED = /^src\/(?!index\.ts$)(?!types\/).+\.ts$/;
+import { mutatedRule, unitDir } from "./mutate-units.mjs";
 
 /**
- * The files to run, per package in `packages` order: `{ pkg, stale, missing }` (package-relative paths, sorted).
+ * The files to run, per unit (a bare package name, or `apps/<name>`) in `packages` order: `{ pkg, stale, missing }` (package-relative paths, sorted).
  * `claims` is the ledger's `mutation.claims` (`{ file, sha }`, file repo-relative); `shas` maps each repo-relative
  * mutated file on disk to the sha256 of its source. A claim whose sha differs from the disk is stale; a file with no
  * claim is missing. Packages with neither are left out.
@@ -14,13 +12,14 @@ export function staleFiles(claims, shas, packages) {
   const claimed = new Map(claims.map((c) => [c.file, c.sha]));
   const out = [];
   for (const pkg of packages) {
-    const prefix = `packages/${pkg}/`;
+    const prefix = `${unitDir(pkg)}/`;
+    const mutated = mutatedRule(pkg);
     const stale = [];
     const missing = [];
     for (const file of [...shas.keys()].sort()) {
       if (!file.startsWith(prefix)) continue;
       const rel = file.slice(prefix.length);
-      if (!MUTATED.test(rel)) continue;
+      if (!mutated.test(rel)) continue;
       const sha = claimed.get(file);
       if (sha === undefined) missing.push(rel);
       else if (sha !== shas.get(file)) stale.push(rel);

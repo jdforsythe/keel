@@ -155,18 +155,21 @@ function liveRuns() {
 
 /** Marks the run file `signalled`; false when it already is, so the caller sends nothing. */
 /**
- * A link `<root>/.stryker-tmp/<name>` to every `packages/<name>`. A sandbox under the repository root's `.stryker-tmp`
+ * A link `<root>/.stryker-tmp/<name>` to every `packages/<name>` and `apps/<name>` (a package wins a shared name). A sandbox under the repository root's `.stryker-tmp`
  * (`ROOT_SANDBOX`, tooling/stryker.mjs) sits beside those links as a package sits beside its siblings, so a test or a
  * process it starts that reaches `../../<name>/src/index.ts` from its own directory finds the sibling's source.
  */
 export function linkPackages(repo) {
   const home = path.join(repo, ".stryker-tmp");
   fs.mkdirSync(home, { recursive: true });
-  for (const e of fs.readdirSync(path.join(repo, "packages"), { withFileTypes: true })) {
-    if (!e.isDirectory() || e.name.startsWith(".")) continue;
-    const link = path.join(home, e.name);
-    if (fs.lstatSync(link, { throwIfNoEntry: false })) continue;
-    fs.symlinkSync(path.join("..", "packages", e.name), link, "dir");
+  for (const parent of ["packages", "apps"]) {
+    if (!fs.existsSync(path.join(repo, parent))) continue;
+    for (const e of fs.readdirSync(path.join(repo, parent), { withFileTypes: true })) {
+      if (!e.isDirectory() || e.name.startsWith(".")) continue;
+      const link = path.join(home, e.name);
+      if (fs.lstatSync(link, { throwIfNoEntry: false })) continue;
+      fs.symlinkSync(path.join("..", parent, e.name), link, "dir");
+    }
   }
 }
 

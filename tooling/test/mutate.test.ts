@@ -3,8 +3,9 @@ import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { changedScope, stopRequested } from "../mutate-changed.mjs";
-import { budgetMinutes, ending, groupMembers, leftNote, statusLine } from "../mutate.mjs";
+import { budgetMinutes, linkPackages, ending, groupMembers, leftNote, statusLine } from "../mutate.mjs";
 import { packageRelative, readTimes } from "../mutate-cache.ts";
+import { APP_MUTATE, strykerConfig } from "../stryker.mjs";
 import { quickFirstOrder } from "../quick-first.ts";
 
 describe("budgetMinutes", () => {
@@ -70,6 +71,41 @@ describe("stopRequested", () => {
   });
 });
 
+describe("linkPackages", () => {
+  it("links every package and app under .stryker-tmp, a package keeping a shared name", () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "keel-link-"));
+    try {
+      for (const d of ["packages/p", "packages/same", "apps/g", "apps/same"])
+        fs.mkdirSync(path.join(dir, d), { recursive: true });
+      linkPackages(dir);
+      const target = (n: string) => fs.readlinkSync(path.join(dir, ".stryker-tmp", n));
+      expect([target("p"), target("g"), target("same")]).toEqual(["../packages/p", "../apps/g", "../packages/same"]);
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("changedScope for an app", () => {
+  const all = ["ctx", "apps/golden-1"];
+  it("scopes an app to its changed modules files and runs it whole for another change", () => {
+    expect(changedScope(["apps/golden-1/modules/todos/a.ts", "apps/golden-1/modules/types/T.ts"], all)).toEqual([
+      { pkg: "apps/golden-1" },
+    ]);
+    expect(changedScope(["apps/golden-1/modules/todos/a.ts", "apps/golden-1/modules/api/b.ts"], all)).toEqual([
+      { pkg: "apps/golden-1", mutate: ["modules/todos/a.ts", "modules/api/b.ts"] },
+    ]);
+    expect(changedScope(["apps/golden-1/test/a.test.ts"], all)).toEqual([{ pkg: "apps/golden-1" }]);
+  });
+  it("does not take an app's src folder or an app outside `all`", () => {
+    expect(changedScope(["apps/golden-1/src/a.ts"], all)).toEqual([{ pkg: "apps/golden-1" }]);
+    expect(changedScope(["apps/golden-2/modules/a.ts", "apps/golden-1/reports/mutation/m.json"], all)).toEqual([]);
+  });
+  it("runs every unit whole when the shared tooling changed, the units file included", () => {
+    expect(changedScope(["tooling/mutate-units.mjs"], all)).toEqual([{ pkg: "ctx" }, { pkg: "apps/golden-1" }]);
+  });
+});
+
 describe("changedScope", () => {
   const all = ["check", "ctx", "schema"];
   it("scopes a package to its changed src files when nothing else in it changed", () => {
@@ -132,5 +168,12 @@ describe("quick-first order", () => {
   it("reads no times from a missing file or an unnamed one", () => {
     expect(readTimes(undefined)).toEqual({});
     expect(readTimes("/nonexistent/times.json")).toEqual({});
+  });
+});
+
+describe("strykerConfig", () => {
+  it("mutates src for a package and the given globs for an app", () => {
+    expect(strykerConfig("ctx", 80).mutate[0]).toBe("src/**/*.ts");
+    expect(strykerConfig("golden-1", 70, 70, { mutate: APP_MUTATE }).mutate).toEqual(APP_MUTATE);
   });
 });

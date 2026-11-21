@@ -11,7 +11,8 @@ import path from "node:path";
 import { mutateCacheDir } from "./mutate-cache.ts";
 import { stopRequested } from "./mutate-changed.mjs";
 import { stopFile } from "./mutate.mjs";
-import { chunkPlan, endLine, listLine, MUTATED, positive, staleFiles } from "./mutate-stale-plan.mjs";
+import { chunkPlan, endLine, listLine, positive, staleFiles } from "./mutate-stale-plan.mjs";
+import { mutatedRule, mutationUnits, sourceDir, unitDir } from "./mutate-units.mjs";
 import { acquire, lockedDiag } from "./mutateLock.mjs";
 import { run } from "./output.ts";
 
@@ -24,19 +25,21 @@ const value = (name) => {
 };
 const sha256 = (text) => createHash("sha256").update(text).digest("hex");
 
-/** Every mutated `src` file of `pkg` on disk, repo-relative, with the sha256 of its source. */
-function hashes(pkgs) {
+/** Every mutated file of the units on disk, repo-relative, with the sha256 of its source. */
+function hashes(units) {
   const out = new Map();
-  const walk = (dir, rel) => {
-    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
-      const r = `${rel}/${e.name}`;
-      if (e.isDirectory()) walk(path.join(dir, e.name), r);
-      else if (e.isFile() && MUTATED.test(r.slice(r.indexOf("/src/") + 1))) out.set(r, undefined);
-    }
-  };
-  for (const pkg of pkgs) {
-    const src = path.join(root, "packages", pkg, "src");
-    if (fs.existsSync(src)) walk(src, `packages/${pkg}/src`);
+  for (const unit of units) {
+    const mutated = mutatedRule(unit);
+    const home = unitDir(unit);
+    const walk = (dir, rel) => {
+      for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+        const r = `${rel}/${e.name}`;
+        if (e.isDirectory()) walk(path.join(dir, e.name), r);
+        else if (e.isFile() && mutated.test(r.slice(home.length + 1))) out.set(r, undefined);
+      }
+    };
+    const src = path.join(root, home, sourceDir(unit));
+    if (fs.existsSync(src)) walk(src, `${home}/${sourceDir(unit)}`);
   }
   for (const file of out.keys()) out.set(file, sha256(fs.readFileSync(path.join(root, file), "utf8")));
   return out;
@@ -49,11 +52,7 @@ if (process.argv[1] === new URL(import.meta.url).pathname) {
     const minutes = positive(value("minutes"), 20);
     const concurrency = positive(value("concurrency"), 3);
     const missing = argv.includes("--missing");
-    const all = fs
-      .readdirSync(path.join(root, "packages"))
-      .sort()
-      .filter((p) => fs.existsSync(path.join(root, "packages", p, "stryker.config.mjs")))
-      .filter((p) => only === undefined || p === only);
+    const all = mutationUnits(root).filter((p) => only === undefined || p === only);
     const ledger = JSON.parse(fs.readFileSync(path.join(root, "tooling", "ledger", "ledger.json"), "utf8"));
     const chunks = chunkPlan(staleFiles(ledger.mutation?.claims ?? [], hashes(all), all), size, { missing });
     if (argv.includes("--list") || chunks.length === 0)
@@ -92,7 +91,7 @@ if (process.argv[1] === new URL(import.meta.url).pathname) {
         KEEL_MUTATE_CONCURRENCY: process.env.KEEL_MUTATE_CONCURRENCY || String(concurrency),
       };
       child = spawn("node", [path.join(root, "tooling", "mutate.mjs"), "--mutate", c.files.join(",")], {
-        cwd: path.join(root, "packages", c.pkg),
+        cwd: path.join(root, unitDir(c.pkg)),
         stdio: ["ignore", "pipe", "inherit"],
         env,
       });
