@@ -50,12 +50,15 @@ function dropIn(tag: string): [string, string] | null {
   return null;
 }
 
+/** `Box` requires a `label` on these tags, so no drop-in exists: the message names `Box`, no fix. */
+const LABELLED: ReadonlySet<string> = new Set(["nav", "aside"]);
+
 const onlyId = (attrs: readonly JSXAttributeItem[]): boolean =>
   attrs.every((a) => a.type === "JSXAttribute" && a.name.type === "JSXIdentifier" && a.name.name === "id");
 
 /**
  * E1805 (k.ui): a lowercase intrinsic element in app code. Fix: the matching base element from `@keel/ui`
- * when it is a drop-in (no attributes besides `id`); the message always names the base element (`Box` for
+ * when it is a drop-in (no attributes besides `id`, and not `nav` or `aside`, which `Box` requires a label for); the message always names the base element (`Box` for
  * tags with no closer match).
  */
 export const noIntrinsicElement: RuleDef = {
@@ -83,7 +86,7 @@ export const noIntrinsicElement: RuleDef = {
             tag,
             base: fit?.[0] ?? SUGGEST.get(tag) ?? "Box",
             extra: fit?.[1] ?? "",
-            fixable: fit !== null && onlyId(o.attributes) ? 1 : 0,
+            fixable: fit !== null && !LABELLED.has(tag) && onlyId(o.attributes) ? 1 : 0,
             openStart: o.name.start,
             openEnd: o.name.end,
             closeStart: close?.name.start ?? -1,

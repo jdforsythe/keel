@@ -162,7 +162,7 @@ type WorkerPlugin = {
   buildEnd: (this: Ctx, error?: Error) => void;
 };
 /** What `config` returns: the locked `envPrefix`, the worker bundles' plugin (Vite adds the project's), and a deployable build's own settings. */
-type Config = { envPrefix: string; worker: { plugins: () => WorkerPlugin[] } } & (
+type Config = { envPrefix: string; define?: Record<string, string>; worker: { plugins: () => WorkerPlugin[] } } & (
   | BuildConfig
   | ClientConfig
   | Record<never, never>
@@ -609,7 +609,14 @@ export default function (): {
       const file = path.join(path.resolve(user.root ?? process.cwd()), "topology.ts");
       projectEnv = user.envPrefix !== undefined || user.define !== undefined;
       ssrBuild = env.isSsrBuild === true;
-      const own = { envPrefix: NO_ENV, worker: { plugins: () => [workerPlugin()] } };
+      // A build is the production one whatever `vite.config.ts` sets `process.env.NODE_ENV` to (k.deploy Build).
+      const own = {
+        envPrefix: NO_ENV,
+        ...(env.command === "build"
+          ? { define: { "import.meta.env.DEV": "false", "import.meta.env.PROD": "true" } }
+          : {}),
+        worker: { plugins: () => [workerPlugin()] },
+      };
       if (env.command !== "build" || env.isSsrBuild === true || name === undefined || !fs.existsSync(file)) return own;
       const top = parseTopology(fs.readFileSync(file, "utf8")).topology;
       const out = `dist/${name}`;
