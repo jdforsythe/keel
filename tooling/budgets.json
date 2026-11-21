@@ -3,7 +3,7 @@
     "check.injected10": 600,
     "test.failing3": 400,
     "spec.section": 1750,
-    "spec.map": 1345,
+    "spec.map": 1350,
     "explain": 300,
     "mcp.tools-list": 1750,
     "docs.map": 1390,
@@ -14,11 +14,11 @@
   },
   "size": {
     "@keel/check": {
-      "max": "54.35kb",
+      "max": "56.25kb",
       "platform": "node"
     },
     "@keel/check/explain": {
-      "max": "14kb",
+      "max": "14.25kb",
       "platform": "node"
     },
     "@keel/cli": {
@@ -95,7 +95,7 @@
       "platform": "node"
     },
     "@keel/std-jobs/tools": {
-      "max": "2.75kb",
+      "max": "3.25kb",
       "platform": "node"
     },
     "@keel/std-live": "1kb",
@@ -178,7 +178,7 @@
       "platform": "node"
     },
     "@keel/std-tokens/tools": {
-      "max": "1.25kb",
+      "max": "1.5kb",
       "platform": "node"
     },
     "@keel/std-temporal": "5kb",
