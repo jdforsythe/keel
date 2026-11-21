@@ -32,7 +32,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; owner: pnpm spec --for <code>.
 | k.reactive | Reactivity | conformance-covered | signals |
 | k.store | Store, transactions | conformance-covered | log |
 | k.component | Components | conformance-covered | props |
-| k.compiler | Compiler, artifacts | implemented | JSX |
+| k.compiler | Compiler, artifacts | conformance-covered | JSX |
 | k.boundary | Server boundary | conformance-covered | stubs |
 | k.bundle | Browser bundles | conformance-covered | workers |
 | k.runtime | DOM runtime, islands | conformance-covered | nodes |

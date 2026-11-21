@@ -11,7 +11,9 @@ test(
   () => {
     const tree = appDataTree();
     const dirs = tree["modules/m/dirs.server.ts"] ?? "";
-    const typed = { "node_modules/cjs-events/index.d.ts": "declare const pkg: { make: () => object };\nexport default pkg;\n" };
+    const typed = {
+      "node_modules/cjs-events/index.d.ts": "declare const pkg: { make: () => object };\nexport default pkg;\n",
+    };
     const dir = materialize({
       ...tree,
       "modules/m/bus.server.ts": "import pkg from 'cjs-events'\nexport const bus: object = pkg.make()\n",
@@ -19,7 +21,8 @@ test(
     });
     try {
       write(dir, {
-        "node_modules/cjs-events/package.json": '{"name":"cjs-events","version":"1.0.0","main":"index.js","types":"index.d.ts"}\n',
+        "node_modules/cjs-events/package.json":
+          '{"name":"cjs-events","version":"1.0.0","main":"index.js","types":"index.d.ts"}\n',
         ...typed,
         "node_modules/cjs-events/index.js": 'const E = require("events");\nmodule.exports = { make: () => new E() };\n',
       });

@@ -1,5 +1,5 @@
 {
-  "commit": "58a225e03e51c6fd39df649fd69dfc6cca212205",
+  "commit": "7d79a1b82893921060405de998b5822cc6f04da8",
   "coverage": {
     "packages": {
       "apps/golden-1": {
@@ -1158,7 +1158,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-21T19:15:41.450Z",
+  "generatedAt": "2026-11-21T19:24:08.474Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -1174,10 +1174,10 @@
     },
     "clauses": {
       "byRung": {
-        "example": 818,
+        "example": 820,
         "exhaustive": 6,
         "monitored": 0,
-        "none": 4,
+        "none": 2,
         "probabilistic": 174,
         "proven": 37
       },
@@ -1314,16 +1314,16 @@
         },
         "k.compiler": {
           "byRung": {
-            "example": 13,
+            "example": 15,
             "exhaustive": 0,
             "monitored": 0,
-            "none": 2,
+            "none": 0,
             "probabilistic": 7,
             "proven": 0
           },
           "status": "implemented",
           "total": 22,
-          "verified": 20
+          "verified": 22
         },
         "k.component": {
           "byRung": {
@@ -1373,7 +1373,7 @@
             "probabilistic": 0,
             "proven": 1
           },
-          "status": "implemented",
+          "status": "conformance-covered",
           "total": 9,
           "verified": 9
         },
@@ -1399,7 +1399,7 @@
             "probabilistic": 0,
             "proven": 0
           },
-          "status": "implemented",
+          "status": "conformance-covered",
           "total": 12,
           "verified": 12
         },
@@ -1945,7 +1945,7 @@
             "probabilistic": 1,
             "proven": 0
           },
-          "status": "implemented",
+          "status": "conformance-covered",
           "total": 17,
           "verified": 17
         },
@@ -2374,7 +2374,7 @@
             "probabilistic": 1,
             "proven": 0
           },
-          "status": "implemented",
+          "status": "conformance-covered",
           "total": 12,
           "verified": 12
         },
@@ -2536,10 +2536,10 @@
         }
       },
       "total": 1039,
-      "verified": 1035
+      "verified": 1037
     },
     "evidenceByRung": {
-      "example": 1456,
+      "example": 1458,
       "exhaustive": 15,
       "monitored": 8,
       "probabilistic": 331,
@@ -3089,7 +3089,7 @@
     },
     "items": 1764,
     "unsafe": 18,
-    "verified": 1560
+    "verified": 1562
   },
   "mutation": {
     "packages": {
@@ -3539,7 +3539,7 @@
         "propertyCalls": 133,
         "proveFiles": 0,
         "simulateFiles": 0,
-        "skipTodo": 2,
+        "skipTodo": 0,
         "unitCases": 718,
         "unitFiles": 91
       },
@@ -3553,7 +3553,7 @@
         "propertyCalls": 96,
         "proveFiles": 0,
         "simulateFiles": 0,
-        "skipTodo": 1,
+        "skipTodo": 0,
         "unitCases": 633,
         "unitFiles": 81
       },
@@ -3889,7 +3889,7 @@
         "propertyCalls": 31,
         "proveFiles": 0,
         "simulateFiles": 0,
-        "skipTodo": 2,
+        "skipTodo": 1,
         "unitCases": 27,
         "unitFiles": 6
       },
@@ -4100,7 +4100,7 @@
       "propertyCalls": 2242,
       "proveFiles": 23,
       "simulateFiles": 6,
-      "skipTodo": 6,
+      "skipTodo": 2,
       "unitCases": 5274,
       "unitFiles": 889
     }

@@ -1,5 +1,5 @@
 # k.compiler: Compiler and artifacts
-status: implemented
+status: conformance-covered
 
 **API.** One Vite plugin, no options (`@keel/compiler/vite`).
 
