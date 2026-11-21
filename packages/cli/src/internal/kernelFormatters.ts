@@ -28,7 +28,7 @@ const flags = (st: Readonly<Record<string, boolean | undefined>>): string => {
 };
 
 /** `keel review`'s trailer says `listed` where its json count says `list` (k.review Loudness). */
-const listed = (c: Readonly<Record<string, number>>): Record<string, number> =>
+const trailerCounts = (c: Readonly<Record<string, number>>): Record<string, number> =>
   Object.fromEntries(Object.entries(c).map(([k, v]) => [k === "list" ? "listed" : k, v]));
 
 /** A file's text as it is: the record's line break follows, so one final newline is dropped. */
@@ -48,7 +48,7 @@ export const kernelFormatters: readonly (readonly [string, Entry])[] = [
     entryOf({
       schema: SummarySchema,
       compact: (r) =>
-        [r.ok ? "ok" : "fail", r.name, countsText(r.name === "review" ? listed(r.counts) : r.counts)]
+        [r.ok ? "ok" : "fail", r.name, countsText(r.name === "review" ? trailerCounts(r.counts) : r.counts)]
           .filter((p) => p !== "")
           .join(" "),
       pretty: (r) => {
