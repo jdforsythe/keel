@@ -4,7 +4,7 @@ status: conformance-covered
 Which bundles, file names and handler uses k.boundary's stubs, Assertion and Reach cover, and how a build keeps every environment value out of a browser asset.
 
 **Bundles.** Each bundle a browser build emits is a browser build for k.boundary, with the stubs and the Assertion: the entry's, each Web Worker's and shared worker's (`new Worker(new URL(<literal>, import.meta.url))`, `new SharedWorker(…)`, an import with `?worker` or `?sharedworker`) and any other chunk Vite bundles in a pass of its own. A worker's chain runs through the file that names it: `<entry> -> <page> -> <worker> -> … -> <file>`.
-- Reach (E1004, so E1107 and E1571) follows `new URL(<literal>, import.meta.url)` and `?worker`, `?sharedworker` and `?url` specifiers as it follows a literal `import()`; a worker file a client entry reaches is a client entry.
+- Reach (E1004 and E1571) follows `new URL(<literal>, import.meta.url)` and `?worker`, `?sharedworker` and `?url` specifiers as it follows a literal `import()`; a worker file a client entry reaches is a client entry.
 
 **Names.** A file is server-only by its name on disk, matched case-insensitively, whatever its extension: `notes.Server.ts`, `keys.server.json`, `copy.server.txt`, `logo.guard.svg`.
 - A server-only file named `.js`, `.jsx`, `.ts`, `.tsx`, `.mjs`, `.cjs`, `.mts` or `.cts` gets a stub. Any other (data, styles, text, an image) gets none: in a browser build's graph, with or without a query, it fails the build with E1007 reason `server-only file`; named from client-reachable code it is E1004.
