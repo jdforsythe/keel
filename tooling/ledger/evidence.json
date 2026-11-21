@@ -1,5 +1,5 @@
 {
-  "commit": "660bf03418779cfd5826efad0645b03e6d28d8ae",
+  "commit": "7d37c82f30a0e04c724a241ba51fe9bff2715d75",
   "coverage": {
     "packages": {
       "apps/golden-1": {
@@ -1158,7 +1158,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-21T19:46:49.695Z",
+  "generatedAt": "2026-11-21T20:45:36.704Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -1174,10 +1174,10 @@
     },
     "clauses": {
       "byRung": {
-        "example": 820,
+        "example": 835,
         "exhaustive": 6,
         "monitored": 0,
-        "none": 2,
+        "none": 4,
         "probabilistic": 174,
         "proven": 37
       },
@@ -1428,6 +1428,19 @@
           "status": "conformance-covered",
           "total": 13,
           "verified": 13
+        },
+        "k.escapes": {
+          "byRung": {
+            "example": 8,
+            "exhaustive": 0,
+            "monitored": 0,
+            "none": 1,
+            "probabilistic": 0,
+            "proven": 0
+          },
+          "status": "implemented",
+          "total": 9,
+          "verified": 8
         },
         "k.evidence": {
           "byRung": {
@@ -1844,6 +1857,19 @@
           "status": "conformance-covered",
           "total": 9,
           "verified": 9
+        },
+        "k.review": {
+          "byRung": {
+            "example": 7,
+            "exhaustive": 0,
+            "monitored": 0,
+            "none": 1,
+            "probabilistic": 0,
+            "proven": 0
+          },
+          "status": "implemented",
+          "total": 8,
+          "verified": 7
         },
         "k.roles": {
           "byRung": {
@@ -2535,11 +2561,11 @@
           "verified": 8
         }
       },
-      "total": 1039,
-      "verified": 1037
+      "total": 1056,
+      "verified": 1052
     },
     "evidenceByRung": {
-      "example": 1458,
+      "example": 1473,
       "exhaustive": 15,
       "monitored": 8,
       "probabilistic": 331,
@@ -3087,9 +3113,9 @@
       "total": 445,
       "verified": 407
     },
-    "items": 1844,
+    "items": 1861,
     "unsafe": 18,
-    "verified": 1562
+    "verified": 1577
   },
   "mutation": {
     "packages": {
@@ -3137,8 +3163,8 @@
         "claims": 141,
         "reason": null,
         "reportDate": "2026-11-19",
-        "score": 81.06,
-        "stale": 46,
+        "score": 80.56,
+        "stale": 47,
         "threshold": 70
       },
       "packages/compiler": {
@@ -3454,7 +3480,7 @@
         "threshold": 70
       }
     },
-    "stale": 240
+    "stale": 241
   },
   "schema": 1,
   "tests": {
@@ -3530,18 +3556,18 @@
         "unitFiles": 59
       },
       "packages/cli": {
-        "conformanceCases": 438,
-        "conformanceFiles": 131,
+        "conformanceCases": 458,
+        "conformanceFiles": 151,
         "exploreFiles": 0,
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 133,
+        "propertyCalls": 140,
         "proveFiles": 0,
         "simulateFiles": 0,
-        "skipTodo": 0,
-        "unitCases": 718,
-        "unitFiles": 91
+        "skipTodo": 3,
+        "unitCases": 748,
+        "unitFiles": 95
       },
       "packages/compiler": {
         "conformanceCases": 178,
@@ -3628,8 +3654,8 @@
         "unitFiles": 38
       },
       "packages/scaffold": {
-        "conformanceCases": 127,
-        "conformanceFiles": 35,
+        "conformanceCases": 128,
+        "conformanceFiles": 36,
         "exploreFiles": 0,
         "fails": 0,
         "otherCases": 0,
@@ -4091,18 +4117,18 @@
       }
     },
     "totals": {
-      "conformanceCases": 4841,
-      "conformanceFiles": 1175,
+      "conformanceCases": 4862,
+      "conformanceFiles": 1196,
       "exploreFiles": 17,
       "fails": 2,
       "otherCases": 0,
       "otherFiles": 0,
-      "propertyCalls": 2242,
+      "propertyCalls": 2249,
       "proveFiles": 23,
       "simulateFiles": 6,
-      "skipTodo": 2,
-      "unitCases": 5274,
-      "unitFiles": 889
+      "skipTodo": 5,
+      "unitCases": 5304,
+      "unitFiles": 893
     }
   },
   "tool": {

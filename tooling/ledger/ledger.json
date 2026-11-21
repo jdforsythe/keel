@@ -3,7 +3,7 @@
   "unsafe": 18,
   "hostElements": 0,
   "rungs": {
-    "example": 1458,
+    "example": 1473,
     "probabilistic": 331,
     "exhaustive": 15,
     "proven": 73,
@@ -16,7 +16,7 @@
         "threshold": 70
       },
       "cli": {
-        "score": 81.06,
+        "score": 80.56,
         "threshold": 70
       },
       "compiler": {
@@ -14374,7 +14374,7 @@
     },
     {
       "item": "k.escapes#1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.escapes#2",
@@ -14382,31 +14382,31 @@
     },
     {
       "item": "k.escapes#3",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.escapes#4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.escapes#5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.escapes#6",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.escapes#7",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.escapes#8",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.escapes#9",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.evidence#1",
@@ -15474,23 +15474,23 @@
     },
     {
       "item": "k.review#1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.review#2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.review#3",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.review#4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.review#5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.review#6",
@@ -15498,11 +15498,11 @@
     },
     {
       "item": "k.review#7",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.review#8",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.roles#1",
