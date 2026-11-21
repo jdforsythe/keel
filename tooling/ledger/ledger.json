@@ -4,7 +4,7 @@
   "hostElements": 0,
   "rungs": {
     "example": 1420,
-    "probabilistic": 332,
+    "probabilistic": 335,
     "exhaustive": 15,
     "proven": 72,
     "monitored": 8
@@ -17464,15 +17464,15 @@
     },
     {
       "item": "std.tokens#13",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "item": "std.tokens#14",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "item": "std.tokens#15",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "item": "std.workflows#1",

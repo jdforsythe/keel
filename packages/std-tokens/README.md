@@ -10,17 +10,19 @@ Opaque tokens for `node` deployables: API keys, invite links, one-time links. `t
   - `@keel/std-tokens` (client-safe): `Digested` (`tokens.Digested`), a schema and its type.
   - `@keel/std-tokens/server` (Node, `*.server.ts`): `tokens(ctx): Tokens`, type `Tokens`:
     - `mint({ ttl: number | null }): Result<{ token: Secret<string>, id: string, digest: Digested, expiresAt: number | null }, credentials.ttl>`
+    - `idOf(token: Secret<string>): Result<string, credentials.mismatch>`
     - `check<R extends { digest: Digested }>(token: Secret<string>, find: (id: string) => R | undefined): Result<R, credentials.mismatch | credentials.expired | credentials.malformed>`
   - `@keel/std-tokens/tools`: `serverImport` (E2201), `nodeDeployable` (E2202).
 - **Invariants:**
   - Token: `keel_<id>_<secret>`, 16 and 64 lowercase hex characters from `randomBytes`. Digest: `$sha256$exp=<ms>$<digest>`, or `$sha256$<digest>` for `ttl: null`, the SHA-256 of the token's text in base64 without padding. `expiresAt` is the clock's whole milliseconds plus `ttl`. `ttl` is an integer from 60,000 to 31,536,000,000 or `null`.
+  - `idOf` returns the id `check` passes to `find`, from the same parse, and `credentials.mismatch` for what `check` refuses before it calls `find` (a value not in the token form, and under real or shell a sim token). It reads no row, digest or clock, so `ok` means well formed, not valid; it is synchronous, never throws, and neither returns nor logs the secret part.
   - `check` hashes the presented token, compares it with the row's digest in constant time (`timingSafeEqual`), then reads `ctx.clock`; a `find` that returns `undefined`, `null` or a non-object is `credentials.mismatch`, and a throw from `find` passes through. A token is valid while `now < expiresAt` and `credentials.expired` from `now >= expiresAt`, an answer only the real token gets.
   - An unreadable digest is `credentials.malformed` with `reason`: `format` (not `Digested`), `parameters` (an id other than `sha256` or `sha256-sim`, a parameter other than `exp=<ms>`, or a digest text that is not the canonical base64 of 32 bytes) or `sim` (a sim digest outside sim).
   - Sim forms: `keelsim_` and `$sha256-sim$`, with bytes from the capability seed and a call count. Sim reads both forms; real and shell answer `credentials.malformed` `sim` for a sim digest and `credentials.mismatch` for a sim token.
   - Each error is one frozen value per code and `reason`, and holds no part of a token or a stored digest. No method throws, a throw from `find` aside; `mint` answers `credentials.ttl` for a missing or non-object argument.
   - Rules: E2201 and E2202 read a file's own static imports, re-exports and `import()` of `@keel/std-tokens/server`; type-only imports and re-exports pass, and a `require` or a helper file that re-exports the entry is not followed. E2201 lets through `*.test.*` and `*.spec.*` files, a top-level test directory and a test directory inside a module.
 - **Dependencies:** `@keel/check`, `@keel/compiler`, `@keel/ctx`, `@keel/schema`; `randomBytes`, `createHash` and `timingSafeEqual` of `node:crypto`.
-- **Rungs:** conformance (example and property, real and sim), properties for `mint`, `check` and the generator.
+- **Rungs:** conformance (example and property, real and sim), properties for `mint`, `idOf`, `check` and the generator.
 
 ## Tokens in an API route
 
@@ -32,6 +34,12 @@ const minted = tokens(ctx).mint({ ttl: null })
 if (!minted.ok) return err(minted.error)
 // ... store minted.value.id and minted.value.digest ...
 return ok({ token: reveal(minted.value.token) })
+
+// in a handler that keeps its rows in a database: read the id, fetch the row, then check
+const id = tokens(ctx).idOf(bearer)
+if (!id.ok) return err({ code: 'keel.denied', message: 'Unknown token', data: null })
+const row = await readRow(ctx, id.value)
+const checked = tokens(ctx).check(bearer, () => row)
 
 // in a handler that checks a presented token
 if (bearer === undefined) return err({ code: 'keel.denied', message: 'No token', data: null })

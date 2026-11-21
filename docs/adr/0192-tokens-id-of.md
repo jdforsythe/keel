@@ -1,6 +1,6 @@
 # ADR-0192: std.tokens: `idOf` reads a token's id before `check` (RFC 0173)
 
-**Status:** proposed (for the operator to confirm).
+**Status:** accepted (orchestrator, under the RFC defaults; for the operator to confirm).
 
 **Context.** `tokens(ctx).check(token, find)` takes a synchronous `find`. An app that keeps its tokens in its own database (k.data) reads the row asynchronously, by the token's id, and the id sits inside the presented `Secret<string>`. Without help the app reveals the token and parses its form itself.
 

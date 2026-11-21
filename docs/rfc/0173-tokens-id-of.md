@@ -1,6 +1,6 @@
 # RFC 0173: std.tokens: `idOf` reads a token's id before `check`
 
-Status: proposed (ADR-0192), for the operator to confirm. For RFC 0158's first question to the operator, decided by the orchestrator: `idOf`, not an async `find`.
+Status: implemented (ADR-0192). For RFC 0158's first question to the operator, decided by the orchestrator: `idOf`, not an async `find`.
 
 ## Decisions
 - D1: `tokens(ctx).idOf(token: Secret<string>): Result<string, KeelError<'credentials.mismatch', {}>>`, a method of the accessor `@keel/std-tokens/server` exports, additive. `check` and `mint` are unchanged.

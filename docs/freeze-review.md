@@ -90,9 +90,9 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | std.temporal | 12 | **conformance-covered** | none |
 | std.text | 11 | **conformance-covered** | none |
 | std.timings | 7 | **conformance-covered** | none |
-| std.tokens | 15 | implemented | clauses 13 to 15: `idOf` is not built |
+| std.tokens | 15 | **conformance-covered** | none |
 | std.workflows | 8 | **conformance-covered** | none |
-| **total** | **854** | 83 of 85 covered | |
+| **total** | **854** | 84 of 85 covered | |
 
 ## 2. One-way audit (principle 1)
 
@@ -139,6 +139,6 @@ Golden apps: `apps/golden-1` and `apps/golden-2` have converged evals (`evals/re
 
 ## Status
 
-No section is `frozen`. The kernel is provisionally frozen: a kernel change goes through an RFC with an ADR, a conformance update and a migration note, and the `frozen` flip waits until the stdlib stages have exercised the kernel (`tasks/0034-freeze/PLAN.md`). k.shell and std.db are `proposed`, k.formats and std.tokens are `implemented`; the other 82 are `conformance-covered`.
+No section is `frozen`. The kernel is provisionally frozen: a kernel change goes through an RFC with an ADR, a conformance update and a migration note, and the `frozen` flip waits until the stdlib stages have exercised the kernel (`tasks/0034-freeze/PLAN.md`). k.shell and std.db are `proposed`, k.formats is `implemented`; the other 83 are `conformance-covered`.
 
 verified: 8e06a5f29c5a8fcf34eeba72b98ecbce7c4dccbd
