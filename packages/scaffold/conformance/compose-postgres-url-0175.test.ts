@@ -46,7 +46,7 @@ const names = fc
   )
   .map(([x, y]) => ({ x: x ?? "zqx", y: y ?? "zqy" }));
 
-test.skip("With module `a` listing `@keel/std-postgres` in `deps`, served by `node` deployable `x` beside `y`, `deploy/compose.yaml` passes `KEEL_POSTGRES_URL` to `x` as a required value from the environment and to `y` not at all, and holds no URL.", () => {
+test("With module `a` listing `@keel/std-postgres` in `deps`, served by `node` deployable `x` beside `y`, `deploy/compose.yaml` passes `KEEL_POSTGRES_URL` to `x` as a required value from the environment and to `y` not at all, and holds no URL.", () => {
   fc.assert(
     fc.property(names, ({ x, y }) => {
       const text = compose(x, y);
