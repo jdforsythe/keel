@@ -20,7 +20,7 @@ const r = await mongoNotes(ctx).forOwner(user)   // in a loader's fn: Result<Not
 
 **Simulation and evidence.** Under sim every capability answers from its sim side, so a run and a `simulate` failure's `SimRun` read the same data again. A session replay starts each sim side empty, as it starts a missing store at `initial` (std.sessions). Data reached any other way is not simulated: a library called outside a capability (an identity source's library included), or a sim side that calls a real store. Keel cannot see such a call: the run reads whatever that store holds, a shrunk `SimRun` may pass when run again, and `explore` and `prove` (k.model, k.prove) reach stores only. The ledger reads rungs from tests (k.ledger) and claims nothing more: a rung earned under sim is evidence about the code with each capability's sim side; a real side holds the rung of the tests that run it against its store.
 
-**Dev.** In `keel dev`, editing an app file that calls `register` loads the server graph again whole, so the registry is empty when the file registers again: no E1602.
+**Dev.** In `keel dev`, editing an app file that registered a capability, directly or through a helper it calls, or editing that helper, loads the server graph again whole, so the next request runs the new code and the registry is empty when the file registers again: no E1602. A capability id two files register is still E1602.
 
 **Files.** A module's data migrations are its files `modules/<id>/migrations/*.sql`. A data capability reads them from the app folder: `KEEL_APP_DIR` when set, else the working directory (`keel dev`, `keel test` and an app's vitest run in the app's folder). `keel build` copies the folder of each module a `node` deployable serves to `dist/<name>/modules/<id>/migrations/`, and `server.mjs` sets `KEEL_APP_DIR` to its own folder when unset. `keel dev` sets `KEEL_DEV_DIR` to the app's absolute `.keel-dev/` folder, where a capability keeps its dev data.
 
@@ -28,6 +28,7 @@ const r = await mongoNotes(ctx).forOwner(user)   // in a loader's fn: Result<Not
 
 **Conformance.**
 - In `modules/notes/mongoNotes.server.ts`, `register('notes.mongo', ...)` is no E1607; `register('mongo', ...)`, `register('other.mongo', ...)`, `register('notes.Mongo', ...)` and `register(name, ...)` with `name` a variable are each one E1607, and a second file registering `notes.mongo` is one E1607, in the file whose path sorts later.
+- Under `keel dev`, with a helper module whose function calls `register('notes.mongo', ...)` and an app file that calls it, editing the helper or the app file makes the next request run the edited code, with no E1602; a second app file registering `notes.mongo` is E1602.
 - A `register<T>` call whose `sim` returns an object missing a member of `T` does not typecheck.
 - An app-registered accessor called twice with one sim ctx returns one object, made once; two sim ctxs of one seed get two objects, whose `sim` factories received equal `seed`s, and a write through one is not read through the other.
 - An API loader returning its capability's `err` `keel.unreachable`, `keel.conflict` or `keel.notFound` answers 502, 409 or 404; one returning `ok` of a value failing the entry's `output` answers 500 and, in dev, an E1554 `diag`.

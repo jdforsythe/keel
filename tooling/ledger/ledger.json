@@ -3,7 +3,7 @@
   "unsafe": 18,
   "hostElements": 0,
   "rungs": {
-    "example": 1646,
+    "example": 1645,
     "probabilistic": 341,
     "exhaustive": 15,
     "proven": 75,
@@ -14872,11 +14872,11 @@
     },
     {
       "item": "k.data#2",
-      "rung": "proven"
+      "rung": "none"
     },
     {
       "item": "k.data#3",
-      "rung": "example"
+      "rung": "proven"
     },
     {
       "item": "k.data#4",
@@ -14900,6 +14900,10 @@
     },
     {
       "item": "k.data#9",
+      "rung": "example"
+    },
+    {
+      "item": "k.data#10",
       "rung": "example"
     },
     {
@@ -16820,11 +16824,11 @@
     },
     {
       "item": "k.sim#4",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "k.sim#5",
-      "rung": "probabilistic"
+      "rung": "example"
     },
     {
       "item": "k.sim#6",
@@ -16832,7 +16836,7 @@
     },
     {
       "item": "k.sim#7",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "item": "k.sim#8",
@@ -16848,6 +16852,10 @@
     },
     {
       "item": "k.sim#11",
+      "rung": "example"
+    },
+    {
+      "item": "k.sim#12",
       "rung": "probabilistic"
     },
     {
@@ -17052,7 +17060,7 @@
     },
     {
       "item": "k.testing#12",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "k.testing#13",
@@ -18084,6 +18092,10 @@
     },
     {
       "item": "std.postgres#22",
+      "rung": "none"
+    },
+    {
+      "item": "std.postgres#23",
       "rung": "example"
     },
     {
