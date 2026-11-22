@@ -3,7 +3,7 @@
   "unsafe": 18,
   "hostElements": 0,
   "rungs": {
-    "example": 1406,
+    "example": 1620,
     "probabilistic": 341,
     "exhaustive": 15,
     "proven": 75,
@@ -100,6 +100,7 @@
         "threshold": 70
       },
       "std-live": {
+        "score": 88.1,
         "threshold": 70
       },
       "std-messages": {
@@ -8186,11 +8187,11 @@
       },
       {
         "file": "packages/std-live/src/live.ts",
-        "sha": "e471952ec0a66131268432ecf1c7c5a8169385ed726d72ee056c235df198af0e",
-        "killed": 69,
+        "sha": "d0d0ef2ceed02311e0f1ce6021120b1c17e9df1ffdf418a0b00787dcb2131a2a",
+        "killed": 74,
         "survived": 10,
         "noCoverage": 0,
-        "score": 87.34
+        "score": 88.1
       },
       {
         "file": "packages/std-messages/src/formatMessage.ts",
@@ -12477,12 +12478,6 @@
     },
     {
       "pkg": "household",
-      "name": "Changes",
-      "file": "household:shopping/Changes.schema.ts",
-      "rung": "none"
-    },
-    {
-      "pkg": "household",
       "name": "Copy",
       "file": "household:shopping/Copy.schema.ts",
       "rung": "example"
@@ -12557,12 +12552,6 @@
       "pkg": "household",
       "name": "changeList",
       "file": "household:shopping/changeList.server.ts",
-      "rung": "none"
-    },
-    {
-      "pkg": "household",
-      "name": "changeStores",
-      "file": "household:shopping/changeStores.ts",
       "rung": "none"
     },
     {
@@ -18601,15 +18590,15 @@
   "a11y": [
     {
       "item": "a11y:todos.edit#1.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.edit#1.2.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.edit#1.3.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.edit#1.3.2",
@@ -18617,11 +18606,11 @@
     },
     {
       "item": "a11y:todos.edit#1.3.5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.edit#1.4.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.edit#1.4.3",
@@ -18629,31 +18618,31 @@
     },
     {
       "item": "a11y:todos.edit#1.4.4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.edit#1.4.12",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.edit#2.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.edit#2.2.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.edit#2.2.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.edit#2.4.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.edit#2.4.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.edit#2.4.3",
@@ -18661,19 +18650,19 @@
     },
     {
       "item": "a11y:todos.edit#2.4.4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.edit#3.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.edit#3.1.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.edit#3.3.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.edit#4.1.2",
@@ -18681,15 +18670,15 @@
     },
     {
       "item": "a11y:todos.index#1.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.index#1.2.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.index#1.3.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.index#1.3.2",
@@ -18697,11 +18686,11 @@
     },
     {
       "item": "a11y:todos.index#1.3.5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.index#1.4.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.index#1.4.3",
@@ -18709,31 +18698,31 @@
     },
     {
       "item": "a11y:todos.index#1.4.4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.index#1.4.12",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.index#2.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.index#2.2.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.index#2.2.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.index#2.4.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.index#2.4.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.index#2.4.3",
@@ -18741,19 +18730,19 @@
     },
     {
       "item": "a11y:todos.index#2.4.4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.index#3.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.index#3.1.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.index#3.3.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.index#4.1.2",
@@ -18761,15 +18750,15 @@
     },
     {
       "item": "a11y:todos.list#1.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.list#1.2.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.list#1.3.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.list#1.3.2",
@@ -18777,11 +18766,11 @@
     },
     {
       "item": "a11y:todos.list#1.3.5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.list#1.4.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.list#1.4.3",
@@ -18789,31 +18778,31 @@
     },
     {
       "item": "a11y:todos.list#1.4.4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.list#1.4.12",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.list#2.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.list#2.2.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.list#2.2.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.list#2.4.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.list#2.4.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.list#2.4.3",
@@ -18821,19 +18810,19 @@
     },
     {
       "item": "a11y:todos.list#2.4.4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.list#3.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.list#3.1.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.list#3.3.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:todos.list#4.1.2",
@@ -18921,15 +18910,15 @@
     },
     {
       "item": "a11y:recipes.catalog#1.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.catalog#1.2.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.catalog#1.3.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.catalog#1.3.2",
@@ -18937,43 +18926,43 @@
     },
     {
       "item": "a11y:recipes.catalog#1.3.5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.catalog#1.4.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.catalog#1.4.3",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.catalog#1.4.4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.catalog#1.4.12",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.catalog#2.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.catalog#2.2.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.catalog#2.2.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.catalog#2.4.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.catalog#2.4.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.catalog#2.4.3",
@@ -18981,35 +18970,35 @@
     },
     {
       "item": "a11y:recipes.catalog#2.4.4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.catalog#3.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.catalog#3.1.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.catalog#3.3.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.catalog#4.1.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.index#1.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.index#1.2.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.index#1.3.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.index#1.3.2",
@@ -19017,43 +19006,43 @@
     },
     {
       "item": "a11y:recipes.index#1.3.5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.index#1.4.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.index#1.4.3",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.index#1.4.4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.index#1.4.12",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.index#2.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.index#2.2.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.index#2.2.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.index#2.4.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.index#2.4.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.index#2.4.3",
@@ -19061,35 +19050,35 @@
     },
     {
       "item": "a11y:recipes.index#2.4.4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.index#3.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.index#3.1.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.index#3.3.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.index#4.1.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.new#1.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.new#1.2.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.new#1.3.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.new#1.3.2",
@@ -19097,11 +19086,11 @@
     },
     {
       "item": "a11y:recipes.new#1.3.5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.new#1.4.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.new#1.4.3",
@@ -19109,31 +19098,31 @@
     },
     {
       "item": "a11y:recipes.new#1.4.4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.new#1.4.12",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.new#2.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.new#2.2.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.new#2.2.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.new#2.4.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.new#2.4.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.new#2.4.3",
@@ -19141,19 +19130,19 @@
     },
     {
       "item": "a11y:recipes.new#2.4.4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.new#3.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.new#3.1.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.new#3.3.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.new#4.1.2",
@@ -19241,15 +19230,15 @@
     },
     {
       "item": "a11y:recipes.show#1.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.show#1.2.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.show#1.3.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.show#1.3.2",
@@ -19257,43 +19246,43 @@
     },
     {
       "item": "a11y:recipes.show#1.3.5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.show#1.4.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.show#1.4.3",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.show#1.4.4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.show#1.4.12",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.show#2.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.show#2.2.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.show#2.2.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.show#2.4.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.show#2.4.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.show#2.4.3",
@@ -19301,23 +19290,23 @@
     },
     {
       "item": "a11y:recipes.show#2.4.4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.show#3.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.show#3.1.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.show#3.3.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:recipes.show#4.1.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:app.frame#1.1.1",
@@ -19401,15 +19390,15 @@
     },
     {
       "item": "a11y:app.start#1.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:app.start#1.2.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:app.start#1.3.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:app.start#1.3.2",
@@ -19417,11 +19406,11 @@
     },
     {
       "item": "a11y:app.start#1.3.5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:app.start#1.4.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:app.start#1.4.3",
@@ -19429,31 +19418,31 @@
     },
     {
       "item": "a11y:app.start#1.4.4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:app.start#1.4.12",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:app.start#2.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:app.start#2.2.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:app.start#2.2.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:app.start#2.4.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:app.start#2.4.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:app.start#2.4.3",
@@ -19461,19 +19450,19 @@
     },
     {
       "item": "a11y:app.start#2.4.4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:app.start#3.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:app.start#3.1.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:app.start#3.3.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:app.start#4.1.2",
@@ -19641,15 +19630,15 @@
     },
     {
       "item": "a11y:members.profile#1.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:members.profile#1.2.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:members.profile#1.3.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:members.profile#1.3.2",
@@ -19657,11 +19646,11 @@
     },
     {
       "item": "a11y:members.profile#1.3.5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:members.profile#1.4.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:members.profile#1.4.3",
@@ -19669,31 +19658,31 @@
     },
     {
       "item": "a11y:members.profile#1.4.4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:members.profile#1.4.12",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:members.profile#2.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:members.profile#2.2.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:members.profile#2.2.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:members.profile#2.4.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:members.profile#2.4.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:members.profile#2.4.3",
@@ -19701,19 +19690,19 @@
     },
     {
       "item": "a11y:members.profile#2.4.4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:members.profile#3.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:members.profile#3.1.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:members.profile#3.3.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:members.profile#4.1.2",
@@ -19801,15 +19790,15 @@
     },
     {
       "item": "a11y:members.signin#1.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:members.signin#1.2.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:members.signin#1.3.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:members.signin#1.3.2",
@@ -19817,11 +19806,11 @@
     },
     {
       "item": "a11y:members.signin#1.3.5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:members.signin#1.4.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:members.signin#1.4.3",
@@ -19829,31 +19818,31 @@
     },
     {
       "item": "a11y:members.signin#1.4.4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:members.signin#1.4.12",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:members.signin#2.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:members.signin#2.2.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:members.signin#2.2.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:members.signin#2.4.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:members.signin#2.4.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:members.signin#2.4.3",
@@ -19861,19 +19850,19 @@
     },
     {
       "item": "a11y:members.signin#2.4.4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:members.signin#3.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:members.signin#3.1.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:members.signin#3.3.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:members.signin#4.1.2",
@@ -20041,15 +20030,15 @@
     },
     {
       "item": "a11y:receipts.book#1.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:receipts.book#1.2.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:receipts.book#1.3.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:receipts.book#1.3.2",
@@ -20057,11 +20046,11 @@
     },
     {
       "item": "a11y:receipts.book#1.3.5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:receipts.book#1.4.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:receipts.book#1.4.3",
@@ -20069,31 +20058,31 @@
     },
     {
       "item": "a11y:receipts.book#1.4.4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:receipts.book#1.4.12",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:receipts.book#2.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:receipts.book#2.2.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:receipts.book#2.2.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:receipts.book#2.4.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:receipts.book#2.4.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:receipts.book#2.4.3",
@@ -20101,19 +20090,19 @@
     },
     {
       "item": "a11y:receipts.book#2.4.4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:receipts.book#3.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:receipts.book#3.1.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:receipts.book#3.3.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:receipts.book#4.1.2",
@@ -20121,15 +20110,15 @@
     },
     {
       "item": "a11y:setup.form#1.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:setup.form#1.2.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:setup.form#1.3.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:setup.form#1.3.2",
@@ -20137,11 +20126,11 @@
     },
     {
       "item": "a11y:setup.form#1.3.5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:setup.form#1.4.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:setup.form#1.4.3",
@@ -20149,31 +20138,31 @@
     },
     {
       "item": "a11y:setup.form#1.4.4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:setup.form#1.4.12",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:setup.form#2.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:setup.form#2.2.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:setup.form#2.2.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:setup.form#2.4.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:setup.form#2.4.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:setup.form#2.4.3",
@@ -20181,19 +20170,19 @@
     },
     {
       "item": "a11y:setup.form#2.4.4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:setup.form#3.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:setup.form#3.1.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:setup.form#3.3.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:setup.form#4.1.2",
@@ -20521,15 +20510,15 @@
     },
     {
       "item": "a11y:shopping.list#1.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:shopping.list#1.2.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:shopping.list#1.3.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:shopping.list#1.3.2",
@@ -20537,11 +20526,11 @@
     },
     {
       "item": "a11y:shopping.list#1.3.5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:shopping.list#1.4.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:shopping.list#1.4.3",
@@ -20549,31 +20538,31 @@
     },
     {
       "item": "a11y:shopping.list#1.4.4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:shopping.list#1.4.12",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:shopping.list#2.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:shopping.list#2.2.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:shopping.list#2.2.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:shopping.list#2.4.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:shopping.list#2.4.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:shopping.list#2.4.3",
@@ -20581,19 +20570,19 @@
     },
     {
       "item": "a11y:shopping.list#2.4.4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:shopping.list#3.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:shopping.list#3.1.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:shopping.list#3.3.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:shopping.list#4.1.2",
