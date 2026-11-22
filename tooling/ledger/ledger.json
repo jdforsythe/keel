@@ -17224,7 +17224,7 @@
     },
     {
       "item": "k.testing#9",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "k.testing#10",
@@ -17236,11 +17236,11 @@
     },
     {
       "item": "k.testing#12",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.testing#13",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "k.testing#14",
@@ -17248,11 +17248,11 @@
     },
     {
       "item": "k.testing#15",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.testing#16",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "k.testing#17",
@@ -17268,6 +17268,10 @@
     },
     {
       "item": "k.testing#20",
+      "rung": "example"
+    },
+    {
+      "item": "k.testing#21",
       "rung": "example"
     },
     {
