@@ -1,5 +1,5 @@
 # k.user: Request user and caller lifetime
-status: conformance-covered
+status: implemented
 
 A request has two identities. `caller` (k.server, k.security) is an anonymous per-browser token and grants nothing. `user` is whoever the app's identity source says made the request. Keel authenticates no one: it carries what a function the app supplies answers, and never reads, writes, mints, rotates or stores a credential, session or token for it.
 
@@ -17,7 +17,9 @@ A request has two identities. `caller` (k.server, k.security) is an anonymous pe
 
 **Caller lifetime.** The caller cookie has no `Max-Age` by default: a browser quit or a shell restart is a new caller. A `node` deployable may set `caller: { days }` in `topology.ts` (an integer 1 to 400): a caller cookie it mints carries `Max-Age=<days × 86,400>`, from that write, never extended. It is still not a credential. The caller hash is then a long-lived device identifier: k.privacy treats it as `.pii('network')`, and the evidence bundle's `pii.json` holds `caller: { days, class: 'network' }` (`{ days: null, class: null }` without it). A std.sessions recording keeps no `tx` `meta`, so no `meta.caller`, whatever the lifetime.
 
-**Rules.** E1578 `caller` on a deployable other than `node`, or `days` not an integer 1 to 400 · E1579 `identity.server.ts` without a default `identity(...)` export, or a `handle.path` not of lowercase `/` segments, or with a route of any deployable at or under it (`keel check`, `keel build`; `createApp` throws it). Fix: none.
+**Testing.** `renderRoute(id, { user })` (k.testing) is the page signed in as `user`: its guards, loaders and actions get it, and its own requests carry `x-keel-user` for it, signed by the `createApp` binding on `ctx`; no `identify` runs. Without `app`: each `service({ contract })` call naming no `user`. With `app` each harness is a browser: the page runs on its own ctx (`ctx`'s clock and random; own storage and caller), and each request to the document's origin (loads, submits, service calls, streams) goes through `ctx.net` to `app.fetch` unless the test routed that origin. Two harnesses over one `app` are two users of one server state; without `user`, `identify` answers each.
+
+**Rules.** E1578 `caller` on a deployable other than `node`, or `days` not an integer 1 to 400 · E1579 `identity.server.ts` without a default `identity(...)` export, or a `handle.path` not of lowercase `/` segments, or with a route of any deployable at or under it (`keel check`, `keel build`; `createApp` throws it) · E1724 `renderRoute` `user` with `app` on a `ctx` no `createApp` of `app` bound, or without `app` beside an open harness on `ctx` with another `user`. Fix: none.
 
 **Conformance.**
 - With `identify` answering `'u1'`, a guard, a loader, an action and a live loader's stream each get `user` `'u1'`, one `identify` call per request; with no identity source, `''`; `renderRoute(id, { user: 'u1' })` gives guard and loader `'u1'`.
@@ -30,3 +32,6 @@ A request has two identities. `caller` (k.server, k.security) is an anonymous pe
 - With `caller: { days: 30 }`, `pii.json` has `caller: { days: 30, class: 'network' }`; without it, `{ days: null, class: null }`.
 - With or without `caller`, a std.sessions recording of a `tx` with `meta: { caller }` holds neither `meta` nor the hash.
 - A `service({ contract: b })` header for `user: 'u1'` resent with another body or to deployable `c`, or signed 66 s ahead, is ignored and `identify` runs; resent unchanged within 60 s, `'u1'`. A 257-character `user`: `api.input` at the sender, ignored by the receiver.
+- `renderRoute` without `app`, `user: 'u1'`, on a ctx a `createApp` bound, `identify` answering `''`: a component's `service({ contract })` call naming no `user` reaches the guard as `'u1'`, `identify` uncalled; naming `user: 'u2'`, as `'u2'`. A second open harness there with `user: 'u3'`: E1724.
+- With `app`, harnesses on one `ctx` with `user` `'u1'` and `'u2'`: each page's load, submit, service call and stream reach `app` as its `user`, with two callers; page 1's write reaches page 2's open stream.
+- With `app` and no `user`, `identify` runs for each page request, given that page's caller; `user` on a `ctx` no `createApp` of `app` bound: E1724, `app` unrequested.
