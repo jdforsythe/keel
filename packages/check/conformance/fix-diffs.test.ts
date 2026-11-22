@@ -310,6 +310,7 @@ const FIX = [
   "E1406",
   "E1759",
   "E1820",
+  "E1809",
   "E1010",
   "E1407",
   "E1515",
@@ -375,6 +376,7 @@ const NO_FIX = [
   "E1754", // the justification must be written by the author
   "E1755", // a budget breach has no source edit
   "E1758", // the locale or time zone is an argument the caller holds
+  "E1801", // a look name that no `look` declares has no nearest token; the author names the look or declares it
   "E1802", // the missing prop value is the author's choice
   "E1607", // which registered name to keep is the author's choice
   "E1803", // the replacement token is the author's choice
