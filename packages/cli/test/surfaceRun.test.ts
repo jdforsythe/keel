@@ -185,7 +185,9 @@ describe("surfaceRun", () => {
       const run = await surfaceRun(dir);
       expect(run.code).toBe(1);
       expect(run.notes).toHaveLength(1);
-      expect(run.notes[0]).toMatch(/^E1006 \S*node_modules\/@keel\/std-boom\/routes\.ts failed to evaluate: boom routes\n$/);
+      expect(run.notes[0]).toMatch(
+        /^E1006 \S*node_modules\/@keel\/std-boom\/routes\.ts failed to evaluate: boom routes\n$/,
+      );
     },
     SLOW,
   );
