@@ -349,8 +349,28 @@ describe("ledger command", () => {
       hostElements: 0,
       rungs: { example: 2, probabilistic: 1, exhaustive: 0, proven: 0, monitored: 0 },
       mutation: {
-        packages: { a: { score: 66.67, threshold: 50 } },
-        claims: [{ file: "packages/a/src/a.ts", sha: SHA_A, killed: 2, survived: 1, noCoverage: 0, score: 66.67 }],
+        packages: {
+          a: {
+            score: 66.67,
+            scoreJustified: 66.67,
+            threshold: 50,
+            killed: 2,
+            survived: 1,
+            noCoverage: 0,
+            justified: 0,
+          },
+        },
+        claims: [
+          {
+            file: "packages/a/src/a.ts",
+            sha: SHA_A,
+            killed: 2,
+            survived: 1,
+            noCoverage: 0,
+            justified: 0,
+            score: 66.67,
+          },
+        ],
       },
       exports: [
         { pkg: "a", name: "bar", file: "packages/a/src/bar.ts", rung: "none" },
