@@ -6,6 +6,7 @@ import os from "node:os";
 import path from "node:path";
 import { acquire, busyDiag, heldBy, lockedDiag } from "./mutateLock.mjs";
 import { run } from "./output.ts";
+import { testSlots } from "./test-slots.mjs";
 import { failVerdict, taskFailures, turboVerdict } from "./turbo-verdict.mjs";
 
 const ROOT = new URL("..", import.meta.url).pathname;
@@ -48,12 +49,14 @@ const NOISE = [
   / WARNING {2}command finished with error, but continuing/,
 ];
 
-// Each vitest run fills every core by itself, so test and coverage tasks run four at a time: more would starve the
-// type-check heavy tests past their timeout without finishing sooner. On a machine with four cores or fewer (a CI
-// runner) they run one at a time, for the same reason.
-const atOnce = os.availableParallelism() <= 4 ? 1 : 4;
+// Test and coverage tasks run as many at once, with as many vitest workers each, as the cores the machine's load
+// leaves free allow (test-slots.mjs): four tasks when it is quiet, down to two with few workers each at load 40 on
+// 16 cores, one on a machine of four cores or fewer (a CI runner). `--concurrency` and `KEEL_TEST_TASKS` set the
+// tasks, `KEEL_TEST_WORKERS` the workers of each.
 const vitestTask = task === "test" || task === "coverage";
-const limit = vitestTask && !extra.some((a) => a.startsWith("--concurrency")) ? [`--concurrency=${atOnce}`] : [];
+const slots = testSlots({ cores: os.availableParallelism(), load: os.loadavg()[0] ?? 0, env: process.env });
+const limit = vitestTask && !extra.some((a) => a.startsWith("--concurrency")) ? [`--concurrency=${slots.tasks}`] : [];
+const workers = vitestTask && slots.workers !== undefined ? { KEEL_TEST_WORKERS: String(slots.workers) } : {};
 // Mutation runs one package at a time (each Stryker run fills the cores) and one run per machine.
 const one = task === "mutate" && !extra.some((a) => a.startsWith("--concurrency")) ? ["--concurrency=1"] : [];
 // A failed task does not cancel the rest (turbo's default does): every task runs to its own verdict, so a gate's
@@ -90,7 +93,7 @@ await run(task ?? "turbo", () => {
     {
       cwd: ROOT,
       encoding: "utf8",
-      env: { ...process.env, TURBO_NO_UPDATE_NOTIFIER: "1", NO_COLOR: "1" },
+      env: { ...process.env, ...workers, TURBO_NO_UPDATE_NOTIFIER: "1", NO_COLOR: "1" },
       maxBuffer: 256 * 1024 * 1024,
     },
   );

@@ -1,5 +1,6 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalPassThroughEnv": ["KEEL_TEST_WORKERS"],
   "tasks": {
     "check": {
       "dependsOn": ["^build"],

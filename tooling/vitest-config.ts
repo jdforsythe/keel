@@ -4,7 +4,9 @@
 // the environment; k.mount Testing).
 // With `KEEL_COVERAGE=1` (tooling/coverage.mjs) it also measures coverage (coverage-config.ts); without it, nothing
 // about coverage is set. With `KEEL_FILE_TIMES=1` (CI's tooling/ci-shards.mjs) each test file prints one
-// `file <path> <s>s` line as it ends, so a shard's log says how far a run got and what each file cost.
+// `file <path> <s>s` line as it ends, so a shard's log says how far a run got and what each file cost. With
+// `KEEL_TEST_WORKERS=<n>` (root `pnpm test` sets it from the machine's load, tooling/test-slots.mjs) a run uses at
+// most n workers, unless the config sets `maxWorkers` itself.
 import { fileURLToPath } from "node:url";
 import type { ViteUserConfig } from "vitest/config";
 import type { TestModule } from "vitest/node";
@@ -25,13 +27,21 @@ const fileTimes: Reporter = {
   },
 };
 
+/** `KEEL_TEST_WORKERS` as a positive integer, else undefined. */
+function workersFromEnv(): number | undefined {
+  const n = Number(process.env.KEEL_TEST_WORKERS);
+  return Number.isInteger(n) && n > 0 ? n : undefined;
+}
+
 export function keelConfig(config: ViteUserConfig = {}): ViteUserConfig {
   const test = config.test ?? {};
+  const workers = test.maxWorkers ?? workersFromEnv();
   const own = test.setupFiles ?? [];
   return {
     ...config,
     test: {
       ...test,
+      ...(workers === undefined ? {} : { maxWorkers: workers }),
       setupFiles: [WATCHDOG, NODE_FETCH_SETUP, ...(typeof own === "string" ? [own] : own)],
       execArgv: ["--import", NODE_FETCH, ...(test.execArgv ?? [])],
       reporters: process.env.KEEL_FILE_TIMES === "1" ? [new KeelReporter(), fileTimes] : [new KeelReporter()],
