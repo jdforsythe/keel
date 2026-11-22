@@ -33,4 +33,4 @@ Canonical names. Changing one requires an RFC.
 - **escape**: a place where code opts out of a protection by its sanctioned name (an opt-in: `unsafe`, a declared origin, `reveal`) or goes around one (a workaround); one finding of `keel review` (k.review, k.escapes).
 - **user**: the id `identify` answers for a request, `""` for no one; distinct from the anonymous `caller`, which grants nothing (k.user).
 
-verified: 64a0931dd19bcaa72dec3dd1666dd5fbdafd1b82
+verified: 3190e26ae653272180ea7a368098f885a7615f09
