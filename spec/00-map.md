@@ -68,14 +68,14 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.mount-scope | Mount scope | implemented | proxy |
 | k.return | Shell mount | conformance-covered | net |
 | k.opening | Openings | conformance-covered | once |
-| k.links | Links in | conformance-covered | ids |
+| k.links | Links in | implemented | ids |
 | k.serverlog | Server log | conformance-covered | bounds |
 | k.sync | Concurrent writes | conformance-covered | heads |
 | k.persist | Storage, durable state | conformance-covered | drivers |
 | k.data | App data | conformance-covered | seam |
 | k.topology | Deployables | conformance-covered | peers |
 | k.deploy | Entry, deploy files | conformance-covered | entry |
-| k.shell | Native shells | conformance-covered | target |
+| k.shell | Native shells | implemented | target |
 | k.compat | Surface compatibility | conformance-covered | accepts |
 | k.api | API routes | conformance-covered | JSON |
 | k.hosting | Client hosting | implemented | servedBy |

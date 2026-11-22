@@ -15449,6 +15449,10 @@
       "rung": "example"
     },
     {
+      "item": "k.links#12",
+      "rung": "none"
+    },
+    {
       "item": "k.model#1",
       "rung": "exhaustive"
     },
@@ -16659,6 +16663,10 @@
     {
       "item": "k.shell#8",
       "rung": "example"
+    },
+    {
+      "item": "k.shell#9",
+      "rung": "none"
     },
     {
       "item": "k.sim#1",
