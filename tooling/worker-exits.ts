@@ -15,7 +15,7 @@ export type WorkerExit = {
 };
 
 const TAIL = 60;
-const exits: WorkerExit[] = [];
+const exits: (Omit<WorkerExit, "said"> & { readonly child: ChildProcess })[] = [];
 const tails = new WeakMap<ChildProcess, string[]>();
 const sent = new WeakMap<ChildProcess, readonly string[]>();
 let installed = false;
@@ -72,29 +72,36 @@ export function watchWorkerExits(): void {
           return Reflect.apply(send, this, args);
         },
       });
-      const tail: string[] = [];
+      // Whole lines only: a chunk may end mid-line, and its rest comes with the next one.
+      const tail: string[] = [""];
       tails.set(this, tail);
       this.stderr?.on("data", (chunk: Buffer | string) => {
-        tail.push(...String(chunk).split("\n"));
+        const [first = "", ...more] = String(chunk).split("\n");
+        tail[tail.length - 1] += first;
+        tail.push(...more);
         if (tail.length > TAIL) tail.splice(0, tail.length - TAIL);
       });
     }
     if (event === "exit" && isForkWorker(this) && unexpected(this)) {
       const [code, signal] = args;
       exits.push({
+        child: this,
         pid: this.pid ?? 0,
         code: typeof code === "number" ? code : null,
         signal: typeof signal === "string" ? signal : null,
         files: sent.get(this) ?? [],
-        said: lastSaid(tails.get(this) ?? []),
       });
     }
     return Reflect.apply(emit, this, [event, ...args]);
   };
 }
 
-/** Every unexpected fork worker exit recorded so far, oldest first. */
-export const workerExits = (): readonly WorkerExit[] => exits;
+/**
+ * Every unexpected fork worker exit recorded so far, oldest first. What each worker said is read now, not at its
+ * exit: a dead worker's last stderr can arrive after its exit event.
+ */
+export const workerExits = (): readonly WorkerExit[] =>
+  exits.map(({ child, ...e }) => ({ ...e, said: lastSaid(tails.get(child) ?? []) }));
 
 /** `killed by SIGKILL` or `exited 134`, then what the worker said last. */
 export function describeExit(e: WorkerExit | undefined): string {

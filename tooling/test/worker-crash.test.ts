@@ -26,7 +26,7 @@ describe("a worker that dies mid-run", () => {
     );
     expect(lines.filter((l) => l.startsWith("T0001 plain.fixture.ts:"))).toHaveLength(1);
     expect(lines.some((l) => l.includes("[vitest-pool]"))).toBe(false);
-    expect(r.stdout).toMatch(/^fail 4 tests, 3 failed, 0 skipped/m);
+    expect(r.stdout).toMatch(/^fail 3 tests, 3 failed, 0 skipped/m);
   }, 90_000);
 });
 

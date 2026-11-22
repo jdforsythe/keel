@@ -116,7 +116,8 @@ export class KeelReporter implements Reporter {
     }));
     const crashed = crashDiags(crashes, unfinished, workerExits(), process.cwd());
     const diags: Diag[] = [...r.diagnostics.map((d) => ({ ...d })), ...crashed];
-    const failed = r.failed + crashed.filter((d) => d.path !== undefined).length;
+    // Each file a dead worker left unfinished had a test (or its collection) failed by that death.
+    const failed = r.failed + (crashes > 0 ? Math.max(unfinished.length, crashed.length) : 0);
     const bad = failed > 0 || r.errors > 0 || crashes > 0;
     const summary: Summary = {
       kind: "summary",
