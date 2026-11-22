@@ -28,7 +28,7 @@ t.dispose()
 
 **Ledger, exploration and simulation.** Rungs and `keel ledger`: k.ledger. `explore`: k.model. `simulate`: k.sim.
 
-**Rules.** E1701 a DOM selector or query in a test (`querySelector`, `getByRole`, `container`) · E1702 rendered role or name differs from `a11y.json` · E1703 axe violation in a harness render · E1704 property failed · E1705 `fire` or `find` with an id absent from `ids.json` (nearest ids listed) · E1719 `fire` `focus` on an unfocusable element, or `blur` off an unfocused one · E1720 (`resumeDocument`) · E1722 `renderRoute` given `app` with `state` or `shell`, or `routes` as an import without `app` · E1724 (k.user Testing) · W1723 a literal `renderRoute` id of a `node` deployable's module, no `app` (`keel check`; fix: pass `app`).
+**Rules.** E1701 a DOM selector or query in a test (`querySelector`, `getByRole`, `container`) · E1702 rendered role or name differs from `a11y.json` · E1703 axe violation in a harness render · E1704 property failed · E1705 `fire` or `find` with an id absent from `ids.json` (nearest ids listed) · E1719 `fire` `focus` on an unfocusable element, or `blur` off an unfocused one · E1720 (`resumeDocument`; a throw while an island claims is named with its thrown text, as the harness shows what a page threw while resuming) · E1722 `renderRoute` given `app` with `state` or `shell`, or `routes` as an import without `app` · E1724 (k.user Testing) · W1723 a literal `renderRoute` id of a `node` deployable's module, no `app` (`keel check`; fix: pass `app`).
 
 **Conformance.**
 - `render` with props that fail the `Props` schema rejects with `schema.invalid` before rendering.
@@ -42,7 +42,7 @@ t.dispose()
 - `navigate(c.href(id))` on a `renderRoute` handle runs the target's guards and loaders and resolves with its chain rendered and every loader settled.
 - `renderRoute` of a page whose loader names `stores` shows the snapshot `ctx.storage` holds; a `Form` submit to its `stores` action saves, and the page's loaders then read the saved state.
 - On one ctx, a save through `renderRoute` is read by `createApp`, and a save through `createApp` by the next `renderRoute` navigation.
-- `resumeDocument` of an island document from `createApp` lets `fire` run the island's handlers; an island missing from `routes` is E1720.
+- `resumeDocument` of an island document from `createApp` lets `fire` run the island's handlers; an island missing from `routes` is E1720; an island whose component throws `new Error('boom')` while claiming is E1720 whose text holds `boom`.
 - `find(id).state` has `active: 'c.option.b'` for a combobox whose `aria-activedescendant` is `c.option.b`, `sort: 'ascending'` for a header with that `aria-sort`, and `checked: 'mixed'` for a mixed checkbox.
 - `resumeDocument` with `routes` as an import: a module store written before the request is initial in `state()`; a `fire` leaves the test's instance unchanged.
 - With `app`, a valid submit whose action answers `keel.fields` `{ amount: 'Too many decimals' }` leaves the amount field `invalid` holding the submitted value and that message, and one POST in `documents()` of exactly the named fields; an invalid submit reaches no action.

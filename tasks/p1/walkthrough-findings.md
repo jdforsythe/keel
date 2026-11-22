@@ -55,18 +55,18 @@
 | S-10 | carried by RFC 0188 (`overflow-wrap`) |
 | S-11 | carried by RFC 0188 (`look`) |
 | L7-1 | fixed (`renderRoute` with `app` takes `routes` as an import: each harness its own client module graph) |
-| L7-2 | open |
+| L7-2 | fixed: a claim's throw on a harness ctx names its cause in the E1253 warning, so E1720 shows it (`packages/runtime-dom/src/internal/resumeIsland.ts`) |
 | L7-3 | fixed: rfc:0192 a channel follows app data: t.changed in the write transaction, follows on the channel route; household's counter store is gone |
 | L7-4 | open |
 | L7-5 | open |
-| L7-6 | open |
+| L7-6 | fixed: `simulate`'s `run()` waits while a `ctx.net` route is still answering (`netInFlight`, `packages/testing/src/simulate.ts`) |
 | L7-7 | open |
 | L7-8 | open |
 | L7-9 | open |
 | L9-1 | fixed: rfc:0195 two factories of one route chain that create one store id are E1550 at keel check, keel build and createApp; household's frame and setup page name one factory |
 | L9-4 | fixed: fix(std-workflows): a step's done payload is typed by its event's payload |
 
-Fixed 17, answered in the skills 10, filed as backlog 11, carried by RFC 0188 6, open 17.
+Fixed 19, answered in the skills 10, filed as backlog 11, carried by RFC 0188 6, open 19.
 
 Each finding: what I tried, where, the command and its output, what I expected, whether docs or skills misled. Kinds: fault (framework behaves against its spec), docs (docs or skills gap), rough (works, but an app author trips on it).
 

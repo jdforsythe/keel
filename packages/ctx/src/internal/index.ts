@@ -5,3 +5,4 @@ export { quiet } from "./quiet.ts";
 export { report } from "./report.ts";
 export { planSchemas } from "./planSchemas.ts";
 export { browserCtx } from "./browserCtx.ts";
+export { netInFlight } from "./netInFlight.ts";

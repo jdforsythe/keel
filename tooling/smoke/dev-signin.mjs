@@ -11,12 +11,13 @@
 // the `api` deployable's inspector section `kitchen.box.currency` as a tally and `keel report` prints it; after an edit
 // to the server file that registers that section, `/api/*` still answers 200 and the section is still served; after
 // each of two edits to the file declaring the kitchen's database, the edited declaration runs, `/api/recipes` answers
-// 200 with the recipe posted before, and no E1602 is logged. The
+// 200 with the recipe posted before, and no E1602 is logged; likewise once the declaration moves into a helper module
+// the declaring file calls, after an edit to the declaring file (twice) and to the helper. The
 // child runs in its own process group, which every path (a finished run, a failed step, a signal, the 90 s limit) kills.
 // Usage: node tooling/smoke/dev-signin.mjs. Nothing is written inside the repo.
 import { execFile, spawn } from "node:child_process";
 import { existsSync } from "node:fs";
-import { appendFile, mkdtemp, rm } from "node:fs/promises";
+import { appendFile, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { copyApp, freePort, recorder, root, wait } from "./built.mjs";
@@ -295,6 +296,41 @@ try {
       `GET /api/recipes after edit ${n} to the database declaration`,
       seen && ran && after.status === 200 && after.body.includes('"title":"Smoke stew"'),
       `status ${after.status}${seen ? "" : ", no reload"}${ran ? "" : ", edited declaration not run"}`,
+    );
+  }
+  // The declaration moved into a helper module the declaring file calls, then the declaring file and the helper each
+  // edited: the file no longer names `database`, and its reload still loads the server graph again whole.
+  const helper = "modules/kitchen/declareKitchen.server.ts";
+  await writeFile(
+    join(dir, helper),
+    'import { database } from "@keel/std-postgres/server";\n\nexport function declareKitchen() {\n  return database("kitchen.db");\n}\n',
+  );
+  const moved = dev.log.filter((l) => l.includes("page reload") && l.includes(declarer)).length;
+  await writeFile(
+    join(dir, declarer),
+    'import { declareKitchen } from "./declareKitchen.server.ts";\n\nexport const kitchenDb = declareKitchen();\n',
+  );
+  for (const end = Date.now() + 15_000; Date.now() < end; await wait(100))
+    if (dev.log.filter((l) => l.includes("page reload") && l.includes(declarer)).length > moved) break;
+  const first = await text(base, "/api/recipes", json);
+  step("GET /api/recipes once the declaration moved into a helper", first.status === 200, `status ${first.status}`);
+  for (const [n, file] of [
+    [3, declarer],
+    [4, declarer],
+    [5, helper],
+  ]) {
+    const mark = `keel smoke: kitchen.db declared through a helper ${n}`;
+    const reloads = () => dev.log.filter((l) => l.includes("page reload") && l.includes(file)).length;
+    const before = reloads();
+    await appendFile(join(dir, file), `\nconsole.warn(${JSON.stringify(mark)});\n`);
+    let seen = false;
+    for (const end = Date.now() + 15_000; Date.now() < end && !seen; await wait(100)) seen = reloads() > before;
+    const after = await text(base, "/api/recipes", json);
+    const ran = dev.log.some((l) => l.includes(mark));
+    step(
+      `GET /api/recipes after edit ${n} with the declaration in a helper (${file.split("/").at(-1)})`,
+      seen && ran && after.status === 200 && after.body.includes('"title":"Smoke stew"'),
+      `status ${after.status}${seen ? "" : ", no reload"}${ran ? "" : ", edited file not run"}`,
     );
   }
   const duplicate = dev.log.find((l) => l.includes("already registered"));

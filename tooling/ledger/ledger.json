@@ -3,8 +3,8 @@
   "unsafe": 18,
   "hostElements": 0,
   "rungs": {
-    "example": 1636,
-    "probabilistic": 341,
+    "example": 1637,
+    "probabilistic": 342,
     "exhaustive": 16,
     "proven": 75,
     "monitored": 8
@@ -24,7 +24,7 @@
         "threshold": 70
       },
       "ctx": {
-        "score": 80.22,
+        "score": 80.11,
         "threshold": 70
       },
       "forms": {
@@ -15040,11 +15040,11 @@
     },
     {
       "item": "k.data#2",
-      "rung": "proven"
+      "rung": "example"
     },
     {
       "item": "k.data#3",
-      "rung": "example"
+      "rung": "proven"
     },
     {
       "item": "k.data#4",
@@ -15068,6 +15068,10 @@
     },
     {
       "item": "k.data#9",
+      "rung": "example"
+    },
+    {
+      "item": "k.data#10",
       "rung": "example"
     },
     {
@@ -16992,11 +16996,11 @@
     },
     {
       "item": "k.sim#4",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "item": "k.sim#5",
-      "rung": "probabilistic"
+      "rung": "example"
     },
     {
       "item": "k.sim#6",
@@ -17004,7 +17008,7 @@
     },
     {
       "item": "k.sim#7",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "item": "k.sim#8",
@@ -17020,6 +17024,10 @@
     },
     {
       "item": "k.sim#11",
+      "rung": "example"
+    },
+    {
+      "item": "k.sim#12",
       "rung": "probabilistic"
     },
     {
@@ -17224,7 +17232,7 @@
     },
     {
       "item": "k.testing#12",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "k.testing#13",
@@ -18256,6 +18264,10 @@
     },
     {
       "item": "std.postgres#22",
+      "rung": "example"
+    },
+    {
+      "item": "std.postgres#23",
       "rung": "example"
     },
     {

@@ -2,7 +2,7 @@
 // Spec: std.postgres, Modes "a lost one is `lost` to every follow on it, and the next `follow` opens it again" and "`on({ kind: 'lost' })` once if delivery stops".
 // Seed: 1337 (no generated inputs: one fixed case).
 // Pending (rfc:0192): skipped until the build lands; the builder un-skips by changing the `test.skip` to `test` in this file.
-// Assumption: runs only with `KEEL_TEST_POSTGRES_URL`. The listening backend is found as the other backends of this role whose last statement is a `LISTEN`; other test files running at once against the same server may lose theirs too (their follows are not asserted here).
+// Assumption: runs only with `KEEL_TEST_POSTGRES_URL`. The listening backend is this process's own, the one whose `application_name` is `keel-listen-<pid of this process>` (std.postgres Modes), so other processes' listeners on the same server are left alone.
 import { createCtx } from "@keel/ctx";
 import { s } from "@keel/schema";
 import { sql } from "@keel/std-postgres";
@@ -28,7 +28,7 @@ describe.skipIf(!hasPg17)("postgres 17", () => {
         await d.query(
           sql(
             Killed,
-          )`select pid, pg_terminate_backend(pid) as t from pg_stat_activity where pid <> pg_backend_pid() and usename = current_user and query ilike 'listen%'`,
+          )`select pid, pg_terminate_backend(pid) as t from pg_stat_activity where pid <> pg_backend_pid() and application_name = ${`keel-listen-${process.pid}`}`,
         ),
       );
       await until(() => a.events.length >= 1 && b.events.length >= 1);
