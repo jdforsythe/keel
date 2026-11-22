@@ -15,7 +15,7 @@ const SECRET = "conformance-secret-user-0123456789abcdef0123456789abcdef";
 const Now = s.object({ user: s.string(), current: s.string() });
 const b = contract("b", { "b.live": { method: "GET", path: "/b/live", events: true, output: Now } });
 
-test.skip("a stream opened with a verified `x-keel-user: u1` has `currentUser()` answer `'u1'` with no `identify` call", async () => {
+test("a stream opened with a verified `x-keel-user: u1` has `currentUser()` answer `'u1'` with no `identify` call", async () => {
   const identified: Request[] = [];
   const ctxY = createCtx({ mode: "sim", seed: 1337 });
   const ctxX = createCtx({ mode: "sim", seed: 1337 });

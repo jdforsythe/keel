@@ -78,7 +78,7 @@ const answerOf = (chunk: string): unknown => {
 };
 
 describe("k.user: currentUser() in a live loader", () => {
-  test.skip("With `identify` answering `'u1'` at open and `''` after, a live loader's `currentUser()` answers `''`, one `identify` call per call", async () => {
+  test("With `identify` answering `'u1'` at open and `''` after, a live loader's `currentUser()` answers `''`, one `identify` call per call", async () => {
     let n = 0;
     const r = await rig(async () => (n++ === 0 ? "u1" : ""));
     const chunks = await readChunks(r.res, 1);
@@ -88,7 +88,7 @@ describe("k.user: currentUser() in a live loader", () => {
     r.close();
   });
 
-  test.skip("`currentUser()` answers `''` after the identity changed, one `identify` call per call, for any number of calls", async () => {
+  test("`currentUser()` answers `''` after the identity changed, one `identify` call per call, for any number of calls", async () => {
     await fc.assert(
       fc.asyncProperty(fc.integer({ min: 1, max: 6 }), async (k) => {
         let n = 0;
@@ -112,7 +112,7 @@ describe("k.user: currentUser() in a live loader", () => {
     );
   });
 
-  test.skip("`currentUser()` runs `identify` on the request the stream opened with, without its body", async () => {
+  test("`currentUser()` runs `identify` on the request the stream opened with, without its body", async () => {
     const r = await rig(async () => "u1");
     await readChunks(r.res, 1);
     expect(r.calls).toHaveLength(2);
@@ -123,7 +123,7 @@ describe("k.user: currentUser() in a live loader", () => {
     r.close();
   });
 
-  test.skip("`currentUser()` answers `''` for an `identify` that throws, answers `42`, or never settles by 5,000 ms on `ctx.clock`", async () => {
+  test("`currentUser()` answers `''` for an `identify` that throws, answers `42`, or never settles by 5,000 ms on `ctx.clock`", async () => {
     for (const mode of ["throw", "invalid", "hang"] as const) {
       let n = 0;
       const r = await rig(async (_a, cx) => {
@@ -146,7 +146,7 @@ describe("k.user: currentUser() in a live loader", () => {
     }
   });
 
-  test.skip("With no identity source, `currentUser()` answers `''`", async () => {
+  test("With no identity source, `currentUser()` answers `''`", async () => {
     const r = await rig(undefined);
     const chunks = await readChunks(r.res, 1);
     expect(answerOf(chunks.join(""))).toEqual({ ok: true, value: { user: "", current: "" } });

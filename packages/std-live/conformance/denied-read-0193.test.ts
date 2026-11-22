@@ -21,7 +21,7 @@ const SESSION =
 const statusErr = (status: number): Result<BoardValue, KeelError<string, unknown>> =>
   err({ code: "api.status", message: `status ${status}`, data: { status, body: null } });
 
-test.skip(`${REFUSED} (a 401 or 403 read: nothing committed, denied, request aborted, no later read)`, async () => {
+test(`${REFUSED} (a 401 or 403 read: nothing committed, denied, request aborted, no later read)`, async () => {
   await fc.assert(
     fc.asyncProperty(fc.constantFrom(401, 403), boardArb, async (status, board) => {
       const ctx = simCtx();
@@ -51,7 +51,7 @@ test.skip(`${REFUSED} (a 401 or 403 read: nothing committed, denied, request abo
   );
 });
 
-test.skip(`${REFUSED} (a 401 or 403 first read: denied, nothing committed, no read after 1 s, 2 s or 30 s)`, async () => {
+test(`${REFUSED} (a 401 or 403 first read: denied, nothing committed, no read after 1 s, 2 s or 30 s)`, async () => {
   for (const status of [401, 403]) {
     const ctx = simCtx();
     const server = createServer();
@@ -77,7 +77,7 @@ test.skip(`${REFUSED} (a 401 or 403 first read: denied, nothing committed, no re
   }
 });
 
-test.skip(`${REFUSED} (a 502 read leaves connecting and reads again 1 s later)`, async () => {
+test(`${REFUSED} (a 502 read leaves connecting and reads again 1 s later)`, async () => {
   const ctx = simCtx();
   const server = createServer();
   server.attach(ctx);
@@ -98,7 +98,7 @@ test.skip(`${REFUSED} (a 502 read leaves connecting and reads again 1 s later)`,
   m.dispose();
 });
 
-test.skip(`${DENIED} (a direct loader call's refusal)`, async () => {
+test(`${DENIED} (a direct loader call's refusal)`, async () => {
   const ctx = simCtx();
   const server = createServer();
   server.attach(ctx);
@@ -116,7 +116,7 @@ test.skip(`${DENIED} (a direct loader call's refusal)`, async () => {
   m.dispose();
 });
 
-test.skip(`${SESSION} (B's refused read leaves denied and B's store as it was; A stays live)`, async () => {
+test(`${SESSION} (B's refused read leaves denied and B's store as it was; A stays live)`, async () => {
   const server = createServer();
   const a = simCtx();
   const b = simCtx(1338);
@@ -141,7 +141,7 @@ test.skip(`${SESSION} (B's refused read leaves denied and B's store as it was; A
   mb.dispose();
 });
 
-test.skip(`${DENIED} (denied is distinct from connecting and offline, and final: a later online event does not leave it)`, async () => {
+test(`${DENIED} (denied is distinct from connecting and offline, and final: a later online event does not leave it)`, async () => {
   const ctx = simCtx();
   const server = createServer();
   server.attach(ctx);

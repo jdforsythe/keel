@@ -17,7 +17,7 @@ const BURST =
 const FAIL = "`identify` throwing or not settling within 5,000 ms at a delivery closes that stream `denied`.";
 const SERVE = "Serve: before each delivery the route calls `currentUser()`";
 
-test.skip(`${SAVED} (a removed session's stream is closed denied with no saved; another member's gets saved)`, async () => {
+test(`${SAVED} (a removed session's stream is closed denied with no saved; another member's gets saved)`, async () => {
   const h = await serveIdentified();
   try {
     h.sessions.set("a", "u1");
@@ -38,7 +38,7 @@ test.skip(`${SAVED} (a removed session's stream is closed denied with no saved; 
   }
 });
 
-test.skip(`${SERVE} (an answer other than the stream's user, any user id, gives closed denied in place of the saved)`, async () => {
+test(`${SERVE} (an answer other than the stream's user, any user id, gives closed denied in place of the saved)`, async () => {
   await fc.assert(
     fc.asyncProperty(fc.stringMatching(/^[a-z]{1,8}$/), fc.stringMatching(/^[a-z]{1,8}$/), async (u, v) => {
       fc.pre(u !== v);
@@ -59,7 +59,7 @@ test.skip(`${SERVE} (an answer other than the stream's user, any user id, gives 
   );
 });
 
-test.skip(`${SERVE} (an unchanged answer delivers the saved, in save order, any number of saves)`, async () => {
+test(`${SERVE} (an unchanged answer delivers the saved, in save order, any number of saves)`, async () => {
   await fc.assert(
     fc.asyncProperty(fc.integer({ min: 1, max: 4 }), async (n) => {
       const h = await serveIdentified();
@@ -86,7 +86,7 @@ test.skip(`${SERVE} (an unchanged answer delivers the saved, in save order, any 
   );
 });
 
-test.skip(`${SERVE} (a changed answer closes a stream in place of a \`message\` as well)`, async () => {
+test(`${SERVE} (a changed answer closes a stream in place of a \`message\` as well)`, async () => {
   const h = await serveIdentified();
   try {
     h.sessions.set("a", "u1");
@@ -102,7 +102,7 @@ test.skip(`${SERVE} (a changed answer closes a stream in place of a \`message\` 
   }
 });
 
-test.skip(`${BURST} (five saves within 500 ms cost one identify for the stream)`, async () => {
+test(`${BURST} (five saves within 500 ms cost one identify for the stream)`, async () => {
   const h = await serveIdentified();
   try {
     h.sessions.set("a", "u1");
@@ -122,7 +122,7 @@ test.skip(`${BURST} (five saves within 500 ms cost one identify for the stream)`
   }
 });
 
-test.skip(`${BURST} (saves any number within one second of the check cost one identify; one 1,000 ms after costs another)`, async () => {
+test(`${BURST} (saves any number within one second of the check cost one identify; one 1,000 ms after costs another)`, async () => {
   await fc.assert(
     fc.asyncProperty(fc.array(fc.integer({ min: 0, max: 99 }), { minLength: 2, maxLength: 5 }), async (gaps) => {
       const h = await serveIdentified();
@@ -151,7 +151,7 @@ test.skip(`${BURST} (saves any number within one second of the check cost one id
   );
 });
 
-test.skip(`${BURST} (an answer that stands is not read again: a removal within the second shows at the next check)`, async () => {
+test(`${BURST} (an answer that stands is not read again: a removal within the second shows at the next check)`, async () => {
   const h = await serveIdentified();
   try {
     h.sessions.set("a", "u1");
@@ -173,7 +173,7 @@ test.skip(`${BURST} (an answer that stands is not read again: a removal within t
   }
 });
 
-test.skip(`${FAIL} (identify throwing)`, async () => {
+test(`${FAIL} (identify throwing)`, async () => {
   const h = await serveIdentified();
   try {
     h.sessions.set("a", "u1");
@@ -188,7 +188,7 @@ test.skip(`${FAIL} (identify throwing)`, async () => {
   }
 });
 
-test.skip(`${FAIL} (identify not settling: the stream is open at 4,999 ms and closed denied at 5,000 ms)`, async () => {
+test(`${FAIL} (identify not settling: the stream is open at 4,999 ms and closed denied at 5,000 ms)`, async () => {
   const h = await serveIdentified();
   try {
     h.sessions.set("a", "u1");
@@ -208,7 +208,7 @@ test.skip(`${FAIL} (identify not settling: the stream is open at 4,999 ms and cl
   }
 });
 
-test.skip(`${SERVE} (one slow identify delays only its own stream)`, async () => {
+test(`${SERVE} (one slow identify delays only its own stream)`, async () => {
   const h = await serveIdentified();
   try {
     h.sessions.set("a", "u1");
@@ -228,7 +228,7 @@ test.skip(`${SERVE} (one slow identify delays only its own stream)`, async () =>
   }
 });
 
-test.skip(`${SERVE} (a publisher's own currentUser() is not asked: the publish runs identify once, as a request)`, async () => {
+test(`${SERVE} (a publisher's own currentUser() is not asked: the publish runs identify once, as a request)`, async () => {
   const h = await serveIdentified();
   try {
     h.sessions.set("p", "u1");
