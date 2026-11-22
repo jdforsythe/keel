@@ -29,7 +29,7 @@ const SHELLS = {
  * `served` (the topology has a `node` deployable, whose origin a tag can name) it reads the tags even when `deployables` is empty,
  * starts the router on the browser history, and mounts its `App` into `#app` with
  * the ctx and `mode`, a string literal: `"dev"` only when Vite serves, `"production"` for a build (k.runtime, k.deploy); the
- * entry reads no `import.meta.env`. Under `"dev"` it then posts the live half of the inspect document (`{ graph, stores, sections }`, k.cli Inspect; `sections` are the registered inspector hooks read with `ctx`) to
+ * entry reads no `import.meta.env`. Under `"dev"` it then posts the live half of the inspect document (`{ graph, stores, sections }`, k.cli Inspect; `sections` are the registered inspector hooks read with `ctx`; with `deployable`, also that name as `deployable`) to
  * `/__keel/inspect`: once after mount, then at most once a second when it changed. An interval rather than an
  * `effect`, so the reporter is not part of the graph it reports. With `shell` (a `keel build --target` build, k.shell
  * Shell ctx) the ctx is `createCtx({ mode: 'shell', drivers })`, the drivers of that shell's std.shells package for
@@ -48,6 +48,7 @@ export function entryCode(
   mode: "dev" | "production" = "production",
   identity = false,
   served = false,
+  deployable?: string,
 ): string {
   const native = shell === undefined ? undefined : SHELLS[shell.kind];
   const origin = `new URL(${q(shell?.origin ?? "")})`;
@@ -99,7 +100,7 @@ export function entryCode(
     "      const snap = st.snapshot();",
     "      live[id] = { state: snap.state, log: snap.log };",
     "    }",
-    "    const body = JSON.stringify({ graph: inspect(), stores: live, sections: inspectorSections(ctx).sections });",
+    `    const body = JSON.stringify({ graph: inspect(), stores: live, sections: inspectorSections(ctx).sections${deployable === undefined ? "" : `, deployable: ${q(deployable)}`} });`,
     "    if (body === last) return;",
     "    last = body;",
     `    const sent = fetch(${q(INSPECT_PATH)}, { method: "POST", headers: { "content-type": "application/json" }, body });`,
