@@ -25,7 +25,13 @@ test("With `currentUser.fixed` (no identity source) a delivery runs no check: an
       const ctx = simCtx();
       const chan = contract("chan", {
         "chan.room": { method: "GET", path: "/api/room/events", query: Room, events: true, output: roomChannel.events },
-        "chan.publish": { method: "POST", path: "/api/room/events", query: Room, body: roomChannel.body, output: s.object({}) },
+        "chan.publish": {
+          method: "POST",
+          path: "/api/room/events",
+          query: Room,
+          body: roomChannel.body,
+          output: s.object({}),
+        },
         "chan.bump": { method: "POST", path: "/api/bump", body: Nothing, output: s.object({}) },
       });
       const room = channelRoute(chan, roomChannel, {
