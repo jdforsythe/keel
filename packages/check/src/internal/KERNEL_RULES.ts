@@ -41,6 +41,7 @@ import { sameAppBaseService } from "../rules/sameAppBaseService.ts";
 import { schemaInSchemaFile } from "../rules/schemaInSchemaFile.ts";
 import { slotSignature } from "../rules/slotSignature.ts";
 import { stylesheetImport } from "../rules/stylesheetImport.ts";
+import { txWhileBuilding } from "../rules/txWhileBuilding.ts";
 import { unsafeJustified } from "../rules/unsafeJustified.ts";
 import type { RuleDef } from "../types/RuleDef.ts";
 
@@ -55,6 +56,7 @@ export const KERNEL_RULES: readonly RuleDef[] = [
   formatInApp,
   pureTransaction,
   noSecretInState,
+  txWhileBuilding,
   revealedValue,
   noNetFetchInApp,
   pathParamsMatch,

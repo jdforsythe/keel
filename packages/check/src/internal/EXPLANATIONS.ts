@@ -412,6 +412,13 @@ const ROWS: readonly Row[] = [
     "keep it s.secret; reveal where used (E1105), never into a payload or state",
     "k.store",
   ],
+  [
+    "E1304",
+    "a tx call that runs while a component builds",
+    "The write throws E1201 at render. Static, partial: the component body and For, If, Match, Case or Boundary function children; a call into a helper is not followed.",
+    "create the view store with the data as initial: store(S, { items: props.data.items }, { id }); or call tx in an event handler",
+    "k.store",
+  ],
   ["E1351", "target id already exists", "", "use a codemod to change the existing item", "k.scaffold"],
   [
     "E1352",
