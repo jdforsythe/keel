@@ -16,6 +16,11 @@ What a subagent in a lane is told, so a fresh orchestrator can brief one without
 - Commits end with the session's attribution trailers.
 - The report states: commits, what is green with each command's last `ok` or `fail` line, what was not run, conformance disputed or owed, budgets re-based, `ledger-fresh` rows.
 
+## The orchestrator
+
+- Before a commit on the main line, read `git status --short` and stage files by name: a lane's subagent has once edited a file in the main worktree, and `git add -A` carried it into a handoff commit.
+- A subagent's report that it is done is checked against its brief's verification list; an unfinished lane is sent back, not merged.
+
 ## Merging a lane
 
 1. In the lane: merge the main line; generated files in conflict (`tooling/ledger/ledger.json`, evidence, `tasks/COVERAGE.md`, `.keel/surface.json`) take either side; `tooling/budgets.json` keeps the larger value; hand-written files keep both sides' intent.
