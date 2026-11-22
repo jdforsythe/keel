@@ -13,15 +13,15 @@
 | 7 | fixed: fix(check): a stale surface.json names the source that changed (hashing what the build evaluated is backlog 1015) |
 | 8 | fixed: rfc:0189 a shell build always calls `shellMount`, `mount` optional; the smoke step builds the shell's web build and finds the listener |
 | 9 | open: rough edge, documented |
-| 10 | open: needs an RFC (k.services Encoding); the keel-deploy skill and the example's README say it |
+| 10 | accepted as rfc:0197 (ADR-0219): a request to a third-party origin carries no Keel header; conformance (k.services, four clauses) and build owed |
 | 11 | answered in the skills (keel: HTTP through a service, E1651) |
-| 12 | open: framework fault (k.scaffold Guarantee) |
+| 12 | fixed: fix(scaffold): in a project holding `.keel/` artifacts an applied scaffold or codemod runs `keel build` over the tree after it; k.scaffold conformance clause owed |
 | 13 | answered in the skills (keel-deploy: `csp.txt` for a `client`, a static host with no `node` deployable) |
 | 14 | answered in the skills (keel-client: E2406 only with `@keel/std-messages`) |
-| 15 | open: rough edge, documented; the smoke step covers it |
-| 16 | open: rough edge, documented |
+| 15 | open: needs an RFC (k.testing: a harness that shows the `/__keel/user` GET a page's router sends); the smoke step covers it |
+| 16 | open: needs an RFC (k.scaffold Generators: `service <module> --base <origin>` declaring the `connect` origin and writing the endpoints and client; `route` with no loader on a deployable with no `node` peer) |
 
-Fixed 4, answered in the skills 6, filed as backlog 1, open 5.
+Fixed 5, answered in the skills 6, filed as backlog 1, accepted as an RFC 1, open 3.
 
 Each entry: what I tried, where, the command and its output, what I expected, and whether the docs or skills misled me. None blocked an example; 8 is fixed.
 
