@@ -186,7 +186,8 @@ export async function documentRoute<T extends RouteTable>(
     documents,
     follow,
     page: true,
-    target: () => ({ route: current, component: null }),
+    // The page's route id, as router mode records it, so its a11y report rows key the ledger alike.
+    target: () => ({ route: String(matchHref(routes, current)?.id ?? current), component: null }),
     teardown: () => {
       islands.dispose();
       document.title = head.title;
