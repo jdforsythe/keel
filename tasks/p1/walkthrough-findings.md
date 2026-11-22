@@ -299,3 +299,35 @@ The README numbers this layer 8, after the frame and brand layer; the ids follow
 ### L7-9 docs: `store.restore(base)` in `afterEach` is E1453 as a statement
 - keel-testing: "`const base = store.snapshot()` and `store.restore(base)` in `afterEach`". With two stores, `afterEach(() => { view.restore(views); copy.restore(copies); })` is `E1453 test/live.test.ts:13:3 Result discarded as a statement; narrow on r.ok`. The one-store form passes only because an arrow's expression body returns the Result. The tests now assert both `ok`.
 
+
+## Layer 9: the weekly staples, in the background
+
+The coverage plan names this layer 8 ("Jobs, schedules, a workflow"); the README numbers it 9, after live updates. The plan's examples (receipt parsing, a nightly digest, a removal workflow) became one feature that uses all three: a weekly schedule starts a workflow with a job per staple.
+
+### L9-1 fault: two factories in one request that create one store id throw, and only at run time
+- Tried: the setup page's loader named `setupStores = (ctx) => ({ ...householdStores(), ...restockStores(ctx) })`, to read the household's name and the weekly runs in one loader. `tsc`, Biome and `keel check` passed.
+- Every request for `/setup` answered 500 `unexpected`; the log line read `loader setup.form threw: Error: store setup.household: id already in use by a live store`. The page's frame (`app.frame`) runs `loadFrame` over `householdStores` in the same request, so two factories create `setup.household` in one request scope (`packages/store/src/store.ts:65`). Under `renderRoute` the page rendered nothing at all and the test failed with E1705 on the first id, with no cause shown (as L7-2).
+- Spec: k.server Server state, "Per request each named factory runs once". It says nothing of two factories that share a store, which a layout and its page meet as soon as both read one setting. Expected: one store per id per request, whichever factory names it, or a `keel check` error naming both factories.
+- Now: the setup loader keeps `householdStores` and asks the shopping API for the runs, in process (`shoppingApi.runs({ user }, ctx)`).
+
+### L9-2 docs: a test's `createApp` runs no runner unless the test passes them
+- Tried: `test/serve.ts` made the app with `createApp({ topology, routes, ctx, deployable, identity })`, as the skill's example. Run now answered `running`, and after 80 turns of the clock the run had not moved: no job ran, no diagnostic.
+- k.topology Runners says `createApp({ runners })` calls them, and the generated entry passes them; keel-server's "Runners and tests" listed every other option but this one. Fixed in `.claude/skills/keel-server/SKILL.md`: pass `runners: { <module>: runners }` as the built entry does.
+
+### L9-3 rough: a format value cannot be written in a chart's `start`
+- `RestockData` first held `at: Instant` (std.temporal). The chart's `start` needs a value: `"1970-01-01T00:00:00.000Z"` fails `tsc` (`string` is not `Format<string, "temporal.Instant">`), and `instantOf(0)` is a `Result`, so a literal needs a fallback the app cannot write without a cast. The run's time is epoch milliseconds (`s.int`), turned into an `Instant` only on the page.
+- Spec: std.temporal "No export reads the clock" and k.formats give no way to make a known-good value. Expected: a checked constructor for a literal (`Instant.of('...')` failing `keel check` when it does not parse).
+
+### L9-4 rough: a workflow step's `done` payload is not typed against its event
+- `StepSpec.run` returns `Result<unknown, ...>` (`packages/std-workflows/src/StepSpec.ts`); `putBack` could answer `ok({ put: true })` for an event whose payload is `{ putBack }`, and only the run would show it, as `failed` with the schema's code. std.workflows says so ("a `done` payload its event refuses commits `failed`"); the types could say it first.
+- Chart `actions` get one payload type for every event that names them (`count` and `note` test `"putBack" in p`), so an action shared across events narrows by hand.
+
+### L9-5 rough: a module's unused `deps` hide until a new edge makes a cycle
+- `setup` listing `shopping` (the setup page shows the runs) was E1153 `receipts -> setup -> shopping -> receipts`. `shopping` listed `setup` and `receipts`, and `receipts` listed `setup`, with no import behind any of the three. Removing `shopping`'s two fixed it. `keel check` reports a missing dep (E1152), not an unused one.
+
+### L9-6 rough: a killed step holds its job for `timeoutMs` plus a second
+- A step job a SIGKILL interrupts runs again once its lease ends, `now + timeoutMs + 1000` (std.jobs Run); with the step's default `timeoutMs` of 60,000 a run killed inside a step stands still a minute after the restart. std.workflows names `timeoutMs` per step but not that it sets how long a crash stalls the run. The step takes `timeoutMs: 10_000`.
+
+### L9-7 rough: the runners' work moves only when a test makes it
+- As L7-6: under `createApp` on a sim ctx, a step's PGlite transaction is real I/O, and the sim clock moves only when the test moves it. A first `turn` read the runs, then moved the clock 500 ms. Under `simulate` that hung: the eleventh schedule's test waited on a lone database statement that takes a plan step (std.postgres `Tx`: statements inside a transaction take "no plan step", so the others do) and waits on the clock, which the test moved only after the statement answered. `vitest` reported a 240 s timeout and nothing else.
+- Now: `test/restock.ts` `moving` awaits the work while yielding to the event loop with `setImmediate` (E1601 bans `setTimeout`, not this), moving the clock 100 ms every 20 yields. Nothing in k.sim or keel-testing says how to drive a server's runners and database under a schedule; `settle` and `run()` settle the page, not the server's background work. Expected: a harness call that runs the clock and the server's I/O until a condition holds (`await until(ctx, () => ...)`).
