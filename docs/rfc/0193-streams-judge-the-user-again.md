@@ -1,6 +1,6 @@
 # RFC 0193: k.user, std.channels and std.live: an open stream judges its user again before each delivery
 
-Status: proposed (ADR-0215), for the operator to confirm. Amends k.user (User), k.server (live loader args), std.channels and std.live. From `apps/household` (walkthrough finding L7-4).
+Status: accepted (ADR-0215, operator, 2026-11-22). Amends k.user (User), k.server (live loader args), std.channels and std.live. From `apps/household` (walkthrough finding L7-4).
 
 ## Decisions
 - D1: before each delivery to an open stream, std-channels asks who the stream's request belongs to now. A live loader's args gain `currentUser()`, which runs the identity source's `identify` again on the request the stream opened with. An answer other than the stream's `user` closes the stream `denied` and delivers nothing.
@@ -57,7 +57,7 @@ The live loader line "args add `signal`" becomes "args add `signal` and `current
 - **`denied` for any failed read.** Rejected: a 502 or a timeout is a reason to retry, which `connecting` says.
 
 ## Spec diff
-Not applied; applied in the implementing commit under `rfc:0193`.
+Applied to the spec sections named below; the `implemented` status flips and the ledger rows come with the implementation.
 - **k.user**, User: the `currentUser` sentences above after "An event stream keeps the `user` it opened with until it closes." Conformance gains: "With `identify` answering `'u1'` at open and `''` after, a live loader's `currentUser()` answers `''`, one `identify` call per call; a stream opened with a verified `x-keel-user: u1`, `'u1'` with no `identify` call."
 - **k.server**, API: "args add `signal` and `currentUser` (k.user)".
 - **std.channels**, Serve: `member` "before each delivery"; the `currentUser` paragraph. Conformance: the clause "After a save that makes `member` false ..." gains a twin below.
@@ -90,7 +90,8 @@ None: unreleased.
 k.user gains about 90 tokens, k.server about 5, std.channels about 110, std.live about 70; each stays under the section budget (2,350).
 
 ## For the operator
-- A kernel section changes: k.user and k.server gain `currentUser()` on a live loader. Under the provisional freeze this is a kernel change by RFC, which I recommend over the app-side wrapper.
-- What an app author writes changes: the 403 wrapper on a live page goes away, and `denied` now also means "a read was refused". An author who wanted a refused read to retry has no form for it; I know of no case that wants one.
-- Each delivery to an open stream can now cost one `identify` call, at most one per stream per second. For an identity source whose `identify` is a database read, a list with 1,000 open streams and a burst of saves is up to 1,000 reads a second on the auth library's store. If that is too much, the alternative is the 60 s interval, which gives up the per-delivery guarantee.
-- A sign-out that only clears a cookie in the browser (D5) still does not close streams; that is the library's revocation model and stays outside Keel.
+Decided:
+- A kernel section changes: k.user and k.server gain `currentUser()` on a live loader, by RFC under the provisional freeze, in place of an app-side wrapper.
+- The 403 wrapper on a live page goes away; `denied` also means a read was refused. A refused read has no retry form.
+- Each delivery to an open stream can cost one `identify` call, at most one per stream per second; a list with 1,000 open streams and a burst of saves is up to 1,000 reads a second on the auth library's store.
+- A sign-out that only clears a cookie in the browser (D5) does not close streams; that is the library's revocation model, outside Keel.
