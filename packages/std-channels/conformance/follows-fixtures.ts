@@ -1,7 +1,7 @@
 // Shared fixtures for the rfc:0192 std.channels conformance files (not a test file). Seed 1337.
 // Assumption: the seam is structural (std.channels: "a data capability accessor whose object has `follow(channel, key, on)`"), so the followed capability is a fake registered with `register` from `@keel/ctx`, whose object has `follow`, plus `changed` and `lose` that a test calls to play the part of std.postgres.
 // Assumption: the route calls `follow(channel, key, on)` with `key` either the canonical JSON text of the stream's params or the params; the fake matches on either.
-// Assumption: `channelRoute(chan, roomChannel, { ..., follows: [fake] })` is typed once the build lands; the options are called through `Reflect.apply` so this file compiles before.
+// Assumption: `channelRoute(chan, roomChannel, { ..., follows: [fake] })` is typed.
 import { register } from "@keel/ctx";
 import type { SimCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
@@ -82,14 +82,12 @@ export async function serveFollowing(): Promise<Following> {
       output: s.object({}),
     },
   });
-  const options = {
+  const room = channelRoute(chan, roomChannel, {
     id: "chan.room",
     publish: "chan.publish",
     follows: [fakeDb],
     member: () => allow.value,
-  };
-  // `follows` is not in the options type yet: the call goes through `Reflect.apply`; the builder may call `channelRoute(chan, roomChannel, options)` directly.
-  const room = Reflect.apply(channelRoute, undefined, [chan, roomChannel, options]);
+  });
   const routes = manifest(chan, { "chan.room": { loader: room.loader }, "chan.publish": { action: room.action } });
   const app = await createApp({
     topology: topology({ web: { modules: ["chan"], adapter: "node" } }),
