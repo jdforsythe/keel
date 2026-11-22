@@ -1,5 +1,5 @@
 {
-  "commit": "a7f2573128a1385572359d6a4d2e778376d3f92d",
+  "commit": "106d604caa714b6b495123f7f724d32b3fbdcff5",
   "coverage": {
     "packages": {
       "apps/golden-1": {
@@ -1168,7 +1168,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-22T17:03:21.203Z",
+  "generatedAt": "2026-11-22T20:41:18.937Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -3198,19 +3198,19 @@
         "threshold": 70
       },
       "packages/compiler": {
-        "claims": 105,
+        "claims": 157,
         "reason": null,
         "reportDate": "2026-11-19",
-        "score": 77.18,
-        "stale": 26,
+        "score": 71.37,
+        "stale": 0,
         "threshold": 70
       },
       "packages/ctx": {
-        "claims": 30,
+        "claims": 40,
         "reason": null,
         "reportDate": "2026-11-18",
-        "score": 79.43,
-        "stale": 3,
+        "score": 75.74,
+        "stale": 1,
         "threshold": 70
       },
       "packages/forms": {
@@ -3262,11 +3262,11 @@
         "threshold": 80
       },
       "packages/server": {
-        "claims": 134,
+        "claims": 142,
         "reason": null,
         "reportDate": "2026-11-19",
-        "score": 76.44,
-        "stale": 26,
+        "score": 80.92,
+        "stale": 1,
         "threshold": 70
       },
       "packages/services": {
@@ -3294,11 +3294,11 @@
         "threshold": 70
       },
       "packages/std-channels": {
-        "claims": 20,
+        "claims": 22,
         "reason": null,
         "reportDate": "2026-11-19",
-        "score": 75.99,
-        "stale": 6,
+        "score": 82.1,
+        "stale": 0,
         "threshold": 70
       },
       "packages/std-conflicts": {
@@ -3390,12 +3390,12 @@
         "threshold": 70
       },
       "packages/std-postgres": {
-        "claims": 0,
-        "reason": "no mutation run",
+        "claims": 49,
+        "reason": null,
         "reportDate": null,
-        "score": null,
-        "stale": null,
-        "threshold": null
+        "score": 88.23,
+        "stale": 0,
+        "threshold": 70
       },
       "packages/std-report": {
         "claims": 2,
@@ -3486,19 +3486,19 @@
         "threshold": 70
       },
       "packages/store": {
-        "claims": 27,
+        "claims": 29,
         "reason": null,
         "reportDate": "2026-11-18",
-        "score": 91.95,
-        "stale": 2,
+        "score": 91.2,
+        "stale": 0,
         "threshold": 80
       },
       "packages/testing": {
-        "claims": 72,
+        "claims": 82,
         "reason": null,
         "reportDate": "2026-11-19",
-        "score": 88.4,
-        "stale": 12,
+        "score": 78.63,
+        "stale": 0,
         "threshold": 70
       },
       "packages/ui": {
@@ -3510,7 +3510,7 @@
         "threshold": 70
       }
     },
-    "stale": 269
+    "stale": 196
   },
   "schema": 1,
   "tests": {
@@ -3956,12 +3956,12 @@
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 42,
+        "propertyCalls": 48,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 2,
-        "unitCases": 44,
-        "unitFiles": 10
+        "unitCases": 81,
+        "unitFiles": 15
       },
       "packages/std-report": {
         "conformanceCases": 31,
@@ -4167,12 +4167,12 @@
       "fails": 2,
       "otherCases": 0,
       "otherFiles": 0,
-      "propertyCalls": 2329,
+      "propertyCalls": 2335,
       "proveFiles": 23,
       "simulateFiles": 17,
       "skipTodo": 5,
-      "unitCases": 5524,
-      "unitFiles": 959
+      "unitCases": 5561,
+      "unitFiles": 964
     }
   },
   "tool": {
