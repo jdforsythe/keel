@@ -1107,9 +1107,9 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1722",
-    "renderRoute given app with state or shell",
-    "With app the page comes from the server, so test module stores and a native shell have no meaning; nothing is requested.",
-    "seed server state through ctx.storage, as createApp reads it; drop state and shell",
+    "renderRoute given app with state or shell, or routes as an import without app",
+    "With app the page comes from the server, so test module stores and a native shell have no meaning; a routes import resumes a built page in a module graph of its own, which a router page never has. Nothing is requested.",
+    "seed server state through ctx.storage, as createApp reads it; drop state and shell; pass app with a routes import, or the route table without",
     "k.testing",
   ],
   [

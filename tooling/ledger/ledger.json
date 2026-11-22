@@ -3,8 +3,8 @@
   "unsafe": 18,
   "hostElements": 0,
   "rungs": {
-    "example": 1615,
-    "probabilistic": 342,
+    "example": 1610,
+    "probabilistic": 341,
     "exhaustive": 15,
     "proven": 75,
     "monitored": 8
@@ -17016,11 +17016,11 @@
     },
     {
       "item": "k.testing#2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "k.testing#3",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "k.testing#4",
@@ -17032,7 +17032,7 @@
     },
     {
       "item": "k.testing#6",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "k.testing#7",
@@ -17040,7 +17040,7 @@
     },
     {
       "item": "k.testing#8",
-      "rung": "probabilistic"
+      "rung": "none"
     },
     {
       "item": "k.testing#9",
@@ -17068,7 +17068,7 @@
     },
     {
       "item": "k.testing#15",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "k.testing#16",
@@ -17080,6 +17080,10 @@
     },
     {
       "item": "k.testing#18",
+      "rung": "none"
+    },
+    {
+      "item": "k.testing#19",
       "rung": "example"
     },
     {
