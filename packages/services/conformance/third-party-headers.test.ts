@@ -10,7 +10,7 @@ const idArb = fc.stringMatching(/^[a-z0-9]{1,12}$/);
 const noteArb = fc.string({ maxLength: 30 });
 
 describe("k.services: a third-party request carries no Keel header", () => {
-  test.skip("a GET with no `bearer` sends exactly `accept: application/json`, credentials `same-origin`: a CORS-simple request", async () => {
+  test("a GET with no `bearer` sends exactly `accept: application/json`, credentials `same-origin`: a CORS-simple request", async () => {
     await fc.assert(
       fc.asyncProperty(idArb, async (id) => {
         const ctx = simCtx();
@@ -27,7 +27,7 @@ describe("k.services: a third-party request carries no Keel header", () => {
     );
   });
 
-  test.skip("with `bearer` `abc`, exactly `accept` and `authorization: Bearer abc`", async () => {
+  test("with `bearer` `abc`, exactly `accept` and `authorization: Bearer abc`", async () => {
     const ctx = simCtx();
     const sent = record(ctx);
     await client().show({ params: { id: "1" }, bearer: secret("abc") }, ctx);
@@ -36,7 +36,7 @@ describe("k.services: a third-party request carries no Keel header", () => {
     expect(sent[0]?.credentials).toBe("same-origin");
   });
 
-  test.skip("for a POST with a body, exactly `accept` and `content-type: application/json`", async () => {
+  test("for a POST with a body, exactly `accept` and `content-type: application/json`", async () => {
     await fc.assert(
       fc.asyncProperty(idArb, noteArb, async (id, note) => {
         const ctx = simCtx();
@@ -51,7 +51,7 @@ describe("k.services: a third-party request carries no Keel header", () => {
     );
   });
 
-  test.skip("for an `events` GET, exactly `accept: text/event-stream`", async () => {
+  test("for an `events` GET, exactly `accept: text/event-stream`", async () => {
     const ctx = simCtx();
     const sent = record(ctx);
     await drain(client().watch({}, ctx));
@@ -61,7 +61,7 @@ describe("k.services: a third-party request carries no Keel header", () => {
     expect(sent[0]?.credentials).toBe("same-origin");
   });
 
-  test.skip("none of those requests carries `x-keel` or `x-keel-user`", async () => {
+  test("none of those requests carries `x-keel` or `x-keel-user`", async () => {
     await fc.assert(
       fc.asyncProperty(idArb, fc.boolean(), async (id, withBearer) => {
         const ctx = simCtx();

@@ -77,7 +77,7 @@ describe("k.services: a request to a Keel origin carries `x-keel: 1`", () => {
     );
   });
 
-  test.skip("a `base` client pointed at a `keel-peer` origin sends `x-keel: 1` besides", async () => {
+  test("a `base` client pointed at a `keel-peer` origin sends `x-keel: 1` besides", async () => {
     const meta = document.createElement("meta");
     meta.setAttribute("name", "keel-peer");
     meta.setAttribute("data-deployable", "api");
@@ -101,7 +101,7 @@ describe("k.services: a request to a Keel origin carries `x-keel: 1`", () => {
     for (const r of sent) expect(r.headers["x-keel"]).toBe("1");
   });
 
-  test.skip("a `base` client pointed at another origin from the ctx a `createApp` bound sends no `x-keel`", async () => {
+  test("a `base` client pointed at another origin from the ctx a `createApp` bound sends no `x-keel`", async () => {
     // Pending the build of RFC 0197; to un-skip, change `test.skip` to `test`.
     const ctx = simCtx();
     await bindToPeer(ctx);
