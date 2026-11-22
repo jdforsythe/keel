@@ -120,6 +120,10 @@ export async function renderRoute<T extends RouteTable>(
     caught,
     page: true,
     target: () => ({ route: String(router.route.get().id), component: null }),
+    place: () => {
+      const r = router.route.get();
+      return JSON.stringify([r.id, r.params]);
+    },
     teardown: () => {
       router.dispose();
       restoreHead();
