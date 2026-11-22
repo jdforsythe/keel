@@ -970,6 +970,9 @@ importers:
       '@keel/forms':
         specifier: workspace:*
         version: link:../forms
+      '@keel/services':
+        specifier: workspace:*
+        version: link:../services
       '@keel/testing':
         specifier: workspace:*
         version: link:../testing
