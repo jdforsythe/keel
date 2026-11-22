@@ -64,8 +64,9 @@ const evidenceFor = (refs: readonly TestRef[], name: string, file: string): Ledg
  *   codes is named outside the quote (`headerCodes`) in the header of a citing file with a non-skipped test. A
  *   `// Clause:` header is not read; it is W1706 with the fix.
  * Export items also get `monitored` evidence from `.keel/monitored.json` (`monitoredEvidence`; E1711 when it fails its
- * shape). Also the `unsafe(...)` calls in `packages/<pkg>/{src,unsafe}` and, per app, in `apps/<app>/**`, and the host
- * elements (`countHosts`) in those files and, per file, in a root `modules/**` (an app's own folder). `z3` is the Z3
+ * shape). Also the `unsafe(...)` calls in `packages/<pkg>/{src,unsafe}`, in a root `modules/**` (an app's own folder)
+ * and, per app, in `apps/<app>/**`, and the host elements (`countHosts`) in those files and, per file, in a root
+ * `modules/**`. `z3` is the Z3
  * version a `prove` call's `proven` evidence names (default: the installed `z3-solver`'s, `z3Version`).
  */
 export function buildLedger(
@@ -99,6 +100,7 @@ export function buildLedger(
       hostElements += countHosts(f.path, f.source);
     }
     if (ROOT_APP.test(f.path)) {
+      unsafe += countUnsafe(f.source);
       const n = countHosts(f.path, f.source);
       hostElements += n;
       if (n > 0) rootHosts[f.path] = n;

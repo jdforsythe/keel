@@ -1,17 +1,19 @@
 import { loader } from "@keel/router";
-import { ok, s } from "@keel/schema";
+import { err, ok, s } from "@keel/schema";
 import { Item } from "./Item.schema.ts";
 import { ListText } from "./ListText.schema.ts";
-import { savedStores } from "./savedStores.ts";
+import { listOf } from "./listOf.server.ts";
 import { shopping } from "./shopping.contract.ts";
 
 export const loadList = loader(
   shopping,
   "shopping.list",
-  { output: s.object({ text: ListText, items: s.array(Item) }), stores: savedStores },
-  async ({ stores }) =>
-    ok({
-      items: stores.saved.get("items"),
+  { output: s.object({ text: ListText, items: s.array(Item) }) },
+  async (_args, ctx) => {
+    const items = await listOf(ctx);
+    if (!items.ok) return err(items.error);
+    return ok({
+      items: items.value,
       text: {
         heading: "Shopping list",
         addStaple: "Add a staple",
@@ -34,5 +36,6 @@ export const loadList = loader(
         failed: "That change did not apply. Try it again.",
         dismiss: "Dismiss",
       },
-    }),
+    });
+  },
 );

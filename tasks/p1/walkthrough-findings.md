@@ -34,8 +34,17 @@
 | L4-7 | answered in the skills (keel-testing: `scope`) |
 | L4-8 | answered in the skills (keel-server: a service call runs in process) |
 | W-1 | filed as backlog 1021 |
+| L5-1 | open |
+| L5-2 | open |
+| L5-3 | open |
+| L6-1 | open |
+| L6-2 | open |
+| L6-3 | open |
+| L6-4 | open |
+| L6-5 | open |
+| L6-6 | open |
 
-Fixed 9, answered in the skills 9, filed as backlog 11, open 1.
+Fixed 9, answered in the skills 9, filed as backlog 11, open 10.
 
 Each finding: what I tried, where, the command and its output, what I expected, whether docs or skills misled. Kinds: fault (framework behaves against its spec), docs (docs or skills gap), rough (works, but an app author trips on it).
 
@@ -156,3 +165,38 @@ Each finding: what I tried, where, the command and its output, what I expected, 
 
 ### W-1 rough (repo tooling): `pnpm ledger` in a fresh worktree rewrites more than the new app
 - `pnpm ledger` after adding the app changed 1,286 lines of `tooling/ledger/ledger.json`: the household's 52 exports, and also seven golden-1 and golden-2 export rungs, the `mutation` section and 180 `a11y` items, because this worktree holds no `reports/` from earlier runs. The committed file keeps the master entries and adds only the household's exports; `node tooling/ledger-fresh.mjs` passes on it.
+
+## Layers 5 and 6
+
+### L5-1 docs: a database `transaction`'s error type is fixed by its first `return`
+- Tried: in `apps/household/modules/receipts/recordReceipt.server.ts`, `receiptsDb(ctx).transaction(async (t) => { const count = await t.one(...); if (!count.ok) return count; if (count.value.n >= 200) return err({ code: "keel.fields", ... }); return t.run(...) })`.
+- `tsc --noEmit`: `error TS2345: Argument of type '(t: Tx) => Promise<... | { readonly ok: false; readonly error: { code: string; message: string; data: { shop: string; }; }; }>' is not assignable to parameter of type '(tx: Tx) => Promise<Result<number, NotFound | StatementError>>'`, followed by a 15-line `TS2769` on the `action` call. The transaction now answers `ok(false)` for a full book and the action maps that to `keel.fields` outside it.
+- Expected: `keel docs std.postgres` to say `fn`'s `err` is limited to the statement errors, or `transaction` to take the union of what `fn` returns (the docs say "`err` ... rolls back", which reads as any `err`).
+
+### L5-2 rough: `std.db` Postgres storage takes no `pglite:` URL
+- k.data says a setting is a server store and the list is app data, so the household name stays a store while the list and the book move to `@keel/std-postgres`. `keel docs std.db` says `storage: 'postgres'` requires a `postgres:` URL in `KEEL_DATABASE_URL`, while `KEEL_POSTGRES_URL` takes `pglite:<folder>`. A deployable run on a PGlite folder therefore keeps its stores in a second place (`storage: 'file'`, the `--localstorage-file` flags), and the walkthrough cannot show `std.db` on Postgres and a PGlite data folder in one build.
+- Expected: one database for both, or the deploy skill naming the split and the reason.
+
+### L5-3 rough: a one-off row schema for a `count(*)` needs its own file
+- `const Count = s.object({ n: s.int() })` beside the `sql(Count)` query in `recordReceipt.server.ts` is `E1104 modules/receipts/recordReceipt.server.ts:13:7 schema Count declared outside a *.schema.ts file; move it there`. It is now `ReceiptCount.schema.ts`. Every statement needs a row schema (std.postgres), so each aggregate an action reads costs a file.
+
+### L6-1 fault: under `renderRoute`, a component's API call carries no member
+- Tried: `test/shoppingList.test.ts` rendered `shopping.list` with `renderRoute("shopping.list", { routes, params: {}, ctx, user })` on the ctx `createApp` serves (`test/serve.ts`), then `fire("shopping.staples.item.milk", { type: "click" })`. The API entries bind `guard: member` (`user === ''` is `keel.denied`).
+- The guard and loader saw `user`; the component's `shoppingApi.add({ body }, ctx)` ran in process with `user` `''`, was answered 403, and the page showed the `shopping.notices.toast.failed` alert. `sent` recorded no request (L4-8), so a net route cannot add the member's cookie or token either. In a browser the same call carries the session cookie and succeeds (the smoke step "menu adds through the API and raises quantity").
+- Expected: keel-testing says "the page is the production page"; a signed-in `renderRoute` should make the page's own API calls as that member, or the docs should name how to test a signed-in page whose components call a guarded API. The list's menu, toggle and remove buttons and the token panel's mint and revoke are now proved in Chromium only; the tests drive the same API directly.
+
+### L6-2 rough: under happy-dom a `Response` drops `set-cookie`, so a sign-in test gets no cookie
+- `formPost(mount.href("/sign-in/email"), ...)` through `createApp` answered `303 /` with `headers.getSetCookie()` `[]` in a happy-dom test file, and `[cookie]` in a `// @vitest-environment node` file. Page tests (happy-dom) therefore authenticate with an API token minted through `membersApi.mint({ body, user }, ctx)`; cookie tests run under node (`test/signin.test.ts`, `test/tokens.test.ts`). Nothing in keel-testing or keel-server mentions it; golden-2's account tests are node files with no comment saying why.
+
+### L6-3 rough: an external id in an element id breaks `properties`, and an app cannot narrow the string
+- `TokenPanel.tsx` used `` id={`members.token.${t.id}`} `` with `TokenInfo.id` `s.string({ min: 1, max: 64 })` (the std.tokens id). `properties(ProfilePage, { runs: 100, seed: 6 })` failed `E1704 ProfilePage: E1703 axe-core rule button-name threw: Failed to execute 'querySele... (seed 6, run 3, shrunk)` with `"tokens":[{"id":"\" ",...}]`.
+- An app may not declare a format (E1106) and `@keel/std-tokens` exports no schema for a token id (its form is 16 lowercase hex), so the rows are numbered by position. Expected: a `TokenId` schema from std.tokens, or the harness quoting ids when it queries them (an id with a quote is still a DOM id the app wrote).
+
+### L6-4 docs: when `clientPii` applies is not what the coverage plan expects
+- The layer 6 brief asks for `clientPii` "where a client needs them". The profile page's loader answers the member's email, name and phone (`.pii` in `ProfileData.schema.ts`) into the served document, and `keel check` is clean with no `clientPii`: k.leave ties E1107 to a `store` a component file reaches, and loader data is not one. keel-compliance's "Mark data" says `.pii` values "serialize where the app sends them" but does not say that page data in the document needs no listing, so an author cannot tell whether a clean check here is right. The app lists none, and the README says why.
+
+### L6-5 rough: a sign-in library through the identity seam is about a hundred lines the app writes
+- `identity.server.ts` turns each native form post into the library's JSON, maps the answer to a 303 with its cookies, carries `next`, and refuses a `next` that is not a path on this origin (`//evil.example/x`, `https://...`: tested in `test/signin.test.ts`). The same code is in golden-2's `identity.server.ts`. The open-redirect check is the app's to remember: k.mount says the `handle` answers "a 303 to a page `Href`" and keel-server says nothing about a guard's `next` after sign-in (L4-3 is the same gap on the setup page).
+
+### L6-6 rough: `formatMessage` takes only a message-set entry
+- `formatMessage(props.data.text.signedInAs, { email }, "en-US")` with `signedInAs` a plain `s.string()` in the loader's copy failed `tsc`: `Argument of type 'string' is not assignable to parameter of type 'Message<Readonly<Record<string, string | number>>>'`. The one-locale members pages now join strings in the component; a placeholder in a plain loader string has no documented helper.

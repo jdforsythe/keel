@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 // Spec: k.deploy, clause "`createApp({ assets })` on a `keel build` node fixture scripts a 200 JavaScript `resume` entry, `immutable`; no manifest: E1555." (RFC 0048)
 // Spec: k.deploy Rules E1555
+// Spec: k.head, Server "a `<link rel=\"stylesheet\">` for each `.css` file under `/assets/` that the build manifest's entry chunk names"
 // Seed: 1337 (no generated inputs; the fixture is built once through the real CLI). In-process createApp, no listening server.
 import type { Ctx } from "@keel/ctx";
 import { spawnSync } from "node:child_process";
@@ -34,7 +35,7 @@ const BUILT_COUNTER = `import { signal } from "@keel/reactive";
 import { Box, Button, Text } from "@keel/ui";
 export default function Counter() {
   const n = signal(0);
-  return <Box><Button id="c.inc" onClick={() => n.set(n.get() + 1)}>+</Button><Text id="c.out">{n.get()}</Text></Box>
+  return <Box p="4"><Button id="c.inc" onClick={() => n.set(n.get() + 1)}>+</Button><Text id="c.out">{n.get()}</Text></Box>
 }
 `;
 
@@ -180,5 +181,20 @@ describe("k.deploy: createApp({ assets }) on a keel build node fixture", () => {
   it("in dev mode assets is ignored and the document script is /@keel/entry.ts", async () => {
     const app = await appFor(emptyDir, "dev");
     expect(await moduleSrc(app)).toBe("/@keel/entry.ts");
+  });
+
+  it("a built node-only deployable (a node deployable and no client one) links a stylesheet under /assets/ that the manifest's entry chunk names, and it serves as 200 CSS", async () => {
+    const app = await appFor(path.join(fixture, "dist", "web"));
+    const res = await app.fetch(new Request("http://localhost/"));
+    const doc = new DOMParser().parseFromString(await res.text(), "text/html");
+    const hrefs = Array.from(doc.querySelectorAll('link[rel="stylesheet"]')).map((l) => l.getAttribute("href") ?? "");
+    expect(hrefs.length).toBeGreaterThan(0);
+    for (const href of hrefs) {
+      expect(href.startsWith("/assets/") && href.endsWith(".css")).toBe(true);
+      const css = await app.fetch(new Request(new URL(href, "http://localhost")));
+      expect(css.status).toBe(200);
+      expect(css.headers.get("content-type") ?? "").toContain("css");
+      expect((await css.text()).length).toBeGreaterThan(0);
+    }
   });
 });

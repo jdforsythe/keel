@@ -35,6 +35,8 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.ledger | 11 | **conformance-covered** | none |
 | k.sync | 14 | **conformance-covered** | none |
 | k.deploy | 11 | **conformance-covered** | none |
+| k.review | 8 | **conformance-covered** | none |
+| k.escapes | 9 | **conformance-covered** | none |
 | k.bundle | 7 | **conformance-covered** | none |
 | k.explain | 4 | **conformance-covered** | none |
 | k.return | 5 | **conformance-covered** | none |
@@ -156,6 +158,6 @@ Golden apps: `apps/golden-1` and `apps/golden-2` have converged evals (`evals/re
 
 ## Status
 
-No section is `frozen`. The kernel is provisionally frozen: a kernel change goes through an RFC with an ADR, a conformance update and a migration note, and the `frozen` flip waits until the stdlib stages have exercised the kernel (`tasks/0034-freeze/PLAN.md`). k.parity and std.db are `proposed`; k.docs, k.host-code, k.mount-scope, k.roles, k.scaffold, std.capacitor and std.tauri are `implemented`; the other 91 of 100 are `conformance-covered`.
+No section is `frozen`. The kernel is provisionally frozen: a kernel change goes through an RFC with an ADR, a conformance update and a migration note, and the `frozen` flip waits until the stdlib stages have exercised the kernel (`tasks/0034-freeze/PLAN.md`). k.parity and std.db are `proposed`; k.docs, k.host-code, k.mount-scope, k.roles, k.scaffold, std.capacitor and std.tauri are `implemented`; the other 93 of 102 are `conformance-covered`.
 
 verified: 68d910b9bf61e79f5f3a523d5bc0c8f4b4419ccc
