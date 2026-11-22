@@ -5,11 +5,11 @@ A request has two identities. `caller` (k.server, k.security) is an anonymous pe
 
 **Identity source.** A project may have `identity.server.ts` beside `topology.ts`, default-exporting `identity({ identify, handle? })` (`@keel/server`); each `node` deployable's generated entry passes it as `createApp({ identity })`.
 - `identify({ request, caller }, ctx)` returns `Promise<string>`: a user id, `''` for no one. `request` is the incoming `Request` without its body.
-- It runs once per request the deployable answers on a route (page, API route, event stream), after the same-site check and before guards; never for assets, `/__keel/*`, a forwarded path or `handle`. The kernel keeps no answer across requests.
+- It runs once per request the deployable answers on a route (page, API route, event stream), after the same-site check and before guards; never for assets, `/__keel/*` but `/__keel/user` (k.guards Client), a forwarded path or `handle`. The kernel keeps no answer across requests.
 - A throw is 500 `keel.unexpected` with a `diag` `identify threw: <name>` (its `name` only); an answer that is not a string of at most 256 characters is 500 with `identify returned: invalid`; past 5,000 ms on `ctx.clock`, 503 `keel.busy` (`data: { limit: 5000 }`). No guard, loader or action then runs.
 - `handle: { path, fn }`: a request at `path` or under it goes to `fn(request, ctx)` with its body (`maxBodyBytes`), after the same-site check for a write; its `Response`, `set-cookie` included, is returned with k.security's headers added. An auth library's endpoints live here.
 
-**User.** Guards, loaders (live too) and actions get `user: string` beside `caller`: `identify`'s answer; `''` with no identity source, on a `client` deployable, or under `renderRoute` without its `user` option. An event stream keeps the `user` it opened with until it closes. No header, cookie, search or body value of the client sets `user`.
+**User.** Guards, loaders (live too) and actions get `user: string` beside `caller`: `identify`'s answer; `''` with no identity source or under `renderRoute` without its `user` option; on a `client` deployable, k.guards Client. An event stream keeps the `user` it opened with until it closes. No header, cookie, search or body value of the client sets `user`.
 
 **Across deployables.** A forwarded request (k.topology) keeps its headers, so the peer runs its own `identify`. A `service({ contract })` method takes `user?: string`, sent as `x-keel-user`: HMAC-SHA-256 under `createApp({ secret })` over method, path, search, `user` and an expiry 60 s ahead on `ctx.clock`. A server that verifies it uses it as `user` and runs no `identify`; any other `x-keel-user` is ignored. On a ctx with no secret (a browser) `user` is `api.input`.
 
