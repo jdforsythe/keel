@@ -3,7 +3,7 @@
   "unsafe": 18,
   "hostElements": 0,
   "rungs": {
-    "example": 1782,
+    "example": 1783,
     "probabilistic": 342,
     "exhaustive": 16,
     "proven": 75,
@@ -17224,7 +17224,7 @@
     },
     {
       "item": "k.testing#9",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.testing#10",
