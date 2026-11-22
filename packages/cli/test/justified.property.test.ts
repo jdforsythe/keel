@@ -119,7 +119,7 @@ describe("mutationClaims with justified entries", () => {
     status,
     location,
   });
-  const run = (statuses: readonly string[], entries: readonly Record<string, string>[]) =>
+  const claimsOf = (statuses: readonly string[], entries: readonly Record<string, string>[]) =>
     mutationClaims(
       [
         { path: "packages/p/src/a.ts", source },
@@ -151,7 +151,7 @@ describe("mutationClaims with justified entries", () => {
         fc.constantFrom("Survived", "NoCoverage", "Killed", "Timeout"),
         fc.array(fc.constantFrom("Survived", "NoCoverage", "Killed", "Timeout"), { minLength: 1, maxLength: 8 }),
         (first, rest) => {
-          const { mutation, unmatched } = run([first, ...rest], [le]);
+          const { mutation, unmatched } = claimsOf([first, ...rest], [le]);
           const pkg = mutation.packages.p;
           const undetected = first === "Survived" || first === "NoCoverage";
           expect(pkg?.justified).toBe(undetected ? 1 : 0);
@@ -170,7 +170,7 @@ describe("mutationClaims with justified entries", () => {
   });
 
   it("with no entries every count of justified is 0 and scoreJustified is the score", () => {
-    const { mutation, unmatched } = run(["Survived", "Killed"], []);
+    const { mutation, unmatched } = claimsOf(["Survived", "Killed"], []);
     expect(mutation.packages.p).toEqual({
       score: 50,
       scoreJustified: 50,
