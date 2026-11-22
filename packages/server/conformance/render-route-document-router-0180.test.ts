@@ -7,7 +7,7 @@ import fc from "fast-check";
 import { expect, test } from "vitest";
 import { MESSAGE, SEED, control, reset, routes, simCtx } from "./render-route-document-support.ts";
 
-test.skip("The same page without `app` records no document on a submit, and the `keel.fields` answer sets the field's error in process.", async () => {
+test("The same page without `app` records no document on a submit, and the `keel.fields` answer sets the field's error in process.", async () => {
   await fc.assert(
     fc.asyncProperty(fc.stringMatching(/^[a-z]{1,8}$/), async (value) => {
       reset("fields");
