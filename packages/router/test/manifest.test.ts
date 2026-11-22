@@ -1,5 +1,5 @@
 // Examples: contract and manifest validation codes (E1502-E1515 at run time) and the routes.json artifact.
-import { action, guard, manifest, routesArtifact } from "@keel/router";
+import { action, guard, manifest, routeTable, routesArtifact } from "@keel/router";
 import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import { describe, expect, it } from "vitest";
@@ -189,5 +189,15 @@ describe("routesArtifact", () => {
       search: { properties: { tab: { enum: ["a", "b"], type: "string" } }, required: [], type: "object" },
     });
     expect(JSON.stringify(routesArtifact(routes))).toBe(JSON.stringify(a));
+  });
+
+  it("gives a page naming another module's layout as bound; serving that module alone is still E1506", () => {
+    const frame = contract("frame", { "frame.main": { layout: true } });
+    const shop = contract("shop", { "shop.home": { path: "/" } });
+    const shopRoutes = manifest(shop, { "shop.home": { component: view, layout: "frame.main" } });
+    expect(routesArtifact(shopRoutes)["shop.home"]?.layout).toBe("frame.main");
+    expect(codeOf(() => routeTable(shopRoutes))).toBe("E1506");
+    const joined = routeTable(manifest(frame, { "frame.main": { component: view } }), shopRoutes);
+    expect(routesArtifact(joined)["shop.home"]?.layout).toBe("frame.main");
   });
 });

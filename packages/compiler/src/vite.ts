@@ -8,6 +8,7 @@ import { DEV_ENTRY } from "./entry/DEV_ENTRY.ts";
 import { ENTRY_PATH } from "./entry/ENTRY_PATH.ts";
 import { ISLANDS_PATH } from "./entry/ISLANDS_PATH.ts";
 import { SERVER_ENTRY } from "./entry/SERVER_ENTRY.ts";
+import { STYLES_PATH } from "./entry/STYLES_PATH.ts";
 import { resumeEntry } from "./entry/resumeEntry.ts";
 import { peerOrigins } from "./hosting/peerOrigins.ts";
 import { topologyReadProblems } from "./hosting/topologyReadProblems.ts";
@@ -34,6 +35,7 @@ import { keelMark } from "./internal/keelMark.ts";
 import { listSources } from "./internal/listSources.ts";
 import { mergeArtifacts } from "./internal/mergeArtifacts.ts";
 import { noDeployable } from "./internal/noDeployable.ts";
+import { packageRoot } from "./internal/packageRoot.ts";
 import { pageMiddleware } from "./internal/pageMiddleware.ts";
 import { parseTopology } from "./internal/parseTopology.ts";
 import { projectHandlerUses } from "./internal/projectHandlerUses.ts";
@@ -41,6 +43,7 @@ import { projectManifests } from "./internal/projectManifests.ts";
 import { registersCapability } from "./internal/registersCapability.ts";
 import { serverEntryCode } from "./internal/serverEntryCode.ts";
 import { stubCode } from "./internal/stubCode.ts";
+import { stylesMiddleware } from "./internal/stylesMiddleware.ts";
 import { unmappedModule } from "./internal/unmappedModule.ts";
 import { urlLiterals } from "./internal/urlLiterals.ts";
 import { writeArtifact } from "./internal/writeArtifact.ts";
@@ -122,6 +125,9 @@ type ModuleNode = object;
 type Middlewares = { use(fn: ReturnType<typeof inspectMiddleware> | ReturnType<typeof pageMiddleware>): void };
 type DevServer = {
   transformIndexHtml?(url: string, html: string): Promise<string>;
+  pluginContainer?: { resolveId(id: string, importer?: string): Promise<{ id: string } | null> };
+  transformRequest?(url: string): Promise<{ code: string } | null>;
+  config?: { server: { fs: { allow: string[] } } };
   moduleGraph: {
     getModuleById(id: string): ModuleNode | undefined;
     invalidateModule?(module: ModuleNode): void;
@@ -666,6 +672,36 @@ export default function (): {
     return entry;
   };
 
+  /**
+   * `keel dev`'s `/@keel/styles.css?d=<name>` (k.head Server): deployable `name`'s `styles` (k.topology Declaration), each
+   * resolved from the root, its package directory added to the served ones, and transformed by Vite as a direct CSS
+   * request (its `url()`s served by Vite), then the atomic CSS; undefined for a name the topology lacks. Without a
+   * topology, the atomic CSS alone.
+   */
+  const devStyles = async (d: string | undefined): Promise<string | undefined> => {
+    const decl = d === undefined ? undefined : topology?.[d];
+    if (topology !== undefined && decl === undefined) return undefined;
+    const parts: string[] = [];
+    for (const spec of decl?.styles ?? []) {
+      const hit = await server?.pluginContainer?.resolveId(spec, path.join(root, "index.html"));
+      const file = hit?.id.split("?")[0];
+      if (file === undefined || !path.isAbsolute(file) || !fs.existsSync(file))
+        throw new Error(`keel: styles entry ${JSON.stringify(spec)} of ${d ?? ""} resolves to no file`);
+      // The entry's package may sit outside Vite's served roots (a linked or store-installed package): its directory
+      // is served too, so the entry and the files its `url()`s name load wherever the package is installed.
+      const allow = server?.config?.server.fs.allow;
+      const dir = packageRoot(fs.realpathSync(file)).split(path.sep).join("/");
+      if (allow !== undefined && !allow.includes(dir)) allow.push(dir);
+      const rel = path.relative(root, file).split(path.sep).join("/");
+      const url = rel.startsWith("..") || path.isAbsolute(rel) ? `/@fs${file.split(path.sep).join("/")}` : `/${rel}`;
+      const out = await server?.transformRequest?.(`${url}?direct`);
+      if (out !== null && out !== undefined) parts.push(out.code);
+    }
+    if (stale) await refresh();
+    parts.push(css);
+    return parts.join("\n");
+  };
+
   /** Re-evaluate tokens and route manifests: `keel.css` and `routes.json`. */
   const refresh = async (): Promise<void> => {
     stale = false;
@@ -825,12 +861,13 @@ export default function (): {
       s.middlewares.use(inspect);
       hasNode = Object.values(topology ?? {}).some((d) => d.adapter === "node" || d.adapter === "static");
       if (hasNode) s.middlewares.use(dev.handle);
+      s.middlewares.use(stylesMiddleware(devStyles));
       // Keel writes the `client` document in dev too; the project's own `index.html` is never read (k.head).
       s.middlewares.use(
         pageMiddleware(async (url) => {
           const name = page();
           if (name === undefined) return undefined;
-          const html = indexHtml(name, ENTRY_PATH);
+          const html = indexHtml(name, ENTRY_PATH, `${STYLES_PATH}?d=${encodeURIComponent(name)}`);
           return s.transformIndexHtml === undefined ? html : s.transformIndexHtml(url, html);
         }),
       );

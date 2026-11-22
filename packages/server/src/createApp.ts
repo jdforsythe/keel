@@ -1,6 +1,7 @@
 import { originOf } from "@keel/compiler/hosting/originOf";
 import { INSPECT_PATH } from "@keel/compiler/inspect/INSPECT_PATH";
 import { ENTRY_PATH } from "@keel/compiler/internal/entry/ENTRY_PATH";
+import { STYLES_PATH } from "@keel/compiler/internal/entry/STYLES_PATH";
 import { bindStd } from "@keel/compiler/std/bindStd";
 import { scope } from "@keel/reactive";
 import { routeTable } from "@keel/router";
@@ -92,7 +93,7 @@ import type { ServerApp } from "./types/ServerApp.ts";
  * `diag` to `log` at startup, since each instance then signs callers with its own random key,
  * and no `secure` writes one W1557: https is then the request's URL or `x-forwarded-proto: https`.
  * Every document's head carries the deployable's name as `<title>` and links the build's entry CSS and `/keel-mark.svg`
- * icon (`headHtml`, k.server Document).
+ * icon; in dev it links `/@keel/styles.css?d=<deployable>` in the entry CSS's place (`headHtml`, k.head Server).
  * `std` (a `.keel/std.json`) is read once and bound to `ctx` for `stdConfig`: missing, malformed or hand-edited
  * rejects with E1160, a value failing its package's registered schema with E1158 (k.module Std config).
  * After startup each `runners` entry of the served deployable's modules runs once on `ctx` (`keepRunning`: a rejection is
@@ -204,6 +205,7 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
     entry:
       built?.entry ??
       (opts.deployable === undefined ? ENTRY_PATH : `${ENTRY_PATH}?d=${encodeURIComponent(opts.deployable)}`),
+    css: built?.css ?? (mode === "dev" ? [`${STYLES_PATH}?d=${encodeURIComponent(name)}`] : []),
     name,
     origin,
     allow: new Set(

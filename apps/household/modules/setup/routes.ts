@@ -10,6 +10,7 @@ import { setup } from "./setup.contract.ts";
 export const routes = manifest(setup, {
   "setup.form": {
     component: SetupPage,
+    layout: "app.frame",
     loader: loadSetup,
     guard: signedIn,
     POST: saveSetup,

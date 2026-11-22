@@ -8,7 +8,7 @@
     "mcp.tools-list": 1900,
     "docs.map": 1490,
     "docs.section": 2350,
-    "docs.skill": 2550,
+    "docs.skill": 2725,
     "docs.for": 400,
     "docs.agents": 600
   },
@@ -55,7 +55,7 @@
     },
     "@keel/schema": "5.65kb",
     "@keel/server": {
-      "max": "26.8kb",
+      "max": "26.9kb",
       "platform": "node"
     },
     "@keel/server/internal/dom": "4.75kb",
