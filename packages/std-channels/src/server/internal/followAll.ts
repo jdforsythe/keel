@@ -1,6 +1,7 @@
 import type { Ctx } from "@keel/ctx";
 import { attempt } from "@keel/schema";
-import type { FollowReport, Followed } from "./Followed.ts";
+import type { FollowReport } from "./FollowReport.ts";
+import type { Followed } from "./Followed.ts";
 
 /** How long a stream waits on `ctx.clock` for every followed capability to be listening. */
 const LISTEN_MS = 5_000;

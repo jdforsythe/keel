@@ -1,7 +1,7 @@
-import { codeError } from "../../internal/codeError.ts";
 import type { Engine } from "./Engine.ts";
 import { pgEngine } from "./pgEngine.ts";
 import { pgliteEngine } from "./pgliteEngine.ts";
+import { schemeOf } from "./schemeOf.ts";
 
 /** At most this many `pglite:` folders stay open in a process; the one used least recently and idle closes first. */
 const OPEN_FOLDERS = 2;
@@ -51,16 +51,6 @@ function evict(): void {
     engines.delete(u);
     void o.close();
   }
-}
-
-/** `url` and its scheme, `pglite` or `pg`; a missing value or another scheme throws E2455, naming no part of it. */
-export function schemeOf(url: string | undefined): { readonly url: string; readonly scheme: "pglite" | "pg" } {
-  if (url === undefined || url === "")
-    throw codeError("E2455", "KEEL_POSTGRES_URL is not set; give it a postgres:, postgresql: or pglite: URL");
-  const scheme = /^([a-z][a-z0-9+.-]*):/i.exec(url)?.[1]?.toLowerCase();
-  if (scheme === "pglite") return { url, scheme: "pglite" };
-  if (scheme === "postgres" || scheme === "postgresql") return { url, scheme: "pg" };
-  throw codeError("E2455", "KEEL_POSTGRES_URL is not a postgres:, postgresql: or pglite: URL");
 }
 
 /**

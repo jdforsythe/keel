@@ -1,13 +1,10 @@
 import { codeError } from "../../internal/codeError.ts";
 import type { ChangedChannel } from "../ChangedChannel.ts";
 import { canonicalJson } from "./canonicalJson.ts";
+import { payloadOf } from "./payloadOf.ts";
 
 /** The most bytes a change's payload holds; Postgres refuses a notification payload of 8,000 bytes. */
 const MAX_BYTES = 7_900;
-
-/** The notification payload of a change: `{"d":<capability>,"c":<channel name>,"k":<key>}` (std.postgres Wire form). */
-export const payloadOf = (capability: string, channel: string, key: string): string =>
-  JSON.stringify({ d: capability, c: channel, k: key });
 
 /**
  * The payload of `changed(channel, params)` on `capability`: `params` parsed by the channel's schema and keyed as the

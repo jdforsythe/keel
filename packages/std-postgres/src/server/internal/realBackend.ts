@@ -2,12 +2,13 @@ import type { Backend } from "./Backend.ts";
 import type { Changes } from "./Changes.ts";
 import type { Engine } from "./Engine.ts";
 import type { Migration } from "./Migration.ts";
-import { engineFor, schemeOf } from "./engineFor.ts";
+import { engineFor } from "./engineFor.ts";
 import { listenChanges } from "./listenChanges.ts";
 import { migrate } from "./migrate.ts";
 import { pgliteChanges } from "./pgliteChanges.ts";
 import { postgresUrl } from "./postgresUrl.ts";
 import { reloadTypes } from "./reloadTypes.ts";
+import { schemeOf } from "./schemeOf.ts";
 
 /** The URL and capability pairs whose migrations this process has applied or found applied. */
 const migrated = new Map<string, Promise<void>>();
