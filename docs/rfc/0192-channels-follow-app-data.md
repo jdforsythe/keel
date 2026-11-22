@@ -1,6 +1,6 @@
 # RFC 0192: std.channels and std.postgres: a channel follows changes an app data commit names
 
-Status: accepted (ADR-0214, D98). Amends std.channels, std.live and std.postgres; no kernel section changes. From `apps/household` (walkthrough finding L7-3).
+Status: implemented (ADR-0214, D98). Amends std.channels, std.live and std.postgres; no kernel section changes. From `apps/household` (walkthrough finding L7-3).
 
 ## Decisions
 - D1: a write names the channel it changes. Inside a `db(ctx).transaction`, `t.changed(channel, params)` records a change of that channel instance; std-postgres delivers it only after the transaction commits, and never for a rollback or a rerun that did not commit. The channel is the topic: no second name is declared for it.
