@@ -15613,6 +15613,10 @@
       "rung": "example"
     },
     {
+      "item": "k.module#15",
+      "rung": "none"
+    },
+    {
       "item": "k.mount-scope#1",
       "rung": "example"
     },
@@ -16339,6 +16343,10 @@
     {
       "item": "k.routes#9",
       "rung": "example"
+    },
+    {
+      "item": "k.routes#10",
+      "rung": "none"
     },
     {
       "item": "k.runtime#1",

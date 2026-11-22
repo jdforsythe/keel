@@ -1,6 +1,6 @@
 # RFC 0187: k.routes, k.module: a page names a layout of the module that composes it
 
-Status: draft (ADR-0209 when accepted). From walkthrough finding S-3 (`tasks/p1/walkthrough-findings.md`).
+Status: accepted (ADR-0210). From walkthrough finding S-3 (`tasks/p1/walkthrough-findings.md`).
 
 ## Problem
 An app has one frame: a masthead whose navigation reaches every module's pages. In Keel today no module can own it.
