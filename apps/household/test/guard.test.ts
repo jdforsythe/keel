@@ -9,8 +9,8 @@ it("sends the list to sign-in, naming it, until a member signs in", async () => 
   expect(before.route().search).toEqual({ next: "/list" });
   expect(before.find("members.signin.heading").text).toBe("Sign in");
   before.dispose();
-  const { ctx, app } = await served(4);
-  const after = await renderRoute("shopping.list", { routes: webRoutes, params: {}, ctx, app });
+  const { ctx, app, user } = await served(4);
+  const after = await renderRoute("shopping.list", { routes: webRoutes, params: {}, ctx, app, user });
   expect(after.route().id).toBe("shopping.list");
   after.dispose();
 });
@@ -51,8 +51,8 @@ it("answers the household API with null before setup and the name after", async 
 });
 
 it("names the household on the setup page once a member is signed in", async () => {
-  const { ctx, app } = await served(4);
-  const page = await renderRoute("setup.form", { routes: webRoutes, params: {}, ctx, app });
+  const { ctx, app, user } = await served(4);
+  const page = await renderRoute("setup.form", { routes: webRoutes, params: {}, ctx, app, user });
   expect(page.route().id).toBe("setup.form");
   await page.fire("setup.form:name", { type: "input", value: "Elm Street" });
   await page.fire("setup.save", { type: "click" });

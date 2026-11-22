@@ -1,6 +1,6 @@
 # RFC 0185: k.user Testing: a `renderRoute` page is signed in for its own requests, one browser per harness
 
-Status: accepted (ADR-0207). From walkthrough findings L6-1 and L6-2 (`tasks/p1/walkthrough-findings.md`) and scenario findings S3-1 and S3-3 (`tasks/p1/scenario3-findings.md`). Builds on RFC 0180 (`renderRoute` with `app`).
+Status: implemented (ADR-0207). From walkthrough findings L6-1 and L6-2 (`tasks/p1/walkthrough-findings.md`) and scenario findings S3-1 and S3-3 (`tasks/p1/scenario3-findings.md`). Builds on RFC 0180 (`renderRoute` with `app`).
 
 ## Decisions
 - D1: `renderRoute`'s `user` means the page is signed in as `user` for everything the page sends, not only for its guards, loaders and actions. The carrier is the one k.user already has for an assertion the app trusts in process: `x-keel-user`, signed by the `keel.user` signer of the binding `createApp` made on `ctx`. The receiving app uses it and runs no `identify`, as for a call between deployables. No fake session, no test credential, no `identify` stub. A test never chooses `caller`: it is the SHA-256 of a sealed token, and the binding holds only the `keel.user` signer.
@@ -107,6 +107,8 @@ After RFC 0180's build:
 - `apps/household`: `shoppingList.test.ts` and the token panel test drive the menu, toggle, remove, mint and revoke through the page (`user`), and `test/serve.ts` drops the token-adding route where `user` covers it.
 - `examples/shell-mount`: `test/shellGuard.test.ts` gains S3-1's two tests, the first as above, the second signing in first through the page; `shell()` keeps no jar of its own.
 - Docs: keel-testing (`user`, two users, a sign-in round trip in document and shell mode, pass the `createApp` ctx for a loader's module call), keel-server's sentence on service calls under test, `EXPLANATIONS` for E1724.
+
+As built: `keelConfig` preloads Node's classes into each vitest worker (`tooling/node-fetch.mjs`, `--import`) and a setup file defines them back after the environment (`tooling/node-fetch-setup.ts`), so a file's own `// @vitest-environment happy-dom` gets them too; a custom environment would not, since vitest resolves that name to its built-in one. `AbortController` and `AbortSignal` are Node's too (Node's `Request` refuses happy-dom's signal), and the `Request`, `Response` and `fetch` kept take a happy-dom `FormData` body, copied into a Node one. `@keel/schema`'s `decodeStrings` reads a `FormData` of either realm. A page's axe check leaves out the other open harnesses' pages. `@keel/ctx/internal` gains `browserCtx` (a ctx over another's clock and random, with its own net and storage), so a capability registered on it builds as on any ctx.
 
 ## Known limits
 - A module store in the test's graph (a client `view` store) is one per graph, so two pages share it. A page that needs its own copy resumes with `routes: () => import(path)` (k.testing).

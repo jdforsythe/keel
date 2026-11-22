@@ -1099,6 +1099,13 @@ const ROWS: readonly Row[] = [
     "k.testing",
   ],
   [
+    "E1724",
+    "renderRoute user with app on a ctx no createApp of app bound, or without app beside an open harness with another user",
+    "The page's requests carry user signed by the keel.user signer of the createApp binding on ctx; with no binding of app there is no signer, and one ctx cannot tell two router pages apart. Nothing is requested.",
+    "pass the ctx createApp made app on; for two users, renderRoute twice with app",
+    "k.user",
+  ],
+  [
     "W1723",
     "a literal renderRoute id of a node deployable's module, with no app",
     "The page renders through a client router, which a built node page never has, so a form's answer document goes untested. Literal ids only.",

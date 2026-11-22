@@ -6,7 +6,7 @@ Faults and gaps the scenario tests found, written as an app author meets them. E
 
 | Finding | Status |
 | --- | --- |
-| S3-1 | open: harness, for an RFC (k.return Testing) |
+| S3-1 | fixed: rfc:0185 a shell harness's cookie jar; `examples/shell-mount` tests the round trip |
 | S3-2 | open: for an RFC (k.guards, k.user) |
 | S3-3 | open: harness or skill text |
 | S3-4 | fixed: the keel-server skill names `createApp`'s `std` |
@@ -17,7 +17,7 @@ Faults and gaps the scenario tests found, written as an app author meets them. E
 | --- | --- | --- |
 | Workflow with jobs on Postgres 17 under SIGKILL | `tooling/smoke/workflow-postgres.mjs` (built-smokes) | pass: instance `kept`, step ran twice, `restored` once, `api.showList` once |
 | CSP header read | `tooling/smoke/csp.mjs` (built-smokes) | pass |
-| Guard redirect into a shell | `examples/shell-mount`, `test/shellGuard.test.ts`; proof in `tooling/smoke/examples.mjs` | redirect with `next` and the mount post pass; the return to the note after sign-in cannot be shown in process (S3-1) |
+| Guard redirect into a shell | `examples/shell-mount`, `test/shellGuard.test.ts`; proof in `tooling/smoke/examples.mjs` | pass: redirect with `next`, the mount post and the return to the note signed in |
 | Sessions for a signed-in user | `apps/golden-2/test/signedInSession.test.ts`, `sessionsReader.test.ts` | pass, after S3-3 and S3-4 |
 
 Scenario 1 stores the workflow, its job queue and the board through the deployable's `storage: "postgres"` (std.db's Postgres driver, `keel_kv`). `@keel/std-postgres` holds app data and is not where std.workflows or std.jobs keep state, so a workflow on Postgres is a workflow on that storage.

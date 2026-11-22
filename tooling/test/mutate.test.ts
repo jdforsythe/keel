@@ -2,11 +2,11 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { changedScope, stopRequested } from "../mutate-changed.mjs";
-import { budgetMinutes, linkPackages, ending, groupMembers, leftNote, statusLine } from "../mutate.mjs";
 import { packageRelative, readTimes } from "../mutate-cache.ts";
-import { APP_MUTATE, strykerConfig } from "../stryker.mjs";
+import { changedScope, stopRequested } from "../mutate-changed.mjs";
+import { budgetMinutes, ending, groupMembers, leftNote, linkPackages, statusLine } from "../mutate.mjs";
 import { quickFirstOrder } from "../quick-first.ts";
+import { APP_MUTATE, strykerConfig } from "../stryker.mjs";
 
 describe("budgetMinutes", () => {
   it("reads the package entry, else the default", () => {

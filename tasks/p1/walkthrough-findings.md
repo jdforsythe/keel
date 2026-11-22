@@ -37,14 +37,14 @@
 | L5-1 | open |
 | L5-2 | open |
 | L5-3 | open |
-| L6-1 | open |
+| L6-1 | fixed: rfc:0185 renderRoute user signs in a page's own requests; household's list and token panel tests drive the page |
 | L6-2 | open |
 | L6-3 | open |
 | L6-4 | open |
 | L6-5 | open |
 | L6-6 | open |
 
-Fixed 9, answered in the skills 9, filed as backlog 11, open 10.
+Fixed 10, answered in the skills 9, filed as backlog 11, open 9.
 
 Each finding: what I tried, where, the command and its output, what I expected, whether docs or skills misled. Kinds: fault (framework behaves against its spec), docs (docs or skills gap), rough (works, but an app author trips on it).
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compareLedger, committedRungs, parseFresh } from "../ledger-compare.mjs";
+import { committedRungs, compareLedger, parseFresh } from "../ledger-compare.mjs";
 
 const file = {
   version: 1,

@@ -2,7 +2,7 @@
 // Usage: node tooling/turbo.mjs <task> [turbo args...]
 import { spawnSync } from "node:child_process";
 import os from "node:os";
-import { busyDiag, heldBy, acquire, lockedDiag } from "./mutateLock.mjs";
+import { acquire, busyDiag, heldBy, lockedDiag } from "./mutateLock.mjs";
 import { run } from "./output.ts";
 
 const [task, ...extra] = process.argv.slice(2).filter((a) => !["--quiet"].includes(a) && !a.startsWith("--format"));
