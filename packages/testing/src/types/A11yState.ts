@@ -11,4 +11,8 @@ export interface A11yState {
   readonly active?: string;
   /** The `aria-sort` value. */
   readonly sort?: string;
+  /** The integer `aria-rowindex`. */
+  readonly rowindex?: number;
+  /** The integer `aria-rowcount`. */
+  readonly rowcount?: number;
 }

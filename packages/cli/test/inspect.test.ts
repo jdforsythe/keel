@@ -116,4 +116,27 @@ describe("keel inspect", () => {
     expect(text).toContain('"code":"E1057"');
     expect(text).toContain('"isError":true');
   });
+
+  it("a document with deployables gives one section record per deployable and section, carrying deployable", async () => {
+    const timings = (n: number) => ({ doc: "{ n: int }", value: { n } });
+    const doc = {
+      ...DOC,
+      sections: { "timings.recent": timings(1) },
+      deployables: {
+        web: { sections: { "timings.recent": timings(7) } },
+        api: { sections: { "timings.recent": timings(1), "kitchen.box": timings(2) } },
+      },
+    };
+    const r = await run(["inspect", "--format=compact"], serving(doc));
+    expect(r.code).toBe(0);
+    const lines = r.stdout.split("\n").filter((l) => l.startsWith("section "));
+    expect(lines).toEqual([
+      'section api kitchen.box {"n":2}',
+      'section api timings.recent {"n":1}',
+      'section web timings.recent {"n":7}',
+    ]);
+    expect(r.stdout).toContain("3 sections");
+    const j = await run(["inspect", "--format=json"], serving(doc));
+    expect(j.stdout).toContain('"kind":"inspect.section","id":"timings.recent","deployable":"web"');
+  });
 });

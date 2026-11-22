@@ -1,10 +1,11 @@
-// An app need not list a kernel package only the generated entry imports: `@keel/store` resolves from the compiler.
+// An app need not list a kernel package only generated or tooling code imports: `@keel/store` and its subpaths resolve
+// from the compiler (the client and server entries) or from the module the caller names (the CLI's surface evaluation).
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { entryDependency } from "../src/internal/entryDependency.ts";
+import { entryDependency } from "../src/entry/entryDependency.ts";
 
 const COMPILER = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 let app = "";
@@ -23,8 +24,22 @@ describe("entryDependency", () => {
     const file = entryDependency("@keel/store", app);
     expect(file).toBe(fs.realpathSync(path.join(COMPILER, "..", "store", "src", "index.ts")));
   });
+  it("resolves a subpath, @keel/store/internal, from the compiler", () => {
+    const file = entryDependency("@keel/store/internal", app);
+    expect(file).toBe(fs.realpathSync(path.join(COMPILER, "..", "store", "src", "internal", "index.ts")));
+  });
+  it("resolves the internals the CLI's server-side surface evaluation loads from the CLI's dependencies", () => {
+    const cli = pathToFileURL(path.join(COMPILER, "..", "cli", "src", "internal", "surfaceRun.ts")).href;
+    expect(entryDependency("@keel/store/internal", app, cli)).toBe(
+      fs.realpathSync(path.join(COMPILER, "..", "store", "src", "internal", "index.ts")),
+    );
+    expect(entryDependency("@keel/router/internal", app, cli)).toBe(
+      fs.realpathSync(path.join(COMPILER, "..", "router", "src", "internal", "index.ts")),
+    );
+  });
   it("leaves a package the app resolves to Vite", () => {
     expect(entryDependency("@keel/store", COMPILER)).toBeUndefined();
+    expect(entryDependency("@keel/store/internal", COMPILER)).toBeUndefined();
   });
   it("leaves a specifier outside @keel/ and one the compiler cannot resolve to Vite", () => {
     expect(entryDependency("vite", app)).toBeUndefined();

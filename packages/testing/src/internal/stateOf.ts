@@ -24,6 +24,8 @@ export function stateOf(el: Element, role: string): A11yState {
     focused?: boolean;
     active?: string;
     sort?: string;
+    rowindex?: number;
+    rowcount?: number;
   } = {};
   if ((DISABLEABLE.has(tag) && el.hasAttribute("disabled")) || aria("disabled") === "true") state.disabled = true;
   if (CHECKABLE.has(role)) {
@@ -48,5 +50,11 @@ export function stateOf(el: Element, role: string): A11yState {
   if (active !== null && active !== "") state.active = active;
   const sort = aria("sort");
   if (sort !== null) state.sort = sort;
+  const int = (v: string | null): number | undefined =>
+    v !== null && /^-?\d+$/.test(v.trim()) ? Number(v) : undefined;
+  const rowindex = int(aria("rowindex"));
+  if (rowindex !== undefined) state.rowindex = rowindex;
+  const rowcount = int(aria("rowcount"));
+  if (rowcount !== undefined) state.rowcount = rowcount;
   return state;
 }

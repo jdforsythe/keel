@@ -1,7 +1,7 @@
 import { a11yRules, criteriaOf } from "@keel/testing/a11y";
 import type { A11yCriteriaMap } from "./A11yCriteriaMap.ts";
 
-/** The Keel codes only `keel check` reports (k.a11y Claims); E1804 also runs at render, so it is a render rule too. */
+/** The Keel codes `keel check` reports (k.a11y Claims); E1804 and E1820 also run at render, so they are render rules too. */
 const STATIC = ["E1802", "E1804", "E1820"];
 
 /**

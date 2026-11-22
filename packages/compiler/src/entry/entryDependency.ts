@@ -10,11 +10,12 @@ const found = (id: string, dir: string): boolean => {
 };
 
 /**
- * The file a bare `@keel/` package specifier the generated entry imports names, when the project at `root` has no such
- * package: resolved from the compiler's own dependencies (`from`, the compiler's module URL), so an app need not list a
- * kernel package only the generated entry imports (an app without stores imports no `@keel/store`). Undefined for any
- * other specifier, a package the project has (Vite resolves it there, so the app and the entry share one instance), or
- * one the compiler cannot resolve either (Vite reports it).
+ * The file a bare `@keel/` specifier (a subpath included: `@keel/store/internal`) names when the project at `root` has
+ * no such package: resolved from the dependencies of the module at `from` (by default the compiler's), so an app need
+ * not list a kernel package only generated or tooling code imports (an app without stores imports no `@keel/store`;
+ * the generated entries import it, the surface evaluation loads `@keel/store/internal`). Undefined for any other
+ * specifier, a package the project has (it resolves there, so the app and the generated code share one instance), or
+ * one `from` cannot resolve either (the caller reports it).
  */
 export function entryDependency(id: string, root: string, from: string = import.meta.url): string | undefined {
   const name = /^@keel\/[^/]+/.exec(id)?.[0];

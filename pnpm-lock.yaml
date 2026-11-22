@@ -933,6 +933,9 @@ importers:
       '@keel/ctx':
         specifier: workspace:*
         version: link:../ctx
+      '@keel/router':
+        specifier: workspace:*
+        version: link:../router
       '@keel/scaffold':
         specifier: workspace:*
         version: link:../scaffold
@@ -942,6 +945,9 @@ importers:
       '@keel/services':
         specifier: workspace:*
         version: link:../services
+      '@keel/store':
+        specifier: workspace:*
+        version: link:../store
       '@keel/testing':
         specifier: workspace:*
         version: link:../testing
@@ -955,15 +961,9 @@ importers:
       '@keel/reactive':
         specifier: workspace:*
         version: link:../reactive
-      '@keel/router':
-        specifier: workspace:*
-        version: link:../router
       '@keel/server':
         specifier: workspace:*
         version: link:../server
-      '@keel/store':
-        specifier: workspace:*
-        version: link:../store
       '@keel/tooling':
         specifier: workspace:*
         version: link:../../tooling

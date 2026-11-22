@@ -1,5 +1,5 @@
 # k.cli: CLI, MCP, LSP
-status: conformance-covered
+status: implemented
 
 **One engine.** `@keel/cli` defines each command once as an operation `{ name, input: Schema, output: Schema }`, served by the `keel` binary (flags parsed by `input`), `keel mcp` (one MCP tool per operation), and `keel lsp` (check diagnostics, fix diffs as code actions, `explain` as hover).
 
@@ -23,7 +23,7 @@ status: conformance-covered
 
 Every command accepts `--format=compact|json|pretty`, `--quiet`, `--limit N`, `--verbose`; diagnostic-emitting ones also take `--code <code>`.
 
-**Inspect.** In dev, an app serves `GET /__keel/inspect` as JSON `{ live, graph, stores, ids, a11y, routes, sections }`: `graph` is `inspect()` outside a request scope, `stores` is `{ [id]: { state, log } }` from `stores()`, unredacted, and `ids`, `a11y`, `routes` are the `.keel/` artifacts. Node deployables serve it from `createApp` with `mode: 'dev'`; client-only apps from the compiler plugin's dev and preview servers; the page's dev entry posts `{ graph, stores, sections }` after mount and on each change (`live: false` until a page has posted). Both answer only a loopback or listed `Host` whose `Origin` is its own or listed (`createApp({ inspect: { origins } })`; for the plugin, comma-separated `KEEL_INSPECT_ORIGINS`; `:*` any port), echoing a listed cross-origin `Origin` for CORS; an absent `Origin` is admitted for GET only; others get 403 `keel.denied`. `keel inspect [url]` (default `http://localhost:5173`) fetches it and prints an `inspect.store` record per store and a count summary.
+**Inspect.** In dev, `GET /__keel/inspect` is JSON `{ live, graph, stores, ids, a11y, routes, sections }`: `inspect()` outside a request scope, `{ [id]: { state, log } }` from `stores()` unredacted, the `.keel/` artifacts. A node deployable's `createApp` with `mode: 'dev'` serves it, else the compiler plugin's dev and preview servers, where the page's dev entry posts `{ graph, stores, sections, deployable }` on mount and change (`live: false` before). `keel dev` adds `deployables` (k.topology). Both answer a loopback or listed `Host` with its own or a listed `Origin` (`createApp({ inspect: { origins } })`; plugin: comma-separated `KEEL_INSPECT_ORIGINS`; `:*` any port; CORS echoed), no `Origin` for GET only; else 403 `keel.denied`. `keel inspect [url]` (default `http://localhost:5173`) prints an `inspect.store` per store, an `inspect.section` per section (per deployable given `deployables`) and counts.
 
 **Inspector hooks** (extension point).
 ```ts
@@ -63,3 +63,4 @@ Every output record has a `kind`; each kind has exactly one formatter. `json` is
 - `keel inspect` prints one `inspect.section` per section; an `error` one is E1057, exit 1.
 - `respond` of a record of a kind with no formatter yields E1054.
 - After `stdCommand('session', op)`, `keel session` parses argv with `op.input`, runs `op` and emits its records, and the MCP tools include `session`; unfilled, I1055, exit 0; filling it with another `op` throws E1053.
+- `keel inspect` of a document with `deployables` prints one `inspect.section` per deployable and section.

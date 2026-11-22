@@ -150,8 +150,10 @@ export const kernelFormatters: readonly (readonly [string, Entry])[] = [
     "inspect.section",
     entryOf({
       schema: InspectSectionSchema,
-      compact: (r) => `section ${r.id} ${clip(JSON.stringify(r.value))}`,
-      pretty: (r) => `section ${r.id}: ${r.doc}\n  ${clip(JSON.stringify(r.value))}`,
+      compact: (r) =>
+        `section ${r.deployable === undefined ? "" : `${r.deployable} `}${r.id} ${clip(JSON.stringify(r.value))}`,
+      pretty: (r) =>
+        `section ${r.deployable === undefined ? "" : `${r.deployable} `}${r.id}: ${r.doc}\n  ${clip(JSON.stringify(r.value))}`,
     }),
   ],
   [

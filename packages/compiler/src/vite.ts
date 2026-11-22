@@ -9,6 +9,7 @@ import { ENTRY_PATH } from "./entry/ENTRY_PATH.ts";
 import { ISLANDS_PATH } from "./entry/ISLANDS_PATH.ts";
 import { SERVER_ENTRY } from "./entry/SERVER_ENTRY.ts";
 import { STYLES_PATH } from "./entry/STYLES_PATH.ts";
+import { entryDependency } from "./entry/entryDependency.ts";
 import { resumeEntry } from "./entry/resumeEntry.ts";
 import { peerOrigins } from "./hosting/peerOrigins.ts";
 import { topologyReadProblems } from "./hosting/topologyReadProblems.ts";
@@ -22,7 +23,6 @@ import { copyPgliteFiles } from "./internal/copyPgliteFiles.ts";
 import { devEntryCode } from "./internal/devEntryCode.ts";
 import { devMiddleware } from "./internal/devMiddleware.ts";
 import { entryCode } from "./internal/entryCode.ts";
-import { entryDependency } from "./internal/entryDependency.ts";
 import { evaluateProject } from "./internal/evaluateProject.ts";
 import { exportNames } from "./internal/exportNames.ts";
 import { hostClient } from "./internal/hostClient.ts";
@@ -138,12 +138,14 @@ type DevServer = {
   middlewares: Middlewares;
 };
 type DevApp = {
+  readonly name: string;
   readonly app: { fetch(req: Request): Promise<Response>; close(): Promise<void> };
   served(path: string): boolean;
   readonly mount: string | undefined;
 };
 const isDevApp = (v: unknown): v is [string, DevApp["app"], DevApp["served"], DevApp["mount"]] =>
   Array.isArray(v) &&
+  typeof v[0] === "string" &&
   typeof v[2] === "function" &&
   (v[3] === undefined || typeof v[3] === "string") &&
   typeof v[1] === "object" &&
@@ -221,8 +223,8 @@ type UserConfig = { root?: string; envPrefix?: unknown; define?: unknown };
  * `topology.ts` statically (E1004 exemption for `client` deployables), and evaluates `tokens.ts` and the
  * deployable's modules' routes (an app module's `modules/<id>/routes.ts`, a stdlib module's package `./routes`)
  * to produce `keel.css` (`import "virtual:keel.css"`) and `routes.json`.
- * A `@keel/` specifier the generated entry imports that the project does not resolve resolves from the compiler's
- * own dependencies (`entryDependency`).
+ * A `@keel/` specifier, subpaths included, a generated module imports (the client and islands entries, the server and
+ * dev entries) that the project does not resolve resolves from the compiler's own dependencies (`entryDependency`).
  * It serves the generated entry at `/@keel/entry.ts` for the deployable `KEEL_DEPLOYABLE` names, else the first
  * `client` one by name: the `mount` entry for a `client` deployable (binding the client-readable part of `std.json`,
  * `clientStdData`, reloaded when a manifest changes), else the resume entry, whose island components
@@ -333,13 +335,18 @@ export default function (): {
     const apps: unknown = mod?.apps;
     devApps = (Array.isArray(apps) ? apps : [])
       .filter(isDevApp)
-      .map(([, app, served, mount]) => ({ app, served, mount }));
+      .map(([name, app, served, mount]) => ({ name, app, served, mount }));
     return devApps;
   });
   const inspect = inspectMiddleware(
     () => root,
     origins,
-    async () => (hasNode ? (await dev.apps()).map((a) => a.app) : []),
+    // The loaded apps with their names: `dev.apps()` loads them into `devApps`.
+    async () => {
+      if (!hasNode) return [];
+      await dev.apps();
+      return devApps.map((a) => ({ name: a.name, app: a.app }));
+    },
   );
   /** Close the dev apps (their runners and streams) so the next request loads them again, once they have closed. */
   const reloadDev = (): void => {
@@ -356,6 +363,12 @@ export default function (): {
     if (!id.startsWith("/@keel/")) return undefined;
     const u = new URL(id, "http://keel.invalid");
     return { path: u.pathname, d: u.searchParams.get("d") ?? undefined };
+  };
+
+  /** Whether `id` is a module the plugin generates: the client and islands entries, the server and dev entries. */
+  const generated = (id: string): boolean => {
+    const at = keyed(id)?.path;
+    return at === ENTRY_PATH || at === ISLANDS_PATH || id === `\0${SERVER_ENTRY}` || id === `\0${DEV_ENTRY}`;
   };
 
   const relOf = (id: string): string | null => {
@@ -893,8 +906,8 @@ export default function (): {
       if (id === path.join(root, "index.html") && page() !== undefined) return id;
       const q = keyed(id);
       if (q?.path === ENTRY_PATH || q?.path === ISLANDS_PATH) return id;
-      // A kernel package the generated entry imports and the app does not list resolves from the compiler's dependencies.
-      if (importer !== undefined && keyed(importer)?.path === ENTRY_PATH) {
+      // A kernel package a generated module imports and the app does not list resolves from the compiler's dependencies.
+      if (importer !== undefined && generated(importer)) {
         const own = entryDependency(id, root);
         if (own !== undefined) return own;
       }
@@ -957,6 +970,7 @@ export default function (): {
           mode,
           exists("identity.ts"),
           served,
+          d.name,
         )
       );
     },
