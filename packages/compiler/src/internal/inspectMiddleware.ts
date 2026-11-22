@@ -11,7 +11,14 @@ const MAX_BODY = 8 * 1024 * 1024;
 
 type Middleware = (req: IncomingMessage, res: ServerResponse, next: (e?: unknown) => void) => void;
 type App = { fetch(req: Request): Promise<Response> };
-type Live = { readonly graph: unknown; readonly stores: unknown; readonly sections: Record<string, unknown> };
+/** A `node` deployable's dev app under `keel dev`, with its deployable's name. */
+type Named = { readonly name: string; readonly app: App };
+type Live = {
+  readonly graph: unknown;
+  readonly stores: unknown;
+  readonly sections: Record<string, unknown>;
+  readonly deployable: string | undefined;
+};
 
 /** A `Host` header value or an origin as a URL, or undefined when it does not parse. */
 const hostOf = (s: string): URL | undefined => {
@@ -33,7 +40,7 @@ const artifact = (root: string, name: string): unknown => {
   }
 };
 
-/** A posted live report: `{ graph: { nodes: [], edges: [] }, stores: {}, sections?: {} }`. */
+/** A posted live report: `{ graph: { nodes: [], edges: [] }, stores: {}, sections?: {}, deployable?: string }`. */
 const liveOf = (text: string): Live | undefined => {
   let parsed: unknown;
   try {
@@ -43,22 +50,33 @@ const liveOf = (text: string): Live | undefined => {
   }
   if (!isRecord(parsed) || !isRecord(parsed.graph) || !isRecord(parsed.stores)) return undefined;
   const { nodes, edges } = parsed.graph;
-  const { sections = {} } = parsed;
+  const { sections = {}, deployable } = parsed;
   if (!Array.isArray(nodes) || !Array.isArray(edges) || !isRecord(sections)) return undefined;
-  return { graph: { nodes, edges }, stores: parsed.stores, sections };
+  if (deployable !== undefined && typeof deployable !== "string") return undefined;
+  return { graph: { nodes, edges }, stores: parsed.stores, sections, deployable };
 };
 
 /**
- * The inspector sections the dev apps serve to `host`, each asked for its own inspect document: of two apps that serve
- * one id the earlier's section is kept. An app that refuses, or answers something else, adds none.
+ * The inspector sections each dev app serves to `host`, by deployable, each app asked for its own inspect document.
+ * An app that refuses, or answers something else, serves none.
  */
-const served = async (apps: readonly App[], host: string): Promise<Record<string, unknown>> => {
-  const out: Record<string, unknown> = {};
-  for (const app of [...apps].reverse()) {
+const served = async (apps: readonly Named[], host: string): Promise<Record<string, Record<string, unknown>>> => {
+  const out: Record<string, Record<string, unknown>> = {};
+  for (const { name, app } of apps) {
     const answer = await app.fetch(new Request(`http://${host}${INSPECT_PATH}`, { headers: { host } }));
     const doc: unknown = answer.ok ? await answer.json().catch(() => undefined) : undefined;
-    if (isRecord(doc) && isRecord(doc.sections)) Object.assign(out, doc.sections);
+    out[name] = isRecord(doc) && isRecord(doc.sections) ? doc.sections : {};
   }
+  return out;
+};
+
+/** The union of the apps' sections over `page`: an app's section replaces the page's, and the first app by name wins. */
+const union = (
+  page: Readonly<Record<string, unknown>>,
+  apps: Readonly<Record<string, Record<string, unknown>>>,
+): Record<string, unknown> => {
+  const out: Record<string, unknown> = { ...page };
+  for (const name of Object.keys(apps).sort().reverse()) Object.assign(out, apps[name]);
   return out;
 };
 
@@ -77,17 +95,21 @@ const send = (res: ServerResponse, status: number, body?: unknown): void => {
  * `GET|POST /__keel/inspect` for the Vite dev and preview servers (k.cli Inspect, RFC 0017).
  * GET returns `{ live, graph, stores, ids, a11y, routes, sections }`: artifacts read from `<root>/.keel/` per request, the live
  * half from the last report the open page posted (`live: false`, empty graph, stores and sections, until one arrives). Under
- * `keel dev`, `apps` gives the `node` deployables' dev apps: `sections` then also holds the sections each of them serves
- * (`served`), and a section of an app replaces the page's section of that id. POST takes the page's report as JSON. Both answer only (RFC 0022) a `Host` that is loopback or in `origins`, with an `Origin`
+ * `keel dev`, `apps` gives the `node` deployables' dev apps by name: the document then also holds `deployables`,
+ * `{ [name]: { sections } }`, each app's own sections (`served`) and, under the `deployable` a page's report names,
+ * the sections that page last posted; `sections` is their union, an app's section replacing the page's of that id
+ * and, of two apps, the first by name kept. POST takes the page's report as JSON. Both answer only (RFC 0022) a `Host` that is loopback or in `origins`, with an `Origin`
  * that is the server's own or in `origins` (`:*` for any port); others get 403 `keel.denied`. A GET may omit `Origin`
  * (a navigation or curl); a POST or any other method must send one. A listed cross-origin `Origin` is echoed for CORS.
  */
 export function inspectMiddleware(
   root: () => string,
   origins: readonly string[] = [],
-  apps: () => Promise<readonly App[]> = () => Promise.resolve([]),
+  apps: () => Promise<readonly Named[]> = () => Promise.resolve([]),
 ): Middleware {
   let live: Live | undefined;
+  /** The sections each `client` deployable's page last posted, by the name its report carries. */
+  const pages = new Map<string, Record<string, unknown>>();
   return (req, res, next) => {
     if ((req.url ?? "").split("?")[0] !== INSPECT_PATH) return next();
     const origin = req.headers.origin;
@@ -110,14 +132,23 @@ export function inspectMiddleware(
     if (req.method === "GET") {
       const dir = root();
       return void apps()
-        .then((list) => served(list, self.host))
+        .then(async (list) => (list.length === 0 ? undefined : await served(list, self.host)))
         .then(
-          (sections) =>
+          (byApp) =>
             send(res, 200, {
               live: live !== undefined,
               graph: live?.graph ?? { nodes: [], edges: [] },
               stores: live?.stores ?? {},
-              sections: { ...live?.sections, ...sections },
+              sections: union(live?.sections ?? {}, byApp ?? {}),
+              ...(byApp === undefined
+                ? {}
+                : {
+                    deployables: Object.fromEntries(
+                      [...new Set([...pages.keys(), ...Object.keys(byApp)])]
+                        .sort()
+                        .map((name) => [name, { sections: { ...pages.get(name), ...byApp[name] } }]),
+                    ),
+                  }),
               ids: artifact(dir, "ids.json"),
               a11y: artifact(dir, "a11y.json"),
               routes: artifact(dir, "routes.json"),
@@ -138,6 +169,7 @@ export function inspectMiddleware(
       const report = liveOf(Buffer.concat(chunks).toString("utf8"));
       if (report === undefined) return send(res, 400);
       live = report;
+      if (report.deployable !== undefined) pages.set(report.deployable, report.sections);
       send(res, 204);
     });
   };

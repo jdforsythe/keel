@@ -1,5 +1,6 @@
 // `GET /__keel/inspect` under `keel dev` (k.cli Inspect, Inspector hooks; k.topology Local topology): the document
-// holds the inspector sections of the `node` deployables' dev apps beside the open page's report.
+// holds the inspector sections of the `node` deployables' dev apps beside the open page's report, and each deployable's
+// own sections under `deployables`.
 import fs from "node:fs";
 import http from "node:http";
 import type { AddressInfo } from "node:net";
@@ -9,6 +10,9 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { inspectMiddleware } from "../src/internal/inspectMiddleware.ts";
 
 type App = { fetch(req: Request): Promise<Response> };
+type Named = { name: string; app: App };
+/** Name the apps `n0`, `n1`, ... in their order. */
+const named = (apps: readonly App[]): Named[] => apps.map((app, i) => ({ name: `n${i}`, app }));
 type Handler = ReturnType<typeof inspectMiddleware>;
 
 let root = "";
@@ -69,7 +73,7 @@ describe("inspectMiddleware with dev apps", () => {
       inspectMiddleware(
         () => root,
         [],
-        () => Promise.resolve([appOf({ "kitchen.box": section(3) }, seen)]),
+        () => Promise.resolve(named([appOf({ "kitchen.box": section(3) }, seen)])),
       ),
     );
     const { status, json } = await get();
@@ -79,6 +83,7 @@ describe("inspectMiddleware with dev apps", () => {
       graph: { nodes: [], edges: [] },
       stores: {},
       sections: { "kitchen.box": section(3) },
+      deployables: { n0: { sections: { "kitchen.box": section(3) } } },
       ids: {},
       a11y: {},
       routes: {},
@@ -92,7 +97,7 @@ describe("inspectMiddleware with dev apps", () => {
       inspectMiddleware(
         () => root,
         [],
-        () => Promise.resolve(apps),
+        () => Promise.resolve(named(apps)),
       ),
     );
     const sections = { "timings.recent": section(7), "page.only": section(8) };
@@ -105,7 +110,48 @@ describe("inspectMiddleware with dev apps", () => {
     });
   });
 
-  it("of two apps serving one id keeps the earlier's, and reads the apps again on every request", async () => {
+  it("keeps each deployable's own sections under deployables: the page's by the name it posts, each app's by its own", async () => {
+    const apps: Named[] = [{ name: "api", app: appOf({ "timings.recent": section(1), "kitchen.box": section(2) }) }];
+    await listen(
+      inspectMiddleware(
+        () => root,
+        [],
+        () => Promise.resolve(apps),
+      ),
+    );
+    const sections = { "timings.recent": section(7), "page.only": section(8) };
+    expect((await post({ ...PAGE, sections, deployable: "web" })).status).toBe(204);
+    const { json } = await get();
+    expect(json).toMatchObject({
+      sections: { "timings.recent": section(1), "kitchen.box": section(2), "page.only": section(8) },
+      deployables: {
+        api: { sections: { "timings.recent": section(1), "kitchen.box": section(2) } },
+        web: { sections },
+      },
+    });
+    expect(Object.keys(Object(json).deployables)).toEqual(["api", "web"]);
+  });
+
+  it("a report whose deployable is not a string is refused with 400", async () => {
+    await listen(
+      inspectMiddleware(
+        () => root,
+        [],
+        () => Promise.resolve([]),
+      ),
+    );
+    expect((await post({ ...PAGE, deployable: 3 })).status).toBe(400);
+  });
+
+  it("without dev apps the document holds no deployables, even after a page names its own", async () => {
+    await listen(inspectMiddleware(() => root));
+    expect((await post({ ...PAGE, sections: { "page.only": section(1) }, deployable: "web" })).status).toBe(204);
+    const { json } = await get();
+    expect(json).toMatchObject({ live: true, sections: { "page.only": section(1) } });
+    expect(Object.keys(Object(json))).not.toContain("deployables");
+  });
+
+  it("of two apps serving one id keeps the first by name, and reads the apps again on every request", async () => {
     let n = 0;
     const counting: App = { fetch: () => Promise.resolve(Response.json({ sections: { "a.count": section(++n) } })) };
     const apps = [counting, appOf({ "a.count": section(100), "b.only": section(5) })];
@@ -113,7 +159,7 @@ describe("inspectMiddleware with dev apps", () => {
       inspectMiddleware(
         () => root,
         [],
-        () => Promise.resolve(apps),
+        () => Promise.resolve(named(apps)),
       ),
     );
     expect((await get()).json).toMatchObject({ sections: { "a.count": section(1), "b.only": section(5) } });
@@ -132,7 +178,7 @@ describe("inspectMiddleware with dev apps", () => {
       inspectMiddleware(
         () => root,
         [],
-        () => Promise.resolve(apps),
+        () => Promise.resolve(named(apps)),
       ),
     );
     const { status, json } = await get();
@@ -186,7 +232,11 @@ describe("plugin wiring under keel dev", () => {
   it("the inspect endpoint serves the sections of the node deployables' dev apps, loaded once", async () => {
     const w = wire(`export default { api: { modules: ["a"], adapter: "node" } };\n`);
     await listen(w.inspect);
-    expect((await get()).json).toMatchObject({ live: false, sections: { "kitchen.box": section(1) } });
+    expect((await get()).json).toMatchObject({
+      live: false,
+      sections: { "kitchen.box": section(1) },
+      deployables: { api: { sections: { "kitchen.box": section(1) } } },
+    });
     expect((await get()).json).toMatchObject({ sections: { "kitchen.box": section(1) } });
     expect(w.loads()).toBe(1);
   });

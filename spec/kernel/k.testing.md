@@ -1,5 +1,5 @@
 # k.testing: Harness and properties
-status: conformance-covered
+status: implemented
 
 **Harness.** From `@keel/testing`:
 ```ts
@@ -19,7 +19,7 @@ t.dispose()
 
 **ctx.** Harness renders use a sim ctx (k.ctx); under `keel test` (`KEEL_TEST=1`) any `ctx` a test creates defaults to sim.
 
-**a11y.** `a11y(id?)` is built from the live DOM: nodes `{ id, role, name, state: { checked?, disabled?, expanded?, selected?, invalid?, focused?, active?, sort? }, children }`, with implicit roles and accessible names per WAI-ARIA: `checked` is `'mixed'` for a mixed checkbox, `active` is the id `aria-activedescendant` names, `sort` is the `aria-sort` value. After the first render and after every `fire`, the harness runs the render checks of k.a11y.
+**a11y.** `a11y(id?)` is built from the live DOM: nodes `{ id, role, name, state: { checked?, disabled?, expanded?, selected?, invalid?, focused?, active?, sort?, rowindex?, rowcount? }, children }`, with implicit roles and accessible names per WAI-ARIA: `checked` is `'mixed'` for a mixed checkbox, `active` is the id `aria-activedescendant` names, `sort` is the `aria-sort` value, `rowindex` and `rowcount` the integer `aria-rowindex` and `aria-rowcount`. After the first render and after every `fire`, the harness runs the render checks of k.a11y.
 
 **Properties.**
 `properties(target, { runs = 100, seed? })` asserts, for a component: renders without throwing, matches `a11y.json`, no axe violations, two renders of one seed are equal. For a transaction: output parses with the store schema, every `invariant` of the store holds, equal inputs give equal outputs, `undo` restores the input. Invariants: `invariant(store, fn)` from `@keel/store`, beside the store (`@keel/testing` re-exports nothing). Each run records its seed; `KEEL_SEED=<n>` replays it.
@@ -49,3 +49,4 @@ t.dispose()
 - With `app`, an action's `ok(href)` leaves `route().id` the target's, `location().entries` 2, and the target's loader run once through `app`.
 - The same page without `app` records no document on a submit, and the `keel.fields` answer sets the field's error in process.
 - `app` with `state` or `shell` rejects E1722, `app` unrequested; W1723 fires on `renderRoute('f.page', { routes })` when a `node` deployable serves `f`, not with `app` nor for a `client` one.
+- `find(id).state` has `rowindex: 2` for a row with `aria-rowindex="2"` and `rowcount: 10` for a grid with `aria-rowcount="10"`, and no key for a value that is not an integer; `a11y()` gives a `th scope="row"` role `rowheader`.

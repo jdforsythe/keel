@@ -212,4 +212,22 @@ describe("plugin wiring and dev entry", () => {
     expect(code.indexOf("mount(router.App")).toBeLessThan(code.indexOf("report();"));
     expect(parseSync("entry.js", code, { sourceType: "module" }).errors).toEqual([]);
   });
+
+  it("with its deployable's name the entry posts it as deployable beside the sections", () => {
+    const code = entryCode(
+      ["/modules/todos/routes.ts"],
+      "virtual:keel.css",
+      {},
+      {},
+      undefined,
+      "dev",
+      false,
+      true,
+      "web",
+    );
+    expect(code).toContain(
+      'JSON.stringify({ graph: inspect(), stores: live, sections: inspectorSections(ctx).sections, deployable: "web" })',
+    );
+    expect(parseSync("entry.js", code, { sourceType: "module" }).errors).toEqual([]);
+  });
 });

@@ -395,6 +395,7 @@ describe("vite: project inputs", () => {
         "dev",
         false,
         true,
+        "web",
       ),
     );
   });
@@ -424,6 +425,7 @@ describe("vite: project inputs", () => {
         "dev",
         false,
         true,
+        "web",
       ),
     );
     expect(code).not.toContain("hidden");
@@ -440,11 +442,11 @@ describe("vite: project inputs", () => {
     p.configResolved({ root, command: "serve" });
     const all = {};
     expect(await p.load("/@keel/entry.ts")).toBe(
-      entryCode(["/modules/m/routes.ts"], "virtual:keel.css", {}, all, undefined, "dev", false, true),
+      entryCode(["/modules/m/routes.ts"], "virtual:keel.css", {}, all, undefined, "dev", false, true, "mid"),
     );
     process.env.KEEL_DEPLOYABLE = "zeta";
     expect(await p.load("/@keel/entry.ts")).toBe(
-      entryCode(["/modules/z/routes.ts"], "virtual:keel.css", {}, all, undefined, "dev", false, true),
+      entryCode(["/modules/z/routes.ts"], "virtual:keel.css", {}, all, undefined, "dev", false, true, "zeta"),
     );
     process.env.KEEL_DEPLOYABLE = "api";
     expect(await p.load("/@keel/entry.ts")).toBe(resumeEntry(undefined, "dev", "virtual:keel.css"));
@@ -489,7 +491,7 @@ describe("vite: project inputs", () => {
       write("modules/a/routes.ts", routesTs("a"));
       const all = {};
       const client = (mode: "dev" | "production") =>
-        entryCode(["/modules/a/routes.ts"], "virtual:keel.css", {}, all, undefined, mode, false, true);
+        entryCode(["/modules/a/routes.ts"], "virtual:keel.css", {}, all, undefined, mode, false, true, "web");
       const none = keel();
       none.configResolved({ root });
       expect(await none.load("/@keel/entry.ts")).toBe(client("production"));

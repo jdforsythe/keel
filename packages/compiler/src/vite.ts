@@ -138,12 +138,14 @@ type DevServer = {
   middlewares: Middlewares;
 };
 type DevApp = {
+  readonly name: string;
   readonly app: { fetch(req: Request): Promise<Response>; close(): Promise<void> };
   served(path: string): boolean;
   readonly mount: string | undefined;
 };
 const isDevApp = (v: unknown): v is [string, DevApp["app"], DevApp["served"], DevApp["mount"]] =>
   Array.isArray(v) &&
+  typeof v[0] === "string" &&
   typeof v[2] === "function" &&
   (v[3] === undefined || typeof v[3] === "string") &&
   typeof v[1] === "object" &&
@@ -333,13 +335,18 @@ export default function (): {
     const apps: unknown = mod?.apps;
     devApps = (Array.isArray(apps) ? apps : [])
       .filter(isDevApp)
-      .map(([, app, served, mount]) => ({ app, served, mount }));
+      .map(([name, app, served, mount]) => ({ name, app, served, mount }));
     return devApps;
   });
   const inspect = inspectMiddleware(
     () => root,
     origins,
-    async () => (hasNode ? (await dev.apps()).map((a) => a.app) : []),
+    // The loaded apps with their names: `dev.apps()` loads them into `devApps`.
+    async () => {
+      if (!hasNode) return [];
+      await dev.apps();
+      return devApps.map((a) => ({ name: a.name, app: a.app }));
+    },
   );
   /** Close the dev apps (their runners and streams) so the next request loads them again, once they have closed. */
   const reloadDev = (): void => {
@@ -957,6 +964,7 @@ export default function (): {
           mode,
           exists("identity.ts"),
           served,
+          d.name,
         )
       );
     },
