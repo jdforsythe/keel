@@ -56,7 +56,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.cli | CLI, MCP, LSP | conformance-covered | flags |
 | k.docs | Installed docs | implemented | read |
 | k.scaffold | Scaffold, codemods | implemented | edits |
-| k.testing | Harness, properties | implemented | fire |
+| k.testing | Harness, properties | conformance-covered | fire |
 | k.model | Store exploration | conformance-covered | traces |
 | k.prove | Proving invariants | conformance-covered | Z3 |
 | k.sim | Simulation | conformance-covered | faults |
@@ -64,9 +64,9 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.server | Thin server | conformance-covered | loads |
 | k.leave | What a request leaves | conformance-covered | state |
 | k.user | User, caller | implemented | user |
-| k.mount | Mount pages | conformance-covered | submit |
+| k.mount | Mount pages | implemented | submit |
 | k.mount-scope | Mount scope | implemented | proxy |
-| k.return | Shell mount | conformance-covered | net |
+| k.return | Shell mount | implemented | net |
 | k.opening | Openings | conformance-covered | once |
 | k.links | Links in | conformance-covered | ids |
 | k.serverlog | Server log | conformance-covered | bounds |

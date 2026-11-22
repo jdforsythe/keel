@@ -1,5 +1,5 @@
 # k.return: Mount from a shell
-status: conformance-covered
+status: implemented
 
 How a shell page (k.shell) reaches the identity source's `handle` (k.user, k.mount) on `KEEL_ORIGIN`. The library's cookie stays in the native cookie store, as the caller cookie does; Keel reads, writes and sends no credential.
 
@@ -17,7 +17,7 @@ So OAuth runs as on the web: the library's start redirects to the provider (an o
 
 **The app's part.** The library's cookie or token, its lifetime, rotation and revocation; the return URIs providers accept; any one-time code passed from the external browser. A token in a secure-storage plugin goes on the app's own requests as `bearer` (k.services); Keel attaches none.
 
-**Testing.** `renderRoute(id, { shell: true })` runs the page under a ctx of `mode: 'shell'`: mount requests go to the sim `net`, `documents()` records each URL opened in the external browser as a GET, and the handle's `returnLink(url)` delivers a return link as the platform does; a passed `ctx` gives the clock and storage. It reports a launch with no link before the first render; with `launch: 'later'` it reports none until the handle's `launch(links)`, `null` for a failed read, which resolves once the links are delivered and the page has settled.
+**Testing.** `renderRoute(id, { shell: true })` runs the page under a ctx of `mode: 'shell'`: mount requests and the page's other requests to its origin go to the sim `net` through the harness's cookie jar (k.mount Testing), `documents()` records each URL opened in the external browser as a GET, and the handle's `returnLink(url)` delivers a return link as the platform does; a passed `ctx` gives the clock and storage. It reports a launch with no link before the first render; with `launch: 'later'` it reports none until the handle's `launch(links)`, `null` for a failed read, which resolves once the links are delivered and the page has settled.
 
 **Limits.** What needs a device or an installed bundle: the Limits of std.capacitor and std.tauri. Link-started (k.opening) is per ctx, in memory: a webview reload starts a new ctx, link-started only by its own launch report.
 
@@ -29,3 +29,4 @@ So OAuth runs as on the web: the library's start redirects to the provider (an o
 - A mount answer 302 to `dev.keel.golden2:/api/auth/x`, with no opening, sends a second `net` GET of `/api/auth/x`.
 - With every GET answered 302 to `dev.keel.golden2:/api/auth/loop`, a `Link` to the mount sends six `net` GETs.
 - A `Link` to `mount.href('/login/github')` answered 302 to `/.//evil.example/x`, or to `/\evil.example/x`, records nothing in `documents()`, sends no second `net` GET and keeps the page; `returnLink('dev.keel.golden2:/.//evil.example/x')` sends nothing and keeps the page.
+- Under `renderRoute(id, { shell: true, ctx })`, `ctx.net` routing the origin to a `createApp` whose `handle` answers a mount `Form` POST 303 to a page with `set-cookie: s=1`: the router navigates there and the page's next `service({ contract })` call carries `cookie` `s=1`.

@@ -15569,6 +15569,14 @@
       "rung": "probabilistic"
     },
     {
+      "item": "k.mount#9",
+      "rung": "none"
+    },
+    {
+      "item": "k.mount#10",
+      "rung": "none"
+    },
+    {
       "item": "k.openapi#1",
       "rung": "proven"
     },
@@ -16059,6 +16067,10 @@
     {
       "item": "k.return#5",
       "rung": "example"
+    },
+    {
+      "item": "k.return#6",
+      "rung": "none"
     },
     {
       "item": "k.reveal#1",
@@ -17083,6 +17095,18 @@
     {
       "item": "k.user#10",
       "rung": "example"
+    },
+    {
+      "item": "k.user#11",
+      "rung": "none"
+    },
+    {
+      "item": "k.user#12",
+      "rung": "none"
+    },
+    {
+      "item": "k.user#13",
+      "rung": "none"
     },
     {
       "item": "std.brands#1",
