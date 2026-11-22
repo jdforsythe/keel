@@ -12,7 +12,7 @@ export default function RecipeError(props: Infer<typeof Props>) {
       <Text id="recipes.error.code" font="mono" fontSize="xs" fg="accent">
         {props.error.code}
       </Text>
-      <Heading id="recipes.error" level={1} fontSize="2xl" weight="semibold" m="0" fg="error">
+      <Heading id="recipes.error" level={1} fontSize="2xl" m="0" fg="error">
         {props.error.message}
       </Heading>
     </Box>

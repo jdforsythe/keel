@@ -62,6 +62,9 @@ export default function CatalogPage(props: Infer<typeof Props>, ctx: Ctx) {
       .map((r) => ({ key: r.id, text: r.title }));
   });
   const nothingPicked = computed(() => picked.get().length === 0);
+  /** A search or filter narrows the table, so an empty page offers every recipe rather than a new one. */
+  const filtered = (): boolean =>
+    props.search.q !== undefined || props.search.currency !== undefined || props.search.favorite !== undefined;
   const add = (): void => {
     const keys = new Set(picked.get());
     const chosen = props.data.recipes.filter((r) => keys.has(r.id)).map((r) => ({ id: r.id, title: r.title }));
@@ -89,10 +92,10 @@ export default function CatalogPage(props: Infer<typeof Props>, ctx: Ctx) {
         font="mono"
         fontSize="sm"
       >
-        <Link id="recipes.catalog.all" to={href(refine("currency", {}))} fg="text">
+        <Link id="recipes.catalog.all" to={href(refine("currency", {}))}>
           {props.data.text.filterAll}
         </Link>
-        <Link id="recipes.catalog.favorites" to={href(refine("currency", { favorite: true }))} fg="text">
+        <Link id="recipes.catalog.favorites" to={href(refine("currency", { favorite: true }))}>
           {props.data.text.filterFavorites}
         </Link>
       </Box>
@@ -102,10 +105,7 @@ export default function CatalogPage(props: Infer<typeof Props>, ctx: Ctx) {
           table: { fontSize: "sm" },
           header: { px: "2", py: "2", font: "mono", fontSize: "xs" },
           cell: { px: "2", py: "2" },
-          sort: { fg: "text" },
-          pager: { py: "3", gap: "4", font: "mono", fontSize: "sm" },
-          previous: { fg: "text" },
-          next: { fg: "text" },
+          pager: { py: "3", direction: "row", align: "center", gap: "4", font: "mono", fontSize: "sm" },
         }}
         label={props.data.text.tableLabel}
         columns={catalogColumns}
@@ -155,7 +155,7 @@ export default function CatalogPage(props: Infer<typeof Props>, ctx: Ctx) {
           <Menu
             id={`recipes.menu.${idPart(row.id)}`}
             styles={{
-              trigger: { px: "3", py: "1", border: "rule", radius: "none", font: "mono", fontSize: "sm" },
+              trigger: { look: "secondary", py: "1" },
               menu: { bg: "card", border: "hairline", p: "1", m: "0" },
               item: { px: "3", py: "1", states: { highlighted: { bg: "text", fg: "card" } } },
             }}
@@ -170,22 +170,24 @@ export default function CatalogPage(props: Infer<typeof Props>, ctx: Ctx) {
             }}
           />
         )}
-        empty={() => <Text id="recipes.table.none">{props.data.text.empty}</Text>}
+        empty={() => (
+          <Box id="recipes.table.none" direction="column" align="start" gap="2" py="4">
+            <Text id="recipes.table.none.line">
+              {filtered() ? props.data.text.catalogNone : props.data.text.boxEmpty}
+            </Text>
+            <Link
+              id="recipes.table.none.next"
+              to={filtered() ? href({}) : recipes.href("recipes.new", { locale: props.params.locale })}
+              font="mono"
+              fontSize="sm"
+            >
+              {filtered() ? props.data.text.showEvery : props.data.text.addFirst}
+            </Link>
+          </Box>
+        )}
       />
       <Box direction="row">
-        <Button
-          id="recipes.addSelected"
-          onClick={add}
-          disabled={nothingPicked}
-          font="mono"
-          fontSize="sm"
-          px="4"
-          py="2"
-          bg="text"
-          fg="card"
-          border="rule"
-          radius="none"
-        >
+        <Button id="recipes.addSelected" onClick={add} disabled={nothingPicked}>
           {props.data.text.addSelected}
         </Button>
       </Box>
@@ -214,7 +216,7 @@ export default function CatalogPage(props: Infer<typeof Props>, ctx: Ctx) {
       <Dialog
         id="recipes.clear"
         styles={{
-          trigger: { px: "3", py: "1", border: "rule", radius: "none", font: "mono", fontSize: "sm" },
+          trigger: { look: "secondary" },
           dialog: { bg: "card", fg: "text", border: "rule", p: "4" },
         }}
         title={props.data.text.clearList}
@@ -222,19 +224,10 @@ export default function CatalogPage(props: Infer<typeof Props>, ctx: Ctx) {
         alert={{ description: props.data.text.clearBody }}
         content={(close) => (
           <Box direction="row" gap="3">
-            <Button id="recipes.clear.cancel" onClick={close} px="4" py="2" border="rule" radius="none">
+            <Button id="recipes.clear.cancel" onClick={close} look="secondary">
               {props.data.text.cancel}
             </Button>
-            <Button
-              id="recipes.clear.confirm"
-              onClick={() => clear(close)}
-              px="4"
-              py="2"
-              bg="text"
-              fg="card"
-              border="rule"
-              radius="none"
-            >
+            <Button id="recipes.clear.confirm" onClick={() => clear(close)}>
               {props.data.text.confirmClear}
             </Button>
           </Box>
@@ -245,29 +238,34 @@ export default function CatalogPage(props: Infer<typeof Props>, ctx: Ctx) {
 
   return (
     <Box as="section" id="recipes.catalog" direction="column" gap="5">
-      <Heading id="recipes.catalog.title" level={1} fontSize="2xl" weight="semibold" m="0">
+      <Heading id="recipes.catalog.title" level={1} fontSize="2xl" m="0">
         {props.data.text.catalogHeading}
       </Heading>
-      <Combobox
-        id="recipes.find"
-        styles={{
-          input: { px: "2", py: "1", border: "rule", radius: "none" },
-          list: { bg: "card", border: "hairline", p: "0", m: "0" },
-          option: { px: "3", py: "1", states: { highlighted: { bg: "text", fg: "card" } } },
-        }}
-        label={props.data.text.findLabel}
-        text={() => typed.get()}
-        onInput={(t) => typed.set(t)}
-        options={() => found.get()}
-        onChange={(recipeId) => {
-          void navigate(recipes.href("recipes.show", { locale: props.params.locale, recipeId }));
-        }}
-        empty={() => props.data.text.findEmpty}
-      />
+      <Box direction="column" gap="1">
+        <Text id="recipes.find.name" font="mono" fontSize="sm">
+          {props.data.text.findLabel}
+        </Text>
+        <Combobox
+          id="recipes.find"
+          styles={{
+            input: { look: "control" },
+            list: { bg: "card", border: "hairline", p: "0", m: "0" },
+            option: { px: "3", py: "1", states: { highlighted: { bg: "text", fg: "card" } } },
+          }}
+          labelledBy="recipes.find.name"
+          text={() => typed.get()}
+          onInput={(t) => typed.set(t)}
+          options={() => found.get()}
+          onChange={(recipeId) => {
+            void navigate(recipes.href("recipes.show", { locale: props.params.locale, recipeId }));
+          }}
+          empty={() => props.data.text.findEmpty}
+        />
+      </Box>
       <Disclosure
         id="recipes.catalogFilters"
         styles={{
-          button: { px: "3", py: "1", border: "rule", radius: "none", font: "mono", fontSize: "sm" },
+          button: { look: "secondary" },
           panel: { py: "2" },
         }}
         summary={() => props.data.text.filtersLabel}
@@ -301,7 +299,19 @@ export default function CatalogPage(props: Infer<typeof Props>, ctx: Ctx) {
       <Tabs
         id="recipes.views"
         styles={{
-          tab: { px: "3", py: "2", font: "mono", fontSize: "sm", states: { selected: { weight: "semibold" } } },
+          list: { direction: "row", gap: "2" },
+          // The secondary look without its hover fill, which would cover the selected tab's Charcoal.
+          tab: {
+            font: "mono",
+            fontSize: "sm",
+            px: "3",
+            py: "2",
+            bg: "card",
+            fg: "text",
+            border: "rule",
+            radius: "none",
+            states: { selected: { bg: "text", fg: "card" } },
+          },
           panel: { py: "2" },
         }}
         label={props.data.text.viewsLabel}

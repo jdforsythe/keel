@@ -24,7 +24,7 @@ export default function NewRecipePage(props: Infer<typeof Props>) {
   });
   return (
     <Box as="section" id="recipes.new" direction="column" gap="5">
-      <Heading id="recipes.new.heading" level={1} fontSize="2xl" weight="semibold" m="0">
+      <Heading id="recipes.new.heading" level={1} fontSize="2xl" m="0">
         {props.data.text.newHeading}
       </Heading>
       <Form
@@ -37,80 +37,36 @@ export default function NewRecipePage(props: Infer<typeof Props>) {
           </Text>
         )}
       >
-        <Input
-          field={f.field("title")}
-          label={props.data.text.titleLabel}
-          font="serif"
-          fontSize="md"
-          px="2"
-          py="2"
-          mx="2"
-          my="1"
-          bg="card"
-          fg="text"
-          border="control"
-          radius="none"
-        />
-        <Input
-          field={f.field("minutes")}
-          type="number"
-          label={props.data.text.minutesLabel}
-          font="serif"
-          fontSize="md"
-          px="2"
-          py="2"
-          mx="2"
-          my="1"
-          bg="card"
-          fg="text"
-          border="control"
-          radius="none"
-        />
-        <Input
-          field={f.field("price.amount")}
-          type="number"
-          label={props.data.text.amountLabel}
-          font="serif"
-          fontSize="md"
-          px="2"
-          py="2"
-          mx="2"
-          my="1"
-          bg="card"
-          fg="text"
-          border="control"
-          radius="none"
-        />
-        <Select
-          field={f.field("price.currency")}
-          label={props.data.text.currencyLabel}
-          options={currencies}
-          font="serif"
-          fontSize="md"
-          px="2"
-          py="2"
-          mx="2"
-          my="1"
-          bg="card"
-          fg="text"
-          border="control"
-          radius="none"
-        />
-        <Button
-          id="recipes.save"
-          type="submit"
-          font="mono"
-          fontSize="sm"
-          px="4"
-          py="2"
-          my="2"
-          bg="text"
-          fg="card"
-          border="rule"
-          radius="none"
-        >
-          {props.data.text.save}
-        </Button>
+        <Box direction="column" gap="4">
+          <Input
+            field={f.field("title")}
+            label={props.data.text.titleLabel}
+            styles={{ field: { direction: "column", gap: "1" } }}
+          />
+          <Input
+            field={f.field("minutes")}
+            type="number"
+            label={props.data.text.minutesLabel}
+            styles={{ field: { direction: "column", gap: "1" } }}
+          />
+          <Input
+            field={f.field("price.amount")}
+            type="number"
+            label={props.data.text.amountLabel}
+            styles={{ field: { direction: "column", gap: "1" } }}
+          />
+          <Select
+            field={f.field("price.currency")}
+            label={props.data.text.currencyLabel}
+            options={currencies}
+            styles={{ field: { direction: "column", gap: "1" } }}
+          />
+          <Box direction="row">
+            <Button id="recipes.save" type="submit">
+              {props.data.text.save}
+            </Button>
+          </Box>
+        </Box>
       </Form>
     </Box>
   );

@@ -16,7 +16,7 @@ export const Props = s.object({ params: LocaleParams, search: RecipeSearch, data
 export default function RecipeList(props: Infer<typeof Props>) {
   return (
     <Box as="section" id="recipes.list" direction="column" gap="5">
-      <Heading id="recipes.list.title" level={1} fontSize="2xl" weight="semibold" m="0">
+      <Heading id="recipes.list.title" level={1} fontSize="2xl" m="0">
         {props.data.text.listTitle}
       </Heading>
       <Box direction="row" align="baseline" justify="between" gap="4" font="mono" fontSize="sm">
@@ -24,14 +24,12 @@ export default function RecipeList(props: Infer<typeof Props>) {
           <Link
             id="recipes.filter.all"
             to={recipes.href("recipes.index", { locale: props.params.locale }, { only: "all" })}
-            fg="text"
           >
             {props.data.text.filterAll}
           </Link>
           <Link
             id="recipes.filter.favorites"
             to={recipes.href("recipes.index", { locale: props.params.locale }, { only: "favorites" })}
-            fg="text"
           >
             {props.data.text.filterFavorites}
           </Link>
@@ -64,7 +62,6 @@ export default function RecipeList(props: Infer<typeof Props>) {
               <Link
                 id={`recipes.link.${idPart(r.id)}`}
                 to={recipes.href("recipes.show", { locale: props.params.locale, recipeId: r.id })}
-                fg="text"
               >
                 {r.title}
               </Link>
