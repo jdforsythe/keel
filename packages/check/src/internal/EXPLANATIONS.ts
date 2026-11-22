@@ -1235,6 +1235,13 @@ const ROWS: readonly Row[] = [
     "k.ui",
   ],
   [
+    "E1809",
+    "gap with no direction",
+    "gap spaces the children of a flex element only; on a block element it spaces nothing. Name the axis with direction: column stacks, row lines up.",
+    'gap="2" -> direction="column" gap="2"; a responsive gap takes the key at its smallest breakpoint',
+    "k.ui",
+  ],
+  [
     "E1820",
     "reversed direction over two or more focusable elements",
     "Focus follows document order; a reversed direction shows it backwards.",

@@ -15,6 +15,7 @@ import { listen } from "../internal/listen.ts";
 import { make } from "../internal/make.ts";
 import { markFirst } from "../internal/markFirst.ts";
 import type { Autofill } from "../types/Autofill.ts";
+import type { ControlStyles } from "../types/ControlStyles.ts";
 import type { StyleProps } from "../types/StyleProps.ts";
 
 type Option = { readonly value: string; readonly label: string };
@@ -30,6 +31,8 @@ export function Select(
     readonly lang?: string;
     /** A k.forms field: binds name, id, value, aria wiring; renders its error under the control. */
     readonly field?: Field<unknown>;
+    /** Part styles: `field` the wrapper, `label` the `<label>`, `error` the field error. */
+    readonly styles?: ControlStyles;
     readonly name?: string;
     /** Called with the new value after the field update, if bound (RFC 0009). */
     readonly onChange?: (value: string) => void;
@@ -93,7 +96,7 @@ export function Select(
           keptFirst(el, "value", () => (typeof props.value === "string" ? props.value : el.value)),
         );
       applyDisabled(el, props);
-      applyStyle(el, props);
+      applyStyle(el, props, "k-control");
       const h = props.onChange;
       if (h !== undefined) listen(el, "change", () => h(el.value));
     }),

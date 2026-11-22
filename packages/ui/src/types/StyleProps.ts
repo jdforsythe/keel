@@ -8,4 +8,6 @@ import type { StyleValues } from "./StyleValues.ts";
  */
 export type StyleProps<D = Computed<string>> = StyleValues<D> & {
   readonly states?: { readonly [S in StyleState]?: StyleValues<D> };
+  /** A `look` token set (k.ui), read at build: its classes for every prop and state the element does not set. */
+  readonly look?: string;
 };

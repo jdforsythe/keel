@@ -54,6 +54,7 @@ function entrySource(
     "const problems = [];",
     "const internal = [];",
     "let css = '';",
+    "let looks = {};",
     "const message = (e) => (e && typeof e === 'object' && 'message' in e ? String(e.message) : String(e));",
     "const coded = (e) => e && typeof e === 'object' && 'code' in e && /^E[0-9]{4}$/.test(String(e.code));",
     // A diagnostic-shaped error keeps its code; any other throw from the compiler call is an internal failure.
@@ -68,6 +69,7 @@ function entrySource(
       "const fits = (u) => { try { compileStyles({ tokens, usages: [u] }); return true; } catch (e) { report(e); return false; } };",
       `if (tokens === undefined && problems.length === 0) problems.push('E1807 ${tokensFile} exports no tokens');`,
       "else if (tokens !== undefined) {",
+      "  if (tokens.look !== null && typeof tokens.look === 'object') looks = tokens.look;",
       "  try { css = compileStyles({ tokens, usages }).css; }",
       "  catch { try { css = compileStyles({ tokens, usages: usages.filter(fits) }).css; } catch (e) { report(e); } }",
       "}",
@@ -92,7 +94,7 @@ function entrySource(
     );
   lines.push(
     `const routes = Object.assign({}, ${routesFiles.map(([f, c]) => `await manifest(${q(f)}, () => import(${spec(f)}), ${c === undefined ? "undefined, undefined" : `${q(c)}, () => import(${spec(c)})`})`).join(", ")});`,
-    "export default JSON.stringify({ css, problems: [...new Set(problems)], internal: [...new Set(internal)], routes });",
+    "export default JSON.stringify({ css, looks, problems: [...new Set(problems)], internal: [...new Set(internal)], routes });",
   );
   return lines.join("\n");
 }
@@ -100,7 +102,7 @@ function entrySource(
 /**
  * Evaluate the app's `tokens.ts`, contracts and `routes.ts` bindings at build time (D24): bundle a generated entry with
  * esbuild from `root` (app modules under `root` go through `compile`, as in Vite; packages are bundled as is, with a
- * `require` from `createRequire` as the server build has), run its module top levels once in Node, and read back the atomic CSS (`compileStyles` from `@keel/ui/css` over `usages`) and the merged
+ * `require` from `createRequire` as the server build has), run its module top levels once in Node, and read back the atomic CSS (`compileStyles` from `@keel/ui/css` over `usages`), the tokens' `look` sets as data and the merged
  * `routes.json` (`routesArtifact` from `@keel/router` per manifest). Usages with an unknown token are left out
  * of the CSS and listed in `problems` (E1801; `keel check` reports them at their source). Error mapping (k.compiler
  * Build-time evaluation): a diagnostic-shaped error keeps its `code`; `tokens.ts` throwing while it evaluates, or
@@ -113,9 +115,15 @@ export async function evaluateProject(input: {
   readonly tokensFile: string | undefined;
   readonly routesFiles: readonly string[];
   readonly usages: readonly StyleUsage[];
-}): Promise<{ css: string; routes: Record<string, RouteEntry>; problems: string[] }> {
+}): Promise<{
+  css: string;
+  looks: Readonly<Record<string, unknown>>;
+  routes: Record<string, RouteEntry>;
+  problems: string[];
+}> {
   const { root } = input;
-  if (input.tokensFile === undefined && input.routesFiles.length === 0) return { css: "", routes: {}, problems: [] };
+  if (input.tokensFile === undefined && input.routesFiles.length === 0)
+    return { css: "", looks: {}, routes: {}, problems: [] };
   // The tokens module is imported dynamically (so its throw is catchable), which esbuild treats as optional.
   if (input.tokensFile !== undefined && !fs.existsSync(path.join(root, input.tokensFile)))
     throw new Error(`keel: Could not resolve "./${input.tokensFile}" (tokens file)`);
@@ -181,7 +189,7 @@ export async function evaluateProject(input: {
     if (syntax.length > 0) return undefined;
     throw e;
   });
-  if (result === undefined) return { css: "", routes: {}, problems: [...new Set(syntax)] };
+  if (result === undefined) return { css: "", looks: {}, routes: {}, problems: [...new Set(syntax)] };
   const text = result.outputFiles[0]?.text ?? "";
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "keel-evaluate-"));
   const file = path.join(dir, "evaluate.mjs");
@@ -208,5 +216,6 @@ export async function evaluateProject(input: {
     const entry = json.routes[id];
     if (isRouteEntry(entry)) routes[id] = entry;
   }
-  return { css: json.css, routes, problems: json.problems.filter((p) => typeof p === "string") };
+  const looks = isRecord(json.looks) ? json.looks : {};
+  return { css: json.css, looks, routes, problems: json.problems.filter((p) => typeof p === "string") };
 }

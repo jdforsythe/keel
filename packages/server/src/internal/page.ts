@@ -80,7 +80,7 @@ export async function page(
           data: outcomes.map((o) => (o.result.ok ? o.result.value.value : undefined)),
           props,
           failure: shown,
-          prepend: submission === null || shown !== null ? "" : fieldSummary(submission),
+          prepend: (html) => (submission === null || shown !== null ? "" : fieldSummary(submission, html)),
           ctx: r.sv.ctx,
           publicize,
         }),
@@ -105,7 +105,7 @@ export async function page(
       data: [],
       props: () => ({}),
       failure: { level: -1, bare: true, error: scrubbedError(rendered.error, r.rq) },
-      prepend: "",
+      prepend: () => "",
       ctx: r.sv.ctx,
       publicize,
     });

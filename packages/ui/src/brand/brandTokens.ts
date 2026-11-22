@@ -5,6 +5,8 @@ import { defineTokens } from "../defineTokens.ts";
  * status badges, conformance markers and active diagnostics; Source Serif 4 and JetBrains Mono (self-hosted:
  * `@keel/ui/fonts`); radius 0; hairline dividers: `border="hairline"` frames a block, a `h="hairline" bg="divider"`
  * Box rules between blocks, and `gap="hairline"` over `bg="divider"` rules between rows.
+ * `base` puts the guide on every page with no app code (page, headings, links, buttons, controls, labels, field
+ * errors, the no-script summary, and a 2px Charcoal focus ring); `look` names `primary`, `secondary` and `control`.
  * Light only: the brand defines one scheme. Color names are alphanumeric so `border` values can name their
  * custom properties (`var(--k-color-divider)`).
  */
@@ -51,4 +53,72 @@ export const brandTokens = defineTokens({
   },
   breakpoint: { md: "768px", lg: "1024px" },
   motion: { fast: "120ms" },
+  base: {
+    page: { font: "serif", fontSize: "md", fg: "text", bg: "surface" },
+    heading: { font: "serif", weight: "semibold", fg: "text" },
+    link: { fg: "text", states: { hover: { fg: "textSecondary" } } },
+    button: {
+      font: "mono",
+      fontSize: "sm",
+      weight: "medium",
+      px: "4",
+      py: "2",
+      bg: "text",
+      fg: "card",
+      border: "rule",
+      radius: "none",
+    },
+    control: {
+      font: "mono",
+      fontSize: "sm",
+      w: "full",
+      px: "2",
+      py: "2",
+      bg: "card",
+      fg: "text",
+      border: "control",
+      radius: "none",
+      states: { hover: { border: "rule" } },
+    },
+    label: { font: "mono", fontSize: "sm", fg: "text" },
+    fieldError: { font: "mono", fontSize: "sm", fg: "error" },
+    summary: { p: "3", bg: "card", fg: "error", border: "error", font: "mono", fontSize: "sm" },
+    focus: "text",
+  },
+  look: {
+    control: {
+      font: "mono",
+      fontSize: "sm",
+      w: "full",
+      px: "2",
+      py: "2",
+      bg: "card",
+      fg: "text",
+      border: "control",
+      radius: "none",
+      states: { hover: { border: "rule" } },
+    },
+    primary: {
+      font: "mono",
+      fontSize: "sm",
+      weight: "medium",
+      px: "4",
+      py: "2",
+      bg: "text",
+      fg: "card",
+      border: "rule",
+      radius: "none",
+    },
+    secondary: {
+      font: "mono",
+      fontSize: "sm",
+      px: "3",
+      py: "2",
+      bg: "card",
+      fg: "text",
+      border: "rule",
+      radius: "none",
+      states: { hover: { bg: "surfaceLow" } },
+    },
+  },
 });

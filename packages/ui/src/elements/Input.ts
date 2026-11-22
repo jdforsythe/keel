@@ -14,6 +14,7 @@ import { make } from "../internal/make.ts";
 import { markFirst } from "../internal/markFirst.ts";
 import { plain } from "../internal/plain.ts";
 import type { Autofill } from "../types/Autofill.ts";
+import type { ControlStyles } from "../types/ControlStyles.ts";
 import type { StyleProps } from "../types/StyleProps.ts";
 
 type InputType = "text" | "email" | "password" | "number" | "search" | "tel" | "url" | "date";
@@ -33,6 +34,8 @@ export function Input(
     readonly lang?: string;
     /** A k.forms field: binds name, id, value, aria wiring; renders its error under the control. */
     readonly field?: Field<unknown>;
+    /** Part styles: `field` the wrapper, `label` the `<label>`, `error` the field error. */
+    readonly styles?: ControlStyles;
     readonly name?: string;
     /** Called with the new value after the field update, if bound (RFC 0009). */
     readonly onInput?: (value: string) => void;
@@ -72,7 +75,7 @@ export function Input(
           );
       }
       applyDisabled(el, props);
-      applyStyle(el, props);
+      applyStyle(el, props, "k-control");
       const h = props.onInput;
       if (h !== undefined) listen(el, "input", () => h(el.value));
     }),

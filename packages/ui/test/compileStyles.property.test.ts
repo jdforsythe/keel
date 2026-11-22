@@ -126,14 +126,14 @@ describe("compileStyles properties", () => {
     expect(css).toContain(".k-justify-between{display:flex;justify-content:space-between}");
   });
 
-  it("keeps [hidden] hidden over a flex rule, written once and before the atomic rules", () => {
+  it("keeps [hidden] hidden over a flex rule, written once in the keel.base layer before the atomic rules", () => {
     const { css } = compileStyles({
       tokens,
       usages: [{ props: { direction: "column" } }, { props: { align: "center" }, state: "hover" }],
     });
     expect(css.split("[hidden]{display:none!important}").length).toBe(2);
     expect(css.indexOf("[hidden]{display:none!important}")).toBeLessThan(css.indexOf(".k-direction-column{"));
-    expect(compileStyles({ tokens, usages: [{ props: { p: "1" } }] }).css).not.toContain("[hidden]");
+    expect(css.indexOf("@layer keel.base{")).toBeLessThan(css.indexOf("[hidden]"));
   });
 
   it("sizes count padding and border: w and h are border-box", () => {

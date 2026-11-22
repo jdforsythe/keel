@@ -104,10 +104,10 @@ function compileFiles(files: readonly SourceFile[], options: CompileOptions): Co
       ...destructuring.diagnostics,
     );
     const elements = collectElements(a);
-    const styles = collectStyles(a);
+    const styles = collectStyles(a, options.looks);
     diagnostics.push(...styles.diagnostics);
     for (const u of styles.usages) usages.set(canonicalJson(u), u);
-    const lowered = lowerFile(a, elements, destructuring.edits, styles.rewrites);
+    const lowered = lowerFile(a, elements, [...destructuring.edits, ...styles.edits], styles.rewrites);
     done.push({ a, elements, bindings: lowered.bindings, code: lowered.code });
   }
   diagnostics.push(...duplicateIds(done));
