@@ -67,7 +67,7 @@ const CONTROLS: ReadonlySet<string> = new Set(["Input", "TextArea", "Select", "C
 const isState = (k: string): k is State => STATES.some((s) => s === k);
 
 /** The `look` sets of `tokens.ts` as data (the build evaluates them), by name. */
-export type Looks = Readonly<Record<string, unknown>>;
+type Looks = Readonly<Record<string, unknown>>;
 
 const isObj = (x: unknown): x is Readonly<Record<string, unknown>> =>
   typeof x === "object" && x !== null && !Array.isArray(x);

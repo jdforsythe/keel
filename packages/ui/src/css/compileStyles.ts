@@ -1,9 +1,10 @@
 import type { StyleUsage } from "@keel/compiler";
 import type { PartState } from "../aria/PartState.ts";
+import type { SetLeaf } from "../internal/SetLeaf.ts";
 import { baseRoles } from "../internal/baseRoles.ts";
 import { className } from "../internal/className.ts";
 import { focusProblem } from "../internal/focusProblem.ts";
-import { type SetLeaf, setLeaves } from "../internal/setLeaves.ts";
+import { setLeaves } from "../internal/setLeaves.ts";
 import { states } from "../internal/states.ts";
 import { styleProps } from "../internal/styleProps.ts";
 import { tokenGroups } from "../internal/tokenGroups.ts";

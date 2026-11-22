@@ -1,16 +1,9 @@
 import type { PartState } from "../aria/PartState.ts";
 import type { StyleProp } from "../types/StyleProp.ts";
 import type { StyleSet } from "../types/StyleSet.ts";
+import type { SetLeaf } from "./SetLeaf.ts";
 import { states } from "./states.ts";
 import { styleProps } from "./styleProps.ts";
-
-/** One (prop, token, breakpoint, state) of a style set; `breakpoint` undefined is `base`. */
-export type SetLeaf = {
-  readonly prop: StyleProp;
-  readonly token: string;
-  readonly breakpoint: string | undefined;
-  readonly state: PartState | undefined;
-};
 
 type Values = Readonly<Partial<Record<StyleProp, string | Readonly<Record<string, string>>>>>;
 
