@@ -26,6 +26,8 @@ import { join } from "node:path";
 import { copyApp, freePort, recorder, root, wait } from "./built.mjs";
 
 const LIMIT_MS = 240_000;
+/** How long an edit may take to reach the dev server's watcher: on a loaded machine a change is reported a minute late. */
+const EDIT_MS = 60_000;
 const cli = join(root, "packages", "cli", "src", "bin.ts");
 const { step, finish } = recorder();
 let dev;
@@ -326,7 +328,7 @@ try {
   const edited = "modules/kitchen/currencyTally.server.ts";
   await appendFile(join(dir, edited), "\n// edited while serving\n");
   let reloaded = false;
-  for (const end = Date.now() + 15_000; Date.now() < end && !reloaded; await wait(100))
+  for (const end = Date.now() + EDIT_MS; Date.now() < end && !reloaded; await wait(100))
     reloaded = dev.log.some((l) => l.includes("page reload") && l.includes(edited));
   step("dev server sees the edit", reloaded, reloaded ? "" : dev.log.slice(-2).join(" | "));
   for (const path of ["/api/recipes", "/api/me"]) {
@@ -349,7 +351,7 @@ try {
     const before = reloadsOf(declarer);
     await appendFile(join(dir, declarer), `\nconsole.warn(${JSON.stringify(mark)});\n`);
     let seen = false;
-    for (const end = Date.now() + 15_000; Date.now() < end && !seen; await wait(100))
+    for (const end = Date.now() + EDIT_MS; Date.now() < end && !seen; await wait(100))
       seen = reloadsOf(declarer) > before;
     const after = await text(base, "/api/recipes", json);
     const ran = await marked(mark);
@@ -372,7 +374,7 @@ try {
     join(dir, declarer),
     'import { declareKitchen } from "./declareKitchen.server.ts";\n\nexport const kitchenDb = declareKitchen();\n',
   );
-  for (const end = Date.now() + 15_000; Date.now() < end; await wait(100)) if (reloadsOf(declarer) > moved) break;
+  for (const end = Date.now() + EDIT_MS; Date.now() < end; await wait(100)) if (reloadsOf(declarer) > moved) break;
   const first = await text(base, "/api/recipes", json);
   step("GET /api/recipes once the declaration moved into a helper", first.status === 200, `status ${first.status}`);
   for (const [n, file] of [
@@ -385,7 +387,7 @@ try {
     const before = reloadsOf(file);
     await appendFile(join(dir, file), `\nconsole.warn(${JSON.stringify(mark)});\n`);
     let seen = false;
-    for (const end = Date.now() + 15_000; Date.now() < end && !seen; await wait(100)) seen = reloadsOf(file) > before;
+    for (const end = Date.now() + EDIT_MS; Date.now() < end && !seen; await wait(100)) seen = reloadsOf(file) > before;
     const after = await text(base, "/api/recipes", json);
     const ran = await marked(mark);
     step(
