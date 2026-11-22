@@ -11,14 +11,17 @@ const PAGE =
   "import { Box, Button, Text } from '@keel/ui'\nexport default function Page(props: { data: { text: string } }) {\n  return (\n" +
   '    <Box id="s.page" direction="column" gap="3" p="4">\n      <Box direction="row" gap="2" p="2">\n        <Text id="s.page.text">{props.data.text}</Text>\n      </Box>\n      <Button id="s.page.more" onClick={() => undefined}>More</Button>\n    </Box>\n  )\n}\n';
 
+const TOKENS =
+  'import { defineTokens } from "@keel/ui";\nimport { brandTokens } from "@keel/ui/brand";\nexport const tokens = defineTokens({ ...brandTokens });\n';
+
 const topo = (adapter: string): string =>
   `import { topology } from '@keel/server'\nexport default topology({ site: { modules: ['s'], adapter: '${adapter}', styles: ['@keel/ui/fonts'] } })\n`;
 
 let node = "";
 let client = "";
 beforeAll(() => {
-  node = materialize({ ...staticTree("none", topo("node")), "modules/s/Page.tsx": PAGE });
-  client = materialize(staticTree("none", topo("client")));
+  node = materialize({ ...staticTree("none", topo("node")), "modules/s/Page.tsx": PAGE, "tokens.ts": TOKENS });
+  client = materialize({ ...staticTree("none", topo("client")), "tokens.ts": TOKENS });
 }, SLOW);
 afterAll(() => {
   cleanup(node);
@@ -36,7 +39,10 @@ const classesOf = (html: string): string[] => [
   ),
 ];
 
-async function sheets(port: number, html: string): Promise<{ href: string; type: string; status: number; css: string }[]> {
+async function sheets(
+  port: number,
+  html: string,
+): Promise<{ href: string; type: string; status: number; css: string }[]> {
   const out = [];
   for (const href of stylesheetsOf(html)) {
     const res = await fetch(new URL(href, `http://localhost:${port}/`));
