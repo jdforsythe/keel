@@ -34,6 +34,7 @@ import { keelMark } from "./internal/keelMark.ts";
 import { listSources } from "./internal/listSources.ts";
 import { mergeArtifacts } from "./internal/mergeArtifacts.ts";
 import { noDeployable } from "./internal/noDeployable.ts";
+import { packageRoot } from "./internal/packageRoot.ts";
 import { pageMiddleware } from "./internal/pageMiddleware.ts";
 import { parseTopology } from "./internal/parseTopology.ts";
 import { projectHandlerUses } from "./internal/projectHandlerUses.ts";
@@ -125,6 +126,7 @@ type DevServer = {
   transformIndexHtml?(url: string, html: string): Promise<string>;
   pluginContainer?: { resolveId(id: string, importer?: string): Promise<{ id: string } | null> };
   transformRequest?(url: string): Promise<{ code: string } | null>;
+  config?: { server: { fs: { allow: string[] } } };
   moduleGraph: {
     getModuleById(id: string): ModuleNode | undefined;
     invalidateModule?(module: ModuleNode): void;
@@ -669,8 +671,9 @@ export default function (): {
 
   /**
    * `keel dev`'s `/@keel/styles.css?d=<name>` (k.head Server): deployable `name`'s `styles` (k.topology Declaration), each
-   * resolved from the root and transformed by Vite as a direct CSS request (its `url()`s served by Vite), then the atomic
-   * CSS; undefined for a name the topology lacks. Without a topology, the atomic CSS alone.
+   * resolved from the root, its package directory added to the served ones, and transformed by Vite as a direct CSS
+   * request (its `url()`s served by Vite), then the atomic CSS; undefined for a name the topology lacks. Without a
+   * topology, the atomic CSS alone.
    */
   const devStyles = async (d: string | undefined): Promise<string | undefined> => {
     const decl = d === undefined ? undefined : topology?.[d];
@@ -681,6 +684,11 @@ export default function (): {
       const file = hit?.id.split("?")[0];
       if (file === undefined || !path.isAbsolute(file) || !fs.existsSync(file))
         throw new Error(`keel: styles entry ${JSON.stringify(spec)} of ${d ?? ""} resolves to no file`);
+      // The entry's package may sit outside Vite's served roots (a linked or store-installed package): its directory
+      // is served too, so the entry and the files its `url()`s name load wherever the package is installed.
+      const allow = server?.config?.server.fs.allow;
+      const dir = packageRoot(fs.realpathSync(file)).split(path.sep).join("/");
+      if (allow !== undefined && !allow.includes(dir)) allow.push(dir);
       const rel = path.relative(root, file).split(path.sep).join("/");
       const url = rel.startsWith("..") || path.isAbsolute(rel) ? `/@fs${file.split(path.sep).join("/")}` : `/${rel}`;
       const out = await server?.transformRequest?.(`${url}?direct`);

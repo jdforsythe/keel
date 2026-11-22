@@ -4,6 +4,7 @@
 import fs from "node:fs";
 import http from "node:http";
 import type { AddressInfo } from "node:net";
+import os from "node:os";
 import path from "node:path";
 import keel from "@keel/compiler/vite";
 import { type ViteDevServer, createServer } from "vite";
@@ -65,6 +66,25 @@ describe("keel dev styles", () => {
     const font = /url\("?([^")]+)"?\)/.exec(css)?.[1] ?? "";
     expect(font).toMatch(/^\/.*brand\.woff2$/);
     expect((await fetch(`${base}${font}`)).status).toBe(200);
+  });
+
+  it("serves a styles entry whose package is linked from outside the served roots, and its url()s", async () => {
+    const outside = fs.mkdtempSync(path.join(os.tmpdir(), "keel-linked-faces-"));
+    try {
+      fs.cpSync(path.join(root, "node_modules/brand-faces"), outside, { recursive: true });
+      fs.rmSync(path.join(root, "node_modules/brand-faces"), { recursive: true });
+      fs.symlinkSync(outside, path.join(root, "node_modules/brand-faces"));
+      const base = await serve();
+      const res = await fetch(`${base}/@keel/styles.css?d=web`);
+      const css = await res.text();
+      expect(res.status, css.slice(0, 400)).toBe(200);
+      expect(css).toContain('font-family: "Brand"');
+      const font = /url\("?([^")]+)"?\)/.exec(css)?.[1] ?? "";
+      expect(font).toMatch(/brand\.woff2$/);
+      expect((await fetch(`${base}${font}`)).status).toBe(200);
+    } finally {
+      fs.rmSync(outside, { recursive: true, force: true });
+    }
   });
 
   it("answers 404 for a deployable the topology lacks", async () => {
