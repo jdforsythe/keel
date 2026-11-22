@@ -1064,6 +1064,20 @@ const ROWS: readonly Row[] = [
     "k.prove",
   ],
   [
+    "E1722",
+    "renderRoute given app with state or shell",
+    "With app the page comes from the server, so test module stores and a native shell have no meaning; nothing is requested.",
+    "seed server state through ctx.storage, as createApp reads it; drop state and shell",
+    "k.testing",
+  ],
+  [
+    "W1723",
+    "a literal renderRoute id of a node deployable's module, with no app",
+    "The page renders through a client router, which a built node page never has, so a form's answer document goes untested. Literal ids only.",
+    "const app = await createApp({ topology, routes, ctx }); renderRoute(id, { routes, app, ctx })",
+    "k.testing",
+  ],
+  [
     "E1751",
     "TS type error with no Keel rule code (message starts with the TS code)",
     "",

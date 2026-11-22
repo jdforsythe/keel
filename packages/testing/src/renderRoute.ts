@@ -5,6 +5,7 @@ import { matchHref } from "@keel/router/match";
 import type { CaughtError } from "@keel/runtime-dom";
 import { serverState } from "@keel/store/internal";
 import { clockStep } from "./internal/clockStep.ts";
+import { documentRoute } from "./internal/documentRoute.ts";
 import { fail } from "./internal/fail.ts";
 import { memoryHistory } from "./internal/memoryHistory.ts";
 import { openHarness } from "./internal/openHarness.ts";
@@ -36,7 +37,9 @@ import type { RouteStateOf } from "./types/RouteStateOf.ts";
  * `dispose` also disposes the router and puts the title and `lang` back. Guards, loaders and actions get
  * `options.caller` and `options.user` (each default `""`). Loaders and actions naming `stores` run their factories over `ctx.storage` as a
  * `node` deployable does (`serverState`, k.server Server state), each navigation or submit one request; `state` and
- * `state()` hold no factory store. The handle's `ctx` is typed as `render`'s: `SimCtx` when none is given.
+ * `state()` hold no factory store. The handle's `ctx` is typed as `render`'s: `SimCtx` when none is given. With
+ * `options.app` (a `createApp` result) the page runs as a built `node` page instead (`documentRoute`): no router; it is
+ * requested from `app`, resumed, and each form post or link to the page's origin is made against `app`.
  */
 export function renderRoute<T extends RouteTable>(
   id: string,
@@ -65,6 +68,8 @@ export async function renderRoute<T extends RouteTable>(
     raw ?? encodeHref(id, compileRoutes(routes).table.get(id)?.def, options.params ?? {}, options.search ?? {});
   // Each harness starts at the top: scroll is the window's, shared with the test before.
   window.scrollTo(0, 0);
+  // With `app` the page is a built node page: requested from the app and resumed, no router.
+  if (options.app !== undefined) return documentRoute(id, url, options, options.app);
   const seeded = seedStores(options.state ?? []);
   // The document a server writes always has a title (the deployable's name, k.head); the harness's fallback is the id.
   const head = { title: document.title, lang: document.documentElement.getAttribute("lang") };
