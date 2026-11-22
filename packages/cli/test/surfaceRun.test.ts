@@ -1,5 +1,5 @@
 // surfaceRun (k.compat Surface): `keel build`'s `.keel/surface.json`, written read-only as `{ data, hash }`, from the
-// contracts and route tables a Vite SSR evaluation of the project reads; E1006 for a contract file that throws. Each
+// contracts and route tables a Vite SSR evaluation of the project reads; E1006 for a contract or route file that throws. Each
 // case evaluates a project in a temp directory under the package's test directory. Seed 1337.
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -139,14 +139,53 @@ describe("surfaceRun", () => {
   );
 
   test(
-    "a routes.ts that throws does not fail the build: the surface is written from the contract",
+    "a routes.ts that throws is E1006 naming the file and the first 60 characters of the first line; code 1, nothing written",
     async () => {
       const dir = project({
         "modules/m/m.contract.ts": contractTs("/api/feed"),
-        "modules/m/routes.ts": 'throw new Error("no routes");\n',
+        "modules/m/routes.ts": `throw new Error(${JSON.stringify(`${"z".repeat(80)}\nsecond line`)});\n`,
       });
-      expect(await surfaceRun(dir)).toEqual({ code: 0, notes: [] });
-      expect(Object.keys(Object(surfaceOn(dir).data.contracts))).toEqual(["m"]);
+      expect(await surfaceRun(dir)).toEqual({
+        code: 1,
+        notes: [`E1006 modules/m/routes.ts failed to evaluate: ${"z".repeat(60)}\n`],
+      });
+      expect(existsSync(join(dir, ".keel", "surface.json"))).toBe(false);
+    },
+    SLOW,
+  );
+
+  test(
+    "a routes.ts throwing a value with an E code keeps its code and message; code 1",
+    async () => {
+      const dir = project({
+        "modules/m/m.contract.ts": contractTs("/api/feed"),
+        "modules/m/routes.ts": 'throw Object.assign(new Error("guard m.home has no route"), { code: "E1502" });\n',
+      });
+      expect(await surfaceRun(dir)).toEqual({ code: 1, notes: ["E1502 guard m.home has no route\n"] });
+    },
+    SLOW,
+  );
+
+  test(
+    "a placed stdlib module whose ./routes throws is E1006 naming its import specifier; code 1",
+    async () => {
+      const dir = project({
+        "topology.ts": 'export default topology({ web: { modules: ["app", "boom"], adapter: "node" } });\n',
+        "modules/app/module.ts":
+          'import { module } from "@keel/compiler";\nexport default module({ id: "app", deps: ["@keel/std-boom"], capabilities: [], public: { exports: [] } });\n',
+        "node_modules/@keel/std-boom/package.json": `${JSON.stringify({
+          name: "@keel/std-boom",
+          type: "module",
+          exports: { "./module": "./module.ts", "./routes": "./routes.ts" },
+        })}\n`,
+        "node_modules/@keel/std-boom/module.ts":
+          'import { module } from "@keel/compiler";\nexport default module({ id: "boom", deps: [], capabilities: [], public: { exports: [] } });\n',
+        "node_modules/@keel/std-boom/routes.ts": 'throw new Error("boom routes");\n',
+      });
+      expect(await surfaceRun(dir)).toEqual({
+        code: 1,
+        notes: ["E1006 @keel/std-boom/routes failed to evaluate: boom routes\n"],
+      });
     },
     SLOW,
   );

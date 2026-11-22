@@ -159,7 +159,7 @@ Packages share no files, so each runs in its own worktree. Kernel changes go by 
 | 9 | guard-redirect-schemas | 0330 | `packages/check/src/internal/guardRedirectLoops.ts`, `router` | yes (k.guards static half) | M | opus |
 | 10 | inspect-sections | 0954 | `spec/kernel/k.cli.md`, `packages/server` and compiler dev inspect, golden-2 timings | yes | M | opus |
 | 11 | client-entry-map | 0424 | `packages/compiler/src/vite.ts` `entryCode`, `docs/THREAT-MODEL.md` | no (RFC if k.hosting text changes) | S | sonnet |
-| 12 | surface-run-throws | 0517 | `packages/cli/src/internal/surfaceRun.ts` | design note; RFC if k.compat text changes | M | opus |
+| 12 | surface-run-throws | 0517 | `packages/cli/src/internal/surfaceRun.ts` | design note; RFC if k.compat text changes | M | opus; done (lane-weak1): a throwing route file is E1006 as k.compiler words it, no RFC |
 | 13 | std-db-tls | 0812 0829 | `packages/std-db`, `.github/workflows/ci.yml`, `tooling/ci.source.json` | no | M | sonnet |
 | 14 | mutation-tooling | 0916 0919 | `tooling/mutate*.mjs`, `tooling/mutate-cache.ts` | no | M | sonnet |
 | 15 | testing-vitest-seam | 0960 | `packages/testing/src/internal/freshGraph.ts`, structure lint S0009 in `tooling` | no | M | sonnet |

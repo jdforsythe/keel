@@ -14,6 +14,24 @@ import { surfaceOf } from "./surfaceOf.ts";
 const CONTRACT = /^modules\/([^/]+)\/([^/]+)\.contract\.ts$/;
 const ROUTES = /^modules\/[^/]+\/routes\.tsx?$/;
 const firstLine = (e: unknown): string => (e instanceof Error ? e.message : String(e)).split("\n")[0] ?? "";
+/** An E code a thrown value carries (`{ code: "E1502" }`), kept as k.compiler Build-time evaluation keeps it. */
+const codeOf = (e: unknown): string | undefined => {
+  const code: unknown = isRecord(e) || e instanceof Error ? Reflect.get(e, "code") : undefined;
+  return typeof code === "string" && /^E\d{4}$/.test(code) ? code : undefined;
+};
+/** The note of a file that failed to evaluate: E1006 with the first 60 characters of the message's first line. */
+const failed = (file: string, e: unknown): string => `E1006 ${file} failed to evaluate: ${firstLine(e).slice(0, 60)}\n`;
+/**
+ * A route file's note, as the routes evaluation words it: its own E code and message when the throw carries one, a
+ * syntax error's E1000 line as is, else `failed`.
+ */
+const routeFailed = (file: string, e: unknown): string => {
+  const code = codeOf(e);
+  const message: unknown = Reflect.get(Object(e), "message");
+  if (code !== undefined) return `${code} ${typeof message === "string" ? message : ""}\n`;
+  const line = firstLine(e);
+  return line.startsWith("E1000 ") ? `${line}\n` : failed(file, e);
+};
 
 type Load = { readonly file: string; readonly load: string };
 
@@ -29,9 +47,11 @@ const contractsIn = (m: Readonly<Record<string, unknown>>): unknown[] =>
  * contracts, the bindings of each `routes` route table (`bindingsOf` of the evaluated `@keel/router/internal`) and
  * the callers (`contractCallers`); the hash of every app file the evaluation read is recorded so `keel check` reports
  * a stale surface (E1005). A contract file that throws is a note `E1006 <file> failed to evaluate: <message>`,
- * records nothing and fails the build (code 1, no file written); a throwing `routes.ts` records nothing here (the
- * routes evaluation reports it). A failure of the evaluator itself is code 1. A project with neither file writes an
- * empty surface without starting the server.
+ * records nothing and fails the build (code 1, no file written); a `routes.ts` or stdlib `./routes` that throws is
+ * the same note naming that file, or the line the routes evaluation prints for it (k.compiler Build-time
+ * evaluation: a thrown E code kept, a syntax error's E1000), so no surface lacks the routes of a file that failed.
+ * A failure of the evaluator itself (`@keel/router/internal` or `@keel/store/internal` not loading) is code 1. A project with neither file
+ * writes an empty surface without starting the server.
  */
 export async function surfaceRun(cwd: string): Promise<{ code: number; notes: string[] }> {
   const root = realpathSync(cwd);
@@ -100,18 +120,20 @@ export async function surfaceRun(cwd: string): Promise<{ code: number; notes: st
       for (const f of contractFiles) {
         const m: unknown = await server?.ssrLoadModule(f.load).catch((e: unknown) => {
           broken.add(f.file);
-          notes.push(`E1006 ${f.file} failed to evaluate: ${firstLine(e).slice(0, 60)}\n`);
+          notes.push(failed(f.file, e));
         });
         if (isRecord(m)) contracts.push(...contractsIn(m));
       }
       const tables: unknown[] = [];
       for (const f of routeFiles) {
         if (broken.size > 0) break;
-        const m: unknown = await server?.ssrLoadModule(f.load).catch(() => undefined);
+        const m: unknown = await server?.ssrLoadModule(f.load).catch((e: unknown) => {
+          notes.push(routeFailed(f.file, e));
+        });
         if (isRecord(m) && isRecord(m.routes) && m.routes.kind === "keel.routeTable") tables.push(m.routes);
       }
       const internal: unknown =
-        tables.length === 0 ? undefined : await server?.ssrLoadModule("@keel/router/internal").catch(() => undefined);
+        tables.length === 0 ? undefined : await server?.ssrLoadModule("@keel/router/internal");
       const bindingsOf = isRecord(internal) ? internal.bindingsOf : undefined;
       for (const t of tables) {
         const cs = isRecord(t) && Array.isArray(t.contracts) ? t.contracts : [];
@@ -126,7 +148,7 @@ export async function surfaceRun(cwd: string): Promise<{ code: number; notes: st
         if (bound instanceof Map) for (const b of bound.values()) if (isRecord(b)) bindings.push(b.binding);
       }
       const kept: unknown =
-        bindings.length === 0 ? undefined : await server?.ssrLoadModule("@keel/store/internal").catch(() => undefined);
+        bindings.length === 0 ? undefined : await server?.ssrLoadModule("@keel/store/internal");
       shapes = isRecord(kept) ? kept.storeShapes : undefined;
     } finally {
       await server?.close();
