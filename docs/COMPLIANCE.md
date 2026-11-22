@@ -56,6 +56,10 @@ The command runs `test`, `check` and `ledger`, makes no network request, and wri
 
 **Verify it.** `keel evidence --verify evidence/<date> --key <keyId>` checks the signature and the key id (E1063), re-hashes every listed file, rejects any unlisted one (E1062) and parses each with its schema. The signature proves the files are unchanged since a holder of the key signed them; who holds the key is the project's own process.
 
+## Review of escapes
+
+`keel review origin/main..HEAD` lists each place a change opts out of or goes around a protection on this page and the kernel's others: `unsafe`, declared origins, `allow`, `reveal`, an identity `handle`, casts and suppressions outside app code, assembled directives and specifiers, framework, dependency, install and CI changes, and fewer `.pii(`, `s.secret(` or `guard(` calls (k.review, k.escapes). The generated CI's `review` job fails a pull request on a `fail` finding; `--fail-on warn` also stops one with a `warn`. A person accepts an escape with `keel review --accept <id> --reason <text>` in a change of its own: the baseline is read at the base of a range, so an acceptance takes effect from the next change. The auditor reads `keel review --all --format=json --list` beside the evidence bundle; the `keel-escapes` skill reads the same output and never accepts.
+
 ## What the audit and the pen test cover
 
 Keel's checks stop where a person's judgment starts. Before a release, the app goes to an accessibility firm for WCAG 2.2 AA with a desktop and a mobile screen reader, starting from the criteria `a11y.json` leaves to a person, and to a pen-test firm for OWASP ASVS level 2. Both receive the verified bundle and its `keyId`, `docs/THREAT-MODEL.md`, an https deployment and one browser profile per role. The pen test covers access control, CSRF (the write proof), XSS (escaping, the policy, Trusted Types), headers and the caller cookie, personal data in logs, sessions and `/sessions/list`, and the documented caps on bodies, the report window and the session ingest. A finding on a criterion the ledger claimed at `example` also adds the rule or test that would have caught it.

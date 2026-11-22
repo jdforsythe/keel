@@ -571,11 +571,40 @@ describe("kernelFormatters", () => {
     render(kind, "pretty", record),
   ];
 
+  it("renders a review finding, and a review trailer says listed", () => {
+    const f = {
+      kind: "review",
+      code: "R1053",
+      path: "modules/a/x.ts",
+      line: 4,
+      col: 9,
+      message: "module specifier computed at run time",
+      protection: "k.security",
+      opt: false,
+      danger: "critical",
+      novelty: "new",
+      loud: "fail",
+      id: "3f2a9c01d2e4",
+    };
+    expect(render("review", "compact", f)).toBe(
+      "R1053 modules/a/x.ts:4:9 critical new module specifier computed at run time",
+    );
+    expect(render("review", "pretty", { ...f, opt: true, reason: "r" })).toContain("opt-in");
+    const counts = { fail: 0, warn: 2, list: 14, accepted: 3 };
+    expect(render("summary", "compact", { kind: "summary", ok: true, name: "review", counts })).toBe(
+      "ok review 0 fail, 2 warn, 14 listed, 3 accepted",
+    );
+    expect(render("summary", "compact", { kind: "summary", ok: true, name: "x", counts: { list: 1 } })).toBe(
+      "ok x 1 list",
+    );
+  });
+
   it("registers the kernel and cli record kinds in order", () => {
     expect(kernelFormatters.map(([k]) => k)).toEqual([
       "diag",
       "summary",
       "req",
+      "review",
       "ledger",
       "ledger.mutation",
       "evidence",

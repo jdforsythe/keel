@@ -23,7 +23,7 @@ export function titleOf(text, id) {
 
 /** Every diagnostic code a section cites, sorted. */
 export function codesIn(text) {
-  return [...new Set(text.match(/\b[EWI]\d{4}\b/g) ?? [])].sort(byText);
+  return [...new Set(text.match(/\b[EWIR]\d{4}\b/g) ?? [])].sort(byText);
 }
 
 /** `id` to title for the rows of a spec table whose first cell is a section id. */

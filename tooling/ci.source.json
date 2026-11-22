@@ -57,8 +57,8 @@
           "run": "pnpm check"
         },
         {
-          "name": "golden-1 and golden-2 a11y reports for the ledger (keel test writes reports/a11y.json)",
-          "run": "pnpm --filter golden-1 exec keel test && pnpm --filter golden-2 exec keel test"
+          "name": "a11y reports for the ledger from every app and example whose routes it carries (keel test writes reports/a11y.json)",
+          "run": "pnpm --workspace-concurrency=1 --filter golden-1 --filter golden-2 --filter household --filter \"./examples/*\" exec keel test"
         },
         {
           "run": "pnpm ledger --diff"
@@ -154,7 +154,7 @@
         {
           "name": "std-db files that take KEEL_TEST_POSTGRES_URL, one at a time on one database",
           "working-directory": "packages/std-db",
-          "run": "set -e\nfor f in conformance/driver-contract.test.ts conformance/serial-commits.test.ts conformance/layout-e2152.test.ts conformance/e2153-no-value.test.ts test/model.test.ts; do pnpm exec vitest run \"$f\"; done"
+          "run": "set -e\nfor f in conformance/driver-contract.test.ts conformance/serial-commits.test.ts conformance/layout-e2152.test.ts conformance/e2153-no-value.test.ts test/model.test.ts test/racing-writes.test.ts; do pnpm exec vitest run \"$f\"; done"
         },
         {
           "name": "std-db Postgres driver cases, TLS ones included, on the ssl server",
@@ -168,6 +168,11 @@
           "name": "std-postgres on Postgres 17, its files one at a time on one database",
           "working-directory": "packages/std-postgres",
           "run": "pnpm exec vitest run"
+        },
+        {
+          "name": "golden-2 on Postgres 17: two users add one recipe title at once",
+          "working-directory": "apps/golden-2",
+          "run": "pnpm exec vitest run test/racing-recipes.test.ts"
         },
         {
           "name": "turbo cache: the builds the check job ran",
@@ -234,8 +239,12 @@
           "run": "node --disable-warning=ExperimentalWarning tooling/smoke/resume.mjs 3"
         },
         {
-          "name": "built household: guard, setup, list, receipts, cross-site refusal and a rejected form, scripts on and off",
+          "name": "built household: sign-in guard, list, receipts, API tokens, a pii canary, and the data kept through SIGKILL on PGlite and Postgres 17",
           "run": "node --disable-warning=ExperimentalWarning tooling/smoke/household.mjs"
+        },
+        {
+          "name": "built golden-2: canaries in every personal-data and secret field reach no log, error answer, URL, cookie, build file or evidence bundle",
+          "run": "node --disable-warning=ExperimentalWarning tooling/smoke/canary.mjs"
         },
         {
           "name": "examples: check, test, build and one proof on the built output of each",
@@ -570,8 +579,8 @@
           "run": "node tooling/mutate-changed.mjs"
         },
         {
-          "name": "golden-1 and golden-2 a11y reports for the ledger (keel test writes reports/a11y.json)",
-          "run": "pnpm --filter golden-1 exec keel test && pnpm --filter golden-2 exec keel test"
+          "name": "a11y reports for the ledger from every app and example whose routes it carries (keel test writes reports/a11y.json)",
+          "run": "pnpm --workspace-concurrency=1 --filter golden-1 --filter golden-2 --filter household --filter \"./examples/*\" exec keel test"
         },
         {
           "run": "pnpm ledger --diff"

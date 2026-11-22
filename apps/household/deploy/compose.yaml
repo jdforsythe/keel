@@ -9,6 +9,7 @@ services:
     environment:
       KEEL_ORIGIN: ${KEEL_ORIGIN:?}
       KEEL_SECRET: ${KEEL_SECRET:?}
+      KEEL_POSTGRES_URL: ${KEEL_POSTGRES_URL:?}
     volumes:
       - web-data:/data
 volumes:

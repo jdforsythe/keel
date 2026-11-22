@@ -1,5 +1,5 @@
 import { manifest } from "@keel/router";
-import { setUp } from "../setup/setUp.guard.ts";
+import { signedIn } from "../members/signedIn.guard.ts";
 import BookPage from "./BookPage.tsx";
 import { loadBook } from "./loadBook.server.ts";
 import { receipts } from "./receipts.contract.ts";
@@ -9,7 +9,7 @@ export const routes = manifest(receipts, {
   "receipts.book": {
     component: BookPage,
     loader: loadBook,
-    guard: setUp,
+    guard: signedIn,
     POST: recordReceipt,
     title: (p) => p.data.text.heading,
   },

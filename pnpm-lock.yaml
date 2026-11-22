@@ -263,6 +263,9 @@ importers:
       '@keel/std-brands':
         specifier: workspace:*
         version: link:../../packages/std-brands
+      '@keel/std-sessions':
+        specifier: workspace:*
+        version: link:../../packages/std-sessions
       '@keel/testing':
         specifier: workspace:*
         version: link:../../packages/testing
@@ -317,18 +320,30 @@ importers:
       '@keel/std-money':
         specifier: workspace:*
         version: link:../../packages/std-money
+      '@keel/std-postgres':
+        specifier: workspace:*
+        version: link:../../packages/std-postgres
       '@keel/std-statecharts':
         specifier: workspace:*
         version: link:../../packages/std-statecharts
+      '@keel/std-temporal':
+        specifier: workspace:*
+        version: link:../../packages/std-temporal
       '@keel/std-text':
         specifier: workspace:*
         version: link:../../packages/std-text
+      '@keel/std-tokens':
+        specifier: workspace:*
+        version: link:../../packages/std-tokens
       '@keel/store':
         specifier: workspace:*
         version: link:../../packages/store
       '@keel/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      better-auth:
+        specifier: 1.7.26
+        version: 1.7.26(pg@8.23.1)(vitest@4.1.12)
     devDependencies:
       '@keel/cli':
         specifier: workspace:*
@@ -952,6 +967,9 @@ importers:
         specifier: ^4.13.16
         version: 4.13.16
     devDependencies:
+      '@keel/forms':
+        specifier: workspace:*
+        version: link:../forms
       '@keel/testing':
         specifier: workspace:*
         version: link:../testing

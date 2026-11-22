@@ -1,10 +1,11 @@
 import { action } from "@keel/router";
 import { err, ok } from "@keel/schema";
-import { tx } from "@keel/store";
-import { savedStores } from "./savedStores.ts";
+import { addTo } from "./addTo.ts";
+import { changeList } from "./changeList.server.ts";
 import { shopping } from "./shopping.contract.ts";
 
-export const postItem = action(shopping, "shopping.add", { stores: savedStores }, (body, { caller, stores }, ctx) => {
-  const r = tx(stores.add, { id: ctx.random.id("Item"), name: body.name }, { meta: { caller } });
-  return r.ok ? ok({ items: stores.saved.get("items") }) : err(r.error);
+export const postItem = action(shopping, "shopping.add", {}, async (body, _args, ctx) => {
+  const id = ctx.random.id("Item");
+  const items = await changeList(ctx, (list) => addTo(list, { id, name: body.name }));
+  return items.ok ? ok({ items: items.value }) : err(items.error);
 });

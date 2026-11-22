@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "keel build",
-    "dev": "keel dev",
+    "dev": "AUTH_FIXTURE=dev keel dev",
     "check": "tsc --noEmit && biome check modules test && keel check --quiet",
     "test": "vitest run"
   },
@@ -23,10 +23,14 @@
     "@keel/std-i18n": "workspace:*",
     "@keel/std-messages": "workspace:*",
     "@keel/std-money": "workspace:*",
+    "@keel/std-postgres": "workspace:*",
     "@keel/std-statecharts": "workspace:*",
+    "@keel/std-temporal": "workspace:*",
     "@keel/std-text": "workspace:*",
+    "@keel/std-tokens": "workspace:*",
     "@keel/store": "workspace:*",
-    "@keel/ui": "workspace:*"
+    "@keel/ui": "workspace:*",
+    "better-auth": "1.7.26"
   },
   "devDependencies": {
     "@keel/cli": "workspace:*",
