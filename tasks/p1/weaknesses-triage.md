@@ -153,7 +153,7 @@ Packages share no files, so each runs in its own worktree. Kernel changes go by 
 | 3 | check-privacy-rules | 0616 0617 0638 | `packages/check` (exports for tools), `std-jobs/src/tools`, `forms`, `std-tokens/src/tools`, `spec/kernel/k.check.md`, k.compliance | yes (E2203, the tools exports) | M | opus |
 | 4 | ledger-range-clauses | 0270 0531 | `packages/cli/src/internal/{buildLedger,citesClause}.ts`, `spec/kernel/k.ledger.md`, `k.testing.md` | yes (k.ledger sentence) | S | opus |
 | 5 | ui-roles-and-live | 0874 0932 | `packages/ui/src`, `spec/kernel/k.ui.md` | yes | M | opus |
-| 6 | a11y-harness | 0572 0573 0580 | `packages/testing/src`, `packages/testing/conformance` (`rfc:` commit), `spec/kernel/k.a11y.md` | yes for 0572 and 0573 | M | sonnet |
+| 6 | a11y-harness | 0572 0573 0580 | `packages/testing/src`, `packages/testing/conformance` (`rfc:` commit), `spec/kernel/k.a11y.md` | yes for 0572 and 0573 | M | sonnet; RFC 0191 draft (lane-weak1): 0572 built (E1820 at render); 0573 table state and `th` built, click focus waits on the operator (reverses a conformance case); 0580 conformance owed |
 | 7 | shell-origin-and-deps | 0608 0957 | `packages/std-capacitor/src`, `std-tauri/src/tools`, `check/src/internal/topologyNeeds.ts`, std.shells specs | yes (std spec) | M | opus |
 | 8 | placed-module-no-routes | 0926 | `packages/compiler/src/internal/unreadModules.ts`, `routeLiterals.ts`, `spec/kernel/k.topology.md` | yes (diagnostic code) | S | opus |
 | 9 | guard-redirect-schemas | 0330 | `packages/check/src/internal/guardRedirectLoops.ts`, `router` | yes (k.guards static half) | M | opus |

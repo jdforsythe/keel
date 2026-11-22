@@ -16,11 +16,11 @@
         "threshold": 70
       },
       "cli": {
-        "score": 80.4,
+        "score": 80.34,
         "threshold": 70
       },
       "compiler": {
-        "score": 77.47,
+        "score": 77.18,
         "threshold": 70
       },
       "ctx": {
@@ -160,7 +160,7 @@
         "threshold": 80
       },
       "testing": {
-        "score": 88.63,
+        "score": 88.4,
         "threshold": 70
       },
       "ui": {
@@ -14181,6 +14181,10 @@
       "rung": "none"
     },
     {
+      "item": "k.a11y#14",
+      "rung": "none"
+    },
+    {
       "item": "k.api#1",
       "rung": "example"
     },
@@ -16995,6 +16999,10 @@
     {
       "item": "k.testing#18",
       "rung": "example"
+    },
+    {
+      "item": "k.testing#19",
+      "rung": "none"
     },
     {
       "item": "k.topology#1",
