@@ -191,8 +191,9 @@ describe("plugin wiring and dev entry", () => {
       middlewares,
     });
     p.configurePreviewServer({ middlewares });
-    expect(used).toHaveLength(2);
-    expect(used[0]).toBe(used[1]);
+    // dev: the inspect endpoint, then the generated client document; preview: the inspect endpoint.
+    expect(used).toHaveLength(3);
+    expect(used[0]).toBe(used[2]);
   });
 
   it("the entry reports graph and stores to /__keel/inspect in dev builds only, and parses as JS", () => {
