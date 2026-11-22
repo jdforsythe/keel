@@ -40,4 +40,5 @@ Stdlib commitments:
 
 Grows per package.
 
+subject: spec/kernel/k.security.md spec/kernel/k.privacy*.md spec/kernel/k.reveal.md spec/kernel/k.escapes.md packages/server/src/ packages/check/src/rules/
 verified: 3190e26ae653272180ea7a368098f885a7615f09
