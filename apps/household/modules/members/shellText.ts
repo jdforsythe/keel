@@ -4,6 +4,7 @@ export const shellText = {
   nav: "Main",
   list: "List",
   receipts: "Receipts",
+  setup: "Setup",
   profile: "Profile",
   signOut: "Sign out",
   signIn: "Sign in",

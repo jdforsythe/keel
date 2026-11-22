@@ -6,6 +6,7 @@ export const ShellText = s.object({
   nav: s.string({ min: 1 }),
   list: s.string({ min: 1 }),
   receipts: s.string({ min: 1 }),
+  setup: s.string({ min: 1 }),
   profile: s.string({ min: 1 }),
   signOut: s.string({ min: 1 }),
   signIn: s.string({ min: 1 }),

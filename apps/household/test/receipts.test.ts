@@ -2,15 +2,14 @@ import { properties, renderRoute } from "@keel/testing";
 import { expect, it } from "vitest";
 import BookPage from "../modules/receipts/BookPage.tsx";
 import { ReceiptsText } from "../modules/receipts/ReceiptsText.schema.ts";
-import { routes } from "../modules/receipts/routes.ts";
-import { served } from "./serve.ts";
+import { served, webRoutes } from "./serve.ts";
 
 type Member = Awaited<ReturnType<typeof served>>;
 
 /** The receipts book in `locale`, opened by the signed-in member of `at` (a fresh app when left out). */
 const open = async (locale: "en-US" | "de-DE", at?: Member) => {
   const { ctx, user } = at ?? (await served(5));
-  return renderRoute("receipts.book", { routes, params: { locale }, ctx, user });
+  return renderRoute("receipts.book", { routes: webRoutes, params: { locale }, ctx, user });
 };
 
 it("starts empty, in English, with a link to the German page", async () => {
@@ -19,9 +18,11 @@ it("starts empty, in English, with a link to the German page", async () => {
   expect(page.find("receipts.count").text).toBe("0 receipts");
   expect(page.find("receipts.switch").text).toBe("Deutsch");
   expect(page.focusOrder()).toEqual([
-    "receipts.nav.receipts",
-    "frame.profile",
-    "frame.signOut",
+    "app.nav.list",
+    "app.nav.receipts",
+    "app.nav.setup",
+    "app.nav.profile",
+    "app.nav.signOut",
     "receipts.switch",
     "receipts.new:shop",
     "receipts.new:amount",

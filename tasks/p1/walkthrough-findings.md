@@ -45,7 +45,7 @@
 | L6-6 | open |
 | S-1 | fixed: rfc:0182 build: keel dev serves the deployable's styles and every dev document links them |
 | S-2 | open |
-| S-3 | RFC 0187 (draft): a page names a layout of the module that composes it; the app keeps a frame per module until it lands |
+| S-3 | fixed: rfc:0187 build: a page's layout may name a layout of a module that lists the page's module in deps; household: one app.frame |
 | S-4 | open |
 | S-5 | open |
 | S-6 | open |

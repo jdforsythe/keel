@@ -1,21 +1,18 @@
-import { Form } from "@keel/router";
 import { If } from "@keel/runtime-dom";
 import { type Infer, s } from "@keel/schema";
-import { Box, Button, Image, Link, Text } from "@keel/ui";
-import mount from "../../identity.ts";
+import { Box, Image, Text } from "@keel/ui";
 import { ShellData } from "./ShellData.schema.ts";
-import { members } from "./members.contract.ts";
 
 export const Props = s.object({ data: ShellData });
 
 /**
- * The page frame every shell layout renders: a masthead with the mark, the app's name and the household's name, the
- * main navigation, a hairline, and the page in a centred column. `nav` holds the links the calling module may make
- * (its `deps`); the frame adds the profile link and the sign-out button for a member, or the sign-in and sign-up
- * links for a visitor.
+ * What every frame of the app renders: a masthead with the mark, the app's name and the household's name, the
+ * navigation the frame passes in `nav`, a hairline, and the page in a centred column that narrows to the screen on a
+ * phone. `app.frame` passes the member's navigation; `members.frame`, around the signed-out pages, the sign-in and
+ * sign-up links.
  */
-export default function Frame(
-  props: Infer<typeof Props> & { readonly nav?: () => Node; readonly children: () => Node },
+export default function Masthead(
+  props: Infer<typeof Props> & { readonly nav: () => Node; readonly children: () => Node },
 ) {
   return (
     <Box id="frame" direction="column" bg="surface" fg="text" font="serif" fontSize="md">
@@ -43,45 +40,7 @@ export default function Frame(
           </If>
         </Box>
         <Box as="nav" id="frame.nav" label={props.data.text.nav} direction="row" align="center" wrap="wrap" gap="4">
-          {props.nav?.() ?? ""}
-          <If when={props.data.signedIn}>
-            {() => (
-              <Box direction="row" align="center" gap="4">
-                <Link id="frame.profile" to={members.href("members.profile")} fg="text">
-                  {props.data.text.profile}
-                </Link>
-                <Form method="POST" action={mount.href("/sign-out")}>
-                  <Button
-                    id="frame.signOut"
-                    type="submit"
-                    font="mono"
-                    fontSize="sm"
-                    px="3"
-                    py="1"
-                    bg="card"
-                    fg="text"
-                    border="rule"
-                    radius="none"
-                    states={{ hover: { bg: "surfaceLow" }, focusVisible: { bg: "surfaceLow" } }}
-                  >
-                    {props.data.text.signOut}
-                  </Button>
-                </Form>
-              </Box>
-            )}
-          </If>
-          <If when={!props.data.signedIn}>
-            {() => (
-              <Box direction="row" align="center" gap="4">
-                <Link id="frame.signIn" to={members.href("members.signin")} fg="text">
-                  {props.data.text.signIn}
-                </Link>
-                <Link id="frame.signUp" to={members.href("members.signup")} fg="text">
-                  {props.data.text.signUp}
-                </Link>
-              </Box>
-            )}
-          </If>
+          {props.nav()}
         </Box>
       </Box>
       <Box h="hairline" bg="divider" />
