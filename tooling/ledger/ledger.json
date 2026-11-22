@@ -3,7 +3,7 @@
   "unsafe": 18,
   "hostElements": 0,
   "rungs": {
-    "example": 1764,
+    "example": 1624,
     "probabilistic": 341,
     "exhaustive": 15,
     "proven": 75,
@@ -68,7 +68,7 @@
         "threshold": 70
       },
       "std-channels": {
-        "score": 77.4,
+        "score": 75.99,
         "threshold": 70
       },
       "std-conflicts": {
@@ -100,7 +100,7 @@
         "threshold": 70
       },
       "std-live": {
-        "score": 87.34,
+        "score": 88.1,
         "threshold": 70
       },
       "std-messages": {
@@ -8187,11 +8187,11 @@
       },
       {
         "file": "packages/std-live/src/live.ts",
-        "sha": "e471952ec0a66131268432ecf1c7c5a8169385ed726d72ee056c235df198af0e",
-        "killed": 69,
+        "sha": "d0d0ef2ceed02311e0f1ce6021120b1c17e9df1ffdf418a0b00787dcb2131a2a",
+        "killed": 74,
         "survived": 10,
         "noCoverage": 0,
-        "score": 87.34
+        "score": 88.1
       },
       {
         "file": "packages/std-messages/src/formatMessage.ts",
@@ -12478,6 +12478,12 @@
     },
     {
       "pkg": "household",
+      "name": "Copy",
+      "file": "household:shopping/Copy.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "household",
       "name": "Item",
       "file": "household:shopping/Item.schema.ts",
       "rung": "none"
@@ -12498,6 +12504,12 @@
       "pkg": "household",
       "name": "ListPage",
       "file": "household:shopping/ListPage.tsx",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "ListParams",
+      "file": "household:shopping/ListParams.schema.ts",
       "rung": "none"
     },
     {
@@ -12544,6 +12556,12 @@
     },
     {
       "pkg": "household",
+      "name": "copy",
+      "file": "household:shopping/copy.store.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "household",
       "name": "deleteItem",
       "file": "household:shopping/deleteItem.server.ts",
       "rung": "none"
@@ -12556,6 +12574,24 @@
     },
     {
       "pkg": "household",
+      "name": "hydrate",
+      "file": "household:shopping/hydrate.transaction.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "household",
+      "name": "listChannel",
+      "file": "household:shopping/listChannel.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "household",
+      "name": "listEvents",
+      "file": "household:shopping/listEvents.server.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
       "name": "listOf",
       "file": "household:shopping/listOf.server.ts",
       "rung": "none"
@@ -12564,6 +12600,12 @@
       "pkg": "household",
       "name": "loadList",
       "file": "household:shopping/loadList.server.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "pageOrigin",
+      "file": "household:shopping/pageOrigin.ts",
       "rung": "none"
     },
     {
@@ -12582,7 +12624,7 @@
       "pkg": "household",
       "name": "shoppingApi",
       "file": "household:shopping/shoppingApi.ts",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "pkg": "household",
@@ -16970,11 +17012,11 @@
     },
     {
       "item": "k.testing#2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "k.testing#3",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "k.testing#4",
@@ -16986,7 +17028,7 @@
     },
     {
       "item": "k.testing#6",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "k.testing#7",
@@ -16994,7 +17036,7 @@
     },
     {
       "item": "k.testing#8",
-      "rung": "probabilistic"
+      "rung": "none"
     },
     {
       "item": "k.testing#9",
@@ -17022,7 +17064,7 @@
     },
     {
       "item": "k.testing#15",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "k.testing#16",
@@ -17038,6 +17080,10 @@
     },
     {
       "item": "k.testing#19",
+      "rung": "example"
+    },
+    {
+      "item": "k.testing#20",
       "rung": "example"
     },
     {
@@ -17314,6 +17360,18 @@
     },
     {
       "item": "std.channels#12",
+      "rung": "example"
+    },
+    {
+      "item": "std.channels#13",
+      "rung": "example"
+    },
+    {
+      "item": "std.channels#14",
+      "rung": "example"
+    },
+    {
+      "item": "std.channels#15",
       "rung": "example"
     },
     {
@@ -17642,6 +17700,10 @@
     },
     {
       "item": "std.live#10",
+      "rung": "example"
+    },
+    {
+      "item": "std.live#11",
       "rung": "example"
     },
     {
@@ -18002,6 +18064,26 @@
     },
     {
       "item": "std.postgres#17",
+      "rung": "example"
+    },
+    {
+      "item": "std.postgres#18",
+      "rung": "example"
+    },
+    {
+      "item": "std.postgres#19",
+      "rung": "example"
+    },
+    {
+      "item": "std.postgres#20",
+      "rung": "example"
+    },
+    {
+      "item": "std.postgres#21",
+      "rung": "example"
+    },
+    {
+      "item": "std.postgres#22",
       "rung": "example"
     },
     {
@@ -18856,7 +18938,7 @@
     },
     {
       "item": "a11y:recipes.catalog#1.3.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:recipes.catalog#1.3.5",
@@ -18900,7 +18982,7 @@
     },
     {
       "item": "a11y:recipes.catalog#2.4.3",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:recipes.catalog#2.4.4",
@@ -18936,7 +19018,7 @@
     },
     {
       "item": "a11y:recipes.index#1.3.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:recipes.index#1.3.5",
@@ -18980,7 +19062,7 @@
     },
     {
       "item": "a11y:recipes.index#2.4.3",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:recipes.index#2.4.4",
@@ -19176,7 +19258,7 @@
     },
     {
       "item": "a11y:recipes.show#1.3.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:recipes.show#1.3.5",
@@ -19220,7 +19302,7 @@
     },
     {
       "item": "a11y:recipes.show#2.4.3",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:recipes.show#2.4.4",
@@ -20283,6 +20365,86 @@
       "rung": "none"
     },
     {
+      "item": "a11y:shopping.events#1.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:shopping.events#1.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:shopping.events#1.3.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:shopping.events#1.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:shopping.events#1.3.5",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:shopping.events#1.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:shopping.events#1.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:shopping.events#1.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:shopping.events#1.4.12",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:shopping.events#2.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:shopping.events#2.2.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:shopping.events#2.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:shopping.events#2.4.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:shopping.events#2.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:shopping.events#2.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:shopping.events#2.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:shopping.events#3.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:shopping.events#3.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:shopping.events#3.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:shopping.events#4.1.2",
+      "rung": "none"
+    },
+    {
       "item": "a11y:shopping.items#1.1.1",
       "rung": "none"
     },
@@ -21324,15 +21486,15 @@
     },
     {
       "item": "a11y:app.home#1.1.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#1.2.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#1.3.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#1.3.2",
@@ -21340,11 +21502,11 @@
     },
     {
       "item": "a11y:app.home#1.3.5",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#1.4.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#1.4.3",
@@ -21352,31 +21514,31 @@
     },
     {
       "item": "a11y:app.home#1.4.4",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#1.4.12",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#2.1.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#2.2.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#2.2.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#2.4.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#2.4.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#2.4.3",
@@ -21384,19 +21546,19 @@
     },
     {
       "item": "a11y:app.home#2.4.4",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#3.1.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#3.1.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#3.3.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#4.1.2",
@@ -21404,15 +21566,15 @@
     },
     {
       "item": "a11y:places.home#1.1.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:places.home#1.2.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:places.home#1.3.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:places.home#1.3.2",
@@ -21420,11 +21582,11 @@
     },
     {
       "item": "a11y:places.home#1.3.5",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:places.home#1.4.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:places.home#1.4.3",
@@ -21432,31 +21594,31 @@
     },
     {
       "item": "a11y:places.home#1.4.4",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:places.home#1.4.12",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:places.home#2.1.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:places.home#2.2.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:places.home#2.2.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:places.home#2.4.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:places.home#2.4.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:places.home#2.4.3",
@@ -21464,19 +21626,19 @@
     },
     {
       "item": "a11y:places.home#2.4.4",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:places.home#3.1.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:places.home#3.1.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:places.home#3.3.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:places.home#4.1.2",
@@ -21484,15 +21646,15 @@
     },
     {
       "item": "a11y:places.place#1.1.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:places.place#1.2.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:places.place#1.3.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:places.place#1.3.2",
@@ -21500,11 +21662,11 @@
     },
     {
       "item": "a11y:places.place#1.3.5",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:places.place#1.4.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:places.place#1.4.3",
@@ -21512,31 +21674,31 @@
     },
     {
       "item": "a11y:places.place#1.4.4",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:places.place#1.4.12",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:places.place#2.1.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:places.place#2.2.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:places.place#2.2.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:places.place#2.4.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:places.place#2.4.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:places.place#2.4.3",
@@ -21544,19 +21706,19 @@
     },
     {
       "item": "a11y:places.place#2.4.4",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:places.place#3.1.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:places.place#3.1.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:places.place#3.3.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:places.place#4.1.2",
@@ -21564,15 +21726,15 @@
     },
     {
       "item": "a11y:app.home#1.1.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#1.2.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#1.3.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#1.3.2",
@@ -21580,11 +21742,11 @@
     },
     {
       "item": "a11y:app.home#1.3.5",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#1.4.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#1.4.3",
@@ -21592,31 +21754,31 @@
     },
     {
       "item": "a11y:app.home#1.4.4",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#1.4.12",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#2.1.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#2.2.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#2.2.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#2.4.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#2.4.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#2.4.3",
@@ -21624,19 +21786,19 @@
     },
     {
       "item": "a11y:app.home#2.4.4",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#3.1.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#3.1.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#3.3.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#4.1.2",
@@ -21644,15 +21806,15 @@
     },
     {
       "item": "a11y:notes.home#1.1.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.home#1.2.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.home#1.3.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.home#1.3.2",
@@ -21660,11 +21822,11 @@
     },
     {
       "item": "a11y:notes.home#1.3.5",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.home#1.4.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.home#1.4.3",
@@ -21672,31 +21834,31 @@
     },
     {
       "item": "a11y:notes.home#1.4.4",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.home#1.4.12",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.home#2.1.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.home#2.2.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.home#2.2.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.home#2.4.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.home#2.4.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.home#2.4.3",
@@ -21704,19 +21866,19 @@
     },
     {
       "item": "a11y:notes.home#2.4.4",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.home#3.1.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.home#3.1.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.home#3.3.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.home#4.1.2",
@@ -21724,15 +21886,15 @@
     },
     {
       "item": "a11y:notes.note#1.1.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.note#1.2.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.note#1.3.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.note#1.3.2",
@@ -21740,11 +21902,11 @@
     },
     {
       "item": "a11y:notes.note#1.3.5",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.note#1.4.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.note#1.4.3",
@@ -21752,31 +21914,31 @@
     },
     {
       "item": "a11y:notes.note#1.4.4",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.note#1.4.12",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.note#2.1.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.note#2.2.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.note#2.2.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.note#2.4.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.note#2.4.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.note#2.4.3",
@@ -21784,19 +21946,19 @@
     },
     {
       "item": "a11y:notes.note#2.4.4",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.note#3.1.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.note#3.1.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.note#3.3.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.note#4.1.2",
@@ -21804,15 +21966,15 @@
     },
     {
       "item": "a11y:notes.signin#1.1.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.signin#1.2.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.signin#1.3.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.signin#1.3.2",
@@ -21820,11 +21982,11 @@
     },
     {
       "item": "a11y:notes.signin#1.3.5",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.signin#1.4.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.signin#1.4.3",
@@ -21832,31 +21994,31 @@
     },
     {
       "item": "a11y:notes.signin#1.4.4",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.signin#1.4.12",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.signin#2.1.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.signin#2.2.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.signin#2.2.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.signin#2.4.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.signin#2.4.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.signin#2.4.3",
@@ -21864,19 +22026,19 @@
     },
     {
       "item": "a11y:notes.signin#2.4.4",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.signin#3.1.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.signin#3.1.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.signin#3.3.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:notes.signin#4.1.2",
@@ -21884,15 +22046,15 @@
     },
     {
       "item": "a11y:app.home#1.1.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#1.2.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#1.3.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#1.3.2",
@@ -21900,11 +22062,11 @@
     },
     {
       "item": "a11y:app.home#1.3.5",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#1.4.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#1.4.3",
@@ -21912,31 +22074,31 @@
     },
     {
       "item": "a11y:app.home#1.4.4",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#1.4.12",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#2.1.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#2.2.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#2.2.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#2.4.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#2.4.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#2.4.3",
@@ -21944,19 +22106,19 @@
     },
     {
       "item": "a11y:app.home#2.4.4",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#3.1.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#3.1.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#3.3.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#4.1.2",
@@ -21964,15 +22126,15 @@
     },
     {
       "item": "a11y:app.home#1.1.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#1.2.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#1.3.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#1.3.2",
@@ -21980,11 +22142,11 @@
     },
     {
       "item": "a11y:app.home#1.3.5",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#1.4.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#1.4.3",
@@ -21992,31 +22154,31 @@
     },
     {
       "item": "a11y:app.home#1.4.4",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#1.4.12",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#2.1.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#2.2.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#2.2.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#2.4.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#2.4.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#2.4.3",
@@ -22024,19 +22186,19 @@
     },
     {
       "item": "a11y:app.home#2.4.4",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#3.1.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#3.1.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#3.3.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:app.home#4.1.2",

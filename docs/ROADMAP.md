@@ -24,4 +24,4 @@ Gates, not dates. A gate passes when its criteria are green in CI.
 - A session replayed in a macOS or iOS shell.
 The S8 exit criterion stays open until those three run: the storage, workflow and proof parts are met, the shell part is not.
 
-verified: 39a5564fa714ddd49fff8398d32919101a66a4f6
+verified: 58518a6665330f253ba46d8d456f7bc45dde1128

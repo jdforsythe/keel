@@ -160,4 +160,4 @@ Golden apps: `apps/golden-1` and `apps/golden-2` have converged evals (`evals/re
 
 No section is `frozen`. The kernel is provisionally frozen: a kernel change goes through an RFC with an ADR, a conformance update and a migration note, and the `frozen` flip waits until the stdlib stages have exercised the kernel (`tasks/0034-freeze/PLAN.md`). k.parity and std.db are `proposed`; k.docs, k.host-code, k.mount-scope, k.roles, k.scaffold, k.store, std.capacitor and std.tauri are `implemented`; the other 92 of 102 are `conformance-covered`.
 
-verified: 68d910b9bf61e79f5f3a523d5bc0c8f4b4419ccc
+verified: 58518a6665330f253ba46d8d456f7bc45dde1128
