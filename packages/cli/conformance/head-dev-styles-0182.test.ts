@@ -2,9 +2,14 @@
 // Seed: 1337 (no generated input: two fixtures, one `keel dev` each on a free port from a closed port-0 listener, the child's group ended in `finally`).
 // ASSUMPTIONS: the node document is GET `/` with `accept: text/html`; "holds the atomic rule of a class" is the stylesheet text containing `.<class>`;
 // a `client` document is the empty `#app` shell (its page renders in the browser), so the `k-*` check is made on the node document only.
+// The node fixture's page carries style props (padded, column-stacked boxes) so the document holds `k-*` classes; classes are read from `class="..."` attributes only.
 import { afterAll, afterEach, beforeAll, expect, test } from "vitest";
 import { cleanup, materialize } from "./compat-support.ts";
 import { SLOW, freePort, get, served, startDev, staticTree, stop, stopAll, stylesheetsOf } from "./static-support.ts";
+
+const PAGE =
+  "import { Box, Button, Text } from '@keel/ui'\nexport default function Page(props: { data: { text: string } }) {\n  return (\n" +
+  '    <Box id="s.page" direction="column" gap="3" p="4">\n      <Box direction="row" gap="2" p="2">\n        <Text id="s.page.text">{props.data.text}</Text>\n      </Box>\n      <Button id="s.page.more" onClick={() => undefined}>More</Button>\n    </Box>\n  )\n}\n';
 
 const topo = (adapter: string): string =>
   `import { topology } from '@keel/server'\nexport default topology({ site: { modules: ['s'], adapter: '${adapter}', styles: ['@keel/ui/fonts'] } })\n`;
@@ -12,7 +17,7 @@ const topo = (adapter: string): string =>
 let node = "";
 let client = "";
 beforeAll(() => {
-  node = materialize(staticTree("none", topo("node")));
+  node = materialize({ ...staticTree("none", topo("node")), "modules/s/Page.tsx": PAGE });
   client = materialize(staticTree("none", topo("client")));
 }, SLOW);
 afterAll(() => {
@@ -24,7 +29,11 @@ afterEach(async () => {
 });
 
 const classesOf = (html: string): string[] => [
-  ...new Set([...html.matchAll(/\bk-[A-Za-z0-9_-]+/g)].map((m) => m[0])),
+  ...new Set(
+    [...html.matchAll(/\bclass="([^"]*)"/g)].flatMap((m) =>
+      (m[1] ?? "").split(/\s+/).filter((c) => /^k-[A-Za-z0-9_-]+$/.test(c)),
+    ),
+  ),
 ];
 
 async function sheets(port: number, html: string): Promise<{ href: string; type: string; status: number; css: string }[]> {
