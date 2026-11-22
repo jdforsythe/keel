@@ -1,48 +1,53 @@
 import { properties } from "@keel/testing";
-import { afterEach, expect, it } from "vitest";
+import { expect, it } from "vitest";
 import mount from "../identity.ts";
-import { copy } from "../modules/shopping/copy.store.ts";
 import { hydrate } from "../modules/shopping/hydrate.transaction.ts";
-import { view } from "../modules/shopping/view.store.ts";
-import { stream, gracePage, household } from "./household.ts";
+import { stream, copyOf, household, listPage } from "./household.ts";
 import { asJson, formPost } from "./serve.ts";
 
-const views = view.snapshot();
-const copies = copy.snapshot();
-afterEach(() => {
-  expect(view.restore(views).ok && copy.restore(copies).ok).toBe(true);
-});
+const click = { type: "click" } as const;
+const LIVE = "Live: changes from your household show here";
 
-it("shows on Grace's open page what Ada adds, buys and removes, without a reload", async () => {
+it("shows on Grace's open page what Ada's page adds, buys and removes, without a reload", async () => {
   const h = await household(11);
-  const page = await gracePage(h);
-  await page.settle();
-  expect(page.find("shopping.live").text).toBe("Live: changes from your household show here");
-  expect(page.find("shopping.empty").text).toContain("The list is empty");
+  const ada = await listPage(h, h.user);
+  const grace = await listPage(h, h.graceId);
+  expect(ada.find("shopping.live").text).toBe(LIVE);
+  expect(grace.find("shopping.live").text).toBe(LIVE);
+  expect(grace.find("shopping.empty").text).toContain("The list is empty");
 
-  await h.raw(asJson("POST", "/api/items", { name: "Milk" }, { cookie: h.adaCookie }));
-  await page.settle();
-  const [milk] = copy.get("items");
-  expect(milk).toMatchObject({ name: "Milk", qty: 1, bought: false });
-  expect(page.find(`shopping.name.${milk?.id}`).text).toBe("Milk × 1");
+  await ada.fire("shopping.staples.trigger", click);
+  await ada.fire("shopping.staples.item.eggs", click);
+  await grace.settle();
+  const [eggs] = copyOf(grace).items;
+  expect(eggs).toMatchObject({ name: "Eggs", qty: 1, bought: false });
+  expect(grace.find(`shopping.name.${eggs?.id}`).text).toBe("Eggs × 1");
+  // Ada's open menu and her tab are her page's own: Grace's widgets and view did not move.
+  expect(grace.find("shopping.staples.trigger").state.expanded).toBe(false);
 
-  await h.raw(asJson("POST", `/api/items/${milk?.id}/toggle`, undefined, { cookie: h.adaCookie }));
-  await page.settle();
-  expect(copy.get("items")).toEqual([{ ...milk, bought: true }]);
+  await ada.fire("shopping.view.tab.bought", click);
+  await ada.fire(`shopping.toggle.${eggs?.id}`, click);
+  await grace.settle();
+  expect(copyOf(grace).items).toEqual([{ ...eggs, bought: true }]);
+  expect(grace.find("shopping.view.tab.toBuy").state.selected).toBe(true);
+  expect(grace.state()["shopping.view"]).toEqual({ show: "toBuy" });
+  expect(ada.state()["shopping.view"]).toEqual({ show: "bought" });
 
-  await h.raw(asJson("DELETE", `/api/items/${milk?.id}`, undefined, { cookie: h.adaCookie }));
-  await page.settle();
-  expect(page.find("shopping.empty").text).toContain("The list is empty");
-  page.dispose();
+  await ada.fire(`shopping.remove.${eggs?.id}`, click);
+  await grace.settle();
+  expect(copyOf(grace).items).toEqual([]);
+  expect(grace.find("shopping.empty").text).toContain("The list is empty");
+  ada.dispose();
+  grace.dispose();
 });
 
 it("tells Ada's stream that the list changed when Grace's page adds, and carries no item or member", async () => {
   const h = await household(12);
   const ada = await stream(h, h.adaCookie);
   expect(await ada.next()).toEqual({ ok: true, value: { kind: "reset" } });
-  const page = await gracePage(h);
-  await page.fire("shopping.staples.trigger", { type: "click" });
-  await page.fire("shopping.staples.item.eggs", { type: "click" });
+  const page = await listPage(h, h.graceId);
+  await page.fire("shopping.staples.trigger", click);
+  await page.fire("shopping.staples.item.eggs", click);
   const saved = await ada.next();
   expect(saved).toEqual({ ok: true, value: { kind: "saved", store: "shopping.changes", head: expect.any(Number) } });
   expect(JSON.stringify(saved)).not.toMatch(/Eggs|grace|Grace|Ada|ada@/);
@@ -54,7 +59,7 @@ it("tells Ada's stream that the list changed when Grace's page adds, and carries
 
 it("shows Offline through a drop, then catches up with what changed while it was away", async () => {
   const h = await household(15);
-  const page = await gracePage(h);
+  const page = await listPage(h, h.graceId);
   await page.settle();
   h.ctx.net.setOnline(false);
   await page.settle();
@@ -64,8 +69,8 @@ it("shows Offline through a drop, then catches up with what changed while it was
   expect(page.find("shopping.empty").text).toContain("The list is empty");
   h.ctx.net.setOnline(true);
   await page.settle();
-  expect(page.find("shopping.live").text).toBe("Live: changes from your household show here");
-  expect(copy.get("items")).toEqual([expect.objectContaining({ name: "Apples", qty: 1 })]);
+  expect(page.find("shopping.live").text).toBe(LIVE);
+  expect(copyOf(page).items).toEqual([expect.objectContaining({ name: "Apples", qty: 1 })]);
   page.dispose();
 });
 

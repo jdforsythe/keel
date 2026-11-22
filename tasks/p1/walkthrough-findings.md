@@ -54,7 +54,7 @@
 | S-9 | carried by RFC 0188 (`base.focus`) |
 | S-10 | carried by RFC 0188 (`overflow-wrap`) |
 | S-11 | carried by RFC 0188 (`look`) |
-| L7-1 | open |
+| L7-1 | fixed (`renderRoute` with `app` takes `routes` as an import: each harness its own client module graph) |
 | L7-2 | open |
 | L7-3 | open |
 | L7-4 | open |
@@ -64,7 +64,7 @@
 | L7-8 | open |
 | L7-9 | open |
 
-Fixed 14, answered in the skills 10, filed as backlog 11, carried by RFC 0188 6, open 18.
+Fixed 15, answered in the skills 10, filed as backlog 11, carried by RFC 0188 6, open 17.
 
 Each finding: what I tried, where, the command and its output, what I expected, whether docs or skills misled. Kinds: fault (framework behaves against its spec), docs (docs or skills gap), rough (works, but an app author trips on it).
 
@@ -267,7 +267,7 @@ The README numbers this layer 8, after the frame and brand layer; the ids follow
 - Tried: `test/live.test.ts` (first draft) opened `shopping.list` twice over one `served()` app and ctx, `renderRoute("shopping.list", { routes: webRoutes, params: {}, ctx, app, user })` with Ada's id, then with Grace's.
 - The second failed: `E1720 test/live.test.ts:29:17 the document did not resume: E1253 [data-k-island="shopping.list"] the claim threw; re-...`. With the claim's error printed (L7-2) it reads `store headless.options:shopping.staples: id already in use by a live store`, from the `Menu`'s chart (`packages/std-headless/src/listChart.ts:26`, `packages/store/src/store.ts:65`). Both harnesses run in one JS realm, so beyond the widget ids, the client stores `shopping.copy` and `shopping.view` are one store for both "browsers": Ada's page hydrating the list would make Grace's page show it with no event reaching Grace.
 - Spec: k.user Testing makes two harnesses over one `app` two users, jars and callers of one server state, and k.testing resumes each page as by `resumeDocument` in its own browser. Two members on the same page is the case those sentences invite, and it cannot be written.
-- Now: one page under `renderRoute` (Grace, `user`), the other member through the API with her cookie and through a raw event-stream GET (`test/household.ts`). The two-page form is proved only by the smoke's two browser contexts.
+- Fixed: with `app`, `renderRoute` takes `routes: () => import(path)` and resumes the page in a client module graph of its own (`packages/testing/src/internal/documentRoute.ts`, `freshGraph.ts`); a ctx's observers and meta are realm-wide (`packages/ctx/src/internal/realmShared.ts`), so such a page hears the ctx's `net` changes. `test/live.test.ts` opens the list as Ada and as Grace (`listPage`, `test/webRoutes.ts`): Ada's page adds, buys and removes, Grace's shows each, and each keeps its own tab and menu. The spec names the import form only for `resumeDocument` (k.testing); the `renderRoute` sentence is owed.
 
 ### L7-2 rough: a resume failure under the harness hides its cause
 - The E1720 above names `the claim threw` and nothing else. `packages/runtime-dom/src/internal/resumeIsland.ts:85` adds the thrown error only when `mode === "dev"`, and the harness ctx is sim, so a test author sees no cause. Finding it took a local edit of that line. k.errors keeps thrown text out of production output; a test harness is not production.
