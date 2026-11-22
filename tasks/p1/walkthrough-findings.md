@@ -43,9 +43,9 @@
 | L6-4 | open |
 | L6-5 | open |
 | L6-6 | open |
-| S-1 | open |
+| S-1 | fixed: rfc:0182 build: keel dev serves the deployable's styles and every dev document links them |
 | S-2 | open |
-| S-3 | open |
+| S-3 | RFC 0187 (draft): a page names a layout of the module that composes it; the app keeps a frame per module until it lands |
 | S-4 | open |
 | S-5 | open |
 | S-6 | open |
@@ -55,7 +55,7 @@
 | S-10 | open |
 | S-11 | open |
 
-Fixed 9, answered in the skills 9, filed as backlog 11, open 21.
+Fixed 10, answered in the skills 9, filed as backlog 11, RFC 1, open 19.
 
 Each finding: what I tried, where, the command and its output, what I expected, whether docs or skills misled. Kinds: fault (framework behaves against its spec), docs (docs or skills gap), rough (works, but an app author trips on it).
 
