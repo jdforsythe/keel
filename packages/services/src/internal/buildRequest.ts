@@ -11,8 +11,8 @@ const Bearer = s.secret(s.string());
 
 /**
  * Build the Request for one call: path params URL-encoded, query by its schema, body as JSON, with
- * `accept` (`application/json`; `text/event-stream` for an `events` endpoint), `x-keel: 1` (the k.server same-site proof for writes) and, with
- * a `bearer`, `authorization: Bearer <token>`, revealed here and nowhere else. Invalid input is `api.input` and nothing is
+ * `accept` (`application/json`; `text/event-stream` for an `events` endpoint), `x-keel: 1` (the k.server same-site proof for writes)
+ * only when `keel` (the target is a Keel origin, k.services Encoding) and, with a `bearer`, `authorization: Bearer <token>`, revealed here and nowhere else. Invalid input is `api.input` and nothing is
  * built: a `bearer` that is not a secret whose text is a token68 of 1 to 4,096 characters (k.api Bearer) is `format` at
  * `bearer`. A `user` is sent as `x-keel-user`, signed by the target's `sign` over the body as sent (k.user); a `user`
  * that is not a string, or one on a target with no `sign` (a ctx no `createApp` bound), is `api.input` `type` at `user`,
@@ -26,6 +26,7 @@ export function buildRequest(
   accept = "application/json",
   sign?: Target["sign"],
   fallback?: string,
+  keel = true,
 ): Result<Request, ApiError<never>> {
   const params = encodePart(e.params, "params", input);
   if (!params.ok) return params;
@@ -53,7 +54,7 @@ export function buildRequest(
   const signed = typeof user === "string" ? sign?.(e.method, url, user, text) : undefined;
   if (user !== undefined && signed === undefined)
     return err(fail.input([{ path: ["user"], rule: typeof user === "string" && sign !== undefined ? "max" : "type" }]));
-  const headers: Record<string, string> = { accept, "x-keel": "1" };
+  const headers: Record<string, string> = keel ? { accept, "x-keel": "1" } : { accept };
   if (b !== undefined) headers.authorization = `Bearer ${token}`;
   if (signed !== undefined) headers["x-keel-user"] = signed;
   const init: RequestInit =
