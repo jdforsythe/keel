@@ -107,3 +107,19 @@ if (globalThis[KEY] === undefined)
     AbortController: globalThis.AbortController,
     AbortSignal: globalThis.AbortSignal,
   };
+
+// Node's fetch sets the type of service on each new socket (`socket.setTypeOfService(0)`), and on macOS that throws
+// EINVAL from inside the client when the peer has already reset the connection, as a `keel dev` child that is
+// starting, reloading or ending does; nothing can catch it, so it ends the worker as an unhandled error. The type of
+// service is best effort: here an EINVAL leaves it unset, and the fetch fails or succeeds on its own terms.
+const { Socket } = await import("node:net");
+const setTypeOfService = Socket.prototype.setTypeOfService;
+if (typeof setTypeOfService === "function")
+  Socket.prototype.setTypeOfService = function keelSetTypeOfService(tos) {
+    try {
+      return setTypeOfService.call(this, tos);
+    } catch (error) {
+      if (error?.code === "EINVAL" || error?.errno === -22) return this;
+      throw error;
+    }
+  };
