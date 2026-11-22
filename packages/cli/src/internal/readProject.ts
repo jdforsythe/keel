@@ -36,7 +36,7 @@ const TO_A11Y = /(?:^|\/)reports$/;
 
 /**
  * Binary only: read the project under `cwd` into engine files. `query` (check, spec, test): code, each module's
- * `migrations/*.sql`, spec markdown, `.keel` artifacts, generated deploy files and the `package.json` beside each `topology.ts` of every project under `cwd`, and the ledger. `ledger`: `query` plus `packages/<pkg>/reports/mutation/mutation.json` and each project's `reports/a11y.json`.
+ * `migrations/*.sql`, spec markdown, `.keel` artifacts, generated deploy files and the `package.json` and `index.html` (W1012) beside each `topology.ts` of every project under `cwd`, and the ledger. `ledger`: `query` plus `packages/<pkg>/reports/mutation/mutation.json` and each project's `reports/a11y.json`.
  * `tree` (scaffold, codemod, build): every text file under 1 MB,
  * since structural operations read manifests, `package.json`, `turbo.json` and CI files too.
  */
@@ -46,7 +46,7 @@ export function readProject(cwd: string, scope: "query" | "ledger" | "tree"): { 
     scope === "tree"
       ? TEXT.test(rel) && statSync(abs).size <= MAX_BYTES
       : QUERY(rel) ||
-        (/(?:^|\/)package\.json$/.test(rel) && existsSync(join(abs, "..", "topology.ts"))) ||
+        (/(?:^|\/)(?:package\.json|index\.html)$/.test(rel) && existsSync(join(abs, "..", "topology.ts"))) ||
         (scope === "ledger" && (MUTATION_REPORT.test(rel) || A11Y_REPORT.test(rel)));
   const walk = (dir: string, rel: string): void => {
     for (const e of readdirSync(dir, { withFileTypes: true }).sort((a, b) => (a.name < b.name ? -1 : 1))) {

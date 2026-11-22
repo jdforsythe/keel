@@ -1,6 +1,6 @@
 import { createCtx } from "@keel/ctx";
-import { createApp } from "@keel/server";
 import { compileRoutes } from "@keel/router/internal";
+import { createApp } from "@keel/server";
 import type { PrerenderOptions } from "../types/PrerenderOptions.ts";
 import type { Prerendered } from "../types/Prerendered.ts";
 import { moduleOf } from "./moduleOf.ts";

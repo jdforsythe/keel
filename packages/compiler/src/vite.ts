@@ -33,16 +33,17 @@ import { keelMark } from "./internal/keelMark.ts";
 import { listSources } from "./internal/listSources.ts";
 import { mergeArtifacts } from "./internal/mergeArtifacts.ts";
 import { noDeployable } from "./internal/noDeployable.ts";
+import { pageMiddleware } from "./internal/pageMiddleware.ts";
 import { parseTopology } from "./internal/parseTopology.ts";
 import { projectHandlerUses } from "./internal/projectHandlerUses.ts";
 import { projectManifests } from "./internal/projectManifests.ts";
 import { registersCapability } from "./internal/registersCapability.ts";
 import { serverEntryCode } from "./internal/serverEntryCode.ts";
-import { writeStatic } from "./internal/writeStatic.ts";
 import { stubCode } from "./internal/stubCode.ts";
 import { unmappedModule } from "./internal/unmappedModule.ts";
 import { urlLiterals } from "./internal/urlLiterals.ts";
 import { writeArtifact } from "./internal/writeArtifact.ts";
+import { writeStatic } from "./internal/writeStatic.ts";
 import { clientStdData } from "./std/clientStdData.ts";
 import { importDeps } from "./std/importDeps.ts";
 import { stdRoutes } from "./std/stdRoutes.ts";
@@ -117,8 +118,9 @@ const MANIFEST = /^modules\/[^/]+\/module\.[cm]?[jt]s$/;
 
 type Entry = { source: string; output: Output | undefined; artifacts: Artifacts; failures: string[] };
 type ModuleNode = object;
-type Middlewares = { use(fn: ReturnType<typeof inspectMiddleware>): void };
+type Middlewares = { use(fn: ReturnType<typeof inspectMiddleware> | ReturnType<typeof pageMiddleware>): void };
 type DevServer = {
+  transformIndexHtml?(url: string, html: string): Promise<string>;
   moduleGraph: {
     getModuleById(id: string): ModuleNode | undefined;
     invalidateModule?(module: ModuleNode): void;
@@ -389,8 +391,18 @@ export default function (): {
       ? undefined
       : { name, modules: d.modules, client: d.adapter === "client" };
   };
-  /** The deployable whose `index.html` the plugin writes when the project has none: the `client` one hosted. */
-  const page = (): string | undefined => hosting;
+  /**
+   * The `client` deployable whose `index.html` the plugin writes (k.head Document source): the one a build hosts, or in
+   * dev the one served (`KEEL_DEPLOYABLE`, else the first `client` by name).
+   */
+  const page = (): string | undefined => {
+    if (command === "build") return hosting;
+    const d = deployable();
+    return d?.client === true ? d.name : undefined;
+  };
+  /** The deployable's `styles` (k.topology Declaration) as side-effect imports, first in its entry. */
+  const styleImports = (name: string | undefined): string =>
+    (name === undefined ? [] : (topology?.[name]?.styles ?? [])).map((x) => `import ${JSON.stringify(x)};\n`).join("");
   /**
    * The routes files of the deployable's modules (every module without a topology): an app module's
    * `modules/<id>/routes.ts`, root-relative; a stdlib module's package `./routes` file (`stdRoutes`), absolute.
@@ -810,6 +822,15 @@ export default function (): {
       s.middlewares.use(inspect);
       hasNode = Object.values(topology ?? {}).some((d) => d.adapter === "node" || d.adapter === "static");
       if (hasNode) s.middlewares.use(dev.handle);
+      // Keel writes the `client` document in dev too; the project's own `index.html` is never read (k.head).
+      s.middlewares.use(
+        pageMiddleware(async (url) => {
+          const name = page();
+          if (name === undefined) return undefined;
+          const html = indexHtml(name, ENTRY_PATH);
+          return s.transformIndexHtml === undefined ? html : s.transformIndexHtml(url, html);
+        }),
+      );
     },
     configurePreviewServer(s) {
       s.middlewares.use(inspect);
@@ -829,7 +850,7 @@ export default function (): {
       if (options?.ssr === false && command === "build" && importer !== undefined && isNodeBuiltin(id))
         return { id, external: true };
       if (id === CSS_IMPORT || id === CSS_ID) return CSS_ID;
-      if (id === path.join(root, "index.html") && !exists("index.html") && page() !== undefined) return id;
+      if (id === path.join(root, "index.html") && page() !== undefined) return id;
       const q = keyed(id);
       if (q?.path === ENTRY_PATH || q?.path === ISLANDS_PATH) return id;
       if (id === SERVER_ENTRY) return `\0${SERVER_ENTRY}`;
@@ -846,7 +867,7 @@ export default function (): {
         const wrong = miscased(id);
         if (wrong !== undefined) throw new Error(wrong);
       }
-      const shown = id === path.join(root, "index.html") && !exists("index.html") ? page() : undefined;
+      const shown = id === path.join(root, "index.html") ? page() : undefined;
       if (shown !== undefined) return indexHtml(shown, ENTRY_PATH);
       if (id === CSS_ID) {
         if (stale) await refresh();
@@ -875,20 +896,23 @@ export default function (): {
       const d = deployable(q.d);
       if (d === undefined) throw new Error(noDeployable(ENTRY_PATH, topology, q.d ?? process.env.KEEL_DEPLOYABLE));
       const mode = command === "serve" ? "dev" : "production";
-      if (!d.client) return resumeEntry(q.d, mode, CSS_IMPORT);
+      if (!d.client) return styleImports(q.d ?? d.name) + resumeEntry(q.d, mode, CSS_IMPORT);
       const all = topology ?? {};
       const served = Object.values(all).some((x) => x.adapter === "node");
       const targets = served ? calledByClient(all, d.modules) : {};
       mapped = served ? new Set([...d.modules, ...Object.values(targets).flat()]) : undefined;
-      return entryCode(
-        routesFiles(q.d).map((f) => (path.isAbsolute(f) ? f : `/${f}`)),
-        CSS_IMPORT,
-        clientStdData(stdArtifact(manifests()).data, new Set(d.modules)),
-        targets,
-        shellOf(exists("identity.ts") ? all[d.name]?.shells : undefined),
-        mode,
-        exists("identity.ts"),
-        served,
+      return (
+        styleImports(d.name) +
+        entryCode(
+          routesFiles(q.d).map((f) => (path.isAbsolute(f) ? f : `/${f}`)),
+          CSS_IMPORT,
+          clientStdData(stdArtifact(manifests()).data, new Set(d.modules)),
+          targets,
+          shellOf(exists("identity.ts") ? all[d.name]?.shells : undefined),
+          mode,
+          exists("identity.ts"),
+          served,
+        )
       );
     },
     transformIndexHtml() {

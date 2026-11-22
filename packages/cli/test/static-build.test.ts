@@ -20,11 +20,7 @@ const loaderSrc = (name: string, id: string, text: string, how: Failing): string
       : how === "throws"
         ? "ok({ text: JSON.parse('{').text })"
         : `ok({ text: '${text}' })`;
-  return (
-    `import { loader } from '@keel/router'\nimport { ${how === "notFound" ? "err" : "ok"} } from '@keel/schema'\n` +
-    `import { Out } from './Out.schema.ts'\nimport { s } from './s.contract.ts'\n\n` +
-    `export const ${name} = loader(s, '${id}', { output: Out }, async () => ${body})\n`
-  );
+  return `import { loader } from '@keel/router'\nimport { ${how === "notFound" ? "err" : "ok"} } from '@keel/schema'\nimport { Out } from './Out.schema.ts'\nimport { s } from './s.contract.ts'\n\nexport const ${name} = loader(s, '${id}', { output: Out }, async () => ${body})\n`;
 };
 
 /**
@@ -56,9 +52,7 @@ function staticTree(failing: Failing = "none"): Tree {
     "modules/s/Page.tsx":
       "import { Box, Button, Text } from '@keel/ui'\nexport default function Page(props: { data: { text: string } }) {\n  return (\n" +
       '    <Box id="s.page">\n      <Text id="s.page.text">{props.data.text}</Text>\n      <Button id="s.page.more" onClick={() => undefined}>More</Button>\n    </Box>\n  )\n}\n',
-    "modules/s/routes.ts":
-      "import { manifest } from '@keel/router'\nimport Page from './Page.tsx'\nimport { about } from './about.server.ts'\nimport { deny } from './deny.guard.ts'\nimport { home } from './home.server.ts'\nimport { s } from './s.contract.ts'\n" +
-      `export const routes = manifest(s, { 's.home': { component: Page, loader: home }, 's.about': { component: Page, loader: about${failing === "denied" ? ", guard: deny" : ""} } })\n`,
+    "modules/s/routes.ts": `import { manifest } from '@keel/router'\nimport Page from './Page.tsx'\nimport { about } from './about.server.ts'\nimport { deny } from './deny.guard.ts'\nimport { home } from './home.server.ts'\nimport { s } from './s.contract.ts'\nexport const routes = manifest(s, { 's.home': { component: Page, loader: home }, 's.about': { component: Page, loader: about${failing === "denied" ? ", guard: deny" : ""} } })\n`,
   };
 }
 

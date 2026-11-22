@@ -43,7 +43,7 @@ test.skip(
   SLOW,
 );
 
-test.skip(
+test(
   "`keel dev`'s document of a `client` deployable holds none of a project `index.html`'s markup.",
   async () => {
     const port = await freePort();
@@ -60,7 +60,7 @@ test.skip(
   SLOW,
 );
 
-test.skip(
+test(
   "W1012: a project root holding `index.html` is one W1012 naming `index.html` per `keel check` and per `keel build`, and none without the file.",
   () => {
     for (const cmd of ["check", "build"]) {
@@ -73,7 +73,7 @@ test.skip(
   SLOW,
 );
 
-test.skip(
+test(
   "W1012: `keel dev` prints one W1012 naming `index.html` for a project root holding the file, and none without it.",
   async () => {
     for (const [dir, want] of [

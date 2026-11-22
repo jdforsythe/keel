@@ -23,7 +23,16 @@ const isAdapter = (v: string): v is Deployable["adapter"] => ADAPTERS.some((x) =
 type Storage = NonNullable<Deployable["storage"]>;
 const STORAGES: readonly Storage[] = ["file", "sqlite", "postgres"];
 const isStorage = (v: unknown): v is Storage => STORAGES.some((x) => x === v);
-const KEYS: ReadonlySet<string> = new Set(["modules", "adapter", "servedBy", "storage", "shells", "caller", "origins"]);
+const KEYS: ReadonlySet<string> = new Set([
+  "modules",
+  "adapter",
+  "servedBy",
+  "storage",
+  "shells",
+  "caller",
+  "origins",
+  "styles",
+]);
 type Shell = { readonly id: string; readonly name: string };
 
 /** A shell's `{ id, name }` when both are string literals, else undefined. */
@@ -41,14 +50,15 @@ function shellOf(e: Expression): Shell | undefined {
 
 /**
  * Read `topology.ts` statically (k.topology Declaration): `export default topology({ name: { modules: [...],
- * adapter, servedBy?, storage?, shells?, caller?, origins? } })` (or a bare object); a `storage` that is not one of its literals, or a
+ * adapter, servedBy?, storage?, shells?, caller?, origins?, styles? } })` (or a bare object); a `storage` that is not one of its literals, or a
  * `shells` entry that is not `capacitor` or `tauri` with literal `id` and `name`, is a problem. Only literal deployable names (in the form `deployableNameProblem` takes),
  * module ids, adapters and `servedBy` count; anything else is a problem, `[deployable, message]` (`deployable` is the key,
  * `""` for the whole file; the message is one short line), and the deployable is skipped (one with a key it does not list, `host` too, as well), except a `servedBy` that is not a
  * string literal, which is dropped from the kept deployable. A spread, a computed key or a key written twice in a
  * deployable's declaration, or a deployable name written twice, is a problem too: what it holds is known only when it
  * runs. Each kept deployable carries the `origins` the static read accepts (`declaredOrigins`), the one declaration
- * every policy Keel emits reads (k.origins). Nothing is executed.
+ * every policy Keel emits reads (k.origins), and the string literals of its `styles` (any other entry is E1587's, read by
+ * `stylesProblems`, and is left out here). Nothing is executed.
  */
 export function parseTopology(source: string): { topology: Topology; problems: [string, string][] } {
   const problems: [string, string][] = [];
@@ -97,6 +107,7 @@ export function parseTopology(source: string): { topology: Topology; problems: [
     let servedBy: string | undefined;
     let storage: Storage | undefined;
     let shells: { capacitor?: Shell; tauri?: Shell } | undefined;
+    let styles: string[] | undefined;
     const fields = new Set<string>();
     let unlisted = false;
     for (const f of v.properties) {
@@ -139,7 +150,8 @@ export function parseTopology(source: string): { topology: Topology; problems: [
           else problems.push([name, `${name}: shells takes capacitor or tauri { id, name } as string literals`]);
         }
         if (fv.type !== "ObjectExpression") problems.push([name, `${name}: shells is not an object literal`]);
-      }
+      } else if (k === "styles" && fv.type === "ArrayExpression")
+        styles = fv.elements.flatMap((x) => (x?.type === "Literal" && typeof x.value === "string" ? [x.value] : []));
     }
     if (unlisted) continue;
     if (modules === undefined || adapter === undefined) {
@@ -153,6 +165,7 @@ export function parseTopology(source: string): { topology: Topology; problems: [
       ...(storage === undefined ? {} : { storage }),
       ...(shells === undefined ? {} : { shells }),
       ...(declared[name] === undefined ? {} : { origins: declared[name] }),
+      ...(styles === undefined ? {} : { styles }),
     };
   }
   return { topology: out, problems };

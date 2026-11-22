@@ -20,7 +20,8 @@ const MANIFEST_DIR = ".vite";
  * `404.html`, each with a `keel-peer` tag per `KEEL_PEER_<NAME>` of `env` and no nonce (a file host serves no policy
  * header; `csp.txt` is the policy). A route answering other than 200 writes no document and is one `E1588` line, naming
  * the deployable, the route id and the status; the lines are returned, empty when every route answered 200. The
- * manifest folder and `entry`'s folder are removed either way.
+ * manifest folder and `entry`'s folder are removed either way. A Keel-coded throw of the app (E1553) rejects as a
+ * `keel: <code> ...` line.
  */
 export async function writeStatic(
   out: string,
@@ -35,7 +36,11 @@ export async function writeStatic(
     const mod: unknown = await import(pathToFileURL(entry).href);
     const render: unknown = typeof mod === "object" && mod !== null ? Reflect.get(mod, "render") : undefined;
     if (typeof render !== "function") throw new Error(`keel: build entry ${entry} exports no render`);
-    const docs: unknown = await render(out, std);
+    // A Keel-coded throw of `createApp` (E1553, E1558) is a diagnostic line of the build.
+    const docs: unknown = await Promise.resolve(render(out, std)).catch((e: unknown) => {
+      const message = e instanceof Error ? e.message : String(e);
+      throw /^[EW]\d{4} /.test(message) ? new Error(`keel: ${message}`) : e;
+    });
     const all = Array.isArray(docs) ? docs.filter(isDoc) : [];
     const tags = peerOrigins(topology, env)
       .origins.map(([n, o]) => `<meta name="keel-peer" data-deployable="${n}" content="${o}">`)
@@ -52,7 +57,8 @@ export async function writeStatic(
         .replace(/<meta property="csp-nonce"[^>]*>/, "")
         .replace(/ nonce="[^"]*"/g, "")
         .replace("</head>", `${tags}</head>`);
-      const rel = d.id === undefined ? "404.html" : d.path === "/" ? "index.html" : `${String(d.path).slice(1)}/index.html`;
+      const rel =
+        d.id === undefined ? "404.html" : d.path === "/" ? "index.html" : `${String(d.path).slice(1)}/index.html`;
       fs.mkdirSync(path.dirname(path.join(out, rel)), { recursive: true });
       fs.writeFileSync(path.join(out, rel), html);
     }

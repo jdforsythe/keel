@@ -18,7 +18,8 @@ import { withWrites } from "./withWrites.ts";
 
 /**
  * `codemod place <module> --to <deployable> [--adapter]` (k.scaffold Codemods): move the module's entry in
- * `topology.ts` to deployable `to`, creating it (needs `adapter`) or removing the one it leaves empty, then regenerate
+ * `topology.ts` to deployable `to`, creating it (needs `adapter`; it gets the brand fonts in `styles`, as a scaffolded
+ * project's deployable does) or removing the one it leaves empty, then regenerate
  * the CI workflow and deploy files. Nothing else changes. Insertion is sorted (modules and new deployables), so
  * placing a module back restores the bytes of a sorted `topology.ts`.
  */
@@ -52,7 +53,7 @@ export function opPlace(
           src,
           ast.obj,
           to,
-          `${to.includes("-") ? `${q}${to}${q}` : to}: { modules: [${q}${module}${q}], adapter: ${q}${adapter}${q} }`,
+          `${to.includes("-") ? `${q}${to}${q}` : to}: { modules: [${q}${module}${q}], adapter: ${q}${adapter}${q}, styles: [${q}@keel/ui/fonts${q}] }`,
         );
   const mid = topologyAst(added);
   const left = mid?.deployables.find((d) => d.name === from.name);

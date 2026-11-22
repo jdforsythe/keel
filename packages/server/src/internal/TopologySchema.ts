@@ -11,7 +11,7 @@ const Origins = s.object({
 const Shell = s.object({ id: s.string(), name: s.string() });
 
 /**
- * Shape of a topology definition: deployable name -> `{ modules, adapter, servedBy?, storage?, shells?, caller?, origins? }` (k.topology); a key it does not list is E1552. Internal: only
+ * Shape of a topology definition: deployable name -> `{ modules, adapter, servedBy?, storage?, shells?, caller?, origins?, styles? }` (k.topology); a key it does not list is E1552. Internal: only
  * `topology()` parses with it, adding the checks the shape cannot state (a deployable has modules).
  */
 export const TopologySchema = s.record(
@@ -24,6 +24,7 @@ export const TopologySchema = s.record(
       shells: s.object({ capacitor: Shell.optional(), tauri: Shell.optional() }).optional(),
       caller: s.object({ days: s.int({ min: 1, max: 400 }) }).optional(),
       origins: Origins.optional(),
+      styles: s.array(s.string({ min: 1 })).optional(),
     },
     { closed: true },
   ),

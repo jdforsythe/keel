@@ -1,7 +1,6 @@
 import type { Result } from "@keel/schema";
 import { deployFiles } from "../deployFiles.ts";
 import { contractTs } from "../templates/contractTs.ts";
-import { indexHtml } from "../templates/indexHtml.ts";
 import { keelMarkSvg } from "../templates/keelMarkSvg.ts";
 import { moduleTs } from "../templates/moduleTs.ts";
 import { packageJson } from "../templates/packageJson.ts";
@@ -23,7 +22,7 @@ import { inputs } from "./inputs.ts";
 /** `.gitignore` of a project: build and tool output, and recorded user sessions (`.keel/sessions/`). `.keel/` is generated, deterministic and hash-checked (E1005), so it is committed, not ignored. */
 const GITIGNORE = "node_modules\ndist\n.turbo\ncoverage\nreports\n.stryker-tmp\n.keel-dev/\n.keel/sessions/\n";
 
-/** `scaffold project <name> [--adapter client|node|static] [--workspace]` (default `client`): root config, tokens, topology, module `app`, generated turbo, CI and deploy files (a `workspace` app, inside the Keel monorepo, gets `index.html` and `vitest.config.ts` instead, and no turbo, CI, deploy files or `.keel/`). */
+/** `scaffold project <name> [--adapter client|node|static] [--workspace]` (default `client`): root config, tokens, topology, module `app`, generated turbo, CI and deploy files (a `workspace` app, inside the Keel monorepo, gets `vitest.config.ts` instead, and no turbo, CI, deploy files or `.keel/`); no `index.html`, since Keel writes every document. */
 export function opProject(input: unknown, files: ReadonlyMap<string, string>): Result<Edit, ScaffoldError> {
   const r = inputs.project.parse(input);
   if (!r.ok) return badInput("project", r.error);
@@ -45,7 +44,6 @@ export function opProject(input: unknown, files: ReadonlyMap<string, string>): R
     [".gitignore", GITIGNORE],
   ]);
   if (workspace) {
-    writes.set("index.html", indexHtml(name));
     writes.set("vitest.config.ts", vitestConfigTs());
     return commit(files, writes);
   }
