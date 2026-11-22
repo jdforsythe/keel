@@ -71,4 +71,12 @@ describe("k.ui: base.page and the role sets compile into the keel.base layer", (
     const { css } = compileWith({}, []);
     for (const selector of Object.values(ROLE_CLASS)) expect(norm(css)).not.toContain(`${selector}{`);
   });
+
+  test("the `keel.base` layer holds `table` with `overflow-wrap: break-word`, with and without a `base` (a column keeps its words whole)", () => {
+    for (const extra of [{}, { base: PAGE }]) {
+      const { css } = compileWith(extra, []);
+      expect(ruleBody(baseLayer(css) ?? "", "table") ?? "").toContain("overflow-wrap:break-word");
+      expect(outsideBaseLayer(css)).not.toContain("table{");
+    }
+  });
 });
