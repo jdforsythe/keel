@@ -156,7 +156,7 @@ function shellMountArg(text: string): string | null {
 }
 
 describe("k.shell: the shell entry calls shellMount with or without an identity source", () => {
-  test.skip(
+  test(
     "The `www` entry of a project with no `identity.ts` calls the package's `shellMount` with the shell's `id` and no `mount`, before the router starts; with `identity.ts`, with its default export as `mount`.",
     () => {
       const without = shellMountArg(shellBuild(project({})));
