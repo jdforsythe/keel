@@ -27,7 +27,7 @@ function setup(plan: { delay: number; fault: "none" | "conflict" }[]) {
   return { db, ctx: simCtx(cap, plan), T: sqlName(table) };
 }
 
-test.skip("a plan `conflict`, `none` runs a lone `run` twice, changing its row once", async () => {
+test("a plan `conflict`, `none` runs a lone `run` twice, changing its row once", async () => {
   const x = setup([C, N, C, ...Array.from({ length: 5 }, () => N)]);
   const r = await x.db(x.ctx).run(sql(NoRows)`update ${x.T} set n = n + 1 where id = 1`);
   expect(okOf(r)).toBe(1);
@@ -38,7 +38,7 @@ test.skip("a plan `conflict`, `none` runs a lone `run` twice, changing its row o
   expect(row.n).toBe(1);
 });
 
-test.skip("`conflict` three times is `keel.conflict`, nothing changed", async () => {
+test("`conflict` three times is `keel.conflict`, nothing changed", async () => {
   const x = setup([C, C, C, N, N, N, N]);
   const r = await x.db(x.ctx).run(sql(NoRows)`update ${x.T} set n = n + 1 where id = 1`);
   expect(errOf(r).code).toBe("keel.conflict");

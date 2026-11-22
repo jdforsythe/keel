@@ -31,7 +31,7 @@ function setup() {
 const callWith = (x: ReturnType<typeof setup>, opts: unknown) => async () =>
   Reflect.apply(x.db(x.ctx).transaction, x.db(x.ctx), [(tx: { one: (q: unknown) => unknown }) => tx.one(sql(Any)`select 1 as v`), opts]);
 
-test.skip("`allow: 'phantoms'` throws", async () => {
+test("`allow: 'phantoms'` throws", async () => {
   await fc.assert(
     fc.asyncProperty(fc.stringMatching(/^[a-z]{3,12}$/), async (reason) => {
       const x = setup();
@@ -41,7 +41,7 @@ test.skip("`allow: 'phantoms'` throws", async () => {
   );
 });
 
-test.skip("`allow` with no `reason` throws", async () => {
+test("`allow` with no `reason` throws", async () => {
   for (const allow of ["write skew", "lost updates"]) {
     const x = setup();
     await expect(callWith(x, { allow })()).rejects.toThrow();
@@ -56,17 +56,17 @@ const call = (opts: string, pre = "") =>
     `${pre}export const run = (ctx: never) => kitchenDb(ctx).transaction(async (tx) => tx.run(q), ${opts})\n`,
   );
 
-test.skip("E2459 fires on `{ allow: 'write skew' }`", () => {
+test("E2459 fires on `{ allow: 'write skew' }`", () => {
   expect(found(project(P, call("{ allow: 'write skew' }")), "E2459").length).toBe(1);
   expect(found(project(P, call("{ allow: 'lost updates' }")), "E2459").length).toBe(1);
 });
 
-test.skip("E2459 fires on a variable `reason`", () => {
+test("E2459 fires on a variable `reason`", () => {
   const f = found(project(P, call("{ allow: 'write skew', reason: why }", "const why = 'audit rows only'\n")), "E2459");
   expect(f.length).toBe(1);
 });
 
-test.skip("E2459 does not fire on `reason: 'audit rows only'`", () => {
+test("E2459 does not fire on `reason: 'audit rows only'`", () => {
   expect(found(project(P, call("{ allow: 'write skew', reason: 'audit rows only' }")), "E2459").length).toBe(0);
   expect(found(project(P, call("{ allow: 'lost updates', reason: 'audit rows only' }")), "E2459").length).toBe(0);
 });

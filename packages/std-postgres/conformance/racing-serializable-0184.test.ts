@@ -29,7 +29,7 @@ function barrier(parties: number) {
 const pg = MODES.find((m) => m.name === "postgres 17");
 
 describe.skipIf(!hasPg17)("postgres 17", () => {
-  test.skip("two `transaction`s writing a counter's value read + 1 are each `ok` or `keel.conflict`, a `fn` runs twice, and the counter equals the `ok` count", async () => {
+  test("two `transaction`s writing a counter's value read + 1 are each `ok` or `keel.conflict`, a `fn` runs twice, and the counter equals the `ok` count", async () => {
     if (pg === undefined) return;
     const { cap, table } = fresh();
     const T = sqlName(table);
@@ -62,7 +62,7 @@ describe.skipIf(!hasPg17)("postgres 17", () => {
   });
 
   for (const allow of [undefined, "write skew"] as const) {
-    test.skip(`two that each take their own doctor off call when two are on call leave ${allow === undefined ? "one on call" : "none on call with `allow: 'write skew'`"}`, async () => {
+    test(`two that each take their own doctor off call when two are on call leave ${allow === undefined ? "one on call" : "none on call with `allow: 'write skew'`"}`, async () => {
       if (pg === undefined) return;
       const { cap, table } = fresh();
       const T = sqlName(table);

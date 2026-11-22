@@ -15,7 +15,7 @@ const reasonArb = fc.stringMatching(/^[a-z]{3,20}$/);
 
 for (const m of MODES) {
   describe(m.name, () => {
-    test.skip("`show transaction_isolation` answers `serializable` in a `transaction` and alone", async () => {
+    test("`show transaction_isolation` answers `serializable` in a `transaction` and alone", async () => {
       const { cap } = fresh();
       const mode = m.make();
       try {
@@ -30,7 +30,7 @@ for (const m of MODES) {
       }
     });
 
-    test.skip("`allow: 'write skew'` runs at `repeatable read`", async () => {
+    test("`allow: 'write skew'` runs at `repeatable read`", async () => {
       const { cap } = fresh();
       const mode = m.make();
       try {
@@ -53,7 +53,7 @@ for (const m of MODES) {
       }
     });
 
-    test.skip("`allow: 'lost updates'` runs at `read committed`", async () => {
+    test("`allow: 'lost updates'` runs at `read committed`", async () => {
       const { cap } = fresh();
       const mode = m.make();
       try {

@@ -24,7 +24,7 @@ function setup() {
   return { db, ctx: simCtx(cap, plan), T: sqlName(table) };
 }
 
-test.skip("two callers each a lone `one` then a lone `run` of the value read + 1 end the counter at 1", async () => {
+test("two callers each a lone `one` then a lone `run` of the value read + 1 end the counter at 1", async () => {
   const x = setup();
   const caller = async () => {
     const r = okOf(await x.db(x.ctx).one(sql(Counter)`select n from ${x.T} where id = 1`));
@@ -36,7 +36,7 @@ test.skip("two callers each a lone `one` then a lone `run` of the value read + 1
   expect(final.n).toBe(1);
 });
 
-test.skip("two callers each in a `transaction` end the counter at 2", async () => {
+test("two callers each in a `transaction` end the counter at 2", async () => {
   const x = setup();
   const caller = () =>
     x.db(x.ctx).transaction(async (tx) => {
