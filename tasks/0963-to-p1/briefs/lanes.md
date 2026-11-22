@@ -1,6 +1,6 @@
 # Open lanes (state at the handoff of 2026-11-22)
 
-Four lanes hold unmerged work. Each worktree is clean and committed; no subagent runs. Every brief carries the rules in `README.md` beside this file. None of these lanes has run `pnpm ledger`; `ledger-fresh` reports their new rows until the ledger is regenerated on the main line after the merge.
+Four lanes hold unmerged work. A finishing subagent runs in each (started 2026-11-22 evening): it merges the main line in and runs what the lane owes below. Conformance written since the sections below: `lane-r193` 8e973e0c (`currentUser.fixed`, D107); `lane-r186` 080aadf5, fee4090d, cf11b493 (owed 1a to 1c; E1589's cases are red until its build, and its `fixtures-by-code` entry is owed after the build); `lane-r188` 4d3d8d13, 830fb50e, d1dc07dd (owed 2, all green; E1801 for a look has no fix while k.ui's rule line says "fix: nearest token": a backlog line). Every brief carries the rules in `README.md` beside this file. None of these lanes has run `pnpm ledger`; `ledger-fresh` reports their new rows until the ledger is regenerated on the main line after the merge.
 
 Suggested order to merge: `lane-ex3`, `lane-r193`, `lane-r186`, `lane-r188` (the largest, and it touches the apps the others touch least). Merge the main line into each first; `lane-r188` and `lane-r193` both changed `apps/household`.
 
