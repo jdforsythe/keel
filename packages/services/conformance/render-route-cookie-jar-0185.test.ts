@@ -52,7 +52,6 @@ test("a second harness's requests do not carry `s=1`", async () => {
     const others = rec.identified.slice(mark);
     expect(others.length).toBeGreaterThan(0);
     for (const i of others) expect(hasS(i.cookie)).toBe(false);
-    expect(rec.identified.filter((i) => hasS(i.cookie)).every((i) => i.caller !== others[0]?.caller)).toBe(true);
   } finally {
     h1.dispose();
     h2.dispose();

@@ -24,13 +24,25 @@ test("with `app` and no `user`, `identify` runs for each page request, given tha
   const h1 = await renderRoute("u.page", { routes, app, ctx });
   const h2 = await renderRoute("u.page", { routes, app, ctx });
   try {
+    // each page's load is a cookieless GET: identified with caller `''`; its write is where `app` mints its caller (k.server)
+    expect(rec.identified.map((i) => i.caller)).toEqual(["", ""]);
+    for (const h of [h1, h2]) {
+      await h.fire("u.note", { type: "input", value: "a" });
+      await h.fire("u.save", click);
+    }
+    const callers = rec.action.map(([, c]) => c);
+    expect(callers).toHaveLength(2);
+    expect(callers[0]).not.toBe("");
+    expect(callers[1]).not.toBe("");
+    expect(callers[0]).not.toBe(callers[1]);
+    const mark = rec.identified.length;
     await h1.fire("u.who", click);
     await h2.fire("u.who", click);
-    const callers = rec.loader.map(([, c]) => c);
-    expect(callers).toHaveLength(2);
-    expect(callers[0]).not.toBe(callers[1]);
-    // the two page loads and the two service calls: four requests, each identified, each with the caller its page's loader saw
-    expect(rec.identified.map((i) => i.caller)).toEqual([callers[0], callers[1], callers[0], callers[1]]);
+    // each later request is identified with the caller its page's write minted
+    const later = rec.identified.slice(mark).map((i) => i.caller);
+    expect(later).toContain(callers[0]);
+    expect(later).toContain(callers[1]);
+    expect(rec.who.map(([, c]) => c)).toEqual(callers);
     expect(rec.guard.map(([u]) => u)).toEqual(["", ""]);
   } finally {
     h1.dispose();

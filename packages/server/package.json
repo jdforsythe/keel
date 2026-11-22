@@ -51,7 +51,6 @@
   },
   "devDependencies": {
     "@keel/forms": "workspace:*",
-    "@keel/services": "workspace:*",
     "@keel/testing": "workspace:*",
     "@keel/tooling": "workspace:*",
     "@keel/ui": "workspace:*",

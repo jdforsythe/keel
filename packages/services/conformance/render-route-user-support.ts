@@ -15,9 +15,29 @@ import { ok, s } from "@keel/schema";
 import * as schema from "@keel/schema";
 import { createApp, identity, topology } from "@keel/server";
 import { service } from "@keel/services";
-import { MODULES, compilePage } from "./claim-support.ts";
+import { compile } from "@keel/compiler";
+import { evaluate } from "@keel/compiler/testing";
+import * as router from "@keel/router";
+import * as ui from "@keel/ui";
+import * as aria from "@keel/ui/aria";
 
 export { Form };
+type Page = (props: router.RouteProps, ctx: Ctx) => Node;
+const MODULES: Record<string, unknown> = { "@keel/ui": ui, "@keel/ui/aria": aria, "@keel/router": router };
+/** Compiles `source` as the default export of `<name>.tsx` and returns it as a route component. */
+function compilePage(name: string, source: string, modules: Record<string, unknown> = MODULES): Page {
+  const r = compile([{ path: `${name}.tsx`, source }]);
+  if (r.diagnostics.length > 0) throw new Error(`fixture: ${name} does not compile: ${JSON.stringify(r.diagnostics)}`);
+  const out = r.outputs[0];
+  if (out === undefined) throw new Error("fixture: no compiler output");
+  const fn = evaluate(out.code, modules);
+  if (typeof fn !== "function") throw new Error("fixture: default export is not a component");
+  return (props, ctx) => {
+    const node: unknown = fn(props, ctx);
+    if (!(node instanceof Node)) throw new Error("fixture: component did not return a Node");
+    return node;
+  };
+}
 export const SEED = 1337;
 export const mount = identityMount("/api/auth");
 
@@ -34,18 +54,28 @@ export const pairs = (cookie: string | null | undefined): string[] =>
   cookie === null || cookie === undefined || cookie === "" ? [] : cookie.split(/;\s*/);
 
 type Who = readonly [user: string, caller: string];
-export const rec = {
-  identified: [] as { caller: string; cookie: string | null }[],
-  handled: [] as { path: string; cookie: string | null }[],
-  guard: [] as Who[],
-  loader: [] as Who[],
-  who: [] as Who[],
-  action: [] as Who[],
-  bump: [] as Who[],
-  live: [] as Who[],
+type Recording = {
+  identified: { caller: string; cookie: string | null }[];
+  handled: { path: string; cookie: string | null }[];
+  guard: Who[];
+  loader: Who[];
+  who: Who[];
+  action: Who[];
+  bump: Who[];
+  live: Who[];
+};
+export const rec: Recording = {
+  identified: [],
+  handled: [],
+  guard: [],
+  loader: [],
+  who: [],
+  action: [],
+  bump: [],
+  live: [],
 };
 /** `value` is what `/in` sets `s` to; `n` the write counter the event stream yields; `waiters` the open streams' wake-ups. */
-export const control = { value: "1", n: 0, waiters: [] as (() => void)[] };
+export const control: { value: string; n: number; waiters: (() => void)[] } = { value: "1", n: 0, waiters: [] };
 export const reset = (): void => {
   for (const list of Object.values(rec)) list.length = 0;
   control.value = "1";
