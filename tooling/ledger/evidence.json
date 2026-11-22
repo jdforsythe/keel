@@ -1,5 +1,5 @@
 {
-  "commit": "ae7bc8b561ed15b88484352fdab8856e46cb0a9d",
+  "commit": "56688c95f8c691433e604b9285f555601ae728bd",
   "coverage": {
     "packages": {
       "apps/golden-1": {
@@ -1168,19 +1168,19 @@
       }
     }
   },
-  "generatedAt": "2026-11-22T16:11:11.892Z",
+  "generatedAt": "2026-11-22T16:15:40.235Z",
   "ledger": {
     "a11y": {
       "byRung": {
-        "example": 380,
+        "example": 364,
         "exhaustive": 0,
         "monitored": 0,
-        "none": 580,
+        "none": 596,
         "probabilistic": 0,
         "proven": 0
       },
       "total": 960,
-      "verified": 380
+      "verified": 364
     },
     "clauses": {
       "byRung": {
@@ -2575,7 +2575,7 @@
       "verified": 1100
     },
     "evidenceByRung": {
-      "example": 1798,
+      "example": 1782,
       "exhaustive": 16,
       "monitored": 8,
       "probabilistic": 342,
@@ -3137,7 +3137,7 @@
     },
     "items": 2663,
     "unsafe": 18,
-    "verified": 1907
+    "verified": 1891
   },
   "mutation": {
     "packages": {
