@@ -312,7 +312,7 @@ The coverage plan names this layer 8 ("Jobs, schedules, a workflow"); the README
 
 ### L9-2 docs: a test's `createApp` runs no runner unless the test passes them
 - Tried: `test/serve.ts` made the app with `createApp({ topology, routes, ctx, deployable, identity })`, as the skill's example. Run now answered `running`, and after 80 turns of the clock the run had not moved: no job ran, no diagnostic.
-- k.topology Runners says `createApp({ runners })` calls them, and the generated entry passes them; keel-server's "Runners and tests" listed every other option but this one. Fixed in `.claude/skills/keel-server/SKILL.md`: pass `runners: { <module>: runners }` as the built entry does.
+- k.topology Runners says `createApp({ runners })` calls them, and the generated entry passes them; keel-server's "Runners and tests" listed every other option but this one. Fixed in `packages/cli/skills/keel-server/SKILL.md` (copied to `.claude/skills`): no runner runs without `runners: { <module>: runners }`.
 
 ### L9-3 rough: a format value cannot be written in a chart's `start`
 - `RestockData` first held `at: Instant` (std.temporal). The chart's `start` needs a value: `"1970-01-01T00:00:00.000Z"` fails `tsc` (`string` is not `Format<string, "temporal.Instant">`), and `instantOf(0)` is a `Result`, so a literal needs a fallback the app cannot write without a cast. The run's time is epoch milliseconds (`s.int`), turned into an `Instant` only on the page.
