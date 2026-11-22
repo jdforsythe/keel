@@ -9,7 +9,10 @@
 // the profile page mints an API token that calls the API, and once revoked the token is refused; values typed into the
 // profile's personal fields reach no server log line and no file in the data folder but the database; no page error or
 // console error. The server is then killed with SIGKILL with a write in flight and restarted, and the list, the
-// receipts, the household name and the session are all there. When docker answers, the same kill and restart runs
+// receipts, the household name and the session are all there. A second member then opens the list in a second browser
+// context: an item the first adds shows on her page with no reload, an item she buys moves on his, both pages say
+// Connecting while the server is killed and Live once it is back, and a sign-out in her other tab turns her page to
+// Signed out with no new item on it. When docker answers, the same kill and restart runs
 // against a throwaway `postgres:17` container; the container is removed after.
 // Usage: node --disable-warning=ExperimentalWarning tooling/smoke/household.mjs. The app is not built here and nothing
 // is written inside the repo; the server child and the container are removed on every path, and a crash prints the
@@ -22,7 +25,7 @@ import { join } from "node:path";
 import { chromium } from "@playwright/test";
 import { freePort, recorder, root, wait } from "./built.mjs";
 
-const LIMIT_MS = 120_000;
+const LIMIT_MS = 240_000;
 const SECRET = "household-smoke-secret-of-32-bytes-or-more";
 const AUTH_SECRET = "household-smoke-auth-secret-of-32-or-more";
 const PASSWORD = "smoke test passphrase";
@@ -116,7 +119,14 @@ async function up(url, ms = 20_000) {
 }
 
 const byId = (page, id) => page.locator(`[id='${id}']`);
-const settled = (page) => page.waitForLoadState("networkidle");
+/**
+ * The page is loaded and its requests are quiet. The list page keeps its change stream open, so the network is never
+ * idle there: past the load, at most 2.5 s are spent waiting for quiet.
+ */
+const settled = async (page) => {
+  await page.waitForLoadState("load");
+  await page.waitForLoadState("networkidle", { timeout: 2_500 }).catch(() => undefined);
+};
 const clip = (v) => String(v).slice(0, 200);
 
 const asJson = { accept: "application/json", "content-type": "application/json", "x-keel": "1" };
@@ -498,6 +508,104 @@ try {
   await page.goto(`${origin}/profile`);
   await settled(page);
   step("the session outlives the restart", new URL(page.url()).pathname === "/profile", page.url());
+
+  // Two members with the list open in two browser contexts: Ada's change shows on Grace's page with no reload, both
+  // say so through a kill and a restart, and a member signed out in another tab gets no list.
+  const graceContext = await browser.newContext();
+  const grace = await graceContext.newPage();
+  grace.on("pageerror", (e) => errors.push(String(e).split("\n")[0]));
+  await grace.goto(`${origin}/signup`);
+  await byId(grace, "members.signupForm:name").fill("Grace Hopper");
+  await byId(grace, "members.signupForm:email").fill("grace@example.com");
+  await byId(grace, "members.signupForm:password").fill(PASSWORD);
+  await Promise.all([
+    grace.waitForURL((u) => u.pathname === "/signin", { timeout: 10_000 }),
+    byId(grace, "members.signupSubmit").click(),
+  ]);
+  await signInOn(grace, "grace@example.com");
+  await grace.goto(`${origin}/list`);
+  await page.goto(`${origin}/list`);
+  const both = [page, grace];
+  for (const p of both) await p.evaluate(() => Object.assign(window, { smokeMark: "kept" }));
+  const statusOf = (p) =>
+    byId(p, "shopping.live")
+      .textContent()
+      .then((t) => (t ?? "").trim());
+  const until = async (p, word, ms) => {
+    for (const end = Date.now() + ms; Date.now() < end; await wait(100)) {
+      if ((await statusOf(p)).startsWith(word)) return true;
+    }
+    return false;
+  };
+  const liveBoth = (await until(page, "Live", 10_000)) && (await until(grace, "Live", 10_000));
+  step("both pages say Live", liveBoth, `${await statusOf(page)} / ${await statusOf(grace)}`);
+  const rowIn = (p, name) => p.locator("[id^='shopping.name.']", { hasText: name });
+  await byId(page, "shopping.staples.trigger").click();
+  await byId(page, "shopping.staples.item.bread").click();
+  const seen = await rowIn(grace, "Bread")
+    .waitFor({ timeout: 10_000 })
+    .then(
+      () => true,
+      () => false,
+    );
+  const noReload = await grace.evaluate(() => Reflect.get(window, "smokeMark") === "kept");
+  step("Ada adds Bread and Grace's page shows it with no reload", seen && noReload, `shown ${seen}, kept ${noReload}`);
+  const breadId = ((await rowIn(grace, "Bread").getAttribute("id")) ?? "").slice("shopping.name.".length);
+  await byId(grace, `shopping.toggle.${breadId}`).click();
+  const bought = await byId(page, `shopping.toggle.${breadId}`).filter({ hasText: "Back on the list" });
+  await byId(page, "shopping.view.tab.bought").click();
+  const moved = await bought.waitFor({ timeout: 10_000 }).then(
+    () => true,
+    () => false,
+  );
+  step("Grace buys it and Ada's page moves it to Bought", moved);
+
+  await killed();
+  const dropped = (await until(page, "Connecting", 15_000)) && (await until(grace, "Connecting", 15_000));
+  step(
+    "both pages say Connecting once the server is gone",
+    dropped,
+    `${await statusOf(page)} / ${await statusOf(grace)}`,
+  );
+  server = serve(port, storage, pglite);
+  const upAgain = await up(`${origin}/`);
+  const recovered = upAgain && (await until(page, "Live", 45_000)) && (await until(grace, "Live", 45_000));
+  step("both pages say Live again after the restart", recovered, `${await statusOf(page)} / ${await statusOf(grace)}`);
+  await byId(page, "shopping.staples.trigger").click();
+  await byId(page, "shopping.staples.item.apples").click();
+  const reached = await rowIn(grace, "Apples")
+    .waitFor({ timeout: 10_000 })
+    .then(
+      () => true,
+      () => false,
+    );
+  const stillKept = await grace.evaluate(() => Reflect.get(window, "smokeMark") === "kept");
+  step("after the restart Ada's add reaches Grace's page", reached && stillKept, `shown ${reached}, kept ${stillKept}`);
+
+  await graceContext.setOffline(true);
+  const offline = await until(grace, "Offline", 10_000);
+  await graceContext.setOffline(false);
+  const online = await until(grace, "Live", 45_000);
+  step("Grace's browser offline says Offline, and Live once it is back", offline && online, await statusOf(grace));
+
+  const elsewhere = await graceContext.newPage();
+  await elsewhere.goto(`${origin}/list`);
+  await Promise.all([
+    elsewhere.waitForURL((u) => u.pathname === "/signin", { timeout: 10_000 }),
+    byId(elsewhere, "app.nav.signOut").click(),
+  ]);
+  await byId(page, "shopping.staples.trigger").click();
+  await byId(page, "shopping.staples.item.rice").click();
+  const out = await until(grace, "Signed out", 10_000);
+  // Rice is on the list from the kill above: Ada's add raises it to 2, which Grace's page must not show.
+  const leaked = await rowIn(grace, "Rice × 2").count();
+  step(
+    "signed out in another tab, Grace's page says so and gets no new item",
+    out && leaked === 0,
+    `${await statusOf(grace)}, rows with Rice × 2: ${leaked}`,
+  );
+  step("no page errors with two members", errors.length === 0, clip(errors.join(" | ")));
+  await graceContext.close();
 
   if ((await docker(["info", "--format", "{{.ServerVersion}}"])) === null) {
     step("postgres 17 skipped: docker is not running", true);
