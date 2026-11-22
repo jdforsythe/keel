@@ -11,7 +11,7 @@ const BOUND_MS = 30_000;
 
 /**
  * Keep a client store current (std.live), inside a scope (E1203 outside one): follow `channel` with `params` at
- * `origin` and, after each `reset` and each `saved` event, run `read(ctx, signal)` and commit an `ok` value with
+ * `origin` and, after each `reset`, `saved` and `changed` event, run `read(ctx, signal)` and commit an `ok` value with
  * `tx(hydrate, value)`. One read at a time: a read is pending until it settles or 30 s pass on `ctx.clock`, and events
  * while one is pending cause exactly one more after it. A read that fails or is not settled within 30 s commits nothing
  * and runs again 1 s later, doubling to 30 s on `ctx.clock`, or at the next event; a read settling after its 30 s
@@ -69,7 +69,7 @@ export function live<C extends Ctx, T, P, Q, M, E>(
   };
   const sub = subscribe(ctx, origin, channel, params, (e) => {
     if (e.kind === "reset") fresh.set(false);
-    if (e.kind === "reset" || e.kind === "saved") void read();
+    if (e.kind === "reset" || e.kind === "saved" || e.kind === "changed") void read();
   });
   sc.onDispose(() => {
     alive = false;

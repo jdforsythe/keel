@@ -11,7 +11,10 @@ import type { StreamEntry } from "../internal/StreamEntry.ts";
 import type { ChannelRoute } from "./ChannelRoute.type.ts";
 import { ChannelsConfig } from "./ChannelsConfig.ts";
 import type { Member } from "./Member.ts";
+import type { Followed } from "./internal/Followed.ts";
 import { allowed } from "./internal/allowed.ts";
+import { canonicalJson } from "./internal/canonicalJson.ts";
+import { followAll } from "./internal/followAll.ts";
 import { full } from "./internal/full.ts";
 import { hubOf } from "./internal/hubOf.ts";
 import { inbox } from "./internal/inbox.ts";
@@ -25,7 +28,8 @@ const closed = (reason: "denied" | "full") => ok({ kind: "closed", reason } as c
 
 type Opts<P, S, Id extends string> = {
   readonly id: Id;
-  readonly stores: (ctx: Ctx) => S;
+  readonly stores?: (ctx: Ctx) => S;
+  readonly follows?: readonly Followed[];
   readonly member: Member<P, S>;
 };
 
@@ -95,10 +99,12 @@ export function channelRoute<P, M, S, const Id extends string, const Pub extends
  * channel's own (std.contracts): another contract is a type error and throws E1515 naming the members that differ. At
  * `id` a live loader: when `member` is false its only event is `closed` `denied`; past the serving module's
  * `maxStreams`, or its `perCaller` (a caller with a cookie) or `perAnonymous` (all cookieless opens together), each
- * counted over that module's own channel streams in the process, `closed` `full`; else `reset`, then `saved` after
- * each save of a store `stores` creates (with `member` re-checked against the stores as saved: false, or a failed
- * re-read, ends it with `closed` `denied`) and `message` per publish to the same channel and params, delivered after
- * any pending re-check. At `publish` the action of `POST { message }`: `member` false is 403, else every open member
+ * counted over that module's own channel streams in the process, `closed` `full`; else it follows each `follows`
+ * entry at the canonical JSON of its params, then yields `reset`, then `saved` after each save of a store `stores`
+ * creates (with `member` re-checked against the stores as saved: false, or a failed re-read, ends it with `closed`
+ * `denied`), `changed` after each followed change (with `member` re-run first) and `message` per publish to the same
+ * channel and params, delivered after any pending re-check. An entry not listening within 5,000 ms on `ctx.clock`, or
+ * a `lost` report, ends the stream with no `closed` event, a drop its client reopens after. At `publish` the action of `POST { message }`: `member` false is 403, else every open member
  * stream of the instance gets the message and it answers `ok({})`. The server answers params failing the channel's
  * schema with 422 before either runs. Events name no caller and hold no store state. Throws E1510 for a `publish` on
  * a channel without `message`.
@@ -108,7 +114,8 @@ export function channelRoute<P, M, S>(
   channel: Channel<P, M>,
   opts: Opts<P, S, string> & { readonly publish?: string | undefined },
 ): object {
-  const { id, publish, stores, member } = opts;
+  const { id, publish, stores, follows = [], member } = opts;
+  const decl: { readonly stores?: (ctx: Ctx) => S } = stores === undefined ? {} : { stores };
   const { module } = contract;
   const { path, params: query, events: output, body, message } = channel;
   if (publish !== undefined && (message === undefined || body === undefined)) {
@@ -118,7 +125,7 @@ export function channelRoute<P, M, S>(
   const streams = holding<StreamEntry<P, M>>(contract, id, { method: "GET", path, query, events: true, output });
   const instance = (key: string): string => `${channel.name}\n${key}`;
   const keyOf = (params: P): string => JSON.stringify(channel.params.encode(params));
-  const live = loader(streams, id, { stores }, async function* ({ search, caller, user, stores, signal }, ctx) {
+  const live = loader(streams, id, decl, async function* ({ search, caller, user, stores, signal }, ctx) {
     // `member` before the caps: a non-member learns nothing about them; it runs once per open as it does below them.
     const at = { caller, user, params: search, stores };
     if (!allowed(member, at)) {
@@ -158,16 +165,32 @@ export function channelRoute<P, M, S>(
         });
       },
     });
+    // A `lost` report or a follow not listening in time ends the stream as a drop: no `closed`, so the client reopens.
+    const drop = new AbortController();
+    const recheck = (): void => {
+      chain = chain.then(() => {
+        if (out) return;
+        out = !allowed(member, at);
+        box.push(out ? { kind: "closed", reason: "denied" } : { kind: "changed" });
+      });
+    };
+    const unfollow = await followAll(ctx, follows, channel, canonicalJson(channel.params.encode(search)), (r) => {
+      if (r.kind === "changed") recheck();
+      else drop.abort();
+    });
+    const until = AbortSignal.any([signal, drop.signal]);
     try {
+      if (unfollow === undefined || drop.signal.aborted) return;
       yield ok<ChannelEvent<M>>({ kind: "reset" });
       for (;;) {
-        const e = await box.next(signal);
+        const e = await box.next(until);
         if (e === undefined) return;
         if (e.kind === "closed") leave();
         yield ok(e);
         if (e.kind === "closed") return;
       }
     } finally {
+      unfollow?.();
       leave();
     }
   });
@@ -175,7 +198,7 @@ export function channelRoute<P, M, S>(
   const send = action(
     holding<PublishEntry<P, M>>(contract, publish, { method: "POST", path, query, body }, true),
     publish,
-    { stores },
+    decl,
     (body, { url, caller, user, stores }, ctx) => {
       const p = paramsOf(channel.params, url);
       if (!p.ok || !allowed(member, { caller, user, params: p.value.value, stores })) return err(denied);

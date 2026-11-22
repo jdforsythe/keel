@@ -53,17 +53,23 @@ function evict(): void {
   }
 }
 
+/** `url` and its scheme, `pglite` or `pg`; a missing value or another scheme throws E2455, naming no part of it. */
+export function schemeOf(url: string | undefined): { readonly url: string; readonly scheme: "pglite" | "pg" } {
+  if (url === undefined || url === "")
+    throw codeError("E2455", "KEEL_POSTGRES_URL is not set; give it a postgres:, postgresql: or pglite: URL");
+  const scheme = /^([a-z][a-z0-9+.-]*):/i.exec(url)?.[1]?.toLowerCase();
+  if (scheme === "pglite") return { url, scheme: "pglite" };
+  if (scheme === "postgres" || scheme === "postgresql") return { url, scheme: "pg" };
+  throw codeError("E2455", "KEEL_POSTGRES_URL is not a postgres:, postgresql: or pglite: URL");
+}
+
 /**
  * The engine for `KEEL_POSTGRES_URL`'s value (std.postgres Modes), one per URL per process: `postgres:` and
  * `postgresql:` use `pg`; `pglite:<folder>` PGlite on disk, loaded by `import()` only then. A missing value or another
  * scheme throws E2455, naming no part of the value.
  */
-export function engineFor(url: string | undefined): Promise<Engine> {
-  if (url === undefined || url === "")
-    throw codeError("E2455", "KEEL_POSTGRES_URL is not set; give it a postgres:, postgresql: or pglite: URL");
-  const scheme = /^([a-z][a-z0-9+.-]*):/i.exec(url)?.[1]?.toLowerCase();
-  if (scheme !== "postgres" && scheme !== "postgresql" && scheme !== "pglite")
-    throw codeError("E2455", "KEEL_POSTGRES_URL is not a postgres:, postgresql: or pglite: URL");
+export function engineFor(value: string | undefined): Promise<Engine> {
+  const { url, scheme } = schemeOf(value);
   const found = engines.get(url);
   if (found !== undefined) {
     found.used = ++clock;

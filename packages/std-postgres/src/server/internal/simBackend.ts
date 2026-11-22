@@ -1,6 +1,7 @@
 import type { Backend } from "./Backend.ts";
 import type { Engine } from "./Engine.ts";
 import type { Migration } from "./Migration.ts";
+import { localChanges } from "./localChanges.ts";
 import { migrate } from "./migrate.ts";
 import { reloadTypes } from "./reloadTypes.ts";
 import { seedValue } from "./seedValue.ts";
@@ -10,13 +11,15 @@ let schemas = 0;
 
 /**
  * The sim side's backend: the shared PGlite in memory, a schema of its own per sim ctx and capability, migrated at the
- * first call; a failed pass keeps nothing and the next call runs it again. Each transaction sets that `search_path` and `setseed` from the capability seed and the call count.
+ * first call; a failed pass keeps nothing and the next call runs it again. Its changes are delivered to its own follows. Each
+ * transaction sets that `search_path` and `setseed` from the capability seed and the call count.
  */
 export function simBackend(name: string, files: () => readonly Migration[], seed: number): Backend {
   schemas += 1;
   const schema = `keel_sim_${schemas}`;
   let calls = 0;
   let made: Promise<Engine> | undefined;
+  const changes = localChanges();
   const prelude: Backend["prelude"] = async (c) => {
     calls += 1;
     await c.query(`set local search_path to ${schema}`, []);
@@ -25,6 +28,7 @@ export function simBackend(name: string, files: () => readonly Migration[], seed
   return {
     pooled: false,
     prelude,
+    changes: () => changes,
     ensure(): Promise<Engine> {
       if (made !== undefined) return made;
       const making = (async () => {
