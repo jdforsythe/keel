@@ -649,7 +649,7 @@ describe("vite: inspect endpoint", () => {
         },
       },
     });
-    expect(used).toHaveLength(2);
+    expect(used).toHaveLength(3);
     expect(preview).toHaveLength(1);
     expect(preview[0]).toBe(used[0]);
     let mw: Parameters<Parameters<typeof p.configurePreviewServer>[0]["middlewares"]["use"]>[0] | undefined;

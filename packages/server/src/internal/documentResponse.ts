@@ -60,7 +60,7 @@ export function documentResponse(
     state,
     r.sv.mode === "dev" ? devMessage : null,
     entry,
-    headHtml(head.title ?? r.sv.name, r.sv.built),
+    headHtml(head.title ?? r.sv.name, r.sv.css, r.sv.built?.files.has("/keel-mark.svg") === true),
     head.lang,
     nonce,
   );
