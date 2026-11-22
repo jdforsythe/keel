@@ -21,7 +21,7 @@ const KINDS: [unknown, string][] = [
   [10n, "a bigint"],
   [Symbol("s"), "a symbol"],
   [() => 1, "a function"],
-  [new Date(0), "a Date"],
+  [Object.create(Date.prototype), "a Date"],
   [new Map(), "a Map"],
   [new Uint8Array(1), "a Uint8Array"],
   [new Named(), "a Named"],
