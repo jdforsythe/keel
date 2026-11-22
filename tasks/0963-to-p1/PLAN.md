@@ -158,6 +158,7 @@ Read only this file and `docs/HANDOFF.md`. Everything else is fetched when a ste
 - Before a push that carries code, after `pnpm build`: the smokes CI runs (`tooling/smoke/restart.mjs`, `workflow.mjs`, `dev-signin.mjs`, `resume.mjs 3`), since no package suite serves a built app in a browser (backlog 1003).
 - Before a push: `pnpm check`, `pnpm test`, both apps' `keel test`, `pnpm ledger --diff`, `node tooling/evidence-report.mjs --check` and `pnpm build` on the exact commit in a clean checkout, each gated on its own exit status. `pnpm ledger` and `pnpm evidence:report` are written from a clean tree after both apps' `keel test`.
 - The gate's root `pnpm test` counts only when its own last line is `ok` with every task run. A failure, flake or not, is fixed or rerun and then the whole root `pnpm test` is run again: a file passing alone says nothing about the tasks the failed run did not finish (D97; before 93cc1ac9 turbo cancelled the running tasks at the first failure and the summary showed one failure).
+- The committed ledger is written only from a tree where `keel test` has just run in exactly the apps CI's check job tests (golden-1, golden-2, household, each `examples/*`; not `apps/sessions`): a `pnpm ledger` in a worktree without those reports drops the a11y rows, and one with extra reports adds rows CI reads as lowered. A lane's subagent regenerates the ledger only after running those `keel test`s there; the gate's `ledger-fresh --a11y` in the clean checkout is the judge (D100).
 - One mutation run at a time (machine-wide lock). Few test-running agents at once: the machine is shared, and spawn-heavy cli conformance times out under load (backlog 0938).
 
 ## Lanes (2026-11-19)
@@ -275,6 +276,10 @@ State at the last checkpoint; each lane is a subagent in its worktree. The older
   - Merged after 2c184922, not pushed, root check ok: `lane-fix2` (39e03176; RFC 0194 with ADR-0216: E1720 names what a page threw, `run()` waits for `ctx.net` in flight, the listener is `keel-listen-<pid>`, `keel dev` reloads on a file that registered a capability or its helper); backlog lines 1029 to 1044 (075eae93); `lane-walk9` (c2b9f731: the walkthrough's weekly staples layer, smoke 47 steps; D99: RFC 0195 built, ADR-0217, E1550 when a layout's and its page's loaders create one store id through different factories; `StepSpec` typed by its `done` events; findings L9-1 to L9-7, L9-3 and L9-5 are backlog 1036).
   - To confirm or reverse with D99: `keel check` treats a page no binding names as under every layout of its module's contract when it looks for E1550.
   - Running: `.worktrees/load` `lane-load` (backlog 1040: a failed task names its file and message, the causes of the load failures, a concurrency cap, three whole runs under load as proof); `.worktrees/mutate` `lane-mutate` (mutation runs for testing, std-postgres, check, compiler, server, std-channels, ctx, store; it commits the regenerated ledger there). Gate and push the main line after `lane-load` merges.
+- Checkpoint 9 of 2026-11-22: pushed 205a26ed. The gate on ae7bc8b5 was green on every step but `ledger-fresh --a11y` (a lane's `pnpm ledger` without app reports had dropped the a11y rows of `todos.edit`); root `pnpm test` passed whole on its first run at load 24 to 35 (882 s) with the test slots of `lane-load`. The ledger was regenerated per D100 and `check`, `ledger --diff`, `ledger-fresh --a11y`, evidence and ci-shards were re-run green in `.worktrees/verify` at 205a26ed; only `ledger.json`, `evidence.json` and `COVERAGE.md` differ from the gated commit. A subagent watches the CI run on 205a26ed.
+  - Merged since checkpoint 8: `lane-load` (c503fc49: a failed task prints file:line, test name and message; a dead worker prints what killed it; std-sessions groups share one project host; `tooling/test-slots.mjs`; RFC 0194's fifth clause: a reset connection rejects like a refused one, fixed in `packages/ctx/src/internal/typeOfServiceBestEffort.ts`); `docs/A11Y-TARGET.md` and `docs/BRAND.md` re-verified (d57288d0).
+  - For the operator (gate tooling is the operator's): `tooling/docs-freshness.mjs` ages every doc on any commit under `docs/`, so D0001 fired seven times in a day; the orchestrator recommends scoping each doc to the paths of its subject.
+  - Running: `.worktrees/mutate` `lane-mutate` (mutation runs; it commits a regenerated ledger there: on merge, regenerate per D100 rather than take its file).
 
 ## Verification
 - [x] Backlog 0956 built and conformance-covered: RFC 0147 and RFC 0150 (links into a shell), red-teamed twice.
@@ -285,8 +290,8 @@ State at the last checkpoint; each lane is a subagent in its worktree. The older
 - [x] P1 and P2 plan written from `tasks/p1/INPUT.md` (backlog 0962): `tasks/p1/PLAN.md`; the operator reads its open decisions O1 to O11.
 
 ## Next action
-1. `git worktree list`, `git status --short`, `gh run list --branch jdforsythe/test-impl --limit 2` (2c184922 is green).
-2. The main line is ahead of 2c184922 (checkpoint 8). Merge `lane-load` and `lane-mutate` when they report, then gate under D97 (Method) in `.worktrees/verify` and push on a whole green root `pnpm test`; then watch CI.
+1. `git worktree list`, `git status --short`, `gh run list --branch jdforsythe/test-impl --limit 2`: read the CI run on 205a26ed to its end and fix what fails before any push.
+2. Merge `lane-mutate` when it reports (regenerate the ledger per D100); the next code batch is gated under D97 (Method) in `.worktrees/verify`.
 3. Ask the operator for RFC 0186, 0188 and 0193 (checkpoint 7); build each accepted one: spec text applied, conformance by the `conformance-writer`, then the build, in its own worktree.
 4. Backlog 1029 to 1044 hold the loose ends of 2026-11-22; 1040 (the suite under load) is in `lane-load`.
 5. After RFC 0188: a brand pass on golden-1 and golden-2 against `docs/BRAND.md`, judged from screenshots.
@@ -294,4 +299,4 @@ State at the last checkpoint; each lane is a subagent in its worktree. The older
 7. Weakness packages left (`tasks/p1/weaknesses-triage.md`): resume-dev-conformance, shell-origin-and-deps, golden-polish; by RFC: 0883, 0960, 1000, the rest of 0302; backlog 1004 to 1028.
 8. The mutation runs on a quiet machine (the ledger holds about 250 stale claims; check, testing, compiler, server and std-postgres changed most).
 9. Decide `tasks/p1/review-findings.md` and create `keel-review.json`. RFC 0163 and RFC 0169's second part after the first real apps. Not started: W4 scoping; the operator's to start: the golden-3 agent run, W16's first pair.
-10. For the operator: D51 to D99 to confirm or reverse (D89 to D99 are of 2026-11-22, in the checkpoints of the Lanes block and in Method).
+10. For the operator: D51 to D100 to confirm or reverse (D89 to D100 are of 2026-11-22, in the checkpoints of the Lanes block and in Method).
