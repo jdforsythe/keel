@@ -280,6 +280,8 @@ State at the last checkpoint; each lane is a subagent in its worktree. The older
   - Merged since checkpoint 8: `lane-load` (c503fc49: a failed task prints file:line, test name and message; a dead worker prints what killed it; std-sessions groups share one project host; `tooling/test-slots.mjs`; RFC 0194's fifth clause: a reset connection rejects like a refused one, fixed in `packages/ctx/src/internal/typeOfServiceBestEffort.ts`); `docs/A11Y-TARGET.md` and `docs/BRAND.md` re-verified (d57288d0).
   - For the operator (gate tooling is the operator's): `tooling/docs-freshness.mjs` ages every doc on any commit under `docs/`, so D0001 fired seven times in a day; the orchestrator recommends scoping each doc to the paths of its subject.
   - Running: `.worktrees/mutate` `lane-mutate` (mutation runs; it commits a regenerated ledger there: on merge, regenerate per D100 rather than take its file).
+- Checkpoint 10 of 2026-11-22: pushed 317c2218 after a full green gate (root `pnpm test` whole on its first run, 594 s; every step ok; the three apps' `keel test` green under 32 CPU burners); CI run 45049631780 is green on every job. 205a26ed before it failed CI on one timeout (`apps/golden-2/test/recipes.test.ts:156`, a 100-run page property at 5 s on a slow runner; no regression: about 0.8 s here, 2 s under contention). D101: `keelConfig` gives a test that calls `properties` or `simulate` and declares no timeout 300 ms per run (`tooling/property-times.ts`; RFC 0194's sixth clause in k.testing; 10 conformance cases); the hand-written timeouts in household are gone. The gate keeps the burner step: `keel test` in golden-1, golden-2 and household once more under `2 x cores` `yes` processes.
+  - Nothing is ahead of 317c2218 but this commit. Running: `.worktrees/mutate` `lane-mutate`.
 
 ## Verification
 - [x] Backlog 0956 built and conformance-covered: RFC 0147 and RFC 0150 (links into a shell), red-teamed twice.
@@ -290,7 +292,7 @@ State at the last checkpoint; each lane is a subagent in its worktree. The older
 - [x] P1 and P2 plan written from `tasks/p1/INPUT.md` (backlog 0962): `tasks/p1/PLAN.md`; the operator reads its open decisions O1 to O11.
 
 ## Next action
-1. `git worktree list`, `git status --short`, `gh run list --branch jdforsythe/test-impl --limit 2`: read the CI run on 205a26ed to its end and fix what fails before any push.
+1. `git worktree list`, `git status --short`, `gh run list --branch jdforsythe/test-impl --limit 2` (317c2218 is green on every job).
 2. Merge `lane-mutate` when it reports (regenerate the ledger per D100); the next code batch is gated under D97 (Method) in `.worktrees/verify`.
 3. Ask the operator for RFC 0186, 0188 and 0193 (checkpoint 7); build each accepted one: spec text applied, conformance by the `conformance-writer`, then the build, in its own worktree.
 4. Backlog 1029 to 1044 hold the loose ends of 2026-11-22; 1040 (the suite under load) is in `lane-load`.
@@ -299,4 +301,4 @@ State at the last checkpoint; each lane is a subagent in its worktree. The older
 7. Weakness packages left (`tasks/p1/weaknesses-triage.md`): resume-dev-conformance, shell-origin-and-deps, golden-polish; by RFC: 0883, 0960, 1000, the rest of 0302; backlog 1004 to 1028.
 8. The mutation runs on a quiet machine (the ledger holds about 250 stale claims; check, testing, compiler, server and std-postgres changed most).
 9. Decide `tasks/p1/review-findings.md` and create `keel-review.json`. RFC 0163 and RFC 0169's second part after the first real apps. Not started: W4 scoping; the operator's to start: the golden-3 agent run, W16's first pair.
-10. For the operator: D51 to D100 to confirm or reverse (D89 to D100 are of 2026-11-22, in the checkpoints of the Lanes block and in Method).
+10. For the operator: D51 to D101 to confirm or reverse (D89 to D101 are of 2026-11-22, in the checkpoints of the Lanes block and in Method).
