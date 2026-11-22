@@ -160,13 +160,13 @@ describe("under generated schedules", () => {
         const theirs = ctx.clock.after(tB).then(() => otherEdit(b.ctx, "Oat milk", "b1", 0));
         void ctx.clock.after(tA).then(() => ctx.net.setOnline(true));
         await run();
-        await mine;
-        const other = await theirs;
         // `run()` stops at the horizon: a window or a retry may reach past it, so the clock runs on until neither is left.
         for (let i = 0; i < 20 && (ctx.clock.next() !== null || !ctx.net.online()); i++) {
           ctx.clock.advance(60_000);
           await run();
         }
+        await mine;
+        const other = await theirs;
 
         const board = await readBoard();
         const stored = board.todos.find((t) => t.id === "t1");

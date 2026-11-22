@@ -165,12 +165,12 @@ describe("under generated schedules", () => {
           () => null,
         );
         await run();
-        await sent;
         // `run()` stops at the horizon: a window or a retry may reach past it, so the clock runs on until neither is left.
         for (let i = 0; i < 20 && (ctx.clock.next() !== null || !ctx.net.online()); i++) {
           ctx.clock.advance(60_000);
           await run();
         }
+        await sent;
         const applied = await commits("api.toggleTodo");
         const left = boardOutbox.get("entries");
         // A flip applied twice would read as not done: the key keeps it to one.
@@ -205,12 +205,12 @@ describe("under generated schedules", () => {
           () => null,
         );
         await run();
-        await sent;
         // `run()` stops at the horizon: a window or a retry may reach past it, so the clock runs on until neither is left.
         for (let i = 0; i < 20 && (ctx.clock.next() !== null || !ctx.net.online()); i++) {
           ctx.clock.advance(60_000);
           await run();
         }
+        await sent;
         await r.settle();
         const applied = await commits("api.toggleTodo");
         expect(applied).toBeLessThanOrEqual(1);
