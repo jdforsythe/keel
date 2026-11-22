@@ -2,6 +2,8 @@
 //   node ../../tooling/mutate.mjs [stryker args]   run Stryker for the package in the current directory
 //   node tooling/mutate.mjs --status               one line per live run
 //   node tooling/mutate.mjs --stop                 one SIGINT to every live run's process group, then waits for it
+//   node ../../tooling/mutate.mjs --shard i/N      run shard i of N of the package's mutated files (tooling/mutate-shard.mjs);
+//                                                  KEEL_MUTATE_SHARD=i/N does the same
 // Stryker runs in its own process group (the core and the test runners it starts). A run over its time budget
 // (tooling/budgets.json `mutate`, minutes) gets one SIGINT to that group: Stryker saves what it has tested to the
 // shared cache and the next run resumes from there. Stryker exits without saving on a second signal, so every
@@ -12,6 +14,7 @@ import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { mutateCacheDir } from "./mutate-cache.ts";
+import { configGlobs, mutatedFiles, shardArg, shardFiles } from "./mutate-shard.mjs";
 import { acquire, lockedDiag } from "./mutateLock.mjs";
 import { mode, quiet, run } from "./output.ts";
 
@@ -219,8 +222,8 @@ function stop() {
   });
 }
 
-function mutate(args) {
-  const pkg = path.basename(process.cwd());
+function mutate(args, shard) {
+  const pkg = path.basename(process.cwd()) + (shard ? ` shard ${shard.i}/${shard.n}` : "");
   const fail = (text, counts = {}, diag) => {
     const ms = Date.now() - t0;
     if (diag && json()) console.log(JSON.stringify({ kind: "diag", ...diag }));
@@ -233,9 +236,10 @@ function mutate(args) {
   // One mutation run on the machine; the packages `pnpm mutate` runs one after the other are its descendants and pass.
   const lock = acquire();
   if (!lock.held) return fail("not started", {}, lockedDiag(lock.holder));
-  const budget = budgetMinutes(readJson(path.join(import.meta.dirname, "budgets.json")), pkg);
+  const unit = path.basename(process.cwd());
+  const budget = budgetMinutes(readJson(path.join(import.meta.dirname, "budgets.json")), unit);
   const cache = mutateCacheDir();
-  const file = path.join(cache, `${pkg}.run.json`);
+  const file = path.join(cache, `${unit}.run.json`);
   fs.mkdirSync(cache, { recursive: true });
   // One run of a package per clone: the cache file is shared by every worktree. `wx` makes the claim atomic.
   const claim = () =>
@@ -271,8 +275,9 @@ function mutate(args) {
       KEEL_WATCHDOG_GRACE_MS: String(WATCHDOG_GRACE_MS),
       ...process.env,
       NODE_PATH,
-      KEEL_TEST_TIMES: path.join(cache, `${pkg}.times.json`),
+      KEEL_TEST_TIMES: path.join(cache, `${unit}.times.json`),
       KEEL_MUTATE_RUN: file,
+      KEEL_MUTATE_SHARD: shard ? `${shard.i}/${shard.n}` : "",
     },
   });
   let over = false;
@@ -369,5 +374,22 @@ if (process.argv[1] === new URL(import.meta.url).pathname) {
   const args = process.argv.slice(2);
   if (args.includes("--status")) await status();
   else if (args.includes("--stop")) await stop();
-  else mutate(args);
+  else {
+    const s = shardArg(args);
+    const pkg = path.basename(process.cwd());
+    const refuse = (message) => {
+      console.log(`E0016 ${message}`);
+      console.log(`fail mutate ${pkg} not started (0.0s)`);
+      process.exitCode = 1;
+    };
+    if (s.error) refuse(s.error);
+    else if (!s.shard) mutate(s.rest);
+    else if (s.rest.some((a) => a === "--mutate" || a.startsWith("--mutate=")))
+      refuse("--shard and --mutate each choose the files; pass one");
+    else {
+      const files = shardFiles(mutatedFiles(process.cwd(), await configGlobs(process.cwd())), s.shard.i, s.shard.n);
+      if (files.length === 0) console.log(`ok mutate ${pkg} shard ${s.shard.i}/${s.shard.n} has no files (0.0s)`);
+      else mutate([...s.rest, "--mutate", files.join(",")], s.shard);
+    }
+  }
 }
