@@ -1,6 +1,5 @@
 // Spec: k.module, Conformance clause 15: "A page of `b` naming a layout of `a`, where `a` lists `b` in `deps`, reports no E1152 and no E1153; `a` and `b` listing each other produce one E1153 naming both."
 // Seed 1337: the module ids are generated.
-// Not yet built (rfc:0187): `test.skip` until `access` in `@keel/check` accepts a `layout` whose module lists the binding's module; remove the `.skip`s in the build that adds it.
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { SEED, type Files, codesOf, lowerId, manifestFile } from "./module-support.ts";
@@ -27,7 +26,7 @@ const files = (a: string, b: string, aDeps: string[], bDeps: string[]): Files =>
   { path: "topology.ts", source: `import { topology } from '@keel/server'\nexport default topology({ web: { modules: ['${a}', '${b}'], adapter: 'node' } })\n` },
 ];
 
-test.skip("a page of `b` naming a layout of `a`, where `a` lists `b` in `deps`, reports no E1152 and no E1153", () => {
+test("a page of `b` naming a layout of `a`, where `a` lists `b` in `deps`, reports no E1152 and no E1153", () => {
   fc.assert(
     fc.property(distinct, ([a, b]) => {
       const f = files(a, b, [b], []);
@@ -38,7 +37,7 @@ test.skip("a page of `b` naming a layout of `a`, where `a` lists `b` in `deps`, 
   );
 });
 
-test.skip("`a` and `b` listing each other in `deps`, with a page of `b` naming a layout of `a`, produce one E1153 naming both and no E1152", () => {
+test("`a` and `b` listing each other in `deps`, with a page of `b` naming a layout of `a`, produce one E1153 naming both and no E1152", () => {
   fc.assert(
     fc.property(distinct, ([a, b]) => {
       const f = files(a, b, [b], [a]);

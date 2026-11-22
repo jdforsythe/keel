@@ -285,7 +285,7 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1152",
-    "import from a module not in deps, its contract included",
+    "import from a module not in deps, its contract included; a layout of a module neither in deps nor listing this one",
     "",
     "add the module to deps in the manifest",
     "k.module",

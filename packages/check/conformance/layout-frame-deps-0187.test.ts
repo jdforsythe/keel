@@ -1,6 +1,5 @@
 // Spec: k.routes, Conformance clause 10 (keel check half): "modules `app` (deps `['shop']`, a layout `app.frame`) and `shop` (deps `[]`, a page with `layout: 'app.frame'`): `keel check` reports no E1152 and no E1153 ... With `app`'s deps `[]` as well, one E1152 at `layout`."
 // Seed 1337: the module ids are generated.
-// Not yet built (rfc:0187): `test.skip` until `access` in `@keel/check` accepts a `layout` whose module lists the binding's module; remove the `.skip`s in the build that adds it.
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { SEED, type Files, codesOf, lowerId, manifestFile } from "./module-support.ts";
@@ -33,7 +32,7 @@ function app(frame: string, page: string, frameDeps: string[], pageDeps: string[
   ];
 }
 
-test.skip("keel check reports no E1152 for a page naming a layout of a module that lists the page's module in `deps`", () => {
+test("keel check reports no E1152 for a page naming a layout of a module that lists the page's module in `deps`", () => {
   fc.assert(
     fc.property(distinct, ([a, b]) => {
       expect(codesOf(app(a, b, [b], []), "E1152")).toEqual([]);
@@ -42,7 +41,7 @@ test.skip("keel check reports no E1152 for a page naming a layout of a module th
   );
 });
 
-test.skip("keel check reports no E1153 for a frame module that lists the page's module in `deps` and a page that names its layout", () => {
+test("keel check reports no E1153 for a frame module that lists the page's module in `deps` and a page that names its layout", () => {
   fc.assert(
     fc.property(distinct, ([a, b]) => {
       expect(codesOf(app(a, b, [b], []), "E1153")).toEqual([]);
@@ -51,7 +50,7 @@ test.skip("keel check reports no E1153 for a frame module that lists the page's 
   );
 });
 
-test.skip("with neither module listing the other in `deps`, keel check reports one E1152 at the page's `layout`", () => {
+test("with neither module listing the other in `deps`, keel check reports one E1152 at the page's `layout`", () => {
   fc.assert(
     fc.property(distinct, ([a, b]) => {
       const d = codesOf(app(a, b, [], []), "E1152").filter((x) => x.path === `modules/${b}/routes.ts`);
@@ -61,7 +60,7 @@ test.skip("with neither module listing the other in `deps`, keel check reports o
   );
 });
 
-test.skip("a page's module listing the layout's module in `deps` still reports no E1152", () => {
+test("a page's module listing the layout's module in `deps` still reports no E1152", () => {
   fc.assert(
     fc.property(distinct, ([a, b]) => {
       expect(codesOf(app(a, b, [], [a]), "E1152")).toEqual([]);

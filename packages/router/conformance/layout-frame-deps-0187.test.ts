@@ -1,7 +1,6 @@
 // @vitest-environment happy-dom
 // Spec: k.routes, Conformance clause 10 (served half): "the page renders inside `app.frame`'s component" for a page of `shop` bound with `layout: 'app.frame'`.
 // Seed 1337 (no random input: fixed modules).
-// Not yet built (rfc:0187): `test.skip` with the check-side cases of the same clause (the router already serves this chain); remove the `.skip` in the build that relaxes E1152.
 import { type RouteProps, manifest, routeTable } from "@keel/router";
 import { contract } from "@keel/router/contract";
 import { expect, test } from "vitest";
@@ -19,7 +18,7 @@ const shopC = contract("shop", { "shop.home": { path: "/" } });
 const appM = manifest(appC, { "app.frame": { component: wrap } });
 const shopM = manifest(shopC, { "shop.home": { component: page, layout: "app.frame" } });
 
-test.skip("a page of `shop` bound with `layout: 'app.frame'` renders inside `app.frame`'s component", async () => {
+test("a page of `shop` bound with `layout: 'app.frame'` renders inside `app.frame`'s component", async () => {
   const { router, ctx } = startRouter(routeTable(appM, shopM), "/");
   const host = document.createElement("div");
   document.body.append(host);
