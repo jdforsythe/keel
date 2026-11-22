@@ -1,6 +1,7 @@
 import type { Ctx } from "@keel/ctx";
 import { MODULES_KEY } from "./MODULES_KEY.ts";
 import type { Target } from "./Target.ts";
+import { USERS_KEY } from "./USERS_KEY.ts";
 import { isFetcher } from "./isFetcher.ts";
 import { isSigner } from "./isSigner.ts";
 
@@ -11,7 +12,8 @@ import { isSigner } from "./isSigner.ts";
  * document's origin and anything else `http://<module>.keel.invalid`, both through `ctx.net.fetch`. In a browser a
  * call to an origin other than the document's is sent with `credentials: "include"`.
  * Over the net a redirect is not followed (`redirect: "manual"`): a 3xx is `api.status` as it is in process.
- * A `createApp`'s binding also gives the target its `x-keel-user` signer (k.user Across deployables).
+ * A `createApp`'s binding also gives the target its `x-keel-user` signer (k.user Across deployables), and with it the
+ * user a call naming none carries, when a `renderRoute` harness signed in on `ctx` is open (`USERS_KEY`, k.user Testing).
  */
 export function moduleTarget(ctx: Ctx, module: string): Target {
   const loc: unknown = Reflect.get(globalThis, "location");
@@ -23,12 +25,16 @@ export function moduleTarget(ctx: Ctx, module: string): Target {
   const sign: Target["sign"] = isSigner(signer)
     ? (method, url, user, body) => signer(module, method, url, user, body)
     : undefined;
+  const users: unknown = Reflect.get(globalThis, USERS_KEY);
+  const given: unknown = sign !== undefined && users instanceof WeakMap ? users.get(ctx) : undefined;
+  const user = typeof given === "string" ? given : undefined;
   const net = (base: string): Target => {
     const cross = origin !== undefined && base !== origin && !base.startsWith(`${origin}/`);
     return {
       base,
       module: true,
       sign,
+      user,
       send: (req) =>
         ctx.net.fetch(
           new Request(req, cross ? { redirect: "manual", credentials: "include" } : { redirect: "manual" }),
@@ -37,7 +43,8 @@ export function moduleTarget(ctx: Ctx, module: string): Target {
   };
   const at: unknown = bound instanceof Map ? bound.get(module) : undefined;
   if (typeof at === "string") return net(at);
-  if (isFetcher(at)) return { base: `http://${module}.keel.invalid`, module: true, sign, send: (req) => at.fetch(req) };
+  if (isFetcher(at))
+    return { base: `http://${module}.keel.invalid`, module: true, sign, user, send: (req) => at.fetch(req) };
   if (bound === undefined && origin !== undefined) return net(origin);
   return net(`http://${module}.keel.invalid`);
 }

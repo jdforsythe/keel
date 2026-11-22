@@ -14,6 +14,8 @@ export type HarnessSetup = Shared &
 
 interface Shared {
   readonly ctx: Ctx;
+  /** The ctx the page runs on when it is not `ctx` (a harness's own browser, k.mount Testing); `ctx` stays the handle's. */
+  readonly run?: Ctx;
   readonly seeded: readonly (readonly [Store<unknown>, Snapshot<unknown>])[];
   /** The project's artifacts the render checks read (`a11y.json`: E1702; `tokens`: E1804). */
   readonly artifacts: HarnessArtifacts | undefined;

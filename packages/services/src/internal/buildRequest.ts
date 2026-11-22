@@ -16,7 +16,7 @@ const Bearer = s.secret(s.string());
  * built: a `bearer` that is not a secret whose text is a token68 of 1 to 4,096 characters (k.api Bearer) is `format` at
  * `bearer`. A `user` is sent as `x-keel-user`, signed by the target's `sign` over the body as sent (k.user); a `user`
  * that is not a string, or one on a target with no `sign` (a ctx no `createApp` bound), is `api.input` `type` at `user`,
- * and one the signer refuses (over 256 characters) `max`. A Request the platform refuses (bad URL, body on GET) is `api.network`.
+ * and one the signer refuses (over 256 characters) `max`. An input that names no `user` carries `fallback` (k.user Testing). A Request the platform refuses (bad URL, body on GET) is `api.network`.
  */
 export function buildRequest(
   e: Endpoint,
@@ -25,6 +25,7 @@ export function buildRequest(
   signal: AbortSignal,
   accept = "application/json",
   sign?: Target["sign"],
+  fallback?: string,
 ): Result<Request, ApiError<never>> {
   const params = encodePart(e.params, "params", input);
   if (!params.ok) return params;
@@ -47,7 +48,8 @@ export function buildRequest(
   const json = body.value;
   // The body is JSON text, held whole before sending, so a signed `user` covers every byte sent; no stream is built.
   const text = json === undefined ? "" : JSON.stringify(json);
-  const user: unknown = Reflect.get(Object(input), "user");
+  const named: unknown = Reflect.get(Object(input), "user");
+  const user = named === undefined ? fallback : named;
   const signed = typeof user === "string" ? sign?.(e.method, url, user, text) : undefined;
   if (user !== undefined && signed === undefined)
     return err(fail.input([{ path: ["user"], rule: typeof user === "string" && sign !== undefined ? "max" : "type" }]));

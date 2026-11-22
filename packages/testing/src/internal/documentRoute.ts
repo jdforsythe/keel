@@ -1,4 +1,5 @@
-import { type Ctx, createCtx } from "@keel/ctx";
+import { type Ctx, type Net, createCtx } from "@keel/ctx";
+import { browserCtx } from "@keel/ctx/internal";
 import { scope } from "@keel/reactive";
 import type { RouteTable } from "@keel/router";
 import { compileRoutes } from "@keel/router/internal";
@@ -11,6 +12,8 @@ import type { DocumentNavigation } from "../types/DocumentNavigation.ts";
 import type { RouteHarness } from "../types/RouteHarness.ts";
 import type { RouteRenderOptions } from "../types/RouteRenderOptions.ts";
 import type { RouteStateOf } from "../types/RouteStateOf.ts";
+import { appSigner } from "./appSigner.ts";
+import { browserFront } from "./browserFront.ts";
 import { clockStep } from "./clockStep.ts";
 import { fail } from "./fail.ts";
 import { openHarness } from "./openHarness.ts";
@@ -35,18 +38,20 @@ function isStateOf<T extends RouteTable>(routes: T, x: unknown): x is RouteState
   return x.id === null || (typeof x.id === "string" && compileRoutes(routes).table.has(x.id));
 }
 
-/** The `name=value` pairs of a response's `Set-Cookie` lines. */
-function setCookies(res: Response): [string, string][] {
-  const raw = res.headers.get("set-cookie");
-  if (raw === null) return [];
-  return raw
-    .split(/,(?=\s*[^;,=\s]+=)/)
-    .map((line) => (line.split(";")[0] ?? "").trim())
-    .filter((pair) => pair.includes("="))
-    .map((pair) => {
-      const at = pair.indexOf("=");
-      return [pair.slice(0, at), pair.slice(at + 1)];
-    });
+/** Nets whose origin `routeOrigin` routed, per app: one route each, so a later harness adds none. */
+const routed = new WeakMap<Net, Set<string>>();
+
+/**
+ * Route `origin` on a sim `net` to `app.fetch`, once per net and origin. A sim net takes its first matching route, so
+ * a route the test made first keeps the origin. A net with no routes is left alone (the front then sends to `app`).
+ */
+function routeOrigin(net: Net, origin: string, app: DocumentApp): void {
+  if (!("route" in net) || typeof net.route !== "function") return;
+  const done = routed.get(net) ?? new Set<string>();
+  routed.set(net, done);
+  if (done.has(origin)) return;
+  done.add(origin);
+  Reflect.apply(net.route, net, [`${origin}/*`, (req: Request) => app.fetch(req)]);
 }
 
 /**
@@ -56,8 +61,12 @@ function setCookies(res: Response): [string, string][] {
  * its server markup too, rejects with E1720. The document's title and `lang` are the page's until `dispose`. Each
  * document navigation the page starts is recorded in `documents()` and, when it is a path of the page's origin, made:
  * a form post is POSTed urlencoded with `sec-fetch-site: same-origin`, the answer (a 422 too) replaces the page and is
- * resumed before `fire` resolves. The harness is one browser: it keeps the cookies `app` sets and sends them back, so
- * `caller` is one `app` mints. `navigate(href)` loads `href` the same way; `location().entries` counts the loaded
+ * resumed before `fire` resolves. The harness is one browser (k.mount Testing): the page runs on a ctx of its own
+ * (`ctx`'s clock and random, a fresh storage) whose net is the harness's front (`browserFront`), and every request to
+ * the origin, the document loads included, goes through it to `ctx.net`, which routes the origin to `app.fetch` unless
+ * the test routed it first. The front's jar keeps the cookies `app` sets, so `caller` is one `app` mints and a
+ * sign-in through the mount holds; with `user` each such request carries `x-keel-user` for it (`appSigner`, E1724
+ * when `ctx`'s binding does not hold `app`). `navigate(href)` loads `href` the same way; `location().entries` counts the loaded
  * documents and `route()` is the match of the last one. `state` or `shell` reject with E1722 before any request.
  */
 export async function documentRoute<T extends RouteTable>(
@@ -77,8 +86,16 @@ export async function documentRoute<T extends RouteTable>(
   const origin = /^https?:$/.test(location.protocol) ? location.origin : "http://localhost";
   const components: Record<string, Island> = {};
   for (const [rid, { def }] of compileRoutes(routes).table) if (def.component) components[rid] = def.component;
-  const jar = new Map<string, string>();
-  const cookie = (): string => [...jar].map(([k, v]) => `${k}=${v}`).join("; ");
+  const sign = options.user === undefined ? undefined : appSigner(ctx, app, id, options.user);
+  routeOrigin(ctx.net, origin, app);
+  const front = browserFront({
+    origin,
+    net: ctx.net,
+    send: "route" in ctx.net ? (req) => ctx.net.fetch(req) : (req) => app.fetch(req),
+    clock: ctx.clock,
+    sign,
+  });
+  const page = browserCtx(ctx, { net: front });
 
   /** Request `path` from `app`, following redirects; the final path and its answer's text, or null off `app`. */
   const request = async (
@@ -91,16 +108,15 @@ export async function documentRoute<T extends RouteTable>(
     let sent = body;
     for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
       const headers = new Headers({ accept: "text/html", "sec-fetch-site": "same-origin" });
-      const jarred = cookie();
-      if (jarred !== "") headers.set("cookie", jarred);
       if (sent !== null) headers.set("content-type", "application/x-www-form-urlencoded");
-      const res = await app.fetch(
+      const res = await front.fetch(
         new Request(
           `${origin}${at}`,
-          sent === null ? { method: verb, headers } : { method: verb, headers, body: sent },
+          sent === null
+            ? { method: verb, headers, redirect: "manual" }
+            : { method: verb, headers, body: sent, redirect: "manual" },
         ),
       );
-      for (const [k, v] of setCookies(res)) jar.set(k, v);
       const to = REDIRECT.has(res.status) ? res.headers.get("location") : null;
       if (to === null) return { path: at, html: await res.text() };
       const next = new URL(to, `${origin}${at}`);
@@ -142,7 +158,7 @@ export async function documentRoute<T extends RouteTable>(
     host.replaceChildren(...doc.body.childNodes);
     const at = host;
     islands = scope(() => {
-      const { warnings: said } = resume(at, components, { ctx, stores: Object.fromEntries(stores()) });
+      const { warnings: said } = resume(at, components, { ctx: page, stores: Object.fromEntries(stores()) });
       // A mismatch the browser would paper over with a client re-render is a fault the test reports.
       warnings.push(...said);
     });
@@ -181,6 +197,7 @@ export async function documentRoute<T extends RouteTable>(
       show(first.html);
     },
     ctx,
+    run: page,
     seeded: [],
     busy,
     documents,
