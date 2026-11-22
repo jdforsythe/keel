@@ -227,6 +227,10 @@
           "run": "node --disable-warning=ExperimentalWarning tooling/smoke/workflow.mjs"
         },
         {
+          "name": "built golden-1 on Postgres 17: the removal workflow resumes after a SIGKILL inside a step, its effect once",
+          "run": "node --disable-warning=ExperimentalWarning tooling/smoke/workflow-postgres.mjs"
+        },
+        {
           "name": "keel dev on golden-2: sign-up and sign-in through the identity mount, stubs for the browser",
           "run": "node --disable-warning=ExperimentalWarning tooling/smoke/dev-signin.mjs"
         },
