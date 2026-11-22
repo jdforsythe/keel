@@ -27,7 +27,11 @@ interface Internals {
   _tree: unknown;
   _selectorData: unknown;
   _selectCache: unknown;
-  readonly _thisWillBeDeletedDoNotUse: { readonly base: { readonly Context: new (spec: Element | Document) => Ctx } };
+  readonly _thisWillBeDeletedDoNotUse: {
+    readonly base: {
+      readonly Context: new (spec: Element | Document | { include: unknown[]; exclude: unknown[] }) => Ctx;
+    };
+  };
   readonly utils: {
     getSelectorData(tree: unknown): unknown;
     publishMetaData(result: object): void;
@@ -43,14 +47,20 @@ interface Ctx {
  * Run the axe-core rules named in `ids` over `root` synchronously: the steps of `axe.run` (context, each rule's
  * `runSync`, `after`, result metadata, verdicts) without its timers, so a harness render can fail as it returns.
  * A rule whose verdict is `cantTell` (axe's `incomplete`) is not run; a rule that throws, or whose `after` failed, is
- * `broken`, with its error's first line.
+ * `broken`, with its error's first line. Elements in `exclude` (another open harness's page) are not judged.
  */
-export function axeSync(root: Element | Document, ids: ReadonlySet<string>): AxeOutcome {
+export function axeSync(
+  root: Element | Document,
+  ids: ReadonlySet<string>,
+  exclude: readonly Element[] = [],
+): AxeOutcome {
   return unsafe(
     "render() fails synchronously and axe.run resolves on setTimeout: replays axe-core 4.14.0 runRules via untyped internals",
     () => {
       const a = axe as unknown as Internals;
-      const context = new a._thisWillBeDeletedDoNotUse.base.Context(root);
+      const context = new a._thisWillBeDeletedDoNotUse.base.Context(
+        exclude.length === 0 ? root : { include: [root], exclude: [...exclude] },
+      );
       a._tree = context.flatTree;
       a._selectorData = a.utils.getSelectorData(context.flatTree);
       a._selectCache = [];

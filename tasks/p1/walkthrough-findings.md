@@ -37,7 +37,7 @@
 | L5-1 | open |
 | L5-2 | open |
 | L5-3 | open |
-| L6-1 | open |
+| L6-1 | fixed: rfc:0185 renderRoute user signs in a page's own requests; household's list and token panel tests drive the page |
 | L6-2 | open |
 | L6-3 | open |
 | L6-4 | open |
@@ -55,7 +55,7 @@
 | S-10 | carried by RFC 0188 (`overflow-wrap`) |
 | S-11 | carried by RFC 0188 (`look`) |
 
-Fixed 13, answered in the skills 10, filed as backlog 11, carried by RFC 0188 6, open 10.
+Fixed 14, answered in the skills 10, filed as backlog 11, carried by RFC 0188 6, open 9.
 
 Each finding: what I tried, where, the command and its output, what I expected, whether docs or skills misled. Kinds: fault (framework behaves against its spec), docs (docs or skills gap), rough (works, but an app author trips on it).
 

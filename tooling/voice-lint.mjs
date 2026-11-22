@@ -4,8 +4,8 @@
 // templates are linted as rendered with the published skills, each hit at the template's source file.
 import fs from "node:fs";
 import path from "node:path";
-import { run } from "./output.ts";
 import { agentFiles } from "../packages/scaffold/src/agents/index.ts";
+import { run } from "./output.ts";
 import { walk } from "./scan.mjs";
 
 const root = path.join(import.meta.dirname, "..");

@@ -9,5 +9,7 @@ export type Target = {
   readonly sign?:
     | ((method: string, url: string, user: string, body: string | Uint8Array) => string | undefined)
     | undefined;
+  /** The user a call that names none carries (k.user Testing); only with `sign`. */
+  readonly user?: string | undefined;
   send(req: Request): Promise<Response>;
 };

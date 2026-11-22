@@ -28,10 +28,17 @@
     "@keel/schema": "workspace:*"
   },
   "devDependencies": {
-    "@types/node": "^22",
     "@keel/check": "workspace:*",
+    "@keel/compiler": "workspace:*",
+    "@keel/forms": "workspace:*",
+    "@keel/reactive": "workspace:*",
+    "@keel/runtime-dom": "workspace:*",
+    "@keel/server": "workspace:*",
+    "@keel/testing": "workspace:*",
     "@keel/tooling": "workspace:*",
+    "@keel/ui": "workspace:*",
+    "@types/node": "^22",
     "fast-check": "^3",
-    "@keel/server": "workspace:*"
+    "happy-dom": "^21"
   }
 }

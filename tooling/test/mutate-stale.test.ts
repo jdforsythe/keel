@@ -3,8 +3,8 @@ import os from "node:os";
 import path from "node:path";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { mutationUnits, unitDir } from "../mutate-units.mjs";
 import { chunkPlan, endLine, leftLine, listLine, positive, staleFiles } from "../mutate-stale-plan.mjs";
+import { mutationUnits, unitDir } from "../mutate-units.mjs";
 
 const shas = new Map([
   ["packages/a/src/x.ts", "1"],

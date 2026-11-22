@@ -8,8 +8,8 @@ type Member = Awaited<ReturnType<typeof served>>;
 
 /** The receipts book in `locale`, opened by the signed-in member of `at` (a fresh app when left out). */
 const open = async (locale: "en-US" | "de-DE", at?: Member) => {
-  const { ctx, app } = at ?? (await served(5));
-  return renderRoute("receipts.book", { routes: webRoutes, params: { locale }, ctx, app });
+  const { ctx, app, user } = at ?? (await served(5));
+  return renderRoute("receipts.book", { routes: webRoutes, params: { locale }, ctx, app, user });
 };
 
 it("starts empty, in English, with a link to the German page", async () => {

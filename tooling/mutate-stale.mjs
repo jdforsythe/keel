@@ -1,3 +1,4 @@
+import { spawn } from "node:child_process";
 // A light mutation run for the files whose mutation claim is stale: the ledger's claim for a `src` file holds the sha256
 // of the source it was scored on, and a file on disk with another hash (or, with --missing, none) is run again.
 // Packages go one at a time, each in chunks of files through the one runner (tooling/mutate.mjs), with a capped number
@@ -5,14 +6,13 @@
 // stop path `pnpm mutate:stop` uses, so Stryker saves its results. Run again to resume: finished chunks are fresh.
 // Usage: node tooling/mutate-stale.mjs [--list] [--only <pkg>] [--chunk <n=4>] [--concurrency <n=3>] [--minutes <n=20>] [--missing]
 import { createHash } from "node:crypto";
-import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { mutateCacheDir } from "./mutate-cache.ts";
 import { stopRequested } from "./mutate-changed.mjs";
-import { stopFile } from "./mutate.mjs";
 import { chunkPlan, endLine, listLine, positive, staleFiles } from "./mutate-stale-plan.mjs";
 import { mutatedRule, mutationUnits, sourceDir, unitDir } from "./mutate-units.mjs";
+import { stopFile } from "./mutate.mjs";
 import { acquire, lockedDiag } from "./mutateLock.mjs";
 import { run } from "./output.ts";
 

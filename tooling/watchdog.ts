@@ -9,7 +9,7 @@
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { isMainThread, Worker } from "node:worker_threads";
+import { Worker, isMainThread } from "node:worker_threads";
 import { afterAll, afterEach, beforeAll, beforeEach, expect, inject } from "vitest";
 
 declare module "vitest" {

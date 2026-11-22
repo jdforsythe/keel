@@ -1,9 +1,11 @@
 import { type Ctx, createCtx } from "@keel/ctx";
+import { browserCtx } from "@keel/ctx/internal";
 import type { RouteTable } from "@keel/router";
 import { compileRoutes, createRouterWith, encodeHref, identityMounts, mountRequests } from "@keel/router/internal";
 import { matchHref } from "@keel/router/match";
 import type { CaughtError } from "@keel/runtime-dom";
 import { serverState } from "@keel/store/internal";
+import { browserFront } from "./internal/browserFront.ts";
 import { clockStep } from "./internal/clockStep.ts";
 import { documentRoute } from "./internal/documentRoute.ts";
 import { fail } from "./internal/fail.ts";
@@ -12,6 +14,7 @@ import { openHarness } from "./internal/openHarness.ts";
 import { seedFrom } from "./internal/seedFrom.ts";
 import { seedStores } from "./internal/seedStores.ts";
 import { settle } from "./internal/settle.ts";
+import { signIn } from "./internal/signIn.ts";
 import type { DocumentNavigation } from "./types/DocumentNavigation.ts";
 import type { RouteHarness } from "./types/RouteHarness.ts";
 import type { RouteRenderOptions } from "./types/RouteRenderOptions.ts";
@@ -79,14 +82,30 @@ export async function renderRoute<T extends RouteTable>(
     if (head.lang === null) document.documentElement.removeAttribute("lang");
     else document.documentElement.setAttribute("lang", head.lang);
   };
-  const ctx = options.ctx ?? createCtx({ mode: "sim", seed: seedFrom(undefined) });
+  const outer = options.ctx ?? createCtx({ mode: "sim", seed: seedFrom(undefined) });
+  const { shell } = options;
+  // A shell page is one browser: its own ctx over `ctx`'s clock, random and storage, its net the jar's front.
+  const origin = /^https?:$/.test(location.protocol) ? location.origin : "http://localhost";
+  const ctx = shell
+    ? browserCtx(outer, {
+        net: browserFront({ origin, net: outer.net, send: (req) => outer.net.fetch(req), clock: outer.clock }),
+        storage: outer.storage,
+      })
+    : outer;
+  let signOut: () => void = () => undefined;
+  try {
+    if (options.user !== undefined) signOut = signIn(ctx, id, options.user);
+  } catch (error) {
+    for (const [st, snap] of seeded) st.restore(snap);
+    restoreHead();
+    throw error;
+  }
   let router: ReturnType<typeof createRouterWith<T>>;
   // A render throw no errorElement caught: the router's root alert shows it, and the checks raise it.
   const caught: CaughtError[] = [];
   const history = memoryHistory(url);
   const documents: DocumentNavigation[] = [];
   const open = (to: string): void => void documents.push({ method: "GET", url: to, body: null });
-  const { shell } = options;
   // The options name no mount: a shell run takes every identity mount the test's modules made.
   const mounts = [...identityMounts];
   const intake = shell
@@ -105,9 +124,10 @@ export async function renderRoute<T extends RouteTable>(
         mount: options.mount,
         onError: (error) => void caught.push(error),
       },
-      serverState(ctx),
+      serverState(outer),
     );
   } catch (error) {
+    signOut();
     for (const [st, snap] of seeded) st.restore(snap);
     restoreHead();
     throw error;
@@ -118,7 +138,8 @@ export async function renderRoute<T extends RouteTable>(
   };
   const { harness, check } = openHarness({
     view: () => router.App(),
-    ctx,
+    ctx: outer,
+    run: ctx,
     seeded,
     busy,
     documents,
@@ -130,6 +151,7 @@ export async function renderRoute<T extends RouteTable>(
       return JSON.stringify([r.id, r.params]);
     },
     teardown: () => {
+      signOut();
       router.dispose();
       restoreHead();
       window.scrollTo(0, 0);
@@ -137,7 +159,7 @@ export async function renderRoute<T extends RouteTable>(
     artifacts: options.artifacts,
   });
   try {
-    await settle(document.body, () => undefined, busy, undefined, clockStep(ctx));
+    await settle(document.body, () => undefined, busy, undefined, clockStep(outer));
     check();
   } catch (error) {
     harness.dispose();

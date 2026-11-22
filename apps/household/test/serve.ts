@@ -52,13 +52,12 @@ export async function signIn(fetch: Fetch, email = EMAIL, name = NAME): Promise<
 }
 
 /**
- * A sim ctx whose net answers every request with the `web` deployable served over that same ctx, so a page under
- * `renderRoute` and the API share one `ctx.storage` and one database. Unless `signedIn` is false, one member has
- * signed up and signed in through the identity mount, and minted an API token through the members API: `fetch` sends
- * that token with every request that carries no `cookie` or `authorization` of its own, and `user` is the member's id
- * for `renderRoute`. A token, not the session cookie: under happy-dom a `Response` drops `set-cookie`. `sent` lists
- * `METHOD /path` of what reached the net, and `lines` every line the server logged. `app` is `fetch` as `renderRoute`'s
- * `app`: a page it serves is requested and posted as a browser does, with the member's token when signed in.
+ * The `web` deployable served over a sim ctx, so a page under `renderRoute` and the API share one `ctx.storage` and one
+ * database. Unless `signedIn` is false, one member has signed up and signed in through the identity mount, and minted
+ * an API token through the members API: `fetch` sends that token with every request that carries no `cookie` or
+ * `authorization` of its own, for tests that call the API directly, and `user` is the member's id. `app` is the
+ * `createApp` result, as `renderRoute`'s `app`: with `user` the page and every request it sends are the member's
+ * (k.user Testing). `sent` lists `METHOD /path` of what `fetch` sent, and `lines` every line the server logged.
  */
 export async function served(
   seed = 1,
@@ -71,7 +70,7 @@ export async function served(
   raw: Fetch;
   user: string;
   token: string;
-  app: { fetch: Fetch };
+  app: Awaited<ReturnType<typeof createApp>>;
 }> {
   const ctx = createCtx({ mode: "sim", seed });
   const lines: string[] = [];
@@ -97,11 +96,7 @@ export async function served(
     headers.set("authorization", `Bearer ${token}`);
     return web.fetch(new Request(req, { headers }));
   };
-  ctx.net.route("http://localhost/api/*", fetch);
-  ctx.net.route("http://members.keel.invalid/*", fetch);
-  ctx.net.route("http://setup.keel.invalid/*", fetch);
-  ctx.net.route("http://shopping.keel.invalid/*", fetch);
-  return { ctx, sent, lines, fetch, raw, user, token, app: { fetch } };
+  return { ctx, sent, lines, fetch, raw, user, token, app: web };
 }
 
 /** A JSON request as a services client sends it. */

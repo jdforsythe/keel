@@ -1,5 +1,7 @@
 // The one vitest config shape for every package, app and scaffolded project: the caller's config plus the Keel
 // reporter, the hard watchdog setup file (watchdog.ts) first among setup files, and the timeouts the watchdog reads.
+// Under happy-dom the fetch classes are Node's (node-fetch.mjs preloaded into each worker, node-fetch-setup.ts after
+// the environment; k.mount Testing).
 // With `KEEL_COVERAGE=1` (tooling/coverage.mjs) it also measures coverage (coverage-config.ts); without it, nothing
 // about coverage is set. With `KEEL_FILE_TIMES=1` (CI's tooling/ci-shards.mjs) each test file prints one
 // `file <path> <s>s` line as it ends, so a shard's log says how far a run got and what each file cost.
@@ -11,6 +13,8 @@ import { coverageOptions } from "./coverage-config.ts";
 import { KeelReporter } from "./vitest-reporter.ts";
 
 const WATCHDOG = fileURLToPath(new URL("./watchdog.ts", import.meta.url));
+const NODE_FETCH = new URL("./node-fetch.mjs", import.meta.url).href;
+const NODE_FETCH_SETUP = fileURLToPath(new URL("./node-fetch-setup.ts", import.meta.url));
 
 /** One line per finished test file: its path and its seconds (setup, import and tests). */
 const fileTimes: Reporter = {
@@ -28,7 +32,8 @@ export function keelConfig(config: ViteUserConfig = {}): ViteUserConfig {
     ...config,
     test: {
       ...test,
-      setupFiles: [WATCHDOG, ...(typeof own === "string" ? [own] : own)],
+      setupFiles: [WATCHDOG, NODE_FETCH_SETUP, ...(typeof own === "string" ? [own] : own)],
+      execArgv: ["--import", NODE_FETCH, ...(test.execArgv ?? [])],
       reporters: process.env.KEEL_FILE_TIMES === "1" ? [new KeelReporter(), fileTimes] : [new KeelReporter()],
       ...(process.env.KEEL_COVERAGE === "1" ? { coverage: coverageOptions(process.cwd()) } : {}),
       provide: {

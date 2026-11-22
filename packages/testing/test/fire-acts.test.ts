@@ -1,11 +1,12 @@
 // @vitest-environment happy-dom
 // k.opening Testing, k.links Testing: under `renderRoute(id, { shell: true })` a `fire` of `click`, `submit` or a `keydown` other than
 // Escape is a person's act, marked on the render's ctx before it dispatches; no other `fire` is, and a render that is
-// no shell marks nothing. Seed 1337 for the property.
+// no shell marks nothing. A shell page runs on its own browser's ctx (k.mount Testing), the mounted router's. Seed 1337
+// for the property.
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
-import { personActs } from "@keel/router/internal";
+import { findRouter, personActs } from "@keel/router/internal";
 import fc from "fast-check";
 import { afterEach, expect, it } from "vitest";
 import { renderRoute } from "../src/renderRoute.ts";
@@ -62,12 +63,14 @@ it("a shell render's fire marks the ctx's act exactly for those events; the hand
         ? await renderRoute("f.home", { routes, ctx, shell: true })
         : await renderRoute("f.home", { routes, ctx });
       handles.push(h);
+      const page = findRouter()?.ctx ?? ctx;
+      expect(page === ctx).toBe(!shell);
       await h.settle();
       await h.navigate(c.href("f.home"));
-      expect(personActs.of(ctx).acted).toBe(false);
+      expect(personActs.of(page).acted).toBe(false);
       if (e.type === "blur") await h.fire("f.field", { type: "focus" });
       await h.fire("f.field", e);
-      expect(personActs.of(ctx).acted).toBe(shell && expected(e));
+      expect(personActs.of(page).acted).toBe(shell && expected(e));
       h.dispose();
     }),
     { seed: 1337, numRuns: 40 },

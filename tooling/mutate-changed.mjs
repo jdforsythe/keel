@@ -8,8 +8,8 @@ import { execFileSync, spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { mutateCacheDir } from "./mutate-cache.ts";
-import { stopFile } from "./mutate.mjs";
 import { mutatedRule, mutationUnits, unitDir } from "./mutate-units.mjs";
+import { stopFile } from "./mutate.mjs";
 import { acquire, lockedDiag } from "./mutateLock.mjs";
 import { run } from "./output.ts";
 
