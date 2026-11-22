@@ -1,0 +1,26 @@
+{
+  "productName": "Shell mount",
+  "version": "0.0.0",
+  "identifier": "dev.keel.shellmount",
+  "build": {
+    "frontendDist": "www"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Shell mount"
+      }
+    ],
+    "security": {
+      "csp": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self' ipc: http://ipc.localhost; manifest-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'; object-src 'none'; require-trusted-types-for 'script'; trusted-types keel"
+    }
+  },
+  "plugins": {
+    "deep-link": {
+      "desktop": {
+        "schemes": ["dev.keel.shellmount"]
+      }
+    }
+  }
+}

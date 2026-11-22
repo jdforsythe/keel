@@ -33,4 +33,6 @@ interface Shared {
   readonly follow?: (nav: DocumentNavigation) => void;
   /** Catches outside the root Boundary that `check()` raises as its own (a router's root alert, `renderRoute`). */
   readonly caught?: CaughtError[];
+  /** Where the page is (a route's id and params): a `fire` or `settle()` that changes it skips E1826. */
+  readonly place?: () => string;
 }

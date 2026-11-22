@@ -87,7 +87,7 @@ describe("k.guards", () => {
     router.dispose();
     host.remove();
   });
-  it("a guard redirect to a route with a param the matched route lacks is E1508 (shown as in guard-redirect-loop-e1508.test.ts: with mode dev, an alert whose text contains E1508)", async () => {
+  it("a guard redirect to a route with a param the matched route lacks makes `manifest` throw E1508 naming the page, the redirect route and the field", () => {
     const Id = s.object({ id: s.string({ min: 1, max: 8 }) });
     const Denied = s.error("keel.denied", s.object({}));
     const page = (): Node => document.createElement("section");
@@ -95,25 +95,17 @@ describe("k.guards", () => {
       "w.login": { path: "/login/:id", params: Id },
       "w.plain": { path: "/plain" },
     });
-
-    const r = manifest(w, {
-      "w.login": { component: page },
-      "w.plain": { component: page, guard: guard({ redirect: "w.login" }, async () => err(Denied.make({}))) },
-    });
-    const router = createRouter(r, {
-      ctx: createCtx({ mode: "sim", seed: SEED }),
-      history: memoryHistory("/"),
-      mode: "dev",
-    });
-    const host = document.createElement("div");
-    document.body.append(host);
-    const off = mount(router.App, host, { ctx: simCtx });
-    await settle();
-    await router.navigate(w.href("w.plain"));
-    await settle();
-    expect(host.querySelector('[role="alert"]')?.textContent ?? "").toContain("E1508");
-    off();
-    router.dispose();
-    host.remove();
+    let thrown: unknown;
+    try {
+      manifest(w, {
+        "w.login": { component: page },
+        "w.plain": { component: page, guard: guard({ redirect: "w.login" }, async () => err(Denied.make({}))) },
+      });
+    } catch (e) {
+      thrown = e;
+    }
+    expect(thrown).toMatchObject({ code: "E1508", message: expect.stringContaining("w.plain") });
+    expect(thrown).toMatchObject({ message: expect.stringContaining("w.login") });
+    expect(thrown).toMatchObject({ message: expect.stringContaining("id") });
   });
 });

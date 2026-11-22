@@ -8,4 +8,4 @@ Commitments made without evidence. Never cite as findings.
 4. A frozen kernel plus an evolving stdlib is a stable enough contract for an in-context learner.
 5. Session-to-test closes the maintenance loop well enough to be a wedge against incumbents.
 
-verified: 587f1b0bfe496ca146d1bf6155f4e7253eee3310
+verified: 39a5564fa714ddd49fff8398d32919101a66a4f6

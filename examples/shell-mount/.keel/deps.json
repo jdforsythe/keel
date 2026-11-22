@@ -1,0 +1,1 @@
+{"data":{"edges":[{"from":"modules/notes/NotePage.tsx#props.params","to":"modules.notes.NotePage:text:#text"}],"nodes":[{"file":"modules/notes/NotePage.tsx","id":"modules.notes.NotePage:text:#text","kind":"binding","name":"text #text"},{"file":"modules/notes/NotePage.tsx","id":"modules/notes/NotePage.tsx#props.params","kind":"prop","name":"params"}]},"hash":"fnv1a:f853b3dc"}

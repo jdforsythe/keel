@@ -75,7 +75,11 @@ export default function ListPage(props: Infer<typeof Props>) {
         method="POST"
         action={todos.href("todos.list", { listId: props.params.listId })}
         form={f}
-        error={(e) => <Text fg="error">{e.message}</Text>}
+        error={(e) => (
+          <Text role="alert" fg="error">
+            {e.message}
+          </Text>
+        )}
       >
         <Input
           field={f.field("title")}

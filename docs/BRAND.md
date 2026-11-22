@@ -33,7 +33,7 @@ A high-contrast parchment surface with deep charcoal text. ISO Ochre is reserved
 The sentence-level rules live in `docs/VOICE.md` (first person, reader as the hero, concrete nouns and numbers, no em dashes, no reversals, no hedging, the full banned list). `tooling/voice-lint.mjs` enforces the mechanical rules as V0003 in `pnpm check`. Two brand-level rules: claims never exceed what the ledger shows (PRINCIPLES 11), and the only nautical term is *Keel*.
 
 ## 6. Where it lives in code
-- `brandTokens` from `@keel/ui/brand` (`packages/ui/src/brand/brandTokens.ts`) holds this palette (`surface`, `surfaceLow`, `card`, `text`, `textSecondary`, `accent`, `verified`, `error`, `divider`), the two font stacks, radius `none` (0), the `hairline` size and border, and a light scheme only. The scaffold `project` template emits a `tokens.ts` that exports `brandTokens`, so every new app starts on brand. Apps: `apps/golden-1`, `apps/golden-2`, `apps/inspector`, `apps/sessions`.
+- `brandTokens` from `@keel/ui/brand` (`packages/ui/src/brand/brandTokens.ts`) holds this palette (`surface`, `surfaceLow`, `card`, `text`, `textSecondary`, `accent`, `verified`, `error`, `divider`), the two font stacks, radius `none` (0), the `hairline` size and border, and a light scheme only. The scaffold `project` template emits a `tokens.ts` that exports `brandTokens`, so every new app starts on brand. Apps: `apps/golden-1`, `apps/golden-2`, `apps/household`, `apps/inspector`, `apps/sessions` and the four `examples/`.
 - Fonts are self-hosted (`@keel/ui/fonts`, `packages/ui/fonts/fonts.css` with the two variable woff2 files and their licenses), never fetched from a third party at runtime (THREAT-MODEL CSP).
 
-verified: bc1dbf6e0eff98d2e5be485efe6a9cc04a08f1af
+verified: 282272bef8849cc2e8ae1cb84a4295b9f8638622
