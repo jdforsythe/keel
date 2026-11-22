@@ -10,7 +10,7 @@ import { simCtx } from "./fixtures.ts";
 
 const items = fc.array(fc.stringMatching(/^[a-z]{1,6}$/), { maxLength: 4 });
 
-test.skip("a page whose component creates `store(S, { items: props.data.items }, { id: 'v.list' })` in its body, under `renderRoute`, shows the loader's items; a click whose handler `tx`es one of its transactions shows the change, and `state()` holds `v.list`.", async () => {
+test("a page whose component creates `store(S, { items: props.data.items }, { id: 'v.list' })` in its body, under `renderRoute`, shows the loader's items; a click whose handler `tx`es one of its transactions shows the change, and `state()` holds `v.list`.", async () => {
   await fc.assert(
     fc.asyncProperty(items, async (list) => {
       control.items = list;

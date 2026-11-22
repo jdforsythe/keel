@@ -14,7 +14,7 @@ import { appOf } from "./resume-graph-app.ts";
 const items = fc.array(fc.stringMatching(/^[a-z]{1,6}$/), { maxLength: 4 });
 const FRESH = () => import("../../testing/conformance/view-store-page.ts");
 
-test.skip("`resumeDocument` of the page's document from `createApp` gives `state()['v.list']` equal to the server's.", async () => {
+test("`resumeDocument` of the page's document from `createApp` gives `state()['v.list']` equal to the server's.", async () => {
   await fc.assert(
     fc.asyncProperty(items, items, async (served, later) => {
       control.items = served;

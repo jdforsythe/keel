@@ -45,13 +45,13 @@ const CLEAN: Record<string, string> = {
   helper: COMPONENT("  seed(bump)", "<Box>x</Box>", "function seed(b) {\n  tx(b, { x: 1 })\n}\n"),
 };
 
-test.skip("E1304 fires on `tx` at the top of a component body and in a `For` row function; not on one in an `onClick` arrow, an `effect` callback, or a top-level helper the body calls.", () => {
+test("E1304 fires on `tx` at the top of a component body and in a `For` row function; not on one in an `onClick` arrow, an `effect` callback, or a top-level helper the body calls.", () => {
   expect(e1304(BAD.body ?? "")).toHaveLength(1);
   expect(e1304(BAD.forRow ?? "")).toHaveLength(1);
   for (const [name, source] of Object.entries(CLEAN)) expect(e1304(source), name).toEqual([]);
 });
 
-test.skip("E1304 also fires on `tx` in a function that is an `If`, `Match`, `Case` or `Boundary` child, one per call", () => {
+test("E1304 also fires on `tx` in a function that is an `If`, `Match`, `Case` or `Boundary` child, one per call", () => {
   fc.assert(
     fc.property(fc.constantFrom("ifChild", "matchCase", "boundary"), (k) => {
       expect(e1304(BAD[k] ?? ""), k).toHaveLength(1);
@@ -60,7 +60,7 @@ test.skip("E1304 also fires on `tx` in a function that is an `If`, `Match`, `Cas
   );
 });
 
-test.skip("E1304 reports one per `tx` call, and its fix names the store's `initial` or an event handler", () => {
+test("E1304 reports one per `tx` call, and its fix names the store's `initial` or an event handler", () => {
   fc.assert(
     fc.property(fc.integer({ min: 1, max: 4 }), (n) => {
       const calls = Array.from({ length: n }, () => "  tx(bump, { x: 1 })").join("\n");
@@ -73,11 +73,11 @@ test.skip("E1304 reports one per `tx` call, and its fix names the store's `initi
   );
 });
 
-test.skip("E1304 does not follow a call: a `tx` in a helper the body calls is none (it throws E1201 at render instead).", () => {
+test("E1304 does not follow a call: a `tx` in a helper the body calls is none (it throws E1201 at render instead).", () => {
   expect(e1304(CLEAN.helper ?? "")).toEqual([]);
 });
 
-test.skip("E1304 is a check rule of component files only: the same `tx` at the top level of a non-component module is none.", () => {
+test("E1304 is a check rule of component files only: the same `tx` at the top level of a non-component module is none.", () => {
   const src = `${HEAD}export const st = store(T, { n: 0 }, { id: 'm.st' })\nexport const bump = transaction(st, 'm.bump', P, (s0, p) => ({ n: s0.n + p.x }))\ntx(bump, { x: 1 })\n`;
   expect(
     check([{ path: "util.ts", source: src }], { types: false }).diagnostics.filter((d) => d.code === "E1304"),
