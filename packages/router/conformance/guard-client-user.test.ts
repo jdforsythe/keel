@@ -94,7 +94,7 @@ function startRouter(ctx: Ctx, opts: { identity: boolean; render?: boolean } = {
 const users = fc.stringMatching(/^[a-z][a-z0-9]{0,11}$/);
 
 describe("k.guards Client: a client router reads the user once before its first guard", () => {
-  test.skip("a guard on the first and on a second navigation gets `'u1'`, after one GET", async () => {
+  test("a guard on the first and on a second navigation gets `'u1'`, after one GET", async () => {
     reset();
     const { ctx, net } = world(userIs("u1"));
     const r = startRouter(ctx);
@@ -111,7 +111,7 @@ describe("k.guards Client: a client router reads the user once before its first 
     }
   });
 
-  test.skip("any user id the read answers is the `user` of the guard and the loader, after one GET", async () => {
+  test("any user id the read answers is the `user` of the guard and the loader, after one GET", async () => {
     await fc.assert(
       fc.asyncProperty(users, async (id) => {
         reset();
@@ -132,7 +132,7 @@ describe("k.guards Client: a client router reads the user once before its first 
     );
   });
 
-  test.skip("a submitted `Form`'s action gets that `user`", async () => {
+  test("a submitted `Form`'s action gets that `user`", async () => {
     reset();
     const { ctx } = world(userIs("u1"));
     const r = startRouter(ctx, { identity: true, render: true });
@@ -150,7 +150,7 @@ describe("k.guards Client: a client router reads the user once before its first 
     }
   });
 
-  test.skip("answered 500, the guard gets `''`", async () => {
+  test("answered 500, the guard gets `''`", async () => {
     reset();
     const { ctx, net } = world(() => new Response("{}", { status: 500 }));
     const r = startRouter(ctx);
@@ -166,7 +166,7 @@ describe("k.guards Client: a client router reads the user once before its first 
     }
   });
 
-  test.skip("any answer other than 200 gives the guard `''`", async () => {
+  test("any answer other than 200 gives the guard `''`", async () => {
     await fc.assert(
       fc.asyncProperty(fc.constantFrom(201, 204, 301, 403, 404, 500, 503), async (status) => {
         reset();
@@ -183,7 +183,7 @@ describe("k.guards Client: a client router reads the user once before its first 
     );
   });
 
-  test.skip("the fetch rejecting, the guard gets `''`", async () => {
+  test("the fetch rejecting, the guard gets `''`", async () => {
     reset();
     const { ctx } = world(userIs("u1"));
     ctx.net.setOnline(false);
@@ -214,7 +214,7 @@ describe("k.guards Client: a client router reads the user once before its first 
     }
   });
 
-  test.skip("a guard that runs while the read is in flight waits for its answer", async () => {
+  test("a guard that runs while the read is in flight waits for its answer", async () => {
     reset();
     const gateOpen = defer();
     const { ctx } = world(async () => {
@@ -233,7 +233,7 @@ describe("k.guards Client: a client router reads the user once before its first 
     }
   });
 
-  test.skip("the router keeps the user in memory only: nothing reaches `ctx.storage`, `document.cookie` or web storage", async () => {
+  test("the router keeps the user in memory only: nothing reaches `ctx.storage`, `document.cookie` or web storage", async () => {
     reset();
     const { ctx } = world(userIs("u1"));
     const writes: string[] = [];

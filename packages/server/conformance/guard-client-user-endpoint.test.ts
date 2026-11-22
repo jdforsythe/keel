@@ -13,7 +13,7 @@ const KEEL = { "x-keel": "1" };
 const userId = fc.string({ minLength: 0, maxLength: 256 });
 
 describe("k.guards Client: GET /__keel/user", () => {
-  test.skip('with `identify` answering `\'u1\'`, `GET /__keel/user` with `x-keel: 1` is 200 `{ "user": "u1" }` with `cache-control: no-store`, one `identify` call', async () => {
+  test('with `identify` answering `\'u1\'`, `GET /__keel/user` with `x-keel: 1` is 200 `{ "user": "u1" }` with `cache-control: no-store`, one `identify` call', async () => {
     const r = await rig({ identify: async () => "u1" });
     const res = await r.get(USER, KEEL);
     expect(res.status).toBe(200);
@@ -22,7 +22,7 @@ describe("k.guards Client: GET /__keel/user", () => {
     expect(r.identified).toHaveLength(1);
   });
 
-  test.skip("any user id `identify` answers, `''` included, is the body's `user`, one `identify` call per GET", async () => {
+  test("any user id `identify` answers, `''` included, is the body's `user`, one `identify` call per GET", async () => {
     await fc.assert(
       fc.asyncProperty(userId, async (id) => {
         const r = await rig({ identify: async () => id });
@@ -38,7 +38,7 @@ describe("k.guards Client: GET /__keel/user", () => {
     );
   });
 
-  test.skip("without `x-keel: 1`, 403 `keel.denied` and `identify` uncalled", async () => {
+  test("without `x-keel: 1`, 403 `keel.denied` and `identify` uncalled", async () => {
     const r = await rig({ identify: async () => "u1" });
     const res = await r.get(USER);
     expect(res.status).toBe(403);
@@ -55,7 +55,7 @@ describe("k.guards Client: GET /__keel/user", () => {
     expect((await r.get(USER)).status).toBe(404);
   });
 
-  test.skip("`identify` runs for `/__keel/user` and not for another `/__keel/*` path", async () => {
+  test("`identify` runs for `/__keel/user` and not for another `/__keel/*` path", async () => {
     const r = await rig({ identify: async () => "u1" });
     await r.get(USER, KEEL);
     expect(r.identified).toHaveLength(1);
@@ -63,7 +63,7 @@ describe("k.guards Client: GET /__keel/user", () => {
     expect(r.identified).toHaveLength(1);
   });
 
-  test.skip("a header, cookie or search value naming a user does not change the answer", async () => {
+  test("a header, cookie or search value naming a user does not change the answer", async () => {
     const r = await rig({ identify: async () => "" });
     const res = await r.get(`${USER}?user=u2`, { ...KEEL, "x-keel-user": "u2", cookie: "user=u2" });
     expect(res.status).toBe(200);

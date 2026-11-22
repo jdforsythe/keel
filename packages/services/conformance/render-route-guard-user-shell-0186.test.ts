@@ -26,7 +26,7 @@ async function shell() {
 const reads = (seen: Seen[]) => seen.filter((r) => r.path === "/__keel/user");
 const holds = (cookie: string | null) => cookie !== null && cookie.split(/;\s*/).includes("s=1");
 
-test.skip("a mount `Form` POST answered 303 to a page guarded by `user !== ''` with `set-cookie: s=1`: a second `/__keel/user` GET carries `s=1`, and the page renders without a redirect", async () => {
+test("a mount `Form` POST answered 303 to a page guarded by `user !== ''` with `set-cookie: s=1`: a second `/__keel/user` GET carries `s=1`, and the page renders without a redirect", async () => {
   const { h, seen } = await shell();
   try {
     expect(reads(seen)).toHaveLength(1);
@@ -43,7 +43,7 @@ test.skip("a mount `Form` POST answered 303 to a page guarded by `user !== ''` w
   }
 });
 
-test.skip("the read after the mount answer comes before the router acts on its `location`: the guard never saw `''` after the POST", async () => {
+test("the read after the mount answer comes before the router acts on its `location`: the guard never saw `''` after the POST", async () => {
   const { h, seen } = await shell();
   try {
     await h.fire("cg.signin.go", { type: "click" });
@@ -58,7 +58,7 @@ test.skip("the read after the mount answer comes before the router acts on its `
   }
 });
 
-test.skip("after a sign-out mount answer the read runs again, carries no `s=1`, and the guard gets `''`", async () => {
+test("after a sign-out mount answer the read runs again, carries no `s=1`, and the guard gets `''`", async () => {
   const { h, seen } = await shell();
   try {
     await h.fire("cg.signin.go", { type: "click" });
@@ -72,7 +72,7 @@ test.skip("after a sign-out mount answer the read runs again, carries no `s=1`, 
   }
 });
 
-test.skip("the user stays out of every URL the page requested", async () => {
+test("the user stays out of every URL the page requested", async () => {
   const { h, seen } = await shell();
   try {
     await h.fire("cg.signin.go", { type: "click" });

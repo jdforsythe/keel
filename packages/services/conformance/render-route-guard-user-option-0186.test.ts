@@ -40,7 +40,7 @@ test("`renderRoute(id, { routes, user })` over a module importing `identity.ts`:
   );
 });
 
-test.skip("`renderRoute(id, { routes, user: 'u1' })` sends no `/__keel/user` GET after a navigation either", async () => {
+test("`renderRoute(id, { routes, user: 'u1' })` sends no `/__keel/user` GET after a navigation either", async () => {
   reset();
   const { ctx, paths } = sim();
   const h = await renderRoute("cg.page", { routes, ctx, user: "u1" });
