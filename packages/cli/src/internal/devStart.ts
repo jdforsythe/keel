@@ -81,7 +81,8 @@ export async function devStart(argv: readonly string[], cwd: string): Promise<De
   if (existsSync(join(cwd, "index.html"))) {
     const diag = makeDiag("W1012", INDEX_HTML_IGNORED, { path: "index.html", line: 1, col: 1, see: "k.head" });
     process.stdout.write(
-      respond([diag], hostIo(false), { command: "dev", format: input.format, quiet: input.quiet, limit: input.limit }).stdout,
+      respond([diag], hostIo(false), { command: "dev", format: input.format, quiet: input.quiet, limit: input.limit })
+        .stdout,
     );
   }
   for (const [signal, n] of STOPS) {

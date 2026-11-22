@@ -177,7 +177,10 @@ describe("parseTopology servedBy", () => {
   it("reports a key a deployable does not list, a leftover host included, as E1552 and keeps the rest", () => {
     const source = `export default topology({ web: { modules: ["w"], adapter: "client", host: "api" }, api: { modules: ["a"], adapter: "node", caller: { days: 3 } } })`;
     expect(parseTopology(source).problems).toEqual([
-      ["web", "web: host is not a deployable key; one of modules, adapter, servedBy, storage, shells, caller, origins, styles"],
+      [
+        "web",
+        "web: host is not a deployable key; one of modules, adapter, servedBy, storage, shells, caller, origins, styles",
+      ],
     ]);
     expect(topologyReadProblems(source).map(([code]) => code)).toEqual(["E1552"]);
   });
