@@ -1,6 +1,6 @@
 # RFC 0180: k.testing: `renderRoute` with `app` runs a `node` page as the build serves it
 
-Status: accepted (ADR-0202). From walkthrough finding L3-1 (`tasks/p1/walkthrough-findings.md`); the fault itself is fixed in 58649bd1.
+Status: implemented (ADR-0202). From walkthrough finding L3-1 (`tasks/p1/walkthrough-findings.md`); the fault itself is fixed in 58649bd1.
 
 ## Decisions
 - D1: `renderRoute(id, { app, routes, ... })` takes `app`, a `createApp` result (`ServerApp`, k.server), and then runs the page as a built `node` page runs: no client router. It GETs the page's URL through `app.fetch` and resumes the answer on `ctx` as `resumeDocument` does. This is document mode. Without `app` the harness renders through the client router, as now (router mode).

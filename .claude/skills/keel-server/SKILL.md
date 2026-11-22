@@ -18,7 +18,7 @@ A `node` deployable owns the data; `client` ones call it. Signatures: `keel docs
 import { s } from '@keel/schema'
 export const Board = s.object({ todos: s.array(s.object({ id: s.id('Todo'), title: s.string() })) })
 ```
-A write that answers nothing has `output: s.object({})` and returns `ok({})`. A client view store changes only through a transaction: after a write, re-read through the service and `tx` the result into a `hydrate` transaction. A page action (`decl` `{ input }`) returns `ok(href)` (303 to it) or `ok(null)`; a page loader's `decl` is `{ output }`.
+A write that answers nothing has `output: s.object({})` and returns `ok({})`. A client view store starts from loader data by being created in the component with it as `initial` (`keel docs k.store`, View stores); after a write, re-read through the service and `tx` the answer into a `hydrate` transaction in the handler. A `tx` in a component body is E1304. A page action (`decl` `{ input }`) returns `ok(href)` (303 to it) or `ok(null)`; a page loader's `decl` is `{ output }`.
 
 ## API routes
 

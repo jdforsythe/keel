@@ -57,7 +57,8 @@ export async function signIn(fetch: Fetch, email = EMAIL, name = NAME): Promise<
  * signed up and signed in through the identity mount, and minted an API token through the members API: `fetch` sends
  * that token with every request that carries no `cookie` or `authorization` of its own, and `user` is the member's id
  * for `renderRoute`. A token, not the session cookie: under happy-dom a `Response` drops `set-cookie`. `sent` lists
- * `METHOD /path` of what reached the net, and `lines` every line the server logged.
+ * `METHOD /path` of what reached the net, and `lines` every line the server logged. `app` is `fetch` as `renderRoute`'s
+ * `app`: a page it serves is requested and posted as a browser does, with the member's token when signed in.
  */
 export async function served(
   seed = 1,
@@ -70,6 +71,7 @@ export async function served(
   raw: Fetch;
   user: string;
   token: string;
+  app: { fetch: Fetch };
 }> {
   const ctx = createCtx({ mode: "sim", seed });
   const lines: string[] = [];
@@ -99,7 +101,7 @@ export async function served(
   ctx.net.route("http://members.keel.invalid/*", fetch);
   ctx.net.route("http://setup.keel.invalid/*", fetch);
   ctx.net.route("http://shopping.keel.invalid/*", fetch);
-  return { ctx, sent, lines, fetch, raw, user, token };
+  return { ctx, sent, lines, fetch, raw, user, token, app: { fetch } };
 }
 
 /** A JSON request as a services client sends it. */

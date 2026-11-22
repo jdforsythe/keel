@@ -24,6 +24,7 @@ import { pascal } from "./pascal.ts";
 import { routeId } from "./routeId.ts";
 import { routeTable } from "./routeTable.ts";
 import { targetsGenerated } from "./targetsGenerated.ts";
+import { topologyOf } from "./topologyOf.ts";
 
 const SEGMENT = /^(?::[a-z][a-zA-Z0-9]*|[a-z0-9][a-z0-9-]*)$/;
 
@@ -144,6 +145,7 @@ export function opRoute(input: unknown, files: ReadonlyMap<string, string>): Res
         params,
         inTestDir ? `../${dir}/routes.ts` : "./routes.ts",
         api === true ? { path, method: verb } : null,
+        Object.values(topologyOf(files) ?? {}).some((d) => d.adapter === "node" && d.modules.includes(mod)),
       ),
     ],
   ]);

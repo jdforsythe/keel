@@ -1,9 +1,11 @@
 # k.hosting: Client hosting
-status: conformance-covered
+status: implemented
 
-**Purpose.** A `client` deployable builds to files any static host can serve, finds its API by a tag, and may be served by a `node` deployable instead.
+**Purpose.** A `client` or `static` deployable builds to files any static host can serve; a `client` one finds its API by a tag and may be served by a `node` deployable instead.
 
 **Artifact.** `keel build` writes `dist/<name>/` per `client` deployable: `index.html`, `assets/` (content-hashed names) and `keel-mark.svg`. Every URL in it is root-absolute or absolute. A static host returns these files at the origin's root, returns `/index.html` with 200 for a path that is no file, and caches `assets/*` as immutable and the rest as `no-cache`.
+
+**Static.** `keel build` writes `dist/<name>/` per `static` deployable: for each of its routes (one path each, E1553) the document its own `createApp` answers a GET of that path at build (production, a real `ctx` with memory storage, caller `''`; loaders run then), at `index.html` for `/` and `<path>/index.html` otherwise; `404.html`, the not-found document; `assets/` with the resume entry of its islands; `keel-mark.svg`; `csp.txt` (k.security). A route answering other than 200 fails the build (E1588). A static host returns `<path>/index.html` for `<path>` and `404.html` with 404 for a path that is no file, caching as above.
 
 **Peers.** For each `node` deployable whose `KEEL_PEER_<NAME>` is set at build, `index.html` carries `<meta name="keel-peer" data-deployable="<name>" content="<origin>">`. The client entry binds the tags to its `ctx`: `service({ contract })` in a browser resolves to the tagged origin of the module's deployable, else the document's origin, and a request to another origin is sent with `credentials: 'include'`. A value that is not an http(s) origin fails the build (E1565).
 
@@ -16,7 +18,7 @@ With a list set, every API route response carries `vary: origin`. Pages, assets 
 
 **Served by.** `servedBy: '<name>'` on a `client` deployable names the `node` deployable that serves it. `keel build` also copies the client artifact into `dist/<name>/`, and that deployable's `createApp` answers a GET or HEAD document request matching none of its routes and no peer's with `index.html` (200, `no-cache`); an unmatched runtime or event-stream request, or a path under `/assets/`, stays 404.
 
-**Rules.** E1565 `KEEL_PEER_<NAME>` at build is not an http(s) origin; names the key, never the value · E1566 `servedBy` that is not a string literal, on a deployable that is not `client`, naming an unknown or non-`node` deployable, or two `client` deployables naming one · W1567 an allowed origin that is cross-site to the server: the caller cookie cannot reach it; use one registrable domain or one origin · E1552 (k.topology) also covers a spread, computed key or key twice in a deployable of `topology.ts`.
+**Rules.** E1565 `KEEL_PEER_<NAME>` at build is not an http(s) origin; names the key, never the value · E1566 `servedBy` that is not a string literal, on a deployable that is not `client`, naming an unknown or non-`node` deployable, or two `client` deployables naming one · W1567 an allowed origin that is cross-site to the server: the caller cookie cannot reach it; use one registrable domain or one origin · E1588 a `static` route whose build GET answers other than 200 (names the route id and status) · E1552 (k.topology) also covers a spread, computed key or key twice in a deployable of `topology.ts`.
 
 **Conformance.**
 - `keel build` of a fixture with a `client` deployable `web` writes `dist/web/index.html` and hashed files under `dist/web/assets/`; no file in it holds a URL that is neither root-absolute nor absolute.
@@ -26,3 +28,5 @@ With a list set, every API route response carries `vary: origin`. Pages, assets 
 - A request from an allowed origin with `sec-fetch-site: cross-site` logs W1567 once for that origin.
 - With `servedBy: 'api'`, `node dist/api/server.mjs` answers `GET /` and `GET /no/such/page` with the client `index.html`, an unmatched runtime GET with 404, and a client asset as `immutable`; `servedBy` naming a `client` deployable is E1566.
 - A deployable with `host: 'api'` is one E1552 naming `host` (k.topology); `topology()` throws E1552 for it.
+- `keel build` of a fixture whose topology is one `static` deployable `site` over a module with routes `/` and `/about`, each loader returning a text, exits 0 and writes `dist/site/index.html` and `dist/site/about/index.html` holding the texts, `dist/site/404.html`, `dist/site/csp.txt` and the files under `dist/site/assets/` those documents script; no `dist/index.html`.
+- The same fixture with a route whose loader returns `err` (`keel.notFound`) exits 1 with one E1588 naming that route id and 404.

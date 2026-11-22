@@ -3,8 +3,8 @@
   "unsafe": 18,
   "hostElements": 0,
   "rungs": {
-    "example": 1641,
-    "probabilistic": 340,
+    "example": 1648,
+    "probabilistic": 341,
     "exhaustive": 15,
     "proven": 74,
     "monitored": 8
@@ -15189,6 +15189,10 @@
       "rung": "example"
     },
     {
+      "item": "k.head#9",
+      "rung": "none"
+    },
+    {
       "item": "k.host-code#1",
       "rung": "example"
     },
@@ -15303,6 +15307,14 @@
     {
       "item": "k.hosting#7",
       "rung": "example"
+    },
+    {
+      "item": "k.hosting#8",
+      "rung": "none"
+    },
+    {
+      "item": "k.hosting#9",
+      "rung": "none"
     },
     {
       "item": "k.leave#1",
@@ -16357,6 +16369,10 @@
       "rung": "example"
     },
     {
+      "item": "k.scaffold#15",
+      "rung": "none"
+    },
+    {
       "item": "k.schema#1",
       "rung": "probabilistic"
     },
@@ -16685,6 +16701,10 @@
       "rung": "example"
     },
     {
+      "item": "k.sim#11",
+      "rung": "probabilistic"
+    },
+    {
       "item": "k.store#1",
       "rung": "probabilistic"
     },
@@ -16774,6 +16794,14 @@
     },
     {
       "item": "k.store#23",
+      "rung": "example"
+    },
+    {
+      "item": "k.store#24",
+      "rung": "example"
+    },
+    {
+      "item": "k.store#25",
       "rung": "example"
     },
     {
@@ -16890,19 +16918,19 @@
     },
     {
       "item": "k.testing#15",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.testing#16",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.testing#17",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.testing#18",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.topology#1",
@@ -16943,6 +16971,18 @@
     {
       "item": "k.topology#10",
       "rung": "example"
+    },
+    {
+      "item": "k.topology#11",
+      "rung": "none"
+    },
+    {
+      "item": "k.topology#12",
+      "rung": "none"
+    },
+    {
+      "item": "k.topology#13",
+      "rung": "none"
     },
     {
       "item": "k.ui#1",
@@ -17043,18 +17083,6 @@
     {
       "item": "k.user#10",
       "rung": "example"
-    },
-    {
-      "item": "k.user#11",
-      "rung": "none"
-    },
-    {
-      "item": "k.user#12",
-      "rung": "none"
-    },
-    {
-      "item": "k.user#13",
-      "rung": "none"
     },
     {
       "item": "std.brands#1",
