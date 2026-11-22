@@ -27,19 +27,13 @@ export default function ShoppingList(props: Infer<typeof Props>, ctx: Ctx) {
   };
   // Every member's page follows the list channel: after each change, its own included, it re-reads the list through
   // its own API call into `shopping.copy`. The server render has no stream; the page's own data shows until the
-  // first read commits.
-  // A stream keeps the member it opened with, so after a sign-out elsewhere it still hears each change; the re-read is
-  // then refused, and the page says it is signed out rather than connecting.
+  // first read commits. A member signed out elsewhere has the stream closed `denied` at the next change, and a refused
+  // re-read is `denied` as well: the status line says signed out until the page is loaded again.
   const origin = pageOrigin();
-  const signedOut = signal(false);
-  const read = async (c: Ctx, abort: AbortSignal) => {
-    const r = await shoppingApi.items({ signal: abort }, c);
-    signedOut.set(!r.ok && r.error.code === "api.status" && r.error.data.status === 403);
-    return r;
-  };
-  const following =
-    origin === undefined ? (): LiveStatus => "connecting" : live(ctx, origin, listChannel, {}, { read, hydrate });
-  const status = (): LiveStatus => (signedOut.get() ? "denied" : following());
+  const status =
+    origin === undefined
+      ? (): LiveStatus => "connecting"
+      : live(ctx, origin, listChannel, {}, { read: (c, abort) => shoppingApi.items({ signal: abort }, c), hydrate });
   const send = async (call: Promise<Result<Infer<typeof Items>, unknown>>) => {
     const r = await call;
     if (r.ok) run(tx(hydrate, r.value));

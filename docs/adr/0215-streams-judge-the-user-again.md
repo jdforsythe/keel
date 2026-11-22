@@ -1,6 +1,6 @@
 # ADR-0215: an open stream judges its user again before each delivery; a refused read is `denied` (RFC 0193)
 
-**Status:** proposed (orchestrator; for the operator to confirm).
+**Status:** accepted (operator, 2026-11-22).
 
 **Context.** k.user keeps an event stream's `user` fixed from open to close, so a member who signs out in another tab keeps hearing each change on the open stream. std.live shows `connecting` for a refused re-read and retries it forever, so `apps/household` wraps `read` to catch the 403 and compose its own status.
 
