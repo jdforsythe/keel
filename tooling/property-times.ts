@@ -70,7 +70,8 @@ function isTestCallee(callee: unknown): boolean {
 function runsOf(call: Node): number {
   const args = Array.isArray(call.arguments) ? call.arguments : [];
   const options: unknown = args[1];
-  if (!isNode(options) || options.type !== "ObjectExpression" || !Array.isArray(options.properties)) return DEFAULT_RUNS;
+  if (!isNode(options) || options.type !== "ObjectExpression" || !Array.isArray(options.properties))
+    return DEFAULT_RUNS;
   for (const p of options.properties) {
     if (!isNode(p) || p.type !== "Property" || name(p.key) !== "runs" || !isNode(p.value)) continue;
     const v = p.value.value;

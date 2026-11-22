@@ -38,7 +38,9 @@ describe("propertyTimes", () => {
     expect(propertyTimes(other, (c) => parseAst(c), 5000)).toBeUndefined();
   });
   it("inserts at UTF-16 offsets, so a test named in another script keeps its text", () => {
-    const out = times(`it("日本語", async () => { await properties(A); });\nit("b", async () => { await properties(B); });`);
+    const out = times(
+      `it("日本語", async () => { await properties(A); });\nit("b", async () => { await properties(B); });`,
+    );
     expect(out).toContain(`it("日本語", { timeout: 30000 }, async`);
     expect(out).toContain(`it("b", { timeout: 30000 }, async`);
   });
