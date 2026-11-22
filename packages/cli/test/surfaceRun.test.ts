@@ -208,4 +208,33 @@ describe("surfaceRun", () => {
     },
     SLOW * 2,
   );
+  test(
+    "a layout's loader and its page's naming two factories that create one store id are an E1550 note and code 1",
+    async () => {
+      const server = (page: string): string => `import { loader } from "@keel/router";
+import { ok, s } from "@keel/schema";
+import { store } from "@keel/store";
+import { m } from "./m.contract.ts";
+const S = s.object({});
+export const frameStores = () => ({ s: store(S, {}, { id: "m.s" }) });
+export const pageStores = () => ({ ...frameStores(), t: store(S, {}, { id: "m.t" }) });
+export const unread = () => ({ s: store(S, {}, { id: \`m.\${"s"}\` }) });
+export const L = loader(m, "m.frame", { output: S, stores: frameStores }, async () => ok({}));
+export const P = loader(m, "m.home", { output: S, stores: ${page} }, async () => ok({}));
+`;
+      const files = (page: string): Record<string, string> => ({
+        "modules/m/m.contract.ts": `import { contract } from "@keel/router/contract";\nexport const m = contract("m", { "m.frame": { layout: true }, "m.home": { path: "/home" } });\n`,
+        "modules/m/m.server.ts": server(page),
+        "modules/m/routes.ts": `import { manifest } from "@keel/router";\nimport { m } from "./m.contract.ts";\nimport { L, P } from "./m.server.ts";\nexport const routes = manifest(m, { "m.frame": { component: () => null, loader: L }, "m.home": { component: () => null, layout: "m.frame", loader: P } });\n`,
+      });
+      expect(await surfaceRun(project(files("unread")))).toEqual({
+        code: 1,
+        notes: [
+          "E1550 route m.home: stores: unread and frameStores (m.frame) both create store m.s; name one factory\n",
+        ],
+      });
+      expect(await surfaceRun(project(files("frameStores")))).toEqual({ code: 0, notes: [] });
+    },
+    SLOW,
+  );
 });

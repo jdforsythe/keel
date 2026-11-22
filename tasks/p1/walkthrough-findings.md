@@ -63,8 +63,10 @@
 | L7-7 | open |
 | L7-8 | open |
 | L7-9 | open |
+| L9-1 | fixed: rfc:0195 two factories of one route chain that create one store id are E1550 at keel check, keel build and createApp; household's frame and setup page name one factory |
+| L9-4 | fixed: fix(std-workflows): a step's done payload is typed by its event's payload |
 
-Fixed 15, answered in the skills 10, filed as backlog 11, carried by RFC 0188 6, open 17.
+Fixed 17, answered in the skills 10, filed as backlog 11, carried by RFC 0188 6, open 17.
 
 Each finding: what I tried, where, the command and its output, what I expected, whether docs or skills misled. Kinds: fault (framework behaves against its spec), docs (docs or skills gap), rough (works, but an app author trips on it).
 
@@ -308,8 +310,9 @@ The coverage plan names this layer 8 ("Jobs, schedules, a workflow"); the README
 - Tried: the setup page's loader named `setupStores = (ctx) => ({ ...householdStores(), ...restockStores(ctx) })`, to read the household's name and the weekly runs in one loader. `tsc`, Biome and `keel check` passed.
 - Every request for `/setup` answered 500 `unexpected`; the log line read `loader setup.form threw: Error: store setup.household: id already in use by a live store`. The page's frame (`app.frame`) runs `loadFrame` over `householdStores` in the same request, so two factories create `setup.household` in one request scope (`packages/store/src/store.ts:65`). Under `renderRoute` the page rendered nothing at all and the test failed with E1705 on the first id, with no cause shown (as L7-2).
 - Spec: k.server Server state, "Per request each named factory runs once". It says nothing of two factories that share a store, which a layout and its page meet as soon as both read one setting. Expected: one store per id per request, whichever factory names it, or a `keel check` error naming both factories.
-- Now: the setup loader keeps `householdStores` and asks the shopping API for the runs, in process (`shoppingApi.runs({ user }, ctx)`).
-- Triage: an author error. k.store Registries: "a duplicate live id throws only within one registry (the server isolates each request scope)"; k.server: "Per request each named factory runs once", so the factory is what loaders share. The throw is `packages/store/src/internal/openHeld.ts:39`; `packages/server/test/layoutPageStoreId.test.ts` reproduces it. RFC 0195 (ADR-0217, accepted) adds E1550 at `keel check`, `keel build` and `createApp`; conformance first. The keel-server skill says loaders that read one store name one factory. The workaround stays.
+- Now: the frame and the setup page both name `frameStores` (`modules/setup/frameStores.server.ts`: the household's stores and the weekly runs'), and the setup loader reads the runs from it.
+- Triage: an author error. k.store Registries: "a duplicate live id throws only within one registry (the server isolates each request scope)"; k.server: "Per request each named factory runs once", so the factory is what loaders share. The throw is `packages/store/src/internal/openHeld.ts:39`; `packages/server/test/layoutPageStoreId.test.ts` reproduces it. RFC 0195 (ADR-0217, accepted) adds E1550 at `keel check`, `keel build` and `createApp`; conformance first. The keel-server skill says loaders that read one store name one factory.
+- Fixed: `keel check` reports E1550 at the deeper loader's `stores` value; `keel build` and `createApp` refuse it after running each factory once on a sim ctx.
 
 ### L9-2 docs: a test's `createApp` runs no runner unless the test passes them
 - Tried: `test/serve.ts` made the app with `createApp({ topology, routes, ctx, deployable, identity })`, as the skill's example. Run now answered `running`, and after 80 turns of the clock the run had not moved: no job ran, no diagnostic.

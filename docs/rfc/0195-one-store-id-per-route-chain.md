@@ -1,6 +1,6 @@
 # RFC 0195: k.server: two factories of one route chain that create one store id are E1550
 
-Status: accepted (ADR-0217). Amends k.server (Server state, Rules, Conformance). From `apps/household` (walkthrough finding L9-1).
+Status: implemented (ADR-0217). Amends k.server (Server state, Rules, Conformance). From `apps/household` (walkthrough finding L9-1).
 
 ## Problem
 The household's setup page named `setupStores = (ctx) => ({ ...householdStores(), ...restockStores(ctx) })` to read the household's name and the weekly runs in one loader. Its frame layout `app.frame` names `householdStores`. `tsc`, Biome and `keel check` passed; every GET of `/setup` answered 500, and the dev log read `keel.unexpected loader setup.form threw: Error: store setup.household: id already in use by a live store`. Under `renderRoute` the page rendered nothing and the test failed with E1705.

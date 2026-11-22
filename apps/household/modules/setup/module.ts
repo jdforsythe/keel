@@ -4,5 +4,5 @@ export default module({
   id: "setup",
   deps: ["members", "shopping", "@keel/std-text"],
   capabilities: [],
-  public: { exports: ["householdStores"] },
+  public: { exports: ["frameStores"] },
 });

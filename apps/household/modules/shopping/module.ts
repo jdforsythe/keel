@@ -14,5 +14,5 @@ export default module({
     "@keel/std-workflows",
   ],
   capabilities: ["clock", "random", "storage", "shopping.db"],
-  public: { exports: ["RestockPanel", "RestockText", "restockText", "Runs", "shoppingApi"] },
+  public: { exports: ["RestockPanel", "restockStores", "RestockText", "restockText", "Runs", "runsOf", "shoppingApi"] },
 });

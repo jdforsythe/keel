@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
-// k.server Server state with k.routes Layouts: a layout's loader and its page's loader whose two `stores` factories
-// create one store id answer 500 at run time, the second factory to open throwing (k.store Registries: one live store
-// per id in the request scope). Both naming one factory open it once and share it. Seed 1337.
+// k.server Server state and Rules (E1550) with k.routes Layouts: a layout's loader and its page's loader whose two
+// `stores` factories create one store id make `createApp` reject with E1550 naming the page, both factories, the id and
+// the layout. Both naming one factory open it once and share it. Seed 1337.
 import { createCtx } from "@keel/ctx";
 import { loader, manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
@@ -37,14 +37,10 @@ async function build(page: typeof homeStores | typeof pageStores, lines: string[
 }
 
 describe("a layout and its page over one store id", () => {
-  it("two factories creating one id: the page's loader throws and the request answers 500", async () => {
-    const lines: string[] = [];
-    const app = await build(pageStores, lines);
-    const res = await app.fetch(new Request("http://localhost/setup"));
-    expect(res.status).toBe(500);
-    expect(lines.filter((l) => l.startsWith("keel.unexpected "))).toEqual([
-      "keel.unexpected loader app.setup threw: Error: store app.home: id already in use by a live store",
-    ]);
+  it("two factories creating one id: createApp rejects with E1550", async () => {
+    await expect(build(pageStores, [])).rejects.toThrow(
+      "E1550 route app.setup: stores: pageStores and homeStores (app.frame) both create store app.home; name one factory",
+    );
   });
 
   it("both loaders naming one factory share its instance and answer 200", async () => {
