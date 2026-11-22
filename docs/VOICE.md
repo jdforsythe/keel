@@ -51,4 +51,5 @@ To: "Keel compiles JSX to DOM operations and keeps every state change in a named
 Rewrite: "It's not the framework that's slow, it's the reasoning."
 To: "The framework is fast enough; the agent's reasoning about invisible rules is what costs tokens."
 
+subject: tooling/voice-lint.mjs
 verified: 58518a6665330f253ba46d8d456f7bc45dde1128

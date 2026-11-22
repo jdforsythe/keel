@@ -41,4 +41,5 @@
 
 **Determinism.** All kernel tests run under a seeded clock and PRNG via `ctx`. A test reading wall time fails lint.
 
+subject: tooling/ .github/ packages/testing/src/ spec/kernel/k.ledger.md spec/kernel/k.testing.md
 verified: 3190e26ae653272180ea7a368098f885a7615f09

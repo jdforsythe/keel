@@ -44,4 +44,5 @@
 
 **Generated, read-only:** `turbo.json`, CI workflows, Dockerfiles, compose. Hand edits fail `pnpm check`.
 
+subject: packages/*/package.json spec/00-map.md tooling/deps.json
 verified: 452a06b6d08da77e448bf993e30ac5525556bda3
