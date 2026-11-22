@@ -1,6 +1,6 @@
 # ADR-0067: a node deployable's document carries its title, stylesheet and icon (RFC 0078)
 
-**Status:** accepted (2026-11-10), under the WORKFLOW RFC defaults 2, 3, 5 and 6.
+**Status:** accepted (2026-11-10), under the WORKFLOW RFC defaults 2, 3, 5 and 6; superseded in part by ADR-0209 (2026-11-22): the brand base is a `base` token group compiled into the one stylesheet, so the rejection of a brand base stylesheet below no longer holds.
 
 **Context.** `createApp` writes a head with a charset and a viewport only, so a node-rendered page has no title, stylesheet or icon, and an unknown path shows the bare code `keel.notFound`. A client deployable gets these from the scaffold's `index.html`; a node deployable has none. The production build's manifest already records the entry's stylesheets, and the build already holds `keel-mark.svg` from `public/`, but the asset loader serves only `assets/`.
 
