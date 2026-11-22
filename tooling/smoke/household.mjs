@@ -314,7 +314,11 @@ try {
     await document.fonts.ready;
     return [getComputedStyle(e).fontFamily, document.fonts.check('17px "Source Serif 4"')];
   });
-  step("the frame sets the brand serif and it loads", serif[0].startsWith('"Source Serif 4"') && serif[1], serif.join(" "));
+  step(
+    "the frame sets the brand serif and it loads",
+    serif[0].startsWith('"Source Serif 4"') && serif[1],
+    serif.join(" "),
+  );
 
   await page.goto(`${origin}/list`);
   await settled(page);

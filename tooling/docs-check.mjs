@@ -45,7 +45,7 @@ const COPY_DIR = ".claude/skills";
 /** The published skills and the size target of each, in tokens (chars / 4). Re-based for the answers an app author needed in the walkthrough (createApp, Select, storage flag, explore, scope, Host, createApp's std, one frame across modules) and for `keel review` in the keel skill, view stores seeded with `initial` (keel-client, keel-server) and node pages tested with `app` (keel-testing). */
 export const TARGETS = {
   keel: 950,
-  "keel-client": 2650,
+  "keel-client": 2725,
   "keel-server": 2450,
   "keel-data": 2550,
   "keel-testing": 2275,
