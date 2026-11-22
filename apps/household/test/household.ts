@@ -2,7 +2,8 @@ import { s } from "@keel/schema";
 import { sql } from "@keel/std-postgres";
 import { renderRoute } from "@keel/testing";
 import { membersDb } from "../modules/members/membersDb.server.ts";
-import { served, signIn, webRoutes } from "./serve.ts";
+import { Copy } from "../modules/shopping/Copy.schema.ts";
+import { served, signIn } from "./serve.ts";
 
 const UserRow = s.object({ userId: s.string() });
 export const GRACE = "grace@example.com";
@@ -17,9 +18,20 @@ export async function household(seed: number) {
   return { ...app, adaCookie: ada, graceCookie: grace, graceId };
 }
 
-/** Grace's list page, signed in as her. */
-export const gracePage = (h: Awaited<ReturnType<typeof household>>) =>
-  renderRoute("shopping.list", { routes: webRoutes, params: {}, ctx: h.ctx, app: h.app, user: h.graceId });
+/**
+ * The list page signed in as `user` (`h.user` is Ada, `h.graceId` Grace), in a browser of its own: the route table is
+ * imported into a client module graph of the harness's own, so two members' pages keep their own client stores and
+ * widgets while they share the server (k.user Testing).
+ */
+export const listPage = (h: Awaited<ReturnType<typeof household>>, user: string) =>
+  renderRoute("shopping.list", { routes: () => import("./webRoutes.ts"), params: {}, ctx: h.ctx, app: h.app, user });
+
+/** The client copy of the list a page holds (`shopping.copy`, k.testing `state()`). */
+export const copyOf = (page: { state(): Readonly<Record<string, unknown>> }) => {
+  const r = Copy.parse(page.state()["shopping.copy"]);
+  if (!r.ok) throw new Error(`no shopping.copy on the page: ${r.error.message}`);
+  return r.value;
+};
 
 /** An open event stream of the list channel with `cookie` (`''`: a visitor); `next()` reads its next event. */
 export async function stream(h: Awaited<ReturnType<typeof household>>, cookie: string) {

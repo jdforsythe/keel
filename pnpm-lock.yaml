@@ -1489,6 +1489,9 @@ importers:
       '@keel/compiler':
         specifier: workspace:*
         version: link:../compiler
+      '@keel/forms':
+        specifier: workspace:*
+        version: link:../forms
       '@keel/router':
         specifier: workspace:*
         version: link:../router

@@ -3,10 +3,10 @@
   "unsafe": 18,
   "hostElements": 0,
   "rungs": {
-    "example": 1484,
-    "probabilistic": 368,
-    "exhaustive": 20,
-    "proven": 84,
+    "example": 1406,
+    "probabilistic": 341,
+    "exhaustive": 15,
+    "proven": 75,
     "monitored": 8
   },
   "mutation": {
@@ -68,7 +68,7 @@
         "threshold": 70
       },
       "std-channels": {
-        "score": 77.4,
+        "score": 75.99,
         "threshold": 70
       },
       "std-conflicts": {
@@ -100,7 +100,6 @@
         "threshold": 70
       },
       "std-live": {
-        "score": 87.34,
         "threshold": 70
       },
       "std-messages": {
@@ -10797,624 +10796,6 @@
   },
   "exports": [
     {
-      "pkg": ".injected10-Vj4m50",
-      "name": "Board",
-      "file": ".injected10-Vj4m50:api/Board.schema.ts",
-      "rung": "probabilistic"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "BoardView",
-      "file": ".injected10-Vj4m50:api/BoardView.schema.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "FieldsReply",
-      "file": ".injected10-Vj4m50:api/FieldsReply.schema.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "FlowParams",
-      "file": ".injected10-Vj4m50:api/FlowParams.schema.ts",
-      "rung": "probabilistic"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "ListDraft",
-      "file": ".injected10-Vj4m50:api/ListDraft.schema.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "ListParams",
-      "file": ".injected10-Vj4m50:api/ListParams.schema.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "ListWrite",
-      "file": ".injected10-Vj4m50:api/ListWrite.schema.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "Nothing",
-      "file": ".injected10-Vj4m50:api/Nothing.schema.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "Removal",
-      "file": ".injected10-Vj4m50:api/Removal.schema.ts",
-      "rung": "probabilistic"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "RemovalData",
-      "file": ".injected10-Vj4m50:api/RemovalData.schema.ts",
-      "rung": "probabilistic"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "StepFailure",
-      "file": ".injected10-Vj4m50:api/StepFailure.schema.ts",
-      "rung": "probabilistic"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "Suggestion",
-      "file": ".injected10-Vj4m50:api/Suggestion.schema.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "Todo",
-      "file": ".injected10-Vj4m50:api/Todo.schema.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "TodoDraft",
-      "file": ".injected10-Vj4m50:api/TodoDraft.schema.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "TodoIdParams",
-      "file": ".injected10-Vj4m50:api/TodoIdParams.schema.ts",
-      "rung": "probabilistic"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "TodoList",
-      "file": ".injected10-Vj4m50:api/TodoList.schema.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "TodoWrite",
-      "file": ".injected10-Vj4m50:api/TodoWrite.schema.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "ToggleWrite",
-      "file": ".injected10-Vj4m50:api/ToggleWrite.schema.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "WriteRefusal",
-      "file": ".injected10-Vj4m50:api/WriteRefusal.schema.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "addList",
-      "file": ".injected10-Vj4m50:api/addList.ts",
-      "rung": "proven"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "addTodo",
-      "file": ".injected10-Vj4m50:api/addTodo.ts",
-      "rung": "proven"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "api",
-      "file": ".injected10-Vj4m50:api/api.contract.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "board",
-      "file": ".injected10-Vj4m50:api/board.ts",
-      "rung": "proven"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "boardChannel",
-      "file": ".injected10-Vj4m50:api/boardChannel.schema.ts",
-      "rung": "probabilistic"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "boardEvents",
-      "file": ".injected10-Vj4m50:api/boardEvents.server.ts",
-      "rung": "none"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "boardStores",
-      "file": ".injected10-Vj4m50:api/boardStores.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "editTodo",
-      "file": ".injected10-Vj4m50:api/editTodo.ts",
-      "rung": "proven"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "hideList",
-      "file": ".injected10-Vj4m50:api/hideList.ts",
-      "rung": "proven"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "jobs",
-      "file": ".injected10-Vj4m50:api/jobs.server.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "loadBoard",
-      "file": ".injected10-Vj4m50:api/loadBoard.server.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "loadSuggestions",
-      "file": ".injected10-Vj4m50:api/loadSuggestions.server.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "postEdit",
-      "file": ".injected10-Vj4m50:api/postEdit.server.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "postList",
-      "file": ".injected10-Vj4m50:api/postList.server.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "postRemove",
-      "file": ".injected10-Vj4m50:api/postRemove.server.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "postTodo",
-      "file": ".injected10-Vj4m50:api/postTodo.server.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "postToggle",
-      "file": ".injected10-Vj4m50:api/postToggle.server.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "postUndo",
-      "file": ".injected10-Vj4m50:api/postUndo.server.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "postUndoRemoval",
-      "file": ".injected10-Vj4m50:api/postUndoRemoval.server.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "purge",
-      "file": ".injected10-Vj4m50:api/purge.server.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "purgeList",
-      "file": ".injected10-Vj4m50:api/purgeList.ts",
-      "rung": "probabilistic"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "removal",
-      "file": ".injected10-Vj4m50:api/removal.server.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "removalChart",
-      "file": ".injected10-Vj4m50:api/removalChart.ts",
-      "rung": "proven"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "removalStores",
-      "file": ".injected10-Vj4m50:api/removalStores.server.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "restore",
-      "file": ".injected10-Vj4m50:api/restore.server.ts",
-      "rung": "probabilistic"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "runners",
-      "file": ".injected10-Vj4m50:api/runners.server.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "showList",
-      "file": ".injected10-Vj4m50:api/showList.ts",
-      "rung": "proven"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "toggleTodo",
-      "file": ".injected10-Vj4m50:api/toggleTodo.ts",
-      "rung": "proven"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "Badge",
-      "file": ".injected10-Vj4m50:cart/Badge.tsx",
-      "rung": "none"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "Field",
-      "file": ".injected10-Vj4m50:cart/Field.tsx",
-      "rung": "none"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "List",
-      "file": ".injected10-Vj4m50:cart/List.tsx",
-      "rung": "none"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "Name",
-      "file": ".injected10-Vj4m50:cart/Name.tsx",
-      "rung": "none"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "count",
-      "file": ".injected10-Vj4m50:cart/count.ts",
-      "rung": "none"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "load",
-      "file": ".injected10-Vj4m50:cart/load.ts",
-      "rung": "none"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "other",
-      "file": ".injected10-Vj4m50:cart/pair.ts",
-      "rung": "none"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "pair",
-      "file": ".injected10-Vj4m50:cart/pair.ts",
-      "rung": "none"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "stamp",
-      "file": ".injected10-Vj4m50:cart/stamp.ts",
-      "rung": "none"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "total",
-      "file": ".injected10-Vj4m50:cart/total.ts",
-      "rung": "none"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "Digest",
-      "file": ".injected10-Vj4m50:digest/Digest.schema.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "LATEST_KEY",
-      "file": ".injected10-Vj4m50:digest/LATEST_KEY.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "RecountInput",
-      "file": ".injected10-Vj4m50:digest/RecountInput.schema.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "boardApi",
-      "file": ".injected10-Vj4m50:digest/boardApi.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "digest",
-      "file": ".injected10-Vj4m50:digest/digest.contract.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "feedDigest",
-      "file": ".injected10-Vj4m50:digest/feedDigest.server.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "jobs",
-      "file": ".injected10-Vj4m50:digest/jobs.server.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "loadDigest",
-      "file": ".injected10-Vj4m50:digest/loadDigest.server.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "readLatest",
-      "file": ".injected10-Vj4m50:digest/readLatest.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "recount",
-      "file": ".injected10-Vj4m50:digest/recount.server.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "refresh",
-      "file": ".injected10-Vj4m50:digest/refresh.server.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "runners",
-      "file": ".injected10-Vj4m50:digest/runners.server.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "schedules",
-      "file": ".injected10-Vj4m50:digest/schedules.server.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "writeLatest",
-      "file": ".injected10-Vj4m50:digest/writeLatest.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "AppShell",
-      "file": ".injected10-Vj4m50:todos/AppShell.tsx",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "EditTodoPage",
-      "file": ".injected10-Vj4m50:todos/EditTodoPage.tsx",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "EditorData",
-      "file": ".injected10-Vj4m50:todos/EditorData.schema.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "ListError",
-      "file": ".injected10-Vj4m50:todos/ListError.tsx",
-      "rung": "probabilistic"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "ListPage",
-      "file": ".injected10-Vj4m50:todos/ListPage.tsx",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "ListSearch",
-      "file": ".injected10-Vj4m50:todos/ListSearch.schema.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "ListsPage",
-      "file": ".injected10-Vj4m50:todos/ListsPage.tsx",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "OutboxPanel",
-      "file": ".injected10-Vj4m50:todos/OutboxPanel.tsx",
-      "rung": "probabilistic"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "Suggestions",
-      "file": ".injected10-Vj4m50:todos/Suggestions.tsx",
-      "rung": "probabilistic"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "TodoParams",
-      "file": ".injected10-Vj4m50:todos/TodoParams.schema.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "TodoRow",
-      "file": ".injected10-Vj4m50:todos/TodoRow.tsx",
-      "rung": "probabilistic"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "boardOutbox",
-      "file": ".injected10-Vj4m50:todos/boardOutbox.ts",
-      "rung": "probabilistic"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "createList",
-      "file": ".injected10-Vj4m50:todos/createList.server.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "createTodo",
-      "file": ".injected10-Vj4m50:todos/createTodo.server.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "editable",
-      "file": ".injected10-Vj4m50:todos/editable.guard.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "editorChart",
-      "file": ".injected10-Vj4m50:todos/editorChart.ts",
-      "rung": "proven"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "editorFollow",
-      "file": ".injected10-Vj4m50:todos/editorFollow.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "editorOutcome",
-      "file": ".injected10-Vj4m50:todos/editorOutcome.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "editorStuck",
-      "file": ".injected10-Vj4m50:todos/editorStuck.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "formAnswer",
-      "file": ".injected10-Vj4m50:todos/formAnswer.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "hydrate",
-      "file": ".injected10-Vj4m50:todos/hydrate.ts",
-      "rung": "probabilistic"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "idPart",
-      "file": ".injected10-Vj4m50:todos/idPart.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "loadIndex",
-      "file": ".injected10-Vj4m50:todos/loadIndex.server.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "loadList",
-      "file": ".injected10-Vj4m50:todos/loadList.server.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "loadTodo",
-      "file": ".injected10-Vj4m50:todos/loadTodo.server.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "pageOrigin",
-      "file": ".injected10-Vj4m50:todos/pageOrigin.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "refreshView",
-      "file": ".injected10-Vj4m50:todos/refreshView.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "resolveEdit",
-      "file": ".injected10-Vj4m50:todos/resolveEdit.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "todos",
-      "file": ".injected10-Vj4m50:todos/todos.contract.ts",
-      "rung": "none"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "todosApi",
-      "file": ".injected10-Vj4m50:todos/todosApi.ts",
-      "rung": "probabilistic"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "updateTodo",
-      "file": ".injected10-Vj4m50:todos/updateTodo.server.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": ".injected10-Vj4m50",
-      "name": "view",
-      "file": ".injected10-Vj4m50:todos/view.ts",
-      "rung": "probabilistic"
-    },
-    {
       "pkg": "golden-1",
       "name": "Board",
       "file": "golden-1:api/Board.schema.ts",
@@ -13104,7 +12485,7 @@
       "pkg": "household",
       "name": "Copy",
       "file": "household:shopping/Copy.schema.ts",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "pkg": "household",
@@ -17634,11 +17015,11 @@
     },
     {
       "item": "k.testing#2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "k.testing#3",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "k.testing#4",
@@ -17650,7 +17031,7 @@
     },
     {
       "item": "k.testing#6",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "k.testing#7",
@@ -17658,7 +17039,7 @@
     },
     {
       "item": "k.testing#8",
-      "rung": "probabilistic"
+      "rung": "none"
     },
     {
       "item": "k.testing#9",
@@ -17686,7 +17067,7 @@
     },
     {
       "item": "k.testing#15",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "k.testing#16",
@@ -17698,6 +17079,10 @@
     },
     {
       "item": "k.testing#18",
+      "rung": "example"
+    },
+    {
+      "item": "k.testing#19",
       "rung": "example"
     },
     {
@@ -17974,15 +17359,15 @@
     },
     {
       "item": "std.channels#13",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.channels#14",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.channels#15",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.conflicts#1",
@@ -18314,7 +17699,7 @@
     },
     {
       "item": "std.live#11",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.messages#1",
@@ -18678,23 +18063,23 @@
     },
     {
       "item": "std.postgres#18",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.postgres#19",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.postgres#20",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.postgres#21",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.postgres#22",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "std.report#1",
