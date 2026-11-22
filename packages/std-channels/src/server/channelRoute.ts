@@ -2,7 +2,7 @@ import { stdConfig } from "@keel/compiler/std/stdConfig";
 import type { Ctx } from "@keel/ctx";
 import { action, loader } from "@keel/router";
 import type { Contract } from "@keel/router/contract";
-import { type KeelError, attempt, err, ok } from "@keel/schema";
+import { type KeelError, err, ok } from "@keel/schema";
 import type { Channel } from "../Channel.type.ts";
 import type { ChannelEntries } from "../ChannelEntries.type.ts";
 import type { ChannelEvent } from "../ChannelEvent.ts";
@@ -25,6 +25,8 @@ import { storesIn } from "./internal/storesIn.ts";
 
 const denied: KeelError<"keel.denied", null> = { code: "keel.denied", message: "denied", data: null };
 const closed = (reason: "denied" | "full") => ok({ kind: "closed", reason } as const);
+/** How long an answer of `currentUser()` stands for a stream, on `ctx.clock` (std.channels Serve). */
+const STANDS_MS = 1_000;
 
 type Opts<P, S, Id extends string> = {
   readonly id: Id;
@@ -103,7 +105,9 @@ export function channelRoute<P, M, S, const Id extends string, const Pub extends
  * entry at the canonical JSON of its params, then yields `reset`, then `saved` after each save of a store `stores`
  * creates (with `member` re-checked against the stores as saved: false, or a failed re-read, ends it with `closed`
  * `denied`), `changed` after each followed change (with `member` re-run first) and `message` per publish to the same
- * channel and params, delivered after any pending re-check. An entry not listening within 5,000 ms on `ctx.clock`, or
+ * channel and params, delivered after any pending re-check. Before each delivery the stream asks `currentUser()`
+ * (k.user), an answer less than 1,000 ms old on `ctx.clock` standing for that stream; an answer other than the
+ * stream's `user` gives `closed` `denied` in place of the event. An entry not listening within 5,000 ms on `ctx.clock`, or
  * a `lost` report, ends the stream with no `closed` event, a drop its client reopens after. At `publish` the action of `POST { message }`: `member` false is 403, else every open member
  * stream of the instance gets the message and it answers `ok({})`. The server answers params failing the channel's
  * schema with 422 before either runs. Events name no caller and hold no store state. Throws E1510 for a `publish` on
@@ -125,7 +129,7 @@ export function channelRoute<P, M, S>(
   const streams = holding<StreamEntry<P, M>>(contract, id, { method: "GET", path, query, events: true, output });
   const instance = (key: string): string => `${channel.name}\n${key}`;
   const keyOf = (params: P): string => JSON.stringify(channel.params.encode(params));
-  const live = loader(streams, id, decl, async function* ({ search, caller, user, stores, signal }, ctx) {
+  const live = loader(streams, id, decl, async function* ({ search, caller, user, stores, signal, currentUser }, ctx) {
     // `member` before the caps: a non-member learns nothing about them; it runs once per open as it does below them.
     const at = { caller, user, params: search, stores };
     if (!allowed(member, at)) {
@@ -145,6 +149,36 @@ export function channelRoute<P, M, S>(
     const ids = new Set(list.map((st) => st.id));
     let chain = Promise.resolve();
     let out = false;
+    // Whether the request the stream opened with still names its `user`, asked before each delivery; an answer less
+    // than a second old stands. Run inside `chain`, so one stream's checks keep its order and run apart from others'.
+    // A member check or a `currentUser()` that fails is a denial; with nothing pending it pushes in the same turn.
+    let checked: number | undefined;
+    const deliver = (event: ChannelEvent<M>, member: () => Promise<boolean> | boolean): Promise<void> | undefined => {
+      if (out) return;
+      const verdict = (still: boolean): undefined => {
+        out = !still;
+        box.push(out ? { kind: "closed", reason: "denied" } : event);
+        return undefined;
+      };
+      const judge = (isMember: boolean): Promise<void> | undefined => {
+        if (!isMember) return verdict(false);
+        if (checked !== undefined && ctx.clock.now() - checked < STANDS_MS) return verdict(true);
+        return currentUser().then(
+          (now) => {
+            checked = ctx.clock.now();
+            verdict(now === user);
+          },
+          () => void verdict(false),
+        );
+      };
+      let m: Promise<boolean> | boolean;
+      try {
+        m = member();
+      } catch {
+        return verdict(false);
+      }
+      return typeof m === "boolean" ? judge(m) : m.then(judge, () => void verdict(false));
+    };
     const leave = join(ctx, hub, {
       key: instance(keyOf(search)),
       caller,
@@ -152,27 +186,20 @@ export function channelRoute<P, M, S>(
       // Messages queue behind any pending re-check, so a stream it revokes gets none.
       post: (m) => {
         const r = channel.message?.parse(m);
-        if (r?.ok === true) chain = chain.then(() => void (out || box.push({ kind: "message", message: r.value })));
+        if (r?.ok === true) chain = chain.then(() => deliver({ kind: "message", message: r.value }, () => true));
       },
       // A re-read or `member` that fails is a denial; the chain goes on for later saves.
       saved: (store, head, read) => {
         if (!ids.has(store)) return;
-        chain = chain.then(async () => {
-          if (out) return;
-          const still = await attempt(async () => (await reread(list, read)) && allowed(member, at));
-          out = !(still.ok && still.value);
-          box.push(out ? { kind: "closed", reason: "denied" } : { kind: "saved", store, head });
-        });
+        chain = chain.then(() =>
+          deliver({ kind: "saved", store, head }, async () => (await reread(list, read)) && allowed(member, at)),
+        );
       },
     });
     // A `lost` report or a follow not listening in time ends the stream as a drop: no `closed`, so the client reopens.
     const drop = new AbortController();
     const recheck = (): void => {
-      chain = chain.then(() => {
-        if (out) return;
-        out = !allowed(member, at);
-        box.push(out ? { kind: "closed", reason: "denied" } : { kind: "changed" });
-      });
+      chain = chain.then(() => deliver({ kind: "changed" }, () => allowed(member, at)));
     };
     const unfollow = await followAll(ctx, follows, channel, canonicalJson(channel.params.encode(search)), (r) => {
       if (r.kind === "changed") recheck();

@@ -1,0 +1,127 @@
+// @vitest-environment node
+// What judging a stream's user again costs (std.channels Serve, k.user): with no identity source a stream delivers
+// with no identity work (no `identify`, no 5,000 ms bound on `ctx.clock`); with one, a burst costs one `identify` per
+// stream per second of `ctx.clock`.
+import { createCtx } from "@keel/ctx";
+import type { SimCtx } from "@keel/ctx";
+import { action, manifest } from "@keel/router";
+import { contract } from "@keel/router/contract";
+import { ok, s } from "@keel/schema";
+import { createApp, identity, topology } from "@keel/server";
+import { store, transaction, tx } from "@keel/store";
+import { expect, test } from "vitest";
+import { channel } from "../src/channel.ts";
+import { channelRoute } from "../src/server/channelRoute.ts";
+
+const Room = s.object({ room: s.string() });
+const room = channel("cost.room", { path: "/api/room/events", params: Room });
+const factory = () => {
+  const log = store(s.object({ n: s.int() }), { n: 0 }, { id: "cost.log" });
+  return { log, bump: transaction(log, "cost.bump", s.object({}), (st) => ({ n: st.n + 1 })) };
+};
+const c = contract("cost", {
+  "cost.room": { method: "GET", path: "/api/room/events", query: Room, events: true, output: room.events },
+  "cost.bump": { method: "POST", path: "/api/bump", body: s.object({}), output: s.object({}) },
+});
+
+const turns = async (n = 25): Promise<void> => {
+  for (let i = 0; i < n; i++) await new Promise<void>((r) => setTimeout(r, 0));
+};
+
+async function rig(identify: (() => string) | undefined) {
+  const ctx: SimCtx = createCtx({ mode: "sim", seed: 1337 });
+  const bounds = { n: 0 };
+  const after = ctx.clock.after.bind(ctx.clock);
+  // Counts the 5,000 ms bound an `identify` call runs under; nothing else here waits that long.
+  Reflect.set(ctx.clock, "after", (ms: number, signal?: AbortSignal) => {
+    if (ms === 5_000) bounds.n++;
+    return after(ms, signal);
+  });
+  const calls = { stream: 0, other: 0 };
+  const route = channelRoute(c, room, { id: "cost.room", stores: factory, member: () => true });
+  const bump = action(c, "cost.bump", { stores: factory }, async (_b, { stores }) => {
+    tx(stores.bump, {});
+    return ok({});
+  });
+  const source =
+    identify === undefined
+      ? {}
+      : {
+          identity: identity({
+            identify: async ({ request }) => {
+              const stream = (request.headers.get("accept") ?? "").includes("text/event-stream");
+              if (stream) calls.stream++;
+              else calls.other++;
+              return identify();
+            },
+          }),
+        };
+  const app = await createApp({
+    topology: topology({ web: { modules: ["cost"], adapter: "node" } }),
+    routes: manifest(c, { "cost.room": { loader: route.loader }, "cost.bump": { action: bump } }),
+    ctx,
+    mode: "dev",
+    ...source,
+  });
+  const ac = new AbortController();
+  const res = await app.fetch(
+    new Request("http://localhost/api/room/events?room=a", {
+      headers: { accept: "text/event-stream" },
+      signal: ac.signal,
+    }),
+  );
+  const reader = res.body?.getReader();
+  const events: unknown[] = [];
+  const dec = new TextDecoder();
+  void (async () => {
+    for (;;) {
+      const r = await reader?.read();
+      if (r === undefined || r.done) return;
+      for (const line of dec.decode(r.value).split("\n"))
+        if (line.startsWith("data:")) events.push(Reflect.get(JSON.parse(line.slice(5)), "value"));
+    }
+  })();
+  await turns();
+  const save = async (): Promise<void> => {
+    const r = await app.fetch(
+      new Request("http://localhost/api/bump", {
+        method: "POST",
+        body: "{}",
+        headers: { accept: "application/json", "content-type": "application/json", origin: "http://localhost" },
+      }),
+    );
+    expect(r.status).toBe(200);
+  };
+  return { ctx, bounds, calls, events, save, close: async () => (ac.abort(), app.close()) };
+}
+
+const kinds = (events: unknown[]): unknown[] => events.map((e) => Reflect.get(Object(e), "kind"));
+
+test("with no identity source, a stream delivers 40 saves with no identity work", async () => {
+  const r = await rig(undefined);
+  for (let i = 0; i < 40; i++) {
+    await r.save();
+    r.ctx.clock.advance(100);
+  }
+  await turns();
+  expect(kinds(r.events)).toEqual(["reset", ...Array.from({ length: 40 }, () => "saved")]);
+  expect(r.bounds.n).toBe(0);
+  await r.close();
+});
+
+test("with an identity source, a burst of 40 saves over 4 s costs one `identify` per second for the stream", async () => {
+  const r = await rig(() => "u1");
+  const atOpen = r.calls.stream;
+  for (let i = 0; i < 40; i++) {
+    await r.save();
+    await turns(5);
+    r.ctx.clock.advance(100);
+  }
+  await turns();
+  expect(kinds(r.events)).toEqual(["reset", ...Array.from({ length: 40 }, () => "saved")]);
+  expect(r.calls.stream - atOpen).toBe(4);
+  // Each save is a request and runs `identify` as one.
+  expect(r.calls.other).toBe(40);
+  expect(r.bounds.n).toBe(r.calls.stream + r.calls.other);
+  await r.close();
+});
