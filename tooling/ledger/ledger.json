@@ -3,7 +3,7 @@
   "unsafe": 18,
   "hostElements": 0,
   "rungs": {
-    "example": 1388,
+    "example": 1392,
     "probabilistic": 341,
     "exhaustive": 15,
     "proven": 75,
@@ -14182,7 +14182,7 @@
     },
     {
       "item": "k.a11y#14",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.api#1",
@@ -14506,7 +14506,7 @@
     },
     {
       "item": "k.cli#20",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.compat#1",
@@ -17002,7 +17002,7 @@
     },
     {
       "item": "k.testing#19",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.topology#1",
@@ -17062,7 +17062,7 @@
     },
     {
       "item": "k.topology#15",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.ui#1",
