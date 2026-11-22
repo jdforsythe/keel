@@ -108,6 +108,15 @@ export const CASES: readonly Case[] = [
   { code: "R1105", range: true, base: {}, head: { "keel-review.json": '{"v":1,"accepted":[]}\n' } },
   { code: "R1107", range: true, base: { ".keel/x.json": "{}\n" }, head: { ".keel/x.json": '{"a":1}\n' } },
   { code: "R1108", range: true, base: { "modules/m/s.ts": PII2 }, head: { "modules/m/s.ts": PII1 } },
+  {
+    code: "R2451",
+    range: false,
+    base: {},
+    head: {
+      "modules/m/db.server.ts":
+        'export const f = (db: Db) => db.transaction(async () => 1, { allow: "write skew", reason: "audit rows only" });\n',
+    },
+  },
   { code: "R1150", range: false, base: {}, head: { "modules/m/bad.ts": "export const = ;\n" } },
   {
     code: "R1151",

@@ -31,10 +31,10 @@ function setup(plan: { delay: number; fault: "none" | "conflict" }[]) {
 }
 
 test("a plan `conflict`, `none` runs a lone `run` twice, changing its row once", async () => {
-  const x = setup([C, N, C, ...Array.from({ length: 5 }, () => N)]);
+  const x = setup([C, N, C, C, C, ...Array.from({ length: 5 }, () => N)]);
   const r = await x.db(x.ctx).run(sql(NoRows)`update ${x.T} set n = n + 1 where id = 1`);
   expect(okOf(r)).toBe(1);
-  // The step after the two it took is the third: `conflict`, proving exactly two were consumed.
+  // The next run starts at the third step: `conflict` three times is `keel.conflict`, proving the first took exactly two.
   const next = await x.db(x.ctx).run(sql(NoRows)`update ${x.T} set n = n + 100 where id = 1`);
   expect(errOf(next).code).toBe("keel.conflict");
   const row = okOf(await x.db(x.ctx).one(sql(Counter)`select n from ${x.T} where id = 1`));
