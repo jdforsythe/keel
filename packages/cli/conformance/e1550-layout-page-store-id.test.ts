@@ -59,7 +59,7 @@ const e1550 = async (command: "build" | "check", pageStores: "a" | "b") => {
 };
 
 for (const command of ["check", "build"] as const) {
-  test.skip(`a layout's loader naming \`a\` and its page's naming \`b\`, both creating store id \`x.s\`, is one E1550 in \`keel ${command}\`; both naming \`a\`, none`, async () => {
+  test(`a layout's loader naming \`a\` and its page's naming \`b\`, both creating store id \`x.s\`, is one E1550 in \`keel ${command}\`; both naming \`a\`, none`, async () => {
     const lines = await e1550(command, "b");
     expect(lines).toHaveLength(1);
     expect(lines[0]).toContain("modules/a/a.server.ts");

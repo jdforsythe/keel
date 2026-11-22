@@ -46,7 +46,7 @@ const found = (files: Files) => check(files, { types: false }).diagnostics.filte
 const TWO = (id: string): string =>
   `const a = () => ({ s: store(S, {}, { id: '${id}' }) })\nconst b = () => ({ ...a(), t: store(S, {}, { id: '${id}' }) })`;
 
-test.skip("A layout whose loader names factory `a` and a page under it whose loader names `b`, where `b` spreads `a()` and both create store id `x.s`, is one E1550 in `keel check` at the page loader's `stores` value naming `a`, `b`, `x.s` and the layout's id", () => {
+test("A layout whose loader names factory `a` and a page under it whose loader names `b`, where `b` spreads `a()` and both create store id `x.s`, is one E1550 in `keel check` at the page loader's `stores` value naming `a`, `b`, `x.s` and the layout's id", () => {
   const { files, source } = project(TWO("x.s"), "a", "b");
   const d = found(files);
   expect(d).toHaveLength(1);
@@ -57,12 +57,12 @@ test.skip("A layout whose loader names factory `a` and a page under it whose loa
   for (const part of ["a", "b", "x.s", "a.layout"]) expect(text).toContain(part);
 });
 
-test.skip("E1550 with both loaders naming `a`, none", () => {
+test("E1550 with both loaders naming `a`, none", () => {
   const { files } = project(TWO("x.s"), "a", "a");
   expect(found(files)).toEqual([]);
 });
 
-test.skip("E1550 two factories whose store ids differ are none", () => {
+test("E1550 two factories whose store ids differ are none", () => {
   const { files } = project(
     "const a = () => ({ s: store(S, {}, { id: 'x.s' }) })\nconst b = () => ({ t: store(S, {}, { id: 'x.t' }) })",
     "a",
@@ -71,7 +71,7 @@ test.skip("E1550 two factories whose store ids differ are none", () => {
   expect(found(files)).toEqual([]);
 });
 
-test.skip("E1550 a factory it cannot read is not judged there", () => {
+test("E1550 a factory it cannot read is not judged there", () => {
   const { files } = project(
     "declare const make: () => Record<string, never>\nconst a = make\nconst b = () => ({ s: store(S, {}, { id: 'x.s' }) })",
     "a",
@@ -80,7 +80,7 @@ test.skip("E1550 a factory it cannot read is not judged there", () => {
   expect(found(files)).toEqual([]);
 });
 
-test.skip("property: for any store id, two distinct factories of one route chain creating it are one E1550 and the same factory twice is none", () => {
+test("property: for any store id, two distinct factories of one route chain creating it are one E1550 and the same factory twice is none", () => {
   fc.assert(
     fc.property(fc.stringMatching(/^[a-z]{1,6}\.[a-z]{1,6}$/), (id) => {
       expect(found(project(TWO(id), "a", "b").files)).toHaveLength(1);

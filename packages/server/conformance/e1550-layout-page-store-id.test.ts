@@ -39,7 +39,7 @@ async function build(names: { layout: "a" | "b"; page: "a" | "b" }) {
   return { app, runs };
 }
 
-test.skip("`createApp` throws E1550 when a layout's loader names `a` and its page's loader names `b`, both creating store id `x.s`", async () => {
+test("`createApp` throws E1550 when a layout's loader names `a` and its page's loader names `b`, both creating store id `x.s`", async () => {
   const message = await build({ layout: "a", page: "b" }).then(
     () => "built",
     (e: unknown) => (e instanceof Error ? e.message : JSON.stringify(e)),
