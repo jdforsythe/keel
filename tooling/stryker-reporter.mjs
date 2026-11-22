@@ -12,7 +12,8 @@ class KeelReporter {
   constructor(options) {
     this.options = options;
     this.t0 = Date.now();
-    this.pkg = path.basename(process.cwd());
+    this.unit = path.basename(process.cwd());
+    this.pkg = this.unit + (process.env.KEEL_MUTATE_SHARD ? ` shard ${process.env.KEEL_MUTATE_SHARD}` : "");
     this.progress = { total: 0, reused: 0, tested: 0, killed: 0, survived: 0, timeout: 0, startedAt: this.t0 };
     this.written = 0;
     this.parent = process.ppid;
@@ -45,7 +46,7 @@ class KeelReporter {
       const f = packageRelative(t.fileName);
       times[f] = Math.round((times[f] ?? 0) + t.timeSpentMs);
     }
-    const file = process.env.KEEL_TEST_TIMES ?? path.join(mutateCacheDir(), `${this.pkg}.times.json`);
+    const file = process.env.KEEL_TEST_TIMES ?? path.join(mutateCacheDir(), `${this.unit}.times.json`);
     fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.writeFileSync(file, JSON.stringify(times));
   }

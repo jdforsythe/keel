@@ -29,3 +29,5 @@ Read this file and the active plan, then act. Do not read `tasks/0338-s8-reach/P
 
 ## Running things for a person
 `pnpm --filter golden-2 dev` serves golden-2 with a dev sign-in fixture (port 5173; never port 8080). A built app: `pnpm --filter golden-<n> build`, then `dist/api/server.mjs` with `PORT`, `KEEL_SECRET` and, for golden-2, `BETTER_AUTH_SECRET`.
+
+subject: tasks/

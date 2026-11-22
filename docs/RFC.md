@@ -10,4 +10,5 @@ The only path to: change a spec section's text or status rules, change a conform
 
 **Pre-implementation exception.** While every spec section of a package is `proposed`, its conformance suites may receive lint-only or shape-only fixes (formatting, removing `!`, API-name alignment with the spec) by the `conformance-writer` under the tag `rfc:0000` in the commit message. Behavior changes still need a numbered RFC. Once any of its sections is past `proposed`, `rfc:0000` is not accepted; the hook and CI reject it.
 
+subject: docs/rfc/0000* docs/adr/0000* .claude/commands/rfc.md tooling/conformance-guard.mjs tooling/hooks/
 verified: 58518a6665330f253ba46d8d456f7bc45dde1128
