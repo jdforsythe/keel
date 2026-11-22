@@ -1,5 +1,5 @@
 # k.guards: Guards
-status: implemented
+status: conformance-covered
 
 **Guards.**
 ```ts

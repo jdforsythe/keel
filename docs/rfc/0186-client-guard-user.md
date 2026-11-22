@@ -1,6 +1,6 @@
 # RFC 0186: k.guards Client: a guard in a `client` deployable or a shell learns the reader from one read per session
 
-Status: accepted (ADR-0208). From scenario finding S3-2 (`tasks/p1/scenario3-findings.md`). Builds on RFC 0185 (the harness's cookie jar), which its testing clause uses.
+Status: implemented (ADR-0208). From scenario finding S3-2 (`tasks/p1/scenario3-findings.md`). Builds on RFC 0185 (the harness's cookie jar), which its testing clause uses.
 
 ## Decisions
 - D1: a `node` deployable with an identity source answers `GET /__keel/user` with `{ user }`, `identify`'s answer for that request, and `cache-control: no-store`. It needs `x-keel: 1`, which a page on another site cannot send without a CORS preflight the server never grants; without it, 403 `keel.denied`. With no identity source the path is the route table's 404. An `identify` throw, bad answer or timeout answers as k.user says (500, 503).
