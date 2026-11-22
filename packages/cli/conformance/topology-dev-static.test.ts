@@ -25,7 +25,7 @@ afterEach(async () => {
   await stopAll();
 });
 
-test.skip(
+test(
   "`keel dev` answers a `static` deployable's route with the document its `createApp` renders, its loader's text in it.",
   async () => {
     const port = await freePort();

@@ -38,6 +38,7 @@ import { projectHandlerUses } from "./internal/projectHandlerUses.ts";
 import { projectManifests } from "./internal/projectManifests.ts";
 import { registersCapability } from "./internal/registersCapability.ts";
 import { serverEntryCode } from "./internal/serverEntryCode.ts";
+import { writeStatic } from "./internal/writeStatic.ts";
 import { stubCode } from "./internal/stubCode.ts";
 import { unmappedModule } from "./internal/unmappedModule.ts";
 import { urlLiterals } from "./internal/urlLiterals.ts";
@@ -310,11 +311,11 @@ export default function (): {
     .filter((o) => o !== "");
   const written = new Map<string, string>();
   let devApps: DevApp[] = [];
-  /** Whether this dev server answers for `node` deployables (`keel dev` of a topology that has one). */
+  /** Whether this dev server answers for `node` or `static` deployables (`keel dev` of a topology that has one). */
   let hasNode = false;
   /** The closing of the last dev apps: the next ones load after it, so two never run on one storage. */
   let closed: Promise<unknown> = Promise.resolve();
-  /** `keel dev`: every `node` deployable's dev app, loaded through Vite's SSR loader (k.topology Local topology). */
+  /** `keel dev`: every `node` and `static` deployable's dev app, loaded through Vite's SSR loader (k.topology Local topology). */
   const dev = devMiddleware(async () => {
     await closed;
     const mod = await server?.ssrLoadModule?.(DEV_ENTRY);
@@ -388,15 +389,8 @@ export default function (): {
       ? undefined
       : { name, modules: d.modules, client: d.adapter === "client" };
   };
-  /**
-   * The deployable whose `index.html` the plugin writes when the project has none: the `client` one hosted, else, in a
-   * build, the `static` one served.
-   */
-  const page = (): string | undefined => {
-    if (hosting !== undefined || command !== "build") return hosting;
-    const d = deployable();
-    return d !== undefined && topology?.[d.name]?.adapter === "static" ? d.name : undefined;
-  };
+  /** The deployable whose `index.html` the plugin writes when the project has none: the `client` one hosted. */
+  const page = (): string | undefined => hosting;
   /**
    * The routes files of the deployable's modules (every module without a topology): an app module's
    * `modules/<id>/routes.ts`, root-relative; a stdlib module's package `./routes` file (`stdRoutes`), absolute.
@@ -714,10 +708,14 @@ export default function (): {
             .find((n) => top[n]?.adapter === "client") !== name;
         return { ...own, build: { outDir: out, emptyOutDir: true } };
       }
-      if (top[name]?.adapter !== "node") return own;
+      const adapter = top[name]?.adapter;
+      if (adapter !== "node" && adapter !== "static") return own;
       clientBuild = true;
-      const pg = top[name]?.storage === "postgres";
+      const built = adapter === "static";
+      const pg = !built && top[name]?.storage === "postgres";
       const at = path.resolve(user.root ?? process.cwd());
+      // A `static` deployable's server bundle is the build's alone: it renders the documents and is removed.
+      const ssrOut = built ? `node_modules/.keel/prerender/${name}` : out;
       return {
         ...own,
         build: {
@@ -730,8 +728,8 @@ export default function (): {
           ssr: {
             resolve: { noExternal: true },
             build: {
-              outDir: out,
-              emptyOutDir: false,
+              outDir: ssrOut,
+              emptyOutDir: built,
               manifest: false,
               copyPublicDir: false,
               // An external map for the server to read frames through: positions only, sources relative to the project.
@@ -759,6 +757,19 @@ export default function (): {
           buildApp: async (b) => {
             await b.build(b.environments.client);
             await b.build(b.environments.ssr);
+            if (built) {
+              const std = path.join(at, ".keel", "std.json");
+              const failed = await writeStatic(
+                path.join(at, out),
+                path.join(at, ssrOut, "server.mjs"),
+                name,
+                top,
+                process.env,
+                fs.existsSync(std) ? std : undefined,
+              );
+              if (failed.length > 0) throw evaluationFailed(failed);
+              return;
+            }
             copyPgliteFiles(path.join(at, out), () => pgliteDist(at));
             // Every module's routes, not the project build's: forwarding needs each peer deployable's paths.
             // Each deployable read as `node`, so the client's modules and every placed stdlib module are listed.
@@ -797,7 +808,7 @@ export default function (): {
     configureServer(s) {
       server = s;
       s.middlewares.use(inspect);
-      hasNode = Object.values(topology ?? {}).some((d) => d.adapter === "node");
+      hasNode = Object.values(topology ?? {}).some((d) => d.adapter === "node" || d.adapter === "static");
       if (hasNode) s.middlewares.use(dev.handle);
     },
     configurePreviewServer(s) {
@@ -858,6 +869,7 @@ export default function (): {
           Object.fromEntries(
             Object.entries(topology ?? {}).flatMap(([n, d]) => (d.origins === undefined ? [] : [[n, d.origins]])),
           ),
+          topology?.[node.name]?.adapter === "static" ? "static" : "node",
         );
       if (q?.path !== ENTRY_PATH) return null;
       const d = deployable(q.d);

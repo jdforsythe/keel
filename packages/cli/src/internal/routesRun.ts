@@ -1,7 +1,7 @@
 import { parseTopology } from "@keel/compiler";
 
 /**
- * Binary only: `keel build`'s `routes.json` for a project whose every deployable is `node`, so no build writes `.keel/`
+ * Binary only: `keel build`'s `routes.json` for a project with deployables and none `client`, so no build writes `.keel/`
  * (the project's own and the first `client` deployable's do). `buildRoutes` (`@keel/compiler/routes`, loaded only here) evaluates
  * the manifests and writes the file with the Vite plugin's writer; its Keel-coded `notes` are returned (a rewritten
  * file is W1005), and an evaluation problem among them (E1006, E1807) makes code 1. A rejected evaluation (E1000,
@@ -12,7 +12,7 @@ export async function routesRun(
   topologySource: string | undefined,
 ): Promise<{ code: number; notes: string[]; rejected?: true }> {
   const all = topologySource === undefined ? [] : Object.values(parseTopology(topologySource).topology);
-  if (all.length === 0 || all.some((d) => d.adapter !== "node")) return { code: 0, notes: [] };
+  if (all.length === 0 || all.some((d) => d.adapter === "client")) return { code: 0, notes: [] };
   try {
     const { buildRoutes } = await import("@keel/compiler/routes");
     const { notes } = await buildRoutes(cwd);
