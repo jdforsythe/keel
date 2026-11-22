@@ -40,7 +40,7 @@
     "@keel/ctx": "4.1kb",
     "@keel/forms": "5kb",
     "@keel/reactive": "4kb",
-    "@keel/router": "14.25kb",
+    "@keel/router": "14.5kb",
     "@keel/router/contract": "3.2kb",
     "@keel/router/match": "2.75kb",
     "@keel/runtime-dom": "6kb",

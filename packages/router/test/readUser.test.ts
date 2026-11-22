@@ -6,8 +6,8 @@ import { mount } from "@keel/runtime-dom";
 import { ok } from "@keel/schema";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { createRouter } from "../src/createRouter.ts";
 import { contract } from "../src/contract/index.ts";
+import { createRouter } from "../src/createRouter.ts";
 import { guard } from "../src/guard.ts";
 import { createRouterWith } from "../src/internal/createRouterWith.ts";
 import { findRouter } from "../src/internal/findRouter.ts";
@@ -40,7 +40,10 @@ function world(answer: () => Response | Promise<Response>) {
   });
   return { ctx, paths };
 }
-const json = (body: unknown, status = 200) => (): Response => new Response(JSON.stringify(body), { status });
+const json =
+  (body: unknown, status = 200) =>
+  (): Response =>
+    new Response(JSON.stringify(body), { status });
 
 test("with no mount, a router sends no request at all, on start or on navigation", async () => {
   seen.length = 0;
@@ -87,7 +90,13 @@ test("`reread` replaces the user before the next guard, and only the latest read
   seen.length = 0;
   const answers: (() => Promise<Response>)[] = [];
   const { ctx, paths } = world(() => answers.shift()?.() ?? json({ user: "" })());
-  const slow = Promise.withResolvers<void>();
+  let release: () => void = () => undefined;
+  const slow = {
+    promise: new Promise<void>((r) => {
+      release = r;
+    }),
+    resolve: () => release(),
+  };
   answers.push(async () => json({ user: "u1" })());
   answers.push(async () => {
     await slow.promise;
