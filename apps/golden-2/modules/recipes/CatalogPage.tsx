@@ -133,15 +133,17 @@ export default function CatalogPage(props: Infer<typeof Props>, ctx: Ctx) {
         }}
         cells={{
           price: (row) => (
-            <Text id={`recipes.table.price.${idPart(row.id)}`}>{formatMoney(row.price, props.params.locale)}</Text>
+            <Text id={`recipes.table.price.${idPart(row.id)}`} font="mono">
+              {formatMoney(row.price, props.params.locale)}
+            </Text>
           ),
           minutes: (row) => (
-            <Text id={`recipes.table.minutes.${idPart(row.id)}`}>
+            <Text id={`recipes.table.minutes.${idPart(row.id)}`} font="mono">
               {formatDuration(durationOf(row.minutes * 60_000), props.params.locale, "short")}
             </Text>
           ),
           addedOn: (row) => (
-            <Text id={`recipes.table.added.${idPart(row.id)}`}>
+            <Text id={`recipes.table.added.${idPart(row.id)}`} font="mono">
               {formatDate(row.addedOn, props.params.locale, "long")}
             </Text>
           ),
