@@ -31,7 +31,7 @@ afterEach(() => {
 const binding = (id: string, entries: string, bound: string): string =>
   `import { action, guard, loader, manifest } from "@keel/router";\nimport { contract } from "@keel/router/contract";\nimport { ok, s } from "@keel/schema";\nconst c = contract("${id}", { ${entries} });\nconst V = () => null;\nexport const routes = manifest(c, { ${bound} });\n`;
 const ROOT_VARS =
-  ":root{--k-color-fg:#111;--k-color-bg:#fff;--k-space-1:4px;--k-space-2:8px}\n@layer keel.base{\n[hidden]{display:none!important}\nbody{overflow-wrap:anywhere}\n.k-summary ul{list-style:none;margin:0;padding:0}\n}\n";
+  ":root{--k-color-fg:#111;--k-color-bg:#fff;--k-space-1:4px;--k-space-2:8px}\n@layer keel.base{\n[hidden]{display:none!important}\ntable{overflow-wrap:break-word}\nbody{overflow-wrap:anywhere}\n.k-summary ul{list-style:none;margin:0;padding:0}\n}\n";
 
 describe("evaluateProject (mutation)", () => {
   it("returns an empty result without inputs", async () => {

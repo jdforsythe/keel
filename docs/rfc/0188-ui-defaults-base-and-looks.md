@@ -10,7 +10,7 @@ Status: implemented (ADR-0209; operator, 2026-11-22, all decisions, D6 as a chec
 - D5 (S-8): the no-script 422 summary names each field by the text of its rendered `<label for>`, links it (`<a href="#<field id>">`), and carries the `summary` role, so `base.summary` styles it.
 - D6 (S-4): `gap` with no `direction` at or below its smallest breakpoint, on an element, a look or a `base` set, is E1809 in `keel check`; a computed `direction` counts as set. The fix adds `direction="column"`, the intent in every observed case. Nothing is written for a lone `gap` at run time.
 - D7 (S-5, S-6, built): an element with `hidden` is not displayed whatever its style props; `w` and `h` size the border box.
-- D8 (S-10): the compiled stylesheet always sets `overflow-wrap: anywhere` on `body`, so an unbroken string wraps inside its container.
+- D8 (S-10): the compiled stylesheet always sets `overflow-wrap: anywhere` on `body`, and `break-word` on `table` so a column keeps its words whole, so an unbroken string wraps inside its container.
 - D9: one new code, E1809 (D6). k.ui and k.forms go from `conformance-covered` to `implemented`, and k.a11y stays `implemented`, until the new clauses are covered. Nothing becomes `frozen`.
 
 ## E1809
@@ -29,7 +29,7 @@ ADR-0067 rejected "a brand base stylesheet from `brandTokens`" as a second styli
 In order:
 1. `:root` custom properties and their scheme and motion overrides, as now.
 2. `@layer keel.base { … }`: the fixed rules, then each `base` role's rules. A look is atomic classes at its use (D3), not a layer rule.
-   - Fixed, always: `[hidden]{display:none!important}`; `body{overflow-wrap:anywhere}`; `.k-summary ul{list-style:none;margin:0;padding:0}`.
+   - Fixed, always: `[hidden]{display:none!important}`; `body{overflow-wrap:anywhere}`; `table{overflow-wrap:break-word}` (a table sizes columns by min-content, where `anywhere` breaks every word); `.k-summary ul{list-style:none;margin:0;padding:0}`.
    - `base.page` on `body`; `heading` on `.k-heading`; `link` on `.k-link`; `button` on `.k-button`; `control` on `.k-control` (Input, TextArea, Select); `label` on `.k-label`; `fieldError` on `.k-error`; `summary` on `.k-summary`. Each set's `states` compile as an atomic rule's states do, under the role selector (`.k-control:hover`).
    - `base.focus`: `:focus-visible{outline:2px solid var(--k-color-<focus>);outline-offset:2px}`.
 3. The atomic rules, unlayered, as now. An unlayered rule beats every layered one, so any style prop at a use wins over the base.
