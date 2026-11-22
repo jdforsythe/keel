@@ -121,6 +121,12 @@ test(`${SESSION} (B's refused read leaves denied and B's store as it was; A stay
   const a = simCtx();
   const b = simCtx(1338);
   server.attach(a);
+  // First registered match wins on the sim net: B's board route is registered before the attachment's, and
+  // answers from the shared server (through A's attachment) until B's session is removed.
+  const session = { removed: false };
+  b.net.route(`${ORIGIN}/api/board`, (req) =>
+    session.removed ? new Response("{}", { status: 403 }) : a.net.fetch(req),
+  );
   server.attach(b);
   const ma = mount(a, readBoard);
   const mb = mount(b, readBoard);
@@ -129,7 +135,7 @@ test(`${SESSION} (B's refused read leaves denied and B's store as it was; A stay
   const before = mb.view.log().length;
   const heldItems = mb.view.get("items");
   // B's session is removed: the board now refuses B.
-  b.net.route(`${ORIGIN}/api/board`, () => new Response("{}", { status: 403 }));
+  session.removed = true;
   expect((await api.add({ body: { item: "from-a" } }, a)).ok).toBe(true);
   await settle();
   expect(mb.status()).toBe("denied");

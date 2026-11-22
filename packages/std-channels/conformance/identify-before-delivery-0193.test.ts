@@ -179,8 +179,9 @@ test(`${FAIL} (identify throwing)`, async () => {
     h.sessions.set("a", "u1");
     const st = await h.open("r", "a");
     await waitFor(() => st.events.length >= 1);
+    h.sessions.set("b", "u2");
     h.modes.set("a", "throw");
-    await h.bump("a");
+    await h.bump("b");
     await waitFor(() => st.ended());
     expect(st.events).toEqual([{ kind: "reset" }, { kind: "closed", reason: "denied" }]);
   } finally {
@@ -194,8 +195,9 @@ test(`${FAIL} (identify not settling: the stream is open at 4,999 ms and closed 
     h.sessions.set("a", "u1");
     const st = await h.open("r", "a");
     await waitFor(() => st.events.length >= 1);
+    h.sessions.set("b", "u2");
     h.modes.set("a", "hang");
-    await h.bump("a");
+    await h.bump("b");
     await settle();
     h.ctx.clock.advance(4_999);
     await settle();

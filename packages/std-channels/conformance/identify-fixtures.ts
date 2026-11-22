@@ -118,7 +118,7 @@ export async function serveIdentified(): Promise<IdentifyRig> {
       const res = await write("/api/bump", {}, sid);
       if (res.status !== 200) throw new Error(`bump answered ${res.status}`);
     },
-    publish: (r, sid, text) => write(`/api/room/events?room=${encodeURIComponent(r)}`, { text }, sid),
+    publish: (r, sid, text) => write(`/api/room/events?room=${encodeURIComponent(r)}`, { message: { text } }, sid),
     dispose: async () => {
       const close: unknown = Reflect.get(Object(app), "close");
       if (typeof close === "function") await Reflect.apply(close, app, []);

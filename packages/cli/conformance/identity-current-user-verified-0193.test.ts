@@ -3,8 +3,11 @@
 // Pending (rfc:0193): skipped until the build lands; the builder un-skips by changing `test.skip` to `test` in this file.
 // Assumption: the header's format is not specified, so it is captured from a real `service` call; a split `x`/`y` pair as in identity-peers.test.ts, `y` serving one live entry whose loader answers `currentUser()`. The header is resent to `y` as an event-stream GET of the same method and path.
 // @vitest-environment node
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { createCtx } from "@keel/ctx";
-import { loader, manifest } from "@keel/router";
+import { loader, manifest, routesArtifact } from "@keel/router";
 import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import { createApp, identity, topology } from "@keel/server";
@@ -42,13 +45,32 @@ test("a stream opened with a verified `x-keel-user: u1` has `currentUser()` answ
       },
     }),
   });
+  // `ctxX` holds the secret once an app bound to it is created: the sender signs `user`.
+  const a = contract("a", { "a.show": { path: "/a/:n", params: s.object({ n: s.string() }) } });
+  const artifacts = fs.mkdtempSync(path.join(os.tmpdir(), "keel-user-live-"));
+  fs.writeFileSync(
+    path.join(artifacts, "routes.json"),
+    JSON.stringify({ data: routesArtifact(manifest(b, { "b.live": { loader: live } })), hash: "" }),
+  );
+  await createApp({
+    topology: t,
+    deployable: "x",
+    peers: { y: "http://y.test" },
+    artifacts,
+    routes: manifest(a, { "a.show": { component: () => document.createElement("main") } }),
+    ctx: ctxX,
+    mode: "production",
+    secret: SECRET,
+  });
   let header: string | null = null;
   ctxX.net.route("http://y.test/*", (req) => {
     header = req.headers.get("x-keel-user");
     return y.fetch(req);
   });
   const api = service({ contract: b });
-  void api.live({ user: "u1" }, ctxX);
+  // an event-stream method returns an async iterable: the request goes out when it is read
+  const sender = api.live({ user: "u1" }, ctxX)[Symbol.asyncIterator]();
+  void sender.next();
   for (let i = 0; i < 50; i++) await Promise.resolve();
   expect(header).not.toBeNull();
   identified.length = 0;
@@ -62,4 +84,5 @@ test("a stream opened with a verified `x-keel-user: u1` has `currentUser()` answ
   expect(new TextDecoder().decode(chunk?.value)).toContain('"current":"u1"');
   expect(identified).toHaveLength(0);
   await reader?.cancel();
+  await sender.return?.();
 });

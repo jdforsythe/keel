@@ -98,7 +98,11 @@ describe("k.user: currentUser() in a live loader", () => {
         const dec = new TextDecoder();
         const got: unknown[] = [];
         for (let i = 0; i <= k; i++) {
-          if (i > 0) r.pulse();
+          if (i > 0) {
+            // The clause promises nothing before the loader waits again: let it re-register.
+            for (let j = 0; j < 50; j++) await Promise.resolve();
+            r.pulse();
+          }
           const chunk = await reader.read();
           got.push(answerOf(dec.decode(chunk.value)));
         }
