@@ -97,7 +97,7 @@ Apps: G1 golden-1 (todo board: `web` client + `api` node on SQLite), G2 golden-2
 | k.aria, k.roles (widget parts) | x | x | - | - | | | `apps/golden-1/test/removalParts.test.ts` |
 | k.host-element, k.host-code (custom components) | - | - | - | - | | x | no app owns a `Host` element |
 | k.security (headers, CSP) | x | x | x | x | ci | | `tooling/smoke/csp.mjs` reads the built policies |
-| k.origins (third-party origins) | - | - | - | - | ci | | `examples/third-party-origin`, `tooling/smoke/csp.mjs` |
+| k.origins (third-party origins) | - | - | - | - | ci | | `examples/third-party-origin`, `examples/client-only-api` (`connect` on a `client`), `tooling/smoke/csp.mjs` |
 | k.privacy (`pii`, `secret`) | - | x | - | - | | | `apps/golden-2/modules/accounts/Credentials.schema.ts` |
 | k.reveal | - | x | - | - | | | `apps/golden-2/modules/accounts/postToken.server.ts` |
 | k.privacy-reads | - | - | - | - | | x | |
@@ -141,6 +141,7 @@ Apps: G1 golden-1 (todo board: `web` client + `api` node on SQLite), G2 golden-2
 | std.tokens | - | x | - | - | | | `apps/golden-2/test/tokens.test.ts` (bearer tokens) |
 | **Deploy shapes** | | | | | | | |
 | static client hosting (CDN, no server) | - | - | x | - | | | `apps/inspector` is `adapter: "client"` with no host; nothing serves it in a smoke except `vite preview` |
+| front end with no server, calling another organisation's API | - | - | - | - | ci | | `examples/client-only-api`: one `client` deployable, no `node`, no `identity.ts`; `origins.connect` and `service({ base })` to GitHub's API; the smoke serves `dist/web` as plain files with `csp.txt`, maps `api.github.com` to a local stand-in, and records no `/__keel/*` request on load, navigation or reload (preflight from `x-keel`: `tasks/p1/examples-findings.md` 10) |
 | node deployable | x | x | - | x | ci | | `restart.mjs`, `resume.mjs` |
 | compose | x | x | - | - | | | `apps/*/deploy/compose.yaml`; CI builds only G1's Dockerfiles |
 | Tauri shell | x | - | - | - | ci | | |
@@ -255,6 +256,7 @@ Each example: under 15 files, one topology, a README of one screen that says the
 | `examples/host-component` | `k.host-element`, `k.host-code`: a custom `Host` element that wraps a small outside library, with its data table alternative | app test and a11y report; build | M |
 | `examples/openapi-import` | `k.openapi`: a typed client from a checked-in OpenAPI file against a stub service route | app test with `net` routes; build | S |
 | `examples/static-client` | static client hosting with no server (`adapter: "client"`); the existing inspector is the real one | build, then a plain file server serves `dist` and Chromium loads it | S |
+| `examples/client-only-api` | a front end with no server of its own: `adapter: "client"` alone, a declared `connect` origin, a page reading a public API with loading, empty and error states | app test over `ctx.net` routes recording every request; build, then a plain file server, Chromium against a local stand-in for the API, the policy refusing an undeclared origin, no `/__keel/*` request; `keel check` on a copy without `origins` is E1571 | S |
 | `examples/shell-mount` | `k.mount` into a shell and a guard redirect into it (`k.return`, `k.mount-scope`) | app test; Tauri Linux run in the existing `shell-tauri` job | M |
 | `examples/links-in` | `k.links`: a deep link opens a route | app test; built-in route table check; Tauri or Capacitor run only if the walkthrough does not take it | S |
 | `examples/compose-peers` | compose with two nodes as peers (`KEEL_PEER_<NAME>`) | `docker compose config` in CI and a boot of both servers; the `docker build` step already exists for G1 | M |

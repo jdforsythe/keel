@@ -10,6 +10,7 @@ import { call } from "./internal/call.ts";
 import { events } from "./internal/events.ts";
 import { fail } from "./internal/fail.ts";
 import { isEndpoint } from "./internal/isEndpoint.ts";
+import { keelOrigin } from "./internal/keelOrigin.ts";
 import { moduleTarget } from "./internal/moduleTarget.ts";
 
 const DEFAULT_TIMEOUT = 10_000;
@@ -29,7 +30,8 @@ function bytes(n: number): number {
  * Build a typed client (k.services): one method `(input, ctx) => Promise<Result<Out, ApiError>>` per endpoint, an
  * `AsyncIterable` of them for an `events: true` endpoint. A `contract`'s calls are resolved per call by k.topology
  * (`moduleTarget`), one method per API entry named by its id after the module; a `base` service's go through
- * `ctx.net.fetch` with `redirect: "manual"`, so no redirect is followed. A call reads at most `maxBytes` (default
+ * `ctx.net.fetch` with `redirect: "manual"`, so no redirect is followed, and carry `x-keel: 1` only to a Keel origin
+ * (`keelOrigin`): to a third party a request carries no Keel header and no cookie. A call reads at most `maxBytes` (default
  * 1 MiB) of a response body. Throws at construction on a non-absolute `base`, a timeout that is not a finite ms > 0
  * or a `maxBytes` that is not an integer > 0; a call never throws.
  */
@@ -53,7 +55,11 @@ export function service(opts: ServiceOptions): unknown {
   const target = (ctx: Ctx): Target =>
     contract !== undefined
       ? moduleTarget(ctx, contract.module)
-      : { base: base ?? "", send: (req) => ctx.net.fetch(new Request(req, { redirect: "manual" })) };
+      : {
+          base: base ?? "",
+          keel: keelOrigin(ctx, base ?? ""),
+          send: (req) => ctx.net.fetch(new Request(req, { redirect: "manual" })),
+        };
   const named: [string, unknown][] =
     contract !== undefined
       ? Object.entries(contract.entries).map(([id, e]) => [id.slice(contract.module.length + 1), e])
