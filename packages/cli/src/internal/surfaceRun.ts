@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { join, relative } from "node:path";
 import { compile, contractCallers, isSourcePath, parseTopology } from "@keel/compiler";
+import { entryDependency } from "@keel/compiler/internal/entry/entryDependency";
 import { stdContract } from "@keel/compiler/std/stdContract";
 import { stdRoutes } from "@keel/compiler/std/stdRoutes";
 import { createViteServer } from "vitest/node";
@@ -13,6 +14,8 @@ import { surfaceOf } from "./surfaceOf.ts";
 
 const CONTRACT = /^modules\/([^/]+)\/([^/]+)\.contract\.ts$/;
 const ROUTES = /^modules\/[^/]+\/routes\.tsx?$/;
+/** A kernel internal the evaluation loads: the project's package, else the CLI's own dependency (`entryDependency`). */
+const kernel = (id: string, root: string): string => entryDependency(id, root, import.meta.url) ?? id;
 const firstLine = (e: unknown): string => (e instanceof Error ? e.message : String(e)).split("\n")[0] ?? "";
 /** An E code a thrown value carries (`{ code: "E1502" }`), kept as k.compiler Build-time evaluation keeps it. */
 const codeOf = (e: unknown): string | undefined => {
@@ -50,8 +53,9 @@ const contractsIn = (m: Readonly<Record<string, unknown>>): unknown[] =>
  * records nothing and fails the build (code 1, no file written); a `routes.ts` or stdlib `./routes` that throws is
  * the same note naming that file, or the line the routes evaluation prints for it (k.compiler Build-time
  * evaluation: a thrown E code kept, a syntax error's E1000), so no surface lacks the routes of a file that failed.
- * A failure of the evaluator itself (`@keel/router/internal` or `@keel/store/internal` not loading) is code 1. A project with neither file
- * writes an empty surface without starting the server.
+ * The two internals load from the project, else from the CLI's own dependencies, so an app need not list
+ * `@keel/store`; a failure of the evaluator itself (either not loading) is code 1. A project with neither file writes
+ * an empty surface without starting the server.
  */
 export async function surfaceRun(cwd: string): Promise<{ code: number; notes: string[] }> {
   const root = realpathSync(cwd);
@@ -132,7 +136,8 @@ export async function surfaceRun(cwd: string): Promise<{ code: number; notes: st
         });
         if (isRecord(m) && isRecord(m.routes) && m.routes.kind === "keel.routeTable") tables.push(m.routes);
       }
-      const internal: unknown = tables.length === 0 ? undefined : await server?.ssrLoadModule("@keel/router/internal");
+      const internal: unknown =
+        tables.length === 0 ? undefined : await server?.ssrLoadModule(kernel("@keel/router/internal", root));
       const bindingsOf = isRecord(internal) ? internal.bindingsOf : undefined;
       for (const t of tables) {
         const cs = isRecord(t) && Array.isArray(t.contracts) ? t.contracts : [];
@@ -146,7 +151,8 @@ export async function surfaceRun(cwd: string): Promise<{ code: number; notes: st
         }
         if (bound instanceof Map) for (const b of bound.values()) if (isRecord(b)) bindings.push(b.binding);
       }
-      const kept: unknown = bindings.length === 0 ? undefined : await server?.ssrLoadModule("@keel/store/internal");
+      const kept: unknown =
+        bindings.length === 0 ? undefined : await server?.ssrLoadModule(kernel("@keel/store/internal", root));
       shapes = isRecord(kept) ? kept.storeShapes : undefined;
     } finally {
       await server?.close();
