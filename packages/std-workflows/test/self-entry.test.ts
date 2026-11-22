@@ -64,18 +64,26 @@ function makePoll(done: Done, max: number) {
   const id = nextId("poll");
   const keys: string[] = [];
   let runs = 0;
+  const ran = (key: string): number => {
+    keys.push(key);
+    runs += 1;
+    return runs;
+  };
   const wf = workflow(id, {
     chart: pollChart(),
     steps: {
-      polling: {
-        run: async (_data, _ctx, { key }) => {
-          keys.push(key);
-          runs += 1;
-          return ok(done === "tick" ? {} : { last: runs >= max });
-        },
-        done,
-        failed: "stuck",
-      },
+      // Each `done` event takes its own payload: `tick` `{}`, `again` `{ last }`.
+      polling:
+        done === "tick"
+          ? {
+              run: async (_data, _ctx, { key }) => {
+                ran(key);
+                return ok({});
+              },
+              done: "tick",
+              failed: "stuck",
+            }
+          : { run: async (_data, _ctx, { key }) => ok({ last: ran(key) >= max }), done: "again", failed: "stuck" },
     },
     waits: { sleeping: { ms: 1000, event: "wake" } },
   });

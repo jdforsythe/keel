@@ -3,6 +3,7 @@ import { Form } from "@keel/router";
 import { If } from "@keel/runtime-dom";
 import { type Infer, s } from "@keel/schema";
 import { Box, Button, Heading, Input, Text } from "@keel/ui";
+import RestockPanel from "../shopping/RestockPanel.tsx";
 import { SetupData } from "./SetupData.schema.ts";
 import { SetupForm } from "./SetupForm.schema.ts";
 import { SetupSearch } from "./SetupSearch.schema.ts";
@@ -66,6 +67,7 @@ export default function SetupPage(props: Infer<typeof Props>) {
           </Box>
         </Box>
       </Form>
+      <RestockPanel text={props.data.restock} runs={props.data.runs} />
     </Box>
   );
 }

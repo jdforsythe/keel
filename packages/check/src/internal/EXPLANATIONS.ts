@@ -674,6 +674,13 @@ const ROWS: readonly Row[] = [
     "k.contract",
   ],
   [
+    "E1550",
+    "two stores factories the loaders of one route chain name create one store id",
+    "A request holds one live store per id; the chain's loaders share a store by naming one factory.",
+    "stores: pageStores -> stores: frameStores, the layout's factory; read the rest another way",
+    "k.server",
+  ],
+  [
     "E1551",
     "loader, action or commitStores outside a *.server.ts file",
     "A loader or action is its binding: R.loader, a re-export, or a value use count.",

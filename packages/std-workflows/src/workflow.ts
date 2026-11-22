@@ -41,9 +41,10 @@ export function workflow<
       if (on === undefined || finals.has(state) || !Object.hasOwn(on, e))
         throw new Error(`E2352 workflow ${id}: ${part} ${state} needs a non-final state whose on has ${e}`);
   };
-  const steps = new Map<string, StepSpec<D, string>>();
+  const steps = new Map<string, StepSpec<D, Readonly<Record<string, Schema<unknown>>>>>();
   const waits = new Map<string, WaitSpec<string>>();
-  const stepTable: Readonly<Record<string, StepSpec<D, string> | undefined>> = spec.steps ?? {};
+  const stepTable: Readonly<Record<string, StepSpec<D, Readonly<Record<string, Schema<unknown>>>> | undefined>> =
+    spec.steps ?? {};
   const waitTable: Readonly<Record<string, WaitSpec<string> | undefined>> = spec.waits ?? {};
   for (const [state, step] of Object.entries(stepTable))
     if (step !== undefined) {

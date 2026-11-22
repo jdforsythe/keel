@@ -15,7 +15,7 @@ export type WorkflowSpec<
   A extends string,
 > = {
   readonly chart: Chart<D, Ev, S, G, A>;
-  readonly steps?: { readonly [K in S]?: StepSpec<D, keyof Ev & string> };
+  readonly steps?: { readonly [K in S]?: StepSpec<D, Ev> };
   readonly waits?: { readonly [K in S]?: WaitSpec<keyof Ev & string> };
   readonly keepMs?: number;
   readonly limit?: number;

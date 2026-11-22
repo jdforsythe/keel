@@ -347,6 +347,7 @@ const NO_FIX = [
   "E1511", // the module's deployable is the author's choice
   "E1552", // k.topology Rules: Fix none; the unknown key is the author's to remove or rename
   "E1566", // which deployable hosts the client is the author's choice
+  "E1550", // k.server Rules: no fix; which factory to drop or which id to rename is the author's choice
   "E1551", // moving the declaration to a .server file is a design change
   "E1567", // the module and deps edits span files
   "E1570", // where the asset or form target lives is the author's choice

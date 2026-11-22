@@ -14,11 +14,11 @@
   },
   "size": {
     "@keel/check": {
-      "max": "58kb",
+      "max": "59kb",
       "platform": "node"
     },
     "@keel/check/explain": {
-      "max": "17.5kb",
+      "max": "17.75kb",
       "platform": "node"
     },
     "@keel/cli": {
@@ -55,7 +55,7 @@
     },
     "@keel/schema": "5.65kb",
     "@keel/server": {
-      "max": "26.9kb",
+      "max": "27.25kb",
       "platform": "node"
     },
     "@keel/server/internal/dom": "4.75kb",
@@ -198,7 +198,7 @@
     "@keel/std-text": "1.5kb",
     "@keel/store": "3.75kb",
     "@keel/store/internal": {
-      "max": "2kb",
+      "max": "2.25kb",
       "platform": "node"
     },
     "@keel/testing": {

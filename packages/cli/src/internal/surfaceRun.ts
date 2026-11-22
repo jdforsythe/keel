@@ -37,6 +37,33 @@ const routeFailed = (file: string, e: unknown): string => {
 };
 
 type Load = { readonly file: string; readonly load: string };
+type Level = { readonly route: string; readonly name: string; readonly factory: unknown };
+
+/** The `stores` factory a binding's `loader` names, else none. */
+const factoryOf = (binding: Readonly<Record<string, unknown>> | undefined): unknown => {
+  const l = binding?.loader;
+  return isRecord(l) && typeof l.stores === "function" ? l.stores : undefined;
+};
+
+/**
+ * Each bound route's chain of loaders naming `stores` (k.server E1550), outermost first, following each binding's
+ * `layout` through `byId` (the evaluated bindings of every route table).
+ */
+function chainsOf(byId: ReadonlyMap<string, Readonly<Record<string, unknown>>>): Level[][] {
+  return [...byId.keys()].map((id) => {
+    const levels: Level[] = [];
+    const seen = new Set<string>();
+    for (let at: string | undefined = id; at !== undefined && !seen.has(at); ) {
+      seen.add(at);
+      const binding = byId.get(at);
+      const factory = factoryOf(binding);
+      if (typeof factory === "function") levels.unshift({ route: at, name: factory.name, factory });
+      const up = binding?.layout;
+      at = typeof up === "string" ? up : undefined;
+    }
+    return levels;
+  });
+}
 
 /** The contract values among a module's exports. */
 const contractsIn = (m: Readonly<Record<string, unknown>>): unknown[] =>
@@ -53,6 +80,8 @@ const contractsIn = (m: Readonly<Record<string, unknown>>): unknown[] =>
  * records nothing and fails the build (code 1, no file written); a `routes.ts` or stdlib `./routes` that throws is
  * the same note naming that file, or the line the routes evaluation prints for it (k.compiler Build-time
  * evaluation: a thrown E code kept, a syntax error's E1000), so no surface lacks the routes of a file that failed.
+ * The evaluated bindings' route chains are judged for E1550 (`storeIdClashes` of `@keel/store/internal`, each `stores`
+ * factory run once on a sim ctx): each clash is a note `E1550 <message>` and fails the build.
  * The two internals load from the project, else from the CLI's own dependencies, so an app need not list
  * `@keel/store`; a failure of the evaluator itself (either not loading) is code 1. A project with neither file writes
  * an empty surface without starting the server.
@@ -90,6 +119,7 @@ export async function surfaceRun(cwd: string): Promise<{ code: number; notes: st
   ];
   const contracts: unknown[] = [];
   const bindings: unknown[] = [];
+  const byId = new Map<string, Readonly<Record<string, unknown>>>();
   let shapes: unknown;
   try {
     const server =
@@ -149,11 +179,19 @@ export async function surfaceRun(cwd: string): Promise<{ code: number; notes: st
         } catch {
           bound = undefined;
         }
-        if (bound instanceof Map) for (const b of bound.values()) if (isRecord(b)) bindings.push(b.binding);
+        if (bound instanceof Map)
+          for (const [id, b] of bound)
+            if (isRecord(b)) {
+              bindings.push(b.binding);
+              if (typeof id === "string" && isRecord(b.binding)) byId.set(id, b.binding);
+            }
       }
       const kept: unknown =
         bindings.length === 0 ? undefined : await server?.ssrLoadModule(kernel("@keel/store/internal", root));
       shapes = isRecord(kept) ? kept.storeShapes : undefined;
+      const clashes = isRecord(kept) ? kept.storeIdClashes : undefined;
+      if (typeof clashes === "function")
+        for (const m of clashes(chainsOf(byId))) if (typeof m === "string") notes.push(`E1550 ${m}\n`);
     } finally {
       await server?.close();
     }

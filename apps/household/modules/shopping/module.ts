@@ -2,7 +2,17 @@ import { module } from "@keel/compiler";
 
 export default module({
   id: "shopping",
-  deps: ["members", "receipts", "setup", "@keel/std-channels", "@keel/std-live", "@keel/std-postgres"],
-  capabilities: ["random", "shopping.db"],
-  public: { exports: [] },
+  deps: [
+    "members",
+    "@keel/std-channels",
+    "@keel/std-jobs",
+    "@keel/std-live",
+    "@keel/std-postgres",
+    "@keel/std-schedules",
+    "@keel/std-statecharts",
+    "@keel/std-temporal",
+    "@keel/std-workflows",
+  ],
+  capabilities: ["clock", "random", "storage", "shopping.db"],
+  public: { exports: ["RestockPanel", "restockStores", "RestockText", "restockText", "Runs", "runsOf", "shoppingApi"] },
 });

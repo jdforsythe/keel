@@ -1,5 +1,5 @@
 import type { Ctx } from "@keel/ctx";
-import { type KeelError, type Result, err, ok } from "@keel/schema";
+import { type KeelError, type Result, type Schema, err, ok } from "@keel/schema";
 import { commitStores } from "@keel/server";
 import { type Job, job } from "@keel/std-jobs";
 import { tx } from "@keel/store";
@@ -29,7 +29,11 @@ const failed = <S extends string, D>(
  * refused `failed` is an `err` that counts a std.jobs attempt: the next run is past `attempts` and commits `failed`
  * `workflows.attempts`; if that is refused too, the job ends in std.jobs `failed` with the refusal's code.
  */
-export function stepJob<S extends string, D>(m: Model<S, D>, state: string, step: StepSpec<D, string>): Job<FlowInput> {
+export function stepJob<S extends string, D>(
+  m: Model<S, D>,
+  state: string,
+  step: StepSpec<D, Readonly<Record<string, Schema<unknown>>>>,
+): Job<FlowInput> {
   const max = step.attempts ?? m.attempts;
   const here = (s: string): boolean => s === state;
   return job(
