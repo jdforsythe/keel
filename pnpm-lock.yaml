@@ -317,6 +317,9 @@ importers:
       '@keel/std-i18n':
         specifier: workspace:*
         version: link:../../packages/std-i18n
+      '@keel/std-jobs':
+        specifier: workspace:*
+        version: link:../../packages/std-jobs
       '@keel/std-live':
         specifier: workspace:*
         version: link:../../packages/std-live
@@ -329,6 +332,9 @@ importers:
       '@keel/std-postgres':
         specifier: workspace:*
         version: link:../../packages/std-postgres
+      '@keel/std-schedules':
+        specifier: workspace:*
+        version: link:../../packages/std-schedules
       '@keel/std-statecharts':
         specifier: workspace:*
         version: link:../../packages/std-statecharts
@@ -341,6 +347,9 @@ importers:
       '@keel/std-tokens':
         specifier: workspace:*
         version: link:../../packages/std-tokens
+      '@keel/std-workflows':
+        specifier: workspace:*
+        version: link:../../packages/std-workflows
       '@keel/store':
         specifier: workspace:*
         version: link:../../packages/store

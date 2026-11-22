@@ -1,6 +1,6 @@
 ---
 name: keel-server
-description: "Keel server state: loaders and actions over server stores, guards on a node deployable, identity source and mount, API routes and bearer, service clients, OpenAPI import; E1510, E1513-E1515, E1558, E1551, E1579-E1583, E1651"
+description: "Keel server state: loaders and actions over server stores, guards on a node deployable, identity source and mount, API routes and bearer, service clients, OpenAPI import; E1510, E1513-E1515, E1550, E1558, E1551, E1579-E1583, E1651"
 ---
 
 # Server state and API
@@ -11,7 +11,7 @@ A `node` deployable owns the data; `client` ones call it. Signatures: `keel docs
 
 `loader` and `action` live in `*.server.ts` (E1551), a `guard` in `*.guard.ts` (E1009). A handler names its contract entry: `loader(contract, id, decl, fn)` and `action(contract, id, decl, fn)`, `fn` never annotated; a handler bound under another id is E1515, so two entries need two loaders over a shared helper. A `node` deployable's browser build stubs those files; in a module only `client` deployables list they ship and run in the browser (k.boundary). Naming `stores`, or a live loader (an async generator, only on an `events: true` GET entry), in a module only a `client` or `static` deployable serves is E1558. Server code never writes module-level stores (E1256).
 
-`stores` names a factory with explicit store `id`s, run once per request and restored from `ctx.storage`. An action's `ok` saves the changed stores in one commit; `err` or a throw saves none; another request's save since this one began is 409 `keel.conflict`. `caller` is an anonymous per-browser hash that grants nothing; put it in `tx` meta, and `stores.board.undoWhere((e) => e.meta?.caller === caller)` undoes its writes.
+`stores` names a factory with explicit store `id`s, run once per request and restored from `ctx.storage`. A request holds one live store per id: a layout's loader and its page's that read one store name the same factory; a second factory that creates that id again (`...householdStores()` inside it) is E1550 at `keel check`, `keel build` and `createApp`. An action's `ok` saves the changed stores in one commit; `err` or a throw saves none; another request's save since this one began is 409 `keel.conflict`. `caller` is an anonymous per-browser hash that grants nothing; put it in `tx` meta, and `stores.board.undoWhere((e) => e.meta?.caller === caller)` undoes its writes.
 
 ```ts
 // modules/api/Board.schema.ts
@@ -125,4 +125,4 @@ export async function addOne(ctx: Ctx, token: Secret<string>) {
 
 ## Runners and tests
 
-`modules/<id>/runners.server.ts` exports `runners = [{ run(ctx, signal) }]`. Tests import `createApp` from `@keel/server` (apps import only `topology` and `commitStores` elsewhere): `await createApp({ topology, routes: routeTable(...), ctx, deployable: 'web' })` (also `mode`, `guards`, `peers`, `secret`, `origin`, `std: '.keel/std.json'`, else std config is empty; see the package README) over a sim ctx, then `app.fetch(new Request(url, { method, headers: { 'content-type': 'application/json' }, body }))`; `renderRoute(id, { user })` runs `stores`. A service call on the `createApp` ctx runs in process and never reaches its `ctx.net`; route `/api/*` of another ctx (a client test's) to `app.fetch`. A GET answers `{ id, results: { [id]: { ok, value } } }`; a write answers the `Result` itself, `{ ok: true, value }`. See keel-testing, keel-data, keel-compliance, keel-deploy.
+`modules/<id>/runners.server.ts` exports `runners = [{ run(ctx, signal) }]`. Tests import `createApp` from `@keel/server` (apps import only `topology` and `commitStores` elsewhere): `await createApp({ topology, routes: routeTable(...), ctx, deployable: 'web' })` (also `mode`, `guards`, `peers`, `secret`, `origin`, `std: '.keel/std.json'`, else std config is empty; see the package README) over a sim ctx (no runner runs without `runners: { <module>: runners }`), then `app.fetch(new Request(url, init))`; `renderRoute(id, { user })` runs `stores`. A service call on the `createApp` ctx runs in process and never reaches its `ctx.net`; route `/api/*` of another ctx (a client test's) to `app.fetch`. A GET answers `{ id, results: { [id]: { ok, value } } }`; a write answers the `Result` itself, `{ ok: true, value }`. See keel-testing, keel-data, keel-compliance, keel-deploy.
