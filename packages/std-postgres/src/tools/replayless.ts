@@ -37,8 +37,10 @@ export const replayless: RuleDef = defineRule({
       for (const q of quasis) {
         const raw = field(field(q, "value"), "raw");
         const start = field(q, "start");
+        // The element's span starts at the delimiter before its text (a backtick or the `}` of a substitution).
         if (typeof raw === "string" && typeof start === "number")
-          for (const at of callsIn(raw, start)) out.push({ path: file.path, ...lineCol(file.source, at) });
+          for (const at of callsIn(raw, file.source.indexOf(raw, start)))
+            out.push({ path: file.path, ...lineCol(file.source, at) });
       }
     });
     return out;

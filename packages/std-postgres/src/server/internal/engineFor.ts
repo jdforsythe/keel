@@ -75,7 +75,12 @@ export function engineFor(value: string | undefined): Promise<Engine> {
           return pgliteEngine(db);
         })
       : Promise.resolve(pgEngine(url));
-  const open: Open = { engine: made, busy: 0, used: ++clock, close: () => closer?.() ?? Promise.resolve() };
+  // A folder evicted while it is still opening closes once it has opened, so no second PGlite holds the folder.
+  const close = async (): Promise<void> => {
+    await made.catch(() => undefined);
+    await closer?.();
+  };
+  const open: Open = { engine: made, busy: 0, used: ++clock, close };
   open.engine = made.then((e) => tracked(open, e));
   open.engine.catch(() => engines.delete(url));
   engines.set(url, open);
