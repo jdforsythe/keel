@@ -33,6 +33,7 @@ export function moduleTarget(ctx: Ctx, module: string): Target {
     return {
       base,
       module: true,
+      keel: true,
       sign,
       user,
       send: (req) =>
@@ -44,7 +45,14 @@ export function moduleTarget(ctx: Ctx, module: string): Target {
   const at: unknown = bound instanceof Map ? bound.get(module) : undefined;
   if (typeof at === "string") return net(at);
   if (isFetcher(at))
-    return { base: `http://${module}.keel.invalid`, module: true, sign, user, send: (req) => at.fetch(req) };
+    return {
+      base: `http://${module}.keel.invalid`,
+      module: true,
+      keel: true,
+      sign,
+      user,
+      send: (req) => at.fetch(req),
+    };
   if (bound === undefined && origin !== undefined) return net(origin);
   return net(`http://${module}.keel.invalid`);
 }

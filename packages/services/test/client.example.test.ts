@@ -37,7 +37,7 @@ describe("wire format", () => {
     expect(sent?.method).toBe("POST");
     expect(sent?.headers.get("content-type")).toBe("application/json");
     expect(sent?.headers.get("accept")).toBe("application/json");
-    expect(sent?.headers.get("x-keel")).toBe("1");
+    expect(sent?.headers.get("x-keel")).toBeNull(); // a third party: no Keel header
     expect(await sent?.json()).toEqual({ text: "hi" });
   });
 

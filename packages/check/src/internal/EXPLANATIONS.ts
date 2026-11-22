@@ -1134,6 +1134,13 @@ const ROWS: readonly Row[] = [
     "k.user",
   ],
   [
+    "E1725",
+    "a package's mutation-justified.json fails its shape, or an entry justifies no mutant of the report on disk",
+    "An entry names a Survived or NoCoverage mutant by file, mutator, original and replacement, with a reason of equivalent, unreachable or performance and a one-sentence note. A killed mutant, or code that moved, leaves it justifying nothing.",
+    "remove the entry, or correct its texts to the mutant's in reports/mutation/mutation.json",
+    "k.ledger",
+  ],
+  [
     "W1723",
     "a literal renderRoute id of a node deployable's module, with no app",
     "The page renders through a client router, which a built node page never has, so a form's answer document goes untested. Literal ids only.",

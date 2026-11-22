@@ -13,8 +13,10 @@ import {
   rmSync,
   statSync,
   symlinkSync,
+  writeFileSync,
 } from "node:fs";
 import { createServer } from "node:http";
+import { createServer as createSecureServer } from "node:https";
 import { extname, join, normalize } from "node:path";
 import { chromium } from "@playwright/test";
 import { freePort, recorder, root, wait } from "./built.mjs";
@@ -27,7 +29,7 @@ const all = readdirSync(join(root, "examples"), { withFileTypes: true })
   .sort();
 const names = process.argv.length > 2 ? process.argv.slice(2) : all;
 
-/** `keel <args>` in `dir`: resolves to whether it passed, and its last output line. */
+/** `keel <args>` in `dir`: resolves to whether it passed, its last output line and its whole output. */
 const keel = (dir, args) =>
   new Promise((resolve) => {
     execFile(
@@ -35,8 +37,8 @@ const keel = (dir, args) =>
       ["--disable-warning=ExperimentalWarning", cli, ...args],
       { cwd: dir, env: { ...process.env, KEEL_AGENT: "1" }, maxBuffer: 64 * 1024 * 1024 },
       (err, stdout, stderr) => {
-        const last = `${stdout}${stderr}`.trim().split("\n").at(-1) ?? "";
-        resolve({ pass: err === null, last });
+        const out = `${stdout}${stderr}`.trim();
+        resolve({ pass: err === null, last: out.split("\n").at(-1) ?? "", out });
       },
     );
   });
@@ -67,12 +69,14 @@ const TYPES = {
 
 /**
  * A plain static file server over `folder`: a file or 404, `/` is `index.html`, each answer with `headers`; with
- * `fallback`, a path that is no file answers `index.html` with 200, as a client host does (keel-deploy).
+ * `fallback`, a path that is no file answers `index.html` with 200, as a client host does (keel-deploy). Each request's
+ * path is pushed to `seen`.
  */
-async function serveFiles(folder, headers = {}, fallback = false) {
+async function serveFiles(folder, headers = {}, fallback = false, seen = []) {
   const port = await freePort();
   const server = createServer((req, res) => {
     const path = new URL(req.url ?? "/", "http://x").pathname;
+    seen.push(path);
     const asked = normalize(join(folder, path === "/" ? "index.html" : path));
     const found = asked.startsWith(folder) && statSync(asked, { throwIfNoEntry: false })?.isFile() === true;
     const file = !found && fallback ? join(folder, "index.html") : asked;
@@ -360,6 +364,176 @@ const proofs = {
     } finally {
       await peers?.stop();
       rmSync(copy, { recursive: true, force: true });
+    }
+  },
+
+  /**
+   * The build writes `dist/web` alone, its `csp.txt` adding the declared `https://api.github.com` to `connect-src` and
+   * no other origin anywhere. A plain file server sends it with that policy; in Chromium, with `api.github.com` mapped
+   * to a local https stand-in (never the internet), the home page links to the releases page, which shows the
+   * stand-in's list on the click and on a reload; a fetch to an undeclared local server is refused by the policy and
+   * never reaches it; no request goes to a Keel server path (`/__keel/*`) or any other host. The stand-in is as strict
+   * as a real API: its preflight answer allows no request header and no credentials, so a Keel header would fail the
+   * call; the plain GET needs no preflight, and no `x-keel`, `x-keel-user`, `authorization` or cookie (one is set for
+   * the page's origin and one for the API's) reaches it (k.services Encoding); a call carrying `x-keel` sends a
+   * preflight asking for that header, which the stand-in refuses, so the call fails. The detail lists the header names the
+   * stand-in received. The same tree with no `origins` fails `keel check` with E1571.
+   */
+  async "client-only-api"(dir) {
+    const API = "https://api.github.com/repos/nodejs/node/releases?per_page=5";
+    const built = readdirSync(join(dir, "dist"));
+    const folder = join(dir, "dist", "web");
+    const policy = readFileSync(join(folder, "csp.txt"), "utf8").trim();
+    const map = directives(policy);
+    const connect = map.get("connect-src");
+    const wider = [...map].filter(([k, v]) => k !== "connect-src" && /https?:/.test(v)).map(([k]) => k);
+    const csp = connect === "'self' https://api.github.com" && wider.length === 0;
+    // GitHub's stand-in: a local https server Chromium reaches for `api.github.com` (host rule, its own certificate),
+    // so the browser applies the policy and CORS as it would to the real API, preflight included.
+    const tls = join(dir, "dist", "tls");
+    mkdirSync(tls, { recursive: true });
+    await new Promise((res, rej) =>
+      execFile(
+        "openssl",
+        ["req", "-x509", "-newkey", "rsa:2048", "-nodes", "-days", "1", "-subj", "/CN=api.github.com"].concat([
+          "-keyout",
+          join(tls, "key.pem"),
+          "-out",
+          join(tls, "cert.pem"),
+        ]),
+        (e) => (e === null ? res(undefined) : rej(e)),
+      ),
+    );
+    const served = [];
+    const server = await serveFiles(folder, { "content-security-policy": policy }, true, served);
+    const stray = [];
+    const other = createServer((req, res) => {
+      stray.push(req.url);
+      res.writeHead(200, { "access-control-allow-origin": "*" }).end("{}");
+    });
+    const otherPort = await freePort();
+    await new Promise((r) => other.listen(otherPort, "127.0.0.1", r));
+    const preflights = [];
+    const sent = [];
+    const received = [];
+    const github = createSecureServer(
+      { key: readFileSync(join(tls, "key.pem")), cert: readFileSync(join(tls, "cert.pem")) },
+      (req, res) => {
+        // A strict API: any origin may read it, with no credentials and no request header beyond the safelisted ones.
+        const cors = { "access-control-allow-origin": "*" };
+        if (req.method === "OPTIONS") {
+          preflights.push(req.headers["access-control-request-headers"] ?? "");
+          res.writeHead(204, { ...cors, "access-control-allow-methods": "GET" }).end();
+          return;
+        }
+        sent.push(`${req.method} ${req.url}`);
+        received.push(Object.keys(req.headers).sort());
+        res.writeHead(200, { ...cors, "content-type": "application/json" });
+        res.end(JSON.stringify([{ tag_name: "v0.0.1", name: "Served by the stand-in", published_at: null }]));
+      },
+    );
+    const githubPort = await freePort();
+    await new Promise((r) => github.listen(githubPort, "127.0.0.1", r));
+    const browser = await chromium.launch({
+      args: [`--host-resolver-rules=MAP api.github.com 127.0.0.1:${githubPort}`],
+    });
+    const copy = join(dir, "dist", "undeclared");
+    try {
+      const context = await browser.newContext({ ignoreHTTPSErrors: true });
+      await context.addCookies([
+        { name: "keel.caller", value: "c1", url: `${server.base}/` },
+        { name: "gh", value: "g1", url: "https://api.github.com/", sameSite: "None", secure: true },
+      ]);
+      const page = await context.newPage();
+      const asked = [];
+      page.on("request", (r) => asked.push(`${r.method()} ${r.url()}`));
+      const errors = [];
+      page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
+      page.on("pageerror", (e) => errors.push(String(e)));
+      await page.goto(`${server.base}/`);
+      await page.locator('[id="app.home.title"]').waitFor({ timeout: 15_000 });
+      const home = await page.locator('[id="app.home.title"]').textContent();
+      await page.locator('[id="app.nav.releases"]').click();
+      const list = page.locator('[id="app.releases.list"]');
+      await list.waitFor({ timeout: 15_000 });
+      const clicked = (await list.textContent()) ?? "";
+      await page.reload();
+      await list.waitFor({ timeout: 15_000 });
+      const reloaded = (await list.textContent()) ?? "";
+      const refused = await page.evaluate(
+        (u) =>
+          fetch(u).then(
+            () => "fetched",
+            () => "refused",
+          ),
+        `http://127.0.0.1:${otherPort}/x`,
+      );
+      const cspErrors = errors.filter((e) => e.includes("Content Security Policy"));
+      const otherErrors = errors.length - cspErrors.length;
+      const gets = asked.filter((a) => a.startsWith("GET https://api.github.com/"));
+      const keelPaths = served.filter((p) => p.startsWith("/__keel"));
+      const foreign = asked.filter(
+        (a) =>
+          !a.includes(` ${server.base}/`) && !a.includes(" https://api.github.com/") && !a.includes(`:${otherPort}/`),
+      );
+      const banned = ["x-keel", "x-keel-user", "authorization", "cookie"];
+      const heard = [...new Set(received.flat())].sort();
+      const keelFree = received.length === 2 && received.every((h) => !h.some((n) => banned.includes(n)));
+      // A preflight asking for `x-keel` is refused: the stand-in allows no request header, so the browser fails the call.
+      const quiet = preflights.length === 0;
+      const keelHeader = await page.evaluate(
+        (u) =>
+          fetch(u, { headers: { "x-keel": "1" } }).then(
+            () => "sent",
+            () => "refused",
+          ),
+        API,
+      );
+      const preflighted = preflights.length === 1 && preflights[0].toLowerCase().includes("x-keel");
+      // The same tree with `origins: {}`: `keel check` refuses the literal base with E1571.
+      rmSync(copy, { recursive: true, force: true });
+      mkdirSync(copy, { recursive: true });
+      for (const entry of readdirSync(dir)) {
+        if (entry !== "node_modules" && entry !== "dist")
+          cpSync(join(dir, entry), join(copy, entry), { recursive: true });
+      }
+      symlinkSync(join(dir, "node_modules"), join(copy, "node_modules"));
+      const topo = readFileSync(join(dir, "topology.ts"), "utf8").replace(/origins: \{.*\},\n/, "origins: {},\n");
+      writeFileSync(join(copy, "topology.ts"), topo);
+      const undeclared = await keel(copy, ["check"]);
+      const e1571 = !undeclared.pass && undeclared.out.includes("E1571 modules/app/githubApi.ts");
+      return [
+        csp &&
+          built.join() === "web" &&
+          home === "A site with no server" &&
+          clicked.includes("v0.0.1") &&
+          reloaded.includes("v0.0.1") &&
+          gets.length === 2 &&
+          gets.every((g) => g === `GET ${API}`) &&
+          sent.length === 2 &&
+          quiet &&
+          keelFree &&
+          keelHeader === "refused" &&
+          preflighted &&
+          refused === "refused" &&
+          stray.length === 0 &&
+          keelPaths.length === 0 &&
+          foreign.length === 0 &&
+          otherErrors === 0 &&
+          e1571,
+        `dist ${built.join(",")}, connect-src ${connect}, other origins ${wider.join(",") || "none"}; ` +
+          `stand-in saw ${sent.join(", ")} with headers ${heard.join(" ")}; Keel header or cookie ${!keelFree}; ` +
+          `preflight with x-keel ${keelHeader}, asking ${preflights.join("|") || "none"}; undeclared ${refused}, ` +
+          `reached ${stray.length}; /__keel requests ${keelPaths.length}; other hosts ${foreign.length}; ` +
+          `${otherErrors} errors; undeclared check E1571 ${e1571}`,
+      ];
+    } finally {
+      await browser.close();
+      await server.stop();
+      await new Promise((r) => other.close(r));
+      await new Promise((r) => github.close(r));
+      rmSync(copy, { recursive: true, force: true });
+      rmSync(tls, { recursive: true, force: true });
     }
   },
 

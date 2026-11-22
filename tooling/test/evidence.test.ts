@@ -65,7 +65,7 @@ const ledger = {
   ],
   a11y: [{ item: "a11y:r#1.1.1", rung: "example" }],
   mutation: {
-    packages: { a: { score: 81.5, threshold: 70 } },
+    packages: { a: { score: 81.5, scoreJustified: 84, justified: 2, threshold: 70 } },
     claims: [
       { file: "packages/a/src/x.ts", sha: crypto.createHash("sha256").update("export const x = 1;\n").digest("hex") },
       { file: "packages/a/src/gone.ts", sha: "0" },
@@ -157,7 +157,15 @@ describe("ledgerPart", () => {
 describe("mutationPart", () => {
   it("counts a claim stale when its file differs, skips missing files, and gives a reason for unmutated units", () => {
     const m = mutationPart(root, ledger, ["packages/a", "packages/b"]);
-    expect(m.packages["packages/a"]).toMatchObject({ score: 81.5, threshold: 70, claims: 3, stale: 1, reason: null });
+    expect(m.packages["packages/a"]).toMatchObject({
+      score: 81.5,
+      scoreJustified: 84,
+      justified: 2,
+      threshold: 70,
+      claims: 3,
+      stale: 1,
+      reason: null,
+    });
     expect(m.packages["packages/b"]).toMatchObject({ score: null, reason: "no mutation run" });
     expect(m.stale).toBe(1);
   });

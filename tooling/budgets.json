@@ -22,7 +22,7 @@
       "platform": "node"
     },
     "@keel/cli": {
-      "max": "27.5kb",
+      "max": "29kb",
       "platform": "node"
     },
     "@keel/cli/docs": {
@@ -63,10 +63,10 @@
       "max": "2.5kb",
       "platform": "node"
     },
-    "@keel/services": "3.5kb",
+    "@keel/services": "3.8kb",
     "@keel/std-channels": "1.5kb",
     "@keel/std-channels/server": {
-      "max": "2.4kb",
+      "max": "2.5kb",
       "platform": "node"
     },
     "@keel/std-channels/tools": {

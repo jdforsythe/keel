@@ -207,7 +207,15 @@ export function ledgerPart(ledger, statuses) {
 }
 
 const sha256 = (file) => crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex");
-const MUTATION_NONE = { claims: 0, reportDate: null, score: null, stale: null, threshold: null };
+const MUTATION_NONE = {
+  claims: 0,
+  justified: null,
+  reportDate: null,
+  score: null,
+  scoreJustified: null,
+  stale: null,
+  threshold: null,
+};
 const COVERAGE_NONE = {
   branches: null,
   commit: null,
@@ -220,7 +228,8 @@ const COVERAGE_NONE = {
 const day = (ms) => new Date(ms).toISOString().slice(0, 10);
 
 /**
- * Part (c): per unit mutation score and threshold (ledger), the report's date (the modification day of
+ * Part (c): per unit mutation score, justified survivors, the score with them left out (`scoreJustified`) and
+ * threshold (ledger), the report's date (the modification day of
  * `reports/mutation/mutation.json`), claims and stale claims (a claim's sha256 differs from the file on disk). A unit
  * the ledger has no score for keeps its entry in `previous` when that one was measured, else it is `null`s with a
  * reason.
@@ -245,7 +254,16 @@ export function mutationPart(root, ledger, unitList, previous = {}) {
     stale += n;
     const report = path.join(root, u, "reports", "mutation", "mutation.json");
     const reportDate = fs.existsSync(report) ? day(fs.statSync(report).mtimeMs) : (previous[u]?.reportDate ?? null);
-    packages[u] = { claims: mine.length, reason: null, reportDate, score: s.score, stale: n, threshold: s.threshold };
+    packages[u] = {
+      claims: mine.length,
+      justified: s.justified ?? 0,
+      reason: null,
+      reportDate,
+      score: s.score,
+      scoreJustified: s.scoreJustified ?? s.score,
+      stale: n,
+      threshold: s.threshold,
+    };
   }
   return { packages, stale };
 }
@@ -310,7 +328,7 @@ export function presentInputs(root, unitList) {
 
 /**
  * The parts `--check` compares, as text: the ledger, the tests, the schema and tool, and the mutation parts the
- * committed tree decides (score, threshold, claims, stale claims). The header (commit, time) is left out. A unit's
+ * committed tree decides (score, justified survivors, threshold, claims, stale claims). The header (commit, time) is left out. A unit's
  * coverage entry and a unit's mutation report date are compared only when `present` lists the unit, because their
  * source files come from local runs. A report marked `dirty` never equals a fresh one, which is not.
  */

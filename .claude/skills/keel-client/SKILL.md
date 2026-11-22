@@ -104,7 +104,7 @@ export default function Recipes(props: Infer<typeof Props>) {
 export const routes = manifest(recipes, { 'recipes.list': { component: Recipes } })
 ```
 
-**Text.** All copy comes from a message set, never a literal in JSX text, `label`, `placeholder`, `alt`, `title` or a route `title` (E2406). A set is keys and params in `*.schema.ts`, one file per locale (E2401):
+**Text.** In a module whose `deps` list `@keel/std-messages`, all copy comes from a message set, never a literal in JSX text, `label`, `placeholder`, `alt`, `title` or a route `title` (E2406). A set is keys and params in `*.schema.ts`, one file per locale (E2401):
 ```ts fragment
 export const RecipesText = messages(AppLocale, { title: {}, count: { n: s.int({ min: 0 }) } },
   (locale) => import(`./RecipesText/${locale}.ts`))
