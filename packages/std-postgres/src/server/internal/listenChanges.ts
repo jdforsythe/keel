@@ -1,3 +1,4 @@
+import { pid } from "node:process";
 import pg from "pg";
 import type { FollowEvent } from "../FollowEvent.ts";
 import type { Changes } from "./Changes.ts";
@@ -34,10 +35,15 @@ const count = (l: Listener): number => [...l.follows.values()].reduce((n, set) =
 /**
  * The listening connection of `url`, opened outside the pool: `LISTEN keel_changes`, each notification handed to the
  * follows of its payload. Its error or end, unless the last follow stopped it, is `lost` once to every follow that was
- * listening, and the next `follow` opens a new one.
+ * listening, and the next `follow` opens a new one. Its `application_name` is `keel-listen-<pid>`, so an operator (and a test)
+ * tells this process's listener from another's in `pg_stat_activity`.
  */
 function open(url: string): Listener {
-  const client = new pg.Client({ connectionString: verifiedSslmode(url), connectionTimeoutMillis: 10_000 });
+  const client = new pg.Client({
+    connectionString: verifiedSslmode(url),
+    connectionTimeoutMillis: 10_000,
+    application_name: `keel-listen-${pid}`,
+  });
   const follows = new Map<string, Set<Follow>>();
   const lost = (): void => {
     if (l.done) return;

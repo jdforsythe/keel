@@ -1,5 +1,5 @@
 import { NetStep, createCtx } from "@keel/ctx";
-import { planSchemas } from "@keel/ctx/internal";
+import { netInFlight, planSchemas } from "@keel/ctx/internal";
 import { gen } from "@keel/schema/gen";
 import { stores } from "@keel/store";
 import * as fc from "fast-check";
@@ -23,7 +23,7 @@ const HORIZON = 600_000;
  * draws a `SimRun` `{ seed, schedule }` (net steps, storage outcomes, offline windows inside the horizon, and a plan
  * for each capability registered with a `plan` schema), creates that sim ctx and awaits the scenario; the live stores
  * are restored to their snapshots from before `simulate` before each run and after the last. The scenario's `run()`
- * settles, then steps the clock to the earlier of its next deadline and the next edge of an offline window, within
+ * settles (a `ctx.net` route still answering counts as work in flight), then steps the clock to the earlier of its next deadline and the next edge of an offline window, within
  * the horizon, settling after each step. A failing run is shrunk
  * and thrown as E1704 with the seed and run on the first line and the shrunk `SimRun` as JSON on the next;
  * `{ replay }` runs one `SimRun` once. Success resolves `{ seed, runs }`.
@@ -38,7 +38,6 @@ export async function simulate(scenario: Scenario, options: SimulateOptions = {}
   const once = async (simRun: SimRun): Promise<void> => {
     restore();
     const ctx = createCtx({ mode: "sim", seed: simRun.seed, schedule: simRun.schedule });
-    const quiet = (): Promise<void> => settle(globalThis.document?.documentElement, () => {});
     const start = ctx.clock.now();
     const edges = simRun.schedule.offline.flatMap((w) => [w.at, w.at + w.ms]);
     /** The earlier of the clock's next deadline and the schedule's next offline window edge, or null. */
@@ -54,6 +53,10 @@ export async function simulate(scenario: Scenario, options: SimulateOptions = {}
       ctx.clock.advance(at - ctx.clock.now());
       return true;
     };
+    // A route still answering (a server on another ctx doing real I/O) is work in flight, as a harness's own page load is.
+    const busy = (): string | null => (netInFlight(ctx.net) > 0 ? "a ctx.net request" : null);
+    // A route waiting on this run's clock gets it stepped, as a harness render's loader does.
+    const quiet = (): Promise<void> => settle(globalThis.document?.documentElement, () => {}, busy, undefined, step);
     // A harness render on this ctx steps the clock while its route waits (k.sim: a page renders inside a run).
     simClocks.set(ctx, step);
     const run = async (): Promise<void> => {

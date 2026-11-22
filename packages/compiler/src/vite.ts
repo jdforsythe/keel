@@ -40,6 +40,7 @@ import { pageMiddleware } from "./internal/pageMiddleware.ts";
 import { parseTopology } from "./internal/parseTopology.ts";
 import { projectHandlerUses } from "./internal/projectHandlerUses.ts";
 import { projectManifests } from "./internal/projectManifests.ts";
+import { registeredIn } from "./internal/registeredIn.ts";
 import { registersCapability } from "./internal/registersCapability.ts";
 import { serverEntryCode } from "./internal/serverEntryCode.ts";
 import { stubCode } from "./internal/stubCode.ts";
@@ -348,6 +349,8 @@ export default function (): {
       return devApps.map((a) => ({ name: a.name, app: a.app }));
     },
   );
+  /** Under `keel dev`: the stack each capability was registered on, by name, as `register` records it (k.data Dev). */
+  const registrations = new Map<string, string>();
   /** Close the dev apps (their runners and streams) so the next request loads them again, once they have closed. */
   const reloadDev = (): void => {
     const old = devApps;
@@ -873,7 +876,10 @@ export default function (): {
       server = s;
       s.middlewares.use(inspect);
       hasNode = Object.values(topology ?? {}).some((d) => d.adapter === "node" || d.adapter === "static");
-      if (hasNode) s.middlewares.use(dev.handle);
+      if (hasNode) {
+        Reflect.set(globalThis, Symbol.for("keel.dev.registrations"), registrations);
+        s.middlewares.use(dev.handle);
+      }
       s.middlewares.use(stylesMiddleware(devStyles));
       // Keel writes the `client` document in dev too; the project's own `index.html` is never read (k.head).
       s.middlewares.use(
@@ -1077,13 +1083,22 @@ export default function (): {
       // A source outside the project (a linked package) is evaluated again by the modules that import it, not by the
       // ones it registered with: the whole server graph loads again, so a registry and its registrations agree.
       if (rel === null && devApps.length > 0 && linked(id)) {
+        registrations.clear();
         server?.moduleGraph.invalidateAll?.();
         reloadDev();
       }
       if (rel !== null && devApps.length > 0 && (rel.startsWith("modules/") || PROJECT_FILE.test(rel))) {
-        // An app file registering a capability (k.data Dev) loads the server graph again whole: the registry starts empty.
-        if (exists(rel) && registersCapability(fs.readFileSync(path.join(root, rel), "utf8")))
+        // An app file that registered a capability, itself or through a helper it called, or that names a registering
+        // export, loads the server graph again whole (k.data Dev): the registry starts empty, and a capability two
+        // files register is still E1602.
+        const abs = path.join(root, rel);
+        if (
+          registeredIn(registrations.values(), abs) ||
+          (exists(rel) && registersCapability(fs.readFileSync(abs, "utf8")))
+        ) {
+          registrations.clear();
           server?.moduleGraph.invalidateAll?.();
+        }
         reloadDev();
       }
       if (rel !== null && change.event === "delete" && modules.delete(rel)) flush();
