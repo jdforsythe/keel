@@ -271,6 +271,10 @@ State at the last checkpoint; each lane is a subagent in its worktree. The older
   - Written, not built, the operator's to decide: RFC 0186 (ADR-0208, `GET /__keel/user` for client and shell guards; S3-2), RFC 0188 (ADR-0209, brand defaults: `base` and `look` token groups, a focus style, a lone `gap` as a check error, the 422 summary naming the label), RFC 0193 (ADR-0215, an open stream judges the user again at most once a second and closes `denied`; `live` gains `denied`; L7-4). The orchestrator recommends all three.
   - Every lane worktree is removed; the branches stay until CI is green on what they hold. Only `.worktrees/verify` remains.
   - Filed as backlog lines 1029 to 1044.
+- Checkpoint 8 of 2026-11-22 (main line c2b9f731 and this commit; pushed head 2c184922, CI run 45024120589 green on every job; 1d948a4b's run 45019193995 green too).
+  - Merged after 2c184922, not pushed, root check ok: `lane-fix2` (39e03176; RFC 0194 with ADR-0216: E1720 names what a page threw, `run()` waits for `ctx.net` in flight, the listener is `keel-listen-<pid>`, `keel dev` reloads on a file that registered a capability or its helper); backlog lines 1029 to 1044 (075eae93); `lane-walk9` (c2b9f731: the walkthrough's weekly staples layer, smoke 47 steps; D99: RFC 0195 built, ADR-0217, E1550 when a layout's and its page's loaders create one store id through different factories; `StepSpec` typed by its `done` events; findings L9-1 to L9-7, L9-3 and L9-5 are backlog 1036).
+  - To confirm or reverse with D99: `keel check` treats a page no binding names as under every layout of its module's contract when it looks for E1550.
+  - Running: `.worktrees/load` `lane-load` (backlog 1040: a failed task names its file and message, the causes of the load failures, a concurrency cap, three whole runs under load as proof); `.worktrees/mutate` `lane-mutate` (mutation runs for testing, std-postgres, check, compiler, server, std-channels, ctx, store; it commits the regenerated ledger there). Gate and push the main line after `lane-load` merges.
 
 ## Verification
 - [x] Backlog 0956 built and conformance-covered: RFC 0147 and RFC 0150 (links into a shell), red-teamed twice.
@@ -281,13 +285,13 @@ State at the last checkpoint; each lane is a subagent in its worktree. The older
 - [x] P1 and P2 plan written from `tasks/p1/INPUT.md` (backlog 0962): `tasks/p1/PLAN.md`; the operator reads its open decisions O1 to O11.
 
 ## Next action
-1. `git worktree list`, `git status --short`, `gh run list --branch jdforsythe/test-impl --limit 2`. CI run 45019193995 on 1d948a4b: read it to the end and fix what fails before any push.
-2. The main line is ahead of 1d948a4b by `lane-r192` (checkpoint 7). Gate it under D97 (Method) in `.worktrees/verify` and push on a whole green root `pnpm test`; then watch CI.
+1. `git worktree list`, `git status --short`, `gh run list --branch jdforsythe/test-impl --limit 2` (2c184922 is green).
+2. The main line is ahead of 2c184922 (checkpoint 8). Merge `lane-load` and `lane-mutate` when they report, then gate under D97 (Method) in `.worktrees/verify` and push on a whole green root `pnpm test`; then watch CI.
 3. Ask the operator for RFC 0186, 0188 and 0193 (checkpoint 7); build each accepted one: spec text applied, conformance by the `conformance-writer`, then the build, in its own worktree.
-4. File the backlog lines checkpoint 7 lists (next free id: `grep -o '^- \[.\] [0-9]*' tasks/BACKLOG.md | sort -k3 -n | tail -1`).
+4. Backlog 1029 to 1044 hold the loose ends of 2026-11-22; 1040 (the suite under load) is in `lane-load`.
 5. After RFC 0188: a brand pass on golden-1 and golden-2 against `docs/BRAND.md`, judged from screenshots.
-6. Walkthrough: the layers left in `tasks/p1/feature-coverage.md` (workflows and jobs; offline; the last layer). Scenarios left: resume with live updates. Examples left: native-tauri, native-capacitor.
+6. Walkthrough: the layers left in `tasks/p1/feature-coverage.md` (offline; the last layer). Scenarios left: resume with live updates. Examples left: native-tauri, native-capacitor.
 7. Weakness packages left (`tasks/p1/weaknesses-triage.md`): resume-dev-conformance, shell-origin-and-deps, golden-polish; by RFC: 0883, 0960, 1000, the rest of 0302; backlog 1004 to 1028.
 8. The mutation runs on a quiet machine (the ledger holds about 250 stale claims; check, testing, compiler, server and std-postgres changed most).
 9. Decide `tasks/p1/review-findings.md` and create `keel-review.json`. RFC 0163 and RFC 0169's second part after the first real apps. Not started: W4 scoping; the operator's to start: the golden-3 agent run, W16's first pair.
-10. For the operator: D51 to D98 to confirm or reverse (D89 to D98 are of 2026-11-22, in the checkpoints of the Lanes block and in Method).
+10. For the operator: D51 to D99 to confirm or reverse (D89 to D99 are of 2026-11-22, in the checkpoints of the Lanes block and in Method).
