@@ -11,7 +11,7 @@ A high-contrast parchment surface with deep charcoal text. ISO Ochre is reserved
 | Role | Hex | OKLCH | Contrast vs `#F9F9F9` |
 | --- | --- | --- | --- |
 | Surface (background) | `#F9F9F9` | `98% 0.001 80` | base |
-| Surface-container-low | `#F3F3F3` | `96% 0.002 80` | 1.1:1 (UI container) |
+| Surface-container-low | `#F3F3F3` | `96% 0.002 80` | 1.05:1 (UI container) |
 | Surface-bright (card) | `#FFFFFF` | `100% 0 0` | 1.05:1 |
 | Text primary / Charcoal | `#1a191e` | `22% 0.01 295` | 16.6:1 (AAA) |
 | Text secondary / Stone | `#6B6B74` | `50% 0.01 260` | 5.01:1 (AA) |
@@ -26,6 +26,7 @@ A high-contrast parchment surface with deep charcoal text. ISO Ochre is reserved
 
 ## 4. Layout and components
 - Geometry: zero border radius on cards, buttons, inputs.
+- Focus: the brand defines no focus style; the platform's indicator stays.
 - Dividers: hairline `1px solid #E4E4E7`, used only to separate compositional blocks.
 - Diagnostic block: monospace container with the code (`E1042`), the path (`src/cart/add.tsx:14:7`), one line of message, and the exact unified diff hunk (`-`, `+`). This is the OUTPUT.md diagnostic shape rendered.
 
@@ -36,4 +37,4 @@ The sentence-level rules live in `docs/VOICE.md` (first person, reader as the he
 - `brandTokens` from `@keel/ui/brand` (`packages/ui/src/brand/brandTokens.ts`) holds this palette (`surface`, `surfaceLow`, `card`, `text`, `textSecondary`, `accent`, `verified`, `error`, `divider`), the two font stacks, radius `none` (0), the `hairline` size and border, and a light scheme only. The scaffold `project` template emits a `tokens.ts` that exports `brandTokens`, so every new app starts on brand. Apps: `apps/golden-1`, `apps/golden-2`, `apps/household`, `apps/inspector`, `apps/sessions` and every app under `examples/`.
 - Fonts are self-hosted (`@keel/ui/fonts`, `packages/ui/fonts/fonts.css` with the two variable woff2 files and their licenses), never fetched from a third party at runtime (THREAT-MODEL CSP).
 
-verified: 282272bef8849cc2e8ae1cb84a4295b9f8638622
+verified: c503fc49
