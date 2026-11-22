@@ -60,14 +60,26 @@ export function renderMarkdown(report) {
     "",
     "## C. Mutation by unit",
     "",
-    "Score and threshold come from the ledger. The report date is the day `reports/mutation/mutation.json` was written. A claim is stale when its file's sha256 differs from the claim's; stale claims are left out of the score.",
+    "Score and threshold come from the ledger. The report date is the day `reports/mutation/mutation.json` was written. A claim is stale when its file's sha256 differs from the claim's; stale claims are left out of the score. Justified counts the survivors `mutation-justified.json` covers; the score without them leaves them out of the count, and the threshold is judged on the score alone.",
     "",
-    ...head(["unit", "score", "threshold", "report date", "claims", "stale"], 1),
+    ...head(["unit", "score", "justified", "score without them", "threshold", "report date", "claims", "stale"], 1),
   );
   const unmutated = [];
   for (const [u, m] of Object.entries(mutation.packages)) {
     if (m.reason !== null) unmutated.push(u);
-    else out.push(row([u, m.score, m.threshold, m.reportDate ?? "", m.claims, m.stale]));
+    else
+      out.push(
+        row([
+          u,
+          m.score,
+          m.justified ?? 0,
+          m.scoreJustified ?? m.score,
+          m.threshold,
+          m.reportDate ?? "",
+          m.claims,
+          m.stale,
+        ]),
+      );
   }
   out.push(
     "",

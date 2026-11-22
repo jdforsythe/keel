@@ -13,6 +13,8 @@ import { a11yClaims } from "./a11yClaims.ts";
 import { a11yFindings } from "./a11yFindings.ts";
 import { buildLedger } from "./buildLedger.ts";
 import { coverageGaps } from "./coverageGaps.ts";
+import { justifiedFiles } from "./justifiedFiles.ts";
+import { justifiedText } from "./justifiedText.ts";
 import { makeDiag } from "./makeDiag.ts";
 import { mutationClaims } from "./mutationClaims.ts";
 import { packageInScope } from "./packageInScope.ts";
@@ -106,7 +108,8 @@ const ledgerFile = (
  * `keel ledger` (k.ledger), the one ledger implementation: one `ledger` record per export and per spec clause, rung by
  * `@keel/testing` `ledger`, one per route and WCAG criterion (`a11yClaims` over `a11yMap`, k.a11y Claims), and one
  * `ledger.mutation` record per mutation claim (`mutationClaims`), after any W1706
- * header notes, E1711 and W1714 (a stale claim). `--write <file>` names the ledger file: `keel ledger` writes the
+ * header notes, E1711, E1725 (a `mutation-justified.json` that fails its shape, by `justifiedFiles`, or an entry that
+ * justifies no mutant of its package's report on disk) and W1714 (a stale claim). `--write <file>` names the ledger file: `keel ledger` writes the
  * records there instead (with `rungs` and `mutation`, the reports on disk merged into the file's claims; stdout keeps
  * the notes and the trailer); `--diff` compares with it (default `.keel/ledger.json`, else
  * `tooling/ledger/ledger.json`) and writes nothing: E1706 per lowered rung, E1706 when the unsafe count rose, E1706
@@ -138,7 +141,27 @@ export function ledgerCommand(input: Input, io: Io, a11yMap: A11yCriteriaMap = n
   const file = files.find((f) => f.path === name);
   const parsed = file === undefined ? undefined : LedgerFileSchema.parse(safeJson(file.source));
   const committed = parsed?.ok === true ? parsed.value : undefined;
-  const { mutation, fresh, reports } = mutationClaims(files, committed?.mutation);
+  const { justified, diags: misshapen } = justifiedFiles(files);
+  const { mutation, fresh, reports, unmatched } = mutationClaims(files, committed?.mutation, justified);
+  const unjustified = Object.entries(unmatched).flatMap(([pkg, indexes]) => {
+    const file = justified.get(pkg);
+    return indexes.flatMap((i) => {
+      const e = file?.entries[i];
+      if (file === undefined || e === undefined) return [];
+      return [
+        makeDiag(
+          "E1725",
+          `entry ${i + 1} (${justifiedText(e.original)}) justifies no mutant of the report; remove it`,
+          {
+            path: file.path,
+            line: 1,
+            col: 1,
+            see: "k.ledger",
+          },
+        ),
+      ];
+    });
+  });
   const stale = mutation.claims
     .filter((c) => !fresh.has(c.file))
     .map((c) =>
@@ -149,7 +172,7 @@ export function ledgerCommand(input: Input, io: Io, a11yMap: A11yCriteriaMap = n
         see: "k.ledger",
       }),
     );
-  const notes = scope === "" ? [...built.diags, ...stale] : [];
+  const notes = scope === "" ? [...built.diags, ...misshapen, ...unjustified, ...stale] : [];
   const held = (cs: readonly A11yClaim[], r: Record<string, number>): Record<string, number> => {
     const n = cs.filter((c) => c.rung === "example").length;
     return n === 0 ? r : { ...r, example: (r.example ?? 0) + n };
