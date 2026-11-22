@@ -30,7 +30,7 @@ afterEach(async () => {
 const names = (r: ReturnType<typeof diags>): string =>
   r.map((d) => `${String(d.path)} ${String(d.message)}`).join("\n");
 
-test.skip(
+test(
   "the built `dist/web/index.html` of a `client` deployable holds none of a project `index.html`'s markup, and its `<title>` is `web`.",
   () => {
     const r = keel(withFile, ["build"]);
