@@ -191,3 +191,97 @@ it("an edit while the dev apps are still loading makes the next request load the
   await request();
   expect(loads).toBe(2);
 });
+
+/** A dev server over `root` whose graph load is `load`; `request()` asks its dev middleware, `all()` counts whole invalidations. */
+function devServer(load: (n: number) => Promise<Record<string, unknown>>): {
+  p: ReturnType<typeof keel>;
+  request(): Promise<unknown>;
+  all(): number;
+  loads(): number;
+} {
+  fs.writeFileSync(path.join(root, "topology.ts"), `export default { api: { modules: ["a"], adapter: "node" } };\n`);
+  let all = 0;
+  let loads = 0;
+  const p = keel();
+  p.configResolved({ root });
+  const used: Parameters<Parameters<typeof p.configurePreviewServer>[0]["middlewares"]["use"]>[0][] = [];
+  p.configureServer({
+    moduleGraph: {
+      getModuleById: () => undefined,
+      invalidateAll: () => {
+        all++;
+      },
+    },
+    reloadModule: () => Promise.resolve(),
+    ssrLoadModule: () => {
+      loads++;
+      return load(loads);
+    },
+    middlewares: {
+      use(fn) {
+        used.push(fn);
+      },
+    },
+  });
+  const handle = used[1];
+  if (handle === undefined) throw new Error("no dev middleware");
+  const request = (): Promise<unknown> =>
+    new Promise((resolve) => {
+      const req = new http.IncomingMessage(new Socket());
+      req.url = "/elsewhere";
+      req.method = "GET";
+      req.headers = { host: "localhost" };
+      handle(req, new http.ServerResponse(req), (e) => resolve(e));
+    });
+  return { p, request, all: () => all, loads: () => loads };
+}
+const idle = { fetch: () => Promise.resolve(new Response(null)), close: () => Promise.resolve() };
+
+it("an edit to a registering file after another edit, before any request, still loads the server graph whole", async () => {
+  const s = devServer(() => Promise.resolve({ apps: [["api", idle, () => false]] }));
+  fs.mkdirSync(path.join(root, "modules/a"), { recursive: true });
+  const db = path.join(root, "modules/a/db.server.ts");
+  fs.writeFileSync(db, `import { database } from "@keel/std-postgres/server";\nexport const db = database("a.db");\n`);
+  await s.request();
+  s.p.watchChange(path.join(root, "modules/a/page.ts"), { event: "update" });
+  expect(s.all()).toBe(0);
+  s.p.watchChange(db, { event: "update" });
+  expect(s.all()).toBe(1);
+  // Nothing was evaluated since: a third edit has no graph to invalidate.
+  s.p.watchChange(db, { event: "update" });
+  expect(s.all()).toBe(1);
+  await s.request();
+  expect(s.loads()).toBe(2);
+});
+
+it("a load that fails is invalidated whole, and the next request loads again", async () => {
+  const s = devServer((n) =>
+    n === 1 ? Promise.reject(new Error("first load")) : Promise.resolve({ apps: [["api", idle, () => false]] }),
+  );
+  expect(String(await s.request())).toContain("first load");
+  expect(s.all()).toBeGreaterThan(0);
+  expect(await s.request()).toBeUndefined();
+  expect(s.loads()).toBe(2);
+  await s.request();
+  expect(s.loads()).toBe(2);
+});
+
+it("a load an edit overtook is invalidated whole once it settles, before the next load", async () => {
+  let open = (): void => {};
+  const gate = new Promise<void>((resolve) => {
+    open = resolve;
+  });
+  const seen: number[] = [];
+  const s = devServer(async (n) => {
+    seen.push(s.all());
+    if (n === 1) await gate;
+    return { apps: [["api", idle, () => false]] };
+  });
+  const before = s.request();
+  await ticks();
+  s.p.watchChange(path.join(root, "modules/a/page.ts"), { event: "update" });
+  expect(s.all()).toBe(0);
+  open();
+  expect(await before).toBeUndefined();
+  expect(seen).toEqual([0, 1]);
+});

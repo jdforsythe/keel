@@ -331,10 +331,21 @@ export default function (): {
   let closed: Promise<unknown> = Promise.resolve();
   /** The load of the dev apps in flight, if any: an edit during it reloads as one after it does (k.data Dev). */
   let loading: Promise<DevApp[]> | undefined;
+  /** Whether a load has evaluated the server graph since it was last invalidated whole: an edit then has one to reload. */
+  let evaluated = false;
+  /** Under `keel dev`: the stack each capability was registered on, by name, as `register` records it (k.data Dev). */
+  const registrations = new Map<string, string>();
+  /** Invalidate the server graph whole, so the next load starts with an empty registry (k.data Dev). */
+  const invalidateWhole = (): void => {
+    registrations.clear();
+    server?.moduleGraph.invalidateAll?.();
+    evaluated = false;
+  };
   /** `keel dev`: every `node` and `static` deployable's dev app, loaded through Vite's SSR loader (k.topology Local topology). */
-  const dev = devMiddleware(() => {
+  const dev: ReturnType<typeof devMiddleware> = devMiddleware(() => {
     const run = (async (): Promise<DevApp[]> => {
       await closed;
+      evaluated = true;
       const mod = await server?.ssrLoadModule?.(DEV_ENTRY);
       const apps: unknown = mod?.apps;
       return (Array.isArray(apps) ? apps : [])
@@ -342,17 +353,23 @@ export default function (): {
         .map(([name, app, served, mount]) => ({ name, app, served, mount }));
     })();
     loading = run;
-    // Only the load no edit overtook becomes the live apps; one an edit overtook is closed by `reloadDev`.
-    return run.then((apps) => {
-      if (loading === run) {
+    // Only the load no edit overtook becomes the live apps. One an edit overtook is closed by `reloadDev`, and its
+    // requests wait for the next load. One that failed leaves a graph half evaluated: the next request loads it whole.
+    return run.then(
+      (apps) => {
+        if (loading !== run) return dev.apps();
         loading = undefined;
         devApps = apps;
-      }
-      return apps;
-    });
+        return apps;
+      },
+      (e: unknown) => {
+        if (loading !== run) return dev.apps();
+        invalidateWhole();
+        reloadDev();
+        throw e;
+      },
+    );
   });
-  /** Whether dev apps are loaded or loading, so an edit has a server graph to reload. */
-  const live = (): boolean => devApps.length > 0 || loading !== undefined;
   const inspect = inspectMiddleware(
     () => root,
     origins,
@@ -363,23 +380,23 @@ export default function (): {
       return devApps.map((a) => ({ name: a.name, app: a.app }));
     },
   );
-  /** Under `keel dev`: the stack each capability was registered on, by name, as `register` records it (k.data Dev). */
-  const registrations = new Map<string, string>();
   /** Close the dev apps (their runners and streams) so the next request loads them again, once they have closed. */
   const reloadDev = (): void => {
     const old = devApps;
-    // A load in flight may have read the files before the edit: its apps close too, and the next request loads anew.
+    // A load in flight may have read the files before the edit: its apps close too, what it evaluated is invalidated
+    // whole once it settles, and the next request loads anew.
     const overtaken = loading;
     loading = undefined;
     devApps = [];
     dev.reset();
-    closed = Promise.allSettled([
+    const closing = Promise.allSettled([
       closed,
       ...old.map((a) => a.app.close()),
       ...(overtaken === undefined
         ? []
         : [overtaken.then((apps) => Promise.allSettled(apps.map((a) => a.app.close())))]),
     ]);
+    closed = overtaken === undefined ? closing : closing.then(invalidateWhole);
     const mod = server?.moduleGraph.getModuleById(`\0${DEV_ENTRY}`);
     if (mod !== undefined) server?.moduleGraph.invalidateModule?.(mod);
   };
@@ -1105,12 +1122,11 @@ export default function (): {
       const rel = relOf(id);
       // A source outside the project (a linked package) is evaluated again by the modules that import it, not by the
       // ones it registered with: the whole server graph loads again, so a registry and its registrations agree.
-      if (rel === null && live() && linked(id)) {
-        registrations.clear();
-        server?.moduleGraph.invalidateAll?.();
+      if (rel === null && evaluated && linked(id)) {
+        invalidateWhole();
         reloadDev();
       }
-      if (rel !== null && live() && (rel.startsWith("modules/") || PROJECT_FILE.test(rel))) {
+      if (rel !== null && evaluated && (rel.startsWith("modules/") || PROJECT_FILE.test(rel))) {
         // An app file that registered a capability, itself or through a helper it called, or that names a registering
         // export, loads the server graph again whole (k.data Dev): the registry starts empty, and a capability two
         // files register is still E1602.
@@ -1118,10 +1134,8 @@ export default function (): {
         if (
           registeredIn(registrations.values(), abs) ||
           (exists(rel) && registersCapability(fs.readFileSync(abs, "utf8")))
-        ) {
-          registrations.clear();
-          server?.moduleGraph.invalidateAll?.();
-        }
+        )
+          invalidateWhole();
         reloadDev();
       }
       if (rel !== null && change.event === "delete" && modules.delete(rel)) flush();
