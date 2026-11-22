@@ -327,6 +327,7 @@ The coverage plan names this layer 8 ("Jobs, schedules, a workflow"); the README
 - `StepSpec.run` returns `Result<unknown, ...>` (`packages/std-workflows/src/StepSpec.ts`); `putBack` could answer `ok({ put: true })` for an event whose payload is `{ putBack }`, and only the run would show it, as `failed` with the schema's code. std.workflows says so ("a `done` payload its event refuses commits `failed`"); the types could say it first.
 - Chart `actions` get one payload type for every event that names them (`count` and `note` test `"putBack" in p`), so an action shared across events narrows by hand.
 - Triage: a bug in the types: `packages/std-workflows/src/StepSpec.ts:10` returns `Result<unknown, …>`; the spec already refuses a `done` payload its event refuses, so the `ok` value can be typed by the event's payload schema.
+- Fixed: `StepSpec<D, Ev>` is one member per event `done` may name, its `run` answering `Result<Infer<Ev[done]>, …>`; `ok({ put: true })` for `put` is a type error where the step is written.
 
 ### L9-5 rough: a module's unused `deps` hide until a new edge makes a cycle
 - `setup` listing `shopping` (the setup page shows the runs) was E1153 `receipts -> setup -> shopping -> receipts`. `shopping` listed `setup` and `receipts`, and `receipts` listed `setup`, with no import behind any of the three. Removing `shopping`'s two fixed it. `keel check` reports a missing dep (E1152), not an unused one.
