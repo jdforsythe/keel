@@ -1,5 +1,5 @@
 # k.topology: Deployables
-status: implemented
+status: conformance-covered
 
 **Declaration.** `topology.ts` default-exports `topology({ <name>: { modules, adapter, servedBy?, storage?, shells?, caller?, origins?, styles? } })` (`@keel/server`), read statically; Adapters: `node` (serves the resume entry), `static` (prerendered HTML per route, k.hosting Static), `client` (loaders, actions in the browser; entry `mount(App, el)`, real `ctx`). Each module is in one deployable, where its routes, actions, live loaders and runners run. `styles` lists package specifiers whose export is a `.css` file (`['@keel/ui/fonts']`): each is imported by the deployable's entry, so its documents link it (k.head) in dev and build.
 

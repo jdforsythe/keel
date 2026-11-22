@@ -3,7 +3,7 @@
   "unsafe": 18,
   "hostElements": 0,
   "rungs": {
-    "example": 1641,
+    "example": 1646,
     "probabilistic": 340,
     "exhaustive": 15,
     "proven": 74,
@@ -16,7 +16,7 @@
         "threshold": 70
       },
       "cli": {
-        "score": 80.56,
+        "score": 80.43,
         "threshold": 70
       },
       "compiler": {
@@ -44,7 +44,7 @@
         "threshold": 70
       },
       "scaffold": {
-        "score": 79.73,
+        "score": 80.38,
         "threshold": 70
       },
       "schema": {
@@ -5488,14 +5488,6 @@
         "survived": 3,
         "noCoverage": 1,
         "score": 86.21
-      },
-      {
-        "file": "packages/scaffold/src/templates/indexHtml.ts",
-        "sha": "30dee3f833beb29880be3bfb9b0eef465015f80bdda4b9b26dd8bba0da706d08",
-        "killed": 3,
-        "survived": 18,
-        "noCoverage": 0,
-        "score": 14.29
       },
       {
         "file": "packages/scaffold/src/templates/keelMarkSvg.ts",
@@ -15190,7 +15182,7 @@
     },
     {
       "item": "k.head#9",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.host-code#1",
@@ -16370,7 +16362,7 @@
     },
     {
       "item": "k.scaffold#15",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.schema#1",
@@ -16974,15 +16966,15 @@
     },
     {
       "item": "k.topology#11",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.topology#12",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.topology#13",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.ui#1",

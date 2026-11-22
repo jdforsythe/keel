@@ -73,7 +73,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.sync | Concurrent writes | conformance-covered | heads |
 | k.persist | Storage, durable state | conformance-covered | drivers |
 | k.data | App data | conformance-covered | seam |
-| k.topology | Deployables | implemented | peers |
+| k.topology | Deployables | conformance-covered | peers |
 | k.deploy | Entry, deploy files | conformance-covered | entry |
 | k.shell | Native shells | conformance-covered | target |
 | k.compat | Surface compatibility | conformance-covered | accepts |
