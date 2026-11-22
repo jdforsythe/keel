@@ -130,3 +130,64 @@ it("a changed source outside the project loads the whole server graph again; one
   await request();
   expect(loads).toBe(3);
 });
+
+it("an edit while the dev apps are still loading makes the next request load them again, after the overtaken ones close", async () => {
+  fs.writeFileSync(path.join(root, "topology.ts"), `export default { api: { modules: ["a"], adapter: "node" } };\n`);
+  const events: string[] = [];
+  let open = (): void => {};
+  const gate = new Promise<void>((resolve) => {
+    open = resolve;
+  });
+  let loads = 0;
+  const app = (n: number) => ({
+    fetch: () => Promise.resolve(new Response(null)),
+    close: () => {
+      events.push(`close ${n}`);
+      return Promise.resolve();
+    },
+  });
+  const p = keel();
+  p.configResolved({ root });
+  const used: Parameters<Parameters<typeof p.configurePreviewServer>[0]["middlewares"]["use"]>[0][] = [];
+  p.configureServer({
+    moduleGraph: { getModuleById: () => undefined },
+    reloadModule: () => Promise.resolve(),
+    ssrLoadModule: async () => {
+      loads++;
+      const n = loads;
+      events.push(`load ${n}`);
+      if (n === 1) await gate;
+      return { apps: [["api", app(n), () => false]] };
+    },
+    middlewares: {
+      use(fn) {
+        used.push(fn);
+      },
+    },
+  });
+  const handle = used[1];
+  if (handle === undefined) throw new Error("no dev middleware");
+  const request = (): Promise<void> =>
+    new Promise((resolve) => {
+      const req = new http.IncomingMessage(new Socket());
+      req.url = "/elsewhere";
+      req.method = "GET";
+      req.headers = { host: "localhost" };
+      handle(req, new http.ServerResponse(req), () => resolve());
+    });
+  const before = request();
+  await ticks();
+  expect(loads).toBe(1);
+  // The edit lands while load 1 is in flight: it may have read the file before the edit.
+  p.watchChange(path.join(root, "modules/a/page.ts"), { event: "update" });
+  const after = request();
+  await ticks();
+  expect(loads).toBe(1);
+  open();
+  await before;
+  await after;
+  expect(loads).toBe(2);
+  expect(events).toEqual(["load 1", "close 1", "load 2"]);
+  await request();
+  expect(loads).toBe(2);
+});

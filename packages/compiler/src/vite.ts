@@ -329,16 +329,30 @@ export default function (): {
   let hasNode = false;
   /** The closing of the last dev apps: the next ones load after it, so two never run on one storage. */
   let closed: Promise<unknown> = Promise.resolve();
+  /** The load of the dev apps in flight, if any: an edit during it reloads as one after it does (k.data Dev). */
+  let loading: Promise<DevApp[]> | undefined;
   /** `keel dev`: every `node` and `static` deployable's dev app, loaded through Vite's SSR loader (k.topology Local topology). */
-  const dev = devMiddleware(async () => {
-    await closed;
-    const mod = await server?.ssrLoadModule?.(DEV_ENTRY);
-    const apps: unknown = mod?.apps;
-    devApps = (Array.isArray(apps) ? apps : [])
-      .filter(isDevApp)
-      .map(([name, app, served, mount]) => ({ name, app, served, mount }));
-    return devApps;
+  const dev = devMiddleware(() => {
+    const run = (async (): Promise<DevApp[]> => {
+      await closed;
+      const mod = await server?.ssrLoadModule?.(DEV_ENTRY);
+      const apps: unknown = mod?.apps;
+      return (Array.isArray(apps) ? apps : [])
+        .filter(isDevApp)
+        .map(([name, app, served, mount]) => ({ name, app, served, mount }));
+    })();
+    loading = run;
+    // Only the load no edit overtook becomes the live apps; one an edit overtook is closed by `reloadDev`.
+    return run.then((apps) => {
+      if (loading === run) {
+        loading = undefined;
+        devApps = apps;
+      }
+      return apps;
+    });
   });
+  /** Whether dev apps are loaded or loading, so an edit has a server graph to reload. */
+  const live = (): boolean => devApps.length > 0 || loading !== undefined;
   const inspect = inspectMiddleware(
     () => root,
     origins,
@@ -354,9 +368,18 @@ export default function (): {
   /** Close the dev apps (their runners and streams) so the next request loads them again, once they have closed. */
   const reloadDev = (): void => {
     const old = devApps;
+    // A load in flight may have read the files before the edit: its apps close too, and the next request loads anew.
+    const overtaken = loading;
+    loading = undefined;
     devApps = [];
     dev.reset();
-    closed = Promise.allSettled([closed, ...old.map((a) => a.app.close())]);
+    closed = Promise.allSettled([
+      closed,
+      ...old.map((a) => a.app.close()),
+      ...(overtaken === undefined
+        ? []
+        : [overtaken.then((apps) => Promise.allSettled(apps.map((a) => a.app.close())))]),
+    ]);
     const mod = server?.moduleGraph.getModuleById(`\0${DEV_ENTRY}`);
     if (mod !== undefined) server?.moduleGraph.invalidateModule?.(mod);
   };
@@ -1082,12 +1105,12 @@ export default function (): {
       const rel = relOf(id);
       // A source outside the project (a linked package) is evaluated again by the modules that import it, not by the
       // ones it registered with: the whole server graph loads again, so a registry and its registrations agree.
-      if (rel === null && devApps.length > 0 && linked(id)) {
+      if (rel === null && live() && linked(id)) {
         registrations.clear();
         server?.moduleGraph.invalidateAll?.();
         reloadDev();
       }
-      if (rel !== null && devApps.length > 0 && (rel.startsWith("modules/") || PROJECT_FILE.test(rel))) {
+      if (rel !== null && live() && (rel.startsWith("modules/") || PROJECT_FILE.test(rel))) {
         // An app file that registered a capability, itself or through a helper it called, or that names a registering
         // export, loads the server graph again whole (k.data Dev): the registry starts empty, and a capability two
         // files register is still E1602.
