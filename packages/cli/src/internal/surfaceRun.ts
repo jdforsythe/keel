@@ -132,8 +132,7 @@ export async function surfaceRun(cwd: string): Promise<{ code: number; notes: st
         });
         if (isRecord(m) && isRecord(m.routes) && m.routes.kind === "keel.routeTable") tables.push(m.routes);
       }
-      const internal: unknown =
-        tables.length === 0 ? undefined : await server?.ssrLoadModule("@keel/router/internal");
+      const internal: unknown = tables.length === 0 ? undefined : await server?.ssrLoadModule("@keel/router/internal");
       const bindingsOf = isRecord(internal) ? internal.bindingsOf : undefined;
       for (const t of tables) {
         const cs = isRecord(t) && Array.isArray(t.contracts) ? t.contracts : [];
@@ -147,8 +146,7 @@ export async function surfaceRun(cwd: string): Promise<{ code: number; notes: st
         }
         if (bound instanceof Map) for (const b of bound.values()) if (isRecord(b)) bindings.push(b.binding);
       }
-      const kept: unknown =
-        bindings.length === 0 ? undefined : await server?.ssrLoadModule("@keel/store/internal");
+      const kept: unknown = bindings.length === 0 ? undefined : await server?.ssrLoadModule("@keel/store/internal");
       shapes = isRecord(kept) ? kept.storeShapes : undefined;
     } finally {
       await server?.close();
