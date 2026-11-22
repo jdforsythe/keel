@@ -240,10 +240,30 @@ const proofs = {
 
   /**
    * The Tauri files register the shell's id as a deep-link scheme; a plain client host sends `dist/web` for any path,
-   * and Chromium opening `/places/oslo` there lands on that place's page.
+   * and Chromium opening `/places/oslo` there lands on that place's page. The shell's own web build (`KEEL_SHELL=tauri`,
+   * the build `keel build --target tauri` runs before cargo) has no identity source and still carries the deep-link
+   * listener, so the built shell takes a page link (k.shell Shell ctx).
    */
   async "links-in"(dir) {
     const conf = readFileSync(join(dir, "deploy", "web", "tauri", "tauri.conf.json"), "utf8");
+    const vite = join(root, "node_modules", "vite", "bin", "vite.js");
+    await new Promise((res, rej) =>
+      execFile(
+        process.execPath,
+        [vite, "build"],
+        {
+          cwd: dir,
+          env: { ...process.env, KEEL_DEPLOYABLE: "web", KEEL_SHELL: "tauri", KEEL_ORIGIN: "https://app.example", NODE_ENV: "production" },
+        },
+        (e, _o, err) => (e === null ? res(undefined) : rej(new Error(err))),
+      ),
+    );
+    const www = join(dir, "dist", "web", "tauri", "www", "assets");
+    const bundle = readdirSync(www)
+      .filter((f) => f.endsWith(".js"))
+      .map((f) => readFileSync(join(www, f), "utf8"))
+      .join("\n");
+    const listens = bundle.includes("plugin:deep-link|get_current");
     const folder = join(dir, "dist", "web");
     const policy = readFileSync(join(folder, "csp.txt"), "utf8").trim();
     const server = await serveFiles(folder, { "content-security-policy": policy }, true);
@@ -259,8 +279,8 @@ const proofs = {
       const text = await title.textContent();
       const scheme = conf.includes('"schemes": ["dev.keel.linksin"]');
       return [
-        scheme && text === "oslo" && errors.length === 0,
-        `scheme ${scheme}, heading "${text}", ${errors.length} errors`,
+        scheme && listens && text === "oslo" && errors.length === 0,
+        `scheme ${scheme}, shell listens ${listens}, heading "${text}", ${errors.length} errors`,
       ];
     } finally {
       await browser.close();

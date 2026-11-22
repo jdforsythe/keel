@@ -1,5 +1,5 @@
 # k.links: Links into a shell
-status: implemented
+status: conformance-covered
 
 Which links on a shell's scheme (k.return) a shell takes, and how it reports its launch. A link from outside reaches a page as a web link does, a declared mount path at any time, and any other mount path only against an opening (k.opening).
 

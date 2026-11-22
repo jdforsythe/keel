@@ -1,6 +1,6 @@
 # RFC 0189: k.shell: a shell delivers page links with or without an identity source
 
-Status: accepted (ADR-0211). Amends k.shell (Shell ctx) and k.links (Testing). From `examples/links-in` (examples finding 8).
+Status: implemented (ADR-0211). Amends k.shell (Shell ctx) and k.links (Testing). From `examples/links-in` (examples finding 8).
 
 ## Decisions
 - D1: k.links stands. A shell build delivers return links whether or not the project has `identity.ts`: a page link is a client-side navigation, at launch or while running.
