@@ -5,6 +5,7 @@ import { ctxMeta } from "./internal/ctxMeta.ts";
 import { deriveSeed } from "./internal/deriveSeed.ts";
 import { extensions } from "./internal/extensions.ts";
 import { kernelNames } from "./internal/kernelNames.ts";
+import { noteRegistration } from "./internal/noteRegistration.ts";
 import { planOf } from "./internal/planOf.ts";
 
 /**
@@ -12,7 +13,7 @@ import { planOf } from "./internal/planOf.ts";
  * Resolution is lazy: the first access on a ctx builds the implementation for its mode, so ctx and register may be created in either order. Each factory receives a seed derived from the ctx seed and the name. Registering the same name with the
  * identical `impls` object again returns the original accessor (HMR safe); any other repeat throws E1602. With `plan`,
  * the sim factory also gets the schedule's `plans[name]`, each step parsed by `plan`; a step that fails throws E1604
- * at the capability's first access on that ctx.
+ * at the capability's first access on that ctx. Under `keel dev` the stack it ran on is recorded (k.data Dev).
  */
 export function register<T extends object, P = never>(name: string, impls: Capability<T, P>): (ctx: Ctx) => T {
   const existing = extensions.get(name);
@@ -36,5 +37,6 @@ export function register<T extends object, P = never>(name: string, impls: Capab
     return impl;
   };
   extensions.set(name, { impls, accessor, plan: impls.plan });
+  noteRegistration(name);
   return accessor;
 }
