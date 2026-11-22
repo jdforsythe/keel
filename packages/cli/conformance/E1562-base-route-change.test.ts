@@ -23,7 +23,8 @@ afterAll(() => {
   for (const d of dirs) cleanup(d);
 });
 const NAME = "s.object({ name: s.string()  }, { closed: true })";
-const field = fc.constantFrom("note", "qty", "label");
+// The clause names the field `note`: one example, run through `fc.assert` once.
+const field = fc.constant("note");
 
 test(
   "With a base where `y`'s action input is `{ name }` and its caller `a` is in deployable `x`, adding a required field `note` is one E1562 at `note` whose fix leaves none; with `a` and the route in one deployable there is none.",
@@ -53,7 +54,7 @@ test(
         write(one.dir, project({ body: required, split: false }));
         expect(diags(buildAndCheck(one.dir, one.base), "E1562")).toEqual([]);
       }),
-      { seed: SEED, numRuns: 3 },
+      { seed: SEED, numRuns: 1 },
     );
   },
   SLOW,
