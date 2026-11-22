@@ -19,14 +19,73 @@ export function turboVerdict(status, output) {
   return { ok: status === 0 && successful === total, successful, total, failed, unfinished };
 }
 
+const DIAG = /^[A-Z]\d{4} /;
+const CONT = /^ {2}(fix|see): |^ {7}\S/;
+
 /**
- * The E0005 message of a failed run: `turbo test failed: @keel/cli#test; 3 of 60 tasks unfinished`.
+ * What each failed task said, from turbo's prefixed log (`@keel/cli:test: T0001 ...`): its diagnostic lines (each
+ * with the `fix:` lines under it), the paths made relative to the repository with `dirs` (package name to its
+ * directory), its `fail ...` trailer, the exit status turbo reports, and, for a task that printed no diagnostic, the
+ * last lines it wrote.
+ * @param {string[]} failed task ids, `@keel/cli#test`
+ * @param {string} output turbo's stdout and stderr
+ * @param {Record<string, string>} dirs
+ * @returns {{ task: string, diags: string[], lines: string[], trailer: string | undefined, exit: number | undefined, tail: string[] }[]}
+ */
+export function taskFailures(failed, output, dirs) {
+  return failed.map((task) => {
+    const hash = task.lastIndexOf("#");
+    const pkg = task.slice(0, hash);
+    const prefix = `${pkg}:${task.slice(hash + 1)}: `;
+    const dir = dirs[pkg];
+    const own = output
+      .split("\n")
+      .filter((l) => l.startsWith(prefix))
+      .map((l) => l.slice(prefix.length));
+    const exit = output
+      .split("\n")
+      .filter((l) => l.startsWith(`${task}: `))
+      .map((l) => /exited \((\d+)\)/.exec(l)?.[1])
+      .find((x) => x !== undefined);
+    /** `conformance/x.test.ts:4:2 ...` as `packages/cli/conformance/x.test.ts:4:2 ...` */
+    const rooted = (l) =>
+      dir === undefined || dir === "." ? l : l.replace(/^([A-Z]\d{4}) (?!\.\.\/)([^\s:]+\.\w+:\d+)/, `$1 ${dir}/$2`);
+    const diags = [];
+    const lines = [];
+    let inDiag = false;
+    for (const l of own) {
+      if (DIAG.test(l)) {
+        const r = rooted(l);
+        diags.push(r);
+        lines.push(r);
+        inDiag = true;
+      } else if (inDiag && CONT.test(l)) lines.push(l);
+      else inDiag = false;
+    }
+    const trailer = own.filter((l) => /^fail \d+ tests/.test(l)).at(-1);
+    const tail = own
+      .map((l) => l.trimEnd())
+      .filter((l) => l !== "" && !/ELIFECYCLE|^\$ /.test(l))
+      .slice(-12);
+    return { task, diags, lines, trailer, exit: exit === undefined ? undefined : Number(exit), tail };
+  });
+}
+
+/**
+ * The E0005 message of a failed run that names, per failed task, where each failed test is
+ * (`turbo test failed: @keel/cli#test packages/cli/test/a.test.ts:4; 3 of 60 tasks unfinished`); a task that named
+ * no test says how it ended (`@keel/std-postgres#test exit 1, no test named`).
  * @param {string} task
  * @param {ReturnType<typeof turboVerdict>} v
+ * @param {ReturnType<typeof taskFailures>} failures
  */
-export function failMessage(task, v) {
-  const what = [];
-  if (v.failed.length > 0) what.push(v.failed.join(", "));
+export function failVerdict(task, v, failures) {
+  const per = failures.map((f) => {
+    const at = [...new Set(f.diags.map((d) => /^[A-Z]\d{4} (\S+?:\d+)(?::\d+)? /.exec(d)?.[1] ?? d.slice(6, 40)))];
+    if (at.length > 0) return `${f.task} ${at.join(", ")}`;
+    return `${f.task} exit ${f.exit ?? "?"}, no test named`;
+  });
+  const what = [...per];
   if (v.unfinished > 0) what.push(`${v.unfinished} of ${v.total} tasks unfinished`);
   if (v.total === 0) what.push("no task summary");
   return `turbo ${task} failed${what.length > 0 ? `: ${what.join("; ")}` : ""}`;
