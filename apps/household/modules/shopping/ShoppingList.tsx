@@ -3,33 +3,66 @@ import { signal } from "@keel/reactive";
 import { For, If } from "@keel/runtime-dom";
 import { type Infer, type Result, s } from "@keel/schema";
 import { Disclosure, Menu, Tabs, Toaster } from "@keel/std-headless";
+import { type LiveStatus, live } from "@keel/std-live";
 import { tx } from "@keel/store";
 import { Box, Button, Text } from "@keel/ui";
 import { Item } from "./Item.schema.ts";
 import type { Items } from "./Items.schema.ts";
 import { ListText } from "./ListText.schema.ts";
+import { copy } from "./copy.store.ts";
+import { hydrate } from "./hydrate.transaction.ts";
+import { listChannel } from "./listChannel.schema.ts";
+import { pageOrigin } from "./pageOrigin.ts";
 import { shoppingApi } from "./shoppingApi.ts";
 import { show } from "./show.transaction.ts";
 import { view } from "./view.store.ts";
 
 export const Props = s.object({ text: ListText, items: s.array(Item) });
-export const uses = [show];
+export const uses = [show, hydrate];
 
 export default function ShoppingList(props: Infer<typeof Props>, ctx: Ctx) {
   const failed = signal(false);
   const run = (r: Result<unknown, unknown>) => {
     if (!r.ok) failed.set(true);
   };
-  const list = signal(props.items);
+  // Every member's page follows the list channel: after each change, its own included, it re-reads the list through
+  // its own API call into `shopping.copy`. The server render has no stream; the page's own data shows until the
+  // first read commits.
+  // A stream keeps the member it opened with, so after a sign-out elsewhere it still hears each change; the re-read is
+  // then refused, and the page says it is signed out rather than connecting.
+  const origin = pageOrigin();
+  const signedOut = signal(false);
+  const read = async (c: Ctx, abort: AbortSignal) => {
+    const r = await shoppingApi.items({ signal: abort }, c);
+    signedOut.set(!r.ok && r.error.code === "api.status" && r.error.data.status === 403);
+    return r;
+  };
+  const following =
+    origin === undefined ? (): LiveStatus => "connecting" : live(ctx, origin, listChannel, {}, { read, hydrate });
+  const status = (): LiveStatus => (signedOut.get() ? "denied" : following());
   const send = async (call: Promise<Result<Infer<typeof Items>, unknown>>) => {
     const r = await call;
-    if (r.ok) list.set(r.value.items);
+    if (r.ok) run(tx(hydrate, r.value));
     else failed.set(true);
   };
+  const list = () => (copy.get("read") ? copy.get("items") : props.items);
   const staple = (key: string) => props.text.staples.find((st) => st.key === key)?.text ?? "";
-  const rows = (bought: boolean) => list.get().filter((i) => i.bought === bought);
+  const rows = (bought: boolean) => list().filter((i) => i.bought === bought);
   return (
     <Box as="section" id="shopping.board" direction="column" gap="4">
+      <Text
+        id="shopping.live"
+        role="status"
+        font="mono"
+        fontSize="xs"
+        px="2"
+        py="1"
+        bg="card"
+        fg={status() === "live" ? "verified" : status() === "offline" ? "error" : "textSecondary"}
+        border={status() === "live" ? "verified" : status() === "offline" ? "error" : "accent"}
+      >
+        {props.text.live[status()]}
+      </Text>
       <Menu
         id="shopping.staples"
         trigger={() => <Text>{props.text.addStaple}</Text>}
@@ -148,7 +181,7 @@ export default function ShoppingList(props: Infer<typeof Props>, ctx: Ctx) {
           </Box>
         )}
       />
-      <If when={list.get().length === 0}>
+      <If when={list().length === 0}>
         <Text id="shopping.empty" fg="textSecondary" p="4" bg="card" border="hairline">
           {props.text.empty}
         </Text>

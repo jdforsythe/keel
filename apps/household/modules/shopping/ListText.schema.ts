@@ -17,4 +17,5 @@ export const ListText = s.object({
   helpBody: s.string(),
   failed: s.string(),
   dismiss: s.string(),
+  live: s.object({ live: s.string(), connecting: s.string(), offline: s.string(), denied: s.string() }),
 });
