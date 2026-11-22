@@ -106,7 +106,7 @@ Spec topics: `pnpm spec std.postgres`; for context `pnpm spec k.sim`, `pnpm spec
 None: unreleased.
 
 ## Token impact
-std.postgres 7,408 to 9,291 characters (2,323 tokens). `spec.section` and `docs.section` are re-based from 1,875 to 2,325: the section states the default level, the opt-down and what each level permits, lone statements and what sim shows, and each is a clause a conformance writer needs; splitting transactions into their own section would move a covered clause (4). The keel-data skill gains about 60 tokens.
+std.postgres 7,408 to 9,291 characters (2,323 tokens). `spec.section` and `docs.section` are re-based from 1,875 to 2,325: the section states the default level, the opt-down and what each level permits, lone statements and what sim shows, and each is a clause a conformance writer needs; splitting transactions into their own section would move a covered clause (4). The keel-data skill gains about 60 tokens. At the merge with k.escapes, the R2451 mention and E2459 in the registry list take the section to 2,331 tokens: `spec.section` and `docs.section` are re-based to 2,350, `docs.skill` and the keel-data target to 2,550 (keel-data 2,541), and `@keel/std-postgres/tools` from 2.5 kb to 3 kb gzip for E2459 (2,889 bytes).
 
 ## For the operator
 1. `serializable` for lone statements too (D6). Recommendation: accept; a single guarantee for every call is the one an author can hold, and the hot-counter cost has a visible escape.
