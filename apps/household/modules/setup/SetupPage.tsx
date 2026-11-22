@@ -28,7 +28,7 @@ export default function SetupPage(props: Infer<typeof Props>) {
       <Form method="POST" action={setup.href("setup.form", {}, props.search)} form={f}>
         <Box direction="column" gap="3" p={{ base: "3", md: "4" }} bg="card" border="hairline">
           <Input
-            w="control"
+            w="full"
             my="1"
             px="2"
             py="2"

@@ -33,7 +33,7 @@ export default function SignupPage(props: Infer<typeof Props>) {
       <Form method="POST" action={mount.href("/sign-up/email", nextOf(props.search))} form={f}>
         <Box direction="column" gap="3" p={{ base: "3", md: "4" }} bg="card" border="hairline">
           <Input
-            w="control"
+            w="full"
             my="1"
             px="2"
             py="2"
@@ -49,7 +49,7 @@ export default function SignupPage(props: Infer<typeof Props>) {
             autocomplete="name"
           />
           <Input
-            w="control"
+            w="full"
             my="1"
             px="2"
             py="2"
@@ -65,7 +65,7 @@ export default function SignupPage(props: Infer<typeof Props>) {
             autocomplete="email"
           />
           <Input
-            w="control"
+            w="full"
             my="1"
             px="2"
             py="2"

@@ -44,18 +44,18 @@
 | L6-5 | open |
 | L6-6 | open |
 | S-1 | fixed: rfc:0182 build: keel dev serves the deployable's styles and every dev document links them |
-| S-2 | open |
+| S-2 | carried by RFC 0188 (base) |
 | S-3 | fixed: rfc:0187 build: a page's layout may name a layout of a module that lists the page's module in deps; household: one app.frame |
-| S-4 | open |
-| S-5 | open |
-| S-6 | open |
-| S-7 | open |
-| S-8 | open |
-| S-9 | open |
-| S-10 | open |
-| S-11 | open |
+| S-4 | answered in the skills (keel, keel-client: `gap` needs `direction`); stacking `gap` carried by RFC 0188 |
+| S-5 | fixed (`@keel/ui` atomic CSS keeps `[hidden]` hidden) |
+| S-6 | fixed (`w`, `h` are border-box; `size.control` removed) |
+| S-7 | carried by RFC 0188 (control `styles` parts, base `label`, `fieldError`) |
+| S-8 | carried by RFC 0188 (summary label and `k-summary`) |
+| S-9 | carried by RFC 0188 (`base.focus`) |
+| S-10 | carried by RFC 0188 (`overflow-wrap`) |
+| S-11 | carried by RFC 0188 (`look`) |
 
-Fixed 10, answered in the skills 9, filed as backlog 11, RFC 1, open 19.
+Fixed 13, answered in the skills 10, filed as backlog 11, carried by RFC 0188 6, open 10.
 
 Each finding: what I tried, where, the command and its output, what I expected, whether docs or skills misled. Kinds: fault (framework behaves against its spec), docs (docs or skills gap), rough (works, but an app author trips on it).
 

@@ -105,7 +105,7 @@ Try it: with the built app running, make an account at `localhost:5211/signup` a
 
 ## Layer 7: the frame and the brand
 
-Every page renders in a frame layout that puts the Keel brand (`docs/BRAND.md`) on it. `tokens.ts` is `brandTokens` plus one size, `control`, the width of a text control inside its card; `topology.ts` lists `@keel/ui/fonts` in `styles`, so the served stylesheet carries Source Serif 4 and JetBrains Mono.
+Every page renders in a frame layout that puts the Keel brand (`docs/BRAND.md`) on it. `tokens.ts` is `brandTokens`; `topology.ts` lists `@keel/ui/fonts` in `styles`, so the served stylesheet carries Source Serif 4 and JetBrains Mono.
 
 - `app.frame` (`app/AppFrame.tsx`) is the one frame around every signed-in page of every module. `app` lists `members`, `receipts`, `setup` and `shopping` in `deps`, so its masthead makes a link from each module's contract: List, Receipts, Setup and Profile, then a Sign out button; a visitor on the start page gets Sign in and Make an account instead. The list, the receipts book, the setup form and the profile each name `layout: 'app.frame'` in their binding and list no `app` in `deps` (k.routes Layouts). Its loader (`app/loadFrame.server.ts`) answers the copy (`members/shellText.ts`), the household's name and whether a member is signed in.
 - `members.frame` (`members/VisitorFrame.tsx`) frames the sign-in and sign-up pages: the masthead with Sign in and Make an account, no member navigation and no household name.
