@@ -34,13 +34,7 @@ const HEARTBEAT_MS = 15_000;
  * (`identified`), `""` for a throw, an invalid answer or no answer in 5,000 ms; with no identity source `""`, and for
  * a stream whose `user` a verified `x-keel-user` gave (`asserted`), that `user`, with no `identify` run.
  */
-export function liveStream(
-  r: Req,
-  m: Match & { kind: "route" },
-  live: Loader,
-  c: Context,
-  asserted: boolean,
-): Handled {
+export function liveStream(r: Req, m: Match & { kind: "route" }, live: Loader, c: Context, asserted: boolean): Handled {
   const { sv, raw } = r;
   if (sv.streams.open >= sv.maxStreams) return { response: busy(sv.maxStreams), route: m.route.id, diags: [] };
   const rq: RequestScope = { ...r.rq, scope: scope(() => undefined, { detached: true }), held: new Map() };

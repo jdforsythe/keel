@@ -19,6 +19,4 @@ export type Loader<Id extends string = string, T = unknown, Live extends boolean
   readonly output: Schema<T, boolean>;
   readonly stores?: (ctx: Ctx) => unknown;
   run(args: LoaderInput, ctx: Ctx): Promise<Out<T>>;
-} & (Live extends true
-  ? { live(args: LiveInput, ctx: Ctx): AsyncIterable<Out<T>> }
-  : { readonly live?: undefined });
+} & (Live extends true ? { live(args: LiveInput, ctx: Ctx): AsyncIterable<Out<T>> } : { readonly live?: undefined });

@@ -10,8 +10,8 @@ import { ownValue } from "./internal/ownValue.ts";
 import { refuseSecret } from "./internal/refuseSecret.ts";
 import { withStores } from "./internal/withStores.ts";
 import { yields } from "./internal/yields.ts";
-import type { Loader } from "./types/Loader.ts";
 import type { LiveInput } from "./types/LiveInput.ts";
+import type { Loader } from "./types/Loader.ts";
 import type { LoaderInput } from "./types/LoaderInput.ts";
 
 type None = Record<string, never>;

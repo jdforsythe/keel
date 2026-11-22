@@ -92,7 +92,17 @@ async function rig(identify: (() => string) | undefined) {
     );
     expect(r.status).toBe(200);
   };
-  return { ctx, bounds, calls, events, save, close: async () => (ac.abort(), app.close()) };
+  return {
+    ctx,
+    bounds,
+    calls,
+    events,
+    save,
+    close: async () => {
+      ac.abort();
+      await app.close();
+    },
+  };
 }
 
 const kinds = (events: unknown[]): unknown[] => events.map((e) => Reflect.get(Object(e), "kind"));

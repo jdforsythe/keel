@@ -1,3 +1,4 @@
+import type { IdentifyAnswer } from "./IdentifyAnswer.ts";
 import type { Served } from "./Served.ts";
 import { diagLine } from "./diagLine.ts";
 
@@ -13,19 +14,13 @@ function nameOf(thrown: unknown): string {
   }
 }
 
-/** What one `identify` call answered: a user, a throw or invalid answer (its `diag` written), or no answer in time. */
-export type Identified =
-  | { readonly kind: "user"; readonly user: string }
-  | { readonly kind: "bad"; readonly bad: string }
-  | { readonly kind: "busy"; readonly limit: number };
-
 /**
  * One call of the identity source's `identify` (k.user) on `raw` without its body, with `caller`, bounded by 5,000 ms
  * on `ctx.clock`: a string of at most 256 characters is the user; a throw writes a `keel.unexpected` diag naming the
  * error's `name` only, an invalid answer one with `identify returned: invalid`; no answer in time is `busy`. With no
  * identity source it answers `""` and calls nothing.
  */
-export async function identified(sv: Served, raw: Request, caller: string): Promise<Identified> {
+export async function identified(sv: Served, raw: Request, caller: string): Promise<IdentifyAnswer> {
   const id = sv.identity;
   if (id === undefined) return { kind: "user", user: "" };
   const stop = new AbortController();

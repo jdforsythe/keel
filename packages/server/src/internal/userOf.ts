@@ -1,5 +1,6 @@
 import type { KeelError } from "@keel/schema";
 import type { Req } from "./Req.ts";
+import type { RequestUser } from "./RequestUser.ts";
 import { identified } from "./identified.ts";
 import { readCapped } from "./readCapped.ts";
 import { unexpected } from "./unexpected.ts";
@@ -10,9 +11,6 @@ async function assertedOf({ sv, raw }: Req): Promise<string | undefined> {
   return body === null ? undefined : sv.keys.user(raw, sv.ctx.clock.now(), body);
 }
 
-/** A request's `user` and whether a verified `x-keel-user` gave it (no `identify` ran). */
-export type UserOf = { readonly user: string; readonly asserted: boolean };
-
 /**
  * The `user` of a routed request (k.user), asked before its guards: the user an `x-keel-user` another deployable of
  * the app signed for this request's body and this deployable asserts (`keys.user`; the body is read from a copy, capped
@@ -21,7 +19,7 @@ export type UserOf = { readonly user: string; readonly asserted: boolean };
  * between requests. A throw or an invalid answer is `keel.unexpected` with its `diag`; past 5,000 ms on `ctx.clock`,
  * `keel.busy` with `data: { limit: 5000 }`. The error fails the request as a guard's would (`runGuards`).
  */
-export async function userOf(r: Req): Promise<UserOf | KeelError<string, unknown>> {
+export async function userOf(r: Req): Promise<RequestUser | KeelError<string, unknown>> {
   const { sv, rq, raw } = r;
   const asserted = raw.headers.has("x-keel-user") ? await assertedOf(r) : undefined;
   if (asserted !== undefined) return { user: asserted, asserted: true };

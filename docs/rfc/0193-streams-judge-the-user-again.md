@@ -1,6 +1,6 @@
 # RFC 0193: k.user, std.channels and std.live: an open stream judges its user again before each delivery
 
-Status: accepted (ADR-0215, operator, 2026-11-22). Amends k.user (User), k.server (live loader args), std.channels and std.live. From `apps/household` (walkthrough finding L7-4).
+Status: implemented (ADR-0215). Amends k.user (User), k.server (live loader args), std.channels and std.live. From `apps/household` (walkthrough finding L7-4).
 
 ## Decisions
 - D1: before each delivery to an open stream, std-channels asks who the stream's request belongs to now. A live loader's args gain `currentUser()`, which runs the identity source's `identify` again on the request the stream opened with. An answer other than the stream's `user` closes the stream `denied` and delivers nothing.
