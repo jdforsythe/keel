@@ -198,6 +198,10 @@
           "run": "node tooling/mutate-shard.mjs merge packages/check/reports/mutation/mutation.json check-shards"
         },
         {
+          "name": "every justified survivor still matches a survivor of its package's report",
+          "run": "node tooling/mutate-justified.mjs"
+        },
+        {
           "name": "a11y reports for the ledger from every app and example whose routes it carries (keel test writes reports/a11y.json)",
           "run": "pnpm --workspace-concurrency=1 --filter golden-1 --filter golden-2 --filter household --filter \"./examples/*\" exec keel test"
         },
