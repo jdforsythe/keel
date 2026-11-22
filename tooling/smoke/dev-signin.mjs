@@ -13,16 +13,19 @@
 // each of two edits to the file declaring the kitchen's database, the edited declaration runs, `/api/recipes` answers
 // 200 with the recipe posted before, and no E1602 is logged; likewise once the declaration moves into a helper module
 // the declaring file calls, after an edit to the declaring file (twice) and to the helper. The
-// child runs in its own process group, which every path (a finished run, a failed step, a signal, the 90 s limit) kills.
-// Usage: node tooling/smoke/dev-signin.mjs. Nothing is written inside the repo.
+// child runs in its own process group, which every path (a finished run, a failed step, a signal, the 240 s limit) kills.
+// `keel dev` starts once the file watcher has caught up with the copy (`caughtUp`), and the 240 s count from then: on a
+// machine under load each reload of the database declaration takes ten seconds or more.
+// Usage: node tooling/smoke/dev-signin.mjs. Nothing is written inside the repo; with `KEEL_SMOKE_LOG=<file>` the dev
+// server's output is written to that file as the run ends.
 import { execFile, spawn } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, watch, writeFileSync } from "node:fs";
 import { appendFile, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { copyApp, freePort, recorder, root, wait } from "./built.mjs";
 
-const LIMIT_MS = 90_000;
+const LIMIT_MS = 240_000;
 const cli = join(root, "packages", "cli", "src", "bin.ts");
 const { step, finish } = recorder();
 let dev;
@@ -43,12 +46,42 @@ for (const signal of ["SIGINT", "SIGTERM"]) {
     process.exit(130);
   });
 }
-const limit = setTimeout(() => {
+/** Write the dev server's output to `KEEL_SMOKE_LOG`, when it names a file. */
+function keepLog() {
+  const file = process.env.KEEL_SMOKE_LOG;
+  if (file !== undefined && file !== "" && dev !== undefined) writeFileSync(file, `${dev.log.join("\n")}\n`);
+}
+let limit;
+const onLimit = () => {
+  keepLog();
   killGroup();
   step("time limit", false, `${LIMIT_MS / 1000}s${dev === undefined ? "" : `, ${dev.log.slice(-3).join(" | ")}`}`);
   finish("dev-signin");
   process.exit(1);
-}, LIMIT_MS);
+};
+
+/**
+ * Wait, at most 30s, until the file watcher has caught up with the writes under `folder`: a file written there now is
+ * reported by a watch on it. On a loaded machine a watcher started sooner hears the copy's writes as changes seconds
+ * into the run: every module reloads, and `vite.config.ts` restarts the dev server under the steps.
+ */
+async function caughtUp(folder) {
+  const name = "caught-up";
+  let seen = false;
+  const watcher = watch(folder, { recursive: true }, (_event, file) => {
+    seen ||= file === name;
+  });
+  watcher.on("error", () => {
+    seen = true;
+  });
+  // The watch itself starts late under load: the file is written until one write is heard.
+  for (let n = 0; n < 150 && !seen; n++) {
+    await writeFile(join(folder, name), String(n));
+    await wait(200);
+  }
+  watcher.close();
+  return seen;
+}
 
 /** Start `keel dev --port <port>` in `dir` as the leader of its own process group; its output is kept in `log`. */
 function startDev(dir, port) {
@@ -153,6 +186,9 @@ try {
   await copyApp(dir, join(root, "apps", "golden-2"));
   const port = await freePort();
   const base = `http://127.0.0.1:${port}`;
+  const settled = await caughtUp(tmp);
+  step("the watcher caught up with the copy", settled, settled ? "" : "no change heard in 30s");
+  limit = setTimeout(onLimit, LIMIT_MS);
   dev = startDev(dir, port);
   const up = await ready(base);
   step("serve dev", up, up ? "" : dev.log.slice(-3).join(" | "));
@@ -363,6 +399,7 @@ try {
 } catch (e) {
   step("flow", false, String(e).split("\n")[0]);
 } finally {
+  keepLog();
   clearTimeout(limit);
   killGroup();
   await Promise.race([dev?.exited, wait(10_000)]);
