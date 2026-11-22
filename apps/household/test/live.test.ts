@@ -48,9 +48,9 @@ it("tells Ada's stream that the list changed when Grace's page adds, and carries
   const page = await listPage(h, h.graceId);
   await page.fire("shopping.staples.trigger", click);
   await page.fire("shopping.staples.item.eggs", click);
-  const saved = await ada.next();
-  expect(saved).toEqual({ ok: true, value: { kind: "saved", store: "shopping.changes", head: expect.any(Number) } });
-  expect(JSON.stringify(saved)).not.toMatch(/Eggs|grace|Grace|Ada|ada@/);
+  const changed = await ada.next();
+  expect(changed).toEqual({ ok: true, value: { kind: "changed" } });
+  expect(JSON.stringify(changed)).not.toMatch(/Eggs|grace|Grace|Ada|ada@/);
   const listed = await (await h.raw(asJson("GET", "/api/items", undefined, { cookie: h.adaCookie }))).json();
   expect(listed.results["shopping.items"].value.items).toEqual([expect.objectContaining({ name: "Eggs", qty: 1 })]);
   page.dispose();
@@ -84,7 +84,7 @@ it("gives a visitor's stream one closed denied and nothing after it", async () =
 });
 
 it("refuses the re-read of a member who signed out, so the list does not reach them", async () => {
-  // The stream keeps the user it opened with (std.channels `member`), so it still hears `saved`; what reaches a
+  // The stream keeps the user it opened with (std.channels `member`), so it still hears `changed`; what reaches a
   // signed-out browser is that the list changed, and its re-read is refused.
   const h = await household(14);
   const grace = await stream(h, h.graceCookie);
@@ -94,7 +94,7 @@ it("refuses the re-read of a member who signed out, so the list does not reach t
   const after = await grace.next();
   const reread = await h.raw(asJson("GET", "/api/items", undefined, { cookie: h.graceCookie }));
   expect(reread.status).toBe(403);
-  expect(after).toEqual({ ok: true, value: { kind: "saved", store: "shopping.changes", head: 1 } });
+  expect(after).toEqual({ ok: true, value: { kind: "changed" } });
   await grace.close();
 });
 

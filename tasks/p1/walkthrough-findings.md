@@ -56,7 +56,7 @@
 | S-11 | carried by RFC 0188 (`look`) |
 | L7-1 | fixed (`renderRoute` with `app` takes `routes` as an import: each harness its own client module graph) |
 | L7-2 | open |
-| L7-3 | open |
+| L7-3 | fixed: rfc:0192 a channel follows app data: t.changed in the write transaction, follows on the channel route; household's counter store is gone |
 | L7-4 | open |
 | L7-5 | open |
 | L7-6 | open |

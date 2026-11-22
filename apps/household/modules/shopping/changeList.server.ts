@@ -2,14 +2,16 @@ import type { Ctx } from "@keel/ctx";
 import { type Infer, ok } from "@keel/schema";
 import { NoRows, sql } from "@keel/std-postgres";
 import { Item } from "./Item.schema.ts";
+import { listChannel } from "./listChannel.schema.ts";
 import { shoppingDb } from "./shoppingDb.server.ts";
 
 type Row = Infer<typeof Item>;
 
 /**
  * Reads the list, applies `change` (one of the list rules in `addTo.ts` and `toggleIn.ts`, or a removal) and writes the
- * rows that differ, in one transaction, serializable by default: two members changing the list at once both apply, one after the
- * other. Answers the list as written.
+ * rows that differ, in one transaction, serializable by default: two members changing the list at once both apply, one
+ * after the other. The transaction names the list channel it changes, so every open list stream hears `changed` once it
+ * commits, in this process or another on the same database. Answers the list as written.
  */
 export const changeList = (ctx: Ctx, change: (items: readonly Row[]) => Row[]) =>
   shoppingDb(ctx).transaction(async (t) => {
@@ -34,5 +36,7 @@ export const changeList = (ctx: Ctx, change: (items: readonly Row[]) => Row[]) =
           : await t.run(sql(NoRows)`update items set qty = ${item.qty}, bought = ${item.bought} where id = ${item.id}`);
       if (!r.ok) return r;
     }
+    const told = await t.changed(listChannel, {});
+    if (!told.ok) return told;
     return ok(after);
   });
