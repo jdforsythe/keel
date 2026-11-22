@@ -18,6 +18,7 @@ import { bearerOf } from "./internal/bearerOf.ts";
 import { bindModules } from "./internal/bindModules.ts";
 import { callerOf } from "./internal/callerOf.ts";
 import { callerSigner } from "./internal/callerSigner.ts";
+import { chainClash } from "./internal/chainClash.ts";
 import { codedError } from "./internal/codedError.ts";
 import { crashed } from "./internal/crashed.ts";
 import { cspReport } from "./internal/cspReport.ts";
@@ -60,7 +61,8 @@ import type { ServerApp } from "./types/ServerApp.ts";
  * `routes` is the deployable's route table (k.routes; none: an empty one).
  * Rejects with an Error whose message starts with E1552 (the served deployable names a module no route belongs to,
  * or a module is in two deployables) or E1553 (a `static` deployable has a route with params or actions) or E1511 (a `client` or
- * `static` deployable serves an API route, k.api).
+ * `static` deployable serves an API route, k.api) or E1550 (two different `stores` factories the loaders of one route
+ * chain name create one store id, each factory run once on a sim ctx: `chainClash`).
  * Each request follows the k.server Request flow and writes one `req` record (after any `diag`) to `log`.
  * Each request runs in its own isolated scope (k.store `isolate`): stores created in it register in its own registry,
  * appear in `#k-state` and are disposed after the response; while it runs, through every `await`, a `tx` on a module-registry
@@ -174,6 +176,7 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
     );
   const top = declaredTopology(opts.topology, opts.origins);
   const served = selectDeployable(top, table, modules, opts.deployable);
+  chainClash(table);
   // Every route of the table, not only the served ones: a path this server forwards to a peer is marked too.
   const marks = secretSegments(table);
   const name = opts.deployable ?? Object.keys(top)[0] ?? "";

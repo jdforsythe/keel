@@ -195,6 +195,11 @@ const setConfigPort = (port: number | undefined): void => {
   write("vite.config.ts", `${VITE_CONFIG}export default defineConfig({ ${server}plugins: [keel()] });\n`);
 };
 
+/** Every `localhost:<port>` or `127.0.0.1:<port>` the output names is `busy`: the server did not move to another port. */
+const expectNoMove = (text: string, busy: number): void => {
+  for (const m of text.matchAll(/(?:localhost|127\.0\.0\.1|\[::1\]):(\d+)/g)) expect(Number(m[1])).toBe(busy);
+};
+
 const e1560 = (text: string): string[] => text.split("\n").filter((l) => l.includes("E1560"));
 
 describe("k.cli keel dev --port (rfc:0091)", () => {
@@ -217,7 +222,7 @@ describe("k.cli keel dev --port (rfc:0091)", () => {
   test(
     "with `p` in use it prints one E1560 line and exits 1, and does not move to another port",
     async () => {
-      const holder = net.createServer();
+      const holder = net.createServer((s) => s.destroy());
       await new Promise<void>((r) => holder.listen(0, r));
       const addr = holder.address();
       const busy = typeof addr === "object" && addr !== null ? addr.port : -1;
@@ -229,9 +234,8 @@ describe("k.cli keel dev --port (rfc:0091)", () => {
         const lines = e1560(p.out());
         expect(lines).toHaveLength(1);
         expect(lines[0]).toContain(String(busy));
-        // no move: the next ports are still unserved by this process
-        const next = (await accepts(busy + 1)) && (await get(busy + 1, "/")) !== null;
-        expect(next).toBe(false);
+        // no move: the process has exited and names no port but `busy` (no probe of a neighbouring port: another process may hold it)
+        expectNoMove(p.out(), busy);
       } finally {
         await new Promise<void>((r) => holder.close(() => r()));
       }
@@ -258,7 +262,7 @@ describe("k.cli keel dev --port (rfc:0091)", () => {
   test(
     "with the config's `p` in use it prints one E1560 line and exits 1, and does not move to another port",
     async () => {
-      const holder = net.createServer();
+      const holder = net.createServer((s) => s.destroy());
       await new Promise<void>((r) => holder.listen(0, r));
       const addr = holder.address();
       const busy = typeof addr === "object" && addr !== null ? addr.port : -1;
@@ -271,8 +275,7 @@ describe("k.cli keel dev --port (rfc:0091)", () => {
         const lines = e1560(p.out());
         expect(lines).toHaveLength(1);
         expect(lines[0]).toContain(String(busy));
-        const next = (await accepts(busy + 1)) && (await get(busy + 1, "/")) !== null;
-        expect(next).toBe(false);
+        expectNoMove(p.out(), busy);
       } finally {
         await stop(p);
         setConfigPort(undefined);

@@ -858,6 +858,57 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       ),
     ],
   },
+  E1550: {
+    opts: NO_TYPES,
+    bad: [
+      manifest("a"),
+      f(
+        "modules/a/a.contract.ts",
+        "import { contract } from '@keel/router/contract'\nexport const a = contract('a', { 'a.layout': { layout: true }, 'a.page': { path: '/p' } })\n",
+      ),
+      f("modules/a/Out.schema.ts", "import { s } from '@keel/schema'\nexport const Out = s.object({})\n"),
+      f(
+        "modules/a/a.server.ts",
+        "import { store } from '@keel/store'\nimport { Out } from './Out.schema.ts'\nexport const a = () => ({ s: store(Out, {}, { id: 'a.s' }) })\n",
+      ),
+      f(
+        "modules/a/b.server.ts",
+        "import { store } from '@keel/store'\nimport { Out } from './Out.schema.ts'\nexport const b = () => ({ t: store(Out, {}, { id: 'a.s' }) })\n",
+      ),
+      f(
+        "modules/a/L.server.server.ts",
+        "import { loader } from '@keel/router'\nimport { ok } from '@keel/schema'\nimport { a as c } from './a.contract.ts'\nimport { a } from './a.server.ts'\nimport { Out } from './Out.schema.ts'\nexport const L = loader(c, 'a.layout', { output: Out, stores: a }, async () => ok({}))\n",
+      ),
+      f(
+        "modules/a/P.server.server.ts",
+        "import { loader } from '@keel/router'\nimport { ok } from '@keel/schema'\nimport { a as c } from './a.contract.ts'\nimport { b } from './b.server.ts'\nimport { Out } from './Out.schema.ts'\nexport const P = loader(c, 'a.page', { output: Out, stores: b }, async () => ok({}))\n",
+      ),
+    ],
+    clean: [
+      manifest("a"),
+      f(
+        "modules/a/a.contract.ts",
+        "import { contract } from '@keel/router/contract'\nexport const a = contract('a', { 'a.layout': { layout: true }, 'a.page': { path: '/p' } })\n",
+      ),
+      f("modules/a/Out.schema.ts", "import { s } from '@keel/schema'\nexport const Out = s.object({})\n"),
+      f(
+        "modules/a/a.server.ts",
+        "import { store } from '@keel/store'\nimport { Out } from './Out.schema.ts'\nexport const a = () => ({ s: store(Out, {}, { id: 'a.s' }) })\n",
+      ),
+      f(
+        "modules/a/b.server.ts",
+        "import { store } from '@keel/store'\nimport { Out } from './Out.schema.ts'\nexport const b = () => ({ t: store(Out, {}, { id: 'a.t' }) })\n",
+      ),
+      f(
+        "modules/a/L.server.server.ts",
+        "import { loader } from '@keel/router'\nimport { ok } from '@keel/schema'\nimport { a as c } from './a.contract.ts'\nimport { a } from './a.server.ts'\nimport { Out } from './Out.schema.ts'\nexport const L = loader(c, 'a.layout', { output: Out, stores: a }, async () => ok({}))\n",
+      ),
+      f(
+        "modules/a/P.server.server.ts",
+        "import { loader } from '@keel/router'\nimport { ok } from '@keel/schema'\nimport { a as c } from './a.contract.ts'\nimport { b } from './b.server.ts'\nimport { Out } from './Out.schema.ts'\nexport const P = loader(c, 'a.page', { output: Out, stores: b }, async () => ok({}))\n",
+      ),
+    ],
+  },
   E1551: {
     opts: NO_TYPES,
     bad: [

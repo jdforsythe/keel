@@ -6,16 +6,14 @@ import { installDom } from "./installDom.ts";
 import { projectLoader } from "./projectLoader.ts";
 
 const origin = field(workerData, "origin");
-const user = field(workerData, "user");
-if (typeof origin !== "string" || typeof user !== "string") throw new TypeError("group: bad worker data");
+if (typeof origin !== "string") throw new TypeError("group: bad worker data");
+if (parentPort === null) throw new TypeError("group: no parent port");
 await installDom(origin);
-const load = await projectLoader(user);
+const load = projectLoader(parentPort);
 const realm = field(
   await load(new URL(`./userRealm.${import.meta.url.endsWith(".ts") ? "ts" : "js"}`, import.meta.url).href),
   "userRealm",
 );
 if (typeof realm !== "function") throw new TypeError("group: userRealm did not load");
-if (parentPort !== null) {
-  Reflect.apply(realm, undefined, [parentPort, load]);
-  parentPort.postMessage({ t: "ready" });
-}
+Reflect.apply(realm, undefined, [parentPort, load]);
+parentPort.postMessage({ t: "ready" });

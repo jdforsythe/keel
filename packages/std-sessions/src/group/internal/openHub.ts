@@ -7,6 +7,7 @@ import type { Outgoing } from "./Outgoing.ts";
 import type { Realm } from "./Realm.ts";
 import { cookieJar } from "./cookieJar.ts";
 import { drained } from "./drained.ts";
+import { projectServer } from "./projectServer.ts";
 import { startRealm } from "./startRealm.ts";
 import { wire } from "./wire.ts";
 
@@ -20,7 +21,7 @@ const IDLE_TURNS = 200;
  * Open a hub: a sim ctx of `seed` whose storage starts with `server` (each value as stored, JSON text, under
  * `keel.store.<id>`), its clock at `at`, `serve` over it, and `count` user workers, started one at a time, whose
  * requests to `origin` reach that server with a cookie jar each (`cookieJar`, on the server clock), each loading
- * modules as the project of user module `user` does.
+ * modules as the project of user module `user` does (`projectServer`).
  */
 export async function openHub(options: {
   readonly serve: Serve;
@@ -70,10 +71,10 @@ export async function openHub(options: {
         waiting--;
       }
     };
-  // One at a time: a worker loading its project writes the project's `.keel/` artifacts, as any Vite run does.
+  const project = await projectServer(options.user);
   const realms: Realm[] = [];
   try {
-    for (const jar of jars) realms.push(await startRealm(options.origin, options.user, fetchAs(jar), touch));
+    for (const jar of jars) realms.push(await startRealm(options.origin, project, fetchAs(jar), touch));
   } catch (error) {
     await Promise.all(realms.map((r) => r.terminate()));
     throw error;

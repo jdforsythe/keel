@@ -76,8 +76,6 @@ it("loads a complete message set for each locale", async () => {
   expect((await ReceiptsText.load("en-US")).heading).toBe("Receipts");
 });
 
-// Each of the 100 runs renders the page and runs axe over it: about 1.1 s on a laptop, past 5 s on a 2-core runner.
-// 100 seeded runs are what `probabilistic` takes (k.ledger), so the case declares its time, as profile.test.ts does.
-it("renders any book the schemas allow", { timeout: 30_000 }, async () => {
+it("renders any book the schemas allow", async () => {
   await properties(BookPage, { runs: 100, seed: 5 });
 });

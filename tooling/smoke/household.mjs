@@ -12,7 +12,9 @@
 // receipts, the household name and the session are all there. A second member then opens the list in a second browser
 // context: an item the first adds shows on her page with no reload, an item she buys moves on his, both pages say
 // Connecting while the server is killed and Live once it is back, and a sign-out in her other tab turns her page to
-// Signed out with no new item on it. When docker answers, the same kill and restart runs
+// Signed out with no new item on it. The first member then selects Run now on the setup page; the server is killed with
+// SIGKILL while the weekly staples run goes and started again, and the run ends once, done, with each staple on the
+// list once. When docker answers, the same kill and restart runs
 // against a throwaway `postgres:17` container; the container is removed after.
 // Usage: node --disable-warning=ExperimentalWarning tooling/smoke/household.mjs. The app is not built here and nothing
 // is written inside the repo; the server child and the container are removed on every path, and a crash prints the
@@ -25,7 +27,7 @@ import { join } from "node:path";
 import { chromium } from "@playwright/test";
 import { freePort, recorder, root, wait } from "./built.mjs";
 
-const LIMIT_MS = 240_000;
+const LIMIT_MS = 300_000;
 const SECRET = "household-smoke-secret-of-32-bytes-or-more";
 const AUTH_SECRET = "household-smoke-auth-secret-of-32-or-more";
 const PASSWORD = "smoke test passphrase";
@@ -606,6 +608,61 @@ try {
   );
   step("no page errors with two members", errors.length === 0, clip(errors.join(" | ")));
   await graceContext.close();
+
+  // The weekly staples: Run now on the setup page, SIGKILL while the run goes, a restart over the same storage and
+  // data, and the run ends once, each staple on the list once.
+  for (const item of (await itemsAt(origin, keep)) ?? []) {
+    await fetch(`${origin}/api/items/${item.id}`, { method: "DELETE", headers: { ...asJson, ...keep } });
+  }
+  const runsAt = async () => {
+    const r = await fetch(`${origin}/api/restock`, { headers: { accept: "application/json", ...keep } }).catch(
+      () => null,
+    );
+    return r === null || r.status !== 200 ? null : (await r.json()).results["shopping.runs"].value;
+  };
+  const lastOf = (p) =>
+    byId(p, "shopping.restock.last")
+      .textContent()
+      .then((t) => (t ?? "").trim());
+  const showing = async (p, word, ms) => {
+    for (const end = Date.now() + ms; Date.now() < end; await wait(100)) {
+      if ((await lastOf(p)).startsWith(word)) return true;
+    }
+    return false;
+  };
+  await page.goto(`${origin}/setup`);
+  await settled(page);
+  const before = await lastOf(page);
+  step("the setup page says no run yet", before.startsWith("No run yet"), before);
+  await byId(page, "shopping.restock.run").click();
+  const running = await showing(page, "Running", 10_000);
+  let midRun = null;
+  for (const end = Date.now() + 15_000; Date.now() < end && midRun === null; await wait(100)) {
+    const r = await runsAt();
+    if (r?.last !== null && r?.last !== undefined && r.last.handled >= 1 && r.last.state === "running") midRun = r;
+  }
+  await killed();
+  step(
+    "Run now starts a run, and the server is killed while it goes",
+    running && midRun !== null,
+    midRun === null ? await lastOf(page) : `${midRun.last.handled} of ${midRun.last.total} handled at the kill`,
+  );
+  server = serve(port, storage, pglite);
+  const restarted = await up(`${origin}/`);
+  const done = restarted && (await showing(page, "Done", 60_000));
+  const final = await runsAt();
+  step(
+    "after the restart the run ends once, done, and the page shows it",
+    done && final?.kept === 1 && final?.last?.state === "done" && final?.last?.putBack === 5,
+    `${await lastOf(page)} kept ${final?.kept}`,
+  );
+  const restocked = ((await itemsAt(origin, keep)) ?? []).map((i) => `${i.name} × ${i.qty}`);
+  step(
+    "the list shows each staple once",
+    JSON.stringify(restocked) === JSON.stringify(["Milk × 1", "Bread × 1", "Eggs × 1", "Rice × 1", "Apples × 1"]),
+    restocked.join(","),
+  );
+  step("no page errors through the weekly run", errors.length === 0, clip(errors.join(" | ")));
 
   if ((await docker(["info", "--format", "{{.ServerVersion}}"])) === null) {
     step("postgres 17 skipped: docker is not running", true);

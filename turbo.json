@@ -1,6 +1,9 @@
 // _generated: edit tooling/turbo.source.json and run pnpm generate. Do not edit by hand.
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalPassThroughEnv": [
+    "KEEL_TEST_WORKERS"
+  ],
   "tasks": {
     "check": {
       "dependsOn": [

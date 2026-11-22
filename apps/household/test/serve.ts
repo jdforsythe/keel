@@ -6,6 +6,7 @@ import source from "../identity.server.ts";
 import mount from "../identity.ts";
 import { membersApi } from "../modules/members/membersApi.ts";
 import { membersDb } from "../modules/members/membersDb.server.ts";
+import { runners } from "../modules/shopping/runners.server.ts";
 import topology from "../topology.ts";
 import { routes } from "./webRoutes.ts";
 
@@ -47,6 +48,21 @@ export async function signIn(fetch: Fetch, email = EMAIL, name = NAME): Promise<
 }
 
 /**
+ * The `web` deployable on `ctx`, as its generated entry makes it: the route table, the identity source and the
+ * shopping module's runners (the job queue, the weekly runs and their schedule). Every log line goes to `lines`.
+ */
+export const webApp = (ctx: SimCtx, lines: string[] = []) =>
+  createApp({
+    topology,
+    routes: webRoutes,
+    ctx,
+    deployable: "web",
+    identity: source,
+    runners: { shopping: runners },
+    log: { format: "json", write: (line: string) => lines.push(line) },
+  });
+
+/**
  * The `web` deployable served over a sim ctx, so a page under `renderRoute` and the API share one `ctx.storage` and one
  * database. Unless `signedIn` is false, one member has signed up and signed in through the identity mount, and minted
  * an API token through the members API: `fetch` sends that token with every request that carries no `cookie` or
@@ -69,14 +85,7 @@ export async function served(
 }> {
   const ctx = createCtx({ mode: "sim", seed });
   const lines: string[] = [];
-  const web = await createApp({
-    topology,
-    routes: webRoutes,
-    ctx,
-    deployable: "web",
-    identity: source,
-    log: { format: "json", write: (line: string) => lines.push(line) },
-  });
+  const web = await webApp(ctx, lines);
   const raw: Fetch = (req) => web.fetch(req);
   if (signedIn) await signIn(raw);
   const rows = await membersDb(ctx).query(sql(UserRow)`select user_id as "userId" from members`);

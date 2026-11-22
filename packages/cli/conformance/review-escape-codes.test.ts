@@ -11,7 +11,11 @@ const RANGE_CODES = ["R1060", "R1061", "R1100", "R1103", "R1104", "R1105", "R110
 
 test("In a fixture git repository each code of the table is reported on its fixture by a range and not on its clean twin; with `--all`, the range codes but R1101 and R1102 are absent.", () => {
   expect(new Set(CASES.map((c) => c.code)).size).toBe(27);
-  for (const c of CASES) {
+});
+
+test.each(CASES.map((c) => [c.code, c] as const))(
+  "In a fixture git repository %s is reported on its fixture by a range and not on its clean twin; with `--all`, the range codes but R1101 and R1102 are absent.",
+  (_code, c) => {
     withRepo([{ ...PROJECT, ...c.base }, c.head], (repo) => {
       const hits = ofCode(review(repo, [range(repo, 0, 1), "--list"]), c.code);
       expect(hits.length, `${c.code} on its fixture`).toBeGreaterThanOrEqual(1);
@@ -23,5 +27,6 @@ test("In a fixture git repository each code of the table is reported on its fixt
     withRepo([{ ...PROJECT, ...cleanBase(c) }, HARMLESS], (repo) => {
       expect(ofCode(review(repo, [range(repo, 0, 1), "--list"]), c.code), `${c.code} on its clean twin`).toEqual([]);
     });
-  }
-});
+  },
+  120_000,
+);
