@@ -20,6 +20,7 @@ import { focusOrder } from "./focusOrder.ts";
 import { moveFocus } from "./moveFocus.ts";
 import { nameOf } from "./nameOf.ts";
 import { nodeOf } from "./nodeOf.ts";
+import { pageRoots } from "./pageRoots.ts";
 import { recordDocuments } from "./recordDocuments.ts";
 import { renderChecks } from "./renderChecks.ts";
 import { resolve } from "./resolve.ts";
@@ -43,6 +44,7 @@ export function openHarness(setup: HarnessSetup): { readonly harness: Harness<Ct
   const page = setup.page === true;
   const container = document.createElement("div");
   document.body.appendChild(container);
+  if (page) pageRoots.add(container);
   const unrecord =
     setup.documents === undefined ? undefined : recordDocuments(container, setup.documents, setup.follow);
   let unmount: (() => void) | undefined;
@@ -57,6 +59,7 @@ export function openHarness(setup: HarnessSetup): { readonly harness: Harness<Ct
     teardown?.();
     unrecord?.();
     container.remove();
+    pageRoots.delete(container);
     for (const [st, snap] of seeded) st.restore(snap);
   };
   // The elements the root held and where the page was at the last check: E1826 compares a `fire` or `settle()` with it.
@@ -72,12 +75,13 @@ export function openHarness(setup: HarnessSetup): { readonly harness: Harness<Ct
   };
   // A host element rendered on this ctx never runs its code (k.host-element Harness and replay).
   harnessed().add(ctx);
+  if (setup.run !== undefined) harnessed().add(setup.run);
   try {
     owner = scope(() => {
       if ("start" in setup) setup.start(container);
       else
         unmount = mount(setup.view, container, {
-          ctx,
+          ctx: setup.run ?? ctx,
           onError: (error) => {
             caught.push(error);
           },

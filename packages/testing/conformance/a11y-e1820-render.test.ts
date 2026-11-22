@@ -52,7 +52,7 @@ describe("k.a11y: E1820 at render", () => {
   it("for any direction and any button count, the render fails with E1820 exactly when the direction is reversed over two or more (property)", async () => {
     await fc.assert(
       fc.asyncProperty(
-        fc.constantFrom("row", "row-reverse", "column", "column-reverse"),
+        fc.constantFrom<Direction>("row", "row-reverse", "column", "column-reverse"),
         fc.integer({ min: 0, max: 4 }),
         async (direction, buttons) => {
           const e = await thrown(async () => (await open(direction, buttons)).dispose());

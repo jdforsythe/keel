@@ -12,8 +12,8 @@ const Row = s.object({ name: s.string(), phone: s.string().nullable() });
 const CANARY = { name: "Quillon Vantablack", phone: "+44 7700 900417" };
 
 it("shows the member's details from their first sign-in, and the token the test minted", async () => {
-  const { ctx, app } = await served(61);
-  const page = await renderRoute("members.profile", { routes: webRoutes, params: {}, ctx, app });
+  const { ctx, app, user } = await served(61);
+  const page = await renderRoute("members.profile", { routes: webRoutes, params: {}, ctx, app, user });
   expect(page.find("members.signedIn").text).toBe(`Signed in as ${EMAIL}`);
   expect(page.find("members.tokens.list").text).toContain("Works until");
   expect(page.focusOrder()).toEqual([
@@ -33,7 +33,7 @@ it("shows the member's details from their first sign-in, and the token the test 
 
 it("saves the name and phone the member types", async () => {
   const { ctx, user, app } = await served(62);
-  const page = await renderRoute("members.profile", { routes: webRoutes, params: {}, ctx, app });
+  const page = await renderRoute("members.profile", { routes: webRoutes, params: {}, ctx, app, user });
   await page.fire("members.profileForm:name", { type: "input", value: "Ada" });
   await page.fire("members.profileForm:phone", { type: "input", value: "0161 496 0000" });
   await page.fire("members.save", { type: "click" });
@@ -41,6 +41,20 @@ it("saves the name and phone the member types", async () => {
   page.dispose();
   const rows = await membersDb(ctx).query(sql(Row)`select name, phone from members where user_id = ${user}`);
   expect(rows.ok && rows.value).toEqual([{ name: "Ada", phone: "0161 496 0000" }]);
+});
+
+it("mints a token, shows its text once, and revokes it, each through the members API", async () => {
+  const { ctx, app, user } = await served(64);
+  const page = await renderRoute("members.profile", { routes: webRoutes, params: {}, ctx, app, user });
+  expect(page.focusOrder()).toContain("members.revoke.0");
+  await page.fire("members.mint", { type: "click" });
+  expect(page.find("members.minted").text.startsWith("keelsim_")).toBe(true);
+  expect(page.focusOrder()).toContain("members.revoke.1");
+  await page.fire("members.revoke.1", { type: "click" });
+  await page.fire("members.revoke.0", { type: "click" });
+  expect(page.find("members.tokens.none").text).not.toBe("");
+  expect(page.focusOrder()).not.toContain("members.revoke.0");
+  page.dispose();
 });
 
 it("keeps typed personal data out of every log line, saved or refused", async () => {

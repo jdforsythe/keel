@@ -81,8 +81,8 @@ for (const path of paths) {
           send(ctx, o, "add", { body: { t: "b1" } }, { base: 0, owner: "b" }).catch(() => null),
         );
         await run();
-        await Promise.all([...sends, mine]);
-        // Past every window, online, and on until nothing is pending.
+        // `run()` stops at the horizon, and a window edge it stepped to can leave a send's answer past it: the clock
+        // runs past every window, online, and on until nothing is pending before the sends are awaited.
         const end = Math.max(0, ...schedule.offline.map((w) => w.at + w.ms));
         if (ctx.clock.now() < end) ctx.clock.advance(end - ctx.clock.now());
         ctx.net.setOnline(true);
@@ -91,6 +91,7 @@ for (const path of paths) {
           ctx.clock.advance(60_000);
           await run();
         }
+        await Promise.all([...sends, mine]);
 
         // Committed writes keep the owner who queued them, and that owner was the signed-in user.
         for (const c of srv.committed.values()) {
@@ -111,9 +112,6 @@ for (const path of paths) {
         }
         if (entries.some((e) => e.owner === "a" && field(e.error, "code") === "offline.owner")) refused++;
         if ([...srv.committed.values()].some((c) => c.owner === "a")) committedA++;
-        // b's write: committed under b, or failed by a fault and kept (a storage fault after the post can do both).
-        const b1 = [...srv.committed.values()].filter((c) => c.t === "b1");
-        expect(b1.length === 1 || entryOf("b1")?.state === "failed").toBe(true);
         // A failed entry of a's is never posted again, however often the connection comes back.
         const before = srv.posts.filter((p) => p.owner === "a").length;
         for (let i = 0; i < 3; i++) {
@@ -123,6 +121,16 @@ for (const path of paths) {
           await run();
         }
         expect(srv.posts.filter((p) => p.owner === "a").length).toBe(before);
+        // b's write: committed under b, or failed by a fault and kept (a storage fault after the post can do both). A
+        // storage fault in a's flush releases it with b's entry still queued and no retry (std.outbox), so b's write is
+        // judged once those reconnects flushed it and the clock ran on until no retry was left.
+        for (let i = 0; i < 20 && ctx.clock.next() !== null; i++) {
+          ctx.clock.advance(60_000);
+          await run();
+        }
+        const b1 = [...srv.committed.values()].filter((c) => c.t === "b1");
+        const b1Entry = o.get("entries").find((e) => field(field(e.input, "body"), "t") === "b1");
+        expect(b1.length === 1 || b1Entry?.state === "failed").toBe(true);
         page.dispose();
         decl.dispose();
       },

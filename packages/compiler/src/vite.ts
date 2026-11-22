@@ -65,7 +65,7 @@ const NAMES: readonly (keyof Artifacts)[] = ["a11y.json", "deps.json", "ids.json
 /** What app code (the generated entry) imports for the atomic CSS, and the id it resolves to. */
 /**
  * The shell a `keel build --target` build makes (`KEEL_SHELL`) and its `KEEL_ORIGIN`, else none (k.shell Build); with
- * `shells`, the deployable's, its `id` there (k.return: the caller gives them when the project has `identity.ts`).
+ * `shells`, the deployable's, its `id` there (k.shell: a shell build always has it, with or without `identity.ts`).
  */
 const shellOf = (
   shells?: NonNullable<Topology[string]["shells"]>,
@@ -960,7 +960,7 @@ export default function (): {
           CSS_IMPORT,
           clientStdData(stdArtifact(manifests()).data, new Set(d.modules)),
           targets,
-          shellOf(exists("identity.ts") ? all[d.name]?.shells : undefined),
+          shellOf(all[d.name]?.shells),
           mode,
           exists("identity.ts"),
           served,
@@ -1075,7 +1075,7 @@ export default function (): {
         reloadDev();
       }
       if (rel !== null && devApps.length > 0 && (rel.startsWith("modules/") || PROJECT_FILE.test(rel))) {
-        // An app file calling `register` (k.data Dev) loads the server graph again whole: the registry starts empty.
+        // An app file registering a capability (k.data Dev) loads the server graph again whole: the registry starts empty.
         if (exists(rel) && registersCapability(fs.readFileSync(path.join(root, rel), "utf8")))
           server?.moduleGraph.invalidateAll?.();
         reloadDev();

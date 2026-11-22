@@ -33,8 +33,8 @@
 
 **Evals.** `evals/` holds agent tasks with pass criteria. Metrics: converged ledger-green rate, iterations to green, tokens to green, unsafe count. Run weekly across >= 2 models; results committed to `evals/results/`.
 
-**Harness.** `@keel/testing` addresses elements by id. A component is called `(props, ctx)`; the handle `render` returns exposes the `ctx` it ran on (the sim ctx made for it, or the one given as `ctx`), so a test drives `ctx.clock` and `ctx.net`. `find(id).state` and `a11y()` report `active` (the option `aria-activedescendant` names), `sort` and `checked` (`'mixed'` included). `fire` takes `keydown` with `key`, `shift`, `alt` and `mod`. `renderRoute(id, { url })` opens a page from a path and query; `location()` returns the history's length and `scrollY`. A widget's a11y claim holds only when every WCAG-mapped rule ran: an axe "needs review" result counts as not run, and the claim stays `none`.
+**Harness.** `@keel/testing` addresses elements by id. A component is called `(props, ctx)`; the handle `render` returns exposes the `ctx` it ran on (the sim ctx made for it, or the one given as `ctx`), so a test drives `ctx.clock` and `ctx.net`. `find(id).state` and `a11y()` report `active` (the option `aria-activedescendant` names), `sort` and `checked` (`'mixed'` included). `fire` takes `keydown` with `key`, `shift`, `alt` and `mod`. `renderRoute(id, { url, user? })` opens a page from a path and query, signed in as `user` for the page's own requests; a harness keeps one cookie jar, so a cookie a response sets goes on the next request; under `keel test` the fetch classes are Node's; `location()` returns the history's length and `scrollY`. A widget's a11y claim holds only when every WCAG-mapped rule ran: an axe "needs review" result counts as not run, and the claim stays `none`.
 
 **Determinism.** All kernel tests run under a seeded clock and PRNG via `ctx`. A test reading wall time fails lint.
 
-verified: 4afc5913b0cc2041920660fce553519b20474b8c
+verified: 3190e26ae653272180ea7a368098f885a7615f09

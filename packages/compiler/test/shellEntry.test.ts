@@ -30,7 +30,7 @@ describe("entryCode shell", () => {
       ["capacitor", "@keel/std-capacitor"],
     ] as const) {
       const shell = { kind, origin: "https://app.example", id: "dev.keel.app" };
-      const code = entryCode(["/r.ts"], "c.css", {}, {}, shell);
+      const code = entryCode(["/r.ts"], "c.css", {}, {}, shell, "production", true);
       expect(code).toContain(`import { shellMount as __keelMount } from "${pkg}/shellMount";`);
       expect(code).toContain('import __keelIdentity from "/identity.ts";');
       const call =
@@ -41,6 +41,13 @@ describe("entryCode shell", () => {
       const without = entryCode(["/r.ts"], "c.css", {}, {}, { kind, origin: "https://app.example" });
       expect(without).not.toMatch(/shellMount|identity/);
     }
+  });
+
+  it("with the shell's id and no identity.ts calls shellMount with no mount and imports no identity", () => {
+    const shell = { kind: "tauri", origin: "https://app.example", id: "dev.keel.app" } as const;
+    const code = entryCode(["/r.ts"], "c.css", {}, {}, shell);
+    expect(code).toContain('__keelMount(ctx, { id: "dev.keel.app", origin: new URL("https://app.example") });');
+    expect(code).not.toContain("identity");
   });
 
   it("leaves the plain entry a real ctx with no shell import", () => {

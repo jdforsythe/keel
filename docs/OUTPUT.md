@@ -50,4 +50,4 @@ Fields: `code` (stable, one letter and four digits, never renumbered) · `path:l
 
 **Internal rule.** Keel's own scripts, runners, and hooks obey this contract from task 0001.
 
-verified: 35de06f8d4339b737d647838e5ff50a923463c10
+verified: 3190e26ae653272180ea7a368098f885a7615f09

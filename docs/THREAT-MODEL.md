@@ -40,4 +40,4 @@ Stdlib commitments:
 
 Grows per package.
 
-verified: 17b301ab120b93f570543c8e98999fd1519c3244
+verified: 3190e26ae653272180ea7a368098f885a7615f09

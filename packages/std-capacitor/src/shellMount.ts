@@ -5,7 +5,7 @@ import { mountRequests } from "@keel/router/internal";
 
 /**
  * Lets a Capacitor shell's pages reach the identity mount (k.return), which a shell build's generated entry calls
- * before it starts the router when the project has `identity.ts`. Navigations under `mount` (that file's default
+ * before it starts the router, with or without an identity source: without `mount` only page links are delivered (k.links). Navigations under `mount` (`identity.ts`'s default
  * export, the only mount read) go through `ctx.net` as mount requests. The external browser is `@capacitor/browser`
  * (Custom Tabs on Android, an in-app Safari view on iOS), opened on `origin`, the build's `KEEL_ORIGIN`, for a root-relative URL. The shell reports its launch to the
  * router once, when `@capacitor/app` `getLaunchUrl` settles (k.links Launch): its URL as the launch link, no URL as no
@@ -18,14 +18,14 @@ export function shellMount(
   opts: {
     readonly id: string;
     readonly origin: URL;
-    readonly mount: { readonly path: string; readonly links: readonly string[] };
+    readonly mount?: { readonly path: string; readonly links: readonly string[] };
   },
 ): void {
   const { origin } = opts.origin;
   const { link, launch } = mountRequests(ctx, {
     id: opts.id,
     origin,
-    mounts: [opts.mount],
+    mounts: opts.mount === undefined ? [] : [opts.mount],
     open: (url) => void Browser.open({ url: new URL(url, origin).href }).catch(() => undefined),
     // Android has no browser to close: the call rejects there.
     close: () => void Browser.close().catch(() => undefined),

@@ -7,7 +7,7 @@ status: conformance-covered
 - `net.fetch`: a request to the page's origin (a relative URL included) goes to the build's `KEEL_ORIGIN`, same method, path, search, headers and body, through the shell's native HTTP client, honouring `redirect: 'manual'`; another origin's request goes as given. Cookies, the caller cookie included (k.security), stay in the shell's cookie store and go only to their origin. A failure rejects with a `TypeError`. `online()` and `net` events: as real.
 - `storage`: the shell's native store, kept across restarts, written before `set` or a `true` `commit` resolves.
 - `clock`, `random` and registered capabilities: as real, unless a capability's `shell` factory differs.
-So `modules/` run unchanged in a browser and in a shell. With `identity.ts` the entry calls the package's `shellMount(ctx, { id, origin, mount })` (`./shellMount`, `mount` from `identity.ts`) before the router starts: it opens each URL the router hands it in an external browser sharing no cookie with the app, reports the launch once, then delivers return links (k.links).
+So `modules/` run unchanged in a browser and in a shell. Before the router starts, the entry calls the package's `shellMount(ctx, { id, origin, mount? })` (`./shellMount`), `id` the shell's: it listens for the shell's return links, reports the launch once, then delivers each (k.links), with an identity source or without one. With `identity.ts`, `mount` is its default export: the link listener also takes that mount's paths, and each URL the router hands it opens in an external browser sharing no cookie with the app (k.return). Without one, page links are delivered and every other link is ignored.
 
 **Shell target.** `keel check` and `keel build` import the `./tools` entry of each declared shell's package (a throw: E1159, k.module), which calls `shellTarget(shell, target)` (`@keel/cli`) once; a second is E1053.
 ```ts
@@ -43,3 +43,4 @@ type ShellTarget = {
 - With `platforms: ['x']`, `--platform y` and no `--platform` are each one E1052; a stub registering nothing, or a path `../a.json`, is one E1585.
 - A `build` whose `error` has an `error:` line then 20 more prints 12 from it and exits 1; one returning an `artifact` prints it in the trailer.
 - A `ShellJob` `{ job: 'tauri', manual: true }` is a `web-tauri` job running `keel build --target tauri` on `workflow_dispatch` only.
+- The `www` entry of a project with no `identity.ts` calls the package's `shellMount` with the shell's `id` and no `mount`, before the router starts; with `identity.ts`, with its default export as `mount`.

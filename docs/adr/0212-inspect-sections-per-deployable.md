@@ -1,6 +1,6 @@
 # ADR-0212: k.cli: the inspect document keeps each deployable's sections under `keel dev` (RFC 0190)
 
-**Status:** proposed (lane decision; for the orchestrator and the operator to confirm).
+**Status:** accepted.
 
 **Context.** `keel dev` serves a topology's `client` and `node` deployables on one origin and merges their inspector sections into one `sections` map. golden-2's page and its `api` deployable both serve `timings.recent`; the `api`'s replaces the page's, so the page's timings reach no tool.
 

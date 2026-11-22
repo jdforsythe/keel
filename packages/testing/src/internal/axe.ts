@@ -3,6 +3,7 @@ import { currentTestMeta } from "../../unsafe/currentTestMeta.ts";
 import type { Violation } from "./Violation.ts";
 import { axeRuleIds } from "./axeRuleIds.ts";
 import { fail } from "./fail.ts";
+import { pageRoots } from "./pageRoots.ts";
 import { uaHidden } from "./uaHidden.ts";
 import { where } from "./where.ts";
 
@@ -32,7 +33,7 @@ const stateOf = (doc: Document, root: Element, page: boolean): string => {
 
 /**
  * axe-core over a render (k.a11y Render checks): a component `render` judges its container with element rules; a
- * `page` judges the whole document, document rules included. Returns the rules run and one violation per element.
+ * `page` judges the whole document, document rules included, but the other open pages (`pageRoots`). Returns the rules run and one violation per element.
  * Within one test, a document in the same state as one already judged (a `properties` case renders equal trees)
  * reuses that verdict.
  */
@@ -45,7 +46,8 @@ export function axe(root: Element, page: boolean): Outcome {
   const key = memo === undefined ? "" : stateOf(doc, root, page);
   const hit = memo?.get(key);
   if (hit !== undefined) return hit;
-  const { ran, failed, broken } = axeSync(page ? doc : root, axeRuleIds(page));
+  const others = page ? [...pageRoots].filter((r) => r !== root && r.isConnected) : [];
+  const { ran, failed, broken } = axeSync(page ? doc : root, axeRuleIds(page), others);
   const [bad] = broken;
   if (bad !== undefined || ran.length === 0)
     throw fail(

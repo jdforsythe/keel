@@ -472,6 +472,104 @@ importers:
         specifier: ^22
         version: 22.20.5
 
+  examples/codemod-place:
+    dependencies:
+      '@keel/compiler':
+        specifier: workspace:*
+        version: link:../../packages/compiler
+      '@keel/ctx':
+        specifier: workspace:*
+        version: link:../../packages/ctx
+      '@keel/reactive':
+        specifier: workspace:*
+        version: link:../../packages/reactive
+      '@keel/router':
+        specifier: workspace:*
+        version: link:../../packages/router
+      '@keel/runtime-dom':
+        specifier: workspace:*
+        version: link:../../packages/runtime-dom
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../../packages/schema
+      '@keel/server':
+        specifier: workspace:*
+        version: link:../../packages/server
+      '@keel/services':
+        specifier: workspace:*
+        version: link:../../packages/services
+      '@keel/store':
+        specifier: workspace:*
+        version: link:../../packages/store
+      '@keel/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+    devDependencies:
+      '@keel/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@keel/testing':
+        specifier: workspace:*
+        version: link:../../packages/testing
+      '@keel/tooling':
+        specifier: workspace:*
+        version: link:../../tooling
+      '@types/node':
+        specifier: ^22
+        version: 22.20.5
+      vite:
+        specifier: ^8.3.6
+        version: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)
+
+  examples/compose-peers:
+    dependencies:
+      '@keel/compiler':
+        specifier: workspace:*
+        version: link:../../packages/compiler
+      '@keel/ctx':
+        specifier: workspace:*
+        version: link:../../packages/ctx
+      '@keel/reactive':
+        specifier: workspace:*
+        version: link:../../packages/reactive
+      '@keel/router':
+        specifier: workspace:*
+        version: link:../../packages/router
+      '@keel/runtime-dom':
+        specifier: workspace:*
+        version: link:../../packages/runtime-dom
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../../packages/schema
+      '@keel/server':
+        specifier: workspace:*
+        version: link:../../packages/server
+      '@keel/services':
+        specifier: workspace:*
+        version: link:../../packages/services
+      '@keel/store':
+        specifier: workspace:*
+        version: link:../../packages/store
+      '@keel/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+    devDependencies:
+      '@keel/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@keel/testing':
+        specifier: workspace:*
+        version: link:../../packages/testing
+      '@keel/tooling':
+        specifier: workspace:*
+        version: link:../../tooling
+      '@types/node':
+        specifier: ^22
+        version: 22.20.5
+      vite:
+        specifier: ^8.3.6
+        version: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)
+
   examples/host-component:
     dependencies:
       '@keel/compiler':
@@ -498,6 +596,55 @@ importers:
       '@keel/server':
         specifier: workspace:*
         version: link:../../packages/server
+      '@keel/store':
+        specifier: workspace:*
+        version: link:../../packages/store
+      '@keel/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+    devDependencies:
+      '@keel/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@keel/testing':
+        specifier: workspace:*
+        version: link:../../packages/testing
+      '@keel/tooling':
+        specifier: workspace:*
+        version: link:../../tooling
+      '@types/node':
+        specifier: ^22
+        version: 22.20.5
+      vite:
+        specifier: ^8.3.6
+        version: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)
+
+  examples/links-in:
+    dependencies:
+      '@keel/compiler':
+        specifier: workspace:*
+        version: link:../../packages/compiler
+      '@keel/ctx':
+        specifier: workspace:*
+        version: link:../../packages/ctx
+      '@keel/reactive':
+        specifier: workspace:*
+        version: link:../../packages/reactive
+      '@keel/router':
+        specifier: workspace:*
+        version: link:../../packages/router
+      '@keel/runtime-dom':
+        specifier: workspace:*
+        version: link:../../packages/runtime-dom
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../../packages/schema
+      '@keel/server':
+        specifier: workspace:*
+        version: link:../../packages/server
+      '@keel/std-tauri':
+        specifier: workspace:*
+        version: link:../../packages/std-tauri
       '@keel/store':
         specifier: workspace:*
         version: link:../../packages/store
@@ -1059,18 +1206,39 @@ importers:
       '@keel/check':
         specifier: workspace:*
         version: link:../check
+      '@keel/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+      '@keel/forms':
+        specifier: workspace:*
+        version: link:../forms
+      '@keel/reactive':
+        specifier: workspace:*
+        version: link:../reactive
+      '@keel/runtime-dom':
+        specifier: workspace:*
+        version: link:../runtime-dom
       '@keel/server':
         specifier: workspace:*
         version: link:../server
+      '@keel/testing':
+        specifier: workspace:*
+        version: link:../testing
       '@keel/tooling':
         specifier: workspace:*
         version: link:../../tooling
+      '@keel/ui':
+        specifier: workspace:*
+        version: link:../ui
       '@types/node':
         specifier: ^22
         version: 22.20.5
       fast-check:
         specifier: ^3
         version: 3.23.2
+      happy-dom:
+        specifier: ^21
+        version: 21.0.4
 
   packages/std-brands:
     dependencies:

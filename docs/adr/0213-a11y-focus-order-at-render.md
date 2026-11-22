@@ -1,6 +1,6 @@
 # ADR-0213: k.a11y, k.testing: E1820 at render, table state keys, `th` by scope (RFC 0191)
 
-**Status:** proposed (lane decision; for the orchestrator and the operator to confirm). RFC 0191 D2 (a harness click moves focus) is not decided here.
+**Status:** accepted.
 
 **Context.** Claims for WCAG 1.3.2 and 2.4.3 map only to E1820, a `keel check` code, so no render run earns them and a `direction` computed at run time is never checked. A harness `th scope="row"` reads as `columnheader`, and `aria-rowindex` and `aria-rowcount` have no state key while E1701 forbids the DOM query a test would use.
 

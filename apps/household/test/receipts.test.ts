@@ -8,8 +8,8 @@ type Member = Awaited<ReturnType<typeof served>>;
 
 /** The receipts book in `locale`, opened by the signed-in member of `at` (a fresh app when left out). */
 const open = async (locale: "en-US" | "de-DE", at?: Member) => {
-  const { ctx, app } = at ?? (await served(5));
-  return renderRoute("receipts.book", { routes: webRoutes, params: { locale }, ctx, app });
+  const { ctx, app, user } = at ?? (await served(5));
+  return renderRoute("receipts.book", { routes: webRoutes, params: { locale }, ctx, app, user });
 };
 
 it("starts empty, in English, with a link to the German page", async () => {
@@ -76,6 +76,8 @@ it("loads a complete message set for each locale", async () => {
   expect((await ReceiptsText.load("en-US")).heading).toBe("Receipts");
 });
 
-it("renders any book the schemas allow", async () => {
+// Each of the 100 runs renders the page and runs axe over it: about 1.1 s on a laptop, past 5 s on a 2-core runner.
+// 100 seeded runs are what `probabilistic` takes (k.ledger), so the case declares its time, as profile.test.ts does.
+it("renders any book the schemas allow", { timeout: 30_000 }, async () => {
   await properties(BookPage, { runs: 100, seed: 5 });
 });
