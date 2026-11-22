@@ -68,6 +68,6 @@ it("keeps typed personal data out of every log line, saved or refused", async ()
   for (const value of Object.values(CANARY)) expect(lines.filter((l) => l.includes(value))).toEqual([]);
 });
 
-it("renders any profile the schemas allow", { timeout: 30_000 }, async () => {
+it("renders any profile the schemas allow", async () => {
   await properties(ProfilePage, { runs: 100, seed: 6 });
 });
