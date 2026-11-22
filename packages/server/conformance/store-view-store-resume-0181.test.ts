@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.store, Conformance "`resumeDocument` of the page's document from `createApp` gives `state()['v.list']` equal to the server's." (RFC 0181 Conformance diff, k.store 25)
+// Spec: k.store, clause "A page component creating `store(S, { items: props.data.items }, { id })` in its body shows the loader's items under `renderRoute`, a click handler's `tx` on it updates the page and `state()`, and `resumeDocument` of its `createApp` document gives `state()` for that id equal to the server's."
 // Spec: k.store, View stores "A store a component creates ... starts from `initial` on the server and in a client router, and from its `#k-state` snapshot at resume."
 // Seed: 1337 (fc.assert below). Pending: the View stores paragraph is not built into spec text for k.store yet.
 // ASSUMPTION: "the server's" is the `state()['v.list']` of the same page under `renderRoute` (a server render starts the store from `initial`), the loader answering the same items;

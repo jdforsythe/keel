@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.store, Conformance "a page whose component creates `store(S, { items: props.data.items }, { id: 'v.list' })` in its body, under `renderRoute`, shows the loader's items; a click whose handler `tx`es one of its transactions shows the change, and `state()` holds `v.list`." (RFC 0181 Conformance diff; the k.store clause 25 text is quoted in the resume file.)
+// Spec: k.store, clause "A page component creating `store(S, { items: props.data.items }, { id })` in its body shows the loader's items under `renderRoute`, a click handler's `tx` on it updates the page and `state()`, and `resumeDocument` of its `createApp` document gives `state()` for that id equal to the server's."
 // Spec: k.store, View stores "A store a component creates is owned by its scope and starts from `initial` on the server and in a client router."
 // Seed: 1337 (fc.assert below). Pending: the clause is not in the spec text yet beyond the RFC diff; the fixture is view-store-page.ts.
 import { renderRoute } from "@keel/testing";
