@@ -10,7 +10,15 @@ import { SEED, norm } from "./fixtures.ts";
 import { ROLES, ROLE_CLASS, baseLayer, compileWith, outsideBaseLayer, ruleBody } from "./base-support.ts";
 
 const PAGE = { page: { fg: "fg", bg: "bg" } };
-const roles = Object.keys(ROLES) as (keyof typeof ROLES)[];
+const roles = [
+  "heading",
+  "link",
+  "button",
+  "control",
+  "label",
+  "fieldError",
+  "summary",
+] as const satisfies readonly (keyof typeof ROLES)[];
 
 describe("k.ui: base.page and the role sets compile into the keel.base layer", () => {
   test("`base.page { fg: 'fg', bg: 'bg' }` puts the tokens' color and background on `body`, in the `keel.base` layer", () => {
