@@ -22,6 +22,8 @@
 
 **Format.** `pnpm check` runs `tooling/format-check.mjs` (F0001), which fails on any file in the repo that Biome would reformat, ignored generated paths aside. An agent formats only the files it edited, by path (`pnpm exec biome format --write <path>`), never a directory or the repo.
 
+**Doc freshness.** `pnpm check` runs `tooling/docs-freshness.mjs`, which fails D0001 when a doc has more than 50 commits to its subject since it last changed or since its `verified: <sha>`. A doc names its subject on a `subject:` line beside `verified:`: globs of the code and spec paths it describes, space separated, a path covering everything under it (`subject: packages/ui/src/brand* docs/brand/`). A package README's subject is its package's `src/` unless it names one. A doc under `docs/` with no `subject:` line ages on every commit to `docs/`, and W0014 says so on each run. A commit that touches only `docs/HANDOFF.md` ages no doc. To clear D0001, reread the doc against its subject, fix what changed, and set `verified:` to the commit read.
+
 **Humans.** Approve RFCs and ADRs outside the RFC defaults below, confirm or reverse the ones an orchestrator accepted under them, own security, decide freezes, pick design partners.
 
 **Point-in-time docs.** Every doc, README, spec sentence and code comment describes the present. History lives in git and `docs/rfc/`. Before the first public release the RFCs, ADRs, docs and comments are swept: superseded material goes, what remains describes 1.0, and the RFC process restarts from there for outside contributors.
@@ -50,4 +52,5 @@ Brief every subagent with: the files it owns, the files other agents own concurr
 
 **Processes.** The machine is shared. A brief tells its agent to run one test file at a time, to run a whole package suite at most twice, to bound every command, and to leave no process behind. The orchestrator runs `pnpm orphans` before and after a batch and after any root run that stopped early: it lists this worktree's processes whose parent is gone (O0001), and `pnpm orphans --kill` ends them. Agents keep scratch files outside the repo. A mutation run is watched and stopped with `pnpm mutate:status` and `pnpm mutate:stop` only.
 
+subject: CLAUDE.md .claude/ tooling/ci.source.json tooling/hooks/
 verified: 58518a6665330f253ba46d8d456f7bc45dde1128

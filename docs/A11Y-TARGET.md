@@ -4,4 +4,5 @@ WCAG 2.2 AA, enforced structurally: base elements require labels at the type lev
 
 The platform's focus indicator stays: the style vocabulary has no `outline`, and the brand guide defines no focus style. The repo's biome config turns `a11y/useSemanticElements` off, since base elements and `role` on `Text` carry the semantics the rule would ask for.
 
+subject: spec/kernel/k.a11y.md spec/kernel/k.aria.md packages/ui/src/ packages/testing/src/a11y/ packages/check/src/rules/blankLabel.ts packages/check/src/rules/lowContrast.ts packages/check/src/rules/reversedFocusOrder.ts
 verified: c503fc49
