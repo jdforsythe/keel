@@ -100,7 +100,7 @@ export default identity({
 })
 ```
 
-Pages reach it through `Link to={mount.href('/login/github')}` or a native `Form` post (no file input: E1583) to `mount.href('/sign-in/email')`; a `subpath` with `..`, `?` or `//` throws E1582. A module importing `identity.ts` needs a `node` or hosted `client` deployable (E1581). A shell build goes through `KEEL_ORIGIN`. `caller: { days }` in `topology.ts` is only on a `node` deployable (E1578).
+Pages reach it through `Link to={mount.href('/login/github')}` or a native `Form` post (no file input: E1583) to `mount.href('/sign-in/email')`; a `subpath` with `..`, `?` or `//` throws E1582. A module importing `identity.ts` needs a `node` or hosted `client` deployable (E1581). With an identity source a `node` deployable answers `GET /__keel/user` (`x-keel: 1`, else 403) with `{ user }`; a `client` page's router reads it once per document and after a shell's sign-in or out, so a `client` page's guard reads `user` as a `node` page's does. That `user` steers navigation only: each API route guards on its own `identify`. A shell build goes through `KEEL_ORIGIN`. `caller: { days }` in `topology.ts` is only on a `node` deployable (E1578).
 
 ## Calling a module or another service
 
