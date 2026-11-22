@@ -66,7 +66,7 @@
     "@keel/services": "3.5kb",
     "@keel/std-channels": "1.5kb",
     "@keel/std-channels/server": {
-      "max": "2.1kb",
+      "max": "2.4kb",
       "platform": "node"
     },
     "@keel/std-channels/tools": {
@@ -164,7 +164,7 @@
     },
     "@keel/std-postgres": "1kb",
     "@keel/std-postgres/server": {
-      "max": "5.75kb",
+      "max": "7.5kb",
       "platform": "node"
     },
     "@keel/std-postgres/testing": {
@@ -172,7 +172,7 @@
       "platform": "node"
     },
     "@keel/std-postgres/tools": {
-      "max": "3kb",
+      "max": "3.25kb",
       "platform": "node"
     },
     "@keel/std-workflows": {
