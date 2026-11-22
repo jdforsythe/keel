@@ -9,7 +9,7 @@ import fc from "fast-check";
 import { expect, test } from "vitest";
 import { SEED, boot, control, pairs, reset, routes } from "./render-route-user-support.ts";
 
-test.skip("under `renderRoute(id, { shell: true, ctx })`, a mount `Form` POST answered 303 to a page with `set-cookie: s=1`: the router navigates there and the page's next `service({ contract })` call carries `cookie` `s=1`", async () => {
+test("under `renderRoute(id, { shell: true, ctx })`, a mount `Form` POST answered 303 to a page with `set-cookie: s=1`: the router navigates there and the page's next `service({ contract })` call carries `cookie` `s=1`", async () => {
   await fc.assert(
     fc.asyncProperty(fc.stringMatching(/^[a-z0-9]{1,8}$/), async (value) => {
       reset();

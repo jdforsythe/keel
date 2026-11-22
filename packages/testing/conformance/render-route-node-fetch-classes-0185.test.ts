@@ -8,7 +8,7 @@ import { expect, test } from "vitest";
 const SEED = 1337;
 const lines = fc.stringMatching(/^[a-z]{1,6}=[a-z0-9]{1,6}$/);
 
-test.skip("under `keel test`, `new Response(null, { headers: { 'set-cookie': 'a=1' } }).headers.getSetCookie()` is `['a=1']`", async () => {
+test("under `keel test`, `new Response(null, { headers: { 'set-cookie': 'a=1' } }).headers.getSetCookie()` is `['a=1']`", async () => {
   expect(new Response(null, { headers: { "set-cookie": "a=1" } }).headers.getSetCookie()).toEqual(["a=1"]);
   await fc.assert(
     fc.property(lines, lines, (a, b) => {
@@ -21,7 +21,7 @@ test.skip("under `keel test`, `new Response(null, { headers: { 'set-cookie': 'a=
   );
 });
 
-test.skip("under `keel test`, `new Request(url, { headers: { cookie: 'a=1' } })` keeps its `cookie`", async () => {
+test("under `keel test`, `new Request(url, { headers: { cookie: 'a=1' } })` keeps its `cookie`", async () => {
   expect(new Request("http://localhost/", { headers: { cookie: "a=1" } }).headers.get("cookie")).toBe("a=1");
   await fc.assert(
     fc.property(lines, (pair) => {

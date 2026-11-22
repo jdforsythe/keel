@@ -18,7 +18,7 @@ const untouched = (): void => {
   expect(rec.action).toEqual([]);
 };
 
-test.skip("with `app` and no `user`, `identify` runs for each page request, given that page's caller", async () => {
+test("with `app` and no `user`, `identify` runs for each page request, given that page's caller", async () => {
   reset();
   const { app, ctx } = await boot();
   const h1 = await renderRoute("u.page", { routes, app, ctx });
@@ -38,7 +38,7 @@ test.skip("with `app` and no `user`, `identify` runs for each page request, give
   }
 });
 
-test.skip("`user` with `app` on a `ctx` no `createApp` bound rejects E1724, `app` unrequested", async () => {
+test("`user` with `app` on a `ctx` no `createApp` bound rejects E1724, `app` unrequested", async () => {
   await fc.assert(
     fc.asyncProperty(fc.stringMatching(/^[a-z][a-z0-9]{0,11}$/), async (user) => {
       reset();
@@ -51,7 +51,7 @@ test.skip("`user` with `app` on a `ctx` no `createApp` bound rejects E1724, `app
   );
 });
 
-test.skip("`user` with `app` on a `ctx` another app's `createApp` bound rejects E1724, `app` unrequested", async () => {
+test("`user` with `app` on a `ctx` another app's `createApp` bound rejects E1724, `app` unrequested", async () => {
   reset();
   const { app } = await boot();
   const other = await boot(createCtx({ mode: "sim", seed: 3 }));

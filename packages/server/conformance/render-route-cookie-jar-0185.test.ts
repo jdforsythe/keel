@@ -13,7 +13,7 @@ const values = fc.stringMatching(/^[a-z0-9]{1,8}$/);
 const carries = (cookie: string | null | undefined, value: string): boolean => pairs(cookie).includes(`s=${value}`);
 const hasS = (cookie: string | null | undefined): boolean => pairs(cookie).some((p) => p.startsWith("s="));
 
-test.skip("with `app` and no `user`, a mount `Form` POST answered 303 with `set-cookie: s=1; HttpOnly`: the followed GET and each later request of that page carry `s=1`", async () => {
+test("with `app` and no `user`, a mount `Form` POST answered 303 with `set-cookie: s=1; HttpOnly`: the followed GET and each later request of that page carry `s=1`", async () => {
   await fc.assert(
     fc.asyncProperty(values, async (value) => {
       reset();
@@ -39,7 +39,7 @@ test.skip("with `app` and no `user`, a mount `Form` POST answered 303 with `set-
   );
 });
 
-test.skip("a second harness's requests do not carry `s=1`", async () => {
+test("a second harness's requests do not carry `s=1`", async () => {
   reset();
   const { app, ctx } = await boot();
   const h1 = await renderRoute("u.signin", { routes, app, ctx });
@@ -59,7 +59,7 @@ test.skip("a second harness's requests do not carry `s=1`", async () => {
   }
 });
 
-test.skip("after an answer with `s=; Max-Age=0`, no request of that page carries `s=1`", async () => {
+test("after an answer with `s=; Max-Age=0`, no request of that page carries `s=1`", async () => {
   reset();
   const { app, ctx } = await boot();
   const h = await renderRoute("u.signin", { routes, app, ctx });

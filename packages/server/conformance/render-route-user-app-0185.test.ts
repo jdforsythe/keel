@@ -24,7 +24,7 @@ async function two() {
   };
 }
 
-test.skip("with `app`, harnesses on one `ctx` with `user` 'u1' and 'u2': each page's load reaches `app` as its `user`, with two callers", async () => {
+test("with `app`, harnesses on one `ctx` with `user` 'u1' and 'u2': each page's load reaches `app` as its `user`, with two callers", async () => {
   const { done } = await two();
   try {
     expect(rec.loader.map(([u]) => u)).toEqual(["u1", "u2"]);
@@ -38,7 +38,7 @@ test.skip("with `app`, harnesses on one `ctx` with `user` 'u1' and 'u2': each pa
   }
 });
 
-test.skip("with `app`, each page's submit reaches `app` as its `user`, with its own caller", async () => {
+test("with `app`, each page's submit reaches `app` as its `user`, with its own caller", async () => {
   const { h1, h2, done } = await two();
   try {
     const [c1, c2] = rec.loader.map(([, c]) => c);
@@ -57,7 +57,7 @@ test.skip("with `app`, each page's submit reaches `app` as its `user`, with its 
   }
 });
 
-test.skip("with `app`, each page's service call reaches `app` as its `user`, with its own caller", async () => {
+test("with `app`, each page's service call reaches `app` as its `user`, with its own caller", async () => {
   const { h1, h2, done } = await two();
   try {
     const [c1, c2] = rec.loader.map(([, c]) => c);
@@ -79,7 +79,7 @@ test.skip("with `app`, each page's service call reaches `app` as its `user`, wit
   }
 });
 
-test.skip("with `app`, each page's event stream reaches `app` as its `user`, with its own caller", async () => {
+test("with `app`, each page's event stream reaches `app` as its `user`, with its own caller", async () => {
   const { h1, h2, done } = await two();
   try {
     const [c1, c2] = rec.loader.map(([, c]) => c);
@@ -95,7 +95,7 @@ test.skip("with `app`, each page's event stream reaches `app` as its `user`, wit
   }
 });
 
-test.skip("with `app`, page 1's write reaches page 2's open stream", async () => {
+test("with `app`, page 1's write reaches page 2's open stream", async () => {
   const { h1, h2, done } = await two();
   try {
     await h2.fire("u.watch", click);

@@ -10,7 +10,7 @@ import { SEED, boot, codeOf, rec, rejection, reset, routes } from "./render-rout
 
 const users = fc.stringMatching(/^[a-z][a-z0-9]{0,11}$/);
 
-test.skip("a component's `service({ contract })` call naming no `user` reaches the guard as the harness's `user`, `identify` uncalled", async () => {
+test("a component's `service({ contract })` call naming no `user` reaches the guard as the harness's `user`, `identify` uncalled", async () => {
   await fc.assert(
     fc.asyncProperty(users, async (user) => {
       reset();
@@ -30,7 +30,7 @@ test.skip("a component's `service({ contract })` call naming no `user` reaches t
   );
 });
 
-test.skip("a call naming `user: 'u2'` keeps it: the guard gets 'u2' under harness user 'u1', `identify` uncalled", async () => {
+test("a call naming `user: 'u2'` keeps it: the guard gets 'u2' under harness user 'u1', `identify` uncalled", async () => {
   reset();
   const { ctx } = await boot();
   const h = await renderRoute("u.page", { routes, ctx, user: "u1" });
@@ -45,7 +45,7 @@ test.skip("a call naming `user: 'u2'` keeps it: the guard gets 'u2' under harnes
   }
 });
 
-test.skip("a second open harness on that ctx with `user: 'u3'` rejects E1724", async () => {
+test("a second open harness on that ctx with `user: 'u3'` rejects E1724", async () => {
   await fc.assert(
     fc.asyncProperty(
       fc.tuple(users, users).filter(([a, b]) => a !== b),
