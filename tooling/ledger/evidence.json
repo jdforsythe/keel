@@ -1,5 +1,5 @@
 {
-  "commit": "1e511e156bf63778a568ff3d5cea0ec282b3ac1d",
+  "commit": "a292ce2ba7af9c8d5cadbfb8e97d75afed0273a8",
   "coverage": {
     "packages": {
       "apps/golden-1": {
@@ -1168,7 +1168,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-22T10:59:15.053Z",
+  "generatedAt": "2026-11-22T11:20:03.796Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -3624,7 +3624,7 @@
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 655,
+        "unitCases": 657,
         "unitFiles": 86
       },
       "packages/ctx": {
@@ -4171,7 +4171,7 @@
       "proveFiles": 23,
       "simulateFiles": 13,
       "skipTodo": 4,
-      "unitCases": 5469,
+      "unitCases": 5471,
       "unitFiles": 938
     }
   },
