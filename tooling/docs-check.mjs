@@ -42,11 +42,11 @@ const root = path.join(import.meta.dirname, "..");
 const SKILLS_DIR = "packages/cli/skills";
 const COPY_DIR = ".claude/skills";
 
-/** The published skills and the size target of each, in tokens (chars / 4). Re-based for the answers an app author needed in the walkthrough (createApp, Select, storage flag, explore, scope, Host) and for `keel review` in the keel skill, view stores seeded with `initial` (keel-client, keel-server) and node pages tested with `app` (keel-testing). */
+/** The published skills and the size target of each, in tokens (chars / 4). Re-based for the answers an app author needed in the walkthrough (createApp, Select, storage flag, explore, scope, Host, createApp's std) and for `keel review` in the keel skill, view stores seeded with `initial` (keel-client, keel-server) and node pages tested with `app` (keel-testing). */
 export const TARGETS = {
   keel: 950,
-  "keel-client": 2475,
-  "keel-server": 2425,
+  "keel-client": 2500,
+  "keel-server": 2450,
   "keel-data": 2500,
   "keel-testing": 2275,
   "keel-deploy": 1600,

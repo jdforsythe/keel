@@ -1,5 +1,5 @@
-// Shared by restart.mjs and workflow.mjs: a copy of apps/golden-1 in a temporary folder, built with `keel build`, its
-// `dist/api/server.mjs` served on a SQLite file in that folder, and the stored rows read back with node:sqlite.
+// Shared by restart.mjs, workflow.mjs and workflow-postgres.mjs: a copy of apps/golden-1 in a temporary folder, built with `keel build`, its
+// `dist/api/server.mjs` served on a SQLite file in that folder (or a Postgres URL), and the stored rows read back with node:sqlite.
 // Nothing here prints a database URL or a stored value; every child is stopped by the caller's `finally`.
 import { execFile, spawn } from "node:child_process";
 import { cp, symlink } from "node:fs/promises";
@@ -104,14 +104,18 @@ export function buildIn(dir) {
   });
 }
 
-/** Start the built api of `dir` on `file` (an absolute path) at `port`; `stop()` kills it. Its output is kept in `log`. */
+/**
+ * Start the built api of `dir` at `port` on `file`: an absolute SQLite path, or a `postgres:` URL given as it is;
+ * `stop()` kills it. Its output is kept in `log`.
+ */
 export function serve(dir, file, port) {
+  const database = file.startsWith("postgres:") ? file : pathToFileURL(file).href;
   const child = spawn(
     process.execPath,
     ["--disable-warning=ExperimentalWarning", join(dir, "dist", "api", "server.mjs")],
     {
       cwd: dir,
-      env: { ...process.env, PORT: String(port), KEEL_SECRET: SECRET, KEEL_DATABASE_URL: pathToFileURL(file).href },
+      env: { ...process.env, PORT: String(port), KEEL_SECRET: SECRET, KEEL_DATABASE_URL: database },
       stdio: ["ignore", "pipe", "pipe"],
     },
   );

@@ -612,9 +612,9 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1508",
-    "guard redirect loop: the redirect route is under that guard, or redirects revisit a URL",
-    "A denied request would redirect into the same guard forever.",
-    "move 'app.login' out of the guarded layout",
+    "a guard's redirect route is under that guard, or (route table) a carried param missing or not fitting, or (runtime) a redirect loop",
+    "A denied request would redirect into the same guard forever, or carry a param its redirect route cannot take: manifest and routeTable throw it, so keel build reports it.",
+    "move 'app.login' out of the guarded layout; declare the redirect route's params field on the page with the same schema",
     "k.guards",
   ],
   [
@@ -1240,6 +1240,13 @@ const ROWS: readonly Row[] = [
     "A stylesheet applies to the whole page (a global cascade); only the code a Host's code prop imports may bring one.",
     "import './chart.css' in Page.tsx -> import it in chart.ts, the Host's code file",
     "k.host-code",
+  ],
+  [
+    "E1826",
+    "a status region inserted holding text (render)",
+    "A screen reader announces a status region's changes, not its arrival; one a fire or settle() inserts already filled is not heard.",
+    '{() => saved() ? <Text role="status">Saved</Text> : null} -> <Text role="status">{() => (saved() ? text.saved : "")}</Text>',
+    "k.a11y",
   ],
   ["E1901", "input inside a <Form> without field", "", "bind the input to a form path with field(path)", "k.forms"],
   [

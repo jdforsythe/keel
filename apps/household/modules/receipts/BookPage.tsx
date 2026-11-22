@@ -29,7 +29,7 @@ export default function BookPage(props: Infer<typeof Props>) {
       >
         {props.data.text.switchTo}
       </Link>
-      <Text id="receipts.count">
+      <Text id="receipts.count" role="status">
         {formatMessage(props.data.text.count, { n: props.data.receipts.length }, props.params.locale)}
       </Text>
       <If when={props.data.receipts.length === 0}>
@@ -77,9 +77,9 @@ export default function BookPage(props: Infer<typeof Props>) {
           <Button id="receipts.save" type="submit">
             {props.data.text.save}
           </Button>
-          <If when={f.pending()}>
-            <Text id="receipts.saving">{props.data.text.saving}</Text>
-          </If>
+          <Text id="receipts.saving" role="status">
+            {f.pending() ? props.data.text.saving : ""}
+          </Text>
         </Box>
       </Form>
     </Box>

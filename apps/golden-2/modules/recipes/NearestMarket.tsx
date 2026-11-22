@@ -57,10 +57,12 @@ export default function NearestMarket(props: Infer<typeof Props>, ctx: Ctx) {
           {props.text.findMarket}
         </Button>
       </Box>
-      <If when={outcome.get().status === "found"}>{() => <Text id="recipes.market.nearest">{nearest.get()}</Text>}</If>
+      <Text id="recipes.market.nearest" role="status">
+        {outcome.get().status === "found" ? nearest.get() : ""}
+      </Text>
       <If when={outcome.get().status === "unavailable"}>
         {() => (
-          <Text id="recipes.market.unavailable" fg="error">
+          <Text id="recipes.market.unavailable" role="alert" fg="error">
             {props.text.marketUnavailable}
           </Text>
         )}
