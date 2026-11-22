@@ -15,7 +15,7 @@ export default function Masthead(
   props: Infer<typeof Props> & { readonly nav: () => Node; readonly children: () => Node },
 ) {
   return (
-    <Box id="frame" direction="column" bg="surface" fg="text" font="serif" fontSize="md">
+    <Box id="frame" direction="column">
       <Box
         as="header"
         id="frame.masthead"
@@ -28,7 +28,7 @@ export default function Masthead(
       >
         <Box direction="row" align="center" gap="3">
           <Image src="/keel-mark.svg" decorative h="mark" />
-          <Text id="frame.app" fontSize="lg" weight="semibold">
+          <Text id="frame.app" fontSize="lg">
             {props.data.text.app}
           </Text>
           <If when={props.data.name !== null}>

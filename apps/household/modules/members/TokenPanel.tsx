@@ -19,9 +19,6 @@ export default function TokenPanel(props: Infer<typeof Props>, ctx: Ctx) {
   const list = signal(props.tokens);
   const shown = signal("");
   const failed = signal(false);
-  // A token is one unbroken word; in pieces of 16 the row wraps at phone width and the text still copies whole.
-  const pieces = (token: string) =>
-    Array.from({ length: Math.ceil(token.length / 16) }, (_, n) => ({ at: n, text: token.slice(n * 16, n * 16 + 16) }));
   const mint = async () => {
     const r = await membersApi.mint({ body: { days: 30 } }, ctx);
     if (!r.ok) return failed.set(true);
@@ -37,26 +34,14 @@ export default function TokenPanel(props: Infer<typeof Props>, ctx: Ctx) {
   return (
     <Box as="section" id="members.tokens" direction="column" gap="3">
       <Box h="hairline" bg="divider" />
-      <Heading id="members.tokens.heading" level={2} m="0" fontSize="lg" weight="semibold">
+      <Heading id="members.tokens.heading" level={2} fontSize="lg">
         {props.text.tokensHeading}
       </Heading>
       <Text id="members.tokens.intro" fg="textSecondary">
         {props.text.tokensIntro}
       </Text>
       <Box direction="row">
-        <Button
-          id="members.mint"
-          onClick={mint}
-          font="mono"
-          fontSize="sm"
-          px="3"
-          py="2"
-          bg="card"
-          fg="text"
-          border="rule"
-          radius="none"
-          states={{ hover: { bg: "surfaceLow" }, focusVisible: { bg: "surfaceLow" } }}
-        >
+        <Button id="members.mint" onClick={mint} look="secondary">
           {props.text.mint}
         </Button>
       </Box>
@@ -65,15 +50,13 @@ export default function TokenPanel(props: Infer<typeof Props>, ctx: Ctx) {
           <Text id="members.minted.note" fontSize="sm">
             {props.text.minted}
           </Text>
-          <Box id="members.minted" direction="row" wrap="wrap" p="2" bg="surfaceLow" font="mono" fontSize="sm">
-            <For each={pieces(shown.get())} key="at">
-              {(piece) => <Text>{piece.text}</Text>}
-            </For>
+          <Box id="members.minted" p="2" bg="surfaceLow" font="mono" fontSize="sm">
+            {shown.get()}
           </Box>
         </Box>
       </If>
       <If when={failed.get()}>
-        <Text id="members.tokens.failed" fg="error" bg="card" border="error" px="3" py="2" font="mono" fontSize="sm">
+        <Text id="members.tokens.failed" look="notice" fg="error" border="error">
           {props.text.failed}
         </Text>
       </If>
@@ -82,7 +65,16 @@ export default function TokenPanel(props: Infer<typeof Props>, ctx: Ctx) {
           {props.text.noTokens}
         </Text>
       </If>
-      <Box as="ul" id="members.tokens.list" direction="column" gap="hairline" bg="divider" p="0" m="0">
+      <Box
+        as="ul"
+        id="members.tokens.list"
+        direction="column"
+        gap="hairline"
+        bg="divider"
+        border="hairline"
+        p="0"
+        m="0"
+      >
         <For each={list.get().map((t, n) => ({ ...t, n }))} key="id">
           {(t) => (
             <Box
@@ -103,15 +95,9 @@ export default function TokenPanel(props: Infer<typeof Props>, ctx: Ctx) {
               <Button
                 id={`members.revoke.${t.n}`}
                 onClick={() => revoke(t.id)}
-                font="mono"
-                fontSize="sm"
-                px="3"
-                py="1"
-                bg="card"
+                look="secondary"
                 fg="error"
                 border="error"
-                radius="none"
-                states={{ hover: { bg: "surfaceLow" }, focusVisible: { bg: "surfaceLow" } }}
               >
                 {props.text.revoke}
               </Button>

@@ -19,7 +19,7 @@ export default function BookPage(props: Infer<typeof Props>) {
   });
   return (
     <Box as="section" id="receipts.page" direction="column" gap="4">
-      <Heading id="receipts.heading" level={1} m="0" fontSize={{ base: "xl", md: "2xl" }} weight="semibold">
+      <Heading id="receipts.heading" level={1} fontSize={{ base: "xl", md: "2xl" }}>
         {props.data.text.heading}
       </Heading>
       <Box direction="row" justify="between" align="baseline" gap="3" wrap="wrap">
@@ -28,7 +28,6 @@ export default function BookPage(props: Infer<typeof Props>) {
         </Text>
         <Link
           id="receipts.switch"
-          fg="text"
           font="mono"
           fontSize="sm"
           lang={props.params.locale === "en-US" ? "de-DE" : "en-US"}
@@ -72,55 +71,14 @@ export default function BookPage(props: Infer<typeof Props>) {
         </For>
       </Box>
       <Box h="hairline" bg="divider" />
-      <Heading id="receipts.formHeading" level={2} m="0" fontSize="lg" weight="semibold">
+      <Heading id="receipts.formHeading" level={2} fontSize="lg">
         {props.data.text.formHeading}
       </Heading>
       <Form method="POST" action={receipts.href("receipts.book", { locale: props.params.locale })} form={f}>
-        <Box direction="column" gap="3" p={{ base: "3", md: "4" }} bg="card" border="hairline">
-          <Input
-            w="full"
-            my="1"
-            px="2"
-            py="2"
-            bg="card"
-            fg="text"
-            border="control"
-            radius="none"
-            font="serif"
-            fontSize="md"
-            states={{ hover: { border: "rule" }, focusVisible: { border: "rule" } }}
-            field={f.field("shop")}
-            label={props.data.text.shop}
-            autocomplete="off"
-          />
-          <Input
-            w="full"
-            my="1"
-            px="2"
-            py="2"
-            bg="card"
-            fg="text"
-            border="control"
-            radius="none"
-            font="serif"
-            fontSize="md"
-            states={{ hover: { border: "rule" }, focusVisible: { border: "rule" } }}
-            field={f.field("amount")}
-            label={props.data.text.amount}
-            autocomplete="off"
-          />
+        <Box look="panel">
+          <Input field={f.field("shop")} label={props.data.text.shop} autocomplete="off" />
+          <Input field={f.field("amount")} label={props.data.text.amount} autocomplete="off" />
           <Select
-            w="full"
-            my="1"
-            px="2"
-            py="2"
-            bg="card"
-            fg="text"
-            border="control"
-            radius="none"
-            font="serif"
-            fontSize="md"
-            states={{ hover: { border: "rule" }, focusVisible: { border: "rule" } }}
             field={f.field("currency")}
             label={props.data.text.currency}
             options={[
@@ -131,17 +89,6 @@ export default function BookPage(props: Infer<typeof Props>) {
             ]}
           />
           <Select
-            w="full"
-            my="1"
-            px="2"
-            py="2"
-            bg="card"
-            fg="text"
-            border="control"
-            radius="none"
-            font="serif"
-            fontSize="md"
-            states={{ hover: { border: "rule" }, focusVisible: { border: "rule" } }}
             field={f.field("paidBy")}
             label={props.data.text.payer}
             options={[
@@ -149,39 +96,9 @@ export default function BookPage(props: Infer<typeof Props>) {
               { value: "sam", label: props.data.text.sam },
             ]}
           />
-          <TextArea
-            w="full"
-            my="1"
-            px="2"
-            py="2"
-            bg="card"
-            fg="text"
-            border="control"
-            radius="none"
-            font="serif"
-            fontSize="md"
-            states={{ hover: { border: "rule" }, focusVisible: { border: "rule" } }}
-            field={f.field("note")}
-            label={props.data.text.note}
-          />
+          <TextArea field={f.field("note")} label={props.data.text.note} />
           <Box direction="row">
-            <Button
-              id="receipts.save"
-              type="submit"
-              font="mono"
-              fontSize="sm"
-              weight="medium"
-              px="4"
-              py="2"
-              bg="text"
-              fg="card"
-              border="rule"
-              radius="none"
-              states={{
-                hover: { bg: "textSecondary", border: "control" },
-                focusVisible: { bg: "textSecondary", border: "control" },
-              }}
-            >
+            <Button id="receipts.save" type="submit">
               {props.data.text.save}
             </Button>
           </Box>

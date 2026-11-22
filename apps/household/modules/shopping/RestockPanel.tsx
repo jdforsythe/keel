@@ -60,7 +60,7 @@ export default function RestockPanel(props: Infer<typeof Props>, ctx: Ctx) {
       bg="card"
       border="hairline"
     >
-      <Heading id="shopping.restock.heading" level={2} m="0" fontSize={{ base: "lg", md: "xl" }} weight="semibold">
+      <Heading id="shopping.restock.heading" level={2} fontSize={{ base: "lg", md: "xl" }}>
         {props.text.heading}
       </Heading>
       <Text id="shopping.restock.intro" fg="textSecondary">
@@ -81,23 +81,7 @@ export default function RestockPanel(props: Infer<typeof Props>, ctx: Ctx) {
         </Text>
       </Box>
       <Box direction="row">
-        <Button
-          id="shopping.restock.run"
-          onClick={() => runNow()}
-          font="mono"
-          fontSize="sm"
-          weight="medium"
-          px="4"
-          py="2"
-          bg="text"
-          fg="card"
-          border="rule"
-          radius="none"
-          states={{
-            hover: { bg: "textSecondary", border: "control" },
-            focusVisible: { bg: "textSecondary", border: "control" },
-          }}
-        >
+        <Button id="shopping.restock.run" onClick={() => runNow()}>
           {props.text.runNow}
         </Button>
       </Box>

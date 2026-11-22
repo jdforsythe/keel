@@ -9,7 +9,7 @@ export const Props = s.object({ data: s.object({ text: ListText, items: s.array(
 export default function ListPage(props: Infer<typeof Props>) {
   return (
     <Box as="section" id="shopping.page" direction="column" gap="4">
-      <Heading id="shopping.heading" level={1} m="0" fontSize={{ base: "xl", md: "2xl" }} weight="semibold">
+      <Heading id="shopping.heading" level={1} fontSize={{ base: "xl", md: "2xl" }}>
         {props.data.text.heading}
       </Heading>
       <ShoppingList text={props.data.text} items={props.data.items} />
