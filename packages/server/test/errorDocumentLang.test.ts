@@ -61,11 +61,15 @@ describe("server failure document language", () => {
     const c = contract("app", {
       "app.p": { path: "/:locale/p", params: Params },
       "app.n": { path: "/n" },
+      "app.h": { path: "/h" },
     });
+    // A guard of a page without a prefix param redirects to a page without params (k.guards Carried params).
+    const brokenPlain = guard({ redirect: "app.h" }, () => Promise.reject(new Error("boom")));
     const app = await appOf(
       manifest(c, {
         "app.p": { component: () => el("main") },
-        "app.n": { component: () => el("main"), guard: broken },
+        "app.n": { component: () => el("main"), guard: brokenPlain },
+        "app.h": { component: () => el("main") },
       }),
     );
     expect(await langOf(app, "/de-DE/zzz")).toEqual([404, "en"]);

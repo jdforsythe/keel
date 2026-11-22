@@ -84,7 +84,7 @@ export const admit = guard({}, async ({ bearer, user }) =>
     : ok(null))
 ```
 
-Bind it as `{ loader, guard: admit }`. A page or layout guard has a `redirect` (`guard({ redirect: 'app.login' }, ...)`, `keel docs k.guards`).
+Bind it as `{ loader, guard: admit }`. A page or layout guard has a `redirect` (`guard({ redirect: 'app.login' }, ...)`); guarded pages share its route's `params` (E1508).
 
 ## Identity
 

@@ -31,7 +31,11 @@ export default function NewRecipePage(props: Infer<typeof Props>) {
         method="POST"
         action={recipes.href("recipes.new", { locale: props.params.locale })}
         form={f}
-        error={(e) => <Text fg="error">{e.message}</Text>}
+        error={(e) => (
+          <Text role="alert" fg="error">
+            {e.message}
+          </Text>
+        )}
       >
         <Input
           field={f.field("title")}

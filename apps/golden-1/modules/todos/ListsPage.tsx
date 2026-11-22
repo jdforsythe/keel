@@ -121,7 +121,11 @@ export default function ListsPage(_props: Infer<typeof Props>, ctx: Ctx) {
         method="POST"
         action={todos.href("todos.index")}
         form={f}
-        error={(e) => <Text fg="error">{e.message}</Text>}
+        error={(e) => (
+          <Text role="alert" fg="error">
+            {e.message}
+          </Text>
+        )}
       >
         <Input
           field={f.field("name")}

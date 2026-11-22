@@ -50,4 +50,4 @@ Brief every subagent with: the files it owns, the files other agents own concurr
 
 **Processes.** The machine is shared. A brief tells its agent to run one test file at a time, to run a whole package suite at most twice, to bound every command, and to leave no process behind. The orchestrator runs `pnpm orphans` before and after a batch and after any root run that stopped early: it lists this worktree's processes whose parent is gone (O0001), and `pnpm orphans --kill` ends them. Agents keep scratch files outside the repo. A mutation run is watched and stopped with `pnpm mutate:status` and `pnpm mutate:stop` only.
 
-verified: 4afc5913b0cc2041920660fce553519b20474b8c
+verified: 39a5564fa714ddd49fff8398d32919101a66a4f6
