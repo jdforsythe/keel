@@ -375,7 +375,8 @@ const proofs = {
    * never reaches it; no request goes to a Keel server path (`/__keel/*`) or any other host. The stand-in is as strict
    * as a real API: its preflight answer allows no request header and no credentials, so a Keel header would fail the
    * call; the plain GET needs no preflight, and no `x-keel`, `x-keel-user`, `authorization` or cookie (one is set for
-   * the page's origin and one for the API's) reaches it (k.services Encoding). The detail lists the header names the
+   * the page's origin and one for the API's) reaches it (k.services Encoding); a call carrying `x-keel` sends a
+   * preflight asking for that header, which the stand-in refuses, so the call fails. The detail lists the header names the
    * stand-in received. The same tree with no `origins` fails `keel check` with E1571.
    */
   async "client-only-api"(dir) {
@@ -478,6 +479,17 @@ const proofs = {
       const banned = ["x-keel", "x-keel-user", "authorization", "cookie"];
       const heard = [...new Set(received.flat())].sort();
       const keelFree = received.length === 2 && received.every((h) => !h.some((n) => banned.includes(n)));
+      // A preflight asking for `x-keel` is refused: the stand-in allows no request header, so the browser fails the call.
+      const quiet = preflights.length === 0;
+      const keelHeader = await page.evaluate(
+        (u) =>
+          fetch(u, { headers: { "x-keel": "1" } }).then(
+            () => "sent",
+            () => "refused",
+          ),
+        API,
+      );
+      const preflighted = preflights.length === 1 && preflights[0].toLowerCase().includes("x-keel");
       // The same tree with `origins: {}`: `keel check` refuses the literal base with E1571.
       rmSync(copy, { recursive: true, force: true });
       mkdirSync(copy, { recursive: true });
@@ -499,8 +511,10 @@ const proofs = {
           gets.length === 2 &&
           gets.every((g) => g === `GET ${API}`) &&
           sent.length === 2 &&
-          preflights.length === 0 &&
+          quiet &&
           keelFree &&
+          keelHeader === "refused" &&
+          preflighted &&
           refused === "refused" &&
           stray.length === 0 &&
           keelPaths.length === 0 &&
@@ -509,7 +523,7 @@ const proofs = {
           e1571,
         `dist ${built.join(",")}, connect-src ${connect}, other origins ${wider.join(",") || "none"}; ` +
           `stand-in saw ${sent.join(", ")} with headers ${heard.join(" ")}; Keel header or cookie ${!keelFree}; ` +
-          `preflights asking ${preflights.join("|") || "none"}; undeclared ${refused}, ` +
+          `preflight with x-keel ${keelHeader}, asking ${preflights.join("|") || "none"}; undeclared ${refused}, ` +
           `reached ${stray.length}; /__keel requests ${keelPaths.length}; other hosts ${foreign.length}; ` +
           `${otherErrors} errors; undeclared check E1571 ${e1571}`,
       ];
