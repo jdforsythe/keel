@@ -44,16 +44,16 @@
 | L6-5 | open |
 | L6-6 | open |
 | S-1 | fixed: rfc:0182 build: keel dev serves the deployable's styles and every dev document links them |
-| S-2 | carried by RFC 0188 (base) |
+| S-2 | fixed: rfc:0188 `base` in the tokens; `brandTokens` styles body, headings, links, buttons and controls with no app code |
 | S-3 | fixed: rfc:0187 build: a page's layout may name a layout of a module that lists the page's module in deps; household: one app.frame |
-| S-4 | answered in the skills (keel, keel-client: `gap` needs `direction`); stacking `gap` carried by RFC 0188 |
+| S-4 | fixed: rfc:0188 E1809, `gap` with no `direction` at its smallest breakpoint, fix `direction="column"` |
 | S-5 | fixed (`@keel/ui` atomic CSS keeps `[hidden]` hidden) |
 | S-6 | fixed (`w`, `h` are border-box; `size.control` removed) |
-| S-7 | carried by RFC 0188 (control `styles` parts, base `label`, `fieldError`) |
-| S-8 | carried by RFC 0188 (summary label and `k-summary`) |
-| S-9 | carried by RFC 0188 (`base.focus`) |
-| S-10 | carried by RFC 0188 (`overflow-wrap`) |
-| S-11 | carried by RFC 0188 (`look`) |
+| S-7 | fixed: rfc:0188 control `styles` parts `field`, `label`, `error`; base `label` and `fieldError` |
+| S-8 | fixed: rfc:0188 the summary names each field by its rendered label, links it and carries `k-summary` |
+| S-9 | fixed: rfc:0188 `base.focus`, a 2px Charcoal `:focus-visible` ring |
+| S-10 | fixed: rfc:0188 `body{overflow-wrap:anywhere}` in the base layer |
+| S-11 | fixed: rfc:0188 `look` sets in the tokens (`primary`, `secondary`, `control` in `brandTokens`) |
 | L7-1 | fixed (`renderRoute` with `app` takes `routes` as an import: each harness its own client module graph) |
 | L7-2 | fixed: a claim's throw on a harness ctx names its cause in the E1253 warning, so E1720 shows it (`packages/runtime-dom/src/internal/resumeIsland.ts`) |
 | L7-3 | fixed: rfc:0192 a channel follows app data: t.changed in the write transaction, follows on the channel route; household's counter store is gone |

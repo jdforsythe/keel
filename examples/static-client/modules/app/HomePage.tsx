@@ -7,9 +7,9 @@ export const Props = s.object({ data: Home });
 
 export default function HomePage(props: Infer<typeof Props>) {
   return (
-    <Box id="app.home" gap="2">
+    <Box id="app.home" direction="column" gap="2">
       <Masthead />
-      <Box as="main" gap="2" p="4">
+      <Box as="main" direction="column" gap="2" p="4">
         <Heading id="app.home.title" level={1}>
           {props.data.heading}
         </Heading>

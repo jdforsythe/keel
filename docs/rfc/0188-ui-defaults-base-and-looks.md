@@ -1,6 +1,6 @@
 # RFC 0188: k.ui defaults: a base from the tokens, named looks, a `gap` that names its axis, a brand focus ring
 
-Status: accepted (ADR-0209; operator, 2026-11-22, all decisions, D6 as a check error). From walkthrough findings S-2, S-4, S-7 to S-11 (`tasks/p1/walkthrough-findings.md`): an app author styling `apps/household` to `docs/BRAND.md`. S-5 and S-6 are built in `@keel/ui` beside this RFC; D7 states them in the spec.
+Status: implemented (ADR-0209; operator, 2026-11-22, all decisions, D6 as a check error). From walkthrough findings S-2, S-4, S-7 to S-11 (`tasks/p1/walkthrough-findings.md`): an app author styling `apps/household` to `docs/BRAND.md`. S-5 and S-6 are built in `@keel/ui` beside this RFC; D7 states them in the spec.
 
 ## Decisions
 - D1 (S-2): `tokens.ts` gains a closed `base` group: one style set per element role, which the compiled stylesheet applies to every element of that role with no app code. `brandTokens` carries the brand's `base`, so every app on `brandTokens` (the scaffold's default) renders on brand from its first page. An app with its own tokens and no `base` gets no role rules, as now.

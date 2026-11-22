@@ -214,7 +214,7 @@ import { brandTokens } from "@keel/ui/brand";
 export const tokens = brandTokens;
 ```
 
-Components never write CSS. They take style props whose values are token names (`bg="card"`, `px="3"`), and the plugin emits one atomic class per prop, token, breakpoint and state it finds in your code. `tokens.ts` must export `tokens`; the plugin evaluates it in Node and validates it with `TokenSchema` (E1807 when it fails). `brandTokens` is the Keel brand from `docs/BRAND.md`. For your own palette, `defineTokens` from `@keel/ui` takes the groups `color`, `space`, `size`, `radius`, `font`, `fontSize`, `weight`, `shadow`, `border`, `breakpoint` and `motion`.
+Components never write CSS. They take style props whose values are token names (`bg="card"`, `px="3"`), and the plugin emits one atomic class per prop, token, breakpoint and state it finds in your code. `tokens.ts` must export `tokens`; the plugin evaluates it in Node and validates it with `TokenSchema` (E1807 when it fails). `brandTokens` is the Keel brand from `docs/BRAND.md`. For your own palette, `defineTokens` from `@keel/ui` takes the groups `color`, `space`, `size`, `radius`, `font`, `fontSize`, `weight`, `shadow`, `border`, `breakpoint` and `motion`, and the style sets `base` (default styles per element role and the focus ring's color) and `look` (named sets an element takes as `look="<name>"`).
 
 ### topology.ts
 

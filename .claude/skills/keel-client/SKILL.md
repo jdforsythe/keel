@@ -1,13 +1,15 @@
 ---
 name: keel-client
-description: "Build Keel pages: components, routes on the page, forms (form, Form, field), widgets (Menu, Tabs, Dialog), data tables, message sets, locale formats, title, a11y; E1304, E1401, E1407, E1802, E1826, E19xx, E24xx, E28xx, E1583"
+description: "Build Keel pages: components, routes on the page, forms (form, Form, field), widgets (Menu, Tabs, Dialog), data tables, message sets, locale formats, title, a11y; E1304, E1401, E1407, E1802, E1809, E1826, E19xx, E24xx, E28xx, E1583"
 ---
 
 # Pages, forms, widgets, tables and text
 
 Signatures: `keel docs <id>` for `k.component` `k.router` `k.contract` `k.forms` `k.head` `k.ui` `k.a11y` `std.headless` `std.options` `std.tables` `std.messages` `std.i18n`.
 
-**Components.** One default export per file, named as the file, with `export const Props = s.object(...)`. Props are getters: never destructure (E1401). Branch with `<If when>`, `<For each key>`, `<Match on>`; `{a && <b/>}` and `.map()` over elements are E1403. A top-level `const x = props.y` used in JSX is E1405: read `props.y` there. Give `id="area.name"` to what a test addresses (E1404). Style props take token names (`p="2"`; E1801). `gap` needs `direction` (`direction="column" gap="2"`). A component reaching an effect takes `(props, ctx: Ctx)`, never optional, defaulted, destructured or followed by a parameter (E1407); one that reaches none is `(props)`. `mount` and `resume` take `{ ctx }`. A view store starts from loader data by being created in the component with it as `initial` (`keel docs k.store`, View stores); `tx` runs in a handler, and one in a component body is E1304.
+**Components.** One default export per file, named as the file, with `export const Props = s.object(...)`. Props are getters: never destructure (E1401). Branch with `<If when>`, `<For each key>`, `<Match on>`; `{a && <b/>}` and `.map()` over elements are E1403. A top-level `const x = props.y` used in JSX is E1405: read `props.y` there. Give `id="area.name"` to what a test addresses (E1404). Style props take token names (`p="2"`; E1801). `gap` spaces a flex element only: give `direction` at or below its smallest breakpoint (`direction="column" gap="2"`; E1809). A component reaching an effect takes `(props, ctx: Ctx)`, never optional, defaulted, destructured or followed by a parameter (E1407); one that reaches none is `(props)`. `mount` and `resume` take `{ ctx }`. A view store starts from loader data by being created in the component with it as `initial` (`keel docs k.store`, View stores); `tx` runs in a handler, and one in a component body is E1304.
+
+**Base and looks.** `tokens.ts` = `brandTokens` puts the brand on every page with no props: its `base` styles `body`, `Heading`, `Link`, `Button`, the controls, their labels and field errors, the no-script error summary, and a 2px focus ring. Write style props only where a page differs; a prop replaces the base for that prop. A set used twice is a look: `look="secondary"` (`primary`, `secondary`, `control` ship), own props win per prop; add one in `tokens.ts` as `{ ...brandTokens, look: { ...brandTokens.look, row: { direction: 'row', gap: '3' } } }`. A control's label, error and wrapper take `styles={{ label: {...}, error: {...}, field: {...} }}`.
 
 CSS such as fonts reaches documents through the deployable's `styles` in `topology.ts`; there is no `index.html`.
 
