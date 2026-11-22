@@ -3,7 +3,17 @@
 // node tooling/smoke/examples.mjs [name ...]. One line per step, then the trailer; a missing proof is a failed step.
 // Every server it starts is stopped in a `finally`; nothing is written outside the examples' own build folders.
 import { execFile, spawn } from "node:child_process";
-import { createReadStream, readFileSync, readdirSync, statSync } from "node:fs";
+import {
+  cpSync,
+  createReadStream,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  symlinkSync,
+} from "node:fs";
 import { createServer } from "node:http";
 import { extname, join, normalize } from "node:path";
 import { chromium } from "@playwright/test";
@@ -31,9 +41,9 @@ const keel = (dir, args) =>
     );
   });
 
-/** Start `node dist/<deployable>/server.mjs` of `dir` on a free port; `stop()` kills it. */
-async function serveNode(dir, deployable, env = {}) {
-  const port = await freePort();
+/** Start `node dist/<deployable>/server.mjs` of `dir` on `port`, a free one by default; `stop()` kills it. */
+async function serveNode(dir, deployable, env = {}, at = undefined) {
+  const port = at ?? (await freePort());
   const child = spawn(
     process.execPath,
     ["--disable-warning=ExperimentalWarning", join(dir, "dist", deployable, "server.mjs")],
@@ -55,13 +65,18 @@ const TYPES = {
   ".woff2": "font/woff2",
 };
 
-/** A plain static file server over `folder`: a file or 404, `/` is `index.html`, each answer with `headers`. */
-async function serveFiles(folder, headers = {}) {
+/**
+ * A plain static file server over `folder`: a file or 404, `/` is `index.html`, each answer with `headers`; with
+ * `fallback`, a path that is no file answers `index.html` with 200, as a client host does (keel-deploy).
+ */
+async function serveFiles(folder, headers = {}, fallback = false) {
   const port = await freePort();
   const server = createServer((req, res) => {
     const path = new URL(req.url ?? "/", "http://x").pathname;
-    const file = normalize(join(folder, path === "/" ? "index.html" : path));
-    const isFile = file.startsWith(folder) && statSync(file, { throwIfNoEntry: false })?.isFile() === true;
+    const asked = normalize(join(folder, path === "/" ? "index.html" : path));
+    const found = asked.startsWith(folder) && statSync(asked, { throwIfNoEntry: false })?.isFile() === true;
+    const file = !found && fallback ? join(folder, "index.html") : asked;
+    const isFile = found || fallback;
     if (!isFile) {
       res.writeHead(404).end();
       return;
@@ -92,6 +107,19 @@ const directives = (policy) =>
       .filter((d) => d[0] !== "")
       .map(([name, ...sources]) => [name, sources.join(" ")]),
   );
+
+/** The built `api` and `web` of `dir` as peers, each naming the other (`KEEL_PEER_<NAME>` is required per peer). */
+async function servePeers(dir) {
+  const [apiPort, webPort] = [await freePort(), await freePort()];
+  const url = (port) => `http://127.0.0.1:${port}`;
+  const api = await serveNode(dir, "api", { KEEL_PEER_WEB: url(webPort) }, apiPort);
+  const web = await serveNode(dir, "web", { KEEL_PEER_API: url(apiPort) }, webPort);
+  const stop = async () => {
+    await web.stop();
+    await api.stop();
+  };
+  return { api, web, stop };
+}
 
 /** Each proof resolves to [pass, detail]. */
 const proofs = {
@@ -207,6 +235,105 @@ const proofs = {
       ];
     } finally {
       await server.stop();
+    }
+  },
+
+  /**
+   * The Tauri files register the shell's id as a deep-link scheme; a plain client host sends `dist/web` for any path,
+   * and Chromium opening `/places/oslo` there lands on that place's page.
+   */
+  async "links-in"(dir) {
+    const conf = readFileSync(join(dir, "deploy", "web", "tauri", "tauri.conf.json"), "utf8");
+    const folder = join(dir, "dist", "web");
+    const policy = readFileSync(join(folder, "csp.txt"), "utf8").trim();
+    const server = await serveFiles(folder, { "content-security-policy": policy }, true);
+    const browser = await chromium.launch();
+    try {
+      const page = await browser.newPage();
+      const errors = [];
+      page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
+      page.on("pageerror", (e) => errors.push(String(e)));
+      await page.goto(`${server.base}/places/oslo`);
+      const title = page.locator('[id="places.place.title"]');
+      await title.waitFor({ timeout: 15_000 });
+      const text = await title.textContent();
+      const scheme = conf.includes('"schemes": ["dev.keel.linksin"]');
+      return [
+        scheme && text === "oslo" && errors.length === 0,
+        `scheme ${scheme}, heading "${text}", ${errors.length} errors`,
+      ];
+    } finally {
+      await browser.close();
+      await server.stop();
+    }
+  },
+
+  /**
+   * The built `web` greets the user its identity source names, through the built `api` at `KEEL_PEER_API`; `api`
+   * refuses a user header it did not sign; the compose file names `api` as `web`'s peer.
+   */
+  async "compose-peers"(dir) {
+    const { api, web, stop } = await servePeers(dir);
+    try {
+      await answer(api.base, "/api/hello");
+      await answer(web.base, "/");
+      const home = (headers) =>
+        fetch(`${web.base}/`, { headers: { accept: "text/html", ...headers } }).then((r) => r.text());
+      const greeted = (await home({ "x-forwarded-user": "Ada" })).includes("Hello, Ada");
+      const refused = (await home({})).includes("api.status");
+      const forged = await fetch(`${api.base}/api/hello`, {
+        headers: { accept: "application/json", "x-keel-user": "Ada" },
+      });
+      const compose = readFileSync(join(dir, "deploy", "compose.yaml"), "utf8");
+      const peer = compose.includes("KEEL_PEER_API: http://api:8080");
+      return [
+        greeted && refused && forged.status === 403 && peer,
+        `greeted ${greeted}, signed out refused ${refused}, forged header ${forged.status}, compose peer ${peer}`,
+      ];
+    } finally {
+      await stop();
+    }
+  },
+
+  /**
+   * On a copy under `dist/placed`, `keel codemod place stock --to api --adapter node` gives a tree whose `keel check`,
+   * `keel test` and `keel build` pass; its built `web` shows the count from its `api` peer; placing `stock` back in
+   * `web` restores `topology.ts` and `deploy/` byte for byte.
+   */
+  async "codemod-place"(dir) {
+    const copy = join(dir, "dist", "placed");
+    rmSync(copy, { recursive: true, force: true });
+    mkdirSync(copy, { recursive: true });
+    for (const entry of readdirSync(dir)) {
+      if (entry !== "node_modules" && entry !== "dist")
+        cpSync(join(dir, entry), join(copy, entry), { recursive: true });
+    }
+    symlinkSync(join(dir, "node_modules"), join(copy, "node_modules"));
+    let peers;
+    try {
+      const steps = [
+        ["codemod", ["codemod", "place", "stock", "--to", "api", "--adapter", "node"]],
+        ["check", ["check"]],
+        ["test", ["test"]],
+        ["build", ["build"]],
+      ];
+      for (const [label, args] of steps) {
+        const r = await keel(copy, args);
+        if (!r.pass) return [false, `placed ${label}: ${r.last}`];
+      }
+      peers = await servePeers(copy);
+      await answer(peers.api.base, "/api/stock/lamp");
+      const res = await answer(peers.web.base, "/");
+      const shown = res === null ? "" : await res.text();
+      const peer = shown.includes("4 lamps on the shelf");
+      const back = await keel(copy, ["codemod", "place", "stock", "--to", "web"]);
+      const same = (path) => readFileSync(join(dir, path), "utf8") === readFileSync(join(copy, path), "utf8");
+      const restored =
+        back.pass && same("topology.ts") && same("deploy/compose.yaml") && !existsSync(join(copy, "deploy", "api"));
+      return [peer && restored, `placed built, page from peer ${peer}, placed back byte for byte ${restored}`];
+    } finally {
+      await peers?.stop();
+      rmSync(copy, { recursive: true, force: true });
     }
   },
 
