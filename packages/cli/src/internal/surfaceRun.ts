@@ -42,7 +42,7 @@ const contractsIn = (m: Readonly<Record<string, unknown>>): unknown[] =>
 /**
  * Binary only: `keel build`'s `.keel/surface.json` (k.compat Surface), written read-only as `{ data, hash }`. Each
  * app `modules/<m>/<m>.contract.ts` and `modules/<m>/routes.ts`, and each placed stdlib module's package `./contract`
- * and `./routes` (`stdContract`, `stdRoutes`, named by the import specifier), is evaluated in Node through a Vite SSR
+ * and `./routes` (`stdContract`, `stdRoutes`, named by their real file), is evaluated in Node through a Vite SSR
  * server rooted at `cwd` (app files compiled by `@keel/compiler`, as the build evaluates them). `surfaceOf` reads the
  * contracts, the bindings of each `routes` route table (`bindingsOf` of the evaluated `@keel/router/internal`) and
  * the callers (`contractCallers`); the hash of every app file the evaluation read is recorded so `keel check` reports
@@ -74,7 +74,7 @@ export async function surfaceRun(cwd: string): Promise<{ code: number; notes: st
   const std = (find: typeof stdRoutes): Load[] =>
     placed.flatMap((m) => {
       const at = find(root, m);
-      return at === undefined ? [] : [{ file: at[2], load: at[0] }];
+      return at === undefined ? [] : [{ file: at[0], load: at[0] }];
     });
   const contractFiles: Load[] = [
     ...files.filter(app).map((f) => ({ file: f.path, load: `/${f.path}` })),

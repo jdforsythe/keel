@@ -167,7 +167,7 @@ describe("surfaceRun", () => {
   );
 
   test(
-    "a placed stdlib module whose ./routes throws is E1006 naming its import specifier; code 1",
+    "a placed stdlib module whose ./routes throws is E1006 naming its real file; code 1",
     async () => {
       const dir = project({
         "topology.ts": 'export default topology({ web: { modules: ["app", "boom"], adapter: "node" } });\n',
@@ -182,10 +182,10 @@ describe("surfaceRun", () => {
           'import { module } from "@keel/compiler";\nexport default module({ id: "boom", deps: [], capabilities: [], public: { exports: [] } });\n',
         "node_modules/@keel/std-boom/routes.ts": 'throw new Error("boom routes");\n',
       });
-      expect(await surfaceRun(dir)).toEqual({
-        code: 1,
-        notes: ["E1006 @keel/std-boom/routes failed to evaluate: boom routes\n"],
-      });
+      const run = await surfaceRun(dir);
+      expect(run.code).toBe(1);
+      expect(run.notes).toHaveLength(1);
+      expect(run.notes[0]).toMatch(/^E1006 \S*node_modules\/@keel\/std-boom\/routes\.ts failed to evaluate: boom routes\n$/);
     },
     SLOW,
   );
