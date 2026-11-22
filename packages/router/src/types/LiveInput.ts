@@ -1,3 +1,4 @@
+import type { CurrentUser } from "./CurrentUser.ts";
 import type { LoaderInput } from "./LoaderInput.ts";
 
 /**
@@ -6,5 +7,5 @@ import type { LoaderInput } from "./LoaderInput.ts";
  */
 export type LiveInput = LoaderInput & {
   readonly signal: AbortSignal;
-  readonly currentUser?: () => Promise<string>;
+  readonly currentUser?: CurrentUser;
 };

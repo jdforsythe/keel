@@ -7,6 +7,7 @@ Status: implemented (ADR-0215). Amends k.user (User), k.server (live loader args
 - D2: on delivery only, with a check less than 1,000 ms old on `ctx.clock` standing for the next one. Rejected: a session change signal (Keel sees no session, k.user) and a bounded interval while idle (an identify per stream per interval, for a stream that delivers nothing).
 - D3: `live` shows `denied` for a refused read as for a refused channel. A `read` whose `err` is `api.status` 401 or 403, or a KeelError `keel.denied`, puts `status()` at `denied`, closes the stream and stops reading. `denied` stays distinct from `connecting` (a read pending or failed for another reason) and `offline` (`ctx.net.online()` false).
 - D4: a stream keeps the `user` it opened with. A different answer never becomes the stream's user; it closes the stream, and a new open is judged as any open is.
+- D6: an app with no identity source pays nothing. `currentUser.fixed` is true where `currentUser()` answers the stream's own `user` and runs nothing; a channel route reads it once at open and then runs no check, clock read or timer on a delivery. A public property, so a library route has the same power (k.parity).
 - D5: Keel still reads no credential. Whether the opening request's cookie still names a user is the identity source's answer, so a library whose sign-out only clears the browser's cookie (a self-contained token) keeps answering the user until the token expires, as it would for any request carrying it.
 
 ## Problem

@@ -1,7 +1,7 @@
 import { scope } from "@keel/reactive";
 import type { Loader } from "@keel/router";
 import type { Match } from "@keel/router/internal";
-import { publicError } from "@keel/router/internal";
+import { fixedUser, judgedUser, publicError } from "@keel/router/internal";
 import { type KeelError, type Result, err, ok } from "@keel/schema";
 import { isolate } from "@keel/store";
 import type { Context } from "hono";
@@ -43,10 +43,12 @@ export function liveStream(r: Req, m: Match & { kind: "route" }, live: Loader, c
   const stop = (): void => ac.abort();
   const ended = new Promise<undefined>((resolve) => ac.signal.addEventListener("abort", () => resolve(undefined)));
   const opener = r.rq.caller.set === "" ? r.rq.caller.id : "";
-  // With nothing to ask, the answer is the stream's own `user`, already settled: no `identify`, no bound on the clock.
-  const fixed = asserted || sv.identity === undefined ? Promise.resolve(rq.user) : undefined;
-  const currentUser = (): Promise<string> =>
-    fixed ?? identified(sv, raw, opener).then((answer) => (answer.kind === "user" ? answer.user : ""));
+  // With nothing to ask, the answer is the stream's own `user`, `fixed`: no `identify`, no bound on the clock, and a
+  // caller that reads `fixed` runs no check at all.
+  const currentUser =
+    asserted || sv.identity === undefined
+      ? fixedUser(rq.user)
+      : judgedUser(() => identified(sv, raw, opener).then((answer) => (answer.kind === "user" ? answer.user : "")));
   sv.streams.open++;
   const run = async (stream: SSEStreamingApi): Promise<void> => {
     const halt = (): void => {

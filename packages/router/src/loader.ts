@@ -5,11 +5,13 @@ import { isolate } from "@keel/store";
 import type { Contract } from "./contract/types/Contract.ts";
 import type { Entries } from "./contract/types/Entries.ts";
 import { firstYield } from "./internal/firstYield.ts";
+import { fixedUser } from "./internal/fixedUser.ts";
 import { isSchema } from "./internal/isSchema.ts";
 import { ownValue } from "./internal/ownValue.ts";
 import { refuseSecret } from "./internal/refuseSecret.ts";
 import { withStores } from "./internal/withStores.ts";
 import { yields } from "./internal/yields.ts";
+import type { CurrentUser } from "./types/CurrentUser.ts";
 import type { LiveInput } from "./types/LiveInput.ts";
 import type { Loader } from "./types/Loader.ts";
 import type { LoaderInput } from "./types/LoaderInput.ts";
@@ -31,7 +33,7 @@ type Args<E, St> = {
   readonly stores: St;
   readonly signal: AbortSignal;
 };
-type LiveArgs<E, St> = Args<E, St> & { readonly currentUser: () => Promise<string> };
+type LiveArgs<E, St> = Args<E, St> & { readonly currentUser: CurrentUser };
 type Stores<St> = { readonly stores?: (ctx: Ctx) => St };
 type GetIds<C> = { [K in keyof C & string]: C[K] extends { readonly method: "GET" } ? K : never }[keyof C & string];
 type LiveIds<C> = {
@@ -50,7 +52,7 @@ type Fn = (
     readonly user: string;
     readonly bearer: Secret<string> | undefined;
     readonly signal: AbortSignal;
-    readonly currentUser: () => Promise<string>;
+    readonly currentUser: CurrentUser;
   },
   ctx: Ctx,
 ) => Promise<Out<unknown>> | AsyncGenerator<Out<unknown>>;
@@ -103,7 +105,7 @@ export function loader(
     withStores(stores, args.stores, ctx, (st) =>
       firstYield((signal) => {
         const user = args.user ?? "";
-        return fn({ ...args, user, bearer: args.bearer, stores: st, signal, currentUser: async () => user }, ctx);
+        return fn({ ...args, user, bearer: args.bearer, stores: st, signal, currentUser: fixedUser(user) }, ctx);
       }),
     );
   const base = {
@@ -119,7 +121,7 @@ export function loader(
     ...base,
     live: (a: LiveInput, ctx: Ctx) => {
       const user = a.user ?? "";
-      const currentUser = a.currentUser ?? (async () => user);
+      const currentUser = a.currentUser ?? fixedUser(user);
       const at = { ...a, user, bearer: a.bearer, currentUser };
       return a.stores !== undefined || stores === undefined
         ? yields(fn({ ...at, stores: a.stores }, ctx))
