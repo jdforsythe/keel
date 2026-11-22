@@ -8,14 +8,14 @@ import { NoRows, sql } from "@keel/std-postgres";
 import { database } from "@keel/std-postgres/server";
 import { ready } from "@keel/std-postgres/testing";
 import { beforeAll, expect, test } from "vitest";
-import type { Ctx } from "@keel/ctx";
+import type { SimCtx } from "@keel/ctx";
 import { fresh, migrationsOf, okOf, simCtx, sqlName } from "./fixtures.ts";
 
 beforeAll(async () => {
   await ready();
 });
 /** Runs `calls` started together, advancing the sim clock to its next deadline whenever one is pending, until they settle. */
-async function drive<T>(ctx: Ctx, calls: Promise<T>[]): Promise<T[]> {
+async function drive<T>(ctx: SimCtx, calls: Promise<T>[]): Promise<T[]> {
   let done = false;
   const all = Promise.all(calls).finally(() => {
     done = true;
@@ -50,6 +50,8 @@ test("two callers each a lone `one` then a lone `run` of the value read + 1 end 
   const out = await drive(x.ctx, [caller(), caller()]);
   for (const r of out) okOf(r);
   const [read] = await drive(x.ctx, [x.db(x.ctx).one(sql(Counter)`select n from ${x.T} where id = 1`)]);
+  expect(read).toBeDefined();
+  if (read === undefined) throw new Error("no read result");
   const final = okOf(read);
   expect(final.n).toBe(1);
 });
@@ -65,6 +67,8 @@ test("two callers each in a `transaction` end the counter at 2", async () => {
   const out = await drive(x.ctx, [caller(), caller()]);
   for (const r of out) okOf(r);
   const [read] = await drive(x.ctx, [x.db(x.ctx).one(sql(Counter)`select n from ${x.T} where id = 1`)]);
+  expect(read).toBeDefined();
+  if (read === undefined) throw new Error("no read result");
   const final = okOf(read);
   expect(final.n).toBe(2);
 });
