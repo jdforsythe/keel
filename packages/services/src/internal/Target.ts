@@ -6,6 +6,8 @@
 export type Target = {
   readonly base: string;
   readonly module?: true;
+  /** A Keel origin (k.services Encoding): its requests carry `x-keel: 1`; a third party's carry no Keel header. */
+  readonly keel: boolean;
   readonly sign?:
     | ((method: string, url: string, user: string, body: string | Uint8Array) => string | undefined)
     | undefined;

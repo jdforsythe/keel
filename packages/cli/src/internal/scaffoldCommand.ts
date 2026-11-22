@@ -4,6 +4,8 @@ import type { Io } from "../types/Io.ts";
 import type { OutRecord } from "../types/OutRecord.ts";
 import type { Write } from "../types/Write.ts";
 import type { Outcome } from "./Outcome.ts";
+import { buildCommand } from "./buildCommand.ts";
+import { isError } from "./isError.ts";
 import { loadShells } from "./loadShells.ts";
 import { makeDiag } from "./makeDiag.ts";
 import { openapiInput } from "./openapiInput.ts";
@@ -15,6 +17,8 @@ import { withAgentFiles } from "./withAgentFiles.ts";
 
 const GENERATORS: readonly Op[] = ["project", "module", "route", "component", "store", "transaction", "service"];
 const CODEMODS: readonly Op[] = ["rename", "move", "add-field", "place"];
+/** A `.keel/` artifact `keel build` writes; the ledger's own files are not among them (k.ledger). */
+const BUILT = /^\.keel\/(?!ledger\.json$|monitored\.json$)[^/]+\.json$/;
 const RENAME_KINDS: Readonly<Record<string, readonly string[]>> = {
   pascal: ["component", "schema"],
   dotted: ["store", "route"],
@@ -96,5 +100,25 @@ export async function scaffoldCommand(name: "scaffold" | "codemod", input: Input
   for (const p of edit.changed) add("change", p);
   for (const p of edit.removed) add("remove", p);
   const counts = { created: edit.created.length, changed: edit.changed.length, removed: edit.removed.length };
-  return { records: [...records, summary(dry ? `${label} --dry-run` : label, [], counts)], writes: dry ? [] : writes };
+  const built = into === "" && [...files.keys()].some((p) => BUILT.test(p));
+  if (dry || !built || writes.length === 0)
+    return {
+      records: [...records, summary(dry ? `${label} --dry-run` : label, [], counts)],
+      writes: dry ? [] : writes,
+    };
+  io.apply?.(writes);
+  const tree = [...edit.files].map(([path, source]) => ({ path, source }));
+  const rebuilt = await buildCommand({ ...io, files: tree });
+  const diags = rebuilt.records.filter((r) => r.kind !== "summary");
+  const failed = rebuilt.records.some((r) => r.kind === "summary" && !r.ok) || diags.some(isError);
+  return {
+    records: [
+      ...records,
+      ...diags,
+      summary(label, diags, { ...counts, errors: failed ? Math.max(1, diags.filter(isError).length) : 0 }),
+    ],
+    writes: [...writes, ...rebuilt.writes],
+    ...(rebuilt.stderr === undefined ? {} : { stderr: rebuilt.stderr }),
+    ...(rebuilt.code === undefined ? {} : { code: rebuilt.code }),
+  };
 }

@@ -88,7 +88,7 @@ Bind it as `{ loader, guard: admit }`. A page or layout guard has a `redirect` (
 
 ## Identity
 
-Keel authenticates no one. `identity.ts` beside `topology.ts` default-exports `identityMount('/api/auth')`; `identity.server.ts` default-exports `identity({ identify, handle? })`. `identify` returns the user id (`''` for no one), once per request; handlers get it as `user`. `handle: { path, fn }` hosts an auth library's endpoints and cookies; no route sits under it (E1579, E1580).
+Keel authenticates no one. `identity.ts` beside `topology.ts` default-exports `identityMount('/api/auth')`; `identity.server.ts` default-exports `identity({ identify, handle? })`. `identify` returns the user id (`''` for no one), once per request; handlers get it as `user`. A live loader keeps the `user` it opened with; its `currentUser()` runs `identify` again on the opening request (`''` with no identity source). `handle: { path, fn }` hosts an auth library's endpoints and cookies; no route sits under it (E1579, E1580).
 
 ```ts fragment
 // identity.server.ts
