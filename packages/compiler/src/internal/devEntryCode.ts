@@ -19,11 +19,11 @@ const [RELOAD, DOM, UNCAUGHT, SERVER, CTX, CTX_NODE, ROUTER, ROUTER_INTERNAL] = 
  * The `keel dev` server module (k.topology Local topology): after installing the server DOM, marking the inspector
  * sections registered by an earlier evaluation as carried over (`inspectorsReload`) and installing the process's
  * uncaught-error listeners (`onUncaught` in dev: each records E1577 with the thrown text and serving goes on), it creates one dev
- * `createApp` per `node` deployable of `topology`, each with its own real `ctx` whose storage is the file
+ * `createApp` per `node` and `static` deployable of `topology`, each with its own real `ctx` whose storage is the file
  * `.keel-dev/<name>.storage.json`, the `routeTable` of its modules' bindings (an app module's `routes.ts`, a stdlib
  * module's package `./routes` export: `stdRoutes`) and runners, the `.keel/` artifacts and `std.json`, the project's `identity.server.ts`
  * (k.user) when it exists, and the
- * others as in-process peers. It exports `apps`, `[name, app, served, mount]` per
+ * `node` ones other than itself as in-process peers. It exports `apps`, `[name, app, served, mount]` per
  * deployable, `served(path)` telling whether a route of that deployable (an API route included) matches the path and
  * `mount` the identity source's `handle.path` (`undefined` without one). Each `createApp` takes `origins`, every
  * deployable's `origins` in `topology` (the static read's, k.origins), written as JSON, never the runtime value's.
@@ -31,9 +31,9 @@ const [RELOAD, DOM, UNCAUGHT, SERVER, CTX, CTX_NODE, ROUTER, ROUTER_INTERNAL] = 
 export function devEntryCode(root: string, topology: Topology): string {
   const abs = (rel: string): string => JSON.stringify(path.join(root, rel).split(path.sep).join("/"));
   const has = (rel: string): boolean => fs.existsSync(path.join(root, rel));
-  const node = Object.keys(topology)
-    .sort()
-    .filter((n) => topology[n]?.adapter === "node");
+  const names = Object.keys(topology).sort();
+  const node = names.filter((n) => topology[n]?.adapter === "node");
+  const served = names.filter((n) => topology[n]?.adapter === "node" || topology[n]?.adapter === "static");
   const lines = [
     `import { installServerDom } from ${DOM};`,
     `import { inspectorsReload } from ${RELOAD};`,
@@ -58,7 +58,7 @@ export function devEntryCode(root: string, topology: Topology): string {
   const std = has(".keel/std.json") ? `, std: ${abs(".keel/std.json")}` : "";
   const id = has("identity.server.ts") ? ", identity" : "";
   if (id !== "") lines.push(`const { default: identity } = await import(${abs("identity.server.ts")});`);
-  for (const name of node) {
+  for (const name of served) {
     const mods = topology[name]?.modules ?? [];
     const files = mods.flatMap((m) => {
       const file = has(`modules/${m}/routes.ts`) ? path.join(root, `modules/${m}/routes.ts`) : stdRoutes(root, m)?.[0];

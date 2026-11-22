@@ -1,6 +1,6 @@
 # RFC 0179: k.hosting, k.topology: what `keel build` writes for a `static` deployable
 
-Status: accepted (ADR-0201). For backlog 1024.
+Status: implemented (ADR-0201). For backlog 1024.
 
 ## Decisions
 - D1: `keel build` writes `dist/<name>/` per `static` deployable. For each of its routes it writes the document that deployable's own `createApp` answers to a GET of the route's path at build time: `index.html` for `/`, `<path>/index.html` for any other path. The build also writes `404.html` (the not-found document), `assets/` (content-hashed, with the resume entry of the deployable's islands), `keel-mark.svg` and `csp.txt` (k.security). Nothing of a `static` deployable lands in `dist/` itself.

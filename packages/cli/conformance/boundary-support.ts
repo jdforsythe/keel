@@ -86,6 +86,25 @@ export function moduleA(actions: boolean): Tree {
   };
 }
 
+/**
+ * `moduleA(false)` for a `static` deployable: a route with params or actions is E1553 (k.topology), so `a.show` is the one path `/a`,
+ * its loader reads no params and the page links to it without any.
+ */
+export function moduleAStatic(): Tree {
+  const { "modules/a/Params.schema.ts": _p, "modules/a/Search.schema.ts": _s, ...rest } = moduleA(false);
+  return {
+    ...rest,
+    "modules/a/a.contract.ts":
+      "import { contract } from '@keel/router/contract'\nexport const a = contract('a', {\n  'a.home': { path: '/' },\n  'a.show': { path: '/a' },\n})\n",
+    "modules/a/load.server.ts": (rest["modules/a/load.server.ts"] ?? "")
+      .replace("async ({ params }) =>", "async () =>")
+      .replace("helper(params.id)", "helper('x')"),
+    "modules/a/Page.tsx":
+      "import { Box, Link } from '@keel/ui'\nimport { a } from './a.contract.ts'\n" +
+      "export default function Page() {\n  return (\n    <Box as=\"main\">\n      <Link to={a.href('a.home')}>Back</Link>\n    </Box>\n  )\n}\n",
+  };
+}
+
 /** Module `w` of a `client` deployable: its `*.server.ts` loader and `*.guard.ts` guard run in the browser. */
 export function moduleW(): Tree {
   const c = CANARY;
@@ -118,6 +137,11 @@ const ENTRY =
   "import Page from './Page.tsx'\nimport { a } from './a.contract.ts'\nimport { routes } from './routes.ts'\n" +
   "Reflect.set(globalThis, 'entryPage', [Page, a.href('a.show', { id: 'x' }), routes])\nexport const entry = 1\n";
 
+/** `ENTRY` for `moduleAStatic`: the one-path route takes no params. */
+const ENTRY_STATIC =
+  "import Page from './Page.tsx'\nimport { a } from './a.contract.ts'\nimport { routes } from './routes.ts'\n" +
+  "Reflect.set(globalThis, 'entryPage', [Page, a.href('a.show'), routes])\nexport const entry = 1\n";
+
 /** The shared project root files: package, config, tsconfig. */
 export const base = (): Tree => ({
   "package.json": `${JSON.stringify({ name: "fx", private: true, type: "module", version: "1.0.0" })}\n`,
@@ -136,8 +160,13 @@ export function nodeTree(placement: Placement = "node"): Tree {
   return {
     ...base(),
     ...topology,
-    ...moduleA(placement === "node"),
-    ...(placement === "node" ? {} : { "index.html": HTML("/modules/a/entry.ts"), "modules/a/entry.ts": ENTRY }),
+    ...(placement === "static" ? moduleAStatic() : moduleA(placement === "node")),
+    ...(placement === "node"
+      ? {}
+      : {
+          "index.html": HTML("/modules/a/entry.ts"),
+          "modules/a/entry.ts": placement === "static" ? ENTRY_STATIC : ENTRY,
+        }),
   };
 }
 

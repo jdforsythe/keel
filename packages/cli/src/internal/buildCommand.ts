@@ -28,7 +28,7 @@ const ARTIFACTS = ["a11y.json", "deps.json", "ids.json", "styles.json"] as const
  * `keel build`: run `keel check` and stop on an error (E1005 aside), then compile every app source of the root project (`isSourcePath`, the rule the Vite plugin and `keel
  * check` share; nested projects by `projectDirs`) with `@keel/compiler`. Diagnostics flow through unchanged; with no error, the `.keel/` artifacts
  * (`{ data, hash }`, sorted keys, read-only) are returned as writes, with `std.json` from `stdArtifact` after the
- * stdlib `deps` are imported (E1159; its E1158 too; E1559 from `pathCollisions`; E1579 from `identityDiags`; E1558 from `serverOnlyCalls`; E1552, E1565 and E1566 from `hostingDiags`), and the deploy files of `topology.ts` (k.deploy; the CI workflow unless the project is an app inside a workspace).
+ * stdlib `deps` are imported (E1159; its E1158 too; E1559 from `pathCollisions`; E1579 from `identityDiags`; E1558 from `serverOnlyCalls`; E1552, E1565 and E1566 from `hostingDiags`; check's W1012), and the deploy files of `topology.ts` (k.deploy; the CI workflow unless the project is an app inside a workspace).
  * With no error and a host `Io.build`, the writes are applied and the disk half runs (`routes.json`, `surface.json`,
  * the Vite builds), its diagnostics, stderr and exit code joining the result: `keel build` and MCP `build` run one path.
  * The declared shells' targets load first (`shellTargets`). `--target` (k.shell Build) then runs `shellPlan`'s checks, and any diagnostic there ends the build with nothing
@@ -67,6 +67,8 @@ export async function buildCommand(io: Io, input: Input = {}): Promise<Outcome> 
       : [...pathCollisions(files, topology, io.cwd), ...serverOnlyCalls(files, topology)]),
   ];
   const diags: OutRecord[] = [
+    // W1012 (k.head Document source): check found a project `index.html`, which the build ignores too.
+    ...checked.filter((r) => r.kind === "diag" && r.code === "W1012"),
     ...[...loaded, ...r.diagnostics, ...std.diagnostics, ...paths].map((d) =>
       makeDiag(d.code, d.message, { path: d.path, line: d.line, col: d.col, see: d.see, fix: d.fix }),
     ),

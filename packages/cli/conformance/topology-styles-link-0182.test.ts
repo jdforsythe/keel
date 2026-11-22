@@ -42,7 +42,7 @@ async function nodeCss(dir: string): Promise<string[]> {
   return out;
 }
 
-test.skip(
+test(
   "With `styles: ['@keel/ui/fonts']`, a built `node` document's head and a built `client` `index.html` each link a stylesheet holding that file's `@font-face` rules.",
   async () => {
     expect(keel(styled, ["build"]).status).toBe(0);
@@ -52,7 +52,7 @@ test.skip(
   SLOW,
 );
 
-test.skip(
+test(
   "Without `styles`, neither a built `node` document's head nor a built `client` `index.html` links a stylesheet holding `@font-face` rules.",
   async () => {
     expect(keel(plain, ["build"]).status).toBe(0);

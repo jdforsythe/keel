@@ -8,7 +8,7 @@
     "mcp.tools-list": 1900,
     "docs.map": 1490,
     "docs.section": 1875,
-    "docs.skill": 2500,
+    "docs.skill": 2550,
     "docs.for": 400,
     "docs.agents": 600
   },
@@ -18,7 +18,7 @@
       "platform": "node"
     },
     "@keel/check/explain": {
-      "max": "17kb",
+      "max": "17.5kb",
       "platform": "node"
     },
     "@keel/cli": {

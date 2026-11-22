@@ -110,12 +110,12 @@ describe("route params", () => {
 describe("project --workspace", () => {
   const files = (): Files => apply("project", { name: "shop", workspace: true }, new Map());
 
-  it("emits index.html and vitest.config.ts, and no turbo, CI or .keel", () => {
+  it("emits vitest.config.ts, and no index.html, turbo, CI or .keel", () => {
     const f = files();
     expect(f.get("vitest.config.ts")).toContain(`import { keelConfig } from "@keel/tooling/vitest-config";`);
     expect(f.get("vitest.config.ts")).toContain(`environment: "happy-dom"`);
     expect(f.get("vitest.config.ts")).toContain("plugins: [keel()]");
-    expect(f.get("index.html")).toContain("/@keel/entry.ts");
+    expect(f.has("index.html")).toBe(false);
     expect([...f.keys()].filter((p) => p === "turbo.json" || p.startsWith(".github") || p.startsWith(".keel"))).toEqual(
       [],
     );

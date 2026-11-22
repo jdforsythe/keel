@@ -1,6 +1,6 @@
 # RFC 0182: k.head, k.topology: Keel writes every document; a deployable's `styles` carries its CSS
 
-Status: accepted (ADR-0204). For backlog 1020, from walkthrough finding L1-8 and the font note of L1-1 (`tasks/p1/walkthrough-findings.md`).
+Status: implemented (ADR-0204). For backlog 1020, from walkthrough finding L1-8 and the font note of L1-1 (`tasks/p1/walkthrough-findings.md`).
 
 ## Decisions
 - D1: one source of truth. Keel writes every document in dev and in build. A `node` or `static` deployable's document is k.head's (Server). A `client` deployable's `index.html` is generated in dev too, as the build writes it now when a project has none (`packages/compiler/src/internal/indexHtml.ts`): charset, viewport, `<title>` its name, the icon, a stylesheet link per entry `.css` file, `#app`, the entry script. A project's own `index.html` is never read. The rejected alternative, reading `index.html` in both, is in Alternatives.

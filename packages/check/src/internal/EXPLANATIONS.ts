@@ -88,6 +88,13 @@ const ROWS: readonly Row[] = [
     "k.bundle",
   ],
   [
+    "W1012",
+    "a project root holding index.html: Keel writes every document and never reads the file",
+    "Dev and build write each document's head, so what the file held would show nowhere: markup, scripts, stylesheets.",
+    "move a header into a layout component and a stylesheet into the deployable's styles, then delete index.html",
+    "k.head",
+  ],
+  [
     "E1049",
     "internal compiler failure",
     "A Keel bug, not app code; the message is verbatim.",
@@ -876,6 +883,13 @@ const ROWS: readonly Row[] = [
     "a placed stdlib module whose ./contract resolves and ./routes does not (at its id)",
     "Its contract's routes would type-check and links to them build, while the app serves none; the package is broken.",
     "install a version of the package whose exports holds ./routes, or unplace the module",
+    "k.topology",
+  ],
+  [
+    "E1587",
+    "a styles entry in topology.ts that is not a string literal or whose package export is not a .css file",
+    "The entry imports each one, so the build links it in every document; a path or a script export has no stylesheet to link.",
+    "styles: ['./fonts.css'] -> styles: ['@keel/ui/fonts']",
     "k.topology",
   ],
   [
