@@ -56,7 +56,7 @@ Apps: G1 golden-1 (todo board: `web` client + `api` node on SQLite), G2 golden-2
 | k.cli: `keel check`, `keel test` | x | x | x | x | ci | | CI `check` and a11y report steps |
 | k.cli: `keel docs` | - | - | - | - | | x | |
 | k.cli: `keel evidence` | - | - | - | - | | x | `pnpm evidence:report --check` reads the ledger, not an app bundle |
-| k.cli: `keel codemod` | - | - | - | - | | x | |
+| k.cli: `keel codemod` | - | - | - | - | ci | | `examples/codemod-place`: the smoke runs `keel codemod place stock --to api --adapter node` on a copy, checks, tests, builds and serves the result as peers, then places it back byte for byte |
 | k.cli: MCP, LSP | - | - | - | - | | x | |
 | k.docs | - | - | - | - | | x | |
 | k.scaffold | - | - | - | - | | x | |
@@ -73,7 +73,7 @@ Apps: G1 golden-1 (todo board: `web` client + `api` node on SQLite), G2 golden-2
 | k.mount-scope | - | - | - | - | | x | |
 | k.return (shell mount) | - | - | - | - | ci | | `examples/shell-mount/test/shellGuard.test.ts` (redirect with `next`, mount post); the return after sign-in is untestable in process (`tasks/p1/scenario3-findings.md` S3-1) |
 | k.opening | t | - | - | - | | | `apps/golden-1/test/editor.test.ts` |
-| k.links (links in) | - | - | - | - | | x | |
+| k.links (links in) | - | - | - | - | ci | | `examples/links-in/test/linksIn.test.ts` (a link at launch and while running lands on the page; other schemes and paths ignored); the smoke checks the Tauri scheme, that the shell build carries the deep-link listener without `identity.ts`, and opens the page path on a plain client host |
 | k.serverlog | t | - | - | - | | | `apps/golden-1/test/realtime.test.ts` |
 | k.sync (concurrent writes) | x | - | - | - | ci | | `apps/golden-1/modules/api/postEdit.server.ts` (409 `keel.conflict`) |
 | k.persist: SQLite | x | - | - | - | ci | | `apps/golden-1/topology.ts`, `restart.mjs` |
@@ -146,7 +146,7 @@ Apps: G1 golden-1 (todo board: `web` client + `api` node on SQLite), G2 golden-2
 | Tauri shell | x | - | - | - | ci | | |
 | Capacitor iOS shell | x | - | - | - | ci | | |
 | Capacitor Android shell | x | - | - | - | ci (build) | | |
-| two nodes as peers (`KEEL_PEER_<NAME>`) | - | x | - | - | ci | | `resume.mjs` |
+| two nodes as peers (`KEEL_PEER_<NAME>`) | - | x | - | - | ci | | `resume.mjs`; `examples/compose-peers` (a `service({ contract })` call to the peer with the user carried in `x-keel-user`; a forged header is 403) |
 
 ## Counts
 

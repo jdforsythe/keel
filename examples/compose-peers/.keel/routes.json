@@ -1,0 +1,1 @@
+{"data":{"front.home":{"actions":[],"guard":null,"layout":null,"module":"front","params":null,"path":"/","search":null},"greet.hello":{"actions":[],"api":true,"guard":null,"layout":null,"method":"GET","module":"greet","params":null,"path":"/api/hello","search":null}},"hash":"fnv1a:5eded770"}
