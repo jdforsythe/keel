@@ -19,6 +19,11 @@ it("starts empty, in English, with a link to the German page", async () => {
   expect(page.find("receipts.saving")).toMatchObject({ role: "status", text: "" });
   expect(page.find("receipts.switch").text).toBe("Deutsch");
   expect(page.focusOrder()).toEqual([
+    "app.nav.list",
+    "app.nav.receipts",
+    "app.nav.setup",
+    "app.nav.profile",
+    "app.nav.signOut",
     "receipts.switch",
     "receipts.new:shop",
     "receipts.new:amount",

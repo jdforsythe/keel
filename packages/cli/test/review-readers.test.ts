@@ -52,6 +52,20 @@ describe("code readers", () => {
     expect(codes("README.md", "Set KEEL_ALLOW_ORIGINS.\n")).toEqual([]);
   });
 
+  test("R2451 reads a transaction's allow with its reason; 'lost updates' is high, 'write skew' the row's medium", () => {
+    const src = `export const a = (ctx) => db(ctx).transaction(fn, { allow: 'lost updates', reason: 'view counts' })
+export const b = (ctx) => db(ctx).transaction(fn, { allow: "write skew", reason: why })
+export const c = (ctx) => db(ctx).transaction(fn)
+export const d = (ctx) => transaction(fn, { allow: 'write skew', reason: 'r' })
+export const e = (ctx) => db(ctx).commit(fn, { allow: 'write skew', reason: 'r' })
+`;
+    const found = codeEscapes("modules/m/a.server.ts", src, kindOf("modules/m/a.server.ts", ""));
+    expect(found.map((r) => [r.code, r.line, r.danger, r.reason, r.text])).toEqual([
+      ["R2451", 1, "high", "view counts", "allow: 'lost updates'"],
+      ["R2451", 2, undefined, undefined, 'allow: "write skew"'],
+    ]);
+  });
+
   test("R1050 reads outside app code only, and never as const", () => {
     const cast = fixture("cast.ts");
     for (const p of [

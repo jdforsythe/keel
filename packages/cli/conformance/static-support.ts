@@ -1,7 +1,7 @@
 // Shared helpers for the `static` deployable conformance files (not a test file): the real `keel` binary over a temp project with `@keel/*` linked
 // (compat-support.ts). Seed 1337 for every property.
-// ASSUMPTIONS (spec names no fixture layout): module `s` serves routes `/` and `/about` whose loaders (in `s.server.ts`) return `{ text }`
-// and whose page shows `props.data.text`; a deployable `site` has adapter `static`; a failing loader returns `err` of a `keel.notFound` error.
+// ASSUMPTIONS (spec names no fixture layout): module `s` serves routes `/` and `/about` whose loaders return `{ text }`
+// and whose page shows `props.data.text` beside a button with a handler (an island); a deployable `site` has adapter `static`; a failing loader returns `err` of a `keel.notFound` error.
 import { type ChildProcess, spawn } from "node:child_process";
 import http from "node:http";
 import net from "node:net";
@@ -19,18 +19,24 @@ const BIN = join(REPO, "packages", "cli", "src", "bin.ts");
 
 export type Failing = "none" | "notFound" | "denied" | "throws";
 
-const loaderSrc = (id: string, text: string, failing: boolean, how: Failing): string => {
+/** One loader file (one export per file, k.check): `ok({ text })`, an `err` of `keel.notFound`, or a throw that is no `throw` statement (E1451 forbids one in app code). */
+const loaderSrc = (name: string, id: string, text: string, how: Failing): string => {
   const body =
-    failing && how === "notFound"
-      ? "return err(Missing.make({}))"
-      : failing && how === "throws"
-        ? "throw new Error('boom')"
-        : `return ok({ text: '${text}' })`;
-  return `export const ${id.replace(".", "_")} = loader(site, '${id}', { output: Out }, async () => {\n  ${body}\n})\n`;
+    how === "notFound"
+      ? "err({ code: 'keel.notFound', message: 'No page', data: null })"
+      : how === "throws"
+        ? "ok({ text: JSON.parse('{').text })"
+        : `ok({ text: '${text}' })`;
+  return `import { loader } from '@keel/router'\nimport { ${how === "notFound" ? "err" : "ok"} } from '@keel/schema'\nimport { Out } from './Out.schema.ts'\nimport { s } from './s.contract.ts'\n\nexport const ${name} = loader(s, '${id}', { output: Out }, async () => ${body})\n`;
 };
 
-/** A project whose deployable `site` has adapter `static` (or `adapter`) over module `s`; `failing` breaks the loader of `/about`. */
+/**
+ * A project whose deployable `site` has adapter `static` (or `adapter`) over module `s`; `failing` breaks `/about`.
+ * The app passes `keel check`: contract export `s`, one export per file, schemas in `*.schema.ts`, a page guard with `redirect`.
+ * The page has an event handler, so each document is an island and scripts the resume entry (k.runtime).
+ */
 export function staticTree(failing: Failing = "none", topologyBody?: string, adapter = "static"): Tree {
+  const about: Failing = failing === "notFound" || failing === "throws" ? failing : "none";
   return {
     "package.json": `${JSON.stringify({ name: "fx", private: true, type: "module", version: "1.0.0" })}\n`,
     "vite.config.ts":
@@ -44,18 +50,17 @@ export function staticTree(failing: Failing = "none", topologyBody?: string, ada
     "modules/s/module.ts":
       "import { module } from '@keel/compiler'\nexport default module({ id: 's', deps: [], capabilities: [], public: { exports: [] } })\n",
     "modules/s/s.contract.ts":
-      "import { contract } from '@keel/router/contract'\nexport const site = contract('s', { 's.home': { path: '/' }, 's.about': { path: '/about' } })\n",
-    "modules/s/s.server.ts":
-      "import { guard, loader } from '@keel/router'\nimport { err, ok, s } from '@keel/schema'\nimport { site } from './s.contract.ts'\n" +
-      "const Out = s.object({ text: s.string() })\nconst Missing = s.error('keel.notFound', s.object({}))\n" +
-      loaderSrc("s.home", HOME_TEXT, false, failing) +
-      loaderSrc("s.about", ABOUT_TEXT, failing === "notFound" || failing === "throws", failing) +
-      "const Denied = s.error('keel.denied', s.object({}))\nexport const deny = guard({}, async () => err(Denied.make({})))\n",
-    "modules/s/routes.ts":
-      "import { manifest } from '@keel/router'\nimport { Text } from '@keel/ui'\nimport { site } from './s.contract.ts'\nimport { deny, s_home, s_about } from './s.server.ts'\n" +
-      "const Home = (props: { data: { text: string } }) => Text({ id: 's.home.text', children: props.data.text })\n" +
-      "const About = (props: { data: { text: string } }) => Text({ id: 's.about.text', children: props.data.text })\n" +
-      `export const routes = manifest(site, { 's.home': { component: Home, loader: s_home }, 's.about': { component: About, loader: s_about${failing === "denied" ? ", guard: deny" : ""} } })\n`,
+      "import { contract } from '@keel/router/contract'\nexport const s = contract('s', { 's.home': { path: '/' }, 's.about': { path: '/about' } })\n",
+    "modules/s/Out.schema.ts": "import { s } from '@keel/schema'\nexport const Out = s.object({ text: s.string() })\n",
+    "modules/s/home.server.ts": loaderSrc("home", "s.home", HOME_TEXT, "none"),
+    "modules/s/about.server.ts": loaderSrc("about", "s.about", ABOUT_TEXT, about),
+    "modules/s/deny.guard.ts":
+      "import { guard } from '@keel/router'\nimport { err, ok } from '@keel/schema'\n" +
+      "export const deny = guard({ redirect: 's.home' }, async ({ user }) => (user === '' ? err({ code: 'keel.denied', message: 'No', data: null }) : ok(null)))\n",
+    "modules/s/Page.tsx":
+      "import { Box, Button, Text } from '@keel/ui'\nexport default function Page(props: { data: { text: string } }) {\n  return (\n" +
+      '    <Box id="s.page">\n      <Text id="s.page.text">{props.data.text}</Text>\n      <Button id="s.page.more" onClick={() => undefined}>More</Button>\n    </Box>\n  )\n}\n',
+    "modules/s/routes.ts": `import { manifest } from '@keel/router'\nimport Page from './Page.tsx'\nimport { about } from './about.server.ts'\nimport { deny } from './deny.guard.ts'\nimport { home } from './home.server.ts'\nimport { s } from './s.contract.ts'\nexport const routes = manifest(s, { 's.home': { component: Page, loader: home }, 's.about': { component: Page, loader: about${failing === "denied" ? ", guard: deny" : ""} } })\n`,
   };
 }
 

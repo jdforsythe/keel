@@ -25,7 +25,7 @@ export const Props = s.object({ items: s.array(s.object({ id: s.id('Todo'), titl
 
 export default function TodoList(props: Infer<typeof Props>) {
   return (
-    <Box as="ul" id="todos.list" gap="2">
+    <Box as="ul" id="todos.list" direction="column" gap="2">
       <For each={props.items} key="id">
         {(t) => <Box as="li">{t.title}</Box>}
       </For>

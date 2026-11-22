@@ -1,6 +1,7 @@
-// `keel build` of a `static` deployable (k.topology Declaration, k.security Other deployables): the project's own build
-// of a topology with no `client` or `node` deployable serves the first `static` one's resume entry, writes a default
-// `index.html` when the project has none, and a build error with no deployable to serve names the fix.
+// `keel build` of a `static` deployable (k.hosting Static, k.topology Declaration): a topology with no `client` or
+// `node` deployable serves the first `static` one's resume entry; a `static` build writes no `index.html`, builds its
+// client entry into `dist/<name>/` and its build entry (exporting `render`) outside `dist/`; a build error with no
+// deployable to serve names the fix.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -25,7 +26,7 @@ const project = (top: string | undefined): string => {
 };
 const STATIC = `{ web: { modules: ["app"], adapter: "static" } }`;
 
-describe("the own build of a static-only topology", () => {
+describe("a static deployable's build", () => {
   it("serves the static deployable's resume entry, with no KEEL_DEPLOYABLE", async () => {
     Reflect.deleteProperty(process.env, "KEEL_DEPLOYABLE");
     const p = keel();
@@ -33,37 +34,30 @@ describe("the own build of a static-only topology", () => {
     expect(await p.load("/@keel/entry.ts")).toBe(resumeEntry(undefined, "production", "virtual:keel.css"));
   });
 
-  it("writes a default index.html scripting the entry when the project has none, and keeps one it has", async () => {
+  it("writes no index.html for a static deployable, in a build or in dev", async () => {
     Reflect.deleteProperty(process.env, "KEEL_DEPLOYABLE");
-    const root = project(STATIC);
-    const p = keel();
-    p.configResolved({ root, command: "build" });
-    const index = path.join(root, "index.html");
-    expect(p.resolveId(index)).toBe(index);
-    expect(await p.load(index)).toBe(indexHtml("web", "/@keel/entry.ts"));
-    fs.writeFileSync(index, "<p>own</p>");
-    expect(p.resolveId(index)).toBeNull();
-    expect(await p.load(index)).toBeNull();
+    for (const command of ["build", "serve"] as const) {
+      const root = project(STATIC);
+      const p = keel();
+      p.configResolved({ root, command });
+      expect(p.resolveId(path.join(root, "index.html"))).toBeNull();
+      expect(await p.load(path.join(root, "index.html"))).toBeNull();
+    }
   });
 
-  it("writes no index.html in dev, or when a node deployable is the one served", async () => {
-    Reflect.deleteProperty(process.env, "KEEL_DEPLOYABLE");
-    const dev = project(STATIC);
-    const p = keel();
-    p.configResolved({ root: dev, command: "serve" });
-    expect(p.resolveId(path.join(dev, "index.html"))).toBeNull();
-    const mixed = project(`{ api: { modules: ["a"], adapter: "node" }, web: { modules: ["app"], adapter: "static" } }`);
-    const q = keel();
-    q.configResolved({ root: mixed, command: "build" });
-    expect(q.resolveId(path.join(mixed, "index.html"))).toBeNull();
-  });
-
-  it("serves the static deployable KEEL_DEPLOYABLE names, with its index.html", async () => {
+  it("builds the client entry into dist/<name>/ and the build entry outside dist/, exporting render, not start", async () => {
     process.env.KEEL_DEPLOYABLE = "web";
     const root = project(`{ api: { modules: ["a"], adapter: "node" }, web: { modules: ["app"], adapter: "static" } }`);
     const p = keel();
+    const c = JSON.stringify(p.config({ root }, { command: "build" }));
+    expect(c).toContain('"build":{"outDir":"dist/web"');
+    expect(c).toContain('"outDir":"node_modules/.keel/prerender/web"');
     p.configResolved({ root, command: "build" });
-    expect(await p.load(path.join(root, "index.html"))).toBe(indexHtml("web", "/@keel/entry.ts"));
+    const code = String(await p.load("\0virtual:keel/server"));
+    expect(code).toContain("export const render = (dir, std) => prerender(");
+    expect(code).toContain('deployable: "web"');
+    expect(code).not.toContain("start(");
+    expect(code).not.toContain("KEEL_APP_DIR");
   });
 });
 

@@ -24,17 +24,17 @@ afterAll(() => {
 });
 
 describe("k.scaffold: project writes no index.html and declares styles", () => {
-  it.skip("`keel scaffold project p` writes no `index.html`, and `topology.ts`'s deployable has `styles: ['@keel/ui/fonts']`", () => {
+  it("`keel scaffold project p` writes no `index.html`, and `topology.ts`'s deployable has `styles: ['@keel/ui/fonts']`", () => {
     expect([...tree.keys()].filter((p) => p.split("/").pop() === "index.html")).toEqual([]);
     expect(tree.get("topology.ts") ?? "").toMatch(STYLES);
   });
 
-  it.skip("`keel scaffold project p --workspace` writes no `index.html`, and `topology.ts`'s deployable has `styles: ['@keel/ui/fonts']`", () => {
+  it("`keel scaffold project p --workspace` writes no `index.html`, and `topology.ts`'s deployable has `styles: ['@keel/ui/fonts']`", () => {
     expect([...wsTree.keys()].filter((p) => p.split("/").pop() === "index.html")).toEqual([]);
     expect(wsTree.get("topology.ts") ?? "").toMatch(STYLES);
   });
 
-  it.skip("for each adapter `client`, `node` and `static` the generated `topology.ts` has the `styles` entry and no `index.html` is written", () => {
+  it("for each adapter `client`, `node` and `static` the generated `topology.ts` has the `styles` entry and no `index.html` is written", () => {
     for (const adapter of ["client", "node", "static"]) {
       const files = apply("project", { name: "shop", adapter }, new Map()).files;
       expect(files.has("index.html"), adapter).toBe(false);

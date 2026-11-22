@@ -1,7 +1,7 @@
 import pg from "pg";
-import type { Isolation } from "../Isolation.ts";
 import type { Conn } from "./Conn.ts";
 import type { Engine } from "./Engine.ts";
+import type { Level } from "./Level.ts";
 import type { Raw } from "./Raw.ts";
 import { TypeCache } from "./TypeCache.ts";
 import { verifiedSslmode } from "./verifiedSslmode.ts";
@@ -23,7 +23,8 @@ const run = async (q: Queryable, text: string, params: readonly (string | null)[
 
 /**
  * The `pg` engine on a `postgres:` or `postgresql:` URL: a pool of at most 10 connections, TLS as the URL's `sslmode`
- * says, idle connections letting the process exit. Client errors are dropped, so a lost connection fails the
+ * says, idle connections letting the process exit. Each connection starts with `default_transaction_isolation`
+ * `serializable`, so a lone statement is a `serializable` transaction in one round trip. Client errors are dropped, so a lost connection fails the
  * statement in flight or the next one and never throws from an event.
  */
 export function pgEngine(url: string): Engine {
@@ -32,6 +33,7 @@ export function pgEngine(url: string): Engine {
     max: 10,
     allowExitOnIdle: true,
     connectionTimeoutMillis: 10_000,
+    options: "-c default_transaction_isolation=serializable",
   });
   pool.on("error", () => undefined);
   pool.on("connect", (client) => {
@@ -40,11 +42,11 @@ export function pgEngine(url: string): Engine {
   return {
     types: new TypeCache(),
     statement: (text, params) => run(pool, text, params),
-    async tx<T>(isolation: Isolation, fn: (c: Conn) => Promise<{ readonly value: T; readonly commit: boolean }>) {
+    async tx<T>(level: Level, fn: (c: Conn) => Promise<{ readonly value: T; readonly commit: boolean }>) {
       const client = await pool.connect();
       let broken = false;
       try {
-        await client.query(`begin isolation level ${isolation}`);
+        await client.query(`begin isolation level ${level}`);
         const conn: Conn = {
           query: (text, params) => run(client, text, params),
           exec: async (text) => {

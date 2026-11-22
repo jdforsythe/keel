@@ -30,12 +30,11 @@ describe("project template carries the Keel brand (docs/BRAND.md)", () => {
     expect(standalone.get("public/keel-mark.svg")).toBe(mark);
     expect(workspace.get("public/keel-mark.svg")).toBe(mark);
   });
-  it("workspace index.html loads the self-hosted fonts and renders the mark in a header", () => {
-    const html = workspace.get("index.html") ?? "";
-    expect(html).toContain('import "@keel/ui/fonts"');
-    expect(html).toContain("<header>");
-    expect(html).toContain('src="/keel-mark.svg"');
-    expect(html).not.toMatch(/https?:\/\//);
+  it("the deployable loads the self-hosted fonts through styles, and no index.html is written", () => {
+    for (const files of [standalone, workspace]) {
+      expect(files.get("topology.ts")).toContain('styles: ["@keel/ui/fonts"]');
+      expect(files.has("index.html")).toBe(false);
+    }
   });
 });
 

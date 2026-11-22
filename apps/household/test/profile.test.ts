@@ -17,10 +17,14 @@ it("shows the member's details from their first sign-in, and the token the test 
   expect(page.find("members.signedIn").text).toBe(`Signed in as ${EMAIL}`);
   expect(page.find("members.tokens.list").text).toContain("Works until");
   expect(page.focusOrder()).toEqual([
+    "app.nav.list",
+    "app.nav.receipts",
+    "app.nav.setup",
+    "app.nav.profile",
+    "app.nav.signOut",
     "members.profileForm:name",
     "members.profileForm:phone",
     "members.save",
-    "members.signOut",
     "members.mint",
     "members.revoke.0",
   ]);

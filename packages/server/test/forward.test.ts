@@ -67,6 +67,7 @@ async function served(ctx: Ctx): Promise<Served> {
     keys: await callerSigner(undefined),
     secure: undefined,
     built: undefined,
+    css: [],
     entry: "/@keel/entry.ts",
     name: "x",
     origin: undefined,

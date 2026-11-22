@@ -12,6 +12,10 @@
       "types": "./src/internal/start.ts",
       "default": "./src/internal/start.ts"
     },
+    "./internal/prerender": {
+      "types": "./src/internal/prerender.ts",
+      "default": "./src/internal/prerender.ts"
+    },
     "./internal/onUncaught": {
       "types": "./src/internal/onUncaught.ts",
       "default": "./src/internal/onUncaught.ts"

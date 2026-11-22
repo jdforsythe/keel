@@ -129,13 +129,14 @@ describe("k.head: a built document has the head this section names; an unmatched
     expect(m?.[1] ?? "<").not.toContain("<");
   });
 
-  it("without assets (dev mode) the document still has the title and no stylesheet or icon link", async () => {
+  it("in dev the head holds the title and a stylesheet link to /@keel/styles.css?d=<deployable>, and no icon link", async () => {
     const app = await appFor("web");
     const res = await get(app, "/");
     expect(res.status).toBe(200);
     const doc = parse(await res.text());
     expect(doc.head.querySelector("title")?.textContent).toBe("web");
-    expect(doc.head.querySelector('link[rel="stylesheet"]')).toBeNull();
+    const links = [...doc.head.querySelectorAll('link[rel="stylesheet"]')].map((l) => l.getAttribute("href"));
+    expect(links).toEqual(["/@keel/styles.css?d=web"]);
     expect(doc.head.querySelector('link[rel="icon"]')).toBeNull();
   });
 });

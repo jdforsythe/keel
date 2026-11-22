@@ -1,0 +1,11 @@
+# ADR-0209: k.ui defaults: a base from the tokens, named looks, a stacking `gap`, a brand focus ring (RFC 0188)
+
+**Status:** proposed (for the operator to accept or reverse).
+
+**Context.** An app on `brandTokens` loads the brand's custom properties and fonts, but no rule uses them: `body`, controls, links and focus keep the platform's look until each use sets a dozen style props, and a set cannot be declared once (findings S-2, S-7, S-9, S-11). `gap` without `direction` spaces nothing (S-4), the no-script 422 summary is bare and names the schema path (S-8), and an unbroken string widens a phone page (S-10). ADR-0067 rejected a brand stylesheet the server writes as a second styling path.
+
+**Decision.** `tokens.ts` gains `base` (style sets per element role, and a `focus` color) and `look` (named style sets). The one compiled stylesheet writes a `keel.base` cascade layer: `[hidden]` hidden, `body` `overflow-wrap: anywhere`, each base set on its role class, and a 2px `:focus-visible` outline in `base.focus`. Atomic rules stay unlayered, so a style prop wins. `look="<name>"` expands to the set's classes, the element's own props replacing the set's per prop. Controls take `styles` parts `field`, `label`, `error`. The 422 summary names fields by their label and carries `k-summary`. `gap` with no `direction` stacks as a column at zero specificity. `brandTokens` ships the brand's `base` and the looks `control`, `primary`, `secondary`; `BRAND.md` gains a focus rule.
+
+**Alternatives.** A server-written brand stylesheet (ADR-0067's rejected option); `gap` without `direction` as a check error; looks as exported objects in `*.look.ts`; spreads in style props; the platform focus ring kept.
+
+**Consequences.** Every app on `brandTokens` renders on brand with no app code and overrides through its tokens; an app with its own tokens and no `base` is unchanged. k.ui and k.a11y read `implemented` until k.ui 18 to 22, k.a11y 13 and k.forms 17 are covered. No new codes.

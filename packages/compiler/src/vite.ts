@@ -8,6 +8,7 @@ import { DEV_ENTRY } from "./entry/DEV_ENTRY.ts";
 import { ENTRY_PATH } from "./entry/ENTRY_PATH.ts";
 import { ISLANDS_PATH } from "./entry/ISLANDS_PATH.ts";
 import { SERVER_ENTRY } from "./entry/SERVER_ENTRY.ts";
+import { STYLES_PATH } from "./entry/STYLES_PATH.ts";
 import { resumeEntry } from "./entry/resumeEntry.ts";
 import { peerOrigins } from "./hosting/peerOrigins.ts";
 import { topologyReadProblems } from "./hosting/topologyReadProblems.ts";
@@ -21,6 +22,7 @@ import { copyPgliteFiles } from "./internal/copyPgliteFiles.ts";
 import { devEntryCode } from "./internal/devEntryCode.ts";
 import { devMiddleware } from "./internal/devMiddleware.ts";
 import { entryCode } from "./internal/entryCode.ts";
+import { entryDependency } from "./internal/entryDependency.ts";
 import { evaluateProject } from "./internal/evaluateProject.ts";
 import { exportNames } from "./internal/exportNames.ts";
 import { hostClient } from "./internal/hostClient.ts";
@@ -33,15 +35,19 @@ import { keelMark } from "./internal/keelMark.ts";
 import { listSources } from "./internal/listSources.ts";
 import { mergeArtifacts } from "./internal/mergeArtifacts.ts";
 import { noDeployable } from "./internal/noDeployable.ts";
+import { packageRoot } from "./internal/packageRoot.ts";
+import { pageMiddleware } from "./internal/pageMiddleware.ts";
 import { parseTopology } from "./internal/parseTopology.ts";
 import { projectHandlerUses } from "./internal/projectHandlerUses.ts";
 import { projectManifests } from "./internal/projectManifests.ts";
 import { registersCapability } from "./internal/registersCapability.ts";
 import { serverEntryCode } from "./internal/serverEntryCode.ts";
 import { stubCode } from "./internal/stubCode.ts";
+import { stylesMiddleware } from "./internal/stylesMiddleware.ts";
 import { unmappedModule } from "./internal/unmappedModule.ts";
 import { urlLiterals } from "./internal/urlLiterals.ts";
 import { writeArtifact } from "./internal/writeArtifact.ts";
+import { writeStatic } from "./internal/writeStatic.ts";
 import { clientStdData } from "./std/clientStdData.ts";
 import { importDeps } from "./std/importDeps.ts";
 import { stdRoutes } from "./std/stdRoutes.ts";
@@ -116,8 +122,12 @@ const MANIFEST = /^modules\/[^/]+\/module\.[cm]?[jt]s$/;
 
 type Entry = { source: string; output: Output | undefined; artifacts: Artifacts; failures: string[] };
 type ModuleNode = object;
-type Middlewares = { use(fn: ReturnType<typeof inspectMiddleware>): void };
+type Middlewares = { use(fn: ReturnType<typeof inspectMiddleware> | ReturnType<typeof pageMiddleware>): void };
 type DevServer = {
+  transformIndexHtml?(url: string, html: string): Promise<string>;
+  pluginContainer?: { resolveId(id: string, importer?: string): Promise<{ id: string } | null> };
+  transformRequest?(url: string): Promise<{ code: string } | null>;
+  config?: { server: { fs: { allow: string[] } } };
   moduleGraph: {
     getModuleById(id: string): ModuleNode | undefined;
     invalidateModule?(module: ModuleNode): void;
@@ -211,6 +221,8 @@ type UserConfig = { root?: string; envPrefix?: unknown; define?: unknown };
  * `topology.ts` statically (E1004 exemption for `client` deployables), and evaluates `tokens.ts` and the
  * deployable's modules' routes (an app module's `modules/<id>/routes.ts`, a stdlib module's package `./routes`)
  * to produce `keel.css` (`import "virtual:keel.css"`) and `routes.json`.
+ * A `@keel/` specifier the generated entry imports that the project does not resolve resolves from the compiler's
+ * own dependencies (`entryDependency`).
  * It serves the generated entry at `/@keel/entry.ts` for the deployable `KEEL_DEPLOYABLE` names, else the first
  * `client` one by name: the `mount` entry for a `client` deployable (binding the client-readable part of `std.json`,
  * `clientStdData`, reloaded when a manifest changes), else the resume entry, whose island components
@@ -310,11 +322,11 @@ export default function (): {
     .filter((o) => o !== "");
   const written = new Map<string, string>();
   let devApps: DevApp[] = [];
-  /** Whether this dev server answers for `node` deployables (`keel dev` of a topology that has one). */
+  /** Whether this dev server answers for `node` or `static` deployables (`keel dev` of a topology that has one). */
   let hasNode = false;
   /** The closing of the last dev apps: the next ones load after it, so two never run on one storage. */
   let closed: Promise<unknown> = Promise.resolve();
-  /** `keel dev`: every `node` deployable's dev app, loaded through Vite's SSR loader (k.topology Local topology). */
+  /** `keel dev`: every `node` and `static` deployable's dev app, loaded through Vite's SSR loader (k.topology Local topology). */
   const dev = devMiddleware(async () => {
     await closed;
     const mod = await server?.ssrLoadModule?.(DEV_ENTRY);
@@ -389,14 +401,17 @@ export default function (): {
       : { name, modules: d.modules, client: d.adapter === "client" };
   };
   /**
-   * The deployable whose `index.html` the plugin writes when the project has none: the `client` one hosted, else, in a
-   * build, the `static` one served.
+   * The `client` deployable whose `index.html` the plugin writes (k.head Document source): the one a build hosts, else
+   * the one served (`KEEL_DEPLOYABLE`, else the first `client` by name), in dev and in the project's own build.
    */
   const page = (): string | undefined => {
-    if (hosting !== undefined || command !== "build") return hosting;
+    if (hosting !== undefined) return hosting;
     const d = deployable();
-    return d !== undefined && topology?.[d.name]?.adapter === "static" ? d.name : undefined;
+    return d?.client === true ? d.name : undefined;
   };
+  /** The deployable's `styles` (k.topology Declaration) as side-effect imports, first in its entry. */
+  const styleImports = (name: string | undefined): string =>
+    (name === undefined ? [] : (topology?.[name]?.styles ?? [])).map((x) => `import ${JSON.stringify(x)};\n`).join("");
   /**
    * The routes files of the deployable's modules (every module without a topology): an app module's
    * `modules/<id>/routes.ts`, root-relative; a stdlib module's package `./routes` file (`stdRoutes`), absolute.
@@ -657,6 +672,36 @@ export default function (): {
     return entry;
   };
 
+  /**
+   * `keel dev`'s `/@keel/styles.css?d=<name>` (k.head Server): deployable `name`'s `styles` (k.topology Declaration), each
+   * resolved from the root, its package directory added to the served ones, and transformed by Vite as a direct CSS
+   * request (its `url()`s served by Vite), then the atomic CSS; undefined for a name the topology lacks. Without a
+   * topology, the atomic CSS alone.
+   */
+  const devStyles = async (d: string | undefined): Promise<string | undefined> => {
+    const decl = d === undefined ? undefined : topology?.[d];
+    if (topology !== undefined && decl === undefined) return undefined;
+    const parts: string[] = [];
+    for (const spec of decl?.styles ?? []) {
+      const hit = await server?.pluginContainer?.resolveId(spec, path.join(root, "index.html"));
+      const file = hit?.id.split("?")[0];
+      if (file === undefined || !path.isAbsolute(file) || !fs.existsSync(file))
+        throw new Error(`keel: styles entry ${JSON.stringify(spec)} of ${d ?? ""} resolves to no file`);
+      // The entry's package may sit outside Vite's served roots (a linked or store-installed package): its directory
+      // is served too, so the entry and the files its `url()`s name load wherever the package is installed.
+      const allow = server?.config?.server.fs.allow;
+      const dir = packageRoot(fs.realpathSync(file)).split(path.sep).join("/");
+      if (allow !== undefined && !allow.includes(dir)) allow.push(dir);
+      const rel = path.relative(root, file).split(path.sep).join("/");
+      const url = rel.startsWith("..") || path.isAbsolute(rel) ? `/@fs${file.split(path.sep).join("/")}` : `/${rel}`;
+      const out = await server?.transformRequest?.(`${url}?direct`);
+      if (out !== null && out !== undefined) parts.push(out.code);
+    }
+    if (stale) await refresh();
+    parts.push(css);
+    return parts.join("\n");
+  };
+
   /** Re-evaluate tokens and route manifests: `keel.css` and `routes.json`. */
   const refresh = async (): Promise<void> => {
     stale = false;
@@ -714,10 +759,14 @@ export default function (): {
             .find((n) => top[n]?.adapter === "client") !== name;
         return { ...own, build: { outDir: out, emptyOutDir: true } };
       }
-      if (top[name]?.adapter !== "node") return own;
+      const adapter = top[name]?.adapter;
+      if (adapter !== "node" && adapter !== "static") return own;
       clientBuild = true;
-      const pg = top[name]?.storage === "postgres";
+      const built = adapter === "static";
+      const pg = !built && top[name]?.storage === "postgres";
       const at = path.resolve(user.root ?? process.cwd());
+      // A `static` deployable's server bundle is the build's alone: it renders the documents and is removed.
+      const ssrOut = built ? `node_modules/.keel/prerender/${name}` : out;
       return {
         ...own,
         build: {
@@ -730,8 +779,8 @@ export default function (): {
           ssr: {
             resolve: { noExternal: true },
             build: {
-              outDir: out,
-              emptyOutDir: false,
+              outDir: ssrOut,
+              emptyOutDir: built,
               manifest: false,
               copyPublicDir: false,
               // An external map for the server to read frames through: positions only, sources relative to the project.
@@ -759,6 +808,19 @@ export default function (): {
           buildApp: async (b) => {
             await b.build(b.environments.client);
             await b.build(b.environments.ssr);
+            if (built) {
+              const std = path.join(at, ".keel", "std.json");
+              const failed = await writeStatic(
+                path.join(at, out),
+                path.join(at, ssrOut, "server.mjs"),
+                name,
+                top,
+                process.env,
+                fs.existsSync(std) ? std : undefined,
+              );
+              if (failed.length > 0) throw evaluationFailed(failed);
+              return;
+            }
             copyPgliteFiles(path.join(at, out), () => pgliteDist(at));
             // Every module's routes, not the project build's: forwarding needs each peer deployable's paths.
             // Each deployable read as `node`, so the client's modules and every placed stdlib module are listed.
@@ -797,8 +859,18 @@ export default function (): {
     configureServer(s) {
       server = s;
       s.middlewares.use(inspect);
-      hasNode = Object.values(topology ?? {}).some((d) => d.adapter === "node");
+      hasNode = Object.values(topology ?? {}).some((d) => d.adapter === "node" || d.adapter === "static");
       if (hasNode) s.middlewares.use(dev.handle);
+      s.middlewares.use(stylesMiddleware(devStyles));
+      // Keel writes the `client` document in dev too; the project's own `index.html` is never read (k.head).
+      s.middlewares.use(
+        pageMiddleware(async (url) => {
+          const name = page();
+          if (name === undefined) return undefined;
+          const html = indexHtml(name, ENTRY_PATH, `${STYLES_PATH}?d=${encodeURIComponent(name)}`);
+          return s.transformIndexHtml === undefined ? html : s.transformIndexHtml(url, html);
+        }),
+      );
     },
     configurePreviewServer(s) {
       s.middlewares.use(inspect);
@@ -818,9 +890,14 @@ export default function (): {
       if (options?.ssr === false && command === "build" && importer !== undefined && isNodeBuiltin(id))
         return { id, external: true };
       if (id === CSS_IMPORT || id === CSS_ID) return CSS_ID;
-      if (id === path.join(root, "index.html") && !exists("index.html") && page() !== undefined) return id;
+      if (id === path.join(root, "index.html") && page() !== undefined) return id;
       const q = keyed(id);
       if (q?.path === ENTRY_PATH || q?.path === ISLANDS_PATH) return id;
+      // A kernel package the generated entry imports and the app does not list resolves from the compiler's dependencies.
+      if (importer !== undefined && keyed(importer)?.path === ENTRY_PATH) {
+        const own = entryDependency(id, root);
+        if (own !== undefined) return own;
+      }
       if (id === SERVER_ENTRY) return `\0${SERVER_ENTRY}`;
       if (id === DEV_ENTRY) return `\0${DEV_ENTRY}`;
       // The server build reads `node:sqlite` when the driver first runs; dev and tests leave it to Node.
@@ -835,7 +912,7 @@ export default function (): {
         const wrong = miscased(id);
         if (wrong !== undefined) throw new Error(wrong);
       }
-      const shown = id === path.join(root, "index.html") && !exists("index.html") ? page() : undefined;
+      const shown = id === path.join(root, "index.html") ? page() : undefined;
       if (shown !== undefined) return indexHtml(shown, ENTRY_PATH);
       if (id === CSS_ID) {
         if (stale) await refresh();
@@ -858,25 +935,29 @@ export default function (): {
           Object.fromEntries(
             Object.entries(topology ?? {}).flatMap(([n, d]) => (d.origins === undefined ? [] : [[n, d.origins]])),
           ),
+          topology?.[node.name]?.adapter === "static" ? "static" : "node",
         );
       if (q?.path !== ENTRY_PATH) return null;
       const d = deployable(q.d);
       if (d === undefined) throw new Error(noDeployable(ENTRY_PATH, topology, q.d ?? process.env.KEEL_DEPLOYABLE));
       const mode = command === "serve" ? "dev" : "production";
-      if (!d.client) return resumeEntry(q.d, mode, CSS_IMPORT);
+      if (!d.client) return styleImports(q.d ?? d.name) + resumeEntry(q.d, mode, CSS_IMPORT);
       const all = topology ?? {};
       const served = Object.values(all).some((x) => x.adapter === "node");
       const targets = served ? calledByClient(all, d.modules) : {};
       mapped = served ? new Set([...d.modules, ...Object.values(targets).flat()]) : undefined;
-      return entryCode(
-        routesFiles(q.d).map((f) => (path.isAbsolute(f) ? f : `/${f}`)),
-        CSS_IMPORT,
-        clientStdData(stdArtifact(manifests()).data, new Set(d.modules)),
-        targets,
-        shellOf(exists("identity.ts") ? all[d.name]?.shells : undefined),
-        mode,
-        exists("identity.ts"),
-        served,
+      return (
+        styleImports(d.name) +
+        entryCode(
+          routesFiles(q.d).map((f) => (path.isAbsolute(f) ? f : `/${f}`)),
+          CSS_IMPORT,
+          clientStdData(stdArtifact(manifests()).data, new Set(d.modules)),
+          targets,
+          shellOf(exists("identity.ts") ? all[d.name]?.shells : undefined),
+          mode,
+          exists("identity.ts"),
+          served,
+        )
       );
     },
     transformIndexHtml() {

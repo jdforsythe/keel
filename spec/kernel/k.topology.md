@@ -1,5 +1,5 @@
 # k.topology: Deployables
-status: implemented
+status: conformance-covered
 
 **Declaration.** `topology.ts` default-exports `topology({ <name>: { modules, adapter, servedBy?, storage?, shells?, caller?, origins?, styles? } })` (`@keel/server`), read statically; Adapters: `node` (serves the resume entry), `static` (prerendered HTML per route, k.hosting Static), `client` (loaders, actions in the browser; entry `mount(App, el)`, real `ctx`). Each module is in one deployable, where its routes, actions, live loaders and runners run. `styles` lists package specifiers whose export is a `.css` file (`['@keel/ui/fonts']`): each is imported by the deployable's entry, so its documents link it (k.head) in dev and build.
 
@@ -27,3 +27,4 @@ status: implemented
 - `keel dev` answers a `static` deployable's route with the document its `createApp` renders, its loader's text in it.
 - With `styles: ['@keel/ui/fonts']`, a built `node` document's head and a built `client` `index.html` each link a stylesheet holding that file's `@font-face` rules; without it, neither does.
 - `styles` entries `'./x.css'`, `'@keel/ui'` and a variable are each one E1587 in `keel check` and `keel build`.
+- With `styles: ['@keel/ui/fonts']`, a `node` document served by `keel dev` links a stylesheet holding that file's `@font-face` rules, each `url()` answering 200; without it, the stylesheet holds none.

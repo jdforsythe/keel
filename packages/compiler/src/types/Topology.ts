@@ -8,7 +8,8 @@ import type { Origins } from "./Origins.ts";
  * `storage` (k.deploy Storage, default `'file'`) picks its `ctx.storage`; a `client` one's `shells` (k.shell) names the
  * native shells that package it, each with a reverse-DNS `id` and the `name` people see. A `node` one's `caller: { days }`
  * (k.user Caller lifetime, an integer 1 to 400) gives the caller cookie it mints a `Max-Age` of that many days. Any
- * deployable's `origins` (k.origins) declares the third-party origins its policies admit.
+ * deployable's `origins` (k.origins) declares the third-party origins its policies admit, and its `styles` (k.topology
+ * Declaration) the package `.css` exports its entry imports, so its documents link them.
  */
 export type Topology = Readonly<
   Record<
@@ -24,6 +25,7 @@ export type Topology = Readonly<
       };
       readonly caller?: { readonly days: number };
       readonly origins?: Origins;
+      readonly styles?: readonly string[];
     }
   >
 >;

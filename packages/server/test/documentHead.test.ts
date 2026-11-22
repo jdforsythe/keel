@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// The document head (k.server Document): `<title>` the deployable name, the build's entry CSS and its `keel-mark.svg`
-// icon, every value escaped; a `keel.notFound` default alert has an `h1`. Property seed 1337.
+// The document head (k.head Server): `<title>` the deployable name, the build's entry CSS (in dev the deployable's
+// `/@keel/styles.css?d=<name>`) and its `keel-mark.svg` icon, every value escaped; a `keel.notFound` default alert has an `h1`. Property seed 1337.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -11,7 +11,6 @@ import { err, s } from "@keel/schema";
 import fc from "fast-check";
 import { afterEach, describe, expect, it } from "vitest";
 import { createApp, topology } from "../src/index.ts";
-import type { BuiltClient } from "../src/internal/BuiltClient.ts";
 import { headHtml } from "../src/internal/headHtml.ts";
 import { loadAssets } from "../src/internal/loadAssets.ts";
 
@@ -43,28 +42,25 @@ const build = (): Record<string, string> => ({
   "keel-mark.svg": "<svg/>",
   "robots.txt": "User-agent: *",
 });
-const built = (css: readonly string[], mark: boolean): BuiltClient => ({
-  entry: "/assets/e.js",
-  css,
-  files: new Map(mark ? [["/keel-mark.svg", { body: new Uint8Array(0), type: "", immutable: false, etag: "" }]] : []),
-});
 /** The head of a document as text, cut at `</head>` so nothing in it is parsed or loaded. */
 const headOf = (html: string): string => html.slice(html.indexOf("<head>"), html.indexOf("</head>"));
 
 describe("headHtml", () => {
   it("titles the deployable and links each stylesheet, then the icon when the build has the mark", () => {
-    expect(headHtml("web", undefined)).toBe("<title>web</title>");
-    expect(headHtml("web", built(["/assets/a.css", "/assets/b.css"], true))).toBe(
+    expect(headHtml("web", [], false)).toBe("<title>web</title>");
+    expect(headHtml("web", ["/assets/a.css", "/assets/b.css"], true)).toBe(
       '<title>web</title><link rel="stylesheet" href="/assets/a.css"><link rel="stylesheet" href="/assets/b.css">' +
         '<link rel="icon" href="/keel-mark.svg">',
     );
-    expect(headHtml("web", built([], false))).toBe("<title>web</title>");
+    expect(headHtml("web", ["/@keel/styles.css?d=a&b"], false)).toBe(
+      '<title>web</title><link rel="stylesheet" href="/@keel/styles.css?d=a&amp;b">',
+    );
   });
 
   it("property: any name or stylesheet URL is escaped, so the head holds exactly its own elements", () => {
     fc.assert(
       fc.property(fc.string(), fc.array(fc.string(), { maxLength: 3 }), (name, css) => {
-        const head = headHtml(name, built(css, false));
+        const head = headHtml(name, css, false);
         expect((head.match(/</g) ?? []).length).toBe(2 + css.length);
         expect((head.match(/"/g) ?? []).length).toBe(4 * css.length);
         const t = document.createElement("template");
@@ -127,7 +123,7 @@ describe("loadAssets", () => {
           expect(href).toMatch(/^\/assets\/[^/]+\.css$/);
           expect(b.files.has(href)).toBe(true);
         }
-        const links = headHtml("web", b).match(/<link rel="stylesheet" href="[^"]*">/g) ?? [];
+        const links = headHtml("web", b.css, false).match(/<link rel="stylesheet" href="[^"]*">/g) ?? [];
         expect(links).toHaveLength(b.css.length);
         for (const l of links) expect(l).not.toContain('q"x');
       }),
@@ -191,13 +187,25 @@ describe("createApp documents", () => {
     expect(await mark.text()).toBe("<svg/>");
   });
 
-  it("a loader's keel.notFound without an errorElement gets the readable alert; dev has a title only", async () => {
+  it("a loader's keel.notFound without an errorElement gets the readable alert; dev links the dev stylesheet", async () => {
     const a = await app();
     const res = await a.fetch(new Request("http://localhost/item"));
     expect(res.status).toBe(404);
     const html = await res.text();
-    expect(headOf(html)).toContain("<title>shop</title>");
-    expect(headOf(html)).not.toContain("<link");
+    expect(headOf(html)).toContain('<title>shop</title><link rel="stylesheet" href="/@keel/styles.css?d=shop">');
+    expect(headOf(html).match(/<link/g)).toHaveLength(1);
     expect(html).toContain("<h1>Not found</h1>");
+  });
+
+  it("a dev document links its deployable's dev stylesheet; production without assets links none", async () => {
+    const dev = await (await (await app()).fetch(new Request("http://localhost/"))).text();
+    expect(headOf(dev)).toContain('<link rel="stylesheet" href="/@keel/styles.css?d=shop">');
+    const bare = await createApp({
+      topology: topology({ shop: { modules: ["app"], adapter: "node" } }),
+      routes,
+      ctx: createCtx({ mode: "sim", seed: SEED }),
+      mode: "production",
+    });
+    expect(headOf(await (await bare.fetch(new Request("http://localhost/"))).text())).not.toContain("<link");
   });
 });

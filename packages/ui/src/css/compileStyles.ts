@@ -16,6 +16,8 @@ type Rule = {
   readonly body: string;
 };
 
+const HIDDEN = "[hidden]{display:none!important}";
+
 const fail = (code: string, message: string): Error => Object.assign(new Error(message), { code });
 
 /** Token values are written into declarations; anything that could end one is rejected. */
@@ -37,11 +39,11 @@ function resolve(tokens: Tokens, prop: keyof typeof vocabulary, token: string): 
   const entry = vocabulary[prop];
   const kw = Object.keys(entry.keywords);
   const k = kw.indexOf(token);
-  if (k >= 0) return { body: `display:flex;${entry.property}:${entry.keywords[token]}`, index: k };
+  if (k >= 0) return { body: `${entry.lead}${entry.property}:${entry.keywords[token]}`, index: k };
   for (const group of entry.groups) {
     const names = Object.keys(tokens[group] ?? {});
     const i = names.indexOf(token);
-    if (i >= 0) return { body: `${entry.property}:var(${varName(group, token)})`, index: i };
+    if (i >= 0) return { body: `${entry.lead}${entry.property}:var(${varName(group, token)})`, index: i };
   }
   const want = entry.groups.length > 0 ? `a ${entry.groups.join(" or ")} token` : `one of ${kw.join(" ")}`;
   throw fail("E1801", `${prop}=${JSON.stringify(token).slice(0, 40)} is not ${want}`);
@@ -76,7 +78,8 @@ const ruleText = (r: Rule): string =>
 /**
  * Compile style usages to atomic CSS. Pure and deterministic: one class per (prop, token, breakpoint,
  * state), deduplicated; equal props give equal class lists. Output order: `:root` custom properties
- * (dark-scheme and reduced-motion overrides in media blocks), base rules, one `min-width` block per
+ * (dark-scheme and reduced-motion overrides in media blocks), `[hidden]{display:none!important}` when a rule sets
+ * `display`, base rules, one `min-width` block per
  * breakpoint in token order, then state rules (selected, checked, expanded, highlighted, hover, focusVisible, active,
  * disabled) and their
  * breakpoint blocks. Throws `code: 'E1801'` for an unknown token or breakpoint, `E1807` for an unsafe value.
@@ -123,6 +126,8 @@ export function compileStyles(input: { readonly tokens: Tokens; readonly usages:
     }
     return out;
   };
-  const css = [...rootBlocks(tokens), ...section(false), ...section(true)].join("\n");
+  // A `display` an atomic rule sets outranks the user agent's `[hidden]`; this keeps `hidden` (k.aria Part) hiding.
+  const hidden = sorted.some((r) => r.body.startsWith("display:")) ? [HIDDEN] : [];
+  const css = [...rootBlocks(tokens), ...hidden, ...section(false), ...section(true)].join("\n");
   return { classes, css: css === "" ? "" : `${css}\n` };
 }

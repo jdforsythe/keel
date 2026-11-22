@@ -26,7 +26,7 @@ afterAll(() => {
   for (const d of dirs) cleanup(d);
 });
 
-test.skip(
+test(
   "`styles` entries `'./x.css'`, `'@keel/ui'` and a variable are each one E1587 in `keel check` and `keel build`.",
   () => {
     for (const [i, [label]] of CASES.entries()) {
@@ -42,7 +42,7 @@ test.skip(
   SLOW,
 );
 
-test.skip(
+test(
   "E1587: a `styles` entry that is a string literal naming a package export that is a `.css` file is none in `keel check` and `keel build`.",
   () => {
     const dir = dirs[CASES.length] ?? "";

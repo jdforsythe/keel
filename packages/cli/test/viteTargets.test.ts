@@ -1,5 +1,5 @@
-// `keel build`'s Vite runs (k.server Build, k.hosting Artifact): the project's own build only without a topology, with
-// no deployable, or with a static one; then one per client deployable by name; then one per node deployable by name.
+// `keel build`'s Vite runs (k.server Build, k.hosting Artifact, Static): the project's own build only without a topology
+// or with no deployable; then one per client deployable by name, one per static one, then one per node one.
 import { describe, expect, it } from "vitest";
 import { viteTargets } from "../src/internal/viteTargets.ts";
 
@@ -19,10 +19,15 @@ describe("viteTargets", () => {
     expect(viteTargets(src)).toEqual(["app", "web", "b", "z"]);
   });
 
-  it("keeps the project's own build first when a deployable is static", () => {
+  it("builds each static deployable by name, after the client ones and before the node ones", () => {
     expect(
-      viteTargets(topo('s: { modules: ["s"], adapter: "static" }, n: { modules: ["n"], adapter: "node" }')),
-    ).toEqual([undefined, "n"]);
+      viteTargets(
+        topo(
+          't: { modules: ["t"], adapter: "static" }, n: { modules: ["n"], adapter: "node" }, s: { modules: ["s"], adapter: "static" }, w: { modules: ["w"], adapter: "client" }',
+        ),
+      ),
+    ).toEqual(["w", "s", "t", "n"]);
+    expect(viteTargets(topo('site: { modules: ["s"], adapter: "static" }'))).toEqual(["site"]);
   });
 
   it("skips the project's own build when every deployable is node", () => {

@@ -88,6 +88,13 @@ const ROWS: readonly Row[] = [
     "k.bundle",
   ],
   [
+    "W1012",
+    "a project root holding index.html: Keel writes every document and never reads the file",
+    "Dev and build write each document's head, so what the file held would show nowhere: markup, scripts, stylesheets.",
+    "move a header into a layout component and a stylesheet into the deployable's styles, then delete index.html",
+    "k.head",
+  ],
+  [
     "E1049",
     "internal compiler failure",
     "A Keel bug, not app code; the message is verbatim.",
@@ -278,7 +285,7 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1152",
-    "import from a module not in deps, its contract included",
+    "import from a module not in deps, its contract included; a layout of a module neither in deps nor listing this one",
     "",
     "add the module to deps in the manifest",
     "k.module",
@@ -879,6 +886,13 @@ const ROWS: readonly Row[] = [
     "k.topology",
   ],
   [
+    "E1587",
+    "a styles entry in topology.ts that is not a string literal or whose package export is not a .css file",
+    "The entry imports each one, so the build links it in every document; a path or a script export has no stylesheet to link.",
+    "styles: ['./fonts.css'] -> styles: ['@keel/ui/fonts']",
+    "k.topology",
+  ],
+  [
     "E1590",
     "origins in topology.ts out of form: not a literal, a key outside img media font connect frame, an inexact origin",
     "Also a reason not 1 to 200 characters on one line, or over 16 origins in a directive. Only these widen the policy.",
@@ -1444,6 +1458,13 @@ const ROWS: readonly Row[] = [
     "Low: the escape is gone or changed; a changed one prints at full loudness.",
     "remove the entry",
     "k.escapes, k.review",
+  ],
+  [
+    "R2451",
+    "a transaction's allow: it gives up part of serializable",
+    "Opt-in: 'lost updates' high (read committed), 'write skew' medium (repeatable read). The reason is its reason.",
+    "drop allow, or do the write in one statement: set n = n + 1",
+    "k.escapes, std.postgres",
   ],
 ];
 

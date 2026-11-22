@@ -126,8 +126,10 @@ function unprefixed({ file, module, facts, routes }: Scanned): Diagnostic[] {
 }
 
 /**
- * E1151, E1152, E1156 for one file of a non-opaque module. An import from another module, and a binding's `layout`
- * naming a layout id of another module (k.routes Layouts, at `layout`), need it in `deps` (E1152); an import, unless
+ * E1151, E1152, E1156 for one file of a non-opaque module. An import from another module needs it in `deps` (E1152); a
+ * binding's `layout` naming a layout id of another module (k.routes Layouts, at `layout`) needs the two related by `deps`
+ * in either direction: this module lists the layout's, or the layout's module, which composes the page, lists this
+ * one (E1152 when neither does; the `layout` adds no `deps` edge). An import, unless
  * it is that module's contract, the export in its `public.exports` (E1151). Fixes add the missing entry
  * to a manifest list: the target's `public.exports` (E1151), this module's `deps` (E1152) or `capabilities` (E1156).
  */
@@ -152,7 +154,9 @@ function access({ file, module, facts, layouts }: Scanned, man: Manifest, p: Pro
     const prefix = l.value.slice(0, Math.max(0, l.value.indexOf(".")));
     const target = prefix === module.prefix ? undefined : p.modules.find((m) => m.prefix === prefix);
     if (target === undefined || target === module || deps.has(target.key)) continue;
-    const msg = `module ${own} binds layout ${short(l.value)} of ${short(target.key)}, which is not in its deps`;
+    if (target.manifest !== null && values(target.manifest, "deps").has(module.key)) continue;
+    const t = short(target.key);
+    const msg = `module ${own} binds layout ${short(l.value)} of ${t}; neither lists the other in its deps`;
     out.push(moduleDiag("E1152", file, l.start, msg, addEntryFix(module.file, man.deps, target.key)));
   }
   const caps = values(man, "capabilities");
