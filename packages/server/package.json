@@ -46,6 +46,7 @@
     "hono": "^4.13.16"
   },
   "devDependencies": {
+    "@keel/forms": "workspace:*",
     "@keel/testing": "workspace:*",
     "@keel/tooling": "workspace:*",
     "@keel/ui": "workspace:*",

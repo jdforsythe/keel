@@ -13,6 +13,7 @@ import { InspectStoreSchema } from "./InspectStoreSchema.ts";
 import { LedgerMutationSchema } from "./LedgerMutationSchema.ts";
 import { LedgerSchema } from "./LedgerSchema.ts";
 import { ReqSchema } from "./ReqSchema.ts";
+import { ReviewSchema } from "./ReviewSchema.ts";
 import { SummarySchema } from "./SummarySchema.ts";
 import { countsText } from "./countsText.ts";
 import { diagCompact } from "./diagCompact.ts";
@@ -25,6 +26,10 @@ const flags = (st: Readonly<Record<string, boolean | undefined>>): string => {
     .map(([k]) => k);
   return on.length === 0 ? "" : ` [${on.join(" ")}]`;
 };
+
+/** `keel review`'s trailer says `listed` where its json count says `list` (k.review Loudness). */
+const trailerCounts = (c: Readonly<Record<string, number>>): Record<string, number> =>
+  Object.fromEntries(Object.entries(c).map(([k, v]) => [k === "list" ? "listed" : k, v]));
 
 /** A file's text as it is: the record's line break follows, so one final newline is dropped. */
 const verbatim = (t: string): string => (t.endsWith("\n") ? t.slice(0, -1) : t);
@@ -42,7 +47,10 @@ export const kernelFormatters: readonly (readonly [string, Entry])[] = [
     "summary",
     entryOf({
       schema: SummarySchema,
-      compact: (r) => [r.ok ? "ok" : "fail", r.name, countsText(r.counts)].filter((p) => p !== "").join(" "),
+      compact: (r) =>
+        [r.ok ? "ok" : "fail", r.name, countsText(r.name === "review" ? trailerCounts(r.counts) : r.counts)]
+          .filter((p) => p !== "")
+          .join(" "),
       pretty: (r) => {
         const c = countsText(r.counts);
         return `${r.name}: ${r.ok ? "passed" : "failed"}${c === "" ? "" : ` (${c})`}`;
@@ -55,6 +63,15 @@ export const kernelFormatters: readonly (readonly [string, Entry])[] = [
       schema: ReqSchema,
       compact: (r) => [r.method, r.path, r.route, r.status, `${r.ms}ms`].filter((p) => p !== undefined).join(" "),
       pretty: (r) => `${r.status} ${r.method} ${r.path}${r.route === undefined ? "" : `  (${r.route})`}  ${r.ms}ms`,
+    }),
+  ],
+  [
+    "review",
+    entryOf({
+      schema: ReviewSchema,
+      compact: (r) => `${r.code} ${r.path}:${r.line}:${r.col} ${r.danger} ${r.novelty} ${r.message}`,
+      pretty: (r) =>
+        `${r.loud.padEnd(4)} ${r.code} ${r.path}:${r.line}:${r.col}\n  ${r.danger}, ${r.novelty}${r.opt ? ", opt-in" : ""}: ${r.message}${r.reason === undefined ? "" : `\n  reason: ${r.reason}`}\n  see: keel explain ${r.code}`,
     }),
   ],
   [

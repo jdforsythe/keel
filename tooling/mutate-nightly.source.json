@@ -145,8 +145,8 @@
           "run": "for d in mutation-reports/mutation-*; do pkg=\"${d##*/mutation-}\"; mkdir -p \"packages/$pkg/reports/mutation\"; cp \"$d/mutation.json\" \"packages/$pkg/reports/mutation/\"; done"
         },
         {
-          "name": "golden-2 a11y report for the ledger (keel test writes reports/a11y.json)",
-          "run": "pnpm --filter golden-2 exec keel test"
+          "name": "a11y reports for the ledger from every app and example whose routes it carries (keel test writes reports/a11y.json)",
+          "run": "pnpm --workspace-concurrency=1 --filter golden-1 --filter golden-2 --filter household --filter \"./examples/*\" exec keel test"
         },
         {
           "run": "pnpm ledger"

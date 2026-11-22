@@ -1,31 +1,40 @@
 import { renderRoute } from "@keel/testing";
 import { expect, it } from "vitest";
-import { routes as receipts } from "../modules/receipts/routes.ts";
-import { routes as setup } from "../modules/setup/routes.ts";
-import { routes as shopping } from "../modules/shopping/routes.ts";
-import { asJson, served, webRoutes } from "./serve.ts";
+import { asJson, formPost, served, webRoutes } from "./serve.ts";
 
-it("sends the list to setup until the household has a name, then lets it through", async () => {
-  const { ctx } = await served(4);
-  const before = await renderRoute("shopping.list", { routes: webRoutes, params: {}, ctx });
-  expect(before.route().id).toBe("setup.form");
-  expect(before.location()).toBeDefined();
-  await before.fire("setup.form:name", { type: "input", value: "Elm Street" });
-  await before.fire("setup.save", { type: "click" });
-  expect(before.find("setup.done").text).toContain("set up");
+it("sends the list to sign-in, naming it, until a member signs in", async () => {
+  const anon = await served(4, false);
+  const before = await renderRoute("shopping.list", { routes: webRoutes, params: {}, ctx: anon.ctx });
+  expect(before.route().id).toBe("members.signin");
+  expect(before.route().search).toEqual({ next: "/list" });
+  expect(before.find("members.signin.heading").text).toBe("Sign in");
   before.dispose();
-  const after = await renderRoute("shopping.list", { routes: shopping, params: {}, ctx });
+  const { ctx, user } = await served(4);
+  const after = await renderRoute("shopping.list", { routes: webRoutes, params: {}, ctx, user });
   expect(after.route().id).toBe("shopping.list");
   after.dispose();
 });
 
 it("guards the receipts book in every locale", async () => {
-  const { ctx } = await served(4);
+  const { ctx } = await served(4, false);
   const page = await renderRoute("receipts.book", { routes: webRoutes, params: { locale: "de-DE" }, ctx });
-  expect(page.route().id).toBe("setup.form");
+  expect(page.route()).toMatchObject({ id: "members.signin", search: { next: "/de-DE/receipts" } });
   page.dispose();
-  expect(receipts).toBeDefined();
-  expect(setup).toBeDefined();
+});
+
+it("guards the setup page", async () => {
+  const { ctx } = await served(4, false);
+  const page = await renderRoute("setup.form", { routes: webRoutes, params: {}, ctx });
+  expect(page.route()).toMatchObject({ id: "members.signin", search: { next: "/setup" } });
+  page.dispose();
+});
+
+it("refuses the API to a request no member made, and answers the member's token", async () => {
+  const { raw, fetch } = await served(4);
+  expect((await raw(asJson("GET", "/api/items"))).status).toBe(403);
+  expect((await raw(asJson("POST", "/api/items", { name: "Milk" }))).status).toBe(403);
+  expect((await raw(asJson("GET", "/api/household"))).status).toBe(403);
+  expect((await fetch(asJson("GET", "/api/items"))).status).toBe(200);
 });
 
 it("answers the household API with null before setup and the name after", async () => {
@@ -34,16 +43,19 @@ it("answers the household API with null before setup and the name after", async 
     ok: true,
     value: { name: null },
   });
-  const post = await fetch(
-    new Request("http://localhost/setup", {
-      method: "POST",
-      headers: { "content-type": "application/x-www-form-urlencoded", "sec-fetch-site": "same-origin" },
-      body: "name=Elm+Street",
-    }),
-  );
-  expect(post.status).toBe(303);
+  expect((await fetch(formPost("/setup", { name: "Elm Street" }))).status).toBe(303);
   expect((await (await fetch(asJson("GET", "/api/household"))).json()).results["setup.household"]).toEqual({
     ok: true,
     value: { name: "Elm Street" },
   });
+});
+
+it("names the household on the setup page once a member is signed in", async () => {
+  const { ctx, user } = await served(4);
+  const page = await renderRoute("setup.form", { routes: webRoutes, params: {}, ctx, user });
+  expect(page.route().id).toBe("setup.form");
+  await page.fire("setup.form:name", { type: "input", value: "Elm Street" });
+  await page.fire("setup.save", { type: "click" });
+  expect(page.find("setup.done").text).toContain("set up");
+  page.dispose();
 });

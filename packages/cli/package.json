@@ -20,6 +20,10 @@
       "types": "./src/docs/index.ts",
       "default": "./src/docs/index.ts"
     },
+    "./review": {
+      "types": "./src/review/index.ts",
+      "default": "./src/review/index.ts"
+    },
     "./shell": {
       "types": "./src/shell/index.ts",
       "default": "./src/shell/index.ts"

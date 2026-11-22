@@ -3,8 +3,8 @@
   "unsafe": 18,
   "hostElements": 0,
   "rungs": {
-    "example": 1589,
-    "probabilistic": 339,
+    "example": 1641,
+    "probabilistic": 340,
     "exhaustive": 15,
     "proven": 74,
     "monitored": 8
@@ -16,7 +16,7 @@
         "threshold": 70
       },
       "cli": {
-        "score": 81.06,
+        "score": 80.56,
         "threshold": 70
       },
       "compiler": {
@@ -11988,14 +11988,284 @@
     },
     {
       "pkg": "household",
-      "name": "AppLocale",
-      "file": "household:receipts/AppLocale.schema.ts",
+      "name": "BearerToken",
+      "file": "household:members/BearerToken.schema.ts",
       "rung": "none"
     },
     {
       "pkg": "household",
-      "name": "Book",
-      "file": "household:receipts/Book.schema.ts",
+      "name": "Credentials",
+      "file": "household:members/Credentials.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "ErrorReply",
+      "file": "household:members/ErrorReply.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "MemberRow",
+      "file": "household:members/MemberRow.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "MintedToken",
+      "file": "household:members/MintedToken.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "Profile",
+      "file": "household:members/Profile.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "ProfileData",
+      "file": "household:members/ProfileData.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "ProfilePage",
+      "file": "household:members/ProfilePage.tsx",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "household",
+      "name": "ProfileSearch",
+      "file": "household:members/ProfileSearch.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "ProfileText",
+      "file": "household:members/ProfileText.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "Registration",
+      "file": "household:members/Registration.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "SignData",
+      "file": "household:members/SignData.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "SignError",
+      "file": "household:members/SignError.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "SignSearch",
+      "file": "household:members/SignSearch.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "SignText",
+      "file": "household:members/SignText.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "SignedInUser",
+      "file": "household:members/SignedInUser.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "SigninPage",
+      "file": "household:members/SigninPage.tsx",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "SignupPage",
+      "file": "household:members/SignupPage.tsx",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "TokenExpiry",
+      "file": "household:members/TokenExpiry.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "TokenInfo",
+      "file": "household:members/TokenInfo.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "TokenList",
+      "file": "household:members/TokenList.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "TokenPanel",
+      "file": "household:members/TokenPanel.tsx",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "TokenRef",
+      "file": "household:members/TokenRef.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "TokenRequest",
+      "file": "household:members/TokenRequest.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "TokenRow",
+      "file": "household:members/TokenRow.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "authOf",
+      "file": "household:members/authOf.server.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "authSettings",
+      "file": "household:members/authSettings.server.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "bearerUser",
+      "file": "household:members/bearerUser.server.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "dayOf",
+      "file": "household:members/dayOf.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "deleteToken",
+      "file": "household:members/deleteToken.server.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "denied",
+      "file": "household:members/denied.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "getTokens",
+      "file": "household:members/getTokens.server.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "loadProfile",
+      "file": "household:members/loadProfile.server.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "loadSignin",
+      "file": "household:members/loadSignin.server.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "loadSignup",
+      "file": "household:members/loadSignup.server.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "member",
+      "file": "household:members/member.guard.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "household",
+      "name": "members",
+      "file": "household:members/members.contract.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "membersApi",
+      "file": "household:members/membersApi.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "household",
+      "name": "membersDb",
+      "file": "household:members/membersDb.server.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "household",
+      "name": "nextOf",
+      "file": "household:members/nextOf.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "postToken",
+      "file": "household:members/postToken.server.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "profileText",
+      "file": "household:members/profileText.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "saveProfile",
+      "file": "household:members/saveProfile.server.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "signText",
+      "file": "household:members/signText.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "signedIn",
+      "file": "household:members/signedIn.guard.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "tokensOf",
+      "file": "household:members/tokensOf.server.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "AppLocale",
+      "file": "household:receipts/AppLocale.schema.ts",
       "rung": "none"
     },
     {
@@ -12036,6 +12306,18 @@
     },
     {
       "pkg": "household",
+      "name": "ReceiptCount",
+      "file": "household:receipts/ReceiptCount.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "ReceiptRow",
+      "file": "household:receipts/ReceiptRow.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
       "name": "ReceiptsText",
       "file": "household:receipts/ReceiptsText.schema.ts",
       "rung": "example"
@@ -12054,8 +12336,8 @@
     },
     {
       "pkg": "household",
-      "name": "bookStores",
-      "file": "household:receipts/bookStores.ts",
+      "name": "bookOf",
+      "file": "household:receipts/bookOf.server.ts",
       "rung": "none"
     },
     {
@@ -12074,6 +12356,12 @@
       "pkg": "household",
       "name": "receipts",
       "file": "household:receipts/receipts.contract.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "receiptsDb",
+      "file": "household:receipts/receiptsDb.server.ts",
       "rung": "none"
     },
     {
@@ -12138,20 +12426,8 @@
     },
     {
       "pkg": "household",
-      "name": "setUp",
-      "file": "household:setup/setUp.guard.ts",
-      "rung": "none"
-    },
-    {
-      "pkg": "household",
       "name": "setup",
       "file": "household:setup/setup.contract.ts",
-      "rung": "none"
-    },
-    {
-      "pkg": "household",
-      "name": "setupApi",
-      "file": "household:setup/setupApi.ts",
       "rung": "none"
     },
     {
@@ -12222,6 +12498,12 @@
     },
     {
       "pkg": "household",
+      "name": "changeList",
+      "file": "household:shopping/changeList.server.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
       "name": "deleteItem",
       "file": "household:shopping/deleteItem.server.ts",
       "rung": "none"
@@ -12230,6 +12512,12 @@
       "pkg": "household",
       "name": "getItems",
       "file": "household:shopping/getItems.server.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "listOf",
+      "file": "household:shopping/listOf.server.ts",
       "rung": "none"
     },
     {
@@ -12246,12 +12534,6 @@
     },
     {
       "pkg": "household",
-      "name": "savedStores",
-      "file": "household:shopping/savedStores.ts",
-      "rung": "none"
-    },
-    {
-      "pkg": "household",
       "name": "shopping",
       "file": "household:shopping/shopping.contract.ts",
       "rung": "none"
@@ -12260,6 +12542,12 @@
       "pkg": "household",
       "name": "shoppingApi",
       "file": "household:shopping/shoppingApi.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "shoppingDb",
+      "file": "household:shopping/shoppingDb.server.ts",
       "rung": "none"
     },
     {
@@ -14697,6 +14985,42 @@
       "rung": "example"
     },
     {
+      "item": "k.escapes#1",
+      "rung": "example"
+    },
+    {
+      "item": "k.escapes#2",
+      "rung": "example"
+    },
+    {
+      "item": "k.escapes#3",
+      "rung": "example"
+    },
+    {
+      "item": "k.escapes#4",
+      "rung": "example"
+    },
+    {
+      "item": "k.escapes#5",
+      "rung": "example"
+    },
+    {
+      "item": "k.escapes#6",
+      "rung": "example"
+    },
+    {
+      "item": "k.escapes#7",
+      "rung": "example"
+    },
+    {
+      "item": "k.escapes#8",
+      "rung": "example"
+    },
+    {
+      "item": "k.escapes#9",
+      "rung": "example"
+    },
+    {
       "item": "k.evidence#1",
       "rung": "example"
     },
@@ -15759,6 +16083,38 @@
     {
       "item": "k.reveal#9",
       "rung": "probabilistic"
+    },
+    {
+      "item": "k.review#1",
+      "rung": "example"
+    },
+    {
+      "item": "k.review#2",
+      "rung": "example"
+    },
+    {
+      "item": "k.review#3",
+      "rung": "example"
+    },
+    {
+      "item": "k.review#4",
+      "rung": "example"
+    },
+    {
+      "item": "k.review#5",
+      "rung": "example"
+    },
+    {
+      "item": "k.review#6",
+      "rung": "example"
+    },
+    {
+      "item": "k.review#7",
+      "rung": "example"
+    },
+    {
+      "item": "k.review#8",
+      "rung": "example"
     },
     {
       "item": "k.roles#1",
@@ -18776,6 +19132,486 @@
     },
     {
       "item": "a11y:app.start#4.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.mint#1.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.mint#1.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.mint#1.3.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.mint#1.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.mint#1.3.5",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.mint#1.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.mint#1.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.mint#1.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.mint#1.4.12",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.mint#2.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.mint#2.2.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.mint#2.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.mint#2.4.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.mint#2.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.mint#2.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.mint#2.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.mint#3.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.mint#3.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.mint#3.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.mint#4.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.profile#1.1.1",
+      "rung": "example"
+    },
+    {
+      "item": "a11y:members.profile#1.2.2",
+      "rung": "example"
+    },
+    {
+      "item": "a11y:members.profile#1.3.1",
+      "rung": "example"
+    },
+    {
+      "item": "a11y:members.profile#1.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.profile#1.3.5",
+      "rung": "example"
+    },
+    {
+      "item": "a11y:members.profile#1.4.2",
+      "rung": "example"
+    },
+    {
+      "item": "a11y:members.profile#1.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.profile#1.4.4",
+      "rung": "example"
+    },
+    {
+      "item": "a11y:members.profile#1.4.12",
+      "rung": "example"
+    },
+    {
+      "item": "a11y:members.profile#2.1.1",
+      "rung": "example"
+    },
+    {
+      "item": "a11y:members.profile#2.2.1",
+      "rung": "example"
+    },
+    {
+      "item": "a11y:members.profile#2.2.2",
+      "rung": "example"
+    },
+    {
+      "item": "a11y:members.profile#2.4.1",
+      "rung": "example"
+    },
+    {
+      "item": "a11y:members.profile#2.4.2",
+      "rung": "example"
+    },
+    {
+      "item": "a11y:members.profile#2.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.profile#2.4.4",
+      "rung": "example"
+    },
+    {
+      "item": "a11y:members.profile#3.1.1",
+      "rung": "example"
+    },
+    {
+      "item": "a11y:members.profile#3.1.2",
+      "rung": "example"
+    },
+    {
+      "item": "a11y:members.profile#3.3.2",
+      "rung": "example"
+    },
+    {
+      "item": "a11y:members.profile#4.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.revoke#1.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.revoke#1.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.revoke#1.3.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.revoke#1.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.revoke#1.3.5",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.revoke#1.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.revoke#1.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.revoke#1.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.revoke#1.4.12",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.revoke#2.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.revoke#2.2.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.revoke#2.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.revoke#2.4.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.revoke#2.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.revoke#2.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.revoke#2.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.revoke#3.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.revoke#3.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.revoke#3.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.revoke#4.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.signin#1.1.1",
+      "rung": "example"
+    },
+    {
+      "item": "a11y:members.signin#1.2.2",
+      "rung": "example"
+    },
+    {
+      "item": "a11y:members.signin#1.3.1",
+      "rung": "example"
+    },
+    {
+      "item": "a11y:members.signin#1.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.signin#1.3.5",
+      "rung": "example"
+    },
+    {
+      "item": "a11y:members.signin#1.4.2",
+      "rung": "example"
+    },
+    {
+      "item": "a11y:members.signin#1.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.signin#1.4.4",
+      "rung": "example"
+    },
+    {
+      "item": "a11y:members.signin#1.4.12",
+      "rung": "example"
+    },
+    {
+      "item": "a11y:members.signin#2.1.1",
+      "rung": "example"
+    },
+    {
+      "item": "a11y:members.signin#2.2.1",
+      "rung": "example"
+    },
+    {
+      "item": "a11y:members.signin#2.2.2",
+      "rung": "example"
+    },
+    {
+      "item": "a11y:members.signin#2.4.1",
+      "rung": "example"
+    },
+    {
+      "item": "a11y:members.signin#2.4.2",
+      "rung": "example"
+    },
+    {
+      "item": "a11y:members.signin#2.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.signin#2.4.4",
+      "rung": "example"
+    },
+    {
+      "item": "a11y:members.signin#3.1.1",
+      "rung": "example"
+    },
+    {
+      "item": "a11y:members.signin#3.1.2",
+      "rung": "example"
+    },
+    {
+      "item": "a11y:members.signin#3.3.2",
+      "rung": "example"
+    },
+    {
+      "item": "a11y:members.signin#4.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.signup#1.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.signup#1.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.signup#1.3.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.signup#1.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.signup#1.3.5",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.signup#1.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.signup#1.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.signup#1.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.signup#1.4.12",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.signup#2.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.signup#2.2.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.signup#2.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.signup#2.4.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.signup#2.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.signup#2.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.signup#2.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.signup#3.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.signup#3.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.signup#3.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.signup#4.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.tokens#1.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.tokens#1.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.tokens#1.3.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.tokens#1.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.tokens#1.3.5",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.tokens#1.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.tokens#1.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.tokens#1.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.tokens#1.4.12",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.tokens#2.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.tokens#2.2.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.tokens#2.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.tokens#2.4.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.tokens#2.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.tokens#2.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.tokens#2.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.tokens#3.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.tokens#3.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.tokens#3.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.tokens#4.1.2",
       "rung": "none"
     },
     {

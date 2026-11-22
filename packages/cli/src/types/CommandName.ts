@@ -12,5 +12,6 @@ export type CommandName =
   | "codemod"
   | "ledger"
   | "evidence"
+  | "review"
   | "session"
   | "report";
