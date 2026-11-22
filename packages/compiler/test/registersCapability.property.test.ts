@@ -39,3 +39,17 @@ test("a file importing `database` from @keel/std-postgres is one; importing only
   ).toBe(true);
   expect(registersCapability('import { sql } from "@keel/std-postgres";\n')).toBe(false);
 });
+
+test("a subpath of either package is the package: `database` from @keel/std-postgres/server is one", () => {
+  fc.assert(
+    fc.property(body, fc.constantFrom("@keel/std-postgres/server", "@keel/std-postgres"), (text, from) => {
+      expect(
+        registersCapability(`import { database } from "${from}";\n${text}\nexport const d = database("a.db");\n`),
+      ).toBe(true);
+      expect(registersCapability(`import { sql } from "${from}";\n${text}\n`)).toBe(false);
+    }),
+    FC,
+  );
+  expect(registersCapability('import { register } from "@keel/ctx/internal";\n')).toBe(true);
+  expect(registersCapability('import { database } from "@keel/std-postgresql";\n')).toBe(false);
+});

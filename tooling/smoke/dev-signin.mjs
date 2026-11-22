@@ -9,7 +9,9 @@
 // and the app's database is a PGlite folder under `.keel-dev/postgres`; every server-only file the accounts routes import is
 // served to a browser request as its stub, with no `node:` import and none of the file's code; `/__keel/inspect` holds
 // the `api` deployable's inspector section `kitchen.box.currency` as a tally and `keel report` prints it; after an edit
-// to the server file that registers that section, `/api/*` still answers 200 and the section is still served. The
+// to the server file that registers that section, `/api/*` still answers 200 and the section is still served; after
+// each of two edits to the file declaring the kitchen's database, the edited declaration runs, `/api/recipes` answers
+// 200 with the recipe posted before, and no E1602 is logged. The
 // child runs in its own process group, which every path (a finished run, a failed step, a signal, the 90 s limit) kills.
 // Usage: node tooling/smoke/dev-signin.mjs. Nothing is written inside the repo.
 import { execFile, spawn } from "node:child_process";
@@ -276,6 +278,27 @@ try {
     again.status === 200 && again.tally,
     `status ${again.status}${again.tally ? "" : ", no tally section"}`,
   );
+
+  // An edit to the file that declares the kitchen's database, twice: the next requests run the edited declaration (it
+  // prints its mark), answer 200 with the recipe posted before, so the reload reused the database, and no E1602.
+  const declarer = "modules/kitchen/kitchenDb.server.ts";
+  for (const n of [1, 2]) {
+    const mark = `keel smoke: kitchen.db declared again ${n}`;
+    const reloads = () => dev.log.filter((l) => l.includes("page reload") && l.includes(declarer)).length;
+    const before = reloads();
+    await appendFile(join(dir, declarer), `\nconsole.warn(${JSON.stringify(mark)});\n`);
+    let seen = false;
+    for (const end = Date.now() + 15_000; Date.now() < end && !seen; await wait(100)) seen = reloads() > before;
+    const after = await text(base, "/api/recipes", json);
+    const ran = dev.log.some((l) => l.includes(mark));
+    step(
+      `GET /api/recipes after edit ${n} to the database declaration`,
+      seen && ran && after.status === 200 && after.body.includes('"title":"Smoke stew"'),
+      `status ${after.status}${seen ? "" : ", no reload"}${ran ? "" : ", edited declaration not run"}`,
+    );
+  }
+  const duplicate = dev.log.find((l) => l.includes("already registered"));
+  step("no E1602 after the declaration edits", duplicate === undefined, duplicate?.slice(0, 80) ?? "");
 } catch (e) {
   step("flow", false, String(e).split("\n")[0]);
 } finally {
