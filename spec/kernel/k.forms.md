@@ -1,5 +1,5 @@
 # k.forms: Forms
-status: conformance-covered
+status: implemented
 
 **API.**
 ```tsx
@@ -24,7 +24,7 @@ const f = form(OrderEdit, { initial: order }) // OrderEdit is an s.object in ord
 - `err` with code `keel.fields` (`data: { [path]: message }`): exactly those field errors are set.
 - any other `err`: the `error` slot renders it; values and field errors are unchanged.
 
-Without JS the server runs the same flow: it decodes FormData with the action's input schema and, on `keel.fields`, re-renders the page with the submitted values, less password-input ones and any that may reach an `s.secret`, and errors (k.server).
+Without JS the server runs the same flow: it decodes FormData with the action's input schema and, on `keel.fields`, re-renders the page with the submitted values, less password-input ones and any that may reach an `s.secret`, and errors (k.server). The page carries a summary before its content, `role="alert"` with class `k-summary` (k.ui Base): one item per error, a link to the field's control (`#<field id>`) named by the text of its `<label for>` (else the path), then the message.
 
 **Slot** on `<Form>`: `error` for non-field errors (k.ui standard slots); no `loading` slot (rfc:0043).
 
@@ -47,3 +47,4 @@ Without JS the server runs the same flow: it decodes FormData with the action's 
 - Two `form()` calls in separate render roots with one schema and one `id` give equal field ids; a second live one in the same root gets `~2`.
 - With `issueText`, an invalid field's error text is exactly its return value for that field's issue, whose `rule`, `path` and constraint match the schema; without it, a `format` issue shows `Invalid value`.
 - No 422 response carries a submitted `s.secret` or password-input value.
+- A no-script post that fails `amount` (an `Input` labelled `Amount`) answers 422 with a `.k-summary` item reading `Amount: <message>` whose link targets `#<field id>`.

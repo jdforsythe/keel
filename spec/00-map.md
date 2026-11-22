@@ -45,8 +45,8 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.routes | Route table | conformance-covered | union |
 | k.guards | Guards | implemented | deny |
 | k.prefix | Path prefix | conformance-covered | enums |
-| k.forms | Forms | conformance-covered | fields |
-| k.ui | Tokens, styling | conformance-covered | CSS |
+| k.forms | Forms | implemented | fields |
+| k.ui | Tokens, styling | implemented | CSS |
 | k.ctx | Capabilities | conformance-covered | clock |
 | k.owner | Ctx owner | conformance-covered | dispose |
 | k.errors | Results, boundaries | conformance-covered | Result |
