@@ -83,7 +83,9 @@ export function resumeIsland(
       // whose ctx is no production one: there the warning is the test's failure, and its cause is what the author needs.
       const shown = mode === "dev" || harnessed().has(ctx);
       claim.session.failed ??=
-        error instanceof Mismatch ? error : new Mismatch(shown ? `the claim threw ${String(error)}` : "the claim threw");
+        error instanceof Mismatch
+          ? error
+          : new Mismatch(shown ? `the claim threw ${String(error)}` : "the claim threw");
     }
     if (claim.session.failed === null && rendered.node !== el)
       claim.session.failed = new Mismatch("the component did not render the island root");
