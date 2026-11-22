@@ -7,7 +7,7 @@ description: "Build Keel pages: components, routes on the page, forms (form, For
 
 Signatures: `keel docs <id>` for `k.component` `k.router` `k.contract` `k.forms` `k.head` `k.ui` `k.a11y` `std.headless` `std.options` `std.tables` `std.messages` `std.i18n`.
 
-**Components.** One default export per file, named as the file, with `export const Props = s.object(...)`. Props are getters: never destructure (E1401). Branch with `<If when>`, `<For each key>`, `<Match on>`; `{a && <b/>}` and `.map()` over elements are E1403. A top-level `const x = props.y` used in JSX is E1405: read `props.y` there. Give `id="area.name"` to what a test addresses (E1404). Style props take token names (`p="2"`; E1801). A component reaching an effect takes `(props, ctx: Ctx)`, never optional, defaulted, destructured or followed by a parameter (E1407); one that reaches none is `(props)`. `mount` and `resume` take `{ ctx }`.
+**Components.** One default export per file, named as the file, with `export const Props = s.object(...)`. Props are getters: never destructure (E1401). Branch with `<If when>`, `<For each key>`, `<Match on>`; `{a && <b/>}` and `.map()` over elements are E1403. A top-level `const x = props.y` used in JSX is E1405: read `props.y` there. Give `id="area.name"` to what a test addresses (E1404). Style props take token names (`p="2"`; E1801). `gap` needs `direction` (`direction="column" gap="2"`). A component reaching an effect takes `(props, ctx: Ctx)`, never optional, defaulted, destructured or followed by a parameter (E1407); one that reaches none is `(props)`. `mount` and `resume` take `{ ctx }`.
 
 CSS such as fonts reaches documents through the deployable's `styles` in `topology.ts`; there is no `index.html`.
 
