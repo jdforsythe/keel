@@ -83,18 +83,17 @@ it("gives a visitor's stream one closed denied and nothing after it", async () =
   expect(await visitor.next()).toBe(null);
 });
 
-it("refuses the re-read of a member who signed out, so the list does not reach them", async () => {
-  // The stream keeps the user it opened with (std.channels `member`), so it still hears `changed`; what reaches a
-  // signed-out browser is that the list changed, and its re-read is refused.
+it("closes the stream of a member who signed out, at the next change, so the list does not reach them", async () => {
+  // Before each delivery the stream asks who its request belongs to now (std.channels, k.user `currentUser`): Grace's
+  // session is gone, so the change closes her stream `denied` in place of `changed`, and a re-read is refused too.
   const h = await household(14);
   const grace = await stream(h, h.graceCookie);
   expect(await grace.next()).toEqual({ ok: true, value: { kind: "reset" } });
   await h.raw(formPost(mount.href("/sign-out"), {}, h.graceCookie));
   await h.raw(asJson("POST", "/api/items", { name: "Rice" }, { cookie: h.adaCookie }));
-  const after = await grace.next();
+  expect(await grace.next()).toEqual({ ok: true, value: { kind: "closed", reason: "denied" } });
   const reread = await h.raw(asJson("GET", "/api/items", undefined, { cookie: h.graceCookie }));
   expect(reread.status).toBe(403);
-  expect(after).toEqual({ ok: true, value: { kind: "changed" } });
   await grace.close();
 });
 

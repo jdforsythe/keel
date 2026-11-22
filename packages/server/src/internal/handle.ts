@@ -121,8 +121,9 @@ export async function handle(sv: Served, raw: Request, rq: RequestScope, c: Cont
   const live = def.loader;
   const stream = method === "GET" && accept.includes("text/event-stream");
   const who = await userOf(r);
-  if (typeof who === "string") rq.user = who;
-  const g = await runGuards(m.route.chain, r.here, m.params, sv, rq, typeof who === "string" ? undefined : who);
+  const known = "user" in who ? who : undefined;
+  if (known !== undefined) rq.user = known.user;
+  const g = await runGuards(m.route.chain, r.here, m.params, sv, rq, "user" in who ? undefined : who);
   if (g.kind === "redirect")
     return {
       response: stream || api ? denied("guard denied") : redirectResponse(write ? 303 : 302, g.location),
@@ -146,6 +147,6 @@ export async function handle(sv: Served, raw: Request, rq: RequestScope, c: Cont
   const query = decodedQuery(def, url.searchParams);
   if (!query.ok) return { response: jsonResponse(422, err(query.error)), route, diags: [] };
   const at = { ...m, search: query.value ?? m.search };
-  if (stream && live !== undefined) return liveStream(r, at, live, c);
+  if (stream && live !== undefined) return liveStream(r, at, live, c, known?.asserted === true);
   return write ? issueCaller(r, noStore(await runAction(r, at))) : page(r, at, 200, null, null);
 }

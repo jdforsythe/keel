@@ -9,6 +9,13 @@ const FIRST_MS = 1000;
 const MAX_MS = 30_000;
 const BOUND_MS = 30_000;
 
+/** A refused read's error: `api.status` 401 or 403 (k.services), or `keel.denied` from a direct loader call. */
+const refused = (e: unknown): boolean => {
+  const code: unknown = Reflect.get(Object(e), "code");
+  const status: unknown = Reflect.get(Object(Reflect.get(Object(e), "data")), "status");
+  return code === "keel.denied" || (code === "api.status" && (status === 401 || status === 403));
+};
+
 /**
  * Keep a client store current (std.live), inside a scope (E1203 outside one): follow `channel` with `params` at
  * `origin` and, after each `reset`, `saved` and `changed` event, run `read(ctx, signal)` and commit an `ok` value with
@@ -17,7 +24,8 @@ const BOUND_MS = 30_000;
  * and runs again 1 s later, doubling to 30 s on `ctx.clock`, or at the next event; a read settling after its 30 s
  * changes nothing. `signal` aborts when a read's 30 s pass while it is pending and when the scope is disposed while it is
  * pending; a `read` that takes only `ctx` stays valid. Disposing the scope closes the stream, ends the waits and drops
- * the result of a read in flight.
+ * the result of a read in flight. A refused read (`refused`) commits nothing, closes the stream and stops reading:
+ * the status is `denied` from then on.
  * Returns the status read.
  */
 export function live<C extends Ctx, T, P, Q, M, E>(
@@ -30,6 +38,7 @@ export function live<C extends Ctx, T, P, Q, M, E>(
   const sc = owner();
   if (sc === undefined) throw new Error("E1203: live() called outside any scope; wrap it in scope(fn)");
   const fresh = signal(false);
+  const denied = signal(false);
   let alive = true;
   let reading = false;
   let again = false;
@@ -56,6 +65,11 @@ export function live<C extends Ctx, T, P, Q, M, E>(
     b.abort();
     reading = false;
     if (!alive) return;
+    if (r?.ok === true && !r.value.ok && refused(r.value.error)) {
+      alive = false;
+      denied.set(true);
+      return sub.close();
+    }
     const done = r?.ok === true && r.value.ok && tx(opts.hydrate, r.value.value).ok;
     fresh.set(done);
     delay = done ? FIRST_MS : delay;
@@ -79,6 +93,7 @@ export function live<C extends Ctx, T, P, Q, M, E>(
   });
   const status = computed((): LiveStatus => {
     const s = sub.status();
+    if (denied.get()) return "denied";
     return s === "open" ? (fresh.get() ? "live" : "connecting") : s;
   });
   return status.get;

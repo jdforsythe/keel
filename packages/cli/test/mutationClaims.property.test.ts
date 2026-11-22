@@ -61,7 +61,7 @@ describe("mutationClaims", () => {
     });
     expect(mutation.claims.map((c) => c.file)).toEqual(["packages/p/src/kept.ts"]);
     expect([...fresh]).toEqual([]);
-    expect(mutation.packages.p).toEqual({ threshold: 70 });
+    expect(mutation.packages.p).toEqual({ threshold: 70, killed: 0, survived: 0, noCoverage: 0, justified: 0 });
   });
 
   it("a report entry for a file that left the tree gives no claim", () => {

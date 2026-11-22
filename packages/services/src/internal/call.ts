@@ -25,7 +25,7 @@ export async function call(
   const timer = ctx.clock.after(ms, cancel.signal);
   const controller = new AbortController();
   linkSignal(input, controller);
-  const req = buildRequest(e, target.base, input, controller.signal, undefined, target.sign, target.user);
+  const req = buildRequest(e, target.base, input, controller.signal, undefined, target.sign, target.user, target.keel);
   if (!req.ok) {
     cancel.abort();
     timer.catch(() => undefined);

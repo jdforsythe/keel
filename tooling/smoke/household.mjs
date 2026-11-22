@@ -596,15 +596,18 @@ try {
     elsewhere.waitForURL((u) => u.pathname === "/signin", { timeout: 10_000 }),
     byId(elsewhere, "app.nav.signOut").click(),
   ]);
+  // The next change closes Grace's stream `denied`: her page says Signed out within about a second of Ada's add.
   await byId(page, "shopping.staples.trigger").click();
+  const asked = Date.now();
   await byId(page, "shopping.staples.item.rice").click();
-  const out = await until(grace, "Signed out", 10_000);
+  const out = await until(grace, "Signed out", 2_000);
+  const took = Date.now() - asked;
   // Rice is on the list from the kill above: Ada's add raises it to 2, which Grace's page must not show.
   const leaked = await rowIn(grace, "Rice × 2").count();
   step(
     "signed out in another tab, Grace's page says so and gets no new item",
     out && leaked === 0,
-    `${await statusOf(grace)}, rows with Rice × 2: ${leaked}`,
+    `${await statusOf(grace)} after ${took} ms, rows with Rice × 2: ${leaked}`,
   );
   step("no page errors with two members", errors.length === 0, clip(errors.join(" | ")));
   await graceContext.close();
