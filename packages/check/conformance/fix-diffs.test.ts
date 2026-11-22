@@ -357,6 +357,7 @@ const NO_FIX = [
   "E1582", // k.mount Rules: Fix none; the subpath is the author's
   "E1584", // k.mount Rules: Fix none; the links entry is the author's
   "E1586", // k.topology Rules: no fix; the package, not the app, is wrong
+  "E1587", // k.topology Rules: no fix; which package export holds the stylesheet is the author's choice
   "E1576", // the public replacement is the author's
   "E1573", // the shell's adapter and app id are the author's
   "E1513", // k.contract Rules: no fix; the checker cannot choose the file

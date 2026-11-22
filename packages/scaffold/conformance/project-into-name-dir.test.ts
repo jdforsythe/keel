@@ -23,13 +23,10 @@ for (const workspace of [false, true]) {
           try {
             const r = keel(dir, ["scaffold", "project", name, ...flags]);
             expect(r.status, JSON.stringify(r.records)).toBe(0);
-            const files = [
-              "package.json",
-              "topology.ts",
-              "modules/app/module.ts",
-              ...(workspace ? ["index.html"] : []),
-            ];
+            const files = ["package.json", "topology.ts", "modules/app/module.ts", ...(workspace ? ["vitest.config.ts"] : [])];
             for (const f of files) expect(existsSync(join(dir, name, f)), f).toBe(true);
+            // k.scaffold: no `index.html`, with or without `--workspace` (Keel writes every document).
+            expect(existsSync(join(dir, name, "index.html")), "index.html").toBe(false);
             expect(top(dir)).toEqual([name]);
           } finally {
             cleanup(dir);

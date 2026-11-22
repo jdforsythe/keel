@@ -692,6 +692,23 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       manifest("w"),
     ],
   },
+  E1587: {
+    opts: NO_TYPES,
+    bad: [
+      f(
+        "topology.ts",
+        "import { topology } from '@keel/server'\nexport default topology({ web: { modules: ['a'], adapter: 'client', styles: ['./x.css'] } })\n",
+      ),
+      manifest("a"),
+    ],
+    clean: [
+      f(
+        "topology.ts",
+        "import { topology } from '@keel/server'\nexport default topology({ web: { modules: ['a'], adapter: 'client', styles: ['@keel/ui/fonts'] } })\n",
+      ),
+      manifest("a"),
+    ],
+  },
   E1566: {
     badOpts: {
       ...NO_TYPES,
