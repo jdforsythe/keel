@@ -10,5 +10,5 @@ const script = path.join(import.meta.dirname, "..", "fixtures", "fetch-reset", "
 it("turns a reset during the socket's setup into a rejected fetch, never an uncaught error", () => {
   const r = spawnSync(process.execPath, ["--import", preload, script], { encoding: "utf8", timeout: 60_000 });
   expect(r.status).toBe(0);
-  expect(JSON.parse(r.stdout)).toEqual({ uncaught: 0, rejected: 1000 });
+  expect(JSON.parse(r.stdout)).toEqual({ uncaught: 0, rejected: 10_000 });
 }, 90_000);

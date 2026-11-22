@@ -108,18 +108,28 @@ if (globalThis[KEY] === undefined)
     AbortSignal: globalThis.AbortSignal,
   };
 
-// Node's fetch sets the type of service on each new socket (`socket.setTypeOfService(0)`), and on macOS that throws
-// EINVAL from inside the client when the peer has already reset the connection, as a `keel dev` child that is
-// starting, reloading or ending does; nothing can catch it, so it ends the worker as an unhandled error. The type of
-// service is best effort: here an EINVAL leaves it unset, and the fetch fails or succeeds on its own terms.
+// Test code's own fetches (a test fetching the `keel dev` child it started) go through Node's fetch, which sets the type
+// of service on each request it writes (`socket.setTypeOfService`); on macOS that throws EINVAL, uncatchable, once the
+// peer has reset the connection, as a child that is starting, reloading or ending does. A real ctx's `net` handles this
+// itself (@keel/ctx `typeOfServiceBestEffort`, proven without this preload by packages/ctx/test/realNet.example.test.ts);
+// a test that makes no real ctx has only this: the same per-socket handling, so an EINVAL leaves the type of service
+// unset and the fetch fails or succeeds on its own terms.
+const channels = await import("node:diagnostics_channel");
 const { Socket } = await import("node:net");
-const setTypeOfService = Socket.prototype.setTypeOfService;
-if (typeof setTypeOfService === "function")
-  Socket.prototype.setTypeOfService = function keelSetTypeOfService(tos) {
-    try {
-      return setTypeOfService.call(this, tos);
-    } catch (error) {
-      if (error?.code === "EINVAL" || error?.errno === -22) return this;
-      throw error;
-    }
-  };
+channels.subscribe("undici:client:connected", (message) => {
+  const socket = message?.socket;
+  if (!(socket instanceof Socket) || typeof socket.setTypeOfService !== "function") return;
+  const set = socket.setTypeOfService;
+  Object.defineProperty(socket, "setTypeOfService", {
+    configurable: true,
+    writable: true,
+    value(tos) {
+      try {
+        return set.call(socket, tos);
+      } catch (error) {
+        if (error?.code === "EINVAL") return socket;
+        throw error;
+      }
+    },
+  });
+});
