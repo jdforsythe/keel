@@ -1,5 +1,6 @@
 import { Visitor } from "oxc-parser";
 import { BASE_ELEMENTS } from "../internal/BASE_ELEMENTS.ts";
+import { BASE_ROLE } from "../internal/BASE_ROLE.ts";
 import type { StyleSource } from "../internal/StyleSource.ts";
 import { clip } from "../internal/clip.ts";
 import { findingAt } from "../internal/findingAt.ts";
@@ -10,19 +11,12 @@ import { num } from "../internal/num.ts";
 import { objectStyleSource } from "../internal/objectStyleSource.ts";
 import { setKeys } from "../internal/setKeys.ts";
 import { str } from "../internal/str.ts";
+import { tokenSetAt } from "../internal/tokenSetAt.ts";
 import { tokenSetGaps } from "../internal/tokenSetGaps.ts";
 import type { Finding } from "../types/Finding.ts";
 import type { RuleDef } from "../types/RuleDef.ts";
 
 const MESSAGE = "gap without direction: name the axis its children are spaced along";
-const ROLE: Readonly<Record<string, string>> = {
-  Heading: "heading",
-  Link: "link",
-  Button: "button",
-  Input: "control",
-  TextArea: "control",
-  Select: "control",
-};
 const isRec = (v: unknown): v is Readonly<Record<string, unknown>> => typeof v === "object" && v !== null;
 const keyText = (k: string): string => (/^[A-Za-z_$][\w$]*$/.test(k) ? k : JSON.stringify(k));
 type Dirs = readonly (readonly string[] | null)[];
@@ -64,16 +58,10 @@ export const gapWithoutDirection: RuleDef = {
   check: ({ file, ast, artifacts, project }) => {
     const tokens = artifacts.tokens;
     const out: Finding[] = [];
-    const host = project.find((f) => /(?:^|\/)tokens\.ts$/.test(f.path)) ?? project[0];
-    if (host?.path === file.path)
-      for (const g of tokenSetGaps(tokens)) {
-        let at = 0;
-        for (const seg of g.set.split(".")) {
-          const i = file.source.indexOf(seg, at);
-          if (i >= 0) at = i;
-        }
-        out.push(findingAt(file, at, { set: g.set }));
-      }
+    for (const g of tokenSetGaps(tokens)) {
+      const at = tokenSetAt(file, project, g.set);
+      if (at !== undefined) out.push(findingAt(file, at, { set: g.set }));
+    }
     if (!isAppPath(file.path)) return out;
     const order = isRec(tokens) && isRec(tokens.breakpoint) ? Object.keys(tokens.breakpoint) : [];
     const looks = isRec(tokens) && isRec(tokens.look) ? tokens.look : {};
@@ -105,7 +93,7 @@ export const gapWithoutDirection: RuleDef = {
     new Visitor({
       JSXOpeningElement: (n) => {
         const name = n.name.type === "JSXIdentifier" ? n.name.name : "";
-        if (BASE_ELEMENTS.has(name) || name === "Part") visit(jsxStyleSource(n.attributes), [], ROLE[name]);
+        if (BASE_ELEMENTS.has(name) || name === "Part") visit(jsxStyleSource(n.attributes), [], BASE_ROLE[name]);
         for (const a of n.attributes) {
           if (a.type !== "JSXAttribute" || a.name.type !== "JSXIdentifier" || a.name.name !== "styles") continue;
           const e = a.value?.type === "JSXExpressionContainer" ? a.value.expression : undefined;

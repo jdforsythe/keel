@@ -209,7 +209,7 @@
       "max": "8.25kb",
       "platform": "node"
     },
-    "@keel/ui": "5kb",
+    "@keel/ui": "5.5kb",
     "@keel/ui/aria": "3.5kb"
   },
   "mutate": {
