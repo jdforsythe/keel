@@ -1,7 +1,7 @@
 import type { PGlite } from "@electric-sql/pglite";
-import type { Isolation } from "../Isolation.ts";
 import type { Conn } from "./Conn.ts";
 import type { Engine } from "./Engine.ts";
+import type { Level } from "./Level.ts";
 import type { Raw } from "./Raw.ts";
 import { TypeCache } from "./TypeCache.ts";
 
@@ -30,10 +30,14 @@ export async function pgliteEngine(db: PGlite): Promise<Engine> {
   await types.load(top);
   return {
     types,
-    statement: (text, params) => run(db, text, params),
-    tx: <T>(isolation: Isolation, fn: (c: Conn) => Promise<{ readonly value: T; readonly commit: boolean }>) =>
+    statement: (text, params) =>
       db.transaction(async (t) => {
-        await t.query(`set transaction isolation level ${isolation}`);
+        await t.query("set transaction isolation level serializable");
+        return run(t, text, params);
+      }),
+    tx: <T>(level: Level, fn: (c: Conn) => Promise<{ readonly value: T; readonly commit: boolean }>) =>
+      db.transaction(async (t) => {
+        await t.query(`set transaction isolation level ${level}`);
         const out = await fn({
           query: (text, params) => run(t, text, params),
           exec: async (text) => {

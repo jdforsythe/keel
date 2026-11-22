@@ -1,6 +1,6 @@
 ---
 name: keel-escapes
-description: "Read keel review output and make the calls a rule cannot: is there a Keel seam, does the reason hold, was a test or configuration bent to pass; never approves a change or edits keel-review.json; R1001, R1010, R1011, R1012, R1014, R1050, R1051, R1052, R1053, R1055, R1056, R1057, R1058, R1059, R1060, R1061, R1100, R1101, R1102, R1103, R1104, R1105, R1107, R1108, R1150, R1151"
+description: "Read keel review output and make the calls a rule cannot: is there a Keel seam, does the reason hold, was a test or configuration bent to pass; never approves a change or edits keel-review.json; R1001, R1010, R1011, R1012, R1014, R1050, R1051, R1052, R1053, R1055, R1056, R1057, R1058, R1059, R1060, R1061, R1100, R1101, R1102, R1103, R1104, R1105, R1107, R1108, R1150, R1151, R2451"
 ---
 
 # Reading keel review
@@ -56,6 +56,7 @@ Read the code at `path:line` and the diff around it. Then answer four questions,
 | R1108 | fewer `.pii(`, `s.secret(` or `guard(` calls | keep the mark or the guard (`keel docs k.privacy`) |
 | R1150 | a file the review cannot parse | correct the syntax; nothing in the file was read |
 | R1151 | a baseline entry with no finding | a person removes it |
+| R2451 | a transaction's `allow` (std.postgres) | drop it to keep `serializable`; does the reason say why the anomaly cannot happen or does no harm here? |
 
 ## Write the report
 

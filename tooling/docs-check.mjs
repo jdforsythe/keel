@@ -47,7 +47,7 @@ export const TARGETS = {
   keel: 950,
   "keel-client": 2550,
   "keel-server": 2450,
-  "keel-data": 2500,
+  "keel-data": 2550,
   "keel-testing": 2275,
   "keel-deploy": 1925,
   "keel-compliance": 1550,

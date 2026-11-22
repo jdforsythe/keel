@@ -1452,6 +1452,13 @@ const ROWS: readonly Row[] = [
     "remove the entry",
     "k.escapes, k.review",
   ],
+  [
+    "R2451",
+    "a transaction's allow: it gives up part of serializable",
+    "Opt-in: 'lost updates' high (read committed), 'write skew' medium (repeatable read). The reason is its reason.",
+    "drop allow, or do the write in one statement: set n = n + 1",
+    "k.escapes, std.postgres",
+  ],
 ];
 
 /**

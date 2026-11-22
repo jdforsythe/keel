@@ -3,7 +3,7 @@
   "unsafe": 18,
   "hostElements": 0,
   "rungs": {
-    "example": 1689,
+    "example": 1694,
     "probabilistic": 341,
     "exhaustive": 15,
     "proven": 75,
@@ -17854,6 +17854,26 @@
     },
     {
       "item": "std.postgres#12",
+      "rung": "example"
+    },
+    {
+      "item": "std.postgres#13",
+      "rung": "example"
+    },
+    {
+      "item": "std.postgres#14",
+      "rung": "example"
+    },
+    {
+      "item": "std.postgres#15",
+      "rung": "example"
+    },
+    {
+      "item": "std.postgres#16",
+      "rung": "example"
+    },
+    {
+      "item": "std.postgres#17",
       "rung": "example"
     },
     {
