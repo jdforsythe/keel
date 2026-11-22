@@ -19,6 +19,10 @@ it("shows the empty list, the menu, the tabs and the help", async () => {
   expect(page.find("shopping.staples.trigger").role).toBe("button");
   expect(page.find("shopping.view.tab.toBuy").state).toMatchObject({ selected: true });
   expect(page.focusOrder()).toEqual([
+    "shopping.nav.list",
+    "shopping.nav.receipts",
+    "frame.profile",
+    "frame.signOut",
     "shopping.staples.trigger",
     "shopping.view.tab.toBuy",
     "shopping.view.panel.toBuy",

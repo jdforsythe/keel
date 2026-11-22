@@ -19,6 +19,9 @@ export default function TokenPanel(props: Infer<typeof Props>, ctx: Ctx) {
   const list = signal(props.tokens);
   const shown = signal("");
   const failed = signal(false);
+  // A token is one unbroken word; in pieces of 16 the row wraps at phone width and the text still copies whole.
+  const pieces = (token: string) =>
+    Array.from({ length: Math.ceil(token.length / 16) }, (_, n) => ({ at: n, text: token.slice(n * 16, n * 16 + 16) }));
   const mint = async () => {
     const r = await membersApi.mint({ body: { days: 30 } }, ctx);
     if (!r.ok) return failed.set(true);
@@ -32,36 +35,84 @@ export default function TokenPanel(props: Infer<typeof Props>, ctx: Ctx) {
     else failed.set(true);
   };
   return (
-    <Box as="section" id="members.tokens" gap="2">
-      <Heading id="members.tokens.heading" level={2}>
+    <Box as="section" id="members.tokens" direction="column" gap="3">
+      <Box h="hairline" bg="divider" />
+      <Heading id="members.tokens.heading" level={2} m="0" fontSize="lg" weight="semibold">
         {props.text.tokensHeading}
       </Heading>
-      <Text id="members.tokens.intro">{props.text.tokensIntro}</Text>
-      <Button id="members.mint" onClick={mint}>
-        {props.text.mint}
-      </Button>
+      <Text id="members.tokens.intro" fg="textSecondary">
+        {props.text.tokensIntro}
+      </Text>
+      <Box direction="row">
+        <Button
+          id="members.mint"
+          onClick={mint}
+          font="mono"
+          fontSize="sm"
+          px="3"
+          py="2"
+          bg="card"
+          fg="text"
+          border="rule"
+          radius="none"
+          states={{ hover: { bg: "surfaceLow" }, focusVisible: { bg: "surfaceLow" } }}
+        >
+          {props.text.mint}
+        </Button>
+      </Box>
       <If when={shown.get() !== ""}>
-        <Box gap="1">
-          <Text id="members.minted.note">{props.text.minted}</Text>
-          <Text id="members.minted">{shown.get()}</Text>
+        <Box direction="column" gap="2" p="3" bg="card" border="rule">
+          <Text id="members.minted.note" fontSize="sm">
+            {props.text.minted}
+          </Text>
+          <Box id="members.minted" direction="row" wrap="wrap" p="2" bg="surfaceLow" font="mono" fontSize="sm">
+            <For each={pieces(shown.get())} key="at">
+              {(piece) => <Text>{piece.text}</Text>}
+            </For>
+          </Box>
         </Box>
       </If>
       <If when={failed.get()}>
-        <Text id="members.tokens.failed" fg="error">
+        <Text id="members.tokens.failed" fg="error" bg="card" border="error" px="3" py="2" font="mono" fontSize="sm">
           {props.text.failed}
         </Text>
       </If>
       <If when={list.get().length === 0}>
-        <Text id="members.tokens.none">{props.text.noTokens}</Text>
+        <Text id="members.tokens.none" fg="textSecondary" p="3" bg="card" border="hairline">
+          {props.text.noTokens}
+        </Text>
       </If>
-      <Box as="ul" id="members.tokens.list" gap="2">
+      <Box as="ul" id="members.tokens.list" direction="column" gap="hairline" bg="divider" p="0" m="0">
         <For each={list.get().map((t, n) => ({ ...t, n }))} key="id">
           {(t) => (
-            <Box as="li" id={`members.token.${t.n}`} direction="row" gap="2" align="center">
-              <Text id={`members.token.ends.${t.n}`}>
+            <Box
+              as="li"
+              id={`members.token.${t.n}`}
+              direction="row"
+              wrap="wrap"
+              justify="between"
+              align="center"
+              gap="2"
+              px="3"
+              py="2"
+              bg="card"
+            >
+              <Text id={`members.token.ends.${t.n}`} font="mono" fontSize="sm">
                 {`${props.text.expires} ${formatDate(t.expiresOn, "en-US", "long")}`}
               </Text>
-              <Button id={`members.revoke.${t.n}`} onClick={() => revoke(t.id)}>
+              <Button
+                id={`members.revoke.${t.n}`}
+                onClick={() => revoke(t.id)}
+                font="mono"
+                fontSize="sm"
+                px="3"
+                py="1"
+                bg="card"
+                fg="error"
+                border="error"
+                radius="none"
+                states={{ hover: { bg: "surfaceLow" }, focusVisible: { bg: "surfaceLow" } }}
+              >
                 {props.text.revoke}
               </Button>
             </Box>

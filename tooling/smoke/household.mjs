@@ -308,8 +308,13 @@ try {
 
   await page.goto(`${origin}/receipts`);
   await settled(page);
-  const padding = await byId(page, "receipts.page").evaluate((e) => getComputedStyle(e).padding);
+  const padding = await byId(page, "frame.main").evaluate((e) => getComputedStyle(e).padding);
   step("a styled element has a non-default computed style", padding !== "0px" && padding !== "", `padding ${padding}`);
+  const serif = await byId(page, "frame").evaluate(async (e) => {
+    await document.fonts.ready;
+    return [getComputedStyle(e).fontFamily, document.fonts.check('17px "Source Serif 4"')];
+  });
+  step("the frame sets the brand serif and it loads", serif[0].startsWith('"Source Serif 4"') && serif[1], serif.join(" "));
 
   await page.goto(`${origin}/list`);
   await settled(page);

@@ -10,6 +10,10 @@ it("renders the start page with its heading and a link to the list", async () =>
   expect(page.find("app.start.intro").text).toContain("receipts book");
   expect(page.find("app.start.toList").role).toBe("link");
   expect(page.focusOrder()).toEqual([
+    "app.nav.list",
+    "app.nav.receipts",
+    "frame.signIn",
+    "frame.signUp",
     "app.start.toList",
     "app.start.toReceipts",
     "app.start.toSetup",

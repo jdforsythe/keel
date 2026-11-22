@@ -19,6 +19,9 @@ it("starts empty, in English, with a link to the German page", async () => {
   expect(page.find("receipts.count").text).toBe("0 receipts");
   expect(page.find("receipts.switch").text).toBe("Deutsch");
   expect(page.focusOrder()).toEqual([
+    "receipts.nav.receipts",
+    "frame.profile",
+    "frame.signOut",
     "receipts.switch",
     "receipts.new:shop",
     "receipts.new:amount",

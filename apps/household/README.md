@@ -16,7 +16,7 @@ Run every command from `apps/household`.
 
 `keel scaffold project household --workspace --adapter node` writes the project: one `node` deployable named `web` that renders pages on the server, `tokens.ts` on `brandTokens`, and an empty `app` module. `keel scaffold route app.start --path /` adds the start page, its loader and a route test.
 
-- `modules/app/StartPage.tsx` renders a heading and one line of text from its loader's data.
+- `modules/app/StartPage.tsx` renders a heading, one line of text from its loader's data, and a link to each page.
 - `modules/app/loadStart.server.ts` returns that data, shaped by `StartData.schema.ts`.
 - `routes.ts` binds the page, the loader and a `title`, so the served document is titled "Household".
 - `test/start.test.ts` renders the route with `renderRoute` and reads the heading by id.
@@ -102,3 +102,16 @@ Keel signs no one in. The app mounts a sign-in library, Better Auth, through the
 Tests: `test/serve.ts` serves the app with its identity source and signs a member up and in. `test/signin.test.ts` covers the cookie, `next`, a wrong password, sign-out and a cross-site post; `test/tokens.test.ts` mints, calls, revokes, expires, tampers with and chains tokens; `test/profile.test.ts` saves the profile, runs `properties` on the page, and checks that typed personal data reaches no log line. The smoke signs up and in in Chromium, mints a token, calls the API with it, revokes it and is refused, and types distinctive values into the profile, then searches the server's log and every file in its data folder but the database for them.
 
 Try it: with the built app running, make an account at `localhost:5211/signup` and sign in. On `/profile`, select Make a token and copy it, then run `curl -s -H "authorization: Bearer <token>" localhost:5211/api/items`. Select Revoke and run the same `curl`: it answers 403.
+
+## Layer 7: the frame and the brand
+
+Every page renders in a shell layout that puts the Keel brand (`docs/BRAND.md`) on it. `tokens.ts` is `brandTokens` plus one size, `control`, the width of a text control inside its card; `topology.ts` lists `@keel/ui/fonts` in `styles`, so the served stylesheet carries Source Serif 4 and JetBrains Mono.
+
+- `members/Frame.tsx` is the frame: a masthead with the mark, the app's name and the household's name, the main navigation, a hairline, and the page in a centred column that narrows to the screen on a phone. For a member the navigation ends with Profile and a Sign out button; for a visitor, with Sign in and Make an account.
+- Each module binds a layout, `<module>.shell`, whose component renders the frame with the links that module's `deps` allow, and whose loader (`loadShell.server.ts`) answers the copy (`members/shellText.ts`), the household's name and whether a member is signed in. The list and the start page link to the list and the receipts book; the receipts book links to itself; the members and setup pages carry only Profile and Sign out. A navigation shared by every page would make the modules depend on each other.
+- Pages set their type scale and spacing with style props: headings `xl` on a phone and `2xl` from `md`, secondary copy in `textSecondary`, numbers and controls in `mono`. Forms sit in a white card with a hairline border; text controls have a `control` border that darkens on hover and focus; a refusal shows in an Error Crimson box and a saved profile in a Verified Green one.
+- The list and the receipts book are rows on white, divided by hairlines; the list's rows stack their buttons under the name on a phone. An empty list, an empty book and no tokens each show a bordered note. The `Menu`, `Tabs`, `Toaster` and `Disclosure` take their parts' styles through `styles`.
+
+Tests: `test/start.test.ts`, `test/shoppingList.test.ts`, `test/receipts.test.ts` and `test/profile.test.ts` read the frame's links first in the focus order. The smoke checks that the frame's computed font is Source Serif 4 and that the font loads.
+
+Check your work: `pnpm test && pnpm check && pnpm build`, then the smoke from the repository root.

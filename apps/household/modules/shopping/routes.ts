@@ -2,15 +2,24 @@ import { manifest } from "@keel/router";
 import { member } from "../members/member.guard.ts";
 import { signedIn } from "../members/signedIn.guard.ts";
 import ListPage from "./ListPage.tsx";
+import ShoppingShell from "./ShoppingShell.tsx";
 import { deleteItem } from "./deleteItem.server.ts";
 import { getItems } from "./getItems.server.ts";
 import { loadList } from "./loadList.server.ts";
+import { loadShell } from "./loadShell.server.ts";
 import { postItem } from "./postItem.server.ts";
 import { shopping } from "./shopping.contract.ts";
 import { toggleItem } from "./toggleItem.server.ts";
 
 export const routes = manifest(shopping, {
-  "shopping.list": { component: ListPage, loader: loadList, guard: signedIn, title: (p) => p.data.text.heading },
+  "shopping.shell": { component: ShoppingShell, loader: loadShell },
+  "shopping.list": {
+    component: ListPage,
+    layout: "shopping.shell",
+    loader: loadList,
+    guard: signedIn,
+    title: (p) => p.data.text.heading,
+  },
   "shopping.items": { loader: getItems, guard: member },
   "shopping.add": { action: postItem, guard: member },
   "shopping.toggle": { action: toggleItem, guard: member },
