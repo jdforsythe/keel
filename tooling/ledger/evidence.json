@@ -1,5 +1,5 @@
 {
-  "commit": "56688c95f8c691433e604b9285f555601ae728bd",
+  "commit": "a7f2573128a1385572359d6a4d2e778376d3f92d",
   "coverage": {
     "packages": {
       "apps/golden-1": {
@@ -1168,7 +1168,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-22T16:15:40.235Z",
+  "generatedAt": "2026-11-22T17:03:21.203Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -1184,7 +1184,7 @@
     },
     "clauses": {
       "byRung": {
-        "example": 881,
+        "example": 882,
         "exhaustive": 6,
         "monitored": 0,
         "none": 13,
@@ -2065,7 +2065,7 @@
         },
         "k.testing": {
           "byRung": {
-            "example": 14,
+            "example": 15,
             "exhaustive": 0,
             "monitored": 0,
             "none": 6,
@@ -2073,8 +2073,8 @@
             "proven": 0
           },
           "status": "implemented",
-          "total": 20,
-          "verified": 14
+          "total": 21,
+          "verified": 15
         },
         "k.topology": {
           "byRung": {
@@ -2571,11 +2571,11 @@
           "verified": 8
         }
       },
-      "total": 1113,
-      "verified": 1100
+      "total": 1114,
+      "verified": 1101
     },
     "evidenceByRung": {
-      "example": 1782,
+      "example": 1783,
       "exhaustive": 16,
       "monitored": 8,
       "probabilistic": 342,
@@ -3135,9 +3135,9 @@
       "total": 590,
       "verified": 427
     },
-    "items": 2663,
+    "items": 2664,
     "unsafe": 18,
-    "verified": 1891
+    "verified": 1892
   },
   "mutation": {
     "packages": {
@@ -4132,8 +4132,8 @@
         "unitFiles": 27
       },
       "packages/testing": {
-        "conformanceCases": 553,
-        "conformanceFiles": 125,
+        "conformanceCases": 563,
+        "conformanceFiles": 126,
         "exploreFiles": 11,
         "fails": 0,
         "otherCases": 0,
@@ -4161,8 +4161,8 @@
       }
     },
     "totals": {
-      "conformanceCases": 5048,
-      "conformanceFiles": 1265,
+      "conformanceCases": 5058,
+      "conformanceFiles": 1266,
       "exploreFiles": 19,
       "fails": 2,
       "otherCases": 0,
