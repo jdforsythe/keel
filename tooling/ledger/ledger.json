@@ -3,8 +3,8 @@
   "unsafe": 18,
   "hostElements": 0,
   "rungs": {
-    "example": 1770,
-    "probabilistic": 341,
+    "example": 1773,
+    "probabilistic": 342,
     "exhaustive": 15,
     "proven": 75,
     "monitored": 8
@@ -12478,6 +12478,18 @@
     },
     {
       "pkg": "household",
+      "name": "Changes",
+      "file": "household:shopping/Changes.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "Copy",
+      "file": "household:shopping/Copy.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
       "name": "Item",
       "file": "household:shopping/Item.schema.ts",
       "rung": "none"
@@ -12498,6 +12510,12 @@
       "pkg": "household",
       "name": "ListPage",
       "file": "household:shopping/ListPage.tsx",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "ListParams",
+      "file": "household:shopping/ListParams.schema.ts",
       "rung": "none"
     },
     {
@@ -12544,6 +12562,18 @@
     },
     {
       "pkg": "household",
+      "name": "changeStores",
+      "file": "household:shopping/changeStores.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "copy",
+      "file": "household:shopping/copy.store.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "household",
       "name": "deleteItem",
       "file": "household:shopping/deleteItem.server.ts",
       "rung": "none"
@@ -12556,6 +12586,24 @@
     },
     {
       "pkg": "household",
+      "name": "hydrate",
+      "file": "household:shopping/hydrate.transaction.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "household",
+      "name": "listChannel",
+      "file": "household:shopping/listChannel.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "household",
+      "name": "listEvents",
+      "file": "household:shopping/listEvents.server.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
       "name": "listOf",
       "file": "household:shopping/listOf.server.ts",
       "rung": "none"
@@ -12564,6 +12612,12 @@
       "pkg": "household",
       "name": "loadList",
       "file": "household:shopping/loadList.server.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "pageOrigin",
+      "file": "household:shopping/pageOrigin.ts",
       "rung": "none"
     },
     {
@@ -12582,7 +12636,7 @@
       "pkg": "household",
       "name": "shoppingApi",
       "file": "household:shopping/shoppingApi.ts",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "pkg": "household",
@@ -20264,6 +20318,86 @@
     },
     {
       "item": "a11y:shopping.add#4.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:shopping.events#1.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:shopping.events#1.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:shopping.events#1.3.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:shopping.events#1.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:shopping.events#1.3.5",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:shopping.events#1.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:shopping.events#1.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:shopping.events#1.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:shopping.events#1.4.12",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:shopping.events#2.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:shopping.events#2.2.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:shopping.events#2.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:shopping.events#2.4.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:shopping.events#2.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:shopping.events#2.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:shopping.events#2.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:shopping.events#3.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:shopping.events#3.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:shopping.events#3.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:shopping.events#4.1.2",
       "rung": "none"
     },
     {

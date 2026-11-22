@@ -50,19 +50,21 @@ export default function ShoppingList(props: Infer<typeof Props>, ctx: Ctx) {
   const rows = (bought: boolean) => list().filter((i) => i.bought === bought);
   return (
     <Box as="section" id="shopping.board" direction="column" gap="4">
-      <Text
-        id="shopping.live"
-        role="status"
-        font="mono"
-        fontSize="xs"
-        px="2"
-        py="1"
-        bg="card"
-        fg={status() === "live" ? "verified" : status() === "offline" ? "error" : "textSecondary"}
-        border={status() === "live" ? "verified" : status() === "offline" ? "error" : "accent"}
-      >
-        {props.text.live[status()]}
-      </Text>
+      <Box direction="row">
+        <Text
+          id="shopping.live"
+          role="status"
+          font="mono"
+          fontSize="xs"
+          px="2"
+          py="1"
+          bg="card"
+          fg={status() === "live" ? "verified" : status() === "offline" ? "error" : "textSecondary"}
+          border={status() === "live" ? "verified" : status() === "offline" ? "error" : "accent"}
+        >
+          {props.text.live[status()]}
+        </Text>
+      </Box>
       <Menu
         id="shopping.staples"
         trigger={() => <Text>{props.text.addStaple}</Text>}

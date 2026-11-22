@@ -116,3 +116,20 @@ Every page renders in a frame layout that puts the Keel brand (`docs/BRAND.md`) 
 Tests: `test/start.test.ts`, `test/shoppingList.test.ts`, `test/receipts.test.ts` and `test/profile.test.ts` read the frame's links first in the focus order; a page in `app.frame` renders over the joined `webRoutes` (`test/serve.ts`). The smoke checks that the frame's computed font is Source Serif 4 and that the font loads.
 
 Check your work: `pnpm test && pnpm check && pnpm build`, then the smoke from the repository root.
+
+## Layer 8: live updates with two members
+
+Two members of one household with the list open see each other's changes without a reload (`keel docs std.channels`, `std.live`).
+
+- `listChannel.schema.ts` declares the channel `shopping.live` at `/api/items/events` with no params and no `message`, so nothing is published from a browser. `shopping.contract.ts` writes its stream entry out, `shopping.events`, an `events: true` GET whose `output` is the channel's `events`.
+- A channel watches server stores, and the list is app data in Postgres. `changeStores.ts` holds a server store, `shopping.changes`, that counts the list's changes: the add, toggle and remove actions bump it after their Postgres transaction commits, and each bump sends `{ kind: 'saved' }` to every open stream.
+- `listEvents.server.ts` is `channelRoute(shopping, listChannel, { id: 'shopping.events', stores: changeStores, member })`, where `member` is true for a signed-in member. A visitor's stream gets `{ kind: 'closed', reason: 'denied' }` and ends.
+- `ShoppingList.tsx` calls `live` with the page's origin: after each `saved`, its own changes included, the page re-reads `GET /api/items` with its own cookie and commits the answer to the client store `shopping.copy` through `hydrate`. The server render shows the loader's list until the first read commits.
+- The status line above the menu (`shopping.live`, a `role="status"` region) says Live, Connecting, Offline or Signed out. Live is green, Offline red, the other two have an ochre border. A stream keeps the member it opened with, so after a sign-out in another tab it still hears that the list changed; its re-read is then refused with 403, and the page says Signed out and shows nothing new.
+- No personal data rides the channel: an event names the store `shopping.changes` and its count, never an item, a member or a cookie.
+
+Tests: `test/live.test.ts` opens Grace's list with `renderRoute` and `user`, and changes the list as Ada through the API: Grace's page shows the add, the purchase and the removal. Ada's raw stream gets `saved` with no item or name in it when Grace's page adds; a visitor's stream gets only `denied`; a member signed out keeps hearing `saved` and is refused the list. Taking the sim network offline shows Offline, and back online the page catches up. `properties` runs on `hydrate`. `test/reconnect.sim.test.ts` follows the list under `simulate` with 25 schedules of drops, delays, lost responses, 503s and offline windows, and after each the page's copy is the server's list and the status is Live. The smoke opens the list in two browser contexts: Ada adds Bread and Grace's page shows it with no reload, Grace buys it and Ada's page moves it to Bought, both pages say Connecting while the server is killed and Live once it is back, Grace's browser offline says Offline, and a sign-out in Grace's other tab turns her page to Signed out with no new item.
+
+Try it: start the built app, make two accounts, and sign in as each in two browser windows, one of them private. Open `localhost:5211/list` in both and add a staple in one: the other shows it within a second. Stop the server with `kill -9 <pid>`: both say Connecting. Start it again: both say Live, and a new item reaches both.
+
+Check your work: `pnpm test && pnpm check && pnpm build`, then the smoke from the repository root.
