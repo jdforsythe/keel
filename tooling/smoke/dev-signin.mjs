@@ -64,6 +64,30 @@ function startDev(dir, port) {
   return { child, log, exited };
 }
 
+/** Reload lines `keel dev` printed for `file`. */
+const reloadsOf = (file) => dev.log.filter((l) => l.includes("page reload") && l.includes(file)).length;
+/**
+ * Wait, at most 5s, until no reload line for `file` arrived for 300ms: one write can give the watcher two change
+ * events, and a late one would count as the next edit's reload.
+ */
+async function quiet(file) {
+  let last = reloadsOf(file);
+  let since = Date.now();
+  for (const end = Date.now() + 5_000; Date.now() < end && Date.now() - since < 300; await wait(50)) {
+    const now = reloadsOf(file);
+    if (now !== last) [last, since] = [now, Date.now()];
+  }
+}
+/**
+ * Whether `mark` reached the log within 5s: the edited code prints it while answering, before the response, but its
+ * stderr arrives on another pipe than the response's socket.
+ */
+async function marked(mark) {
+  for (const end = Date.now() + 5_000; Date.now() < end; await wait(50))
+    if (dev.log.some((l) => l.includes(mark))) return true;
+  return false;
+}
+
 const html = { accept: "text/html" };
 const form = { ...html, "content-type": "application/x-www-form-urlencoded" };
 
@@ -285,13 +309,14 @@ try {
   const declarer = "modules/kitchen/kitchenDb.server.ts";
   for (const n of [1, 2]) {
     const mark = `keel smoke: kitchen.db declared again ${n}`;
-    const reloads = () => dev.log.filter((l) => l.includes("page reload") && l.includes(declarer)).length;
-    const before = reloads();
+    await quiet(declarer);
+    const before = reloadsOf(declarer);
     await appendFile(join(dir, declarer), `\nconsole.warn(${JSON.stringify(mark)});\n`);
     let seen = false;
-    for (const end = Date.now() + 15_000; Date.now() < end && !seen; await wait(100)) seen = reloads() > before;
+    for (const end = Date.now() + 15_000; Date.now() < end && !seen; await wait(100))
+      seen = reloadsOf(declarer) > before;
     const after = await text(base, "/api/recipes", json);
-    const ran = dev.log.some((l) => l.includes(mark));
+    const ran = await marked(mark);
     step(
       `GET /api/recipes after edit ${n} to the database declaration`,
       seen && ran && after.status === 200 && after.body.includes('"title":"Smoke stew"'),
@@ -305,13 +330,13 @@ try {
     join(dir, helper),
     'import { database } from "@keel/std-postgres/server";\n\nexport function declareKitchen() {\n  return database("kitchen.db");\n}\n',
   );
-  const moved = dev.log.filter((l) => l.includes("page reload") && l.includes(declarer)).length;
+  await quiet(declarer);
+  const moved = reloadsOf(declarer);
   await writeFile(
     join(dir, declarer),
     'import { declareKitchen } from "./declareKitchen.server.ts";\n\nexport const kitchenDb = declareKitchen();\n',
   );
-  for (const end = Date.now() + 15_000; Date.now() < end; await wait(100))
-    if (dev.log.filter((l) => l.includes("page reload") && l.includes(declarer)).length > moved) break;
+  for (const end = Date.now() + 15_000; Date.now() < end; await wait(100)) if (reloadsOf(declarer) > moved) break;
   const first = await text(base, "/api/recipes", json);
   step("GET /api/recipes once the declaration moved into a helper", first.status === 200, `status ${first.status}`);
   for (const [n, file] of [
@@ -320,13 +345,13 @@ try {
     [5, helper],
   ]) {
     const mark = `keel smoke: kitchen.db declared through a helper ${n}`;
-    const reloads = () => dev.log.filter((l) => l.includes("page reload") && l.includes(file)).length;
-    const before = reloads();
+    await quiet(file);
+    const before = reloadsOf(file);
     await appendFile(join(dir, file), `\nconsole.warn(${JSON.stringify(mark)});\n`);
     let seen = false;
-    for (const end = Date.now() + 15_000; Date.now() < end && !seen; await wait(100)) seen = reloads() > before;
+    for (const end = Date.now() + 15_000; Date.now() < end && !seen; await wait(100)) seen = reloadsOf(file) > before;
     const after = await text(base, "/api/recipes", json);
-    const ran = dev.log.some((l) => l.includes(mark));
+    const ran = await marked(mark);
     step(
       `GET /api/recipes after edit ${n} with the declaration in a helper (${file.split("/").at(-1)})`,
       seen && ran && after.status === 200 && after.body.includes('"title":"Smoke stew"'),
