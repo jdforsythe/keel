@@ -6,6 +6,7 @@ import type { Handled } from "./Handled.ts";
 import type { Req } from "./Req.ts";
 import type { RequestScope } from "./RequestScope.ts";
 import type { Served } from "./Served.ts";
+import { USER_PATH } from "./USER_PATH.ts";
 import { answering } from "./answering.ts";
 import { bareError } from "./bareError.ts";
 import { decodedQuery } from "./decodedQuery.ts";
@@ -26,13 +27,15 @@ import { runGuards } from "./runGuards.ts";
 import { sameSite } from "./sameSite.ts";
 import { servedEntry } from "./servedEntry.ts";
 import { statusOf } from "./statusOf.ts";
+import { userEntry } from "./userEntry.ts";
 import { userOf } from "./userOf.ts";
 
 /**
  * One request (k.server Request flow): a write (POST, PUT, PATCH, DELETE) that is not same-site gets 403
  * `keel.denied` before anything runs (CSRF, `sameSite`); one at the identity source's `handle.path` or under it then goes
  * to its `fn` with its body (over `maxBodyBytes`: 413) and gets `fn`'s response as given (k.user); a GET or HEAD of
- * `/@keel/entry.ts` gets the resume entry, or a production client build's file (`servedEntry`). Then, in order
+ * `/@keel/entry.ts` gets the resume entry, or a production client build's file (`servedEntry`); with an identity
+ * source, `/__keel/user` gets `userEntry`'s answer (k.guards Client). Then, in order
  * (k.api Paths, Requests): match the path pattern (none: 404; a trailing slash or a prefix param's default segment:
  * 308 to the canonical path); pick the entry answering the method (`answering`; none: 405 with the pattern's `allow`,
  * no guard run); parse its params (fail: 404 at the nearest errorElement, no guard or loader runs) and a page's search
@@ -75,6 +78,8 @@ export async function handle(sv: Served, raw: Request, rq: RequestScope, c: Cont
     here: `${path}${url.search}`,
     runtime: api || accept.includes("application/json"),
   };
+  // The identity source's answer for the page's router (k.guards Client); with no source the path is a 404 below.
+  if (sv.identity !== undefined && url.pathname === USER_PATH) return userEntry(r);
   if (found.route === null) {
     const doc = sv.built?.index;
     // A hosted client's document (k.hosting Host): the router matches its paths in the browser.
