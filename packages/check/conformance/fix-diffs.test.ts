@@ -333,6 +333,7 @@ const NO_FIX = [
   "E1252", // the JSX or ctx replacement is the author's
   "E1302", // moving the effect out of the transaction is a design change
   "E1303", // removing the field or the reveal call is a design change
+  "E1304", // k.store Rules: the fix is a hint (create the store with the data as `initial`, or move the call to a handler), a design change
   "E1402", // the content of the missing Case is the author's
   "E1404", // which id to rename is the author's choice
   "E1453", // how to handle the Result is the author's choice
@@ -357,6 +358,7 @@ const NO_FIX = [
   "E1582", // k.mount Rules: Fix none; the subpath is the author's
   "E1584", // k.mount Rules: Fix none; the links entry is the author's
   "E1586", // k.topology Rules: no fix; the package, not the app, is wrong
+  "E1587", // k.topology Rules: no fix; which package export holds the stylesheet is the author's choice
   "E1576", // the public replacement is the author's
   "E1573", // the shell's adapter and app id are the author's
   "E1513", // k.contract Rules: no fix; the checker cannot choose the file

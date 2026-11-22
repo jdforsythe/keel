@@ -28,6 +28,7 @@ import { noSecretInState } from "../rules/noSecretInState.ts";
 import { noThrow } from "../rules/noThrow.ts";
 import { noTryCatch } from "../rules/noTryCatch.ts";
 import { noUnsafeSyntax } from "../rules/noUnsafeSyntax.ts";
+import { nodePageWithoutApp } from "../rules/nodePageWithoutApp.ts";
 import { oneExport } from "../rules/oneExport.ts";
 import { passwordField } from "../rules/passwordField.ts";
 import { pathParamsMatch } from "../rules/pathParamsMatch.ts";
@@ -41,6 +42,7 @@ import { sameAppBaseService } from "../rules/sameAppBaseService.ts";
 import { schemaInSchemaFile } from "../rules/schemaInSchemaFile.ts";
 import { slotSignature } from "../rules/slotSignature.ts";
 import { stylesheetImport } from "../rules/stylesheetImport.ts";
+import { txWhileBuilding } from "../rules/txWhileBuilding.ts";
 import { unsafeJustified } from "../rules/unsafeJustified.ts";
 import type { RuleDef } from "../types/RuleDef.ts";
 
@@ -55,6 +57,8 @@ export const KERNEL_RULES: readonly RuleDef[] = [
   formatInApp,
   pureTransaction,
   noSecretInState,
+  txWhileBuilding,
+  nodePageWithoutApp,
   revealedValue,
   noNetFetchInApp,
   pathParamsMatch,

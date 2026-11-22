@@ -6,7 +6,7 @@ status key: proposed | implemented | conformance-covered | frozen. Budget: file 
 Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); owner: keel docs --for <code>.
 | block | owner | block | owner |
 |-|-|-|-|
-| E100x | k.compiler, k.boundary, k.bundle | E105x | k.cli, k.evidence, k.docs, k.review |
+| E100x | k.compiler, k.boundary, k.bundle, k.head | E105x | k.cli, k.evidence, k.docs, k.review |
 | E110x | k.schema, k.privacy, k.reveal, k.leave, k.privacy-reads | E115x | k.module |
 | E120x | k.reactive | E125x | k.runtime, k.resume, k.claim |
 | E130x | k.store | E135x | k.scaffold |
@@ -30,7 +30,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.schema | Schemas | conformance-covered | codecs |
 | k.formats | Format types | conformance-covered | brands |
 | k.reactive | Reactivity | conformance-covered | signals |
-| k.store | Store, transactions | conformance-covered | log |
+| k.store | Store, transactions | implemented | log |
 | k.component | Components | conformance-covered | props |
 | k.compiler | Compiler, artifacts | conformance-covered | JSX |
 | k.boundary | Server boundary | conformance-covered | stubs |
@@ -78,8 +78,8 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.shell | Native shells | conformance-covered | target |
 | k.compat | Surface compatibility | conformance-covered | accepts |
 | k.api | API routes | conformance-covered | JSON |
-| k.hosting | Client hosting | conformance-covered | servedBy |
-| k.head | Document head | conformance-covered | title |
+| k.hosting | Client hosting | implemented | servedBy |
+| k.head | Document head | implemented | title |
 | k.services | Thin services | conformance-covered | clients |
 | k.openapi | OpenAPI import | conformance-covered | clients |
 | k.module | Module manifest | conformance-covered | surface |

@@ -177,7 +177,10 @@ describe("parseTopology servedBy", () => {
   it("reports a key a deployable does not list, a leftover host included, as E1552 and keeps the rest", () => {
     const source = `export default topology({ web: { modules: ["w"], adapter: "client", host: "api" }, api: { modules: ["a"], adapter: "node", caller: { days: 3 } } })`;
     expect(parseTopology(source).problems).toEqual([
-      ["web", "web: host is not a deployable key; one of modules, adapter, servedBy, storage, shells, caller, origins"],
+      [
+        "web",
+        "web: host is not a deployable key; one of modules, adapter, servedBy, storage, shells, caller, origins, styles",
+      ],
     ]);
     expect(topologyReadProblems(source).map(([code]) => code)).toEqual(["E1552"]);
   });
@@ -236,7 +239,7 @@ describe("client build", () => {
   };
   const TOP = `{ api: { modules: ["a"], adapter: "node" }, web: { modules: ["w"], adapter: "client", servedBy: "api" } }`;
 
-  it("serves a default index.html when the project has none, with the peer tags", async () => {
+  it("serves the generated index.html, never the project's own, with the peer tags", async () => {
     const root = project(TOP);
     process.env.KEEL_DEPLOYABLE = "web";
     process.env.KEEL_PEER_API = "https://api.test/";
@@ -256,8 +259,10 @@ describe("client build", () => {
         injectTo: "head",
       },
     ]);
+    // A project's own index.html is never read (k.head Document source).
     fs.writeFileSync(index, "<p>own</p>");
-    expect(p.resolveId(index)).toBeNull();
+    expect(p.resolveId(index)).toBe(index);
+    expect(await p.load(index)).toBe(indexHtml("web", "/@keel/entry.ts"));
     process.env.KEEL_PEER_API = "nope";
     expect(() => p.transformIndexHtml()).toThrow(/^E1565 KEEL_PEER_API is not an http\(s\) origin/);
   });

@@ -2,7 +2,7 @@
 
 A `client` deployable builds to plain files. This guide shows three ways to ship them, from the least to the most to set up. The examples use `apps/golden-1`: `web` is the `client` deployable and `api` is the `node` deployable that owns the data.
 
-`keel build` writes `dist/web/`: `index.html`, `assets/` (every file named with a content hash) and `keel-mark.svg`. Every URL in it is root-absolute or absolute, so the files belong at the root of an origin. Nothing in them names a server.
+`keel build` writes `dist/web/`: `index.html` (written by Keel; the project has none), `assets/` (every file named with a content hash) and `keel-mark.svg`. Every URL in it is root-absolute or absolute, so the files belong at the root of an origin. Nothing in them names a server.
 
 `keel build` runs `keel check` first and stops on an error. No environment value is written into these files except the `KEEL_PEER_<NAME>` origins below; `import.meta.env` holds only Vite's `MODE`, `DEV`, `PROD`, `SSR` and `BASE_URL`, so configuration the browser reads comes through a module's `clientStd`. The `node` modules' server-only files (`*.server.*`, `*.guard.*`) are never in them: a browser build that would hold one fails with E1007.
 

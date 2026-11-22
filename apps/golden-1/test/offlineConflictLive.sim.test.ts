@@ -129,7 +129,7 @@ describe("under generated schedules", () => {
   it("one edit is stored, the other is a visible 409 keel.conflict, and A ends showing the stored board", async () => {
     const outcomes = new Map<string, number>();
     await simulate(
-      async ({ ctx, run, schedule }) => {
+      async ({ ctx, run }) => {
         open?.dispose();
         open = undefined;
         fresh();
@@ -160,18 +160,13 @@ describe("under generated schedules", () => {
         const theirs = ctx.clock.after(tB).then(() => otherEdit(b.ctx, "Oat milk", "b1", 0));
         void ctx.clock.after(tA).then(() => ctx.net.setOnline(true));
         await run();
-        await mine;
-        const other = await theirs;
-        // Past every window and retry: online, and the clock run on until the page is live again. `run()` steps only to
-        // pending deadlines and a window's end is none, so a run can stop inside a window: the test steps past them.
-        const end = Math.max(0, ...schedule.offline.map((w) => w.at + w.ms));
-        if (ctx.clock.now() < end) ctx.clock.advance(end - ctx.clock.now());
-        ctx.net.setOnline(true);
-        await run();
-        for (let i = 0; i < 20 && ctx.clock.next() !== null; i++) {
+        // `run()` stops at the horizon: a window or a retry may reach past it, so the clock runs on until neither is left.
+        for (let i = 0; i < 20 && (ctx.clock.next() !== null || !ctx.net.online()); i++) {
           ctx.clock.advance(60_000);
           await run();
         }
+        await mine;
+        const other = await theirs;
 
         const board = await readBoard();
         const stored = board.todos.find((t) => t.id === "t1");

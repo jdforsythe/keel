@@ -12,6 +12,8 @@ Apps: G1 golden-1 (todo board: `web` client + `api` node on SQLite), G2 golden-2
 |-|-|-|
 | `restart.mjs` (ci) | G1 built `api`, SQLite | writes, SIGKILL, restart, board row byte-equal |
 | `workflow.mjs` (ci) | G1 built `api` | removal workflow resumes after a kill inside a step |
+| `workflow-postgres.mjs` (ci) | G1 built `api` on Postgres 17 | the same workflow with its store and jobs on Postgres; the step's effect once |
+| `csp.mjs` (ci) | G1 built `api` and `examples/third-party-origin` | `csp.txt` equals the host's document policy; declared origins present, others absent |
 | `resume.mjs` (ci) | G2 built `web` and `api`, peers | five pages resume in Chromium; forms; identity mount sign-up and sign-in |
 | `dev-signin.mjs` (ci) | G2 `keel dev` | sign-in over HTTP, server stubs for the browser |
 | `shell.mjs`, `shell-drive.mjs`, `shell-launch.mjs` (ci) | G1 Tauri (Linux, macOS), Capacitor iOS | recorded session replayed in the shell; offline outbox drains after SIGKILL; cookie survives relaunch |
@@ -39,7 +41,7 @@ Apps: G1 golden-1 (todo board: `web` client + `api` node on SQLite), G2 golden-2
 | k.router | x | x | x | x | ci | | `apps/*/modules/*/routes.ts` |
 | k.contract | x | x | x | x | | | `apps/*/modules/*/*.contract.ts` |
 | k.routes (table) | x | x | x | x | | | `apps/golden-2/test/routes.test.ts` |
-| k.guards | x | x | - | x | | | `apps/golden-1/modules/todos/editable.guard.ts`, `apps/golden-2/modules/recipes/cook.guard.ts` |
+| k.guards | x | x | - | x | | | `apps/golden-1/modules/todos/editable.guard.ts`, `apps/golden-2/modules/recipes/cook.guard.ts`; a redirecting guard in a shell: `examples/shell-mount` |
 | k.prefix | - | t | - | - | | | `apps/golden-2/test/routes.test.ts` |
 | k.forms | x | x | - | - | ci | | `apps/golden-2/modules/recipes/NewRecipePage.tsx` |
 | k.ui (tokens, styling) | x | x | x | x | | | `apps/*/tokens.ts` |
@@ -69,13 +71,13 @@ Apps: G1 golden-1 (todo board: `web` client + `api` node on SQLite), G2 golden-2
 | k.user (caller) | x | x | - | - | ci | | `apps/golden-2/modules/accounts/loadMe.server.ts` |
 | k.mount (mount pages) | - | x | - | - | ci | | `apps/golden-2/identity.server.ts`, `dev-signin.mjs` |
 | k.mount-scope | - | - | - | - | | x | |
-| k.return (shell mount) | - | - | - | - | | x | no app mounts into a shell |
+| k.return (shell mount) | - | - | - | - | ci | | `examples/shell-mount/test/shellGuard.test.ts` (redirect with `next`, mount post); the return after sign-in is untestable in process (`tasks/p1/scenario3-findings.md` S3-1) |
 | k.opening | t | - | - | - | | | `apps/golden-1/test/editor.test.ts` |
 | k.links (links in) | - | - | - | - | | x | |
 | k.serverlog | t | - | - | - | | | `apps/golden-1/test/realtime.test.ts` |
 | k.sync (concurrent writes) | x | - | - | - | ci | | `apps/golden-1/modules/api/postEdit.server.ts` (409 `keel.conflict`) |
 | k.persist: SQLite | x | - | - | - | ci | | `apps/golden-1/topology.ts`, `restart.mjs` |
-| k.persist: Postgres | - | p | - | - | | x | `evals/tasks/golden-1-api/restartProof.ts` runs G1 on Postgres in CI (an eval task, not an app) |
+| k.persist: Postgres | - | p | - | - | ci | | `tooling/smoke/workflow-postgres.mjs`; `evals/tasks/golden-1-api/restartProof.ts` runs G1 on Postgres in CI |
 | k.data (app data seam) | - | p | - | - | | x | `lane-w14g2` |
 | k.topology: client + node | x | x | x | x | ci | | `apps/*/topology.ts` |
 | k.topology: peers | - | x | - | - | ci | | `resume.mjs` (web and api name each other) |
@@ -94,15 +96,15 @@ Apps: G1 golden-1 (todo board: `web` client + `api` node on SQLite), G2 golden-2
 | k.a11y | x | x | x | - | ci | | `reports/a11y.json` |
 | k.aria, k.roles (widget parts) | x | x | - | - | | | `apps/golden-1/test/removalParts.test.ts` |
 | k.host-element, k.host-code (custom components) | - | - | - | - | | x | no app owns a `Host` element |
-| k.security (headers, CSP) | x | x | x | x | | | default policy on every built server; no app test reads it |
-| k.origins (third-party origins) | - | - | - | - | | x | |
+| k.security (headers, CSP) | x | x | x | x | ci | | `tooling/smoke/csp.mjs` reads the built policies |
+| k.origins (third-party origins) | - | - | - | - | ci | | `examples/third-party-origin`, `tooling/smoke/csp.mjs` |
 | k.privacy (`pii`, `secret`) | - | x | - | - | | | `apps/golden-2/modules/accounts/Credentials.schema.ts` |
 | k.reveal | - | x | - | - | | | `apps/golden-2/modules/accounts/postToken.server.ts` |
 | k.privacy-reads | - | - | - | - | | x | |
 | k.evidence | - | - | - | - | | x | |
 | k.parity | - | - | - | - | | x | proposed section |
 | **Stdlib** | | | | | | | |
-| std.sessions: record, replay, to-test | x | - | - | x | ci | | `apps/sessions/test`, `shellSession.ts`, `shell.mjs` |
+| std.sessions: record, replay, to-test | x | x | - | x | ci | | `apps/sessions/test`, `shellSession.ts`, `shell.mjs`; a signed-in user: `apps/golden-2/test/signedInSession.test.ts` |
 | std.sessions: GitHub Action | - | - | - | - | | x | |
 | std.i18n | - | x | - | - | | | `apps/golden-2/modules/accounts/AccountsLocale.schema.ts` |
 | std.money | - | x | - | - | | | `apps/golden-2/modules/recipes/currencyOptions.ts` |
@@ -124,7 +126,7 @@ Apps: G1 golden-1 (todo board: `web` client + `api` node on SQLite), G2 golden-2
 | std.conflicts (races report) | - | - | - | - | | x | dependency only; no import |
 | std.multi | t | - | - | - | | | `shellSession.ts` records a one-user group |
 | std.statecharts | x | - | - | - | | | `apps/golden-1/modules/api/removalChart.ts` |
-| std.monitor | x | - | - | - | man | | `monitor.mjs` |
+| std.monitor | x | t | - | - | man | | `monitor.mjs`; `sessions.tally` behind the reader guard: `apps/golden-2/test/sessionsReader.test.ts` |
 | std.headless: Dialog, Disclosure, Toaster | - | x | - | - | ci | | `apps/golden-2/modules/recipes/toasts.ts` |
 | std.options: Listbox, Combobox, Menu, Tabs | - | x | - | - | | | `apps/golden-2/modules/recipes/CatalogPage.tsx` |
 | std.lists | - | - | - | - | | x | |
@@ -132,7 +134,7 @@ Apps: G1 golden-1 (todo board: `web` client + `api` node on SQLite), G2 golden-2
 | std.db (SQLite) | x | - | - | - | ci | | `restart.mjs` |
 | std.db (Postgres) | - | p | - | - | | x | CI Postgres jobs run package tests |
 | std.postgres | - | p | - | - | | x | `lane-w14g2` |
-| std.workflows | x | - | - | - | ci | | `workflow.mjs` |
+| std.workflows | x | - | - | - | ci | | `workflow.mjs`, `workflow-postgres.mjs` |
 | std.shells | x | - | - | - | ci | | Tauri and iOS smokes |
 | std.capacitor | x | - | - | - | ci | | iOS drive, Android build |
 | std.tauri | x | - | - | - | ci | | Tauri drive |
@@ -155,10 +157,10 @@ Apps: G1 golden-1 (todo board: `web` client + `api` node on SQLite), G2 golden-2
 ### a. Features no app uses, by how much an app author leans on them
 
 1. Postgres app data (`std.postgres`, `k.data`, `std.db` on Postgres): pending in `lane-w14g2`; until it merges, no app stores data in Postgres.
-2. Third-party origins (`k.origins`) and the CSP they widen: every real app calls a payment, map or analytics origin.
+2. Third-party origins (`k.origins`) and the CSP they widen: only `examples/third-party-origin` and the `csp.mjs` copy of golden-1 declare one.
 3. Custom components (`k.host-element`, `k.host-code`): charts and editors are the usual reason to leave the building blocks.
 4. OpenAPI import (`k.openapi`): the way an app reaches an existing service; `k.services` is used only against the app's own routes.
-5. A guard redirect into a shell and shell mounts (`k.return`, `k.mount-scope`): sign-in in a native shell.
+5. Shell mounts (`k.return`, `k.mount-scope`): `examples/shell-mount` shows the guard redirect and the mount post; the sign-in round trip is not driven in a shell (S3-1).
 6. Links in (`k.links`) and `keel codemod`: deep links into an installed app; moving code between deployables.
 7. `keel docs`, `keel evidence` over an app, MCP and LSP: an app author meets them on day one; only package tests drive them.
 8. Static client hosting with no server behind it (`apps/inspector` has no host in a smoke).
@@ -175,16 +177,15 @@ Apps: G1 golden-1 (todo board: `web` client + `api` node on SQLite), G2 golden-2
 - `k.prefix`, `k.head`: G2 only (one test; `title` on three routes).
 - `k.services`: a typed client for the app's own API; Ins reads one JSON route.
 - `std.statecharts`: two charts, both in G1.
-- `k.security`: the default CSP applies to every built server and no app test reads a header.
 - `std.i18n` and `std.messages`: G2's locale switch is client-side; no built smoke switches locale.
 
 ### c. Combinations nothing exercises together
 
 1. Offline writes, conflicts and live updates: G1 queues writes (`outbox.sim.test.ts`) and answers 409 `keel.conflict`, and the board channel pushes, but no test or smoke queues a write that conflicts while a push arrives for the same row.
-2. Workflows with jobs on Postgres: `workflow.mjs` runs on SQLite only; Postgres has the restart proof for the board and no workflow.
+2. Workflows with jobs on Postgres: `workflow-postgres.mjs` covers the kill and restart; no schedule fires into one.
 3. `pii` with tokens and the privacy rules: the `reveal` of a minted token in G2 is checked in tests; no built smoke asserts that a `pii` field never reaches a log, the session recording or the evidence bundle.
-4. A guard redirect into a shell: no guarded route is reachable in a Tauri or Capacitor build.
-5. Sessions recorded from a user who signs in: G1's recordings are anonymous; G2 has identity and no sessions module.
+4. A guard redirect into a shell: `examples/shell-mount` under `renderRoute` with `shell`; no Tauri or Capacitor run drives it.
+5. Sessions recorded from a user who signs in: G2 places `sessions` and records a signed-in page under sim; no built smoke records one.
 6. Identity with the outbox: a queued write whose owner differs from the caller (`std.outbox-owner`) is checked in package tests, never after a sign-out in a shell.
 7. Resume (G2) with live updates and forms (G1): `resume.mjs` covers a server-rendered G2; G1 is a client build, so no island resumes into a channel.
 8. Schedules with workflows with Postgres, `servedBy` with peers and a shell, i18n with money in a form: each pair has no test.

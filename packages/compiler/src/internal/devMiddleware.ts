@@ -8,7 +8,7 @@ const answers = (app: Served, path: string): boolean =>
   app.served(path) || (app.mount !== undefined && `${path}/`.startsWith(`${app.mount}/`));
 
 /**
- * The `keel dev` middleware (k.topology Local topology): a request whose path a `node` deployable's route matches, or
+ * The `keel dev` middleware (k.topology Local topology): a request whose path a `node` or `static` deployable's route matches, or
  * that is at or under its identity source's `handle.path`, is answered by that deployable's dev app, streaming its body
  * (event streams too); anything else goes on to Vite.
  * `load` gives the dev apps (`DEV_ENTRY`), loaded once and again after `reset`; `apps` is that load, started when

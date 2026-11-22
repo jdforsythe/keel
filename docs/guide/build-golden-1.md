@@ -47,7 +47,6 @@ todo-by-hand/
   tsconfig.json       strict TypeScript profile, Keel JSX
   vite.config.ts      the Keel Vite plugin
   vitest.config.ts    the same plugin for tests, happy-dom, Keel's reporter
-  index.html          the page shell the client deployable mounts into
   tokens.ts           design tokens; the CSS is generated from them
   topology.ts         which modules form which deployable
   .gitignore
@@ -185,26 +184,11 @@ export default keelConfig({
 
 Tests run through the same plugin, so components compile exactly as they do in the app, and a test run refreshes `.keel/`. `happy-dom` gives components a DOM. The `include` globs cover `test/`, a module's own `modules/<id>/test/`, and recorded sessions. `keelConfig` adds the Keel reporter, which prints results in the compact format from `docs/OUTPUT.md`, and the test watchdog, which kills a test that runs far past its timeout (`docs/TESTING.md`).
 
-### index.html
+### The document and `styles`
 
-```html title="index.html"
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>golden-1</title>
-    <link rel="icon" href="/keel-mark.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="/node_modules/@keel/ui/fonts/fonts.css" />
-  </head>
-  <body>
-    <div id="app"></div>
-    <script type="module" src="/@keel/entry.ts"></script>
-  </body>
-</html>
-```
+golden-1 has no `index.html`. Keel writes every document, in dev and in the build: charset, viewport, a `<title>` (the deployable's name), the icon `/keel-mark.svg`, a stylesheet link per `styles` entry, `<div id="app"></div>` and the script for `/@keel/entry.ts`. The brand fonts come from `styles: ["@keel/ui/fonts"]` on each deployable in `topology.ts` (below): the deployable's entry imports that package's `.css` export, so its documents link it. App code imports no `.css`. A project `index.html` is never read, and `keel check` reports one as W1012; put markup such as a header in a layout component.
 
-`#app` is where the client deployable mounts; the generated entry throws `keel: index.html has no #app element` without it. `/@keel/entry.ts` is not a file you write: the plugin answers that URL (section 4). The stylesheet is the brand fonts shipped inside `@keel/ui`, linked through `node_modules`.
+`/@keel/entry.ts` is not a file you write: the plugin answers that URL (section 4).
 
 ### public/keel-mark.svg
 
@@ -219,7 +203,7 @@ Tests run through the same plugin, so components compile exactly as they do in t
 </svg>
 ```
 
-Vite copies `public/` into the build. The app shell shows this mark, and `index.html` uses it as the icon. You can copy it from `docs/brand/keel-mark.svg` instead of typing it.
+Vite copies `public/` into the build. The app shell shows this mark, and the generated document uses it as the icon. You can copy it from `docs/brand/keel-mark.svg` instead of typing it.
 
 ### tokens.ts
 
@@ -242,12 +226,13 @@ export default topology({
     modules: ["todos"],
     adapter: "client",
     servedBy: "api",
+    styles: ["@keel/ui/fonts"],
     shells: {
       capacitor: { id: "dev.keel.golden1", name: "Golden 1" },
       tauri: { id: "dev.keel.golden1", name: "Golden 1" },
     },
   },
-  api: { modules: ["api", "digest", "sessions"], adapter: "node", storage: "sqlite" },
+  api: { modules: ["api", "digest", "sessions"], adapter: "node", storage: "sqlite", styles: ["@keel/ui/fonts"] },
 });
 ```
 
@@ -255,9 +240,9 @@ A deployable is a set of modules that builds to one artifact. The adapter decide
 
 - `client`: a browser app. Loaders and actions run in the browser with a real `ctx`; the entry mounts the router into `#app`. `keel build` writes it to `dist/<name>/`. With `servedBy: "api"`, the `api` deployable also serves it, so one process answers `GET /`.
 - `node`: a server (Hono). It renders pages to HTML, answers JSON and event streams, runs runners, and ships a small resume entry for pages that have interactive parts. `keel build` writes `dist/<name>/server.mjs`.
-- `static`: prerendered HTML. golden-1 does not use it.
+- `static`: prerendered HTML, one document per route, written by `keel build`. golden-1 does not use it.
 
-Each module belongs to exactly one deployable, and no other file names a deployable. Splitting `digest` into its own server is a change to this file alone (section 10). `storage: "sqlite"` gives `api` a SQLite file for `ctx.storage` (`KEEL_DATABASE_URL`); `sessions` is the stdlib module that serves the tally route. `shells` names the Capacitor and Tauri apps `keel build --target` makes from `web`. The plugin reads `topology.ts` statically, so keep it a literal.
+Each module belongs to exactly one deployable, and no other file names a deployable. Splitting `digest` into its own server is a change to this file alone (section 10). `storage: "sqlite"` gives `api` a SQLite file for `ctx.storage` (`KEEL_DATABASE_URL`); `sessions` is the stdlib module that serves the tally route. `styles` lists the package CSS each deployable's documents link. `shells` names the Capacitor and Tauri apps `keel build --target` makes from `web`. The plugin reads `topology.ts` statically, so keep it a literal.
 
 ### .gitignore
 
@@ -278,7 +263,7 @@ You write sources; the plugin and `keel build` derive everything below. Nothing 
 
 | What | Written by | From | Notes |
 | --- | --- | --- | --- |
-| `/@keel/entry.ts`, mount entry | Vite plugin, in memory | `topology.ts`, each module's `routes.ts` | served for a `client` deployable; `keel build` bundles it into `dist/web/assets/index-*.js`, which `dist/web/index.html` scripts |
+| `/@keel/entry.ts`, mount entry | Vite plugin, in memory | `topology.ts`, each module's `routes.ts` | served for a `client` deployable; `keel build` bundles it into `dist/web/assets/index-*.js`, which the generated `dist/web/index.html` scripts |
 | `/@keel/entry.ts`, resume entry | Vite plugin, in memory | `topology.ts`, `routes.ts` | served for a `node` deployable's pages; built to `dist/<name>/assets/entry-*.js` |
 | `/@keel/islands.ts` | Vite plugin, in memory | each `routes.ts` | route id to component, for the resume entry |
 | `virtual:keel.css` (served as `/__keel.css`) | Vite plugin | `tokens.ts` and `.keel/styles.json` | one atomic rule per style usage |
@@ -286,21 +271,22 @@ You write sources; the plugin and `keel build` derive everything below. Nothing 
 | `.keel/routes.json` | Vite plugin | the served deployable's `routes.ts`, evaluated in Node | path, params, search, method, actions, layout, guard per route; for golden-1, the `todos` routes |
 | `.keel/std.json` | Vite plugin and `keel build` | `std` entries in `module.ts` | stdlib config per package and module; in golden-1 the `readers` of `@keel/std-sessions` in `api` |
 | `.keel/surface.json` | `keel build` only | every module's contract | the HTTP surface: each API entry's method, path and schemas, and which modules import the contract; `keel check --base` compares it against a deployed one |
-| `dist/web/` | `keel build` (Vite) | `index.html`, the mount entry | the `web` client: static files |
+| `dist/web/` | `keel build` (Vite) | the generated document, the mount entry | the `web` client: static files |
 | `dist/api/` | `keel build` (Vite, `KEEL_DEPLOYABLE=api`) | the `api`, `digest` and `sessions` modules, and the `web` client (`servedBy: "api"`) | `server.mjs` with every dependency bundled, the resume entry and the client's `index.html` and files in `assets/`, `routes.json` (all modules' routes, for forwarding), `std.json` |
 | `deploy/api/Dockerfile`, `deploy/compose.yaml` | `keel build` | `topology.ts` | one Dockerfile per `node` deployable, one compose service each |
 
 Every `.keel/` file is `{ data, hash }` JSON with sorted keys, written read-only (mode 0444). `keel check` recomputes them from your sources, and a file that differs is E1005. A project with no `.keel/` yet checks clean; once a build or test run has written it, editing a source makes `keel check` report E1005 for each stale artifact before your real error. Run `keel build` before `keel check` after edits.
 
-### From index.html to a rendered route
+### From the document to a rendered route
 
 Follow `http://localhost:5173/lists/l1` in `keel dev`:
 
-1. Vite serves `index.html`. Its script asks for `/@keel/entry.ts`.
+1. Keel serves the generated document. Its script asks for `/@keel/entry.ts`.
 2. The plugin picks the deployable to serve: the one `KEEL_DEPLOYABLE` names, else the first `client` deployable by name. Here that is `web`, whose modules are `["todos"]`.
 3. It generates the mount entry. For golden-1 under `keel dev` it is, minus a dev-only block that reports live state to `/__keel/inspect`:
 
    ```ts
+   import "@keel/ui/fonts";
    import "virtual:keel.css";
    import { createCtx } from "@keel/ctx";
    import { browserHistory, createRouter, routeTable } from "@keel/router";
@@ -310,7 +296,7 @@ Follow `http://localhost:5173/lists/l1` in `keel dev`:
    const mode = "dev";
    const router = createRouter(routeTable(__keelRoutes0), { ctx, history: browserHistory(), mode });
    const el = document.getElementById("app");
-   if (el === null) throw new Error("keel: index.html has no #app element");
+   if (el === null) throw new Error("keel: the document has no #app element");
    mount(router.App, el, { ctx, mode });
    ```
 

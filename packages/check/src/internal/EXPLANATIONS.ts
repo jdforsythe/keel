@@ -88,6 +88,13 @@ const ROWS: readonly Row[] = [
     "k.bundle",
   ],
   [
+    "W1012",
+    "a project root holding index.html: Keel writes every document and never reads the file",
+    "Dev and build write each document's head, so what the file held would show nowhere: markup, scripts, stylesheets.",
+    "move a header into a layout component and a stylesheet into the deployable's styles, then delete index.html",
+    "k.head",
+  ],
+  [
     "E1049",
     "internal compiler failure",
     "A Keel bug, not app code; the message is verbatim.",
@@ -438,6 +445,13 @@ const ROWS: readonly Row[] = [
     "s.secret anywhere in a store's state schema, or a reveal call in a transaction function",
     "State reaches snapshots and #k-state. Any reveal in a reducer fires, even a compare. Static, partial (unresolved schemas, past 8 consts, helpers); store() throws E1303 at run time.",
     "keep it s.secret; reveal where used (E1105), never into a payload or state",
+    "k.store",
+  ],
+  [
+    "E1304",
+    "a tx call that runs while a component builds",
+    "The write throws E1201 at render. Static, partial: the component body and For, If, Match, Case or Boundary function children; a call into a helper is not followed.",
+    "create the view store with the data as initial: store(S, { items: props.data.items }, { id }); or call tx in an event handler",
     "k.store",
   ],
   ["E1351", "target id already exists", "", "use a codemod to change the existing item", "k.scaffold"],
@@ -872,6 +886,13 @@ const ROWS: readonly Row[] = [
     "k.topology",
   ],
   [
+    "E1587",
+    "a styles entry in topology.ts that is not a string literal or whose package export is not a .css file",
+    "The entry imports each one, so the build links it in every document; a path or a script export has no stylesheet to link.",
+    "styles: ['./fonts.css'] -> styles: ['@keel/ui/fonts']",
+    "k.topology",
+  ],
+  [
     "E1590",
     "origins in topology.ts out of form: not a literal, a key outside img media font connect frame, an inexact origin",
     "Also a reason not 1 to 200 characters on one line, or over 16 origins in a directive. Only these widen the policy.",
@@ -1083,6 +1104,20 @@ const ROWS: readonly Row[] = [
     "Z3 can abort or hang when its caller is a worker; run the test in a process.",
     'test: { pool: "forks" }',
     "k.prove",
+  ],
+  [
+    "E1722",
+    "renderRoute given app with state or shell",
+    "With app the page comes from the server, so test module stores and a native shell have no meaning; nothing is requested.",
+    "seed server state through ctx.storage, as createApp reads it; drop state and shell",
+    "k.testing",
+  ],
+  [
+    "W1723",
+    "a literal renderRoute id of a node deployable's module, with no app",
+    "The page renders through a client router, which a built node page never has, so a form's answer document goes untested. Literal ids only.",
+    "const app = await createApp({ topology, routes, ctx }); renderRoute(id, { routes, app, ctx })",
+    "k.testing",
   ],
   [
     "E1751",

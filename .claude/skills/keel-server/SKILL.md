@@ -18,7 +18,7 @@ A `node` deployable owns the data; `client` ones call it. Signatures: `keel docs
 import { s } from '@keel/schema'
 export const Board = s.object({ todos: s.array(s.object({ id: s.id('Todo'), title: s.string() })) })
 ```
-A write that answers nothing has `output: s.object({})` and returns `ok({})`. A client view store changes only through a transaction: after a write, re-read through the service and `tx` the result into a `hydrate` transaction. A page action (`decl` `{ input }`) returns `ok(href)` (303 to it) or `ok(null)`; a page loader's `decl` is `{ output }`.
+A write that answers nothing has `output: s.object({})` and returns `ok({})`. A client view store starts from loader data by being created in the component with it as `initial` (`keel docs k.store`, View stores); after a write, re-read through the service and `tx` the answer into a `hydrate` transaction in the handler. A `tx` in a component body is E1304. A page action (`decl` `{ input }`) returns `ok(href)` (303 to it) or `ok(null)`; a page loader's `decl` is `{ output }`.
 
 ## API routes
 
@@ -125,4 +125,4 @@ export async function addOne(ctx: Ctx, token: Secret<string>) {
 
 ## Runners and tests
 
-`modules/<id>/runners.server.ts` exports `runners = [{ run(ctx, signal) }]`. Tests import `createApp` from `@keel/server` (apps import only `topology` and `commitStores` elsewhere): `await createApp({ topology, routes: routeTable(...), ctx, deployable: 'web' })` (also `mode`, `guards`, `peers`, `secret`, `origin`; see the package README) over a sim ctx, then `app.fetch(new Request(url, { method, headers: { 'content-type': 'application/json' }, body }))`; `renderRoute(id, { user })` runs `stores`. A service call on the `createApp` ctx runs in process and never reaches its `ctx.net`; route `/api/*` of another ctx (a client test's) to `app.fetch`. A GET answers `{ id, results: { [id]: { ok, value } } }`; a write answers the `Result` itself, `{ ok: true, value }`. See keel-testing, keel-data, keel-compliance, keel-deploy.
+`modules/<id>/runners.server.ts` exports `runners = [{ run(ctx, signal) }]`. Tests import `createApp` from `@keel/server` (apps import only `topology` and `commitStores` elsewhere): `await createApp({ topology, routes: routeTable(...), ctx, deployable: 'web' })` (also `mode`, `guards`, `peers`, `secret`, `origin`, `std: '.keel/std.json'`, else std config is empty; see the package README) over a sim ctx, then `app.fetch(new Request(url, { method, headers: { 'content-type': 'application/json' }, body }))`; `renderRoute(id, { user })` runs `stores`. A service call on the `createApp` ctx runs in process and never reaches its `ctx.net`; route `/api/*` of another ctx (a client test's) to `app.fetch`. A GET answers `{ id, results: { [id]: { ok, value } } }`; a write answers the `Result` itself, `{ ok: true, value }`. See keel-testing, keel-data, keel-compliance, keel-deploy.

@@ -77,14 +77,12 @@ describe("@keel/compiler/vite config (client build of a node deployable)", () =>
     expect(keel().config({ root }, { command: "serve" })).not.toHaveProperty("define");
   });
 
-  it("keeps the project config for serve, ssr, static, unknown or unset deployables, or no topology", () => {
+  it("keeps the project config for serve, ssr, unknown or unset deployables, or no topology", () => {
     process.env.KEEL_DEPLOYABLE = "api";
     expect(keel().config({ root }, { command: "serve" })).toEqual(SERVE);
     expect(keel().config({ root }, { command: "build", isSsrBuild: true })).toEqual(OWN);
-    for (const name of ["pre", "nope"]) {
-      process.env.KEEL_DEPLOYABLE = name;
-      expect(keel().config({ root }, { command: "build" })).toEqual(OWN);
-    }
+    process.env.KEEL_DEPLOYABLE = "nope";
+    expect(keel().config({ root }, { command: "build" })).toEqual(OWN);
     Reflect.deleteProperty(process.env, "KEEL_DEPLOYABLE");
     expect(keel().config({ root }, { command: "build" })).toEqual(OWN);
     process.env.KEEL_DEPLOYABLE = "api";

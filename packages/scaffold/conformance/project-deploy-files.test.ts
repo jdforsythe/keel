@@ -1,4 +1,4 @@
-// Spec: k.scaffold, Generators "`project`: ... module `app`, generated turbo, CI and deploy files (k.deploy), agent files (k.explain); `--workspace` (an app inside the Keel monorepo) adds `index.html` and `vitest.config.ts` instead of turbo, CI, agent files."
+// Spec: k.scaffold, Generators "`project`: ... module `app`, generated turbo, CI and deploy files (k.deploy), agent files (k.explain); `--workspace` (an app inside the Keel monorepo) adds `vitest.config.ts` instead of turbo, CI, agent files. No `index.html`."
 // Seed 1337 (fast-check). Generated in process (Op "project"); ASSUMED input keys `name`, `adapter` and `workspace`.
 import fc from "fast-check";
 import { expect, test } from "vitest";
@@ -26,10 +26,10 @@ test("project yields turbo.json, .github/workflows/ci.yml and, per node deployab
   );
 });
 
-test("project --workspace adds index.html and vitest.config.ts instead of turbo and CI, and writes no deploy file", () => {
+test("project --workspace adds vitest.config.ts instead of turbo and CI, writes no index.html and no deploy file", () => {
   for (const adapter of ["client", "node", "static"]) {
     const files = out({ name: "shop", adapter, workspace: true });
-    expect(files.has("index.html")).toBe(true);
+    expect(files.has("index.html")).toBe(false);
     expect(files.has("vitest.config.ts")).toBe(true);
     expect(files.has("turbo.json")).toBe(false);
     expect(files.has(".github/workflows/ci.yml")).toBe(false);

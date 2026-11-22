@@ -39,7 +39,7 @@ Run `pnpm dev` from `apps/golden-1`. `keel dev` serves `web` with hot reload and
 ## Production
 1. `pnpm --filter ./apps/golden-1 build` runs `keel build`. It writes:
    - the `.keel/` artifacts, `surface.json` among them;
-   - `dist/web/`, the `web` client as static files (`index.html`, `assets/`, `keel-mark.svg`);
+   - `dist/web/`, the `web` client as static files (the generated `index.html`, `assets/`, `keel-mark.svg`);
    - `dist/api/`: `server.mjs`, the generated entry with every dependency bundled, beside a copy of the `web` client, `routes.json` and `std.json`;
    - `deploy/api/Dockerfile` and `deploy/compose.yaml`, from `topology.ts`.
 2. `pnpm api` runs `dist/api/server.mjs`, with `ctx.storage` in the SQLite file `.api.sqlite` (`@keel/std-db`). A board kept in an older `.api.storage` file is not read: the server starts on an empty database. It serves the whole app: `GET /` returns the client's `index.html`, `/api/*` answers the board, and `dist/web/` is the same client for a static host (`docs/guide/deploy-client.md`). It reads its settings from the environment and exits with E1560 when one is missing or invalid:

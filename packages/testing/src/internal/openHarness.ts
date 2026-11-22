@@ -43,7 +43,8 @@ export function openHarness(setup: HarnessSetup): { readonly harness: Harness<Ct
   const page = setup.page === true;
   const container = document.createElement("div");
   document.body.appendChild(container);
-  const unrecord = setup.documents === undefined ? undefined : recordDocuments(container, setup.documents);
+  const unrecord =
+    setup.documents === undefined ? undefined : recordDocuments(container, setup.documents, setup.follow);
   let unmount: (() => void) | undefined;
   let owner: Scope | undefined;
   let gone = false;
