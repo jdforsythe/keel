@@ -25,7 +25,7 @@ const has = (ref) => {
 };
 
 const SHARED =
-  /^tooling\/(stryker|stryker-reporter|mutate|mutate-units|mutateLock|quick-first|mutate-cache|vitest\.mutate\.config)\.(mjs|ts)$/;
+  /^tooling\/(stryker|stryker-reporter|mutate|mutate-units|mutate-shard|mutateLock|quick-first|mutate-cache|vitest\.mutate\.config)\.(mjs|ts)$/;
 const IGNORED = /^(reports|\.stryker-tmp|node_modules)\//;
 const UNIT_FILE = /^((?:packages|apps)\/[^/]+)\/(.+)$/;
 

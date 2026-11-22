@@ -3366,4 +3366,5 @@ The Keel skills in `.claude/skills/keel*/SKILL.md` are terse API cards for the s
 - Inspecting a running app (`keel inspect`, `/__keel/inspect`), recorded sessions, and `keel check --base` against a deployed `surface.json`.
 - Shipping the `web` client to a static host or across origins; `docs/guide/deploy-client.md` covers it.
 
+subject: apps/golden-1/
 verified: b8e3fb6c7219acfdc4bba61aebbeb0abb8a6a308

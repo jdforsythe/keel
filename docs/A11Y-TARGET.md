@@ -4,4 +4,5 @@ WCAG 2.2 AA, enforced structurally: base elements require labels at the type lev
 
 The style vocabulary has no `outline`, so no app style removes the focus indicator. With `base.focus` in the tokens, every focusable element shows a 2px solid ring in that color 2px outside it on keyboard focus, and E1807 fails a `focus` color under 3:1 against the page background; `brandTokens` sets the brand guide's Charcoal ring, 15.75:1 or more on every brand surface (WCAG 2.2 2.4.7, 1.4.11, 2.4.13). An app without `base.focus` keeps the platform's indicator. The repo's biome config turns `a11y/useSemanticElements` off, since base elements and `role` on `Text` carry the semantics the rule would ask for.
 
-verified: a9b55f16
+subject: spec/kernel/k.a11y.md spec/kernel/k.aria.md packages/ui/src/ packages/testing/src/a11y/ packages/check/src/rules/blankLabel.ts packages/check/src/rules/lowContrast.ts packages/check/src/rules/reversedFocusOrder.ts
+verified: c503fc49
