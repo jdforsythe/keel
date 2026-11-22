@@ -1,6 +1,6 @@
 ---
 name: keel-testing
-description: "Test and check Keel code: @keel/testing render, renderRoute (stores pages too), fire, settle, find, a11y, focusOrder, sim ctx and net routes, properties, explore, simulate, prove, std-statecharts chart, ledger rungs; E170x, E1706, E1708-E1710, E1715-E1718, E1722, E1724, W1723"
+description: "Test and check Keel code: @keel/testing render, renderRoute (stores pages too), fire, settle, find, a11y, focusOrder, sim ctx and net routes, properties, explore, simulate, prove, std-statecharts chart, ledger rungs; E170x, E1706, E1708-E1710, E1715-E1718, E1722, W1723"
 ---
 
 # Testing and correctness
@@ -34,8 +34,7 @@ test("adds a todo", async () => {
 - The harness ctx is always sim (seed `KEEL_SEED`, default 1337). `ctx.clock.advance(ms)` moves time; `ctx.net.route(url, handler)` answers requests.
 - Between tests: `const base = store.snapshot()` and `store.restore(base)` in `afterEach`.
 - A page a `node` deployable serves is tested as the build serves it: `const app = await createApp({ topology, routes, ctx }); const t = await renderRoute(id, { routes, app, ctx })`. The page is requested from `app` and resumed with no router; a `<Form>` submit is POSTed to `app` and its answer (a 422 with the values and errors, or a 303's target) replaces the page. Seed server state through `ctx.storage`; `state` or `shell` with `app` is E1722. Without `app` such a test is W1723.
-- `user` signs the page in: `renderRoute(id, { routes, app, ctx, user })` sends every page request (load, submit, service call, stream) as `user`, on the ctx `createApp` made `app` on (else E1724). Two members are two harnesses over one `app`, open at once. Without `user`, sign in through the page: each harness with `app` or `shell` keeps its own cookie jar, so a mount `Form` post's `set-cookie` holds for its later requests. Without `app`, pass the `createApp` ctx so a component's or loader's service call carries `user`; a second user on one ctx is E1724.
-- `renderRoute(id, { routes, shell: true })` runs the page as in a native shell: `t.documents()` lists what the external browser opened, `t.returnLink(url)` delivers a return link after the page opened it (`keel docs k.return`). Route the page's origin on `ctx.net` to the `api` deployable's `app.fetch`; the harness's jar is the native cookie store, so a sign-in through the mount is tested end to end.
+- `renderRoute(id, { routes, shell: true })` runs the page as in a native shell: `t.documents()` lists what the external browser opened, `t.returnLink(url)` delivers a return link after the page opened it (`keel docs k.return`).
 - A passing `renderRoute` per page runs axe-core and token contrast, and makes the page's `a11y:` claims; E1703, E1804 and E1821 fail it. E1702: role or name differs from `a11y.json`.
 
 ## Properties, exploration, simulation, proof

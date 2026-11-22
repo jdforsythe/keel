@@ -66,7 +66,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.user | User, caller | implemented | user |
 | k.mount | Mount pages | implemented | submit |
 | k.mount-scope | Mount scope | implemented | proxy |
-| k.return | Shell mount | implemented | net |
+| k.return | Shell mount | conformance-covered | net |
 | k.opening | Openings | conformance-covered | once |
 | k.links | Links in | conformance-covered | ids |
 | k.serverlog | Server log | conformance-covered | bounds |
