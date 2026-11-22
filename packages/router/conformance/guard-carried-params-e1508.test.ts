@@ -74,6 +74,10 @@ const failing: readonly Pair[] = [
   ["unbounded number to a bounded number", () => s.number(), () => s.number({ min: 0 })],
   ["number with a larger max to a smaller max", () => s.number({ max: 9 }), () => s.number({ max: 5 })],
   ["string to int (another type)", () => s.string(), () => s.int()],
+  ["unbounded number to an unbounded int", () => s.number(), () => s.int()],
+  ["number within an int's bounds to an int", () => s.number({ min: 1, max: 5 }), () => s.int({ min: 0, max: 10 })],
+  ["int with a larger max to a number with a smaller max", () => s.int({ max: 20 }), () => s.number({ max: 10 })],
+  ["unbounded int to a bounded number", () => s.int(), () => s.number({ min: 0 })],
 ];
 const passing: readonly Pair[] = [
   ["the same node", () => sameNode, () => sameNode],
@@ -89,6 +93,8 @@ const passing: readonly Pair[] = [
   ["int with a min to an unbounded int", () => s.int({ min: 1 }), () => s.int()],
   ["int bounds within the target's", () => s.int({ min: 1, max: 5 }), () => s.int({ min: 0, max: 10 })],
   ["number bounds within the target's", () => s.number({ min: 1, max: 5 }), () => s.number({ min: 0, max: 10 })],
+  ["int to an unbounded number", () => s.int(), () => s.number()],
+  ["int bounds within a number target's", () => s.int({ min: 1, max: 5 }), () => s.number({ min: 0, max: 10 })],
   ["number with a min to an unbounded number", () => s.number({ min: 1 }), () => s.number()],
 ];
 
