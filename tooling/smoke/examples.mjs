@@ -253,7 +253,13 @@ const proofs = {
         [vite, "build"],
         {
           cwd: dir,
-          env: { ...process.env, KEEL_DEPLOYABLE: "web", KEEL_SHELL: "tauri", KEEL_ORIGIN: "https://app.example", NODE_ENV: "production" },
+          env: {
+            ...process.env,
+            KEEL_DEPLOYABLE: "web",
+            KEEL_SHELL: "tauri",
+            KEEL_ORIGIN: "https://app.example",
+            NODE_ENV: "production",
+          },
         },
         (e, _o, err) => (e === null ? res(undefined) : rej(new Error(err))),
       ),

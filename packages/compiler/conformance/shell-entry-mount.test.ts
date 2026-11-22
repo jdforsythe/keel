@@ -46,7 +46,6 @@ const tree: Record<string, string> = {
     "import { contract } from '@keel/router/contract'\nexport const c = contract('c', { 'c.page': { path: '/' } })\n",
 };
 
-
 const identityFiles: Record<string, string> = {
   "identity.ts": "import { identityMount } from '@keel/router'\nexport default identityMount('/api/auth')\n",
   "identity.server.ts":
@@ -151,7 +150,10 @@ function shellBuild(dir: string): string {
 
 /** The argument object of the `shellMount` call: the one holding the shell's `id` and an `origin`. */
 function shellMountArg(text: string): string | null {
-  const m = /\{[^{}]*\bid\s*:\s*["'`]dev\.keel\.golden["'`][^{}]*\borigin\s*:[^{}]*\}|\{[^{}]*\borigin\s*:[^{}]*\bid\s*:\s*["'`]dev\.keel\.golden["'`][^{}]*\}/.exec(text);
+  const m =
+    /\{[^{}]*\bid\s*:\s*["'`]dev\.keel\.golden["'`][^{}]*\borigin\s*:[^{}]*\}|\{[^{}]*\borigin\s*:[^{}]*\bid\s*:\s*["'`]dev\.keel\.golden["'`][^{}]*\}/.exec(
+      text,
+    );
   return m === null ? null : m[0];
 }
 

@@ -75,7 +75,9 @@ export function entryCode(
     native === undefined
       ? `const ctx = createCtx({ mode: "real" });`
       : `const ctx = createCtx({ mode: "shell", drivers: __keelDrivers({ origin: ${origin} }) });`,
-    ...(id === undefined ? [] : [`__keelMount(ctx, { id: ${q(id)}, origin: ${origin}${identity ? ", mount: __keelIdentity" : ""} });`]),
+    ...(id === undefined
+      ? []
+      : [`__keelMount(ctx, { id: ${q(id)}, origin: ${origin}${identity ? ", mount: __keelIdentity" : ""} });`]),
     ...(bind ? [`bindStd(ctx, ${JSON.stringify(std)});`] : []),
     ...(peers
       ? [
