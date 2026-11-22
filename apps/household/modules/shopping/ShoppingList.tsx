@@ -52,7 +52,7 @@ export default function ShoppingList(props: Infer<typeof Props>, ctx: Ctx) {
               expanded: { bg: "textSecondary" },
             },
           },
-          menu: { p: "0", m: "0", bg: "card", border: "rule" },
+          menu: { direction: "column", p: "0", m: "0", bg: "card", border: "rule" },
           item: {
             direction: "row",
             px: "3",

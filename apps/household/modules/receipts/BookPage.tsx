@@ -78,7 +78,7 @@ export default function BookPage(props: Infer<typeof Props>) {
       <Form method="POST" action={receipts.href("receipts.book", { locale: props.params.locale })} form={f}>
         <Box direction="column" gap="3" p={{ base: "3", md: "4" }} bg="card" border="hairline">
           <Input
-            w="control"
+            w="full"
             my="1"
             px="2"
             py="2"
@@ -94,7 +94,7 @@ export default function BookPage(props: Infer<typeof Props>) {
             autocomplete="off"
           />
           <Input
-            w="control"
+            w="full"
             my="1"
             px="2"
             py="2"
@@ -150,7 +150,7 @@ export default function BookPage(props: Infer<typeof Props>) {
             ]}
           />
           <TextArea
-            w="control"
+            w="full"
             my="1"
             px="2"
             py="2"

@@ -105,7 +105,7 @@ Try it: with the built app running, make an account at `localhost:5211/signup` a
 
 ## Layer 7: the frame and the brand
 
-Every page renders in a shell layout that puts the Keel brand (`docs/BRAND.md`) on it. `tokens.ts` is `brandTokens` plus one size, `control`, the width of a text control inside its card; `topology.ts` lists `@keel/ui/fonts` in `styles`, so the served stylesheet carries Source Serif 4 and JetBrains Mono.
+Every page renders in a shell layout that puts the Keel brand (`docs/BRAND.md`) on it. `tokens.ts` is `brandTokens`; `topology.ts` lists `@keel/ui/fonts` in `styles`, so the served stylesheet carries Source Serif 4 and JetBrains Mono.
 
 - `members/Frame.tsx` is the frame: a masthead with the mark, the app's name and the household's name, the main navigation, a hairline, and the page in a centred column that narrows to the screen on a phone. For a member the navigation ends with Profile and a Sign out button; for a visitor, with Sign in and Make an account.
 - Each module binds a layout, `<module>.shell`, whose component renders the frame with the links that module's `deps` allow, and whose loader (`loadShell.server.ts`) answers the copy (`members/shellText.ts`), the household's name and whether a member is signed in. The list and the start page link to the list and the receipts book; the receipts book links to itself; the members and setup pages carry only Profile and Sign out. A navigation shared by every page would make the modules depend on each other.
