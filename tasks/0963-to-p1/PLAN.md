@@ -239,6 +239,12 @@ State at the last checkpoint; each lane is a subagent in its worktree. The older
   - `.worktrees/l61` `lane-l61` (87449f4d): L6-1 is a spec gap; RFC 0185 written (ADR-0207, E1724, k.user#11 to #13): a `renderRoute` page's own requests carry `user`; two users are two harnesses over one `app` and `ctx`. Conformance and build follow the merge of `lane-r180`.
   - `lane-r176`: a conformance writer does the two owed items; then the lint rule goes off, the main line is merged in and the lane merges.
   - Merge order: `lane-r180`, `lane-r182`, `lane-r176`, `lane-r184`; then the gate and the push with abab2f20.
+- Checkpoint 2 of 2026-11-22: merged `lane-r176` (0fd4a355; RFC 0176, 0177; biome `a11y/useSemanticElements` off, D89). `lane-r182`'s conformance is corrected (dcba4991); it waits for `lane-r180` to merge.
+  - D90 (RFC 0180): a resume mismatch under `renderRoute` with `app` is E1720, as the spec says; the build reports it (27f18b3b). The fixture that hid it is being corrected by a conformance writer (`packages/server/conformance/render-route-document-support.ts`).
+  - D91 (RFC 0180): with `app` the harness is one browser that keeps the cookies `app` sets; `app` mints `caller` (spec changed, 650357a1). `caller` is the hash of a sealed token and cannot be chosen by a test. RFC 0185's Build line "the front adds the page's caller cookie" is to be rewritten to this before its conformance.
+  - To file: `apps/sessions` keeps 6 W1723 (std-sessions' `toTest` emitter writes router-mode tests); under happy-dom a `Response` drops `set-cookie`, so the harness's cookie jar is empty in practice.
+  - The operator opened `apps/household` under `keel dev` and saw no styles: the dev document of a `node` deployable links no stylesheet. `.worktrees/hstyle` `lane-hstyle` (from `lane-r182`) finds the fault and gives the app a full pass against `docs/BRAND.md`, with an audit of the golden apps.
+  - Running: `lane-r184` (build of RFC 0184), `.worktrees/scen3` `lane-scen3` (scenarios: workflow on Postgres under a kill, CSP header, guard redirect into a shell, signed-in sessions), `lane-hstyle`, the conformance writer on `lane-r180`. A dev server for the operator runs on port 5214 from the main line: stop it at handoff.
 
 ## Verification
 - [x] Backlog 0956 built and conformance-covered: RFC 0147 and RFC 0150 (links into a shell), red-teamed twice.

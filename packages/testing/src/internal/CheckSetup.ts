@@ -10,4 +10,6 @@ export interface CheckSetup {
   readonly a11y: Readonly<Record<string, A11yEntry>> | undefined;
   readonly tokens: Tokens | undefined;
   readonly target: () => Pick<A11yCheck, "route" | "component">;
+  /** After a `fire` or `settle()` that kept the page: the elements the root held at the last check (E1826). */
+  readonly before?: ReadonlySet<Element> | undefined;
 }

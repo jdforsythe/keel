@@ -73,7 +73,7 @@ The built proof in `tooling/smoke/examples.mjs` covers the server half over real
 
 **What happened.** The guard always redirects: on a `client` deployable `user` is `''`. The example's guard instead calls `/api/me` through a service on every guarded navigation.
 
-**Expected.** k.guards: "`caller` and `user` are k.server's and k.user's (`''` if none or client-only)"; k.user: "`''` with no identity source, on a `client` deployable". So the behaviour is as specified, and no section says how a guard in a shell or a hosted client learns who is signed in. An app in a shell needs a guard that redirects a signed-out reader, and today each author writes the network call, its failure handling and its cost per navigation. For an RFC: a client-side `user` the runtime fills from one call to the identity source (k.user), or a std helper that a guard awaits.
+**Expected.** k.guards: '`caller` and `user` are k.server's and k.user's (`''` if none or client-only)'; k.user: '`''` with no identity source, on a `client` deployable'. So the behaviour is as specified, and no section says how a guard in a shell or a hosted client learns who is signed in. An app in a shell needs a guard that redirects a signed-out reader, and today each author writes the network call, its failure handling and its cost per navigation. For an RFC: a client-side `user` the runtime fills from one call to the identity source (k.user), or a std helper that a guard awaits.
 
 ## S3-3. `renderRoute(id, { user })` on its own ctx: a loader's module call refuses `user`
 
@@ -81,7 +81,7 @@ The built proof in `tooling/smoke/examples.mjs` covers the server half over real
 
 **What happened.** The call answers `api.input` at `user`, nothing reaches the net, and the page renders signed out (the loader treats any error as signed out). Passing the `createApp` ctx itself (`ctx: server`) works: that ctx is bound, so the call is signed.
 
-**Expected.** k.user Conformance: "`renderRoute(id, { user: 'u1' })` gives guard and loader `'u1'`": it does, but on an unbound ctx the loader cannot pass it on. A test of a `node` page that calls a module service with `user` has to know to share the `createApp` ctx.
+**Expected.** k.user Conformance: '`renderRoute(id, { user: 'u1' })` gives guard and loader `'u1'`': it does, but on an unbound ctx the loader cannot pass it on. A test of a `node` page that calls a module service with `user` has to know to share the `createApp` ctx.
 
 **Cause.** `packages/services/src/internal/buildRequest.ts:52`: a `user` on a target with no `sign` is `api.input` (`type`). The harness ctx is bound to no signer. Fix: the harness signs for its own ctx, or keel-testing says to pass the `createApp` ctx.
 

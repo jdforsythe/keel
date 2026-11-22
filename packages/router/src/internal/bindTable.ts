@@ -9,6 +9,7 @@ import type { Compiled } from "./Compiled.ts";
 import type { Def } from "./Def.ts";
 import type { EntryShape } from "./EntryShape.ts";
 import type { Registered } from "./Registered.ts";
+import { carriedFits } from "./carriedFits.ts";
 import { checkEntries } from "./checkEntries.ts";
 import { codedError } from "./codedError.ts";
 import { isAction } from "./isAction.ts";
@@ -85,7 +86,8 @@ function layoutFits(module: string, shapes: ReadonlyMap<string, EntryShape>, lay
  * E1515 a key no entry of `c` has, an entry left unbound, a binding missing its required member (`component`,
  * `loader`, `action`) or a handler declared for another id or contract, a plain loader on an `events: true` entry or
  * an async generator one on any other; E1510 a member the entry's kind refuses; E1508 a page or layout guard without
- * `redirect`, or a redirect to an API entry; E1506 a `layout` of `c`'s module that is no layout id of `c`, one not
+ * `redirect`, a redirect to an API entry, or a guarded page whose chain carries a param its redirect route of `c`
+ * declares that the page lacks or whose node does not fit (`carriedFits`); E1506 a `layout` of `c`'s module that is no layout id of `c`, one not
  * of the form `<module>.<name>`, or a cycle within `c`. A `layout` of another module's contract leaves the table
  * `open` until `routeTable` joins it.
  */
@@ -153,5 +155,7 @@ export function bindTable(c: Contract, binding: unknown): Compiled {
   }
   const table = new Map<string, Registered>();
   for (const [id, def] of defs) table.set(id, { id, def, segments: def.segments });
-  return { bindings, table, ...locate(table, c.module) };
+  const located = locate(table, c.module);
+  carriedFits(located.located, defs);
+  return { bindings, table, ...located };
 }

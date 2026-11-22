@@ -30,7 +30,7 @@ describe("the nearest market on the shopping list", () => {
   it("names the market closest to the device and its distance, and sends the position nowhere", async () => {
     const { api, r } = await listTab("en-US", 1);
     expect(r.find("recipes.market.find").name).toBe("Find the nearest market");
-    expect(() => r.find("recipes.market.nearest")).toThrow();
+    expect(r.find("recipes.market.nearest")).toMatchObject({ role: "status", text: "" });
     const sent = api.sent.length;
     await r.fire("recipes.market.find", { type: "click" });
     expect(r.find("recipes.market.nearest").text).toBe(
@@ -69,7 +69,7 @@ describe("the nearest market on the shopping list", () => {
     expect(t.find("recipes.market.unavailable").text).toBe(
       "Your location is not available. Allow location access in the browser, then press the button again.",
     );
-    expect(() => t.find("recipes.market.nearest")).toThrow();
+    expect(t.find("recipes.market.nearest").text).toBe("");
     stop.abort();
   });
 });
