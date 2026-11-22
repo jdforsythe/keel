@@ -1,7 +1,6 @@
 import { form } from "@keel/forms";
 import { computed } from "@keel/reactive";
 import { Form } from "@keel/router";
-import { If } from "@keel/runtime-dom";
 import { type Infer, s } from "@keel/schema";
 import { Box, Button, Heading, Input, Select, Text } from "@keel/ui";
 import { Todo } from "../api/Todo.schema.ts";
@@ -48,18 +47,18 @@ export default function EditTodoPage(props: Infer<typeof Props>) {
       <Heading id="todos.edit.title" level={1} fontSize="2xl" weight="semibold" m="0">
         Edit todo
       </Heading>
-      <If when={status.get() !== ""}>
-        {() => (
-          <Text id="todos.edit.status" font="mono" fontSize="sm" fg="error">
-            {status.get()}
-          </Text>
-        )}
-      </If>
+      <Text id="todos.edit.status" role="status" font="mono" fontSize="sm" fg="error">
+        {status.get()}
+      </Text>
       <Form
         method="POST"
         action={todos.href("todos.edit", props.params)}
         form={f}
-        error={(e) => <Text fg="error">{e.message}</Text>}
+        error={(e) => (
+          <Text role="alert" fg="error">
+            {e.message}
+          </Text>
+        )}
       >
         <Input
           field={f.field("title")}

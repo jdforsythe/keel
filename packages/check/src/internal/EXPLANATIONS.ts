@@ -447,6 +447,13 @@ const ROWS: readonly Row[] = [
     "keep it s.secret; reveal where used (E1105), never into a payload or state",
     "k.store",
   ],
+  [
+    "E1304",
+    "a tx call that runs while a component builds",
+    "The write throws E1201 at render. Static, partial: the component body and For, If, Match, Case or Boundary function children; a call into a helper is not followed.",
+    "create the view store with the data as initial: store(S, { items: props.data.items }, { id }); or call tx in an event handler",
+    "k.store",
+  ],
   ["E1351", "target id already exists", "", "use a codemod to change the existing item", "k.scaffold"],
   [
     "E1352",
@@ -612,9 +619,9 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1508",
-    "guard redirect loop: the redirect route is under that guard, or redirects revisit a URL",
-    "A denied request would redirect into the same guard forever.",
-    "move 'app.login' out of the guarded layout",
+    "a guard's redirect route is under that guard, or (route table) a carried param missing or not fitting, or (runtime) a redirect loop",
+    "A denied request would redirect into the same guard forever, or carry a param its redirect route cannot take: manifest and routeTable throw it, so keel build reports it.",
+    "move 'app.login' out of the guarded layout; declare the redirect route's params field on the page with the same schema",
     "k.guards",
   ],
   [
@@ -1099,6 +1106,20 @@ const ROWS: readonly Row[] = [
     "k.prove",
   ],
   [
+    "E1722",
+    "renderRoute given app with state or shell",
+    "With app the page comes from the server, so test module stores and a native shell have no meaning; nothing is requested.",
+    "seed server state through ctx.storage, as createApp reads it; drop state and shell",
+    "k.testing",
+  ],
+  [
+    "W1723",
+    "a literal renderRoute id of a node deployable's module, with no app",
+    "The page renders through a client router, which a built node page never has, so a form's answer document goes untested. Literal ids only.",
+    "const app = await createApp({ topology, routes, ctx }); renderRoute(id, { routes, app, ctx })",
+    "k.testing",
+  ],
+  [
     "E1751",
     "TS type error with no Keel rule code (message starts with the TS code)",
     "",
@@ -1233,6 +1254,13 @@ const ROWS: readonly Row[] = [
     "A stylesheet applies to the whole page (a global cascade); only the code a Host's code prop imports may bring one.",
     "import './chart.css' in Page.tsx -> import it in chart.ts, the Host's code file",
     "k.host-code",
+  ],
+  [
+    "E1826",
+    "a status region inserted holding text (render)",
+    "A screen reader announces a status region's changes, not its arrival; one a fire or settle() inserts already filled is not heard.",
+    '{() => saved() ? <Text role="status">Saved</Text> : null} -> <Text role="status">{() => (saved() ? text.saved : "")}</Text>',
+    "k.a11y",
   ],
   ["E1901", "input inside a <Form> without field", "", "bind the input to a form path with field(path)", "k.forms"],
   [

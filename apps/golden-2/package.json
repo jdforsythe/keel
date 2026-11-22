@@ -21,7 +21,6 @@
     "@keel/schema": "workspace:*",
     "@keel/server": "workspace:*",
     "@keel/services": "workspace:*",
-    "@keel/std-tokens": "workspace:*",
     "@keel/std-geo": "workspace:*",
     "@keel/std-headless": "workspace:*",
     "@keel/std-health": "workspace:*",
@@ -30,10 +29,12 @@
     "@keel/std-money": "workspace:*",
     "@keel/std-postgres": "workspace:*",
     "@keel/std-report": "workspace:*",
+    "@keel/std-sessions": "workspace:*",
     "@keel/std-tables": "workspace:*",
     "@keel/std-temporal": "workspace:*",
     "@keel/std-text": "workspace:*",
     "@keel/std-timings": "workspace:*",
+    "@keel/std-tokens": "workspace:*",
     "@keel/store": "workspace:*",
     "@keel/ui": "workspace:*",
     "better-auth": "1.7.26"
@@ -42,7 +43,6 @@
     "@keel/cli": "workspace:*",
     "@keel/std-brands": "workspace:*",
     "@types/node": "^22",
-    "@keel/std-sessions": "workspace:*",
     "@keel/testing": "workspace:*",
     "@keel/tooling": "workspace:*",
     "vite": "^8.3.6"

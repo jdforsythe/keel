@@ -1,6 +1,6 @@
 # RFC 0181: k.store: a `tx` in a component body is E1304; a view store seeded from loader data is created with it
 
-Status: accepted (ADR-0203). From walkthrough finding L4-1 (`tasks/p1/walkthrough-findings.md`).
+Status: implemented (ADR-0203). From walkthrough finding L4-1 (`tasks/p1/walkthrough-findings.md`).
 
 ## Decisions
 - D1: E1304 (k.store, a free number in E130x): `keel check` reports a `tx` call that runs while a component builds. That is a `tx` in the component function's own body outside any nested function, or in a function that is a `For`, `If`, `Match`, `Case` or `Boundary` child, since each of those renders at build (k.component Build). A `tx` in any other nested function (an event handler, an `effect` or `computed` callback, a helper) is none. The rule is partial: it does not follow a call into another function. It is an error, since the write throws E1201 at run time in every render path.

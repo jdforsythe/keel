@@ -55,7 +55,11 @@ export default function RecipePage(props: Infer<typeof Props>) {
         method="POST"
         action={recipes.href("recipes.show", props.params)}
         form={f}
-        error={(e) => <Text fg="error">{e.message}</Text>}
+        error={(e) => (
+          <Text role="alert" fg="error">
+            {e.message}
+          </Text>
+        )}
       >
         <Button
           id="recipes.toggleFavorite"

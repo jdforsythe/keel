@@ -458,6 +458,21 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       ),
     ],
   },
+  E1304: {
+    opts: NO_TYPES,
+    bad: [
+      f(
+        "C.tsx",
+        "import { tx } from '@keel/store'\nimport { Box } from '@keel/ui'\ndeclare const bump: Parameters<typeof tx>[0]\nexport default function C(props: { x: number }) {\n  tx(bump, { x: 1 })\n  void props\n  return <Box>x</Box>\n}\n",
+      ),
+    ],
+    clean: [
+      f(
+        "C.tsx",
+        "import { tx } from '@keel/store'\nimport { Box } from '@keel/ui'\ndeclare const bump: Parameters<typeof tx>[0]\nexport default function C(props: { x: number }) {\n  const onClick = () => tx(bump, { x: 1 })\n  void onClick\n  void props\n  return <Box>x</Box>\n}\n",
+      ),
+    ],
+  },
   E1401: {
     opts: NO_TYPES,
     bad: [f("C.tsx", `${UI}export default function C({ name }: { name: string }) { return <Text>{name}</Text> }\n`)],

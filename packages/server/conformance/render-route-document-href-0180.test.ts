@@ -6,7 +6,7 @@ import fc from "fast-check";
 import { expect, test } from "vitest";
 import { SEED, appOn, control, reset, routes, simCtx } from "./render-route-document-support.ts";
 
-test.skip("With `app`, an action's `ok(href)` leaves `route().id` the target's, `location().entries` 2, and the target's loader run once through `app`.", async () => {
+test("With `app`, an action's `ok(href)` leaves `route().id` the target's, `location().entries` 2, and the target's loader run once through `app`.", async () => {
   await fc.assert(
     fc.asyncProperty(fc.stringMatching(/^[a-z]{1,8}$/), async (value) => {
       reset("href");
@@ -15,7 +15,7 @@ test.skip("With `app`, an action's `ok(href)` leaves `route().id` the target's, 
       const opts = { routes, ctx, app };
       const h = await renderRoute("f.page", opts);
       await h.fire("f.amount", { type: "input", value });
-      await h.fire("f.form", { type: "submit" });
+      await h.fire("f.save", { type: "click" });
       expect(h.route().id).toBe("f.done");
       expect(h.location().entries).toBe(2);
       expect(control.doneLoads).toBe(1);

@@ -9,7 +9,7 @@ import { MESSAGE, SEED, appOn, control, reset, routes, simCtx } from "./render-r
 
 const amounts = fc.stringMatching(/^[a-z]{1,8}$/);
 
-test.skip("With `app`, a valid submit whose action answers `keel.fields` `{ amount: 'Too many decimals' }` leaves the amount field `invalid`, holding the submitted value, its error text that message, and one POST in `documents()` of exactly the named fields.", async () => {
+test("With `app`, a valid submit whose action answers `keel.fields` `{ amount: 'Too many decimals' }` leaves the amount field `invalid`, holding the submitted value, its error text that message, and one POST in `documents()` of exactly the named fields.", async () => {
   await fc.assert(
     fc.asyncProperty(amounts, async (value) => {
       reset("fields");
@@ -18,7 +18,7 @@ test.skip("With `app`, a valid submit whose action answers `keel.fields` `{ amou
       const opts = { routes, ctx, app };
       const h = await renderRoute("f.page", opts);
       await h.fire("f.amount", { type: "input", value });
-      await h.fire("f.form", { type: "submit" });
+      await h.fire("f.save", { type: "click" });
       expect(h.a11y("f.amount").state.invalid).toBe(true);
       expect(h.find("f.shown").text).toBe(value);
       expect(h.find("f.error").text).toBe(MESSAGE);
@@ -32,14 +32,14 @@ test.skip("With `app`, a valid submit whose action answers `keel.fields` `{ amou
   );
 });
 
-test.skip("With `app`, an invalid submit shows the schema error and reaches no action: no POST to `app`, the action records no call.", async () => {
+test("With `app`, an invalid submit shows the schema error and reaches no action: no POST to `app`, the action records no call.", async () => {
   reset("fields");
   const ctx = simCtx();
   const app = await appOn(ctx);
   const opts = { routes, ctx, app };
   const h = await renderRoute("f.page", opts);
   await h.fire("f.amount", { type: "input", value: "" });
-  await h.fire("f.form", { type: "submit" });
+  await h.fire("f.save", { type: "click" });
   expect(h.a11y("f.amount").state.invalid).toBe(true);
   expect(h.find("f.error").text).not.toBe("");
   expect(h.find("f.error").text).not.toBe(MESSAGE);
@@ -49,7 +49,7 @@ test.skip("With `app`, an invalid submit shows the schema error and reaches no a
   h.dispose();
 });
 
-test.skip("With `app`, the page is a GET of its URL through `app.fetch` (the harness starts from `GET /f`).", async () => {
+test("With `app`, the page is a GET of its URL through `app.fetch` (the harness starts from `GET /f`).", async () => {
   reset("fields");
   const ctx = simCtx();
   const app = await appOn(ctx);

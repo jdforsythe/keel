@@ -34,15 +34,17 @@ import { unexpected } from "./unexpected.ts";
  * Mount `view` through runtime-dom (`ctx`, root-Boundary `onError`), or run `start`, inside a scope, in a container
  * on `document.body`, and build the harness; with `documents`, the page's document navigations are recorded there
  * (`recordDocuments`) instead of made. `check()` raises the first root-Boundary catch (`keel.unexpected`), or one `setup.caught` holds,
- * then the render checks (`renderChecks`: E1702 with `a11y`, E1703, E1804 with `tokens`, E1821); `fire` and `settle` run it after settling. `dispose` unmounts, runs
+ * then the render checks (`renderChecks`: E1702 with `a11y`, E1703, E1804 with `tokens`, E1821); `fire` and `settle` run it after settling,
+ * with E1826 over the elements the root held at the last check unless `place` changed since. `dispose` unmounts, runs
  * `teardown`, and restores the seeded stores. A mount that throws disposes and rethrows.
  */
-export function openHarness(setup: HarnessSetup): { readonly harness: Harness<Ctx>; check(): void } {
+export function openHarness(setup: HarnessSetup): { readonly harness: Harness<Ctx>; check(after?: boolean): void } {
   const { ctx, seeded, artifacts, busy, teardown, target, registry } = setup;
   const page = setup.page === true;
   const container = document.createElement("div");
   document.body.appendChild(container);
-  const unrecord = setup.documents === undefined ? undefined : recordDocuments(container, setup.documents);
+  const unrecord =
+    setup.documents === undefined ? undefined : recordDocuments(container, setup.documents, setup.follow);
   let unmount: (() => void) | undefined;
   let owner: Scope | undefined;
   let gone = false;
@@ -57,11 +59,16 @@ export function openHarness(setup: HarnessSetup): { readonly harness: Harness<Ct
     container.remove();
     for (const [st, snap] of seeded) st.restore(snap);
   };
-  const check = (): void => {
+  // The elements the root held and where the page was at the last check: E1826 compares a `fire` or `settle()` with it.
+  let held: { readonly elements: ReadonlySet<Element>; readonly at: string | undefined } | undefined;
+  const check = (after = false): void => {
+    const at = setup.place?.();
+    const before = after && held !== undefined && held.at === at ? held.elements : undefined;
+    held = { elements: new Set([container, ...Array.from(container.querySelectorAll("*"))]), at };
     const [first] = caught.splice(0);
     if (first !== undefined) throw unexpected(first);
     if (page) asMain(container);
-    renderChecks({ root: container, page, target, a11y: artifacts?.["a11y.json"], tokens: artifacts?.tokens });
+    renderChecks({ root: container, page, target, a11y: artifacts?.["a11y.json"], tokens: artifacts?.tokens, before });
   };
   // A host element rendered on this ctx never runs its code (k.host-element Harness and replay).
   harnessed().add(ctx);
@@ -133,13 +140,13 @@ export function openHarness(setup: HarnessSetup): { readonly harness: Harness<Ct
     }
     const [first] = errors;
     if (errors.length > 0) throw first;
-    if (!gone) check();
+    if (!gone) check(true);
   };
 
   const settleNow = async (): Promise<void> => {
     live();
     await settle(container, () => undefined, busy, registry, clockStep(ctx));
-    if (!gone) check();
+    if (!gone) check(true);
   };
 
   const order = (): readonly string[] => {
