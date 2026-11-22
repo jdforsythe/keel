@@ -1,6 +1,6 @@
 # ADR-0214: a channel follows changes an app data commit names (RFC 0192)
 
-**Status:** proposed (orchestrator; for the operator to confirm).
+**Status:** accepted (orchestrator, D98).
 
 **Context.** std.channels sends `saved` after a server store save, and app data in Postgres (k.data, std.postgres) is no store, so `apps/household` keeps a counter store that each write action bumps after its commit. A forgotten bump leaves pages stale, two concurrent bumps make a committed write answer 409, and a bump reaches only the streams in its own process, so a second replica's streams hear nothing.
 
