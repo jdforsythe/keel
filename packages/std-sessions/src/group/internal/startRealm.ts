@@ -17,19 +17,19 @@ const entry = (): URL => new URL(`./userWorker.${here.endsWith(".ts") ? "ts" : "
 const loader = (): string => pathToFileURL(createRequire(import.meta.url).resolve("tsx")).href;
 
 /**
- * Start one user's worker (std.multi) with its DOM at `origin`, loading modules as the project of user module `user`
- * does; resolves once the worker is ready for calls, or rejects, the worker ended, when it fails to start. Each
+ * Start one user's worker (std.multi) with its DOM at `origin`, loading modules through `project` (the group's
+ * `projectServer`: each module request the worker's runner sends is answered from it); resolves once the worker is ready for calls, or rejects, the worker ended, when it fails to start. Each
  * request its sim net sends to `origin` goes to `fetch`; the response head, every body chunk and the end are posted
  * back in order, and `touch` hears each, so the group's `settle` sees traffic. A body the worker cancels is cancelled
  * at the server.
  */
 export function startRealm(
   origin: string,
-  user: string,
+  project: { invoke(data: unknown): Promise<{ result: unknown } | { error: unknown }> },
   fetch: (req: Outgoing) => Promise<Response>,
   touch: () => void,
 ): Promise<Realm> {
-  const worker = new Worker(entry(), { execArgv: ["--import", loader()], workerData: { origin, user } });
+  const worker = new Worker(entry(), { execArgv: ["--import", loader()], workerData: { origin } });
   running.add(worker);
   const calls = new Map<number, { resolve(v: JsonValue | undefined): void; reject(e: Error): void }>();
   /** The server body each in-flight response is read from, by request. */
@@ -91,6 +91,21 @@ export function startRealm(
     void serve(rid, { url, method, headers, body: body instanceof Uint8Array ? new Uint8Array(body) : null });
   };
 
+  const onInvoke = (m: unknown): void => {
+    const id = field(m, "id");
+    if (typeof id !== "number") return;
+    // An answer that cannot cross the thread boundary comes back as its error.
+    void project
+      .invoke(field(m, "data"))
+      .then((answer) => {
+        if (dead === undefined) worker.postMessage({ t: "invoked", id, ...answer });
+      })
+      .catch((error: unknown) => {
+        const message = error instanceof Error ? error.message : String(error);
+        if (dead === undefined) worker.postMessage({ t: "invoked", id, error: { name: "Error", message } });
+      });
+  };
+
   const onReturn = (m: unknown): void => {
     const r = wire.ret.parse(m);
     if (!r.ok) {
@@ -123,6 +138,7 @@ export function startRealm(
     else if (t === "req") onRequest(m);
     else if (t === "ret") onReturn(m);
     else if (t === "cancel") onCancel(m);
+    else if (t === "invoke") onInvoke(m);
   });
   worker.on("error", (e: unknown) => fail(e instanceof Error ? e : new Error(String(e))));
   worker.on("exit", (code: number) => {
