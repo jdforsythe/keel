@@ -9,5 +9,7 @@ export const loadStart = loader(app, "app.start", { output: StartData }, async (
     intro: "One shopping list and one receipts book for everyone at home.",
     toList: "Open the shopping list",
     toReceipts: "Open the receipts book",
+    toSetup: "Name the household",
+    toProfile: "Your profile and API tokens",
   }),
 );

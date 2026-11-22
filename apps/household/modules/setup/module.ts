@@ -2,7 +2,7 @@ import { module } from "@keel/compiler";
 
 export default module({
   id: "setup",
-  deps: ["@keel/std-text"],
+  deps: ["members", "@keel/std-text"],
   capabilities: [],
-  public: { exports: ["setUp"] },
+  public: { exports: [] },
 });

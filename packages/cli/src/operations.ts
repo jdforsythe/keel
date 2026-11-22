@@ -11,6 +11,7 @@ import { InspectSectionSchema } from "./internal/InspectSectionSchema.ts";
 import { InspectStoreSchema } from "./internal/InspectStoreSchema.ts";
 import { LedgerSchema } from "./internal/LedgerSchema.ts";
 import { ReqSchema } from "./internal/ReqSchema.ts";
+import { ReviewSchema } from "./internal/ReviewSchema.ts";
 import { outputOf } from "./internal/outputOf.ts";
 import type { Operation } from "./types/Operation.ts";
 
@@ -154,5 +155,21 @@ export const operations: readonly Operation[] = [
     output: outputOf(EvidenceRecord),
     positional: [],
     scope: "ledger",
+  },
+  {
+    name: "review",
+    description: "Escapes from the framework's protections by danger and novelty, over a git range or --all.",
+    input: s.object({
+      paths,
+      all: s.boolean().optional(),
+      list: s.boolean().optional(),
+      "fail-on": s.enum(["warn"]).optional(),
+      accept: s.string().optional(),
+      reason: s.string().optional(),
+      ...diagnostic,
+    }),
+    output: outputOf(ReviewSchema, EditSchema),
+    positional: ["paths"],
+    scope: "none",
   },
 ];

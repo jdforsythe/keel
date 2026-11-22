@@ -58,6 +58,26 @@ function job(name: string, adapter: string): string[] {
   return out;
 }
 
+/** The `review` job (k.review CI): on a pull request, `keel review` over its range, with full history to read both ends. */
+function reviewJob(): string[] {
+  return [
+    "  review:",
+    "    if: github.event_name == 'pull_request'",
+    "    runs-on: ubuntu-latest",
+    "    steps:",
+    `      - uses: ${CHECKOUT}`,
+    "        with:",
+    "          fetch-depth: 0",
+    `      - uses: ${PNPM}`,
+    `      - uses: ${NODE}`,
+    "        with:",
+    "          node-version: 22",
+    "          cache: pnpm",
+    "      - run: pnpm install --frozen-lockfile",
+    `      - run: pnpm exec keel review origin/${GITHUB_EXPR("github.base_ref")}..HEAD`,
+  ];
+}
+
 /** The steps every shell job starts with: checkout, pnpm and Node 22. */
 const SETUP = [
   `      - uses: ${CHECKOUT}`,
@@ -98,7 +118,8 @@ function shellJob(name: string, shell: string, j: ShellJob): string[] {
 /**
  * `.github/workflows/ci.yml` of a project outside the Keel monorepo (k.deploy Deploy files): a job per deployable
  * (sorted), run when its modules (a host's: and those of the clients it hosts) or the shared config change (every job on a push), that checks against the base
- * branch's surface (none there: W1568), tests, builds, and builds an image it never pushes (`node`) or uploads `dist/<name>`.
+ * branch's surface (none there: W1568), tests, builds, and builds an image it never pushes (`node`) or uploads `dist/<name>`;
+ * one `review` job on a pull request (k.review CI).
  * A `client` deployable's shells add the CI jobs of their targets in `shells` (`ShellApp` from `project`), on its paths
  * (k.shell CI); a `manual` one makes `workflow_dispatch` a trigger.
  */
@@ -145,6 +166,7 @@ export function ciWorkflow(
       return `          if hit '${pattern(modules)}'; then echo "${n}=true" >> "$GITHUB_OUTPUT"; fi`;
     }),
   ];
+  lines.push(...reviewJob());
   for (const n of names) lines.push(...job(n, topology[n]?.adapter ?? "client"));
   for (const g of given) lines.push(...shellJob(g.name, g.shell, g.j));
   lines.push("");

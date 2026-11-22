@@ -43,4 +43,9 @@ export type Input = {
   readonly audit?: string;
   readonly verify?: string;
   readonly key?: string;
+  readonly all?: boolean;
+  readonly list?: boolean;
+  readonly "fail-on"?: "warn";
+  readonly accept?: string;
+  readonly reason?: string;
 };

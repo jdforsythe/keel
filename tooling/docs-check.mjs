@@ -1,4 +1,4 @@
-// Keeps the seven published skills (packages/cli/skills/<name>/SKILL.md) true. Usage: node tooling/docs-check.mjs
+// Keeps the eight published skills (packages/cli/skills/<name>/SKILL.md) true. Usage: node tooling/docs-check.mjs
 // [--write]; `--write` replaces .claude/skills/<name>/ with a copy of each published skill and checks nothing.
 //
 // D0006 a fenced ts or tsx block does not type-check; D0007 more than two `ts fragment` blocks in a skill; D0008 an
@@ -42,15 +42,16 @@ const root = path.join(import.meta.dirname, "..");
 const SKILLS_DIR = "packages/cli/skills";
 const COPY_DIR = ".claude/skills";
 
-/** The published skills and the size target of each, in tokens (chars / 4). Re-based for the answers an app author needed in the walkthrough (createApp, Select, storage flag, explore, scope, Host). */
+/** The published skills and the size target of each, in tokens (chars / 4). Re-based for the answers an app author needed in the walkthrough (createApp, Select, storage flag, explore, scope, Host) and for `keel review` in the keel skill. */
 export const TARGETS = {
-  keel: 900,
+  keel: 950,
   "keel-client": 2450,
   "keel-server": 2400,
   "keel-data": 2500,
   "keel-testing": 2150,
   "keel-deploy": 1600,
   "keel-compliance": 1550,
+  "keel-escapes": 1700,
 };
 export const MAX_FRAGMENTS = 2;
 
@@ -133,10 +134,10 @@ export function checkRepoOnly(name, text) {
 export function checkCodes(name, text, known) {
   const diags = [];
   const file = skillFile(name);
-  for (const m of text.matchAll(/(?<![\w])[EWI]\d{4}(?![\w])/g))
+  for (const m of text.matchAll(/(?<![\w])[EWIR]\d{4}(?![\w])/g))
     if (!known.has(m[0]))
       diags.push(diag("D0009", file, lineOf(text, m.index ?? 0), `${m[0]} is in no catalog or spec section`));
-  for (const m of text.matchAll(/(?<![\w])([EWI]\d{2,3})(x{1,2})(?![\w])/g)) {
+  for (const m of text.matchAll(/(?<![\w])([EWIR]\d{2,3})(x{1,2})(?![\w])/g)) {
     const prefix = m[1];
     if (prefix.length + m[2].length !== 5) continue;
     if (![...known].some((c) => c.startsWith(prefix)))

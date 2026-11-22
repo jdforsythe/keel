@@ -6,11 +6,11 @@ Run every command from `apps/household`.
 
 | command | does |
 |-|-|
-| `pnpm dev` | `keel dev` on port 5173 |
+| `pnpm dev` | `keel dev` on port 5173, with the sign-in library's dev secret |
 | `pnpm test` | the app's tests under a simulated ctx |
 | `pnpm check` | `tsc`, Biome and `keel check` |
 | `pnpm build` | `keel build` into `dist/web/server.mjs` |
-| `PORT=5211 KEEL_SECRET=<32+ bytes> node dist/web/server.mjs` | the built app |
+| `PORT=5211 KEEL_SECRET=<32+ bytes> BETTER_AUTH_SECRET=<32+ characters> KEEL_POSTGRES_URL=pglite:data/postgres node --experimental-webstorage --localstorage-file=data/storage dist/web/server.mjs` | the built app, its data in `data/` |
 
 ## Layer 1: scaffold, dev server, docs
 
@@ -74,4 +74,31 @@ curl -s -H 'accept: application/json' -H 'x-keel: 1' -H 'content-type: applicati
 curl -s localhost:5211/api/items
 ```
 
-The pages that come next, storage that survives a restart, sign-in and personal data, live updates and offline writes, attach to these modules: `savedStores.ts`, `bookStores.ts` and `householdStores.ts` are the stores a durable storage keeps, and `setUp.guard.ts` is where a signed-in user replaces the household check.
+## Layer 5: Postgres app data and a restart
+
+The list and the receipts are records that grow as the household uses the app, so they are app data (`keel docs k.data`) and live in Postgres through `@keel/std-postgres`. The household's name is one setting, so it stays a server store.
+
+- `shoppingDb.server.ts` is `database("shopping.db")` and `receiptsDb.server.ts` is `database("receipts.db")`. Each module lists `@keel/std-postgres` in `deps` and its database in `capabilities`.
+- `modules/shopping/migrations/0001-items.sql` makes the `items` table, with a unique index on the names still to buy; `modules/receipts/migrations/0001-receipts.sql` makes `receipts`. They run at the first query, in order, once.
+- `listOf.server.ts` reads the list. `changeList.server.ts` reads it, applies one rule from `addTo.ts` or `toggleIn.ts` (or a removal) and writes the rows that changed, in one serializable transaction, so two members changing the list at once both apply. The API actions and the page loader call these two.
+- `bookOf.server.ts` reads the book newest first; `recordReceipt.server.ts` counts and inserts in one transaction and refuses a 201st receipt with `keel.fields`.
+- `keel build` copies each module's `migrations/` into `dist/web/modules/`, and `server.mjs` reads them from there. `KEEL_POSTGRES_URL` picks the database: `pglite:<folder>` for PGlite on disk, `postgres://...` for a server. `keel dev` keeps PGlite in `.keel-dev/postgres`.
+
+Tests: `test/setup.ts` awaits `ready()`, so every sim ctx gets its own migrated, empty databases in memory. `test/items.test.ts` drives the list API: quantities, the merge of a bought item put back, the 50-item limit, and 80 seeded changes that keep the list's three rules. The smoke kills the built server with SIGKILL while a write is in flight, starts it again over the same folder, and finds the list, the receipts and the name; with docker running it does the same on a throwaway `postgres:17`.
+
+Try it: start the built app with the command in the table, open `localhost:5211/list`, name the household and add Milk. Stop the server with `kill -9 <pid>` and start it again: Milk is still on the list, kept in `data/postgres`.
+
+## Layer 6: sign-in, personal data, API tokens
+
+Keel signs no one in. The app mounts a sign-in library, Better Auth, through the identity seam (`keel docs k.user`, `k.mount`), and the `members` module holds the pages and the data around it.
+
+- `identity.ts` is `identityMount("/api/auth")`. `identity.server.ts` is `identity({ identify, handle })`: `handle` hands the library's endpoints every request under `/api/auth`, turning a page's form post into the JSON the library takes and answering with a 303 and the library's cookie; `identify` answers the member of an API token when the request carries `authorization`, else the member of the session cookie, else `''`.
+- `authOf.server.ts` opens the library over its own `auth.sqlite`, beside the web storage file; `authSettings.server.ts` reads `BETTER_AUTH_SECRET`, and a server without one prints `members.secret` and exits. Accounts, password hashes and sessions live only there.
+- `/signup` and `/signin` post natively to the mount (`SignupPage.tsx`, `SigninPage.tsx`); the passwords are `s.secret` (`Registration.schema.ts`, `Credentials.schema.ts`), and a refusal comes back as `?error=credentials`, never with a typed value in the URL.
+- `signedIn.guard.ts` sends the list, the receipts book, the setup page and the profile to `/signin?next=<path>` until someone signs in; a sign-in goes on to `next` when it is a path on this origin. `member.guard.ts` answers 403 to an API request no member made.
+- The first sign-in writes the member's row in Postgres (`migrations/0001-members.sql`). `/profile` (`ProfilePage.tsx`) edits the name and phone, marked `.pii("name")` and `.pii("contact")` in `Profile.schema.ts`, with `autocomplete` on each control. Keel keeps them out of log lines and error text; the database stores them as written. No client store holds personal data, so the modules list no `clientPii`.
+- `TokenPanel.tsx` mints an API token through `POST /api/tokens` and shows it once: `postToken.server.ts` mints it with `tokens(ctx).mint({ ttl })`, keeps its id, digest and expiry in `api_tokens` and answers `reveal(token)`. `bearerUser.server.ts` finds the row with `tokens(ctx).idOf` and verifies it with `check`, which refuses an expired token. Revoking deletes the row.
+
+Tests: `test/serve.ts` serves the app with its identity source and signs a member up and in. `test/signin.test.ts` covers the cookie, `next`, a wrong password, sign-out and a cross-site post; `test/tokens.test.ts` mints, calls, revokes, expires, tampers with and chains tokens; `test/profile.test.ts` saves the profile, runs `properties` on the page, and checks that typed personal data reaches no log line. The smoke signs up and in in Chromium, mints a token, calls the API with it, revokes it and is refused, and types distinctive values into the profile, then searches the server's log and every file in its data folder but the database for them.
+
+Try it: with the built app running, make an account at `localhost:5211/signup` and sign in. On `/profile`, select Make a token and copy it, then run `curl -s -H "authorization: Bearer <token>" localhost:5211/api/items`. Select Revoke and run the same `curl`: it answers 403.
