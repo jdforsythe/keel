@@ -1,5 +1,5 @@
 {
-  "commit": "4b635b5d349a63cbe632b9ec8c51ef8ee666427d",
+  "commit": "19e1ca5c75736d34794599a2ceada517e972d7b2",
   "coverage": {
     "packages": {
       "apps/golden-1": {
@@ -1168,7 +1168,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-22T08:56:37.982Z",
+  "generatedAt": "2026-11-22T09:18:14.279Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -1184,7 +1184,7 @@
     },
     "clauses": {
       "byRung": {
-        "example": 851,
+        "example": 856,
         "exhaustive": 6,
         "monitored": 0,
         "none": 3,
@@ -2403,16 +2403,16 @@
         },
         "std.postgres": {
           "byRung": {
-            "example": 11,
+            "example": 16,
             "exhaustive": 0,
             "monitored": 0,
             "none": 0,
             "probabilistic": 1,
             "proven": 0
           },
-          "status": "conformance-covered",
-          "total": 12,
-          "verified": 12
+          "status": "implemented",
+          "total": 17,
+          "verified": 17
         },
         "std.report": {
           "byRung": {
@@ -2571,11 +2571,11 @@
           "verified": 8
         }
       },
-      "total": 1073,
-      "verified": 1070
+      "total": 1078,
+      "verified": 1075
     },
     "evidenceByRung": {
-      "example": 1689,
+      "example": 1694,
       "exhaustive": 15,
       "monitored": 8,
       "probabilistic": 341,
@@ -3135,9 +3135,9 @@
       "total": 547,
       "verified": 416
     },
-    "items": 2340,
+    "items": 2345,
     "unsafe": 18,
-    "verified": 1796
+    "verified": 1801
   },
   "mutation": {
     "packages": {
@@ -3540,7 +3540,7 @@
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 150,
+        "unitCases": 151,
         "unitFiles": 21
       },
       "apps/household": {
@@ -3610,7 +3610,7 @@
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 755,
+        "unitCases": 756,
         "unitFiles": 98
       },
       "packages/compiler": {
@@ -3624,8 +3624,8 @@
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 640,
-        "unitFiles": 83
+        "unitCases": 643,
+        "unitFiles": 84
       },
       "packages/ctx": {
         "conformanceCases": 152,
@@ -3950,17 +3950,17 @@
         "unitFiles": 17
       },
       "packages/std-postgres": {
-        "conformanceCases": 48,
-        "conformanceFiles": 15,
+        "conformanceCases": 62,
+        "conformanceFiles": 20,
         "exploreFiles": 0,
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 32,
+        "propertyCalls": 35,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 1,
-        "unitCases": 36,
+        "unitCases": 38,
         "unitFiles": 7
       },
       "packages/std-report": {
@@ -4161,18 +4161,18 @@
       }
     },
     "totals": {
-      "conformanceCases": 4932,
-      "conformanceFiles": 1222,
+      "conformanceCases": 4946,
+      "conformanceFiles": 1227,
       "exploreFiles": 18,
       "fails": 2,
       "otherCases": 0,
       "otherFiles": 0,
-      "propertyCalls": 2285,
+      "propertyCalls": 2288,
       "proveFiles": 23,
       "simulateFiles": 13,
       "skipTodo": 4,
-      "unitCases": 5433,
-      "unitFiles": 933
+      "unitCases": 5440,
+      "unitFiles": 934
     }
   },
   "tool": {
