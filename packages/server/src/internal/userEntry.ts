@@ -18,10 +18,10 @@ export async function userEntry(r: Req): Promise<Handled> {
   if (r.raw.headers.get("x-keel") !== "1")
     return { response: denied("x-keel header required"), route: undefined, diags: [] };
   const who = await userOf(r);
-  if (typeof who === "string") r.rq.user = who;
+  if ("user" in who) r.rq.user = who.user;
   const response =
-    typeof who === "string"
-      ? jsonResponse(200, { user: who })
+    "user" in who
+      ? jsonResponse(200, { user: who.user })
       : jsonResponse(statusOf(who.code), err(publicError(who, r.sv.mode)));
   response.headers.set("cache-control", "no-store");
   return { response, route: undefined, diags: [] };
