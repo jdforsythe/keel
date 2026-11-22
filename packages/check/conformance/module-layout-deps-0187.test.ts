@@ -23,7 +23,10 @@ const files = (a: string, b: string, aDeps: string[], bDeps: string[]): Files =>
   manifestFile({ id: b, deps: bDeps }),
   contract(b, `'${b}.home': { path: '/' }`),
   binding(b, `'${b}.home': { component: Page, layout: '${a}.frame' }`),
-  { path: "topology.ts", source: `import { topology } from '@keel/server'\nexport default topology({ web: { modules: ['${a}', '${b}'], adapter: 'node' } })\n` },
+  {
+    path: "topology.ts",
+    source: `import { topology } from '@keel/server'\nexport default topology({ web: { modules: ['${a}', '${b}'], adapter: 'node' } })\n`,
+  },
 ];
 
 test("a page of `b` naming a layout of `a`, where `a` lists `b` in `deps`, reports no E1152 and no E1153", () => {
