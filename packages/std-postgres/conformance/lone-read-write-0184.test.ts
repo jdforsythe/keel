@@ -18,7 +18,10 @@ const Counter = s.object({ n: s.int() });
 function setup() {
   const { cap, table } = fresh();
   const db = database(cap, {
-    migrations: migrationsOf(`create table ${table} (id int primary key, n int not null)`, `insert into ${table} values (1, 0)`),
+    migrations: migrationsOf(
+      `create table ${table} (id int primary key, n int not null)`,
+      `insert into ${table} values (1, 0)`,
+    ),
   });
   const plan = Array.from({ length: 8 }, () => ({ delay: 10, fault: "none" as const }));
   return { db, ctx: simCtx(cap, plan), T: sqlName(table) };

@@ -34,7 +34,10 @@ describe.skipIf(!hasPg17)("postgres 17", () => {
     const { cap, table } = fresh();
     const T = sqlName(table);
     const db = database(cap, {
-      migrations: migrationsOf(`create table ${table} (id int primary key, n int not null)`, `insert into ${table} values (1, 0)`),
+      migrations: migrationsOf(
+        `create table ${table} (id int primary key, n int not null)`,
+        `insert into ${table} values (1, 0)`,
+      ),
     });
     const mode = pg.make();
     try {

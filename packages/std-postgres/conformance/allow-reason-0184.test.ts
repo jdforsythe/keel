@@ -29,7 +29,10 @@ function setup() {
   return { db, ctx };
 }
 const callWith = (x: ReturnType<typeof setup>, opts: unknown) => async () =>
-  Reflect.apply(x.db(x.ctx).transaction, x.db(x.ctx), [(tx: { one: (q: unknown) => unknown }) => tx.one(sql(Any)`select 1 as v`), opts]);
+  Reflect.apply(x.db(x.ctx).transaction, x.db(x.ctx), [
+    (tx: { one: (q: unknown) => unknown }) => tx.one(sql(Any)`select 1 as v`),
+    opts,
+  ]);
 
 test("`allow: 'phantoms'` throws", async () => {
   await fc.assert(
