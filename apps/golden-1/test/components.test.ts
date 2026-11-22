@@ -160,9 +160,9 @@ describe("ListsPage", () => {
     expect(t.find("todos.openCount.l1").text).toBe("1 open");
     t.dispose();
   });
-  it("shows no list rows for an empty board", () => {
+  it("says there is no list yet on an empty board", () => {
     const t = render(ListsPage, { props: {} });
-    expect(t.find("todos.lists.items").text).toBe("");
+    expect(t.find("todos.lists.empty").text).toBe("No lists yet. Name one below to start.");
     t.dispose();
   });
   it("Remove hides a list behind an undo bar, and Undo shows it again", async () => {

@@ -21,7 +21,15 @@ export default function TodoRow(props: Infer<typeof Props>, ctx: Ctx) {
     void send(ctx, boardOutbox, "toggleTodo", call, { base: view.get("head"), owner: "" });
   };
   return (
-    <Box direction="row" align="center" gap="3" px="3" py="2" bg="card">
+    <Box
+      direction={{ base: "column", md: "row" }}
+      wrap="wrap"
+      align={{ base: "start", md: "center" }}
+      gap={{ base: "2", md: "3" }}
+      px="3"
+      py="2"
+      bg="card"
+    >
       <Checkbox
         id={`todos.toggle.${idPart(props.todo.id)}`}
         label={`Done: ${props.todo.title}`}
@@ -42,7 +50,6 @@ export default function TodoRow(props: Infer<typeof Props>, ctx: Ctx) {
       <Link
         id={`todos.editLink.${idPart(props.todo.id)}`}
         to={todos.href("todos.edit", { listId: props.todo.listId, todoId: props.todo.id })}
-        fg="text"
         fontSize="sm"
       >
         Edit {props.todo.title}
