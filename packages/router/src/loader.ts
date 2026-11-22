@@ -5,11 +5,14 @@ import { isolate } from "@keel/store";
 import type { Contract } from "./contract/types/Contract.ts";
 import type { Entries } from "./contract/types/Entries.ts";
 import { firstYield } from "./internal/firstYield.ts";
+import { fixedUser } from "./internal/fixedUser.ts";
 import { isSchema } from "./internal/isSchema.ts";
 import { ownValue } from "./internal/ownValue.ts";
 import { refuseSecret } from "./internal/refuseSecret.ts";
 import { withStores } from "./internal/withStores.ts";
 import { yields } from "./internal/yields.ts";
+import type { CurrentUser } from "./types/CurrentUser.ts";
+import type { LiveInput } from "./types/LiveInput.ts";
 import type { Loader } from "./types/Loader.ts";
 import type { LoaderInput } from "./types/LoaderInput.ts";
 
@@ -30,6 +33,7 @@ type Args<E, St> = {
   readonly stores: St;
   readonly signal: AbortSignal;
 };
+type LiveArgs<E, St> = Args<E, St> & { readonly currentUser: CurrentUser };
 type Stores<St> = { readonly stores?: (ctx: Ctx) => St };
 type GetIds<C> = { [K in keyof C & string]: C[K] extends { readonly method: "GET" } ? K : never }[keyof C & string];
 type LiveIds<C> = {
@@ -48,6 +52,7 @@ type Fn = (
     readonly user: string;
     readonly bearer: Secret<string> | undefined;
     readonly signal: AbortSignal;
+    readonly currentUser: CurrentUser;
   },
   ctx: Ctx,
 ) => Promise<Out<unknown>> | AsyncGenerator<Out<unknown>>;
@@ -57,7 +62,7 @@ export function loader<M extends string, C extends Entries, K extends LiveIds<C>
   contract: Contract<M, C>,
   id: K,
   decl: Stores<St>,
-  fn: (args: Args<C[K], NoInfer<St>>, ctx: Ctx) => AsyncGenerator<Out<InferOr<C[K], "output", never>>>,
+  fn: (args: LiveArgs<C[K], NoInfer<St>>, ctx: Ctx) => AsyncGenerator<Out<InferOr<C[K], "output", never>>>,
 ): Loader<K, InferOr<C[K], "output", never>, true>;
 /** An API GET entry's loader: `fn` answers a `Result` of the entry's `output`. */
 export function loader<M extends string, C extends Entries, K extends GetIds<C>, St = undefined>(
@@ -76,7 +81,9 @@ export function loader<M extends string, C extends Entries, K extends ViewIds<C>
 /**
  * Declare the loader of entry `id` of `contract` (k.contract Handlers, k.server): `fn` gets `{ params, search, url,
  * caller, user, bearer, stores, signal }` typed from the entry (`search` is an API entry's `query`; a layout's
- * `params` and `search` are the matched route's, `unknown`) and `ctx`, and is never annotated. On an API GET `decl`
+ * `params` and `search` are the matched route's, `unknown`) and `ctx`, and is never annotated; a live loader's args
+ * also have `currentUser()` (k.user), which the server binds to the identity source and which answers `user` when
+ * the caller gives none (`run`, a direct call). On an API GET `decl`
  * is `{ stores? }` and `fn` answers the entry's `output`, as an async generator (a live loader) on an `events: true`
  * entry only; on a page or layout `decl` is `{ output, stores? }`, and an `output` holding `s.secret` throws E1113.
  * `manifest` binds it under `id` only (E1515).
@@ -96,7 +103,10 @@ export function loader(
   const { stores } = decl;
   const run = (args: LoaderInput, ctx: Ctx): Promise<Out<unknown>> =>
     withStores(stores, args.stores, ctx, (st) =>
-      firstYield((signal) => fn({ ...args, user: args.user ?? "", bearer: args.bearer, stores: st, signal }, ctx)),
+      firstYield((signal) => {
+        const user = args.user ?? "";
+        return fn({ ...args, user, bearer: args.bearer, stores: st, signal, currentUser: fixedUser(user) }, ctx);
+      }),
     );
   const base = {
     kind: "keel.loader" as const,
@@ -109,12 +119,14 @@ export function loader(
   if (Reflect.get(fn, Symbol.toStringTag) !== "AsyncGeneratorFunction") return Object.freeze(base);
   return Object.freeze({
     ...base,
-    live: (a: LoaderInput & { readonly signal: AbortSignal }, ctx: Ctx) =>
-      a.stores !== undefined || stores === undefined
-        ? yields(fn({ ...a, user: a.user ?? "", bearer: a.bearer, stores: a.stores }, ctx))
-        : liveWithStores(stores, ctx, (st) =>
-            yields(fn({ ...a, user: a.user ?? "", bearer: a.bearer, stores: st }, ctx)),
-          ),
+    live: (a: LiveInput, ctx: Ctx) => {
+      const user = a.user ?? "";
+      const currentUser = a.currentUser ?? fixedUser(user);
+      const at = { ...a, user, bearer: a.bearer, currentUser };
+      return a.stores !== undefined || stores === undefined
+        ? yields(fn({ ...at, stores: a.stores }, ctx))
+        : liveWithStores(stores, ctx, (st) => yields(fn({ ...at, stores: st }, ctx)));
+    },
   });
 }
 

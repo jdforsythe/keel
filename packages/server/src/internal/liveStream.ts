@@ -1,7 +1,7 @@
 import { scope } from "@keel/reactive";
 import type { Loader } from "@keel/router";
 import type { Match } from "@keel/router/internal";
-import { publicError } from "@keel/router/internal";
+import { fixedUser, judgedUser, publicError } from "@keel/router/internal";
 import { type KeelError, type Result, err, ok } from "@keel/schema";
 import { isolate } from "@keel/store";
 import type { Context } from "hono";
@@ -13,6 +13,7 @@ import { attempted } from "./attempted.ts";
 import { busy } from "./busy.ts";
 import { caught } from "./caught.ts";
 import { diagLine } from "./diagLine.ts";
+import { identified } from "./identified.ts";
 import { openFactory } from "./openFactory.ts";
 import { scrubbedCause } from "./scrubbedCause.ts";
 import { scrubbedDiag } from "./scrubbedDiag.ts";
@@ -29,8 +30,11 @@ const HEARTBEAT_MS = 15_000;
  * scope is disposed when the stream ends. A throw of `fn` ends it with one `data:` line, its `keel.unexpected` `err`, and a
  * `keel.unexpected` diag written to `log`, both without the request's `.pii()` values and revealed secrets (`scrubbedCause`, `scrubbedDiag`; past a scrub cap the diag keeps `loader <id> threw: `). Written with Hono's `streamSSE`; `cache-control: no-store`. With
  * `maxStreams` streams open it is 503 `keel.busy` and opens nothing; a stream holds its place until it ends.
+ * `fn`'s args have `currentUser()` (k.user): `identify` run again on the opening request without its body
+ * (`identified`), `""` for a throw, an invalid answer or no answer in 5,000 ms; with no identity source `""`, and for
+ * a stream whose `user` a verified `x-keel-user` gave (`asserted`), that `user`, with no `identify` run.
  */
-export function liveStream(r: Req, m: Match & { kind: "route" }, live: Loader, c: Context): Handled {
+export function liveStream(r: Req, m: Match & { kind: "route" }, live: Loader, c: Context, asserted: boolean): Handled {
   const { sv, raw } = r;
   if (sv.streams.open >= sv.maxStreams) return { response: busy(sv.maxStreams), route: m.route.id, diags: [] };
   const rq: RequestScope = { ...r.rq, scope: scope(() => undefined, { detached: true }), held: new Map() };
@@ -38,6 +42,13 @@ export function liveStream(r: Req, m: Match & { kind: "route" }, live: Loader, c
   const ac = new AbortController();
   const stop = (): void => ac.abort();
   const ended = new Promise<undefined>((resolve) => ac.signal.addEventListener("abort", () => resolve(undefined)));
+  const opener = r.rq.caller.set === "" ? r.rq.caller.id : "";
+  // With nothing to ask, the answer is the stream's own `user`, `fixed`: no `identify`, no bound on the clock, and a
+  // caller that reads `fixed` runs no check at all.
+  const currentUser =
+    asserted || sv.identity === undefined
+      ? fixedUser(rq.user)
+      : judgedUser(() => identified(sv, raw, opener).then((answer) => (answer.kind === "user" ? answer.user : "")));
   sv.streams.open++;
   const run = async (stream: SSEStreamingApi): Promise<void> => {
     const halt = (): void => {
@@ -64,6 +75,7 @@ export function liveStream(r: Req, m: Match & { kind: "route" }, live: Loader, c
           user: rq.user,
           stores,
           signal: ac.signal,
+          currentUser,
         };
         it = live
           .live?.(rq.bearer === undefined ? args : { ...args, bearer: rq.bearer }, sv.ctx)
