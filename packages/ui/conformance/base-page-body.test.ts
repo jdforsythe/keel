@@ -13,7 +13,7 @@ const PAGE = { page: { fg: "fg", bg: "bg" } };
 const roles = Object.keys(ROLES) as (keyof typeof ROLES)[];
 
 describe("k.ui: base.page and the role sets compile into the keel.base layer", () => {
-  test.skip("`base.page { fg: 'fg', bg: 'bg' }` puts the tokens' color and background on `body`, in the `keel.base` layer", () => {
+  test("`base.page { fg: 'fg', bg: 'bg' }` puts the tokens' color and background on `body`, in the `keel.base` layer", () => {
     const { css } = compileWith({ base: PAGE }, []);
     const layer = baseLayer(css);
     expect(layer).not.toBeNull();
@@ -22,7 +22,7 @@ describe("k.ui: base.page and the role sets compile into the keel.base layer", (
     expect(body).toMatch(/background(-color)?:var\(--k-color-bg\)/);
   });
 
-  test.skip("the layer comes after the custom properties and holds `[hidden]{display:none!important}`", () => {
+  test("the layer comes after the custom properties and holds `[hidden]{display:none!important}`", () => {
     const { css } = compileWith({ base: PAGE }, []);
     const n = norm(css);
     expect(n.indexOf(":root{")).toBeGreaterThanOrEqual(0);
@@ -30,7 +30,7 @@ describe("k.ui: base.page and the role sets compile into the keel.base layer", (
     expect(baseLayer(css)).toContain("[hidden]{display:none!important}");
   });
 
-  test.skip("a `fg` at a use wins: its atomic rule is outside the layer, the page's color rule inside it", () => {
+  test("a `fg` at a use wins: its atomic rule is outside the layer, the page's color rule inside it", () => {
     const { classes, css } = compileWith({ base: PAGE }, [{ props: { fg: "accent" } }]);
     const fg = (classes[0] ?? []).find((c) => c.startsWith("k-fg-"));
     expect(fg).toBe("k-fg-accent");
@@ -39,7 +39,7 @@ describe("k.ui: base.page and the role sets compile into the keel.base layer", (
     expect(outsideBaseLayer(css)).not.toContain("body{");
   });
 
-  test.skip("each `base` set is on its role's selector in the layer (heading, link, button, control, label, fieldError, summary)", () => {
+  test("each `base` set is on its role's selector in the layer (heading, link, button, control, label, fieldError, summary)", () => {
     fc.assert(
       fc.property(fc.constantFrom(...roles), (role) => {
         const { css } = compileWith({ base: { [role]: ROLES[role] } }, []);
@@ -53,14 +53,14 @@ describe("k.ui: base.page and the role sets compile into the keel.base layer", (
     );
   });
 
-  test.skip("a role's `states` sit under the role selector (`.k-button:hover`)", () => {
+  test("a role's `states` sit under the role selector (`.k-button:hover`)", () => {
     const { css } = compileWith({ base: { button: ROLES.button } }, []);
     const layer = baseLayer(css) ?? "";
     const hover = ruleBody(layer, ".k-button:hover") ?? "";
     expect(hover).toMatch(/background(-color)?:var\(--k-color-accent\)/);
   });
 
-  test.skip("`page` is on `body` and the roles are not (`body` holds no `.k-*` selector)", () => {
+  test("`page` is on `body` and the roles are not (`body` holds no `.k-*` selector)", () => {
     const { css } = compileWith({ base: { page: ROLES.label } }, []);
     const layer = baseLayer(css) ?? "";
     expect(ruleBody(layer, "body")).not.toBeNull();

@@ -16,7 +16,7 @@ const errorOf = (doc: Document): Element | null =>
   doc.getElementById(doc.getElementById(FIELD_ID)?.getAttribute("aria-describedby") ?? "");
 
 describe("k.ui: part styles on an Input with a field", () => {
-  it.skip("`styles={{ label: { fg: 'accent' }, error: { fg: 'error' } }}` puts those classes on its `<label>` and its error element", async () => {
+  it("`styles={{ label: { fg: 'accent' }, error: { fg: 'error' } }}` puts those classes on its `<label>` and its error element", async () => {
     const doc = await served();
     const label = doc.querySelector(`label[for="${FIELD_ID}"]`);
     expect(label).not.toBeNull();
@@ -28,14 +28,14 @@ describe("k.ui: part styles on an Input with a field", () => {
     expect(error?.classList.contains("k-fg-accent")).toBe(false);
   });
 
-  it.skip("the label and the error element carry their role classes `k-label` and `k-error`, and the control `k-control`", async () => {
+  it("the label and the error element carry their role classes `k-label` and `k-error`, and the control `k-control`", async () => {
     const doc = await served();
     expect(doc.querySelector(`label[for="${FIELD_ID}"]`)?.classList.contains("k-label")).toBe(true);
     expect(errorOf(doc)?.classList.contains("k-error")).toBe(true);
     expect(doc.getElementById(FIELD_ID)?.classList.contains("k-control")).toBe(true);
   });
 
-  it.skip("no element of the document has a `style` attribute", async () => {
+  it("no element of the document has a `style` attribute", async () => {
     const doc = await served();
     expect(doc.querySelectorAll("[style]")).toHaveLength(0);
   });

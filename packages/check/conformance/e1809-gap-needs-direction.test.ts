@@ -24,11 +24,11 @@ const e1809 = (source: string, tokens?: object) =>
   );
 
 describe("k.ui: E1809 gap with no direction", () => {
-  test.skip('`<Box gap="2">` with no `direction` is E1809', () => {
+  test('`<Box gap="2">` with no `direction` is E1809', () => {
     expect(e1809(page('gap="2"'))).toHaveLength(1);
   });
 
-  test.skip('its fix adds `direction="column"`', () => {
+  test('its fix adds `direction="column"`', () => {
     const source = page('gap="2"');
     const fix = e1809(source)[0]?.fix;
     expect(typeof fix).toBe("string");
@@ -46,37 +46,37 @@ describe("k.ui: E1809 gap with no direction", () => {
     }
   });
 
-  test.skip("with `direction={{ base: 'column', md: 'row' }}` it is clean", () => {
+  test("with `direction={{ base: 'column', md: 'row' }}` it is clean", () => {
     expect(e1809(page(`gap="2" direction={{ base: 'column', md: 'row' }}`))).toEqual([]);
   });
 
-  test.skip("`gap={{ base: '2' }}` with `direction={{ md: 'row' }}` is E1809: direction is not set at the smallest breakpoint", () => {
+  test("`gap={{ base: '2' }}` with `direction={{ md: 'row' }}` is E1809: direction is not set at the smallest breakpoint", () => {
     expect(e1809(page(`gap={{ base: '2' }} direction={{ md: 'row' }}`))).toHaveLength(1);
   });
 
-  test.skip("a computed `direction` counts", () => {
+  test("a computed `direction` counts", () => {
     const src = `${HEAD}export default function C(props: { dir: 'row' | 'column' }) { return <Box gap="2" direction={props.dir}><Text>a</Text></Box> }\n`;
     expect(e1809(src)).toEqual([]);
   });
 
-  test.skip("a look that sets `direction` makes `gap` clean", () => {
+  test("a look that sets `direction` makes `gap` clean", () => {
     const tokens = { ...TOKENS, look: { stack: { direction: "column" } } };
     expect(e1809(page('look="stack" gap="2"'), tokens)).toEqual([]);
   });
 
-  test.skip("a look with `gap` and no `direction` is E1809", () => {
+  test("a look with `gap` and no `direction` is E1809", () => {
     const tokens = { ...TOKENS, look: { stack: { gap: "2" } } };
     expect(e1809(page('look="stack"'), tokens).length).toBeGreaterThan(0);
   });
 
-  test.skip("a `base` set with `gap` and no `direction` is E1809, and clean with one", () => {
+  test("a `base` set with `gap` and no `direction` is E1809, and clean with one", () => {
     const bad = { ...TOKENS, base: { page: { gap: "2" } } };
     const clean = { ...TOKENS, base: { page: { gap: "2", direction: "column" } } };
     expect(e1809(page(""), bad).length).toBeGreaterThan(0);
     expect(e1809(page(""), clean)).toEqual([]);
   });
 
-  test.skip("any gap token is E1809 without a `direction` and clean with any `direction` at base (property)", () => {
+  test("any gap token is E1809 without a `direction` and clean with any `direction` at base (property)", () => {
     fc.assert(
       fc.property(fc.constantFrom("1", "2"), fc.constantFrom("row", "column", "row-reverse"), (gap, direction) => {
         expect(e1809(page(`gap="${gap}"`))).toHaveLength(1);
@@ -87,7 +87,7 @@ describe("k.ui: E1809 gap with no direction", () => {
     );
   });
 
-  test.skip("a `direction` with no `gap`, and neither prop, are clean", () => {
+  test("a `direction` with no `gap`, and neither prop, are clean", () => {
     expect(e1809(page('direction="row"'))).toEqual([]);
     expect(e1809(page(""))).toEqual([]);
   });

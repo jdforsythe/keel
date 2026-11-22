@@ -18,37 +18,37 @@ const colors = (focus: string, bg: string) => ({
 const build = (focus: string, bg: string) => () => withGroups(colors(focus, bg));
 
 describe("k.a11y: the base.focus ring", () => {
-  test.skip("with `base.focus: 'fg'` the layer gives `:focus-visible` a 2px solid outline in `fg` at 2px offset", () => {
+  test("with `base.focus: 'fg'` the layer gives `:focus-visible` a 2px solid outline in `fg` at 2px offset", () => {
     const { css } = compileWith({ base: { focus: "fg" } }, []);
     const layer = baseLayer(css) ?? "";
     expect(layer).toMatch(/:focus-visible\{[^}]*outline:2px solid var\(--k-color-fg\)/);
     expect(layer).toMatch(/:focus-visible\{[^}]*outline-offset:2px/);
   });
 
-  test.skip("a pointer click shows no ring: the layer has no `:focus` outline, only `:focus-visible`", () => {
+  test("a pointer click shows no ring: the layer has no `:focus` outline, only `:focus-visible`", () => {
     const { css } = compileWith({ base: { focus: "fg" } }, []);
     const layer = baseLayer(css) ?? "";
     expect(layer).not.toMatch(/:focus(?!-visible)[^{]*\{[^}]*outline/);
   });
 
-  test.skip("without `base.focus` the layer has no outline rule, and the platform's indicator stays", () => {
+  test("without `base.focus` the layer has no outline rule, and the platform's indicator stays", () => {
     const { css } = compileWith({ base: { page: { fg: "fg" } } }, []);
     expect(baseLayer(css) ?? "").not.toContain("outline");
   });
 
-  test.skip("a `base.focus` color at 2:1 against `base.page`'s `bg` is E1807", () => {
+  test("a `base.focus` color at 2:1 against `base.page`'s `bg` is E1807", () => {
     // #949494 on #ffffff is 3.03:1; #b0b0b0 on #ffffff is 2.17:1; #bbbbbb is 1.92:1.
     expect(ratio("#bbbbbb", "#ffffff")).toBeLessThan(3);
     expect(codeOf(build("#bbbbbb", "#ffffff"))).toBe("E1807");
     expect(TokenSchema.parse(JSON.parse(JSON.stringify(colors("#bbbbbb", "#ffffff")))).ok).toBe(false);
   });
 
-  test.skip("a `base.focus` color at 3:1 or more passes", () => {
+  test("a `base.focus` color at 3:1 or more passes", () => {
     expect(ratio("#767676", "#ffffff")).toBeGreaterThanOrEqual(3);
     expect(codeOf(build("#767676", "#ffffff"))).toBe(null);
   });
 
-  test.skip("E1807 exactly when the ratio against `base.page`'s `bg` is under 3 (property)", () => {
+  test("E1807 exactly when the ratio against `base.page`'s `bg` is under 3 (property)", () => {
     fc.assert(
       fc.property(fc.integer({ min: 0, max: 255 }), fc.integer({ min: 0, max: 255 }), (a, b) => {
         const focus = hex(a);
@@ -59,7 +59,7 @@ describe("k.a11y: the base.focus ring", () => {
     );
   });
 
-  test.skip("it is judged in either scheme: a `{ light, dark }` focus that fails in dark only is E1807", () => {
+  test("it is judged in either scheme: a `{ light, dark }` focus that fails in dark only is E1807", () => {
     const pair = (): unknown =>
       withGroups({
         color: { fg: { light: "#000000", dark: "#222222" }, bg: { light: "#ffffff", dark: "#111111" } },

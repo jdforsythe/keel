@@ -13,7 +13,7 @@ const PRIMARY = { bg: "accent", fg: "bg", px: "2", states: { hover: { bg: "fg" }
 const LOOK = { look: { primary: PRIMARY } };
 
 describe("k.ui: look sets and the element's own props", () => {
-  test.skip('`<Button look="primary" px="1">` has the look\'s classes for every prop but `px`, and `k-px-1`', () => {
+  test('`<Button look="primary" px="1">` has the look\'s classes for every prop but `px`, and `k-px-1`', () => {
     const { classes } = compileWith(LOOK, [{ props: { px: "1" }, look: "primary" }]);
     const own = classes[0] ?? [];
     expect(own).toContain("k-px-1");
@@ -22,12 +22,12 @@ describe("k.ui: look sets and the element's own props", () => {
     expect(own).not.toContain("k-px-2");
   });
 
-  test.skip('`look="nope"` is E1801', () => {
+  test('`look="nope"` is E1801', () => {
     expect(codeOf(() => compileWith(LOOK, [{ props: {}, look: "nope" }]))).toBe("E1801");
     expect(codeOf(() => compileWith(LOOK, [{ props: {}, look: "primary" }]))).toBe(null);
   });
 
-  test.skip("the element's own `px` replaces the look's, for any two space tokens (property)", () => {
+  test("the element's own `px` replaces the look's, for any two space tokens (property)", () => {
     fc.assert(
       fc.property(fc.constantFrom("0", "1", "2", "3"), fc.constantFrom("0", "1", "2", "3"), (mine, theirs) => {
         const { classes } = compileWith({ look: { l: { px: theirs, bg: "accent" } } }, [

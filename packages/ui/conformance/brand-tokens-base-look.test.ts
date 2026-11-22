@@ -37,22 +37,22 @@ describe("k.a11y and k.ui: brandTokens carries base and look, and its focus ring
     );
   });
 
-  test.skip("`brandTokens.base.focus` is `text`", () => {
+  test("`brandTokens.base.focus` is `text`", () => {
     expect(group("base")["focus"]).toBe("text");
   });
 
-  test.skip("`brandTokens.base` holds a set for each of page, heading, link, button, control, label, fieldError and summary", () => {
+  test("`brandTokens.base` holds a set for each of page, heading, link, button, control, label, fieldError and summary", () => {
     const base = group("base");
     for (const role of ["page", "heading", "link", "button", "control", "label", "fieldError", "summary"]) {
       expect(isRecord(base[role]), role).toBe(true);
     }
   });
 
-  test.skip("`brandTokens.look` names `primary`, `control` and `secondary`", () => {
+  test("`brandTokens.look` names `primary`, `control` and `secondary`", () => {
     expect(Object.keys(group("look")).sort()).toEqual(["control", "primary", "secondary"]);
   });
 
-  test.skip("`brandTokens` passes `TokenSchema` with both groups", () => {
+  test("`brandTokens` passes `TokenSchema` with both groups", () => {
     expect(TokenSchema.parse(brandTokens).ok).toBe(true);
   });
 });

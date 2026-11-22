@@ -8,14 +8,14 @@ import { SEED } from "./fixtures.ts";
 import { baseLayer, compileWith, ruleBody } from "./base-support.ts";
 
 describe("k.ui: a long unbroken string does not widen the page", () => {
-  test.skip("the `keel.base` layer holds `body` with `overflow-wrap: anywhere`", () => {
+  test("the `keel.base` layer holds `body` with `overflow-wrap: anywhere`", () => {
     const { css } = compileWith({}, []);
     const layer = baseLayer(css);
     expect(layer).not.toBeNull();
     expect(ruleBody(layer ?? "", "body") ?? "").toContain("overflow-wrap:anywhere");
   });
 
-  test.skip("it does so with or without a `base.page` set, which adds to the `body` rule and does not replace it", () => {
+  test("it does so with or without a `base.page` set, which adds to the `body` rule and does not replace it", () => {
     fc.assert(
       fc.property(fc.boolean(), (withPage) => {
         const { css } = compileWith(withPage ? { base: { page: { fg: "fg", bg: "bg" } } } : {}, []);

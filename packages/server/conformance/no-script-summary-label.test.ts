@@ -29,7 +29,7 @@ const messageOf = (doc: Document): string => {
 };
 
 describe("k.forms: the no-script 422 summary names the field's label, not its path", () => {
-  it.skip("a post failing `amount` (an `Input` labelled `Amount`) answers 422 with a `.k-summary` item reading `Amount: <message>` whose link targets `#<field id>`", async () => {
+  it("a post failing `amount` (an `Input` labelled `Amount`) answers 422 with a `.k-summary` item reading `Amount: <message>` whose link targets `#<field id>`", async () => {
     const { status, doc } = await served("Amount");
     expect(status).toBe(422);
     const summary = doc.querySelector(".k-summary");
@@ -43,7 +43,7 @@ describe("k.forms: the no-script 422 summary names the field's label, not its pa
     expect(doc.getElementById(FIELD_ID)).not.toBeNull();
   });
 
-  it.skip('the summary is `role="alert"` and comes before the page content', async () => {
+  it('the summary is `role="alert"` and comes before the page content', async () => {
     const { doc } = await served("Amount");
     const summary = doc.querySelector(".k-summary");
     expect(summary?.getAttribute("role")).toBe("alert");
@@ -52,7 +52,7 @@ describe("k.forms: the no-script 422 summary names the field's label, not its pa
     expect(((summary?.compareDocumentPosition(root ?? doc) ?? 0) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0).toBe(true);
   });
 
-  it.skip("the link text is the label, never the path `amount`, for any label (property)", async () => {
+  it("the link text is the label, never the path `amount`, for any label (property)", async () => {
     await fc.assert(
       fc.asyncProperty(label, async (text) => {
         const { status, doc } = await served(text);
