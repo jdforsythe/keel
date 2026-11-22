@@ -17,7 +17,7 @@ keel codemod place digest --to jobs --adapter node
 ```
 
 **Generators.** Each emits spec-conformant files only:
-- `project`: `package.json`, `.gitignore`, `tokens.ts`, `topology.ts` (`--adapter client|node|static`, default `client`), `vite.config.ts`, module `app`, generated turbo, CI and deploy files (k.deploy), agent files (k.explain); `--workspace` (an app inside the Keel monorepo) adds `index.html` and `vitest.config.ts` instead of turbo, CI, agent files. `keel scaffold project <name>` writes under `<name>/`.
+- `project`: `package.json`, `.gitignore`, `tokens.ts`, `topology.ts` (`--adapter client|node|static`, default `client`), `vite.config.ts`, module `app`, generated turbo, CI and deploy files (k.deploy), agent files (k.explain); `--workspace` (an app inside the Keel monorepo) adds `vitest.config.ts` instead of turbo, CI, agent files. No `index.html`; the deployable has `styles: ['@keel/ui/fonts']`. `keel scaffold project <name>` writes under `<name>/`.
 - `module`: `modules/<id>/module.ts`, `<id>.contract.ts` and `routes.ts`; adds the module to `topology.ts`.
 - `route`: contract entry and binding (k.contract), `*.server.ts` loader, page component, route test; with `--api` (and `--method`, default `GET`) an API entry, its handler and a JSON request test, no component. Input `{ id, path, file?, api?, method? }`; `method` is `GET`, `POST`, `PUT`, `PATCH` or `DELETE`, and without `api` it is E1052.
 - `component`: `<Name>.tsx` with a `Props` schema and a property test (k.testing).
@@ -51,3 +51,4 @@ keel codemod place digest --to jobs --adapter node
 - `scaffold project` writes a <= 600-token block naming `keel docs`, `keel explain`, skill paths, without `pnpm spec`, `spec/` or `--workspace`; `CLAUDE.md` `@AGENTS.md\n`; copies equal to `keel docs <name>`; with `--workspace`, none.
 - `--sync` restores an edited block and copy, keeps text outside the block, reruns as no-op; creates absent files; keeps a `CLAUDE.md`, linked or not.
 - `keel check`: fresh, no W1356; an edited or removed copy or edited block, one W1356 there; no block, none. Unclosed block: `--sync` E1355, exit 1, writes nothing.
+- `keel scaffold project p` and `keel scaffold project p --workspace` write no `index.html`, and `topology.ts`'s deployable has `styles: ['@keel/ui/fonts']`.

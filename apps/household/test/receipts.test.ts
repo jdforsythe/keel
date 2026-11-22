@@ -2,15 +2,14 @@ import { properties, renderRoute } from "@keel/testing";
 import { expect, it } from "vitest";
 import BookPage from "../modules/receipts/BookPage.tsx";
 import { ReceiptsText } from "../modules/receipts/ReceiptsText.schema.ts";
-import { routes } from "../modules/receipts/routes.ts";
-import { served } from "./serve.ts";
+import { served, webRoutes } from "./serve.ts";
 
 type Member = Awaited<ReturnType<typeof served>>;
 
 /** The receipts book in `locale`, opened by the signed-in member of `at` (a fresh app when left out). */
 const open = async (locale: "en-US" | "de-DE", at?: Member) => {
-  const { ctx, user } = at ?? (await served(5));
-  return renderRoute("receipts.book", { routes, params: { locale }, ctx, user });
+  const { ctx, app } = at ?? (await served(5));
+  return renderRoute("receipts.book", { routes: webRoutes, params: { locale }, ctx, app });
 };
 
 it("starts empty, in English, with a link to the German page", async () => {

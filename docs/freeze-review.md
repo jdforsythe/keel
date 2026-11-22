@@ -9,7 +9,7 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.schema | 15 | **conformance-covered** | none |
 | k.formats | 1 | **conformance-covered** | none |
 | k.reactive | 20 | **conformance-covered** | none |
-| k.store | 23 | **conformance-covered** | none |
+| k.store | 25 | implemented | clause 25 (a view store seeded from loader data, through `renderRoute` and `resumeDocument`): its tests quote the RFC's wording, not the clause |
 | k.ctx | 18 | **conformance-covered** | none |
 | k.errors | 13 | **conformance-covered** | none |
 | k.compiler | 22 | **conformance-covered** | none |
@@ -29,9 +29,9 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.cli | 19 | **conformance-covered** | none |
 | k.module | 14 | **conformance-covered** | none |
 | k.scaffold | 14 | implemented | clause 11 (`scaffold route` with `method` and no `api` is E1052) and clause 14 (the W1356 managed-block check): no cited test |
-| k.testing | 14 | **conformance-covered** | none |
+| k.testing | 18 | **conformance-covered** | none |
 | k.model | 7 | **conformance-covered** | none |
-| k.sim | 10 | **conformance-covered** | none |
+| k.sim | 11 | **conformance-covered** | none |
 | k.ledger | 11 | **conformance-covered** | none |
 | k.sync | 14 | **conformance-covered** | none |
 | k.deploy | 11 | **conformance-covered** | none |
@@ -158,6 +158,6 @@ Golden apps: `apps/golden-1` and `apps/golden-2` have converged evals (`evals/re
 
 ## Status
 
-No section is `frozen`. The kernel is provisionally frozen: a kernel change goes through an RFC with an ADR, a conformance update and a migration note, and the `frozen` flip waits until the stdlib stages have exercised the kernel (`tasks/0034-freeze/PLAN.md`). k.parity and std.db are `proposed`; k.docs, k.host-code, k.mount-scope, k.roles, k.scaffold, std.capacitor and std.tauri are `implemented`; the other 93 of 102 are `conformance-covered`.
+No section is `frozen`. The kernel is provisionally frozen: a kernel change goes through an RFC with an ADR, a conformance update and a migration note, and the `frozen` flip waits until the stdlib stages have exercised the kernel (`tasks/0034-freeze/PLAN.md`). k.parity and std.db are `proposed`; k.docs, k.host-code, k.mount-scope, k.roles, k.scaffold, k.store, std.capacitor and std.tauri are `implemented`; the other 92 of 102 are `conformance-covered`.
 
 verified: 68d910b9bf61e79f5f3a523d5bc0c8f4b4419ccc

@@ -440,6 +440,13 @@ const ROWS: readonly Row[] = [
     "keep it s.secret; reveal where used (E1105), never into a payload or state",
     "k.store",
   ],
+  [
+    "E1304",
+    "a tx call that runs while a component builds",
+    "The write throws E1201 at render. Static, partial: the component body and For, If, Match, Case or Boundary function children; a call into a helper is not followed.",
+    "create the view store with the data as initial: store(S, { items: props.data.items }, { id }); or call tx in an event handler",
+    "k.store",
+  ],
   ["E1351", "target id already exists", "", "use a codemod to change the existing item", "k.scaffold"],
   [
     "E1352",
@@ -1083,6 +1090,20 @@ const ROWS: readonly Row[] = [
     "Z3 can abort or hang when its caller is a worker; run the test in a process.",
     'test: { pool: "forks" }',
     "k.prove",
+  ],
+  [
+    "E1722",
+    "renderRoute given app with state or shell",
+    "With app the page comes from the server, so test module stores and a native shell have no meaning; nothing is requested.",
+    "seed server state through ctx.storage, as createApp reads it; drop state and shell",
+    "k.testing",
+  ],
+  [
+    "W1723",
+    "a literal renderRoute id of a node deployable's module, with no app",
+    "The page renders through a client router, which a built node page never has, so a form's answer document goes untested. Literal ids only.",
+    "const app = await createApp({ topology, routes, ctx }); renderRoute(id, { routes, app, ctx })",
+    "k.testing",
   ],
   [
     "E1751",

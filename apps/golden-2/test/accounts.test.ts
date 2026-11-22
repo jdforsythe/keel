@@ -1,7 +1,7 @@
 import { createCtx } from "@keel/ctx";
 import { NoRows, sql } from "@keel/std-postgres";
 import { tokens } from "@keel/std-tokens/server";
-import { render, renderRoute, resumeDocument } from "@keel/testing";
+import { render, renderRoute } from "@keel/testing";
 import { describe, expect, it } from "vitest";
 import mount from "../identity.ts";
 import { AccountData } from "../modules/accounts/AccountData.schema.ts";
@@ -198,7 +198,9 @@ describe("account pages", () => {
   });
 
   it("the pages pass the accessibility checks as routes, and tab through their fields in order", async () => {
-    const up = await renderRoute("accounts.signup", { routes, params: { locale: "ja-JP" } });
+    const ctx = apiCtx(52);
+    const { app } = await accountsApp(ctx);
+    const up = await renderRoute("accounts.signup", { routes, params: { locale: "ja-JP" }, ctx, app });
     expect(up.focusOrder()).toEqual([
       "accounts.signupForm:name",
       "accounts.signupForm:email",
@@ -211,13 +213,17 @@ describe("account pages", () => {
       routes,
       params: { locale: "en-US" },
       search: { error: "credentials" },
+      ctx,
+      app,
     });
     expect(signin.find("accounts.signinError").text).toBe(enText.errorCredentials);
     signin.dispose();
   });
 
   it("validates on the client and the browser posts only the named fields, to the mount, never into a URL", async () => {
-    const page = await renderRoute("accounts.signin", { routes, params: { locale: "de-DE" } });
+    const ctx = apiCtx(53);
+    const { app } = await accountsApp(ctx);
+    const page = await renderRoute("accounts.signin", { routes, params: { locale: "de-DE" }, ctx, app });
     await page.fire("accounts.signinForm:email", { type: "input", value: EMAIL });
     await page.fire("accounts.signinForm:password", { type: "input", value: "short" });
     await page.fire("accounts.signinSubmit", { type: "click" });
@@ -237,7 +243,7 @@ describe("account pages", () => {
 });
 
 describe("placement", () => {
-  /** The sign-up page's documents for the same typing, in a client router and on the page `createApp` served. */
+  /** The sign-up page's documents: first after typing an invalid email, then after correcting it. */
   async function typed(h: {
     fire(id: string, e: { type: string; value?: string }): Promise<unknown>;
     documents(): readonly unknown[];
@@ -252,19 +258,14 @@ describe("placement", () => {
     return { invalid, valid: [...h.documents()] };
   }
 
-  it("the sign-up page posts the same document from a client router and from the node deployable's served page", async () => {
-    const client = await renderRoute("accounts.signup", { routes, params: { locale: "en-US" } });
-    const inClient = await typed(client);
-    client.dispose();
-    const { app } = await accountsApp(apiCtx(51));
-    const res = await app.fetch(new Request("http://localhost/account/signup", { headers: { accept: "text/html" } }));
-    expect(res.status).toBe(200);
-    const served = await resumeDocument(await res.text(), { routes });
+  it("the node deployable's sign-up page posts nothing while invalid, then only the named fields to the mount", async () => {
+    const ctx = apiCtx(51);
+    const { app } = await accountsApp(ctx);
+    const served = await renderRoute("accounts.signup", { routes, params: { locale: "en-US" }, ctx, app });
     const onNode = await typed(served);
     served.dispose();
-    expect(inClient.invalid).toEqual([]);
-    expect(onNode).toEqual(inClient);
-    expect(inClient.valid).toEqual([
+    expect(onNode.invalid).toEqual([]);
+    expect(onNode.valid).toEqual([
       {
         method: "POST",
         url: mount.href("/sign-up/email", { locale: "en-US" }),
