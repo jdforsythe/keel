@@ -18,7 +18,7 @@ test("With `app`, a valid submit whose action answers `keel.fields` `{ amount: '
       const opts = { routes, ctx, app };
       const h = await renderRoute("f.page", opts);
       await h.fire("f.amount", { type: "input", value });
-      await h.fire("f.form", { type: "submit" });
+      await h.fire("f.save", { type: "click" });
       expect(h.a11y("f.amount").state.invalid).toBe(true);
       expect(h.find("f.shown").text).toBe(value);
       expect(h.find("f.error").text).toBe(MESSAGE);
@@ -39,7 +39,7 @@ test("With `app`, an invalid submit shows the schema error and reaches no action
   const opts = { routes, ctx, app };
   const h = await renderRoute("f.page", opts);
   await h.fire("f.amount", { type: "input", value: "" });
-  await h.fire("f.form", { type: "submit" });
+  await h.fire("f.save", { type: "click" });
   expect(h.a11y("f.amount").state.invalid).toBe(true);
   expect(h.find("f.error").text).not.toBe("");
   expect(h.find("f.error").text).not.toBe(MESSAGE);

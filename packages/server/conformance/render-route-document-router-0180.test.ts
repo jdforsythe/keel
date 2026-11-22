@@ -13,7 +13,7 @@ test("The same page without `app` records no document on a submit, and the `keel
       reset("fields");
       const h = await renderRoute("f.page", { routes, ctx: simCtx() });
       await h.fire("f.amount", { type: "input", value });
-      await h.fire("f.form", { type: "submit" });
+      await h.fire("f.save", { type: "click" });
       expect(h.documents()).toEqual([]);
       expect(control.posts).toBe(1);
       expect(h.find("f.error").text).toBe(MESSAGE);

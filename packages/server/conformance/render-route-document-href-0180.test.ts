@@ -15,7 +15,7 @@ test("With `app`, an action's `ok(href)` leaves `route().id` the target's, `loca
       const opts = { routes, ctx, app };
       const h = await renderRoute("f.page", opts);
       await h.fire("f.amount", { type: "input", value });
-      await h.fire("f.form", { type: "submit" });
+      await h.fire("f.save", { type: "click" });
       expect(h.route().id).toBe("f.done");
       expect(h.location().entries).toBe(2);
       expect(control.doneLoads).toBe(1);
