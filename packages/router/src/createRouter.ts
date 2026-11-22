@@ -17,10 +17,11 @@ import type { StateOf } from "./types/StateOf.ts";
  * unless it is `dev`, a `keel.unexpected` the default alert, an `errorElement` or a `Form` gets has message
  * `unexpected` and data `{}`, as from the server; observers and `mount`'s `onError` get the full error. `opts.mount`
  * is the identity mount's `path` (k.mount): no page matches at or under it, so a link, `navigate` or `ok` there is a
- * document navigation; a path holding a `\` matches no page either. With `opts.mount` (the app has `identity.ts`) the
- * router reads `user` from its page's origin's `GET /__keel/user` (k.guards Client) as it starts, and again after each
- * mount request's answer in a shell; a guard, loader or action waits for a read in flight. It is `""` before an answer
- * and after a failed one, held in memory only. Without `opts.mount` nothing is sent and `user` is `""`.
+ * document navigation; a path holding a `\` matches no page either. With `opts.mount` (the app has `identity.ts`, whose
+ * `identityMount` call brings the read into the bundle) the router reads `user` from its page's origin's
+ * `GET /__keel/user` (k.guards Client) as it starts, and again after each mount request's answer in a shell; a guard,
+ * loader or action waits for a read in flight. It is `""` before an answer and after a failed one, held in memory only.
+ * Without `opts.mount` nothing is sent and `user` is `""`.
  */
 export function createRouter<T extends RouteTable>(
   routes: T,

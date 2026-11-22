@@ -36,7 +36,6 @@ import { needsBare } from "./needsBare.ts";
 import { notFound } from "./notFound.ts";
 import { pageHead } from "./pageHead.ts";
 import { publicError } from "./publicError.ts";
-import { readUser } from "./readUser.ts";
 import { renderView } from "./renderView.ts";
 import { rooted } from "./rooted.ts";
 import { routers } from "./routers.ts";
@@ -45,6 +44,7 @@ import { runLoaders } from "./runLoaders.ts";
 import { shells } from "./shells.ts";
 import { splitUrl } from "./splitUrl.ts";
 import { unexpected } from "./unexpected.ts";
+import { userRead } from "./userRead.ts";
 import { withNext } from "./withNext.ts";
 import { writeHead } from "./writeHead.ts";
 
@@ -68,7 +68,7 @@ const nearestErrorElement = (route: Located, from: number): number => {
  * (denied: redirect to the guard's `redirect` with `?next=`), then every loader of the chain concurrently,
  * then commit. The previous page stays rendered and `pending` is true until the commit. Guards, loaders and actions get
  * `caller` and `user` (default `""`; the harness supplies them); with `read`, `user` is the page origin's
- * `/__keel/user` answer, read once as the router starts and again on `reread` (k.guards Client, `readUser`). Each navigation that is not a guard's redirect reports `nav` to
+ * `/__keel/user` answer, read once as the router starts and again on `reread` (k.guards Client, `userRead`). Each navigation that is not a guard's redirect reports `nav` to
  * the ctx's observers before its guards, and each loader or action `err` reports `error` (k.ctx Observers).
  * `state` runs loaders and actions naming `stores` (k.server Server state; the harness passes it, `createRouter` never
  * does): each loader run is one `state.request()` and each submit another, an action's `ok` saves (a stale read
@@ -96,8 +96,9 @@ export function createRouterWith<T extends RouteTable>(
     /** The identity mount's `path` (k.mount): no page matches at or under it. */
     readonly mount?: string | undefined;
     /**
-     * Whether the router reads `user` from `/__keel/user` (k.guards Client); default: `mount` is given and `user` is
-     * not. The harness passes it for a shell run, whose mount it names to no router.
+     * Whether the router reads `user` from `/__keel/user` (k.guards Client) when an identity mount was made
+     * (`userRead`); default: `mount` is given and `user` is not. The harness passes it for a shell run, whose mount it
+     * names to no router.
      */
     readonly read?: boolean;
     /** A throw no route `errorElement` caught, before the root default alert shows it; the harness raises it. */
@@ -110,11 +111,12 @@ export function createRouterWith<T extends RouteTable>(
   const who = { caller: opts.caller ?? "", user: opts.user ?? "" };
   // The reader as the page's origin last said (k.guards Client): in memory only, `""` until an answer and after a
   // failed one. Guards, loaders and actions wait for a read in flight.
-  const reads = opts.read ?? (opts.mount !== undefined && opts.user === undefined);
+  // The read is `identityMount`'s (`userRead`): with no identity mount made, the bundle holds none and nothing is sent.
+  const read = (opts.read ?? (opts.mount !== undefined && opts.user === undefined)) ? userRead.fn : undefined;
   let reading: Promise<void> = done;
   const reread = (): Promise<void> => {
-    if (!reads) return done;
-    const p = readUser(ctx).then((user) => {
+    if (read === undefined) return done;
+    const p = read(ctx).then((user) => {
       if (reading === p) who.user = user;
     });
     reading = p;

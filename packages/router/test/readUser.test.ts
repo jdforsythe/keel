@@ -9,6 +9,7 @@ import { expect, test } from "vitest";
 import { contract } from "../src/contract/index.ts";
 import { createRouter } from "../src/createRouter.ts";
 import { guard } from "../src/guard.ts";
+import { identityMount } from "../src/identityMount.ts";
 import { createRouterWith } from "../src/internal/createRouterWith.ts";
 import { findRouter } from "../src/internal/findRouter.ts";
 import { readUser } from "../src/internal/readUser.ts";
@@ -16,6 +17,8 @@ import { manifest } from "../src/manifest.ts";
 import { memoryHistory } from "./memoryHistory.ts";
 
 const SEED = 1337;
+// The identity mount an app's `identity.ts` makes; making it gives routers their read (`userRead`).
+identityMount("/auth");
 const cc = contract("ru", { "ru.home": { path: "/" }, "ru.in": { path: "/in" }, "ru.b": { path: "/b" } });
 const seen: string[] = [];
 const gate = guard({ redirect: "ru.in" }, async ({ user }) => {
