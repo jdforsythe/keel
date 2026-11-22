@@ -8,12 +8,16 @@ import { JUSTIFIED_FILE, type Entry, entry, justifiedFile, justifiedReport } fro
 import { keel } from "./test-sim-project.ts";
 
 const run = (entries: readonly Entry[], withReport: boolean) =>
-  withProject("ledger-e1725-shape", {
-    [SOURCE]: source,
-    [EXAMPLE]: exampleTest,
-    ...(withReport ? { [PKG_REPORT]: justifiedReport("Survived", 3, { high: 90, low: 80, break: 50 }) } : {}),
-    [JUSTIFIED_FILE]: justifiedFile(entries),
-  }, (dir) => keel(dir, ["ledger"]));
+  withProject(
+    "ledger-e1725-shape",
+    {
+      [SOURCE]: source,
+      [EXAMPLE]: exampleTest,
+      ...(withReport ? { [PKG_REPORT]: justifiedReport("Survived", 3, { high: 90, low: 80, break: 50 }) } : {}),
+      [JUSTIFIED_FILE]: justifiedFile(entries),
+    },
+    (dir) => keel(dir, ["ledger"]),
+  );
 
 const { note: _note, ...noNote } = entry();
 

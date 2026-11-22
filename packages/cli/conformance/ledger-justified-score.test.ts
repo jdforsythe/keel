@@ -9,7 +9,12 @@ import { keel, writeFiles } from "./test-sim-project.ts";
 const COMMITTED = ".keel/ledger.json";
 // 3 killed + 1 survived = 75%; with the survivor justified and left out of the count, 100%.
 const report = (breakAt: number): string => justifiedReport("Survived", 3, { high: 90, low: 80, break: breakAt });
-const files = { [SOURCE]: source, [EXAMPLE]: exampleTest, [PKG_REPORT]: report(70), [JUSTIFIED_FILE]: justifiedFile([entry()]) };
+const files = {
+  [SOURCE]: source,
+  [EXAMPLE]: exampleTest,
+  [PKG_REPORT]: report(70),
+  [JUSTIFIED_FILE]: justifiedFile([entry()]),
+};
 
 describe("k.ledger: justified survivors", () => {
   it("From a report with one Survived mutant and a `mutation-justified.json` entry naming its file, mutator, original and replacement, `keel ledger --write` stores that file's claim with `justified` 1 and the package's `scoreJustified` above its `score`, and `--diff` judges the threshold on `score`.", () => {

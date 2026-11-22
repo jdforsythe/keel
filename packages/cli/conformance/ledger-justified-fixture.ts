@@ -28,12 +28,13 @@ export function justifiedReport(status: MutantStatus, killed: number, thresholds
     location: locate(ORIGINAL),
     status,
   };
+  const killedStatus: MutantStatus = "Killed";
   const others = Array.from({ length: killed }, (_, i) => ({
     id: `k${i}`,
     mutatorName: "ArithmeticOperator",
     replacement: "-",
     location: locate("number"),
-    status: "Killed" as MutantStatus,
+    status: killedStatus,
   }));
   const files = { "src/clamp.ts": { language: "typescript", source, mutants: [target, ...others] } };
   return `${JSON.stringify({ schemaVersion: "1", thresholds, files }, null, 2)}\n`;
@@ -50,4 +51,5 @@ export const entry = (over: Entry = {}): Entry => ({
   ...over,
 });
 
-export const justifiedFile = (entries: readonly Entry[]): string => `${JSON.stringify({ justified: entries }, null, 2)}\n`;
+export const justifiedFile = (entries: readonly Entry[]): string =>
+  `${JSON.stringify({ justified: entries }, null, 2)}\n`;

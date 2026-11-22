@@ -9,12 +9,16 @@ import { keel } from "./test-sim-project.ts";
 
 const thresholds = { high: 90, low: 80, break: 50 };
 const run = (status: "Survived" | "Killed" | "Timeout", entries: Parameters<typeof justifiedFile>[0]) =>
-  withProject("ledger-e1725-match", {
-    [SOURCE]: source,
-    [EXAMPLE]: exampleTest,
-    [PKG_REPORT]: justifiedReport(status, 3, thresholds),
-    [JUSTIFIED_FILE]: justifiedFile(entries),
-  }, (dir) => keel(dir, ["ledger"]));
+  withProject(
+    "ledger-e1725-match",
+    {
+      [SOURCE]: source,
+      [EXAMPLE]: exampleTest,
+      [PKG_REPORT]: justifiedReport(status, 3, thresholds),
+      [JUSTIFIED_FILE]: justifiedFile(entries),
+    },
+    (dir) => keel(dir, ["ledger"]),
+  );
 
 const named = (r: ReturnType<typeof run>): string => JSON.stringify(diags(r, "E1725"));
 
@@ -37,12 +41,16 @@ describe("k.ledger: E1725 an entry that justifies no mutant", () => {
   }, 60_000);
 
   it("an entry that matches a NoCoverage mutant gives no E1725", () => {
-    const r = withProject("ledger-e1725-nocov", {
-      [SOURCE]: source,
-      [EXAMPLE]: exampleTest,
-      [PKG_REPORT]: justifiedReport("NoCoverage", 3, thresholds),
-      [JUSTIFIED_FILE]: justifiedFile([entry()]),
-    }, (dir) => keel(dir, ["ledger"]));
+    const r = withProject(
+      "ledger-e1725-nocov",
+      {
+        [SOURCE]: source,
+        [EXAMPLE]: exampleTest,
+        [PKG_REPORT]: justifiedReport("NoCoverage", 3, thresholds),
+        [JUSTIFIED_FILE]: justifiedFile([entry()]),
+      },
+      (dir) => keel(dir, ["ledger"]),
+    );
     expect(diags(r, "E1725")).toEqual([]);
   }, 60_000);
 
