@@ -9,6 +9,7 @@ import { createOwner } from "./createOwner.ts";
 import { createRoot } from "./createRoot.ts";
 import { disposeOwner } from "./disposeOwner.ts";
 import { eventQueue } from "./eventQueue.ts";
+import { harnessed } from "./harnessed.ts";
 import { made } from "./made.ts";
 import { nodesOf } from "./nodesOf.ts";
 import { replaced } from "./replaced.ts";
@@ -78,11 +79,11 @@ export function resumeIsland(
       );
     } catch (error) {
       // Any throw while claiming is a mismatch: the client re-render below shows a real app error. The thrown text can
-      // carry data, so the warning holds it only in dev, as the root fallback does (k.errors).
+      // carry data, so the warning holds it only in dev, as the root fallback does (k.errors), and in a test harness,
+      // whose ctx is no production one: there the warning is the test's failure, and its cause is what the author needs.
+      const shown = mode === "dev" || harnessed().has(ctx);
       claim.session.failed ??=
-        error instanceof Mismatch
-          ? error
-          : new Mismatch(mode === "dev" ? `the claim threw ${String(error)}` : "the claim threw");
+        error instanceof Mismatch ? error : new Mismatch(shown ? `the claim threw ${String(error)}` : "the claim threw");
     }
     if (claim.session.failed === null && rendered.node !== el)
       claim.session.failed = new Mismatch("the component did not render the island root");

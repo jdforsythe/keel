@@ -100,6 +100,15 @@ describe("resumeDocument", () => {
     expect(e instanceof Error ? e.message : "").toMatch(/^E1720 .*\[data-k-island="rd.fr"\] props do not decode/);
   });
 
+  it("E1720 names what an island's claim threw (k.errors: a harness is no production)", async () => {
+    const html = page(
+      islandHtml("rd.fr", () => Fragile({ n: 1 })),
+      { islands: { "rd.fr": { n: -1 } } },
+    );
+    const e = await rejection(resumeDocument(html, { routes, ctx: sim() }));
+    expect(e instanceof Error ? e.message : "").toMatch(/^E1720 .*the claim threw Error: negative -1/);
+  });
+
   it("a document whose islands all resume raises no E1720", async () => {
     const html = page(
       islandHtml("rd.fr", () => Fragile({ n: 2 })),
