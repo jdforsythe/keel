@@ -8,14 +8,15 @@ type Member = Awaited<ReturnType<typeof served>>;
 
 /** The receipts book in `locale`, opened by the signed-in member of `at` (a fresh app when left out). */
 const open = async (locale: "en-US" | "de-DE", at?: Member) => {
-  const { ctx, user } = at ?? (await served(5));
-  return renderRoute("receipts.book", { routes: webRoutes, params: { locale }, ctx, user });
+  const { ctx, app } = at ?? (await served(5));
+  return renderRoute("receipts.book", { routes: webRoutes, params: { locale }, ctx, app });
 };
 
 it("starts empty, in English, with a link to the German page", async () => {
   const page = await open("en-US");
   expect(page.find("receipts.heading").text).toBe("Receipts");
-  expect(page.find("receipts.count").text).toBe("0 receipts");
+  expect(page.find("receipts.count")).toMatchObject({ role: "status", text: "0 receipts" });
+  expect(page.find("receipts.saving")).toMatchObject({ role: "status", text: "" });
   expect(page.find("receipts.switch").text).toBe("Deutsch");
   expect(page.focusOrder()).toEqual([
     "app.nav.list",

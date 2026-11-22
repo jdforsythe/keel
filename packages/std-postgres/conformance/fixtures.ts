@@ -9,7 +9,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createCtx } from "@keel/ctx";
-import type { Ctx } from "@keel/ctx";
+import type { Ctx, SimCtx } from "@keel/ctx";
 import { s } from "@keel/schema";
 import type { Result } from "@keel/schema";
 import { fragment } from "@keel/std-postgres";
@@ -45,7 +45,7 @@ export function simCtx(
   cap: string,
   plan: { delay: number; fault: "none" | "unavailable" | "conflict" }[] = [],
   seed = SEED,
-): Ctx {
+): SimCtx {
   return createCtx({ mode: "sim", seed, schedule: { net: [], storage: [], offline: [], plans: { [cap]: plan } } });
 }
 

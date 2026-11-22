@@ -29,6 +29,10 @@ interface Shared {
   readonly registry?: () => ReadonlyMap<string, Store<unknown>>;
   /** Where the document navigations the page starts are recorded (`recordDocuments`) until `dispose`. */
   readonly documents?: DocumentNavigation[];
+  /** Makes each recorded document navigation (`renderRoute` with `app`); without it they are only recorded. */
+  readonly follow?: (nav: DocumentNavigation) => void;
   /** Catches outside the root Boundary that `check()` raises as its own (a router's root alert, `renderRoute`). */
   readonly caught?: CaughtError[];
+  /** Where the page is (a route's id and params): a `fire` or `settle()` that changes it skips E1826. */
+  readonly place?: () => string;
 }

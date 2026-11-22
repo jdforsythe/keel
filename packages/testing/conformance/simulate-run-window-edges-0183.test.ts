@@ -28,12 +28,12 @@ async function after(offline: { at: number; ms: number }[], to: number, horizon?
   return seen[0];
 }
 
-test.skip("`replay` of a `SimRun` whose `offline` is `[{ at: 100, ms: 50 }]`, its scenario advancing the clock to 120 with no `after` waiter pending: after `run()`, `ctx.net.online()` is true and `clock.now()` is 150; with `horizon: 130` it is still false.", async () => {
+test("`replay` of a `SimRun` whose `offline` is `[{ at: 100, ms: 50 }]`, its scenario advancing the clock to 120 with no `after` waiter pending: after `run()`, `ctx.net.online()` is true and `clock.now()` is 150; with `horizon: 130` it is still false.", async () => {
   expect(await after([{ at: 100, ms: 50 }], 120)).toMatchObject({ online: true, now: 150 });
   expect(await after([{ at: 100, ms: 50 }], 120, 130)).toMatchObject({ online: false, now: 120 });
 });
 
-test.skip("`run()` leaves no window edge within the horizon ahead of the clock: for generated disjoint windows it stops at the last edge within the horizon", async () => {
+test("`run()` leaves no window edge within the horizon ahead of the clock: for generated disjoint windows it stops at the last edge within the horizon", async () => {
   const windows = fc
     .array(fc.tuple(fc.integer({ min: 1, max: 400 }), fc.integer({ min: 1, max: 400 })), { minLength: 1, maxLength: 5 })
     .map((gaps) => {
@@ -58,7 +58,7 @@ test.skip("`run()` leaves no window edge within the horizon ahead of the clock: 
   );
 });
 
-test.skip("`clock.next()` is unchanged: with no `after` waiter it is `null` before and after `run()` stepped to a window edge, and a pending `after` deadline is what it returns, never an edge", async () => {
+test("`clock.next()` is unchanged: with no `after` waiter it is `null` before and after `run()` stepped to a window edge, and a pending `after` deadline is what it returns, never an edge", async () => {
   const seen: (number | null)[] = [];
   await simulate(
     async ({ ctx, run }) => {

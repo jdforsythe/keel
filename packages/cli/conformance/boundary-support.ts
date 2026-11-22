@@ -101,7 +101,7 @@ export function moduleAStatic(): Tree {
       .replace("helper(params.id)", "helper('x')"),
     "modules/a/Page.tsx":
       "import { Box, Link } from '@keel/ui'\nimport { a } from './a.contract.ts'\n" +
-      'export default function Page() {\n  return (\n    <Box as="main">\n      <Link to={a.href(\'a.home\')}>Back</Link>\n    </Box>\n  )\n}\n',
+      "export default function Page() {\n  return (\n    <Box as=\"main\">\n      <Link to={a.href('a.home')}>Back</Link>\n    </Box>\n  )\n}\n",
   };
 }
 
@@ -163,7 +163,10 @@ export function nodeTree(placement: Placement = "node"): Tree {
     ...(placement === "static" ? moduleAStatic() : moduleA(placement === "node")),
     ...(placement === "node"
       ? {}
-      : { "index.html": HTML("/modules/a/entry.ts"), "modules/a/entry.ts": placement === "static" ? ENTRY_STATIC : ENTRY }),
+      : {
+          "index.html": HTML("/modules/a/entry.ts"),
+          "modules/a/entry.ts": placement === "static" ? ENTRY_STATIC : ENTRY,
+        }),
   };
 }
 

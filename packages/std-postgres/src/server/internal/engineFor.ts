@@ -23,7 +23,7 @@ const tracked = (open: Open, engine: Engine): Engine => {
   return {
     types: engine.types,
     statement: (text, params) => around(() => engine.statement(text, params)),
-    tx: (isolation, fn) => around(() => engine.tx(isolation, fn)),
+    tx: (level, fn) => around(() => engine.tx(level, fn)),
   };
 };
 

@@ -2,23 +2,23 @@
   "output": {
     "check.injected10": 600,
     "test.failing3": 400,
-    "spec.section": 1875,
+    "spec.section": 2350,
     "spec.map": 1410,
     "explain": 300,
     "mcp.tools-list": 1900,
     "docs.map": 1490,
-    "docs.section": 1875,
+    "docs.section": 2350,
     "docs.skill": 2650,
     "docs.for": 400,
     "docs.agents": 600
   },
   "size": {
     "@keel/check": {
-      "max": "57.1kb",
+      "max": "58kb",
       "platform": "node"
     },
     "@keel/check/explain": {
-      "max": "16.5kb",
+      "max": "17.5kb",
       "platform": "node"
     },
     "@keel/cli": {
@@ -40,13 +40,13 @@
     "@keel/ctx": "3.75kb",
     "@keel/forms": "5kb",
     "@keel/reactive": "4kb",
-    "@keel/router": "13.75kb",
+    "@keel/router": "14.25kb",
     "@keel/router/contract": "3.2kb",
     "@keel/router/match": "2.75kb",
     "@keel/runtime-dom": "6kb",
     "@keel/runtime-dom/ops": "10.75kb",
     "@keel/scaffold": {
-      "max": "18.8kb",
+      "max": "19kb",
       "platform": "node"
     },
     "@keel/scaffold/agents": {
@@ -172,7 +172,7 @@
       "platform": "node"
     },
     "@keel/std-postgres/tools": {
-      "max": "2.5kb",
+      "max": "3kb",
       "platform": "node"
     },
     "@keel/std-workflows": {
@@ -202,14 +202,14 @@
       "platform": "node"
     },
     "@keel/testing": {
-      "max": "14kb",
+      "max": "16kb",
       "platform": "node"
     },
     "@keel/testing/prove": {
       "max": "8.25kb",
       "platform": "node"
     },
-    "@keel/ui": "4.75kb",
+    "@keel/ui": "5kb",
     "@keel/ui/aria": "3.5kb"
   },
   "mutate": {

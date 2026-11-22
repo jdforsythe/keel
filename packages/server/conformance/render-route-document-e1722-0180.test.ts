@@ -9,7 +9,7 @@ import { appOn, routes, simCtx } from "./render-route-document-support.ts";
 
 const codeOf = (e: unknown): unknown => (typeof e === "object" && e !== null ? Reflect.get(e, "code") : undefined);
 
-test.skip("`app` with `state` rejects E1722, `app` unrequested.", async () => {
+test("`app` with `state` rejects E1722, `app` unrequested.", async () => {
   const ctx = simCtx();
   const app = await appOn(ctx);
   const opts = { routes, ctx, app, state: [] };
@@ -21,7 +21,7 @@ test.skip("`app` with `state` rejects E1722, `app` unrequested.", async () => {
   expect(app.requests).toEqual([]);
 });
 
-test.skip("`app` with `shell` rejects E1722, `app` unrequested.", async () => {
+test("`app` with `shell` rejects E1722, `app` unrequested.", async () => {
   const ctx = simCtx();
   const app = await appOn(ctx);
   const shell = true;

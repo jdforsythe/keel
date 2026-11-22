@@ -170,6 +170,46 @@ const proofs = {
     }
   },
 
+  /**
+   * The built `api` serves the shell's client at the guarded path, refuses `/api/me` signed out, answers a sign-in post
+   * to the mount with a 303 to its `next` and a cookie, then names the user; the Tauri files register the shell's id.
+   */
+  async "shell-mount"(dir) {
+    const server = await serveNode(dir, "api");
+    try {
+      const page = await answer(server.base, "/notes/n1");
+      const html = page === null ? "" : await page.text();
+      const me = (cookie) =>
+        fetch(`${server.base}/api/me`, { headers: { accept: "application/json", ...(cookie ? { cookie } : {}) } });
+      const out = (await me()).status;
+      const signin = await fetch(`${server.base}/api/auth/sign-in/email?next=%2Fnotes%2Fn1`, {
+        method: "POST",
+        headers: { "content-type": "application/x-www-form-urlencoded", origin: server.base },
+        body: "name=Ada",
+        redirect: "manual",
+      });
+      const cookie = signin.headers
+        .getSetCookie()
+        .map((c) => c.split(";")[0])
+        .join("; ");
+      const inRes = await me(cookie);
+      const named = inRes.status === 200 ? JSON.stringify(await inRes.json()) : "";
+      const conf = readFileSync(join(dir, "deploy", "web", "tauri", "tauri.conf.json"), "utf8");
+      return [
+        page?.status === 200 &&
+          html.includes('id="app"') &&
+          out === 403 &&
+          signin.status === 303 &&
+          signin.headers.get("location") === "/notes/n1" &&
+          named.includes('"name":"Ada"') &&
+          conf.includes('"schemes": ["dev.keel.shellmount"]'),
+        `page ${page?.status}, me ${out} then ${inRes.status}, sign-in ${signin.status} to ${signin.headers.get("location")}`,
+      ];
+    } finally {
+      await server.stop();
+    }
+  },
+
   /** A plain file server sends `dist/web` with its `csp.txt` as the policy; Chromium renders the page, no errors. */
   async "static-client"(dir) {
     const folder = join(dir, "dist", "web");

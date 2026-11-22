@@ -21,7 +21,7 @@ const project = (adapter: string, call: string): Files => [
 ];
 const w1723 = (files: Files) => check(files, { types: false }).diagnostics.filter((d) => d.code === "W1723");
 
-test.skip("W1723 fires on `renderRoute('f.page', { routes })` when a `node` deployable serves `f`, not with `app` nor for a `client` one.", () => {
+test("W1723 fires on `renderRoute('f.page', { routes })` when a `node` deployable serves `f`, not with `app` nor for a `client` one.", () => {
   fc.assert(
     fc.property(fc.constantFrom("f.page", "f.edit", "f.show"), (id) => {
       expect(w1723(project("node", `renderRoute('${id}', { routes })`))).toHaveLength(1);
@@ -32,7 +32,7 @@ test.skip("W1723 fires on `renderRoute('f.page', { routes })` when a `node` depl
   );
 });
 
-test.skip("W1723 has fix 'pass `app`' and a `renderRoute` id that is not a literal reports none.", () => {
+test("W1723 has fix 'pass `app`' and a `renderRoute` id that is not a literal reports none.", () => {
   const [d] = w1723(project("node", "renderRoute('f.page', { routes })"));
   expect(String(d?.fix ?? "pass `app`")).toContain("app");
   const nonLiteral = project("node", "renderRoute(`f.${'page'}`, { routes })");

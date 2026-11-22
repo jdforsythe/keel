@@ -198,6 +198,16 @@ describe("editorFollow", () => {
 });
 
 describe("EditTodoPage status", () => {
+  it("is a status region from the first render, filled when a save fails (E1826)", async () => {
+    chartAt("viewing", 0);
+    const t = render(EditTodoPage, { props: { params, data: milk } });
+    expect(t.find("todos.edit.status")).toMatchObject({ role: "status", text: "" });
+    chartAt("saving", 2);
+    await t.settle();
+    expect(t.find("todos.edit.status").text).toBe("Not saved. Save to try again.");
+    t.dispose();
+  });
+
   it("names a failed try, a refused edit and a given-up one; Save is off for the last two", () => {
     const page = (state: "viewing" | "saving" | "conflict" | "gaveUp", attempts: number) =>
       render(EditTodoPage, {
@@ -206,7 +216,7 @@ describe("EditTodoPage status", () => {
       });
     const quiet = page("viewing", 0);
     expect(quiet.a11y().length).toBeGreaterThan(0);
-    expect(() => quiet.find("todos.edit.status")).toThrow();
+    expect(quiet.find("todos.edit.status").text).toBe("");
     expect(quiet.find("todos.save").state.disabled ?? false).toBe(false);
     quiet.dispose();
     const retry = page("saving", 2);

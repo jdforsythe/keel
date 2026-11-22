@@ -1,9 +1,10 @@
 import { renderRoute } from "@keel/testing";
 import { expect, it } from "vitest";
-import { routes } from "../modules/app/routes.ts";
+import { served, webRoutes } from "./serve.ts";
 
 it("renders the start page with its heading and a link to the list", async () => {
-  const page = await renderRoute("app.start", { routes, params: {} });
+  const { ctx, app } = await served(2, false);
+  const page = await renderRoute("app.start", { routes: webRoutes, params: {}, ctx, app });
   expect(page.route().id).toBe("app.start");
   expect(page.find("app.start.heading").role).toBe("heading");
   expect(page.find("app.start.heading").text).toBe("Household");

@@ -148,7 +148,7 @@ describe("under generated schedules", () => {
     if (!T1.ok) throw new Error(T1.error.message);
     const t1 = T1.value;
     await simulate(
-      async ({ ctx, run, schedule }) => {
+      async ({ ctx, run }) => {
         open?.dispose();
         open = undefined;
         fresh();
@@ -165,15 +165,12 @@ describe("under generated schedules", () => {
           () => null,
         );
         await run();
-        await sent;
-        const end = Math.max(0, ...schedule.offline.map((w) => w.at + w.ms));
-        if (ctx.clock.now() < end) ctx.clock.advance(end - ctx.clock.now());
-        ctx.net.setOnline(true);
-        await run();
-        for (let i = 0; i < 20 && ctx.clock.next() !== null; i++) {
+        // `run()` stops at the horizon: a window or a retry may reach past it, so the clock runs on until neither is left.
+        for (let i = 0; i < 20 && (ctx.clock.next() !== null || !ctx.net.online()); i++) {
           ctx.clock.advance(60_000);
           await run();
         }
+        await sent;
         const applied = await commits("api.toggleTodo");
         const left = boardOutbox.get("entries");
         // A flip applied twice would read as not done: the key keeps it to one.
@@ -196,7 +193,7 @@ describe("under generated schedules", () => {
     if (!T1.ok) throw new Error(T1.error.message);
     const t1 = T1.value;
     await simulate(
-      async ({ ctx, run, schedule }) => {
+      async ({ ctx, run }) => {
         open?.dispose();
         open = undefined;
         fresh();
@@ -208,15 +205,12 @@ describe("under generated schedules", () => {
           () => null,
         );
         await run();
-        await sent;
-        const end = Math.max(0, ...schedule.offline.map((w) => w.at + w.ms));
-        if (ctx.clock.now() < end) ctx.clock.advance(end - ctx.clock.now());
-        ctx.net.setOnline(true);
-        await run();
-        for (let i = 0; i < 20 && ctx.clock.next() !== null; i++) {
+        // `run()` stops at the horizon: a window or a retry may reach past it, so the clock runs on until neither is left.
+        for (let i = 0; i < 20 && (ctx.clock.next() !== null || !ctx.net.online()); i++) {
           ctx.clock.advance(60_000);
           await run();
         }
+        await sent;
         await r.settle();
         const applied = await commits("api.toggleTodo");
         expect(applied).toBeLessThanOrEqual(1);

@@ -8,6 +8,7 @@ import { createCtx } from "@keel/ctx";
 import type { SimCtx } from "@keel/ctx";
 import { ok, s } from "@keel/schema";
 import { NoRows, fragment, sql } from "@keel/std-postgres";
+import type { Tx } from "@keel/std-postgres/server";
 import { database } from "@keel/std-postgres/server";
 import { ready } from "@keel/std-postgres/testing";
 import fc from "fast-check";
@@ -108,17 +109,23 @@ test("an expected error inside a transaction leaves it usable: the other stateme
   );
 });
 
-test("each isolation level runs; another value throws", async () => {
-  const { cap, name, table } = fresh();
+test("each allow runs at its level; a blank or non-string reason, or a level name as allow, throws", async () => {
+  const { cap, name } = fresh();
   const db = notesOf(cap, name);
   const ctx = sim(cap);
-  const Level = s.object({ level: s.string() });
-  for (const isolation of ["read committed", "repeatable read", "serializable"] as const) {
-    const r = await db(ctx).transaction(async (tx) => tx.one(sql(Level)`show transaction_isolation`), { isolation });
-    expect(r).toEqual(ok({ transaction_isolation: isolation }).ok ? r : r);
-  }
-  const bad = { isolation: "read uncommitted" };
-  await expect(Reflect.apply(db(ctx).transaction, db(ctx), [async () => ok(null), bad])).rejects.toThrow(/isolation/);
+  const Level = s.object({ transaction_isolation: s.string() });
+  const at = (opts: unknown) =>
+    Reflect.apply(db(ctx).transaction, db(ctx), [
+      async (tx: Tx) => tx.one(sql(Level)`show transaction_isolation`),
+      opts,
+    ]);
+  expect(await at(undefined)).toEqual(ok({ transaction_isolation: "serializable" }));
+  expect(await at({})).toEqual(ok({ transaction_isolation: "serializable" }));
+  expect(await at({ allow: "write skew", reason: "r" })).toEqual(ok({ transaction_isolation: "repeatable read" }));
+  expect(await at({ allow: "lost updates", reason: "r" })).toEqual(ok({ transaction_isolation: "read committed" }));
+  await expect(at({ allow: "write skew", reason: "  " })).rejects.toThrow(/reason/);
+  await expect(at({ allow: "write skew", reason: 3 })).rejects.toThrow(/reason/);
+  await expect(at({ allow: "serializable", reason: "r" })).rejects.toThrow(/allow/);
 });
 
 test("a database error that is not expected throws its SQLSTATE and no value", async () => {

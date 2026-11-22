@@ -2,6 +2,7 @@ import type { RouteTable } from "../types/RouteTable.ts";
 import type { Bound } from "./Bound.ts";
 import type { Compiled } from "./Compiled.ts";
 import type { Registered } from "./Registered.ts";
+import { carriedFits } from "./carriedFits.ts";
 import { codedError } from "./codedError.ts";
 import { locate } from "./locate.ts";
 import { patternClash } from "./patternClash.ts";
@@ -12,7 +13,8 @@ import { tables } from "./tables.ts";
  * The union of route tables (k.routes Union), nested tables flattened, in argument order. Throws an Error with `code`:
  * E1502 one module twice, or two modules sharing a path pattern at any method; E1509 a k.prefix collision over the
  * union; E1506 a `layout` that names no entry of the union, an entry that is no layout, or closes a cycle across
- * modules (`chainOf`). A value that is no route table throws a TypeError.
+ * modules (`chainOf`); E1508 a guarded page on a chain joined across modules that lacks a
+ * params field of its redirect route, or carries one that does not fit (`carriedFits`). A value that is no route table throws a TypeError.
  */
 export function unionTables(parts: readonly RouteTable[]): Compiled & { readonly contracts: RouteTable["contracts"] } {
   const bindings = new Map<string, Bound>();
@@ -38,5 +40,7 @@ export function unionTables(parts: readonly RouteTable[]): Compiled & { readonly
   if (clash !== null) throw codedError("E1502", clash);
   const collision = prefixCollision(defs);
   if (collision !== null) throw codedError("E1509", collision);
-  return { bindings, table, located: locate(table).located, contracts };
+  const { located } = locate(table);
+  carriedFits(located, new Map([...table].map(([id, r]) => [id, r.def])));
+  return { bindings, table, located, contracts };
 }

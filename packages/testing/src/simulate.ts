@@ -22,7 +22,9 @@ const HORIZON = 600_000;
  * Run `scenario` under many generated schedules (k.sim), as `properties` runs a property under many inputs. Each run
  * draws a `SimRun` `{ seed, schedule }` (net steps, storage outcomes, offline windows inside the horizon, and a plan
  * for each capability registered with a `plan` schema), creates that sim ctx and awaits the scenario; the live stores
- * are restored to their snapshots from before `simulate` before each run and after the last. A failing run is shrunk
+ * are restored to their snapshots from before `simulate` before each run and after the last. The scenario's `run()`
+ * settles, then steps the clock to the earlier of its next deadline and the next edge of an offline window, within
+ * the horizon, settling after each step. A failing run is shrunk
  * and thrown as E1704 with the seed and run on the first line and the shrunk `SimRun` as JSON on the next;
  * `{ replay }` runs one `SimRun` once. Success resolves `{ seed, runs }`.
  */
@@ -38,9 +40,16 @@ export async function simulate(scenario: Scenario, options: SimulateOptions = {}
     const ctx = createCtx({ mode: "sim", seed: simRun.seed, schedule: simRun.schedule });
     const quiet = (): Promise<void> => settle(globalThis.document?.documentElement, () => {});
     const start = ctx.clock.now();
-    /** Advance the clock to its next deadline inside the horizon; false when there is none. */
+    const edges = simRun.schedule.offline.flatMap((w) => [w.at, w.at + w.ms]);
+    /** The earlier of the clock's next deadline and the schedule's next offline window edge, or null. */
+    const next = (): number | null => {
+      const now = ctx.clock.now();
+      const deadline = ctx.clock.next();
+      return edges.reduce<number | null>((min, e) => (e > now && (min === null || e < min) ? e : min), deadline);
+    };
+    /** Advance the clock to its next deadline or window edge inside the horizon; false when there is none. */
     const step = (): boolean => {
-      const at = ctx.clock.next();
+      const at = next();
       if (at === null || at - start > horizon) return false;
       ctx.clock.advance(at - ctx.clock.now());
       return true;

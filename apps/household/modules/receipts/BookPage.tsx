@@ -23,7 +23,7 @@ export default function BookPage(props: Infer<typeof Props>) {
         {props.data.text.heading}
       </Heading>
       <Box direction="row" justify="between" align="baseline" gap="3" wrap="wrap">
-        <Text id="receipts.count" font="mono" fontSize="sm" fg="textSecondary">
+        <Text id="receipts.count" role="status" font="mono" fontSize="sm" fg="textSecondary">
           {formatMessage(props.data.text.count, { n: props.data.receipts.length }, props.params.locale)}
         </Text>
         <Link
@@ -185,11 +185,9 @@ export default function BookPage(props: Infer<typeof Props>) {
               {props.data.text.save}
             </Button>
           </Box>
-          <If when={f.pending()}>
-            <Text id="receipts.saving" font="mono" fontSize="sm" fg="textSecondary">
-              {props.data.text.saving}
-            </Text>
-          </If>
+          <Text id="receipts.saving" role="status" font="mono" fontSize="sm" fg="textSecondary">
+            {f.pending() ? props.data.text.saving : ""}
+          </Text>
         </Box>
       </Form>
     </Box>

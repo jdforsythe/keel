@@ -1,6 +1,6 @@
 # RFC 0183: k.sim: `run()` steps to the edges of the schedule's offline windows
 
-Status: accepted (ADR-0205). From the offline, conflict and connection-loss scenario tests in `apps/golden-1/test/*.sim.test.ts`.
+Status: implemented (ADR-0205). From the offline, conflict and connection-loss scenario tests in `apps/golden-1/test/*.sim.test.ts`.
 
 ## Decisions
 - D1: `run()` steps to the earlier of the next pending `after` deadline and the next edge of a `schedule.offline` window, either within `horizon`. An edge is a window's `at` or `at + ms`; the next one is the earliest edge later than the clock's time.

@@ -32,6 +32,7 @@ status: conformance-covered
 | R1108 | high | fewer `.pii(`, `s.secret(` or `guard(` calls in a file the range keeps; one per kind |
 | R1150 | critical | a tracked code file in scope that does not parse |
 | R1151 | low | a baseline entry matching no finding |
+| R2451 | opt-in: `'lost updates'` high, `'write skew'` medium | an `allow` property of the object a `.transaction(` call takes (std.postgres); `reason` its reason |
 
 
 **Range codes.** R1060, R1061, R1100 to R1105, R1107 and R1108 are read from the range's changes to files in scope (R1100 also from `packages/` and `node_modules/@keel/`), each `new`; R1101 and R1102 only when their entry is not at `<base>`. Under `--all` only R1101 and R1102 are read, from the tree.
