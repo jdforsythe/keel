@@ -8,7 +8,7 @@ const row = (danger: Escape["danger"], opt: boolean, protection: string, message
   range,
 });
 
-/** The codes of k.escapes, each with its row's danger; R1010's and R1057's level can rise per finding (`Raw.danger`). */
+/** The codes of k.escapes, each with its row's danger; R1010's, R1057's and R2451's level can rise per finding (`Raw.danger`). */
 export const ESCAPES: ReadonlyMap<string, Escape> = new Map([
   ["R1001", row("medium", true, "k.check", "unsafe() lifts the strict profile for its function")],
   ["R1010", row("low", true, "k.origins", "a declared third-party origin")],
@@ -36,4 +36,5 @@ export const ESCAPES: ReadonlyMap<string, Escape> = new Map([
   ["R1108", row("high", false, "k.privacy", "fewer pii, secret or guard calls", true)],
   ["R1150", row("critical", false, "k.review", "a code file the review cannot parse")],
   ["R1151", row("low", false, "k.review", "a baseline entry that matches no finding")],
+  ["R2451", row("medium", true, "std.postgres", "a transaction allows an anomaly serializable prevents")],
 ]);

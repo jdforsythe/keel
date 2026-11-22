@@ -1,7 +1,7 @@
 // Two signed-in users add a recipe with the same title at once. The kitchen's unique index on lower(title) decides:
 // exactly one is saved and the other gets the app's answer for a taken title, 422 `keel.fields` on `title`.
-// std.postgres: "a unique ... violation is `postgres.constraint`"; "a serialization failure outside `transaction` is
-// `keel.conflict`"; k.server answers `keel.conflict` 409. Runs on sim, on PGlite, and on Postgres 17 where
+// std.postgres: "a unique ... violation is `postgres.constraint`"; "A lone `query`, `one` or `run` is its own
+// `serializable` transaction, rerun as `fn` is"; past its third run it is `keel.conflict`, which k.server answers 409. Runs on sim, on PGlite, and on Postgres 17 where
 // `KEEL_TEST_POSTGRES_URL` is set. Seed 1337.
 import { randomBytes } from "node:crypto";
 import { mkdtempSync, rmSync } from "node:fs";
@@ -120,9 +120,20 @@ for (const m of MODES) {
   });
 }
 
-describe("a planned serialization failure on the kitchen database (sim)", () => {
-  it("answers the add 409 keel.conflict and saves nothing", async () => {
+describe("planned serialization failures on the kitchen database (sim)", () => {
+  it("reruns the add past one and saves it once", async () => {
     const server = simServer([{ delay: 0, fault: "conflict" }, ...none(20)]);
+    const { ana, ben } = await twoUsers(server);
+    const added = await answer(ana.fetch(asJson("POST", "/api/recipes", draft("Soup", 30))));
+    expect(added.status).toBe(200);
+    expect(await titlesOf(ben)).toEqual(["Soup"]);
+    await ana.close();
+    await ben.close();
+  });
+
+  it("answers the add 409 keel.conflict past three and saves nothing; a retry lands", async () => {
+    const conflict = { delay: 0, fault: "conflict" as const };
+    const server = simServer([conflict, conflict, conflict, ...none(20)]);
     const { ana, ben } = await twoUsers(server);
     const lost = await answer(ana.fetch(asJson("POST", "/api/recipes", draft("Soup", 30))));
     expect(lost.status).toBe(409);

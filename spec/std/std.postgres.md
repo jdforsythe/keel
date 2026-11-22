@@ -1,7 +1,7 @@
 # std.postgres: Postgres app data
 status: implemented
 
-**Extension points.** Capability registry (k.ctx, k.data): `database(name, ...)` registers one capability per call. Check rule registry: `/tools` (E2451, E2452, E2458, W2456). A module using it lists it in `deps`, the database's name in `capabilities`.
+**Extension points.** Capability registry (k.ctx, k.data): `database(name, ...)` registers one capability per call. Check rule registry: `/tools` (E2451, E2452, E2458, E2459, W2456). A module using it lists it in `deps`, the database's name in `capabilities`.
 
 **API.** `@keel/std-postgres` is client-safe; `/server`, `/testing` Node only.
 ```ts
@@ -20,7 +20,7 @@ const r = await kitchenDb(ctx).query(sql(Recipe)`select ... where id = ${id}`)  
 
 **Modes.** `KEEL_POSTGRES_URL` picks the store, read at the first query: `postgres:` or `postgresql:` uses `pg`, a pool of at most 10 per URL per process, TLS as `sslmode` says, idle ones letting the process exit; `pglite:<folder>` uses PGlite on disk, one process. Missing, it is `pglite:<KEEL_DEV_DIR>/postgres` when `KEEL_DEV_DIR` is set (`keel dev`, k.data Files); else, or another scheme, E2455, naming no part of the value. Under sim each database is PGlite in memory, migrated, one per sim ctx and capability, `setseed` from the capability seed; after `await ready()` (`/testing`, in the app's vitest `setupFiles`) sim queries settle without a timer. The plan (k.sim) is `{ delay, fault }[]`, `delay` integer 0 to 60,000 sim ms, `fault` `none`, `unavailable` (`keel.unreachable`, runs nothing) or `conflict` (a serialization failure, committing nothing); each run of a lone statement or of `fn` takes one step, statements on `tx` none; past its end, `none`. Sim runs each transaction whole in step order, an order `serializable` allows; what `allow` permits does not happen under sim.
 
-**Rules.** E2451 `@keel/std-postgres/server` imported (static or `import()`) outside a `*.server.ts` file, tests and type-only imports aside · E2452 that import in a module a deployable other than `node` serves · E2453, E2454, E2455 above · W2456 `now()`, `current_timestamp`, `clock_timestamp()`, `random()` or `gen_random_uuid()` in a template's text or a migration, not replayed under sim (pass `ctx.clock.now()` or `ctx.random.id(brand)`) · E2457 a parameter that is not a JSON value; E2453 to E2455 and E2457 throw · E2458 a `database` name that is not a literal `<moduleId>.<name>` of its module (E1607) · E2459 `allow` in a `.transaction(` options object without a `reason` that is a non-empty string literal.
+**Rules.** E2451 `@keel/std-postgres/server` imported (static or `import()`) outside a `*.server.ts` file, tests and type-only imports aside · E2452 that import in a module a deployable other than `node` serves · E2453, E2454, E2455 above · W2456 `now()`, `current_timestamp`, `clock_timestamp()`, `random()` or `gen_random_uuid()` in a template's text or a migration, not replayed under sim (pass `ctx.clock.now()` or `ctx.random.id(brand)`) · E2457 a parameter that is not a JSON value; E2453 to E2455 and E2457 throw · E2458 a `database` name that is not a literal `<moduleId>.<name>` of its module (E1607) · E2459 `allow` in a `.transaction(` options object without a `reason` that is a non-empty string literal. R2451 (k.escapes) each `allow`.
 
 **Conformance.**
 - `` sql(S)`select ${"x'; drop table t"}` `` has `text` `select $1` and `params` `["x'; drop table t"]`; `` sql(S)`a ${1} ${fragment`b ${2}`} ${3}` `` has `text` `a $1 b $2 $3`.

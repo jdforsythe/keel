@@ -1,6 +1,6 @@
 ---
 name: keel-data
-description: "Durable Keel storage, app data (std-postgres), concurrent and offline writes, conflicts, live updates and workflows: topology storage, KEEL_DATABASE_URL, commitStores, transaction concurrent, keel.conflict 409, std-offline outbox, std-conflicts, std-channels, std-live, std-workflows; E1560, E1563, E1572, E2151-E2153, E2351-E2355, E1607, E2451-E2458, E2601, E2602, E2651, E2701"
+description: "Durable Keel storage, app data (std-postgres), concurrent and offline writes, conflicts, live updates and workflows: topology storage, KEEL_DATABASE_URL, commitStores, transaction concurrent, keel.conflict 409, std-offline outbox, std-conflicts, std-channels, std-live, std-workflows; E1560, E1563, E1572, E2151-E2153, E2351-E2355, E1607, E2451-E2459, E2601, E2602, E2651, E2701"
 ---
 
 # Data: storage, writes, live views, workflows
@@ -15,7 +15,7 @@ Outside a request (runners, jobs) use `commitStores(ctx, factory, fn)` from `@ke
 
 ## App data
 
-App data (k.data) goes in Postgres through `@keel/std-postgres`. `export const kitchenDb = database('kitchen.db')` (`modules/kitchen/kitchenDb.server.ts`) reads `modules/kitchen/migrations/*.sql` (`KEEL_APP_DIR`, else cwd) at its first call. A handler calls `kitchenDb(ctx).query(sql(Recipe)`select ... where id = ${id}`)`: a row schema per statement, each `${value}` a parameter. `one` of no row is `keel.notFound`; `run(sql(NoRows)...)` counts; `transaction(fn)` reruns on serialization failure, then is `keel.conflict`. Migrations: `NNNN-<kebab>.sql`, forward only. `KEEL_POSTGRES_URL` is `postgres:` or `pglite:<folder>`; unset under `keel dev`, `.keel-dev/postgres`. Tests await `ready()` (`@keel/std-postgres/testing`) in `setupFiles`. Other stores: `register('notes.mongo', impls)`; names are literal `<module>.<lowerCamel>`, one file each (E1607, E2458). SQL `now()` is W2456.
+App data (k.data) goes in Postgres through `@keel/std-postgres`. `export const kitchenDb = database('kitchen.db')` (`modules/kitchen/kitchenDb.server.ts`) reads `modules/kitchen/migrations/*.sql` (`KEEL_APP_DIR`, else cwd) at its first call. A handler calls `kitchenDb(ctx).query(sql(Recipe)`select ... where id = ${id}`)`: a row schema per statement, each `${value}` a parameter. `one` of no row is `keel.notFound`; `run(sql(NoRows)...)` counts; `transaction(fn)` and each lone call are `serializable`, rerun 3 times, then `keel.conflict`: put a write and the read it uses in one `transaction`. `{ allow: 'write skew' | 'lost updates', reason: '<literal>' }` opts down (E2459, R2451); sim never shows its race. Migrations: `NNNN-<kebab>.sql`, forward only. `KEEL_POSTGRES_URL` is `postgres:` or `pglite:<folder>`; unset under `keel dev`, `.keel-dev/postgres`. Tests await `ready()` (`@keel/std-postgres/testing`) in `setupFiles`. Other stores: `register('notes.mongo', impls)`; names are literal `<module>.<lowerCamel>`, one file each (E1607, E2458). SQL `now()` is W2456.
 
 ## Concurrent writes
 

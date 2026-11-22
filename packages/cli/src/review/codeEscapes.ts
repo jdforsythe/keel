@@ -109,7 +109,8 @@ function locator(source: string): (at: number) => { line: number; col: number } 
 
 /**
  * The escapes one code file holds (k.escapes): every row read by syntax. A file that does not parse is one R1150 and
- * nothing else. `kind` says where the file sits; it decides R1050, R1057, R1058, R1059 and R1010.
+ * nothing else. `kind` says where the file sits; it decides R1050, R1057, R1058, R1059 and R1010. R2451 is an `allow` of
+ * the object a `.transaction(` call takes: `'lost updates'` high, any other value the row's medium; `reason` its reason.
  */
 export function codeEscapes(path: string, source: string, kind: FileKind): Raw[] {
   const parsed = parseSync(path, source, { sourceType: "module", lang: langOf(path) });
@@ -187,6 +188,23 @@ export function codeEscapes(path: string, source: string, kind: FileKind): Raw[]
               for (const h of props(p.value)) if (h.name === "handle") add("R1014", h.start, h.end);
           }
         }
+      }
+      if (c.type === "MemberExpression" && !c.computed && c.property.type === "Identifier") {
+        if (c.property.name === "transaction")
+          for (const a of n.arguments) {
+            if (a.type !== "ObjectExpression") continue;
+            const ps = props(a);
+            const allow = ps.find((p) => p.name === "allow");
+            if (allow === undefined) continue;
+            const given = foldString(allow.value);
+            const why = ps.find((p) => p.name === "reason");
+            const reason = why === undefined ? null : foldString(why.value);
+            add("R2451", allow.start, allow.end, {
+              message: `a transaction allows ${given ?? "an anomaly"}`,
+              ...(given === "lost updates" ? { danger: "high" as const } : {}),
+              ...(reason === null ? {} : { reason }),
+            });
+          }
       }
       if (
         c.type === "MemberExpression" &&

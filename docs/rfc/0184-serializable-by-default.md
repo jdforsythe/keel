@@ -1,6 +1,6 @@
 # RFC 0184: std.postgres: serializable by default, `allow` with a reason, lone statements serializable
 
-Status: accepted (ADR-0206). Amends RFC 0158 (the `transaction` text of std.postgres). From a scenario test, `packages/std-postgres/test/racing-writes.test.ts`, on Postgres 17.
+Status: implemented (ADR-0206). Amends RFC 0158 (the `transaction` text of std.postgres). From a scenario test, `packages/std-postgres/test/racing-writes.test.ts`, on Postgres 17.
 
 ## Decisions
 - D1: `transaction(fn)` runs at `serializable`. Rejected: `repeatable read`, which still lets write skew commit silently (Proposal, Levels).
