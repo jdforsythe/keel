@@ -19,7 +19,7 @@ beforeAll(async () => {
 
 for (const m of MODES) {
   describe(m.name, () => {
-    test.skip("a `follow` started before a `transaction` that calls `changed(ch, { b: 'x' })` twice and commits gets one `changed`", async () => {
+    test("a `follow` started before a `transaction` that calls `changed(ch, { b: 'x' })` twice and commits gets one `changed`", async () => {
       const { cap, table } = fresh();
       const mode = m.make();
       try {
@@ -40,7 +40,7 @@ for (const m of MODES) {
       }
     });
 
-    test.skip("a `follow` started before a `transaction` whose `fn` returns `err` gets none", async () => {
+    test("a `follow` started before a `transaction` whose `fn` returns `err` gets none", async () => {
       const { cap, table } = fresh();
       const mode = m.make();
       try {
@@ -60,7 +60,7 @@ for (const m of MODES) {
       }
     });
 
-    test.skip("a `follow` started before a `transaction` whose `fn` throws gets none (rollback)", async () => {
+    test("a `follow` started before a `transaction` whose `fn` throws gets none (rollback)", async () => {
       const { cap, table } = fresh();
       const mode = m.make();
       try {
@@ -81,7 +81,7 @@ for (const m of MODES) {
       }
     });
 
-    test.skip("`changed` on the database object is its own transaction, delivered once when it commits", async () => {
+    test("`changed` on the database object is its own transaction, delivered once when it commits", async () => {
       const { cap, table } = fresh();
       const mode = m.make();
       try {
@@ -98,7 +98,7 @@ for (const m of MODES) {
   });
 }
 
-test.skip("under sim a plan `conflict`, `none` that calls `changed` in each run gets one", async () => {
+test("under sim a plan `conflict`, `none` that calls `changed` in each run gets one", async () => {
   const { cap, table } = fresh();
   const ctx = simCtx(cap, [
     { delay: 0, fault: "conflict" },
@@ -118,7 +118,7 @@ test.skip("under sim a plan `conflict`, `none` that calls `changed` in each run 
   expect(w.events).toEqual([{ kind: "changed" }]);
 });
 
-test.skip("under sim a lone `changed` is delivered when its step settles, not before, with no timer", async () => {
+test("under sim a lone `changed` is delivered when its step settles, not before, with no timer", async () => {
   const { cap, table } = fresh();
   const ctx: SimCtx = simCtx(cap, [{ delay: 10, fault: "none" }]);
   const d = notesDb(cap, table)(ctx);
@@ -131,7 +131,7 @@ test.skip("under sim a lone `changed` is delivered when its step settles, not be
   expect(w.events).toEqual([{ kind: "changed" }]);
 });
 
-test.skip("under sim, deliveries happen in step order across keys", async () => {
+test("under sim, deliveries happen in step order across keys", async () => {
   await fc.assert(
     fc.asyncProperty(fc.array(fc.constantFrom("a", "b", "c"), { minLength: 1, maxLength: 8 }), async (order) => {
       const { cap, table } = fresh();

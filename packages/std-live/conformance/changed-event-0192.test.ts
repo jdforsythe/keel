@@ -11,7 +11,7 @@ import { api, boardArb, controlled, createServer, mount, readBoard, settle, simC
 const CLAUSE =
   "A `changed` event during one read causes exactly one more read; with callers A and B on one sim server whose route follows a database, a write by A that calls `changed` is in B's hydrated store after B's next read.";
 
-test.skip(`${CLAUSE} (one \`changed\` during a read causes exactly one more)`, async () => {
+test(`${CLAUSE} (one \`changed\` during a read causes exactly one more)`, async () => {
   const ctx = simCtx();
   const server = createServer();
   server.attach(ctx);
@@ -31,7 +31,7 @@ test.skip(`${CLAUSE} (one \`changed\` during a read causes exactly one more)`, a
   m.dispose();
 });
 
-test.skip(`${CLAUSE} (for any number of \`changed\` events during one read, exactly one more read runs)`, async () => {
+test(`${CLAUSE} (for any number of \`changed\` events during one read, exactly one more read runs)`, async () => {
   await fc.assert(
     fc.asyncProperty(fc.integer({ min: 1, max: 12 }), boardArb, async (n, board) => {
       const ctx = simCtx();
@@ -54,7 +54,7 @@ test.skip(`${CLAUSE} (for any number of \`changed\` events during one read, exac
   );
 });
 
-test.skip(`${CLAUSE} (a write by A that calls \`changed\` is in B's hydrated store after B's next read)`, async () => {
+test(`${CLAUSE} (a write by A that calls \`changed\` is in B's hydrated store after B's next read)`, async () => {
   await fc.assert(
     fc.asyncProperty(fc.array(fc.string({ maxLength: 8 }), { minLength: 1, maxLength: 5 }), async (items) => {
       const server = createFollowingServer();

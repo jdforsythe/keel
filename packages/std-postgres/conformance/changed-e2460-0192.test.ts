@@ -20,7 +20,7 @@ beforeAll(async () => {
 const unavailable = [{ delay: 0, fault: "unavailable" as const }];
 const marker = (n: number) => `SECRET-${n}-MARK`;
 
-test.skip("`params` failing the channel's schema throw E2460 and run no statement, naming no param", async () => {
+test("`params` failing the channel's schema throw E2460 and run no statement, naming no param", async () => {
   await fc.assert(
     fc.asyncProperty(
       fc.oneof(fc.integer(), fc.constant(null), fc.array(fc.integer(), { maxLength: 3 })),
@@ -42,7 +42,7 @@ test.skip("`params` failing the channel's schema throw E2460 and run no statemen
   );
 });
 
-test.skip("a payload over 7,900 bytes throws E2460 and runs no statement, naming no key", async () => {
+test("a payload over 7,900 bytes throws E2460 and runs no statement, naming no key", async () => {
   await fc.assert(
     fc.asyncProperty(fc.integer({ min: 8_000, max: 9_500 }), async (len) => {
       const { cap, table } = fresh();
@@ -60,7 +60,7 @@ test.skip("a payload over 7,900 bytes throws E2460 and runs no statement, naming
   );
 });
 
-test.skip("on `tx`, a payload over 7,900 bytes throws E2460 and the transaction commits nothing", async () => {
+test("on `tx`, a payload over 7,900 bytes throws E2460 and the transaction commits nothing", async () => {
   const { cap, table } = fresh();
   const d = notesDb(cap, table)(simCtx(cap));
   await expect(

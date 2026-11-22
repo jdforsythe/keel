@@ -15,7 +15,7 @@ beforeAll(async () => {
 
 for (const m of MODES) {
   describe(m.name, () => {
-    test.skip("a `follow` of `{ b: 'x' }` gets nothing for a change of `{ b: 'y' }`, another channel name or another capability on the same URL", async () => {
+    test("a `follow` of `{ b: 'x' }` gets nothing for a change of `{ b: 'y' }`, another channel name or another capability on the same URL", async () => {
       const one = fresh();
       const two = fresh();
       const mode = m.make();
@@ -41,7 +41,7 @@ for (const m of MODES) {
   });
 }
 
-test.skip("for any other value of `b`, a `follow` of `{ b: 'x' }` gets nothing", async () => {
+test("for any other value of `b`, a `follow` of `{ b: 'x' }` gets nothing", async () => {
   await fc.assert(
     fc.asyncProperty(
       fc.string({ maxLength: 12 }).filter((v) => v !== "x"),
@@ -59,7 +59,7 @@ test.skip("for any other value of `b`, a `follow` of `{ b: 'x' }` gets nothing",
   );
 });
 
-test.skip("params are keyed as their canonical JSON: a change with keys in any order reaches the follow of the sorted key", async () => {
+test("params are keyed as their canonical JSON: a change with keys in any order reaches the follow of the sorted key", async () => {
   await fc.assert(
     fc.asyncProperty(fc.integer({ min: -9, max: 9 }), fc.integer({ min: -9, max: 9 }), async (a, b) => {
       const { cap, table } = fresh();

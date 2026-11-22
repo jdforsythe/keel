@@ -10,7 +10,7 @@ import { serveFollowing } from "./follows-fixtures.ts";
 const CLAUSE =
   "With `follows: [db]`, an open member stream gets `reset`, then `{ kind: 'changed' }` after a committed `changed` of its channel and params, and nothing for other params; a stream for which `member` is false at that point gets `closed` `denied`.";
 
-test.skip(`${CLAUSE} (reset, then one changed per committed change of its channel and params)`, async () => {
+test(`${CLAUSE} (reset, then one changed per committed change of its channel and params)`, async () => {
   await fc.assert(
     fc.asyncProperty(fc.stringMatching(/^[a-z]{1,6}$/), fc.integer({ min: 1, max: 4 }), async (room, n) => {
       const h = await serveFollowing();
@@ -33,7 +33,7 @@ test.skip(`${CLAUSE} (reset, then one changed per committed change of its channe
   );
 });
 
-test.skip(`${CLAUSE} (nothing for other params)`, async () => {
+test(`${CLAUSE} (nothing for other params)`, async () => {
   const h = await serveFollowing();
   try {
     const st = await h.open("a");
@@ -51,7 +51,7 @@ test.skip(`${CLAUSE} (nothing for other params)`, async () => {
   }
 });
 
-test.skip(`${CLAUSE} (a stream for which \`member\` is false at that point gets closed denied)`, async () => {
+test(`${CLAUSE} (a stream for which \`member\` is false at that point gets closed denied)`, async () => {
   const h = await serveFollowing();
   try {
     const st = await h.open("a");
@@ -65,7 +65,7 @@ test.skip(`${CLAUSE} (a stream for which \`member\` is false at that point gets 
   }
 });
 
-test.skip(`${CLAUSE} (every open member stream of the same params gets it, others none)`, async () => {
+test(`${CLAUSE} (every open member stream of the same params gets it, others none)`, async () => {
   const h = await serveFollowing();
   try {
     const [a1, a2, b] = [await h.open("a"), await h.open("a"), await h.open("b")];

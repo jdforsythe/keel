@@ -14,7 +14,7 @@ import { boardChannel, changed, keyOf, until, watch } from "./follow-fixtures.ts
 const Killed = s.object({ pid: s.int(), t: s.boolean() });
 
 describe.skipIf(!hasPg17)("postgres 17", () => {
-  test.skip("terminating the listening connection's backend reports `lost` once to each open follow; the next `follow` opens a new connection and gets the next change", async () => {
+  test("terminating the listening connection's backend reports `lost` once to each open follow; the next `follow` opens a new connection and gets the next change", async () => {
     const { cap } = fresh();
     const before = process.env.KEEL_POSTGRES_URL;
     process.env.KEEL_POSTGRES_URL = PG17;

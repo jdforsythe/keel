@@ -7,7 +7,7 @@ import { expect, test } from "vitest";
 import { roomChannel, settle, waitFor } from "./fixtures.ts";
 import { serveFollowing } from "./follows-fixtures.ts";
 
-test.skip("No `changed` event holds a capability name, a param or a row value", async () => {
+test("No `changed` event holds a capability name, a param or a row value", async () => {
   await fc.assert(
     fc.asyncProperty(fc.stringMatching(/^[a-z]{8,12}$/), fc.stringMatching(/^[a-z0-9]{12,16}$/), async (room, row) => {
       const h = await serveFollowing();

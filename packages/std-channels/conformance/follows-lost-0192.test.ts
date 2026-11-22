@@ -9,7 +9,7 @@ import { expect, test } from "vitest";
 import { ORIGIN, roomChannel, settle, waitFor } from "./fixtures.ts";
 import { serveFollowing } from "./follows-fixtures.ts";
 
-test.skip("A `lost` report ends each following stream with no `closed` event", async () => {
+test("A `lost` report ends each following stream with no `closed` event", async () => {
   const h = await serveFollowing();
   try {
     const a = await h.open("a");
@@ -25,7 +25,7 @@ test.skip("A `lost` report ends each following stream with no `closed` event", a
   }
 });
 
-test.skip("under sim, `subscribe` reopens 1 s later after a `lost` report and the new stream starts with `reset`", async () => {
+test("under sim, `subscribe` reopens 1 s later after a `lost` report and the new stream starts with `reset`", async () => {
   const h = await serveFollowing();
   try {
     h.ctx.net.route(`${ORIGIN}/*`, (req) => h.app.fetch(req));

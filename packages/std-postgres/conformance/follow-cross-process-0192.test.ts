@@ -26,7 +26,7 @@ const processA = (cap: string, table: string): Promise<string> =>
   });
 
 describe.skipIf(!hasPg17)("postgres 17", () => {
-  test.skip("with two processes on one URL, a `follow` in process B and a committed `changed` in process A: B's `on` gets `changed`, and a read in B started after it sees A's rows", async () => {
+  test("with two processes on one URL, a `follow` in process B and a committed `changed` in process A: B's `on` gets `changed`, and a read in B started after it sees A's rows", async () => {
     const { cap, table } = fresh();
     const before = process.env.KEEL_POSTGRES_URL;
     process.env.KEEL_POSTGRES_URL = PG17;
