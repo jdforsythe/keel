@@ -1067,7 +1067,7 @@ export default function (): {
         reloadDev();
       }
       if (rel !== null && devApps.length > 0 && (rel.startsWith("modules/") || PROJECT_FILE.test(rel))) {
-        // An app file calling `register` (k.data Dev) loads the server graph again whole: the registry starts empty.
+        // An app file registering a capability (k.data Dev) loads the server graph again whole: the registry starts empty.
         if (exists(rel) && registersCapability(fs.readFileSync(path.join(root, rel), "utf8")))
           server?.moduleGraph.invalidateAll?.();
         reloadDev();

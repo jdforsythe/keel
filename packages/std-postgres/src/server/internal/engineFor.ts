@@ -7,8 +7,22 @@ import { pgliteEngine } from "./pgliteEngine.ts";
 const OPEN_FOLDERS = 2;
 
 type Open = { engine: Promise<Engine>; busy: number; used: number; readonly close: () => Promise<void> };
-const engines = new Map<string, Open>();
-let clock = 0;
+/**
+ * Shared by every evaluation of this module in the process: a `keel dev` reload evaluates it again, and the new
+ * evaluation reuses the folders and pools the last one opened instead of opening them a second time.
+ */
+const KEY = Symbol.for("keel.postgres.engines");
+
+function sharedEngines(): Map<string, Open> {
+  const shared: unknown = Reflect.get(globalThis, KEY);
+  if (shared instanceof Map) return shared;
+  const made = new Map<string, Open>();
+  Reflect.set(globalThis, KEY, made);
+  return made;
+}
+
+const engines = sharedEngines();
+let clock = Math.max(0, ...[...engines.values()].map((o) => o.used));
 
 const tracked = (open: Open, engine: Engine): Engine => {
   const around = async <T>(work: () => Promise<T>): Promise<T> => {
