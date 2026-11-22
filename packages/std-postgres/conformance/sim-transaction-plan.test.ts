@@ -1,5 +1,5 @@
 // Spec: std.postgres, Conformance "Under sim, a plan `conflict`, `conflict`, `none` makes a `transaction` run `fn` three times and commit once; `conflict` three times is `keel.conflict`, nothing committed; `fn`'s `err` commits nothing."
-// Spec: std.postgres, API "`transaction(fn, { isolation? })`: `fn(tx)`, `tx` with `query`, `one` and `run`, in one transaction ...; `ok` commits, `err` or a throw rolls back. A serialization failure or deadlock runs `fn` again, at most 3 runs, then is `keel.conflict`, nothing committed."
+// Spec: std.postgres, API "`transaction(fn, { allow?, reason? })`: `fn(tx)`, `tx` with `query`, `one` and `run`, in one `serializable` transaction: committed ones have the effect of some serial order: no lost update, no write skew. `ok` commits, `err` or a throw rolls back. A serialization failure or deadlock runs `fn` again, at most 3 runs, then is `keel.conflict`, nothing committed; what `fn` does outside `tx` must be safe to repeat."
 // Spec: std.postgres, Modes "each `query`, `one` and `run` and each run of `fn` takes one step, statements on `tx` none."
 // Seed: 1337.
 // Assumption: the capability's plan is `plans[<database name>]` (k.sim); the first query's migration takes no step.
