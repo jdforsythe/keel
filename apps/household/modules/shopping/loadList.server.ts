@@ -35,6 +35,12 @@ export const loadList = loader(
         helpBody: "Adding a name already on the list raises its quantity. Bought items move to the Bought tab.",
         failed: "That change did not apply. Try it again.",
         dismiss: "Dismiss",
+        live: {
+          live: "Live: changes from your household show here",
+          connecting: "Connecting: changes from your household show once connected",
+          offline: "Offline: this list shows what it held when the connection dropped",
+          denied: "Signed out: sign in again to see changes",
+        },
       },
     });
   },

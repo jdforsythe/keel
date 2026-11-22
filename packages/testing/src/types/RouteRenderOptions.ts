@@ -3,6 +3,7 @@ import type { RouteTable } from "@keel/router";
 import type { Store } from "@keel/store";
 import type { DocumentApp } from "./DocumentApp.ts";
 import type { HarnessArtifacts } from "./HarnessArtifacts.ts";
+import type { RoutesImport } from "./RoutesImport.ts";
 
 /**
  * Options of `renderRoute`: the route table (k.routes: a manifest or `routeTable`), the target's params and search (or `url`, a raw path and query parsed as
@@ -10,7 +11,12 @@ import type { HarnessArtifacts } from "./HarnessArtifacts.ts";
  * loaders and actions receive (each default `""`: anonymous, no one).
  */
 export interface RouteRenderOptions<T extends RouteTable = RouteTable> {
-  readonly routes: T;
+  /**
+   * The route table, or with `app` an import of the module that exports it (`RoutesImport`): the page then resumes in
+   * a client module graph of its own (as `resumeDocument`), so its client stores, widget state and islands are this
+   * harness's alone; without `app` an import rejects with E1722.
+   */
+  readonly routes: T | RoutesImport<T>;
   readonly params?: Readonly<Record<string, unknown>>;
   readonly search?: Readonly<Record<string, unknown>>;
   readonly url?: string;

@@ -308,12 +308,18 @@ importers:
       '@keel/services':
         specifier: workspace:*
         version: link:../../packages/services
+      '@keel/std-channels':
+        specifier: workspace:*
+        version: link:../../packages/std-channels
       '@keel/std-headless':
         specifier: workspace:*
         version: link:../../packages/std-headless
       '@keel/std-i18n':
         specifier: workspace:*
         version: link:../../packages/std-i18n
+      '@keel/std-live':
+        specifier: workspace:*
+        version: link:../../packages/std-live
       '@keel/std-messages':
         specifier: workspace:*
         version: link:../../packages/std-messages
@@ -1483,6 +1489,9 @@ importers:
       '@keel/compiler':
         specifier: workspace:*
         version: link:../compiler
+      '@keel/forms':
+        specifier: workspace:*
+        version: link:../forms
       '@keel/router':
         specifier: workspace:*
         version: link:../router

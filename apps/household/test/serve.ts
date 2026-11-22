@@ -1,21 +1,16 @@
 import { type SimCtx, createCtx } from "@keel/ctx";
-import { routeTable } from "@keel/router";
 import { s } from "@keel/schema";
 import { createApp } from "@keel/server";
 import { sql } from "@keel/std-postgres";
 import source from "../identity.server.ts";
 import mount from "../identity.ts";
-import { routes as app } from "../modules/app/routes.ts";
 import { membersApi } from "../modules/members/membersApi.ts";
 import { membersDb } from "../modules/members/membersDb.server.ts";
-import { routes as members } from "../modules/members/routes.ts";
-import { routes as receipts } from "../modules/receipts/routes.ts";
-import { routes as setup } from "../modules/setup/routes.ts";
-import { routes as shopping } from "../modules/shopping/routes.ts";
 import topology from "../topology.ts";
+import { routes } from "./webRoutes.ts";
 
 /** The `web` deployable's route table, as its generated entry joins it. */
-export const webRoutes = routeTable(app, members, receipts, setup, shopping);
+export const webRoutes = routes;
 
 export const NAME = "Ada Lovelace";
 export const EMAIL = "ada@example.com";

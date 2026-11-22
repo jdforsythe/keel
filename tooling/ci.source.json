@@ -175,6 +175,11 @@
           "run": "pnpm exec vitest run test/racing-recipes.test.ts"
         },
         {
+          "name": "household on Postgres 17: an add on one replica reaches a list stream open on another",
+          "working-directory": "apps/household",
+          "run": "pnpm exec vitest run test/replicas.test.ts"
+        },
+        {
           "name": "turbo cache: the builds the check job ran",
           "uses": "actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0",
           "with": {

@@ -3,11 +3,14 @@ import { err, ok } from "@keel/schema";
 import type { Result } from "@keel/schema";
 import type { Conflict } from "../../Conflict.ts";
 import type { ConstraintError } from "../../ConstraintError.ts";
+import { NoRows } from "../../NoRows.ts";
 import type { NotFound } from "../../NotFound.ts";
 import type { Query } from "../../Query.ts";
 import type { ResultError } from "../../ResultError.ts";
 import type { StatementError } from "../../StatementError.ts";
 import type { Unreachable } from "../../Unreachable.ts";
+import { sql } from "../../sql.ts";
+import type { ChangedChannel } from "../ChangedChannel.ts";
 import type { Database } from "../Database.type.ts";
 import type { TransactionOptions } from "../TransactionOptions.ts";
 import type { Tx } from "../Tx.ts";
@@ -19,9 +22,11 @@ import type { Level } from "./Level.ts";
 import type { Raw } from "./Raw.ts";
 import type { Step } from "./Step.ts";
 import type { ValueOf } from "./ValueOf.ts";
+import { changeText } from "./changeText.ts";
 import { classify } from "./classify.ts";
 import { errors } from "./errors.ts";
 import { isSerial } from "./isSerial.ts";
+import { payloadOf } from "./payloadOf.ts";
 import { rowsOf } from "./rowsOf.ts";
 import { toText } from "./toText.ts";
 import { unexpected } from "./unexpected.ts";
@@ -38,6 +43,12 @@ const NONE: Step = { delay: 0, fault: "none" };
 type Plan = { readonly steps: readonly Step[]; readonly clock: Clock };
 
 const paramsOf = (q: Query<unknown>): (string | null)[] => q.params.map(toText);
+
+/** One run of a transaction's `fn`: whether it must run again or lost its connection, and the changes it recorded. */
+type RunState = { serial: boolean; lost: boolean; readonly changes: Set<string> };
+
+/** A run's `tx` and, for the database object's own `changed`, the notify of a payload already checked. */
+type Run = Tx & { notify(text: string): Promise<Result<null, StatementError>> };
 
 /** The level `opts` asks for: `serializable` without an `allow`; an `allow` it does not take, or no `reason`, throws. */
 function levelOf(opts: TransactionOptions | undefined): Level {
@@ -108,10 +119,11 @@ async function known(raw: Raw, engine: Engine, c: Conn | null): Promise<void> {
 }
 
 /**
- * The database of one ctx (std.postgres API) over `backend`. With `plan` (sim) each run of a lone statement and each run
- * of a transaction's `fn` takes the next step (past the end: no delay, no fault); statements on `tx` take none.
+ * The database of one ctx (std.postgres API) of capability `name` over `backend`. With `plan` (sim) each run of a lone
+ * statement and each run of a transaction's `fn` takes the next step (past the end: no delay, no fault); statements on
+ * `tx` take none. The changes a committed run recorded go to `backend.changes()` once it has committed.
  */
-export function makeDatabase(backend: Backend, plan?: Plan): Database {
+export function makeDatabase(name: string, backend: Backend, plan?: Plan): Database {
   let taken = 0;
   /** Takes a plan step: waits its delay, then answers its fault, `null` for none. */
   const gate = async (): Promise<Unreachable | Conflict | null> => {
@@ -175,7 +187,18 @@ export function makeDatabase(backend: Backend, plan?: Plan): Database {
     fn: (tx: Tx) => Promise<Result<unknown, unknown>>,
     opts?: TransactionOptions,
   ): Promise<Result<unknown, unknown>> {
-    const level = levelOf(opts);
+    return runs(levelOf(opts), fn);
+  }
+
+  /** `fn` in transaction runs at `level`, as `transaction` says; the committed run's changes are delivered after. */
+  function runs<R extends Result<unknown, unknown>>(
+    level: Level,
+    fn: (run: Run) => Promise<R>,
+  ): Promise<Result<ValueOf<R>, ErrorOf<R> | ConstraintError | Unreachable | Conflict>>;
+  async function runs(
+    level: Level,
+    fn: (run: Run) => Promise<Result<unknown, unknown>>,
+  ): Promise<Result<unknown, unknown>> {
     for (let n = 1; ; n++) {
       const stop = await gate();
       if (stop === errors.unreachable) return err(errors.unreachable);
@@ -183,12 +206,12 @@ export function makeDatabase(backend: Backend, plan?: Plan): Database {
       if (!("tx" in engine)) return err(engine);
       // A plan step `conflict` lets the run's statements run, then fails it as a serialization failure at its commit.
       const forced = stop !== null;
-      const state = { serial: false, lost: false };
+      const state: RunState = { serial: false, lost: false, changes: new Set() };
       let outcome: Result<unknown, unknown> | undefined;
       try {
         outcome = await engine.tx(level, async (c) => {
           await backend.prelude(c);
-          const r = await fn(txOf(c, engine, state));
+          const r = await fn(txOf(name, c, engine, state));
           return { value: r, commit: r.ok && !forced && !state.serial && !state.lost };
         });
       } catch (e) {
@@ -205,11 +228,22 @@ export function makeDatabase(backend: Backend, plan?: Plan): Database {
         if (n >= RUNS) return err(errors.conflict);
         continue;
       }
+      if (outcome.ok && state.changes.size > 0) backend.changes().committed([...state.changes]);
       return outcome;
     }
   }
 
-  return { query, one, run, transaction };
+  /** A change as its own transaction, its payload checked (E2460) before any step or statement. */
+  const changed = async <P>(channel: ChangedChannel<P>, params: P): Promise<Result<null, StatementError>> => {
+    const text = changeText(name, channel, params);
+    const r = await runs("serializable", (t) => t.notify(text));
+    return r.ok ? ok(null) : err(r.error);
+  };
+
+  const follow: Database["follow"] = (channel, key, on) =>
+    backend.changes().follow(payloadOf(name, channel.name, key), on);
+
+  return { query, one, run, transaction, changed, follow };
 }
 
 /** `one`'s answer from `query`'s: the one row, none `keel.notFound`; more than one throws. */
@@ -225,7 +259,7 @@ function onlyRow<T>(r: Result<T[], StatementError>): Result<T, StatementError | 
  * leaves the transaction usable; a serialization failure or deadlock marks the run for a rerun, a lost connection ends
  * it, and statements after either answer that error without running.
  */
-function txOf(c: Conn, engine: Engine, state: { serial: boolean; lost: boolean }): Tx {
+function txOf(name: string, c: Conn, engine: Engine, state: RunState): Run {
   const stmt = async (q: Query<unknown>): Promise<Raw | StatementError> => {
     if (state.lost) return errors.unreachable;
     if (state.serial) return errors.conflict;
@@ -250,8 +284,17 @@ function txOf(c: Conn, engine: Engine, state: { serial: boolean; lost: boolean }
     const r = await stmt(q);
     return "rows" in r ? parsed(q, r, engine) : err(r);
   };
+  /** `pg_notify` of a checked payload inside the transaction; recorded for delivery once the run commits. */
+  const notify = async (text: string): Promise<Result<null, StatementError>> => {
+    const r = await stmt(sql(NoRows)`select pg_notify('keel_changes', ${text})`);
+    if (!("rows" in r)) return err(r);
+    state.changes.add(text);
+    return ok(null);
+  };
   return {
     query,
+    notify,
+    changed: async (channel, params) => notify(changeText(name, channel, params)),
     one: async (q) => onlyRow(await query(q)),
     async run(q) {
       const r = await stmt(q);

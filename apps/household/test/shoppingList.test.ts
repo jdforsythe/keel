@@ -1,10 +1,14 @@
 import { renderRoute } from "@keel/testing";
 import { afterEach, expect, it } from "vitest";
+import { copy } from "../modules/shopping/copy.store.ts";
 import { view } from "../modules/shopping/view.store.ts";
 import { asJson, served, webRoutes } from "./serve.ts";
 
 const base = view.snapshot();
-afterEach(() => view.restore(base));
+const copies = copy.snapshot();
+afterEach(() => {
+  expect(view.restore(base).ok && copy.restore(copies).ok).toBe(true);
+});
 
 async function open() {
   const s = await served(3);

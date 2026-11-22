@@ -54,8 +54,17 @@
 | S-9 | carried by RFC 0188 (`base.focus`) |
 | S-10 | carried by RFC 0188 (`overflow-wrap`) |
 | S-11 | carried by RFC 0188 (`look`) |
+| L7-1 | fixed (`renderRoute` with `app` takes `routes` as an import: each harness its own client module graph) |
+| L7-2 | open |
+| L7-3 | fixed: rfc:0192 a channel follows app data: t.changed in the write transaction, follows on the channel route; household's counter store is gone |
+| L7-4 | open |
+| L7-5 | open |
+| L7-6 | open |
+| L7-7 | open |
+| L7-8 | open |
+| L7-9 | open |
 
-Fixed 14, answered in the skills 10, filed as backlog 11, carried by RFC 0188 6, open 9.
+Fixed 15, answered in the skills 10, filed as backlog 11, carried by RFC 0188 6, open 17.
 
 Each finding: what I tried, where, the command and its output, what I expected, whether docs or skills misled. Kinds: fault (framework behaves against its spec), docs (docs or skills gap), rough (works, but an app author trips on it).
 
@@ -249,4 +258,44 @@ Each finding: what I tried, where, the command and its output, what I expected, 
 
 ### S-11 rough: a style set is repeated at every use
 - A brand text control is twelve style props and a primary button eleven; a spread of a shared object is not collected (k.ui reads literals), so each of the app's eleven controls and five primary buttons repeats them. A wrapper component per variant is the only reuse, and it must pass `field`, `id` and event props through.
+
+## Layer 7: channels and live updates, two members
+
+The README numbers this layer 8, after the frame and brand layer; the ids follow the coverage plan's layer 7.
+
+### L7-1 fault: two `renderRoute` harnesses of one page do not resume, and share every client store
+- Tried: `test/live.test.ts` (first draft) opened `shopping.list` twice over one `served()` app and ctx, `renderRoute("shopping.list", { routes: webRoutes, params: {}, ctx, app, user })` with Ada's id, then with Grace's.
+- The second failed: `E1720 test/live.test.ts:29:17 the document did not resume: E1253 [data-k-island="shopping.list"] the claim threw; re-...`. With the claim's error printed (L7-2) it reads `store headless.options:shopping.staples: id already in use by a live store`, from the `Menu`'s chart (`packages/std-headless/src/listChart.ts:26`, `packages/store/src/store.ts:65`). Both harnesses run in one JS realm, so beyond the widget ids, the client stores `shopping.copy` and `shopping.view` are one store for both "browsers": Ada's page hydrating the list would make Grace's page show it with no event reaching Grace.
+- Spec: k.user Testing makes two harnesses over one `app` two users, jars and callers of one server state, and k.testing resumes each page as by `resumeDocument` in its own browser. Two members on the same page is the case those sentences invite, and it cannot be written.
+- Fixed: with `app`, `renderRoute` takes `routes: () => import(path)` and resumes the page in a client module graph of its own (`packages/testing/src/internal/documentRoute.ts`, `freshGraph.ts`); a ctx's observers and meta are realm-wide (`packages/ctx/src/internal/realmShared.ts`), so such a page hears the ctx's `net` changes. `test/live.test.ts` opens the list as Ada and as Grace (`listPage`, `test/webRoutes.ts`): Ada's page adds, buys and removes, Grace's shows each, and each keeps its own tab and menu. The spec names the import form only for `resumeDocument` (k.testing); the `renderRoute` sentence is owed.
+
+### L7-2 rough: a resume failure under the harness hides its cause
+- The E1720 above names `the claim threw` and nothing else. `packages/runtime-dom/src/internal/resumeIsland.ts:85` adds the thrown error only when `mode === "dev"`, and the harness ctx is sim, so a test author sees no cause. Finding it took a local edit of that line. k.errors keeps thrown text out of production output; a test harness is not production.
+
+### L7-3 rough: a channel cannot follow app data in Postgres without a store the app invents
+- k.data puts the list in Postgres through std-postgres; std.channels sends `{ kind: 'saved', store, head }` "after each save of a store `stores` creates (k.sync `save`)". A Postgres commit is no store save, so `channelRoute` over the list has nothing to watch.
+- Now: `changeStores.ts` holds a server store `shopping.changes` that only counts, and each write action bumps it after its transaction commits (`postItem.server.ts`, `toggleItem.server.ts`, `deleteItem.server.ts`). A write that forgets the bump leaves every open page stale, and nothing checks it. keel-data's Live updates example watches a store and says nothing about app data.
+- Expected: a way for a server action to signal a channel (`notify(ctx, channel, params)`), or keel-data naming the counter-store pattern for std-postgres data.
+
+### L7-4 rough: a stream outlives the session that opened it, and `live` says connecting, not denied
+- Tried: `test/live.test.ts` "refuses the re-read of a member who signed out": Grace's stream open with her cookie, a sign-out through `/api/auth/sign-out`, then Ada adds Rice. Grace's stream got `{ kind: 'saved', store: 'shopping.changes', head: 1 }`; her re-read answered 403.
+- Spec: std.channels, `member` runs "for each open stream, after each save of its stores", and `packages/std-channels/src/server/Member.ts:3`, "a stream's re-check after a save sees the `user` it opened with". std.live: `status()` is "`denied` once the channel denies" and `connecting` while "a read is pending or failed", so a member signed out elsewhere shows Connecting forever, retrying a refused read with backoff.
+- No list data reaches the signed-out browser, but the status lies. `ShoppingList.tsx` wraps `read`: a 403 answer sets a signal that shows Signed out. The smoke proves it in a second tab.
+
+### L7-5 docs: what `origin` a page passes to `live`, and what the server render does with it
+- std.live shows `live(ctx, origin, boardChannel, {}, ...)` and std.channels "`subscribe(ctx, origin, ...)`"; neither says what `origin` is for a page its own `node` deployable serves, nor whether `live` may run in the server render. `ShoppingList.tsx` uses `pageOrigin.ts`, `typeof location === "undefined" ? undefined : location.origin`, and renders `connecting` with no `live` call on the server. Expected: `live` taking the document's origin by default (as `service` calls do, k.services), or the docs naming the pattern.
+
+### L7-6 rough: `simulate` against a real server needs hand-made turns
+- Tried: `test/reconnect.sim.test.ts`, `live` in a `scope` on the scenario's ctx, its `ctx.net` routes forwarding to a `createApp` on another ctx (PGlite and the sign-in library behind it).
+- `run()` settles microtasks and sim timers, so the server's PGlite and sqlite I/O had not answered when it returned: status `connecting`, copy `[]`, E1704 on the empty schedule. A schedule whose offline windows end past the horizon leaves the stream's 30 s backoff timer past the clock `run()` stops at, so even a waiting test stays `connecting`. `setTimeout` to give the server time is E1601 in a test file.
+- Now: up to 60 turns, each awaiting one server round trip and `ctx.clock.advance(5_000)`, then `run()`. k.sim says `run()` "settles as the harness does"; the harness's own `settle` waits for `app` requests in flight, `simulate` does not. A forwarding route also has to pass `signal: req.signal` on, or each run's stream stays open and the eighth run's is closed `full`.
+
+### L7-7 rough: a page with a channel never goes network-idle
+- `tooling/smoke/household.mjs` waited for Playwright's `networkidle` after each navigation; once the list page opened its stream, `sign-up and sign-in go on to the list` failed with `page.waitForLoadState: Timeout 30000ms exceeded`. The smoke now waits for `load` and at most 2.5 s for quiet. Any tool that waits for an idle network (`tooling/smoke/persist.mjs`, the monitor path) has the same problem on a live page, and no element or event says the page has resumed.
+
+### L7-8 docs: keel-testing does not name `renderRoute`'s `user`
+- `.claude/skills/keel-testing/SKILL.md:29` lists `renderRoute(id, { routes, params, search, state, ctx, caller })`; k.testing and k.user Testing have `user`, and the two-harness form. The brief and the earlier household tests use `user`; an author working from the skill finds neither it nor E1724.
+
+### L7-9 docs: `store.restore(base)` in `afterEach` is E1453 as a statement
+- keel-testing: "`const base = store.snapshot()` and `store.restore(base)` in `afterEach`". With two stores, `afterEach(() => { view.restore(views); copy.restore(copies); })` is `E1453 test/live.test.ts:13:3 Result discarded as a statement; narrow on r.ok`. The one-store form passes only because an arrow's expression body returns the Result. The tests now assert both `ok`.
 

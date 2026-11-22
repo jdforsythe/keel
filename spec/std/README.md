@@ -33,7 +33,7 @@ S8 adds std.db, std.workflows, std.shells and std.tokens.
 | std.report | Tally report | conformance-covered | formatter registry: `report.tally`; `keel report` |
 | std.jobs | Background jobs | conformance-covered | module manifest and inspector hooks: durable jobs, retry, lease, E2501-E2506 |
 | std.schedules | Schedules | conformance-covered | module manifest: cron in a zone, catch-up, E2551-E2553 |
-| std.channels | Channels | conformance-covered | module manifest and check rule registry: named channels over a server event stream, E2601-E2602 |
+| std.channels | Channels | conformance-covered | module manifest and check rule registry: named channels over a server event stream, stores and followed app data, E2601-E2602 |
 | std.live | Live views | conformance-covered | composes std.channels: a client store re-read on every push |
 | std.offline | Outbox | conformance-covered | check rule registry: queued writes with keys and bases, resolve, E2651 |
 | std.contracts | Stdlib contracts | proposed | std-health, std-sessions, std-channels and std-offline over k.contract |
@@ -48,7 +48,7 @@ S8 adds std.db, std.workflows, std.shells and std.tokens.
 | std.lists | List primitives | conformance-covered | `listChart`, `stableRows` for app components |
 | std.tables | Data tables | conformance-covered | columns from a schema, query in the URL, `applyQuery`, E2851-E2853 |
 | std.db | SQLite and Postgres storage | proposed | storage drivers (k.persist) and check rule registry: E2151-E2153 |
-| std.postgres | Postgres app data | implemented | capability and check rule registries: `database`, `sql` with a result schema, `serializable` transactions, migrations, PGlite under sim, E2451-E2459 |
+| std.postgres | Postgres app data | implemented | capability and check rule registries: `database`, `sql` with a result schema, `serializable` transactions, `changed` and `follow`, migrations, PGlite under sim, E2451-E2460 |
 | std.workflows | Workflows | conformance-covered | module manifest, inspector hook, check rule registry: chart instances over jobs, E2351-E2355 |
 | std.shells | Shell drivers | conformance-covered | storage and net drivers for Capacitor and Tauri shells |
 | std.capacitor | Capacitor shell target | implemented | shell target: Android and iOS files, tools, build, CI jobs |

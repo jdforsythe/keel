@@ -14,11 +14,11 @@ import { simBackend } from "./internal/simBackend.ts";
 /** What the registry holds per ctx: the database, made at its first access with the ctx's clock. */
 type Side = { at(ctx: Ctx): Database };
 
-const sideOf = (backend: Backend, steps?: readonly Step[]): Side => {
+const sideOf = (name: string, backend: Backend, steps?: readonly Step[]): Side => {
   let db: Database | undefined;
   return {
     at(ctx) {
-      db ??= makeDatabase(backend, steps === undefined ? undefined : { steps, clock: ctx.clock });
+      db ??= makeDatabase(name, backend, steps === undefined ? undefined : { steps, clock: ctx.clock });
       return db;
     },
   };
@@ -39,11 +39,11 @@ export function database(name: string, opts: DatabaseOptions = {}): (ctx: Ctx) =
     found ??= migrationFiles(name, foundMigrations(name));
     return found;
   };
-  const real = (): Side => sideOf(realBackend(name, files));
+  const real = (): Side => sideOf(name, realBackend(name, files));
   const accessor = register<Side, Step>(name, {
     real,
     shell: real,
-    sim: ({ seed, plan }) => sideOf(simBackend(name, files, seed), plan),
+    sim: ({ seed, plan }) => sideOf(name, simBackend(name, files, seed), plan),
     plan: Step,
   });
   return (ctx) => accessor(ctx).at(ctx);

@@ -2,7 +2,7 @@ import { type Ctx, type Net, createCtx } from "@keel/ctx";
 import { browserCtx } from "@keel/ctx/internal";
 import { scope } from "@keel/reactive";
 import type { RouteTable } from "@keel/router";
-import { compileRoutes } from "@keel/router/internal";
+import { compileRoutes, encodeHref } from "@keel/router/internal";
 import { matchHref } from "@keel/router/match";
 import { resume } from "@keel/runtime-dom/ops";
 import type { Island } from "@keel/runtime-dom/ops";
@@ -16,6 +16,7 @@ import { appSigner } from "./appSigner.ts";
 import { browserFront } from "./browserFront.ts";
 import { clockStep } from "./clockStep.ts";
 import { fail } from "./fail.ts";
+import { freshGraph } from "./freshGraph.ts";
 import { openHarness } from "./openHarness.ts";
 import { seedFrom } from "./seedFrom.ts";
 import { settle } from "./settle.ts";
@@ -25,18 +26,21 @@ const MAX_REDIRECTS = 20;
 const REDIRECT: ReadonlySet<number> = new Set([301, 302, 303, 307, 308]);
 
 /** The route state of the page at `path`: its match in `routes`, never pending (a document is loaded whole). */
-function stateAt(routes: RouteTable, path: string): unknown {
-  const m = matchHref(routes, path);
+function stateAt(graph: Graph, routes: RouteTable, path: string): unknown {
+  const m = graph.matchHref(routes, path);
   return m === null
     ? { id: null, params: {}, search: {}, pending: false }
     : { id: m.id, params: m.params, search: m.search, pending: false };
 }
 
 /** Narrow a route state built by `stateAt` from a match in `routes` to the table's typed state. */
-function isStateOf<T extends RouteTable>(routes: T, x: unknown): x is RouteStateOf<T> {
+function isStateOf<T extends RouteTable>(graph: Graph, routes: RouteTable, x: unknown): x is RouteStateOf<T> {
   if (typeof x !== "object" || x === null || !("id" in x)) return false;
-  return x.id === null || (typeof x.id === "string" && compileRoutes(routes).table.has(x.id));
+  return x.id === null || (typeof x.id === "string" && graph.compileRoutes(routes).table.has(x.id));
 }
+
+/** The client module graph a page resumes in: the test's own, or one `freshGraph` evaluated for this harness. */
+type Graph = Awaited<ReturnType<typeof freshGraph>>;
 
 /** Nets whose origin `routeOrigin` routed, per app: one route each, so a later harness adds none. */
 const routed = new WeakMap<Net, Set<string>>();
@@ -66,12 +70,13 @@ function routeOrigin(net: Net, origin: string, app: DocumentApp): void {
  * the origin, the document loads included, goes through it to `ctx.net`, which routes the origin to `app.fetch` unless
  * the test routed it first. The front's jar keeps the cookies `app` sets, so `caller` is one `app` mints and a
  * sign-in through the mount holds; with `user` each such request carries `x-keel-user` for it (`appSigner`, E1724
- * when `ctx`'s binding does not hold `app`). `navigate(href)` loads `href` the same way; `location().entries` counts the loaded
+ * when `ctx`'s binding does not hold `app`). With `routes` as an import (`RoutesImport`) the page resumes in a client
+ * module graph of its own (`freshGraph`): its client stores, widget stores and islands are this harness's alone, and
+ * `state()` and `settle` read that graph's stores. `navigate(href)` loads `href` the same way; `location().entries` counts the loaded
  * documents and `route()` is the match of the last one. `state` or `shell` reject with E1722 before any request.
  */
 export async function documentRoute<T extends RouteTable>(
   id: string,
-  url: string,
   options: RouteRenderOptions<T>,
   app: DocumentApp,
 ): Promise<RouteHarness<RouteStateOf<T>, Ctx>> {
@@ -81,11 +86,35 @@ export async function documentRoute<T extends RouteTable>(
       `renderRoute(${JSON.stringify(id)}): app serves the page, so ${options.state !== undefined ? "state" : "shell"} has no meaning; seed ctx.storage`,
       { option: options.state !== undefined ? "state" : "shell" },
     );
-  const routes: RouteTable = options.routes;
+  const given = options.routes;
+  // An import resumes the page in a client module graph of its own: this harness's browser alone.
+  const graph =
+    typeof given === "function"
+      ? await freshGraph(given)
+      : {
+          routes: given,
+          table: compileRoutes(given).table,
+          compileRoutes,
+          matchHref,
+          encodeHref,
+          resume,
+          stores,
+          scope,
+        };
+  const routes: RouteTable = graph.routes;
+  const raw = options.url;
+  // A raw url is a root-relative path and query of page `id` (never another origin, scheme or route).
+  if (raw !== undefined && (!/^\/(?![/\\])/.test(raw) || graph.matchHref(routes, raw)?.id !== id))
+    throw fail("E1501", `renderRoute(${JSON.stringify(id)}): url ${JSON.stringify(raw)} is not a path of this page`, {
+      url: raw,
+    });
+  const url = raw ?? graph.encodeHref(id, graph.table.get(id)?.def, options.params ?? {}, options.search ?? {});
+  // Each harness starts at the top: scroll is the window's, shared with the test before.
+  window.scrollTo(0, 0);
   const ctx = options.ctx ?? createCtx({ mode: "sim", seed: seedFrom(undefined) });
   const origin = /^https?:$/.test(location.protocol) ? location.origin : "http://localhost";
   const components: Record<string, Island> = {};
-  for (const [rid, { def }] of compileRoutes(routes).table) if (def.component) components[rid] = def.component;
+  for (const [rid, { def }] of graph.table) if (def.component) components[rid] = def.component;
   const sign = options.user === undefined ? undefined : appSigner(ctx, app, id, options.user);
   routeOrigin(ctx.net, origin, app);
   const front = browserFront({
@@ -157,8 +186,11 @@ export async function documentRoute<T extends RouteTable>(
     if (lang !== null) document.documentElement.setAttribute("lang", lang);
     host.replaceChildren(...doc.body.childNodes);
     const at = host;
-    islands = scope(() => {
-      const { warnings: said } = resume(at, components, { ctx: page, stores: Object.fromEntries(stores()) });
+    islands = graph.scope(() => {
+      const { warnings: said } = graph.resume(at, components, {
+        ctx: page,
+        stores: Object.fromEntries(graph.stores()),
+      });
       // A mismatch the browser would paper over with a client re-render is a fault the test reports.
       warnings.push(...said);
     });
@@ -199,12 +231,13 @@ export async function documentRoute<T extends RouteTable>(
     ctx,
     run: page,
     seeded: [],
+    registry: graph.stores,
     busy,
     documents,
     follow,
     page: true,
     // The page's route id, as router mode records it, so its a11y report rows key the ledger alike.
-    target: () => ({ route: String(matchHref(routes, current)?.id ?? current), component: null }),
+    target: () => ({ route: String(graph.matchHref(routes, current)?.id ?? current), component: null }),
     teardown: () => {
       islands.dispose();
       document.title = head.title;
@@ -223,8 +256,8 @@ export async function documentRoute<T extends RouteTable>(
     throw error;
   }
   const route = (): RouteStateOf<T> => {
-    const st = stateAt(routes, current);
-    if (!isStateOf(options.routes, st))
+    const st = stateAt(graph, routes, current);
+    if (!isStateOf<T>(graph, routes, st))
       throw fail("E1501", `renderRoute: ${current} is no page of routes`, { url: current });
     return st;
   };

@@ -1,10 +1,19 @@
 import { contract } from "@keel/router/contract";
 import { ItemRef } from "./ItemRef.schema.ts";
 import { Items } from "./Items.schema.ts";
+import { ListParams } from "./ListParams.schema.ts";
 import { NewItem } from "./NewItem.schema.ts";
+import { listChannel } from "./listChannel.schema.ts";
 
 export const shopping = contract("shopping", {
   "shopping.list": { path: "/list" },
+  "shopping.events": {
+    method: "GET",
+    path: "/api/items/events",
+    query: ListParams,
+    events: true,
+    output: listChannel.events,
+  },
   "shopping.items": { method: "GET", path: "/api/items", output: Items },
   "shopping.add": { method: "POST", path: "/api/items", body: NewItem, output: Items },
   "shopping.toggle": { method: "POST", path: "/api/items/:id/toggle", params: ItemRef, output: Items },

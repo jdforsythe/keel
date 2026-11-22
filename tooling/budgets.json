@@ -2,12 +2,12 @@
   "output": {
     "check.injected10": 600,
     "test.failing3": 400,
-    "spec.section": 2350,
+    "spec.section": 3100,
     "spec.map": 1410,
     "explain": 300,
     "mcp.tools-list": 1900,
     "docs.map": 1490,
-    "docs.section": 2350,
+    "docs.section": 3100,
     "docs.skill": 2725,
     "docs.for": 400,
     "docs.agents": 600
@@ -66,7 +66,7 @@
     "@keel/services": "3.5kb",
     "@keel/std-channels": "1.5kb",
     "@keel/std-channels/server": {
-      "max": "2.1kb",
+      "max": "2.4kb",
       "platform": "node"
     },
     "@keel/std-channels/tools": {
@@ -164,7 +164,7 @@
     },
     "@keel/std-postgres": "1kb",
     "@keel/std-postgres/server": {
-      "max": "5.75kb",
+      "max": "7.5kb",
       "platform": "node"
     },
     "@keel/std-postgres/testing": {
@@ -172,7 +172,7 @@
       "platform": "node"
     },
     "@keel/std-postgres/tools": {
-      "max": "3kb",
+      "max": "3.25kb",
       "platform": "node"
     },
     "@keel/std-workflows": {
@@ -202,7 +202,7 @@
       "platform": "node"
     },
     "@keel/testing": {
-      "max": "17kb",
+      "max": "18kb",
       "platform": "node"
     },
     "@keel/testing/prove": {
