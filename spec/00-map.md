@@ -56,10 +56,10 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.cli | CLI, MCP, LSP | conformance-covered | flags |
 | k.docs | Installed docs | implemented | read |
 | k.scaffold | Scaffold, codemods | implemented | edits |
-| k.testing | Harness, properties | implemented | fire |
+| k.testing | Harness, properties | conformance-covered | fire |
 | k.model | Store exploration | conformance-covered | traces |
 | k.prove | Proving invariants | conformance-covered | Z3 |
-| k.sim | Simulation | implemented | faults |
+| k.sim | Simulation | conformance-covered | faults |
 | k.ledger | Ledger, evidence | conformance-covered | rungs |
 | k.server | Thin server | conformance-covered | loads |
 | k.leave | What a request leaves | conformance-covered | state |

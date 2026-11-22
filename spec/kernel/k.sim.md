@@ -1,5 +1,5 @@
 # k.sim: Schedules and simulation
-status: implemented
+status: conformance-covered
 
 Under sim (k.ctx) every capability is deterministic by seed. A schedule fixes what the seed leaves alone: how long each request takes, which requests and storage calls fail, and when the network is offline. `simulate` runs one scenario under many generated schedules, as `properties` (k.testing) runs one property under many inputs.
 
