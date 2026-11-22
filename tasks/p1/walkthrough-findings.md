@@ -43,8 +43,19 @@
 | L6-4 | open |
 | L6-5 | open |
 | L6-6 | open |
+| S-1 | fixed: rfc:0182 build: keel dev serves the deployable's styles and every dev document links them |
+| S-2 | carried by RFC 0188 (base) |
+| S-3 | fixed: rfc:0187 build: a page's layout may name a layout of a module that lists the page's module in deps; household: one app.frame |
+| S-4 | answered in the skills (keel, keel-client: `gap` needs `direction`); stacking `gap` carried by RFC 0188 |
+| S-5 | fixed (`@keel/ui` atomic CSS keeps `[hidden]` hidden) |
+| S-6 | fixed (`w`, `h` are border-box; `size.control` removed) |
+| S-7 | carried by RFC 0188 (control `styles` parts, base `label`, `fieldError`) |
+| S-8 | carried by RFC 0188 (summary label and `k-summary`) |
+| S-9 | carried by RFC 0188 (`base.focus`) |
+| S-10 | carried by RFC 0188 (`overflow-wrap`) |
+| S-11 | carried by RFC 0188 (`look`) |
 
-Fixed 9, answered in the skills 9, filed as backlog 11, open 10.
+Fixed 13, answered in the skills 10, filed as backlog 11, carried by RFC 0188 6, open 10.
 
 Each finding: what I tried, where, the command and its output, what I expected, whether docs or skills misled. Kinds: fault (framework behaves against its spec), docs (docs or skills gap), rough (works, but an app author trips on it).
 
@@ -200,3 +211,42 @@ Each finding: what I tried, where, the command and its output, what I expected, 
 
 ### L6-6 rough: `formatMessage` takes only a message-set entry
 - `formatMessage(props.data.text.signedInAs, { email }, "en-US")` with `signedInAs` a plain `s.string()` in the loader's copy failed `tsc`: `Argument of type 'string' is not assignable to parameter of type 'Message<Readonly<Record<string, string | number>>>'`. The one-locale members pages now join strings in the component; a placeholder in a plain loader string has no documented helper.
+
+## Styles
+
+### S-1 docs: k.head and k.topology disagree on what a dev document links
+- Tried: `AUTH_FIXTURE=dev keel dev --port 5391` in `apps/household`, `curl localhost:5391/signup`.
+- Saw: the head holds charset, viewport, the CSP nonce meta and `<title>`; no `<link rel="stylesheet">`. The entry module (`/@keel/entry.ts?d=web`) imports `@keel/ui/fonts` and `/__keel.css`, so the styles arrive once the script runs (Vite injects them); with scripts off, and before the module loads, the page is bare. The built `server.mjs` links `/assets/entry-*.css` (fonts and atomic rules, 200).
+- `keel docs k.head` says "In dev, or without a build, it holds the title only" (`packages/server/src/internal/headHtml.ts:10` links `built?.css`, absent in dev); `keel docs k.topology` says a `styles` entry is imported by the entry "so its documents link it (k.head) in dev and build". One of the two needs an RFC. The k.head conformance item "A built document has the head this section names" and the k.topology item "With `styles: ['@keel/ui/fonts']`, a built `node` document's head ... link a stylesheet" have no dev case.
+
+### S-2 rough: nothing puts the brand on a page until the app does
+- The project ships `tokens.ts` on `brandTokens` and `styles: ["@keel/ui/fonts"]`, so the custom properties and `@font-face` rules load, but no rule uses them: `body` keeps the browser's Times and the controls their platform look until a component sets `font`, `fg` and `bg`. The scaffolded start page sets none, which is the unstyled page the operator saw under `keel dev`. Expected: the scaffold's first route renders in a layout that sets the brand font and colours, or the base stylesheet sets them from the tokens.
+
+### S-3 rough: a navigation shared by every module's pages is a `deps` cycle
+- A layout that links to the list, the receipts book and the profile must list `shopping`, `receipts` and `members` in `deps`; a page that renders in it must list the layout's module (k.routes Layouts, E1152). Any module holding both is `E1153`. `Link to` takes only an `Href`, and only the target's contract makes one (L4-3, L4-4).
+- The app now has one shell layout per module (`<module>.shell`), each rendering `members/Frame.tsx` with the links its `deps` allow: the list and the start page link to the list and the receipts book; the receipts book cannot link to the list; the profile, sign-in and setup pages link only to the profile and sign-out. A member on the receipts book reaches the list by the browser's back button.
+
+### S-4 fault: `gap` without `direction` spaces nothing
+- `<Box gap="3">` writes `.k-gap-3{gap:var(--k-space-3)}` and no `display`, so on a block `div` it does nothing. Every `gap` the app had (`p="4" gap="3"` on each page) was inert. keel's skill example `<Box as="ul" id="todos.list" gap="2">` shows the same. Expected: `gap` implies flex as `direction` does, or the docs say `gap` needs `direction`.
+
+### S-5 rough: a part's `direction` defeats the widget's `hidden`
+- `styles={{ menu: { direction: "column" } }}` on a `Menu` showed the menu open on every load: `.k-direction-column{display:flex}` outranks the user-agent `[hidden]` rule the widget relies on. The menu part now takes no `direction`. Expected: the base stylesheet keeps `[hidden]` hidden, or k.aria warns.
+
+### S-6 rough: a full-width text control overflows its container
+- `Input w="full" px="2" border="control"` is 18px wider than its parent (content-box sizing; `Select` is border-box in Chromium, so the two differ). No prop sets `box-sizing`. The app adds a token, `size.control: "calc(100% - 18px)"`, in `tokens.ts`, tied to `px="2"` and the 1px border.
+
+### S-7 rough: a control's label and its field error take no style
+- Style props on `Input`, `Select` and `TextArea` reach the control only. The `<label>`, the wrapper and the error `<span>` under the control are unstyled: a field error prints in the body colour, not Error Crimson, and the label sits above the control only because `w` makes the control wrap.
+
+### S-8 rough: the no-script 422 summary is unstyled and names the field path
+- A refused receipt posted without scripts renders `<div role="alert"><ul><li>amount: Write the amount ...</li></ul></div>` (`packages/server/src/internal/fieldSummary.ts`) above the page: bullets, browser margins, and the schema path `amount` in place of the label `Amount`. The app cannot style or word it.
+
+### S-9 rough: focus shows the browser's ring
+- `states.focusVisible` takes the style props, and none sets `outline`, so a focused control shows the platform's rounded blue ring beside zero-radius brand borders. The app adds a background change on focus; the ring stays.
+
+### S-10 rough: a long unbroken string widens the page at phone width
+- A minted API token (90 characters, no break) pushed the profile page 380px past a 390px viewport. No prop sets `overflow-wrap`. `TokenPanel.tsx` now renders the token in 16-character pieces in a wrapping row.
+
+### S-11 rough: a style set is repeated at every use
+- A brand text control is twelve style props and a primary button eleven; a spread of a shared object is not collected (k.ui reads literals), so each of the app's eleven controls and five primary buttons repeats them. A wrapper component per variant is the only reuse, and it must pass `field`, `id` and event props through.
+

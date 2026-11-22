@@ -19,6 +19,8 @@ import type { ReportWindow } from "./ReportWindow.ts";
  * `allow` is the set of allowed origins, serialized (`createApp({ allow })`, k.hosting).
  * `entry` is the script an island document loads: `built`'s entry, else `/@keel/entry.ts?d=<deployable>`, the resume
  * entry of `createApp({ deployable })`'s islands (none given: `/@keel/entry.ts`, every `node` module's).
+ * `css` is the stylesheets every document links (k.head Server): `built`'s, else in dev `/@keel/styles.css?d=<deployable>`
+ * (the deployable's `styles` and the atomic CSS, served by the compiler's dev server), else none.
  * `lifecycle` aborts on `close()`, ending runners and open event streams. `maxStreams` caps the open event streams
  * (`createApp({ maxStreams })`) and `streams.open` counts them (`liveStream`). `reports` is the CSP report window
  * (`cspReport`). `frames` reads a throw's app frames (`appFrames` of `createApp({ artifacts })`). `log` is
@@ -40,6 +42,7 @@ export type Served = {
   readonly secure: boolean | undefined;
   readonly built: BuiltClient | undefined;
   readonly entry: string;
+  readonly css: readonly string[];
   readonly name: string;
   readonly origin: string | undefined;
   readonly allow: ReadonlySet<string>;

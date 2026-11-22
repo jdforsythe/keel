@@ -3,7 +3,7 @@
   "unsafe": 18,
   "hostElements": 0,
   "rungs": {
-    "example": 1760,
+    "example": 1698,
     "probabilistic": 341,
     "exhaustive": 15,
     "proven": 75,
@@ -20,7 +20,7 @@
         "threshold": 70
       },
       "compiler": {
-        "score": 77.2,
+        "score": 77.47,
         "threshold": 70
       },
       "ctx": {
@@ -52,7 +52,7 @@
         "threshold": 80
       },
       "server": {
-        "score": 76.52,
+        "score": 76.44,
         "threshold": 70
       },
       "services": {
@@ -164,7 +164,7 @@
         "threshold": 70
       },
       "ui": {
-        "score": 70.81,
+        "score": 70.74,
         "threshold": 70
       }
     },
@@ -11956,6 +11956,12 @@
     },
     {
       "pkg": "household",
+      "name": "AppFrame",
+      "file": "household:app/AppFrame.tsx",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
       "name": "StartData",
       "file": "household:app/StartData.schema.ts",
       "rung": "none"
@@ -11970,6 +11976,12 @@
       "pkg": "household",
       "name": "app",
       "file": "household:app/app.contract.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "loadFrame",
+      "file": "household:app/loadFrame.server.ts",
       "rung": "none"
     },
     {
@@ -11994,6 +12006,12 @@
       "pkg": "household",
       "name": "ErrorReply",
       "file": "household:members/ErrorReply.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "Masthead",
+      "file": "household:members/Masthead.tsx",
       "rung": "none"
     },
     {
@@ -12042,6 +12060,18 @@
       "pkg": "household",
       "name": "Registration",
       "file": "household:members/Registration.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "ShellData",
+      "file": "household:members/ShellData.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "ShellText",
+      "file": "household:members/ShellText.schema.ts",
       "rung": "none"
     },
     {
@@ -12130,6 +12160,12 @@
     },
     {
       "pkg": "household",
+      "name": "VisitorFrame",
+      "file": "household:members/VisitorFrame.tsx",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
       "name": "authOf",
       "file": "household:members/authOf.server.ts",
       "rung": "none"
@@ -12168,6 +12204,12 @@
       "pkg": "household",
       "name": "getTokens",
       "file": "household:members/getTokens.server.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "loadFrame",
+      "file": "household:members/loadFrame.server.ts",
       "rung": "none"
     },
     {
@@ -12234,6 +12276,12 @@
       "pkg": "household",
       "name": "saveProfile",
       "file": "household:members/saveProfile.server.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "household",
+      "name": "shellText",
+      "file": "household:members/shellText.ts",
       "rung": "none"
     },
     {
@@ -15193,6 +15241,10 @@
       "rung": "example"
     },
     {
+      "item": "k.head#10",
+      "rung": "example"
+    },
+    {
       "item": "k.host-code#1",
       "rung": "example"
     },
@@ -15449,10 +15501,6 @@
       "rung": "example"
     },
     {
-      "item": "k.links#12",
-      "rung": "example"
-    },
-    {
       "item": "k.model#1",
       "rung": "exhaustive"
     },
@@ -15534,6 +15582,10 @@
     },
     {
       "item": "k.module#14",
+      "rung": "example"
+    },
+    {
+      "item": "k.module#15",
       "rung": "example"
     },
     {
@@ -16265,6 +16317,10 @@
       "rung": "example"
     },
     {
+      "item": "k.routes#10",
+      "rung": "example"
+    },
+    {
       "item": "k.runtime#1",
       "rung": "example"
     },
@@ -16665,10 +16721,6 @@
       "rung": "example"
     },
     {
-      "item": "k.shell#9",
-      "rung": "example"
-    },
-    {
       "item": "k.sim#1",
       "rung": "probabilistic"
     },
@@ -16990,6 +17042,10 @@
     },
     {
       "item": "k.topology#13",
+      "rung": "example"
+    },
+    {
+      "item": "k.topology#14",
       "rung": "example"
     },
     {
@@ -19123,6 +19179,86 @@
       "rung": "example"
     },
     {
+      "item": "a11y:app.frame#1.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:app.frame#1.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:app.frame#1.3.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:app.frame#1.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:app.frame#1.3.5",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:app.frame#1.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:app.frame#1.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:app.frame#1.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:app.frame#1.4.12",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:app.frame#2.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:app.frame#2.2.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:app.frame#2.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:app.frame#2.4.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:app.frame#2.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:app.frame#2.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:app.frame#2.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:app.frame#3.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:app.frame#3.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:app.frame#3.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:app.frame#4.1.2",
+      "rung": "none"
+    },
+    {
       "item": "a11y:app.start#1.1.1",
       "rung": "example"
     },
@@ -19200,6 +19336,86 @@
     },
     {
       "item": "a11y:app.start#4.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.frame#1.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.frame#1.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.frame#1.3.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.frame#1.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.frame#1.3.5",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.frame#1.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.frame#1.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.frame#1.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.frame#1.4.12",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.frame#2.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.frame#2.2.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.frame#2.2.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.frame#2.4.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.frame#2.4.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.frame#2.4.3",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.frame#2.4.4",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.frame#3.1.1",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.frame#3.1.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.frame#3.3.2",
+      "rung": "none"
+    },
+    {
+      "item": "a11y:members.frame#4.1.2",
       "rung": "none"
     },
     {
@@ -20324,15 +20540,15 @@
     },
     {
       "item": "a11y:inspector.index#1.1.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:inspector.index#1.2.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:inspector.index#1.3.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:inspector.index#1.3.2",
@@ -20340,11 +20556,11 @@
     },
     {
       "item": "a11y:inspector.index#1.3.5",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:inspector.index#1.4.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:inspector.index#1.4.3",
@@ -20352,31 +20568,31 @@
     },
     {
       "item": "a11y:inspector.index#1.4.4",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:inspector.index#1.4.12",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:inspector.index#2.1.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:inspector.index#2.2.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:inspector.index#2.2.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:inspector.index#2.4.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:inspector.index#2.4.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:inspector.index#2.4.3",
@@ -20384,19 +20600,19 @@
     },
     {
       "item": "a11y:inspector.index#2.4.4",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:inspector.index#3.1.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:inspector.index#3.1.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:inspector.index#3.3.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:inspector.index#4.1.2",
@@ -20404,15 +20620,15 @@
     },
     {
       "item": "a11y:ops.home#1.1.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:ops.home#1.2.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:ops.home#1.3.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:ops.home#1.3.2",
@@ -20420,11 +20636,11 @@
     },
     {
       "item": "a11y:ops.home#1.3.5",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:ops.home#1.4.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:ops.home#1.4.3",
@@ -20432,31 +20648,31 @@
     },
     {
       "item": "a11y:ops.home#1.4.4",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:ops.home#1.4.12",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:ops.home#2.1.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:ops.home#2.2.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:ops.home#2.2.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:ops.home#2.4.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:ops.home#2.4.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:ops.home#2.4.3",
@@ -20464,19 +20680,19 @@
     },
     {
       "item": "a11y:ops.home#2.4.4",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:ops.home#3.1.1",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:ops.home#3.1.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:ops.home#3.3.2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "a11y:ops.home#4.1.2",
@@ -20723,326 +20939,6 @@
       "rung": "none"
     },
     {
-      "item": "a11y:shop.home#1.1.1",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:shop.home#1.2.2",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:shop.home#1.3.1",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:shop.home#1.3.2",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:shop.home#1.3.5",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:shop.home#1.4.2",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:shop.home#1.4.3",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:shop.home#1.4.4",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:shop.home#1.4.12",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:shop.home#2.1.1",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:shop.home#2.2.1",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:shop.home#2.2.2",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:shop.home#2.4.1",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:shop.home#2.4.2",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:shop.home#2.4.3",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:shop.home#2.4.4",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:shop.home#3.1.1",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:shop.home#3.1.2",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:shop.home#3.3.2",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:shop.home#4.1.2",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:stock.count#1.1.1",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:stock.count#1.2.2",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:stock.count#1.3.1",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:stock.count#1.3.2",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:stock.count#1.3.5",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:stock.count#1.4.2",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:stock.count#1.4.3",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:stock.count#1.4.4",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:stock.count#1.4.12",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:stock.count#2.1.1",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:stock.count#2.2.1",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:stock.count#2.2.2",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:stock.count#2.4.1",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:stock.count#2.4.2",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:stock.count#2.4.3",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:stock.count#2.4.4",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:stock.count#3.1.1",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:stock.count#3.1.2",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:stock.count#3.3.2",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:stock.count#4.1.2",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:front.home#1.1.1",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:front.home#1.2.2",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:front.home#1.3.1",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:front.home#1.3.2",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:front.home#1.3.5",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:front.home#1.4.2",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:front.home#1.4.3",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:front.home#1.4.4",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:front.home#1.4.12",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:front.home#2.1.1",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:front.home#2.2.1",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:front.home#2.2.2",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:front.home#2.4.1",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:front.home#2.4.2",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:front.home#2.4.3",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:front.home#2.4.4",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:front.home#3.1.1",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:front.home#3.1.2",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:front.home#3.3.2",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:front.home#4.1.2",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:greet.hello#1.1.1",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:greet.hello#1.2.2",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:greet.hello#1.3.1",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:greet.hello#1.3.2",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:greet.hello#1.3.5",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:greet.hello#1.4.2",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:greet.hello#1.4.3",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:greet.hello#1.4.4",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:greet.hello#1.4.12",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:greet.hello#2.1.1",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:greet.hello#2.2.1",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:greet.hello#2.2.2",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:greet.hello#2.4.1",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:greet.hello#2.4.2",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:greet.hello#2.4.3",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:greet.hello#2.4.4",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:greet.hello#3.1.1",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:greet.hello#3.1.2",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:greet.hello#3.3.2",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:greet.hello#4.1.2",
-      "rung": "none"
-    },
-    {
       "item": "a11y:app.home#1.1.1",
       "rung": "example"
     },
@@ -21120,166 +21016,6 @@
     },
     {
       "item": "a11y:app.home#4.1.2",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:places.home#1.1.1",
-      "rung": "example"
-    },
-    {
-      "item": "a11y:places.home#1.2.2",
-      "rung": "example"
-    },
-    {
-      "item": "a11y:places.home#1.3.1",
-      "rung": "example"
-    },
-    {
-      "item": "a11y:places.home#1.3.2",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:places.home#1.3.5",
-      "rung": "example"
-    },
-    {
-      "item": "a11y:places.home#1.4.2",
-      "rung": "example"
-    },
-    {
-      "item": "a11y:places.home#1.4.3",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:places.home#1.4.4",
-      "rung": "example"
-    },
-    {
-      "item": "a11y:places.home#1.4.12",
-      "rung": "example"
-    },
-    {
-      "item": "a11y:places.home#2.1.1",
-      "rung": "example"
-    },
-    {
-      "item": "a11y:places.home#2.2.1",
-      "rung": "example"
-    },
-    {
-      "item": "a11y:places.home#2.2.2",
-      "rung": "example"
-    },
-    {
-      "item": "a11y:places.home#2.4.1",
-      "rung": "example"
-    },
-    {
-      "item": "a11y:places.home#2.4.2",
-      "rung": "example"
-    },
-    {
-      "item": "a11y:places.home#2.4.3",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:places.home#2.4.4",
-      "rung": "example"
-    },
-    {
-      "item": "a11y:places.home#3.1.1",
-      "rung": "example"
-    },
-    {
-      "item": "a11y:places.home#3.1.2",
-      "rung": "example"
-    },
-    {
-      "item": "a11y:places.home#3.3.2",
-      "rung": "example"
-    },
-    {
-      "item": "a11y:places.home#4.1.2",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:places.place#1.1.1",
-      "rung": "example"
-    },
-    {
-      "item": "a11y:places.place#1.2.2",
-      "rung": "example"
-    },
-    {
-      "item": "a11y:places.place#1.3.1",
-      "rung": "example"
-    },
-    {
-      "item": "a11y:places.place#1.3.2",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:places.place#1.3.5",
-      "rung": "example"
-    },
-    {
-      "item": "a11y:places.place#1.4.2",
-      "rung": "example"
-    },
-    {
-      "item": "a11y:places.place#1.4.3",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:places.place#1.4.4",
-      "rung": "example"
-    },
-    {
-      "item": "a11y:places.place#1.4.12",
-      "rung": "example"
-    },
-    {
-      "item": "a11y:places.place#2.1.1",
-      "rung": "example"
-    },
-    {
-      "item": "a11y:places.place#2.2.1",
-      "rung": "example"
-    },
-    {
-      "item": "a11y:places.place#2.2.2",
-      "rung": "example"
-    },
-    {
-      "item": "a11y:places.place#2.4.1",
-      "rung": "example"
-    },
-    {
-      "item": "a11y:places.place#2.4.2",
-      "rung": "example"
-    },
-    {
-      "item": "a11y:places.place#2.4.3",
-      "rung": "none"
-    },
-    {
-      "item": "a11y:places.place#2.4.4",
-      "rung": "example"
-    },
-    {
-      "item": "a11y:places.place#3.1.1",
-      "rung": "example"
-    },
-    {
-      "item": "a11y:places.place#3.1.2",
-      "rung": "example"
-    },
-    {
-      "item": "a11y:places.place#3.3.2",
-      "rung": "example"
-    },
-    {
-      "item": "a11y:places.place#4.1.2",
       "rung": "none"
     },
     {

@@ -2,7 +2,8 @@
 // app's `dev` script sets them) in a copy of the app in a temporary folder, so its `.keel-dev/` state is that folder's,
 // on a free port. Over HTTP, with no browser: `/` and
 // `/catalog` answer the page shell that loads `/@keel/entry.ts`; the sign-in page is server-rendered by the `api`
-// deployable; a sign-up and a sign-in post to the identity mount (`/api/auth`) the way the account forms do and answer
+// deployable; the shell and the sign-in page each link a stylesheet that answers 200 as CSS with the brand font faces
+// and a rule for every `k-*` class the page uses; a sign-up and a sign-in post to the identity mount (`/api/auth`) the way the account forms do and answer
 // 303 to the sign-in page, the sign-in with a session cookie; with that cookie the sign-in page names the account and
 // `GET /api/me` answers its email, and without it neither does; a recipe posted with that cookie is in `GET /api/recipes`
 // and the app's database is a PGlite folder under `.keel-dev/postgres`; every server-only file the accounts routes import is
@@ -147,6 +148,30 @@ try {
       !signinPage.body.includes('id="accounts.signedIn"'),
     `status ${signinPage.status}`,
   );
+  // Dev documents link the styles a built one does (k.head Server): the `client` shell and the `api` document each link
+  // a stylesheet that answers 200 as CSS with the brand font faces, and the server-rendered page's `k-*` rules.
+  for (const [path, page] of [
+    ["/", await text(base, "/")],
+    ["/account/signin", signinPage],
+  ]) {
+    const hrefs = [...page.body.matchAll(/<link rel="stylesheet" href="([^"]+)"/g)].map((m) =>
+      m[1].replaceAll("&amp;", "&"),
+    );
+    const sheets = await Promise.all(hrefs.map((h) => text(base, h, { accept: "text/css,*/*;q=0.1" })));
+    const css = sheets.map((x) => x.body).join("\n");
+    const classes = [...new Set([...page.body.matchAll(/class="([^"]*)"/g)].flatMap((m) => m[1].split(/\s+/)))].filter(
+      (c) => c.startsWith("k-"),
+    );
+    const missing = classes.filter((c) => !css.includes(`.${c.replaceAll(":", "\\:")}`));
+    step(
+      `GET ${path} links its styles`,
+      hrefs.length > 0 &&
+        sheets.every((x) => x.status === 200 && (x.res?.headers.get("content-type") ?? "").startsWith("text/css")) &&
+        css.includes("@font-face") &&
+        missing.length === 0,
+      `${hrefs.length} stylesheets ${sheets.map((x) => x.status).join(",")}${missing.length === 0 ? "" : `, no rule for ${missing.slice(0, 3).join(" ")}`}`,
+    );
+  }
   const anon = await text(base, "/api/me", { accept: "application/json" });
   step("GET /api/me without a session", anon.status === 403, `status ${anon.status}`);
 

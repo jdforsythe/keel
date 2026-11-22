@@ -8,6 +8,7 @@ import { recordReceipt } from "./recordReceipt.server.ts";
 export const routes = manifest(receipts, {
   "receipts.book": {
     component: BookPage,
+    layout: "app.frame",
     loader: loadBook,
     guard: signedIn,
     POST: recordReceipt,

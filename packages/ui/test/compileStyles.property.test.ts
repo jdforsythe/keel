@@ -126,6 +126,23 @@ describe("compileStyles properties", () => {
     expect(css).toContain(".k-justify-between{display:flex;justify-content:space-between}");
   });
 
+  it("keeps [hidden] hidden over a flex rule, written once and before the atomic rules", () => {
+    const { css } = compileStyles({
+      tokens,
+      usages: [{ props: { direction: "column" } }, { props: { align: "center" }, state: "hover" }],
+    });
+    expect(css.split("[hidden]{display:none!important}").length).toBe(2);
+    expect(css.indexOf("[hidden]{display:none!important}")).toBeLessThan(css.indexOf(".k-direction-column{"));
+    expect(compileStyles({ tokens, usages: [{ props: { p: "1" } }] }).css).not.toContain("[hidden]");
+  });
+
+  it("sizes count padding and border: w and h are border-box", () => {
+    const { css } = compileStyles({ tokens, usages: [{ props: { w: "1", h: "2", p: "1" } }] });
+    expect(css).toContain("{box-sizing:border-box;width:var(--k-space-1)}");
+    expect(css).toContain("{box-sizing:border-box;height:var(--k-space-2)}");
+    expect(css).toMatch(/\.k-p-1[^{]*\{padding:var\(--k-space-1\)\}/);
+  });
+
   it("rejects unknown tokens and breakpoints with E1801, unsafe values with E1807", () => {
     const code = (f: () => unknown): unknown => {
       try {

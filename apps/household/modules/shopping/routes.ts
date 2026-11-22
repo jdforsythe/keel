@@ -10,7 +10,13 @@ import { shopping } from "./shopping.contract.ts";
 import { toggleItem } from "./toggleItem.server.ts";
 
 export const routes = manifest(shopping, {
-  "shopping.list": { component: ListPage, loader: loadList, guard: signedIn, title: (p) => p.data.text.heading },
+  "shopping.list": {
+    component: ListPage,
+    layout: "app.frame",
+    loader: loadList,
+    guard: signedIn,
+    title: (p) => p.data.text.heading,
+  },
   "shopping.items": { loader: getItems, guard: member },
   "shopping.add": { action: postItem, guard: member },
   "shopping.toggle": { action: toggleItem, guard: member },

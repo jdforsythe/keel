@@ -12,7 +12,7 @@ export default module({
 })
 ```
 - `id`: lowerCamel, equals the folder name; prefixes its route ids, store ids, transaction names and error codes.
-- `deps`: app module ids or stdlib package names it may import from, link to or call. Stdlib modules ship the same manifest (extension point) at the package root; `deps` name the package and its `id` is its prefix.
+- `deps`: app module ids or stdlib package names it may import from, link to or call; a page of a module it lists may name its layouts (k.routes Layouts). Stdlib modules ship the same manifest (extension point) at the package root; `deps` name the package and its `id` is its prefix.
 - `capabilities`: `ctx` capabilities its code may use.
 - `std` (optional): its config for stdlib packages, `{ '<pkg>': <literal JSON> }`, read statically. A package that takes config registers its schema under its name (`s.register('@keel/std-x', Config)`); the value must parse with it.
 - `public.exports`: export names (equal to file names) other modules may import. Its routes are its contract's entries, public to every module whose `deps` name it (k.contract).
@@ -40,3 +40,4 @@ Anything not listed is private. Cross-module imports name the exporting file: no
 - An island document of `createApp({ std })` carries as `std` in `#k-state` the config of `clientStd` packages for the served deployable's modules, and a resumed route component reading `stdConfig` on a ctx `bindClientStd` bound gets the server's value; other packages and modules, and a `createApp` without `std`, add nothing.
 - With `clientStd(pkg, ['a'])`, `#k-state` holds only key `a` of each module's `pkg` config.
 - `keel check` imports a `deps` package's `./tools` export: a rule it registers reports, and a throw is E1159.
+- A page of `b` naming a layout of `a`, where `a` lists `b` in `deps`, reports no E1152 and no E1153; `a` and `b` listing each other produce one E1153 naming both.
