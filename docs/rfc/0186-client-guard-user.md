@@ -67,7 +67,7 @@ Spec topics: `pnpm spec k.guards`, `pnpm spec k.user`, `pnpm spec k.return`; for
 
 ## For the operator
 - What an app author sees changes: on a `client` deployable and in a shell, a guard's (and a loader's or action's) `user` is the signed-in reader instead of always `''`, and a `client` app with `identity.ts` sends one `GET /__keel/user` per document load and per mount answer. The guard a `node` page uses now works on a client page.
-- A new kernel entry, `/__keel/user`, exposes `identify`'s answer to same-origin page script. Keel still reads, writes and stores no credential; the answer is the user id the app's own source returns. It rests on a client never authorizing: the spec says so in D4's words, and the API still guards. Confirm that the kernel, not a std package, owns the entry.
+- A new kernel entry, `/__keel/user`, exposes `identify`'s answer to same-origin page script. Keel still reads, writes and stores no credential; the answer is the user id the app's own source returns. It rests on a client never authorizing: the spec says so in D4's words, and the API still guards. The kernel, not a std package, owns the entry.
 - `identify` runs once more per session (per document in a browser).
 
 ## Migration
