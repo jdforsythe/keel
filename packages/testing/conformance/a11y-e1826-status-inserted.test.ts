@@ -38,7 +38,14 @@ const make = (variant: Variant, message: string) => {
         if (variant === "inserted-alert") return live("alert", "done", message);
         return Box({ id: "panel", children: () => live("status", "done", message) });
       };
-      const slot = () => If({ when: () => saved.get(), children: shown, fallback: () => document.createTextNode("") });
+      const slot = () =>
+        If({
+          get when() {
+            return saved.get();
+          },
+          children: shown,
+          fallback: () => document.createTextNode(""),
+        });
       return Box({
         id: "root",
         children: () => [
