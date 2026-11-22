@@ -21,6 +21,7 @@ import { copyPgliteFiles } from "./internal/copyPgliteFiles.ts";
 import { devEntryCode } from "./internal/devEntryCode.ts";
 import { devMiddleware } from "./internal/devMiddleware.ts";
 import { entryCode } from "./internal/entryCode.ts";
+import { entryDependency } from "./internal/entryDependency.ts";
 import { evaluateProject } from "./internal/evaluateProject.ts";
 import { exportNames } from "./internal/exportNames.ts";
 import { hostClient } from "./internal/hostClient.ts";
@@ -214,6 +215,8 @@ type UserConfig = { root?: string; envPrefix?: unknown; define?: unknown };
  * `topology.ts` statically (E1004 exemption for `client` deployables), and evaluates `tokens.ts` and the
  * deployable's modules' routes (an app module's `modules/<id>/routes.ts`, a stdlib module's package `./routes`)
  * to produce `keel.css` (`import "virtual:keel.css"`) and `routes.json`.
+ * A `@keel/` specifier the generated entry imports that the project does not resolve resolves from the compiler's
+ * own dependencies (`entryDependency`).
  * It serves the generated entry at `/@keel/entry.ts` for the deployable `KEEL_DEPLOYABLE` names, else the first
  * `client` one by name: the `mount` entry for a `client` deployable (binding the client-readable part of `std.json`,
  * `clientStdData`, reloaded when a manifest changes), else the resume entry, whose island components
@@ -853,6 +856,11 @@ export default function (): {
       if (id === path.join(root, "index.html") && page() !== undefined) return id;
       const q = keyed(id);
       if (q?.path === ENTRY_PATH || q?.path === ISLANDS_PATH) return id;
+      // A kernel package the generated entry imports and the app does not list resolves from the compiler's dependencies.
+      if (importer !== undefined && keyed(importer)?.path === ENTRY_PATH) {
+        const own = entryDependency(id, root);
+        if (own !== undefined) return own;
+      }
       if (id === SERVER_ENTRY) return `\0${SERVER_ENTRY}`;
       if (id === DEV_ENTRY) return `\0${DEV_ENTRY}`;
       // The server build reads `node:sqlite` when the driver first runs; dev and tests leave it to Node.
