@@ -34,6 +34,7 @@ test("adds a todo", async () => {
 - The harness ctx is always sim (seed `KEEL_SEED`, default 1337). `ctx.clock.advance(ms)` moves time; `ctx.net.route(url, handler)` answers requests.
 - Between tests: `const base = store.snapshot()` and `store.restore(base)` in `afterEach`.
 - A page a `node` deployable serves is tested as the build serves it: `const app = await createApp({ topology, routes, ctx }); const t = await renderRoute(id, { routes, app, ctx })`. The page is requested from `app` and resumed with no router; a `<Form>` submit is POSTed to `app` and its answer (a 422 with the values and errors, or a 303's target) replaces the page. Seed server state through `ctx.storage`; `state` or `shell` with `app` is E1722. Without `app` such a test is W1723.
+- Two users: two harnesses over one `app` and `ctx`, each with `routes: () => import("./webRoutes.ts")` (exports `routes`), so each page has its own client modules; read its store by id, `t.state()["shopping.copy"]`. With the table both share client stores (E1720).
 - `renderRoute(id, { routes, shell: true })` runs the page as in a native shell: `t.documents()` lists what the external browser opened, `t.returnLink(url)` delivers a return link after the page opened it (`keel docs k.return`).
 - A passing `renderRoute` per page runs axe-core and token contrast, and makes the page's `a11y:` claims; E1703, E1804 and E1821 fail it. E1702: role or name differs from `a11y.json`.
 

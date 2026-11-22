@@ -60,7 +60,15 @@ export async function renderRoute<T extends RouteTable>(
   id: string,
   options: RouteRenderOptions<T>,
 ): Promise<RouteHarness<RouteStateOf<T>, Ctx>> {
-  const routes: RouteTable = options.routes;
+  const given = options.routes;
+  // With `app` the page is a built node page: requested from the app and resumed, no router.
+  if (options.app !== undefined) return documentRoute(id, options, options.app);
+  if (typeof given === "function")
+    throw fail("E1722", `renderRoute(${JSON.stringify(id)}): routes as an import needs app; pass the route table`, {
+      option: "routes",
+    });
+  const table = given;
+  const routes: RouteTable = table;
   const raw = options.url;
   // A raw url is a root-relative path and query of page `id` (never another origin, scheme or route).
   if (raw !== undefined && (!/^\/(?![/\\])/.test(raw) || matchHref(routes, raw)?.id !== id))
@@ -71,8 +79,6 @@ export async function renderRoute<T extends RouteTable>(
     raw ?? encodeHref(id, compileRoutes(routes).table.get(id)?.def, options.params ?? {}, options.search ?? {});
   // Each harness starts at the top: scroll is the window's, shared with the test before.
   window.scrollTo(0, 0);
-  // With `app` the page is a built node page: requested from the app and resumed, no router.
-  if (options.app !== undefined) return documentRoute(id, url, options, options.app);
   const seeded = seedStores(options.state ?? []);
   // The document a server writes always has a title (the deployable's name, k.head); the harness's fallback is the id.
   const head = { title: document.title, lang: document.documentElement.getAttribute("lang") };
@@ -114,7 +120,7 @@ export async function renderRoute<T extends RouteTable>(
   if (options.launch === undefined) void intake?.launch([]);
   try {
     router = createRouterWith(
-      options.routes,
+      table,
       {
         ctx,
         history,
