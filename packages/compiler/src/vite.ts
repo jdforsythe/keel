@@ -392,11 +392,11 @@ export default function (): {
       : { name, modules: d.modules, client: d.adapter === "client" };
   };
   /**
-   * The `client` deployable whose `index.html` the plugin writes (k.head Document source): the one a build hosts, or in
-   * dev the one served (`KEEL_DEPLOYABLE`, else the first `client` by name).
+   * The `client` deployable whose `index.html` the plugin writes (k.head Document source): the one a build hosts, else
+   * the one served (`KEEL_DEPLOYABLE`, else the first `client` by name), in dev and in the project's own build.
    */
   const page = (): string | undefined => {
-    if (command === "build") return hosting;
+    if (hosting !== undefined) return hosting;
     const d = deployable();
     return d?.client === true ? d.name : undefined;
   };
