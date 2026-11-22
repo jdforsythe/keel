@@ -5,52 +5,25 @@
 // Checks each unit that has the file against its report `reports/mutation/mutation.json`: M0003 an entry missing a
 // field, with a reason outside the set, a note that is not one sentence, or equal to another; M0002 an entry that
 // matches no undetected mutant of the report, so the file cannot rot; W0016 a unit with the file and no report.
+// The shape, an entry's identity and a mutant's original text are `keel ledger`'s own (E1725, `packages/cli/src/internal`).
 import fs from "node:fs";
 import path from "node:path";
 import { mutationUnits, unitDir } from "./mutate-units.mjs";
+import { JUSTIFIED_REASONS } from "../packages/cli/src/internal/JUSTIFIED_REASONS.ts";
+import { justifiedKey } from "../packages/cli/src/internal/justifiedKey.ts";
+import { justifiedShape } from "../packages/cli/src/internal/justifiedShape.ts";
+import { mutantOriginal } from "../packages/cli/src/internal/mutantOriginal.ts";
 import { run } from "./output.ts";
 
 export const FILE = "mutation-justified.json";
-export const REASONS = ["equivalent", "unreachable", "performance"];
-const FIELDS = ["file", "mutator", "original", "replacement", "reason", "note"];
+export const REASONS = JUSTIFIED_REASONS;
+export const originalText = mutantOriginal;
 const UNDETECTED = new Set(["Survived", "NoCoverage"]);
-const DETECTED = new Set(["Killed", "Timeout"]);
-
-/** The text a mutant replaces: `source` from its 1-based start to its 1-based, exclusive end. */
-export function originalText(source, location) {
-  const lines = source.split("\n");
-  const offset = ({ line, column }) => {
-    let o = 0;
-    for (let k = 0; k < line - 1; k++) o += (lines[k] ?? "").length + 1;
-    return o + column - 1;
-  };
-  return source.slice(offset(location.start), offset(location.end));
-}
-
-const isRecord = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
-const oneSentence = (s) => /^\S[^\n]*[.!?]$/.test(s) && !/[.!?]\s+[A-Z]/.test(s.slice(0, -1));
-/** An entry's identity; runs of white space in the texts count as one space, so a multi-line text fits on one line. */
-const flat = (s) => s.replace(/\s+/g, " ").trim();
-const keyOf = (e) => [e.file, e.mutator, flat(e.original), flat(e.replacement)].join("\0");
+const keyOf = justifiedKey;
 
 /** Problems with the file's shape: `{ index, message }` per bad entry; an unreadable top level is index -1. */
 export function shapeProblems(doc) {
-  if (!isRecord(doc) || !Array.isArray(doc.justified)) return [{ index: -1, message: "wants { justified: [...] }" }];
-  const out = [];
-  const seen = new Set();
-  doc.justified.forEach((e, index) => {
-    if (!isRecord(e)) return out.push({ index, message: "an entry is an object" });
-    const missing = FIELDS.filter((f) => typeof e[f] !== "string" || (f !== "replacement" && e[f] === ""));
-    if (missing.length > 0) return out.push({ index, message: `missing ${missing.join(", ")}` });
-    const extra = Object.keys(e).filter((k) => !FIELDS.includes(k));
-    if (extra.length > 0) return out.push({ index, message: `unknown field ${extra.join(", ")}` });
-    if (!REASONS.includes(e.reason))
-      return out.push({ index, message: `reason ${e.reason} is not one of ${REASONS.join(", ")}` });
-    if (!oneSentence(e.note)) return out.push({ index, message: "note is one sentence" });
-    if (seen.has(keyOf(e))) return out.push({ index, message: "equal to an earlier entry" });
-    seen.add(keyOf(e));
-  });
-  return out;
+  return justifiedShape(doc).problems.map(({ index, message }) => ({ index, message }));
 }
 
 /**

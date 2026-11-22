@@ -1,0 +1,36 @@
+{
+  "justified": [
+    {
+      "file": "src/internal/toParam.ts",
+      "mutator": "ConditionalExpression",
+      "original": "v === null",
+      "replacement": "false",
+      "reason": "equivalent",
+      "note": "The walk returns null before it can fail, so kind is never given null and the test is never true."
+    },
+    {
+      "file": "src/server/internal/TypeCache.ts",
+      "mutator": "StringLiteral",
+      "original": "\",\"",
+      "replacement": "\"\"",
+      "reason": "unreachable",
+      "note": "The pg_type query selects four columns and each goes through String, so delim is never undefined and the default is never read."
+    },
+    {
+      "file": "src/tools/nodeDeployable.ts",
+      "mutator": "StringLiteral",
+      "original": "\"\"",
+      "replacement": "\"Stryker was here!\"",
+      "reason": "unreachable",
+      "note": "Both groups of the MODULE pattern take part in every match, so neither group is undefined and neither default is read."
+    },
+    {
+      "file": "src/tools/nodeDeployable.ts",
+      "mutator": "ConditionalExpression",
+      "original": "found.length === 0",
+      "replacement": "false",
+      "reason": "performance",
+      "note": "With no import found the loop over found adds no finding, so the early return only saves parsing the topology."
+    }
+  ]
+}

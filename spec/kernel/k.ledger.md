@@ -33,3 +33,6 @@ status: conformance-covered
 - A passing test whose body asserts with `expectTypeOf` makes the exports it names `proven`.
 - A passing `prove` makes the transactions it names `proven`.
 - "E2001-E2003 each fire." cited by files adding `(E2001)`, `(E2002)`, `(E2003)` is `example`; skipping one file's tests, or one file adding `(E2001-E2003)` alone, gives `none`; "No E2001-E2003." cited by a file naming no code is `example`.
+- From a report with one Survived mutant and a `mutation-justified.json` entry naming its file, mutator, original and replacement, `keel ledger --write` stores that file's claim with `justified` 1 and the package's `scoreJustified` above its `score`, and `--diff` judges the threshold on `score`.
+- An entry whose texts match only a Killed mutant, or no mutant, of the report on disk makes `keel ledger` report E1725 naming the entry.
+- An entry without `note`, or with a `reason` outside `equivalent`, `unreachable` and `performance`, makes `keel ledger` report E1725 with or without a report on disk.

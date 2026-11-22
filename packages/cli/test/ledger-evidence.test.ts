@@ -362,9 +362,9 @@ describe("mutationClaims", () => {
       ["packages/b/src/a.ts", 2, 1, 0, 66.67],
     ]);
     expect(mutation.packages).toEqual({
-      a: { score: 50, threshold: 50 },
-      b: { score: 66.67, threshold: 50 },
-      c: { threshold: 50 },
+      a: { score: 50, scoreJustified: 50, threshold: 50, killed: 2, survived: 1, noCoverage: 1, justified: 0 },
+      b: { score: 66.67, scoreJustified: 66.67, threshold: 50, killed: 2, survived: 1, noCoverage: 0, justified: 0 },
+      c: { threshold: 50, killed: 0, survived: 0, noCoverage: 0, justified: 0 },
     });
     expect([...fresh]).toEqual(["packages/a/src/a.ts", "packages/b/src/a.ts"]);
   });
@@ -384,7 +384,7 @@ describe("mutationClaims", () => {
     );
     expect(mutation.claims.map((c) => c.file)).toEqual(["packages/a/src/a.ts", "packages/a/src/b.ts"]);
     expect(fresh.size).toBe(0);
-    expect(mutation.packages).toEqual({ a: { threshold: 50 } });
+    expect(mutation.packages).toEqual({ a: { threshold: 50, killed: 0, survived: 0, noCoverage: 0, justified: 0 } });
   });
 });
 
