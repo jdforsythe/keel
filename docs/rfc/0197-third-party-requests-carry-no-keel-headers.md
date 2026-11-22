@@ -1,6 +1,6 @@
 # RFC 0197: k.services: a request to a third-party origin carries no Keel header
 
-Status: accepted (ADR-0219). Amends k.services (API, Encoding, Conformance). From `examples/client-only-api` (examples finding 10).
+Status: implemented (ADR-0219). Amends k.services (API, Encoding, Conformance). From `examples/client-only-api` (examples finding 10).
 
 ## Problem
 A Keel front end with no back end, a `client` deployable that reads another organisation's API, must work with nothing but the API's own CORS policy. It does not. `examples/client-only-api` reads `https://api.github.com/repos/nodejs/node/releases` through `githubApi = service({ base: "https://api.github.com", schema: GitHubApi })`, with `origins.connect` declaring the origin (k.origins). Each `GET` carries `x-keel: 1`, so Chromium sends an `OPTIONS` preflight with `access-control-request-headers: x-keel` first; an API whose preflight answer lists only the headers it knows refuses the call, and the page can only show its alert.

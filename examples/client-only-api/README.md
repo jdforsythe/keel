@@ -4,7 +4,7 @@ A front end with no server of its own. `topology.ts` has one deployable, `web`, 
 
 GitHub's origin is declared once, under `origins.connect` in `topology.ts`, with its reason. With it, `keel check` accepts the literal `base` in `modules/app/githubApi.ts` (without it, E1571), and the policy the build writes reads `connect-src 'self' https://api.github.com`. The browser refuses a request to any other origin.
 
-The client in `githubApi.ts` sends `x-keel: 1` with each call, so the browser asks GitHub with a CORS preflight first. An API whose preflight does not allow that header refuses the call, and the page shows its alert.
+GitHub is a third party, so the client in `githubApi.ts` sends it no Keel header and no cookie: each call is a plain `GET` with `accept: application/json`, a CORS-simple request the browser sends with no preflight. The API's own CORS policy is all the page needs.
 
 ## Hosting
 
@@ -20,4 +20,4 @@ The pages make no request to a Keel server path such as `/__keel/user`.
 
 Run `keel check`, `keel test` and `keel build`, then serve `dist/web` with a static file server and open `/`.
 
-`test/clientOnly.test.ts` answers GitHub through `ctx.net` routes and records every request the pages make: one call to GitHub per visit to the releases page, and nothing else.
+`test/clientOnly.test.ts` answers GitHub through `ctx.net` routes and records every request the pages make: one call to GitHub per visit to the releases page, carrying `accept` alone, and nothing else.

@@ -372,8 +372,11 @@ const proofs = {
    * no other origin anywhere. A plain file server sends it with that policy; in Chromium, with `api.github.com` mapped
    * to a local https stand-in (never the internet), the home page links to the releases page, which shows the
    * stand-in's list on the click and on a reload; a fetch to an undeclared local server is refused by the policy and
-   * never reaches it; no request goes to a Keel server path (`/__keel/*`) or any other host. The detail names the
-   * preflight the client's `x-keel` header causes. The same tree with no `origins` fails `keel check` with E1571.
+   * never reaches it; no request goes to a Keel server path (`/__keel/*`) or any other host. The stand-in is as strict
+   * as a real API: its preflight answer allows no request header and no credentials, so a Keel header would fail the
+   * call; the plain GET needs no preflight, and no `x-keel`, `x-keel-user`, `authorization` or cookie (one is set for
+   * the page's origin and one for the API's) reaches it (k.services Encoding). The detail lists the header names the
+   * stand-in received. The same tree with no `origins` fails `keel check` with E1571.
    */
   async "client-only-api"(dir) {
     const API = "https://api.github.com/repos/nodejs/node/releases?per_page=5";
@@ -411,17 +414,19 @@ const proofs = {
     await new Promise((r) => other.listen(otherPort, "127.0.0.1", r));
     const preflights = [];
     const sent = [];
+    const received = [];
     const github = createSecureServer(
       { key: readFileSync(join(tls, "key.pem")), cert: readFileSync(join(tls, "cert.pem")) },
       (req, res) => {
+        // A strict API: any origin may read it, with no credentials and no request header beyond the safelisted ones.
         const cors = { "access-control-allow-origin": "*" };
         if (req.method === "OPTIONS") {
-          const wanted = req.headers["access-control-request-headers"] ?? "";
-          preflights.push(wanted);
-          res.writeHead(204, { ...cors, "access-control-allow-headers": wanted }).end();
+          preflights.push(req.headers["access-control-request-headers"] ?? "");
+          res.writeHead(204, { ...cors, "access-control-allow-methods": "GET" }).end();
           return;
         }
-        sent.push(`${req.method} ${req.url} x-keel ${req.headers["x-keel"] ?? "none"}`);
+        sent.push(`${req.method} ${req.url}`);
+        received.push(Object.keys(req.headers).sort());
         res.writeHead(200, { ...cors, "content-type": "application/json" });
         res.end(JSON.stringify([{ tag_name: "v0.0.1", name: "Served by the stand-in", published_at: null }]));
       },
@@ -433,7 +438,12 @@ const proofs = {
     });
     const copy = join(dir, "dist", "undeclared");
     try {
-      const page = await (await browser.newContext({ ignoreHTTPSErrors: true })).newPage();
+      const context = await browser.newContext({ ignoreHTTPSErrors: true });
+      await context.addCookies([
+        { name: "keel.caller", value: "c1", url: `${server.base}/` },
+        { name: "gh", value: "g1", url: "https://api.github.com/", sameSite: "None", secure: true },
+      ]);
+      const page = await context.newPage();
       const asked = [];
       page.on("request", (r) => asked.push(`${r.method()} ${r.url()}`));
       const errors = [];
@@ -465,6 +475,9 @@ const proofs = {
         (a) =>
           !a.includes(` ${server.base}/`) && !a.includes(" https://api.github.com/") && !a.includes(`:${otherPort}/`),
       );
+      const banned = ["x-keel", "x-keel-user", "authorization", "cookie"];
+      const heard = [...new Set(received.flat())].sort();
+      const keelFree = received.length === 2 && received.every((h) => !h.some((n) => banned.includes(n)));
       // The same tree with `origins: {}`: `keel check` refuses the literal base with E1571.
       rmSync(copy, { recursive: true, force: true });
       mkdirSync(copy, { recursive: true });
@@ -486,6 +499,8 @@ const proofs = {
           gets.length === 2 &&
           gets.every((g) => g === `GET ${API}`) &&
           sent.length === 2 &&
+          preflights.length === 0 &&
+          keelFree &&
           refused === "refused" &&
           stray.length === 0 &&
           keelPaths.length === 0 &&
@@ -493,7 +508,8 @@ const proofs = {
           otherErrors === 0 &&
           e1571,
         `dist ${built.join(",")}, connect-src ${connect}, other origins ${wider.join(",") || "none"}; ` +
-          `stand-in saw ${sent.join(", ")}; preflights asking ${preflights.join("|") || "none"}; undeclared ${refused}, ` +
+          `stand-in saw ${sent.join(", ")} with headers ${heard.join(" ")}; Keel header or cookie ${!keelFree}; ` +
+          `preflights asking ${preflights.join("|") || "none"}; undeclared ${refused}, ` +
           `reached ${stray.length}; /__keel requests ${keelPaths.length}; other hosts ${foreign.length}; ` +
           `${otherErrors} errors; undeclared check E1571 ${e1571}`,
       ];

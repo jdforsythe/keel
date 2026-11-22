@@ -44,6 +44,20 @@ it("renders the home page and navigates to the releases with no server, asking o
   expect(seen).toEqual([`GET ${RELEASES}`]);
 });
 
+it("sends GitHub a CORS-simple GET: `accept` alone, no Keel header, no cookie", async () => {
+  const ctx = createCtx({ mode: "sim", seed: 1 });
+  const sent: { names: string[]; credentials: string }[] = [];
+  ctx.net.route("https://api.github.com/*", (req) => {
+    sent.push({ names: [...req.headers.keys()].sort(), credentials: req.credentials });
+    return json(TWO);
+  });
+  const page = await renderRoute("app.releases", { routes, params: {}, ctx });
+  await page.settle();
+  expect(page.find("app.releases.list").text).toContain("v25.1.0");
+  page.dispose();
+  expect(sent).toEqual([{ names: ["accept"], credentials: "same-origin" }]);
+});
+
 it("asks GitHub again on a reload of the releases page, and nothing else", async () => {
   const { ctx, seen } = world(() => json(TWO));
   for (const _ of [1, 2]) {
