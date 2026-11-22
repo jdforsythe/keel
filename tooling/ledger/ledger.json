@@ -3,10 +3,10 @@
   "unsafe": 18,
   "hostElements": 0,
   "rungs": {
-    "example": 1641,
+    "example": 1643,
     "probabilistic": 340,
     "exhaustive": 15,
-    "proven": 74,
+    "proven": 75,
     "monitored": 8
   },
   "mutation": {
@@ -160,11 +160,11 @@
         "threshold": 80
       },
       "testing": {
-        "score": 88.37,
+        "score": 88.63,
         "threshold": 70
       },
       "ui": {
-        "score": 71,
+        "score": 70.81,
         "threshold": 70
       }
     },
@@ -14137,6 +14137,10 @@
       "rung": "example"
     },
     {
+      "item": "k.a11y#13",
+      "rung": "none"
+    },
+    {
       "item": "k.api#1",
       "rung": "example"
     },
@@ -15154,6 +15158,10 @@
     },
     {
       "item": "k.guards#3",
+      "rung": "example"
+    },
+    {
+      "item": "k.guards#4",
       "rung": "example"
     },
     {
@@ -16987,6 +16995,10 @@
     {
       "item": "k.ui#15",
       "rung": "example"
+    },
+    {
+      "item": "k.ui#16",
+      "rung": "proven"
     },
     {
       "item": "k.user#1",
