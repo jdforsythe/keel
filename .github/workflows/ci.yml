@@ -187,6 +187,8 @@ jobs:
         run: "node --disable-warning=ExperimentalWarning tooling/smoke/household.mjs"
       - name: "built golden-2: canaries in every personal-data and secret field reach no log, error answer, URL, cookie, build file or evidence bundle"
         run: "node --disable-warning=ExperimentalWarning tooling/smoke/canary.mjs"
+      - name: "built brand: a page with no styling of its own gets the brand's base, focus ring and responsive row in Chromium"
+        run: "node --disable-warning=ExperimentalWarning tooling/smoke/brand.mjs"
       - name: "examples: check, test, build and one proof on the built output of each"
         run: "node --disable-warning=ExperimentalWarning tooling/smoke/examples.mjs"
   changes:
