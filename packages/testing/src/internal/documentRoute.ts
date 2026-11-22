@@ -52,12 +52,12 @@ function setCookies(res: Response): [string, string][] {
 /**
  * `renderRoute(id, { app })` (k.testing Harness): page `id` at `url` runs as a built `node` page runs, with no router.
  * The harness GETs `url` from `app`, follows redirects with a GET, and resumes the answer's body (scripts dropped but
- * `#k-state`) on `ctx` with every live store, as `resumeDocument` does, except that an island that mismatches
- * re-renders on the client as in a browser (E1720 for any other warning); the document's title and `lang` are the
- * page's until `dispose`. Each document navigation the page starts is recorded in `documents()` and, when it is a path
- * of the page's origin, made: a form post is POSTed urlencoded with `sec-fetch-site: same-origin`, the answer (a 422
- * too) replaces the page and is resumed before `fire` resolves. The harness keeps the cookies `app` sets and sends
- * them back, as a browser does. `navigate(href)` loads `href` the same way; `location().entries` counts the loaded
+ * `#k-state`) on `ctx` with every live store, as `resumeDocument` does: any resume warning, an island that mismatches
+ * its server markup too, rejects with E1720. The document's title and `lang` are the page's until `dispose`. Each
+ * document navigation the page starts is recorded in `documents()` and, when it is a path of the page's origin, made:
+ * a form post is POSTed urlencoded with `sec-fetch-site: same-origin`, the answer (a 422 too) replaces the page and is
+ * resumed before `fire` resolves. The harness is one browser: it keeps the cookies `app` sets and sends them back, so
+ * `caller` is one `app` mints. `navigate(href)` loads `href` the same way; `location().entries` counts the loaded
  * documents and `route()` is the match of the last one. `state` or `shell` reject with E1722 before any request.
  */
 export async function documentRoute<T extends RouteTable>(
@@ -143,8 +143,8 @@ export async function documentRoute<T extends RouteTable>(
     const at = host;
     islands = scope(() => {
       const { warnings: said } = resume(at, components, { ctx, stores: Object.fromEntries(stores()) });
-      // An island that mismatches re-renders on the client, as the resume entry does in a browser; the rest reject.
-      warnings.push(...said.filter((w) => !w.includes("re-rendered on the client")));
+      // A mismatch the browser would paper over with a client re-render is a fault the test reports.
+      warnings.push(...said);
     });
   };
 
