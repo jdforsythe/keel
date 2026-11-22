@@ -3,7 +3,7 @@
 // hand upward, an item whose source is gone and an item the tree gained all pass it; this fails S0011 on each.
 // Usage: node tooling/ledger-fresh.mjs           exports, clauses and the unsafe count (what a tree alone decides)
 //        node tooling/ledger-fresh.mjs --a11y    also the WCAG items and the count per rung; needs the apps'
-//                                                reports/a11y.json (`keel test` in golden-1 and golden-2, as CI does)
+//                                                reports/a11y.json (`keel test` in golden-1, golden-2, household and each example, as CI does)
 // Not compared: the mutation section (its claims come from reports/mutation/mutation.json, written by nightly runs).
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";

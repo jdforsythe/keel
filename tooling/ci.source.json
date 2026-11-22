@@ -57,8 +57,8 @@
           "run": "pnpm check"
         },
         {
-          "name": "golden-1 and golden-2 a11y reports for the ledger (keel test writes reports/a11y.json)",
-          "run": "pnpm --filter golden-1 exec keel test && pnpm --filter golden-2 exec keel test"
+          "name": "a11y reports for the ledger from every app and example whose routes it carries (keel test writes reports/a11y.json)",
+          "run": "pnpm --workspace-concurrency=1 --filter golden-1 --filter golden-2 --filter household --filter \"./examples/*\" exec keel test"
         },
         {
           "run": "pnpm ledger --diff"
@@ -579,8 +579,8 @@
           "run": "node tooling/mutate-changed.mjs"
         },
         {
-          "name": "golden-1 and golden-2 a11y reports for the ledger (keel test writes reports/a11y.json)",
-          "run": "pnpm --filter golden-1 exec keel test && pnpm --filter golden-2 exec keel test"
+          "name": "a11y reports for the ledger from every app and example whose routes it carries (keel test writes reports/a11y.json)",
+          "run": "pnpm --workspace-concurrency=1 --filter golden-1 --filter golden-2 --filter household --filter \"./examples/*\" exec keel test"
         },
         {
           "run": "pnpm ledger --diff"
