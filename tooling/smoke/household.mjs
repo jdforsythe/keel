@@ -652,7 +652,7 @@ try {
   });
   await graceContext.setOffline(false);
   const why = grace.locator("[id^='shopping.outbox.why.']");
-  const shown = await why
+  const refusedShown = await why
     .filter({ hasText: "Oats × 2: someone at home changed this item" })
     .waitFor({ timeout: 30_000 })
     .then(
@@ -670,8 +670,8 @@ try {
     );
   step(
     "a mark of an item changed at home is shown refused, and Grace applies it over the change",
-    shown && notYet && applied && cleared,
-    `shown ${shown}, held ${notYet}, applied ${applied}, cleared ${cleared}`,
+    refusedShown && notYet && applied && cleared,
+    `shown ${refusedShown}, held ${notYet}, applied ${applied}, cleared ${cleared}`,
   );
 
   const elsewhere = await graceContext.newPage();
