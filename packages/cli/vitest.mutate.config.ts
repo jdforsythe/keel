@@ -3,6 +3,7 @@
 // package. A test that reaches a sibling package finds the root with `repoRoot` (`@keel/tooling/repo-root`).
 // Excluded here (still run by `pnpm test`): the tests that spawn `keel` from `packages/cli/src/bin.ts` or scan
 // `packages/` and `apps/`. They run the package's own source, not the sandbox copy, so they can kill no mutant.
+import path from "node:path";
 import { QuickFirst } from "@keel/tooling/quick-first";
 import { defineConfig, mergeConfig } from "vitest/config";
 import base from "./vitest.config.ts";
@@ -10,6 +11,10 @@ import base from "./vitest.config.ts";
 export default mergeConfig(
   base,
   defineConfig({
+    // A shell package's `tools` entry imports `@keel/cli` to register its target. Resolved from the package it is the
+    // repository's `packages/cli`, a second copy of `src/internal/shellSlot.ts` beside the sandbox's; the alias makes both
+    // the sandbox copy, as in `pnpm test`, where the tests' `../src` is that package.
+    resolve: { alias: [{ find: /^@keel\/cli$/, replacement: path.resolve("src/index.ts") }] },
     test: {
       exclude: [
         "conformance/artifact-forged-e1005.test.ts",
