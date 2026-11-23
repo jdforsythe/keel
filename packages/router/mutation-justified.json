@@ -1,0 +1,268 @@
+{
+  "justified": [
+    {
+      "file": "src/internal/userRead.ts",
+      "mutator": "ObjectLiteral",
+      "original": "{ fn: undefined }",
+      "replacement": "{}",
+      "reason": "equivalent",
+      "note": "Reading fn from an object without the key gives undefined, which is the value the declared object starts with."
+    },
+    {
+      "file": "src/internal/returnOpenings.ts",
+      "mutator": "ConditionalExpression",
+      "original": "typeof v !== \"object\" || v === null || Array.isArray(v)",
+      "replacement": "false",
+      "reason": "equivalent",
+      "note": "A parsed value that is no plain object fails the key count, or makes the deadline test throw inside the try of take, so take resolves false either way."
+    },
+    {
+      "file": "src/internal/returnOpenings.ts",
+      "mutator": "LogicalOperator",
+      "original": "typeof v !== \"object\" || v === null || Array.isArray(v)",
+      "replacement": "(typeof v !== \"object\" || v === null) && Array.isArray(v)",
+      "reason": "equivalent",
+      "note": "A parsed value that is no plain object fails the key count, or makes the deadline test throw inside the try of take, so take resolves false either way."
+    },
+    {
+      "file": "src/internal/returnOpenings.ts",
+      "mutator": "ConditionalExpression",
+      "original": "typeof v !== \"object\" || v === null",
+      "replacement": "false",
+      "reason": "equivalent",
+      "note": "A parsed value that is no plain object fails the key count, or makes the deadline test throw inside the try of take, so take resolves false either way."
+    },
+    {
+      "file": "src/internal/returnOpenings.ts",
+      "mutator": "LogicalOperator",
+      "original": "typeof v !== \"object\" || v === null",
+      "replacement": "typeof v !== \"object\" && v === null",
+      "reason": "equivalent",
+      "note": "A parsed value that is no plain object fails the key count, or makes the deadline test throw inside the try of take, so take resolves false either way."
+    },
+    {
+      "file": "src/internal/returnOpenings.ts",
+      "mutator": "ConditionalExpression",
+      "original": "typeof v !== \"object\"",
+      "replacement": "false",
+      "reason": "equivalent",
+      "note": "A parsed value that is no plain object fails the key count, or makes the deadline test throw inside the try of take, so take resolves false either way."
+    },
+    {
+      "file": "src/internal/returnOpenings.ts",
+      "mutator": "ConditionalExpression",
+      "original": "v === null",
+      "replacement": "false",
+      "reason": "equivalent",
+      "note": "A parsed value that is no plain object fails the key count, or makes the deadline test throw inside the try of take, so take resolves false either way."
+    },
+    {
+      "file": "src/internal/returnOpenings.ts",
+      "mutator": "LogicalOperator",
+      "original": "!(\"deadline\" in v) || typeof v.deadline !== \"number\" || !Number.isFinite(v.deadline)",
+      "replacement": "(!(\"deadline\" in v) || typeof v.deadline !== \"number\") && !Number.isFinite(v.deadline)",
+      "reason": "equivalent",
+      "note": "Number.isFinite is false for a deadline that is absent or no number, so the value is refused without the two earlier tests."
+    },
+    {
+      "file": "src/internal/returnOpenings.ts",
+      "mutator": "ConditionalExpression",
+      "original": "!(\"deadline\" in v) || typeof v.deadline !== \"number\"",
+      "replacement": "false",
+      "reason": "equivalent",
+      "note": "Number.isFinite is false for a deadline that is absent or no number, so the value is refused without the two earlier tests."
+    },
+    {
+      "file": "src/internal/returnOpenings.ts",
+      "mutator": "LogicalOperator",
+      "original": "!(\"deadline\" in v) || typeof v.deadline !== \"number\"",
+      "replacement": "!(\"deadline\" in v) && typeof v.deadline !== \"number\"",
+      "reason": "equivalent",
+      "note": "Number.isFinite is false for a deadline that is absent or no number, so the value is refused without the two earlier tests."
+    },
+    {
+      "file": "src/internal/returnOpenings.ts",
+      "mutator": "ConditionalExpression",
+      "original": "typeof v.deadline !== \"number\"",
+      "replacement": "false",
+      "reason": "equivalent",
+      "note": "Number.isFinite is false for a deadline that is absent or no number, so the value is refused without the two earlier tests."
+    },
+    {
+      "file": "src/internal/returnOpenings.ts",
+      "mutator": "BlockStatement",
+      "original": "{ return null; }",
+      "replacement": "{}",
+      "reason": "equivalent",
+      "note": "With the catch block empty the value stays undefined, which the next test refuses as no object."
+    },
+    {
+      "file": "src/internal/returnOpenings.ts",
+      "mutator": "ConditionalExpression",
+      "original": "raw === null",
+      "replacement": "false",
+      "reason": "equivalent",
+      "note": "JSON.parse of null gives null, which pendingAt refuses, so take resolves false as it does for no stored value."
+    },
+    {
+      "file": "src/internal/readUser.ts",
+      "mutator": "ConditionalExpression",
+      "original": "typeof body === \"object\" && body !== null",
+      "replacement": "true",
+      "reason": "equivalent",
+      "note": "A body that is no object makes Reflect.get throw inside the try, whose catch answers the empty string as the test does."
+    },
+    {
+      "file": "src/internal/readUser.ts",
+      "mutator": "LogicalOperator",
+      "original": "typeof body === \"object\" && body !== null",
+      "replacement": "typeof body === \"object\" || body !== null",
+      "reason": "equivalent",
+      "note": "A body that is no object makes Reflect.get throw inside the try, whose catch answers the empty string as the test does."
+    },
+    {
+      "file": "src/internal/readUser.ts",
+      "mutator": "ConditionalExpression",
+      "original": "typeof body === \"object\"",
+      "replacement": "true",
+      "reason": "equivalent",
+      "note": "A body that is no object makes Reflect.get throw inside the try, whose catch answers the empty string as the test does."
+    },
+    {
+      "file": "src/internal/readUser.ts",
+      "mutator": "ConditionalExpression",
+      "original": "body !== null",
+      "replacement": "true",
+      "reason": "equivalent",
+      "note": "A body that is no object makes Reflect.get throw inside the try, whose catch answers the empty string as the test does."
+    },
+    {
+      "file": "src/internal/readUser.ts",
+      "mutator": "OptionalChaining",
+      "original": "res.body?.cancel",
+      "replacement": "res.body.cancel",
+      "reason": "equivalent",
+      "note": "An answer with no body makes the call throw inside the try, whose catch answers the empty string as the next line does."
+    },
+    {
+      "file": "src/internal/bindTable.ts",
+      "mutator": "ConditionalExpression",
+      "original": "s.kind === \"api\" && s.method !== undefined && s.method !== \"GET\"",
+      "replacement": "true",
+      "reason": "equivalent",
+      "note": "The row check before it refuses an action member off an API write entry and a verb member off a page, so the member read is undefined there and nothing is bound."
+    },
+    {
+      "file": "src/internal/bindTable.ts",
+      "mutator": "LogicalOperator",
+      "original": "s.kind === \"api\" && s.method !== undefined && s.method !== \"GET\"",
+      "replacement": "s.kind === \"api\" && s.method !== undefined || s.method !== \"GET\"",
+      "reason": "equivalent",
+      "note": "The row check before it refuses an action member off an API write entry and a verb member off a page, so the member read is undefined there and nothing is bound."
+    },
+    {
+      "file": "src/internal/bindTable.ts",
+      "mutator": "ConditionalExpression",
+      "original": "s.kind === \"api\" && s.method !== undefined",
+      "replacement": "true",
+      "reason": "equivalent",
+      "note": "The row check before it refuses an action member off an API write entry and a verb member off a page, so the member read is undefined there and nothing is bound."
+    },
+    {
+      "file": "src/internal/bindTable.ts",
+      "mutator": "ConditionalExpression",
+      "original": "s.method !== \"GET\"",
+      "replacement": "true",
+      "reason": "equivalent",
+      "note": "The row check before it refuses an action member off an API write entry and a verb member off a page, so the member read is undefined there and nothing is bound."
+    },
+    {
+      "file": "src/internal/bindTable.ts",
+      "mutator": "StringLiteral",
+      "original": "\"GET\"",
+      "replacement": "\"\"",
+      "reason": "equivalent",
+      "note": "The row check before it refuses an action member off an API write entry and a verb member off a page, so the member read is undefined there and nothing is bound."
+    },
+    {
+      "file": "src/internal/bindTable.ts",
+      "mutator": "ConditionalExpression",
+      "original": "s.kind === \"page\"",
+      "replacement": "true",
+      "reason": "equivalent",
+      "note": "The row check before it refuses an action member off an API write entry and a verb member off a page, so the member read is undefined there and nothing is bound."
+    },
+    {
+      "file": "src/internal/bindTable.ts",
+      "mutator": "ConditionalExpression",
+      "original": "s.method !== undefined",
+      "replacement": "true",
+      "reason": "equivalent",
+      "note": "Only an API entry has a method or events and every API entry has a method, so the outcome is the same for each kind of entry."
+    },
+    {
+      "file": "src/internal/bindTable.ts",
+      "mutator": "LogicalOperator",
+      "original": "s.kind === \"api\" && s.method !== undefined",
+      "replacement": "s.kind === \"api\" || s.method !== undefined",
+      "reason": "equivalent",
+      "note": "Only an API entry has a method or events and every API entry has a method, so the outcome is the same for each kind of entry."
+    },
+    {
+      "file": "src/internal/bindTable.ts",
+      "mutator": "ConditionalExpression",
+      "original": "s.kind === \"api\"",
+      "replacement": "true",
+      "reason": "equivalent",
+      "note": "Only an API entry has a method or events and every API entry has a method, so the outcome is the same for each kind of entry."
+    },
+    {
+      "file": "src/internal/bindTable.ts",
+      "mutator": "ConditionalExpression",
+      "original": "a !== undefined",
+      "replacement": "true",
+      "reason": "unreachable",
+      "note": "An API write entry with no action is refused as binding no action before this line, so the action is never undefined here."
+    },
+    {
+      "file": "src/internal/paramFits.ts",
+      "mutator": "ConditionalExpression",
+      "original": "inner.min !== undefined",
+      "replacement": "true",
+      "reason": "equivalent",
+      "note": "An undefined bound compared with a number is false, so an absent inner bound fails the test with or without the check."
+    },
+    {
+      "file": "src/internal/paramFits.ts",
+      "mutator": "ConditionalExpression",
+      "original": "inner.max !== undefined",
+      "replacement": "true",
+      "reason": "equivalent",
+      "note": "An undefined bound compared with a number is false, so an absent inner bound fails the test with or without the check."
+    },
+    {
+      "file": "src/internal/paramFits.ts",
+      "mutator": "ConditionalExpression",
+      "original": "page === target",
+      "replacement": "false",
+      "reason": "performance",
+      "note": "The same node also has equal serialized forms, so the identity test only saves the two serializations."
+    },
+    {
+      "file": "src/internal/isHref.ts",
+      "mutator": "EqualityOperator",
+      "original": "i < path.length",
+      "replacement": "i <= path.length",
+      "reason": "equivalent",
+      "note": "The char code one past the end is NaN, which no comparison in the loop body matches, so the extra round changes nothing."
+    },
+    {
+      "file": "src/internal/carriedNext.ts",
+      "mutator": "EqualityOperator",
+      "original": "i < v.length",
+      "replacement": "i <= v.length",
+      "reason": "equivalent",
+      "note": "The char code one past the end is NaN, which no comparison in the loop body matches, so the extra round changes nothing."
+    }
+  ]
+}
