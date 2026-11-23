@@ -6,21 +6,27 @@ import type { ScaffoldError } from "../types/ScaffoldError.ts";
 import type { Writes } from "./Writes.ts";
 import { addDeployable } from "./addDeployable.ts";
 import { badInput } from "./badInput.ts";
+import { baseUrl } from "./baseUrl.ts";
 import { commit } from "./commit.ts";
 import { fail } from "./fail.ts";
 import { inputs } from "./inputs.ts";
 import { insertItem } from "./insertItem.ts";
+import { isCode } from "./isCode.ts";
 import { regenerated } from "./regenerated.ts";
 import { removeDeployable } from "./removeDeployable.ts";
 import { removeItem } from "./removeItem.ts";
+import { serviceBase } from "./serviceBase.ts";
 import { topologyAst } from "./topologyAst.ts";
+import { topologyOf } from "./topologyOf.ts";
 import { withWrites } from "./withWrites.ts";
 
 /**
  * `codemod place <module> --to <deployable> [--adapter]` (k.scaffold Codemods): move the module's entry in
  * `topology.ts` to deployable `to`, creating it (needs `adapter`; it gets the brand fonts in `styles`, as a scaffolded
  * project's deployable does) or removing the one it leaves empty, then regenerate
- * the CI workflow and deploy files. Nothing else changes. Insertion is sorted (modules and new deployables), so
+ * the CI workflow and deploy files. Nothing else changes. A module holding a `service({ base })` whose origin a
+ * `client` target does not declare under `origins.connect` would fail check there (E1571, k.security), so that move
+ * is E1353 and writes nothing. Insertion is sorted (modules and new deployables), so
  * placing a module back restores the bytes of a sorted `topology.ts`.
  */
 export function opPlace(
@@ -45,6 +51,18 @@ export function opPlace(
   if (target !== undefined && adapter !== undefined && target.adapter !== adapter)
     return fail("E1052", "topology.ts", `deployable ${to} is ${target.adapter}, not ${adapter}`);
   if (from.name === to) return commit(files, new Map());
+  if ((target?.adapter ?? adapter) === "client") {
+    const declared = topologyOf(files)?.[to]?.origins?.connect ?? {};
+    for (const [path, source] of files) {
+      if (!path.startsWith(`modules/${module}/`) || !isCode(path)) continue;
+      const base = serviceBase(path, source);
+      const origin = base === undefined ? undefined : baseUrl(base)?.origin;
+      if (origin === undefined || declared[origin] !== undefined) continue;
+      const message = `service base ${origin} is not declared under origins.connect of ${to}`;
+      const cause = { code: "E1571", path, line: 1, message };
+      return fail("E1353", path, `operation aborted, would introduce E1571: ${message}; nothing written`, cause);
+    }
+  }
   const q = src.charAt(from.list.start + 1) === "'" ? "'" : '"';
   const added =
     target !== undefined
