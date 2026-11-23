@@ -12,7 +12,8 @@
 //   pattern declared at the top of a module): what its imports reach is credited to every test of the file. Elsewhere
 //   Stryker's `ignoreStatic` holds: code that only runs at load is not held against a test that happens to load it.
 // In a mutant run the active mutant's id is put in `__STRYKER_ACTIVE_MUTANT__`, which a worker or child process
-// inherits and the instrumented code reads.
+// inherits and the instrumented code reads; and a worker still alive after WORKER_S seconds is ended, so a mutant that
+// leaves a user's worker waiting fails its test then, in place of the minute Stryker's own timeout takes.
 import fs from "node:fs";
 import { syncBuiltinESMExports } from "node:module";
 import os from "node:os";
@@ -21,6 +22,9 @@ import { pathToFileURL } from "node:url";
 import workerThreads from "node:worker_threads";
 import { afterAll, afterEach, beforeAll, beforeEach, inject } from "vitest";
 
+/** Seconds a test's worker may live in a mutant run; the group tests end theirs within three. */
+const WORKER_S = 20;
+const MUTANT = inject("mode") === "mutant";
 const UNIT = /[\\/]test[\\/]unit[\\/]/;
 const PRELOAD = pathToFileURL(path.resolve("vitest.stryker.preload.mjs")).href;
 const key = inject("globalNamespace");
@@ -32,6 +36,10 @@ if (Real.name !== "MutationWorker") {
   class MutationWorker extends Real {
     constructor(file, options = {}) {
       super(file, { ...options, execArgv: [...(options.execArgv ?? process.execArgv), "--import", PRELOAD] });
+      if (!MUTANT) return;
+      const timer = setTimeout(() => void this.terminate(), WORKER_S * 1000);
+      timer.unref();
+      this.once("exit", () => clearTimeout(timer));
     }
   }
   workerThreads.Worker = MutationWorker;
@@ -48,7 +56,7 @@ const reachedIn = (file) => {
   return ids;
 };
 
-if (inject("mode") === "mutant") {
+if (MUTANT) {
   const activate = () => {
     if (ns.activeMutant !== undefined) process.env.__STRYKER_ACTIVE_MUTANT__ = String(ns.activeMutant);
   };
