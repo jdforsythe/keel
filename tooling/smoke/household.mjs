@@ -27,14 +27,14 @@ import { mkdir, mkdtemp, readFile, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { chromium } from "@playwright/test";
-import { freePort, recorder, root, wait } from "./built.mjs";
+import { freePort, keepOutput, recorder, root, wait } from "./built.mjs";
 
 const LIMIT_MS = 300_000;
 const SECRET = "household-smoke-secret-of-32-bytes-or-more";
 const AUTH_SECRET = "household-smoke-auth-secret-of-32-or-more";
 const PASSWORD = "smoke test passphrase";
 const app = join(root, "apps", "household");
-const { step, finish } = recorder();
+const { step, finish, caught } = recorder();
 let server;
 let browser;
 let tmp;
@@ -97,6 +97,7 @@ function serve(port, file, data) {
   const log = [];
   for (const out of [child.stdout, child.stderr]) out.on("data", (d) => log.push(...String(d).trim().split("\n")));
   child.once("error", (e) => log.push(String(e)));
+  keepOutput("server", log);
   return { child, log };
 }
 
@@ -798,6 +799,7 @@ try {
     }
   }
 } catch (e) {
+  caught(e);
   step("flow", false, clip(String(e).split("\n")[0]));
 } finally {
   clearTimeout(limit);

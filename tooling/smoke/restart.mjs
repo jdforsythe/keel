@@ -7,7 +7,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { BOARD_KEY, buildCopy, field, freePort, get, post, ready, recorder, row, serve, stop, view } from "./built.mjs";
 
-const { step, finish } = recorder();
+const { step, finish, caught } = recorder();
 const tmp = await mkdtemp(join(tmpdir(), "keel-smoke-restart-"));
 let first;
 let second;
@@ -70,6 +70,7 @@ try {
     `head ${snap.head} -> ${saved.head}`,
   );
 } catch (e) {
+  caught(e);
   step("flow", false, String(e).split("\n")[0]);
 } finally {
   await stop(first);

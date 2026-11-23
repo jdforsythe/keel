@@ -2,8 +2,10 @@
 // `dist/api/server.mjs` served on a SQLite file in that folder (or a Postgres URL), and the stored rows read back with node:sqlite.
 // Nothing here prints a database URL or a stored value; every child is stopped by the caller's `finally`.
 import { execFile, spawn } from "node:child_process";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { cp, symlink } from "node:fs/promises";
 import { createServer } from "node:net";
+import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -16,21 +18,59 @@ const SKIP = new Set(["node_modules", "dist", ".keel", ".keel-dev", ".turbo", "r
 
 export const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
+/** Captured output of the processes a smoke started, by label; each value is the live array its reader appends to. */
+const kept = new Map();
+const KEEP_TAIL = 200;
+
+/** Keep `lines` (a child's captured stdout and stderr, still growing) for the file a crash or a failed step writes. */
+export function keepOutput(label, lines) {
+  let name = label;
+  for (let n = 2; kept.has(name); n++) name = `${label}#${n}`;
+  kept.set(name, lines);
+}
+
+/**
+ * Write the error's stack and the tail of every kept log to a file in the temporary folder, outside the repository and
+ * not removed by a smoke's cleanup; returns its path, or undefined when nothing could be written.
+ */
+function writeKept(name, stack) {
+  try {
+    const dir = join(tmpdir(), "keel-smoke");
+    mkdirSync(dir, { recursive: true });
+    const file = join(dir, `${name}-${process.pid}-${Date.now()}.log`);
+    const parts = [stack === undefined ? "" : `error\n${stack}\n`];
+    for (const [label, lines] of kept)
+      parts.push(`${label} (last ${KEEP_TAIL} of ${lines.length} lines)\n${lines.slice(-KEEP_TAIL).join("\n")}\n`);
+    writeFileSync(file, parts.join("\n"));
+    return file;
+  } catch {
+    return undefined;
+  }
+}
+
 /** A step recorder: `step(label, pass, detail)`, and `finish(name)` prints the lines and the trailer. */
 export function recorder() {
   const lines = [];
   const t0 = Date.now();
   let failed = 0;
   let finished = false;
+  let fault;
+  /** The line that names the file holding the error and the children's output tail; empty when none was written. */
+  const keptLine = (name) => {
+    const file = writeKept(name, fault);
+    return file === undefined ? [] : [`  output: ${file}`];
+  };
   // A crash (an uncaught error, a rejection nobody awaited, an exit before `finish`) keeps and prints the steps so far.
   const crashed = (why) => {
     if (finished) return;
     finished = true;
     for (const l of lines) console.log(l);
+    for (const l of keptLine("crashed")) console.log(l);
     console.log(`fail crashed after ${lines.length} steps: ${why}`);
     process.exitCode = 1;
   };
   process.on("uncaughtException", (e) => {
+    fault = String(e?.stack ?? e);
     crashed(
       String(e?.stack ?? e)
         .split("\n")
@@ -40,6 +80,7 @@ export function recorder() {
     process.exit(1);
   });
   process.on("unhandledRejection", (e) => {
+    fault = String(e?.stack ?? e);
     crashed(
       String(e?.stack ?? e)
         .split("\n")
@@ -54,9 +95,14 @@ export function recorder() {
       if (!pass) failed++;
       lines.push(`${pass ? "ok" : "fail"} ${label}${detail === "" ? "" : ` ${detail}`}`);
     },
+    /** The error a script caught and turned into a failed step: its whole stack goes to the kept file. */
+    caught(e) {
+      fault = String(e?.stack ?? e);
+    },
     finish(name) {
       finished = true;
       for (const l of lines) console.log(l);
+      if (failed > 0 || fault !== undefined) for (const l of keptLine(name)) console.log(l);
       console.log(
         `${failed === 0 ? "ok" : "fail"} ${name} ${lines.length} steps, ${failed} failed (${((Date.now() - t0) / 1000).toFixed(1)}s)`,
       );
@@ -99,7 +145,10 @@ export function buildIn(dir) {
       process.execPath,
       [cli, "build"],
       { cwd: dir, env: { ...process.env, KEEL_AGENT: "1" }, maxBuffer: 64 * 1024 * 1024 },
-      (err) => resolve(err === null),
+      (err, stdout, stderr) => {
+        if (err !== null) keepOutput(`build ${basename(dir)}`, `${stdout}\n${stderr}`.split("\n"));
+        resolve(err === null);
+      },
     );
   });
 }
@@ -121,6 +170,7 @@ export function serve(dir, file, port) {
   );
   const log = [];
   for (const out of [child.stdout, child.stderr]) out.on("data", (d) => log.push(...String(d).trim().split("\n")));
+  keepOutput(`serve ${basename(dir)} :${port}`, log);
   const exited = new Promise((resolve) => child.once("exit", resolve));
   return {
     child,

@@ -27,7 +27,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { chromium } from "@playwright/test";
-import { buildIn, copyApp, field, freePort, get, recorder, root, stop, wait } from "./built.mjs";
+import { buildIn, copyApp, field, freePort, get, keepOutput, recorder, root, stop, wait } from "./built.mjs";
 
 const SECRET = "golden-2-smoke-secret-of-32-bytes-or-more";
 /** The sign-in library's secret (`BETTER_AUTH_SECRET`), which golden-2's server requires. */
@@ -60,6 +60,7 @@ function serveDeployable(dir, name, port, file, peers) {
   );
   const log = [];
   for (const out of [child.stdout, child.stderr]) out.on("data", (d) => log.push(...String(d).trim().split("\n")));
+  keepOutput(`serve ${name} :${port}`, log);
   const exited = new Promise((resolve) => child.once("exit", resolve));
   return {
     child,
@@ -464,7 +465,7 @@ async function liveForm(browser, step, run, h) {
 }
 
 const runs = Number(process.argv[2] ?? "1");
-const { step, finish } = recorder();
+const { step, finish, caught } = recorder();
 const tmp = await mkdtemp(join(tmpdir(), "keel-smoke-resume-"));
 let api;
 let web;
@@ -725,6 +726,7 @@ try {
     if (h.cookie !== "") await liveForm(browser, step, run, h);
   }
 } catch (e) {
+  caught(e);
   step("flow", false, String(e).split("\n")[0]);
 } finally {
   await browser?.close();

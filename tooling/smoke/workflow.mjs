@@ -24,7 +24,7 @@ import {
   wait,
 } from "./built.mjs";
 
-const { step, finish } = recorder();
+const { step, finish, caught } = recorder();
 const tmp = await mkdtemp(join(tmpdir(), "keel-smoke-workflow-"));
 let first;
 let second;
@@ -113,6 +113,7 @@ try {
   const ids = Array.isArray(board.log) ? board.log.map((e) => Number(e.id)) : [];
   step("log ordered", ids.every((id, i) => i === 0 || id === ids[i - 1] + 1) && ids.at(-1) === board.head);
 } catch (e) {
+  caught(e);
   step("flow", false, String(e).split("\n")[0]);
 } finally {
   await stop(first);

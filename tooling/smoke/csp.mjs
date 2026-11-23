@@ -13,7 +13,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { buildIn, copyApp, freePort, recorder, root, serve, stop, wait } from "./built.mjs";
 
-const { step, finish } = recorder();
+const { step, finish, caught } = recorder();
 const tmp = await mkdtemp(join(tmpdir(), "keel-smoke-csp-"));
 const SECRET = "csp-smoke-secret-of-32-bytes-or-more-ok";
 const WEB_IMG = "https://img.example";
@@ -144,6 +144,7 @@ try {
     again !== p1 && again.replace(/'nonce-[^']+'/, "") === p1.replace(/'nonce-[^']+'/, ""),
   );
 } catch (e) {
+  caught(e);
   step("flow", false, String(e).split("\n")[0]);
 } finally {
   await stop(api);
