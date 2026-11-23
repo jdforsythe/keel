@@ -39,16 +39,15 @@ describe("the nearest market on the shopping list", () => {
     expect(() => r.find("recipes.market.unavailable")).toThrow();
     expect(api.sent.length).toBe(sent);
   });
-  it("names it in de-DE and ja-JP with the locale's digits", async () => {
-    const de = await listTab("de-DE", 12);
-    await de.r.fire("recipes.market.find", { type: "click" });
-    expect(de.r.find("recipes.market.nearest").text).toBe(
-      "Nächster Markt: Viktualienmarkt, München, 2.777 km entfernt",
-    );
-    de.r.dispose();
-    const ja = await listTab("ja-JP", 3);
-    await ja.r.fire("recipes.market.find", { type: "click" });
-    expect(ja.r.find("recipes.market.nearest").text).toBe("最寄りの市場: 築地場外市場（東京）（約 6,444 km）");
+  it("names it in de-DE with the locale's digits", async () => {
+    const { r } = await listTab("de-DE", 12);
+    await r.fire("recipes.market.find", { type: "click" });
+    expect(r.find("recipes.market.nearest").text).toBe("Nächster Markt: Viktualienmarkt, München, 2.777 km entfernt");
+  });
+  it("names it in ja-JP with the locale's digits", async () => {
+    const { r } = await listTab("ja-JP", 3);
+    await r.fire("recipes.market.find", { type: "click" });
+    expect(r.find("recipes.market.nearest").text).toBe("最寄りの市場: 築地場外市場（東京）（約 6,444 km）");
   });
   it("agrees with the position the ctx's geo capability reports", async () => {
     const { api, r } = await listTab("en-US", 9);
