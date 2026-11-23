@@ -36,9 +36,10 @@ describe("staleFiles", () => {
 });
 
 describe("staleFiles with inert files", () => {
-  it("leaves out a missing file with no mutant to run, and still lists a stale one", () => {
+  it("leaves out a file with no mutant to run, missing or stale", () => {
     const claims = [{ file: "packages/a/src/y.ts", sha: "old" }];
-    expect(staleFiles(claims, shas, ["a"], new Set(["packages/a/src/x.ts", "packages/a/src/y.ts"]))).toEqual([
+    expect(staleFiles(claims, shas, ["a"], new Set(["packages/a/src/x.ts", "packages/a/src/y.ts"]))).toEqual([]);
+    expect(staleFiles(claims, shas, ["a"], new Set(["packages/a/src/x.ts"]))).toEqual([
       { pkg: "a", stale: ["src/y.ts"], missing: [] },
     ]);
   });

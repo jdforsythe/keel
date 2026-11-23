@@ -27,8 +27,8 @@ export function reportClaims(dir, report, sha256) {
  * The files to run, per unit (a bare package name, or `apps/<name>`) in `packages` order: `{ pkg, stale, missing }` (package-relative paths, sorted).
  * `claims` is the ledger's `mutation.claims` (`{ file, sha }`, file repo-relative); `shas` maps each repo-relative
  * mutated file on disk to the sha256 of its source. A claim whose sha differs from the disk is stale; a file with no
- * claim is missing, unless `inert` (a set of repo-relative files with no mutant to run: zero mutants, or only ignored
- * ones) holds it. Packages with neither are left out.
+ * claim is missing; a file in `inert` (a set of repo-relative files with no mutant to run: zero mutants, or only ignored ones, as
+ * its source is now) is neither. Packages with neither are left out.
  */
 export function staleFiles(claims, shas, packages, inert = new Set()) {
   const claimed = new Map(claims.map((c) => [c.file, c.sha]));
@@ -42,10 +42,10 @@ export function staleFiles(claims, shas, packages, inert = new Set()) {
       if (!file.startsWith(prefix)) continue;
       const rel = file.slice(prefix.length);
       if (!mutated.test(rel)) continue;
+      if (inert.has(file)) continue;
       const sha = claimed.get(file);
-      if (sha === undefined) {
-        if (!inert.has(file)) missing.push(rel);
-      } else if (sha !== shas.get(file)) stale.push(rel);
+      if (sha === undefined) missing.push(rel);
+      else if (sha !== shas.get(file)) stale.push(rel);
     }
     if (stale.length || missing.length) out.push({ pkg, stale, missing });
   }
