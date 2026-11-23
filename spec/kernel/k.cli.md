@@ -6,9 +6,9 @@ status: implemented
 **Commands.**
 | command | does |
 | --- | --- |
-| `check [paths]` | k.check over code files and `.keel/*.json` artifacts under `paths`, each with its project's `topology.ts`; its `files` counts those, tests and config files included |
+| `check [paths]` | k.check over code files and `.keel/*.json` artifacts under `paths`, each with its project's `topology.ts` |
 | `test [paths]` | harness under sim ctx |
-| `build` | production build per deployable; its `files` counts the root project's app sources only (no tests, declarations or tool configs), so it is below `check`'s |
+| `build` | production build per deployable |
 | `dev [--port N]` | dev server and log stream (default Vite's `server.port` or 5173; in use: E1560) |
 | `docs [id]` / `--for <code>` / `--sync` | installed docs (k.docs) |
 | `explain <code>` | <= 120 tokens: meaning and fix pattern |
