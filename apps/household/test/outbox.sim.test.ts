@@ -108,8 +108,8 @@ it("commits an offline mark once, or keeps it as a conflict when another member 
       for (let turn = 0; turn < 40 && waiting(); turn++) {
         await stored(h);
         ctx.clock.advance(60_000);
-        await run();
         ctx.net.setOnline(true);
+        await run();
       }
       if (!adaFirst) await adaAdds(h, name);
       page.dispose();
@@ -117,7 +117,6 @@ it("commits an offline mark once, or keeps it as a conflict when another member 
       const [entry] = listOutbox.get("entries");
       const applied = (await committed(h)) - before;
       const now = (await stored(h)).find((i) => i.id === item.id);
-      (await import("node:fs")).appendFileSync("/tmp/wk10/sim1.log", `${JSON.stringify({ n, adaFirst, first: first.state, entry, applied, now })}\n`);
       expect(waiting()).toBe(false);
       expect([0, 1]).toContain(applied);
       expect(now?.bought).toBe(applied === 1);
@@ -187,11 +186,13 @@ it("holds a queued mark through a sign-out and sends it once the same member sig
       ctx.net.setOnline(true);
       await run();
       ctx.net.setOnline(true);
-      for (let turn = 0; turn < 6; turn++) {
+      // Six turns, and more while a flush is still in hand (its storage write waits on the clock).
+      const sending = () => listOutbox.get("entries").some((e) => e.state === "sending");
+      for (let turn = 0; turn < 6 || (turn < 20 && sending()); turn++) {
         await stored(h);
         ctx.clock.advance(60_000);
-        await run();
         ctx.net.setOnline(true);
+        await run();
       }
       expect((await committed(h)) - before).toBe(0);
       expect((await stored(h)).find((i) => i.id === item.id)).toMatchObject({ bought: false, rev: 0 });
@@ -210,8 +211,8 @@ it("holds a queued mark through a sign-out and sends it once the same member sig
       for (let turn = 0; turn < 40 && waiting(); turn++) {
         await stored(h);
         ctx.clock.advance(60_000);
-        await run();
         ctx.net.setOnline(true);
+        await run();
       }
       again.dispose();
       const applied = (await committed(h)) - before;
