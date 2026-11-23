@@ -83,9 +83,9 @@ Apps: G1 golden-1 (todo board: `web` client + `api` node on SQLite), G2 golden-2
 | k.topology: peers | - | x | - | - | ci | | `resume.mjs` (web and api name each other) |
 | k.topology: `servedBy` | x | x | - | - | ci | | `apps/golden-1/test/host.test.ts` |
 | k.deploy (entry, deploy files) | x | x | - | x | ci | | `apps/golden-1/deploy`, docker build |
-| k.shell: Tauri | x | - | - | - | ci | | `apps/golden-1/topology.ts`, `shell.mjs` |
-| k.shell: Capacitor iOS | x | - | - | - | ci | | `shell-drive.mjs --shell ios` |
-| k.shell: Capacitor Android | x | - | - | - | ci (build) | | nothing is driven |
+| k.shell: Tauri | x | - | - | - | ci | | `apps/golden-1/topology.ts`, `shell.mjs`; `examples/native-tauri` is one page in the shell and nothing else (app test under `renderRoute` with `shell`; the smoke checks the committed shell id and the page in Chromium on a plain host; its `cargo` build is run by hand, no CI job builds it) |
+| k.shell: Capacitor iOS | x | - | - | - | ci | | `shell-drive.mjs --shell ios`; `examples/native-capacitor` is one page in the shell and nothing else (app test, smoke as for Tauri; its iOS `xcodebuild` build is run by hand, no CI job builds it) |
+| k.shell: Capacitor Android | x | - | - | - | ci (build) | | nothing is driven; `examples/native-capacitor` builds a debug APK by hand, no CI job builds it |
 | k.compat | - | - | - | - | | x | |
 | k.api (API routes) | x | x | - | x | ci | | `apps/golden-1/modules/api/routes.ts` |
 | k.hosting | x | x | - | - | ci | | `apps/golden-1/test/host.test.ts` |
@@ -260,7 +260,7 @@ Each example: under 15 files, one topology, a README of one screen that says the
 | `examples/shell-mount` | `k.mount` into a shell and a guard redirect into it (`k.return`, `k.mount-scope`) | app test; Tauri Linux run in the existing `shell-tauri` job | M |
 | `examples/links-in` | `k.links`: a deep link opens a route | app test; built-in route table check; Tauri or Capacitor run only if the walkthrough does not take it | S |
 | `examples/compose-peers` | compose with two nodes as peers (`KEEL_PEER_<NAME>`) | `docker compose config` in CI and a boot of both servers; the `docker build` step already exists for G1 | M |
-| `examples/native-tauri`, `examples/native-capacitor` | one page in a Tauri and a Capacitor shell, nothing else | the shell builds; Tauri runs on Linux in `shell-tauri` | M |
+| `examples/native-tauri`, `examples/native-capacitor` | one page in a Tauri and a Capacitor shell, nothing else | exists: app test, the `examples.mjs` proof (shell id, page in Chromium, no `/__keel/*` request); `keel build --target` run by hand for Tauri (cargo), Capacitor iOS and Android; a CI build of them is not wired (`shell-tauri` and `shell-android` build golden-1) | M |
 | `examples/codemod-place` | `keel codemod place`: move a module from one deployable to another | script runs the codemod over the example and `keel check` passes after | S |
 
 The two native shells are examples and not walkthrough layers: golden-1 already exercises both end to end, and a reader of the walkthrough does not need a native toolchain. Native shells stay in G1 for the full drive (offline outbox after SIGKILL); the examples show only the build and a first page.
