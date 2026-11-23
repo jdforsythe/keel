@@ -45,6 +45,7 @@ interface Fake extends EventEmitter {
   readonly options: { execArgv?: string[]; workerData?: unknown };
   readonly posted: unknown[];
   terminated: number;
+  postMessage(m: unknown): void;
 }
 const isFake = (w: unknown): w is Fake => w instanceof EventEmitter && "posted" in w;
 const lastWorker = (): Fake => {
