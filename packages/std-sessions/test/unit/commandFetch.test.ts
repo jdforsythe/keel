@@ -5,14 +5,14 @@
 import type { Io } from "@keel/cli";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { Session } from "../src/Session.schema.ts";
-import { commandFetch } from "../src/internal/commandFetch.ts";
-import { fileOf } from "../src/internal/fileOf.ts";
-import { recordsOf } from "../src/internal/recordsOf.ts";
-import { safeUrl } from "../src/internal/safeUrl.ts";
-import { sessionOut } from "../src/internal/sessionOut.ts";
-import { sessionText } from "../src/internal/sessionText.ts";
-import { shownUrl } from "../src/internal/shownUrl.ts";
+import { Session } from "../../src/Session.schema.ts";
+import { commandFetch } from "../../src/internal/commandFetch.ts";
+import { fileOf } from "../../src/internal/fileOf.ts";
+import { recordsOf } from "../../src/internal/recordsOf.ts";
+import { safeUrl } from "../../src/internal/safeUrl.ts";
+import { sessionOut } from "../../src/internal/sessionOut.ts";
+import { sessionText } from "../../src/internal/sessionText.ts";
+import { shownUrl } from "../../src/internal/shownUrl.ts";
 
 const FP = "7f3a9c01d2e4";
 const raw = (over: Record<string, unknown> = {}) => ({

@@ -3,7 +3,7 @@
 // Seed 1337
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { cookieJar } from "../src/group/internal/cookieJar.ts";
+import { cookieJar } from "../../src/group/internal/cookieJar.ts";
 
 const HTTP = "http://group.test";
 const HTTPS = "https://group.test";

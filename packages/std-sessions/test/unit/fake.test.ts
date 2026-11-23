@@ -4,7 +4,7 @@
 import { type Schema, s } from "@keel/schema";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { fake } from "../src/internal/fake.ts";
+import { fake } from "../../src/internal/fake.ts";
 
 /** A random source that walks `values` in order, then repeats. */
 const walk = (values: readonly number[]): (() => number) => {

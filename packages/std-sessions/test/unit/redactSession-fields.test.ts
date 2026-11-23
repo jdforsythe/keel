@@ -9,8 +9,8 @@ import { s } from "@keel/schema";
 import { store, transaction } from "@keel/store";
 import fc from "fast-check";
 import { beforeAll, describe, expect, test } from "vitest";
-import { Session } from "../src/Session.schema.ts";
-import { redactSession } from "../src/redactSession.ts";
+import { Session } from "../../src/Session.schema.ts";
+import { redactSession } from "../../src/redactSession.ts";
 
 const shop = contract("shop", {
   "shop.item": {

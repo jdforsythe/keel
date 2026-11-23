@@ -6,17 +6,17 @@ import { createHash } from "node:crypto";
 import { type Id, type JsonValue, s } from "@keel/schema";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { Session } from "../src/Session.schema.ts";
-import { decoded } from "../src/internal/decoded.ts";
-import { emptySession } from "../src/internal/emptySession.ts";
-import { fingerprint } from "../src/internal/fingerprint.ts";
-import { getJson } from "../src/internal/getJson.ts";
-import { hrefOf } from "../src/internal/hrefOf.ts";
-import { moduleFile } from "../src/internal/moduleFile.ts";
-import { objectOf } from "../src/internal/objectOf.ts";
-import { parseRedactEntry } from "../src/internal/parseRedactEntry.ts";
-import { readerHeaders } from "../src/internal/readerHeaders.ts";
-import { sessionDiag } from "../src/internal/sessionDiag.ts";
+import { Session } from "../../src/Session.schema.ts";
+import { decoded } from "../../src/internal/decoded.ts";
+import { emptySession } from "../../src/internal/emptySession.ts";
+import { fingerprint } from "../../src/internal/fingerprint.ts";
+import { getJson } from "../../src/internal/getJson.ts";
+import { hrefOf } from "../../src/internal/hrefOf.ts";
+import { moduleFile } from "../../src/internal/moduleFile.ts";
+import { objectOf } from "../../src/internal/objectOf.ts";
+import { parseRedactEntry } from "../../src/internal/parseRedactEntry.ts";
+import { readerHeaders } from "../../src/internal/readerHeaders.ts";
+import { sessionDiag } from "../../src/internal/sessionDiag.ts";
 
 const hex12 = (text: string): string => createHash("sha256").update(text).digest("hex").slice(0, 12);
 

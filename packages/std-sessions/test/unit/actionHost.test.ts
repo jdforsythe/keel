@@ -7,7 +7,7 @@ import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, afterEach, beforeAll, describe, expect, test, vi } from "vitest";
-import { actionHost } from "../src/internal/actionHost.ts";
+import { actionHost } from "../../src/internal/actionHost.ts";
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "keel-action-host-"));
 const script = path.join(dir, "child.mjs");

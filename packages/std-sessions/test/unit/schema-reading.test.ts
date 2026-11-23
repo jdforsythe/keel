@@ -4,12 +4,12 @@
 // Seed 1337
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import type { ShapeNode } from "../src/internal/ShapeNode.ts";
-import { hasSchemaPath } from "../src/internal/hasSchemaPath.ts";
-import { parseTs } from "../src/internal/parseTs.ts";
-import { pathSegments } from "../src/internal/pathSegments.ts";
-import { resolveSchema } from "../src/internal/resolveSchema.ts";
-import { scopeOf } from "../src/internal/scopeOf.ts";
+import type { ShapeNode } from "../../src/internal/ShapeNode.ts";
+import { hasSchemaPath } from "../../src/internal/hasSchemaPath.ts";
+import { parseTs } from "../../src/internal/parseTs.ts";
+import { pathSegments } from "../../src/internal/pathSegments.ts";
+import { resolveSchema } from "../../src/internal/resolveSchema.ts";
+import { scopeOf } from "../../src/internal/scopeOf.ts";
 
 type File = { path: string; source: string };
 const HERE = "modules/cart/cart.ts";

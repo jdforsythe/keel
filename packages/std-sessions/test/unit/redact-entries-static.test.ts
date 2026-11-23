@@ -4,10 +4,10 @@
 // Seed 1337
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { parseFolder } from "../src/internal/parseFolder.ts";
-import { parseTs } from "../src/internal/parseTs.ts";
-import { pathMissing } from "../src/internal/pathMissing.ts";
-import { redactLiterals } from "../src/internal/redactLiterals.ts";
+import { parseFolder } from "../../src/internal/parseFolder.ts";
+import { parseTs } from "../../src/internal/parseTs.ts";
+import { pathMissing } from "../../src/internal/pathMissing.ts";
+import { redactLiterals } from "../../src/internal/redactLiterals.ts";
 
 const literalsOf = (source: string) => {
   const ast = parseTs("modules/cart/module.ts", source);

@@ -4,10 +4,10 @@
 import type { OutRecord } from "@keel/cli";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import type { OutputFlags } from "../src/internal/OutputFlags.ts";
-import { actionFlags } from "../src/internal/actionFlags.ts";
-import { actionText } from "../src/internal/actionText.ts";
-import { clean } from "../src/internal/clean.ts";
+import type { OutputFlags } from "../../src/internal/OutputFlags.ts";
+import { actionFlags } from "../../src/internal/actionFlags.ts";
+import { actionText } from "../../src/internal/actionText.ts";
+import { clean } from "../../src/internal/clean.ts";
 
 const compact: OutputFlags = { mode: "compact", quiet: false, limit: undefined };
 const pretty: OutputFlags = { mode: "pretty", quiet: false, limit: undefined };

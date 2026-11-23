@@ -4,7 +4,7 @@
 import { type JsonValue, s } from "@keel/schema";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { redact } from "../src/redact.ts";
+import { redact } from "../../src/redact.ts";
 
 const plain = { paths: [], seed: 7, salt: "tx:a.b" };
 const strings = (except: readonly string[] = []) => ({ ...plain, strings: { except } });
