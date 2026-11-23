@@ -17,6 +17,22 @@
       "default": "./src/prove/index.ts"
     }
   },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/src/index.d.ts",
+        "default": "./dist/src/index.js"
+      },
+      "./a11y": {
+        "types": "./dist/src/a11y/index.d.ts",
+        "default": "./dist/src/a11y/index.js"
+      },
+      "./prove": {
+        "types": "./dist/src/prove/index.d.ts",
+        "default": "./dist/src/prove/index.js"
+      }
+    }
+  },
   "files": ["dist", "docs"],
   "scripts": {
     "check": "tsc --noEmit && biome check src test unsafe",

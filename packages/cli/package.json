@@ -35,6 +35,32 @@
   "publishConfig": {
     "bin": {
       "keel": "./dist/src/bin.js"
+    },
+    "exports": {
+      ".": {
+        "types": "./dist/src/index.d.ts",
+        "default": "./dist/src/index.js"
+      },
+      "./testing": {
+        "types": "./dist/src/testing/respond.d.ts",
+        "default": "./dist/src/testing/respond.js"
+      },
+      "./evidence": {
+        "types": "./dist/src/evidence/index.d.ts",
+        "default": "./dist/src/evidence/index.js"
+      },
+      "./docs": {
+        "types": "./dist/src/docs/index.d.ts",
+        "default": "./dist/src/docs/index.js"
+      },
+      "./review": {
+        "types": "./dist/src/review/index.d.ts",
+        "default": "./dist/src/review/index.js"
+      },
+      "./shell": {
+        "types": "./dist/src/shell/index.d.ts",
+        "default": "./dist/src/shell/index.js"
+      }
     }
   },
   "files": ["dist", "docs", "skills"],
