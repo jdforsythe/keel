@@ -315,7 +315,7 @@ State at the last checkpoint; each lane is a subagent in its worktree. The older
 
 ## Next action
 1. `git worktree list`, `git status --short`, `gh run list --branch jdforsythe/test-impl --limit 2` (d8a9e60e is green on every job). Read `tasks/0963-to-p1/briefs/README.md` and `tasks/0963-to-p1/briefs/lanes.md`, State.
-2. Gate the main line (it holds `lane-exn` and `lane-scn`; root check ok) in `.worktrees/verify` and push on green; watch CI to the end.
+2. In parallel, a subagent each: (a) the gate on the main line head (it holds `lane-exn` and `lane-scn`) in `.worktrees/verify`, whole, in CI's order; when it reaches household's `keel test` under burners, a result of 57 tests with `fail` and 0 failed is read with full output and explained before it is rerun (`docs/HANDOFF.md`, state); push on green and watch CI to the end. (b) and (c) the finishers of line 3.
 3. Finish `lane-wlk` and `lane-wk10` as `lanes.md` says each owes; merge; the ledger per Method's D100; gate; push.
 4. Mutation is whole (`lanes.md`, State). After source changes: `node tooling/mutate-stale.mjs --list --missing`, run what it lists, then the ledger. Tests would help the packages nearest their lines (std-tables, cli, ui, check, compiler) and backlog 1069.
 5. Weakness packages left (`tasks/p1/weaknesses-triage.md`): by RFC: 0960, 1000, the rest of 0302; backlog 1004 to 1028 and 1049 to 1072 from the lanes.
