@@ -498,6 +498,13 @@ const ROWS: readonly Row[] = [
     "k.scaffold",
   ],
   [
+    "E1358",
+    "scaffold service in a client module needs a reason for its origin",
+    "The module is on a client deployable, so api.server.ts ships to the browser and its origin must be declared under origins.connect with a reason a reviewer reads (k.origins). Nothing is written.",
+    "pass --reason '<why the app calls it>', or keel codemod place <module> --to <name> --adapter node",
+    "k.scaffold",
+  ],
+  [
     "E1401",
     "props destructured",
     "Props are getters; destructuring loses reactivity.",
@@ -782,7 +789,7 @@ const ROWS: readonly Row[] = [
     "E1571",
     "absolute URL at an undeclared origin given to ctx.net.fetch or service({ base }) in client code",
     "The policy's connect-src is this origin and the declared connect origins (k.origins). A *.server.ts file stays on the server only in a module a node deployable lists; in a module only client deployables list it ships.",
-    "move the service to a *.server.ts file of a module a node deployable lists and call it from a loader or action",
+    "declare the origin under origins.connect in topology.ts with a reason, or move the service to a module a node deployable lists",
     "k.security",
   ],
   [
