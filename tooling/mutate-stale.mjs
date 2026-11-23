@@ -1,6 +1,8 @@
 import { spawn } from "node:child_process";
 // A light mutation run for the files whose mutation claim is stale: the ledger's claim for a `src` file holds the sha256
-// of the source it was scored on, and a file on disk with another hash (or, with --missing, none) is run again.
+// of the source it was scored on, and a file on disk with another hash (or, with --missing, none) is run again. So is a
+// file whose entry in the report on disk does not hold the mutants Stryker's instrumenter finds in it: a run stopped at
+// its bound leaves such a partial entry.
 // Packages go one at a time, each in chunks of files through the one runner (tooling/mutate.mjs), with a capped number
 // of test runners, so the run can share a machine. Nothing starts after --minutes; the live chunk is stopped through the
 // stop path `pnpm mutate:stop` uses, so Stryker saves its results. Run again to resume: finished chunks are fresh.
@@ -10,7 +12,15 @@ import fs from "node:fs";
 import path from "node:path";
 import { mutateCacheDir } from "./mutate-cache.ts";
 import { stopRequested } from "./mutate-changed.mjs";
-import { chunkPlan, endLine, listLine, positive, reportClaims, staleFiles } from "./mutate-stale-plan.mjs";
+import {
+  chunkPlan,
+  endLine,
+  listLine,
+  partialFiles,
+  positive,
+  reportClaims,
+  staleFiles,
+} from "./mutate-stale-plan.mjs";
 import { mutatedRule, mutationUnits, sourceDir, unitDir } from "./mutate-units.mjs";
 import { stopFile } from "./mutate.mjs";
 import { acquire, lockedDiag } from "./mutateLock.mjs";
@@ -45,13 +55,38 @@ function hashes(units) {
   return out;
 }
 
+/** The entry of Stryker's instrumenter, which sits beside `@stryker-mutator/core` in the package store. */
+const instrumenterEntry = () =>
+  new URL("../../../instrumenter/dist/src/index.js", import.meta.resolve("@stryker-mutator/core")).href;
+
+/** Reads each repo-relative file's mutants (ignored ones included) from Stryker's instrumenter: `file -> mutants`. */
+async function instrumented(files) {
+  const out = new Map();
+  if (files.length === 0) return out;
+  const { Instrumenter } = await import(instrumenterEntry());
+  const quiet = { debug() {}, info() {}, warn() {}, error() {}, isDebugEnabled: () => false };
+  const instrumenter = new Instrumenter(quiet);
+  for (const file of files) {
+    const content = fs.readFileSync(path.join(root, file), "utf8");
+    const r = await instrumenter.instrument([{ name: file, mutate: true, content }], {
+      plugins: null,
+      excludedMutations: [],
+      ignorers: [],
+    });
+    out.set(file, r.mutants);
+  }
+  return out;
+}
+
 /**
  * What the Stryker reports on disk add to the ledger: the claims they hold (a report is the whole incremental state of its
- * unit, newer than a ledger written before a run), and the files of them with no scored mutant (`inert`).
+ * unit, newer than a ledger written before a run), the files of them with no scored mutant (`inert`), and the files whose
+ * entry, for the source now on disk (`disk`: file to sha), does not hold the mutants the instrumenter finds (`partial`).
  */
-function reports(units) {
+async function reports(units, disk) {
   const claims = [];
   const inert = [];
+  const partial = [];
   for (const unit of units) {
     const f = path.join(root, unitDir(unit), "reports", "mutation", "mutation.json");
     if (!fs.existsSync(f)) continue;
@@ -64,30 +99,17 @@ function reports(units) {
     const r = reportClaims(unitDir(unit), report, sha256);
     claims.push(...r.claims);
     inert.push(...r.inert);
+    const current = [...r.claims, ...r.inert].filter((c) => disk.get(c.file) === c.sha).map((c) => c.file);
+    partial.push(...partialFiles(unitDir(unit), report, await instrumented(current)));
   }
-  return { claims, inert };
+  return { claims, inert, partial };
 }
-
-/** The entry of Stryker's instrumenter, which sits beside `@stryker-mutator/core` in the package store. */
-const instrumenterEntry = () =>
-  new URL("../../../instrumenter/dist/src/index.js", import.meta.resolve("@stryker-mutator/core")).href;
 
 /** The repo-relative `files` Stryker's instrumenter finds no mutant to run in (types, re-exports, constants). */
 async function mutantless(files) {
-  if (files.length === 0) return new Set();
-  const { Instrumenter } = await import(instrumenterEntry());
-  const quiet = { debug() {}, info() {}, warn() {}, error() {}, isDebugEnabled: () => false };
-  const instrumenter = new Instrumenter(quiet);
   const out = new Set();
-  for (const file of files) {
-    const content = fs.readFileSync(path.join(root, file), "utf8");
-    const r = await instrumenter.instrument([{ name: file, mutate: true, content }], {
-      plugins: null,
-      excludedMutations: [],
-      ignorers: [],
-    });
-    if (r.mutants.every((m) => m.ignoreReason !== undefined)) out.add(file);
-  }
+  for (const [file, mutants] of await instrumented(files))
+    if (mutants.every((m) => m.ignoreReason !== undefined)) out.add(file);
   return out;
 }
 
@@ -101,7 +123,7 @@ if (process.argv[1] === new URL(import.meta.url).pathname) {
     const all = mutationUnits(root).filter((p) => only === undefined || p === only);
     const ledger = JSON.parse(fs.readFileSync(path.join(root, "tooling", "ledger", "ledger.json"), "utf8"));
     const disk = hashes(all);
-    const onDisk = reports(all);
+    const onDisk = await reports(all, disk);
     // A report on disk is newer than the ledger's claim of its file; its inert files hold only while the source is unchanged.
     const claims = [...(ledger.mutation?.claims ?? []), ...onDisk.claims];
     const inert = new Set(onDisk.inert.filter((c) => disk.get(c.file) === c.sha).map((c) => c.file));
@@ -112,7 +134,7 @@ if (process.argv[1] === new URL(import.meta.url).pathname) {
       );
       for (const f of await mutantless(candidates.filter((f) => !claimedFiles.has(f)))) inert.add(f);
     }
-    const chunks = chunkPlan(staleFiles(claims, disk, all, inert), size, { missing });
+    const chunks = chunkPlan(staleFiles(claims, disk, all, inert, new Set(onDisk.partial)), size, { missing });
     if (argv.includes("--list") || chunks.length === 0)
       return {
         diags: [],

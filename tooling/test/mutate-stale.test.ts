@@ -3,7 +3,16 @@ import os from "node:os";
 import path from "node:path";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { chunkPlan, endLine, leftLine, listLine, positive, reportClaims, staleFiles } from "../mutate-stale-plan.mjs";
+import {
+  chunkPlan,
+  endLine,
+  leftLine,
+  listLine,
+  partialFiles,
+  positive,
+  reportClaims,
+  staleFiles,
+} from "../mutate-stale-plan.mjs";
 import { mutationUnits, unitDir } from "../mutate-units.mjs";
 
 const shas = new Map([
@@ -41,6 +50,85 @@ describe("staleFiles with inert files", () => {
     expect(staleFiles(claims, shas, ["a"], new Set(["packages/a/src/x.ts", "packages/a/src/y.ts"]))).toEqual([]);
     expect(staleFiles(claims, shas, ["a"], new Set(["packages/a/src/x.ts"]))).toEqual([
       { pkg: "a", stale: ["src/y.ts"], missing: [] },
+    ]);
+  });
+});
+
+describe("partialFiles", () => {
+  // The instrumenter counts lines and columns from 0, a report from 1.
+  const at = (line: number, column: number, d: number) => ({
+    start: { line: line + d, column: column + d },
+    end: { line: line + d, column: column + d + 4 },
+  });
+  const found = (line: number, mutatorName: string, replacement: string) => ({
+    mutatorName,
+    replacement,
+    location: at(line, 2, 0),
+  });
+  const held = (line: number, mutatorName: string, replacement: string, status: string) => ({
+    mutatorName,
+    replacement,
+    status,
+    location: at(line, 2, 1),
+  });
+  const three = [
+    found(1, "BooleanLiteral", "false"),
+    found(2, "StringLiteral", '""'),
+    found(3, "BlockStatement", "{}"),
+  ];
+  const whole = [
+    held(3, "BlockStatement", "{}", "Killed"),
+    held(1, "BooleanLiteral", "false", "NoCoverage"),
+    held(2, "StringLiteral", '""', "Ignored"),
+  ];
+  it("lists a file whose report entry holds fewer mutants than the file has", () => {
+    const report = {
+      files: {
+        "src/cut.ts": { source: "C", mutants: [whole[1]] },
+        "src/whole.ts": { source: "W", mutants: whole },
+      },
+    };
+    const mutants = new Map([
+      ["packages/a/src/cut.ts", three],
+      ["packages/a/src/whole.ts", three],
+    ]);
+    expect(partialFiles("packages/a", report, mutants)).toEqual(["packages/a/src/cut.ts"]);
+  });
+  it("lists a file cut down to its ignored mutants, and one whose entry holds other mutants than the file has", () => {
+    const report = {
+      files: {
+        "src/ignored.ts": { source: "I", mutants: [whole[2]] },
+        "src/other.ts": { source: "O", mutants: [whole[0], whole[1], held(9, "StringLiteral", '""', "Killed")] },
+        "src/more.ts": { source: "M", mutants: [...whole, held(9, "StringLiteral", '""', "Killed")] },
+      },
+    };
+    const mutants = new Map(["ignored", "other", "more"].map((n) => [`packages/a/src/${n}.ts`, three]));
+    expect(partialFiles("packages/a", report, mutants)).toEqual([
+      "packages/a/src/ignored.ts",
+      "packages/a/src/other.ts",
+      "packages/a/src/more.ts",
+    ]);
+  });
+  it("leaves out a file nothing was found for, and reads a report without files as holding nothing", () => {
+    const report = { files: { "src/changed.ts": { source: "C", mutants: [] }, "src/bad.ts": { source: "B" } } };
+    expect(partialFiles("packages/a", report, new Map([["packages/a/src/bad.ts", three]]))).toEqual([
+      "packages/a/src/bad.ts",
+    ]);
+    expect(partialFiles("packages/a", {}, new Map())).toEqual([]);
+    expect(partialFiles("packages/a", null, new Map())).toEqual([]);
+  });
+});
+
+describe("staleFiles with partial files", () => {
+  it("lists a claimed file whose report entry is partial as stale, though its sha holds or it reads inert", () => {
+    const claims = [
+      { file: "packages/a/src/x.ts", sha: "1" },
+      { file: "packages/a/src/y.ts", sha: "2" },
+    ];
+    const partial = new Set(["packages/a/src/x.ts", "packages/b/src/z.ts"]);
+    expect(staleFiles(claims, shas, ["a", "b"], new Set(["packages/b/src/z.ts"]), partial)).toEqual([
+      { pkg: "a", stale: ["src/x.ts"], missing: [] },
+      { pkg: "b", stale: ["src/z.ts"], missing: ["src/deep/w.ts"] },
     ]);
   });
 });

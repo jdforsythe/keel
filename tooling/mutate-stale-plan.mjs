@@ -1,5 +1,5 @@
-// The pure part of `pnpm mutate:stale`: which mutated `src` files have a stale or missing mutation claim, and how they
-// are cut into chunks. Reads nothing; tooling/mutate-stale.mjs feeds it the ledger's claims and the files' hashes.
+// The pure part of `pnpm mutate:stale`: which mutated `src` files have a stale, partial or missing mutation claim, and
+// how they are cut into chunks. Reads nothing; tooling/mutate-stale.mjs feeds it the ledger's claims and the files' hashes.
 import { mutatedRule, unitDir } from "./mutate-units.mjs";
 
 const SCORED = new Set(["Killed", "Timeout", "Survived", "NoCoverage"]);
@@ -23,14 +23,44 @@ export function reportClaims(dir, report, sha256) {
   return { claims, inert };
 }
 
+/** One mutant as text: its mutator, its place counted from `base` (0 in the instrumenter, 1 in a report) and its replacement. */
+const mutantKey = (m, base) => {
+  const s = m?.location?.start;
+  const e = m?.location?.end;
+  return `${m?.mutatorName} ${s?.line - base}:${s?.column - base}-${e?.line - base}:${e?.column - base} ${m?.replacement}`;
+};
+
+/**
+ * The repo-relative files of a Stryker report (of the unit whose directory is `dir`) whose entry does not hold exactly
+ * the mutants the file has: fewer (a run stopped at its bound saves a file's NoCoverage and Ignored mutants at once and
+ * drops the ones still waiting), more, or others. `found` maps a repo-relative file to the mutants Stryker's
+ * instrumenter finds in its source, ignored ones included; a file it does not name is left out.
+ */
+export function partialFiles(dir, report, found) {
+  const files = report?.files;
+  if (files === null || typeof files !== "object") return [];
+  const out = [];
+  for (const [rel, entry] of Object.entries(files)) {
+    const file = `${dir}/${rel}`;
+    const mutants = found.get(file);
+    if (mutants === undefined || typeof entry?.source !== "string") continue;
+    const held = Array.isArray(entry.mutants) ? entry.mutants : [];
+    const want = mutants.map((m) => mutantKey(m, 0)).sort();
+    const have = held.map((m) => mutantKey(m, 1)).sort();
+    if (want.length !== have.length || want.some((k, i) => k !== have[i])) out.push(file);
+  }
+  return out;
+}
+
 /**
  * The files to run, per unit (a bare package name, or `apps/<name>`) in `packages` order: `{ pkg, stale, missing }` (package-relative paths, sorted).
  * `claims` is the ledger's `mutation.claims` (`{ file, sha }`, file repo-relative); `shas` maps each repo-relative
  * mutated file on disk to the sha256 of its source. A claim whose sha differs from the disk is stale; a file with no
  * claim is missing; a file in `inert` (a set of repo-relative files with no mutant to run: zero mutants, or only ignored ones, as
- * its source is now) is neither. Packages with neither are left out.
+ * its source is now) is neither. A file in `partial` (a set of repo-relative files whose report entry does not hold the
+ * file's mutants, `partialFiles`) is stale whatever its claim or `inert` says. Packages with neither are left out.
  */
-export function staleFiles(claims, shas, packages, inert = new Set()) {
+export function staleFiles(claims, shas, packages, inert = new Set(), partial = new Set()) {
   const claimed = new Map(claims.map((c) => [c.file, c.sha]));
   const out = [];
   for (const pkg of packages) {
@@ -42,6 +72,10 @@ export function staleFiles(claims, shas, packages, inert = new Set()) {
       if (!file.startsWith(prefix)) continue;
       const rel = file.slice(prefix.length);
       if (!mutated.test(rel)) continue;
+      if (partial.has(file)) {
+        stale.push(rel);
+        continue;
+      }
       if (inert.has(file)) continue;
       const sha = claimed.get(file);
       if (sha === undefined) missing.push(rel);
