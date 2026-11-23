@@ -21,12 +21,12 @@
         "justified": 0
       },
       "cli": {
-        "score": 80.42,
-        "scoreJustified": 80.42,
+        "score": 82.11,
+        "scoreJustified": 82.11,
         "threshold": 70,
         "killed": 2460,
         "survived": 392,
-        "noCoverage": 207,
+        "noCoverage": 144,
         "justified": 0
       },
       "compiler": {
@@ -102,12 +102,12 @@
         "justified": 0
       },
       "server": {
-        "score": 75.6,
-        "scoreJustified": 75.6,
+        "score": 76.1,
+        "scoreJustified": 76.1,
         "threshold": 70,
         "killed": 2525,
-        "survived": 650,
-        "noCoverage": 165,
+        "survived": 639,
+        "noCoverage": 154,
         "justified": 0
       },
       "services": {

@@ -1,5 +1,5 @@
 {
-  "commit": "fb2924719efd306e76481ad58999df3ef6b0cbd6",
+  "commit": "8b42508dec1ad3156fae114ed4cf8d82e1f01390",
   "coverage": {
     "packages": {
       "apps/golden-1": {
@@ -1168,7 +1168,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-23T00:53:39.178Z",
+  "generatedAt": "2026-11-23T01:11:40.157Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -3206,9 +3206,9 @@
         "justified": 0,
         "reason": null,
         "reportDate": "2026-11-19",
-        "score": 80.42,
-        "scoreJustified": 80.42,
-        "stale": 51,
+        "score": 82.11,
+        "scoreJustified": 82.11,
+        "stale": 52,
         "threshold": 70
       },
       "packages/compiler": {
@@ -3296,9 +3296,9 @@
         "justified": 0,
         "reason": null,
         "reportDate": "2026-11-19",
-        "score": 75.6,
-        "scoreJustified": 75.6,
-        "stale": 29,
+        "score": 76.1,
+        "scoreJustified": 76.1,
+        "stale": 30,
         "threshold": 70
       },
       "packages/services": {
@@ -3602,7 +3602,7 @@
         "threshold": 70
       }
     },
-    "stale": 197
+    "stale": 199
   },
   "schema": 1,
   "tests": {
@@ -3702,8 +3702,8 @@
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 773,
-        "unitFiles": 102
+        "unitCases": 775,
+        "unitFiles": 103
       },
       "packages/compiler": {
         "conformanceCases": 179,
@@ -3828,7 +3828,7 @@
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 608,
+        "unitCases": 609,
         "unitFiles": 116
       },
       "packages/services": {
@@ -4263,8 +4263,8 @@
       "proveFiles": 23,
       "simulateFiles": 17,
       "skipTodo": 5,
-      "unitCases": 5671,
-      "unitFiles": 982
+      "unitCases": 5674,
+      "unitFiles": 983
     }
   },
   "tool": {
