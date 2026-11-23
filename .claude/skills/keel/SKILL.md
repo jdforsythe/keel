@@ -40,7 +40,7 @@ export default function TodoList(props: Infer<typeof Props>) {
 - No `Date`, `Math.random`, `fetch`, `setTimeout` or `localStorage` (E1601): use `ctx.clock`, `ctx.random.id('Todo')`, `ctx.storage`, a `service` for HTTP (E1651).
 - No `any`, casts, `!` or `@ts-ignore` (E1757); no `@keel/*` import with an `internal` segment (E1576).
 
-**Commands.** `keel check` · `keel test` · `keel build` · `keel dev` · `keel review origin/main..HEAD` · `keel scaffold project|module|route|component|store <name>` · `keel codemod rename|move|place`: prefer them to hand edits.
+**Commands.** `keel check` · `keel test` · `keel build` · `keel dev` · `keel review origin/main..HEAD` · `keel scaffold project|module|route|component|store|service <name>` · `keel codemod rename|move|place`: prefer them to hand edits.
 
 **Skills.** Examples put several exports in one block; in an app each is a file.
 - keel-client: components, pages, forms, action redirects (`ok(href)`), widgets, tables, text.
