@@ -294,24 +294,25 @@ describe("toTest: route tables and navigations", () => {
     ]);
   });
 
-  test("a contract whose name is taken, or is no identifier, is imported under another", () => {
-    const s = session({ events: [nav(1, "/a"), nav(2, "/b")] });
+  test("a contract whose name is taken is imported under another, and two modules each get their own", () => {
+    const s = session({ events: [nav(1, "/a"), nav(2, "/b"), nav(3, "/c")] });
     const source = toTest(s, {
       navs: [
         { index: 0, id: "cart.show", params: {}, search: {} },
-        { index: 1, id: "my-app.home", params: {}, search: {} },
+        { index: 1, id: "orders.show", params: {}, search: {} },
+        { index: 2, id: "cart.show", params: {}, search: {} },
       ],
       stores: [{ id: "cart.cart", name: "cart", from: "../cart.ts" }],
-      routes: [
-        cartRoutes,
-        { module: "my-app", from: "../../my-app/routes.ts", contract: "../../my-app/my-app.contract.ts" },
-      ],
+      routes: [cartRoutes, orders],
     });
-    expect(lines(source)).toContain('import { cart as cartContract } from "../cart.contract.ts";');
-    expect(lines(source)).toContain('import { my-app as my_app } from "../../my-app/my-app.contract.ts";');
+    expect(lines(source).filter((l) => l.includes(".contract.ts"))).toEqual([
+      'import { cart as cartContract } from "../cart.contract.ts";',
+      'import { orders } from "../../orders/orders.contract.ts";',
+    ]);
     expect(body(source).filter((l) => l.includes("navigate"))).toEqual([
       '  await h.navigate(cartContract.href("cart.show"));',
-      '  await h.navigate(my_app.href("my-app.home"));',
+      '  await h.navigate(orders.href("orders.show"));',
+      '  await h.navigate(cartContract.href("cart.show"));',
     ]);
   });
 
