@@ -3,8 +3,8 @@
 //   properties of 4 to 10 runs that each render an app, 129 s of the package's 154 s of tests. Every mutant they cover
 //   would wait on them for its timeout or its survival. test/group-{handle,stream,caller,app}.test.ts cover the same
 //   code in about 7 s.
-// Added here: vitest.stryker.setup.mjs, which carries Stryker's coverage and active mutant into the worker threads a
-// group's users run in.
+// Added here: vitest.stryker.setup.mjs, which credits a file under test/unit/ with what the modules it imports do at
+// load.
 import { QuickFirst } from "@keel/tooling/quick-first";
 import { defineConfig, mergeConfig } from "vitest/config";
 import base from "./vitest.config.ts";
