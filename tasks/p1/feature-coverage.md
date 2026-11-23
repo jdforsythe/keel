@@ -55,7 +55,7 @@ Apps: G1 golden-1 (todo board: `web` client + `api` node on SQLite), G2 golden-2
 | k.cli: `keel build` | x | x | x | x | ci | | `restart.mjs`, `resume.mjs` |
 | k.cli: `keel check`, `keel test` | x | x | x | x | ci | | CI `check` and a11y report steps |
 | k.cli: `keel docs` | - | - | - | - | | x | |
-| k.cli: `keel evidence` | - | - | - | - | | x | `pnpm evidence:report --check` reads the ledger, not an app bundle |
+| k.cli: `keel evidence` | - | - | - | - | | x | `pnpm evidence:report --check` reads the ledger; `tooling/smoke/canary.mjs` runs `keel evidence` and `--verify` over golden-2 and household |
 | k.cli: `keel codemod` | - | - | - | - | ci | | `examples/codemod-place`: the smoke runs `keel codemod place stock --to api --adapter node` on a copy, checks, tests, builds and serves the result as peers, then places it back byte for byte |
 | k.cli: MCP, LSP | - | - | - | - | | x | |
 | k.docs | - | - | - | - | | x | |
@@ -101,10 +101,10 @@ Apps: G1 golden-1 (todo board: `web` client + `api` node on SQLite), G2 golden-2
 | k.privacy (`pii`, `secret`) | - | x | - | - | | | `apps/golden-2/modules/accounts/Credentials.schema.ts` |
 | k.reveal | - | x | - | - | | | `apps/golden-2/modules/accounts/postToken.server.ts` |
 | k.privacy-reads | - | - | - | - | | x | |
-| k.evidence | - | - | - | - | | x | |
+| k.evidence | - | - | - | - | ci | x | `tooling/smoke/canary.mjs`: the bundles of golden-2 and household hold no canary and verify |
 | k.parity | - | - | - | - | | x | proposed section |
 | **Stdlib** | | | | | | | |
-| std.sessions: record, replay, to-test | x | x | - | x | ci | | `apps/sessions/test`, `shellSession.ts`, `shell.mjs`; a signed-in user: `apps/golden-2/test/signedInSession.test.ts` |
+| std.sessions: record, replay, to-test | x | x | - | x | ci | | `apps/sessions/test`, `shellSession.ts`, `shell.mjs`; a signed-in user: `apps/golden-2/test/signedInSession.test.ts`; household records every page of its frame and uploads to its own ingest: `apps/household/test/recording.test.ts` |
 | std.sessions: GitHub Action | - | - | - | - | | x | |
 | std.i18n | - | x | - | - | | | `apps/golden-2/modules/accounts/AccountsLocale.schema.ts` |
 | std.money | - | x | - | - | | | `apps/golden-2/modules/recipes/currencyOptions.ts` |
@@ -126,7 +126,7 @@ Apps: G1 golden-1 (todo board: `web` client + `api` node on SQLite), G2 golden-2
 | std.conflicts (races report) | - | - | - | - | | x | dependency only; no import |
 | std.multi | t | - | - | - | | | `shellSession.ts` records a one-user group |
 | std.statecharts | x | - | - | - | | | `apps/golden-1/modules/api/removalChart.ts` |
-| std.monitor | x | t | - | - | man | | `monitor.mjs`; `sessions.tally` behind the reader guard: `apps/golden-2/test/sessionsReader.test.ts` |
+| std.monitor | x | t | - | - | man | | `monitor.mjs`; `sessions.tally` behind the reader guard: `apps/golden-2/test/sessionsReader.test.ts`; household's `monitor` runner and tally: `apps/household/test/recording.test.ts` |
 | std.headless: Dialog, Disclosure, Toaster | - | x | - | - | ci | | `apps/golden-2/modules/recipes/toasts.ts` |
 | std.options: Listbox, Combobox, Menu, Tabs | - | x | - | - | | | `apps/golden-2/modules/recipes/CatalogPage.tsx` |
 | std.lists | - | - | - | - | | x | |
@@ -214,11 +214,13 @@ One app, one lane, built in order; each layer is a tagged commit range with its 
 | 7 Channels and live, two users | `std.channels`, `std.live`, `std.multi` with two signed-in users | app tests under simulation; built-app smoke with two browser contexts (replaces the manual `monitor.mjs` path in CI) | M |
 | 8 Jobs, schedules, a workflow | receipt parsing as a job, a nightly digest schedule, a removal-style workflow, `std.statecharts` | app tests with the sim clock; built-app smoke that waits for one schedule fire | M |
 | 9 (README) The weekly staples, built | `std.workflows` (chart, a step job per staple, a wait), `std.jobs` (a start job), `std.schedules` (weekly, `missed: 'once'`), `commitStores`, `std.channels` over a workflow store; `apps/household/modules/shopping/restock.server.ts` | `test/restock.test.ts`, `test/restock.sim.test.ts` (kill at eleven points, `simulate` faults, schedule catch-up), `test/restockChart.test.ts`; `tooling/smoke/household.mjs` Run now, SIGKILL mid-run, restart, one run, each staple once | M |
-| 9 Sessions and evidence | `std.sessions` record, replay, to-test, `std.monitor`, `keel evidence`, `--verify` | app tests; `keel evidence --verify` over the app in CI | S |
+| 10 (README) Session recordings, tallies, evidence | `std.sessions` record with upload to the app's own ingest, the frame's note that lists what the recorder kept, `std.monitor`, `keel evidence`, `--verify`; replay of a visitor's start page | `apps/household/test/recording.test.ts` (masked `pii` in the note, the recording, the upload and the archive; reader guard; tally); `tooling/smoke/household.mjs` reads a typed phone masked in the note; `tooling/smoke/canary.mjs` runs `keel evidence` and `--verify` over the app in CI | S |
 
 Offline writes, conflicts and the native shells stay out of the walkthrough's layers. The outbox and the shell are covered by golden-1 today (sections 2 and 4 below); a tenth layer may add the outbox once layers 5 to 9 are built, and the walkthrough takes it only if it reads naturally in the ledger (a household member adds a receipt on a train).
 
 The walkthrough is also the demo app (`tasks/p1/PLAN.md` W10 and its Feature moments table), and it stays a realistic app. Layer 9 shows in the UI what the session records as the person uses the app, and nothing more: there is no replay page built into the app. Replay, stepping back, turning a session into a test and filing a bug from one are done with the normal tools (the `keel` commands, the inspector, `std.sessions`' own entries), the way a team running a real app does it. The public docs walk through that with this app: use the app, find the recorded session, replay it, reproduce a bug from it, make a test of it. Each earlier layer names one moment a reader can try in under a minute with the normal tools (kill the server and find the data kept; open two windows and watch a live update; read the evidence bundle), and the README lists them in order.
+
+Three limits keep the walk from a recorded household session to a test from being done with the normal tools: `keel session capture` reads nothing from a page a `node` deployable serves under `keel dev` (the resumed page posts no live inspect report, and the server's `sessions.live` is `null`); `replay`, `minimize` and `to-test` render the base with no `user` and no `app`, so a recording of a page behind the sign-in guard stops at its first input with E2003; and the file `to-test` writes seeds a `std.statecharts` chart as a store and fails with `st.snapshot is not a function`. A visitor's recording of the start page replays (`apps/household/test/recording.test.ts`).
 
 Closes: findings a.1, a.9 (`std.multi`), b (`k.guards`, `std.tokens`, `std.schedules`, `std.channels`, `k.privacy` use), c.5 (sessions from a signed-in user), c.8 (schedules with workflows with Postgres).
 

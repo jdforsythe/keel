@@ -329,6 +329,9 @@ importers:
       '@keel/std-schedules':
         specifier: workspace:*
         version: link:../../packages/std-schedules
+      '@keel/std-sessions':
+        specifier: workspace:*
+        version: link:../../packages/std-sessions
       '@keel/std-statecharts':
         specifier: workspace:*
         version: link:../../packages/std-statecharts

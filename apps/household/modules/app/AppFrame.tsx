@@ -9,18 +9,20 @@ import { members } from "../members/members.contract.ts";
 import { receipts } from "../receipts/receipts.contract.ts";
 import { setup } from "../setup/setup.contract.ts";
 import { shopping } from "../shopping/shopping.contract.ts";
+import RecordingNote from "./RecordingNote.tsx";
 
 export const Props = s.object({ data: ShellData });
 
 /**
  * Layout `app.frame`: the one frame around every signed-in page of every module. `app` lists each feature module in
  * `deps`, so its masthead links to all of them: List, Receipts, Setup and Profile, then Sign out. A visitor on the
- * start page gets the sign-in and sign-up links instead.
+ * start page gets the sign-in and sign-up links instead. Under the page it renders the note on what the page records.
  */
 export default function AppFrame(props: Infer<typeof Props> & { readonly children: () => Node }) {
   return (
     <Masthead
       data={props.data}
+      foot={() => <RecordingNote text={props.data.text} />}
       nav={() => (
         <Box direction="row" align="center" wrap="wrap" gap="4">
           <If when={props.data.signedIn}>

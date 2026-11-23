@@ -7,12 +7,16 @@ export const Props = s.object({ data: ShellData });
 
 /**
  * What every frame of the app renders: a masthead with the mark, the app's name and the household's name, the
- * navigation the frame passes in `nav`, a hairline, and the page in a centred column that narrows to the screen on a
- * phone. `app.frame` passes the member's navigation; `members.frame`, around the signed-out pages, the sign-in and
+ * navigation the frame passes in `nav`, a hairline, the page in a centred column that narrows to the screen on a
+ * phone, and under it what the frame passes in `foot`. `app.frame` passes the member's navigation; `members.frame`, around the signed-out pages, the sign-in and
  * sign-up links.
  */
 export default function Masthead(
-  props: Infer<typeof Props> & { readonly nav: () => Node; readonly children: () => Node },
+  props: Infer<typeof Props> & {
+    readonly nav: () => Node;
+    readonly foot?: () => Node;
+    readonly children: () => Node;
+  },
 ) {
   return (
     <Box id="frame" direction="column">
@@ -53,6 +57,9 @@ export default function Masthead(
         py={{ base: "4", md: "6" }}
       >
         {props.children()}
+      </Box>
+      <Box id="frame.foot" w={{ md: "measure" }} mx={{ md: "auto" }} px={{ base: "3", md: "4" }} py="3">
+        {props.foot?.()}
       </Box>
     </Box>
   );

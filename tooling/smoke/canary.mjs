@@ -5,10 +5,11 @@
 // the flow over HTTP once per log format (`KEEL_FORMAT` `compact` and `json`), each on fresh data in that folder. Each
 // sink is a step of its own, so a leak names its sink and the field: the server's output, error answers and the pages
 // a refusal redirects to, URLs asked for and redirected to, cookies, the built files under `dist/` (`routes.json` and
-// the rest) after the runs, and the evidence bundle `keel evidence` writes for apps/golden-2 (whose `keel test` runs
-// the sim canary tests), which must also verify. The database is the one place they may be: its files are checked to
+// the rest) after the runs, and the evidence bundle `keel evidence` writes for apps/golden-2 and for apps/household
+// (each app's `keel test` runs its sim canary tests), which must be written with no check error and no failed test,
+// and verify. The database is the one place they may be: its files are checked to
 // hold the email, so the run is known to have carried it. Usage: node tooling/smoke/canary.mjs. The bundle goes to the
-// temporary folder; the app's own folder is only read.
+// temporary folder; each app's own folder is only read.
 import { execFile, spawn } from "node:child_process";
 import { generateKeyPairSync } from "node:crypto";
 import { mkdir, mkdtemp, readFile, readdir, rm } from "node:fs/promises";
@@ -17,10 +18,13 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { buildIn, copyApp, freePort, recorder, root, wait } from "./built.mjs";
 
-const LIMIT_MS = 240_000;
+const LIMIT_MS = 420_000;
 const SECRET = "golden-2-smoke-secret-of-32-bytes-or-more";
 const AUTH_SECRET = "golden-2-smoke-auth-secret-of-32-characters";
 const golden2 = join(root, "apps", "golden-2");
+const household = join(root, "apps", "household");
+/** The values `apps/household/test/profile.test.ts` and `test/recording.test.ts` type into the profile's marked fields. */
+const HOUSEHOLD_CANARIES = { name: "Quillon Vantablack", phone: "+44 7700 900417" };
 const cli = join(root, "packages", "cli", "src", "bin.ts");
 const {
   CANARIES,
@@ -112,6 +116,57 @@ async function filesUnder(dir) {
     else if (e.isFile()) out.push(p);
   }
   return out;
+}
+
+/**
+ * `keel evidence` over the app in `cwd` with a fresh Ed25519 key, the bundle in the temporary folder: a step that it
+ * was written, one that no file of it holds a canary, and one that `keel evidence --verify` passes for its key.
+ */
+async function bundle(name, cwd, canaries) {
+  const { privateKey } = generateKeyPairSync("ed25519");
+  const key = privateKey.export({ type: "pkcs8", format: "pem" });
+  const out = join(tmp, `evidence-${name}`);
+  const evidence = await new Promise((resolve) => {
+    const child = execFile(
+      process.execPath,
+      ["--disable-warning=ExperimentalWarning", cli, "evidence", "--out", out],
+      {
+        cwd,
+        env: { ...process.env, KEEL_AGENT: "1", KEEL_EVIDENCE_KEY: key },
+        maxBuffer: 64 * 1024 * 1024,
+        timeout: 180_000,
+      },
+      (err, stdout) =>
+        resolve({ code: err === null ? 0 : (err.code ?? 1), last: stdout.trim().split("\n").at(-1) ?? "" }),
+    );
+    children.add(child);
+  });
+  const manifest = await readFile(join(out, "manifest.json"), "utf8").then(JSON.parse, () => null);
+  step(
+    `evidence written for apps/${name}`,
+    manifest !== null && evidence.code === 0,
+    `exit ${evidence.code}, ${evidence.last}`,
+  );
+  const inBundle = await leakedFiles(out, canaries);
+  step(`sink evidence bundle of apps/${name}`, manifest !== null && inBundle.length === 0, inBundle.join(" | "));
+  const verified = await new Promise((resolve) => {
+    execFile(
+      process.execPath,
+      [
+        "--disable-warning=ExperimentalWarning",
+        cli,
+        "evidence",
+        "--verify",
+        out,
+        "--key",
+        String(manifest?.keyId ?? ""),
+      ],
+      { cwd, env: { ...process.env, KEEL_AGENT: "1" }, timeout: 60_000 },
+      (err, stdout) =>
+        resolve({ code: err === null ? 0 : (err.code ?? 1), last: stdout.trim().split("\n").at(-1) ?? "" }),
+    );
+  });
+  step(`evidence bundle of apps/${name} verifies`, verified.code === 0, verified.last);
 }
 
 /** The files under `dir` holding a canary, as `path: fields`; `[]` when none. Bytes are read as latin1, so any text form matches. */
@@ -308,47 +363,9 @@ try {
     `${files} files${built.length === 0 ? "" : `, leaked ${built.join(" | ")}`}`,
   );
 
-  // The evidence bundle of apps/golden-2: its `keel test` runs test/canary.test.ts and test/canary-session.test.ts.
-  const { privateKey } = generateKeyPairSync("ed25519");
-  const key = privateKey.export({ type: "pkcs8", format: "pem" });
-  const out = join(tmp, "evidence");
-  const evidence = await new Promise((resolve) => {
-    const child = execFile(
-      process.execPath,
-      ["--disable-warning=ExperimentalWarning", cli, "evidence", "--out", out],
-      {
-        cwd: golden2,
-        env: { ...process.env, KEEL_AGENT: "1", KEEL_EVIDENCE_KEY: key },
-        maxBuffer: 64 * 1024 * 1024,
-        timeout: 180_000,
-      },
-      (err, stdout) =>
-        resolve({ code: err === null ? 0 : (err.code ?? 1), last: stdout.trim().split("\n").at(-1) ?? "" }),
-    );
-    children.add(child);
-  });
-  const manifest = await readFile(join(out, "manifest.json"), "utf8").then(JSON.parse, () => null);
-  step("evidence written for apps/golden-2", manifest !== null, `exit ${evidence.code}, ${evidence.last}`);
-  const inBundle = await leakedFiles(out, CANARIES);
-  step("sink evidence bundle", manifest !== null && inBundle.length === 0, inBundle.join(" | "));
-  const verified = await new Promise((resolve) => {
-    execFile(
-      process.execPath,
-      [
-        "--disable-warning=ExperimentalWarning",
-        cli,
-        "evidence",
-        "--verify",
-        out,
-        "--key",
-        String(manifest?.keyId ?? ""),
-      ],
-      { cwd: golden2, env: { ...process.env, KEEL_AGENT: "1" }, timeout: 60_000 },
-      (err, stdout) =>
-        resolve({ code: err === null ? 0 : (err.code ?? 1), last: stdout.trim().split("\n").at(-1) ?? "" }),
-    );
-  });
-  step("evidence bundle verifies", verified.code === 0, verified.last);
+  // The evidence bundle of each app: its `keel test` runs the app's sim canary tests.
+  await bundle("golden-2", golden2, CANARIES);
+  await bundle("household", household, HOUSEHOLD_CANARIES);
 } catch (e) {
   step("flow", false, String(e).split("\n")[0]);
 } finally {

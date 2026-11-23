@@ -72,7 +72,7 @@ it("shows the last run on the setup page, and Run now starts one the page follow
   expect(page.find("shopping.restock.last").text).toBe(
     "No run yet. The first starts on Saturday, or when you select Run now.",
   );
-  expect(page.focusOrder().slice(-2)).toEqual(["setup.save", "shopping.restock.run"]);
+  expect(page.focusOrder().slice(-3)).toEqual(["setup.save", "shopping.restock.run", "app.recording.note.button"]);
 
   await page.fire("shopping.restock.run", click);
   // The fire settles once the page is quiet, by when the first staple's job may have run.

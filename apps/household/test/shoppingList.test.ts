@@ -38,6 +38,7 @@ it("shows the empty list, the menu, the tabs and the help", async () => {
     "shopping.view.tab.toBuy",
     "shopping.view.panel.toBuy",
     "shopping.help.button",
+    "app.recording.note.button",
   ]);
   page.dispose();
 });

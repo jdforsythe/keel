@@ -6,7 +6,8 @@
 // the household name; the shopping menu adds through the API and the list survives a reload; an API write and the
 // loader agree; the API refuses a request no member made; a cross-site write answers 403; a receipt form answered with
 // a server error shows the typed values, `aria-invalid` and the error text, with scripts running and with scripts off;
-// the profile page mints an API token that calls the API, and once revoked the token is refused; values typed into the
+// the profile page mints an API token that calls the API, and once revoked the token is refused; the frame's note on what
+// the page records lists a phone number typed into the profile masked; values typed into the
 // profile's personal fields reach no server log line and no file in the data folder but the database; no page error or
 // console error. The server is then killed with SIGKILL with a write in flight and restarted, and the list, the
 // receipts, the household name and the session are all there. A second member then opens the list in a second browser
@@ -443,7 +444,21 @@ try {
 
   const canary = { name: "Quillon Vantablack", phone: "+44 7700 900417" };
   await byId(page, "members.profileForm:name").fill(canary.name);
+  await byId(page, "app.recording.note.button").click();
   await byId(page, "members.profileForm:phone").fill(canary.phone);
+  const masked = `input members.profileForm:phone "${"x".repeat(canary.phone.length)}"`;
+  const noted = await byId(page, "app.recording.events")
+    .filter({ hasText: masked })
+    .waitFor({ timeout: 10_000 })
+    .then(
+      () => byId(page, "app.recording.events").innerText(),
+      () => "",
+    );
+  step(
+    "the frame's note lists the typed phone as the recorder kept it, masked",
+    noted.includes(masked) && Object.values(canary).every((v) => !noted.includes(v)),
+    clip(noted.split("\n").at(-1) ?? ""),
+  );
   await byId(page, "members.save").click();
   await byId(page, "members.saved").waitFor({ timeout: 10_000 });
   await page.reload();

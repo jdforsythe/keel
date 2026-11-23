@@ -185,7 +185,7 @@ jobs:
         run: "node --disable-warning=ExperimentalWarning tooling/smoke/resume.mjs 3"
       - name: "built household: sign-in guard, list, receipts, API tokens, a pii canary, and the data kept through SIGKILL on PGlite and Postgres 17"
         run: "node --disable-warning=ExperimentalWarning tooling/smoke/household.mjs"
-      - name: "built golden-2: canaries in every personal-data and secret field reach no log, error answer, URL, cookie, build file or evidence bundle"
+      - name: "built golden-2: canaries in every personal-data and secret field reach no log, error answer, URL, cookie, build file or evidence bundle; keel evidence --verify passes over golden-2 and household"
         run: "node --disable-warning=ExperimentalWarning tooling/smoke/canary.mjs"
       - name: "built brand: a page with no styling of its own gets the brand's base, focus ring and responsive row in Chromium"
         run: "node --disable-warning=ExperimentalWarning tooling/smoke/brand.mjs"

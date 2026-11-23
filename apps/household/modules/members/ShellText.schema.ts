@@ -1,6 +1,6 @@
 import { s } from "@keel/schema";
 
-/** The copy every page's masthead shows: the app's name and the navigation. */
+/** The copy every page's frame shows: the app's name, the navigation, and the note on what the page records. */
 export const ShellText = s.object({
   app: s.string({ min: 1 }),
   nav: s.string({ min: 1 }),
@@ -11,4 +11,7 @@ export const ShellText = s.object({
   signOut: s.string({ min: 1 }),
   signIn: s.string({ min: 1 }),
   signUp: s.string({ min: 1 }),
+  recording: s.string({ min: 1 }),
+  recordingBody: s.string({ min: 1 }),
+  recorded: s.string({ min: 1 }),
 });
