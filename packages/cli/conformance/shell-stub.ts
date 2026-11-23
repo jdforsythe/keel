@@ -1,8 +1,8 @@
 // Fixture for the k.shell conformance over a stub shell package (not a test file). Public surface only: the `keel` binary over a temp project.
 // The project declares `tauri` on `web` (`client`); `node_modules/@keel/std-tauri` is replaced by a stub package whose `./tools` entry registers a target.
 // The stub reads `stub.json` at the project root, so a test shapes the target without touching the stub:
-//   { register?: false, platforms?, files?, tools?, build?, jobs? }  (defaults: registers, `platforms: []`, `files: { "a.json": ... }`, no tool entries, an `artifact`, no jobs)
-// Each call of the target's `build` appends one JSON line to `build-calls.txt` of the project: `{ dir, origin, platform, release, www, a }` (`www` and `a`: whether `www/index.html` and `a.json` were already in `dir`).
+//   { register?: false, platforms?, files?, tools?, plugins?, build?, jobs? }  (defaults: registers, `platforms: []`, `files: { "a.json": ... }`, no tool entries, an `artifact`, no jobs)
+// Each call of the target's `build` appends one JSON line to `build-calls.txt` of the project: `{ dir, origin, connect, platform, release, www, a }` (`www` and `a`: whether `www/index.html` and `a.json` were already in `dir`).
 // The stub is plain JavaScript (a `.ts` file under `node_modules` is not run by Node); its `.` and `./shellMount` re-export the real package's drivers and `shellMount`, so the shell entry bundles.
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
@@ -31,6 +31,8 @@ export type StubConfig = {
   platforms?: string[];
   files?: Record<string, string>;
   tools?: { tool: string; need: string }[];
+  /** `plugins` of the target; an entry with `whenIdentity` is given only when `app.identity` is true. */
+  plugins?: { plugin: string; version: string; need: string; whenIdentity?: boolean }[];
   build?: { artifact: string } | { error: string };
   jobs?: StubJob[];
 };
@@ -53,12 +55,17 @@ if (cfg.register !== false) {
     platforms: cfg.platforms ?? [],
     files: () => cfg.files ?? { "a.json": ${JSON.stringify(A_JSON)} },
     tools: () => cfg.tools ?? [],
+    plugins: (app) =>
+      (cfg.plugins ?? [])
+        .filter((p) => p.whenIdentity !== true || app.identity)
+        .map(({ plugin, version, need }) => ({ plugin, version, need })),
     build: (at) => {
       appendFileSync(
         join(process.cwd(), "build-calls.txt"),
         JSON.stringify({
           dir: at.dir,
           origin: at.origin,
+          connect: at.connect ?? null,
           platform: at.platform ?? null,
           release: at.release,
           www: existsSync(join(at.dir, "www", "index.html")),
@@ -118,14 +125,21 @@ export function setStub(dir: string, cfg: StubConfig): void {
 export type Out = Run & { out: string };
 
 /** `keel <args>` with `KEEL_ORIGIN` set (or not), JSON records and the whole output text. */
-export function run(dir: string, args: readonly string[], origin: string | undefined = ORIGIN, format = "json"): Out {
+export function run(
+  dir: string,
+  args: readonly string[],
+  origin: string | undefined = ORIGIN,
+  format = "json",
+  extra: Readonly<Record<string, string>> = {},
+): Out {
   const env: Record<string, string> = {};
   for (const [k, v] of Object.entries(process.env)) {
     if (v === undefined || k.startsWith("VITEST") || k.startsWith("KEEL_")) continue;
     if (k === "NODE_OPTIONS" || k === "TEST") continue;
     env[k] = v;
   }
-  if (origin !== undefined) env["KEEL_ORIGIN"] = origin;
+  if (origin !== undefined) env.KEEL_ORIGIN = origin;
+  for (const [k, v] of Object.entries(extra)) env[k] = v;
   const r = spawnSync(process.execPath, [BIN, ...args, `--format=${format}`], {
     cwd: dir,
     encoding: "utf8",

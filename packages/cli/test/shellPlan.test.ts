@@ -29,6 +29,7 @@ const stub = (platforms: readonly string[]): ShellTarget => ({
     ...(at.probe.exists("node_modules/.bin/stub") ? [] : [{ tool: "stub", need: "stub in the app's devDependencies" }]),
     ...(at.platform === "b" && at.env.STUB_B === undefined ? [{ tool: "stub-b", need: "STUB_B set" }] : []),
   ],
+  plugins: () => [],
   build: () => ({ error: "unused" }),
   ci: () => [],
 });
@@ -42,6 +43,8 @@ const loaded = (over: Partial<Loaded> = {}): Loaded => ({
     { shell: "capacitor", app: app("mobile") },
   ],
   paths: new Set(),
+  topology: {},
+  needs: [],
   diags: [],
   ...over,
 });
@@ -194,7 +197,41 @@ describe("shellPlan", () => {
       release: false,
       origin: "https://app.example",
       apps: [app("web"), app("desk")],
+      connect: { web: [], desk: [] },
     });
+  });
+
+  test("each app's connect is the build's peer origins then its declared origins, without KEEL_ORIGIN", () => {
+    const topology = {
+      web: { modules: [], adapter: "client" as const, origins: { connect: { "https://api.example": "r" } } },
+      desk: {
+        modules: [],
+        adapter: "client" as const,
+        origins: { connect: { "https://app.example": "r", "https://peer.example": "r", "https://b.example": "r" } },
+      },
+      api: { modules: [], adapter: "node" as const },
+    };
+    const env = { ...goodEnv, KEEL_PEER_API: "https://peer.example" };
+    const r = shellPlan({ target: "tauri" }, env, "/app", loaded({ topology }), full("/app"));
+    expect(r.plan?.connect).toEqual({
+      web: ["https://peer.example", "https://api.example"],
+      desk: ["https://peer.example", "https://b.example"],
+    });
+  });
+
+  test("a plugin the target's apps lack is its E1572 beside the E1575 entries, the other shell's left out, and no plan", () => {
+    const need = (shell: "tauri" | "capacitor", plugin: string) => ({
+      shell,
+      plugin,
+      diag: { kind: "diag" as const, code: "E1572", message: `web: ${shell} needs ${plugin}` },
+    });
+    const l = loaded({ needs: [need("tauri", "@x/p"), need("capacitor", "@x/q")] });
+    const r = shellPlan({ target: "tauri" }, goodEnv, "/app", l);
+    expect(r.plan).toBeUndefined();
+    expect(r.diags.map((d) => d.code)).toEqual(["E1575", "E1572"]);
+    expect(r.diags[1]?.message).toBe("web: tauri needs @x/p");
+    const clean = shellPlan({ target: "tauri" }, goodEnv, "/app", l, full("/app"));
+    expect(clean.diags.map((d) => d.message)).toEqual(["web: tauri needs @x/p"]);
   });
 
   test("a clean capacitor project yields its platform; release is true only for release: true", () => {

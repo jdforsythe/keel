@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import type { ShellBuild } from "@keel/cli";
 import { toolCommand } from "@keel/cli/shell";
 import { returnScheme } from "../returnScheme.ts";
+import { allowConfig } from "./allowConfig.ts";
 import { androidNetworkSecurity } from "./androidNetworkSecurity.ts";
 import { metaPolicy } from "./metaPolicy.ts";
 
@@ -99,7 +100,8 @@ function stepsOf(at: ShellBuild, platform: string): { steps: Step[]; artifact: s
 /**
  * A Capacitor shell build in `at.dir`, beside `www/` and `capacitor.config.json` (std.capacitor Build): the app's
  * `package.json` (the Capacitor CLI runs only at the root of an npm package and reads the app's plugins from it), the
- * deployable's `csp.txt` policy as a meta tag in `www/index.html`, then `cap add` (once), `cap sync`, the shell's `id`
+ * deployable's `csp.txt` policy as a meta tag in `www/index.html`, `plugins.KeelHttp.allow` (`origin` then `connect`)
+ * added to `capacitor.config.json` there (`allowConfig`), which the native plugin reads, then `cap add` (once), `cap sync`, the shell's `id`
  * registered as a URI scheme in the platform project (`returnScheme`), and the platform's build, on Android after
  * `androidNetworkSecurity`'s cleartext rule. The artifact is the APK or the simulator app; a failing tool's output is
  * the error.
@@ -109,6 +111,11 @@ export function capacitorBuild(at: ShellBuild): { readonly artifact: string } | 
   const index = join(at.dir, "www", "index.html");
   const csp = join(at.root, "dist", at.deployable, "csp.txt");
   if (existsSync(csp)) writeFileSync(index, metaPolicy(readFileSync(index, "utf8"), readFileSync(csp, "utf8")));
+  const config = join(at.dir, "capacitor.config.json");
+  const generated = existsSync(config) ? readFileSync(config, "utf8") : "";
+  // The generated file is read-only and was copied so: the build's own replaces it.
+  rmSync(config, { force: true });
+  writeFileSync(config, allowConfig(generated, at.origin, at.connect));
   const { steps, artifact } = stepsOf(at, at.platform ?? "android");
   for (const s of steps) {
     s.before?.();

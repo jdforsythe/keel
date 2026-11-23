@@ -63,6 +63,9 @@ importers:
 
   apps/golden-1:
     dependencies:
+      '@capacitor/app':
+        specifier: 8.1.2
+        version: 8.1.2(@capacitor/core@8.6.0)
       '@capacitor/core':
         specifier: 8.6.0
         version: 8.6.0
@@ -135,15 +138,6 @@ importers:
       '@keel/ui':
         specifier: workspace:*
         version: link:../../packages/ui
-      '@tauri-apps/api':
-        specifier: 2.12.4
-        version: 2.12.4
-      '@tauri-apps/plugin-http':
-        specifier: 2.9.0
-        version: 2.9.0
-      '@tauri-apps/plugin-store':
-        specifier: 2.5.1
-        version: 2.5.1
     devDependencies:
       '@capacitor/android':
         specifier: 8.6.2

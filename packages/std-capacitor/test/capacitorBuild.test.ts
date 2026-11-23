@@ -95,6 +95,7 @@ function project(
     root,
     dir,
     origin: "https://app.example.com",
+    connect: [],
     platform: "android",
     release: false,
     env: { PATH: `${join(root, "bin")}:/usr/bin:/bin` },
@@ -119,6 +120,18 @@ describe.skipIf(process.platform === "win32")("capacitorBuild", () => {
       `<meta http-equiv="Content-Security-Policy" content="default-src 'none'">`,
     );
     expect(existsSync(join(dir, "icons"))).toBe(false);
+  });
+
+  test("the build folder's config gains the allow list, origin then connect, and keeps the generated keys", () => {
+    const generated = '{\n  "appId": "dev.keel.golden",\n  "appName": "Golden",\n  "webDir": "www"\n}\n';
+    const { dir, at } = project({ "dist/web/capacitor/capacitor.config.json": generated });
+    capacitorBuild({ ...at, connect: ["https://peer.example", "https://api.example"] });
+    expect(JSON.parse(readFileSync(join(dir, "capacitor.config.json"), "utf8"))).toEqual({
+      appId: "dev.keel.golden",
+      appName: "Golden",
+      webDir: "www",
+      plugins: { KeelHttp: { allow: ["https://app.example.com", "https://peer.example", "https://api.example"] } },
+    });
   });
 
   test("a page without a policy is left as it is", () => {
@@ -181,7 +194,9 @@ describe.skipIf(process.platform === "win32")("capacitorBuild", () => {
       'android:networkSecurityConfig="@xml/keel_network_security"',
     );
     expect(readFileSync(config, "utf8")).toContain('<domain includeSubdomains="false">localhost</domain>');
-    expect(readFileSync(join(dir, "capacitor.config.json"), "utf8")).toBe("{}\n");
+    expect(JSON.parse(readFileSync(join(dir, "capacitor.config.json"), "utf8"))).toEqual({
+      plugins: { KeelHttp: { allow: ["http://localhost:4182"] } },
+    });
     expect("artifact" in capacitorBuild({ ...cleartext, origin: "https://app.example.com" })).toBe(true);
     expect(existsSync(config)).toBe(false);
     expect(readFileSync(join(main, "AndroidManifest.xml"), "utf8")).not.toContain("networkSecurityConfig");

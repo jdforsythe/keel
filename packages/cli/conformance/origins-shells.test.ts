@@ -3,9 +3,25 @@
 // Seed 1337 (no generated input: spawned builds).
 // ASSUMPTION: `keel build` writes `deploy/w/tauri/tauri.conf.json` with `app.security.csp` as one string (k.shell, as scaffold's tauri-conf test reads it).
 // The Capacitor case reads `dist/w/csp.txt` after a plain `keel build`: no JDK, Android SDK or platform build runs.
+import { readFileSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { cleanup, materialize } from "./compat-support.ts";
 import { SLOW, build, cspTxt, directivesOf, tauriPolicy, tree } from "./origins-support.ts";
+
+// k.shell Plugins: a Capacitor app lists `@capacitor/preferences` and `@capacitor/app` at the versions `@keel/std-capacitor` pins (std.capacitor Plugins).
+const capacitorPlugins = (): Record<string, string> => {
+  const file = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "std-capacitor", "package.json");
+  const pkg: unknown = JSON.parse(readFileSync(resolve(file), "utf8"));
+  const deps: unknown = typeof pkg === "object" && pkg !== null ? Reflect.get(pkg, "dependencies") : undefined;
+  const pin = (name: string): string => {
+    const v: unknown = typeof deps === "object" && deps !== null ? Reflect.get(deps, name) : undefined;
+    if (typeof v !== "string") throw new Error(`@keel/std-capacitor does not pin ${name}`);
+    return v;
+  };
+  return { "@capacitor/preferences": pin("@capacitor/preferences"), "@capacitor/app": pin("@capacitor/app") };
+};
 
 const topo = (shell: string, origins: string): string =>
   `{ a: { modules: ['a'], adapter: 'node' }, w: { modules: ['c'], adapter: 'client', shells: { ${shell}: { id: 'dev.keel.golden', name: 'Golden' } }, origins: ${origins} } }`;
@@ -18,7 +34,10 @@ beforeAll(() => {
     }),
   );
   capacitor = materialize(
-    tree(topo("capacitor", "{ frame: { 'https://v.example': 'r' } }"), { "@keel/std-capacitor": "workspace:*" }),
+    tree(topo("capacitor", "{ frame: { 'https://v.example': 'r' } }"), {
+      "@keel/std-capacitor": "workspace:*",
+      ...capacitorPlugins(),
+    }),
   );
 }, SLOW);
 afterAll(() => {

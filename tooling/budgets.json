@@ -183,8 +183,8 @@
       "max": "3.25kb",
       "platform": "node"
     },
-    "@keel/std-capacitor": "1.5kb",
-    "@keel/std-tauri": "1.75kb",
+    "@keel/std-capacitor": "2kb",
+    "@keel/std-tauri": "2.25kb",
     "@keel/std-tokens": "1kb",
     "@keel/std-tokens/server": {
       "max": "1.75kb",

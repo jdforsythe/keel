@@ -27,7 +27,7 @@ Canonical names. Changing one requires an RFC.
 - **host element**: `Host` from `@keel/ui`, the one element whose node outside code owns (a chart library, d3, a standard custom element), given a schema-typed value and run by `hostCode({ mount, update, dispose })`; client only, opaque to the harness and replay, counted in the ledger (k.host-element).
 - **driver**: an object passed as `createCtx({ drivers })` that supplies `storage` or `net` on a `real` or `shell` ctx and keeps that capability's contract.
 - **shell**: a native package of a `client` deployable, `capacitor` (Android, iOS) or `tauri` (desktop), declared in `topology.ts` as `shells`.
-- **shell target**: what a shell's package registers with `shellTarget(shell, target)` in its `./tools` entry: the shell's platforms, files, tools, build and CI jobs (k.shell); std.capacitor and std.tauri.
+- **shell target**: what a shell's package registers with `shellTarget(shell, target)` in its `./tools` entry: the shell's platforms, files, tools, plugins, build and CI jobs (k.shell); std.capacitor and std.tauri.
 - **workflow**: `workflow(id, spec)` from `@keel/std-workflows`: a state chart run per instance in one server store, its steps run as jobs.
 - **diagnostic**: the one output shape for every error, warning, and finding (see OUTPUT.md).
 - **identity source**: `identity.server.ts` beside `topology.ts`, default-exporting `identity({ identify, handle? })`: the app's `identify` and optional `handle` mount, through which an auth library or platform tells Keel who the user is (k.user), and `identity.ts`, its `identityMount(path, { links }?)` half that pages import (k.mount).

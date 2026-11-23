@@ -18,7 +18,7 @@ describe("entryCode shell", () => {
     );
     expect(tauri).toContain('import { tauriDrivers as __keelDrivers } from "@keel/std-tauri";');
     expect(tauri).toContain(
-      'const ctx = createCtx({ mode: "shell", drivers: __keelDrivers({ origin: new URL("https://app.example") }) });',
+      'const ctx = createCtx({ mode: "shell", drivers: __keelDrivers({ origin: new URL("https://app.example"), connect: [] }) });',
     );
     const cap = entryCode(["/r.ts"], "c.css", {}, {}, { kind: "capacitor", origin: "http://localhost:8080" });
     expect(cap).toContain('import { capacitorDrivers as __keelDrivers } from "@keel/std-capacitor";');

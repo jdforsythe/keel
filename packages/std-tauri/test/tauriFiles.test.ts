@@ -41,7 +41,7 @@ describe("tauri files", () => {
               csp: "default-src 'none'; script-src 'self'; connect-src 'self' ipc: http://ipc.localhost; frame-ancestors 'none'",
             },
           },
-          plugins: { "deep-link": { desktop: { schemes: [tau.id] } } },
+          plugins: { "deep-link": { desktop: { schemes: [tau.id] } }, http: { scopeRedirects: true } },
         });
         const cargo = files.get("deploy/web/tauri/Cargo.toml") ?? "";
         expect(cargo).toContain('name = "golden-1"');
@@ -63,33 +63,44 @@ describe("tauri files", () => {
     );
   });
 
-  test("the plugins of return links and the default browser are in the Tauri files only with identity", () => {
+  test("the plugins of launch and return links are in every Tauri shell; the default browser's only with identity", () => {
     const topology: DeployTopology = {
       web: { modules: ["c"], adapter: "client", shells: { tauri: { id: "dev.keel.golden", name: "Golden" } } },
     };
     const at = "deploy/web/tauri/";
     const plain = deployFiles(topology, { ci: false, policy: () => POLICY, shells });
     const signed = deployFiles(topology, { ci: false, policy: () => POLICY, identity: true, shells });
-    const extra = [
+    const links = [
       'tauri-plugin-deep-link = "=2.6.3"',
-      'tauri-plugin-opener = "=2.7.3"',
       'tauri-plugin-single-instance = { version = "=2.5.5", features = ["deep-link"] }',
     ];
-    for (const dep of extra) {
-      expect(plain.get(`${at}Cargo.toml`)).not.toContain(dep);
+    for (const dep of links) {
+      expect(plain.get(`${at}Cargo.toml`)).toContain(dep);
       expect(signed.get(`${at}Cargo.toml`)).toContain(dep);
     }
+    expect(plain.get(`${at}Cargo.toml`)).not.toContain("tauri-plugin-opener");
+    expect(signed.get(`${at}Cargo.toml`)).toContain('tauri-plugin-opener = "=2.7.3"');
     const plugins = ["tauri_plugin_single_instance::init", "tauri_plugin_deep_link::init", "tauri_plugin_opener::init"];
     const lib = signed.get(`${at}src/lib.rs`) ?? "";
-    for (const plugin of plugins) {
-      expect(plain.get(`${at}src/lib.rs`)).not.toContain(plugin);
-      expect(lib).toContain(plugin);
-    }
+    for (const plugin of plugins) expect(lib).toContain(plugin);
+    for (const plugin of plugins.slice(0, 2)) expect(plain.get(`${at}src/lib.rs`)).toContain(plugin);
+    expect(plain.get(`${at}src/lib.rs`)).not.toContain("tauri_plugin_opener");
+    expect(
+      tauriTarget.plugins({
+        deployable: "web",
+        id: "dev.keel.golden",
+        name: "Golden",
+        version: "1.0.0",
+        pkg: "fx",
+        policy: undefined,
+        identity: true,
+      }),
+    ).toEqual([]);
     // The single-instance plugin is registered first, so a second launch never starts the others.
     expect(plugins.map((x) => lib.indexOf(x))).toEqual(plugins.map((x) => lib.indexOf(x)).sort((a, b) => a - b));
     const permissions = (files: Map<string, string>): unknown =>
       Reflect.get(Object(JSON.parse(files.get(`${at}capabilities/default.json`) ?? "{}")), "permissions");
-    expect(permissions(plain)).toEqual(["core:default", "store:default"]);
+    expect(permissions(plain)).toEqual(["core:default", "store:default", "deep-link:default"]);
     expect(permissions(signed)).toEqual([
       "core:default",
       "store:default",
@@ -105,10 +116,14 @@ describe("tauri files", () => {
     const opener = { identifier: "opener:allow-open-url", allow: [{ url: "http://localhost:8787/*" }] };
     const permissions = (text: string): unknown => Reflect.get(Object(JSON.parse(text)), "permissions");
     expect(permissions(tauriHttpCapability("http://localhost:8787"))).toEqual([http]);
-    expect(permissions(tauriHttpCapability("http://localhost:8787", true))).toEqual([http, opener]);
+    expect(permissions(tauriHttpCapability("http://localhost:8787", [], true))).toEqual([http, opener]);
+    const both = { identifier: "http:default", allow: [...http.allow, { url: "https://api.example/*" }] };
+    expect(
+      permissions(tauriHttpCapability("http://localhost:8787", ["https://api.example", "http://localhost:8787"], true)),
+    ).toEqual([both, opener]);
   });
 
-  test("a tree with identity.ts gets the Tauri files with the plugins; without it, without them", () => {
+  test("a tree with identity.ts gets the Tauri files with the opener; without it, without it", () => {
     const tree = new Map([
       [
         "topology.ts",
@@ -119,8 +134,9 @@ describe("tauri files", () => {
     const cargo = (files: Map<string, string>): string =>
       deployDrift(files, true, undefined, shells).find((d) => d.path === "deploy/web/tauri/Cargo.toml")?.want ?? "";
     expect(cargo(tree)).toContain('name = "fx"');
-    expect(cargo(tree)).not.toContain("tauri-plugin-deep-link");
-    expect(cargo(new Map([...tree, ["identity.ts", ""]]))).toContain("tauri-plugin-deep-link");
+    expect(cargo(tree)).toContain("tauri-plugin-deep-link");
+    expect(cargo(tree)).not.toContain("tauri-plugin-opener");
+    expect(cargo(new Map([...tree, ["identity.ts", ""]]))).toContain("tauri-plugin-opener");
   });
 
   test("without a policy there is no tauri.conf.json; shells on a node or static deployable write nothing", () => {
