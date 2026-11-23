@@ -1,5 +1,5 @@
 {
-  "commit": "3d803331a2711692e3180001e93de29e6560613d",
+  "commit": "b31ddcd6366de31f1053d6ea03f8421f2e2fe49d",
   "coverage": {
     "packages": {
       "apps/golden-1": {
@@ -1168,7 +1168,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-23T09:25:11.120Z",
+  "generatedAt": "2026-11-23T10:51:12.724Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -2575,19 +2575,19 @@
       "verified": 1142
     },
     "evidenceByRung": {
-      "example": 1860,
+      "example": 1865,
       "exhaustive": 16,
       "monitored": 8,
-      "probabilistic": 344,
+      "probabilistic": 348,
       "proven": 75
     },
     "exports": {
       "byRung": {
-        "example": 254,
+        "example": 256,
         "exhaustive": 2,
         "monitored": 0,
-        "none": 162,
-        "probabilistic": 136,
+        "none": 156,
+        "probabilistic": 140,
         "proven": 37
       },
       "packages": {
@@ -2989,15 +2989,15 @@
         },
         "std-sessions": {
           "byRung": {
-            "example": 6,
+            "example": 8,
             "exhaustive": 0,
             "monitored": 0,
-            "none": 10,
-            "probabilistic": 7,
+            "none": 4,
+            "probabilistic": 11,
             "proven": 0
           },
           "total": 23,
-          "verified": 13
+          "verified": 19
         },
         "std-statecharts": {
           "byRung": {
@@ -3133,11 +3133,11 @@
         }
       },
       "total": 591,
-      "verified": 429
+      "verified": 435
     },
     "items": 2742,
     "unsafe": 18,
-    "verified": 1967
+    "verified": 1973
   },
   "mutation": {
     "packages": {
@@ -3192,12 +3192,12 @@
         "threshold": null
       },
       "packages/check": {
-        "claims": 194,
+        "claims": 200,
         "justified": 0,
         "reason": null,
         "reportDate": "2026-11-23",
-        "score": 77.52,
-        "scoreJustified": 77.52,
+        "score": 77.6,
+        "scoreJustified": 77.6,
         "stale": 0,
         "threshold": 70
       },
@@ -3212,12 +3212,12 @@
         "threshold": 70
       },
       "packages/compiler": {
-        "claims": 157,
+        "claims": 158,
         "justified": 0,
         "reason": null,
         "reportDate": "2026-11-23",
-        "score": 73.62,
-        "scoreJustified": 73.62,
+        "score": 73.64,
+        "scoreJustified": 73.64,
         "stale": 0,
         "threshold": 70
       },
@@ -3322,12 +3322,12 @@
         "threshold": 70
       },
       "packages/std-capacitor": {
-        "claims": 20,
+        "claims": 24,
         "justified": 0,
         "reason": null,
         "reportDate": "2026-11-23",
-        "score": 77.31,
-        "scoreJustified": 77.31,
+        "score": 80.35,
+        "scoreJustified": 80.35,
         "stale": 0,
         "threshold": 70
       },
@@ -3482,14 +3482,14 @@
         "threshold": 70
       },
       "packages/std-sessions": {
-        "claims": 0,
-        "justified": null,
-        "reason": "no mutation run",
-        "reportDate": null,
-        "score": null,
-        "scoreJustified": null,
-        "stale": null,
-        "threshold": null
+        "claims": 130,
+        "justified": 0,
+        "reason": null,
+        "reportDate": "2026-11-23",
+        "score": 87.27,
+        "scoreJustified": 87.27,
+        "stale": 0,
+        "threshold": 70
       },
       "packages/std-statecharts": {
         "claims": 17,
@@ -3512,12 +3512,12 @@
         "threshold": 70
       },
       "packages/std-tauri": {
-        "claims": 26,
+        "claims": 29,
         "justified": 0,
         "reason": null,
         "reportDate": "2026-11-23",
-        "score": 72.97,
-        "scoreJustified": 72.97,
+        "score": 75.89,
+        "scoreJustified": 75.89,
         "stale": 0,
         "threshold": 70
       },
@@ -4090,12 +4090,12 @@
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 65,
+        "propertyCalls": 89,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 209,
-        "unitFiles": 49
+        "unitCases": 689,
+        "unitFiles": 79
       },
       "packages/std-statecharts": {
         "conformanceCases": 30,
@@ -4259,12 +4259,12 @@
       "fails": 2,
       "otherCases": 0,
       "otherFiles": 0,
-      "propertyCalls": 2463,
+      "propertyCalls": 2487,
       "proveFiles": 23,
       "simulateFiles": 17,
       "skipTodo": 5,
-      "unitCases": 5976,
-      "unitFiles": 1016
+      "unitCases": 6456,
+      "unitFiles": 1046
     }
   },
   "tool": {
