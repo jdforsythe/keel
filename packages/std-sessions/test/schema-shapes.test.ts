@@ -197,6 +197,7 @@ test("SessionRecord: the `session` record, closed, with a nullable error and fil
   expect(SessionRecord.parse({ ...record, events: 1.5 }).ok).toBe(false);
 });
 
+// The bound covers the first load of the cli's formatter, which this test pays for inside its body.
 test("SessionMonitorRecord: the `session.monitor` record, closed, and its compact and pretty lines", async () => {
   const { SessionMonitorRecord } = await import("../src/SessionMonitorRecord.ts");
   const { respond } = await import("@keel/cli/testing");
@@ -211,7 +212,7 @@ test("SessionMonitorRecord: the `session.monitor` record, closed, and its compac
     "ok session monitor 3 transactions, 12 runs -> m.json\n  origin: https://app.test",
   );
   expect(respond([{ ...record, extra: 1 }]).stdout).toContain("E1054");
-});
+}, 20_000);
 
 test("Archive: fingerprint entries of count, first, last and filed sessions, each closed", async () => {
   const { Archive } = await import("../src/Archive.schema.ts");
