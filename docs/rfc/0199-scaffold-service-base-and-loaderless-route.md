@@ -1,6 +1,6 @@
 # RFC 0199: k.scaffold: a service by its base, a route with no loader, and a refresh in place of a build
 
-Status: proposed (ADR-0221). Amends k.scaffold (examples, Generators, new **Service** and **Refresh**, Rules, Conformance). Under D103 and D104. Settles backlog 0883, 1045 and 1048; from examples findings 12 and 16.
+Status: implemented (ADR-0221). Amends k.scaffold (examples, Generators, new **Service** and **Refresh**, Rules, Conformance). Under D103 and D104. Settles backlog 0883, 1045 and 1048; from examples findings 12 and 16.
 
 ## Decisions
 - D1: `keel scaffold service <module>` writes the same two files wherever the module is placed: `<Id>Api.schema.ts` and `api.server.ts`. Only `topology.ts` differs by placement.

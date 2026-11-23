@@ -1,6 +1,6 @@
 # ADR-0221: k.scaffold: a service by its base, a route with no loader, a refresh in place of a build (RFC 0199)
 
-**Status:** proposed (for the operator to confirm; under D103 and D104).
+**Status:** accepted (operator; under D103 and D104).
 
 **Context.** A front end with no back end that calls a declared third-party origin is a first-class app. `keel scaffold service` took only an OpenAPI document and, in a module on a `client` deployable, wrote a file that fails E1571. `keel scaffold route` always wrote a loader. In a built project every scaffold ran a whole `keel build`, bundles included, so that `keel check` found no stale artifact. `examples/client-only-api` took 11 hand edits after the scaffold.
 

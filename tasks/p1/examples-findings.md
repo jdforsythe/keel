@@ -15,11 +15,11 @@
 | 9 | open: rough edge, documented |
 | 10 | fixed: rfc:0197 (ADR-0219) a request to a third-party origin carries no Keel header and no cookie; the smoke step's strict `api.github.com` stand-in sees no preflight and no Keel header |
 | 11 | answered in the skills (keel: HTTP through a service, E1651) |
-| 12 | fixed: fix(scaffold): in a project holding `.keel/` artifacts an applied scaffold or codemod runs `keel build` over the tree after it; k.scaffold conformance clause owed |
+| 12 | fixed: rfc:0199 (ADR-0221) in a project holding `.keel/` artifacts an applied scaffold or codemod refreshes the artifacts and generated deploy files, with no bundle; k.scaffold conformance covers it |
 | 13 | answered in the skills (keel-deploy: `csp.txt` for a `client`, a static host with no `node` deployable) |
 | 14 | answered in the skills (keel-client: E2406 only with `@keel/std-messages`) |
 | 15 | open: needs an RFC (k.testing: a harness that shows the `/__keel/user` GET a page's router sends); the smoke step covers it |
-| 16 | open: needs an RFC (k.scaffold Generators: `service <module> --base <origin>` declaring the `connect` origin and writing the endpoints and client; `route` with no loader on a deployable with no `node` peer) |
+| 16 | fixed: rfc:0199 (ADR-0221) `scaffold service <module> --base <url> --reason <text>` writes the endpoints file, the client, the dependency and the `connect` origin; `scaffold route --no-loader` writes a page with no loader; 7 hand edits are left, all app content |
 | 17 | open: rough edge (k.scaffold: `project --workspace` writes no page and `route` writes a loader and an empty `<Box />` a client-only page does not use) |
 | 18 | open: needs an RFC (k.scaffold: a `--shell tauri|capacitor` option writing `shells`, the std package and the pinned plugin and CLI packages RFC 0198 lists) |
 | 19 | open: needs an RFC (k.shell: `keel build --target` of a `client` with no server and no request to one needs no `KEEL_ORIGIN`) |
