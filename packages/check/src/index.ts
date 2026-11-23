@@ -2,6 +2,7 @@
 export { carriesReveal } from "./carriesReveal.ts";
 export { check } from "./check.ts";
 export { defineRule } from "./defineRule.ts";
+export { dependencyNeed } from "./dependencyNeed.ts";
 export { format } from "./format.ts";
 export { outputSchemas } from "./outputSchemas.ts";
 export { reportedCodes } from "./reportedCodes.ts";
