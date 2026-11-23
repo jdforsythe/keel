@@ -6,7 +6,7 @@ import type { Edit } from "../types/Edit.ts";
 import type { ScaffoldError } from "../types/ScaffoldError.ts";
 import type { Writes } from "./Writes.ts";
 import { badInput } from "./badInput.ts";
-import { callArgObject } from "./callArgObject.ts";
+import { baseUrl } from "./baseUrl.ts";
 import { commit } from "./commit.ts";
 import { connectOrigin } from "./connectOrigin.ts";
 import { fail } from "./fail.ts";
@@ -14,31 +14,11 @@ import { inputs } from "./inputs.ts";
 import { isLowerCamel } from "./isLowerCamel.ts";
 import { jsonText } from "./jsonText.ts";
 import { lineCol } from "./lineCol.ts";
-import { parseSource } from "./parseSource.ts";
 import { pascal } from "./pascal.ts";
-import { propertyValue } from "./propertyValue.ts";
+import { serviceBase } from "./serviceBase.ts";
 import { targetsGenerated } from "./targetsGenerated.ts";
 import { topologyAst } from "./topologyAst.ts";
 import { topologyOf } from "./topologyOf.ts";
-
-/** The parsed `base` when it is an absolute `http` or `https` URL with no query, fragment or credentials, else null. */
-function baseUrl(base: string): URL | null {
-  if (/[\s"'`\\?#]/.test(base) || !/^https?:\/\/[^/@]+(?:\/|$)/i.test(base)) return null;
-  try {
-    const u = new URL(base);
-    return u.username === "" && u.password === "" && u.hostname !== "" ? u : null;
-  } catch {
-    return null;
-  }
-}
-
-/** The `base` string literal of the first `service({ base, ... })` call of an `api.server.ts` source, else undefined. */
-function baseOf(source: string): string | undefined {
-  const program = parseSource("api.server.ts", source);
-  const arg = program === null ? null : callArgObject(program, "service");
-  const v = arg === null ? null : propertyValue(arg, "base");
-  return v?.type === "Literal" && typeof v.value === "string" ? v.value : undefined;
-}
 
 /**
  * `scaffold service <module>` (k.scaffold Service), in one of two forms. `base`: an empty endpoint declaration
@@ -63,7 +43,7 @@ export function opService(input: unknown, files: ReadonlyMap<string, string>): R
     base !== undefined && schema === undefined && service === undefined
       ? { schema: apiSchemaTs(name), service: apiServerTs(name, base), url: base }
       : base === undefined && schema !== undefined && service !== undefined
-        ? { schema, service, url: baseOf(service) }
+        ? { schema, service, url: serviceBase("api.server.ts", service) }
         : null;
   if (sources === null)
     return fail("E1052", dir, "service takes base alone, or schema and service together (--base or --openapi)");
