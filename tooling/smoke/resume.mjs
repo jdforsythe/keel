@@ -125,7 +125,8 @@ async function recipes(base) {
 
 /**
  * Before any script runs: at the end of parsing, keep every served element, then count every element removed and
- * every element added under an island root.
+ * every element added under an island root. The household frame's list of recorded events is left out: it gains a
+ * line for each event the recorder keeps, the input claimed at resume among them.
  */
 function watch() {
   const k = { served: [], rows: {}, removed: 0, added: 0, observer: null };
@@ -138,7 +139,7 @@ function watch() {
       for (const r of records) {
         for (const n of r.removedNodes) if (n.nodeType === 1) k.removed++;
         const t = r.target;
-        const inIsland = t.nodeType === 1 && t.closest("[data-k-island]") !== null;
+        const inIsland = t.nodeType === 1 && t.closest("[data-k-island]") !== null && t.closest("[id='app.recording.events']") === null;
         for (const n of r.addedNodes) if (n.nodeType === 1 && inIsland) k.added++;
       }
     });
@@ -156,7 +157,7 @@ const kept = (page) =>
     for (const r of k.observer?.takeRecords() ?? []) {
       for (const n of r.removedNodes) if (n.nodeType === 1) k.removed++;
       const t = r.target;
-      const inIsland = t.nodeType === 1 && t.closest("[data-k-island]") !== null;
+      const inIsland = t.nodeType === 1 && t.closest("[data-k-island]") !== null && t.closest("[id='app.recording.events']") === null;
       for (const n of r.addedNodes) if (n.nodeType === 1 && inIsland) k.added++;
     }
     k.observer?.disconnect();
