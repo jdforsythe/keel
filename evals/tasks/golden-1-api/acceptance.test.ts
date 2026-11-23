@@ -22,11 +22,11 @@ import path from "node:path";
 import { respond } from "@keel/cli/testing";
 import { type Ctx, type SimCtx, createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
-import { type RouteTable, routeTable, routesArtifact } from "@keel/router";
-import { routes as sessionsRoutes } from "@keel/std-sessions/routes";
-import { type ServerApp, topology } from "@keel/server";
+import { type RouteTable, routeTable } from "@keel/router";
+import { type ServerApp, type Topology, topology } from "@keel/server";
 import { createApp } from "@keel/server";
 import { findRaces, raceRecords } from "@keel/std-conflicts";
+import { routes as sessionsRoutes } from "@keel/std-sessions/routes";
 import "@keel/std-conflicts/tools";
 import { drain, send } from "@keel/std-offline";
 import { coverage } from "@keel/std-statecharts";
@@ -48,6 +48,7 @@ import { routes as digestRoutes } from "../modules/digest/routes.ts";
 import { runners } from "../modules/digest/runners.server.ts";
 import { boardOutbox } from "../modules/todos/boardOutbox.ts";
 import { editorChart } from "../modules/todos/editorChart.ts";
+import shipped from "../topology.ts";
 
 const ORIGIN = "http://localhost";
 const HOUR = 3_600_000;
@@ -55,15 +56,30 @@ const BOARD_KEY = "keel.store.api.board";
 const QUEUE_KEY = "std.jobs.digest";
 const LATEST_KEY = "digest.latest";
 
-const A = topology({
-  web: { modules: ["todos"], adapter: "client" },
-  api: { modules: ["api", "digest", "sessions"], adapter: "node" },
-});
-const B = topology({
-  web: { modules: ["todos"], adapter: "client" },
-  api: { modules: ["api", "sessions"], adapter: "node" },
-  digest: { modules: ["digest"], adapter: "node" },
-});
+/** The deployable `topology.ts` serves `api` from. */
+const apiHome = ((): string => {
+  const name = Object.entries(shipped).find(([, d]) => d.modules.includes("api"))?.[0];
+  if (name === undefined) throw new Error("topology.ts has no deployable serving `api`");
+  return name;
+})();
+
+/**
+ * The app's own `topology.ts` with `digest` moved: into the deployable that serves `api` (topology A, one `node`
+ * deployable) or into a `node` deployable of its own (topology B). Everything else is the app's, so a change to
+ * `topology.ts` reaches both layouts.
+ */
+function placed(together: boolean): Topology {
+  const out = Object.fromEntries(
+    Object.entries(shipped).map(([name, d]) => {
+      const rest = d.modules.filter((m) => m !== "digest");
+      const { storage: _, ...kept } = d;
+      return [name, { ...kept, modules: name === apiHome && together ? [...rest, "digest"] : rest }];
+    }),
+  );
+  return topology(together ? out : { ...out, digest: { modules: ["digest"], adapter: "node" } });
+}
+const A = placed(true);
+const B = placed(false);
 const both: RouteTable = routeTable(apiRoutes, digestRoutes, sessionsRoutes);
 const apiOnly: RouteTable = routeTable(apiRoutes, sessionsRoutes);
 
@@ -81,10 +97,10 @@ function cleanTemp(): void {
 }
 afterEach(cleanTemp);
 
-/** `routes.json` of the app's node routes, as forwarding reads it from `artifacts`. */
+/** A folder holding the `routes.json` `keel build` wrote for the deployable that serves `api`, as forwarding reads it from `artifacts`. */
 function artifacts(): string {
   const dir = tempDir("golden-1-split-");
-  fs.writeFileSync(path.join(dir, "routes.json"), JSON.stringify({ data: routesArtifact(both), hash: "" }));
+  fs.copyFileSync(path.join(import.meta.dirname, "..", "dist", apiHome, "routes.json"), path.join(dir, "routes.json"));
   return dir;
 }
 
@@ -95,12 +111,20 @@ async function settle(): Promise<void> {
 
 /** A ctx over `sim` whose `api.board` reads and saves wait while `held` is set: a write then holds every later board read. */
 function gated(sim: SimCtx) {
+  /** Each request the ctx's `net` was asked for: what a deployable sends over the network. */
+  const fetched: string[] = [];
   let held: Promise<void> | undefined;
   let release = (): void => undefined;
   const ctx: Ctx = {
     clock: sim.clock,
     random: sim.random,
-    net: sim.net,
+    net: {
+      fetch: (req) => {
+        fetched.push(`${req.method} ${new URL(req.url).pathname}`);
+        return sim.net.fetch(req);
+      },
+      online: () => sim.net.online(),
+    },
     storage: {
       get: (key) => sim.storage.get(key),
       set: async (key, value) => {
@@ -119,6 +143,7 @@ function gated(sim: SimCtx) {
   };
   return {
     ctx,
+    fetched,
     hold(): void {
       held = new Promise((r) => {
         release = r;
@@ -169,7 +194,7 @@ async function layoutA(): Promise<Layout> {
     hold: g.hold,
     release: g.release,
     read: (key) => sim.storage.get(key),
-    hops: () => ({ forwarded: [], peerCalls: [] }),
+    hops: () => ({ forwarded: [], peerCalls: [...g.fetched] }),
   };
 }
 

@@ -271,3 +271,29 @@ describe("children as a thunk (RFC 0008)", () => {
     expect(render(() => Heading({ level: 2, children: () => "T" })).host.textContent).toBe("T");
   });
 });
+
+describe("Checkbox label", () => {
+  it("a click on the label text toggles the box and calls onChange once, as a click on the box does", () => {
+    const seen: boolean[] = [];
+    const { host, dispose } = render(() => Checkbox({ label: "Done: Bread", onChange: (c) => seen.push(c) }));
+    document.body.appendChild(host);
+    const box = host.querySelector<HTMLInputElement>("input[type=checkbox]");
+    const label = host.querySelector("label");
+    if (box === null || label === null) throw new Error("no checkbox");
+    expect(label.getAttribute("for")).toBe(box.id);
+    expect(label.textContent).toBe("Done: Bread");
+    label.click();
+    box.click();
+    label.click();
+    expect(seen).toEqual([true, false, true]);
+    dispose();
+    host.remove();
+  });
+
+  it("the label is a direct child of the wrapper, after the box, with no node between them", () => {
+    const { host, dispose } = render(() => Checkbox({ label: "Done: Bread" }));
+    const wrap = first(host);
+    expect(Array.from(wrap.childNodes).map((n) => n.nodeName.toLowerCase())).toEqual(["input", "label"]);
+    dispose();
+  });
+});
