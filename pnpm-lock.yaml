@@ -323,6 +323,9 @@ importers:
       '@keel/std-money':
         specifier: workspace:*
         version: link:../../packages/std-money
+      '@keel/std-offline':
+        specifier: workspace:*
+        version: link:../../packages/std-offline
       '@keel/std-postgres':
         specifier: workspace:*
         version: link:../../packages/std-postgres
