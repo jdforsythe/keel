@@ -11,8 +11,9 @@ const SINGLE_INSTANCE = "2.5.5";
 
 /**
  * `deploy/<name>/tauri/Cargo.toml` (k.shell Files): the shell crate `crate` at the app's `version`, with exact versions
- * of `tauri`, `tauri-build`, `serde_json`, `tauri-plugin-store` and `tauri-plugin-http`; with `identity` (the project has
- * `identity.ts`, k.return) also `tauri-plugin-deep-link`, `tauri-plugin-opener` and `tauri-plugin-single-instance`.
+ * of `tauri`, `tauri-build`, `serde_json`, `tauri-plugin-store`, `tauri-plugin-http` and, for launch and return links
+ * (k.links), `tauri-plugin-deep-link` and `tauri-plugin-single-instance`; with `identity` (the project has
+ * `identity.ts`, k.return) also `tauri-plugin-opener`.
  * Its library is `keel_shell`.
  */
 export function cargoToml(crate: string, version: string, identity = false): string {
@@ -37,13 +38,9 @@ export function cargoToml(crate: string, version: string, identity = false): str
     `serde_json = "=${SERDE_JSON}"`,
     `tauri-plugin-store = "=${STORE}"`,
     `tauri-plugin-http = "=${HTTP}"`,
-    ...(identity
-      ? [
-          `tauri-plugin-deep-link = "=${DEEP_LINK}"`,
-          `tauri-plugin-opener = "=${OPENER}"`,
-          `tauri-plugin-single-instance = { version = "=${SINGLE_INSTANCE}", features = ["deep-link"] }`,
-        ]
-      : []),
+    `tauri-plugin-deep-link = "=${DEEP_LINK}"`,
+    ...(identity ? [`tauri-plugin-opener = "=${OPENER}"`] : []),
+    `tauri-plugin-single-instance = { version = "=${SINGLE_INSTANCE}", features = ["deep-link"] }`,
     "",
   ].join("\n");
 }

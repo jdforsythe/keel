@@ -9,13 +9,13 @@ import { tauriHttpCapability } from "./tauriHttpCapability.ts";
 
 /**
  * A Tauri shell build in `at.dir`, beside `www/` and the shell files (std.tauri Build): `capabilities/http.json`
- * allowing `KEEL_ORIGIN` (to the default browser too with `identity`), `defaultIcon` as `icons/icon.png` when the app
+ * allowing `KEEL_ORIGIN` (to the default browser too with `identity`) and the `connect` origins, `defaultIcon` as `icons/icon.png` when the app
  * has none, then `tauri build --debug --no-bundle` (`--release`: without `--debug`) with Cargo's `bin` folder first on
  * `PATH`. A new `Cargo.lock` is copied back to `deploy/<name>/tauri/`. The artifact is the binary; a failing tool's
  * output is the error.
  */
 export function tauriBuild(at: ShellBuild): { readonly artifact: string } | { readonly error: string } {
-  writeFileSync(join(at.dir, "capabilities", "http.json"), tauriHttpCapability(at.origin, at.identity));
+  writeFileSync(join(at.dir, "capabilities", "http.json"), tauriHttpCapability(at.origin, at.connect, at.identity));
   if (!existsSync(join(at.dir, "icons", "icon.png"))) {
     mkdirSync(join(at.dir, "icons"), { recursive: true });
     writeFileSync(join(at.dir, "icons", "icon.png"), defaultIcon());

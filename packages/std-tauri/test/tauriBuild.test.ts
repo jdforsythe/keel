@@ -57,6 +57,7 @@ function project(
     root,
     dir: join(root, "dist/web/tauri"),
     origin: "https://app.example.com",
+    connect: [],
     platform: undefined,
     release: false,
     env: { PATH: `${join(root, "bin")}:/usr/bin:/bin`, HOME: join(root, "nowhere") },
@@ -82,6 +83,22 @@ describe.skipIf(process.platform === "win32")("tauriBuild", () => {
     expect(readFileSync(join(root, "dist/web/tauri/capabilities/http.json"), "utf8")).toContain(
       "https://app.example.com/*",
     );
+  });
+
+  test("the http capability allows KEEL_ORIGIN and each connect origin, and no other URL", () => {
+    const { root, at } = project(PASSING, {}, { connect: ["https://peer.example", "https://api.example"] });
+    tauriBuild(at);
+    const http: unknown = JSON.parse(readFileSync(join(root, "dist/web/tauri/capabilities/http.json"), "utf8"));
+    expect(Reflect.get(Object(http), "permissions")).toEqual([
+      {
+        identifier: "http:default",
+        allow: [
+          { url: "https://app.example.com/*" },
+          { url: "https://peer.example/*" },
+          { url: "https://api.example/*" },
+        ],
+      },
+    ]);
   });
 
   test("the http capability allows the default browser to open KEEL_ORIGIN only with identity", () => {
