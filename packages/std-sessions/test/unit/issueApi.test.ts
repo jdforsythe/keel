@@ -248,10 +248,10 @@ describe("issueApi: find", () => {
   });
 
   test("each failure is its reason and nothing found so far is returned", async () => {
-    const after = async (second: Reply) =>
+    const onSecondPage = async (second: Reply) =>
       await api(json([issue(1)], { link: `<${API}/open-2>; rel="next"` }), second).calls.find("l");
     expect(await api(new Error("down")).calls.find("l")).toEqual({ ok: false, why: "github issues list unreachable" });
-    expect(await after(json({ message: "rate limited" }, { status: 403 }))).toEqual({
+    expect(await onSecondPage(json({ message: "rate limited" }, { status: 403 }))).toEqual({
       ok: false,
       why: "github issues list answered 403",
     });
@@ -263,7 +263,7 @@ describe("issueApi: find", () => {
       json([{ number: 1 }]),
       json([issue(1, { body: 5 })]),
     ])
-      expect(await after(body)).toEqual({ ok: false, why: "github issues list answered without a list" });
+      expect(await onSecondPage(body)).toEqual({ ok: false, why: "github issues list answered without a list" });
     expect(await api(json([issue(1)]), json({}, { status: 500 })).calls.find("l")).toEqual({
       ok: false,
       why: "github issues list answered 500",
