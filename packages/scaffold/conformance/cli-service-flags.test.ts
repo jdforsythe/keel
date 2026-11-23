@@ -1,6 +1,6 @@
 // Spec: k.scaffold, Service "`keel scaffold service <module>` takes `--openapi <file>` or `--base <url>`, one of them." and "`reason` from `--reason <text>`, and without one it is E1358."
 // Spec: k.scaffold, Generators "`route`: ... `no-loader` with `api` is E1052" (flags `--no-loader`, `--api`).
-// The real binary, one fixed project per case; refusals write nothing and exit 1.
+// The real binary, one fixed project per case; refusals write nothing; E1052 is a usage error (exit 2, k.cli Output), the others exit 1.
 import { afterAll, describe, expect, it } from "vitest";
 import { type Files, ORDERS_OPENAPI, fresh } from "./fixtures.ts";
 import { cleanup, keel, materialize, readTree } from "./keel-cli.ts";
@@ -12,11 +12,12 @@ afterAll(() => {
 });
 
 function refuses(tree: Files, args: string[], code: string): string {
+  const exit = code === "E1052" ? 2 : 1;
   const dir = materialize(tree);
   dirs.push(dir);
   const before = readTree(dir);
   const r = keel(dir, args);
-  expect(r.status, text(r.records)).toBe(1);
+  expect(r.status, text(r.records)).toBe(exit);
   expect(diagCodes(r.records), text(r.records)).toContain(code);
   expect(readTree(dir)).toEqual(before);
   return text(r.records);
@@ -96,7 +97,7 @@ describe("keel scaffold route --no-loader", () => {
       /["']app\.home["']\s*:\s*\{\s*component(?:\s*:\s*\w+)?\s*,?\s*\}/,
     );
   }, 120000);
-  it("--no-loader with --api is E1052, exit 1, nothing written", () => {
+  it("--no-loader with --api is E1052, exit 2, nothing written", () => {
     refuses(fresh(), ["scaffold", "route", "app.hook", "--path", "/hook", "--api", "--no-loader"], "E1052");
   }, 60000);
 });
