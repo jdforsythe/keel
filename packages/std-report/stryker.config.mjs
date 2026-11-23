@@ -1,3 +1,4 @@
-import { strykerConfig } from "../../tooling/stryker.mjs";
+import { ROOT_SANDBOX, strykerConfig } from "../../tooling/stryker.mjs";
 
-export default strykerConfig("std-report", 70);
+// ROOT_SANDBOX: the conformance tests that run the `keel` binary find the repository at `../../..` from their file.
+export default { ...strykerConfig("std-report", 70), ...ROOT_SANDBOX };
