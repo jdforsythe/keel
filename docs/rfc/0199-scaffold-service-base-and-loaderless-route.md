@@ -152,7 +152,7 @@ Replayed in a scratch workspace project with these outputs written as the sample
 | `routes.ts` | bindings written; the author adds the two `title`s |
 | `Releases.schema.ts`, two pages, the masthead, the test | the author's |
 
-Eleven hand edits become seven, each of them the app's own content: one endpoint, one schema, two titles, three components and a test. None is structure Keel knows.
+Eleven hand edits become eight, each of them the app's own content: one endpoint, one schema, two titles, three components and a test. None is structure Keel knows.
 
 ## Alternatives
 - **Refuse `service` in a `client` module.** It closes 0883 and leaves the client-only app with every hand edit; D103 asks for the opposite.
