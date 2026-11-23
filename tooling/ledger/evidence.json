@@ -1,5 +1,5 @@
 {
-  "commit": "1cb23627985e5073abbdb9648efbcba61c908849",
+  "commit": "6e4f908d5f11803f6cf9894fc049b5191b25bd4c",
   "coverage": {
     "packages": {
       "apps/golden-1": {
@@ -1168,7 +1168,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-23T22:38:14.644Z",
+  "generatedAt": "2026-11-23T23:42:54.139Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -3206,9 +3206,9 @@
         "justified": 0,
         "reason": null,
         "reportDate": "2026-11-23",
-        "score": 72.64,
-        "scoreJustified": 72.64,
-        "stale": 7,
+        "score": 71.91,
+        "scoreJustified": 71.91,
+        "stale": 0,
         "threshold": 70
       },
       "packages/compiler": {
@@ -3272,13 +3272,13 @@
         "threshold": 70
       },
       "packages/scaffold": {
-        "claims": 110,
+        "claims": 115,
         "justified": 0,
         "reason": null,
         "reportDate": "2026-11-23",
-        "score": 78.75,
-        "scoreJustified": 78.75,
-        "stale": 5,
+        "score": 78.87,
+        "scoreJustified": 78.87,
+        "stale": 0,
         "threshold": 70
       },
       "packages/schema": {
@@ -3486,8 +3486,8 @@
         "justified": 0,
         "reason": null,
         "reportDate": "2026-11-23",
-        "score": 87.27,
-        "scoreJustified": 87.27,
+        "score": 90.51,
+        "scoreJustified": 90.51,
         "stale": 0,
         "threshold": 70
       },
@@ -3602,7 +3602,7 @@
         "threshold": 70
       }
     },
-    "stale": 13
+    "stale": 1
   },
   "schema": 1,
   "tests": {

@@ -21,12 +21,12 @@
         "justified": 0
       },
       "cli": {
-        "score": 72.64,
-        "scoreJustified": 72.64,
+        "score": 71.91,
+        "scoreJustified": 71.91,
         "threshold": 70,
-        "killed": 8211,
-        "survived": 2245,
-        "noCoverage": 847,
+        "killed": 8592,
+        "survived": 2380,
+        "noCoverage": 977,
         "justified": 0
       },
       "compiler": {
@@ -84,12 +84,12 @@
         "justified": 0
       },
       "scaffold": {
-        "score": 78.75,
-        "scoreJustified": 78.75,
+        "score": 78.87,
+        "scoreJustified": 78.87,
         "threshold": 70,
-        "killed": 2990,
-        "survived": 635,
-        "noCoverage": 172,
+        "killed": 3670,
+        "survived": 784,
+        "noCoverage": 199,
         "justified": 0
       },
       "schema": {
@@ -273,12 +273,12 @@
         "justified": 0
       },
       "std-sessions": {
-        "score": 87.27,
-        "scoreJustified": 87.27,
+        "score": 90.51,
+        "scoreJustified": 90.51,
         "threshold": 70,
-        "killed": 5478,
-        "survived": 577,
-        "noCoverage": 222,
+        "killed": 5684,
+        "survived": 490,
+        "noCoverage": 106,
         "justified": 0
       },
       "std-statecharts": {
@@ -2382,12 +2382,12 @@
       },
       {
         "file": "packages/cli/src/internal/buildCommand.ts",
-        "sha": "43d578466fa97e6c79d5e9f1a6b656f0be38d76d03c169574d2ee95cc86f7171",
-        "killed": 76,
-        "survived": 46,
+        "sha": "313663912f71df0abe4dd319954dc9fa6aef5ed57883f1fb07c16cad8cd035ad",
+        "killed": 78,
+        "survived": 45,
         "noCoverage": 37,
         "justified": 0,
-        "score": 47.8
+        "score": 48.75
       },
       {
         "file": "packages/cli/src/internal/buildLedger.ts",
@@ -2715,10 +2715,10 @@
       },
       {
         "file": "packages/cli/src/internal/hostBuild.ts",
-        "sha": "d7cad4c7ca2cc20cb76cd9a326222e9012168e76504cb88a25a200202affc8b9",
+        "sha": "a26bd45ed70eca399d48ad2f4759c1fa28d095f53f2c80c08b2db9047e2b5997",
         "killed": 0,
         "survived": 0,
-        "noCoverage": 60,
+        "noCoverage": 71,
         "justified": 0,
         "score": 0
       },
@@ -2733,12 +2733,12 @@
       },
       {
         "file": "packages/cli/src/internal/hostIo.ts",
-        "sha": "62e7828957bf8648709320d617dc1ac3422d1ed4fe30144aff56713d998c9291",
+        "sha": "cf9460c408e2b0c215410870a65df732f72646c98d795e1d1c5ab0b4aa54b196",
         "killed": 25,
-        "survived": 6,
-        "noCoverage": 4,
+        "survived": 8,
+        "noCoverage": 5,
         "justified": 0,
-        "score": 71.43
+        "score": 65.79
       },
       {
         "file": "packages/cli/src/internal/hostingDiags.ts",
@@ -3048,12 +3048,12 @@
       },
       {
         "file": "packages/cli/src/internal/openapiInput.ts",
-        "sha": "db81151ec772fb846c2704b36b3dd085e0031523bc475b189762a937a9b59875",
-        "killed": 24,
-        "survived": 15,
+        "sha": "3df89b92efe6c07f6186d8a9ddf7964eee9abf68b9888a5fc778d9b60082e9c6",
+        "killed": 19,
+        "survived": 16,
         "noCoverage": 6,
         "justified": 0,
-        "score": 53.33
+        "score": 46.34
       },
       {
         "file": "packages/cli/src/internal/packageBin.ts",
@@ -3237,12 +3237,12 @@
       },
       {
         "file": "packages/cli/src/internal/routesRun.ts",
-        "sha": "7dce34bd17cca8f8ad4f1ab5654dfc1668e7c3a8252541c8cec9dc8363258a78",
-        "killed": 22,
+        "sha": "50f7dfb646791e71172dc0ea11fea809c4ec7e930f4237a54734bf5720b78d34",
+        "killed": 26,
         "survived": 3,
         "noCoverage": 8,
         "justified": 0,
-        "score": 66.67
+        "score": 70.27
       },
       {
         "file": "packages/cli/src/internal/rpcFailure.ts",
@@ -3291,21 +3291,21 @@
       },
       {
         "file": "packages/cli/src/internal/scaffoldCommand.ts",
-        "sha": "f05512acf017e77e4316b0ef3b62b5e9157614e394bc0a77a32e4049d128e9ad",
-        "killed": 189,
-        "survived": 52,
+        "sha": "00dfafe0687b6f3331ae62bab4a1d99c22c9c109f9480346301859002766b117",
+        "killed": 194,
+        "survived": 59,
         "noCoverage": 1,
         "justified": 0,
-        "score": 78.1
+        "score": 76.38
       },
       {
         "file": "packages/cli/src/internal/scaffoldInput.ts",
-        "sha": "ae94ab7f1dea27f4471e830f5eb01c31d38964d60670e14d4f948fba40ad4885",
-        "killed": 37,
-        "survived": 5,
+        "sha": "5e7c9a544ab66311fd86c71c35e783c8fd42be5802a089277ec6b4e597dd8bb1",
+        "killed": 39,
+        "survived": 4,
         "noCoverage": 2,
         "justified": 0,
-        "score": 84.09
+        "score": 86.67
       },
       {
         "file": "packages/cli/src/internal/scrubCode.ts",
@@ -7916,6 +7916,15 @@
         "score": 66.67
       },
       {
+        "file": "packages/scaffold/src/internal/baseUrl.ts",
+        "sha": "691f5c87ee054b4a07a891f91b84287528659e047cbc0936498f9ed8828c0e33",
+        "killed": 18,
+        "survived": 9,
+        "noCoverage": 1,
+        "justified": 0,
+        "score": 64.29
+      },
+      {
         "file": "packages/scaffold/src/internal/basenames.ts",
         "sha": "b73db753170a3262585c8c1754a9fa9853cd5a1efaca4bde2214bf2a4afdda9f",
         "killed": 17,
@@ -7950,6 +7959,15 @@
         "noCoverage": 1,
         "justified": 0,
         "score": 93.33
+      },
+      {
+        "file": "packages/scaffold/src/internal/connectOrigin.ts",
+        "sha": "0f97116669853ef4eecb0ecca0a29e503a4cd6879a50db393ed49f7ac3dbc49c",
+        "killed": 84,
+        "survived": 11,
+        "noCoverage": 1,
+        "justified": 0,
+        "score": 87.5
       },
       {
         "file": "packages/scaffold/src/internal/constructorSites.ts",
@@ -7998,12 +8016,12 @@
       },
       {
         "file": "packages/scaffold/src/internal/fail.ts",
-        "sha": "6c3cc04a04bae0e09031dec46794bba32ada82ecefbde0ed673b455a83707972",
-        "killed": 7,
+        "sha": "3d620dec8995de92091f871e7709a21c74d7128c88dbf09ef7fcdda7b44b508a",
+        "killed": 8,
         "survived": 1,
         "noCoverage": 0,
         "justified": 0,
-        "score": 87.5
+        "score": 88.89
       },
       {
         "file": "packages/scaffold/src/internal/fieldType.ts",
@@ -8232,12 +8250,12 @@
       },
       {
         "file": "packages/scaffold/src/internal/opPlace.ts",
-        "sha": "39c0d147d1c1ab5e357090a94070bd4f024eb141e173f13a6dc86295d4ad16e1",
-        "killed": 67,
-        "survived": 21,
+        "sha": "39d4c2e5cfc6bd11bbebe745682553266c8ca7a91b8a44a0a96e87188869b937",
+        "killed": 95,
+        "survived": 28,
         "noCoverage": 11,
         "justified": 0,
-        "score": 67.68
+        "score": 70.9
       },
       {
         "file": "packages/scaffold/src/internal/opProject.ts",
@@ -8259,21 +8277,21 @@
       },
       {
         "file": "packages/scaffold/src/internal/opRoute.ts",
-        "sha": "ef4311b2429cac2043c08608c01efaf517aae1b12ba269b3c04f9101a548483e",
-        "killed": 264,
-        "survived": 43,
+        "sha": "03caeca35c0eacce2fbb0a6742cdbc7d5192f1de69781fb8ff091a61bbb811c1",
+        "killed": 281,
+        "survived": 45,
         "noCoverage": 2,
         "justified": 0,
-        "score": 85.44
+        "score": 85.67
       },
       {
         "file": "packages/scaffold/src/internal/opService.ts",
-        "sha": "91aacbe5db2d7e3dafbe630c1f7f33a8a2008595db37deb581e29747f16a787d",
-        "killed": 54,
-        "survived": 20,
-        "noCoverage": 8,
+        "sha": "5be7ba4460bd327590127dd85ed29d0613e37bb9080253a172fc04c9990928a6",
+        "killed": 142,
+        "survived": 53,
+        "noCoverage": 12,
         "justified": 0,
-        "score": 65.85
+        "score": 68.6
       },
       {
         "file": "packages/scaffold/src/internal/opStore.ts",
@@ -8492,6 +8510,15 @@
         "score": 50
       },
       {
+        "file": "packages/scaffold/src/internal/serviceBase.ts",
+        "sha": "d5390ed487393a3ed52ad4c5d84f4ba8d86921d3ca48805e3fe149bf0158d73d",
+        "killed": 17,
+        "survived": 2,
+        "noCoverage": 0,
+        "justified": 0,
+        "score": 89.47
+      },
+      {
         "file": "packages/scaffold/src/internal/shellApps.ts",
         "sha": "78e154c0dd8c628e25e195b06e850f9f44f211c28129d8224acb2cac8e79c3a9",
         "killed": 14,
@@ -8600,9 +8627,27 @@
         "score": 27.59
       },
       {
+        "file": "packages/scaffold/src/templates/apiSchemaTs.ts",
+        "sha": "b9c12e9439e16e830dff2ad1a5ce253043d5b84de71818216c64f5f305f15347",
+        "killed": 7,
+        "survived": 0,
+        "noCoverage": 0,
+        "justified": 0,
+        "score": 100
+      },
+      {
+        "file": "packages/scaffold/src/templates/apiServerTs.ts",
+        "sha": "6fca9e104d6b73eedb0d167ac7f43bfc0a7163e11370b1739614c994892bd35a",
+        "killed": 8,
+        "survived": 0,
+        "noCoverage": 0,
+        "justified": 0,
+        "score": 100
+      },
+      {
         "file": "packages/scaffold/src/templates/bindingEntry.ts",
-        "sha": "daf2bc9e548260a4e79d555beb5adda164e8848e2d2a1992f90006a61abd3f83",
-        "killed": 17,
+        "sha": "791bf992f3bcefc5a84a9baa1f43349a4dc1a2fca256ba15eae4b03491a7d62f",
+        "killed": 20,
         "survived": 0,
         "noCoverage": 0,
         "justified": 0,
@@ -13417,20 +13462,20 @@
       {
         "file": "packages/std-sessions/src/group/internal/openHub.ts",
         "sha": "a17aeccfe1ace1862789030215af9d23706f6f200c09de511b7a4414b7be90e5",
-        "killed": 67,
-        "survived": 32,
-        "noCoverage": 29,
+        "killed": 120,
+        "survived": 8,
+        "noCoverage": 0,
         "justified": 0,
-        "score": 52.34
+        "score": 93.75
       },
       {
         "file": "packages/std-sessions/src/group/internal/projectHost.ts",
         "sha": "0be3239f676fc187a2f60b365c89bfdafc66ee83ec1ab4bb6ee9990019c8ee88",
-        "killed": 9,
-        "survived": 19,
-        "noCoverage": 40,
+        "killed": 70,
+        "survived": 0,
+        "noCoverage": 0,
         "justified": 0,
-        "score": 13.24
+        "score": 100
       },
       {
         "file": "packages/std-sessions/src/group/internal/projectLoader.ts",
@@ -13453,11 +13498,11 @@
       {
         "file": "packages/std-sessions/src/group/internal/startRealm.ts",
         "sha": "9e95b1c7c70ca1fb5eb09e29492e352367306829dd84b5fe3ed565e11caacfa6",
-        "killed": 108,
-        "survived": 60,
-        "noCoverage": 26,
+        "killed": 178,
+        "survived": 15,
+        "noCoverage": 2,
         "justified": 0,
-        "score": 55.67
+        "score": 91.28
       },
       {
         "file": "packages/std-sessions/src/group/internal/userRealm.ts",
@@ -13489,11 +13534,11 @@
       {
         "file": "packages/std-sessions/src/group/internal/userWorker.ts",
         "sha": "3c42f71d3e6f6d439bb33df18faaa1615aa2310f328b4aa44aa28db4051f773d",
-        "killed": 0,
-        "survived": 0,
-        "noCoverage": 24,
+        "killed": 22,
+        "survived": 1,
+        "noCoverage": 1,
         "justified": 0,
-        "score": 0
+        "score": 91.67
       },
       {
         "file": "packages/std-sessions/src/group/internal/wire.ts",
