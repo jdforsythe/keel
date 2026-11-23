@@ -204,3 +204,47 @@ describe("events in a second copy", () => {
     dispose();
   });
 });
+
+describe("the pre-resume queue in a second copy", () => {
+  it("queues each interaction event on an island not yet resumed, and no other type", async () => {
+    vi.resetModules();
+    const { eventQueue } = await import("../src/internal/eventQueue.ts");
+    eventQueue.install();
+    eventQueue.drop(0);
+    const island = document.createElement("div");
+    island.setAttribute("data-k-island", "second.copy");
+    const button = document.createElement("button");
+    island.append(button);
+    document.body.append(island);
+    const queued = [
+      "click",
+      "dblclick",
+      "auxclick",
+      "contextmenu",
+      "input",
+      "beforeinput",
+      "change",
+      "submit",
+      "reset",
+      "keydown",
+      "keyup",
+      "pointerdown",
+      "pointerup",
+      "mousedown",
+      "mouseup",
+      "touchstart",
+      "touchend",
+      "focusin",
+      "focusout",
+    ];
+    for (const [i, type] of queued.entries()) {
+      button.dispatchEvent(new Event(type, { bubbles: true }));
+      expect([type, eventQueue.pending()]).toEqual([type, i + 1]);
+    }
+    for (const type of ["", "pointermove", "scroll", "focus", "keypress", "Stryker was here"])
+      button.dispatchEvent(new Event(type, { bubbles: true }));
+    expect(eventQueue.pending()).toBe(queued.length);
+    eventQueue.drop(0);
+    expect(eventQueue.pending()).toBe(0);
+  });
+});
