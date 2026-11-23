@@ -27,6 +27,7 @@ export type Input = {
   readonly workspace?: boolean;
   readonly file?: string;
   readonly api?: boolean;
+  readonly method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   readonly path?: string;
   readonly openapi?: string;
   readonly to?: string;

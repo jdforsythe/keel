@@ -32,7 +32,7 @@ export function scaffoldInput(
     case "service":
       return pick({ id: a, schema: generated?.schema, service: generated?.service });
     case "route":
-      return pick({ id: a, path: input.path, file: input.file, api: input.api });
+      return pick({ id: a, path: input.path, file: input.file, api: input.api, method: input.method });
     case "rename":
       return pick({ kind: input.kind, from: a, to: b });
     case "move":

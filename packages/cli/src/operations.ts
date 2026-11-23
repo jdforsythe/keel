@@ -37,6 +37,7 @@ const structural = {
   path: s.string().optional(),
   file: s.string().optional(),
   api: s.boolean().optional(),
+  method: s.enum(["GET", "POST", "PUT", "PATCH", "DELETE"]).optional(),
   openapi: s.string().optional(),
   to: s.string().optional(),
   default: s.string().optional(),
