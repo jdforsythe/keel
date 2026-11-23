@@ -16,6 +16,10 @@ Verified in the lane after the last merge of the main line: `pnpm build`; ui 368
 
 ## State at this checkpoint
 
-- Merged since the lanes: `lane-mutc` (52 compiler test cases; compiler's mutation score 73.6) and `lane-cliflake` (D110; the cli suite green 5 full runs of 5, 2 under 8 burners; `onUncaught` keeps one pair of process listeners when the server graph is evaluated again). The ledger and evidence are regenerated from this tree (`ledger --diff`: 0 lowered).
-- Next: the gate in `.worktrees/verify`, the push, CI.
-- Mutation: 199 claims are stale, in check, cli, router, server, services, ui and scaffold mostly (`node tooling/mutate-stale.mjs --list`); the main worktree's `packages/<pkg>/reports/mutation/mutation.json` files are what `pnpm ledger` reads, and an old report there overrides fresher committed claims (compiler read 69.47 from a report of 2026-11-19 until a refreshed one was copied in).
+- Pushed: 17b30c87 after a second full green gate (it adds `lane-g2flake`: golden-2's tests hold on a slow runner, the plan's D111). CI run 45106805360 on it is watched to its end; the run before it, on 33c60bb4, was red in `check` for those tests.
+- Open lanes, a subagent in each (started late on 2026-11-22):
+  - `.worktrees/mutfix` `lane-mutfix`: the mutation runs of scaffold and cli (the dry run failed in Stryker's sandbox), then the stale claims of check, testing, store, std-conflicts and std-report, then what `node tooling/mutate-stale.mjs --list --missing` lists (about 1,100 files with no claim: first what "missing" means, a fix to the listing if it counts files with no mutants, then the runs, smallest packages first). The mutation lock is machine-wide: every mutation run goes through this lane. Its refreshed `packages/<pkg>/reports/mutation/mutation.json` files are copied to the main worktree before `pnpm ledger`.
+  - `.worktrees/w17` `lane-w17`: weakness package 17, resume-dev-conformance (backlog 0747), the conformance writer.
+  - `.worktrees/w18` `lane-w18`: weakness package 18, golden-polish (backlog 0386, 0964, 0366).
+  - `.worktrees/w7` `lane-w7`: weakness package 7, shell-origin-and-deps (backlog 0608, 0957): the RFC, ADR and spec text first (`rfc-lane.md`), then the conformance writer, then the build.
+- Merging one: `README.md`, Merging a lane; then the ledger per Method's D100, the gate, the push.
