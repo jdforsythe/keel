@@ -59,17 +59,21 @@ function addEntry(path: string, src: string, fn: string, entry: string, imports:
 }
 
 /**
- * `scaffold route <module>.<name> --path <path> [--file <page.tsx>] [--api [--method <verb>]]`: an entry in the
- * module's `<module>.contract.ts` and its binding in `routes.ts`, a `*.server.ts` handler naming the entry (a loader;
- * an action for an API write), a page component, and a route test. `api` (k.api) writes an API entry (`method`,
- * default `GET`; `output`) and a JSON request test, and no page; `method` without `api` is E1052.
+ * `scaffold route <module>.<name> --path <path> [--file <page.tsx>] [--no-loader] [--api [--method <verb>]]`: an entry
+ * in the module's `<module>.contract.ts` and its binding in `routes.ts`, a `*.server.ts` handler naming the entry (a
+ * loader; an action for an API write), a page component, and a route test. `no-loader` writes no handler file and binds
+ * the page's `component` alone. `api` (k.api) writes an API entry (`method`, default `GET`; `output`) and a JSON
+ * request test, and no page; `method` without `api`, or `no-loader` with `api`, is E1052.
  */
 export function opRoute(input: unknown, files: ReadonlyMap<string, string>): Result<Edit, ScaffoldError> {
   const r = inputs.route.parse(input);
   if (!r.ok) return badInput("route", r.error);
   const { id, path, file, api, method } = r.value;
+  const bare = r.value["no-loader"] === true;
   if (method !== undefined && api !== true)
     return fail("E1052", id, "method is for an API route: pass api with method, or drop method");
+  if (bare && api === true)
+    return fail("E1052", id, "no-loader is for a page route: an API route is its handler; drop one of the two");
   if (targetsGenerated(id) || (file !== undefined && targetsGenerated(file)))
     return fail("E1005", file ?? id, `${file ?? id} is a generated location`);
   const rid = routeId(id);
@@ -106,7 +110,7 @@ export function opRoute(input: unknown, files: ReadonlyMap<string, string>): Res
   const handlerPath = `${dir}/${handlerName}.server.ts`;
   const inTestDir = files.has("vitest.config.ts");
   const testPath = inTestDir ? `test/${mod}.${leaf}.route.test.ts` : `${dir}/${leaf}.route.test.ts`;
-  for (const p of [handlerPath, testPath, ...(api === true ? [] : basenames(files, `${page}.tsx`))])
+  for (const p of [...(bare ? [] : [handlerPath]), testPath, ...(api === true ? [] : basenames(files, `${page}.tsx`))])
     if (files.has(p)) return fail("E1351", p, `${p} already exists`);
   const params = [...path.matchAll(/:([a-zA-Z0-9]+)/g)].map((m) => m[1] ?? "");
   const contractSrc = files.get(contractPath);
@@ -128,16 +132,21 @@ export function opRoute(input: unknown, files: ReadonlyMap<string, string>): Res
   const nextRoutes =
     routesSrc === undefined
       ? null
-      : addEntry(routesPath, routesSrc, "manifest", bindingEntry(id, handlerName, api === true ? null : page, write), [
-          ...(api === true ? [] : [`import ${page} from "${pageSpec}";`]),
-          `import { ${handlerName} } from "./${handlerName}.server.ts";`,
-        ]);
+      : addEntry(
+          routesPath,
+          routesSrc,
+          "manifest",
+          bindingEntry(id, bare ? null : handlerName, api === true ? null : page, write),
+          [
+            ...(api === true ? [] : [`import ${page} from "${pageSpec}";`]),
+            ...(bare ? [] : [`import { ${handlerName} } from "./${handlerName}.server.ts";`]),
+          ],
+        );
   if (routesSrc === undefined || nextRoutes === null)
     return fail("E1052", routesPath, `${routesPath} has no manifest(${mod}, {...}) to add the route to`);
   const writes: Writes = new Map([
     [contractPath, nextContract],
     [routesPath, nextRoutes],
-    [handlerPath, write ? actionTs(handlerName, mod, id) : loaderTs(handlerName, mod, id, api === true)],
     [
       testPath,
       routeTest(
@@ -149,6 +158,8 @@ export function opRoute(input: unknown, files: ReadonlyMap<string, string>): Res
       ),
     ],
   ]);
+  if (!bare)
+    writes.set(handlerPath, write ? actionTs(handlerName, mod, id) : loaderTs(handlerName, mod, id, api === true));
   if (api !== true) writes.set(pagePath, componentTsx(page));
   return commit(files, writes);
 }
