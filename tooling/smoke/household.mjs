@@ -662,12 +662,10 @@ try {
   const notYet = (await itemNamed("Oats"))?.bought === false;
   await grace.locator("[id^='shopping.outbox.mine.']").click();
   const applied = await serverHas("Oats", true, 10_000);
-  const cleared = await why
-    .waitFor({ state: "detached", timeout: 10_000 })
-    .then(
-      () => true,
-      () => false,
-    );
+  const cleared = await why.waitFor({ state: "detached", timeout: 10_000 }).then(
+    () => true,
+    () => false,
+  );
   step(
     "a mark of an item changed at home is shown refused, and Grace applies it over the change",
     refusedShown && notYet && applied && cleared,

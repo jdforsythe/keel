@@ -139,7 +139,10 @@ function watch() {
       for (const r of records) {
         for (const n of r.removedNodes) if (n.nodeType === 1) k.removed++;
         const t = r.target;
-        const inIsland = t.nodeType === 1 && t.closest("[data-k-island]") !== null && t.closest("[id='app.recording.events']") === null;
+        const inIsland =
+          t.nodeType === 1 &&
+          t.closest("[data-k-island]") !== null &&
+          t.closest("[id='app.recording.events']") === null;
         for (const n of r.addedNodes) if (n.nodeType === 1 && inIsland) k.added++;
       }
     });
@@ -157,7 +160,8 @@ const kept = (page) =>
     for (const r of k.observer?.takeRecords() ?? []) {
       for (const n of r.removedNodes) if (n.nodeType === 1) k.removed++;
       const t = r.target;
-      const inIsland = t.nodeType === 1 && t.closest("[data-k-island]") !== null && t.closest("[id='app.recording.events']") === null;
+      const inIsland =
+        t.nodeType === 1 && t.closest("[data-k-island]") !== null && t.closest("[id='app.recording.events']") === null;
       for (const n of r.addedNodes) if (n.nodeType === 1 && inIsland) k.added++;
     }
     k.observer?.disconnect();
