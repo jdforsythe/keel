@@ -558,7 +558,50 @@ const proofs = {
       await server.stop();
     }
   },
+  /** The Tauri files register the shell's id; the web build as a plain client host shows the page and calls no Keel server. */
+  "native-tauri": (dir) =>
+    shellPage(dir, ["tauri", "tauri.conf.json"], '"schemes": ["dev.keel.nativetauri"]', "One page in a Tauri shell"),
+
+  /** The Capacitor config carries the shell's id; the web build as a plain client host shows the page and calls no Keel server. */
+  "native-capacitor": (dir) =>
+    shellPage(
+      dir,
+      ["capacitor", "capacitor.config.json"],
+      '"appId": "dev.keel.nativecapacitor"',
+      "One page in a Capacitor shell",
+    ),
 };
+
+/**
+ * A native-shell example: the shell's committed files carry its id, and the web build as a plain client host serves it
+ * shows the page's heading, with no request to `/__keel/*` and no console error.
+ */
+async function shellPage(dir, file, needle, heading) {
+  const conf = readFileSync(join(dir, "deploy", "web", ...file), "utf8");
+  const folder = join(dir, "dist", "web");
+  const policy = readFileSync(join(folder, "csp.txt"), "utf8").trim();
+  const seen = [];
+  const server = await serveFiles(folder, { "content-security-policy": policy }, false, seen);
+  const browser = await chromium.launch();
+  try {
+    const page = await browser.newPage();
+    const errors = [];
+    page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
+    page.on("pageerror", (e) => errors.push(String(e)));
+    await page.goto(`${server.base}/`);
+    const title = page.locator('[id="app.home.title"]');
+    await title.waitFor({ timeout: 15_000 });
+    const text = await title.textContent();
+    const keelCalls = seen.filter((p) => p.startsWith("/__keel/"));
+    return [
+      conf.includes(needle) && text === heading && errors.length === 0 && keelCalls.length === 0,
+      `shell id ${conf.includes(needle)}, heading "${text}", ${errors.length} errors, ${keelCalls.length} /__keel requests`,
+    ];
+  } finally {
+    await browser.close();
+    await server.stop();
+  }
+}
 
 const { step, finish } = recorder();
 for (const name of names) {
