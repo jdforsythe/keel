@@ -2,13 +2,35 @@
 // are cut into chunks. Reads nothing; tooling/mutate-stale.mjs feeds it the ledger's claims and the files' hashes.
 import { mutatedRule, unitDir } from "./mutate-units.mjs";
 
+const SCORED = new Set(["Killed", "Timeout", "Survived", "NoCoverage"]);
+
+/**
+ * What a Stryker report on disk says of the files it holds, for the unit whose directory is `dir` (repo-relative):
+ * `claims` (`{ file, sha }`, the sha of the source the report holds) for each file with a scored mutant, and `inert`
+ * (`{ file, sha }` too), the files it holds with none (all their mutants ignored), which have nothing to run while the sha holds. `sha256` hashes a source text.
+ */
+export function reportClaims(dir, report, sha256) {
+  const claims = [];
+  const inert = [];
+  const files = report?.files;
+  if (files === null || typeof files !== "object") return { claims, inert };
+  for (const [rel, entry] of Object.entries(files)) {
+    if (typeof entry?.source !== "string") continue;
+    const file = `${dir}/${rel}`;
+    const scored = Array.isArray(entry.mutants) && entry.mutants.some((m) => SCORED.has(m?.status));
+    (scored ? claims : inert).push({ file, sha: sha256(entry.source) });
+  }
+  return { claims, inert };
+}
+
 /**
  * The files to run, per unit (a bare package name, or `apps/<name>`) in `packages` order: `{ pkg, stale, missing }` (package-relative paths, sorted).
  * `claims` is the ledger's `mutation.claims` (`{ file, sha }`, file repo-relative); `shas` maps each repo-relative
  * mutated file on disk to the sha256 of its source. A claim whose sha differs from the disk is stale; a file with no
- * claim is missing. Packages with neither are left out.
+ * claim is missing, unless `inert` (a set of repo-relative files with no mutant to run: zero mutants, or only ignored
+ * ones) holds it. Packages with neither are left out.
  */
-export function staleFiles(claims, shas, packages) {
+export function staleFiles(claims, shas, packages, inert = new Set()) {
   const claimed = new Map(claims.map((c) => [c.file, c.sha]));
   const out = [];
   for (const pkg of packages) {
@@ -21,8 +43,9 @@ export function staleFiles(claims, shas, packages) {
       const rel = file.slice(prefix.length);
       if (!mutated.test(rel)) continue;
       const sha = claimed.get(file);
-      if (sha === undefined) missing.push(rel);
-      else if (sha !== shas.get(file)) stale.push(rel);
+      if (sha === undefined) {
+        if (!inert.has(file)) missing.push(rel);
+      } else if (sha !== shas.get(file)) stale.push(rel);
     }
     if (stale.length || missing.length) out.push({ pkg, stale, missing });
   }

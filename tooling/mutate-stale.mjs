@@ -10,7 +10,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { mutateCacheDir } from "./mutate-cache.ts";
 import { stopRequested } from "./mutate-changed.mjs";
-import { chunkPlan, endLine, listLine, positive, staleFiles } from "./mutate-stale-plan.mjs";
+import { chunkPlan, endLine, listLine, positive, reportClaims, staleFiles } from "./mutate-stale-plan.mjs";
 import { mutatedRule, mutationUnits, sourceDir, unitDir } from "./mutate-units.mjs";
 import { stopFile } from "./mutate.mjs";
 import { acquire, lockedDiag } from "./mutateLock.mjs";
@@ -45,6 +45,52 @@ function hashes(units) {
   return out;
 }
 
+/**
+ * What the Stryker reports on disk add to the ledger: the claims they hold (a report is the whole incremental state of its
+ * unit, newer than a ledger written before a run), and the files of them with no scored mutant (`inert`).
+ */
+function reports(units) {
+  const claims = [];
+  const inert = [];
+  for (const unit of units) {
+    const f = path.join(root, unitDir(unit), "reports", "mutation", "mutation.json");
+    if (!fs.existsSync(f)) continue;
+    let report;
+    try {
+      report = JSON.parse(fs.readFileSync(f, "utf8"));
+    } catch {
+      continue;
+    }
+    const r = reportClaims(unitDir(unit), report, sha256);
+    claims.push(...r.claims);
+    inert.push(...r.inert);
+  }
+  return { claims, inert };
+}
+
+/** The entry of Stryker's instrumenter, which sits beside `@stryker-mutator/core` in the package store. */
+const instrumenterEntry = () =>
+  new URL("../../../instrumenter/dist/src/index.js", import.meta.resolve("@stryker-mutator/core")).href;
+
+/** The repo-relative `files` Stryker's instrumenter finds no mutant to run in (types, re-exports, constants). */
+async function mutantless(files) {
+  if (files.length === 0) return new Set();
+  const { Instrumenter } = await import(instrumenterEntry());
+  const quiet = { debug() {}, info() {}, warn() {}, error() {}, isDebugEnabled: () => false };
+  const instrumenter = new Instrumenter(quiet);
+  const out = new Set();
+  for (const file of files) {
+    const content = fs.readFileSync(path.join(root, file), "utf8");
+    const r = await instrumenter.instrument([{ name: file, mutate: true, content }], {
+      plugins: null,
+      excludedMutations: [],
+      ignorers: [],
+    });
+    if (r.mutants.every((m) => m.ignoreReason !== undefined)) out.add(file);
+  }
+  return out;
+}
+
 if (process.argv[1] === new URL(import.meta.url).pathname) {
   await run("mutate-stale", async () => {
     const only = value("only");
@@ -54,7 +100,19 @@ if (process.argv[1] === new URL(import.meta.url).pathname) {
     const missing = argv.includes("--missing");
     const all = mutationUnits(root).filter((p) => only === undefined || p === only);
     const ledger = JSON.parse(fs.readFileSync(path.join(root, "tooling", "ledger", "ledger.json"), "utf8"));
-    const chunks = chunkPlan(staleFiles(ledger.mutation?.claims ?? [], hashes(all), all), size, { missing });
+    const disk = hashes(all);
+    const onDisk = reports(all);
+    // A report on disk is newer than the ledger's claim of its file; its inert files hold only while the source is unchanged.
+    const claims = [...(ledger.mutation?.claims ?? []), ...onDisk.claims];
+    const inert = new Set(onDisk.inert.filter((c) => disk.get(c.file) === c.sha).map((c) => c.file));
+    const claimedFiles = new Set(claims.map((c) => c.file));
+    if (missing) {
+      const candidates = staleFiles(claims, disk, all, inert).flatMap((e) =>
+        e.missing.map((f) => `${unitDir(e.pkg)}/${f}`),
+      );
+      for (const f of await mutantless(candidates.filter((f) => !claimedFiles.has(f)))) inert.add(f);
+    }
+    const chunks = chunkPlan(staleFiles(claims, disk, all, inert), size, { missing });
     if (argv.includes("--list") || chunks.length === 0)
       return {
         diags: [],
