@@ -150,3 +150,44 @@ Tests: `test/restock.test.ts` runs Run now through the API (one job per staple, 
 Try it: start the built app, sign in, and open `localhost:5211/list` in one window and `localhost:5211/setup` in another. Select Run now: the staples arrive on the list one by one. Stop the server with `kill -9 <pid>` halfway and start it again: the run goes on from the staple it reached, and the setup page says `Done: 5 of 5 staples handled`.
 
 Check your work: `pnpm test && pnpm check && pnpm build`, then the smoke from the repository root.
+
+## Layer 10: session recordings, tallies and the evidence bundle
+
+Each page a member opens records what happens on it, so a fault a member hits arrives with the steps that led to it (`keel docs std.sessions`, `std.monitor`, `k.evidence`).
+
+- `topology.ts` places the `sessions` module of `@keel/std-sessions` in `web`, so the app serves the ingest itself: `POST /sessions` takes a recording, and `GET /sessions/list` and `GET /sessions/tally` answer a reader. The `app` module lists `@keel/std-sessions` in `deps` and the `observe` and `session` capabilities; its `readers` list in `module.ts` is empty, so both reads answer 403 to every member until an operator adds the hash of their caller cookie.
+- `app/RecordingNote.tsx` sits under every page of `app.frame`. In the browser it calls `record(ctx, { upload })` with the page's own `/sessions`: the recorder keeps navigations, clicks, typed values, transactions and errors, and posts the recording on the first error the page reports. A document is one recording; the next page starts its own.
+- The note, What this page records, lists the newest 12 events as the recorder kept them (`app/eventLine.ts`) and counts them in a `role="status"` line. It shows the recording and nothing else: a value typed into a field marked `.pii()` reads `x` repeated, because that is what the recording holds. Password fields and `s.secret` values are masked the same way.
+- `app/runners.server.ts` lists `monitor`: it counts each commit of a server store by its transaction's name, `setup.household.name` and the weekly run's steps, into `sessions.tally`, once a minute and at shutdown. The tally holds names and counts.
+- `keel evidence` runs `keel check`, `keel test` and the ledger over the app and writes a signed bundle. Its `pii.json` lists every marked path of the `members` schemas and the four sinks (session recordings, inputs, the log, the bundle) with the rung of the clause that redacts each; `security.json` holds the headers and the policy `web` sends; `a11y.json` the result per route.
+
+Tests: `test/recording.test.ts` opens the profile as a member, opens the note and types a name and a phone number: the note lists both as `x` repeated; the recording, its upload and the archive `POST /sessions` files it in hold neither, nor the member's email, password or id. A visitor's recording of the start page replays to the same state and fingerprint. A member and a visitor get 403 from the list and the tally, and after one setup save and a minute the tally reads `setup.household.name: 1` with no name in it. The smoke types a phone number on the built profile page and reads it masked in the note. `tooling/smoke/canary.mjs` runs `keel evidence` over the app, searches the bundle for the typed values and runs `keel evidence --verify` on it.
+
+Try it: with the built app running, sign in and open `localhost:5211/profile`. Select What this page records, then type your name: the note adds a line `input members.profileForm:name "xxxxx"`, one `x` per character. Then write the evidence bundle and check it:
+
+```sh
+openssl genpkey -algorithm ed25519 -out /tmp/evidence.pem
+KEEL_EVIDENCE_KEY="$(cat /tmp/evidence.pem)" pnpm exec keel evidence --out /tmp/household-evidence
+grep keyId /tmp/household-evidence/manifest.json
+pnpm exec keel evidence --verify /tmp/household-evidence --key <keyId>
+node -p 'require("/tmp/household-evidence/pii.json").sinks'
+```
+
+Change one byte of any file in the bundle and run the `--verify` line again: it answers E1062 and names the file.
+
+Check your work: `pnpm test && pnpm check && pnpm build`, then the smoke and `node --disable-warning=ExperimentalWarning tooling/smoke/canary.mjs` from the repository root.
+
+## Layer 11: marks made offline, and a conflict shown
+
+A member in the shop marks items bought where the signal drops. Each mark waits on the page, kept in the browser, and goes to the server once the connection is back (`keel docs std.offline`, `std.outbox-owner`, `k.data`). The outbox needs a member to own each mark, so it works on the list behind sign-in, which layer 6 turned on.
+
+- `listOutbox.ts` is `outbox("shopping.outbox", shopping, { limit: 50 })`. The Bought and Back on the list buttons call `send` with the mark, the item's `rev` the page showed as `base`, and the signed-in member's id as `owner`; `drain` runs for that member while the page is open. A mark that waits shows `Bought, waiting to send` under its item, in a `role="status"` line. Adding and removing still go straight to the API.
+- `migrations/0003-item-revisions.sql` gives each item a `rev`, which every change raises (`writeList.server.ts`), and a `list_writes` table of the keys of marks that committed.
+- `POST /api/items/:id/bought` (`postBought.server.ts`) passes the mark's `write` through `writeFor` with the request's member, so a mark commits only for the member who made it. A request with no one signed in answers `offline.signin`: the outbox keeps the mark queued on the device until that member signs in again. Another member's mark answers `offline.owner`. `markBought.server.ts` then works in one transaction: a key in `list_writes` already committed, so the list comes back unchanged; an item that is gone is 404; an item whose `rev` moved past `base` is 409 `keel.conflict` with the item's `rev` as `head`, and nothing is written.
+- `OutboxNote.tsx`, Marks not applied, lists each mark the server refused under the tabs, in a `role="alert"` line. A mark of an item changed at home names the item as it is now and offers Mark it bought (`resolve` with `mine`, which sends it again over the new `rev`) or Leave it as it is (`theirs`). A mark of a removed item, or one another member made on this device, offers Dismiss.
+
+Tests: `test/outbox.test.ts` marks Milk bought with the sim network down, finds it waiting and the server unchanged, and sees it commit once when the network is back. Grace adds one more Milk while Ada's mark waits: Ada's page shows `Milk × 2: someone at home changed this item while your mark waited`, and each choice applies or drops the mark. A removed item, a mark sent twice, a stale `base`, another member's mark and a mark after sign-out each get their answer. `test/outbox.sim.test.ts` runs the offline mark under `simulate`, 30 schedules of drops, delays, lost responses, 503s, failed storage writes and offline windows: the mark commits once or not at all, and when Ada changed the item first it stays as a conflict with `head` 1. Under 15 more schedules Grace signs out with a mark queued: nothing commits while she is out, and once she signs in again the mark commits once. The smoke takes Grace's browser offline, marks Apples bought, finds the line `Bought, waiting to send` and the server unchanged, and finds Apples bought once she is back; then Ada adds Oats while Grace's mark of Oats waits, Grace's page shows the refusal, and Mark it bought applies it.
+
+Try it: start the built app, sign in as two members in two windows, one of them private, and open `localhost:5211/list` in both. In one window open the browser's developer tools and turn the network off. Select Bought on Milk: the row says `Bought, waiting to send`. In the other window add Milk again. Turn the network back on: the first window shows Marks not applied with `Milk × 2`, and Mark it bought moves Milk to Bought in both windows.
+
+Check your work: `pnpm test && pnpm check && pnpm build`, then the smoke from the repository root.

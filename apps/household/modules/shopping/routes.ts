@@ -7,6 +7,7 @@ import { getItems } from "./getItems.server.ts";
 import { getRuns } from "./getRuns.server.ts";
 import { listEvents } from "./listEvents.server.ts";
 import { loadList } from "./loadList.server.ts";
+import { postBought } from "./postBought.server.ts";
 import { postItem } from "./postItem.server.ts";
 import { postRun } from "./postRun.server.ts";
 import { runEvents } from "./runEvents.server.ts";
@@ -25,6 +26,7 @@ export const routes = manifest(shopping, {
   "shopping.items": { loader: getItems, guard: member },
   "shopping.add": { action: postItem, guard: member },
   "shopping.toggle": { action: toggleItem, guard: member },
+  "shopping.mark": { action: postBought },
   "shopping.remove": { action: deleteItem, guard: member },
   "shopping.runEvents": { loader: runEvents.loader },
   "shopping.runs": { loader: getRuns, guard: member },

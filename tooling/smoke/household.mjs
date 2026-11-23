@@ -6,12 +6,14 @@
 // the household name; the shopping menu adds through the API and the list survives a reload; an API write and the
 // loader agree; the API refuses a request no member made; a cross-site write answers 403; a receipt form answered with
 // a server error shows the typed values, `aria-invalid` and the error text, with scripts running and with scripts off;
-// the profile page mints an API token that calls the API, and once revoked the token is refused; values typed into the
+// the profile page mints an API token that calls the API, and once revoked the token is refused; the frame's note on what
+// the page records lists a phone number typed into the profile masked; values typed into the
 // profile's personal fields reach no server log line and no file in the data folder but the database; no page error or
 // console error. The server is then killed with SIGKILL with a write in flight and restarted, and the list, the
 // receipts, the household name and the session are all there. A second member then opens the list in a second browser
 // context: an item the first adds shows on her page with no reload, an item she buys moves on his, both pages say
-// Connecting while the server is killed and Live once it is back, and a sign-out in her other tab turns her page to
+// Connecting while the server is killed and Live once it is back, a mark she makes offline waits on her page and goes
+// once she is back, a mark of an item changed meanwhile comes back refused and she applies it, and a sign-out in her other tab turns her page to
 // Signed out with no new item on it. The first member then selects Run now on the setup page; the server is killed with
 // SIGKILL while the weekly staples run goes and started again, and the run ends once, done, with each staple on the
 // list once. When docker answers, the same kill and restart runs
@@ -443,7 +445,21 @@ try {
 
   const canary = { name: "Quillon Vantablack", phone: "+44 7700 900417" };
   await byId(page, "members.profileForm:name").fill(canary.name);
+  await byId(page, "app.recording.note.button").click();
   await byId(page, "members.profileForm:phone").fill(canary.phone);
+  const masked = `input members.profileForm:phone "${"x".repeat(canary.phone.length)}"`;
+  const noted = await byId(page, "app.recording.events")
+    .filter({ hasText: masked })
+    .waitFor({ timeout: 10_000 })
+    .then(
+      () => byId(page, "app.recording.events").innerText(),
+      () => "",
+    );
+  step(
+    "the frame's note lists the typed phone as the recorder kept it, masked",
+    noted.includes(masked) && Object.values(canary).every((v) => !noted.includes(v)),
+    clip(noted.split("\n").at(-1) ?? ""),
+  );
   await byId(page, "members.save").click();
   await byId(page, "members.saved").waitFor({ timeout: 10_000 });
   await page.reload();
@@ -589,6 +605,72 @@ try {
   await graceContext.setOffline(false);
   const online = await until(grace, "Live", 45_000);
   step("Grace's browser offline says Offline, and Live once it is back", offline && online, await statusOf(grace));
+
+  // The outbox: a mark Grace makes offline waits on her page and goes once she is back; a mark of an item Ada changed
+  // meanwhile comes back refused with 409 and is applied when Grace chooses to.
+  const itemNamed = async (name) => ((await itemsAt(origin, keep)) ?? []).find((i) => i.name === name);
+  const serverHas = async (name, bought, ms) => {
+    for (const end = Date.now() + ms; Date.now() < end; await wait(100)) {
+      if ((await itemNamed(name))?.bought === bought) return true;
+    }
+    return false;
+  };
+  const apples = await itemNamed("Apples");
+  await graceContext.setOffline(true);
+  await until(grace, "Offline", 10_000);
+  await byId(grace, `shopping.toggle.${apples?.id}`).click();
+  const waitingText = await byId(grace, `shopping.waiting.${apples?.id}`)
+    .filter({ hasText: "waiting to send" })
+    .waitFor({ timeout: 10_000 })
+    .then(
+      () => true,
+      () => false,
+    );
+  const heldBack = (await itemNamed("Apples"))?.bought === false;
+  await graceContext.setOffline(false);
+  const sent = await serverHas("Apples", true, 30_000);
+  step(
+    "a mark made offline waits on Grace's page and goes once she is back",
+    apples !== undefined && waitingText && heldBack && sent,
+    `waiting ${waitingText}, held ${heldBack}, sent ${sent}`,
+  );
+
+  await fetch(`${origin}/api/items`, {
+    method: "POST",
+    headers: { ...asJson, ...keep },
+    body: JSON.stringify({ name: "Oats" }),
+  });
+  await rowIn(grace, "Oats").waitFor({ timeout: 10_000 });
+  const oats = await itemNamed("Oats");
+  await graceContext.setOffline(true);
+  await until(grace, "Offline", 10_000);
+  await byId(grace, `shopping.toggle.${oats?.id}`).click();
+  await fetch(`${origin}/api/items`, {
+    method: "POST",
+    headers: { ...asJson, ...keep },
+    body: JSON.stringify({ name: "Oats" }),
+  });
+  await graceContext.setOffline(false);
+  const why = grace.locator("[id^='shopping.outbox.why.']");
+  const refusedShown = await why
+    .filter({ hasText: "Oats × 2: someone at home changed this item" })
+    .waitFor({ timeout: 30_000 })
+    .then(
+      () => true,
+      () => false,
+    );
+  const notYet = (await itemNamed("Oats"))?.bought === false;
+  await grace.locator("[id^='shopping.outbox.mine.']").click();
+  const applied = await serverHas("Oats", true, 10_000);
+  const cleared = await why.waitFor({ state: "detached", timeout: 10_000 }).then(
+    () => true,
+    () => false,
+  );
+  step(
+    "a mark of an item changed at home is shown refused, and Grace applies it over the change",
+    refusedShown && notYet && applied && cleared,
+    `shown ${refusedShown}, held ${notYet}, applied ${applied}, cleared ${cleared}`,
+  );
 
   const elsewhere = await graceContext.newPage();
   await elsewhere.goto(`${origin}/list`);

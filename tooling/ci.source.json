@@ -256,7 +256,7 @@
           "run": "node --disable-warning=ExperimentalWarning tooling/smoke/household.mjs"
         },
         {
-          "name": "built golden-2: canaries in every personal-data and secret field reach no log, error answer, URL, cookie, build file or evidence bundle",
+          "name": "built golden-2: canaries in every personal-data and secret field reach no log, error answer, URL, cookie, build file or evidence bundle; keel evidence --verify passes over golden-2 and household",
           "run": "node --disable-warning=ExperimentalWarning tooling/smoke/canary.mjs"
         },
         {

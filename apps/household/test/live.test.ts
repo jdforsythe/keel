@@ -28,7 +28,7 @@ it("shows on Grace's open page what Ada's page adds, buys and removes, without a
   await ada.fire("shopping.view.tab.bought", click);
   await ada.fire(`shopping.toggle.${eggs?.id}`, click);
   await grace.settle();
-  expect(copyOf(grace).items).toEqual([{ ...eggs, bought: true }]);
+  expect(copyOf(grace).items).toEqual([{ ...eggs, bought: true, rev: 1 }]);
   expect(grace.find("shopping.view.tab.toBuy").state.selected).toBe(true);
   expect(grace.state()["shopping.view"]).toEqual({ show: "toBuy" });
   expect(ada.state()["shopping.view"]).toEqual({ show: "bought" });

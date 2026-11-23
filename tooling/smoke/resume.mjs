@@ -125,7 +125,8 @@ async function recipes(base) {
 
 /**
  * Before any script runs: at the end of parsing, keep every served element, then count every element removed and
- * every element added under an island root.
+ * every element added under an island root. The household frame's list of recorded events is left out: it gains a
+ * line for each event the recorder keeps, the input claimed at resume among them.
  */
 function watch() {
   const k = { served: [], rows: {}, removed: 0, added: 0, observer: null };
@@ -138,7 +139,10 @@ function watch() {
       for (const r of records) {
         for (const n of r.removedNodes) if (n.nodeType === 1) k.removed++;
         const t = r.target;
-        const inIsland = t.nodeType === 1 && t.closest("[data-k-island]") !== null;
+        const inIsland =
+          t.nodeType === 1 &&
+          t.closest("[data-k-island]") !== null &&
+          t.closest("[id='app.recording.events']") === null;
         for (const n of r.addedNodes) if (n.nodeType === 1 && inIsland) k.added++;
       }
     });
@@ -156,10 +160,17 @@ const kept = (page) =>
     for (const r of k.observer?.takeRecords() ?? []) {
       for (const n of r.removedNodes) if (n.nodeType === 1) k.removed++;
       const t = r.target;
-      const inIsland = t.nodeType === 1 && t.closest("[data-k-island]") !== null;
+      const inIsland =
+        t.nodeType === 1 && t.closest("[data-k-island]") !== null && t.closest("[id='app.recording.events']") === null;
       for (const n of r.addedNodes) if (n.nodeType === 1 && inIsland) k.added++;
     }
     k.observer?.disconnect();
+    // The note prints "<n> events kept" and lists at most the newest 12; a page without the note has no tally.
+    const eventTally = () => {
+      const list = document.getElementById("app.recording.events");
+      const n = Number.parseInt(document.getElementById("app.recording.count")?.textContent ?? "", 10);
+      return list === null || Number.isNaN(n) ? null : { listed: list.children.length, kept: n };
+    };
     const rows = Object.entries(k.rows);
     const a = document.activeElement;
     return {
@@ -167,6 +178,7 @@ const kept = (page) =>
       gone: k.served.filter((el) => !el.isConnected).length,
       removed: k.removed,
       added: k.added,
+      events: eventTally(),
       rows: rows.length,
       sameRows: rows.filter(([id, el]) => document.getElementById(id) === el).length,
       islands: [...document.querySelectorAll("[data-k-island]")].map((e) => e.getAttribute("data-k-island")),
@@ -233,6 +245,13 @@ function checkPage(step, label, v, served) {
     v.state.gone === 0 && v.state.removed === 0 && v.state.added === 0,
     `${v.state.removed} removed, ${v.state.added} added under islands, ${v.state.gone} of ${v.state.served} served elements gone`,
   );
+  const tally = v.state.events;
+  if (tally !== null)
+    step(
+      `${label} recorded events not doubled`,
+      tally.listed <= Math.min(12, tally.kept),
+      `${tally.listed} listed, ${tally.kept} kept`,
+    );
   if (v.set.typed !== undefined) {
     const f = v.state.focus;
     step(

@@ -4,6 +4,7 @@ import { createApp } from "@keel/server";
 import { sql } from "@keel/std-postgres";
 import source from "../identity.server.ts";
 import mount from "../identity.ts";
+import { runners as appRunners } from "../modules/app/runners.server.ts";
 import { membersApi } from "../modules/members/membersApi.ts";
 import { membersDb } from "../modules/members/membersDb.server.ts";
 import { runners } from "../modules/shopping/runners.server.ts";
@@ -58,7 +59,7 @@ export const webApp = (ctx: SimCtx, lines: string[] = []) =>
     ctx,
     deployable: "web",
     identity: source,
-    runners: { shopping: runners },
+    runners: { app: appRunners, shopping: runners },
     log: { format: "json", write: (line: string) => lines.push(line) },
   });
 

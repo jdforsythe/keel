@@ -27,6 +27,7 @@ it("shows the member's details from their first sign-in, and the token the test 
     "members.save",
     "members.mint",
     "members.revoke.0",
+    "app.recording.note.button",
   ]);
   page.dispose();
 });

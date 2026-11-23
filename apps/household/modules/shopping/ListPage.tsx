@@ -1,10 +1,9 @@
 import { type Infer, s } from "@keel/schema";
 import { Box, Heading } from "@keel/ui";
-import { Item } from "./Item.schema.ts";
-import { ListText } from "./ListText.schema.ts";
+import { ListData } from "./ListData.schema.ts";
 import ShoppingList from "./ShoppingList.tsx";
 
-export const Props = s.object({ data: s.object({ text: ListText, items: s.array(Item) }) });
+export const Props = s.object({ data: ListData });
 
 export default function ListPage(props: Infer<typeof Props>) {
   return (
@@ -12,7 +11,7 @@ export default function ListPage(props: Infer<typeof Props>) {
       <Heading id="shopping.heading" level={1} fontSize={{ base: "xl", md: "2xl" }}>
         {props.data.text.heading}
       </Heading>
-      <ShoppingList text={props.data.text} items={props.data.items} />
+      <ShoppingList text={props.data.text} items={props.data.items} member={props.data.member} />
     </Box>
   );
 }

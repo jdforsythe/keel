@@ -38,6 +38,7 @@ it("shows the empty list, the menu, the tabs and the help", async () => {
     "shopping.view.tab.toBuy",
     "shopping.view.panel.toBuy",
     "shopping.help.button",
+    "app.recording.note.button",
   ]);
   page.dispose();
 });
@@ -58,7 +59,7 @@ it("adds through the API, raises the quantity, moves it to Bought and removes it
   expect(view.get("show")).toBe("bought");
   expect(page.find(`shopping.toggle.${milk.id}`).text).toBe("Back on the list");
   const server = await (await fetch(asJson("GET", "/api/items"))).json();
-  expect(server.results["shopping.items"]).toEqual({ ok: true, value: { items: [{ ...milk, bought: true }] } });
+  expect(server.results["shopping.items"]).toEqual({ ok: true, value: { items: [{ ...milk, bought: true, rev: 2 }] } });
   await page.fire(`shopping.remove.${milk.id}`, { type: "click" });
   expect(page.find("shopping.empty").text).toContain("The list is empty");
   page.dispose();

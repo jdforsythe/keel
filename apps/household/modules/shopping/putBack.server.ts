@@ -22,7 +22,7 @@ export const putBack = (data: Infer<typeof RestockData>, ctx: Ctx, env: StepEnv)
     if (!done.ok) return done;
     const [first] = done.value;
     if (first !== undefined) return ok(first);
-    const before = await t.query(sql(Item)`select id, name, qty, bought from items order by seq`);
+    const before = await t.query(sql(Item)`select id, name, qty, bought, rev from items order by seq`);
     if (!before.ok) return before;
     const written = await writeList(t, before.value, putBackIn(before.value, { id: ctx.random.id("Item"), name }));
     if (!written.ok) return written;

@@ -31,6 +31,7 @@ it("starts empty, in English, with a link to the German page", async () => {
     "receipts.new:paidBy",
     "receipts.new:note",
     "receipts.save",
+    "app.recording.note.button",
   ]);
   page.dispose();
 });

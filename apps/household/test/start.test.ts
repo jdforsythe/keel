@@ -17,6 +17,7 @@ it("renders the start page with its heading and a link to the list", async () =>
     "app.start.toReceipts",
     "app.start.toSetup",
     "app.start.toProfile",
+    "app.recording.note.button",
   ]);
   page.dispose();
 });

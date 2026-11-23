@@ -323,12 +323,18 @@ importers:
       '@keel/std-money':
         specifier: workspace:*
         version: link:../../packages/std-money
+      '@keel/std-offline':
+        specifier: workspace:*
+        version: link:../../packages/std-offline
       '@keel/std-postgres':
         specifier: workspace:*
         version: link:../../packages/std-postgres
       '@keel/std-schedules':
         specifier: workspace:*
         version: link:../../packages/std-schedules
+      '@keel/std-sessions':
+        specifier: workspace:*
+        version: link:../../packages/std-sessions
       '@keel/std-statecharts':
         specifier: workspace:*
         version: link:../../packages/std-statecharts
