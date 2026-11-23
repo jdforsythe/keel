@@ -196,7 +196,7 @@ describe("mask, jsonOf, utf8Length, seeded", () => {
     expect(jsonOf({ a: 1 }, s.string())).toEqual({ a: 1 });
     expect(jsonOf(undefined)).toBeNull();
     expect(jsonOf(() => 1)).toBeNull();
-    expect(jsonOf({ when: new Date(0) })).toBeNull();
+    expect(jsonOf({ big: 1n })).toBeNull();
     expect(jsonOf(Symbol("x"), s.string())).toBeNull();
   });
 

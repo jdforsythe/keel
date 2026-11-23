@@ -83,10 +83,15 @@ describe("actionHost: what it reads from the process", () => {
   });
 
   test("now is the wall clock in milliseconds", () => {
-    const before = Date.now();
-    const now = actionHost().now();
-    expect(now).toBeGreaterThanOrEqual(before);
-    expect(now).toBeLessThanOrEqual(Date.now());
+    vi.useFakeTimers({ now: 1_800_000_000_000 });
+    try {
+      const host = actionHost();
+      expect(host.now()).toBe(1_800_000_000_000);
+      vi.advanceTimersByTime(1500);
+      expect(host.now()).toBe(1_800_000_001_500);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   test("fetch is the global fetch, with and without init", async () => {
