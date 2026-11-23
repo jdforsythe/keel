@@ -7,6 +7,7 @@ import { join } from "node:path";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 import { cleanup, keel, materialize, readTree } from "./keel-cli.ts";
+import { capacitorDeps } from "./plugin-deps.ts";
 
 const SEED = 1337;
 const SLOW = 300_000;
@@ -17,7 +18,7 @@ const project = (id: string, name: string): Map<string, string> =>
   new Map([
     [
       "package.json",
-      `${JSON.stringify({ name: "fx", private: true, type: "module", version: "1.2.3", dependencies: { "@keel/std-capacitor": "workspace:*" } })}\n`,
+      `${JSON.stringify({ name: "fx", private: true, type: "module", version: "1.2.3", dependencies: capacitorDeps() })}\n`,
     ],
     [
       "vite.config.ts",

@@ -2,7 +2,8 @@ import { realpathSync } from "node:fs";
 import { createRequire } from "node:module";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
-import type { Origins } from "@keel/compiler";
+import { dependencyNeed } from "@keel/check";
+import type { Origins, Topology } from "@keel/compiler";
 import type { DeployShells, ShellApp } from "@keel/scaffold";
 import type { ShellTarget } from "../types/ShellTarget.ts";
 import type { SourceFile } from "../types/SourceFile.ts";
@@ -79,7 +80,10 @@ async function load(
  * ancestor's real path is outside the folder's (`linkEscapes`). `shells` are the targets as the deploy generator reads
  * them, giving no file of a set holding such a path; `apps` each declared shell's app, holding `policy` for its deployable's declared
  * origins (k.origins); `paths`
- * the shell files they give.
+ * the shell files they give; `topology` the parsed root `topology.ts`; `needs` the E1572 of each plugin a target's
+ * `plugins` names for an app that the project's `package.json` `dependencies` lack or hold at another version text
+ * (k.shell Plugins), at the first deployable asking, once per shell and plugin, in order; none without a
+ * `package.json` that is a JSON object.
  */
 export async function shellTargets(
   cwd: string,
@@ -90,6 +94,8 @@ export async function shellTargets(
   readonly shells: DeployShells;
   readonly apps: readonly { readonly shell: Shell; readonly app: ShellApp }[];
   readonly paths: ReadonlySet<string>;
+  readonly topology: Topology;
+  readonly needs: readonly { readonly shell: Shell; readonly plugin: string; readonly diag: Diag }[];
   readonly diags: Diag[];
 }> {
   const pkg = project.find((f) => f.path === "package.json")?.source;
@@ -103,6 +109,8 @@ export async function shellTargets(
   const targets: Partial<Record<Shell, ShellTarget>> = {};
   const shells: { -readonly [S in Shell]?: DeployShells[S] } = {};
   const diags: Diag[] = [];
+  const needs: { shell: Shell; plugin: string; diag: Diag }[] = [];
+  const source = project.find((f) => f.path === "topology.ts")?.source ?? "";
   const all: { shell: Shell; app: ShellApp }[] = [];
   const at = { path: "topology.ts", line: 1, col: 1 };
   const real = realOf(cwd);
@@ -134,6 +142,14 @@ export async function shellTargets(
         : [{ deployable, id: s.id, name: s.name, ...shared, policy: policy?.(topology[deployable]?.origins) }];
     });
     for (const app of apps) all.push({ shell, app });
+    for (const app of apps)
+      for (const { plugin, version, need } of target.plugins(app)) {
+        if (pkg === undefined || needs.some((n) => n.shell === shell && n.plugin === plugin)) continue;
+        const message = `${app.deployable}: ${shell} needs ${plugin}`;
+        const at = { dir: "", source, pkg, deployable: app.deployable, dep: plugin, message, version, need };
+        const diag = dependencyNeed(at);
+        if (diag !== undefined) needs.push({ shell, plugin, diag });
+      }
     // The first path of `app`'s set that leaves its folder, by its text or through a symlink on disk.
     const leaves = (app: ShellApp, given: Readonly<Record<string, string>>): string | undefined => {
       const folder = join("deploy", app.deployable, shell);
@@ -162,5 +178,5 @@ export async function shellTargets(
       Object.keys(shells[shell]?.files(app) ?? {}).map((p) => `deploy/${app.deployable}/${shell}/${p}`),
     ),
   );
-  return { targets, shells, apps: all, paths, diags };
+  return { targets, shells, apps: all, paths, topology, needs, diags };
 }

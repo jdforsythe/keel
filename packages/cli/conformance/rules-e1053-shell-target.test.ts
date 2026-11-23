@@ -9,6 +9,7 @@ const target = {
   platforms: [],
   files: () => ({}),
   tools: () => [],
+  plugins: () => [],
   build: () => ({ artifact: "x" }),
   ci: () => [],
 };

@@ -3,7 +3,8 @@ import type { ShellTarget } from "./ShellTarget.ts";
 
 /**
  * A shell build after its checks pass (k.shell Build 1-3): the shell and its registered target, `--platform`,
- * `--release`, the build's `KEEL_ORIGIN` origin, and the app of each `client` deployable declaring the shell.
+ * `--release`, the build's `KEEL_ORIGIN` origin, the app of each `client` deployable declaring the shell, and per
+ * deployable its `connect` origins (k.shell Origins).
  */
 export type ShellPlan = {
   readonly target: "capacitor" | "tauri";
@@ -12,4 +13,5 @@ export type ShellPlan = {
   readonly release: boolean;
   readonly origin: string;
   readonly apps: readonly ShellApp[];
+  readonly connect: Readonly<Record<string, readonly string[]>>;
 };

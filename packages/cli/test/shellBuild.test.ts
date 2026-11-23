@@ -36,6 +36,7 @@ function stub(answer: (at: ShellBuild) => { artifact: string } | { error: string
     platforms: [],
     files: () => ({}),
     tools: () => [],
+    plugins: () => [],
     build: (at) => {
       calls.push(at);
       return answer(at);
@@ -51,6 +52,7 @@ const plan = (target: ShellTarget, apps: readonly string[] = ["web"]): ShellPlan
   release: false,
   origin: "https://app.example.com",
   apps: apps.map(app),
+  connect: { web: ["https://api.example"] },
 });
 
 /** The fake `npx`: `vite build` records its environment and writes the shell entry's page for the deployable it names. */
@@ -109,6 +111,7 @@ describe.skipIf(process.platform === "win32")("shellBuild", () => {
       root,
       dir: join(root, "dist/web/tauri"),
       origin: "https://app.example.com",
+      connect: ["https://api.example"],
       platform: "x",
       release: true,
     });
@@ -129,6 +132,7 @@ describe.skipIf(process.platform === "win32")("shellBuild", () => {
     const r = shellBuild(root, plan(target, ["web", "desk"]));
     expect(r.artifacts).toEqual(["art-web", "art-desk"]);
     expect(calls.map((c) => c.deployable)).toEqual(["web", "desk"]);
+    expect(calls.map((c) => c.connect)).toEqual([["https://api.example"], []]);
     expect(readFileSync(join(root, "vite-env.txt"), "utf8")).toBe(
       "web tauri https://app.example.com production\ndesk tauri https://app.example.com production\n",
     );

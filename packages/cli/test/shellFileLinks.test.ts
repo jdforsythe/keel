@@ -39,7 +39,7 @@ function project(files: Record<string, string>): { root: string; project: { path
   );
   writeFileSync(
     join(pkg, "tools.js"),
-    `import { shellTarget } from ${JSON.stringify(REGISTER)};\nshellTarget("tauri", { platforms: [], files: () => (${JSON.stringify(files)}), tools: () => [], build: () => ({ artifact: "x" }), ci: () => [] });\n`,
+    `import { shellTarget } from ${JSON.stringify(REGISTER)};\nshellTarget("tauri", { platforms: [], files: () => (${JSON.stringify(files)}), tools: () => [], plugins: () => [], build: () => ({ artifact: "x" }), ci: () => [] });\n`,
   );
   writeFileSync(join(root, "package.json"), JSON.stringify({ name: "fx", version: "1.0.0", type: "module" }));
   return { root, project: [{ path: "topology.ts", source: TOPOLOGY }] };

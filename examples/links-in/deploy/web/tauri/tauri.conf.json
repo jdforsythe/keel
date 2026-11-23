@@ -21,6 +21,9 @@
       "desktop": {
         "schemes": ["dev.keel.linksin"]
       }
+    },
+    "http": {
+      "scopeRedirects": true
     }
   }
 }

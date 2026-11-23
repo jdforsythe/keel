@@ -25,7 +25,7 @@ describe("std.shells: the global fetch stays unpatched", () => {
           ? { status: 200, headers: { "set-cookie": "sid=1; Path=/" } }
           : { status: 200, body: "ok" },
       );
-      const { storage, net } = tauriDrivers({ origin: ORIGIN });
+      const { storage, net } = tauriDrivers({ origin: ORIGIN, connect: [OTHER] });
       expect(globalThis.fetch).toBe(guard);
       await storage.set("k", "v");
       await storage.get("k");

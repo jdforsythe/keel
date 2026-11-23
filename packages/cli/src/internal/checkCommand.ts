@@ -21,7 +21,8 @@ import { summary } from "./summary.ts";
  * `--base <surface.json>` hands the deployed surface to the k.compat pass (E1562); no usable surface there is W1568.
  * E1559 (one path in two deployables) and E1558 (server-only route work a `client` or `static` deployable serves) come
  * from `pathCollisions` and `serverOnlyCalls`, the functions `keel build` calls; E1579 for a route under the identity
- * source's `handle.path`, from `identityDiags`. Each declared shell's target loads first (`shellTargets`: E1159, E1585).
+ * source's `handle.path`, from `identityDiags`. Each declared shell's target loads first (`shellTargets`: E1159, E1585),
+ * and each plugin it names that `package.json` lacks is one E1572, once per plugin (k.shell Plugins).
  * W1356 for a stale agent file, where `AGENTS.md` holds the Keel block.
  */
 export async function checkCommand(input: Input, io: Io): Promise<OutRecord[]> {
@@ -43,6 +44,7 @@ export async function checkCommand(input: Input, io: Io): Promise<OutRecord[]> {
     ...checked,
     ...paths,
     ...loaded.diags,
+    ...loaded.needs.filter((n, i, all) => all.findIndex((x) => x.plugin === n.plugin) === i).map((n) => n.diag),
     ...deployFreshness(project, policy, loaded.shells),
     ...(await agentDrift(project)),
   ];

@@ -1,4 +1,5 @@
 import { isAbsolute, join } from "node:path";
+import { shellConnect } from "@keel/compiler/hosting/shellConnect";
 import type { Diag } from "../internal/Diag.ts";
 import { makeDiag } from "../internal/makeDiag.ts";
 import type { shellTargets } from "../internal/shellTargets.ts";
@@ -14,7 +15,8 @@ const NO_PROBE: Probe = { run: () => undefined, exists: () => false, platform: "
  * (`loaded`: E1159, E1585), a `client` deployable declares the shell (E1052), `--platform` is one of the target's
  * `platforms`, and given when it has some (E1052); `KEEL_ORIGIN` is valid (E1574, naming the key and no value); the
  * target's `tools` over `probe` (a relative path read from `cwd`; none given: nothing runs or exists), each entry one
- * E1575. With no diagnostic, the plan, one app per declaring deployable from `loaded`'s apps.
+ * E1575, with the E1572 of each plugin the shell's apps lack (`loaded.needs`). With no diagnostic, the plan, one app
+ * per declaring deployable from `loaded`'s apps, each with its `connect` origins (`shellConnect` over `env`).
  */
 export function shellPlan(
   input: Input,
@@ -49,9 +51,15 @@ export function shellPlan(
       makeDiag("E1574", "KEEL_ORIGIN must be an https: origin (http: on localhost only)", { see: "k.shell" }),
     );
   const at: Probe = { ...probe, exists: (path) => probe.exists(isAbsolute(path) ? path : join(cwd, path)) };
-  const diags = shell
-    .tools({ platform: p, env, probe: at })
-    .map((t) => makeDiag("E1575", `${t.tool} missing or too old: needs ${t.need}`, { see: "k.shell" }));
+  const diags = [
+    ...shell
+      .tools({ platform: p, env, probe: at })
+      .map((t) => makeDiag("E1575", `${t.tool} missing or too old: needs ${t.need}`, { see: "k.shell" })),
+    ...loaded.needs.filter((n) => n.shell === target).map((n) => n.diag),
+  ];
   if (diags.length > 0) return { diags, plan: undefined };
-  return { diags: [], plan: { target, shell, platform: p, release: input.release === true, origin, apps } };
+  const connect = Object.fromEntries(
+    apps.map((a) => [a.deployable, shellConnect(loaded.topology, a.deployable, env, origin)]),
+  );
+  return { diags: [], plan: { target, shell, platform: p, release: input.release === true, origin, apps, connect } };
 }
