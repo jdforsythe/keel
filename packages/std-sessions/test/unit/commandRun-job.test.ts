@@ -13,7 +13,9 @@ import { toTest } from "../../src/toTest.ts";
 
 vi.mock("../../src/internal/runJob.ts", () => ({ runJob: vi.fn() }));
 const job = vi.mocked(runJob);
-beforeEach(() => job.mockReset());
+beforeEach(() => {
+  job.mockReset();
+});
 
 const FP = "7f3a9c01d2e4";
 const F = "sessions/a.json";
