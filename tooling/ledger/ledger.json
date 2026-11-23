@@ -3,7 +3,7 @@
   "unsafe": 18,
   "hostElements": 0,
   "rungs": {
-    "example": 1897,
+    "example": 1904,
     "probabilistic": 348,
     "exhaustive": 16,
     "proven": 75,
@@ -21,12 +21,12 @@
         "justified": 0
       },
       "cli": {
-        "score": 72.01,
-        "scoreJustified": 72.01,
+        "score": 72.64,
+        "scoreJustified": 72.64,
         "threshold": 70,
-        "killed": 8584,
-        "survived": 2372,
-        "noCoverage": 965,
+        "killed": 8211,
+        "survived": 2245,
+        "noCoverage": 847,
         "justified": 0
       },
       "compiler": {
@@ -84,12 +84,12 @@
         "justified": 0
       },
       "scaffold": {
-        "score": 78.83,
-        "scoreJustified": 78.83,
+        "score": 78.75,
+        "scoreJustified": 78.75,
         "threshold": 70,
-        "killed": 3399,
-        "survived": 720,
-        "noCoverage": 193,
+        "killed": 2990,
+        "survived": 635,
+        "noCoverage": 172,
         "justified": 0
       },
       "schema": {
@@ -23033,6 +23033,34 @@
     },
     {
       "item": "k.scaffold#15",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold#16",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold#17",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold#18",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold#19",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold#20",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold#21",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold#22",
       "rung": "example"
     },
     {
