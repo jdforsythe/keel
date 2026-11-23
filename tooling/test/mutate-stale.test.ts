@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { chunkPlan, endLine, leftLine, listLine, positive, staleFiles } from "../mutate-stale-plan.mjs";
+import { chunkPlan, endLine, leftLine, listLine, positive, reportClaims, staleFiles } from "../mutate-stale-plan.mjs";
 import { mutationUnits, unitDir } from "../mutate-units.mjs";
 
 const shas = new Map([
@@ -32,6 +32,41 @@ describe("staleFiles", () => {
   });
   it("ignores claims of files no longer on disk", () => {
     expect(staleFiles([{ file: "packages/a/src/gone.ts", sha: "1" }], new Map(), ["a"])).toEqual([]);
+  });
+});
+
+describe("staleFiles with inert files", () => {
+  it("leaves out a file with no mutant to run, missing or stale", () => {
+    const claims = [{ file: "packages/a/src/y.ts", sha: "old" }];
+    expect(staleFiles(claims, shas, ["a"], new Set(["packages/a/src/x.ts", "packages/a/src/y.ts"]))).toEqual([]);
+    expect(staleFiles(claims, shas, ["a"], new Set(["packages/a/src/x.ts"]))).toEqual([
+      { pkg: "a", stale: ["src/y.ts"], missing: [] },
+    ]);
+  });
+});
+
+describe("reportClaims", () => {
+  const hash = (text: string) => `h:${text}`;
+  const report = {
+    files: {
+      "src/x.ts": { source: "X", mutants: [{ status: "Ignored" }, { status: "Killed" }] },
+      "src/y.ts": { source: "Y", mutants: [{ status: "Ignored" }] },
+      "src/z.ts": { source: "Z", mutants: [] },
+      "src/bad.ts": { mutants: [{ status: "Killed" }] },
+    },
+  };
+  it("claims a file with a scored mutant by the sha of the source the report holds, and sets the others aside", () => {
+    expect(reportClaims("packages/a", report, hash)).toEqual({
+      claims: [{ file: "packages/a/src/x.ts", sha: "h:X" }],
+      inert: [
+        { file: "packages/a/src/y.ts", sha: "h:Y" },
+        { file: "packages/a/src/z.ts", sha: "h:Z" },
+      ],
+    });
+  });
+  it("reads a report without files as holding nothing", () => {
+    expect(reportClaims("packages/a", {}, hash)).toEqual({ claims: [], inert: [] });
+    expect(reportClaims("packages/a", undefined, hash)).toEqual({ claims: [], inert: [] });
   });
 });
 
