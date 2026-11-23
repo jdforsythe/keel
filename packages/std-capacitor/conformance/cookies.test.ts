@@ -35,7 +35,7 @@ describe("std.shells: cookies stay in the shell's cookie store", () => {
             ? { status: 200, headers: { "set-cookie": `${name}=${value}; Path=/` } }
             : { status: 200 },
         );
-        const { net } = capacitorDrivers({ origin: ORIGIN });
+        const { net } = capacitorDrivers({ origin: ORIGIN, connect: [OTHER] });
         await net.fetch(new Request(`${ORIGIN.origin}/login`, { method: "POST" }));
         await net.fetch(new Request(`${ORIGIN.origin}/next`));
         await net.fetch(new Request(`${page}/viaPage`));
@@ -61,7 +61,7 @@ describe("std.shells: cookies stay in the shell's cookie store", () => {
             ? { status: 200, headers: { "set-cookie": `${name}=${value}; Path=/` } }
             : { status: 200 },
         );
-        const { net } = capacitorDrivers({ origin: ORIGIN });
+        const { net } = capacitorDrivers({ origin: ORIGIN, connect: [OTHER] });
         await net.fetch(new Request(`${OTHER}/set`));
         await net.fetch(new Request(`${ORIGIN.origin}/next`));
         await net.fetch(new Request(`${OTHER}/again`));

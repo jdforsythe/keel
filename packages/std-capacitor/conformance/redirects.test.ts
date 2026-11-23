@@ -3,8 +3,8 @@
 // Spec: std.shells, Conformance "With `redirect: 'error'`, a 302 rejects with a `TypeError` after one native request."
 // Seed: 1337. This file is the std-capacitor half; the other package has the same file name.
 // @vitest-environment happy-dom
-// Assumption: the stand-in native side (fixtures.ts) follows a 3xx itself unless the driver asks for no redirects (the native client of RFC 0142), so a driver that leaves the following to it puts hops on the wire
-// that bypass its list and drop no `authorization`; the count of native requests is `world.wire.length`, one entry per hop the native side sent.
+// Assumption: the stand-in native side (fixtures.ts) follows no redirect, as `KeelHttp` does (std.shells); the driver does, so every hop is one native request and `world.wire.length` counts them.
+// `world.follows` holds, per native request, whether the call asked the native client to follow; "neither asking the native client to follow" is every entry false.
 import { capacitorDrivers } from "@keel/std-capacitor";
 import fc from "fast-check";
 import { afterEach, describe, expect, test, vi } from "vitest";
@@ -43,6 +43,7 @@ describe("std.shells: redirects the driver follows", () => {
         expect(await res.text()).toBe("done");
         expect(world.wire.map((w) => w.url)).toEqual([`${SELF}/${a}x`, `${SELF}/${b}y`]);
         expect(world.ids).toHaveLength(2);
+        expect(world.follows).toEqual([false, false]);
         expect(world.cancelled).toEqual([]);
         end();
       }),

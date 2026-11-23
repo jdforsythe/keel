@@ -39,6 +39,8 @@ export interface Native {
   readonly ids: string[];
   /** The `id` of each `cancel` call. */
   readonly cancelled: string[];
+  /** For each request, whether the call asked the native client to follow redirects. */
+  readonly follows: boolean[];
   readonly jar: Map<string, Map<string, string>>;
   backend: Backend;
   refuse: boolean;
@@ -51,6 +53,7 @@ export const native: Native = {
   wire: [],
   ids: [],
   cancelled: [],
+  follows: [],
   jar: new Map(),
   backend: ok,
   refuse: false,
@@ -58,6 +61,7 @@ export const native: Native = {
     this.wire.length = 0;
     this.ids.length = 0;
     this.cancelled.length = 0;
+    this.follows.length = 0;
     this.jar.clear();
     this.backend = ok;
     this.refuse = false;
@@ -126,10 +130,15 @@ const request = async (o: unknown): Promise<{ status: number; headers: Record<st
   const headers: Record<string, string> = {};
   for (const [k, v] of Object.entries(Object(field(o, "headers")))) headers[k.toLowerCase()] = text(v);
   const data = field(o, "data");
-  // The native client follows a 3xx with a `location` as GET (up to 10 hops) unless the call is manual (RFC 0142).
-  // Assumption: manual is spelled `redirect: 'manual'` on the `request` call; `followRedirects: false` and `maxRedirections: 0` are read the same, since the spec fixes the behavior, not the call shape.
-  const manual =
-    field(o, "redirect") === "manual" || field(o, "followRedirects") === false || field(o, "maxRedirections") === 0;
+  // The native client follows no redirect (std.shells, std.capacitor): a 3xx resolves as it came, whatever the call says.
+  // `follows` records whether the call asked it to follow: `redirect: 'follow'`, `followRedirects: true`, `disableRedirects: false`, or `maxRedirections` above 0.
+  const redirectAsk = field(o, "redirect");
+  native.follows.push(
+    redirectAsk === "follow" ||
+      field(o, "followRedirects") === true ||
+      field(o, "disableRedirects") === false ||
+      Number(field(o, "maxRedirections") ?? 0) > 0,
+  );
   let at: Wire = {
     url,
     method: (text(field(o, "method")) || "GET").toUpperCase(),
@@ -138,7 +147,7 @@ const request = async (o: unknown): Promise<{ status: number; headers: Record<st
   };
   native.ids.push(id);
   let reply: Reply = ok(at);
-  for (let hops = 0; ; hops++) {
+  {
     const hopOrigin = new URL(at.url).origin;
     const jar = native.jar.get(hopOrigin);
     const hopHeaders = { ...at.headers };
@@ -155,9 +164,6 @@ const request = async (o: unknown): Promise<{ status: number; headers: Record<st
       jarOf.set(pair.slice(0, eq), pair.slice(eq + 1));
       native.jar.set(hopOrigin, jarOf);
     }
-    const to = lower(reply.headers).location;
-    if (manual || reply.status < 300 || reply.status > 399 || to === undefined || hops >= 10) break;
-    at = { url: new URL(to, at.url).href, method: "GET", headers: {}, body: null };
   }
   gone.delete(id);
   queueMicrotask(() => {
@@ -255,6 +261,8 @@ export interface World {
   readonly ids: string[];
   /** The `id` of each `cancel` call the native plugin got. */
   readonly cancelled: string[];
+  /** For each request, whether the call asked the native client to follow redirects. */
+  readonly follows: boolean[];
   /** An app restart: what the native store keeps survives, the rest is dropped (nothing to drop here: `localStorage` is the store). */
   restart(): void;
   /** Empties the native store between property runs. */
@@ -270,6 +278,7 @@ export function begin(page: string): World {
     jar: native.jar,
     ids: native.ids,
     cancelled: native.cancelled,
+    follows: native.follows,
     backend: (b) => {
       native.backend = b;
     },

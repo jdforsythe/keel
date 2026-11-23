@@ -21,6 +21,7 @@ import { fileURLToPath } from "node:url";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 import { cleanup, materialize } from "./compat-support.ts";
+import { capacitorDeps } from "./plugin-deps.ts";
 
 const SLOW = 300_000;
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -30,7 +31,7 @@ const SEED = 1337;
 
 const manifestSrc = (id: string): string =>
   `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [] } })\n`;
-const PKG = `${JSON.stringify({ name: "fx", private: true, type: "module", version: "1.0.0", dependencies: { "@keel/std-capacitor": "workspace:*" }, devDependencies: { "@capacitor/cli": "8.0.0" } })}\n`;
+const PKG = `${JSON.stringify({ name: "fx", private: true, type: "module", version: "1.0.0", dependencies: capacitorDeps(), devDependencies: { "@capacitor/cli": "8.0.0" } })}\n`;
 const files = (id: string): Record<string, string> => ({
   "package.json": PKG,
   "vite.config.ts":

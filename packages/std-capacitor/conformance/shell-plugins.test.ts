@@ -184,7 +184,7 @@ describe("std.capacitor: KeelHttp allow list and plugins", () => {
       fc.assert(
         fc.property(fc.uniqueArray(fc.constantFrom("a", "b", "c", "d"), { maxLength: 3 }), (hosts) => {
           const dir = made({
-            origins: hosts.length === 0 ? undefined : declared(hosts),
+            ...(hosts.length === 0 ? {} : { origins: declared(hosts) }),
             deps: listed(...Object.keys(NEEDS)),
           });
           expect(buildAndroid(dir)).toBe(0);

@@ -200,7 +200,7 @@ describe("std.tauri: redirect scope, plugin crates and the http permission", () 
     () => {
       fc.assert(
         fc.property(fc.uniqueArray(fc.constantFrom("a", "b", "c", "d"), { maxLength: 3 }), (hosts) => {
-          const dir = made({ origins: hosts.length === 0 ? undefined : declared(hosts) });
+          const dir = made(hosts.length === 0 ? {} : { origins: declared(hosts) });
           expect(buildTarget(dir, SELF)).toBe(0);
           const urls = strings(
             JSON.parse(readFileSync(join(dir, "dist", "web", "tauri", "capabilities", "http.json"), "utf8")),
