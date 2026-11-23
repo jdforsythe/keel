@@ -20,7 +20,7 @@ const TOPOLOGY = {
 };
 const REGISTER = pathToFileURL(join(import.meta.dirname, "../src/shellTarget.ts")).href;
 const target = (file: string): string =>
-  `{ platforms: [], files: () => ({ ${JSON.stringify(file)}: "{}" }), tools: () => [], build: () => ({ artifact: "x" }), ci: () => [] }`;
+  `{ platforms: [], files: () => ({ ${JSON.stringify(file)}: "{}" }), tools: () => [], plugins: () => [], build: () => ({ artifact: "x" }), ci: () => [] }`;
 
 /**
  * A project whose stub `@keel/std-tauri/tools` runs `body`. The package folder is linked into `node_modules`, so its
