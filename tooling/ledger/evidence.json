@@ -1,5 +1,5 @@
 {
-  "commit": "106d604caa714b6b495123f7f724d32b3fbdcff5",
+  "commit": "fb2924719efd306e76481ad58999df3ef6b0cbd6",
   "coverage": {
     "packages": {
       "apps/golden-1": {
@@ -1168,26 +1168,26 @@
       }
     }
   },
-  "generatedAt": "2026-11-22T20:41:18.937Z",
+  "generatedAt": "2026-11-23T00:53:39.178Z",
   "ledger": {
     "a11y": {
       "byRung": {
-        "example": 364,
+        "example": 396,
         "exhaustive": 0,
         "monitored": 0,
-        "none": 596,
+        "none": 604,
         "probabilistic": 0,
         "proven": 0
       },
-      "total": 960,
-      "verified": 364
+      "total": 1000,
+      "verified": 396
     },
     "clauses": {
       "byRung": {
-        "example": 882,
+        "example": 910,
         "exhaustive": 6,
         "monitored": 0,
-        "none": 13,
+        "none": 9,
         "probabilistic": 175,
         "proven": 38
       },
@@ -1207,7 +1207,7 @@
         },
         "k.a11y": {
           "byRung": {
-            "example": 12,
+            "example": 13,
             "exhaustive": 0,
             "monitored": 0,
             "none": 1,
@@ -1215,8 +1215,8 @@
             "proven": 0
           },
           "status": "implemented",
-          "total": 14,
-          "verified": 13
+          "total": 15,
+          "verified": 14
         },
         "k.api": {
           "byRung": {
@@ -1493,7 +1493,7 @@
         },
         "k.forms": {
           "byRung": {
-            "example": 13,
+            "example": 14,
             "exhaustive": 0,
             "monitored": 0,
             "none": 0,
@@ -1501,21 +1501,21 @@
             "proven": 1
           },
           "status": "conformance-covered",
-          "total": 16,
-          "verified": 16
+          "total": 17,
+          "verified": 17
         },
         "k.guards": {
           "byRung": {
-            "example": 3,
+            "example": 7,
             "exhaustive": 0,
             "monitored": 0,
-            "none": 4,
+            "none": 0,
             "probabilistic": 1,
             "proven": 0
           },
-          "status": "implemented",
+          "status": "conformance-covered",
           "total": 8,
-          "verified": 4
+          "verified": 8
         },
         "k.head": {
           "byRung": {
@@ -1597,7 +1597,7 @@
         },
         "k.ledger": {
           "byRung": {
-            "example": 10,
+            "example": 13,
             "exhaustive": 0,
             "monitored": 0,
             "none": 0,
@@ -1605,8 +1605,8 @@
             "proven": 0
           },
           "status": "conformance-covered",
-          "total": 12,
-          "verified": 12
+          "total": 15,
+          "verified": 15
         },
         "k.links": {
           "byRung": {
@@ -1649,7 +1649,7 @@
         },
         "k.mount": {
           "byRung": {
-            "example": 8,
+            "example": 9,
             "exhaustive": 0,
             "monitored": 0,
             "none": 0,
@@ -1657,8 +1657,8 @@
             "proven": 1
           },
           "status": "conformance-covered",
-          "total": 10,
-          "verified": 10
+          "total": 11,
+          "verified": 11
         },
         "k.mount-scope": {
           "byRung": {
@@ -2000,7 +2000,7 @@
         },
         "k.services": {
           "byRung": {
-            "example": 3,
+            "example": 7,
             "exhaustive": 0,
             "monitored": 0,
             "none": 0,
@@ -2008,8 +2008,8 @@
             "proven": 1
           },
           "status": "conformance-covered",
-          "total": 12,
-          "verified": 12
+          "total": 16,
+          "verified": 16
         },
         "k.shell": {
           "byRung": {
@@ -2091,20 +2091,20 @@
         },
         "k.ui": {
           "byRung": {
-            "example": 10,
+            "example": 17,
             "exhaustive": 0,
             "monitored": 0,
             "none": 0,
             "probabilistic": 2,
             "proven": 4
           },
-          "status": "conformance-covered",
-          "total": 16,
-          "verified": 16
+          "status": "implemented",
+          "total": 23,
+          "verified": 23
         },
         "k.user": {
           "byRung": {
-            "example": 13,
+            "example": 14,
             "exhaustive": 0,
             "monitored": 0,
             "none": 0,
@@ -2112,8 +2112,8 @@
             "proven": 0
           },
           "status": "conformance-covered",
-          "total": 13,
-          "verified": 13
+          "total": 14,
+          "verified": 14
         },
         "std.brands": {
           "byRung": {
@@ -2143,7 +2143,7 @@
         },
         "std.channels": {
           "byRung": {
-            "example": 15,
+            "example": 18,
             "exhaustive": 0,
             "monitored": 0,
             "none": 0,
@@ -2151,8 +2151,8 @@
             "proven": 0
           },
           "status": "conformance-covered",
-          "total": 15,
-          "verified": 15
+          "total": 18,
+          "verified": 18
         },
         "std.conflicts": {
           "byRung": {
@@ -2286,7 +2286,7 @@
         },
         "std.live": {
           "byRung": {
-            "example": 11,
+            "example": 14,
             "exhaustive": 0,
             "monitored": 0,
             "none": 0,
@@ -2294,8 +2294,8 @@
             "proven": 0
           },
           "status": "conformance-covered",
-          "total": 11,
-          "verified": 11
+          "total": 14,
+          "verified": 14
         },
         "std.messages": {
           "byRung": {
@@ -2571,14 +2571,14 @@
           "verified": 8
         }
       },
-      "total": 1114,
-      "verified": 1101
+      "total": 1138,
+      "verified": 1129
     },
     "evidenceByRung": {
-      "example": 1783,
+      "example": 1844,
       "exhaustive": 16,
       "monitored": 8,
-      "probabilistic": 342,
+      "probabilistic": 343,
       "proven": 75
     },
     "exports": {
@@ -2586,8 +2586,8 @@
         "example": 254,
         "exhaustive": 2,
         "monitored": 0,
-        "none": 163,
-        "probabilistic": 134,
+        "none": 162,
+        "probabilistic": 135,
         "proven": 37
       },
       "packages": {
@@ -2620,12 +2620,12 @@
             "example": 6,
             "exhaustive": 0,
             "monitored": 0,
-            "none": 1,
-            "probabilistic": 4,
+            "none": 0,
+            "probabilistic": 5,
             "proven": 0
           },
           "total": 11,
-          "verified": 10
+          "verified": 11
         },
         "ctx": {
           "byRung": {
@@ -3133,384 +3133,476 @@
         }
       },
       "total": 590,
-      "verified": 427
+      "verified": 428
     },
-    "items": 2664,
+    "items": 2728,
     "unsafe": 18,
-    "verified": 1892
+    "verified": 1953
   },
   "mutation": {
     "packages": {
       "apps/golden-1": {
         "claims": 0,
+        "justified": null,
         "reason": "no mutation run",
         "reportDate": null,
         "score": null,
+        "scoreJustified": null,
         "stale": null,
         "threshold": null
       },
       "apps/golden-2": {
         "claims": 0,
+        "justified": null,
         "reason": "no mutation run",
         "reportDate": null,
         "score": null,
+        "scoreJustified": null,
         "stale": null,
         "threshold": null
       },
       "apps/household": {
         "claims": 0,
+        "justified": null,
         "reason": "no mutation run",
         "reportDate": null,
         "score": null,
+        "scoreJustified": null,
         "stale": null,
         "threshold": null
       },
       "apps/inspector": {
         "claims": 0,
+        "justified": null,
         "reason": "no mutation run",
         "reportDate": null,
         "score": null,
+        "scoreJustified": null,
         "stale": null,
         "threshold": null
       },
       "apps/sessions": {
         "claims": 0,
+        "justified": null,
         "reason": "no mutation run",
         "reportDate": null,
         "score": null,
+        "scoreJustified": null,
         "stale": null,
         "threshold": null
       },
       "packages/check": {
         "claims": 125,
+        "justified": 0,
         "reason": null,
         "reportDate": "2026-11-19",
-        "score": 73.58,
-        "stale": 27,
+        "score": 73.81,
+        "scoreJustified": 73.81,
+        "stale": 28,
         "threshold": 70
       },
       "packages/cli": {
         "claims": 141,
+        "justified": 0,
         "reason": null,
         "reportDate": "2026-11-19",
-        "score": 80.34,
-        "stale": 50,
+        "score": 80.42,
+        "scoreJustified": 80.42,
+        "stale": 51,
         "threshold": 70
       },
       "packages/compiler": {
         "claims": 157,
+        "justified": 0,
         "reason": null,
-        "reportDate": "2026-11-19",
-        "score": 71.37,
+        "reportDate": "2026-11-23",
+        "score": 73.63,
+        "scoreJustified": 73.63,
         "stale": 0,
         "threshold": 70
       },
       "packages/ctx": {
         "claims": 40,
+        "justified": 0,
         "reason": null,
-        "reportDate": "2026-11-18",
-        "score": 75.74,
-        "stale": 1,
+        "reportDate": "2026-11-22",
+        "score": 76.23,
+        "scoreJustified": 76.23,
+        "stale": 0,
         "threshold": 70
       },
       "packages/forms": {
         "claims": 28,
+        "justified": 0,
         "reason": null,
-        "reportDate": "2026-11-19",
-        "score": 88.33,
-        "stale": 2,
+        "reportDate": "2026-11-22",
+        "score": 85.62,
+        "scoreJustified": 85.62,
+        "stale": 0,
         "threshold": 70
       },
       "packages/reactive": {
         "claims": 23,
+        "justified": 0,
         "reason": null,
         "reportDate": "2026-11-17",
         "score": 86.22,
+        "scoreJustified": 86.22,
         "stale": 0,
         "threshold": 80
       },
       "packages/router": {
         "claims": 59,
+        "justified": 0,
         "reason": null,
         "reportDate": "2026-11-19",
         "score": 85.85,
+        "scoreJustified": 85.85,
         "stale": 21,
         "threshold": 80
       },
       "packages/runtime-dom": {
         "claims": 68,
+        "justified": 0,
         "reason": null,
-        "reportDate": "2026-11-19",
-        "score": 75.27,
-        "stale": 8,
+        "reportDate": "2026-11-22",
+        "score": 75.36,
+        "scoreJustified": 75.36,
+        "stale": 0,
         "threshold": 70
       },
       "packages/scaffold": {
         "claims": 103,
+        "justified": 0,
         "reason": null,
         "reportDate": "2026-11-19",
         "score": 80.38,
+        "scoreJustified": 80.38,
         "stale": 30,
         "threshold": 70
       },
       "packages/schema": {
         "claims": 39,
+        "justified": 0,
         "reason": null,
-        "reportDate": "2026-11-18",
-        "score": 92.68,
-        "stale": 11,
+        "reportDate": "2026-11-22",
+        "score": 91.14,
+        "scoreJustified": 91.14,
+        "stale": 0,
         "threshold": 80
       },
       "packages/server": {
         "claims": 142,
+        "justified": 0,
         "reason": null,
         "reportDate": "2026-11-19",
-        "score": 80.92,
-        "stale": 1,
+        "score": 75.6,
+        "scoreJustified": 75.6,
+        "stale": 29,
         "threshold": 70
       },
       "packages/services": {
         "claims": 35,
+        "justified": 0,
         "reason": null,
         "reportDate": "2026-11-19",
         "score": 84.73,
+        "scoreJustified": 84.73,
         "stale": 9,
         "threshold": 70
       },
       "packages/std-brands": {
         "claims": 4,
+        "justified": 0,
         "reason": null,
         "reportDate": "2026-11-19",
         "score": 84.24,
+        "scoreJustified": 84.24,
         "stale": 0,
         "threshold": 70
       },
       "packages/std-capacitor": {
         "claims": 8,
+        "justified": 0,
         "reason": null,
-        "reportDate": "2026-11-19",
-        "score": 86.11,
-        "stale": 1,
+        "reportDate": "2026-11-22",
+        "score": 83.87,
+        "scoreJustified": 83.87,
+        "stale": 0,
         "threshold": 70
       },
       "packages/std-channels": {
         "claims": 22,
+        "justified": 0,
         "reason": null,
-        "reportDate": "2026-11-19",
-        "score": 82.1,
+        "reportDate": "2026-11-22",
+        "score": 81.73,
+        "scoreJustified": 81.73,
         "stale": 0,
         "threshold": 70
       },
       "packages/std-conflicts": {
         "claims": 11,
+        "justified": 0,
         "reason": null,
-        "reportDate": "2026-11-19",
+        "reportDate": "2026-11-22",
         "score": 77.41,
+        "scoreJustified": 77.41,
         "stale": 1,
         "threshold": 70
       },
       "packages/std-db": {
         "claims": 8,
+        "justified": 0,
         "reason": null,
-        "reportDate": "2026-11-19",
-        "score": 96.49,
-        "stale": 1,
+        "reportDate": "2026-11-22",
+        "score": 97.59,
+        "scoreJustified": 97.59,
+        "stale": 0,
         "threshold": 70
       },
       "packages/std-geo": {
         "claims": 4,
+        "justified": 0,
         "reason": null,
         "reportDate": "2026-11-19",
         "score": 100,
+        "scoreJustified": 100,
         "stale": 0,
         "threshold": 70
       },
       "packages/std-headless": {
         "claims": 14,
+        "justified": 0,
         "reason": null,
-        "reportDate": "2026-11-19",
-        "score": 77.55,
-        "stale": 7,
+        "reportDate": "2026-11-22",
+        "score": 78.77,
+        "scoreJustified": 78.77,
+        "stale": 0,
         "threshold": 70
       },
       "packages/std-health": {
         "claims": 4,
+        "justified": 0,
         "reason": null,
-        "reportDate": "2026-11-19",
+        "reportDate": "2026-11-22",
         "score": 100,
-        "stale": 2,
+        "scoreJustified": 100,
+        "stale": 0,
         "threshold": 70
       },
       "packages/std-i18n": {
         "claims": 9,
+        "justified": 0,
         "reason": null,
-        "reportDate": "2026-11-19",
-        "score": 71.91,
-        "stale": 1,
+        "reportDate": "2026-11-22",
+        "score": 76.22,
+        "scoreJustified": 76.22,
+        "stale": 0,
         "threshold": 70
       },
       "packages/std-jobs": {
         "claims": 30,
+        "justified": 0,
         "reason": null,
-        "reportDate": "2026-11-19",
-        "score": 85.19,
-        "stale": 1,
+        "reportDate": "2026-11-22",
+        "score": 85.5,
+        "scoreJustified": 85.5,
+        "stale": 0,
         "threshold": 70
       },
       "packages/std-live": {
         "claims": 1,
+        "justified": 0,
         "reason": null,
         "reportDate": "2026-11-22",
-        "score": 88.1,
+        "score": 94.26,
+        "scoreJustified": 94.26,
         "stale": 0,
         "threshold": 70
       },
       "packages/std-messages": {
         "claims": 35,
+        "justified": 0,
         "reason": null,
         "reportDate": "2026-11-19",
         "score": 92.47,
+        "scoreJustified": 92.47,
         "stale": 0,
         "threshold": 70
       },
       "packages/std-money": {
         "claims": 2,
+        "justified": 0,
         "reason": null,
         "reportDate": "2026-11-19",
         "score": 92.16,
+        "scoreJustified": 92.16,
         "stale": 0,
         "threshold": 70
       },
       "packages/std-offline": {
         "claims": 20,
+        "justified": 0,
         "reason": null,
-        "reportDate": "2026-11-19",
-        "score": 70.09,
-        "stale": 12,
+        "reportDate": "2026-11-22",
+        "score": 79.72,
+        "scoreJustified": 79.72,
+        "stale": 0,
         "threshold": 70
       },
       "packages/std-postgres": {
         "claims": 49,
+        "justified": 0,
         "reason": null,
         "reportDate": null,
         "score": 88.23,
+        "scoreJustified": 88.23,
         "stale": 0,
         "threshold": 70
       },
       "packages/std-report": {
         "claims": 2,
+        "justified": 0,
         "reason": null,
         "reportDate": "2026-11-19",
         "score": 81.48,
+        "scoreJustified": 81.48,
         "stale": 1,
         "threshold": 70
       },
       "packages/std-schedules": {
         "claims": 12,
+        "justified": 0,
         "reason": null,
         "reportDate": "2026-11-19",
         "score": 81.43,
+        "scoreJustified": 81.43,
         "stale": 0,
         "threshold": 70
       },
       "packages/std-sessions": {
         "claims": 0,
+        "justified": null,
         "reason": "no mutation run",
         "reportDate": null,
         "score": null,
+        "scoreJustified": null,
         "stale": null,
         "threshold": null
       },
       "packages/std-statecharts": {
         "claims": 17,
+        "justified": 0,
         "reason": null,
         "reportDate": "2026-11-19",
         "score": 75.17,
+        "scoreJustified": 75.17,
         "stale": 0,
         "threshold": 70
       },
       "packages/std-tables": {
         "claims": 14,
+        "justified": 0,
         "reason": null,
-        "reportDate": "2026-11-19",
-        "score": 70.66,
-        "stale": 1,
+        "reportDate": "2026-11-22",
+        "score": 70.96,
+        "scoreJustified": 70.96,
+        "stale": 0,
         "threshold": 70
       },
       "packages/std-tauri": {
         "claims": 9,
+        "justified": 0,
         "reason": null,
-        "reportDate": "2026-11-19",
-        "score": 80,
-        "stale": 1,
+        "reportDate": "2026-11-22",
+        "score": 77.87,
+        "scoreJustified": 77.87,
+        "stale": 0,
         "threshold": 70
       },
       "packages/std-temporal": {
         "claims": 18,
+        "justified": 0,
         "reason": null,
         "reportDate": "2026-11-19",
         "score": 89.19,
+        "scoreJustified": 89.19,
         "stale": 0,
         "threshold": 70
       },
       "packages/std-text": {
         "claims": 11,
+        "justified": 0,
         "reason": null,
         "reportDate": "2026-11-19",
         "score": 85.12,
+        "scoreJustified": 85.12,
         "stale": 0,
         "threshold": 70
       },
       "packages/std-timings": {
         "claims": 5,
+        "justified": 0,
         "reason": null,
         "reportDate": "2026-11-19",
         "score": 92.06,
+        "scoreJustified": 92.06,
         "stale": 0,
         "threshold": 70
       },
       "packages/std-tokens": {
         "claims": 14,
+        "justified": 0,
         "reason": null,
-        "reportDate": "2026-11-19",
-        "score": 76.1,
-        "stale": 1,
+        "reportDate": "2026-11-22",
+        "score": 81.73,
+        "scoreJustified": 81.73,
+        "stale": 0,
         "threshold": 70
       },
       "packages/std-workflows": {
         "claims": 25,
+        "justified": 0,
         "reason": null,
-        "reportDate": "2026-11-19",
-        "score": 72.23,
-        "stale": 2,
+        "reportDate": "2026-11-22",
+        "score": 74.12,
+        "scoreJustified": 74.12,
+        "stale": 0,
         "threshold": 70
       },
       "packages/store": {
         "claims": 29,
+        "justified": 0,
         "reason": null,
         "reportDate": "2026-11-18",
-        "score": 91.2,
-        "stale": 0,
+        "score": 89.58,
+        "scoreJustified": 89.58,
+        "stale": 2,
         "threshold": 80
       },
       "packages/testing": {
         "claims": 82,
+        "justified": 0,
         "reason": null,
         "reportDate": "2026-11-19",
-        "score": 78.63,
-        "stale": 0,
+        "score": 79.47,
+        "scoreJustified": 79.47,
+        "stale": 13,
         "threshold": 70
       },
       "packages/ui": {
         "claims": 42,
+        "justified": 0,
         "reason": null,
         "reportDate": "2026-11-18",
-        "score": 70.74,
-        "stale": 4,
+        "score": 73.19,
+        "scoreJustified": 73.19,
+        "stale": 12,
         "threshold": 70
       }
     },
-    "stale": 196
+    "stale": 197
   },
   "schema": 1,
   "tests": {
@@ -3540,8 +3632,8 @@
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 151,
-        "unitFiles": 21
+        "unitCases": 160,
+        "unitFiles": 22
       },
       "apps/household": {
         "conformanceCases": 0,
@@ -3586,32 +3678,32 @@
         "unitFiles": 7
       },
       "packages/check": {
-        "conformanceCases": 860,
-        "conformanceFiles": 121,
+        "conformanceCases": 881,
+        "conformanceFiles": 123,
         "exploreFiles": 0,
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 247,
+        "propertyCalls": 250,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 422,
-        "unitFiles": 62
+        "unitCases": 435,
+        "unitFiles": 64
       },
       "packages/cli": {
-        "conformanceCases": 491,
-        "conformanceFiles": 166,
+        "conformanceCases": 507,
+        "conformanceFiles": 171,
         "exploreFiles": 0,
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 143,
+        "propertyCalls": 147,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 760,
-        "unitFiles": 98
+        "unitCases": 773,
+        "unitFiles": 102
       },
       "packages/compiler": {
         "conformanceCases": 179,
@@ -3620,12 +3712,12 @@
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 99,
+        "propertyCalls": 105,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 659,
-        "unitFiles": 87
+        "unitCases": 723,
+        "unitFiles": 93
       },
       "packages/ctx": {
         "conformanceCases": 156,
@@ -3670,18 +3762,18 @@
         "unitFiles": 16
       },
       "packages/router": {
-        "conformanceCases": 248,
-        "conformanceFiles": 60,
+        "conformanceCases": 257,
+        "conformanceFiles": 61,
         "exploreFiles": 0,
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 108,
+        "propertyCalls": 111,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 295,
-        "unitFiles": 48
+        "unitCases": 301,
+        "unitFiles": 50
       },
       "packages/runtime-dom": {
         "conformanceCases": 115,
@@ -3698,8 +3790,8 @@
         "unitFiles": 39
       },
       "packages/scaffold": {
-        "conformanceCases": 132,
-        "conformanceFiles": 38,
+        "conformanceCases": 138,
+        "conformanceFiles": 39,
         "exploreFiles": 0,
         "fails": 0,
         "otherCases": 0,
@@ -3726,13 +3818,13 @@
         "unitFiles": 23
       },
       "packages/server": {
-        "conformanceCases": 639,
-        "conformanceFiles": 152,
+        "conformanceCases": 658,
+        "conformanceFiles": 157,
         "exploreFiles": 0,
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 266,
+        "propertyCalls": 270,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
@@ -3740,18 +3832,18 @@
         "unitFiles": 116
       },
       "packages/services": {
-        "conformanceCases": 95,
-        "conformanceFiles": 28,
+        "conformanceCases": 123,
+        "conformanceFiles": 35,
         "exploreFiles": 0,
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 62,
+        "propertyCalls": 75,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 55,
-        "unitFiles": 15
+        "unitCases": 57,
+        "unitFiles": 16
       },
       "packages/std-brands": {
         "conformanceCases": 8,
@@ -3782,18 +3874,18 @@
         "unitFiles": 12
       },
       "packages/std-channels": {
-        "conformanceCases": 54,
-        "conformanceFiles": 17,
+        "conformanceCases": 66,
+        "conformanceFiles": 19,
         "exploreFiles": 0,
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 28,
+        "propertyCalls": 32,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 43,
-        "unitFiles": 17
+        "unitCases": 45,
+        "unitFiles": 18
       },
       "packages/std-conflicts": {
         "conformanceCases": 25,
@@ -3894,18 +3986,18 @@
         "unitFiles": 12
       },
       "packages/std-live": {
-        "conformanceCases": 16,
-        "conformanceFiles": 12,
+        "conformanceCases": 22,
+        "conformanceFiles": 13,
         "exploreFiles": 0,
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 15,
+        "propertyCalls": 17,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 11,
-        "unitFiles": 4
+        "unitCases": 12,
+        "unitFiles": 5
       },
       "packages/std-messages": {
         "conformanceCases": 57,
@@ -4146,13 +4238,13 @@
         "unitFiles": 49
       },
       "packages/ui": {
-        "conformanceCases": 178,
-        "conformanceFiles": 38,
+        "conformanceCases": 213,
+        "conformanceFiles": 45,
         "exploreFiles": 0,
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 62,
+        "propertyCalls": 69,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
@@ -4161,18 +4253,18 @@
       }
     },
     "totals": {
-      "conformanceCases": 5058,
-      "conformanceFiles": 1266,
+      "conformanceCases": 5210,
+      "conformanceFiles": 1297,
       "exploreFiles": 19,
       "fails": 2,
       "otherCases": 0,
       "otherFiles": 0,
-      "propertyCalls": 2335,
+      "propertyCalls": 2381,
       "proveFiles": 23,
       "simulateFiles": 17,
       "skipTodo": 5,
-      "unitCases": 5561,
-      "unitFiles": 964
+      "unitCases": 5671,
+      "unitFiles": 982
     }
   },
   "tool": {
