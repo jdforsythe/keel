@@ -74,6 +74,51 @@ describe("mountSource and mountDiags", () => {
     expect(codes([...base, top(`, servedBy: 'api'${shells}`), page])).toEqual([]);
   });
 
+  it("E1589 at the key of a static deployable or a client one without servedBy, when no file it serves is E1581", () => {
+    const top = (body: string) => ({
+      path: "topology.ts",
+      source: `import { topology } from '@keel/server'\nexport default topology({\n${body}\n})\n`,
+    });
+    const api = "  api: { modules: ['b'], adapter: 'node' },";
+    const at = (body: string, extra: { path: string; source: string }[] = []) =>
+      mountDiags([...base, top(body), ...extra]).map((d) => [d.code, d.path, d.line, d.col, d.message.split(":")[0]]);
+    expect(at(`${api}\n  web: { modules: ['a'], adapter: 'client' },`)).toEqual([
+      ["E1589", "topology.ts", 4, 3, "web (client) has no servedBy"],
+    ]);
+    expect(at(`  'site': { modules: ['a'], adapter: 'static' },\n${api}`)).toEqual([
+      ["E1589", "topology.ts", 3, 3, "site (static) serves no router"],
+    ]);
+    expect(at(`${api}\n  web: { modules: ['a'], adapter: 'client', servedBy: 'api' },`)).toEqual([]);
+    expect(at(api)).toEqual([]);
+    // A shell's key written as a later deployable's does not move the location.
+    const shelled =
+      "  api: { modules: ['b'], adapter: 'node' },\n  app: { modules: ['c'], adapter: 'client', servedBy: 'api', shells: { tauri: { id: 'dev.keel.app', name: 'App' } } },";
+    expect(at(`${shelled}\n  tauri: { modules: ['a'], adapter: 'client' },`)).toEqual([
+      ["E1589", "topology.ts", 5, 3, "tauri (client) has no servedBy"],
+    ]);
+    const page = { path: "modules/a/p.ts", source: USE("mount.href('/x')") };
+    expect(at(`${api}\n  web: { modules: ['a'], adapter: 'client' },`, [page]).map((d) => d[0])).toEqual(["E1581"]);
+    const body = `  web: { modules: ['a'], adapter: 'client' },\n  site: { modules: ['c'], adapter: 'static' },`;
+    expect(at(body, [page]).map((d) => [d[0], d[2]])).toEqual([
+      ["E1581", 1],
+      ["E1589", 4],
+    ]);
+    expect(mountDiags([top(`  web: { modules: ['a'], adapter: 'client' },`)])).toEqual([]);
+  });
+
+  it("E1589 names any deployable key it is reported at", () => {
+    fc.assert(
+      fc.property(fc.stringMatching(/^[a-z][a-z0-9-]{0,9}$/), fc.constantFrom("client", "static"), (key, adapter) => {
+        const source = `import { topology } from '@keel/server'\nexport default topology({\n  api: { modules: ['b'], adapter: 'node' },\n  '${key}': { modules: ['a'], adapter: '${adapter}' },\n})\n`;
+        fc.pre(key !== "api");
+        const diags = mountDiags([...base, { path: "topology.ts", source }]);
+        expect(diags.map((d) => [d.code, d.line, d.col])).toEqual([["E1589", 4, 3]]);
+        expect(diags[0]?.message.startsWith(`${key} (${adapter}) `)).toBe(true);
+      }),
+      { seed: 1337, numRuns: 50 },
+    );
+  });
+
   it("E1582 for every literal subpath with a refused character, none for accepted ones", () => {
     fc.assert(
       fc.property(fc.stringMatching(/^\/[a-z]{1,4}$/), fc.constantFrom("?", "#", "%", ":", "//", "/.."), (sub, bad) => {

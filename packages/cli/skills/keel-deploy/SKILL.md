@@ -1,6 +1,6 @@
 ---
 name: keel-deploy
-description: "Build and deploy Keel deployables: keel build, server.mjs, PORT/KEEL_SECRET/KEEL_ORIGIN/KEEL_PEER_<NAME>/KEEL_ALLOW_ORIGINS, keel dev, servedBy, static client hosting, keel codemod place, native shells and keel build --target; E1560, E1565, E1566, E1573, E1574, E1575, E1578, E1587, E1588, E1590, E1591, W1012"
+description: "Build and deploy Keel deployables: keel build, server.mjs, PORT/KEEL_SECRET/KEEL_ORIGIN/KEEL_PEER_<NAME>/KEEL_ALLOW_ORIGINS, keel dev, servedBy, static client hosting, keel codemod place, native shells and keel build --target; E1560, E1565, E1566, E1573, E1574, E1575, E1578, E1587, E1588, E1589, E1590, E1591, W1012"
 ---
 
 # Build and deploy
@@ -48,7 +48,7 @@ A bad value is one E1560 naming the key, never the value, and exit 1. An uncaugh
 
 **Caller lifetime.** `caller: { days }` on a `node` deployable (an integer 1 to 400, else E1578) makes its caller cookie outlive a browser quit. It is network personal data. An `identify` that trusts a header a proxy injects is safe only when the deployable is reachable through that proxy alone.
 
-**Serve the client from a node deployable.** `servedBy: '<node deployable>'` on the `client` deployable copies its build into `dist/<servedBy>/`, and that deployable's `GET /` returns the app. It is a string literal naming a `node` deployable, one client each (else E1566). A deployable key Keel does not list is E1552.
+**Serve the client from a node deployable.** `servedBy: '<node deployable>'` on the `client` deployable copies its build into `dist/<servedBy>/`, and that deployable's `GET /` returns the app. It is a string literal naming a `node` deployable, one client each (else E1566). With `identity.ts` a `client` deployable needs it (E1589). A deployable key Keel does not list is E1552.
 
 **Host the client on a static host.** The host sends `csp.txt` as the policy header; with no `node` deployable that is all. To call one, build with `KEEL_PEER_API=<origin>`: `index.html` gets a `keel-peer` tag, and `service({ contract })` in the browser calls that origin with credentials. A value that is not an http(s) origin fails the build (E1565). On the server set `KEEL_ALLOW_ORIGINS` to the client's origins, comma-separated (never `*`: E1560). Keep both on one registrable domain so the caller cookie works (else W1567). The static host returns `/index.html` with 200 for a path that is no file.
 

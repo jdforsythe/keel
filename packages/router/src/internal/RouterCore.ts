@@ -19,4 +19,6 @@ export type RouterCore = {
     readonly form: HTMLFormElement;
     readonly handle: FormHandle | undefined;
   }): Promise<Result<Href | null, KeelError<string, unknown>> | null>;
+  /** Reads `user` again when this router reads it (k.guards Client), resolving with the answer; else at once. */
+  reread(): Promise<void>;
 };

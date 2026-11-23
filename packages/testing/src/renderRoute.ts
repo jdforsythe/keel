@@ -38,7 +38,8 @@ import type { RouteStateOf } from "./types/RouteStateOf.ts";
  * `launch(links)` (k.links Testing), and a `fire` of `click`, `submit` or a `keydown` other than Escape is a person's
  * act (k.opening Link-started), which the handle's `navigate` is not;
  * `dispose` also disposes the router and puts the title and `lang` back. Guards, loaders and actions get
- * `options.caller` and `options.user` (each default `""`). Loaders and actions naming `stores` run their factories over `ctx.storage` as a
+ * `options.caller` and `options.user` (each default `""`); without `options.user`, a router with `options.mount`, or a
+ * shell run over an identity mount, reads `user` from `/__keel/user` through the harness's net (k.guards Client). Loaders and actions naming `stores` run their factories over `ctx.storage` as a
  * `node` deployable does (`serverState`, k.server Server state), each navigation or submit one request; `state` and
  * `state()` hold no factory store. The handle's `ctx` is typed as `render`'s: `SimCtx` when none is given. With
  * `options.app` (a `createApp` result) the page runs as a built `node` page instead (`documentRoute`): no router; it is
@@ -128,6 +129,9 @@ export async function renderRoute<T extends RouteTable>(
         user: options.user ?? "",
         leave: open,
         mount: options.mount,
+        // The router reads `user` (k.guards Client) unless `user` stands for the answer: with `mount`, or in a shell over
+        // the identity mounts the test's modules made.
+        read: options.user === undefined && (options.mount !== undefined || (shell !== undefined && mounts.length > 0)),
         onError: (error) => void caught.push(error),
       },
       serverState(outer),

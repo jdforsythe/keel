@@ -114,7 +114,8 @@ import type { ServerApp } from "./types/ServerApp.ts";
  * (`handle`), and every routed one gets the `user` `userOf` answers; a `handle.path` not of lowercase `/` segments, or
  * with a route whose literal path is at or under it, rejects with E1579; no page matches at or under it (a `:param`
  * route that would fit there is not matched). A caller cookie a deployable with `caller: { days }` mints carries
- * `Max-Age`; service client calls made on `ctx` sign their `user` as `x-keel-user` under `secret`.
+ * `Max-Age`; service client calls made on `ctx` sign their `user` as `x-keel-user` under `secret`. With `identity`,
+ * `GET /__keel/user` answers the request's `user` to the page's router (`userEntry`, k.guards Client).
  * Every response carries the k.security headers (`secured`); every document its own nonce policy (report-only in dev),
  * any other response `default-src 'none'; frame-ancestors 'none'`. `POST /__keel/csp` takes policy reports before any
  * write check or route (`cspReport`) and logs `csp` records.

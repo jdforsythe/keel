@@ -13,16 +13,21 @@
 // each of two edits to the file declaring the kitchen's database, the edited declaration runs, `/api/recipes` answers
 // 200 with the recipe posted before, and no E1602 is logged; likewise once the declaration moves into a helper module
 // the declaring file calls, after an edit to the declaring file (twice) and to the helper. The
-// child runs in its own process group, which every path (a finished run, a failed step, a signal, the 90 s limit) kills.
-// Usage: node tooling/smoke/dev-signin.mjs. Nothing is written inside the repo.
+// child runs in its own process group, which every path (a finished run, a failed step, a signal, the 240 s limit) kills.
+// `keel dev` starts once the file watcher has caught up with the copy (`caughtUp`), and the 240 s count from then: on a
+// machine under load each reload of the database declaration takes ten seconds or more.
+// Usage: node tooling/smoke/dev-signin.mjs. Nothing is written inside the repo; with `KEEL_SMOKE_LOG=<file>` the dev
+// server's output is written to that file as the run ends.
 import { execFile, spawn } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, watch, writeFileSync } from "node:fs";
 import { appendFile, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { copyApp, freePort, recorder, root, wait } from "./built.mjs";
 
-const LIMIT_MS = 90_000;
+const LIMIT_MS = 240_000;
+/** How long an edit may take to reach the dev server's watcher. */
+const EDIT_MS = 60_000;
 const cli = join(root, "packages", "cli", "src", "bin.ts");
 const { step, finish } = recorder();
 let dev;
@@ -43,12 +48,42 @@ for (const signal of ["SIGINT", "SIGTERM"]) {
     process.exit(130);
   });
 }
-const limit = setTimeout(() => {
+/** Write the dev server's output to `KEEL_SMOKE_LOG`, when it names a file. */
+function keepLog() {
+  const file = process.env.KEEL_SMOKE_LOG;
+  if (file !== undefined && file !== "" && dev !== undefined) writeFileSync(file, `${dev.log.join("\n")}\n`);
+}
+let limit;
+const onLimit = () => {
+  keepLog();
   killGroup();
   step("time limit", false, `${LIMIT_MS / 1000}s${dev === undefined ? "" : `, ${dev.log.slice(-3).join(" | ")}`}`);
   finish("dev-signin");
   process.exit(1);
-}, LIMIT_MS);
+};
+
+/**
+ * Wait, at most 30s, until the file watcher has caught up with the writes under `folder`: a file written there now is
+ * reported by a watch on it. On a loaded machine a watcher started sooner hears the copy's writes as changes seconds
+ * into the run: every module reloads, and `vite.config.ts` restarts the dev server under the steps.
+ */
+async function caughtUp(folder) {
+  const name = "caught-up";
+  let seen = false;
+  const watcher = watch(folder, { recursive: true }, (_event, file) => {
+    seen ||= file === name;
+  });
+  watcher.on("error", () => {
+    seen = true;
+  });
+  // The watch itself starts late under load: the file is written until one write is heard.
+  for (let n = 0; n < 150 && !seen; n++) {
+    await writeFile(join(folder, name), String(n));
+    await wait(200);
+  }
+  watcher.close();
+  return seen;
+}
 
 /** Start `keel dev --port <port>` in `dir` as the leader of its own process group; its output is kept in `log`. */
 function startDev(dir, port) {
@@ -62,6 +97,45 @@ function startDev(dir, port) {
   for (const out of [child.stdout, child.stderr]) out.on("data", (d) => log.push(...String(d).trim().split("\n")));
   const exited = new Promise((resolve) => child.once("exit", resolve));
   return { child, log, exited };
+}
+
+/** Reload lines `keel dev` printed for `file`. */
+const reloadsOf = (file) => dev.log.filter((l) => l.includes("page reload") && l.includes(file)).length;
+/**
+ * Wait, at most 5s, until no reload line for `file` arrived for 300ms: one write can give the watcher two change
+ * events, and a late one would count as the next edit's reload.
+ */
+async function quiet(file) {
+  let last = reloadsOf(file);
+  let since = Date.now();
+  for (const end = Date.now() + 5_000; Date.now() < end && Date.now() - since < 300; await wait(50)) {
+    const now = reloadsOf(file);
+    if (now !== last) [last, since] = [now, Date.now()];
+  }
+}
+/**
+ * Whether the dev server reported a reload of `file` after `write` wrote it, within `EDIT_MS`. `write` runs again every
+ * 5s until then: on macOS the watcher sometimes reports no change for a write to a file created moments ago, as every
+ * file of the copy is, and on a loaded machine reports one late.
+ */
+async function heard(file, write) {
+  await quiet(file);
+  const before = reloadsOf(file);
+  for (const end = Date.now() + EDIT_MS; Date.now() < end; ) {
+    await write();
+    for (const until = Date.now() + 5_000; Date.now() < until; await wait(100))
+      if (reloadsOf(file) > before) return true;
+  }
+  return false;
+}
+/**
+ * Whether `mark` reached the log within 5s: the edited code prints it while answering, before the response, but its
+ * stderr arrives on another pipe than the response's socket.
+ */
+async function marked(mark) {
+  for (const end = Date.now() + 5_000; Date.now() < end; await wait(50))
+    if (dev.log.some((l) => l.includes(mark))) return true;
+  return false;
 }
 
 const html = { accept: "text/html" };
@@ -129,6 +203,9 @@ try {
   await copyApp(dir, join(root, "apps", "golden-2"));
   const port = await freePort();
   const base = `http://127.0.0.1:${port}`;
+  const settled = await caughtUp(tmp);
+  step("the watcher caught up with the copy", settled, settled ? "" : "no change heard in 30s");
+  limit = setTimeout(onLimit, LIMIT_MS);
   dev = startDev(dir, port);
   const up = await ready(base);
   step("serve dev", up, up ? "" : dev.log.slice(-3).join(" | "));
@@ -264,10 +341,7 @@ try {
 
   // An edit to the server file that registers the section at its top level: the dev apps load again and still answer.
   const edited = "modules/kitchen/currencyTally.server.ts";
-  await appendFile(join(dir, edited), "\n// edited while serving\n");
-  let reloaded = false;
-  for (const end = Date.now() + 15_000; Date.now() < end && !reloaded; await wait(100))
-    reloaded = dev.log.some((l) => l.includes("page reload") && l.includes(edited));
+  const reloaded = await heard(edited, () => appendFile(join(dir, edited), "\n// edited while serving\n"));
   step("dev server sees the edit", reloaded, reloaded ? "" : dev.log.slice(-2).join(" | "));
   for (const path of ["/api/recipes", "/api/me"]) {
     const after = await text(base, path, json);
@@ -285,13 +359,11 @@ try {
   const declarer = "modules/kitchen/kitchenDb.server.ts";
   for (const n of [1, 2]) {
     const mark = `keel smoke: kitchen.db declared again ${n}`;
-    const reloads = () => dev.log.filter((l) => l.includes("page reload") && l.includes(declarer)).length;
-    const before = reloads();
-    await appendFile(join(dir, declarer), `\nconsole.warn(${JSON.stringify(mark)});\n`);
-    let seen = false;
-    for (const end = Date.now() + 15_000; Date.now() < end && !seen; await wait(100)) seen = reloads() > before;
+    const seen = await heard(declarer, () =>
+      appendFile(join(dir, declarer), `\nconsole.warn(${JSON.stringify(mark)});\n`),
+    );
     const after = await text(base, "/api/recipes", json);
-    const ran = dev.log.some((l) => l.includes(mark));
+    const ran = await marked(mark);
     step(
       `GET /api/recipes after edit ${n} to the database declaration`,
       seen && ran && after.status === 200 && after.body.includes('"title":"Smoke stew"'),
@@ -305,13 +377,12 @@ try {
     join(dir, helper),
     'import { database } from "@keel/std-postgres/server";\n\nexport function declareKitchen() {\n  return database("kitchen.db");\n}\n',
   );
-  const moved = dev.log.filter((l) => l.includes("page reload") && l.includes(declarer)).length;
-  await writeFile(
-    join(dir, declarer),
-    'import { declareKitchen } from "./declareKitchen.server.ts";\n\nexport const kitchenDb = declareKitchen();\n',
+  await heard(declarer, () =>
+    writeFile(
+      join(dir, declarer),
+      'import { declareKitchen } from "./declareKitchen.server.ts";\n\nexport const kitchenDb = declareKitchen();\n',
+    ),
   );
-  for (const end = Date.now() + 15_000; Date.now() < end; await wait(100))
-    if (dev.log.filter((l) => l.includes("page reload") && l.includes(declarer)).length > moved) break;
   const first = await text(base, "/api/recipes", json);
   step("GET /api/recipes once the declaration moved into a helper", first.status === 200, `status ${first.status}`);
   for (const [n, file] of [
@@ -320,13 +391,9 @@ try {
     [5, helper],
   ]) {
     const mark = `keel smoke: kitchen.db declared through a helper ${n}`;
-    const reloads = () => dev.log.filter((l) => l.includes("page reload") && l.includes(file)).length;
-    const before = reloads();
-    await appendFile(join(dir, file), `\nconsole.warn(${JSON.stringify(mark)});\n`);
-    let seen = false;
-    for (const end = Date.now() + 15_000; Date.now() < end && !seen; await wait(100)) seen = reloads() > before;
+    const seen = await heard(file, () => appendFile(join(dir, file), `\nconsole.warn(${JSON.stringify(mark)});\n`));
     const after = await text(base, "/api/recipes", json);
-    const ran = dev.log.some((l) => l.includes(mark));
+    const ran = await marked(mark);
     step(
       `GET /api/recipes after edit ${n} with the declaration in a helper (${file.split("/").at(-1)})`,
       seen && ran && after.status === 200 && after.body.includes('"title":"Smoke stew"'),
@@ -338,6 +405,7 @@ try {
 } catch (e) {
   step("flow", false, String(e).split("\n")[0]);
 } finally {
+  keepLog();
   clearTimeout(limit);
   killGroup();
   await Promise.race([dev?.exited, wait(10_000)]);

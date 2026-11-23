@@ -900,6 +900,13 @@ const ROWS: readonly Row[] = [
     "k.topology",
   ],
   [
+    "E1589",
+    "identity.ts beside a static deployable, or a client one without servedBy: no origin of it answers /__keel/user",
+    "With identity.ts a client router asks its own origin who the reader is; unanswered, every guard gets user ''.",
+    "adapter: 'client' -> adapter: 'client', servedBy: 'api'",
+    "k.mount",
+  ],
+  [
     "E1590",
     "origins in topology.ts out of form: not a literal, a key outside img media font connect frame, an inexact origin",
     "Also a reason not 1 to 200 characters on one line, or over 16 origins in a directive. Only these widen the policy.",

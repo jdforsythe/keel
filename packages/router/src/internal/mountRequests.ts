@@ -117,7 +117,7 @@ async function opening(ctx: Ctx, shell: Shell, url: string, chain: Chain): Promi
 /**
  * One mount request (k.return): `href` through `ctx.net` with `x-keel: 1`, `accept: application/json` and
  * `redirect: 'manual'`, a POST of `body` (urlencoded) when given, else a GET. Only the answer's status and `location`
- * are read. A redirect on `KEEL_ORIGIN` goes where `arrive` says, one elsewhere opens in the external browser when
+ * are read; once it is answered the mounted router reads `user` again (`reread`) before anything follows. A redirect on `KEEL_ORIGIN` goes where `arrive` says, one elsewhere opens in the external browser when
  * it is `http:` or `https:`, and one on the shell's own scheme is read as a return link that takes no opening and
  * continues `chain`, counting toward its redirects in a row. A location whose path begins `//` or `/\` once dot
  * segments are removed is ignored (`split`). A GET answered without a redirect opens its URL in the
@@ -141,6 +141,8 @@ async function request(ctx: Ctx, shell: Shell, href: string, chain: Chain, body?
   }
   // The body is never read: its stream is released.
   void res.body?.cancel().catch(() => undefined);
+  // The answer may have signed the reader in or out: the router reads `user` again before acting (k.guards Client).
+  await routerOf(ctx)?.reread();
   const to = res.status >= 300 && res.status < 400 ? res.headers.get("location") : null;
   if (to === null) {
     if (body === undefined) await opening(ctx, shell, href, chain);

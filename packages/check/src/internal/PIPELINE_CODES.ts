@@ -36,6 +36,7 @@ export const PIPELINE_CODES: readonly string[] = [
     "E1584",
     "E1586",
     "E1587",
+    "E1589",
     "E1590",
     "E1591",
     "E1753",

@@ -1,6 +1,6 @@
 # ADR-0208: k.guards Client: a guard in a `client` deployable or a shell learns the reader from one read per session (RFC 0186)
 
-**Status:** accepted (orchestrator, under the RFC defaults; for the operator to confirm, see RFC 0186 For the operator).
+**Status:** accepted (operator, 2026-11-22).
 
 **Context.** On a `client` deployable and in a shell a guard's `user` is always `''`, so an app guarding a page by sign-in calls its own API on every guarded navigation. The session cookie is `HttpOnly` in a browser and in the native store in a shell; only `identify` on the `node` deployable that mounts `handle` can say who the reader is.
 

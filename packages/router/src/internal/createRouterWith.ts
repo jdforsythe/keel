@@ -44,6 +44,7 @@ import { runLoaders } from "./runLoaders.ts";
 import { shells } from "./shells.ts";
 import { splitUrl } from "./splitUrl.ts";
 import { unexpected } from "./unexpected.ts";
+import { userRead } from "./userRead.ts";
 import { withNext } from "./withNext.ts";
 import { writeHead } from "./writeHead.ts";
 
@@ -66,7 +67,8 @@ const nearestErrorElement = (route: Located, from: number): number => {
  * nearest errorElement, no loader) and search (failing keys dropped), run every guard outermost first
  * (denied: redirect to the guard's `redirect` with `?next=`), then every loader of the chain concurrently,
  * then commit. The previous page stays rendered and `pending` is true until the commit. Guards, loaders and actions get
- * `caller` and `user` (default `""`; the harness supplies them). Each navigation that is not a guard's redirect reports `nav` to
+ * `caller` and `user` (default `""`; the harness supplies them); with `read`, `user` is the page origin's
+ * `/__keel/user` answer, read once as the router starts and again on `reread` (k.guards Client, `userRead`). Each navigation that is not a guard's redirect reports `nav` to
  * the ctx's observers before its guards, and each loader or action `err` reports `error` (k.ctx Observers).
  * `state` runs loaders and actions naming `stores` (k.server Server state; the harness passes it, `createRouter` never
  * does): each loader run is one `state.request()` and each submit another, an action's `ok` saves (a stale read
@@ -93,6 +95,12 @@ export function createRouterWith<T extends RouteTable>(
     readonly leave?: (url: string, replace: boolean) => void;
     /** The identity mount's `path` (k.mount): no page matches at or under it. */
     readonly mount?: string | undefined;
+    /**
+     * Whether the router reads `user` from `/__keel/user` (k.guards Client) when an identity mount was made
+     * (`userRead`); default: `mount` is given and `user` is not. The harness passes it for a shell run, whose mount it
+     * names to no router.
+     */
+    readonly read?: boolean;
     /** A throw no route `errorElement` caught, before the root default alert shows it; the harness raises it. */
     readonly onError?: (error: CaughtError) => void;
   },
@@ -101,6 +109,20 @@ export function createRouterWith<T extends RouteTable>(
   const { ctx, history, leave = (u, r) => location[r ? "replace" : "assign"](u) } = opts;
   const mount = shells.get(ctx);
   const who = { caller: opts.caller ?? "", user: opts.user ?? "" };
+  // The reader as the page's origin last said (k.guards Client): in memory only, `""` until an answer and after a
+  // failed one. Guards, loaders and actions wait for a read in flight.
+  // The read is `identityMount`'s (`userRead`): with no identity mount made, the bundle holds none and nothing is sent.
+  const read = (opts.read ?? (opts.mount !== undefined && opts.user === undefined)) ? userRead.fn : undefined;
+  let reading: Promise<void> = done;
+  const reread = (): Promise<void> => {
+    if (read === undefined) return done;
+    const p = read(ctx).then((user) => {
+      if (reading === p) who.user = user;
+    });
+    reading = p;
+    return p;
+  };
+  const answered = (): Promise<void> => reading;
   const shownMode = opts.mode === "dev" ? "dev" : "production";
   const shown = (e: KeelError<string, unknown>): KeelError<string, unknown> => publicError(e, shownMode);
   const { table: own, located } = compileRoutes(routes);
@@ -219,6 +241,8 @@ export function createRouterWith<T extends RouteTable>(
     mode: Nav,
     visited: readonly string[],
   ): Promise<void> => {
+    await answered();
+    if (t !== token) return;
     for (const [i, lvl] of m.route.chain.entries()) {
       const g = lvl.def.guard;
       if (g === undefined) continue;
@@ -282,6 +306,7 @@ export function createRouterWith<T extends RouteTable>(
     if (v === null || m === null || m.kind !== "route") return;
     const t = token;
     pending.set(true);
+    await answered();
     const results = await runLoaders(
       v.chain,
       { params: v.params, search: v.search, url: absoluteUrl(v.url), ...who },
@@ -314,6 +339,7 @@ export function createRouterWith<T extends RouteTable>(
     ctx,
     navigate,
     accepts: (href, method) => (match(href).route === null ? null : actionAt(href, method) !== null),
+    reread,
     async submit(req) {
       const handle = req.handle?.[formHandle];
       if (handle !== undefined && !handle.validate().ok) return null;
@@ -333,6 +359,7 @@ export function createRouterWith<T extends RouteTable>(
         // One request: the action's instance, its `ok` saved (else `keel.conflict`), ended before revalidating.
         const rq = state?.request();
         const from = act.stores;
+        await answered();
         const ran = await attempt(async () => {
           const stores = from === undefined ? undefined : await rq?.stores(from);
           const out = await act.run(decoded.value, { params, url, ...who, stores }, ctx);
@@ -360,6 +387,7 @@ export function createRouterWith<T extends RouteTable>(
     popped = key ?? null;
     void go(url, "pop", []);
   });
+  void reread();
   void go(history.current(), "initial", []);
 
   return {

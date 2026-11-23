@@ -2,7 +2,7 @@ import { module } from "@keel/compiler";
 
 export default module({
   id: "notes",
-  deps: ["api"],
-  capabilities: ["net"],
+  deps: [],
+  capabilities: [],
   public: { exports: ["NoteParams", "SigninSearch"] },
 });
