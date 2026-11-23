@@ -19,5 +19,11 @@ Verified in the lane after the last merge of the main line: `pnpm build`; ui 368
 - Pushed: db2d7536, CI green on every job (run 45151149540, after one rerun of shard 6; backlog 1066).
 - On the main line since, gated and pushed with the plan's checkpoint 19: `lane-msess` (std-sessions 87.3), `lane-mutall` (`mutate:stale` lists a file whose report entry does not hold exactly the mutants Stryker's instrumenter gives it), and a ledger regenerated over complete reports.
 - Mutation: every one of the 41 packages has a complete report and a score above its threshold in the committed ledger; `node tooling/mutate-stale.mjs --list --missing` lists none. The nearest their lines: std-tables 71.0, cli 72.0, ui 72.8, check 72.8, compiler 73.6 (all against 70). The ledger scores a partial report entry as it stands; only the stale tool sees one, so run it before trusting a score after a stopped run. `packages/check/stryker.config.mjs` sets its own concurrency.
-- No lane is open. Every refreshed report is also in `<git common dir>/keel-mutation-held/<pkg>.json`; the main worktree's `packages/<pkg>/reports/mutation/mutation.json` are what `pnpm ledger` reads.
+- Pushed: d8a9e60e after a full green gate; its CI run 45237799683 is watched to its end.
+- Open lanes, a subagent in each (started 2026-11-23):
+  - `.worktrees/exn` `lane-exn`: `examples/native-tauri` and `examples/native-capacitor`, one page in one shell each, no server; their findings go to `tasks/p1/examples-findings.md`.
+  - `.worktrees/scn` `lane-scn`: the scenario "resume with live updates and forms" (`tasks/p1/feature-coverage.md`, hole 7), hosted in household if its web server-renders and resumes, as new steps of `tooling/smoke/resume.mjs`; it stops with options if that needs a design change to an app.
+  - `.worktrees/wlk` `lane-wlk`: an RFC on `keel scaffold service` (backlog 0883, 1045, 1048), writing only (`rfc-lane.md`); then the conformance writer and the build.
+  - Not started, and it touches household as `lane-scn` does, so it follows it: the walkthrough's last layer (the outbox in household).
+- Every refreshed report is also in `<git common dir>/keel-mutation-held/<pkg>.json`; the main worktree's `packages/<pkg>/reports/mutation/mutation.json` are what `pnpm ledger` reads.
 - Merging a lane: `README.md`, Merging a lane; copy its refreshed reports into the main worktree and the held folder; then the ledger per Method's D100, the gate, the push.
