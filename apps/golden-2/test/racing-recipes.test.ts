@@ -12,7 +12,7 @@ import type { Ctx } from "@keel/ctx";
 import { s } from "@keel/schema";
 import { createApp } from "@keel/server";
 import fc from "fast-check";
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { Box } from "../modules/kitchen/Box.schema.ts";
 import topology from "../topology.ts";
 import { apiRoutes } from "./apiRoutes.ts";
@@ -58,10 +58,17 @@ const realServer = (url: string) => (): Ctx => {
   return createCtx({ mode: "real", seed: SEED + real });
 };
 
-const MODES: { name: string; server: () => Ctx }[] = [
+/**
+ * The bound on a mode's first request. A PGlite folder's first query loads the engine, runs initdb on disk and
+ * migrates: about 0.7 s on a quiet machine, where a property run after it takes about 5 ms, and over 5 s on a
+ * starved CI runner. std-postgres bounds its own PGlite tests the same.
+ */
+const OPEN_MS = 60_000;
+
+const MODES: { name: string; server: () => Ctx; open?: number }[] = [
   { name: "sim", server: () => simServer() },
-  { name: "pglite", server: realServer(`pglite:${join(dir, "pg")}`) },
-  ...(PG17 === "" ? [] : [{ name: "postgres 17", server: realServer(PG17) }]),
+  { name: "pglite", server: realServer(`pglite:${join(dir, "pg")}`), open: OPEN_MS },
+  ...(PG17 === "" ? [] : [{ name: "postgres 17", server: realServer(PG17), open: OPEN_MS }]),
 ];
 
 /** Two api replicas over one database, each request made by its own user. */
@@ -87,6 +94,13 @@ const RUN = randomBytes(3).toString("hex");
 let tag = 0;
 for (const m of MODES) {
   describe(`two users add one title at once on ${m.name}`, () => {
+    // The database opens here, under its own bound, so the test's bound holds the property runs alone.
+    beforeAll(async () => {
+      const { ana, ben } = await twoUsers(m.server());
+      await titlesOf(ana);
+      await ana.close();
+      await ben.close();
+    }, m.open);
     it("saves exactly one; the other gets 422 keel.fields on title", async () => {
       await fc.assert(
         fc.asyncProperty(
