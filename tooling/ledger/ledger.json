@@ -3,8 +3,8 @@
   "unsafe": 18,
   "hostElements": 0,
   "rungs": {
-    "example": 1844,
-    "probabilistic": 343,
+    "example": 1859,
+    "probabilistic": 344,
     "exhaustive": 16,
     "proven": 75,
     "monitored": 8
@@ -12,12 +12,12 @@
   "mutation": {
     "packages": {
       "check": {
-        "score": 79.16,
-        "scoreJustified": 79.16,
+        "score": 79.39,
+        "scoreJustified": 79.39,
         "threshold": 70,
-        "killed": 7763,
-        "survived": 1319,
-        "noCoverage": 725,
+        "killed": 7708,
+        "survived": 1279,
+        "noCoverage": 722,
         "justified": 0
       },
       "cli": {
@@ -30,12 +30,12 @@
         "justified": 0
       },
       "compiler": {
-        "score": 73.63,
-        "scoreJustified": 73.63,
+        "score": 75.66,
+        "scoreJustified": 75.66,
         "threshold": 70,
-        "killed": 11352,
-        "survived": 3328,
-        "noCoverage": 738,
+        "killed": 10328,
+        "survived": 2744,
+        "noCoverage": 578,
         "justified": 0
       },
       "ctx": {
@@ -129,12 +129,12 @@
         "justified": 0
       },
       "std-capacitor": {
-        "score": 83.87,
-        "scoreJustified": 83.87,
+        "score": 85.85,
+        "scoreJustified": 85.85,
         "threshold": 70,
-        "killed": 156,
-        "survived": 18,
-        "noCoverage": 12,
+        "killed": 91,
+        "survived": 4,
+        "noCoverage": 11,
         "justified": 0
       },
       "std-channels": {
@@ -291,11 +291,11 @@
         "justified": 0
       },
       "std-tauri": {
-        "score": 77.87,
-        "scoreJustified": 77.87,
+        "score": 79.81,
+        "scoreJustified": 79.81,
         "threshold": 70,
-        "killed": 190,
-        "survived": 41,
+        "killed": 166,
+        "survived": 29,
         "noCoverage": 13,
         "justified": 0
       },
@@ -16113,6 +16113,12 @@
     },
     {
       "pkg": "check",
+      "name": "dependencyNeed",
+      "file": "packages/check/src/dependencyNeed.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "check",
       "name": "explain",
       "file": "packages/check/src/explain.ts",
       "rung": "example"
@@ -18402,6 +18408,10 @@
       "rung": "example"
     },
     {
+      "item": "k.errors#14",
+      "rung": "example"
+    },
+    {
       "item": "k.escapes#1",
       "rung": "example"
     },
@@ -20170,6 +20180,22 @@
       "rung": "example"
     },
     {
+      "item": "k.shell#10",
+      "rung": "example"
+    },
+    {
+      "item": "k.shell#11",
+      "rung": "example"
+    },
+    {
+      "item": "k.shell#12",
+      "rung": "example"
+    },
+    {
+      "item": "k.shell#13",
+      "rung": "example"
+    },
+    {
       "item": "k.sim#1",
       "rung": "probabilistic"
     },
@@ -20715,6 +20741,18 @@
     },
     {
       "item": "std.capacitor#6",
+      "rung": "example"
+    },
+    {
+      "item": "std.capacitor#7",
+      "rung": "example"
+    },
+    {
+      "item": "std.capacitor#8",
+      "rung": "example"
+    },
+    {
+      "item": "std.capacitor#9",
       "rung": "example"
     },
     {
@@ -21718,6 +21756,18 @@
       "rung": "example"
     },
     {
+      "item": "std.shells#10",
+      "rung": "example"
+    },
+    {
+      "item": "std.shells#11",
+      "rung": "example"
+    },
+    {
+      "item": "std.shells#12",
+      "rung": "example"
+    },
+    {
       "item": "std.statecharts#1",
       "rung": "probabilistic"
     },
@@ -21815,6 +21865,14 @@
     },
     {
       "item": "std.tauri#6",
+      "rung": "example"
+    },
+    {
+      "item": "std.tauri#7",
+      "rung": "example"
+    },
+    {
+      "item": "std.tauri#8",
       "rung": "example"
     },
     {
