@@ -279,7 +279,11 @@ describe("openHub: requests through a user's cookie jar", () => {
     await hub({ count: 2 });
     handler = () => reply("a=1; Path=/", "b=2; Path=/");
     const res = await started(0).fetch(
-      out(`${ORIGIN}/x`, { method: "POST", body: new TextEncoder().encode("hi"), headers: new Headers({ "x-k": "v" }) }),
+      out(`${ORIGIN}/x`, {
+        method: "POST",
+        body: new TextEncoder().encode("hi"),
+        headers: new Headers({ "x-k": "v" }),
+      }),
     );
     expect(await res.text()).toBe("ok");
     expect(seen[0]?.method).toBe("POST");

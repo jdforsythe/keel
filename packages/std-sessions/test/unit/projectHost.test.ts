@@ -154,8 +154,14 @@ describe("projectHost: module requests", () => {
   test("an error that is a plain object, one with fields that are not text, null, or text", async () => {
     await run();
     const cases: [unknown, { name: string; message: string; stack: string | undefined }][] = [
-      [{ name: "Custom", message: "m", stack: "at x" }, { name: "Custom", message: "m", stack: "at x" }],
-      [{ name: 4, message: 5, stack: 6 }, { name: "Error", message: "[object Object]", stack: undefined }],
+      [
+        { name: "Custom", message: "m", stack: "at x" },
+        { name: "Custom", message: "m", stack: "at x" },
+      ],
+      [
+        { name: 4, message: 5, stack: 6 },
+        { name: "Error", message: "[object Object]", stack: undefined },
+      ],
       [{ message: "only" }, { name: "Error", message: "only", stack: undefined }],
       [null, { name: "Error", message: "null", stack: undefined }],
       ["boom", { name: "Error", message: "boom", stack: undefined }],

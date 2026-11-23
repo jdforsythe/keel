@@ -111,9 +111,7 @@ describe("startRealm: starting the worker", () => {
     expect(w.url.href.endsWith("/group/internal/userWorker.ts")).toBe(true);
     expect(w.options.execArgv).toEqual(["--import", expect.stringMatching(/^file:.*\/tsx\//)]);
     expect(w.options.execArgv?.[1]).toBe(
-      pathToFileURL(
-        (await import("node:module")).createRequire(import.meta.url).resolve("tsx"),
-      ).href,
+      pathToFileURL((await import("node:module")).createRequire(import.meta.url).resolve("tsx")).href,
     );
     expect(w.options.workerData).toEqual({ origin: "http://app.test" });
     expect(running.size).toBe(1);
@@ -123,7 +121,12 @@ describe("startRealm: starting the worker", () => {
 
   test("it resolves only once the worker says ready, and ignores other messages meanwhile", async () => {
     let done = false;
-    const pending = startRealm("o", { invoke: async () => ({ result: 1 }) }, async () => new Response(""), () => {});
+    const pending = startRealm(
+      "o",
+      { invoke: async () => ({ result: 1 }) },
+      async () => new Response(""),
+      () => {},
+    );
     void pending.then(() => {
       done = true;
     });
@@ -138,7 +141,12 @@ describe("startRealm: starting the worker", () => {
   });
 
   test("a worker that errors before it is ready rejects with the error and is terminated", async () => {
-    const pending = startRealm("o", { invoke: async () => ({ result: 1 }) }, async () => new Response(""), () => {});
+    const pending = startRealm(
+      "o",
+      { invoke: async () => ({ result: 1 }) },
+      async () => new Response(""),
+      () => {},
+    );
     const w = lastWorker();
     const error = new Error("no tsx");
     w.emit("error", error);
@@ -147,7 +155,12 @@ describe("startRealm: starting the worker", () => {
   });
 
   test("a worker that exits before it is ready rejects with its exit code", async () => {
-    const pending = startRealm("o", { invoke: async () => ({ result: 1 }) }, async () => new Response(""), () => {});
+    const pending = startRealm(
+      "o",
+      { invoke: async () => ({ result: 1 }) },
+      async () => new Response(""),
+      () => {},
+    );
     const w = lastWorker();
     w.emit("exit", 3);
     await expect(pending).rejects.toThrow("group: user worker exited (3)");
@@ -155,7 +168,12 @@ describe("startRealm: starting the worker", () => {
   });
 
   test("a thrown value that is not an Error is wrapped in one", async () => {
-    const pending = startRealm("o", { invoke: async () => ({ result: 1 }) }, async () => new Response(""), () => {});
+    const pending = startRealm(
+      "o",
+      { invoke: async () => ({ result: 1 }) },
+      async () => new Response(""),
+      () => {},
+    );
     lastWorker().emit("error", "plain text");
     await expect(pending).rejects.toBe("plain text");
   });
@@ -490,7 +508,8 @@ describe("startRealm: a body the worker cancels", () => {
 describe("startRealm: module requests from the worker", () => {
   test("an invoke asks the project and the answer is posted back under the same id", async () => {
     const { w, invoked } = await start({
-      invoke: async (data) => (data === "bad" ? { error: { name: "E", message: "m", stack: undefined } } : { result: [1] }),
+      invoke: async (data) =>
+        data === "bad" ? { error: { name: "E", message: "m", stack: undefined } } : { result: [1] },
     });
     w.emit("message", { t: "invoke", id: 3, data: { file: "a" } });
     w.emit("message", { t: "invoke", id: 4, data: "bad" });
