@@ -1,6 +1,6 @@
 // onUncaught (k.leave Process): the two process listeners write one E1577 `diag` each, the route of the request the
 // failing work ran in, `-` outside one, the thrown text only with `dev`, scrubbed of the request's values; the listeners
-// are installed once per process. Each case loads a fresh copy of the module so the once-flag starts unset, and calls
+// are installed once per process, and a second copy of the module takes the first copy's place. Each case loads a fresh copy of the module so the once-flag starts unset, and calls
 // the listeners it added directly (emitting the process event would reach the test runner's own handlers).
 import { describe, expect, it, vi } from "vitest";
 
@@ -59,6 +59,33 @@ describe("onUncaught", () => {
     try {
       expect(after1.map((l, i) => l.length - (before[i]?.length ?? 0))).toEqual([1, 1]);
       expect(after2.map((l) => l.length)).toEqual(after1.map((l) => l.length));
+    } finally {
+      EVENTS.forEach((event, i) => {
+        for (const fn of listenersOf(event)) if (!before[i]?.includes(fn)) drop(event, fn);
+      });
+    }
+  });
+
+  it("a second copy of the module takes the first copy's place: one listener per event, and it reads its own `serving`", async () => {
+    const before = EVENTS.map((e) => listenersOf(e));
+    const copy = async () => {
+      vi.resetModules();
+      const { onUncaught } = await import("../src/internal/onUncaught.ts");
+      const { serving } = await import("../src/internal/serving.ts");
+      const lines: string[] = [];
+      onUncaught({ format: "compact", write: (l) => lines.push(l) }, ROOT, true, () => undefined);
+      return { lines, serving };
+    };
+    try {
+      const first = await copy();
+      const second = await copy();
+      const added = EVENTS.map((event, i) => listenersOf(event).filter((fn) => !before[i]?.includes(fn)));
+      expect(added.map((l) => l.length)).toEqual([1, 1]);
+      second.serving.run({ route: "app.late", pii: new Set(), secrets: new Set() }, () => {
+        for (const fn of added[0] ?? []) Reflect.apply(fn, process, [new Error("boom")]);
+      });
+      expect(first.lines).toEqual([]);
+      expect(second.lines).toEqual(["E1577 uncaught exception in work of route app.late: Error: boom"]);
     } finally {
       EVENTS.forEach((event, i) => {
         for (const fn of listenersOf(event)) if (!before[i]?.includes(fn)) drop(event, fn);

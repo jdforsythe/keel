@@ -27,9 +27,14 @@ const projectVite = (dir: string): string => {
   }
 };
 
+/** Whether `CHOKIDAR_USEPOLLING` asks for a polling file watcher: set, and not empty, `0` or `false`. */
+const polls = (): boolean => !["", "0", "false"].includes((process.env.CHOKIDAR_USEPOLLING ?? "").toLowerCase());
+
 /**
  * Binary only: the project's own `vite` (the nearest `node_modules/vite` at or above `cwd`, as `npx --no-install vite`
- * finds it) creates a dev server for `cwd` with `server.strictPort`, and `server.port` only when `port` is given. This
+ * finds it) creates a dev server for `cwd` with `server.strictPort`, `server.port` only when `port` is given, and
+ * `server.watch.usePolling` when `CHOKIDAR_USEPOLLING` asks for it (Vite's watcher on macOS takes file events whatever
+ * that variable says, and a busy machine delivers those late or drops them). This
  * evaluates the project's `vite.config.ts` and its plugins' `config` hooks once; nothing listens yet. What
  * `createServer` returns is checked at runtime against the shape `keel dev` uses. Throws when `vite` cannot be
  * resolved or does not fit.
@@ -40,7 +45,11 @@ export async function viteServer(cwd: string, port: number | undefined): Promise
   const version = field(mod, "version");
   const server: unknown = await create({
     root: cwd,
-    server: port === undefined ? { strictPort: true } : { strictPort: true, port },
+    server: {
+      strictPort: true,
+      ...(port === undefined ? {} : { port }),
+      ...(polls() ? { watch: { usePolling: true } } : {}),
+    },
   });
   const config = field(server, "config");
   const info = method(field(config, "logger"), "info");

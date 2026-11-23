@@ -80,7 +80,13 @@ const freePort = (): Promise<number> =>
 const cleanEnv = (): Record<string, string> => {
   const env: Record<string, string> = {};
   for (const [k, v] of Object.entries(process.env)) {
-    if (v !== undefined && !k.toLowerCase().startsWith("npm_") && k !== "KEEL_AGENT" && k !== "NODE_OPTIONS")
+    if (
+      v !== undefined &&
+      !k.toLowerCase().startsWith("npm_") &&
+      k !== "KEEL_AGENT" &&
+      k !== "NODE_OPTIONS" &&
+      k !== "CHOKIDAR_USEPOLLING"
+    )
       env[k] = v;
   }
   return env;
