@@ -1,5 +1,5 @@
 {
-  "commit": "8b42508dec1ad3156fae114ed4cf8d82e1f01390",
+  "commit": "1a739b2c9fee3b46464145c2c134143d3b425f16",
   "coverage": {
     "packages": {
       "apps/golden-1": {
@@ -1168,7 +1168,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-23T01:11:40.157Z",
+  "generatedAt": "2026-11-23T03:08:00.012Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -3192,13 +3192,13 @@
         "threshold": null
       },
       "packages/check": {
-        "claims": 125,
+        "claims": 171,
         "justified": 0,
         "reason": null,
-        "reportDate": "2026-11-19",
-        "score": 73.81,
-        "scoreJustified": 73.81,
-        "stale": 28,
+        "reportDate": "2026-11-23",
+        "score": 79.16,
+        "scoreJustified": 79.16,
+        "stale": 1,
         "threshold": 70
       },
       "packages/cli": {
@@ -3255,10 +3255,10 @@
         "claims": 59,
         "justified": 0,
         "reason": null,
-        "reportDate": "2026-11-19",
-        "score": 85.85,
-        "scoreJustified": 85.85,
-        "stale": 21,
+        "reportDate": "2026-11-23",
+        "score": 83.13,
+        "scoreJustified": 83.13,
+        "stale": 0,
         "threshold": 80
       },
       "packages/runtime-dom": {
@@ -3295,20 +3295,20 @@
         "claims": 142,
         "justified": 0,
         "reason": null,
-        "reportDate": "2026-11-19",
-        "score": 76.1,
-        "scoreJustified": 76.1,
-        "stale": 30,
+        "reportDate": "2026-11-23",
+        "score": 81.41,
+        "scoreJustified": 81.41,
+        "stale": 0,
         "threshold": 70
       },
       "packages/services": {
         "claims": 35,
         "justified": 0,
         "reason": null,
-        "reportDate": "2026-11-19",
-        "score": 84.73,
-        "scoreJustified": 84.73,
-        "stale": 9,
+        "reportDate": "2026-11-23",
+        "score": 84.93,
+        "scoreJustified": 84.93,
+        "stale": 0,
         "threshold": 70
       },
       "packages/std-brands": {
@@ -3595,14 +3595,14 @@
         "claims": 42,
         "justified": 0,
         "reason": null,
-        "reportDate": "2026-11-18",
-        "score": 73.19,
-        "scoreJustified": 73.19,
-        "stale": 12,
+        "reportDate": "2026-11-23",
+        "score": 72.48,
+        "scoreJustified": 72.48,
+        "stale": 0,
         "threshold": 70
       }
     },
-    "stale": 199
+    "stale": 100
   },
   "schema": 1,
   "tests": {
@@ -3632,7 +3632,7 @@
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 160,
+        "unitCases": 161,
         "unitFiles": 22
       },
       "apps/household": {
@@ -4263,7 +4263,7 @@
       "proveFiles": 23,
       "simulateFiles": 17,
       "skipTodo": 5,
-      "unitCases": 5674,
+      "unitCases": 5675,
       "unitFiles": 983
     }
   },
