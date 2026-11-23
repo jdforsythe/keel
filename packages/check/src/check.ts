@@ -87,7 +87,7 @@ function expectedHashes(files: readonly SourceFile[], opts: CheckOptions): Reado
  * `keel check` over in-memory files (k.check pipeline): (1) oxc parse and strict TS check, (2) compiler
  * diagnostics passed through unchanged, one compile per project (`projectDirs`: paths relative to it, its own
  * `topology.ts`; rfc:0059), (3) the rule registry on each code file, rules' `sql` readers on each migration, plus project passes (E1005
- * against the hashes the compiler derives from each artifact's project, W1005, E1454, E1607, E1550, E1508, E1511, E1566, E1586, E1587, W1012, E1580-E1582, E1584, E1753, E1755, the k.module pass
+ * against the hashes the compiler derives from each artifact's project, W1005, E1454, E1607, E1550, E1508, E1511, E1566, E1586, E1587, W1012, E1580-E1582, E1584, E1589, E1753, E1755, the k.module pass
  * E1151-E1158, the contract passes (E1155, E1502-E1504, E1509, E1513, E1514), and the k.compat pass E1562, E1563,
  * W1564, W1568 over `.keel/surface.json`), (4) dedupe and sort. Static only: no app code is evaluated (rendered a11y is `keel test`, rfc:0023). Pure and deterministic for equal inputs.
  */
@@ -134,7 +134,7 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
     // E1587: a `styles` entry that is no string literal or no package `.css` export; W1012: an `index.html` Keel never reads.
     if (top !== undefined) out.push(...stylesDiags(dir, top, path.join(opts.root ?? process.cwd(), dir)));
     if (all.some((f) => f.path === `${dir}index.html`)) out.push(indexHtmlDiag(dir));
-    // E1580-E1582, E1584 (k.mount): the project's `identity.ts`, its importers and the topology serving them.
+    // E1580-E1582, E1584, E1589 (k.mount): the project's `identity.ts`, its importers and the topology serving them.
     for (const d of mountDiags(project.map((f) => ({ path: f.path.slice(dir.length), source: f.source }))))
       out.push({ kind: "diag", ...d, path: `${dir}${d.path}` });
     for (const d of compiled.diagnostics) {

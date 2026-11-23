@@ -7,7 +7,7 @@ Faults and gaps the scenario tests found, written as an app author meets them. E
 | Finding | Status |
 | --- | --- |
 | S3-1 | fixed: rfc:0185 a shell harness's cookie jar; `examples/shell-mount` tests the round trip |
-| S3-2 | open: for an RFC (k.guards, k.user) |
+| S3-2 | fixed: rfc:0186 the client router reads `user` from `GET /__keel/user`; `examples/shell-mount`'s guard reads `user` |
 | S3-3 | open: harness or skill text |
 | S3-4 | fixed: the keel-server skill names `createApp`'s `std` |
 

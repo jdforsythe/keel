@@ -199,6 +199,21 @@ async function flow(base) {
   } catch {
     // Left empty: the carried step fails.
   }
+  // The client router's read of the user (k.guards Client): the one answer the user id may be in, so it is not an error answer.
+  urls.push("/__keel/user");
+  const entry = await fetch(`${base}/__keel/user`, {
+    headers: { cookie, accept: "application/json", "x-keel": "1" },
+    redirect: "manual",
+  }).then(
+    async (res) => ({ status: res.status, text: await res.text(), cookies: res.headers.getSetCookie() }),
+    (e) => ({ status: 0, text: String(e), cookies: [] }),
+  );
+  let entryUser = null;
+  try {
+    entryUser = JSON.parse(entry.text).user;
+  } catch {
+    // Left null: the carried step fails.
+  }
   const signedIn = cookie;
   cookie = "";
   await json("GET", "/api/me", { authorization: `Bearer ${token}` });
@@ -208,7 +223,13 @@ async function flow(base) {
   await json("GET", "/api/me", { authorization: `Basic ${CANARY_PASSWORD}` });
   cookie = signedIn;
   await form("/api/auth/sign-out?locale=en-US", {});
-  return { answers, urls, me, minted: { token, tokenSecret: token.split("_").at(-1) ?? "", userId } };
+  return {
+    answers,
+    urls,
+    me,
+    entry: { ...entry, user: entryUser },
+    minted: { token, tokenSecret: token.split("_").at(-1) ?? "", userId },
+  };
 }
 
 /** An answer that refuses: a 4xx or 5xx, or a page reached by a redirect that carries `error`. */
@@ -240,6 +261,16 @@ try {
       `${format}: carried: signed in, minted a token, /api/me names the email`,
       run.minted.token !== "" && run.minted.userId !== "" && meHolds,
       `me ${run.me.status}`,
+    );
+    step(
+      `${format}: carried: /__keel/user names the user id`,
+      run.minted.userId !== "" && run.entry.status === 200 && run.entry.user === run.minted.userId,
+      `entry ${run.entry.status}`,
+    );
+    step(
+      `${format}: sink /__keel/user sets no cookie`,
+      run.entry.cookies.length === 0,
+      `${run.entry.cookies.length} cookies`,
     );
     const db = await leakedFiles(join(data, "postgres"), { email: CANARY_EMAIL });
     step(`${format}: carried: the database files hold the email`, db.length > 0, `${db.length} files`);

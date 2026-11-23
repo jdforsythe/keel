@@ -1,5 +1,7 @@
 import { codedError } from "./internal/codedError.ts";
 import { identityMounts } from "./internal/identityMounts.ts";
+import { readUser } from "./internal/readUser.ts";
+import { userRead } from "./internal/userRead.ts";
 import type { IdentityMount } from "./types/IdentityMount.ts";
 import type { MountHref } from "./types/MountHref.ts";
 
@@ -15,6 +17,8 @@ const SUBPATH = /^(\/(?!\.\.?(\/|$))[\w.~-]+)*$/;
  * `[A-Za-z0-9._~-]`, none `.` or `..`; anything else throws E1582. `options.links` (default `[]`) are subpaths of that
  * form, none `''` and none repeated, else E1584: a shell takes a return link to `path` plus one of them at any time
  * (k.links). A shell's router reads mount requests by `path` (k.return): the mount its entry passes to `shellMount`.
+ * Making one gives routers their `/__keel/user` read (k.guards Client, `userRead`): only a bundle that makes an identity
+ * mount carries it.
  */
 export function identityMount<P extends string>(
   path: P,
@@ -41,5 +45,6 @@ export function identityMount<P extends string>(
     },
   };
   identityMounts.add(mount);
+  userRead.fn = readUser;
   return mount;
 }
