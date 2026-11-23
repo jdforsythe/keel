@@ -1,5 +1,5 @@
 {
-  "commit": "b31ddcd6366de31f1053d6ea03f8421f2e2fe49d",
+  "commit": "2fd5e43ef3ddf912d6846e13e2e5e182909fa368",
   "coverage": {
     "packages": {
       "apps/golden-1": {
@@ -1168,7 +1168,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-23T10:51:12.724Z",
+  "generatedAt": "2026-11-23T17:59:27.862Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -3192,12 +3192,12 @@
         "threshold": null
       },
       "packages/check": {
-        "claims": 200,
+        "claims": 202,
         "justified": 0,
         "reason": null,
         "reportDate": "2026-11-23",
-        "score": 77.6,
-        "scoreJustified": 77.6,
+        "score": 72.84,
+        "scoreJustified": 72.84,
         "stale": 0,
         "threshold": 70
       },
@@ -3206,8 +3206,8 @@
         "justified": 0,
         "reason": null,
         "reportDate": "2026-11-23",
-        "score": 71.67,
-        "scoreJustified": 71.67,
+        "score": 72.01,
+        "scoreJustified": 72.01,
         "stale": 0,
         "threshold": 70
       },
@@ -3276,8 +3276,8 @@
         "justified": 0,
         "reason": null,
         "reportDate": "2026-11-23",
-        "score": 79.95,
-        "scoreJustified": 79.95,
+        "score": 78.83,
+        "scoreJustified": 78.83,
         "stale": 0,
         "threshold": 70
       },
@@ -3326,8 +3326,8 @@
         "justified": 0,
         "reason": null,
         "reportDate": "2026-11-23",
-        "score": 80.35,
-        "scoreJustified": 80.35,
+        "score": 80,
+        "scoreJustified": 80,
         "stale": 0,
         "threshold": 70
       },
@@ -3516,8 +3516,8 @@
         "justified": 0,
         "reason": null,
         "reportDate": "2026-11-23",
-        "score": 75.89,
-        "scoreJustified": 75.89,
+        "score": 76.83,
+        "scoreJustified": 76.83,
         "stale": 0,
         "threshold": 70
       },
@@ -3592,12 +3592,12 @@
         "threshold": 70
       },
       "packages/ui": {
-        "claims": 51,
+        "claims": 52,
         "justified": 0,
         "reason": null,
         "reportDate": "2026-11-23",
-        "score": 73.01,
-        "scoreJustified": 73.01,
+        "score": 72.76,
+        "scoreJustified": 72.76,
         "stale": 0,
         "threshold": 70
       }
