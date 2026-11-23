@@ -25,6 +25,29 @@
       "types": "./jsx-runtime.d.ts"
     }
   },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/src/index.d.ts",
+        "default": "./dist/src/index.js"
+      },
+      "./ops": {
+        "types": "./dist/src/ops/index.d.ts",
+        "default": "./dist/src/ops/index.js"
+      },
+      "./internal": {
+        "types": "./dist/src/internal/index.d.ts",
+        "default": "./dist/src/internal/index.js"
+      },
+      "./url": {
+        "types": "./dist/src/url/index.d.ts",
+        "default": "./dist/src/url/index.js"
+      },
+      "./jsx-runtime": {
+        "types": "./jsx-runtime.d.ts"
+      }
+    }
+  },
   "files": ["dist", "jsx-runtime.d.ts", "docs"],
   "scripts": {
     "check": "tsc --noEmit && biome check src test unsafe",

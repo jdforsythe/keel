@@ -17,6 +17,22 @@
       "default": "./src/internal/index.ts"
     }
   },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/src/index.d.ts",
+        "default": "./dist/src/index.js"
+      },
+      "./gen": {
+        "types": "./dist/src/gen.d.ts",
+        "default": "./dist/src/gen.js"
+      },
+      "./internal": {
+        "types": "./dist/src/internal/index.d.ts",
+        "default": "./dist/src/internal/index.js"
+      }
+    }
+  },
   "files": ["dist", "docs"],
   "scripts": {
     "check": "tsc --noEmit && biome check src test unsafe",

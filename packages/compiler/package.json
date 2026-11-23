@@ -49,6 +49,54 @@
     },
     "./tsconfig.strict.json": "./tsconfig.strict.json"
   },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/src/index.d.ts",
+        "default": "./dist/src/index.js"
+      },
+      "./vite": {
+        "types": "./dist/src/vite.d.ts",
+        "default": "./dist/src/vite.js"
+      },
+      "./client": {
+        "types": "./src/client.d.ts"
+      },
+      "./routes": {
+        "types": "./dist/src/buildRoutes.d.ts",
+        "default": "./dist/src/buildRoutes.js"
+      },
+      "./internal": {
+        "types": "./dist/src/globals/index.d.ts",
+        "default": "./dist/src/globals/index.js"
+      },
+      "./a11y": {
+        "types": "./dist/src/a11y/index.d.ts",
+        "default": "./dist/src/a11y/index.js"
+      },
+      "./internal/entry/*": {
+        "types": "./dist/src/entry/*.d.ts",
+        "default": "./dist/src/entry/*.js"
+      },
+      "./inspect/*": {
+        "types": "./dist/src/inspect/*.d.ts",
+        "default": "./dist/src/inspect/*.js"
+      },
+      "./std/*": {
+        "types": "./dist/src/std/*.d.ts",
+        "default": "./dist/src/std/*.js"
+      },
+      "./hosting/*": {
+        "types": "./dist/src/hosting/*.d.ts",
+        "default": "./dist/src/hosting/*.js"
+      },
+      "./testing": {
+        "types": "./dist/src/testing/evaluate.d.ts",
+        "default": "./dist/src/testing/evaluate.js"
+      },
+      "./tsconfig.strict.json": "./tsconfig.strict.json"
+    }
+  },
   "files": ["dist", "tsconfig.strict.json", "docs"],
   "scripts": {
     "check": "tsc --noEmit && biome check src test unsafe",

@@ -21,6 +21,26 @@
       "default": "./src/internal/index.ts"
     }
   },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/src/index.d.ts",
+        "default": "./dist/src/index.js"
+      },
+      "./contract": {
+        "types": "./dist/src/contract/index.d.ts",
+        "default": "./dist/src/contract/index.js"
+      },
+      "./match": {
+        "types": "./dist/src/match/index.d.ts",
+        "default": "./dist/src/match/index.js"
+      },
+      "./internal": {
+        "types": "./dist/src/internal/index.d.ts",
+        "default": "./dist/src/internal/index.js"
+      }
+    }
+  },
   "files": ["dist", "docs"],
   "scripts": {
     "check": "tsc --noEmit && biome check src test unsafe",

@@ -18,6 +18,23 @@
       "default": "./src/tools.ts"
     }
   },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/src/index.d.ts",
+        "default": "./dist/src/index.js"
+      },
+      "./shellMount": {
+        "types": "./dist/src/shellMount.d.ts",
+        "default": "./dist/src/shellMount.js"
+      },
+      "./package.json": "./package.json",
+      "./tools": {
+        "types": "./dist/src/tools.d.ts",
+        "default": "./dist/src/tools.js"
+      }
+    }
+  },
   "files": ["dist", "android/src/main/", "android/build.gradle", "ios/Sources", "Package.swift", "docs"],
   "capacitor": {
     "android": {
