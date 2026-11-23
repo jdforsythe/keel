@@ -165,6 +165,12 @@ const kept = (page) =>
       for (const n of r.addedNodes) if (n.nodeType === 1 && inIsland) k.added++;
     }
     k.observer?.disconnect();
+    // The note prints "<n> events kept" and lists at most the newest 12; a page without the note has no tally.
+    const eventTally = () => {
+      const list = document.getElementById("app.recording.events");
+      const n = Number.parseInt(document.getElementById("app.recording.count")?.textContent ?? "", 10);
+      return list === null || Number.isNaN(n) ? null : { listed: list.children.length, kept: n };
+    };
     const rows = Object.entries(k.rows);
     const a = document.activeElement;
     return {
@@ -172,6 +178,7 @@ const kept = (page) =>
       gone: k.served.filter((el) => !el.isConnected).length,
       removed: k.removed,
       added: k.added,
+      events: eventTally(),
       rows: rows.length,
       sameRows: rows.filter(([id, el]) => document.getElementById(id) === el).length,
       islands: [...document.querySelectorAll("[data-k-island]")].map((e) => e.getAttribute("data-k-island")),
@@ -238,6 +245,13 @@ function checkPage(step, label, v, served) {
     v.state.gone === 0 && v.state.removed === 0 && v.state.added === 0,
     `${v.state.removed} removed, ${v.state.added} added under islands, ${v.state.gone} of ${v.state.served} served elements gone`,
   );
+  const tally = v.state.events;
+  if (tally !== null)
+    step(
+      `${label} recorded events not doubled`,
+      tally.listed <= Math.min(12, tally.kept),
+      `${tally.listed} listed, ${tally.kept} kept`,
+    );
   if (v.set.typed !== undefined) {
     const f = v.state.focus;
     step(

@@ -150,3 +150,26 @@ it("commits a write sent twice once, and refuses a write for another member, for
   const after = await mark(h.user, h.adaCookie, "Write_three");
   expect([after.status, await code(after)]).toEqual([400, "offline.signin"]);
 });
+
+it("keeps a write key to the member who sent it: two members' marks with one key both apply, one member's twice once", async () => {
+  const h = await household(86);
+  await h.raw(asJson("POST", "/api/items", { name: "Milk" }, { cookie: h.graceCookie }));
+  await h.raw(asJson("POST", "/api/items", { name: "Eggs" }, { cookie: h.graceCookie }));
+  const items = await stored(h);
+  const [first, second] = items;
+  if (first === undefined || second === undefined) throw new Error("the list holds fewer than two items");
+  const mark = (id: string, owner: string, cookie: string) =>
+    h.raw(
+      asJson("POST", `/api/items/${id}/bought`, { bought: true, write: { key: "Write_shared", base: 0, owner } }, { cookie }),
+    );
+
+  expect((await mark(first.id, h.user, h.adaCookie)).status).toBe(200);
+  expect((await mark(second.id, h.graceId, h.graceCookie)).status).toBe(200);
+  expect((await stored(h)).map((i) => [i.id, i.bought, i.rev])).toEqual(items.map((i) => [i.id, true, 1]));
+  expect(await committed(h)).toBe(2);
+
+  expect((await mark(first.id, h.user, h.adaCookie)).status).toBe(200);
+  expect((await mark(second.id, h.graceId, h.graceCookie)).status).toBe(200);
+  expect((await stored(h)).map((i) => i.rev)).toEqual([1, 1]);
+  expect(await committed(h)).toBe(2);
+});

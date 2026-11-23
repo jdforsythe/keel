@@ -15,6 +15,6 @@ export const postBought = action(shopping, "shopping.mark", {}, async (body, arg
   const write = writeFor(body.write, args.user);
   if (!write.ok) return err(write.error);
   if (args.user === "") return err(denied);
-  const items = await markBought(ctx, args.params.id, body.bought, write.value);
+  const items = await markBought(ctx, args.params.id, body.bought, { ...write.value, owner: args.user });
   return items.ok ? ok({ items: items.value }) : err(items.error);
 });

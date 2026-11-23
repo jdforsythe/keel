@@ -8,9 +8,8 @@ type Row = Infer<typeof Item>;
 
 /**
  * Inside transaction `t`, writes the rows of `after` that differ from `before`, raising the `rev` of each it updates,
- * and deletes the ones it lacks; when any
- * row changed, names the list channel, so every open list stream hears `changed` once `t` commits. Answers whether a
- * row changed.
+ * and deletes the ones it lacks; when any row changed, names the list channel, so every open list stream hears
+ * `changed` once `t` commits. Answers whether a row changed.
  */
 export async function writeList(t: Tx, before: readonly Row[], after: readonly Row[]) {
   let changed = false;
