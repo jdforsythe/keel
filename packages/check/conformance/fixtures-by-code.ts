@@ -1238,6 +1238,21 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       f("modules/shop/paths.server.ts", "export const paths = import.meta.dirname\n"),
     ],
   },
+  E1801: {
+    opts: { types: false, artifacts: { tokens: { space: { 2: "8px" }, look: { primary: { p: "2" } } } } },
+    bad: [f("C.tsx", `${UI}export default function C() { return <Button look="nope">Save</Button> }\n`)],
+    clean: [f("C.tsx", `${UI}export default function C() { return <Button look="primary">Save</Button> }\n`)],
+  },
+  E1809: {
+    opts: NO_TYPES,
+    bad: [f("C.tsx", `${UI}export default function C() { return <Box gap="2"><Text>a</Text><Text>b</Text></Box> }\n`)],
+    clean: [
+      f(
+        "C.tsx",
+        `${UI}export default function C() { return <Box direction="column" gap="2"><Text>a</Text><Text>b</Text></Box> }\n`,
+      ),
+    ],
+  },
   E1802: {
     bad: [f("C.tsx", `${UI}export default function C() { return <Button /> }\n`)],
     clean: [f("C.tsx", `${UI}export default function C() { return <Button>Save</Button> }\n`)],

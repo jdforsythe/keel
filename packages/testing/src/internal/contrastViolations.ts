@@ -1,4 +1,4 @@
-import type { Tokens } from "@keel/ui";
+import type { BaseRole, StyleProp, Tokens } from "@keel/ui";
 import { contrast } from "@keel/ui/css";
 import type { ClassMap } from "./ClassMap.ts";
 import type { Violation } from "./Violation.ts";
@@ -20,30 +20,59 @@ const exempt = (el: Element): boolean => {
   return inDisabledFieldset(el);
 };
 
+/** Role class -> `base` role (k.ui Base); `body`'s `page` set is what no element of the page sets. */
+const ROLES: Readonly<Record<string, BaseRole>> = {
+  "k-heading": "heading",
+  "k-link": "link",
+  "k-button": "button",
+  "k-control": "control",
+  "k-label": "label",
+  "k-error": "fieldError",
+  "k-summary": "summary",
+};
+
 /**
  * The token `prop` resolves to on `el` at the breakpoint index `at` (0 base, i + 1 breakpoint i): its own winning
- * class, else the nearest ancestor's. A class of breakpoint j applies when j's min-width is at most `at`'s; a later
- * breakpoint in token order wins, as its `min-width` block comes later in the CSS.
+ * class, else its role's `base` set (an atomic rule outranks the `keel.base` layer), else the nearest ancestor's, else
+ * `base.page`'s. A value of breakpoint j applies when j's min-width is at most `at`'s; a later breakpoint in token
+ * order wins, as its `min-width` block comes later in the CSS.
  */
-function tokenAt(map: ClassMap, el: Element, prop: string, at: number): string | undefined {
+function tokenAt(map: ClassMap, tokens: Tokens, el: Element, prop: StyleProp, at: number): string | undefined {
   const width = (i: number): number => map.breakpoints[i - 1]?.[1] ?? 0;
+  const rankOf = (bp: string | undefined): number =>
+    bp === undefined || bp === "base" ? 0 : 1 + map.breakpoints.findIndex(([b]) => b === bp);
+  const fromSet = (role: BaseRole): string | undefined => {
+    const v = tokens.base?.[role]?.[prop];
+    if (typeof v === "string" || v === undefined) return v;
+    let best: [string, number] | undefined;
+    for (const [bp, token] of Object.entries(v)) {
+      const rank = rankOf(bp);
+      if (width(rank) <= width(at) && rank >= (best?.[1] ?? 0)) best = [token, rank];
+    }
+    return best?.[0];
+  };
   for (let n: Element | null = el; n !== null; n = n.parentElement) {
     let best: [string, number] | undefined;
     for (const cls of Array.from(n.classList)) {
       const hit = map.byClass.get(cls);
-      const rank = hit?.bp === undefined ? 0 : 1 + map.breakpoints.findIndex(([b]) => b === hit.bp);
+      const rank = rankOf(hit?.bp);
       if (hit?.prop === prop && width(rank) <= width(at) && rank >= (best?.[1] ?? 0)) best = [hit.token, rank];
     }
     if (best !== undefined) return best[0];
+    for (const cls of Array.from(n.classList)) {
+      const role = ROLES[cls];
+      const own = role === undefined ? undefined : fromSet(role);
+      if (own !== undefined) return own;
+    }
   }
-  return undefined;
+  return fromSet("page");
 }
 
 /**
  * E1804 at render (k.a11y Contrast): every visible, enabled element holding text, per scheme and breakpoint, from
- * its atomic classes and `tokens` (no layout): `fg` its own or inherited, the background the nearest painted
- * ancestor's `bg` (itself included), else `#FFFFFF`; text without an `fg` is `#000000` in both schemes (Keel's CSS
- * sets no root `color` or `color-scheme`, so the user agent's default text stays). 4.5:1, or 3:1 when large
+ * its atomic classes, its role's `base` set and `tokens` (no layout): `fg` its own or inherited, the background the
+ * nearest painted ancestor's `bg` (itself included), else `base.page`'s, else `#FFFFFF`; text without an `fg` takes
+ * `base.page`'s, else `#000000` in both schemes (the user agent's default text). 4.5:1, or 3:1 when large
  * (`fontSize` >= 24px, or >= 18.66px at `weight` >= 700). Text under `hidden` or disabled is exempt; `aria-hidden`
  * text is visible and judged. A color that is not hex is not judged. One violation per element.
  */
@@ -56,8 +85,8 @@ export function contrastViolations(root: Element, tokens: Tokens): Violation[] {
     let help: string | undefined;
     for (let at = 0; at <= map.breakpoints.length && help === undefined; at++)
       for (const scheme of SCHEMES) {
-        const fgTok = tokenAt(map, el, "fg", at);
-        const bgTok = tokenAt(map, el, "bg", at);
+        const fgTok = tokenAt(map, tokens, el, "fg", at);
+        const bgTok = tokenAt(map, tokens, el, "bg", at);
         const pick = (t: string | undefined, none: string): string => {
           const c = t === undefined ? none : colors[t];
           return c === undefined || typeof c === "string" ? (c ?? "") : c[scheme];
@@ -65,8 +94,8 @@ export function contrastViolations(root: Element, tokens: Tokens): Violation[] {
         const fg = pick(fgTok, "#000000");
         const bg = pick(bgTok, "#FFFFFF");
         if (!HEX.test(fg) || !HEX.test(bg)) continue;
-        const sizeTok = tokenAt(map, el, "fontSize", at);
-        const weightTok = tokenAt(map, el, "weight", at);
+        const sizeTok = tokenAt(map, tokens, el, "fontSize", at);
+        const weightTok = tokenAt(map, tokens, el, "weight", at);
         const size = px(sizeTok === undefined ? "" : (tokens.fontSize?.[sizeTok] ?? ""));
         const weight = Number(weightTok === undefined ? 400 : tokens.weight?.[weightTok]);
         const need = size >= 24 || (size >= 18.66 && weight >= 700) ? 3 : 4.5;

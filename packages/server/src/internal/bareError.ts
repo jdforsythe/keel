@@ -33,7 +33,7 @@ export function bareError(
     data: [],
     props: () => ({}),
     failure,
-    prepend: "",
+    prepend: () => "",
     ctx: r.sv.ctx,
     publicize,
   });

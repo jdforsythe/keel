@@ -13,10 +13,10 @@ export default function VisitorFrame(props: Infer<typeof Props> & { readonly chi
       data={props.data}
       nav={() => (
         <Box direction="row" align="center" gap="4">
-          <Link id="members.nav.signIn" to={members.href("members.signin")} fg="text">
+          <Link id="members.nav.signIn" to={members.href("members.signin")}>
             {props.data.text.signIn}
           </Link>
-          <Link id="members.nav.signUp" to={members.href("members.signup")} fg="text">
+          <Link id="members.nav.signUp" to={members.href("members.signup")}>
             {props.data.text.signUp}
           </Link>
         </Box>

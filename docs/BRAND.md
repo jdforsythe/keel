@@ -26,15 +26,32 @@ A high-contrast parchment surface with deep charcoal text. ISO Ochre is reserved
 
 ## 4. Layout and components
 - Geometry: zero border radius on cards, buttons, inputs.
-- Focus: the brand defines no focus style; the platform's indicator stays.
+- Focus: a 2px solid Charcoal ring, 2px outside the element, square, on keyboard focus (`:focus-visible`). Ochre stays reserved for status. The ring sits on the surface around the element, where Charcoal measures 16.60:1 on Surface, 15.75:1 on Surface-container-low and 17.47:1 on Surface-bright. That meets WCAG 2.2 2.4.7, 1.4.11 at 3:1 and 2.4.13 (AAA): the ring encloses more than a 2px perimeter of the element and changes those pixels by far more than 3:1. Keel's controls carry it through `base.focus`; no style prop removes it.
 - Dividers: hairline `1px solid #E4E4E7`, used only to separate compositional blocks.
 - Diagnostic block: monospace container with the code (`E1042`), the path (`src/cart/add.tsx:14:7`), one line of message, and the exact unified diff hunk (`-`, `+`). This is the OUTPUT.md diagnostic shape rendered.
+
+### Defaults and looks
+`brandTokens` puts the guide on every page with no app code. Its `base` group styles each element role, and any style prop at a use replaces the default for that prop.
+
+| Role | Default |
+| --- | --- |
+| `page` (`body`) | Source Serif 4 at 17px, Charcoal on Surface |
+| `heading` | Source Serif 4, semibold, Charcoal |
+| `link` | Charcoal, Stone on hover |
+| `button` | JetBrains Mono 14px, medium, Surface-bright on Charcoal, a 1px Charcoal rule, zero radius |
+| `control` (Input, TextArea, Select) | JetBrains Mono 14px, full width, Charcoal on Surface-bright, a 1px Stone border that turns Charcoal on hover, zero radius |
+| `label` | JetBrains Mono 14px, Charcoal |
+| `fieldError` | JetBrains Mono 14px, Crimson |
+| `summary` (no-script error summary) | JetBrains Mono 14px, Crimson on Surface-bright inside a 1px Crimson border |
+| `focus` | Charcoal: the ring above |
+
+Its `look` group names three sets an element takes as `look="<name>"`, its own props winning: `primary` is the button default, `control` the control default, and `secondary` a JetBrains Mono 14px button in Charcoal on Surface-bright with a 1px Charcoal rule that fills Surface-container-low on hover. An app restyles a role or a look in its own `tokens.ts` (`{ ...brandTokens, look: { ...brandTokens.look, primary: { ... } } }`).
 
 ## 5. Voice and vocabulary
 The sentence-level rules live in `docs/VOICE.md` (first person, reader as the hero, concrete nouns and numbers, no em dashes, no reversals, no hedging, the full banned list). `tooling/voice-lint.mjs` enforces the mechanical rules as V0003 in `pnpm check`. Two brand-level rules: claims never exceed what the ledger shows (PRINCIPLES 11), and the only nautical term is *Keel*.
 
 ## 6. Where it lives in code
-- `brandTokens` from `@keel/ui/brand` (`packages/ui/src/brand/brandTokens.ts`) holds this palette (`surface`, `surfaceLow`, `card`, `text`, `textSecondary`, `accent`, `verified`, `error`, `divider`), the two font stacks, radius `none` (0), the `hairline` size and border, and a light scheme only. The scaffold `project` template emits a `tokens.ts` that exports `brandTokens`, so every new app starts on brand. Apps: `apps/golden-1`, `apps/golden-2`, `apps/household`, `apps/inspector`, `apps/sessions` and every app under `examples/`.
+- `brandTokens` from `@keel/ui/brand` (`packages/ui/src/brand/brandTokens.ts`) holds this palette (`surface`, `surfaceLow`, `card`, `text`, `textSecondary`, `accent`, `verified`, `error`, `divider`), the two font stacks, radius `none` (0), the `hairline` size and border, a light scheme only, and the `base` and `look` groups of section 4. The scaffold `project` template emits a `tokens.ts` that exports `brandTokens`, so every new app starts on brand. Apps: `apps/golden-1`, `apps/golden-2`, `apps/household`, `apps/inspector`, `apps/sessions` and every app under `examples/`.
 - Fonts are self-hosted (`@keel/ui/fonts`, `packages/ui/fonts/fonts.css` with the two variable woff2 files and their licenses), never fetched from a third party at runtime (THREAT-MODEL CSP).
 
 subject: packages/ui/src/brand* docs/brand/

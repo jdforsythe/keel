@@ -22,6 +22,8 @@ Canonical names. Changing one requires an RFC.
 - **extension point**: schema type registry, check rule registry, capability registry, module manifest, inspector hooks (`inspector({ id, schema, read })`: a named, schema-typed section of the inspect document), output formatter registry.
 - **unsafe**: the only named path around a guarantee; requires a justification string; counted in the ledger.
 - **part**: `Part` from `@keel/ui/aria`, the element stdlib widgets build on; a base element whose `role` fixes its tag and ARIA props.
+- **base**: the `tokens.ts` group of style sets the compiled stylesheet applies to each element role (`page`, `heading`, `link`, `button`, `control`, `label`, `fieldError`, `summary`), with the `focus` color of the keyboard focus ring; any style prop at a use wins (k.ui).
+- **look**: a named style set in the `look` group of `tokens.ts`, applied as `look="<name>"`; the element's own props replace the set's per prop (k.ui).
 - **host element**: `Host` from `@keel/ui`, the one element whose node outside code owns (a chart library, d3, a standard custom element), given a schema-typed value and run by `hostCode({ mount, update, dispose })`; client only, opaque to the harness and replay, counted in the ledger (k.host-element).
 - **driver**: an object passed as `createCtx({ drivers })` that supplies `storage` or `net` on a `real` or `shell` ctx and keeps that capability's contract.
 - **shell**: a native package of a `client` deployable, `capacitor` (Android, iOS) or `tauri` (desktop), declared in `topology.ts` as `shells`.

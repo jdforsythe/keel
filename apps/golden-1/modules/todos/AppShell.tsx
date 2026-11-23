@@ -44,7 +44,7 @@ export default function AppShell(props: Infer<typeof Props> & { readonly childre
     void todosApi.undo({}, ctx).then(() => refreshView(ctx));
   };
   return (
-    <Box id="todos.shell" direction="column" bg="surface" fg="text" font="serif" fontSize="md">
+    <Box id="todos.shell" direction="column">
       <Box
         as="header"
         direction={{ base: "column", md: "row" }}
@@ -75,22 +75,15 @@ export default function AppShell(props: Infer<typeof Props> & { readonly childre
           >
             {LABELS[status()]}
           </Text>
-          <Link id="todos.home" to={todos.href("todos.index")} fg="text">
+          <Link id="todos.home" to={todos.href("todos.index")}>
             Home
           </Link>
           <Button
             id="todos.undo"
             disabled={empty}
             onClick={undo}
-            font="mono"
-            fontSize="sm"
-            px="3"
-            py="2"
-            bg="card"
-            fg="text"
-            border="rule"
-            radius="none"
-            states={{ hover: { bg: "surfaceLow" }, disabled: { fg: "textSecondary", border: "control" } }}
+            look="secondary"
+            states={{ disabled: { fg: "textSecondary", border: "control" } }}
           >
             Undo
           </Button>

@@ -44,7 +44,7 @@ export default function EditTodoPage(props: Infer<typeof Props>) {
   });
   return (
     <Box as="section" id="todos.edit" direction="column" gap="5">
-      <Heading id="todos.edit.title" level={1} fontSize="2xl" weight="semibold" m="0">
+      <Heading id="todos.edit.title" level={1} fontSize="2xl" m="0">
         Edit todo
       </Heading>
       <Text id="todos.edit.status" role="status" font="mono" fontSize="sm" fg="error">
@@ -60,52 +60,20 @@ export default function EditTodoPage(props: Infer<typeof Props>) {
           </Text>
         )}
       >
-        <Input
-          field={f.field("title")}
-          label="Title"
-          font="serif"
-          fontSize="md"
-          px="2"
-          py="2"
-          mx="2"
-          my="1"
-          bg="card"
-          fg="text"
-          border="control"
-          radius="none"
-        />
-        <Select
-          field={f.field("priority")}
-          label="Priority"
-          options={PRIORITIES}
-          font="serif"
-          fontSize="md"
-          px="2"
-          py="2"
-          mx="2"
-          my="1"
-          bg="card"
-          fg="text"
-          border="control"
-          radius="none"
-        />
-        <Button
-          id="todos.save"
-          type="submit"
-          disabled={blocked}
-          states={{ disabled: { fg: "textSecondary", border: "control" } }}
-          font="mono"
-          fontSize="sm"
-          px="4"
-          py="2"
-          my="2"
-          bg="text"
-          fg="card"
-          border="rule"
-          radius="none"
-        >
-          Save
-        </Button>
+        <Box direction="column" gap="3" p={{ base: "3", md: "4" }} bg="card" border="hairline">
+          <Input field={f.field("title")} label="Title" />
+          <Select field={f.field("priority")} label="Priority" options={PRIORITIES} />
+          <Box direction="row">
+            <Button
+              id="todos.save"
+              type="submit"
+              disabled={blocked}
+              states={{ disabled: { bg: "surfaceLow", fg: "textSecondary", border: "control" } }}
+            >
+              Save
+            </Button>
+          </Box>
+        </Box>
       </Form>
     </Box>
   );

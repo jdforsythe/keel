@@ -21,7 +21,7 @@ export function Heading(
 ): Node {
   return make(`h${tagOf("Heading level", LEVELS, props.level)}`, (el) => {
     applyIdLang(el, props);
-    applyStyle(el, props);
+    applyStyle(el, props, "k-heading");
     appendChildren(el, renderChildren(props.children));
   });
 }

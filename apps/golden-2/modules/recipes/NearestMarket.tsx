@@ -47,12 +47,7 @@ export default function NearestMarket(props: Infer<typeof Props>, ctx: Ctx) {
           onClick={() => {
             void locate();
           }}
-          px="3"
-          py="1"
-          border="rule"
-          radius="none"
-          font="mono"
-          fontSize="sm"
+          look="secondary"
         >
           {props.text.findMarket}
         </Button>

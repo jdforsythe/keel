@@ -49,7 +49,7 @@ export default function OutboxPanel(_props: Infer<typeof Props>, ctx: Ctx) {
           px={{ base: "3", md: "4" }}
           py="4"
         >
-          <Heading id="todos.outbox.title" level={2} fontSize="xl" weight="semibold" m="0">
+          <Heading id="todos.outbox.title" level={2} fontSize="xl" m="0">
             Outbox
           </Heading>
           <Box
@@ -67,8 +67,9 @@ export default function OutboxPanel(_props: Infer<typeof Props>, ctx: Ctx) {
                 <Box
                   as="li"
                   id={`todos.outbox.entry.${idPart(entry.key)}`}
-                  direction="row"
-                  align="center"
+                  direction={{ base: "column", md: "row" }}
+                  wrap="wrap"
+                  align={{ base: "start", md: "center" }}
                   justify="between"
                   gap="3"
                   px="3"
@@ -96,28 +97,14 @@ export default function OutboxPanel(_props: Infer<typeof Props>, ctx: Ctx) {
                           id={`todos.outbox.mine.${idPart(entry.key)}`}
                           disabled={entry.endpoint === "editTodo" && editorStuck()}
                           onClick={() => choose(entry, "mine")}
-                          font="mono"
-                          fontSize="sm"
-                          px="3"
-                          py="2"
-                          bg="text"
-                          fg="card"
-                          border="rule"
-                          radius="none"
+                          states={{ disabled: { bg: "surfaceLow", fg: "textSecondary", border: "control" } }}
                         >
                           Keep mine
                         </Button>
                         <Button
                           id={`todos.outbox.theirs.${idPart(entry.key)}`}
                           onClick={() => choose(entry, "theirs")}
-                          font="mono"
-                          fontSize="sm"
-                          px="3"
-                          py="2"
-                          bg="card"
-                          fg="text"
-                          border="rule"
-                          radius="none"
+                          look="secondary"
                         >
                           Keep theirs
                         </Button>
@@ -129,14 +116,7 @@ export default function OutboxPanel(_props: Infer<typeof Props>, ctx: Ctx) {
                       <Button
                         id={`todos.outbox.theirs.${idPart(entry.key)}`}
                         onClick={() => choose(entry, "theirs")}
-                        font="mono"
-                        fontSize="sm"
-                        px="3"
-                        py="2"
-                        bg="card"
-                        fg="text"
-                        border="rule"
-                        radius="none"
+                        look="secondary"
                       >
                         Dismiss
                       </Button>

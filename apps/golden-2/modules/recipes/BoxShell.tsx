@@ -26,15 +26,7 @@ export default function BoxShell(props: Infer<typeof Props> & { readonly childre
     if (!removed.ok) return;
   };
   return (
-    <Box
-      id="recipes.shell"
-      lang={props.params.locale}
-      direction="column"
-      bg="surface"
-      fg="text"
-      font="serif"
-      fontSize="md"
-    >
+    <Box id="recipes.shell" lang={props.params.locale} direction="column">
       <Box
         as="header"
         direction={{ base: "column", md: "row" }}
@@ -54,17 +46,13 @@ export default function BoxShell(props: Infer<typeof Props> & { readonly childre
           </Text>
         </Box>
         <Box as="nav" id="recipes.nav" label={props.data.text.navLabel} direction="row" align="center" gap="4">
-          <Link id="recipes.home" to={recipes.href("recipes.index", { locale: props.params.locale })} fg="text">
+          <Link id="recipes.home" to={recipes.href("recipes.index", { locale: props.params.locale })}>
             {props.data.text.home}
           </Link>
-          <Link id="recipes.newLink" to={recipes.href("recipes.new", { locale: props.params.locale })} fg="text">
+          <Link id="recipes.newLink" to={recipes.href("recipes.new", { locale: props.params.locale })}>
             {props.data.text.newLink}
           </Link>
-          <Link
-            id="recipes.catalogLink"
-            to={recipes.href("recipes.catalog", { locale: props.params.locale })}
-            fg="text"
-          >
+          <Link id="recipes.catalogLink" to={recipes.href("recipes.catalog", { locale: props.params.locale })}>
             {props.data.text.catalogLink}
           </Link>
         </Box>
@@ -101,7 +89,7 @@ export default function BoxShell(props: Infer<typeof Props> & { readonly childre
           id="recipes.toaster"
           styles={{
             toast: { bg: "card", border: "hairline", px: "3", py: "2", font: "mono", fontSize: "sm" },
-            dismiss: { px: "2", py: "1", border: "rule", radius: "none" },
+            dismiss: { look: "secondary", px: "2", py: "1" },
           }}
           items={() => toasts.get("items")}
           onDismiss={dismiss}

@@ -1,7 +1,7 @@
 import type { Ctx } from "@keel/ctx";
 import { form } from "@keel/forms";
 import { Form } from "@keel/router";
-import { For } from "@keel/runtime-dom";
+import { For, If } from "@keel/runtime-dom";
 import { type Infer, s } from "@keel/schema";
 import { Box, Button, Heading, Input, Link, Text } from "@keel/ui";
 import { ListDraft } from "../api/ListDraft.schema.ts";
@@ -35,16 +35,16 @@ export default function ListsPage(_props: Infer<typeof Props>, ctx: Ctx) {
   const f = form(ListDraft);
   return (
     <Box as="section" id="todos.lists" direction="column" gap="5">
-      <Heading id="todos.lists.title" level={1} fontSize="2xl" weight="semibold" m="0">
+      <Heading id="todos.lists.title" level={1} fontSize="2xl" m="0">
         Lists
       </Heading>
       <For each={waiting()} key="flow">
         {(r) => (
           <Box
             id={`todos.removal.${idPart(r.flow)}`}
-            direction="row"
+            direction={{ base: "column", md: "row" }}
             justify="between"
-            align="center"
+            align={{ base: "start", md: "center" }}
             gap="3"
             px="3"
             py="2"
@@ -52,71 +52,72 @@ export default function ListsPage(_props: Infer<typeof Props>, ctx: Ctx) {
             border="hairline"
           >
             <Text fontSize="sm">{`${nameOf(r.list)} is removed in 10 minutes.`}</Text>
-            <Button
-              id={`todos.undo.${idPart(r.flow)}`}
-              onClick={() => undo(r.flow)}
-              font="mono"
-              fontSize="sm"
-              px="3"
-              py="1"
-              bg="card"
-              fg="text"
-              border="rule"
-              radius="none"
-            >
+            <Button id={`todos.undo.${idPart(r.flow)}`} onClick={() => undo(r.flow)} look="secondary">
               Undo
             </Button>
           </Box>
         )}
       </For>
-      <Box as="ul" id="todos.lists.items" direction="column" gap="hairline" bg="divider" border="hairline" p="0" m="0">
-        <For each={shown()} key="id">
-          {(list) => (
-            <Box
-              as="li"
-              id={`todos.listItem.${idPart(list.id)}`}
-              direction="row"
-              justify="between"
-              align="baseline"
-              gap="3"
-              px="3"
-              py="3"
-              bg="card"
-            >
-              <Link
-                id={`todos.listLink.${idPart(list.id)}`}
-                to={todos.href("todos.list", { listId: list.id })}
-                fg="text"
-              >
-                {list.name}
-              </Link>
-              <Text
-                id={`todos.openCount.${idPart(list.id)}`}
-                font="mono"
-                fontSize="xs"
-                fg="accent"
-                border="accent"
-                px="2"
-                py="1"
-              >{`${openCount(list.id)} open`}</Text>
-              <Button
-                id={`todos.remove.${idPart(list.id)}`}
-                onClick={() => remove(list.id)}
-                font="mono"
-                fontSize="xs"
-                px="2"
-                py="1"
-                bg="card"
-                fg="text"
-                border="rule"
-                radius="none"
-              >
-                Remove
-              </Button>
-            </Box>
-          )}
-        </For>
-      </Box>
+      <If
+        when={shown().length > 0}
+        fallback={() => (
+          <Text as="p" id="todos.lists.empty" m="0" fg="textSecondary">
+            No lists yet. Name one below to start.
+          </Text>
+        )}
+      >
+        {() => (
+          <Box
+            as="ul"
+            id="todos.lists.items"
+            direction="column"
+            gap="hairline"
+            bg="divider"
+            border="hairline"
+            p="0"
+            m="0"
+          >
+            <For each={shown()} key="id">
+              {(list) => (
+                <Box
+                  as="li"
+                  id={`todos.listItem.${idPart(list.id)}`}
+                  direction={{ base: "column", md: "row" }}
+                  justify="between"
+                  align={{ base: "start", md: "center" }}
+                  gap="3"
+                  px="3"
+                  py="3"
+                  bg="card"
+                >
+                  <Box
+                    direction={{ base: "column", md: "row" }}
+                    wrap="wrap"
+                    align={{ base: "start", md: "baseline" }}
+                    gap={{ base: "2", md: "3" }}
+                  >
+                    <Link id={`todos.listLink.${idPart(list.id)}`} to={todos.href("todos.list", { listId: list.id })}>
+                      {list.name}
+                    </Link>
+                    <Text
+                      id={`todos.openCount.${idPart(list.id)}`}
+                      font="mono"
+                      fontSize="xs"
+                      fg="accent"
+                      border="accent"
+                      px="2"
+                      py="1"
+                    >{`${openCount(list.id)} open`}</Text>
+                  </Box>
+                  <Button id={`todos.remove.${idPart(list.id)}`} onClick={() => remove(list.id)} look="secondary">
+                    Remove
+                  </Button>
+                </Box>
+              )}
+            </For>
+          </Box>
+        )}
+      </If>
       <Form
         method="POST"
         action={todos.href("todos.index")}
@@ -127,35 +128,14 @@ export default function ListsPage(_props: Infer<typeof Props>, ctx: Ctx) {
           </Text>
         )}
       >
-        <Input
-          field={f.field("name")}
-          label="List name"
-          font="serif"
-          fontSize="md"
-          px="2"
-          py="2"
-          mx="2"
-          my="1"
-          bg="card"
-          fg="text"
-          border="control"
-          radius="none"
-        />
-        <Button
-          id="todos.addList"
-          type="submit"
-          font="mono"
-          fontSize="sm"
-          px="4"
-          py="2"
-          my="2"
-          bg="text"
-          fg="card"
-          border="rule"
-          radius="none"
-        >
-          Add list
-        </Button>
+        <Box direction="column" gap="3" p={{ base: "3", md: "4" }} bg="card" border="hairline">
+          <Input field={f.field("name")} label="List name" />
+          <Box direction="row">
+            <Button id="todos.addList" type="submit">
+              Add list
+            </Button>
+          </Box>
+        </Box>
       </Form>
     </Box>
   );

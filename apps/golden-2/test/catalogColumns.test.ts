@@ -238,7 +238,8 @@ describe("recipes catalog loader and page", () => {
   it("CatalogPage shows the empty row when nothing matches", () => {
     const data = parsed(CatalogData, { page: { rows: [], total: 0, page: 1, pages: 1 }, recipes: [], text: en });
     const t = render(CatalogPage, { props: { params: { locale: "en-US" }, search: { q: "zz" }, data } });
-    expect(t.find("recipes.table.none").text).toBe("No recipes");
+    expect(t.find("recipes.table.none.line").text).toBe(en.catalogNone);
+    expect(t.find("recipes.table.none.next").text).toBe(en.showEvery);
     t.dispose();
   });
   it("BoxShell shows raised toasts with a dismiss button", async () => {

@@ -1,6 +1,8 @@
 import type { Field } from "@keel/forms";
 import { attr, text } from "@keel/runtime-dom/ops";
+import type { ControlStyles } from "../types/ControlStyles.ts";
 import { appendChildren } from "./appendChildren.ts";
+import { applyStyle } from "./applyStyle.ts";
 import { attrOf } from "./attrOf.ts";
 import { bound } from "./bound.ts";
 import { controlId } from "./controlId.ts";
@@ -11,16 +13,22 @@ import { make } from "./make.ts";
  * A wrapper holding `control(id)` and a visible `<label for>` naming it (after a checkbox, before others). The id is
  * `props.id`, the field's, or `controlId`. With `field`, `field.bind(control)` owns name, id, value and aria wiring,
  * and the error text renders in an element with id `field.errorId` under the control (k.forms Bindings); both are
- * bound (`data-k`, rfc:0067). Nodes are
+ * bound (`data-k`, rfc:0067). `styles` parts style the wrapper (`field`), the label (`k-label`) and the error (`k-error`). Nodes are
  * made in document order, so at resume each claims its server element (rfc:0064).
  */
 export function labelled<C extends HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(
   kind: string,
-  props: { readonly label: string; readonly id?: string; readonly field?: Field<unknown> },
+  props: {
+    readonly label: string;
+    readonly id?: string;
+    readonly field?: Field<unknown>;
+    readonly styles?: ControlStyles;
+  },
   after: boolean,
   control: (id: string) => C,
 ): Node {
   return make("div", (wrap) => {
+    applyStyle(wrap, props.styles?.field ?? {});
     const first = props.id ?? props.field?.id ?? controlId(kind, props.label, undefined, wrap);
     // A getter `id` binds the control's id and the label's `for` (a field owns the id instead).
     const live = isGetter(props, "id") && props.field === undefined;
@@ -28,6 +36,7 @@ export function labelled<C extends HTMLInputElement | HTMLSelectElement | HTMLTe
     const label = (): Node =>
       make("label", (l) => {
         attrOf(l, "for", live, id);
+        applyStyle(l, props.styles?.label ?? {}, "k-label");
         const t = l.appendChild(document.createTextNode(props.label));
         if (isGetter(props, "label")) text(t, () => props.label);
       });
@@ -43,6 +52,7 @@ export function labelled<C extends HTMLInputElement | HTMLSelectElement | HTMLTe
         make("span", (msg) => {
           bound(msg);
           msg.setAttribute("id", field.errorId);
+          applyStyle(msg, props.styles?.error ?? {}, "k-error");
           msg.appendChild(document.createTextNode(""));
           text(msg, () => field.error() ?? "");
         }),

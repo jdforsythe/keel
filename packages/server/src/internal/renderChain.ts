@@ -74,7 +74,8 @@ export function renderChain(input: ChainInput): Rendered {
       islands[lvl.id] = input.props(i);
       for (const id of used) touched.add(id);
     }
-    return `${last ? input.prepend : ""}${toHtml(out)}`;
+    const own = toHtml(out);
+    return last ? `${input.prepend(own)}${own}` : own;
   };
 
   const levelAt = (i: number): string => {

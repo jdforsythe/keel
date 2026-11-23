@@ -12,6 +12,7 @@ import { labelled } from "../internal/labelled.ts";
 import { listen } from "../internal/listen.ts";
 import { make } from "../internal/make.ts";
 import { markFirst } from "../internal/markFirst.ts";
+import type { ControlStyles } from "../types/ControlStyles.ts";
 import type { StyleProps } from "../types/StyleProps.ts";
 
 /** A checkbox followed by its visible `<label for>` (`label` required, E1802). */
@@ -23,6 +24,8 @@ export function Checkbox(
     readonly lang?: string;
     /** A k.forms field: binds name, id, value, aria wiring; renders its error under the control. */
     readonly field?: Field<unknown>;
+    /** Part styles: `field` the wrapper, `label` the `<label>`, `error` the field error. */
+    readonly styles?: ControlStyles;
     readonly name?: string;
     /** Called with the new checked state after the field update, if bound (RFC 0009). */
     readonly onChange?: (checked: boolean) => void;

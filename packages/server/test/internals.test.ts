@@ -97,11 +97,18 @@ describe("selectDeployable", () => {
 });
 
 describe("messages and fields", () => {
-  it("fieldSummary escapes and names the root path `form`", () => {
-    expect(
-      fieldSummary({ route: "a.b", method: "POST", values: {}, errors: { "": "Bad <x>", note: "Required" } }),
-    ).toBe(
-      '<div role="alert" data-k-fields="a.b"><ul><li data-field="form">form: Bad &lt;x&gt;</li><li data-field="note">note: Required</li></ul></div>',
+  it("fieldSummary escapes, names the root path `form`, and names a field by its control's label, else its path", () => {
+    const html =
+      '<form><label for="f.note">  Your <b>note</b> &amp; more </label><input id="f.note" name="note">' +
+      '<input id="f.age" name="age"><input name="bare"></form>';
+    const errors = { "": "Bad <x>", note: "Required", age: "Too low", bare: "Missing", gone: "Unknown" };
+    expect(fieldSummary({ route: "a.b", method: "POST", values: {}, errors }, html)).toBe(
+      '<div role="alert" class="k-summary" data-k-fields="a.b"><ul>' +
+        '<li data-field="form">form: Bad &lt;x&gt;</li>' +
+        '<li data-field="note"><a href="#f.note">Your note &amp; more</a>: Required</li>' +
+        '<li data-field="age"><a href="#f.age">age</a>: Too low</li>' +
+        '<li data-field="bare">bare: Missing</li>' +
+        '<li data-field="gone">gone: Unknown</li></ul></div>',
     );
   });
 

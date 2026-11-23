@@ -1,11 +1,16 @@
 import type { StyleUsage } from "@keel/compiler";
 import type { PartState } from "../aria/PartState.ts";
+import type { SetLeaf } from "../internal/SetLeaf.ts";
+import { baseRoles } from "../internal/baseRoles.ts";
 import { className } from "../internal/className.ts";
+import { focusProblem } from "../internal/focusProblem.ts";
+import { setLeaves } from "../internal/setLeaves.ts";
 import { states } from "../internal/states.ts";
 import { styleProps } from "../internal/styleProps.ts";
 import { tokenGroups } from "../internal/tokenGroups.ts";
 import { varName } from "../internal/varName.ts";
 import { vocabulary } from "../internal/vocabulary.ts";
+import type { StyleProp } from "../types/StyleProp.ts";
 import type { Tokens } from "../types/Tokens.ts";
 
 type Rule = {
@@ -17,6 +22,9 @@ type Rule = {
 };
 
 const HIDDEN = "[hidden]{display:none!important}";
+const SUMMARY_LIST = ".k-summary ul{list-style:none;margin:0;padding:0}";
+/** A table sizes its columns by min-content: under `anywhere` every word could break, so cells break only an overlong word. */
+const TABLE_WRAP = "table{overflow-wrap:break-word}";
 
 const fail = (code: string, message: string): Error => Object.assign(new Error(message), { code });
 
@@ -72,48 +80,129 @@ function rootBlocks(tokens: Tokens): string[] {
   return out;
 }
 
-const ruleText = (r: Rule): string =>
-  `${(states.find((s) => s.key === r.state)?.sel ?? [""]).map((s) => `.${r.cls}${s}`).join(",")}{${r.body}}`;
+const selectorsOf = (sel: string, state: PartState | undefined): string =>
+  (states.find((s) => s.key === state)?.sel ?? [""]).map((s) => `${sel}${s}`).join(",");
+
+const ruleText = (r: Rule): string => `${selectorsOf(`.${r.cls}`, r.state)}{${r.body}}`;
+
+const isStyleProp = (k: string): k is StyleProp => styleProps.some((p) => p === k);
+
+/** The `keel.base` layer (k.ui Base): fixed rules, each `base` set on its role, and the `base.focus` ring. */
+function baseLayer(tokens: Tokens, bps: readonly (readonly [string, string])[]): string {
+  const rules: string[] = [HIDDEN, TABLE_WRAP];
+  const media = new Map<string, string[]>();
+  const decls = (ls: readonly SetLeaf[]): string => ls.map((l) => resolve(tokens, l.prop, l.token).body).join(";");
+  for (const { role, selector } of baseRoles) {
+    const set = tokens.base?.[role];
+    const leaves = set === undefined ? [] : setLeaves(set);
+    for (const l of leaves)
+      if (l.breakpoint !== undefined && !bps.some(([n]) => n === l.breakpoint))
+        throw fail(
+          "E1801",
+          `base.${role} breakpoint ${JSON.stringify(l.breakpoint).slice(0, 40)} is not a breakpoint token`,
+        );
+    const groups = [undefined, ...states.map((s) => s.key)].flatMap((state) =>
+      [undefined, ...bps.map(([n]) => n)].map((bp) => ({
+        state,
+        bp,
+        leaves: leaves.filter((l) => l.state === state && l.breakpoint === bp),
+      })),
+    );
+    for (const g of groups) {
+      const own = decls(g.leaves);
+      const body =
+        role === "page" && g.state === undefined && g.bp === undefined ? ["overflow-wrap:anywhere", own] : [own];
+      const text = body.filter((d) => d !== "").join(";");
+      if (text === "") continue;
+      const rule = `${selectorsOf(selector, g.state)}{${text}}`;
+      if (g.bp === undefined) rules.push(rule);
+      else media.set(g.bp, [...(media.get(g.bp) ?? []), rule]);
+    }
+    if (role === "summary") rules.push(SUMMARY_LIST);
+  }
+  const focus = tokens.base?.focus;
+  if (focus !== undefined) {
+    if (tokens.color?.[focus] === undefined)
+      throw fail("E1801", `base.focus=${JSON.stringify(focus).slice(0, 40)} is not a color token`);
+    rules.push(`:focus-visible{outline:2px solid var(${varName("color", focus)});outline-offset:2px}`);
+  }
+  for (const [name, width] of bps) {
+    const inBp = media.get(name);
+    if (inBp !== undefined)
+      rules.push(`@media (min-width: ${value("breakpoint", name, width)}){\n${inBp.join("\n")}\n}`);
+  }
+  return `@layer keel.base{\n${rules.join("\n")}\n}`;
+}
 
 /**
  * Compile style usages to atomic CSS. Pure and deterministic: one class per (prop, token, breakpoint,
- * state), deduplicated; equal props give equal class lists. Output order: `:root` custom properties
- * (dark-scheme and reduced-motion overrides in media blocks), `[hidden]{display:none!important}` when a rule sets
- * `display`, base rules, one `min-width` block per
- * breakpoint in token order, then state rules (selected, checked, expanded, highlighted, hover, focusVisible, active,
- * disabled) and their
- * breakpoint blocks. Throws `code: 'E1801'` for an unknown token or breakpoint, `E1807` for an unsafe value.
+ * state), deduplicated; equal props give equal class lists. A usage naming a `look` gets the set's classes for every
+ * prop and state it does not set itself, then its own. Output order: `:root` custom properties (dark-scheme and
+ * reduced-motion overrides in media blocks), the `keel.base` layer (`[hidden]{display:none!important}`, `body` with
+ * `overflow-wrap:anywhere`, the summary's list unmarked, each `base` set on its role selector with its states and
+ * breakpoints, and the `base.focus` ring on `:focus-visible`), then the unlayered atomic rules: base rules, one
+ * `min-width` block per breakpoint in token order, then state rules (selected, checked, expanded, highlighted, hover,
+ * focusVisible, active, disabled) and their breakpoint blocks. Throws `code: 'E1801'` for an unknown token,
+ * breakpoint or look, `E1807` for an unsafe value or a `base.focus` under 3:1 against `base.page`'s `bg`.
  */
 export function compileStyles(input: { readonly tokens: Tokens; readonly usages: readonly StyleUsage[] }): {
   classes: string[][];
   css: string;
 } {
   const { tokens } = input;
+  const problem = focusProblem(tokens);
+  if (problem !== null) throw fail("E1807", problem);
   const bps = Object.entries(tokens.breakpoint ?? {});
   const rules = new Map<string, Rule>();
-  const classes = input.usages.map((u) => {
-    const bpIndex = u.breakpoint === undefined ? -1 : bps.findIndex(([n]) => n === u.breakpoint);
-    if (bpIndex < 0 && u.breakpoint !== undefined)
-      throw fail("E1801", `breakpoint ${JSON.stringify(u.breakpoint).slice(0, 40)} is not a breakpoint token`);
-    const stateIndex = states.findIndex((s) => s.key === u.state);
-    const out: string[] = [];
-    for (const [p, prop] of styleProps.entries()) {
-      const token = u.props[prop];
-      if (token === undefined) continue;
-      const cls = className(prop, token, u.breakpoint, u.state);
-      if (!rules.has(cls)) {
-        const { body, index } = resolve(tokens, prop, token);
-        rules.set(cls, {
-          cls,
-          order: [stateIndex, p, index],
-          breakpoint: u.breakpoint,
-          state: u.state,
-          body,
-        });
-      }
-      out.push(cls);
+  const add = (
+    prop: StyleProp,
+    token: string,
+    breakpoint: string | undefined,
+    state: PartState | undefined,
+  ): string => {
+    const bpIndex = breakpoint === undefined ? -1 : bps.findIndex(([n]) => n === breakpoint);
+    if (bpIndex < 0 && breakpoint !== undefined)
+      throw fail("E1801", `breakpoint ${JSON.stringify(breakpoint).slice(0, 40)} is not a breakpoint token`);
+    const cls = className(prop, token, breakpoint, state);
+    if (!rules.has(cls)) {
+      const { body, index } = resolve(tokens, prop, token);
+      const stateIndex = states.findIndex((s) => s.key === state);
+      rules.set(cls, { cls, order: [stateIndex, styleProps.indexOf(prop), index], breakpoint, state, body });
     }
-    return out;
+    return cls;
+  };
+  const looks = new Map<string, SetLeaf[]>();
+  for (const [name, set] of Object.entries(tokens.look ?? {})) {
+    const leaves = setLeaves(set);
+    // Every look's tokens resolve, used or not: a bad name in tokens.ts is E1801 where it is written.
+    for (const l of leaves) {
+      resolve(tokens, l.prop, l.token);
+      if (l.breakpoint !== undefined && !bps.some(([n]) => n === l.breakpoint))
+        throw fail(
+          "E1801",
+          `look.${name} breakpoint ${JSON.stringify(l.breakpoint).slice(0, 40)} is not a breakpoint token`,
+        );
+    }
+    looks.set(name, leaves);
+  }
+  const classes = input.usages.map((u) => {
+    const out: string[] = [];
+    for (const prop of styleProps) {
+      const token = u.props[prop];
+      if (token !== undefined) out.push(add(prop, token, u.breakpoint, u.state));
+    }
+    if (u.look === undefined) return out;
+    const set = looks.get(u.look);
+    if (set === undefined) throw fail("E1801", `look=${JSON.stringify(u.look).slice(0, 40)} is not a look token`);
+    const own = new Set(
+      Object.keys(u.props)
+        .filter(isStyleProp)
+        .map((p) => `${u.state ?? ""}:${p}`),
+    );
+    const fromLook = set
+      .filter((l) => !own.has(`${l.state ?? ""}:${l.prop}`))
+      .map((l) => add(l.prop, l.token, l.breakpoint, l.state));
+    return [...fromLook, ...out];
   });
   const sorted = [...rules.values()].sort(compare);
   const section = (stateful: boolean): string[] => {
@@ -126,8 +215,6 @@ export function compileStyles(input: { readonly tokens: Tokens; readonly usages:
     }
     return out;
   };
-  // A `display` an atomic rule sets outranks the user agent's `[hidden]`; this keeps `hidden` (k.aria Part) hiding.
-  const hidden = sorted.some((r) => r.body.startsWith("display:")) ? [HIDDEN] : [];
-  const css = [...rootBlocks(tokens), ...hidden, ...section(false), ...section(true)].join("\n");
-  return { classes, css: css === "" ? "" : `${css}\n` };
+  const css = [...rootBlocks(tokens), baseLayer(tokens, bps), ...section(false), ...section(true)].join("\n");
+  return { classes, css: `${css}\n` };
 }

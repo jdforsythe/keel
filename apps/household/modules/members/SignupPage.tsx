@@ -20,91 +20,34 @@ export default function SignupPage(props: Infer<typeof Props>) {
   const f = form(Registration, { id: "members.signupForm" });
   return (
     <Box as="section" id="members.signup" direction="column" gap="4">
-      <Heading id="members.signup.heading" level={1} m="0" fontSize={{ base: "xl", md: "2xl" }} weight="semibold">
+      <Heading id="members.signup.heading" level={1} fontSize={{ base: "xl", md: "2xl" }}>
         {props.data.text.signupHeading}
       </Heading>
       <If when={props.search.error !== undefined}>
         {() => (
-          <Text id="members.signupError" fg="error" bg="card" border="error" px="3" py="2" font="mono" fontSize="sm">
+          <Text id="members.signupError" look="notice" fg="error" border="error">
             {props.data.text.errorInvalid}
           </Text>
         )}
       </If>
       <Form method="POST" action={mount.href("/sign-up/email", nextOf(props.search))} form={f}>
-        <Box direction="column" gap="3" p={{ base: "3", md: "4" }} bg="card" border="hairline">
+        <Box look="panel">
+          <Input field={f.field("name")} label={props.data.text.nameLabel} autocomplete="name" />
+          <Input field={f.field("email")} label={props.data.text.emailLabel} autocomplete="email" />
           <Input
-            w="full"
-            my="1"
-            px="2"
-            py="2"
-            bg="card"
-            fg="text"
-            border="control"
-            radius="none"
-            font="serif"
-            fontSize="md"
-            states={{ hover: { border: "rule" }, focusVisible: { border: "rule" } }}
-            field={f.field("name")}
-            label={props.data.text.nameLabel}
-            autocomplete="name"
-          />
-          <Input
-            w="full"
-            my="1"
-            px="2"
-            py="2"
-            bg="card"
-            fg="text"
-            border="control"
-            radius="none"
-            font="serif"
-            fontSize="md"
-            states={{ hover: { border: "rule" }, focusVisible: { border: "rule" } }}
-            field={f.field("email")}
-            label={props.data.text.emailLabel}
-            autocomplete="email"
-          />
-          <Input
-            w="full"
-            my="1"
-            px="2"
-            py="2"
-            bg="card"
-            fg="text"
-            border="control"
-            radius="none"
-            font="serif"
-            fontSize="md"
-            states={{ hover: { border: "rule" }, focusVisible: { border: "rule" } }}
             field={f.field("password")}
             type="password"
             label={props.data.text.passwordLabel}
             autocomplete="new-password"
           />
           <Box direction="row">
-            <Button
-              id="members.signupSubmit"
-              type="submit"
-              font="mono"
-              fontSize="sm"
-              weight="medium"
-              px="4"
-              py="2"
-              bg="text"
-              fg="card"
-              border="rule"
-              radius="none"
-              states={{
-                hover: { bg: "textSecondary", border: "control" },
-                focusVisible: { bg: "textSecondary", border: "control" },
-              }}
-            >
+            <Button id="members.signupSubmit" type="submit">
               {props.data.text.signupSubmit}
             </Button>
           </Box>
         </Box>
       </Form>
-      <Link id="members.toSignin" fg="text" to={members.href("members.signin", {}, nextOf(props.search))}>
+      <Link id="members.toSignin" to={members.href("members.signin", {}, nextOf(props.search))}>
         {props.data.text.toSignin}
       </Link>
     </Box>

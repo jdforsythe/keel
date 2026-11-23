@@ -13,13 +13,13 @@ export default function ListError(props: Infer<typeof Props>) {
       <Text font="mono" fontSize="xs" fg="accent">
         {props.error.code}
       </Text>
-      <Heading id="todos.error.title" level={1} fontSize="2xl" weight="semibold" m="0" fg="error">
+      <Heading id="todos.error.title" level={1} fontSize="2xl" m="0" fg="error">
         Not found
       </Heading>
       <Text as="p" id="todos.error.message" m="0" font="mono" fontSize="sm">
         {props.error.message}
       </Text>
-      <Link id="todos.error.home" to={todos.href("todos.index")} fg="text">
+      <Link id="todos.error.home" to={todos.href("todos.index")}>
         Back to lists
       </Link>
     </Box>

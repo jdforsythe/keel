@@ -65,22 +65,7 @@ export default function ShoppingList(props: Infer<typeof Props>, ctx: Ctx) {
         items={() => props.text.staples}
         onSelect={(key) => send(shoppingApi.add({ body: { name: staple(key) } }, ctx))}
         styles={{
-          trigger: {
-            font: "mono",
-            fontSize: "sm",
-            weight: "medium",
-            px: "4",
-            py: "2",
-            bg: "text",
-            fg: "card",
-            border: "rule",
-            radius: "none",
-            states: {
-              hover: { bg: "textSecondary", border: "control" },
-              focusVisible: { bg: "textSecondary", border: "control" },
-              expanded: { bg: "textSecondary" },
-            },
-          },
+          trigger: { look: "primary", states: { expanded: { bg: "textSecondary" } } },
           menu: { direction: "column", p: "0", m: "0", bg: "card", border: "rule" },
           item: {
             direction: "row",
@@ -143,30 +128,16 @@ export default function ShoppingList(props: Infer<typeof Props>, ctx: Ctx) {
                     <Button
                       id={`shopping.toggle.${item.id}`}
                       onClick={() => send(shoppingApi.toggle({ params: { id: item.id } }, ctx))}
-                      font="mono"
-                      fontSize="sm"
-                      px="3"
-                      py="1"
-                      bg="card"
-                      fg="text"
-                      border="rule"
-                      radius="none"
-                      states={{ hover: { bg: "surfaceLow" }, focusVisible: { bg: "surfaceLow" } }}
+                      look="secondary"
                     >
                       {item.bought ? props.text.putBack : props.text.markBought}
                     </Button>
                     <Button
                       id={`shopping.remove.${item.id}`}
                       onClick={() => send(shoppingApi.remove({ params: { id: item.id } }, ctx))}
-                      font="mono"
-                      fontSize="sm"
-                      px="3"
-                      py="1"
-                      bg="card"
+                      look="secondary"
                       fg="error"
                       border="error"
-                      radius="none"
-                      states={{ hover: { bg: "surfaceLow" }, focusVisible: { bg: "surfaceLow" } }}
                     >
                       {props.text.remove}
                     </Button>
@@ -190,28 +161,15 @@ export default function ShoppingList(props: Infer<typeof Props>, ctx: Ctx) {
           dismiss={props.text.dismiss}
           styles={{
             toast: {
+              look: "notice",
               direction: "row",
               align: "center",
               justify: "between",
               gap: "3",
-              px: "3",
-              py: "2",
-              bg: "card",
               fg: "error",
               border: "error",
-              font: "mono",
-              fontSize: "sm",
             },
-            dismiss: {
-              font: "mono",
-              fontSize: "sm",
-              px: "2",
-              py: "1",
-              bg: "card",
-              fg: "text",
-              border: "rule",
-              radius: "none",
-            },
+            dismiss: { look: "secondary" },
           }}
         />
       </Box>

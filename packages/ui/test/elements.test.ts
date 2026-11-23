@@ -196,10 +196,10 @@ describe("base elements", () => {
 
   it("Button: children are the text; a stray label is ignored; type defaults to button", () => {
     const a = render(() => Button({ children: "Close" }));
-    expect(first(a.host).outerHTML).toBe('<button type="button">Close</button>');
+    expect(first(a.host).outerHTML).toBe('<button type="button" class="k-button">Close</button>');
     const loose: Readonly<Record<string, unknown>> = { type: "submit", children: "Save", label: "x" };
     const b = render(() => Reflect.apply(Button, undefined, [loose]));
-    expect(first(b.host).outerHTML).toBe('<button type="submit">Save</button>');
+    expect(first(b.host).outerHTML).toBe('<button type="submit" class="k-button">Save</button>');
     a.dispose();
     b.dispose();
   });

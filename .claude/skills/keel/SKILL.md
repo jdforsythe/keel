@@ -15,6 +15,7 @@ description: "Read first in a Keel app: app shape, one export per file, the rule
 - `<id>.contract.ts`: `contract('<id>', { 'id.name': { path } | { method, path, output } })` (`@keel/router/contract`). `routes.ts`: `manifest(<id>, { 'id.name': { component } | { loader } | { action } })`, every entry bound (E1515). Link only with `<id>.href(id, params?, search?)` (E1501). See `k.contract`.
 - Stores: `store(schema, initial, { id })`, `transaction(store, 'mod.name', Payload, fn)`, written only by `tx(t, payload)`; `invariant(store, fn)` beside it; a component lists the transactions it calls in `uses` (E1301).
 - `*.server.ts`: `loader(<id>, 'id.name', decl, fn)` and `action(...)`; `*.guard.ts`: `guard({ redirect }, fn)`.
+- `tokens.ts`: `export const tokens = brandTokens` (`@keel/ui/brand`) styles every page on brand; style props only where a page differs, `look="secondary"` for a named set, `gap` with `direction` (E1809). See keel-client.
 
 ```tsx
 import { For } from '@keel/runtime-dom'

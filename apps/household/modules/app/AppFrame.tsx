@@ -26,32 +26,20 @@ export default function AppFrame(props: Infer<typeof Props> & { readonly childre
           <If when={props.data.signedIn}>
             {() => (
               <Box direction="row" align="center" wrap="wrap" gap="4">
-                <Link id="app.nav.list" to={shopping.href("shopping.list")} fg="text">
+                <Link id="app.nav.list" to={shopping.href("shopping.list")}>
                   {props.data.text.list}
                 </Link>
-                <Link id="app.nav.receipts" to={receipts.href("receipts.book", { locale: "en-US" })} fg="text">
+                <Link id="app.nav.receipts" to={receipts.href("receipts.book", { locale: "en-US" })}>
                   {props.data.text.receipts}
                 </Link>
-                <Link id="app.nav.setup" to={setup.href("setup.form")} fg="text">
+                <Link id="app.nav.setup" to={setup.href("setup.form")}>
                   {props.data.text.setup}
                 </Link>
-                <Link id="app.nav.profile" to={members.href("members.profile")} fg="text">
+                <Link id="app.nav.profile" to={members.href("members.profile")}>
                   {props.data.text.profile}
                 </Link>
                 <Form method="POST" action={mount.href("/sign-out")}>
-                  <Button
-                    id="app.nav.signOut"
-                    type="submit"
-                    font="mono"
-                    fontSize="sm"
-                    px="3"
-                    py="1"
-                    bg="card"
-                    fg="text"
-                    border="rule"
-                    radius="none"
-                    states={{ hover: { bg: "surfaceLow" }, focusVisible: { bg: "surfaceLow" } }}
-                  >
+                  <Button id="app.nav.signOut" type="submit" look="secondary">
                     {props.data.text.signOut}
                   </Button>
                 </Form>
@@ -61,10 +49,10 @@ export default function AppFrame(props: Infer<typeof Props> & { readonly childre
           <If when={!props.data.signedIn}>
             {() => (
               <Box direction="row" align="center" gap="4">
-                <Link id="app.nav.signIn" to={members.href("members.signin")} fg="text">
+                <Link id="app.nav.signIn" to={members.href("members.signin")}>
                   {props.data.text.signIn}
                 </Link>
-                <Link id="app.nav.signUp" to={members.href("members.signup")} fg="text">
+                <Link id="app.nav.signUp" to={members.href("members.signup")}>
                   {props.data.text.signUp}
                 </Link>
               </Box>

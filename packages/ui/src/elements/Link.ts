@@ -28,7 +28,7 @@ export function Link(
       typeof props.to === "string" && isHref(props.to) ? props.to : "about:blank",
     );
     applyIdLang(el, props);
-    applyStyle(el, props);
+    applyStyle(el, props, "k-link");
     appendChildren(el, renderChildren(props.children));
   });
 }

@@ -29,7 +29,7 @@ describe("a route of base elements is an island when one is bound (backlog 0182)
     expect(typeof document).toBe("undefined");
     const html = await page(() => Box({ children: Input({ label: "Title", onInput: () => undefined }) }));
     expect(html).toContain('<div data-k-island="app.form"><div><label for="');
-    expect(html).toMatch(/<input type="text" id="[^"]+" data-k="">/);
+    expect(html).toMatch(/<input type="text" id="[^"]+" class="k-control" data-k="">/);
     expect(html.split("data-k-island=").length).toBe(2);
     expect(html).toContain(ENTRY);
   });

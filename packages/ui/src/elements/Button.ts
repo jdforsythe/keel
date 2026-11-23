@@ -31,7 +31,7 @@ export function Button(
     attrOf(el, "type", isGetter(props, "type"), () => props.type ?? "button");
     applyIdLang(el, props);
     applyDisabled(el, props);
-    applyStyle(el, props);
+    applyStyle(el, props, "k-button");
     appendChildren(el, renderChildren(props.children));
     listen(el, "click", props.onClick);
   });

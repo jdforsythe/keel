@@ -11,6 +11,7 @@ type Pat = ParamPattern | BindingPattern | BindingRestElement;
 import type { Diagnostic } from "../types/Diagnostic.ts";
 import type { StyleUsage } from "../types/StyleUsage.ts";
 import type { Analysis } from "./Analysis.ts";
+import type { Edit } from "./Edit.ts";
 import type { FnInfo } from "./FnInfo.ts";
 import type { StyleRewrite } from "./StyleRewrite.ts";
 import { attrNameOf } from "./attrNameOf.ts";
@@ -60,7 +61,80 @@ const STATES: readonly State[] = [
   "disabled",
 ];
 
+/** Base elements whose `styles` hold part styles (`field`, `label`, `error`). */
+const CONTROLS: ReadonlySet<string> = new Set(["Input", "TextArea", "Select", "Checkbox"]);
+
 const isState = (k: string): k is State => STATES.some((s) => s === k);
+
+/** The `look` sets of `tokens.ts` as data (the build evaluates them), by name. */
+type Looks = Readonly<Record<string, unknown>>;
+
+const isObj = (x: unknown): x is Readonly<Record<string, unknown>> =>
+  typeof x === "object" && x !== null && !Array.isArray(x);
+
+/** Leaves of a look set read as data: plain props, responsive records, and `states`. */
+function dataLeaves(v: Readonly<Record<string, unknown>>, state: State | undefined, out: Leaf[]): void {
+  for (const prop of STYLE_PROPS) {
+    const x = v[prop];
+    if (typeof x === "string") out.push({ prop, token: x, breakpoint: undefined, state });
+    else if (isObj(x))
+      for (const [bp, token] of Object.entries(x))
+        if (typeof token === "string") out.push({ prop, token, breakpoint: bp === "base" ? undefined : bp, state });
+  }
+  const st = v.states;
+  if (state === undefined && isObj(st))
+    for (const s of STATES) {
+      const nested = st[s];
+      if (isObj(nested)) dataLeaves(nested, s, out);
+    }
+}
+
+/** The classes look `name` adds beside `own` (`<state>:<prop>` keys the element sets itself), or undefined if unknown. */
+function lookClasses(looks: Looks | undefined, name: string, own: ReadonlySet<string>): string[] | undefined {
+  const set = looks?.[name];
+  if (!isObj(set)) return undefined;
+  const leaves: Leaf[] = [];
+  dataLeaves(set, undefined, leaves);
+  return classList(leaves.filter((l) => !own.has(`${l.state ?? ""}:${l.prop}`)));
+}
+
+/** The literal string of a `look` attribute or property value, if it is one. */
+function lookName(e: Expression | null | undefined): string | undefined {
+  if (e === null || e === undefined) return undefined;
+  const x = unparen(e);
+  if (x.type === "Literal" && typeof x.value === "string") return x.value;
+  if (x.type === "TemplateLiteral" && x.expressions.length === 0) return x.quasis[0]?.value.cooked ?? undefined;
+  return undefined;
+}
+
+/** `<state>:<prop>` for every style prop a literal `states` object names. */
+function stateKeys(st: ObjectExpression): string[] {
+  const out: string[] = [];
+  for (const q of st.properties) {
+    const s = keyOf(q);
+    if (s === undefined || q.type !== "Property" || !isState(s)) continue;
+    const inner = unparen(q.value);
+    if (inner.type === "ObjectExpression")
+      for (const r of inner.properties) {
+        const rk = keyOf(r);
+        if (rk !== undefined && STYLE_PROPS.includes(rk)) out.push(`${s}:${rk}`);
+      }
+  }
+  return out;
+}
+
+/** `<state>:<prop>` for every style prop an object literal names, its `states` included. */
+function ownKeys(o: ObjectExpression): Set<string> {
+  const out = new Set<string>();
+  for (const p of o.properties) {
+    const k = keyOf(p);
+    if (k === undefined || p.type !== "Property") continue;
+    const v = unparen(p.value);
+    if (STYLE_PROPS.includes(k)) out.add(`:${k}`);
+    else if (k === "states" && v.type === "ObjectExpression") for (const s of stateKeys(v)) out.add(s);
+  }
+  return out;
+}
 
 function unparen(e: Expression): Expression {
   return e.type === "ParenthesizedExpression" ? unparen(e.expression) : e;
@@ -172,12 +246,18 @@ function classList(leaves: readonly Leaf[]): string[] {
  * from its first parameter, and `?? {...}` or `|| {...}` over one), collected where its caller writes it; a
  * lowercase helper is not a component and forwards nothing.
  */
-export function collectStyles(a: Analysis): {
+export function collectStyles(
+  a: Analysis,
+  looks?: Looks,
+): {
   usages: StyleUsage[];
   rewrites: Map<number, StyleRewrite>;
+  edits: Edit[];
   diagnostics: Diagnostic[];
 } {
-  const base = new Set(uiBaseElements(a).keys());
+  const ui = uiBaseElements(a);
+  const base = new Set(ui.keys());
+  const controls = new Set([...ui].filter(([, b]) => CONTROLS.has(b)).map(([local]) => local));
   for (const i of a.imports) {
     if (i.importKind === "type" || i.source.value !== "@keel/ui/aria") continue;
     for (const s of i.specifiers) {
@@ -187,6 +267,8 @@ export function collectStyles(a: Analysis): {
     }
   }
   const leaves: Leaf[] = [];
+  const named = new Set<string>();
+  const edits: Edit[] = [];
   const rewrites = new Map<number, StyleRewrite>();
   const diagnostics: Diagnostic[] = [];
   const unread = (at: number): void => {
@@ -195,8 +277,8 @@ export function collectStyles(a: Analysis): {
   const fns = componentFns(a);
   for (const j of a.jsx)
     if (j.type === "JSXElement") {
-      element(j, base, leaves, rewrites);
-      parts(j, base, leaves, unread, forwardsAt(a, fns, j.start));
+      element(j, base, leaves, rewrites, { looks, named });
+      parts(j, base, controls, leaves, unread, forwardsAt(a, fns, j.start), { looks, named, edits });
     }
   const byKey = new Map<string, StyleUsage>();
   for (const l of leaves) {
@@ -212,13 +294,22 @@ export function collectStyles(a: Analysis): {
     const u = byKey.get(k);
     return u === undefined ? [] : [u];
   });
-  return { usages, rewrites, diagnostics };
+  for (const look of [...named].sort()) usages.push({ props: {}, look });
+  return { usages, rewrites, edits, diagnostics };
 }
 
-function element(el: JSXElement, base: ReadonlySet<string>, out: Leaf[], rewrites: Map<number, StyleRewrite>): void {
+function element(
+  el: JSXElement,
+  base: ReadonlySet<string>,
+  out: Leaf[],
+  rewrites: Map<number, StyleRewrite>,
+  look: { readonly looks: Looks | undefined; readonly named: Set<string> },
+): void {
   const n = el.openingElement.name;
   if (n.type !== "JSXIdentifier" || !base.has(n.name)) return;
   const drop = new Set<number>();
+  const own = new Set<string>();
+  let lookAt: { start: number; name: string } | undefined;
   const fixedLeaves: Leaf[] = [];
   let rewritable = true;
   let extra: string[] = [];
@@ -238,8 +329,27 @@ function element(el: JSXElement, base: ReadonlySet<string>, out: Leaf[], rewrite
       }
       continue;
     }
+    if (name === "look") {
+      const v = at.value;
+      const lit =
+        v === null
+          ? undefined
+          : v.type === "Literal"
+            ? lookName(v)
+            : v.type === "JSXExpressionContainer" && v.expression.type !== "JSXEmptyExpression"
+              ? lookName(v.expression)
+              : undefined;
+      if (lit !== undefined) {
+        lookAt = { start: at.start, name: lit };
+        look.named.add(lit);
+      }
+      continue;
+    }
     if (name !== "states" && !STYLE_PROPS.includes(name)) continue;
     const v = at.value;
+    if (name !== "states") own.add(`:${name}`);
+    else if (v !== null && v.type === "JSXExpressionContainer" && v.expression.type === "ObjectExpression")
+      for (const k of stateKeys(v.expression)) own.add(k);
     const mine: Leaf[] = [];
     let fixed = false;
     if (v !== null && v.type === "Literal") {
@@ -256,9 +366,11 @@ function element(el: JSXElement, base: ReadonlySet<string>, out: Leaf[], rewrite
       fixedLeaves.push(...mine);
     }
   }
+  const fromLook = lookAt === undefined ? undefined : lookClasses(look.looks, lookAt.name, own);
+  if (lookAt !== undefined && fromLook !== undefined) drop.add(lookAt.start);
   if (!rewritable || drop.size === 0) return;
   if (classAttr !== undefined) drop.add(classAttr);
-  rewrites.set(el.start, { drop, className: [...classList(fixedLeaves), ...extra].join(" ") });
+  rewrites.set(el.start, { drop, className: [...(fromLook ?? []), ...classList(fixedLeaves), ...extra].join(" ") });
 }
 
 /** Names a pattern binds (`a`, `{ a, b: c }`, `[a]`, `a = 1`, `...a`). */
@@ -335,10 +447,18 @@ function forwards(e: Expression, f: Forward): boolean {
 }
 
 /** Part styles: each part's style object in the `styles` of a component that is not a base element (never rewritten). */
-function parts(el: JSXElement, base: ReadonlySet<string>, out: Leaf[], unread: (at: number) => void, f: Forward): void {
+function parts(
+  el: JSXElement,
+  base: ReadonlySet<string>,
+  controls: ReadonlySet<string>,
+  out: Leaf[],
+  unread: (at: number) => void,
+  f: Forward,
+  look: { readonly looks: Looks | undefined; readonly named: Set<string>; readonly edits: Edit[] },
+): void {
   const n = el.openingElement.name;
   const component = n.type === "JSXMemberExpression" || (n.type === "JSXIdentifier" && /^[A-Z]/.test(n.name));
-  if (!component || (n.type === "JSXIdentifier" && base.has(n.name))) return;
+  if (!component || (n.type === "JSXIdentifier" && base.has(n.name) && !controls.has(n.name))) return;
   /** A forwarded value, or `forwarded ?? literal` / `forwarded || literal`, whose literal `then` reads. */
   const value = (e: Expression, then: (o: ObjectExpression) => void): void => {
     const x = unparen(e);
@@ -366,6 +486,16 @@ function parts(el: JSXElement, base: ReadonlySet<string>, out: Leaf[], unread: (
             if ((q.type === "SpreadElement" && !forwards(q.argument, f)) || (q.type === "Property" && q.computed))
               unread(q.start);
           styleObject(part, undefined, out);
+          for (const q of part.properties) {
+            if (q.type !== "Property" || keyOf(q) !== "look") continue;
+            const name = lookName(q.value);
+            if (name === undefined) continue;
+            look.named.add(name);
+            const classes = lookClasses(look.looks, name, ownKeys(part));
+            // The look becomes the classes it adds; `classesOf` keeps a part style's atomic `class`.
+            if (classes !== undefined)
+              look.edits.push({ start: q.start, end: q.end, text: `class: ${JSON.stringify(classes.join(" "))}` });
+          }
         });
       }
     });

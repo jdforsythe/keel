@@ -121,7 +121,13 @@ const PROJECT_FILE = /(?:^|\/)(?:tokens|topology|routes)\.ts$|\.schema\.ts$/;
 /** App module manifests: their `std` entries are `std.json`. */
 const MANIFEST = /^modules\/[^/]+\/module\.[cm]?[jt]s$/;
 
-type Entry = { source: string; output: Output | undefined; artifacts: Artifacts; failures: string[] };
+type Entry = {
+  source: string;
+  looks: string;
+  output: Output | undefined;
+  artifacts: Artifacts;
+  failures: string[];
+};
 type ModuleNode = object;
 type Middlewares = { use(fn: ReturnType<typeof inspectMiddleware> | ReturnType<typeof pageMiddleware>): void };
 type DevServer = {
@@ -277,6 +283,9 @@ export default function (): {
   let topology: Topology | undefined;
   let routes: Record<string, RouteEntry> = {};
   let css = "";
+  /** The tokens' `look` sets, once evaluated: `compile` lowers a `look` to their classes. */
+  let looks: Readonly<Record<string, unknown>> | undefined;
+  let looksKey = "";
   let stale = true;
   let usageKeys = "";
   let warn: Warn = () => {};
@@ -716,13 +725,16 @@ export default function (): {
 
   const compileModule = (rel: string, code: string): Entry => {
     let entry = modules.get(rel);
-    if (entry === undefined || entry.source !== code) {
-      const r = compile([{ path: rel, source: code }], topology === undefined ? {} : { topology });
+    if (entry === undefined || entry.source !== code || entry.looks !== looksKey) {
+      const r = compile([{ path: rel, source: code }], {
+        ...(topology === undefined ? {} : { topology }),
+        ...(looks === undefined ? {} : { looks }),
+      });
       const failures = r.diagnostics
         // E1004 reads the whole import graph: `keel check` reports it, and a browser build fails with E1007 instead.
         .filter((d) => !/^[WI]/.test(d.code) && d.code !== "E1004")
         .map((d) => `${d.code} ${d.path}:${d.line}:${d.col} ${d.message}`);
-      entry = { source: code, output: r.outputs[0], artifacts: r.artifacts, failures };
+      entry = { source: code, looks: looksKey, output: r.outputs[0], artifacts: r.artifacts, failures };
       modules.set(rel, entry);
     }
     return entry;
@@ -771,6 +783,8 @@ export default function (): {
     for (const p of r.problems) warn(`keel: ${p}`);
     problems = r.problems;
     css = r.css;
+    looks = r.looks;
+    looksKey = canonicalJson(r.looks);
     routes = r.routes;
     // `keel check` cannot verify routes.json beside a routes.ts (W1005); the build can, before it rewrites it.
     const prior = path.join(root, ".keel", "routes.json");

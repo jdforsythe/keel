@@ -19,68 +19,21 @@ export default function ProfilePage(props: Infer<typeof Props>) {
   });
   return (
     <Box as="section" id="members.profile" direction="column" gap="4">
-      <Heading id="members.profile.heading" level={1} m="0" fontSize={{ base: "xl", md: "2xl" }} weight="semibold">
+      <Heading id="members.profile.heading" level={1} fontSize={{ base: "xl", md: "2xl" }}>
         {props.data.text.heading}
       </Heading>
       <Text id="members.signedIn" fg="textSecondary">{`${props.data.text.signedInAs} ${props.data.email}`}</Text>
       <If when={props.search.saved === true}>
-        <Text id="members.saved" fg="verified" border="verified" bg="card" px="3" py="2" font="mono" fontSize="sm">
+        <Text id="members.saved" look="notice" fg="verified" border="verified">
           {props.data.text.saved}
         </Text>
       </If>
       <Form method="POST" action={members.href("members.profile")} form={f}>
-        <Box direction="column" gap="3" p={{ base: "3", md: "4" }} bg="card" border="hairline">
-          <Input
-            w="full"
-            my="1"
-            px="2"
-            py="2"
-            bg="card"
-            fg="text"
-            border="control"
-            radius="none"
-            font="serif"
-            fontSize="md"
-            states={{ hover: { border: "rule" }, focusVisible: { border: "rule" } }}
-            field={f.field("name")}
-            label={props.data.text.nameLabel}
-            autocomplete="name"
-          />
-          <Input
-            w="full"
-            my="1"
-            px="2"
-            py="2"
-            bg="card"
-            fg="text"
-            border="control"
-            radius="none"
-            font="serif"
-            fontSize="md"
-            states={{ hover: { border: "rule" }, focusVisible: { border: "rule" } }}
-            field={f.field("phone")}
-            type="tel"
-            label={props.data.text.phoneLabel}
-            autocomplete="tel"
-          />
+        <Box look="panel">
+          <Input field={f.field("name")} label={props.data.text.nameLabel} autocomplete="name" />
+          <Input field={f.field("phone")} type="tel" label={props.data.text.phoneLabel} autocomplete="tel" />
           <Box direction="row">
-            <Button
-              id="members.save"
-              type="submit"
-              font="mono"
-              fontSize="sm"
-              weight="medium"
-              px="4"
-              py="2"
-              bg="text"
-              fg="card"
-              border="rule"
-              radius="none"
-              states={{
-                hover: { bg: "textSecondary", border: "control" },
-                focusVisible: { bg: "textSecondary", border: "control" },
-              }}
-            >
+            <Button id="members.save" type="submit">
               {props.data.text.save}
             </Button>
           </Box>

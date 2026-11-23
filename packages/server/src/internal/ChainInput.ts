@@ -14,8 +14,8 @@ export type ChainInput = {
   /** Island props (schema-encoded params, search, data) per chain level. */
   readonly props: (level: number) => JsonValue;
   readonly failure: Failure | null;
-  /** HTML placed before the route (last level) component's output, e.g. the 422 field summary. */
-  readonly prepend: string;
+  /** HTML placed before the route (last level) component's output, given that output, e.g. the 422 field summary. */
+  readonly prepend: (html: string) => string;
   readonly ctx: Ctx;
   /** The error as it may leave the server (production scrubs `keel.unexpected`). */
   readonly publicize: (e: KeelError<string, unknown>) => KeelError<string, unknown>;

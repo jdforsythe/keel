@@ -61,20 +61,7 @@ export default function RecipePage(props: Infer<typeof Props>) {
           </Text>
         )}
       >
-        <Button
-          id="recipes.toggleFavorite"
-          type="submit"
-          disabled={sending}
-          font="mono"
-          fontSize="sm"
-          px="4"
-          py="2"
-          my="2"
-          bg="text"
-          fg="card"
-          border="rule"
-          radius="none"
-        >
+        <Button id="recipes.toggleFavorite" type="submit" disabled={sending}>
           {props.data.text.toggleFavorite}
         </Button>
       </Form>

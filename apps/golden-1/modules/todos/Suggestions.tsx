@@ -1,6 +1,6 @@
 import type { Ctx } from "@keel/ctx";
 import { type ResourceState, resource } from "@keel/reactive";
-import { Case, For, Match } from "@keel/runtime-dom";
+import { Case, For, If, Match } from "@keel/runtime-dom";
 import { type Infer, s } from "@keel/schema";
 import type { ApiError } from "@keel/services";
 import { Box, Heading, Text } from "@keel/ui";
@@ -27,7 +27,7 @@ export default function Suggestions(_props: Infer<typeof Props>, ctx: Ctx) {
   const list = resource(() => fetchSuggestions(ctx));
   return (
     <Box as="section" id="todos.suggestions" direction="column" gap="3">
-      <Heading id="todos.suggestions.title" level={2} fontSize="xl" weight="semibold" m="0">
+      <Heading id="todos.suggestions.title" level={2} fontSize="xl" m="0">
         Suggestions
       </Heading>
       <Match on={list.get()}>
@@ -47,24 +47,35 @@ export default function Suggestions(_props: Infer<typeof Props>, ctx: Ctx) {
         </Case>
         <Case<State> tag="ready">
           {(v) => (
-            <Box
-              as="ul"
-              id="todos.suggestions.list"
-              direction="column"
-              gap="hairline"
-              bg="divider"
-              border="hairline"
-              p="0"
-              m="0"
+            <If
+              when={v.value.length > 0}
+              fallback={() => (
+                <Text id="todos.suggestions.empty" as="p" m="0" font="mono" fontSize="sm" fg="textSecondary">
+                  No suggestions right now.
+                </Text>
+              )}
             >
-              <For each={v.value} key="title">
-                {(item) => (
-                  <Box as="li" direction="row" px="3" py="2" bg="card">
-                    {item.title}
-                  </Box>
-                )}
-              </For>
-            </Box>
+              {() => (
+                <Box
+                  as="ul"
+                  id="todos.suggestions.list"
+                  direction="column"
+                  gap="hairline"
+                  bg="divider"
+                  border="hairline"
+                  p="0"
+                  m="0"
+                >
+                  <For each={v.value} key="title">
+                    {(item) => (
+                      <Box as="li" direction="row" px="3" py="2" bg="card">
+                        {item.title}
+                      </Box>
+                    )}
+                  </For>
+                </Box>
+              )}
+            </If>
           )}
         </Case>
       </Match>

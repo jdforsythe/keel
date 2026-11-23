@@ -5,11 +5,13 @@ import { fieldInForm } from "../rules/fieldInForm.ts";
 import { foreignUrlAttr } from "../rules/foreignUrlAttr.ts";
 import { foreignUrlFetch } from "../rules/foreignUrlFetch.ts";
 import { formatInApp } from "../rules/formatInApp.ts";
+import { gapWithoutDirection } from "../rules/gapWithoutDirection.ts";
 import { guardInGuardFile } from "../rules/guardInGuardFile.ts";
 import { hostCodeImport } from "../rules/hostCodeImport.ts";
 import { identityFile } from "../rules/identityFile.ts";
 import { loaderInServerFile } from "../rules/loaderInServerFile.ts";
 import { lowContrast } from "../rules/lowContrast.ts";
+import { missingLook } from "../rules/missingLook.ts";
 import { noAmbientCapability } from "../rules/noAmbientCapability.ts";
 import { noAmbientLocale } from "../rules/noAmbientLocale.ts";
 import { noCodeFromString } from "../rules/noCodeFromString.ts";
@@ -94,6 +96,8 @@ export const KERNEL_RULES: readonly RuleDef[] = [
   foreignUrlAttr,
   foreignUrlFetch,
   reversedFocusOrder,
+  gapWithoutDirection,
+  missingLook,
   blankLabel,
   hostCodeImport,
   stylesheetImport,

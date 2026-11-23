@@ -15,53 +15,22 @@ export default function SetupPage(props: Infer<typeof Props>) {
   const f = form(SetupForm, { id: "setup.form" });
   return (
     <Box as="section" id="setup.page" direction="column" gap="4">
-      <Heading id="setup.heading" level={1} m="0" fontSize={{ base: "xl", md: "2xl" }} weight="semibold">
+      <Heading id="setup.heading" level={1} fontSize={{ base: "xl", md: "2xl" }}>
         {props.data.heading}
       </Heading>
       <Text id="setup.intro" fg="textSecondary">
         {props.data.intro}
       </Text>
       <If when={props.data.current !== null}>
-        <Text id="setup.done" fg="verified" border="verified" bg="card" px="3" py="2" font="mono" fontSize="sm">
+        <Text id="setup.done" look="notice" fg="verified" border="verified">
           {props.data.done}
         </Text>
       </If>
       <Form method="POST" action={setup.href("setup.form", {}, props.search)} form={f}>
-        <Box direction="column" gap="3" p={{ base: "3", md: "4" }} bg="card" border="hairline">
-          <Input
-            w="full"
-            my="1"
-            px="2"
-            py="2"
-            bg="card"
-            fg="text"
-            border="control"
-            radius="none"
-            font="serif"
-            fontSize="md"
-            states={{ hover: { border: "rule" }, focusVisible: { border: "rule" } }}
-            field={f.field("name")}
-            label={props.data.name}
-            autocomplete="off"
-          />
+        <Box look="panel">
+          <Input field={f.field("name")} label={props.data.name} autocomplete="off" />
           <Box direction="row">
-            <Button
-              id="setup.save"
-              type="submit"
-              font="mono"
-              fontSize="sm"
-              weight="medium"
-              px="4"
-              py="2"
-              bg="text"
-              fg="card"
-              border="rule"
-              radius="none"
-              states={{
-                hover: { bg: "textSecondary", border: "control" },
-                focusVisible: { bg: "textSecondary", border: "control" },
-              }}
-            >
+            <Button id="setup.save" type="submit">
               {props.data.save}
             </Button>
           </Box>
