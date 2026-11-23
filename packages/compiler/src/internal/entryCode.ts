@@ -33,7 +33,7 @@ const SHELLS = {
  * `/__keel/inspect`: once after mount, then at most once a second when it changed. An interval rather than an
  * `effect`, so the reporter is not part of the graph it reports. With `shell` (a `keel build --target` build, k.shell
  * Shell ctx) the ctx is `createCtx({ mode: 'shell', drivers })`, the drivers of that shell's std.shells package for
- * the build's `origin` (`KEEL_ORIGIN`); with `shell.id` the entry, before the router starts, calls that package's `shellMount` with the shell's `id`, the
+ * the build's `origin` (`KEEL_ORIGIN`) and `connect`, the other origins its `net` sends to (k.shell Origins); with `shell.id` the entry, before the router starts, calls that package's `shellMount` with the shell's `id`, the
  * origin and, with `identity` (the project has `identity.ts`, k.return), the identity mount (its default export);
  * without it page links are delivered (k.links). With `identity` (the project has `identity.ts`) the entry imports
  * its default export and starts the router with `mount` its `path`, so no page matches at or under it (k.mount). Under
@@ -44,7 +44,12 @@ export function entryCode(
   cssId: string,
   std: StdData = {},
   deployables: Readonly<Record<string, readonly string[]>> = {},
-  shell?: { readonly kind: keyof typeof SHELLS; readonly origin: string; readonly id?: string | undefined },
+  shell?: {
+    readonly kind: keyof typeof SHELLS;
+    readonly origin: string;
+    readonly id?: string | undefined;
+    readonly connect?: readonly string[] | undefined;
+  },
   mode: "dev" | "production" = "production",
   identity = false,
   served = false,
@@ -75,7 +80,7 @@ export function entryCode(
     ...imports,
     native === undefined
       ? `const ctx = createCtx({ mode: "real" });`
-      : `const ctx = createCtx({ mode: "shell", drivers: __keelDrivers({ origin: ${origin} }) });`,
+      : `const ctx = createCtx({ mode: "shell", drivers: __keelDrivers({ origin: ${origin}, connect: ${JSON.stringify(shell?.connect ?? [])} }) });`,
     ...(id === undefined
       ? []
       : [`__keelMount(ctx, { id: ${q(id)}, origin: ${origin}${identity ? ", mount: __keelIdentity" : ""} });`]),

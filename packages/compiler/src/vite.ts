@@ -11,7 +11,9 @@ import { SERVER_ENTRY } from "./entry/SERVER_ENTRY.ts";
 import { STYLES_PATH } from "./entry/STYLES_PATH.ts";
 import { entryDependency } from "./entry/entryDependency.ts";
 import { resumeEntry } from "./entry/resumeEntry.ts";
+import { originOf } from "./hosting/originOf.ts";
 import { peerOrigins } from "./hosting/peerOrigins.ts";
+import { shellConnect } from "./hosting/shellConnect.ts";
 import { topologyReadProblems } from "./hosting/topologyReadProblems.ts";
 import { SERVER_ONLY_NAME } from "./internal/SERVER_ONLY_NAME.ts";
 import { STUB_NAME } from "./internal/STUB_NAME.ts";
@@ -66,14 +68,18 @@ const NAMES: readonly (keyof Artifacts)[] = ["a11y.json", "deps.json", "ids.json
 /** What app code (the generated entry) imports for the atomic CSS, and the id it resolves to. */
 /**
  * The shell a `keel build --target` build makes (`KEEL_SHELL`) and its `KEEL_ORIGIN`, else none (k.shell Build); with
- * `shells`, the deployable's, its `id` there (k.shell: a shell build always has it, with or without `identity.ts`).
+ * the deployable `name` of `topology`, its `id` there (k.shell: a shell build always has it, with or without
+ * `identity.ts`) and its `connect` origins (`shellConnect`).
  */
 const shellOf = (
-  shells?: NonNullable<Topology[string]["shells"]>,
-): { kind: "capacitor" | "tauri"; origin: string; id: string | undefined } | undefined => {
+  topology: Topology = {},
+  name = "",
+): { kind: "capacitor" | "tauri"; origin: string; id: string | undefined; connect: readonly string[] } | undefined => {
   const kind = process.env.KEEL_SHELL;
   const origin = process.env.KEEL_ORIGIN ?? "";
-  return kind === "capacitor" || kind === "tauri" ? { kind, origin, id: shells?.[kind]?.id } : undefined;
+  if (kind !== "capacitor" && kind !== "tauri") return undefined;
+  const connect = shellConnect(topology, name, process.env, originOf(origin) ?? origin);
+  return { kind, origin, id: topology[name]?.shells?.[kind]?.id, connect };
 };
 const CSS_IMPORT = "virtual:keel.css";
 /** The ESM bundle of a `'postgres'` entry gives `pg`'s CommonJS `require` of node built-ins a real `require`. */
@@ -1026,7 +1032,7 @@ export default function (): {
           CSS_IMPORT,
           clientStdData(stdArtifact(manifests()).data, new Set(d.modules)),
           targets,
-          shellOf(all[d.name]?.shells),
+          shellOf(all, d.name),
           mode,
           exists("identity.ts"),
           served,
