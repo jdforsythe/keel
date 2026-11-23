@@ -19,7 +19,7 @@ Verified in the lane after the last merge of the main line: `pnpm build`; ui 368
 - Pushed: 17b30c87 after a second full green gate (it adds `lane-g2flake`: golden-2's tests hold on a slow runner, the plan's D111). CI run 45106805360 on it is watched to its end; the run before it, on 33c60bb4, was red in `check` for those tests.
 - Open lanes, a subagent in each (started late on 2026-11-22):
   - `.worktrees/mutfix` `lane-mutfix`: the mutation runs of scaffold and cli (the dry run failed in Stryker's sandbox), then the stale claims of check, testing, store, std-conflicts and std-report, then what `node tooling/mutate-stale.mjs --list --missing` lists (about 1,100 files with no claim: first what "missing" means, a fix to the listing if it counts files with no mutants, then the runs, smallest packages first). The mutation lock is machine-wide: every mutation run goes through this lane. Its refreshed `packages/<pkg>/reports/mutation/mutation.json` files are copied to the main worktree before `pnpm ledger`.
-  - `.worktrees/w17` `lane-w17`: weakness package 17, resume-dev-conformance (backlog 0747), the conformance writer.
   - `.worktrees/w18` `lane-w18`: weakness package 18, golden-polish (backlog 0386, 0964, 0366).
   - `.worktrees/w7` `lane-w7`: weakness package 7, shell-origin-and-deps (backlog 0608, 0957): the RFC, ADR and spec text first (`rfc-lane.md`), then the conformance writer, then the build.
+- Merged and not yet in the ledger, gated or pushed: `lane-w17` (backlog 0747: k.errors has a Conformance bullet for `resume`'s fallback in `dev` and production; `packages/runtime-dom/conformance/resume-dev-message.test.ts`, 2 cases green).
 - Merging one: `README.md`, Merging a lane; then the ledger per Method's D100, the gate, the push.

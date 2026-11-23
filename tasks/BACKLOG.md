@@ -848,7 +848,7 @@ Format: `- [ ] NNNN title · pkg · spec · gate · depends`. Sized to one conte
 - [x] 0744 review, minor: `logUnwritable` writes a plain stderr line when `KEEL_FORMAT=json` · server · docs/OUTPUT.md
 - [ ] 0745 review, minor: `packages/std-schedules/conformance/first-fire-err.test.ts` line 1 carries an RFC tag (CLAUDE rule 11); needs an rfc commit · std-schedules
 - [x] 0746 review, minor: a secret param at the front of a route (`/:token`, `/:lang/:token`) marks the first segment of every path in the log · server · k.privacy
-- [ ] 0747 review, minor: `resume` with `mode: "dev"` has no conformance case · runtime-dom · k.errors
+- [x] 0747 review, minor: `resume` with `mode: "dev"` has no conformance case · runtime-dom · k.errors
 - [ ] 0748 review, minor: `openHub.ts` derives keys that `restore` already derives; THREAT-MODEL does not name `keys` in `#k-state` · store, docs
 - [x] 0760 server, low: a route led by a param (`/:p/:tok`, `tok` secret) logs `/en/A` as `/[secret]`, where the RFC 0123 text says `/en/[secret]`; it over-marks and never leaks. Decide whether the build or the RFC text changes · server · k.privacy
 - [ ] 0761 tooling: `pnpm mutate:stale` stopped a server chunk at "0 of 0 mutants" after 8 s and reported 19 files left in 2 packages while `pnpm ledger` showed 2 stale claims; find which count is right · tooling · docs/TESTING.md
