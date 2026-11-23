@@ -11,8 +11,10 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -22,8 +24,11 @@ import java.util.concurrent.Executors;
  * Keel's HTTP client for a Capacitor shell. Each request runs on a background thread over {@link HttpURLConnection},
  * which keeps cookies in the default {@code CookieHandler} (the store {@code CapacitorHttp} uses). {@code request}
  * resolves with the status and headers, {@code set-cookie} left out; the body follows as {@code chunk} events of at
- * most 16 KiB (base64), then {@code end}, or {@code fail} on an error. A request with {@code redirect: "manual"} is
- * not followed: its 3xx resolves as it came, its cookies kept. {@code cancel} disconnects the request.
+ * most 16 KiB (base64), then {@code end}, or {@code fail} on an error. A URL is sent only when its origin is in the
+ * plugin's {@code allow} configuration ({@code plugins.KeelHttp.allow} of {@code capacitor.config.json}, exact
+ * {@code http:} or {@code https:} origins); any other, and every URL when there is no list, is rejected before a
+ * connection opens. No redirect is followed: a 3xx resolves as it came, its cookies kept. {@code cancel} disconnects
+ * the request.
  */
 @CapacitorPlugin(name = "KeelHttp")
 public class KeelHttpPlugin extends Plugin {
@@ -49,6 +54,23 @@ public class KeelHttpPlugin extends Plugin {
         call.resolve();
     }
 
+    /** The origin of {@code url} as the page writes one: scheme, host and a port that is not the scheme's own; null when it is not http(s). */
+    static String originOf(URL url) {
+        String scheme = url.getProtocol().toLowerCase(Locale.ROOT);
+        if (!scheme.equals("http") && !scheme.equals("https")) return null;
+        String host = url.getHost().toLowerCase(Locale.ROOT);
+        if (host.isEmpty()) return null;
+        int port = url.getPort();
+        return scheme + "://" + host + (port == -1 || port == url.getDefaultPort() ? "" : ":" + port);
+    }
+
+    /** Whether the {@code allow} configuration lists the origin of {@code url}. */
+    private boolean allowed(URL url) {
+        String origin = originOf(url);
+        String[] allow = getConfig().getArray("allow");
+        return origin != null && allow != null && Arrays.asList(allow).contains(origin);
+    }
+
     @Override
     protected void handleOnDestroy() {
         for (HttpURLConnection c : open.values()) c.disconnect();
@@ -60,10 +82,15 @@ public class KeelHttpPlugin extends Plugin {
         HttpURLConnection c = null;
         boolean headed = false;
         try {
-            c = (HttpURLConnection) new URL(call.getString("url", "")).openConnection();
+            URL url = new URL(call.getString("url", ""));
+            if (!allowed(url)) {
+                call.reject("network request failed");
+                return;
+            }
+            c = (HttpURLConnection) url.openConnection();
             open.put(id, c);
             c.setRequestMethod(call.getString("method", "GET"));
-            c.setInstanceFollowRedirects(!"manual".equals(call.getString("redirect")));
+            c.setInstanceFollowRedirects(false);
             JSObject headers = call.getObject("headers", new JSObject());
             for (Iterator<String> keys = headers.keys(); keys.hasNext(); ) {
                 String k = keys.next();

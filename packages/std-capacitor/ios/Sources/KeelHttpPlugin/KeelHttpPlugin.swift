@@ -4,8 +4,10 @@ import Foundation
 /// Keel's HTTP client for a Capacitor shell. Each request is a `URLSession` data task with the default configuration,
 /// whose cookies `HTTPCookieStorage.shared` keeps (the store `CapacitorHttp` uses). `request` resolves with the status
 /// and headers, `set-cookie` left out; the body follows as `chunk` events of at most 16 KiB (base64), then `end`, or
-/// `fail` on an error. A request with `redirect: "manual"` is not followed: its 3xx resolves as it came, its cookies
-/// kept. A response that sets a cookie resolves after `URLSession.flush` has written the cookie store to disk, so the
+/// `fail` on an error. A URL is sent only when its origin is in the plugin's `allow` configuration
+/// (`plugins.KeelHttp.allow` of `capacitor.config.json`, exact `http:` or `https:` origins); any other, and every URL
+/// when there is no list, is rejected before a task starts. No redirect is followed: a 3xx resolves as it came, its
+/// cookies kept. A response that sets a cookie resolves after `URLSession.flush` has written the cookie store to disk, so the
 /// cookie outlives a force-stop that follows at once. `cancel` cancels the task.
 @objc(KeelHttpPlugin)
 public class KeelHttpPlugin: CAPPlugin, CAPBridgedPlugin, URLSessionDataDelegate {
@@ -20,7 +22,6 @@ public class KeelHttpPlugin: CAPPlugin, CAPBridgedPlugin, URLSessionDataDelegate
         let id: String
         let task: URLSessionDataTask
         var call: CAPPluginCall?
-        let manual: Bool
         var cancelled = false
     }
 
@@ -30,8 +31,25 @@ public class KeelHttpPlugin: CAPPlugin, CAPBridgedPlugin, URLSessionDataDelegate
     private var table: [Int: Entry] = [:]
     private lazy var session = URLSession(configuration: .default, delegate: self, delegateQueue: nil)
 
+    /// The origin of `url` as the page writes one: scheme, host and a port that is not the scheme's own; nil when it
+    /// is not http(s).
+    static func origin(of url: URL) -> String? {
+        guard let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https",
+              let host = url.host?.lowercased(), !host.isEmpty else { return nil }
+        let named = host.contains(":") ? "[\(host)]" : host
+        guard let port = url.port, port != (scheme == "https" ? 443 : 80) else { return "\(scheme)://\(named)" }
+        return "\(scheme)://\(named):\(port)"
+    }
+
+    /// Whether the `allow` configuration lists the origin of `url`.
+    private func allowed(_ url: URL) -> Bool {
+        guard let origin = KeelHttpPlugin.origin(of: url) else { return false }
+        let allow = (getConfig().getArray("allow") ?? []).compactMap { $0 as? String }
+        return allow.contains(origin)
+    }
+
     @objc func request(_ call: CAPPluginCall) {
-        guard let id = call.getString("id"), let url = URL(string: call.getString("url") ?? "") else {
+        guard let id = call.getString("id"), let url = URL(string: call.getString("url") ?? ""), allowed(url) else {
             call.reject("network request failed")
             return
         }
@@ -43,8 +61,7 @@ public class KeelHttpPlugin: CAPPlugin, CAPBridgedPlugin, URLSessionDataDelegate
         }
         if let data = call.getString("data") { req.httpBody = Data(data.utf8) }
         let task = session.dataTask(with: req)
-        let manual = call.getString("redirect") == "manual"
-        lock.withLock { table[task.taskIdentifier] = Entry(id: id, task: task, call: call, manual: manual) }
+        lock.withLock { table[task.taskIdentifier] = Entry(id: id, task: task, call: call) }
         task.resume()
     }
 
@@ -86,10 +103,7 @@ public class KeelHttpPlugin: CAPPlugin, CAPBridgedPlugin, URLSessionDataDelegate
                            willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest,
                            completionHandler: @escaping (URLRequest?) -> Void) {
         // No new request: the task completes with the redirect response itself.
-        let manual = lock.withLock { table[task.taskIdentifier]?.manual ?? false }
-        // A followed redirect's own cookies reach no later delegate call: they are flushed here.
-        if !manual, response.value(forHTTPHeaderField: "Set-Cookie") != nil { session.flush {} }
-        completionHandler(manual ? nil : request)
+        completionHandler(nil)
     }
 
     public func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
