@@ -59,7 +59,7 @@ it("adds through the API, raises the quantity, moves it to Bought and removes it
   expect(view.get("show")).toBe("bought");
   expect(page.find(`shopping.toggle.${milk.id}`).text).toBe("Back on the list");
   const server = await (await fetch(asJson("GET", "/api/items"))).json();
-  expect(server.results["shopping.items"]).toEqual({ ok: true, value: { items: [{ ...milk, bought: true }] } });
+  expect(server.results["shopping.items"]).toEqual({ ok: true, value: { items: [{ ...milk, bought: true, rev: 2 }] } });
   await page.fire(`shopping.remove.${milk.id}`, { type: "click" });
   expect(page.find("shopping.empty").text).toContain("The list is empty");
   page.dispose();

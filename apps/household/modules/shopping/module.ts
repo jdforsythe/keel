@@ -7,6 +7,7 @@ export default module({
     "@keel/std-channels",
     "@keel/std-jobs",
     "@keel/std-live",
+    "@keel/std-offline",
     "@keel/std-postgres",
     "@keel/std-schedules",
     "@keel/std-statecharts",

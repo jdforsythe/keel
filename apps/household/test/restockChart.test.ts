@@ -36,12 +36,14 @@ it("keeps each chart event deterministic and undoable", async () => {
 });
 
 it("puts a name back once: still to buy stays, bought goes back, new joins below 50", () => {
-  const milk = { id: id(), name: "Milk", qty: 3, bought: false };
+  const milk = { id: id(), name: "Milk", qty: 3, bought: false, rev: 0 };
   const fresh = id();
   expect(putBackIn([milk], { id: fresh, name: "Milk" })).toEqual([milk]);
   expect(putBackIn([{ ...milk, bought: true }], { id: fresh, name: "Milk" })).toEqual([{ ...milk, qty: 1 }]);
-  expect(putBackIn([], { id: fresh, name: "Milk" })).toEqual([{ id: fresh, name: "Milk", qty: 1, bought: false }]);
-  const full = Array.from({ length: 50 }, (_, n) => ({ id: id(), name: `N${n}`, qty: 1, bought: false }));
+  expect(putBackIn([], { id: fresh, name: "Milk" })).toEqual([
+    { id: fresh, name: "Milk", qty: 1, bought: false, rev: 0 },
+  ]);
+  const full = Array.from({ length: 50 }, (_, n) => ({ id: id(), name: `N${n}`, qty: 1, bought: false, rev: 0 }));
   expect(putBackIn(full, { id: fresh, name: "Milk" })).toEqual(full);
   for (const items of [[], [milk], [{ ...milk, bought: true }], full]) {
     const once = putBackIn(items, { id: id(), name: "Milk" });

@@ -15,9 +15,10 @@ type Row = Infer<typeof Item>;
  */
 export const changeList = (ctx: Ctx, change: (items: readonly Row[]) => Row[]) =>
   shoppingDb(ctx).transaction(async (t) => {
-    const before = await t.query(sql(Item)`select id, name, qty, bought from items order by seq`);
+    const before = await t.query(sql(Item)`select id, name, qty, bought, rev from items order by seq`);
     if (!before.ok) return before;
     const after = change(before.value);
     const written = await writeList(t, before.value, after);
-    return written.ok ? ok(after) : written;
+    if (!written.ok) return written;
+    return written.value ? t.query(sql(Item)`select id, name, qty, bought, rev from items order by seq`) : ok(after);
   });

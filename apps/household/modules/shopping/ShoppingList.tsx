@@ -4,20 +4,24 @@ import { For, If } from "@keel/runtime-dom";
 import { type Infer, type Result, s } from "@keel/schema";
 import { Disclosure, Menu, Tabs, Toaster } from "@keel/std-headless";
 import { type LiveStatus, live } from "@keel/std-live";
+import { drain, send } from "@keel/std-offline";
 import { tx } from "@keel/store";
 import { Box, Button, Text } from "@keel/ui";
 import { Item } from "./Item.schema.ts";
 import type { Items } from "./Items.schema.ts";
 import { ListText } from "./ListText.schema.ts";
+import OutboxNote from "./OutboxNote.tsx";
 import { copy } from "./copy.store.ts";
 import { hydrate } from "./hydrate.transaction.ts";
 import { listChannel } from "./listChannel.schema.ts";
+import { listOutbox } from "./listOutbox.ts";
+import { markOf } from "./markOf.ts";
 import { pageOrigin } from "./pageOrigin.ts";
 import { shoppingApi } from "./shoppingApi.ts";
 import { show } from "./show.transaction.ts";
 import { view } from "./view.store.ts";
 
-export const Props = s.object({ text: ListText, items: s.array(Item) });
+export const Props = s.object({ text: ListText, items: s.array(Item), member: s.string().pii("identifier") });
 export const uses = [show, hydrate];
 
 export default function ShoppingList(props: Infer<typeof Props>, ctx: Ctx) {
@@ -34,11 +38,31 @@ export default function ShoppingList(props: Infer<typeof Props>, ctx: Ctx) {
     origin === undefined
       ? (): LiveStatus => "connecting"
       : live(ctx, origin, listChannel, {}, { read: (c, abort) => shoppingApi.items({ signal: abort }, c), hydrate });
-  const send = async (call: Promise<Result<Infer<typeof Items>, unknown>>) => {
+  const change = async (call: Promise<Result<Infer<typeof Items>, unknown>>) => {
     const r = await call;
     if (r.ok) run(tx(hydrate, r.value));
     else failed.set(true);
   };
+  // A mark goes through the outbox: offline it waits there, kept in the browser's storage, and `drain` sends it once
+  // the browser is back, for this member only. A mark the server refused shows in the note under the tabs.
+  if (origin !== undefined) void drain(ctx, listOutbox, { owner: props.member });
+  const mark = async (item: Infer<typeof Item>) => {
+    const r = await send(
+      ctx,
+      listOutbox,
+      "mark",
+      { params: { id: item.id }, body: { bought: !item.bought } },
+      { base: item.rev, owner: props.member },
+    );
+    if (r.state === "sent") run(tx(hydrate, r.value));
+    else if (r.state === "failed") failed.set(true);
+  };
+  const waiting = (id: string) =>
+    listOutbox
+      .get("entries")
+      .filter((e) => e.state === "queued" || e.state === "sending")
+      .map(markOf)
+      .find((m) => m?.id === id);
   const list = () => (copy.get("read") ? copy.get("items") : props.items);
   const staple = (key: string) => props.text.staples.find((st) => st.key === key)?.text ?? "";
   const rows = (bought: boolean) => list().filter((i) => i.bought === bought);
@@ -63,7 +87,7 @@ export default function ShoppingList(props: Infer<typeof Props>, ctx: Ctx) {
         id="shopping.staples"
         trigger={() => <Text>{props.text.addStaple}</Text>}
         items={() => props.text.staples}
-        onSelect={(key) => send(shoppingApi.add({ body: { name: staple(key) } }, ctx))}
+        onSelect={(key) => change(shoppingApi.add({ body: { name: staple(key) } }, ctx))}
         styles={{
           trigger: { look: "primary", states: { expanded: { bg: "textSecondary" } } },
           menu: { direction: "column", p: "0", m: "0", bg: "card", border: "rule" },
@@ -123,18 +147,23 @@ export default function ShoppingList(props: Infer<typeof Props>, ctx: Ctx) {
                   py="2"
                   bg="card"
                 >
-                  <Text id={`shopping.name.${item.id}`} fontSize="lg">{`${item.name} × ${item.qty}`}</Text>
+                  <Box direction="column" gap="1">
+                    <Text id={`shopping.name.${item.id}`} fontSize="lg">{`${item.name} × ${item.qty}`}</Text>
+                    <Text id={`shopping.waiting.${item.id}`} role="status" font="mono" fontSize="xs" fg="textSecondary">
+                      {waiting(item.id) === undefined
+                        ? ""
+                        : waiting(item.id)?.bought === true
+                          ? props.text.outbox.waitingBought
+                          : props.text.outbox.waitingBack}
+                    </Text>
+                  </Box>
                   <Box direction="row" gap="2">
-                    <Button
-                      id={`shopping.toggle.${item.id}`}
-                      onClick={() => send(shoppingApi.toggle({ params: { id: item.id } }, ctx))}
-                      look="secondary"
-                    >
+                    <Button id={`shopping.toggle.${item.id}`} onClick={() => mark(item)} look="secondary">
                       {item.bought ? props.text.putBack : props.text.markBought}
                     </Button>
                     <Button
                       id={`shopping.remove.${item.id}`}
-                      onClick={() => send(shoppingApi.remove({ params: { id: item.id } }, ctx))}
+                      onClick={() => change(shoppingApi.remove({ params: { id: item.id } }, ctx))}
                       look="secondary"
                       fg="error"
                       border="error"
@@ -148,6 +177,7 @@ export default function ShoppingList(props: Infer<typeof Props>, ctx: Ctx) {
           </Box>
         )}
       />
+      <OutboxNote text={props.text.outbox} items={list()} />
       <If when={list().length === 0}>
         <Text id="shopping.empty" fg="textSecondary" p="4" bg="card" border="hairline">
           {props.text.empty}

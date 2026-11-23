@@ -5,4 +5,4 @@ import { shoppingDb } from "./shoppingDb.server.ts";
 
 /** The household's list, in the order its items were first added. */
 export const listOf = (ctx: Ctx) =>
-  shoppingDb(ctx).query(sql(Item)`select id, name, qty, bought from items order by seq`);
+  shoppingDb(ctx).query(sql(Item)`select id, name, qty, bought, rev from items order by seq`);

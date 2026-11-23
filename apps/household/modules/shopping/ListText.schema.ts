@@ -1,4 +1,5 @@
 import { s } from "@keel/schema";
+import { OutboxText } from "./OutboxText.schema.ts";
 
 const Staple = s.object({ key: s.string({ min: 1, max: 64 }), text: s.string({ min: 1 }) });
 
@@ -17,5 +18,6 @@ export const ListText = s.object({
   helpBody: s.string(),
   failed: s.string(),
   dismiss: s.string(),
+  outbox: OutboxText,
   live: s.object({ live: s.string(), connecting: s.string(), offline: s.string(), denied: s.string() }),
 });

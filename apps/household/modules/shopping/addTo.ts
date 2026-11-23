@@ -8,5 +8,5 @@ export function addTo(items: readonly Row[], p: { id: Row["id"]; name: string })
   const open = items.find((i) => !i.bought && i.name === p.name);
   if (open !== undefined) return items.map((i) => (i.id === open.id ? { ...i, qty: Math.min(99, i.qty + 1) } : i));
   if (items.length >= 50 || items.some((i) => i.id === p.id)) return [...items];
-  return [...items, { id: p.id, name: p.name, qty: 1, bought: false }];
+  return [...items, { id: p.id, name: p.name, qty: 1, bought: false, rev: 0 }];
 }

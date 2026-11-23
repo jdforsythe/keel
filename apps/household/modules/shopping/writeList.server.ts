@@ -7,7 +7,8 @@ import { listChannel } from "./listChannel.schema.ts";
 type Row = Infer<typeof Item>;
 
 /**
- * Inside transaction `t`, writes the rows of `after` that differ from `before` and deletes the ones it lacks; when any
+ * Inside transaction `t`, writes the rows of `after` that differ from `before`, raising the `rev` of each it updates,
+ * and deletes the ones it lacks; when any
  * row changed, names the list channel, so every open list stream hears `changed` once `t` commits. Answers whether a
  * row changed.
  */
@@ -29,7 +30,11 @@ export async function writeList(t: Tx, before: readonly Row[], after: readonly R
             sql(NoRows)`insert into items (id, name, qty, bought)
                           values (${item.id}, ${item.name}, ${item.qty}, ${item.bought})`,
           )
-        : await t.run(sql(NoRows)`update items set qty = ${item.qty}, bought = ${item.bought} where id = ${item.id}`);
+        : await t.run(
+            sql(
+              NoRows,
+            )`update items set qty = ${item.qty}, bought = ${item.bought}, rev = rev + 1 where id = ${item.id}`,
+          );
     if (!r.ok) return r;
     changed = true;
   }
