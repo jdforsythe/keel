@@ -1,6 +1,6 @@
 # Keel spec map
 
-status key: proposed | implemented | conformance-covered | frozen. Budget: file 1,250 tokens, section 1,700.
+status key: proposed | implemented | conformance-covered | frozen. Budget: file 1,410 tokens, section 3,100.
 
 ## Code ranges
 Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); owner: keel docs --for <code>.

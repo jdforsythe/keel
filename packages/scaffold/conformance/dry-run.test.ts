@@ -15,6 +15,7 @@ import {
   withSchema,
   withStoreCart,
 } from "./fixtures.ts";
+import { freshNode } from "./service-base-support.ts";
 import { type CliRecord, cleanup, keel, materialize, readTree } from "./keel-cli.ts";
 import { type PrintedEdit, applyEdits } from "./unified-diff.ts";
 
@@ -28,7 +29,9 @@ const calls: [Parameters<typeof apply>[0], Record<string, unknown>, () => Files]
   ["move", { name: "OrderCard", to: "catalog" }, withOrders],
   ["add-field", { schema: "Order", field: "note", type: "string.optional" }, () => withSchema(true)],
   ["transaction", { id: "orders.cart.addItem" }, withStoreCart],
-  ["service", SERVICE_INPUT, fresh],
+  ["service", SERVICE_INPUT, freshNode],
+  ["service", { id: "orders", base: "https://api.example.com" }, freshNode],
+  ["service", { id: "orders", base: "https://api.example.com", reason: "order list" }, fresh],
 ];
 
 describe("scaffold (dry run)", () => {
@@ -81,9 +84,14 @@ const cli: [string, string[], () => Files][] = [
   ],
   ["scaffold transaction orders.cart.addItem", ["scaffold", "transaction", "orders.cart.addItem"], withStoreCart],
   [
-    "scaffold service orders --openapi openapi.json",
-    ["scaffold", "service", "orders", "--openapi", "openapi.json"],
+    "scaffold service orders --openapi openapi.json --reason order-list",
+    ["scaffold", "service", "orders", "--openapi", "openapi.json", "--reason", "order-list"],
     withOpenApi,
+  ],
+  [
+    "scaffold service orders --base https://api.example.com --reason order-list",
+    ["scaffold", "service", "orders", "--base", "https://api.example.com", "--reason", "order-list"],
+    fresh,
   ],
 ];
 

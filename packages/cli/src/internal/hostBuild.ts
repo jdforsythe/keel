@@ -21,8 +21,14 @@ const ERROR = /^E\d{4} /;
  * error line of `routesRun` or a Vite build (an evaluation problem: E1006, E1807) is an error diagnostic, as each fails
  * its step (k.compiler Build-time evaluation); a warning line (W1005) is advisory, printed to stderr. A throwing
  * contract file is the surface step's E1006, so the routes step's line for that file is dropped.
+ * `refresh` (k.scaffold Refresh) stops before the Vite builds: `routes.json` is evaluated whatever the deployables
+ * are, since no Vite build follows to write it, then `surface.json`; no bundle, no `csp.txt`, nothing under `dist/`,
+ * and no W1005 for the `routes.json` it rewrites.
  */
-export async function hostBuild(cwd: string): Promise<{ code: number; diagnostics: readonly Diag[]; stderr: string }> {
+export async function hostBuild(
+  cwd: string,
+  refresh = false,
+): Promise<{ code: number; diagnostics: readonly Diag[]; stderr: string }> {
   const topo = join(cwd, "topology.ts");
   const topology = existsSync(topo) ? readFileSync(topo, "utf8") : undefined;
   const advisory: string[] = [];
@@ -32,7 +38,8 @@ export async function hostBuild(cwd: string): Promise<{ code: number; diagnostic
   const sort = (notes: readonly string[]): void => {
     for (const n of notes) (ERROR.test(n) ? failing : advisory).push(n);
   };
-  const routes = await routesRun(cwd, topology);
+  const ran = await routesRun(cwd, topology, refresh);
+  const routes = refresh ? { ...ran, notes: ran.notes.filter((n) => !n.startsWith("W1005 ")) } : ran;
   let code = routes.code;
   if (routes.rejected === true) sort(routes.notes);
   else {
@@ -41,7 +48,7 @@ export async function hostBuild(cwd: string): Promise<{ code: number; diagnostic
     const reported = surface.notes.flatMap((n) => /^E1006 (\S+) /.exec(n)?.[1] ?? []);
     sort(routes.notes.filter((n) => !reported.some((f) => n.startsWith(`E1006 ${f} `))));
     code = Math.max(code, surface.code);
-    for (const target of viteTargets(topology)) {
+    for (const target of refresh ? [] : viteTargets(topology)) {
       const b = viteRun(cwd, target);
       sort((b?.notes ?? []).filter((n) => !reported.some((f) => n.startsWith(`E1006 ${f} `))));
       if (b !== undefined && b.code !== 0) {
@@ -50,7 +57,7 @@ export async function hostBuild(cwd: string): Promise<{ code: number; diagnostic
         break;
       }
     }
-    if (code === 0) advisory.push(...(await writeCspFiles(cwd, topology, process.env)));
+    if (code === 0 && !refresh) advisory.push(...(await writeCspFiles(cwd, topology, process.env)));
   }
   const diagnostics: Diag[] = [];
   // A node deployable's Vite build evaluates the routes again: its lines repeat the routes step's.

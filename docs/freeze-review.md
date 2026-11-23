@@ -28,7 +28,7 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.check | 13 | **conformance-covered** | none |
 | k.cli | 19 | **conformance-covered** | none |
 | k.module | 14 | **conformance-covered** | none |
-| k.scaffold | 14 | implemented | clause 11 (`scaffold route` with `method` and no `api` is E1052) and clause 14 (the W1356 managed-block check): no cited test |
+| k.scaffold | 21 | implemented | clause 11 (`scaffold route` with `method` and no `api` is E1052) and clause 14 (the W1356 managed-block check): no cited test |
 | k.testing | 18 | **conformance-covered** | none |
 | k.model | 7 | **conformance-covered** | none |
 | k.sim | 11 | **conformance-covered** | none |
@@ -161,4 +161,4 @@ Golden apps: `apps/golden-1` and `apps/golden-2` have converged evals (`evals/re
 No section is `frozen`. The kernel is provisionally frozen: a kernel change goes through an RFC with an ADR, a conformance update and a migration note, and the `frozen` flip waits until the stdlib stages have exercised the kernel (`tasks/0034-freeze/PLAN.md`). k.parity and std.db are `proposed`; k.docs, k.host-code, k.mount-scope, k.roles, k.scaffold, k.store, std.capacitor and std.tauri are `implemented`; the other 92 of 102 are `conformance-covered`.
 
 subject: spec/ packages/*/conformance/
-verified: 58518a6665330f253ba46d8d456f7bc45dde1128
+verified: cabf260a248016caba93da26745983293efe5c60
