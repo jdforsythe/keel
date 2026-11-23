@@ -15,4 +15,10 @@ export const restockText: Infer<typeof RestockText> = {
   by: { schedule: "Started by the schedule", member: "Started by a member" },
   failedWith: "Stopped with",
   refused: "The run did not start. Try it again.",
+  live: {
+    live: "Live: a run shows here as it goes",
+    connecting: "Connecting: a run shows once connected",
+    offline: "Offline: this panel shows the run it held when the connection dropped",
+    denied: "Signed out: sign in again to see a run",
+  },
 };

@@ -84,6 +84,8 @@ it("shows the last run on the setup page, and Run now starts one the page follow
     await page.settle();
   }
   expect(page.find("shopping.restock.last").text).toBe("Done: 5 of 5 staples handled, 5 put back.");
+  expect(page.find("shopping.restock.live").text).toBe("Live: a run shows here as it goes");
+  expect(page.find("shopping.restock.live").role).toBe("status");
   expect(page.find("shopping.restock.refused").text).toBe("");
   page.dispose();
 }, 60_000);

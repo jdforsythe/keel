@@ -13,4 +13,5 @@ export const RestockText = s.object({
   by: s.object({ schedule: s.string(), member: s.string() }),
   failedWith: s.string(),
   refused: s.string(),
+  live: s.object({ live: s.string(), connecting: s.string(), offline: s.string(), denied: s.string() }),
 });
