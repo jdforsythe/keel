@@ -1,6 +1,6 @@
-// k.scaffold Guarantee: in a project that holds `.keel/` artifacts, an applied operation runs `keel build` over the tree
-// after it, so the artifacts it makes stale (`surface.json` for a changed contract) are rewritten and `keel check`
-// stays clean; a dry run, and a project never built, build nothing.
+// k.scaffold Refresh: in a project that holds `.keel/` artifacts, an applied operation runs `keel build`'s steps up to
+// the bundles over the tree after it (`Io.refresh`, never `Io.build`), so the artifacts it makes stale (`surface.json`
+// for a changed contract) are rewritten and `keel check` stays clean; a dry run, and a project never built, refresh nothing.
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { run } from "../src/index.ts";
@@ -32,7 +32,7 @@ async function builtProject(): Promise<Files> {
 }
 
 describe("scaffold refreshes the artifacts it makes stale", () => {
-  it("scaffold route in a built project runs keel build over the tree after its edit set, applied first", async () => {
+  it("scaffold route in a built project refreshes over the tree after its edit set, applied first, with no bundle", async () => {
     const files = await builtProject();
     expect(files.some((f) => f.path === ".keel/ids.json")).toBe(true);
     expect(await e1005(files)).toEqual([]);
@@ -41,7 +41,11 @@ describe("scaffold refreshes the artifacts it makes stale", () => {
       cwd: CWD,
       files,
       apply: (w) => steps.push(`apply ${w.map((x) => x.path).join(" ")}`),
-      build: async (cwd) => {
+      build: async () => {
+        steps.push("bundle");
+        return { code: 0, diagnostics: [], stderr: "" };
+      },
+      refresh: async (cwd) => {
         steps.push(`build ${cwd === CWD}`);
         return { code: 0, diagnostics: [], stderr: "" };
       },
@@ -52,7 +56,8 @@ describe("scaffold refreshes the artifacts it makes stale", () => {
         .split("\n")
         .filter((l) => l !== "")
         .at(-1),
-    ).toMatch(/^ok scaffold route /);
+    ).toMatch(/^ok scaffold route 3 created, 2 changed, 0 removed, [1-9]\d* artifacts, 0 errors$/);
+    expect(steps).not.toContain("bundle");
     // The edit set reaches the host, then the build's static artifacts, then the disk half reads both.
     expect(steps[0]).toContain("modules/app/app.contract.ts");
     expect(steps[1]).toContain(".keel/ids.json");
@@ -66,7 +71,7 @@ describe("scaffold refreshes the artifacts it makes stale", () => {
     const e = await runEngine(["scaffold", "route", "app.releases", "--path", "/releases"], {
       cwd: CWD,
       files,
-      build: async () => ({
+      refresh: async () => ({
         code: 1,
         diagnostics: [{ kind: "diag", code: "E1006", path: "modules/app/routes.ts", line: 1, col: 1, message: "x" }],
         stderr: "",
@@ -93,6 +98,7 @@ describe("scaffold refreshes the artifacts it makes stale", () => {
       cwd: CWD,
       files,
       build,
+      refresh: build,
     });
     expect(dry.writes).toEqual([]);
     const bare = files.filter((f) => !f.path.startsWith(".keel/"));
@@ -100,6 +106,7 @@ describe("scaffold refreshes the artifacts it makes stale", () => {
       cwd: CWD,
       files: bare,
       build,
+      refresh: build,
     });
     expect(e.result.code).toBe(0);
     expect(e.writes.some((w) => w.path.startsWith(".keel/"))).toBe(false);

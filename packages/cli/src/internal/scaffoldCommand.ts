@@ -6,6 +6,7 @@ import type { Write } from "../types/Write.ts";
 import type { Outcome } from "./Outcome.ts";
 import { buildCommand } from "./buildCommand.ts";
 import { isError } from "./isError.ts";
+import { isRecord } from "./isRecord.ts";
 import { loadShells } from "./loadShells.ts";
 import { makeDiag } from "./makeDiag.ts";
 import { openapiInput } from "./openapiInput.ts";
@@ -38,7 +39,9 @@ const refusal = (d: ScaffoldDiag, into: string): OutRecord[] => [
 
 /**
  * `keel scaffold <op> ...` / `keel codemod <op> ...` over `io.files` through `@keel/scaffold`, which is pure, so
- * `--dry-run` only skips the writes (RFC 0045). The edit set comes back as `scaffold.edit` records (unified diffs
+ * `--dry-run` only skips the writes (RFC 0045). An applied operation in a project holding a `.keel/` artifact of
+ * `keel build` then refreshes what `keel check` reads (k.scaffold Refresh): the edit set is applied, `buildCommand`
+ * runs up to the bundles over the new tree, its diagnostics follow the edit lines, and the trailer counts `artifacts` as that run of `keel build` does. The edit set comes back as `scaffold.edit` records (unified diffs
  * under `--dry-run`) plus writes for the binary (`project <name>`: under `<name>/`, with the agent files of the running
  * `@keel/cli` unless `--workspace`); a refusal is its diagnostic (E135x, E1005, E1052), nothing written. `codemod rename` without
  * `--kind` tries component then schema (PascalCase) or store then route (dotted), first one that finds `from`.
@@ -66,7 +69,10 @@ export async function scaffoldCommand(name: "scaffold" | "codemod", input: Input
       .map((f) => [f.path.slice(into.length), f.source]),
   );
   const dry = input["dry-run"] === true;
-  const generated = op === "service" ? openapiInput(input.args?.[0], input, io.cwd, files) : undefined;
+  const generated =
+    op === "service" && input.openapi !== undefined
+      ? openapiInput(input.args?.[0], input.openapi, io.cwd, files)
+      : undefined;
   if (generated !== undefined && !generated.ok)
     return { records: [generated.diag, summary(`${name} ${op}`, [generated.diag], {})], writes: [] };
   const base = scaffoldInput(op, input, generated?.value);
@@ -108,14 +114,17 @@ export async function scaffoldCommand(name: "scaffold" | "codemod", input: Input
     };
   io.apply?.(writes);
   const tree = [...edit.files].map(([path, source]) => ({ path, source }));
-  const rebuilt = await buildCommand({ ...io, files: tree });
+  const rebuilt = await buildCommand({ ...io, files: tree }, {}, true);
   const diags = rebuilt.records.filter((r) => r.kind !== "summary");
-  const failed = rebuilt.records.some((r) => r.kind === "summary" && !r.ok) || diags.some(isError);
+  const trailer = rebuilt.records.find((r) => r.kind === "summary");
+  const failed = trailer?.ok !== true || diags.some(isError);
+  const made = isRecord(trailer?.counts) ? trailer.counts.artifacts : undefined;
+  const artifacts = failed || typeof made !== "number" ? 0 : made;
   return {
     records: [
       ...records,
       ...diags,
-      summary(label, diags, { ...counts, errors: failed ? Math.max(1, diags.filter(isError).length) : 0 }),
+      summary(label, diags, { ...counts, artifacts, errors: failed ? Math.max(1, diags.filter(isError).length) : 0 }),
     ],
     writes: [...writes, ...rebuilt.writes],
     ...(rebuilt.stderr === undefined ? {} : { stderr: rebuilt.stderr }),

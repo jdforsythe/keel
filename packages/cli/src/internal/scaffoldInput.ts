@@ -11,7 +11,7 @@ const parseDefault = (text: string): unknown => {
 
 /**
  * Map cli input to the `@keel/scaffold` input of `op` (k.scaffold CLI examples). Missing values stay absent
- * so `@keel/scaffold` reports them (E1052). `generated` is the `openapi` output of `service`. `--default` is read as JSON when it parses, else as a string.
+ * so `@keel/scaffold` reports them (E1052). `generated` is the `openapi` output of `service --openapi`; `--base` and `--reason` pass as they are. `--default` is read as JSON when it parses, else as a string.
  */
 export function scaffoldInput(
   op: Op,
@@ -30,9 +30,22 @@ export function scaffoldInput(
     case "transaction":
       return pick({ id: a });
     case "service":
-      return pick({ id: a, schema: generated?.schema, service: generated?.service });
+      return pick({
+        id: a,
+        base: input.base,
+        schema: generated?.schema,
+        service: generated?.service,
+        reason: input.reason,
+      });
     case "route":
-      return pick({ id: a, path: input.path, file: input.file, api: input.api, method: input.method });
+      return pick({
+        id: a,
+        path: input.path,
+        file: input.file,
+        api: input.api,
+        method: input.method,
+        "no-loader": input["no-loader"],
+      });
     case "rename":
       return pick({ kind: input.kind, from: a, to: b });
     case "move":

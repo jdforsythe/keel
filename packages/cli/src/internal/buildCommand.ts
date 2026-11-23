@@ -33,8 +33,9 @@ const ARTIFACTS = ["a11y.json", "deps.json", "ids.json", "styles.json"] as const
  * the Vite builds), its diagnostics, stderr and exit code joining the result: `keel build` and MCP `build` run one path.
  * The declared shells' targets load first (`shellTargets`). `--target` (k.shell Build) then runs `shellPlan`'s checks, and any diagnostic there ends the build with nothing
  * written; after a clean disk half the host (`Io.shell`) builds the shell, and the trailer names each artifact.
+ * `refresh` (k.scaffold Refresh) runs the same steps with `Io.refresh` as the disk half: no bundle, nothing under `dist/`.
  */
-export async function buildCommand(io: Io, input: Input = {}): Promise<Outcome> {
+export async function buildCommand(io: Io, input: Input = {}, refresh = false): Promise<Outcome> {
   const project = projectFiles(io);
   const policy = await shellPolicy(io.cwd, project);
   const targets = await loadShells(io.cwd, project, policy);
@@ -99,10 +100,11 @@ export async function buildCommand(io: Io, input: Input = {}): Promise<Outcome> 
       errors: Math.max(all.filter(isError).length, code === 0 ? 0 : 1),
     }),
   ];
-  if (failed || io.build === undefined) return { records: done(diags), writes };
+  const half = refresh ? io.refresh : io.build;
+  if (failed || half === undefined) return { records: done(diags), writes };
   // The disk half reads what the engine wrote, so the writes land first (`Io.build`).
   io.apply?.(writes);
-  const post = await io.build(io.cwd);
+  const post = await half(io.cwd);
   const plan = pre.plan;
   if (plan === undefined || post.code !== 0 || post.diagnostics.some(isError) || host === undefined)
     return {
