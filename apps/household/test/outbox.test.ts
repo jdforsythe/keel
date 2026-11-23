@@ -160,7 +160,12 @@ it("keeps a write key to the member who sent it: two members' marks with one key
   if (first === undefined || second === undefined) throw new Error("the list holds fewer than two items");
   const mark = (id: string, owner: string, cookie: string) =>
     h.raw(
-      asJson("POST", `/api/items/${id}/bought`, { bought: true, write: { key: "Write_shared", base: 0, owner } }, { cookie }),
+      asJson(
+        "POST",
+        `/api/items/${id}/bought`,
+        { bought: true, write: { key: "Write_shared", base: 0, owner } },
+        { cookie },
+      ),
     );
 
   expect((await mark(first.id, h.user, h.adaCookie)).status).toBe(200);

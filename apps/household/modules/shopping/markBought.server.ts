@@ -23,7 +23,9 @@ export const markBought = (
 ) =>
   shoppingDb(ctx).transaction(async (t) => {
     const list = () => t.query(sql(Item)`select id, name, qty, bought, rev from items order by seq`);
-    const seen = await t.query(sql(WriteKey)`select owner, key from list_writes where owner = ${write.owner} and key = ${write.key}`);
+    const seen = await t.query(
+      sql(WriteKey)`select owner, key from list_writes where owner = ${write.owner} and key = ${write.key}`,
+    );
     if (!seen.ok) return seen;
     const before = await list();
     if (!before.ok || seen.value.length > 0) return before;
@@ -36,7 +38,9 @@ export const markBought = (
         message: "The item changed first",
         data: { transaction: "shopping.mark", head: item.rev },
       });
-    const kept = await t.run(sql(NoRows)`insert into list_writes (owner, key, at) values (${write.owner}, ${write.key}, ${ctx.clock.now()})`);
+    const kept = await t.run(
+      sql(NoRows)`insert into list_writes (owner, key, at) values (${write.owner}, ${write.key}, ${ctx.clock.now()})`,
+    );
     if (!kept.ok) return kept;
     if (item.bought === bought) return before;
     const written = await writeList(t, before.value, toggleIn(before.value, id));
