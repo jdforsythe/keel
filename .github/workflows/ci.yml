@@ -181,7 +181,7 @@ jobs:
         run: "node --disable-warning=ExperimentalWarning tooling/smoke/dev-signin.mjs"
       - name: Chromium for the browser smoke
         run: pnpm exec playwright install --with-deps chromium
-      - name: "served golden-2 pages resume in place in Chromium, three runs"
+      - name: "served golden-2 pages, and the built household's setup page with its form and live panel, resume in place in Chromium, three runs"
         run: "node --disable-warning=ExperimentalWarning tooling/smoke/resume.mjs 3"
       - name: "built household: sign-in guard, list, receipts, API tokens, a pii canary, and the data kept through SIGKILL on PGlite and Postgres 17"
         run: "node --disable-warning=ExperimentalWarning tooling/smoke/household.mjs"

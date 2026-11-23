@@ -1,7 +1,7 @@
 import type { Ctx } from "@keel/ctx";
 import { signal } from "@keel/reactive";
 import { type Infer, s } from "@keel/schema";
-import { live } from "@keel/std-live";
+import { type LiveStatus, live } from "@keel/std-live";
 import { UTC, formatInstant, instantOf } from "@keel/std-temporal";
 import { tx } from "@keel/store";
 import { Box, Button, Heading, Text } from "@keel/ui";
@@ -19,16 +19,18 @@ export const uses = [hydrateRuns];
 export default function RestockPanel(props: Infer<typeof Props>, ctx: Ctx) {
   const refused = signal(false);
   // The panel follows the runs channel: each save of a run, by a step job or a member's Run now, re-reads the runs
-  // into `shopping.runsCopy`. The server render shows the loader's runs until the first read commits.
+  // into `shopping.runsCopy`. The server render has no stream and shows the loader's runs until the first read commits.
   const origin = pageOrigin();
-  if (origin !== undefined)
-    live(
-      ctx,
-      origin,
-      runsChannel,
-      {},
-      { read: (c, abort) => shoppingApi.runs({ signal: abort }, c), hydrate: hydrateRuns },
-    );
+  const status =
+    origin === undefined
+      ? (): LiveStatus => "connecting"
+      : live(
+          ctx,
+          origin,
+          runsChannel,
+          {},
+          { read: (c, abort) => shoppingApi.runs({ signal: abort }, c), hydrate: hydrateRuns },
+        );
   const runs = () => (runsCopy.get("read") ? runsCopy.get("runs") : props.runs);
   const running = () => runs().last?.state === "running";
   const summary = () => {
@@ -66,6 +68,21 @@ export default function RestockPanel(props: Infer<typeof Props>, ctx: Ctx) {
       <Text id="shopping.restock.intro" fg="textSecondary">
         {props.text.intro}
       </Text>
+      <Box direction="row">
+        <Text
+          id="shopping.restock.live"
+          role="status"
+          font="mono"
+          fontSize="xs"
+          px="2"
+          py="1"
+          bg="card"
+          fg={status() === "live" ? "verified" : status() === "offline" ? "error" : "textSecondary"}
+          border={status() === "live" ? "verified" : status() === "offline" ? "error" : "accent"}
+        >
+          {props.text.live[status()]}
+        </Text>
+      </Box>
       <Box direction="column" gap="1" px="3" py="2" bg="surfaceLow" border={running() ? "accent" : "hairline"}>
         <Text
           id="shopping.restock.last"

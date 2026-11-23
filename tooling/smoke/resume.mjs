@@ -12,8 +12,17 @@
 // page, the sign-in form is filled and submitted with Enter while the scripts are still held: the browser sends
 // exactly one POST. Then, scripts running, a sign-up and a sign-in through the forms: each one POST to the identity
 // mount answered by a 303, and the sign-in page then names the account, with no console warning or error.
+// Last, the built apps/household (`pnpm --filter household build`; it is not built here), whose `web` is a `node`
+// deployable, served on a free port with its data in the temporary folder: a member's setup page, which holds a form
+// and the weekly staples panel (a `live` island with a status line), is loaded the same way with the household name
+// typed before resume. It resumes as the pages above do and says Live; a run a second client starts through the API
+// shows on it with the typed name, the caret and focus as they were and no reload; the form saves the name typed
+// before resume; the server is killed and the page says Connecting, then Live once it is back and the run done; the
+// browser goes offline, a second client starts another run the page does not show, and back online the page says Live
+// and shows it.
 // Usage: node tooling/smoke/resume.mjs [runs] (default 1). Nothing is written inside the repo.
 import { spawn } from "node:child_process";
+import { existsSync } from "node:fs";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -24,6 +33,7 @@ const SECRET = "golden-2-smoke-secret-of-32-bytes-or-more";
 /** The sign-in library's secret (`BETTER_AUTH_SECRET`), which golden-2's server requires. */
 const AUTH_SECRET = "golden-2-smoke-auth-secret-of-32-characters";
 const golden2 = join(root, "apps", "golden-2");
+const household = join(root, "apps", "household");
 
 /** Start the built deployable `name` of `dir` at `port` with web storage in `file` and `peers` as its environment. */
 function serveDeployable(dir, name, port, file, peers) {
@@ -246,11 +256,200 @@ const fieldError = (page, selector) =>
       .trim();
   }, selector);
 
+/** `POST /api/restock` (Run now) on `base` as the member `cookie`, as a second client; the status. */
+const runNow = (base, cookie) => postAs(base, "/api/restock", {}, cookie);
+
+/** The latest weekly run `GET /api/restock` answers to the member `cookie`, or null. */
+async function lastRun(base, cookie) {
+  const r = await fetch(`${base}/api/restock`, { headers: { accept: "application/json", cookie } }).catch(() => null);
+  if (r === null || r.status !== 200) return null;
+  return field(await r.json().catch(() => null), "results", "shopping.runs", "value", "last") ?? null;
+}
+
+/** Poll the latest run until `done(run)` holds, at most `ms`; the run then, or null. */
+async function runUntil(base, cookie, done, ms) {
+  for (const end = Date.now() + ms; Date.now() < end; await wait(100)) {
+    const run = await lastRun(base, cookie);
+    if (run !== null && done(run)) return run;
+  }
+  return null;
+}
+
+/** The trimmed text of the element `id` on `page`, "" when it is absent. */
+const textOf = (page, id) => page.evaluate((i) => (document.getElementById(i)?.textContent ?? "").trim(), id);
+
+/** Poll the text of `id` on `page` until `holds(text)`, at most `ms`; whether it held. */
+async function textUntil(page, id, holds, ms) {
+  for (const end = Date.now() + ms; Date.now() < end; await wait(100)) {
+    if (holds(await textOf(page, id).catch(() => ""))) return true;
+  }
+  return false;
+}
+
+/** The focused element against the served ones the page still holds: a reload leaves none. */
+const focusNow = (page) =>
+  page.evaluate(() => {
+    const k = Reflect.get(window, "__keelSmoke");
+    const a = document.activeElement;
+    return {
+      id: a?.id ?? "",
+      same: a !== null && k.served.includes(a),
+      value: a instanceof HTMLInputElement ? a.value : "",
+      caret: a instanceof HTMLInputElement ? a.selectionStart : null,
+      marked: Reflect.get(window, "smokeMark") === "kept",
+    };
+  });
+
+/**
+ * The household setup page as the member `h.cookie`: resume with the name typed, a live update from a second client,
+ * the form's submit, a server restart and an offline window. `h.restart()` kills the server and starts it again.
+ */
+async function liveForm(browser, step, run, h) {
+  const label = `run ${run} setup`;
+  const context = await browser.newContext({ viewport: { width: 1000, height: 500 } });
+  const [name, value] = h.cookie.split("=");
+  await context.addCookies([{ name, value, url: h.base }]);
+  const page = await context.newPage();
+  const logged = [];
+  page.on("console", (m) => {
+    if (m.type() !== "warning" && m.type() !== "error") return;
+    if (!m.text().startsWith("Failed to load resource")) logged.push(`${m.type()}: ${m.text()}`);
+  });
+  page.on("pageerror", (e) => logged.push(`pageerror: ${String(e).split("\n")[0]}`));
+  await page.addInitScript(watch);
+  const live = "shopping.restock.live";
+  const last = "shopping.restock.last";
+  const started = "shopping.restock.started";
+  const says = (word, ms) => textUntil(page, live, (t) => t.startsWith(word), ms);
+  const input = 'input[name="name"]';
+  const typed = `Elm Street ${run}`;
+
+  // k.resume: the served document resumes keeping every server node; the server render has no stream (Connecting).
+  const v = await visit(page, `${h.base}/setup`, async (p) => ({ typed: await typeBefore(p, input, typed) }));
+  checkPage(
+    step,
+    label,
+    v,
+    (html) =>
+      islandsIn(html).includes("setup.form") &&
+      html.includes('id="setup.page"') &&
+      /id="shopping\.restock\.live"[^>]*>Connecting/.test(html),
+  );
+  await page.evaluate(() => Object.assign(window, { smokeMark: "kept" }));
+  // std.live: `status()` is `connecting` before the first read commits and `live` after it.
+  step(
+    `${label} says Live once its first read commits (std.live)`,
+    await says("Live", 10_000),
+    await textOf(page, live),
+  );
+
+  // std.live: a write by A is in B's hydrated store after B's next read, with no input from B.
+  const before = `${await textOf(page, last)} ${await textOf(page, started)}`;
+  const asked = await runNow(h.base, h.cookie);
+  const shown = await textUntil(page, started, (t) => !before.endsWith(` ${t}`) && t !== "", 10_000);
+  const now = await textOf(page, last);
+  step(
+    `${label} shows a run a second client starts, with no input (std.live)`,
+    asked === 200 && shown && now.startsWith("Running"),
+    `POST ${asked}, "${now}"`,
+  );
+  const f = await focusNow(page);
+  step(
+    `${label} typed name, caret and focus kept through the update, no reload (k.runtime)`,
+    f.same && f.value === typed && f.caret === 2 && f.marked,
+    `focus ${f.id || "none"} (served ${f.same}), value "${f.value}", caret ${f.caret}, marked ${f.marked}`,
+  );
+  step(`${label} says Live through the update (std.live)`, await says("Live", 5_000), await textOf(page, live));
+  step(`${label} console`, logged.length === 0, logged.slice(0, 3).join(" | "));
+
+  // k.forms: the field holds what was typed before resume; the submit sends it once and the action saves it.
+  const posts = [];
+  page.on("response", (r) => {
+    if (r.request().method() === "POST") posts.push(`${r.status()} ${new URL(r.url()).pathname}`);
+  });
+  await page.click('[id="setup.save"]');
+  const done = await page
+    .locator('[id="setup.done"]')
+    .waitFor({ timeout: 10_000 })
+    .then(
+      () => true,
+      () => false,
+    );
+  let saved = null;
+  for (const end = Date.now() + 5_000; Date.now() < end && saved !== typed; await wait(100)) {
+    saved = field(
+      await fetch(`${h.base}/api/household`, { headers: { accept: "application/json", cookie: h.cookie } }).then(
+        (r) => r.json(),
+        () => null,
+      ),
+      "results",
+      "setup.household",
+      "value",
+      "name",
+    );
+  }
+  step(
+    `${label} form posts once and saves the name typed before resume (k.forms)`,
+    done && saved === typed && posts.length === 1 && posts[0].endsWith(" /setup"),
+    `${posts.join(" ")}, stored "${saved}"`,
+  );
+  step(`${label} says Live after the submit (std.live)`, await says("Live", 10_000), await textOf(page, live));
+  await page.evaluate(() => Object.assign(window, { smokeMark: "kept" }));
+
+  // std.live: `connecting` while the stream opens; after it reopens a read runs and the status is `live`.
+  await h.kill();
+  step(
+    `${label} says Connecting once the server is gone (std.live)`,
+    await says("Connecting", 15_000),
+    await textOf(page, live),
+  );
+  const up = await h.start();
+  step(
+    `${label} says Live again after the restart (std.live)`,
+    up && (await says("Live", 45_000)),
+    await textOf(page, live),
+  );
+  const ended = await runUntil(h.base, h.cookie, (r) => r.state !== "running", 60_000);
+  const caught = await textUntil(page, last, (t) => t.startsWith("Done: 5 of 5"), 10_000);
+  step(
+    `${label} shows the run done after the restart (std.live)`,
+    ended?.state === "done" && caught,
+    `run ${ended?.state}, "${await textOf(page, last)}"`,
+  );
+
+  // std.live: `offline` while the net is offline and no read runs; back online the stream reopens and one read runs.
+  const stale = `${await textOf(page, last)} ${await textOf(page, started)}`;
+  await context.setOffline(true);
+  const off = await says("Offline", 10_000);
+  const again = await runNow(h.base, h.cookie);
+  const going = await runUntil(h.base, h.cookie, (r) => r.state === "running" && r.handled >= 1, 15_000);
+  const held = `${await textOf(page, last)} ${await textOf(page, started)}`;
+  step(
+    `${label} says Offline and holds what it had while a second client starts a run (std.live)`,
+    off && again === 200 && going !== null && held === stale,
+    `${await textOf(page, live)}, POST ${again}, "${held}"`,
+  );
+  await context.setOffline(false);
+  const on = await says("Live", 45_000);
+  const fresh = await textUntil(page, started, (t) => t !== "" && !stale.endsWith(` ${t}`), 10_000);
+  const marked = await page.evaluate(() => Reflect.get(window, "smokeMark") === "kept");
+  step(
+    `${label} says Live and shows that run once back online, no reload (std.live)`,
+    on && fresh && marked,
+    `${await textOf(page, live)}, "${await textOf(page, last)}", marked ${marked}`,
+  );
+  step(`${label} console through the restart`, logged.length === 0, logged.slice(0, 3).join(" | "));
+  // The next run of this page starts a run of its own: this one ends first.
+  await runUntil(h.base, h.cookie, (r) => r.state !== "running", 60_000);
+  await context.close();
+}
+
 const runs = Number(process.argv[2] ?? "1");
 const { step, finish } = recorder();
 const tmp = await mkdtemp(join(tmpdir(), "keel-smoke-resume-"));
 let api;
 let web;
+let home;
 let browser;
 try {
   const dir = join(tmp, "app");
@@ -295,6 +494,26 @@ try {
   web = serveDeployable(dir, "web", webPort, join(tmp, "web.storage"), peers);
   const webUp = await up(`${webBase}/`, "text/html");
   step("serve web", webUp, webUp ? "" : web.log.slice(-3).join(" | "));
+
+  // The household app as it is built: its `web` is a node deployable, so nothing is copied or changed.
+  const homeBuilt = existsSync(join(household, "dist", "web", "server.mjs"));
+  step("household built", homeBuilt, homeBuilt ? "" : "run pnpm --filter household build first");
+  const homePort = await freePort();
+  const h = {
+    base: `http://127.0.0.1:${homePort}`,
+    cookie: "",
+    async start() {
+      home = serveDeployable(household, "web", homePort, join(tmp, "household.storage"), {});
+      return up(`${h.base}/`, "text/html");
+    },
+    async kill() {
+      await home?.kill();
+    },
+  };
+  const homeUp = homeBuilt && (await h.start());
+  step("serve household", homeUp, homeUp ? "" : (home?.log.slice(-3).join(" | ") ?? ""));
+  if (homeUp) h.cookie = await session(h.base);
+  step("household session", h.cookie !== "" && !h.cookie.includes(";"));
 
   browser = await chromium.launch();
   for (let run = 1; run <= runs; run++) {
@@ -483,6 +702,8 @@ try {
     );
     step(`run ${run} sign-in console`, said.length === 0, said.slice(0, 3).join(" | "));
     await account.close();
+
+    if (h.cookie !== "") await liveForm(browser, step, run, h);
   }
 } catch (e) {
   step("flow", false, String(e).split("\n")[0]);
@@ -490,6 +711,7 @@ try {
   await browser?.close();
   await stop(web);
   await stop(api);
+  await stop(home);
   await rm(tmp, { recursive: true, force: true });
 }
 finish("resume");

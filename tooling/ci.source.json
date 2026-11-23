@@ -248,7 +248,7 @@
           "run": "pnpm exec playwright install --with-deps chromium"
         },
         {
-          "name": "served golden-2 pages resume in place in Chromium, three runs",
+          "name": "served golden-2 pages, and the built household's setup page with its form and live panel, resume in place in Chromium, three runs",
           "run": "node --disable-warning=ExperimentalWarning tooling/smoke/resume.mjs 3"
         },
         {

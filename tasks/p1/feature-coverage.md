@@ -14,7 +14,7 @@ Apps: G1 golden-1 (todo board: `web` client + `api` node on SQLite), G2 golden-2
 | `workflow.mjs` (ci) | G1 built `api` | removal workflow resumes after a kill inside a step |
 | `workflow-postgres.mjs` (ci) | G1 built `api` on Postgres 17 | the same workflow with its store and jobs on Postgres; the step's effect once |
 | `csp.mjs` (ci) | G1 built `api` and `examples/third-party-origin` | `csp.txt` equals the host's document policy; declared origins present, others absent |
-| `resume.mjs` (ci) | G2 built `web` and `api`, peers | five pages resume in Chromium; forms; identity mount sign-up and sign-in |
+| `resume.mjs` (ci) | G2 built `web` and `api`, peers | five pages resume in Chromium; forms; identity mount sign-up and sign-in; the built household's setup page resumes into its runs channel with a form |
 | `dev-signin.mjs` (ci) | G2 `keel dev` | sign-in over HTTP, server stubs for the browser |
 | `shell.mjs`, `shell-drive.mjs`, `shell-launch.mjs` (ci) | G1 Tauri (Linux, macOS), Capacitor iOS | recorded session replayed in the shell; offline outbox drains after SIGKILL; cookie survives relaunch |
 | Android build, `docker build` per node deployable (ci) | G1 | the build runs; nothing is driven |
@@ -83,9 +83,9 @@ Apps: G1 golden-1 (todo board: `web` client + `api` node on SQLite), G2 golden-2
 | k.topology: peers | - | x | - | - | ci | | `resume.mjs` (web and api name each other) |
 | k.topology: `servedBy` | x | x | - | - | ci | | `apps/golden-1/test/host.test.ts` |
 | k.deploy (entry, deploy files) | x | x | - | x | ci | | `apps/golden-1/deploy`, docker build |
-| k.shell: Tauri | x | - | - | - | ci | | `apps/golden-1/topology.ts`, `shell.mjs` |
-| k.shell: Capacitor iOS | x | - | - | - | ci | | `shell-drive.mjs --shell ios` |
-| k.shell: Capacitor Android | x | - | - | - | ci (build) | | nothing is driven |
+| k.shell: Tauri | x | - | - | - | ci | | `apps/golden-1/topology.ts`, `shell.mjs`; `examples/native-tauri` is one page in the shell and nothing else (app test under `renderRoute` with `shell`; the smoke checks the committed shell id and the page in Chromium on a plain host; its `cargo` build is run by hand, no CI job builds it) |
+| k.shell: Capacitor iOS | x | - | - | - | ci | | `shell-drive.mjs --shell ios`; `examples/native-capacitor` is one page in the shell and nothing else (app test, smoke as for Tauri; its iOS `xcodebuild` build is run by hand, no CI job builds it) |
+| k.shell: Capacitor Android | x | - | - | - | ci (build) | | nothing is driven; `examples/native-capacitor` builds a debug APK by hand, no CI job builds it |
 | k.compat | - | - | - | - | | x | |
 | k.api (API routes) | x | x | - | x | ci | | `apps/golden-1/modules/api/routes.ts` |
 | k.hosting | x | x | - | - | ci | | `apps/golden-1/test/host.test.ts` |
@@ -188,7 +188,7 @@ Apps: G1 golden-1 (todo board: `web` client + `api` node on SQLite), G2 golden-2
 4. A guard redirect into a shell: `examples/shell-mount` under `renderRoute` with `shell`; no Tauri or Capacitor run drives it.
 5. Sessions recorded from a user who signs in: G2 places `sessions` and records a signed-in page under sim; no built smoke records one.
 6. Identity with the outbox: a queued write whose owner differs from the caller (`std.outbox-owner`) is checked in package tests, never after a sign-out in a shell.
-7. Resume (G2) with live updates and forms (G1): `resume.mjs` covers a server-rendered G2; G1 is a client build, so no island resumes into a channel.
+7. Resume with live updates and forms: covered. `resume.mjs` loads the built household's setup page (a `node` web deployable; the page holds a form and the weekly staples panel, a `live` island with a status line) with the name typed before resume: the island resumes in place and says Live, a run a second client starts shows with the typed name, caret and focus kept, the form saves that name, and the page says Connecting through a server kill, Offline through an offline window, and Live with the run it missed after each.
 8. Schedules with workflows with Postgres, `servedBy` with peers and a shell, i18n with money in a form: each pair has no test.
 
 ## Where each proof lives
@@ -238,7 +238,7 @@ Placement follows what the repo does today: a scenario that belongs to one packa
 | Evidence bundle over an app: `keel evidence --verify` passes and a tampered bundle fails | `packages/cli/test/` (the command's home) | run the command over a fixture app; flip one byte | S |
 | Identity with the outbox: a queued write after sign-out (c.6) | `packages/std-offline/test/` for `std.outbox-owner`; the walkthrough's app tests after layer 6 | `simulate` sign-out with a pending write | M |
 | Guard redirect into a shell (c.4) | `tooling/smoke/shell.mjs` as a new session (Linux Tauri in CI, `shell-drive.mjs` on macOS) after the walkthrough has a redirecting guard | WebDriver; the redirected route and a later sign-in | M |
-| Resume with live updates and forms (c.7) | `tooling/smoke/resume.mjs` as a new page step, after golden-1 has a `node` web deployable (section 5) | built app in Chromium | M |
+| Resume with live updates and forms (c.7) | `tooling/smoke/resume.mjs`, the `setup` steps of each run, over the built `apps/household` (its `web` is a `node` deployable; nothing is copied or changed) | built app in Chromium: scripts held while the name is typed, a run started through the API as a second client, the form submitted, the server killed and restarted, the browser context offline and back | M |
 | Locale switch with money in a form; `servedBy` with peers and a shell (c.8) | `apps/golden-2/test/` for the first; `tooling/smoke/resume.mjs` for the second | sim and Chromium | S |
 | CSP header read: the default policy on a built server and what a third-party origin widens | `packages/cli/test/` for the build, `tooling/smoke/` header step on one built app | built server, one `fetch` and a header parse | S |
 
@@ -260,7 +260,7 @@ Each example: under 15 files, one topology, a README of one screen that says the
 | `examples/shell-mount` | `k.mount` into a shell and a guard redirect into it (`k.return`, `k.mount-scope`) | app test; Tauri Linux run in the existing `shell-tauri` job | M |
 | `examples/links-in` | `k.links`: a deep link opens a route | app test; built-in route table check; Tauri or Capacitor run only if the walkthrough does not take it | S |
 | `examples/compose-peers` | compose with two nodes as peers (`KEEL_PEER_<NAME>`) | `docker compose config` in CI and a boot of both servers; the `docker build` step already exists for G1 | M |
-| `examples/native-tauri`, `examples/native-capacitor` | one page in a Tauri and a Capacitor shell, nothing else | the shell builds; Tauri runs on Linux in `shell-tauri` | M |
+| `examples/native-tauri`, `examples/native-capacitor` | one page in a Tauri and a Capacitor shell, nothing else | exists: app test, the `examples.mjs` proof (shell id, page in Chromium, no `/__keel/*` request); `keel build --target` run by hand for Tauri (cargo), Capacitor iOS and Android; a CI build of them is not wired (`shell-tauri` and `shell-android` build golden-1) | M |
 | `examples/codemod-place` | `keel codemod place`: move a module from one deployable to another | script runs the codemod over the example and `keel check` passes after | S |
 
 The two native shells are examples and not walkthrough layers: golden-1 already exercises both end to end, and a reader of the walkthrough does not need a native toolchain. Native shells stay in G1 for the full drive (offline outbox after SIGKILL); the examples show only the build and a first page.
@@ -268,7 +268,6 @@ The two native shells are examples and not walkthrough layers: golden-1 already 
 ### 4. Better closed by extending a golden app
 
 - Postgres with a workflow and a job (c.2): golden-2 moves to Postgres in `lane-w14g2`; its `api` gains the job only if scenario 4 of section 2 needs a second app, otherwise the smoke over golden-1 is enough.
-- Resume with live updates (c.7): golden-1 gets a `node` web deployable; this is a topology change to a golden app.
 - Sessions from a signed-in user (c.5): golden-2 gains a sessions module.
 - Static client hosting: `apps/inspector` already is that; `examples/static-client` shows it small and the smoke serves its `dist` as plain files.
 - Compose and Dockerfiles: CI builds only golden-1's images; add golden-2's to the same step.
@@ -306,7 +305,6 @@ Lane F touches the shared CI source and workspace file once and finishes before 
 ### Waits on other work
 
 - Shell scenarios (guard redirect into a shell, `examples/shell-mount`): need the walkthrough's redirecting guard (layer 4, being built) and the `k.mount` shell path.
-- Resume with live updates: needs golden-1's `node` web deployable.
 - Sessions from a signed-in user: needs golden-2's sessions module.
 - `examples/compose-peers` and `examples/native-*`: independent of everything above; ready once lane F merges.
 
