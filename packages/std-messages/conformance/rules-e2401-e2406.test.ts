@@ -1,4 +1,4 @@
-// Spec: std.messages, clause "E2401 to E2406 each have a triggering fixture and a clean one; the fixes of E2401 (`load` form), E2403, E2404 and E2405 apply with `git apply`, and re-checking reports no diagnostic of that code." (rfc:0079)
+// Spec: std.messages, Rules E2401 to E2406: triggering and clean fixtures and fixes. The clause "E2401 to E2407 each have a triggering fixture and a clean one; ..." is quoted whole in rule-e2407.test.ts, which covers E2407. (rfc:0079)
 // Spec: std.messages Rules E2401, E2402, E2403, E2404, E2405, E2406 (one test per code, each with a triggering and a clean fixture).
 // Seed 1337 (no random inputs; fixtures are fixed trees from ./fixtures/support.ts)
 import "@keel/std-messages/tools";
