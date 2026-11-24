@@ -36,6 +36,7 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.requests | 4 | **conformance-covered** | none |
 | k.model | 7 | **conformance-covered** | none |
 | k.sim | 14 | **conformance-covered** | none |
+| k.drive | 23 | **conformance-covered** | none |
 | k.ledger | 15 | **conformance-covered** | none |
 | k.sync | 14 | **conformance-covered** | none |
 | k.deploy | 13 | **conformance-covered** | none |
@@ -117,7 +118,7 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | std.contracts | 7 | **conformance-covered** | none |
 | std.lists | 6 | **conformance-covered** | none |
 | std.tauri | 10 | **conformance-covered** | `UNTESTABLE` toolchain lookups and capability file shape |
-| **total** | **1270** | 106 of 108 covered | |
+| **total** | **1293** | 107 of 109 covered | |
 
 ## 2. One-way audit (principle 1)
 

@@ -1,5 +1,6 @@
 import type { SimClock } from "../SimClock.ts";
 import { checkMs } from "./checkMs.ts";
+import { driven } from "./driven.ts";
 
 interface Waiter {
   readonly at: number;
@@ -19,15 +20,16 @@ export function simClock(timers: readonly { readonly at: number; readonly fn: ()
   let t = 0;
   let seq = 0;
   const waiters = new Set<Waiter>(timers.map(({ at, fn }) => ({ at, seq: seq++, resolve: fn, timer: true })));
-  return {
+  const clock: SimClock = {
     now: () => t,
     next: () => {
       let min: number | null = null;
       for (const w of waiters) if (w.timer === undefined && (min === null || w.at < min)) min = w.at;
       return min;
     },
-    after: (ms, signal) =>
-      new Promise<void>((resolve, reject) => {
+    after: (ms, signal) => {
+      driven.get(clock)?.waited();
+      return new Promise<void>((resolve, reject) => {
         checkMs(ms);
         if (signal?.aborted) {
           reject(signal.reason);
@@ -51,7 +53,8 @@ export function simClock(timers: readonly { readonly at: number; readonly fn: ()
           return;
         }
         waiters.add(w);
-      }),
+      });
+    },
     advance: (ms) => {
       checkMs(ms);
       const target = t + ms;
@@ -64,4 +67,5 @@ export function simClock(timers: readonly { readonly at: number; readonly fn: ()
       t = target;
     },
   };
+  return clock;
 }

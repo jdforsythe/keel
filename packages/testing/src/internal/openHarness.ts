@@ -15,7 +15,6 @@ import type { TestEvent } from "../types/TestEvent.ts";
 import type { HarnessSetup } from "./HarnessSetup.ts";
 import { actsFor } from "./actsFor.ts";
 import { asMain } from "./asMain.ts";
-import { clockStep } from "./clockStep.ts";
 import { fail } from "./fail.ts";
 import { focusOrder } from "./focusOrder.ts";
 import { nameOf } from "./nameOf.ts";
@@ -31,6 +30,7 @@ import { stateOf } from "./stateOf.ts";
 import { storeValues } from "./storeValues.ts";
 import { treeOf } from "./treeOf.ts";
 import { unexpected } from "./unexpected.ts";
+import { watchOf } from "./watchOf.ts";
 
 /**
  * Mount `view` through runtime-dom (`ctx`, root-Boundary `onError`), or run `start`, inside a scope, in a container
@@ -135,7 +135,7 @@ export function openHarness(setup: HarnessSetup): { readonly harness: Harness<Ct
     const win = document.defaultView;
     win?.addEventListener("error", onError);
     try {
-      await settle(container, act, busy, registry, clockStep(ctx));
+      await settle(container, act, busy, registry, watchOf(ctx));
     } finally {
       win?.removeEventListener("error", onError);
     }
@@ -155,7 +155,7 @@ export function openHarness(setup: HarnessSetup): { readonly harness: Harness<Ct
 
   const settleNow = async (): Promise<void> => {
     live();
-    await settle(container, () => undefined, busy, registry, clockStep(ctx));
+    await settle(container, () => undefined, busy, registry, watchOf(ctx));
     if (!gone) check(true);
   };
 

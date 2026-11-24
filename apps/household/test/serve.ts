@@ -20,7 +20,7 @@ export const PASSWORD = "analytical engine";
 
 const UserRow = s.object({ userId: s.string() });
 
-type Fetch = (r: Request) => Promise<Response>;
+export type Fetch = (r: Request) => Promise<Response>;
 
 /** The cookie pairs a response sets, as a `cookie` header sends them back. */
 const cookiesOf = (res: Response): string =>
@@ -69,11 +69,14 @@ export const webApp = (ctx: SimCtx, lines: string[] = []) =>
  * an API token through the members API: `fetch` sends that token with every request that carries no `cookie` or
  * `authorization` of its own, for tests that call the API directly, and `user` is the member's id. `app` is the
  * `createApp` result, as `renderRoute`'s `app`: with `user` the page and every request it sends are the member's
- * (k.user Testing). `sent` lists `METHOD /path` of what `fetch` sent, and `lines` every line the server logged.
+ * (k.user Testing). `sent` lists `METHOD /path` of what `fetch` sent, and `lines` every line the server logged. With
+ * `using` (a `simulate` run's ctx) the server runs on that ctx, whose clock the run drives; otherwise on a ctx of its
+ * own from `seed`, whose clock the test moves.
  */
 export async function served(
   seed = 1,
   signedIn = true,
+  using?: SimCtx,
 ): Promise<{
   ctx: SimCtx;
   sent: string[];
@@ -84,7 +87,7 @@ export async function served(
   token: string;
   app: Awaited<ReturnType<typeof createApp>>;
 }> {
-  const ctx = createCtx({ mode: "sim", seed });
+  const ctx = using ?? createCtx({ mode: "sim", seed });
   const lines: string[] = [];
   const web = await webApp(ctx, lines);
   const raw: Fetch = (req) => web.fetch(req);
