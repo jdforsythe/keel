@@ -9,9 +9,11 @@
 - `keel session replay|minimize|to-test` replay with `serve` when the deployable serving `route.id` is `node`, building the app as the generated entry does (`topology`, `deployable`, every placed module's routes, the identity source; no runners, peers, assets or `std` config), and through the router otherwise.
 - The recording gains no user. `--user <id>` on the three commands, and `user` on `replay` and `minimize`, sign the base in through k.user Testing in either mode; the emitted test writes `user` only when `--user` was given.
 - A base that resumes as another route is E2003 for the base, `unapplied` `-1`, `base route <id> redirected to <other id>`.
-- The `node` form of the `to-test` file builds the same app in the test body and passes `app`, with no `state`. W1723 is unchanged: a hand-written router-mode test of a node page keeps it.
+- The `node` form of the `to-test` file is `test/session-<fingerprint>.test.ts` in the project folder, outside every module (k.boundary Reach: a file under a `node` module is client-reachable, so its identity import would be E1004); it builds the same app in the test body and passes `app`, with no `state`. The router form stays under `modules/<route module>/test/`.
+- `serve` gets the ctx with the clock at `at` and the random stream unread; the stream's position after a replay is not specified. Server data comes only from recorded inputs, never from `state`. W1723 is unchanged: a hand-written router-mode test of a node page keeps it.
 
 **Alternatives.**
+- A k.boundary exception for test files under a `node` module: a second notion of reach for one emitter.
 - Changing only the emitted test: `to-test` would prove in one mode and write a test in another.
 - Replaying recorded net exchanges or seeding storage from the recorded `state`: the first puts loader answers, personal data among them, into every session; the second invents server state from a browser's stores.
 - Recording a user or a signed-in flag, or a fixed placeholder user: the browser of a node page does not know its user, the id is an identifier the recording keeps out, and a placeholder breaks pages that redirect a signed-in person.

@@ -9,6 +9,8 @@ Status: implemented (ADR-0237), accepted by the orchestrator on 2026-11-24, for 
 - D4: in the `app` form the recorded `state` is not applied (E1722 forbids `state` with `app`); each store starts as the served document resumes it.
 - D5: the recording holds no user and gains none. `--user <id>` on the three commands, and `user` on `replay` and `minimize`, render the base signed in as that id (k.user Testing), in either mode. The emitted test writes `user: "<id>"` only when `--user` was given.
 - D6: a base that resumes as another route (a guard's redirect) is E2003 for the base, `unapplied` `-1`, with the message `base route <id> redirected to <other id>`. No new code.
+- D8: the emitted file of a `node` page is `test/session-<fingerprint>.test.ts` in the project folder, where the hand-written `app` tests live (golden-2's, household's, `apps/sessions`' own), not under the module. k.boundary Reach counts a non-server-only file under `modules/<id>/` of a `node` module as client-reachable, a test file too, so a file there importing `identity.server.ts` is E1004, as k.boundary says it should be. A file outside every module is not client-reachable and may import server-only files. No boundary exception is added.
+- D9: `serve` gets the replay ctx with its clock at `at` and its random stream unread; app and page then draw from that one stream, so two replays are equal, and the stream's position after a replay is not part of the result. A served session's server data comes only from its recorded inputs replayed through the app, never from `state`.
 - D7: W1723 is unchanged. The emitted file of a `node` page passes `app`; a hand-written router-mode `renderRoute` of a node page keeps the warning.
 
 ## Problem
@@ -26,16 +28,16 @@ The emitter cannot change alone. std.sessions defines `replay` for router mode o
 `serve` is std.multi's name and shape (`openGroup` and `replayGroup` take `serve(ctx)`), here narrowed to a `createApp` result, because `renderRoute`'s `app` needs one and `user` needs its signer binding on `ctx` (E1724).
 
 ### What determinism the recording gives
-The session holds the seed (when the recording ctx had one), the base route and the inputs with their clock times. Under `serve` the app and the page share the ctx's clock and random (k.mount Testing), so two replays of one session are equal. The recorded run's server state, loader answers and user are not in the session. A session whose error needs them does not reproduce: `replay` reports E2004 and `to-test` writes nothing, as now. That is the honest result. A session recorded against production data can only be replayed against data the test supplies, and `to-test` gives the developer a file to add that data to.
+The session holds the seed (when the recording ctx had one), the base route and the inputs with their clock times. Under `serve` the app and the page share the ctx's clock and random (k.mount Testing), so two replays of one session are equal. `serve` is called with the clock at `at` and the random stream unread; the app draws from the stream while it serves, so what is left of it after the replay is not specified. The recorded run's server state, loader answers and user are not in the session. A session whose error needs them does not reproduce: `replay` reports E2004 and `to-test` writes nothing, as now. That is the honest result. A session recorded against production data can only be replayed against data the test supplies, and `to-test` gives the developer a file to add that data to.
 
 ### Recorded state
-`state` is not applied with `serve`. `renderRoute` with `app` rejects `state` (E1722) because the served document carries its stores in `#k-state`; seeding the page's client stores over that would render a page no server sent. The recorded `state` is a browser's view of its stores, not server storage, so it cannot seed `ctx.storage` either.
+`state` is not applied with `serve`. `renderRoute` with `app` rejects `state` (E1722) because the served document carries its stores in `#k-state`; seeding the page's client stores over that would render a page no server sent. The recorded `state` is a browser's view of its stores, not server storage, so it cannot seed `ctx.storage` either. A served session's server data comes only from its recorded inputs replayed through the app: a recorded submit runs its action. A test that needs data the session did not write adds it by hand.
 
 ### The user
 A recording keeps no `user` (k.user: no `tx` `meta`; std.sessions keeps no identifier), and this RFC adds none: a user id is an identifier the recording is built not to hold. `--user <id>` is the developer's choice of an id to sign the page in as, a test account's. It is passed as `renderRoute`'s `user`, in router mode too (k.user Testing defines `user` with and without `app`). The page's own requests then carry `x-keel-user` for it, no `identify` runs, and the harness's cookie jar holds the caller cookie the app mints, never a recorded one. A guarded base replayed without `--user` redirects: E2003 for the base names the route it landed on, so the fix is plain.
 
 ### The emitted test
-For a `node` deployable `to-test` writes the app into the test body:
+For a `node` deployable `to-test` writes `test/session-<fingerprint>.test.ts` beside `topology.ts`, with the app in the test body:
 ```ts
 // Session: fb142676235c, seed 0
 import { createCtx } from "@keel/ctx";
@@ -45,8 +47,8 @@ import { routes as sessionsRoutes } from "@keel/std-sessions/routes";
 import { record } from "@keel/std-sessions/record";
 import { renderRoute } from "@keel/testing";
 import { expect, test } from "vitest";
-import topology from "../../../topology.ts";
-import { routes as opsRoutes } from "../routes.ts";
+import topology from "../topology.ts";
+import { routes as opsRoutes } from "../modules/ops/routes.ts";
 
 const routes = routeTable(opsRoutes, sessionsRoutes);
 
@@ -62,7 +64,7 @@ test("session fb142676235c", async () => {
   h.dispose();
 });
 ```
-`routes` is the table of every module the deployable places (an app module's `routes.ts`, a stdlib module's package `./routes`), joined with `routeTable` in `topology.ts` order when there are several, as above for `apps/sessions`. `identity` is imported from `identity.server.ts` when the project has one. Runners, peers, assets and the `std` config are left out: a runner works on a schedule the session does not hold, a peer is another deployable the test would have to build, and assets and `std.json` are build output. A session that needs one of them does not reproduce and gets no file. The file holds no `state`, so it holds no recorded store value; the inputs carry exactly what the router form carries.
+`routes` is the table of every module the deployable places (an app module's `routes.ts`, a stdlib module's package `./routes`), joined with `routeTable` in `topology.ts` order when there are several, as above for `apps/sessions`. `identity` is imported from `../identity.server.ts` when the project has one. The file sits in the project's `test/` folder, where the apps' hand-written `app` tests already build their apps and import server-only files (`apps/household/test/serve.ts`, `apps/golden-2/test/signedInSession.test.ts`). Under `modules/<id>/test/` of a `node` module it would be client-reachable (k.boundary Reach) and its identity import E1004. The router form stays under `modules/<route module>/test/`. Runners, peers, assets and the `std` config are left out: a runner works on a schedule the session does not hold, a peer is another deployable the test would have to build, and assets and `std.json` are build output. A session that needs one of them does not reproduce and gets no file. The file holds no `state`, so it holds no recorded store value; the inputs carry exactly what the router form carries.
 
 ### What stays W1723
 W1723 is unchanged. After the build the two emitted files in `apps/sessions` are rewritten by `to-test` in the `app` form. The four hand-written cases in `homeRecording.test.ts` and golden-2's `signedInSession.test.ts` are fixed by hand: each builds or can build `createApp` over its own route table, and passing it as `app` is W1723's fix. A case that cannot take `app` keeps its warning, which is what W1723 is for.
@@ -73,6 +75,7 @@ W1723 is unchanged. After the build the two emitted files in `apps/sessions` are
 - **Seed `ctx.storage` from the recorded `state`.** The recorded state is the browser's stores, not `keel.store.<id>` server records; writing one into the other invents server state.
 - **Record a `signedIn` flag or the user.** The browser of a node page does not know its user; learning it would add a request to every recording page, and the id is an identifier the recording keeps out.
 - **A fixed placeholder user whenever the project has an identity source.** Signs in visitor pages that redirect a signed-in person (a sign-in page) and so breaks their replays.
+- **A k.boundary exception for test files, or for emitted ones, under a `node` module.** A second notion of reach for one emitter; the project `test/` folder already holds such tests.
 - **A `@keel/testing` helper that builds a deployable's app from `topology.ts`.** A kernel addition for one emitter; the scaffold's node route test already writes `createApp` inline.
 
 ## Spec diff
@@ -86,6 +89,7 @@ Applied in this commit.
 By the `conformance-writer`, from the spec text, in `packages/std-sessions/conformance/` (it imports `@keel/server` and `@keel/testing`, which a std package may):
 - `to-test-served.test.ts`: std.sessions#16 and #19, over a fixture project with a `node` deployable `api` and a buggy page, and its `client` twin.
 - `replay-served.test.ts`: std.sessions#17.
+- #16's text names the file `test/session-<fingerprint>.test.ts` and adds no E1004 with an `identity.server.ts` in the fixture; its header quotes it again.
 - `replay-served-user.test.ts`: std.sessions#18, a fixture whose guard admits only `u1` and redirects to `a.signin`.
 - Existing cases keep their text: `to-test.test.ts` and `to-test-redaction.test.ts` cover the router form, which is unchanged for `client` fixtures. The writer checks whether their fixture projects place the page on a `node` deployable; such a fixture now gets the `app` form, and the writer moves it to a `client` deployable or asserts the `app` form.
 
@@ -101,7 +105,7 @@ None. No app is released; the two emitted files are written again.
 - `packages/std-sessions/src/replay.ts`, `minimize.ts`, `ReplayResult.ts`, `internal/replayRun.ts`: `serve` and `user`; the base redirect as `unapplied` `-1`.
 - `packages/std-sessions/src/internal/commandRun.ts`, `commandJob.ts`, `CommandJobInput.ts` and the job file `runJob` writes: the deployable's adapter, `--user` in the command's input schema (`command.ts`), the job importing `topology.ts`, the placed modules' routes and `identity.server.ts` to build `serve`; `unappliedText` for the redirect.
 - `packages/std-sessions/src/toTest.ts`: the `node` form.
-- `apps/sessions/modules/ops/test/session-*.test.ts`: written again with `keel session to-test`.
+- `apps/sessions/modules/ops/test/session-*.test.ts`: removed, and written again by `keel session to-test` as `apps/sessions/test/session-*.test.ts`.
 - `apps/sessions/test/homeRecording.test.ts` and `apps/golden-2/test/signedInSession.test.ts`: pass `app`.
 - Docs: `packages/std-sessions/README.md`, the `keel-testing` and `keel-compliance` skills where they show `to-test`, a changeset, `tasks/BACKLOG.md`.
 
