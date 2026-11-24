@@ -14,6 +14,7 @@ import { lineCol } from "./lineCol.ts";
 import { mapTsDiagnostic } from "./mapTsDiagnostic.ts";
 import { resultDiscards } from "./resultDiscards.ts";
 import { textNodes } from "./textNodes.ts";
+import { typeCache } from "./typeCache.ts";
 import { tsCompilerOptions } from "./tsCompilerOptions.ts";
 import { unifiedDiff } from "./unifiedDiff.ts";
 
@@ -59,12 +60,13 @@ const mtimeOf = (fileName: string): number => fs.statSync(fileName, { throwIfNoE
  * mtime across calls; results are memoized by input and revalidated against those mtimes. Errors that encode a Keel rule are reported under that
  * code (`mapTsDiagnostic`); the rest are E1751. Mapped codes the compiler already reported in the same file
  * are dropped (`skip`). Also finds discarded `Result` expression statements (E1453), the date receivers E1758 reads and the JSX children
- * that render nothing (E1406), which need types.
+ * that render nothing (E1406), which need types. With `cacheDir`, results also persist there across processes (`typeCache`).
  */
 export function typeCheck(
   files: readonly SourceFile[],
   root: string,
   skip: ReadonlyMap<string, ReadonlySet<string>>,
+  cacheDir?: string,
 ): Typed {
   const code = files.filter((f) => CODE.test(f.path) && !f.path.endsWith(".d.ts"));
   if (code.length === 0) return { diagnostics: [], dates: new Map() };
@@ -86,6 +88,9 @@ export function typeCheck(
   ].join("\u0001");
   const hit = memo.get(key);
   if (hit?.reads.every(([f, m]) => mtimeOf(f) === m) === true) return hit.result;
+  const kept = cacheDir === undefined ? undefined : typeCache(cacheDir, key, ts.version, base);
+  const loaded = kept?.load();
+  if (loaded !== undefined) return loaded;
 
   const byName = new Map<string, SourceFile>();
   const views = new Map<string, Annotated>();
@@ -185,5 +190,6 @@ export function typeCheck(
   }
   const result = { diagnostics: out, dates };
   memo.set(key, { result, reads: [...reads] });
+  kept?.save(result, [...reads]);
   return result;
 }

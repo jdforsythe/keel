@@ -146,7 +146,7 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
     for (const f of group) artifactsOf.set(f.path, { ...compiled.artifacts, ...opts.artifacts });
   }
 
-  const typed = opts.types === false ? undefined : typeCheck(code, opts.root ?? process.cwd(), reported);
+  const typed = opts.types === false ? undefined : typeCheck(code, opts.root ?? process.cwd(), reported, opts.typeCache);
   // One diagnostic per fault: where the compiler reports E1403 at an expression, E1406 does not.
   const e1403 = new Set(out.filter((d) => d.code === "E1403").map((d) => `${d.path}:${d.line}:${d.col}`));
   if (typed !== undefined)
