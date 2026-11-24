@@ -77,16 +77,16 @@ W1723 is unchanged. After the build the two emitted files in `apps/sessions` are
 
 ## Spec diff
 Applied in this commit.
-- std.sessions (to `implemented` until its conformance and build land): API `replay` and `minimize` take `serve?` and `user?`, and `unapplied` is `-1` for the base; a new Served pages paragraph; Commands gain `--user`, the mode by deployable adapter and what `serve` builds, and three bullets defining the `to-test` file in each form; Conformance gains four clauses (#14 to #17).
+- std.sessions (to `implemented` until its conformance and build land): API `replay` and `minimize` take `serve?` and `user?`, and `unapplied` is `-1` for the base; a new Served pages paragraph; Commands gain `--user`, the mode by deployable adapter and what `serve` builds, and three bullets defining the `to-test` file in each form; Conformance gains four clauses (#16 to #19), after RFC 0213's #14 and #15.
 - Map (`spec/std/README.md`): the std.sessions row reads `implemented`.
 - k.testing, k.user and k.mount are unchanged: W1723, E1722, `user` and the one-browser harness are used as written.
 - No glossary term, no section, no code. No budget moves.
 
 ## Conformance diff
 By the `conformance-writer`, from the spec text, in `packages/std-sessions/conformance/` (it imports `@keel/server` and `@keel/testing`, which a std package may):
-- `to-test-served.test.ts`: std.sessions#14 and #17, over a fixture project with a `node` deployable `api` and a buggy page, and its `client` twin.
-- `replay-served.test.ts`: std.sessions#15.
-- `replay-served-user.test.ts`: std.sessions#16, a fixture whose guard admits only `u1` and redirects to `a.signin`.
+- `to-test-served.test.ts`: std.sessions#16 and #19, over a fixture project with a `node` deployable `api` and a buggy page, and its `client` twin.
+- `replay-served.test.ts`: std.sessions#17.
+- `replay-served-user.test.ts`: std.sessions#18, a fixture whose guard admits only `u1` and redirects to `a.signin`.
 - Existing cases keep their text: `to-test.test.ts` and `to-test-redaction.test.ts` cover the router form, which is unchanged for `client` fixtures. The writer checks whether their fixture projects place the page on a `node` deployable; such a fixture now gets the `app` form, and the writer moves it to a `client` deployable or asserts the `app` form.
 
 ## Migration
