@@ -1,29 +1,36 @@
 // @vitest-environment happy-dom
 // Spec: k.drive, Conformance "In an empty replay, a scenario that awaits a promise nothing resolves, with no clock waiter, rejects `simulate` with E1704 whose first line holds `E1727 the scenario waits and nothing in the run is due`."
 // Spec: k.drive, Conformance "In an empty replay with `horizon: 1000`, a scenario that awaits `ctx.clock.after(5000)` rejects `simulate` with E1704 whose first line holds `E1727 the scenario waits past the horizon: next deadline 5000 ms`, the clock at 0."
-// Spec: k.drive, Conformance "A capability registered with a `sim` factory whose `work()` returns `hold('probe', () => new Promise(() => {}))`: in an empty replay, a scenario that awaits `work()` rejects `simulate`, after at least 10,000 ms of real time, with E1704 whose first line holds `E1728 work in flight never answered: probe`."
+// Spec: k.drive, Conformance "A capability registered with a `sim` factory whose `work()` returns `hold('probe', () => new Promise(() => {}))`: in an empty replay, a scenario that awaits `work()` under `budget: 300` rejects `simulate`, no sooner than 300 ms of real time after the call, with E1704 whose first line holds `E1728 the budget ran out with work in flight: probe`."
 // Spec: k.drive, Conformance "A capability registered with a `sim` factory whose `work()` returns `hold('probe', () => ctx.clock.after(10))`: in an empty replay, a scenario that awaits `work()` rejects `simulate` with E1704 whose first line holds `E1728 held work waits on the sim clock: probe`."
+// Spec: k.drive, Conformance "In an empty replay under `budget: 300`, a scenario that runs a loop of `node:timers` `setTimeout(1)` calls, each started when the previous answers, for 600 ms of real time, then awaits `run()`, rejects `simulate` with E1704 whose first line holds `E1728 the budget ran out with work in flight: Timeout`; the same loop for 100 ms resolves."
+// Spec: k.drive, Conformance "In an empty replay under `budget: 300`, a scenario that awaits one `node:timers` `setTimeout(400)` rejects `simulate` with E1704 whose first line holds `E1728 the budget ran out with work in flight: Timeout`; one that awaits `setTimeout(100)` resolves."
+// Spec: k.drive, Conformance "In an empty replay, a scenario that starts a `node:timers` `setTimeout(50)` and resolves without awaiting it rejects `simulate` with E1704 whose first line holds `E1728 work outlived the scenario: Timeout`; one that starts a `setInterval` and calls `clearInterval` on it before resolving resolves."
+// Spec: k.drive, Conformance "A capability registered with a `sim` factory whose `work()` returns `hold('probe', () => new Promise(() => {}))`: in an empty replay, a scenario that calls `work()` without awaiting it and resolves rejects `simulate` with E1704 whose first line holds `E1728 work outlived the scenario: probe`."
+// Spec: k.drive, Conformance "In a vitest test declaring a 2,000 ms timeout, an empty replay with no `budget` whose scenario awaits `work()` of a capability whose `work()` returns `hold('probe', () => new Promise(() => {}))` rejects `simulate` with E1704 whose first line holds `E1728 the budget ran out with work in flight: probe`, between 1,800 and 2,000 ms of real time after the test started."
+// Spec: k.drive, Conformance "In an empty replay, a scenario that awaits a promise nothing resolves, with no clock waiter, rejects `simulate` with E1704 whose first line holds `E1727 the scenario waits and nothing in the run is due`."
+// Spec: k.drive, Conformance "In an empty replay with `horizon: 1000`, a scenario that awaits `ctx.clock.after(5000)` rejects `simulate` with E1704 whose first line holds `E1727 the scenario waits past the horizon: next deadline 5000 ms`, the clock at 0."
 // Spec: k.drive, Stalls "A scenario pending with no `run` call of it pending, when no work is pending and no moment is within its bound, fails the run on that turn with E1727 (k.testing), `the scenario waits past the horizon: next deadline <n> ms` when `ctx.clock.next()` is `n`, else `the scenario waits and nothing in the run is due`."
 // Spec: k.drive, Stalls "A `ctx.clock.after` or an online wait made inside held work fails it at once with E1728 `held work waits on the sim clock: <label>`."
-// Spec: k.drive, Stalls "A resource or held work still pending 10,000 ms of real time after its own creation fails it with E1728 `work in flight never answered: <label>`, `<label>` the held work's label, else the resource's Node type (`Timeout`, `PBKDF2REQUEST`, `TCPWRAP`)."
-// Spec: k.drive, Stalls "The bound runs per piece of work: endless short work is no stall, and while it runs the clock stays still, bounded by the test's own timeout."
-// Spec: k.drive, Stalls "The bound reads real time only to fail a run: it never moves the clock or changes a trace."
+// Spec: k.drive, Stalls "`simulate` has a real-time *budget*: `simulate(scenario, { budget })` in ms, else the enclosing vitest test's timeout less a tenth of it (at least 50 ms), measured from the test's start, else 300,000 ms from the `simulate` call."
+// Spec: k.drive, Stalls "When the budget is spent, the run in progress fails with E1728 `the budget ran out with work in flight: <labels>`, each pending piece's label (held work's label, else the resource's Node type: `Timeout`, `PBKDF2REQUEST`, `TCPWRAP`) oldest first, comma-separated, or `none`; it is not shrunk or replayed."
+// Spec: k.drive, Stalls "No piece of work has a bound of its own: endless short work is no stall, and the budget, the author's own bound, ends it."
+// Spec: k.drive, Stalls "The budget reads real time only to fail a run: it never moves the clock or changes a trace."
 // Spec: k.drive, Stalls "A scenario that resolves with work of the run still pending fails with E1728 `work outlived the scenario: <label>`, the first pending in creation order; it closes what it opened first (`app.close()`, `clearInterval`, a socket's `close`)."
 // Spec: k.drive, Stalls "A scenario that rejects is reported with its own error."
 // Spec: k.drive, Driving "Work that waits only on the sim clock or on the net's online state is promises alone and is never pending: it is *parked*, as is the request, job or route around it."
-// Spec: k.drive, Conformance "In an empty replay, a scenario that runs a loop of `node:timers` `setTimeout(1)` calls, each started when the previous answers, for 12,000 ms of real time, then awaits `run()`, resolves."
-// Spec: k.drive, Conformance "In an empty replay, a scenario that awaits one `node:timers` `setTimeout(11000)` rejects `simulate`, after at least 10,000 ms of real time, with E1704 whose first line holds `E1728 work in flight never answered: Timeout`."
-// Spec: k.drive, Conformance "In an empty replay, a scenario that starts a `node:timers` `setTimeout(50)` and resolves without awaiting it rejects `simulate` with E1704 whose first line holds `E1728 work outlived the scenario: Timeout`; one that starts a `setInterval` and calls `clearInterval` on it before resolving resolves."
-// Spec: k.drive, Conformance "A capability registered with a `sim` factory whose `work()` returns `hold('probe', () => new Promise(() => {}))`: in an empty replay, a scenario that calls `work()` without awaiting it and resolves rejects `simulate` with E1704 whose first line holds `E1728 work outlived the scenario: probe`."
 // Spec: k.testing, Rules "E1727 a `simulate` scenario waiting on nothing the run can move, E1728 held work waiting on the clock or work in flight that never answers (k.drive Stalls), E1729 two replays of a run whose traces differ (k.drive Law check)"
 // Spec: k.sim, Failure "A failing run is shrunk (fewer steps, shorter delays, fewer faults and windows) and reported as E1704 (k.testing) with the seed, the run, and the shrunk `SimRun` as JSON on the next line."
 // Seed: 1337 (fc.assert below); replays use a SimRun of seed 1 and an empty schedule.
-// Timing: E1727 and the clock-wait E1728 are asserted to arrive in well under 10 s of real time (their bounds read no real time, so a machine's speed cannot move them); the cases that wait out the real-time bound take 10 s each and carry their own timeout.
+// Timing: E1727 and the clock-wait E1728 are asserted to arrive in well under 5 s of real time (their bounds read no real time, so a machine's speed cannot move them); every budget case sets `budget: 300` and waits at most 600 ms of real time, the 2,000 ms case excepted; the file takes about 6 s.
+// ASSUMPTION: the budget's "labels" are separated by a comma with or without a space after it; `labelsOf` splits on `,` and trims, and takes word characters only, so the operator's trailer after the labels is left out.
+// ASSUMPTION: the "between 1,800 and 2,000 ms ... after the test started" case measures from the entry of the test body (the runner's own start precedes it by a few ms), so its lower bound is 1,800 less a 10 ms slack; its upper bound is the runner's own 2,000 ms timeout, raced by a 1,990 ms timer made outside the run, so a late E1728 fails with a message naming that, not the runner's.
+// UNTESTABLE: the default budget of 300,000 ms from the `simulate` call (outside any vitest test) would take five minutes; and the `none` label list, since a run with nothing pending and a scenario unfinished is E1727 at once, and only a scenario that blocks the event loop past the budget could reach it, which the text leaves unsaid.
 // ASSUMPTION: "first line" is the message's first line; the E1704 line holds the stall text after the code. E1727 and E1728 are runtime codes (no `keel check` fixture), reached by the operator only as E1704.
 // ASSUMPTION: a `ctx.net` route that awaits a promise nothing resolves is a promise alone, so a scenario awaiting its fetch is parked with nothing pending: E1727 `the scenario waits and nothing in the run is due` (the earlier "a ctx.net request" label no longer exists in the Stalls text).
 // ASSUMPTION: a `setInterval` of `node:timers` made in the scenario and never cleared is the "resource's Node type" case: `Timeout`.
 // UNTESTABLE: the online wait of the E1728 held-work sentence; no public API names an online wait (only `ctx.net.online()`, a read), so only the clock wait is asserted.
-import { setImmediate, setInterval, setTimeout } from "node:timers";
+import { clearInterval, clearTimeout, setImmediate, setInterval, setTimeout } from "node:timers";
 import { register } from "@keel/ctx";
 import type { SimCtx } from "@keel/ctx";
 import { simulate } from "@keel/testing";
@@ -31,14 +38,21 @@ import fc from "fast-check";
 import { expect, test } from "vitest";
 import { SEED, codeOf, messageOf, thrown } from "./fixtures.ts";
 
+const BUDGET = 300;
 const replay = { seed: 1, schedule: { net: [], storage: [], offline: [], plans: {} } };
 const firstLine = (e: unknown): string => messageOf(e).split("\n")[0] ?? "";
-/** Real milliseconds a call takes (`hrtime`: the only way to read that bound from outside; no `Date`); the stall bounds under test read no real time, so they stay far under this. */
+/** Real milliseconds a call takes (`hrtime`: the only way to read that bound from outside; no `Date`); the stall bounds that read no real time stay far under this. */
 const SOON = 5000;
 const realMs = async (fn: () => Promise<unknown>): Promise<number> => {
   const start = process.hrtime.bigint();
   await fn();
   return Number(process.hrtime.bigint() - start) / 1e6;
+};
+
+/** The comma-separated labels after `E1728 the budget ran out with work in flight: ` on the first line, the operator's own trailer (the seed) left out. */
+const labelsOf = (e: unknown): string[] => {
+  const m = /E1728 the budget ran out with work in flight: (\w+(?:, ?\w+)*)/.exec(firstLine(e));
+  return (m?.[1] ?? "").split(",").map((l) => l.trim());
 };
 
 type Probe = { work(ctx: SimCtx): Promise<void> };
@@ -111,7 +125,7 @@ test("a scenario awaiting a `ctx.clock.after(d)` past a generated `horizon` fail
   );
 });
 
-test("A scenario pending with no `run` call of it pending, when no work is pending and no moment is within its bound, fails the run on that turn: a scenario waiting on nothing fails E1727 within real seconds, long before the 10,000 ms bound", async () => {
+test("A scenario pending with no `run` call of it pending, when no work is pending and no moment is within its bound, fails the run on that turn: a scenario waiting on nothing fails E1727 within real seconds, with no budget in play", async () => {
   const took = await realMs(async () => {
     const e = await thrown(() =>
       simulate(
@@ -200,68 +214,168 @@ test("E1727 a `simulate` scenario waiting on nothing the run can move reaches th
   expect(json).toMatchObject({ seed: expect.any(Number), schedule: expect.any(Object) });
 });
 
+test("A capability registered with a `sim` factory whose `work()` returns `hold('probe', () => new Promise(() => {}))`: in an empty replay, a scenario that awaits `work()` under `budget: 300` rejects `simulate`, no sooner than 300 ms of real time after the call, with E1704 whose first line holds `E1728 the budget ran out with work in flight: probe`.", async () => {
+  let seen: SimCtx | undefined;
+  let e: unknown;
+  const took = await realMs(async () => {
+    e = await thrown(() =>
+      simulate(
+        async ({ ctx }) => {
+          seen = ctx;
+          await hung(ctx).work(ctx);
+        },
+        { replay, budget: BUDGET },
+      ),
+    );
+  });
+  expect(took).toBeGreaterThanOrEqual(BUDGET);
+  expect(codeOf(e)).toBe("E1704");
+  expect(firstLine(e)).toContain("E1728 the budget ran out with work in flight: probe");
+  expect(seen?.clock.now()).toBe(0);
+});
+
 test(
-  "A capability registered with a `sim` factory whose `work()` returns `hold('probe', () => new Promise(() => {}))`: in an empty replay, a scenario that awaits `work()` rejects `simulate`, after at least 10,000 ms of real time, with E1704 whose first line holds `E1728 work in flight never answered: probe`.",
-  { timeout: 60_000 },
+  "In a vitest test declaring a 2,000 ms timeout, an empty replay with no `budget` whose scenario awaits `work()` of a capability whose `work()` returns `hold('probe', () => new Promise(() => {}))` rejects `simulate` with E1704 whose first line holds `E1728 the budget ran out with work in flight: probe`, between 1,800 and 2,000 ms of real time after the test started.",
+  { timeout: 2000 },
   async () => {
-    let seen: SimCtx | undefined;
-    let e: unknown;
-    const took = await realMs(async () => {
-      e = await thrown(() =>
+    const start = process.hrtime.bigint();
+    const sinceStart = (): number => Number(process.hrtime.bigint() - start) / 1e6;
+    const lateMark = Symbol("the runner's timeout came first");
+    let arrivedAt = Number.POSITIVE_INFINITY;
+    let lateTimer: ReturnType<typeof setTimeout> | undefined;
+    const late = new Promise<symbol>((resolve) => {
+      lateTimer = setTimeout(() => resolve(lateMark), 1990);
+    });
+    const outcome = await Promise.race([
+      thrown(() =>
         simulate(
           async ({ ctx }) => {
-            seen = ctx;
             await hung(ctx).work(ctx);
           },
           { replay },
         ),
+      ).then((e) => {
+        arrivedAt = sinceStart();
+        return e;
+      }),
+      late,
+    ]);
+    clearTimeout(lateTimer);
+    expect(outcome, "E1728 must arrive before the runner's own 2,000 ms timeout").not.toBe(lateMark);
+    expect(codeOf(outcome)).toBe("E1704");
+    expect(firstLine(outcome)).toContain("E1728 the budget ran out with work in flight: probe");
+    expect(arrivedAt).toBeGreaterThanOrEqual(1800 - 10);
+    expect(arrivedAt).toBeLessThan(2000);
+  },
+);
+
+test("When the budget is spent, the run in progress fails with E1728 `the budget ran out with work in flight: <labels>`, each pending piece's label oldest first, comma-separated: a hold made before any number of timers lists `probe` then each `Timeout`", async () => {
+  await fc.assert(
+    fc.asyncProperty(fc.integer({ min: 1, max: 3 }), async (timers) => {
+      const handles: ReturnType<typeof setTimeout>[] = [];
+      const e = await thrown(() =>
+        simulate(
+          async ({ ctx }) => {
+            void hung(ctx).work(ctx);
+            for (let i = 0; i < timers; i++) handles.push(setTimeout(() => undefined, 1_000_000));
+            await new Promise<void>(() => {});
+          },
+          { replay, budget: BUDGET },
+        ),
       );
-    });
-    expect(took).toBeGreaterThanOrEqual(10_000);
-    expect(codeOf(e)).toBe("E1704");
-    expect(firstLine(e)).toContain("E1728 work in flight never answered: probe");
-    expect(seen?.clock.now()).toBe(0);
-  },
-);
+      for (const h of handles) clearTimeout(h);
+      expect(codeOf(e)).toBe("E1704");
+      expect(labelsOf(e)).toEqual(["probe", ...Array.from({ length: timers }, () => "Timeout")]);
+    }),
+    { seed: SEED, numRuns: 3 },
+  );
+});
 
-test(
-  "A resource or held work still pending 10,000 ms of real time after its own creation fails it with E1728 `work in flight never answered: <label>`, `<label>` the resource's Node type (`Timeout`) when no work is held: an interval the scenario never clears",
-  { timeout: 60_000 },
-  async () => {
-    let handle: ReturnType<typeof setInterval> | undefined;
-    const e = await thrown(() =>
-      simulate(
-        async ({ ctx }) => {
-          handle = setInterval(() => undefined, 1_000_000);
-          await ctx.clock.after(10);
-        },
-        { replay },
-      ),
-    );
-    clearInterval(handle);
-    expect(codeOf(e)).toBe("E1704");
-    expect(firstLine(e)).toContain("E1728 work in flight never answered: Timeout");
-  },
-);
+test("each pending piece's label oldest first: a timer made before a hold lists `Timeout` then `probe`", async () => {
+  let handle: ReturnType<typeof setTimeout> | undefined;
+  const e = await thrown(() =>
+    simulate(
+      async ({ ctx }) => {
+        handle = setTimeout(() => undefined, 1_000_000);
+        void hung(ctx).work(ctx);
+        await new Promise<void>(() => {});
+      },
+      { replay, budget: BUDGET },
+    ),
+  );
+  clearTimeout(handle);
+  expect(codeOf(e)).toBe("E1704");
+  expect(labelsOf(e)).toEqual(["Timeout", "probe"]);
+});
 
-test(
-  "E1728 reaches the operator as E1704 with the shrunk `SimRun` as JSON on the next line",
-  { timeout: 60_000 },
-  async () => {
-    const e = await thrown(() =>
-      simulate(
-        async ({ ctx }) => {
-          await hung(ctx).work(ctx);
-        },
-        { replay },
-      ),
-    );
-    expect(codeOf(e)).toBe("E1704");
-    const lines = messageOf(e).split("\n");
-    expect(lines[0]).toContain("E1728");
-    expect(JSON.parse(lines[1] ?? "")).toMatchObject({ schedule: expect.any(Object) });
-  },
-);
+test("When the budget is spent, the run in progress fails with E1728 and is not shrunk or replayed: a scenario outlasting the budget is called once", async () => {
+  let calls = 0;
+  const e = await thrown(() =>
+    simulate(
+      async ({ ctx }) => {
+        calls += 1;
+        await hung(ctx).work(ctx);
+      },
+      { runs: 1, seed: 1, budget: BUDGET },
+    ),
+  );
+  expect(codeOf(e)).toBe("E1704");
+  expect(firstLine(e)).toContain("E1728 the budget ran out with work in flight: probe");
+  expect(calls).toBe(1);
+});
+
+test("The budget reads real time only to fail a run: it never moves the clock or changes a trace: a passing scenario records the same moments under a `budget` and under none, and with `law: true` its two traces agree", async () => {
+  await fc.assert(
+    fc.asyncProperty(fc.array(fc.integer({ min: 0, max: 400 }), { minLength: 1, maxLength: 4 }), async (waits) => {
+      const record = async (budget: number | undefined): Promise<number[]> => {
+        const seen: number[] = [];
+        await simulate(
+          async ({ ctx }) => {
+            for (const w of waits) {
+              await ctx.clock.after(w);
+              seen.push(ctx.clock.now());
+            }
+          },
+          budget === undefined ? { replay, law: true } : { replay, law: true, budget },
+        );
+        return seen;
+      };
+      expect(await record(BUDGET)).toEqual(await record(undefined));
+    }),
+    { seed: SEED, numRuns: 10 },
+  );
+});
+
+test("A resource still pending when the budget is spent is listed by its Node type (`Timeout`) when no work is held: an interval the scenario never clears, under `budget: 300`", async () => {
+  let handle: ReturnType<typeof setInterval> | undefined;
+  const e = await thrown(() =>
+    simulate(
+      async ({ ctx }) => {
+        handle = setInterval(() => undefined, 1_000_000);
+        await ctx.clock.after(10);
+      },
+      { replay, budget: BUDGET },
+    ),
+  );
+  clearInterval(handle);
+  expect(codeOf(e)).toBe("E1704");
+  expect(firstLine(e)).toContain("E1728 the budget ran out with work in flight: Timeout");
+});
+
+test("E1728 reaches the operator as E1704 with the `SimRun` as JSON on the next line", async () => {
+  const e = await thrown(() =>
+    simulate(
+      async ({ ctx }) => {
+        await hung(ctx).work(ctx);
+      },
+      { replay, budget: BUDGET },
+    ),
+  );
+  expect(codeOf(e)).toBe("E1704");
+  const lines = messageOf(e).split("\n");
+  expect(lines[0]).toContain("E1728");
+  expect(JSON.parse(lines[1] ?? "")).toMatchObject({ schedule: expect.any(Object) });
+});
 
 test("A capability registered with a `sim` factory whose `work()` returns `hold('probe', () => ctx.clock.after(10))`: in an empty replay, a scenario that awaits `work()` rejects `simulate` with E1704 whose first line holds `E1728 held work waits on the sim clock: probe`, at once", async () => {
   let e: unknown;
@@ -299,51 +413,50 @@ test("a `ctx.clock.after` of any duration made inside held work fails E1728 `hel
   );
 });
 
-// ---- E1728 per piece of work (Conformance #18, #19) and work outliving the scenario (#21, #22) ----
+// ---- E1728 budget (Conformance #18, #19) and work outliving the scenario (#21, #22) ----
 
-test(
-  "In an empty replay, a scenario that runs a loop of `node:timers` `setTimeout(1)` calls, each started when the previous answers, for 12,000 ms of real time, then awaits `run()`, resolves.",
-  { timeout: 40_000 },
-  async () => {
-    let laps = 0;
-    const took = await realMs(async () => {
-      await simulate(
-        async ({ run }) => {
-          const start = process.hrtime.bigint();
-          while (Number(process.hrtime.bigint() - start) / 1e6 < 12_000) {
-            await new Promise<void>((resolve) => setTimeout(resolve, 1));
-            laps += 1;
-          }
-          await run();
-        },
-        { replay },
-      );
-    });
-    expect(laps).toBeGreaterThan(0);
-    expect(took).toBeGreaterThanOrEqual(12_000);
-  },
-);
+test("In an empty replay under `budget: 300`, a scenario that runs a loop of `node:timers` `setTimeout(1)` calls, each started when the previous answers, for 600 ms of real time, then awaits `run()`, rejects `simulate` with E1704 whose first line holds `E1728 the budget ran out with work in flight: Timeout`; the same loop for 100 ms resolves.", async () => {
+  const loop =
+    (realMsToRun: number) =>
+    async ({ run }: { run(): Promise<void> }): Promise<void> => {
+      const start = process.hrtime.bigint();
+      while (Number(process.hrtime.bigint() - start) / 1e6 < realMsToRun) {
+        await new Promise<void>((resolve) => setTimeout(resolve, 1));
+      }
+      await run();
+    };
+  const e = await thrown(() => simulate(loop(600), { replay, budget: BUDGET }));
+  expect(codeOf(e)).toBe("E1704");
+  expect(firstLine(e)).toContain("E1728 the budget ran out with work in flight: Timeout");
+  expect(await thrown(() => simulate(loop(100), { replay, budget: BUDGET }))).toBeUndefined();
+});
 
-test(
-  "In an empty replay, a scenario that awaits one `node:timers` `setTimeout(11000)` rejects `simulate`, after at least 10,000 ms of real time, with E1704 whose first line holds `E1728 work in flight never answered: Timeout`.",
-  { timeout: 40_000 },
-  async () => {
-    let e: unknown;
-    const took = await realMs(async () => {
-      e = await thrown(() =>
+test("In an empty replay under `budget: 300`, a scenario that awaits one `node:timers` `setTimeout(400)` rejects `simulate` with E1704 whose first line holds `E1728 the budget ran out with work in flight: Timeout`; one that awaits `setTimeout(100)` resolves.", async () => {
+  const wait = (ms: number) => async (): Promise<void> => {
+    await new Promise<void>((resolve) => setTimeout(resolve, ms));
+  };
+  const e = await thrown(() => simulate(wait(400), { replay, budget: BUDGET }));
+  expect(codeOf(e)).toBe("E1704");
+  expect(firstLine(e)).toContain("E1728 the budget ran out with work in flight: Timeout");
+  expect(await thrown(() => simulate(wait(100), { replay, budget: BUDGET }))).toBeUndefined();
+});
+
+test("No piece of work has a bound of its own: a single timer or a loop of short timers that ends inside the budget resolves, whatever its real length below the budget", async () => {
+  await fc.assert(
+    fc.asyncProperty(fc.integer({ min: 0, max: 120 }), async (ms) => {
+      const e = await thrown(() =>
         simulate(
           async () => {
-            await new Promise<void>((resolve) => setTimeout(resolve, 11_000));
+            await new Promise<void>((resolve) => setTimeout(resolve, ms));
           },
-          { replay },
+          { replay, budget: 1000 },
         ),
       );
-    });
-    expect(took).toBeGreaterThanOrEqual(10_000);
-    expect(codeOf(e)).toBe("E1704");
-    expect(firstLine(e)).toContain("E1728 work in flight never answered: Timeout");
-  },
-);
+      expect(e).toBeUndefined();
+    }),
+    { seed: SEED, numRuns: 8 },
+  );
+});
 
 test("In an empty replay, a scenario that starts a `node:timers` `setTimeout(50)` and resolves without awaiting it rejects `simulate` with E1704 whose first line holds `E1728 work outlived the scenario: Timeout`; one that starts a `setInterval` and calls `clearInterval` on it before resolving resolves.", async () => {
   const e = await thrown(() =>

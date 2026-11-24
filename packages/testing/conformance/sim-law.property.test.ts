@@ -4,7 +4,7 @@
 // Spec: k.drive, Law "Two runs of one `SimRun` and one scenario take the same moments in the same order and report the same observer events (k.ctx) in the same order at the same `ctx.clock.now()`, ending with equal store snapshots."
 // Spec: k.drive, Law "*The same moments* are the `ctx.clock.now()` at each completion the scenario sees (a waiter, a save, a net call); *store snapshots* are the final values of the storage keys the scenario wrote; observer events include the `net` events of the schedule's offline windows."
 // Spec: k.drive, Law "The run's *trace* is the list of moments taken and observer events of the run's ctx and its replicas, each with its `ctx.clock.now()`."
-// Spec: k.drive, Driving "How fast real work runs decides nothing: the clock moves only when no work is pending."
+// Spec: k.drive, Driving "Real work's speed decides nothing."
 // Seed: 1337 (fc.assert below); the ten-waiter clause runs under `simulate` seed 7.
 // ASSUMPTION: "moments in the same order" is observed as the clock time at which each scenario-visible completion (waiter, save, net call, and a real completion the scenario records) is seen, in completion order; "store snapshots" are read as the final values of the keys the scenario wrote to `ctx.storage` (a `get` takes a storage step like any other, so the read is part of the run); observer events are the `net` events of the schedule's offline windows.
 // ASSUMPTION: real asynchronous work in the generated scenarios runs in one sequential chain (one real operation in flight at a time), so the only order under test is real work against the sim clock, never two real timers racing each other in real time, which no drive can fix.
