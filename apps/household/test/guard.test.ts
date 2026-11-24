@@ -59,3 +59,14 @@ it("names the household on the setup page once a member is signed in", async () 
   expect(page.find("setup.done").text).toContain("set up");
   page.dispose();
 });
+
+it("follows the setup guard's next to a page of the app, and a hostile next lands on the setup page", async () => {
+  const { fetch } = await served(37);
+  const to = async (next: string) =>
+    (await fetch(formPost(`/setup?next=${encodeURIComponent(next)}`, { name: "Elm Street" }))).headers.get("location");
+  expect(await to("/list")).toBe("/list");
+  const stay = await to("/setup");
+  expect(stay).not.toBeNull();
+  for (const next of ["/\t/evil.example/x", "//evil.example", "https://evil.example/", "/\\evil.example"])
+    expect(await to(next)).toBe(stay);
+});
