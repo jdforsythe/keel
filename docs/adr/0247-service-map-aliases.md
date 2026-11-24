@@ -6,12 +6,13 @@
 
 **Decision.**
 - k.bundle states the service map (own modules, `node` and `static` modules the scan reaches, placed modules with no folder; only when the topology has a `node` deployable), the scan's edges and resolution, and E1011's condition, message and scope (a `client` deployable's build in `keel build`; never `keel check` or `keel dev`).
-- A file under `modules/` is imported by a relative specifier. E1013 in `keel check`, at the specifier's opening quote, with a fix to the relative path: any other specifier, resolved as the type check resolves it (package `exports` and `imports`, `node_modules`, symlinks followed, no `tsconfig.json`), that lands under `modules/`. Test files and own-module aliases included.
-- The scan stays relative-only; E1011 stays the build's backstop. A build does not report E1013.
+- A file under `modules/` is imported by a relative specifier. E1013 in `keel check`, at the specifier's opening quote, with a fix to the relative path: any other specifier but a `#` one (E1576 alone), resolved as the type check resolves it (package `exports`, `node_modules`, symlinks followed, no `tsconfig.json`), that lands under `modules/`. Test files and own-module aliases included.
+- The scan stays relative-only. `keel build` stops at its check step on E1013; on a tree `keel check` passes, a computed `import()` (W1608) is the one input that reaches E1011, and its conformance uses it.
 
 **Alternatives.**
 - Mapping aliases from the resolved graph: needs Vite's resolver before the entry exists, and leaves the module rules blind; two ways to import a file.
 - Teaching every resolver every alias form: reads `tsconfig.json`, R1103-critical config, for a second way.
-- E1013 in the build too: the build would never reach E1011 for an alias; `keel check` is where rules land.
+- E1013 beside E1576 for a `#` alias: two findings for one specifier.
+- E1011 as an internal invariant tested through a hand-made graph: a computed `import()` gives it a real input.
 
-**Consequences.** No app in the tree changes. k.bundle reads `implemented` until its six new clauses are covered, at about 2,960 of 3,100 tokens. A module reached only through a worker file (`new URL`, `?worker`) is still unmapped by the scan.
+**Consequences.** No app in the tree changes. k.bundle reads `implemented` until its six new clauses are covered, at about 3,010 of 3,100 tokens. A module reached only through a worker file (`new URL`, `?worker`) is still unmapped by the scan.
