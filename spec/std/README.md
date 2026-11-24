@@ -21,7 +21,7 @@ S8 adds std.db, std.workflows, std.shells and std.tokens.
 | --- | --- | --- | --- |
 | std.sessions | Sessions | conformance-covered | capture, ingest, replay, minimize, to-test; GitHub Action |
 | std.i18n | Locales | proposed | schema type registry and check rule registry: `i18n.Locale`, numbers, plurals |
-| std.money | Money | conformance-covered | schema type registry: `money.Money`, add, format for a locale |
+| std.money | Money | proposed | schema type registry: `money.Money`, add, format and parse for a locale |
 | std.temporal | Dates, instants and durations | conformance-covered | schema type registry: instants, dates, zones, durations; format |
 | std.text | Text | conformance-covered | schema type registry: `text.Email`, `Slug`, `line`, `para`, collation |
 | std.messages | Message sets | proposed | check rule registry: message sets, one file per locale |
