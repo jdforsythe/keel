@@ -2,6 +2,7 @@
 export { literalCopy } from "./literalCopy.ts";
 export { localeFile } from "./localeFile.ts";
 export { missingMessage } from "./missingMessage.ts";
+export { neverApplies } from "./neverApplies.ts";
 export { placeholderParams } from "./placeholderParams.ts";
 export { undeclaredKey } from "./undeclaredKey.ts";
 export { unusedKey } from "./unusedKey.ts";

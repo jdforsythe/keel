@@ -4,6 +4,7 @@ import { s } from "@keel/schema";
 import { formatMessage, messages } from "@keel/std-messages";
 import { describe, expect, it, test, vi } from "vitest";
 import type { ParamKind } from "../src/internal/ParamKind.ts";
+import { exactKey } from "../src/internal/exactKey.ts";
 import { genMessage } from "../src/internal/genMessage.ts";
 import { kindOf } from "../src/internal/kindOf.ts";
 import { messageOk } from "../src/internal/messageOk.ts";
@@ -118,7 +119,7 @@ describe("genMessage", () => {
     expect(genMessage([], one)).toEqual({ text: " {n}" });
     expect(genMessage(["a"], one)).toEqual({ plural: "n", other: "# a {n}" });
     expect(genMessage(["a", "b"], one)).toEqual({ text: "a {n}" });
-    expect(genMessage(["a", "b", "c"], one)).toEqual({ plural: "n", other: "# a {n}" });
+    expect(genMessage(["a", "b", "c"], one)).toEqual({ plural: "n", "=0": "b {n}", other: "# a {n}" });
     expect(genMessage(["a"], kinds({ who: "string" }))).toEqual({ text: "a {who}" });
   });
 
@@ -211,4 +212,21 @@ test("module constants: identifier keys, the text formats, every plural form, th
   const params = new Map<string, ParamKind>([["n", "number"]]);
   for (const form of ["zero", "one", "two", "few", "many"])
     expect(freshMessageOk({ plural: "n", other: "x", [form]: "#" }, params)).toBe(true);
+});
+
+describe("exactKey", () => {
+  it("is = then 0 or a digit string without a leading zero, at most the largest safe integer", () => {
+    for (const k of ["=0", "=1", "=12", "=9007199254740991"]) expect(exactKey(k)).toBe(true);
+    for (const k of ["=", "=01", "=-1", "=1.5", "=1e3", "= 1", "=x", "0", "=9007199254740992", "=1\n"])
+      expect(exactKey(k)).toBe(false);
+  });
+});
+
+describe("messageOk exact forms", () => {
+  const params = kinds({ n: "number" });
+  it("admits exact keys beside the categories and refuses another = key", () => {
+    expect(messageOk({ plural: "n", "=0": "none", "=12": "# a dozen", other: "#" }, params)).toBe(true);
+    expect(messageOk({ plural: "n", "=01": "x", other: "#" }, params)).toBe(false);
+    expect(messageOk({ plural: "n", "=0": "{x}", other: "#" }, params)).toBe(false);
+  });
 });

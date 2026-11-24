@@ -1,5 +1,5 @@
 # std.i18n: Locales
-status: proposed
+status: conformance-covered
 
 **Extension points.** Schema type registry (k.schema `s.register`): importing `@keel/std-i18n` registers `i18n.Locale`. Check rule registry (k.check `defineRule`): `@keel/std-i18n/tools`, which `keel check` imports for a module whose `deps` list the package (k.module), registers E2301.
 

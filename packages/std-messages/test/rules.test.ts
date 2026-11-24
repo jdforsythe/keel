@@ -81,3 +81,20 @@ test("E2406: a route title's block-body return; expressions and letterless text 
   expect(v("<main><Image alt={t.title} /><p>{t.title} {t.count} {t.total} - 42 %</p></main>")).toEqual([]);
   expect(v("<main><Image alt={`A pie`} /><p>{t.title}{t.count}{t.total}</p></main>")).toHaveLength(1);
 });
+
+test("E2407: one patch clears every never-selected form of a message, with the zero rename and the removals together", () => {
+  const entry = (count: string) => de(`{ title: 'T', count: ${count}, total: { text: 'Total {n}' } }`);
+  const en = "modules/recipes/RecipesText/en-US.ts";
+  const files = tree({
+    [en]: entry("{ plural: 'n', zero: 'none', one: '# a', two: '# t', few: '# f', other: '# b' }"),
+  });
+  const found = codesOf(files, "E2407");
+  expect(found.map((d) => d.message)).toEqual([
+    "plural form zero never applies in en-US; '=0' matches 0",
+    "plural form two never applies in en-US",
+    "plural form few never applies in en-US",
+  ]);
+  const out = applyFix(files, found[0]?.fix ?? "").find((f) => f.path === en)?.source ?? "";
+  expect(out).toContain("{ plural: 'n', '=0': 'none', one: '# a', other: '# b' }");
+  expect(codesOf(applyFix(files, found[0]?.fix ?? ""), "E2407")).toEqual([]);
+});

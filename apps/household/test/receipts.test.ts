@@ -15,7 +15,7 @@ const open = async (locale: "en-US" | "de-DE", at?: Member) => {
 it("starts empty, in English, with a link to the German page", async () => {
   const page = await open("en-US");
   expect(page.find("receipts.heading").text).toBe("Receipts");
-  expect(page.find("receipts.count")).toMatchObject({ role: "status", text: "0 receipts" });
+  expect(page.find("receipts.count")).toMatchObject({ role: "status", text: "No receipts yet" });
   expect(page.find("receipts.saving")).toMatchObject({ role: "status", text: "" });
   expect(page.find("receipts.switch").text).toBe("Deutsch");
   expect(page.focusOrder()).toEqual([
@@ -42,7 +42,7 @@ it("refuses an amount with three decimals and saves nothing", async () => {
   await page.fire("receipts.new:amount", { type: "input", value: "12.345" });
   await page.fire("receipts.save", { type: "click" });
   expect(page.find("receipts.new:amount").state).toMatchObject({ invalid: true });
-  expect(page.find("receipts.count").text).toBe("0 receipts");
+  expect(page.find("receipts.count").text).toBe("No receipts yet");
   page.dispose();
 });
 

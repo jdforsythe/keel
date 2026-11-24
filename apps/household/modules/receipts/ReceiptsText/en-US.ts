@@ -2,7 +2,7 @@ import { ReceiptsText } from "../ReceiptsText.schema.ts";
 
 export default ReceiptsText.text({
   heading: "Receipts",
-  count: { plural: "n", one: "# receipt", other: "# receipts" },
+  count: { plural: "n", "=0": "No receipts yet", one: "# receipt", other: "# receipts" },
   empty: "Record the first receipt with the form below.",
   paidBy: { select: "who", cases: { alex: "Paid by Alex", sam: "Paid by Sam" } },
   formHeading: "Record a receipt",

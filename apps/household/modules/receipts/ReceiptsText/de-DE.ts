@@ -2,7 +2,7 @@ import { ReceiptsText } from "../ReceiptsText.schema.ts";
 
 export default ReceiptsText.text({
   heading: "Belege",
-  count: { plural: "n", one: "# Beleg", other: "# Belege" },
+  count: { plural: "n", "=0": "Noch keine Belege", one: "# Beleg", other: "# Belege" },
   empty: "Erfasse den ersten Beleg mit dem Formular unten.",
   paidBy: { select: "who", cases: { alex: "Bezahlt von Alex", sam: "Bezahlt von Sam" } },
   formHeading: "Beleg erfassen",

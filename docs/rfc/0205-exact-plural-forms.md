@@ -1,6 +1,6 @@
 # RFC 0205: std.messages and std.i18n: exact plural forms (`'=0'`)
 
-Status: accepted (ADR-0227) by the orchestrator on 2026-11-24, for the operator to confirm. Amends std.i18n (`PluralForms`, `plural`, Conformance) and std.messages (Extension points, the entry bullet, new **Plurals**, Rules E2407, Conformance). From backlog 1009.
+Status: implemented (ADR-0227), accepted by the orchestrator on 2026-11-24, for the operator to confirm. Amends std.i18n (`PluralForms`, `plural`, Conformance) and std.messages (Extension points, the entry bullet, new **Plurals**, Rules E2407, Conformance). From backlog 1009.
 
 ## Decisions
 - D1: an exact form is a plural form keyed `'=n'`, `n` a non-negative safe integer in canonical decimal (`'=0'`, `'=1'`, `'=12'`): ICU's spelling, flat beside the category forms.
@@ -35,8 +35,8 @@ count: { plural: 'n', '=0': 'Noch keine Belege', one: '# Beleg', other: '# Beleg
 
 ## Spec diff
 Applied in this commit.
-- std.i18n (`proposed` until built): `PluralForms` gains exact keys, `plural` selects them first; one conformance clause.
-- std.messages (`proposed` until built): the example's `de-DE` count has `'=0'`; the entry bullet lists `'=n'?`; new **Plurals** bullet; Extension points E2401 to E2407; Rules E2407; conformance clauses for parse, render, E2407 and seven rules.
+- std.i18n (`conformance-covered`): `PluralForms` gains exact keys, `plural` selects them first; one conformance clause.
+- std.messages (`conformance-covered`): the example's `de-DE` count has `'=0'`; the entry bullet lists `'=n'?`; new **Plurals** bullet; Extension points E2401 to E2407; Rules E2407; conformance clauses for parse, render, E2407 and seven rules.
 - `spec/std/README.md` rows read `proposed`. No map row, no code range change (E2407 is in E240x), no glossary term.
 
 ## Conformance
