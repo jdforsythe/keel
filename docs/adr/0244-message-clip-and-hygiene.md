@@ -12,6 +12,7 @@
 - std.db is `conformance-covered`.
 - k.ledger: an `a11y` item keeps its committed rung while its project has no `reports/a11y.json` (counted as `keptNoReport`), is recomputed when the report is present and is dropped when its route is gone; a mutation report file with no scored mutant drops its claim. The gate's `ledger-fresh --a11y`, after `keel test` in every app, bounds how long a kept rung can outlive its page.
 - k.test-run: a clause asserts T0001's clip.
+- The clip is a safety net (D143): each message is written to fit; an edit suggestion goes to `fix`, any other to `keel explain`; a path is shortened from its front. E1004 names its chain's ends and elides the middle; E1580, E1587, E1589 and E1108 are rewritten, E1589 and E1108 gaining fixes. No record field is added.
 
 **Alternatives.** Counting code points or graphemes; allowing a split pair; clipping only at producers; keeping T0001 at 90; stating the rule in k.errors.
 

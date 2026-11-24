@@ -9,6 +9,7 @@ Status: accepted (ADR-0244), accepted by the orchestrator on 2026-11-24, for the
 4. **`check-budget-injected10` keeps reading `apps/golden-1`.** Its clause is about golden app 1's output, and the case already asserts the ten injected codes and `10 errors`, so an app change cannot hollow it.
 5. **An a11y rung is kept without a report.** `keel ledger` keeps the committed rung of an `a11y` item when its project has no `reports/a11y.json`, so a ledger regenerated where `keel test` did not run does not drop every a11y claim. A kept entry can outlive what it claims: the page can change, or lose the test that rendered it, while no report exists to say so. The bound is the gate: in its clean checkout `keel test` runs in each app first, so every report is present, and `ledger-fresh --a11y` recomputes every item from it; a kept rung never survives the gate. The trailer's `keptNoReport` count makes a kept item visible anywhere else.
 6. **std.db flips to `conformance-covered`.** All 13 clauses are at `example` in the ledger and CI's `postgres` job sets `KEEL_TEST_POSTGRES_URL` for `driver-contract.test.ts`, clause 1's Postgres 17 half.
+7. **No new record field; the clip is a safety net (D143).** Five codes wrote past 89 units: E1004 (to 145, the chain's tail and the server file lost), E1589 (185), E1580 (96), E1587 (108), E1108 (131). Each message is rewritten to fit for its fixtures' inputs. A suggestion that is an edit goes to `fix`: E1589's `servedBy`, when `topology.ts` has one `node` deployable, and E1108's `deps` entry, when the format comes from a `@keel/std-*` package the module does not list. One that is not an edit goes to `keel explain`: E1580's and E1587's remedies, E1589's other choices, and "only a stdlib format has a literal form". E1004 names the two ends of its chain and elides the middle past the bound. The middle is then printed nowhere: the record has no data for it, `pretty` cannot derive it, and the position (the importer), the entry and the server-only file are what a fix needs.
 
 ## Problem
 - No spec text says how a message is clipped. `docs/OUTPUT.md` and k.check say "under 90 chars". The build: `packages/check/src/internal/clip.ts` collapses each whitespace run holding a line feed to one space, trims, and past `n` (89 at every message site) keeps `slice(0, n - 3)` and `...`; `packages/cli/src/internal/makeDiag.ts` keeps `slice(0, 86)` and `...` past 89, without the whitespace step; `packages/testing/src/testResults.ts` keeps 87 and `...` past 90, a 90-character message. All count UTF-16 code units (`length`), and `slice` can end on the first half of a surrogate pair. The formatters (`diagCompact`, `diagPretty`, json) never clip, and `normalize` does not either, so a producer that skips `clip` emits a longer message in every format.
@@ -27,6 +28,11 @@ Without `serve`, `mount` goes to `renderRoute` and, for a page with no guard, ch
 
 ### The bound rule (docs/TESTING.md)
 A conformance case or hook that runs `check` in process, or a `keel` command (`run`, or the binary as a child), runs under a timeout of at least 30 s, at least 60 s when the command runs app code under `keel test` (`test`, `session replay`, `minimize`, `to-test`): its own when it passes one, else its package's configured `testTimeout`. A timeout a case adds takes the floor.
+
+### Messages that fit
+- k.check Diagnostics: the clip is a safety net; a suggestion that is an edit goes in `fix`, one that is not in `keel explain`; a path past the bound loses whole leading segments to `.../`, its last segment kept. Conformance #23: every fixture diagnostic of every `reportedCodes()` code is at most 89 units and does not end in `...`.
+- E1004 (k.boundary, "E1004's message"): `client code reaches server-only (<entry> -> ... -> <server-only file>)`, the shortest chain, its middle one `...` past the bound, then the ends shortened from the front; with no chain, `client code imports server-only <file>`.
+- E1580, E1589 (k.mount Messages), E1587 (k.topology), E1108 (k.formats): each message stated whole, with its length at the fixture's input.
 
 ### k.ledger (as built in `a11yClaims.ts`, `ledgerCommand.ts`, `mutationClaims.ts`)
 - The committed file is the `--write` target, else `.keel/ledger.json`, else `tooling/ledger/ledger.json`. For a project with no `reports/a11y.json`, an item that file holds at `example` or `none` keeps that rung (evidence `example reports/a11y.json` or `none`) and is counted as kept; an item it lacks is computed (`none` without runs). With the report present every item is computed. An item whose route `.keel/routes.json` no longer lists is not emitted.
@@ -49,6 +55,7 @@ A conformance case or hook that runs `check` in process, or a `keel` command (`r
 Applied in this commit.
 - k.check (to `implemented` until clause 22 is covered): Diagnostics states the rule; Conformance gains #22, appended.
 - k.test-run (to `implemented` until clause 7 is covered): T0001's message is clipped as k.check says, in place of "cut at 90 characters"; Conformance gains #7. No clause quotes the old words.
+- k.check: the safety-net sentence and Conformance #23. k.boundary: "E1004's message". k.mount: Messages, and Rules' "Fix: none, but E1589's below." k.topology: "E1587's message". k.formats: "E1108's message", and Rules' "fix: below, else none." Each of these four sections goes to `implemented` only if a clause is added; none is, so their statuses stand.
 - k.ledger (to `implemented` until clauses 16 to 19 are covered): the File sentence the tooling lane wrote stands; Conformance gains #16 (report absent: rung kept, `keptNoReport`), #17 (report present: recomputed, E1706), #18 (route gone: dropped), #19 (no scored mutant: claim dropped).
 - std.sessions (stays `implemented`): the `mount` sentence says `serve` is called once and the app is unrequested; Conformance gains #18 and #19.
 - std.db: `conformance-covered`; the std index row likewise; the map's k.check row reads `implemented`.
@@ -58,6 +65,8 @@ Applied in this commit.
 ## Conformance diff
 By the `conformance-writer`, from the spec text.
 - `packages/cli/conformance/diag-message-clip.test.ts` (new): k.check#22.
+- `packages/check/conformance/diag-message-fit.test.ts` (new): k.check#23 over `fixtures-by-code.ts`.
+- Cases pinning the old messages or the old Rules text, to correct: `packages/check/conformance/bundle-reach.test.ts:45-59` (the four-file chain is now `modules/a/Page.tsx -> ... -> lib/notes.server.ts`); `packages/check/conformance/mount-e1589.test.ts:43,45` (E1589's two texts); `packages/check/conformance/mount-rules.test.ts:1` and `packages/cli/conformance/mount-rules-build.test.ts:1` (k.mount Rules' last sentence); `packages/check/conformance/format-literal-E1108.test.ts:1` (k.formats Rules' fix); `packages/check/conformance/fix-diffs.test.ts:333,369` (E1108 and E1589 now have fixes: a fixture and its diff each). The other E1004 cases (`boundary-reach.test.ts:33,315`, `bundle-reach.test.ts:41,114`, `cli/conformance/bundle-workers.test.ts:66`) hold as written.
 - `packages/cli/conformance/ledger-kept-claims.test.ts` (new): k.ledger#16 to #19.
 - `packages/testing/conformance/test-run-t0001-clip.test.ts` (new): k.test-run#7.
 - `packages/std-sessions/conformance/replay-mount.test.ts` (new): std.sessions#18 and #19. `to-test-identity-mount.test.ts`: drop its UNTESTABLE line.
@@ -83,6 +92,7 @@ None. No app is released.
 - `packages/cli/src/internal/normalize.ts`: clip every `diag` record's message by the rule; `makeDiag.ts` uses the same function.
 - `packages/check/src/internal/clip.ts`: the surrogate step; `packages/testing/src/testResults.ts`: the rule at 89 in place of 90.
 - k.ledger: built (lane-t1, merged here); no build change.
+- Messages: `packages/compiler/src/compile.ts` and `internal/clientReach.ts` (E1004: chain as a file list, the elision), `hosting/mountDiags.ts` and `hosting/mountSource.ts` (E1580, E1589 and its fix), `hosting/stylesProblems.ts` (E1587), `packages/check/src/internal/formatLiterals.ts` and `typeCheck.ts` (E1108 and its fix), the path shortening in the clip module of `@keel/compiler/internal`, `packages/check/src/internal/EXPLANATIONS.ts` (E1580, E1587, E1589, E1108 carry the remedies), and the unit tests pinning old texts (`packages/compiler/test/mountDiagnostics.test.ts`, `stylesProblems.test.ts`).
 - `packages/check/package.json`: `@keel/router` in devDependencies.
 - Docs: a changeset; `tasks/BACKLOG.md` 1080, 1085, 1091, 1092, 1023.
 - The ledger: k.check#22, k.test-run#7, k.ledger#16 to #19 and std.sessions#18, #19 at `none` until covered (`ledger-fresh` lists them; the orchestrator regenerates).
