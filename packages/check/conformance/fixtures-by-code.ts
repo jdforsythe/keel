@@ -1125,6 +1125,37 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       f("identity.server.ts", MOUNT_SERVER),
     ],
   },
+  E1730: {
+    opts: NO_TYPES,
+    bad: [
+      f(
+        "topology.ts",
+        "import { topology } from '@keel/server'\nexport default topology({ web: { modules: ['a'], adapter: 'client', servedBy: 'api' }, api: { modules: ['b'], adapter: 'node' } })\n",
+      ),
+      manifest("a"),
+      manifest("b"),
+      f("identity.ts", `${MOUNT_HEAD}export default identityMount('/api/auth')\n`),
+      f("identity.server.ts", MOUNT_SERVER),
+      f(
+        "modules/a/test/page.test.ts",
+        "import { renderRoute } from '@keel/testing'\nimport { test } from 'vitest'\ndeclare const routes: never\ntest('x', async () => { await renderRoute('a.page', { routes }) })\n",
+      ),
+    ],
+    clean: [
+      f(
+        "topology.ts",
+        "import { topology } from '@keel/server'\nexport default topology({ web: { modules: ['a'], adapter: 'client', servedBy: 'api' }, api: { modules: ['b'], adapter: 'node' } })\n",
+      ),
+      manifest("a"),
+      manifest("b"),
+      f("identity.ts", `${MOUNT_HEAD}export default identityMount('/api/auth')\n`),
+      f("identity.server.ts", MOUNT_SERVER),
+      f(
+        "modules/a/test/page.test.ts",
+        "import { renderRoute } from '@keel/testing'\nimport mount from '../../../identity.ts'\nimport { test } from 'vitest'\ndeclare const routes: never\ntest('x', async () => { await renderRoute('a.page', { routes, mount }) })\n",
+      ),
+    ],
+  },
   E1586: {
     opts: { types: false, root: stdRoot() },
     bad: placesStd("nort"),
