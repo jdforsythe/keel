@@ -5,12 +5,24 @@ import type { RunState } from "./RunState.ts";
 import { runStorage } from "./runStorage.ts";
 
 const active = new Set<RunState>();
+/**
+ * False for a crypto job made by a synchronous call (`randomBytes(n)` with no callback): Node destroys it only at a
+ * garbage collection, so it is no pending work. A request has its `ondone` set by then.
+ */
+const requested = (piece: Piece): boolean => {
+  const job = piece.job?.deref();
+  return piece.job === undefined || (job !== undefined && typeof Reflect.get(job, "ondone") === "function");
+};
 const hook = createHook({
-  init(id, type) {
+  init(id, type, _trigger, resource) {
     // A promise is never pending work (k.drive Driving): parked work is promises alone.
     if (type === "PROMISE") return;
     const scope = runStorage.getStore();
-    if (scope !== undefined && !scope.state.stopped) scope.state.live.set(id, { label: type });
+    if (scope !== undefined && !scope.state.stopped)
+      scope.state.live.set(
+        id,
+        resource.constructor.name.endsWith("Job") ? { label: type, job: new WeakRef(resource) } : { label: type },
+      );
   },
   destroy(id) {
     for (const state of active) state.live.delete(id);
@@ -48,7 +60,7 @@ export function runTracker(onHeldWait: (label: string) => void): RunHandle {
       const scope = runStorage.getStore();
       if (scope?.state === state && scope.held !== undefined) state.onHeldWait(scope.held);
     },
-    pending: () => [...state.live.values()],
+    pending: () => [...state.live.values()].filter(requested),
     stop: () => {
       state.stopped = true;
       active.delete(state);
