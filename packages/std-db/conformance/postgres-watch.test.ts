@@ -1,3 +1,5 @@
+// Spec: std.db, prose (not a Conformance bullet) "Each `commit` resolving `true` that stores a `keel.store.` key runs `pg_notify('keel_storage', $1)` in its transaction, `$1` the JSON text `{"o":<token>,"k":[<keys>]}`, the keys sorted and split across as few notifications as keep each at most 7,900 bytes; a key whose own entry would leave a notification over 7,900 bytes is announced in none, and its `commit` still resolves `true`; Postgres delivers them after the commit, in commit order."
+// Untestable from outside the driver: "a transaction id that is not a number fails the open (E2153)" (a real server's `pg_current_xact_id()` is always a number); no case.
 // Spec: std.db, Conformance "On Postgres 17, with drivers A and B open on one database and a `watch` on B resolved, a `commit` through A storing `keel.store.s` gives B's `on` `{ kind: 'committed', keys: ['keel.store.s'] }`; a `commit` through B storing `keel.store.s` gives it nothing."
 // Spec: std.db, Conformance "On Postgres 17, a `commit` through A storing 400 keys `keel.store.<id>`, each `<id>` 40 characters, gives B's `on` reports whose `keys` together are those 400 keys, each once, in sorted order, and each `keel_storage` notification payload is at most 7,900 bytes."
 // Spec: std.db, Conformance "On Postgres 17, terminating the backend whose `application_name` is `keel-storage-<pid>` reports `lost` once to each of B's open watches; B's next `watch` opens a new connection and gets the next commit's report."
@@ -137,6 +139,38 @@ describe.skipIf(!hasPg17)("postgres 17", () => {
         expect(committed(w.reports).flat()).toEqual(sorted);
         expect(sniffed.payloads.length).toBeGreaterThanOrEqual(2);
         for (const p of sniffed.payloads) expect(Buffer.byteLength(p, "utf8")).toBeLessThanOrEqual(7900);
+        w.stop();
+      }),
+      { seed: SEED, numRuns: 2 },
+    );
+  });
+
+  test("a key whose own entry would leave a notification over 7,900 bytes is announced in none, and its `commit` still resolves `true`", async () => {
+    await fc.assert(
+      fc.asyncProperty(fc.hexaString({ minLength: 4, maxLength: 10 }), async (tag) => {
+        const { A, B } = await pair();
+        const sniffed = await sniff();
+        const w = await watching(B);
+        const long = `keel.store.${"k".repeat(8000)}`;
+        const short = `keel.store.short${tag}`;
+        expect(
+          await A.commit([
+            { key: long, expect: null, value: "v" },
+            { key: short, expect: null, value: "v" },
+          ]),
+        ).toBe(true);
+        // Sentinel: a later commit through A; its report is the last one to arrive.
+        expect(await A.commit([{ key: "keel.store.sentinel", expect: null, value: "v" }])).toBe(true);
+        await until(() => committed(w.reports).flat().includes("keel.store.sentinel"), "B's reports");
+        await settle();
+        const keys = committed(w.reports).flat();
+        expect(keys).toContain(short);
+        expect(keys).not.toContain(long);
+        expect(await B.get(long)).toBe("v");
+        for (const p of sniffed.payloads) {
+          expect(Buffer.byteLength(p, "utf8")).toBeLessThanOrEqual(7900);
+          expect(p.includes(long)).toBe(false);
+        }
         w.stop();
       }),
       { seed: SEED, numRuns: 2 },

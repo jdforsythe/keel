@@ -1,4 +1,4 @@
-// Spec: k.sim, Conformance "With `createApp` A on sim ctx `a` and B on `b = replica(a)`, an action on A that saves store `s` reports one `save` event to an observer of `a` and none to an observer of `b`; overlapping actions on A and B that save `s` from one read leave one saved and the other 409 `keel.conflict`."
+// Spec: k.sim, Conformance "With `createApp` A on sim ctx `a` and B on `b = replica(a)`, an action on either app that saves store `s` reports one `save` event to an observer of that app's ctx and none to an observer of the other's, and so for each of repeated saves; overlapping actions on A and B that save `s` from one read leave one saved and the other 409 `keel.conflict`."
 // Seed: 1337. Runs under plain Node; only runtime (JSON) requests are used. Interleavings use deferreds; no timers.
 // Reading: the clause names A's action; it holds the same for B's, so the first case is generated over which app serves the action and how many saves it makes (each save one event to the serving app's ctx only).
 // Reading: the `save` event is `{ kind: 'save', store, head, from }` (k.persist Server saves, k.sync Saves); the store id is the `store` field.
