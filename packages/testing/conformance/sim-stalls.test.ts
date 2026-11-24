@@ -5,8 +5,16 @@
 // Spec: k.drive, Conformance "A capability registered with a `sim` factory whose `work()` returns `hold('probe', () => ctx.clock.after(10))`: in an empty replay, a scenario that awaits `work()` rejects `simulate` with E1704 whose first line holds `E1728 held work waits on the sim clock: probe`."
 // Spec: k.drive, Stalls "A scenario pending with no `run` call of it pending, when no work is pending and no moment is within its bound, fails the run on that turn with E1727 (k.testing), `the scenario waits past the horizon: next deadline <n> ms` when `ctx.clock.next()` is `n`, else `the scenario waits and nothing in the run is due`."
 // Spec: k.drive, Stalls "A `ctx.clock.after` or an online wait made inside held work fails it at once with E1728 `held work waits on the sim clock: <label>`."
-// Spec: k.drive, Stalls "Work pending through 10,000 ms of real time without settling fails it with E1728 `work in flight never answered: <label>`, `<label>` the held work's label, else the resource's Node type (`Timeout`, `PBKDF2REQUEST`, `TCPWRAP`)."
-// Spec: k.drive, Stalls "That bound reads real time only to fail a run: it never moves the clock or changes a trace."
+// Spec: k.drive, Stalls "A resource or held work still pending 10,000 ms of real time after its own creation fails it with E1728 `work in flight never answered: <label>`, `<label>` the held work's label, else the resource's Node type (`Timeout`, `PBKDF2REQUEST`, `TCPWRAP`)."
+// Spec: k.drive, Stalls "The bound runs per piece of work: endless short work is no stall, and while it runs the clock stays still, bounded by the test's own timeout."
+// Spec: k.drive, Stalls "The bound reads real time only to fail a run: it never moves the clock or changes a trace."
+// Spec: k.drive, Stalls "A scenario that resolves with work of the run still pending fails with E1728 `work outlived the scenario: <label>`, the first pending in creation order; it closes what it opened first (`app.close()`, `clearInterval`, a socket's `close`)."
+// Spec: k.drive, Stalls "A scenario that rejects is reported with its own error."
+// Spec: k.drive, Driving "Work that waits only on the sim clock or on the net's online state is promises alone and is never pending: it is *parked*, as is the request, job or route around it."
+// Spec: k.drive, Conformance "In an empty replay, a scenario that runs a loop of `node:timers` `setTimeout(1)` calls, each started when the previous answers, for 12,000 ms of real time, then awaits `run()`, resolves."
+// Spec: k.drive, Conformance "In an empty replay, a scenario that awaits one `node:timers` `setTimeout(11000)` rejects `simulate`, after at least 10,000 ms of real time, with E1704 whose first line holds `E1728 work in flight never answered: Timeout`."
+// Spec: k.drive, Conformance "In an empty replay, a scenario that starts a `node:timers` `setTimeout(50)` and resolves without awaiting it rejects `simulate` with E1704 whose first line holds `E1728 work outlived the scenario: Timeout`; one that starts a `setInterval` and calls `clearInterval` on it before resolving resolves."
+// Spec: k.drive, Conformance "A capability registered with a `sim` factory whose `work()` returns `hold('probe', () => new Promise(() => {}))`: in an empty replay, a scenario that calls `work()` without awaiting it and resolves rejects `simulate` with E1704 whose first line holds `E1728 work outlived the scenario: probe`."
 // Spec: k.testing, Rules "E1727 a `simulate` scenario waiting on nothing the run can move, E1728 held work waiting on the clock or work in flight that never answers (k.drive Stalls), E1729 two replays of a run whose traces differ (k.drive Law check)"
 // Spec: k.sim, Failure "A failing run is shrunk (fewer steps, shorter delays, fewer faults and windows) and reported as E1704 (k.testing) with the seed, the run, and the shrunk `SimRun` as JSON on the next line."
 // Seed: 1337 (fc.assert below); replays use a SimRun of seed 1 and an empty schedule.
@@ -217,7 +225,7 @@ test(
 );
 
 test(
-  "Work pending through 10,000 ms of real time without settling fails it with E1728 `work in flight never answered: <label>`, `<label>` the resource's Node type (`Timeout`) when no work is held: an interval the scenario never clears",
+  "A resource or held work still pending 10,000 ms of real time after its own creation fails it with E1728 `work in flight never answered: <label>`, `<label>` the resource's Node type (`Timeout`) when no work is held: an interval the scenario never clears",
   { timeout: 60_000 },
   async () => {
     let handle: ReturnType<typeof setInterval> | undefined;
@@ -289,4 +297,156 @@ test("a `ctx.clock.after` of any duration made inside held work fails E1728 `hel
     }),
     { seed: SEED, numRuns: 6 },
   );
+});
+
+// ---- E1728 per piece of work (Conformance #18, #19) and work outliving the scenario (#21, #22) ----
+
+test(
+  "In an empty replay, a scenario that runs a loop of `node:timers` `setTimeout(1)` calls, each started when the previous answers, for 12,000 ms of real time, then awaits `run()`, resolves.",
+  { timeout: 40_000 },
+  async () => {
+    let laps = 0;
+    const took = await realMs(async () => {
+      await simulate(
+        async ({ run }) => {
+          const start = process.hrtime.bigint();
+          while (Number(process.hrtime.bigint() - start) / 1e6 < 12_000) {
+            await new Promise<void>((resolve) => setTimeout(resolve, 1));
+            laps += 1;
+          }
+          await run();
+        },
+        { replay },
+      );
+    });
+    expect(laps).toBeGreaterThan(0);
+    expect(took).toBeGreaterThanOrEqual(12_000);
+  },
+);
+
+test(
+  "In an empty replay, a scenario that awaits one `node:timers` `setTimeout(11000)` rejects `simulate`, after at least 10,000 ms of real time, with E1704 whose first line holds `E1728 work in flight never answered: Timeout`.",
+  { timeout: 40_000 },
+  async () => {
+    let e: unknown;
+    const took = await realMs(async () => {
+      e = await thrown(() =>
+        simulate(
+          async () => {
+            await new Promise<void>((resolve) => setTimeout(resolve, 11_000));
+          },
+          { replay },
+        ),
+      );
+    });
+    expect(took).toBeGreaterThanOrEqual(10_000);
+    expect(codeOf(e)).toBe("E1704");
+    expect(firstLine(e)).toContain("E1728 work in flight never answered: Timeout");
+  },
+);
+
+test("In an empty replay, a scenario that starts a `node:timers` `setTimeout(50)` and resolves without awaiting it rejects `simulate` with E1704 whose first line holds `E1728 work outlived the scenario: Timeout`; one that starts a `setInterval` and calls `clearInterval` on it before resolving resolves.", async () => {
+  const e = await thrown(() =>
+    simulate(
+      async () => {
+        setTimeout(() => undefined, 50);
+      },
+      { replay },
+    ),
+  );
+  expect(codeOf(e)).toBe("E1704");
+  expect(firstLine(e)).toContain("E1728 work outlived the scenario: Timeout");
+  const closed = await thrown(() =>
+    simulate(
+      async () => {
+        const h = setInterval(() => undefined, 1_000_000);
+        clearInterval(h);
+      },
+      { replay },
+    ),
+  );
+  expect(closed).toBeUndefined();
+});
+
+test("a timer of any real duration left running when the scenario resolves fails E1728 `work outlived the scenario: Timeout`", async () => {
+  await fc.assert(
+    fc.asyncProperty(fc.integer({ min: 1, max: 200 }), async (ms) => {
+      const e = await thrown(() =>
+        simulate(
+          async () => {
+            setTimeout(() => undefined, ms);
+          },
+          { replay },
+        ),
+      );
+      expect(codeOf(e)).toBe("E1704");
+      expect(firstLine(e)).toContain("E1728 work outlived the scenario: Timeout");
+    }),
+    { seed: SEED, numRuns: 8 },
+  );
+});
+
+test("A capability registered with a `sim` factory whose `work()` returns `hold('probe', () => new Promise(() => {}))`: in an empty replay, a scenario that calls `work()` without awaiting it and resolves rejects `simulate` with E1704 whose first line holds `E1728 work outlived the scenario: probe`.", async () => {
+  const e = await thrown(() =>
+    simulate(
+      async ({ ctx }) => {
+        void hung(ctx).work(ctx);
+      },
+      { replay },
+    ),
+  );
+  expect(codeOf(e)).toBe("E1704");
+  expect(firstLine(e)).toContain("E1728 work outlived the scenario: probe");
+});
+
+test("work outliving the scenario names the first pending in creation order: a hold made before a timer is `probe`, a timer made before a hold is `Timeout`", async () => {
+  const holdFirst = await thrown(() =>
+    simulate(
+      async ({ ctx }) => {
+        void hung(ctx).work(ctx);
+        setTimeout(() => undefined, 50);
+      },
+      { replay },
+    ),
+  );
+  expect(firstLine(holdFirst)).toContain("E1728 work outlived the scenario: probe");
+  const timerFirst = await thrown(() =>
+    simulate(
+      async ({ ctx }) => {
+        setTimeout(() => undefined, 50);
+        void hung(ctx).work(ctx);
+      },
+      { replay },
+    ),
+  );
+  expect(firstLine(timerFirst)).toContain("E1728 work outlived the scenario: Timeout");
+});
+
+test("parked pollers do not count as work outliving the scenario: a `ctx.clock.after` waiter and a `ctx.net` route nothing answers, left behind, let the scenario resolve", async () => {
+  const e = await thrown(() =>
+    simulate(
+      async ({ ctx }) => {
+        void ctx.clock.after(1000).catch(() => undefined);
+        ctx.net.route("https://park.test/*", () => new Promise<Response>(() => {}));
+        void ctx.net.fetch(new Request("https://park.test/a")).catch(() => undefined);
+      },
+      { replay },
+    ),
+  );
+  expect(e).toBeUndefined();
+});
+
+test("A scenario that rejects is reported with its own error: a scenario that leaves a timer running and throws reports E1704 with its own message, not E1728", async () => {
+  const e = await thrown(() =>
+    simulate(
+      async () => {
+        setTimeout(() => undefined, 50);
+        throw new Error("scenario's own failure");
+      },
+      { replay },
+    ),
+  );
+  expect(codeOf(e)).toBe("E1704");
+  expect(messageOf(e)).toContain("scenario's own failure");
+  expect(firstLine(e)).not.toContain("E1728");
 });

@@ -5,6 +5,8 @@
 // Spec: k.drive, Driving "On each of its turns, while the scenario is pending and no work is pending, the drive advances the clock to the next moment if it is at most `horizon` ms past the run's start (or, while a `run(ms)` waits, at most its `t + ms`)."
 // Spec: k.drive, Driving "How fast real work runs decides nothing: the clock moves only when no work is pending."
 // Spec: k.drive, Driving "each async resource other than a promise created in that context, from its creation until Node destroys it: a timer or immediate after its callback, a file, DNS or thread-pool request (a password hash) after it answers, a socket, server, interval or port once closed;"
+// Spec: k.drive, Driving "The harness's and the drive's own macrotask turns are made outside the run's context and are not work; the drive moves the clock inside the run's context, so waiters, offline-edge callbacks and `observe` callbacks it runs make work of the run."
+// Spec: k.drive, Conformance "Under `simulate` with `replay` of a `SimRun` of seed 1 whose schedule's `offline` is `[{ at: 100, ms: 50 }]`, an `observe` callback that, on the `net` event at 100, starts a `node:timers` `setTimeout(20)` recording `ctx.clock.now()` as it answers: it records 100, and after `run()` the clock is 150."
 // Seed: 1337 (fc.assert below); replays use a SimRun of seed 1 and an empty schedule.
 // ASSUMPTION: "inside app code" is a `ctx.net` route handler (a sim route runs as app code, k.drive Seams) or the scenario itself, which runs in the run's context; both are asserted. The route's fetch takes the default net step `{ delay: 0, fault: 'none' }`.
 // ASSUMPTION: "never lets the clock pass it" is read as: a `ctx.clock.after(10)` waiter started beside the real work resolves after it, so the record is the real completion at clock 0, then `timer` at 10, whatever the real duration.
@@ -13,6 +15,7 @@ import { pbkdf2 } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { setImmediate, setTimeout } from "node:timers";
 import { fileURLToPath } from "node:url";
+import { observe } from "@keel/ctx";
 import { simulate } from "@keel/testing";
 import fc from "fast-check";
 import { expect, test } from "vitest";
@@ -210,4 +213,25 @@ test("work parked on a deadline `D` reads `'running'` after `run(c)` for any `c`
     }),
     { seed: SEED, numRuns: 25 },
   );
+});
+
+// ASSUMPTION: the `net` event is recognised by its JSON holding `"net"`, with the clock at 100 (the event's own fields are k.ctx's, not named here).
+test("Under `simulate` with `replay` of a `SimRun` of seed 1 whose schedule's `offline` is `[{ at: 100, ms: 50 }]`, an `observe` callback that, on the `net` event at 100, starts a `node:timers` `setTimeout(20)` recording `ctx.clock.now()` as it answers: it records 100, and after `run()` the clock is 150.", async () => {
+  const seen: number[] = [];
+  let after = -1;
+  let started = false;
+  await simulate(
+    async ({ ctx, run }) => {
+      observe(ctx, (e) => {
+        if (started || ctx.clock.now() !== 100 || !JSON.stringify(e).includes('"net"')) return;
+        started = true;
+        setTimeout(() => void seen.push(ctx.clock.now()), 20);
+      });
+      await run();
+      after = ctx.clock.now();
+    },
+    { replay: { seed: 1, schedule: { net: [], storage: [], offline: [{ at: 100, ms: 50 }], plans: {} } } },
+  );
+  expect(seen).toEqual([100]);
+  expect(after).toBe(150);
 });
