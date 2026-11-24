@@ -275,7 +275,7 @@ You write sources; the plugin and `keel build` derive everything below. Nothing 
 | `dist/api/` | `keel build` (Vite, `KEEL_DEPLOYABLE=api`) | the `api`, `digest` and `sessions` modules, and the `web` client (`servedBy: "api"`) | `server.mjs` with every dependency bundled, the resume entry and the client's `index.html` and files in `assets/`, `routes.json` (all modules' routes, for forwarding), `std.json` |
 | `deploy/api/Dockerfile`, `deploy/compose.yaml` | `keel build` | `topology.ts` | one Dockerfile per `node` deployable, one compose service each |
 
-Every `.keel/` file is `{ data, hash }` JSON with sorted keys, written read-only (mode 0444). `keel check` recomputes them from your sources, and a file that differs is E1005. A project with no `.keel/` yet checks clean; once a build or test run has written it, editing a source makes `keel check` report E1005 for each stale artifact before your real error. Run `keel build` before `keel check` after edits.
+Every `.keel/` file is `{ data, hash }` JSON with sorted keys, written read-only (mode 0444). `keel check` recomputes them from your sources, and a file that differs is E1005. `.keel/surface.json` records each file it was built from as a hash of the file's syntax tree, not its text: a formatter's change (an import sort, a re-indent, quotes, commas, parentheses, a comment) is not stale, and an edit that can change the surface is. A project with no `.keel/` yet checks clean; once a build or test run has written it, editing a source makes `keel check` report E1005 for each stale artifact before your real error. Run `keel build` before `keel check` after edits.
 
 ### From the document to a rendered route
 

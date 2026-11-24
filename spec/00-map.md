@@ -78,7 +78,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.topology | Deployables | implemented | peers |
 | k.deploy | Entry, deploy files | conformance-covered | entry |
 | k.shell | Native shells | implemented | target |
-| k.compat | Surface compatibility | conformance-covered | accepts |
+| k.compat | Surface compatibility | implemented | accepts |
 | k.api | API routes | conformance-covered | JSON |
 | k.hosting | Client hosting | implemented | servedBy |
 | k.head | Document head | implemented | title |
