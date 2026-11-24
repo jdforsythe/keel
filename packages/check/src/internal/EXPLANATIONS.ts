@@ -1192,7 +1192,7 @@ const ROWS: readonly Row[] = [
   [
     "E1728",
     "held work waits on the sim clock, the budget ran out, or work outlived the scenario, under simulate",
-    "Held work waited on ctx.clock. Or the run's real-time budget (budget, else the test's timeout less a tenth) ran out; the labels are the work in flight. Or the scenario resolved and its work was still pending when the budget ran out; each label is the hold's, else the Node type.",
+    "Held work waited on ctx.clock. Or the run's real-time budget (budget, else the test's timeout less a tenth) ran out with work in flight, before or after the scenario resolved; each label is the hold's, else the Node type.",
     "hold only work answering through something made outside the run; close what the run opens before it resolves",
     "k.drive",
   ],
