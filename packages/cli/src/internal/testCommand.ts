@@ -57,13 +57,17 @@ async function vitestRun(root: string, filters: readonly string[]): Promise<Test
   };
   const exitCode = process.exitCode;
   const previous = process.env.KEEL_TEST;
+  const pool = process.env.UV_THREADPOOL_SIZE;
   process.env.KEEL_TEST = "1";
+  // One thread-pool thread in every test process, whatever the environment holds (k.drive-law Order): libuv reads it
+  // once per process, so it is in the environment the test processes start with.
+  process.env.UV_THREADPOOL_SIZE = "1";
   try {
     const { strays } = await catchingStray(root, async () => {
       const vitest = await startVitest(
         "test",
         [...filters],
-        { root, watch: false, reporters: [collector], env: { KEEL_TEST: "1" } },
+        { root, watch: false, reporters: [collector], env: { KEEL_TEST: "1", UV_THREADPOOL_SIZE: "1" } },
         // The project's `identity.ts` is a setup file whether or not its vitest config has the `keel()` plugin.
         { plugins: [{ name: "keel-identity", config: () => identitySetup(root) }] },
         { stdout: sink(), stderr: sink() },
@@ -75,13 +79,16 @@ async function vitestRun(root: string, filters: readonly string[]): Promise<Test
   } finally {
     if (previous === undefined) Reflect.deleteProperty(process.env, "KEEL_TEST");
     else process.env.KEEL_TEST = previous;
+    if (pool === undefined) Reflect.deleteProperty(process.env, "UV_THREADPOOL_SIZE");
+    else process.env.UV_THREADPOOL_SIZE = pool;
     process.exitCode = exitCode;
   }
   return report;
 }
 
 /**
- * `keel test [paths]`: vitest, programmatically, on `io.cwd` with `KEEL_TEST=1` (k.testing: ctx defaults to sim);
+ * `keel test [paths]`: vitest, programmatically, on `io.cwd` with `KEEL_TEST=1` (k.testing: ctx defaults to sim) and
+ * `UV_THREADPOOL_SIZE=1` over any value set (k.drive-law Order);
  * vitest's own output is discarded and `@keel/testing` `testResults` (the same walk the repository's
  * KeelReporter uses) turns results into T0001 diagnostics plus a summary (not ok when any
  * test failed); every render check the harness recorded goes to `reports/a11y.json` (`writeA11yReport`). Skipped (the empty run) when `io.files` holds no test file and no vitest config, so an in-memory
