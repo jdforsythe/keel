@@ -14,6 +14,7 @@ export type Message<P = Readonly<Record<string, string | number>>> = (
       readonly two?: string;
       readonly few?: string;
       readonly many?: string;
+      readonly [exact: `=${number}`]: string;
     }
   | { readonly select: string; readonly cases: Readonly<Record<string, string>> }
 ) & { readonly [params]?: P };
