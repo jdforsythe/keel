@@ -16,7 +16,7 @@ import { mkdir, mkdtemp, readFile, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { buildIn, copyApp, freePort, recorder, root, wait } from "./built.mjs";
+import { buildIn, copyApp, freePort, keepOutput, recorder, root, wait } from "./built.mjs";
 
 const LIMIT_MS = 420_000;
 const SECRET = "golden-2-smoke-secret-of-32-bytes-or-more";
@@ -37,7 +37,7 @@ const {
   leaked,
 } = await import(pathToFileURL(join(golden2, "test", "canaries.ts")).href);
 
-const { step, finish } = recorder();
+const { step, finish, caught } = recorder();
 const children = new Set();
 const killAll = () => {
   for (const c of children) if (c.exitCode === null && c.signalCode === null) c.kill("SIGKILL");
@@ -83,6 +83,7 @@ function serve(dir, port, data, format) {
   children.add(child);
   const log = [];
   for (const out of [child.stdout, child.stderr]) out.on("data", (d) => log.push(...String(d).split("\n")));
+  keepOutput(`serve :${port}`, log);
   const exited = new Promise((resolve) => child.once("exit", resolve));
   return {
     child,
@@ -367,6 +368,7 @@ try {
   await bundle("golden-2", golden2, CANARIES);
   await bundle("household", household, HOUSEHOLD_CANARIES);
 } catch (e) {
+  caught(e);
   step("flow", false, String(e).split("\n")[0]);
 } finally {
   clearTimeout(limit);

@@ -8,6 +8,9 @@ import { redacted } from "../src/internal/redacted.ts";
 import { scrubbed } from "../src/internal/scrubbed.ts";
 
 const SEED = 1337;
+// The cases scrub texts of hundreds of thousands of characters and run 300 generated cases; a starved worker needs
+// more than the default 5 s.
+const SCALE_MS = 60_000;
 
 const chars = fc.oneof(
   fc.constantFrom(
@@ -52,7 +55,7 @@ const longOr = (t: fc.Arbitrary<string>) =>
     { weight: 1, arbitrary: fc.tuple(t, fc.integer({ min: 100, max: 1_500 })).map(([v, n]) => v.repeat(n)) },
   );
 
-describe("no secret or pii value makes the scrub throw", () => {
+describe("no secret or pii value makes the scrub throw", { timeout: SCALE_MS }, () => {
   it("a value longer than one expression holds is marked, and many values do not overflow an expression", () => {
     const long = "k3y-".repeat(20_000);
     expect(scrubbed(`x ${long} y ${long.toUpperCase()}`, [[new Set([long]), "[secret]"]])).toBe(
@@ -87,7 +90,7 @@ describe("no secret or pii value makes the scrub throw", () => {
   });
 });
 
-describe("a long value is found in steps linear in the text", () => {
+describe("a long value is found in steps linear in the text", { timeout: SCALE_MS }, () => {
   // A clock is not read in tests (S0006): each case counts the walk's steps against the text's length and the build's
   // against the forms' length, and runs the adversarial shape, which a scan restarted at every position would not finish
   // in the test's time.

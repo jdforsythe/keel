@@ -101,10 +101,12 @@ const expectedExit = (out: Out, failOnWarn: boolean): number =>
 function cell(repo: Repo, from: number, to: number, row: Row): string | undefined {
   const r = range(repo, from, to);
   const out = review(repo, [r, "--list"]);
-  expect(review(repo, [r]).status).toBe(expectedExit(out, false));
-  expect(review(repo, [r, "--fail-on", "warn"]).status).toBe(expectedExit(out, true));
+  const plain = review(repo, [r]);
+  expect(plain.status, plain.stderr + plain.stdout).toBe(expectedExit(out, false));
+  const strict = review(repo, [r, "--fail-on", "warn"]);
+  expect(strict.status, strict.stderr + strict.stdout).toBe(expectedExit(out, true));
   const hits = ofCode(out, row.code);
-  expect(hits).toHaveLength(1);
+  expect(hits, `${row.name} ${row.code} ${r}: ${out.stderr}${out.stdout}`).toHaveLength(1);
   expect(hits[0]?.danger).toBe(row.danger);
   expect(hits[0]?.opt).toBe(row.opt);
   return hits[0]?.loud;
