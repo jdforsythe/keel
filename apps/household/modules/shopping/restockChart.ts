@@ -1,5 +1,6 @@
-import { s } from "@keel/schema";
+import { formatLiteral, s } from "@keel/schema";
 import { chart } from "@keel/std-statecharts";
+import { Instant } from "@keel/std-temporal";
 import { PutBack } from "./PutBack.schema.ts";
 import { RestockData } from "./RestockData.schema.ts";
 
@@ -9,7 +10,7 @@ import { RestockData } from "./RestockData.schema.ts";
  */
 export const restockChart = chart("shopping.restockChart", {
   data: RestockData,
-  start: { staples: [], next: 0, putBack: 0, by: "member", at: 0, code: "" },
+  start: { staples: [], next: 0, putBack: 0, by: "member", at: formatLiteral(Instant, "1970-01-01T00:00:00.000Z"), code: "" },
   events: { put: PutBack, failed: s.object({ code: s.string({ max: 80 }) }), rested: s.object({}) },
   guards: { more: (d) => d.next + 1 < d.staples.length },
   actions: {
