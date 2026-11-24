@@ -348,7 +348,7 @@ describe("E1451 noThrow", () => {
       block("nested", E("src/a.ts", "export function f() {\n  const g = () => {\n    throw 1\n  }\n  throw g\n}\n")),
       block("test file exempt", E("test/a.test.ts", "throw new Error('x')\n")),
       block("config exempt", E("vite.config.ts", "throw new Error('x')\n")),
-      block("unsafe dir exempt", E("src/unsafe/a.ts", "throw new Error('x')\n")),
+      block("unsafe dir read", E("src/unsafe/a.ts", "throw new Error('x')\n")),
     ].join("\n");
     expect(out).toMatchInlineSnapshot(`
       "# in function
@@ -425,8 +425,8 @@ describe("E1451 noThrow", () => {
 
       # config exempt
 
-      # unsafe dir exempt
-      "
+      # unsafe dir read
+      1:1 throw in app code; return err(...) for expected failures"
     `);
   });
 });
@@ -960,8 +960,8 @@ describe("E1757 noUnsafeSyntax", () => {
       block("js file", E("src/a.js", "// @ts-ignore\nexport const a = 1\n")),
       block("tsx", E("src/a.tsx", `export const a = (x: unknown) => x ${AS} string\n`)),
       block("mts", E("src/a.mts", `export const a = (x: unknown) => x ${AS} string\n`)),
-      block("unsafe dir", E("src/unsafe/a.ts", `export const a = (x: unknown) => x ${AS} string\n`)),
-      block("nested unsafe dir", E("src/x/unsafe/a.ts", `export const a = (x: unknown) => x ${AS} string\n`)),
+      block("unsafe dir read", E("src/unsafe/a.ts", `export const a = (x: unknown) => x ${AS} string\n`)),
+      block("nested unsafe dir read", E("src/x/unsafe/a.ts", `export const a = (x: unknown) => x ${AS} string\n`)),
       block("notunsafe dir", E("src/notunsafe/a.ts", `export const a = (x: unknown) => x ${AS} string\n`)),
       block("keel dir", E(".keel/a.ts", `export const a = (x: unknown) => x ${AS} string\n`)),
       block("node_modules", E("node_modules/p/a.ts", `export const a = (x: unknown) => x ${AS} string\n`)),
@@ -1104,10 +1104,10 @@ describe("E1757 noUnsafeSyntax", () => {
       1:34 type cast outside unsafe/; use a guard or move it to unsafe/
       # mts
       1:34 type cast outside unsafe/; use a guard or move it to unsafe/
-      # unsafe dir
-
-      # nested unsafe dir
-
+      # unsafe dir read
+      1:34 type cast outside an unsafe() call; use a guard or move it into the call
+      # nested unsafe dir read
+      1:34 type cast outside an unsafe() call; use a guard or move it into the call
       # notunsafe dir
       1:34 type cast outside unsafe/; use a guard or move it to unsafe/
       # keel dir
@@ -1866,8 +1866,6 @@ describe("small helpers", () => {
     for (const p of [
       "src/a.test.ts",
       "test/a.ts",
-      "src/unsafe/a.ts",
-      "unsafe/a.ts",
       ".keel/a.ts",
       "node_modules/p/a.ts",
       "x/node_modules/p/a.ts",
@@ -1879,6 +1877,8 @@ describe("small helpers", () => {
     ])
       expect(isAppPath(p)).toBe(false);
     expect(isAppPath("src/unsafely/a.ts")).toBe(true);
+    expect(isAppPath("unsafe/a.ts")).toBe(true);
+    expect(isAppPath("src/x/unsafe/a.ts")).toBe(true);
     expect(isAppPath("src/a.configs.ts")).toBe(true);
     expect(isAppPath("src/configa.ts")).toBe(true);
   });

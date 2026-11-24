@@ -249,14 +249,6 @@
       "note": "The same node also has equal serialized forms, so the identity test only saves the two serializations."
     },
     {
-      "file": "src/internal/isHref.ts",
-      "mutator": "EqualityOperator",
-      "original": "i < path.length",
-      "replacement": "i <= path.length",
-      "reason": "equivalent",
-      "note": "The char code one past the end is NaN, which no comparison in the loop body matches, so the extra round changes nothing."
-    },
-    {
       "file": "src/internal/carriedNext.ts",
       "mutator": "EqualityOperator",
       "original": "i < v.length",

@@ -44,7 +44,7 @@ export default topology({
 - `KEEL_DATABASE_URL`, for `storage: 'sqlite'` or `'postgres'` (needs `@keel/std-db` in `dependencies`: E1572).
 - `KEEL_POSTGRES_URL` when a served module lists `@keel/std-postgres` in `deps` (compose requires it). `KEEL_APP_DIR` defaults to the folder of `server.mjs`.
 - `KEEL_FORMAT=json` logs json.
-A bad value is one E1560 naming the key, never the value, and exit 1. An uncaught throw or rejection logs E1577, drains up to 10 s and exits 1: run it under a supervisor. `keel dev` serves every deployable on one origin.
+A bad value is one E1560 naming the key, never the value, and exit 1. An uncaught throw or rejection logs E1577, drains up to 10 s and exits 1: run it under a supervisor. `keel dev` serves every deployable on one origin. `KEEL_DEV_POLL=1` makes `keel dev` poll for file changes (`usePolling`, `interval: 100`, over the project's `server.watch`): set it in a container, on a network file system, or where file events are dropped; unset, empty or `0` leaves the watcher to `vite.config.ts`; any other value is one E1560 naming the key, exit 1.
 
 **Caller lifetime.** `caller: { days }` on a `node` deployable (an integer 1 to 400, else E1578) makes its caller cookie outlive a browser quit. It is network personal data. An `identify` that trusts a header a proxy injects is safe only when the deployable is reachable through that proxy alone.
 

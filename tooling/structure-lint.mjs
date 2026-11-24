@@ -22,7 +22,11 @@ function targets() {
       for (const d of ["src", "unsafe", "test", "conformance"]) dirs.push(path.join(pk, p, d));
   }
   dirs.push(path.join(root, "tooling"), path.join(root, "evals"));
-  const skip = [path.join(root, "tooling", "fixtures"), path.join(root, "evals", "results")];
+  const skip = [
+    path.join(root, "tooling", "fixtures"),
+    path.join(root, "evals", "results"),
+    path.join(root, "packages", "cli", "conformance", "unsafe", "review-fixtures"),
+  ];
   const set = new Set();
   for (const d of dirs) for (const f of walk(d, skip)) if (CODE_EXT.test(f)) set.add(f);
   return [...set].sort();

@@ -25,7 +25,7 @@ S8 adds std.db, std.workflows, std.shells and std.tokens.
 | std.temporal | Dates, instants and durations | conformance-covered | schema type registry: instants, dates, zones, durations; format |
 | std.text | Text | conformance-covered | schema type registry: `text.Email`, `Slug`, `line`, `para`, collation |
 | std.messages | Message sets | conformance-covered | check rule registry: message sets, one file per locale |
-| std.copy | Literal copy | conformance-covered | `@keel/std-messages`: where E2406 reads copy and the shapes it follows |
+| std.copy | Literal copy | implemented | `@keel/std-messages`: where E2406 reads copy and the shapes it follows |
 | std.brands | Id brand case | conformance-covered | check rule registry: E2101 with fix |
 | std.geo | Geolocation | conformance-covered | capability registry: `geo`, seeded sim |
 | std.health | Health route | conformance-covered | module manifest: route and public export via `deps` |
@@ -33,8 +33,8 @@ S8 adds std.db, std.workflows, std.shells and std.tokens.
 | std.report | Tally report | conformance-covered | formatter registry: `report.tally`; `keel report` |
 | std.jobs | Background jobs | conformance-covered | module manifest and inspector hooks: durable jobs, retry, lease, E2501-E2506 |
 | std.schedules | Schedules | conformance-covered | module manifest: cron in a zone, catch-up, E2551-E2553 |
-| std.channels | Channels | conformance-covered | module manifest and check rule registry: named channels over a server event stream, stores and followed app data, E2601-E2602 |
-| std.live | Live views | conformance-covered | composes std.channels: a client store re-read on every push |
+| std.channels | Channels | implemented | module manifest and check rule registry: named channels over a server event stream, stores and followed app data, E2601-E2602 |
+| std.live | Live views | implemented | composes std.channels: a client store re-read on every push |
 | std.offline | Outbox | conformance-covered | check rule registry: queued writes with keys and bases, resolve, E2651 |
 | std.contracts | Stdlib contracts | proposed | std-health, std-sessions, std-channels and std-offline over k.contract |
 | std.outbox | Outbox storage faults | conformance-covered | `@keel/std-offline`: storage writes that reject or never settle, other throws in a flush |

@@ -1,14 +1,16 @@
 # k.persist: Storage and durable state
-status: conformance-covered
+status: implemented
 
 **Storage.** `ctx.storage` keeps Keel's own state (k.data): stores' snapshots and what stdlib packages version through it, never app data. It holds string values by string key, as given (secrets: k.privacy); each operation returns a promise:
 - `get(key)`: the value, `null` when absent. `set(key, value)` stores it.
 - `read(keys)`: one value per position asked, a repeated key included, `null` for an absent one, as one cut: no `commit` lands between two of them.
 - `commit(writes)`: each write is `{ key, expect, value? }`, `expect` a value or `null` (absent). When every key holds its `expect`, each `value` is stored and it resolves `true`; otherwise nothing is stored and it resolves `false`. A write without `value` is a condition only. One key twice throws E1606.
 
-Real: the platform's `localStorage` (on Node, the file `--localstorage-file` names; one process). Sim: in memory per ctx; under a schedule (k.sim) a `read` or a `commit` takes one `storage` step, and a failed `commit` stores nothing. Two `createApp`s on one sim ctx behave as two processes sharing one storage. Shell: k.shell.
+Real: the platform's `localStorage` (on Node, the file `--localstorage-file` names; one process). Sim: in memory per ctx; under a schedule (k.sim) a `read` or a `commit` takes one `storage` step, and a failed `commit` stores nothing. Two `createApp`s on one sim ctx share one storage object and its observers; on a ctx and its `replica` (k.sim Replicas) they behave as two processes sharing one storage. Shell: k.shell.
 
 **Drivers.** `createCtx({ mode, drivers: { storage?, net? } })` gives a `real` or `shell` ctx each object as that capability, which keeps its contract (`storage` above; `net` k.ctx and k.sync). `@keel/ctx/node` `fileStorage(path)` is a storage driver over a JSON file (`keel dev`'s, k.topology). On a `sim` ctx `drivers` throws E1605, as `schedule` off sim throws E1604: simulation stays the kernel's, so runs replay. Generated entries pass drivers (k.deploy, k.shell); app code reaches them only through `ctx`. A driver that holds connections has `close()`, resolving once they close; the generated entry awaits it after `app.close()`, and any call after it rejects.
+
+**Watch.** A storage may have `watch(on): Promise<() => void>`, the one optional part of its contract: it reports the saves other processes commit to the same data. `on({ kind: 'committed', keys })` follows each `commit` resolving `true` through another storage object on that data that stored a value at a key beginning `keel.store.`: `keys` are those keys, sorted, and never a value; one report per commit, in commit order (a driver may split one commit's keys across consecutive reports). A `set`, a condition-only write and a commit storing no such key report nothing. `on({ kind: 'lost' })` comes once when delivery stops; that watch then reports nothing more. The promise resolves once listening, so each commit resolving `true` after it is reported, and rejects when it cannot listen; the returned function stops it. `localStorage`, `fileStorage` and std.db's `sqlite` have no `watch`, so a save there is seen live only by the process that made it; std.db's `postgres` has one. Under sim each ctx's storage has one, reporting the commits through its replicas' storage once the committing `commit` has resolved and the microtask queue has drained, in step order, with no timer, and never `lost`. A storage nothing watches does no work for it.
 
 **Server saves.** k.server's state rules hold for every process sharing one driver:
 - A request restores a factory's stores from one `read` of their keys (`keel.store.<id>`).
@@ -18,7 +20,7 @@ Real: the platform's `localStorage` (on Node, the file `--localstorage-file` nam
 
 **Older snapshots.** A stored snapshot outlives the code that wrote it. `restore` of a snapshot whose state parses but whose log names a transaction the store no longer declares, or holds a payload its schema refuses, keeps `state`, `head` and `keys`, takes `state` as `initial`, and keeps no entry. A state the schema refuses stays `restore`'s `err`. Before a deploy, k.compat reports both (E1563, W1564).
 
-**Rules.** E1605 `drivers` on a `sim` ctx (throws) · E1606 one key twice in a `commit` (throws) · E1551 (k.server) also covers `commitStores` outside `*.server.ts`, and reads app files only: no test, tool config (`*.config.*`), or file under `unsafe/`, `.keel/`, `node_modules/` or the root's `packages/` (kernel and stdlib code).
+**Rules.** E1605 `drivers` on a `sim` ctx (throws) · E1606 one key twice in a `commit` (throws) · E1551 (k.server) also covers `commitStores` outside `*.server.ts`, and reads app code only (k.check), not the root's `packages/` (kernel and stdlib code).
 
 **Conformance.**
 - `read(keys)` returns each key's value in the order asked, `null` for an absent key.
@@ -33,3 +35,7 @@ Real: the platform's `localStorage` (on Node, the file `--localstorage-file` nam
 - `restore` of a snapshot whose log names an undeclared transaction returns `ok`, keeps `state` and `head()`, and leaves `log()` empty and `snapshot().initial` equal to `state`.
 - A second ctx on `f` reads a value set through `createCtx({ mode: 'real', drivers: { storage: fileStorage(f) } })`.
 - A `commitStores` call and a `loader` call in `packages/p/src/run.ts` are no E1551; the same file at `modules/a/run.ts` is two.
+- `createCtx({ mode: 'real' })`'s `ctx.storage` and `fileStorage(f)` have no `watch`.
+- Under sim, with `b = replica(a)` and a `watch` on `a.storage` resolved, a `commit` through `b.storage` storing `keel.store.s1` and `keel.store.s0` and resolving `true` gives `on` exactly one `{ kind: 'committed', keys: ['keel.store.s0', 'keel.store.s1'] }`, with no `ctx.clock` advance.
+- Under sim, with `b = replica(a)` and a `watch` on `a.storage` resolved, each of these gives `on` nothing: a `commit` through `a.storage`; a `commit` through `b.storage` resolving `false`; one of condition-only writes; one storing only `x.other`; a `set` through `b.storage` of `keel.store.s0`; and any `commit` after the watch's returned function ran.
+- Under sim, three `commit`s through `b.storage` of `keel.store.s0`, `keel.store.s1` and `keel.store.s2`, in that order, give a `watch` on `a.storage` three reports, in that order.

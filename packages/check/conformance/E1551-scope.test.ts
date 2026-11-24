@@ -1,4 +1,4 @@
-// Spec: k.persist, Rules "E1551 (k.server) also covers `commitStores` outside `*.server.ts`, and reads app files only: no test, tool config (`*.config.*`), or file under `unsafe/`, `.keel/`, `node_modules/` or the root's `packages/` (kernel and stdlib code)."
+// Spec: k.persist, Rules "E1551 (k.server) also covers `commitStores` outside `*.server.ts`, and reads app code only (k.check), not the root's `packages/` (kernel and stdlib code)."
 // Spec: k.persist, Conformance "A `commitStores` call and a `loader` call in `packages/p/src/run.ts` are no E1551; the same file at `modules/a/run.ts` is two."
 // Seed: 1337.
 import { check } from "@keel/check";
@@ -34,14 +34,12 @@ test("E1551 covers `commitStores` outside `*.server.ts`: the same source at `mod
   expect(found(at("modules/a/run.server.ts")).length).toBe(0);
 });
 
-test.each([
-  "node_modules/x/run.ts",
-  ".keel/run.ts",
-  "modules/a/unsafe/run.ts",
-  "modules/a/run.test.ts",
-  "modules/a/vitest.config.ts",
-])(
-  "E1551 reads app files only: no test, tool config, or file under `unsafe/`, `.keel/`, `node_modules/` or `packages/`: %s is none.",
+test("E1551 reads app code, which includes a file under `unsafe/` outside its lifted ranges: `modules/a/unsafe/run.ts` is two.", () => {
+  expect(found(at("modules/a/unsafe/run.ts")).length).toBe(2);
+});
+
+test.each(["node_modules/x/run.ts", ".keel/run.ts", "modules/a/run.test.ts", "modules/a/vitest.config.ts"])(
+  "E1551 reads app code only: no test, tool config, or file under `.keel/`, `node_modules/` or `packages/`: %s is none.",
   (path) => {
     expect(found(at(path)).length).toBe(0);
   },

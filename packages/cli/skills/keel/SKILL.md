@@ -38,7 +38,7 @@ export default function TodoList(props: Infer<typeof Props>) {
 **Rules.**
 - Failures are values: return `err(...)`, never `throw` (E1451); wrap throwing code in `attempt`, never `try` (E1452); never drop a `Result` (E1453).
 - No `Date`, `Math.random`, `fetch`, `setTimeout` or `localStorage` (E1601): use `ctx.clock`, `ctx.random.id('Todo')`, `ctx.storage`, a `service` for HTTP (E1651).
-- No `any`, casts, `!` or `@ts-ignore` (E1757); no `@keel/*` import with an `internal` segment (E1576).
+- No `any`, casts, `!` or `@ts-ignore` outside `unsafe(reason, fn)` (E1757); no `@keel/*` import with an `internal` segment (E1576).
 - A format value written in source (a chart's `start`, a store's initial value, a fixture) is `formatLiteral(Instant, '1970-01-01T00:00:00.000Z')` (`@keel/schema`): a string literal `keel check` parses with the format, E1108 when it does not. Data from outside reads with `parse` and answers a `Result`.
 
 **Commands.** `keel check` · `keel test` · `keel build` · `keel dev` · `keel review origin/main..HEAD` · `keel scaffold project|module|route|component|store|service <name>` · `keel codemod rename|move|place`: prefer them to hand edits.

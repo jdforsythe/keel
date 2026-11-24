@@ -34,6 +34,8 @@
     "@keel/store": "workspace:*"
   },
   "devDependencies": {
+    "@keel/router": "workspace:*",
+    "@keel/server": "workspace:*",
     "@keel/services": "workspace:*",
     "@keel/testing": "workspace:*",
     "@keel/tooling": "workspace:*",

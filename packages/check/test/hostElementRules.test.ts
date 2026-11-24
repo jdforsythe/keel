@@ -108,14 +108,14 @@ describe("E1825", () => {
     expect(hits("E1825", [f("modules/a/C.tsx", pageOf), code])).toHaveLength(1);
   });
 
-  it("property: a `.css` import is reported in any app file no code prop names, never in a test or under unsafe/", () => {
+  it("property: a `.css` import is reported in any app file no code prop names, never in a test; an unsafe/ file is read", () => {
     const seg = fc.stringMatching(/^[a-z]{2,8}$/);
     fc.assert(
       fc.property(seg, seg, (dir, file) => {
         const src = `import './${file}.css'\nexport const ${file} = 1\n`;
         expect(hits("E1825", [f(`modules/${dir}/${file}.ts`, src)])).toHaveLength(1);
         expect(hits("E1825", [f(`modules/${dir}/${file}.test.ts`, src)])).toEqual([]);
-        expect(hits("E1825", [f(`modules/${dir}/unsafe/${file}.ts`, src)])).toEqual([]);
+        expect(hits("E1825", [f(`modules/${dir}/unsafe/${file}.ts`, src)])).toHaveLength(1);
       }),
       { seed: 1337, numRuns: 50 },
     );

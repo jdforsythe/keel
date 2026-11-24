@@ -25,10 +25,10 @@ test("E1757: a cast, non-null assertion, any, or ts-suppression is reported", ()
   );
 });
 
-test("E1757: the same source under unsafe/ reports no E1757", () => {
+test("E1757: the same source in a file under unsafe/, outside any `unsafe(` call, is reported too", () => {
   fc.assert(
     fc.property(ident, (n) => {
-      for (const src of BAD(n)) expect(codes(src, "src/unsafe/a.ts")).not.toContain("E1757");
+      for (const src of BAD(n)) expect(codes(src, "src/unsafe/a.ts")).toContain("E1757");
     }),
     { seed: SEED, numRuns: 20 },
   );

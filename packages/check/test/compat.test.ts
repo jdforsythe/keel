@@ -1,4 +1,4 @@
-import { canonicalJson, hashOf } from "@keel/compiler/internal";
+import { canonicalJson, hashOf, sourceHash } from "@keel/compiler/internal";
 // Seed 1337. The k.compat pass (E1562, W1568) and `surface.json` freshness (E1005) over in-memory projects.
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -50,7 +50,7 @@ const data = (sv: Sv, sources: readonly SourceFile[]) => ({
     },
   },
   stores: {},
-  sources: Object.fromEntries(sources.map((s) => [s.path, hashOf(s.source)])),
+  sources: Object.fromEntries(sources.map((s) => [s.path, sourceHash(s.path, s.source)])),
 });
 const surface = (d: unknown) => f(".keel/surface.json", `${canonicalJson({ data: d, hash: hashOf(d) })}\n`);
 const SPLIT = { x: { modules: ["a"], adapter: "node" }, y: { modules: ["y"], adapter: "node" } } as const;
@@ -63,7 +63,7 @@ describe("surface.json freshness", () => {
     const contract = contractTs("      name: s.string(),");
     const base = data({ body: { ...obj(["name"]), additionalProperties: false } }, []);
     const file = surface(data({ body: obj(["name", "note"]) }, [contract]));
-    const edited = f(contract.path, `${contract.source}// edited\n`);
+    const edited = f(contract.path, `${contract.source}export const edited = 1\n`);
     expect(run([edited, file], { base, topology: SPLIT }).map((d) => d.code)).toEqual(["E1005"]);
     expect(run([edited, file])[0]?.message).toBe(
       `.keel/surface.json is stale, ${contract.path} changed; run keel build`,

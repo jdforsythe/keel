@@ -41,17 +41,20 @@ async function check(cwd: string, args: string[]): Promise<{ files: unknown; e10
   };
 }
 
-const A = 'export default function A() {\n  return <p id="a.p">a</p>\n}\n';
-const B = 'export default function B() {\n  return <p id="b.p">b</p>\n}\n';
+const UI_TYPES = 'declare module "@keel/ui" { export function Box(p: { id: string; children?: string }): null }\n';
+const A = 'import { Box } from "@keel/ui"\nexport default function A() {\n  return <Box id="a.p">a</Box>\n}\n';
+const B = 'import { Box } from "@keel/ui"\nexport default function B() {\n  return <Box id="b.p">b</Box>\n}\n';
 
 beforeAll(async () => {
   root = realpathSync(mkdtempSync(join(tmpdir(), "keel-workspace-")));
   put("package.json", "{}\n");
   put("apps/a/package.json", "{}\n");
-  // Under `unsafe/` a raw `<p>` is no E1805, so `keel build`'s check passes and the ids still derive.
-  put("apps/a/src/unsafe/A.tsx", A);
+  // The temporary workspace has no `@keel/ui` to resolve, so each app types the import itself.
+  put("apps/a/src/uiTypes.ts", UI_TYPES);
+  put("apps/a/src/A.tsx", A);
   put("apps/b/package.json", "{}\n");
-  put("apps/b/src/unsafe/B.tsx", B);
+  put("apps/b/src/uiTypes.ts", UI_TYPES);
+  put("apps/b/src/B.tsx", B);
   for (const app of ["apps/a", "apps/b"]) expect((await run(["build"], io(join(root, app)))).code).toBe(0);
 }, 60_000);
 
@@ -61,7 +64,7 @@ describe("keel check in a workspace (0144)", () => {
   it("counts the same files for an app from the root and from inside it, artifacts included, all genuine", async () => {
     const inside = await check(join(root, "apps/a"), []);
     const fromRoot = await check(root, ["apps/a"]);
-    expect(inside.files).toBe(6); // src/unsafe/A.tsx and the five artifacts `keel build` writes
+    expect(inside.files).toBe(7); // src/A.tsx, src/uiTypes.ts and the five artifacts `keel build` writes
     expect(fromRoot).toEqual(inside);
     expect((await check(root, [])).e1005).toEqual([]);
   });

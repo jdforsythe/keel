@@ -11,6 +11,7 @@ import { documentRoute } from "./internal/documentRoute.ts";
 import { fail } from "./internal/fail.ts";
 import { memoryHistory } from "./internal/memoryHistory.ts";
 import { openHarness } from "./internal/openHarness.ts";
+import { requestLog } from "./internal/requestLog.ts";
 import { seedFrom } from "./internal/seedFrom.ts";
 import { seedStores } from "./internal/seedStores.ts";
 import { settle } from "./internal/settle.ts";
@@ -38,8 +39,9 @@ import type { RouteStateOf } from "./types/RouteStateOf.ts";
  * `launch(links)` (k.links Testing), and a `fire` of `click`, `submit` or a `keydown` other than Escape is a person's
  * act (k.opening Link-started), which the handle's `navigate` is not;
  * `dispose` also disposes the router and puts the title and `lang` back. Guards, loaders and actions get
- * `options.caller` and `options.user` (each default `""`); without `options.user`, a router with `options.mount`, or a
- * shell run over an identity mount, reads `user` from `/__keel/user` through the harness's net (k.guards Client). Loaders and actions naming `stores` run their factories over `ctx.storage` as a
+ * `options.caller` and `options.user` (each default `""`); without `options.user`, a router reads `user` from
+ * `/__keel/user` through the harness's net when an identity mount was made in the test file's module graph, the first
+ * made its `mount` (k.guards Client, k.mount-scope), and `requests()` lists what the page sent (k.requests). Loaders and actions naming `stores` run their factories over `ctx.storage` as a
  * `node` deployable does (`serverState`, k.server Server state), each navigation or submit one request; `state` and
  * `state()` hold no factory store. The handle's `ctx` is typed as `render`'s: `SimCtx` when none is given. With
  * `options.app` (a `createApp` result) the page runs as a built `node` page instead (`documentRoute`): no router; it is
@@ -93,9 +95,17 @@ export async function renderRoute<T extends RouteTable>(
   const { shell } = options;
   // A shell page is one browser: its own ctx over `ctx`'s clock, random and storage, its net the jar's front.
   const origin = /^https?:$/.test(location.protocol) ? location.origin : "http://localhost";
+  // The page's requests (k.requests): a shell page's are its browser's; otherwise every fetch of `ctx.net`, from here on.
+  const log = requestLog(shell ? undefined : outer.net);
   const ctx = shell
     ? browserCtx(outer, {
-        net: browserFront({ origin, net: outer.net, send: (req) => outer.net.fetch(req), clock: outer.clock }),
+        net: browserFront({
+          log: log.push,
+          origin,
+          net: outer.net,
+          send: (req) => outer.net.fetch(req),
+          clock: outer.clock,
+        }),
         storage: outer.storage,
       })
     : outer;
@@ -103,6 +113,7 @@ export async function renderRoute<T extends RouteTable>(
   try {
     if (options.user !== undefined) signOut = signIn(ctx, id, options.user);
   } catch (error) {
+    log.close();
     for (const [st, snap] of seeded) st.restore(snap);
     restoreHead();
     throw error;
@@ -113,7 +124,7 @@ export async function renderRoute<T extends RouteTable>(
   const history = memoryHistory(url);
   const documents: DocumentNavigation[] = [];
   const open = (to: string): void => void documents.push({ method: "GET", url: to, body: null });
-  // The options name no mount: a shell run takes every identity mount the test's modules made.
+  // The options name no mount: the page takes the identity mounts the test's modules made (k.guards Client).
   const mounts = [...identityMounts];
   const intake = shell
     ? mountRequests(ctx, { id: shell === true ? "dev.keel.golden2" : shell.id, open, mounts })
@@ -128,16 +139,17 @@ export async function renderRoute<T extends RouteTable>(
         caller: options.caller ?? "",
         user: options.user ?? "",
         leave: open,
-        mount: options.mount,
-        // The router reads `user` (k.guards Client) unless `user` stands for the answer: with `mount`, or in a shell over
-        // the identity mounts the test's modules made.
-        read: options.user === undefined && (options.mount !== undefined || (shell !== undefined && mounts.length > 0)),
+        mount: mounts[0]?.path,
+        // The router reads `user` (k.guards Client) unless `user` stands for the answer, as a built one does when its
+        // entry imported `identity.ts`: when the test's modules made an identity mount.
+        read: options.user === undefined && mounts.length > 0,
         onError: (error) => void caught.push(error),
       },
       serverState(outer),
     );
   } catch (error) {
     signOut();
+    log.close();
     for (const [st, snap] of seeded) st.restore(snap);
     restoreHead();
     throw error;
@@ -151,6 +163,7 @@ export async function renderRoute<T extends RouteTable>(
     ctx: outer,
     run: ctx,
     seeded,
+    log,
     busy,
     documents,
     caught,

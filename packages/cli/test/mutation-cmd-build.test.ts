@@ -42,9 +42,14 @@ describe("build", () => {
   it("keel build then keel check: no E1005 with ids in test/fixtures and a *.config.ts (backlog 0142)", async () => {
     const files = [
       {
-        // Under `unsafe/` the raw `<h1>` is no E1805, so `keel build`'s check passes and the ids still derive.
-        path: "modules/app/unsafe/Home.tsx",
-        source: 'export default function Home() { return <h1 id="home.title">Hi</h1> }\n',
+        path: "modules/app/Home.tsx",
+        source:
+          'import { Box } from "@keel/ui"\nexport default function Home() { return <Box id="home.title">Hi</Box> }\n',
+      },
+      // The sandbox has no `@keel/ui` to resolve, so the file's import is typed here.
+      {
+        path: "modules/app/uiTypes.ts",
+        source: 'declare module "@keel/ui" { export function Box(p: { id: string; children?: string }): null }\n',
       },
       {
         path: "test/fixtures/Widget.tsx",
@@ -63,9 +68,7 @@ describe("build", () => {
     expect(r.stdout).not.toContain("E1005");
     // and the stale case still holds: a source edit after the build is E1005
     const moved = files.map((f) =>
-      f.path === "modules/app/unsafe/Home.tsx"
-        ? { ...f, source: f.source.replace('id="home.title"', 'id="home.t2"') }
-        : f,
+      f.path === "modules/app/Home.tsx" ? { ...f, source: f.source.replace('id="home.title"', 'id="home.t2"') } : f,
     );
     const stale = await run(["check", "--format=json"], { cwd: CWD, files: [...moved, ...artifacts] });
     expect(stale.stdout).toContain("E1005");

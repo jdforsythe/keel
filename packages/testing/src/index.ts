@@ -27,6 +27,7 @@ export type { PropertyResult } from "./types/PropertyResult.ts";
 export type { RenderOptions } from "./types/RenderOptions.ts";
 export type { ResumeDocumentOptions } from "./types/ResumeDocumentOptions.ts";
 export type { ResumedHarness } from "./types/ResumedHarness.ts";
+export type { SentRequest } from "./types/SentRequest.ts";
 export type { RouteHarness } from "./types/RouteHarness.ts";
 export type { RouteRenderOptions } from "./types/RouteRenderOptions.ts";
 export type { Scenario } from "./types/Scenario.ts";

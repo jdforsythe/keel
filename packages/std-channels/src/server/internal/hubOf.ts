@@ -7,7 +7,7 @@ const hubs = new WeakMap<Ctx, Hub>();
 export function hubOf(ctx: Ctx): Hub {
   const hit = hubs.get(ctx);
   if (hit !== undefined) return hit;
-  const hub: Hub = { sinks: new Set(), stop: undefined };
+  const hub: Hub = { sinks: new Set(), stop: undefined, watch: undefined };
   hubs.set(ctx, hub);
   return hub;
 }

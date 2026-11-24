@@ -11,7 +11,7 @@ status: conformance-covered
 | R1011 | high, opt-in | an `allow` property of the object a `createApp(` call takes, or the word `KEEL_ALLOW_ORIGINS` in a tracked file but Markdown |
 | R1012 | high, opt-in | a `reveal` call |
 | R1014 | high, opt-in | a `handle` property of the object an `identity(` call takes, or of `createApp(`'s `identity` object |
-| R1050 | medium | a cast (not `as const`), `any`, `!` or ts-suppression comment outside app code: a test file, a `.d.ts`, a `*.config.*` file, or under `unsafe/` or `.keel/` |
+| R1050 | medium | a cast (not `as const`), `any`, `!` or ts-suppression comment in a test file, a `.d.ts`, a `*.config.*` file, or a file under `unsafe/` or `.keel/` |
 | R1051 | medium | a comment that starts `eslint-disable`, `biome-ignore` or `oxlint-disable` |
 | R1052 | critical | a string folded from literals, `+`, templates, `.join` or `String.raw` that starts, after any `//` or `/*` and spaces, `@ts-`, `eslint-disable`, `biome-ignore` or `oxlint-disable`; the outermost fold once |
 | R1053 | critical | a module specifier not a string literal or a template without `${}`: `import()`, `require`, `new Worker`, `import.meta.resolve`; but an `import()` template starting `./` or `../` and ending in a file extension (std.messages' `load`), and `new Worker(new URL('<literal>', import.meta.url))` |

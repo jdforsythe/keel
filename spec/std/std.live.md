@@ -1,5 +1,5 @@
 # std.live: Live views
-status: conformance-covered
+status: implemented
 
 **Extension points.** None of its own: it composes std.channels `subscribe` with a k.store transaction.
 
@@ -24,7 +24,7 @@ A live view is a client store kept current by its hydrating transaction. Values 
 - A read that resolves after a read started later commits nothing.
 - A read returning `err` commits nothing, `status()` is `connecting`, and reads run again 1 s, then 2 s, then 4 s later on `ctx.clock` until one succeeds.
 - Under sim, after `setOnline(false)`, `status()` is `offline` and no read runs; after `setOnline(true)` the stream reopens and exactly one read runs.
-- With callers A and B subscribed to one sim server, a write by A is in B's hydrated store after B's next read, with no input from B.
+- With callers A and B subscribed to one sim server, a write by A is in B's hydrated store after B's next read (B's `read` of the board snapshot through B's ctx storage, started by the `saved` that reached B's stream), with no input from B.
 - Disposing the scope closes the stream, and a read in flight then commits nothing.
 - Under one seed, two runs of one script of saves give byte-equal logs on the hydrated store.
 - Under sim, after a committed read, a `saved` event starts a read that never settles; once `ctx.clock` passes 30 s from its start, `status()` is `connecting`, and 1 s later a second read runs; when that one settles `ok`, it commits and `status()` is `live`.
@@ -33,3 +33,4 @@ A live view is a client store kept current by its hydrating transaction. Values 
 - A read answering `api.status` 403 commits nothing, `status()` is `denied`, the stream's request is aborted, and no read runs after 1 s, 2 s or 30 s on `ctx.clock`; a read answering `api.status` 502 leaves `status()` at `connecting` and reads again 1 s later.
 - A read returning a KeelError `keel.denied` gives `denied`.
 - With callers A and B live on one sim server and B's session removed, A's write leaves B's `status()` at `denied` and B's hydrated store as it was.
+- Under sim, with callers A and B live on one page, A through a `createApp` on ctx `a` and B through one on `replica(a)` (k.sim Replicas), a write by A to a store the channel's `stores` creates is in B's hydrated store after B's next read, with no input from B.

@@ -18,14 +18,20 @@ const WHAT: Readonly<Record<string, string>> = {
 
 /**
  * E1757 (k.check; CLAUDE.md rule 6): `as T` (not `as const`), `<T>x`, `x!`, `any`, or a ts-suppression
- * comment in a code file outside `unsafe/`. Fixes: `x!` -> `x`, `any` -> `unknown`, delete the comment.
+ * comment in a code file outside `.keel/`, `node_modules/`
+ * and lifted ranges (the pipeline drops a finding inside one). Fixes: `x!` -> `x`, `any` -> `unknown`, delete the comment.
  */
 export const noUnsafeSyntax: RuleDef = {
   code: "E1757",
-  message: (f) => `${WHAT[str(f.data, "kind")] ?? "unsafe syntax"} outside unsafe/; use a guard or move it to unsafe/`,
+  message: (f) => {
+    const what = WHAT[str(f.data, "kind")] ?? "unsafe syntax";
+    return /(?:^|\/)unsafe\//.test(f.path)
+      ? `${what} outside an unsafe() call; use a guard or move it into the call`
+      : `${what} outside unsafe/; use a guard or move it to unsafe/`;
+  },
   see: "k.check",
   check: ({ file, ast }) => {
-    if (!isCodePath(file.path) || /(?:^|\/)(?:unsafe|\.keel|node_modules)\//.test(file.path)) return [];
+    if (!isCodePath(file.path) || /(?:^|\/)(?:\.keel|node_modules)\//.test(file.path)) return [];
     const out: Finding[] = [];
     const hit = (kind: string, at: number, start: number, end: number, text: string): void =>
       void out.push(findingAt(file, at, { kind, start, end, text }));

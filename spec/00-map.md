@@ -1,6 +1,6 @@
 # Keel spec map
 
-status key: proposed | implemented | conformance-covered | frozen. Budget: file 1,430 tokens, section 3,400.
+status key: proposed | implemented | conformance-covered | frozen. Budget: file 1,440 tokens, section 3,400.
 
 ## Code ranges
 Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); owner: keel docs --for <code>.
@@ -43,14 +43,14 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.router | Routes | conformance-covered | params |
 | k.contract | Module contract | conformance-covered | entries |
 | k.routes | Route table | conformance-covered | union |
-| k.guards | Guards | conformance-covered | deny |
+| k.guards | Guards | implemented | deny |
 | k.prefix | Path prefix | conformance-covered | enums |
 | k.forms | Forms | conformance-covered | fields |
 | k.ui | Tokens, styling | implemented | CSS |
 | k.ctx | Capabilities | conformance-covered | clock |
 | k.owner | Ctx owner | conformance-covered | dispose |
 | k.errors | Results, boundaries | conformance-covered | Result |
-| k.check | Checker, diagnostics | conformance-covered | codes |
+| k.check | Checker, diagnostics | implemented | codes |
 | k.explain | Explanations | conformance-covered | text |
 | k.host | Host reads | conformance-covered | zone |
 | k.cli | CLI, MCP, LSP | implemented | flags |
@@ -59,9 +59,10 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.scaffold-shell | Shell scaffold | implemented | shells |
 | k.testing | Harness, properties | implemented | fire |
 | k.test-run | Test end, results | implemented | dispose |
+| k.requests | Requests sent | implemented | sent |
 | k.model | Store exploration | conformance-covered | traces |
 | k.prove | Proving invariants | conformance-covered | Z3 |
-| k.sim | Simulation | conformance-covered | faults |
+| k.sim | Simulation | implemented | faults |
 | k.ledger | Ledger, evidence | conformance-covered | rungs |
 | k.server | Thin server | conformance-covered | loads |
 | k.leave | What a request leaves | conformance-covered | state |
@@ -73,12 +74,12 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.links | Links in | conformance-covered | ids |
 | k.serverlog | Server log | conformance-covered | bounds |
 | k.sync | Concurrent writes | conformance-covered | heads |
-| k.persist | Storage, durable state | conformance-covered | drivers |
+| k.persist | Storage, durable state | implemented | drivers |
 | k.data | App data | conformance-covered | seam |
 | k.topology | Deployables | implemented | peers |
-| k.deploy | Entry, deploy files | conformance-covered | entry |
+| k.deploy | Entry, deploy files | implemented | entry |
 | k.shell | Native shells | implemented | target |
-| k.compat | Surface compatibility | conformance-covered | accepts |
+| k.compat | Surface compatibility | implemented | accepts |
 | k.api | API routes | conformance-covered | JSON |
 | k.hosting | Client hosting | implemented | servedBy |
 | k.head | Document head | implemented | title |

@@ -5,9 +5,8 @@ import { findingsOf } from "./internal/findingsOf.ts";
 import { localeFileOf } from "./internal/localeFileOf.ts";
 import { msgOf } from "./internal/msgOf.ts";
 
-/** Not read: tests, tool configs, `unsafe/`, `.keel/` and `node_modules/`. */
-const SKIP =
-  /(?:^|\/)(?:test|tests|conformance|__tests__|unsafe|\.keel|node_modules)\/|\.(?:test|spec|config)\.[cm]?[jt]sx?$/;
+/** Not read: tests, tool configs, `.keel/` and `node_modules/`; an `unsafe/` file is read whole. */
+const SKIP = /(?:^|\/)(?:test|tests|conformance|__tests__|\.keel|node_modules)\/|\.(?:test|spec|config)\.[cm]?[jt]sx?$/;
 
 /**
  * E2406 (std.copy): literal copy in an app file of a module listing the package, other than the set's locale files:

@@ -11,6 +11,7 @@ import { realClock } from "./internal/realClock.ts";
 import { realNet } from "./internal/realNet.ts";
 import { realRandom } from "./internal/realRandom.ts";
 import { realStorage } from "./internal/realStorage.ts";
+import { replicaSets } from "./internal/replicaSets.ts";
 import { report } from "./internal/report.ts";
 import { simClock } from "./internal/simClock.ts";
 import { simNet } from "./internal/simNet.ts";
@@ -36,7 +37,12 @@ export function createCtx(opts: CtxOptions): Ctx {
   const seed = opts.seed ?? 0;
   // The net reports connectivity changes on the ctx it belongs to; a window listener must not keep that ctx alive.
   const self: { ref?: WeakRef<Ctx> } = {};
-  const changed = (online: boolean): void => report(self.ref?.deref(), { kind: "net", online });
+  const changed = (online: boolean): void => {
+    const root = self.ref?.deref();
+    report(root, { kind: "net", online });
+    // Replicas (k.sim Replicas) share the net, so it reports to each of them.
+    for (const r of root === undefined ? [] : (replicaSets.get(root) ?? [])) report(r.deref(), { kind: "net", online });
+  };
   if (opts.drivers !== undefined && mode === "sim") throw E1605();
   if (opts.schedule !== undefined && mode !== "sim") throw E1604(`schedule on a ${mode} ctx`);
   if (mode === "sim") {
