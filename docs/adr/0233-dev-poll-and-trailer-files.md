@@ -6,7 +6,7 @@
 
 **Decision.**
 - `keel dev` reads `KEEL_DEV_POLL` at start: `1` passes Vite `server.watch` `usePolling: true` and `interval: 100` over the project's own `server.watch`; unset, empty or `0` passes nothing; any other value is one E1560 naming the key, no server, exit 1. Keel reads no `CHOKIDAR_USEPOLLING`; the cli suite sets `KEEL_DEV_POLL=1`. The clause sits in k.topology beside Local topology.
-- `keel check`'s `files` counts every file it checked: code files and `.keel/*.json` artifacts under `paths`, tests, declarations and tool configs among them (k.check Trailer).
+- `keel check`'s `files` counts every file it checked: code files and `.keel/*.json` artifacts under `paths`, tests and declarations among them and tool configs other than `vite.config.*`, `vitest.config.*` and `stryker.config.*`, which it does not read (k.check Trailer).
 - `keel build`'s `files` counts the root project's app sources, the files its `.keel/` artifacts derive from (k.deploy Build).
 
 **Alternatives.**

@@ -5,7 +5,7 @@ Status: accepted (ADR-0233), accepted by the orchestrator on 2026-11-24, for the
 ## Decisions
 - D1: `keel dev` polls for file changes when `KEEL_DEV_POLL` is `1`: it passes Vite `server.watch` `usePolling: true` and `interval: 100` over the project's own `server.watch`. Unset, empty or `0`: Keel passes no `server.watch`. Any other value: one E1560 naming the key, no server, exit 1.
 - D2: `keel dev` reads no `CHOKIDAR_USEPOLLING`. The cli suite sets `KEEL_DEV_POLL=1`.
-- D3: the two trailers keep counting different things, and each command's section says what its count is: `keel check` counts every file it checked (code files and `.keel/*.json` artifacts, tests and tool configs among them); `keel build` counts the root project's app sources, the files the `.keel/` artifacts derive from.
+- D3: the two trailers keep counting different things, and each command's section says what its count is: `keel check` counts every file it checked (code files and `.keel/*.json` artifacts, tests among them, and tool configs other than `vite.config.*`, `vitest.config.*` and `stryker.config.*`, which it does not read); `keel build` counts the root project's app sources, the files the `.keel/` artifacts derive from.
 - D4: the clauses go in k.topology (Local topology's neighbour), k.check and k.deploy, not k.cli: k.cli's own conformance caps `keel docs k.cli` at 1,500 tokens, and the section is at about 1,495.
 
 ## Problem
@@ -23,7 +23,7 @@ Status: accepted (ADR-0233), accepted by the orchestrator on 2026-11-24, for the
 E1007 is not touched: the value is read by the CLI process only, no browser file reads it, and a one-character value is below k.bundle's 8-character `environment value` floor in any case.
 
 ### Trailer counts
-- k.check gains **Trailer**: the summary's `files` counts every file `keel check` checked: each code file (`*.ts`, `*.tsx`, `*.mts`, `*.cts`, `*.js`, `*.jsx`, `*.mjs`) and `.keel/*.json` artifact under `paths`, in every project there, tests, declarations and tool configs among them.
+- k.check gains **Trailer**: the summary's `files` counts every file `keel check` checked: each code file (`*.ts`, `*.tsx`, `*.mts`, `*.cts`, `*.js`, `*.jsx`, `*.mjs`) and `.keel/*.json` artifact under `paths`, in every project there, tests and declarations among them and tool configs other than `vite.config.*`, `vitest.config.*` and `stryker.config.*`, which it does not read.
 - k.deploy's Build gains: the summary's `files` counts the root project's app sources, the files its `.keel/` artifacts derive from: each code file outside a nested project root (k.topology) that is not a test, a declaration or a tool config, and has no path segment that starts with `.` or is `node_modules`, `dist`, `coverage`, `reports`, `test`, `tests` or `conformance`.
 
 Each number answers its own command's question: how much did the check read, how much did the build compile. A reader comparing them sees why they differ.
