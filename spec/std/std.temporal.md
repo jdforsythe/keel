@@ -16,7 +16,7 @@ formatDate(addedOn, props.params.locale, 'long') // de-DE: '10. November 2026'
 - `Duration` is elapsed time in whole milliseconds, at most 1e15 either way: `PT0S`, or an optional `-`, `PT`, then `<h>H` if at least an hour, `<m>M` if the minutes (1 to 59) are nonzero, and `<s>S` or `<s>.<mmm>S` if the seconds or milliseconds are nonzero (`PT1H30M`, `-PT0.500S`).
 - `DateStyle` is `s.enum(['short', 'medium', 'long', 'full'])`; `UnitStyle` is `s.enum(['long', 'short', 'narrow'])`.
 - `TemporalError` is `KeelError<'temporal.outOfRange', { value: number }>`.
-- `instantOf(ms: number): Result<Instant, TemporalError>` is the instant `Math.floor(ms)` milliseconds after the Unix epoch; a non-finite value, or one outside years 0001 to 9999, is `temporal.outOfRange` with `value` `ms`. No export reads the clock. `epochMs(i: Instant): number` is its inverse.
+- `instantOf(ms: number): Result<Instant, TemporalError>` is the instant `Math.floor(ms)` milliseconds after the Unix epoch; a non-finite value, or one outside years 0001 to 9999, is `temporal.outOfRange` with `value` `ms`. No export reads the clock. `epochMs(i: Instant): number` is its inverse. A known instant written in source is `formatLiteral(Instant, '1970-01-01T00:00:00.000Z')` (k.formats Literals).
 - `plainDateOf(i: Instant, zone: TimeZone): PlainDate` is the calendar date at `i` in `zone`; when that date leaves years 0001 to 9999, it is `i`'s UTC date.
 - `addDays(d: PlainDate, days: number): Result<PlainDate, TemporalError>`: a non-integer `days`, or a result outside years 0001 to 9999, is `temporal.outOfRange` with `value` `days`.
 - `durationOf(ms: number): Duration` for an integer within the bounds (any other `ms` throws); `durationMs(d: Duration): number` is its inverse.

@@ -15,6 +15,7 @@ import type { ModuleInfo } from "./ModuleInfo.ts";
 import { addEntryFix } from "./addEntryFix.ts";
 import { depsCycles } from "./depsCycles.ts";
 import { discoverModules } from "./discoverModules.ts";
+import { guardEdges } from "./guardEdges.ts";
 import { joinPath } from "./joinPath.ts";
 import { moduleDiag } from "./moduleDiag.ts";
 import { moduleOf } from "./moduleOf.ts";
@@ -203,7 +204,10 @@ export function moduleChecks(checked: readonly Checked[]): Diagnostic[] {
   }
   const project: Project = { modules, byKey };
   const files = checked.map((c) => c.file);
-  const out: Diagnostic[] = [...depsCycles(modules, byKey), ...clientPii(scanned, files)];
+  const out: Diagnostic[] = [
+    ...depsCycles(modules, byKey, guardEdges(scanned, { modules, byKey })),
+    ...clientPii(scanned, files),
+  ];
   for (const m of modules) {
     out.push(...publicMissing(m, stems.get(m) ?? new Set()));
     out.push(...stdConfig(m));

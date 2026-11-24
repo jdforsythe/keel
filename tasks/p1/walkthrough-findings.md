@@ -28,7 +28,7 @@
 | L4-1 | fixed: fix(testing): renderRoute raises a page render throw no errorElement caught, so a tx in a component body names its E1201 |
 | L4-2 | answered in the skills (keel-server: `createApp` options) |
 | L4-3 | fixed: `pageHref` (`@keel/router/match`) reads a guard's `next` into an `Href`; the household setup action follows it (rfc:0207, backlog 1008) |
-| L4-4 | filed as backlog 1019 |
+| L4-4 | fixed: rfc:0212, k.guards Home states a guard module and E1153 names the guard |
 | L4-5 | answered in the skills (keel-server) |
 | L4-6 | filed as backlog 1014 |
 | L4-7 | answered in the skills (keel-testing: `scope`) |
@@ -321,7 +321,7 @@ The coverage plan names this layer 8 ("Jobs, schedules, a workflow"); the README
 ### L9-3 rough: a format value cannot be written in a chart's `start`
 - `RestockData` first held `at: Instant` (std.temporal). The chart's `start` needs a value: `"1970-01-01T00:00:00.000Z"` fails `tsc` (`string` is not `Format<string, "temporal.Instant">`), and `instantOf(0)` is a `Result`, so a literal needs a fallback the app cannot write without a cast. The run's time is epoch milliseconds (`s.int`), turned into an `Instant` only on the page.
 - Spec: std.temporal "No export reads the clock" and k.formats give no way to make a known-good value. Expected: a checked constructor for a literal (`Instant.of('...')` failing `keel check` when it does not parse).
-- Triage: needs an RFC (std.temporal and k.formats: a checked constructor for a literal format value).
+- Triage: closed. rfc:0208 (ADR-0230) `formatLiteral(format, text)` is the checked constructor for a literal format value, E1108 when `keel check` cannot parse it; `RestockData.at` and `Run.at` are `Instant` and the chart's `start` uses it.
 
 ### L9-4 rough: a workflow step's `done` payload is not typed against its event
 - `StepSpec.run` returns `Result<unknown, ...>` (`packages/std-workflows/src/StepSpec.ts`); `putBack` could answer `ok({ put: true })` for an event whose payload is `{ putBack }`, and only the run would show it, as `failed` with the schema's code. std.workflows says so ("a `done` payload its event refuses commits `failed`"); the types could say it first.
