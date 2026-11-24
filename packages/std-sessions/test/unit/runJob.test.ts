@@ -34,6 +34,7 @@ const good = {
   fingerprint: "7f3a9c01d2e4",
   error: null,
   unapplied: null,
+  redirectedTo: null,
   session: null,
   navs: [],
   runs: 1,
@@ -129,6 +130,7 @@ describe("runJob: what it answers", () => {
       reproduced: false,
       error: "cart.full",
       unapplied: 2,
+      redirectedTo: null,
       runs: 4,
       minimal: true,
       navs: [{ index: 1, id: "cart.show", params: {}, search: { q: "a" } }],
@@ -205,5 +207,26 @@ describe("runJob: what it answers", () => {
     });
     await expect(runJob({ cwd }, jobOf())).rejects.toThrow("vitest crashed");
     expect(fs.readdirSync(dir)).toEqual([]);
+  });
+
+  test("with serve the job replays over every placed table and builds the app as the generated entry does", async () => {
+    const seen = scripted(good);
+    const serve = {
+      deployable: "api",
+      identity: true,
+      routes: ["../../modules/cart/routes.ts", "@keel/std-sessions/routes"],
+    };
+    await runJob({ cwd }, jobOf({ serve, user: "u1" }));
+    await runJob({ cwd }, jobOf({ serve: { ...serve, identity: false } }));
+    const source = seen[0]?.source ?? "";
+    expect(source).toContain('import { routes as r1 } from "@keel/std-sessions/routes";');
+    expect(source).toContain('import { createApp } from "@keel/server";');
+    expect(source).toContain('import identity from "../../identity.server.ts";');
+    expect(source).toContain('"user":"u1"');
+    expect(source).toContain(
+      'routes: [r0, r1], serve: (ctx) => createApp({ topology, deployable: "api", routes: routeTable(r0, r1), ctx, identity }) });',
+    );
+    expect(seen[1]?.source).not.toContain("identity");
+    expect(seen[1]?.source).not.toContain('"user"');
   });
 });

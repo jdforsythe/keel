@@ -4,7 +4,7 @@ import { keelConfig } from "@keel/tooling/vitest-config";
 export default keelConfig({
   plugins: [keel()],
   test: {
-    // `keel session` replays run as `.keel/sessions/*.test.ts` jobs; `to-test` writes `modules/<m>/test/`.
+    // `keel session` replays run as `.keel/sessions/*.test.ts` jobs; `to-test` writes `test/session-<fingerprint>.test.ts`.
     include: ["test/**/*.test.{ts,tsx}", "modules/*/test/**/*.test.{ts,tsx}", ".keel/sessions/*.test.ts"],
     environment: "happy-dom",
   },

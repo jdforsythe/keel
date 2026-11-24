@@ -19,7 +19,7 @@ S8 adds std.db, std.workflows, std.shells and std.tokens.
 ## Sections
 | id | section | status | one line |
 | --- | --- | --- | --- |
-| std.sessions | Sessions | conformance-covered | capture, ingest, replay, minimize, to-test; GitHub Action |
+| std.sessions | Sessions | implemented | capture, ingest, replay, minimize, to-test; GitHub Action |
 | std.i18n | Locales | conformance-covered | schema type registry and check rule registry: `i18n.Locale`, numbers, plurals |
 | std.money | Money | conformance-covered | schema type registry: `money.Money`, add, format and parse for a locale |
 | std.temporal | Dates, instants and durations | conformance-covered | schema type registry: instants, dates, zones, durations; format |
@@ -40,7 +40,7 @@ S8 adds std.db, std.workflows, std.shells and std.tokens.
 | std.outbox | Outbox storage faults | conformance-covered | `@keel/std-offline`: storage writes that reject or never settle, other throws in a flush |
 | std.outbox-owner | Outbox owner check | conformance-covered | `@keel/std-offline`: `writeFor` refuses a write of another owner than the caller's, `offline.owner` |
 | std.conflicts | Races | conformance-covered | formatter registry: order-dependent rebased entries, E2701 |
-| std.multi | Multi-user sessions | conformance-covered | std-sessions: groups of users recorded and replayed under simulation, E2007-E2008 |
+| std.multi | Multi-user sessions | implemented | std-sessions: groups of users recorded and replayed under simulation, E2007-E2008 |
 | std.statecharts | State charts | conformance-covered | check rule registry: flat charts compiled to a store and transactions, E2751-E2755 |
 | std.monitor | Production tallies | conformance-covered | std-sessions: server transaction counts as `monitored` evidence, E2009-E2010 |
 | std.headless | Headless widgets | conformance-covered | Dialog, Disclosure, Toaster, three charts, E2801 |

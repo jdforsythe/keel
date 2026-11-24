@@ -6,7 +6,7 @@ const NavCall = s.object({ index: s.int(), id: s.string(), params: s.record(s.js
 
 /**
  * What a `keel session` job writes back: the replay's `fingerprint`, first error `code`,
- * `unapplied` index and whether it `reproduced`; `session` is the minimized (`minimize`) or redacted (`to-test`)
+ * `unapplied` index, the route a redirected base landed on (`redirectedTo`) and whether it `reproduced`; `session` is the minimized (`minimize`) or redacted (`to-test`)
  * session when the op reproduced, with `navs` (`to-test`). `runs` and `minimal` report `minimize`.
  */
 export const JobResult = s.object({
@@ -14,6 +14,7 @@ export const JobResult = s.object({
   fingerprint: s.string(),
   error: s.string().nullable(),
   unapplied: s.int().nullable(),
+  redirectedTo: s.string().nullable(),
   session: Session.nullable(),
   navs: s.array(NavCall),
   runs: s.int(),

@@ -300,12 +300,12 @@ function removeDeadCopies(): void {
 }
 
 /**
- * A disk copy of `fixtures/cart-bug/` under `conformance/.tmp-<pid>-<n>/` (gitignored; inside the workspace so its
+ * A disk copy of `fixtures/<name>/` (default `cart-bug`) under `conformance/.tmp-<pid>-<n>/` (gitignored; inside the workspace so its
  * imports resolve through the package's `node_modules`, plus a `node_modules/@keel/std-sessions` link to this package).
  * `files()` reads it back for `run`; `fix()` overlays `fixtures/cart-bug.fix/`; `write` adds a file; `dispose()`
  * removes it. Copies of this process id and of dead process ids are removed first.
  */
-export function diskFixture(): {
+export function diskFixture(name = "cart-bug"): {
   readonly dir: string;
   files(): { path: string; source: string }[];
   write(rel: string, source: string): void;
@@ -314,7 +314,7 @@ export function diskFixture(): {
 } {
   removeDeadCopies();
   const dir = path.join(HERE, `.tmp-${process.pid}-${copies++}`);
-  fs.cpSync(path.join(HERE, "fixtures", "cart-bug"), dir, { recursive: true });
+  fs.cpSync(path.join(HERE, "fixtures", name), dir, { recursive: true });
   fs.mkdirSync(path.join(dir, "node_modules", "@keel"), { recursive: true });
   fs.symlinkSync(PACKAGE, path.join(dir, "node_modules", "@keel", "std-sessions"), "dir");
   const write = (rel: string, source: string): void => {
@@ -325,7 +325,7 @@ export function diskFixture(): {
     dir,
     files: () => filesOf(dir),
     write,
-    fix: () => fs.cpSync(path.join(HERE, "fixtures", "cart-bug.fix"), dir, { recursive: true }),
+    fix: () => fs.cpSync(path.join(HERE, "fixtures", `${name}.fix`), dir, { recursive: true }),
     dispose: () => fs.rmSync(dir, { recursive: true, force: true }),
   };
 }

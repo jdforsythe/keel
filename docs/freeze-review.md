@@ -85,12 +85,12 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | std.messages | 11 | **conformance-covered** | none |
 | std.money | 10 | **conformance-covered** | none |
 | std.monitor | 7 | **conformance-covered** | none |
-| std.multi | 7 | **conformance-covered** | none |
+| std.multi | 8 | implemented | the spec file holds `implemented` |
 | std.offline | 16 | **conformance-covered** | none |
 | std.options | 7 | **conformance-covered** | none |
 | std.report | 19 | **conformance-covered** | none |
 | std.schedules | 9 | **conformance-covered** | none |
-| std.sessions | 13 | **conformance-covered** | none |
+| std.sessions | 19 | implemented | clauses 16 to 19 (a session of a served page replayed through its app): no conformance yet |
 | std.shells | 13 | implemented | the spec file holds `implemented` |
 | std.statecharts | 10 | **conformance-covered** | none |
 | std.tables | 11 | implemented | the spec file holds `implemented` |
@@ -113,7 +113,7 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | std.contracts | 7 | **conformance-covered** | none |
 | std.lists | 6 | **conformance-covered** | none |
 | std.tauri | 10 | implemented | `UNTESTABLE` toolchain lookups and capability file shape |
-| **total** | **1223** | 81 of 107 covered | |
+| **total** | **1230** | 79 of 107 covered | |
 
 ## 2. One-way audit (principle 1)
 
@@ -160,7 +160,7 @@ Golden apps: `apps/golden-1` and `apps/golden-2` have converged evals (`evals/re
 
 ## Status
 
-No section is `frozen`. The kernel is provisionally frozen: a kernel change goes through an RFC with an ADR, a conformance update and a migration note, and the `frozen` flip waits until the stdlib stages have exercised the kernel (`tasks/0034-freeze/PLAN.md`). k.parity and std.db are `proposed`; k.a11y, k.cli, k.docs, k.formats, k.head, k.host-code, k.hosting, k.module, k.mount-scope, k.openapi, k.roles, k.scaffold, k.scaffold-shell, k.shell, k.store, k.test-run, k.testing, k.topology, k.ui, std.capacitor, std.postgres, std.shells, std.tables and std.tauri are `implemented`; the other 81 of 107 are `conformance-covered`.
+No section is `frozen`. The kernel is provisionally frozen: a kernel change goes through an RFC with an ADR, a conformance update and a migration note, and the `frozen` flip waits until the stdlib stages have exercised the kernel (`tasks/0034-freeze/PLAN.md`). k.parity and std.db are `proposed`; k.a11y, k.cli, k.docs, k.formats, k.head, k.host-code, k.hosting, k.module, k.mount-scope, k.openapi, k.roles, k.scaffold, k.scaffold-shell, k.shell, k.store, k.test-run, k.testing, k.topology, k.ui, std.capacitor, std.multi, std.postgres, std.sessions, std.shells, std.tables and std.tauri are `implemented`; the other 79 of 107 are `conformance-covered`.
 
 subject: spec/ packages/*/conformance/
 verified: 54e178cce35942a0eb697a03d500c9ff2bce2d9b

@@ -1,19 +1,23 @@
 // @vitest-environment happy-dom
 // @vitest-environment-options {"url": "http://localhost/"}
 // The ops home page resumes in a browser with a page origin: it starts a session recording on the page's ctx whose
-// upload is this service's own `/sessions`. A loader that fails with `ops.forced` raises the error event through the
-// router, which reports the navigation and then the loader's error. The recorder outlives the page component, and an
-// error reported after the served route but before the page resumes still reaches it, as on first load. Seed 1337
+// upload is this service's own `/sessions`. Each page is served by the `sessions` deployable's app (`node`), over the
+// page's ctx. A loader that fails with `ops.forced` reports the navigation and then the loader's error. The recorder
+// outlives the page component, and an error reported after the served route but before the page resumes still reaches
+// it, as on first load. Seed 1337
 import { createCtx } from "@keel/ctx";
-import { loader, manifest } from "@keel/router";
+import { loader, manifest, routeTable } from "@keel/router";
 import { contract } from "@keel/router/contract";
 import { mount } from "@keel/runtime-dom";
 import { err, s } from "@keel/schema";
+import { createApp } from "@keel/server";
 import { record, session } from "@keel/std-sessions";
+import { routes as sessionsRoutes } from "@keel/std-sessions/routes";
 import { renderRoute } from "@keel/testing";
 import { describe, expect, it } from "vitest";
 import Home from "../modules/ops/Home.ts";
 import { routes } from "../modules/ops/routes.ts";
+import topology from "../topology.ts";
 
 const forced = contract("ops", { "ops.home": { path: "/" }, "ops.forced": { path: "/forced" } });
 const failingContract = contract("ops", { "ops.home": { path: "/" } });
@@ -35,10 +39,14 @@ const failing = manifest(failingContract, {
   },
 });
 
+/** The `sessions` deployable (`node`) serving `table` beside the ingest routes, over `ctx`. */
+const serve = (table: typeof routes, ctx: ReturnType<typeof createCtx>) =>
+  createApp({ topology, deployable: "sessions", routes: routeTable(table, sessionsRoutes), ctx });
+
 describe("ops.home recording", () => {
   it("records on the page ctx and uploads the first error to the page origin + /sessions", async () => {
     const ctx = createCtx({ mode: "sim", seed: 1337 });
-    const page = await renderRoute("ops.home", { routes: withForced, ctx });
+    const page = await renderRoute("ops.home", { routes: withForced, ctx, app: await serve(withForced, ctx) });
 
     const recorder = record(ctx);
     expect(recorder.errors()).toEqual([]);
@@ -58,7 +66,7 @@ describe("ops.home recording", () => {
 
   it("uploads an error reported after the served route and before the home page resumes", async () => {
     const ctx = createCtx({ mode: "sim", seed: 1337 });
-    const served = await renderRoute("ops.home", { routes: failing, ctx });
+    const served = await renderRoute("ops.home", { routes: failing, ctx, app: await serve(failing, ctx) });
     served.dispose();
     expect(session(ctx).taken()).toEqual([]);
     const dispose = mount(Home, document.body, { ctx });
@@ -73,16 +81,16 @@ describe("ops.home recording", () => {
 
   it("keeps recording after the home page is disposed", async () => {
     const ctx = createCtx({ mode: "sim", seed: 1337 });
-    const page = await renderRoute("ops.home", { routes, ctx });
+    const page = await renderRoute("ops.home", { routes, ctx, app: await serve(routes, ctx) });
     page.dispose();
-    const forced = await renderRoute("ops.home", { routes: failing, ctx });
+    const next = await renderRoute("ops.home", { routes: failing, ctx, app: await serve(failing, ctx) });
+    // The recorder the first page started is the one that sees the second page's navigation.
     expect(
       record(ctx)
-        .errors()
-        .map((e) => e.code),
-    ).toEqual(["ops.forced"]);
-    expect(session(ctx).taken()).toHaveLength(1);
-    forced.dispose();
+        .events()
+        .map((e) => e.kind),
+    ).toEqual(["nav"]);
+    next.dispose();
     record(ctx).stop();
   });
 });

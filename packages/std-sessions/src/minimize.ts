@@ -1,5 +1,5 @@
-import type { RouteTable } from "@keel/router";
 import { type KeelError, type Result, err, ok, s } from "@keel/schema";
+import type { ReplayOptions } from "./ReplayOptions.ts";
 import type { Session } from "./Session.schema.ts";
 import type { SessionEvent } from "./SessionEvent.ts";
 import { isInput } from "./internal/isInput.ts";
@@ -33,11 +33,11 @@ const range = (n: number): number[] => Array.from({ length: n }, (_, i) => i);
  * `seed`, `deterministic`, `at`, `route` and `state`; its `events` are the kept inputs (at their recorded `at`) with
  * the observations of their final replay in occurrence order, and `error` and `fingerprint` come from that replay.
  * Every replay is deterministic under the seed and the candidate order is fixed, so two runs are equal. `redact` is
- * passed to each replay (see `replay`).
+ * passed to each replay (see `replay`), as are `serve`, called once per run so every run starts from an empty server, and `user`.
  */
 export async function minimize(
   session: Session,
-  options: { readonly routes: RouteTable; readonly maxRuns?: number; readonly redact?: readonly string[] },
+  options: ReplayOptions & { readonly maxRuns?: number },
 ): Promise<
   Result<
     { session: Session; runs: number; minimal: boolean },
@@ -62,7 +62,12 @@ export async function minimize(
     const events = keep.flatMap((i) => inputs.slice(i, i + 1));
     const r = await replayRun(
       { ...session, events },
-      { routes: options.routes, ...(options.redact === undefined ? {} : { redact: options.redact }) },
+      {
+        routes: options.routes,
+        ...(options.redact === undefined ? {} : { redact: options.redact }),
+        ...(options.serve === undefined ? {} : { serve: options.serve }),
+        ...(options.user === undefined ? {} : { user: options.user }),
+      },
     );
     seen.set(key, { reproduced: r.result.reproduced, recorded: r.recorded });
     return r.result.reproduced;

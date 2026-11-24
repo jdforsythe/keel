@@ -5,7 +5,7 @@
     "spec.section": 3400,
     "spec.map": 1440,
     "explain": 300,
-    "mcp.tools-list": 2000,
+    "mcp.tools-list": 2050,
     "docs.map": 1520,
     "docs.section": 3400,
     "docs.skill": 3100,
@@ -140,7 +140,7 @@
       "platform": "node"
     },
     "@keel/std-sessions/tools": {
-      "max": "10.5kb",
+      "max": "11.5kb",
       "platform": "node"
     },
     "@keel/std-headless": "6kb",
