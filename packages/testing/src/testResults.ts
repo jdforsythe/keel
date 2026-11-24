@@ -47,6 +47,26 @@ function frames(e: Rec): Frame[] {
   });
 }
 
+/**
+ * One T0001 for an error outside any test's result: `uncaught: <code> <first line>`, at its first app frame, else at
+ * 1:1 of the file vitest names for it (`VITEST_TEST_PATH`), else unlocated.
+ */
+function uncaught(e: unknown, cwd: string): TestDiag {
+  const rec = isRec(e) ? e : {};
+  const code = str(rec.code);
+  const said = firstLine(isRec(e) ? (str(e.message) ?? "unhandled error") : String(e)).trim();
+  const message = clip(
+    `uncaught: ${code === undefined ? "" : `${code} `}${said === "" ? "error outside any test" : said}`,
+  );
+  const [top] = frames(rec);
+  const file = str(rec.VITEST_TEST_PATH);
+  if (top !== undefined)
+    return { kind: "diag", code: "T0001", path: relative(cwd, top.file), line: top.line, col: top.col, message };
+  if (file !== undefined && file !== "")
+    return { kind: "diag", code: "T0001", path: relative(cwd, file), line: 1, col: 1, message };
+  return { kind: "diag", code: "T0001", message };
+}
+
 /** Changed lines of a vitest diff only (never two dumps), at most 8. */
 function compactDiff(d: string | undefined): string | undefined {
   if (d === undefined || d === "") return undefined;
@@ -65,8 +85,9 @@ function compactDiff(d: string | undefined): string | undefined {
  * a harness failure carrying an E17xx `code` (E1704 `properties` and `simulate`, E1708-E1710 `explore`) as that code
  * at the test file's own frame, the message `first line (suite > test)`; each with
  * a `fix` carrying the compact diff and up to four more app frames; a file that failed outside any test gets
- * one T0001 at line 1; each unhandled error one T0001 without location. Pure; shared by the cli and the
- * repository's vitest reporter.
+ * one T0001 at line 1; each error outside any test's result (vitest's unhandled errors, or one `keel test` held
+ * around the run) one T0001 `uncaught: <code> <first line>` at its first app frame, else at 1:1 of its
+ * `VITEST_TEST_PATH`, else unlocated. Pure; shared by the cli and the repository's vitest reporter.
  */
 export function testResults(files: readonly unknown[], errors: readonly unknown[], cwd: string): TestReport {
   const diagnostics: TestDiag[] = [];
@@ -128,9 +149,6 @@ export function testResults(files: readonly unknown[], errors: readonly unknown[
       diagnostics.push({ kind: "diag", code: "T0001", path: at, line: 1, col: 1, message: clip(message) });
     }
   }
-  for (const e of errors) {
-    const message = firstLine(isRec(e) ? (str(e.message) ?? "unhandled error") : String(e));
-    diagnostics.push({ kind: "diag", code: "T0001", message: clip(message) });
-  }
+  for (const e of errors) diagnostics.push(uncaught(e, cwd));
   return { diagnostics, tests, failed, skipped, errors: errors.length };
 }

@@ -41,6 +41,28 @@ describe("catchingStray", () => {
     expect(r.strays.map((d) => d.message)).toEqual(["uncaught: late rejection", "uncaught: work failed"]);
   });
 
+  it("skips a node_modules first frame and locates the error at its first app frame", async () => {
+    const r = await catchingStray(root, async () => {
+      const e = new Error("socket closed");
+      e.stack = [
+        "Error: socket closed",
+        `    at onEnd (${root}/node_modules/dep/index.js:3:5)`,
+        `    at run (${root}/test/catchingStray.test.ts:61:9)`,
+      ].join("\n");
+      throw e;
+    });
+    expect(r.strays).toEqual([
+      {
+        kind: "diag",
+        code: "T0001",
+        path: "test/catchingStray.test.ts",
+        line: 61,
+        col: 9,
+        message: "uncaught: socket closed",
+      },
+    ]);
+  });
+
   it("names a message without a stack and leaves no handler behind", async () => {
     const before = [process.listenerCount("uncaughtException"), process.listenerCount("unhandledRejection")];
     const r = await catchingStray(root, async () => {
