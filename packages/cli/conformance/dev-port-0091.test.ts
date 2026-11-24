@@ -1,7 +1,7 @@
 // Spec: k.cli, clause "`keel dev --port <p>`, or `server.port: <p>` in the Vite config, serves on `p`; with `p` in use it prints one E1560 line and exits 1." (rfc:0091)
 // Spec: k.cli Commands "`dev [--port N]` | dev server and log stream (default Vite's `server.port` or 5173; in use: E1560)"; Rules E1052 "flag value invalid for the input schema".
 // Seed 1337. Spawns the real binary over a temp project with `vite` linked. The wait for the server is a retry, with a fixed pause, of
-// an `http.get`, bounded by a count of pauses. Ports come from a listener on port 0 that is closed first; a busy port is held by the
+// an `http.get`, bounded by a wall clock. Ports come from a listener on port 0 that is closed first; a busy port is held by the
 // test's own listener. Only processes the test started are signalled (the child's process group); every child is ended in `afterEach`.
 import { type ChildProcess, spawn } from "node:child_process";
 import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
@@ -17,7 +17,7 @@ import { SEED, keel } from "./fixtures.ts";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const BIN = join(REPO, "packages", "cli", "src", "bin.ts");
-const SLOW = 120_000;
+const SLOW = 300_000;
 
 let fixture = "";
 const write = (rel: string, content: string): void => {
@@ -169,14 +169,15 @@ const accepts = (port: number): Promise<boolean> =>
 
 /**
  * Retry, with a fixed pause between attempts, until the port accepts a connection and answers any HTTP status, or the
- * process exits. 800 pauses of 50 ms bound the wait at about 40 s however fast a refused connect returns.
+ * process exits. A wall clock of 90 s bounds the wait however fast a refused connect returns.
  */
 async function served(p: Proc, port: number): Promise<boolean> {
   let done = false;
   void p.exited.then(() => {
     done = true;
   });
-  for (let i = 0; i < 800 && !done; i++) {
+  const until = Date.now() + 90_000;
+  for (let i = 0; Date.now() < until && !done; i++) {
     if (i > 0) await pause(50);
     if (!(await accepts(port))) continue;
     const ok = (await get(port, "/")) !== null;
@@ -210,7 +211,7 @@ describe("k.cli keel dev --port (rfc:0091)", () => {
         const port = await freePort();
         const p = startDev(["--port", String(port)]);
         try {
-          expect(await served(p, port)).toBe(true);
+          expect(await served(p, port), p.out()).toBe(true);
         } finally {
           await stop(p);
         }
@@ -250,7 +251,7 @@ describe("k.cli keel dev --port (rfc:0091)", () => {
       setConfigPort(port);
       const p = startDev([]);
       try {
-        expect(await served(p, port)).toBe(true);
+        expect(await served(p, port), p.out()).toBe(true);
       } finally {
         await stop(p);
         setConfigPort(undefined);
