@@ -4,22 +4,18 @@ import type { Operation } from "../types/Operation.ts";
 import type { OutRecord } from "../types/OutRecord.ts";
 import type { A11yCriteriaMap } from "./A11yCriteriaMap.ts";
 import type { Outcome } from "./Outcome.ts";
-import { a11yRuleMap } from "./a11yRuleMap.ts";
-import { buildCommand } from "./buildCommand.ts";
-import { checkCommand } from "./checkCommand.ts";
 import { explainCommand } from "./explainCommand.ts";
 import { inspectCommand } from "./inspectCommand.ts";
-import { ledgerCommand } from "./ledgerCommand.ts";
 import { loadStd } from "./loadStd.ts";
 import { projectFiles } from "./projectFiles.ts";
-import { scaffoldCommand } from "./scaffoldCommand.ts";
 import { stdSlot } from "./stdSlot.ts";
-import { testCommand } from "./testCommand.ts";
 import { unavailable } from "./unavailable.ts";
 
 /** The a11y rule map, read only when a project has `.keel/routes.json` (k.a11y Claims items exist only then). */
-const ledgerRules = (io: Io): A11yCriteriaMap =>
-  projectFiles(io).some((f) => /(?:^|\/)\.keel\/routes\.json$/.test(f.path)) ? a11yRuleMap() : new Map();
+const ledgerRules = async (io: Io): Promise<A11yCriteriaMap> =>
+  projectFiles(io).some((f) => /(?:^|\/)\.keel\/routes\.json$/.test(f.path))
+    ? (await import("./a11yRuleMap.ts")).a11yRuleMap()
+    : new Map();
 
 const only = (records: readonly OutRecord[]): Outcome => ({
   records,
@@ -29,12 +25,21 @@ const only = (records: readonly OutRecord[]): Outcome => ({
 /** Run one operation on schema-valid input. Every surface ends here: same input, same records and writes. */
 export async function execute(op: Operation, input: Input, io: Io): Promise<Outcome> {
   switch (op.name) {
-    case "check":
+    case "check": {
+      // Loaded only when the command runs: it brings in typescript and the checker.
+      const { checkCommand } = await import("./checkCommand.ts");
       return only(await checkCommand(input, io));
-    case "test":
+    }
+    case "test": {
+      // Loaded only when the command runs: it brings in vitest and the test harness.
+      const { testCommand } = await import("./testCommand.ts");
       return only(await testCommand(input, io));
-    case "build":
+    }
+    case "build": {
+      // Loaded only when the command runs: it brings in the compiler, the checker and typescript.
+      const { buildCommand } = await import("./buildCommand.ts");
       return await buildCommand(io, input);
+    }
     case "docs": {
       // Behind its own entry, loaded only when the command runs (`@keel/cli` size budget).
       const { docsCommand } = await import("@keel/cli/docs");
@@ -43,8 +48,11 @@ export async function execute(op: Operation, input: Input, io: Io): Promise<Outc
     case "explain":
       // `explain` reads no files; a stdlib code loads the project's manifests to register its std deps' rules.
       return only(await explainCommand(input, () => loadStd(io.load === undefined ? io : { ...io, files: undefined })));
-    case "ledger":
-      return ledgerCommand(input, io, ledgerRules(io));
+    case "ledger": {
+      // Loaded only when the command runs: it brings in typescript and the test harness.
+      const { ledgerCommand } = await import("./ledgerCommand.ts");
+      return ledgerCommand(input, io, await ledgerRules(io));
+    }
     case "evidence": {
       // Behind its own entry, loaded only when the command runs (`@keel/cli` size budget).
       const { evidenceCommand } = await import("@keel/cli/evidence");
@@ -56,8 +64,11 @@ export async function execute(op: Operation, input: Input, io: Io): Promise<Outc
       return reviewCommand(input, io);
     }
     case "scaffold":
-    case "codemod":
+    case "codemod": {
+      // Loaded only when the command runs: it brings in the scaffolder, the compiler and the checker.
+      const { scaffoldCommand } = await import("./scaffoldCommand.ts");
       return await scaffoldCommand(op.name, input, io);
+    }
     case "dev":
       return only(unavailable(op.name, "vite.config.ts and the keel binary (vite dev server)", "k.server"));
     case "inspect":
