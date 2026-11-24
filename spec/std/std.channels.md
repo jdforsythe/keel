@@ -1,6 +1,5 @@
 # std.channels: Channels
-status: implemented
-
+status: conformance-covered
 **Extension points.** Module manifest: stdlib module `channels` (capabilities `clock`, `net`, `observe`), served from a `node` module's contract (std.contracts). Check rule registry: E2601 and E2602 through `@keel/std-channels/tools`.
 
 **Declare.** In a `*.schema.ts` file whose name is the export:

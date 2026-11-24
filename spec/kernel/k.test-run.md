@@ -1,6 +1,5 @@
 # k.test-run: Test end and results
-status: implemented
-
+status: conformance-covered
 From `@keel/testing`, under vitest: when a harness handle (k.testing) ends without `dispose()`, and how `keel test` prints an error outside any test.
 
 **Disposal.** A `render`, `renderRoute` or `resumeDocument` handle made while a test runs, in its body or a `beforeEach` or `afterEach` hook, is disposed when that test ends, passed or failed, after its `afterEach` hooks: as `dispose()`, its elements leave the document, its scope is disposed and its seeded stores are restored. A route handle is disposed with every document it opened. A handle already disposed is not disposed again, so a write after a hand `dispose()` stays; a second `dispose()` does nothing, and a disposed handle's methods are E1705. A handle made outside a test (`beforeAll`, a `describe` body, module scope) is disposed only by `dispose()`, which an `afterAll` makes. With no vitest test running, nothing is registered.

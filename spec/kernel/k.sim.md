@@ -1,6 +1,5 @@
 # k.sim: Schedules and simulation
-status: implemented
-
+status: conformance-covered
 Under sim (k.ctx) every capability is deterministic by seed. A schedule fixes what the seed leaves alone: how long each request takes, which requests and storage calls fail, and when the network is offline. `simulate` runs one scenario under many generated schedules, as `properties` (k.testing) runs one property under many inputs.
 
 **Clock.** The sim clock starts at 0 and moves only through `advance(ms)`, which resolves each waiter whose deadline it crosses in deadline order (ties: registration order), with `now()` at that deadline for code that runs synchronously as the waiter resolves. `next()` returns the earliest pending deadline, else `null`.
