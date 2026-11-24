@@ -11,7 +11,7 @@ Ideas that come up outside the current plans. An idea is built at once only when
 - `service({ module })` GET results without the `{ id, results }` envelope. Backlog 0339. Needs an RFC amendment.
 - Invalid search values answered with 422 instead of defaults. Backlog 0275.
 - A cap on concurrent event streams. Backlog 0364.
-- A broker for stream and channel fan-out across replicas. RFC 0081 and RFC 0085 Known limits.
+- A transport for channel `message` across replicas (saves cross by k.persist Watch). RFC 0081 and RFC 0085 Known limits; RFC 0223.
 - An optimistic client view with log entries replicated to clients. RFC 0081 Alternatives. Needs a generic apply endpoint and client rebase rules.
 - More conflict policies (`last-writer`, path-level `merge`, `first-writer`). RFC 0081 Alternatives. Needs a state diff per write.
 - Channel messages resumed for members that were disconnected. RFC 0081 Known limits.
