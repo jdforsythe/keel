@@ -28,7 +28,10 @@ test("`renderRoute(id, { routes, app, mount })` rejects E1722, `app` unrequested
 test("`app` with `mount` rejects E1722 whatever other of `user` and `caller` the options carry, `app` unrequested.", async () => {
   await fc.assert(
     fc.asyncProperty(
-      fc.record({ user: fc.option(fc.stringMatching(/^[a-z0-9]{1,6}$/), { nil: undefined }), caller: fc.option(fc.stringMatching(/^[a-z0-9]{1,6}$/), { nil: undefined }) }),
+      fc.record({
+        user: fc.option(fc.stringMatching(/^[a-z0-9]{1,6}$/), { nil: undefined }),
+        caller: fc.option(fc.stringMatching(/^[a-z0-9]{1,6}$/), { nil: undefined }),
+      }),
       async (extra) => {
         const ctx = simCtx();
         const app = await appOn(ctx);

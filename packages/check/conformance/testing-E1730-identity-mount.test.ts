@@ -33,9 +33,9 @@ const TOPOLOGY = f(
   "import { topology } from '@keel/server'\nexport default topology({ web: { modules: ['a'], adapter: 'client', servedBy: 'api' }, api: { modules: ['b'], adapter: 'node' } })\n",
 );
 const TEST_PATH = "modules/a/test/page.test.ts";
-const HEAD = "import { renderRoute } from '@keel/testing'\nimport { test } from 'vitest'\ndeclare const routes: never\n";
-const testFile = (call: string, head = HEAD): string =>
-  `${head}test('x', async () => { await ${call} })\n`;
+const HEAD =
+  "import { renderRoute } from '@keel/testing'\nimport { test } from 'vitest'\ndeclare const routes: never\n";
+const testFile = (call: string, head = HEAD): string => `${head}test('x', async () => { await ${call} })\n`;
 const project = (source: string, path = TEST_PATH, withIdentity = true): Files => [
   TOPOLOGY,
   manifest("a"),
@@ -121,12 +121,16 @@ test("E1730 reports none for options that are not an object literal, and none fo
 });
 
 test("E1730 is reported for a renderRoute under any alias of the @keel/testing import", () => {
-  const src = testFile("rr('a.page', { routes })", "import { renderRoute as rr } from '@keel/testing'\nimport { test } from 'vitest'\ndeclare const routes: never\n");
+  const src = testFile(
+    "rr('a.page', { routes })",
+    "import { renderRoute as rr } from '@keel/testing'\nimport { test } from 'vitest'\ndeclare const routes: never\n",
+  );
   expect(e1730(project(src))).toHaveLength(1);
 });
 
 test("E1730 is not reported for a renderRoute that is not from @keel/testing", () => {
-  const src = "import { test } from 'vitest'\ndeclare function renderRoute(id: string, o: object): Promise<void>\ndeclare const routes: never\ntest('x', async () => { await renderRoute('a.page', { routes }) })\n";
+  const src =
+    "import { test } from 'vitest'\ndeclare function renderRoute(id: string, o: object): Promise<void>\ndeclare const routes: never\ntest('x', async () => { await renderRoute('a.page', { routes }) })\n";
   expect(e1730(project(src))).toEqual([]);
 });
 

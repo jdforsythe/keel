@@ -7,7 +7,7 @@ import { createCtx } from "@keel/ctx";
 import { renderRoute } from "@keel/testing";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { SEED, boot, control, pairs, reset, routes } from "./render-route-user-support.ts";
+import { SEED, boot, control, mount, pairs, reset, routes } from "./render-route-user-support.ts";
 
 test("under `renderRoute(id, { shell: true, ctx })`, a mount `Form` POST answered 303 to a page with `set-cookie: s=1`: the router navigates there and the page's next `service({ contract })` call carries `cookie` `s=1`", async () => {
   await fc.assert(
@@ -21,7 +21,7 @@ test("under `renderRoute(id, { shell: true, ctx })`, a mount `Form` POST answere
         seen.push({ method: req.method, path: new URL(req.url).pathname, cookie: req.headers.get("cookie") });
         return app.fetch(req);
       });
-      const h = await renderRoute("u.signin", { routes, shell: true, ctx });
+      const h = await renderRoute("u.signin", { routes, shell: true, ctx, mount });
       try {
         await h.fire("u.signin.go", { type: "click" });
         expect(seen.find((r) => r.method === "POST")?.path).toBe("/api/auth/in");

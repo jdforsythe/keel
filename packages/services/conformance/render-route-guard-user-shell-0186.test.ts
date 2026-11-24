@@ -8,7 +8,7 @@
 import { createCtx } from "@keel/ctx";
 import { renderRoute } from "@keel/testing";
 import { expect, test } from "vitest";
-import { SEED, boot, reset, rec, routes } from "./render-route-guard-user-support.ts";
+import { SEED, boot, mount, reset, rec, routes } from "./render-route-guard-user-support.ts";
 
 type Seen = { method: string; path: string; cookie: string | null; url: string };
 async function shell() {
@@ -20,7 +20,7 @@ async function shell() {
     seen.push({ method: req.method, path: new URL(req.url).pathname, cookie: req.headers.get("cookie"), url: req.url });
     return app.fetch(req);
   });
-  const h = await renderRoute("cg.signin", { routes, shell: true, ctx });
+  const h = await renderRoute("cg.signin", { routes, shell: true, ctx, mount });
   return { h, seen };
 }
 const reads = (seen: Seen[]) => seen.filter((r) => r.path === "/__keel/user");

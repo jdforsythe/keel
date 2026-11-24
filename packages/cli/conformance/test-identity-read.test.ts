@@ -1,13 +1,13 @@
-// Spec: k.guards (rfc:0209), Conformance "`keel test` over a project with `identity.ts` beside `topology.ts`, which no module file imports, whose one test asserts that `renderRoute(id, { routes })`'s `requests()` holds one entry whose `url` ends `/__keel/user`, passes; with `identity.ts` and `identity.server.ts` removed, the same test fails."
-// Spec: k.guards (rfc:0209), Client "Under vitest with the `keel()` plugin, as `keel test` runs it, the project's `identity.ts` beside `topology.ts` is evaluated before each test file, as the built entry imports it; so a test sees the read exactly when the built app sends it (k.requests)."
-// The real `keel` binary runs `keel test` over a temp project (OS tmpdir), once with `identity.ts` and `identity.server.ts` and once without. No module file imports `identity.ts`.
-// Besides the clause's one test, a second test file counts the `/__keel/user` entries of two routers (one per `renderRoute`): one each with `identity.ts` (so the plugin evaluated it before that file, not only the first), none without. Seed: no generated inputs, n/a.
-// ASSUMPTIONS: the project needs `module.ts`, a contract and routes for the one page; topology `web` is a `client` deployable `servedBy` an `api` node (E1589 otherwise); `keel test` needs no `vitest.config.ts`.
-import { mkdirSync, mkdtempSync, readFileSync, symlinkSync } from "node:fs";
+// Spec: k.guards, Conformance "Over a project with `identity.ts` and `identity.server.ts` beside `topology.ts` and a `vitest.config.ts` using the `keel()` plugin, which no module file imports, one test file asserting that `renderRoute(id, { routes })`'s `requests()` is `[]`, and a second importing `identity.ts`'s default export as `mount` and asserting that `renderRoute(id, { routes, mount })`'s `requests()` is exactly one entry, whose `url` ends `/__keel/user`: `keel test` passes both files, and so does `vitest run` in the project."
+// Spec: k.guards, Client "A `renderRoute` router reads only when its test names the identity mount: the `mount` option, the default export of `identity.ts` that the test file imports (`import mount from '../identity.ts'`), as the built entry imports it and passes it to `createRouter`. With `mount` and without `user` it sends the GET as a built one does, its own `mount` (k.mount-scope) that mount's `path`; without `mount` it sends none, whatever the test's modules import. Nothing outside the test file is loaded for it, by `keel test` or by vitest, so a test runs the same under both and sees the read exactly when it names the mount (k.requests)."
+// The real `keel` binary runs `keel test` over a temp project (OS tmpdir), and vitest runs in the same project (plainVitest); both runs see both test files. No module file imports `identity.ts`. A third file, with no `mount`, records the `/__keel/user` count of two routers to a file and the same count is read after each run: none under either runner, so nothing was loaded before the file.
+// Seed: no generated inputs, n/a.
+// ASSUMPTIONS: the project needs `module.ts`, a contract and routes for the one page; topology `web` is a `client` deployable `servedBy` an `api` node (E1589 otherwise); `keel test` needs no `vitest.config.ts`, the plain run does, and it holds the `keel()` plugin (`@keel/compiler/vite`).
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { type Run, keel, removeFile, removeProject, root, summaryOf, writeFiles } from "./test-sim-project.ts";
+import { type Run, keel, plainVitest, root, summaryOf, writeFiles } from "./test-sim-project.ts";
 
 // The docblock is spelled in two pieces so vitest does not read it as this file's own environment.
 const ENV = ["// @vitest", "-environment happy-dom"].join("");
@@ -15,6 +15,10 @@ const PACKAGES = ["ctx", "schema", "testing", "router", "compiler", "server"];
 const EXTERNAL = ["vitest", "vite", "fast-check", "happy-dom", "typescript"];
 
 const FILES: Readonly<Record<string, string>> = {
+  "vitest.config.ts": `import keel from "@keel/compiler/vite"
+import { defineConfig } from "vitest/config"
+export default defineConfig({ plugins: [keel()] })
+`,
   "topology.ts": `import { topology } from "@keel/server"
 export default topology({
   web: { modules: ["a"], adapter: "client", servedBy: "api" },
@@ -50,13 +54,26 @@ import { b } from "./b.contract.ts"
 const Page = () => document.createElement("p")
 export const routes = manifest(b, { "b.page": { component: Page } })
 `,
-  "test/read.test.ts": `${ENV}
+  "test/nomount.test.ts": `${ENV}
 import { renderRoute } from "@keel/testing"
 import { expect, it } from "vitest"
 import { routes } from "../modules/a/routes.ts"
 
-it("renderRoute's requests() holds one entry whose url ends /__keel/user", async () => {
+it("renderRoute(id, { routes })'s requests() is []", async () => {
   const h = await renderRoute("a.page", { routes })
+  await h.settle()
+  expect(h.requests()).toEqual([])
+  h.dispose()
+})
+`,
+  "test/mount.test.ts": `${ENV}
+import { renderRoute } from "@keel/testing"
+import { expect, it } from "vitest"
+import mount from "../identity.ts"
+import { routes } from "../modules/a/routes.ts"
+
+it("renderRoute(id, { routes, mount })'s requests() is exactly one entry whose url ends /__keel/user", async () => {
+  const h = await renderRoute("a.page", { routes, mount })
   await h.settle()
   const log = h.requests()
   expect(log).toHaveLength(1)
@@ -71,7 +88,7 @@ import { renderRoute } from "@keel/testing"
 import { it } from "vitest"
 import { routes } from "../modules/a/routes.ts"
 
-it("counts the reads of two routers", async () => {
+it("counts the reads of two routers that name no mount", async () => {
   const counts: number[] = []
   for (let i = 0; i < 2; i++) {
     const h = await renderRoute("a.page", { routes })
@@ -93,51 +110,51 @@ function makeDir(): string {
   return dir;
 }
 
-const counts = (dir: string): unknown => JSON.parse(readFileSync(join(dir, "test", "counts.json"), "utf8"));
+/** The counts the third test file wrote, or "not written" when the run stopped before it. */
+const counts = (dir: string): unknown => {
+  try {
+    return JSON.parse(readFileSync(join(dir, "test", "counts.json"), "utf8"));
+  } catch {
+    return "not written";
+  }
+};
 
-let withIdentity = "";
-let without = "";
-let runWith: Run | undefined;
-let runWithout: Run | undefined;
+let dir = "";
+let viaKeel: Run | undefined;
+let keelCounts: unknown;
+let plain: { status: number | null } = { status: null };
+let plainCounts: unknown;
 
 beforeAll(() => {
-  withIdentity = makeDir();
-  runWith = keel(withIdentity, ["test"]);
-  without = makeDir();
-  removeFile(without, "identity.ts");
-  removeFile(without, "identity.server.ts");
-  runWithout = keel(without, ["test"]);
+  dir = makeDir();
+  viaKeel = keel(dir, ["test"]);
+  keelCounts = counts(dir);
+  rmSync(join(dir, "test", "counts.json"), { force: true });
+  plain = plainVitest(dir);
+  plainCounts = counts(dir);
 }, 300_000);
 
-afterAll(() => {
-  removeProject(withIdentity);
-  removeProject(without);
-});
+afterAll(() => rmSync(dir, { recursive: true, force: true }));
 
-describe("k.guards: `keel test` evaluates identity.ts before each test file", () => {
-  it("`keel test` over a project with identity.ts beside topology.ts, no module file importing it, whose test asserts requests() holds one entry ending /__keel/user, passes", () => {
-    expect(summaryOf(runWith ?? { status: null, records: [], stdout: "" })).toMatchObject({
+describe("k.guards: a test names the identity mount, and nothing is loaded before a test file", () => {
+  it("`keel test` passes both files: the one with no mount and the one passing mount", () => {
+    expect(summaryOf(viaKeel ?? { status: null, records: [], stdout: "" })).toMatchObject({
       kind: "summary",
       ok: true,
-      counts: { tests: 2, failed: 0 },
+      counts: { tests: 3, failed: 0 },
     });
-    expect(runWith?.status).toBe(0);
+    expect(viaKeel?.status).toBe(0);
   });
 
-  it("with identity.ts and identity.server.ts removed, the same test fails", () => {
-    expect(runWithout?.status).not.toBe(0);
-    expect(summaryOf(runWithout ?? { status: null, records: [], stdout: "" })).toMatchObject({
-      kind: "summary",
-      ok: false,
-      counts: { failed: 1 },
-    });
+  it("`vitest run` in the project passes both files too", () => {
+    expect(plain.status).toBe(0);
   });
 
-  it("the project with identity.ts sends exactly one /__keel/user request per router, in each test file", () => {
-    expect(counts(withIdentity)).toEqual([1, 1]);
+  it("a test file naming no mount sends no /__keel/user request from either router, under `keel test`", () => {
+    expect(keelCounts).toEqual([0, 0]);
   });
 
-  it("the client-only project (no identity.ts) sends no /__keel/user request", () => {
-    expect(counts(without)).toEqual([0, 0]);
+  it("a test file naming no mount sends no /__keel/user request from either router, under `vitest run`: the run is the same", () => {
+    expect(plainCounts).toEqual(keelCounts);
   });
 });

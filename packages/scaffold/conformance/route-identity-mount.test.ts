@@ -5,7 +5,8 @@
 import fc from "fast-check";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { RUNS, SEED, apply, esc, fresh, lowerName, read, rel } from "./fixtures.ts";
-import { BOUND, cleanup, keel, materialize, readTree } from "./keel-cli.ts";
+import { cleanup, keel, materialize, readTree } from "./keel-cli.ts";
+import { BOUND } from "./shell-support.ts";
 
 const TOPOLOGY = `import { topology } from "@keel/server"
 export default topology({
