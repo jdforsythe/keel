@@ -85,7 +85,7 @@ const cleanEnv = (): Record<string, string> => {
       !k.toLowerCase().startsWith("npm_") &&
       k !== "KEEL_AGENT" &&
       k !== "NODE_OPTIONS" &&
-      k !== "CHOKIDAR_USEPOLLING"
+      k !== "KEEL_DEV_POLL"
     )
       env[k] = v;
   }

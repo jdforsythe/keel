@@ -8,6 +8,7 @@ import type { Typed } from "./Typed.ts";
 import { annotateProps } from "./annotateProps.ts";
 import { applyEdits } from "./applyEdits.ts";
 import { dateReads } from "./dateReads.ts";
+import { formatLiterals } from "./formatLiterals.ts";
 import { isAppPath } from "./isAppPath.ts";
 import { lineCol } from "./lineCol.ts";
 import { mapTsDiagnostic } from "./mapTsDiagnostic.ts";
@@ -172,6 +173,7 @@ export function typeCheck(
     };
     for (const at of resultDiscards(sf, checker))
       push("E1453", at, "Result discarded as a statement; narrow on r.ok", "k.errors");
+    for (const f of formatLiterals(sf, checker)) push("E1108", f.at, f.message, "k.formats");
     dates.set(file.path, new Set(dateReads(sf, checker, program).map(view.original)));
     if (file.path.endsWith("x") && isAppPath(file.path))
       for (const t of textNodes(sf, checker))

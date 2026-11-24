@@ -40,6 +40,17 @@ it("goes on to the page the guard named, and only to a page on this origin", asy
   expect(await to("https://evil.example/")).toBe("/");
 });
 
+it("lands on the start page for a hostile next: a tab a URL parser strips, a protocol-relative host, a backslash, an encoded slash", async () => {
+  const { raw } = await served(36, false);
+  await raw(formPost(signUp, { name: NAME, email: EMAIL, password: PASSWORD }));
+  const to = async (next: string) =>
+    (await raw(formPost(mount.href("/sign-in/email", { next }), { email: EMAIL, password: PASSWORD }))).headers.get(
+      "location",
+    );
+  for (const next of ["/\t/evil.example/x", "//evil.example", "/\\evil.example", "/%2F%2Fevil.example", "/signin"])
+    expect(await to(next)).toBe("/");
+});
+
 it("refuses a wrong password with no cookie and no typed value in the URL", async () => {
   const { raw } = await served(33, false);
   await raw(formPost(signUp, { name: NAME, email: EMAIL, password: PASSWORD }));

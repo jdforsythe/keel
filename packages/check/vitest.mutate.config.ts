@@ -19,6 +19,9 @@ export default keelConfig({
     // and conformance is not edited: E1501.
     testNamePattern: /^(?!E1501: a string path passed to a navigate function typed)/,
     passWithNoTests: true,
+    // `check()` imports nothing and reads the schema registry as its process holds it; `keel check` imports each std package in `deps`
+    // first (k.module Std config). A test process stands in for that import for the two packages whose formats E1108 fixtures name.
+    setupFiles: ["@keel/std-temporal", "@keel/std-text"],
     sequence: { sequencer: QuickFirst },
   },
 });

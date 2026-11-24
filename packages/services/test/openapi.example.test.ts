@@ -182,7 +182,7 @@ describe("endpoints", () => {
   };
 
   test("one declaration per operation in document order, with the files' exact layout", () => {
-    const r = openapi({ ...full, components }, { name: "order-items" });
+    const r = openapi({ ...full, components }, { name: "orderItems" });
     expect(r).toEqual({
       ok: true,
       value: {

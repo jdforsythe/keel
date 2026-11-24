@@ -1,4 +1,5 @@
 import { createCtx } from "@keel/ctx";
+import { epochMs } from "@keel/std-temporal";
 import { simulate } from "@keel/testing";
 import { expect, it } from "vitest";
 import { jobs } from "../modules/shopping/jobs.server.ts";
@@ -86,7 +87,7 @@ it("starts a run at Saturday 08:00 UTC, and one only after a server down across 
   await drive(ctx, (r) => r.last !== null, 20);
   const fired = await runsOn(ctx);
   expect(fired.last).toMatchObject({ by: "schedule", state: "running" });
-  expect(fired.last?.at).toBeGreaterThanOrEqual(SATURDAY_8);
+  expect(fired.last === null ? Number.NaN : epochMs(fired.last.at)).toBeGreaterThanOrEqual(SATURDAY_8);
   await drive(ctx, ended);
   expect(await listOn(ctx)).toEqual(STAPLES);
   await first.close();
@@ -96,7 +97,7 @@ it("starts a run at Saturday 08:00 UTC, and one only after a server down across 
   ctx.clock.advance(3 * 7 * DAY + 4 * DAY);
   const back = ctx.clock.now();
   const second = await webApp(ctx);
-  await drive(ctx, (r) => r.last !== null && r.last.at >= back, 40);
+  await drive(ctx, (r) => r.last !== null && epochMs(r.last.at) >= back, 40);
   expect((await runsOn(ctx)).last).toMatchObject({ by: "schedule", state: "running" });
   await drive(ctx, ended);
   await drive(ctx, () => false, 40);

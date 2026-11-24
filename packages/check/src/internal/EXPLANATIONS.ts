@@ -249,6 +249,13 @@ const ROWS: readonly Row[] = [
     "k.leave",
   ],
   [
+    "E1108",
+    "a formatLiteral text that is not a literal or does not parse",
+    "formatLiteral is for values written in source; keel check parses them with the format's own reader. Data from outside reads with parse and answers a Result.",
+    "formatLiteral(Instant, '2026-02-30T00:00:00.000Z') -> '2026-02-28T00:00:00.000Z'",
+    "k.formats",
+  ],
+  [
     "E1111",
     "a .pii() or s.secret node, or a schema it cannot read, in a route's params, search or query",
     "A path or query reaches browser history and proxy logs, which no redaction reaches.",
@@ -292,9 +299,9 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1153",
-    "cycle in module deps (message lists the cycle)",
+    "cycle in module deps (message lists the cycle); a deps edge is an import, a contract's among them, so a link is one. A guard bound by modules that link to one another closes a cycle when it sits in one of them, and the message then names it (k.guards Home)",
     "",
-    "move the shared code into a module both depend on",
+    "move the shared code into a module both depend on; for a guard, a module of its own with no pages",
     "k.module",
   ],
   [
@@ -464,7 +471,7 @@ const ROWS: readonly Row[] = [
   ["E1351", "target id already exists", "", "use a codemod to change the existing item", "k.scaffold"],
   [
     "E1352",
-    "id violates naming (dotted lowerCamel with module prefix; components PascalCase)",
+    "id violates naming (dotted lowerCamel with module prefix; components PascalCase; a service name lowerCamel)",
     "",
     "route OrderShow -> orders.show",
     "k.scaffold",

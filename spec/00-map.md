@@ -1,13 +1,13 @@
 # Keel spec map
 
-status key: proposed | implemented | conformance-covered | frozen. Budget: file 1,440 tokens, section 3,100.
+status key: proposed | implemented | conformance-covered | frozen. Budget: file 1,440 tokens, section 3,400.
 
 ## Code ranges
 Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); owner: keel docs --for <code>.
 | block | owner | block | owner |
 |-|-|-|-|
 | E100x | k.compiler, k.boundary, k.bundle, k.head | E105x | k.cli, k.evidence, k.docs, k.review |
-| E110x | k.schema, k.privacy, k.reveal, k.leave, k.privacy-reads | E115x | k.module |
+| E110x | k.schema, k.formats, k.privacy, k.reveal, k.leave, k.privacy-reads | E115x | k.module |
 | E120x | k.reactive | E125x | k.runtime, k.resume, k.claim |
 | E130x | k.store | E135x | k.scaffold, k.scaffold-shell |
 | E140x | k.component, k.place | E145x | k.errors |
@@ -28,7 +28,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | id | section | status | one line |
 |-|-|-|-|
 | k.schema | Schemas | conformance-covered | codecs |
-| k.formats | Format types | conformance-covered | brands |
+| k.formats | Format types | implemented | brands |
 | k.reactive | Reactivity | conformance-covered | signals |
 | k.store | Store, transactions | implemented | log |
 | k.component | Components | conformance-covered | props |
@@ -50,7 +50,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.ctx | Capabilities | conformance-covered | clock |
 | k.owner | Ctx owner | conformance-covered | dispose |
 | k.errors | Results, boundaries | conformance-covered | Result |
-| k.check | Checker, diagnostics | conformance-covered | codes |
+| k.check | Checker, diagnostics | implemented | codes |
 | k.explain | Explanations | conformance-covered | text |
 | k.host | Host reads | conformance-covered | zone |
 | k.cli | CLI, MCP, LSP | implemented | flags |
@@ -77,7 +77,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.persist | Storage, durable state | conformance-covered | drivers |
 | k.data | App data | conformance-covered | seam |
 | k.topology | Deployables | implemented | peers |
-| k.deploy | Entry, deploy files | conformance-covered | entry |
+| k.deploy | Entry, deploy files | implemented | entry |
 | k.shell | Native shells | implemented | target |
 | k.compat | Surface compatibility | conformance-covered | accepts |
 | k.api | API routes | conformance-covered | JSON |
