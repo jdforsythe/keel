@@ -1089,7 +1089,10 @@ export default function (): {
         },
         mapped,
         (id) => stubbed.has(id) || serverOnlyFile(id.split("?")[0] ?? id),
-        (id) => this.getModuleInfo?.(id)?.importers?.[0],
+        (id) => {
+          const info = this.getModuleInfo?.(id);
+          return [...(info?.importers ?? []), ...(info?.dynamicImporters ?? [])];
+        },
       );
       if (unmapped !== undefined)
         throw new Error(
