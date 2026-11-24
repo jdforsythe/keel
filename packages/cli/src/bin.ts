@@ -6,7 +6,6 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { WriteRefused } from "./internal/WriteRefused.ts";
-import { devStart } from "./internal/devStart.ts";
 import { hostIo } from "./internal/hostIo.ts";
 import { refusedRun } from "./internal/refusedRun.ts";
 import { run } from "./run.ts";
@@ -16,7 +15,10 @@ const head = argv[0];
 const cwd = process.cwd();
 const serving = (head === "mcp" || head === "lsp") && argv.length === 1;
 
-const dev = head === "dev" && existsSync(join(cwd, "vite.config.ts")) ? await devStart(argv, cwd) : undefined;
+const dev =
+  head === "dev" && existsSync(join(cwd, "vite.config.ts"))
+    ? await (await import("./internal/devStart.ts")).devStart(argv, cwd)
+    : undefined;
 if (dev !== undefined) {
   if (!dev.serving) {
     process.exitCode = dev.code;

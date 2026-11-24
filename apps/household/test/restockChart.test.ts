@@ -1,5 +1,7 @@
 import { createCtx } from "@keel/ctx";
+import { formatLiteral } from "@keel/schema";
 import { coverage } from "@keel/std-statecharts";
+import { Instant } from "@keel/std-temporal";
 import { explore, properties } from "@keel/testing";
 import { expect, it } from "vitest";
 import { putBackIn } from "../modules/shopping/putBackIn.ts";
@@ -7,7 +9,12 @@ import { restockChart } from "../modules/shopping/restockChart.ts";
 import { runsOf } from "../modules/shopping/runsOf.ts";
 import { weeklyStaples } from "../modules/shopping/weeklyStaples.ts";
 
-const data = { staples: weeklyStaples, next: 0, putBack: 0, by: "member" as const, at: 0, code: "" };
+const at = {
+  start: formatLiteral(Instant, "1970-01-01T00:00:00.000Z"),
+  older: formatLiteral(Instant, "1970-01-01T00:00:00.001Z"),
+  newer: formatLiteral(Instant, "1970-01-01T00:00:00.002Z"),
+};
+const data = { staples: weeklyStaples, next: 0, putBack: 0, by: "member" as const, at: at.start, code: "" };
 const events = Object.values(restockChart.events);
 const ids = createCtx({ mode: "sim", seed: 3 });
 const id = () => ids.random.id("Item");
@@ -53,10 +60,10 @@ it("puts a name back once: still to buy stays, bought goes back, new joins below
 
 it("shows the run started last, and counts a done run's staples as handled", () => {
   expect(runsOf({})).toEqual({ last: null, kept: 0 });
-  const older = { state: "done", data: { ...data, at: 1, next: 5, putBack: 4 } };
-  const newer = { state: "resting", data: { ...data, at: 2, next: 2, putBack: 2, by: "schedule" as const } };
+  const older = { state: "done", data: { ...data, at: at.older, next: 5, putBack: 4 } };
+  const newer = { state: "resting", data: { ...data, at: at.newer, next: 2, putBack: 2, by: "schedule" as const } };
   expect(runsOf({ a: older, b: newer })).toEqual({
-    last: { by: "schedule", at: 2, state: "running", putBack: 2, handled: 2, total: 5, code: "" },
+    last: { by: "schedule", at: at.newer, state: "running", putBack: 2, handled: 2, total: 5, code: "" },
     kept: 2,
   });
   expect(runsOf({ a: { ...older, state: "failed", data: { ...older.data, code: "x" } } }).last?.state).toBe("failed");

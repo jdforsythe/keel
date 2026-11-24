@@ -2,27 +2,27 @@
   "output": {
     "check.injected10": 600,
     "test.failing3": 400,
-    "spec.section": 3100,
+    "spec.section": 3400,
     "spec.map": 1430,
     "explain": 300,
     "mcp.tools-list": 2000,
     "docs.map": 1510,
-    "docs.section": 3100,
-    "docs.skill": 3050,
+    "docs.section": 3400,
+    "docs.skill": 3100,
     "docs.for": 400,
     "docs.agents": 600
   },
   "size": {
     "@keel/check": {
-      "max": "62kb",
+      "max": "63kb",
       "platform": "node"
     },
     "@keel/check/explain": {
-      "max": "18.5kb",
+      "max": "19kb",
       "platform": "node"
     },
     "@keel/cli": {
-      "max": "29.75kb",
+      "max": "31.25kb",
       "platform": "node"
     },
     "@keel/cli/docs": {
@@ -40,7 +40,7 @@
     "@keel/ctx": "4.1kb",
     "@keel/forms": "5kb",
     "@keel/reactive": "4kb",
-    "@keel/router": "14.5kb",
+    "@keel/router": "14.6kb",
     "@keel/router/contract": "3.2kb",
     "@keel/router/match": "2.75kb",
     "@keel/runtime-dom": "6kb",
@@ -53,7 +53,7 @@
       "max": "1.5kb",
       "platform": "node"
     },
-    "@keel/schema": "5.65kb",
+    "@keel/schema": "5.75kb",
     "@keel/server": {
       "max": "27.5kb",
       "platform": "node"

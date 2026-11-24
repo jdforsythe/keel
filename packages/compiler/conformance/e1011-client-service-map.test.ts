@@ -46,7 +46,7 @@ function tree(mod: string, variant: Variant): Record<string, string> {
       },
     }),
     "modules/app/Page.tsx": page,
-    "modules/app/module.ts": `import { module } from "@keel/compiler";\nexport default module({ id: "app", deps: [${variant === "none" ? "" : `"${mod}"`}], capabilities: [], public: { exports: [] } });\n`,
+    "modules/app/module.ts": `import { module } from "@keel/compiler";\nexport default module({ id: "app", deps: [${variant === "relative-called" ? `"${mod}"` : ""}], capabilities: [], public: { exports: [] } });\n`,
     "modules/app/routes.ts":
       'import { manifest } from "@keel/router";\nimport { app } from "./app.contract.ts";\nimport Page from "./Page.tsx";\nexport const routes = manifest(app, { "app.home": { component: Page } });\n',
     "modules/app/app.contract.ts":
