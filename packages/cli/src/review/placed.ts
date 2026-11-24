@@ -1,9 +1,8 @@
+import { clipMessage } from "../internal/clipMessage.ts";
 import { ESCAPES } from "./ESCAPES.ts";
 import type { Found } from "./Found.ts";
 import type { Raw } from "./Raw.ts";
 import { escapeId } from "./escapeId.ts";
-
-const clip = (s: string): string => (s.length > 89 ? `${s.slice(0, 86)}...` : s);
 
 /** One file's raw escapes as findings at `path` (k.review Findings): the row's fields, an `id` per escape in file order. */
 export function placed(path: string, raws: readonly Raw[]): Found[] {
@@ -21,7 +20,7 @@ export function placed(path: string, raws: readonly Raw[]): Found[] {
       path,
       line: r.line,
       col: r.col,
-      message: clip(r.message ?? row.message),
+      message: clipMessage(r.message ?? row.message),
       protection: row.protection,
       opt: row.opt,
       danger: r.danger ?? row.danger,

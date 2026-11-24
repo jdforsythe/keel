@@ -10,7 +10,13 @@ const ESC = String.fromCharCode(27);
 const ANSI = new RegExp(`${ESC}\\[[0-9;]*m`, "g");
 const strip = (s: string): string => s.replace(ANSI, "");
 const firstLine = (s: string): string => strip(s).split("\n")[0] ?? "";
-const clip = (s: string): string => (s.length > 90 ? `${s.slice(0, 87)}...` : s);
+/** A T0001 message by the k.check rule: one line, at most 89 UTF-16 code units, a cut keeping 86 (85 before a pair's first half) and `...`. */
+const clip = (s: string): string => {
+  const one = s.replace(/\s*\n\s*/g, " ").trim();
+  if (one.length <= 89) return one;
+  const last = one.charCodeAt(85);
+  return `${one.slice(0, last >= 0xd800 && last <= 0xdbff ? 85 : 86)}...`;
+};
 const FRAME = /(?:^|[\s(])(?:file:\/\/)?((?:\/|[A-Za-z]:[\\/])[^():]+):(\d+):(\d+)\)?$/;
 
 const isApp = (f: string): boolean =>

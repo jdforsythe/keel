@@ -1,3 +1,4 @@
+import { clipMessage } from "./clipMessage.ts";
 import type { Diag } from "./Diag.ts";
 
 type Loc = {
@@ -16,7 +17,7 @@ export function makeDiag(code: string, message: string, loc: Loc = {}): Diag {
     ...(loc.path === undefined ? {} : { path: loc.path }),
     ...(loc.line === undefined ? {} : { line: loc.line }),
     ...(loc.col === undefined ? {} : { col: loc.col }),
-    message: message.length > 89 ? `${message.slice(0, 86)}...` : message,
+    message: clipMessage(message),
     ...(loc.fix === undefined ? {} : { fix: loc.fix }),
     ...(loc.see === undefined ? {} : { see: loc.see }),
   };
