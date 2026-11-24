@@ -178,6 +178,8 @@ it("holds a queued mark through a sign-out and sends it once the same member sig
       if (first.state !== "queued") {
         // The schedule failed the browser's storage: nothing is queued, so nothing may commit.
         page.dispose();
+        // The drain the page started may still be in hand: let it answer before the scenario ends.
+        await run();
         expect(first.state).toBe("failed");
         return;
       }
