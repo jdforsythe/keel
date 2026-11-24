@@ -1,5 +1,5 @@
 # std.live: Live views
-status: conformance-covered
+status: implemented
 
 **Extension points.** None of its own: it composes std.channels `subscribe` with a k.store transaction.
 
@@ -33,3 +33,4 @@ A live view is a client store kept current by its hydrating transaction. Values 
 - A read answering `api.status` 403 commits nothing, `status()` is `denied`, the stream's request is aborted, and no read runs after 1 s, 2 s or 30 s on `ctx.clock`; a read answering `api.status` 502 leaves `status()` at `connecting` and reads again 1 s later.
 - A read returning a KeelError `keel.denied` gives `denied`.
 - With callers A and B live on one sim server and B's session removed, A's write leaves B's `status()` at `denied` and B's hydrated store as it was.
+- Under sim, with callers A and B live on one page, A through a `createApp` on ctx `a` and B through one on `replica(a)` (k.sim Replicas), a write by A to a store the channel's `stores` creates is in B's hydrated store after B's next read, with no input from B.

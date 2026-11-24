@@ -7,8 +7,8 @@ status: conformance-covered
 
 **Storage.** A `node` deployable's `storage` in `topology.ts` decides its `ctx.storage`, the only state that survives a restart:
 - `'file'` (default): the file `--localstorage-file` names; one process.
-- `'sqlite'`: a SQLite file, `KEEL_DATABASE_URL` a `file:` URL (default `file:/data/keel.sqlite`); processes on one host may share it.
-- `'postgres'`: `KEEL_DATABASE_URL` a `postgres:` or `postgresql:` URL (required); replicas share it.
+- `'sqlite'`: a SQLite file, `KEEL_DATABASE_URL` a `file:` URL (default `file:/data/keel.sqlite`); processes on one host may share it, and a live stream sees only its own process's saves.
+- `'postgres'`: `KEEL_DATABASE_URL` a `postgres:` or `postgresql:` URL (required); replicas share it, and a live stream on one sees the saves of each (k.persist Watch, std.channels).
 `'sqlite'` and `'postgres'` are drivers (k.persist) of `@keel/std-db` (std.db; E1572); the generated entry imports the one named and `start` opens it before listening (a failure: std.db's E2152 or E2153, exit 1). The URL is a secret: no log line, diagnostic or generated file holds it.
 
 **Deploy files.** Derived from `topology.ts` by `@keel/scaffold`, written by `keel build` and scaffold operations that change them; read-only (E1005, fix: the regenerated file).
