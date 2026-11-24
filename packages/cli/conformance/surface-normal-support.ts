@@ -45,7 +45,8 @@ export const SUBJECT_TEXT = [
   "",
 ].join("\n");
 
-export const VIEW_TEXT = "import { Box } from '@keel/ui'\nexport default function View() {\n  return <Box>Hi there</Box>\n}\n";
+export const VIEW_TEXT =
+  "import { Box } from '@keel/ui'\nexport default function View() {\n  return <Box>Hi there</Box>\n}\n";
 
 /** Stands in for the DOM the JSX templates of `View.tsx` touch when `keel build` evaluates the file in Node. */
 const DOC_STUB = [
