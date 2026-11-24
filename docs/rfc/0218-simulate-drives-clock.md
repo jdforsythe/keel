@@ -1,6 +1,6 @@
 # RFC 0218: k.drive: `simulate` drives the run's clock when no work of the run is pending
 
-Status: implemented (ADR-0240) by the orchestrator on 2026-11-24, amended the same day after reviews of the first three builds, for the operator to confirm; the fourth amendment carries the operator's D134 and D135. Adds k.drive and k.drive-law; amends k.sim (Schedule plans, simulate), k.testing (Rules), std.postgres (Modes, Conformance), the map. From `apps/household` (walkthrough finding L9-7, backlog 1038).
+Status: implemented (ADR-0240) by the orchestrator on 2026-11-24, amended the same day after reviews of the first three builds, for the operator to confirm; the fourth amendment carries the operator's D134 and D135, the fifth the third review's findings and the orchestrator's D139. Adds k.drive and k.drive-law; amends k.sim (Schedule plans, simulate), k.testing (Rules), std.postgres (Modes, Conformance), the map. From `apps/household` (walkthrough finding L9-7, backlog 1038).
 
 ## Decisions
 - D1: one drive. While a run's scenario is pending, `simulate` advances the run's clock to its next moment on each drive turn where no work of the run is pending. No harness call moves the clock. `run(ms?)` only says how far to wait.
@@ -12,6 +12,8 @@ Status: implemented (ADR-0240) by the orchestrator on 2026-11-24, amended the sa
 - D7: E1727 is raised on the drive's turn where nothing is pending, no moment is within the bound and the scenario is still pending: no grace. E1728 is held work waiting on the clock (at once), work still pending when the scenario resolves (at once), or the run's real-time budget spent: `budget`, else the enclosing test's timeout less a tenth, else 300,000 ms. The budget names every piece of work in flight and only fails a run; no piece of work has a bound of its own.
 - D9: the drive moves the clock inside the run's context, so waiters, offline-edge callbacks and `observe` callbacks it runs make work of the run.
 - D10: k.drive splits at the law (the operator's D134, every section within 3,100 tokens): k.drive keeps the drive, seams and stalls; k.drive-law holds the Law and the law check.
+- D11: resources made in held work's async context are the hold's, not the run's; a resource a garbage collection would destroy is not pending (the drive collects once per new pending set); no turn count decides anything under `simulate`: a harness call resolves on a drive turn where no work of the run but harness calls is pending, and after the scenario resolves the drive waits, moving no clock, until nothing is pending or the budget is spent (E1728 `work outlived the scenario: <labels>`).
+- D12 (D139): held work is delivered in start order, after pending thread-pool requests; `keel test` starts test processes with `UV_THREADPOOL_SIZE=1`, overriding the environment; concurrent real work outside every seam is a named residual the law check reports.
 - D8: a new section, k.drive. Driving, seams, law, law check and stalls with 17 clauses would put k.sim at about 4,450 tokens, past the 3,400 section budget and principle 8's 4k. k.sim keeps schedules, replicas, `simulate` and `run(ms?)`.
 
 ## Problem
@@ -28,7 +30,7 @@ Tests are deterministic without the author thinking about it. So the law has to 
 ### Pending work
 `simulate` runs each scenario in the run's async context. Work of the run is pending:
 - each async resource other than a promise created in that context, from creation until Node destroys it: a timer or immediate after its callback, a file, DNS or thread-pool request (a password hash) after it answers, a socket, server, interval or port once closed;
-- held work, until it settles;
+- held work, until it is delivered (fifth amendment: in start order);
 - a harness `fire`, `settle`, `navigate` or render in progress, except while it waits only on an unanswered `ctx.net` route.
 
 The harness's and the drive's own macrotask turns are made outside the run's context (`AsyncResource` bound to the root, or `AsyncLocalStorage.exit`), so they are not work. The review's `setTimeout(12)` is a `Timeout` in the run's context: the clock waits for it, and the record is `real@0, timer@10` for every d.
@@ -71,7 +73,7 @@ What the law rests on:
 - within the run's context, every non-promise resource is pending;
 - work that answers through something made outside the run changes nothing only if it is held with `hold`.
 
-Three things escape the tracker and can change a trace:
+Four things escape the drive and can change a trace (the fourth since the fifth amendment: concurrent real work outside every seam whose completions the drive does not deliver):
 - a resource made before the run or outside its context: a worker started at import, a module-level timer, channel or `AsyncResource`. Three identical replays gave `@289`, E1727 and `@293`.
 - an `import()` in app code other than a harness's `routes` loader. The test runner answers it over its own channel; under vitest the clock moved 48 to 100 ms differently in two runs.
 - state kept outside the run's stores from one run to the next.
@@ -103,7 +105,7 @@ It is reported in place of E1704, so a nondeterministic failure is never present
   - A fixed bound per piece of work was rejected. 10,000 ms per resource failed `restock.test.ts` 5 times in 20 under load 90 to 400: a short PGlite timer starved past 10 s, in a run that takes 5 s alone. A bound on one busy span failed a loop of answered 1 ms timers.
   - The author's own bound is the test's timeout. `simulate` fails shortly before it, naming what is in flight, instead of the runner's bare timeout message. So the budget can only turn a run red that the runner would have timed out anyway.
   - Endless short work is no stall, and the budget ends it. `@keel/testing` reads `performance.now` for the budget only. It never moves the clock or changes a trace.
-- E1728, when the scenario resolves with work of the run still pending: `work outlived the scenario: <label>`, naming the first pending piece in creation order. Leftover work is a test bug: a stray `setTimeout` bled into later runs, and law pairs saw different values with no report. A scenario closes what it opened before it resolves (`app.close()`, `clearInterval`, a socket's `close`), or awaits `run()`. Parked work, a runner's poll among them, is not pending, so it never counts. A scenario that rejects is reported with its own error.
+- E1728, when work of the run is still pending once the scenario has resolved and the budget is spent: `work outlived the scenario: <labels>`, oldest first. The drive waits for that work, moving no clock; a turn-count grace failed 13 runs in 20 under load. Leftover work is a test bug: a stray `setTimeout` bled into later runs, and law pairs saw different values with no report. A scenario closes what it opened before it resolves (`app.close()`, `clearInterval`, a socket's `close`), or awaits `run()`. Parked work, a runner's poll among them, is not pending, so it never counts. A scenario that rejects is reported with its own error.
 
 `keel explain` entries: E1727 and E1728 as built, with E1728's text naming its three cases. E1729:
 ```
@@ -111,6 +113,18 @@ E1729 two replays of a simulate run differ
 The run reached work the drive cannot see: a reply through a channel made before the run that no capability holds, or state kept from one run to the next.
 hold the outside work in its capability, or keep the state in the run's stores
 ```
+
+### Order (fifth amendment)
+The third review showed four ways real time still decided a trace, each with scratch tests on the build:
+- PGlite arms its own 10,000 ms idle-stats `setTimeout` inside a held query, depending on real time. A resource made in held work's async context is now the hold's.
+- Synchronous jobs (`pbkdf2Sync`, `gzipSync`, key generation) leave a resource alive until garbage collection. Listing types cannot be complete, and WebCrypto jobs in flight have no callback either. The drive runs one full collection each time the pending set is one it has not collected with; a resource the collection destroys is not pending.
+- `fire` resolved after quiet rounds with tracked work pending; a stray timer at scenario end was judged after three turns. No count of turns or rounds decides anything under `simulate` now.
+- Two `pbkdf2` sign-ins on the thread pool reordered for one seed (E1729 in 9 of 20).
+
+D139 has three parts:
+- (a) `keel test` starts every process that runs a test file with `UV_THREADPOOL_SIZE=1`, whatever the environment holds. libuv reads it once per process, so it is set at the process's start. One rule: a value the author set does not win, because a second thread lets real time order completions. Plain vitest keeps its environment's value.
+- (b) The drive owns each hold's promise, so it delivers a settled hold only once every earlier-started hold has been delivered and no thread-pool request of the run is pending. A hold could deadlock only if an earlier hold's settling waited on a later hold's delivery; k.sim already forbids a hold that waits on another held work, and if one does, the budget ends the run with E1728 naming both. A thread-pool request completes without the run's JavaScript, so waiting for it cannot deadlock. Waiting for the thread pool also orders a hold against a hash that is pending beside it.
+- (c) The residual: concurrent real asynchronous work made in the run outside every seam whose completions the drive does not deliver (two `node:timers` timers, a socket's data). App code reaches it only past E1601; the law check, on by default under `keel test`, reports it as E1729. The law sentence reads "under `keel test`, by construction, ..., unless a thing that escapes the drive reaches the trace".
 
 ## Alternatives
 - Watching quiet macrotask turns (the first build): speed decides the trace, as the review measured.
@@ -124,6 +138,7 @@ hold the outside work in its capability, or keep the state in the run's stores
 
 ## Spec diff
 Applied in this commit.
+- Fifth amendment: k.drive Driving (resources in held work, garbage-collected resources, held until delivered, harness calls under `simulate`), Stalls (work outliving the scenario waits on the budget); k.drive-law gains Order (delivery, `UV_THREADPOOL_SIZE`), and its Law reads "Under `keel test`, by construction" with a fourth residual; k.sim's `hold` sentence says delivered in start order; std.postgres gains a bullet.
 - Fourth amendment: k.drive's Law and Law check paragraphs, and its #10, #16, #17 and #20, move to a new section k.drive-law (`implemented`) unchanged but for the Law check, which states the default, `law: false` and `law: true`, the replays after the last run, the budget they share, `checked`, and the shrink. k.drive's intro gains a pointer and its Stalls a sentence: a law-check replay the budget stops fails nothing. k.sim's `simulate` signature reads `law?` with a pointer, and its result `{ seed, runs, checked }`. k.testing Rules point E1729 at k.drive-law. Map: the k.drive-law row; `spec.map` re-based from 1,500 to 1,510 and `docs.map` from 1,530 to 1,540 tokens. `tooling/docs-owners.json`: `@keel/testing` owns k.drive-law.
 - k.drive (new, `implemented`): Driving, Seams, Law, Law check, Stalls, an "empty replay" definition, and 17 clauses. #1 to #10 are k.sim's former #15 to #24, with "Under `simulate` with `replay` of a `SimRun` of seed 1 and an empty schedule" written "In an empty replay". #5 and #9 change behaviour (the `hold` signature, the outside channel, the 10,000 ms bound). #11 to #17 are new.
 - k.sim: the plans bullet's `hold(label, start)` and what a capability holds; `simulate` gains `law = false`; `run(ms?)` points to k.drive; the Driving, Law and Stalls paragraphs and clauses #15 to #24 move to k.drive, leaving 14 clauses.
@@ -134,6 +149,7 @@ Applied in this commit.
 
 ## Conformance diff
 By the `conformance-writer`, from the spec text.
+- Fifth amendment. Changed: k.drive#17 (a stray `setTimeout(50)` resolves; an uncleared `setInterval` under `budget: 300` fails E1728 `work outlived the scenario: Timeout`), k.drive#18 (a never-settling hold under `budget: 300`; `Timeout, probe`), k.drive-law#7 (a 200 ms scenario under `law: true, budget: 300` resolves `checked` 0; `budget: 1000` gives 1). New: k.drive#21 (`fire` waits for a handler's real timer, `sim-tracked.test.ts`), #22 (`pbkdf2Sync` and `gzipSync` are not work, `sim-tracked.test.ts`); k.drive-law#9 (two holds answer in start order, `sim-order.test.ts`), #10 (`UV_THREADPOOL_SIZE` under `keel test`, `packages/cli/conformance/test-threadpool.test.ts`); std.postgres#26 (two committing inserts leave no work, `packages/std-postgres/conformance/sim-held.test.ts`). Prose headers that quote the changed sentences re-point: k.drive Driving's first two list items and the harness sentence, Stalls' last sentences, k.drive-law Law's first sentence and its residual sentence, k.sim's `hold` sentence.
 - Fourth amendment. No bullet's wording changes. Moved, text unchanged: k.drive#10 to k.drive-law#1; #16 to k.drive-law#2; #17 to k.drive-law#3; #20 to k.drive-law#4; k.drive#11 to #15 to k.drive#10 to #14; #18 and #19 to #15 and #16; #21 to #24 to #17 to #20; #1 to #9 keep their numbers. New: k.drive-law#5 (the default, by `KEEL_TEST`), #6 (replays after the last run, `checked`), #7 (a replay the budget stops), #8 (a failing run, three calls with `law` on or off). Prose headers re-point: k.drive Law to k.drive-law Law, text unchanged; k.drive Law check to k.drive-law Law check, whose first sentence is replaced (the header in `sim-law-check.test.ts` quoting "With `law: true` each run is run a second time ..." quotes a sentence that no longer exists); k.testing Rules' E1727 to E1729 sentence now ends `(k.drive-law)`; k.sim's `simulate` signature and result sentences changed. `sim-law-check.test.ts`'s ASSUMPTION that `law: true` calls a passing scenario twice per run stays true; its order (replays after the last run) is #6. #7 and #8 go in `sim-law-check.test.ts`, #5 too, setting and restoring `process.env.KEEL_TEST`.
 - `packages/testing/conformance/sim-drive.test.ts`, `sim-stalls.test.ts`, `sim-law.property.test.ts`: headers move from k.sim#15 to #24 to k.drive#1 to #10 and quote the new wording. #5 is rewritten (a port made before `simulate`); #9 waits on the 10,000 ms bound with its own timeout.
 - `packages/testing/conformance/sim-tracked.test.ts` (new): k.drive#11 (real `setTimeout`), #12 (`pbkdf2`), #14 (`running` at `t + ms`), #15 (`renderRoute` module load).
@@ -145,6 +161,7 @@ By the `conformance-writer`, from the spec text.
 None. No app is released.
 
 ## Token impact
+- Fifth amendment: k.drive about 3,000 tokens, k.drive-law about 1,870, std.postgres about 3,400 (past 3,100 before this amendment, under 3,500).
 - Fourth amendment: k.drive about 2,590 tokens, k.drive-law about 1,460, k.sim about 1,965. Each is under 3,100. `spec.section` and `docs.section` stay at 3,500: k.scaffold (3,387), std.postgres (3,337) and std.sessions (3,171) are past 3,100.
 - k.drive about 3,230 tokens; k.sim about 1,935; std.postgres about 3,335; k.testing about 2,930. Each is under 3,400.
 - The map and the docs map gain one row, re-based as above.
@@ -180,3 +197,9 @@ None. No app is released.
 Third amendment: E1728's per-piece 10,000 ms bound is replaced by the run's budget; the storage entry holds the stored string and the store entry omits log `at`. k.drive#9, #18, #19 and #20 change wording; #24 is new. `spec.section` and `docs.section` are re-based from 3,400 to 3,500 tokens (k.drive about 3,460).
 
 Fourth amendment: the operator's D135 (`law` on under `keel test`) and D134 (k.drive split at the law into k.drive and k.drive-law). No bullet's wording changes; #10, #16, #17 and #20 move; k.drive-law#5 to #8 are new.
+4. **Order of real completions (D139, the orchestrator's).**
+   - (a) `keel test` sets `UV_THREADPOOL_SIZE=1` for every test process, overriding the author's value; plain vitest does not. The cost: thread-pool work (hashes, file reads, DNS, compression) runs one job at a time, so crypto-heavy tests run slower.
+   - (b) Adopted: holds are delivered in start order and after pending thread-pool requests. It deadlocks only for a hold k.sim already forbids, and then the budget names both.
+   - (c) The residual is named in k.drive-law: concurrent real work outside every seam whose completions the drive does not deliver. The law claims determinism by construction under `keel test`, and the law check reports the rest.
+
+Fifth amendment: the third review's findings and D139. k.drive#17, #18 and k.drive-law#7 change wording; k.drive#21, #22, k.drive-law#9, #10 and std.postgres#26 are new.
