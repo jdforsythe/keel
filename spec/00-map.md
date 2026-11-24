@@ -40,7 +40,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.claim | Claim order | conformance-covered | eager |
 | k.defaults | Queued defaults | conformance-covered | submit |
 | k.place | Placed props | conformance-covered | calls |
-| k.router | Routes | implemented | params |
+| k.router | Routes | conformance-covered | params |
 | k.contract | Module contract | conformance-covered | entries |
 | k.routes | Route table | conformance-covered | union |
 | k.guards | Guards | conformance-covered | deny |

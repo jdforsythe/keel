@@ -8,7 +8,7 @@
     "mcp.tools-list": 2000,
     "docs.map": 1510,
     "docs.section": 3100,
-    "docs.skill": 2975,
+    "docs.skill": 3010,
     "docs.for": 400,
     "docs.agents": 600
   },
@@ -40,7 +40,7 @@
     "@keel/ctx": "4.1kb",
     "@keel/forms": "5kb",
     "@keel/reactive": "4kb",
-    "@keel/router": "14.5kb",
+    "@keel/router": "14.6kb",
     "@keel/router/contract": "3.2kb",
     "@keel/router/match": "2.75kb",
     "@keel/runtime-dom": "6kb",

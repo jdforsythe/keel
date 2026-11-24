@@ -1,5 +1,5 @@
 # k.router: Routes
-status: implemented
+status: conformance-covered
 
 **Manifest.** One per module, in `routes.ts`, binding the module's contract (k.contract); a deployable's route table is their union (k.routes).
 ```ts
