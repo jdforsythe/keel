@@ -1,4 +1,4 @@
-import type { RouteTable } from "@keel/router";
+import type { IdentityMount, RouteTable } from "@keel/router";
 import type { ReplayOptions } from "./ReplayOptions.ts";
 
 /** The job `keel session` writes: which op, the session (JSON), where the result goes, and the deployable's routes (every placed module's with `serve`). */
@@ -15,4 +15,6 @@ export type CommandJobInput = {
   readonly serve?: ReplayOptions["serve"];
   /** The id the base renders signed in as (`--user`). */
   readonly user?: string;
+  /** The project's identity mount, `identity.ts`'s default export, for a route no `node` deployable serves (`replay`'s `mount`). */
+  readonly mount?: IdentityMount;
 };

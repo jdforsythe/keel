@@ -9,7 +9,9 @@ function request(api: { path: string; method: string }): string {
  * `<mod>.<name>.route.test.ts` (k.testing): renders the route's chain. `routes` is the import specifier of the module's manifest.
  * `api` (k.api): the route is an API route with no view, so the test serves the module alone from a node
  * deployable, requests that path with that method and expects JSON. `node`: a page a `node` deployable serves, so the
- * test serves the module alone from one and renders the page from that app (`renderRoute` with `app`).
+ * test serves the module alone from one and renders the page from that app (`renderRoute` with `app`). `mount`: the
+ * import specifier of the project's `identity.ts`, when it has one: a router page's test imports its default export as
+ * `mount` and passes it (k.guards Client), as the built entry does.
  */
 export function routeTest(
   id: string,
@@ -17,6 +19,7 @@ export function routeTest(
   routes = "./routes.ts",
   api: { path: string; method: string } | null = null,
   node = false,
+  mount: string | null = null,
 ): string {
   const p = params.length === 0 ? "{}" : `{ ${params.map((n) => n.concat(': "1"')).join(", ")} }`;
   if (api !== null) {
@@ -64,10 +67,11 @@ export function routeTest(
   return [
     `import { renderRoute } from "@keel/testing";`,
     `import { expect, it } from "vitest";`,
+    ...(mount === null ? [] : [`import mount from "${mount}";`]),
     `import { routes } from "${routes}";`,
     "",
     `it("renders its chain", async () => {`,
-    `  const page = await renderRoute("${id}", { routes, params: ${p} });`,
+    `  const page = await renderRoute("${id}", { routes, params: ${p}${mount === null ? "" : ", mount"} });`,
     `  expect(page.route().id).toBe("${id}");`,
     "  page.dispose();",
     "});",

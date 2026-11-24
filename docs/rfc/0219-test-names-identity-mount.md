@@ -1,6 +1,6 @@
 # RFC 0219: k.guards: a test names the identity mount; `keel test` loads nothing before a test file
 
-Status: accepted (ADR-0241), accepted by the orchestrator on 2026-11-24, for the operator to confirm. Amends k.guards (Client, a new Test files paragraph, Conformance #9 and #10 reworded, #11 added), k.testing (`renderRoute`, Rules, one Conformance clause), k.mount (Declaration), k.mount-scope (Test), k.scaffold (`route`, one clause), std.sessions (`replay`, Commands, one clause), the map. Written over RFC 0221's section split. From the operator's decision D136 (backlog 1089): principle 2 holds against RFC 0209's loading.
+Status: implemented (ADR-0241), accepted by the orchestrator on 2026-11-24, for the operator to confirm. Amends k.guards (Client, a new Test files paragraph, Conformance #9 and #10 reworded, #11 added), k.testing (`renderRoute`, Rules, one Conformance clause), k.mount (Declaration), k.mount-scope (Test), k.scaffold (`route`, one clause), std.sessions (`replay`, Commands, one clause), the map. Written over RFC 0221's section split. From the operator's decision D136 (backlog 1089): principle 2 holds against RFC 0209's loading.
 
 ## Decisions
 - D1: `renderRoute` takes `mount`, the identity mount: `identity.ts`'s default export, which the test file imports (`import mount from '../identity.ts'`). It is the one way a harness gets a mount. The built entry does the same: it imports `identity.ts` and passes the mount to `createRouter` and `shellMount`.

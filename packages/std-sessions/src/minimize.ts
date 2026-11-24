@@ -33,7 +33,7 @@ const range = (n: number): number[] => Array.from({ length: n }, (_, i) => i);
  * `seed`, `deterministic`, `at`, `route` and `state`; its `events` are the kept inputs (at their recorded `at`) with
  * the observations of their final replay in occurrence order, and `error` and `fingerprint` come from that replay.
  * Every replay is deterministic under the seed and the candidate order is fixed, so two runs are equal. `redact` is
- * passed to each replay (see `replay`), as are `serve`, called once per run so every run starts from an empty server, and `user`.
+ * passed to each replay (see `replay`), as are `serve`, called once per run so every run starts from an empty server, `user` and `mount`.
  */
 export async function minimize(
   session: Session,
@@ -67,6 +67,7 @@ export async function minimize(
         ...(options.redact === undefined ? {} : { redact: options.redact }),
         ...(options.serve === undefined ? {} : { serve: options.serve }),
         ...(options.user === undefined ? {} : { user: options.user }),
+        ...(options.mount === undefined ? {} : { mount: options.mount }),
       },
     );
     seen.set(key, { reproduced: r.result.reproduced, recorded: r.recorded });

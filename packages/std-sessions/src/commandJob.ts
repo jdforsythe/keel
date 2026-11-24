@@ -32,6 +32,7 @@ export async function commandJob(job: CommandJobInput): Promise<void> {
     redact,
     ...(job.serve === undefined ? {} : { serve: job.serve }),
     ...(job.user === undefined ? {} : { user: job.user }),
+    ...(job.mount === undefined ? {} : { mount: job.mount }),
   };
   const first = await replayRun(session, opts);
   const seen = {
