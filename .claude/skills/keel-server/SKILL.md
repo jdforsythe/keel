@@ -84,7 +84,7 @@ export const admit = guard({}, async ({ bearer, user }) =>
     : ok(null))
 ```
 
-Bind it as `{ loader, guard: admit }`. A page or layout guard has a `redirect` (`guard({ redirect: 'app.login' }, ...)`); guarded pages share its route's `params` (E1508).
+Bind it as `{ loader, guard: admit }`. A page or layout guard has a `redirect` (`guard({ redirect: 'app.login' }, ...)`); guarded pages share its route's `params` (E1508). A guard lives in a `*.guard.*` file of a module and is bound by value import, so the binder lists that module in `deps`. A guard bound by modules that link to one another (a link imports the binder's contract) lives in a module of its own with no pages and no `deps` on its binders; a guard in one of them is E1153 `module deps cycle through guard <name>` (k.guards Home). A `redirect` is a route id, no `deps` entry.
 
 ## Identity
 

@@ -299,9 +299,9 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1153",
-    "cycle in module deps (message lists the cycle)",
+    "cycle in module deps (message lists the cycle); a deps edge is an import, a contract's among them, so a link is one. A guard bound by modules that link to one another closes a cycle when it sits in one of them, and the message then names it (k.guards Home)",
     "",
-    "move the shared code into a module both depend on",
+    "move the shared code into a module both depend on; for a guard, a module of its own with no pages",
     "k.module",
   ],
   [

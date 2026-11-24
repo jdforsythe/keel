@@ -14,11 +14,11 @@
   },
   "size": {
     "@keel/check": {
-      "max": "62.5kb",
+      "max": "63kb",
       "platform": "node"
     },
     "@keel/check/explain": {
-      "max": "18.75kb",
+      "max": "19kb",
       "platform": "node"
     },
     "@keel/cli": {

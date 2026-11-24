@@ -1,4 +1,5 @@
 import type { Diagnostic } from "../../types/Diagnostic.ts";
+import { stemOf } from "../stemOf.ts";
 import type { ModuleInfo } from "./ModuleInfo.ts";
 import { moduleDiag } from "./moduleDiag.ts";
 
@@ -42,9 +43,14 @@ function cycleFrom(start: string, scc: ReadonlySet<string>, graph: ReadonlyMap<s
 
 /**
  * E1153: one diagnostic per cycle in module `deps` (per strongly connected component), at the manifest of the
- * component's smallest module id, on the dep that starts the reported cycle; the message lists the cycle.
+ * component's smallest module id, on the dep that starts the reported cycle; the message lists the cycle. When an edge
+ * of that cycle imports a `*.guard.*` file (`guards`), the first such edge's first file by path names the guard.
  */
-export function depsCycles(modules: readonly ModuleInfo[], byKey: ReadonlyMap<string, ModuleInfo>): Diagnostic[] {
+export function depsCycles(
+  modules: readonly ModuleInfo[],
+  byKey: ReadonlyMap<string, ModuleInfo>,
+  guards: ReadonlyMap<string, readonly string[]> = new Map(),
+): Diagnostic[] {
   const graph = new Map(modules.map((m) => [m.key, edges(m, byKey)]));
   const done = new Set<string>();
   const out: Diagnostic[] = [];
@@ -56,7 +62,20 @@ export function depsCycles(modules: readonly ModuleInfo[], byKey: ReadonlyMap<st
     for (const k of scc) done.add(k);
     const cycle = cycleFrom(m.key, scc, graph);
     const at = m.manifest?.deps.entries.find((e) => e.value === cycle[1])?.start ?? 0;
-    out.push(moduleDiag("E1153", m.file, at, `module deps cycle: ${cycle.join(" -> ")}`));
+    const ids = cycle.join(" -> ");
+    const guard = cycle.slice(1).flatMap((to, i) => guards.get(`${cycle[i]}\n${to}`)?.slice(0, 1) ?? [])[0];
+    out.push(
+      guard === undefined
+        ? moduleDiag("E1153", m.file, at, `module deps cycle: ${ids}`)
+        : moduleDiag(
+            "E1153",
+            m.file,
+            at,
+            `module deps cycle through guard ${stemOf(guard)}: ${ids}`,
+            undefined,
+            "k.guards",
+          ),
+    );
   }
   return out;
 }
