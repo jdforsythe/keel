@@ -19,6 +19,8 @@ Where an element is made, so that resume (k.runtime, k.resume) claims its own se
 
 **Rules.** E1257 an element placed by an op that started after it was made, in a served render · E1258 an element made before the component call it is passed to (fix: `() =>`; none for a binding).
 
+**E1258's message.** `<prop>: an element made before the call; make it inside a thunk` (`icon`: 61 units).
+
 **Conformance.**
 - `Form` or `Disclosure` given `children` as a node, an array of nodes or a string is a type error; a thunk is not.
 - `Card({ icon: Icon() })`, `Card({ children: [Input(...)] })`, `Disclosure({ children: xs.map((x) => Text(x)) })`, `Card({ children: ok ? A() : 'x' })`, `<Card icon={el} />` with `const el = <Icon />`, and `Form({ children: () => [el] })` with `el` a component call before it or a `const` imported from another project file are each one E1258; the inline ones' fix applies and re-checks clean.
