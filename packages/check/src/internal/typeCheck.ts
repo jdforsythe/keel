@@ -159,7 +159,7 @@ export function typeCheck(
       const open = manifest === undefined ? null : /\bdeps\s*:\s*\[(\s*)(\]?)/.exec(manifest.source);
       if (pkg === undefined || manifest === undefined || open === null || manifest.source.includes(`'${pkg}'`))
         return "";
-      const at = open.index + open[0].length - open[1].length - open[2].length;
+      const at = open.index + open[0].length - (open[1] ?? "").length - (open[2] ?? "").length;
       const text = open[2] === "]" ? `'${pkg}'` : `'${pkg}', `;
       return unifiedDiff(manifest.path, manifest.source, applyEdits(manifest.source, [{ start: at, end: at, text }]));
     };
