@@ -1622,6 +1622,9 @@ importers:
       '@electric-sql/pglite':
         specifier: 0.5.16
         version: 0.5.16
+      '@keel/compiler':
+        specifier: workspace:*
+        version: link:../compiler
       '@keel/router':
         specifier: workspace:*
         version: link:../router

@@ -1,10 +1,11 @@
 // k.check-cache In one process: nothing an earlier `check()` call parsed, loaded or registered changes a later call's
-// answer. A parsed file is reused only under the same compiler options; a `@keel/std-*` package's formats and rules
-// apply only while the project's app manifests reach it.
+// answer. A parsed file is reused only under the same compiler options; a `@keel/std-*` package's formats apply only
+// while the project's app manifests reach it, and so do its rules when `importDeps` imported it first.
 import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { importDeps } from "@keel/compiler/std/importDeps";
 import { afterAll, expect, it, vi } from "vitest";
 import { check, defineRule } from "../src/index.ts";
 import { packageName } from "../src/internal/packageName.ts";
@@ -79,10 +80,10 @@ it("E1108 judges against the formats of the packages `deps` lists on this call, 
   expect(e1108(["@keel/std-temporal"])).toEqual([]);
 });
 
-it("a rule a @keel/std-* package defined runs only while the project's deps reach that package", async () => {
+it("a rule the caller registered runs whatever deps lists, before and after importDeps loaded its package", async () => {
   const root = scratch();
   const pkg = join(root, "node_modules/@keel/std-fake");
-  put(join(pkg, "package.json"), '{"name":"@keel/std-fake","type":"module"}');
+  put(join(pkg, "package.json"), '{"name":"@keel/std-fake","type":"module","exports":{".":"./rule.mjs"}}');
   put(
     join(pkg, "rule.mjs"),
     "export const register = (defineRule) => defineRule({ code: 'E2999', message: 'fake', see: 'k.check', explain: 'A test rule.', check: ({ file }) => file.path.endsWith('b.ts') ? [{ path: file.path, line: 1, col: 1 }] : [] })\n",
@@ -92,18 +93,42 @@ it("a rule a @keel/std-* package defined runs only while the project's deps reac
   const b = { path: "modules/a/b.ts", source: "export const b = 1\n" };
   const e2999 = (deps: string[]) =>
     check([MODULE(deps), b], { root, types: false }).diagnostics.filter((d) => d.code === "E2999");
+  expect(e2999([])).toHaveLength(1);
+  expect(await importDeps(root, [MODULE(["@keel/std-fake"])])).toEqual([]);
   expect(e2999(["@keel/std-fake"])).toHaveLength(1);
-  expect(e2999([])).toEqual([]);
+  expect(e2999([])).toHaveLength(1);
 });
 
-it("a rule whose defining package cannot be told runs; one from a known std package runs only in scope", () => {
+it("a rule whose package importDeps imported first runs only while deps reach that package", async () => {
+  const root = scratch();
+  const pkg = join(root, "node_modules/@keel/std-fake-deps");
+  put(join(pkg, "package.json"), '{"name":"@keel/std-fake-deps","type":"module","exports":{"./tools":"./tools.mjs"}}');
+  put(
+    join(pkg, "tools.mjs"),
+    "globalThis.__keelSessionDefine({ code: 'E2998', message: 'fake', see: 'k.check', explain: 'A test rule.', check: ({ file }) => file.path.endsWith('b.ts') ? [{ path: file.path, line: 1, col: 1 }] : [] })\n",
+  );
+  vi.stubGlobal("__keelSessionDefine", defineRule);
+  const b = { path: "modules/a/b.ts", source: "export const b = 1\n" };
+  const e2998 = async (deps: string[]) => {
+    expect(await importDeps(root, [MODULE(deps)])).toEqual([]);
+    return check([MODULE(deps), b], { root, types: false }).diagnostics.filter((d) => d.code === "E2998");
+  };
+  expect(await e2998(["@keel/std-fake-deps"])).toHaveLength(1);
+  expect(await e2998([])).toEqual([]);
+  expect(await e2998(["@keel/std-fake-deps"])).toHaveLength(1);
+  vi.unstubAllGlobals();
+});
+
+it("a rule runs unless its std package was imported first by importDeps and is out of scope", () => {
   const scope = new Set(["@keel/std-a"]);
-  expect(ruleInScope(null, scope)).toBe(true);
-  expect(ruleInScope(undefined, scope)).toBe(true);
-  expect(ruleInScope("@keel/check", scope)).toBe(true);
-  expect(ruleInScope("some-lib", new Set())).toBe(true);
-  expect(ruleInScope("@keel/std-a", scope)).toBe(true);
-  expect(ruleInScope("@keel/std-b", scope)).toBe(false);
+  const byDeps = new Set(["@keel/std-a", "@keel/std-b"]);
+  expect(ruleInScope(null, scope, byDeps)).toBe(true);
+  expect(ruleInScope(undefined, scope, byDeps)).toBe(true);
+  expect(ruleInScope("@keel/check", scope, byDeps)).toBe(true);
+  expect(ruleInScope("some-lib", new Set(), byDeps)).toBe(true);
+  expect(ruleInScope("@keel/std-a", scope, byDeps)).toBe(true);
+  expect(ruleInScope("@keel/std-b", scope, byDeps)).toBe(false);
+  expect(ruleInScope("@keel/std-c", scope, byDeps)).toBe(true);
 });
 
 it("a file under no package.json that names a package has no owner (null), the case ruleInScope runs", () => {

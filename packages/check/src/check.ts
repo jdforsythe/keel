@@ -15,6 +15,7 @@ import { budgetBreaches } from "./internal/budgetBreaches.ts";
 import { chainStoreIds } from "./internal/chainStoreIds.ts";
 import { compatChecks } from "./internal/compat/compatChecks.ts";
 import { contractChecks } from "./internal/contractChecks.ts";
+import { depsRuleOwners } from "./internal/depsRuleOwners.ts";
 import { dropLifted } from "./internal/dropLifted.ts";
 import { duplicateErrorCodes } from "./internal/duplicateErrorCodes.ts";
 import { generatedEdits } from "./internal/generatedEdits.ts";
@@ -170,8 +171,8 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
     for (const f of group) artifactsOf.set(f.path, { ...compiled.artifacts, ...opts.artifacts });
   }
 
-  // The `@keel/*` packages this call's app manifests reach: a std package's formats and rules apply only among them,
-  // whatever an earlier call in this process imported (k.check-cache In one process).
+  // The `@keel/*` packages this call's app manifests reach: a std package's formats apply only among them, and so do
+  // the rules of one `importDeps` imported first, whatever an earlier call in this process loaded (k.check-cache).
   const scope = stdInScope(all, opts.root ?? process.cwd());
   const typed =
     opts.types === false ? undefined : typeCheck(code, opts.root ?? process.cwd(), reported, scope, opts.typeCache);
@@ -180,7 +181,7 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
   if (typed !== undefined)
     out.push(...typed.diagnostics.filter((d) => d.code !== "E1406" || !e1403.has(`${d.path}:${d.line}:${d.col}`)));
 
-  const registered = rules().filter((r) => ruleInScope(ruleOwners.get(r.code), scope));
+  const registered = rules().filter((r) => ruleInScope(ruleOwners.get(r.code), scope, depsRuleOwners));
   const checked: Checked[] = [];
   for (const file of code) {
     const parsed = parseFile(file);
