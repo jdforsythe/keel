@@ -11,7 +11,7 @@ Ideas that come up outside the current plans. An idea is built at once only when
 - `service({ module })` GET results without the `{ id, results }` envelope. Backlog 0339. Needs an RFC amendment.
 - Invalid search values answered with 422 instead of defaults. Backlog 0275.
 - A cap on concurrent event streams. Backlog 0364.
-- A broker for stream and channel fan-out across replicas. RFC 0081 and RFC 0085 Known limits.
+- A transport for channel `message` across replicas (saves cross by k.persist Watch). RFC 0081 and RFC 0085 Known limits; RFC 0223.
 - An optimistic client view with log entries replicated to clients. RFC 0081 Alternatives. Needs a generic apply endpoint and client rebase rules.
 - More conflict policies (`last-writer`, path-level `merge`, `first-writer`). RFC 0081 Alternatives. Needs a state diff per write.
 - Channel messages resumed for members that were disconnected. RFC 0081 Known limits.
@@ -73,3 +73,4 @@ Ideas that come up outside the current plans. An idea is built at once only when
 - `prove` from any thread: Z3 in a child process that `prove` starts, so a runner on worker threads can prove; today a worker call is refused (E1721). Costs a process start and a serialised query per call.
 - A static rule for E1256: `keel check` reports a `tx` reached from a `*.server.ts` loader, guard or action whose transaction is bound to a module-level store, across imports (as `refreshView.ts` and `hydrate.ts` sit two files from the loader). Today the check is at run time only.
 - A rule-code range for Keel libraries (E9xxx, W9xxx), so a library's own check rules never collide with the kernel's or the stdlib's (RFC 0169's author; needed when the library format of RFC 0163 is built).
+- A sign-in that returns to a page on another origin: a typed peer page reference resolved against a declared public origin per peer, giving an absolute URL brand `ok`, `Link` and `navigate` take; only with an auth library step that carries the session across origins. Today a return target is a page of the `handle`'s own origin (E1592).
