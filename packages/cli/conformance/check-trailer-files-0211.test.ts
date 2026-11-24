@@ -1,5 +1,5 @@
-// Spec: k.check Trailer, "The summary's `files` counts every file `keel check` checked: each code file (`*.ts`, `*.tsx`, `*.mts`, `*.cts`, `*.js`, `*.jsx`, `*.mjs`) and `.keel/*.json` artifact under `paths`, in every project there, tests, declarations and tool configs among them. `keel build` counts its own (k.deploy Build)."
-// Spec: k.check Conformance 14, "In a project `keel build` ran in, whose files besides `package.json` and those `keel build` wrote are `topology.ts`, `vite.config.ts`, `modules/a/module.ts`, `modules/a/A.tsx`, `modules/a/A.test.tsx` and `test/a.test.ts`, the json summary's `counts.files` is 6 plus the number of `.keel/*.json` files for `keel check`, and 3 for `keel check modules/a`; with a nested project `apps/b/` added (its own `package.json`, `topology.ts`, `modules/b/module.ts` and `modules/b/B.tsx`, and the files its `keel build` wrote), `keel check` at the root counts 9 plus the number of `.keel/*.json` files under the root, `apps/b/` included."
+// Spec: k.check Trailer, "The summary's `files` counts every file `keel check` checked: each code file (`*.ts`, `*.tsx`, `*.mts`, `*.cts`, `*.js`, `*.jsx`, `*.mjs`) and `.keel/*.json` artifact under `paths`, in every project there, tests and declarations among them and tool configs other than `vite.config.*`, `vitest.config.*` and `stryker.config.*` (those three are not read: the project's own `tsc` checks them). `keel build` counts its own (k.deploy Build)."
+// Spec: k.check Conformance 14, "In a project `keel build` ran in, whose files besides `package.json` and those `keel build` wrote are `topology.ts`, `vite.config.ts`, `modules/a/module.ts`, `modules/a/A.tsx`, `modules/a/A.test.tsx` and `test/a.test.ts`, the json summary's `counts.files` is 5 plus the number of `.keel/*.json` files for `keel check`, and 3 for `keel check modules/a`; with a nested project `apps/b/` added (its own `package.json`, `topology.ts`, `modules/b/module.ts` and `modules/b/B.tsx`, and the files its `keel build` wrote), `keel check` at the root counts 8 plus the number of `.keel/*.json` files under the root, `apps/b/` included."
 // Seed 1337 (the property adds generated code files of every counted extension, declarations, tests and tool configs, and non-code files that are not counted).
 // Real binary over a temp project with `@keel/*` and `vite` linked; `keel build` runs first (at the root, and in `apps/b/` for the nested case) so the `.keel/*.json` artifacts exist; their number is read from disk.
 // The spec's trailer text describes what the code already does: the example cases may pass before the RFC's build.
@@ -74,23 +74,23 @@ const put = (rel: string, text: string): void => {
 
 describe("k.check Trailer: what `files` counts (rfc:0211)", () => {
   test(
-    "in a project `keel build` ran in, the json summary's `counts.files` is 6 plus the number of `.keel/*.json` files for `keel check`, and 3 for `keel check modules/a`",
+    "in a project `keel build` ran in, the json summary's `counts.files` is 5 plus the number of `.keel/*.json` files for `keel check`, and 3 for `keel check modules/a`",
     () => {
       const keelJson = artifacts(dir);
       expect(keelJson).toBeGreaterThan(0);
-      expect(files(dir, ["check"])).toBe(6 + keelJson);
+      expect(files(dir, ["check"])).toBe(5 + keelJson);
       expect(files(dir, ["check", "modules/a"])).toBe(3);
     },
     SLOW,
   );
 
   test(
-    "with a nested project `apps/b/` added, `keel check` at the root counts 9 plus the number of `.keel/*.json` files under the root, `apps/b/` included",
+    "with a nested project `apps/b/` added, `keel check` at the root counts 8 plus the number of `.keel/*.json` files under the root, `apps/b/` included",
     () => {
       try {
         for (const [rel, text] of Object.entries(nested())) put(rel, text);
         keel(join(dir, "apps/b"), ["build"]);
-        expect(files(dir, ["check"])).toBe(9 + artifacts(dir));
+        expect(files(dir, ["check"])).toBe(8 + artifacts(dir));
       } finally {
         rmSync(join(dir, "apps"), { recursive: true, force: true });
       }
@@ -99,21 +99,29 @@ describe("k.check Trailer: what `files` counts (rfc:0211)", () => {
   );
 
   test(
-    "`files` counts each code file (`*.ts`, `*.tsx`, `*.mts`, `*.cts`, `*.js`, `*.jsx`, `*.mjs`), tests, declarations and tool configs among them, and no other file",
+    "`files` counts each code file (`*.ts`, `*.tsx`, `*.mts`, `*.cts`, `*.js`, `*.jsx`, `*.mjs`), tests and declarations among them, tool configs other than `vite.config.*`, `vitest.config.*` and `stryker.config.*`, and no other file",
     () => {
       const keelJson = artifacts(dir);
       const ext = fc.constantFrom("ts", "tsx", "mts", "cts", "js", "jsx", "mjs");
       const counted = fc.oneof(
         ext.map((e) => (n: number) => `modules/a/extra${n}.${e}`),
         ext.map((e) => (n: number) => `modules/a/extra${n}.test.${e}`),
-        ext.map((e) => (n: number) => `tools/extra${n}.config.${e}`),
+        fc
+          .tuple(fc.constantFrom("tailwind", "eslint", "tsup", "postcss", "vitepress"), ext)
+          .map(([name, e]) => (n: number) => `tools/${name}${n}.config.${e}`),
         fc.constantFrom("d.ts", "d.mts", "d.cts").map((e) => (n: number) => `types/extra${n}.${e}`),
       );
-      const ignored = fc.constantFrom(
+      const toolExt = fc.constantFrom("ts", "mts", "cts", "js", "mjs", "cjs");
+      const ignored = fc.oneof(
+        fc
+          .tuple(fc.constantFrom("vite", "vitest", "stryker"), toolExt)
+          .map(([name, e]) => (n: number) => `tools/t${n}/${name}.config.${e}`),
+        fc.constantFrom(
         (n: number) => `docs/note${n}.md`,
         (n: number) => `data${n}.txt`,
         (n: number) => `data/extra${n}.json`,
         (n: number) => `modules/a/style${n}.css`,
+        ),
       );
       fc.assert(
         fc.property(
@@ -132,13 +140,13 @@ describe("k.check Trailer: what `files` counts (rfc:0211)", () => {
                 put(rel, "x\n");
                 written.push(rel);
               });
-              expect(files(dir, ["check"])).toBe(6 + keelJson + countedNames.length);
+              expect(files(dir, ["check"])).toBe(5 + keelJson + countedNames.length);
             } finally {
               for (const rel of written) rmSync(join(dir, rel), { force: true });
             }
           },
         ),
-        { seed: SEED, numRuns: 4 },
+        { seed: SEED, numRuns: 8 },
       );
     },
     SLOW,
