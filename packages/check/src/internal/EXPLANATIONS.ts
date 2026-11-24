@@ -1235,7 +1235,7 @@ const ROWS: readonly Row[] = [
   [
     "E1802",
     "missing or blank a11y-required prop",
-    "Heading level, Image alt, label on inputs, Link and Button text, one of label and labelledBy on Host; a blank literal label names nothing.",
+    "Heading level, Image alt, label on inputs, Link and Button text, one of label and labelledBy on Host and on Box scroll; a blank literal label names nothing.",
     '<Input /> -> <Input label="Email" />',
     "k.ui",
   ],

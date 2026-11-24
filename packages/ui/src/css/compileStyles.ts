@@ -25,6 +25,9 @@ const HIDDEN = "[hidden]{display:none!important}";
 const SUMMARY_LIST = ".k-summary ul{list-style:none;margin:0;padding:0}";
 /** A table sizes its columns by min-content: under `anywhere` every word could break, so cells break only an overlong word. */
 const TABLE_WRAP = "table{overflow-wrap:break-word}";
+/** A header aligns as the cells of its row; a scroll region scrolls and shrinks inside a flex row. */
+const TABLE_HEAD = "th{text-align:inherit}";
+const SCROLL = ".k-scroll{overflow-x:auto;min-width:0}";
 
 const fail = (code: string, message: string): Error => Object.assign(new Error(message), { code });
 
@@ -89,7 +92,7 @@ const isStyleProp = (k: string): k is StyleProp => styleProps.some((p) => p === 
 
 /** The `keel.base` layer (k.ui Base): fixed rules, each `base` set on its role, and the `base.focus` ring. */
 function baseLayer(tokens: Tokens, bps: readonly (readonly [string, string])[]): string {
-  const rules: string[] = [HIDDEN, TABLE_WRAP];
+  const rules: string[] = [HIDDEN, TABLE_WRAP, TABLE_HEAD, SCROLL];
   const media = new Map<string, string[]>();
   const decls = (ls: readonly SetLeaf[]): string => ls.map((l) => resolve(tokens, l.prop, l.token).body).join(";");
   for (const { role, selector } of baseRoles) {
