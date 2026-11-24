@@ -9,10 +9,13 @@ const LEAST_MARGIN_MS = 50;
 /**
  * The `performance.now()` time at which the run's real-time budget is spent (k.drive Stalls): `budget` ms from the
  * call, else the enclosing vitest test's timeout less a tenth of it (at least 50 ms) counted from the instant the
- * runner started the test, else 300,000 ms from the call. A `budget` that is not a positive integer is `schema.invalid`.
+ * runner started the test, else 300,000 ms from the call. `called` is the `performance.now()` time of the call and `epoch` the same instant as an epoch time. A `budget` that is not a positive integer is `schema.invalid`.
  */
-export function budgetDeadline(budget: number | undefined): number {
-  const called = performance.now();
+export function budgetDeadline(
+  budget: number | undefined,
+  called: number = performance.now(),
+  epoch: number = performance.timeOrigin + called,
+): number {
   if (budget !== undefined) {
     if (!Number.isInteger(budget) || budget < 1)
       throw fail(
@@ -24,6 +27,6 @@ export function budgetDeadline(budget: number | undefined): number {
   }
   const test = currentTestBound();
   if (test === undefined) return called + DEFAULT_BUDGET_MS;
-  const started = called - (performance.timeOrigin + called - test.startedAt);
+  const started = called - (epoch - test.startedAt);
   return started + Math.max(0, test.timeout - Math.max(LEAST_MARGIN_MS, test.timeout / 10));
 }

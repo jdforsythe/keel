@@ -4,7 +4,7 @@ import { simulate } from "@keel/testing";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { budgetDeadline } from "../src/internal/budgetDeadline.ts";
 
-const bound = vi.hoisted(() => ({ value: undefined as { timeout: number; startedAt: number } | undefined }));
+const bound = vi.hoisted((): { value: { timeout: number; startedAt: number } | undefined } => ({ value: undefined }));
 vi.mock("../unsafe/currentTestBound.ts", () => ({ currentTestBound: () => bound.value }));
 
 const empty = { seed: 1, schedule: { net: [], storage: [], offline: [], plans: {} } };
@@ -15,36 +15,27 @@ afterEach(() => {
 
 describe("budgetDeadline", () => {
   it("is 300,000 ms from the call outside a test", () => {
-    const before = performance.now();
-    const at = budgetDeadline(undefined);
-    expect(at - before).toBeGreaterThanOrEqual(300_000);
-    expect(at - before).toBeLessThan(300_100);
+    expect(budgetDeadline(undefined, 1_000, 5_000)).toBe(301_000);
   });
 
   it("is `budget` ms from the call", () => {
-    const before = performance.now();
-    expect(budgetDeadline(250) - before).toBeGreaterThanOrEqual(250);
-    expect(budgetDeadline(250) - before).toBeLessThan(350);
+    expect(budgetDeadline(250, 1_000, 5_000)).toBe(1_250);
   });
 
   it("is the test's timeout less a tenth from the test's start", () => {
-    bound.value = { timeout: 10_000, startedAt: performance.timeOrigin + performance.now() - 1_000 };
-    const before = performance.now();
-    const left = budgetDeadline(undefined) - before;
-    expect(left).toBeGreaterThan(7_900);
-    expect(left).toBeLessThanOrEqual(8_000);
+    bound.value = { timeout: 10_000, startedAt: 4_000 };
+    // The call is 1,000 ms after the test's start, which is at 0 on the clock of `called`.
+    expect(budgetDeadline(undefined, 1_000, 5_000)).toBe(9_000);
   });
 
   it("leaves out at least 50 ms of a short timeout", () => {
-    bound.value = { timeout: 200, startedAt: performance.timeOrigin + performance.now() };
-    const left = budgetDeadline(undefined) - performance.now();
-    expect(left).toBeGreaterThan(100);
-    expect(left).toBeLessThanOrEqual(150);
+    bound.value = { timeout: 200, startedAt: 5_000 };
+    expect(budgetDeadline(undefined, 1_000, 5_000)).toBe(1_150);
   });
 
   it("prefers `budget` to the test's timeout", () => {
-    bound.value = { timeout: 10_000, startedAt: performance.timeOrigin + performance.now() };
-    expect(budgetDeadline(100) - performance.now()).toBeLessThanOrEqual(100);
+    bound.value = { timeout: 10_000, startedAt: 5_000 };
+    expect(budgetDeadline(100, 1_000, 5_000)).toBe(1_100);
   });
 
   it("rejects a budget that is not a positive integer", () => {
