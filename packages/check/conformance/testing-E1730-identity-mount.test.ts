@@ -179,7 +179,12 @@ test("the message names the relative specifier of identity.ts from the file, for
       const path = ["modules", "a", ...dirs, "x.test.ts"].join("/");
       const up = "../".repeat(dirs.length + 2);
       const [d] = e1730(project(testFile("renderRoute('a.page', { routes })"), path));
-      expect(d?.message).toBe(`renderRoute names no identity mount; import mount from '${up}identity.ts' and pass it`);
+      const full = `renderRoute names no identity mount; import mount from '${up}identity.ts' and pass it`;
+      const message = d?.message ?? "";
+      // OUTPUT.md: a message is under 90 chars; a longer one is clipped, so it is asserted by its bound and as a prefix of the whole text.
+      expect(message.length).toBeLessThan(90);
+      if (full.length < 90) expect(message).toBe(full);
+      else expect(full.startsWith(message.replace(/\.\.\.$/, ""))).toBe(true);
     }),
     { seed: SEED, numRuns: 12 },
   );
