@@ -103,20 +103,25 @@ describe("session capture", () => {
     expect(out.records[0]).toEqual(record(`.keel/sessions/${FP}-0.json`, { error: null, events: 0, inputs: 0 }));
   });
 
-  test("no recorder (a null section value) is one E1056 and writes nothing", async () => {
-    const { io } = net(() => inspect(null));
-    expect(await commandFetch("capture", {}, io)).toEqual({
-      records: [
-        diag("E1056", "session capture has no sessions.live section: http://localhost:5173"),
-        summary("capture", false, 0),
+  test("each way to have nothing to save is one E1056 with its own message, and nothing is written", async () => {
+    const answers: readonly [string, () => Response, string][] = [
+      ["absent", () => json({ sections: { other: {} } }), "has no sessions.live section"],
+      ["null", () => inspect(null), "found no recorder (sessions.live is null)"],
+      [
+        "error",
+        () => json({ sections: { "sessions.live": { error: { code: "E1057", message: "read\nthrew" } } } }),
+        "sessions.live is an error: read threw",
       ],
-      writes: [],
-    });
-  });
-
-  test("no recorder (a section with no value) writes nothing and passes", async () => {
-    const { io } = net(() => json({ sections: { "sessions.live": {} } }));
-    expect(await commandFetch("capture", {}, io)).toEqual({ records: [summary("capture", true, 0)], writes: [] });
+      ["not a session", () => inspect({ v: 2 }), "sessions.live is not a session"],
+      ["no value", () => json({ sections: { "sessions.live": {} } }), "sessions.live is not a session"],
+    ];
+    for (const [name, answer, why] of answers) {
+      const { io } = net(answer);
+      expect(await commandFetch("capture", {}, io), name).toEqual({
+        records: [diag("E1056", `session capture ${why}: http://localhost:5173`), summary("capture", false, 0)],
+        writes: [],
+      });
+    }
   });
 
   test("each failure is one E1056 naming the target's origin only, and no write", async () => {

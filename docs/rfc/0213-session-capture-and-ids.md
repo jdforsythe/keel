@@ -1,6 +1,6 @@
 # RFC 0213: std.sessions: `capture` with no recorder is E1056; the session-id rule is spec, groups included
 
-Status: accepted (ADR-0235), accepted by the orchestrator on 2026-11-24, for the operator to confirm. Amends std.sessions (API, Commands, Conformance) and std.multi (Module, Conformance). From backlog 1067 and 1068.
+Status: implemented (ADR-0235), accepted by the orchestrator on 2026-11-24, for the operator to confirm. Amends std.sessions (API, Commands, Conformance) and std.multi (Module, Conformance). From backlog 1067 and 1068.
 
 ## Decisions
 - D1: `keel session capture [url]` saves nothing and answers E1056, exit 1, when `sessions.live` is absent, `null` (no `record` on the page), an `error` section, or not a `Session`. Only a section holding a `Session` is a capture.
