@@ -1184,9 +1184,9 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1728",
-    "held work waits on the sim clock, work in flight never answers, or work outlived the scenario, under simulate",
-    "Held work waited on ctx.clock or the online state, which its own hold blocks. Or one resource or hold stayed pending 10,000 ms of real time after its own creation (endless short work is no stall). Or the scenario resolved with work of the run still pending: the label is the hold's, else the open resource's Node type (Timeout, TCPWRAP), the first in creation order.",
-    "hold only work answering through something made outside the run, never a clock wait; close what the run opens before the scenario resolves (app.close(), clearInterval, a socket's close)",
+    "held work waits on the sim clock, work never answers, or work outlived the scenario, under simulate",
+    "Held work waited on ctx.clock. Or one resource or hold stayed pending 10,000 ms of real time after its creation. Or the scenario resolved with work of the run pending; the label is the hold's, else the resource's Node type (Timeout, TCPWRAP).",
+    "hold only work answering through something made outside the run; close what the run opens before it resolves",
     "k.drive",
   ],
   [
