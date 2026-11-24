@@ -1,36 +1,18 @@
 import path from "node:path";
-import { type Expression, Visitor, parseSync } from "oxc-parser";
+import { Visitor, parseSync } from "oxc-parser";
 import { lineCol } from "../internal/lineCol.ts";
 import { parseTopology } from "../internal/parseTopology.ts";
 import type { Diagnostic } from "../types/Diagnostic.ts";
 import type { SourceFile } from "../types/SourceFile.ts";
 import { identitySource } from "./identitySource.ts";
 import { mountSource } from "./mountSource.ts";
+import { topologyEntry } from "./topologyEntry.ts";
 
 /** A subpath `identityMount(path).href` takes: `''` or `/`-led segments of `[A-Za-z0-9._~-]`, none `.` or `..`. */
 const SUBPATH = /^(\/(?!\.\.?(\/|$))[\w.~-]+)*$/;
 
 /** Offset in `source` (`topology.ts`) of the key of deployable `name`; 0 when the static read finds none. */
-function keyOffset(source: string, name: string): number {
-  const { program } = parseSync("topology.ts", source, { sourceType: "module", lang: "ts" });
-  let e: Expression | undefined;
-  for (const s of program.body)
-    if (s.type === "ExportDefaultDeclaration" && s.declaration.type !== "FunctionDeclaration")
-      if (s.declaration.type !== "ClassDeclaration" && s.declaration.type !== "TSInterfaceDeclaration")
-        e = s.declaration;
-  while (e !== undefined && e.type !== "ObjectExpression") {
-    if (e.type === "ParenthesizedExpression" || e.type === "TSAsExpression" || e.type === "TSSatisfiesExpression")
-      e = e.expression;
-    else if (e.type === "CallExpression") e = e.arguments[0]?.type === "SpreadElement" ? undefined : e.arguments[0];
-    else e = undefined;
-  }
-  for (const p of e?.properties ?? []) {
-    if (p.type !== "Property" || p.computed) continue;
-    const k = p.key;
-    if ((k.type === "Identifier" ? k.name : k.type === "Literal" ? k.value : undefined) === name) return k.start;
-  }
-  return 0;
-}
+const keyOffset = (source: string, name: string): number => topologyEntry(source, name).key;
 
 /**
  * k.mount Rules of a project (paths relative to it), when it has an `identity.ts`. E1580: `identity.ts` whose default
@@ -51,7 +33,7 @@ export function mountDiags(files: readonly SourceFile[]): Diagnostic[] {
     read.problem ??
     (server !== undefined && identitySource(server.source).mounted
       ? undefined
-      : "identity.server.ts needs handle: { path: mount.path }, mount its default import of ./identity.ts");
+      : "identity.server.ts gives no handle: { path: <identity.ts default import>.path }");
   const out: Diagnostic[] =
     problem === undefined ? [] : [{ code: "E1580", path: own.path, line: 1, col: 1, message: problem, see: "k.mount" }];
   for (const l of read.links ?? [])
@@ -115,9 +97,9 @@ export function mountDiags(files: readonly SourceFile[]): Diagnostic[] {
     if (top === undefined || unmounted.has(name)) continue;
     const message =
       d.adapter === "static"
-        ? `${name} (static) serves no router: with identity.ts its pages never learn the reader; move it to a project of its own, or make it client with servedBy`
+        ? `${name} (static) serves no router, so with identity.ts its pages never learn the reader`
         : d.adapter === "client" && d.servedBy === undefined
-          ? `${name} (client) has no servedBy: with identity.ts its router reads /__keel/user from its own origin, which mounts no handle; add servedBy: '<node deployable>', or remove identity.ts`
+          ? `${name} (client) has no servedBy: no origin of it mounts the identity handle`
           : undefined;
     if (message !== undefined)
       out.push({

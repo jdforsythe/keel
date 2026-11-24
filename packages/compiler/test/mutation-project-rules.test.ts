@@ -58,7 +58,7 @@ describe("E1002 raw HTML", () => {
 describe("E1004 server imports", () => {
   it("reports server specifiers (with and without extension), not type imports or look-alikes", () => {
     const src = `import a from './x.server.ts'; import b from './y.server'; import type c from './z.server.ts'; import d from './w.serverx.ts'; import e from './q.server.tsx'; import {f} from './v.server.mjs'; import g from './server.ts'; import h from './x.server.cts'`;
-    const m = (s: string) => `client code imports server module ${s}`;
+    const m = (s: string) => `client code imports server-only ${s.replace("./", "")}`;
     expect(diags(src)).toEqual([
       d("E1004", "a.tsx", 1, 1, m("./x.server.ts"), "k.compiler"),
       d("E1004", "a.tsx", 1, 32, m("./y.server"), "k.compiler"),

@@ -6,6 +6,8 @@ import { buildDeps } from "./internal/buildDeps.ts";
 import { canonicalJson } from "./internal/canonicalJson.ts";
 import { clientReach } from "./internal/clientReach.ts";
 import { clip } from "./internal/clip.ts";
+import { fitChain } from "./internal/fitChain.ts";
+import { shortPath } from "./internal/shortPath.ts";
 import { collectElements } from "./internal/collectElements.ts";
 import { collectStyles } from "./internal/collectStyles.ts";
 import { diag } from "./internal/diag.ts";
@@ -65,6 +67,14 @@ function syntaxMessage(parser: string): string {
   return clip(`syntax error: ${parser}`, 89);
 }
 
+/** E1004 message (k.boundary Reach): the shortest chain from a client entry, else the file the import names. */
+function reachMessage(chain: string | undefined, file: string): string {
+  const head = "client code reaches server-only (";
+  if (chain !== undefined) return `${head}${fitChain(chain.split(" -> "), 89 - head.length - 1)})`;
+  const lead = "client code imports server-only ";
+  return `${lead}${shortPath(file, 89 - lead.length)}`;
+}
+
 /**
  * Compile Keel sources (k.compiler): lower JSX to k.runtime ops, run the compile-time rules, and derive
  * the `.keel/` artifacts. Pure and deterministic: equal inputs give byte-identical results; nothing is
@@ -115,9 +125,8 @@ function compileFiles(files: readonly SourceFile[], options: CompileOptions): Co
   const byPath = new Map(done.map((d) => [d.a.path, d.a]));
   for (const h of clientReach([...byPath.values()], options.topology).hits) {
     const a = byPath.get(h.path);
-    const via = h.chain === undefined ? "" : ` (${h.chain})`;
     if (a !== undefined)
-      diagnostics.push(diag(a, "E1004", h.start, `client code imports server module ${h.source}${via}`, "k.compiler"));
+      diagnostics.push(diag(a, "E1004", h.start, reachMessage(h.chain, h.file), "k.compiler"));
   }
   // E1010 (k.bundle Names): a specifier naming a file of the project in a case other than its name on disk.
   for (const m of miscasedImports([...byPath.values()])) {

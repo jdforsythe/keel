@@ -4,7 +4,7 @@
 // Spec: k.bundle, Conformance "An import `./notes.Server.ts` of `notes.server.ts` is one E1010 in `keel check`, and on a case-insensitive file system `vite build` ships no canary."
 // Spec: k.bundle, Rules "E1010 a specifier naming a file in a case other than its name on disk (fix: the name on disk) · E1007 reasons `environment config` and `environment value`, beside k.boundary's."
 // Seed 1337 (the properties below). `check` over in-memory project trees (the type pass is off: the rules read syntax and the topology). The build halves of these clauses are in packages/cli/conformance/bundle-*.test.ts.
-// Node `api` lists module `a`, `client` `web` lists module `w`. E1004's message ends `(<entry> -> … -> <file>)`. The E1010 tests need no real disk: the in-memory file list holds the name on disk, so they hold on any file system.
+// Node `api` lists module `a`, `client` `web` lists module `w`. E1004's message is `client code reaches server-only (<chain>)`, a chain past 89 units elided as in k.boundary E1004's message. The E1010 tests need no real disk: the in-memory file list holds the name on disk, so they hold on any file system.
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 import { CONTRACT_A, ROUTES_A, diagsOf, file, nodeA, pageOf } from "./boundary-support.ts";
@@ -42,7 +42,7 @@ describe("k.bundle Bundles: reach follows a worker the way it follows a literal 
     });
   }
 
-  test("a worker reached through a plain file is the same E1004: `Page.tsx` -> `lib/start.ts` -> `lib/w.ts` -> `lib/notes.server.ts`", () => {
+  test("a worker reached through a plain file is the same E1004: `Page.tsx` -> `lib/start.ts` -> `lib/w.ts` -> `lib/notes.server.ts`, its four-file chain past 89 units shown as `(modules/a/Page.tsx -> ... -> lib/notes.server.ts)`", () => {
     const start = file("lib/start.ts", "export const start = () => new Worker(new URL('./w.ts', import.meta.url))\n");
     const d = e1004(
       nodeA([
@@ -56,9 +56,7 @@ describe("k.bundle Bundles: reach follows a worker the way it follows a literal 
     );
     expect(d).toHaveLength(1);
     expect(d[0]?.path).toBe("lib/w.ts");
-    expect(d[0]?.message.endsWith("(modules/a/Page.tsx -> lib/start.ts -> lib/w.ts -> lib/notes.server.ts)")).toBe(
-      true,
-    );
+    expect(d[0]?.message).toBe("client code reaches server-only (modules/a/Page.tsx -> ... -> lib/notes.server.ts)");
   });
 
   test("`new URL('../../lib/keys.server.ts', import.meta.url)` in `Page.tsx` names its file: one E1004 at `Page.tsx`", () => {

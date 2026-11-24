@@ -32,7 +32,7 @@ const messages = (source: string): string[] => read(source).map((p) => p.message
 const top = (body: string): string => `export default { ${body} }\n`;
 const NOT_LITERAL = "web: a styles entry is not a string literal";
 const entry = (spec: string, what: string): string =>
-  `web: styles entry '${spec}' is ${what}; name a package export that is a .css file`;
+  `web: styles entry '${spec}' is ${what}`;
 
 describe("stylesProblems", () => {
   it("accepts a package export that is a .css file, in every wrapper the declaration may take", () => {
