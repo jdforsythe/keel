@@ -718,7 +718,7 @@ const ROWS: readonly Row[] = [
   [
     "E1552",
     "topology.ts is not statically readable, a deployable name is not [a-z][a-z0-9-]*, or a module is unknown or in two deployables, or a deployable has a key it does not list",
-    "",
+    "A deployable lists modules, adapter, servedBy, storage, shells, caller, origins and styles.",
     "write literal names, modules and adapters; list each existing module in exactly one deployable",
     "k.topology",
   ],

@@ -3,13 +3,12 @@ import { artifactHashes, compile, parseTopology, projectDirs, routeLiterals } fr
 import type { Topology } from "@keel/compiler";
 import { foreignRoutesDiags } from "@keel/compiler/hosting/foreignRoutesDiags";
 import { mountDiags } from "@keel/compiler/hosting/mountDiags";
-import { applyEdits } from "./internal/applyEdits.ts";
-import { unifiedDiff } from "./internal/unifiedDiff.ts";
 import { servedByEdit } from "@keel/compiler/hosting/servedByEdit";
 import { topologyReadProblems } from "@keel/compiler/hosting/topologyReadProblems";
 import type { Checked } from "./internal/Checked.ts";
 import type { Expected } from "./internal/Expected.ts";
 import { apiWithoutServer } from "./internal/apiWithoutServer.ts";
+import { applyEdits } from "./internal/applyEdits.ts";
 import { artifactDir } from "./internal/artifactDir.ts";
 import { budgetBreaches } from "./internal/budgetBreaches.ts";
 import { chainStoreIds } from "./internal/chainStoreIds.ts";
@@ -35,6 +34,7 @@ import { summarize } from "./internal/summarize.ts";
 import { topologyDiags } from "./internal/topologyDiags.ts";
 import { topologyNeeds } from "./internal/topologyNeeds.ts";
 import { typeCheck } from "./internal/typeCheck.ts";
+import { unifiedDiff } from "./internal/unifiedDiff.ts";
 import { rules } from "./rules.ts";
 import type { CheckOptions } from "./types/CheckOptions.ts";
 import type { CheckResult } from "./types/CheckResult.ts";
@@ -142,8 +142,14 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
     // E1580-E1582, E1584, E1589 (k.mount): the project's `identity.ts`, its importers and the topology serving them.
     for (const d of mountDiags(project.map((f) => ({ path: f.path.slice(dir.length), source: f.source })))) {
       // E1589's fix: `servedBy` of the one `node` deployable, for a `client` one (k.mount Messages).
-      const edit = d.code === "E1589" && d.message.includes(" (client) ") && top !== undefined ? servedByEdit(top, d.message.split(" ")[0] ?? "") : undefined;
-      const fix = edit === undefined || top === undefined ? {} : { fix: unifiedDiff(`${dir}topology.ts`, top, applyEdits(top, [edit])) };
+      const edit =
+        d.code === "E1589" && d.message.includes(" (client) ") && top !== undefined
+          ? servedByEdit(top, d.message.split(" ")[0] ?? "")
+          : undefined;
+      const fix =
+        edit === undefined || top === undefined
+          ? {}
+          : { fix: unifiedDiff(`${dir}topology.ts`, top, applyEdits(top, [edit])) };
       out.push({ kind: "diag", ...d, ...fix, path: `${dir}${d.path}` });
     }
     // E1592 (k.user): `identity.server.ts` and the project files it imports, importing the routes of a module another origin serves.

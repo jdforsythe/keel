@@ -179,7 +179,7 @@ describe("parseTopology servedBy", () => {
     expect(parseTopology(source).problems).toEqual([
       [
         "web",
-        "web: host is not a deployable key; one of modules, adapter, servedBy, storage, shells, caller, origins, styles",
+        "web: host is not a deployable key",
       ],
     ]);
     expect(topologyReadProblems(source).map(([code]) => code)).toEqual(["E1552"]);
