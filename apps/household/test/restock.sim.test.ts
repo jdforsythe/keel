@@ -86,11 +86,11 @@ it(
       await run(500);
       ctx.clock.advance(SATURDAY_8 - ctx.clock.now() - 1_000);
       expect((await runsOn(ctx)).last).toBeNull();
-      await run(10_000);
+      await run(1_500);
       const fired = await runsOn(ctx);
-      expect(fired.last).toMatchObject({ by: "schedule" });
+      expect(fired.last).toMatchObject({ by: "schedule", state: "running" });
       expect(fired.last === null ? Number.NaN : epochMs(fired.last.at)).toBeGreaterThanOrEqual(SATURDAY_8);
-      await run(40_000);
+      await run(60_000);
       expect(await listOn(ctx)).toEqual(STAPLES);
       await first.close();
 
@@ -99,9 +99,9 @@ it(
       ctx.clock.advance(3 * 7 * DAY + 4 * DAY);
       const back = ctx.clock.now();
       const second = await webApp(ctx);
-      await run(20_000);
+      await run(1_000);
       const caughtUp = (await runsOn(ctx)).last;
-      expect(caughtUp).toMatchObject({ by: "schedule" });
+      expect(caughtUp).toMatchObject({ by: "schedule", state: "running" });
       expect(caughtUp === null ? Number.NaN : epochMs(caughtUp.at)).toBeGreaterThanOrEqual(back);
       await run(60_000);
       const caught = await runsOn(ctx);

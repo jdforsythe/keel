@@ -1,5 +1,5 @@
 import { type Ctx, type Net, createCtx } from "@keel/ctx";
-import { browserCtx } from "@keel/ctx/internal";
+import { browserCtx, holdOn } from "@keel/ctx/internal";
 import { scope } from "@keel/reactive";
 import type { RouteTable } from "@keel/router";
 import { compileRoutes, encodeHref } from "@keel/router/internal";
@@ -88,10 +88,12 @@ export async function documentRoute<T extends RouteTable>(
       { option: options.state !== undefined ? "state" : "shell" },
     );
   const given = options.routes;
-  // An import resumes the page in a client module graph of its own: this harness's browser alone.
+  const ctx = options.ctx ?? createCtx({ mode: "sim", seed: seedFrom(undefined) });
+  // An import resumes the page in a client module graph of its own: this harness's browser alone. The test runner
+  // answers the import over a channel made before the run, so the load is held, under the route id (k.drive Seams).
   const graph =
     typeof given === "function"
-      ? await freshGraph(given)
+      ? await holdOn(ctx.clock)(id, () => freshGraph(given))
       : {
           routes: given,
           table: compileRoutes(given).table,
@@ -112,7 +114,6 @@ export async function documentRoute<T extends RouteTable>(
   const url = raw ?? graph.encodeHref(id, graph.table.get(id)?.def, options.params ?? {}, options.search ?? {});
   // Each harness starts at the top: scroll is the window's, shared with the test before.
   window.scrollTo(0, 0);
-  const ctx = options.ctx ?? createCtx({ mode: "sim", seed: seedFrom(undefined) });
   const origin = /^https?:$/.test(location.protocol) ? location.origin : "http://localhost";
   const components: Record<string, Island> = {};
   for (const [rid, { def }] of graph.table) if (def.component) components[rid] = def.component;

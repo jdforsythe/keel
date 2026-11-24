@@ -1,4 +1,5 @@
 import { type Ctx, createCtx } from "@keel/ctx";
+import { holdOn } from "@keel/ctx/internal";
 import { scope } from "@keel/reactive";
 import { compileRoutes } from "@keel/router/internal";
 import { resume } from "@keel/runtime-dom/ops";
@@ -37,11 +38,12 @@ export function resumeDocument<C extends Ctx>(
 export function resumeDocument(html: string, options: ResumeDocumentOptions): Promise<ResumedHarness<Ctx>>;
 export async function resumeDocument(html: string, options: ResumeDocumentOptions): Promise<ResumedHarness<Ctx>> {
   const given = options.routes;
+  const ctx = options.ctx ?? createCtx({ mode: "sim", seed: seedFrom(undefined) });
+  // The test runner answers the import over a channel made before the run: the load is held (k.drive Seams).
   const graph =
     typeof given === "function"
-      ? await freshGraph(given)
+      ? await holdOn(ctx.clock)("resumeDocument", () => freshGraph(given))
       : { table: compileRoutes(given).table, resume, stores, scope };
-  const ctx = options.ctx ?? createCtx({ mode: "sim", seed: seedFrom(undefined) });
   const live = graph.stores();
   const seeded: (readonly [Store<unknown>, Snapshot<unknown>])[] = [...live.values()].map((st) => [
     st,

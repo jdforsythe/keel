@@ -67,9 +67,8 @@ it(
       expect(copyOf(grace).items).toEqual([]);
       await h.raw(asJson("POST", "/api/restock", undefined, { cookie: h.adaCookie }));
       let seen = 0;
-      // The page reaches the server through its own app, real I/O the run does not hold: each turn gives it a few more
-      // event-loop turns, and the loop ends when the staples are on the list, not at a time.
-      for (let n = 0; n < 600 && seen < 5; n++) {
+      // The run takes about a minute of sim time: watch the list every half second of it.
+      for (let n = 0; n < 120 && seen < 5; n++) {
         await run(500);
         await grace.settle();
         const now = copyOf(grace).items.length;
@@ -100,11 +99,8 @@ it(
       expect(page.find("shopping.restock.last").text).toMatch(/^Running: [01] of 5 staples handled, [01] put back\.$/);
       expect(page.find("shopping.restock.last").role).toBe("status");
       expect(page.find("shopping.restock.started").text).toBe("Started by a member, Jan 1, 1970, 12:00:00 AM UTC");
-      // As above: the page waits on its own requests to the server, so the loop ends on the page showing the run done.
-      for (let n = 0; n < 600 && !page.find("shopping.restock.last").text.startsWith("Done"); n++) {
-        await run(500);
-        await page.settle();
-      }
+      await run(60_000);
+      await page.settle();
       expect(page.find("shopping.restock.last").text).toBe("Done: 5 of 5 staples handled, 5 put back.");
       expect(page.find("shopping.restock.live").text).toBe("Live: a run shows here as it goes");
       expect(page.find("shopping.restock.live").role).toBe("status");

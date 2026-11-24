@@ -8,3 +8,5 @@ export { browserCtx } from "./browserCtx.ts";
 export { netInFlight } from "./netInFlight.ts";
 export { tapNet } from "./tapNet.ts";
 export { heldWork } from "./heldWork.ts";
+export { holdOn } from "./holdOn.ts";
+export { driven } from "./driven.ts";

@@ -13,7 +13,7 @@ import { planOf } from "./internal/planOf.ts";
  * Register a capability (extension point). Returns the typed accessor `(ctx) => T`, the only way to reach it.
  * Resolution is lazy: the first access on a ctx builds the implementation for its mode, so ctx and register may be created in either order. Each factory receives a seed derived from the ctx seed and the name. Registering the same name with the
  * identical `impls` object again returns the original accessor (HMR safe); any other repeat throws E1602. With `plan`,
- * the sim factory also gets the schedule's `plans[name]`, each step parsed by `plan`, and `hold(work, label)`, which returns `work` and marks it held until it settles (k.sim); a step that fails throws E1604
+ * the sim factory also gets the schedule's `plans[name]`, each step parsed by `plan`, and `hold(label, start)`, which calls `start` and marks the work it returns held until it settles (k.sim); a step that fails throws E1604
  * at the capability's first access on that ctx. Under `keel dev` the stack it ran on is recorded (k.data Dev).
  */
 export function register<T extends object, P = never>(name: string, impls: Capability<T, P>): (ctx: Ctx) => T {
@@ -35,7 +35,7 @@ export function register<T extends object, P = never>(name: string, impls: Capab
       sim(opts: {
         readonly seed: number;
         readonly plan: readonly unknown[];
-        readonly hold: <W>(work: Promise<W>, label: string) => Promise<W>;
+        readonly hold: <W>(label: string, start: () => Promise<W>) => Promise<W>;
       }): T;
     } = impls;
     const impl =

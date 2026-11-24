@@ -1,18 +1,16 @@
-import type { Schedule, SimCtx } from "@keel/ctx";
-import { heldWork, netInFlight } from "@keel/ctx/internal";
-import { stores } from "@keel/store";
+import type { Ctx, Schedule, SimCtx } from "@keel/ctx";
+import { observe } from "@keel/ctx";
+import { driven, heldWork } from "@keel/ctx/internal";
 import type { DriveHandle } from "./DriveHandle.ts";
 import type { HarnessGauge } from "./HarnessGauge.ts";
 import { drained } from "./drained.ts";
 import { fail } from "./fail.ts";
 import { harnessGauges } from "./harnessGauges.ts";
+import { runTracker } from "./runTracker.ts";
+import { traceEvent } from "./traceEvent.ts";
 
-/** Macrotask turns a stalled run waits, with nothing due, before E1727: lets an untracked `import()` finish. */
-const IDLE_TURNS = 1_000;
-/** Macrotask turns held work or an unanswered route may wait, with nothing changing, before E1728 (`settle`'s count). */
-const STUCK_TURNS = 200_000;
-/** Consecutive quiet macrotask turns that make the run idle (k.sim Driving). */
-const QUIET_TURNS = 2;
+/** Real milliseconds work may stay pending before E1728 (k.drive Stalls); it only fails a run. */
+const PENDING_MS = 10_000;
 /** The longest `run(ms)` (k.sim simulate). */
 const MAX_RUN_MS = 600_000;
 
@@ -23,44 +21,39 @@ interface Waiting {
   readonly done: () => void;
 }
 
-const logSizes = (): string => [...stores()].map(([id, st]) => `${id}:${st.log().length}`).join(",");
-
 /**
- * The drive of one `simulate` run (k.sim Driving): while the scenario is pending it moves the run's clock to the next
- * moment (the earlier of the clock's next deadline and the schedule's next offline edge) whenever the run is idle, up
- * to `horizon` ms past the run's start or, while a `run(ms)` waits, `t + ms`. It draws no random and reads no real
- * time: idleness is two drained macrotask turns with no store-log or DOM change, no held work and no harness call in
- * progress but one stalled on `ctx.net`. A stall fails `failure` with E1727 or E1728 (k.sim Stalls).
+ * The drive of one `simulate` run (k.drive Driving): the scenario runs in the run's async context (`inRun`), and
+ * while it is pending the drive moves the run's clock to the next moment (the earlier of the clock's next deadline and
+ * the schedule's next offline edge) on each of its turns where nothing is pending: no resource of the run other than a
+ * promise, no held work, no harness call in progress but one stalled on `ctx.net`. The bound is `horizon` ms past the
+ * run's start or, while a `run(ms)` waits, `t + ms`. It draws no random and reads no time but the 10,000 ms bound on
+ * pending work. A stall fails `failure` with E1727 or E1728 (k.drive Stalls). With `record` the moments and the
+ * observer events of the ctx and its replicas go to `trace`.
  */
-export function drive(ctx: SimCtx, schedule: Schedule, horizon: number): DriveHandle {
+export function drive(ctx: SimCtx, schedule: Schedule, horizon: number, record: boolean): DriveHandle {
   const start = ctx.clock.now();
   const edges = schedule.offline.flatMap((w) => [w.at, w.at + w.ms]);
-  const gauge: HarnessGauge = { active: 0, stalled: 0 };
+  const gauge: HarnessGauge = { calls: new Set() };
   harnessGauges.set(ctx.clock, gauge);
   const waiting: Waiting[] = [];
+  const trace: string[] = [];
+  const note = (entry: Record<string, unknown>): void => {
+    trace.push(JSON.stringify({ at: ctx.clock.now(), ...entry }));
+  };
   let over = false;
   let reject: (e: Error) => void = () => {};
   const failure = new Promise<never>((_, no) => {
     reject = no;
   });
   failure.catch(() => {});
-  let mutations = 0;
-  const observer =
-    typeof MutationObserver === "function" && globalThis.document?.documentElement !== undefined
-      ? new MutationObserver((records) => {
-          mutations += records.length;
-        })
-      : undefined;
-  observer?.observe(globalThis.document.documentElement, {
-    subtree: true,
-    childList: true,
-    attributes: true,
-    characterData: true,
+  const tracker = runTracker((label) => {
+    reject(fail("E1728", `held work waits on the sim clock: ${label}`, { label }));
   });
-  const signature = (): string => {
-    mutations += observer?.takeRecords().length ?? 0;
-    return `${mutations}|${logSizes()}`;
+  const watch = (c: Ctx): void => {
+    if (record) observe(c, (e) => note(traceEvent(e)));
   };
+  driven.set(ctx.clock, { enter: tracker.enter, waited: tracker.waited, replica: watch });
+  watch(ctx);
   /** The earlier of the clock's next deadline and the next offline window edge after the clock, or null. */
   const next = (): number | null => {
     const now = ctx.clock.now();
@@ -69,69 +62,49 @@ export function drive(ctx: SimCtx, schedule: Schedule, horizon: number): DriveHa
   /** The latest time the drive may move the clock to now: the longest `run(ms)` waiting, else the horizon. */
   const bound = (): number =>
     waiting.reduce((m, w) => Math.max(m, w.bound), waiting.length === 0 ? start + horizon : 0);
+  const moveTo = (at: number): void => {
+    ctx.clock.advance(Math.max(0, at - ctx.clock.now()));
+    if (record) note({ kind: "moment" });
+  };
   const loop = async (): Promise<void> => {
-    let last = signature();
-    let quiet = 0;
-    let still = 0;
-    let idle = 0;
+    let since: number | null = null;
     while (!over) {
       await drained();
       if (over) return;
-      const seen = signature();
-      if (seen !== last) {
-        last = seen;
-        quiet = 0;
-        still = 0;
-        idle = 0;
-        continue;
-      }
-      still++;
       const held = heldWork(ctx);
-      if (held.length > 0 || gauge.active !== gauge.stalled) {
-        quiet = 0;
-        idle = 0;
-        const [first] = held;
-        if (first !== undefined && still > STUCK_TURNS) {
-          reject(fail("E1728", `work in flight never answered: ${first}`, { label: first }));
+      const live = tracker.pending();
+      let stalled = 0;
+      for (const call of gauge.calls) if (call.stalled()) stalled++;
+      if (held.length > 0 || live.length > 0 || gauge.calls.size > stalled) {
+        const now = performance.now();
+        since ??= now;
+        if (now - since > PENDING_MS) {
+          const label = held[0] ?? live[0] ?? "a harness call";
+          reject(fail("E1728", `work in flight never answered: ${label}`, { label }));
           return;
         }
         continue;
       }
-      if (++quiet < QUIET_TURNS) continue;
+      since = null;
       const at = next();
       if (at !== null && at <= bound()) {
-        ctx.clock.advance(Math.max(0, at - ctx.clock.now()));
-        quiet = 0;
-        still = 0;
-        idle = 0;
-        continue;
-      }
-      if (netInFlight(ctx.net) > 0) {
-        idle = 0;
-        if (still > STUCK_TURNS) {
-          reject(fail("E1728", "work in flight never answered: a ctx.net request", { label: "a ctx.net request" }));
-          return;
-        }
+        moveTo(at);
         continue;
       }
       if (waiting.length > 0) {
         for (const w of waiting.splice(0)) {
-          if (w.until !== null && ctx.clock.now() < w.until) ctx.clock.advance(w.until - ctx.clock.now());
+          if (w.until !== null && ctx.clock.now() < w.until) moveTo(w.until);
           w.done();
         }
-        quiet = 0;
-        idle = 0;
         continue;
       }
-      if (gauge.active === 0 && ++idle > IDLE_TURNS) {
-        const deadline = ctx.clock.next();
-        const why =
-          deadline === null
-            ? "the scenario waits and nothing in the run is due"
-            : `the scenario waits past the horizon: next deadline ${deadline} ms`;
-        reject(fail("E1727", why, { next: deadline }));
-        return;
-      }
+      const deadline = ctx.clock.next();
+      const why =
+        deadline === null
+          ? "the scenario waits and nothing in the run is due"
+          : `the scenario waits past the horizon: next deadline ${deadline} ms`;
+      reject(fail("E1727", why, { next: deadline }));
+      return;
     }
   };
   const running = loop();
@@ -152,12 +125,15 @@ export function drive(ctx: SimCtx, schedule: Schedule, horizon: number): DriveHa
     });
   };
   return {
+    inRun: tracker.inRun,
     run,
     failure,
+    trace,
     stop: async () => {
       over = true;
-      observer?.disconnect();
       harnessGauges.delete(ctx.clock);
+      driven.delete(ctx.clock);
+      tracker.stop();
       await running;
     },
   };

@@ -44,18 +44,18 @@ export async function pgliteEngine(db: PGlite): Promise<Engine> {
     held: Held,
   ): Promise<T> =>
     exclusive(async () => {
-      await held(db.exec(`begin isolation level ${level}`));
+      await held(() => db.exec(`begin isolation level ${level}`));
       try {
         const out = await fn({
-          query: (text, params) => held(run(db, text, params)),
+          query: (text, params) => held(() => run(db, text, params)),
           exec: async (text) => {
-            await held(db.exec(text));
+            await held(() => db.exec(text));
           },
         });
-        await held(db.exec(out.commit ? "commit" : "rollback"));
+        await held(() => db.exec(out.commit ? "commit" : "rollback"));
         return out.value;
       } catch (e) {
-        await held(db.exec("rollback")).catch(() => {});
+        await held(() => db.exec("rollback")).catch(() => {});
         throw e;
       }
     });

@@ -30,8 +30,8 @@ const logSizes = (live: ReadonlyMap<string, Store<unknown>>): string =>
  * moving rounds, or `MAX_BUSY_TURNS` busy turns, throws `keel.unexpected` "fire did not settle" (with the pending
  * route id; after the busy turns, naming their count and unit). Without `root` only store logs count. `registry` lists the live stores (default `stores()`; a fresh module
  * graph's own for `resumeDocument`). No timers. `watch` reports to the `simulate` run
- * that owns the ctx's clock that the call is in progress, and that it is stalled (busy, nothing moving after a macrotask
- * turn) so the run's drive may move the clock for it (k.sim Driving); the call moves no clock itself.
+ * that owns the ctx's clock that the call is in progress, and when it is stalled (busy, nothing moving after a macrotask
+ * turn) so the run's drive may move the clock for it (k.drive Driving); the call moves no clock itself.
  */
 export async function settle(
   root: Element | undefined,
@@ -58,6 +58,9 @@ export async function settle(
       mutations += observer?.takeRecords().length ?? 0;
       return mutations > 0 || logSizes(registry()) !== last;
     };
+    // Asked by the drive on its own turn: stalled only while waiting on I/O after a turn in which nothing moved.
+    let waiting = false;
+    report.stalled(() => waiting && !changed() && busy() !== null);
     let turns = 0;
     for (let round = 0; round < MAX_ROUNDS; ) {
       for (let hop = 0; hop < ROUND_HOPS; hop++) await Promise.resolve();
@@ -80,11 +83,11 @@ export async function settle(
             },
           );
         await drained();
-        report.stalled(!changed() && busy() !== null);
+        waiting = true;
         quiet = 0;
         continue;
       }
-      report.stalled(false);
+      waiting = false;
       round++;
       quiet = moved || pending !== null ? 0 : quiet + 1;
       if (quiet === QUIET_ROUNDS) return;

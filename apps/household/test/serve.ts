@@ -1,4 +1,4 @@
-import { type Ctx, type SimCtx, createCtx, register } from "@keel/ctx";
+import { type SimCtx, createCtx } from "@keel/ctx";
 import { s } from "@keel/schema";
 import { createApp } from "@keel/server";
 import { sql } from "@keel/std-postgres";
@@ -41,27 +41,6 @@ export const formPost = (path: string, fields: Record<string, string>, cookie = 
     },
     body: new URLSearchParams(fields).toString(),
   });
-
-type Holder = { readonly hold: <T>(work: Promise<T>, label: string) => Promise<T> };
-const passThrough: Holder = { hold: (work) => work };
-const holder = register<Holder>("household.test", {
-  real: () => passThrough,
-  shell: () => passThrough,
-  sim: ({ hold }) => ({ hold }),
-});
-
-/**
- * `work` held as real I/O of the `simulate` run whose ctx is `ctx` (k.sim `hold`): a server on another ctx answering
- * from its own database, or the sign-in library hashing a password off the event loop, shows the run no clock or
- * macrotask, so the run waits for it; on a ctx outside `simulate` it is `work`.
- */
-export const held = <T>(ctx: Ctx, work: Promise<T>): Promise<T> => holder(ctx).hold(work, "server");
-
-/** The household `h` as one `simulate` run reaches it: each request to its server is held work of the run's `ctx`. */
-export const onRun = <H extends { readonly raw: Fetch }>(h: H, ctx: Ctx): H => ({
-  ...h,
-  raw: (req) => held(ctx, h.raw(req)),
-});
 
 /** Sign up and sign in `email` through the identity mount; resolves the session cookie, `''` when refused. */
 export async function signIn(fetch: Fetch, email = EMAIL, name = NAME): Promise<string> {
@@ -112,7 +91,7 @@ export async function served(
   const lines: string[] = [];
   const web = await webApp(ctx, lines);
   const raw: Fetch = (req) => web.fetch(req);
-  if (signedIn) await held(ctx, signIn(raw));
+  if (signedIn) await signIn(raw);
   const rows = await membersDb(ctx).query(sql(UserRow)`select user_id as "userId" from members`);
   const user = rows.ok ? (rows.value[0]?.userId ?? "") : "";
   const minted = user === "" ? null : await membersApi.mint({ body: { days: 30 }, user }, ctx);

@@ -1,5 +1,4 @@
-/** The harness calls in progress on a `simulate` run's ctxs, and how many of them wait only on an unanswered route. */
+/** The harness calls in progress on a `simulate` run's ctxs; each says whether it waits on nothing but an unanswered route. */
 export interface HarnessGauge {
-  active: number;
-  stalled: number;
+  readonly calls: Set<{ stalled: () => boolean }>;
 }

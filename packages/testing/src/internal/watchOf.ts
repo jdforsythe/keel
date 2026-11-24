@@ -2,30 +2,24 @@ import type { Ctx } from "@keel/ctx";
 import type { SettleWatch } from "./SettleWatch.ts";
 import { harnessGauges } from "./harnessGauges.ts";
 
-const NONE = { stalled: (_: boolean): void => {}, end: (): void => {} };
+const NONE = { stalled: (_: (() => boolean) | null): void => {}, end: (): void => {} };
 
 /**
- * How a harness `settle` on `ctx` tells the run it belongs to that a call is in progress or stalled on `ctx.net`
- * (k.sim Driving). A ctx outside `simulate` reports nowhere and its clock stays the test's.
+ * How a harness `settle` on `ctx` tells the run it belongs to that a call is in progress, and when it waits on nothing
+ * but an unanswered route (k.drive Driving). A ctx outside `simulate` reports nowhere and its clock stays the test's.
  */
 export function watchOf(ctx: Ctx): SettleWatch {
   return () => {
     const gauge = harnessGauges.get(ctx.clock);
     if (gauge === undefined) return NONE;
-    let stalled = false;
-    let over = false;
-    gauge.active++;
+    const call = { stalled: (): boolean => false };
+    gauge.calls.add(call);
     return {
-      stalled: (on) => {
-        if (over || on === stalled) return;
-        stalled = on;
-        gauge.stalled += on ? 1 : -1;
+      stalled: (probe) => {
+        call.stalled = probe ?? (() => false);
       },
       end: () => {
-        if (over) return;
-        over = true;
-        gauge.active--;
-        if (stalled) gauge.stalled--;
+        gauge.calls.delete(call);
       },
     };
   };

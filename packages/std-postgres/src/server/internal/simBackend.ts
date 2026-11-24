@@ -14,9 +14,15 @@ let schemas = 0;
  * The sim side's backend: the shared PGlite in memory, a schema of its own per sim ctx and capability, migrated at the
  * first call; a failed pass keeps nothing and the next call runs it again. Its changes are delivered to its own follows. Each
  * transaction sets that `search_path` and `setseed` from the capability seed and the call count. Each call into PGlite is
- * held by `held` (its wait for the session, a plan step's delay and a transaction body's own awaits are not).
+ * held under `<name> query`, and the engine's boot under `<name> boot` (its wait for the session, a plan step's delay and a transaction body's own awaits are not).
  */
-export function simBackend(name: string, files: () => readonly Migration[], seed: number, held: Held): Backend {
+export function simBackend(
+  name: string,
+  files: () => readonly Migration[],
+  seed: number,
+  hold: <T>(label: string, start: () => Promise<T>) => Promise<T>,
+): Backend {
+  const held: Held = (start) => hold(`${name} query`, start);
   schemas += 1;
   const schema = `keel_sim_${schemas}`;
   let calls = 0;
@@ -34,8 +40,8 @@ export function simBackend(name: string, files: () => readonly Migration[], seed
     ensure(): Promise<Engine> {
       if (made !== undefined) return made;
       const making = (async () => {
-        const shared = await simEngine();
-        // Every call into the shared PGlite goes through `held`, a migration's included (k.sim Driving).
+        const shared = await hold(`${name} boot`, simEngine);
+        // Every call into the shared PGlite goes through `held`, a migration's included (k.drive).
         const engine: Engine = {
           types: shared.types,
           statement: (text, params) => shared.statement(text, params, held),

@@ -12,8 +12,8 @@ export interface Capability<T extends object, P = never> {
   sim(opts: {
     readonly seed: number;
     readonly plan: readonly P[];
-    /** Returns `work` and marks it held until it settles: real I/O no microtask or clock of the ctx shows (k.sim). */
-    readonly hold: <W>(work: Promise<W>, label: string) => Promise<W>;
+    /** Calls `start` and marks the work it returns held until it settles: work that answers through something made outside the run (k.sim). */
+    readonly hold: <W>(label: string, start: () => Promise<W>) => Promise<W>;
   }): T;
   readonly plan?: Schema<unknown, boolean>;
 }
