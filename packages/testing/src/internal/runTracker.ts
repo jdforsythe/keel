@@ -6,7 +6,7 @@ import { runStorage } from "./runStorage.ts";
 
 const active = new Set<RunState>();
 /**
- * False for a crypto job made by a synchronous call (`randomBytes(n)` with no callback): Node destroys it only at a
+ * False for a random-bytes job made by a synchronous call (`randomBytes(n)` with no callback, `randomUUID()`): Node destroys it only at a
  * garbage collection, so it is no pending work. A request has its `ondone` set by then.
  */
 const requested = (piece: Piece): boolean => {
@@ -21,7 +21,7 @@ const hook = createHook({
     if (scope !== undefined && !scope.state.stopped)
       scope.state.live.set(
         id,
-        resource.constructor.name.endsWith("Job") ? { label: type, job: new WeakRef(resource) } : { label: type },
+        type === "RANDOMBYTESREQUEST" ? { label: type, job: new WeakRef(resource) } : { label: type },
       );
   },
   destroy(id) {
