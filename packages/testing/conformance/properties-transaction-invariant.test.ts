@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.testing, clause "A transaction breaking a declared invariant fails `properties()` with E1704."
+// Spec: k.testing, clause "A transaction breaking an `invariant` fails `properties()` with E1704."
 // Seed: 1337.
 import { properties } from "@keel/testing";
 import { describe, expect, it } from "vitest";

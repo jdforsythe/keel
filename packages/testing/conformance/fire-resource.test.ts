@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.testing, clause "`fire` resolves only after every effect and resource it triggered has settled."
+// Spec: k.testing, clause "`fire` resolves only once every effect and resource it triggered has settled."
 // Seed: 1337.
 // The event starts a resource whose promise needs many microtask hops (no cap: up to 2000); no timer, no `settle()` call.
 import type { Ctx } from "@keel/ctx";
