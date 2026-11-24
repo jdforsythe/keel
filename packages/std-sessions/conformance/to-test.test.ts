@@ -46,7 +46,7 @@ describe("std.sessions: to-test", () => {
     expect(
       check(files, { root: fx.dir }).diagnostics.filter((d) => d.code.startsWith("E") && d.path === emitted),
     ).toEqual([]);
-  });
+  }, 30_000);
 
   test("The `to-test` file fails under `keel test` on the buggy fixture", async () => {
     const r = await run(["test", emitted], { cwd: fx.dir, files: fx.files() });

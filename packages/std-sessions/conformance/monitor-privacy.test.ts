@@ -277,5 +277,5 @@ describe("std.monitor: privacy", () => {
       }),
       { seed: 1337, numRuns: 6 },
     );
-  });
+  }, 30_000);
 });

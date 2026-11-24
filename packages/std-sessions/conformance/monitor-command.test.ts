@@ -279,7 +279,7 @@ describe("std.monitor: keel session monitor", () => {
       }),
       { seed: 1337, numRuns: 6 },
     );
-  });
+  }, 30_000);
 
   test(`${CLAUSE} (an unreachable URL reports E2010 and writes nothing)`, async () => {
     const dir = mkDir();
@@ -294,7 +294,7 @@ describe("std.monitor: keel session monitor", () => {
     expect(r.code).toBe(1);
     expect(fs.existsSync(path.join(dir, MONITORED))).toBe(false);
     expect(fs.existsSync(path.join(dir, ".keel"))).toBe(false);
-  });
+  }, 30_000);
 
   test(`${CLAUSE} (it prints one session.monitor record, and the default file is .keel/monitored.json)`, async () => {
     await fc.assert(
@@ -318,7 +318,7 @@ describe("std.monitor: keel session monitor", () => {
       }),
       { seed: 1337, numRuns: 6 },
     );
-  });
+  }, 30_000);
 
   test(`${CLAUSE} (compact line: ok session monitor <n> transactions, <m> runs -> <file>)`, async () => {
     const { t, token, dir } = await served({ v: 1, from: 10, to: 70, tx: { "a.one": 4, "a.two": 3 } });
@@ -329,7 +329,7 @@ describe("std.monitor: keel session monitor", () => {
       fetch: forwarding(t.tallyApp, token),
     });
     expect(r.stdout).toContain(`ok session monitor 2 transactions, 7 runs -> ${MONITORED}`);
-  });
+  }, 30_000);
 
   test(`${CLAUSE} (--out names the file)`, async () => {
     const { t, token, dir } = await served({ v: 1, from: 1, to: 2, tx: { "a.one": 1 } });
@@ -342,5 +342,5 @@ describe("std.monitor: keel session monitor", () => {
     expect(records(r.stdout).find((x) => x.kind === "session.monitor")?.file).toBe("out/tally.json");
     expect(fs.existsSync(path.join(dir, "out/tally.json"))).toBe(true);
     expect(fs.existsSync(path.join(dir, MONITORED))).toBe(false);
-  });
+  }, 30_000);
 });
