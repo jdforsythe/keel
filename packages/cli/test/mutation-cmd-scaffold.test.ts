@@ -42,7 +42,16 @@ beforeAll(async () => {
     );
   tree = files;
   cyclic = applied(files, [
-    { path: "modules/orders/module.ts", content: manifest("orders", [], ["OrderCard"]) },
+    { path: "modules/orders/module.ts", content: manifest("orders", [], ["OrderCard", "Other"]) },
+    { path: "modules/orders/Other.ts", content: "export const Other = 1\n" },
+    {
+      path: "modules/orders/OrdersUse.ts",
+      content: "import OrderCard from './OrderCard.tsx'\nexport const OrdersUse = OrderCard\n",
+    },
+    {
+      path: "modules/catalog/CatalogOther.ts",
+      content: "import { Other } from '../orders/Other.ts'\nexport const CatalogOther = Other\n",
+    },
     { path: "modules/catalog/module.ts", content: manifest("catalog", ["orders"], []) },
     {
       path: "modules/catalog/CatalogRow.tsx",
@@ -229,6 +238,11 @@ describe("refusals", () => {
 
   it("an edit that would break check carries its cause diagnostic at line 1 col 1 under k.check", async () => {
     const r = await go(["codemod", "move", "OrderCard", "--to", "catalog"], cyclic);
+    console.error(
+      "DBG",
+      JSON.stringify(r.writes.map((w) => [w.path, w.content?.slice(0, 300)])),
+      [...cyclic.map((f) => f.path)].join(","),
+    );
     expect(r.result.code).toBe(1);
     expect(r.writes).toEqual([]);
     expect(r.records).toEqual([
