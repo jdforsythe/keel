@@ -2,7 +2,7 @@ import { type Expression, parseSync } from "oxc-parser";
 
 /**
  * Where deployable `name` sits in `source` (`topology.ts`), read statically: `key`, the offset of its key (0 when none);
- * `body`, the offset just after the `{` of its object-literal value and `empty` when that object holds no property.
+ * `body`, the offset immediately after the `{` of its object-literal value and `empty` when that object holds no property.
  */
 export function topologyEntry(
   source: string,
