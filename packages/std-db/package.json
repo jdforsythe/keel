@@ -52,6 +52,7 @@
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.16",
+    "@keel/compiler": "workspace:*",
     "@keel/router": "workspace:*",
     "@keel/schema": "workspace:*",
     "@keel/server": "workspace:*",
