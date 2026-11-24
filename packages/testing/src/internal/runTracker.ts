@@ -35,12 +35,18 @@ export function runTracker(onHeldWait: (label: string) => void): RunHandle {
   let collected = new Set<number>();
   if (active.size === 0) hook.enable();
   active.add(state);
+  /** The resources pending when last read. */
+  let last = "";
   const pending = (): readonly Piece[] => {
     // Keys only before the collection: reading a weak reference keeps its target alive until the turn ends.
-    if ([...state.live.keys()].some((id) => id >= 0 && !collected.has(id))) {
+    const ids = [...state.live.keys()].filter((id) => id >= 0);
+    const seen = ids.join(",");
+    // A set read unchanged since the last read, with a resource no collection has seen: only a collection can end it.
+    if (seen === last && ids.some((id) => !collected.has(id))) {
       fullCollection();
-      collected = new Set([...state.live.keys()].filter((id) => id >= 0));
+      collected = new Set(ids);
     }
+    last = seen;
     for (const [id, piece] of state.live)
       if (piece.resource !== undefined && piece.resource.deref() === undefined) state.live.delete(id);
     return [...state.live.values()];
