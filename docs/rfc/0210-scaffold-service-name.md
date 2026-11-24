@@ -1,6 +1,6 @@
 # RFC 0210: k.scaffold and k.openapi: `keel scaffold service --name`
 
-Status: accepted (ADR-0232), accepted by the orchestrator on 2026-11-24, for the operator to confirm. Amends k.scaffold (Operations example, Generators, Service, Rules, Conformance), k.openapi (API, Conformance), the map, the section budget. From `examples/openapi-import` (examples finding 6, backlog 1013).
+Status: implemented (ADR-0232), accepted by the orchestrator on 2026-11-24, for the operator to confirm. Amends k.scaffold (Operations example, Generators, Service, Rules, Conformance), k.openapi (API, Conformance), the map, the section budget. From `examples/openapi-import` (examples finding 6, backlog 1013).
 
 ## Decisions
 - D1: `keel scaffold service <module>` takes `--name <name>` with `--openapi` and with `--base`; the operation's input gains `name?`. The declaration is `<Name>Api` in `<Name>Api.schema.ts`, `<Name>` being `name` with its first letter upper-cased.
@@ -27,7 +27,7 @@ keel scaffold service orders --base https://api.github.com --name gitHub
 Both write `modules/orders/GitHubApi.schema.ts` (`export const GitHubApi = ...`) and `modules/orders/api.server.ts` (`export const api = service({ base, schema: GitHubApi })`). The scaffold input is `{ id, name?, base?, schema?, service?, reason? }`; the CLI maps `--name` to `name` and, with `--openapi`, passes it to `openapi(doc, { name })` as well, so the generated texts and the file name agree. The MCP tool input is the CLI's flag set, which holds `name` already: one shape.
 
 ### A valid name
-lowerCamel, letters and digits, a lower-case first letter: the module id rule, so the default is always valid. `GitHub`, `git_hub`, `git-hub`, `1x` and `''` are E1352. A PascalCase name is refused rather than taken as it is: one spelling per declaration, and `--name GitHub` and `--name gitHub` do not both work. The declaration `<Name>Api` is never a reserved word, and the generator already keeps a component const from taking it. A clash with an existing file is E1351, at the first of `<Name>Api.schema.ts` and `api.server.ts` that exists. A clash a file name does not show (another file of the module exporting `GitHubApi`) is whatever `keel check` reports, and the Guarantee turns it into E1353.
+lowerCamel, letters and digits, a lower-case first letter: the module id rule, so the default is always valid. `GitHub`, `git_hub`, `git-hub`, `1x` and `''` are E1352. A PascalCase name is refused rather than taken as it is: one spelling per declaration, and `--name GitHub` and `--name gitHub` do not both work. The declaration `<Name>Api` is never a reserved word, and the generator already keeps a component const from taking it. A clash with an existing file is E1351, at `api.server.ts` where it exists, else `<Name>Api.schema.ts`. A clash a file name does not show (another file of the module exporting `GitHubApi`) is whatever `keel check` reports, and the Guarantee turns it into E1353.
 
 With `--openapi`, a bad `--name` is E1352 as well, not the E1052 `openapiInput` reports for a document it cannot read: the CLI checks the name before it calls `openapi`.
 

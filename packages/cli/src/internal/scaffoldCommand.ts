@@ -79,8 +79,10 @@ export async function scaffoldCommand(name: "scaffold" | "codemod", input: Input
   );
   const dry = input["dry-run"] === true;
   const generated =
-    op === "service" && input.openapi !== undefined
-      ? openapiInput(input.args?.[0], input.openapi, io.cwd, files)
+    op === "service" &&
+    input.openapi !== undefined &&
+    (input.name === undefined || /^[a-z][A-Za-z0-9]*$/.test(input.name))
+      ? openapiInput(input.name ?? input.args?.[0], input.openapi, io.cwd, files)
       : undefined;
   if (generated !== undefined && !generated.ok)
     return { records: [generated.diag, summary(`${name} ${op}`, [generated.diag], {})], writes: [] };

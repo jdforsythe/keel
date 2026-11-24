@@ -21,6 +21,7 @@ export const inputs = {
   transaction: s.object({ id: s.string() }),
   service: s.object({
     id: s.string(),
+    name: s.string().optional(),
     base: s.string().optional(),
     schema: s.string().optional(),
     service: s.string().optional(),

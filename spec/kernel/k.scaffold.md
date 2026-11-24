@@ -35,7 +35,7 @@ keel codemod place digest --to jobs --adapter node
 - `add-field` adds a field to a schema and to every initial state, fixture, and form `initial` that constructs it. Optional fields need no data; required fields take `--default`.
 
 **Service.** `keel scaffold service <module>` takes `--openapi <file>` or `--base <url>`, one of them, and `--name <name>` with either. Input `{ id, name?, base?, schema?, service?, reason? }`: `base` alone, or `schema` and `service` together (the two sources of k.openapi, whose `base` literal is the URL); anything else is E1052.
-- `name` names the declaration: `<Name>Api` in `<Name>Api.schema.ts`, `<Name>` being `name` with its first letter upper-cased. It is lowerCamel, as a module id is (else E1352, nothing written, in either form); without it, `name` is the module id. The client is `api` in `api.server.ts` whatever the name, so a module holds one scaffolded service: a second is E1351.
+- `name` names the declaration: `<Name>Api` in `<Name>Api.schema.ts`, `<Name>` being `name` with its first letter upper-cased. It is lowerCamel, as a module id is (else E1352, nothing written, in either form); without it, `name` is the module id. The client is `api` in `api.server.ts` whatever the name, so a module holds one scaffolded service: a second is E1351. An empty `--name ''` is a name outside the rule: E1352.
 - `--openapi`: both files as k.openapi generates them for `name`, read-only.
 - `--base`: an absolute `http` or `https` URL with no query, fragment or credentials (else E1052). `<Name>Api.schema.ts` exports `<Name>Api = endpoints({})` and `api.server.ts` exports `api = service({ base: '<url>', schema: <Name>Api })`; both are the author's to edit.
 

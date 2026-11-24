@@ -52,8 +52,7 @@ function endpointsOf(g: Gen, paths: Readonly<Record<string, unknown>>): [string,
  */
 export function openapi(doc: unknown, opts: OpenApiOptions): Result<OpenApiFiles, SchemaError> {
   const name = `${pascal(opts.name)}Api`;
-  if (!/^[a-z]/i.test(opts.name) || !IDENT.test(name))
-    throw new RangeError(`openapi name is not a module id: ${opts.name}`);
+  if (!/^[a-z][A-Za-z0-9]*$/.test(opts.name)) throw new RangeError(`openapi name is not lowerCamel: ${opts.name}`);
   if (!isRecord(doc)) return err(invalid([{ path: [], rule: "type" }]));
   const g: Gen = { doc, issues: [], named: new Map(), reserved: new Set([...RESERVED, name]) };
   if (typeof doc.openapi !== "string" || !doc.openapi.startsWith("3.")) {
