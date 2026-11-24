@@ -6,7 +6,7 @@ status: conformance-covered
 3. Rule registry: kernel structure rules plus rules from stdlib modules in the project's `deps` (k.module), run on each file with read-only project artifacts (`.keel/*.json`, manifests) and `project`: the project's code files and its `topology.ts`, one shared array.
 4. Formatter: dedupe, sort by path, line, col (E1005, W1005 last), group by code, cap, render per `--format` (k.cli).
 
-Changing one file re-runs steps 1-3 for that file and its dependents only.
+Changing one file re-runs steps 1-3 for that file and its dependents only. Across processes, step 1 reuses results kept on disk (k.check-cache).
 
 **Diagnostics.** Exactly the OUTPUT.md model: `{ kind: 'diag', code, path, line, col, message, fix?, see? }`. `code` is E (error), W (warning), or I (info) plus four digits, never renumbered; `message` is one line under 90 chars; `fix` is a unified diff hunk that applies to the checked tree; `see` is the spec section id. Only E codes affect the exit code (k.cli). A TS error that encodes a Keel rule (a missing a11y prop, an unknown field path, a string for `Href`) is reported under that rule's code; any other TS error is E1751.
 
