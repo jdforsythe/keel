@@ -25,7 +25,7 @@ vi.mock("pg", () => {
       return { rows: [] };
     }
     async connect(): Promise<{ query(): Promise<{ rows: unknown[] }>; release(): void }> {
-      return { query: async () => ({ rows: [] }), release: () => undefined };
+      return { query: async () => ({ rows: [{ x: "7" }] }), release: () => undefined };
     }
     async end(): Promise<void> {
       this.#record.ended++;

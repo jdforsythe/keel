@@ -23,17 +23,19 @@ export function register<T extends object, P = never>(name: string, impls: Capab
   }
   const instances = new WeakMap<Ctx, T>();
   const accessor = (ctx: Ctx): T => {
-    const cached = instances.get(ctx);
-    if (cached !== undefined) return cached;
     const meta = ctxMeta.get(ctx);
     if (meta === undefined) throw new Error(`capability "${name}": not a ctx made by createCtx`);
+    // A replica (k.sim Replicas) shares the implementation of the ctx it was made from.
+    const owner = meta.root ?? ctx;
+    const cached = instances.get(owner);
+    if (cached !== undefined) return cached;
     const seed = deriveSeed(meta.seed, name);
     const sim: { sim(opts: { readonly seed: number; readonly plan: readonly unknown[] }): T } = impls;
     const impl =
       meta.mode === "sim"
         ? sim.sim({ seed, plan: planOf(name, impls.plan, meta.plans[name]) })
         : impls[meta.mode]({ seed });
-    instances.set(ctx, impl);
+    instances.set(owner, impl);
     return impl;
   };
   extensions.set(name, { impls, accessor, plan: impls.plan });

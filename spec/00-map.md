@@ -62,7 +62,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.requests | Requests sent | implemented | sent |
 | k.model | Store exploration | conformance-covered | traces |
 | k.prove | Proving invariants | conformance-covered | Z3 |
-| k.sim | Simulation | conformance-covered | faults |
+| k.sim | Simulation | implemented | faults |
 | k.ledger | Ledger, evidence | conformance-covered | rungs |
 | k.server | Thin server | conformance-covered | loads |
 | k.leave | What a request leaves | conformance-covered | state |
@@ -74,12 +74,12 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.links | Links in | conformance-covered | ids |
 | k.serverlog | Server log | conformance-covered | bounds |
 | k.sync | Concurrent writes | conformance-covered | heads |
-| k.persist | Storage, durable state | conformance-covered | drivers |
+| k.persist | Storage, durable state | implemented | drivers |
 | k.data | App data | conformance-covered | seam |
 | k.topology | Deployables | implemented | peers |
 | k.deploy | Entry, deploy files | implemented | entry |
 | k.shell | Native shells | implemented | target |
-| k.compat | Surface compatibility | conformance-covered | accepts |
+| k.compat | Surface compatibility | implemented | accepts |
 | k.api | API routes | conformance-covered | JSON |
 | k.hosting | Client hosting | implemented | servedBy |
 | k.head | Document head | implemented | title |

@@ -115,6 +115,27 @@ test("member is re-checked against the stores as saved when the server ctx repor
   ]);
 });
 
+test("a store whose head restarts lower gives the stream a reset, then its saves again", async () => {
+  const h = await serve(() => true);
+  const st = await h.open("?room=a");
+  await until(() => st.lines.length === 1);
+  const copy = scope(() => undefined).run(() => store(Flag, { on: true }, { id: "t.copy2" }));
+  await h.ctx.storage.set("keel.store.t.flag", JSON.stringify(copy.snapshot({ meta: true })));
+  report(h.ctx, { kind: "save", store: "t.flag", head: 5, from: 4 });
+  report(h.ctx, { kind: "save", store: "t.flag", head: 5, from: 4 });
+  await until(() => st.lines.length === 2);
+  report(h.ctx, { kind: "save", store: "t.flag", head: 1, from: 0 });
+  await until(() => st.lines.length === 3);
+  report(h.ctx, { kind: "save", store: "t.flag", head: 2, from: 1 });
+  await until(() => st.lines.length === 4);
+  expect(st.lines).toEqual([
+    { ok: true, value: { kind: "reset" } },
+    { ok: true, value: { kind: "saved", store: "t.flag", head: 5 } },
+    { ok: true, value: { kind: "reset" } },
+    { ok: true, value: { kind: "saved", store: "t.flag", head: 2 } },
+  ]);
+});
+
 test("a member predicate that throws denies, at open and at publish", async () => {
   const h = await serve(() => {
     throw new Error("boom");

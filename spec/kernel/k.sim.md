@@ -1,5 +1,5 @@
 # k.sim: Schedules and simulation
-status: conformance-covered
+status: implemented
 
 Under sim (k.ctx) every capability is deterministic by seed. A schedule fixes what the seed leaves alone: how long each request takes, which requests and storage calls fail, and when the network is offline. `simulate` runs one scenario under many generated schedules, as `properties` (k.testing) runs one property under many inputs.
 
@@ -17,6 +17,8 @@ type NetStep = { delay: number; fault: 'none' | 'drop' | 'lost' | 'unavailable' 
 - **plans.** `register(name, { real, shell, sim, plan? })`: `plan` is the schema of one step of that capability's plan. Its sim factory gets `{ seed, plan }`, `plan` being `plans[name]` parsed by it (default `[]`), and consumes it in call order as its own documentation says.
 
 A ctx without `schedule` behaves as with an empty one. `schedule` on a real or shell ctx, or one that fails `Schedule`, throws E1604.
+
+**Replicas.** `replica(ctx)` (`@keel/ctx`) of a sim ctx is a sim ctx standing for another process on the same storage, as two replicas of a `node` deployable are. It shares `ctx`'s clock, random, net, schedule and capability implementations (a capability accessor returns one object for both). Its `ctx.storage` is another storage object on the same data: commits through either serialize as one storage's (k.persist), they take steps of one schedule, and each sees the other's through `watch` (k.persist Watch). Its observers are its own: an event reported on one, a `save` of a `createApp` on it among them, reaches only that one's observers, but `net`, reported to both. `replica` of a real or shell ctx throws E1604. A test of two replicas serves one `createApp` on `ctx` and one on `replica(ctx)`, and renders each page with `app` (k.testing) against the one it reaches.
 
 **simulate** (`@keel/testing`).
 ```ts
@@ -44,3 +46,5 @@ await simulate(async ({ ctx, run }) => {
 - Two `simulate` runs with one seed pass the same `SimRun`s to the scenario in the same order.
 - A module store written by one run holds its pre-`simulate` state when the next run starts and after `simulate` resolves.
 - `replay` of a `SimRun` whose `offline` is `[{ at: 100, ms: 50 }]`, its scenario advancing the clock to 120 with no `after` waiter pending: after `run()`, `ctx.net.online()` is true and `clock.now()` is 150; with `horizon: 130` it is still false.
+- With `b = replica(a)` of a sim ctx `a`: a value `set` through `a.storage` is what `b.storage.get` returns; `b.clock.now()` equals `a.clock.now()` after `advance(100)` on `a`'s clock; a capability accessor returns the same object for `a` and `b`; `replica` of a real ctx throws E1604.
+- With `createApp` A on sim ctx `a` and B on `b = replica(a)`, an action on either app that saves store `s` reports one `save` event to an observer of that app's ctx and none to an observer of the other's, and so for each of repeated saves; overlapping actions on A and B that save `s` from one read leave one saved and the other 409 `keel.conflict`.

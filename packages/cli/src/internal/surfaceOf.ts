@@ -73,7 +73,7 @@ function storesOf(e: Evaluated): Record<string, JsonSchema> {
  * its `module`, `callers` (sorted) and `entries`, each API entry by id with its `method`, `path`, `params`, `query`,
  * `body` (an absent one `null`), `output` and `errors` (`{}` without); pages and layouts are not recorded. `stores`,
  * each store a bound loader's or action's `stores` factory creates (one run on a sim ctx) by id, its state schema
- * and each transaction's payload schema; `sources`, the hash of each evaluated file (E1005 freshness). Schemas are
+ * and each transaction's payload schema; `sources`, the hash of each evaluated file's normal form (E1005 freshness). Schemas are
  * JSON Schema, as in `routes.json`. The file holds `version: 2`.
  */
 export function surfaceOf(e: Evaluated): JsonSchema {
