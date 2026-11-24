@@ -1,5 +1,5 @@
 # k.test-run: Test end and results
-status: proposed
+status: implemented
 
 From `@keel/testing`, under vitest: when a harness handle (k.testing) ends without `dispose()`, and how `keel test` prints an error outside any test.
 
