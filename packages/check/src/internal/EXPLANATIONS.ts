@@ -1176,6 +1176,20 @@ const ROWS: readonly Row[] = [
     "k.testing",
   ],
   [
+    "E1727",
+    "a simulate scenario waits on nothing the run can move",
+    "The drive moves the run's clock when the run is idle, up to the horizon. The scenario still waited: on a deadline past the horizon, or on something no clock waiter, held work or ctx.net route will answer.",
+    "raise horizon, await run(ms) for a later time, or hold the real I/O the scenario awaits",
+    "k.testing",
+  ],
+  [
+    "E1728",
+    "work in flight that never answers under simulate",
+    "Held work (a capability's real I/O, such as a PGlite call) or a ctx.net route stayed pending with nothing else moving. The clock does not move while held work is pending.",
+    "make the held work answer; a transaction's fn must not hold across a clock wait",
+    "k.testing",
+  ],
+  [
     "W1723",
     "a literal renderRoute id of a node deployable's module, with no app",
     "The page renders through a client router, which a built node page never has, so a form's answer document goes untested. Literal ids only.",

@@ -14,13 +14,13 @@ import type { RouteRenderOptions } from "../types/RouteRenderOptions.ts";
 import type { RouteStateOf } from "../types/RouteStateOf.ts";
 import { appSigner } from "./appSigner.ts";
 import { browserFront } from "./browserFront.ts";
-import { clockStep } from "./clockStep.ts";
 import { fail } from "./fail.ts";
 import { freshGraph } from "./freshGraph.ts";
 import { openHarness } from "./openHarness.ts";
 import { requestLog } from "./requestLog.ts";
 import { seedFrom } from "./seedFrom.ts";
 import { settle } from "./settle.ts";
+import { watchOf } from "./watchOf.ts";
 
 /** Redirects followed for one navigation before it fails, as a browser caps a chain. */
 const MAX_REDIRECTS = 20;
@@ -252,7 +252,7 @@ export async function documentRoute<T extends RouteTable>(
   });
   try {
     raise();
-    await settle(document.body, () => undefined, busy, undefined, clockStep(ctx));
+    await settle(document.body, () => undefined, busy, undefined, watchOf(ctx));
     raise();
     check();
   } catch (error) {

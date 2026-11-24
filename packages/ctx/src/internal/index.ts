@@ -7,3 +7,4 @@ export { planSchemas } from "./planSchemas.ts";
 export { browserCtx } from "./browserCtx.ts";
 export { netInFlight } from "./netInFlight.ts";
 export { tapNet } from "./tapNet.ts";
+export { heldWork } from "./heldWork.ts";

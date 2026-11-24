@@ -1,5 +1,7 @@
 import type { Store } from "@keel/store";
 import { stores } from "@keel/store";
+import type { SettleWatch } from "./SettleWatch.ts";
+import { drained } from "./drained.ts";
 import { fail } from "./fail.ts";
 
 /** Rounds `settle` waits at most before reporting work that never goes quiet. */
@@ -12,21 +14,6 @@ const MAX_BUSY_TURNS = 200_000;
 /** Microtask hops per round before its macrotask turn: one `await Promise.resolve()` each. */
 const ROUND_HOPS = 16;
 
-/**
- * One macrotask turn: resolves after the microtask queue has drained, so a promise chain of any length started by
- * the event finishes inside the round. A `MessageChannel` message is a macrotask in Node and browsers alike with no
- * delay and no clock, so a simulated clock never sees it; never a timer
- * a test may have faked.
- */
-const drained = (): Promise<void> =>
-  new Promise((done) => {
-    const channel = new MessageChannel();
-    channel.port1.onmessage = (): void => {
-      channel.port1.close();
-      done();
-    };
-    channel.port2.postMessage(0);
-  });
 /** Consecutive quiet rounds that count as settled. */
 const QUIET_ROUNDS = 2;
 
@@ -42,17 +29,18 @@ const logSizes = (live: ReadonlyMap<string, Store<unknown>>): string =>
  * with nothing moving waits one macrotask turn and does not count toward the 50 quiet-bound rounds; more than 50
  * moving rounds, or `MAX_BUSY_TURNS` busy turns, throws `keel.unexpected` "fire did not settle" (with the pending
  * route id; after the busy turns, naming their count and unit). Without `root` only store logs count. `registry` lists the live stores (default `stores()`; a fresh module
- * graph's own for `resumeDocument`). No timers. A busy round with nothing moving calls `step` after its macrotask turn:
- * under `simulate` it advances the run's sim clock to its next deadline, so a loader waiting on that clock (a delayed
- * request) finishes; elsewhere it does nothing and the clock is the test's.
+ * graph's own for `resumeDocument`). No timers. `watch` reports to the `simulate` run
+ * that owns the ctx's clock that the call is in progress, and that it is stalled (busy, nothing moving after a macrotask
+ * turn) so the run's drive may move the clock for it (k.sim Driving); the call moves no clock itself.
  */
 export async function settle(
   root: Element | undefined,
   act: () => void,
   busy: () => string | null = () => null,
   registry: () => ReadonlyMap<string, Store<unknown>> = stores,
-  step: () => boolean = () => false,
+  watch: SettleWatch = () => ({ stalled: () => {}, end: () => {} }),
 ): Promise<void> {
+  const report = watch();
   let mutations = 0;
   const observer =
     root === undefined
@@ -92,10 +80,11 @@ export async function settle(
             },
           );
         await drained();
-        if (!changed() && busy() !== null) step();
+        report.stalled(!changed() && busy() !== null);
         quiet = 0;
         continue;
       }
+      report.stalled(false);
       round++;
       quiet = moved || pending !== null ? 0 : quiet + 1;
       if (quiet === QUIET_ROUNDS) return;
@@ -107,6 +96,7 @@ export async function settle(
       pending === null ? { rounds: MAX_ROUNDS } : { rounds: MAX_ROUNDS, route: pending },
     );
   } finally {
+    report.end();
     observer?.disconnect();
   }
 }

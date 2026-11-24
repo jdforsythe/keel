@@ -1,15 +1,14 @@
 import { NetStep, createCtx } from "@keel/ctx";
-import { netInFlight, planSchemas } from "@keel/ctx/internal";
+import { planSchemas } from "@keel/ctx/internal";
 import { gen } from "@keel/schema/gen";
 import { stores } from "@keel/store";
 import * as fc from "fast-check";
 import { SimRun } from "./SimRun.schema.ts";
 import { clip } from "./internal/clip.ts";
+import { drive } from "./internal/drive.ts";
 import { fail } from "./internal/fail.ts";
 import { firstLine } from "./internal/firstLine.ts";
 import { seedFrom } from "./internal/seedFrom.ts";
-import { settle } from "./internal/settle.ts";
-import { simClocks } from "./internal/simClocks.ts";
 import type { PropertyResult } from "./types/PropertyResult.ts";
 import type { Scenario } from "./types/Scenario.ts";
 import type { SimulateOptions } from "./types/SimulateOptions.ts";
@@ -22,9 +21,10 @@ const HORIZON = 600_000;
  * Run `scenario` under many generated schedules (k.sim), as `properties` runs a property under many inputs. Each run
  * draws a `SimRun` `{ seed, schedule }` (net steps, storage outcomes, offline windows inside the horizon, and a plan
  * for each capability registered with a `plan` schema), creates that sim ctx and awaits the scenario; the live stores
- * are restored to their snapshots from before `simulate` before each run and after the last. The scenario's `run()`
- * settles (a `ctx.net` route still answering counts as work in flight), then steps the clock to the earlier of its next deadline and the next edge of an offline window, within
- * the horizon, settling after each step. A failing run is shrunk
+ * are restored to their snapshots from before `simulate` before each run and after the last. While the scenario is pending the run's clock is driven (k.sim): whenever the run is idle it moves to the earlier of
+ * its next deadline and the next offline window edge, within the horizon. The scenario's `run()` waits to the horizon,
+ * `run(ms)` to exactly `t + ms`; `horizon: 0` leaves the clock to the scenario. A scenario that waits on nothing the
+ * run can move fails E1727, work in flight that never answers E1728. A failing run is shrunk
  * and thrown as E1704 with the seed and run on the first line and the shrunk `SimRun` as JSON on the next;
  * `{ replay }` runs one `SimRun` once. Success resolves `{ seed, runs }`.
  */
@@ -38,32 +38,15 @@ export async function simulate(scenario: Scenario, options: SimulateOptions = {}
   const once = async (simRun: SimRun): Promise<void> => {
     restore();
     const ctx = createCtx({ mode: "sim", seed: simRun.seed, schedule: simRun.schedule });
-    const start = ctx.clock.now();
-    const edges = simRun.schedule.offline.flatMap((w) => [w.at, w.at + w.ms]);
-    /** The earlier of the clock's next deadline and the schedule's next offline window edge, or null. */
-    const next = (): number | null => {
-      const now = ctx.clock.now();
-      const deadline = ctx.clock.next();
-      return edges.reduce<number | null>((min, e) => (e > now && (min === null || e < min) ? e : min), deadline);
-    };
-    /** Advance the clock to its next deadline or window edge inside the horizon; false when there is none. */
-    const step = (): boolean => {
-      const at = next();
-      if (at === null || at - start > horizon) return false;
-      ctx.clock.advance(at - ctx.clock.now());
-      return true;
-    };
-    // A route still answering (a server on another ctx doing real I/O) is work in flight, as a harness's own page load is.
-    const busy = (): string | null => (netInFlight(ctx.net) > 0 ? "a ctx.net request" : null);
-    // A route waiting on this run's clock gets it stepped, as a harness render's loader does.
-    const quiet = (): Promise<void> => settle(globalThis.document?.documentElement, () => {}, busy, undefined, step);
-    // A harness render on this ctx steps the clock while its route waits (k.sim: a page renders inside a run).
-    simClocks.set(ctx, step);
-    const run = async (): Promise<void> => {
-      await quiet();
-      while (step()) await quiet();
-    };
-    await scenario({ ctx, seed: simRun.seed, schedule: simRun.schedule, run });
+    const driven = drive(ctx, simRun.schedule, horizon);
+    const running = Promise.resolve(scenario({ ctx, seed: simRun.seed, schedule: simRun.schedule, run: driven.run }));
+    // A stall fails the run while the scenario is still pending; its own later outcome is not read.
+    running.catch(() => {});
+    try {
+      await Promise.race([running, driven.failure]);
+    } finally {
+      await driven.stop();
+    }
   };
   const failed = (reason: unknown, run: number, label: string, simRun: SimRun | undefined): Error => {
     const plans = Object.keys(simRun?.schedule.plans ?? {});
