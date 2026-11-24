@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 // Spec: k.test-run Disposal "... disposed when that test ends, passed or failed, after its `afterEach` hooks ..."
-// Spec: k.test-run Conformance "An `afterEach` hook of the test that made a render finds it in the document; ... "
+// Spec: k.test-run Conformance "An `afterEach` hook of the test that made a render finds it in the document; a render made in `beforeAll` is in the document in each test of its suite and is gone after an `afterAll` `dispose()`."
 // Seed: 1337 (n/a: no generated inputs). The cases run in order.
 import { render } from "@keel/testing";
 import { afterEach, describe, expect, it } from "vitest";
