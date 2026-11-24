@@ -81,7 +81,14 @@ export async function documentRoute<T extends RouteTable>(
   options: RouteRenderOptions<T>,
   app: DocumentApp,
 ): Promise<RouteHarness<RouteStateOf<T>, Ctx>> {
-  const stray = options.state !== undefined ? "state" : options.shell !== undefined ? "shell" : options.mount !== undefined ? "mount" : null;
+  const stray =
+    options.state !== undefined
+      ? "state"
+      : options.shell !== undefined
+        ? "shell"
+        : options.mount !== undefined
+          ? "mount"
+          : null;
   if (stray !== null)
     throw fail(
       "E1722",
