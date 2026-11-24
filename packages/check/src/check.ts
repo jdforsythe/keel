@@ -5,6 +5,7 @@ import { mountDiags } from "@keel/compiler/hosting/mountDiags";
 import { topologyReadProblems } from "@keel/compiler/hosting/topologyReadProblems";
 import type { Checked } from "./internal/Checked.ts";
 import type { Expected } from "./internal/Expected.ts";
+import { aliasedImports } from "./internal/aliasedImports.ts";
 import { apiWithoutServer } from "./internal/apiWithoutServer.ts";
 import { artifactDir } from "./internal/artifactDir.ts";
 import { budgetBreaches } from "./internal/budgetBreaches.ts";
@@ -89,7 +90,7 @@ function expectedHashes(files: readonly SourceFile[], opts: CheckOptions): Reado
  * diagnostics passed through unchanged, one compile per project (`projectDirs`: paths relative to it, its own
  * `topology.ts`; rfc:0059), (3) the rule registry on each code file, rules' `sql` readers on each migration, plus project passes (E1005
  * against the hashes the compiler derives from each artifact's project, W1005, E1454, E1607, E1550, E1508, E1511, E1566, E1586, E1587, W1012, E1580-E1582, E1584, E1589, E1753, E1755, the k.module pass
- * E1151-E1158, the contract passes (E1155, E1502-E1504, E1509, E1513, E1514), and the k.compat pass E1562, E1563,
+ * E1151-E1158, E1013, the contract passes (E1155, E1502-E1504, E1509, E1513, E1514), and the k.compat pass E1562, E1563,
  * W1564, W1568 over `.keel/surface.json`), (4) dedupe and sort. Static only: no app code is evaluated (rendered a11y is `keel test`, rfc:0023). Pure and deterministic for equal inputs.
  */
 export function check(files: readonly SourceFile[], opts: CheckOptions = {}): CheckResult {
@@ -170,6 +171,7 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
     ...registerNames(checked, dirs),
     ...chainStoreIds(checked, dirs, all),
     ...moduleChecks(checked),
+    ...aliasedImports(checked, path.resolve(opts.root ?? process.cwd()), dirs),
     ...guardRedirectLoops(checked),
     ...contractChecks(checked, all, opts.topology),
     ...ruleCodeDeclarations(checked),

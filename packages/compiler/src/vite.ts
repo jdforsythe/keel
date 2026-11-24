@@ -1072,7 +1072,7 @@ export default function (): {
       const why = browserBreach(this.getModuleIds?.() ?? [], info, breach, show, (id) => stubbed.has(id));
       if (why !== undefined) throw new Error(`E1007 ${why}`);
       // E1011 (k.bundle Service map): the entry maps the modules the scan found; one the bundler reached by another way
-      // (an alias, a package name, a template import) would send its calls to an origin that is not its deployable's.
+      // (a computed import(), found by glob) would send its calls to an origin that is not its deployable's.
       if (mapped === undefined) return;
       const topo = Object.values(topology ?? {});
       const unmapped = unmappedModule(
