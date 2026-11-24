@@ -329,6 +329,8 @@ State at the last checkpoint; each lane is a subagent in its worktree. The older
 
 - Checkpoint 27 of 2026-11-24: `lane-rtest` merged (d4253318; in the lane: build 57, testing 916, cli 1465, every app's and example's `keel test` and `keel check`, root check but for `ledger-fresh`, 22 new rows); its worktree and branch are removed. The main line's root `pnpm test` failed one server case over RFC 0201's scaffold helpers, mended in 324c5fda. Conformance is written for RFC 0203 (449d0443) and RFC 0204 (9833f561) and a builder runs in each lane; RFC 0205 and 0206's conformance writer runs. D121: mutation, the ledger, the gate and the push wait until the lanes of RFC 0203 to 0206 merge, as one batch: their builders keep the machine busy, and each merge makes the same packages' mutation stale again (to confirm).
 
+- Checkpoint 28 of 2026-11-24: `lane-r1009` merged (a0b18994: RFC 0205 and 0206 built) and removed. Builders run in `lane-r1052` and `lane-r1037`. Two writer lanes opened: `lane-r1008` (RFC 0207) and `lane-r1036` (RFC 0208); D122: both accepted on the orchestrator's authority once written (to confirm). D121 holds: the batch (mutation, ledger, gate, push) follows the merges of `lane-r1052` and `lane-r1037`; the two new lanes go into the batch after it.
+
 ## Next action
 1. `git worktree list`, `git status --short`, `gh run list --branch jdforsythe/test-impl --limit 2` (run 45305356961 on 6c747185 is green on every job). Read `tasks/0963-to-p1/briefs/README.md` and the last section of `tasks/0963-to-p1/briefs/lanes.md`.
 2. `lane-rtest` is merged. Finish the lanes of RFC 0203 to 0206 (`briefs/lanes.md`, "Opened on resume"): conformance, a builder, the report checked against the brief, the merge as `briefs/README.md` says.
