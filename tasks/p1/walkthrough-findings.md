@@ -28,7 +28,7 @@
 | L4-1 | fixed: fix(testing): renderRoute raises a page render throw no errorElement caught, so a tx in a component body names its E1201 |
 | L4-2 | answered in the skills (keel-server: `createApp` options) |
 | L4-3 | filed as backlog 1008 |
-| L4-4 | filed as backlog 1019 |
+| L4-4 | fixed: rfc:0212, k.guards Home states a guard module and E1153 names the guard |
 | L4-5 | answered in the skills (keel-server) |
 | L4-6 | filed as backlog 1014 |
 | L4-7 | answered in the skills (keel-testing: `scope`) |

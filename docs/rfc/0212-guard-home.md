@@ -6,14 +6,14 @@ Status: accepted (ADR-0234), accepted by the orchestrator on 2026-11-24, for the
 - D1: no new construct. A guard lives in a `*.guard.*` file of a module and is bound by value import, as today. A guard bound by modules that link to one another lives in a module of its own: no pages, its files guards and what they import, its `deps` reaching no module that binds them. Each binding module lists it. This is the one home, stated in k.guards Home.
 - D2: a guard's `redirect` stays a route id resolved in the deployable's route table, so a guard module names another module's sign-in page with no `deps` entry. Nothing changes in the router.
 - D3: a file outside every module is not a home. k.module does not check its imports, and k.boundary makes it server-only in every deployable, so a `client` deployable's build refuses it (E1007). No new rule refuses one: k.module already says all app code lives in modules, and no app or example puts a guard there.
-- D4: E1153 names the guard. When a module of the listed cycle imports from a `*.guard.*` file of the module after it, the message reads `module deps cycle through guard <name>: <ids>` and `see` is `k.guards`. `<name>` is the stem of the first such file along the cycle, the first by path within one edge. The guard comes before the cycle, so the 89-character clip cuts the cycle's tail and never the guard. A cycle with no guard import keeps its message and `see: k.module`.
-- D5: the spec states where E1153 lands (the smallest module id's entry naming the next module of the cycle), which `depsCycles` does today, so the conformance clause can quote a location.
+- D4: E1153 names the guard. When a module of the listed cycle imports from a `*.guard.*` file of the module after it, the message reads `module deps cycle through guard <name>: <ids>` and `see` is `k.guards`. `<name>` is the file name up to its first dot (`y` of `y.guard.ts`) of the first such file along the cycle: the first edge of the listed cycle that has one, its first file by path. The guard comes before the cycle, so the 89-character clip cuts the cycle's tail and never the guard. A cycle with no guard import keeps its message and `see: k.module`.
+- D5: the spec states where E1153 lands (the smallest module id's entry naming the next module of the cycle, at the id's opening quote inside `deps: [...]`), which `depsCycles` does today, so the conformance clause can quote a location.
 
 ## Problem
 A page binds a guard in its `routes.ts` by value import (`guard: signedIn`), so the binding module lists the guard's module in `deps` (E1152). A link to a page imports that page's contract (k.contract Derived: `href`), which is a `deps` entry too. So when the guard's module also holds a page that links to a page of a module binding the guard, `deps` is a cycle:
 
 ```
-E1153 modules/members/module.ts:5:10 module deps cycle: members -> shopping -> members
+E1153 modules/members/module.ts:4:10 module deps cycle: members -> shopping -> members
 fail check 1 errors
 ```
 
@@ -44,7 +44,7 @@ modules/shopping/  deps: ['access']             routes.ts binds signedIn
 
 ### E1153
 ```
-E1153 modules/members/module.ts:5:10 module deps cycle through guard signedIn: members -> shopping -> members
+E1153 modules/members/module.ts:4:10 module deps cycle through guard signedIn: members -> shopping -> members
 fail check 1 errors
 ```
 - The cycle is the one `depsCycles` lists today: the shortest from the component's smallest module id, reported at that module's entry naming the next.
