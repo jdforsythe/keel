@@ -1185,6 +1185,11 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
     bad: [f("src/run.ts", "export const run = (s: string) => eval(s)\n")],
     clean: [f("src/run.ts", "export const run = (s: string) => s\n")],
   },
+  W1608: {
+    opts: NO_TYPES,
+    bad: [f("modules/app/load.ts", "export const load = () => import('./b.ts')\n")],
+    clean: [f("modules/app/load.ts", "import { b } from './b.ts'\nexport const load = () => b\n")],
+  },
   E1701: {
     bad: [f("test/cart.test.ts", "const el = document.querySelector('#total')\nvoid el\n")],
     clean: [f("test/cart.test.ts", "const t = { find: (id: string) => id }\nvoid t.find('cart.total')\n")],
@@ -1409,7 +1414,7 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
     bad: [
       f(
         "C.tsx",
-        `${HOST_HEAD}const load = () => import('./chart.ts').then((m) => m.chart)\nexport default function C() { return <Host id="c.h" role="img" label="L" input={In} value={{ n: 1 }} code={load} /> }\n`,
+        `${HOST_HEAD}declare const load: () => unknown\nexport default function C() { return <Host id="c.h" role="img" label="L" input={In} value={{ n: 1 }} code={load} /> }\n`,
       ),
     ],
     clean: [

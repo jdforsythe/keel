@@ -516,7 +516,7 @@ const ROWS: readonly Row[] = [
     "scaffold service in a client module needs a reason for its origin",
     "The module is on a client deployable, so api.server.ts ships to the browser and its origin must be declared under origins.connect with a reason a reviewer reads (k.origins). Nothing is written.",
     "pass --reason '<why the app calls it>', or keel codemod place <module> --to <name> --adapter node",
-    "k.scaffold",
+    "k.scaffold-service",
   ],
   [
     "E1359",
@@ -967,6 +967,13 @@ const ROWS: readonly Row[] = [
     "eval, Function(...), new Function(...), a function's constructor, or import()/new Worker of a data: or blob: URL",
     "Code from a string reaches every ambient effect past E1601.",
     "eval(src) -> call the function src describes",
+    "k.ctx",
+  ],
+  [
+    "W1608",
+    "import() in app code is a load simulate does not track; use a static import",
+    "A module load is I/O no ctx owns: a simulate run neither waits for it nor orders it by seed, so one seed can give two traces. A Host's code (E1824) and a message set's load (E2401) are not reported.",
+    "const { a } = await import('./a.ts') -> import { a } from './a.ts'",
     "k.ctx",
   ],
   [
