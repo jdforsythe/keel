@@ -1,0 +1,18 @@
+# k.test-run: Test end and results
+status: implemented
+
+From `@keel/testing`, under vitest: when a harness handle (k.testing) ends without `dispose()`, and how `keel test` prints an error outside any test.
+
+**Disposal.** A `render`, `renderRoute` or `resumeDocument` handle made while a test runs, in its body or a `beforeEach` or `afterEach` hook, is disposed when that test ends, passed or failed, after its `afterEach` hooks: as `dispose()`, its elements leave the document, its scope is disposed and its seeded stores are restored. A route handle is disposed with every document it opened. A handle already disposed is not disposed again, so a write after a hand `dispose()` stays; a second `dispose()` does nothing, and a disposed handle's methods are E1705. A handle made outside a test (`beforeAll`, a `describe` body, module scope) is disposed only by `dispose()`, which an `afterAll` makes. With no vitest test running, nothing is registered.
+
+**Results.** `testResults(files, errors, cwd)` turns a finished vitest run into OUTPUT.md diagnostics for `keel test` and the repository's reporter. An app frame is a stack frame whose file is an absolute path outside `node_modules`, not `node:`, and not vitest's own (`/vitest/`, `/@vitest/`); paths are relative to `cwd`. Each error outside any test's result, an unhandled error or rejection vitest reports or one `keel test` catches around the run, is one T0001 `uncaught: <first line>`, its string `code` before the line when it has one, cut at 90 characters. It is located at its first app frame, from vitest's parsed `stacks` when present, else its `stack` text; with none, at 1:1 of the file vitest names for it (`VITEST_TEST_PATH`); with neither, without a location. Both paths make it with `testResults`.
+
+**Rules.** None of its own: a failed test and an uncaught error are T0001 (OUTPUT.md); a disposed handle's methods E1705 (k.testing).
+
+**Conformance.**
+- A test that `renderRoute`s a page with a `<main>` landmark and fails before `dispose()` leaves no element of it in the document once it ends, and the next test's `renderRoute` of that page passes its render checks.
+- A `render` given `state: [[store, v]]` and never disposed: the next test reads the store's value from before the render. Disposed by hand and the store written after it in the same test: the next test reads the write, and a second `dispose()` throws nothing.
+- An `afterEach` hook of the test that made a render finds it in the document; a render made in `beforeAll` is in the document in each test of its suite and is gone after an `afterAll` `dispose()`.
+- A `renderRoute` with `app` whose `<Form>` submit is answered 303 leaves no element of either document after the test.
+- `testResults([], [e], cwd)` for an error whose `stacks` are a `node_modules` frame, then `cwd/test/a.test.ts` 12:11, is one T0001 at `test/a.test.ts:12:11`, `uncaught: boom`; with `code` `ECONNRESET`, `uncaught: ECONNRESET boom`; with no app frame and `VITEST_TEST_PATH` `cwd/test/a.test.ts`, at `test/a.test.ts:1:1`; with neither, unlocated.
+- `keel test` over a project whose test leaves a `setTimeout` that throws `new Error('late')` after the test ends prints `T0001 <file>:<line>:<col> uncaught: late` at the `throw`, and the run fails.

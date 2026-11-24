@@ -42,13 +42,13 @@ const root = path.join(import.meta.dirname, "..");
 const SKILLS_DIR = "packages/cli/skills";
 const COPY_DIR = ".claude/skills";
 
-/** The published skills and the size target of each, in tokens (chars / 4). Re-based for the answers an app author needed in the walkthrough (createApp, Select, storage flag, explore, scope, Host, createApp's std, one frame across modules) and for `keel review` in the keel skill, view stores seeded with `initial` (keel-client, keel-server), node pages tested with `app` and two users as two harnesses (keel-testing), a channel that follows std-postgres writes (keel-data), one factory per store id across a layout and its page and its code E1550 (keel-server), a crashed workflow step stalling for its `timeoutMs` (keel-data), the client `user` a `client` page's guard reads from `/__keel/user` (keel-client, keel-server, keel-testing), a client with no `node` deployable and a `connect` origin's preflight (keel-deploy), the tokens' `base` and `look` and E1809 (keel-client, keel), E1589 for an `identity.ts` no origin answers (keel-server, keel-deploy), `scaffold service --base` and its `--reason` on a `client` deployable (keel-server). */
+/** The published skills and the size target of each, in tokens (chars / 4). Re-based for the answers an app author needed in the walkthrough (createApp, Select, storage flag, explore, scope, Host, createApp's std, one frame across modules) and for `keel review` in the keel skill, view stores seeded with `initial` (keel-client, keel-server), node pages tested with `app` and two users as two harnesses (keel-testing), a channel that follows std-postgres writes (keel-data), one factory per store id across a layout and its page and its code E1550 (keel-server), a crashed workflow step stalling for its `timeoutMs` (keel-data), the client `user` a `client` page's guard reads from `/__keel/user` (keel-client, keel-server, keel-testing), a client with no `node` deployable and a `connect` origin's preflight (keel-deploy), the tokens' `base` and `look` and E1809 (keel-client, keel), E1589 for an `identity.ts` no origin answers (keel-server, keel-deploy), `scaffold service --base` and its `--reason` on a `client` deployable (keel-server), a key sent to the focused element, a select pick and renders disposed at test end (keel-testing). */
 export const TARGETS = {
   keel: 1000,
   "keel-client": 2975,
   "keel-server": 2700,
   "keel-data": 2700,
-  "keel-testing": 2400,
+  "keel-testing": 2500,
   "keel-deploy": 2000,
   "keel-compliance": 1550,
   "keel-escapes": 1700,

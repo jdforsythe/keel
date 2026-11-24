@@ -70,7 +70,7 @@ describe("testResults", () => {
     expect(r.diagnostics.map((d) => [d.path, d.line, d.col, d.message])).toEqual([
       ["a.ts", 2, 4, "t: m"],
       ["../other/b.test.ts", 1, 1, "Cannot find module"],
-      [undefined, undefined, undefined, "boom"],
+      [undefined, undefined, undefined, "uncaught: boom"],
     ]);
     expect([r.failed, r.errors]).toEqual([2, 1]);
   });
