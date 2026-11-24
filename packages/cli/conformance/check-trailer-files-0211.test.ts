@@ -106,21 +106,25 @@ describe("k.check Trailer: what `files` counts (rfc:0211)", () => {
       const counted = fc.oneof(
         ext.map((e) => (n: number) => `modules/a/extra${n}.${e}`),
         ext.map((e) => (n: number) => `modules/a/extra${n}.test.${e}`),
-        fc
-          .tuple(fc.constantFrom("tailwind", "eslint", "tsup", "postcss", "vitepress"), ext)
-          .map(([name, e]) => (n: number) => `tools/${name}${n}.config.${e}`),
+        fc.tuple(fc.constantFrom("tailwind", "eslint", "tsup", "postcss", "vitepress"), ext).map(
+          ([name, e]) =>
+            (n: number) =>
+              `tools/${name}${n}.config.${e}`,
+        ),
         fc.constantFrom("d.ts", "d.mts", "d.cts").map((e) => (n: number) => `types/extra${n}.${e}`),
       );
       const toolExt = fc.constantFrom("ts", "mts", "cts", "js", "mjs", "cjs");
       const ignored = fc.oneof(
-        fc
-          .tuple(fc.constantFrom("vite", "vitest", "stryker"), toolExt)
-          .map(([name, e]) => (n: number) => `tools/t${n}/${name}.config.${e}`),
+        fc.tuple(fc.constantFrom("vite", "vitest", "stryker"), toolExt).map(
+          ([name, e]) =>
+            (n: number) =>
+              `tools/t${n}/${name}.config.${e}`,
+        ),
         fc.constantFrom(
-        (n: number) => `docs/note${n}.md`,
-        (n: number) => `data${n}.txt`,
-        (n: number) => `data/extra${n}.json`,
-        (n: number) => `modules/a/style${n}.css`,
+          (n: number) => `docs/note${n}.md`,
+          (n: number) => `data${n}.txt`,
+          (n: number) => `data/extra${n}.json`,
+          (n: number) => `modules/a/style${n}.css`,
         ),
       );
       fc.assert(
