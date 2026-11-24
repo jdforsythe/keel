@@ -33,19 +33,33 @@ const inline = async (port?: number): Promise<unknown> => (await viteServer(proj
 
 describe("viteServer", () => {
   it("asks for a strict port, and the given port when there is one", async () => {
-    vi.stubEnv("CHOKIDAR_USEPOLLING", "");
+    vi.stubEnv("KEEL_DEV_POLL", "");
     expect(await inline()).toEqual({ root: project, server: { strictPort: true } });
     expect(await inline(4321)).toEqual({ root: project, server: { strictPort: true, port: 4321 } });
   });
 
-  it("asks for a polling watcher when CHOKIDAR_USEPOLLING is set to anything but empty, 0 or false", async () => {
-    for (const on of ["1", "true", "yes"]) {
-      vi.stubEnv("CHOKIDAR_USEPOLLING", on);
-      expect(await inline()).toEqual({ root: project, server: { strictPort: true, watch: { usePolling: true } } });
-    }
-    for (const off of ["", "0", "false", "FALSE"]) {
-      vi.stubEnv("CHOKIDAR_USEPOLLING", off);
+  it("asks for a polling watcher, one interval of 100 ms, only when KEEL_DEV_POLL is 1", async () => {
+    vi.stubEnv("KEEL_DEV_POLL", "1");
+    expect(await inline()).toEqual({
+      root: project,
+      server: { strictPort: true, watch: { usePolling: true, interval: 100 } },
+    });
+    for (const off of ["", "0"]) {
+      vi.stubEnv("KEEL_DEV_POLL", off);
       expect(await inline(4321)).toEqual({ root: project, server: { strictPort: true, port: 4321 } });
+    }
+    vi.unstubAllEnvs();
+    vi.stubEnv("KEEL_DEV_POLL", undefined);
+    expect(await inline()).toEqual({ root: project, server: { strictPort: true } });
+  });
+
+  it("throws for any other value, naming the key and not the value", async () => {
+    for (const bad of ["true", "yes", "false", "TRUE"]) {
+      vi.stubEnv("KEEL_DEV_POLL", bad);
+      const e = await viteServer(project, undefined).catch((x: unknown) => x);
+      expect(e).toBeInstanceOf(Error);
+      expect(String(e)).toContain("KEEL_DEV_POLL");
+      expect(String(e)).not.toContain(bad);
     }
   });
 });
