@@ -17,8 +17,8 @@ import { browserFront } from "./browserFront.ts";
 import { clockStep } from "./clockStep.ts";
 import { fail } from "./fail.ts";
 import { freshGraph } from "./freshGraph.ts";
-import { requestLog } from "./requestLog.ts";
 import { openHarness } from "./openHarness.ts";
+import { requestLog } from "./requestLog.ts";
 import { seedFrom } from "./seedFrom.ts";
 import { settle } from "./settle.ts";
 

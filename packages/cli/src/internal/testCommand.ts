@@ -1,7 +1,7 @@
 import { Writable } from "node:stream";
+import { identitySetupFiles } from "@keel/compiler/hosting/identitySetupFiles";
 import { type TestReport, testResults } from "@keel/testing";
 import { writeA11yReport } from "@keel/testing/a11y";
-import { identitySetupFiles } from "@keel/compiler/hosting/identitySetupFiles";
 import { type Vitest, startVitest } from "vitest/node";
 import type { Input } from "../types/Input.ts";
 import type { Io } from "../types/Io.ts";
@@ -36,6 +36,11 @@ const notPassed = (r: TestReport, reason: string): TestReport => ({
   errors: 1,
 });
 
+/** The `test.setupFiles` entry of the project's `identity.ts` (vitest's `test` key is not in Vite's own config type). */
+function identitySetup(root: string): Record<string, unknown> {
+  return { test: { setupFiles: identitySetupFiles(root) } };
+}
+
 async function vitestRun(root: string, filters: readonly string[]): Promise<TestReport> {
   let report = EMPTY;
   let run: Vitest | undefined;
@@ -60,7 +65,7 @@ async function vitestRun(root: string, filters: readonly string[]): Promise<Test
         [...filters],
         { root, watch: false, reporters: [collector], env: { KEEL_TEST: "1" } },
         // The project's `identity.ts` is a setup file whether or not its vitest config has the `keel()` plugin.
-        { plugins: [{ name: "keel-identity", config: () => ({ test: { setupFiles: identitySetupFiles(root) } }) }] },
+        { plugins: [{ name: "keel-identity", config: () => identitySetup(root) }] },
         { stdout: sink(), stderr: sink() },
       );
       await vitest?.close();

@@ -99,7 +99,13 @@ export async function renderRoute<T extends RouteTable>(
   const log = requestLog(shell ? undefined : outer.net);
   const ctx = shell
     ? browserCtx(outer, {
-        net: browserFront({ log: log.push, origin, net: outer.net, send: (req) => outer.net.fetch(req), clock: outer.clock }),
+        net: browserFront({
+          log: log.push,
+          origin,
+          net: outer.net,
+          send: (req) => outer.net.fetch(req),
+          clock: outer.clock,
+        }),
         storage: outer.storage,
       })
     : outer;
