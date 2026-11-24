@@ -10,6 +10,7 @@ import { afterAll, expect, test } from "vitest";
 import {
   SEED,
   baseSurface,
+  baseSurfaceOnce,
   buildAndCheck,
   cleanup,
   diags,
@@ -55,7 +56,7 @@ test(
     fc.assert(
       fc.property(fc.constantFrom("note", "qty", "label"), (f) => {
         const NAME = "s.object({ name: s.string() })";
-        const { dir, base } = baseSurface(project({ body: NAME, split: false }));
+        const { dir, base } = baseSurfaceOnce(project({ body: NAME, split: false }));
         dirs.push(dir);
         write(dir, project({ body: `s.object({ name: s.string(), ${f}: s.string() })`, split: false }));
         expect(keel(dir, ["build"]).status).toBe(0);

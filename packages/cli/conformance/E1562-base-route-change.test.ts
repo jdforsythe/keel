@@ -5,7 +5,7 @@ import fc from "fast-check";
 import { afterAll, expect, test } from "vitest";
 import {
   SEED,
-  baseSurface,
+  baseSurfaceOnce,
   buildAndCheck,
   cleanup,
   diags,
@@ -32,7 +32,7 @@ test(
     fc.assert(
       fc.property(field, (f) => {
         const required = `s.object({ name: s.string(), ${f}: s.string()  }, { closed: true })`;
-        const { dir, base } = baseSurface(project({ body: NAME, split: true }));
+        const { dir, base } = baseSurfaceOnce(project({ body: NAME, split: true }));
         dirs.push(dir);
         write(dir, project({ body: required, split: true }));
         const run = buildAndCheck(dir, base);
@@ -49,7 +49,7 @@ test(
         );
         expect(diags(buildAndCheck(dir, base), "E1562")).toEqual([]);
 
-        const one = baseSurface(project({ body: NAME, split: false }));
+        const one = baseSurfaceOnce(project({ body: NAME, split: false }));
         dirs.push(one.dir);
         write(one.dir, project({ body: required, split: false }));
         expect(diags(buildAndCheck(one.dir, one.base), "E1562")).toEqual([]);
@@ -61,14 +61,14 @@ test(
 );
 
 test("E1562: modules in one deployable are not compared; moving `a` to another deployable makes the same change E1562", () => {
-  const { dir, base } = baseSurface(project({ body: NAME, split: false }));
+  const { dir, base } = baseSurfaceOnce(project({ body: NAME, split: false }));
   dirs.push(dir);
   write(dir, project({ body: "s.object({ name: s.string(), note: s.string()  }, { closed: true })", split: true }));
   expect(diags(buildAndCheck(dir, base), "E1562")).toHaveLength(1);
 });
 
 test("E1562: a change that no base endpoint refuses (an added optional field) is clean", () => {
-  const { dir, base } = baseSurface(project({ body: NAME, split: true }));
+  const { dir, base } = baseSurfaceOnce(project({ body: NAME, split: true }));
   dirs.push(dir);
   write(
     dir,

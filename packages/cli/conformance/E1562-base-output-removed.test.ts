@@ -1,48 +1,43 @@
 // Spec: k.compat, clause "Removing an `output` field a base entry requires is one E1562 with no fix; adding a field to an open output object is none."
-// Seed 1337. Cross-deployable caller `a` (deployable x) of entry `y.load` of the contract `y` (deployable y).
-import fc from "fast-check";
+// Seed 1337. Cross-deployable caller `a` (deployable x) of the contract `y` (deployable y). Every field is an entry `y.load<j>` of one project
+// (`projectMany`), so the case is three builds and two checks.
 import { afterAll, expect, test } from "vitest";
-import { SEED, baseSurface, buildAndCheck, cleanup, diags, project, write } from "./compat-support.ts";
+import { baseSurface, buildAndCheck, cleanup, diags, e1562Of, projectMany, write } from "./compat-support.ts";
 
-/** Property runs spawn several `keel build` and `keel check` processes each. */
+/** The case spawns three `keel build` and two `keel check`. */
 const SLOW = 120_000;
 
 const dirs: string[] = [];
 afterAll(() => {
   for (const d of dirs) cleanup(d);
 });
-const field = fc.constantFrom("title", "total", "status");
+const FIELDS = ["title", "total", "status"];
 
 test(
   "Removing an `output` field a base entry requires is one E1562 with no fix; adding a field to an open output object is none.",
   () => {
-    fc.assert(
-      fc.property(field, (f) => {
-        const both = `s.object({ id: s.string(), ${f}: s.string() })`;
-        const onlyId = "s.object({ id: s.string() })";
-        const value = (withField: boolean): string => (withField ? `{ id: 'i', ${f}: 'v' }` : "{ id: 'i' }");
-        const { dir, base } = baseSurface(project({ output: both, outputValue: value(true), split: true }));
-        dirs.push(dir);
+    /** An output schema of `id` and `fields`, all strings, and a value of it. */
+    const output = (fields: readonly string[]): [string, string] => [
+      `s.object({ ${["id", ...fields].map((n) => `${n}: s.string()`).join(", ")} })`,
+      `{ ${["id", ...fields].map((n) => `${n}: '${n === "id" ? "i" : "v"}'`).join(", ")} }`,
+    ];
+    const { dir, base } = baseSurface(projectMany({ outputs: FIELDS.map((f) => output([f])) }));
+    dirs.push(dir);
 
-        write(dir, project({ output: onlyId, outputValue: value(false), split: true }));
-        const removed = diags(buildAndCheck(dir, base), "E1562");
-        expect(removed).toHaveLength(1);
-        expect(String(removed[0]?.message)).toContain(f);
-        expect(removed[0]?.fix).toBeUndefined();
+    write(dir, projectMany({ outputs: FIELDS.map(() => output([])) }));
+    const removed = buildAndCheck(dir, base);
+    expect(diags(removed, "E1562")).toHaveLength(FIELDS.length);
+    FIELDS.forEach((f, j) => {
+      const found = e1562Of(removed, `y.load${j}`);
+      expect(found, f).toHaveLength(1);
+      expect(String(found[0]?.message)).toContain(f);
+      expect(found[0]?.fix).toBeUndefined();
+    });
 
-        const extra = `s.object({ id: s.string(), ${f}: s.string(), more: s.string() })`;
-        write(
-          dir,
-          project({
-            output: extra,
-            outputValue: `{ id: 'i', ${f}: 'v', more: 'm' }`,
-            split: true,
-          }),
-        );
-        expect(diags(buildAndCheck(dir, base), "E1562")).toEqual([]);
-      }),
-      { seed: SEED, numRuns: 3 },
-    );
+    write(dir, projectMany({ outputs: FIELDS.map((f) => output([f, "more"])) }));
+    const extra = buildAndCheck(dir, base);
+    expect(diags(extra, "E1562")).toEqual([]);
+    FIELDS.forEach((f, j) => expect(e1562Of(extra, `y.load${j}`), f).toEqual([]));
   },
   SLOW,
 );
