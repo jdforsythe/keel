@@ -10,6 +10,8 @@ import { opFailed } from "../internal/opFailed.ts";
 import type { PgClient } from "./PgClient.ts";
 import type { PgPool } from "./PgPool.ts";
 import type { PostgresOptions } from "./PostgresOptions.ts";
+import { notifyPayloads } from "./notifyPayloads.ts";
+import { storageListener } from "./storageListener.ts";
 import { verifiedSslmode } from "./verifiedSslmode.ts";
 
 const SELECT = "select key, value from keel_kv where key = any($1::text[])";
@@ -20,6 +22,9 @@ const LOCK =
 /** One advisory lock id for opening, so two processes create and upgrade the tables one at a time. */
 const OPEN_LOCK = "select pg_advisory_xact_lock(7265657)";
 
+/** Sends each `keel_storage` payload, in order, inside the commit's transaction. */
+const NOTIFY = "select pg_notify('keel_storage', p) from unnest($1::text[]) with ordinality as t(p, i) order by i";
+
 const field = (row: unknown, name: string): unknown =>
   typeof row === "object" && row !== null && name in row ? Reflect.get(row, name) : undefined;
 
@@ -28,15 +33,20 @@ const field = (row: unknown, name: string): unknown =>
  * connections, TLS as the URL's `sslmode` says. Opening creates or upgrades `keel_kv` and `keel_meta` in one
  * transaction. A newer `layout` rejects E2152; a database that cannot be reached or opened rejects E2153, naming
  * `KEEL_DATABASE_URL` and no part of it. `read` is one `SELECT`; `commit` and `set` are one transaction that takes
- * `pg_advisory_xact_lock` for each key in key order, compares, then writes. Replicas may share the database.
+ * `pg_advisory_xact_lock` for each key in key order, compares, then writes. Replicas may share the database: `watch` (k.persist Watch) is `LISTEN` on `keel_storage`, announced by `pg_notify` in each store commit's transaction; a pool from `clientFactory` has none.
  */
 export async function postgres(url: URL, options: PostgresOptions = {}): Promise<DbStorage> {
   if (url.protocol !== "postgres:" && url.protocol !== "postgresql:")
     throw dbError("E2153", "KEEL_DATABASE_URL is not a postgres: or postgresql: URL");
   const pool: PgPool = options.clientFactory?.() ?? quietPool(url);
+  let token = "";
   try {
     await inTx(pool, async (c) => {
       await c.query(OPEN_LOCK);
+      if (options.clientFactory === undefined) {
+        const xid = field((await c.query("select pg_current_xact_id()::text as x")).rows[0], "x");
+        token = typeof xid === "string" && /^\d+$/.test(xid) ? xid : "0";
+      }
       await c.query("create table if not exists keel_kv (key text primary key, value text not null)");
       await c.query("create table if not exists keel_meta (name text primary key, value text not null)");
       const r = await c.query("select value from keel_meta where name = 'layout'");
@@ -75,6 +85,8 @@ export async function postgres(url: URL, options: PostgresOptions = {}): Promise
         }
         const stored = writes.filter((w) => w.value !== undefined);
         if (stored.length > 0) await c.query(UPSERT, [stored.map((w) => w.key), stored.map((w) => w.value)]);
+        const announced = check && token !== "" ? stored.map((w) => w.key).filter((k) => k.startsWith("keel.store.")).sort() : [];
+        if (announced.length > 0) await c.query(NOTIFY, [notifyPayloads(token, announced)]);
         return true;
       });
     } catch (e) {
@@ -91,7 +103,9 @@ export async function postgres(url: URL, options: PostgresOptions = {}): Promise
       throw opFailed("postgres", "read", e);
     }
   };
+  const listener = options.clientFactory === undefined ? storageListener(url, token) : undefined;
   return {
+    ...(listener === undefined ? {} : { watch: listener.watch }),
     get: async (key) => (await readKeys([key]))[0] ?? null,
     set: async (key, value) => {
       await write([{ key, expect: null, value }], false);
@@ -101,6 +115,7 @@ export async function postgres(url: URL, options: PostgresOptions = {}): Promise
     close: async () => {
       if (closed) return;
       closed = true;
+      await listener?.close();
       await pool.end();
     },
   };
