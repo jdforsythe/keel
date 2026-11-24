@@ -18,17 +18,17 @@ const sorted = (o: Fields): Fields =>
 export function shellManifest(pkg: Readonly<Fields>, shell: "tauri" | "capacitor", identity: boolean): string {
   const deps = strings(pkg.dependencies);
   const dev = strings(pkg.devDependencies);
-  const listed = (name: string): boolean => Object.hasOwn(deps, name) || Object.hasOwn(dev, name);
+  const has = (name: string): boolean => Object.hasOwn(deps, name) || Object.hasOwn(dev, name);
   const table = SHELL_PACKAGES[shell];
   const server = deps["@keel/server"];
   const std = `@keel/std-${shell}`;
-  if (!listed(std)) deps[std] = typeof server === "string" ? server : "^0.0.0";
-  for (const [name, version] of Object.entries(table.dependencies)) if (!listed(name)) deps[name] = version;
+  if (!has(std)) deps[std] = typeof server === "string" ? server : "^0.0.0";
+  for (const [name, version] of Object.entries(table.dependencies)) if (!has(name)) deps[name] = version;
   const plugins = { ...table.plugins, ...(identity ? table.identity : {}) };
   for (const [name, version] of Object.entries(plugins)) {
     if (Object.hasOwn(dev, name) && !Object.hasOwn(deps, name)) dev[name] = version;
     else deps[name] = version;
   }
-  for (const [name, version] of Object.entries(table.devDependencies)) if (!listed(name)) dev[name] = version;
+  for (const [name, version] of Object.entries(table.devDependencies)) if (!has(name)) dev[name] = version;
   return `${jsonText({ ...pkg, dependencies: sorted(deps), devDependencies: sorted(dev) })}\n`;
 }
