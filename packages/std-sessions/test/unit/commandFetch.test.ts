@@ -103,6 +103,17 @@ describe("session capture", () => {
     expect(out.records[0]).toEqual(record(`.keel/sessions/${FP}-0.json`, { error: null, events: 0, inputs: 0 }));
   });
 
+  test("no recorder (a null section value) is one E1056 and writes nothing", async () => {
+    const { io } = net(() => inspect(null));
+    expect(await commandFetch("capture", {}, io)).toEqual({
+      records: [
+        diag("E1056", "session capture has no sessions.live section: http://localhost:5173"),
+        summary("capture", false, 0),
+      ],
+      writes: [],
+    });
+  });
+
   test("no recorder (a section with no value) writes nothing and passes", async () => {
     const { io } = net(() => json({ sections: { "sessions.live": {} } }));
     expect(await commandFetch("capture", {}, io)).toEqual({ records: [summary("capture", true, 0)], writes: [] });
