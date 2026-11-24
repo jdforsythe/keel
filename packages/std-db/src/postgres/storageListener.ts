@@ -1,5 +1,5 @@
-import pg from "pg";
 import type { StorageReport } from "@keel/ctx";
+import pg from "pg";
 import type { StorageListening } from "./StorageListening.ts";
 import { verifiedSslmode } from "./verifiedSslmode.ts";
 

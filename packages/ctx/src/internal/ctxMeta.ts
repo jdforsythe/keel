@@ -11,5 +11,11 @@ import { realmShared } from "./realmShared.ts";
  */
 export const ctxMeta: WeakMap<
   Ctx,
-  { readonly mode: Mode; readonly seed: number; readonly given: number | undefined; readonly plans: Schedule["plans"]; readonly root?: Ctx }
+  {
+    readonly mode: Mode;
+    readonly seed: number;
+    readonly given: number | undefined;
+    readonly plans: Schedule["plans"];
+    readonly root?: Ctx;
+  }
 > = realmShared("keel.ctxMeta");

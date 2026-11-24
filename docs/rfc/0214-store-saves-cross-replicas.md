@@ -1,6 +1,6 @@
 # RFC 0214: k.persist and std.channels: a store save reaches the live streams of every replica
 
-Status: accepted (ADR-0236) by the orchestrator on 2026-11-24, for the operator to confirm. Amends k.persist (Storage, a Watch paragraph, Conformance), k.sim (Replicas, Conformance), k.deploy (Storage, two sentences), std.db (API, On disk, Conformance), std.channels (Serve, Conformance), std.live (Conformance), the map and the std index. From backlog 1034.
+Status: implemented (ADR-0236) by the orchestrator on 2026-11-24, for the operator to confirm. Amends k.persist (Storage, a Watch paragraph, Conformance), k.sim (Replicas, Conformance), k.deploy (Storage, two sentences), std.db (API, On disk, Conformance), std.channels (Serve, Conformance), std.live (Conformance), the map and the std index. From backlog 1034.
 
 ## Decisions
 - D1: the storage driver announces commits, as std-postgres's `changed` does for app data. k.persist gains one optional part of the storage contract, `watch(on)`: it reports each `true` commit another storage object made to the same data, naming the `keel.store.` keys it stored and never a value. No bus, no broker, no new service.

@@ -37,7 +37,7 @@
       "max": "35kb",
       "platform": "node"
     },
-    "@keel/ctx": "4.1kb",
+    "@keel/ctx": "4.4kb",
     "@keel/forms": "5kb",
     "@keel/reactive": "4kb",
     "@keel/router": "14.6kb",
@@ -66,7 +66,7 @@
     "@keel/services": "3.8kb",
     "@keel/std-channels": "1.5kb",
     "@keel/std-channels/server": {
-      "max": "2.5kb",
+      "max": "3kb",
       "platform": "node"
     },
     "@keel/std-channels/tools": {
@@ -155,7 +155,7 @@
       "platform": "node"
     },
     "@keel/std-db/postgres": {
-      "max": "2kb",
+      "max": "2.6kb",
       "platform": "node"
     },
     "@keel/std-db/tools": {

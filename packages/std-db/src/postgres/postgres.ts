@@ -85,7 +85,13 @@ export async function postgres(url: URL, options: PostgresOptions = {}): Promise
         }
         const stored = writes.filter((w) => w.value !== undefined);
         if (stored.length > 0) await c.query(UPSERT, [stored.map((w) => w.key), stored.map((w) => w.value)]);
-        const announced = check && token !== "" ? stored.map((w) => w.key).filter((k) => k.startsWith("keel.store.")).sort() : [];
+        const announced =
+          check && token !== ""
+            ? stored
+                .map((w) => w.key)
+                .filter((k) => k.startsWith("keel.store."))
+                .sort()
+            : [];
         if (announced.length > 0) await c.query(NOTIFY, [notifyPayloads(token, announced)]);
         return true;
       });

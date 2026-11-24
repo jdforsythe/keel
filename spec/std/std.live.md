@@ -24,7 +24,7 @@ A live view is a client store kept current by its hydrating transaction. Values 
 - A read that resolves after a read started later commits nothing.
 - A read returning `err` commits nothing, `status()` is `connecting`, and reads run again 1 s, then 2 s, then 4 s later on `ctx.clock` until one succeeds.
 - Under sim, after `setOnline(false)`, `status()` is `offline` and no read runs; after `setOnline(true)` the stream reopens and exactly one read runs.
-- With callers A and B subscribed to one sim server, a write by A is in B's hydrated store after B's next read, with no input from B.
+- With callers A and B subscribed to one sim server, a write by A is in B's hydrated store after B's next read (B's `read` of the board snapshot through B's ctx storage, started by the `saved` that reached B's stream), with no input from B.
 - Disposing the scope closes the stream, and a read in flight then commits nothing.
 - Under one seed, two runs of one script of saves give byte-equal logs on the hydrated store.
 - Under sim, after a committed read, a `saved` event starts a read that never settles; once `ctx.clock` passes 30 s from its start, `status()` is `connecting`, and 1 s later a second read runs; when that one settles `ok`, it commits and `status()` is `live`.

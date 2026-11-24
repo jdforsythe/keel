@@ -51,7 +51,7 @@ export const boardEvents = channelRoute(api, boardChannel, { id: 'api.boardEvent
 - `identify` throwing or not settling within 5,000 ms at a delivery closes that stream `denied`.
 - Under sim, with `createApp` A on ctx `a` and B on `b = replica(a)` (k.sim Replicas) serving one channel route with `stores`, a member stream open on B gets `reset`, then `{ kind: 'saved', store, head }` after an action on A saves that store, `head` being the head A's save produced.
 - Under sim, with A and B as above, for a generated sequence of saves of one store by actions on A and on B, the `saved` heads on each member stream open on A or on B strictly rise, and once the run settles the last equals the store's head.
-- Under sim, with A and B as above, a member stream open on B for which `member` turns false after a save on A gets `{ kind: 'closed', reason: 'denied' }` and ends.
+- Under sim, with A and B as above, a member stream open on B for which `member` turns false after a save on A gets `{ kind: 'closed', reason: 'denied' }` in place of that save's `saved`, then its end; the events before it are those of earlier saves.
 - Under sim, with A and B as above, a member's publish on A delivers `{ kind: 'message', message }` to A's member streams of that channel and params and to none of B's.
 - On a real ctx whose storage driver has a `watch` the test controls, two member streams of routes with `stores` call `watch` once; neither gets `reset` before it resolves; `on({ kind: 'lost' })` ends both with no `closed` event; a stream opened after that calls `watch` again; and the function `watch` resolved runs when the last stream ends.
 - On a real ctx whose storage driver has no `watch`, a member stream of a route with `stores` gets `reset` at open.
