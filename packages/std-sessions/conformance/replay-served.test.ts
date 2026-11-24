@@ -1,16 +1,18 @@
-import { createCtx } from "@keel/ctx";
 // @vitest-environment happy-dom
 // Spec: std.sessions, clause "`replay` with `serve` of an unmodified session recorded under `renderRoute` with `app` calls `serve` once and returns `reproduced: true`, `unapplied: null`, and every store's final state equal to the recording's."
 // Spec: std.sessions, Served pages "With `serve(ctx)`, a function resolving a `createApp` result made on `ctx`, the base is a page a `node` deployable serves: `replay` makes the sim ctx, advances it to `at`, calls `serve(ctx)` once, and renders the base with `renderRoute(route.id, { routes, params, search, ctx, app, user })` (k.testing; `user` left out when absent), so guards, loaders and actions run in the app over `ctx.storage`, which starts empty."
 // Spec: std.sessions, Served pages "`state` is not applied: each store starts as the served document resumes it."
-// Spec: std.sessions, Served pages "App and page share the ctx's clock and random (k.mount Testing), so a replay under one `seed` is deterministic."
+// Spec: std.sessions, Served pages "App and page share the ctx's clock and random (k.mount Testing): `serve` gets the ctx with its clock at `at` and its random stream unread, both then draw from that stream, so two replays under one `seed` draw the same values and are equal; where the stream stands after a replay is not part of the result."
+// Spec: std.sessions, Served pages "The server's data comes only from the recorded inputs replayed through the app (a submit runs its action), never from `state`."
 // Spec: std.sessions, Served pages "The server state, loader answers and user of the recorded run are not in the session: a session whose error needs them does not reproduce (E2004)."
 // Seed 1337
 // Untestable here: that guards, loaders and actions "run in the app over `ctx.storage`" (the spec names no way to observe the storage a replay used), and `minimize` calling `serve` once per run (RFC 0215 Proposal, not in the spec text).
+import { createCtx } from "@keel/ctx";
+import type { SimCtx } from "@keel/ctx";
 import { replay } from "@keel/std-sessions/replay";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { AT, SEED, countingServe, guardedRoutes, recordServed } from "./served-fixtures.ts";
+import { AT, buildApp, countingServe, guardedRoutes, recordServed } from "./served-fixtures.ts";
 
 const visitsArb = fc.array(fc.constantFrom("a.about" as const, "a.help" as const), { maxLength: 4 });
 
@@ -30,16 +32,18 @@ describe("std.sessions: replay with serve", () => {
     );
   }, 120_000);
 
-  test("`replay` calls `serve` with the sim ctx of `seed`, advanced to `at`", async () => {
+  test("`replay` calls `serve` with the sim ctx of `seed`, its clock at `at` and its random stream unread", async () => {
     await fc.assert(
       fc.asyncProperty(fc.integer({ min: 0, max: 100_000 }), async (seed) => {
         const { session } = await recordServed("a.about", [], { seed });
-        const { serve, ctxs } = countingServe();
+        const seen: { now: number; id: string }[] = [];
+        const serve = (ctx: SimCtx) => {
+          seen.push({ now: ctx.clock.now(), id: ctx.random.id("Probe") });
+          return buildApp(ctx);
+        };
         await replay({ ...session, seed }, { routes: guardedRoutes, serve });
-        const [ctx] = ctxs;
-        expect(ctx?.clock.now()).toBe(session.at);
         expect(session.at).toBe(AT);
-        expect(ctx?.random.id("Probe")).toBe(createCtx({ mode: "sim", seed }).random.id("Probe"));
+        expect(seen).toEqual([{ now: session.at, id: createCtx({ mode: "sim", seed }).random.id("Probe") }]);
       }),
       { seed: 1337, numRuns: 8 },
     );
