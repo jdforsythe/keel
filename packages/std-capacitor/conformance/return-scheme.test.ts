@@ -39,7 +39,7 @@ const files = (id: string): Record<string, string> => ({
   "tsconfig.json": JSON.stringify({
     compilerOptions: { jsx: "react-jsx", jsxImportSource: "@keel/runtime-dom", module: "esnext", target: "es2022" },
   }),
-  "topology.ts": `import { topology } from '@keel/server'\nexport default topology({\n  web: { modules: ['c'], adapter: 'client', shells: { capacitor: { id: '${id}', name: 'Golden' } } },\n})\n`,
+  "topology.ts": `import { topology } from '@keel/server'\nexport default topology({\n  web: { modules: ['c'], adapter: 'client', shells: { capacitor: { id: '${id}', name: 'Golden' } } },\n  api: { modules: [], adapter: 'node' },\n})\n`,
   "modules/c/module.ts": manifestSrc("c"),
   "modules/c/Page.tsx":
     "import { Box, Text } from '@keel/ui'\nexport default function Page() {\n  return (\n    <Box as=\"main\">\n      <Text>home</Text>\n    </Box>\n  )\n}\n",

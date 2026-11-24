@@ -47,7 +47,7 @@ const manifestSrc = (id: string): string =>
   `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [] } })\n`;
 type Opts = { identity?: boolean; origins?: string; deps?: Record<string, string> };
 const topo = (o: Opts): string =>
-  `import { topology } from '@keel/server'\nexport default topology({\n  web: { modules: ['c'], adapter: 'client'${o.identity ? ", servedBy: 'api'" : ""}, shells: { capacitor: { id: 'dev.keel.golden', name: 'Golden' } }${o.origins ? `, origins: ${o.origins}` : ""} },\n${o.identity ? "  api: { modules: [], adapter: 'node' },\n" : ""}})\n`;
+  `import { topology } from '@keel/server'\nexport default topology({\n  web: { modules: ['c'], adapter: 'client'${o.identity ? ", servedBy: 'api'" : ""}, shells: { capacitor: { id: 'dev.keel.golden', name: 'Golden' } }${o.origins ? `, origins: ${o.origins}` : ""} },\n  api: { modules: [], adapter: 'node' },\n})\n`;
 const IDENTITY: Record<string, string> = {
   "identity.ts": "import { identityMount } from '@keel/router'\nexport default identityMount('/api/auth')\n",
   "identity.server.ts":
