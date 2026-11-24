@@ -11,6 +11,7 @@ import { budgetBreaches } from "./internal/budgetBreaches.ts";
 import { chainStoreIds } from "./internal/chainStoreIds.ts";
 import { compatChecks } from "./internal/compat/compatChecks.ts";
 import { contractChecks } from "./internal/contractChecks.ts";
+import { dropLifted } from "./internal/dropLifted.ts";
 import { duplicateErrorCodes } from "./internal/duplicateErrorCodes.ts";
 import { generatedEdits } from "./internal/generatedEdits.ts";
 import { guardRedirectLoops } from "./internal/guardRedirectLoops.ts";
@@ -177,6 +178,7 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
     ...compatChecks(files, opts.project ?? files, (dir) => compatTopology(dir, all, opts), opts.base),
   );
 
-  const diagnostics = normalize(out);
+  // A lifted range (k.check, App code) reports none of its nine codes.
+  const diagnostics = normalize(dropLifted(out, code));
   return { diagnostics, summary: summarize(diagnostics) };
 }

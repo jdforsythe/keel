@@ -1,7 +1,7 @@
 // Shared fixture for the k.compat Sources conformance files (not a test file). Public surface only: the `keel` binary over a temp project.
 // Seed 1337 for every property in this suite.
 // ASSUMED (spec names no fixture layout; the layout is what `keel build` accepts today): the files other than `modules/y/subject.ts` sit where the
-// one-export-per-file and no-lowercase-JSX rules (E1752, E1805) do not reach: `unsafe/View.tsx`, a node_modules package `xs` for the multi-export imports.
+// one-export-per-file and no-lowercase-JSX rules (E1752, E1805) do not reach: `modules/y/View.tsx` (`Box` stands for the `p` of the spec text: a lowercase element is E1805 in every app file), a node_modules package `xs` for the multi-export imports.
 // `routes.ts` imports `unsafe/Doc.ts` first (a document stub) because the JSX of a `.tsx` file needs a DOM when evaluated in Node.
 // ASSUMED: the shared two-module project of compat-support.ts, whose `routes.ts` also imports
 // `subject.ts` and `unsafe/View.tsx`, so both are evaluated by `keel build` and listed in `sources`; the edits are applied to the
@@ -11,7 +11,7 @@ import { join } from "node:path";
 import { type Run, type Tree, diags, keel, materialize, project, readText, write } from "./compat-support.ts";
 
 export const SUBJECT = "modules/y/subject.ts";
-export const VIEW = "unsafe/View.tsx";
+export const VIEW = "modules/y/View.tsx";
 export const SURFACE = ".keel/surface.json";
 export const SLOW = 600_000;
 
@@ -45,7 +45,8 @@ export const SUBJECT_TEXT = [
   "",
 ].join("\n");
 
-export const VIEW_TEXT = "export default function View() {\n  return <p>Hi there</p>\n}\n";
+export const VIEW_TEXT =
+  "import { Box } from '@keel/ui'\nexport default function View() {\n  return <Box>Hi there</Box>\n}\n";
 
 /** Stands in for the DOM the JSX templates of `View.tsx` touch when `keel build` evaluates the file in Node. */
 const DOC_STUB = [
@@ -62,7 +63,7 @@ export function tree(subject: string = SUBJECT_TEXT, view: string = VIEW_TEXT): 
   const routes = files["modules/y/routes.ts"] ?? "";
   return {
     ...files,
-    "modules/y/routes.ts": `import '../../unsafe/Doc.ts'\nimport './subject.ts'\nimport '../../unsafe/View.tsx'\n${routes}`,
+    "modules/y/routes.ts": `import '../../unsafe/Doc.ts'\nimport './subject.ts'\nimport './View.tsx'\n${routes}`,
     [SUBJECT]: subject,
     [VIEW]: view,
     "node_modules/xs/package.json": '{ "name": "xs", "type": "module", "main": "index.js", "types": "index.d.ts" }\n',

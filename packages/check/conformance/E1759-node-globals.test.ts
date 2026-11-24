@@ -1,4 +1,4 @@
-// Spec: k.host, Node globals "A browser file is an app file under `modules/<id>/` of a module a deployable lists that is not server-only (k.boundary), except the `routes.ts` of a module no `client` or `static` deployable lists; with no `topology.ts`, any app file that is not server-only. In a browser file E1759 reports a read of `process`, `Buffer`, `global`, `setImmediate`, `clearImmediate`, `__dirname`, `__filename`, `require`, `import.meta.dirname` or `import.meta.filename`, and a value import, re-export, literal `import()` or `require` of a Node built-in (`node:` or a bare name Node lists as built-in). In any app file, `*.server.*` included, `require`, `__dirname` and `__filename` are E1759: an ES module has none. Fix, outside a browser file: `__dirname` to `import.meta.dirname`, `__filename` to `import.meta.filename`; none otherwise. Not reported: a name the file declares; the operand of `typeof`, and a read under a `typeof x !== 'undefined'` test (`if`, `?:` or `&&`); members of `globalThis`; `import type`; tests, `*.config.*`, `unsafe/`, `.keel/` and `node_modules/`."
+// Spec: k.host, Node globals "A browser file is an app file under `modules/<id>/` of a module a deployable lists that is not server-only (k.boundary), except the `routes.ts` of a module no `client` or `static` deployable lists; with no `topology.ts`, any app file that is not server-only. In a browser file E1759 reports a read of `process`, `Buffer`, `global`, `setImmediate`, `clearImmediate`, `__dirname`, `__filename`, `require`, `import.meta.dirname` or `import.meta.filename`, and a value import, re-export, literal `import()` or `require` of a Node built-in (`node:` or a bare name Node lists as built-in). In any app file, `*.server.*` included, `require`, `__dirname` and `__filename` are E1759: an ES module has none. Fix, outside a browser file: `__dirname` to `import.meta.dirname`, `__filename` to `import.meta.filename`; none otherwise. Not reported: a name the file declares; the operand of `typeof`, and a read under a `typeof x !== 'undefined'` test (`if`, `?:` or `&&`); members of `globalThis`; `import type`; tests, `*.config.*`, `.keel/` and `node_modules/`, and a lifted range of a file under `unsafe/` (k.check, App code: E1759 is reported in the rest of such a file)."
 // Spec: k.host, Rules "E1759 a Node-only global or built-in import in a browser file, or `require`, `__dirname` or `__filename` in an ES module (fix: `import.meta.dirname` or `import.meta.filename` outside a browser file)."
 // Spec: k.host, Conformance "In `modules/shop/Badge.tsx` of a `node` deployable, each one E1759: `process.env.X`, `Buffer.from(s)`, `global.x`, `setImmediate(f)`, `import.meta.dirname`, `import fs from 'node:fs'`, `import { join } from 'path'`, `export { readFile } from 'fs'`, `import('node:os')`, `require('x')`, `__dirname`; and with a `client` deployable listing `shop`, in `modules/shop/stock.ts`."
 // Spec: k.host, Conformance "None: the reads but `require`, `__dirname` and `__filename` in `modules/shop/stock.server.ts` and in `routes.ts` of a module only `node` deployables list; all of them in `Badge.test.tsx` and `vite.config.ts`; `typeof process`, `typeof process !== 'undefined' && process.env.X`, `globalThis.process`, `import type { Buffer } from 'node:buffer'`, `const process = { env: {} }; process.env`, and `import x from 'pathe'`."
@@ -194,16 +194,25 @@ describe("k.host Node globals: none, the reads but `require`, `__dirname` and `_
     }
   });
 
-  test("everything in `unsafe/`, `.keel/` and `node_modules/` is none", () => {
+  test("everything in `.keel/` and `node_modules/` is none", () => {
     for (const path of [
-      "modules/shop/unsafe/x.ts",
-      "unsafe/x.ts",
       "modules/shop/.keel/x.ts",
       ".keel/x.ts",
       "modules/shop/node_modules/pkg/x.ts",
       "node_modules/pkg/x.ts",
     ]) {
       for (const stmt of REPORTING) expect(count(shop("client", [file(path, asSource(stmt))]))).toBe(0);
+    }
+  });
+
+  test("a lifted range of a file under `unsafe/` is none and the rest of such a file is E1759", () => {
+    const helper = "function unsafe<T>(reason: string, fn: () => T): T { return fn() }\n";
+    for (const path of ["modules/shop/unsafe/x.ts"]) {
+      const lifted = `${helper}export const a = unsafe('why', () => process.env.X)\n`;
+      expect(count(shop("client", [file(path, lifted)]))).toBe(0);
+      const outside = `${helper}export const a = unsafe('why', () => 1)\nexport const b = process.env.X\n`;
+      expect(count(shop("client", [file(path, outside)]))).toBe(1);
+      expect(count(shop("client", [file(path, "export const a = process.env.X\n")]))).toBe(1);
     }
   });
 });

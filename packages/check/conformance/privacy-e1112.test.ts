@@ -197,8 +197,8 @@ describe("k.privacy E1112", () => {
     expectOne(["const { storage } = ctx", "storage.set('k', reveal(p.k))"], 1);
   });
 
-  test("E1112 does not report a file under `unsafe/`", () => {
-    expectNone(["tx(t, { v: reveal(p.k) })"], "modules/app/unsafe/x.server.ts");
+  test("E1112 reports a file under `unsafe/` outside any `unsafe(` call (E1112 is not a lifted code)", () => {
+    expectOne(["tx(t, { v: reveal(p.k) })"], 0, "modules/app/unsafe/x.server.ts");
   });
 
   test("E1112 does not report a test file", () => {

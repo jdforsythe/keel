@@ -148,7 +148,6 @@ const REPORTING: Record<string, string> = {
   "modules/recipes/RecipeList.test.tsx": component(`<Input placeholder="Search" label="Search" />`),
   "modules/recipes/row.test.ts": "export const x = Text({ children: 'Recipes' })\n",
   "modules/recipes/RecipeList.spec.tsx": component("<h1>Recipes</h1>"),
-  "modules/recipes/unsafe/Row.tsx": component("<h1>Recipes</h1>"),
   "modules/recipes/.keel/Row.tsx": component("<h1>Recipes</h1>"),
 };
 for (const [path, source] of Object.entries(REPORTING)) {

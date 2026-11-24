@@ -82,7 +82,7 @@ test("the manifest of a module is its `module.ts`", async () => {
   expect(dependsOn("modules/recipes/View.tsx", [{ ...manifest, path: "modules/recipes/manifest.ts" }])).toBe(false);
 });
 
-test("each rule's code, spec section and explanation; E2406 skips tests, tool configs and generated trees", async () => {
+test("each rule's code, spec section and explanation; E2406 skips tests, tool configs and generated trees, and reads unsafe/ files", async () => {
   vi.resetModules();
   const tools = await import("../src/tools/index.ts");
   expect(
@@ -135,6 +135,8 @@ test("each rule's code, spec section and explanation; E2406 skips tests, tool co
     "modules/recipes/testing.ts",
     "modules/recipes/site.config.json.ts",
     "modules/recipes/row.test.d/row.ts",
+    "modules/recipes/unsafe/row.ts",
+    "unsafe/row.ts",
     "row.ts",
   ])
     expect([path, copy(path)]).toEqual([path, 1]);
@@ -143,10 +145,8 @@ test("each rule's code, spec section and explanation; E2406 skips tests, tool co
     "modules/recipes/tests/row.ts",
     "modules/recipes/conformance/row.ts",
     "modules/recipes/__tests__/row.ts",
-    "modules/recipes/unsafe/row.ts",
     "modules/recipes/.keel/row.ts",
     "modules/recipes/node_modules/pkg/row.ts",
-    "unsafe/row.ts",
     "test/row.ts",
     "modules/recipes/row.test.ts",
     "modules/recipes/row.spec.ts",

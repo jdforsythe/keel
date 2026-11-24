@@ -1226,8 +1226,8 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1757",
-    "cast, non-null assertion, any, or ts-suppression outside unsafe/",
-    "These defeat the type system; narrow with a guard or isolate in unsafe/.",
+    "cast, non-null assertion, any, or ts-suppression outside an unsafe() call",
+    "These defeat the type system; narrow with a guard, or put the one expression in unsafe(reason, () => ...) in a file under unsafe/.",
     "x! -> x (after a guard); any -> unknown",
     "k.check",
   ],

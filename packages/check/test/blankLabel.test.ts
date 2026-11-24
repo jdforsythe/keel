@@ -32,9 +32,10 @@ describe("E1802 blank label", () => {
     expect(out([f("modules/a/w.tsx", own)])).toEqual([]);
   });
 
-  it("skips test files and unsafe/ directories", () => {
+  it("skips test files and reads unsafe/ files", () => {
     const src = `${UI}export const a = Box({ label: '' })\n`;
-    expect(out([f("modules/a/v.test.ts", src), f("modules/a/unsafe/v.ts", src)])).toEqual([]);
+    expect(out([f("modules/a/v.test.ts", src)])).toEqual([]);
+    expect(out([f("modules/a/unsafe/v.ts", src)])).toHaveLength(1);
   });
 
   it("reports each blank label once, in source order", () => {

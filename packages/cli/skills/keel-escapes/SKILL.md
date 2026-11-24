@@ -46,7 +46,7 @@ Read the code at `path:line` and the diff around it. Then answer four questions,
 | R1055 | a Keel package's `src`, `dist` or `unsafe` files | the package's public entry (`keel docs k.security`) |
 | R1056 | a global by a computed key, an indirect `eval` | the `ctx` capability: `ctx.net`, `ctx.clock`, `ctx.storage` (`keel docs k.ctx`) |
 | R1057 | `process.env`, `fs`, `net`, `http`, `child_process` | `DeployEnv` and `ctx`; a `service` client for the network (`keel docs k.services`) |
-| R1058 | a file under `unsafe/` with no `unsafe(` call | move it out, or wrap the one line that needs it |
+| R1058 | a file under `unsafe/` with no `unsafe(` call | move it out, or wrap the one line that needs it in `unsafe(reason, () => ...)`; the file's other lines are checked as app code |
 | R1059, R1060 | a skipped or focused test, fewer assertions | restore the test; change the code under test instead |
 | R1061 | a conformance file changed | the conformance suite changes in its own reviewed change |
 | R1100 | framework source changed with the app | land the framework change on its own |

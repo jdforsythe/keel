@@ -52,12 +52,12 @@ describe("E1207 detached scope in app code", () => {
     expect(out(`import * as r from '@keel/reactive'\nexport const f = (r: X) => r.scope(() => 1, opts)\n`)).toEqual([]);
   });
 
-  it("stays quiet in kernel and stdlib packages, tests, and unsafe directories", () => {
+  it("stays quiet in kernel and stdlib packages, and tests", () => {
     const src = body("scope(() => 1, { detached: true, onError })");
     expect(out(src, "packages/std-sessions/src/internal/recording.ts")).toEqual([]);
     expect(out(src, "packages/reactive/src/scope.ts")).toEqual([]);
     expect(out(src, "modules/app/job.test.ts")).toEqual([]);
-    expect(out(src, "modules/app/unsafe/job.ts")).toEqual([]);
     expect(out(src)).toHaveLength(1);
+    expect(out(src, "modules/app/unsafe/job.ts")).toHaveLength(1);
   });
 });

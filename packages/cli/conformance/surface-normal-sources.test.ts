@@ -146,7 +146,8 @@ test(
 );
 
 /** A `.tsx` view whose paragraph holds `children` verbatim. */
-const view = (children: string): string => `export default function View() {\n  return <p>${children}</p>\n}\n`;
+const view = (children: string): string =>
+  `import { Box } from '@keel/ui'\nexport default function View() {\n  return <Box>${children}</Box>\n}\n`;
 
 test(
   'In a listed `.tsx` file, `<p>Hi there</p>`, `<p>Hi {"there"}</p>` and `<p>` on one line, `Hi there` indented on the next and `</p>` on a third have one normal form; `<p>Hi  there</p>` with two spaces does not.',

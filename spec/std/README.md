@@ -25,7 +25,7 @@ S8 adds std.db, std.workflows, std.shells and std.tokens.
 | std.temporal | Dates, instants and durations | conformance-covered | schema type registry: instants, dates, zones, durations; format |
 | std.text | Text | conformance-covered | schema type registry: `text.Email`, `Slug`, `line`, `para`, collation |
 | std.messages | Message sets | conformance-covered | check rule registry: message sets, one file per locale |
-| std.copy | Literal copy | conformance-covered | `@keel/std-messages`: where E2406 reads copy and the shapes it follows |
+| std.copy | Literal copy | implemented | `@keel/std-messages`: where E2406 reads copy and the shapes it follows |
 | std.brands | Id brand case | conformance-covered | check rule registry: E2101 with fix |
 | std.geo | Geolocation | conformance-covered | capability registry: `geo`, seeded sim |
 | std.health | Health route | conformance-covered | module manifest: route and public export via `deps` |
