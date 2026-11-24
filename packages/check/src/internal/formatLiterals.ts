@@ -43,7 +43,7 @@ export function formatLiterals(sf: ts.SourceFile, checker: ts.TypeChecker): { at
             message:
               names.length === 0
                 ? "formatLiteral format is no format type over a string"
-                : `formatLiteral format ${names.join(" & ")} is not one registered format; only a stdlib format has a literal form`,
+                : `formatLiteral format ${names.join(" & ")} is not one registered format; list its package in \`deps\` (only a stdlib format has a literal form)`,
           });
         if (!ts.isStringLiteral(text) && !ts.isNoSubstitutionTemplateLiteral(text)) {
           out.push({ at: text.getStart(sf), message: "formatLiteral text is not a string literal" });
