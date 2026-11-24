@@ -21,6 +21,6 @@ export function capacitorPlugins(
   return [
     entry("@capacitor/preferences", "storage"),
     entry("@capacitor/app", "launch and return links"),
-    ...(app.identity ? [entry("@capacitor/browser", "the external browser of identity.ts")] : []),
+    ...(app.identity ? [entry("@capacitor/browser", "external browser sign-in")] : []),
   ];
 }

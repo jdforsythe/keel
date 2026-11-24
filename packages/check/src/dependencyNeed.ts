@@ -16,7 +16,7 @@ function jsonOf(text: string): unknown {
  * E1572 (k.deploy, k.shell Plugins) for one package the app's `package.json` must list: undefined when `pkg` (the
  * `package.json` text) is not a JSON object, or its `dependencies` hold `dep` (with `version`: at exactly that text).
  * Else the diagnostic at `<dir>topology.ts` on the key of `deployable` in `source` (the `topology.ts` text): `message`,
- * then ` <version>` when one is given, ` in package.json dependencies` and ` (<need>)` when one is given. Its fix is
+ * then ` <version>` when one is given, else ` in package.json dependencies`, and ` (<need>)` when one is given. Its fix is
  * `package.json` with `dep` added or set in `dependencies`, keys sorted, at `version`, else at the spec of the first
  * `@keel/` dependency (`*` with none).
  */
@@ -45,7 +45,10 @@ export function dependencyNeed(at: {
     code: "E1572",
     path: `${at.dir}topology.ts`,
     ...lineCol(at.source, Math.max(0, at.source.search(key))),
-    message: `${at.message}${at.version === undefined ? "" : ` ${at.version}`} in package.json dependencies${at.need === undefined ? "" : ` (${at.need})`}`,
+    message:
+      at.version === undefined
+        ? `${at.message} in package.json dependencies${at.need === undefined ? "" : ` (${at.need})`}`
+        : `${at.message} ${at.version}${at.need === undefined ? "" : ` (${at.need})`}`,
     see: "k.deploy",
     fix: unifiedDiff(`${at.dir}package.json`, at.pkg, next),
   };

@@ -60,7 +60,7 @@ describe("dependencyNeed", () => {
           col: 3,
           see: "k.deploy",
         });
-        expect(diag?.message).toBe(`web: tauri needs ${d} ${v} in package.json dependencies (storage)`);
+        expect(diag?.message).toBe(`web: tauri needs ${d} ${v} (storage)`);
         const next: unknown = JSON.parse(applied(pkg, diag?.fix ?? ""));
         const deps: unknown = Reflect.get(Object(next), "dependencies");
         expect(deps).toEqual({ ...rest, [d]: v });
@@ -74,7 +74,7 @@ describe("dependencyNeed", () => {
     fc.assert(
       fc.property(dep, version, fc.constantFrom("^", "~", ">=", "workspace:"), (d, v, range) => {
         const diag = at(pkgOf({ [d]: `${range}${v}` }), d, v);
-        expect(diag?.message).toBe(`web: tauri needs ${d} ${v} in package.json dependencies`);
+        expect(diag?.message).toBe(`web: tauri needs ${d} ${v}`);
         expect(diag?.fix).toContain(`-    "${d}": "${range}${v}"`);
         expect(diag?.fix).toContain(`+    "${d}": "${v}"`);
         expect(at(pkgOf({ [d]: v }), d, v)).toBeUndefined();

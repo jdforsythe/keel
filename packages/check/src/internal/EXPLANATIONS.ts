@@ -837,7 +837,7 @@ const ROWS: readonly Row[] = [
   [
     "E1572",
     "a deployable's storage or shells needs a package the app's dependencies lack",
-    "A shell also needs each native plugin its target names, at the exact version given.",
+    "A shell also needs each native plugin its target names in package.json dependencies, at the exact version given.",
     '"dependencies": { ... } -> "dependencies": { ..., "@keel/std-db": "*" }',
     "k.deploy",
   ],
