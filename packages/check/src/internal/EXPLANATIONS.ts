@@ -33,7 +33,7 @@ const ROWS: readonly Row[] = [
   [
     "E1004",
     "server-only module (*.server.*, *.guard.*) imported from client-reachable code",
-    "Reach follows imports from each route component, naming the chain; routes.ts may import them.",
+    "Reach follows imports from each route component; the message names the shortest chain from the entry to the server-only file (a long one shows only its ends), and the fix is at the importing file. routes.ts may import them.",
     "reach loaders and actions through the route, not an import",
     "k.compiler, k.boundary",
   ],
@@ -251,7 +251,7 @@ const ROWS: readonly Row[] = [
   [
     "E1108",
     "a formatLiteral text that is not a literal or does not parse",
-    "formatLiteral is for values written in source; keel check parses them with the format's own reader. Data from outside reads with parse and answers a Result. A format of a std package registers only when the module lists the package in deps.",
+    "formatLiteral is for values written in source; keel check parses them with the format's own reader. Data from outside reads with parse and answers a Result. Only a stdlib format has a literal form, and its package registers only when the module lists it in deps; the fix adds the package to deps.",
     "formatLiteral(Instant, '2026-02-30T00:00:00.000Z') -> '2026-02-28T00:00:00.000Z'",
     "k.formats",
   ],
@@ -886,7 +886,7 @@ const ROWS: readonly Row[] = [
   [
     "E1580",
     "identity.ts not identityMount('<literal>'), or identity.server.ts handle.path not mount.path",
-    "",
+    "identity.ts exports identityMount('<literal>') of lowercase / segments; identity.server.ts mounts the handle at the default import's path.",
     "handle: { path: '/api/auth' } -> handle: { path: mount.path }",
     "k.mount",
   ],
@@ -923,14 +923,14 @@ const ROWS: readonly Row[] = [
   [
     "E1587",
     "a styles entry in topology.ts that is not a string literal or whose package export is not a .css file",
-    "The entry imports each one, so the build links it in every document; a path or a script export has no stylesheet to link.",
+    "The entry imports each one, so the build links it in every document; a path or a script export has no stylesheet to link. Name a package export that is a .css file.",
     "styles: ['./fonts.css'] -> styles: ['@keel/ui/fonts']",
     "k.topology",
   ],
   [
     "E1589",
     "identity.ts beside a static deployable, or a client one without servedBy: no origin of it answers /__keel/user",
-    "With identity.ts a client router asks its own origin who the reader is; unanswered, every guard gets user ''.",
+    "With identity.ts a client router asks its own origin who the reader is; unanswered, every guard gets user ''. Move a static deployable to a project of its own or make it client with servedBy; give a client one servedBy of a node deployable, or remove identity.ts.",
     "adapter: 'client' -> adapter: 'client', servedBy: 'api'",
     "k.mount",
   ],

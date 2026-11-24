@@ -18,10 +18,8 @@ const topology = (body: string) => ({
 const API = "  api: { modules: ['b'], adapter: 'node' },";
 const STATIC = "  site: { modules: ['shop'], adapter: 'static' },";
 const CLIENT = "  web: { modules: ['shop'], adapter: 'client' },";
-const E1589_STATIC =
-  "site (static) serves no router, so with identity.ts its pages never learn the reader";
-const E1589_CLIENT =
-  "web (client) has no servedBy: no origin of it mounts the identity handle";
+const E1589_STATIC = "site (static) serves no router, so with identity.ts its pages never learn the reader";
+const E1589_CLIENT = "web (client) has no servedBy: no origin of it mounts the identity handle";
 const use = (path: string, source: string) => ({ path, source });
 const codes = (files: { path: string; source: string }[]): string[] => mountDiags(files).map((d) => d.code);
 

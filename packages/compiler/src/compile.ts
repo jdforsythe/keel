@@ -6,11 +6,10 @@ import { buildDeps } from "./internal/buildDeps.ts";
 import { canonicalJson } from "./internal/canonicalJson.ts";
 import { clientReach } from "./internal/clientReach.ts";
 import { clip } from "./internal/clip.ts";
-import { fitChain } from "./internal/fitChain.ts";
-import { shortPath } from "./internal/shortPath.ts";
 import { collectElements } from "./internal/collectElements.ts";
 import { collectStyles } from "./internal/collectStyles.ts";
 import { diag } from "./internal/diag.ts";
+import { fitChain } from "./internal/fitChain.ts";
 import { hashOf } from "./internal/hashOf.ts";
 import { internalFailure } from "./internal/internalFailure.ts";
 import { lowerFile } from "./internal/lowerFile.ts";
@@ -21,6 +20,7 @@ import { rulePropsDestructuring } from "./internal/rules/rulePropsDestructuring.
 import { ruleRawHtml } from "./internal/rules/ruleRawHtml.ts";
 import { ruleTopLevelPropRead } from "./internal/rules/ruleTopLevelPropRead.ts";
 import { ruleUrlLiteral } from "./internal/rules/ruleUrlLiteral.ts";
+import { shortPath } from "./internal/shortPath.ts";
 import type { A11yEntry } from "./types/A11yEntry.ts";
 import type { Artifacts } from "./types/Artifacts.ts";
 import type { CompileOptions } from "./types/CompileOptions.ts";
@@ -125,8 +125,7 @@ function compileFiles(files: readonly SourceFile[], options: CompileOptions): Co
   const byPath = new Map(done.map((d) => [d.a.path, d.a]));
   for (const h of clientReach([...byPath.values()], options.topology).hits) {
     const a = byPath.get(h.path);
-    if (a !== undefined)
-      diagnostics.push(diag(a, "E1004", h.start, reachMessage(h.chain, h.file), "k.compiler"));
+    if (a !== undefined) diagnostics.push(diag(a, "E1004", h.start, reachMessage(h.chain, h.file), "k.compiler"));
   }
   // E1010 (k.bundle Names): a specifier naming a file of the project in a case other than its name on disk.
   for (const m of miscasedImports([...byPath.values()])) {
