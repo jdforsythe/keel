@@ -33,9 +33,13 @@ describe("Box scroll", () => {
 
   it("never gains k-scroll without scroll (property)", () => {
     fc.assert(
-      fc.property(fc.constantFrom("2", "3", "4"), fc.constantFrom("start", "center", "end"), (p, textAlign) => {
-        expect(classOf(() => Box({ id: "x", p, textAlign }))).not.toContain("k-scroll");
-      }),
+      fc.property(
+        fc.constantFrom<"2" | "3" | "4">("2", "3", "4"),
+        fc.constantFrom<"start" | "center" | "end">("start", "center", "end"),
+        (p, textAlign) => {
+          expect(classOf(() => Box({ id: "x", p, textAlign }))).not.toContain("k-scroll");
+        },
+      ),
       { seed: SEED, numRuns: 10 },
     );
   });

@@ -178,7 +178,7 @@ export const blankLabel: RuleDef = {
         if (name === undefined || arg === undefined || arg.type === "SpreadElement") return;
         objectLabels(arg, nameProp(name), at(name));
         const read = name === "Host" || name === "Box" ? objectKeys(arg) : null;
-        const counted = name === "Host" || (read !== null && read.keys.includes("scroll"));
+        const counted = name === "Host" || read?.keys.includes("scroll") === true;
         const count = read === null || !counted ? null : namesOf(read.keys, read.spread);
         if (count !== null && count !== 1) out.push(findingAt(file, n.start, { name, why: "count" }));
       },
