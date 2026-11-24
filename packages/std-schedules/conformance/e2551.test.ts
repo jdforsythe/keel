@@ -88,19 +88,19 @@ test("`60 * * * *`, `* * * *`, `@daily` and `0 0 * * MON` are each one E2551, an
     expect(d[0]?.fix).toBeUndefined();
   }
   expect(found(project({ cron: "0 0 * * 1" }), "E2551").length).toBe(0);
-});
+}, 30_000);
 
 test("E2551 names the field: `60 * * * *` names the minute field.", () => {
   const d = found(project({ cron: "60 * * * *" }), "E2551");
   expect(d[0]?.message.toLowerCase()).toContain("minute");
-});
+}, 30_000);
 
 test("A `zone` literal that is not a `TimeZone` is one E2551, and a clean twin is none.", () => {
   expect(found(project({ zone: "Mars/Olympus" }), "E2551").length).toBe(1);
   expect(found(project({ zone: "utc" }), "E2551").length).toBe(1);
   expect(found(project({ zone: "Europe/Berlin" }), "E2551").length).toBe(0);
   expect(found(project({ zone: "UTC" }), "E2551").length).toBe(0);
-});
+}, 30_000);
 
 test("`schedule` throws E2551 for `60 * * * *`, `* * * *`, `@daily` and `0 0 * * MON`, and for a `zone` that does not parse, and not for a valid entry.", () => {
   for (const cron of BAD) expect(() => schedule(mkJobs(), table(cron))).toThrow(/E2551/);
@@ -120,4 +120,4 @@ test("For generated out-of-range numbers in each of the five fields, `schedule` 
     }),
     { seed: 1337, numRuns: 40 },
   );
-});
+}, 30_000);

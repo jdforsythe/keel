@@ -18,10 +18,8 @@ const topology = (body: string) => ({
 const API = "  api: { modules: ['b'], adapter: 'node' },";
 const STATIC = "  site: { modules: ['shop'], adapter: 'static' },";
 const CLIENT = "  web: { modules: ['shop'], adapter: 'client' },";
-const E1589_STATIC =
-  "site (static) serves no router: with identity.ts its pages never learn the reader; move it to a project of its own, or make it client with servedBy";
-const E1589_CLIENT =
-  "web (client) has no servedBy: with identity.ts its router reads /__keel/user from its own origin, which mounts no handle; add servedBy: '<node deployable>', or remove identity.ts";
+const E1589_STATIC = "site (static) serves no router, so with identity.ts its pages never learn the reader";
+const E1589_CLIENT = "web (client) has no servedBy: no origin of it mounts the identity handle";
 const use = (path: string, source: string) => ({ path, source });
 const codes = (files: { path: string; source: string }[]): string[] => mountDiags(files).map((d) => d.code);
 
@@ -33,7 +31,7 @@ describe("mountDiags diagnostics", () => {
         path: "identity.ts",
         line: 1,
         col: 1,
-        message: "identity.server.ts needs handle: { path: mount.path }, mount its default import of ./identity.ts",
+        message: "identity.server.ts gives no handle: { path: <identity.ts default import>.path }",
         see: "k.mount",
       },
     ];
@@ -52,7 +50,7 @@ describe("mountDiags diagnostics", () => {
     expect(rest).toEqual([]);
     expect(d).toMatchObject({ code: "E1580", path: "identity.ts", line: 1, col: 1, see: "k.mount" });
     expect(d?.message).not.toBe("");
-    expect(d?.message).not.toContain("identity.server.ts needs");
+    expect(d?.message).not.toContain("identity.server.ts gives no handle");
   });
 
   it("E1584 points into identity.ts and sees k.mount", () => {

@@ -7,3 +7,4 @@ export { blankPattern } from "./blankPattern.ts";
 export { isBlank } from "./isBlank.ts";
 export { onSecret } from "./onSecret.ts";
 export type { SecretListener } from "./SecretListener.ts";
+export { clipMessage } from "./clipMessage.ts";

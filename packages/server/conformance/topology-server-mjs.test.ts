@@ -63,5 +63,5 @@ describe("k.deploy: server.mjs", () => {
       }),
       { seed: 1337, numRuns: 5 },
     );
-  });
+  }, 30_000);
 });

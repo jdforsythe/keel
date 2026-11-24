@@ -2,7 +2,7 @@
 // Spec: k.boundary, Conformance "For generated import graphs, E1004 is reported exactly when a route component reaches a server-only file by value imports through no server-only file or `routes.ts`."
 // Spec: k.boundary, Reach "Client-reachable code (E1004 and E1571; E1107 has its own, k.leave), with a `topology.ts`: a file under `modules/<id>/`, not server-only, of a `node` or `static` module (one such a deployable lists); a file of a `client` module, for imports of another module's server-only files; and a project file outside `node_modules/` a client entry reaches by value imports, re-exports and literal `import()`, not through a server-only file. Client entries: each route `component` of a `node` or `static` module and every file of a `client` one. No `topology.ts`: every file but server-only ones. A `routes.ts` may import server-only files by value; a specifier with a query names its file; package imports are not followed (E1007 covers them). An E1004 found through a chain ends `(<entry> -> … -> <file>)`."
 // Seed 1337 (fc.assert below). `check` over in-memory project trees with a `topology.ts` (the type pass is off: the rule reads syntax and the topology).
-// Node `api` lists module `a`, `client` `web` lists module `w`. E1004's message ends `(<entry> -> … -> <file>)`, the chain from the route component to the server-only file.
+// Node `api` lists module `a`, `client` `web` lists module `w`. E1004's message is `client code reaches server-only (<chain>)`, the chain from the route component to the server-only file, elided as k.boundary E1004's message says past 89 units.
 import { posix } from "node:path";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";

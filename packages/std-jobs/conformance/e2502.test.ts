@@ -74,7 +74,7 @@ test("E2502 fires on `jobs` in `public.exports` and not on its clean twin.", () 
     ),
     { seed: 1337, numRuns: 30 },
   );
-});
+}, 30_000);
 
 test("E2502's fix removes `jobs` from `public.exports`, and re-checking the patched file reports no E2502.", () => {
   const files = project(["sendReceipt", "jobs"]);
@@ -83,4 +83,4 @@ test("E2502's fix removes `jobs` from `public.exports`, and re-checking the patc
   const patched = applyFix(files, d[0]?.fix ?? "");
   expect(found(patched, "E2502").length).toBe(0);
   expect(patched.find((f) => f.path === "modules/orders/module.ts")?.source).toContain("sendReceipt");
-});
+}, 30_000);

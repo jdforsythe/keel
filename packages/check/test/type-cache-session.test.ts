@@ -7,6 +7,8 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, expect, it, vi } from "vitest";
 import { check, defineRule } from "../src/index.ts";
+import { packageName } from "../src/internal/packageName.ts";
+import { ruleInScope } from "../src/internal/ruleInScope.ts";
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), "../../..");
 const bases: string[] = [];
@@ -72,7 +74,8 @@ it("E1108 judges against the formats of the packages `deps` lists on this call, 
   const without = e1108([]);
   expect(without).toHaveLength(1);
   expect(without[0]?.line).toBe(3);
-  expect(without[0]?.message).toContain("temporal.Instant");
+  expect(without[0]?.message).toBe("formatLiteral format temporal.Instant is not one registered format");
+  expect(without[0]?.fix).toContain("+export default module({ id: 'a', deps: ['@keel/std-temporal']");
   expect(e1108(["@keel/std-temporal"])).toEqual([]);
 });
 
@@ -91,4 +94,20 @@ it("a rule a @keel/std-* package defined runs only while the project's deps reac
     check([MODULE(deps), b], { root, types: false }).diagnostics.filter((d) => d.code === "E2999");
   expect(e2999(["@keel/std-fake"])).toHaveLength(1);
   expect(e2999([])).toEqual([]);
+});
+
+it("a rule whose defining package cannot be told runs; one from a known std package runs only in scope", () => {
+  const scope = new Set(["@keel/std-a"]);
+  expect(ruleInScope(null, scope)).toBe(true);
+  expect(ruleInScope(undefined, scope)).toBe(true);
+  expect(ruleInScope("@keel/check", scope)).toBe(true);
+  expect(ruleInScope("some-lib", new Set())).toBe(true);
+  expect(ruleInScope("@keel/std-a", scope)).toBe(true);
+  expect(ruleInScope("@keel/std-b", scope)).toBe(false);
+});
+
+it("a file under no package.json that names a package has no owner (null), the case ruleInScope runs", () => {
+  const dir = realpathSync(mkdtempSync(join(tmpdir(), "keel-noowner-")));
+  bases.push(dir);
+  expect(packageName(join(dir, "x.mjs"), () => undefined)).toBeNull();
 });

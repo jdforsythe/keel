@@ -1,6 +1,7 @@
 import { createRequire } from "node:module";
 import path from "node:path";
 import { type Expression, parseSync } from "oxc-parser";
+import { shortPath } from "../internal/shortPath.ts";
 
 /** One E1587 problem: the deployable, the entry's offset in the source, and the message. */
 type Problem = { readonly deployable: string; readonly offset: number; readonly message: string };
@@ -65,12 +66,18 @@ export function stylesProblems(source: string, root: string): Problem[] {
         }
         const spec = x.value;
         const file = spec.startsWith(".") || spec.startsWith("/") ? undefined : resolved(spec);
-        if (file === undefined || !file.endsWith(".css"))
-          out.push({
-            deployable: name,
-            offset: x.start,
-            message: `${name}: styles entry '${spec}' is ${file === undefined ? (spec.startsWith(".") || spec.startsWith("/") ? "a path" : "no package export") : "an export that is not a .css file"}; name a package export that is a .css file`,
-          });
+        if (file === undefined || !file.endsWith(".css")) {
+          const what =
+            file === undefined
+              ? spec.startsWith(".") || spec.startsWith("/")
+                ? "a path"
+                : "no package export"
+              : "an export that is not a .css file";
+          const head = `${name}: styles entry '`;
+          const tail = `' is ${what}`;
+          const shown = shortPath(spec, 89 - head.length - tail.length);
+          out.push({ deployable: name, offset: x.start, message: `${head}${shown}${tail}` });
+        }
       }
     }
   }

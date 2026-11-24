@@ -16,6 +16,8 @@ export { sourceForm } from "../internal/sourceForm.ts";
 export { sourceHash } from "../internal/sourceHash.ts";
 export type { HandlerKind } from "../internal/HandlerKind.ts";
 export type { HandlerUse } from "../internal/HandlerUse.ts";
+export { fitChain } from "../internal/fitChain.ts";
+export { shortPath } from "../internal/shortPath.ts";
 export { projectHandlerUses } from "../internal/projectHandlerUses.ts";
 export { SERVER_ONLY_NAME } from "../internal/SERVER_ONLY_NAME.ts";
 export type { ContractEntryReading } from "../internal/ContractEntryReading.ts";

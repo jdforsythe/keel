@@ -40,7 +40,13 @@ describe("clientReach", () => {
       node,
     );
     expect(r.hits).toEqual([
-      { path: "lib/f.ts", start: 0, source: "./k.guard.ts", chain: "modules/a/Page.tsx -> lib/f.ts -> lib/k.guard.ts" },
+      {
+        path: "lib/f.ts",
+        start: 0,
+        source: "./k.guard.ts",
+        file: "lib/k.guard.ts",
+        chain: "modules/a/Page.tsx -> lib/f.ts -> lib/k.guard.ts",
+      },
     ]);
     expect([...r.subject].sort()).toEqual(["lib/f.ts", "modules/a/Page.tsx", "modules/a/routes.ts"]);
   });

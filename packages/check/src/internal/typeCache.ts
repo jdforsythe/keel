@@ -36,7 +36,8 @@ const isSite = (v: unknown): v is FormatSite =>
   Array.isArray(v.names) &&
   v.names.every((n) => typeof n === "string") &&
   (v.text === null || typeof v.text === "string") &&
-  (v.owner === null || typeof v.owner === "string");
+  (v.owner === null || typeof v.owner === "string") &&
+  (v.pkg === null || typeof v.pkg === "string");
 
 const isDates = (v: unknown): v is [string, number[]][] =>
   Array.isArray(v) &&

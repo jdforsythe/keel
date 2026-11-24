@@ -1,7 +1,7 @@
+import { clipMessage } from "@keel/schema/internal";
 import { contrast } from "@keel/ui/css";
 import { type JSXAttributeItem, type JSXChild, Visitor } from "oxc-parser";
 import { BASE_ROLE } from "../internal/BASE_ROLE.ts";
-import { clip } from "../internal/clip.ts";
 import { findingAt } from "../internal/findingAt.ts";
 import { isAppPath } from "../internal/isAppPath.ts";
 import { str } from "../internal/str.ts";
@@ -112,7 +112,7 @@ export const lowContrast: RuleDef = {
     const set = str(f.data, "set");
     const pair = `fg "${str(f.data, "fg")}" on bg "${str(f.data, "bg")}"`;
     const tail = `is ${str(f.data, "ratio")}:1 in ${str(f.data, "scheme")}`;
-    return set === "" ? `${pair} ${tail}` : clip(`${set}: ${pair} ${tail}`, 89);
+    return set === "" ? `${pair} ${tail}` : clipMessage(`${set}: ${pair} ${tail}`, 89);
   },
   see: "k.a11y",
   check: ({ file, ast, artifacts, project }) => {

@@ -1,7 +1,7 @@
+import { clipMessage } from "@keel/schema/internal";
 import { Visitor } from "oxc-parser";
 import type { Diagnostic } from "../types/Diagnostic.ts";
 import type { Checked } from "./Checked.ts";
-import { clip } from "./clip.ts";
 import { isAppPath } from "./isAppPath.ts";
 import { lineCol } from "./lineCol.ts";
 
@@ -29,7 +29,10 @@ export function duplicateErrorCodes(files: readonly Checked[]): Diagnostic[] {
         first.set(h.code, `${file.path}:${line}`);
         continue;
       }
-      const message = clip(`error code "${clip(h.code, 30)}" already declared at ${prior.slice(-40)}`, 89);
+      const message = clipMessage(
+        `error code "${clipMessage(h.code, 30)}" already declared at ${prior.slice(-40)}`,
+        89,
+      );
       out.push({ kind: "diag", code: "E1454", path: file.path, line, col, message, see: "k.errors" });
     }
   }

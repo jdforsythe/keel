@@ -2,7 +2,7 @@
 // Spec: k.leave, Rules "E1107 a `.pii()` class reaching `#k-state` that `clientPii` does not list (fix adds it)"
 // Spec: k.leave, Conformance "`store(Contact, …)` with `email: s.string().pii('contact')` in a component file is E1107 when the module has no `clientPii`, and with `clientPii: ['name']`; with `clientPii: ['contact']`, or in a `*.server.ts` file, it is not; the fix adds `'contact'`."
 // Seed 1337 (the properties below). The type pass is off: the fixtures name packages that resolve only on disk.
-// The negatives for the real golden modules are read from apps/ by realFiles.
+// The negatives read the modules under fixtures/pii-server-only/ by realFiles.
 import { check } from "@keel/check";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
@@ -12,6 +12,7 @@ import { topologyOf } from "./boundary-support.ts";
 import { type Files, SEED } from "./support.ts";
 
 const NO_TYPES = { types: false } as const;
+const PII_FIXTURE = "packages/check/conformance/fixtures/pii-server-only";
 const f = (path: string, source: string): Files[number] => ({ path, source });
 const CLASSES = ["name", "contact", "location", "identifier", "financial", "special", "network", "content"] as const;
 
@@ -112,14 +113,25 @@ describe("k.leave Rules: E1107 a store call in a client-reachable file whose sta
     expect(e1107([module_(), server, page])).toEqual([]);
   });
 
-  test("negative: the real accounts module of apps/golden-2 (its `.pii('contact')` stores are reached from server files only) reports no E1107", () => {
-    expect(e1107(realFiles("apps/golden-2/modules/accounts", "modules/accounts"))).toEqual([]);
+  test("negative: a module whose `.pii('contact')` and `.pii('identifier')` stores are reached only from `*.server.ts` files reports no E1107", () => {
+    const files = realFiles(`${PII_FIXTURE}/modules/app`, "modules/app");
+    expect(files.map((x) => x.path)).toContain("modules/app/contacts.server.ts");
+    expect(e1107(files)).toEqual([]);
   });
 
-  test("negative: the real todos and api modules of apps/golden-1 and the recipes module of apps/golden-2 report no E1107", () => {
-    expect(e1107(realFiles("apps/golden-1/modules/todos", "modules/todos"))).toEqual([]);
-    expect(e1107(realFiles("apps/golden-1/modules/api", "modules/api"))).toEqual([]);
-    expect(e1107(realFiles("apps/golden-2/modules/recipes", "modules/recipes"))).toEqual([]);
+  test("negative: a client module whose store schema holds no `.pii` node reports no E1107", () => {
+    const files = realFiles(`${PII_FIXTURE}/modules/plain`, "modules/plain");
+    expect(files.map((x) => x.path)).toContain("modules/plain/PlainCard.tsx");
+    expect(e1107(files)).toEqual([]);
+  });
+
+  test("control: the same schema stored in a client component is E1107, so the fixture holds what E1107 reads", () => {
+    const files = realFiles(`${PII_FIXTURE}/modules/app`, "modules/app");
+    const client = f(
+      "modules/app/Show.tsx",
+      "import { store } from '@keel/store'\nimport { Contact } from './Contact.schema.ts'\nexport const shown = store(Contact, { email: '', userId: '' })\n",
+    );
+    expect(e1107([...files, client])).toHaveLength(1);
   });
 
   test("a profile store module with `contact` and `identifier` pii, made reachable from a client component, is E1107 for both classes, and clean once the module lists them", () => {

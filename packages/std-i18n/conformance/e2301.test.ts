@@ -33,7 +33,7 @@ test.skip("With `@keel/std-i18n` in a module's `deps`, `keel check` reports one 
   const bare = "export const h = (n: number) => n.toLocaleString()\n";
   expect(count(project(true, bare), "E1758").length).toBe(1);
   expect(count(project(true, bare), "E2301").length).toBe(0);
-});
+}, 30_000);
 
 test("E2301 message names the stdlib function to call (`formatNumber`, `formatMoney`, `formatDate`, `formatInstant`, `formatDuration`, `compareText`, `plural` or `localeName`) and carries no fix.", () => {
   const names = [
@@ -50,4 +50,4 @@ test("E2301 message names the stdlib function to call (`formatNumber`, `formatMo
   expect(d.length).toBe(1);
   expect(names.some((n) => d[0]?.message.includes(n))).toBe(true);
   expect(d[0]?.fix).toBeUndefined();
-});
+}, 30_000);

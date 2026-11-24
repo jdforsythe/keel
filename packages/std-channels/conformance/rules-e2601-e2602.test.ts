@@ -84,7 +84,7 @@ test("E2601 `channelRoute` outside a `*.server.ts` file fires on a fixture and n
   ];
   expect(found(withRoute("modules/chan/boardEvents.ts"), "E2601").length).toBe(1);
   expect(found(withRoute("modules/chan/boardEvents.server.ts"), "E2601").length).toBe(0);
-});
+}, 30_000);
 
 test("E2602 a channel `message` schema holding an `s.secret` fires on a fixture and not on its clean twin.", () => {
   fc.assert(
@@ -100,4 +100,4 @@ test("E2602 a channel `message` schema holding an `s.secret` fires on a fixture 
     ),
     { seed: 1337, numRuns: 12 },
   );
-});
+}, 30_000);

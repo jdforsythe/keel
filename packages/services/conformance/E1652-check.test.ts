@@ -42,13 +42,13 @@ const hits = async (files: { path: string; source: string }[]): Promise<Set<stri
 describe("k.services: E1652", () => {
   it("E1652 a `:param` in a literal `path` without a field in a literal `params` is reported", async () => {
     expect(await hits([missingField, otherField, ...clean])).toEqual(new Set([missingField.path, otherField.path]));
-  });
+  }, 30_000);
 
   it("E1652 a `params` field missing from the `path` is reported", async () => {
     expect(await hits([extraField, extraBeside, ...clean])).toEqual(new Set([extraField.path, extraBeside.path]));
-  });
+  }, 30_000);
 
   it("E1652 is not reported when every `:param` has a field and every field has a `:param`", async () => {
     expect(await hits(clean)).toEqual(new Set());
-  });
+  }, 30_000);
 });

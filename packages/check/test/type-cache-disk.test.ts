@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { check } from "../src/index.ts";
+import { CACHE_FORMAT } from "../src/internal/CACHE_FORMAT.ts";
 import type { TypeEntry } from "../src/internal/TypeEntry.ts";
 import { typeCache } from "../src/internal/typeCache.ts";
 
@@ -24,7 +25,16 @@ const entry: TypeEntry = {
   ],
   items: [
     { kind: "diag", code: "E1751", path: "a.ts", line: 1, col: 2, message: "m", see: "k.check" },
-    { kind: "format", path: "a.ts", formatAt: 3, textAt: 9, names: ["iso"], text: "x", owner: "@keel/std-x" },
+    {
+      kind: "format",
+      path: "a.ts",
+      formatAt: 3,
+      textAt: 9,
+      names: ["iso"],
+      text: "x",
+      owner: "@keel/std-x",
+      pkg: null,
+    },
   ],
   dates: new Map([["a.ts", new Set([3, 7])]]),
 };
@@ -43,7 +53,7 @@ it("an entry that cannot be read, does not parse or lacks the entry shape is a m
   for (const bad of [
     good.slice(0, 40),
     "{}",
-    good.replace('"format":2', '"format":1'),
+    good.replace(`"format":${CACHE_FORMAT}`, `"format":${CACHE_FORMAT - 1}`),
     good.replace('"key":"k"', '"key":3'),
     good.replace('["f","/x/b.ts","0"]', '["q","/x/b.ts","0"]'),
     good.replace('"line":1', '"line":"1"'),

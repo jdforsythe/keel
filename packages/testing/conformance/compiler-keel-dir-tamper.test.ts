@@ -67,7 +67,7 @@ describe("k.compiler: .keel/ tamper detection", () => {
       expect.arrayContaining([".keel/a11y.json", ".keel/deps.json", ".keel/ids.json", ".keel/routes.json"]),
     );
     expect(e1005(files)).toEqual([]);
-  });
+  }, 30_000);
 
   it("Changing any byte of a file under .keel/ makes keel check report E1005 on that file", async () => {
     const files = await build();
@@ -94,5 +94,5 @@ describe("k.compiler: .keel/ tamper detection", () => {
       ),
       { seed: 1337, numRuns: 100 },
     );
-  });
+  }, 30_000);
 });

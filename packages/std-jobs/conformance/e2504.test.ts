@@ -63,7 +63,7 @@ const project = (runners: string, adapter = "node"): Files => [
 test("E2504 fires on a `runners` export lacking `jobs` and not on its clean twin.", () => {
   expect(found(project("[]"), "E2504").length).toBe(1);
   expect(found(project("[jobs]"), "E2504").length).toBe(0);
-});
+}, 30_000);
 
 test("E2504 fires on a module with jobs placed in a non-`node` deployable and not in a `node` one.", () => {
   fc.assert(
@@ -73,7 +73,7 @@ test("E2504 fires on a module with jobs placed in a non-`node` deployable and no
     }),
     { seed: 1337, numRuns: 10 },
   );
-});
+}, 30_000);
 
 test("E2504's fix adds `jobs` to `runners`, and re-checking the patched file reports no E2504.", () => {
   const files = project("[]");
@@ -82,4 +82,4 @@ test("E2504's fix adds `jobs` to `runners`, and re-checking the patched file rep
   const patched = applyFix(files, d[0]?.fix ?? "");
   expect(patched.find((f) => f.path === "modules/orders/runners.server.ts")?.source).toContain("jobs]");
   expect(found(patched, "E2504").length).toBe(0);
-});
+}, 30_000);

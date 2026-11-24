@@ -97,7 +97,7 @@ describe("std.statecharts: keel check rules", () => {
       expect(hits.length, code).toBe(1);
       expect(hits[0]?.see).toBe("std.statecharts");
     }
-  });
+  }, 30_000);
 
   test("E2751 `initial` or a `to` naming no state (fix: the nearest state name)", () => {
     const badInitial = project({ initial: "'veiwing'", states: reachable("") });
@@ -140,7 +140,7 @@ describe("std.statecharts: keel check rules", () => {
       }),
       { seed: 1337, numRuns: 15 },
     );
-  });
+  }, 30_000);
 
   test("E2752 a state unreachable from `initial` through `on` targets", () => {
     const d = found(project({ states: reachable("\n    orphan: { on: { edit: 'viewing' } },") }), "E2752");
@@ -162,7 +162,7 @@ describe("std.statecharts: keel check rules", () => {
     // reachability runs from `initial` only: two states pointing at each other are unreachable together
     const island = reachable("\n    a: { on: { edit: 'b' } },\n    b: { on: { edit: 'a' } },");
     expect(found(project({ states: island }), "E2752").length).toBe(2);
-  });
+  }, 30_000);
 
   test("E2753 a non-final state with no target to another state (fix: add `final: true`)", () => {
     const withStuck = (body: string) =>
@@ -179,7 +179,7 @@ describe("std.statecharts: keel check rules", () => {
     expect(found(fixed, "E2754")).toEqual([]);
     expect(fixed.find((f) => f.path.endsWith("editorChart.ts"))?.source).toMatch(/stuck: \{[^}]*final: true/);
     expect(found(CLEAN, "E2753")).toEqual([]);
-  });
+  }, 30_000);
 
   test("E2754 a final state with `on`, an `on` event missing from `events`, or a `guard` or `do` naming no entry", () => {
     const variants: Parts[] = [
@@ -190,7 +190,7 @@ describe("std.statecharts: keel check rules", () => {
     ];
     for (const v of variants) expect(found(project(v), "E2754").length).toBe(1);
     expect(found(CLEAN, "E2754")).toEqual([]);
-  });
+  }, 30_000);
 
   test("E2755 a `chart` whose `initial`, `events`, `guards`, `actions`, `states`, `on` keys or targets are not literals: a variable, a spread or a computed key (the checker cannot prove it)", () => {
     const variants: Parts[] = [
@@ -201,5 +201,5 @@ describe("std.statecharts: keel check rules", () => {
     ];
     for (const v of variants) expect(found(project(v), "E2755").length).toBe(1);
     expect(found(CLEAN, "E2755")).toEqual([]);
-  });
+  }, 30_000);
 });

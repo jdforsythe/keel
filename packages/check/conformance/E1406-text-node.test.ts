@@ -3,6 +3,7 @@
 // Spec: k.place, Conformance "Each one E1406: `{props.icon}` with `icon: () => Node` (fix `{props.icon()}` applies with `git apply` and re-checks clean); `{ok ? props.icon() : null}`; `{makeIcon()}` with `makeIcon(): Node` imported from a project file; `{props.items}` with `items: Node[]`; `{props[k]()}` with a `Node` result; `{f}` with `f: (n: number) => string` (no fix)."
 // Spec: k.place, Conformance "None: `{props.icon()}`, `{props.children()}`, `{props.label}` with a string, `{String(n)}`, `{t.title}`, `{x}` with `x: any`, `{formatMoney(m, l)}`, inline JSX, and `{ok && <b/>}` (one E1403 and no E1406)."
 // Seed 1337 (the properties below). The type pass is on unless a test says `types: false`.
+import { fileURLToPath } from "node:url";
 import { check } from "@keel/check";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
@@ -246,10 +247,27 @@ describe("k.place Check: none", () => {
   });
 });
 
-describe("k.place Check: real code", () => {
-  test("the recipes module of golden-2, with the type pass on, reports no E1406", () => {
-    const real = realFiles("apps/golden-2/modules/recipes", "modules/recipes");
-    expect(real.length).toBeGreaterThan(5);
-    expect(e1406(real).length).toBe(0);
+describe("k.place Check: a module of the test's own", () => {
+  const FIXTURE = "packages/check/conformance/fixtures/text-children";
+  const PACKAGE = fileURLToPath(new URL("../", import.meta.url));
+
+  test("a module whose JSX children are text (strings, numbers, a contract `href`, called slots), with the type pass on, reports no E1406", () => {
+    const real = realFiles(FIXTURE, "modules/text");
+    expect(real.map((x) => x.path).sort()).toEqual(["modules/text/TextCard.tsx", "modules/text/text.contract.ts"]);
+    expect(e1406(real, { root: PACKAGE }).length).toBe(0);
+  });
+
+  test("control: the same module with a `Node` child added is one E1406, so the type pass reads the fixture", () => {
+    const real = realFiles(FIXTURE, "modules/text").map((x) =>
+      x.path.endsWith("TextCard.tsx")
+        ? {
+            ...x,
+            source: x.source
+              .replace("children: () => string }", "children: () => string; node: Node }")
+              .replace("</Box>", '  <Text id="text.node">{props.node}</Text>\n    </Box>'),
+          }
+        : x,
+    );
+    expect(e1406(real, { root: PACKAGE }).length).toBe(1);
   });
 });

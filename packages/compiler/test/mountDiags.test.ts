@@ -81,7 +81,13 @@ describe("mountSource and mountDiags", () => {
     });
     const api = "  api: { modules: ['b'], adapter: 'node' },";
     const at = (body: string, extra: { path: string; source: string }[] = []) =>
-      mountDiags([...base, top(body), ...extra]).map((d) => [d.code, d.path, d.line, d.col, d.message.split(":")[0]]);
+      mountDiags([...base, top(body), ...extra]).map((d) => [
+        d.code,
+        d.path,
+        d.line,
+        d.col,
+        d.message.split(/[:,]/)[0],
+      ]);
     expect(at(`${api}\n  web: { modules: ['a'], adapter: 'client' },`)).toEqual([
       ["E1589", "topology.ts", 4, 3, "web (client) has no servedBy"],
     ]);

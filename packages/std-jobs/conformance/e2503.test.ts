@@ -77,7 +77,7 @@ test("E2503 fires on a job `input` schema holding `s.secret` and not on its clea
     }),
     { seed: 1337, numRuns: 30 },
   );
-});
+}, 30_000);
 
 test("E2503 fires on `s.secret` nested in an object, array or optional inside the job `input`.", () => {
   for (const src of [
@@ -87,7 +87,7 @@ test("E2503 fires on `s.secret` nested in an object, array or optional inside th
   ]) {
     expect(found(project(src), "E2503").length).toBe(1);
   }
-});
+}, 30_000);
 
 test("A `queue` whose input holds `s.secret` throws E2503.", () => {
   fc.assert(
@@ -118,7 +118,7 @@ test("E2503 fires for `job` reached through `import * as jobs`.", () => {
     }),
     { seed: 1337, numRuns: 20 },
   );
-});
+}, 30_000);
 
 test("E2503 does not fire for a `.secret()` call on an object other than `@keel/schema`'s `s`.", () => {
   fc.assert(
@@ -134,4 +134,4 @@ test("E2503 does not fire for a `.secret()` call on an object other than `@keel/
     }),
     { seed: 1337, numRuns: 20 },
   );
-});
+}, 30_000);

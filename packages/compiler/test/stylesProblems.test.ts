@@ -5,6 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { stylesProblems } from "../src/hosting/stylesProblems.ts";
+import { shortPath } from "../src/internal/shortPath.ts";
 
 let root = "";
 const write = (rel: string, text: string): void => {
@@ -31,8 +32,7 @@ const read = (source: string) => stylesProblems(source, root);
 const messages = (source: string): string[] => read(source).map((p) => p.message);
 const top = (body: string): string => `export default { ${body} }\n`;
 const NOT_LITERAL = "web: a styles entry is not a string literal";
-const entry = (spec: string, what: string): string =>
-  `web: styles entry '${spec}' is ${what}; name a package export that is a .css file`;
+const entry = (spec: string, what: string): string => `web: styles entry '${spec}' is ${what}`;
 
 describe("stylesProblems", () => {
   it("accepts a package export that is a .css file, in every wrapper the declaration may take", () => {
@@ -98,7 +98,7 @@ describe("stylesProblems", () => {
     expect(absolute.startsWith("/")).toBe(true);
     expect(messages(top(`web: { styles: ['./local.css', '${absolute}', '../x.css', '.hidden/x.css'] }`))).toEqual([
       entry("./local.css", "a path"),
-      entry(absolute, "a path"),
+      entry(shortPath(absolute, 89 - "web: styles entry '' is a path".length), "a path"),
       entry("../x.css", "a path"),
       entry(".hidden/x.css", "a path"),
     ]);

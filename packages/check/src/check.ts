@@ -3,11 +3,13 @@ import { artifactHashes, compile, parseTopology, projectDirs, routeLiterals } fr
 import type { Topology } from "@keel/compiler";
 import { foreignRoutesDiags } from "@keel/compiler/hosting/foreignRoutesDiags";
 import { mountDiags } from "@keel/compiler/hosting/mountDiags";
+import { servedByEdit } from "@keel/compiler/hosting/servedByEdit";
 import { topologyReadProblems } from "@keel/compiler/hosting/topologyReadProblems";
 import type { Checked } from "./internal/Checked.ts";
 import type { Expected } from "./internal/Expected.ts";
 import { aliasedImports } from "./internal/aliasedImports.ts";
 import { apiWithoutServer } from "./internal/apiWithoutServer.ts";
+import { applyEdits } from "./internal/applyEdits.ts";
 import { artifactDir } from "./internal/artifactDir.ts";
 import { budgetBreaches } from "./internal/budgetBreaches.ts";
 import { chainStoreIds } from "./internal/chainStoreIds.ts";
@@ -26,6 +28,7 @@ import { parseFile } from "./internal/parseFile.ts";
 import { placedWithoutRoutes } from "./internal/placedWithoutRoutes.ts";
 import { registerNames } from "./internal/registerNames.ts";
 import { ruleCodeDeclarations } from "./internal/ruleCodeDeclarations.ts";
+import { ruleInScope } from "./internal/ruleInScope.ts";
 import { ruleOwners } from "./internal/ruleOwners.ts";
 import { runRules } from "./internal/runRules.ts";
 import { runSqlRules } from "./internal/runSqlRules.ts";
@@ -35,13 +38,12 @@ import { summarize } from "./internal/summarize.ts";
 import { topologyDiags } from "./internal/topologyDiags.ts";
 import { topologyNeeds } from "./internal/topologyNeeds.ts";
 import { typeCheck } from "./internal/typeCheck.ts";
+import { unifiedDiff } from "./internal/unifiedDiff.ts";
 import { rules } from "./rules.ts";
 import type { CheckOptions } from "./types/CheckOptions.ts";
 import type { CheckResult } from "./types/CheckResult.ts";
 import type { Diagnostic } from "./types/Diagnostic.ts";
 import type { SourceFile } from "./types/SourceFile.ts";
-
-const STD_PACKAGE = /^@keel\/std-/;
 
 /** The topology of the project at `dir`: the caller's for the root, else the static parse of `<dir>topology.ts`. */
 function topologyOf(dir: string, all: readonly SourceFile[], opts: CheckOptions): Topology | undefined {
@@ -142,8 +144,18 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
     if (top !== undefined) out.push(...stylesDiags(dir, top, path.join(opts.root ?? process.cwd(), dir)));
     if (all.some((f) => f.path === `${dir}index.html`)) out.push(indexHtmlDiag(dir));
     // E1580-E1582, E1584, E1589 (k.mount): the project's `identity.ts`, its importers and the topology serving them.
-    for (const d of mountDiags(project.map((f) => ({ path: f.path.slice(dir.length), source: f.source }))))
-      out.push({ kind: "diag", ...d, path: `${dir}${d.path}` });
+    for (const d of mountDiags(project.map((f) => ({ path: f.path.slice(dir.length), source: f.source })))) {
+      // E1589's fix: `servedBy` of the one `node` deployable, for a `client` one (k.mount Messages).
+      const edit =
+        d.code === "E1589" && d.message.includes(" (client) ") && top !== undefined
+          ? servedByEdit(top, d.message.split(" ")[0] ?? "")
+          : undefined;
+      const fix =
+        edit === undefined || top === undefined
+          ? {}
+          : { fix: unifiedDiff(`${dir}topology.ts`, top, applyEdits(top, [edit])) };
+      out.push({ kind: "diag", ...d, ...fix, path: `${dir}${d.path}` });
+    }
     // E1592 (k.user): `identity.server.ts` and the project files it imports, importing the routes of a module another origin serves.
     for (const d of foreignRoutesDiags(
       project.map((f) => ({ path: f.path.slice(dir.length), source: f.source })),
@@ -168,10 +180,7 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
   if (typed !== undefined)
     out.push(...typed.diagnostics.filter((d) => d.code !== "E1406" || !e1403.has(`${d.path}:${d.line}:${d.col}`)));
 
-  const registered = rules().filter((r) => {
-    const owner = ruleOwners.get(r.code);
-    return owner === undefined || owner === null || !STD_PACKAGE.test(owner) || scope.has(owner);
-  });
+  const registered = rules().filter((r) => ruleInScope(ruleOwners.get(r.code), scope));
   const checked: Checked[] = [];
   for (const file of code) {
     const parsed = parseFile(file);

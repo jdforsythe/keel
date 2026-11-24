@@ -32,7 +32,7 @@ describe("E1730 a test names no identity mount", () => {
     expect(found([one.topology, one.identity, file("apps/one/test/x.test.ts", "", call)])).toHaveLength(1);
     expect(found([one.topology, one.identity, two.topology, file("apps/two/test/x.test.ts", "", call)])).toEqual([]);
     const [d] = found([one.topology, one.identity, file("apps/one/test/x.test.ts", "", call)]);
-    expect(d?.message).toBe("renderRoute names no identity mount; import mount from '../identity.ts' and pass it");
+    expect(d?.message).toBe("renderRoute names no identity mount; pass identity.ts's default export as mount");
   });
 
   it("passes an existing default import named mount without a second import", () => {

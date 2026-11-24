@@ -75,6 +75,7 @@ export function clientReach(
           path: p,
           start: e.start,
           source: e.source,
+          file: t.name,
           ...(walk ? { chain: `${chainOf(p)} -> ${t.name}` } : {}),
         });
       if (walk && !t.server && t.file !== undefined && !parent.has(t.file)) {

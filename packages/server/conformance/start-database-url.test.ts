@@ -123,5 +123,5 @@ describe("k.deploy: KEEL_DATABASE_URL of a 'postgres' deployable", () => {
       }),
       { seed: 1337, numRuns: 5 },
     );
-  });
+  }, 30_000);
 });

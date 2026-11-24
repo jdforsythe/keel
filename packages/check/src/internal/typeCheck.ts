@@ -97,10 +97,8 @@ function keyOf(code: readonly SourceFile[], base: string, skip: ReadonlyMap<stri
 
 /** The pass's findings as `check()` reports them, each `formatLiteral` call judged against the registry now. */
 function resolve(entry: TypeEntry, code: readonly SourceFile[], scope: ReadonlySet<string>): Typed {
-  const sources = new Map(code.map((f) => [f.path, f.source]));
-  const diagnostics = entry.items.flatMap((i) =>
-    i.kind === "diag" ? [i] : judgeFormat(i, sources.get(i.path) ?? "", scope),
-  );
+  const sources: ReadonlyMap<string, string> = new Map(code.map((f) => [f.path, f.source]));
+  const diagnostics = entry.items.flatMap((i) => (i.kind === "diag" ? [i] : judgeFormat(i, sources, scope)));
   return { diagnostics, dates: entry.dates };
 }
 
@@ -267,6 +265,7 @@ function pass(
         names: f.names,
         text: f.text,
         owner: f.owner,
+        pkg: f.pkg,
       });
     dates.set(file.path, new Set(dateReads(sf, checker, program).map(view.original)));
     if (file.path.endsWith("x") && isAppPath(file.path))

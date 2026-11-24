@@ -47,7 +47,7 @@ const passMount = (opts: ObjectExpression, value: string): Edit => {
  */
 export const identityMountMissing: RuleDef = {
   code: "E1730",
-  message: (f) => `renderRoute names no identity mount; import mount from '${str(f.data, "path")}' and pass it`,
+  message: () => "renderRoute names no identity mount; pass identity.ts's default export as mount",
   see: "k.guards",
   check: ({ file, ast, project }) => {
     if (!isTestPath(file.path)) return [];

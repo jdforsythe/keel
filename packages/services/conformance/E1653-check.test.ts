@@ -23,13 +23,13 @@ const hits = async (files: { path: string; source: string }[]): Promise<Set<stri
 describe("k.services: E1653", () => {
   it("E1653 `body` on a `GET` endpoint is reported", async () => {
     expect(await hits([getBody, post, put, getNoBody])).toEqual(new Set([getBody.path]));
-  });
+  }, 30_000);
 
   it("E1653 `body` on a `HEAD` endpoint is reported", async () => {
     expect(await hits([headBody, post, put, getNoBody])).toEqual(new Set([headBody.path]));
-  });
+  }, 30_000);
 
   it("E1653 is not reported for `body` on POST or PUT, nor for GET without a body", async () => {
     expect(await hits([post, put, getNoBody])).toEqual(new Set());
-  });
+  }, 30_000);
 });

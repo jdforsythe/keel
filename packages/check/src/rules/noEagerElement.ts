@@ -105,7 +105,7 @@ function returnsOf(f: FileOf, fn: Fn): Expression[] {
  */
 export const noEagerElement: RuleDef = {
   code: "E1258",
-  message: (f) => `${str(f.data, "prop")}: an element made before the call; make it inside a thunk: () => ...`,
+  message: (f) => `${str(f.data, "prop")}: an element made before the call; make it inside a thunk`,
   see: "k.claim",
   check: ({ file, ast, artifacts, project }) => {
     if (!isAppPath(file.path)) return [];

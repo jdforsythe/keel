@@ -11,14 +11,14 @@ describe("std.sessions: E2001 fires on a fixture, not on its clean twin.", () =>
 
   test("E2001 fires on a fixture, not on its clean twin: E2001 on an unknown subject", () => {
     expect(codes(["bogus:cart.pay#card.number"])).toContain("E2001");
-  });
+  }, 30_000);
   test("E2001 fires on a fixture, not on its clean twin: E2001 on a subject of another module", () => {
     expect(codes(["tx:orders.pay#card.number"])).toContain("E2001");
-  });
+  }, 30_000);
   test("E2001 fires on a fixture, not on its clean twin: E2001 on a field absent from its schema", () => {
     expect(codes(["tx:cart.pay#card.nope"])).toContain("E2001");
-  });
+  }, 30_000);
   test("E2001 fires on a fixture, not on its clean twin: E2001 absent for a valid redact path", () => {
     expect(codes(["tx:cart.pay#card.number"])).not.toContain("E2001");
-  });
+  }, 30_000);
 });

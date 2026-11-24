@@ -1,7 +1,7 @@
+import { clipMessage } from "@keel/schema/internal";
 import { Visitor } from "oxc-parser";
 import type { Diagnostic } from "../types/Diagnostic.ts";
 import type { Checked } from "./Checked.ts";
-import { clip } from "./clip.ts";
 import { isAppPath } from "./isAppPath.ts";
 import { lineCol } from "./lineCol.ts";
 
@@ -31,7 +31,7 @@ export function ruleCodeDeclarations(files: readonly Checked[]): Diagnostic[] {
     for (const h of hits.sort((x, y) => x.at - y.at)) {
       const { line, col } = lineCol(file.source, h.at);
       const prior = first.get(h.code);
-      const code = clip(h.code, 20);
+      const code = clipMessage(h.code, 20);
       let message: string | null = null;
       if (!/^[EW]2\d{3}$/.test(h.code)) message = `rule code ${code} is outside E2xxx/W2xxx`;
       else if (prior !== undefined) message = `rule code ${code} already defined at ${prior.slice(-40)}`;
