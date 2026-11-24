@@ -16,6 +16,11 @@ const hook = createHook({
     // A resource made in held work's async context is the hold's, not work of the run.
     if (scope === undefined || scope.held !== undefined || scope.state.stopped) return;
     scope.state.live.set(id, { label: type, resource: new WeakRef(resource) });
+    scope.state.moved = true;
+  },
+  after(id) {
+    // A callback of a pending resource ran: it may be done and wait only for a collection (an async gzip's handle).
+    for (const state of active) if (state.live.has(id)) state.moved = true;
   },
   destroy(id) {
     for (const state of active) state.live.delete(id);
@@ -29,10 +34,8 @@ const hook = createHook({
  * drive delivers it.
  */
 export function runTracker(onHeldWait: (label: string) => void): RunHandle {
-  const state: RunState = { live: new Map(), holds: [], onHeldWait, stopped: false };
+  const state: RunState = { live: new Map(), holds: [], onHeldWait, stopped: false, moved: false };
   let holds = 0;
-  /** The resources the last garbage collection saw. */
-  let collected = new Set<number>();
   if (active.size === 0) hook.enable();
   active.add(state);
   /** The resources pending when last read. */
@@ -41,10 +44,11 @@ export function runTracker(onHeldWait: (label: string) => void): RunHandle {
     // Keys only before the collection: reading a weak reference keeps its target alive until the turn ends.
     const ids = [...state.live.keys()].filter((id) => id >= 0);
     const seen = ids.join(",");
-    // A set read unchanged since the last read, with a resource no collection has seen: only a collection can end it.
-    if (seen === last && ids.some((id) => !collected.has(id))) {
+    // The same set on two reads in a row, and since the last collection a resource joined it or a callback of one
+    // ran: what is left may be a job only a collection destroys. Work in flight is reachable and survives it.
+    if (seen === last && ids.length > 0 && state.moved) {
+      state.moved = false;
       fullCollection();
-      collected = new Set(ids);
     }
     last = seen;
     for (const [id, piece] of state.live)

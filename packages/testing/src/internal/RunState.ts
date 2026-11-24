@@ -14,4 +14,6 @@ export interface RunState {
   readonly onHeldWait: (label: string) => void;
   /** Set once the run is over: what its context makes after that is nobody's. */
   stopped: boolean;
+  /** Set when a resource joins the pending work or a callback of one runs; cleared by a garbage collection. */
+  moved: boolean;
 }
