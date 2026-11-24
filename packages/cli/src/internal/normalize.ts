@@ -12,6 +12,8 @@ export function normalize(records: readonly OutRecord[]): OutRecord[] {
     if (entry === undefined) return { kind: "diag", code: "E1054", message: `record kind ${r.kind} has no formatter` };
     if (entry.render("json", r) === undefined)
       return { kind: "diag", code: "E1054", message: `record of kind ${r.kind} does not fit its formatter schema` };
-    return r.kind === "diag" && typeof r.message === "string" ? { ...r, message: clipMessage(r.message) } : r;
+    if (r.kind !== "diag" || typeof r.message !== "string") return r;
+    const message = clipMessage(r.message);
+    return message === r.message ? r : { ...r, message };
   });
 }
