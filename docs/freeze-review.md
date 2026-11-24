@@ -32,11 +32,11 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.scaffold-service | 8 | **conformance-covered** | none |
 | k.scaffold-shell | 9 | **conformance-covered** | none |
 | k.testing | 26 | **conformance-covered** | none |
-| k.test-run | 6 | **conformance-covered** | none |
+| k.test-run | 7 | implemented | clause 7 at `none` |
 | k.requests | 4 | **conformance-covered** | none |
 | k.model | 7 | **conformance-covered** | none |
 | k.sim | 14 | **conformance-covered** | none |
-| k.ledger | 15 | **conformance-covered** | none |
+| k.ledger | 19 | implemented | clauses 16 to 19 at `none` |
 | k.sync | 14 | **conformance-covered** | none |
 | k.deploy | 13 | **conformance-covered** | none |
 | k.review | 8 | **conformance-covered** | none |
@@ -164,7 +164,7 @@ Golden apps: `apps/golden-1` and `apps/golden-2` have converged evals (`evals/re
 
 ## Status
 
-No section is `frozen`. The kernel is provisionally frozen: a kernel change goes through an RFC with an ADR, a conformance update and a migration note, and the `frozen` flip waits until the stdlib stages have exercised the kernel (`tasks/0034-freeze/PLAN.md`). k.parity (clauses 5 and 6 at `none`) is `proposed` and k.check (clause 22 at `none`) `implemented`; the other 109 of 111 are `conformance-covered`.
+No section is `frozen`. The kernel is provisionally frozen: a kernel change goes through an RFC with an ADR, a conformance update and a migration note, and the `frozen` flip waits until the stdlib stages have exercised the kernel (`tasks/0034-freeze/PLAN.md`). k.parity (clauses 5 and 6 at `none`) is `proposed`, and k.check (clause 22 at `none`) k.ledger (clauses 16 to 19 at `none`) and k.test-run (clause 7 at `none`) are `implemented`; the other 107 of 111 are `conformance-covered`.
 
 subject: spec/ packages/*/conformance/
 verified: 454c7318e4169f30dff33d1aecdc9677e2ca9489

@@ -10,7 +10,9 @@
 - docs/TESTING.md: a conformance case running `check` in process or a `keel` command passes its own timeout, at least 30 s, at least 60 s when it runs app code under `keel test`.
 - Conformance tests own their fixtures; the k.check budget case on golden app 1 stays, by its clause.
 - std.db is `conformance-covered`.
+- k.ledger: an `a11y` item keeps its committed rung while its project has no `reports/a11y.json` (counted as `keptNoReport`), is recomputed when the report is present and is dropped when its route is gone; a mutation report file with no scored mutant drops its claim. The gate's `ledger-fresh --a11y`, after `keel test` in every app, bounds how long a kept rung can outlive its page.
+- k.test-run: a clause asserts T0001's clip.
 
 **Alternatives.** Counting code points or graphemes; allowing a split pair; clipping only at producers; keeping T0001 at 90; stating the rule in k.errors.
 
-**Consequences.** k.check reads `implemented` until clause 22 is covered. `normalize` in `@keel/cli` clips; `@keel/check`'s and `@keel/testing`'s clips gain the surrogate step. `@keel/check` gains `@keel/router` as a devDependency for one fixture root.
+**Consequences.** k.check, k.test-run and k.ledger read `implemented` until their new clauses are covered. `normalize` in `@keel/cli` clips; `@keel/check`'s and `@keel/testing`'s clips gain the surrogate step. `@keel/check` gains `@keel/router` as a devDependency for one fixture root.

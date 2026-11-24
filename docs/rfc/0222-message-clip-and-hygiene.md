@@ -1,19 +1,22 @@
 # RFC 0222: a diagnostic's message is clipped by one exact rule; `replay` and `minimize` take `mount`; std.db conformance-covered
 
-Status: accepted (ADR-0244), accepted by the orchestrator on 2026-11-24, for the operator to confirm. Amends k.check (Diagnostics, Conformance), k.test-run (Results), std.sessions (API, Conformance), std.db (status), the map, the std index, `docs/OUTPUT.md`, `docs/TESTING.md`, `docs/freeze-review.md`. Carries conformance hygiene under its tag. From backlog 1080, 1092, 1091, 1085, 1023.
+Status: accepted (ADR-0244), accepted by the orchestrator on 2026-11-24, for the operator to confirm. Amends k.check (Diagnostics, Conformance), k.test-run (Results, Conformance), k.ledger (File, Conformance), std.sessions (API, Conformance), std.db (status), the map, the std index, `docs/OUTPUT.md`, `docs/TESTING.md`, `docs/freeze-review.md`. Carries conformance hygiene under its tag. From backlog 1080, 1092, 1091, 1085, 1023; owns the k.ledger File change built for 1083 and 1021.
 
 ## For the operator
 1. **The clip rule lives in k.check, not k.errors.** k.errors is Results and boundaries; k.check's Diagnostics paragraph already owns "`message` is one line under 90 chars" and its Pipeline step 4 owns rendering. One place states it.
 2. **No cut splits a surrogate pair.** The build cuts at 86 UTF-16 code units and can leave a lone high surrogate before `...`. The rule keeps 85 then (88 in all). The build changes.
 3. **Every `diag` record is clipped where a command renders it** (`respond`), so a producer that forgot to clip still meets the contract, and `keel test`'s T0001 moves from 90 characters (87 and `...`) to the same rule.
 4. **`check-budget-injected10` keeps reading `apps/golden-1`.** Its clause is about golden app 1's output, and the case already asserts the ten injected codes and `10 errors`, so an app change cannot hollow it.
-5. **std.db flips to `conformance-covered`.** All 13 clauses are at `example` in the ledger and CI's `postgres` job sets `KEEL_TEST_POSTGRES_URL` for `driver-contract.test.ts`, clause 1's Postgres 17 half.
+5. **An a11y rung is kept without a report.** `keel ledger` keeps the committed rung of an `a11y` item when its project has no `reports/a11y.json`, so a ledger regenerated where `keel test` did not run does not drop every a11y claim. A kept entry can outlive what it claims: the page can change, or lose the test that rendered it, while no report exists to say so. The bound is the gate: in its clean checkout `keel test` runs in each app first, so every report is present, and `ledger-fresh --a11y` recomputes every item from it; a kept rung never survives the gate. The trailer's `keptNoReport` count makes a kept item visible anywhere else.
+6. **std.db flips to `conformance-covered`.** All 13 clauses are at `example` in the ledger and CI's `postgres` job sets `KEEL_TEST_POSTGRES_URL` for `driver-contract.test.ts`, clause 1's Postgres 17 half.
 
 ## Problem
 - No spec text says how a message is clipped. `docs/OUTPUT.md` and k.check say "under 90 chars". The build: `packages/check/src/internal/clip.ts` collapses each whitespace run holding a line feed to one space, trims, and past `n` (89 at every message site) keeps `slice(0, n - 3)` and `...`; `packages/cli/src/internal/makeDiag.ts` keeps `slice(0, 86)` and `...` past 89, without the whitespace step; `packages/testing/src/testResults.ts` keeps 87 and `...` past 90, a 90-character message. All count UTF-16 code units (`length`), and `slice` can end on the first half of a surrogate pair. The formatters (`diagCompact`, `diagPretty`, json) never clip, and `normalize` does not either, so a producer that skips `clip` emits a longer message in every format.
 - std.sessions says in prose that `replay` and `minimize` take `mount` and that `mount` with `serve` is E1722; no Conformance clause states it, and `to-test-identity-mount.test.ts` records it as untestable.
 - Three conformance header quotes no longer match their spec text (1091). Fourteen std-sessions conformance cases run an in-process `check` under vitest's 5 s default (1085). Six conformance tests read app files under `apps/` as fixtures (1023).
 - std.db is `proposed` for a reason that no longer holds.
+- `keel ledger` recomputed every `a11y` item from `reports/a11y.json`, so a run without the report lowered every committed a11y rung to `none` (1021), and a mutation report file with no scored mutant left its old claim in place, stale for ever (1083). The tooling lane fixed both and added a k.ledger File sentence with no RFC and no clause; nothing asserts it.
+- T0001's clip has no clause in k.test-run.
 
 ## Proposal
 ### The clip rule (k.check Diagnostics)
@@ -23,7 +26,15 @@ A message is one line of at most 89 characters counted in UTF-16 code units: eac
 Without `serve`, `mount` goes to `renderRoute` and, for a page with no guard, changes nothing a replay returns. With `serve`, the call calls `serve` once and rejects with E1722 from `renderRoute`, the app unrequested. Two clauses state both exactly.
 
 ### The bound rule (docs/TESTING.md)
-A conformance case or hook that runs `check` in process, or a `keel` command (`run`, or the binary as a child), passes its own timeout: at least 30 s, at least 60 s when the command runs app code under `keel test` (`test`, `session replay`, `minimize`, `to-test`); a new bound takes the floor. Every existing bound in the repo meets it.
+A conformance case or hook that runs `check` in process, or a `keel` command (`run`, or the binary as a child), runs under a timeout of at least 30 s, at least 60 s when the command runs app code under `keel test` (`test`, `session replay`, `minimize`, `to-test`): its own when it passes one, else its package's configured `testTimeout`. A timeout a case adds takes the floor.
+
+### k.ledger (as built in `a11yClaims.ts`, `ledgerCommand.ts`, `mutationClaims.ts`)
+- The committed file is the `--write` target, else `.keel/ledger.json`, else `tooling/ledger/ledger.json`. For a project with no `reports/a11y.json`, an item that file holds at `example` or `none` keeps that rung (evidence `example reports/a11y.json` or `none`) and is counted as kept; an item it lacks is computed (`none` without runs). With the report present every item is computed. An item whose route `.keel/routes.json` no longer lists is not emitted.
+- The summary `counts` gain `keptNoReport`, the kept items in scope, shown only above 0, after `stale`.
+- A mutation report's file with no scored mutant (every one `Ignored`) deletes that file's claim; a file with one scored mutant replaces it as before.
+
+### T0001's clip
+`testResults` clips each T0001 message itself, for the repository's reporter as well as `keel test`, so the clause sits in k.test-run, not in k.check #22's `respond` case. An uncaught error's message carries `uncaught: `, so 200 `a`s give 76 of them; a file that failed to run carries the bare message, 86 `a`s.
 
 ### std.db
 `status: conformance-covered`, as `docs/freeze-review.md` requires (no clause at `partial`, `todo` or `none`; `keel ledger --diff` E1707 otherwise).
@@ -37,7 +48,8 @@ A conformance case or hook that runs `check` in process, or a `keel` command (`r
 ## Spec diff
 Applied in this commit.
 - k.check (to `implemented` until clause 22 is covered): Diagnostics states the rule; Conformance gains #22, appended.
-- k.test-run (stays `conformance-covered`): T0001's message is clipped as k.check says, in place of "cut at 90 characters". No clause quotes the old words.
+- k.test-run (to `implemented` until clause 7 is covered): T0001's message is clipped as k.check says, in place of "cut at 90 characters"; Conformance gains #7. No clause quotes the old words.
+- k.ledger (to `implemented` until clauses 16 to 19 are covered): the File sentence the tooling lane wrote stands; Conformance gains #16 (report absent: rung kept, `keptNoReport`), #17 (report present: recomputed, E1706), #18 (route gone: dropped), #19 (no scored mutant: claim dropped).
 - std.sessions (stays `implemented`): the `mount` sentence says `serve` is called once and the app is unrequested; Conformance gains #18 and #19.
 - std.db: `conformance-covered`; the std index row likewise; the map's k.check row reads `implemented`.
 - `docs/OUTPUT.md` Fields: the rule in short. `docs/TESTING.md` Wall-clock bounds: the bound rule. `docs/freeze-review.md`: k.check and std.db rows and the Status count.
@@ -46,6 +58,8 @@ Applied in this commit.
 ## Conformance diff
 By the `conformance-writer`, from the spec text.
 - `packages/cli/conformance/diag-message-clip.test.ts` (new): k.check#22.
+- `packages/cli/conformance/ledger-kept-claims.test.ts` (new): k.ledger#16 to #19.
+- `packages/testing/conformance/test-run-t0001-clip.test.ts` (new): k.test-run#7.
 - `packages/std-sessions/conformance/replay-mount.test.ts` (new): std.sessions#18 and #19. `to-test-identity-mount.test.ts`: drop its UNTESTABLE line.
 - 1091, re-quotes only: `packages/scaffold/conformance/service-file.test.ts` line 1 quotes k.scaffold Generators' current `service` bullet ("`service`: a client of an API no app module serves (k.services): `modules/<id>/<Name>Api.schema.ts` and `api.server.ts`, with `@keel/services` in `package.json` (k.scaffold-service)."); `packages/scaffold/conformance/cli-service-flags.test.ts` line 5 quotes "`route`: ... `no-loader` with `api`, is E1052" (the comma); `packages/std-sessions/conformance/to-test-served.test.ts` line 9 cites `k.boundary, Reach`, not `std.sessions, k.boundary Reach`.
 - 1085, bounds only (30_000, each an in-process `check`): `packages/std-sessions/conformance/E2001-redact-path.test.ts` lines 12, 15, 18, 21; `E2005-adapter-not-node.test.ts` lines 20, 23, 26, 42, 62, 66, 73; `e2009.test.ts` lines 245, 251, 257. `to-test.test.ts:43` has its 30_000 already. The writer applies the rule to the rest of the folder and to any case it touches elsewhere.
@@ -61,13 +75,14 @@ By the `conformance-writer`, from the spec text.
 None. No app is released.
 
 ## Token impact
-- Spec: k.check 2,766 to 2,988 tokens; std.sessions 2,478 to 2,650; k.test-run 817 to 824; k.errors unchanged at 1,543; the map 1,489 to 1,487. All within 3,100.
+- Spec: k.check 2,766 to 2,988 tokens; std.sessions 2,478 to 2,650; k.test-run 817 to 914; k.ledger 2,002 to 2,378; k.errors unchanged at 1,543; the map 1,489 to 1,487. All within 3,100.
 - `@keel/cli`: one clip in `normalize`; `@keel/check`, `@keel/testing`: a surrogate test in `clip`. Sizes measured in the build.
 
 ## Build plan
 1. This commit: RFC, ADR, spec text, docs. 2. `conformance-writer`: the two new files and the hygiene above, under `rfc:0222`. 3. Build:
 - `packages/cli/src/internal/normalize.ts`: clip every `diag` record's message by the rule; `makeDiag.ts` uses the same function.
 - `packages/check/src/internal/clip.ts`: the surrogate step; `packages/testing/src/testResults.ts`: the rule at 89 in place of 90.
+- k.ledger: built (lane-t1, merged here); no build change.
 - `packages/check/package.json`: `@keel/router` in devDependencies.
 - Docs: a changeset; `tasks/BACKLOG.md` 1080, 1085, 1091, 1092, 1023.
-- The ledger: k.check#22 and std.sessions#18, #19 at `none` until covered (`ledger-fresh` lists them; the orchestrator regenerates).
+- The ledger: k.check#22, k.test-run#7, k.ledger#16 to #19 and std.sessions#18, #19 at `none` until covered (`ledger-fresh` lists them; the orchestrator regenerates).

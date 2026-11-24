@@ -59,12 +59,12 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.scaffold-shell | Shell scaffold | conformance-covered | shells |
 | k.scaffold-service | Service scaffold | conformance-covered | clients |
 | k.testing | Harness, properties | implemented | fire |
-| k.test-run | Test end, results | conformance-covered | dispose |
+| k.test-run | Test end, results | implemented | dispose |
 | k.requests | Requests sent | conformance-covered | sent |
 | k.model | Store exploration | conformance-covered | traces |
 | k.prove | Proving invariants | conformance-covered | Z3 |
 | k.sim | Simulation | conformance-covered | faults |
-| k.ledger | Ledger, evidence | conformance-covered | rungs |
+| k.ledger | Ledger, evidence | implemented | rungs |
 | k.server | Thin server | conformance-covered | loads |
 | k.leave | What a request leaves | conformance-covered | state |
 | k.user | User, caller | conformance-covered | user |

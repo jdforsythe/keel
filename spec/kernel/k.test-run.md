@@ -1,5 +1,5 @@
 # k.test-run: Test end and results
-status: conformance-covered
+status: implemented
 From `@keel/testing`, under vitest: when a harness handle (k.testing) ends without `dispose()`, and how `keel test` prints an error outside any test.
 
 **Disposal.** A `render`, `renderRoute` or `resumeDocument` handle made while a test runs, in its body or a `beforeEach` or `afterEach` hook, is disposed when that test ends, passed or failed, after its `afterEach` hooks: as `dispose()`, its elements leave the document, its scope is disposed and its seeded stores are restored. A route handle is disposed with every document it opened. A handle already disposed is not disposed again, so a write after a hand `dispose()` stays; a second `dispose()` does nothing, and a disposed handle's methods are E1705. A handle made outside a test (`beforeAll`, a `describe` body, module scope) is disposed only by `dispose()`, which an `afterAll` makes. With no vitest test running, nothing is registered.
@@ -15,3 +15,4 @@ From `@keel/testing`, under vitest: when a harness handle (k.testing) ends witho
 - A `renderRoute` with `app` whose `<Form>` submit is answered 303 leaves no element of either document after the test.
 - `testResults([], [e], cwd)` for an error whose `stacks` are a `node_modules` frame, then `cwd/test/a.test.ts` 12:11, is one T0001 at `test/a.test.ts:12:11`, `uncaught: boom`; with `code` `ECONNRESET`, `uncaught: ECONNRESET boom`; with no app frame and `VITEST_TEST_PATH` `cwd/test/a.test.ts`, at `test/a.test.ts:1:1`; with neither, unlocated.
 - `keel test` over a project whose test leaves a `setTimeout` that throws `new Error('late')` after the test ends prints `T0001 <file>:<line>:<col> uncaught: late` at the `throw`, and the run fails.
+- `testResults([], [e], cwd)` for an error `e` whose `message` is 200 `a`s, with no `code`, `stacks` or `stack`, is one T0001 whose message is `uncaught: `, 76 `a`s and `...`; `testResults([f], [], cwd)` for a file `f` whose `result` is `{ state: 'fail', errors: [{ message: m }] }`, `m` 200 `a`s, and which has no test, is one T0001 whose message is 86 `a`s and `...`.
