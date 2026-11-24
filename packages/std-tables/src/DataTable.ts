@@ -1,9 +1,10 @@
 import { computed, effect } from "@keel/reactive";
 import { For, If } from "@keel/runtime-dom";
 import { formatNumber } from "@keel/std-i18n";
-import { type Child, Link } from "@keel/ui";
-import { Part } from "@keel/ui/aria";
+import { Box, type Child, Link } from "@keel/ui";
+import { Part, type PartStyle } from "@keel/ui/aria";
 import type { DataTableProps } from "./DataTableProps.ts";
+import type { TableStyles } from "./TableStyles.ts";
 import type { Field } from "./Field.ts";
 import type { TablePage } from "./TablePage.type.ts";
 import type { TableQuery } from "./TableQuery.ts";
@@ -30,7 +31,11 @@ export function DataTable<T extends object, S extends Field<T>, F extends Field<
   // Read once: `id`, `columns`, `styles`, and whether `selected`, `actions` and `labelledBy` are given (they shape the
   // table). Everything else is read where it is shown, so a prop the app changes updates the table in place.
   const { id, columns: cols } = props;
-  const styles = props.styles ?? {};
+  const styles: TableStyles = props.styles ?? {};
+  for (const key of Object.keys(styles))
+    if (key.startsWith("column.") && !cols.show.some((c) => c === key.slice(7)))
+      throw new Error(`E2851 styles key ${JSON.stringify(key.slice(0, 40))} names no shown column`);
+  const columnStyle = (col: string): PartStyle => styles[`column.${col}`] ?? {};
   const text = () => props.text;
   const view = computed(
     (): TablePage<T> =>
@@ -100,6 +105,7 @@ export function DataTable<T extends object, S extends Field<T>, F extends Field<
     const by = sortable(col);
     return Part({
       ...styles.header,
+      ...columnStyle(col),
       id: `${id}.header.${col}`,
       role: "columnheader",
       sort,
@@ -148,6 +154,7 @@ export function DataTable<T extends object, S extends Field<T>, F extends Field<
         out.push(
           Part({
             ...styles.cell,
+            ...columnStyle(col),
             id: `${id}.cell.${key}.${col}`,
             role: col === cols.rowHeader ? "rowheader" : "cell",
             children: () => content(row, col),
@@ -329,5 +336,13 @@ export function DataTable<T extends object, S extends Field<T>, F extends Field<
     }
     return nav;
   };
-  return Part({ id, role: "generic", children: () => [table(), pager()] });
+  const scroll = props.scroll === "x";
+  const region = (): Node => {
+    const { scroll: own } = styles;
+    const children = (): Node => table();
+    return props.labelledBy !== undefined
+      ? Box({ ...own, id: `${id}.scroll`, scroll: "x", labelledBy: props.labelledBy, children })
+      : Box({ ...own, id: `${id}.scroll`, scroll: "x", label: props.label ?? "", children });
+  };
+  return Part({ id, role: "generic", children: () => [scroll ? region() : table(), pager()] });
 }

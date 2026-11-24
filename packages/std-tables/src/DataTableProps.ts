@@ -27,7 +27,9 @@ export type DataTableProps<T, S extends Field<T>, F extends Field<T>, W extends 
   readonly header?: (col: W, sort: "ascending" | "descending" | undefined) => Node;
   /** Rendered in one cell spanning the row when `total` is 0. */
   readonly empty?: () => Node;
-  readonly styles?: TableStyles;
+  /** `x` wraps the table, not the pager, in a scroll region named as the table is; read once. */
+  readonly scroll?: "x";
+  readonly styles?: TableStyles<Extract<W, string>>;
 } & (
   | { readonly label: string; readonly labelledBy?: never }
   | { readonly labelledBy: string; readonly label?: never }
