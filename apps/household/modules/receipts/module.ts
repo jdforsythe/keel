@@ -4,7 +4,6 @@ export default module({
   id: "receipts",
   deps: [
     "members",
-    "setup",
     "@keel/std-i18n",
     "@keel/std-messages",
     "@keel/std-money",
