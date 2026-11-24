@@ -1,6 +1,6 @@
 // Spec: std.capacitor, Conformance "A build with `KEEL_ORIGIN=https://golden-1.example` of a deployable declaring `origins.connect` `https://api.example` leaves `dist/web/capacitor/capacitor.config.json` with `plugins.KeelHttp.allow` `[\"https://golden-1.example\", \"https://api.example\"]`; with no `origins`, the first alone. The file under `deploy/` has no `plugins`."
 // Spec: std.capacitor, Conformance "The target's `plugins` for an app with `identity` false: `@capacitor/preferences` and `@capacitor/app`, each at the version `@keel/std-capacitor`'s `package.json` `dependencies` hold, and no other; with `identity` true, `@capacitor/browser` too."
-// Spec: std.capacitor, Conformance "`keel check` of a project declaring `capacitor`, with no `identity.ts`, whose `dependencies` hold `@keel/std-capacitor` and those two at those versions: no E1572. Adding `identity.ts` (and its source, a `node` deployable serving it): one E1572 naming `@capacitor/browser` and `(the external browser of identity.ts)`. Removing `@capacitor/app` instead: one naming it."
+// Spec: std.capacitor, Conformance "`keel check` of a project declaring `capacitor`, with no `identity.ts`, whose `dependencies` hold `@keel/std-capacitor` and those two at those versions: no E1572. Adding `identity.ts` (and its source, a `node` deployable serving it): one E1572, `web: capacitor needs @capacitor/browser 8.0.5 (external browser sign-in)`. Removing `@capacitor/app` instead: one, `web: capacitor needs @capacitor/app 8.1.2 (launch and return links)`."
 // Seed: 1337 (the declared origins of the allow property are generated; the projects are otherwise fixed).
 // The real binary over a temp project. The target's `plugins` is read through `keel check`: with `@keel/std-capacitor` alone in `dependencies` the E1572 diagnostics are the plugins the target gives, one each,
 // so "and no other" is the count; the message form is k.shell Plugins, the `need` texts are the ones of std.capacitor's table.
@@ -40,7 +40,7 @@ const pinned = (name: string): string => {
 const NEEDS: Record<string, string> = {
   "@capacitor/preferences": "storage",
   "@capacitor/app": "launch and return links",
-  "@capacitor/browser": "the external browser of identity.ts",
+  "@capacitor/browser": "external browser sign-in",
 };
 
 const manifestSrc = (id: string): string =>
@@ -161,8 +161,7 @@ const allowOf = (dir: string): unknown => {
 };
 
 const e1572 = (dir: string): string[] => diags(keel(dir, ["check"]), "E1572").map((d) => String(d.message));
-const line = (plugin: string): string =>
-  `web: capacitor needs ${plugin} ${pinned(plugin)} in package.json dependencies (${NEEDS[plugin]})`;
+const line = (plugin: string): string => `web: capacitor needs ${plugin} ${pinned(plugin)} (${NEEDS[plugin]})`;
 const listed = (...plugins: string[]): Record<string, string> => Object.fromEntries(plugins.map((p) => [p, pinned(p)]));
 
 describe("std.capacitor: KeelHttp allow list and plugins", () => {
@@ -226,7 +225,7 @@ describe("std.capacitor: KeelHttp allow list and plugins", () => {
   );
 
   test(
-    "adding `identity.ts` and its source is one E1572 naming `@capacitor/browser` and `(the external browser of identity.ts)`",
+    "adding `identity.ts` and its source is one E1572, `web: capacitor needs @capacitor/browser 8.0.5 (external browser sign-in)`",
     () => {
       const dir = made({ identity: true, deps: listed("@capacitor/preferences", "@capacitor/app") });
       expect(e1572(dir)).toEqual([line("@capacitor/browser")]);
@@ -235,7 +234,7 @@ describe("std.capacitor: KeelHttp allow list and plugins", () => {
   );
 
   test(
-    "removing `@capacitor/app` instead is one E1572 naming it",
+    "removing `@capacitor/app` instead is one E1572, `web: capacitor needs @capacitor/app 8.1.2 (launch and return links)`",
     () => {
       const dir = made({ deps: listed("@capacitor/preferences") });
       const found = e1572(dir);

@@ -1,7 +1,7 @@
 // Spec: k.shell, Conformance "With a stub target whose `plugins` gives `{ plugin: '@x/p', version: '1.2.3', need: 'n' }`: `keel check` of an app without `@x/p` in `dependencies` prints one E1572 at the deployable's key naming `@x/p 1.2.3` and `(n)`, whose fix adds `\"@x/p\": \"1.2.3\"`; with `\"@x/p\": \"^1.2.3\"`, one whose fix sets `1.2.3`; with `1.2.3`, none. Two `client` deployables declaring the shell: one E1572."
 // Spec: k.shell, Conformance "With that E1572, `keel build --target tauri` prints it, exits 1, writes nothing under `dist/web/tauri/` and calls no `build`."
 // Spec: k.shell, Conformance "A stub whose `plugins` gives that entry only when `app.identity`: no E1572 in a project with no `identity.ts`; one with it."
-// Spec: k.shell, Plugins "`<deployable>: <shell> needs <plugin> <version> in package.json dependencies (<need>)`, its fix that entry added or set, keys sorted; once per plugin in a project. No `package.json`, or one that is not a JSON object: none."
+// Spec: k.shell, Plugins "Each one absent from the app's `package.json` `dependencies`, or there at another version text, is one E1572 at the deployable's key in `topology.ts`, `<deployable>: <shell> needs <plugin> <version> (<need>)`, its fix that entry added or set, keys sorted; once per plugin in a project."
 // Seed: 1337 (the plugin name, version and need are generated; the projects are otherwise fixed).
 // Over a stub `@keel/std-tauri` (`shell-stub.ts`, `plugins` in its config). ASSUMPTIONS: the diag's `message` is the quoted text and its `fix` a unified diff of `package.json` (as E1572 over `check()`),
 // with `path` naming `topology.ts`; "at the deployable's key" is read as the message starting `web:`.
@@ -22,7 +22,8 @@ afterAll(() => cleanup(dir));
 const lower = fc.stringMatching(/^[a-z]{2,8}$/);
 const plugin = fc.tuple(lower, lower).map(([a, b]) => `@${a}/${b}`);
 const version = fc.tuple(fc.nat(30), fc.nat(30), fc.nat(30)).map(([a, b, c]) => `${a}.${b}.${c}`);
-const need = fc.stringMatching(/^[a-z][a-z ]{0,38}$/);
+// plugin (at most 18), version (at most 8) and need hold at most 50 characters together.
+const need = fc.stringMatching(/^[a-z][a-z ]{0,22}$/);
 const setDeps = (deps: Record<string, string>, root = dir): void => {
   writeFileSync(
     join(root, "package.json"),
@@ -52,7 +53,7 @@ describe("k.shell: Plugins over a stub package", () => {
           const found = e1572(["check"]);
           expect(found).toHaveLength(1);
           const diag = found[0];
-          expect(diag?.message).toBe(`web: tauri needs ${p} ${v} in package.json dependencies (${n})`);
+          expect(diag?.message).toBe(`web: tauri needs ${p} ${v} (${n})`);
           expect(String(diag?.path)).toContain("topology.ts");
           expect(String(diag?.fix)).toContain(`+    "${p}": "${v}"`);
         }),
@@ -106,7 +107,7 @@ describe("k.shell: Plugins over a stub package", () => {
       expect(r.status).toBe(1);
       const found = withCode(r, "E1572");
       expect(found).toHaveLength(1);
-      expect(found[0]?.message).toBe("web: tauri needs @x/p 1.2.3 in package.json dependencies (n)");
+      expect(found[0]?.message).toBe("web: tauri needs @x/p 1.2.3 (n)");
       expect(existsSync(join(dir, "dist", "web", "tauri"))).toBe(false);
       expect(buildCalls(dir)).toEqual([]);
     },
@@ -133,7 +134,7 @@ describe("k.shell: Plugins over a stub package", () => {
       for (const [path, source] of Object.entries(IDENTITY)) writeFileSync(join(dir, path), source);
       const found = e1572(["check"]);
       expect(found).toHaveLength(1);
-      expect(found[0]?.message).toBe("web: tauri needs @x/p 1.2.3 in package.json dependencies (n)");
+      expect(found[0]?.message).toBe("web: tauri needs @x/p 1.2.3 (n)");
     },
     SLOW,
   );
