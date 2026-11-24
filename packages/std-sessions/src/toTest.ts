@@ -108,7 +108,7 @@ export function toTest(
   }
   const [one] = options.routes;
   const join: string[] = [];
-  if (options.routes.length === 1 && one !== undefined) add(one.from, `{ routes }`);
+  if (options.routes.length === 1 && one !== undefined) add(one.from, "{ routes }");
   else {
     const names = options.routes.map((r) => {
       const as = local(`${r.module.replace(/[^A-Za-z0-9_$]/g, "_")}Routes`);
@@ -140,8 +140,8 @@ export function toTest(
   }
   const { serve } = options;
   if (serve !== undefined) {
-    add(serve.topology, `topology`);
-    if (serve.identity !== undefined) add(serve.identity, `identity`);
+    add(serve.topology, "topology");
+    if (serve.identity !== undefined) add(serve.identity, "identity");
     body.push(
       `  const app = await createApp({ topology, deployable: ${lit(serve.deployable)}, routes, ctx${serve.identity === undefined ? "" : ", identity"} });`,
     );
