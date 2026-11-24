@@ -47,6 +47,7 @@
     "typescript": "^5.6"
   },
   "devDependencies": {
+    "@keel/router": "workspace:*",
     "@keel/tooling": "workspace:*",
     "@types/node": "^22",
     "fast-check": "^3"

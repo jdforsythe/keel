@@ -10,8 +10,8 @@ import { SEED } from "./support.ts";
 
 const ROUTES = "import type { Href } from '@keel/router'\ndeclare const orders: { href(id: 'orders.list'): Href }\n";
 
-/** A project whose node_modules resolve `@keel/router` for the type pass (this package does not depend on it). */
-const APP = fileURLToPath(new URL("../../../apps/golden-1/", import.meta.url));
+/** This package, whose node_modules resolve `@keel/router` (a devDependency) for the type pass. */
+const APP = fileURLToPath(new URL("../", import.meta.url));
 
 const codes = (path: string, source: string, types = true): string[] =>
   check([{ path, source }], types ? { root: APP } : { types: false }).diagnostics.map((d) => d.code);

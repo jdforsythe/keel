@@ -36,7 +36,8 @@ function clipped(m: string): string {
   return `${one.slice(0, keep)}...`;
 }
 
-const isLoneSurrogateFree = (s: string): boolean => s.isWellFormed();
+const isLoneSurrogateFree = (s: string): boolean =>
+  !/[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/.test(s);
 
 describe("k.check: a diagnostic's message is clipped in `respond`", () => {
   it("89 `a`s are `m` itself in compact, pretty and json", () => {
