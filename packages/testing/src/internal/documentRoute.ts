@@ -1,5 +1,5 @@
 import { type Ctx, type Net, createCtx } from "@keel/ctx";
-import { browserCtx } from "@keel/ctx/internal";
+import { browserCtx, holdOn } from "@keel/ctx/internal";
 import { scope } from "@keel/reactive";
 import type { RouteTable } from "@keel/router";
 import { compileRoutes, encodeHref } from "@keel/router/internal";
@@ -14,13 +14,13 @@ import type { RouteRenderOptions } from "../types/RouteRenderOptions.ts";
 import type { RouteStateOf } from "../types/RouteStateOf.ts";
 import { appSigner } from "./appSigner.ts";
 import { browserFront } from "./browserFront.ts";
-import { clockStep } from "./clockStep.ts";
 import { fail } from "./fail.ts";
 import { freshGraph } from "./freshGraph.ts";
 import { openHarness } from "./openHarness.ts";
 import { requestLog } from "./requestLog.ts";
 import { seedFrom } from "./seedFrom.ts";
 import { settle } from "./settle.ts";
+import { watchOf } from "./watchOf.ts";
 
 /** Redirects followed for one navigation before it fails, as a browser caps a chain. */
 const MAX_REDIRECTS = 20;
@@ -98,10 +98,12 @@ export async function documentRoute<T extends RouteTable>(
       { option: stray },
     );
   const given = options.routes;
-  // An import resumes the page in a client module graph of its own: this harness's browser alone.
+  const ctx = options.ctx ?? createCtx({ mode: "sim", seed: seedFrom(undefined) });
+  // An import resumes the page in a client module graph of its own: this harness's browser alone. The test runner
+  // answers the import over a channel made before the run, so the load is held, under the route id (k.drive Seams).
   const graph =
     typeof given === "function"
-      ? await freshGraph(given)
+      ? await holdOn(ctx.clock)(id, () => freshGraph(given))
       : {
           routes: given,
           table: compileRoutes(given).table,
@@ -122,7 +124,6 @@ export async function documentRoute<T extends RouteTable>(
   const url = raw ?? graph.encodeHref(id, graph.table.get(id)?.def, options.params ?? {}, options.search ?? {});
   // Each harness starts at the top: scroll is the window's, shared with the test before.
   window.scrollTo(0, 0);
-  const ctx = options.ctx ?? createCtx({ mode: "sim", seed: seedFrom(undefined) });
   const origin = /^https?:$/.test(location.protocol) ? location.origin : "http://localhost";
   const components: Record<string, Island> = {};
   for (const [rid, { def }] of graph.table) if (def.component) components[rid] = def.component;
@@ -262,7 +263,7 @@ export async function documentRoute<T extends RouteTable>(
   });
   try {
     raise();
-    await settle(document.body, () => undefined, busy, undefined, clockStep(ctx));
+    await settle(document.body, () => undefined, busy, undefined, watchOf(ctx));
     raise();
     check();
   } catch (error) {

@@ -43,7 +43,7 @@ export function database(name: string, opts: DatabaseOptions = {}): (ctx: Ctx) =
   const accessor = register<Side, Step>(name, {
     real,
     shell: real,
-    sim: ({ seed, plan }) => sideOf(name, simBackend(name, files, seed), plan),
+    sim: ({ seed, plan, hold }) => sideOf(name, simBackend(name, files, seed, hold), plan),
     plan: Step,
   });
   return (ctx) => accessor(ctx).at(ctx);

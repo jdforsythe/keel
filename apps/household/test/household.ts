@@ -1,3 +1,4 @@
+import type { SimCtx } from "@keel/ctx";
 import { s } from "@keel/schema";
 import { sql } from "@keel/std-postgres";
 import { renderRoute } from "@keel/testing";
@@ -8,9 +9,9 @@ import { served, signIn } from "./serve.ts";
 const UserRow = s.object({ userId: s.string() });
 export const GRACE = "grace@example.com";
 
-/** One household with two members: Ada (`served`'s member) and Grace, each signed in with a session cookie. */
-export async function household(seed: number) {
-  const app = await served(seed);
+/** One household with two members: Ada (`served`'s member) and Grace, each signed in with a session cookie. `using` is a `simulate` run's ctx. */
+export async function household(seed: number, using?: SimCtx) {
+  const app = await served(seed, true, using);
   const grace = await signIn(app.raw, GRACE, "Grace Hopper");
   const rows = await membersDb(app.ctx).query(sql(UserRow)`select user_id as "userId" from members`);
   const graceId = (rows.ok ? rows.value : []).map((r) => r.userId).find((id) => id !== app.user) ?? "";
