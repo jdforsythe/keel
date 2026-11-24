@@ -17,6 +17,14 @@ function identify(args: { readonly request: Request }): Promise<string> {
   return Promise.resolve(pair === undefined ? "" : decodeURIComponent(pair.slice(COOKIE.length + 1)));
 }
 
+let joined: { readonly of: RouteTable; readonly table: RouteTable } | undefined;
+
+/** The table of `at` joined with the `web` deployable's, built once for the table it was given. */
+function joinedTable(at: RouteTable): RouteTable {
+  if (joined === undefined || joined.of !== at) joined = { of: at, table: routeTable(at, web) };
+  return joined.table;
+}
+
 /** `POST /api/auth/sign-in/email`: sets the cookie to the posted name and answers 303 to the page the `next` search key names (`pageHref`), else `/`. */
 async function handle(request: Request, _ctx: unknown, at: { readonly routes: RouteTable }): Promise<Response> {
   const url = new URL(request.url);
@@ -26,7 +34,7 @@ async function handle(request: Request, _ctx: unknown, at: { readonly routes: Ro
   const name = new URLSearchParams(await request.text()).get("name") ?? "";
   if (name === "") return new Response(null, { status: 303, headers: { location: "/signin" } });
   // The `api` deployable serves no page: the pages a sign-in returns to are the `web` deployable's, so they join its table.
-  const back = pageHref(routeTable(at.routes, web), url.searchParams.get("next") ?? "");
+  const back = pageHref(joinedTable(at.routes), url.searchParams.get("next") ?? "");
   const headers = new Headers({ location: back.ok ? back.value : "/" });
   headers.append("set-cookie", `${COOKIE}=${encodeURIComponent(name)}; HttpOnly; SameSite=Lax; Path=/`);
   return new Response(null, { status: 303, headers });
