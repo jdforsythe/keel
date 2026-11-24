@@ -1,5 +1,5 @@
-import { clipMessage } from "./clipMessage.ts";
 import type { Diag } from "./Diag.ts";
+import { clipMessage } from "./clipMessage.ts";
 
 type Loc = {
   readonly path?: string | undefined;
