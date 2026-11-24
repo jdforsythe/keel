@@ -23,7 +23,7 @@ const apiAct = action(c, "t.reports", {}, async (_body, at) => {
   return ok({ n: 1 });
 });
 const pageAct = action(c, "t.index", { input: s.object({}) }, async (_input, at) => {
-  expectTypeOf<keyof typeof at>().toEqualTypeOf<"params" | "url" | "caller" | "user" | "stores">();
+  expectTypeOf<keyof typeof at>().toEqualTypeOf<"params" | "url" | "caller" | "user" | "stores" | "routes">();
   return ok(null);
 });
 const nothing = action(c, "t.nothing", {}, async () => ok({}));

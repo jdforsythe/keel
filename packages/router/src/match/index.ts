@@ -2,3 +2,4 @@
 // replay and redaction use it). re-exports only.
 export { matchHref } from "./matchHref.ts";
 export type { RouteMatch } from "./RouteMatch.ts";
+export { pageHref } from "./pageHref.ts";
