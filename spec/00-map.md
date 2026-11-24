@@ -7,7 +7,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | block | owner | block | owner |
 |-|-|-|-|
 | E100x | k.compiler, k.boundary, k.bundle, k.head | E105x | k.cli, k.evidence, k.docs, k.review |
-| E110x | k.schema, k.privacy, k.reveal, k.leave, k.privacy-reads | E115x | k.module |
+| E110x | k.schema, k.formats, k.privacy, k.reveal, k.leave, k.privacy-reads | E115x | k.module |
 | E120x | k.reactive | E125x | k.runtime, k.resume, k.claim |
 | E130x | k.store | E135x | k.scaffold, k.scaffold-shell |
 | E140x | k.component, k.place | E145x | k.errors |
@@ -28,7 +28,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | id | section | status | one line |
 |-|-|-|-|
 | k.schema | Schemas | conformance-covered | codecs |
-| k.formats | Format types | conformance-covered | brands |
+| k.formats | Format types | implemented | brands |
 | k.reactive | Reactivity | conformance-covered | signals |
 | k.store | Store, transactions | implemented | log |
 | k.component | Components | conformance-covered | props |

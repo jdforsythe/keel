@@ -1,6 +1,6 @@
 ---
 name: keel-testing
-description: "Test and check Keel code: @keel/testing render, renderRoute (stores pages too), fire, settle, find, a11y, focusOrder, sim ctx and net routes, properties, explore, simulate, prove, std-statecharts chart, ledger rungs; E170x, E1706, E1708-E1710, E1715-E1719, E1722, E1726, W1723"
+description: "Test and check Keel code: @keel/testing render, renderRoute (stores pages too), fire, settle, find, a11y, focusOrder, sim ctx and net routes, properties, explore, simulate, prove, std-statecharts chart, ledger rungs; E170x, E1706, E1708-E1710, E1715-E1719, E1722, E1726, W1723, E1108"
 ---
 
 # Testing and correctness
@@ -110,7 +110,7 @@ test("no state is unreachable or stuck", () => {
   expect(coverage(saveChart, r)).toEqual({ unreached: [], dead: [] });
 });
 ```
-A flow with states (editing, saving, retrying) is a `chart` in a client-safe file; the id is the store id. It compiles to a store and one transaction per event, so `explore(Object.values(c.events))` is its closed form and every event passes `properties`. `keel check` reports E2751-E2755 on a bad declaration; all literals, no spreads or computed keys.
+A flow with states (editing, saving, retrying) is a `chart` in a client-safe file; the id is the store id. It compiles to a store and one transaction per event, so `explore(Object.values(c.events))` is its closed form and every event passes `properties`. `keel check` reports E2751-E2755 on a bad declaration; all literals, no spreads or computed keys. A format value in `start` or a fixture is `formatLiteral(Instant, '1970-01-01T00:00:00.000Z')` (`@keel/schema`; E1108 when the literal does not parse).
 
 ## Ledger rungs
 

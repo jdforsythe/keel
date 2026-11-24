@@ -14,6 +14,7 @@ export type { Secret } from "./Secret.ts";
 export type { SchemaError } from "./SchemaError.ts";
 export { attempt } from "./attempt.ts";
 export { err } from "./err.ts";
+export { formatLiteral } from "./formatLiteral.ts";
 export { ok } from "./ok.ts";
 export { s } from "./s.ts";
 export { pathToString } from "./pathToString.ts";

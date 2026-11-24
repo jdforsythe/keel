@@ -249,6 +249,13 @@ const ROWS: readonly Row[] = [
     "k.leave",
   ],
   [
+    "E1108",
+    "a formatLiteral text that is not a literal or does not parse",
+    "formatLiteral is for values written in source; keel check parses them with the format's own reader. Data from outside reads with parse and answers a Result.",
+    "formatLiteral(Instant, '2026-02-30T00:00:00.000Z') -> '2026-02-28T00:00:00.000Z'",
+    "k.formats",
+  ],
+  [
     "E1111",
     "a .pii() or s.secret node, or a schema it cannot read, in a route's params, search or query",
     "A path or query reaches browser history and proxy logs, which no redaction reaches.",
