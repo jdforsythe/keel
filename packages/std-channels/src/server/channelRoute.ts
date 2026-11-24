@@ -22,6 +22,7 @@ import { join } from "./internal/join.ts";
 import { paramsOf } from "./internal/paramsOf.ts";
 import { reread } from "./internal/reread.ts";
 import { storesIn } from "./internal/storesIn.ts";
+import { watchStores } from "./internal/watchStores.ts";
 
 const denied: KeelError<"keel.denied", null> = { code: "keel.denied", message: "denied", data: null };
 const closed = (reason: "denied" | "full") => ok({ kind: "closed", reason } as const);
@@ -204,7 +205,8 @@ export function channelRoute<P, M, S>(
       },
       // A re-read or `member` that fails is a denial; the chain goes on for later saves.
       saved: (store, head, read) => {
-        if (!ids.has(store)) return;
+        if (!ids.has(store) || head <= (delivered.get(store) ?? Number.NEGATIVE_INFINITY)) return;
+        delivered.set(store, head);
         chain = chain.then(() =>
           deliver({ kind: "saved", store, head }, async () => (await reread(list, read)) && allowed(member, at)),
         );
@@ -215,13 +217,19 @@ export function channelRoute<P, M, S>(
     const recheck = (): void => {
       chain = chain.then(() => deliver({ kind: "changed" }, () => allowed(member, at)));
     };
+    // Heads a stream delivered, per store: local and remote saves of one store reach it as one rising sequence.
+    const delivered = new Map<string, number>();
     const unfollow = await followAll(ctx, follows, channel, canonicalJson(channel.params.encode(search)), (r) => {
       if (r.kind === "changed") recheck();
       else drop.abort();
     });
+    // A route with `stores` on a storage with `watch` is watching before `reset` (k.persist Watch).
+    const unwatch =
+      unfollow === undefined || decl.stores === undefined ? undefined : await watchStores(ctx, hub, () => drop.abort());
     const until = AbortSignal.any([signal, drop.signal]);
     try {
       if (unfollow === undefined || drop.signal.aborted) return;
+      if (decl.stores !== undefined && unwatch === undefined) return;
       yield ok<ChannelEvent<M>>({ kind: "reset" });
       for (;;) {
         const e = await box.next(until);
@@ -232,6 +240,7 @@ export function channelRoute<P, M, S>(
       }
     } finally {
       unfollow?.();
+      unwatch?.();
       leave();
     }
   });
