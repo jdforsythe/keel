@@ -1,5 +1,5 @@
 import type { Ctx } from "@keel/ctx";
-import type { RouteTable } from "@keel/router";
+import type { IdentityMount, RouteTable } from "@keel/router";
 import type { Store } from "@keel/store";
 import type { DocumentApp } from "./DocumentApp.ts";
 import type { HarnessArtifacts } from "./HarnessArtifacts.ts";
@@ -37,7 +37,13 @@ export interface RouteRenderOptions<T extends RouteTable = RouteTable> {
   readonly launch?: "later";
   /**
    * The `createApp` result of the `node` deployable that serves the page: the page is then requested from it and
-   * resumed, as a build serves it, with no router (k.testing Harness); with `state` or `shell` it rejects E1722.
+   * resumed, as a build serves it, with no router (k.testing Harness); with `state`, `shell` or `mount` it rejects E1722.
    */
   readonly app?: DocumentApp;
+  /**
+   * The identity mount, `identity.ts`'s default export imported by the test (k.guards Client): the router reads `user`
+   * from `/__keel/user` with it (unless `user` is given) and matches no page under its `path` (k.mount-scope), and a
+   * shell sends mount requests under it (k.return). Without it the harness has none, as a project with no `identity.ts`.
+   */
+  readonly mount?: IdentityMount;
 }

@@ -1149,9 +1149,9 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1722",
-    "renderRoute given app with state or shell, or routes as an import without app",
-    "With app the page comes from the server, so test module stores and a native shell have no meaning; a routes import resumes a built page in a module graph of its own, which a router page never has. Nothing is requested.",
-    "seed server state through ctx.storage, as createApp reads it; drop state and shell; pass app with a routes import, or the route table without",
+    "renderRoute given app with state, shell or mount, or routes as an import without app",
+    "With app the page comes from the server, so test module stores, a native shell and an identity mount have no meaning (the served page's identity is app's); a routes import resumes a built page in a module graph of its own, which a router page never has. Nothing is requested.",
+    "seed server state through ctx.storage, as createApp reads it; drop state, shell and mount; pass app with a routes import, or the route table without",
     "k.testing",
   ],
   [
@@ -1174,6 +1174,13 @@ const ROWS: readonly Row[] = [
     "change with value is a pick in a select without multiple: the enabled option of that value is selected, then input and change fire. Another element, a multiple select, or no enabled option of that value is refused, and nothing changes.",
     "fire change with the value of an enabled option on a single select; on a text field fire input with value",
     "k.testing",
+  ],
+  [
+    "E1730",
+    "a test's renderRoute names neither mount nor app in a project with identity.ts",
+    "The built app always has the identity mount: its router reads /__keel/user and matches no page under the mount. A test names it so the file alone says what runs. keel check only.",
+    "import mount from '../identity.ts'; renderRoute(id, { routes, mount })",
+    "k.guards",
   ],
   [
     "W1723",

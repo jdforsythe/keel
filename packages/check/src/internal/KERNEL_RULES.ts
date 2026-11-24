@@ -30,6 +30,7 @@ import { noSecretInState } from "../rules/noSecretInState.ts";
 import { noThrow } from "../rules/noThrow.ts";
 import { noTryCatch } from "../rules/noTryCatch.ts";
 import { noUnsafeSyntax } from "../rules/noUnsafeSyntax.ts";
+import { identityMountMissing } from "../rules/identityMountMissing.ts";
 import { nodePageWithoutApp } from "../rules/nodePageWithoutApp.ts";
 import { oneExport } from "../rules/oneExport.ts";
 import { passwordField } from "../rules/passwordField.ts";
@@ -61,6 +62,7 @@ export const KERNEL_RULES: readonly RuleDef[] = [
   noSecretInState,
   txWhileBuilding,
   nodePageWithoutApp,
+  identityMountMissing,
   revealedValue,
   noNetFetchInApp,
   pathParamsMatch,
