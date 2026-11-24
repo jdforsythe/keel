@@ -1,6 +1,6 @@
 # Keel spec map
 
-status key: proposed | implemented | conformance-covered | frozen. Budget: file 1,430 tokens, section 3,400.
+status key: proposed | implemented | conformance-covered | frozen. Budget: file 1,440 tokens, section 3,400.
 
 ## Code ranges
 Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); owner: keel docs --for <code>.
@@ -43,7 +43,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.router | Routes | conformance-covered | params |
 | k.contract | Module contract | conformance-covered | entries |
 | k.routes | Route table | conformance-covered | union |
-| k.guards | Guards | conformance-covered | deny |
+| k.guards | Guards | implemented | deny |
 | k.prefix | Path prefix | conformance-covered | enums |
 | k.forms | Forms | conformance-covered | fields |
 | k.ui | Tokens, styling | implemented | CSS |
@@ -59,6 +59,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.scaffold-shell | Shell scaffold | implemented | shells |
 | k.testing | Harness, properties | implemented | fire |
 | k.test-run | Test end, results | implemented | dispose |
+| k.requests | Requests sent | implemented | sent |
 | k.model | Store exploration | conformance-covered | traces |
 | k.prove | Proving invariants | conformance-covered | Z3 |
 | k.sim | Simulation | conformance-covered | faults |
