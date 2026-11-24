@@ -13,6 +13,18 @@
       "default": "./src/explain.ts"
     }
   },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/src/index.d.ts",
+        "default": "./dist/src/index.js"
+      },
+      "./explain": {
+        "types": "./dist/src/explain.d.ts",
+        "default": "./dist/src/explain.js"
+      }
+    }
+  },
   "files": ["dist", "docs"],
   "scripts": {
     "check": "tsc --noEmit && biome check src test unsafe",

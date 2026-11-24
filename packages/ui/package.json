@@ -22,6 +22,27 @@
     },
     "./fonts": "./fonts/fonts.css"
   },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/src/index.d.ts",
+        "default": "./dist/src/index.js"
+      },
+      "./css": {
+        "types": "./dist/src/css/index.d.ts",
+        "default": "./dist/src/css/index.js"
+      },
+      "./brand": {
+        "types": "./dist/src/brand/index.d.ts",
+        "default": "./dist/src/brand/index.js"
+      },
+      "./aria": {
+        "types": "./dist/src/aria/index.d.ts",
+        "default": "./dist/src/aria/index.js"
+      },
+      "./fonts": "./fonts/fonts.css"
+    }
+  },
   "files": ["dist", "fonts", "docs"],
   "scripts": {
     "check": "tsc --noEmit && biome check src test unsafe",

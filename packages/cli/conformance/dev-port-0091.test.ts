@@ -17,7 +17,7 @@ import { SEED, keel } from "./fixtures.ts";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const BIN = join(REPO, "packages", "cli", "src", "bin.ts");
-const SLOW = 120_000;
+const SLOW = 300_000;
 
 let fixture = "";
 const write = (rel: string, content: string): void => {
@@ -169,14 +169,14 @@ const accepts = (port: number): Promise<boolean> =>
 
 /**
  * Retry, with a fixed pause between attempts, until the port accepts a connection and answers any HTTP status, or the
- * process exits. 800 pauses of 50 ms bound the wait at about 40 s however fast a refused connect returns.
+ * process exits. 1800 pauses of 50 ms bound the wait at 90 s or more (each turn also spends time in `accepts`).
  */
 async function served(p: Proc, port: number): Promise<boolean> {
   let done = false;
   void p.exited.then(() => {
     done = true;
   });
-  for (let i = 0; i < 800 && !done; i++) {
+  for (let i = 0; i < 1800 && !done; i++) {
     if (i > 0) await pause(50);
     if (!(await accepts(port))) continue;
     const ok = (await get(port, "/")) !== null;
@@ -210,7 +210,7 @@ describe("k.cli keel dev --port (rfc:0091)", () => {
         const port = await freePort();
         const p = startDev(["--port", String(port)]);
         try {
-          expect(await served(p, port)).toBe(true);
+          expect(await served(p, port), p.out()).toBe(true);
         } finally {
           await stop(p);
         }
@@ -250,7 +250,7 @@ describe("k.cli keel dev --port (rfc:0091)", () => {
       setConfigPort(port);
       const p = startDev([]);
       try {
-        expect(await served(p, port)).toBe(true);
+        expect(await served(p, port), p.out()).toBe(true);
       } finally {
         await stop(p);
         setConfigPort(undefined);

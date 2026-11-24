@@ -55,11 +55,16 @@ function descendants(root) {
   return out;
 }
 
+let killing = false;
+
 /**
  * One T0001 line on stderr, written synchronously: the main thread, which owns process.stderr, may be blocked. A
  * fork worker's stderr is a pipe to vitest, which an orphan no longer has (EPIPE): the kill goes ahead regardless.
  */
 function kill(reason) {
+  // SIGKILL reaches a starved process late; a tick in between must not print a second line.
+  if (killing) return;
+  killing = true;
   const { file, test } = current();
   const name = test.length > 36 ? `${test.slice(0, 35)}…` : test;
   const what = name ? ` "${name}"` : "";

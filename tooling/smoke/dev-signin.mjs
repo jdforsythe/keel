@@ -23,13 +23,13 @@ import { existsSync, watch, writeFileSync } from "node:fs";
 import { appendFile, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { copyApp, freePort, recorder, root, wait } from "./built.mjs";
+import { copyApp, freePort, keepOutput, recorder, root, wait } from "./built.mjs";
 
 const LIMIT_MS = 240_000;
 /** How long an edit may take to reach the dev server's watcher. */
 const EDIT_MS = 60_000;
 const cli = join(root, "packages", "cli", "src", "bin.ts");
-const { step, finish } = recorder();
+const { step, finish, caught } = recorder();
 let dev;
 
 /** SIGKILL the dev server's process group (the child and whatever it started); true once it is gone or never was. */
@@ -95,6 +95,7 @@ function startDev(dir, port) {
   });
   const log = [];
   for (const out of [child.stdout, child.stderr]) out.on("data", (d) => log.push(...String(d).trim().split("\n")));
+  keepOutput("keel dev", log);
   const exited = new Promise((resolve) => child.once("exit", resolve));
   return { child, log, exited };
 }
@@ -403,6 +404,7 @@ try {
   const duplicate = dev.log.find((l) => l.includes("already registered"));
   step("no E1602 after the declaration edits", duplicate === undefined, duplicate?.slice(0, 80) ?? "");
 } catch (e) {
+  caught(e);
   step("flow", false, String(e).split("\n")[0]);
 } finally {
   keepLog();

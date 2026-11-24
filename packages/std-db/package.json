@@ -17,6 +17,22 @@
       "default": "./src/tools/index.ts"
     }
   },
+  "publishConfig": {
+    "exports": {
+      "./sqlite": {
+        "types": "./dist/src/sqlite/index.d.ts",
+        "default": "./dist/src/sqlite/index.js"
+      },
+      "./postgres": {
+        "types": "./dist/src/postgres/index.d.ts",
+        "default": "./dist/src/postgres/index.js"
+      },
+      "./tools": {
+        "types": "./dist/src/tools/index.d.ts",
+        "default": "./dist/src/tools/index.js"
+      }
+    }
+  },
   "engines": {
     "node": ">=22.13"
   },

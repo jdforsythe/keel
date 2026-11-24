@@ -7,6 +7,7 @@ import type { Io } from "../types/Io.ts";
 import type { OutRecord } from "../types/OutRecord.ts";
 import { TEST_FILE } from "./TEST_FILE.ts";
 import { a11yCases } from "./a11yCases.ts";
+import { catchingStray } from "./catchingStray.ts";
 import { makeDiag } from "./makeDiag.ts";
 import { projectFiles } from "./projectFiles.ts";
 
@@ -52,14 +53,18 @@ async function vitestRun(root: string, filters: readonly string[]): Promise<Test
   const previous = process.env.KEEL_TEST;
   process.env.KEEL_TEST = "1";
   try {
-    const vitest = await startVitest(
-      "test",
-      [...filters],
-      { root, watch: false, reporters: [collector], env: { KEEL_TEST: "1" } },
-      {},
-      { stdout: sink(), stderr: sink() },
-    );
-    await vitest?.close();
+    const { strays } = await catchingStray(root, async () => {
+      const vitest = await startVitest(
+        "test",
+        [...filters],
+        { root, watch: false, reporters: [collector], env: { KEEL_TEST: "1" } },
+        {},
+        { stdout: sink(), stderr: sink() },
+      );
+      await vitest?.close();
+    });
+    if (strays.length > 0)
+      report = { ...report, diagnostics: [...report.diagnostics, ...strays], errors: report.errors + strays.length };
   } finally {
     if (previous === undefined) Reflect.deleteProperty(process.env, "KEEL_TEST");
     else process.env.KEEL_TEST = previous;

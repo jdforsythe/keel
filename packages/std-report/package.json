@@ -13,6 +13,18 @@
       "default": "./src/tools.ts"
     }
   },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/src/index.d.ts",
+        "default": "./dist/src/index.js"
+      },
+      "./tools": {
+        "types": "./dist/src/tools.d.ts",
+        "default": "./dist/src/tools.js"
+      }
+    }
+  },
   "files": ["dist", "docs"],
   "scripts": {
     "check": "tsc --noEmit && biome check src test unsafe",

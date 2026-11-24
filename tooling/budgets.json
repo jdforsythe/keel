@@ -22,7 +22,7 @@
       "platform": "node"
     },
     "@keel/cli": {
-      "max": "29.25kb",
+      "max": "29.75kb",
       "platform": "node"
     },
     "@keel/cli/docs": {

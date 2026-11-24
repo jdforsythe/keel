@@ -17,6 +17,22 @@
       "default": "./src/tools/index.ts"
     }
   },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/src/index.d.ts",
+        "default": "./dist/src/index.js"
+      },
+      "./server": {
+        "types": "./dist/src/server/index.d.ts",
+        "default": "./dist/src/server/index.js"
+      },
+      "./tools": {
+        "types": "./dist/src/tools/index.d.ts",
+        "default": "./dist/src/tools/index.js"
+      }
+    }
+  },
   "engines": {
     "node": ">=22"
   },
