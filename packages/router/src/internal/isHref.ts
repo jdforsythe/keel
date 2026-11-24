@@ -1,13 +1,5 @@
 import type { Href } from "../types/Href.ts";
-
-/** Whether `path` holds a backslash (a URL parser reads it as `/`) or a control character: C0, DEL or C1. */
-function unsafeChar(path: string): boolean {
-  for (let i = 0; i < path.length; i++) {
-    const c = path.charCodeAt(i);
-    if (c < 0x20 || (c >= 0x7f && c <= 0x9f) || c === 0x5c) return true;
-  }
-  return false;
-}
+import { unsafeChar } from "./unsafeChar.ts";
 
 /**
  * Brand check for a path `hrefIn` built: root-relative with exactly one leading `/` (never `//`, which is
