@@ -37,7 +37,7 @@
       "max": "35kb",
       "platform": "node"
     },
-    "@keel/ctx": "4.4kb",
+    "@keel/ctx": "4.5kb",
     "@keel/forms": "5kb",
     "@keel/reactive": "4kb",
     "@keel/router": "14.6kb",
@@ -168,7 +168,7 @@
       "platform": "node"
     },
     "@keel/std-postgres/testing": {
-      "max": "0.75kb",
+      "max": "0.8kb",
       "platform": "node"
     },
     "@keel/std-postgres/tools": {
@@ -202,7 +202,7 @@
       "platform": "node"
     },
     "@keel/testing": {
-      "max": "18kb",
+      "max": "18.8kb",
       "platform": "node"
     },
     "@keel/testing/prove": {

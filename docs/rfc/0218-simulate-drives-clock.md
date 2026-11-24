@@ -1,6 +1,6 @@
 # RFC 0218: k.sim: `simulate` drives the run's clock while nothing else can move
 
-Status: accepted (ADR-0240) by the orchestrator on 2026-11-24, for the operator to confirm. Amends k.sim (Schedule plans, simulate, three new paragraphs, Conformance), k.testing (Rules), std.postgres (Modes, Conformance). From `apps/household` (walkthrough finding L9-7, backlog 1038).
+Status: implemented (ADR-0240), accepted by the orchestrator on 2026-11-24, for the operator to confirm. Amends k.sim (Schedule plans, simulate, three new paragraphs, Conformance), k.testing (Rules), std.postgres (Modes, Conformance). From `apps/household` (walkthrough finding L9-7, backlog 1038).
 
 ## Decisions
 - D1: one driver. While a run's scenario is pending, `simulate` advances the run's clock to its next moment whenever the run is idle; no helper moves the clock on its own. `run()` only says how far to wait.
