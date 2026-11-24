@@ -25,7 +25,7 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.compat | 15 | **conformance-covered** | none |
 | k.api | 14 | **conformance-covered** | none |
 | k.services | 16 | **conformance-covered** | none |
-| k.check | 21 | **conformance-covered** | none |
+| k.check | 22 | implemented | clause 22 at `none` |
 | k.cli | 20 | **conformance-covered** | none |
 | k.module | 22 | **conformance-covered** | none |
 | k.scaffold | 18 | **conformance-covered** | none |
@@ -74,7 +74,7 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | std.channels | 24 | **conformance-covered** | none |
 | std.conflicts | 10 | **conformance-covered** | none |
 | std.copy | 3 | **conformance-covered** | none |
-| std.db | 13 | proposed | clause 1: the Postgres path runs on PGlite only; no job sets `KEEL_TEST_POSTGRES_URL` |
+| std.db | 13 | **conformance-covered** | none; clause 1 meets Postgres 17 in CI's `postgres` job |
 | std.postgres | 17 | **conformance-covered** | not audited clause by clause; clauses 5 and 7 meet Postgres 17 in CI's `postgres` job only |
 | std.postgres-changes | 6 | **conformance-covered** | not audited clause by clause |
 | std.outbox | 14 | **conformance-covered** | none |
@@ -164,7 +164,7 @@ Golden apps: `apps/golden-1` and `apps/golden-2` have converged evals (`evals/re
 
 ## Status
 
-No section is `frozen`. The kernel is provisionally frozen: a kernel change goes through an RFC with an ADR, a conformance update and a migration note, and the `frozen` flip waits until the stdlib stages have exercised the kernel (`tasks/0034-freeze/PLAN.md`). k.parity (clauses 5 and 6 at `none`) and std.db are `proposed`; the other 106 of 108 are `conformance-covered`, none `implemented`.
+No section is `frozen`. The kernel is provisionally frozen: a kernel change goes through an RFC with an ADR, a conformance update and a migration note, and the `frozen` flip waits until the stdlib stages have exercised the kernel (`tasks/0034-freeze/PLAN.md`). k.parity (clauses 5 and 6 at `none`) is `proposed` and k.check (clause 22 at `none`) `implemented`; the other 109 of 111 are `conformance-covered`.
 
 subject: spec/ packages/*/conformance/
 verified: 454c7318e4169f30dff33d1aecdc9677e2ca9489

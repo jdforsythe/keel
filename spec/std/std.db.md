@@ -1,5 +1,5 @@
 # std.db: SQLite and Postgres storage
-status: proposed
+status: conformance-covered
 
 **Extension points.** Storage drivers (k.persist Drivers): `@keel/std-db/sqlite` and `@keel/std-db/postgres` export the drivers a `node` deployable's generated entry opens when `topology.ts` sets `storage` (k.deploy). Check rule registry: `@keel/std-db/tools` registers E2151. App code never imports the package (E2151): its state reaches the database only through stores and `ctx.storage`.
 
