@@ -22,8 +22,10 @@ export interface RouteRenderOptions<T extends RouteTable = RouteTable> {
   readonly url?: string;
   readonly state?: readonly (readonly [Store<unknown>, unknown])[];
   readonly ctx?: Ctx;
-  readonly caller?: string;
-  readonly user?: string;
+  /** `undefined` is the same as absent (`""`), so an optional value passes through. */
+  readonly caller?: string | undefined;
+  /** `undefined` is the same as absent: no one, and with `mount` the router reads `user`. */
+  readonly user?: string | undefined;
   readonly artifacts?: HarnessArtifacts;
   /**
    * Run the page as in a native shell (k.return Testing), which gives it a ctx of `mode: 'shell'` in a build; `id` is
