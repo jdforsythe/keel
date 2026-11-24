@@ -59,6 +59,8 @@ describe("scaffold shell refusals, compact lines", () => {
           const diags = r.lines.filter((l) => /^E\d{4} /.test(l));
           expect(diags.length, r.lines.join("\n")).toBeGreaterThanOrEqual(1);
           expect(diags[0]?.startsWith(`${code} `), r.lines.join("\n")).toBe(true);
+          // the refusal is the operation's own, not the CLI rejecting an unknown flag or operation
+          for (const line of diags) expect(line, line).not.toMatch(/unknown (flag|scaffold operation|operation)/);
           for (const line of diags) {
             const message = line.replace(/^E\d{4} (\S+:\d+(:\d+)? )?/, "");
             expect(message.length, line).toBeGreaterThan(0);
