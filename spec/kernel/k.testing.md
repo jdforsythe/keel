@@ -1,6 +1,5 @@
 # k.testing: Harness and properties
-status: implemented
-
+status: conformance-covered
 **Harness.** From `@keel/testing`:
 ```ts
 const t = render(CartView, { props: { compact: false }, state: [[cart, { items: [] }]] })

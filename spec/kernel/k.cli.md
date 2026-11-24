@@ -1,6 +1,5 @@
 # k.cli: CLI, MCP, LSP
-status: implemented
-
+status: conformance-covered
 **One engine.** `@keel/cli` defines each command once as an operation `{ name, input: Schema, output: Schema }`, served by the `keel` binary (flags parsed by `input`), `keel mcp` (one MCP tool per operation), and `keel lsp` (check diagnostics, fix diffs as code actions, `explain` as hover).
 
 **Commands.**

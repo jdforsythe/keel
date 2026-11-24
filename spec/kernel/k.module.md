@@ -1,6 +1,5 @@
 # k.module: Module manifest
-status: implemented
-
+status: conformance-covered
 **Manifest.** All app code lives in modules. A module is a folder `modules/<id>/` with a `module.ts`:
 ```ts
 import { module } from '@keel/compiler'

@@ -1,6 +1,5 @@
 # std.capacitor: Capacitor shell target
-status: implemented
-
+status: conformance-covered
 **Extension points.** Shell target (k.shell): `@keel/std-capacitor/tools` calls `shellTarget('capacitor', target)`. Its drivers are std.shells'. It follows Capacitor 8's releases and Android's and Xcode's toolchains: the versions here change with this section, not the kernel's.
 
 **Files.** `platforms` is `['android', 'ios']`. `files` gives `deploy/<name>/capacitor/capacitor.config.json`: `appId` the `id`, `appName` the `name`, `webDir` `www`.

@@ -1,6 +1,5 @@
 # k.docs: Installed docs
-status: implemented
-
+status: conformance-covered
 `keel docs` reads the docs of the Keel packages a project has installed: the map, one spec section, one skill, or the lines citing a code. It is the k.cli operation `docs` and the MCP tool `docs` (`sync: true` is `--sync`; a refused write answers E1357); `keel explain` is k.explain.
 
 **Packed files.** Each published `@keel/*` package carries the sections it owns: `docs/<id>.md`, the section's text, and `docs/index.json`, `{ sections: [{ id, title, codes }] }`, `codes` every diagnostic code the section cites. `@keel/cli` also carries `docs/map.json`, `{ sections: [{ id, title, package }] }`, every kernel and std section once, and the published skills, `skills/<name>/SKILL.md`, each opening with `name` and `description` frontmatter.

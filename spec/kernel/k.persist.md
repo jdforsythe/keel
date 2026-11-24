@@ -1,6 +1,5 @@
 # k.persist: Storage and durable state
-status: implemented
-
+status: conformance-covered
 **Storage.** `ctx.storage` keeps Keel's own state (k.data): stores' snapshots and what stdlib packages version through it, never app data. It holds string values by string key, as given (secrets: k.privacy); each operation returns a promise:
 - `get(key)`: the value, `null` when absent. `set(key, value)` stores it.
 - `read(keys)`: one value per position asked, a repeated key included, `null` for an absent one, as one cut: no `commit` lands between two of them.

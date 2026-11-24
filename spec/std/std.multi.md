@@ -1,6 +1,5 @@
 # std.multi: Multi-user sessions
-status: implemented
-
+status: conformance-covered
 **Module.** Part of `@keel/std-sessions`, subpath `./group` (Node only). A session group is the sessions of several users of one server, recorded under simulation on one timeline:
 ```ts
 type SessionGroup = { v: 1; seed: number; at: number; origin: string; server: { [store]: JsonValue }; users: Session[]; schedule?: Schedule }
