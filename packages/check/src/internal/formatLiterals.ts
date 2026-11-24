@@ -1,4 +1,3 @@
-import { s } from "@keel/schema";
 import ts from "typescript";
 
 /** Where `@keel/schema` declares `formatLiteral`: the source file, or its built declaration file. */
@@ -23,39 +22,25 @@ function isFormatLiteral(call: ts.CallExpression, checker: ts.TypeChecker): bool
 }
 
 /**
- * E1108 (k.formats): offsets and messages for each `formatLiteral` call whose `text` is no string literal (`'..'`, `".."`
- * or a template without substitution), whose `format` names no one registered format, or whose `text` the registered
- * format's `parse` refuses. Reported at the argument at fault. The registry is the process's: `keel check` imports the
- * `@keel/std-*` packages in `deps` first, and no app code runs.
+ * The `formatLiteral` calls of `sf` (E1108, k.formats), however imported: the offsets of the `format` and `text`
+ * arguments, the format names the call's type carries, and the literal text (`'..'`, `".."` or a template without
+ * substitution), or `null` for any other argument. `judgeFormat` judges each against the registry.
  */
-export function formatLiterals(sf: ts.SourceFile, checker: ts.TypeChecker): { at: number; message: string }[] {
-  const out: { at: number; message: string }[] = [];
+export function formatLiterals(
+  sf: ts.SourceFile,
+  checker: ts.TypeChecker,
+): { formatAt: number; textAt: number; names: string[]; text: string | null }[] {
+  const out: { formatAt: number; textAt: number; names: string[]; text: string | null }[] = [];
   const visit = (n: ts.Node): void => {
     if (ts.isCallExpression(n) && n.arguments.length >= 2 && isFormatLiteral(n, checker)) {
       const [format, text] = n.arguments;
-      if (format !== undefined && text !== undefined) {
-        const names = namesOf(n, checker);
-        const name = names.length === 1 ? names[0] : undefined;
-        const schema = name === undefined ? undefined : s.registry().get(name);
-        if (schema === undefined)
-          out.push({
-            at: format.getStart(sf),
-            message:
-              names.length === 0
-                ? "formatLiteral format is no format type over a string"
-                : `formatLiteral format ${names.join(" & ")} is not one registered format; list its package in \`deps\` (only a stdlib format has a literal form)`,
-          });
-        if (!ts.isStringLiteral(text) && !ts.isNoSubstitutionTemplateLiteral(text)) {
-          out.push({ at: text.getStart(sf), message: "formatLiteral text is not a string literal" });
-        } else if (schema !== undefined) {
-          const r = schema.parse(text.text);
-          if (!r.ok)
-            out.push({
-              at: text.getStart(sf),
-              message: `formatLiteral text does not parse as ${name} (${r.error.data.issues[0]?.rule ?? "type"})`,
-            });
-        }
-      }
+      if (format !== undefined && text !== undefined)
+        out.push({
+          formatAt: format.getStart(sf),
+          textAt: text.getStart(sf),
+          names: namesOf(n, checker),
+          text: ts.isStringLiteral(text) || ts.isNoSubstitutionTemplateLiteral(text) ? text.text : null,
+        });
     }
     ts.forEachChild(n, visit);
   };
