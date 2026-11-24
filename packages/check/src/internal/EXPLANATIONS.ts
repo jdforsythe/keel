@@ -1185,7 +1185,7 @@ const ROWS: readonly Row[] = [
   [
     "E1728",
     "held work waits on the sim clock, the budget ran out, or work outlived the scenario, under simulate",
-    "Held work waited on ctx.clock. Or the run's real-time budget (budget, else the test's timeout less a tenth) ran out; the labels are the work in flight. Or the scenario resolved with work pending; the label is the hold's, else the Node type.",
+    "Held work waited on ctx.clock. Or the run's real-time budget (budget, else the test's timeout less a tenth) ran out; the labels are the work in flight. Or the scenario resolved and its work was still pending when the budget ran out; each label is the hold's, else the Node type.",
     "hold only work answering through something made outside the run; close what the run opens before it resolves",
     "k.drive",
   ],
@@ -1194,7 +1194,7 @@ const ROWS: readonly Row[] = [
     "two replays of a simulate run differ",
     "The traces differ: moments, observer events, the final value of a storage key the run wrote or a live store's snapshot. The run reached work the drive cannot see (a reply through a channel made before the run that no capability holds) or kept state across runs.",
     "hold the outside work in its capability, or keep the state in the run's stores",
-    "k.drive",
+    "k.drive-law",
   ],
   [
     "W1723",
