@@ -334,7 +334,7 @@ test("A rule registered with `defineRule` that reports every call expression rep
     fc.property(fc.integer({ min: 0, max: 4 }), fc.integer({ min: 0, max: 4 }), (outer, inner) => {
       const top = Array.from({ length: outer }, (_, i) => `probe(${i})`).join("\n");
       const body = Array.from({ length: inner }, (_, i) => `probe(${i})`).join("; ");
-      const src = `declare function probe(n: number): number\n${HELPER}${top}\nexport const a = ${call("'r'", `() => { ${body} }`)}\n`;
+      const src = `declare const probe: (n: number) => number\n${HELPER}${top}\nexport const a = ${call("'r'", `() => { ${body} }`)}\n`;
       const hits = of(diags(src), "E2961");
       expect(hits).toHaveLength(outer + inner);
       const lines = hits.map((d) => d.line);
