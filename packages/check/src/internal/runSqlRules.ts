@@ -1,7 +1,7 @@
+import { clip } from "@keel/compiler/internal";
 import type { Diagnostic } from "../types/Diagnostic.ts";
 import type { RuleDef } from "../types/RuleDef.ts";
 import type { SourceFile } from "../types/SourceFile.ts";
-import { clip } from "./clip.ts";
 import { ruleThrew } from "./ruleThrew.ts";
 
 /**

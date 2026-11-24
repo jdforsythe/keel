@@ -1,5 +1,5 @@
+import { clip } from "@keel/compiler/internal";
 import type { OutRecord } from "../types/OutRecord.ts";
-import { clipMessage } from "./clipMessage.ts";
 import { registry } from "./registry.ts";
 
 /**
@@ -13,7 +13,7 @@ export function normalize(records: readonly OutRecord[]): OutRecord[] {
     if (entry.render("json", r) === undefined)
       return { kind: "diag", code: "E1054", message: `record of kind ${r.kind} does not fit its formatter schema` };
     if (r.kind !== "diag" || typeof r.message !== "string") return r;
-    const message = clipMessage(r.message);
+    const message = clip(r.message, 89);
     return message === r.message ? r : { ...r, message };
   });
 }

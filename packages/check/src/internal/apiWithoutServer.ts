@@ -1,8 +1,8 @@
 import { routeLiterals } from "@keel/compiler";
 import type { Topology } from "@keel/compiler";
+import { clip } from "@keel/compiler/internal";
 import type { Diagnostic } from "../types/Diagnostic.ts";
 import type { SourceFile } from "../types/SourceFile.ts";
-import { clip } from "./clip.ts";
 import { isRecord } from "./compat/isRecord.ts";
 import { lineCol } from "./lineCol.ts";
 import { moduleContracts } from "./moduleContracts.ts";

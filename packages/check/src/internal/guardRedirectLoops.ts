@@ -1,10 +1,10 @@
+import { clip } from "@keel/compiler/internal";
 import { type Expression, type Program, Visitor } from "oxc-parser";
 import type { Diagnostic } from "../types/Diagnostic.ts";
 import type { SourceFile } from "../types/SourceFile.ts";
 import type { Checked } from "./Checked.ts";
 import type { ContractEntry } from "./ContractEntry.ts";
 import { bindingCalls } from "./bindingCalls.ts";
-import { clip } from "./clip.ts";
 import { contractCalls } from "./contractCalls.ts";
 import { isAppPath } from "./isAppPath.ts";
 import { lineCol } from "./lineCol.ts";

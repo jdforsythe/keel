@@ -1,7 +1,7 @@
+import { clip } from "@keel/compiler/internal";
 import type { Expression } from "oxc-parser";
 import { Visitor } from "oxc-parser";
 import type { Checked } from "../internal/Checked.ts";
-import { clip } from "../internal/clip.ts";
 import { endpointRefs } from "../internal/compat/endpointRefs.ts";
 import { resolveExpr } from "../internal/compat/resolveExpr.ts";
 import { samePath } from "../internal/compat/samePath.ts";

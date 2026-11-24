@@ -1,9 +1,9 @@
+import { clip } from "@keel/compiler/internal";
 import ts from "typescript";
 import type { Diagnostic } from "../types/Diagnostic.ts";
 import type { SourceFile } from "../types/SourceFile.ts";
 import { applyEdits } from "./applyEdits.ts";
 import { bindingTypeError } from "./bindingTypeError.ts";
-import { clip } from "./clip.ts";
 import { contractTypeError } from "./contractTypeError.ts";
 import { lineCol } from "./lineCol.ts";
 import { nodeAt } from "./nodeAt.ts";

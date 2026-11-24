@@ -1,9 +1,9 @@
+import { clip } from "@keel/compiler/internal";
 import type { Diagnostic } from "../types/Diagnostic.ts";
 import type { Finding } from "../types/Finding.ts";
 import type { RuleDef } from "../types/RuleDef.ts";
 import type { RuleInput } from "../types/RuleInput.ts";
 import { applyEdits } from "./applyEdits.ts";
-import { clip } from "./clip.ts";
 import { ruleThrew } from "./ruleThrew.ts";
 import { unifiedDiff } from "./unifiedDiff.ts";
 

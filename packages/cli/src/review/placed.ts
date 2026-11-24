@@ -1,4 +1,4 @@
-import { clipMessage } from "../internal/clipMessage.ts";
+import { clip } from "@keel/compiler/internal";
 import { ESCAPES } from "./ESCAPES.ts";
 import type { Found } from "./Found.ts";
 import type { Raw } from "./Raw.ts";
@@ -20,7 +20,7 @@ export function placed(path: string, raws: readonly Raw[]): Found[] {
       path,
       line: r.line,
       col: r.col,
-      message: clipMessage(r.message ?? row.message),
+      message: clip(r.message ?? row.message, 89),
       protection: row.protection,
       opt: row.opt,
       danger: r.danger ?? row.danger,

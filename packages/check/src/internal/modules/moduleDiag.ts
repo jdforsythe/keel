@@ -1,6 +1,6 @@
+import { clip } from "@keel/compiler/internal";
 import type { Diagnostic } from "../../types/Diagnostic.ts";
 import type { SourceFile } from "../../types/SourceFile.ts";
-import { clip } from "../clip.ts";
 import { lineCol } from "../lineCol.ts";
 
 /** A k.module diagnostic at offset `at` of `file`: one-line message under 90 chars, optional fix diff and `see`. */

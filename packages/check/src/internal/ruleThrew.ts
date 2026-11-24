@@ -1,6 +1,6 @@
+import { clip } from "@keel/compiler/internal";
 import type { Diagnostic } from "../types/Diagnostic.ts";
 import type { RuleDef } from "../types/RuleDef.ts";
-import { clip } from "./clip.ts";
 
 /** The E1756 for a rule whose `check`, `sql`, `message` or `fix` threw on the file at `path`. */
 export function ruleThrew(rule: RuleDef, path: string, e: unknown): Diagnostic {

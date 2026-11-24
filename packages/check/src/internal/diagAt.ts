@@ -1,6 +1,6 @@
+import { clip } from "@keel/compiler/internal";
 import type { Diagnostic } from "../types/Diagnostic.ts";
 import type { SourceFile } from "../types/SourceFile.ts";
-import { clip } from "./clip.ts";
 import { lineCol } from "./lineCol.ts";
 
 /** A diagnostic `code` at offset `at` of `file`, its message clipped to one line under 90 chars. */

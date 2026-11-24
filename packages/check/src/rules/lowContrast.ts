@@ -1,7 +1,7 @@
+import { clip } from "@keel/compiler/internal";
 import { contrast } from "@keel/ui/css";
 import { type JSXAttributeItem, type JSXChild, Visitor } from "oxc-parser";
 import { BASE_ROLE } from "../internal/BASE_ROLE.ts";
-import { clip } from "../internal/clip.ts";
 import { findingAt } from "../internal/findingAt.ts";
 import { isAppPath } from "../internal/isAppPath.ts";
 import { str } from "../internal/str.ts";

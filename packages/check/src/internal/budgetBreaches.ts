@@ -1,6 +1,6 @@
+import { clip } from "@keel/compiler/internal";
 import type { Budget } from "../types/Budget.ts";
 import type { Diagnostic } from "../types/Diagnostic.ts";
-import { clip } from "./clip.ts";
 
 /** E1755 (k.check): every budget whose measured `actual` exceeds its `limit`. */
 export function budgetBreaches(budgets: readonly Budget[]): Diagnostic[] {

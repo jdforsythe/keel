@@ -1,3 +1,5 @@
+import { clip } from "@keel/compiler/internal";
+
 import type { TestDiag } from "./types/TestDiag.ts";
 import type { TestReport } from "./types/TestReport.ts";
 
@@ -10,13 +12,8 @@ const ESC = String.fromCharCode(27);
 const ANSI = new RegExp(`${ESC}\\[[0-9;]*m`, "g");
 const strip = (s: string): string => s.replace(ANSI, "");
 const firstLine = (s: string): string => strip(s).split("\n")[0] ?? "";
-/** A T0001 message by the k.check rule: one line, at most 89 UTF-16 code units, a cut keeping 86 (85 before a pair's first half) and `...`. */
-const clip = (s: string): string => {
-  const one = s.replace(/\s*\n\s*/g, " ").trim();
-  if (one.length <= 89) return one;
-  const last = one.charCodeAt(85);
-  return `${one.slice(0, last >= 0xd800 && last <= 0xdbff ? 85 : 86)}...`;
-};
+/** A T0001 message by the k.check rule (89 UTF-16 code units). */
+const clip89 = (s: string): string => clip(s, 89);
 const FRAME = /(?:^|[\s(])(?:file:\/\/)?((?:\/|[A-Za-z]:[\\/])[^():]+):(\d+):(\d+)\)?$/;
 
 const isApp = (f: string): boolean =>
@@ -61,7 +58,7 @@ function uncaught(e: unknown, cwd: string): TestDiag {
   const rec = isRec(e) ? e : {};
   const code = str(rec.code);
   const said = firstLine(isRec(e) ? (str(e.message) ?? "unhandled error") : String(e)).trim();
-  const message = clip(
+  const message = clip89(
     `uncaught: ${code === undefined ? "" : `${code} `}${said === "" ? "error outside any test" : said}`,
   );
   const [top] = frames(rec);
@@ -130,7 +127,7 @@ export function testResults(files: readonly unknown[], errors: readonly unknown[
           path: relative(cwd, top?.file ?? file),
           line: top?.line ?? 1,
           col: top?.col ?? 1,
-          message: clip(
+          message: clip89(
             coded === undefined
               ? `${name.join(" > ")}: ${said}`
               : `${said.replace(/^E17\d\d\s+/, "")} (${name.join(" > ")})`,
@@ -152,7 +149,7 @@ export function testResults(files: readonly unknown[], errors: readonly unknown[
       const first: unknown = Array.isArray(result.errors) ? result.errors[0] : undefined;
       const message = firstLine((isRec(first) ? str(first.message) : undefined) ?? "file failed to run");
       const at = relative(cwd, path);
-      diagnostics.push({ kind: "diag", code: "T0001", path: at, line: 1, col: 1, message: clip(message) });
+      diagnostics.push({ kind: "diag", code: "T0001", path: at, line: 1, col: 1, message: clip89(message) });
     }
   }
   for (const e of errors) diagnostics.push(uncaught(e, cwd));

@@ -1,7 +1,7 @@
+import { clip } from "@keel/compiler/internal";
 import { Visitor } from "oxc-parser";
 import type { Diagnostic } from "../types/Diagnostic.ts";
 import type { Checked } from "./Checked.ts";
-import { clip } from "./clip.ts";
 import { isAppPath } from "./isAppPath.ts";
 import { lineCol } from "./lineCol.ts";
 

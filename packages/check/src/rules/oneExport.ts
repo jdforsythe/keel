@@ -1,5 +1,5 @@
+import { clip } from "@keel/compiler/internal";
 import type { Program } from "oxc-parser";
-import { clip } from "../internal/clip.ts";
 import { findingAt } from "../internal/findingAt.ts";
 import { isAppPath } from "../internal/isAppPath.ts";
 import { isComponentFile } from "../internal/isComponentFile.ts";

@@ -1,6 +1,6 @@
+import { clip } from "@keel/compiler/internal";
 import { type Expression, Visitor } from "oxc-parser";
 import { BASE_ELEMENTS } from "../internal/BASE_ELEMENTS.ts";
-import { clip } from "../internal/clip.ts";
 import { findingAt } from "../internal/findingAt.ts";
 import { isAppPath } from "../internal/isAppPath.ts";
 import { jsxLiteral } from "../internal/jsxLiteral.ts";

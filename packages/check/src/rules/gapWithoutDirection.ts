@@ -1,8 +1,8 @@
+import { clip } from "@keel/compiler/internal";
 import { Visitor } from "oxc-parser";
 import { BASE_ELEMENTS } from "../internal/BASE_ELEMENTS.ts";
 import { BASE_ROLE } from "../internal/BASE_ROLE.ts";
 import type { StyleSource } from "../internal/StyleSource.ts";
-import { clip } from "../internal/clip.ts";
 import { findingAt } from "../internal/findingAt.ts";
 import { isAppPath } from "../internal/isAppPath.ts";
 import { jsxStyleSource } from "../internal/jsxStyleSource.ts";

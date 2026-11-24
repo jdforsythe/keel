@@ -1,6 +1,6 @@
 import { globalRefs, unwrapExpression } from "@keel/compiler/internal";
+import { clip } from "@keel/compiler/internal";
 import { type Expression, Visitor } from "oxc-parser";
-import { clip } from "../internal/clip.ts";
 import { findingAt } from "../internal/findingAt.ts";
 import { importedFunction } from "../internal/importedFunction.ts";
 import { isAppPath } from "../internal/isAppPath.ts";

@@ -1,9 +1,9 @@
 import type { Topology } from "@keel/compiler";
 import { servedByProblems } from "@keel/compiler/hosting/servedByProblems";
 import { topologyReadProblems } from "@keel/compiler/hosting/topologyReadProblems";
+import { clip } from "@keel/compiler/internal";
 import type { Diagnostic } from "../types/Diagnostic.ts";
 import { applyEdits } from "./applyEdits.ts";
-import { clip } from "./clip.ts";
 import { lineCol } from "./lineCol.ts";
 import { unifiedDiff } from "./unifiedDiff.ts";
 

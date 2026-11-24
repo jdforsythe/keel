@@ -5,6 +5,7 @@ import { analyze } from "./internal/analyze.ts";
 import { buildDeps } from "./internal/buildDeps.ts";
 import { canonicalJson } from "./internal/canonicalJson.ts";
 import { clientReach } from "./internal/clientReach.ts";
+import { clip } from "./internal/clip.ts";
 import { collectElements } from "./internal/collectElements.ts";
 import { collectStyles } from "./internal/collectStyles.ts";
 import { diag } from "./internal/diag.ts";
@@ -61,8 +62,7 @@ function duplicateIds(all: readonly { a: Analysis; elements: readonly ElementInf
 
 /** E1000 message: the parser's message on one line, `syntax error: ` first, under 90 chars. */
 function syntaxMessage(parser: string): string {
-  const text = `syntax error: ${parser.replace(/\s*\n\s*/g, " ").trim()}`;
-  return text.length > 89 ? `${text.slice(0, 86)}...` : text;
+  return clip(`syntax error: ${parser}`, 89);
 }
 
 /**
