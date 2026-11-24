@@ -63,8 +63,15 @@ export function drive(
   const tracker = runTracker((label) => {
     reject(fail("E1728", `held work waits on the sim clock: ${label}`, { label }));
   });
+  /** Each resource's id in the order the run first reported it: the ids themselves count across runs. */
+  const resources = new Map<string, string>();
+  const resourceId = (id: string): string => {
+    const own = resources.get(id) ?? String(resources.size + 1);
+    resources.set(id, own);
+    return own;
+  };
   const watch = (c: Ctx): void => {
-    if (record) observe(c, (e) => note({ kind: "event", at: c.clock.now(), event: traceEvent(e) }));
+    if (record) observe(c, (e) => note({ kind: "event", at: c.clock.now(), event: traceEvent(e, resourceId) }));
   };
   driven.set(ctx.clock, { enter: tracker.enter, waited: tracker.waited, replica: watch });
   watch(ctx);

@@ -132,7 +132,8 @@ it("commits an offline mark once, or keeps it as a conflict when another member 
       }
       outcomes[entry === undefined ? "sent" : entry.state === "conflict" ? "conflict" : "failed"] += 1;
     },
-    { runs: 30, seed: 9, horizon: 120_000 },
+    // The scenario counts its calls (`n`) and the server outlives the runs, so a replay is a different run: no law check.
+    { runs: 30, seed: 9, horizon: 120_000, law: false },
   );
   expect(outcomes.sent).toBeGreaterThan(0);
   expect(outcomes.conflict).toBeGreaterThan(0);
@@ -224,6 +225,7 @@ it("holds a queued mark through a sign-out and sends it once the same member sig
       if (entry === undefined) expect(applied).toBe(1);
       else expect(entry.state).toBe("failed");
     },
-    { runs: 15, seed: 10, horizon: 120_000 },
+    // The scenario counts its calls (`n`) and the server outlives the runs, so a replay is a different run: no law check.
+    { runs: 15, seed: 10, horizon: 120_000, law: false },
   );
 }, 240_000);

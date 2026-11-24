@@ -61,6 +61,7 @@ it("catches up with the server's list after every schedule of drops and offline 
       expect(status()).toBe("live");
       page.dispose();
     },
-    { runs: 25, seed: 7, horizon: 120_000 },
+    // The scenario counts its calls (`n`) and the server outlives the runs, so a replay is a different run: no law check.
+    { runs: 25, seed: 7, horizon: 120_000, law: false },
   );
 }, 120_000);
