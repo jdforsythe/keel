@@ -1,6 +1,5 @@
 # k.requests: Requests a page sends
-status: implemented
-
+status: conformance-covered
 From `@keel/testing`: the requests a harness's page sent, Keel's own among them, so a test asserts which requests an app makes without a browser.
 
 **Request log.** Each `render`, `renderRoute` and `resumeDocument` handle (k.testing) has `requests()`: `readonly SentRequest[]`, `{ method, url, headers }`, one entry per `fetch` its page's net was given from the call that made the handle until its `dispose()`, in the order the fetches were made. `method` is the `Request`'s method, `url` its absolute URL, `headers` the names of the headers it entered `ctx.net` with, lower case, sorted, each once: after the cookie jar and `x-keel-user` were set (k.mount Testing, k.user Testing), so a request that carried cookies lists `cookie`. An entry holds no header value and no body, so a failed assertion on the request log prints no cookie, signature, bearer or submitted value; a Keel URL holds no marked field (E1111). A disposed handle's `requests()` is E1705, thrown synchronously as `find` and `a11y` do on a disposed handle.

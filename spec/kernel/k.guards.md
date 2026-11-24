@@ -1,6 +1,5 @@
 # k.guards: Guards
-status: implemented
-
+status: conformance-covered
 **Guards.**
 ```ts
 export const auth = guard({ redirect: 'app.login' }, async ({ url, caller }, ctx) => ok(null))

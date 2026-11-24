@@ -1,6 +1,5 @@
 # k.compat: Surface compatibility
-status: implemented
-
+status: conformance-covered
 **Purpose.** Deployables ship at different times, so a module's routes must keep accepting what its callers in other deployables send, and keep answering what they decode. `keel check` proves both from one artifact.
 
 **Surface.** `keel build` writes `.keel/surface.json`, a k.compiler artifact (E1005): for each contract (k.contract) its `module`, the modules that import it (`callers`), and each API entry's id, method, `path`, `params`, `query`, `body`, `output` and `errors`; for each store a `stores` factory creates, its `id`, state schema and each transaction's payload schema (the build runs each factory once on a sim ctx). Schemas are JSON Schema, as in `routes.json`; the file holds `version: 2`. Its layout, keys sorted, `callers` sorted, an absent `params`, `query` or `body` `null`, no `errors` `{}`, `sources` each file the build evaluated with the hash of its normal form (Sources):

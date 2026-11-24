@@ -1,6 +1,5 @@
 # std.copy: Literal copy
-status: implemented
-
+status: conformance-covered
 In a module whose `deps` list `@keel/std-messages`, text a person reads comes from a message set (std.messages). E2406 reports text written as a literal instead: a value with a letter (`\p{L}`), at the literal, with no fix.
 
 **Files.** Every app `*.tsx` file of the module, with or without `export default` and whatever its name, and its `routes.ts` (the route `title` only). Calls (below) are read in every app file of the module except the set's locale files. Tests and `.keel/` are not read; a file under `unsafe/` is read whole, its `unsafe(` calls included (k.check App code).

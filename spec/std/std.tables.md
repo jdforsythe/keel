@@ -1,6 +1,5 @@
 # std.tables: Data tables
-status: implemented
-
+status: conformance-covered
 **Package.** `@keel/std-tables`, client-safe, no config. Exports `columns`, `tableSearch`, `tablePage`, `applyQuery`, `DataTable`, `TableSearch`. A table is a native `table` of `Part`s (k.aria), APG Sortable Table: links and checkboxes in Tab order, no grid keyboard model. Text, ids and `styles` follow std.headless.
 
 **Columns.**

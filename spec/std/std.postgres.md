@@ -1,6 +1,5 @@
 # std.postgres: Postgres app data
-status: implemented
-
+status: conformance-covered
 **Extension points.** Capability registry (k.ctx, k.data): `database(name, ...)` registers one capability per call; `follow` is the std.channels follow seam. Check rule registry: `/tools` (E2451, E2452, E2458, E2459, E2460, W2456). A module using it lists it in `deps`, the database's name in `capabilities`.
 
 **API.** `@keel/std-postgres` is client-safe; `/server`, `/testing` Node only.

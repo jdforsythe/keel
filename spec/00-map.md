@@ -1,6 +1,6 @@
 # Keel spec map
 
-status key: proposed | implemented | conformance-covered | frozen. Budget: file 1,440 tokens, section 3,400.
+status key: proposed | implemented | conformance-covered | frozen. Budget: file 1,500 tokens, section 3,400.
 
 ## Code ranges
 Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); owner: keel docs --for <code>.
@@ -28,9 +28,9 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | id | section | status | one line |
 |-|-|-|-|
 | k.schema | Schemas | conformance-covered | codecs |
-| k.formats | Format types | implemented | brands |
+| k.formats | Format types | conformance-covered | brands |
 | k.reactive | Reactivity | conformance-covered | signals |
-| k.store | Store, transactions | implemented | log |
+| k.store | Store, transactions | conformance-covered | log |
 | k.component | Components | conformance-covered | props |
 | k.compiler | Compiler, artifacts | conformance-covered | JSX |
 | k.boundary | Server boundary | conformance-covered | stubs |
@@ -43,55 +43,55 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.router | Routes | conformance-covered | params |
 | k.contract | Module contract | conformance-covered | entries |
 | k.routes | Route table | conformance-covered | union |
-| k.guards | Guards | implemented | deny |
+| k.guards | Guards | conformance-covered | deny |
 | k.prefix | Path prefix | conformance-covered | enums |
 | k.forms | Forms | conformance-covered | fields |
-| k.ui | Tokens, styling | implemented | CSS |
+| k.ui | Tokens, styling | conformance-covered | CSS |
 | k.ctx | Capabilities | conformance-covered | clock |
 | k.owner | Ctx owner | conformance-covered | dispose |
 | k.errors | Results, boundaries | conformance-covered | Result |
-| k.check | Checker, diagnostics | implemented | codes |
+| k.check | Checker, diagnostics | conformance-covered | codes |
 | k.explain | Explanations | conformance-covered | text |
 | k.host | Host reads | conformance-covered | zone |
-| k.cli | CLI, MCP, LSP | implemented | flags |
-| k.docs | Installed docs | implemented | read |
-| k.scaffold | Scaffold, codemods | implemented | edits |
-| k.scaffold-shell | Shell scaffold | implemented | shells |
-| k.testing | Harness, properties | implemented | fire |
-| k.test-run | Test end, results | implemented | dispose |
-| k.requests | Requests sent | implemented | sent |
+| k.cli | CLI, MCP, LSP | conformance-covered | flags |
+| k.docs | Installed docs | conformance-covered | read |
+| k.scaffold | Scaffold, codemods | conformance-covered | edits |
+| k.scaffold-shell | Shell scaffold | conformance-covered | shells |
+| k.testing | Harness, properties | conformance-covered | fire |
+| k.test-run | Test end, results | conformance-covered | dispose |
+| k.requests | Requests sent | conformance-covered | sent |
 | k.model | Store exploration | conformance-covered | traces |
 | k.prove | Proving invariants | conformance-covered | Z3 |
-| k.sim | Simulation | implemented | faults |
+| k.sim | Simulation | conformance-covered | faults |
 | k.drive | Sim clock drive | implemented | idle |
 | k.ledger | Ledger, evidence | conformance-covered | rungs |
 | k.server | Thin server | conformance-covered | loads |
 | k.leave | What a request leaves | conformance-covered | state |
 | k.user | User, caller | conformance-covered | user |
 | k.mount | Mount pages | conformance-covered | submit |
-| k.mount-scope | Mount scope | implemented | proxy |
+| k.mount-scope | Mount scope | conformance-covered | proxy |
 | k.return | Shell mount | conformance-covered | net |
 | k.opening | Openings | conformance-covered | once |
 | k.links | Links in | conformance-covered | ids |
 | k.serverlog | Server log | conformance-covered | bounds |
 | k.sync | Concurrent writes | conformance-covered | heads |
-| k.persist | Storage, durable state | implemented | drivers |
+| k.persist | Storage, durable state | conformance-covered | drivers |
 | k.data | App data | conformance-covered | seam |
-| k.topology | Deployables | implemented | peers |
-| k.deploy | Entry, deploy files | implemented | entry |
-| k.shell | Native shells | implemented | target |
-| k.compat | Surface compatibility | implemented | accepts |
+| k.topology | Deployables | conformance-covered | peers |
+| k.deploy | Entry, deploy files | conformance-covered | entry |
+| k.shell | Native shells | conformance-covered | target |
+| k.compat | Surface compatibility | conformance-covered | accepts |
 | k.api | API routes | conformance-covered | JSON |
-| k.hosting | Client hosting | implemented | servedBy |
-| k.head | Document head | implemented | title |
+| k.hosting | Client hosting | conformance-covered | servedBy |
+| k.head | Document head | conformance-covered | title |
 | k.services | Thin services | conformance-covered | clients |
 | k.openapi | OpenAPI import | conformance-covered | clients |
-| k.module | Module manifest | implemented | surface |
-| k.a11y | Accessibility | implemented | WCAG |
+| k.module | Module manifest | conformance-covered | surface |
+| k.a11y | Accessibility | conformance-covered | WCAG |
 | k.aria | Widget parts | conformance-covered | roles |
-| k.roles | Part roles | implemented | grid |
+| k.roles | Part roles | conformance-covered | grid |
 | k.host-element | Host elements | conformance-covered | charts |
-| k.host-code | Host code | implemented | d3 |
+| k.host-code | Host code | conformance-covered | d3 |
 | k.security | Headers, CSP | conformance-covered | CSP |
 | k.origins | Declared origins | conformance-covered | CSP |
 | k.privacy | Secrets, personal data | conformance-covered | secrets |

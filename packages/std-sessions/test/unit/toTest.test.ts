@@ -92,11 +92,11 @@ describe("toTest: the whole file", () => {
         'import { record } from "@keel/std-sessions/record";',
         'import { renderRoute } from "@keel/testing";',
         'import { expect, test } from "vitest";',
-        'import { cart } from "../cart.ts";',
         'import { list } from "../../orders/list.ts";',
-        'import { routes as cartRoutes } from "../routes.ts";',
-        'import { routes as ordersRoutes } from "../../orders/routes.ts";',
         'import { orders } from "../../orders/orders.contract.ts";',
+        'import { routes as ordersRoutes } from "../../orders/routes.ts";',
+        'import { cart } from "../cart.ts";',
+        'import { routes as cartRoutes } from "../routes.ts";',
         "",
         "const routes = routeTable(cartRoutes, ordersRoutes);",
         "",
@@ -208,9 +208,9 @@ describe("toTest: stores", () => {
       'import { routes as routesStore3 } from "../c.ts";',
       'import { ctx as ctxStore } from "../ctx.ts";',
       'import { h as hStore } from "../h.ts";',
+      'import { routes } from "../routes.ts";',
       'import { same } from "../same-a.ts";',
       'import { same as sameStore } from "../same-b.ts";',
-      'import { routes } from "../routes.ts";',
     ]);
     expect(source).toContain(
       "state: [[routesStore, 1], [routesStore2, 2], [routesStore3, 3], [ctxStore, 4], [hStore, 5], [same, 6], [sameStore, 7]], ctx });",
@@ -306,8 +306,8 @@ describe("toTest: route tables and navigations", () => {
       routes: [cartRoutes, orders],
     });
     expect(lines(source).filter((l) => l.includes(".contract.ts"))).toEqual([
-      'import { cart as cartContract } from "../cart.contract.ts";',
       'import { orders } from "../../orders/orders.contract.ts";',
+      'import { cart as cartContract } from "../cart.contract.ts";',
     ]);
     expect(body(source).filter((l) => l.includes("navigate"))).toEqual([
       '  await h.navigate(cartContract.href("cart.show"));',

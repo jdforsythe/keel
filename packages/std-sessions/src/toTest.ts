@@ -47,6 +47,15 @@ function href(contract: string, n: NavCall): string {
   if (!empty(n.search)) args.push(lit(n.search));
   return `${contract}.href(${args.join(", ")})`;
 }
+/** How far up a relative specifier climbs: `../../x` is 2, `./x` is 0, a package is -1 (it sorts first, then the farthest). */
+const climb = (from: string): number => (from.startsWith(".") ? from.split("../").length - 1 : -1);
+/** The order the formatter leaves imports in: packages, then relative paths from the farthest up, each group by specifier. */
+function importOrder(a: { readonly from: string }, b: { readonly from: string }): number {
+  const ca = climb(a.from);
+  const cb = climb(b.from);
+  if (ca !== cb) return ca === -1 ? -1 : cb === -1 ? 1 : cb - ca;
+  return a.from < b.from ? -1 : a.from > b.from ? 1 : 0;
+}
 const moduleOf = (id: string): string => id.slice(0, Math.max(0, id.indexOf(".")));
 
 /**
@@ -73,14 +82,16 @@ export function toTest(
   },
 ): string {
   const seed = session.seed ?? 0;
-  const imports = [
-    'import { createCtx } from "@keel/ctx";',
-    ...(options.routes.length > 1 ? ['import { routeTable } from "@keel/router";'] : []),
-    ...(options.serve === undefined ? [] : ['import { createApp } from "@keel/server";']),
-    'import { record } from "@keel/std-sessions/record";',
-    'import { renderRoute } from "@keel/testing";',
-    'import { expect, test } from "vitest";',
-  ];
+  const imports: { readonly from: string; readonly text: string }[] = [];
+  const add = (from: string, names: string): void => {
+    imports.push({ from, text: `import ${names} from ${lit(from)};` });
+  };
+  add("@keel/ctx", "{ createCtx }");
+  if (options.routes.length > 1) add("@keel/router", "{ routeTable }");
+  if (options.serve !== undefined) add("@keel/server", "{ createApp }");
+  add("@keel/std-sessions/record", "{ record }");
+  add("@keel/testing", "{ renderRoute }");
+  add("vitest", "{ expect, test }");
   const taken = new Set(RESERVED);
   const local = (want: string, kind = "Store"): string => {
     let name = taken.has(want) ? `${want}${kind}` : want;
@@ -91,17 +102,17 @@ export function toTest(
   const seeded: string[] = [];
   for (const st of options.serve === undefined ? options.stores : []) {
     const as = local(st.name);
-    imports.push(`import { ${st.name === as ? as : `${st.name} as ${as}`} } from ${lit(st.from)};`);
+    add(st.from, `{ ${st.name === as ? as : `${st.name} as ${as}`} }`);
     const value = session.state[st.id];
     if (value !== undefined) seeded.push(`[${as}, ${lit(value)}]`);
   }
   const [one] = options.routes;
   const join: string[] = [];
-  if (options.routes.length === 1 && one !== undefined) imports.push(`import { routes } from ${lit(one.from)};`);
+  if (options.routes.length === 1 && one !== undefined) add(one.from, "{ routes }");
   else {
     const names = options.routes.map((r) => {
       const as = local(`${r.module.replace(/[^A-Za-z0-9_$]/g, "_")}Routes`);
-      imports.push(`import { routes as ${as} } from ${lit(r.from)};`);
+      add(r.from, `{ routes as ${as} }`);
       return as;
     });
     join.push(`const routes = routeTable(${names.join(", ")});`);
@@ -112,7 +123,7 @@ export function toTest(
     const r = options.routes.find((x) => x.module === m);
     if (r === undefined || r.contract === "" || contracts.has(m)) continue;
     const as = local(m.replace(/[^A-Za-z0-9_$]/g, "_"), "Contract");
-    imports.push(`import { ${m === as ? as : `${m} as ${as}`} } from ${lit(r.contract)};`);
+    add(r.contract, `{ ${m === as ? as : `${m} as ${as}`} }`);
     contracts.set(m, as);
   }
   const body: string[] = [`  const ctx = createCtx({ mode: "sim", seed: ${seed} });`];
@@ -129,8 +140,8 @@ export function toTest(
   }
   const { serve } = options;
   if (serve !== undefined) {
-    imports.push(`import topology from ${lit(serve.topology)};`);
-    if (serve.identity !== undefined) imports.push(`import identity from ${lit(serve.identity)};`);
+    add(serve.topology, "topology");
+    if (serve.identity !== undefined) add(serve.identity, "identity");
     body.push(
       `  const app = await createApp({ topology, deployable: ${lit(serve.deployable)}, routes, ctx${serve.identity === undefined ? "" : ", identity"} });`,
     );
@@ -166,7 +177,7 @@ export function toTest(
   body.push("  expect(rec.errors()).toEqual([]);", "  h.dispose();");
   return [
     `// Session: ${session.fingerprint}, seed ${seed}`,
-    ...imports,
+    ...imports.sort(importOrder).map((i) => i.text),
     "",
     ...(join.length > 0 ? [...join, ""] : []),
     `test(${lit(`session ${session.fingerprint}`)}, async () => {`,

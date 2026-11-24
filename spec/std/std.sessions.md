@@ -1,6 +1,5 @@
 # std.sessions: Sessions
-status: implemented
-
+status: conformance-covered
 **Module.** `@keel/std-sessions` is stdlib module `sessions` (capabilities `clock`, `observe`, `session`, `storage`). Modules set `std['@keel/std-sessions']: { redact?, expose?, readers? }`; browsers get only `redact`.
 An entry is `<subject>:<target>#<path>`: `tx:` transaction (payload), `store:` id (state), `route:` id (`params.*`, `search.*`), `el:` element (its values in every event), `error:` code (`data.*`). `record` keeps every value but `redact` entries and `.pii()` values, which become their schema's generated value (`el:`, `error:`: `x` repeated). `s.secret` values (also in `nav` search) and password inputs are always redacted; error messages and `data` (not `data.at`) drop redacted values. `to-test` writes each `s.string()` no `expose` entry names as `x` repeated.
 
