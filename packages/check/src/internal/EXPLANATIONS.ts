@@ -970,6 +970,13 @@ const ROWS: readonly Row[] = [
     "k.ctx",
   ],
   [
+    "W1608",
+    "import() in app code is a load simulate does not track; use a static import",
+    "A module load is I/O no ctx owns: a simulate run neither waits for it nor orders it by seed, so one seed can give two traces. A Host's code (E1824) and a message set's load (E2401) are not reported.",
+    "const { a } = await import('./a.ts') -> import { a } from './a.ts'",
+    "k.ctx",
+  ],
+  [
     "E1604",
     "schedule or replica on a real or shell ctx, a schedule failing Schedule, or a plan step failing its plan schema",
     "A schedule and a replica are sim only; each plan step is parsed by the capability's plan schema.",
