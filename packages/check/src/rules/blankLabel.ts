@@ -59,7 +59,7 @@ function attributeText(a: JSXAttribute): string | null {
 }
 
 /**
- * A `Host`'s text alternative count when its props are all written by name (k.host-element): how many of `label` and
+ * A `Host`'s or `Box scroll`'s text alternative count when its props are all written by name (k.host-element): how many of `label` and
  * `labelledBy` it has, or null when a spread may give one.
  */
 function namesOf(keys: readonly (string | null)[], spread: boolean): number | null {
@@ -102,14 +102,15 @@ function objectLabels(node: Expression, prop: string, at: (start: number) => voi
  * `@keel/ui`, aliases and a namespace import followed; the same for `Frame`'s `title` (k.origins), and a JSX `Frame`
  * with no `title` and no spread, so the type pass need not run; the same for `Host`'s `label` (k.host-element), and a `Host`
  * with neither or both of `label` and `labelledBy` when no spread may give one (a JSX element, or a call's object
- * literal). A computed one is unchecked. No fix: the name is the author's.
+ * literal), and the same for a `Box` with `scroll` (k.ui Scroll regions). A computed one is unchecked. No fix: the name is the author's.
  */
 export const blankLabel: RuleDef = {
   code: "E1802",
   message: (f) => {
     const name = str(f.data, "name");
     if (name === "Frame") return "<Frame> title is missing or blank; it must name the frame";
-    if (str(f.data, "why") === "count") return "<Host> needs exactly one of label and labelledBy";
+    if (str(f.data, "why") === "count")
+      return `<${name === "Box" ? "Box scroll" : "Host"}> needs exactly one of label and labelledBy`;
     return `<${name}> label is blank; it must name the ${name === "Box" ? "landmark" : name === "Host" ? "element" : "control"}`;
   },
   see: "k.a11y",
@@ -141,7 +142,12 @@ export const blankLabel: RuleDef = {
           (a) => a.type === "JSXSpreadAttribute" || (a.name.type === "JSXIdentifier" && a.name.name === prop),
         );
         if (name === "Frame" && !named) at(name)(o.name.start);
-        if (name === "Host") {
+        const scrolls =
+          name === "Box" &&
+          o.attributes.some(
+            (a) => a.type === "JSXAttribute" && a.name.type === "JSXIdentifier" && a.name.name === "scroll",
+          );
+        if (name === "Host" || scrolls) {
           const keys = o.attributes.map((a) =>
             a.type === "JSXAttribute" && a.name.type === "JSXIdentifier" ? a.name.name : null,
           );
@@ -171,8 +177,9 @@ export const blankLabel: RuleDef = {
         const arg = n.arguments[0];
         if (name === undefined || arg === undefined || arg.type === "SpreadElement") return;
         objectLabels(arg, nameProp(name), at(name));
-        const read = name === "Host" ? objectKeys(arg) : null;
-        const count = read === null ? null : namesOf(read.keys, read.spread);
+        const read = name === "Host" || name === "Box" ? objectKeys(arg) : null;
+        const counted = name === "Host" || (read !== null && read.keys.includes("scroll"));
+        const count = read === null || !counted ? null : namesOf(read.keys, read.spread);
         if (count !== null && count !== 1) out.push(findingAt(file, n.start, { name, why: "count" }));
       },
     }).visit(ast);
