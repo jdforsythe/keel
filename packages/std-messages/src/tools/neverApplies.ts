@@ -5,8 +5,9 @@ import { inLocaleFile } from "./internal/inLocaleFile.ts";
 import { keyOf } from "./internal/keyOf.ts";
 import { lineCol } from "./internal/lineCol.ts";
 import { msgOf } from "./internal/msgOf.ts";
-import { packEdits, unpackEdits } from "./internal/multiEdit.ts";
+import { packEdits } from "./internal/packEdits.ts";
 import { removals } from "./internal/removals.ts";
+import { unpackEdits } from "./internal/unpackEdits.ts";
 import { unwrap } from "./internal/unwrap.ts";
 
 const CATEGORIES = ["zero", "one", "two", "few", "many"];
