@@ -49,8 +49,6 @@
   "devDependencies": {
     "@keel/tooling": "workspace:*",
     "@types/node": "^22",
-    "fast-check": "^3",
-    "@keel/std-temporal": "workspace:*",
-    "@keel/std-text": "workspace:*"
+    "fast-check": "^3"
   }
 }
