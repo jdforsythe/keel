@@ -13,6 +13,9 @@ export const THROWN = "planted-thrown-text";
 /** What the fixture's own timers are called, spelled so the fixture's source is data here. */
 const TIMER = ["set", "Timeout"].join("");
 
+/** The `unsafe` call's sandbox: a function that runs its second argument; the rules lift the range of that argument. */
+const LIFT = "function unsafe<T>(reason: string, fn: () => T): T {\n  return fn();\n}\n";
+
 /** The fixture's files under `modules/app/`, path -> source: loaders in `*.server.ts` files, the timers and writes under `unsafe/`. */
 const APP_FILES: Record<string, string> = {
   "Data.schema.ts": `import { s } from "@keel/schema";
@@ -23,19 +26,24 @@ export default function Home() {
   return Text({ children: "home" });
 }
 `,
-  "unsafe/throwLater.ts": `export const throwLater = (...delays: number[]): void => {
-  for (const ms of delays) ${TIMER}(() => { throw new Error(${JSON.stringify(THROWN)}); }, ms);
-};
+  "unsafe/throwLater.ts": `${LIFT}export const throwLater = (...delays: number[]): void =>
+  unsafe("the fixture schedules an uncaught throw on purpose", () => {
+    for (const ms of delays) ${TIMER}(() => { throw new Error(${JSON.stringify(THROWN)}); }, ms);
+  });
 `,
-  "unsafe/later.ts": `export const later = (ms: number, work: () => void): void => {
-  ${TIMER}(work, ms);
-};
+  "unsafe/later.ts": `${LIFT}export const later = (ms: number, work: () => void): void =>
+  unsafe("the fixture needs a timer", () => {
+    ${TIMER}(work, ms);
+  });
 `,
-  "unsafe/announce.ts": `export const announce = (text: string): void => {
-  process.stdout.write(text);
-};
+  "unsafe/announce.ts": `${LIFT}export const announce = (text: string): void =>
+  unsafe("the fixture writes to the process's stdout", () => {
+    process.stdout.write(text);
+  });
 `,
-  "unsafe/rejectOnLoad.ts": `if (process.env.LEAVE_MODE === "reject") void Promise.reject(new Error(${JSON.stringify(THROWN)}));
+  "unsafe/rejectOnLoad.ts": `${LIFT}unsafe("the fixture rejects a promise at module scope on purpose", () => {
+  if (process.env.LEAVE_MODE === "reject") void Promise.reject(new Error(${JSON.stringify(THROWN)}));
+});
 export const rejectOnLoad = true;
 `,
   "late.server.ts": `import { loader } from "@keel/router";
