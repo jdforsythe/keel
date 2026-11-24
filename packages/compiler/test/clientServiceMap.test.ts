@@ -16,7 +16,7 @@ describe("unmappedModule", () => {
       moduleOf,
       new Set(["web"]),
       () => false,
-      (id) => (id.includes("api") ? "/modules/web/a.ts" : undefined),
+      (id) => (id.includes("api") ? ["/modules/api/d.ts", "/modules/web/a.ts"] : []),
     );
     expect(got).toEqual({ module: "api", importer: "/modules/web/a.ts" });
   });
@@ -28,7 +28,7 @@ describe("unmappedModule", () => {
         moduleOf,
         new Set(["web", "api"]),
         () => false,
-        () => undefined,
+        () => [],
       ),
     ).toBeUndefined();
     expect(
@@ -37,7 +37,7 @@ describe("unmappedModule", () => {
         moduleOf,
         new Set(["web"]),
         (id) => id.includes("api"),
-        () => undefined,
+        () => [],
       ),
     ).toBeUndefined();
   });

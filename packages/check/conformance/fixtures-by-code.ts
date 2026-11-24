@@ -4,6 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import type { check } from "@keel/check";
 import { repoRoot } from "@keel/tooling/repo-root";
+import { BASE, sharedRoot } from "./E1013-support.ts";
 import type { Files } from "./support.ts";
 
 type Options = NonNullable<Parameters<typeof check>[1]>;
@@ -974,6 +975,19 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
     clean: [
       f("lib/notes.server.ts", "export const notes = 1\n"),
       f("api.server.ts", "import { notes } from './lib/notes.server.ts'\nexport const api = notes\n"),
+    ],
+  },
+  // The bad page reaches `notes` through the symlink `node_modules/linked-notes` and `app` lists no dep, so only E1013 reports (`#notes/...` is also E1576).
+  E1013: {
+    opts: { root: sharedRoot() },
+    bad: [
+      mod("app", [], []),
+      ...BASE.filter((b) => b.path !== "modules/app/Page.tsx" && b.path !== "modules/app/module.ts"),
+      f("modules/app/Page.tsx", "import { lib } from 'linked-notes/lib.ts'\nexport const Page = lib\n"),
+    ],
+    clean: [
+      ...BASE.filter((b) => b.path !== "modules/app/Page.tsx"),
+      f("modules/app/Page.tsx", "import { lib } from '../notes/lib.ts'\nexport const Page = lib\n"),
     ],
   },
   E1570: {
