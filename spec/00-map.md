@@ -56,7 +56,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.cli | CLI, MCP, LSP | implemented | flags |
 | k.docs | Installed docs | implemented | read |
 | k.scaffold | Scaffold, codemods | implemented | edits |
-| k.scaffold-shell | Shell scaffold | proposed | shells |
+| k.scaffold-shell | Shell scaffold | implemented | shells |
 | k.testing | Harness, properties | implemented | fire |
 | k.model | Store exploration | conformance-covered | traces |
 | k.prove | Proving invariants | conformance-covered | Z3 |

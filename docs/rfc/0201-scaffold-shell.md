@@ -1,6 +1,6 @@
 # RFC 0201: k.scaffold-shell: `keel scaffold shell <tauri|capacitor>` adds a native shell
 
-Status: accepted (ADR-0223) by the orchestrator on 2026-11-24, for the operator to confirm. New section k.scaffold-shell; amends k.scaffold (Operations, Generators, Guarantee, Refresh, Rules), std.tauri and std.capacitor (new **App packages**, Tools, Conformance), the map. Under D103. From examples finding 18.
+Status: implemented (ADR-0223), accepted by the orchestrator on 2026-11-24, for the operator to confirm. New section k.scaffold-shell; amends k.scaffold (Operations, Generators, Guarantee, Refresh, Rules), std.tauri and std.capacitor (new **App packages**, Tools, Conformance), the map. Under D103. From examples finding 18.
 
 ## Decisions
 - D1: `keel scaffold shell <tauri|capacitor> --id <reverse-dns> [--name <title>] [--to <deployable>]` is a generator. It changes `topology.ts` and `package.json`, and no other file.
@@ -77,7 +77,7 @@ Each std package declares every version an app lists for it, in its own `package
   "peerDependenciesMeta": { "@capacitor/android": { "optional": true }, "@capacitor/cli": { "optional": true }, "@capacitor/ios": { "optional": true } }
 }
 ```
-`@keel/std-tauri` gains `"peerDependencies": { "@tauri-apps/cli": "2.12.4" }`, optional the same way. A peer is what it says: the std package's build runs the app's own `tauri` and `cap` (`toolCommand(dir, "@tauri-apps/cli", "tauri", ...)`), so the app provides them. Optional keeps pnpm from installing them into a package's own tests; pnpm still warns when an app lists another version.
+`@keel/std-tauri` gains `"peerDependencies": { "@tauri-apps/cli": "2.12.4" }`, optional the same way. A peer is what it says: the std package's build runs the app's own `tauri` and `cap` (`toolCommand(dir, "@tauri-apps/cli", "tauri", ...)`), so the app provides them. Optional means an app that lacks one gets no install error; pnpm still warns when an app lists another version.
 
 `tooling/generate.mjs` writes `packages/scaffold/src/internal/SHELL_PACKAGES.ts` from those two files, calling each target's `plugins` with `identity` false and true, so the plugin rule has one home:
 ```ts
@@ -149,7 +149,7 @@ As every generator: the edit set is a function of the tree and the input (and th
 
 ## Spec diff
 Applied in this commit.
-- New **k.scaffold-shell** (Adding a native shell), status `proposed`: the command, Input, Edits, After it, Refusals, Rules (E1359), Conformance. About 1,490 tokens. k.scaffold could not take it: it is at about 2,750 of 3,100 tokens, and k.shell at 3,002.
+- New **k.scaffold-shell** (Adding a native shell), status `implemented`: the command, Input, Edits, After it, Refusals, Rules (E1359), Conformance. About 1,490 tokens. k.scaffold could not take it: it is at about 2,750 of 3,100 tokens, and k.shell at 3,002.
 - k.scaffold (stays `implemented`): an Operations example line; a Generators bullet pointing to the new section; the Guarantee's `shell` clause; Refresh: `shell` refreshes nothing; Rules: E1359 pointing to the new section.
 - std.tauri and std.capacitor (stay `implemented`): **App packages**; Tools points to it; one conformance clause each.
 - Map: the k.scaffold-shell row and the E135x owner. `tooling/docs-owners.json`: `@keel/scaffold` owns k.scaffold-shell.

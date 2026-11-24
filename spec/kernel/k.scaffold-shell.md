@@ -1,5 +1,5 @@
 # k.scaffold-shell: Adding a native shell
-status: proposed
+status: implemented
 
 `keel scaffold shell <tauri|capacitor>` declares a native shell (k.shell) on a `client` deployable and lists what the shell needs in `package.json`. It is a generator (k.scaffold): one edit set, applied atomically, `--dry-run` as for any operation.
 ```sh
