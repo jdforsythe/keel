@@ -11,6 +11,8 @@ interface FrontSetup {
   /** The clock a cookie's `Expires` is read against. */
   readonly clock: Clock;
   /** The `x-keel-user` value a request to the origin carries (`renderRoute` `user` with `app`), else none. */
+  /** Hears each request as it enters `send` (or `net`), after the jar and `x-keel-user` are set (k.requests). */
+  readonly log?: ((req: Request) => void) | undefined;
   readonly sign?: ((method: string, url: string, body: Uint8Array) => string | undefined) | undefined;
 }
 
@@ -46,7 +48,10 @@ export function browserFront(setup: FrontSetup): Net {
   return {
     online: () => setup.net.online(),
     fetch: async (req) => {
-      if (new URL(req.url).origin !== setup.origin) return setup.net.fetch(req);
+      if (new URL(req.url).origin !== setup.origin) {
+        setup.log?.(req);
+        return setup.net.fetch(req);
+      }
       const headers = new Headers(req.headers);
       headers.delete("cookie");
       if (jar.size > 0) headers.set("cookie", [...jar].map(([k, v]) => `${k}=${v}`).join("; "));
@@ -55,7 +60,9 @@ export function browserFront(setup: FrontSetup): Net {
         const signed = setup.sign(req.method, req.url, body);
         if (signed !== undefined) headers.set("x-keel-user", signed);
       }
-      const res = await setup.send(new Request(req, { headers }));
+      const sent = new Request(req, { headers });
+      setup.log?.(sent);
+      const res = await setup.send(sent);
       const now = setup.clock.now();
       for (const line of res.headers.getSetCookie()) apply(jar, line, now);
       return res;

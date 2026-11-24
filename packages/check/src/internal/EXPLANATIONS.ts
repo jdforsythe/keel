@@ -971,9 +971,9 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1604",
-    "schedule on a real or shell ctx, a schedule failing Schedule, or a plan step failing its plan schema",
-    "A schedule drives sim capabilities only; each plan step is parsed by the capability's plan schema.",
-    "createCtx({ mode: 'real', schedule }) -> createCtx({ mode: 'sim', seed, schedule })",
+    "schedule or replica on a real or shell ctx, a schedule failing Schedule, or a plan step failing its plan schema",
+    "A schedule and a replica are sim only; each plan step is parsed by the capability's plan schema.",
+    "createCtx({ mode: 'real', schedule }) -> createCtx({ mode: 'sim', seed, schedule }); replica(realCtx) -> replica(simCtx)",
     "k.sim",
   ],
   [

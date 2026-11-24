@@ -3,6 +3,7 @@ import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import type { DevServer } from "./DevServer.ts";
+import { devPoll } from "./devPoll.ts";
 import { isRecord } from "./isRecord.ts";
 
 const field = (v: unknown, key: string): unknown => (isRecord(v) ? v[key] : undefined);
@@ -33,8 +34,8 @@ const polls = (): boolean => !["", "0", "false"].includes((process.env.CHOKIDAR_
 /**
  * Binary only: the project's own `vite` (the nearest `node_modules/vite` at or above `cwd`, as `npx --no-install vite`
  * finds it) creates a dev server for `cwd` with `server.strictPort`, `server.port` only when `port` is given, and
- * `server.watch.usePolling` when `CHOKIDAR_USEPOLLING` asks for it (Vite's watcher on macOS takes file events whatever
- * that variable says, and a busy machine delivers those late or drops them). This
+ * `server.watch` `{ usePolling: true, interval: 100 }` when `KEEL_DEV_POLL` is `1` (merged over the project's own
+ * `server.watch`; unset, empty or `0` passes none). Any other value throws. This
  * evaluates the project's `vite.config.ts` and its plugins' `config` hooks once; nothing listens yet. What
  * `createServer` returns is checked at runtime against the shape `keel dev` uses. Throws when `vite` cannot be
  * resolved or does not fit.
@@ -43,12 +44,14 @@ export async function viteServer(cwd: string, port: number | undefined): Promise
   const mod: unknown = await import(pathToFileURL(projectVite(cwd)).href);
   const create = method(mod, "createServer");
   const version = field(mod, "version");
+  const poll = devPoll(process.env.KEEL_DEV_POLL);
+  if (poll === undefined) throw new Error("KEEL_DEV_POLL must be 1, 0 or unset");
   const server: unknown = await create({
     root: cwd,
     server: {
       strictPort: true,
       ...(port === undefined ? {} : { port }),
-      ...(polls() ? { watch: { usePolling: true } } : {}),
+      ...(poll === "on" ? { watch: { usePolling: true, interval: 100 } } : {}),
     },
   });
   const config = field(server, "config");

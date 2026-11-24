@@ -2,6 +2,7 @@ import type { Ctx, SimCtx } from "@keel/ctx";
 import type { Store } from "@keel/store";
 import type { A11yNode } from "./A11yNode.ts";
 import type { Found } from "./Found.ts";
+import type { SentRequest } from "./SentRequest.ts";
 import type { TestEvent } from "./TestEvent.ts";
 
 /**
@@ -24,6 +25,12 @@ export interface Harness<C extends Ctx = SimCtx> {
   find(id: string): Found;
   /** The ids of focusable elements in sequential focus order, without disabled or hidden ones (k.a11y). */
   focusOrder(): readonly string[];
+  /**
+   * The requests the page sent (k.requests), in order: one `{ method, url, headers }` per `fetch` its net was given
+   * since the handle opened, header names only. With `renderRoute`'s `app` or `shell` they are that browser's own;
+   * otherwise every fetch of `ctx.net` while the handle is open. Throws E1705 once disposed.
+   */
+  requests(): readonly SentRequest[];
   /** Unmount and free every binding, listener, and subscription. Idempotent. */
   dispose(): void;
 }

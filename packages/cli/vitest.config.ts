@@ -12,6 +12,6 @@ export default keelConfig({
     // the server. Each child inherits this, and `keel dev` then has Vite's watcher read file times itself instead of
     // taking macOS file events: a busy machine delivers those seconds late or drops them, and reports the writes of the
     // project's own setup as later changes (one to `vite.config.ts` restarts the dev server under the case).
-    env: { CHOKIDAR_USEPOLLING: "1" },
+    env: { KEEL_DEV_POLL: "1" },
   },
 });

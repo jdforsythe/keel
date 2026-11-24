@@ -24,6 +24,9 @@ const c = contract("cost", {
   "cost.bump": { method: "POST", path: "/api/bump", body: s.object({}), output: s.object({}) },
 });
 
+/** The 5,000 ms wait the stream's open makes for its storage `watch` (k.persist Watch): the sim storage has one. It is no identify's. */
+const WATCH_BOUND = 1;
+
 const turns = async (n = 25): Promise<void> => {
   for (let i = 0; i < n; i++) await new Promise<void>((r) => setTimeout(r, 0));
 };
@@ -140,7 +143,7 @@ test("with no identity source, a stream's 40 deliveries over 4 s run no judge, r
   }
   await turns();
   expect(kinds(r.events)).toEqual(["reset", ...Array.from({ length: 40 }, () => "saved")]);
-  expect(r.bounds.n).toBe(0);
+  expect(r.bounds.n).toBe(WATCH_BOUND);
   expect(r.clock.after).toBe(0);
   expect(r.ctx.clock.next()).toBe(heartbeat);
   // The same saves with no stream open read the clock as often: the stream's deliveries read it not at all.
@@ -169,7 +172,7 @@ test("with an identity source, a burst of 40 saves over 4 s costs one `identify`
   expect(r.calls.stream - atOpen).toBe(4);
   // Each save is a request and runs `identify` as one.
   expect(r.calls.other).toBe(40);
-  expect(r.bounds.n).toBe(r.calls.stream + r.calls.other);
+  expect(r.bounds.n).toBe(WATCH_BOUND + r.calls.stream + r.calls.other);
   expect(r.given.currentUser?.fixed).toBe(false);
   await r.close();
 });

@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
-// k.mount Navigation (rfc:0156): `renderRoute`'s `mount` is its router's own. Under it no page matches, a `:param`
-// route included, so `navigate` there records one GET; another harness in the process, with no mount or another,
-// routes by its table. A path holding a `\` matches no page. Seed 1337.
+// k.mount Navigation (rfc:0156): a `renderRoute` router's `mount` is the first identity mount the test made (k.guards
+// Client). Under it no page matches, a `:param` route included, so `navigate` there records one GET. A path holding a
+// `\` matches no page. Seed 1337.
 import { createCtx } from "@keel/ctx";
 import { type Href, identityMount, manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
@@ -15,6 +15,7 @@ const to = (u: string): Href => {
   if (!isHref(u)) throw new Error(`not an Href: ${u}`);
   return u;
 };
+const gate = identityMount("/gate");
 const main = () => document.createElement("main");
 const c = contract("mo", {
   "mo.home": { path: "/" },
@@ -28,12 +29,8 @@ const routes = manifest(c, {
 });
 const get = (url: string) => ({ method: "GET", url, body: null });
 const open: { dispose(): void }[] = [];
-const start = async (mount?: string) => {
-  const h = await renderRoute("mo.home", {
-    routes,
-    ctx: createCtx({ mode: "sim", seed: 1337 }),
-    ...(mount === undefined ? {} : { mount }),
-  });
+const start = async () => {
+  const h = await renderRoute("mo.home", { routes, ctx: createCtx({ mode: "sim", seed: 1337 }) });
   open.push(h);
   return h;
 };
@@ -41,10 +38,9 @@ afterEach(() => {
   for (const h of open.splice(0)) h.dispose();
 });
 
-describe("renderRoute with mount", () => {
+describe("renderRoute under the identity mount the test made", () => {
   it("records one GET for the mount and a path under it, and renders a :param page beside it", async () => {
-    const gate = identityMount("/gate");
-    const h = await start(gate.path);
+    const h = await start();
     await h.navigate(gate.href("/sign-out"));
     await h.navigate(gate.href());
     expect(h.documents()).toEqual([get("/gate/sign-out"), get("/gate")]);
@@ -54,29 +50,21 @@ describe("renderRoute with mount", () => {
     expect(h.documents()).toHaveLength(2);
   });
 
-  it("is per harness: with none or another mount, /gate/sign-out is the :param page", async () => {
-    identityMount("/gate");
-    const none = await start();
-    await none.navigate(to("/gate/sign-out"));
-    expect(none.route().id).toBe("mo.two");
-    expect(none.documents()).toEqual([]);
-    none.dispose();
-    const other = await start("/other");
-    await other.navigate(to("/gate/sign-out"));
-    expect(other.route().id).toBe("mo.two");
-    await other.navigate(to("/other/x"));
-    expect(other.documents()).toEqual([get("/other/x")]);
+  it("a second identityMount call does not throw and leaves the first one made as the mount a router reads", async () => {
+    identityMount("/other");
+    const h = await start();
+    await h.navigate(to("/other/x"));
+    expect(h.route().id).toBe("mo.two");
+    await h.navigate(to("/gate/x"));
+    expect(h.documents()).toEqual([get("/gate/x")]);
   });
 
-  it("a path holding a backslash records one GET and adds no history entry, with a mount or none", async () => {
-    for (const mount of ["/gate", undefined]) {
-      const h = await start(mount);
-      const before = h.location().entries;
-      await h.navigate(to("/a/\\x"));
-      expect(h.documents()).toEqual([get("/a/\\x")]);
-      expect(h.route().id).toBe("mo.home");
-      expect(h.location().entries).toBe(before);
-      h.dispose();
-    }
+  it("a path holding a backslash records one GET and adds no history entry", async () => {
+    const h = await start();
+    const before = h.location().entries;
+    await h.navigate(to("/a/\\x"));
+    expect(h.documents()).toEqual([get("/a/\\x")]);
+    expect(h.route().id).toBe("mo.home");
+    expect(h.location().entries).toBe(before);
   });
 });
