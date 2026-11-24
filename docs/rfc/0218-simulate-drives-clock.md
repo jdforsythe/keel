@@ -1,6 +1,6 @@
 # RFC 0218: k.drive: `simulate` drives the run's clock when no work of the run is pending
 
-Status: implemented (ADR-0240), accepted by the orchestrator on 2026-11-24, amended the same day after design reviews of the first two builds, for the operator to confirm. Adds k.drive; amends k.sim (Schedule plans, simulate), k.testing (Rules), std.postgres (Modes, Conformance), the map. From `apps/household` (walkthrough finding L9-7, backlog 1038).
+Status: accepted (ADR-0240) by the orchestrator on 2026-11-24, amended the same day after reviews of the first three builds, for the operator to confirm. Adds k.drive; amends k.sim (Schedule plans, simulate), k.testing (Rules), std.postgres (Modes, Conformance), the map. From `apps/household` (walkthrough finding L9-7, backlog 1038).
 
 ## Decisions
 - D1: one drive. While a run's scenario is pending, `simulate` advances the run's clock to its next moment on each drive turn where no work of the run is pending. No harness call moves the clock. `run(ms?)` only says how far to wait.
@@ -9,7 +9,7 @@ Status: implemented (ADR-0240), accepted by the orchestrator on 2026-11-24, amen
 - D4: `hold(label, start)` is for work that answers through something made outside the run: an engine, worker or channel. It must not wrap a clock wait. A clock or online wait made inside held work is E1728 at once (the async context shows it). std-postgres holds the engine boot and each PGlite call. The wait for the session is not held: it waits on held or parked work.
 - D5: a closed list of seams. App code reaches nothing else; E1601, E1603 and E1759 report ambient effects. Three things escape the tracker (see The law); `keel check` reports none of them, and the law check reports one only when `law` is on or on a failing run's replays, and only when it reaches the trace.
 - D6: the law check. `simulate(..., { law: true })` runs each run twice and compares traces; `law` is off by default. A failing run is always replayed twice before it is reported. The trace ends with the final value of each storage key the run wrote (by key) and each live store's snapshot (by id). A difference anywhere is E1729 in place of E1704.
-- D7: E1727 is raised on the drive's turn where nothing is pending, no moment is within the bound and the scenario is still pending: no grace. E1728 is held work waiting on the clock (at once), a resource or hold still pending 10,000 ms of real time after its own creation (per piece of work, never a busy span), or work still pending when the scenario resolves. The real-time bound only fails a run.
+- D7: E1727 is raised on the drive's turn where nothing is pending, no moment is within the bound and the scenario is still pending: no grace. E1728 is held work waiting on the clock (at once), work still pending when the scenario resolves (at once), or the run's real-time budget spent: `budget`, else the enclosing test's timeout less a tenth, else 300,000 ms. The budget names every piece of work in flight and only fails a run; no piece of work has a bound of its own.
 - D9: the drive moves the clock inside the run's context, so waiters, offline-edge callbacks and `observe` callbacks it runs make work of the run.
 - D8: a new section, k.drive. Driving, seams, law, law check and stalls with 17 clauses would put k.sim at about 4,450 tokens, past the 3,400 section budget and principle 8's 4k. k.sim keeps schedules, replicas, `simulate` and `run(ms?)`.
 
@@ -64,7 +64,7 @@ What a capability author does: hold, with a label, each piece of work that answe
 ### The law
 The drive draws no random and reads no real time. Two runs of one `SimRun` and one scenario take the same moments in the same order and report the same observer events in the same order at the same clock times, ending with equal store snapshots. The trace is the list of moments taken and the observer events of the run's ctx and replicas, each with its clock time.
 
-The trace ends with the final value of each storage key the run wrote, by key in code-unit order, then each live store's snapshot, by id. Entries are `{ kind: 'moment', at }`, `{ kind: 'event', at, event }`, `{ kind: 'storage', key, value }` and `{ kind: 'store', id, value }`. Without the final values, two replays that wrote 7 and 8 passed.
+The trace ends with the final value of each storage key the run wrote, by key in code-unit order, as the stored string with no parsing of app data; then each live store's snapshot, by id, with each log entry's `at` left out (a per-store counter no restore resets, so with it every `law: true` run with a store differed). Entries are `{ kind: 'moment', at }`, `{ kind: 'event', at, event }`, `{ kind: 'storage', key, value }` and `{ kind: 'store', id, value }`. Without the final values, two replays that wrote 7 and 8 passed.
 
 What the law rests on:
 - within the run's context, every non-promise resource is pending;
@@ -91,7 +91,11 @@ It is reported in place of E1704, so a nondeterministic failure is never present
 ### Stalls
 - E1727, on the drive turn where nothing is pending, no moment is within the bound and the scenario is pending with no `run` call: `the scenario waits past the horizon: next deadline <n> ms`, or `the scenario waits and nothing in the run is due`. There is no grace: pending real work is tracked, so nothing can still be coming.
 - E1728, at once: `held work waits on the sim clock: <label>`.
-- E1728, for a resource or held work still pending 10,000 ms of real time after its own creation: `work in flight never answered: <label>`, the label being the held work's or the resource's Node type (`Timeout`, `PBKDF2REQUEST`, `TCPWRAP`). The bound runs per piece of work. Timing one continuous busy span instead failed a loop of 1 ms timers at 10.0 s, though every timer answered. Endless short work is no stall: while it runs the clock stays still, and the test's own timeout bounds it. A database's cold boot belongs before the run, in std.postgres `ready()`. `@keel/testing` reads `performance.now` for this bound only. It can fail a run and never moves the clock or changes a trace.
+- E1728, when the run's real-time budget is spent: `the budget ran out with work in flight: <labels>`. The labels are each pending piece's (held work's label, else the resource's Node type: `Timeout`, `PBKDF2REQUEST`, `TCPWRAP`), oldest first and comma-separated, or `none`. The run is not shrunk or replayed.
+  - The budget is `simulate(scenario, { budget })` in ms. Else it is the enclosing vitest test's timeout less a tenth of it (at least 50 ms), measured from the test's start. Else it is 300,000 ms from the `simulate` call.
+  - A fixed bound per piece of work was rejected. 10,000 ms per resource failed `restock.test.ts` 5 times in 20 under load 90 to 400: a short PGlite timer starved past 10 s, in a run that takes 5 s alone. A bound on one busy span failed a loop of answered 1 ms timers.
+  - The author's own bound is the test's timeout. `simulate` fails shortly before it, naming what is in flight, instead of the runner's bare timeout message. So the budget can only turn a run red that the runner would have timed out anyway.
+  - Endless short work is no stall, and the budget ends it. `@keel/testing` reads `performance.now` for the budget only. It never moves the clock or changes a trace.
 - E1728, when the scenario resolves with work of the run still pending: `work outlived the scenario: <label>`, naming the first pending piece in creation order. Leftover work is a test bug: a stray `setTimeout` bled into later runs, and law pairs saw different values with no report. A scenario closes what it opened before it resolves (`app.close()`, `clearInterval`, a socket's `close`), or awaits `run()`. Parked work, a runner's poll among them, is not pending, so it never counts. A scenario that rejects is reported with its own error.
 
 `keel explain` entries: E1727 and E1728 as built, with E1728's text naming its three cases. E1729:
@@ -135,7 +139,7 @@ None. No app is released.
 - `@keel/testing`: the tracker replaces the quiet-turn idle rule; size measured in the build.
 
 ## Build plan
-- `packages/testing/src/internal/runTracker.ts` (new, Node only): the run's `AsyncLocalStorage`, the `async_hooks` hook counting non-promise resources by type with each one's creation time, the 10,000 ms bound per resource and hold, the in-hold check, and the list of what is pending in creation order for `work outlived the scenario`.
+- `packages/testing/src/internal/runTracker.ts` (new, Node only): the run's `AsyncLocalStorage`, the `async_hooks` hook counting non-promise resources by type with each one's creation time, the run's budget (from `budget`, the vitest test's timeout and start, or 300,000 ms) and the list of pending work oldest first for its message, the in-hold check, and the list of what is pending in creation order for `work outlived the scenario`.
 - `drive.ts`: `advance` called inside the run's context.
 - `simulate.ts`: E1728 `work outlived the scenario` when the scenario resolves with work pending; the trace's final `storage` entries (keys the run wrote, through the sim storage) and `store` entries (`stores()` snapshots).
 - `drive.ts`: moves the clock when the tracker's count, held work and pending harness calls are all zero, on its own turn made outside the run; E1727 with no grace.
@@ -150,7 +154,7 @@ None. No app is released.
 - Docs: the keel-testing skill, the testing README, the changeset.
 
 ## For the operator
-1. **A real-time bound that can only fail a run.** E1728 fails a resource or hold still pending 10,000 ms of real time after its own creation. It reads real time, but never moves the clock or changes a trace. Without it, a library's open handle hangs the run until vitest's timeout, with no name. Recommended: accept.
+1. **The real-time bound comes from the test's timeout.** E1728 fails the run when its budget is spent: `budget`, else the enclosing test's timeout less a tenth, else 300,000 ms. It names every piece of work in flight, where the runner's timeout would name nothing, and it can only fail a run the runner would have timed out. Recommended: accept.
 2. **`law` by default.** The options:
    - (a) on under every `keel test`: each `simulate` run costs twice as much, and it fits the bet that tests are deterministic without the author thinking about it;
    - (b) on in CI only (`CI` set);
@@ -162,3 +166,5 @@ None. No app is released.
    - (b) the harness holds every module load, which means hooking the test runner's loader, specific to vitest.
 
    Recommended: (a). It is caught where it is written, and it is one rule. No code is added now; the Law names the hole.
+
+Third amendment: E1728's per-piece 10,000 ms bound is replaced by the run's budget; the storage entry holds the stored string and the store entry omits log `at`. k.drive#9, #18, #19 and #20 change wording; #24 is new. `spec.section` and `docs.section` are re-based from 3,400 to 3,500 tokens (k.drive about 3,460).

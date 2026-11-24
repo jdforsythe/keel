@@ -1,6 +1,6 @@
 # ADR-0240: k.drive: `simulate` drives the run's clock when no work of the run is pending (RFC 0218)
 
-**Status:** accepted (orchestrator, 2026-11-24, amended twice the same day, for the operator to confirm).
+**Status:** accepted (orchestrator, 2026-11-24, amended three times the same day, for the operator to confirm).
 
 **Context.** Under `simulate` a scenario that awaited server work waiting on the clock hung. A drive that moved the clock after quiet macrotask turns fixed the hang, but let machine speed reorder events: a real `setTimeout(12)` ran after a 10 ms sim waiter, and the run passed. Unheld work (`app.fetch` behind a harness, a password hash, PGlite's boot and session wait) needed app-side helpers. Tests are deterministic without the author thinking about it, so the law must hold by construction.
 
@@ -16,9 +16,9 @@
 - There is a closed list of seams; app code reaches nothing else (E1601, E1603, E1759). The residual is an unheld reply through a channel made before the run, or state kept across runs.
 - The law check: `law: true` runs each run twice and compares traces, and a failing run is always replayed twice. A difference is E1729 in place of E1704.
 - E1727 has no grace in turns.
-- E1728 also fails a resource or hold still pending 10,000 ms of real time after its own creation. The bound is per piece, so endless short work is bounded only by the test's timeout. It can fail a run and never changes a trace.
+- E1728 also fails the run when its real-time budget is spent. The budget is `simulate`'s `budget`, else the enclosing test's timeout less a tenth, else 300,000 ms. The message names every piece of work in flight, oldest first. No piece of work has a bound of its own, so a starved short timer never fails a run the test would finish. The budget can fail a run and never changes a trace.
 - A scenario that resolves with work still pending fails E1728 `work outlived the scenario: <label>`.
-- The trace ends with the final values of the storage keys the run wrote (by key) and of the live stores (by id). `law` is off by default.
+- The trace ends with the final values of the storage keys the run wrote (by key, as stored strings) and of the live stores (by id, log entries without `at`). `law` is off by default.
 - The drive runs its callbacks in the run's context.
 - Three things escape the tracker: a resource made before or outside the run, unless held; an `import()` in app code outside a harness's `routes` loader; state kept across runs. `keel check` reports none of them. The law check reports one only when `law` is on or on a failing run's replays, and only when it reaches the trace.
 

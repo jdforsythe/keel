@@ -2,12 +2,12 @@
   "output": {
     "check.injected10": 600,
     "test.failing3": 400,
-    "spec.section": 3400,
+    "spec.section": 3500,
     "spec.map": 1500,
     "explain": 300,
     "mcp.tools-list": 2050,
     "docs.map": 1530,
-    "docs.section": 3400,
+    "docs.section": 3500,
     "docs.skill": 3300,
     "docs.for": 400,
     "docs.agents": 600
