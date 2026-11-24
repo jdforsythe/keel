@@ -1107,9 +1107,9 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1719",
-    "focus or a key press fired where a user cannot focus, or blur off an element without focus",
-    "A key press goes to the focused element: fire keydown dispatches there when focus is on the target or inside it, and moves focus to a focusable target first. A target that cannot take focus, with focus outside it, gets no key, and nothing moves.",
-    "fire the key at the focused element or the container that holds it; give the element a role that takes focus; fire focus before blur",
+    "focus or a key fired where a user cannot focus, or blur off an unfocused element",
+    "A key goes to the focused element, inside the target or the target itself, focused first when it can be. Otherwise no key reaches it.",
+    "fire the key at the focused element or its container; give the element a role that takes focus; fire focus before blur",
     "k.testing",
   ],
   [
