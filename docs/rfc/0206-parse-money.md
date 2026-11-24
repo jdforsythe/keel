@@ -1,6 +1,6 @@
 # RFC 0206: std.money: `parseMoney(text, currency, locale)` reads typed amounts
 
-Status: accepted (ADR-0228) by the orchestrator on 2026-11-24, for the operator to confirm. Amends std.money (API, Rules, Conformance) and `spec/std/README.md`'s row. From backlog 1010.
+Status: implemented (ADR-0228), accepted by the orchestrator on 2026-11-24, for the operator to confirm. Amends std.money (API, Rules, Conformance) and `spec/std/README.md`'s row. From backlog 1010.
 
 ## Decisions
 - D1: `parseMoney(text, currency, locale): Result<Money, ParseMoneyError>` beside `formatMoney`; the currency is an argument, never inferred from the text.
@@ -42,7 +42,7 @@ if (!amount.ok) return err({ code: 'keel.fields', message: text.amountFormat, da
 
 ## Spec diff
 Applied in this commit.
-- std.money (`proposed` until built): the import line and an example; `parseMoney` with Sign, Mark and Number; its errors; the form pattern; Rules lists the two new KeelError codes; three conformance clauses (the two laws, accepted texts, rejected texts).
+- std.money (`conformance-covered`): the import line and an example; `parseMoney` with Sign, Mark and Number; its errors; the form pattern; Rules lists the two new KeelError codes; three conformance clauses (the two laws, accepted texts, rejected texts).
 - `spec/std/README.md`: the row reads `proposed` and "format and parse". No diagnostic, no code range, no glossary term.
 
 ## Conformance

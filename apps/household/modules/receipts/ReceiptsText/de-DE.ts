@@ -15,7 +15,7 @@ export default ReceiptsText.text({
   note: "Notiz",
   save: "Beleg speichern",
   saving: "Wird gespeichert",
-  amountFormat: "Schreibe den Betrag als Ziffern mit bis zu zwei Nachkommastellen, etwa 12,50",
+  amountFormat: "Schreibe den Betrag mit bis zu zwei Nachkommastellen, etwa 12,50",
   full: "Das Buch fasst 200 Belege. Entferne einen, um einen neuen hinzuzufügen.",
   switchTo: "English",
 });

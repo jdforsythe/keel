@@ -46,11 +46,27 @@ it("refuses an amount with three decimals and saves nothing", async () => {
   page.dispose();
 });
 
+it("reads an amount in the page's locale: 12,50 in German is 12 euros 50, 12,50 in English is refused", async () => {
+  const at = await served(5);
+  const en = await open("en-US", at);
+  await en.fire("receipts.new:shop", { type: "input", value: "Corner shop" });
+  await en.fire("receipts.new:amount", { type: "input", value: "12,50" });
+  await en.fire("receipts.save", { type: "click" });
+  expect(en.find("receipts.new:amount").state).toMatchObject({ invalid: true });
+  en.dispose();
+  const de = await open("de-DE", at);
+  await de.fire("receipts.new:shop", { type: "input", value: "Ecke" });
+  await de.fire("receipts.new:amount", { type: "input", value: "12,50 €" });
+  await de.fire("receipts.save", { type: "click" });
+  expect(de.find("receipts.count").text).toBe("1 Beleg");
+  de.dispose();
+});
+
 it("records a receipt and shows it in each locale's money format", async () => {
   const at = await served(5);
   const page = await open("en-US", at);
   await page.fire("receipts.new:shop", { type: "input", value: "Corner shop" });
-  await page.fire("receipts.new:amount", { type: "input", value: "12,50" });
+  await page.fire("receipts.new:amount", { type: "input", value: "12.50" });
   await page.fire("receipts.new:paidBy", { type: "input", value: "sam" });
   await page.fire("receipts.save", { type: "click" });
   expect(page.find("receipts.count").text).toBe("1 receipt");

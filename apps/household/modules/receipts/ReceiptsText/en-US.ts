@@ -15,7 +15,7 @@ export default ReceiptsText.text({
   note: "Note",
   save: "Save receipt",
   saving: "Saving",
-  amountFormat: "Write the amount as digits with up to two decimals, such as 12.50",
+  amountFormat: "Write the amount with up to two decimals, such as 12.50",
   full: "The book holds 200 receipts. Remove one to add another.",
   switchTo: "Deutsch",
 });
