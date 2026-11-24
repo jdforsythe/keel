@@ -1,6 +1,6 @@
 # RFC 0218: k.drive: `simulate` drives the run's clock when no work of the run is pending
 
-Status: implemented (ADR-0240) by the orchestrator on 2026-11-24, amended the same day after reviews of the first three builds, for the operator to confirm. Adds k.drive; amends k.sim (Schedule plans, simulate), k.testing (Rules), std.postgres (Modes, Conformance), the map. From `apps/household` (walkthrough finding L9-7, backlog 1038).
+Status: implemented (ADR-0240) by the orchestrator on 2026-11-24, amended the same day after reviews of the first three builds, for the operator to confirm; the fourth amendment carries the operator's D134 and D135. Adds k.drive and k.drive-law; amends k.sim (Schedule plans, simulate), k.testing (Rules), std.postgres (Modes, Conformance), the map. From `apps/household` (walkthrough finding L9-7, backlog 1038).
 
 ## Decisions
 - D1: one drive. While a run's scenario is pending, `simulate` advances the run's clock to its next moment on each drive turn where no work of the run is pending. No harness call moves the clock. `run(ms?)` only says how far to wait.
@@ -8,9 +8,10 @@ Status: implemented (ADR-0240) by the orchestrator on 2026-11-24, amended the sa
 - D3: parked work needs no attribution. Work waiting on the sim clock or on the net's online state is promises alone, so it is never pending. A request, job or route that is waiting on the clock is parked by construction.
 - D4: `hold(label, start)` is for work that answers through something made outside the run: an engine, worker or channel. It must not wrap a clock wait. A clock or online wait made inside held work is E1728 at once (the async context shows it). std-postgres holds the engine boot and each PGlite call. The wait for the session is not held: it waits on held or parked work.
 - D5: a closed list of seams. App code reaches nothing else; E1601, E1603 and E1759 report ambient effects. Three things escape the tracker (see The law); `keel check` reports none of them, and the law check reports one only when `law` is on or on a failing run's replays, and only when it reaches the trace.
-- D6: the law check. `simulate(..., { law: true })` runs each run twice and compares traces; `law` is off by default. A failing run is always replayed twice before it is reported. The trace ends with the final value of each storage key the run wrote (by key) and each live store's snapshot (by id). A difference anywhere is E1729 in place of E1704.
+- D6: the law check (the operator's D135). `law` is on by default when `KEEL_TEST` is `1` as `simulate` is called, as `keel test` sets it, and off in plain vitest; `law: false` turns it off, `law: true` on. Each passing run is replayed after the last run, in run order, and its traces compared; the replays share the run's budget, and one the budget stops ends the check without failing. A failing run is replayed twice before it is reported, whatever `law` is; runs tried while shrinking run once. The trace ends with the final value of each storage key the run wrote (by key) and each live store's snapshot (by id). A difference anywhere is E1729 in place of E1704.
 - D7: E1727 is raised on the drive's turn where nothing is pending, no moment is within the bound and the scenario is still pending: no grace. E1728 is held work waiting on the clock (at once), work still pending when the scenario resolves (at once), or the run's real-time budget spent: `budget`, else the enclosing test's timeout less a tenth, else 300,000 ms. The budget names every piece of work in flight and only fails a run; no piece of work has a bound of its own.
 - D9: the drive moves the clock inside the run's context, so waiters, offline-edge callbacks and `observe` callbacks it runs make work of the run.
+- D10: k.drive splits at the law (the operator's D134, every section within 3,100 tokens): k.drive keeps the drive, seams and stalls; k.drive-law holds the Law and the law check.
 - D8: a new section, k.drive. Driving, seams, law, law check and stalls with 17 clauses would put k.sim at about 4,450 tokens, past the 3,400 section budget and principle 8's 4k. k.sim keeps schedules, replicas, `simulate` and `run(ms?)`.
 
 ## Problem
@@ -80,7 +81,13 @@ Three things escape the tracker and can change a trace:
 Callbacks the drive runs are in the run's context: it calls `advance` inside it, so a waiter, an offline-edge callback or an `observe` callback that starts a timer makes work of the run.
 
 ### The law check
-`simulate(scenario, { law: true })` runs each run a second time with its `SimRun` and compares the traces. A failing run's shrunk `SimRun` is always replayed twice before it is reported, unless it failed with E1727 or E1728. Two traces that differ give:
+`law` is on by default under `keel test`, and off in plain vitest. The harness knows by `process.env.KEEL_TEST`, read when `simulate` is called: `keel test` sets it to `1`, and a sim ctx's default mode reads the same variable (k.ctx). `law: false` turns the check off and `law: true` turns it on, in either place.
+
+With `law` on, each run that passed is run a second time with its `SimRun` and the traces are compared. The replays come after the last run, in run order, so every run, and its outcome, is the one it would be with `law` off. A replay's own outcome is not read, only its trace.
+
+The replays share the run's budget (Stalls). A replay the budget stops is not compared: no later run is replayed, and `simulate` resolves. So a right run on a slow machine never fails for its replay: the check gets the time the runs left. `simulate` resolves `{ seed, runs, checked }`, where `checked` counts the replays compared, so a test can see a check cut short.
+
+A failing run's shrunk `SimRun` is replayed twice before it is reported, unless it failed with E1727 or E1728, whatever `law` is. The runs fast-check tries while shrinking run once each: a shrink candidate's replay would double the shrink for a check the shrunk run gets anyway. Two traces that differ give:
 ```
 E1729 two replays of the run differ at trace entry 3
 {"kind":"moment","at":10}
@@ -112,9 +119,12 @@ hold the outside work in its capability, or keep the state in the run's stores
 - An explicit per-request ctx: breaks capability accessors keyed by ctx.
 - `until(ctx, cond)`: a second helper that moves the clock.
 - Driving any sim ctx: changes every harness test and would need the tracker in browsers.
+- Each run's replay right after it: the replays spend time later runs need, so a run that passes with `law` off can fail E1728 with it on. A budget of its own for each replay: the test runner's timeout still ends the test.
+- `law` on when `CI` is set: the operator chose `keel test`.
 
 ## Spec diff
 Applied in this commit.
+- Fourth amendment: k.drive's Law and Law check paragraphs, and its #10, #16, #17 and #20, move to a new section k.drive-law (`implemented`) unchanged but for the Law check, which states the default, `law: false` and `law: true`, the replays after the last run, the budget they share, `checked`, and the shrink. k.drive's intro gains a pointer and its Stalls a sentence: a law-check replay the budget stops fails nothing. k.sim's `simulate` signature reads `law?` with a pointer, and its result `{ seed, runs, checked }`. k.testing Rules point E1729 at k.drive-law. Map: the k.drive-law row; `spec.map` re-based from 1,500 to 1,510 and `docs.map` from 1,530 to 1,540 tokens. `tooling/docs-owners.json`: `@keel/testing` owns k.drive-law.
 - k.drive (new, `implemented`): Driving, Seams, Law, Law check, Stalls, an "empty replay" definition, and 17 clauses. #1 to #10 are k.sim's former #15 to #24, with "Under `simulate` with `replay` of a `SimRun` of seed 1 and an empty schedule" written "In an empty replay". #5 and #9 change behaviour (the `hold` signature, the outside channel, the 10,000 ms bound). #11 to #17 are new.
 - k.sim: the plans bullet's `hold(label, start)` and what a capability holds; `simulate` gains `law = false`; `run(ms?)` points to k.drive; the Driving, Law and Stalls paragraphs and clauses #15 to #24 move to k.drive, leaving 14 clauses.
 - k.testing Rules: E1727, E1728 (its three cases), E1729, pointing to k.drive.
@@ -124,6 +134,7 @@ Applied in this commit.
 
 ## Conformance diff
 By the `conformance-writer`, from the spec text.
+- Fourth amendment. No bullet's wording changes. Moved, text unchanged: k.drive#10 to k.drive-law#1; #16 to k.drive-law#2; #17 to k.drive-law#3; #20 to k.drive-law#4; k.drive#11 to #15 to k.drive#10 to #14; #18 and #19 to #15 and #16; #21 to #24 to #17 to #20; #1 to #9 keep their numbers. New: k.drive-law#5 (the default, by `KEEL_TEST`), #6 (replays after the last run, `checked`), #7 (a replay the budget stops), #8 (a failing run, three calls with `law` on or off). Prose headers re-point: k.drive Law to k.drive-law Law, text unchanged; k.drive Law check to k.drive-law Law check, whose first sentence is replaced (the header in `sim-law-check.test.ts` quoting "With `law: true` each run is run a second time ..." quotes a sentence that no longer exists); k.testing Rules' E1727 to E1729 sentence now ends `(k.drive-law)`; k.sim's `simulate` signature and result sentences changed. `sim-law-check.test.ts`'s ASSUMPTION that `law: true` calls a passing scenario twice per run stays true; its order (replays after the last run) is #6. #7 and #8 go in `sim-law-check.test.ts`, #5 too, setting and restoring `process.env.KEEL_TEST`.
 - `packages/testing/conformance/sim-drive.test.ts`, `sim-stalls.test.ts`, `sim-law.property.test.ts`: headers move from k.sim#15 to #24 to k.drive#1 to #10 and quote the new wording. #5 is rewritten (a port made before `simulate`); #9 waits on the 10,000 ms bound with its own timeout.
 - `packages/testing/conformance/sim-tracked.test.ts` (new): k.drive#11 (real `setTimeout`), #12 (`pbkdf2`), #14 (`running` at `t + ms`), #15 (`renderRoute` module load).
 - `sim-stalls.test.ts` gains #13 (hold waiting on the clock); `sim-law-check.test.ts` (new): #16, #17.
@@ -134,6 +145,7 @@ By the `conformance-writer`, from the spec text.
 None. No app is released.
 
 ## Token impact
+- Fourth amendment: k.drive about 2,590 tokens, k.drive-law about 1,460, k.sim about 1,965. Each is under 3,100. `spec.section` and `docs.section` stay at 3,500: k.scaffold (3,387), std.postgres (3,337) and std.sessions (3,171) are past 3,100.
 - k.drive about 3,230 tokens; k.sim about 1,935; std.postgres about 3,335; k.testing about 2,930. Each is under 3,400.
 - The map and the docs map gain one row, re-based as above.
 - `@keel/testing`: the tracker replaces the quiet-turn idle rule; size measured in the build.
@@ -155,12 +167,10 @@ None. No app is released.
 
 ## For the operator
 1. **The real-time bound comes from the test's timeout.** E1728 fails the run when its budget is spent: `budget`, else the enclosing test's timeout less a tenth, else 300,000 ms. It names every piece of work in flight, where the runner's timeout would name nothing, and it can only fail a run the runner would have timed out. Recommended: accept.
-2. **`law` by default.** The options:
-   - (a) on under every `keel test`: each `simulate` run costs twice as much, and it fits the bet that tests are deterministic without the author thinking about it;
-   - (b) on in CI only (`CI` set);
-   - (c) off, as the text says now.
-
-   Recommended: (b). The cost lands where flakiness hurts, and local runs stay fast. The text keeps (c) until you decide.
+2. **`law` by default.** The operator's call (D135): on under `keel test`, `law: false` to opt out. Calls made in carrying it out, to confirm or reverse:
+   - "Under `keel test`" is `KEEL_TEST=1` at the `simulate` call, the variable a sim ctx's default mode reads; plain vitest is off unless `law: true`.
+   - The replays run after the last run and share its budget; one the budget stops ends the check and fails nothing, and `checked` reports how many were compared. A run never fails for its replay alone, at the price of a check that a slow machine may cut short.
+   - A failing run is not replayed by the law check: its shrunk `SimRun` gets the two replays it always gets, and shrink candidates run once.
 3. **A plain `import()` in app code.** The options:
    - (a) a `keel check` code for an `import()` in app code outside a harness's `routes` loader: a new diagnostic for existing apps;
    - (b) the harness holds every module load, which means hooking the test runner's loader, specific to vitest.
@@ -168,3 +178,5 @@ None. No app is released.
    Recommended: (a). It is caught where it is written, and it is one rule. No code is added now; the Law names the hole.
 
 Third amendment: E1728's per-piece 10,000 ms bound is replaced by the run's budget; the storage entry holds the stored string and the store entry omits log `at`. k.drive#9, #18, #19 and #20 change wording; #24 is new. `spec.section` and `docs.section` are re-based from 3,400 to 3,500 tokens (k.drive about 3,460).
+
+Fourth amendment: the operator's D135 (`law` on under `keel test`) and D134 (k.drive split at the law into k.drive and k.drive-law). No bullet's wording changes; #10, #16, #17 and #20 move; k.drive-law#5 to #8 are new.
