@@ -1,4 +1,4 @@
-// Spec: std.live, clause "With callers A and B subscribed to one sim server, a write by A is in B's hydrated store after B's next read, with no input from B."
+// Spec: std.live, clause "With callers A and B subscribed to one sim server, a write by A is in B's hydrated store after B's next read (B's `read` of the board snapshot through B's ctx storage, started by the `saved` that reached B's stream), with no input from B."
 // Seed 1337
 import fc from "fast-check";
 import { expect, test } from "vitest";

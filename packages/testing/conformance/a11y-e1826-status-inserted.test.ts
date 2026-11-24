@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.a11y, Conformance "After a `fire` or `settle()`, a `role="status"` element that was not there before, sits under an existing parent and already holds text, fails the render check E1826 naming its element id; a status rendered empty and filled later passes; an inserted alert passes; a status inside a subtree inserted whole passes."
+// Spec: k.a11y, Conformance "A `fire` that inserts `<Text id="done" role="status">Saved</Text>` under an element rendered before it fails with E1826 naming `done`; a `Text role="status"` rendered empty at the first render and given `Saved` by the `fire` passes, as do a `Text role="alert"` inserted holding text and a `role="status"` region inside a subtree the `fire` inserted whole."
 // Spec: k.a11y, Rules "E1826 a `status` region inserted holding text (render; no criterion in Claims)"
 // Seed: 1337 (RFC 0176 clause k.a11y #13).
 // Pending: not built. The failing-case tests are skipped; the passing cases run and must stay green.
