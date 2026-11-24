@@ -4,6 +4,7 @@ import type { Snapshot, Store } from "@keel/store";
 import type { DocumentNavigation } from "../types/DocumentNavigation.ts";
 import type { HarnessArtifacts } from "../types/HarnessArtifacts.ts";
 import type { CheckSetup } from "./CheckSetup.ts";
+import type { RequestLog } from "./requestLog.ts";
 
 /**
  * What `render`, `renderRoute` and `resumeDocument` share once inputs are parsed and stores seeded: a `view` to mount,
@@ -35,6 +36,8 @@ interface Shared {
   readonly follow?: (nav: DocumentNavigation) => void;
   /** Catches outside the root Boundary that `check()` raises as its own (a router's root alert, `renderRoute`). */
   readonly caught?: CaughtError[];
+  /** The page's request log (k.requests) when its requests are not those of `ctx.net` (a browser front's, a router tapped before it opened); default: a tap on `ctx.net`. */
+  readonly log?: RequestLog;
   /** Where the page is (a route's id and params): a `fire` or `settle()` that changes it skips E1826. */
   readonly place?: () => string;
 }

@@ -25,8 +25,6 @@ export interface RouteRenderOptions<T extends RouteTable = RouteTable> {
   readonly caller?: string;
   readonly user?: string;
   readonly artifacts?: HarnessArtifacts;
-  /** The identity mount's `path` (k.mount), as a build's entry gives its router: no page matches at or under it. */
-  readonly mount?: string;
   /**
    * Run the page as in a native shell (k.return Testing), which gives it a ctx of `mode: 'shell'` in a build; `id` is
    * the shell's `id` (k.shell), the scheme of its return links, and `true` stands for `dev.keel.golden2`.

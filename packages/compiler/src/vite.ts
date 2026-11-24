@@ -91,6 +91,17 @@ const PG_BANNER =
 const evaluationFailed = (problems: readonly string[]): Error =>
   new Error(problems.map((p) => `keel: ${p}`).join("\n"));
 
+/**
+ * Under vitest, the project's `identity.ts` joins the run's `test.setupFiles` (k.guards Client): `keel test` evaluates it
+ * before each test file, as the built entry imports it, so a `renderRoute` router reads `/__keel/user` exactly when
+ * the built app does. A project with no `identity.ts`, or a run that is not vitest's, adds nothing.
+ */
+function testSetup(root: string): Record<string, unknown> {
+  const file = path.join(root, "identity.ts");
+  if (process.env.VITEST === undefined || !fs.existsSync(file)) return {};
+  return { test: { setupFiles: [file] } };
+}
+
 /** The served modules' `modules/<id>/migrations/` folders of `root`, copied under `out` at the same path (k.data Files). */
 function copyMigrations(root: string, out: string, modules: readonly string[]): void {
   for (const id of modules) {
@@ -818,6 +829,7 @@ export default function (): {
           ? { define: { "import.meta.env.DEV": "false", "import.meta.env.PROD": "true" } }
           : {}),
         worker: { plugins: () => [workerPlugin()] },
+        ...testSetup(path.resolve(user.root ?? process.cwd())),
       };
       if (env.command !== "build" || env.isSsrBuild === true || name === undefined || !fs.existsSync(file)) return own;
       const top = parseTopology(fs.readFileSync(file, "utf8")).topology;

@@ -9,6 +9,7 @@ import type { Snapshot, Store } from "@keel/store";
 import { onTestEnd } from "../../unsafe/onTestEnd.ts";
 import type { A11yNode } from "../types/A11yNode.ts";
 import type { Found } from "../types/Found.ts";
+import type { SentRequest } from "../types/SentRequest.ts";
 import type { Harness } from "../types/Harness.ts";
 import type { TestEvent } from "../types/TestEvent.ts";
 import type { HarnessSetup } from "./HarnessSetup.ts";
@@ -20,6 +21,7 @@ import { focusOrder } from "./focusOrder.ts";
 import { nameOf } from "./nameOf.ts";
 import { nodeOf } from "./nodeOf.ts";
 import { pageRoots } from "./pageRoots.ts";
+import { requestLog } from "./requestLog.ts";
 import { recordDocuments } from "./recordDocuments.ts";
 import { renderChecks } from "./renderChecks.ts";
 import { resolve } from "./resolve.ts";
@@ -50,10 +52,12 @@ export function openHarness(setup: HarnessSetup): { readonly harness: Harness<Ct
   let unmount: (() => void) | undefined;
   let owner: Scope | undefined;
   let gone = false;
+  const log = setup.log ?? requestLog(ctx.net);
   const caught: CaughtError[] = setup.caught ?? [];
   const dispose = (): void => {
     if (gone) return;
     gone = true;
+    log.close();
     unmount?.();
     owner?.dispose();
     teardown?.();
@@ -155,10 +159,15 @@ export function openHarness(setup: HarnessSetup): { readonly harness: Harness<Ct
     if (!gone) check(true);
   };
 
+  const requests = (): readonly SentRequest[] => {
+    live();
+    return log.entries();
+  };
+
   const order = (): readonly string[] => {
     live();
     return focusOrder(container);
   };
 
-  return { harness: { ctx, a11y: tree, state, fire, settle: settleNow, find, focusOrder: order, dispose }, check };
+  return { harness: { ctx, a11y: tree, state, fire, settle: settleNow, find, focusOrder: order, requests, dispose }, check };
 }
