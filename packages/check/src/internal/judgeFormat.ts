@@ -3,19 +3,23 @@ import type { Diagnostic } from "../types/Diagnostic.ts";
 import type { FormatSite } from "./FormatSite.ts";
 import { lineCol } from "./lineCol.ts";
 
+const STD = /^@keel\/std-/;
+
 /**
  * E1108 (k.formats) at one `formatLiteral` call: its `format` names no one registered format, its `text` is no string
- * literal, or the registered format's `parse` refuses it. The registry is the process's: `keel check` imports the
- * `@keel/std-*` packages in `deps` first, and no app code runs.
+ * literal, or the registered format's `parse` refuses it. The registry is the process's (`keel check` imports the
+ * `@keel/std-*` packages in `deps` first, and no app code runs), held to `scope`: a format a `@keel/std-*` package
+ * declares counts only while that package is in `scope` (`stdInScope`), as in a fresh process.
  */
-export function judgeFormat(site: FormatSite, source: string): Diagnostic[] {
+export function judgeFormat(site: FormatSite, source: string, scope: ReadonlySet<string>): Diagnostic[] {
   const out: Diagnostic[] = [];
   const at = (pos: number, message: string): void => {
     if (pos >= 0)
       out.push({ kind: "diag", code: "E1108", path: site.path, ...lineCol(source, pos), message, see: "k.formats" });
   };
   const name = site.names.length === 1 ? site.names[0] : undefined;
-  const schema = name === undefined ? undefined : s.registry().get(name);
+  const gone = site.owner !== null && STD.test(site.owner) && !scope.has(site.owner);
+  const schema = name === undefined || gone ? undefined : s.registry().get(name);
   if (schema === undefined)
     at(
       site.formatAt,

@@ -8,7 +8,9 @@ import type { TypeEntry } from "./TypeEntry.ts";
 import { isRecord } from "./compat/isRecord.ts";
 
 /** Entries kept in one folder (k.check-cache Entries); each write removes the least recently written beyond them. */
-const KEEP = 32;
+const KEEP = 4;
+/** The largest entry written, as JSON text: 16 MiB. */
+const MAX_BYTES = 16 * 1024 * 1024;
 
 const KINDS = new Set(["r", "f", "d", "p", "l", "x"]);
 const isProbe = (v: unknown): v is Probe =>
@@ -33,7 +35,8 @@ const isSite = (v: unknown): v is FormatSite =>
   typeof v.textAt === "number" &&
   Array.isArray(v.names) &&
   v.names.every((n) => typeof n === "string") &&
-  (v.text === null || typeof v.text === "string");
+  (v.text === null || typeof v.text === "string") &&
+  (v.owner === null || typeof v.owner === "string");
 
 const isDates = (v: unknown): v is [string, number[]][] =>
   Array.isArray(v) &&
@@ -51,6 +54,7 @@ function parseEntry(text: string): TypeEntry | undefined {
   if (
     !isRecord(v) ||
     v.format !== CACHE_FORMAT ||
+    typeof v.key !== "string" ||
     !Array.isArray(v.probes) ||
     !Array.isArray(v.items) ||
     !isDates(v.dates)
@@ -59,14 +63,15 @@ function parseEntry(text: string): TypeEntry | undefined {
   const probes = v.probes.filter(isProbe);
   const items = v.items.filter((i): i is Diagnostic | FormatSite => isDiagnostic(i) || isSite(i));
   if (probes.length !== v.probes.length || items.length !== v.items.length) return undefined;
-  return { probes, items, dates: new Map(v.dates.map(([p, ns]) => [p, new Set(ns)])) };
+  return { key: v.key, probes, items, dates: new Map(v.dates.map(([p, ns]) => [p, new Set(ns)])) };
 }
 
 /**
  * The type pass's entries kept in `dir` across processes (k.check-cache): `name` is the key's hash. `load` gives the
  * entry as written, or `undefined` for one that cannot be read, does not parse or lacks the entry shape; the caller
- * uses it only when its probes hold. `save` writes a temporary file and renames it into place, then removes the least
- * recently written entries beyond 32; a failed write is ignored. What is stored: paths, hashes and diagnostics.
+ * uses it only when the key it holds is the one looked up and its probes hold. `save` writes an entry of at most
+ * 16 MiB to a temporary file and renames it into place, then removes the least recently written entries beyond 4 and
+ * every other `*.tmp` file; a failed write is ignored. What is stored: paths, hashes and diagnostics.
  */
 export function typeCache(dir: string, name: string) {
   const file = path.join(dir, `types-${name}.json`);
@@ -80,17 +85,23 @@ export function typeCache(dir: string, name: string) {
     },
     save(entry: TypeEntry): void {
       try {
-        fs.mkdirSync(dir, { recursive: true });
         const dates = [...entry.dates].map(([p, s]) => [p, [...s]]);
+        const text = JSON.stringify({
+          format: CACHE_FORMAT,
+          key: entry.key,
+          probes: entry.probes,
+          items: entry.items,
+          dates,
+        });
+        if (Buffer.byteLength(text) > MAX_BYTES) return;
+        fs.mkdirSync(dir, { recursive: true });
         const tmp = `${file}.${process.pid}.tmp`;
-        fs.writeFileSync(
-          tmp,
-          JSON.stringify({ format: CACHE_FORMAT, probes: entry.probes, items: entry.items, dates }),
-        );
+        fs.writeFileSync(tmp, text);
         fs.renameSync(tmp, file);
         const own = path.basename(file);
-        const others = fs
-          .readdirSync(dir)
+        const names = fs.readdirSync(dir);
+        for (const n of names) if (n.endsWith(".tmp")) fs.rmSync(path.join(dir, n), { force: true });
+        const others = names
           .filter((n) => n.startsWith("types-") && n.endsWith(".json") && n !== own)
           .map((n) => ({ n, at: fs.statSync(path.join(dir, n), { throwIfNoEntry: false })?.mtimeMs ?? 0 }))
           .sort((a, b) => b.at - a.at);

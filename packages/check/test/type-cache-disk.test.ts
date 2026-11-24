@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, expect, it } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { check } from "../src/index.ts";
 import type { TypeEntry } from "../src/internal/TypeEntry.ts";
 import { typeCache } from "../src/internal/typeCache.ts";
@@ -17,13 +17,14 @@ beforeEach(() => {
 afterEach(() => rmSync(root, { recursive: true, force: true }));
 
 const entry: TypeEntry = {
+  key: "k",
   probes: [
     ["r", "/x/a.d.ts", "ab"],
     ["f", "/x/b.ts", "0"],
   ],
   items: [
     { kind: "diag", code: "E1751", path: "a.ts", line: 1, col: 2, message: "m", see: "k.check" },
-    { kind: "format", path: "a.ts", formatAt: 3, textAt: 9, names: ["iso"], text: "x" },
+    { kind: "format", path: "a.ts", formatAt: 3, textAt: 9, names: ["iso"], text: "x", owner: "@keel/std-x" },
   ],
   dates: new Map([["a.ts", new Set([3, 7])]]),
 };
@@ -42,7 +43,8 @@ it("an entry that cannot be read, does not parse or lacks the entry shape is a m
   for (const bad of [
     good.slice(0, 40),
     "{}",
-    good.replace('"format":1', '"format":2'),
+    good.replace('"format":2', '"format":1'),
+    good.replace('"key":"k"', '"key":3'),
     good.replace('["f","/x/b.ts","0"]', '["q","/x/b.ts","0"]'),
     good.replace('"line":1', '"line":"1"'),
     good.replace('"text":"x"', '"text":3'),
@@ -52,10 +54,53 @@ it("an entry that cannot be read, does not parse or lacks the entry shape is a m
   }
 });
 
-it("a folder keeps 32 entries, the one just written among them", () => {
-  for (let i = 0; i < 40; i++) typeCache(dir, `k${i}`).save(entry);
-  expect(readdirSync(dir)).toHaveLength(32);
-  expect(typeCache(dir, "k39").load()).toBeDefined();
+it("a folder keeps 4 entries, the one just written among them, and no other writer's temporary file", () => {
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, "t.json.999999.tmp"), "{");
+  for (let i = 0; i < 6; i++) typeCache(dir, `k${i}`).save(entry);
+  expect(readdirSync(dir)).toHaveLength(4);
+  expect(readdirSync(dir).some((n) => n.endsWith(".tmp"))).toBe(false);
+  expect(typeCache(dir, "k5").load()).toBeDefined();
+});
+
+it("an entry above 16 MiB is not written", () => {
+  const big = "m".repeat(1024 * 1024);
+  const items = Array.from({ length: 17 }, (_, i) => ({
+    ...entry.items[0],
+    kind: "diag" as const,
+    code: "E1751",
+    path: "a.ts",
+    line: i,
+    col: 1,
+    message: big,
+  }));
+  typeCache(dir, "big").save({ ...entry, items });
+  expect(typeCache(dir, "big").load()).toBeUndefined();
+  typeCache(dir, "small").save(entry);
+  expect(typeCache(dir, "small").load()).toEqual(entry);
+});
+
+/** `check()` from a module instance of its own (no memo): what the next process gives. */
+async function fresh(files: { path: string; source: string }[], cached = true) {
+  vi.resetModules();
+  const m = await import("../src/index.ts");
+  return m.check(files, cached ? { root, typeCache: dir } : { root }).diagnostics;
+}
+
+it("an entry holding another key (a copied or renamed file) is a miss for check, which rewrites it", async () => {
+  const files = [{ path: "a.ts", source: "export const a: string = 1;\n" }];
+  const other = [{ path: "a.ts", source: "export const a: number = 1;\n" }];
+  check(files, { root, typeCache: dir });
+  check(other, { root, typeCache: dir });
+  const [x, y] = readdirSync(dir).map((n) => join(dir, n));
+  const tx = readFileSync(x ?? "", "utf8");
+  const ty = readFileSync(y ?? "", "utf8");
+  writeFileSync(x ?? "", ty);
+  writeFileSync(y ?? "", tx);
+  expect(await fresh(files)).toEqual(await fresh(files, false));
+  expect(await fresh(other)).toEqual(await fresh(other, false));
+  expect((await fresh(files)).map((d) => d.code)).toEqual(["E1751"]);
+  expect(readFileSync(x ?? "", "utf8")).toBe(tx);
 });
 
 it("check with a typeCache writes one entry of paths, hashes and diagnostics, and reports what a check without it does", () => {

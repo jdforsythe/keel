@@ -17,10 +17,12 @@ import { judgeFormat } from "./judgeFormat.ts";
 import { lineCol } from "./lineCol.ts";
 import { mapTsDiagnostic } from "./mapTsDiagnostic.ts";
 import { ownCode } from "./ownCode.ts";
+import { packageName } from "./packageName.ts";
 import { probeRecorder } from "./probeRecorder.ts";
 import { probesHold } from "./probesHold.ts";
 import { resultDiscards } from "./resultDiscards.ts";
 import { textNodes } from "./textNodes.ts";
+import { tsCode } from "./tsCode.ts";
 import { tsCompilerOptions } from "./tsCompilerOptions.ts";
 import { typeCache } from "./typeCache.ts";
 import { unifiedDiff } from "./unifiedDiff.ts";
@@ -36,14 +38,26 @@ const JSX_NAME = "__keel_check_jsx__.d.ts";
 const CODE = /\.[cm]?[jt]sx?$/;
 
 const JSX_SOURCE = "@keel/runtime-dom";
-/** Parsed on-disk files (node_modules, workspace packages, TS libs) by path, reused while their text is the same. */
-const disk = new Map<string, ts.SourceFile>();
-const virtual = new Map<string, ts.SourceFile>();
+/**
+ * Parsed files (app files, node_modules, workspace packages, TS libs) by compiler options, then path: one is reused
+ * only by a pass with the same options, while its text is the same (k.check-cache In one process). TypeScript keeps a
+ * file's imports on its parsed form, and `jsxImportSource` adds one.
+ */
+const parsed = new Map<string, Map<string, ts.SourceFile>>();
 /** Passes by key; one is reused only while its probes hold (k.check-cache Probes). */
 const memo = new Map<string, TypeEntry>();
 const MEMO_MAX = 128;
 
 const norm = (p: string): string => p.split(path.sep).join("/");
+
+function parsedFor(options: ts.CompilerOptions): Map<string, ts.SourceFile> {
+  const key = JSON.stringify(options);
+  const held = parsed.get(key);
+  if (held !== undefined) return held;
+  const made = new Map<string, ts.SourceFile>();
+  parsed.set(key, made);
+  return made;
+}
 
 function sourceFile(cache: Map<string, ts.SourceFile>, fileName: string, text: string): ts.SourceFile {
   const hit = cache.get(fileName);
@@ -70,6 +84,7 @@ function keyOf(code: readonly SourceFile[], base: string, skip: ReadonlyMap<stri
         own.version,
         own.hash,
         ts.version,
+        tsCode(),
         tsCompilerOptions(),
         base,
         ts.sys.useCaseSensitiveFileNames,
@@ -81,9 +96,11 @@ function keyOf(code: readonly SourceFile[], base: string, skip: ReadonlyMap<stri
 }
 
 /** The pass's findings as `check()` reports them, each `formatLiteral` call judged against the registry now. */
-function resolve(entry: TypeEntry, code: readonly SourceFile[]): Typed {
+function resolve(entry: TypeEntry, code: readonly SourceFile[], scope: ReadonlySet<string>): Typed {
   const sources = new Map(code.map((f) => [f.path, f.source]));
-  const diagnostics = entry.items.flatMap((i) => (i.kind === "diag" ? [i] : judgeFormat(i, sources.get(i.path) ?? "")));
+  const diagnostics = entry.items.flatMap((i) =>
+    i.kind === "diag" ? [i] : judgeFormat(i, sources.get(i.path) ?? "", scope),
+  );
   return { diagnostics, dates: entry.dates };
 }
 
@@ -114,6 +131,7 @@ export function typeCheck(
   files: readonly SourceFile[],
   root: string,
   skip: ReadonlyMap<string, ReadonlySet<string>>,
+  scope: ReadonlySet<string>,
   cacheDir?: string,
 ): Typed {
   const code = files.filter((f) => CODE.test(f.path) && !f.path.endsWith(".d.ts"));
@@ -121,19 +139,19 @@ export function typeCheck(
   const base = norm(path.resolve(root));
   const key = keyOf(code, base, skip);
   const held = memo.get(key);
-  if (held !== undefined && probesHold(held.probes)) return resolve(held, code);
+  if (held !== undefined && probesHold(held.probes)) return resolve(held, code, scope);
   const kept = cacheDir === undefined ? undefined : typeCache(cacheDir, key);
   const loaded = kept?.load();
-  if (loaded !== undefined && probesHold(loaded.probes)) {
+  if (loaded !== undefined && loaded.key === key && probesHold(loaded.probes)) {
     remember(key, loaded);
-    return resolve(loaded, code);
+    return resolve(loaded, code, scope);
   }
-  const { entry, whole } = pass(code, base, skip);
+  const { entry, whole } = pass(code, base, skip, key);
   if (whole) {
     remember(key, entry);
     kept?.save(entry);
   }
-  return resolve(entry, code);
+  return resolve(entry, code, scope);
 }
 
 /** One TypeScript program over `code`, every disk question recorded; `whole` is false when the disk changed under it. */
@@ -141,6 +159,7 @@ function pass(
   code: readonly SourceFile[],
   base: string,
   skip: ReadonlyMap<string, ReadonlySet<string>>,
+  key: string,
 ): { entry: TypeEntry; whole: boolean } {
   const byName = new Map<string, SourceFile>();
   const views = new Map<string, Annotated>();
@@ -170,14 +189,6 @@ function pass(
     if (n === jsxName) return JSX_DTS;
     return views.get(n)?.text ?? rec.read(fileName);
   };
-  host.getSourceFile = (fileName) => {
-    const n = norm(fileName);
-    if (n === jsxName) return sourceFile(virtual, n, JSX_DTS);
-    const v = views.get(n);
-    if (v !== undefined) return sourceFile(virtual, n, v.text);
-    const text = rec.read(fileName);
-    return text === undefined ? undefined : sourceFile(disk, n, text);
-  };
   const typeRef = (name: string): string | undefined =>
     ts.resolveTypeReferenceDirective(name, `${base}/__probe__.ts`, FROM_ROOT, host).resolvedTypeReferenceDirective
       ?.resolvedFileName;
@@ -186,6 +197,23 @@ function pass(
   const probe = ts.resolveModuleName(`${JSX_SOURCE}/jsx-runtime`, `${base}/__probe__.tsx`, strict, host);
   const shim = probe.resolvedModule === undefined;
   const options: ts.CompilerOptions = shim ? strict : { ...strict, jsxImportSource: JSX_SOURCE };
+  const files = parsedFor(options);
+  host.getSourceFile = (fileName) => {
+    const n = norm(fileName);
+    if (n === jsxName) return sourceFile(files, n, JSX_DTS);
+    const v = views.get(n);
+    if (v !== undefined) return sourceFile(files, n, v.text);
+    const text = rec.read(fileName);
+    return text === undefined ? undefined : sourceFile(files, n, text);
+  };
+  const owners = new Map<string, string | null>();
+  const ownerOf = (fileName: string): string | null => {
+    const held = owners.get(fileName);
+    if (held !== undefined) return held;
+    const found = packageName(fileName, (f) => host.readFile(f));
+    owners.set(fileName, found);
+    return found;
+  };
   const program = ts.createProgram({
     rootNames: [
       ...byName.keys(),
@@ -230,7 +258,7 @@ function pass(
     };
     for (const at of resultDiscards(sf, checker))
       push("E1453", at, "Result discarded as a statement; narrow on r.ok", "k.errors");
-    for (const f of formatLiterals(sf, checker))
+    for (const f of formatLiterals(sf, checker, ownerOf))
       out.push({
         kind: "format",
         path: file.path,
@@ -238,6 +266,7 @@ function pass(
         textAt: view.original(f.textAt),
         names: f.names,
         text: f.text,
+        owner: f.owner,
       });
     dates.set(file.path, new Set(dateReads(sf, checker, program).map(view.original)));
     if (file.path.endsWith("x") && isAppPath(file.path))
@@ -245,5 +274,5 @@ function pass(
         push("E1406", t.at, "JSX child renders nothing; call the prop", "k.place", t.fix);
   }
   const probes = rec.probes();
-  return { entry: { probes: probes ?? [], items: out, dates }, whole: probes !== undefined };
+  return { entry: { key, probes: probes ?? [], items: out, dates }, whole: probes !== undefined };
 }

@@ -21,25 +21,38 @@ function isFormatLiteral(call: ts.CallExpression, checker: ts.TypeChecker): bool
   return (sym?.declarations ?? []).some((d) => DECLARED_IN.test(d.getSourceFile().fileName.split("\\").join("/")));
 }
 
+/** The file declaring the value `format` names (an identifier, a namespace member, or a call's callee). */
+function declaringFile(format: ts.Expression, checker: ts.TypeChecker): string | undefined {
+  const target = ts.isCallExpression(format) ? format.expression : format;
+  const at = ts.isPropertyAccessExpression(target) ? target.name : ts.isIdentifier(target) ? target : undefined;
+  let sym = at === undefined ? undefined : checker.getSymbolAtLocation(at);
+  if (sym !== undefined && (sym.flags & ts.SymbolFlags.Alias) !== 0) sym = checker.getAliasedSymbol(sym);
+  return sym?.declarations?.[0]?.getSourceFile().fileName;
+}
+
 /**
  * The `formatLiteral` calls of `sf` (E1108, k.formats), however imported: the offsets of the `format` and `text`
  * arguments, the format names the call's type carries, and the literal text (`'..'`, `".."` or a template without
- * substitution), or `null` for any other argument. `judgeFormat` judges each against the registry.
+ * substitution), or `null` for any other argument, and the package declaring the `format` value (`ownerOf` of its
+ * file). `judgeFormat` judges each against the registry.
  */
 export function formatLiterals(
   sf: ts.SourceFile,
   checker: ts.TypeChecker,
-): { formatAt: number; textAt: number; names: string[]; text: string | null }[] {
-  const out: { formatAt: number; textAt: number; names: string[]; text: string | null }[] = [];
+  ownerOf: (fileName: string) => string | null,
+): { formatAt: number; textAt: number; names: string[]; text: string | null; owner: string | null }[] {
+  const out: { formatAt: number; textAt: number; names: string[]; text: string | null; owner: string | null }[] = [];
   const visit = (n: ts.Node): void => {
     if (ts.isCallExpression(n) && n.arguments.length >= 2 && isFormatLiteral(n, checker)) {
       const [format, text] = n.arguments;
+      const declared = format === undefined ? undefined : declaringFile(format, checker);
       if (format !== undefined && text !== undefined)
         out.push({
           formatAt: format.getStart(sf),
           textAt: text.getStart(sf),
           names: namesOf(n, checker),
           text: ts.isStringLiteral(text) || ts.isNoSubstitutionTemplateLiteral(text) ? text.text : null,
+          owner: declared === undefined ? null : ownerOf(declared),
         });
     }
     ts.forEachChild(n, visit);

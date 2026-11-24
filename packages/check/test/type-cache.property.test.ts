@@ -1,15 +1,19 @@
 // Seed 1337. The type cache's law (k.check-cache): over generated edit sequences, a warm `check()` (this module's memo,
 // and a fresh module reading the folder the earlier calls wrote) reports what a cold one (a fresh module, no folder)
 // reports. The edits include the holes an mtime cache had: a file rewritten with its old time, a dependency's
-// `package.json` `types` changed, a new file shadowing a resolution, and a linked package's target gaining one.
+// `package.json` `types` changed, a new file shadowing a resolution, and a linked package's target gaining one; and
+// what one process carries between calls: the JSX runtime starting or stopping to resolve (other compiler options for
+// files already parsed) and a `@keel/std-*` package leaving `deps` after a call imported it.
 import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import fc from "fast-check";
 import { afterAll, expect, it, vi } from "vitest";
 import { check } from "../src/index.ts";
 
 const SEED = 1337;
+const REPO = join(dirname(fileURLToPath(import.meta.url)), "../../..");
 const OLD = 1_700_000_000;
 const bases: string[] = [];
 afterAll(() => {
@@ -29,7 +33,9 @@ type Edit =
   | { k: "other"; on: boolean }
   | { k: "types"; to: string }
   | { k: "shadow"; on: boolean }
-  | { k: "linked"; on: boolean };
+  | { k: "linked"; on: boolean }
+  | { k: "jsx"; on: boolean }
+  | { k: "deps"; on: boolean };
 
 const types = fc.constantFrom("number", "string");
 const edit: fc.Arbitrary<Edit> = fc.oneof(
@@ -39,6 +45,8 @@ const edit: fc.Arbitrary<Edit> = fc.oneof(
   fc.constantFrom("index.d.ts", "other.d.ts").map((to): Edit => ({ k: "types", to })),
   fc.boolean().map((on): Edit => ({ k: "shadow", on })),
   fc.boolean().map((on): Edit => ({ k: "linked", on })),
+  fc.boolean().map((on): Edit => ({ k: "jsx", on })),
+  fc.boolean().map((on): Edit => ({ k: "deps", on })),
 );
 
 function project(): { root: string; foo: string; bar: string } {
@@ -46,6 +54,7 @@ function project(): { root: string; foo: string; bar: string } {
   bases.push(base);
   const root = join(base, "p");
   const foo = join(root, "node_modules/foo");
+  mkdirSync(join(root, "node_modules/@keel"), { recursive: true });
   const bar = join(base, "bar");
   put(join(root, "package.json"), '{"name":"p","private":true,"type":"module"}\n');
   put(join(foo, "package.json"), '{"name":"foo","types":"index.d.ts"}\n');
@@ -54,10 +63,19 @@ function project(): { root: string; foo: string; bar: string } {
   put(join(bar, "package.json"), '{"name":"bar","types":"index.d.ts"}\n');
   put(join(bar, "x.d.ts"), DTS("number"));
   symlinkSync(bar, join(root, "node_modules/bar"));
+  for (const p of ["schema", "std-temporal", "compiler"])
+    symlinkSync(join(REPO, "packages", p), join(root, "node_modules/@keel", p));
   return { root, foo, bar };
 }
 
-function apply(p: { foo: string; bar: string }, e: Edit): void {
+function apply(p: { root: string; foo: string; bar: string }, e: Edit): void {
+  const dom = join(p.root, "node_modules/@keel/runtime-dom");
+  if (e.k === "jsx") {
+    if (e.on) {
+      put(join(dom, "package.json"), '{"name":"@keel/runtime-dom","exports":{"./jsx-runtime":{"types":"./j.d.ts"}}}');
+      put(join(dom, "j.d.ts"), "export namespace JSX { interface IntrinsicElements { span: { bar?: 1 } } }\n");
+    } else rmSync(dom, { recursive: true, force: true });
+  }
   if (e.k === "dts") put(join(p.foo, "index.d.ts"), DTS(e.type));
   else if (e.k === "other") {
     if (e.on) put(join(p.foo, "other.d.ts"), DTS("string"));
@@ -72,15 +90,28 @@ function apply(p: { foo: string; bar: string }, e: Edit): void {
   }
 }
 
-const files = (type: string) => [
+const MODULE = (deps: boolean) =>
+  `import { module } from '@keel/compiler'\nexport default module({ id: 'a', deps: [${deps ? "'@keel/std-temporal'" : ""}], capabilities: [], public: { exports: [] } })\n`;
+const files = (type: string, deps: boolean) => [
+  { path: "modules/a/module.ts", source: MODULE(deps) },
+  { path: "modules/a/d.tsx", source: "export const d = <span foo={1} />\n" },
+  {
+    path: "modules/a/t.ts",
+    source:
+      "import { formatLiteral } from '@keel/schema'\nimport { Instant } from '@keel/std-temporal'\n\nexport const t = formatLiteral(Instant, '2026-02-28T00:00:00.000Z')\n",
+  },
   { path: "modules/a/a.ts", source: `import { n } from 'foo'\n\nexport const a: ${type} = n\n` },
   { path: "modules/a/b.ts", source: "import { n } from 'foo/sub'\n\nexport const b: number = n\n" },
   { path: "modules/a/c.ts", source: "import { n } from 'bar/x'\n\nexport const c: number = n\n" },
 ];
 
-/** `check()` from a module instance of its own: no memo, no parsed files from this module's calls. */
-async function fresh(): Promise<typeof check> {
+/**
+ * `check()` from a module instance of its own: no memo, no parsed files, no format registry from this module's calls;
+ * with `deps`, `@keel/std-temporal` imported first into it, as `keel check` imports what `deps` lists.
+ */
+async function fresh(deps: boolean): Promise<typeof check> {
   vi.resetModules();
+  if (deps) await import("@keel/std-temporal");
   const m = await import("../src/index.ts");
   return m.check;
 }
@@ -91,13 +122,15 @@ it("a warm check reports what a cold one does, after every edit of a generated s
       const p = project();
       const folder = join(p.root, "node_modules/.cache/keel");
       let type = "number";
-      expect(check(files(type), { root: p.root, typeCache: folder }).diagnostics).toEqual([]);
+      let deps = true;
+      check(files(type, deps), { root: p.root, typeCache: folder });
       for (const e of edits) {
         apply(p, e);
         if (e.k === "a") type = e.type;
-        const warm = check(files(type), { root: p.root, typeCache: folder }).diagnostics;
-        const fromDisk = (await fresh())(files(type), { root: p.root, typeCache: folder }).diagnostics;
-        const cold = (await fresh())(files(type), { root: p.root }).diagnostics;
+        if (e.k === "deps") deps = e.on;
+        const warm = check(files(type, deps), { root: p.root, typeCache: folder }).diagnostics;
+        const fromDisk = (await fresh(deps))(files(type, deps), { root: p.root, typeCache: folder }).diagnostics;
+        const cold = (await fresh(deps))(files(type, deps), { root: p.root }).diagnostics;
         expect(warm).toEqual(cold);
         expect(fromDisk).toEqual(cold);
       }

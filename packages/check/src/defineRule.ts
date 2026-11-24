@@ -1,5 +1,7 @@
+import { callerPackage } from "./internal/callerPackage.ts";
 import { registrations } from "./internal/registrations.ts";
 import { registry } from "./internal/registry.ts";
+import { ruleOwners } from "./internal/ruleOwners.ts";
 import type { RuleDef } from "./types/RuleDef.ts";
 
 /**
@@ -11,5 +13,6 @@ export function defineRule(def: RuleDef & { readonly explain: string }): RuleDef
   if (registry().has(def.code)) throw new Error(`E1753 rule code ${def.code} registered twice`);
   const rule: RuleDef = Object.freeze({ ...def });
   registrations.set(rule.code, rule);
+  ruleOwners.set(rule.code, callerPackage());
   return rule;
 }
