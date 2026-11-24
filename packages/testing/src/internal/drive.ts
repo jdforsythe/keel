@@ -1,6 +1,7 @@
 import type { Ctx, Schedule, SimCtx } from "@keel/ctx";
 import { observe } from "@keel/ctx";
-import { driven, heldWork } from "@keel/ctx/internal";
+import { driven, storageWrites } from "@keel/ctx/internal";
+import { stores } from "@keel/store";
 import type { DriveHandle } from "./DriveHandle.ts";
 import type { HarnessGauge } from "./HarnessGauge.ts";
 import { drained } from "./drained.ts";
@@ -9,7 +10,7 @@ import { harnessGauges } from "./harnessGauges.ts";
 import { runTracker } from "./runTracker.ts";
 import { traceEvent } from "./traceEvent.ts";
 
-/** Real milliseconds work may stay pending before E1728 (k.drive Stalls); it only fails a run. */
+/** Real milliseconds a piece of work may stay pending, from its own creation, before E1728 (k.drive Stalls); it only fails a run. */
 const PENDING_MS = 10_000;
 /** The longest `run(ms)` (k.sim simulate). */
 const MAX_RUN_MS = 600_000;
@@ -38,8 +39,11 @@ export function drive(ctx: SimCtx, schedule: Schedule, horizon: number, record: 
   const waiting: Waiting[] = [];
   const trace: string[] = [];
   const note = (entry: Record<string, unknown>): void => {
-    trace.push(JSON.stringify({ at: ctx.clock.now(), ...entry }));
+    trace.push(JSON.stringify(entry));
   };
+  /** The harness calls in progress that are not stalled on an unanswered `ctx.net` route, first seen at real times. */
+  const busyCalls = (): readonly object[] => [...gauge.calls].filter((call) => !call.stalled());
+  const seen = new WeakMap<object, number>();
   let over = false;
   let reject: (e: Error) => void = () => {};
   const failure = new Promise<never>((_, no) => {
@@ -50,7 +54,7 @@ export function drive(ctx: SimCtx, schedule: Schedule, horizon: number, record: 
     reject(fail("E1728", `held work waits on the sim clock: ${label}`, { label }));
   });
   const watch = (c: Ctx): void => {
-    if (record) observe(c, (e) => note(traceEvent(e)));
+    if (record) observe(c, (e) => note({ kind: "event", at: c.clock.now(), event: traceEvent(e) }));
   };
   driven.set(ctx.clock, { enter: tracker.enter, waited: tracker.waited, replica: watch });
   watch(ctx);
@@ -63,29 +67,28 @@ export function drive(ctx: SimCtx, schedule: Schedule, horizon: number, record: 
   const bound = (): number =>
     waiting.reduce((m, w) => Math.max(m, w.bound), waiting.length === 0 ? start + horizon : 0);
   const moveTo = (at: number): void => {
-    ctx.clock.advance(Math.max(0, at - ctx.clock.now()));
-    if (record) note({ kind: "moment" });
+    // Inside the run's context, so the waiters, offline-edge callbacks and observers it runs make work of the run.
+    tracker.inRun(() => ctx.clock.advance(Math.max(0, at - ctx.clock.now())));
+    if (record) note({ kind: "moment", at: ctx.clock.now() });
   };
   const loop = async (): Promise<void> => {
-    let since: number | null = null;
     while (!over) {
       await drained();
       if (over) return;
-      const held = heldWork(ctx);
       const live = tracker.pending();
-      let stalled = 0;
-      for (const call of gauge.calls) if (call.stalled()) stalled++;
-      if (held.length > 0 || live.length > 0 || gauge.calls.size > stalled) {
+      const calls = busyCalls();
+      if (live.length > 0 || calls.length > 0) {
         const now = performance.now();
-        since ??= now;
-        if (now - since > PENDING_MS) {
-          const label = held[0] ?? live[0] ?? "a harness call";
+        const late = live.find((piece) => now - piece.since > PENDING_MS);
+        const call = calls.find((c) => now - (seen.get(c) ?? now) > PENDING_MS);
+        for (const c of calls) if (!seen.has(c)) seen.set(c, now);
+        if (late !== undefined || call !== undefined) {
+          const label = late?.label ?? "a harness call";
           reject(fail("E1728", `work in flight never answered: ${label}`, { label }));
           return;
         }
         continue;
       }
-      since = null;
       const at = next();
       if (at !== null && at <= bound()) {
         moveTo(at);
@@ -129,6 +132,22 @@ export function drive(ctx: SimCtx, schedule: Schedule, horizon: number, record: 
     run,
     failure,
     trace,
+    outlived: async () => {
+      // Native resources are destroyed a turn after they close: let a closed one go before it counts.
+      for (let turn = 0; turn < 3 && (tracker.pending().length > 0 || busyCalls().length > 0); turn++) await drained();
+      const left = tracker.pending()[0];
+      return left?.label ?? (busyCalls().length > 0 ? "a harness call" : undefined);
+    },
+    finish: () => {
+      if (!record) return;
+      for (const [key, value] of storageWrites(ctx.storage)) note({ kind: "storage", key, value });
+      const live = [...stores()].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+      // A log entry's `at` is its store's own stamp (by default a counter no restore resets), not the run's.
+      for (const [id, st] of live) {
+        const snap = st.snapshot({ meta: true });
+        note({ kind: "store", id, value: { ...snap, log: snap.log.map(({ at: _at, ...rest }) => rest) } });
+      }
+    },
     stop: async () => {
       over = true;
       harnessGauges.delete(ctx.clock);

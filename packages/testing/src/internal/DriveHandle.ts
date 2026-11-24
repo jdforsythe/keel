@@ -7,5 +7,9 @@ export interface DriveHandle {
   readonly run: (ms?: number) => Promise<void>;
   readonly failure: Promise<never>;
   readonly trace: readonly string[];
+  /** The label of the first piece of work still pending once the scenario resolved, in creation order, if any. */
+  readonly outlived: () => Promise<string | undefined>;
+  /** Append the run's final storage and store values to the trace (k.drive Law). */
+  readonly finish: () => void;
   readonly stop: () => Promise<void>;
 }

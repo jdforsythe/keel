@@ -51,10 +51,17 @@ export async function simulate(scenario: Scenario, options: SimulateOptions = {}
     running.catch(() => {});
     try {
       await Promise.race([running, driven.failure]);
+      const left = await driven.outlived();
+      if (left !== undefined)
+        return {
+          error: fail("E1728", `work outlived the scenario: ${left}`, { label: left }),
+          trace: driven.trace,
+        };
       return { trace: driven.trace };
     } catch (error) {
       return { error, trace: driven.trace };
     } finally {
+      driven.finish();
       await driven.stop();
     }
   };
@@ -72,12 +79,18 @@ export async function simulate(scenario: Scenario, options: SimulateOptions = {}
         );
     return undefined;
   };
+  /** The first difference between two replays: the run has drifted, so there is nothing to shrink (k.drive Law check). */
+  let drifted: Error | undefined;
   const once = async (simRun: SimRun): Promise<void> => {
+    if (drifted !== undefined) return;
     const first = await attempt(simRun, law);
     if (law) {
       const second = await attempt(simRun, true);
       const differ = compared(first.trace, second.trace);
-      if (differ !== undefined) throw differ;
+      if (differ !== undefined) {
+        drifted = differ;
+        throw differ;
+      }
     }
     if (first.error !== undefined) throw first.error;
   };
@@ -126,6 +139,7 @@ export async function simulate(scenario: Scenario, options: SimulateOptions = {}
       }),
       { seed, numRuns: runs },
     );
+    if (drifted !== undefined) throw drifted;
     if (out.failed) throw await failed(out.errorInstance, out.numRuns, "shrunk", out.counterexample?.[0]);
     return { seed, runs };
   } finally {
