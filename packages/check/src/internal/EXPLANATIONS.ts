@@ -340,6 +340,13 @@ const ROWS: readonly Row[] = [
     "k.module",
   ],
   [
+    "E1165",
+    "a deps entry the module does not use",
+    "An app module in deps is one a non-test file of the module imports from, or whose layout a binding names either way (k.module Checks). Any other entry is an edge no code needs: it can close a deps cycle (E1153) that no import makes.",
+    "remove the entry from deps",
+    "k.module",
+  ],
+  [
     "E1160",
     "createApp({ std }) file missing, not { data, hash }, or hand-edited",
     "The std.json artifact is built from the module manifests; its hash must match its data.",
@@ -1235,7 +1242,7 @@ const ROWS: readonly Row[] = [
   [
     "E1802",
     "missing or blank a11y-required prop",
-    "Heading level, Image alt, label on inputs, Link and Button text, one of label and labelledBy on Host; a blank literal label names nothing.",
+    "Heading level, Image alt, label on inputs, Link and Button text, one of label and labelledBy on Host and on Box scroll; a blank literal label names nothing.",
     '<Input /> -> <Input label="Email" />',
     "k.ui",
   ],

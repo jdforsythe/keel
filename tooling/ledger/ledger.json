@@ -22314,6 +22314,26 @@
       "rung": "example"
     },
     {
+      "item": "k.module#16",
+      "rung": "none"
+    },
+    {
+      "item": "k.module#17",
+      "rung": "none"
+    },
+    {
+      "item": "k.module#18",
+      "rung": "none"
+    },
+    {
+      "item": "k.module#19",
+      "rung": "none"
+    },
+    {
+      "item": "k.module#20",
+      "rung": "none"
+    },
+    {
       "item": "k.mount-scope#1",
       "rung": "example"
     },
@@ -23200,6 +23220,10 @@
     {
       "item": "k.scaffold#22",
       "rung": "example"
+    },
+    {
+      "item": "k.scaffold#23",
+      "rung": "none"
     },
     {
       "item": "k.schema#1",

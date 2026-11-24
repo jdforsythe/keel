@@ -30,7 +30,7 @@ keel codemod place digest --to jobs --adapter node
 
 **Codemods.**
 - `rename` (component, route, store, transaction, schema, field, module) updates the declaration, file name, every import, `href()` call (free or a contract's), `uses:` list, element-id prefix, test, contract entry and binding.
-- `move` relocates a file to another module, updating imports and both manifests.
+- `move` relocates a file to another module, updating imports and manifests: a module gains each `deps` entry the move makes it need (k.module E1152) and loses each entry the move leaves unused (E1165).
 - `place` moves a module to a deployable in `topology.ts` (a new deployable needs `--adapter`; an emptied one is removed) and regenerates the deploy files; nothing else changes.
 - `add-field` adds a field to a schema and to every initial state, fixture, and form `initial` that constructs it. Optional fields need no data; required fields take `--default`.
 
@@ -71,3 +71,4 @@ Both forms add `@keel/services` to `dependencies` at the version of `@keel/serve
 - In the default project, each is E1353 naming E1590, nothing written: `base: 'http://api.example.com'` with a `reason`; a `reason` of 201 characters; an origin that would be the 17th under `connect`. In the `node` project `base: 'http://internal:8080'` applies.
 - `route { id: 'orders.about', path: '/about', 'no-loader': true }` creates the page component and the route test alone, adds the contract entry, and binds `'orders.about'` to `{ component }`: no `*.server.ts` file is created and `routes.ts` gains no loader import; `keel check` and `keel test` are clean in the default and the `node` project. With `api: true` it is E1052, nothing written.
 - In a project where `keel build` ran and `keel check` is clean, each generator applied by `keel scaffold` leaves `keel check` clean with no E1005, every file under `dist/` byte-identical, no W1005 in its output and a trailer whose `artifacts` is above 0; `keel scaffold service orders --base https://api.example.com --reason r` in the default project is one of them. With `--dry-run`, and in a project `keel build` never ran in, no file under `.keel/` is written and the trailer has no `artifacts`.
+- `move F --to c`, `F` the only file of `a` importing from `b`, removes `b` from `a`'s `deps` and adds it to `c`'s; a module `d` whose one import from `a` was `F` gains `c` and loses `a`; `keel check`, clean before, is clean after, with no E1165.

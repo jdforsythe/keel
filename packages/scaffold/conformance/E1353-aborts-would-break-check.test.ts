@@ -1,7 +1,8 @@
 // Spec: k.scaffold, clause "An operation whose edit set would introduce a diagnostic writes no file and reports E1353."
 // Spec: k.scaffold, Rules "E1353 operation aborted, would break check; nothing written"
-// Scenario: moving OrderCard into catalog while catalog already depends on orders would create a deps cycle (E1153)
-// and orders would import a module not in its deps; the clean counterpart moves it without that dependency.
+// Scenario: catalog keeps a second non-test file importing orders' contract, so the move's removal of unused deps
+// (k.scaffold move) leaves `orders` in catalog's deps; OrdersPage imports OrderCard, so orders gains `catalog`: a
+// deps cycle (E1153). The clean counterpart moves it without that dependency.
 import { expect, it } from "vitest";
 import { type Files, apply, dryRun, errText, only, rel, scaffoldRaw, snap, withOrders } from "./fixtures.ts";
 
@@ -16,6 +17,11 @@ function cyclic(): Files {
   f.set(
     row,
     `import OrderCard from '${rel(row, only(f, /(^|\/)OrderCard\.tsx$/))}'\nexport default function CatalogRow() {\n  return OrderCard\n}\n`,
+  );
+  const link = "modules/catalog/CatalogLink.ts";
+  f.set(
+    link,
+    `import { orders } from '${rel(link, "modules/orders/orders.contract.ts")}'\nexport const CatalogLink = orders\n`,
   );
   return f;
 }

@@ -8,13 +8,13 @@
     "mcp.tools-list": 2000,
     "docs.map": 1510,
     "docs.section": 3100,
-    "docs.skill": 3010,
+    "docs.skill": 3100,
     "docs.for": 400,
     "docs.agents": 600
   },
   "size": {
     "@keel/check": {
-      "max": "61.75kb",
+      "max": "62kb",
       "platform": "node"
     },
     "@keel/check/explain": {
@@ -210,7 +210,7 @@
       "platform": "node"
     },
     "@keel/ui": "5.5kb",
-    "@keel/ui/aria": "3.5kb"
+    "@keel/ui/aria": "3.6kb"
   },
   "mutate": {
     "default": 30
