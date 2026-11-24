@@ -1,4 +1,4 @@
-import { clip } from "@keel/compiler/internal";
+import { clipMessage } from "@keel/schema/internal";
 import type { Diagnostic } from "../types/Diagnostic.ts";
 import type { Finding } from "../types/Finding.ts";
 import type { RuleDef } from "../types/RuleDef.ts";
@@ -15,7 +15,7 @@ function toDiagnostic(rule: RuleDef, f: Finding, input: RuleInput): Diagnostic {
     path: f.path,
     line: f.line,
     col: f.col,
-    message: clip(text, 89),
+    message: clipMessage(text, 89),
   };
   const withSee: Diagnostic = rule.see === undefined ? base : { ...base, see: rule.see };
   const edits = rule.fix?.(f, { file: input.file, ast: input.ast }) ?? null;

@@ -1,4 +1,4 @@
-import { clip } from "@keel/compiler/internal";
+import { clipMessage } from "@keel/schema/internal";
 import type { Program } from "oxc-parser";
 import { findingAt } from "../internal/findingAt.ts";
 import { isAppPath } from "../internal/isAppPath.ts";
@@ -51,8 +51,8 @@ export const oneExport: RuleDef = {
     str(f.data, "kind") === "reexport"
       ? "re-export outside index.ts; import from the source file"
       : str(f.data, "kind") === "many"
-        ? clip(`${str(f.data, "count")} exports in one file (${str(f.data, "names")}); one export per file`, 89)
-        : clip(`file ${str(f.data, "stem")} exports ${str(f.data, "name")}; filename must equal its export`, 89),
+        ? clipMessage(`${str(f.data, "count")} exports in one file (${str(f.data, "names")}); one export per file`, 89)
+        : clipMessage(`file ${str(f.data, "stem")} exports ${str(f.data, "name")}; filename must equal its export`, 89),
   see: "k.check",
   check: ({ file, ast }) => {
     const stem = stemOf(file.path);

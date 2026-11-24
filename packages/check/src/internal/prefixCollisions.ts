@@ -1,4 +1,4 @@
-import { clip } from "@keel/compiler/internal";
+import { clipMessage } from "@keel/schema/internal";
 import type { Expression, ObjectExpression, StringLiteral } from "oxc-parser";
 import type { Diagnostic } from "../types/Diagnostic.ts";
 import type { SourceFile } from "../types/SourceFile.ts";
@@ -145,7 +145,7 @@ function collisions(routes: readonly Route[]): Diagnostic[] {
       path: r.file.path,
       line,
       col,
-      message: clip(message, 89),
+      message: clipMessage(message, 89),
       see: "k.prefix",
     };
     if (pre === null) {

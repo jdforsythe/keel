@@ -1,3 +1,4 @@
+import { clipMessage } from "@keel/schema/internal";
 import type { Analysis } from "./internal/Analysis.ts";
 import type { BindingInfo } from "./internal/BindingInfo.ts";
 import type { ElementInfo } from "./internal/ElementInfo.ts";
@@ -5,7 +6,6 @@ import { analyze } from "./internal/analyze.ts";
 import { buildDeps } from "./internal/buildDeps.ts";
 import { canonicalJson } from "./internal/canonicalJson.ts";
 import { clientReach } from "./internal/clientReach.ts";
-import { clip } from "./internal/clip.ts";
 import { collectElements } from "./internal/collectElements.ts";
 import { collectStyles } from "./internal/collectStyles.ts";
 import { diag } from "./internal/diag.ts";
@@ -64,7 +64,7 @@ function duplicateIds(all: readonly { a: Analysis; elements: readonly ElementInf
 
 /** E1000 message: the parser's message on one line, `syntax error: ` first, under 90 chars. */
 function syntaxMessage(parser: string): string {
-  return clip(`syntax error: ${parser}`, 89);
+  return clipMessage(`syntax error: ${parser}`, 89);
 }
 
 /** E1004 message (k.boundary Reach): the shortest chain from a client entry, else the file the import names. */

@@ -1,7 +1,7 @@
 import type { Topology } from "@keel/compiler";
 import { servedByProblems } from "@keel/compiler/hosting/servedByProblems";
 import { topologyReadProblems } from "@keel/compiler/hosting/topologyReadProblems";
-import { clip } from "@keel/compiler/internal";
+import { clipMessage } from "@keel/schema/internal";
 import type { Diagnostic } from "../types/Diagnostic.ts";
 import { applyEdits } from "./applyEdits.ts";
 import { lineCol } from "./lineCol.ts";
@@ -33,7 +33,7 @@ export function topologyDiags(dir: string, topology: Topology, source?: string):
     const { line, col } = lineCol(text, typeof offset === "number" ? offset : by < 0 ? at : at + by);
     const see = SEE.get(code) ?? "k.topology";
     const path = `${dir}topology.ts`;
-    const diag: Diagnostic = { kind: "diag", code, path, line, col, message: clip(message, 89), see };
+    const diag: Diagnostic = { kind: "diag", code, path, line, col, message: clipMessage(message, 89), see };
     return typeof edit === "object" ? { ...diag, fix: unifiedDiff(path, text, applyEdits(text, [edit])) } : diag;
   });
 }

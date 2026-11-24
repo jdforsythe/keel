@@ -1,4 +1,4 @@
-import { clip } from "@keel/compiler/internal";
+import { clipMessage } from "@keel/schema/internal";
 import type { Expression } from "oxc-parser";
 import { Visitor } from "oxc-parser";
 import type { Checked } from "../internal/Checked.ts";
@@ -81,7 +81,7 @@ export const sameAppBaseService: RuleDef = {
           const method = e.method === "HEAD" ? "GET" : e.method;
           const hit = entries.find((r) => r.method === method && samePath(r.path, e.path));
           if (hit === undefined) continue;
-          out.push(findingAt(file, base.start, { module: hit.module, call: `${e.method} ${clip(e.path, 24)}` }));
+          out.push(findingAt(file, base.start, { module: hit.module, call: `${e.method} ${clipMessage(e.path, 24)}` }));
           return;
         }
       },

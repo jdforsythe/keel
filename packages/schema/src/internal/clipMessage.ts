@@ -3,7 +3,7 @@
  * one space and the ends are trimmed; a longer text keeps `n - 3` units, or one fewer when the last kept unit is the
  * first half of a surrogate pair, then `...`.
  */
-export function clip(s: string, n: number): string {
+export function clipMessage(s: string, n: number): string {
   const one = s.replace(/\s*\n\s*/g, " ").trim();
   if (one.length <= n) return one;
   let keep = n - 3;

@@ -1,4 +1,4 @@
-import { clip } from "@keel/compiler/internal";
+import { clipMessage } from "@keel/schema/internal";
 import type { Diag } from "./Diag.ts";
 
 type Loc = {
@@ -17,7 +17,7 @@ export function makeDiag(code: string, message: string, loc: Loc = {}): Diag {
     ...(loc.path === undefined ? {} : { path: loc.path }),
     ...(loc.line === undefined ? {} : { line: loc.line }),
     ...(loc.col === undefined ? {} : { col: loc.col }),
-    message: clip(message, 89),
+    message: clipMessage(message, 89),
     ...(loc.fix === undefined ? {} : { fix: loc.fix }),
     ...(loc.see === undefined ? {} : { see: loc.see }),
   };

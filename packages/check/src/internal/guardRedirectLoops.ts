@@ -1,4 +1,4 @@
-import { clip } from "@keel/compiler/internal";
+import { clipMessage } from "@keel/schema/internal";
 import { type Expression, type Program, Visitor } from "oxc-parser";
 import type { Diagnostic } from "../types/Diagnostic.ts";
 import type { SourceFile } from "../types/SourceFile.ts";
@@ -111,7 +111,7 @@ export function guardRedirectLoops(files: readonly Checked[]): Diagnostic[] {
     if (!api && !guardedBy(g.redirect, key, routes)) continue;
     const { line, col } = lineCol(g.file.source, g.at);
     const why = api ? "an API route; redirect to a page" : `which ${g.name} guards: a redirect loop`;
-    const message = clip(`guard ${g.name} redirects to ${g.redirect}, ${why}`, 89);
+    const message = clipMessage(`guard ${g.name} redirects to ${g.redirect}, ${why}`, 89);
     out.push({ kind: "diag", code: "E1508", path: g.file.path, line, col, message, see: "k.guards" });
   }
   return out;

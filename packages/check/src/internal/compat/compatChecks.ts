@@ -1,6 +1,6 @@
 import type { Topology } from "@keel/compiler";
 import { hashOf } from "@keel/compiler/internal";
-import { clip } from "@keel/compiler/internal";
+import { clipMessage } from "@keel/schema/internal";
 import type { Diagnostic } from "../../types/Diagnostic.ts";
 import type { SourceFile } from "../../types/SourceFile.ts";
 import { lineCol } from "../lineCol.ts";
@@ -83,7 +83,7 @@ function diag(code: string, ctx: Ctx, spot: Spot | null, path: string, message: 
     path: spot?.file.path ?? path,
     line,
     col,
-    message: clip(message, 89),
+    message: clipMessage(message, 89),
     see: "k.compat",
   };
   return fix === undefined ? d : { ...d, fix };
@@ -110,8 +110,8 @@ function base(current: Surface, before: Surface, topology: Topology | undefined,
       if (now === undefined || now.method !== e.method || now.path !== e.path) {
         const m =
           now === undefined
-            ? `${id} (base ${e.method} ${clip(e.path, 24)}) is gone; callers in other deployables use it`
-            : `${id} moved from ${e.method} ${clip(e.path, 20)} to ${now.method} ${clip(now.path, 20)}; callers use it`;
+            ? `${id} (base ${e.method} ${clipMessage(e.path, 24)}) is gone; callers in other deployables use it`
+            : `${id} moved from ${e.method} ${clipMessage(e.path, 20)} to ${now.method} ${clipMessage(now.path, 20)}; callers use it`;
         const entry = at(id, null);
         const spot = entry === null ? null : { file: entry.file, start: entry.expr.start, end: entry.expr.start };
         out.push(diag("E1562", ctx, spot, `${ctx.dir}${ctx.at}`, m));

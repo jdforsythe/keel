@@ -1,4 +1,4 @@
-import { clip } from "@keel/compiler/internal";
+import { clipMessage } from "@keel/schema/internal";
 
 import type { TestDiag } from "./types/TestDiag.ts";
 import type { TestReport } from "./types/TestReport.ts";
@@ -13,7 +13,7 @@ const ANSI = new RegExp(`${ESC}\\[[0-9;]*m`, "g");
 const strip = (s: string): string => s.replace(ANSI, "");
 const firstLine = (s: string): string => strip(s).split("\n")[0] ?? "";
 /** A T0001 message by the k.check rule (89 UTF-16 code units). */
-const clip89 = (s: string): string => clip(s, 89);
+const clip89 = (s: string): string => clipMessage(s, 89);
 const FRAME = /(?:^|[\s(])(?:file:\/\/)?((?:\/|[A-Za-z]:[\\/])[^():]+):(\d+):(\d+)\)?$/;
 
 const isApp = (f: string): boolean =>

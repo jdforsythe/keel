@@ -1,4 +1,4 @@
-import { clip } from "@keel/compiler/internal";
+import { clipMessage } from "@keel/schema/internal";
 import type { Budget } from "../types/Budget.ts";
 import type { Diagnostic } from "../types/Diagnostic.ts";
 
@@ -12,7 +12,7 @@ export function budgetBreaches(budgets: readonly Budget[]): Diagnostic[] {
       path: b.path ?? "budgets.json",
       line: 1,
       col: 1,
-      message: clip(`budget ${clip(b.id, 40)} exceeded: ${b.actual} ${b.unit} > ${b.limit}`, 89),
+      message: clipMessage(`budget ${clipMessage(b.id, 40)} exceeded: ${b.actual} ${b.unit} > ${b.limit}`, 89),
       see: "k.check",
     }));
 }

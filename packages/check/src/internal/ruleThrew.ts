@@ -1,4 +1,4 @@
-import { clip } from "@keel/compiler/internal";
+import { clipMessage } from "@keel/schema/internal";
 import type { Diagnostic } from "../types/Diagnostic.ts";
 import type { RuleDef } from "../types/RuleDef.ts";
 
@@ -11,7 +11,7 @@ export function ruleThrew(rule: RuleDef, path: string, e: unknown): Diagnostic {
     path,
     line: 1,
     col: 1,
-    message: clip(`rule ${rule.code} threw: ${clip(why, 60)}`, 89),
+    message: clipMessage(`rule ${rule.code} threw: ${clipMessage(why, 60)}`, 89),
     see: "k.check",
   };
 }

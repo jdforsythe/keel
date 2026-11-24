@@ -1,4 +1,4 @@
-import { clip } from "@keel/compiler/internal";
+import { clipMessage } from "@keel/schema/internal";
 import type { Diagnostic } from "../types/Diagnostic.ts";
 import type { RuleDef } from "../types/RuleDef.ts";
 import type { SourceFile } from "../types/SourceFile.ts";
@@ -21,7 +21,7 @@ export function runSqlRules(all: readonly RuleDef[], file: SourceFile): Diagnost
           path: f.path,
           line: f.line,
           col: f.col,
-          message: clip(text, 89),
+          message: clipMessage(text, 89),
         };
         out.push(rule.see === undefined ? base : { ...base, see: rule.see });
       }

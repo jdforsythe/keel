@@ -1,4 +1,4 @@
-import { clip } from "@keel/compiler/internal";
+import { clipMessage } from "@keel/schema/internal";
 import { Visitor } from "oxc-parser";
 import { BASE_ELEMENTS } from "../internal/BASE_ELEMENTS.ts";
 import { BASE_ROLE } from "../internal/BASE_ROLE.ts";
@@ -52,7 +52,7 @@ export const gapWithoutDirection: RuleDef = {
     const set = str(f.data, "set");
     return set === ""
       ? MESSAGE
-      : clip(`gap without direction in ${set}: name the axis its children are spaced along`, 89);
+      : clipMessage(`gap without direction in ${set}: name the axis its children are spaced along`, 89);
   },
   see: "k.ui",
   check: ({ file, ast, artifacts, project }) => {

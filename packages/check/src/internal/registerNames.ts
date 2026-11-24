@@ -1,4 +1,4 @@
-import { clip } from "@keel/compiler/internal";
+import { clipMessage } from "@keel/schema/internal";
 import { Visitor } from "oxc-parser";
 import type { Diagnostic } from "../types/Diagnostic.ts";
 import type { Checked } from "./Checked.ts";
@@ -53,9 +53,16 @@ export function registerNames(files: readonly Checked[], dirs: readonly string[]
     const id = MODULE_DIR.exec(file.path.slice(dir.length))?.[1];
     for (const call of registerCalls(checked)) {
       if (id !== undefined && !wellNamed(call.name, id)) {
-        const shown = call.name === undefined ? "a name that is not a string literal" : `"${clip(call.name, 30)}"`;
+        const shown =
+          call.name === undefined ? "a name that is not a string literal" : `"${clipMessage(call.name, 30)}"`;
         out.push(
-          diagAt(file, call.at, "E1607", `register of ${shown}: name it '${clip(id, 20)}.<lowerCamel>'`, "k.data"),
+          diagAt(
+            file,
+            call.at,
+            "E1607",
+            `register of ${shown}: name it '${clipMessage(id, 20)}.<lowerCamel>'`,
+            "k.data",
+          ),
         );
         continue;
       }
@@ -67,7 +74,7 @@ export function registerNames(files: readonly Checked[], dirs: readonly string[]
         continue;
       }
       if (prior.path === file.path) continue;
-      const message = `capability "${clip(call.name, 30)}" also registered at ${prior.path.slice(-30)}:${prior.line}`;
+      const message = `capability "${clipMessage(call.name, 30)}" also registered at ${prior.path.slice(-30)}:${prior.line}`;
       out.push(diagAt(file, call.at, "E1607", message, "k.data"));
     }
   }

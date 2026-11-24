@@ -16,7 +16,6 @@ export { sourceForm } from "../internal/sourceForm.ts";
 export { sourceHash } from "../internal/sourceHash.ts";
 export type { HandlerKind } from "../internal/HandlerKind.ts";
 export type { HandlerUse } from "../internal/HandlerUse.ts";
-export { clip } from "../internal/clip.ts";
 export { fitChain } from "../internal/fitChain.ts";
 export { shortPath } from "../internal/shortPath.ts";
 export { projectHandlerUses } from "../internal/projectHandlerUses.ts";

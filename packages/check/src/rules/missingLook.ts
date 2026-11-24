@@ -1,4 +1,4 @@
-import { clip } from "@keel/compiler/internal";
+import { clipMessage } from "@keel/schema/internal";
 import { type Expression, Visitor } from "oxc-parser";
 import { BASE_ELEMENTS } from "../internal/BASE_ELEMENTS.ts";
 import { findingAt } from "../internal/findingAt.ts";
@@ -30,8 +30,8 @@ export const missingLook: RuleDef = {
   message: (f) => {
     const look = str(f.data, "look");
     return look === ""
-      ? clip(`${str(f.data, "set")} ${str(f.data, "what")}`, 89)
-      : clip(`look="${look}" is not a look token`, 89);
+      ? clipMessage(`${str(f.data, "set")} ${str(f.data, "what")}`, 89)
+      : clipMessage(`look="${look}" is not a look token`, 89);
   },
   see: "k.ui",
   check: ({ file, ast, artifacts, project }) => {

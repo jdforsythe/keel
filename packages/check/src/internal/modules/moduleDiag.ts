@@ -1,4 +1,4 @@
-import { clip } from "@keel/compiler/internal";
+import { clipMessage } from "@keel/schema/internal";
 import type { Diagnostic } from "../../types/Diagnostic.ts";
 import type { SourceFile } from "../../types/SourceFile.ts";
 import { lineCol } from "../lineCol.ts";
@@ -19,7 +19,7 @@ export function moduleDiag(
     path: file.path,
     line,
     col,
-    message: clip(message, 89),
+    message: clipMessage(message, 89),
     see,
   };
   return fix === undefined ? base : { ...base, fix };

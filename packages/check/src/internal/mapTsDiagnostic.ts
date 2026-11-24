@@ -1,4 +1,4 @@
-import { clip } from "@keel/compiler/internal";
+import { clipMessage } from "@keel/schema/internal";
 import ts from "typescript";
 import type { Diagnostic } from "../types/Diagnostic.ts";
 import type { SourceFile } from "../types/SourceFile.ts";
@@ -128,7 +128,7 @@ export function mapTsDiagnostic(
     path,
     line,
     col,
-    message: clip(message, 89),
+    message: clipMessage(message, 89),
     see,
   });
   const mapped = contractTypeError(node) ?? bindingTypeError(node, checker);

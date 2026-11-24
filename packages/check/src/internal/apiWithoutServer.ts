@@ -1,6 +1,6 @@
 import { routeLiterals } from "@keel/compiler";
 import type { Topology } from "@keel/compiler";
-import { clip } from "@keel/compiler/internal";
+import { clipMessage } from "@keel/schema/internal";
 import type { Diagnostic } from "../types/Diagnostic.ts";
 import type { SourceFile } from "../types/SourceFile.ts";
 import { isRecord } from "./compat/isRecord.ts";
@@ -58,7 +58,7 @@ export function apiWithoutServer(
         path: `${dir}topology.ts`,
         line,
         col,
-        message: clip(message, 89),
+        message: clipMessage(message, 89),
         see: "k.api",
       });
     }
