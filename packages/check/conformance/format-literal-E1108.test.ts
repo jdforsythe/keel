@@ -2,10 +2,8 @@
 // Spec: k.formats, Conformance "In a module whose `deps` list `@keel/std-temporal`, `keel check` reports one E1108 at the text argument, its message containing `temporal.Instant` and `format`, for `formatLiteral(Instant, '2026-02-30T00:00:00.000Z')`, and none for `formatLiteral(Instant, '2026-02-28T00:00:00.000Z')`; the same holds in a test file of that module."
 // Spec: k.formats, Conformance "`const t = '1970-01-01T00:00:00.000Z'` then `formatLiteral(Instant, t)` reports one E1108 at `t`, as does a template with a substitution; `` formatLiteral(Instant, `1970-01-01T00:00:00.000Z`) `` reports none."
 // Spec: k.formats, Conformance "`formatLiteral(I, '1970-01-01T00:00:00.000Z')` with `import { Instant as I }`, and `formatLiteral(T.Instant, '1970-01-01T00:00:00.000Z')` with `import * as T from '@keel/std-temporal'`, report no E1108; `formatLiteral(line({ max: 80 }), 'Pasta')` reports one E1108 at its first argument, its message containing `line(1..80)`."
-// Seed 1337. The test process imports `@keel/std-temporal` and `@keel/std-text` so the schema type registry holds their formats.
+// Seed 1337. `keel check` imports each `@keel/std-*` package in the module's `deps` itself, so the fixtures are source text.
 import { check } from "@keel/check";
-import "@keel/std-temporal";
-import "@keel/std-text";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 import { type Files, SEED } from "./support.ts";
