@@ -1,21 +1,31 @@
-# ADR-0240: k.sim: `simulate` drives the run's clock while nothing else can move (RFC 0218)
+# ADR-0240: k.drive: `simulate` drives the run's clock when no work of the run is pending (RFC 0218)
 
-**Status:** accepted (orchestrator, 2026-11-24, for the operator to confirm).
+**Status:** accepted (orchestrator, 2026-11-24, amended the same day, for the operator to confirm).
 
-**Context.** Under `simulate` the clock moved only inside `run()` or a harness call stalled on `ctx.net`. A scenario that awaited server work waiting on the clock (a std-postgres plan delay, a job's backoff, a runner's poll) hung, and `vitest` reported only its timeout. std-postgres's PGlite calls are real I/O the harness did not see, so `run()` could step the clock mid-statement and the order of commits and timeouts depended on PGlite's speed. The household worked around both with `setImmediate` yields that advanced the clock.
+**Context.** Under `simulate` a scenario that awaited server work waiting on the clock hung. A drive that moved the clock after quiet macrotask turns fixed the hang, but let machine speed reorder events: a real `setTimeout(12)` ran after a 10 ms sim waiter, and the run passed. Unheld work (`app.fetch` behind a harness, a password hash, PGlite's boot and session wait) needed app-side helpers. Tests are deterministic without the author thinking about it, so the law must hold by construction.
 
 **Decision.**
-- One drive: while a run's scenario is pending, `simulate` advances the run's clock to its next moment (the earlier of `ctx.clock.next()` and the next offline edge) whenever the run is idle, within the horizon, or within `t + ms` while a `run(ms)` waits. No harness call moves the clock.
-- Idle: no held work pending, two drained macrotask turns with no store-log or DOM change, no harness call in progress but one stalled on an unanswered `ctx.net` route.
-- A sim capability factory gets `hold(work, label)`; std-postgres holds each PGlite call, not a plan delay, a queue wait or `fn`'s awaits.
-- `run(ms?)`: `run()` to the horizon; `run(ms)` to `t + ms` exactly; `run(0)` drains with no clock move; another `ms` is `schema.invalid`. `horizon: 0` leaves the clock to the scenario.
-- The law: one `SimRun` and one scenario give the same moments, observer events and clock times in the same order and equal final stores.
-- E1727 (the scenario waits on nothing the run can move, after 1,000 idle turns) and E1728 (held work or a `ctx.net` route that never answers, after 200,000 turns), each failing the run and reported through E1704.
+- A new section, k.drive. `simulate` runs each scenario in the run's async context: `AsyncLocalStorage` and an `async_hooks` hook in `@keel/testing`, Node only. `@keel/ctx` gains no Node import, and a sim ctx outside `simulate` is never driven.
+- Pending work is decided by tracking:
+  - every non-promise async resource made in the run's context, until Node destroys it;
+  - held work, until it settles;
+  - a harness call, except while it waits only on an unanswered `ctx.net` route.
+- Work waiting only on the sim clock or online state is promises alone, so it is parked by construction.
+- The clock moves to the next moment, within the horizon or `t + ms`, on a drive turn where nothing is pending.
+- `hold(label, start)` is for work that answers through something made outside the run. std-postgres holds `boot` and each call; the harness holds module loads. A clock or online wait inside a hold is E1728 at once.
+- There is a closed list of seams; app code reaches nothing else (E1601, E1603, E1759). The residual is an unheld reply through a channel made before the run, or state kept across runs.
+- The law check: `law: true` runs each run twice and compares traces, and a failing run is always replayed twice. A difference is E1729 in place of E1704.
+- E1727 has no grace in turns. E1728 also fails work pending through 10,000 ms of real time; this can fail a run and never changes a trace.
 
 **Alternatives.**
-- `until(ctx, cond)`: a second helper moving the clock beside `run()`.
-- Driving any sim ctx: changes every harness test; a plain sim ctx keeps a test-owned clock.
-- Holding a whole transaction: deadlocks a `fn` that awaits the clock.
-- Labels on every `ctx.clock.after` for E1727: touches every caller for a message.
+- Quiet-turn idleness: speed decides the trace.
+- Composite holds with clock-wait attribution: a parked rule per hold, and a concurrent branch is missed.
+- Waiting on promise chains started by harness calls: their ends are not observable.
+- A per-request ctx: breaks accessors keyed by ctx.
+- `until(ctx, cond)`, or driving every sim ctx.
 
-**Consequences.** A scenario awaits server work directly and asserts at a time with `run(ms)`. The household's `moving`, `steadily` and `turn` reduce to awaits and `run(ms)`. Work the run cannot see (a file read, an unloaded `import()`, a timer) is outside the law. k.sim, k.testing and std.postgres stay `implemented`; the map does not change.
+**Consequences.**
+- The household's `held` and `onRun` helpers and its turn loops go.
+- A library that leaves a handle open under sim fails E1728, naming its Node type.
+- k.sim's clauses #15 to #24 become k.drive#1 to #10, with #5 and #9 rewritten, and k.drive gains #11 to #17. std.postgres gains #25.
+- The map and docs map budgets are re-based by 10 tokens each.
