@@ -1,5 +1,5 @@
 # k.check: Checker and diagnostics
-status: conformance-covered
+status: implemented
 
 **Pipeline.** `keel check [paths]`: one pass, incremental, under 1s warm on golden app 1. Static only: it never evaluates app code (rendered a11y checks are k.testing).
 1. Parse (oxc) and TS strict type check. Ambient types: Node's when `@types/node` resolves from the project root, and k.bundle's Types.
@@ -29,6 +29,8 @@ An optional `sql: (file) => findings` reads each module migration, `modules/<id>
 
 **Flags.** `--code <code>` keeps only that code (the summary still counts all) · `--limit N` sets the per-code cap (default 5), followed by `... +K more <code> (keel check --code <code>)` · `--quiet` prints the trailer only · `--format=compact|json|pretty`.
 
+**Trailer.** The summary's `files` counts every file `keel check` checked: each code file (`*.ts`, `*.tsx`, `*.mts`, `*.cts`, `*.js`, `*.jsx`, `*.mjs`) and `.keel/*.json` artifact under `paths`, in every project there, tests, declarations and tool configs among them. `keel build` counts its own (k.deploy Build).
+
 **Budgets.** Enforced from `budgets.json` (output tokens, gzip size per package or route). A breach is E1755.
 
 **Rules.** E1751 TS type error with no Keel rule code (message starts with the TS code) · E1752 file with more than one export, filename not equal to its export, or a re-export outside `index.*` and `types/` (principle 3) · E1753 rule code registered twice, or a stdlib rule outside E2xxx/W2xxx · E1754 `unsafe` without a justification string · E1755 budget exceeded · E1756 rule threw · E1757 cast, non-null assertion, `any`, or ts-suppression outside `unsafe/` · E1758 ambient locale or time zone in app code: `navigator.language` or `languages`; an `Intl` constructor, `toLocale*String` or `localeCompare` without a locale; an `Intl.DateTimeFormat` or a date's `toLocale*String` without `timeZone`; a local-time getter (`getHours`, ...) on a `new Date(...)` expression. Names resolve as for E1601; no fix.
@@ -47,3 +49,4 @@ An optional `sql: (file) => findings` reads each module migration, `modules/<id>
 - A rule receives, as read-only `project`, every code file of its file's project and that project's `topology.ts`, the same array for each file it checks.
 - A file reading `process.env` and importing `node:path` checks clean in a project whose root resolves `@types/node` and reports E1751 in one whose root does not.
 - `n.toLocaleString()`, `new Intl.DateTimeFormat('de-DE').format(d)`, `navigator.language` and `new Date(0).getHours()` are each one E1758; `a.localeCompare(b, 'de-DE')` and `new Intl.DateTimeFormat('de-DE', { timeZone: 'UTC' })` none.
+- In a project `keel build` ran in, whose files besides `package.json` and those `keel build` wrote are `topology.ts`, `vite.config.ts`, `modules/a/module.ts`, `modules/a/A.tsx`, `modules/a/A.test.tsx` and `test/a.test.ts`, the json summary's `counts.files` is 6 plus the number of `.keel/*.json` files for `keel check`, and 3 for `keel check modules/a`; with a nested project `apps/b/` added (its own `package.json`, `topology.ts`, `modules/b/module.ts` and `modules/b/B.tsx`, and the files its `keel build` wrote), `keel check` at the root counts 9 plus the number of `.keel/*.json` files under the root, `apps/b/` included.
