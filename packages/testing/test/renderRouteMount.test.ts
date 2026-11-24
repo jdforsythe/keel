@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
-// k.mount Navigation (rfc:0156): a `renderRoute` router's `mount` is the first identity mount the test made (k.guards
-// Client). Under it no page matches, a `:param` route included, so `navigate` there records one GET. A path holding a
-// `\` matches no page. Seed 1337.
+// k.mount Navigation: a `renderRoute` router's mount is the `mount` option the test passes (k.guards Client,
+// k.mount-scope). Under it no page matches, a `:param` route included, so `navigate` there records one GET; without
+// `mount` the harness has none. A path holding a `\` matches no page. Seed 1337.
 import { createCtx } from "@keel/ctx";
 import { type Href, identityMount, manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
@@ -29,8 +29,9 @@ const routes = manifest(c, {
 });
 const get = (url: string) => ({ method: "GET", url, body: null });
 const open: { dispose(): void }[] = [];
-const start = async () => {
-  const h = await renderRoute("mo.home", { routes, ctx: createCtx({ mode: "sim", seed: 1337 }) });
+const start = async (mount: typeof gate | null = gate) => {
+  const ctx = createCtx({ mode: "sim", seed: 1337 });
+  const h = await renderRoute("mo.home", mount === null ? { routes, ctx } : { routes, ctx, mount });
   open.push(h);
   return h;
 };
@@ -38,7 +39,7 @@ afterEach(() => {
   for (const h of open.splice(0)) h.dispose();
 });
 
-describe("renderRoute under the identity mount the test made", () => {
+describe("renderRoute under the identity mount the test names", () => {
   it("records one GET for the mount and a path under it, and renders a :param page beside it", async () => {
     const h = await start();
     await h.navigate(gate.href("/sign-out"));
@@ -50,13 +51,20 @@ describe("renderRoute under the identity mount the test made", () => {
     expect(h.documents()).toHaveLength(2);
   });
 
-  it("a second identityMount call does not throw and leaves the first one made as the mount a router reads", async () => {
+  it("a second identityMount call does not throw, and the router's mount is the one the test names", async () => {
     identityMount("/other");
     const h = await start();
     await h.navigate(to("/other/x"));
     expect(h.route().id).toBe("mo.two");
     await h.navigate(to("/gate/x"));
     expect(h.documents()).toEqual([get("/gate/x")]);
+  });
+
+  it("without mount no path is the mount's: a path under the gate renders its page", async () => {
+    const h = await start(null);
+    await h.navigate(to("/gate/x"));
+    expect(h.route().id).toBe("mo.two");
+    expect(h.documents()).toEqual([]);
   });
 
   it("a path holding a backslash records one GET and adds no history entry", async () => {

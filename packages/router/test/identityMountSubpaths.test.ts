@@ -12,12 +12,11 @@ const messageOf = (fn: () => unknown): string | null => {
   }
   return null;
 };
-/** `identityMount` and the set of mounts made, of a router loaded afresh. */
+/** `identityMount` of a router loaded afresh. */
 const fresh = async () => {
   vi.resetModules();
   const { identityMount } = await import("../src/identityMount.ts");
-  const { identityMounts } = await import("../src/internal/index.ts");
-  return { identityMount, identityMounts };
+  return { identityMount };
 };
 
 const GOOD = [
@@ -116,13 +115,11 @@ describe("identityMount", () => {
     for (const path of ["/auth", "/api/auth", "/a-b/c9"]) expect(identityMount(path).path).toBe(path);
   });
 
-  it("every mount made is among the process's identity mounts", async () => {
-    const { identityMount, identityMounts } = await fresh();
-    expect(identityMounts.size).toBe(0);
+  it("a second mount in one module graph does not throw and leaves the first as it was", async () => {
+    const { identityMount } = await fresh();
     const one = identityMount("/one");
     const two = identityMount("/two", { links: ["/back"] });
-    expect([...identityMounts]).toEqual([one, two]);
+    expect([one.path, one.links, two.path, two.links]).toEqual(["/one", [], "/two", ["/back"]]);
     expect(messageOf(() => identityMount("/Bad"))).toBe("E1580 path");
-    expect(identityMounts.size).toBe(2);
   });
 });

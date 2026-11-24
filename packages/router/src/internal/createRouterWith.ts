@@ -96,9 +96,8 @@ export function createRouterWith<T extends RouteTable>(
     /** The identity mount's `path` (k.mount): no page matches at or under it. */
     readonly mount?: string | undefined;
     /**
-     * Whether the router reads `user` from `/__keel/user` (k.guards Client) when an identity mount was made
-     * (`userRead`); default: `mount` is given and `user` is not. The harness passes it for a shell run, whose mount it
-     * names to no router.
+     * Whether the router reads `user` from `/__keel/user` (k.guards Client, `userRead`); default: `mount` is given and
+     * `user` is not. `renderRoute` passes it: with its `mount` option and without `user`.
      */
     readonly read?: boolean;
     /** A throw no route `errorElement` caught, before the root default alert shows it; the harness raises it. */

@@ -74,18 +74,28 @@ function routeOrigin(net: Net, origin: string, app: DocumentApp): void {
  * when `ctx`'s binding does not hold `app`). With `routes` as an import (`RoutesImport`) the page resumes in a client
  * module graph of its own (`freshGraph`): its client stores, widget stores and islands are this harness's alone, and
  * `state()` and `settle` read that graph's stores. `navigate(href)` loads `href` the same way; `location().entries` counts the loaded
- * documents and `route()` is the match of the last one. `state` or `shell` reject with E1722 before any request.
+ * documents and `route()` is the match of the last one. `state`, `shell` or `mount` reject with E1722 before any request.
  */
 export async function documentRoute<T extends RouteTable>(
   id: string,
   options: RouteRenderOptions<T>,
   app: DocumentApp,
 ): Promise<RouteHarness<RouteStateOf<T>, Ctx>> {
-  if (options.state !== undefined || options.shell !== undefined)
+  const stray =
+    options.state !== undefined
+      ? "state"
+      : options.shell !== undefined
+        ? "shell"
+        : options.mount !== undefined
+          ? "mount"
+          : null;
+  if (stray !== null)
     throw fail(
       "E1722",
-      `renderRoute(${JSON.stringify(id)}): app serves the page, so ${options.state !== undefined ? "state" : "shell"} has no meaning; seed ctx.storage`,
-      { option: options.state !== undefined ? "state" : "shell" },
+      stray === "mount"
+        ? `renderRoute(${JSON.stringify(id)}): app serves the page and gives its identity, so mount has no meaning; drop mount`
+        : `renderRoute(${JSON.stringify(id)}): app serves the page, so ${stray} has no meaning; seed ctx.storage`,
+      { option: stray },
     );
   const given = options.routes;
   // An import resumes the page in a client module graph of its own: this harness's browser alone.

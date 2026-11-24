@@ -1,5 +1,4 @@
 import { codedError } from "./internal/codedError.ts";
-import { identityMounts } from "./internal/identityMounts.ts";
 import { readUser } from "./internal/readUser.ts";
 import { userRead } from "./internal/userRead.ts";
 import type { IdentityMount } from "./types/IdentityMount.ts";
@@ -44,7 +43,6 @@ export function identityMount<P extends string>(
       throw codedError("E1582", `href subpath ${JSON.stringify(sub)}`);
     },
   };
-  identityMounts.add(mount);
   userRead.fn = readUser;
   return mount;
 }

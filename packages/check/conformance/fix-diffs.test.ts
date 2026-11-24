@@ -1,6 +1,7 @@
 // Seed 1337 (fast-check seed, recorded in each fc.assert below)
 // Spec: k.check, clause "Every fix a diagnostic carries applies to its fixture with `git apply`, and re-checking reports no diagnostic of that code. Fixtures of E1003, E1005 (bytes only), E1151, E1152, E1154-E1156, E1401, E1403 (`&&`, `?:` with `If` imported), E1405, E1451, E1452 (`try`), E1601, E1652, E1653, E1757 (`!`, `any`, suppression), E1805, and E1808 carry one; RFC 0035 lists why the others cannot."
 // RFC 0157 / 0162: E1157 is retired (no fixture); E1154-E1156 keep theirs; E1407, E1510 and E1515 each carry one (k.component, k.contract); E1513 and E1514 carry none. k.check's sentence still names E1157 and omits these: see the report.
+// RFC 0219: E1730 carries one (k.guards Test files); its exact result is asserted in testing-E1730-identity-mount.test.ts.
 // RFC 0204: E1165 carries one (its fix removes the `deps` entry).
 // Invariant (not a sentence of k.module now): no fix edits a file under `node_modules/`.
 import { execFileSync } from "node:child_process";
@@ -93,6 +94,7 @@ interface FixedCase {
 }
 
 const FIXED: FixedCase[] = [
+  { name: "E1730 (import mount, pass it)", code: "E1730", ...fixtureOf("E1730") },
   { name: "E1590", code: "E1590", ...fixtureOf("E1590") },
   { name: "E1591", code: "E1591", ...fixtureOf("E1591") },
   { name: "E1003", code: "E1003", ...fixtureOf("E1003") },
@@ -283,6 +285,7 @@ for (const c of FIXED) {
 }
 
 const FIX = [
+  "E1730",
   "E1003",
   "E1590",
   "E1591",

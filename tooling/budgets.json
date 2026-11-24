@@ -18,7 +18,7 @@
       "platform": "node"
     },
     "@keel/check/explain": {
-      "max": "19kb",
+      "max": "20kb",
       "platform": "node"
     },
     "@keel/cli": {
@@ -124,7 +124,7 @@
       "platform": "node"
     },
     "@keel/std-sessions/commandJob": {
-      "max": "9.25kb",
+      "max": "9.5kb",
       "platform": "node"
     },
     "@keel/std-sessions/group": {
@@ -202,7 +202,7 @@
       "platform": "node"
     },
     "@keel/testing": {
-      "max": "18kb",
+      "max": "18.25kb",
       "platform": "node"
     },
     "@keel/testing/prove": {

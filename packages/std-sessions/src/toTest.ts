@@ -23,6 +23,7 @@ const RESERVED = new Set([
   "app",
   "createApp",
   "identity",
+  "mount",
   "topology",
   "createCtx",
   "record",
@@ -69,7 +70,9 @@ const moduleOf = (id: string): string => id.slice(0, Math.max(0, id.indexOf(".")
  * value). Several serving modules' route tables are joined with `routeTable`. With `user` the base renders with
  * `user: <id>` in its options. With `serve` (a `node` deployable serves the page) the file builds the app after the
  * clock advance and before `record` (`createApp` over `topology.ts`, the tables and `identity.server.ts`) and passes it
- * as `app` to `renderRoute`, with no `state` and no store import: the app's own storage is the page's state.
+ * as `app` to `renderRoute`, with no `state` and no store import: the app's own storage is the page's state. With
+ * `mount` (the import specifier of the project's `identity.ts`; the router form only) the file imports its default
+ * export as `mount` and passes it to `renderRoute` (k.guards Client).
  */
 export function toTest(
   session: Session,
@@ -79,6 +82,7 @@ export function toTest(
     readonly routes: readonly RoutesImport[];
     readonly serve?: ServeImport;
     readonly user?: string;
+    readonly mount?: string;
   },
 ): string {
   const seed = session.seed ?? 0;
@@ -139,6 +143,7 @@ export function toTest(
     now = session.at;
   }
   const { serve } = options;
+  if (serve === undefined && options.mount !== undefined) add(options.mount, "mount");
   if (serve !== undefined) {
     add(serve.topology, "topology");
     if (serve.identity !== undefined) add(serve.identity, "identity");
@@ -151,7 +156,7 @@ export function toTest(
   const user = options.user === undefined ? "" : `, user: ${lit(options.user)}`;
   if (serve === undefined)
     body.push(
-      `  const h = await renderRoute(${lit(r.id)}, { routes, params: ${lit(r.params)}, search: ${lit(r.search)}, state: [${seeded.join(", ")}], ctx${user} });`,
+      `  const h = await renderRoute(${lit(r.id)}, { routes, params: ${lit(r.params)}, search: ${lit(r.search)}, state: [${seeded.join(", ")}], ctx${serve === undefined && options.mount !== undefined ? ", mount" : ""}${user} });`,
     );
   else
     body.push(

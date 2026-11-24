@@ -42,7 +42,8 @@ function withNotRun(op: string, diags: OutRecord[]): OutRecord[] {
  * Run one `keel session` job inside the project's `keel test` runner (std.sessions D1): write
  * `.keel/sessions/job-<pid>-<n>.test.ts`, which imports each route table of `routes` and calls
  * `commandJob` from `@keel/std-sessions/commandJob` with the session inline (with `serve`, also `serve(ctx)`, which
- * builds the app as the generated entry does: `createApp` over `topology.ts`, the tables and `identity.server.ts`); run `keel test <job> --format=json` on
+ * builds the app as the generated entry does: `createApp` over `topology.ts`, the tables and `identity.server.ts`;
+ * with `mount`, `identity.ts`'s default export as `mount`, as the built entry passes it); run `keel test <job> --format=json` on
  * `io.cwd` (the project's vitest config and environment, `KEEL_TEST=1`); read `JobResult` back from the
  * `.result.json` beside it; remove both. Without a result, the test run's diagnostics come back instead (app code threw on import); a run that
  * reported none means the project's vitest `include` misses `.keel/sessions/`, and E1052 says so.
@@ -60,6 +61,8 @@ export async function runJob(
      */
     readonly serve?: { readonly deployable: string; readonly identity: boolean; readonly routes: readonly string[] };
     readonly user?: string;
+    /** Without `serve`, whether the project has `identity.ts`: the job passes its default export as `mount`. */
+    readonly mount?: boolean;
     readonly maxRuns?: number;
     readonly expose: readonly string[];
     readonly redact: readonly string[];
@@ -81,6 +84,8 @@ export async function runJob(
       'import topology from "../../topology.ts";',
       ...(serve.identity ? ['import identity from "../../identity.server.ts";'] : []),
     );
+  const mount = serve === undefined && job.mount === true;
+  if (mount) imports.push('import mount from "../../identity.ts";');
   const tables = specs.map((_, i) => `r${i}`).join(", ");
   const serveOption =
     serve === undefined
@@ -103,7 +108,7 @@ export async function runJob(
     `const session: unknown = ${JSON.stringify(job.session)};`,
     "",
     'test("keel session job", async () => {',
-    `  await commandJob({ ...${JSON.stringify(args)}, session, routes: [${tables}]${serveOption} });`,
+    `  await commandJob({ ...${JSON.stringify(args)}, session, routes: [${tables}]${serveOption}${mount ? ", mount" : ""} });`,
     "}, 600_000);",
     "",
   ].join("\n");

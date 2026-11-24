@@ -155,6 +155,10 @@ export function opRoute(input: unknown, files: ReadonlyMap<string, string>): Res
         inTestDir ? `../${dir}/routes.ts` : "./routes.ts",
         api === true ? { path, method: verb } : null,
         Object.values(topologyOf(files) ?? {}).some((d) => d.adapter === "node" && d.modules.includes(mod)),
+        // The project's identity mount, as the built entry passes it (k.guards Client).
+        files.has("identity.ts") && files.has("topology.ts")
+          ? `${"../".repeat(testPath.split("/").length - 1)}identity.ts`
+          : null,
       ),
     ],
   ]);

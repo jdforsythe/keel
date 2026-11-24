@@ -26,7 +26,8 @@ import { seededState } from "./seededState.ts";
  * recording ctx had them. Also returns the replay recorder's whole session (`recorded`: inputs and observations in
  * occurrence order, its fingerprint), which `minimize` and `keel session` read.
  * With `serve` the ctx is advanced to `at`, `serve(ctx)` is called once before the recorder starts, and the base is
- * rendered with `app` (no recorded `state`); with `user` it renders signed in as `user`. A base that resumes as another
+ * rendered with `app` (no recorded `state`); with `user` it renders signed in as `user`. `mount` is passed to
+ * `renderRoute` (k.guards Client); with `serve` the render rejects E1722, which the replay throws. A base that resumes as another
  * route is not applied: `unapplied` -1, the replay's error E2003 `base route <id> redirected to <other id>` (so it is
  * never reproduced) and `redirectedTo` that route's id.
  */
@@ -66,6 +67,7 @@ export async function replayRun(
   const def = pageOf(routes, session.route.id);
   if (def === undefined || !served) return finish(liveState(), -1);
   const user = options.user === undefined ? {} : { user: options.user };
+  const mount = options.mount === undefined ? {} : { mount: options.mount };
   const params = decoded(def.params, session.route.params);
   const search = decoded(def.search, session.route.search);
   let h: Awaited<ReturnType<typeof renderRoute>>;
@@ -79,9 +81,15 @@ export async function replayRun(
             state: seededState(session.state),
             ctx,
             ...user,
+            ...mount,
           })
-        : await renderRoute(session.route.id, { routes, params, search, ctx, app, ...user });
-  } catch {
+        : await renderRoute(session.route.id, { routes, params, search, ctx, app, ...user, ...mount });
+  } catch (error) {
+    // `app` with `mount` is the caller's mistake (E1722), not the session's.
+    if (typeof error === "object" && error !== null && Reflect.get(error, "code") === "E1722") {
+      rec.stop();
+      throw error;
+    }
     return finish(liveState(), -1);
   }
   const landed = app === undefined ? session.route.id : h.route().id;

@@ -1,7 +1,7 @@
 import { type Ctx, createCtx } from "@keel/ctx";
 import { browserCtx } from "@keel/ctx/internal";
 import type { RouteTable } from "@keel/router";
-import { compileRoutes, createRouterWith, encodeHref, identityMounts, mountRequests } from "@keel/router/internal";
+import { compileRoutes, createRouterWith, encodeHref, mountRequests } from "@keel/router/internal";
 import { matchHref } from "@keel/router/match";
 import type { CaughtError } from "@keel/runtime-dom";
 import { serverState } from "@keel/store/internal";
@@ -39,13 +39,15 @@ import type { RouteStateOf } from "./types/RouteStateOf.ts";
  * `launch(links)` (k.links Testing), and a `fire` of `click`, `submit` or a `keydown` other than Escape is a person's
  * act (k.opening Link-started), which the handle's `navigate` is not;
  * `dispose` also disposes the router and puts the title and `lang` back. Guards, loaders and actions get
- * `options.caller` and `options.user` (each default `""`); without `options.user`, a router reads `user` from
- * `/__keel/user` through the harness's net when an identity mount was made in the test file's module graph, the first
- * made its `mount` (k.guards Client, k.mount-scope), and `requests()` lists what the page sent (k.requests). Loaders and actions naming `stores` run their factories over `ctx.storage` as a
+ * `options.caller` and `options.user` (each default `""`); `options.mount`, the identity mount the test imports from
+ * `identity.ts`, is the router's and shell's mount (k.guards Client, k.mount-scope): with it and without `options.user`
+ * the router reads `user` from `/__keel/user` through the harness's net; without it there is no read, no mount scope
+ * and no mount request. `requests()` lists what the page sent (k.requests). Loaders and actions naming `stores` run their factories over `ctx.storage` as a
  * `node` deployable does (`serverState`, k.server Server state), each navigation or submit one request; `state` and
  * `state()` hold no factory store. The handle's `ctx` is typed as `render`'s: `SimCtx` when none is given. With
  * `options.app` (a `createApp` result) the page runs as a built `node` page instead (`documentRoute`): no router; it is
- * requested from `app`, resumed, and each form post or link to the page's origin is made against `app`.
+ * requested from `app`, resumed, and each form post or link to the page's origin is made against `app`; `app` with
+ * `mount` rejects E1722, as the served page's identity comes from `app`.
  */
 export function renderRoute<T extends RouteTable>(
   id: string,
@@ -124,8 +126,8 @@ export async function renderRoute<T extends RouteTable>(
   const history = memoryHistory(url);
   const documents: DocumentNavigation[] = [];
   const open = (to: string): void => void documents.push({ method: "GET", url: to, body: null });
-  // The options name no mount: the page takes the identity mounts the test's modules made (k.guards Client).
-  const mounts = [...identityMounts];
+  // The test names the identity mount (k.guards Client); without it the harness has none.
+  const mounts = options.mount === undefined ? [] : [options.mount];
   const intake = shell
     ? mountRequests(ctx, { id: shell === true ? "dev.keel.golden2" : shell.id, open, mounts })
     : null;
@@ -139,10 +141,10 @@ export async function renderRoute<T extends RouteTable>(
         caller: options.caller ?? "",
         user: options.user ?? "",
         leave: open,
-        mount: mounts[0]?.path,
+        mount: options.mount?.path,
         // The router reads `user` (k.guards Client) unless `user` stands for the answer, as a built one does when its
-        // entry imported `identity.ts`: when the test's modules made an identity mount.
-        read: options.user === undefined && mounts.length > 0,
+        // entry imported `identity.ts`: when the test names the mount.
+        read: options.user === undefined && options.mount !== undefined,
         onError: (error) => void caught.push(error),
       },
       serverState(outer),

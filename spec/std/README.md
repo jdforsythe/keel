@@ -19,7 +19,7 @@ S8 adds std.db, std.workflows, std.shells and std.tokens.
 ## Sections
 | id | section | status | one line |
 | --- | --- | --- | --- |
-| std.sessions | Sessions | conformance-covered | capture, ingest, replay, minimize, to-test; GitHub Action |
+| std.sessions | Sessions | implemented | capture, ingest, replay, minimize, to-test; GitHub Action |
 | std.sessions-served | Served-page sessions | conformance-covered | std-sessions: replay and to-test of a page a `node` deployable serves |
 | std.i18n | Locales | conformance-covered | schema type registry and check rule registry: `i18n.Locale`, numbers, plurals |
 | std.money | Money | conformance-covered | schema type registry: `money.Money`, add, format and parse for a locale |

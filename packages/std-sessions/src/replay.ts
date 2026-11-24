@@ -15,7 +15,8 @@ import { replayRun } from "./internal/replayRun.ts";
  * (every module's `std['@keel/std-sessions'].redact`), so the replay recorder redacts as the live one did.
  * `serve(ctx)` (called once, on the replay ctx advanced to `at`) resolves a `createApp` result: the base is then
  * rendered with `renderRoute` and `app`, so guards, loaders and actions run in the app over an empty sim storage; the
- * recorded `state` is not applied. `user` renders the base signed in as that id. A base page that redirected is never
+ * recorded `state` is not applied. `user` renders the base signed in as that id. `mount`, the project's identity mount,
+ * is passed to `renderRoute` for a base rendered without `serve` (k.guards Client); with `serve` it rejects E1722. A base page that redirected is never
  * reproduced: `unapplied` -1, whatever the session recorded.
  */
 export async function replay(session: Session, options: ReplayOptions): Promise<ReplayResult> {
