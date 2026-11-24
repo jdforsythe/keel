@@ -86,10 +86,22 @@ final class ShellDrive: XCTestCase {
     }
     let target = scope.matching(type, identifier: nil).matching(NSPredicate(format: "label == %@", label)).firstMatch
     guard target.waitForExistence(timeout: seconds) else {
-      return ["ok": false, "error": "no \(role) labelled \(label) within \(Int(seconds))s"]
+      return ["ok": false, "error": "no \(role) labelled \(label) within \(Int(seconds))s; \(seen(app, type, scope))"]
     }
     if let refused = input(target) { return ["ok": false, "error": "the \(role) labelled \(label) \(refused)"] }
     return ["ok": true, "value": ""]
+  }
+
+  /// What the page shows when an element did not appear, on one line: whether the `within` landmark exists, the labels of
+  /// the elements of the wanted type in scope, and the labels of those of that type anywhere in the web view.
+  private func seen(_ app: XCUIApplication, _ type: XCUIElement.ElementType, _ scope: XCUIElementQuery) -> String {
+    func labels(_ q: XCUIElementQuery) -> String {
+      let all = q.matching(type, identifier: nil).allElementsBoundByIndex.prefix(12).map { $0.label }
+      return "[" + all.joined(separator: " | ") + "]"
+    }
+    let page = app.webViews.descendants(matching: .any)
+    let texts = app.webViews.descendants(matching: .staticText).allElementsBoundByIndex.prefix(12).map { $0.label }
+    return "in scope \(labels(scope)); in page \(labels(page)); text [\(texts.joined(separator: " | "))]"
   }
 
   /// Send `answer`, wait for the next command. Nil when the smoke is gone.
