@@ -471,7 +471,7 @@ const ROWS: readonly Row[] = [
   ["E1351", "target id already exists", "", "use a codemod to change the existing item", "k.scaffold"],
   [
     "E1352",
-    "id violates naming (dotted lowerCamel with module prefix; components PascalCase)",
+    "id violates naming (dotted lowerCamel with module prefix; components PascalCase; a service name lowerCamel)",
     "",
     "route OrderShow -> orders.show",
     "k.scaffold",

@@ -22,10 +22,10 @@ import { topologyOf } from "./topologyOf.ts";
 
 /**
  * `scaffold service <module>` (k.scaffold Service), in one of two forms. `base`: an empty endpoint declaration
- * `<Module>Api` and its client `api` at that URL, both the author's to edit. `schema` and `service`: the two sources
+ * `<Name>Api` (`name`, the module id by default; lowerCamel, else E1352) and its client `api` at that URL, both the author's to edit. `schema` and `service`: the two sources
  * `@keel/services/openapi` generated (the cli converts the document; scaffold may not import services), placed as they
  * are, generated marker included, so later operations may not edit them (E1005). Either way the files are
- * `modules/<module>/<Module>Api.schema.ts` and `api.server.ts`, and `@keel/services` joins the project's `dependencies`
+ * `modules/<module>/<Name>Api.schema.ts` and `api.server.ts` (E1351 names `api.server.ts` first where both exist), and `@keel/services` joins the project's `dependencies`
  * at the version of `@keel/server`. Where a `client` deployable lists the module, `api.server.ts` ships to the browser
  * (k.boundary), so the origin of the URL is declared under that deployable's `origins.connect` with `reason`
  * (k.origins); with no `reason` it is E1358, and what k.origins refuses is E1353 naming E1590. A `reason` with nothing
@@ -35,10 +35,13 @@ export function opService(input: unknown, files: ReadonlyMap<string, string>): R
   const r = inputs.service.parse(input);
   if (!r.ok) return badInput("service", r.error);
   const { id, base, schema, service, reason } = r.value;
+  const serviceName = r.value.name ?? id;
   if (targetsGenerated(id)) return fail("E1005", id, `${id} is a generated location`);
   if (!isLowerCamel(id)) return fail("E1352", `modules/${id}`, `module id ${id} must be lowerCamel`);
+  if (!isLowerCamel(serviceName))
+    return fail("E1352", `modules/${id}`, `service name ${JSON.stringify(serviceName)} must be lowerCamel`);
   const dir = `modules/${id}`;
-  const name = `${pascal(id)}Api`;
+  const name = `${pascal(serviceName)}Api`;
   const sources =
     base !== undefined && schema === undefined && service === undefined
       ? { schema: apiSchemaTs(name), service: apiServerTs(name, base), url: base }
@@ -51,8 +54,8 @@ export function opService(input: unknown, files: ReadonlyMap<string, string>): R
     return fail("E1052", dir, "base must be an absolute http or https URL with no query, fragment or credentials");
   if (!files.has(`${dir}/module.ts`)) return fail("E1052", dir, `${id} is not a module of this project`);
   const writes: Writes = new Map([
-    [`${dir}/${name}.schema.ts`, sources.schema],
     [`${dir}/api.server.ts`, sources.service],
+    [`${dir}/${name}.schema.ts`, sources.schema],
   ]);
   for (const p of writes.keys()) if (files.has(p)) return fail("E1351", p, `service ${id} already exists`);
   const origin = sources.url === undefined ? undefined : baseUrl(sources.url)?.origin;

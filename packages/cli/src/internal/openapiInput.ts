@@ -5,7 +5,7 @@ import { relPath } from "./relPath.ts";
 
 /**
  * The generated `schema` and `service` texts of `keel scaffold service <name> --openapi <file>` (k.services OpenAPI).
- * The file comes from the Io file list (`files`, project-relative paths; `openapi` resolved against `cwd`). An absent
+ * `name` is `--name`, else the module id. The file comes from the Io file list (`files`, project-relative paths; `openapi` resolved against `cwd`). An absent
  * or non-JSON file, a document outside the supported subset or a bad name is E1052 naming `--openapi`.
  */
 export function openapiInput(
@@ -35,6 +35,6 @@ export function openapiInput(
     }
     return { ok: true, value: r.value };
   } catch {
-    return fail(`service name ${JSON.stringify(name.slice(0, 24))} is not a module id`);
+    return fail(`service name ${JSON.stringify(name.slice(0, 24))} is not lowerCamel`);
   }
 }
