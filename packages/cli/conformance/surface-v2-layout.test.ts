@@ -1,4 +1,4 @@
-// Spec: k.compat, Surface "Its layout, keys sorted, `callers` sorted, an absent `params`, `query` or `body` `null`, no `errors` `{}`, `sources` each file the build evaluated with its content hash:"
+// Spec: k.compat, Surface "Its layout, keys sorted, `callers` sorted, an absent `params`, `query` or `body` `null`, no `errors` `{}`, `sources` each file the build evaluated with the hash of its normal form (Sources):"
 // Spec: k.compat, clause "`keel build` with `a` importing `y`'s contract writes `data.contracts.y` `{ module, callers: ["a"], entries }`, `params` `null` on an entry without one."
 // Seed: none (a fixed project). Real binary over a temp project (compat-support.ts).
 import { afterAll, expect, test } from "vitest";
