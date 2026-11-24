@@ -205,8 +205,15 @@ export function channelRoute<P, M, S>(
       },
       // A re-read or `member` that fails is a denial; the chain goes on for later saves.
       saved: (store, head, read) => {
-        if (!ids.has(store) || head <= (delivered.get(store) ?? Number.NEGATIVE_INFINITY)) return;
+        if (!ids.has(store)) return;
+        const last = delivered.get(store) ?? Number.NEGATIVE_INFINITY;
+        if (head === last) return;
         delivered.set(store, head);
+        // A head below the last delivered: the store's count restarted (its storage was replaced), so the client re-reads.
+        if (head < last) {
+          chain = chain.then(() => deliver({ kind: "reset" }, () => allowed(member, at)));
+          return;
+        }
         chain = chain.then(() =>
           deliver({ kind: "saved", store, head }, async () => (await reread(list, read)) && allowed(member, at)),
         );
