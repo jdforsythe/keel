@@ -245,8 +245,9 @@ const proofs = {
   /**
    * The Tauri files register the shell's id as a deep-link scheme; a plain client host sends `dist/web` for any path,
    * and Chromium opening `/places/oslo` there lands on that place's page. The shell's own web build (`KEEL_SHELL=tauri`,
-   * the build `keel build --target tauri` runs before cargo) has no identity source and still carries the deep-link
-   * listener, so the built shell takes a page link (k.shell Shell ctx).
+   * the build `keel build --target tauri` runs before cargo, with no `KEEL_ORIGIN` as the app has no `node` deployable)
+   * has no identity source and still carries the deep-link listener, so the built shell takes a page link (k.shell
+   * Shell ctx).
    */
   async "links-in"(dir) {
     const conf = readFileSync(join(dir, "deploy", "web", "tauri", "tauri.conf.json"), "utf8");
@@ -258,10 +259,9 @@ const proofs = {
         {
           cwd: dir,
           env: {
-            ...process.env,
+            ...Object.fromEntries(Object.entries(process.env).filter(([k]) => k !== "KEEL_ORIGIN")),
             KEEL_DEPLOYABLE: "web",
             KEEL_SHELL: "tauri",
-            KEEL_ORIGIN: "https://app.example",
             NODE_ENV: "production",
           },
         },
