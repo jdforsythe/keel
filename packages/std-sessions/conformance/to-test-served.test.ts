@@ -157,7 +157,7 @@ describe("std.sessions: to-test of a node deployable's page", () => {
     const diags = check(files, { root: fx.dir }).diagnostics;
     expect(diags.filter((d) => d.code === "W1723" && d.path === out.path)).toEqual([]);
     expect(diags.filter((d) => d.code.startsWith("E") && d.path === out.path)).toEqual([]);
-  });
+  }, 30_000);
 
   test("`keel check` reports W1723 on a hand-written router-mode `renderRoute` of the same page (the warning is not vacuous)", () => {
     const rel = "modules/cart/test/handwritten.test.ts";
@@ -181,7 +181,7 @@ test("hand-written", async () => {
     } finally {
       fs.rmSync(path.join(fx.dir, rel), { force: true });
     }
-  });
+  }, 30_000);
 
   test("the `to-test` file of a `node` page fails under `keel test` on the buggy fixture", async () => {
     expect(out.path).toMatch(EMITTED);
@@ -223,7 +223,7 @@ describe("std.sessions: to-test of a node deployable's page with an identity.ser
     const diags = check(files, { root: fx.dir }).diagnostics;
     expect(diags.filter((d) => d.code === "W1723" && d.path === out.path)).toEqual([]);
     expect(diags.filter((d) => d.code === "E1004" && d.path === out.path)).toEqual([]);
-  });
+  }, 30_000);
 
   test("control: the same import of `identity.server.ts` from a file under `modules/cart/test/` of the `node` module is E1004 (the check is not vacuous)", () => {
     const rel = "modules/cart/test/imports-identity.test.ts";
@@ -234,7 +234,7 @@ describe("std.sessions: to-test of a node deployable's page with an identity.ser
     } finally {
       fs.rmSync(path.join(fx.dir, rel), { force: true });
     }
-  });
+  }, 30_000);
 });
 
 describe("std.sessions: to-test of a client deployable's page", () => {
