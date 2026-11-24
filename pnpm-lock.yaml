@@ -1835,6 +1835,12 @@ importers:
         specifier: workspace:*
         version: link:../store
     devDependencies:
+      '@keel/router':
+        specifier: workspace:*
+        version: link:../router
+      '@keel/server':
+        specifier: workspace:*
+        version: link:../server
       '@keel/services':
         specifier: workspace:*
         version: link:../services
