@@ -14,8 +14,8 @@ import { lineCol } from "./lineCol.ts";
 import { mapTsDiagnostic } from "./mapTsDiagnostic.ts";
 import { resultDiscards } from "./resultDiscards.ts";
 import { textNodes } from "./textNodes.ts";
-import { typeCache } from "./typeCache.ts";
 import { tsCompilerOptions } from "./tsCompilerOptions.ts";
+import { typeCache } from "./typeCache.ts";
 import { unifiedDiff } from "./unifiedDiff.ts";
 
 /** Fallback global JSX typing when `@keel/runtime-dom/jsx-runtime` does not resolve from `root`. */

@@ -2,9 +2,9 @@ import { mkdirSync, mkdtempSync, readdirSync, rmSync, utimesSync, writeFileSync 
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, expect, it } from "vitest";
+import { check } from "../src/index.ts";
 import type { Typed } from "../src/internal/Typed.ts";
 import { typeCache } from "../src/internal/typeCache.ts";
-import { check } from "../src/index.ts";
 
 let root = "";
 let dir = "";
