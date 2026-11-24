@@ -5,8 +5,8 @@ import type { ShellProbe } from "./ShellProbe.ts";
 /**
  * A shell package's half of `keel check` and `keel build --target` (k.shell Shell target), registered with
  * `shellTarget`: the `--platform` values (`[]` for none), the shell files under `deploy/<name>/<shell>/`, what the
- * machine lacks (each one E1575), the npm packages whose native half the shell's tool installs only when the app's
- * `package.json` lists them (each at its exact `version`; `need` says what uses it, in at most 60 characters; a
+ * machine lacks (each one E1575; `tool` and `need` at most 60 characters together), the npm packages whose native half the shell's tool installs only when the app's
+ * `package.json` lists them (each at its exact `version`; `plugin`, `version` and `need` (what uses it) at most 50 characters together; a
  * missing or differing one is E1572), the build after the web build, and the CI jobs.
  */
 export type ShellTarget = {

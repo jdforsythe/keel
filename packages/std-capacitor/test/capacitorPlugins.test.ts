@@ -25,17 +25,17 @@ describe("capacitorPlugins", () => {
     ]);
   });
 
-  test("with identity the browser too; every version is an exact one and every need at most 60 characters", () => {
+  test("with identity the browser too; every version is an exact one and plugin, version and need at most 50 characters together", () => {
     const all = capacitorTarget.plugins(app(true));
     expect(all.map((p) => p.plugin)).toEqual(["@capacitor/preferences", "@capacitor/app", "@capacitor/browser"]);
     expect(all[2]).toEqual({
       plugin: "@capacitor/browser",
       version: pinned("@capacitor/browser"),
-      need: "the external browser of identity.ts",
+      need: "external browser sign-in",
     });
     for (const p of all) {
       expect(p.version).toMatch(/^\d+\.\d+\.\d+$/);
-      expect(p.need.length).toBeLessThanOrEqual(60);
+      expect(p.plugin.length + p.version.length + p.need.length).toBeLessThanOrEqual(50);
     }
   });
 });
