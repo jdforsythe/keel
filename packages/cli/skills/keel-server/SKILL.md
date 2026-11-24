@@ -121,7 +121,7 @@ export async function addOne(ctx: Ctx, token: Secret<string>) {
 }
 ```
 
-`keel scaffold service <module> --openapi openapi.json` turns an OpenAPI 3 document into a read-only client (`keel docs k.openapi`); `--base <url>` writes an empty one to fill. `--name <lowerCamel>` names the declaration `<Name>Api` (default: the module id); a module holds one service. On a `client` deployable add `--reason <why>`: it declares the origin (else E1358; `keel docs k.scaffold-service`).
+`keel scaffold service <module> --openapi openapi.json` turns an OpenAPI 3 document into a read-only client (`keel docs k.openapi`); `--base <url>` writes an empty one. `--name <lowerCamel>` names the declaration `<Name>Api` (default: the module id); a module holds one. On a `client` deployable add `--reason <why>`: it declares the origin (else E1358; `keel docs k.scaffold-service`).
 
 ## Runners and tests
 
