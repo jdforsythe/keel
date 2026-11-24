@@ -1,6 +1,6 @@
 // Spec: std.channels, Conformance "Under sim, with `createApp` A on ctx `a` and B on `b = replica(a)` (k.sim Replicas) serving one channel route with `stores`, a member stream open on B gets `reset`, then `{ kind: 'saved', store, head }` after an action on A saves that store, `head` being the head A's save produced."
 // Spec: std.channels, Conformance "Under sim, with A and B as above, for a generated sequence of saves of one store by actions on A and on B, the `saved` heads on each member stream open on A or on B strictly rise, and once the run settles the last equals the store's head."
-// Spec: std.channels, Conformance "Under sim, with A and B as above, a member stream open on B for which `member` turns false after a save on A gets `{ kind: 'closed', reason: 'denied' }` and ends."
+// Spec: std.channels, Conformance "Under sim, with A and B as above, a member stream open on B for which `member` turns false after a save on A gets `{ kind: 'closed', reason: 'denied' }` in place of that save's `saved`, then its end; the events before it are those of earlier saves."
 // Spec: std.channels, Conformance "Under sim, with A and B as above, a member's publish on A delivers `{ kind: 'message', message }` to A's member streams of that channel and params and to none of B's."
 // Spec: std.channels, Conformance "On a real ctx whose storage driver has a `watch` the test controls, two member streams of routes with `stores` call `watch` once; neither gets `reset` before it resolves; `on({ kind: 'lost' })` ends both with no `closed` event; a stream opened after that calls `watch` again; and the function `watch` resolved runs when the last stream ends."
 // Spec: std.channels, Conformance "On a real ctx whose storage driver has no `watch`, a member stream of a route with `stores` gets `reset` at open."
@@ -96,14 +96,23 @@ test("under sim, with A and B as above, for a generated sequence of saves of one
   );
 });
 
-test("under sim, with A and B as above, a member stream open on B for which `member` turns false after a save on A gets `{ kind: 'closed', reason: 'denied' }` and ends", async () => {
-  const { A, B } = await pairOf();
+test("under sim, with A and B as above, a member stream open on B for which `member` turns false after a save on A gets `{ kind: 'closed', reason: 'denied' }` in place of that save's `saved`, then its end; the events before it are those of earlier saves", async () => {
+  const { A, B, headOf } = await pairOf();
   const onB = await B.open("r", await B.enroll());
   const other = await B.open("r", await B.enroll());
   await waitFor(() => onB.events.length >= 1 && other.events.length >= 1);
   await A.act("clear");
   await waitFor(() => onB.ended());
-  expect(onB.events).toEqual([{ kind: "reset" }, { kind: "closed", reason: "denied" }]);
+  // The enrolment of `other` on B is itself a save of `chan.members` that `onB` saw: the events before `closed` are those of earlier saves.
+  const events = onB.events;
+  const closedAt = events.findIndex((e) => field(e, "kind") === "closed");
+  expect(events[0]).toEqual({ kind: "reset" });
+  expect(events[closedAt]).toEqual({ kind: "closed", reason: "denied" });
+  expect(closedAt).toBe(events.length - 1);
+  for (const e of events.slice(1, closedAt)) expect(field(e, "kind")).toBe("saved");
+  // the denying save (the clear) produced no `saved`: every head before `closed` is below the store's head
+  const denying = await headOf("chan.members");
+  expect(headsOf(events, "chan.members").includes(denying)).toBe(false);
   // `member` is false for every caller after the clear: the other member's stream is closed the same way.
   await waitFor(() => other.ended());
   expect(other.events.at(-1)).toEqual({ kind: "closed", reason: "denied" });
@@ -111,23 +120,26 @@ test("under sim, with A and B as above, a member stream open on B for which `mem
 
 test("under sim, with A and B as above, a member's publish on A delivers `{ kind: 'message', message }` to A's member streams of that channel and params and to none of B's", async () => {
   await fc.assert(
-    fc.asyncProperty(fc.hexaString({ minLength: 1, maxLength: 12 }), async (text) => {
-      const { A, B } = await pairOf();
-      const cookieA = await A.enroll();
-      const a1 = await A.open("r", cookieA);
-      const a2 = await A.open("r", await A.enroll());
-      const b1 = await B.open("r", await B.enroll());
-      await waitFor(() => [a1, a2, b1].every((st) => st.events.length >= 1));
-      const before = b1.events.length;
-      const res = await A.post(roomChannel.path, { message: { text } }, { cookie: cookieA, search: "?room=r" });
-      expect(res.status).toBe(200);
-      const want = { kind: "message", message: { text } };
-      await waitFor(() => [a1, a2].every((st) => st.events.some((e) => JSON.stringify(e) === JSON.stringify(want))));
-      await settle();
-      expect(b1.events).toHaveLength(before);
-      expect(b1.raw().includes(text)).toBe(false);
-      for (const st of [a1, a2, b1]) st.close();
-    }),
+    fc.asyncProperty(
+      fc.hexaString({ minLength: 16, maxLength: 24 }).map((h) => `sk_live_${h}`),
+      async (text) => {
+        const { A, B } = await pairOf();
+        const cookieA = await A.enroll();
+        const a1 = await A.open("r", cookieA);
+        const a2 = await A.open("r", await A.enroll());
+        const b1 = await B.open("r", await B.enroll());
+        await waitFor(() => [a1, a2, b1].every((st) => st.events.length >= 1));
+        const before = b1.events.length;
+        const res = await A.post(roomChannel.path, { message: { text } }, { cookie: cookieA, search: "?room=r" });
+        expect(res.status).toBe(200);
+        const want = { kind: "message", message: { text } };
+        await waitFor(() => [a1, a2].every((st) => st.events.some((e) => JSON.stringify(e) === JSON.stringify(want))));
+        await settle();
+        expect(b1.events).toHaveLength(before);
+        expect(b1.raw().includes(text)).toBe(false);
+        for (const st of [a1, a2, b1]) st.close();
+      },
+    ),
     { seed: SEED, numRuns: 6 },
   );
 });

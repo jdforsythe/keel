@@ -96,7 +96,7 @@ afterEach(async () => {
 /** `live` on `ctx` against `origin`, hydrating a fresh client store `view` from the board store's snapshot in `ctx.storage`. */
 function page(ctx: SimCtx, origin: string, id: string) {
   const made: { view?: ReturnType<typeof makeView> } = {};
-  scope(() => {
+  const viewScope = scope(() => {
     made.view = makeView(id);
   });
   const view = made.view;
@@ -125,7 +125,15 @@ function page(ctx: SimCtx, origin: string, id: string) {
       },
     );
   });
-  return { view: view.store, hydrate: view.hydrate, reads: () => reads, dispose: () => sc.dispose() };
+  return {
+    view: view.store,
+    hydrate: view.hydrate,
+    reads: () => reads,
+    dispose: () => {
+      sc.dispose();
+      viewScope.dispose();
+    },
+  };
 }
 
 function makeView(id: string) {
@@ -155,22 +163,25 @@ test("under sim, with callers A and B live on one page, A through a `createApp` 
       a.net.route(`${ORIGIN_B}/*`, (req) => B.fetch(req));
       const pa = page(a, ORIGIN_A, "view.a");
       const pb = page(b, ORIGIN_B, "view.b");
-      // Each page's first read follows its stream's `reset`.
-      await waitFor(() => pa.reads() >= 1 && pb.reads() >= 1);
-      const readsB = pb.reads();
-      const logB = pb.view.log().length;
-      for (const [i, item] of items.entries()) {
-        expect((await postAdd(A, item)).status).toBe(200);
-        await waitFor(() => pb.view.get("items").length === i + 1);
-        expect(pb.view.get("items")).toEqual(items.slice(0, i + 1));
-        expect(pb.view.get("head")).toBe(i + 1);
+      try {
+        // Each page's first read follows its stream's `reset`.
+        await waitFor(() => pa.reads() >= 1 && pb.reads() >= 1);
+        const readsB = pb.reads();
+        const logB = pb.view.log().length;
+        for (const [i, item] of items.entries()) {
+          expect((await postAdd(A, item)).status).toBe(200);
+          await waitFor(() => pb.view.get("items").length === i + 1);
+          expect(pb.view.get("items")).toEqual(items.slice(0, i + 1));
+          expect(pb.view.get("head")).toBe(i + 1);
+        }
+        expect(pb.reads()).toBeGreaterThan(readsB);
+        expect(pb.view.log().length).toBeGreaterThan(logB);
+        // B's page took no input: its log holds hydrations only.
+        expect(pb.view.log().every((e) => e.name === pb.hydrate.name)).toBe(true);
+      } finally {
+        pa.dispose();
+        pb.dispose();
       }
-      expect(pb.reads()).toBeGreaterThan(readsB);
-      expect(pb.view.log().length).toBeGreaterThan(logB);
-      // B's page took no input: its log holds hydrations only.
-      expect(pb.view.log().every((e) => e.name === pb.hydrate.name)).toBe(true);
-      pa.dispose();
-      pb.dispose();
     }),
     { seed: SEED, numRuns: 8 },
   );
