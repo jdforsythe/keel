@@ -198,6 +198,7 @@ type ModuleInfo = {
   importedIds: readonly string[];
   dynamicallyImportedIds: readonly string[];
   importers?: readonly string[];
+  dynamicImporters?: readonly string[];
 };
 /** An emitted file of a bundle: a chunk's code or an asset's source. */
 type Emitted = { fileName: string; code?: string; source?: string | Uint8Array };
