@@ -65,8 +65,10 @@ it("follows the setup guard's next to a page of the app, and a hostile next land
   const to = async (next: string) =>
     (await fetch(formPost(`/setup?next=${encodeURIComponent(next)}`, { name: "Elm Street" }))).headers.get("location");
   expect(await to("/list")).toBe("/list");
-  const stay = await to("/setup");
-  expect(stay).not.toBeNull();
-  for (const next of ["/\t/evil.example/x", "//evil.example", "https://evil.example/", "/\\evil.example"])
-    expect(await to(next)).toBe(stay);
+  // `ok(null)`: the document post answers 303 to the setup page itself, never to the hostile target.
+  for (const next of ["/\t/evil.example/x", "//evil.example", "https://evil.example/", "/\\evil.example"]) {
+    const at = await to(next);
+    expect(at?.startsWith("/setup")).toBe(true);
+    expect(new URL(at ?? "", "https://app.example").origin).toBe("https://app.example");
+  }
 });

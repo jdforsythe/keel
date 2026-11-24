@@ -1,7 +1,8 @@
-import type { RouteTable } from "@keel/router";
+import { type RouteTable, routeTable } from "@keel/router";
 import { pageHref } from "@keel/router/match";
 import { identity } from "@keel/server";
 import mount from "./identity.ts";
+import { routes as web } from "./modules/notes/routes.ts";
 
 // A stand-in for an auth library, so the example runs alone: the name typed on the sign-in page becomes the user.
 // A real app hands `identify` and `handle` to its library (keel-server, Identity).
@@ -24,7 +25,8 @@ async function handle(request: Request, _ctx: unknown, at: { readonly routes: Ro
   }
   const name = new URLSearchParams(await request.text()).get("name") ?? "";
   if (name === "") return new Response(null, { status: 303, headers: { location: "/signin" } });
-  const back = pageHref(at.routes, url.searchParams.get("next") ?? "");
+  // The `api` deployable serves no page: the pages a sign-in returns to are the `web` deployable's, so they join its table.
+  const back = pageHref(routeTable(at.routes, web), url.searchParams.get("next") ?? "");
   const headers = new Headers({ location: back.ok ? back.value : "/" });
   headers.append("set-cookie", `${COOKIE}=${encodeURIComponent(name)}; HttpOnly; SameSite=Lax; Path=/`);
   return new Response(null, { status: 303, headers });
