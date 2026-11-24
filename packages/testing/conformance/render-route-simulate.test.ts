@@ -42,6 +42,7 @@ test("a `renderRoute` on a `simulate` run's ctx with `net: [{ delay: 1 }]` resol
       t.dispose();
     },
     {
+      law: false,
       replay: { seed: SEED, schedule: { net: [{ delay: 1, fault: "none" }], storage: [], offline: [], plans: {} } },
     },
   );

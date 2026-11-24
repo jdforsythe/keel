@@ -64,6 +64,8 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.model | Store exploration | conformance-covered | traces |
 | k.prove | Proving invariants | conformance-covered | Z3 |
 | k.sim | Simulation | conformance-covered | faults |
+| k.drive | Sim clock drive | implemented | idle |
+| k.drive-law | Replays agree | implemented | replays |
 | k.ledger | Ledger, evidence | conformance-covered | rungs |
 | k.server | Thin server | conformance-covered | loads |
 | k.leave | What a request leaves | conformance-covered | state |

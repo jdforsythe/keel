@@ -16,6 +16,7 @@ const PREFIX = "keel.store.";
 export function simStorage(steps: readonly ("ok" | "fail")[] = [], like?: KeyValueStorage): KeyValueStorage {
   const shared: SimShared = (like === undefined ? undefined : sharedOfSim.get(like)) ?? {
     data: new Map<string, string>(),
+    written: new Set<string>(),
     steps,
     n: 0,
     watchers: new Set(),
@@ -32,6 +33,7 @@ export function simStorage(steps: readonly ("ok" | "fail")[] = [], like?: KeyVal
     },
     set: async (key, value) => {
       await step();
+      shared.written.add(key);
       data.set(key, value);
     },
     read: async (keys) => {
@@ -41,7 +43,15 @@ export function simStorage(steps: readonly ("ok" | "fail")[] = [], like?: KeyVal
     commit: async (writes) => {
       noRepeat(writes);
       await step();
-      const ok = applyCommit(get, (k, v) => (v === null ? data.delete(k) : data.set(k, v)), writes);
+      const ok = applyCommit(
+        get,
+        (k, v) => {
+          shared.written.add(k);
+          if (v === null) data.delete(k);
+          else data.set(k, v);
+        },
+        writes,
+      );
       const keys = writes
         .filter((w) => w.value !== undefined && w.key.startsWith(PREFIX))
         .map((w) => w.key)

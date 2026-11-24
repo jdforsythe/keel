@@ -17,7 +17,7 @@ describe("k.sim: stores are restored around runs", () => {
         tx(addItem, { item: { id: "written-by-run", qty: 2 } });
         await run();
       },
-      { runs: 10, seed: SEED },
+      { runs: 10, seed: SEED, law: false },
     );
     expect(atStart).toHaveLength(10);
     for (const items of atStart) expect(items).toEqual(before);

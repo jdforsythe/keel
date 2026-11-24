@@ -1,6 +1,7 @@
 import type { SimCtx } from "./SimCtx.ts";
 import { E1604 } from "./internal/E1604.ts";
 import { ctxMeta } from "./internal/ctxMeta.ts";
+import { driven } from "./internal/driven.ts";
 import { replicaSets } from "./internal/replicaSets.ts";
 import { simStorage } from "./internal/simStorage.ts";
 
@@ -18,5 +19,6 @@ export function replica(ctx: SimCtx): SimCtx {
   const set = replicaSets.get(root) ?? [];
   set.push(new WeakRef(made));
   replicaSets.set(root, set);
+  driven.get(ctx.clock)?.replica(made);
   return Object.freeze(made);
 }

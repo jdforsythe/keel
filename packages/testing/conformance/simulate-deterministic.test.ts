@@ -13,7 +13,7 @@ async function collect(seed: number, runs: number) {
       seen.push({ seed: runSeed, schedule });
       await run();
     },
-    { runs, seed },
+    { runs, seed, law: false },
   );
   return seen;
 }

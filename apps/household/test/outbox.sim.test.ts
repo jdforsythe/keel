@@ -103,8 +103,8 @@ it("commits an offline mark once, or keeps it as a conflict when another member 
       ctx.net.setOnline(true);
       await run();
       ctx.net.setOnline(true);
-      // The server answers from PGlite and the sign-in library, real I/O `run()` does not wait for: each turn waits
-      // for one round trip to the server and moves the browser's clock past the outbox's longest retry gap.
+      // The server is a household of its own, on a ctx the run does not drive: each turn waits for one round trip to
+      // it and moves the browser's clock past the outbox's longest retry gap.
       for (let turn = 0; turn < 40 && waiting(); turn++) {
         await stored(h);
         ctx.clock.advance(60_000);
@@ -132,7 +132,8 @@ it("commits an offline mark once, or keeps it as a conflict when another member 
       }
       outcomes[entry === undefined ? "sent" : entry.state === "conflict" ? "conflict" : "failed"] += 1;
     },
-    { runs: 30, seed: 9, horizon: 120_000 },
+    // The scenario counts its calls (`n`) and the server outlives the runs, so a replay is a different run: no law check.
+    { runs: 30, seed: 9, horizon: 120_000, law: false },
   );
   expect(outcomes.sent).toBeGreaterThan(0);
   expect(outcomes.conflict).toBeGreaterThan(0);
@@ -178,6 +179,8 @@ it("holds a queued mark through a sign-out and sends it once the same member sig
       if (first.state !== "queued") {
         // The schedule failed the browser's storage: nothing is queued, so nothing may commit.
         page.dispose();
+        // The drain the page started may still be in hand: let it answer before the scenario ends.
+        await run();
         expect(first.state).toBe("failed");
         return;
       }
@@ -222,6 +225,7 @@ it("holds a queued mark through a sign-out and sends it once the same member sig
       if (entry === undefined) expect(applied).toBe(1);
       else expect(entry.state).toBe("failed");
     },
-    { runs: 15, seed: 10, horizon: 120_000 },
+    // The scenario counts its calls (`n`) and the server outlives the runs, so a replay is a different run: no law check.
+    { runs: 15, seed: 10, horizon: 120_000, law: false },
   );
 }, 240_000);

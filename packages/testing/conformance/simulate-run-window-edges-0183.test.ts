@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 // Spec: k.sim, Conformance "`replay` of a `SimRun` whose `offline` is `[{ at: 100, ms: 50 }]`, its scenario advancing the clock to 120 with no `after` waiter pending: after `run()`, `ctx.net.online()` is true and `clock.now()` is 150; with `horizon: 130` it is still false."
-// Spec: k.sim, simulate "`run()` settles ..., then while the earlier of `ctx.clock.next()` and the next edge (`at` or `at + ms`, later than the clock) of a window in the run's `schedule.offline` is at most `horizon` ms past the run's start, it advances the clock to it and settles again: no window edge within the horizon is left ahead of the clock."
-// Spec: k.sim, Clock "`next()` returns the earliest pending deadline, else `null`." (unchanged: window edges are the schedule's, not the clock's)
-// Seed: 1337 (fc.assert below). Pending: `run()` does not step to window edges yet.
+// Spec: k.sim, simulate "`run(ms?)` waits while the drive (k.drive) moves the clock: `run()` resolves once the run is idle, no `ctx.net` route of it is unanswered, and no moment is within the horizon, so no window edge within the horizon is left ahead of the clock; `run(ms)`, `ms` an integer 0 to 600000, takes each moment at or before `t + ms` (`t` the clock when called; the horizon does not bound it), then advances the clock to `t + ms` if it is earlier, and resolves once the run is idle with no `ctx.net` route unanswered. `run(0)` moves no clock. Another `ms` rejects with `schema.invalid`, failing the run."
+// Spec: k.sim, Clock "`next()` returns the earliest pending deadline, else `null`." Window edges are the schedule's, not the clock's, so `next()` never returns one.
+// Seed: 1337 (fc.assert below).
 // ASSUMPTION: the horizon counts from the run's start, the sim clock's 0; windows in the property are disjoint and ordered; `clock.advance` returns a promise.
 import { simulate } from "@keel/testing";
 import fc from "fast-check";

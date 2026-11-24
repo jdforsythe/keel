@@ -49,9 +49,8 @@ it("catches up with the server's list after every schedule of drops and offline 
       await h.raw(asJson("POST", "/api/items", { name: `Item ${n}` }, { cookie: h.adaCookie }));
       await run();
       ctx.net.setOnline(true);
-      // The server answers from PGlite and the sign-in library, real I/O that `run()` does not wait for, and a
-      // reconnect may wait up to 30 s on a clock `run()` leaves at its horizon. Each turn waits for one round trip to
-      // the server (no timers in a test, E1601), so its other requests move too, and moves the page's clock 5 s.
+      // The server is a household of its own, on a ctx the run does not drive. Each turn waits for one round trip to
+      // it and moves the page's clock 5 s, so a reconnect that waits up to 30 s gets there.
       for (let turn = 0; turn < 60 && status() !== "live"; turn++) {
         await h.raw(asJson("GET", "/api/items", undefined, { cookie: h.adaCookie }));
         ctx.clock.advance(5_000);
@@ -62,6 +61,7 @@ it("catches up with the server's list after every schedule of drops and offline 
       expect(status()).toBe("live");
       page.dispose();
     },
-    { runs: 25, seed: 7, horizon: 120_000 },
+    // The scenario counts its calls (`n`) and the server outlives the runs, so a replay is a different run: no law check.
+    { runs: 25, seed: 7, horizon: 120_000, law: false },
   );
 }, 120_000);

@@ -6,7 +6,6 @@ import { matchHref } from "@keel/router/match";
 import type { CaughtError } from "@keel/runtime-dom";
 import { serverState } from "@keel/store/internal";
 import { browserFront } from "./internal/browserFront.ts";
-import { clockStep } from "./internal/clockStep.ts";
 import { documentRoute } from "./internal/documentRoute.ts";
 import { fail } from "./internal/fail.ts";
 import { memoryHistory } from "./internal/memoryHistory.ts";
@@ -16,6 +15,7 @@ import { seedFrom } from "./internal/seedFrom.ts";
 import { seedStores } from "./internal/seedStores.ts";
 import { settle } from "./internal/settle.ts";
 import { signIn } from "./internal/signIn.ts";
+import { watchOf } from "./internal/watchOf.ts";
 import type { DocumentNavigation } from "./types/DocumentNavigation.ts";
 import type { RouteHarness } from "./types/RouteHarness.ts";
 import type { RouteRenderOptions } from "./types/RouteRenderOptions.ts";
@@ -184,7 +184,7 @@ export async function renderRoute<T extends RouteTable>(
     artifacts: options.artifacts,
   });
   try {
-    await settle(document.body, () => undefined, busy, undefined, clockStep(outer));
+    await settle(document.body, () => undefined, busy, undefined, watchOf(outer));
     check();
   } catch (error) {
     harness.dispose();
