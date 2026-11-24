@@ -1,6 +1,7 @@
 // Spec: k.drive-law, Conformance "`keel test` over a project whose one test records `process.env.UV_THREADPOOL_SIZE` and starts four `node:crypto` `pbkdf2` calls at once, the first of 200,000 iterations and the others of 1, recording each index as it answers: the record is `'1'` and `[0, 1, 2, 3]`, with `UV_THREADPOOL_SIZE=4` in `keel test`'s environment too; plain vitest over it records `'4'` with `UV_THREADPOOL_SIZE=4`."
-// Spec: k.drive-law, Order "`keel test` starts every process that runs a test file with `UV_THREADPOOL_SIZE` `1`, whatever its environment holds, so thread-pool requests run one at a time in the order made; plain vitest keeps the environment's value."
+// Spec: k.drive-law, Order "`keel test` runs test files in forked processes (vitest's `forks` pool) and starts every one with `UV_THREADPOOL_SIZE` `1`, whatever its environment holds, so thread-pool requests run one at a time in the order made; a `threads` pool shares one process's thread pool, and `keel test` runs none; plain vitest keeps the environment's value."
 // The real `keel` binary runs `keel test` over a temp project (OS tmpdir); the control is plain vitest over the same project. Both children get `UV_THREADPOOL_SIZE=4` from this process's environment (the support's clean env keeps it). No generated inputs; seed n/a.
+// ASSUMPTION: a test file runs in a forked process when `process.send` is a function (a fork has an IPC channel to its parent; a worker thread has none).
 // ASSUMPTION: the property "whatever its environment holds" is exercised with the clause's `4` and with `128`, each a `keel test` run; the order is read from the record the test writes.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -27,13 +28,13 @@ it("records the pool size and the order four hashes answer in", async () => {
   await Promise.all(hashes);
   writeFileSync(
     new URL("./observed.json", import.meta.url),
-    JSON.stringify({ size: process.env.UV_THREADPOOL_SIZE ?? null, order }),
+    JSON.stringify({ size: process.env.UV_THREADPOOL_SIZE ?? null, order, forked: typeof process.send === "function" }),
   );
   expect(order).toHaveLength(4);
 });
 `;
 
-type Observed = { size: string | null; order: number[] };
+type Observed = { size: string | null; order: number[]; forked: boolean };
 const isObserved = (v: unknown): v is Observed =>
   typeof v === "object" && v !== null && "size" in v && "order" in v && Array.isArray(v.order);
 
@@ -86,6 +87,10 @@ describe("k.drive-law Order: `keel test` runs one thread-pool thread", () => {
 
   it("four `pbkdf2` calls made at once, the first of 200,000 iterations and the others of 1, answer in submission order under `keel test`: `[0, 1, 2, 3]`, for each environment value", () => {
     for (const { saw } of viaKeel) expect(saw.order).toEqual([0, 1, 2, 3]);
+  });
+
+  it("`keel test` runs test files in forked processes and no `threads` pool: the test file has an IPC channel to its parent (`process.send` is a function), for each environment value", () => {
+    for (const { saw } of viaKeel) expect(saw.forked).toBe(true);
   });
 
   it("control: plain vitest over the same project with `UV_THREADPOOL_SIZE=4` records `'4'`", () => {

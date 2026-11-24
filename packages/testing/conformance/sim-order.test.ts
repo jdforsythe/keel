@@ -1,6 +1,9 @@
 // @vitest-environment happy-dom
 // Spec: k.drive-law, Conformance "A capability registered with a `sim` factory whose `work(ms)` returns `hold('probe', () => new Promise((r) => setTimeout(r, ms)))` (`node:timers`): in an empty replay, a scenario that calls `work(50)` and then `work(0)`, recording `'a'` when the first answers and `'b'` when the second does, then awaits both, records `['a', 'b']`, and `simulate` resolves."
 // Spec: k.drive-law, Order "Held work that settles is *delivered*, its promise settled for the code awaiting it, on a drive turn once every hold of the run started before it is delivered and no thread-pool request of the run is pending: holds answer in the order they started."
+// Spec: k.drive-law, Order "A thread-pool request is a request Node runs on its thread pool (a file system call, a DNS lookup, a `node:crypto` job); a `node:zlib` handle, a stream's or a one-shot call's, is not one."
+// Spec: k.drive-law, Conformance "A capability registered with a `sim` factory whose `work()` returns `hold('probe', () => Promise.resolve())`: in an empty replay under `budget: 300`, a scenario that opens a `node:zlib` `createGzip()` stream, awaits `work()`, then destroys the stream, resolves `simulate`."
+// Spec: k.drive-law, Law "Four things escape the drive and can change a trace: a resource made before the run or outside its context (a worker started at import, a module-level timer, channel or `AsyncResource`), unless the work answering through it is held; an `import()` in app code other than a harness's `routes` loader, which the test runner answers over its own channel; state kept outside the run's stores from one run to the next; real asynchronous work made in the run outside every seam (k.drive), whose completions the drive does not deliver, running beside a hold or other such work (a `node:timers` timer, a file read, a socket's data)."
 // Spec: k.drive-law, Order "A hold whose settling waits on a later hold's delivery (k.sim forbids it) never settles, and the budget ends the run."
 // Spec: k.sim, plans "`hold(label, start)` calls `start()` and returns a promise of its outcome, held (k.drive) until it is delivered, in start order (k.drive-law Order)."
 // Spec: k.drive, Driving "held work, until it is delivered (k.drive-law Order); a resource created in held work's async context (an engine's own timer armed in a held call) is the hold's, not work of the run;"
@@ -10,6 +13,7 @@
 // ASSUMPTION: a hold waiting on a later hold's delivery ends the run with E1728 `the budget ran out with work in flight` naming both holds, oldest first (the RFC's "the budget names both").
 import { pbkdf2 } from "node:crypto";
 import { setTimeout } from "node:timers";
+import { createGzip } from "node:zlib";
 import { register } from "@keel/ctx";
 import { simulate } from "@keel/testing";
 import fc from "fast-check";
@@ -153,4 +157,43 @@ test("A hold whose settling waits on a later hold's delivery (k.sim forbids it) 
   );
   expect(codeOf(e)).toBe("E1704");
   expect(messageOf(e).split("\n")[0]).toContain("E1728 the budget ran out with work in flight: first, second");
+});
+
+const quick = register("simOrderQuick", {
+  real: () => ({ work: () => Promise.resolve() }),
+  shell: () => ({ work: () => Promise.resolve() }),
+  sim: ({ hold }) => ({ work: () => hold("probe", () => Promise.resolve()) }),
+});
+
+test("A capability registered with a `sim` factory whose `work()` returns `hold('probe', () => Promise.resolve())`: in an empty replay under `budget: 300`, a scenario that opens a `node:zlib` `createGzip()` stream, awaits `work()`, then destroys the stream, resolves `simulate`.", async () => {
+  await simulate(
+    async ({ ctx }) => {
+      const stream = createGzip();
+      try {
+        await quick(ctx).work();
+      } finally {
+        stream.destroy();
+      }
+    },
+    { replay, budget: 300 },
+  );
+});
+
+test("any number of open `createGzip()` streams delay no hold's delivery: the hold is delivered and the scenario resolves under `budget: 300`", async () => {
+  await fc.assert(
+    fc.asyncProperty(fc.integer({ min: 1, max: 4 }), async (streams) => {
+      await simulate(
+        async ({ ctx }) => {
+          const open = Array.from({ length: streams }, () => createGzip());
+          try {
+            await quick(ctx).work();
+          } finally {
+            for (const s of open) s.destroy();
+          }
+        },
+        { replay, budget: 300 },
+      );
+    }),
+    { seed: SEED, numRuns: 5 },
+  );
 });

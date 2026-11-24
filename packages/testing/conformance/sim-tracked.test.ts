@@ -7,8 +7,9 @@
 // Spec: k.drive, Driving "each async resource other than a promise created in that context outside held work, from its creation until Node destroys it: a timer or immediate after its callback, a file, DNS or thread-pool request (a password hash) after it answers, a socket, server, interval or port once closed;"
 // Spec: k.drive, Driving "held work, until it is delivered (k.drive-law Order); a resource created in held work's async context (an engine's own timer armed in a held call) is the hold's, not work of the run;"
 // Spec: k.drive, Driving "a harness `fire`, `settle`, `navigate` or render in progress, but not while it waits only on an unanswered `ctx.net` route."
-// Spec: k.drive, Driving "A resource a garbage collection would destroy is not pending: each time the set of pending resources is not one it has collected with, the drive runs one full garbage collection before reading it, and a resource that collection destroys (a synchronous call's job) is not pending."
+// Spec: k.drive, Driving "A resource a garbage collection would destroy is not pending: when the drive reads one set of pending resources on two turns in a row and, since its last collection, a resource has joined the set or a callback of one has run, it runs one full garbage collection, and a resource that collection destroys (a synchronous call's job, a finished stream's handle) is not pending."
 // Spec: k.drive, Conformance "In an empty replay, for each `d` of 1, 2 and 20, `fire` on a `render` handle on the run's ctx whose handler starts a `node:timers` `setTimeout(d)` that writes `'late'` to storage key `k` resolves with `k` reading `'late'`."
+// Spec: k.drive, Conformance "In an empty replay under `budget: 2000`, a scenario that awaits a `node:zlib` `gzip` (the callback form) of `Buffer.alloc(4 * 1024 * 1024)`, then awaits `ctx.clock.after(1)`, resolves `simulate` with `ctx.clock.now()` 1 after the second await."
 // Spec: k.drive, Conformance "In an empty replay under `budget: 300`, a scenario that calls `node:crypto` `pbkdf2Sync` of 1,000 iterations and `node:zlib` `gzipSync`, then awaits `ctx.clock.after(10)`, resolves `simulate` with `ctx.clock.now()` 10 after the await."
 // Spec: k.drive, Driving "The harness's and the drive's own macrotask turns are made outside the run's context and are not work; the drive moves the clock inside the run's context, so waiters, offline-edge callbacks and `observe` callbacks it runs make work of the run."
 // Spec: k.drive, Conformance "Under `simulate` with `replay` of a `SimRun` of seed 1 whose schedule's `offline` is `[{ at: 100, ms: 50 }]`, an `observe` callback that, on the `net` event at 100, starts a `node:timers` `setTimeout(20)` recording `ctx.clock.now()` as it answers: it records 100, and after `run()` the clock is 150."
@@ -20,7 +21,7 @@ import { pbkdf2, pbkdf2Sync } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { setImmediate, setTimeout } from "node:timers";
 import { fileURLToPath } from "node:url";
-import { gzipSync } from "node:zlib";
+import { gzip, gzipSync } from "node:zlib";
 import type { Ctx } from "@keel/ctx";
 import { observe } from "@keel/ctx";
 import { s } from "@keel/schema";
@@ -324,5 +325,33 @@ test("synchronous `pbkdf2Sync` and `gzipSync` calls, any number of them with any
       },
     ),
     { seed: SEED, numRuns: 10 },
+  );
+});
+
+async function gzipThenWait(bytes: number): Promise<number> {
+  let now = -1;
+  await simulate(
+    async ({ ctx }) => {
+      await new Promise<void>((resolve, reject) => {
+        gzip(Buffer.alloc(bytes), (e) => (e === null ? resolve() : reject(e)));
+      });
+      await ctx.clock.after(1);
+      now = ctx.clock.now();
+    },
+    { replay, budget: 2000 },
+  );
+  return now;
+}
+
+test("In an empty replay under `budget: 2000`, a scenario that awaits a `node:zlib` `gzip` (the callback form) of `Buffer.alloc(4 * 1024 * 1024)`, then awaits `ctx.clock.after(1)`, resolves `simulate` with `ctx.clock.now()` 1 after the second await.", async () => {
+  expect(await gzipThenWait(4 * 1024 * 1024)).toBe(1);
+});
+
+test("a callback-form `gzip` of any buffer from a few bytes to a few MB leaves no work: the scenario resolves with the clock at 1 after the following `ctx.clock.after(1)`", async () => {
+  await fc.assert(
+    fc.asyncProperty(fc.integer({ min: 1, max: 4 * 1024 * 1024 }), async (bytes) => {
+      expect(await gzipThenWait(bytes)).toBe(1);
+    }),
+    { seed: SEED, numRuns: 8 },
   );
 });
