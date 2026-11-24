@@ -1,12 +1,12 @@
 // The imports `toTest` writes are in the order the repo's formatter leaves them (biome's organized imports), in both forms. Seed 1337
 import { spawnSync } from "node:child_process";
 import nodePath from "node:path";
-import { fileURLToPath } from "node:url";
+import { repoRoot } from "@keel/tooling/repo-root";
 import { expect, test } from "vitest";
 import { Session } from "../src/Session.schema.ts";
 import { toTest } from "../src/toTest.ts";
 
-const REPO_ROOT = nodePath.resolve(nodePath.dirname(fileURLToPath(import.meta.url)), "../../..");
+const REPO_ROOT = repoRoot(import.meta.dirname);
 const BIOME = nodePath.join(REPO_ROOT, "node_modules/.bin/biome");
 
 const parsed = Session.parse({
