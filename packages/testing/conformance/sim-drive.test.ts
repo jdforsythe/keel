@@ -1,14 +1,18 @@
 // @vitest-environment happy-dom
-// Spec: k.sim, Conformance "Under `simulate` with `replay` of a `SimRun` of seed 1 and an empty schedule, a scenario that awaits `ctx.clock.after(500)` and calls no `run` resolves, with `ctx.clock.now()` 500 after the await."
-// Spec: k.sim, Conformance "Under `simulate` with `replay` of a `SimRun` of seed 1 and an empty schedule, a scenario that starts a `ctx.clock.after(1000)` waiter, then awaits `ctx.clock.after(100)` and after it `ctx.clock.after(200)`: after the second await `ctx.clock.now()` is 300 and the 1,000 ms waiter has not resolved."
-// Spec: k.sim, Conformance "Under `simulate` with `replay` of a `SimRun` of seed 1 and an empty schedule, with waiters at 100, 200 and 300 ms each recording `ctx.clock.now()` as it resolves: after `await run(250)` the record is `[100, 200]` and the clock 250; after a following `await run(0)`, the same; after a following `await run()`, `[100, 200, 300]` and the clock 300."
-// Spec: k.sim, Conformance "Under `simulate` with `replay` of a `SimRun` of seed 1 and an empty schedule and `horizon: 0`, a scenario with waiters at 50 and 200 ms that calls `ctx.clock.advance(100)` then `await run()`: the clock is 100, the 50 ms waiter has resolved and the 200 ms one has not."
-// Spec: k.sim, Conformance "A capability registered with a `sim` factory whose `work()` returns `hold(p, 'probe')`, `p` resolving after 50 `MessageChannel` macrotask turns: under `simulate` with `replay` of a `SimRun` of seed 1 and an empty schedule, a scenario that starts a `ctx.clock.after(10)` waiter and awaits `work()` sees `ctx.clock.now()` 0 when `work()` answers and the 10 ms waiter not resolved."
-// Spec: k.sim, Conformance "Under `simulate` with `replay` of a `SimRun` of seed 1 and an empty schedule, with a `ctx.clock.after(100)` waiter pending, `fire` on a `render` handle on the run's ctx whose handler runs a transaction and waits on no clock resolves with `ctx.clock.now()` 0."
-// Spec: k.sim, simulate "`run(ms?)` waits while the drive (below) moves the clock: `run()` resolves once the run is idle, no `ctx.net` route of it is unanswered, and no moment is within the horizon, so no window edge within the horizon is left ahead of the clock; `run(ms)`, `ms` an integer 0 to 600000, takes each moment at or before `t + ms` (`t` the clock when called; the horizon does not bound it), then advances the clock to `t + ms` if it is earlier, and resolves once the run is idle with no `ctx.net` route unanswered. `run(0)` moves no clock. Another `ms` rejects with `schema.invalid`, failing the run."
-// Spec: k.sim, Driving "A harness call moves no clock itself."
-// Seed: 1337 (fc.assert below); replays use a SimRun of seed 1 and an empty schedule. No timer: MessageChannel turns stand for real I/O.
+// Spec: k.drive, Conformance "In an empty replay, a scenario that awaits `ctx.clock.after(500)` and calls no `run` resolves, with `ctx.clock.now()` 500 after the await."
+// Spec: k.drive, Conformance "In an empty replay, a scenario that starts a `ctx.clock.after(1000)` waiter, then awaits `ctx.clock.after(100)` and after it `ctx.clock.after(200)`: after the second await `ctx.clock.now()` is 300 and the 1,000 ms waiter has not resolved."
+// Spec: k.drive, Conformance "In an empty replay, with waiters at 100, 200 and 300 ms each recording `ctx.clock.now()` as it resolves: after `await run(250)` the record is `[100, 200]` and the clock 250; after a following `await run(0)`, the same; after a following `await run()`, `[100, 200, 300]` and the clock 300."
+// Spec: k.drive, Conformance "In an empty replay with `horizon: 0`, a scenario with waiters at 50 and 200 ms that calls `ctx.clock.advance(100)` then `await run()`: the clock is 100, the 50 ms waiter has resolved and the 200 ms one has not."
+// Spec: k.drive, Conformance "A capability registered with a `sim` factory whose `work()` returns `hold('probe', () => p)`, `p` resolving when a `MessagePort` made before `simulate` delivers a message the test posts after 50 macrotask turns: in an empty replay, a scenario that starts a `ctx.clock.after(10)` waiter and awaits `work()` sees `ctx.clock.now()` 0 when `work()` answers and the 10 ms waiter not resolved."
+// Spec: k.drive, Conformance "In an empty replay, with a `ctx.clock.after(100)` waiter pending, `fire` on a `render` handle on the run's ctx whose handler runs a transaction and waits on no clock resolves with `ctx.clock.now()` 0."
+// Spec: k.sim, simulate "`run(ms?)` waits while the drive (k.drive) moves the clock: `run()` resolves once the run is idle, no `ctx.net` route of it is unanswered, and no moment is within the horizon, so no window edge within the horizon is left ahead of the clock; `run(ms)`, `ms` an integer 0 to 600000, takes each moment at or before `t + ms` (`t` the clock when called; the horizon does not bound it), then advances the clock to `t + ms` if it is earlier, and resolves once the run is idle with no `ctx.net` route unanswered. `run(0)` moves no clock. Another `ms` rejects with `schema.invalid`, failing the run."
+// Spec: k.drive, Driving "A harness call moves no clock itself."
+// Spec: k.drive, Driving "`simulate` (k.sim) runs each scenario inside the run's async context (Node `AsyncLocalStorage` and an `async_hooks` hook, in `@keel/testing`; `@keel/ctx` imports no Node module and a sim ctx outside `simulate` is never driven)."
+// Spec: k.drive, Driving "A scenario that awaits work waiting on the clock gets its answer at the first moment it can, with no `run()` call, and code after an `await` that needs no clock runs at the time that `await` answered; after `run(ms)` the run's state at `t + ms` is readable, work parked across it included."
+// Spec: k.drive, Driving "`horizon: 0` leaves every later moment to the scenario's `advance`."
+// Seed: 1337 (fc.assert below); replays use a SimRun of seed 1 and an empty schedule. The held work of the probe answers through a MessagePort made before `simulate`; the test's own MessageChannel turns stand for real I/O and no timer is used.
 // ASSUMPTION: a waiter "resolved" is seen when its `.then` runs, after the scenario's next await; `run(ms)` with ms outside 0..600000 or non-integer rejects the run, so `simulate` rejects.
+// ASSUMPTION: the clock stays where the test put it for a sim ctx outside `simulate` ("never driven"): the last case reads that through a harness `fire`.
 import { MessageChannel } from "node:worker_threads";
 import type { SimCtx } from "@keel/ctx";
 import { register } from "@keel/ctx";
@@ -49,12 +53,33 @@ function turns(n: number): Promise<void> {
 }
 
 type Probe = { work(): Promise<void> };
-let probeTurns = 50;
+/** The port made before `simulate`; `answerAfter(n)` posts to it from the test after `n` macrotask turns of the test's own. */
+let outside = new MessageChannel();
 const probe = register("simDriveProbe", {
   real: (): Probe => ({ work: () => Promise.resolve() }),
   shell: (): Probe => ({ work: () => Promise.resolve() }),
-  sim: ({ hold }): Probe => ({ work: () => hold(turns(probeTurns), "probe") }),
+  sim: ({ hold }): Probe => ({
+    work: () =>
+      hold(
+        "probe",
+        () =>
+          new Promise<void>((resolve) => {
+            outside.port1.once("message", () => resolve());
+          }),
+      ),
+  }),
 });
+
+function answerAfter(n: number): void {
+  outside = new MessageChannel();
+  const port = outside.port2;
+  void turns(n).then(() => port.postMessage(0));
+}
+
+function closeOutside(): void {
+  outside.port1.close();
+  outside.port2.close();
+}
 
 test("Under `simulate` with `replay` of a `SimRun` of seed 1 and an empty schedule, a scenario that awaits `ctx.clock.after(500)` and calls no `run` resolves, with `ctx.clock.now()` 500 after the await.", async () => {
   let now = -1;
@@ -236,8 +261,8 @@ test("Under `simulate` with `replay` of a `SimRun` of seed 1 and an empty schedu
   expect(seen).toEqual([{ now: 100, early: true, late: false }]);
 });
 
-test("A capability registered with a `sim` factory whose `work()` returns `hold(p, 'probe')`, `p` resolving after 50 `MessageChannel` macrotask turns: under `simulate` with `replay` of a `SimRun` of seed 1 and an empty schedule, a scenario that starts a `ctx.clock.after(10)` waiter and awaits `work()` sees `ctx.clock.now()` 0 when `work()` answers and the 10 ms waiter not resolved.", async () => {
-  probeTurns = 50;
+test("A capability registered with a `sim` factory whose `work()` returns `hold('probe', () => p)`, `p` resolving when a `MessagePort` made before `simulate` delivers a message the test posts after 50 macrotask turns: in an empty replay, a scenario that starts a `ctx.clock.after(10)` waiter and awaits `work()` sees `ctx.clock.now()` 0 when `work()` answers and the 10 ms waiter not resolved.", async () => {
+  answerAfter(50);
   const seen: { now: number; waiter: boolean }[] = [];
   await simulate(
     async ({ ctx }) => {
@@ -249,13 +274,14 @@ test("A capability registered with a `sim` factory whose `work()` returns `hold(
     },
     { replay },
   );
+  closeOutside();
   expect(seen).toEqual([{ now: 0, waiter: false }]);
 });
 
-test("held work of any length in macrotask turns answers at clock time 0 with a pending 10 ms waiter not resolved", async () => {
+test("held work answering through a port made before `simulate`, after any number of macrotask turns, answers at clock time 0 with a pending 10 ms waiter not resolved", async () => {
   await fc.assert(
     fc.asyncProperty(fc.integer({ min: 1, max: 300 }), async (n) => {
-      probeTurns = n;
+      answerAfter(n);
       const seen: { now: number; waiter: boolean }[] = [];
       await simulate(
         async ({ ctx }) => {
@@ -267,6 +293,7 @@ test("held work of any length in macrotask turns answers at clock time 0 with a 
         },
         { replay },
       );
+      closeOutside();
       expect(seen).toEqual([{ now: 0, waiter: false }]);
     }),
     { seed: SEED, numRuns: 10 },
@@ -291,7 +318,7 @@ test("Under `simulate` with `replay` of a `SimRun` of seed 1 and an empty schedu
 });
 
 test("a harness call moves no clock itself: `fire` on a plain sim ctx outside `simulate` with a pending waiter leaves the clock where the test put it", async () => {
-  // Outside `simulate` the clock is the test's (k.sim Driving: A harness call moves no clock itself).
+  // Outside `simulate` the clock is the test's: a sim ctx outside `simulate` is never driven (k.drive Driving).
   const ctx = simCtx();
   const w = waiter(ctx, 100);
   const t = render(CartView, { props: { compact: false }, state: [[cart, { items: [] }]], ctx });
