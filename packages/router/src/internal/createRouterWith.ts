@@ -362,7 +362,7 @@ export function createRouterWith<T extends RouteTable>(
         await answered();
         const ran = await attempt(async () => {
           const stores = from === undefined ? undefined : await rq?.stores(from);
-          const out = await act.run(decoded.value, { params, url, ...who, stores }, ctx);
+          const out = await act.run(decoded.value, { params, url, ...who, stores, routes }, ctx);
           // A link that is no `Href` is never followed: `keel.unexpected`, nothing saved, the value in no message.
           if (out.ok && out.value !== null && (typeof out.value !== "string" || !isHref(out.value)))
             return err(unexpected(`action ${String(req.action)} returned a link that is no path of this origin`));

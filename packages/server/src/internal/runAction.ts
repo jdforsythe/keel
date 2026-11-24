@@ -83,7 +83,7 @@ export async function runAction(r: Req, m: Match & { kind: "route" }): Promise<H
   let refused: Diag | null = null;
   const { result: ran, frames } = await caught(async () => {
     const stores = action.stores === undefined ? undefined : await openFactory(sv.ctx, rq, action.stores);
-    const at = { params: m.params, url: r.url, caller: rq.caller.id, user: rq.user, stores };
+    const at = { params: m.params, url: r.url, caller: rq.caller.id, user: rq.user, stores, routes: r.sv.routes };
     const out =
       action.output === undefined
         ? await inRequest(rq, () => action.run(decoded.value, at, sv.ctx))

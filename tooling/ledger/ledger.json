@@ -1,39 +1,39 @@
 {
   "version": 1,
-  "unsafe": 18,
+  "unsafe": 19,
   "hostElements": 0,
   "rungs": {
-    "example": 1914,
-    "probabilistic": 349,
+    "example": 1970,
+    "probabilistic": 368,
     "exhaustive": 16,
-    "proven": 75,
+    "proven": 81,
     "monitored": 8
   },
   "mutation": {
     "packages": {
       "check": {
-        "score": 72.84,
-        "scoreJustified": 72.84,
+        "score": 73.1,
+        "scoreJustified": 73.1,
         "threshold": 70,
-        "killed": 12970,
-        "survived": 4081,
-        "noCoverage": 755,
+        "killed": 13183,
+        "survived": 4098,
+        "noCoverage": 754,
         "justified": 0
       },
       "cli": {
-        "score": 71.98,
-        "scoreJustified": 71.98,
+        "score": 71.82,
+        "scoreJustified": 71.82,
         "threshold": 70,
-        "killed": 8718,
-        "survived": 2410,
-        "noCoverage": 983,
+        "killed": 8665,
+        "survived": 2413,
+        "noCoverage": 987,
         "justified": 0
       },
       "compiler": {
         "score": 73.62,
         "scoreJustified": 73.62,
         "threshold": 70,
-        "killed": 11374,
+        "killed": 11375,
         "survived": 3326,
         "noCoverage": 749,
         "justified": 0
@@ -66,13 +66,13 @@
         "justified": 0
       },
       "router": {
-        "score": 90.25,
-        "scoreJustified": 91.03,
+        "score": 90.2,
+        "scoreJustified": 90.94,
         "threshold": 80,
-        "killed": 3674,
-        "survived": 365,
-        "noCoverage": 32,
-        "justified": 35
+        "killed": 3783,
+        "survived": 378,
+        "noCoverage": 33,
+        "justified": 34
       },
       "runtime-dom": {
         "score": 79.88,
@@ -84,37 +84,37 @@
         "justified": 0
       },
       "scaffold": {
-        "score": 78.94,
-        "scoreJustified": 78.94,
+        "score": 78.35,
+        "scoreJustified": 78.35,
         "threshold": 70,
-        "killed": 3680,
-        "survived": 783,
-        "noCoverage": 199,
+        "killed": 4010,
+        "survived": 922,
+        "noCoverage": 186,
         "justified": 0
       },
       "schema": {
-        "score": 91.38,
-        "scoreJustified": 91.38,
+        "score": 91.24,
+        "scoreJustified": 91.24,
         "threshold": 80,
-        "killed": 1653,
-        "survived": 142,
-        "noCoverage": 14,
+        "killed": 1657,
+        "survived": 144,
+        "noCoverage": 15,
         "justified": 0
       },
       "server": {
         "score": 81.41,
         "scoreJustified": 81.41,
         "threshold": 70,
-        "killed": 4777,
+        "killed": 4778,
         "survived": 840,
         "noCoverage": 251,
         "justified": 0
       },
       "services": {
-        "score": 83.79,
-        "scoreJustified": 83.79,
+        "score": 83.8,
+        "scoreJustified": 83.8,
         "threshold": 70,
-        "killed": 1390,
+        "killed": 1391,
         "survived": 236,
         "noCoverage": 33,
         "justified": 0
@@ -192,10 +192,10 @@
         "justified": 0
       },
       "std-i18n": {
-        "score": 76.22,
-        "scoreJustified": 76.22,
+        "score": 76.79,
+        "scoreJustified": 76.79,
         "threshold": 70,
-        "killed": 250,
+        "killed": 258,
         "survived": 76,
         "noCoverage": 2,
         "justified": 0
@@ -219,21 +219,21 @@
         "justified": 0
       },
       "std-messages": {
-        "score": 92.47,
-        "scoreJustified": 92.47,
+        "score": 90.73,
+        "scoreJustified": 90.73,
         "threshold": 70,
-        "killed": 1658,
-        "survived": 127,
-        "noCoverage": 8,
+        "killed": 1800,
+        "survived": 170,
+        "noCoverage": 14,
         "justified": 0
       },
       "std-money": {
-        "score": 92.16,
-        "scoreJustified": 92.16,
+        "score": 85.4,
+        "scoreJustified": 85.4,
         "threshold": 70,
-        "killed": 47,
-        "survived": 3,
-        "noCoverage": 1,
+        "killed": 193,
+        "survived": 30,
+        "noCoverage": 3,
         "justified": 0
       },
       "std-offline": {
@@ -291,12 +291,12 @@
         "justified": 0
       },
       "std-tables": {
-        "score": 70.96,
-        "scoreJustified": 70.96,
+        "score": 72.35,
+        "scoreJustified": 72.35,
         "threshold": 70,
-        "killed": 579,
+        "killed": 615,
         "survived": 203,
-        "noCoverage": 34,
+        "noCoverage": 32,
         "justified": 0
       },
       "std-tauri": {
@@ -309,12 +309,12 @@
         "justified": 0
       },
       "std-temporal": {
-        "score": 89.19,
-        "scoreJustified": 89.19,
+        "score": 89.59,
+        "scoreJustified": 89.59,
         "threshold": 70,
         "killed": 198,
         "survived": 17,
-        "noCoverage": 7,
+        "noCoverage": 6,
         "justified": 0
       },
       "std-text": {
@@ -363,20 +363,20 @@
         "justified": 0
       },
       "testing": {
-        "score": 78.04,
-        "scoreJustified": 78.04,
+        "score": 78.37,
+        "scoreJustified": 78.37,
         "threshold": 70,
-        "killed": 4097,
-        "survived": 662,
+        "killed": 4192,
+        "survived": 666,
         "noCoverage": 491,
         "justified": 0
       },
       "ui": {
-        "score": 72.76,
-        "scoreJustified": 72.76,
+        "score": 72.93,
+        "scoreJustified": 72.93,
         "threshold": 70,
-        "killed": 1349,
-        "survived": 390,
+        "killed": 1363,
+        "survived": 391,
         "noCoverage": 115,
         "justified": 0
       }
@@ -824,6 +824,15 @@
         "score": 53.85
       },
       {
+        "file": "packages/check/src/internal/formatLiterals.ts",
+        "sha": "d3f45fdee78308cdc028154c698b529c6ef763aa6989f296fe7ae21bfd52cae3",
+        "killed": 63,
+        "survived": 18,
+        "noCoverage": 3,
+        "justified": 0,
+        "score": 75
+      },
+      {
         "file": "packages/check/src/internal/generatedEdits.ts",
         "sha": "9a9975588930b2452245268bfa759dcc757e82a4322b2519106ce3c63a58ee9c",
         "killed": 158,
@@ -1140,12 +1149,12 @@
       },
       {
         "file": "packages/check/src/internal/modules/depsCycles.ts",
-        "sha": "f80b6ef4cb45b4496817c40bec33df37700199d4722448c7baa6bdf882b83f58",
-        "killed": 62,
-        "survived": 12,
+        "sha": "453cd0db1ea21d01d52c90ee20278b1475ab2658519fbbf37c4ade4992b79529",
+        "killed": 78,
+        "survived": 9,
         "noCoverage": 4,
         "justified": 0,
-        "score": 79.49
+        "score": 85.71
       },
       {
         "file": "packages/check/src/internal/modules/discoverModules.ts",
@@ -1155,6 +1164,15 @@
         "noCoverage": 1,
         "justified": 0,
         "score": 62.5
+      },
+      {
+        "file": "packages/check/src/internal/modules/guardEdges.ts",
+        "sha": "02fd963d19e71e98c2bb42f194404616da2bdc2a9e30ce4d55c1ad1c6ae6e3e3",
+        "killed": 22,
+        "survived": 7,
+        "noCoverage": 0,
+        "justified": 0,
+        "score": 75.86
       },
       {
         "file": "packages/check/src/internal/modules/inNodeModules.ts",
@@ -1194,16 +1212,16 @@
       },
       {
         "file": "packages/check/src/internal/modules/moduleChecks.ts",
-        "sha": "8e0ebf76df613d86c3fc881681e99d0b3588684515270e10052080834856fe39",
-        "killed": 189,
-        "survived": 24,
+        "sha": "b3c5ef8e6d3576a9a71ccaa1836490d77bc11889c0c157c0c76bda87db6dd50e",
+        "killed": 194,
+        "survived": 21,
         "noCoverage": 0,
         "justified": 0,
-        "score": 88.73
+        "score": 90.23
       },
       {
         "file": "packages/check/src/internal/modules/moduleDiag.ts",
-        "sha": "aa3ddbc2c03877b9fe363de7bad16ace750778484d806535d690a40ae400bc43",
+        "sha": "24245accf1aa137cfea4ac96ec2902faff95cfad70dea320ae341d7253a7ea4a",
         "killed": 6,
         "survived": 2,
         "noCoverage": 0,
@@ -1290,6 +1308,15 @@
         "noCoverage": 3,
         "justified": 0,
         "score": 80.95
+      },
+      {
+        "file": "packages/check/src/internal/modules/unusedDeps.ts",
+        "sha": "a1cfe13f019eba555b10983cc1933345b9563256a2a532c4ae55d319e7c241ea",
+        "killed": 44,
+        "survived": 6,
+        "noCoverage": 0,
+        "justified": 0,
+        "score": 88
       },
       {
         "file": "packages/check/src/internal/mutatedBinding.ts",
@@ -1680,12 +1707,12 @@
       },
       {
         "file": "packages/check/src/internal/topologyNeeds.ts",
-        "sha": "4de903b33cc74a6ca3d45478325b055ba13faba27f4f91319c28e3596ba2ad8a",
-        "killed": 39,
-        "survived": 13,
+        "sha": "3c61c8fbc7df6e699ca8d4ef60efe4ce24ce6db1115929ea757ae1f1757b2101",
+        "killed": 40,
+        "survived": 12,
         "noCoverage": 0,
         "justified": 0,
-        "score": 75
+        "score": 76.92
       },
       {
         "file": "packages/check/src/internal/trailer.ts",
@@ -1707,12 +1734,12 @@
       },
       {
         "file": "packages/check/src/internal/typeCheck.ts",
-        "sha": "1c1a62cc9566ab7838d92c0265ffa87eba2dfce8060dee147e453da7728fe2fd",
-        "killed": 156,
+        "sha": "40f0050a565c4c144ab3359e692232011545ce537ada2fb570ca27fcad86dc8a",
+        "killed": 158,
         "survived": 52,
         "noCoverage": 3,
         "justified": 0,
-        "score": 73.93
+        "score": 74.18
       },
       {
         "file": "packages/check/src/internal/unifiedDiff.ts",
@@ -1761,12 +1788,12 @@
       },
       {
         "file": "packages/check/src/rules/blankLabel.ts",
-        "sha": "09eee5ab16d2e4d8bcf005f6eb2b24ce9ef51090bfa2731a7e0f3f07a2d976c7",
-        "killed": 315,
-        "survived": 76,
-        "noCoverage": 4,
+        "sha": "df8b2576834c12ea5407ca827f3b26aed2734da58e154af3b49387a75a733db0",
+        "killed": 375,
+        "survived": 69,
+        "noCoverage": 0,
         "justified": 0,
-        "score": 79.75
+        "score": 84.46
       },
       {
         "file": "packages/check/src/rules/bodyOnGetEndpoint.ts",
@@ -2202,7 +2229,7 @@
       },
       {
         "file": "packages/cli/src/bin.ts",
-        "sha": "1033e53bab1a47c44d477061ee19ccb33d7e9664b2c35669aee0e7013d35fbe1",
+        "sha": "99a46e9563b85666595ff45af60e2d2d69605f7e92bc7dc4bddd7594382ba392",
         "killed": 0,
         "survived": 0,
         "noCoverage": 48,
@@ -2436,12 +2463,12 @@
       },
       {
         "file": "packages/cli/src/internal/catchingStray.ts",
-        "sha": "b42312a76ca3a4c598e8f14dd0688352f95d19952171bade7edb341baaba8bce",
-        "killed": 86,
-        "survived": 25,
-        "noCoverage": 3,
+        "sha": "43d62e0d1ae575ca67b5d8078f9872467831852f50938c838bf2d95308601014",
+        "killed": 13,
+        "survived": 1,
+        "noCoverage": 0,
         "justified": 0,
-        "score": 75.44
+        "score": 92.86
       },
       {
         "file": "packages/cli/src/internal/checkCommand.ts",
@@ -2643,12 +2670,12 @@
       },
       {
         "file": "packages/cli/src/internal/execute.ts",
-        "sha": "f0b2daeaed9f81937ef9a2377a2fbc6c9ce3a55d78918c6e3da7cc851115b501",
-        "killed": 35,
+        "sha": "34ab4d3b92123c9953b54857563abbf9b03aa1b40256b8b78bbc5cdfe368ff03",
+        "killed": 40,
         "survived": 8,
         "noCoverage": 6,
         "justified": 0,
-        "score": 71.43
+        "score": 74.07
       },
       {
         "file": "packages/cli/src/internal/exitCode.ts",
@@ -2742,7 +2769,7 @@
       },
       {
         "file": "packages/cli/src/internal/hostIo.ts",
-        "sha": "cf9460c408e2b0c215410870a65df732f72646c98d795e1d1c5ab0b4aa54b196",
+        "sha": "bee0676351a62d272df3ff7d099202495edb05c62375b1e545981fd6a14ae7d4",
         "killed": 25,
         "survived": 8,
         "noCoverage": 5,
@@ -2922,7 +2949,7 @@
       },
       {
         "file": "packages/cli/src/internal/loadStd.ts",
-        "sha": "8d3b234cecd63dc4f05a269e9da0ad5f56d68426512af00410a4f75fab9246af",
+        "sha": "cbf878a5eac3ee4e7242df70322a66de42fbe7d8ac76bfdf699caa5499cfe7b7",
         "killed": 1,
         "survived": 2,
         "noCoverage": 1,
@@ -3057,7 +3084,7 @@
       },
       {
         "file": "packages/cli/src/internal/openapiInput.ts",
-        "sha": "3df89b92efe6c07f6186d8a9ddf7964eee9abf68b9888a5fc778d9b60082e9c6",
+        "sha": "d70cd778c237a78a11d2be516b2d09291c8cf559c1ebce0143d5affbd5deb059",
         "killed": 19,
         "survived": 16,
         "noCoverage": 6,
@@ -3300,21 +3327,21 @@
       },
       {
         "file": "packages/cli/src/internal/scaffoldCommand.ts",
-        "sha": "00dfafe0687b6f3331ae62bab4a1d99c22c9c109f9480346301859002766b117",
-        "killed": 194,
-        "survived": 59,
-        "noCoverage": 1,
+        "sha": "90d3d5fb0245b96aeea7afa9ddabf9e990c2bcde8df53300af7f750f820454c9",
+        "killed": 209,
+        "survived": 85,
+        "noCoverage": 6,
         "justified": 0,
-        "score": 76.38
+        "score": 69.67
       },
       {
         "file": "packages/cli/src/internal/scaffoldInput.ts",
-        "sha": "5e7c9a544ab66311fd86c71c35e783c8fd42be5802a089277ec6b4e597dd8bb1",
+        "sha": "47d9e65a7452d9a17c20c785daa234a6844561adf40726cb50e9a6d2e9c2f009",
         "killed": 39,
-        "survived": 4,
-        "noCoverage": 2,
+        "survived": 5,
+        "noCoverage": 4,
         "justified": 0,
-        "score": 86.67
+        "score": 81.25
       },
       {
         "file": "packages/cli/src/internal/scrubCode.ts",
@@ -3831,7 +3858,7 @@
       },
       {
         "file": "packages/cli/src/run.ts",
-        "sha": "899433ac82e3445f608ffd8b08f4caa5f21e9ac260c3c14ba7bfacbed39343a3",
+        "sha": "800f5a934f5626c81adc03490eb16597c45365357cf12a8b583c98e887e370f9",
         "killed": 52,
         "survived": 4,
         "noCoverage": 1,
@@ -4089,6 +4116,15 @@
         "noCoverage": 0,
         "justified": 0,
         "score": 70.59
+      },
+      {
+        "file": "packages/compiler/src/hosting/isReverseDns.ts",
+        "sha": "03dae4787dccfab8dcb8014677c68f6f756b1c3d3bc0a4e7a9845dd2104def7a",
+        "killed": 1,
+        "survived": 0,
+        "noCoverage": 0,
+        "justified": 0,
+        "score": 100
       },
       {
         "file": "packages/compiler/src/hosting/mountDiags.ts",
@@ -4407,7 +4443,7 @@
       },
       {
         "file": "packages/compiler/src/internal/collectStyles.ts",
-        "sha": "f48f2a8324df441193c044dc7747f10e9ab2b83b8e1fb96bd432ae427c2a817d",
+        "sha": "111cd7d4d8d00276916cbf387785600607a5691b66e1c0ff7e95ab4160de552d",
         "killed": 682,
         "survived": 176,
         "noCoverage": 33,
@@ -6180,12 +6216,12 @@
       },
       {
         "file": "packages/router/src/action.ts",
-        "sha": "f032687e10204c2f7f9229c59c05fae18a326eb156931bbb97935e8b11e482bb",
-        "killed": 33,
+        "sha": "4402aca59c5e51d2a4a7ab41cf67e0a5ed396ded859ddaa3aa7cf16490ab69f5",
+        "killed": 35,
         "survived": 7,
         "noCoverage": 0,
         "justified": 0,
-        "score": 82.5
+        "score": 83.33
       },
       {
         "file": "packages/router/src/browserHistory.ts",
@@ -6387,12 +6423,12 @@
       },
       {
         "file": "packages/router/src/internal/createRouterWith.ts",
-        "sha": "8f4430ba6e742cbd9b6b0c3d813c01114e1da1c8255e604e374a86c958114d01",
-        "killed": 497,
-        "survived": 110,
+        "sha": "3104f3ab68116d4fd14389557f614cb4222a64c90f4516a870be6307ddb8ee54",
+        "killed": 500,
+        "survived": 107,
         "noCoverage": 8,
         "justified": 0,
-        "score": 80.81
+        "score": 81.3
       },
       {
         "file": "packages/router/src/internal/defaultError.ts",
@@ -6522,12 +6558,12 @@
       },
       {
         "file": "packages/router/src/internal/isHref.ts",
-        "sha": "18b52fdde1e7588c646a0dcf0123bc1a9339b13c7ef63ab1d3a14b8526f8db10",
-        "killed": 40,
-        "survived": 2,
+        "sha": "7d14cfc6c9d0f4c956105944816a91f8b254e8f1c93526dd40612c81ce2db4a8",
+        "killed": 16,
+        "survived": 0,
         "noCoverage": 0,
-        "justified": 1,
-        "score": 95.24
+        "justified": 0,
+        "score": 100
       },
       {
         "file": "packages/router/src/internal/isLoader.ts",
@@ -6836,6 +6872,15 @@
         "score": 77.27
       },
       {
+        "file": "packages/router/src/internal/returnRefused.ts",
+        "sha": "336295257e25375ecaa57cdbb5b82e382398dada428244a46f394100da14d87a",
+        "killed": 81,
+        "survived": 8,
+        "noCoverage": 1,
+        "justified": 0,
+        "score": 90
+      },
+      {
         "file": "packages/router/src/internal/rooted.ts",
         "sha": "b905f34a267845b2c4f23702efc6cac7269dff5c02ed9dd552a722f4433c7b1b",
         "killed": 5,
@@ -6935,6 +6980,15 @@
         "score": 92.68
       },
       {
+        "file": "packages/router/src/internal/unsafeChar.ts",
+        "sha": "65e6403cd3ba76a25a672315d65151bbc50b6fbb6dfa5f88c05dd527029a0a07",
+        "killed": 26,
+        "survived": 0,
+        "noCoverage": 0,
+        "justified": 0,
+        "score": 100
+      },
+      {
         "file": "packages/router/src/internal/unwrapNode.ts",
         "sha": "0f88475087c2cc835fc352c86346545bc5d28c089c4fbbb2ddb83f462653083a",
         "killed": 14,
@@ -7023,6 +7077,15 @@
         "noCoverage": 0,
         "justified": 0,
         "score": 88.24
+      },
+      {
+        "file": "packages/router/src/match/pageHref.ts",
+        "sha": "a691c5293ce4f424b61234705a0ffe9c072de3c6732589b1147efec62f3482a9",
+        "killed": 21,
+        "survived": 10,
+        "noCoverage": 0,
+        "justified": 0,
+        "score": 67.74
       },
       {
         "file": "packages/router/src/navigate.ts",
@@ -7971,12 +8034,12 @@
       },
       {
         "file": "packages/scaffold/src/internal/connectOrigin.ts",
-        "sha": "0f97116669853ef4eecb0ecca0a29e503a4cd6879a50db393ed49f7ac3dbc49c",
-        "killed": 84,
-        "survived": 11,
-        "noCoverage": 1,
+        "sha": "722ed709c12f8f3fb74dc857ef253e15d8d6dcffe19df5dfc54aa361c58c51eb",
+        "killed": 61,
+        "survived": 5,
+        "noCoverage": 0,
         "justified": 0,
-        "score": 87.5
+        "score": 92.42
       },
       {
         "file": "packages/scaffold/src/internal/constructorSites.ts",
@@ -7986,6 +8049,15 @@
         "noCoverage": 0,
         "justified": 0,
         "score": 87.72
+      },
+      {
+        "file": "packages/scaffold/src/internal/declareShell.ts",
+        "sha": "a4c7bcb4ef1800d863345ce8cb3236a33a0d94332de40268d94da1dabb205f30",
+        "killed": 34,
+        "survived": 30,
+        "noCoverage": 0,
+        "justified": 0,
+        "score": 53.13
       },
       {
         "file": "packages/scaffold/src/internal/deployWrites.ts",
@@ -7998,12 +8070,12 @@
       },
       {
         "file": "packages/scaffold/src/internal/diagnose.ts",
-        "sha": "3f30d5c3b8dde13f02f94975eca6b641cb79b3f2ff21c67a2fb0a0b8cbf378d6",
-        "killed": 104,
+        "sha": "f7377ea7e4c968c623df6fcf39724e556980964cb53d4d3b8f94a986c4be70ab",
+        "killed": 120,
         "survived": 13,
         "noCoverage": 5,
         "justified": 0,
-        "score": 85.25
+        "score": 86.96
       },
       {
         "file": "packages/scaffold/src/internal/dirOf.ts",
@@ -8016,21 +8088,21 @@
       },
       {
         "file": "packages/scaffold/src/internal/editManifest.ts",
-        "sha": "31d1f8d806b6570489c549b681e1a298a0a9b6de0f9b59a673caadfc4b99d572",
-        "killed": 55,
-        "survived": 2,
+        "sha": "49dba9bcd7f4377046053fd4d427bf661670fb34b374a3dfdece67af2c0744eb",
+        "killed": 79,
+        "survived": 5,
         "noCoverage": 0,
         "justified": 0,
-        "score": 96.49
+        "score": 94.05
       },
       {
         "file": "packages/scaffold/src/internal/fail.ts",
-        "sha": "3d620dec8995de92091f871e7709a21c74d7128c88dbf09ef7fcdda7b44b508a",
-        "killed": 8,
+        "sha": "79ec76e90a1692919833e1ec5be0f19d7b33f8b9b67166e03418f207a2c4229d",
+        "killed": 9,
         "survived": 1,
         "noCoverage": 0,
         "justified": 0,
-        "score": 88.89
+        "score": 90
       },
       {
         "file": "packages/scaffold/src/internal/fieldType.ts",
@@ -8049,6 +8121,15 @@
         "noCoverage": 0,
         "justified": 0,
         "score": 70
+      },
+      {
+        "file": "packages/scaffold/src/internal/fitDeployable.ts",
+        "sha": "e7189f6f2a3ddce74f03b828c6e99cd046b91eca3ad6f9623c01762ea1d930fc",
+        "killed": 20,
+        "survived": 8,
+        "noCoverage": 1,
+        "justified": 0,
+        "score": 68.97
       },
       {
         "file": "packages/scaffold/src/internal/idNames.ts",
@@ -8141,6 +8222,15 @@
         "score": 100
       },
       {
+        "file": "packages/scaffold/src/internal/isTestPath.ts",
+        "sha": "bf98472923dbc9eeb849b67d2210444e534886c1abd7c63366cf7fa71191ff6d",
+        "killed": 7,
+        "survived": 3,
+        "noCoverage": 0,
+        "justified": 0,
+        "score": 70
+      },
+      {
         "file": "packages/scaffold/src/internal/joinSpec.ts",
         "sha": "7c2fcfcef99c482200d1cd5b815670cec707d4ca1c125f74060c3dc70e0b4df9",
         "killed": 22,
@@ -8222,6 +8312,15 @@
         "score": 100
       },
       {
+        "file": "packages/scaffold/src/internal/moduleUses.ts",
+        "sha": "96940b86d8f17b2f694d4453216206dfd9f8f7e479c81c3729bd888f772fae5d",
+        "killed": 30,
+        "survived": 12,
+        "noCoverage": 0,
+        "justified": 0,
+        "score": 71.43
+      },
+      {
         "file": "packages/scaffold/src/internal/opAddField.ts",
         "sha": "397a5e267bd251a3bbbcb4cfe57157f826567487cb18264e4624565d0ececb4d",
         "killed": 66,
@@ -8250,12 +8349,12 @@
       },
       {
         "file": "packages/scaffold/src/internal/opMove.ts",
-        "sha": "2c1bbf8c679c2580364ace2aa3a96e19b6d732a4ffdc4b0f55f6ac12dc5578cf",
-        "killed": 79,
-        "survived": 32,
-        "noCoverage": 44,
+        "sha": "e2eed19b59023d21ad00b1dd1a1b0f7cc0d3da675e54ba018944e8ebd5c9390c",
+        "killed": 102,
+        "survived": 45,
+        "noCoverage": 20,
         "justified": 0,
-        "score": 50.97
+        "score": 61.08
       },
       {
         "file": "packages/scaffold/src/internal/opPlace.ts",
@@ -8295,12 +8394,21 @@
       },
       {
         "file": "packages/scaffold/src/internal/opService.ts",
-        "sha": "5be7ba4460bd327590127dd85ed29d0613e37bb9080253a172fc04c9990928a6",
-        "killed": 142,
-        "survived": 53,
+        "sha": "f538644e37be45e6edc97dec1ba63b6bbbd7ed0309b15ccc7db28d5fc90180eb",
+        "killed": 147,
+        "survived": 55,
         "noCoverage": 12,
         "justified": 0,
-        "score": 68.6
+        "score": 68.69
+      },
+      {
+        "file": "packages/scaffold/src/internal/opShell.ts",
+        "sha": "200dc73e4d557fc5e5f1c422f1c82080666b53bd968f1b876f16bafb602dbd4a",
+        "killed": 149,
+        "survived": 51,
+        "noCoverage": 9,
+        "justified": 0,
+        "score": 71.29
       },
       {
         "file": "packages/scaffold/src/internal/opStore.ts",
@@ -8493,7 +8601,7 @@
       },
       {
         "file": "packages/scaffold/src/internal/run.ts",
-        "sha": "ee147d1bdbe0ddea3d42333646065f29421dc21bd48b2dd27a5b028b586e0dd8",
+        "sha": "75937b2b6d05f037ef49393c0d0a5a815c7f9f6aa9e2262330eb998bc0b43985",
         "killed": 3,
         "survived": 1,
         "noCoverage": 2,
@@ -8535,6 +8643,24 @@
         "noCoverage": 0,
         "justified": 0,
         "score": 82.35
+      },
+      {
+        "file": "packages/scaffold/src/internal/shellManifest.ts",
+        "sha": "7bd013e83c53c96ae5f0111fffac0e087a04aef5e520c367a3147bd8cec72739",
+        "killed": 30,
+        "survived": 19,
+        "noCoverage": 2,
+        "justified": 0,
+        "score": 58.82
+      },
+      {
+        "file": "packages/scaffold/src/internal/shellName.ts",
+        "sha": "2893ae04de6540ca32963636bf28946c7ab4cff0e2a38b3007974b5d50d0f4cb",
+        "killed": 14,
+        "survived": 4,
+        "noCoverage": 0,
+        "justified": 0,
+        "score": 77.78
       },
       {
         "file": "packages/scaffold/src/internal/sortedKeys.ts",
@@ -8904,6 +9030,15 @@
         "noCoverage": 0,
         "justified": 0,
         "score": 60
+      },
+      {
+        "file": "packages/schema/src/formatLiteral.ts",
+        "sha": "6ce23839715a05b428e0d5589ff3f34417419cfee46ce3c03f87c761829b9ffb",
+        "killed": 4,
+        "survived": 2,
+        "noCoverage": 1,
+        "justified": 0,
+        "score": 57.14
       },
       {
         "file": "packages/schema/src/gen.ts",
@@ -9870,12 +10005,12 @@
       },
       {
         "file": "packages/server/src/internal/handle.ts",
-        "sha": "e89c1ba57d524e76e509d4c51d00a482b4c5885bb32467fb83bd6ff68423d8ae",
-        "killed": 196,
+        "sha": "37f1c6a8f0f75c10d1f59f33442c7bc0a03fcb61e5f171b6fe6d4ffa44a281cf",
+        "killed": 197,
         "survived": 31,
         "noCoverage": 4,
         "justified": 0,
-        "score": 84.85
+        "score": 84.91
       },
       {
         "file": "packages/server/src/internal/headHtml.ts",
@@ -10293,7 +10428,7 @@
       },
       {
         "file": "packages/server/src/internal/runAction.ts",
-        "sha": "68e136a0f559953d53f1ba8147cd47ac2083f6a26368ad9a6990e2c9bc7d13b1",
+        "sha": "4afe5f000096d6348d6412e2d50460588fe6103facc4cd1b0641211a011adbf6",
         "killed": 147,
         "survived": 17,
         "noCoverage": 1,
@@ -10905,12 +11040,12 @@
       },
       {
         "file": "packages/services/src/openapi/openapi.ts",
-        "sha": "88edefae91f54993b4eaa4c53566e122d800cce1abc0536e101d89dd1fa57329",
-        "killed": 120,
+        "sha": "d9a07b7a859e034c2a7f4c1c2454e129c40281d4a8523e7d28ac3c3decf3f3bb",
+        "killed": 121,
         "survived": 6,
         "noCoverage": 0,
         "justified": 0,
-        "score": 95.24
+        "score": 95.28
       },
       {
         "file": "packages/services/src/service.ts",
@@ -11832,8 +11967,8 @@
       },
       {
         "file": "packages/std-i18n/src/plural.ts",
-        "sha": "ed67fa56fc4f3e90405196b44744247b7681c60dc803d92a18aa5e6dc7fda771",
-        "killed": 3,
+        "sha": "b2f04b17e9404cb69320df98b1d2e850177fa193866ea494c3662ff614219ee1",
+        "killed": 11,
         "survived": 0,
         "noCoverage": 0,
         "justified": 0,
@@ -12182,13 +12317,22 @@
         "score": 92.86
       },
       {
+        "file": "packages/std-messages/src/internal/exactKey.ts",
+        "sha": "2d6121a760e12c7d82e33ce1ebde4d87549322d37f2b717c09ad64389c7f6e00",
+        "killed": 9,
+        "survived": 1,
+        "noCoverage": 0,
+        "justified": 0,
+        "score": 90
+      },
+      {
         "file": "packages/std-messages/src/internal/genMessage.ts",
-        "sha": "aa5e88a48a78b9970fe246c9e05ab59268bd171857d17313c007f414c3cb7dd4",
-        "killed": 31,
+        "sha": "8c6863c8bb5a8b06b4adf5248f60927e0cc49f9ea962906c7f9ecb5612b5d3a7",
+        "killed": 37,
         "survived": 0,
         "noCoverage": 1,
         "justified": 0,
-        "score": 96.88
+        "score": 97.37
       },
       {
         "file": "packages/std-messages/src/internal/kindOf.ts",
@@ -12201,12 +12345,12 @@
       },
       {
         "file": "packages/std-messages/src/internal/messageOk.ts",
-        "sha": "f85ff808cca55a5fe2467c5a273c67d929dff3645a8b2c56ddcabdf649213304",
-        "killed": 81,
+        "sha": "ae07a38d7b1a39a84f383a39a48a7f635d514a97fcbf052cfeb08daa3a68155f",
+        "killed": 83,
         "survived": 3,
         "noCoverage": 0,
         "justified": 0,
-        "score": 96.43
+        "score": 96.51
       },
       {
         "file": "packages/std-messages/src/internal/placeholders.ts",
@@ -12380,13 +12524,22 @@
         "score": 100
       },
       {
+        "file": "packages/std-messages/src/tools/internal/packEdits.ts",
+        "sha": "5e483f68e7d46bf576007ba139b8a6dc10b67d7468b0a145251b644386418396",
+        "killed": 9,
+        "survived": 0,
+        "noCoverage": 0,
+        "justified": 0,
+        "score": 100
+      },
+      {
         "file": "packages/std-messages/src/tools/internal/paramHits.ts",
-        "sha": "d8797fe9a42adcad646230c703551b773ad8c8702e0a391ccb84739fea1e7735",
-        "killed": 149,
+        "sha": "22ff171159bdbc276cbd2b953d6cc1e4a58ec0015702f0c62eeb020ee1521297",
+        "killed": 148,
         "survived": 3,
         "noCoverage": 0,
         "justified": 0,
-        "score": 98.03
+        "score": 98.01
       },
       {
         "file": "packages/std-messages/src/tools/internal/parsed.ts",
@@ -12407,6 +12560,15 @@
         "score": 100
       },
       {
+        "file": "packages/std-messages/src/tools/internal/removals.ts",
+        "sha": "2b21966288e75568cb8fc5e61d7211aaf2066355112e68904ddb036fcea60ff3",
+        "killed": 21,
+        "survived": 8,
+        "noCoverage": 5,
+        "justified": 0,
+        "score": 61.76
+      },
+      {
         "file": "packages/std-messages/src/tools/internal/setDecls.ts",
         "sha": "b3b874d63072beb2b1547bfe4137ee6cc172dda296cce8c38ce6aa25b28e9ef4",
         "killed": 181,
@@ -12423,6 +12585,15 @@
         "noCoverage": 1,
         "justified": 0,
         "score": 90.32
+      },
+      {
+        "file": "packages/std-messages/src/tools/internal/unpackEdits.ts",
+        "sha": "0ece0839da42deae34f7a889a6c09d19d7feec5c773bdf4c1640b150c7ef723c",
+        "killed": 19,
+        "survived": 10,
+        "noCoverage": 0,
+        "justified": 0,
+        "score": 65.52
       },
       {
         "file": "packages/std-messages/src/tools/internal/unwrap.ts",
@@ -12459,6 +12630,15 @@
         "noCoverage": 0,
         "justified": 0,
         "score": 100
+      },
+      {
+        "file": "packages/std-messages/src/tools/neverApplies.ts",
+        "sha": "c3e487aceb5ddea71f97d34070e9ddac4f169a8578eb4b637eadb8ded1aa9091",
+        "killed": 77,
+        "survived": 24,
+        "noCoverage": 1,
+        "justified": 0,
+        "score": 75.49
       },
       {
         "file": "packages/std-messages/src/tools/placeholderParams.ts",
@@ -12498,12 +12678,39 @@
       },
       {
         "file": "packages/std-money/src/formatMoney.ts",
-        "sha": "1b44188c1c8e1e024055873aa63f3f10f8ab39f72434f9f1778740fc84087b5a",
+        "sha": "2531cdac26c15daeb5139a6aaab89525062739b2a7f74c8ce6b2244f17639ed6",
         "killed": 31,
         "survived": 1,
         "noCoverage": 1,
         "justified": 0,
         "score": 93.94
+      },
+      {
+        "file": "packages/std-money/src/internal/localeMarks.ts",
+        "sha": "796f70052032c98b8b135486705a8c907cab37c34fc4225ead711c7984121c0a",
+        "killed": 29,
+        "survived": 17,
+        "noCoverage": 1,
+        "justified": 0,
+        "score": 61.7
+      },
+      {
+        "file": "packages/std-money/src/internal/normalized.ts",
+        "sha": "eb247d62ab3942fa95e2bc0f73806de42c6cf0355c96a063ef017866be15bb19",
+        "killed": 3,
+        "survived": 1,
+        "noCoverage": 0,
+        "justified": 0,
+        "score": 75
+      },
+      {
+        "file": "packages/std-money/src/parseMoney.ts",
+        "sha": "0bc48abbc4788d4e029e9ede0089b2043dfb7a4335f2019d831672eb9a8076c5",
+        "killed": 114,
+        "survived": 9,
+        "noCoverage": 1,
+        "justified": 0,
+        "score": 91.94
       },
       {
         "file": "packages/std-offline/src/drain.ts",
@@ -14631,12 +14838,12 @@
       },
       {
         "file": "packages/std-tables/src/DataTable.ts",
-        "sha": "1861c539dcbb2a520510581150787406608df7b8dc4fe8499ed0d9dc02aaa248",
-        "killed": 233,
+        "sha": "7de50aedb085acf71f242d3362cda467109ac46da94d04b2fdf58f99cc418269",
+        "killed": 269,
         "survived": 105,
-        "noCoverage": 22,
+        "noCoverage": 20,
         "justified": 0,
-        "score": 64.72
+        "score": 68.27
       },
       {
         "file": "packages/std-tables/src/TableSearch.component.ts",
@@ -15989,6 +16196,15 @@
         "score": 84.78
       },
       {
+        "file": "packages/testing/src/internal/actsFor.ts",
+        "sha": "4721c9569a379ebf229b0ca71a2e394edcd37ee01e7e597ae969eecbf391e2bb",
+        "killed": 38,
+        "survived": 2,
+        "noCoverage": 0,
+        "justified": 0,
+        "score": 95
+      },
+      {
         "file": "packages/testing/src/internal/appSigner.ts",
         "sha": "a8f311f18ff4a1ffed72567f37a4ff2624a2190511044ca7fe01079ec833a99f",
         "killed": 0,
@@ -16287,12 +16503,12 @@
       },
       {
         "file": "packages/testing/src/internal/moveFocus.ts",
-        "sha": "924486fdd2bf0fc425e847e6153c42fb8af37f23a7c25a288f11516d60d91939",
-        "killed": 30,
+        "sha": "4f811a1582d23616b5694a5734508690f42a461debb09079c50069c91000ef02",
+        "killed": 31,
         "survived": 4,
         "noCoverage": 0,
         "justified": 0,
-        "score": 88.24
+        "score": 88.57
       },
       {
         "file": "packages/testing/src/internal/nameAndSource.ts",
@@ -16332,12 +16548,21 @@
       },
       {
         "file": "packages/testing/src/internal/openHarness.ts",
-        "sha": "2deb0442811679d993fa84d2508a6537a8b32162d8bcc8658d0961ba1fac8917",
-        "killed": 111,
-        "survived": 23,
+        "sha": "5c55cf65802882cdf78d25bb2ba06dcdca05c7442afe893b7ee764f26c6fd23c",
+        "killed": 100,
+        "survived": 21,
         "noCoverage": 6,
         "justified": 0,
-        "score": 79.29
+        "score": 78.74
+      },
+      {
+        "file": "packages/testing/src/internal/pickOption.ts",
+        "sha": "33e0d9c33376fac72055f1c9a570af11326ec638a5bd0b349dd10e44026fbf04",
+        "killed": 38,
+        "survived": 3,
+        "noCoverage": 0,
+        "justified": 0,
+        "score": 92.68
       },
       {
         "file": "packages/testing/src/internal/piiViolations.ts",
@@ -16683,12 +16908,12 @@
       },
       {
         "file": "packages/testing/src/testResults.ts",
-        "sha": "6886459f2d2a6d17098216c14eb545cc961d4cd36912c8531caa213bf7124688",
-        "killed": 305,
-        "survived": 28,
+        "sha": "d9657e2fa1e9908c32c1379a1393d8fddfdaca60bca8fd1887bd89b9905735d7",
+        "killed": 334,
+        "survived": 29,
         "noCoverage": 1,
         "justified": 0,
-        "score": 91.32
+        "score": 91.76
       },
       {
         "file": "packages/ui/src/TokenSchema.ts",
@@ -16719,7 +16944,7 @@
       },
       {
         "file": "packages/ui/src/css/compileStyles.ts",
-        "sha": "4d7dd6fd57a11c66a5061ae667a5b6e50b3b38dcbe0a523eb349cb63a314dafe",
+        "sha": "a4647ae4f7059f2ae5988f81571d598cce4a779d2e025cf7b02cb0dca6987c9c",
         "killed": 230,
         "survived": 80,
         "noCoverage": 28,
@@ -16755,12 +16980,12 @@
       },
       {
         "file": "packages/ui/src/elements/Box.ts",
-        "sha": "e65889b9ca5e2649b84ce3f37e6472e2c594da03b717e5797573a3c73549a89a",
-        "killed": 10,
-        "survived": 0,
+        "sha": "444542393859de9c418b2aef71b17cb5177a16ff1acaca53d932d0eaacbf1500",
+        "killed": 24,
+        "survived": 1,
         "noCoverage": 0,
         "justified": 0,
-        "score": 100
+        "score": 96
       },
       {
         "file": "packages/ui/src/elements/Button.ts",
@@ -18771,12 +18996,6 @@
     },
     {
       "pkg": "household",
-      "name": "minorUnits",
-      "file": "household:receipts/minorUnits.ts",
-      "rung": "example"
-    },
-    {
-      "pkg": "household",
       "name": "receipts",
       "file": "household:receipts/receipts.contract.ts",
       "rung": "none"
@@ -19727,7 +19946,7 @@
       "pkg": "router",
       "name": "routeTable",
       "file": "packages/router/src/routeTable.ts",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "pkg": "router",
@@ -19781,6 +20000,12 @@
       "pkg": "schema",
       "name": "err",
       "file": "packages/schema/src/err.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "schema",
+      "name": "formatLiteral",
+      "file": "packages/schema/src/formatLiteral.ts",
       "rung": "probabilistic"
     },
     {
@@ -19847,7 +20072,7 @@
       "pkg": "server",
       "name": "identity",
       "file": "packages/server/src/identity.ts",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "pkg": "server",
@@ -20135,6 +20360,12 @@
       "pkg": "std-money",
       "name": "formatMoney",
       "file": "packages/std-money/src/formatMoney.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "std-money",
+      "name": "parseMoney",
+      "file": "packages/std-money/src/parseMoney.ts",
       "rung": "probabilistic"
     },
     {
@@ -20851,6 +21082,10 @@
     },
     {
       "item": "k.a11y#15",
+      "rung": "example"
+    },
+    {
+      "item": "k.a11y#16",
       "rung": "example"
     },
     {
@@ -21814,6 +22049,30 @@
       "rung": "probabilistic"
     },
     {
+      "item": "k.formats#2",
+      "rung": "proven"
+    },
+    {
+      "item": "k.formats#3",
+      "rung": "proven"
+    },
+    {
+      "item": "k.formats#4",
+      "rung": "proven"
+    },
+    {
+      "item": "k.formats#5",
+      "rung": "example"
+    },
+    {
+      "item": "k.formats#6",
+      "rung": "example"
+    },
+    {
+      "item": "k.formats#7",
+      "rung": "example"
+    },
+    {
       "item": "k.forms#1",
       "rung": "example"
     },
@@ -22315,23 +22574,31 @@
     },
     {
       "item": "k.module#16",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.module#17",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.module#18",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.module#19",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.module#20",
-      "rung": "none"
+      "rung": "example"
+    },
+    {
+      "item": "k.module#21",
+      "rung": "example"
+    },
+    {
+      "item": "k.module#22",
+      "rung": "example"
     },
     {
       "item": "k.mount-scope#1",
@@ -22384,6 +22651,14 @@
     {
       "item": "k.openapi#1",
       "rung": "proven"
+    },
+    {
+      "item": "k.openapi#2",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.openapi#3",
+      "rung": "probabilistic"
     },
     {
       "item": "k.opening#1",
@@ -23042,6 +23317,22 @@
       "rung": "example"
     },
     {
+      "item": "k.router#17",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.router#18",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.router#19",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.router#20",
+      "rung": "probabilistic"
+    },
+    {
       "item": "k.routes#1",
       "rung": "example"
     },
@@ -23134,6 +23425,42 @@
       "rung": "example"
     },
     {
+      "item": "k.scaffold-shell#1",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold-shell#2",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold-shell#3",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold-shell#4",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold-shell#5",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold-shell#6",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold-shell#7",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold-shell#8",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold-shell#9",
+      "rung": "example"
+    },
+    {
       "item": "k.scaffold#1",
       "rung": "example"
     },
@@ -23223,7 +23550,19 @@
     },
     {
       "item": "k.scaffold#23",
-      "rung": "none"
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold#24",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold#25",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold#26",
+      "rung": "example"
     },
     {
       "item": "k.schema#1",
@@ -23774,6 +24113,30 @@
       "rung": "probabilistic"
     },
     {
+      "item": "k.test-run#1",
+      "rung": "example"
+    },
+    {
+      "item": "k.test-run#2",
+      "rung": "example"
+    },
+    {
+      "item": "k.test-run#3",
+      "rung": "example"
+    },
+    {
+      "item": "k.test-run#4",
+      "rung": "example"
+    },
+    {
+      "item": "k.test-run#5",
+      "rung": "example"
+    },
+    {
+      "item": "k.test-run#6",
+      "rung": "example"
+    },
+    {
       "item": "k.testing#1",
       "rung": "example"
     },
@@ -23855,6 +24218,26 @@
     },
     {
       "item": "k.testing#21",
+      "rung": "example"
+    },
+    {
+      "item": "k.testing#22",
+      "rung": "example"
+    },
+    {
+      "item": "k.testing#23",
+      "rung": "example"
+    },
+    {
+      "item": "k.testing#24",
+      "rung": "example"
+    },
+    {
+      "item": "k.testing#25",
+      "rung": "example"
+    },
+    {
+      "item": "k.testing#26",
       "rung": "example"
     },
     {
@@ -24010,6 +24393,22 @@
       "rung": "example"
     },
     {
+      "item": "k.ui#24",
+      "rung": "example"
+    },
+    {
+      "item": "k.ui#25",
+      "rung": "proven"
+    },
+    {
+      "item": "k.ui#26",
+      "rung": "proven"
+    },
+    {
+      "item": "k.ui#27",
+      "rung": "proven"
+    },
+    {
       "item": "k.user#1",
       "rung": "example"
     },
@@ -24131,6 +24530,10 @@
     },
     {
       "item": "std.capacitor#10",
+      "rung": "example"
+    },
+    {
+      "item": "std.capacitor#11",
       "rung": "example"
     },
     {
@@ -24407,7 +24810,7 @@
     },
     {
       "item": "std.i18n#5",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "item": "std.i18n#6",
@@ -24415,10 +24818,14 @@
     },
     {
       "item": "std.i18n#7",
-      "rung": "probabilistic"
+      "rung": "example"
     },
     {
       "item": "std.i18n#8",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.i18n#9",
       "rung": "example"
     },
     {
@@ -24559,19 +24966,19 @@
     },
     {
       "item": "std.messages#3",
-      "rung": "example"
-    },
-    {
-      "item": "std.messages#4",
       "rung": "probabilistic"
     },
     {
-      "item": "std.messages#5",
+      "item": "std.messages#4",
       "rung": "example"
     },
     {
+      "item": "std.messages#5",
+      "rung": "probabilistic"
+    },
+    {
       "item": "std.messages#6",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "item": "std.messages#7",
@@ -24583,6 +24990,14 @@
     },
     {
       "item": "std.messages#9",
+      "rung": "example"
+    },
+    {
+      "item": "std.messages#10",
+      "rung": "example"
+    },
+    {
+      "item": "std.messages#11",
       "rung": "example"
     },
     {
@@ -24611,6 +25026,18 @@
     },
     {
       "item": "std.money#7",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.money#8",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.money#9",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "std.money#10",
       "rung": "probabilistic"
     },
     {
@@ -25226,6 +25653,14 @@
       "rung": "example"
     },
     {
+      "item": "std.tables#10",
+      "rung": "example"
+    },
+    {
+      "item": "std.tables#11",
+      "rung": "example"
+    },
+    {
       "item": "std.tauri#1",
       "rung": "example"
     },
@@ -25259,6 +25694,10 @@
     },
     {
       "item": "std.tauri#9",
+      "rung": "example"
+    },
+    {
+      "item": "std.tauri#10",
       "rung": "example"
     },
     {

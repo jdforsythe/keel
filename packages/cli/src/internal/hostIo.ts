@@ -2,7 +2,6 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import type { Io } from "../types/Io.ts";
 import { applyWrites } from "./applyWrites.ts";
-import { hostBuild } from "./hostBuild.ts";
 import { hostDocs } from "./hostDocs.ts";
 import { readProject } from "./readProject.ts";
 
@@ -28,8 +27,9 @@ export function hostIo(stream: boolean): Io {
           ? hostDocs(cwd, scope)
           : [...readProject(cwd, scope), ...hostDocs(cwd, scope)],
     apply: (writes) => applyWrites(cwd, writes),
-    build: (dir) => hostBuild(dir),
-    refresh: (dir) => hostBuild(dir, true),
+    // Loaded only when a build or a scaffold's refresh runs: it brings in vite and vitest.
+    build: async (dir) => (await import("./hostBuild.ts")).hostBuild(dir),
+    refresh: async (dir) => (await import("./hostBuild.ts")).hostBuild(dir, true),
     // Behind its own entry, loaded only for `--target` (`@keel/cli` size budget).
     shell: async () => (await import("@keel/cli/shell")).hostShell,
     read: (path) => {

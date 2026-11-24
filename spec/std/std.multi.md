@@ -1,11 +1,11 @@
 # std.multi: Multi-user sessions
-status: conformance-covered
+status: implemented
 
 **Module.** Part of `@keel/std-sessions`, subpath `./group` (Node only). A session group is the sessions of several users of one server, recorded under simulation on one timeline:
 ```ts
 type SessionGroup = { v: 1; seed: number; at: number; origin: string; server: { [store]: JsonValue }; users: Session[]; schedule?: Schedule }
 ```
-`server` holds each server store, as stored in `keel.store.<id>`, when the group opened.
+`server` holds each server store, as stored in `keel.store.<id>`, when the group opened. Each of `users` is a `sessions.Session`, its `id` under std.sessions' rule; a group has no id of its own, and its users are named by index.
 
 **Record.** `openGroup({ user, serve, users, seed, origin, at?, server?, schedule? })`. `user` is the URL of a module exporting `{ routes, base: { id, params, search } }`; `serve(ctx)` returns the server (`{ fetch }`, as `createApp` does) over a sim ctx of seed `seed` whose storage starts with `server`. Each user runs in its own worker thread, with its own DOM, modules and sim ctx (seed derived from `seed` and its index), renders `base` at `at` (default 0) under `record(ctx, { limit: Infinity })`, and reaches the server through its sim net at `origin` with its own cookie jar; other URLs are 404. The handle:
 - `user(i)`: `fire`, `navigate`, `find` and `state`, as k.testing's harness gives them.
@@ -32,3 +32,4 @@ type SessionGroup = { v: 1; seed: number; at: number; origin: string; server: { 
 - A `net` event that `record` captured is applied by `replay` and `replayGroup` as a `setOnline` call and recorded again.
 - Under one `schedule`, two runs of one script on `openGroup` give byte-equal groups, and with a `lost` step on a user's write the server holds one entry for that write's key.
 - E2007 and E2008 each fire on a fixture and not on its clean twin.
+- `SessionGroup` refuses a group whose `users[1].id` is `../x`, its first issue's `path` being `['users', 1, 'id']`; `keel session replay` of that group file emits E2007 and exits 1, and `replayGroup` of it throws E2007 before any user opens.

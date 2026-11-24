@@ -2,7 +2,7 @@ import type { Ctx } from "@keel/ctx";
 import { signal } from "@keel/reactive";
 import { type Infer, s } from "@keel/schema";
 import { type LiveStatus, live } from "@keel/std-live";
-import { UTC, formatInstant, instantOf } from "@keel/std-temporal";
+import { UTC, formatInstant } from "@keel/std-temporal";
 import { tx } from "@keel/store";
 import { Box, Button, Heading, Text } from "@keel/ui";
 import { RestockText } from "./RestockText.schema.ts";
@@ -42,10 +42,7 @@ export default function RestockPanel(props: Infer<typeof Props>, ctx: Ctx) {
   };
   const started = () => {
     const last = runs().last;
-    const at = last === null ? null : instantOf(last.at);
-    return last === null || at === null || !at.ok
-      ? ""
-      : `${props.text.by[last.by]}, ${formatInstant(at.value, "en-US", UTC, "medium")} UTC`;
+    return last === null ? "" : `${props.text.by[last.by]}, ${formatInstant(last.at, "en-US", UTC, "medium")} UTC`;
   };
   const runNow = async () => {
     const r = await shoppingApi.run({}, ctx);

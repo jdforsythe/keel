@@ -6,9 +6,11 @@ import { isObjectSchema } from "./internal/isObjectSchema.ts";
 import { isSchema } from "./internal/isSchema.ts";
 import { ownValue } from "./internal/ownValue.ts";
 import { withStores } from "./internal/withStores.ts";
+import { routeTable } from "./routeTable.ts";
 import type { Action } from "./types/Action.ts";
 import type { ApiAction } from "./types/ApiAction.ts";
 import type { Href } from "./types/Href.ts";
+import type { RouteTable } from "./types/RouteTable.ts";
 
 type None = Record<string, never>;
 type InferOr<E, K extends string, D> = E extends { readonly [P in K]: infer S } ? Infer<S> : D;
@@ -19,6 +21,7 @@ type PageAt<E, St> = {
   readonly caller: string;
   readonly user: string;
   readonly stores: St;
+  readonly routes: RouteTable;
 };
 type ApiAt<E, St> = PageAt<E, St> & { readonly bearer: Secret<string> | undefined };
 type Stores<St> = { readonly stores?: (ctx: Ctx) => St };
@@ -39,8 +42,10 @@ type At<P, St> = {
   readonly user: string;
   readonly bearer: Secret<string> | undefined;
   readonly stores: St;
+  readonly routes: RouteTable;
 };
-type RunAt<P, St> = Omit<At<P, St>, "user" | "bearer" | "stores"> & {
+type RunAt<P, St> = Omit<At<P, St>, "user" | "bearer" | "stores" | "routes"> & {
+  readonly routes?: RouteTable;
   readonly stores?: St;
   readonly user?: string;
   readonly bearer?: Secret<string> | undefined;
@@ -56,6 +61,9 @@ type Built<I, P, St> = {
   readonly stores?: (ctx: Ctx) => St;
   run(input: I, at: RunAt<P, St>, ctx: Ctx): Out<unknown> | Promise<Out<unknown>>;
 };
+
+/** The table `run` gives `fn` when its args carry none: no pages, so every `pageHref` read is refused. */
+let none: RouteTable | undefined;
 
 /** The closed empty object: an API write entry's body when it declares none. */
 const EMPTY: ObjectSchema<unknown> = s.object({});
@@ -81,7 +89,7 @@ export function action<M extends string, C extends Entries, K extends PageIds<C>
 /**
  * Declare an action of entry `id` of `contract` (k.contract Handlers, k.server): `fn` is never annotated. On an API
  * write entry `decl` is `{ stores? }`; `fn` gets the `body` decoded by the entry's schema (the closed empty object
- * without one), `{ params, url, caller, user, bearer, stores }` and `ctx`, and answers the entry's `output` (k.api
+ * without one), `{ params, url, caller, user, bearer, stores, routes }` and `ctx`, and answers the entry's `output` (k.api
  * Output). On a page `decl` is `{ input, stores? }`; `fn` gets the decoded form, `{ params, url, caller, user, stores }`
  * and `ctx`, and answers `ok(href)` or `ok(null)`; its verb is its binding key. Throws nothing.
  */
@@ -94,12 +102,15 @@ export function action<I, P, St>(
   const entry = ownValue(contract.entries, id);
   const at = typeof entry === "object" && entry !== null ? entry : {};
   const { stores } = decl;
-  const run = (input: I, a: RunAt<P, St>, ctx: Ctx) =>
-    a.stores !== undefined || stores === undefined
-      ? fn(input, { ...a, user: a.user ?? "", bearer: a.bearer, stores: a.stores }, ctx)
+  const run = (input: I, a: RunAt<P, St>, ctx: Ctx) => {
+    none ??= routeTable();
+    const routes = a.routes ?? none;
+    return a.stores !== undefined || stores === undefined
+      ? fn(input, { ...a, user: a.user ?? "", bearer: a.bearer, stores: a.stores, routes }, ctx)
       : withStores(stores, undefined, ctx, (st) =>
-          fn(input, { ...a, user: a.user ?? "", bearer: a.bearer, stores: st }, ctx),
+          fn(input, { ...a, user: a.user ?? "", bearer: a.bearer, stores: st, routes }, ctx),
         );
+  };
   const base = { kind: "keel.action" as const, contract, id, ...(stores === undefined ? {} : { stores }), run };
   const output = ownValue(at, "output");
   if (decl.input === undefined && isSchema(output)) {

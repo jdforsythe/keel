@@ -32,6 +32,7 @@ export function scaffoldInput(
     case "service":
       return pick({
         id: a,
+        name: input.name,
         base: input.base,
         schema: generated?.schema,
         service: generated?.service,

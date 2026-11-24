@@ -1,4 +1,6 @@
 import type { Ctx } from "@keel/ctx";
+import type { RouteTable } from "@keel/router";
+import { pageHref } from "@keel/router/match";
 import { attempt } from "@keel/schema";
 import { identity } from "@keel/server";
 import { NoRows, sql } from "@keel/std-postgres";
@@ -62,20 +64,14 @@ const isFormPost = (r: Request): boolean =>
 /** The search key the page shows for a refused post. */
 const refusal = (res: Response): SignError => (res.status === 401 ? "credentials" : "invalid");
 
-/** `next` when it is a path on this origin (one leading `/`, no scheme or host), else none. */
-function local(next: string | null): string | undefined {
-  if (next === null) return undefined;
-  return next.startsWith("/") && !next.startsWith("//") && !next.includes("\\") ? next : undefined;
-}
-
 /**
  * The library's endpoints. A JSON call passes through unchanged. A page's form post is sent to the library as the JSON
  * body its endpoints take (the form's fields, nothing added) and answered with a 303 carrying the library's
- * `set-cookie`: a sign-in to the page the guard sent the member from (the post's `next` search key) or the start page,
+ * `set-cookie`: a sign-in to the page the guard sent the member from (the post's `next` search key, read by `pageHref`) or the start page,
  * a sign-up or a sign-out to the sign-in page, and a refusal back to the posting page with `?error=`. The typed values
  * never go into a URL.
  */
-async function handle(request: Request, ctx: Ctx): Promise<Response> {
+async function handle(request: Request, ctx: Ctx, at: { readonly routes: RouteTable }): Promise<Response> {
   const auth = await library(ctx);
   const url = new URL(request.url);
   if (!isFormPost(request)) return remember(url.pathname, await auth.handler(request), ctx);
@@ -89,7 +85,8 @@ async function handle(request: Request, ctx: Ctx): Promise<Response> {
     body: JSON.stringify(fields),
   });
   const res = await remember(url.pathname, await auth.handler(sent), ctx);
-  const next = local(url.searchParams.get("next"));
+  const back = pageHref(at.routes, url.searchParams.get("next") ?? "");
+  const next = back.ok ? back.value : undefined;
   const kept = next === undefined ? {} : { next };
   const signUp = url.pathname === `${mount.path}/sign-up/email`;
   const signIn = url.pathname === `${mount.path}/sign-in/email`;
