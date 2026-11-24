@@ -49,6 +49,7 @@ const STYLE_PROPS: readonly string[] = [
   "align",
   "justify",
   "wrap",
+  "textAlign",
 ];
 const STATES: readonly State[] = [
   "selected",

@@ -26,6 +26,13 @@ const flex = (property: string, keywords: Readonly<Record<string, string>>): Ent
   lead: "display:flex;",
 });
 
+const text = (property: string, keywords: Readonly<Record<string, string>>): Entry => ({
+  groups: [],
+  keywords,
+  property,
+  lead: "",
+});
+
 /** Style prop -> CSS. `w`/`h` take `size` tokens, then `space` tokens. */
 export const vocabulary: Readonly<Record<StyleProp, Entry>> = {
   p: token("padding", "space"),
@@ -67,4 +74,5 @@ export const vocabulary: Readonly<Record<StyleProp, Entry>> = {
     evenly: "space-evenly",
   }),
   wrap: flex("flex-wrap", { wrap: "wrap", nowrap: "nowrap", reverse: "wrap-reverse" }),
+  textAlign: text("text-align", { start: "start", center: "center", end: "end" }),
 };

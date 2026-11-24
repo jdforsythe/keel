@@ -21,16 +21,31 @@ type Landmark =
   | { readonly as: "section" | "main" | "header" | "footer"; readonly label?: string }
   | { readonly as?: "div" | "ul" | "ol" | "li" | "article"; readonly label?: never };
 
+/**
+ * `scroll="x"` makes the box a keyboard-reachable scroll region: a `div` with `role="region"`, `tabindex="0"` and
+ * class `k-scroll`, named by exactly one of `label` and `labelledBy` (an element id), with no `as`.
+ */
+type ScrollRegion =
+  | { readonly scroll: "x"; readonly label: string; readonly labelledBy?: never; readonly as?: never }
+  | { readonly scroll: "x"; readonly labelledBy: string; readonly label?: never; readonly as?: never };
+
 /** A structural container. `as` is a closed set of structural tags (default `div`), checked at runtime. */
 export function Box(
   props: StyleProps & {
     readonly id?: string /** Written as the `lang` attribute. */;
     readonly lang?: string;
     readonly children?: Child | Children | undefined;
-  } & Landmark,
+  } & ((Landmark & { readonly scroll?: undefined; readonly labelledBy?: undefined }) | ScrollRegion),
 ): Node {
-  return make(tagOf("Box as", BOX_TAGS, props.as, "div"), (el) => {
+  const scroll = props.scroll === "x";
+  return make(scroll ? "div" : tagOf("Box as", BOX_TAGS, props.as, "div"), (el) => {
     applyIdLang(el, props);
+    if (scroll) {
+      el.setAttribute("role", "region");
+      el.setAttribute("tabindex", "0");
+      el.classList.add("k-scroll");
+      attrOf(el, "aria-labelledby", isGetter(props, "labelledBy"), () => props.labelledBy);
+    }
     attrOf(el, "aria-label", isGetter(props, "label"), () => props.label);
     applyStyle(el, props);
     appendChildren(el, renderChildren(props.children));
