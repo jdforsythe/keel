@@ -390,6 +390,7 @@ const NO_FIX = [
   "E1824", // the code prop is rewritten to the literal form by the author, who names the file and export
   "E1825", // moving the stylesheet import to the code file is a design change
   "E1901", // the form path to bind is the author's choice
+  "W1608", // which static import replaces the load is the author's call
   "W1114", // s.secret also changes how the server reads the value (reveal), which the author writes
 ];
 

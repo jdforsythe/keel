@@ -1383,7 +1383,7 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
     bad: [
       f(
         "C.tsx",
-        `${HOST_HEAD}const load = () => import('./chart.ts').then((m) => m.chart)\nexport default function C() { return <Host id="c.h" role="img" label="L" input={In} value={{ n: 1 }} code={load} /> }\n`,
+        `${HOST_HEAD}declare const load: () => unknown\nexport default function C() { return <Host id="c.h" role="img" label="L" input={In} value={{ n: 1 }} code={load} /> }\n`,
       ),
     ],
     clean: [
