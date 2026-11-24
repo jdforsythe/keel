@@ -60,7 +60,7 @@ export async function handle(sv: Served, raw: Request, rq: RequestScope, c: Cont
   if (mount !== undefined && `${url.pathname}/`.startsWith(`${mount.path}/`)) {
     const body = raw.body === null ? null : await readCapped(raw, sv.maxBody);
     const sent = body === null ? raw : new Request(raw.url, { method, headers: raw.headers, body, signal: raw.signal });
-    const response = raw.body !== null && body === null ? payloadTooLarge(sv.maxBody) : await mount.fn(sent, sv.ctx);
+    const response = raw.body !== null && body === null ? payloadTooLarge(sv.maxBody) : await mount.fn(sent, sv.ctx, { routes: sv.routes });
     return { response, route: undefined, diags: [] };
   }
   const resumeEntry = servedEntry(raw, url.pathname, sv.built);
