@@ -25,6 +25,11 @@ describe("androidNetworkSecurity", () => {
     expect(r.config?.match(/cleartextTrafficPermitted="true"/g)).toHaveLength(1);
   });
 
+  test("no origin allows no cleartext and takes out a rule an earlier build added", () => {
+    const earlier = androidNetworkSecurity(MANIFEST, "http://localhost:4182", false).manifest;
+    expect(androidNetworkSecurity(earlier, undefined, false)).toEqual({ manifest: MANIFEST, config: undefined });
+  });
+
   test("an https: origin changes nothing and allows no cleartext", () => {
     expect(androidNetworkSecurity(MANIFEST, "https://golden-1.example", false)).toEqual({
       manifest: MANIFEST,

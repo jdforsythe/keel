@@ -67,19 +67,21 @@ const NOT_APP =
 const NAMES: readonly (keyof Artifacts)[] = ["a11y.json", "deps.json", "ids.json", "routes.json", "styles.json"];
 /** What app code (the generated entry) imports for the atomic CSS, and the id it resolves to. */
 /**
- * The shell a `keel build --target` build makes (`KEEL_SHELL`) and its `KEEL_ORIGIN`, else none (k.shell Build); with
- * the deployable `name` of `topology`, its `id` there (k.shell: a shell build always has it, with or without
- * `identity.ts`) and its `connect` origins (`shellConnect`).
+ * The shell a `keel build --target` build makes (`KEEL_SHELL`) and its `KEEL_ORIGIN` (unset or empty: no `origin`,
+ * k.shell Without a server), else none (k.shell Build); with the deployable `name` of `topology`, its `id` there
+ * (k.shell: a shell build always has it, with or without `identity.ts`) and its `connect` origins (`shellConnect`).
  */
 const shellOf = (
   topology: Topology = {},
   name = "",
-): { kind: "capacitor" | "tauri"; origin: string; id: string | undefined; connect: readonly string[] } | undefined => {
+): { kind: "capacitor" | "tauri"; origin?: string; id: string | undefined; connect: readonly string[] } | undefined => {
   const kind = process.env.KEEL_SHELL;
-  const origin = process.env.KEEL_ORIGIN ?? "";
+  const given = process.env.KEEL_ORIGIN;
   if (kind !== "capacitor" && kind !== "tauri") return undefined;
-  const connect = shellConnect(topology, name, process.env, originOf(origin) ?? origin);
-  return { kind, origin, id: topology[name]?.shells?.[kind]?.id, connect };
+  const id = topology[name]?.shells?.[kind]?.id;
+  if (given === undefined || given === "") return { kind, id, connect: shellConnect(topology, name, process.env) };
+  const connect = shellConnect(topology, name, process.env, originOf(given) ?? given);
+  return { kind, origin: given, id, connect };
 };
 const CSS_IMPORT = "virtual:keel.css";
 /** The ESM bundle of a `'postgres'` entry gives `pg`'s CommonJS `require` of node built-ins a real `require`. */

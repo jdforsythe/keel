@@ -10,14 +10,17 @@ import { pageOf } from "./pageOf.ts";
 /**
  * k.shell's net on `@tauri-apps/plugin-http`'s `fetch`: the request goes through the Rust HTTP client, whose cookie
  * store keeps every cookie and sends it to its own origin only; `set-cookie` never reaches the page. A request on the
- * page's origin goes to `origin`; the driver sends only to `origin` and the `connect` origins and follows redirects
+ * page's origin goes to `origin`, and with none is refused before any native call; the driver sends only to `origin`
+ * and the `connect` origins and follows redirects
  * itself, each hop one request with `maxRedirections: 0` held to that list (`followRedirects`); the body of a response
  * it follows is cancelled. The global `fetch` stays unpatched. A failure, a refused URL included, rejects with a
  * `TypeError` that names no URL; an aborted request with the signal's reason.
  */
-export function tauriNet(origin: URL, connect: readonly string[] = []): Net {
+export function tauriNet(origin: URL | undefined, connect: readonly string[] = []): Net {
   return {
     fetch: async (req) => {
+      const url = mapUrl(req.url, origin, pageOf());
+      if (url === undefined) throw new TypeError("network request failed");
       const body = req.method === "GET" || req.method === "HEAD" ? null : await req.arrayBuffer();
       const send = async (hop: Hop): Promise<Response> => {
         try {
@@ -32,7 +35,7 @@ export function tauriNet(origin: URL, connect: readonly string[] = []): Net {
           throw req.signal.aborted ? req.signal.reason : new TypeError("network request failed");
         }
       };
-      const first = { url: mapUrl(req.url, origin, pageOf()), method: req.method, headers: req.headers, body: true };
+      const first = { url, method: req.method, headers: req.headers, body: true };
       const res = await followRedirects(
         first,
         req.redirect,

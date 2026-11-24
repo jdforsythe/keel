@@ -89,11 +89,11 @@ const SETUP = [
 ];
 
 /**
- * One shell target's CI job for `client` deployable `name` (k.shell CI), on its paths: `<name>-<job>` with
- * `KEEL_ORIGIN` from `vars`, the setup, the job's `steps`, the install, `keel build --target <shell>` with its
+ * One shell target's CI job for `client` deployable `name` (k.shell CI), on its paths: `<name>-<job>` with, when
+ * `served` (the topology has a `node` deployable), `KEEL_ORIGIN` from `vars`, the setup, the job's `steps`, the install, `keel build --target <shell>` with its
  * `platform` and `env`, and the upload of its `artifact`; a `manual` job's `if` also needs `workflow_dispatch`.
  */
-function shellJob(name: string, shell: string, j: ShellJob): string[] {
+function shellJob(name: string, shell: string, j: ShellJob, served: boolean): string[] {
   const id = `${name}-${j.job}`;
   const env = Object.entries(j.env);
   return [
@@ -101,8 +101,7 @@ function shellJob(name: string, shell: string, j: ShellJob): string[] {
     `    needs: ${PATHS}`,
     `    if: needs['${PATHS}'].outputs.${name} == 'true'${j.manual ? " && github.event_name == 'workflow_dispatch'" : ""}`,
     `    runs-on: ${j.runsOn}`,
-    "    env:",
-    `      KEEL_ORIGIN: ${GITHUB_EXPR("vars.KEEL_ORIGIN")}`,
+    ...(served ? ["    env:", `      KEEL_ORIGIN: ${GITHUB_EXPR("vars.KEEL_ORIGIN")}`] : []),
     "    steps:",
     ...SETUP,
     ...j.steps.map((s) => `      - run: ${s}`),
@@ -168,7 +167,8 @@ export function ciWorkflow(
   ];
   lines.push(...reviewJob());
   for (const n of names) lines.push(...job(n, topology[n]?.adapter ?? "client"));
-  for (const g of given) lines.push(...shellJob(g.name, g.shell, g.j));
+  const served = names.some((n) => topology[n]?.adapter === "node");
+  for (const g of given) lines.push(...shellJob(g.name, g.shell, g.j, served));
   lines.push("");
   return lines.join("\n");
 }

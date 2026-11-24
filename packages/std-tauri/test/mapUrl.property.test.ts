@@ -50,4 +50,15 @@ describe("mapUrl", () => {
       run,
     );
   });
+
+  test("with no `origin`, a URL on the page goes nowhere and any other URL is unchanged", () => {
+    fc.assert(
+      fc.property(pages, others, path, search, (page, other, p, q) => {
+        expect(mapUrl(new URL(`${page}${p}${q}`).href, undefined, at(page))).toBeUndefined();
+        const url = new URL(`${other}${p}${q}`).href;
+        expect(mapUrl(url, undefined, at(page))).toBe(url);
+      }),
+      run,
+    );
+  });
 });

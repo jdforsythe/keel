@@ -100,7 +100,7 @@ function stepsOf(at: ShellBuild, platform: string): { steps: Step[]; artifact: s
 /**
  * A Capacitor shell build in `at.dir`, beside `www/` and `capacitor.config.json` (std.capacitor Build): the app's
  * `package.json` (the Capacitor CLI runs only at the root of an npm package and reads the app's plugins from it), the
- * deployable's `csp.txt` policy as a meta tag in `www/index.html`, `plugins.KeelHttp.allow` (`origin` then `connect`)
+ * deployable's `csp.txt` policy as a meta tag in `www/index.html`, `plugins.KeelHttp.allow` (`origin` when there is one, then `connect`)
  * added to `capacitor.config.json` there (`allowConfig`), which the native plugin reads, then `cap add` (once), `cap sync`, the shell's `id`
  * registered as a URI scheme in the platform project (`returnScheme`), and the platform's build, on Android after
  * `androidNetworkSecurity`'s cleartext rule. The artifact is the APK or the simulator app; a failing tool's output is

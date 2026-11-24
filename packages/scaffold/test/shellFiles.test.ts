@@ -175,7 +175,15 @@ describe("shell jobs from a target", () => {
     expect(ci).toContain("          path: dist/web/tauri/out");
     expect(ci).toContain("  web-hand:");
     expect(ci).toContain("      - run: pnpm exec keel build --target tauri --platform p");
-    expect(ci).toContain("KEEL_ORIGIN: ${{ vars.KEEL_ORIGIN }}");
+    expect(ci).not.toContain("KEEL_ORIGIN");
+  });
+
+  test("a shell job sets KEEL_ORIGIN from vars only when the topology has a node deployable", () => {
+    const served: DeployTopology = { ...topology, api: { modules: [], adapter: "node" } };
+    const ci = deployFiles(served, { ci: true, shells }).get(".github/workflows/ci.yml") ?? "";
+    expect(ci).toContain("    env:\n      KEEL_ORIGIN: ${{ vars.KEEL_ORIGIN }}\n    steps:");
+    const alone = deployFiles(topology, { ci: true, shells }).get(".github/workflows/ci.yml") ?? "";
+    expect(alone).toContain("    runs-on: ubuntu-24.04\n    steps:");
   });
 
   test("a manual job adds the workflow_dispatch trigger and runs on it only; an automatic one does not", () => {

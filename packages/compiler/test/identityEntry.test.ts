@@ -36,3 +36,13 @@ describe("entryCode without identity.ts (k.guards Client)", () => {
     }
   });
 });
+
+describe("entryCode in a shell build with no origin (k.shell Without a server)", () => {
+  it("passes no origin to the drivers or to shellMount", () => {
+    const shell = { kind: "tauri", id: "dev.keel.app", connect: ["https://api.example"] } as const;
+    const code = entryCode(["/r.ts"], "c.css", {}, {}, shell, "production", false);
+    expect(code).toContain('drivers: __keelDrivers({ connect: ["https://api.example"] })');
+    expect(code).toContain('__keelMount(ctx, { id: "dev.keel.app" });');
+    expect(code).not.toContain("new URL(");
+  });
+});

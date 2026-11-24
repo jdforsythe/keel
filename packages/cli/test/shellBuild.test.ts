@@ -118,6 +118,17 @@ describe.skipIf(process.platform === "win32")("shellBuild", () => {
     expect(calls[0]?.env).toMatchObject({ KEEL_ORIGIN: "https://app.example.com", KEEL_SHELL: "tauri" });
   });
 
+  test("a plan with no origin gives the target no origin and no KEEL_ORIGIN, even one inherited empty", () => {
+    const root = project();
+    vi.stubEnv("KEEL_ORIGIN", "");
+    const { calls, target } = stub(() => ({ artifact: "a" }));
+    const { origin: _, ...none } = plan(target);
+    expect(shellBuild(root, none).code).toBe(0);
+    expect(Object.keys(calls[0] ?? {})).not.toContain("origin");
+    expect(Object.keys(calls[0]?.env ?? {})).not.toContain("KEEL_ORIGIN");
+    expect(readFileSync(join(root, "vite-env.txt"), "utf8")).toBe("web tauri  production\n");
+  });
+
   test("a shell build of an app with no deploy folder builds with the Vite output alone", () => {
     const root = project();
     const { calls, target } = stub(() => ({ artifact: "a" }));

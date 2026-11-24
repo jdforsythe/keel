@@ -111,10 +111,20 @@ describe("tauri files", () => {
     expect(plain.get(`${at}tauri.conf.json`)).toBe(signed.get(`${at}tauri.conf.json`));
   });
 
+  test("with no origin the http capability allows the connect origins alone, and with none of those there is none", () => {
+    const text = tauriHttpCapability(undefined, ["https://api.example"], true) ?? "";
+    expect(Reflect.get(Object(JSON.parse(text)), "permissions")).toEqual([
+      { identifier: "http:default", allow: [{ url: "https://api.example/*" }] },
+    ]);
+    expect(tauriHttpCapability(undefined, [])).toBeUndefined();
+    expect(tauriHttpCapability(undefined, [], true)).toBeUndefined();
+  });
+
   test("the build's http capability lets the default browser open KEEL_ORIGIN only with identity", () => {
     const http = { identifier: "http:default", allow: [{ url: "http://localhost:8787/*" }] };
     const opener = { identifier: "opener:allow-open-url", allow: [{ url: "http://localhost:8787/*" }] };
-    const permissions = (text: string): unknown => Reflect.get(Object(JSON.parse(text)), "permissions");
+    const permissions = (text: string | undefined): unknown =>
+      Reflect.get(Object(JSON.parse(text ?? "null")), "permissions");
     expect(permissions(tauriHttpCapability("http://localhost:8787"))).toEqual([http]);
     expect(permissions(tauriHttpCapability("http://localhost:8787", [], true))).toEqual([http, opener]);
     const both = { identifier: "http:default", allow: [...http.allow, { url: "https://api.example/*" }] };

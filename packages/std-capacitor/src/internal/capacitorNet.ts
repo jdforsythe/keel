@@ -45,14 +45,15 @@ type Got = {
 /**
  * k.shell's net on the package's native plugin `KeelHttp`: the request goes through the native HTTP client, whose cookie
  * store keeps every cookie and sends it to its own origin only; `set-cookie` never reaches the page. A request on the
- * page's origin goes to `origin`; the driver sends only to `origin` and the `connect` origins and follows redirects
+ * page's origin goes to `origin`, and with none is refused before any native call; the driver sends only to `origin`
+ * and the `connect` origins and follows redirects
  * itself, one unfollowed native request per hop, each held to that list (`followRedirects`). The response
  * resolves on its headers and its body yields each chunk as it arrives; an abort or a reader's cancel cancels the native
  * request. The body's listeners are added before the request is sent and removed when the body ends, fails or is
  * cancelled, or its response is a redirect the driver follows. The global `fetch` stays unpatched. A failure, a refused
  * URL included, rejects with a `TypeError` that names no URL; an aborted request with the signal's reason.
  */
-export function capacitorNet(origin: URL, connect: readonly string[] = []): Net {
+export function capacitorNet(origin: URL | undefined, connect: readonly string[] = []): Net {
   const http = registerPlugin<KeelHttp>("KeelHttp");
   const send = async (hop: Hop, data: string, signal: AbortSignal): Promise<Got> => {
     const id = `${++seq}`;
@@ -112,9 +113,11 @@ export function capacitorNet(origin: URL, connect: readonly string[] = []): Net 
   };
   return {
     fetch: async (req) => {
+      const url = mapUrl(req.url, origin, pageOf());
+      if (url === undefined) throw new TypeError("network request failed");
       const signal = req.signal;
       const data = req.method === "GET" || req.method === "HEAD" ? "" : await req.text();
-      const first = { url: mapUrl(req.url, origin, pageOf()), method: req.method, headers: req.headers, body: true };
+      const first = { url, method: req.method, headers: req.headers, body: true };
       const got = await followRedirects(
         first,
         req.redirect,
