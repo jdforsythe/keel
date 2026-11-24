@@ -67,7 +67,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.ledger | Ledger, evidence | implemented | rungs |
 | k.server | Thin server | conformance-covered | loads |
 | k.leave | What a request leaves | conformance-covered | state |
-| k.user | User, caller | conformance-covered | user |
+| k.user | User, caller | implemented | user |
 | k.mount | Mount pages | conformance-covered | submit |
 | k.mount-scope | Mount scope | conformance-covered | proxy |
 | k.return | Shell mount | conformance-covered | net |

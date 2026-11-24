@@ -1125,6 +1125,35 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       f("identity.server.ts", MOUNT_SERVER),
     ],
   },
+  E1592: {
+    opts: NO_TYPES,
+    bad: [
+      f(
+        "topology.ts",
+        "import { topology } from '@keel/server'\nexport default topology({ web: { modules: ['a'], adapter: 'client' }, api: { modules: ['b'], adapter: 'node' } })\n",
+      ),
+      manifest("a"),
+      manifest("b"),
+      f("modules/a/routes.ts", "export const routes = {}\n"),
+      f(
+        "identity.server.ts",
+        "import { identity } from '@keel/server'\nimport { routes } from './modules/a/routes.ts'\nexport default identity({ identify: async () => '', handle: { path: '/api/auth', fn: () => new Response(String(routes)) } })\n",
+      ),
+    ],
+    clean: [
+      f(
+        "topology.ts",
+        "import { topology } from '@keel/server'\nexport default topology({ web: { modules: ['a'], adapter: 'client', servedBy: 'api' }, api: { modules: ['b'], adapter: 'node' } })\n",
+      ),
+      manifest("a"),
+      manifest("b"),
+      f("modules/a/routes.ts", "export const routes = {}\n"),
+      f(
+        "identity.server.ts",
+        "import { identity } from '@keel/server'\nimport { routes } from './modules/a/routes.ts'\nexport default identity({ identify: async () => '', handle: { path: '/api/auth', fn: () => new Response(String(routes)) } })\n",
+      ),
+    ],
+  },
   E1730: {
     opts: NO_TYPES,
     bad: [
