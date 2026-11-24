@@ -1,6 +1,6 @@
-// Spec: std.postgres, Conformance "`params` failing the channel's schema and a payload over 7,900 bytes each throw E2460 and run no statement."
-// Spec: std.postgres, Rules "E2460 a `changed` whose `params` fail the channel's schema or whose payload exceeds 7,900 bytes (throws)."
-// Spec: std.postgres, API "No error, log line or diagnostic holds `params` or a key."
+// Spec: std.postgres-changes, Conformance "`params` failing the channel's schema and a payload over 7,900 bytes each throw E2460 and run no statement."
+// Spec: std.postgres-changes, Rules "E2460 a `changed` whose `params` fail the channel's schema or whose payload exceeds 7,900 bytes (throws)."
+// Spec: std.postgres-changes, API "No error, log line or diagnostic holds `params` or a key."
 // Seed: 1337.
 // Pending (rfc:0192): skipped until the build lands; the builder un-skips by changing each `test.skip` to `test` in this file.
 // Assumption: "run no statement" is shown under sim by the plan: step 0 is `unavailable`, so the throwing call must leave it unconsumed and the next valid call is the one that sees `keel.unreachable`.

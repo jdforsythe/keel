@@ -15,7 +15,7 @@ export const boardEvents = channelRoute(api, boardChannel, { id: 'api.boardEvent
 `stores` and `follows` are optional, a route having either, both or neither. `follows` lists data capability accessors (k.data) whose object has `follow(channel, key, on)`; an entry without one is a type error. `channelRoute` returns `{ loader, action }`, bound at `api`'s entries `id` and `publish` (std.contracts): a live loader (k.server) yielding `ChannelEvent<M>` and the publish action:
 - `{ kind: 'reset' }`, first on every open: the client re-reads; nothing missed while closed is resent.
 - `{ kind: 'saved', store, head }` after each save of a store `stores` creates (k.sync `save`), in save order, to every open member stream.
-- `{ kind: 'changed' }` after each committed change a capability in `follows` reports for this channel and the stream's params (std.postgres `changed`), to every open member stream of them, with `member` re-run first as after a save.
+- `{ kind: 'changed' }` after each committed change a capability in `follows` reports for this channel and the stream's params (std.postgres-changes `changed`), to every open member stream of them, with `member` re-run first as after a save.
 - `{ kind: 'message', message }` for each publish to the same channel and params, the publisher's stream included.
 - `{ kind: 'closed', reason }`, then the end: `denied` when `member` is or turns false, `full` when the open is past a cap.
 

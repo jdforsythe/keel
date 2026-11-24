@@ -37,7 +37,7 @@
     "k.routes"
   ],
   "@keel/runtime-dom": ["k.component", "k.defaults", "k.runtime"],
-  "@keel/scaffold": ["k.scaffold", "k.scaffold-shell"],
+  "@keel/scaffold": ["k.scaffold", "k.scaffold-service", "k.scaffold-shell"],
   "@keel/schema": ["k.formats", "k.privacy", "k.reveal", "k.schema"],
   "@keel/server": [
     "k.claim",
@@ -65,10 +65,10 @@
   "@keel/std-messages": ["std.copy", "std.messages"],
   "@keel/std-money": ["std.money"],
   "@keel/std-offline": ["std.offline", "std.outbox", "std.outbox-owner"],
-  "@keel/std-postgres": ["std.postgres"],
+  "@keel/std-postgres": ["std.postgres", "std.postgres-changes"],
   "@keel/std-report": ["std.report"],
   "@keel/std-schedules": ["std.schedules"],
-  "@keel/std-sessions": ["std.monitor", "std.multi", "std.sessions"],
+  "@keel/std-sessions": ["std.monitor", "std.multi", "std.sessions", "std.sessions-served"],
   "@keel/std-statecharts": ["std.statecharts"],
   "@keel/std-tables": ["std.tables"],
   "@keel/std-temporal": ["std.temporal"],

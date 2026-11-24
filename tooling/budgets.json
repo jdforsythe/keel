@@ -2,13 +2,13 @@
   "output": {
     "check.injected10": 600,
     "test.failing3": 400,
-    "spec.section": 3500,
-    "spec.map": 1510,
+    "spec.section": 3100,
+    "spec.map": 1530,
     "explain": 300,
     "mcp.tools-list": 2050,
-    "docs.map": 1540,
-    "docs.section": 3500,
-    "docs.skill": 3300,
+    "docs.map": 1580,
+    "docs.section": 3100,
+    "docs.skill": 3450,
     "docs.for": 400,
     "docs.agents": 600
   },
@@ -22,7 +22,7 @@
       "platform": "node"
     },
     "@keel/cli": {
-      "max": "31.25kb",
+      "max": "31.5kb",
       "platform": "node"
     },
     "@keel/cli/docs": {

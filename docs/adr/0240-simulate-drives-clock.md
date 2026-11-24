@@ -34,7 +34,7 @@
 **Consequences.**
 - The household's `held` and `onRun` helpers and its turn loops go.
 - A library that leaves a handle open under sim fails E1728, naming its Node type.
-- k.sim's clauses #15 to #24 become k.drive#1 to #10, with #5 and #9 rewritten, and k.drive gains #11 to #23. std.postgres gains #25.
+- k.sim's clauses #15 to #24 become k.drive#1 to #10, with #5 and #9 rewritten, and k.drive gains #11 to #23. std.postgres gains #19.
 - The map and docs map budgets are re-based by 10 tokens each, twice.
 - k.drive's #10, #16, #17 and #20 become k.drive-law#1 to #4, k.drive's later bullets renumber, and k.drive-law gains #5 to #8.
 - Every `simulate` under `keel test` costs up to twice its runs; a slow machine checks fewer.

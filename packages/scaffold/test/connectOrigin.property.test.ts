@@ -1,4 +1,4 @@
-// k.scaffold Service: the `origins.connect` edit of `topology.ts`. Whatever the deployable's layout and quote style,
+// k.scaffold-service: the `origins.connect` edit of `topology.ts`. Whatever the deployable's layout and quote style,
 // the static read (k.origins) finds exactly the declared entry afterwards, and every other property is kept.
 import { declaredOrigins } from "@keel/compiler/hosting/declaredOrigins";
 import fc from "fast-check";

@@ -1,6 +1,6 @@
 # Keel spec map
 
-status key: proposed | implemented | conformance-covered | frozen. Budget: file 1,510 tokens, section 3,500.
+status key: proposed | implemented | conformance-covered | frozen.
 
 ## Code ranges
 Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); owner: keel docs --for <code>.
@@ -9,7 +9,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | E100x | k.compiler, k.boundary, k.bundle, k.head | E105x | k.cli, k.evidence, k.docs, k.review |
 | E110x | k.schema, k.formats, k.privacy, k.reveal, k.leave, k.privacy-reads | E115x | k.module |
 | E120x | k.reactive | E125x | k.runtime, k.resume, k.claim |
-| E130x | k.store | E135x | k.scaffold, k.scaffold-shell |
+| E130x | k.store | E135x | k.scaffold, k.scaffold-shell, k.scaffold-service |
 | E140x | k.component, k.place | E145x | k.errors |
 | E150x | k.router, k.contract, k.guards, k.prefix, k.api | E155x | k.server, k.topology, k.deploy, k.shell, k.compat, k.hosting, k.security, k.origins, k.leave, k.user, k.mount |
 | E160x | k.ctx, k.sim, k.persist, k.data | E165x | k.services |
@@ -22,7 +22,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | E260x | std.channels | E265x | std.offline |
 | E270x | std.conflicts | E275x | std.statecharts |
 | E280x | std.headless | E285x | std.tables |
-| E220x | std.tokens | E245x | std.postgres |
+| E220x | std.tokens | E245x | std.postgres, std.postgres-changes |
 
 ## Kernel
 | id | section | status | one line |
@@ -47,7 +47,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.prefix | Path prefix | conformance-covered | enums |
 | k.forms | Forms | conformance-covered | fields |
 | k.ui | Tokens, styling | conformance-covered | CSS |
-| k.ctx | Capabilities | conformance-covered | clock |
+| k.ctx | Capabilities | implemented | clock |
 | k.owner | Ctx owner | conformance-covered | dispose |
 | k.errors | Results, boundaries | conformance-covered | Result |
 | k.check | Checker, diagnostics | conformance-covered | codes |
@@ -57,6 +57,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.docs | Installed docs | conformance-covered | read |
 | k.scaffold | Scaffold, codemods | conformance-covered | edits |
 | k.scaffold-shell | Shell scaffold | conformance-covered | shells |
+| k.scaffold-service | Service scaffold | conformance-covered | clients |
 | k.testing | Harness, properties | conformance-covered | fire |
 | k.test-run | Test end, results | conformance-covered | dispose |
 | k.requests | Requests sent | conformance-covered | sent |

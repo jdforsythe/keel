@@ -1,5 +1,5 @@
-// Spec: k.scaffold, Conformance "E1052, nothing written: a `reason` in the `node` project; `base` with `schema` and `service`; none of the three; a `base` of `ftp://a.example`, `/v1`, `https://a.example/?q=1` or `https://u:p@a.example`."
-// Spec: k.scaffold, Service "`base` alone, or `schema` and `service` together; anything else is E1052." and "an absolute `http` or `https` URL with no query, fragment or credentials (else E1052)".
+// Spec: k.scaffold-service, Conformance "E1052, nothing written: a `reason` in the `node` project; `base` with `schema` and `service`; none of the three; a `base` of `ftp://a.example`, `/v1`, `https://a.example/?q=1` or `https://u:p@a.example`."
+// Spec: k.scaffold-service, Input "`base` alone, or `schema` and `service` together; anything else is E1052." and "an absolute `http` or `https` URL with no query, fragment or credentials (else E1052)".
 // seed 1337 (property over malformed base values).
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
