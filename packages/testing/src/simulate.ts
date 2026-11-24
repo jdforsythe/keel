@@ -4,6 +4,7 @@ import { gen } from "@keel/schema/gen";
 import { stores } from "@keel/store";
 import * as fc from "fast-check";
 import { SimRun } from "./SimRun.schema.ts";
+import { budgetDeadline } from "./internal/budgetDeadline.ts";
 import { clip } from "./internal/clip.ts";
 import { codeOf } from "./internal/codeOf.ts";
 import { drive } from "./internal/drive.ts";
@@ -26,7 +27,7 @@ const HORIZON = 600_000;
  * While the scenario is pending the run's clock is driven (k.drive): on each turn where no work of the run is pending it
  * moves to the earlier of its next deadline and the next offline window edge, within the horizon. The scenario's
  * `run()` waits to the horizon, `run(ms)` to exactly `t + ms`; `horizon: 0` leaves the clock to the scenario. A
- * scenario that waits on nothing the run can move fails E1727, work in flight that never answers E1728. With `law` each
+ * scenario that waits on nothing the run can move fails E1727, a spent real-time budget E1728. With `law` each
  * run is run twice and the traces compared; a failing run is replayed twice before it is reported; traces that differ
  * are E1729. A failing run is shrunk and thrown as E1704 with the seed and run on the first line and the shrunk
  * `SimRun` as JSON on the next; `{ replay }` runs one `SimRun` once. Success resolves `{ seed, runs }`.
@@ -35,6 +36,9 @@ export async function simulate(scenario: Scenario, options: SimulateOptions = {}
   const seed = seedFrom(options.seed);
   const horizon = options.horizon ?? HORIZON;
   const law = options.law ?? false;
+  const deadline = budgetDeadline(options.budget);
+  /** Set once the budget is spent: the run is not shrunk or replayed (k.drive Stalls). */
+  let spent = false;
   const kept = [...stores().values()].map((st) => [st, st.snapshot({ meta: true })] as const);
   const restore = (): void => {
     for (const [st, snap] of kept) st.restore(snap);
@@ -43,7 +47,7 @@ export async function simulate(scenario: Scenario, options: SimulateOptions = {}
   const attempt = async (simRun: SimRun, record: boolean): Promise<{ error?: unknown; trace: readonly string[] }> => {
     restore();
     const ctx = createCtx({ mode: "sim", seed: simRun.seed, schedule: simRun.schedule });
-    const driven = drive(ctx, simRun.schedule, horizon, record);
+    const driven = drive(ctx, simRun.schedule, horizon, record, deadline);
     const running = driven.inRun(async () =>
       scenario({ ctx, seed: simRun.seed, schedule: simRun.schedule, run: driven.run }),
     );
@@ -79,11 +83,22 @@ export async function simulate(scenario: Scenario, options: SimulateOptions = {}
         );
     return undefined;
   };
+  const isBudget = (e: unknown): boolean =>
+    codeOf(e) === "E1728" &&
+    e instanceof Error &&
+    "data" in e &&
+    typeof e.data === "object" &&
+    e.data !== null &&
+    "budget" in e.data;
   /** The first difference between two replays: the run has drifted, so there is nothing to shrink (k.drive Law check). */
   let drifted: Error | undefined;
   const once = async (simRun: SimRun): Promise<void> => {
-    if (drifted !== undefined) return;
+    if (drifted !== undefined || spent) return;
     const first = await attempt(simRun, law);
+    if (isBudget(first.error)) {
+      spent = true;
+      throw first.error;
+    }
     if (law) {
       const second = await attempt(simRun, true);
       const differ = compared(first.trace, second.trace);

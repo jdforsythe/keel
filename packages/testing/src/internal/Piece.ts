@@ -1,5 +1,4 @@
-/** One piece of pending work of a run: its label and the real time (`performance.now()`) it was created at. */
+/** One piece of pending work of a run: its label, held work's own else the resource's Node type. */
 export interface Piece {
   readonly label: string;
-  readonly since: number;
 }

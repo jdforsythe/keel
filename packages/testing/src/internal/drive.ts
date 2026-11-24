@@ -10,8 +10,6 @@ import { harnessGauges } from "./harnessGauges.ts";
 import { runTracker } from "./runTracker.ts";
 import { traceEvent } from "./traceEvent.ts";
 
-/** Real milliseconds a piece of work may stay pending, from its own creation, before E1728 (k.drive Stalls); it only fails a run. */
-const PENDING_MS = 10_000;
 /** The longest `run(ms)` (k.sim simulate). */
 const MAX_RUN_MS = 600_000;
 
@@ -27,11 +25,17 @@ interface Waiting {
  * while it is pending the drive moves the run's clock to the next moment (the earlier of the clock's next deadline and
  * the schedule's next offline edge) on each of its turns where nothing is pending: no resource of the run other than a
  * promise, no held work, no harness call in progress but one stalled on `ctx.net`. The bound is `horizon` ms past the
- * run's start or, while a `run(ms)` waits, `t + ms`. It draws no random and reads no time but the 10,000 ms bound on
- * pending work. A stall fails `failure` with E1727 or E1728 (k.drive Stalls). With `record` the moments and the
+ * run's start or, while a `run(ms)` waits, `t + ms`. It draws no random and reads no time but the real-time budget, which `deadline`
+ * (a `performance.now()` time) ends, naming what is in flight. A stall fails `failure` with E1727 or E1728 (k.drive Stalls). With `record` the moments and the
  * observer events of the ctx and its replicas go to `trace`.
  */
-export function drive(ctx: SimCtx, schedule: Schedule, horizon: number, record: boolean): DriveHandle {
+export function drive(
+  ctx: SimCtx,
+  schedule: Schedule,
+  horizon: number,
+  record: boolean,
+  deadline: number,
+): DriveHandle {
   const start = ctx.clock.now();
   const edges = schedule.offline.flatMap((w) => [w.at, w.at + w.ms]);
   const gauge: HarnessGauge = { calls: new Set() };
@@ -43,7 +47,6 @@ export function drive(ctx: SimCtx, schedule: Schedule, horizon: number, record: 
   };
   /** The harness calls in progress that are not stalled on an unanswered `ctx.net` route, first seen at real times. */
   const busyCalls = (): readonly object[] => [...gauge.calls].filter((call) => !call.stalled());
-  const seen = new WeakMap<object, number>();
   let over = false;
   let reject: (e: Error) => void = () => {};
   const failure = new Promise<never>((_, no) => {
@@ -75,20 +78,13 @@ export function drive(ctx: SimCtx, schedule: Schedule, horizon: number, record: 
     while (!over) {
       await drained();
       if (over) return;
-      const live = tracker.pending();
-      const calls = busyCalls();
-      if (live.length > 0 || calls.length > 0) {
-        const now = performance.now();
-        const late = live.find((piece) => now - piece.since > PENDING_MS);
-        const call = calls.find((c) => now - (seen.get(c) ?? now) > PENDING_MS);
-        for (const c of calls) if (!seen.has(c)) seen.set(c, now);
-        if (late !== undefined || call !== undefined) {
-          const label = late?.label ?? "a harness call";
-          reject(fail("E1728", `work in flight never answered: ${label}`, { label }));
-          return;
-        }
-        continue;
+      if (performance.now() >= deadline) {
+        const labels = [...tracker.pending().map((piece) => piece.label), ...busyCalls().map(() => "a harness call")];
+        const list = labels.length === 0 ? "none" : labels.join(", ");
+        reject(fail("E1728", `the budget ran out with work in flight: ${list}`, { labels, budget: true }));
+        return;
       }
+      if (tracker.pending().length > 0 || busyCalls().length > 0) continue;
       const at = next();
       if (at !== null && at <= bound()) {
         moveTo(at);
@@ -101,12 +97,12 @@ export function drive(ctx: SimCtx, schedule: Schedule, horizon: number, record: 
         }
         continue;
       }
-      const deadline = ctx.clock.next();
+      const due = ctx.clock.next();
       const why =
-        deadline === null
+        due === null
           ? "the scenario waits and nothing in the run is due"
-          : `the scenario waits past the horizon: next deadline ${deadline} ms`;
-      reject(fail("E1727", why, { next: deadline }));
+          : `the scenario waits past the horizon: next deadline ${due} ms`;
+      reject(fail("E1727", why, { next: due }));
       return;
     }
   };

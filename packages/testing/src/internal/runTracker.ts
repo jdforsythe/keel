@@ -10,8 +10,7 @@ const hook = createHook({
     // A promise is never pending work (k.drive Driving): parked work is promises alone.
     if (type === "PROMISE") return;
     const scope = runStorage.getStore();
-    if (scope !== undefined && !scope.state.stopped)
-      scope.state.live.set(id, { label: type, since: performance.now() });
+    if (scope !== undefined && !scope.state.stopped) scope.state.live.set(id, { label: type });
   },
   destroy(id) {
     for (const state of active) state.live.delete(id);
@@ -21,7 +20,7 @@ const hook = createHook({
 /**
  * Track the work the code run through `inRun` makes, with an `async_hooks` hook that is on only while a tracker is:
  * the asynchronous resources (Node destroys one when it is done: a timer after its callback, a request after it
- * answers) and the held work. Each piece keeps the real time it was created at.
+ * answers) and the held work.
  */
 export function runTracker(onHeldWait: (label: string) => void): RunHandle {
   const state: RunState = { live: new Map(), onHeldWait, stopped: false };
@@ -33,7 +32,7 @@ export function runTracker(onHeldWait: (label: string) => void): RunHandle {
     enter: (label, start) => {
       holds += 1;
       const id = -holds;
-      state.live.set(id, { label, since: performance.now() });
+      state.live.set(id, { label });
       const release = (): void => void state.live.delete(id);
       let work: ReturnType<typeof start>;
       try {
