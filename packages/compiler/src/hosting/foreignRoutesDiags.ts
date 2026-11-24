@@ -32,8 +32,7 @@ export function foreignRoutesDiags(files: readonly SourceFile[], root?: string):
   const deployables = Object.values(parseTopology(top.source).topology);
   const bare = (id: string): boolean =>
     deployables.some(
-      (d) =>
-        d.modules.includes(id) && (d.adapter === "static" || (d.adapter === "client" && d.servedBy === undefined)),
+      (d) => d.modules.includes(id) && (d.adapter === "static" || (d.adapter === "client" && d.servedBy === undefined)),
     );
   const std = new Map<string, string>();
   if (root !== undefined)
@@ -60,7 +59,8 @@ export function foreignRoutesDiags(files: readonly SourceFile[], root?: string):
         continue;
       const from = s.source.value;
       const target = resolve(byPath, file.path, from);
-      const id = std.get(from) ?? (target === undefined ? undefined : /^modules\/([^/]+)\/routes\.tsx?$/.exec(target.path)?.[1]);
+      const id =
+        std.get(from) ?? (target === undefined ? undefined : /^modules\/([^/]+)\/routes\.tsx?$/.exec(target.path)?.[1]);
       if (id !== undefined && bare(id))
         out.push({
           code: "E1592",
