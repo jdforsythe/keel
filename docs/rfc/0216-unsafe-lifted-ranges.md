@@ -83,7 +83,7 @@ No app, example or fixture project has a file under `unsafe/`, so no existing ap
 
 ## Spec diff
 Applied in this commit.
-- k.check (to `implemented` until its new clauses and the build land): **App code** paragraph (the definition, lifted ranges, the lifted codes, what sits outside, stdlib rules); E1757's Rules entry (scope and the two messages); Conformance gains seven clauses (#14 to #20).
+- k.check (to `implemented` until its new clauses and the build land): **App code** paragraph (the definition, lifted ranges, the lifted codes, what sits outside, stdlib rules); E1757's Rules entry (scope and the two messages); Conformance gains seven clauses (#14 to #20); #14 names the directive as a `@ts-expect-error` comment, without the comment marker, so a header quotes the clause whole.
 - k.persist (stays `conformance-covered`): E1551 reads app code (k.check), which now includes `unsafe/` files; no clause is added, as k.check #19 shows a non-lifted code reading an `unsafe/` file.
 - k.escapes (stays `conformance-covered`): R1050's row lists files instead of "outside app code"; no behaviour change.
 - std.copy (to `implemented`): Files reads `unsafe/` files whole; Conformance gains one clause (#3).
