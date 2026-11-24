@@ -3,6 +3,7 @@
 // Spec: k.check-cache, clause "In that project with `node_modules/foo` a symbolic link to a folder `../foo` beside the project holding the same two files, after one `keel check`, rewriting `../foo/index.d.ts` to `export declare const n: string` with its old modification time makes the next `keel check` report one E1751 at `modules/a/a.ts` line 3."
 // Spec: k.check-cache, clause "For 4 generated sequences (seed 1337) of 1 to 3 edits to that project, each one of: rewriting `modules/a/a.ts` with `number` or `string` as the type of `a`; rewriting `node_modules/foo/index.d.ts` with `number` or `string` as the type of `n`, its modification time set back to the old one; adding or deleting `node_modules/foo/other.d.ts`; setting `package.json`'s `types` to `index.d.ts` or `other.d.ts`: after each edit, `keel check --format=json` with `node_modules/.cache/keel` as the previous run left it prints the same stdout bytes and exits with the same code as the run that follows it with the folder deleted."
 // Spec: k.check-cache, clause "In that project, after one `keel check`, replacing each file in `node_modules/.cache/keel` with its first 40 bytes, or with `{}`, leaves the next `keel check --format=json` printing the same stdout bytes and exit code as a run with the folder deleted, and after it every file in the folder parses as JSON."
+// Spec: k.check-cache, clause "In that project, with an empty `node_modules/.cache/keel`, `keel check` with `modules/a/a.ts` declaring `a: number`, then with it declaring `a: string` (`n` still `number`), leaves two entry files; with the two files' contents swapped, `keel check` of each of the two trees prints the same stdout bytes and exits with the same code as a run with the folder deleted."
 // Spec: k.check-cache, clause "`keel check` in that project with `node_modules` removed leaves no `node_modules` folder."
 // Seed 1337. The real binary over scratch projects under a realpath'd temp folder. Time is only ever set with `utimesSync` to a fixed past second (OLD).
 // The review of RFC 0226 showed each stale-reuse hole on the earlier build: the cases "mtime kept", "dependency package.json", "shadowing file",
@@ -235,14 +236,22 @@ type Edit =
   | { k: "a"; type: "number" | "string" }
   | { k: "dts"; type: "number" | "string" }
   | { k: "other"; on: boolean }
-  | { k: "types"; to: "index.d.ts" | "other.d.ts" };
+  | { k: "types"; to: "index.d.ts" | "other.d.ts" }
+  | { k: "abar" }
+  | { k: "pkg"; on: boolean }
+  | { k: "deps"; on: boolean };
 const type = fc.constantFrom<"number" | "string">("number", "string");
 const edit: fc.Arbitrary<Edit> = fc.oneof(
   type.map((t): Edit => ({ k: "a", type: t })),
   type.map((t): Edit => ({ k: "dts", type: t })),
   fc.boolean().map((on): Edit => ({ k: "other", on })),
   fc.constantFrom<"index.d.ts" | "other.d.ts">("index.d.ts", "other.d.ts").map((to): Edit => ({ k: "types", to })),
+  fc.constant<Edit>({ k: "abar" }),
+  fc.boolean().map((on): Edit => ({ k: "pkg", on })),
+  fc.boolean().map((on): Edit => ({ k: "deps", on })),
 );
+const MANIFEST = (id: string, deps: string[]) =>
+  `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [${deps.map((d) => `'${d}'`).join(", ")}], capabilities: [], public: { exports: [] } })\n`;
 
 function apply(p: Project, e: Edit): void {
   if (e.k === "a") put(join(p.dir, "modules/a/a.ts"), A(e.type));
@@ -250,7 +259,19 @@ function apply(p: Project, e: Edit): void {
   else if (e.k === "other") {
     if (e.on) put(join(p.foo, "other.d.ts"), DTS("string"));
     else rmSync(join(p.foo, "other.d.ts"), { force: true });
-  } else put(join(p.foo, "package.json"), PKG(e.to));
+  } else if (e.k === "types") put(join(p.foo, "package.json"), PKG(e.to));
+  else if (e.k === "abar")
+    put(join(p.dir, "modules/a/a.ts"), "import { m } from 'bar'\n\nexport const a: string = m\n");
+  else if (e.k === "pkg") {
+    const bar = join(p.dir, "node_modules/bar");
+    if (e.on) {
+      put(join(bar, "package.json"), '{"name":"bar","types":"index.d.ts"}\n');
+      put(join(bar, "index.d.ts"), "export declare const m: string\n");
+    } else rmSync(bar, { recursive: true, force: true });
+  } else {
+    put(join(p.dir, "modules/a/module.ts"), MANIFEST("a", e.on ? ["b"] : []));
+    put(join(p.dir, "modules/b/module.ts"), MANIFEST("b", []));
+  }
 }
 
 describe("k.check-cache #4: the law", () => {
@@ -311,6 +332,36 @@ describe("k.check-cache #8: no node_modules, no cache", () => {
         put(join(p.dir, "modules/a/a.ts"), body);
         keel(p.dir);
         expect(existsSync(join(p.dir, "node_modules"))).toBe(false);
+      }
+    },
+    SLOW,
+  );
+});
+
+describe("k.check-cache #9: an entry stores its key", () => {
+  test(
+    "with the two entry files' contents swapped, `keel check` of each of the two trees prints the same stdout bytes and exits with the same code as a run with the folder deleted",
+    () => {
+      for (const tree of ["number", "string"]) {
+        const p = project();
+        const folder = join(p.dir, CACHE);
+        mkdirSync(folder, { recursive: true });
+        put(join(p.dir, "modules/a/a.ts"), A("number"));
+        keel(p.dir);
+        put(join(p.dir, "modules/a/a.ts"), A("string"));
+        keel(p.dir);
+        const files = readdirSync(folder).sort();
+        expect(files).toHaveLength(2);
+        const [one, two] = files.map((f) => join(folder, f));
+        if (one === undefined || two === undefined) throw new Error("two entry files expected");
+        const [x, y] = [readFileSync(one, "utf8"), readFileSync(two, "utf8")];
+        writeFileSync(one, y);
+        writeFileSync(two, x);
+        put(join(p.dir, "modules/a/a.ts"), A(tree));
+        const warm = keel(p.dir);
+        const fresh = cold(p.dir);
+        expect(warm.stdout, tree).toBe(fresh.stdout);
+        expect(warm.status, tree).toBe(fresh.status);
       }
     },
     SLOW,
