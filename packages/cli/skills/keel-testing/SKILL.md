@@ -1,6 +1,6 @@
 ---
 name: keel-testing
-description: "Test and check Keel code: @keel/testing render, renderRoute (stores pages too), fire, settle, find, a11y, focusOrder, sim ctx and net routes, properties, explore, simulate, prove, std-statecharts chart, ledger rungs; E170x, E1706, E1708-E1710, E1715-E1718, E1722, W1723"
+description: "Test and check Keel code: @keel/testing render, renderRoute (stores pages too), fire, settle, find, a11y, focusOrder, sim ctx and net routes, properties, explore, simulate, prove, std-statecharts chart, ledger rungs; E170x, E1706, E1708-E1710, E1715-E1719, E1722, E1726, W1723"
 ---
 
 # Testing and correctness
@@ -23,12 +23,12 @@ test("adds a todo", async () => {
   const r = await renderRoute("todos.list", { routes, params: { listId: "l1" }, ctx });
   await r.fire("todos.add", { type: "click" });
   expect(r.find("todos.count").text).toBe("1 open");
-  r.dispose();
 });
 ```
 - `render(Comp, { props, state: [[store, value]], ctx })` renders one component; `renderRoute(id, { routes, params, search, state, ctx, caller })` runs guards and loaders first and renders the chain; `{ url }` replaces `params` and `search`. `r.navigate(todos.href(id, params))` moves on (`todos` is the module's contract).
-- `fire(id, event)`: `click`, `input { value }`, `change`, `keydown { key }`, `submit`, `focus`, `blur`. It resolves once effects, resources and actions are quiet (no timers). `await r.settle()` does the same with no event.
-- `find(id)` is `{ id, role, name, text, state }`, never a node. `state(store)` is a value; `state()` is every store by id. `a11y()` is the role, name and state tree; a labelled input's id comes from it. `focusOrder()` lists ids in tab order. An unknown id is E1705 (nearest ids listed). `dispose()` restores seeded stores.
+- `fire(id, event)`: `click`, `input { value }`, `change`, `change { value }`, `keydown { key }`, `submit`, `focus`, `blur`. It resolves once effects, resources and actions are quiet (no timers). `await r.settle()` does the same with no event.
+- A key goes to the focused element: `keydown` at a focusable element without focus focuses it first (blur, focus, then the key); at the container of the focused element it reaches that element; at an element that cannot take focus it is E1719. `change { value }` on a `<select>` picks that option (`input` then `change`); E1726 elsewhere or for a disabled option.
+- `find(id)` is `{ id, role, name, text, state }`, never a node. `state(store)` is a value; `state()` is every store by id. `a11y()` is the role, name and state tree; a labelled input's id comes from it. `focusOrder()` lists ids in tab order. An unknown id is E1705 (nearest ids listed). A render made in a test, `beforeEach` or `afterEach` is disposed when the test ends, after `afterEach`, pass or fail, and restores seeded stores; no `dispose()` needed. One made in `beforeAll` is yours to `dispose()` in `afterAll`.
 - Props and `state` parse first (`schema.invalid`, nothing renders). A loader or action naming `stores` runs over the harness `ctx.storage`, one request per navigation or submit, so a `node` page is tested like any other; `createApp` on one ctx reads its saves.
 - The page is the production page: a thrown loader or action shows `unexpected` in the alert, `errorElement` and `Form` error.
 - The harness ctx is always sim (seed `KEEL_SEED`, default 1337). `ctx.clock.advance(ms)` moves time; `ctx.net.route(url, handler)` answers requests.

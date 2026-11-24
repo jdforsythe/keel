@@ -1107,9 +1107,9 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1719",
-    "focus fired where a user cannot focus",
-    "",
-    "give the element a role that takes focus, or fire focus before blur",
+    "focus or a key press fired where a user cannot focus, or blur off an element without focus",
+    "A key press goes to the focused element: fire keydown dispatches there when focus is on the target or inside it, and moves focus to a focusable target first. A target that cannot take focus, with focus outside it, gets no key, and nothing moves.",
+    "fire the key at the focused element or the container that holds it; give the element a role that takes focus; fire focus before blur",
     "k.testing",
   ],
   [
@@ -1146,6 +1146,13 @@ const ROWS: readonly Row[] = [
     "An entry names a Survived or NoCoverage mutant by file, mutator, original and replacement, with a reason of equivalent, unreachable or performance and a one-sentence note. A killed mutant, or code that moved, leaves it justifying nothing.",
     "remove the entry, or correct its texts to the mutant's in reports/mutation/mutation.json",
     "k.ledger",
+  ],
+  [
+    "E1726",
+    "fire change with a value a person cannot pick",
+    "change with value is a pick in a select without multiple: the enabled option of that value is selected, then input and change fire. Another element, a multiple select, or no enabled option of that value is refused, and nothing changes.",
+    "fire change with the value of an enabled option on a single select; on a text field fire input with value",
+    "k.testing",
   ],
   [
     "W1723",
