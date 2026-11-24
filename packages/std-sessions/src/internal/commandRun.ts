@@ -66,7 +66,8 @@ function unappliedText(s: Session, n: number, redirectedTo: string | null = null
  * (an input that does not apply, N from 0 over `events`) and E2004 (fingerprint differs) and one `session` record.
  * A `replay` file with a top-level `users` key is a `SessionGroup`: `groupDiags` reports E2007 and E2008 (std.multi) and
  * nothing replays; a valid group gets a summary that says it replays through `replayGroup`, exit 0.
- * `minimize` rewrites `<f>` with the 1-minimal session; `to-test` writes `modules/<m>/test/session-<fingerprint>.test.ts`
+ * `minimize` rewrites `<f>` with the 1-minimal session; `to-test` writes `test/session-<fingerprint>.test.ts` beside `topology.ts` for a page a `node` deployable serves,
+ * `modules/<m>/test/session-<fingerprint>.test.ts` otherwise,
  * from the session redacted with the route module's `expose` entries. Both write nothing unless the session reproduces (E2004).
  */
 export async function commandRun(
@@ -150,19 +151,27 @@ export async function commandRun(
       [{ path: target, content: sessionText(out), readonly: false }],
     );
   }
-  const file = `modules/${m}/test/session-${out.fingerprint}.test.ts`;
+  const file =
+    serve === undefined
+      ? `modules/${m}/test/session-${out.fingerprint}.test.ts`
+      : `test/session-${out.fingerprint}.test.ts`;
+  // From `test/` the app's files are one folder up; from `modules/<m>/test/` the module's own are one up and the rest
+  // two.
+  const own = (name: string): string => (serve === undefined ? `../${name}` : `../modules/${m}/${name}`);
+  const other = (id: string, name: string): string =>
+    serve === undefined ? `../../${id}/${name}` : `../modules/${id}/${name}`;
   const source = toTest(out, {
     navs: r.navs,
     stores: storesOf(files, Object.keys(out.state), m),
     routes: (serve === undefined ? modules.map((x) => ({ module: x, app: true, spec: x, contract: "" })) : placed).map(
       (p) => ({
         module: p.module,
-        from: !p.app ? p.spec : p.module === m ? "../routes.ts" : `../../${p.module}/routes.ts`,
+        from: !p.app ? p.spec : p.module === m ? own("routes.ts") : other(p.module, "routes.ts"),
         contract: !p.app
           ? p.contract
           : p.module === m
-            ? `../${p.module}.contract.ts`
-            : `../../${p.module}/${p.module}.contract.ts`,
+            ? own(`${p.module}.contract.ts`)
+            : other(p.module, `${p.module}.contract.ts`),
       }),
     ),
     ...(serve === undefined
@@ -170,8 +179,8 @@ export async function commandRun(
       : {
           serve: {
             deployable: serve.deployable,
-            topology: "../../../topology.ts",
-            ...(serve.identity ? { identity: "../../../identity.server.ts" } : {}),
+            topology: "../topology.ts",
+            ...(serve.identity ? { identity: "../identity.server.ts" } : {}),
           },
         }),
     ...(user === undefined ? {} : { user }),

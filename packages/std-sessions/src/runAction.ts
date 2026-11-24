@@ -180,7 +180,9 @@ export async function runAction(
     const [out] = sessionsOf(emitted.records);
     if (!safe(out, fp, reproduced)) continue;
     const test =
-      out.file === `modules/${out.route.split(".")[0]}/test/session-${fp}.test.ts` ? io.read(out.file) : undefined;
+      out.file === `modules/${out.route.split(".")[0]}/test/session-${fp}.test.ts` || out.file === `test/session-${fp}.test.ts`
+        ? io.read(out.file)
+        : undefined;
     if (test === undefined) continue;
     const title = clean(`session ${fp}: ${out.error ?? "ok"} at ${out.route}`, 256);
     const body = `${sessionMarker(fp)}\n${issueBody(sessionCompact(out), test)}`;

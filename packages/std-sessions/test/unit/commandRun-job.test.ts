@@ -420,7 +420,9 @@ describe("commandRun: a node deployable serves the page", () => {
     const plain = await commandRun("to-test", F, io(node(true)), undefined);
     const text = plain.writes[0]?.content ?? "";
     expect(text).toContain('createApp({ topology, deployable: "web", routes, ctx, identity })');
-    expect(text).toContain('import identity from "../../../identity.server.ts";');
+    expect(text).toContain('import identity from "../identity.server.ts";');
+    expect(text).toContain('import topology from "../topology.ts";');
+    expect(plain.writes[0]?.path).toBe(`test/session-${FP}.test.ts`);
     expect(text).not.toMatch(/\buser\b/);
     const signed = await commandRun("to-test", F, io(node()), undefined, "u1");
     expect(signed.writes[0]?.content).toContain('ctx, app, user: "u1" })');
