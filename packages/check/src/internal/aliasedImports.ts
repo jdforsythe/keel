@@ -21,6 +21,7 @@ const LIBRARY = /^(?:packages|node_modules|\.keel)\//;
 export function aliasedImports(checked: readonly Checked[], root: string, dirs: readonly string[]): Diagnostic[] {
   const options = tsCompilerOptions();
   const cache = ts.createModuleResolutionCache(root, (s) => s, options);
+  if (!fs.existsSync(root)) return [];
   const real = fs.realpathSync(root);
   const out: Diagnostic[] = [];
   for (const { file, parsed } of checked) {
