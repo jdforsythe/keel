@@ -207,7 +207,12 @@ test("E1153: for any cycle of generated modules the guard message appears exactl
           expect(d[0]?.message).toBe(`module deps cycle: ${cycle}`);
           expect(d[0]?.see).toBe("k.module");
         } else {
-          expect(d[0]?.message).toBe(`module deps cycle through guard ${expected}: ${cycle}`);
+          // OUTPUT.md: "`message` under 90 chars". The text states no clip marker, so a clipped message is asserted by its bound and its guard prefix, an unclipped one by equality.
+          const full = `module deps cycle through guard ${expected}: ${cycle}`;
+          const msg = d[0]?.message ?? "";
+          expect(msg.length).toBeLessThan(90);
+          if (full.length < 90) expect(msg).toBe(full);
+          expect(msg.startsWith(`module deps cycle through guard ${expected}:`)).toBe(true);
           expect(d[0]?.see).toBe("k.guards");
         }
         const [line, col] = entryPos(ids[0] ?? "", [ids[1 % ids.length] ?? ""], ids[1 % ids.length] ?? "");
@@ -235,8 +240,11 @@ test("E1153: a long guard name or a long cycle never cuts the guard name within 
         const d = codesOf(files, "E1153");
         expect(d.length).toBe(1);
         const msg = d[0]?.message ?? "";
-        expect(msg.slice(0, 89).startsWith(`module deps cycle through guard ${name}:`)).toBe(true);
-        expect(msg.length).toBeGreaterThan(89);
+        // OUTPUT.md: "`message` under 90 chars"; the guard comes before the cycle (RFC 0212 D4).
+        expect(GUARD_MSG(name, [...ids, ids[0] ?? ""]).length).toBeGreaterThan(89);
+        expect(msg.length).toBeLessThan(90);
+        expect(msg.includes(name)).toBe(true);
+        expect(msg.startsWith(`module deps cycle through guard ${name}:`)).toBe(true);
       },
     ),
     { seed: SEED, numRuns: 25 },
