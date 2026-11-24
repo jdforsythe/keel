@@ -11,7 +11,6 @@ import { SERVER_ENTRY } from "./entry/SERVER_ENTRY.ts";
 import { STYLES_PATH } from "./entry/STYLES_PATH.ts";
 import { entryDependency } from "./entry/entryDependency.ts";
 import { resumeEntry } from "./entry/resumeEntry.ts";
-import { identitySetupFiles } from "./hosting/identitySetupFiles.ts";
 import { originOf } from "./hosting/originOf.ts";
 import { peerOrigins } from "./hosting/peerOrigins.ts";
 import { shellConnect } from "./hosting/shellConnect.ts";
@@ -91,12 +90,6 @@ const PG_BANNER =
 /** A build's failure on evaluation problems: one `keel: <code> ...` line each, as the plugin's warnings read. */
 const evaluationFailed = (problems: readonly string[]): Error =>
   new Error(problems.map((p) => `keel: ${p}`).join("\n"));
-
-/** Under vitest, the project's `identity.ts` joins the run's `test.setupFiles` (`identitySetupFiles`, k.guards Client). */
-function testSetup(root: string): Record<string, unknown> {
-  const setupFiles = process.env.VITEST === undefined ? [] : identitySetupFiles(root);
-  return setupFiles.length === 0 ? {} : { test: { setupFiles } };
-}
 
 /** The served modules' `modules/<id>/migrations/` folders of `root`, copied under `out` at the same path (k.data Files). */
 function copyMigrations(root: string, out: string, modules: readonly string[]): void {
@@ -205,6 +198,7 @@ type ModuleInfo = {
   importedIds: readonly string[];
   dynamicallyImportedIds: readonly string[];
   importers?: readonly string[];
+  dynamicImporters?: readonly string[];
 };
 /** An emitted file of a bundle: a chunk's code or an asset's source. */
 type Emitted = { fileName: string; code?: string; source?: string | Uint8Array };
@@ -825,7 +819,6 @@ export default function (): {
           ? { define: { "import.meta.env.DEV": "false", "import.meta.env.PROD": "true" } }
           : {}),
         worker: { plugins: () => [workerPlugin()] },
-        ...testSetup(path.resolve(user.root ?? process.cwd())),
       };
       if (env.command !== "build" || env.isSsrBuild === true || name === undefined || !fs.existsSync(file)) return own;
       const top = parseTopology(fs.readFileSync(file, "utf8")).topology;
@@ -1080,7 +1073,7 @@ export default function (): {
       const why = browserBreach(this.getModuleIds?.() ?? [], info, breach, show, (id) => stubbed.has(id));
       if (why !== undefined) throw new Error(`E1007 ${why}`);
       // E1011 (k.bundle Service map): the entry maps the modules the scan found; one the bundler reached by another way
-      // (an alias, a package name, a template import) would send its calls to an origin that is not its deployable's.
+      // (a computed import(), found by glob) would send its calls to an origin that is not its deployable's.
       if (mapped === undefined) return;
       const topo = Object.values(topology ?? {});
       const unmapped = unmappedModule(
@@ -1097,7 +1090,10 @@ export default function (): {
         },
         mapped,
         (id) => stubbed.has(id) || serverOnlyFile(id.split("?")[0] ?? id),
-        (id) => this.getModuleInfo?.(id)?.importers?.[0],
+        (id) => {
+          const info = this.getModuleInfo?.(id);
+          return [...(info?.importers ?? []), ...(info?.dynamicImporters ?? [])];
+        },
       );
       if (unmapped !== undefined)
         throw new Error(

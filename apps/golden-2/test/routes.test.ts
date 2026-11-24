@@ -1,6 +1,7 @@
 import { createCtx } from "@keel/ctx";
 import { renderRoute } from "@keel/testing";
 import { describe, expect, it } from "vitest";
+import mount from "../identity.ts";
 import { Box } from "../modules/kitchen/Box.schema.ts";
 import { recipes } from "../modules/recipes/recipes.contract.ts";
 import { routes } from "../modules/recipes/routes.ts";
@@ -31,7 +32,7 @@ describe("recipes.index", () => {
     const soup = await seed(api, "Soup", 30);
     const stew = await seed(api, "Stew", 90, 1800, "JPY");
     await favorite(api, stew);
-    const all = await renderRoute("recipes.index", { routes, params: { locale: "en-US" }, ctx: api.ctx });
+    const all = await renderRoute("recipes.index", { routes, params: { locale: "en-US" }, ctx: api.ctx, mount });
     expect(all.find(`recipes.link.${soup}`).text).toBe("Soup");
     expect(all.find(`recipes.minutes.${stew}`).text).toBe("1 hr, 30 min");
     expect(all.find(`recipes.price.${stew}`).text).toBe("¥1,800");
@@ -43,6 +44,7 @@ describe("recipes.index", () => {
       params: { locale: "de-DE" },
       search: { only: "favorites" },
       ctx: api.ctx,
+      mount,
     });
     expect(favs.find(`recipes.link.${stew}`).text).toBe("Stew");
     expect(favs.find("recipes.count").text).toBe("1 Rezept");
@@ -51,7 +53,7 @@ describe("recipes.index", () => {
   });
   it("shows recipes.empty when the box has none", async () => {
     const api = await simApi();
-    const r = await renderRoute("recipes.index", { routes, params: { locale: "ja-JP" }, ctx: api.ctx });
+    const r = await renderRoute("recipes.index", { routes, params: { locale: "ja-JP" }, ctx: api.ctx, mount });
     expect(r.find("recipes.empty").text).toBe("レシピはありません");
     r.dispose();
   });
@@ -68,7 +70,12 @@ describe("recipes.show", () => {
   it("toggles the favorite through the api and revalidates", async () => {
     const api = await simApi();
     const id = await seed(api, "Soup", 30);
-    const r = await renderRoute("recipes.show", { routes, params: { locale: "en-US", recipeId: id }, ctx: api.ctx });
+    const r = await renderRoute("recipes.show", {
+      routes,
+      params: { locale: "en-US", recipeId: id },
+      ctx: api.ctx,
+      mount,
+    });
     expect(r.find("recipes.title").text).toBe("Soup");
     expect(r.find("recipes.addedOn").text).toBe("Added November 10, 2026");
     expect(r.find("recipes.favorite").text).toBe("Not favorite");
@@ -86,6 +93,7 @@ describe("recipes.show", () => {
       routes,
       params: { locale: "de-DE", recipeId: missing },
       ctx: api.ctx,
+      mount,
     });
     expect(r.find("recipes.error").text).toBe("Kein solches Rezept");
     r.dispose();
@@ -96,13 +104,13 @@ describe("recipes.new", () => {
   it("redirects a guest to recipes.index in the same locale", async () => {
     const api = await simApi();
     await api.ctx.storage.set("recipes.guest", "1");
-    const r = await renderRoute("recipes.new", { routes, params: { locale: "de-DE" }, ctx: api.ctx });
+    const r = await renderRoute("recipes.new", { routes, params: { locale: "de-DE" }, ctx: api.ctx, mount });
     expect(r.route()).toMatchObject({ id: "recipes.index", params: { locale: "de-DE" } });
     r.dispose();
   });
   it("sends nothing on an invalid submit, focuses the first invalid field and shows its rule", async () => {
     const api = await simApi();
-    const r = await renderRoute("recipes.new", { routes, params: { locale: "de-DE" }, ctx: api.ctx });
+    const r = await renderRoute("recipes.new", { routes, params: { locale: "de-DE" }, ctx: api.ctx, mount });
     await r.fire("recipes.save", { type: "click" });
     expect(api.sent).toEqual([]);
     expect(r.find("recipes.draft:title").state.focused).toBe(true);
@@ -111,7 +119,7 @@ describe("recipes.new", () => {
   });
   it("creates a recipe with a price and lists it", async () => {
     const api = await simApi();
-    const r = await renderRoute("recipes.new", { routes, params: { locale: "en-US" }, ctx: api.ctx });
+    const r = await renderRoute("recipes.new", { routes, params: { locale: "en-US" }, ctx: api.ctx, mount });
     await r.fire("recipes.draft:title", { type: "input", value: "Pie" });
     await r.fire("recipes.draft:minutes", { type: "input", value: "45" });
     await r.fire("recipes.draft:price.amount", { type: "input", value: "1999" });
@@ -126,7 +134,7 @@ describe("recipes.new", () => {
   it("shows recipes.draft:title:error for a duplicate title, in the locale", async () => {
     const api = await simApi();
     await seed(api, "Soup", 30);
-    const r = await renderRoute("recipes.new", { routes, params: { locale: "ja-JP" }, ctx: api.ctx });
+    const r = await renderRoute("recipes.new", { routes, params: { locale: "ja-JP" }, ctx: api.ctx, mount });
     await r.fire("recipes.draft:title", { type: "input", value: "soup" });
     await r.fire("recipes.draft:minutes", { type: "input", value: "10" });
     await r.fire("recipes.draft:price.amount", { type: "input", value: "500" });

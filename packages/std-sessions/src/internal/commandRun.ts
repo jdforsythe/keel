@@ -122,6 +122,7 @@ export async function commandRun(
     deployable === undefined || deployable.adapter !== "node"
       ? undefined
       : { deployable: deployable.name, identity: files.some((f) => f.path === "identity.server.ts") };
+  const hasIdentity = files.some((f) => f.path === "identity.ts");
   const job = await runJob(io, {
     op,
     session: Session.encode(session),
@@ -130,6 +131,8 @@ export async function commandRun(
       ? {}
       : { serve: { ...serve, routes: placed.map((p) => (p.app ? `../../modules/${p.module}/routes.ts` : p.spec)) } }),
     ...(user === undefined ? {} : { user }),
+    // Without `serve` the router form takes the project's identity mount, as the built entry does (k.guards Client).
+    ...(serve === undefined && hasIdentity ? { mount: true } : {}),
     expose: op === "to-test" ? entriesOf(files, m, "expose") : [],
     redact: modules.flatMap((x) => entriesOf(files, x, "redact")),
     ...(maxRuns === undefined ? {} : { maxRuns }),
@@ -184,6 +187,7 @@ export async function commandRun(
           },
         }),
     ...(user === undefined ? {} : { user }),
+    ...(serve === undefined && hasIdentity ? { mount: "../../../identity.ts" } : {}),
   });
   return done([sessionOut(out, out.error?.code ?? null, file)], [{ path: file, content: source, readonly: false }]);
 }

@@ -1,5 +1,6 @@
 // Fixtures for the k.return suites (not a test file). Seed for every property: 1337.
 // A shell run of the k.mount pages: `renderRoute(id, { routes, ctx, shell: true })` over a sim ctx whose net answers every URL through `answer`.
+// Each harness passes the identity mount as `mount` (k.guards Client): `openShell` the mount of mount-pages.ts, `openShellOver` that of act-pages.ts, whose tables it runs.
 // `user: ""` stands for the k.guards Client read's answer, so no `/__keel/user` GET joins the request lists these suites assert.
 // Assumptions (the spec does not say): `shell: true` is a `renderRoute` option beside `ctx`; the sim net sees the mount request as a `Request` whose URL
 // resolves (against the page's origin, whatever it is) to the `href` unchanged, so a request is recorded as pathname + search;
@@ -7,7 +8,8 @@
 import { createCtx } from "@keel/ctx";
 import type { SimCtx } from "@keel/ctx";
 import { renderRoute } from "@keel/testing";
-import { routes } from "./mount-pages.ts";
+import { mount as actMount } from "./act-pages.ts";
+import { mount, routes } from "./mount-pages.ts";
 
 export { SEED, VALID, INVALID, mount } from "./mount-pages.ts";
 export const SCHEME = "dev.keel.golden2";
@@ -48,7 +50,7 @@ export async function openShell(id: string, answer: Answer = plain, given?: SimC
     sent.push(entry);
     return answer(entry, sent.length - 1);
   });
-  const handle = await renderRoute(id, { routes, ctx, shell: true, user: "" });
+  const handle = await renderRoute(id, { routes, ctx, shell: true, user: "", mount });
   opened.push(handle);
   return { handle, sent, ctx };
 }
@@ -111,6 +113,7 @@ export async function openShellOver(
     ctx,
     shell: true,
     user: "",
+    mount: actMount,
     ...(launch === undefined ? {} : { launch }),
   });
   opened.push(handle);

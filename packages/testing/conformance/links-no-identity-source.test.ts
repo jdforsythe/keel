@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 // Spec: k.links, Conformance "In a project with no identity source, `renderRoute(id, { shell: { id: 'dev.keel.linksin' } })`: `returnLink('dev.keel.linksin:/about')`, and with `launch: 'later'` `launch(['dev.keel.linksin:/about'])`, each navigate to `/about`; `returnLink('dev.keel.linksin:/api/auth/callback?code=c')` sends nothing through `net` and leaves the page where it was."
-// Seed 1337 (fc.assert below; the sim ctx's seed is 1337). Fixture: routes `li.home` (`/`) and `li.about` (`/about`); no `identityMount` is called in this file, so no identity source is registered.
+// Seed 1337 (fc.assert below; the sim ctx's seed is 1337). Fixture: routes `li.home` (`/`) and `li.about` (`/about`); no `identityMount` is called in this file and `renderRoute` is passed no `mount`, so the harness has no identity source.
 // ASSUMED: a link not admitted sends no `net` request; `launch` is a `renderRoute` option beside `shell` and the handle then has `launch(links)`.
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";

@@ -197,9 +197,9 @@ export async function ticks(): Promise<void> {
 
 const opened: { dispose(): void }[] = [];
 
-/** `renderRoute` of `id` over this module's routes on a sim ctx; `closeAll` disposes every handle opened so far. */
+/** `renderRoute` of `id` over this module's routes on a sim ctx, passing `mount` (k.guards Client: a harness takes the identity mount as an option); `closeAll` disposes every handle opened so far. */
 export async function open(id: string) {
-  const handle = await renderRoute(id, { routes, ctx: createCtx({ mode: "sim", seed: SEED }) });
+  const handle = await renderRoute(id, { routes, ctx: createCtx({ mode: "sim", seed: SEED }), mount });
   opened.push(handle);
   return handle;
 }

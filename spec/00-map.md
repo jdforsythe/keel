@@ -34,7 +34,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.component | Components | conformance-covered | props |
 | k.compiler | Compiler, artifacts | conformance-covered | JSX |
 | k.boundary | Server boundary | conformance-covered | stubs |
-| k.bundle | Browser bundles | conformance-covered | workers |
+| k.bundle | Browser bundles | implemented | workers |
 | k.runtime | DOM runtime, islands | conformance-covered | nodes |
 | k.resume | Documents, resume | conformance-covered | regions |
 | k.claim | Claim order | conformance-covered | eager |
@@ -43,7 +43,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.router | Routes | conformance-covered | params |
 | k.contract | Module contract | conformance-covered | entries |
 | k.routes | Route table | conformance-covered | union |
-| k.guards | Guards | conformance-covered | deny |
+| k.guards | Guards | implemented | deny |
 | k.prefix | Path prefix | conformance-covered | enums |
 | k.forms | Forms | conformance-covered | fields |
 | k.ui | Tokens, styling | conformance-covered | CSS |
@@ -55,10 +55,10 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.host | Host reads | conformance-covered | zone |
 | k.cli | CLI, MCP, LSP | conformance-covered | flags |
 | k.docs | Installed docs | conformance-covered | read |
-| k.scaffold | Scaffold, codemods | conformance-covered | edits |
+| k.scaffold | Scaffold, codemods | implemented | edits |
 | k.scaffold-shell | Shell scaffold | conformance-covered | shells |
 | k.scaffold-service | Service scaffold | conformance-covered | clients |
-| k.testing | Harness, properties | conformance-covered | fire |
+| k.testing | Harness, properties | implemented | fire |
 | k.test-run | Test end, results | conformance-covered | dispose |
 | k.requests | Requests sent | conformance-covered | sent |
 | k.model | Store exploration | conformance-covered | traces |
@@ -69,7 +69,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.ledger | Ledger, evidence | conformance-covered | rungs |
 | k.server | Thin server | conformance-covered | loads |
 | k.leave | What a request leaves | conformance-covered | state |
-| k.user | User, caller | conformance-covered | user |
+| k.user | User, caller | implemented | user |
 | k.mount | Mount pages | conformance-covered | submit |
 | k.mount-scope | Mount scope | conformance-covered | proxy |
 | k.return | Shell mount | conformance-covered | net |

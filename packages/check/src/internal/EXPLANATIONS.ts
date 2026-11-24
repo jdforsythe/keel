@@ -83,8 +83,15 @@ const ROWS: readonly Row[] = [
   [
     "E1011",
     "a client bundle holds an app module its service map leaves out",
-    "An alias, package name or template import() reached it; its calls would miss its deployable.",
-    "import '@/api/x' -> import '../api/x'",
+    "A computed import() reached it, and the bundler found it by glob where the scan did not follow; its calls would miss its deployable.",
+    "import a literal, relative specifier of it from the client's own module",
+    "k.bundle",
+  ],
+  [
+    "E1013",
+    "a specifier other than relative reaching a file under modules/",
+    "Module rules (E1151, E1152, E1165), codemods and the client's service map read relative specifiers; an alias walks past all of them.",
+    "import 'linked-notes/lib.ts' -> import '../notes/lib.ts'",
     "k.bundle",
   ],
   [
@@ -949,6 +956,13 @@ const ROWS: readonly Row[] = [
     "k.origins",
   ],
   [
+    "E1592",
+    "identity.server.ts, or a file it imports, imports the routes of a module a static deployable, or a client one without servedBy, serves",
+    "Those pages are on another origin than the sign-in: a return there lands the person signed out, and an Href is root-relative.",
+    "adapter: 'client' -> adapter: 'client', servedBy: 'api'",
+    "k.user",
+  ],
+  [
     "E1601",
     "Date.now, new Date(), Temporal.Now, Math.random, crypto.randomUUID, fetch, sendBeacon, localStorage in app code",
     "Effects go through ctx so sim runs are deterministic. Aliases, destructuring and literal keys count.",
@@ -1156,9 +1170,9 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1722",
-    "renderRoute given app with state or shell, or routes as an import without app",
-    "With app the page comes from the server, so test module stores and a native shell have no meaning; a routes import resumes a built page in a module graph of its own, which a router page never has. Nothing is requested.",
-    "seed server state through ctx.storage, as createApp reads it; drop state and shell; pass app with a routes import, or the route table without",
+    "renderRoute given app with state, shell or mount, or routes as an import without app",
+    "With app the page comes from the server, with its own identity, so test stores, a shell and a mount mean nothing; a routes import resumes a built page in its own module graph. Nothing is requested.",
+    "seed ctx.storage, as createApp reads it; drop state, shell and mount; pass app with a routes import, or the table without",
     "k.testing",
   ],
   [
@@ -1202,6 +1216,13 @@ const ROWS: readonly Row[] = [
     "The traces differ: moments, observer events, the final value of a storage key the run wrote or a live store's snapshot. The run reached work the drive cannot see (a reply through a channel made before the run that no capability holds) or kept state across runs.",
     "hold the outside work in its capability, or keep the state in the run's stores",
     "k.drive-law",
+  ],
+  [
+    "E1730",
+    "a test's renderRoute names neither mount nor app in a project with identity.ts",
+    "The built app always has the identity mount: its router reads /__keel/user and matches no page under the mount. A test names it so the file alone says what runs. keel check only.",
+    "import mount from '../identity.ts'; renderRoute(id, { routes, mount })",
+    "k.guards",
   ],
   [
     "W1723",

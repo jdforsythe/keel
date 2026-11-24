@@ -1,5 +1,6 @@
 import { renderRoute } from "@keel/testing";
 import { afterEach, describe, expect, it } from "vitest";
+import mount from "../identity.ts";
 import { routes } from "../modules/recipes/routes.ts";
 import { shoppingList } from "../modules/recipes/shoppingList.ts";
 import { toasts } from "../modules/recipes/toasts.ts";
@@ -21,8 +22,8 @@ type Api = Awaited<ReturnType<typeof catalogApi>>;
 async function open(api: Api, locale: "en-US" | "de-DE" | "ja-JP" = "en-US", url?: string) {
   const r =
     url === undefined
-      ? await renderRoute("recipes.catalog", { routes, params: { locale }, ctx: api.ctx, artifacts })
-      : await renderRoute("recipes.catalog", { routes, url, ctx: api.ctx, artifacts });
+      ? await renderRoute("recipes.catalog", { routes, params: { locale }, ctx: api.ctx, artifacts, mount })
+      : await renderRoute("recipes.catalog", { routes, url, ctx: api.ctx, artifacts, mount });
   live.push(r);
   return r;
 }

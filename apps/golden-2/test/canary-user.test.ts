@@ -91,7 +91,7 @@ async function flow(seed: number): Promise<Run> {
   };
 
   const rec = record(web, { upload: UPLOAD() });
-  const t = await renderRoute("recipes.index", { routes, params: { locale: "en-US" }, ctx: web });
+  const t = await renderRoute("recipes.index", { routes, params: { locale: "en-US" }, ctx: web, mount });
   const navigated: string[] = [location.href];
   const matches: string[] = [JSON.stringify(t.route())];
   const go = async (href: ReturnType<typeof recipes.href>) => {

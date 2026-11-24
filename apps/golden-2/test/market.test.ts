@@ -2,6 +2,7 @@ import { createCtx } from "@keel/ctx";
 import { geo } from "@keel/std-geo";
 import { render, renderRoute } from "@keel/testing";
 import { afterEach, describe, expect, it } from "vitest";
+import mount from "../identity.ts";
 import { MarketKey } from "../modules/recipes/MarketKey.schema.ts";
 import NearestMarket from "../modules/recipes/NearestMarket.tsx";
 import { RecipesText } from "../modules/recipes/RecipesText.schema.ts";
@@ -20,7 +21,7 @@ afterEach(() => {
 /** The catalog page's shopping list tab in `locale`, over a sim ctx of `seed`: its geo position is that seed's. */
 async function listTab(locale: "en-US" | "de-DE" | "ja-JP", seed: number) {
   const api = await catalogApi(seed);
-  const r = await renderRoute("recipes.catalog", { routes, params: { locale }, ctx: api.ctx, artifacts });
+  const r = await renderRoute("recipes.catalog", { routes, params: { locale }, ctx: api.ctx, artifacts, mount });
   live.push(r);
   await r.fire("recipes.views.tab.list", { type: "click" });
   return { api, r };

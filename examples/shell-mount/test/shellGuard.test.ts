@@ -10,6 +10,7 @@ import { createApp } from "@keel/server";
 import { renderRoute } from "@keel/testing";
 import { expect, it } from "vitest";
 import source from "../identity.server.ts";
+import mount from "../identity.ts";
 import { routes as api } from "../modules/api/routes.ts";
 import { notes } from "../modules/notes/notes.contract.ts";
 import { routes } from "../modules/notes/routes.ts";
@@ -38,7 +39,7 @@ async function shell() {
 
 it("sends a signed-out reader to sign-in with the note as next; the sign-in posts through the mount to that next", async () => {
   const { ctx, sent } = await shell();
-  const t = await renderRoute("notes.home", { routes, shell: { id: "dev.keel.shellmount" }, ctx });
+  const t = await renderRoute("notes.home", { routes, shell: { id: "dev.keel.shellmount" }, ctx, mount });
   try {
     await t.fire("notes.home.toNote", { type: "click" });
     expect(t.route()).toMatchObject({ id: "notes.signin", search: { next: "/notes/n1" } });
@@ -56,7 +57,7 @@ it("sends a signed-out reader to sign-in with the note as next; the sign-in post
 
 it("sends a signed-out reader to sign-in and back to the note after signing in, the param carried", async () => {
   const { ctx, sent } = await shell();
-  const t = await renderRoute("notes.home", { routes, shell: { id: "dev.keel.shellmount" }, ctx });
+  const t = await renderRoute("notes.home", { routes, shell: { id: "dev.keel.shellmount" }, ctx, mount });
   try {
     await t.fire("notes.home.toNote", { type: "click" });
     await t.fire("notes.signinForm:name", { type: "input", value: "Ada" });
@@ -71,7 +72,7 @@ it("sends a signed-out reader to sign-in and back to the note after signing in, 
 
 it("lets a signed-in reader open the note without a detour", async () => {
   const { ctx } = await shell();
-  const t = await renderRoute("notes.signin", { routes, shell: { id: "dev.keel.shellmount" }, ctx });
+  const t = await renderRoute("notes.signin", { routes, shell: { id: "dev.keel.shellmount" }, ctx, mount });
   try {
     await t.fire("notes.signinForm:name", { type: "input", value: "Ada" });
     await t.fire("notes.signinSubmit", { type: "click" });
@@ -86,7 +87,7 @@ it("lets a signed-in reader open the note without a detour", async () => {
 
 it("reads the user once at start and once after the sign-in answer, never per navigation", async () => {
   const { ctx, sent } = await shell();
-  const t = await renderRoute("notes.home", { routes, shell: { id: "dev.keel.shellmount" }, ctx });
+  const t = await renderRoute("notes.home", { routes, shell: { id: "dev.keel.shellmount" }, ctx, mount });
   const reads = () => sent.filter((s) => s.startsWith("GET /__keel/user"));
   try {
     expect(reads()).toHaveLength(1);

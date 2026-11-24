@@ -8,17 +8,17 @@
     "mcp.tools-list": 2050,
     "docs.map": 1580,
     "docs.section": 3100,
-    "docs.skill": 3450,
+    "docs.skill": 3550,
     "docs.for": 400,
     "docs.agents": 600
   },
   "size": {
     "@keel/check": {
-      "max": "64kb",
+      "max": "65kb",
       "platform": "node"
     },
     "@keel/check/explain": {
-      "max": "19.5kb",
+      "max": "20kb",
       "platform": "node"
     },
     "@keel/cli": {
@@ -124,7 +124,7 @@
       "platform": "node"
     },
     "@keel/std-sessions/commandJob": {
-      "max": "9.25kb",
+      "max": "9.5kb",
       "platform": "node"
     },
     "@keel/std-sessions/group": {
