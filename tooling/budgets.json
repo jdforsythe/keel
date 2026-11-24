@@ -3,10 +3,10 @@
     "check.injected10": 600,
     "test.failing3": 400,
     "spec.section": 3400,
-    "spec.map": 1430,
+    "spec.map": 1440,
     "explain": 300,
     "mcp.tools-list": 2000,
-    "docs.map": 1510,
+    "docs.map": 1520,
     "docs.section": 3400,
     "docs.skill": 3100,
     "docs.for": 400,
@@ -124,7 +124,7 @@
       "platform": "node"
     },
     "@keel/std-sessions/commandJob": {
-      "max": "9kb",
+      "max": "9.25kb",
       "platform": "node"
     },
     "@keel/std-sessions/group": {

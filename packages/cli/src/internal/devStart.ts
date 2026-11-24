@@ -4,6 +4,7 @@ import { join, resolve } from "node:path";
 import { INDEX_HTML_IGNORED } from "@keel/compiler/hosting/INDEX_HTML_IGNORED";
 import { operations } from "../operations.ts";
 import type { DevServer } from "./DevServer.ts";
+import { devPoll } from "./devPoll.ts";
 import { devPort } from "./devPort.ts";
 import { errorText } from "./errorText.ts";
 import { hostIo } from "./hostIo.ts";
@@ -56,6 +57,21 @@ export async function devStart(argv: readonly string[], cwd: string): Promise<De
     });
     return { code: r.code, stdout: r.stdout, stderr: "", serving: false };
   };
+  if (devPoll(process.env.KEEL_DEV_POLL) === undefined) {
+    const diag = makeDiag("E1560", "dev watcher setting KEEL_DEV_POLL is not 1, 0 or unset", {
+      fix: "set KEEL_DEV_POLL=1 to poll for file changes, or unset it",
+      see: "k.topology",
+    });
+    const r = respond([diag, summary("dev", [diag], { errors: 1 })], hostIo(false), {
+      command: "dev",
+      format: input.format,
+      quiet: input.quiet,
+      limit: input.limit,
+      verbose: input.verbose,
+      code: input.code,
+    });
+    return { code: r.code, stdout: r.stdout, stderr: "", serving: false };
+  }
   setDefaultResultOrder("ipv4first");
   // Where a capability keeps its dev data (k.data Files), beside each deployable's storage file.
   process.env.KEEL_DEV_DIR = join(resolve(cwd), ".keel-dev");

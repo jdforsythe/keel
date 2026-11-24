@@ -11,6 +11,7 @@ import { SERVER_ENTRY } from "./entry/SERVER_ENTRY.ts";
 import { STYLES_PATH } from "./entry/STYLES_PATH.ts";
 import { entryDependency } from "./entry/entryDependency.ts";
 import { resumeEntry } from "./entry/resumeEntry.ts";
+import { identitySetupFiles } from "./hosting/identitySetupFiles.ts";
 import { originOf } from "./hosting/originOf.ts";
 import { peerOrigins } from "./hosting/peerOrigins.ts";
 import { shellConnect } from "./hosting/shellConnect.ts";
@@ -90,6 +91,12 @@ const PG_BANNER =
 /** A build's failure on evaluation problems: one `keel: <code> ...` line each, as the plugin's warnings read. */
 const evaluationFailed = (problems: readonly string[]): Error =>
   new Error(problems.map((p) => `keel: ${p}`).join("\n"));
+
+/** Under vitest, the project's `identity.ts` joins the run's `test.setupFiles` (`identitySetupFiles`, k.guards Client). */
+function testSetup(root: string): Record<string, unknown> {
+  const setupFiles = process.env.VITEST === undefined ? [] : identitySetupFiles(root);
+  return setupFiles.length === 0 ? {} : { test: { setupFiles } };
+}
 
 /** The served modules' `modules/<id>/migrations/` folders of `root`, copied under `out` at the same path (k.data Files). */
 function copyMigrations(root: string, out: string, modules: readonly string[]): void {
@@ -818,6 +825,7 @@ export default function (): {
           ? { define: { "import.meta.env.DEV": "false", "import.meta.env.PROD": "true" } }
           : {}),
         worker: { plugins: () => [workerPlugin()] },
+        ...testSetup(path.resolve(user.root ?? process.cwd())),
       };
       if (env.command !== "build" || env.isSsrBuild === true || name === undefined || !fs.existsSync(file)) return own;
       const top = parseTopology(fs.readFileSync(file, "utf8")).topology;

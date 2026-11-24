@@ -2,6 +2,7 @@ import type { Io, OutRecord, Outcome } from "@keel/cli";
 import { INSPECT_PATH } from "@keel/compiler/inspect/INSPECT_PATH";
 import { s } from "@keel/schema";
 import { Session } from "../Session.schema.ts";
+import { clean } from "./clean.ts";
 import { fileOf } from "./fileOf.ts";
 import { getJson } from "./getJson.ts";
 import { readerHeaders } from "./readerHeaders.ts";
@@ -13,7 +14,11 @@ import { shownUrl } from "./shownUrl.ts";
 
 const DEFAULT_URL = "http://localhost:5173";
 /** The parts of an inspect document `capture` reads (open objects: the rest is ignored). */
-const Inspect = s.object({ sections: s.record(s.object({ value: s.json().optional() })) });
+const Inspect = s.object({
+  sections: s.record(
+    s.object({ value: s.json().nullable().optional(), error: s.object({ message: s.string() }).optional() }),
+  ),
+});
 /** A runtime response of `sessions.list`: `results["sessions.list"]` is `ok(Listing)` (open objects). */
 const Listed = s.object({
   results: s.object({
@@ -24,7 +29,7 @@ const Listed = s.object({
 /**
  * `keel session capture [url]` and `keel session ingest <url> [--failing] [--since t]` (std.sessions Commands).
  * `capture` fetches `<url>/__keel/inspect` (default `http://localhost:5173`) and writes section
- * `sessions.live`'s value to `.keel/sessions/<fingerprint>-<index>.json`; a `null` value (no recorder) writes nothing.
+ * `sessions.live`'s value to `.keel/sessions/<fingerprint>-<index>.json`; a section that is absent, `null` (no recorder), an `error` or not a `Session` is E1056 and writes nothing.
  * `ingest` sends `GET <url>/sessions/list?failing=1&since=<t>` (`accept: application/json`; with
  * `KEEL_SESSIONS_TOKEN` in `io.env`, the caller cookie `__Host-keel-caller` on https, else `keel-caller`) and writes
  * each archived session the same way. Unreachable, non-2xx, or a body without the section or the `sessions.list`
@@ -63,7 +68,8 @@ export async function commandFetch(
     const doc = Inspect.parse(got.body);
     const section = doc.ok ? doc.value.sections["sessions.live"] : undefined;
     if (section === undefined) return fail("has no sessions.live section");
-    if (section.value === null || section.value === undefined) return done([]);
+    if (section.error !== undefined) return fail(`sessions.live is an error: ${clean(section.error.message, 30)}`);
+    if (section.value === null) return fail("found no recorder (sessions.live is null)");
     const live = Session.parse(section.value);
     return live.ok ? write([live.value]) : fail("sessions.live is not a session");
   }

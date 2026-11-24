@@ -18,6 +18,7 @@ import { clockStep } from "./clockStep.ts";
 import { fail } from "./fail.ts";
 import { freshGraph } from "./freshGraph.ts";
 import { openHarness } from "./openHarness.ts";
+import { requestLog } from "./requestLog.ts";
 import { seedFrom } from "./seedFrom.ts";
 import { settle } from "./settle.ts";
 
@@ -117,7 +118,9 @@ export async function documentRoute<T extends RouteTable>(
   for (const [rid, { def }] of graph.table) if (def.component) components[rid] = def.component;
   const sign = options.user === undefined ? undefined : appSigner(ctx, app, id, options.user);
   routeOrigin(ctx.net, origin, app);
+  const log = requestLog();
   const front = browserFront({
+    log: log.push,
     origin,
     net: ctx.net,
     send: "route" in ctx.net ? (req) => ctx.net.fetch(req) : (req) => app.fetch(req),
@@ -232,6 +235,7 @@ export async function documentRoute<T extends RouteTable>(
     run: page,
     seeded: [],
     registry: graph.stores,
+    log,
     busy,
     documents,
     follow,
