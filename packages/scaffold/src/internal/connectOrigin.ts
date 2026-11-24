@@ -1,19 +1,9 @@
 import MagicString from "magic-string";
-import type { ObjectExpression } from "oxc-parser";
 import { appendProperty } from "./appendProperty.ts";
-import { lineIndent } from "./lineIndent.ts";
+import { fitDeployable } from "./fitDeployable.ts";
 import { propertyValue } from "./propertyValue.ts";
 import { quote } from "./quote.ts";
 import { topologyAst } from "./topologyAst.ts";
-
-/** The longest line the edit leaves on one line; past it the deployable is written one property per line. */
-const WIDTH = 120;
-
-/** `obj` of `src` with `text` as its last property, one property per line at `indent`. */
-function spread(src: string, obj: ObjectExpression, text: string, indent: string): string {
-  const props = [...obj.properties.map((p) => src.slice(p.start, p.end)), text];
-  return `{\n${props.map((p) => `${indent}  ${p},\n`).join("")}${indent}}`;
-}
 
 /**
  * `topology.ts` with `origin: reason` declared under `origins.connect` of deployable `name` (k.origins Declaration),
@@ -37,10 +27,7 @@ export function connectOrigin(src: string, name: string, origin: string, reason:
   else if (origins !== null) appendProperty(ms, src, origins, `connect: { ${entry} }`);
   else appendProperty(ms, src, deployable, `origins: { connect: { ${entry} } }`);
   const next = ms.toString();
-  const first = deployable.properties[0];
-  const inline = first !== undefined && !src.slice(deployable.start, first.start).includes("\n");
-  const line = next.slice(next.lastIndexOf("\n", d.prop.start) + 1).split("\n")[0] ?? "";
-  if (origins !== null || !inline || line.length <= WIDTH) return next;
-  const wide = spread(src, deployable, `origins: { connect: { ${entry} } }`, lineIndent(src, d.prop.start));
-  return `${src.slice(0, deployable.start)}${wide}${src.slice(deployable.end)}`;
+  if (origins !== null) return next;
+  const props = [...deployable.properties.map((p) => src.slice(p.start, p.end)), `origins: { connect: { ${entry} } }`];
+  return fitDeployable(src, next, deployable, d.prop.start, props);
 }

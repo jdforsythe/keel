@@ -1456,15 +1456,24 @@ importers:
 
   packages/std-capacitor:
     dependencies:
+      '@capacitor/android':
+        specifier: 8.6.2
+        version: 8.6.2(@capacitor/core@8.6.0)
       '@capacitor/app':
         specifier: 8.1.2
         version: 8.1.2(@capacitor/core@8.6.0)
       '@capacitor/browser':
         specifier: 8.0.5
         version: 8.0.5(@capacitor/core@8.6.0)
+      '@capacitor/cli':
+        specifier: 8.6.2
+        version: 8.6.2(supports-color@7.2.0)
       '@capacitor/core':
         specifier: 8.6.0
         version: 8.6.0
+      '@capacitor/ios':
+        specifier: 8.6.2
+        version: 8.6.2(@capacitor/core@8.6.0)
       '@capacitor/preferences':
         specifier: 8.0.1
         version: 8.0.1(@capacitor/core@8.6.0)
@@ -2214,6 +2223,9 @@ importers:
         specifier: workspace:*
         version: link:../router
       '@tauri-apps/api':
+        specifier: 2.12.4
+        version: 2.12.4
+      '@tauri-apps/cli':
         specifier: 2.12.4
         version: 2.12.4
       '@tauri-apps/plugin-deep-link':

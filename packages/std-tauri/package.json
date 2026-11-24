@@ -12,6 +12,7 @@
       "types": "./src/shellMount.ts",
       "default": "./src/shellMount.ts"
     },
+    "./package.json": "./package.json",
     "./tools": {
       "types": "./src/tools/index.ts",
       "default": "./src/tools/index.ts"
@@ -27,6 +28,7 @@
         "types": "./dist/src/shellMount.d.ts",
         "default": "./dist/src/shellMount.js"
       },
+      "./package.json": "./package.json",
       "./tools": {
         "types": "./dist/src/tools/index.d.ts",
         "default": "./dist/src/tools/index.js"
@@ -51,6 +53,14 @@
     "@tauri-apps/plugin-http": "2.9.0",
     "@tauri-apps/plugin-opener": "2.7.3",
     "@tauri-apps/plugin-store": "2.5.1"
+  },
+  "peerDependencies": {
+    "@tauri-apps/cli": "2.12.4"
+  },
+  "peerDependenciesMeta": {
+    "@tauri-apps/cli": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@keel/scaffold": "workspace:*",

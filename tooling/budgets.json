@@ -3,10 +3,10 @@
     "check.injected10": 600,
     "test.failing3": 400,
     "spec.section": 3100,
-    "spec.map": 1410,
+    "spec.map": 1430,
     "explain": 300,
     "mcp.tools-list": 2000,
-    "docs.map": 1500,
+    "docs.map": 1510,
     "docs.section": 3100,
     "docs.skill": 2925,
     "docs.for": 400,
@@ -46,7 +46,7 @@
     "@keel/runtime-dom": "6kb",
     "@keel/runtime-dom/ops": "10.75kb",
     "@keel/scaffold": {
-      "max": "20kb",
+      "max": "22kb",
       "platform": "node"
     },
     "@keel/scaffold/agents": {

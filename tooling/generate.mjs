@@ -1,12 +1,15 @@
 // Generates turbo.json and the .github/workflows/*.yml files from tooling/*.source.json, and the deploy files
 // (k.topology) of each app in tooling/deploy.source.json with the @keel/scaffold generator `keel build` uses, and the
 // kernel ledger's sink rungs @keel/cli ships (k.evidence `pii.json`) from tooling/ledger/ledger.json, and the
-// std.temporal zone list from tooling/tzdata.source.zi.
+// std.temporal zone list from tooling/tzdata.source.zi, and the app packages of each native shell @keel/scaffold writes
+// (k.scaffold-shell) from packages/std-tauri/package.json and packages/std-capacitor/package.json.
 // Usage: node tooling/generate.mjs [--check]   (--check exits 2 with S0007 on drift)
 import fs from "node:fs";
 import path from "node:path";
 import { PII_SINKS } from "../packages/cli/src/internal/PII_SINKS.ts";
 import { deployDrift } from "../packages/scaffold/src/deployDrift.ts";
+import { capacitorTarget } from "../packages/std-capacitor/src/tools/capacitorTarget.ts";
+import { tauriTarget } from "../packages/std-tauri/src/tools/tauriTarget.ts";
 import { parseArgs, run } from "./output.ts";
 
 const here = import.meta.dirname;
@@ -143,7 +146,60 @@ function zoneNames() {
   ].join("");
 }
 
+/**
+ * `SHELL_PACKAGES.ts`: what an app declaring each shell lists beside its std package (std.tauri, std.capacitor App
+ * packages), at the versions the std package's own `package.json` declares. `dependencies`: the std package's
+ * `dependencies` an app lists that are not plugins (`@capacitor/core`, which the Capacitor CLI reads from the app);
+ * `plugins`: the target's `plugins` with `identity` false; `identity`: those it adds with `identity` true;
+ * `devDependencies`: the std package's `peerDependencies`.
+ */
+function shellPackages() {
+  const shells = [
+    ["capacitor", "std-capacitor", capacitorTarget, ["@capacitor/core"]],
+    ["tauri", "std-tauri", tauriTarget, []],
+  ];
+  const app = { deployable: "web", id: "dev.keel.app", name: "App", version: "0.0.0", pkg: "app", policy: undefined };
+  const obj = (entries, ind) =>
+    entries.length === 0
+      ? "{}"
+      : `{\n${entries.map(([k, v]) => `${ind}  ${JSON.stringify(k)}: ${JSON.stringify(v)},\n`).join("")}${ind}}`;
+  const blocks = shells.map(([shell, dir, target, listed]) => {
+    const pkg = JSON.parse(fs.readFileSync(path.join(root, "packages", dir, "package.json"), "utf8"));
+    const version = (field, name) => {
+      const v = pkg[field]?.[name];
+      if (typeof v !== "string") throw new Error(`packages/${dir}/package.json: no ${name} in ${field}`);
+      return v;
+    };
+    const plugins = (identity) =>
+      target.plugins({ ...app, identity }).map((p) => [p.plugin, version("dependencies", p.plugin)]);
+    const plain = plugins(false);
+    const names = new Set(plain.map(([n]) => n));
+    const fields = [
+      ["dependencies", listed.map((n) => [n, version("dependencies", n)])],
+      ["plugins", plain],
+      ["identity", plugins(true).filter(([n]) => !names.has(n))],
+      ["devDependencies", Object.keys(pkg.peerDependencies ?? {}).map((n) => [n, version("peerDependencies", n)])],
+    ];
+    const sorted = (entries) => [...entries].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+    return `  ${shell}: {\n${fields.map(([f, e]) => `    ${f}: ${obj(sorted(e), "    ")},\n`).join("")}  },\n`;
+  });
+  return [
+    "// _generated: from packages/std-tauri/package.json and packages/std-capacitor/package.json; run pnpm generate.\n",
+    "type Versions = Readonly<Record<string, string>>;\n",
+    "type Packages = { dependencies: Versions; plugins: Versions; identity: Versions; devDependencies: Versions };\n\n",
+    "/**\n",
+    " * What an app declaring each native shell lists beside the shell's std package (std.tauri, std.capacitor App packages),\n",
+    " * at the versions the std package declares: `dependencies` kept as an app writes them, `plugins` (k.shell Plugins) and,\n",
+    " * with `identity.ts`, `identity` in `dependencies` at exactly these versions, `devDependencies` the CLI and platforms.\n",
+    " */\n",
+    'export const SHELL_PACKAGES: Readonly<Record<"capacitor" | "tauri", Packages>> = {\n',
+    ...blocks,
+    "};\n",
+  ].join("");
+}
+
 const outputs = {
+  "packages/scaffold/src/internal/SHELL_PACKAGES.ts": shellPackages(),
   "packages/std-temporal/src/internal/zoneNames.ts": zoneNames(),
   "packages/cli/src/internal/KERNEL_SINK_RUNGS.ts": sinkRungs(),
   "turbo.json": turbo(),
