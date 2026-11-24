@@ -1,6 +1,6 @@
 # RFC 0216: k.check: an `unsafe/` file is app code outside its `unsafe(` calls
 
-Status: accepted (ADR-0238), accepted by the orchestrator on 2026-11-24, for the operator to confirm. Amends k.check (App code, Rules, Conformance), k.persist (E1551's file scope), k.escapes (R1050's row, wording only), std.copy (Files, Conformance), the map. From backlog 1026.
+Status: implemented (ADR-0238), accepted by the orchestrator on 2026-11-24, for the operator to confirm. Amends k.check (App code, Rules, Conformance), k.persist (E1551's file scope), k.escapes (R1050's row, wording only), std.copy (Files, Conformance), the map. From backlog 1026.
 
 ## Decisions
 - D1: option (a). A file under `unsafe/` is app code but for its lifted ranges: the arrow function or function expression written as the second argument of an `unsafe(` call with a justification string. Every other line of the file is checked as `modules/<id>/a.ts` is.

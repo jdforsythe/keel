@@ -162,7 +162,10 @@ describe("E1603 code from a string (rfc:0053)", () => {
     expect(e1603("const Function = (s: string): string => s\nexport const a = (): string => Function('x')")).toEqual(
       [],
     );
-    expect(e1603("export const a = (s: string): unknown => eval(s)", "unsafe/a.ts")).toEqual([]);
     expect(e1603("export const a = (s: string): unknown => eval(s)", "vite.config.ts")).toEqual([]);
+  });
+
+  it("reports in a file under unsafe/ (the pipeline lifts it inside a lifted range only)", () => {
+    expect(e1603("export const a = (s: string): unknown => eval(s)", "unsafe/a.ts")).toHaveLength(1);
   });
 });

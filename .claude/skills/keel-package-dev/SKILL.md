@@ -4,7 +4,7 @@ description: How to implement or change a kernel package: layout, strict TS prof
 ---
 # Package development
 
-**Layout.** `packages/<pkg>/src/<Export>.ts` one export per file · `index.ts` re-exports only · `conformance/` (read-only to you) · `test/` properties and examples · `unsafe/` the only place for casts, with `unsafe(reason, fn)`.
+**Layout.** `packages/<pkg>/src/<Export>.ts` one export per file · `index.ts` re-exports only · `conformance/` (read-only to you) · `test/` properties and examples · `unsafe/` the only place for casts, `any` and suppressions, each inside `unsafe(reason, () => ...)`; the file's other lines are checked as app code.
 
 **Procedure.** `pnpm spec <id>` -> read the conformance suite's test names (not bodies) -> implement smallest slice -> `pnpm check` -> `pnpm test --filter <pkg>` -> property tests for every exported pure function -> `pnpm mutate --filter <pkg>` if touching schema/reactive/store/router -> changeset -> update README contract.
 
