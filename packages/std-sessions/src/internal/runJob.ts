@@ -40,8 +40,9 @@ function withNotRun(op: string, diags: OutRecord[]): OutRecord[] {
 
 /**
  * Run one `keel session` job inside the project's `keel test` runner (std.sessions D1): write
- * `.keel/sessions/job-<pid>-<n>.test.ts`, which imports each serving module's `routes.ts` and calls
- * `commandJob` from `@keel/std-sessions/commandJob` with the session inline; run `keel test <job> --format=json` on
+ * `.keel/sessions/job-<pid>-<n>.test.ts`, which imports each route table of `routes` and calls
+ * `commandJob` from `@keel/std-sessions/commandJob` with the session inline (with `serve`, also `serve(ctx)`, which
+ * builds the app as the generated entry does: `createApp` over `topology.ts`, the tables and `identity.server.ts`); run `keel test <job> --format=json` on
  * `io.cwd` (the project's vitest config and environment, `KEEL_TEST=1`); read `JobResult` back from the
  * `.result.json` beside it; remove both. Without a result, the test run's diagnostics come back instead (app code threw on import); a run that
  * reported none means the project's vitest `include` misses `.keel/sessions/`, and E1052 says so.
@@ -52,6 +53,13 @@ export async function runJob(
     readonly op: "replay" | "minimize" | "to-test";
     readonly session: unknown;
     readonly modules: readonly string[];
+    /**
+     * With a `node` deployable serving the route: its name, whether the project has an `identity.server.ts`, and the
+     * import specifiers (from the job file, `.keel/sessions/`) of every placed module's route table, which the job
+     * replays over in place of `modules`.
+     */
+    readonly serve?: { readonly deployable: string; readonly identity: boolean; readonly routes: readonly string[] };
+    readonly user?: string;
     readonly maxRuns?: number;
     readonly expose: readonly string[];
     readonly redact: readonly string[];
@@ -63,12 +71,27 @@ export async function runJob(
   const rel = `.keel/sessions/${name}.test.ts`;
   const testFile = path.join(dir, `${name}.test.ts`);
   const resultFile = path.join(dir, `${name}.result.json`);
-  const imports = job.modules.map((m, i) => `import { routes as r${i} } from "../../modules/${m}/routes.ts";`);
+  const specs = job.serve?.routes ?? job.modules.map((m) => `../../modules/${m}/routes.ts`);
+  const imports = specs.map((from, i) => `import { routes as r${i} } from ${JSON.stringify(from)};`);
+  const { serve } = job;
+  if (serve !== undefined)
+    imports.push(
+      'import { routeTable } from "@keel/router";',
+      'import { createApp } from "@keel/server";',
+      'import topology from "../../topology.ts";',
+      ...(serve.identity ? ['import identity from "../../identity.server.ts";'] : []),
+    );
+  const tables = specs.map((_, i) => `r${i}`).join(", ");
+  const serveOption =
+    serve === undefined
+      ? ""
+      : `, serve: (ctx) => createApp({ topology, deployable: ${JSON.stringify(serve.deployable)}, routes: routeTable(${tables}), ctx${serve.identity ? ", identity" : ""} })`;
   const args = {
     op: job.op,
     result: resultFile,
     expose: job.expose,
     redact: job.redact,
+    ...(job.user === undefined ? {} : { user: job.user }),
     ...(job.maxRuns === undefined ? {} : { maxRuns: job.maxRuns }),
   };
   const source = [
@@ -80,7 +103,7 @@ export async function runJob(
     `const session: unknown = ${JSON.stringify(job.session)};`,
     "",
     'test("keel session job", async () => {',
-    `  await commandJob({ ...${JSON.stringify(args)}, session, routes: [${job.modules.map((_, i) => `r${i}`).join(", ")}] });`,
+    `  await commandJob({ ...${JSON.stringify(args)}, session, routes: [${tables}]${serveOption} });`,
     "}, 600_000);",
     "",
   ].join("\n");

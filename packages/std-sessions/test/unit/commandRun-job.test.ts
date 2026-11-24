@@ -51,7 +51,7 @@ const project = (text: string = JSON.stringify(raw())) => [
   file(F, text),
   file(
     "topology.ts",
-    'import { topology } from "@keel/compiler";\nexport default topology({ web: { modules: ["cart", "orders", "shared"], adapter: "node" } });\n',
+    'import { topology } from "@keel/compiler";\nexport default topology({ web: { modules: ["cart", "orders", "shared"], adapter: "client" } });\n',
   ),
   file("modules/cart/routes.ts"),
   file("modules/orders/routes.ts"),
@@ -69,6 +69,7 @@ const result = (over: Partial<JobResult> = {}): { ok: true; result: JobResult } 
     fingerprint: FP,
     error: "cart.full",
     unapplied: null,
+    redirectedTo: null,
     session: null,
     navs: [],
     runs: 1,
@@ -377,5 +378,51 @@ describe("commandRun: to-test", () => {
       records: [record(), summary("to-test", true)],
       writes: [],
     });
+  });
+});
+
+const node = (identity = false) => [
+  ...project().filter((f) => f.path !== "topology.ts"),
+  file(
+    "topology.ts",
+    'import { topology } from "@keel/compiler";\nexport default topology({ web: { modules: ["cart", "orders", "shared"], adapter: "node" } });\n',
+  ),
+  ...(identity ? [file("identity.server.ts")] : []),
+];
+
+describe("commandRun: a node deployable serves the page", () => {
+  test("the job gets serve (deployable, identity, every placed module's routes) and the user", async () => {
+    job.mockResolvedValue(result());
+    await commandRun("replay", F, io(node(true)), undefined, "u1");
+    expect(job.mock.calls[0]?.[1]).toMatchObject({
+      modules: ["cart", "orders"],
+      serve: {
+        deployable: "web",
+        identity: true,
+        routes: ["../../modules/cart/routes.ts", "../../modules/orders/routes.ts"],
+      },
+      user: "u1",
+    });
+  });
+  test("a client deployable's job has no serve, and no user without --user", async () => {
+    job.mockResolvedValue(result());
+    await commandRun("replay", F, io(), undefined);
+    expect(job.mock.calls[0]?.[1]).not.toHaveProperty("serve");
+    expect(job.mock.calls[0]?.[1]).not.toHaveProperty("user");
+  });
+  test("a redirected base is E2003 naming both routes", async () => {
+    job.mockResolvedValue(result({ reproduced: false, unapplied: -1, redirectedTo: "a.signin" }));
+    const out = await commandRun("replay", F, io(node()), undefined);
+    expect(JSON.stringify(out.records)).toContain("base route cart.show redirected to a.signin");
+  });
+  test("to-test of a node page writes the app form, with user only when given", async () => {
+    job.mockResolvedValue(result({ session: session(), navs: [] }));
+    const plain = await commandRun("to-test", F, io(node(true)), undefined);
+    const text = plain.writes[0]?.content ?? "";
+    expect(text).toContain('createApp({ topology, deployable: "web", routes, ctx, identity })');
+    expect(text).toContain('import identity from "../../../identity.server.ts";');
+    expect(text).not.toMatch(/\buser\b/);
+    const signed = await commandRun("to-test", F, io(node()), undefined, "u1");
+    expect(signed.writes[0]?.content).toContain('ctx, app, user: "u1" })');
   });
 });

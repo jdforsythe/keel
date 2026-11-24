@@ -40,6 +40,7 @@ export type Input = {
   readonly failing?: boolean;
   readonly since?: string;
   readonly "max-runs"?: number;
+  readonly user?: string;
   readonly base?: string;
   readonly port?: number;
   readonly out?: string;

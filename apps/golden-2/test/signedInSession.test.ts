@@ -48,7 +48,13 @@ async function recorded() {
   );
   // One ctx for the api and the page, as the `node` deployable serving `accounts.signin` has.
   const rec = record(server);
-  const page = await renderRoute("accounts.signin", { routes, params: { locale: "en-US" }, ctx: server, user: USER });
+  const page = await renderRoute("accounts.signin", {
+    routes,
+    params: { locale: "en-US" },
+    ctx: server,
+    user: USER,
+    app,
+  });
   const named = page.find("accounts.signedIn").text;
   await page.fire("accounts.signinForm:email", { type: "input", value: TYPED_EMAIL });
   await page.fire("accounts.signinForm:password", { type: "input", value: PASSWORD });

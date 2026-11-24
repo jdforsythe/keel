@@ -45,6 +45,7 @@ describe("commandJob: replay", () => {
       fingerprint: session.fingerprint,
       error: "keel.unexpected",
       unapplied: null,
+      redirectedTo: null,
       runs: 1,
       ...none,
     });
@@ -58,6 +59,7 @@ describe("commandJob: replay", () => {
       fingerprint: session.fingerprint,
       error: "keel.unexpected",
       unapplied: null,
+      redirectedTo: null,
       runs: 1,
       ...none,
     });
@@ -105,6 +107,7 @@ describe("commandJob: replay", () => {
         fingerprint: session.fingerprint,
         error: "keel.unexpected",
         unapplied: null,
+        redirectedTo: null,
         runs: 1,
         ...none,
       });
@@ -128,6 +131,7 @@ describe("commandJob: minimize", () => {
       fingerprint: session.fingerprint,
       error: "keel.unexpected",
       unapplied: null,
+      redirectedTo: null,
       navs: [],
       minimal: true,
     });
@@ -225,6 +229,7 @@ describe("commandJob: to-test", () => {
       fingerprint: session.fingerprint,
       error: "keel.unexpected",
       unapplied: null,
+      redirectedTo: null,
       runs: 2,
       minimal: false,
     });

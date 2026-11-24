@@ -4,9 +4,11 @@ import type { Io, OutRecord, Outcome, SourceFile } from "@keel/cli";
 import { Session } from "../Session.schema.ts";
 import { toTest } from "../toTest.ts";
 import { parseTs } from "./parseTs.ts";
+import { placedRoutes } from "./placedRoutes.ts";
 import { projectOf } from "./projectOf.ts";
 import { redactLiterals } from "./redactLiterals.ts";
 import { runJob } from "./runJob.ts";
+import { servingDeployable } from "./servingDeployable.ts";
 import { servingModules } from "./servingModules.ts";
 import { sessionDiag } from "./sessionDiag.ts";
 import { sessionOut } from "./sessionOut.ts";
@@ -47,8 +49,11 @@ function storesOf(files: readonly SourceFile[], ids: readonly string[], m: strin
 }
 
 /** The E2003 message for input `n` of `s` (-1: the base). */
-function unappliedText(s: Session, n: number): string {
-  if (n < 0) return `base route ${s.route.id} is not served`;
+function unappliedText(s: Session, n: number, redirectedTo: string | null = null): string {
+  if (n < 0)
+    return redirectedTo === null
+      ? `base route ${s.route.id} is not served`
+      : `base route ${s.route.id} redirected to ${redirectedTo}`;
   const e = s.events[n];
   const what = e === undefined ? "" : e.kind === "nav" ? e.href : e.kind === "fire" ? e.id : "";
   return `input event ${n} (${e?.kind ?? "none"}) does not apply: ${what}`;
@@ -64,7 +69,13 @@ function unappliedText(s: Session, n: number): string {
  * `minimize` rewrites `<f>` with the 1-minimal session; `to-test` writes `modules/<m>/test/session-<fingerprint>.test.ts`
  * from the session redacted with the route module's `expose` entries. Both write nothing unless the session reproduces (E2004).
  */
-export async function commandRun(op: Op, target: string, io: Io, maxRuns: number | undefined): Promise<Outcome> {
+export async function commandRun(
+  op: Op,
+  target: string,
+  io: Io,
+  maxRuns: number | undefined,
+  user: string | undefined = undefined,
+): Promise<Outcome> {
   const files = projectOf(io);
   const done = (
     records: OutRecord[],
@@ -102,10 +113,22 @@ export async function commandRun(op: Op, target: string, io: Io, maxRuns: number
   const modules = servingModules(files, session.route.id);
   if (modules === undefined) return done([sessionDiag("E2003", unappliedText(session, -1), target)]);
   const m = session.route.id.split(".")[0] ?? "";
+  const deployable = servingDeployable(files, session.route.id);
+  // A `node` deployable serves the page: the job builds its app as the generated entry does (every placed module's
+  // routes, the identity source). Any other adapter replays through the router.
+  const placed = deployable?.adapter === "node" ? placedRoutes(io.cwd, files, deployable.modules) : [];
+  const serve =
+    deployable === undefined || deployable.adapter !== "node"
+      ? undefined
+      : { deployable: deployable.name, identity: files.some((f) => f.path === "identity.server.ts") };
   const job = await runJob(io, {
     op,
     session: Session.encode(session),
     modules,
+    ...(serve === undefined
+      ? {}
+      : { serve: { ...serve, routes: placed.map((p) => (p.app ? `../../modules/${p.module}/routes.ts` : p.spec)) } }),
+    ...(user === undefined ? {} : { user }),
     expose: op === "to-test" ? entriesOf(files, m, "expose") : [],
     redact: modules.flatMap((x) => entriesOf(files, x, "redact")),
     ...(maxRuns === undefined ? {} : { maxRuns }),
@@ -116,7 +139,7 @@ export async function commandRun(op: Op, target: string, io: Io, maxRuns: number
   const r = job.result;
   const diags: OutRecord[] = [];
   if (r.unapplied !== null && op !== "minimize")
-    diags.push(sessionDiag("E2003", unappliedText(session, r.unapplied), target));
+    diags.push(sessionDiag("E2003", unappliedText(session, r.unapplied, r.redirectedTo), target));
   if (!r.reproduced)
     diags.push(sessionDiag("E2004", `replay fingerprint ${r.fingerprint} differs from ${session.fingerprint}`, target));
   const out = r.session;
@@ -131,11 +154,27 @@ export async function commandRun(op: Op, target: string, io: Io, maxRuns: number
   const source = toTest(out, {
     navs: r.navs,
     stores: storesOf(files, Object.keys(out.state), m),
-    routes: modules.map((x) => ({
-      module: x,
-      from: x === m ? "../routes.ts" : `../../${x}/routes.ts`,
-      contract: x === m ? `../${x}.contract.ts` : `../../${x}/${x}.contract.ts`,
-    })),
+    routes: (serve === undefined ? modules.map((x) => ({ module: x, app: true, spec: x, contract: "" })) : placed).map(
+      (p) => ({
+        module: p.module,
+        from: !p.app ? p.spec : p.module === m ? "../routes.ts" : `../../${p.module}/routes.ts`,
+        contract: !p.app
+          ? p.contract
+          : p.module === m
+            ? `../${p.module}.contract.ts`
+            : `../../${p.module}/${p.module}.contract.ts`,
+      }),
+    ),
+    ...(serve === undefined
+      ? {}
+      : {
+          serve: {
+            deployable: serve.deployable,
+            topology: "../../../topology.ts",
+            ...(serve.identity ? { identity: "../../../identity.server.ts" } : {}),
+          },
+        }),
+    ...(user === undefined ? {} : { user }),
   });
   return done([sessionOut(out, out.error?.code ?? null, file)], [{ path: file, content: source, readonly: false }]);
 }

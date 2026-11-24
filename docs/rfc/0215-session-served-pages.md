@@ -1,6 +1,6 @@
 # RFC 0215: std.sessions: a session of a served page replays through its app
 
-Status: accepted (ADR-0237) by the orchestrator on 2026-11-24, for the operator to confirm. Amends std.sessions (API, a new Served pages paragraph, Commands, Conformance) and the std map row. From `apps/sessions` and `apps/golden-2` under `keel test` (backlog 1029).
+Status: implemented (ADR-0237), accepted by the orchestrator on 2026-11-24, for the operator to confirm. Amends std.sessions (API, a new Served pages paragraph, Commands, Conformance) and the std map row. From `apps/sessions` and `apps/golden-2` under `keel test` (backlog 1029).
 
 ## Decisions
 - D1: `replay` and `minimize` gain `serve`, the std.multi shape: a function of the replay ctx resolving a `createApp` result made on it. With it the base is rendered with `renderRoute` and `app` (k.testing), so the page runs as its `node` deployable serves it. Replay gains the mode; the emitted test is not the only bridge, so the run `to-test` uses to prove a reproduction is the run the test makes.
