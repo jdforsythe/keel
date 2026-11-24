@@ -6,6 +6,6 @@ export type ScaffoldDiag = {
   readonly line: number;
   readonly col: number;
   readonly message: string;
-  readonly see: "k.scaffold";
+  readonly see: "k.scaffold" | "k.scaffold-shell";
   readonly cause?: { readonly code: string; readonly path: string; readonly line: number; readonly message: string };
 };

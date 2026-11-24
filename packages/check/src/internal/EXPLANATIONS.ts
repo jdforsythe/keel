@@ -505,6 +505,13 @@ const ROWS: readonly Row[] = [
     "k.scaffold",
   ],
   [
+    "E1359",
+    "scaffold shell has no one client deployable to take the shell",
+    "A native shell packages a client deployable (k.shell). The topology has none, several and --to names none, or --to names a node or static one. Nothing is written.",
+    "pass --to <client deployable>, or keel codemod place <module> --to <name> --adapter client",
+    "k.scaffold-shell",
+  ],
+  [
     "E1401",
     "props destructured",
     "Props are getters; destructuring loses reactivity.",

@@ -26,6 +26,12 @@ export const inputs = {
     service: s.string().optional(),
     reason: s.string().optional(),
   }),
+  shell: s.object({
+    shell: s.string(),
+    id: s.string().optional(),
+    name: s.string().optional(),
+    to: s.string().optional(),
+  }),
   rename: s.object({
     kind: s.enum(["component", "store", "route", "schema", "module"]),
     from: s.string(),

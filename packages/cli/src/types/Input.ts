@@ -12,6 +12,7 @@ export type Input = {
   readonly code?: string;
   readonly paths?: string[];
   readonly id?: string;
+  readonly name?: string;
   readonly for?: string;
   readonly sync?: boolean;
   readonly url?: string;

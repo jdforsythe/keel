@@ -21,10 +21,10 @@
 | 15 | open: needs an RFC (k.testing: a harness that shows the `/__keel/user` GET a page's router sends); the smoke step covers it |
 | 16 | fixed: rfc:0199 (ADR-0221) `scaffold service <module> --base <url> --reason <text>` writes the endpoints file, the client, the dependency and the `connect` origin; `scaffold route --no-loader` writes a page with no loader; 7 hand edits are left, all app content |
 | 17 | open: rough edge (k.scaffold: `project --workspace` writes no page and `route` writes a loader and an empty `<Box />` a client-only page does not use) |
-| 18 | open: needs an RFC (k.scaffold: a `--shell tauri|capacitor` option writing `shells`, the std package and the pinned plugin and CLI packages RFC 0198 lists) |
+| 18 | fixed: rfc:0201 (ADR-0223) `keel scaffold shell <tauri|capacitor> --id <reverse-dns>` writes `shells`, the std package and the plugin, CLI and platform packages at the versions the std package declares; `examples/native-tauri` and `examples/native-capacitor` replay byte for byte from `scaffold project --workspace` and `scaffold shell` (a tooling test) |
 | 19 | fixed: rfc:0200 (ADR-0222) a shell build of an app with no `node` deployable reads no `KEEL_ORIGIN`; `examples/native-tauri`, `examples/native-capacitor` and `examples/links-in` build their shells with no environment, and a set `KEEL_ORIGIN` there is E1574 |
 
-Fixed 5, answered in the skills 6, filed as backlog 1, accepted as an RFC 1, open 6.
+Fixed 6, answered in the skills 6, filed as backlog 1, accepted as an RFC 1, open 5.
 
 Each entry: what I tried, where, the command and its output, what I expected, and whether the docs or skills misled me. None blocked an example; 8 and 10 are fixed.
 
