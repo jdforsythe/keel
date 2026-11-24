@@ -34,6 +34,12 @@ Canonical names. Changing one requires an RFC.
 - **declared origin**: an exact third-party origin with a reason, listed under one directive (`img`, `media`, `font`, `connect`, `frame`) of a deployable's `origins` in `topology.ts`; the one way the content security policy widens (k.origins).
 - **escape**: a place where code opts out of a protection by its sanctioned name (an opt-in: `unsafe`, a declared origin, `reveal`) or goes around one (a workaround); one finding of `keel review` (k.review, k.escapes).
 - **user**: the id `identify` answers for a request, `""` for no one; distinct from the anonymous `caller`, which grants nothing (k.user).
+- **request log**: the list `requests()` returns of the requests a harness sent while open: `{ method, url, headers }`, header names only (k.requests).
+- **replica**: `replica(ctx)` of a sim ctx, a sim ctx standing for another process on the same storage, as two replicas of a `node` deployable are (k.sim, k.persist).
+- **watch**: the one optional part of a storage's contract, `watch(on)`, reporting the saves other processes commit to the same data (k.persist).
+- **lifted range**: the function written as the second argument of a justified `unsafe(` call in an `unsafe/` file, where a listed set of kernel codes is not reported (k.check).
+- **scroll region**: `Box scroll="x"`, a named, keyboard-reachable region whose wider content scrolls inside it (k.ui, k.a11y).
+- **exact form**: a plural form keyed `=n` that applies when the count is n (std.messages, std.i18n).
 
 subject: spec/ packages/*/package.json
-verified: 3190e26ae653272180ea7a368098f885a7615f09
+verified: d85819216e9dd312dd25bbf71eb06348c2152119
