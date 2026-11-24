@@ -251,7 +251,7 @@ const ROWS: readonly Row[] = [
   [
     "E1108",
     "a formatLiteral text that is not a literal or does not parse",
-    "formatLiteral is for values written in source; keel check parses them with the format's own reader. Data from outside reads with parse and answers a Result.",
+    "formatLiteral is for values written in source; keel check parses them with the format's own reader. Data from outside reads with parse and answers a Result. A format of a std package registers only when the module lists the package in deps.",
     "formatLiteral(Instant, '2026-02-30T00:00:00.000Z') -> '2026-02-28T00:00:00.000Z'",
     "k.formats",
   ],
