@@ -1,6 +1,6 @@
 # @keel/std-sessions
 
-**Spec:** std.sessions, std.multi, std.monitor · **Status:** implemented · **verified:** (none)
+**Spec:** std.sessions, std.sessions-served, std.multi, std.monitor · **Status:** implemented · **verified:** (none)
 
 ## Contract
 

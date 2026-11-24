@@ -54,9 +54,9 @@ test("canonicalJson gives one text for any key order, at any depth", () => {
   );
 });
 
-test("keel explain E2460 names std.postgres and a fix", () => {
+test("keel explain E2460 names std.postgres-changes and a fix", () => {
   const text = explain("E2460");
-  expect(text).toContain("see: std.postgres");
+  expect(text).toContain("see: std.postgres-changes");
   expect(text).toContain("Fix:");
   expect(text.length).toBeLessThan(440);
 });

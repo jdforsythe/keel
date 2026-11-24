@@ -1,5 +1,5 @@
-// Spec: std.postgres, Conformance "A `follow` of `{ b: 'x' }` gets nothing for a change of `{ b: 'y' }`, another channel name or another capability on the same URL."
-// Spec: std.postgres, API "`params` is parsed by `channel.params` ... and keyed as its canonical JSON (keys sorted)."
+// Spec: std.postgres-changes, Conformance "A `follow` of `{ b: 'x' }` gets nothing for a change of `{ b: 'y' }`, another channel name or another capability on the same URL."
+// Spec: std.postgres-changes, API "`params` is parsed by `channel.params` ... and keyed as its canonical JSON (keys sorted)."
 // Seed: 1337.
 // Pending (rfc:0192): skipped until the build lands; the builder un-skips by changing each `test.skip` to `test` in this file.
 // Assumption: "nothing" is shown by `flush` (a later commit on the same connection arriving) and a closing positive control: the follow then gets exactly the one `changed` of its own key.
