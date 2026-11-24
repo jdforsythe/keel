@@ -43,11 +43,10 @@ export function Box(
     if (scroll) {
       el.setAttribute("role", "region");
       el.setAttribute("tabindex", "0");
-      el.classList.add("k-scroll");
       attrOf(el, "aria-labelledby", isGetter(props, "labelledBy"), () => props.labelledBy);
     }
     attrOf(el, "aria-label", isGetter(props, "label"), () => props.label);
-    applyStyle(el, props);
+    applyStyle(el, props, scroll ? "k-scroll" : undefined);
     appendChildren(el, renderChildren(props.children));
   });
 }
