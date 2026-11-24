@@ -1,6 +1,7 @@
 import { Writable } from "node:stream";
 import { type TestReport, testResults } from "@keel/testing";
 import { writeA11yReport } from "@keel/testing/a11y";
+import { identitySetupFiles } from "@keel/compiler/hosting/identitySetupFiles";
 import { type Vitest, startVitest } from "vitest/node";
 import type { Input } from "../types/Input.ts";
 import type { Io } from "../types/Io.ts";
@@ -58,7 +59,8 @@ async function vitestRun(root: string, filters: readonly string[]): Promise<Test
         "test",
         [...filters],
         { root, watch: false, reporters: [collector], env: { KEEL_TEST: "1" } },
-        {},
+        // The project's `identity.ts` is a setup file whether or not its vitest config has the `keel()` plugin.
+        { plugins: [{ name: "keel-identity", config: () => ({ test: { setupFiles: identitySetupFiles(root) } }) }] },
         { stdout: sink(), stderr: sink() },
       );
       await vitest?.close();

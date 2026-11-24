@@ -14,6 +14,7 @@ import { resumeEntry } from "./entry/resumeEntry.ts";
 import { originOf } from "./hosting/originOf.ts";
 import { peerOrigins } from "./hosting/peerOrigins.ts";
 import { shellConnect } from "./hosting/shellConnect.ts";
+import { identitySetupFiles } from "./hosting/identitySetupFiles.ts";
 import { topologyReadProblems } from "./hosting/topologyReadProblems.ts";
 import { SERVER_ONLY_NAME } from "./internal/SERVER_ONLY_NAME.ts";
 import { STUB_NAME } from "./internal/STUB_NAME.ts";
@@ -91,15 +92,10 @@ const PG_BANNER =
 const evaluationFailed = (problems: readonly string[]): Error =>
   new Error(problems.map((p) => `keel: ${p}`).join("\n"));
 
-/**
- * Under vitest, the project's `identity.ts` joins the run's `test.setupFiles` (k.guards Client): `keel test` evaluates it
- * before each test file, as the built entry imports it, so a `renderRoute` router reads `/__keel/user` exactly when
- * the built app does. A project with no `identity.ts`, or a run that is not vitest's, adds nothing.
- */
+/** Under vitest, the project's `identity.ts` joins the run's `test.setupFiles` (`identitySetupFiles`, k.guards Client). */
 function testSetup(root: string): Record<string, unknown> {
-  const file = path.join(root, "identity.ts");
-  if (process.env.VITEST === undefined || !fs.existsSync(file)) return {};
-  return { test: { setupFiles: [file] } };
+  const setupFiles = process.env.VITEST === undefined ? [] : identitySetupFiles(root);
+  return setupFiles.length === 0 ? {} : { test: { setupFiles } };
 }
 
 /** The served modules' `modules/<id>/migrations/` folders of `root`, copied under `out` at the same path (k.data Files). */
