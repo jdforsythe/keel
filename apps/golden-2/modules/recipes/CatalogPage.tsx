@@ -101,10 +101,13 @@ export default function CatalogPage(props: Infer<typeof Props>, ctx: Ctx) {
       </Box>
       <DataTable
         id="recipes.table"
+        scroll="x"
         styles={{
           table: { fontSize: "sm" },
           header: { px: "2", py: "2", font: "mono", fontSize: "xs" },
           cell: { px: "2", py: "2" },
+          "column.price": { textAlign: "end" },
+          "column.minutes": { textAlign: "end" },
           pager: { py: "3", direction: "row", align: "center", gap: "4", font: "mono", fontSize: "sm" },
         }}
         label={props.data.text.tableLabel}

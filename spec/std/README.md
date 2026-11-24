@@ -21,7 +21,7 @@ S8 adds std.db, std.workflows, std.shells and std.tokens.
 | --- | --- | --- | --- |
 | std.sessions | Sessions | conformance-covered | capture, ingest, replay, minimize, to-test; GitHub Action |
 | std.i18n | Locales | conformance-covered | schema type registry and check rule registry: `i18n.Locale`, numbers, plurals |
-| std.money | Money | conformance-covered | schema type registry: `money.Money`, add, format for a locale |
+| std.money | Money | conformance-covered | schema type registry: `money.Money`, add, format and parse for a locale |
 | std.temporal | Dates, instants and durations | conformance-covered | schema type registry: instants, dates, zones, durations; format |
 | std.text | Text | conformance-covered | schema type registry: `text.Email`, `Slug`, `line`, `para`, collation |
 | std.messages | Message sets | conformance-covered | check rule registry: message sets, one file per locale |
@@ -46,7 +46,7 @@ S8 adds std.db, std.workflows, std.shells and std.tokens.
 | std.headless | Headless widgets | conformance-covered | Dialog, Disclosure, Toaster, three charts, E2801 |
 | std.options | Listbox, combobox, menu and tabs | conformance-covered | Listbox, Combobox, Menu, Tabs on `optionsChart` |
 | std.lists | List primitives | conformance-covered | `listChart`, `stableRows` for app components |
-| std.tables | Data tables | conformance-covered | columns from a schema, query in the URL, `applyQuery`, E2851-E2853 |
+| std.tables | Data tables | implemented | columns from a schema, query in the URL, `applyQuery`, E2851-E2853 |
 | std.db | SQLite and Postgres storage | proposed | storage drivers (k.persist) and check rule registry: E2151-E2153 |
 | std.postgres | Postgres app data | implemented | capability and check rule registries: `database`, `sql` with a result schema, `serializable` transactions, `changed` and `follow`, migrations, PGlite under sim, E2451-E2460 |
 | std.workflows | Workflows | conformance-covered | module manifest, inspector hook, check rule registry: chart instances over jobs, E2351-E2355 |

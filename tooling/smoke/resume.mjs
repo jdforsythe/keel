@@ -20,6 +20,8 @@
 // before resume; the server is killed and the page says Connecting, then Live once it is back and the run done; the
 // browser goes offline, a second client starts another run the page does not show, and back online the page says Live
 // and shows it.
+// The catalog is also loaded at 390px in en-US and de-DE: the document is no wider than the viewport and the table
+// scrolls inside its region.
 // Usage: node tooling/smoke/resume.mjs [runs] (default 1). Nothing is written inside the repo.
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
@@ -623,6 +625,28 @@ try {
       .catch(() => undefined);
     const now = await page.locator(toggle).getAttribute("aria-expanded");
     step(`run ${run} catalog disclosure`, was !== now && now === "true", `${was} -> ${now}`);
+
+    // The catalog at 390px, in both served locales: the document is no wider than the viewport and the table scrolls
+    // inside its region (RFC 0203).
+    for (const locale of ["en-US", "de-DE"]) {
+      const narrow = await browser.newPage({ viewport: { width: 390, height: 800 } });
+      await narrow.goto(`${webBase}/${locale}/catalog`);
+      await narrow.locator('[id="recipes.table.scroll"]').waitFor({ timeout: 15_000 });
+      const sizes = await narrow.evaluate(() => {
+        const region = document.getElementById("recipes.table.scroll");
+        return {
+          document: document.documentElement.scrollWidth,
+          region: region?.clientWidth ?? 0,
+          table: region?.scrollWidth ?? 0,
+        };
+      });
+      step(
+        `run ${run} catalog ${locale} at 390px does not scroll sideways`,
+        sizes.document <= 390 && sizes.table > sizes.region,
+        `document ${sizes.document}, region ${sizes.region}, table ${sizes.table}`,
+      );
+      await narrow.close();
+    }
 
     // The sign-in page, served by `api`: the email typed before resume stays; a bad address shows the field's error.
     const email = 'input[name="email"]';

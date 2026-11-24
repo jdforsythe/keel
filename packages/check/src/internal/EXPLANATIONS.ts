@@ -1121,9 +1121,9 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1719",
-    "focus fired where a user cannot focus",
-    "",
-    "give the element a role that takes focus, or fire focus before blur",
+    "focus or a key fired where a user cannot focus, or blur off an unfocused element",
+    "A key goes to the focused element, inside the target or the target itself, focused first when it can be. Otherwise no key reaches it.",
+    "fire the key at the focused element or its container; give the element a role that takes focus; fire focus before blur",
     "k.testing",
   ],
   [
@@ -1160,6 +1160,13 @@ const ROWS: readonly Row[] = [
     "An entry names a Survived or NoCoverage mutant by file, mutator, original and replacement, with a reason of equivalent, unreachable or performance and a one-sentence note. A killed mutant, or code that moved, leaves it justifying nothing.",
     "remove the entry, or correct its texts to the mutant's in reports/mutation/mutation.json",
     "k.ledger",
+  ],
+  [
+    "E1726",
+    "fire change with a value a person cannot pick",
+    "change with value is a pick in a select without multiple: the enabled option of that value is selected, then input and change fire. Another element, a multiple select, or no enabled option of that value is refused, and nothing changes.",
+    "fire change with the value of an enabled option on a single select; on a text field fire input with value",
+    "k.testing",
   ],
   [
     "W1723",
@@ -1235,7 +1242,7 @@ const ROWS: readonly Row[] = [
   [
     "E1802",
     "missing or blank a11y-required prop",
-    "Heading level, Image alt, label on inputs, Link and Button text, one of label and labelledBy on Host; a blank literal label names nothing.",
+    "Heading level, Image alt, label on inputs, Link and Button text, one of label and labelledBy on Host and on Box scroll; a blank literal label names nothing.",
     '<Input /> -> <Input label="Email" />',
     "k.ui",
   ],

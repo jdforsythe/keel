@@ -15,14 +15,14 @@
 | L2-1 | filed as backlog 1012 (the stale-artifact message names its source: fix(check): a stale surface.json names the source that changed) |
 | L2-2 | answered in the skills (keel-client A11y: no base element takes `role`) |
 | L2-3 | answered in the skills (keel-testing `explore`) |
-| L2-4 | filed as backlog 1016 |
-| L2-5 | filed as backlog 1017 |
+| L2-4 | fixed: k.testing: a render made in a test is disposed when the test ends, pass or fail (k.test-run Disposal) |
+| L2-5 | fixed: k.testing: `fire` `keydown` goes to the focused element and focuses a focusable target first |
 | L2-6 | open |
 | L3-1 | fixed: fix(forms): a keel.fields answer to a native post re-renders the bound controls with the submitted values and errors, kept at resume |
 | L3-2 | answered in the skills (keel-deploy, Run `server.mjs`) |
 | L3-3 | answered in the skills (keel-client A11y: `Select options`) |
 | L3-4 | filed as backlog 1009 (the `zero` rule is answered in keel-client) |
-| L3-5 | filed as backlog 1018 |
+| L3-5 | fixed: k.testing: `fire` `change` with `value` picks the option of a select and fires `input` then `change` |
 | L3-6 | answered in the skills (keel-client Forms: `initial` is partial) |
 | L3-7 | filed as backlog 1010 |
 | L4-1 | fixed: fix(testing): renderRoute raises a page render throw no errorElement caught, so a tx in a component body names its E1201 |

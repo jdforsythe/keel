@@ -23,7 +23,7 @@ const refuse = (code: string, path: string, message: string, at = AT): Result<ne
   fail(code, path, message, undefined, at, SEE);
 
 /** `a`, `a and b`, `a, b and c`. */
-const listed = (names: readonly string[]): string =>
+const nameList = (names: readonly string[]): string =>
   names.length < 2 ? names.join("") : `${names.slice(0, -1).join(", ")} and ${names.at(-1) ?? ""}`;
 
 /**
@@ -95,7 +95,7 @@ export function opShell(input: unknown, files: ReadonlyMap<string, string>): Res
       return refuse(
         "E1359",
         "topology.ts",
-        `${listed(clients.map((d) => d.name))} are client deployables; pass --to with one`,
+        `${nameList(clients.map((d) => d.name))} are client deployables; pass --to with one`,
         where(one.prop.start),
       );
     target = one;

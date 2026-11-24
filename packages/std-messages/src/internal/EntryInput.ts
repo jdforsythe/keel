@@ -11,6 +11,7 @@ type Plural<N extends string> = {
   readonly two?: string;
   readonly few?: string;
   readonly many?: string;
+  readonly [exact: `=${number}`]: string;
 };
 type Select<P extends Params> = {
   [N in keyof P & string]: Infer<P[N]> extends string

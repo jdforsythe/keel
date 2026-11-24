@@ -58,14 +58,14 @@ describe("keel test", () => {
     expect(r.stdout).toBe("T0001 c.test.mjs:1:1 cannot load\nfail test 0 tests, 1 failed, 0 skipped\n");
   }, 60_000);
 
-  it("an unhandled error with every test passing still makes the run not ok", async () => {
+  it("an unhandled error with every test passing still makes the run not ok, located at its throw", async () => {
     const p = project({
       "d.test.mjs":
         'it("passes", async () => { setTimeout(() => { throw new Error("late"); }, 0); await new Promise((r) => setTimeout(r, 50)); });\n',
     });
     const r = await run(["test"], p);
     expect(r.code).toBe(1);
-    expect(r.stdout).toBe("T0001 late\nfail test 1 tests, 0 failed, 0 skipped\n");
+    expect(r.stdout).toBe("T0001 d.test.mjs:1:53 uncaught: late\nfail test 1 tests, 0 failed, 0 skipped\n");
   }, 60_000);
 
   it("a project whose files hold a vitest config but no tests still starts vitest", async () => {
