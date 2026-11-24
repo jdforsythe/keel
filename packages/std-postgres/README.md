@@ -1,6 +1,6 @@
 # @keel/std-postgres
 
-**Spec:** std.postgres · **Status:** proposed · **verified:** (none)
+**Spec:** std.postgres, std.postgres-changes · **Status:** proposed · **verified:** (none)
 
 App data in Postgres for `node` deployables (k.data). `database(name, { migrations? })` registers a capability whose real side is Postgres through `pg` or PGlite on disk, and whose sim side is PGlite in memory, so a test and a seeded simulation run the same SQL. Every statement names the schema its rows are parsed with.
 

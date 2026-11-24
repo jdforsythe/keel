@@ -1,5 +1,5 @@
 // Spec: std.postgres, Modes "`pg` ... one listening connection per URL, its `application_name` `keel-listen-<pid>`, opened at the first `follow` outside the pool and closed when the last follow stops" (rfc:0194)
-// Spec: std.postgres, Conformance "With a `follow` open, a `pg_stat_activity` backend has `application_name` `keel-listen-<pid>`."
+// Spec: std.postgres-changes, Conformance "With a `follow` open, a `pg_stat_activity` backend has `application_name` `keel-listen-<pid>`."
 // Seed: 1337 (no generated inputs: one fixed case).
 // Assumption: runs only with `KEEL_TEST_POSTGRES_URL` (PG17, `hasPg17`); `<pid>` is this test process's `process.pid`; the backend is looked up with a query through the pool, which is not the listening connection.
 import { createCtx } from "@keel/ctx";

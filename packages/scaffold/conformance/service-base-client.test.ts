@@ -1,4 +1,4 @@
-// Spec: k.scaffold, Conformance "In the default project that input with `reason: 'order list'` also changes `topology.ts`: `web` has `origins: { connect: { 'https://api.example.com': 'order list' } }` and its other properties as before, and `keel check` is clean; with `base: 'https://api.example.com/v2'` the key is still `https://api.example.com`."
+// Spec: k.scaffold-service, Conformance "In the default project that input with `reason: 'order list'` also changes `topology.ts`: `web` has `origins: { connect: { 'https://api.example.com': 'order list' } }` and its other properties as before, and `keel check` is clean; with `base: 'https://api.example.com/v2'` the key is still `https://api.example.com`."
 // seed 1337 (property over hosts and base paths).
 import fc from "fast-check";
 import { afterAll, describe, expect, it } from "vitest";
