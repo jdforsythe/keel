@@ -12,6 +12,7 @@ keel scaffold store orders.cart
 keel scaffold transaction orders.cart.addItem
 keel scaffold service orders --openapi openapi.json
 keel scaffold service geo --base https://geo.example.com --reason 'place lookup'
+keel scaffold shell tauri --id com.acme.shop
 keel codemod rename OrderCard OrderTile
 keel codemod move OrderCard --to catalog
 keel codemod add-field Order note 'string.optional'
@@ -25,6 +26,7 @@ keel codemod place digest --to jobs --adapter node
 - `component`: `<Name>.tsx` with a `Props` schema and a property test (k.testing).
 - `store` / `transaction`: `*.schema.ts`, store or transaction file, invariant test.
 - `service`: a client of an API no app module serves (k.services): `modules/<id>/<Id>Api.schema.ts` and `api.server.ts`, with `@keel/services` in `package.json` (Service).
+- `shell`: a native shell on a `client` deployable, `shells` in `topology.ts` and the shell's packages in `package.json` (k.scaffold-shell).
 
 **Codemods.**
 - `rename` (component, route, store, transaction, schema, field, module) updates the declaration, file name, every import, `href()` call (free or a contract's), `uses:` list, element-id prefix, test, contract entry and binding.
@@ -40,11 +42,11 @@ Both forms add `@keel/services` to `dependencies` at the version of `@keel/serve
 
 **Turbo emission.** Any operation adding or removing a module or package regenerates `turbo.json`, CI workflows and deploy files (k.deploy) from the task graph and topology (ADR-0009). Generated files are read-only (E1005).
 
-**Guarantee.** If `keel check` was clean before an operation, it is clean after. Otherwise nothing is written and E1353 reports the first diagnostic the edit set would introduce.
+**Guarantee.** If `keel check` was clean before an operation, it is clean after; for `shell`, once its packages are installed and `keel build` ran (k.scaffold-shell). Otherwise nothing is written and E1353 reports the first diagnostic the edit set would introduce.
 
-**Refresh.** In a project holding a `.keel/` artifact `keel build` writes, an applied operation then refreshes what `keel check` reads: after `keel build`'s check, it writes the `.keel/` artifacts and generated deploy files `keel build` writes, from the new tree. It builds no bundle and writes nothing under `dist/`. It prints nothing while it runs and no W1005 for an artifact it rewrites; a diagnostic of the refresh follows the edit lines and the edits stay written. The one trailer adds `artifacts`, the files the refresh wrote: `ok scaffold route 2 created, 2 changed, 0 removed, 7 artifacts, 0 errors`. `--dry-run`, and a project with no such artifact, refresh nothing.
+**Refresh.** In a project holding a `.keel/` artifact `keel build` writes, an applied operation then refreshes what `keel check` reads: after `keel build`'s check, it writes the `.keel/` artifacts and generated deploy files `keel build` writes, from the new tree. It builds no bundle and writes nothing under `dist/`. It prints nothing while it runs and no W1005 for an artifact it rewrites; a diagnostic of the refresh follows the edit lines and the edits stay written. The one trailer adds `artifacts`, the files the refresh wrote: `ok scaffold route 2 created, 2 changed, 0 removed, 7 artifacts, 0 errors`. `--dry-run`, a project with no such artifact, and `shell`, refresh nothing.
 
-**Rules.** E1351 target id already exists (fix: use a codemod) · E1352 id violates naming: route, store and transaction ids are dotted lowerCamel, prefixed by the module id; components PascalCase; deployable names as k.topology E1552 · E1353 operation aborted, would break check; nothing written · E1354 `add-field` of a required field without `--default` while constructors exist · E1355 Keel block not one start and one end line · W1356 agent file stale or block malformed (`keel docs --sync`) · E1357 write through a symlink out of the project · E1358 `service` in a module of a `client` deployable whose origin that deployable does not declare under `connect`, with no `reason`; names the deployable and the origin (no fix: pass `--reason`, or `codemod place` the module on a `node` deployable). A failing input schema, unknown target, or missing `topology.ts` reports k.cli E1052; an unknown operation E1051.
+**Rules.** E1351 target id already exists (fix: use a codemod) · E1352 id violates naming: route, store and transaction ids are dotted lowerCamel, prefixed by the module id; components PascalCase; deployable names as k.topology E1552 · E1353 operation aborted, would break check; nothing written · E1354 `add-field` of a required field without `--default` while constructors exist · E1355 Keel block not one start and one end line · W1356 agent file stale or block malformed (`keel docs --sync`) · E1357 write through a symlink out of the project · E1358 `service` in a module of a `client` deployable whose origin that deployable does not declare under `connect`, with no `reason`; names the deployable and the origin (no fix: pass `--reason`, or `codemod place` the module on a `node` deployable) · E1359 `shell` with no one `client` deployable to take it (k.scaffold-shell). A failing input schema, unknown target, or missing `topology.ts` reports k.cli E1052; an unknown operation E1051.
 
 **Conformance.**
 - Each generator run in a fresh project leaves `keel check` and `keel test` clean.

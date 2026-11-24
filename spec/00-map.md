@@ -1,6 +1,6 @@
 # Keel spec map
 
-status key: proposed | implemented | conformance-covered | frozen. Budget: file 1,410 tokens, section 3,100.
+status key: proposed | implemented | conformance-covered | frozen. Budget: file 1,430 tokens, section 3,100.
 
 ## Code ranges
 Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); owner: keel docs --for <code>.
@@ -9,7 +9,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | E100x | k.compiler, k.boundary, k.bundle, k.head | E105x | k.cli, k.evidence, k.docs, k.review |
 | E110x | k.schema, k.privacy, k.reveal, k.leave, k.privacy-reads | E115x | k.module |
 | E120x | k.reactive | E125x | k.runtime, k.resume, k.claim |
-| E130x | k.store | E135x | k.scaffold |
+| E130x | k.store | E135x | k.scaffold, k.scaffold-shell |
 | E140x | k.component, k.place | E145x | k.errors |
 | E150x | k.router, k.contract, k.guards, k.prefix, k.api | E155x | k.server, k.topology, k.deploy, k.shell, k.compat, k.hosting, k.security, k.origins, k.leave, k.user, k.mount |
 | E160x | k.ctx, k.sim, k.persist, k.data | E165x | k.services |
@@ -56,6 +56,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.cli | CLI, MCP, LSP | implemented | flags |
 | k.docs | Installed docs | implemented | read |
 | k.scaffold | Scaffold, codemods | implemented | edits |
+| k.scaffold-shell | Shell scaffold | proposed | shells |
 | k.testing | Harness, properties | implemented | fire |
 | k.model | Store exploration | conformance-covered | traces |
 | k.prove | Proving invariants | conformance-covered | Z3 |
