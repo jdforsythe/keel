@@ -18,7 +18,7 @@
 | 12 | fixed: rfc:0199 (ADR-0221) in a project holding `.keel/` artifacts an applied scaffold or codemod refreshes the artifacts and generated deploy files, with no bundle; k.scaffold conformance covers it |
 | 13 | answered in the skills (keel-deploy: `csp.txt` for a `client`, a static host with no `node` deployable) |
 | 14 | answered in the skills (keel-client: E2406 only with `@keel/std-messages`) |
-| 15 | open: needs an RFC (k.testing: a harness that shows the `/__keel/user` GET a page's router sends); the smoke step covers it |
+| 15 | fixed: rfc:0209 (ADR-0231) `requests()` on every harness; `examples/client-only-api`'s test asserts the log whole, and the keel() plugin loads `identity.ts` so a test reads `/__keel/user` exactly when the built app does |
 | 16 | fixed: rfc:0199 (ADR-0221) `scaffold service <module> --base <url> --reason <text>` writes the endpoints file, the client, the dependency and the `connect` origin; `scaffold route --no-loader` writes a page with no loader; 7 hand edits are left, all app content |
 | 17 | open: rough edge (k.scaffold: `project --workspace` writes no page and `route` writes a loader and an empty `<Box />` a client-only page does not use) |
 | 18 | fixed: rfc:0201 (ADR-0223) `keel scaffold shell <tauri|capacitor> --id <reverse-dns>` writes `shells`, the std package and the plugin, CLI and platform packages at the versions the std package declares; `examples/native-tauri` and `examples/native-capacitor` replay byte for byte from `scaffold project --workspace` and `scaffold shell` (a tooling test) |

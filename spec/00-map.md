@@ -59,7 +59,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.scaffold-shell | Shell scaffold | implemented | shells |
 | k.testing | Harness, properties | implemented | fire |
 | k.test-run | Test end, results | implemented | dispose |
-| k.requests | Requests sent | proposed | sent |
+| k.requests | Requests sent | implemented | sent |
 | k.model | Store exploration | conformance-covered | traces |
 | k.prove | Proving invariants | conformance-covered | Z3 |
 | k.sim | Simulation | conformance-covered | faults |
