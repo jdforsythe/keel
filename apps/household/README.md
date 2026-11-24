@@ -47,10 +47,10 @@ The `receipts` module is a book of what each person paid. `keel scaffold module 
 - `AppLocale.schema.ts` serves `en-US` and `de-DE`, with `en-US` as the `pathDefault`: `/receipts` is English and `/de-DE/receipts` German. Another locale is a 404.
 - `ReceiptsText.schema.ts` declares the message set; `ReceiptsText/en-US.ts` and `ReceiptsText/de-DE.ts` give every key a message, with a `plural` for the count and a `select` for who paid. The loader returns the served locale's entry.
 - `NewReceipt.schema.ts` is the form: `shop` is a `line` of up to 60 characters, `note` a `para`, `currency` the `std.money` `Currency`. `BookPage.tsx` binds each field with `form` and posts to the page's own action.
-- `recordReceipt.server.ts` reads the amount into minor units (`minorUnits.ts`), answers `keel.fields` for an amount it cannot read, and records the receipt in a server store (`bookStores.ts`) restored from `ctx.storage` on each request.
+- `recordReceipt.server.ts` reads the amount with `parseMoney` in the route's locale, answers `keel.fields` for an amount it cannot read, and records the receipt in a server store (`bookStores.ts`) restored from `ctx.storage` on each request.
 - Totals print with `formatMoney` and the route's locale: `€12.50` in English, `12,50 €` in German.
 
-Tests: `test/receipts.test.ts` renders both locales, submits a bad and a good receipt, reads the same book in German, and runs `properties` over the page; `test/minorUnits.test.ts` covers the amount reader.
+Tests: `test/receipts.test.ts` renders both locales, submits a bad and a good receipt, reads the same book in German, and runs `properties` over the page; the amount reader is `parseMoney` (`@keel/std-money`).
 
 A server store needs storage. Start the build with `node --experimental-webstorage --localstorage-file=<path> dist/web/server.mjs`, as `deploy/web/Dockerfile` does.
 

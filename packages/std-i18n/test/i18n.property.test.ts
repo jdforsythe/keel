@@ -57,3 +57,25 @@ test("localeName is non-empty for every Locale, and every tag parses", () => {
     expect(localeName(l).length).toBeGreaterThan(0);
   }
 });
+
+test("plural takes the exact form for a non-negative safe integer, else the result without exact forms", () => {
+  const exact = fc.dictionary(
+    fc.integer({ min: 0, max: 20 }).map((n) => `=${n}` as const),
+    fc.string({ maxLength: 8 }),
+  );
+  fc.assert(
+    fc.property(fc.integer({ min: -3, max: 25 }), locale, exact, (n, l, forms) => {
+      const withExact = { other: "# o", one: "# one", ...forms };
+      const picked = Number.isInteger(n) && n >= 0 ? forms[`=${n}`] : undefined;
+      const base = plural(n, l, { other: "# o", one: "# one" });
+      expect(plural(n, l, withExact)).toBe(picked === undefined ? base : picked.split("#").join(formatNumber(n, l)));
+    }),
+    { seed: SEED },
+  );
+});
+
+test("plural never selects a malformed = key", () => {
+  expect(plural(1, "en-US", { "=01": "x", "=1.0": "y", "=-1": "z", other: "#" })).toBe("1");
+  expect(plural(-1, "en-US", { "=-1": "z", other: "#" })).toBe("-1");
+  expect(plural(1.5, "en-US", { "=1.5": "z", other: "#" })).toBe("1.5");
+});

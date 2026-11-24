@@ -1,4 +1,5 @@
 import type { Expression } from "oxc-parser";
+import { exactKey } from "../../internal/exactKey.ts";
 import { placeholders } from "../../internal/placeholders.ts";
 import type { Hit } from "./Hit.ts";
 import type { ToolKind } from "./ToolKind.ts";
@@ -49,10 +50,7 @@ export function paramHits(key: string, value: Expression, params: ReadonlyMap<st
     const kind = params.get(plural.value);
     if (kind !== "number" && kind !== "unknown")
       out.push({ at: plural.at, msg: `plural '${clip(plural.value)}' is not a number param of '${k}'` });
-    for (const f of FORMS) {
-      const form = fields.get(f);
-      if (form !== undefined) tmpl(form, plural.value);
-    }
+    for (const [f, form] of fields) if (FORMS.includes(f) || exactKey(f)) tmpl(form, plural.value);
   }
   const selectOn = fields.get("select");
   const select = selectOn === undefined ? undefined : stringOf(selectOn);

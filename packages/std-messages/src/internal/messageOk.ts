@@ -1,4 +1,5 @@
 import type { ParamKind } from "./ParamKind.ts";
+import { exactKey } from "./exactKey.ts";
 import { templateOk } from "./templateOk.ts";
 
 const FORMS = ["plural", "zero", "one", "two", "few", "many", "other"];
@@ -8,7 +9,7 @@ const fields = (v: unknown): Map<string, unknown> | undefined =>
 
 /**
  * An object message for a key with `params` (std.messages): `{ text }`, `{ plural: p, other, ...forms }` over a number
- * param, or `{ select: p, cases }` with one case per value of an enum param; every template names declared params only.
+ * param (with exact forms keyed `'=n'`), or `{ select: p, cases }` with one case per value of an enum param; every template names declared params only.
  */
 export function messageOk(v: unknown, params: ReadonlyMap<string, ParamKind>): boolean {
   const m = fields(v);
@@ -19,7 +20,9 @@ export function messageOk(v: unknown, params: ReadonlyMap<string, ParamKind>): b
   const kind = typeof p === "string" ? params.get(p) : undefined;
   if (m.has("plural"))
     return (
-      kind === "number" && m.has("other") && [...m].every(([k, x]) => FORMS.includes(k) && (k === "plural" || ok(x)))
+      kind === "number" &&
+      m.has("other") &&
+      [...m].every(([k, x]) => (FORMS.includes(k) || exactKey(k)) && (k === "plural" || ok(x)))
     );
   const cases = fields(m.get("cases"));
   return m.size === 2 && typeof kind === "object" && cases?.size === kind.length && kind.every((c) => ok(cases.get(c)));

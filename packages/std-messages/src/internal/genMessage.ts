@@ -3,7 +3,7 @@ import type { ParamKind } from "./ParamKind.ts";
 
 /**
  * Map generated `parts` to a valid object message for `params` (the format type's `gen.map`): a `select` over an
- * enum param, a `plural` over a number param or a `text`, as the param `parts.length` picks; each template names one.
+ * enum param, a `plural` (sometimes with an exact `'=0'`) over a number param or a `text`, as the param `parts.length` picks; each template names one.
  */
 export function genMessage(parts: readonly string[], params: ReadonlyMap<string, ParamKind>): JsonValue {
   const all = [...params.keys()];
@@ -12,5 +12,6 @@ export function genMessage(parts: readonly string[], params: ReadonlyMap<string,
   const name = all[n % all.length] ?? "";
   const kind = params.get(name);
   if (typeof kind === "object") return { select: name, cases: Object.fromEntries(kind.map((v, i) => [v, t(i)])) };
-  return kind === "number" && n % 2 === 1 ? { plural: name, other: `# ${t(0)}` } : { text: t(0) };
+  if (kind !== "number" || n % 2 === 0) return { text: t(0) };
+  return n % 3 === 0 ? { plural: name, "=0": t(1), other: `# ${t(0)}` } : { plural: name, other: `# ${t(0)}` };
 }

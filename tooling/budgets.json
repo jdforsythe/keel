@@ -8,7 +8,7 @@
     "mcp.tools-list": 2000,
     "docs.map": 1510,
     "docs.section": 3100,
-    "docs.skill": 2925,
+    "docs.skill": 2975,
     "docs.for": 400,
     "docs.agents": 600
   },
@@ -99,12 +99,12 @@
       "platform": "node"
     },
     "@keel/std-live": "1kb",
-    "@keel/std-messages": "1.5kb",
+    "@keel/std-messages": "1.6kb",
     "@keel/std-messages/tools": {
-      "max": "6kb",
+      "max": "7kb",
       "platform": "node"
     },
-    "@keel/std-money": "1kb",
+    "@keel/std-money": "1.75kb",
     "@keel/std-offline": "3.75kb",
     "@keel/std-offline/tools": {
       "max": "3kb",
