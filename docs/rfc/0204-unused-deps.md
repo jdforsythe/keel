@@ -1,6 +1,6 @@
 # RFC 0204: k.module: a `deps` entry the module does not use is E1165
 
-Status: accepted (ADR-0226), accepted by the orchestrator on 2026-11-23, for the operator to confirm. Amends k.module (`deps`, Checks, Rules, Conformance), k.scaffold (Codemods, Conformance), the map. From `apps/household` (walkthrough finding L9-5, backlog 1037).
+Status: implemented (ADR-0226), accepted by the orchestrator on 2026-11-23, for the operator to confirm. Amends k.module (`deps`, Checks, Rules, Conformance), k.scaffold (Codemods, Conformance), the map. From `apps/household` (walkthrough finding L9-5, backlog 1037).
 
 ## Decisions
 - D1: one new code, E1165: a `deps` entry, other than a `@keel/std-*` package, that the module does not use. An error, at the entry, with a fix that removes it.
