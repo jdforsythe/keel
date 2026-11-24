@@ -51,7 +51,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.owner | Ctx owner | conformance-covered | dispose |
 | k.errors | Results, boundaries | conformance-covered | Result |
 | k.check | Checker, diagnostics | conformance-covered | codes |
-| k.check-cache | Type cache | conformance-covered | reuse |
+| k.check-cache | Type cache | implemented | reuse |
 | k.explain | Explanations | conformance-covered | text |
 | k.host | Host reads | conformance-covered | zone |
 | k.cli | CLI, MCP, LSP | conformance-covered | flags |
