@@ -8,6 +8,7 @@ import { bindStd } from "@keel/compiler/std/bindStd";
 import { importDeps } from "@keel/compiler/std/importDeps";
 import { readStd } from "@keel/compiler/std/readStd";
 import { stdConfig } from "@keel/compiler/std/stdConfig";
+import { stdImporting } from "@keel/compiler/std/stdImporting";
 import keel from "@keel/compiler/vite";
 import { createCtx } from "@keel/ctx";
 import { s } from "@keel/schema";
@@ -274,6 +275,31 @@ describe("importDeps", () => {
     expect(Reflect.get(globalThis, "__keelTools")).toBe(1);
     expect(at(await importDeps(root, files))).toHaveLength(1);
     expect(Reflect.get(globalThis, "__keelTools")).toBe(1);
+  });
+
+  it("imports the ./tools export of a package with no entry; a package with neither is E1159 not found", async () => {
+    pkg(
+      "std-only-tools",
+      "globalThis.__keelOnlyTools = (globalThis.__keelOnlyTools ?? 0) + 1;\nexport {};\n",
+      {
+        "./tools": "./tools.js",
+      },
+      "tools.js",
+    );
+    pkg("std-only-sub", "export {};\n", { "./sub": "./index.js" });
+    const named: string[] = [];
+    const seen = (): void => {
+      if (stdImporting("@keel/std-only-tools")) named.push("@keel/std-only-tools");
+    };
+    vi.stubGlobal("__keelSeen", seen);
+    fs.appendFileSync(path.join(root, "node_modules/@keel/std-only-tools/tools.js"), "globalThis.__keelSeen();\n");
+    expect(at(await importDeps(root, [mod("a", ["@keel/std-only-tools", "@keel/std-only-sub"])]))).toEqual([
+      "E1159 stdlib dep @keel/std-only-sub of module a cannot be imported (not found)",
+    ]);
+    expect(Reflect.get(globalThis, "__keelOnlyTools")).toBe(1);
+    expect(named).toEqual(["@keel/std-only-tools"]);
+    expect(stdImporting("@keel/std-only-tools")).toBe(false);
+    vi.unstubAllGlobals();
   });
 });
 
