@@ -24,6 +24,7 @@ import { resolveImport } from "./resolveImport.ts";
 import { scanFile } from "./scanFile.ts";
 import { short } from "./short.ts";
 import { stdConfig } from "./stdConfig.ts";
+import { unusedDeps } from "./unusedDeps.ts";
 
 type Scanned = {
   readonly file: SourceFile;
@@ -207,6 +208,7 @@ export function moduleChecks(checked: readonly Checked[]): Diagnostic[] {
     out.push(...publicMissing(m, stems.get(m) ?? new Set()));
     out.push(...stdConfig(m));
   }
+  out.push(...unusedDeps(scanned, project));
   for (const s of scanned) {
     out.push(...unprefixed(s));
     if (s.module.manifest !== null) out.push(...access(s, s.module.manifest, project));
