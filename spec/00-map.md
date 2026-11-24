@@ -1,6 +1,6 @@
 # Keel spec map
 
-status key: proposed | implemented | conformance-covered | frozen. Budget: file 1,430 tokens, section 3,100.
+status key: proposed | implemented | conformance-covered | frozen. Budget: file 1,430 tokens, section 3,400.
 
 ## Code ranges
 Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); owner: keel docs --for <code>.
@@ -83,7 +83,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.hosting | Client hosting | implemented | servedBy |
 | k.head | Document head | implemented | title |
 | k.services | Thin services | conformance-covered | clients |
-| k.openapi | OpenAPI import | conformance-covered | clients |
+| k.openapi | OpenAPI import | implemented | clients |
 | k.module | Module manifest | implemented | surface |
 | k.a11y | Accessibility | implemented | WCAG |
 | k.aria | Widget parts | conformance-covered | roles |
