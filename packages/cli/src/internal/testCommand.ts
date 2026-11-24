@@ -60,14 +60,15 @@ async function vitestRun(root: string, filters: readonly string[]): Promise<Test
   const pool = process.env.UV_THREADPOOL_SIZE;
   process.env.KEEL_TEST = "1";
   // One thread-pool thread in every test process, whatever the environment holds (k.drive-law Order): libuv reads it
-  // once per process, so it is in the environment the test processes start with.
+  // once per process, so it is in the environment the forked test processes start with (`pool: "forks"` below).
   process.env.UV_THREADPOOL_SIZE = "1";
   try {
     const { strays } = await catchingStray(root, async () => {
       const vitest = await startVitest(
         "test",
         [...filters],
-        { root, watch: false, reporters: [collector], env: { KEEL_TEST: "1", UV_THREADPOOL_SIZE: "1" } },
+        // Forks, whatever the project's config says: each test process then starts with the environment set above.
+        { root, watch: false, pool: "forks", reporters: [collector], env: { KEEL_TEST: "1", UV_THREADPOOL_SIZE: "1" } },
         // The project's `identity.ts` is a setup file whether or not its vitest config has the `keel()` plugin.
         { plugins: [{ name: "keel-identity", config: () => identitySetup(root) }] },
         { stdout: sink(), stderr: sink() },
