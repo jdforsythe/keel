@@ -172,10 +172,6 @@ const securityConfigs = (): string[] =>
     (p) => p.endsWith(".xml") && p.includes(`res${sep}xml${sep}`) && read(p).includes("<network-security-config"),
   );
 const manifests = (): string[] => named("AndroidManifest.xml");
-const configs = (): Record<string, string> =>
-  Object.fromEntries(
-    named("capacitor.config.json").map((p) => [p, read(p).replaceAll(LOCAL, "<origin>").replaceAll(HTTPS, "<origin>")]),
-  );
 
 const allowList = (): unknown => {
   const config: unknown = JSON.parse(
