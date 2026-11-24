@@ -1,6 +1,7 @@
 // Spec: k.mount, Rules "E1589 with `identity.ts`, a `static` deployable, or a `client` one without `servedBy` (shells or not), its key in `topology.ts`: no origin of it answers the router's `/__keel/user` read (k.guards Client); none when a module file it serves is E1581."
 // Spec: k.mount, Conformance "With `identity.ts` and `identity.server.ts`, no module file importing `identity.ts`: `{ web: client }`, `{ web: client, shells }` and `{ site: static, api: node }` each give one E1589 at that deployable's key in `keel check` and `keel build`; `{ web: client, servedBy: 'api', api: node }` with or without `shells`, `{ api: node }` and the same topologies without `identity.ts` give none; a file of `web` importing `identity.ts` gives one E1581 and no E1589."
-// Spec: RFC 0186 D8 and Proposal: the messages and the `keel explain E1589` text asserted below are the RFC's, verbatim.
+// Spec: k.mount, Messages "E1580: `identity.ts's default export is not identityMount('<literal>') of lowercase / segments` (86 units) or `identity.server.ts gives no handle: { path: <identity.ts default import>.path }` (79). E1589: `<name> (static) serves no router, so with identity.ts its pages never learn the reader` (`site`: 84) or `<name> (client) has no servedBy: no origin of it mounts the identity handle` (`web`: 72). What to do instead is `keel explain`'s. E1589's fix, for a `client` deployable when `topology.ts` has exactly one `node` deployable, adds `servedBy: '<its name>'` to the entry; otherwise none."
+// Spec: RFC 0186 D8 and Proposal: the `keel explain E1589` text asserted below is the RFC's, verbatim.
 // Seed 1337 (fc.assert below). `keel build` is packages/cli/conformance/mount-e1589-build.test.ts. In-memory project, `check(files, { types: false })`.
 // Expected red until E1589 is built.
 import { check } from "@keel/check";
@@ -40,9 +41,9 @@ const keyAt = (files: Files, key: string): { line: number; col: number } => {
 const WEB = (extra = ""): string => `web: { modules: ['a'], adapter: 'client'${extra} }`;
 const API = "api: { modules: ['b'], adapter: 'node' }";
 const clientMsg = (name: string): string =>
-  `${name} (client) has no servedBy: with identity.ts its router reads /__keel/user from its own origin, which mounts no handle; add servedBy: '<node deployable>', or remove identity.ts`;
+  `${name} (client) has no servedBy: no origin of it mounts the identity handle`;
 const staticMsg = (name: string): string =>
-  `${name} (static) serves no router: with identity.ts its pages never learn the reader; move it to a project of its own, or make it client with servedBy`;
+  `${name} (static) serves no router, so with identity.ts its pages never learn the reader`;
 
 describe("k.mount: E1589 identity.ts beside a deployable no origin of which answers /__keel/user", () => {
   test("`{ web: client }` with `identity.ts` and `identity.server.ts` is one E1589 at `web`'s key in `topology.ts`, with the client message", () => {

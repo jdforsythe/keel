@@ -45,6 +45,7 @@ import { projectManifests } from "./internal/projectManifests.ts";
 import { registeredIn } from "./internal/registeredIn.ts";
 import { registersCapability } from "./internal/registersCapability.ts";
 import { serverEntryCode } from "./internal/serverEntryCode.ts";
+import { shortPath } from "./internal/shortPath.ts";
 import { stubCode } from "./internal/stubCode.ts";
 import { stylesMiddleware } from "./internal/stylesMiddleware.ts";
 import { unmappedModule } from "./internal/unmappedModule.ts";
@@ -1095,10 +1096,9 @@ export default function (): {
           return [...(info?.importers ?? []), ...(info?.dynamicImporters ?? [])];
         },
       );
+      const lead = unmapped === undefined ? "" : `${unmapped.module} is not in the client's service map: imported by `;
       if (unmapped !== undefined)
-        throw new Error(
-          `E1011 ${unmapped.module} is not in the client's service map: imported by ${show(unmapped.importer)}`,
-        );
+        throw new Error(`E1011 ${lead}${shortPath(show(unmapped.importer), 89 - lead.length)}`);
     },
     generateBundle: {
       order: "post",

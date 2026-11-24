@@ -814,11 +814,11 @@ describe("testResults details", () => {
     expect(one(T({}, [{ message: "a\u001b[0Kb" }])).message).toBe("t: a\u001b[0Kb");
   });
 
-  it("clips messages at 90 characters", () => {
+  it("clips messages at 89 characters", () => {
     const prefix = "t: ";
-    expect(one(T({}, [{ message: "x".repeat(87) }])).message).toBe(`${prefix}${"x".repeat(87)}`);
-    expect(one(T({}, [{ message: "x".repeat(88) }])).message).toBe(`${prefix}${"x".repeat(84)}...`);
-    expect(one(T({}, [{ message: "x".repeat(200) }])).message.length).toBe(90);
+    expect(one(T({}, [{ message: "x".repeat(86) }])).message).toBe(`${prefix}${"x".repeat(86)}`);
+    expect(one(T({}, [{ message: "x".repeat(87) }])).message).toBe(`${prefix}${"x".repeat(83)}...`);
+    expect(one(T({}, [{ message: "x".repeat(200) }])).message.length).toBe(89);
   });
 
   it("locates a failure at the first app frame of parsed stacks, with defaults for missing line and column", () => {
@@ -972,7 +972,7 @@ describe("testResults details", () => {
     expect(failedFile({ result: { state: "fail", errors: [5] } }).diagnostics[0]?.message).toBe("file failed to run");
     expect(
       failedFile({ result: { state: "fail", errors: [{ message: "x".repeat(100) }] } }).diagnostics[0]?.message,
-    ).toBe(`${"x".repeat(87)}...`);
+    ).toBe(`${"x".repeat(86)}...`);
     const both = failedFile({ result: { state: "fail", errors: [{ message: "file" }] } }, [T()]);
     expect(both.failed).toBe(1);
     expect(both.diagnostics).toHaveLength(1);
@@ -1007,7 +1007,7 @@ describe("testResults details", () => {
       { kind: "diag", code: "T0001", message: "uncaught: plain" },
       { kind: "diag", code: "T0001", message: "uncaught: 42" },
       { kind: "diag", code: "T0001", message: "uncaught: null" },
-      { kind: "diag", code: "T0001", message: `uncaught: ${"y".repeat(77)}...` },
+      { kind: "diag", code: "T0001", message: `uncaught: ${"y".repeat(76)}...` },
     ]);
     expect(r).toMatchObject({ tests: 0, failed: 0, skipped: 0, errors: 6 });
     expect(testResults([], [{ message: "\u001b[31mred\u001b[0m" }], CWD).diagnostics[0]?.message).toBe("uncaught: red");

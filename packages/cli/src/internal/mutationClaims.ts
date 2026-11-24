@@ -48,7 +48,7 @@ const parse = (text: string): unknown => {
 /**
  * Mutation claims (k.ledger Mutation): each Stryker report on disk (`packages/<pkg>/reports/mutation/mutation.json`,
  * `files` keyed relative to the package) gives one claim per file with a scored mutant, and the package's threshold
- * (`thresholds.break`); a report replaces the committed claims of the files it covers, other claims stay while their file
+ * (`thresholds.break`); a report replaces the committed claims of the files it covers (a file the report holds with no scored mutant, all of them ignored, loses its claim), other claims stay while their file
  * exists: a claim whose file is not in the tree is dropped. A claim is
  * fresh while the file on disk hashes to its `sha`. Each package's `score` is detected over detected plus undetected
  * across its fresh claims (absent when none is fresh). Scores are percent, stored to two decimals (`ledger.mutation` shows one).
@@ -98,8 +98,11 @@ export function mutationClaims(
         return i === undefined ? [] : [i];
       });
       for (const i of covered) matched.add(i);
-      if (total === 0) continue;
       const file = `packages/${pkg}/${path}`;
+      if (total === 0) {
+        claims.delete(file);
+        continue;
+      }
       claims.set(file, {
         file,
         sha: sha256(source),

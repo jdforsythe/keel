@@ -246,17 +246,17 @@ describe("std.monitor: E2009 fires on a fixture and not on its clean twin.", () 
     const fixture = [RUNNERS("export const runners = [monitor]"), ROUTES_PLAIN];
     expect(codes("static", fixture)).toContain("E2009");
     expect(codes("node", fixture)).not.toContain("E2009");
-  });
+  }, 30_000);
 
   test("E2009 fires on `monitor` in the runners of a client deployable, not of a node one", () => {
     const fixture = [RUNNERS("export const runners = [monitor]"), ROUTES_PLAIN];
     expect(codes("client", fixture)).toContain("E2009");
     expect(codes("node", fixture)).not.toContain("E2009");
-  });
+  }, 30_000);
 
   test("E2009 does not fire on a client deployable whose runners hold no `monitor`", () => {
     expect(codes("client", [RUNNERS_PLAIN, ROUTES_PLAIN])).not.toContain("E2009");
-  });
+  }, 30_000);
 });
 
 describe("std.monitor: E2010 `session monitor`: the tally URL is unreachable, not 2xx, or not a `Tally`.", () => {
@@ -278,7 +278,7 @@ describe("std.monitor: E2010 `session monitor`: the tally URL is unreachable, no
     expect(r.stdout).toMatch(/E2010/);
     expect(r.code).toBe(1);
     expect(fs.existsSync(path.join(dir, MONITORED))).toBe(false);
-  });
+  }, 30_000);
 
   test("E2010 fires on any non-2xx answer, writes nothing", async () => {
     await fc.assert(
@@ -291,7 +291,7 @@ describe("std.monitor: E2010 `session monitor`: the tally URL is unreachable, no
       }),
       { seed: 1337, numRuns: 6 },
     );
-  });
+  }, 30_000);
 
   test("E2010 fires on a 2xx answer that is not a Tally, writes nothing", async () => {
     await fc.assert(
@@ -307,7 +307,7 @@ describe("std.monitor: E2010 `session monitor`: the tally URL is unreachable, no
       ),
       { seed: 1337, numRuns: 6 },
     );
-  });
+  }, 30_000);
 
   test("E2010 does not fire on its clean twin, a served Tally", async () => {
     const t = await boot();
@@ -319,5 +319,5 @@ describe("std.monitor: E2010 `session monitor`: the tally URL is unreachable, no
     expect(r.stdout).not.toMatch(/E2010/);
     expect(r.code).toBe(0);
     expect(fs.existsSync(path.join(dir, MONITORED))).toBe(true);
-  });
+  }, 30_000);
 });

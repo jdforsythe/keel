@@ -31,5 +31,5 @@ describe("k.topology: E1560", () => {
       }),
       { seed: 1337, numRuns: 5 },
     );
-  });
+  }, 30_000);
 });

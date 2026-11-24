@@ -1,4 +1,5 @@
 // Seed 1337 (fast-check seed, recorded in each fc.assert below)
+// RFC 0222: E1108 (a `@keel/std-*` package added to `deps`) and E1589 (`servedBy` added, one `node` deployable) carry a fix.
 // Spec: k.check, clause "Every fix a diagnostic carries applies to its fixture with `git apply`, and re-checking reports no diagnostic of that code. Fixtures of E1003, E1005 (bytes only), E1151, E1152, E1154-E1156, E1401, E1403 (`&&`, `?:` with `If` imported), E1405, E1451, E1452 (`try`), E1601, E1652, E1653, E1757 (`!`, `any`, suppression), E1805, and E1808 carry one; RFC 0035 lists why the others cannot."
 // RFC 0157 / 0162: E1157 is retired (no fixture); E1154-E1156 keep theirs; E1407, E1510 and E1515 each carry one (k.component, k.contract); E1513 and E1514 carry none. k.check's sentence still names E1157 and omits these: see the report.
 // RFC 0219: E1730 carries one (k.guards Test files); its exact result is asserted in testing-E1730-identity-mount.test.ts.
@@ -119,6 +120,24 @@ const FIXED: FixedCase[] = [
   { name: "E1152", code: "E1152", ...fixtureOf("E1152") },
   { name: "E1154", code: "E1154", ...fixtureOf("E1154") },
   { name: "E1165 (remove the deps entry)", code: "E1165", ...fixtureOf("E1165") },
+  {
+    name: "E1589 (add servedBy: 'api' to the client deployable beside one node deployable)",
+    code: "E1589",
+    files: [
+      f(
+        "topology.ts",
+        "import { topology } from '@keel/server'\nexport default topology({\n  web: { modules: ['a'], adapter: 'client' },\n  api: { modules: ['b'], adapter: 'node' },\n})\n",
+      ),
+      manifest("a", [], []),
+      manifest("b", [], []),
+      f("identity.ts", "import { identityMount } from '@keel/router'\nexport default identityMount('/api/auth')\n"),
+      f(
+        "identity.server.ts",
+        "import { identity } from '@keel/server'\nimport mount from './identity.ts'\nexport default identity({ identify: async () => '', handle: { path: mount.path, fn: () => new Response('') } })\n",
+      ),
+    ],
+    opts: NO_TYPES,
+  },
   {
     name: "E1155 (route show in orders gets orders. prefix)",
     code: "E1155",
@@ -287,6 +306,8 @@ for (const c of FIXED) {
 }
 
 const FIX = [
+  "E1108", // k.formats Rules: fix below, else none: adds the `@keel/std-*` package to `deps`; its fixture and diff are packages/cli/conformance/format-literal-e1108-fix.test.ts (in-process `check` has std-temporal registered, so only `keel check` reaches the unregistered form)
+  "E1589", // k.mount Messages: adds `servedBy` when `topology.ts` has exactly one `node` deployable; its fixture and exact diff are mount-e1589-fix.test.ts, and it is a FIXED case here
   "E1730",
   "E1003",
   "E1590",
@@ -333,7 +354,6 @@ const NO_FIX = [
   "E1104", // renaming the file would break imports in other files
   "E1105", // moving to a .server file is a design change
   "E1106", // which stdlib format type to use is the author's choice
-  "E1108", // k.formats Rules: no fix; which literal to write, or whether the value is data to read with parse, is the author's
   "E1111", // carrying the value another way (an action input, a session) is a design change
   "E1112", // what to derive is the author's choice
   "E1153", // which dependency edge to cut is a design choice
@@ -369,7 +389,6 @@ const NO_FIX = [
   "E1581", // k.mount Rules: Fix none; moving the module or hosting the deployable is the author's choice
   "E1582", // k.mount Rules: Fix none; the subpath is the author's
   "E1584", // k.mount Rules: Fix none; the links entry is the author's
-  "E1589", // k.mount Rules: Fix none; hosting the deployable or dropping identity.ts is the author's choice
   "E1592", // k.user Rules: Fix none; serving the module with servedBy or moving it is the author's choice
   "E1586", // k.topology Rules: no fix; the package, not the app, is wrong
   "E1587", // k.topology Rules: no fix; which package export holds the stylesheet is the author's choice

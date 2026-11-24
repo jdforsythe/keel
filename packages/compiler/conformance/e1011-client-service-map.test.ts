@@ -1,5 +1,5 @@
 // Spec: k.bundle, Rules "E1011 a client bundle holds a file of an app module of a `node` or `static` deployable that its service map omits (Service map) · E1013 a specifier other than relative reaching a file under `modules/`, in `keel check` (fix: the relative specifier; Aliases) · E1010 a specifier naming a file in a case other than its name on disk (fix: the name on disk) · E1007 reasons `environment config` and `environment value`, beside k.boundary's."
-// Spec: k.bundle, Service map "E1011: after bundling, a `client` deployable's browser build (`keel build`, or `vite build` alone) fails, exits 1 and writes nothing for it, when its graph holds a file under `modules/<id>/`, `<id>` listed by a `node` or `static` deployable and not in the map, that is neither server-only by name nor a stub. One line, no position, no fix: `E1011 <id> is not in the client's service map: imported by <file>`, the file first by absolute path among such files, `<file>` the project-relative path of the first file the bundler records importing it. `keel check` and `keel dev` report no E1011. On a tree `keel check` passes, the one way such a file reaches the bundle is a computed `import()` (W1608), whose files the bundler finds by glob and the scan does not follow."
+// Spec: k.bundle, Service map "E1011: after bundling, a `client` deployable's browser build (`keel build`, or `vite build` alone) fails, exits 1 and writes nothing for it, when its graph holds a file under `modules/<id>/`, `<id>` listed by a `node` or `static` deployable and not in the map, that is neither server-only by name nor a stub. One line, no position, no fix: `E1011 <id> is not in the client's service map: imported by <file>`, the file first by absolute path among such files, `<file>` the project-relative path of the first file outside `<id>` that the bundler records importing a file of it (for a glob import, the file holding the `import()`), shortened from its front so the text after `E1011 ` is at most 89 units; the line is no diag record, so `respond`'s clip never sees it. `keel check` and `keel dev` report no E1011. On a tree `keel check` passes, the one way such a file reaches the bundle is a computed `import()` (W1608), whose files the bundler finds by glob and the scan does not follow."
 // Spec: k.bundle, Conformance "A fixture with topology `api` (`node`, module `notes`) and `web` (`client`, module `app`, its page `modules/app/Page.tsx`), `notes` holding `notes.contract.ts`, `lib.ts` (`export const lib = 'x'`), `T.ts` (`export type T = string`), both public, `parts/a.ts` (`export const a = 'a'`) and a loader in `ping.server.ts`: a page holding ``export const load = (n: string) => import(`../notes/parts/${n}.ts`)``, with no other import of `notes` in `app`, makes `keel build` print W1608 and no error from its check step, then exit 1 printing exactly one E1011 line, `E1011 notes is not in the client's service map: imported by modules/app/Page.tsx`."
 // Spec: k.bundle, Conformance "In that fixture, `keel build` exits 0 with no E1011 when the page imports nothing of `notes`, when it imports `../notes/notes.contract.ts` and calls `service({ contract: notes })`, and when beside `load` it imports `./client.ts` which imports `../notes/lib.ts`; it prints no E1011 when the page's one import of `notes` is `../notes/ping.server.ts`."
 // Spec: k.bundle, Conformance "In that fixture, a page holding `load` and also `import type { T } from '../notes/T.ts'`, or `// import { lib } from '../notes/lib.ts'`, makes `keel build` print one E1011 for `notes`; with the topology `site` (`static`, module `notes`) and `web`, no `node` deployable, `load` prints none."
@@ -259,5 +259,33 @@ describe("k.bundle Service map: E1011 after bundling, a client deployable's buil
       );
     },
     SLOW * 2,
+  );
+});
+
+describe("k.bundle Service map: E1011's importer is shortened from its front to fit 89 units after `E1011 `", () => {
+  /** The importer with leading segments dropped behind one `.../` until the text fits, or one segment is left. */
+  const fitted = (id: string, file: string): string => {
+    const head = `${id} is not in the client's service map: imported by `;
+    const segs = file.split("/");
+    for (let k = 0; k < segs.length; k++) {
+      const path = k === 0 ? file : `.../${segs.slice(k).join("/")}`;
+      if (head.length + path.length <= 89 || k === segs.length - 1) return `${head}${path}`;
+    }
+    return head;
+  };
+
+  test(
+    "a module id of 24 letters makes the line `E1011 <id> is not in the client's service map: imported by .../app/Page.tsx`, at most 89 units after `E1011 `",
+    () => {
+      const id = "n".repeat(24);
+      const r = buildFixture(id, "computed");
+      expect(r.e1011, r.out).toHaveLength(1);
+      const line = r.e1011[0] ?? "";
+      const text = line.slice(line.indexOf("E1011 ") + "E1011 ".length);
+      expect(text).toBe(`${id} is not in the client's service map: imported by .../app/Page.tsx`);
+      expect(text).toBe(fitted(id, "modules/app/Page.tsx"));
+      expect(text.length).toBeLessThanOrEqual(89);
+    },
+    SLOW,
   );
 });

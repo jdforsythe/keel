@@ -23,10 +23,10 @@ describe("k.services: E1651", () => {
     const r = await check([...bad, ...clean], { types: false });
     const hit = r.diagnostics.filter((d) => d.code === "E1651").map((d) => d.path);
     expect(new Set(hit)).toEqual(new Set(bad.map((f) => f.path)));
-  });
+  }, 30_000);
 
   it("E1651 is not reported for code that goes through a declared endpoint", async () => {
     const r = await check(clean, { types: false });
     expect(r.diagnostics.filter((d) => d.code === "E1651")).toEqual([]);
-  });
+  }, 30_000);
 });

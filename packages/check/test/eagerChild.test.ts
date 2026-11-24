@@ -14,7 +14,7 @@ describe("E1808 eager base-element children (backlog 0188)", () => {
   it("reports at the value with a message naming the parent, and its fix wraps the value in a thunk", () => {
     const src = page(`return Box({ p: '1', children: ${IN} })`);
     const [d] = e1808(src);
-    expect(d?.message).toBe("Box children made before it; pass a thunk: children: () => ...");
+    expect(d?.message).toBe("Box children made before it; pass a thunk");
     expect([d?.line, d?.col]).toEqual([2, (src.split("\n")[1] ?? "").indexOf("Input") + 1]);
     const fixed = applyPatch("modules/app/Page.ts", src, d?.fix ?? "");
     expect(fixed).toContain(`children: () => ${IN}`);

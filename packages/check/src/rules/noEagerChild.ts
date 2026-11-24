@@ -52,7 +52,7 @@ function makerImports(ast: Program): {
  */
 export const noEagerChild: RuleDef = {
   code: "E1808",
-  message: (f) => `${str(f.data, "base")} children made before it; pass a thunk: children: () => ...`,
+  message: (f) => `${str(f.data, "base")} children made before it; pass a thunk`,
   see: "k.ui",
   check: ({ file, ast }) => {
     if (!isAppPath(file.path)) return [];

@@ -2,7 +2,7 @@ import { parseSync } from "oxc-parser";
 
 /** A `links` entry `identityMount` takes: `/`-led segments of `[A-Za-z0-9._~-]`, none `.` or `..`, not `''`. */
 const LINK = /^(\/(?!\.\.?(\/|$))[\w.~-]+)+$/;
-const E1580 = "identity.ts needs `export default identityMount('<path>')`, a literal of lowercase / segments";
+const E1580 = "identity.ts's default export is not identityMount('<literal>') of lowercase / segments";
 
 /**
  * The project's `identity.ts` read statically (k.mount Declaration): `path`, the literal of its default export

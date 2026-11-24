@@ -2,7 +2,7 @@
 // Spec: k.scaffold-service, Conformance "In the `node` project holding as `openapi.json` an OpenAPI 3 document k.openapi accepts, `keel scaffold service orders --openapi openapi.json --name gitHub` creates exactly `modules/orders/GitHubApi.schema.ts` (one export, `GitHubApi`) and `modules/orders/api.server.ts` (one export, `api`, importing `./GitHubApi.schema.ts`), each with the generated first line, and leaves `keel check` clean; with `--name GitHub` it is E1352, nothing written."
 // Spec: k.scaffold-service, Input "It is lowerCamel, as a module id is (else E1352, nothing written, in either form)"; E1352 not E1052 for a bad --name with --openapi (RFC 0210).
 // seed 1337 (the --name property below).
-// Spec: k.scaffold, Generators "`route`: ... `no-loader` with `api` is E1052" (flags `--no-loader`, `--api`).
+// Spec: k.scaffold, Generators "`route`: ... `no-loader` with `api`, is E1052" (flags `--no-loader`, `--api`).
 // The real binary, one fixed project per case; refusals write nothing; E1052 is a usage error (exit 2, k.cli Output), the others exit 1.
 import fc from "fast-check";
 import { afterAll, describe, expect, it } from "vitest";

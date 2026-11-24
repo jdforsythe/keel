@@ -1,6 +1,6 @@
+import { clipMessage } from "@keel/schema/internal";
 import type { Argument, CallExpression, Expression, ObjectExpression } from "oxc-parser";
 import { Visitor } from "oxc-parser";
-import { clip } from "../internal/clip.ts";
 import { findingAt } from "../internal/findingAt.ts";
 import { isAppPath } from "../internal/isAppPath.ts";
 import { jsxLiteral } from "../internal/jsxLiteral.ts";
@@ -59,7 +59,8 @@ function literalProp(obj: ObjectExpression, name: string): string | null | undef
  */
 export const passwordField: RuleDef = {
   code: "W1114",
-  message: (f) => `password field '${clip(str(f.data, "path"), 24)}' is not s.secret; it reaches logs as written`,
+  message: (f) =>
+    `password field '${clipMessage(str(f.data, "path"), 24)}' is not s.secret; it reaches logs as written`,
   see: "k.privacy-reads",
   check: ({ file, ast, project }) => {
     if (!isAppPath(file.path)) return [];

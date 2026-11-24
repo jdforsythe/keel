@@ -1,7 +1,7 @@
 // Seed 1337 (the properties below)
 // Spec: k.bundle, Rules "E1011 a client bundle holds a file of an app module of a `node` or `static` deployable that its service map omits (Service map) · E1013 a specifier other than relative reaching a file under `modules/`, in `keel check` (fix: the relative specifier; Aliases) · E1010 a specifier naming a file in a case other than its name on disk (fix: the name on disk) · E1007 reasons `environment config` and `environment value`, beside k.boundary's."
-// Spec: k.bundle, Aliases "A file under the project's `modules/` is imported by a relative specifier. `keel check` resolves every other specifier of an `import`, `import type`, `export … from` or `import('<literal>')` in a code file outside `packages/`, `node_modules/` and `.keel/` (E1576's files, k.security), its `?query` stripped, but a `#` specifier (E1576 alone), as its type check does: bundler resolution, a package's `exports`, `node_modules` up from the file, symlinks followed to the real path, no `tsconfig.json` read. One that resolves to a file under `modules/` (through a workspace link, a `node_modules` symlink or the project's own name and `exports`) is E1013 at its opening quote: `E1013 '<specifier>' reaches modules/<id>/<path> by an alias; import it as '<relative>'`, `<relative>` the path from the importing file's folder to that file as named on disk, starting `./` or `../`, the query appended. The fix replaces the specifier with `<relative>`. A specifier no file resolves to, as a `tsconfig.json` `paths` or `baseUrl` alias, a root-absolute path or a Vite `resolve.alias` is, is E1751 (TS2307), not E1013. E1013 is a check error, so `keel build` stops at its check step (k.boundary Build gate) and E1011 is never reached through it."
-// Spec: k.bundle, Conformance "`keel check` of that fixture with a symlink `node_modules/linked-notes` to `modules/notes`, the page importing `{ lib }` from `linked-notes/lib.ts`: one E1013 at the specifier's opening quote, `E1013 'linked-notes/lib.ts' reaches modules/notes/lib.ts by an alias; import it as '../notes/lib.ts'`; after its fix the line reads `import { lib } from '../notes/lib.ts'` and `keel check` reports no E1013. `keel build` of it exits 1 with that E1013, no E1011, and nothing written."
+// Spec: k.bundle, Aliases "A file under the project's `modules/` is imported by a relative specifier. `keel check` resolves every other specifier of an `import`, `import type`, `export … from` or `import('<literal>')` in a code file outside `packages/`, `node_modules/` and `.keel/` (E1576's files, k.security), its `?query` stripped, but a `#` specifier (E1576 alone), as its type check does: bundler resolution, a package's `exports`, `node_modules` up from the file, symlinks followed to the real path, no `tsconfig.json` read. One that resolves to a file under `modules/` (through a workspace link, a `node_modules` symlink or the project's own name and `exports`) is E1013 at its opening quote: `E1013 '<specifier>' reaches modules/<id>/<path> by an alias`, past the bound the specifier shortened from its front, then the file (k.check Diagnostics). The fix replaces the specifier with the path from the importing file's folder to that file as named on disk, starting `./` or `../`, the query appended. A specifier no file resolves to, as a `tsconfig.json` `paths` or `baseUrl` alias, a root-absolute path or a Vite `resolve.alias` is, is E1751 (TS2307), not E1013. E1013 is a check error, so `keel build` stops at its check step (k.boundary Build gate) and E1011 is never reached through it."
+// Spec: k.bundle, Conformance "`keel check` of that fixture with a symlink `node_modules/linked-notes` to `modules/notes`, the page importing `{ lib }` from `linked-notes/lib.ts`: one E1013 at the specifier's opening quote, `E1013 'linked-notes/lib.ts' reaches modules/notes/lib.ts by an alias` (62 units after the code); after its fix the line reads `import { lib } from '../notes/lib.ts'` and `keel check` reports no E1013. `keel build` of it exits 1 with that E1013, no E1011, and nothing written."
 // Spec: k.bundle, Conformance "In that project, one E1013 each, its fix `'../notes/T.ts'` or `'../notes/lib.ts'`, for `import type { T } from 'linked-notes/T.ts'`, `export { lib } from 'linked-notes/lib.ts'`, `import('linked-notes/lib.ts')`, and, with `package.json` `{ "name": "fx", "exports": { "./notes/*": "./modules/notes/*" } }`, `fx/notes/lib.ts`; with a symlink `node_modules/linked-app` to `modules/app`, `linked-app/Page.tsx` imported from `modules/app/sub/Deep.tsx` is one E1013 whose fix is `'../Page.tsx'`."
 // Spec: k.bundle, Conformance "In that project, `#notes/lib.ts` with `package.json` `\"imports\": { \"#notes/*\": \"./modules/notes/*\" }` is one E1576 and no E1013; with `tsconfig.json` `paths: { \"@/*\": [\"./modules/*\"] }`, an import of `@/notes/lib.ts` is one E1751 whose message starts `TS2307` and no E1013, as is one of `/modules/notes/lib.ts`; `@keel/ui` is neither."
 // The project is a real tree (E1013-support.ts): `package.json` `imports` and `exports`, symlinks in `node_modules`, a `tsconfig.json` with `paths`. `check(files, { root })` gets the same files in memory. "That fixture" is read as modules `app` (page `modules/app/Page.tsx`, deps `notes`) and `notes` (public `lib`, `T`). The page of every case is named `Page.tsx`.
@@ -72,10 +72,8 @@ describe("k.bundle Aliases: `linked-notes/lib.ts` in the page, `keel check` of t
     expect(d?.col).toBe(21);
   });
 
-  test("the message is `'linked-notes/lib.ts' reaches modules/notes/lib.ts by an alias; import it as '../notes/lib.ts'`", () => {
-    expect(only(files, "E1013")[0]?.message).toBe(
-      "'linked-notes/lib.ts' reaches modules/notes/lib.ts by an alias; import it as '../notes/lib.ts'",
-    );
+  test("the message is `'linked-notes/lib.ts' reaches modules/notes/lib.ts by an alias`, 62 units", () => {
+    expect(only(files, "E1013")[0]?.message).toBe("'linked-notes/lib.ts' reaches modules/notes/lib.ts by an alias");
   });
 
   test("the fix replaces the specifier: one `-` and one `+` line of the diff, `--- a/modules/app/Page.tsx`", () => {
@@ -152,7 +150,7 @@ describe("k.bundle Aliases: each form a package alias or link takes, landing und
       const d = only(files, "E1013");
       expect(d).toHaveLength(1);
       expect(d[0]?.message).toBe(
-        `'${specifier}' reaches modules/notes/${relative.slice("../notes/".length).replace(/\?.*$/, "")} by an alias; import it as '${relative}'`,
+        `'${specifier}' reaches modules/notes/${relative.slice("../notes/".length).replace(/\?.*$/, "")} by an alias`,
       );
       expect(changedLines(d[0]?.fix ?? "")).toEqual([
         `-${source.split("\n")[0]}`,
@@ -168,9 +166,7 @@ describe("k.bundle Aliases: each form a package alias or link takes, landing und
     const d = only(files, "E1013");
     expect(d).toHaveLength(1);
     expect(d[0]?.path).toBe("modules/app/sub/Deep.tsx");
-    expect(d[0]?.message).toBe(
-      "'linked-app/Page.tsx' reaches modules/app/Page.tsx by an alias; import it as '../Page.tsx'",
-    );
+    expect(d[0]?.message).toBe("'linked-app/Page.tsx' reaches modules/app/Page.tsx by an alias");
     expect(changedLines(d[0]?.fix ?? "")).toEqual([
       "-import { Page } from 'linked-app/Page.tsx'",
       "+import { Page } from '../Page.tsx'",
@@ -183,9 +179,7 @@ describe("k.bundle Aliases: each form a package alias or link takes, landing und
     );
     const d = only(files, "E1013");
     expect(d).toHaveLength(1);
-    expect(d[0]?.message).toBe(
-      "'linked-notes/lib.ts' reaches modules/notes/lib.ts by an alias; import it as './lib.ts'",
-    );
+    expect(d[0]?.message).toBe("'linked-notes/lib.ts' reaches modules/notes/lib.ts by an alias");
   });
 
   test("a test file is covered: `modules/app/test/page.test.ts` importing `linked-notes/lib.ts` is one E1013 whose fix is `'../../notes/lib.ts'`", () => {
@@ -195,9 +189,7 @@ describe("k.bundle Aliases: each form a package alias or link takes, landing und
     const d = only(files, "E1013");
     expect(d).toHaveLength(1);
     expect(d[0]?.path).toBe("modules/app/test/page.test.ts");
-    expect(d[0]?.message).toBe(
-      "'linked-notes/lib.ts' reaches modules/notes/lib.ts by an alias; import it as '../../notes/lib.ts'",
-    );
+    expect(d[0]?.message).toBe("'linked-notes/lib.ts' reaches modules/notes/lib.ts by an alias");
   });
 
   test("a test file of the module itself is covered: `modules/notes/test/lib.test.ts` importing `linked-notes/lib.ts` has the fix `'../lib.ts'`", () => {
@@ -206,18 +198,14 @@ describe("k.bundle Aliases: each form a package alias or link takes, landing und
     );
     const d = only(files, "E1013");
     expect(d).toHaveLength(1);
-    expect(d[0]?.message).toBe(
-      "'linked-notes/lib.ts' reaches modules/notes/lib.ts by an alias; import it as '../lib.ts'",
-    );
+    expect(d[0]?.message).toBe("'linked-notes/lib.ts' reaches modules/notes/lib.ts by an alias");
   });
 
   test("a file outside `modules/` is checked too: `lib/y.ts` importing `linked-notes/lib.ts` is one E1013 whose fix is `'../modules/notes/lib.ts'`", () => {
     const files = withFiles(f("lib/y.ts", "import { lib } from 'linked-notes/lib.ts'\nexport const y = lib\n"));
     const d = only(files, "E1013");
     expect(d).toHaveLength(1);
-    expect(d[0]?.message).toBe(
-      "'linked-notes/lib.ts' reaches modules/notes/lib.ts by an alias; import it as '../modules/notes/lib.ts'",
-    );
+    expect(d[0]?.message).toBe("'linked-notes/lib.ts' reaches modules/notes/lib.ts by an alias");
   });
 });
 
@@ -294,7 +282,7 @@ describe("k.bundle Rules: E1013 over alias forms, depths and statements", () => 
           expect(d[0]?.line).toBe(blank + 1);
           const first = source.split("\n")[blank] ?? "";
           expect(d[0]?.col).toBe(first.indexOf("'") + 1);
-          expect(d[0]?.message).toBe(`'${form.spec}' reaches ${form.target} by an alias; import it as '${relative}'`);
+          expect(d[0]?.message).toBe(`'${form.spec}' reaches ${form.target} by an alias`);
           expect(relative.startsWith("./") || relative.startsWith("../")).toBe(true);
           const after = patched(files, d[0]?.fix ?? "", path);
           expect(after).toBe(source.replace(`'${form.spec}'`, `'${relative}'`));

@@ -1,7 +1,7 @@
 // Spec: std.copy, Not followed "Calls (`fmt('Recipes')`), object members (`copy.title`), `let`, destructuring, imports from installed packages, attributes and properties not listed (`id`, `name`, `type`, `href`, `value`), lowercase callees and member callees (`s.enum`, `Set.text`), and a value with no letter (`'%'`, `'42'`, `` `${a}${b}` ``)."
 // Spec: std.copy, Conformance "None: `id="recipes.list"`, `type="number"`, `href="/a"`, `{props.data.text.title}`, `` {`${a}${b}`} ``, `{'%'}`, `{n + 1}`, `copy.title`, `fmt('Recipes')`, `s.enum(['a'])`, `Set.text({ title: 'Rezepte' })` in a locale file, `let t = 'x'`, a `const` from an installed package, each reporting case in a test file, and in a module whose `deps` do not list `@keel/std-messages`."
 // Seed 1337 (the property below). Each negative is its own fixture: a project tree whose module lists `@keel/std-messages`
-// unless the test says otherwise. The real-code cases read modules of the sample apps at test time.
+// unless the test says otherwise. The module cases read the modules under fixtures/copy-followed/ and fixtures/copy-unlisted/ at test time.
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -176,17 +176,25 @@ test("std.copy not followed: a module with no `deps` at all reports no E2406", (
   expect(e2406({ "modules/recipes/module.ts": bare, [VIEW]: component("<h1>Recipes</h1>") }).length).toBe(0);
 });
 
-test("std.copy not followed: the recipes module of golden-2, a real module listing `@keel/std-messages`, is no E2406", () => {
-  const files = realModule("apps/golden-2/modules/recipes", "recipes");
+test("std.copy not followed: a module listing `@keel/std-messages` whose copy follows std.copy is no E2406", () => {
+  const files = realModule("packages/std-messages/conformance/fixtures/copy-followed/modules/recipes", "recipes");
   expect(files.some((f) => f.path === "modules/recipes/module.ts")).toBe(true);
+  expect(files.some((f) => f.path === "modules/recipes/RecipeList.tsx")).toBe(true);
   const d = check(files, { types: false }).diagnostics.filter((x) => x.code === "E2406");
   expect(d).toEqual([]);
 });
 
-test("std.copy not followed: the todos module of golden-1, whose `deps` do not list `@keel/std-messages`, is no E2406", () => {
-  const files = realModule("apps/golden-1/modules/todos", "todos");
+test("std.copy not followed: a module whose `deps` do not list `@keel/std-messages` is no E2406 for literal copy, which is E2406 once it lists it", () => {
+  const files = realModule("packages/std-messages/conformance/fixtures/copy-unlisted/modules/todos", "todos");
   const d = check(files, { types: false }).diagnostics.filter((x) => x.code === "E2406");
   expect(d).toEqual([]);
+  const listing = files.map((f) =>
+    f.path === "modules/todos/module.ts"
+      ? { ...f, source: f.source.replace("deps: []", "deps: ['@keel/std-messages']") }
+      : f,
+  );
+  expect(listing).not.toEqual(files);
+  expect(check(listing, { types: false }).diagnostics.filter((x) => x.code === "E2406").length).toBeGreaterThan(0);
 });
 
 test("std.copy not followed: any word reached only through a call, a member, `let`, an unlisted attribute or a locale file is no E2406", () => {

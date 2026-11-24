@@ -122,7 +122,7 @@ export function parseTopology(source: string): { topology: Topology; problems: [
         continue;
       }
       if (!KEYS.has(k)) {
-        problems.push([name, `${name}: ${k} is not a deployable key; one of ${[...KEYS].join(", ")}`]);
+        problems.push([name, `${name}: ${k} is not a deployable key`]);
         unlisted = true;
         continue;
       }

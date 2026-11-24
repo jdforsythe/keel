@@ -3,6 +3,7 @@ import path from "node:path";
 import ts from "typescript";
 import type { Diagnostic } from "../types/Diagnostic.ts";
 import type { Checked } from "./Checked.ts";
+import { aliasMessage } from "./aliasMessage.ts";
 import { applyEdits } from "./applyEdits.ts";
 import { lineCol } from "./lineCol.ts";
 import { specifierLiterals } from "./specifierLiterals.ts";
@@ -45,7 +46,7 @@ export function aliasedImports(checked: readonly Checked[], root: string, dirs: 
         code: "E1013",
         path: file.path,
         ...lineCol(file.source, lit.start),
-        message: `'${lit.spec}' reaches ${landed.slice(dir.length)} by an alias; import it as '${relative}'`,
+        message: aliasMessage(lit.spec, landed.slice(dir.length)),
         see: "k.bundle",
         fix: unifiedDiff(file.path, file.source, applyEdits(file.source, [edit])),
       });

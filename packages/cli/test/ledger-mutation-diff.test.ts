@@ -35,4 +35,19 @@ describe("ledger --diff: stale claims", () => {
     expect(await codes([committed("old"), file("packages/a/src/a.ts", "new")])).toEqual(["W1714", "E1713"]);
     expect(await codes([committed("same"), file("packages/a/src/a.ts", "same")])).toEqual([]);
   });
+
+  it("a file the report holds with only ignored mutants loses its claim: no W1714, as mutate-stale leaves it alone", async () => {
+    const report = (source: string, status: string) =>
+      file(
+        "packages/a/reports/mutation/mutation.json",
+        JSON.stringify({
+          thresholds: { break: 70 },
+          files: { "src/a.ts": { source, mutants: [{ status, mutatorName: "X", replacement: "y" }] } },
+        }),
+      );
+    const ignored = [committed("old"), file("packages/a/src/a.ts", "new"), report("new", "Ignored")];
+    expect(await codes(ignored)).not.toContain("W1714");
+    // a report with a scored mutant replaces the claim instead
+    expect(await codes([committed("old"), file("packages/a/src/a.ts", "new"), report("new", "Killed")])).toEqual([]);
+  });
 });

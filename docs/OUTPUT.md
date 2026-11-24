@@ -12,7 +12,7 @@ E1042 src/cart/add.tsx:14:7 write to state not owned by this component
        +  tx.cart.addItem({ item })
 ```
 
-Fields: `code` (stable, one letter and four digits, never renumbered) · `path:line:col` · `message` under 90 chars · optional `fix` as a unified diff hunk · optional `see` (spec section id). The code is the key to `keel explain E1042` and `keel docs --for E1042`. Compact and pretty print `see` as `see: keel docs <id>`; json keeps the id.
+Fields: `code` (stable, one letter and four digits, never renumbered) · `path:line:col` · `message` one line of at most 89 characters (UTF-16 code units; a longer one keeps 86, or 85 rather than split a surrogate pair, then `...`; k.check Diagnostics), the same in every format · optional `fix` as a unified diff hunk · optional `see` (spec section id). The code is the key to `keel explain E1042` and `keel docs --for E1042`. Compact and pretty print `see` as `see: keel docs <id>`; json keeps the id.
 
 **Compact rules**
 - Passing tests, successful builds, clean files are silent. One trailer line: `ok 412 tests, 0 failed, 3 skipped (1.8s)` from a `pnpm` script; `keel` commands print the same line without the timing. A tooling script's trailer is `ok <name> <count> <unit>, ... (1.8s)` (`ok check 81 tasks (29.1s)`), and a script with a line of its own prints it whole (`ok voice-lint 2911 files`). A failed run ends on one `fail <name>` trailer (`fail build`) and prints no `ok` line.

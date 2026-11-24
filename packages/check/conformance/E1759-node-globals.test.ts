@@ -410,23 +410,31 @@ describe("k.host Node globals: the fix", () => {
   });
 });
 
-describe("k.host Node globals: real apps", () => {
-  for (const app of ["apps/golden-1", "apps/golden-2", "apps/inspector"]) {
-    test(`${app}, files and topology as they are, reports no E1759`, () => {
-      const files = realApp(app);
-      expect(files.some((x) => x.path === "topology.ts")).toBe(true);
-      expect(e1759(files)).toEqual([]);
-    });
-  }
+describe("k.host Node globals: a project of the test's own", () => {
+  const APP = "packages/check/conformance/fixtures/node-globals-app";
+  // The project's `topology.ts` is given as source text: `@keel/server` is later than check in the deps order.
+  const project = () => [
+    topology({ api: { modules: ["shop"], adapter: "node" }, web: { modules: ["shop"], adapter: "client" } }),
+    ...realApp(APP),
+  ];
 
-  test("a real app's browser module reads no Node global: adding one to a real component file is one E1759", () => {
-    const files = realApp("apps/golden-2");
-    const target = files.find((x) => x.path.startsWith("modules/recipes/") && x.path.endsWith(".tsx"));
-    expect(target).toBeDefined();
-    if (target === undefined) return;
+  test("a project with a `node` and a `client` deployable, a browser component, a server file importing `node:fs` and a `vite.config.ts` reading `process.env`, reports no E1759", () => {
+    const files = project();
+    expect(files.map((x) => x.path).sort()).toEqual([
+      "modules/shop/Badge.tsx",
+      "modules/shop/module.ts",
+      "modules/shop/stock.server.ts",
+      "topology.ts",
+      "vite.config.ts",
+    ]);
+    expect(e1759(files)).toEqual([]);
+  });
+
+  test("a browser module reads no Node global: adding `process.env.X` to its component is one E1759 at it", () => {
+    const files = project();
     const changed = files.map((x) =>
-      x.path === target.path ? { ...x, source: `${x.source}\nexport const probe = process.env.X\n` } : x,
+      x.path === BADGE ? { ...x, source: `${x.source}\nexport const probe = process.env.X\n` } : x,
     );
-    expect(e1759(changed).map((d) => d.path)).toEqual([target.path]);
+    expect(e1759(changed).map((d) => d.path)).toEqual([BADGE]);
   });
 });

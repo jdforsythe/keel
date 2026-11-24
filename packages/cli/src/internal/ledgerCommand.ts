@@ -124,10 +124,19 @@ const ledgerFile = (
 export function ledgerCommand(input: Input, io: Io, a11yMap: A11yCriteriaMap = new Map()): Outcome {
   const files = projectFiles(io);
   const built = buildLedger(files);
-  const a11y = a11yMap.size === 0 ? [] : a11yClaims(files, a11yMap, a11yFindings(io.cwd, files));
   const byItem = new Map(built.items.map((i) => [i.item, i]));
   const all = ledger(built.items.map((i) => ({ item: i.item, evidence: i.evidence.map((e) => e.ev) })));
   const scope = input.scope ?? "";
+  const name = input.write ?? COMMITTED.find((p) => files.some((f) => f.path === p));
+  const file = files.find((f) => f.path === name);
+  const parsed = file === undefined ? undefined : LedgerFileSchema.parse(safeJson(file.source));
+  const committed = parsed?.ok === true ? parsed.value : undefined;
+  const keptRungs = new Map(
+    (committed?.a11y ?? []).flatMap((c) =>
+      c.rung === "example" || c.rung === "none" ? [[c.item, c.rung] as const] : [],
+    ),
+  );
+  const a11y = a11yMap.size === 0 ? [] : a11yClaims(files, a11yMap, a11yFindings(io.cwd, files), keptRungs);
   const records = all.filter((r) => r.item.startsWith(scope));
   const claims = a11y.filter((c) => c.item.startsWith(scope));
   const apps = Object.keys(built.appUnsafe).filter((a) => `${a}:`.startsWith(scope) || scope.startsWith(`${a}:`));
@@ -137,10 +146,6 @@ export function ledgerCommand(input: Input, io: Io, a11yMap: A11yCriteriaMap = n
       ? built.hostElements
       : apps.reduce((n, a) => n + (built.appHosts[a] ?? 0), 0) +
         Object.entries(built.rootHosts).reduce((n, [path, k]) => n + (path.startsWith(scope) ? k : 0), 0);
-  const name = input.write ?? COMMITTED.find((p) => files.some((f) => f.path === p));
-  const file = files.find((f) => f.path === name);
-  const parsed = file === undefined ? undefined : LedgerFileSchema.parse(safeJson(file.source));
-  const committed = parsed?.ok === true ? parsed.value : undefined;
   const { justified, diags: misshapen } = justifiedFiles(files);
   const { mutation, fresh, reports, unmatched } = mutationClaims(files, committed?.mutation, justified);
   const unjustified = Object.entries(unmatched).flatMap(([pkg, indexes]) => {
@@ -184,8 +189,15 @@ export function ledgerCommand(input: Input, io: Io, a11yMap: A11yCriteriaMap = n
     verified: records.filter((r) => r.rung !== "none").length + claims.filter((c) => c.rung !== "none").length,
     unsafe,
     warnings: notes.length,
-    // Host element, rung and stale counts only when above 0, so a trailer stays one short line.
-    ...Object.fromEntries(Object.entries({ hostElements, ...shown, stale: stale.length }).filter(([, n]) => n > 0)),
+    // Host element, rung, stale and kept counts (a11y items kept for want of a project's report) only when above 0, so a trailer stays one short line.
+    ...Object.fromEntries(
+      Object.entries({
+        hostElements,
+        ...shown,
+        stale: stale.length,
+        keptNoReport: claims.filter((c) => c.kept === true).length,
+      }).filter(([, n]) => n > 0),
+    ),
   };
   if (input.diff !== true) {
     const out: OutRecord[] = [

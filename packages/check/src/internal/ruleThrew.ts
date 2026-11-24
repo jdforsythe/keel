@@ -1,6 +1,6 @@
+import { clipMessage } from "@keel/schema/internal";
 import type { Diagnostic } from "../types/Diagnostic.ts";
 import type { RuleDef } from "../types/RuleDef.ts";
-import { clip } from "./clip.ts";
 
 /** The E1756 for a rule whose `check`, `sql`, `message` or `fix` threw on the file at `path`. */
 export function ruleThrew(rule: RuleDef, path: string, e: unknown): Diagnostic {
@@ -11,7 +11,7 @@ export function ruleThrew(rule: RuleDef, path: string, e: unknown): Diagnostic {
     path,
     line: 1,
     col: 1,
-    message: clip(`rule ${rule.code} threw: ${clip(why, 60)}`, 89),
+    message: clipMessage(`rule ${rule.code} threw: ${clipMessage(why, 60)}`, 89),
     see: "k.check",
   };
 }

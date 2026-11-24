@@ -1,6 +1,6 @@
 import { globalRefs, unwrapExpression } from "@keel/compiler/internal";
+import { clipMessage } from "@keel/schema/internal";
 import { type Expression, Visitor } from "oxc-parser";
-import { clip } from "../internal/clip.ts";
 import { findingAt } from "../internal/findingAt.ts";
 import { importedFunction } from "../internal/importedFunction.ts";
 import { isAppPath } from "../internal/isAppPath.ts";
@@ -35,8 +35,8 @@ export const noSecretInState: RuleDef = {
   code: "E1303",
   message: (f) =>
     f.data?.tx === undefined
-      ? clip(`store state schema holds s.secret at ${str(f.data, "path")}; state never holds a secret`, 89)
-      : clip(`transaction ${str(f.data, "tx")} uses reveal; state never holds a secret`, 89),
+      ? clipMessage(`store state schema holds s.secret at ${str(f.data, "path")}; state never holds a secret`, 89)
+      : clipMessage(`transaction ${str(f.data, "tx")} uses reveal; state never holds a secret`, 89),
   see: "k.store",
   check: ({ file, ast, project }) => {
     if (!isAppPath(file.path)) return [];

@@ -1,6 +1,6 @@
+import { clipMessage } from "@keel/schema/internal";
 import type { Diagnostic } from "../../types/Diagnostic.ts";
 import type { SourceFile } from "../../types/SourceFile.ts";
-import { clip } from "../clip.ts";
 import { lineCol } from "../lineCol.ts";
 
 /** A k.module diagnostic at offset `at` of `file`: one-line message under 90 chars, optional fix diff and `see`. */
@@ -19,7 +19,7 @@ export function moduleDiag(
     path: file.path,
     line,
     col,
-    message: clip(message, 89),
+    message: clipMessage(message, 89),
     see,
   };
   return fix === undefined ? base : { ...base, fix };

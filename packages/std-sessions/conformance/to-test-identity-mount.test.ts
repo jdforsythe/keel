@@ -3,7 +3,6 @@
 // Spec: std.sessions, Commands "Otherwise they replay without `serve`, with `mount` the default export of the project's `identity.ts` when there is one, and the `to-test` file imports it as `mount` and passes it."
 // Seed 1337 (the session's seed; no generated input). The fixture is fixtures/cart-bug (a `client` deployable `web`); the identity fixture rewrites its topology so `web` is served by a `node` deployable `api` holding a module `gate` (E1589 otherwise) and adds `identity.ts` and `identity.server.ts`.
 // ASSUMPTIONS: the router-form file is `modules/cart/test/session-<fingerprint>.test.ts`; "its `renderRoute` options hold `mount`" is a `mount` key in the object literal of the one `renderRoute` call; `identity.ts` from there is `../../../identity.ts`.
-// UNTESTABLE here: `replay` and `minimize` taking `mount` (and E1722 with `serve`) are signature prose of std.sessions, not a Conformance sentence; their `mount` reaches `renderRoute`, whose E1722 is asserted in packages/server/conformance/render-route-app-mount-e1722.test.ts.
 import fs from "node:fs";
 import path from "node:path";
 import { check } from "@keel/check";

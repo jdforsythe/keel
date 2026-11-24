@@ -1,4 +1,5 @@
 import { canonicalJson, hashOf, references } from "@keel/compiler/internal";
+import { clipMessage } from "@keel/schema/internal";
 // Targeted examples pinning exact diagnostics (code, location, message, fix diff), helper edge cases, and
 // formatting. Rule output is pinned with inline snapshots of reviewed fixtures. Property parts use seed 1337.
 import fc from "fast-check";
@@ -10,7 +11,6 @@ import type { Budget, Diagnostic, SourceFile } from "../src/index.ts";
 import { check, defineRule, format, rules } from "../src/index.ts";
 import { applyEdits } from "../src/internal/applyEdits.ts";
 import { budgetBreaches } from "../src/internal/budgetBreaches.ts";
-import { clip } from "../src/internal/clip.ts";
 import { compareDiagnostics } from "../src/internal/compareDiagnostics.ts";
 import { ensureImport } from "../src/internal/ensureImport.ts";
 import { findingAt } from "../src/internal/findingAt.ts";
@@ -1821,15 +1821,15 @@ describe("small helpers", () => {
   });
 
   it("clip joins lines, trims, and cuts with an ellipsis exactly at the limit", () => {
-    expect(clip("abc", 3)).toBe("abc");
-    expect(clip("abcd", 3)).toBe("...");
-    expect(clip("abcdef", 5)).toBe("ab...");
-    expect(clip("  a  \n  b  ", 10)).toBe("a b");
-    expect(clip("a \n\n b\nc", 10)).toBe("a b c");
-    expect(clip("a  b", 10)).toBe("a  b");
-    expect(clip("x".repeat(100), 89)).toBe(`${"x".repeat(86)}...`);
-    expect(clip("x".repeat(89), 89)).toBe("x".repeat(89));
-    fc.assert(fc.property(fc.string(), fc.integer({ min: 4, max: 100 }), (s, n) => clip(s, n).length <= n));
+    expect(clipMessage("abc", 3)).toBe("abc");
+    expect(clipMessage("abcd", 3)).toBe("...");
+    expect(clipMessage("abcdef", 5)).toBe("ab...");
+    expect(clipMessage("  a  \n  b  ", 10)).toBe("a b");
+    expect(clipMessage("a \n\n b\nc", 10)).toBe("a b c");
+    expect(clipMessage("a  b", 10)).toBe("a  b");
+    expect(clipMessage("x".repeat(100), 89)).toBe(`${"x".repeat(86)}...`);
+    expect(clipMessage("x".repeat(89), 89)).toBe("x".repeat(89));
+    fc.assert(fc.property(fc.string(), fc.integer({ min: 4, max: 100 }), (s, n) => clipMessage(s, n).length <= n));
   });
 
   it("path classifiers", () => {

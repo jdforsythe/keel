@@ -153,14 +153,26 @@ export function typeCheck(
       if (mapped === null || (mapped.code !== "E1751" && own.has(mapped.code))) continue;
       out.push(mapped);
     }
-    const push = (code: string, at: number, message: string, see: string, end = -1): void => {
+    const depsFix = (pkg: string | undefined): string => {
+      const dir = /^(?:.*\/)?modules\/[^/]+\//.exec(file.path)?.[0];
+      const manifest = dir === undefined ? undefined : files.find((m) => m.path === `${dir}module.ts`);
+      const open = manifest === undefined ? null : /\bdeps\s*:\s*\[(\s*)(\]?)/.exec(manifest.source);
+      if (pkg === undefined || manifest === undefined || open === null || manifest.source.includes(`'${pkg}'`))
+        return "";
+      const at = open.index + open[0].length - (open[1] ?? "").length - (open[2] ?? "").length;
+      const text = open[2] === "]" ? `'${pkg}'` : `'${pkg}', `;
+      return unifiedDiff(manifest.path, manifest.source, applyEdits(manifest.source, [{ start: at, end: at, text }]));
+    };
+    const push = (code: string, at: number, message: string, see: string, end = -1, edit = ""): void => {
       const pos = view.original(at);
       const after = end < 0 ? -1 : view.original(end);
       if (pos < 0) return;
       const fix =
-        after < 0
-          ? ""
-          : unifiedDiff(file.path, file.source, applyEdits(file.source, [{ start: after, end: after, text: "()" }]));
+        edit !== ""
+          ? edit
+          : after < 0
+            ? ""
+            : unifiedDiff(file.path, file.source, applyEdits(file.source, [{ start: after, end: after, text: "()" }]));
       out.push({
         kind: "diag",
         code,
@@ -173,7 +185,7 @@ export function typeCheck(
     };
     for (const at of resultDiscards(sf, checker))
       push("E1453", at, "Result discarded as a statement; narrow on r.ok", "k.errors");
-    for (const f of formatLiterals(sf, checker)) push("E1108", f.at, f.message, "k.formats");
+    for (const f of formatLiterals(sf, checker)) push("E1108", f.at, f.message, "k.formats", -1, depsFix(f.pkg));
     dates.set(file.path, new Set(dateReads(sf, checker, program).map(view.original)));
     if (file.path.endsWith("x") && isAppPath(file.path))
       for (const t of textNodes(sf, checker))

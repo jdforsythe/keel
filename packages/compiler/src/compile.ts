@@ -1,3 +1,4 @@
+import { clipMessage } from "@keel/schema/internal";
 import type { Analysis } from "./internal/Analysis.ts";
 import type { BindingInfo } from "./internal/BindingInfo.ts";
 import type { ElementInfo } from "./internal/ElementInfo.ts";
@@ -8,6 +9,7 @@ import { clientReach } from "./internal/clientReach.ts";
 import { collectElements } from "./internal/collectElements.ts";
 import { collectStyles } from "./internal/collectStyles.ts";
 import { diag } from "./internal/diag.ts";
+import { fitChain } from "./internal/fitChain.ts";
 import { hashOf } from "./internal/hashOf.ts";
 import { internalFailure } from "./internal/internalFailure.ts";
 import { lowerFile } from "./internal/lowerFile.ts";
@@ -18,6 +20,7 @@ import { rulePropsDestructuring } from "./internal/rules/rulePropsDestructuring.
 import { ruleRawHtml } from "./internal/rules/ruleRawHtml.ts";
 import { ruleTopLevelPropRead } from "./internal/rules/ruleTopLevelPropRead.ts";
 import { ruleUrlLiteral } from "./internal/rules/ruleUrlLiteral.ts";
+import { shortPath } from "./internal/shortPath.ts";
 import type { A11yEntry } from "./types/A11yEntry.ts";
 import type { Artifacts } from "./types/Artifacts.ts";
 import type { CompileOptions } from "./types/CompileOptions.ts";
@@ -61,8 +64,15 @@ function duplicateIds(all: readonly { a: Analysis; elements: readonly ElementInf
 
 /** E1000 message: the parser's message on one line, `syntax error: ` first, under 90 chars. */
 function syntaxMessage(parser: string): string {
-  const text = `syntax error: ${parser.replace(/\s*\n\s*/g, " ").trim()}`;
-  return text.length > 89 ? `${text.slice(0, 86)}...` : text;
+  return clipMessage(`syntax error: ${parser}`, 89);
+}
+
+/** E1004 message (k.boundary Reach): the shortest chain from a client entry, else the file the import names. */
+function reachMessage(chain: string | undefined, file: string): string {
+  const head = "client code reaches server-only (";
+  if (chain !== undefined) return `${head}${fitChain(chain.split(" -> "), 89 - head.length - 1)})`;
+  const lead = "client code imports server-only ";
+  return `${lead}${shortPath(file, 89 - lead.length)}`;
 }
 
 /**
@@ -115,9 +125,7 @@ function compileFiles(files: readonly SourceFile[], options: CompileOptions): Co
   const byPath = new Map(done.map((d) => [d.a.path, d.a]));
   for (const h of clientReach([...byPath.values()], options.topology).hits) {
     const a = byPath.get(h.path);
-    const via = h.chain === undefined ? "" : ` (${h.chain})`;
-    if (a !== undefined)
-      diagnostics.push(diag(a, "E1004", h.start, `client code imports server module ${h.source}${via}`, "k.compiler"));
+    if (a !== undefined) diagnostics.push(diag(a, "E1004", h.start, reachMessage(h.chain, h.file), "k.compiler"));
   }
   // E1010 (k.bundle Names): a specifier naming a file of the project in a case other than its name on disk.
   for (const m of miscasedImports([...byPath.values()])) {

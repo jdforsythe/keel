@@ -5,4 +5,6 @@ export type A11yClaim = {
   readonly criterion: string;
   readonly rung: "none" | "example";
   readonly evidence: string;
+  /** True when the project holds no `reports/a11y.json` and the committed rung is kept. */
+  readonly kept?: true;
 };
