@@ -74,3 +74,11 @@ Read this section; what stands above it is the record of how the lanes got here.
 - After `lane-rtest` merges: `node tooling/mutate-stale.mjs --missing --minutes 150 --concurrency 6` with the machine quiet, the reports copied to `<git common dir>/keel-mutation-held/`, `keel test` in golden-1, golden-2, household and each example, `pnpm ledger`, `pnpm evidence:report`, `node tooling/ledger-fresh.mjs --a11y`, the ledger commit last; one whole gate in `.worktrees/verify`; push; watch CI.
 - The gate's brief, as the last three were given: CI's order from `.github/workflows/ci.yml`; bash, never zsh loops; no `timeout` binary on this machine (`/tmp/gate/step.sh` is a wrapper, if it still exists); a limit on root `pnpm test` above 590 s (one gate killed its own run there); every smoke with CI's exact arguments; the postgres job on two throwaway `postgres:17` containers off port 5432; household's full output kept; report only when every step has finished; `node tooling/publish-exports.mjs --check` as an extra, expected to fail on the two compiler findings of backlog 1005 only.
 
+
+## Opened on resume, 2026-11-24
+
+- `lane-rtest`: a finisher runs what the section above lists; no merge until its report is checked.
+- `.worktrees/r1052` `lane-r1052`: backlog 1052, a table's overflow and a cell's text alignment in k.ui; RFC 0203, ADR 0225. Writer phase.
+- `.worktrees/r1037` `lane-r1037`: backlog 1037, a code for a module `deps` entry no file imports; RFC 0204, ADR 0226. Writer phase.
+- `.worktrees/r1009` `lane-r1009`: backlog 1009 (an exact-match plural form; RFC 0205, ADR 0227) and backlog 1010 (`parseMoney`; RFC 0206, ADR 0228). Writer phase.
+- A writer commits the RFC, the ADR and the spec text and runs no suite. Next for each: the `conformance-writer` subagent from the spec text, then a builder briefed from `briefs/README.md`. The next free numbers are RFC 0207 and ADR 0229.
