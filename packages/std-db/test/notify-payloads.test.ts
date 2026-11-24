@@ -27,3 +27,16 @@ test("payloads split any key list under 7,900 bytes and lose or repeat no key", 
     { seed: 1337, numRuns: 100 },
   );
 });
+
+test("a key whose own entry cannot fit one payload is announced in none, and its neighbours still are", () => {
+  const small = "keel.store.a";
+  const huge = `keel.store.${"x".repeat(8000)}`;
+  const payloads = notifyPayloads("5", [small, huge, "keel.store.z"]);
+  for (const p of payloads) expect(Buffer.byteLength(p, "utf8")).toBeLessThanOrEqual(7900);
+  const announced = payloads.flatMap((p) => {
+    const k: unknown = Reflect.get(Object(JSON.parse(p)), "k");
+    return Array.isArray(k) ? k.map(String) : [];
+  });
+  expect(announced).toEqual([small, "keel.store.z"]);
+  expect(notifyPayloads("5", [huge])).toEqual([]);
+});

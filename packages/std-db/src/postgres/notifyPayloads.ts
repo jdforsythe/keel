@@ -1,4 +1,4 @@
-/** The `keel_storage` notification payloads for `keys` (sorted, store keys only) under `token`: JSON `{"o":<token>,"k":[...]}`, as few as keep each at most 7,900 bytes. Never a value. */
+/** The `keel_storage` notification payloads for `keys` (sorted, store keys only) under `token`: JSON `{"o":<token>,"k":[...]}`, as few as keep each at most 7,900 bytes. Never a value. A key whose own entry cannot fit in one payload is left out: no notification carries it. */
 export function notifyPayloads(token: string, keys: readonly string[]): string[] {
   const head = `{"o":${token},"k":[`;
   const out: string[] = [];
@@ -7,6 +7,7 @@ export function notifyPayloads(token: string, keys: readonly string[]): string[]
   for (const key of keys) {
     const text = JSON.stringify(key);
     const add = Buffer.byteLength(text) + 1;
+    if (Buffer.byteLength(head) + 2 + add > 7_900) continue;
     if (chunk.length > 0 && size + add > 7_900) {
       out.push(`${head}${chunk.join(",")}]}`);
       chunk = [];

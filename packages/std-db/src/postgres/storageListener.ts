@@ -31,10 +31,12 @@ export function storageListener(url: URL, token: string): StorageListening {
   const drop = (client: pg.Client, lost: boolean): void => {
     client.removeAllListeners();
     client.on("error", () => undefined);
-    if (live === client) {
-      live = undefined;
-      opening = undefined;
+    if (live !== client) {
+      void client.end().catch(() => undefined);
+      return;
     }
+    live = undefined;
+    opening = undefined;
     const gone = [...watchers];
     watchers.clear();
     if (lost) for (const on of gone) on({ kind: "lost" });

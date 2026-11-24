@@ -45,7 +45,8 @@ export async function postgres(url: URL, options: PostgresOptions = {}): Promise
       await c.query(OPEN_LOCK);
       if (options.clientFactory === undefined) {
         const xid = field((await c.query("select pg_current_xact_id()::text as x")).rows[0], "x");
-        token = typeof xid === "string" && /^\d+$/.test(xid) ? xid : "0";
+        if (typeof xid !== "string" || !/^\d+$/.test(xid)) throw new Error("the transaction id is not a number");
+        token = xid;
       }
       await c.query("create table if not exists keel_kv (key text primary key, value text not null)");
       await c.query("create table if not exists keel_meta (name text primary key, value text not null)");
