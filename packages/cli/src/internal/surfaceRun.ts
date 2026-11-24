@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { join, relative } from "node:path";
 import { compile, contractCallers, isSourcePath, parseTopology } from "@keel/compiler";
+import { sourceHash } from "@keel/compiler/internal";
 import { entryDependency } from "@keel/compiler/internal/entry/entryDependency";
 import { stdContract } from "@keel/compiler/std/stdContract";
 import { stdRoutes } from "@keel/compiler/std/stdRoutes";
@@ -139,7 +140,7 @@ export async function surfaceRun(cwd: string): Promise<{ code: number; notes: st
                 transform(code, id) {
                   const path = rel(id);
                   if (path === undefined) return null;
-                  sources[path] = hashOf(text.get(path) ?? code);
+                  sources[path] = sourceHash(path, text.get(path) ?? code) ?? "unparsed";
                   const out = compile([{ path, source: code }]);
                   const broken = out.diagnostics.find((d) => d.code === "E1000");
                   if (broken !== undefined)

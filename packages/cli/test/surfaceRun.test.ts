@@ -4,6 +4,7 @@
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { sourceHash } from "@keel/compiler/internal";
 import fc from "fast-check";
 import { afterAll, describe, expect, test } from "vitest";
 import { hashOf } from "../src/internal/hashOf.ts";
@@ -88,8 +89,8 @@ describe("surfaceRun", () => {
         },
       });
       expect(s.data.sources).toEqual({
-        "modules/m/m.contract.ts": hashOf(source),
-        "modules/m/routes.ts": hashOf(ROUTES),
+        "modules/m/m.contract.ts": sourceHash("modules/m/m.contract.ts", source),
+        "modules/m/routes.ts": sourceHash("modules/m/routes.ts", ROUTES),
       });
       expect(s.hash).toBe(hashOf(s.data));
     },
