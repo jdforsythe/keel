@@ -239,9 +239,12 @@ const SCENARIOS: Record<string, (kind: Kind, x: string) => Files> = {
   E1156: (k, x) => [mfile(k, { id: x }), { path: `${where(k, x)}/Run.ts`, source: RUN }],
 };
 
+// The clause names E1151-E1156 only; E1165 (unused `deps`) is not judged for `@keel/std-*` entries (k.module Rules).
+const NAMED = new Set(["E1151", "E1152", "E1153", "E1154", "E1155", "E1156"]);
 const sortedCodes = (files: Files) =>
   check(files, NO_TYPES)
     .diagnostics.map((d) => d.code)
+    .filter((c) => NAMED.has(c))
     .sort();
 
 test("a module as an app module and as a stdlib package yield the same multiset of diagnostic codes for each of E1151-E1156", () => {

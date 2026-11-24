@@ -1,6 +1,6 @@
 ---
 name: keel
-description: "Read first in a Keel app: app shape, one export per file, the rules, the commands, and which Keel skill to load next; E1104, E1155, E1401, E1403, E1407, E145x, E1501, E1515, E1601, E1301, E1752, E1757"
+description: "Read first in a Keel app: app shape, one export per file, the rules, the commands, and which Keel skill to load next; E1104, E1155, E1165, E1401, E1403, E1407, E145x, E1501, E1515, E1601, E1301, E1752, E1757"
 ---
 
 # Building a Keel app
