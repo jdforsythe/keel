@@ -21,7 +21,7 @@ import { topologyAst } from "./topologyAst.ts";
 import { topologyOf } from "./topologyOf.ts";
 
 /**
- * `scaffold service <module>` (k.scaffold Service), in one of two forms. `base`: an empty endpoint declaration
+ * `scaffold service <module>` (k.scaffold-service), in one of two forms. `base`: an empty endpoint declaration
  * `<Name>Api` (`name`, the module id by default; lowerCamel, else E1352) and its client `api` at that URL, both the author's to edit. `schema` and `service`: the two sources
  * `@keel/services/openapi` generated (the cli converts the document; scaffold may not import services), placed as they
  * are, generated marker included, so later operations may not edit them (E1005). Either way the files are
@@ -76,6 +76,7 @@ export function opService(input: unknown, files: ReadonlyMap<string, string>): R
       `${id} is on client deployable ${first}, which does not declare ${origin}`,
       undefined,
       at === undefined ? undefined : lineCol(topology, at),
+      "k.scaffold-service",
     );
   } else {
     let next: string | null = topology;

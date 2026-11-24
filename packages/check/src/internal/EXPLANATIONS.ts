@@ -516,7 +516,7 @@ const ROWS: readonly Row[] = [
     "scaffold service in a client module needs a reason for its origin",
     "The module is on a client deployable, so api.server.ts ships to the browser and its origin must be declared under origins.connect with a reason a reviewer reads (k.origins). Nothing is written.",
     "pass --reason '<why the app calls it>', or keel codemod place <module> --to <name> --adapter node",
-    "k.scaffold",
+    "k.scaffold-service",
   ],
   [
     "E1359",

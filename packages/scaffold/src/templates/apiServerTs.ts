@@ -1,4 +1,4 @@
-/** `api.server.ts` of `scaffold service --base` (k.scaffold Service): the client `api` of the endpoints `name` at `base`. */
+/** `api.server.ts` of `scaffold service --base` (k.scaffold-service): the client `api` of the endpoints `name` at `base`. */
 export function apiServerTs(name: string, base: string): string {
   return [
     `import { service } from "@keel/services";`,
