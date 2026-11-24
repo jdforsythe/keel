@@ -1,6 +1,6 @@
 # ADR-0240: k.drive: `simulate` drives the run's clock when no work of the run is pending (RFC 0218)
 
-**Status:** accepted (orchestrator, 2026-11-24, amended five times the same day, for the operator to confirm).
+**Status:** accepted (orchestrator, 2026-11-24, amended six times the same day, for the operator to confirm).
 
 **Context.** Under `simulate` a scenario that awaited server work waiting on the clock hung. A drive that moved the clock after quiet macrotask turns fixed the hang, but let machine speed reorder events: a real `setTimeout(12)` ran after a 10 ms sim waiter, and the run passed. Unheld work (`app.fetch` behind a harness, a password hash, PGlite's boot and session wait) needed app-side helpers. Tests are deterministic without the author thinking about it, so the law must hold by construction.
 
@@ -9,7 +9,7 @@
 - Pending work is decided by tracking:
   - every non-promise async resource made in the run's context, until Node destroys it;
   - held work, until it is delivered, in start order and after pending thread-pool requests; a resource made in held work is the hold's;
-  - not a resource a garbage collection would destroy (the drive collects once per new pending set);
+  - not a resource a garbage collection would destroy (the drive collects when one pending set is read on two turns in a row and a resource joined it or a callback of one ran since the last collection);
   - a harness call, except while it waits only on an unanswered `ctx.net` route.
 - Work waiting only on the sim clock or online state is promises alone, so it is parked by construction.
 - The clock moves to the next moment, within the horizon or `t + ms`, on a drive turn where nothing is pending.
@@ -19,7 +19,7 @@
 - E1727 has no grace in turns.
 - E1728 also fails the run when its real-time budget is spent. The budget is `simulate`'s `budget`, else the enclosing test's timeout less a tenth, else 300,000 ms. The message names every piece of work in flight, oldest first. No piece of work has a bound of its own, so a starved short timer never fails a run the test would finish. The budget can fail a run and never changes a trace.
 - After the scenario resolves, the drive waits, moving no clock, until no work is pending; work still pending when the budget is spent fails E1728 `work outlived the scenario: <labels>`. Under `simulate` a harness call resolves on a turn where no work but harness calls is pending; no turn count decides anything.
-- `keel test` starts test processes with `UV_THREADPOOL_SIZE=1`, overriding the environment.
+- `keel test` runs test files in forked processes started with `UV_THREADPOOL_SIZE=1`, overriding the environment. A `node:zlib` handle is no thread-pool request.
 - The trace ends with the final values of the storage keys the run wrote (by key, as stored strings) and of the live stores (by id, log entries without `at`).
 - The drive runs its callbacks in the run's context.
 - Four things escape the drive: a resource made before or outside the run, unless held; an `import()` in app code outside a harness's `routes` loader; state kept across runs; concurrent real work outside every seam whose completions the drive does not deliver. Under `keel test` the law holds by construction otherwise, and the law check reports the rest. `keel check` reports none of them. The law check reports one only when `law` is on or on a failing run's replays, and only when it reaches the trace.
