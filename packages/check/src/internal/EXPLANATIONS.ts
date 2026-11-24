@@ -949,6 +949,13 @@ const ROWS: readonly Row[] = [
     "k.origins",
   ],
   [
+    "E1592",
+    "identity.server.ts, or a file it imports, imports the routes of a module a static deployable, or a client one without servedBy, serves",
+    "Those pages are on another origin than the sign-in: a return there lands the person signed out, and an Href is root-relative.",
+    "adapter: 'client' -> adapter: 'client', servedBy: 'api'",
+    "k.user",
+  ],
+  [
     "E1601",
     "Date.now, new Date(), Temporal.Now, Math.random, crypto.randomUUID, fetch, sendBeacon, localStorage in app code",
     "Effects go through ctx so sim runs are deterministic. Aliases, destructuring and literal keys count.",
