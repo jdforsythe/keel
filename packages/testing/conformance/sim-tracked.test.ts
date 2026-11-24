@@ -4,19 +4,28 @@
 // Spec: k.drive, Conformance "In an empty replay, a scenario that starts work writing `'running'` to a storage key, awaiting `ctx.clock.after(1000)`, then writing `'done'`: after `await run(500)` the key reads `'running'` and the clock is 500; after a following `await run(600)`, `'done'`."
 // Spec: k.drive, Driving "On each of its turns, while the scenario is pending and no work is pending, the drive advances the clock to the next moment if it is at most `horizon` ms past the run's start (or, while a `run(ms)` waits, at most its `t + ms`)."
 // Spec: k.drive, Driving "Real work's speed decides nothing."
-// Spec: k.drive, Driving "each async resource other than a promise created in that context, from its creation until Node destroys it: a timer or immediate after its callback, a file, DNS or thread-pool request (a password hash) after it answers, a socket, server, interval or port once closed;"
+// Spec: k.drive, Driving "each async resource other than a promise created in that context outside held work, from its creation until Node destroys it: a timer or immediate after its callback, a file, DNS or thread-pool request (a password hash) after it answers, a socket, server, interval or port once closed;"
+// Spec: k.drive, Driving "held work, until it is delivered (k.drive-law Order); a resource created in held work's async context (an engine's own timer armed in a held call) is the hold's, not work of the run;"
+// Spec: k.drive, Driving "a harness `fire`, `settle`, `navigate` or render in progress, but not while it waits only on an unanswered `ctx.net` route."
+// Spec: k.drive, Driving "A resource a garbage collection would destroy is not pending: each time the set of pending resources is not one it has collected with, the drive runs one full garbage collection before reading it, and a resource that collection destroys (a synchronous call's job) is not pending."
+// Spec: k.drive, Conformance "In an empty replay, for each `d` of 1, 2 and 20, `fire` on a `render` handle on the run's ctx whose handler starts a `node:timers` `setTimeout(d)` that writes `'late'` to storage key `k` resolves with `k` reading `'late'`."
+// Spec: k.drive, Conformance "In an empty replay under `budget: 300`, a scenario that calls `node:crypto` `pbkdf2Sync` of 1,000 iterations and `node:zlib` `gzipSync`, then awaits `ctx.clock.after(10)`, resolves `simulate` with `ctx.clock.now()` 10 after the await."
 // Spec: k.drive, Driving "The harness's and the drive's own macrotask turns are made outside the run's context and are not work; the drive moves the clock inside the run's context, so waiters, offline-edge callbacks and `observe` callbacks it runs make work of the run."
 // Spec: k.drive, Conformance "Under `simulate` with `replay` of a `SimRun` of seed 1 whose schedule's `offline` is `[{ at: 100, ms: 50 }]`, an `observe` callback that, on the `net` event at 100, starts a `node:timers` `setTimeout(20)` recording `ctx.clock.now()` as it answers: it records 100, and after `run()` the clock is 150."
 // Seed: 1337 (fc.assert below); replays use a SimRun of seed 1 and an empty schedule.
 // ASSUMPTION: "inside app code" is a `ctx.net` route handler (a sim route runs as app code, k.drive Seams) or the scenario itself, which runs in the run's context; both are asserted. The route's fetch takes the default net step `{ delay: 0, fault: 'none' }`.
 // ASSUMPTION: "never lets the clock pass it" is read as: a `ctx.clock.after(10)` waiter started beside the real work resolves after it, so the record is the real completion at clock 0, then `timer` at 10, whatever the real duration.
 // UNTESTABLE: a dynamic import in app code. k.drive Law names an `import()` that the test runner answers over its own channel as what the law check reports, so no ordering is asserted; the harness's module load (a route's chunk) is k.drive #15 in packages/server/conformance/sim-route-load.test.ts.
-import { pbkdf2 } from "node:crypto";
+import { pbkdf2, pbkdf2Sync } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { setImmediate, setTimeout } from "node:timers";
 import { fileURLToPath } from "node:url";
+import { gzipSync } from "node:zlib";
+import type { Ctx } from "@keel/ctx";
 import { observe } from "@keel/ctx";
-import { simulate } from "@keel/testing";
+import { s } from "@keel/schema";
+import { clone, on, template } from "@keel/runtime-dom/ops";
+import { render, simulate } from "@keel/testing";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { SEED } from "./fixtures.ts";
@@ -234,4 +243,86 @@ test("Under `simulate` with `replay` of a `SimRun` of seed 1 whose schedule's `o
   );
   expect(seen).toEqual([100]);
   expect(after).toBe(150);
+});
+
+// ASSUMPTION: the `render` handle's `fire` of the click on `late.go` is the harness call in progress; the handler's `setTimeout(d)` is real work of the run, so `fire` resolves only after it has answered.
+const LateT = template('<div><button id="late.go" data-k="late.go">go</button></div>');
+const LateView = Object.assign(
+  (props: { readonly ms: number }, ctx: Ctx): Node => {
+    const root = clone(LateT);
+    on("late.go", "click", () => {
+      setTimeout(() => {
+        void ctx.storage.set("k", "late");
+      }, props.ms);
+    });
+    return root;
+  },
+  { Props: s.object({ ms: s.int() }) },
+);
+
+async function fireLate(ms: number): Promise<string | null> {
+  let seen: string | null = null;
+  await simulate(
+    async ({ ctx }) => {
+      const t = render(LateView, { props: { ms }, ctx });
+      await t.fire("late.go", { type: "click" });
+      seen = await ctx.storage.get("k");
+      t.dispose();
+    },
+    { replay },
+  );
+  return seen;
+}
+
+test("In an empty replay, for each `d` of 1, 2 and 20, `fire` on a `render` handle on the run's ctx whose handler starts a `node:timers` `setTimeout(d)` that writes `'late'` to storage key `k` resolves with `k` reading `'late'`.", async () => {
+  for (const d of [1, 2, 20]) expect(await fireLate(d)).toBe("late");
+});
+
+test("`fire` waits for the real timer its handler starts, for any real delay from 0 to 40 ms", async () => {
+  await fc.assert(
+    fc.asyncProperty(fc.integer({ min: 0, max: 40 }), async (d) => {
+      expect(await fireLate(d)).toBe("late");
+    }),
+    { seed: SEED, numRuns: 12 },
+  );
+});
+
+test("In an empty replay under `budget: 300`, a scenario that calls `node:crypto` `pbkdf2Sync` of 1,000 iterations and `node:zlib` `gzipSync`, then awaits `ctx.clock.after(10)`, resolves `simulate` with `ctx.clock.now()` 10 after the await.", async () => {
+  let now = -1;
+  await simulate(
+    async ({ ctx }) => {
+      pbkdf2Sync("pw", "salt", 1000, 32, "sha256");
+      gzipSync(Buffer.from("keel"));
+      await ctx.clock.after(10);
+      now = ctx.clock.now();
+    },
+    { replay, budget: 300 },
+  );
+  expect(now).toBe(10);
+});
+
+test("synchronous `pbkdf2Sync` and `gzipSync` calls, any number of them with any iteration count, are not work: the scenario resolves with the clock at its wait", async () => {
+  await fc.assert(
+    fc.asyncProperty(
+      fc.integer({ min: 1, max: 5 }),
+      fc.integer({ min: 1, max: 3000 }),
+      fc.integer({ min: 1, max: 500 }),
+      async (calls, iterations, wait) => {
+        let now = -1;
+        await simulate(
+          async ({ ctx }) => {
+            for (let i = 0; i < calls; i++) {
+              pbkdf2Sync("pw", "salt", iterations, 32, "sha256");
+              gzipSync(Buffer.from(`keel${i}`));
+            }
+            await ctx.clock.after(wait);
+            now = ctx.clock.now();
+          },
+          { replay, budget: 300 },
+        );
+        expect(now).toBe(wait);
+      },
+    ),
+    { seed: SEED, numRuns: 10 },
+  );
 });

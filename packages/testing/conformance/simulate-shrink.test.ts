@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 // Spec: k.sim, Conformance "A scenario that fails only when a response is `lost` fails `simulate` with E1704 whose shrunk `SimRun` holds exactly one `lost` step and no other fault; `replay` of it fails the same way."
+// Spec: k.sim, simulate "The seed is `seed`, else `KEEL_SEED`, else 1337; success resolves `{ seed, runs, checked }` (k.drive-law)."
 // Seed: 1337.
 import { simulate } from "@keel/testing";
 import { describe, expect, it } from "vitest";
@@ -64,8 +65,8 @@ describe("k.sim: shrinking", () => {
     expect(faultsOf(shrunkRun(replayed))).toEqual(["lost"]);
   });
 
-  it("a scenario that never fails resolves `{ seed, runs }`", async () => {
-    const r = await simulate(async ({ run }) => run(), { runs: 20, seed: SEED });
-    expect(r).toEqual({ seed: SEED, runs: 20 });
+  it("a scenario that never fails resolves `{ seed, runs, checked }`, `checked` 0 with `law` off", async () => {
+    const r = await simulate(async ({ run }) => run(), { runs: 20, seed: SEED, law: false });
+    expect(r).toEqual({ seed: SEED, runs: 20, checked: 0 });
   });
 });

@@ -1,5 +1,6 @@
 // Spec: std.postgres, Conformance "Under `simulate` with `replay` of a `SimRun` of seed 1 whose plan for the database is `[{ delay: 500, fault: 'none' }]`, a scenario that awaits a lone `query` and calls no `run` gets its answer with `ctx.clock.now()` 500; with that plan empty, a `transaction` whose `fn` runs a `tx` statement, awaits `ctx.clock.after(100)` and runs another commits both, answering with `ctx.clock.now()` 100."
 // Spec: std.postgres, Conformance "In an empty replay (k.drive), a first `query` on a database no earlier run used, started beside a `ctx.clock.after(1)` waiter, answers with `ctx.clock.now()` 0 and the waiter not resolved."
+// Spec: std.postgres, Conformance "In an empty replay (k.drive), a scenario that runs two `insert` statements through `query`, each committing, then awaits `ctx.clock.after(10)`, resolves `simulate` with `ctx.clock.now()` 10, less than 5,000 ms of real time after the first `insert` answers."
 // Spec: std.postgres, Modes "Under sim the engine's boot and each call into PGlite (a statement, `begin`, `commit`, `rollback`, a migration) are held (k.drive) from the call until PGlite answers, labelled `<capability> boot` and `<capability> query`; a plan step's `delay`, the wait for the database to be free and `fn`'s own awaits are not: each waits on held or parked work."
 // Seed: 1337 (fc.assert below); replays use a SimRun of seed 1.
 // Assumption: "a database no earlier run used" is a `fresh()` capability name, so the first query boots the engine inside the run; its boot is held, a plan step takes no part in it.
@@ -214,3 +215,40 @@ test("a first `query` on a database no earlier run used answers at `ctx.clock.no
     { seed: SEED, numRuns: 5 },
   );
 });
+
+// ASSUMPTION: an `insert` through `query` is `insert ... returning id, name` parsed by `Row`; the real-time bound is read with `hrtime` from the first insert's answer to the end of `simulate`.
+async function twoInserts(ids: [number, number]): Promise<{ now: number; ms: number }> {
+  const { cap, table } = fresh();
+  const db = notesDb(cap, table);
+  const T = sqlName(table);
+  let now = -1;
+  let start = 0n;
+  await simulate(
+    async ({ ctx }) => {
+      okOf(await db(ctx).query(sql(Row)`insert into ${T} values (${ids[0]}, 'a') returning id, name`));
+      start = process.hrtime.bigint();
+      okOf(await db(ctx).query(sql(Row)`insert into ${T} values (${ids[1]}, 'b') returning id, name`));
+      await ctx.clock.after(10);
+      now = ctx.clock.now();
+    },
+    { replay: replayOf(cap, []) },
+  );
+  return { now, ms: Number(process.hrtime.bigint() - start) / 1e6 };
+}
+
+test("In an empty replay (k.drive), a scenario that runs two `insert` statements through `query`, each committing, then awaits `ctx.clock.after(10)`, resolves `simulate` with `ctx.clock.now()` 10, less than 5,000 ms of real time after the first `insert` answers.", async () => {
+  const r = await twoInserts([1, 2]);
+  expect(r.now).toBe(10);
+  expect(r.ms).toBeLessThan(5000);
+});
+
+test("two committing `insert` statements through `query` leave no work for any two distinct ids: the scenario resolves at `ctx.clock.now()` 10", async () => {
+  await fc.assert(
+    fc.asyncProperty(fc.integer({ min: 1, max: 1000 }), fc.integer({ min: 1001, max: 2000 }), async (a, b) => {
+      const r = await twoInserts([a, b]);
+      expect(r.now).toBe(10);
+      expect(r.ms).toBeLessThan(5000);
+    }),
+    { seed: SEED, numRuns: 5 },
+  );
+}, 60_000);

@@ -1,9 +1,9 @@
 // @vitest-environment happy-dom
-// Spec: k.drive, Conformance "A scenario that starts ten waiters `ctx.clock.after(Math.floor(ctx.random.float() * 1000))`, each recording its index and `ctx.clock.now()` as it resolves, then awaits `run()`: under `simulate` with `{ runs: 20, seed: 7 }` each run's record lists all ten ordered by time, ties by index, and `replay` of the `SimRun` that run received records an equal list."
-// Spec: k.drive, Law "The drive draws no random and reads no real time."
-// Spec: k.drive, Law "Two runs of one `SimRun` and one scenario take the same moments in the same order and report the same observer events (k.ctx) in the same order at the same `ctx.clock.now()`, ending with equal store snapshots."
-// Spec: k.drive, Law "*The same moments* are the `ctx.clock.now()` at each completion the scenario sees (a waiter, a save, a net call); *store snapshots* are the final values of the storage keys the scenario wrote; observer events include the `net` events of the schedule's offline windows."
-// Spec: k.drive, Law "The run's *trace* is the list of moments taken and observer events of the run's ctx and its replicas, each with its `ctx.clock.now()`."
+// Spec: k.drive-law, Conformance "A scenario that starts ten waiters `ctx.clock.after(Math.floor(ctx.random.float() * 1000))`, each recording its index and `ctx.clock.now()` as it resolves, then awaits `run()`: under `simulate` with `{ runs: 20, seed: 7 }` each run's record lists all ten ordered by time, ties by index, and `replay` of the `SimRun` that run received records an equal list."
+// Spec: k.drive-law, Law "The drive draws no random and reads no real time."
+// Spec: k.drive-law, Law "Under `keel test`, by construction, two runs of one `SimRun` and one scenario take the same moments in the same order and report the same observer events (k.ctx) in the same order at the same `ctx.clock.now()`, ending with equal store snapshots, unless a thing that escapes the drive (below) reaches the trace; the law check, on by default there, reports that as E1729."
+// Spec: k.drive-law, Law "*The same moments* are the `ctx.clock.now()` at each completion the scenario sees (a waiter, a save, a net call); *store snapshots* are the final values of the storage keys the scenario wrote; observer events include the `net` events of the schedule's offline windows."
+// Spec: k.drive-law, Law "The run's *trace* is the list of moments taken and observer events of the run's ctx and its replicas, each with its `ctx.clock.now()`."
 // Spec: k.drive, Driving "Real work's speed decides nothing."
 // Seed: 1337 (fc.assert below); the ten-waiter clause runs under `simulate` seed 7.
 // ASSUMPTION: "moments in the same order" is observed as the clock time at which each scenario-visible completion (waiter, save, net call, and a real completion the scenario records) is seen, in completion order; "store snapshots" are read as the final values of the keys the scenario wrote to `ctx.storage` (a `get` takes a storage step like any other, so the read is part of the run); observer events are the `net` events of the schedule's offline windows.
@@ -27,13 +27,14 @@ test("A scenario that starts ten waiters `ctx.clock.after(Math.floor(ctx.random.
     await run();
   };
   const runs: { simRun: { seed: number; schedule: Schedule }; record: Rec[] }[] = [];
+  // `law: false`: this case counts the scenario's calls, which the default law check under `keel test` doubles.
   await simulate(
     async ({ ctx, run, seed, schedule }) => {
       const record: Rec[] = [];
       await scenario(record, ctx, run);
       runs.push({ simRun: { seed, schedule }, record });
     },
-    { runs: 20, seed: 7 },
+    { runs: 20, seed: 7, law: false },
   );
   expect(runs).toHaveLength(20);
   for (const { simRun, record } of runs) {
@@ -48,7 +49,7 @@ test("A scenario that starts ten waiters `ctx.clock.after(Math.floor(ctx.random.
         await scenario(r, ctx, run);
         again = r;
       },
-      { replay: simRun },
+      { replay: simRun, law: false },
     );
     expect(again).toEqual(record);
   }
