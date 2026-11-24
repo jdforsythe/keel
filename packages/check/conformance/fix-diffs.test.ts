@@ -2,6 +2,7 @@
 // Spec: k.check, clause "Every fix a diagnostic carries applies to its fixture with `git apply`, and re-checking reports no diagnostic of that code. Fixtures of E1003, E1005 (bytes only), E1151, E1152, E1154-E1156, E1401, E1403 (`&&`, `?:` with `If` imported), E1405, E1451, E1452 (`try`), E1601, E1652, E1653, E1757 (`!`, `any`, suppression), E1805, and E1808 carry one; RFC 0035 lists why the others cannot."
 // RFC 0157 / 0162: E1157 is retired (no fixture); E1154-E1156 keep theirs; E1407, E1510 and E1515 each carry one (k.component, k.contract); E1513 and E1514 carry none. k.check's sentence still names E1157 and omits these: see the report.
 // RFC 0219: E1730 carries one (k.guards Test files); its exact result is asserted in testing-E1730-identity-mount.test.ts.
+// RFC 0225: E1013 carries one (k.bundle Aliases); its exact diff is asserted in bundle-E1013-aliased-import.test.ts.
 // RFC 0204: E1165 carries one (its fix removes the `deps` entry).
 // Invariant (not a sentence of k.module now): no fix edits a file under `node_modules/`.
 import { execFileSync } from "node:child_process";
@@ -131,6 +132,7 @@ const FIXED: FixedCase[] = [
     opts: NO_TYPES,
   },
   { name: "E1156", code: "E1156", ...fixtureOf("E1156") },
+  { name: "E1013 (the alias replaced by the relative specifier)", code: "E1013", ...fixtureOf("E1013") },
   {
     name: "E1401",
     code: "E1401",
@@ -318,6 +320,7 @@ const FIX = [
   "E1820",
   "E1809",
   "E1010",
+  "E1013",
   "E1407",
   "E1515",
 ];
