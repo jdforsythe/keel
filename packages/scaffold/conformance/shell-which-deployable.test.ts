@@ -2,7 +2,7 @@
 // Spec: k.scaffold-shell, Rules "E1359 ... none, several and no `--to`, or `--to` naming another adapter; names them".
 import { describe, expect, it } from "vitest";
 import { errText, read, snap } from "./fixtures.ts";
-import { multiTopology, pNode, shell, shellApply, squash } from "./shell-support.ts";
+import { multiTopology, pNode, rec, shell, shellApply, squash } from "./shell-support.ts";
 
 const ID = "com.acme.p";
 const E1359 = /E1359/;
@@ -21,7 +21,10 @@ describe("scaffold shell, which deployable", () => {
   for (const kind of ["tauri", "capacitor"]) {
     it(`${kind} with no to and two client deployables is one E1359 naming web and admin`, () => {
       const t = refused(multiTopology(), { shell: kind, id: ID }, "E1359");
-      expect(t.match(/E1359/g)).toHaveLength(1);
+      const r = shell({ shell: kind, id: ID }, multiTopology());
+      const error = r.ok ? {} : rec(r.error);
+      expect(rec(error.data).code).toBe("E1359");
+      expect(String(error.message).startsWith("E1359")).toBe(true);
       expect(t).toContain("web");
       expect(t).toContain("admin");
     });

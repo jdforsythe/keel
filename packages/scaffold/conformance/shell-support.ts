@@ -12,7 +12,7 @@ import { root } from "./keel-cli.ts";
 
 export type ShellInput = { shell: string; id?: string; name?: string; to?: string };
 export type ShellResult =
-  | { ok: true; value: { files: Files; created: string[]; changed: string[] } }
+  | { ok: true; value: { files: Files; created: readonly string[]; changed: readonly string[] } }
   | { ok: false; error: unknown };
 
 export function shell(input: ShellInput, files: Files): ShellResult {
