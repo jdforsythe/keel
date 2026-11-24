@@ -3,8 +3,8 @@
   "unsafe": 18,
   "hostElements": 0,
   "rungs": {
-    "example": 1908,
-    "probabilistic": 348,
+    "example": 1914,
+    "probabilistic": 349,
     "exhaustive": 16,
     "proven": 75,
     "monitored": 8
@@ -21,21 +21,21 @@
         "justified": 0
       },
       "cli": {
-        "score": 71.91,
-        "scoreJustified": 71.91,
+        "score": 71.98,
+        "scoreJustified": 71.98,
         "threshold": 70,
-        "killed": 8592,
-        "survived": 2380,
-        "noCoverage": 977,
+        "killed": 8718,
+        "survived": 2410,
+        "noCoverage": 983,
         "justified": 0
       },
       "compiler": {
-        "score": 73.64,
-        "scoreJustified": 73.64,
+        "score": 73.62,
+        "scoreJustified": 73.62,
         "threshold": 70,
-        "killed": 11366,
-        "survived": 3329,
-        "noCoverage": 740,
+        "killed": 11374,
+        "survived": 3326,
+        "noCoverage": 749,
         "justified": 0
       },
       "ctx": {
@@ -84,11 +84,11 @@
         "justified": 0
       },
       "scaffold": {
-        "score": 78.87,
-        "scoreJustified": 78.87,
+        "score": 78.94,
+        "scoreJustified": 78.94,
         "threshold": 70,
-        "killed": 3670,
-        "survived": 784,
+        "killed": 3680,
+        "survived": 783,
         "noCoverage": 199,
         "justified": 0
       },
@@ -132,8 +132,8 @@
         "score": 80,
         "scoreJustified": 80,
         "threshold": 70,
-        "killed": 592,
-        "survived": 105,
+        "killed": 608,
+        "survived": 109,
         "noCoverage": 43,
         "justified": 0
       },
@@ -300,12 +300,12 @@
         "justified": 0
       },
       "std-tauri": {
-        "score": 76.83,
-        "scoreJustified": 76.83,
+        "score": 76.91,
+        "scoreJustified": 76.91,
         "threshold": 70,
-        "killed": 597,
-        "survived": 158,
-        "noCoverage": 22,
+        "killed": 623,
+        "survived": 163,
+        "noCoverage": 24,
         "justified": 0
       },
       "std-temporal": {
@@ -2435,6 +2435,15 @@
         "score": 100
       },
       {
+        "file": "packages/cli/src/internal/catchingStray.ts",
+        "sha": "b42312a76ca3a4c598e8f14dd0688352f95d19952171bade7edb341baaba8bce",
+        "killed": 86,
+        "survived": 25,
+        "noCoverage": 3,
+        "justified": 0,
+        "score": 75.44
+      },
+      {
         "file": "packages/cli/src/internal/checkCommand.ts",
         "sha": "c03f24553fed0630949d59cbefb6af524ecb060d7666ce8decd9d29952367848",
         "killed": 23,
@@ -3462,12 +3471,12 @@
       },
       {
         "file": "packages/cli/src/internal/testCommand.ts",
-        "sha": "4d41a84b3b4d75ff427d10c7acbc7599ae1742d4300ab2a5adb1978476b328b1",
-        "killed": 56,
-        "survived": 14,
-        "noCoverage": 0,
+        "sha": "1264b0acc40520fd5e6851a05873c2e57dd05eaef52b41dd52e1392bf3bee3b6",
+        "killed": 57,
+        "survived": 18,
+        "noCoverage": 3,
         "justified": 0,
-        "score": 80
+        "score": 73.08
       },
       {
         "file": "packages/cli/src/internal/testEvidence.ts",
@@ -3840,12 +3849,12 @@
       },
       {
         "file": "packages/cli/src/shell/shellBuild.ts",
-        "sha": "5df11892e6b77eb3e742ee98d8e7ad87cbc771c51496b1e42f5c49a30365b4be",
-        "killed": 38,
+        "sha": "426b6fbb5295a90fd2d36b451b29e62c1e749e4e56d1f276643ef4c074fb16a9",
+        "killed": 52,
         "survived": 7,
         "noCoverage": 1,
         "justified": 0,
-        "score": 82.61
+        "score": 86.67
       },
       {
         "file": "packages/cli/src/shell/shellOrigin.ts",
@@ -3858,12 +3867,12 @@
       },
       {
         "file": "packages/cli/src/shell/shellPlan.ts",
-        "sha": "c8a9e495068105625c23ec1172667c640a366db6d09ae019acf5ba346abbc308",
-        "killed": 96,
-        "survived": 3,
+        "sha": "68897f86f538d706620831354b387e1c33aecde1b60926f278081fce8c3ff7b3",
+        "killed": 121,
+        "survived": 4,
         "noCoverage": 0,
         "justified": 0,
-        "score": 96.97
+        "score": 96.8
       },
       {
         "file": "packages/cli/src/shell/toolError.ts",
@@ -4173,7 +4182,7 @@
       },
       {
         "file": "packages/compiler/src/hosting/shellConnect.ts",
-        "sha": "90f997fbae9d32c54f4b03f1f0d4f65d5fd52405db976e950b0e8ab152dbe847",
+        "sha": "a2ffbc6b956478007bb6093a5b4e2c41f282d76f985a668de188f57aeecacd21",
         "killed": 12,
         "survived": 0,
         "noCoverage": 0,
@@ -4506,12 +4515,12 @@
       },
       {
         "file": "packages/compiler/src/internal/entryCode.ts",
-        "sha": "7abebcdb61157ab67d0607c07ae4a876dbe92d29cf4a9fd88c973d75feec63e6",
-        "killed": 114,
-        "survived": 5,
+        "sha": "fe4002a93f3863f22b2930362698a4206f37ca93d848369cff40f2fc563cf1b8",
+        "killed": 122,
+        "survived": 4,
         "noCoverage": 0,
         "justified": 0,
-        "score": 95.8
+        "score": 96.83
       },
       {
         "file": "packages/compiler/src/internal/entryOf.ts",
@@ -5316,12 +5325,12 @@
       },
       {
         "file": "packages/compiler/src/vite.ts",
-        "sha": "d195c7f07fe85c97db7e49625039822c61c192b6e651d115cd9772c30cd34422",
+        "sha": "2ab5b97bdb4eeafbeafd73938c66996395ca81fe84873ec4c422b7cb8131e30c",
         "killed": 912,
-        "survived": 580,
-        "noCoverage": 162,
+        "survived": 578,
+        "noCoverage": 171,
         "justified": 0,
-        "score": 55.14
+        "score": 54.91
       },
       {
         "file": "packages/ctx/src/NetStep.schema.ts",
@@ -8655,12 +8664,12 @@
       },
       {
         "file": "packages/scaffold/src/templates/ciWorkflow.ts",
-        "sha": "6df16f9b69415bf4a17a4ed5ed824a85e681936105c676f7f27709cc8a9f88f8",
-        "killed": 158,
-        "survived": 19,
+        "sha": "aa893f193d2a74b7b62c1a1a2ff9f7129167c3f541d584d4c9de484d0da132a6",
+        "killed": 168,
+        "survived": 18,
         "noCoverage": 6,
         "justified": 0,
-        "score": 86.34
+        "score": 87.5
       },
       {
         "file": "packages/scaffold/src/templates/componentTest.ts",
@@ -10950,7 +10959,7 @@
       },
       {
         "file": "packages/std-capacitor/src/capacitorDrivers.ts",
-        "sha": "582dd81d26377fdaa7a288321f1f9781a5e5c91b867730a10dedfcfb0e1c1687",
+        "sha": "fff813301037c01ac371ec968f0cd3abe77bfeb2f7a5949a93aa870533ed9488",
         "killed": 2,
         "survived": 0,
         "noCoverage": 0,
@@ -10968,8 +10977,8 @@
       },
       {
         "file": "packages/std-capacitor/src/internal/allows.ts",
-        "sha": "879bc954a1d4cfad1af52ce45cfd5fce2807766381930376971e6928d0007589",
-        "killed": 20,
+        "sha": "cd9c7cb5ede127ff7433e0346e1f7edf4241657545d42291828e4fe22045a042",
+        "killed": 21,
         "survived": 0,
         "noCoverage": 0,
         "justified": 0,
@@ -10977,12 +10986,12 @@
       },
       {
         "file": "packages/std-capacitor/src/internal/capacitorNet.ts",
-        "sha": "cfd497f817bab424a13ac18c63a9d04449ddb21881454b1e2a2810ba91917a40",
-        "killed": 67,
-        "survived": 16,
+        "sha": "6de54480718a45dd9218aafa83ca402f2ebef5339fc50a4928db33ad9523540c",
+        "killed": 69,
+        "survived": 18,
         "noCoverage": 1,
         "justified": 0,
-        "score": 79.76
+        "score": 78.41
       },
       {
         "file": "packages/std-capacitor/src/internal/cellStorage.ts",
@@ -11004,8 +11013,8 @@
       },
       {
         "file": "packages/std-capacitor/src/internal/mapUrl.ts",
-        "sha": "697cc4d6626da22f4cb26b5eddd097c7a6b3ce0bebdbe069f67746660b3da683",
-        "killed": 13,
+        "sha": "3d65f3547274824c95c9778ba4707b85a272182cdd27d8da8305c5dd77c34342",
+        "killed": 16,
         "survived": 0,
         "noCoverage": 0,
         "justified": 0,
@@ -11049,12 +11058,12 @@
       },
       {
         "file": "packages/std-capacitor/src/shellMount.ts",
-        "sha": "f689b8da421e6c7f786c8bf94c0a971ab1f4000dc78ff653e5c7e506e772f29a",
-        "killed": 25,
-        "survived": 5,
+        "sha": "f7cc02181dc1ce502391b82b819b3db7e45d06814d5c458feecbec6d2b16bd42",
+        "killed": 26,
+        "survived": 7,
         "noCoverage": 1,
         "justified": 0,
-        "score": 80.65
+        "score": 76.47
       },
       {
         "file": "packages/std-capacitor/src/tools.ts",
@@ -11067,25 +11076,25 @@
       },
       {
         "file": "packages/std-capacitor/src/tools/allowConfig.ts",
-        "sha": "ff18d88c52b94ca194ea5bd3d9894bbb4c77f8f9b6e55a8a652cd8c09d06dfee",
-        "killed": 25,
+        "sha": "e6637e3c1b11bdf27e927c206e1b0b49928849d496d666c2885ead8845a66852",
+        "killed": 30,
         "survived": 4,
         "noCoverage": 0,
         "justified": 0,
-        "score": 86.21
+        "score": 88.24
       },
       {
         "file": "packages/std-capacitor/src/tools/androidNetworkSecurity.ts",
-        "sha": "a532df143d8c691f92d36444555903b19e8bc394232c27c89ca2875c2555693b",
-        "killed": 27,
+        "sha": "ee2645a1c9c4ba137db96499a3886585f18a3beaa4b3c7928aa70020c9a5e8be",
+        "killed": 31,
         "survived": 7,
         "noCoverage": 0,
         "justified": 0,
-        "score": 79.41
+        "score": 81.58
       },
       {
         "file": "packages/std-capacitor/src/tools/capacitorBuild.ts",
-        "sha": "048e633bc3883051eef06c0ec2d91cbaa076c2474f58ea3db06e7bfd669c2384",
+        "sha": "d82149dfde26fb585c05efa2d58024ca8c4a24e3e038d4d8de56fce25e89b51a",
         "killed": 100,
         "survived": 12,
         "noCoverage": 3,
@@ -14757,8 +14766,8 @@
       },
       {
         "file": "packages/std-tauri/src/internal/allows.ts",
-        "sha": "879bc954a1d4cfad1af52ce45cfd5fce2807766381930376971e6928d0007589",
-        "killed": 20,
+        "sha": "cd9c7cb5ede127ff7433e0346e1f7edf4241657545d42291828e4fe22045a042",
+        "killed": 21,
         "survived": 0,
         "noCoverage": 0,
         "justified": 0,
@@ -14793,8 +14802,8 @@
       },
       {
         "file": "packages/std-tauri/src/internal/mapUrl.ts",
-        "sha": "697cc4d6626da22f4cb26b5eddd097c7a6b3ce0bebdbe069f67746660b3da683",
-        "killed": 13,
+        "sha": "3d65f3547274824c95c9778ba4707b85a272182cdd27d8da8305c5dd77c34342",
+        "killed": 16,
         "survived": 0,
         "noCoverage": 0,
         "justified": 0,
@@ -14829,25 +14838,25 @@
       },
       {
         "file": "packages/std-tauri/src/internal/tauriNet.ts",
-        "sha": "b966f0951f6bf200ca5458ab3cb61af7e737bced3cff61c575104227397535c7",
-        "killed": 26,
-        "survived": 13,
+        "sha": "5ae38312b4df2f6dc4375b2ec059e7b856fff8be2a34f14027f6e70343ce054f",
+        "killed": 28,
+        "survived": 15,
         "noCoverage": 0,
         "justified": 0,
-        "score": 66.67
+        "score": 65.12
       },
       {
         "file": "packages/std-tauri/src/shellMount.ts",
-        "sha": "a2f8d1ac5f5373eb7f21a4fc21b2ce8622aeb6091f711d205a9648e12d88c5a7",
-        "killed": 17,
-        "survived": 5,
+        "sha": "d484b97de8cb212a68fe77d5ada32552b24cd019c77bdde63021c9b8966bd03f",
+        "killed": 18,
+        "survived": 7,
         "noCoverage": 1,
         "justified": 0,
-        "score": 73.91
+        "score": 69.23
       },
       {
         "file": "packages/std-tauri/src/tauriDrivers.ts",
-        "sha": "47ea38c122a1e8f7c439d14d2e7cddd57360f084c885d35c15288cd94c66e47d",
+        "sha": "72d10d38239ce1860856df33d62a0bb7f20c8b0180213950cca92f328e96cfbc",
         "killed": 2,
         "survived": 0,
         "noCoverage": 0,
@@ -14901,12 +14910,12 @@
       },
       {
         "file": "packages/std-tauri/src/tools/tauriBuild.ts",
-        "sha": "eca2a5fb61e543ebbfb236a88e4530930bed1e850b6397d640e37c5ce8af35ee",
-        "killed": 45,
-        "survived": 8,
-        "noCoverage": 2,
+        "sha": "480ff3126112d1219df41ca82dc49128cadd68c53d05c8e28bf30bfb13a94345",
+        "killed": 51,
+        "survived": 9,
+        "noCoverage": 4,
         "justified": 0,
-        "score": 81.82
+        "score": 79.69
       },
       {
         "file": "packages/std-tauri/src/tools/tauriBuildRs.ts",
@@ -14946,12 +14955,12 @@
       },
       {
         "file": "packages/std-tauri/src/tools/tauriHttpCapability.ts",
-        "sha": "1cb61422e1f5efe9c9c8dc708640de5859c44d37943108316f9fc3334f39f4aa",
-        "killed": 24,
+        "sha": "72e2a800ff3e7699f1ff2228e9be168375f423d638812c53af827d0e3b8bc7a9",
+        "killed": 37,
         "survived": 4,
         "noCoverage": 0,
         "justified": 0,
-        "score": 85.71
+        "score": 90.24
       },
       {
         "file": "packages/std-tauri/src/tools/tauriJobs.ts",
@@ -23521,6 +23530,22 @@
       "rung": "example"
     },
     {
+      "item": "k.shell#14",
+      "rung": "example"
+    },
+    {
+      "item": "k.shell#15",
+      "rung": "example"
+    },
+    {
+      "item": "k.shell#16",
+      "rung": "example"
+    },
+    {
+      "item": "k.shell#17",
+      "rung": "example"
+    },
+    {
       "item": "k.sim#1",
       "rung": "probabilistic"
     },
@@ -24078,6 +24103,10 @@
     },
     {
       "item": "std.capacitor#9",
+      "rung": "example"
+    },
+    {
+      "item": "std.capacitor#10",
       "rung": "example"
     },
     {
@@ -25093,6 +25122,10 @@
       "rung": "example"
     },
     {
+      "item": "std.shells#13",
+      "rung": "probabilistic"
+    },
+    {
       "item": "std.statecharts#1",
       "rung": "probabilistic"
     },
@@ -25198,6 +25231,10 @@
     },
     {
       "item": "std.tauri#8",
+      "rung": "example"
+    },
+    {
+      "item": "std.tauri#9",
       "rung": "example"
     },
     {

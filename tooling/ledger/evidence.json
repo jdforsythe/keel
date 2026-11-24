@@ -1,5 +1,5 @@
 {
-  "commit": "6e4f908d5f11803f6cf9894fc049b5191b25bd4c",
+  "commit": "3d204849d546d45c55b8ced116616a6f71f016de",
   "coverage": {
     "packages": {
       "apps/golden-1": {
@@ -1168,7 +1168,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-23T23:42:54.139Z",
+  "generatedAt": "2026-11-24T00:55:28.298Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -1184,11 +1184,11 @@
     },
     "clauses": {
       "byRung": {
-        "example": 930,
+        "example": 936,
         "exhaustive": 6,
         "monitored": 0,
         "none": 9,
-        "probabilistic": 175,
+        "probabilistic": 176,
         "proven": 38
       },
       "sections": {
@@ -2013,7 +2013,7 @@
         },
         "k.shell": {
           "byRung": {
-            "example": 13,
+            "example": 17,
             "exhaustive": 0,
             "monitored": 0,
             "none": 0,
@@ -2021,8 +2021,8 @@
             "proven": 0
           },
           "status": "implemented",
-          "total": 13,
-          "verified": 13
+          "total": 17,
+          "verified": 17
         },
         "k.sim": {
           "byRung": {
@@ -2130,7 +2130,7 @@
         },
         "std.capacitor": {
           "byRung": {
-            "example": 9,
+            "example": 10,
             "exhaustive": 0,
             "monitored": 0,
             "none": 0,
@@ -2138,8 +2138,8 @@
             "proven": 0
           },
           "status": "implemented",
-          "total": 9,
-          "verified": 9
+          "total": 10,
+          "verified": 10
         },
         "std.channels": {
           "byRung": {
@@ -2459,12 +2459,12 @@
             "exhaustive": 0,
             "monitored": 0,
             "none": 0,
-            "probabilistic": 6,
+            "probabilistic": 7,
             "proven": 0
           },
           "status": "implemented",
-          "total": 12,
-          "verified": 12
+          "total": 13,
+          "verified": 13
         },
         "std.statecharts": {
           "byRung": {
@@ -2494,7 +2494,7 @@
         },
         "std.tauri": {
           "byRung": {
-            "example": 8,
+            "example": 9,
             "exhaustive": 0,
             "monitored": 0,
             "none": 0,
@@ -2502,8 +2502,8 @@
             "proven": 0
           },
           "status": "implemented",
-          "total": 8,
-          "verified": 8
+          "total": 9,
+          "verified": 9
         },
         "std.temporal": {
           "byRung": {
@@ -2571,14 +2571,14 @@
           "verified": 8
         }
       },
-      "total": 1158,
-      "verified": 1149
+      "total": 1165,
+      "verified": 1156
     },
     "evidenceByRung": {
-      "example": 1908,
+      "example": 1914,
       "exhaustive": 16,
       "monitored": 8,
-      "probabilistic": 348,
+      "probabilistic": 349,
       "proven": 75
     },
     "exports": {
@@ -3135,9 +3135,9 @@
       "total": 605,
       "verified": 439
     },
-    "items": 2883,
+    "items": 2890,
     "unsafe": 18,
-    "verified": 2016
+    "verified": 2023
   },
   "mutation": {
     "packages": {
@@ -3195,19 +3195,19 @@
         "claims": 202,
         "justified": 0,
         "reason": null,
-        "reportDate": "2026-11-23",
+        "reportDate": "2026-11-24",
         "score": 72.84,
         "scoreJustified": 72.84,
         "stale": 0,
         "threshold": 70
       },
       "packages/cli": {
-        "claims": 189,
+        "claims": 190,
         "justified": 0,
         "reason": null,
-        "reportDate": "2026-11-23",
-        "score": 71.91,
-        "scoreJustified": 71.91,
+        "reportDate": "2026-11-24",
+        "score": 71.98,
+        "scoreJustified": 71.98,
         "stale": 0,
         "threshold": 70
       },
@@ -3215,9 +3215,9 @@
         "claims": 158,
         "justified": 0,
         "reason": null,
-        "reportDate": "2026-11-23",
-        "score": 73.64,
-        "scoreJustified": 73.64,
+        "reportDate": "2026-11-24",
+        "score": 73.62,
+        "scoreJustified": 73.62,
         "stale": 0,
         "threshold": 70
       },
@@ -3275,9 +3275,9 @@
         "claims": 115,
         "justified": 0,
         "reason": null,
-        "reportDate": "2026-11-23",
-        "score": 78.87,
-        "scoreJustified": 78.87,
+        "reportDate": "2026-11-24",
+        "score": 78.94,
+        "scoreJustified": 78.94,
         "stale": 0,
         "threshold": 70
       },
@@ -3325,7 +3325,7 @@
         "claims": 24,
         "justified": 0,
         "reason": null,
-        "reportDate": "2026-11-23",
+        "reportDate": "2026-11-24",
         "score": 80,
         "scoreJustified": 80,
         "stale": 0,
@@ -3515,9 +3515,9 @@
         "claims": 29,
         "justified": 0,
         "reason": null,
-        "reportDate": "2026-11-23",
-        "score": 76.83,
-        "scoreJustified": 76.83,
+        "reportDate": "2026-11-24",
+        "score": 76.91,
+        "scoreJustified": 76.91,
         "stale": 0,
         "threshold": 70
       },
@@ -3692,18 +3692,18 @@
         "unitFiles": 65
       },
       "packages/cli": {
-        "conformanceCases": 514,
-        "conformanceFiles": 173,
+        "conformanceCases": 526,
+        "conformanceFiles": 177,
         "exploreFiles": 0,
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 150,
+        "propertyCalls": 157,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 777,
-        "unitFiles": 103
+        "unitCases": 784,
+        "unitFiles": 104
       },
       "packages/compiler": {
         "conformanceCases": 179,
@@ -3716,7 +3716,7 @@
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 728,
+        "unitCases": 729,
         "unitFiles": 94
       },
       "packages/ctx": {
@@ -3800,7 +3800,7 @@
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 133,
+        "unitCases": 134,
         "unitFiles": 25
       },
       "packages/schema": {
@@ -3860,17 +3860,17 @@
         "unitFiles": 2
       },
       "packages/std-capacitor": {
-        "conformanceCases": 55,
-        "conformanceFiles": 15,
+        "conformanceCases": 62,
+        "conformanceFiles": 17,
         "exploreFiles": 0,
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 62,
+        "propertyCalls": 68,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 63,
+        "unitCases": 67,
         "unitFiles": 16
       },
       "packages/std-channels": {
@@ -4126,17 +4126,17 @@
         "unitFiles": 10
       },
       "packages/std-tauri": {
-        "conformanceCases": 66,
-        "conformanceFiles": 18,
+        "conformanceCases": 73,
+        "conformanceFiles": 20,
         "exploreFiles": 0,
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 66,
+        "propertyCalls": 72,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 62,
+        "unitCases": 65,
         "unitFiles": 13
       },
       "packages/std-temporal": {
@@ -4253,18 +4253,18 @@
       }
     },
     "totals": {
-      "conformanceCases": 5308,
-      "conformanceFiles": 1312,
+      "conformanceCases": 5334,
+      "conformanceFiles": 1320,
       "exploreFiles": 19,
       "fails": 2,
       "otherCases": 0,
       "otherFiles": 0,
-      "propertyCalls": 2497,
+      "propertyCalls": 2516,
       "proveFiles": 23,
       "simulateFiles": 18,
       "skipTodo": 5,
-      "unitCases": 6539,
-      "unitFiles": 1055
+      "unitCases": 6555,
+      "unitFiles": 1056
     }
   },
   "tool": {
