@@ -14,7 +14,11 @@ import { shownUrl } from "./shownUrl.ts";
 
 const DEFAULT_URL = "http://localhost:5173";
 /** The parts of an inspect document `capture` reads (open objects: the rest is ignored). */
-const Inspect = s.object({ sections: s.record(s.object({ value: s.json().nullable().optional(), error: s.object({ message: s.string() }).optional() })) });
+const Inspect = s.object({
+  sections: s.record(
+    s.object({ value: s.json().nullable().optional(), error: s.object({ message: s.string() }).optional() }),
+  ),
+});
 /** A runtime response of `sessions.list`: `results["sessions.list"]` is `ok(Listing)` (open objects). */
 const Listed = s.object({
   results: s.object({
