@@ -1,4 +1,4 @@
-// Spec: k.check "Every E code in a kernel section's Rules ... has an `explain` entry of at most 120 tokens"; k.docs Rules E1065, E1066; k.scaffold Rules E1355, E1358, W1356.
+// Spec: k.check "Every E code in a kernel section's Rules ... has an `explain` entry of at most 120 tokens"; k.docs Rules E1065, E1066; k.scaffold Rules E1355, W1356; k.scaffold-service Rules E1358.
 // Seed: none (fixed code list). Red: `explain` has no entry for a code here until it is added.
 import { explain } from "@keel/check/explain";
 import { expect, test } from "vitest";
