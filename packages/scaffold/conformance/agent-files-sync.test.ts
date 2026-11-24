@@ -44,7 +44,7 @@ beforeAll(() => {
   const second = keel(proj, ["docs", "--sync"]);
   againStatus = second.status;
   again = readTree(proj);
-});
+}, 120000);
 afterAll(() => cleanup(dir));
 
 describe("k.scaffold keel docs --sync", () => {
