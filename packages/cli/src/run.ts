@@ -1,8 +1,6 @@
 import { runEngine } from "./internal/runEngine.ts";
 import { serveStream } from "./internal/serveStream.ts";
 import { usageResult } from "./internal/usageResult.ts";
-import { lsp } from "./lsp.ts";
-import { mcp } from "./mcp.ts";
 import type { Io } from "./types/Io.ts";
 import type { RunResult } from "./types/RunResult.ts";
 
@@ -23,7 +21,8 @@ export async function run(argv: readonly string[], io: Io): Promise<RunResult> {
     const r = usageResult(head, [d], io, undefined);
     return { code: r.code, stdout: r.stdout, stderr: r.stderr };
   }
-  const server = head === "mcp" ? mcp(() => io) : lsp(() => io);
+  // Loaded only for `mcp` and `lsp`: the language server brings in the checker and typescript.
+  const server = head === "mcp" ? (await import("./mcp.ts")).mcp(() => io) : (await import("./lsp.ts")).lsp(() => io);
   const stdin = io.stdin ?? "";
   if (typeof stdin !== "string") {
     const out: string[] = [];
