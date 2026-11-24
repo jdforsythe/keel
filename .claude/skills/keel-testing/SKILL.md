@@ -1,6 +1,6 @@
 ---
 name: keel-testing
-description: "Test and check Keel code: @keel/testing render, renderRoute (stores pages too), fire, settle, find, a11y, focusOrder, sim ctx and net routes, properties, explore, simulate, prove, std-statecharts chart, ledger rungs; E170x, E1706, E1708-E1710, E1715-E1719, E1722, E1726, W1723, E1108"
+description: "Test and check Keel code: @keel/testing render, renderRoute (stores pages too), fire, settle, find, a11y, focusOrder, sim ctx and net routes, properties, explore, simulate, prove, std-statecharts chart, ledger rungs; E170x, E1706, E1708-E1710, E1715-E1719, E1722, E1726, W1608, W1723, E1108"
 ---
 
 # Testing and correctness
@@ -81,7 +81,7 @@ test("a fetch survives drops, delays and 503s", async () => {
 - `explore(txs, { from, payloads, depth, maxStates })` is synchronous and visits every state of one store, checking its invariants. Give `payloads: { 'demo.add': [...] }` for a transaction whose payload schema is not finite (E1710). E1708 an invariant broke (`data.snapshot` replays the shortest path); E1709 `maxStates` reached or a closed form that did not close. E1708 throws; a run that returns found no broken invariant. With a `depth` bound `complete` is `false` when states lie past it: assert `states.length` and `depth` instead, or `complete` only for the closed form.
 - A server store factory (`savedStores()`) creates reactive primitives, so a test calls it inside a scope: `scope(() => undefined).run(() => savedStores())` (`scope` from `@keel/reactive`, E1203 otherwise).
 - With no options and every transaction named, `explore` is the closed form: `complete: true` means every state is covered.
-- `simulate(scenario, { runs, seed, horizon, replay })` runs the scenario under generated schedules of delays, drops, `lost` responses, 503s, storage failures and offline windows. `run()` settles and steps the clock to each `after` deadline and each offline window's start and end within the horizon, so after it the net is online unless a window reaches past the horizon. A failure is E1704 with the shrunk `SimRun`; `{ replay: simRun }` reruns it.
+- `simulate(scenario, { runs, seed, horizon, replay })` runs the scenario under generated schedules of delays, drops, `lost` responses, 503s, storage failures and offline windows. `run()` settles and steps the clock to each `after` deadline and each offline window's start and end within the horizon, so after it the net is online unless a window reaches past the horizon. A failure is E1704 with the shrunk `SimRun`; `{ replay: simRun }` reruns it. A module load by `import()` in app code is I/O the run neither waits for nor orders by seed (W1608): use a static import.
 - `prove(txs)` from `@keel/testing/prove` (Node, optional peer `z3-solver`) proves the invariants by induction for every state and payload, for functions in the fragment (no calls to other functions, loops or reassignment). E1715 outside the fragment (use `explore`), E1716 counterexample (the invariant may need strengthening), E1717 no verdict within `rlimit`, E1718 `z3-solver` missing.
 
 ## State charts

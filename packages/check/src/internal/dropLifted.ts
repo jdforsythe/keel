@@ -3,7 +3,7 @@ import type { SourceFile } from "../types/SourceFile.ts";
 import { liftedRanges } from "./liftedRanges.ts";
 
 /** The kernel codes a lifted range does not report (k.check, App code). */
-const LIFTED = new Set(["E1252", "E1451", "E1452", "E1601", "E1603", "E1651", "E1757", "E1758", "E1759"]);
+const LIFTED = new Set(["E1252", "E1451", "E1452", "E1601", "E1603", "E1651", "E1757", "E1758", "E1759", "W1608"]);
 
 /** Offset of 1-based `line`, `col` in `source` (UTF-16, the compiler's convention). */
 function offsetOf(source: string, line: number, col: number): number {
