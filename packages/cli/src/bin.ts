@@ -1,41 +1,8 @@
 #!/usr/bin/env node
-// The `keel` binary: the only surface that touches the process. Everything goes through `run` with a host `Io`:
-// the engine loads the files each operation needs and applies its effects; `mcp` and `lsp` stream over stdio.
-// `dev` hands serving to Vite when `vite.config.ts` exists, running the project's Vite in this process (`devStart`);
-// `build` runs its disk half (`routes.json`, `surface.json`, the Vite builds) through the host `Io.build`, as MCP does.
-import { existsSync } from "node:fs";
-import { join } from "node:path";
-import { WriteRefused } from "./internal/WriteRefused.ts";
-import { hostIo } from "./internal/hostIo.ts";
-import { refusedRun } from "./internal/refusedRun.ts";
-import { run } from "./run.ts";
+// The `keel` binary's entry. Node's on-disk compile cache comes first, so each start reuses the compiled modules of
+// the last (for `.ts` sources, the stripped text too); the binary (`main.ts`) loads after it, every module it imports
+// under the cache. The cache is used where Node has it (22.1 and later): a feature test, so the entry links on 22.0.
+import nodeModule from "node:module";
 
-const argv = process.argv.slice(2);
-const head = argv[0];
-const cwd = process.cwd();
-const serving = (head === "mcp" || head === "lsp") && argv.length === 1;
-
-const dev =
-  head === "dev" && existsSync(join(cwd, "vite.config.ts"))
-    ? await (await import("./internal/devStart.ts")).devStart(argv, cwd)
-    : undefined;
-if (dev !== undefined) {
-  if (!dev.serving) {
-    process.exitCode = dev.code;
-    // A dev server that was created and closed may leave Vite's handles behind; the output is flushed, then the
-    // process ends.
-    process.stderr.write(dev.stderr, () => process.stdout.write(dev.stdout, () => process.exit()));
-  }
-} else {
-  const io = hostIo(serving);
-  // A write a symlink would carry out of the project refuses the edit set: E1357, nothing written (`applyWrites`).
-  const r = await run(argv, io).catch((e: unknown) => {
-    if (e instanceof WriteRefused) return refusedRun(e.paths, argv, io);
-    throw e;
-  });
-  // stderr first: the trailer in stdout is the last thing a terminal shows.
-  if (r.stderr !== "") process.stderr.write(r.stderr);
-  if (r.stdout !== "") process.stdout.write(r.stdout);
-  process.exitCode = r.code;
-  if (serving) process.exit();
-}
+if (typeof nodeModule.enableCompileCache === "function") nodeModule.enableCompileCache();
+await import("./main.ts");

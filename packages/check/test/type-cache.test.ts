@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { expect, it } from "vitest";
 import { check } from "../src/index.ts";
 
-it("a changed node_modules file (new mtime) invalidates the cached type check", () => {
+it("a changed node_modules file invalidates the kept type check", () => {
   const root = mkdtempSync(join(tmpdir(), "keel-check-root-"));
   try {
     const dep = join(root, "node_modules", "dep");

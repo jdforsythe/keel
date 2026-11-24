@@ -191,3 +191,73 @@ export function baseSurface(files: Tree): { dir: string; base: string } {
   writeFileSync(base, readFileSync(join(dir, ".keel/surface.json"), "utf8"));
   return { dir, base };
 }
+
+/** The entries of `projectMany`: one POST entry per `bodies` item, one GET entry per `outputs` item (schema, value). */
+export type Many = {
+  readonly bodies?: readonly string[];
+  readonly outputs?: readonly (readonly [schema: string, value: string])[];
+};
+
+/**
+ * The project of `project({ split: true })` whose contract `y` holds many entries instead of `y.add` and `y.load`: `y.add<i>`
+ * (POST `/y/add<i>`, `body` the i-th of `bodies`, output `ACTION_ANSWER`) and `y.load<j>` (GET `/y/load<j>`, the j-th
+ * output), each bound in `routes.ts` to its own file. One build then judges every entry: an E1562 names its entry first.
+ */
+export function projectMany(m: Many): Tree {
+  const bodies = m.bodies ?? [];
+  const outputs = m.outputs ?? [];
+  const head = `import { ok } from '@keel/schema'\nimport { y } from './y.contract.ts'\n`;
+  const files: Tree = {};
+  for (const [k, v] of Object.entries(project({ split: true })))
+    if (!k.startsWith("modules/y/") || k === "modules/y/module.ts") files[k] = v;
+  const entries = [
+    ...bodies.map(
+      (b, i) => `  'y.add${i}': { method: 'POST', path: '/y/add${i}', body: ${b}, output: ${ACTION_ANSWER} },\n`,
+    ),
+    ...outputs.map(([o], j) => `  'y.load${j}': { method: 'GET', path: '/y/load${j}', output: ${o} },\n`),
+  ];
+  files["modules/y/y.contract.ts"] =
+    `import { contract } from '@keel/router/contract'\nimport { s } from '@keel/schema'\n` +
+    `export const y = contract('y', {\n${entries.join("")}})\n`;
+  bodies.forEach((_, i) => {
+    files[`modules/y/add${i}.server.ts`] =
+      `import { action } from '@keel/router'\n${head}export const add${i} = action(y, 'y.add${i}', {}, async () => ok(null))\n`;
+  });
+  outputs.forEach(([, value], j) => {
+    files[`modules/y/load${j}.server.ts`] =
+      `import { loader } from '@keel/router'\n${head}export const load${j} = loader(y, 'y.load${j}', {}, async () => ok(${value}))\n`;
+  });
+  const names = [...bodies.map((_, i) => `add${i}`), ...outputs.map((_, j) => `load${j}`)];
+  files["modules/y/routes.ts"] =
+    `import { manifest } from '@keel/router'\nimport { y } from './y.contract.ts'\n` +
+    names.map((n) => `import { ${n} } from './${n}.server.ts'\n`).join("") +
+    `export const routes = manifest(y, { ${[
+      ...bodies.map((_, i) => `'y.add${i}': { action: add${i} }`),
+      ...outputs.map((_, j) => `'y.load${j}': { loader: load${j} }`),
+    ].join(", ")} })\n`;
+  return files;
+}
+
+/** The E1562 records of `run` naming entry `id` (its message starts with the id). */
+export const e1562Of = (run: Run, id: string): Rec[] =>
+  diags(run, "E1562").filter((d) => String(d.message).startsWith(`${id} `));
+
+/**
+ * `baseSurface` once per distinct `files` in this process: a repeated base is a fresh copy of the files beside the
+ * surface the first build wrote, so a case that rebuilds its project sees the base it asked for without a build.
+ * For callers that rebuild the returned project before they read it.
+ */
+const bases = new Map<string, string>();
+export function baseSurfaceOnce(files: Tree): { dir: string; base: string } {
+  const key = JSON.stringify(Object.entries(files).sort(([a], [b]) => (a < b ? -1 : 1)));
+  const known = bases.get(key);
+  if (known !== undefined) {
+    const dir = materialize(files);
+    const base = join(dir, "..", `${dir.split("/").pop()}-base.json`);
+    writeFileSync(base, known);
+    return { dir, base };
+  }
+  const built = baseSurface(files);
+  bases.set(key, readFileSync(built.base, "utf8"));
+  return built;
+}

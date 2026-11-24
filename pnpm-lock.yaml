@@ -2290,6 +2290,9 @@ importers:
         specifier: workspace:*
         version: link:../std-i18n
     devDependencies:
+      '@keel/check':
+        specifier: workspace:*
+        version: link:../check
       '@keel/tooling':
         specifier: workspace:*
         version: link:../../tooling

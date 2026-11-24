@@ -31,6 +31,7 @@
     "@keel/std-i18n": "workspace:*"
   },
   "devDependencies": {
+    "@keel/check": "workspace:*",
     "@keel/tooling": "workspace:*",
     "@types/node": "^22",
     "fast-check": "^3"

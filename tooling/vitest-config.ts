@@ -6,14 +6,17 @@
 // about coverage is set. With `KEEL_FILE_TIMES=1` (CI's tooling/ci-shards.mjs) each test file prints one
 // `file <path> <s>s` line as it ends, so a shard's log says how far a run got and what each file cost. With
 // `KEEL_TEST_WORKERS=<n>` (root `pnpm test` sets it from the machine's load, tooling/test-slots.mjs) a run uses at
-// most n workers, unless the config sets `maxWorkers` itself. A test that runs `properties` or `simulate` and declares
+// most n workers, unless the config sets `maxWorkers` itself; without it, a run sizes itself the same way as one task
+// of `testSlots` from the load when it starts, at most vitest's own default (one fewer than the cores). A test that runs `properties` or `simulate` and declares
 // no options is given a timeout for its runs (property-times.ts).
+import os from "node:os";
 import { fileURLToPath } from "node:url";
 import type { ViteUserConfig } from "vitest/config";
 import type { TestModule } from "vitest/node";
 import type { Reporter } from "vitest/reporters";
 import { coverageOptions } from "./coverage-config.ts";
 import { propertyTimesPlugin } from "./property-times.ts";
+import { testSlots } from "./test-slots.mjs";
 import { KeelReporter } from "./vitest-reporter.ts";
 
 const WATCHDOG = fileURLToPath(new URL("./watchdog.ts", import.meta.url));
@@ -29,10 +32,16 @@ const fileTimes: Reporter = {
   },
 };
 
-/** `KEEL_TEST_WORKERS` as a positive integer, else undefined. */
+/**
+ * `KEEL_TEST_WORKERS` as a positive integer; else, for a run of its own (a package's `pnpm test`), the workers one
+ * `testSlots` task gets from the load now, at most one fewer than the cores; else undefined (four cores or fewer).
+ */
 function workersFromEnv(): number | undefined {
   const n = Number(process.env.KEEL_TEST_WORKERS);
-  return Number.isInteger(n) && n > 0 ? n : undefined;
+  if (Number.isInteger(n) && n > 0) return n;
+  const cores = os.availableParallelism();
+  const own = testSlots({ cores, load: os.loadavg()[0] ?? 0, env: { KEEL_TEST_TASKS: "1" } }).workers;
+  return own === undefined ? undefined : Math.min(cores - 1, own);
 }
 
 export function keelConfig(config: ViteUserConfig = {}): ViteUserConfig {

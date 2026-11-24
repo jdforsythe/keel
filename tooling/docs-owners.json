@@ -1,5 +1,5 @@
 {
-  "@keel/check": ["k.explain", "k.host", "k.privacy-reads"],
+  "@keel/check": ["k.check-cache", "k.explain", "k.host", "k.privacy-reads"],
   "@keel/cli": [
     "k.boundary",
     "k.check",

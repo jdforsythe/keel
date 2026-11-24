@@ -28,8 +28,11 @@ import { parseFile } from "./internal/parseFile.ts";
 import { placedWithoutRoutes } from "./internal/placedWithoutRoutes.ts";
 import { registerNames } from "./internal/registerNames.ts";
 import { ruleCodeDeclarations } from "./internal/ruleCodeDeclarations.ts";
+import { ruleInScope } from "./internal/ruleInScope.ts";
+import { ruleOwners } from "./internal/ruleOwners.ts";
 import { runRules } from "./internal/runRules.ts";
 import { runSqlRules } from "./internal/runSqlRules.ts";
+import { stdInScope } from "./internal/stdInScope.ts";
 import { stylesDiags } from "./internal/stylesDiags.ts";
 import { summarize } from "./internal/summarize.ts";
 import { topologyDiags } from "./internal/topologyDiags.ts";
@@ -167,13 +170,17 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
     for (const f of group) artifactsOf.set(f.path, { ...compiled.artifacts, ...opts.artifacts });
   }
 
-  const typed = opts.types === false ? undefined : typeCheck(code, opts.root ?? process.cwd(), reported);
+  // The `@keel/*` packages this call's app manifests reach: a std package's formats and rules apply only among them,
+  // whatever an earlier call in this process imported (k.check-cache In one process).
+  const scope = stdInScope(all, opts.root ?? process.cwd());
+  const typed =
+    opts.types === false ? undefined : typeCheck(code, opts.root ?? process.cwd(), reported, scope, opts.typeCache);
   // One diagnostic per fault: where the compiler reports E1403 at an expression, E1406 does not.
   const e1403 = new Set(out.filter((d) => d.code === "E1403").map((d) => `${d.path}:${d.line}:${d.col}`));
   if (typed !== undefined)
     out.push(...typed.diagnostics.filter((d) => d.code !== "E1406" || !e1403.has(`${d.path}:${d.line}:${d.col}`)));
 
-  const registered = rules();
+  const registered = rules().filter((r) => ruleInScope(ruleOwners.get(r.code), scope));
   const checked: Checked[] = [];
   for (const file of code) {
     const parsed = parseFile(file);
