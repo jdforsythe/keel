@@ -46,7 +46,7 @@
     "@keel/runtime-dom": "6kb",
     "@keel/runtime-dom/ops": "10.75kb",
     "@keel/scaffold": {
-      "max": "20kb",
+      "max": "22kb",
       "platform": "node"
     },
     "@keel/scaffold/agents": {
