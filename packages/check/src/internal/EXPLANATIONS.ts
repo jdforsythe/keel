@@ -822,9 +822,9 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1574",
-    "a shell build without a valid KEEL_ORIGIN",
-    "The shell sends page-origin requests to KEEL_ORIGIN: https outside localhost.",
-    "KEEL_ORIGIN=https://app.example keel build --target tauri",
+    "a shell build's KEEL_ORIGIN: unset or invalid with a node deployable, set without one",
+    "The shell sends page-origin requests to KEEL_ORIGIN, the origin of the app's node deployable.",
+    "KEEL_ORIGIN=https://app.example keel build --target tauri; with no node deployable, unset it",
     "k.shell",
   ],
   [

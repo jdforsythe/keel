@@ -26,7 +26,7 @@ const files = (): Record<string, string> => ({
     compilerOptions: { jsx: "react-jsx", jsxImportSource: "@keel/runtime-dom", module: "esnext", target: "es2022" },
   }),
   "topology.ts":
-    "import { topology } from '@keel/server'\nexport default topology({\n  web: { modules: ['c'], adapter: 'client', shells: { tauri: { id: 'dev.keel.golden', name: 'Golden' } } },\n})\n",
+    "import { topology } from '@keel/server'\nexport default topology({\n  web: { modules: ['c'], adapter: 'client', shells: { tauri: { id: 'dev.keel.golden', name: 'Golden' } } },\n  api: { modules: [], adapter: 'node' },\n})\n",
   "modules/c/module.ts": manifestSrc("c"),
   "modules/c/routes.ts":
     "import { manifest } from '@keel/router'\nimport { c } from './c.contract.ts'\nconst Page = () => null\nexport const routes = manifest(c, { 'c.page': { component: Page } })\n",

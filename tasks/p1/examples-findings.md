@@ -22,7 +22,7 @@
 | 16 | fixed: rfc:0199 (ADR-0221) `scaffold service <module> --base <url> --reason <text>` writes the endpoints file, the client, the dependency and the `connect` origin; `scaffold route --no-loader` writes a page with no loader; 7 hand edits are left, all app content |
 | 17 | open: rough edge (k.scaffold: `project --workspace` writes no page and `route` writes a loader and an empty `<Box />` a client-only page does not use) |
 | 18 | open: needs an RFC (k.scaffold: a `--shell tauri|capacitor` option writing `shells`, the std package and the pinned plugin and CLI packages RFC 0198 lists) |
-| 19 | open: needs an RFC (k.shell: `keel build --target` of a `client` with no server and no request to one needs no `KEEL_ORIGIN`) |
+| 19 | fixed: rfc:0200 (ADR-0222) a shell build of an app with no `node` deployable reads no `KEEL_ORIGIN`; `examples/native-tauri`, `examples/native-capacitor` and `examples/links-in` build their shells with no environment, and a set `KEEL_ORIGIN` there is E1574 |
 
 Fixed 5, answered in the skills 6, filed as backlog 1, accepted as an RFC 1, open 6.
 

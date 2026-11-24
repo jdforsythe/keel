@@ -6,10 +6,10 @@ import { preferencesStorage } from "./internal/preferencesStorage.ts";
 /**
  * The `storage` and `net` drivers of a Capacitor shell (std.shells), which a shell build's generated entry passes to
  * `createCtx({ mode: 'shell', drivers })` (k.shell). `origin` is the build's `KEEL_ORIGIN`: requests on the page's
- * own origin go there. `connect` holds the other exact origins `net` sends to (k.shell Origins; none when absent);
+ * own origin go there; with none (k.shell Without a server) they are refused. `connect` holds the other exact origins `net` sends to (k.shell Origins; none when absent);
  * a request or redirect hop to any other URL is refused.
  */
-export function capacitorDrivers(opts: { readonly origin: URL; readonly connect?: readonly string[] }): {
+export function capacitorDrivers(opts: { readonly origin?: URL; readonly connect?: readonly string[] }): {
   readonly storage: KeyValueStorage;
   readonly net: Net;
 } {

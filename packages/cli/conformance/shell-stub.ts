@@ -2,10 +2,11 @@
 // The project declares `tauri` on `web` (`client`); `node_modules/@keel/std-tauri` is replaced by a stub package whose `./tools` entry registers a target.
 // The stub reads `stub.json` at the project root, so a test shapes the target without touching the stub:
 //   { register?: false, platforms?, files?, tools?, plugins?, build?, jobs? }  (defaults: registers, `platforms: []`, `files: { "a.json": ... }`, no tool entries, an `artifact`, no jobs)
-// Each call of the target's `build` appends one JSON line to `build-calls.txt` of the project: `{ dir, origin, connect, platform, release, www, a }` (`www` and `a`: whether `www/index.html` and `a.json` were already in `dir`).
+// Each call of the target's `build` appends one JSON line to `build-calls.txt` of the project: `{ dir, origin, connect, platform, release, www, a, keys, envKeys }` (`www` and `a`: whether `www/index.html` and `a.json` were already in `dir`; `keys` the keys of the `ShellBuild` it was given, `envKeys` those of its `env`; `origin` is absent from the line when the build has none).
+// The project has a `node` deployable `api` beside `web` unless `stubProject(cfg, false)` asks for `web` alone (k.shell Without a server); `run` sets `KEEL_ORIGIN` to `ORIGIN` unless given another value, `""` (empty) or `UNSET`.
 // The stub is plain JavaScript (a `.ts` file under `node_modules` is not run by Node); its `.` and `./shellMount` re-export the real package's drivers and `shellMount`, so the shell entry bundles.
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { type Rec, type Run, cleanup, materialize } from "./compat-support.ts";
@@ -42,8 +43,11 @@ export const A_JSON = '{"key":"abcdefghijkl"}\n';
 
 const manifestSrc = (id: string): string =>
   `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [], capabilities: [], public: { exports: [] } })\n`;
-export const topologySrc = (shell: boolean): string =>
-  `import { topology } from '@keel/server'\nexport default topology({\n  web: { modules: ['c'], adapter: 'client'${shell ? ", shells: { tauri: { id: 'dev.keel.golden', name: 'Golden' } }" : ""} },\n})\n`;
+/** `web` (`client`), and with `server` a `node` deployable `api` beside it. */
+export const topologySrc = (shell: boolean, server = true): string =>
+  `import { topology } from '@keel/server'\nexport default topology({\n  web: { modules: ['c'], adapter: 'client'${shell ? ", shells: { tauri: { id: 'dev.keel.golden', name: 'Golden' } }" : ""} },${server ? "\n  api: { modules: [], adapter: 'node' }," : ""}\n})\n`;
+/** Pass as `run`'s `origin` to leave `KEEL_ORIGIN` unset (`undefined` takes the default `ORIGIN`). */
+export const UNSET = null;
 
 const TOOLS_JS = `import { appendFileSync, existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -65,6 +69,8 @@ if (cfg.register !== false) {
         JSON.stringify({
           dir: at.dir,
           origin: at.origin,
+          keys: Object.keys(at),
+          envKeys: Object.keys(at.env ?? {}),
           connect: at.connect ?? null,
           platform: at.platform ?? null,
           release: at.release,
@@ -80,7 +86,7 @@ if (cfg.register !== false) {
 `;
 
 /** A project declaring `tauri` on `web`, with the stub as `@keel/std-tauri`. */
-export function stubProject(cfg: StubConfig = {}): string {
+export function stubProject(cfg: StubConfig = {}, server = true): string {
   const dir = materialize({
     "package.json": `${JSON.stringify({ name: "fx", private: true, type: "module", version: "1.0.0", dependencies: { "@keel/std-tauri": "workspace:*" } })}\n`,
     "vite.config.ts":
@@ -88,7 +94,7 @@ export function stubProject(cfg: StubConfig = {}): string {
     "tsconfig.json": JSON.stringify({
       compilerOptions: { jsx: "react-jsx", jsxImportSource: "@keel/runtime-dom", module: "esnext", target: "es2022" },
     }),
-    "topology.ts": topologySrc(true),
+    "topology.ts": topologySrc(true, server),
     "modules/c/module.ts": manifestSrc("c"),
     "modules/c/Page.tsx":
       "import { Box, Text } from '@keel/ui'\nexport default function Page() {\n  return (\n    <Box as=\"main\">\n      <Text>home</Text>\n    </Box>\n  )\n}\n",
@@ -128,7 +134,7 @@ export type Out = Run & { out: string };
 export function run(
   dir: string,
   args: readonly string[],
-  origin: string | undefined = ORIGIN,
+  origin: string | null | undefined = ORIGIN,
   format = "json",
   extra: Readonly<Record<string, string>> = {},
 ): Out {
@@ -138,7 +144,7 @@ export function run(
     if (k === "NODE_OPTIONS" || k === "TEST") continue;
     env[k] = v;
   }
-  if (origin !== undefined) env.KEEL_ORIGIN = origin;
+  if (origin !== null) env.KEEL_ORIGIN = origin;
   for (const [k, v] of Object.entries(extra)) env[k] = v;
   const r = spawnSync(process.execPath, [BIN, ...args, `--format=${format}`], {
     cwd: dir,
@@ -169,3 +175,24 @@ export const buildCalls = (dir: string): Record<string, unknown>[] => {
     .filter((l) => l !== "")
     .map((l) => JSON.parse(l));
 };
+
+/** All JavaScript a shell build wrote under `dist/web/tauri/www/`, with every space removed (the bundle is minified, so its object literals are read by shape). */
+export const wwwText = (dir: string): string => {
+  const out: string[] = [];
+  const walk = (at: string): void => {
+    for (const e of readdirSync(at, { withFileTypes: true })) {
+      const p = join(at, e.name);
+      if (e.isDirectory()) walk(p);
+      else if (/\.m?js$/.test(e.name)) out.push(readFileSync(p, "utf8"));
+    }
+  };
+  const www = join(dir, "dist", "web", "tauri", "www");
+  if (existsSync(www)) walk(www);
+  return out.join("\n").replace(/\s+/g, "").replace(/['`]/g, '"');
+};
+/** The object literal the entry passes to the package's drivers: `...mode:"shell",drivers:<fn>({...})`. */
+export const driversArg = (text: string): string | undefined =>
+  /mode:"shell",drivers:[\w$]+\((\{[^()]*\})\)/.exec(text)?.[1];
+/** The object literal the entry passes to `shellMount` for the shell `id`: it holds `id:"<id>"`. */
+export const mountArg = (text: string, id: string): string | undefined =>
+  new RegExp(`\\{[^{}]*id:"${id.replace(/\./g, "\\.")}"[^{}]*\\}`).exec(text)?.[0];

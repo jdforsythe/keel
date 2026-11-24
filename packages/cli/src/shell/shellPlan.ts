@@ -13,10 +13,11 @@ const NO_PROBE: Probe = { run: () => undefined, exists: () => false, platform: "
 /**
  * The checks `keel build --target` runs before any work, in order (k.shell Build 1-3): the shell targets load
  * (`loaded`: E1159, E1585), a `client` deployable declares the shell (E1052), `--platform` is one of the target's
- * `platforms`, and given when it has some (E1052); `KEEL_ORIGIN` is valid (E1574, naming the key and no value); the
+ * `platforms`, and given when it has some (E1052); with a `node` deployable in the topology `KEEL_ORIGIN` is valid, and
+ * with none it is unset or empty (E1574 each, naming the key and no value; empty counts as unset); the
  * target's `tools` over `probe` (a relative path read from `cwd`; none given: nothing runs or exists), each entry one
  * E1575, with the E1572 of each plugin the shell's apps lack (`loaded.needs`). With no diagnostic, the plan, one app
- * per declaring deployable from `loaded`'s apps, each with its `connect` origins (`shellConnect` over `env`).
+ * per declaring deployable from `loaded`'s apps, each with its `connect` origins (`shellConnect` over `env`), and the origin when there is one.
  */
 export function shellPlan(
   input: Input,
@@ -45,10 +46,16 @@ export function shellPlan(
         { see: "k.shell" },
       ),
     );
-  const origin = shellOrigin(env.KEEL_ORIGIN);
-  if (origin === undefined)
+  const served = Object.values(loaded.topology).some((d) => d.adapter === "node");
+  const given = env.KEEL_ORIGIN === "" ? undefined : env.KEEL_ORIGIN;
+  const origin = served ? shellOrigin(given) : undefined;
+  if (served && origin === undefined)
     return fail(
       makeDiag("E1574", "KEEL_ORIGIN must be an https: origin (http: on localhost only)", { see: "k.shell" }),
+    );
+  if (!served && given !== undefined)
+    return fail(
+      makeDiag("E1574", "KEEL_ORIGIN is set and topology.ts has no node deployable to answer it", { see: "k.shell" }),
     );
   const at: Probe = { ...probe, exists: (path) => probe.exists(isAbsolute(path) ? path : join(cwd, path)) };
   const diags = [
@@ -61,5 +68,7 @@ export function shellPlan(
   const connect = Object.fromEntries(
     apps.map((a) => [a.deployable, shellConnect(loaded.topology, a.deployable, env, origin)]),
   );
-  return { diags: [], plan: { target, shell, platform: p, release: input.release === true, origin, apps, connect } };
+  const release = input.release === true;
+  const base: ShellPlan = { target, shell, platform: p, release, apps, connect };
+  return { diags: [], plan: origin === undefined ? base : { ...base, origin } };
 }

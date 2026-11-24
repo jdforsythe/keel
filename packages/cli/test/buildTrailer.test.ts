@@ -137,7 +137,6 @@ describe("build trailer", () => {
     const e = env();
     for (const k of Object.keys(e)) if (k.startsWith("VITEST") || k.startsWith("KEEL_")) delete e[k];
     e.PATH = [bin, dirname(process.execPath), "/usr/bin", "/bin"].join(delimiter);
-    e.KEEL_ORIGIN = "https://app.example";
     const r = spawnSync(process.execPath, [BIN, "build", "--target", "tauri"], {
       cwd: app,
       env: e,

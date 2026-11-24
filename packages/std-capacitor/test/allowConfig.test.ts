@@ -37,4 +37,11 @@ describe("allowConfig", () => {
       expect(JSON.parse(out)).toEqual({ plugins: { KeelHttp: { allow: ["https://a.example"] } } });
     }
   });
+
+  test("with no origin the list is `connect` alone, and empty when it is", () => {
+    expect(JSON.parse(allowConfig("{}", undefined, ["https://b.example"]))).toEqual({
+      plugins: { KeelHttp: { allow: ["https://b.example"] } },
+    });
+    expect(JSON.parse(allowConfig("{}", undefined, []))).toEqual({ plugins: { KeelHttp: { allow: [] } } });
+  });
 });

@@ -43,7 +43,7 @@ const loaded = (over: Partial<Loaded> = {}): Loaded => ({
     { shell: "capacitor", app: app("mobile") },
   ],
   paths: new Set(),
-  topology: {},
+  topology: { api: { modules: [], adapter: "node" } },
   needs: [],
   diags: [],
   ...over,
@@ -115,6 +115,36 @@ describe("shellPlan", () => {
     );
     expect(local.diags).toEqual([]);
     expect(local.plan?.origin).toBe("http://localhost:3000");
+  });
+
+  test("with no node deployable, an unset or empty KEEL_ORIGIN gives a plan with no origin", () => {
+    for (const env of [{}, { KEEL_ORIGIN: "" }]) {
+      const r = shellPlan({ target: "tauri" }, env, "/app", loaded({ topology: {} }), full("/app"));
+      expect(r.diags).toEqual([]);
+      expect(r.plan).toBeDefined();
+      expect(r.plan === undefined ? [] : Object.keys(r.plan)).not.toContain("origin");
+    }
+  });
+
+  test("with no node deployable, a KEEL_ORIGIN set and not empty is E1574 that names the key, never the value", () => {
+    fc.assert(
+      fc.property(fc.stringMatching(/^[a-z]{3,8}$/), (host) => {
+        for (const value of [`https://${host}.example`, `http://localhost/${host}`, `${host}.example`]) {
+          const r = shellPlan({ target: "tauri" }, { KEEL_ORIGIN: value }, "/app", loaded({ topology: {} }));
+          expect(r.plan).toBeUndefined();
+          expect(r.diags).toEqual([
+            {
+              kind: "diag",
+              code: "E1574",
+              message: "KEEL_ORIGIN is set and topology.ts has no node deployable to answer it",
+              see: "k.shell",
+            },
+          ]);
+          expect(JSON.stringify(r.diags)).not.toContain(host);
+        }
+      }),
+      run,
+    );
   });
 
   test("no client deployable declaring the shell, or no registered target, is E1052 naming shells.<target>", () => {

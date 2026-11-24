@@ -61,4 +61,17 @@ describe("allows", () => {
     );
     for (const bad of ["", "/x", "golden-1.example", "https://"]) expect(allows(bad, ORIGIN, [bad])).toBe(false);
   });
+
+  test("with no `origin`, only the listed origins are allowed", () => {
+    fc.assert(
+      fc.property(fc.uniqueArray(listed, { minLength: 1, maxLength: 4 }), tail, (all, t) => {
+        const [out = "", ...connect] = all;
+        expect(allows(`${ORIGIN.origin}${t}`, undefined, connect)).toBe(false);
+        expect(allows(`${out}${t}`, undefined, connect)).toBe(false);
+        for (const o of connect) expect(allows(`${o}${t}`, undefined, connect)).toBe(true);
+        expect(allows(`${out}${t}`, undefined, [])).toBe(false);
+      }),
+      run,
+    );
+  });
 });
