@@ -6,11 +6,11 @@ import { isObjectSchema } from "./internal/isObjectSchema.ts";
 import { isSchema } from "./internal/isSchema.ts";
 import { ownValue } from "./internal/ownValue.ts";
 import { withStores } from "./internal/withStores.ts";
+import { routeTable } from "./routeTable.ts";
 import type { Action } from "./types/Action.ts";
 import type { ApiAction } from "./types/ApiAction.ts";
 import type { Href } from "./types/Href.ts";
 import type { RouteTable } from "./types/RouteTable.ts";
-import { routeTable } from "./routeTable.ts";
 
 type None = Record<string, never>;
 type InferOr<E, K extends string, D> = E extends { readonly [P in K]: infer S } ? Infer<S> : D;
@@ -103,7 +103,8 @@ export function action<I, P, St>(
   const at = typeof entry === "object" && entry !== null ? entry : {};
   const { stores } = decl;
   const run = (input: I, a: RunAt<P, St>, ctx: Ctx) => {
-    const routes = a.routes ?? (none ??= routeTable());
+    none ??= routeTable();
+    const routes = a.routes ?? none;
     return a.stores !== undefined || stores === undefined
       ? fn(input, { ...a, user: a.user ?? "", bearer: a.bearer, stores: a.stores, routes }, ctx)
       : withStores(stores, undefined, ctx, (st) =>
