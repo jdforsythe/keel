@@ -198,6 +198,7 @@ type ModuleInfo = {
   importedIds: readonly string[];
   dynamicallyImportedIds: readonly string[];
   importers?: readonly string[];
+  dynamicImporters?: readonly string[];
 };
 /** An emitted file of a bundle: a chunk's code or an asset's source. */
 type Emitted = { fileName: string; code?: string; source?: string | Uint8Array };
@@ -1072,7 +1073,7 @@ export default function (): {
       const why = browserBreach(this.getModuleIds?.() ?? [], info, breach, show, (id) => stubbed.has(id));
       if (why !== undefined) throw new Error(`E1007 ${why}`);
       // E1011 (k.bundle Service map): the entry maps the modules the scan found; one the bundler reached by another way
-      // (an alias, a package name, a template import) would send its calls to an origin that is not its deployable's.
+      // (a computed import(), found by glob) would send its calls to an origin that is not its deployable's.
       if (mapped === undefined) return;
       const topo = Object.values(topology ?? {});
       const unmapped = unmappedModule(
@@ -1089,7 +1090,10 @@ export default function (): {
         },
         mapped,
         (id) => stubbed.has(id) || serverOnlyFile(id.split("?")[0] ?? id),
-        (id) => this.getModuleInfo?.(id)?.importers?.[0],
+        (id) => {
+          const info = this.getModuleInfo?.(id);
+          return [...(info?.importers ?? []), ...(info?.dynamicImporters ?? [])];
+        },
       );
       if (unmapped !== undefined)
         throw new Error(

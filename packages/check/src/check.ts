@@ -1,10 +1,12 @@
 import path from "node:path";
 import { artifactHashes, compile, parseTopology, projectDirs, routeLiterals } from "@keel/compiler";
 import type { Topology } from "@keel/compiler";
+import { foreignRoutesDiags } from "@keel/compiler/hosting/foreignRoutesDiags";
 import { mountDiags } from "@keel/compiler/hosting/mountDiags";
 import { topologyReadProblems } from "@keel/compiler/hosting/topologyReadProblems";
 import type { Checked } from "./internal/Checked.ts";
 import type { Expected } from "./internal/Expected.ts";
+import { aliasedImports } from "./internal/aliasedImports.ts";
 import { apiWithoutServer } from "./internal/apiWithoutServer.ts";
 import { artifactDir } from "./internal/artifactDir.ts";
 import { budgetBreaches } from "./internal/budgetBreaches.ts";
@@ -88,8 +90,8 @@ function expectedHashes(files: readonly SourceFile[], opts: CheckOptions): Reado
  * `keel check` over in-memory files (k.check pipeline): (1) oxc parse and strict TS check, (2) compiler
  * diagnostics passed through unchanged, one compile per project (`projectDirs`: paths relative to it, its own
  * `topology.ts`; rfc:0059), (3) the rule registry on each code file, rules' `sql` readers on each migration, plus project passes (E1005
- * against the hashes the compiler derives from each artifact's project, W1005, E1454, E1607, E1550, E1508, E1511, E1566, E1586, E1587, W1012, E1580-E1582, E1584, E1589, E1753, E1755, the k.module pass
- * E1151-E1158, the contract passes (E1155, E1502-E1504, E1509, E1513, E1514), and the k.compat pass E1562, E1563,
+ * against the hashes the compiler derives from each artifact's project, W1005, E1454, E1607, E1550, E1508, E1511, E1566, E1586, E1587, W1012, E1580-E1582, E1584, E1589, E1592, E1753, E1755, the k.module pass
+ * E1151-E1158, E1013, the contract passes (E1155, E1502-E1504, E1509, E1513, E1514), and the k.compat pass E1562, E1563,
  * W1564, W1568 over `.keel/surface.json`), (4) dedupe and sort. Static only: no app code is evaluated (rendered a11y is `keel test`, rfc:0023). Pure and deterministic for equal inputs.
  */
 export function check(files: readonly SourceFile[], opts: CheckOptions = {}): CheckResult {
@@ -138,6 +140,12 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
     // E1580-E1582, E1584, E1589 (k.mount): the project's `identity.ts`, its importers and the topology serving them.
     for (const d of mountDiags(project.map((f) => ({ path: f.path.slice(dir.length), source: f.source }))))
       out.push({ kind: "diag", ...d, path: `${dir}${d.path}` });
+    // E1592 (k.user): `identity.server.ts` and the project files it imports, importing the routes of a module another origin serves.
+    for (const d of foreignRoutesDiags(
+      project.map((f) => ({ path: f.path.slice(dir.length), source: f.source })),
+      path.join(opts.root ?? process.cwd(), dir),
+    ))
+      out.push({ kind: "diag", ...d, path: `${dir}${d.path}` });
     for (const d of compiled.diagnostics) {
       const path = d.path === "" ? d.path : `${dir}${d.path}`;
       out.push({ kind: "diag", ...d, path });
@@ -171,6 +179,7 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
     ...registerNames(checked, dirs),
     ...chainStoreIds(checked, dirs, all),
     ...moduleChecks(checked),
+    ...aliasedImports(checked, path.resolve(opts.root ?? process.cwd()), dirs),
     ...guardRedirectLoops(checked),
     ...contractChecks(checked, all, opts.topology),
     ...ruleCodeDeclarations(checked),

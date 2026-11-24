@@ -83,8 +83,15 @@ const ROWS: readonly Row[] = [
   [
     "E1011",
     "a client bundle holds an app module its service map leaves out",
-    "An alias, package name or template import() reached it; its calls would miss its deployable.",
-    "import '@/api/x' -> import '../api/x'",
+    "A computed import() reached it, and the bundler found it by glob where the scan did not follow; its calls would miss its deployable.",
+    "import a literal, relative specifier of it from the client's own module",
+    "k.bundle",
+  ],
+  [
+    "E1013",
+    "a specifier other than relative reaching a file under modules/",
+    "Module rules (E1151, E1152, E1165), codemods and the client's service map read relative specifiers; an alias walks past all of them.",
+    "import 'linked-notes/lib.ts' -> import '../notes/lib.ts'",
     "k.bundle",
   ],
   [
@@ -947,6 +954,13 @@ const ROWS: readonly Row[] = [
     "TypeScript refuses the duplicate key too (TS1117); the second reason would replace the first.",
     "img: { 'https://a.example': 'x', 'https://a.example': 'y' } -> img: { 'https://a.example': 'x' }",
     "k.origins",
+  ],
+  [
+    "E1592",
+    "identity.server.ts, or a file it imports, imports the routes of a module a static deployable, or a client one without servedBy, serves",
+    "Those pages are on another origin than the sign-in: a return there lands the person signed out, and an Href is root-relative.",
+    "adapter: 'client' -> adapter: 'client', servedBy: 'api'",
+    "k.user",
   ],
   [
     "E1601",

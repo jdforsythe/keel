@@ -34,7 +34,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.component | Components | conformance-covered | props |
 | k.compiler | Compiler, artifacts | conformance-covered | JSX |
 | k.boundary | Server boundary | conformance-covered | stubs |
-| k.bundle | Browser bundles | conformance-covered | workers |
+| k.bundle | Browser bundles | implemented | workers |
 | k.runtime | DOM runtime, islands | conformance-covered | nodes |
 | k.resume | Documents, resume | conformance-covered | regions |
 | k.claim | Claim order | conformance-covered | eager |
@@ -68,7 +68,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.ledger | Ledger, evidence | conformance-covered | rungs |
 | k.server | Thin server | conformance-covered | loads |
 | k.leave | What a request leaves | conformance-covered | state |
-| k.user | User, caller | conformance-covered | user |
+| k.user | User, caller | implemented | user |
 | k.mount | Mount pages | conformance-covered | submit |
 | k.mount-scope | Mount scope | conformance-covered | proxy |
 | k.return | Shell mount | conformance-covered | net |
