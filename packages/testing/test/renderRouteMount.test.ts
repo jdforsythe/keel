@@ -29,9 +29,9 @@ const routes = manifest(c, {
 });
 const get = (url: string) => ({ method: "GET", url, body: null });
 const open: { dispose(): void }[] = [];
-const start = async (mount: typeof gate | undefined = gate) => {
+const start = async (mount: typeof gate | null = gate) => {
   const ctx = createCtx({ mode: "sim", seed: 1337 });
-  const h = await renderRoute("mo.home", mount === undefined ? { routes, ctx } : { routes, ctx, mount });
+  const h = await renderRoute("mo.home", mount === null ? { routes, ctx } : { routes, ctx, mount });
   open.push(h);
   return h;
 };
@@ -61,7 +61,7 @@ describe("renderRoute under the identity mount the test names", () => {
   });
 
   it("without mount no path is the mount's: a path under the gate renders its page", async () => {
-    const h = await start(undefined);
+    const h = await start(null);
     await h.navigate(to("/gate/x"));
     expect(h.route().id).toBe("mo.two");
     expect(h.documents()).toEqual([]);
