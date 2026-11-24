@@ -13,4 +13,4 @@
 
 **Alternatives.** No cache, the tests sharing work alone; mtimes with guards (size, inode, a racy window); off in CI or opt-in; a flag or a hit marker; a timeout scaled by a measured cold start.
 
-**Consequences.** A hit costs reading and hashing every file the pass read (tens of milliseconds). Stored diagnostics may quote source lines; a forged entry is trusted as `node_modules` is. Node's compile cache in `bin.ts` stays, with `engines` at `>=22.1`. k.check-cache reads `proposed` until it is built and its eight clauses are covered.
+**Consequences.** A hit costs reading and hashing every file the pass read (tens of milliseconds). Stored diagnostics may quote source lines; a forged entry is trusted as `node_modules` is. Node's compile cache in `bin.ts` stays, called only where Node has `module.enableCompileCache` (22.1 and later), so `engines` stays `>=22`.
