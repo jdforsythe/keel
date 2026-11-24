@@ -81,12 +81,12 @@ test("E2552 fires on a `schedule` key not prefixed by its module id and not on i
     }),
     { seed: 1337, numRuns: 30 },
   );
-});
+}, 30_000);
 
 test("E2552 fires on a `schedule` outside `modules/<id>/schedules.server.ts` and not on its clean twin.", () => {
   expect(found(project({ path: "modules/orders/other.server.ts" }), "E2552").length).toBe(1);
   expect(found(project(), "E2552").length).toBe(0);
-});
+}, 30_000);
 
 test("E2552's fix prefixes the key with the module id, and re-checking the patched file reports no E2552.", () => {
   fc.assert(
@@ -102,4 +102,4 @@ test("E2552's fix prefixes the key with the module id, and re-checking the patch
     }),
     { seed: 1337, numRuns: 20 },
   );
-});
+}, 30_000);

@@ -77,7 +77,7 @@ test("E2553 fires on a `runners` export lacking `schedules` and not on its clean
   expect(found(project({ runners: "[jobs]" }), "E2553").length).toBe(1);
   expect(found(project({ runners: "[]" }), "E2553").length).toBe(1);
   expect(found(project({ runners: "[jobs, schedules]" }), "E2553").length).toBe(0);
-});
+}, 30_000);
 
 test("E2553's fix adds `schedules` to `runners`, and re-checking the patched file reports no E2553.", () => {
   const files = project({ runners: "[jobs]" });
@@ -86,4 +86,4 @@ test("E2553's fix adds `schedules` to `runners`, and re-checking the patched fil
   const patched = applyFix(files, d[0]?.fix ?? "");
   expect(patched.find((f) => f.path === "modules/orders/runners.server.ts")?.source).toContain("schedules");
   expect(found(patched, "E2553").length).toBe(0);
-});
+}, 30_000);

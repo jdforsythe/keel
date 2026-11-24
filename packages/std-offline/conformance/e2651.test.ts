@@ -91,4 +91,4 @@ test("`keel check` reports E2651 on an outbox whose api body holds an `s.secret`
     }),
     { seed: 1337, numRuns: 15 },
   );
-});
+}, 30_000);

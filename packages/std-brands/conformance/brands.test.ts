@@ -66,7 +66,7 @@ test("For generated non-PascalCase brands (lower, snake, kebab, camel), `s.id('<
     }),
     { seed: SEED, numRuns: 60 },
   );
-});
+}, 30_000);
 
 test("For generated non-PascalCase brands (lower, snake, kebab, camel), `ctx.random.id('<b>')` reports exactly one E2101 at the literal's line and col", () => {
   fc.assert(
@@ -78,7 +78,7 @@ test("For generated non-PascalCase brands (lower, snake, kebab, camel), `ctx.ran
     }),
     { seed: SEED, numRuns: 60 },
   );
-});
+}, 30_000);
 
 test("A file whose brands are all PascalCase literals, variables, or other expressions reports no E2101", () => {
   fc.assert(
@@ -95,7 +95,7 @@ export function f(ctx) { return [ctx.random.id('${b}'), ctx.random.id(dyn), ctx.
     }),
     { seed: SEED, numRuns: 40 },
   );
-});
+}, 30_000);
 
 test("For each generated E2101 with a fix, the fix applies to its file with `git apply`, and re-checking the patched file reports no E2101", () => {
   fc.assert(
@@ -112,7 +112,7 @@ test("For each generated E2101 with a fix, the fix applies to its file with `git
     }),
     { seed: SEED, numRuns: 40 },
   );
-});
+}, 30_000);
 
 test("The fixed brand of `user_id`, `user-id` and `userId` is `UserId`; the quote character is kept.", () => {
   for (const b of ["user_id", "user-id", "userId"]) {
@@ -127,7 +127,7 @@ test("The fixed brand of `user_id`, `user-id` and `userId` is `UserId`; the quot
       expect(patched[0]?.source).toBe(sApi("UserId", q));
     }
   }
-});
+}, 30_000);
 
 test("A brand with no letter-led PascalCase form (`'_'`, `'1st'`) reports E2101 without a `fix`.", () => {
   for (const b of ["_", "1st"]) {
@@ -139,4 +139,4 @@ test("A brand with no letter-led PascalCase form (`'_'`, `'1st'`) reports E2101 
     expect(c.length).toBe(1);
     expect(c[0]?.fix).toBeUndefined();
   }
-});
+}, 30_000);

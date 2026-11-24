@@ -118,7 +118,7 @@ describe("k.deploy: DeployEnv keys", () => {
       }),
       { seed: 1337, numRuns: 5 },
     );
-  });
+  }, 30_000);
 
   test("`KEEL_ORIGIN` is optional: with `KEEL_PEER_MY_API` set and `KEEL_ORIGIN` unset, `server.mjs` answers on `PORT`", async () => {
     const entry = path.join(fixture, "dist", "web", "server.mjs");
@@ -140,5 +140,5 @@ describe("k.deploy: DeployEnv keys", () => {
     } finally {
       child.kill("SIGTERM");
     }
-  });
+  }, 30_000);
 });

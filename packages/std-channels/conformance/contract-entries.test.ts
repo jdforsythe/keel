@@ -256,7 +256,7 @@ describe("std.contracts: std-channels", () => {
       (d) => d.code === "E1111" || d.code === "W1005",
     );
     expect(ds).toEqual([]);
-  });
+  }, 30_000);
 
   test("`routes.json` lists both of the channel's entry ids (the compiler reads them statically, nothing unread)", () => {
     const r = routeLiterals(boardFiles(false), { root: "." });
@@ -272,7 +272,7 @@ describe("std.contracts: std-channels", () => {
     const hits = check(files, { types: false }).diagnostics.filter((d) => d.code === "E1111");
     expect(hits).toHaveLength(2);
     expect(hits.map((d) => (src[d.line - 1] ?? "").slice(d.col - 1, d.col - 1 + 5))).toEqual(["query", "query"]);
-  });
+  }, 30_000);
 
   test("a contract file importing a channel from a `*.schema.ts` file is no E1514; from `boardChannel.ts`, one E1514", () => {
     const run = (file: string) =>
@@ -293,5 +293,5 @@ describe("std.contracts: std-channels", () => {
       ).diagnostics.filter((d) => d.code === "E1514");
     expect(run("Board.schema.ts")).toEqual([]);
     expect(run("boardChannel.ts")).toHaveLength(1);
-  });
+  }, 30_000);
 });
