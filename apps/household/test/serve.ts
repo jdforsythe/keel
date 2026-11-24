@@ -1,4 +1,4 @@
-import { type SimCtx, createCtx } from "@keel/ctx";
+import { type Ctx, type SimCtx, createCtx, register } from "@keel/ctx";
 import { s } from "@keel/schema";
 import { createApp } from "@keel/server";
 import { sql } from "@keel/std-postgres";
@@ -20,7 +20,7 @@ export const PASSWORD = "analytical engine";
 
 const UserRow = s.object({ userId: s.string() });
 
-type Fetch = (r: Request) => Promise<Response>;
+export type Fetch = (r: Request) => Promise<Response>;
 
 /** The cookie pairs a response sets, as a `cookie` header sends them back. */
 const cookiesOf = (res: Response): string =>
@@ -41,6 +41,27 @@ export const formPost = (path: string, fields: Record<string, string>, cookie = 
     },
     body: new URLSearchParams(fields).toString(),
   });
+
+type Holder = { readonly hold: <T>(work: Promise<T>, label: string) => Promise<T> };
+const passThrough: Holder = { hold: (work) => work };
+const holder = register<Holder>("household.test", {
+  real: () => passThrough,
+  shell: () => passThrough,
+  sim: ({ hold }) => ({ hold }),
+});
+
+/**
+ * `work` held as real I/O of the `simulate` run whose ctx is `ctx` (k.sim `hold`): a server on another ctx answering
+ * from its own database, or the sign-in library hashing a password off the event loop, shows the run no clock or
+ * macrotask, so the run waits for it; on a ctx outside `simulate` it is `work`.
+ */
+export const held = <T>(ctx: Ctx, work: Promise<T>): Promise<T> => holder(ctx).hold(work, "server");
+
+/** The household `h` as one `simulate` run reaches it: each request to its server is held work of the run's `ctx`. */
+export const onRun = <H extends { readonly raw: Fetch }>(h: H, ctx: Ctx): H => ({
+  ...h,
+  raw: (req) => held(ctx, h.raw(req)),
+});
 
 /** Sign up and sign in `email` through the identity mount; resolves the session cookie, `''` when refused. */
 export async function signIn(fetch: Fetch, email = EMAIL, name = NAME): Promise<string> {
@@ -69,11 +90,14 @@ export const webApp = (ctx: SimCtx, lines: string[] = []) =>
  * an API token through the members API: `fetch` sends that token with every request that carries no `cookie` or
  * `authorization` of its own, for tests that call the API directly, and `user` is the member's id. `app` is the
  * `createApp` result, as `renderRoute`'s `app`: with `user` the page and every request it sends are the member's
- * (k.user Testing). `sent` lists `METHOD /path` of what `fetch` sent, and `lines` every line the server logged.
+ * (k.user Testing). `sent` lists `METHOD /path` of what `fetch` sent, and `lines` every line the server logged. With
+ * `using` (a `simulate` run's ctx) the server runs on that ctx, whose clock the run drives; otherwise on a ctx of its
+ * own from `seed`, whose clock the test moves.
  */
 export async function served(
   seed = 1,
   signedIn = true,
+  using?: SimCtx,
 ): Promise<{
   ctx: SimCtx;
   sent: string[];
@@ -84,11 +108,11 @@ export async function served(
   token: string;
   app: Awaited<ReturnType<typeof createApp>>;
 }> {
-  const ctx = createCtx({ mode: "sim", seed });
+  const ctx = using ?? createCtx({ mode: "sim", seed });
   const lines: string[] = [];
   const web = await webApp(ctx, lines);
   const raw: Fetch = (req) => web.fetch(req);
-  if (signedIn) await signIn(raw);
+  if (signedIn) await held(ctx, signIn(raw));
   const rows = await membersDb(ctx).query(sql(UserRow)`select user_id as "userId" from members`);
   const user = rows.ok ? (rows.value[0]?.userId ?? "") : "";
   const minted = user === "" ? null : await membersApi.mint({ body: { days: 30 }, user }, ctx);

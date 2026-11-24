@@ -1,3 +1,4 @@
+import type { Ctx } from "@keel/ctx";
 import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";
 import { drain, send } from "@keel/std-offline";
@@ -9,7 +10,7 @@ import { Items } from "../modules/shopping/Items.schema.ts";
 import { listOutbox } from "../modules/shopping/listOutbox.ts";
 import { shoppingDb } from "../modules/shopping/shoppingDb.server.ts";
 import { GRACE, household } from "./household.ts";
-import { PASSWORD, asJson, formPost } from "./serve.ts";
+import { PASSWORD, asJson, formPost, held, onRun } from "./serve.ts";
 
 const Count = s.object({ n: s.int() });
 type House = Awaited<ReturnType<typeof household>>;
@@ -31,15 +32,15 @@ async function stored(h: House) {
  * An empty list and no kept write key, for the next run. A sim ctx draws its write keys from its seed, and two runs of
  * one seed draw the same key; a browser draws a fresh one for every write.
  */
-async function startOver(h: House): Promise<void> {
-  const items = await shoppingDb(h.ctx).run(sql(NoRows)`delete from items`);
-  const keys = await shoppingDb(h.ctx).run(sql(NoRows)`delete from list_writes`);
+async function startOver(h: House, run: Ctx): Promise<void> {
+  const items = await held(run, shoppingDb(h.ctx).run(sql(NoRows)`delete from items`));
+  const keys = await held(run, shoppingDb(h.ctx).run(sql(NoRows)`delete from list_writes`));
   if (!items.ok || !keys.ok) throw new Error("the list was not cleared");
 }
 
 /** How many outbox writes the server has committed. */
-async function committed(h: House): Promise<number> {
-  const rows = await shoppingDb(h.ctx).query(sql(Count)`select count(*)::int as n from list_writes`);
+async function committed(h: House, run: Ctx): Promise<number> {
+  const rows = await held(run, shoppingDb(h.ctx).query(sql(Count)`select count(*)::int as n from list_writes`));
   return rows.ok ? (rows.value[0]?.n ?? -1) : -1;
 }
 
@@ -77,16 +78,17 @@ it("commits an offline mark once, or keeps it as a conflict when another member 
   let n = 0;
   await simulate(
     async ({ ctx, run }) => {
+      const s = onRun(h, ctx);
       expect(listOutbox.restore(empty).ok).toBe(true);
-      await startOver(h);
+      await startOver(s, ctx);
       n += 1;
       const name = `Item ${n}`;
       const adaFirst = n % 2 === 1;
-      await adaAdds(h, name);
-      const item = (await stored(h)).find((i) => i.name === name);
+      await adaAdds(s, name);
+      const item = (await stored(s)).find((i) => i.name === name);
       if (item === undefined) throw new Error(`no ${name} on the list`);
-      const before = await committed(h);
-      ctx.net.route(`${location.origin}/*`, toServer(h, jar));
+      const before = await committed(s, ctx);
+      ctx.net.route(`${location.origin}/*`, toServer(s, jar));
       const page = scope(() => undefined);
       page.run(() => void drain(ctx, listOutbox, { owner: h.graceId }));
 
@@ -99,24 +101,24 @@ it("commits an offline mark once, or keeps it as a conflict when another member 
         { base: item.rev, owner: h.graceId },
       );
       expect(["queued", "failed"]).toContain(first.state);
-      if (adaFirst) await adaAdds(h, name);
+      if (adaFirst) await adaAdds(s, name);
       ctx.net.setOnline(true);
       await run();
       ctx.net.setOnline(true);
-      // The server answers from PGlite and the sign-in library, real I/O `run()` does not wait for: each turn waits
-      // for one round trip to the server and moves the browser's clock past the outbox's longest retry gap.
+      // The server answers from PGlite and the sign-in library, held work of the run: each turn waits for one round
+      // trip to the server and moves the browser's clock past the outbox's longest retry gap.
       for (let turn = 0; turn < 40 && waiting(); turn++) {
-        await stored(h);
+        await stored(s);
         ctx.clock.advance(60_000);
         ctx.net.setOnline(true);
         await run();
       }
-      if (!adaFirst) await adaAdds(h, name);
+      if (!adaFirst) await adaAdds(s, name);
       page.dispose();
 
       const [entry] = listOutbox.get("entries");
-      const applied = (await committed(h)) - before;
-      const now = (await stored(h)).find((i) => i.id === item.id);
+      const applied = (await committed(s, ctx)) - before;
+      const now = (await stored(s)).find((i) => i.id === item.id);
       expect(waiting()).toBe(false);
       expect([0, 1]).toContain(applied);
       expect(now?.bought).toBe(applied === 1);
@@ -148,15 +150,16 @@ it("holds a queued mark through a sign-out and sends it once the same member sig
   let n = 0;
   await simulate(
     async ({ ctx, run }) => {
+      const s = onRun(h, ctx);
       expect(listOutbox.restore(empty).ok).toBe(true);
-      await startOver(h);
+      await startOver(s, ctx);
       n += 1;
       const name = `Staple ${n}`;
-      await adaAdds(h, name);
-      const item = (await stored(h)).find((i) => i.name === name);
+      await adaAdds(s, name);
+      const item = (await stored(s)).find((i) => i.name === name);
       if (item === undefined) throw new Error(`no ${name} on the list`);
-      const before = await committed(h);
-      const signIn = await h.raw(formPost(mount.href("/sign-in/email"), { email: GRACE, password: PASSWORD }));
+      const before = await committed(s, ctx);
+      const signIn = await s.raw(formPost(mount.href("/sign-in/email"), { email: GRACE, password: PASSWORD }));
       const cookieOf = (res: Response) =>
         res.headers
           .getSetCookie()
@@ -164,7 +167,7 @@ it("holds a queued mark through a sign-out and sends it once the same member sig
           .filter((c) => !c.endsWith("="))
           .join("; ");
       const jar = { cookie: cookieOf(signIn) };
-      ctx.net.route(`${location.origin}/*`, toServer(h, jar));
+      ctx.net.route(`${location.origin}/*`, toServer(s, jar));
       const page = scope(() => undefined);
       page.run(() => void drain(ctx, listOutbox, { owner: h.graceId }));
       ctx.net.setOnline(false);
@@ -182,20 +185,20 @@ it("holds a queued mark through a sign-out and sends it once the same member sig
         return;
       }
 
-      await h.raw(formPost(mount.href("/sign-out"), {}, jar.cookie));
+      await s.raw(formPost(mount.href("/sign-out"), {}, jar.cookie));
       ctx.net.setOnline(true);
       await run();
       ctx.net.setOnline(true);
       // Six turns, and more while a flush is still in hand (its storage write waits on the clock).
       const sending = () => listOutbox.get("entries").some((e) => e.state === "sending");
       for (let turn = 0; turn < 6 || (turn < 20 && sending()); turn++) {
-        await stored(h);
+        await stored(s);
         ctx.clock.advance(60_000);
         ctx.net.setOnline(true);
         await run();
       }
-      expect((await committed(h)) - before).toBe(0);
-      expect((await stored(h)).find((i) => i.id === item.id)).toMatchObject({ bought: false, rev: 0 });
+      expect((await committed(s, ctx)) - before).toBe(0);
+      expect((await stored(s)).find((i) => i.id === item.id)).toMatchObject({ bought: false, rev: 0 });
       const held = listOutbox.get("entries");
       expect(held.map((e) => e.endpoint)).toEqual(["mark"]);
       page.dispose();
@@ -205,20 +208,20 @@ it("holds a queued mark through a sign-out and sends it once the same member sig
       }
 
       // She signs in again; the list page she opens drains for her.
-      jar.cookie = cookieOf(await h.raw(formPost(mount.href("/sign-in/email"), { email: GRACE, password: PASSWORD })));
+      jar.cookie = cookieOf(await s.raw(formPost(mount.href("/sign-in/email"), { email: GRACE, password: PASSWORD })));
       const again = scope(() => undefined);
       again.run(() => void drain(ctx, listOutbox, { owner: h.graceId }));
       for (let turn = 0; turn < 40 && waiting(); turn++) {
-        await stored(h);
+        await stored(s);
         ctx.clock.advance(60_000);
         ctx.net.setOnline(true);
         await run();
       }
       again.dispose();
-      const applied = (await committed(h)) - before;
+      const applied = (await committed(s, ctx)) - before;
       const [entry] = listOutbox.get("entries");
       expect([0, 1]).toContain(applied);
-      expect((await stored(h)).find((i) => i.id === item.id)?.bought).toBe(applied === 1);
+      expect((await stored(s)).find((i) => i.id === item.id)?.bought).toBe(applied === 1);
       if (entry === undefined) expect(applied).toBe(1);
       else expect(entry.state).toBe("failed");
     },
