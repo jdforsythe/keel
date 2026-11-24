@@ -3,6 +3,7 @@ import type { ProxyDiag } from "./ProxyDiag.ts";
 import { importRefs } from "./importRefs.ts";
 import { isCode } from "./isCode.ts";
 import { isGenerated } from "./isGenerated.ts";
+import { isTestPath } from "./isTestPath.ts";
 import { lineCol } from "./lineCol.ts";
 import { moduleOf } from "./moduleOf.ts";
 import { moduleUses } from "./moduleUses.ts";
@@ -33,7 +34,7 @@ function cycles(manifests: ReadonlyMap<string, Manifest>): string[][] {
 
 /**
  * The check proxy: what `keel check` would report that an operation can cause. TS2307 unresolved relative
- * import; E1151 import of a non-public export of another module; E1152 import from a module not in `deps`;
+ * import; E1151 import of a non-public export of another module; E1152 import from a module not in `deps` (a test file needs none, so neither E1151 nor E1152 reads it);
  * E1153 cycle in module `deps`; E1165 a `deps` entry the module does not use (`@keel/std-*` entries are not judged). Sorted by path, then position.
  */
 export function diagnose(files: ReadonlyMap<string, string>): ProxyDiag[] {
@@ -61,7 +62,7 @@ export function diagnose(files: ReadonlyMap<string, string>): ProxyDiag[] {
         continue;
       }
       const to = moduleOf(target);
-      if (from === null || to === null || from === to) continue;
+      if (from === null || to === null || from === to || isTestPath(path)) continue;
       const fm = manifests.get(from);
       const tm = manifests.get(to);
       if (fm === undefined || tm === undefined) continue;

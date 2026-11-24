@@ -143,6 +143,14 @@ describe("diagnose", () => {
     ]);
   });
 
+  it("reads no E1151 or E1152 in a test file, which needs no deps entry, and still reports its TS2307", () => {
+    const f = tree({
+      "modules/a/x.test.ts":
+        "import { thing } from '../c/thing.ts'\nimport { priv } from '../b/priv.ts'\nimport './nope.ts'\n",
+    });
+    expect(diagnoseOther(f).map((d) => d.code)).toEqual(["TS2307"]);
+  });
+
   it("counts a layout binding as a use in either direction", () => {
     const f = tree({
       "modules/b/module.ts": manifest("b", [], ["pub"]),
