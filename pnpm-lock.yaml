@@ -1098,6 +1098,12 @@ importers:
         specifier: ^5.6
         version: 5.9.3
     devDependencies:
+      '@keel/std-temporal':
+        specifier: workspace:*
+        version: link:../std-temporal
+      '@keel/std-text':
+        specifier: workspace:*
+        version: link:../std-text
       '@keel/tooling':
         specifier: workspace:*
         version: link:../../tooling
@@ -1321,6 +1327,12 @@ importers:
 
   packages/schema:
     devDependencies:
+      '@keel/std-temporal':
+        specifier: workspace:*
+        version: link:../std-temporal
+      '@keel/std-text':
+        specifier: workspace:*
+        version: link:../std-text
       '@keel/tooling':
         specifier: workspace:*
         version: link:../../tooling

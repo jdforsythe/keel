@@ -21,6 +21,10 @@ const f = (path: string, source: string): Files[number] => ({ path, source });
 const HOST_HEAD = "import { Host } from '@keel/ui'\nimport { In } from './In.schema.ts'\n";
 const UI = "import { Box, Text, Button } from '@keel/ui'\n";
 const SCHEMA = "import { s } from '@keel/schema'\n";
+const STD_TEMPORAL_MODULE =
+  "import { module } from '@keel/compiler'\nexport default module({ id: 'app', deps: ['@keel/std-temporal'], capabilities: [], public: { exports: [] } })\n";
+const literalSource = (day: string): string =>
+  `import { formatLiteral } from '@keel/schema'\nimport { Instant } from '@keel/std-temporal'\nexport const At = formatLiteral(Instant, '${day}T00:00:00.000Z')\n`;
 const SERVICES = "import { endpoints } from '@keel/services'\n";
 const UNSAFE = "unsafe"; // built so this file's own lint does not read fixture text as a call
 const MOUNT_HEAD = "import { identityMount } from '@keel/router'\n";
@@ -272,6 +276,10 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
         `${SCHEMA}import { store } from '@keel/store'\nexport const Card = store(s.object({ email: s.string().pii('contact') }), { email: '' })\n`,
       ),
     ],
+  },
+  E1108: {
+    bad: [f("modules/app/module.ts", STD_TEMPORAL_MODULE), f("modules/app/At.ts", literalSource("2026-02-30"))],
+    clean: [f("modules/app/module.ts", STD_TEMPORAL_MODULE), f("modules/app/At.ts", literalSource("2026-02-28"))],
   },
   E1005: {
     bad: [

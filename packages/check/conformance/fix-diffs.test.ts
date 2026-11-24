@@ -324,6 +324,7 @@ const NO_FIX = [
   "E1104", // renaming the file would break imports in other files
   "E1105", // moving to a .server file is a design change
   "E1106", // which stdlib format type to use is the author's choice
+  "E1108", // k.formats Rules: no fix; which literal to write, or whether the value is data to read with parse, is the author's
   "E1111", // carrying the value another way (an action input, a session) is a design change
   "E1112", // what to derive is the author's choice
   "E1153", // which dependency edge to cut is a design choice
