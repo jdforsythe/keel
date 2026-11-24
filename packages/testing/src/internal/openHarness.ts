@@ -6,18 +6,17 @@ import { mount } from "@keel/runtime-dom";
 import type { CaughtError } from "@keel/runtime-dom";
 import { harnessed, hosts } from "@keel/runtime-dom/internal";
 import type { Snapshot, Store } from "@keel/store";
+import { onTestEnd } from "../../unsafe/onTestEnd.ts";
 import type { A11yNode } from "../types/A11yNode.ts";
 import type { Found } from "../types/Found.ts";
 import type { Harness } from "../types/Harness.ts";
 import type { TestEvent } from "../types/TestEvent.ts";
 import type { HarnessSetup } from "./HarnessSetup.ts";
+import { actsFor } from "./actsFor.ts";
 import { asMain } from "./asMain.ts";
 import { clockStep } from "./clockStep.ts";
-import { emitOn } from "./emitOn.ts";
-import { eventFor } from "./eventFor.ts";
 import { fail } from "./fail.ts";
 import { focusOrder } from "./focusOrder.ts";
-import { moveFocus } from "./moveFocus.ts";
 import { nameOf } from "./nameOf.ts";
 import { nodeOf } from "./nodeOf.ts";
 import { pageRoots } from "./pageRoots.ts";
@@ -37,7 +36,8 @@ import { unexpected } from "./unexpected.ts";
  * (`recordDocuments`) instead of made. `check()` raises the first root-Boundary catch (`keel.unexpected`), or one `setup.caught` holds,
  * then the render checks (`renderChecks`: E1702 with `a11y`, E1703, E1804 with `tokens`, E1821); `fire` and `settle` run it after settling,
  * with E1826 over the elements the root held at the last check unless `place` changed since. `dispose` unmounts, runs
- * `teardown`, and restores the seeded stores. A mount that throws disposes and rethrows.
+ * `teardown`, and restores the seeded stores; it runs by itself when the vitest test that opened the harness ends
+ * (`onTestEnd`). A mount that throws disposes and rethrows.
  */
 export function openHarness(setup: HarnessSetup): { readonly harness: Harness<Ctx>; check(after?: boolean): void } {
   const { ctx, seeded, artifacts, busy, teardown, target, registry } = setup;
@@ -73,6 +73,8 @@ export function openHarness(setup: HarnessSetup): { readonly harness: Harness<Ct
     if (page) asMain(container);
     renderChecks({ root: container, page, target, a11y: artifacts?.["a11y.json"], tokens: artifacts?.tokens, before });
   };
+  // A handle made while a test runs ends with that test (k.test-run Disposal); `dispose` does nothing a second time.
+  onTestEnd(dispose);
   // A host element rendered on this ctx never runs its code (k.host-element Harness and replay).
   harnessed().add(ctx);
   if (setup.run !== undefined) harnessed().add(setup.run);
@@ -119,17 +121,8 @@ export function openHarness(setup: HarnessSetup): { readonly harness: Harness<Ct
     return { id: el.id, role, name, text: (el.textContent ?? "").trim(), state: stateOf(el, role) };
   };
 
-  const fire = async (id: string, event: TestEvent): Promise<void> => {
-    live();
-    const el = resolve(container, id);
-    const act =
-      event.type === "emit"
-        ? emitOn(el, id, event.detail)
-        : event.type === "focus" || event.type === "blur"
-          ? moveFocus(el, event.type)
-          : () => {
-              el.dispatchEvent(eventFor(el, event));
-            };
+  /** Run `act` and settle, rethrowing the first error the window reported meanwhile. */
+  const step = async (act: () => void): Promise<void> => {
     const errors: unknown[] = [];
     const onError = (e: Event): void => {
       errors.push(e instanceof ErrorEvent ? e.error : e);
@@ -144,7 +137,16 @@ export function openHarness(setup: HarnessSetup): { readonly harness: Harness<Ct
     }
     const [first] = errors;
     if (errors.length > 0) throw first;
-    if (!gone) check(true);
+  };
+
+  const fire = async (id: string, event: TestEvent): Promise<void> => {
+    live();
+    const el = resolve(container, id);
+    for (const act of actsFor(el, id, event)) {
+      await step(act);
+      if (gone) return;
+    }
+    check(true);
   };
 
   const settleNow = async (): Promise<void> => {

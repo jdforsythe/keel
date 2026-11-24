@@ -995,22 +995,52 @@ describe("testResults details", () => {
     expect(second.failed).toBe(2);
   });
 
-  it("each unhandled error is a T0001 without a location", () => {
+  it("each unhandled error is an unlocated T0001 `uncaught: <first line>` when it names no place", () => {
     const r = testResults(
       [],
       [{ message: "boom\nmore" }, {}, "plain\ntext", 42, null, { message: "y".repeat(95) }],
       CWD,
     );
     expect(r.diagnostics).toStrictEqual([
-      { kind: "diag", code: "T0001", message: "boom" },
-      { kind: "diag", code: "T0001", message: "unhandled error" },
-      { kind: "diag", code: "T0001", message: "plain" },
-      { kind: "diag", code: "T0001", message: "42" },
-      { kind: "diag", code: "T0001", message: "null" },
-      { kind: "diag", code: "T0001", message: `${"y".repeat(87)}...` },
+      { kind: "diag", code: "T0001", message: "uncaught: boom" },
+      { kind: "diag", code: "T0001", message: "uncaught: unhandled error" },
+      { kind: "diag", code: "T0001", message: "uncaught: plain" },
+      { kind: "diag", code: "T0001", message: "uncaught: 42" },
+      { kind: "diag", code: "T0001", message: "uncaught: null" },
+      { kind: "diag", code: "T0001", message: `uncaught: ${"y".repeat(77)}...` },
     ]);
     expect(r).toMatchObject({ tests: 0, failed: 0, skipped: 0, errors: 6 });
-    expect(testResults([], [{ message: "\u001b[31mred\u001b[0m" }], CWD).diagnostics[0]?.message).toBe("red");
+    expect(testResults([], [{ message: "\u001b[31mred\u001b[0m" }], CWD).diagnostics[0]?.message).toBe("uncaught: red");
+    expect(testResults([], [{ message: "" }], CWD).diagnostics[0]?.message).toBe("uncaught: error outside any test");
+    expect(testResults([], [{ message: "x", code: 7 }], CWD).diagnostics[0]?.message).toBe("uncaught: x");
+  });
+
+  it("an unhandled error with an app frame in its stack text is located there; VITEST_TEST_PATH is the fallback", () => {
+    const stack = [
+      "Error: late",
+      "    at f (/repo/node_modules/dep/i.js:1:2)",
+      "    at g (/repo/pkg/t.test.ts:7:11)",
+    ].join("\n");
+    const [located] = testResults([], [{ message: "late", stack }], CWD).diagnostics;
+    expect(located).toStrictEqual({
+      kind: "diag",
+      code: "T0001",
+      path: "t.test.ts",
+      line: 7,
+      col: 11,
+      message: "uncaught: late",
+    });
+    const [fallback] = testResults([], [{ message: "late", VITEST_TEST_PATH: "/repo/pkg/u.test.ts" }], CWD).diagnostics;
+    expect(fallback).toStrictEqual({
+      kind: "diag",
+      code: "T0001",
+      path: "u.test.ts",
+      line: 1,
+      col: 1,
+      message: "uncaught: late",
+    });
+    const [empty] = testResults([], [{ message: "late", VITEST_TEST_PATH: "" }], CWD).diagnostics;
+    expect(empty).toStrictEqual({ kind: "diag", code: "T0001", message: "uncaught: late" });
   });
 
   it("ignores non-record files and tolerates missing task lists", () => {
