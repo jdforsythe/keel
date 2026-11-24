@@ -78,6 +78,6 @@
   "@keel/std-tokens": ["std.tokens"],
   "@keel/std-workflows": ["std.workflows"],
   "@keel/store": ["k.store", "k.sync"],
-  "@keel/testing": ["k.model", "k.prove", "k.testing"],
+  "@keel/testing": ["k.model", "k.prove", "k.test-run", "k.testing"],
   "@keel/ui": ["k.a11y", "k.aria", "k.host-code", "k.host-element", "k.roles", "k.ui"]
 }
