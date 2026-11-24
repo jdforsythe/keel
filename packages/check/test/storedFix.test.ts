@@ -1,4 +1,4 @@
-import { canonicalJson, hashOf } from "@keel/compiler/internal";
+import { canonicalJson, hashOf, sourceHash } from "@keel/compiler/internal";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { type SourceFile, check } from "../src/index.ts";
@@ -44,7 +44,7 @@ const data = (state: unknown, sources: readonly SourceFile[]) => ({
   version: 2,
   contracts: {},
   stores: { "api.board": { state, transactions: {} } },
-  sources: Object.fromEntries(sources.map((s) => [s.path, hashOf(s.source)])),
+  sources: Object.fromEntries(sources.map((s) => [s.path, sourceHash(s.path, s.source)])),
 });
 const surface = (d: unknown) => f(".keel/surface.json", `${canonicalJson({ data: d, hash: hashOf(d) })}\n`);
 const run = (files: SourceFile[], base: unknown) =>
