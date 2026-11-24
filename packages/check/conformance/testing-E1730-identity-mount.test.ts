@@ -1,5 +1,5 @@
-// Spec: k.guards, Conformance "In a project with `identity.ts` beside `topology.ts`, `keel check` reports one E1730 for `renderRoute('a.page', { routes })` in `modules/a/test/page.test.ts`, at the options object, its message `renderRoute names no identity mount; import mount from '../../../identity.ts' and pass it`; applying its fix adds `import mount from '../../../identity.ts';` and `mount` to the options, and the file then has no E1730. It reports none for the same call with `mount` or with `app`, with a spread in the options, in a non-test file, or in a project without `identity.ts`."
-// Spec: k.guards, Test files "`keel check` reports E1730 at the options object of a `renderRoute` call from `@keel/testing` (any alias) in a test file of a project with `identity.ts` beside `topology.ts`, when the options are an object literal with no spread, no computed key, and neither `mount` nor `app`: `renderRoute names no identity mount; import mount from '<path>' and pass it`, `<path>` the relative specifier of `identity.ts` from the file. Its fix adds `mount` to the options and, when the file has no default import of `identity.ts`, `import mount from '<path>';` after its last import (`mount: <name>` when it has one under another name); no fix when the file binds `mount` otherwise. Non-literal options are none."
+// Spec: k.guards, Conformance "In a project with `identity.ts` beside `topology.ts`, `keel check` reports one E1730 for `renderRoute('a.page', { routes })` in `modules/a/test/page.test.ts`, at the options object, its message `renderRoute names no identity mount; pass identity.ts's default export as mount`; applying its fix adds `import mount from '../../../identity.ts';` and `mount` to the options, and the file then has no E1730. It reports none for the same call with `mount` or with `app`, with a spread in the options, in a non-test file, or in a project without `identity.ts`."
+// Spec: k.guards, Test files "`keel check` reports E1730 at the options object of a `renderRoute` call from `@keel/testing` (any alias) in a test file of a project with `identity.ts` beside `topology.ts`, when the options are an object literal with no spread, no computed key, and neither `mount` nor `app`: `renderRoute names no identity mount; pass identity.ts's default export as mount` (79 units). Its fix adds `mount` to the options and, when the file has no default import of `identity.ts`, `import mount from '<path>';`, `<path>` the relative specifier of `identity.ts` from the file, after its last import (`mount: <name>` when it has one under another name); no fix when the file binds `mount` otherwise. Non-literal options are none."
 // Spec: k.testing, Rules "E1730 a test's `renderRoute` with neither `mount` nor `app` in a project with `identity.ts` (k.guards Client)"
 // Seed 1337 (fc.assert below). Public API only: `check` and `explain` from @keel/check, the fix applied with `git apply` as fix-diffs.test.ts does.
 // ASSUMPTIONS: "at the options object" is the line and 1-based column of the object literal's `{`; "after its last import" is the line after the last `import` statement; the fix appends `mount` to the object's keys (any position passes: the property reads the keys, not their order).
@@ -61,13 +61,13 @@ function applyFix(files: Files, fix: string): Files {
 }
 const sourceOf = (files: Files, path: string): string => files.find((x) => x.path === path)?.source ?? "";
 
-test("in a project with identity.ts beside topology.ts, keel check reports one E1730 for renderRoute('a.page', { routes }) in modules/a/test/page.test.ts, at the options object, its message renderRoute names no identity mount; import mount from '../../../identity.ts' and pass it", () => {
+test("in a project with identity.ts beside topology.ts, keel check reports one E1730 for renderRoute('a.page', { routes }) in modules/a/test/page.test.ts, at the options object, its message renderRoute names no identity mount; pass identity.ts's default export as mount", () => {
   const src = testFile("renderRoute('a.page', { routes })");
   const found = e1730(project(src));
   expect(found).toHaveLength(1);
   const [d] = found;
   expect(d?.path).toBe(TEST_PATH);
-  expect(d?.message).toBe("renderRoute names no identity mount; import mount from '../../../identity.ts' and pass it");
+  expect(d?.message).toBe("renderRoute names no identity mount; pass identity.ts's default export as mount");
   const lines = src.split("\n");
   const line = lines.findIndex((l) => l.includes("{ routes }")) + 1;
   expect(d?.line).toBe(line);
@@ -173,18 +173,13 @@ test("E1730 carries no fix when the file binds mount otherwise", () => {
   expect(found[0]?.fix).toBeUndefined();
 });
 
-test("the message names the relative specifier of identity.ts from the file, for any depth of the test file", () => {
+test("the message is `renderRoute names no identity mount; pass identity.ts's default export as mount`, 79 units, for any depth of the test file", () => {
   fc.assert(
     fc.property(fc.array(fc.constantFrom("test", "unit", "deep"), { minLength: 0, maxLength: 3 }), (dirs) => {
       const path = ["modules", "a", ...dirs, "x.test.ts"].join("/");
-      const up = "../".repeat(dirs.length + 2);
       const [d] = e1730(project(testFile("renderRoute('a.page', { routes })"), path));
-      const full = `renderRoute names no identity mount; import mount from '${up}identity.ts' and pass it`;
-      const message = d?.message ?? "";
-      // OUTPUT.md: a message is under 90 chars; a longer one is clipped, so it is asserted by its bound and as a prefix of the whole text.
-      expect(message.length).toBeLessThan(90);
-      if (full.length < 90) expect(message).toBe(full);
-      else expect(full.startsWith(message.replace(/\.\.\.$/, ""))).toBe(true);
+      expect(d?.message).toBe("renderRoute names no identity mount; pass identity.ts's default export as mount");
+      expect(d?.message.length).toBe(79);
     }),
     { seed: SEED, numRuns: 12 },
   );

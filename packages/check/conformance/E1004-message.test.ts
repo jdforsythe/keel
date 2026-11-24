@@ -1,6 +1,6 @@
 // Spec: k.boundary, E1004's message "**E1004's message.** At the import, in the importing file. When a client entry reaches that file: `client code reaches server-only (<chain>)`, the shortest chain of files from the entry to the server-only file the import names (a package specifier when it names no project file), joined by ` -> `. When that passes 89 units, the files between the first and the last become one `...`, then the first loses leading segments, then the last (k.check Diagnostics). The middle is then not reported: the position names the importer, the ends name the entry and the server-only file, and the fix is at the importer. With no such chain (a file of a `node` module, or no `topology.ts`): `client code imports server-only <file>`. Examples: `client code reaches server-only (modules/a/Page.tsx -> lib/fmt.ts -> lib/keys.server.ts)` (88 units); a fourth file between them gives `client code reaches server-only (modules/a/Page.tsx -> ... -> lib/notes.server.ts)` (82)."
 // Seed 1337 (the property). `check` over in-memory trees, type pass off. Node `api` lists module `a`; its `Page.tsx` is the route component, the entry.
-// ASSUMPTIONS: "loses leading segments" is read only through its bounds (the message is at most 89 units, ends `)`, and holds the server-only file's own name); how many segments go, and any marker for them, are not asserted. "The shortest chain" is a chain with no shortcut: each file imports only the next.
+// ASSUMPTIONS: the marker is one `.../` (k.check Diagnostics: `a/b/c.ts`, `.../b/c.ts`, `.../c.ts`), and the order is: middle files become `...` (three files or more), then the first path loses leading segments until the message fits or one is left, then the last. "The shortest chain" is a chain with no shortcut: each file imports only the next.
 import fc from "fast-check";
 import { posix } from "node:path";
 import { describe, expect, test } from "vitest";
@@ -28,6 +28,23 @@ const chainProject = (chain: readonly string[]): Files => {
   ]);
 };
 const whole = (chain: readonly string[]): string => `${PREFIX}${["modules/a/Page.tsx", ...chain].join(" -> ")})`;
+const shown = (path: string, k: number): string => (k === 0 ? path : `.../${path.split("/").slice(k).join("/")}`);
+/** The rule of the spec: whole if it fits; else the middle as `...`, then the first loses leading segments, then the last. */
+const expected = (chain: readonly string[]): string => {
+  const files = ["modules/a/Page.tsx", ...chain];
+  const text = (xs: readonly string[]): string => `${PREFIX}${xs.join(" -> ")})`;
+  if (text(files).length <= 89) return text(files);
+  const first = files[0] ?? "";
+  const last = files[files.length - 1] ?? "";
+  const mid = files.length >= 3 ? ["..."] : [];
+  const build = (kf: number, kl: number): string =>
+    text([shown(first, kf), ...mid, ...(files.length >= 2 ? [shown(last, kl)] : [])]);
+  const nf = first.split("/").length;
+  const nl = last.split("/").length;
+  for (let kf = 0; kf < nf; kf++) if (build(kf, 0).length <= 89) return build(kf, 0);
+  for (let kl = 1; kl < nl; kl++) if (build(nf - 1, kl).length <= 89) return build(nf - 1, kl);
+  return build(nf - 1, nl - 1);
+};
 
 describe("k.boundary: E1004's message", () => {
   test("`Page.tsx` -> `lib/fmt.ts` -> `lib/keys.server.ts` is `client code reaches server-only (modules/a/Page.tsx -> lib/fmt.ts -> lib/keys.server.ts)`, 88 units, at `lib/fmt.ts`", () => {
@@ -85,8 +102,7 @@ describe("k.boundary: E1004's message", () => {
         expect(m.endsWith("...")).toBe(false);
         expect(m.startsWith(PREFIX)).toBe(true);
         expect(m.endsWith(`${last.split("/").at(-1) ?? ""})`)).toBe(true);
-        if (whole(chain).length <= 89) expect(m).toBe(whole(chain));
-        else expect(m).toContain("Page.tsx");
+        expect(m).toBe(expected(chain));
       }),
       { seed: SEED, numRuns: 60 },
     );
