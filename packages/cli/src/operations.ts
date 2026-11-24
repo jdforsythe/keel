@@ -43,6 +43,8 @@ const structural = {
   base: s.string().optional(),
   reason: s.string().optional(),
   to: s.string().optional(),
+  id: s.string().optional(),
+  name: s.string().optional(),
   default: s.string().optional(),
 };
 
@@ -119,7 +121,7 @@ export const operations: readonly Operation[] = [
   },
   {
     name: "scaffold",
-    description: "Structural generator: project, module, route, component, store (k.scaffold).",
+    description: "Structural generator: project, module, route, component, store, shell (k.scaffold).",
     input: s.object(structural),
     output: outputOf(EditSchema),
     positional: ["op", "args"],

@@ -16,7 +16,16 @@ import { summary } from "./summary.ts";
 import { unifiedDiff } from "./unifiedDiff.ts";
 import { withAgentFiles } from "./withAgentFiles.ts";
 
-const GENERATORS: readonly Op[] = ["project", "module", "route", "component", "store", "transaction", "service"];
+const GENERATORS: readonly Op[] = [
+  "project",
+  "module",
+  "route",
+  "component",
+  "store",
+  "transaction",
+  "service",
+  "shell",
+];
 const CODEMODS: readonly Op[] = ["rename", "move", "add-field", "place"];
 /** A `.keel/` artifact `keel build` writes; the ledger's own files are not among them (k.ledger). */
 const BUILT = /^\.keel\/(?!ledger\.json$|monitored\.json$)[^/]+\.json$/;
@@ -107,7 +116,8 @@ export async function scaffoldCommand(name: "scaffold" | "codemod", input: Input
   for (const p of edit.removed) add("remove", p);
   const counts = { created: edit.created.length, changed: edit.changed.length, removed: edit.removed.length };
   const built = into === "" && [...files.keys()].some((p) => BUILT.test(p));
-  if (dry || !built || writes.length === 0)
+  // `shell` refreshes nothing: the new shell package is not installed yet, so its target cannot load (k.scaffold-shell).
+  if (dry || !built || writes.length === 0 || op === "shell")
     return {
       records: [...records, summary(dry ? `${label} --dry-run` : label, [], counts)],
       writes: dry ? [] : writes,

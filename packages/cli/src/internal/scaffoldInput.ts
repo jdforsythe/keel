@@ -46,6 +46,8 @@ export function scaffoldInput(
         method: input.method,
         "no-loader": input["no-loader"],
       });
+    case "shell":
+      return pick({ shell: a, id: input.id, name: input.name, to: input.to });
     case "rename":
       return pick({ kind: input.kind, from: a, to: b });
     case "move":

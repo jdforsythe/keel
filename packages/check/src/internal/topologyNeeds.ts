@@ -1,4 +1,5 @@
 import type { Topology } from "@keel/compiler";
+import { isReverseDns } from "@keel/compiler/hosting/isReverseDns";
 import { dependencyNeed } from "../dependencyNeed.ts";
 import type { Diagnostic } from "../types/Diagnostic.ts";
 import { lineCol } from "./lineCol.ts";
@@ -9,7 +10,6 @@ const NEEDS: Readonly<Record<string, string>> = {
   capacitor: "@keel/std-capacitor",
   tauri: "@keel/std-tauri",
 };
-const REVERSE_DNS = /^[A-Za-z][\w-]*(?:\.[A-Za-z][\w-]*)+$/;
 
 /**
  * E1572 (k.deploy) and E1573 (k.shell) of `keel check`, at `<dir>topology.ts` on the deployable's key: a `storage` or
@@ -36,7 +36,7 @@ export function topologyNeeds(dir: string, topology: Topology, source: string, p
     if (shells.length > 0 && d.adapter !== "client")
       at(name, `${name}: shells need a client deployable, not ${d.adapter}`);
     for (const [shell, s] of shells)
-      if (s !== undefined && !REVERSE_DNS.test(s.id))
+      if (s !== undefined && !isReverseDns(s.id))
         at(name, `${name}: ${shell} id ${JSON.stringify(s.id)} is not reverse-DNS (dev.example.app)`);
     for (const want of [d.storage ?? "file", ...shells.map(([k]) => k)]) {
       const dep = NEEDS[want];

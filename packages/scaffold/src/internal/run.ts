@@ -13,6 +13,7 @@ import { opProject } from "./opProject.ts";
 import { opRename } from "./opRename.ts";
 import { opRoute } from "./opRoute.ts";
 import { opService } from "./opService.ts";
+import { opShell } from "./opShell.ts";
 import { opStore } from "./opStore.ts";
 import { opTransaction } from "./opTransaction.ts";
 
@@ -26,6 +27,7 @@ const OPS: ReadonlyMap<string, Impl> = new Map<Op, Impl>([
   ["store", opStore],
   ["transaction", opTransaction],
   ["service", opService],
+  ["shell", opShell],
   ["rename", opRename],
   ["move", opMove],
   ["place", opPlace],

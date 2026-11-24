@@ -61,6 +61,22 @@
     "@keel/ctx": "workspace:*",
     "@keel/router": "workspace:*"
   },
+  "peerDependencies": {
+    "@capacitor/android": "8.6.2",
+    "@capacitor/cli": "8.6.2",
+    "@capacitor/ios": "8.6.2"
+  },
+  "peerDependenciesMeta": {
+    "@capacitor/android": {
+      "optional": true
+    },
+    "@capacitor/cli": {
+      "optional": true
+    },
+    "@capacitor/ios": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@keel/scaffold": "workspace:*",
     "@keel/schema": "workspace:*",
