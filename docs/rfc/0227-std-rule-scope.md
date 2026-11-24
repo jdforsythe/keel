@@ -1,6 +1,6 @@
 # RFC 0227: k.check-cache: a std rule is left out only when `deps` loaded it and dropped it
 
-Status: accepted (ADR-0249), accepted by the orchestrator on 2026-11-24, for the operator to confirm. Amends k.check-cache (In one process, Conformance). From the 0963 whole test run (D144).
+Status: implemented (ADR-0249), accepted by the orchestrator on 2026-11-24, for the operator to confirm. Amends k.check-cache (In one process, Conformance). From the 0963 whole test run (D144).
 
 ## Decisions
 - D1: a `@keel/std-*` package's formats (E1108) stay scoped by the `deps` of the call, as they are.
