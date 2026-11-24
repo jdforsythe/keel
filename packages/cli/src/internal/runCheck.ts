@@ -15,8 +15,9 @@ import { relPath } from "./relPath.ts";
  * First the `@keel/std-*` packages in the `deps` of `project`'s app manifests are imported, so their rules and config
  * schemas register (k.module Std config, rfc:0066); one that cannot be is E1159, listed before the check's diagnostics.
  * `base` is the parsed `surface.json` of `keel check --base` (k.compat E1562). The type pass keeps its results in the
- * project's `node_modules/.cache/keel`, when the project has `node_modules`, so a `keel check` after a `keel build`
- * over the same sources reuses the build's.
+ * project's `node_modules/.cache/keel` when the project has `node_modules` (k.check-cache), so a `keel check` after a
+ * `keel build` (whose check runs here too) over the same files reuses the build's; a reused result is the one a run
+ * with the folder deleted gives.
  */
 export async function runCheck(
   cwd: string,

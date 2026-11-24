@@ -1,9 +1,9 @@
-import { mkdirSync, mkdtempSync, readdirSync, rmSync, utimesSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, expect, it } from "vitest";
 import { check } from "../src/index.ts";
-import type { Typed } from "../src/internal/Typed.ts";
+import type { TypeEntry } from "../src/internal/TypeEntry.ts";
 import { typeCache } from "../src/internal/typeCache.ts";
 
 let root = "";
@@ -16,49 +16,59 @@ beforeEach(() => {
 });
 afterEach(() => rmSync(root, { recursive: true, force: true }));
 
-const result: Typed = {
-  diagnostics: [{ kind: "diag", code: "E1751", path: "a.ts", line: 1, col: 2, message: "m", see: "k.check" }],
+const entry: TypeEntry = {
+  probes: [
+    ["r", "/x/a.d.ts", "ab"],
+    ["f", "/x/b.ts", "0"],
+  ],
+  items: [
+    { kind: "diag", code: "E1751", path: "a.ts", line: 1, col: 2, message: "m", see: "k.check" },
+    { kind: "format", path: "a.ts", formatAt: 3, textAt: 9, names: ["iso"], text: "x" },
+  ],
   dates: new Map([["a.ts", new Set([3, 7])]]),
 };
 
-it("an entry saved by one process is the result the next one loads, dates included", () => {
-  const dep = join(root, "dep.d.ts");
-  writeFileSync(dep, "export {}\n");
-  utimesSync(dep, 1_000, 1_000);
-  typeCache(dir, "k", "5.9", root).save(result, [[dep, 1_000_000]]);
-  const loaded = typeCache(dir, "k", "5.9", root).load();
-  expect(loaded?.diagnostics).toEqual(result.diagnostics);
-  expect(loaded?.dates).toEqual(result.dates);
-  utimesSync(dep, 2_000, 2_000);
-  expect(typeCache(dir, "k", "5.9", root).load()).toBeUndefined();
+it("an entry saved by one process is the entry the next one loads: probes, findings in order, dates", () => {
+  typeCache(dir, "k").save(entry);
+  expect(typeCache(dir, "k").load()).toEqual(entry);
+  expect(typeCache(dir, "other").load()).toBeUndefined();
 });
 
-it("another key, another TypeScript version or a new package under node_modules misses", () => {
-  typeCache(dir, "k", "5.9", root).save(result, []);
-  expect(typeCache(dir, "other", "5.9", root).load()).toBeUndefined();
-  expect(typeCache(dir, "k", "6.0", root).load()).toBeUndefined();
-  expect(typeCache(dir, "k", "5.9", root).load()).toBeDefined();
-  mkdirSync(join(root, "node_modules", "dep"));
-  utimesSync(join(root, "node_modules"), 5, 5);
-  expect(typeCache(dir, "k", "5.9", root).load()).toBeUndefined();
-});
-
-it("a file that is not an entry is a miss, and the folder keeps at most 32 entries", () => {
-  typeCache(dir, "k", "5.9", root).save(result, []);
+it("an entry that cannot be read, does not parse or lacks the entry shape is a miss", () => {
+  typeCache(dir, "k").save(entry);
   const [name] = readdirSync(dir);
-  writeFileSync(join(dir, name ?? ""), '{"reads":[["x"]],"diagnostics":[],"dates":[]}');
-  expect(typeCache(dir, "k", "5.9", root).load()).toBeUndefined();
-  writeFileSync(join(dir, name ?? ""), "not json");
-  expect(typeCache(dir, "k", "5.9", root).load()).toBeUndefined();
-  for (let i = 0; i < 40; i++) typeCache(dir, `k${i}`, "5.9", root).save(result, []);
-  expect(readdirSync(dir).length).toBeLessThanOrEqual(32);
+  const file = join(dir, name ?? "");
+  const good = readFileSync(file, "utf8");
+  for (const bad of [
+    good.slice(0, 40),
+    "{}",
+    good.replace('"format":1', '"format":2'),
+    good.replace('["f","/x/b.ts","0"]', '["q","/x/b.ts","0"]'),
+    good.replace('"line":1', '"line":"1"'),
+    good.replace('"text":"x"', '"text":3'),
+  ]) {
+    writeFileSync(file, bad);
+    expect(typeCache(dir, "k").load()).toBeUndefined();
+  }
 });
 
-it("check with a typeCache writes an entry and gives the same diagnostics as without", () => {
-  const files = [{ path: "a.ts", source: "export const a: string = 1;\n" }];
+it("a folder keeps 32 entries, the one just written among them", () => {
+  for (let i = 0; i < 40; i++) typeCache(dir, `k${i}`).save(entry);
+  expect(readdirSync(dir)).toHaveLength(32);
+  expect(typeCache(dir, "k39").load()).toBeDefined();
+});
+
+it("check with a typeCache writes one entry of paths, hashes and diagnostics, and reports what a check without it does", () => {
+  mkdirSync(join(root, "node_modules", "dep"));
+  writeFileSync(join(root, "node_modules", "dep", "package.json"), '{"name":"dep","types":"index.d.ts"}');
+  writeFileSync(join(root, "node_modules", "dep", "index.d.ts"), "export declare const secretName: number;\n");
+  const files = [{ path: "a.ts", source: 'import { secretName } from "dep";\nexport const a: string = secretName;\n' }];
   const cached = check(files, { root, typeCache: dir }).diagnostics;
+  const [name] = readdirSync(dir);
   expect(readdirSync(dir)).toHaveLength(1);
-  const plain = check(files, { root }).diagnostics;
-  expect(cached).toEqual(plain);
-  expect(plain.map((d) => d.code)).toContain("E1751");
+  const stored = readFileSync(join(dir, name ?? ""), "utf8");
+  expect(stored).not.toContain("export declare const");
+  expect(stored).toContain(join(root, "node_modules", "dep", "package.json"));
+  expect(cached).toEqual(check(files, { root }).diagnostics);
+  expect(cached.map((d) => d.code)).toEqual(["E1751"]);
 });

@@ -9,8 +9,9 @@ import type { SourceFile } from "./SourceFile.ts";
  * derives each checked `.keel/` dir's expected hashes from (default `files`); the cli passes the whole project.
  * `topology`: the parsed `topology.ts`, passed to `compile` (E1004 is not reported in client-only deployables). `types: false` skips pipeline step 1b.
  * `base`: the parsed `surface.json` of the deployed code (`keel check --base`, k.compat); without it, no E1562.
- * `typeCache`: a directory the type pass keeps its results in across processes, each used only while every file the
- * pass read keeps its mtime; results are the same with or without it.
+ * `typeCache`: a folder the type pass keeps its results in across processes (k.check-cache), each used only when every
+ * file system question the pass asked gets the same answer again (file bytes by hash, existence, real paths, listings);
+ * results are the same with or without it.
  */
 export type CheckOptions = {
   readonly root?: string;
