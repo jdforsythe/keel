@@ -180,7 +180,8 @@ export async function runAction(
     const [out] = sessionsOf(emitted.records);
     if (!safe(out, fp, reproduced)) continue;
     const test =
-      out.file === `modules/${out.route.split(".")[0]}/test/session-${fp}.test.ts` || out.file === `test/session-${fp}.test.ts`
+      out.file === `modules/${out.route.split(".")[0]}/test/session-${fp}.test.ts` ||
+      out.file === `test/session-${fp}.test.ts`
         ? io.read(out.file)
         : undefined;
     if (test === undefined) continue;
