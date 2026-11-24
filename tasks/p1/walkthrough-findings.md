@@ -27,7 +27,7 @@
 | L3-7 | filed as backlog 1010 |
 | L4-1 | fixed: fix(testing): renderRoute raises a page render throw no errorElement caught, so a tx in a component body names its E1201 |
 | L4-2 | answered in the skills (keel-server: `createApp` options) |
-| L4-3 | filed as backlog 1008 |
+| L4-3 | fixed: `pageHref` (`@keel/router/match`) reads a guard's `next` into an `Href`; the household setup action follows it (rfc:0207, backlog 1008) |
 | L4-4 | filed as backlog 1019 |
 | L4-5 | answered in the skills (keel-server) |
 | L4-6 | filed as backlog 1014 |
@@ -331,7 +331,7 @@ The coverage plan names this layer 8 ("Jobs, schedules, a workflow"); the README
 
 ### L9-5 rough: a module's unused `deps` hide until a new edge makes a cycle
 - `setup` listing `shopping` (the setup page shows the runs) was E1153 `receipts -> setup -> shopping -> receipts`. `shopping` listed `setup` and `receipts`, and `receipts` listed `setup`, with no import behind any of the three. Removing `shopping`'s two fixed it. `keel check` reports a missing dep (E1152), not an unused one.
-- Triage: needs an RFC (k.module: a code for a `deps` entry no file imports).
+- Triage: closed. rfc:0204 (ADR-0226) E1165 reports a `deps` entry the module does not use, with a fix removing it; `keel codemod move` removes the entries it leaves unused; `receipts` no longer lists `setup`.
 
 ### L9-6 rough: a killed step holds its job for `timeoutMs` plus a second
 - A step job a SIGKILL interrupts runs again once its lease ends, `now + timeoutMs + 1000` (std.jobs Run); with the step's default `timeoutMs` of 60,000 a run killed inside a step stands still a minute after the restart. std.workflows names `timeoutMs` per step but not that it sets how long a crash stalls the run. The step takes `timeoutMs: 10_000`.

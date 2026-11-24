@@ -19,18 +19,21 @@ const tree = (extra: Record<string, string>): Map<string, string> =>
     ...Object.entries(extra),
   ]);
 
+/** The proxy's diagnostics but E1165, which the fixtures' unused entries would add to every case. */
+const diagnoseOther = (f: Map<string, string>) => diagnose(f).filter((d) => d.code !== "E1165");
+
 describe("diagnose", () => {
   it("is clean for allowed imports and ignores bare specifiers", () => {
     const f = tree({
       "modules/a/x.ts": "import { pub } from '../b/pub.ts'\nimport 'react'\nimport './y.ts'\n",
       "modules/a/y.ts": "export const y = 1\n",
     });
-    expect(diagnose(f)).toEqual([]);
+    expect(diagnoseOther(f)).toEqual([]);
   });
 
   it("reports TS2307 with the import's line", () => {
     const f = tree({ "modules/a/x.ts": "const z = 1\n\nimport { q } from './nope.ts'\n" });
-    expect(diagnose(f)).toEqual([
+    expect(diagnoseOther(f)).toEqual([
       { code: "TS2307", path: "modules/a/x.ts", line: 3, message: "cannot find module './nope.ts'" },
     ]);
   });
@@ -39,7 +42,7 @@ describe("diagnose", () => {
     const f = tree({
       "modules/a/x.ts": "import { thing } from '../c/thing.ts'\nimport { priv } from '../b/priv'\n",
     });
-    expect(diagnose(f)).toEqual([
+    expect(diagnoseOther(f)).toEqual([
       { code: "E1152", path: "modules/a/x.ts", line: 1, message: "import from module c, not in a deps" },
       { code: "E1151", path: "modules/a/x.ts", line: 2, message: "priv is not a public export of module b" },
     ]);
@@ -50,7 +53,7 @@ describe("diagnose", () => {
       "modules/b/pub.store.ts": "export const s = 1\n",
       "modules/a/x.ts": "import { s } from '../b/pub.store.ts'\n",
     });
-    expect(diagnose(f)).toEqual([]);
+    expect(diagnoseOther(f)).toEqual([]);
   });
 
   it("skips imports outside modules, within one module, and into modules without a manifest", () => {
@@ -61,17 +64,17 @@ describe("diagnose", () => {
       "lib/u.ts": "import { thing } from '../modules/c/thing.ts'\n",
       "modules/c/own.ts": "import { thing } from './thing.ts'\n",
     });
-    expect(diagnose(f)).toEqual([]);
+    expect(diagnoseOther(f)).toEqual([]);
   });
 
   it("skips a module whose own manifest is missing even when the target has one", () => {
     const f = tree({ "modules/d/v.ts": "import { thing } from '../c/thing.ts'\n" });
-    expect(diagnose(f)).toEqual([]);
+    expect(diagnoseOther(f)).toEqual([]);
     const g = tree({
       "modules/d/module.ts": "export const nothing = 1\n",
       "modules/d/v.ts": "import { thing } from '../c/thing.ts'\n",
     });
-    expect(diagnose(g)).toEqual([]);
+    expect(diagnoseOther(g)).toEqual([]);
   });
 
   it("skips non-code, generated, unparsable, and non-module.ts manifest paths", () => {
@@ -83,7 +86,7 @@ describe("diagnose", () => {
       "modules/e/sub/module.ts": manifest("e", [], []),
       "modules/e/deep/module.ts": manifest("e2", ["zz"], []),
     });
-    expect(diagnose(f)).toEqual([]);
+    expect(diagnoseOther(f)).toEqual([]);
   });
 
   it("reads manifests only at modules/<id>/module.ts", () => {
@@ -94,7 +97,7 @@ describe("diagnose", () => {
       ["modules/a/x.ts", "import { y } from '../b/y.ts'\n"],
       ["modules/b/y.ts", "export const y = 1\n"],
     ]);
-    expect(diagnose(f)).toEqual([]);
+    expect(diagnoseOther(f)).toEqual([]);
   });
 
   it("reports cycles once each, canonical from the smallest id, sorted, at line 1 of that manifest", () => {
@@ -106,7 +109,7 @@ describe("diagnose", () => {
       ["modules/y/module.ts", manifest("y", ["x"], [])],
       ["modules/z/module.ts", manifest("z", ["a", "ghost"], [])],
     ]);
-    expect(diagnose(f)).toEqual([
+    expect(diagnoseOther(f)).toEqual([
       { code: "E1153", path: "modules/a/module.ts", line: 1, message: "cycle in module deps: a -> b -> c -> a" },
       { code: "E1153", path: "modules/x/module.ts", line: 1, message: "cycle in module deps: x -> y -> x" },
     ]);
@@ -114,13 +117,52 @@ describe("diagnose", () => {
 
   it("reports a self dependency as a one-module cycle and none for a long acyclic chain", () => {
     const self = new Map<string, string>([["modules/a/module.ts", manifest("a", ["a"], [])]]);
-    expect(diagnose(self).map((d) => d.message)).toEqual(["cycle in module deps: a -> a"]);
+    expect(diagnoseOther(self).map((d) => d.message)).toEqual(["cycle in module deps: a -> a"]);
     const chain = new Map<string, string>();
     const ids = ["a", "b", "c", "d", "e"];
     ids.forEach((id, i) =>
       chain.set(`modules/${id}/module.ts`, manifest(id, i + 1 < ids.length ? [ids[i + 1] ?? ""] : [], [])),
     );
-    expect(diagnose(chain)).toEqual([]);
+    expect(diagnoseOther(chain)).toEqual([]);
+  });
+
+  it("reports E1165 for a deps entry no non-test file uses, a ghost among them, and none for std entries or test imports", () => {
+    const f = tree({
+      "modules/a/module.ts": manifest("a", ["b", "c", "ghost", "@keel/std-brands"], ["A"]),
+      "modules/a/x.ts": "import { pub } from '../b/pub.ts'\n",
+      "modules/a/x.test.ts": "import { thing } from '../c/thing.ts'\n",
+    });
+    expect(diagnose(f).filter((d) => d.code === "E1165")).toEqual([
+      { code: "E1165", path: "modules/a/module.ts", line: 1, message: "module a lists c in deps and does not use it" },
+      {
+        code: "E1165",
+        path: "modules/a/module.ts",
+        line: 1,
+        message: "module a lists ghost in deps and does not use it",
+      },
+    ]);
+  });
+
+  it("reads no E1151 or E1152 in a test file, which needs no deps entry, and still reports its TS2307", () => {
+    const f = tree({
+      "modules/a/x.test.ts":
+        "import { thing } from '../c/thing.ts'\nimport { priv } from '../b/priv.ts'\nimport './nope.ts'\n",
+    });
+    expect(diagnoseOther(f).map((d) => d.code)).toEqual(["TS2307"]);
+  });
+
+  it("counts a layout binding as a use in either direction", () => {
+    const f = tree({
+      "modules/b/module.ts": manifest("b", [], ["pub"]),
+      "modules/a/routes.ts": "export const r = { 'a.home': { layout: 'b.frame' } }\n",
+    });
+    expect(diagnose(f).filter((d) => d.code === "E1165")).toEqual([]);
+    const g = tree({
+      "modules/a/module.ts": manifest("a", [], ["A"]),
+      "modules/b/module.ts": manifest("b", ["a"], ["pub"]),
+      "modules/a/routes.ts": "export const r = { 'a.home': { layout: 'b.frame' } }\n",
+    });
+    expect(diagnose(g).filter((d) => d.code === "E1165")).toEqual([]);
   });
 
   it("orders diagnostics by path", () => {
@@ -128,7 +170,7 @@ describe("diagnose", () => {
       "modules/a/z.ts": "import './n1.ts'\n",
       "modules/a/m.ts": "import './n2.ts'\n",
     });
-    expect(diagnose(f).map((d) => d.path)).toEqual(["modules/a/m.ts", "modules/a/z.ts"]);
+    expect(diagnoseOther(f).map((d) => d.path)).toEqual(["modules/a/m.ts", "modules/a/z.ts"]);
   });
 });
 
@@ -181,8 +223,9 @@ describe("constructorSites", () => {
 });
 
 describe("editManifest", () => {
-  const change = (d: string[], a: string[], r: string[] = []) => ({
+  const change = (d: string[], a: string[], r: string[] = [], rd: string[] = []) => ({
     addDeps: new Set(d),
+    removeDeps: new Set(rd),
     addExports: new Set(a),
     removeExports: new Set(r),
   });
@@ -215,6 +258,17 @@ describe("editManifest", () => {
   it("does nothing when every change is already present", () => {
     const src = "export default module({ id: 'a', deps: ['b'], public: { exports: ['X'] } })\n";
     expect(editManifest("m.ts", src, change(["b", "a"], ["X"]))).toBe(src);
+  });
+
+  it("drops removed deps, keeps the quote style, and keeps what is added back", () => {
+    const src = `export default module({ id: 'a', deps: ["b", "c", "d"], public: { exports: [] } })\n`;
+    expect(editManifest("m.ts", src, change(["e"], [], [], ["c", "q"]))).toBe(
+      `export default module({ id: 'a', deps: ["b", "d", "e"], public: { exports: [] } })\n`,
+    );
+    expect(editManifest("m.ts", src, change(["c"], [], [], ["c"]))).toBe(src);
+    expect(editManifest("m.ts", src, change([], [], [], ["b", "c", "d"]))).toBe(
+      `export default module({ id: 'a', deps: [], public: { exports: [] } })\n`,
+    );
   });
 
   it("rewrites exports when removing, keeping quote style, and keeps what is added back", () => {

@@ -1,6 +1,7 @@
 // Seed 1337 (fast-check seed, recorded in each fc.assert below)
 // Spec: k.check, clause "Every fix a diagnostic carries applies to its fixture with `git apply`, and re-checking reports no diagnostic of that code. Fixtures of E1003, E1005 (bytes only), E1151, E1152, E1154-E1156, E1401, E1403 (`&&`, `?:` with `If` imported), E1405, E1451, E1452 (`try`), E1601, E1652, E1653, E1757 (`!`, `any`, suppression), E1805, and E1808 carry one; RFC 0035 lists why the others cannot."
 // RFC 0157 / 0162: E1157 is retired (no fixture); E1154-E1156 keep theirs; E1407, E1510 and E1515 each carry one (k.component, k.contract); E1513 and E1514 carry none. k.check's sentence still names E1157 and omits these: see the report.
+// RFC 0204: E1165 carries one (its fix removes the `deps` entry).
 // Invariant (not a sentence of k.module now): no fix edits a file under `node_modules/`.
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -114,6 +115,7 @@ const FIXED: FixedCase[] = [
   },
   { name: "E1152", code: "E1152", ...fixtureOf("E1152") },
   { name: "E1154", code: "E1154", ...fixtureOf("E1154") },
+  { name: "E1165 (remove the deps entry)", code: "E1165", ...fixtureOf("E1165") },
   {
     name: "E1155 (route show in orders gets orders. prefix)",
     code: "E1155",
@@ -292,6 +294,7 @@ const FIX = [
   "E1151",
   "E1152",
   "E1154",
+  "E1165",
   "E1155",
   "E1156",
   "E1401",

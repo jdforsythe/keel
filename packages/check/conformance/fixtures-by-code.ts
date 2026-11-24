@@ -182,6 +182,7 @@ const sameAppService = (base: string): Files => [
   mod("b", [], []),
   contractFile("b", "'b.pub': { method: 'GET', path: '/b/pub', output: s.json() },"),
   mod("a", ["b"], []),
+  f("modules/a/Peer.ts", "import { b } from '../b/b.contract.ts'\nexport const Peer = b\n"),
   f(
     "modules/a/BApi.schema.ts",
     `${SERVICES}${SCHEMA}export const BApi = endpoints({ get: { method: 'GET', path: '/b/pub', output: s.json() } })\n`,
@@ -352,7 +353,24 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
     bad: [mod("b", [], ["Pub"]), exp("b", "Pub"), mod("a", [], []), use("a", "b", "Pub")],
     clean: [mod("b", [], ["Pub"]), exp("b", "Pub"), mod("a", ["b"], []), use("a", "b", "Pub")],
   },
-  E1153: { bad: [mod("a", ["b"], []), mod("b", ["a"], [])], clean: [mod("a", ["b"], []), mod("b", [], [])] },
+  E1153: {
+    opts: NO_TYPES,
+    bad: [
+      mod("a", ["b"], ["A"]),
+      exp("a", "A"),
+      use("a", "b", "B"),
+      mod("b", ["a"], ["B"]),
+      exp("b", "B"),
+      use("b", "a", "A"),
+    ],
+    clean: [mod("a", ["b"], []), use("a", "b", "B"), mod("b", [], ["B"]), exp("b", "B")],
+  },
+  // E1165 (rfc:0204): `a` lists `b` with no file of `a` importing from it; the clean counterpart imports `b`'s public export.
+  E1165: {
+    opts: NO_TYPES,
+    bad: [mod("b", [], ["Pub"]), exp("b", "Pub"), mod("a", ["b"], [])],
+    clean: [mod("b", [], ["Pub"]), exp("b", "Pub"), mod("a", ["b"], []), use("a", "b", "Pub")],
+  },
   E1154: { bad: [mod("a", [], ["Ghost"])], clean: [mod("a", [], ["Ghost"]), exp("a", "Ghost")] },
   E1155: {
     opts: NO_TYPES,

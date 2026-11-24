@@ -3,8 +3,10 @@ import type { ProxyDiag } from "./ProxyDiag.ts";
 import { importRefs } from "./importRefs.ts";
 import { isCode } from "./isCode.ts";
 import { isGenerated } from "./isGenerated.ts";
+import { isTestPath } from "./isTestPath.ts";
 import { lineCol } from "./lineCol.ts";
 import { moduleOf } from "./moduleOf.ts";
+import { moduleUses } from "./moduleUses.ts";
 import { parseSource } from "./parseSource.ts";
 import { readManifest } from "./readManifest.ts";
 import { resolveImport } from "./resolveImport.ts";
@@ -32,8 +34,8 @@ function cycles(manifests: ReadonlyMap<string, Manifest>): string[][] {
 
 /**
  * The check proxy: what `keel check` would report that an operation can cause. TS2307 unresolved relative
- * import; E1151 import of a non-public export of another module; E1152 import from a module not in `deps`;
- * E1153 cycle in module `deps`. Sorted by path, then position.
+ * import; E1151 import of a non-public export of another module; E1152 import from a module not in `deps` (a test file needs none, so neither E1151 nor E1152 reads it);
+ * E1153 cycle in module `deps`; E1165 a `deps` entry the module does not use (`@keel/std-*` entries are not judged). Sorted by path, then position.
  */
 export function diagnose(files: ReadonlyMap<string, string>): ProxyDiag[] {
   const manifests = new Map<string, Manifest>();
@@ -60,7 +62,7 @@ export function diagnose(files: ReadonlyMap<string, string>): ProxyDiag[] {
         continue;
       }
       const to = moduleOf(target);
-      if (from === null || to === null || from === to) continue;
+      if (from === null || to === null || from === to || isTestPath(path)) continue;
       const fm = manifests.get(from);
       const tm = manifests.get(to);
       if (fm === undefined || tm === undefined) continue;
@@ -81,5 +83,15 @@ export function diagnose(files: ReadonlyMap<string, string>): ProxyDiag[] {
       message: `cycle in module deps: ${[...c, first].join(" -> ")}`,
     });
   }
+  const uses = moduleUses(files);
+  for (const [id, man] of manifests)
+    for (const dep of man.deps)
+      if (!dep.startsWith("@keel/std-") && uses.get(id)?.has(dep) !== true)
+        out.push({
+          code: "E1165",
+          path: `modules/${id}/module.ts`,
+          line: 1,
+          message: `module ${id} lists ${dep} in deps and does not use it`,
+        });
   return out;
 }
