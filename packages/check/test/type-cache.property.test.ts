@@ -107,11 +107,12 @@ const files = (type: string, deps: boolean) => [
 
 /**
  * `check()` from a module instance of its own: no memo, no parsed files, no format registry from this module's calls;
- * with `deps`, `@keel/std-temporal` imported first into it, as `keel check` imports what `deps` lists.
+ * the `@keel/std-*` packages `files`' manifests list imported into it first, as `keel check` does (`importDeps`).
  */
-async function fresh(deps: boolean): Promise<typeof check> {
+async function fresh(root: string, list: readonly { path: string; source: string }[]): Promise<typeof check> {
   vi.resetModules();
-  if (deps) await import("@keel/std-temporal");
+  const { importDeps } = await import("@keel/compiler/std/importDeps");
+  await importDeps(root, list);
   const m = await import("../src/index.ts");
   return m.check;
 }
@@ -129,8 +130,9 @@ it("a warm check reports what a cold one does, after every edit of a generated s
         if (e.k === "a") type = e.type;
         if (e.k === "deps") deps = e.on;
         const warm = check(files(type, deps), { root: p.root, typeCache: folder }).diagnostics;
-        const fromDisk = (await fresh(deps))(files(type, deps), { root: p.root, typeCache: folder }).diagnostics;
-        const cold = (await fresh(deps))(files(type, deps), { root: p.root }).diagnostics;
+        const now = files(type, deps);
+        const fromDisk = (await fresh(p.root, now))(now, { root: p.root, typeCache: folder }).diagnostics;
+        const cold = (await fresh(p.root, now))(now, { root: p.root }).diagnostics;
         expect(warm).toEqual(cold);
         expect(fromDisk).toEqual(cold);
       }
