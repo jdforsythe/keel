@@ -21,13 +21,16 @@ interface Waiting {
 }
 
 /**
- * The drive of one `simulate` run (k.drive Driving): the scenario runs in the run's async context (`inRun`), and
- * while it is pending the drive moves the run's clock to the next moment (the earlier of the clock's next deadline and
- * the schedule's next offline edge) on each of its turns where nothing is pending: no resource of the run other than a
- * promise, no held work, no harness call in progress but one stalled on `ctx.net`. The bound is `horizon` ms past the
- * run's start or, while a `run(ms)` waits, `t + ms`. It draws no random and reads no time but the real-time budget, which `deadline`
- * (a `performance.now()` time) ends, naming what is in flight. A stall fails `failure` with E1727 or E1728 (k.drive Stalls). With `record` the moments and the
- * observer events of the ctx and its replicas go to `trace`.
+ * The drive of one `simulate` run (k.drive Driving): the scenario runs in the run's async context (`inRun`). On each
+ * of its turns the drive delivers the oldest settled held work once no thread-pool request is pending (k.drive-law
+ * Order); when nothing of the run is pending (no resource of the run other than a promise or one a garbage collection
+ * destroys, no held work) it resolves the oldest harness call not stalled on `ctx.net`, else, while the scenario is
+ * pending, moves the run's clock to the next moment (the earlier of the clock's next deadline and the schedule's next
+ * offline edge). The bound is `horizon` ms past the run's start or, while a `run(ms)` waits, `t + ms`. Once the
+ * scenario resolves (`outlived`) it moves no clock and resolves when nothing is pending. It draws no random and reads
+ * no time but the real-time budget, which `deadline` (a `performance.now()` time) ends, naming what is in flight. A
+ * stall fails `failure` with E1727 or E1728 (k.drive Stalls). With `record` the moments and the observer events of the
+ * ctx and its replicas go to `trace`.
  */
 export function drive(
   ctx: SimCtx,
@@ -45,9 +48,13 @@ export function drive(
   const note = (entry: Record<string, unknown>): void => {
     trace.push(JSON.stringify(entry));
   };
-  /** The harness calls in progress that are not stalled on an unanswered `ctx.net` route, first seen at real times. */
-  const busyCalls = (): readonly object[] => [...gauge.calls].filter((call) => !call.stalled());
+  /** The harness calls in progress that are not stalled on an unanswered `ctx.net` route, in start order. */
+  const busyCalls = (): { readonly stalled: () => boolean; readonly ready: () => void }[] =>
+    [...gauge.calls].filter((call) => !call.stalled());
   let over = false;
+  /** Set once the scenario has resolved: the drive then waits for the run's work, moving no clock (k.drive Stalls). */
+  let after = false;
+  let quiet: () => void = () => {};
   let reject: (e: Error) => void = () => {};
   const failure = new Promise<never>((_, no) => {
     reject = no;
@@ -81,10 +88,25 @@ export function drive(
       if (performance.now() >= deadline) {
         const labels = [...tracker.pending().map((piece) => piece.label), ...busyCalls().map(() => "a harness call")];
         const list = labels.length === 0 ? "none" : labels.join(", ");
-        reject(fail("E1728", `the budget ran out with work in flight: ${list}`, { labels, budget: true }));
+        const why = after ? `work outlived the scenario: ${list}` : `the budget ran out with work in flight: ${list}`;
+        reject(fail("E1728", why, { labels, budget: true }));
         return;
       }
-      if (tracker.pending().length > 0 || busyCalls().length > 0) continue;
+      const pending = tracker.pending();
+      // Held work is delivered one piece a turn, in start order, once no thread-pool request is pending (k.drive-law Order).
+      if (tracker.deliver(pending)) continue;
+      if (pending.length > 0) continue;
+      // Nothing of the run is pending but harness calls: the oldest one not stalled on a route resolves on this turn.
+      const [call] = busyCalls();
+      if (call !== undefined) {
+        gauge.calls.delete(call);
+        call.ready();
+        continue;
+      }
+      if (after) {
+        quiet();
+        return;
+      }
       const at = next();
       if (at !== null && at <= bound()) {
         moveTo(at);
@@ -128,11 +150,11 @@ export function drive(
     run,
     failure,
     trace,
-    outlived: async () => {
-      // Native resources are destroyed a turn after they close: let a closed one go before it counts.
-      for (let turn = 0; turn < 3 && (tracker.pending().length > 0 || busyCalls().length > 0); turn++) await drained();
-      const left = tracker.pending()[0];
-      return left?.label ?? (busyCalls().length > 0 ? "a harness call" : undefined);
+    outlived: () => {
+      after = true;
+      return new Promise<void>((done) => {
+        quiet = done;
+      });
     },
     finish: () => {
       if (!record) return;

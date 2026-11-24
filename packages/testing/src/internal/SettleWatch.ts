@@ -1,9 +1,9 @@
 /**
- * What a `settle` reports to the `simulate` run whose clock its ctx shares: `watch()` marks a harness call in progress
- * and returns its handle; `stalled(probe)` gives the question the drive asks on its own turn, true while the call
- * waits on nothing but an unanswered route (k.drive Driving), `null` for none; `end()` says it is over.
+ * What a `settle` reports to the `simulate` run whose clock its ctx shares (k.drive Driving): `watch(stalled)` marks a
+ * harness call in progress, `stalled` true while it waits on nothing but an unanswered route; `ready` resolves on the
+ * drive turn where nothing of the run is pending but harness calls in progress, and `end()` says the call is over.
+ * Outside `simulate` it gives `undefined`.
  */
-export type SettleWatch = () => {
-  readonly stalled: (probe: (() => boolean) | null) => void;
-  readonly end: () => void;
-};
+export type SettleWatch = (
+  stalled: () => boolean,
+) => { readonly ready: Promise<void>; readonly end: () => void } | undefined;

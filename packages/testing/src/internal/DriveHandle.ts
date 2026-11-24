@@ -7,8 +7,11 @@ export interface DriveHandle {
   readonly run: (ms?: number) => Promise<void>;
   readonly failure: Promise<never>;
   readonly trace: readonly string[];
-  /** The label of the first piece of work still pending once the scenario resolved, in creation order, if any. */
-  readonly outlived: () => Promise<string | undefined>;
+  /**
+   * Once the scenario resolved: resolves when no work of the run is pending; the budget spent first fails `failure`
+   * with E1728 `work outlived the scenario` (k.drive Stalls).
+   */
+  readonly outlived: () => Promise<void>;
   /** Append the run's final storage and store values to the trace (k.drive Law). */
   readonly finish: () => void;
   readonly stop: () => Promise<void>;

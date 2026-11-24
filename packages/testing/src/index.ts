@@ -24,6 +24,7 @@ export type { LedgerInput } from "./types/LedgerInput.ts";
 export type { LedgerRecord } from "./types/LedgerRecord.ts";
 export type { PropertyOptions } from "./types/PropertyOptions.ts";
 export type { PropertyResult } from "./types/PropertyResult.ts";
+export type { SimulateResult } from "./types/SimulateResult.ts";
 export type { RenderOptions } from "./types/RenderOptions.ts";
 export type { ResumeDocumentOptions } from "./types/ResumeDocumentOptions.ts";
 export type { ResumedHarness } from "./types/ResumedHarness.ts";
