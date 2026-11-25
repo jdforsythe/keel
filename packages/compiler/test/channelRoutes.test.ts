@@ -85,7 +85,8 @@ describe("a channel in a module's contract", () => {
     });
   });
 
-  it("builds a routes.json holding the same ids, paths and methods, with no warning", { timeout: 30000 }, async () => {
+  // The plugin's build start compiles the fixture's sources and imports the stdlib it names: about 3.5 s here, so 60 s.
+  it("builds a routes.json holding the same ids, paths and methods, with no warning", { timeout: 60_000 }, async () => {
     const warnings: string[] = [];
     const p = keel();
     p.configResolved({ root, command: "build" });

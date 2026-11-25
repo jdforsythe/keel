@@ -35,7 +35,8 @@ const unseeded =
 const seeded =
   "import fc from 'fast-check';\nimport { it } from 'vitest';\nit('p', () => {\n  fc.assert(fc.property(fc.nat(), () => true), { seed: 1 });\n});\n";
 
-describe("S0015 in structure-lint's file set", () => {
+// Each case runs structure-lint over a throwaway root, a process of its own: about 0.6 s here, so 20 s.
+describe("S0015 in structure-lint's file set", { timeout: 20_000 }, () => {
   it("an unseeded property in `packages/a/conformance/` is one S0015 at its line", () => {
     const d = s0015("packages/a/conformance/p.test.ts", unseeded);
     expect(d.map((x) => [x.path, x.line])).toEqual([["packages/a/conformance/p.test.ts", 4]]);

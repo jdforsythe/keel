@@ -30,9 +30,11 @@ const notesOf = (cap: string, name: string) =>
 const sim = (cap: string, plan: { delay: number; fault: string }[] = []): SimCtx =>
   createCtx({ mode: "sim", seed: SEED, schedule: { net: [], storage: [], offline: [], plans: { [cap]: plan } } });
 
+// `ready()` loads the PGlite engine (its WebAssembly and initdb): about 1.5 s here, over 10 s on a slow runner, so the
+// hook states 60 s, the bound the apps give a PGlite folder's first open.
 beforeAll(async () => {
   await ready();
-});
+}, 60_000);
 afterEach(() => {
   vi.restoreAllMocks();
 });

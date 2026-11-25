@@ -224,7 +224,8 @@ describe("D0015 D0016 D0017 D0018: the scaffold templates", () => {
 });
 
 describe("the published skills", () => {
-  it("pass every check", () => {
+  // Reads every skill, agent template and doc the repository publishes: about 0.6 s here, so 15 s.
+  it("pass every check", { timeout: 15_000 }, () => {
     expect(checkRepo(repo).diags).toEqual([]);
   });
 });

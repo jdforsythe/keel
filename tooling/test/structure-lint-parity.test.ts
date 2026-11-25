@@ -31,7 +31,8 @@ function s0012(file: string, source: string): { code: string; path: string }[] {
     .filter((d) => d.code === "S0012");
 }
 
-describe("rfc:0169 conformance: S0012 with deps.json as shipped", () => {
+// Each case runs structure-lint over a throwaway root, a process of its own: about 0.6 s here, so 20 s.
+describe("rfc:0169 conformance: S0012 with deps.json as shipped", { timeout: 20_000 }, () => {
   it("rfc:0169 conformance: `import { mountRequests } from '@keel/router/internal'` in `packages/std-tauri/src/a.ts` passes", () => {
     expect(
       s0012(

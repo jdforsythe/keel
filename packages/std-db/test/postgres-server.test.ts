@@ -4,7 +4,7 @@
 // without it; the TLS cases also need that server to have `ssl` on.
 import { createServer } from "node:net";
 import { setTimeout as sleep } from "node:timers/promises";
-import { testTime } from "@keel/tooling/test-time";
+import { fixedTime, testTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
 import pg from "pg";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
@@ -334,6 +334,7 @@ describe.skipIf(SERVER === "")("postgres driver over TLS", () => {
   });
 });
 
+// The driver's own 10 s connect timeout is waited out in full, then 20 s bounds the server and the work around it.
 test("a server that accepts and never answers rejects E2153 after the 10 s connect timeout", async () => {
   const sockets: { destroy(): void }[] = [];
   const silent = createServer((socket) => {
@@ -352,7 +353,7 @@ test("a server that accepts and never answers rejects E2153 after the 10 s conne
     for (const s of sockets) s.destroy();
     await new Promise<void>((resolve) => silent.close(() => resolve()));
   }
-}, 30_000);
+}, fixedTime(10_000) + testTime(20_000));
 
 function permutations<T>(xs: readonly T[]): T[][] {
   if (xs.length <= 1) return [[...xs]];

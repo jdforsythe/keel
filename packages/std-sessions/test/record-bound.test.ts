@@ -66,6 +66,8 @@ const bytes = (session: Session): number => utf8Length(JSON.stringify(Session.en
 afterEach(() => void vi.unstubAllGlobals());
 
 describe("record bounds", () => {
+  // 2,000 inputs through the rendered page, each recorded with the whole value typed so far: about 2.3 ms an input
+  // here, so 50 ms an input.
   test("typing a 2,000-character textarea keeps the session JSON within 192 KiB", async () => {
     const { rec, h } = await open(createCtx({ mode: "sim", seed: 1337 }));
     let text = "";
@@ -80,7 +82,7 @@ describe("record bounds", () => {
     const last = out.events.filter((e) => e.kind === "fire").at(-1);
     expect(last?.kind === "fire" && last.event).toEqual({ type: "input", value: text });
     h.dispose();
-  }, 60_000);
+  }, 2000 * 50);
 
   test("property (seed 1337): the serialized session never exceeds the byte bound", async () => {
     await fc.assert(

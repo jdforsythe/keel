@@ -73,7 +73,8 @@ describe("hardTimes", () => {
   });
 });
 
-describe("S0016 in structure-lint's file set", () => {
+// Each case runs structure-lint over a throwaway root, a process of its own: about 0.6 s here, so 20 s.
+describe("S0016 in structure-lint's file set", { timeout: 20_000 }, () => {
   const hard = `import { spawnSync } from "node:child_process";\nspawnSync("x", [], { timeout: 60_000 });\n`;
 
   it("is one S0016 in a package test, a tooling smoke and an app's test folder, and none in a package's source", () => {
