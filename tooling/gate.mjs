@@ -60,7 +60,16 @@ const fail = (line) => {
 const here = process.cwd();
 const common = git(["rev-parse", "--path-format=absolute", "--git-common-dir"], here).stdout.trim();
 if (common === "") fail("fail gate not inside a git repository");
-const main = path.dirname(common);
+// The main worktree: the outermost registered worktree that holds this one (a lane lives in its `.worktrees/`), or this
+// one. The repository's first worktree may be elsewhere: the gate's checkout and results belong to this line of work.
+const top = git(["rev-parse", "--show-toplevel"], here).stdout.trim();
+const worktrees = git(["worktree", "list", "--porcelain"], here)
+  .stdout.split("\n")
+  .filter((l) => l.startsWith("worktree "))
+  .map((l) => l.slice("worktree ".length));
+const main = worktrees
+  .filter((w) => top === w || top.startsWith(`${w}${path.sep}`))
+  .reduce((a, w) => (w.length < a.length ? w : a), top);
 const rev = positional[0] ?? "HEAD";
 const sha = git(["rev-parse", "--verify", "--quiet", `${rev}^{commit}`], here).stdout.trim();
 if (sha === "") fail(`fail gate ${rev} is not a commit`);
@@ -90,9 +99,7 @@ if (bad.length > 0) fail(`fail gate --with ${bad.join(",")}: not a job the gate 
 
 // ---- the clean worktree ----
 const verify = path.resolve(values.get("worktree") ?? path.join(main, ".worktrees", "verify"));
-const registered = git(["worktree", "list", "--porcelain"], here)
-  .stdout.split("\n")
-  .some((l) => l === `worktree ${verify}`);
+const registered = worktrees.includes(verify);
 if (!registered) fail(`fail gate no worktree at ${verify}: git worktree add --detach ${verify}`);
 const gitDir = git(["rev-parse", "--absolute-git-dir"], verify).stdout.trim();
 const lock = path.join(gitDir, "keel-gate.lock");
