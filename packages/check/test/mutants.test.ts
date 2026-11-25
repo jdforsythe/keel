@@ -949,7 +949,10 @@ describe("E1757 noUnsafeSyntax", () => {
       block("suppress last line no newline", E("src/a.ts", "export const a = 1\n// @ts-ignore")),
       block("comment before code same line", E("src/a.ts", "/* @ts-ignore */ export const a = 1\n")),
       block("other comment ok", E("src/a.ts", "// @ts-ignored\n// ts-ignore\nexport const a = 1\n")),
-      block("quoted directive ok", E("src/a.ts", "// see @ts-ignore here\n/* the `@ts-expect-error` form */\nexport const a = 1\n")),
+      block(
+        "quoted directive ok",
+        E("src/a.ts", "// see @ts-ignore here\n/* the `@ts-expect-error` form */\nexport const a = 1\n"),
+      ),
       block("suppress word boundary", E("src/a.ts", "// @ts-ignore-ish\nexport const a = 1\n")),
       block("suppress jsdoc line", E("src/a.ts", "/**\n * @ts-nocheck\n */\nexport const a = 1\n")),
       block(
