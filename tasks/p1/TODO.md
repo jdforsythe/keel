@@ -27,16 +27,18 @@ The `unsafe` count measures escapes from the type system in code that runs. Nega
 ### Gate and tooling health (first: every other lane trips over these)
 - [x] `done` backlog 1102: check's mutation run gets past its initial test run; no test writes a type cache beside an app
 - [ ] `next` backlog 1105: a bound on `mutate.mjs --stop`
-- [ ] `running` backlog 1040, 1103, 0991: the whole root test reliable under load, `canary.mjs` under load, a scaffolded project builds on first run (`lane-gate`)
+- [x] `done` backlog 0991: a scaffolded project builds on first run
+- [ ] `next` backlog 1040 (the concurrency cap, measured on a quiet machine) and 1103 (not reproduced; the smoke now keeps its command's output)
 - [ ] `next` check's 13 mutation chunks on the main line, when the machine is quiet
 
 ### W1 Freeze
 - [x] `done` RFC 0163, the library format: RFC, ADR and spec made true against the tree; the build order is the RFC's last section
-- [ ] `running` slice 1, the library kind (`lane-lib`)
-- [ ] `blocked` (slice 1) slices 2a and 2b side by side, then 3, then 4 (the stdlib on the format) beside 4b (the app data seam, k.server-deps)
+- [x] `done` slice 1, the library kind, on `lane-lib`, the RFC's integration line
+- [ ] `running` slices 2a and 2b side by side (`lane-lib2a`, `lane-lib2b`)
+- [ ] `blocked` (2a, 2b) slice 3, then 4 (the stdlib on the format) beside 4b (the app data seam, k.server-deps)
 - [ ] `blocked` (slices 4 and 4b) k.parity's second part: kind gates, lint S0013, conformance for clauses 5 and 6
 - [ ] `blocked` (k.parity) every kernel section `conformance-covered`, then the `frozen` flip
-- [ ] `next` backlog 1100: the largest sections split so the map plus any one section fits principle 8; the section cap returns to 3,100
+- [ ] `next` backlog 1100: the largest sections split so the map plus any one section fits principle 8 (the section cap is back at 3,100)
 - [x] `done` RFC and ADR status lines say what is built
 - [ ] `next` RFC 0191's last part: the `Box as="nav"` conformance case (backlog 0580)
 
@@ -46,17 +48,18 @@ The triage is `tasks/p1/weaknesses.md`: 102 lines to fix now in 17 lanes (A1), 1
 - [ ] `running` lane 01 gate-flakes: three of its nine lines (`lane-gate`)
 - [ ] `running` lane 06 server-scrub-and-streams: RFC 0230 (`lane-w06`)
 - [ ] `running` lane 07 check-security-rules: RFC 0231 (`lane-sec07`)
-- [ ] `running` lane 08 router-identity: RFC 0232 (`lane-sec08`)
+- [x] `done` lane 08 router-identity: RFC 0232
 - [ ] `next` lanes 02 to 05 and 09 to 17, in the triage's order, as lanes free up
 - [ ] `blocked` (A1) the A2 lanes 18 to 32
 - [ ] `blocked` (fix lanes) a red-team pass, by Claude and by Codex, that files no new high or medium line
 
 ### W3 Evidence and coverage
 - [x] `done` the survey (`tasks/p1/evidence-survey.md`)
-- [ ] `running` a11y evidence: the item key per project, the four criteria at `none`, routes with no evidence outside household (`lane-a11y`)
+- [x] `done` every page route outside household rendered with its a11y checks
+- [ ] `running` RFC 0233: the a11y item key per project, `keel test` passing the artifacts by default, items per page route (`lane-a11yrfc`)
 - [x] `done` household: every export has evidence; every page route rendered with its a11y checks
 - [ ] `next` backlog 1106, 1107: a generated `s.id` with a shape a server mints; a found input gives its value
-- [ ] `running` RFC 0229: `unsafe` counts runtime escapes; negative type tests have their own home and count; six uses removed (`lane-unsafe`)
+- [x] `done` RFC 0229: `unsafe` counts escapes in code that runs (13, from 35); negative type tests have their own home and count (90)
 - [ ] `blocked` (survey) tier 1 packages to target, one lane per package
 - [ ] `blocked` (tier 1) tier 2, then tier 3
 - [ ] `next` mutation for the golden apps' modules (backlog 0919)
