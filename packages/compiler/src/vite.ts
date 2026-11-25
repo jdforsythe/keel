@@ -19,9 +19,9 @@ import { SERVER_ONLY_NAME } from "./internal/SERVER_ONLY_NAME.ts";
 import { STUB_NAME } from "./internal/STUB_NAME.ts";
 import { artifactText } from "./internal/artifactText.ts";
 import { browserBreach } from "./internal/browserBreach.ts";
+import { bundledFiles } from "./internal/bundledFiles.ts";
 import { calledModules } from "./internal/calledModules.ts";
 import { canonicalJson } from "./internal/canonicalJson.ts";
-import { copyPgliteFiles } from "./internal/copyPgliteFiles.ts";
 import { devEntryCode } from "./internal/devEntryCode.ts";
 import { devMiddleware } from "./internal/devMiddleware.ts";
 import { entryCode } from "./internal/entryCode.ts";
@@ -34,6 +34,7 @@ import { isNodeBuiltin } from "./internal/isNodeBuiltin.ts";
 import { isSourcePath } from "./internal/isSourcePath.ts";
 import { islandsCode } from "./internal/islandsCode.ts";
 import { keelMark } from "./internal/keelMark.ts";
+import { libraryRegisters } from "./internal/libraryRegisters.ts";
 import { listSources } from "./internal/listSources.ts";
 import { mergeArtifacts } from "./internal/mergeArtifacts.ts";
 import { noDeployable } from "./internal/noDeployable.ts";
@@ -52,6 +53,7 @@ import { unmappedModule } from "./internal/unmappedModule.ts";
 import { urlLiterals } from "./internal/urlLiterals.ts";
 import { writeArtifact } from "./internal/writeArtifact.ts";
 import { writeStatic } from "./internal/writeStatic.ts";
+import { allLibraries } from "./std/allLibraries.ts";
 import { appLibraries } from "./std/appLibraries.ts";
 import { clientStdData } from "./std/clientStdData.ts";
 import { importDeps } from "./std/importDeps.ts";
@@ -104,14 +106,18 @@ function copyMigrations(root: string, out: string, modules: readonly string[]): 
   }
 }
 
-/** The folder of the PGlite package `@keel/std-postgres` resolves from the project at `at`, if it resolves. */
-function pgliteDist(at: string): string | undefined {
-  try {
-    const server = createRequire(path.join(at, "package.json")).resolve("@keel/std-postgres/server");
-    return path.dirname(createRequire(server).resolve("@electric-sql/pglite"));
-  } catch {
-    return undefined;
+/** The module ids of a server build's output chunks (`RolldownOutput`, or a list of them). */
+function chunkModules(output: unknown): string[] {
+  const outputs = Array.isArray(output) ? output : [output];
+  const ids: string[] = [];
+  for (const o of outputs) {
+    const chunks: unknown = typeof o === "object" && o !== null ? Reflect.get(o, "output") : undefined;
+    for (const c of Array.isArray(chunks) ? chunks : []) {
+      const list: unknown = typeof c === "object" && c !== null ? Reflect.get(c, "moduleIds") : undefined;
+      for (const id of Array.isArray(list) ? list : []) if (typeof id === "string") ids.push(id);
+    }
   }
+  return ids;
 }
 /**
  * `node:sqlite` in a build: read when the driver first runs, not linked at load, so `server.mjs` starts on a Node
@@ -304,6 +310,14 @@ export default function (): {
   let root = process.cwd();
   /** The app's libraries (`appLibraries`), compiled as its own files; read again when a manifest changes. */
   let libraries: Library[] = [];
+  /** Whether a library export registers (`libraryRegisters`), kept while `libraries` is the same list. */
+  let follow:
+    | { readonly of: readonly Library[]; readonly registers: (spec: string, name: string) => boolean }
+    | undefined;
+  const registering = (): ((spec: string, name: string) => boolean) => {
+    if (follow?.of !== libraries) follow = { of: libraries, registers: libraryRegisters(libraries) };
+    return follow.registers;
+  };
   /** Whether `configResolved` set `root`; until then no artifact is written. */
   let resolved = false;
   let command: "build" | "serve" | undefined;
@@ -915,7 +929,7 @@ export default function (): {
         builder: {
           buildApp: async (b) => {
             await b.build(b.environments.client);
-            await b.build(b.environments.ssr);
+            const bundled = await b.build(b.environments.ssr);
             if (built) {
               const std = path.join(at, ".keel", "std.json");
               const failed = await writeStatic(
@@ -929,7 +943,14 @@ export default function (): {
               if (failed.length > 0) throw evaluationFailed(failed);
               return;
             }
-            copyPgliteFiles(path.join(at, out), () => pgliteDist(at));
+            // The files bundled package files read beside themselves (k.server-deps); a problem fails the build, which
+            // then leaves no `dist/<name>/` (E1014).
+            const read = bundledFiles(chunkModules(bundled), allLibraries(at));
+            if (read.problems.length > 0) {
+              fs.rmSync(path.join(at, out), { recursive: true, force: true });
+              throw evaluationFailed(read.problems);
+            }
+            for (const c of read.copies) fs.cpSync(c.from, path.join(at, out, c.rel), { recursive: true });
             // Every module's routes, not the project build's: forwarding needs each peer deployable's paths.
             // Each deployable read as `node`, so the client's modules and every placed stdlib module are listed.
             const asNode = (d: { modules: readonly string[] }): Topology[string] => ({
@@ -1193,18 +1214,19 @@ export default function (): {
       const rel = relOf(id);
       // A source outside the project (a linked package) is evaluated again by the modules that import it, not by the
       // ones it registered with: the whole server graph loads again, so a registry and its registrations agree.
+      if (rel === null && linked(id)) follow = undefined;
       if (rel === null && evaluated && linked(id)) {
         invalidateWhole();
         reloadDev();
       }
       if (rel !== null && evaluated && (rel.startsWith("modules/") || PROJECT_FILE.test(rel))) {
         // An app file that registered a capability, itself or through a helper it called, or that names a registering
-        // export, loads the server graph again whole (k.data Dev): the registry starts empty, and a capability two
-        // files register is still E1602.
+        // export (of `@keel/ctx`, or of a library: k.server-deps Registration through a library), loads the server graph
+        // again whole (k.data Dev): the registry starts empty, and a capability two files register is still E1602.
         const abs = path.join(root, rel);
         if (
           registeredIn(registrations.values(), abs) ||
-          (exists(rel) && registersCapability(fs.readFileSync(abs, "utf8")))
+          (exists(rel) && registersCapability(fs.readFileSync(abs, "utf8"), registering(), rel))
         )
           invalidateWhole();
         reloadDev();

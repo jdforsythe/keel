@@ -7,6 +7,7 @@ import { agentDrift } from "./agentDrift.ts";
 import { baseInput } from "./baseInput.ts";
 import { codeFiles } from "./codeFiles.ts";
 import { deployFreshness } from "./deployFreshness.ts";
+import { libraryManifestFiles } from "./libraryManifestFiles.ts";
 import { loadShells } from "./loadShells.ts";
 import { makeDiag } from "./makeDiag.ts";
 import { projectFiles } from "./projectFiles.ts";
@@ -48,7 +49,7 @@ export async function checkCommand(input: Input, io: Io): Promise<OutRecord[]> {
     ...paths,
     ...loaded.diags,
     ...loaded.needs.filter((n, i, all) => all.findIndex((x) => x.plugin === n.plugin) === i).map((n) => n.diag),
-    ...deployFreshness(project, policy, loaded.shells),
+    ...deployFreshness([...project, ...libraryManifestFiles(io.cwd, project)], policy, loaded.shells),
     ...(await agentDrift(project)),
   ];
   const errors = diags.filter((d) => d.code.startsWith("E")).length;

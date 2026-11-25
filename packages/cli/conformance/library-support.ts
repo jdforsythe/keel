@@ -214,3 +214,191 @@ export const siteTree = (libraries?: Tree[]): Tree => ({
 
 /** The library's `src/Badge.tsx` in a project tree. */
 export const BADGE_PATH = `${LIB}/src/Badge.tsx`;
+
+// ---- slice 4b: the app data seam (k.server-deps) ----
+// `@acme/store` is a made-up data battery written by the test: it declares an `env` name, reads a file beside itself and exports a function that calls `register`.
+// No name of a stdlib package appears in any fixture below.
+import * as nodeFs from "node:fs";
+
+export const STORE = "@acme/store";
+export const STORE_ENV = "ACME_STORE_URL";
+
+const list = (xs: readonly string[]): string => `[${xs.map((x) => `'${x}'`).join(", ")}]`;
+
+/** `'a', 'b'` as `env` entry source text: one quoted literal per name. */
+export const quoted = (names: readonly string[]): string[] => names.map((n) => `'${n}'`);
+
+/** A manifest whose `env` holds `entries` (source text, one per line, so each entry has its own position). */
+export const envManifestSrc = (
+  id: string,
+  deps: readonly string[],
+  entries: readonly string[],
+  o: { exports?: readonly string[]; capabilities?: readonly string[] } = {},
+): string =>
+  `import { module } from '@keel/compiler'\nexport default module({\n  id: '${id}',\n  deps: ${list(deps)},\n  capabilities: ${list(o.capabilities ?? [])},\n  public: { exports: ${list(o.exports ?? [])} },\n  env: [\n${entries.map((e) => `    ${e},\n`).join("")}  ],\n})\n`;
+
+export type DataLibraryShape = {
+  readonly name?: string;
+  readonly id?: string;
+  readonly deps?: string[];
+  /** Names the manifest's `env` holds (default: `ACME_STORE_URL`). */
+  readonly env?: string[];
+  /** `src/store.bin` beside `src/store.ts`, which reads it with `new URL('./store.bin', import.meta.url)`. */
+  readonly bin?: boolean;
+  /** `literal`: `store()` calls `register('store.main', ...)`; `param`: `store(name)` calls `register(name, ...)`; `none`: `store()` registers nothing. */
+  readonly register?: "literal" | "param" | "none";
+};
+
+export const STORE_BIN = "store-bytes-1337\n";
+
+/** A library of the data seam: `package.json`, `module.ts` (with `env`), `src/index.ts` re-exporting `store` from `./store.ts`, `src/store.ts`, the ledger file, and `src/store.bin` when `bin`. */
+export function dataLibrary(sh: DataLibraryShape = {}): Tree {
+  const name = sh.name ?? STORE;
+  const root = `node_modules/${name}`;
+  const bin = sh.bin ?? false;
+  const reg = sh.register ?? "literal";
+  const title = bin ? "readFileSync(new URL('./store.bin', import.meta.url), 'utf8')" : "'lib'";
+  const impl = `const impl = () => ({ title: () => ${title} })\n`;
+  const sides = "{ real: impl, shell: impl, sim: impl }";
+  const store =
+    reg === "none"
+      ? "export function store(): number {\n  return 1\n}\n"
+      : `${impl}export function store(${reg === "param" ? "name: string" : ""}) {\n  return register(${reg === "param" ? "name" : "'store.main'"}, ${sides})\n}\n`;
+  const head = `${reg === "none" ? "" : "import { register } from '@keel/ctx'\n"}${bin ? "import { readFileSync } from 'node:fs'\n" : ""}`;
+  const out: Tree = {
+    [`${root}/package.json`]: JSON.stringify({
+      name,
+      version: "1.0.0",
+      type: "module",
+      keel: "library",
+      exports: { ".": { keel: "./src/index.ts", default: "./index.js" } },
+    }),
+    [`${root}/index.js`]: "export {}\n",
+    [`${root}/module.ts`]: envManifestSrc(sh.id ?? "store", sh.deps ?? [], quoted(sh.env ?? [STORE_ENV]), {
+      exports: ["store"],
+      capabilities: reg === "none" ? [] : ["store.main"],
+    }),
+    [`${root}/src/index.ts`]: "export { store } from './store.ts'\n",
+    [`${root}/src/store.ts`]: `${head}${store}`,
+    [`${root}/.keel/ledger.json`]: LEDGER,
+  };
+  if (bin) out[`${root}/src/store.bin`] = STORE_BIN;
+  return out;
+}
+
+export type ModShape = {
+  readonly id: string;
+  readonly deps?: string[];
+  /** `env` entries as source text (default: none). */
+  readonly env?: string[];
+  /** Files of the module, replacing the generated ones by path. */
+  readonly extra?: Tree;
+};
+
+/** The files of one module: manifest, a page contract entry `<id>.page` at `/<id>`, `Page.tsx`, `routes.ts`. */
+function moduleFiles(m: ModShape): Tree {
+  const id = m.id;
+  return {
+    [`modules/${id}/module.ts`]: envManifestSrc(id, m.deps ?? [], m.env ?? []),
+    [`modules/${id}/${id}.contract.ts`]: `import { contract } from '@keel/router/contract'\nexport const ${id} = contract('${id}', { '${id}.page': { path: '/${id}' } })\n`,
+    [`modules/${id}/Page.tsx`]:
+      "import { Box, Text } from '@keel/ui'\nexport default function Page() {\n  return (\n    <Box as=\"main\">\n      <Text>page</Text>\n    </Box>\n  )\n}\n",
+    [`modules/${id}/routes.ts`]: `import { manifest } from '@keel/router'\nimport { ${id} } from './${id}.contract.ts'\nimport Page from './Page.tsx'\nexport const routes = manifest(${id}, { '${id}.page': { component: Page } })\n`,
+    ...(m.extra ?? {}),
+  };
+}
+
+/** A project of `node` deployables (`deployables`: name to module ids), `modules` and installed `libraries`. */
+export function serverDepsProject(sh: {
+  readonly deployables: Record<string, string[]>;
+  readonly modules: ModShape[];
+  readonly libraries?: Tree[];
+  /** Added to the app's `package.json` `dependencies`. */
+  readonly dependencies?: Record<string, string>;
+}): Tree {
+  const decl = Object.entries(sh.deployables)
+    .map(([n, ms]) => `${n}: { modules: ${list(ms)}, adapter: 'node' }`)
+    .join(", ");
+  return {
+    ...base(),
+    "package.json": `${JSON.stringify({ name: "fx", private: true, type: "module", version: "1.0.0", dependencies: sh.dependencies ?? {} })}\n`,
+    "topology.ts": `import { topology } from '@keel/server'\nexport default topology({ ${decl} })\n`,
+    ...Object.assign({}, ...sh.modules.map(moduleFiles)),
+    ...Object.assign({}, ...(sh.libraries ?? [])),
+  };
+}
+
+/** The files of module `id` serving `GET /api/<id>/one` answering `{ title }` from `data(ctx)` of `data.server.ts` (the page entry is replaced); `dataSrc` is that file's source. */
+export const loaderModule = (id: string, dataSrc: string): Tree => ({
+  [`modules/${id}/${id}.contract.ts`]: `import { contract } from '@keel/router/contract'\nimport { s } from '@keel/schema'\nexport const ${id} = contract('${id}', { '${id}.get': { method: 'GET', path: '/api/${id}/one', output: s.object({ title: s.string() }) } })\n`,
+  [`modules/${id}/get.server.ts`]: `import { loader } from '@keel/router'\nimport { ok } from '@keel/schema'\nimport { ${id} } from './${id}.contract.ts'\nimport { data } from './data.server.ts'\nexport const get = loader(${id}, '${id}.get', {}, (_args, ctx) => Promise.resolve(ok({ title: data(ctx) })))\n`,
+  [`modules/${id}/routes.ts`]: `import { manifest } from '@keel/router'\nimport { ${id} } from './${id}.contract.ts'\nimport { get } from './get.server.ts'\nexport const routes = manifest(${id}, { '${id}.get': { loader: get } })\n`,
+  [`modules/${id}/data.server.ts`]: dataSrc,
+});
+
+/** `Buffer` files written under `dir` (binary-safe; `Tree` holds text only). */
+export function writeBytes(dir: string, files: Record<string, Uint8Array>): void {
+  for (const [rel, bytes] of Object.entries(files)) {
+    const full = join(dir, rel);
+    nodeFs.mkdirSync(dirname(full), { recursive: true });
+    nodeFs.writeFileSync(full, bytes);
+  }
+}
+
+/** The text of `dir/<rel>`, or `undefined` when there is none. */
+export function textAt(dir: string, rel: string): string | undefined {
+  try {
+    return nodeFs.readFileSync(join(dir, rel), "utf8");
+  } catch {
+    return undefined;
+  }
+}
+
+/** The bytes of `dir/<rel>`, or `undefined` when there is none. */
+export function bytesAt(dir: string, rel: string): Uint8Array | undefined {
+  try {
+    return nodeFs.readFileSync(join(dir, rel));
+  } catch {
+    return undefined;
+  }
+}
+
+/** The `NAME: value` pairs of service `name` in `deploy/compose.yaml` text, in file order, keys all upper case (ASSUMED layout: `services:` then a two-space `<name>:` header per service, its entries indented below). */
+export function serviceEnv(compose: string, name: string): [string, string][] {
+  const out: [string, string][] = [];
+  let inServices = false;
+  let current = "";
+  for (const line of compose.split("\n")) {
+    if (/^\S/.test(line)) {
+      inServices = line.trim() === "services:";
+      current = "";
+      continue;
+    }
+    if (!inServices) continue;
+    const head = /^ {2}([A-Za-z0-9_-]+):\s*$/.exec(line);
+    if (head !== null) {
+      current = head[1] ?? "";
+      continue;
+    }
+    const pair = /^\s{3,}([A-Z][A-Z0-9_]*):\s*(.*)$/.exec(line);
+    if (current === name && pair !== null) out.push([pair[1] ?? "", pair[2] ?? ""]);
+  }
+  return out;
+}
+
+/** The service names `deploy/compose.yaml` text declares. */
+export function serviceNames(compose: string): string[] {
+  const out: string[] = [];
+  let inServices = false;
+  for (const line of compose.split("\n")) {
+    if (/^\S/.test(line)) inServices = line.trim() === "services:";
+    else if (inServices) {
+      const head = /^ {2}([A-Za-z0-9_-]+):\s*$/.exec(line);
+      if (head !== null) out.push(head[1] ?? "");
+    }
+  }
+  return out;
+}
+
+/** Whether a `DeployEnv` key (k.deploy): `PORT` or a `KEEL_` name. */
+export const isDeployKey = (n: string): boolean => n === "PORT" || n.startsWith("KEEL_");

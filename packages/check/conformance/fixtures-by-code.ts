@@ -434,6 +434,22 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
     bad: [mod("shop", ["@acme/charts"], []), mod("charts", [], []), ...library("charts", [])],
     clean: [mod("shop", ["@acme/charts"], []), mod("charts", [], []), ...library("graphs", [])],
   },
+  // E1167 (rfc:0163): a manifest `env` entry outside `[A-Z][A-Z0-9_]*`, at the entry; the clean counterpart holds a name in the pattern.
+  E1167: {
+    opts: NO_TYPES,
+    bad: [
+      f(
+        "modules/shop/module.ts",
+        "import { module } from '@keel/compiler'\nexport default module({ id: 'shop', deps: [], capabilities: [], public: { exports: [] }, env: ['shop_url'] })\n",
+      ),
+    ],
+    clean: [
+      f(
+        "modules/shop/module.ts",
+        "import { module } from '@keel/compiler'\nexport default module({ id: 'shop', deps: [], capabilities: [], public: { exports: [] }, env: ['SHOP_URL'] })\n",
+      ),
+    ],
+  },
   // E1162 (rfc:0163): an installed library listed in `deps` ships no `.keel/ledger.json`, at the entry; the clean counterpart ships one.
   E1162: {
     opts: NO_TYPES,

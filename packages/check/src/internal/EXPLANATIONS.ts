@@ -95,6 +95,13 @@ const ROWS: readonly Row[] = [
     "k.bundle",
   ],
   [
+    "E1014",
+    "keel build: a file a bundled package reads through new URL(x, import.meta.url) cannot be copied beside server.mjs",
+    "The bundle reads it relative to server.mjs; a missing, computed or outside name would fail only when the server runs.",
+    "ship the file in the package, or name it with a literal path inside the package file's folder",
+    "k.server-deps",
+  ],
+  [
     "E1015",
     "a relative specifier resolving outside the project",
     "keel check reads the project's files only, so no rule (E1004, E1107, E1111, E1571) follows that file.",
@@ -401,6 +408,13 @@ const ROWS: readonly Row[] = [
     "Module ids prefix route ids, store ids, transaction names and error codes, so each holder needs its own.",
     "rename the app module, or drop one of the two libraries",
     "k.library",
+  ],
+  [
+    "E1167",
+    "an env entry that is no string literal matching [A-Z][A-Z0-9_]*, or a key DeployEnv reads",
+    "deploy/compose.yaml passes each name to the deployables serving the module; the deploy keys are Keel's own.",
+    "env: ['notes_url'] -> env: ['NOTES_URL']",
+    "k.server-deps",
   ],
   [
     "E1160",

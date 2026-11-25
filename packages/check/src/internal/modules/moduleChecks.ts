@@ -15,6 +15,7 @@ import type { ModuleInfo } from "./ModuleInfo.ts";
 import { addEntryFix } from "./addEntryFix.ts";
 import { depsCycles } from "./depsCycles.ts";
 import { discoverModules } from "./discoverModules.ts";
+import { envNames } from "./envNames.ts";
 import { guardEdges } from "./guardEdges.ts";
 import { libraryManifests } from "./libraryManifests.ts";
 import { moduleDiag } from "./moduleDiag.ts";
@@ -136,7 +137,7 @@ function access({ file, module, facts, layouts }: Scanned, man: Manifest, p: Pro
 }
 
 /**
- * The k.module project pass (E1151-E1158, E1165) and the k.library manifest rules (E1163, E1166) over every parsed
+ * The k.module project pass (E1151-E1158, E1165), the k.library manifest rules (E1163, E1166) and E1167 (k.server-deps) over every parsed
  * code file: discover manifests (`modules/<id>/module.ts` and a library's `node_modules/<name>/module.ts`, its
  * `package.json` read from `files`), map each non-test file to its module by folder, read the manifests statically,
  * then check deps cycles, the public surface, `std` config (E1158), id prefixes (contract keys among them), and
@@ -182,6 +183,7 @@ export function moduleChecks(
       projectOf,
     ),
     ...libraryManifests(modules, byKey),
+    ...envNames(modules),
   ];
   for (const m of modules) {
     out.push(...publicMissing(m, stems.get(m) ?? new Set()));

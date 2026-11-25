@@ -12,5 +12,6 @@ export function readManifest(path: string, src: string): Manifest | null {
     id: a.id,
     deps: a.deps === null ? [] : stringItems(a.deps),
     exports: a.exports === null ? [] : stringItems(a.exports),
+    env: a.env === null ? [] : stringItems(a.env),
   };
 }
