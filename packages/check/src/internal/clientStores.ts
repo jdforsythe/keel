@@ -213,16 +213,27 @@ const readSite = (site: Site, file: SourceFile, project: readonly SourceFile[]):
  * that function's parameters (or their members) is a store maker reading those argument paths and holding the
  * classes the read took, and the site is judged at the maker's callers. Read again until the makers stop changing, so
  * a maker calling a maker is one; the makers the round after `MAKER_ROUNDS` still makes or changes are `unsettled`.
+ * `storing` holds the key of each library one of whose files uses `store` of `@keel/store`.
  */
 function storeMakers(
   checked: readonly Checked[],
   modules: readonly ModuleInfo[],
   projectOf: (path: string) => readonly SourceFile[],
-): { readonly makers: Makers; readonly deferred: ReadonlySet<string>; readonly unsettled: ReadonlySet<string> } {
+): {
+  readonly makers: Makers;
+  readonly deferred: ReadonlySet<string>;
+  readonly unsettled: ReadonlySet<string>;
+  readonly storing: ReadonlySet<string>;
+} {
   const libs = checked.filter(
     ({ file }) =>
       moduleOf(file.path, modules)?.library === true && !isTestPath(file.path) && !SERVER_ONLY_NAME.test(file.path),
   );
+  const storing = new Set<string>();
+  for (const { file, parsed } of libs) {
+    const key = moduleOf(file.path, modules)?.key;
+    if (key !== undefined && storeUses(file, parsed.program, projectOf(file.path)).length > 0) storing.add(key);
+  }
   let makers: Makers = new Map();
   let deferred = new Set<string>();
   let seen = new Map<string, string>();
@@ -255,11 +266,11 @@ function storeMakers(
     makers = next;
     deferred = later;
     const changed = [...shown].filter(([k, v]) => seen.get(k) !== v).map(([k]) => k);
-    if (changed.length === 0 && shown.size === seen.size) return { makers, deferred, unsettled: new Set() };
-    if (round === MAKER_ROUNDS) return { makers, deferred, unsettled: new Set(changed) };
+    if (changed.length === 0 && shown.size === seen.size) return { makers, deferred, unsettled: new Set(), storing };
+    if (round === MAKER_ROUNDS) return { makers, deferred, unsettled: new Set(changed), storing };
     seen = shown;
   }
-  return { makers, deferred, unsettled: new Set() };
+  return { makers, deferred, unsettled: new Set(), storing };
 }
 
 /**
@@ -276,12 +287,12 @@ export function clientStores(
   projectOf: (path: string) => readonly SourceFile[],
 ): Diagnostic[] {
   const out: Diagnostic[] = [];
-  const { makers, deferred, unsettled } = storeMakers(checked, modules, projectOf);
+  const { makers, deferred, unsettled, storing } = storeMakers(checked, modules, projectOf);
   for (const { file, parsed } of checked) {
     if (LIBRARY.test(file.path) || isTestPath(file.path)) continue;
     const project = projectOf(file.path);
     const uses = storeUses(file, parsed.program, project);
-    if (uses.length === 0 && makers.size === 0) continue;
+    if (uses.length === 0 && makers.size === 0 && storing.size === 0) continue;
     const judging = judges(file, modules, project).filter((m) => m.manifest !== null);
     if (judging.length === 0) continue;
     const at = (pos: number, message: string, fix?: string): void => {
@@ -291,9 +302,9 @@ export function clientStores(
       if ("other" in use) at(use.other, unfollowed(use.name));
       else if (use.name === "stores") at(use.call, STORES);
     }
-    if (makers.size > 0)
-      for (const use of makerValueUses(file, parsed.program, project, makers, modules))
-        at(use.at, makerUnfollowed(use.name));
+    if (makers.size > 0 || storing.size > 0)
+      for (const use of makerValueUses(file, parsed.program, project, makers, storing, modules))
+        at(use.at, use.call ? notReadable(`${use.name}()`) : makerUnfollowed(use.name));
     for (const site of sitesOf(file, parsed.program, uses, makers, project)) {
       if (site.key !== undefined && unsettled.has(site.key)) {
         const callee = site.call.callee;

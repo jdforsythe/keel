@@ -6,8 +6,9 @@ import type { SourceFile } from "../types/SourceFile.ts";
  * files and make it a library. `view` gives the path every rule reads such a file at, `<p>modules/<id>/<f>`, and any
  * other path unchanged; `real` undoes it. `folder` is the package folder (`<p>node_modules/<name>/`) holding a library
  * file, undefined for any other path. `packages` holds each library's `package.json` among the files;
- * `entries` maps each specifier a library's `exports` gives a `keel` source to under `src/` or `unsafe/` (`@acme/charts`,
- * `@acme/charts/x`) to that file's view path.
+ * `entries` maps each specifier a library's `exports` gives a source under `src/` or `unsafe/` (`@acme/charts`,
+ * `@acme/charts/x`), at its `keel` condition, else at the target Node imports (a string, or `node`, `import` or
+ * `default`), to that file's view path; a `*` pattern gives none.
  */
 export type LibraryView = {
   readonly view: (path: string) => string;

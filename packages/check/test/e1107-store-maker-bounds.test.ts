@@ -64,9 +64,10 @@ it("a maker's own pii class is its callers': a clean argument still reports it a
   ]);
 });
 
-it("a maker used as a value in client code is reported at its name; one check cannot follow is not judged", () => {
+it("a maker used as a value in client code is reported at its name, and a call through it as not readable", () => {
   expect(app(hits(project([page(`const m = chart\nexport const a = m('shop.a', { data: ${P} })`)])))).toEqual([
     `modules/shop/Page.tsx:4 ${USE("chart")}`,
+    "modules/shop/Page.tsx:5 store state not readable at m(); cannot show its .pii() classes",
   ]);
   expect(
     app(hits(project([page(`const apply = (f: unknown, x: unknown) => x\nexport const a = apply(chart, ${P})`)]))),
