@@ -23,7 +23,13 @@ import { topologyFor } from "./topologyFor.ts";
 /** Kernel and stdlib code and dependencies: a store a package creates is the package's. */
 const LIBRARY = /^(?:packages|node_modules|\.keel)\//;
 const WRAPPERS = new Set(["ParenthesizedExpression", "TSAsExpression", "TSSatisfiesExpression", "TSNonNullExpression"]);
-const NOT_READABLE = "store state not readable statically; cannot show its .pii() classes";
+const UNREAD = "store state not readable at ; cannot show its .pii() classes";
+/** E1107's message for a state schema it cannot read, naming the part, cut from its front to fit 89 units. */
+const notReadable = (part: string): string => {
+  const room = 89 - UNREAD.length;
+  const shown = part.length <= room ? part : `...${part.slice(part.length - room + 3)}`;
+  return `store state not readable at ${shown}; cannot show its .pii() classes`;
+};
 const STORES = "stores() in client code can send every request store to #k-state";
 type Use = { readonly call: number; readonly name: string } | { readonly other: number; readonly name: string };
 const unfollowed = (name: string): string => `${name} of @keel/store used other than as a call; check cannot follow it`;
@@ -177,11 +183,12 @@ export function clientStores(
       }
       const arg = call.arguments[0];
       if (arg === undefined) continue;
-      const classes = storeClasses(arg, file, project);
-      if (classes === undefined) {
-        at(arg.start, NOT_READABLE);
+      const read = storeClasses(arg, file, project);
+      if ("unread" in read) {
+        at(arg.start, notReadable(read.unread));
         continue;
       }
+      const classes = read.classes;
       const lacking = judging.flatMap((m) => {
         const listed = new Set(m.manifest?.clientPii.entries.map((e) => e.value) ?? []);
         const missing = [...classes].filter((c) => !listed.has(c));

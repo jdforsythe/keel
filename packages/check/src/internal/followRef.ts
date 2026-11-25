@@ -1,3 +1,4 @@
+import { references } from "@keel/compiler/internal";
 import type { Expression, ModuleExportName, Program } from "oxc-parser";
 import type { SourceFile } from "../types/SourceFile.ts";
 import type { FollowedRef } from "./FollowedRef.ts";
@@ -99,14 +100,16 @@ function binding(name: string, file: SourceFile, project: readonly SourceFile[],
   if (init !== undefined) return followRef(init, file, project, hops + 1);
   const ref = scope.imports.get(name);
   if (ref !== undefined) return imported(ref, file, project, hops + 1);
-  return scope.declared.has(name) ? null : "global";
+  // A name bound in a nested scope (a parameter, a local) is not followed; only one the file never binds is global.
+  return scope.declared.has(name) || references(parseFile(file).program).declared.has(name) ? null : "global";
 }
 
 /**
  * `expr` in `file` followed to the expression it names: parentheses and `as`/`satisfies` removed, an identifier to
  * its top-level `const` or through imports, re-exports and `export *` of project files, and `ns.Name` of a namespace
  * import to that file's export. A binding from a package is that package's export (`name` `*` for a namespace
- * import), a name the file never declares `"global"`; anything else it cannot follow is `null`.
+ * import), a name the file never binds in any scope `"global"`; anything else it cannot follow (a parameter or a local
+ * among them) is `null`.
  */
 export function followRef(expr: Expression, file: SourceFile, project: readonly SourceFile[], hops = 0): FollowedRef {
   if (hops > MAX_HOPS) return null;
