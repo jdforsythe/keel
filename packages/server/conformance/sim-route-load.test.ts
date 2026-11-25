@@ -41,11 +41,20 @@ test("In an empty replay, with a `ctx.clock.after(10)` waiter pending, `renderRo
   expect(await loadWith(10)).toEqual({ now: 0, waiter: false, text: "" });
 });
 
+/** Generated waits the property case runs. */
+const RUNS = 5;
+/**
+ * What the property case bounds: per run, an app made on a fresh replay and one renderRoute that imports its routes,
+ * about 65 ms here on a quiet machine and up to 150 ms beside other work. The bound is 2,000 ms a run, so a runner ten
+ * times slower (scale 0.1) still has 200 ms a run.
+ */
+const LOAD_BOUND = RUNS * 2_000;
+
 test("`renderRoute` given `app` and `routes` as an import resolves with the clock at 0 and the waiter not resolved, for a `ctx.clock.after(d)` waiter of any `d`", async () => {
   await fc.assert(
     fc.asyncProperty(fc.integer({ min: 1, max: 60_000 }), async (d) => {
       expect(await loadWith(d)).toEqual({ now: 0, waiter: false, text: "" });
     }),
-    { seed: SEED, numRuns: 5 },
+    { seed: SEED, numRuns: RUNS },
   );
-});
+}, LOAD_BOUND);

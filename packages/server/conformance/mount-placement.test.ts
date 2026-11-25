@@ -66,6 +66,15 @@ async function resumedPost(html: string, input: Typed): Promise<readonly Entry[]
   return out;
 }
 
+/** Generated inputs the property case runs. */
+const RUNS = 12;
+/**
+ * What the generated-input case bounds: per run, one renderRoute and one resumeDocument of the sign-in page, three
+ * fires each, about 60 ms here on a quiet machine and up to 120 ms beside other work. The bound is 1,500 ms a run, so a
+ * runner ten times slower (scale 0.1) still has 150 ms a run.
+ */
+const GENERATED_BOUND = RUNS * 1_500;
+
 describe("k.mount: one page module records equal documents() under renderRoute and under createApp then resumeDocument", () => {
   it("for invalid input both record nothing, and for valid input both record the one POST to the mount", async () => {
     const html = await served("/sign-in");
@@ -89,9 +98,9 @@ describe("k.mount: one page module records equal documents() under renderRoute a
         expect(resumed).toEqual(rendered);
         expect(rendered.length).toBe(input.email.length >= 3 && input.password.length >= 2 ? 1 : 0);
       }),
-      { seed: SEED, numRuns: 12 },
+      { seed: SEED, numRuns: RUNS },
     );
-  });
+  }, GENERATED_BOUND);
 
   it("a Link to the mount records one GET in both, and the served link is the mount's Href as written", async () => {
     const html = await served("/");

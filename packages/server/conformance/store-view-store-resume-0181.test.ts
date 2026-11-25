@@ -13,6 +13,15 @@ import { appOf } from "./resume-graph-app.ts";
 
 const items = fc.array(fc.stringMatching(/^[a-z]{1,6}$/), { maxLength: 4 });
 const FRESH = () => import("../../testing/conformance/view-store-page.ts");
+/** Generated item lists the property case runs. */
+const RUNS = 8;
+/**
+ * What the property case bounds: per run, an app made and its page served, one renderRoute, one resumeDocument that
+ * imports the page and one fire, about 45 ms here on a quiet machine and up to 100 ms beside other work; the first run
+ * also loads the page's modules, about 100 ms. The bound is 1,000 ms a run and 2,000 ms for the loading, so a runner ten
+ * times slower (scale 0.1) still has 100 ms a run and 200 ms to load.
+ */
+const RESUME_BOUND = RUNS * 1_000 + 2_000;
 
 test("`resumeDocument` of the page's document from `createApp` gives `state()['v.list']` equal to the server's.", async () => {
   await fc.assert(
@@ -34,6 +43,6 @@ test("`resumeDocument` of the page's document from `createApp` gives `state()['v
       expect(t.find("v.items").text).toBe([...served, "new"].join(","));
       t.dispose();
     }),
-    { seed: SEED, numRuns: 8 },
+    { seed: SEED, numRuns: RUNS },
   );
-});
+}, RESUME_BOUND);
