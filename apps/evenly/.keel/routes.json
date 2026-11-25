@@ -1,1 +1,1 @@
-{"data":{"app.start":{"actions":[],"guard":null,"layout":null,"module":"app","params":null,"path":"/","search":null}},"hash":"fnv1a:4b358bc1"}
+{"data":{"app.start":{"actions":[],"guard":null,"layout":null,"module":"app","params":null,"path":"/","search":null},"trip.show":{"actions":[],"guard":null,"layout":null,"module":"trip","params":null,"path":"/trip","search":null}},"hash":"fnv1a:882e1eb9"}

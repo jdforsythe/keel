@@ -2,7 +2,7 @@ import { module } from "@keel/compiler";
 
 export default module({
   id: "app",
-  deps: [],
+  deps: ["trip"],
   capabilities: [],
   public: { exports: [] },
 });

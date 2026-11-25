@@ -18,6 +18,8 @@
     "@keel/runtime-dom": "workspace:*",
     "@keel/schema": "workspace:*",
     "@keel/server": "workspace:*",
+    "@keel/std-brands": "workspace:*",
+    "@keel/std-headless": "workspace:*",
     "@keel/store": "workspace:*",
     "@keel/ui": "workspace:*"
   },
@@ -26,6 +28,8 @@
     "@keel/testing": "workspace:*",
     "@keel/tooling": "workspace:*",
     "@types/node": "^22",
-    "vite": "^8.3.6"
+    "fast-check": "^3",
+    "vite": "^8.3.6",
+    "z3-solver": "5.3.3"
   }
 }

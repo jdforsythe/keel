@@ -93,6 +93,12 @@ importers:
       '@keel/server':
         specifier: workspace:*
         version: link:../../packages/server
+      '@keel/std-brands':
+        specifier: workspace:*
+        version: link:../../packages/std-brands
+      '@keel/std-headless':
+        specifier: workspace:*
+        version: link:../../packages/std-headless
       '@keel/store':
         specifier: workspace:*
         version: link:../../packages/store
@@ -112,9 +118,15 @@ importers:
       '@types/node':
         specifier: ^22
         version: 22.20.5
+      fast-check:
+        specifier: ^3
+        version: 3.23.2
       vite:
         specifier: ^8.3.6
         version: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)
+      z3-solver:
+        specifier: 5.3.3
+        version: 5.3.3
 
   apps/golden-1:
     dependencies:
