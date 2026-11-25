@@ -1,5 +1,8 @@
 import { DatabaseSync } from "node:sqlite";
 import { fileURLToPath } from "node:url";
+import { attempt } from "@keel/schema";
+import { raise } from "../../unsafe/raise.ts";
+import { settleNow } from "../../unsafe/settleNow.ts";
 import type { DbStorage } from "../DbStorage.ts";
 import { LAYOUT } from "../internal/LAYOUT.ts";
 import { checkLayout } from "../internal/checkLayout.ts";
@@ -19,16 +22,16 @@ const UPSERT = "insert into keel_kv (key, value) values (?, ?) on conflict (key)
  * Processes on one host may share the file.
  */
 export async function sqlite(url: URL): Promise<DbStorage> {
-  let db: DatabaseSync;
-  try {
-    db = new DatabaseSync(fileURLToPath(url));
-  } catch {
-    throw dbError(
-      "E2153",
-      "KEEL_DATABASE_URL: SQLite cannot open the file; check the file: URL and that its folder exists",
+  const opened = attempt(() => new DatabaseSync(fileURLToPath(url)));
+  if (!opened.ok)
+    return raise(
+      dbError(
+        "E2153",
+        "KEEL_DATABASE_URL: SQLite cannot open the file; check the file: URL and that its folder exists",
+      ),
     );
-  }
-  try {
+  const db = opened.value;
+  const setUp = settleNow(() => {
     db.exec("pragma busy_timeout = 5000");
     db.exec("pragma journal_mode = wal");
     db.exec("pragma synchronous = full");
@@ -40,10 +43,12 @@ export async function sqlite(url: URL): Promise<DbStorage> {
       if (checkLayout(row?.value))
         db.prepare("insert into keel_meta (name, value) values ('layout', ?)").run(String(LAYOUT));
     });
-  } catch (e) {
+  });
+  if (setUp.threw) {
     db.close();
-    if (e instanceof Error && "code" in e && (e.code === "E2152" || e.code === "E2153")) throw e;
-    throw dbError("E2153", "KEEL_DATABASE_URL: SQLite cannot open or set up the database");
+    const e = setUp.error;
+    if (e instanceof Error && "code" in e && (e.code === "E2152" || e.code === "E2153")) return raise(e);
+    return raise(dbError("E2153", "KEEL_DATABASE_URL: SQLite cannot open or set up the database"));
   }
   const select = db.prepare(SELECT);
   const upsert = db.prepare(UPSERT);
@@ -55,12 +60,9 @@ export async function sqlite(url: URL): Promise<DbStorage> {
   };
   const run = async <T>(op: string, texts: readonly (string | undefined)[], fn: () => T): Promise<T> => {
     checkText(texts);
-    if (!db.isOpen) throw new Error(`std.db sqlite: ${op} after close()`);
-    try {
-      return fn();
-    } catch (e) {
-      throw opFailed("sqlite", op, e);
-    }
+    if (!db.isOpen) return raise(new Error(`std.db sqlite: ${op} after close()`));
+    const r = settleNow(fn);
+    return r.threw ? raise(opFailed("sqlite", op, r.error)) : r.value;
   };
   return {
     get: (key) => run("get", [key], () => values([key]).get(key) ?? null),
@@ -96,12 +98,12 @@ export async function sqlite(url: URL): Promise<DbStorage> {
 /** Runs `fn` in `BEGIN IMMEDIATE`; commits unless it throws or returns `false`. */
 function tx<T>(db: DatabaseSync, fn: () => T): T {
   db.exec("begin immediate");
-  try {
+  const s = settleNow(() => {
     const r = fn();
     db.exec(r === false ? "rollback" : "commit");
     return r;
-  } catch (e) {
-    if (db.isTransaction) db.exec("rollback");
-    throw e;
-  }
+  });
+  if (!s.threw) return s.value;
+  if (db.isTransaction) db.exec("rollback");
+  return raise(s.error);
 }

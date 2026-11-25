@@ -1,7 +1,7 @@
+import { postgres } from "@keel/std-db/postgres";
 // The `pg` pool the Postgres driver builds when no `clientFactory` is given: its options and its error listeners, seen
 // through a stand-in for the `pg` module.
 import { expect, test, vi } from "vitest";
-import { postgres } from "../src/postgres/postgres.ts";
 
 type Listener = (...args: readonly unknown[]) => unknown;
 

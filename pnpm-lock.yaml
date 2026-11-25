@@ -1832,12 +1832,6 @@ importers:
 
   packages/std-db:
     dependencies:
-      '@keel/check':
-        specifier: workspace:*
-        version: link:../check
-      '@keel/ctx':
-        specifier: workspace:*
-        version: link:../ctx
       pg:
         specifier: 8.23.1
         version: 8.23.1
@@ -1845,9 +1839,18 @@ importers:
       '@electric-sql/pglite':
         specifier: 0.5.16
         version: 0.5.16
+      '@keel/check':
+        specifier: workspace:*
+        version: link:../check
+      '@keel/cli':
+        specifier: workspace:*
+        version: link:../cli
       '@keel/compiler':
         specifier: workspace:*
         version: link:../compiler
+      '@keel/ctx':
+        specifier: workspace:*
+        version: link:../ctx
       '@keel/router':
         specifier: workspace:*
         version: link:../router

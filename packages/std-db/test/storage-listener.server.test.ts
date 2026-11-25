@@ -2,7 +2,7 @@
 // the client that replaced it.
 import type { StorageReport } from "@keel/ctx";
 import { expect, test, vi } from "vitest";
-import { storageListener } from "../src/postgres/storageListener.ts";
+import { storageListener } from "../src/postgres/storageListener.server.ts";
 
 type Listener = (...args: readonly unknown[]) => unknown;
 

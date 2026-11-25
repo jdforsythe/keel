@@ -3,4 +3,4 @@ export type { DbStorage } from "../DbStorage.ts";
 export type { PgClient } from "./PgClient.ts";
 export type { PgPool } from "./PgPool.ts";
 export type { PostgresOptions } from "./PostgresOptions.ts";
-export { postgres } from "./postgres.ts";
+export { postgres } from "./postgres.server.ts";

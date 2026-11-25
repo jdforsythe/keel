@@ -6,16 +6,16 @@ import { DatabaseSync } from "node:sqlite";
 import { pathToFileURL } from "node:url";
 import { check } from "@keel/check";
 import "@keel/std-db/tools";
+import type { PgClient } from "@keel/std-db/postgres";
+import type { PgPool } from "@keel/std-db/postgres";
+import { postgres } from "@keel/std-db/postgres";
+import { sqlite } from "@keel/std-db/sqlite";
 import { afterEach, describe, expect, test } from "vitest";
-import { removeDir, tempDir } from "../conformance/fixtures.ts";
 import { checkLayout } from "../src/internal/checkLayout.ts";
 import { dbError } from "../src/internal/dbError.ts";
 import { distinctKeys } from "../src/internal/distinctKeys.ts";
 import { opFailed } from "../src/internal/opFailed.ts";
-import type { PgClient } from "../src/postgres/PgClient.ts";
-import type { PgPool } from "../src/postgres/PgPool.ts";
-import { postgres } from "../src/postgres/postgres.ts";
-import { sqlite } from "../src/sqlite/sqlite.ts";
+import { removeDir, tempDir } from "./support.ts";
 
 /** The rejection of `p`; fails when `p` resolves. */
 async function rejection(p: Promise<unknown>): Promise<unknown> {

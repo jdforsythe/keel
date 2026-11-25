@@ -1,5 +1,8 @@
 import type { StorageWrite } from "@keel/ctx";
+import { attempt } from "@keel/schema";
 import pg from "pg";
+import { raise } from "../../unsafe/raise.ts";
+import { settle } from "../../unsafe/settle.ts";
 import type { DbStorage } from "../DbStorage.ts";
 import { LAYOUT } from "../internal/LAYOUT.ts";
 import { checkLayout } from "../internal/checkLayout.ts";
@@ -10,9 +13,9 @@ import { opFailed } from "../internal/opFailed.ts";
 import type { PgClient } from "./PgClient.ts";
 import type { PgPool } from "./PgPool.ts";
 import type { PostgresOptions } from "./PostgresOptions.ts";
-import { notifyPayloads } from "./notifyPayloads.ts";
-import { storageListener } from "./storageListener.ts";
-import { verifiedSslmode } from "./verifiedSslmode.ts";
+import { notifyPayloads } from "./notifyPayloads.server.ts";
+import { storageListener } from "./storageListener.server.ts";
+import { verifiedSslmode } from "./verifiedSslmode.server.ts";
 
 const SELECT = "select key, value from keel_kv where key = any($1::text[])";
 const UPSERT =
@@ -37,15 +40,16 @@ const field = (row: unknown, name: string): unknown =>
  */
 export async function postgres(url: URL, options: PostgresOptions = {}): Promise<DbStorage> {
   if (url.protocol !== "postgres:" && url.protocol !== "postgresql:")
-    throw dbError("E2153", "KEEL_DATABASE_URL is not a postgres: or postgresql: URL");
+    return raise(dbError("E2153", "KEEL_DATABASE_URL is not a postgres: or postgresql: URL"));
   const pool: PgPool = options.clientFactory?.() ?? quietPool(url);
   let token = "";
-  try {
-    await inTx(pool, async (c) => {
+  const opened = await settle(() =>
+    inTx(pool, async (c) => {
       await c.query(OPEN_LOCK);
       if (options.clientFactory === undefined) {
         const xid = field((await c.query("select pg_current_xact_id()::text as x")).rows[0], "x");
-        if (typeof xid !== "string" || !/^\d+$/.test(xid)) throw new Error("the transaction id is not a number");
+        if (typeof xid !== "string" || !/^\d+$/.test(xid))
+          return raise(new Error("the transaction id is not a number"));
         token = xid;
       }
       await c.query("create table if not exists keel_kv (key text primary key, value text not null)");
@@ -54,15 +58,17 @@ export async function postgres(url: URL, options: PostgresOptions = {}): Promise
       if (checkLayout(field(r.rows[0], "value")))
         await c.query("insert into keel_meta (name, value) values ('layout', $1)", [String(LAYOUT)]);
       return true;
-    });
-  } catch (e) {
-    await pool.end().catch(() => undefined);
-    if (e instanceof Error && "code" in e && (e.code === "E2152" || e.code === "E2153")) throw e;
-    throw dbError("E2153", "KEEL_DATABASE_URL: the Postgres database cannot be reached or set up");
+    }),
+  );
+  if (opened.threw) {
+    void (await attempt(() => pool.end()));
+    const e = opened.error;
+    if (e instanceof Error && "code" in e && (e.code === "E2152" || e.code === "E2153")) return raise(e);
+    return raise(dbError("E2153", "KEEL_DATABASE_URL: the Postgres database cannot be reached or set up"));
   }
   let closed = false;
   const live = (op: string): void => {
-    if (closed) throw new Error(`std.db postgres: ${op} after close()`);
+    if (closed) raise(new Error(`std.db postgres: ${op} after close()`));
   };
   const values = async (q: PgPool | PgClient, keys: readonly string[]) => {
     const out = new Map<string, string>();
@@ -77,8 +83,8 @@ export async function postgres(url: URL, options: PostgresOptions = {}): Promise
     const keys = distinctKeys(writes);
     checkText(writes.flatMap((w) => [w.key, w.value]));
     live(check ? "commit" : "set");
-    try {
-      return await inTx(pool, async (c) => {
+    const r = await settle(() =>
+      inTx(pool, async (c) => {
         await c.query(LOCK, [keys]);
         if (check) {
           const found = await values(c, keys);
@@ -95,20 +101,17 @@ export async function postgres(url: URL, options: PostgresOptions = {}): Promise
             : [];
         if (announced.length > 0) await c.query(NOTIFY, [notifyPayloads(token, announced)]);
         return true;
-      });
-    } catch (e) {
-      throw opFailed("postgres", check ? "commit" : "set", e);
-    }
+      }),
+    );
+    return r.threw ? raise(opFailed("postgres", check ? "commit" : "set", r.error)) : r.value;
   };
   const readKeys = async (keys: readonly string[]) => {
     checkText(keys);
     live("read");
-    try {
-      const found = await values(pool, keys);
-      return keys.map((k) => found.get(k) ?? null);
-    } catch (e) {
-      throw opFailed("postgres", "read", e);
-    }
+    const r = await settle(() => values(pool, keys));
+    if (r.threw) return raise(opFailed("postgres", "read", r.error));
+    const found = r.value;
+    return keys.map((k) => found.get(k) ?? null);
   };
   const listener = options.clientFactory === undefined ? storageListener(url, token) : undefined;
   return {
@@ -144,18 +147,17 @@ function quietPool(url: URL): PgPool {
 /** Runs `fn` on one client in a read committed transaction, so each statement after a lock sees what the lock holder committed; `false` rolls back. A failed rollback drops the client. */
 async function inTx(pool: PgPool, fn: (c: PgClient) => Promise<boolean>): Promise<boolean> {
   const c = await pool.connect();
-  let broken = false;
-  try {
+  const s = await settle(async () => {
     await c.query("begin isolation level read committed");
     const r = await fn(c);
     await c.query(r ? "commit" : "rollback");
     return r;
-  } catch (e) {
-    await c.query("rollback").catch(() => {
-      broken = true;
-    });
-    throw e;
-  } finally {
-    c.release(broken);
+  });
+  if (!s.threw) {
+    c.release(false);
+    return s.value;
   }
+  const rolled = await attempt(() => c.query("rollback"));
+  c.release(!rolled.ok);
+  return raise(s.error);
 }

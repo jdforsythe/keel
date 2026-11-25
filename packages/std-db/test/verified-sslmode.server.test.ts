@@ -1,7 +1,7 @@
 // `sslmode=require` and `sslmode=prefer` reach `pg` as `verify-full`, which `pg` reads them as, so its security
 // warning is never printed.
 import { expect, test } from "vitest";
-import { verifiedSslmode } from "../src/postgres/verifiedSslmode.ts";
+import { verifiedSslmode } from "../src/postgres/verifiedSslmode.server.ts";
 
 const base = "postgres://u:p@db.example:5432/app";
 

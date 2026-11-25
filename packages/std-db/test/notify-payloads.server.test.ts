@@ -1,7 +1,7 @@
 // Property: the `keel_storage` payloads of any sorted key list are JSON `{"o","k"}`, each at most 7,900 bytes, and together hold the keys once, in order (std.db).
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { notifyPayloads } from "../src/postgres/notifyPayloads.ts";
+import { notifyPayloads } from "../src/postgres/notifyPayloads.server.ts";
 
 test("payloads split any key list under 7,900 bytes and lose or repeat no key", () => {
   fc.assert(

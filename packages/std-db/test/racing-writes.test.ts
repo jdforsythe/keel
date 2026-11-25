@@ -12,7 +12,7 @@ import { createApp, topology } from "@keel/server";
 import { store, transaction, tx } from "@keel/store";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { KINDS, NOTES_KEY, SEED, field, makeRig } from "../conformance/fixtures.ts";
+import { KINDS, NOTES_KEY, SEED, field, makeRig } from "./support.ts";
 
 const Notes = s.object({ items: s.array(s.string()) });
 const Add = s.object({ text: s.string() });
@@ -30,7 +30,7 @@ let arrivals: ((h: Held) => void)[] = [];
 const arrived = (): Promise<Held> => new Promise((r) => arrivals.push(r));
 
 const write = action(t, "t.page", { input: Add, stores: factory }, async ({ text }, { stores }) => {
-  tx(stores.add, { text });
+  void tx(stores.add, { text });
   await new Promise<void>((release) => {
     const h = { text, release };
     held.push(h);

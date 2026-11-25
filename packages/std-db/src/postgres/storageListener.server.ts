@@ -1,16 +1,16 @@
 import type { StorageReport } from "@keel/ctx";
+import { attempt } from "@keel/schema";
 import pg from "pg";
+import { raise } from "../../unsafe/raise.ts";
+import { settle } from "../../unsafe/settle.ts";
 import type { StorageListening } from "./StorageListening.ts";
-import { verifiedSslmode } from "./verifiedSslmode.ts";
+import { verifiedSslmode } from "./verifiedSslmode.server.ts";
 
 /** The keys of a `keel_storage` payload from another driver, else nothing: its own token's, and anything not shaped `{"o","k"}`, is dropped. */
 function foreignKeys(payload: string, own: string): readonly string[] | undefined {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(payload);
-  } catch {
-    return undefined;
-  }
+  const read = attempt((): unknown => JSON.parse(payload));
+  if (!read.ok) return undefined;
+  const parsed = read.value;
   if (typeof parsed !== "object" || parsed === null) return undefined;
   const o: unknown = Reflect.get(parsed, "o");
   const k: unknown = Reflect.get(parsed, "k");
@@ -32,7 +32,7 @@ export function storageListener(url: URL, token: string): StorageListening {
     client.removeAllListeners();
     client.on("error", () => undefined);
     if (live !== client) {
-      void client.end().catch(() => undefined);
+      void attempt(() => client.end());
       return;
     }
     live = undefined;
@@ -40,7 +40,7 @@ export function storageListener(url: URL, token: string): StorageListening {
     const gone = [...watchers];
     watchers.clear();
     if (lost) for (const on of gone) on({ kind: "lost" });
-    void client.end().catch(() => undefined);
+    void attempt(() => client.end());
   };
   const open = async (): Promise<pg.Client> => {
     const client = new pg.Client({
@@ -54,21 +54,18 @@ export function storageListener(url: URL, token: string): StorageListening {
       if (m.channel !== "keel_storage" || m.payload === undefined) return;
       const keys = foreignKeys(m.payload, token);
       if (keys === undefined || keys.length === 0) return;
-      for (const on of [...watchers])
-        try {
-          on({ kind: "committed", keys });
-        } catch {
-          // A watcher's throw never reaches the connection.
-        }
+      // A watcher's throw never reaches the connection.
+      for (const on of [...watchers]) void attempt(() => on({ kind: "committed", keys }));
     });
-    try {
+    const listening = await settle(async () => {
       await client.connect();
       await client.query("listen keel_storage");
-    } catch (e) {
+    });
+    if (listening.threw) {
       client.removeAllListeners();
       client.on("error", () => undefined);
-      await client.end().catch(() => undefined);
-      throw e;
+      void (await attempt(() => client.end()));
+      return raise(listening.error);
     }
     live = client;
     return client;
@@ -78,24 +75,24 @@ export function storageListener(url: URL, token: string): StorageListening {
     const pending = opening;
     opening = undefined;
     live = undefined;
-    const client = await pending.catch(() => undefined);
-    if (client === undefined) return;
+    const settled = await attempt(() => pending);
+    if (!settled.ok) return;
+    const client = settled.value;
     client.removeAllListeners();
     client.on("error", () => undefined);
-    await client.end().catch(() => undefined);
+    void (await attempt(() => client.end()));
   };
   return {
     watch: async (on) => {
       const mine = on;
       watchers.add(mine);
       opening ??= open();
-      const attempt = opening;
-      try {
-        await attempt;
-      } catch (e) {
+      const pending = opening;
+      const opened = await settle(() => pending);
+      if (opened.threw) {
         watchers.delete(mine);
-        if (opening === attempt) opening = undefined;
-        throw e;
+        if (opening === pending) opening = undefined;
+        return raise(opened.error);
       }
       return () => {
         if (watchers.delete(mine)) void stopIfIdle();

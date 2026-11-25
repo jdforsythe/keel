@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { sqlite } from "@keel/std-db/sqlite";
 import { expect, test } from "vitest";
-import { closeStorage, removeDir, spawnNode, tempDir, writeScript } from "../conformance/fixtures.ts";
+import { closeStorage, removeDir, spawnNode, tempDir, writeScript } from "./support.ts";
 
 const driver = new URL("../src/sqlite/index.ts", import.meta.url).href;
 const loop = `import { sqlite } from "${driver}";
