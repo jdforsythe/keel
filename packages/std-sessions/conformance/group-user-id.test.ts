@@ -6,7 +6,7 @@ import { SessionGroup, openGroup, replayGroup } from "@keel/std-sessions/group";
 import "@keel/std-sessions/tools";
 import fc from "fast-check";
 import { beforeAll, describe, expect, test } from "vitest";
-import { SEED, USER, drive, groupOptions, serve } from "./group-fixtures.ts";
+import { GROUP_BOUND, SEED, USER, drive, groupOptions, serve } from "./group-fixtures.ts";
 
 const RULE = /^[A-Za-z0-9_-]{1,64}$/;
 const hostile = ["../x", "a/b", "a\\b", "", "a".repeat(65), "a\u0000b", "a b", "."];
@@ -25,7 +25,7 @@ beforeAll(async () => {
   const e: unknown = JSON.parse(JSON.stringify(SessionGroup.encode(clean)));
   if (typeof e !== "object" || e === null || Array.isArray(e)) throw new Error("group: not an object");
   encoded = { ...e };
-}, 120_000);
+}, GROUP_BOUND);
 
 /** The encoded group with `users[1].id` replaced. */
 function withId(id: string): Record<string, unknown> {

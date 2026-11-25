@@ -4,7 +4,7 @@
 import { openGroup } from "@keel/std-sessions/group";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { SEED, drive, groupOptions, texts } from "./group-fixtures.ts";
+import { GROUP_BOUND, SEED, drive, groupOptions, texts } from "./group-fixtures.ts";
 
 describe("std.multi: users are isolated", () => {
   test("Two users of one group get distinct `caller`s", async () => {
@@ -26,7 +26,7 @@ describe("std.multi: users are isolated", () => {
     // each user's own cookie jar keeps its caller across requests
     expect(b0).toBe(a0);
     expect(b1).toBe(a1);
-  }, 60_000);
+  }, GROUP_BOUND);
 
   test("one user's `find` never returns the other's elements", async () => {
     await fc.assert(
@@ -45,5 +45,5 @@ describe("std.multi: users are isolated", () => {
       }),
       { seed: 1337, numRuns: 4 },
     );
-  }, 120_000);
+  }, 4 * GROUP_BOUND);
 });

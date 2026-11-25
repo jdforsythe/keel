@@ -7,7 +7,7 @@
 import { openGroup, replayGroup } from "@keel/std-sessions/group";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { ItemsState, SEED, type Step, USER, groupOptions, serve, texts } from "./group-fixtures.ts";
+import { GROUP_BOUND, ItemsState, SEED, type Step, USER, groupOptions, serve, texts } from "./group-fixtures.ts";
 
 type Fault = "none" | "drop" | "lost" | "unavailable";
 type Schedule = {
@@ -70,7 +70,7 @@ describe("std.multi: group schedule", () => {
       }),
       { seed: 1337, numRuns: 5 },
     );
-  }, 120_000);
+  }, 5 * 2 * GROUP_BOUND);
 
   test(`${CLAUSE} (a lost write leaves one entry)`, async () => {
     // Two users: user i gets steps i, i + 2, ... of `net`, so `net[w]` is user w's first request, its write.
@@ -99,5 +99,5 @@ describe("std.multi: group schedule", () => {
       }),
       { seed: 1337, numRuns: 4 },
     );
-  }, 120_000);
+  }, 4 * 2 * GROUP_BOUND);
 });

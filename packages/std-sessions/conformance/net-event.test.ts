@@ -10,7 +10,7 @@ import { openGroup, replayGroup } from "@keel/std-sessions/group";
 import { renderRoute } from "@keel/testing";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { EMPTY_VIEW, SEED, USER, base, clientView, drive, groupOptions, routes, serve } from "./group-fixtures.ts";
+import { EMPTY_VIEW, GROUP_BOUND, SEED, USER, base, clientView, drive, groupOptions, routes, serve } from "./group-fixtures.ts";
 
 const netOf = (events: readonly { readonly kind: string }[]): boolean[] =>
   events.flatMap((e) => ("online" in e && typeof e.online === "boolean" && e.kind === "net" ? [e.online] : []));
@@ -74,5 +74,5 @@ describe("std.multi: net events", () => {
       }),
       { seed: 1337, numRuns: 4 },
     );
-  }, 120_000);
+  }, 4 * 2 * GROUP_BOUND);
 });

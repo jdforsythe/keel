@@ -6,7 +6,7 @@
 import { openGroup, replayGroup } from "@keel/std-sessions/group";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { ItemsState, SEED, USER, drive, groupOptions, serve } from "./group-fixtures.ts";
+import { GROUP_BOUND, ItemsState, SEED, USER, drive, groupOptions, serve } from "./group-fixtures.ts";
 
 type Write = { readonly u: 0 | 1; readonly note: string; readonly gap: number };
 const writeArb: fc.Arbitrary<Write> = fc.record({
@@ -15,6 +15,9 @@ const writeArb: fc.Arbitrary<Write> = fc.record({
   // gap 0: the next write happens at the same `at`, so user index breaks the tie on replay
   gap: fc.constantFrom(0, 0, 25, 100),
 });
+
+/** Generated write lists the case runs: a group opened and replayed a run. */
+const RUNS = 5;
 
 describe("std.multi: replay order", () => {
   test("Inputs of different users apply in order of `at`, then user index, then event index", async () => {
@@ -47,7 +50,7 @@ describe("std.multi: replay order", () => {
         const log = ItemsState.parse(r.server.log?.state);
         expect(log.ok && log.value.items).toEqual(expected.map((e) => e.text));
       }),
-      { seed: 1337, numRuns: 5 },
+      { seed: 1337, numRuns: RUNS },
     );
-  }, 120_000);
+  }, RUNS * 2 * GROUP_BOUND);
 });

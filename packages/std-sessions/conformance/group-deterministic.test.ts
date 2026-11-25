@@ -3,7 +3,7 @@
 import { openGroup } from "@keel/std-sessions/group";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { SEED, type Step, drive, groupOptions } from "./group-fixtures.ts";
+import { GROUP_BOUND, SEED, type Step, drive, groupOptions } from "./group-fixtures.ts";
 
 const word = fc.stringMatching(/^[a-z]{1,6}$/);
 const user = fc.constantFrom<0 | 1>(0, 1);
@@ -22,6 +22,9 @@ async function run(seed: number, script: readonly Step[]): Promise<string> {
   return JSON.stringify(await g.stop());
 }
 
+/** Generated scripts the case runs: two groups a run. */
+const RUNS = 5;
+
 describe("std.multi: openGroup is deterministic", () => {
   test("Under one seed, two runs of one script on `openGroup` give byte-equal groups", async () => {
     // Workers make runs slow: few runs, each a pair of full group recordings.
@@ -31,7 +34,7 @@ describe("std.multi: openGroup is deterministic", () => {
         const b = await run(SEED, script);
         expect(a).toBe(b);
       }),
-      { seed: 1337, numRuns: 5 },
+      { seed: 1337, numRuns: RUNS },
     );
-  }, 120_000);
+  }, RUNS * 2 * GROUP_BOUND);
 });
