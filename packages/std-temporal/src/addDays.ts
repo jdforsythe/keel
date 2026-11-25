@@ -1,5 +1,5 @@
 import { type Result, err, ok } from "@keel/schema";
-import { PlainDate } from "./PlainDate.ts";
+import { PlainDate } from "./PlainDate.schema.ts";
 import type { TemporalError } from "./TemporalError.ts";
 import { iso } from "./internal/iso.ts";
 

@@ -1,6 +1,6 @@
-import type { Instant } from "./Instant.ts";
-import { PlainDate } from "./PlainDate.ts";
-import type { TimeZone } from "./TimeZone.ts";
+import type { Instant } from "./Instant.schema.ts";
+import { PlainDate } from "./PlainDate.schema.ts";
+import type { TimeZone } from "./TimeZone.schema.ts";
 import { UTC } from "./UTC.ts";
 import { iso } from "./internal/iso.ts";
 

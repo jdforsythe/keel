@@ -2513,17 +2513,22 @@ importers:
         version: 3.23.2
 
   packages/std-temporal:
-    dependencies:
+    devDependencies:
+      '@keel/check':
+        specifier: workspace:*
+        version: link:../check
+      '@keel/cli':
+        specifier: workspace:*
+        version: link:../cli
+      '@keel/compiler':
+        specifier: workspace:*
+        version: link:../compiler
       '@keel/schema':
         specifier: workspace:*
         version: link:../schema
       '@keel/std-i18n':
         specifier: workspace:*
         version: link:../std-i18n
-    devDependencies:
-      '@keel/check':
-        specifier: workspace:*
-        version: link:../check
       '@keel/tooling':
         specifier: workspace:*
         version: link:../../tooling

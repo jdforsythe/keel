@@ -2,8 +2,8 @@
 import { gen } from "@keel/schema/gen";
 import fc from "fast-check";
 import { afterEach, beforeEach, expect, test } from "vitest";
-import { Instant } from "../src/Instant.ts";
-import { TimeZone } from "../src/TimeZone.ts";
+import { Instant } from "../src/Instant.schema.ts";
+import { TimeZone } from "../src/TimeZone.schema.ts";
 import { formatInstant } from "../src/formatInstant.ts";
 import { plainDateOf } from "../src/plainDateOf.ts";
 

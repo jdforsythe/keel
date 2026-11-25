@@ -1,5 +1,5 @@
 import { type Result, err, ok } from "@keel/schema";
-import { Instant } from "./Instant.ts";
+import { Instant } from "./Instant.schema.ts";
 import type { TemporalError } from "./TemporalError.ts";
 import { iso } from "./internal/iso.ts";
 

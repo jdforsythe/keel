@@ -1,6 +1,6 @@
 import type { Locale } from "@keel/std-i18n";
-import type { Duration } from "./Duration.ts";
-import type { UnitStyle } from "./UnitStyle.ts";
+import type { Duration } from "./Duration.schema.ts";
+import type { UnitStyle } from "./UnitStyle.schema.ts";
 import { durationValue } from "./internal/durationValue.ts";
 
 /**

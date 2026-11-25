@@ -2,7 +2,7 @@
 import { gen } from "@keel/schema/gen";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { TimeZone } from "../src/TimeZone.ts";
+import { TimeZone } from "../src/TimeZone.schema.ts";
 import { pinnedZones } from "../src/internal/pinnedZones.ts";
 
 const SEED = 1337;
