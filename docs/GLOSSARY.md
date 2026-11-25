@@ -49,4 +49,4 @@ Canonical names. Changing one requires an RFC.
 - **type cache**: the results of `keel check`'s type pass kept across processes in `node_modules/.cache/keel/` (or `check()`'s `typeCache` folder), each entry keyed by content and used only when every file system question it recorded gets the same answer; it changes the time a run takes, never its output (k.check-cache).
 
 subject: spec/ packages/*/package.json
-verified: 5548044331e7dc4ebccbe43c4e7dc7989514e7f6
+verified: f8043b86a1ef3b706789e4a8dafb234167ef80bb

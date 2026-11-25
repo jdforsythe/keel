@@ -1,0 +1,8 @@
+# std.sessions-redact: Error text in a recording
+status: conformance-covered
+Which errors a recorder (std.sessions) scrubs of the values it drops, and in what forms.
+
+**Channels.** Each value std.sessions drops from later error messages and `data` (a redacted value; a marked open object's undeclared key, or a non-empty string or number under it, in a payload, a state or route values) is dropped from every error the recorder records, however the error reached the ctx: one passed to `report` (its `message`; in its `data`, at any depth, each string, each number and each object key, a nested `cause` among them), and the `keel.unexpected` a route's loader ends in when it throws an `Error` (its `message`), throws any other value (its `String()`) or returns a promise that rejects (its reason, read the same way). Each dropped value is written as `x` repeated, found as written, URL-encoded and JSON-escaped, in any letter case; one under 3 characters only as a whole token. `data.at` is kept unless an `error:` entry names it. Other free text, and any other encoding of a value, is not scrubbed.
+
+**Conformance.**
+- For a store of state schema `s.object({ p: s.object({}).pii('contact') })`, with an undeclared key and a string under `p` given through `initial`, a `restore` whose snapshot holds them in `initial` only, a commit, or an undo back to a commit that made them, and for a `tx` payload of that schema holding them: an error then reported with them in its `message`, as `data` values, as `data` keys or in a nested `cause`, and one a loader ends in by throwing an `Error` naming them, throwing a string naming them, or rejecting with a string naming them, is recorded holding neither.

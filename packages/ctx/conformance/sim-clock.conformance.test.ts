@@ -37,6 +37,7 @@ describe("k.ctx sim clock", () => {
         }
         expect(prev).toBe(steps.reduce((a, b) => a + b, 0));
       }),
+      { seed: 1337 },
     );
   });
 

@@ -28,7 +28,7 @@ const op = fc.oneof(
   fc.record({ kind: fc.constant("close" as const), at: fc.nat(), twice: fc.boolean() }),
 );
 
-test("for any opens and closes on two modules, each module's cookieless streams stay within its perAnonymous, each caller's within its perCaller, its streams within its maxStreams, and every count returns to zero", () => {
+test("for any opens and closes on two modules, the cookieless streams of both together stay within perAnonymous, each caller's on a module within its perCaller, a module's streams within its maxStreams, and every count returns to zero", () => {
   fc.assert(
     fc.property(
       fc.integer({ min: 1, max: 6 }),
@@ -42,7 +42,10 @@ test("for any opens and closes on two modules, each module's cookieless streams 
         const open: (() => void)[] = [];
         for (const o of ops) {
           if (o.kind === "open") {
-            const before = count(hub.sinks, o.caller, o.module);
+            const before =
+              o.caller === ""
+                ? [...hub.sinks].filter((x) => x.caller === "").length
+                : count(hub.sinks, o.caller, o.module);
             const bound = o.caller === "" ? perAnonymous : perCaller;
             const admit = !full(hub.sinks, o.caller, o.module, cfg);
             expect(admit).toBe(of(hub.sinks, o.module).length < maxStreams && before < bound);
@@ -52,8 +55,8 @@ test("for any opens and closes on two modules, each module's cookieless streams 
             leave?.();
             if (o.twice) leave?.();
           }
+          expect([...hub.sinks].filter((x) => x.caller === "").length).toBeLessThanOrEqual(perAnonymous);
           for (const m of MODULES) {
-            expect(count(hub.sinks, "", m)).toBeLessThanOrEqual(perAnonymous);
             expect(count(hub.sinks, "a", m)).toBeLessThanOrEqual(perCaller);
             expect(count(hub.sinks, "b", m)).toBeLessThanOrEqual(perCaller);
             expect(of(hub.sinks, m).length).toBeLessThanOrEqual(maxStreams);
@@ -91,12 +94,14 @@ test("defaults: 64 cookieless streams, 8 per caller with a cookie, 1,000 in the 
   ).toBe(true);
 });
 
-test("another module's streams count against none of a module's bounds", () => {
+test("another module's streams count against a module's perAnonymous only, as cookieless streams", () => {
   const other = [
     ...Array.from({ length: 1000 }, (_, i) => sink(`c${i}`, "n")),
     ...Array.from({ length: 64 }, () => sink("", "n")),
   ];
-  expect(full(other, "", "m", {})).toBe(false);
+  expect(full(other, "", "m", {})).toBe(true);
+  expect(full(other, "", "m", { perAnonymous: 65 })).toBe(false);
+  expect(full(other.slice(0, 1000), "", "m", {})).toBe(false);
   expect(full(other, "c1", "m", { perCaller: 1, maxStreams: 1 })).toBe(false);
   expect(full(other, "c1", "n", {})).toBe(true);
 });

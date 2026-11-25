@@ -6,7 +6,7 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 
 | section | clauses | status | missing tests |
 | --- | --- | --- | --- |
-| k.schema | 16 | **conformance-covered** | none |
+| k.schema | 21 | **conformance-covered** | none |
 | k.formats | 8 | **conformance-covered** | none |
 | k.reactive | 20 | **conformance-covered** | none |
 | k.store | 25 | **conformance-covered** | none |
@@ -96,7 +96,7 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | std.options | 7 | **conformance-covered** | none |
 | std.report | 19 | **conformance-covered** | none |
 | std.schedules | 9 | **conformance-covered** | none |
-| std.sessions | 19 | **conformance-covered** | none |
+| std.sessions | 23 | **conformance-covered** | none |
 | std.sessions-served | 3 | **conformance-covered** | none |
 | std.shells | 13 | **conformance-covered** | none |
 | std.statecharts | 10 | **conformance-covered** | none |
@@ -121,7 +121,10 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | std.lists | 6 | **conformance-covered** | none |
 | std.tauri | 10 | **conformance-covered** | `UNTESTABLE` toolchain lookups and capability file shape |
 | k.unsafe | 9 | **conformance-covered** | none |
-| **total** | **1396** | 114 of 115 covered | |
+| k.a11y-static | 8 | **conformance-covered** | none |
+| std.channels-limits | 4 | **conformance-covered** | none |
+| std.sessions-redact | 1 | **conformance-covered** | none |
+| **total** | **1418** | 117 of 118 covered | |
 
 ## 2. One-way audit (principle 1)
 

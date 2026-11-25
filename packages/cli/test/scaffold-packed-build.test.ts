@@ -3,7 +3,8 @@
 // layout outside the repository: each `@keel/*` package is a copy of what it ships (`files`, its `package.json` with the
 // `publishConfig` exports and bin), and its `node_modules` holds only what its manifest declares (dependencies, peers
 // that are not optional, optional peers the project lists). A package that imports what it does not declare fails here
-// as it would for a public user; inside the monorepo its own dev dependencies would hide it.
+// as it would for a public user; inside the monorepo its own dev dependencies would hide it. The test builds and packs
+// what it installs itself, so it needs no earlier `pnpm build`.
 import { spawnSync } from "node:child_process";
 import {
   cpSync,
@@ -85,24 +86,101 @@ const link = (target: string, at: string): void => {
   symlinkSync(target, at, "dir");
 };
 
+/** What the project at `cwd` lists, dependencies and dev dependencies. */
+function listed(cwd: string): string[] {
+  const project = manifest(cwd);
+  return [...project.dependencies, ...keys(project.json.devDependencies)];
+}
+
+const keelPackage = (name: string): Manifest => manifest(join(REPO, "packages", name.replace(/^@keel\//, "")));
+
+/** What an installed `m` links in its `node_modules`, for a project that lists `wanted`. */
+const declared = (m: Manifest, wanted: readonly string[]): string[] => [
+  ...m.dependencies,
+  ...m.peers,
+  ...m.optionalPeers.filter((n) => wanted.includes(n)),
+];
+
+/** Every `@keel/*` package `install` stages for a project that lists `wanted`, by name. */
+function packed(wanted: readonly string[]): Manifest[] {
+  const out = new Map<string, Manifest>();
+  const visit = (name: string): void => {
+    if (!name.startsWith("@keel/") || out.has(name)) return;
+    const m = keelPackage(name);
+    out.set(name, m);
+    for (const dep of declared(m, wanted)) visit(dep);
+  };
+  for (const name of wanted) visit(name);
+  return [...out.values()].sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/** The environment a child of this test runs with: no npm or vitest process options, no agent output mode. */
+function childEnv(): Record<string, string> {
+  const env: Record<string, string> = {};
+  for (const [k, v] of Object.entries(process.env))
+    if (v !== undefined && !k.toLowerCase().startsWith("npm_") && k !== "NODE_OPTIONS" && k !== "KEEL_AGENT")
+      env[k] = v;
+  return env;
+}
+
+const tail = (r: { stdout: string; stderr: string }): string =>
+  `${r.stdout}${r.stderr}`.trim().split("\n").slice(-20).join("\n");
+
+/**
+ * Gives each package in `ms` what its tarball ships, as `pnpm pack` would: its build through turbo (cached, and with
+ * the builds it depends on), then its `prepack` where a `files` entry is still absent. Throws, naming the package and
+ * the entry, when a `files` entry or a `publishConfig.bin` is absent after that, so the install never copies a package
+ * that ships nothing. Whether every `publishConfig.exports` path exists is `tooling/publish-exports.mjs --check`'s.
+ */
+function ship(ms: readonly Manifest[]): void {
+  const env = { ...childEnv(), TURBO_NO_UPDATE_NOTIFIER: "1", NO_COLOR: "1" };
+  const pnpm = (args: string[], cwd: string) =>
+    spawnSync("pnpm", args, { cwd, env, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
+  const filters = ms.map((m) => `--filter=${m.name}`);
+  const built = pnpm(["exec", "turbo", "run", "build", ...filters, "--output-logs=errors-only", "--ui=stream"], REPO);
+  if (built.status !== 0) throw new Error(`turbo build of ${ms.map((m) => m.name).join(", ")} failed:\n${tail(built)}`);
+  const absent = (m: Manifest): string[] => m.files.filter((f) => !existsSync(join(m.dir, f)));
+  for (const m of ms) {
+    const scripts = isRecord(m.json.scripts) ? m.json.scripts : {};
+    if (absent(m).length === 0 || typeof scripts.prepack !== "string") continue;
+    const r = pnpm(["run", "--silent", "prepack"], m.dir);
+    if (r.status !== 0) throw new Error(`${m.name} prepack failed:\n${tail(r)}`);
+  }
+  const missing: string[] = [];
+  for (const m of ms) {
+    for (const f of absent(m)) missing.push(`${m.name} files entry ${f}`);
+    const pc = isRecord(m.json.publishConfig) ? m.json.publishConfig : {};
+    for (const [what, rel] of bins(pc)) if (!existsSync(join(m.dir, rel))) missing.push(`${m.name} ${what} ${rel}`);
+  }
+  if (missing.length > 0) throw new Error(`packed packages lack what they ship: ${missing.join("; ")}`);
+}
+
+/** Each path `publishConfig.bin` points at, with where it is named. */
+function bins(pc: Record<string, unknown>): [string, string][] {
+  if (typeof pc.bin === "string") return [["publishConfig.bin", pc.bin]];
+  if (!isRecord(pc.bin)) return [];
+  const out: [string, string][] = [];
+  for (const [k, v] of Object.entries(pc.bin)) if (typeof v === "string") out.push([`publishConfig.bin ${k}`, v]);
+  return out;
+}
+
 /**
  * Installs the project at `cwd` from its `package.json`: `@keel/*` as packed copies under `cwd/.store`, each linked to
  * what it declares; third-party packages linked to the repo's installed copies, which carry their own dependencies.
  */
-function install(cwd: string): void {
-  const project = manifest(cwd);
-  const wanted = [...project.dependencies, ...keys(project.json.devDependencies)];
+function install(cwd: string): string {
+  const wanted = listed(cwd);
   const staged = new Map<string, string>();
   const stage = (name: string): string => {
     const done = staged.get(name);
     if (done !== undefined) return done;
-    const m = manifest(join(REPO, "packages", name.replace(/^@keel\//, "")));
+    const m = keelPackage(name);
     const at = join(cwd, ".store", name.replace("/", "+"), "node_modules", name);
     staged.set(name, at);
     mkdirSync(at, { recursive: true });
-    for (const f of m.files) if (existsSync(join(m.dir, f))) cpSync(join(m.dir, f), join(at, f), { recursive: true });
+    for (const f of m.files) cpSync(join(m.dir, f), join(at, f), { recursive: true });
     writeFileSync(join(at, "package.json"), packedManifest(m));
-    const own = [...m.dependencies, ...m.peers, ...m.optionalPeers.filter((n) => wanted.includes(n))];
+    const own = declared(m, wanted);
     for (const dep of own) {
       const target = dep.startsWith("@keel/") ? stage(dep) : thirdParty(dep, m.dir);
       link(target, join(cwd, ".store", name.replace("/", "+"), "node_modules", dep));
@@ -115,9 +193,11 @@ function install(cwd: string): void {
   const bin = join(cwd, "node_modules/@keel/cli");
   const cli = manifest(bin).json.bin;
   const keel = isRecord(cli) && typeof cli.keel === "string" ? cli.keel : "";
-  if (!existsSync(join(bin, keel))) throw new Error(`the packed @keel/cli has no bin at ${keel}: run pnpm build`);
+  if (!existsSync(join(bin, keel))) throw new Error(`the packed @keel/cli has no bin at ${keel}`);
+  return join(bin, keel);
 }
 
+// The time limit covers the packed packages' builds: minutes on a checkout with none, a second from turbo's cache.
 it("a scaffolded project builds with keel build from exactly its listed dependencies", async () => {
   const e = await runEngine(["scaffold", "project", "shop"], { cwd: "/work", files: [] });
   expect(e.result.code).toBe(0);
@@ -129,17 +209,13 @@ it("a scaffolded project builds with keel build from exactly its listed dependen
       mkdirSync(dirname(path), { recursive: true });
       writeFileSync(path, w.content);
     }
-    install(cwd);
-    const keel = join(cwd, "node_modules/@keel/cli/dist/src/bin.js");
-    const env: Record<string, string> = {};
-    for (const [k, v] of Object.entries(process.env))
-      if (v !== undefined && !k.toLowerCase().startsWith("npm_") && k !== "NODE_OPTIONS" && k !== "KEEL_AGENT")
-        env[k] = v;
-    const r = spawnSync(process.execPath, [keel, "build"], { cwd, env, encoding: "utf8" });
+    ship(packed(listed(cwd)));
+    const keel = install(cwd);
+    const r = spawnSync(process.execPath, [keel, "build"], { cwd, env: childEnv(), encoding: "utf8" });
     const out = `${r.stdout}${r.stderr}`;
     expect(r.status, out).toBe(0);
     expect(out.trim().split("\n").at(-1), out).toMatch(/^ok build /);
   } finally {
     rmSync(cwd, { recursive: true, force: true });
   }
-}, 120_000);
+}, 600_000);

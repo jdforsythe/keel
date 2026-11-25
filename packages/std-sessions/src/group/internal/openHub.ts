@@ -1,6 +1,7 @@
 import { type SimCtx, createCtx } from "@keel/ctx";
 import type { JsonValue } from "@keel/schema";
 import type { Snapshot } from "@keel/store";
+import { snapshotKeys } from "@keel/store";
 import type { Serve } from "../Serve.ts";
 import type { Hub } from "./Hub.ts";
 import type { Outgoing } from "./Outgoing.ts";
@@ -121,13 +122,8 @@ export async function openHub(options: {
       const out: { [store: string]: Snapshot<JsonValue> } = {};
       for (const key of keys) {
         const r = wire.snapshot.parse(await read(key));
-        // A snapshot stored without `keys` takes them from its log entries, as `restore` does.
-        if (r.ok)
-          out[key.slice(PREFIX.length)] = {
-            ...r.value,
-            keys:
-              r.value.keys ?? r.value.log.flatMap((e) => (e.key === undefined ? [] : [{ name: e.name, key: e.key }])),
-          };
+        // A snapshot stored without `keys` takes them as `restore` does.
+        if (r.ok) out[key.slice(PREFIX.length)] = { ...r.value, keys: snapshotKeys(r.value) };
       }
       return out;
     },

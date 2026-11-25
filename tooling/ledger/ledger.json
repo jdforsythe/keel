@@ -4,8 +4,8 @@
   "hostElements": 0,
   "negativeTypes": 90,
   "rungs": {
-    "example": 2461,
-    "probabilistic": 442,
+    "example": 2487,
+    "probabilistic": 449,
     "exhaustive": 16,
     "proven": 81,
     "monitored": 8
@@ -22,12 +22,12 @@
         "justified": 0
       },
       "cli": {
-        "score": 71.38,
-        "scoreJustified": 71.38,
+        "score": 71.5,
+        "scoreJustified": 71.5,
         "threshold": 70,
-        "killed": 7299,
-        "survived": 2027,
-        "noCoverage": 900,
+        "killed": 7080,
+        "survived": 1951,
+        "noCoverage": 871,
         "justified": 0
       },
       "compiler": {
@@ -94,11 +94,11 @@
         "justified": 0
       },
       "schema": {
-        "score": 91.06,
-        "scoreJustified": 91.06,
+        "score": 89.8,
+        "scoreJustified": 89.8,
         "threshold": 80,
-        "killed": 1426,
-        "survived": 126,
+        "killed": 1144,
+        "survived": 116,
         "noCoverage": 14,
         "justified": 0
       },
@@ -139,12 +139,12 @@
         "justified": 0
       },
       "std-channels": {
-        "score": 79.38,
-        "scoreJustified": 79.38,
+        "score": 75.56,
+        "scoreJustified": 75.56,
         "threshold": 70,
-        "killed": 689,
-        "survived": 163,
-        "noCoverage": 16,
+        "killed": 439,
+        "survived": 131,
+        "noCoverage": 11,
         "justified": 0
       },
       "std-conflicts": {
@@ -274,12 +274,12 @@
         "justified": 0
       },
       "std-sessions": {
-        "score": 88.99,
-        "scoreJustified": 88.99,
+        "score": 89.04,
+        "scoreJustified": 89.04,
         "threshold": 70,
-        "killed": 5926,
-        "survived": 574,
-        "noCoverage": 159,
+        "killed": 5051,
+        "survived": 485,
+        "noCoverage": 137,
         "justified": 0
       },
       "std-statecharts": {
@@ -355,21 +355,21 @@
         "justified": 0
       },
       "store": {
-        "score": 89.86,
-        "scoreJustified": 89.86,
+        "score": 86.88,
+        "scoreJustified": 86.88,
         "threshold": 80,
-        "killed": 727,
-        "survived": 73,
-        "noCoverage": 9,
+        "killed": 384,
+        "survived": 52,
+        "noCoverage": 6,
         "justified": 0
       },
       "testing": {
-        "score": 78.91,
-        "scoreJustified": 78.91,
+        "score": 77.97,
+        "scoreJustified": 77.97,
         "threshold": 70,
-        "killed": 4100,
-        "survived": 611,
-        "noCoverage": 485,
+        "killed": 3772,
+        "survived": 582,
+        "noCoverage": 484,
         "justified": 0
       },
       "ui": {
@@ -21208,6 +21208,12 @@
     },
     {
       "pkg": "store",
+      "name": "givenPii",
+      "file": "packages/store/src/givenPii.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "store",
       "name": "invariant",
       "file": "packages/store/src/invariant.ts",
       "rung": "probabilistic"
@@ -21216,6 +21222,12 @@
       "pkg": "store",
       "name": "isolate",
       "file": "packages/store/src/isolate.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "store",
+      "name": "snapshotKeys",
+      "file": "packages/store/src/snapshotKeys.ts",
       "rung": "probabilistic"
     },
     {
@@ -21346,6 +21358,38 @@
     }
   ],
   "clauses": [
+    {
+      "item": "k.a11y-static#1",
+      "rung": "example"
+    },
+    {
+      "item": "k.a11y-static#2",
+      "rung": "example"
+    },
+    {
+      "item": "k.a11y-static#3",
+      "rung": "example"
+    },
+    {
+      "item": "k.a11y-static#4",
+      "rung": "example"
+    },
+    {
+      "item": "k.a11y-static#5",
+      "rung": "example"
+    },
+    {
+      "item": "k.a11y-static#6",
+      "rung": "example"
+    },
+    {
+      "item": "k.a11y-static#7",
+      "rung": "example"
+    },
+    {
+      "item": "k.a11y-static#8",
+      "rung": "example"
+    },
     {
       "item": "k.a11y#1",
       "rung": "probabilistic"
@@ -22168,7 +22212,7 @@
     },
     {
       "item": "k.ctx#4",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "item": "k.ctx#5",
@@ -24439,6 +24483,26 @@
       "rung": "example"
     },
     {
+      "item": "k.schema#17",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.schema#18",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.schema#19",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.schema#20",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.schema#21",
+      "rung": "probabilistic"
+    },
+    {
       "item": "k.security#1",
       "rung": "example"
     },
@@ -25432,6 +25496,22 @@
     },
     {
       "item": "std.capacitor#11",
+      "rung": "example"
+    },
+    {
+      "item": "std.channels-limits#1",
+      "rung": "example"
+    },
+    {
+      "item": "std.channels-limits#2",
+      "rung": "example"
+    },
+    {
+      "item": "std.channels-limits#3",
+      "rung": "example"
+    },
+    {
+      "item": "std.channels-limits#4",
       "rung": "example"
     },
     {
@@ -26451,6 +26531,10 @@
       "rung": "example"
     },
     {
+      "item": "std.sessions-redact#1",
+      "rung": "example"
+    },
+    {
       "item": "std.sessions-served#1",
       "rung": "example"
     },
@@ -26536,6 +26620,22 @@
     },
     {
       "item": "std.sessions#19",
+      "rung": "example"
+    },
+    {
+      "item": "std.sessions#20",
+      "rung": "example"
+    },
+    {
+      "item": "std.sessions#21",
+      "rung": "example"
+    },
+    {
+      "item": "std.sessions#22",
+      "rung": "example"
+    },
+    {
+      "item": "std.sessions#23",
       "rung": "example"
     },
     {

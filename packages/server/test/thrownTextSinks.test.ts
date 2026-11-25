@@ -18,17 +18,20 @@ const made = (): string => {
 };
 const modes = ["dev", "production"] as const;
 
-/** A value whose field getter passes its first read (`output.parse`) and throws naming the secret after, so `encode` throws. */
+/**
+ * A value that is plain data by its keys and descriptors, which `parse` and `encode`'s check read, and whose `get`
+ * (which `encode`'s copy uses) throws naming the secret, so `encode` throws.
+ */
 const encodeThrows = (): { n: string } => {
   const t = made();
-  let reads = 0;
-  return {
-    get n(): string {
-      reads++;
-      if (reads > 1) throw new Error(`enc ${t}`);
-      return "x";
+  return new Proxy(
+    { n: "x" },
+    {
+      get: () => {
+        throw new Error(`enc ${t}`);
+      },
     },
-  };
+  );
 };
 const Out = s.object({ n: s.string() });
 
