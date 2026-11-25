@@ -40,7 +40,7 @@ const committed = (body: Record<string, unknown>, path = LEDGER): SourceFile =>
 
 const MAP: A11yCriteriaMap = new Map([["1.1.1", { render: ["image-alt"], static: [] }]]);
 const a11yFiles = (passed: boolean): SourceFile[] => [
-  file("app/.keel/routes.json", JSON.stringify({ data: { "m.r": { module: "m" } }, hash: "x" })),
+  file("app/.keel/routes.json", JSON.stringify({ data: { "m.r": { path: "/r", module: "m" } }, hash: "x" })),
   file(
     "app/reports/a11y.json",
     JSON.stringify([
@@ -227,7 +227,7 @@ describe("ledgerCommand: a11y claims", () => {
     const out = call({}, files, MAP);
     expect(of(out.records, "ledger")).toEqual([
       { kind: "ledger", item: "packages/a/src/foo.ts#foo", rung: "none", evidence: "none" },
-      { kind: "ledger", item: "a11y:m.r#1.1.1", rung: "example", evidence: "example app/reports/a11y.json" },
+      { kind: "ledger", item: "a11y:app:m.r#1.1.1", rung: "example", evidence: "example app/reports/a11y.json" },
     ]);
     expect(trailer(out.records)).toEqual({
       kind: "summary",
@@ -240,7 +240,7 @@ describe("ledgerCommand: a11y claims", () => {
   test("a failing run, or no criteria map, gives no example claim; none is not verified", () => {
     const failing = call({}, a11yFiles(false), MAP);
     expect(of(failing.records, "ledger")).toEqual([
-      { kind: "ledger", item: "a11y:m.r#1.1.1", rung: "none", evidence: "none" },
+      { kind: "ledger", item: "a11y:app:m.r#1.1.1", rung: "none", evidence: "none" },
     ]);
     expect(trailer(failing.records)).toMatchObject({ counts: { items: 1, verified: 0 } });
     expect(of(call({}, a11yFiles(true)).records, "ledger")).toEqual([]);
@@ -254,8 +254,8 @@ describe("ledgerCommand: a11y claims", () => {
       return x?.kind === "summary" ? x.counts : undefined;
     };
     expect(t("a11y:")).toEqual({ items: 1, verified: 1, unsafe: 0, warnings: 0, example: 1 });
-    expect(t("a11y:m.r#1.1.1")).toEqual({ items: 1, verified: 1, unsafe: 0, warnings: 0, example: 1 });
-    expect(t("a11y:other")).toEqual({ items: 0, verified: 0, unsafe: 0, warnings: 0 });
+    expect(t("a11y:app:m.r#1.1.1")).toEqual({ items: 1, verified: 1, unsafe: 0, warnings: 0, example: 1 });
+    expect(t("a11y:other:")).toEqual({ items: 0, verified: 0, unsafe: 0, warnings: 0 });
     expect(t("packages/a/src/baz")).toEqual({ items: 1, verified: 1, unsafe: 0, warnings: 0, example: 1 });
     expect(t("")).toEqual({ items: 5, verified: 3, unsafe: 1, warnings: 0, example: 2, probabilistic: 1 });
     expect(of(call({ scope: "packages/b/" }, files, MAP).records, "ledger").map((r) => r.item)).toEqual([
@@ -266,7 +266,7 @@ describe("ledgerCommand: a11y claims", () => {
   test("the ledger file lists the claims with their rungs", () => {
     const out = call({ write: "l.json" }, [...src.slice(0, 1), ...a11yFiles(true)], MAP);
     expect(JSON.parse(out.writes[0]?.content ?? "")).toMatchObject({
-      a11y: [{ item: "a11y:m.r#1.1.1", rung: "example" }],
+      a11y: [{ item: "a11y:app:m.r#1.1.1", rung: "example" }],
     });
   });
 });
@@ -394,10 +394,10 @@ describe("ledgerCommand --diff", () => {
     expect(diags(call({ diff: true, scope: "foo.ts" }, [...base, old]).records)).toEqual([]);
   });
 
-  test("a lowered a11y claim is at reports/a11y.json, a lowered clause at its spec section", () => {
+  test("a lowered a11y claim is at its project's reports/a11y.json, a lowered clause at its spec section", () => {
     const old = committed({
       unsafe: 0,
-      a11y: [{ item: "a11y:m.r#1.1.1", rung: "example" }],
+      a11y: [{ item: "a11y:app:m.r#1.1.1", rung: "example" }],
       clauses: [
         { item: "k.a#1", rung: "example" },
         { item: "std.s#1", rung: "example" },
@@ -417,7 +417,7 @@ describe("ledgerCommand --diff", () => {
       diags(out.records)
         .map((d) => d.path)
         .sort(),
-    ).toEqual(["reports/a11y.json", "spec/kernel/k.a.md", "spec/std/std.s.md"]);
+    ).toEqual(["app/reports/a11y.json", "spec/kernel/k.a.md", "spec/std/std.s.md"]);
   });
 
   test("an unsafe count above the committed one is E1706 at the ledger file; scoped runs compare with zero", () => {

@@ -18,6 +18,7 @@ import { justifiedText } from "./justifiedText.ts";
 import { makeDiag } from "./makeDiag.ts";
 import { mutationClaims } from "./mutationClaims.ts";
 import { packageInScope } from "./packageInScope.ts";
+import { pagelessLayouts } from "./pagelessLayouts.ts";
 import { projectFiles } from "./projectFiles.ts";
 import { summary } from "./summary.ts";
 
@@ -55,9 +56,13 @@ const describe = (item: LedgerItem | undefined): string => {
   return `${parts.join(" ")} ${best.path}${all.length > 1 ? ` +${all.length - 1}` : ""}`;
 };
 
-/** The file an item lives in: the source file, `apps/<app>/modules/<path>`, or the spec section. */
+/** The file an item lives in: the source file, `apps/<app>/modules/<path>`, the project's a11y report, or the spec section. */
 const itemPath = (item: string): string => {
-  if (item.startsWith("a11y:")) return "reports/a11y.json";
+  if (item.startsWith("a11y:")) {
+    // `a11y:<project>:<routeId>#<criterion>`: a route id holds no `:`, so the project ends at the last one.
+    const project = item.slice("a11y:".length, item.lastIndexOf(":", item.indexOf("#")));
+    return project === "." || project === "" ? "reports/a11y.json" : `${project}/reports/a11y.json`;
+  }
   const file = item.slice(0, item.lastIndexOf("#"));
   if (file.startsWith("packages/")) return file;
   const at = file.indexOf(":");
@@ -106,9 +111,10 @@ const ledgerFile = (
 
 /**
  * `keel ledger` (k.ledger), the one ledger implementation: one `ledger` record per export and per spec clause, rung by
- * `@keel/testing` `ledger`, one per route and WCAG criterion (`a11yClaims` over `a11yMap`, k.a11y Claims), and one
+ * `@keel/testing` `ledger`, one per page route of each project and WCAG criterion (`a11yClaims` over `a11yMap`, k.a11y Claims; a committed a11y
+ * item of no current page route is dropped), and one
  * `ledger.mutation` record per mutation claim (`mutationClaims`), after any W1706
- * header notes, E1711, E1725 (a `mutation-justified.json` that fails its shape, by `justifiedFiles`, or an entry that
+ * header notes, W1731 (a layout no page route's chain holds, `pagelessLayouts`), E1711, E1725 (a `mutation-justified.json` that fails its shape, by `justifiedFiles`, or an entry that
  * justifies no mutant of its package's report on disk) and W1714 (a stale claim). `--write <file>` names the ledger file: `keel ledger` writes the
  * records there instead (with `rungs` and `mutation`, the reports on disk merged into the file's claims; stdout keeps
  * the notes and the trailer); `--diff` compares with it (default `.keel/ledger.json`, else
@@ -177,7 +183,8 @@ export function ledgerCommand(input: Input, io: Io, a11yMap: A11yCriteriaMap = n
         see: "k.ledger",
       }),
     );
-  const notes = scope === "" ? [...built.diags, ...misshapen, ...unjustified, ...stale] : [];
+  const layouts = a11yMap.size === 0 ? [] : pagelessLayouts(files);
+  const notes = scope === "" ? [...built.diags, ...misshapen, ...unjustified, ...stale, ...layouts] : [];
   const held = (cs: readonly A11yClaim[], r: Record<string, number>): Record<string, number> => {
     const n = cs.filter((c) => c.rung === "example").length;
     return n === 0 ? r : { ...r, example: (r.example ?? 0) + n };

@@ -10,7 +10,10 @@ const MAP: A11yCriteriaMap = new Map([
   ["1.1.1", { render: ["image-alt"], static: ["E1802"] }],
   ["1.4.3", { render: ["E1804"], static: ["E1804"] }],
 ]);
-const routes = JSON.stringify({ data: { "m.r": { module: "m" }, "n.r": { module: "n" } }, hash: "x" });
+const routes = JSON.stringify({
+  data: { "m.r": { path: "/m", module: "m" }, "n.r": { path: "/n", module: "n" } },
+  hash: "x",
+});
 const runs = JSON.stringify(
   ["m.r", "n.r"].map((route) => ({
     route,
@@ -32,16 +35,16 @@ const rungs = (findings: { code: string; path: string }[]) =>
 describe("a11y claims and static findings", () => {
   it("withholds only the criteria of a code found in the route's module", () => {
     expect(rungs([])).toEqual({
-      "a11y:m.r#1.1.1": "example",
-      "a11y:m.r#1.4.3": "example",
-      "a11y:n.r#1.1.1": "example",
-      "a11y:n.r#1.4.3": "example",
+      "a11y:app:m.r#1.1.1": "example",
+      "a11y:app:m.r#1.4.3": "example",
+      "a11y:app:n.r#1.1.1": "example",
+      "a11y:app:n.r#1.4.3": "example",
     });
     expect(rungs([{ code: "E1802", path: "app/modules/m/Page.tsx" }])).toEqual({
-      "a11y:m.r#1.1.1": "none",
-      "a11y:m.r#1.4.3": "example",
-      "a11y:n.r#1.1.1": "example",
-      "a11y:n.r#1.4.3": "example",
+      "a11y:app:m.r#1.1.1": "none",
+      "a11y:app:m.r#1.4.3": "example",
+      "a11y:app:n.r#1.1.1": "example",
+      "a11y:app:n.r#1.4.3": "example",
     });
   });
 

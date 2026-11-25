@@ -1232,6 +1232,13 @@ const ROWS: readonly Row[] = [
     "k.testing",
   ],
   [
+    "W1731",
+    "keel ledger: a layout in a project's .keel/routes.json that no page route's chain holds",
+    "A layout's markup is checked only in the renderRoute runs of the pages it wraps, so this one is in no render check and no a11y item. A warning: the item count does not move.",
+    "give a page `layout: <id>` in its contract, or remove the layout",
+    "k.ledger",
+  ],
+  [
     "E1751",
     "TS type error with no Keel rule code (message starts with the TS code)",
     "",

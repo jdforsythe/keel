@@ -7,7 +7,7 @@ import { ledgerCommand } from "../src/internal/ledgerCommand.ts";
 
 const MAP: A11yCriteriaMap = new Map([["1.4.3", { render: ["E1804"], static: [] }]]);
 const routes = (...ids: string[]) =>
-  JSON.stringify({ data: Object.fromEntries(ids.map((id) => [id, { module: "m" }])), hash: "x" });
+  JSON.stringify({ data: Object.fromEntries(ids.map((id) => [id, { path: `/${id}`, module: "m" }])), hash: "x" });
 const runsOf = (passed: boolean) =>
   JSON.stringify([
     {
@@ -21,14 +21,14 @@ const runsOf = (passed: boolean) =>
     },
   ]);
 const committed = new Map<string, "none" | "example">([
-  ["a11y:m.r#1.4.3", "example"],
-  ["a11y:gone.r#1.4.3", "example"],
+  ["a11y:app:m.r#1.4.3", "example"],
+  ["a11y:app:gone.r#1.4.3", "example"],
 ]);
 
 describe("a11y claims kept for want of a report", () => {
   it("keeps the committed rung when the project has no report", () => {
     const out = a11yClaims([{ path: "app/.keel/routes.json", source: routes("m.r") }], MAP, [], committed);
-    expect(out.map((c) => [c.item, c.rung, c.kept])).toEqual([["a11y:m.r#1.4.3", "example", true]]);
+    expect(out.map((c) => [c.item, c.rung, c.kept])).toEqual([["a11y:app:m.r#1.4.3", "example", true]]);
   });
 
   it("computes the item again when the report is present, so a violation lowers it", () => {
@@ -43,8 +43,8 @@ describe("a11y claims kept for want of a report", () => {
   it("drops an item whose route is gone and does not invent one the file lacks", () => {
     const out = a11yClaims([{ path: "app/.keel/routes.json", source: routes("m.r", "new.r") }], MAP, [], committed);
     expect(out.map((c) => [c.item, c.rung, c.kept])).toEqual([
-      ["a11y:m.r#1.4.3", "example", true],
-      ["a11y:new.r#1.4.3", "none", undefined],
+      ["a11y:app:m.r#1.4.3", "example", true],
+      ["a11y:app:new.r#1.4.3", "none", undefined],
     ]);
   });
 });
@@ -66,7 +66,7 @@ describe("keel ledger with kept a11y items", () => {
       hostElements: 0,
       exports: [],
       clauses: [],
-      a11y: [{ item: "a11y:m.r#1.1.1", rung: "example" }],
+      a11y: [{ item: "a11y:app:m.r#1.1.1", rung: "example" }],
     }),
   };
   const go = (input: { diff?: true; write?: string }, files: { path: string; source: string }[]) =>
@@ -78,7 +78,7 @@ describe("keel ledger with kept a11y items", () => {
 
   it("writes the committed rung and counts the kept item in the trailer", () => {
     const r = go({ write: "tooling/ledger/ledger.json" }, [routesFile, ledger]);
-    expect(JSON.parse(r.writes[0]?.content ?? "").a11y).toEqual([{ item: "a11y:m.r#1.1.1", rung: "example" }]);
+    expect(JSON.parse(r.writes[0]?.content ?? "").a11y).toEqual([{ item: "a11y:app:m.r#1.1.1", rung: "example" }]);
     expect(counts(r)).toMatchObject({ example: 1, keptNoReport: 1 });
   });
 
@@ -90,7 +90,7 @@ describe("keel ledger with kept a11y items", () => {
 
   it("with no report and no committed item the rung is none, and nothing is kept", () => {
     const r = go({ write: "l.json" }, [routesFile]);
-    expect(JSON.parse(r.writes[0]?.content ?? "").a11y).toEqual([{ item: "a11y:m.r#1.1.1", rung: "none" }]);
+    expect(JSON.parse(r.writes[0]?.content ?? "").a11y).toEqual([{ item: "a11y:app:m.r#1.1.1", rung: "none" }]);
     expect(counts(r)).not.toHaveProperty("keptNoReport");
   });
 });
