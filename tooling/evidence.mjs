@@ -25,7 +25,7 @@ import path from "node:path";
 import { scrub, walk } from "./scan.mjs";
 
 /** The evidence.json shape version; a change to the shape raises it. */
-export const SCHEMA = 1;
+export const SCHEMA = 2;
 /** The report tool's version; a change to how a number is computed raises it. */
 export const TOOL_VERSION = 1;
 /** Rungs from none to the strongest, the order every `byRung` object lists. */
@@ -180,7 +180,13 @@ const tally = (items) => {
   return { byRung: r, total: items.length, verified: items.length - r.none };
 };
 
-/** Part (a): the committed ledger file's totals, clauses per spec section, exports and WCAG items, all by rung. */
+/** The project of a WCAG item `a11y:<project>:<routeId>#<criterion>`: a route id holds no `:`, so it ends at the last one. */
+const projectOf = (item) => item.slice("a11y:".length, item.lastIndexOf(":", item.indexOf("#")));
+
+/**
+ * Part (a): the committed ledger file's totals, clauses per spec section, exports and WCAG items (also per project),
+ * all by rung.
+ */
 export function ledgerPart(ledger, statuses) {
   const clauses = ledger.clauses ?? [];
   const exportsList = ledger.exports ?? [];
@@ -194,6 +200,8 @@ export function ledgerPart(ledger, statuses) {
   for (const [id, list] of groups) sections[id] = { status: statuses[id] ?? "unknown", ...tally(list) };
   const pkgs = new Map();
   for (const e of exportsList) pkgs.set(e.pkg, [...(pkgs.get(e.pkg) ?? []), e]);
+  const a11yProjects = new Map();
+  for (const a of a11y) a11yProjects.set(projectOf(a.item), [...(a11yProjects.get(projectOf(a.item)) ?? []), a]);
   const all = [...clauses, ...exportsList, ...a11y];
   return {
     items: all.length,
@@ -202,7 +210,7 @@ export function ledgerPart(ledger, statuses) {
     evidenceByRung: { ...ledger.rungs },
     clauses: { ...tally(clauses), sections },
     exports: { ...tally(exportsList), packages: Object.fromEntries([...pkgs].map(([p, l]) => [p, tally(l)])) },
-    a11y: tally(a11y),
+    a11y: { ...tally(a11y), projects: Object.fromEntries([...a11yProjects].map(([p, l]) => [p, tally(l)])) },
   };
 }
 
