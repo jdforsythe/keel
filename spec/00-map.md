@@ -33,7 +33,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.store | Store, transactions | conformance-covered | log |
 | k.component | Components | conformance-covered | props |
 | k.compiler | Compiler, artifacts | conformance-covered | JSX |
-| k.boundary | Server boundary | implemented | stubs |
+| k.boundary | Server boundary | conformance-covered | stubs |
 | k.bundle | Browser bundles | conformance-covered | workers |
 | k.runtime | DOM runtime, islands | conformance-covered | nodes |
 | k.resume | Documents, resume | conformance-covered | regions |
@@ -56,7 +56,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.host | Host reads | conformance-covered | zone |
 | k.cli | CLI, MCP, LSP | conformance-covered | flags |
 | k.docs | Installed docs | conformance-covered | read |
-| k.scaffold | Scaffold, codemods | implemented | edits |
+| k.scaffold | Scaffold, codemods | conformance-covered | edits |
 | k.scaffold-shell | Shell scaffold | conformance-covered | shells |
 | k.scaffold-service | Service scaffold | conformance-covered | clients |
 | k.testing | Harness, properties | conformance-covered | fire |
@@ -69,7 +69,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.drive-law | Replays agree | conformance-covered | replays |
 | k.ledger | Ledger, evidence | conformance-covered | rungs |
 | k.server | Thin server | conformance-covered | loads |
-| k.leave | What a request leaves | implemented | state |
+| k.leave | What a request leaves | conformance-covered | state |
 | k.user | User, caller | conformance-covered | user |
 | k.mount | Mount pages | conformance-covered | submit |
 | k.mount-scope | Mount scope | conformance-covered | proxy |

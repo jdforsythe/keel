@@ -1,5 +1,5 @@
 # k.leave: What a request leaves
-status: implemented
+status: conformance-covered
 
 What a request `createApp` serves (k.server) leaves in its document, in process-wide state and in the process once its response has gone out.
 
