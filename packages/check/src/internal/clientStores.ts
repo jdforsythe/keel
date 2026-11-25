@@ -16,12 +16,14 @@ import { moduleDiag } from "./modules/moduleDiag.ts";
 import { moduleOf } from "./modules/moduleOf.ts";
 import { short } from "./modules/short.ts";
 import { storeClasses } from "./storeClasses.ts";
+import type { Maker } from "./storeMakers/Maker.ts";
 import type { MakerPath } from "./storeMakers/MakerPath.ts";
 import type { SiteRead } from "./storeMakers/SiteRead.ts";
 import { calleeKey } from "./storeMakers/calleeKey.ts";
 import { deferredTo } from "./storeMakers/deferredTo.ts";
 import { fnKeyOf } from "./storeMakers/fnKeyOf.ts";
 import { makerRead } from "./storeMakers/makerRead.ts";
+import { makerValueUses } from "./storeMakers/makerValueUses.ts";
 import { topRefs } from "./topRefs.ts";
 import { topologyFor } from "./topologyFor.ts";
 
@@ -38,6 +40,13 @@ const notReadable = (part: string): string => {
 const STORES = "stores() in client code can send every request store to #k-state";
 type Use = { readonly call: number; readonly name: string } | { readonly other: number; readonly name: string };
 const unfollowed = (name: string): string => `${name} of @keel/store used other than as a call; check cannot follow it`;
+const MAKER_USE = "store maker  used other than as a call; check cannot follow it";
+/** E1107's message for a store maker used other than as a call, its name cut from its front to fit 89 units. */
+const makerUnfollowed = (name: string): string => {
+  const room = 89 - MAKER_USE.length;
+  const shown = name.length <= room ? name : `...${name.slice(name.length - room + 3)}`;
+  return `store maker ${shown} used other than as a call; check cannot follow it`;
+};
 
 /** What a top-level name of `file` is in `@keel/store`: its `store` or `stores` export, its namespace, or none. */
 function storeExport(name: string, file: SourceFile, project: readonly SourceFile[]): string | undefined {
@@ -153,11 +162,15 @@ function judges(file: SourceFile, modules: readonly ModuleInfo[], project: reado
   return [...found].sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
 }
 
-/** A site E1107 reads: a `store` call (its first argument) or a store maker's call (the paths its maker reads). */
-type Site = { readonly call: CallExpression; readonly maker: readonly MakerPath[] | undefined };
-/** The store makers by key (`fnKeyOf`), each with the argument paths its state schema reads. */
-type Makers = ReadonlyMap<string, readonly MakerPath[]>;
-/** Bounds the reads of `storeMakers`: a chain of makers longer than this is not followed to its end. */
+/** A site E1107 reads: a `store` call (its first argument) or a store maker's call (its maker and key). */
+type Site = { readonly call: CallExpression; readonly maker: Maker | undefined; readonly key: string | undefined };
+/** The store makers by key (`fnKeyOf`). */
+type Makers = ReadonlyMap<string, Maker>;
+/**
+ * Bounds the reads of `storeMakers`: a function holding a `store` call is a maker of depth 1, one calling a maker of
+ * depth n is of depth n + 1. Round n finds depth n + 1; a maker the round after this many still makes or changes (depth
+ * 17 and on) is unsettled, and each call of it is E1107 not readable at its callee, never judged or deferred.
+ */
 const MAKER_ROUNDS = 16;
 
 /** The `store` calls and store makers' calls of `file`. */
@@ -176,14 +189,14 @@ function sitesOf(
     const call = calls.get(use.call);
     if (call === undefined) continue;
     stores.add(call.start);
-    out.push({ call, maker: undefined });
+    out.push({ call, maker: undefined, key: undefined });
   }
   if (makers.size > 0)
     for (const call of calls.values()) {
       if (stores.has(call.start)) continue;
-      const key = calleeKey(call, file, project);
-      const paths = key === undefined ? undefined : makers.get(key);
-      if (paths !== undefined) out.push({ call, maker: paths });
+      const key = calleeKey(call.callee, file, project);
+      const maker = key === undefined ? undefined : makers.get(key);
+      if (maker !== undefined) out.push({ call, maker, key });
     }
   return out.sort((a, b) => a.call.start - b.call.start);
 }
@@ -197,23 +210,24 @@ const readSite = (site: Site, file: SourceFile, project: readonly SourceFile[]):
 /**
  * The store makers of the libraries' files and the sites they defer (k.leave E1107): a top-level function of a
  * library file holding a `store` call, or a call of another store maker, whose state schema it cannot read only at
- * that function's parameters (or their members) is a store maker reading those argument paths, and the site is
- * judged at the maker's callers. Read again until the makers stop changing, so a maker calling a maker is one.
+ * that function's parameters (or their members) is a store maker reading those argument paths and holding the
+ * classes the read took, and the site is judged at the maker's callers. Read again until the makers stop changing, so
+ * a maker calling a maker is one; the makers the round after `MAKER_ROUNDS` still makes or changes are `unsettled`.
  */
 function storeMakers(
   checked: readonly Checked[],
   modules: readonly ModuleInfo[],
   projectOf: (path: string) => readonly SourceFile[],
-): { readonly makers: Makers; readonly deferred: ReadonlySet<string> } {
+): { readonly makers: Makers; readonly deferred: ReadonlySet<string>; readonly unsettled: ReadonlySet<string> } {
   const libs = checked.filter(
     ({ file }) =>
       moduleOf(file.path, modules)?.library === true && !isTestPath(file.path) && !SERVER_ONLY_NAME.test(file.path),
   );
   let makers: Makers = new Map();
   let deferred = new Set<string>();
-  let seen = "";
-  for (let round = 0; round < MAKER_ROUNDS; round++) {
-    const next = new Map<string, MakerPath[]>();
+  let seen = new Map<string, string>();
+  for (let round = 0; round <= MAKER_ROUNDS; round++) {
+    const next = new Map<string, { paths: MakerPath[]; classes: Set<string> }>();
     const later = new Set<string>();
     for (const { file, parsed } of libs) {
       const project = projectOf(file.path);
@@ -224,27 +238,37 @@ function storeMakers(
         if (to === undefined) continue;
         later.add(`${file.path}:${site.call.start}`);
         const key = fnKeyOf(file, to.fn);
-        const paths = next.get(key) ?? [];
+        const maker = next.get(key) ?? { paths: [], classes: new Set<string>() };
         for (const p of to.paths)
-          if (!paths.some((q) => q.index === p.index && q.members.join(".") === p.members.join("."))) paths.push(p);
-        next.set(key, paths);
+          if (!maker.paths.some((q) => q.index === p.index && q.members.join(".") === p.members.join(".")))
+            maker.paths.push(p);
+        for (const c of to.classes) maker.classes.add(c);
+        next.set(key, maker);
       }
     }
-    const shown = JSON.stringify([...next].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
+    const shown = new Map(
+      [...next].map(([k, m]) => [
+        k,
+        JSON.stringify([m.paths.map((p) => [p.index, ...p.members].join(".")).sort(), [...m.classes].sort()]),
+      ]),
+    );
     makers = next;
     deferred = later;
-    if (shown === seen) break;
+    const changed = [...shown].filter(([k, v]) => seen.get(k) !== v).map(([k]) => k);
+    if (changed.length === 0 && shown.size === seen.size) return { makers, deferred, unsettled: new Set() };
+    if (round === MAKER_ROUNDS) return { makers, deferred, unsettled: new Set(changed) };
     seen = shown;
   }
-  return { makers, deferred };
+  return { makers, deferred, unsettled: new Set() };
 }
 
 /**
  * E1107 (k.leave E1107) over the checked files: each `store` call of `@keel/store`, and each call of a library's store
- * maker (`storeMakers`, read at the argument paths its state schema reads), whose state schema holds a `.pii(class)` a judging module's `clientPii`
- * does not list (the fix adds the classes when one module lacks them), a state schema it cannot read, a `stores()`
- * call, and `store` or `stores` used other than as a call; none of the last three has a fix. `projectOf` gives each
- * file's project.
+ * maker (`storeMakers`: its own classes and those at the argument paths its state schema reads), whose state schema
+ * holds a `.pii(class)` a judging module's `clientPii` does not list (the fix adds the classes when one module lacks
+ * them), a state schema it cannot read (a call of an unsettled maker among them), a `stores()` call, and `store`,
+ * `stores` or a store maker used other than as a call; none of the last four has a fix. `projectOf` gives each file's
+ * project.
  */
 export function clientStores(
   checked: readonly Checked[],
@@ -252,7 +276,7 @@ export function clientStores(
   projectOf: (path: string) => readonly SourceFile[],
 ): Diagnostic[] {
   const out: Diagnostic[] = [];
-  const { makers, deferred } = storeMakers(checked, modules, projectOf);
+  const { makers, deferred, unsettled } = storeMakers(checked, modules, projectOf);
   for (const { file, parsed } of checked) {
     if (LIBRARY.test(file.path) || isTestPath(file.path)) continue;
     const project = projectOf(file.path);
@@ -267,7 +291,15 @@ export function clientStores(
       if ("other" in use) at(use.other, unfollowed(use.name));
       else if (use.name === "stores") at(use.call, STORES);
     }
+    if (makers.size > 0)
+      for (const use of makerValueUses(file, parsed.program, project, makers, modules))
+        at(use.at, makerUnfollowed(use.name));
     for (const site of sitesOf(file, parsed.program, uses, makers, project)) {
+      if (site.key !== undefined && unsettled.has(site.key)) {
+        const callee = site.call.callee;
+        at(site.call.start, notReadable(`${file.source.slice(callee.start, callee.end).replace(/\s+/g, " ")}()`));
+        continue;
+      }
       if (deferred.has(`${file.path}:${site.call.start}`)) continue;
       const read = readSite(site, file, project);
       if (read === undefined) continue;

@@ -16,8 +16,9 @@ function partText(part: Argument, file: SourceFile): string {
 
 /**
  * The `.pii(class)` classes a store's state schema `expr` of `file` holds (k.leave E1107), read by `schemaRead`, or
- * the first part of `file` it cannot read (`unread`, as one line of source) when a part cannot be read (`'unknown'`,
- * k.privacy-reads) or a `.pii()` names its class other than by a string literal, with every such part (`parts`). The
+ * also the first part of `file` it cannot read (`unread`, as one line of source) when a part cannot be read
+ * (`'unknown'`, k.privacy-reads) or a `.pii()` names its class other than by a string literal, with every such part
+ * (`parts`); `classes` then holds those of the parts it did read. The
  * arguments of `s.enum(...)` and `s.literal(...)` are values, not read. A package's schema value holds none the app
  * must list; a package factory's call is read through its source (k.privacy-reads Factories).
  */
@@ -27,7 +28,11 @@ export function storeClasses(
   project: readonly SourceFile[],
 ):
   | { readonly classes: ReadonlySet<string> }
-  | { readonly unread: string; readonly parts: readonly { readonly part: Argument; readonly file: SourceFile }[] } {
+  | {
+      readonly classes: ReadonlySet<string>;
+      readonly unread: string;
+      readonly parts: readonly { readonly part: Argument; readonly file: SourceFile }[];
+    } {
   const classes = new Set<string>();
   let unread: string | undefined;
   const parts: { part: Argument; file: SourceFile }[] = [];
@@ -58,5 +63,5 @@ export function storeClasses(
     },
   };
   if (schemaRead(expr, file, project, q) !== "unknown") return { classes };
-  return { unread: unread ?? partText(expr, file), parts };
+  return { classes, unread: unread ?? partText(expr, file), parts };
 }

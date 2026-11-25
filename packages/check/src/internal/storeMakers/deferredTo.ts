@@ -93,16 +93,16 @@ function pathOf(part: Argument, top: Top, program: Program): MakerPath | undefin
 }
 
 /**
- * The top-level function of `file` a site at `pos` lies in and the argument paths it reads, when every part of `read`
- * it cannot read is a parameter of that function, or a member of one, in `file`: the site's state schema is its
- * caller's (k.leave E1107).
+ * The top-level function of `file` a site at `pos` lies in, the argument paths it reads and the classes `read` took,
+ * when every part of `read` it cannot read is a parameter of that function, or a member of one, in `file`: the site's
+ * state schema is its caller's (k.leave E1107).
  */
 export function deferredTo(
   read: SiteRead,
   pos: number,
   file: SourceFile,
   program: Program,
-): { readonly fn: ReadFn; readonly paths: readonly MakerPath[] } | undefined {
+): { readonly fn: ReadFn; readonly paths: readonly MakerPath[]; readonly classes: ReadonlySet<string> } | undefined {
   if (!("parts" in read) || read.parts.length === 0) return undefined;
   const top = topFunctions(program).find((t) => t.fn.start <= pos && pos < t.fn.end);
   if (top === undefined) return undefined;
@@ -113,5 +113,5 @@ export function deferredTo(
     if (path === undefined) return undefined;
     paths.push(path);
   }
-  return { fn: top.fn, paths };
+  return { fn: top.fn, paths, classes: read.classes };
 }

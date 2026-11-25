@@ -2,7 +2,7 @@ import type { Argument, CallExpression, Expression } from "oxc-parser";
 import type { SourceFile } from "../../types/SourceFile.ts";
 import { followRef } from "../followRef.ts";
 import { storeClasses } from "../storeClasses.ts";
-import type { MakerPath } from "./MakerPath.ts";
+import type { Maker } from "./Maker.ts";
 import type { SiteRead } from "./SiteRead.ts";
 
 type At = { readonly expr: Argument; readonly file: SourceFile };
@@ -48,19 +48,27 @@ function reach(node: Argument, file: SourceFile, members: readonly string[], pro
 }
 
 /**
- * The classes a store maker's call holds at the argument paths its state schema reads (k.leave E1107), or the first
- * part not read and every such part. A path that reaches no argument reads nothing.
+ * The classes a store maker's call holds (k.leave E1107): the maker's own and those at the argument paths its state
+ * schema reads, with the first part not read and every such part when one is not. A path that reaches no argument
+ * reads nothing; a spread argument at or before a path's index makes that path unread (at the spread, as one line of
+ * source), its part the call itself, so a maker calling a maker this way is no maker.
  */
 export function makerRead(
   call: CallExpression,
   file: SourceFile,
   project: readonly SourceFile[],
-  paths: readonly MakerPath[],
+  maker: Maker,
 ): SiteRead {
-  const classes = new Set<string>();
+  const classes = new Set(maker.classes);
   let first: string | undefined;
   const parts: { readonly part: Argument; readonly file: SourceFile }[] = [];
-  for (const path of paths) {
+  for (const path of maker.paths) {
+    const spread = call.arguments.slice(0, path.index + 1).find((a) => a.type === "SpreadElement");
+    if (spread !== undefined) {
+      first ??= file.source.slice(spread.start, spread.end).replace(/\s+/g, " ");
+      parts.push({ part: call, file });
+      continue;
+    }
     const arg = call.arguments[path.index];
     if (arg === undefined) continue;
     const at = reach(arg, file, path.members, project);
@@ -70,5 +78,5 @@ export function makerRead(
       parts.push(...read.parts);
     } else for (const c of read.classes) classes.add(c);
   }
-  return first === undefined ? { classes } : { unread: first, parts };
+  return first === undefined ? { classes } : { classes, unread: first, parts };
 }

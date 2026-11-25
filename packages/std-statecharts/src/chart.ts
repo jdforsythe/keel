@@ -90,6 +90,6 @@ export function chart<
     return { store: st, events: asEvents(table), enabled };
   };
   // Declared outside a scope (module level): the store lives as long as the module, as a module-level `store` does.
-  const own = owner() === undefined ? detached(() => compile(id)) : compile(id);
+  const own = owner() === undefined ? detached(compile, id) : compile(id);
   return { ...own, data: spec.data, states: spec.states, initial: spec.initial, next, taken, [compileKey]: compile };
 }
