@@ -17,25 +17,34 @@ const enter = (x: unknown, above: Above): number => (typeof x === "object" && x 
 
 /**
  * Validate `x` against `node`, appending every failure to `issues`. A container node judges the value's own shape
- * first (k.schema Plain data) and reads nothing under a value that is not a plain container. A Proxy whose trap
- * throws makes it throw; `make` turns that into an issue.
+ * first (k.schema Plain data) and reads nothing under a value that is not a plain container. An array in `copies` is
+ * one `seal` built in this parse from a plain array's items, so it is plain by construction and its shape is not read
+ * again; its items are judged as any array's. A Proxy whose trap throws makes it throw; `make` turns that into an
+ * issue.
  */
-export function check(node: Node, x: unknown, path: Path, issues: Issue[], above: Above = []): void {
+export function check(
+  node: Node,
+  x: unknown,
+  path: Path,
+  issues: Issue[],
+  above: Above = [],
+  copies: ReadonlySet<object> = new Set(),
+): void {
   switch (node.kind) {
     case "nullable":
-      if (x !== null) check(node.inner, x, path, issues, above);
+      if (x !== null) check(node.inner, x, path, issues, above, copies);
       break;
     case "optional":
-      check(node.inner, x, path, issues, above);
+      check(node.inner, x, path, issues, above, copies);
       break;
     case "secret":
-      if (Secret.is(x)) check(node.inner, Secret.open(x), path, issues);
+      if (Secret.is(x)) check(node.inner, Secret.open(x), path, issues, [], copies);
       else if (x === Secret.marker) issues.push({ path, rule: "secret-missing" });
-      else check(node.inner, x, path, issues, above);
+      else check(node.inner, x, path, issues, above, copies);
       break;
     case "format": {
       const before = issues.length;
-      check(node.base, x, path, issues, above);
+      check(node.base, x, path, issues, above, copies);
       // Fail closed: a format node with no in-memory check (deserialized, or another copy of @keel/schema) refuses.
       if (issues.length === before && formats.get(node)?.test(x) !== true) issues.push({ path, rule: "format" });
       break;
@@ -44,11 +53,11 @@ export function check(node: Node, x: unknown, path: Path, issues: Issue[], above
       if (!isJson(x)) issues.push({ path, rule: "type" });
       break;
     case "array": {
-      const items = plainItems(x);
+      const items = Array.isArray(x) && copies.has(x) ? x : plainItems(x);
       if (items === undefined) issues.push({ path, rule: "type" });
       else {
         const pushed = enter(x, above);
-        for (const [i, item] of items.entries()) check(node.item, item, [...path, i], issues, above);
+        for (const [i, item] of items.entries()) check(node.item, item, [...path, i], issues, above, copies);
         if (pushed > 0) above.pop();
       }
       break;
@@ -59,7 +68,7 @@ export function check(node: Node, x: unknown, path: Path, issues: Issue[], above
       else {
         const pushed = enter(x, above);
         own.keys.forEach((key, i) => {
-          check(node.value, own.values[i], [...path, key], issues, above);
+          check(node.value, own.values[i], [...path, key], issues, above, copies);
         });
         if (pushed > 0) above.pop();
       }
@@ -90,7 +99,7 @@ export function check(node: Node, x: unknown, path: Path, issues: Issue[], above
         } else if (values[i] === null && field.kind === "optional" && field.inner.kind !== "nullable") {
           issues.push({ path: at, rule: "optional-null" });
         } else {
-          check(field, values[i], at, issues, above);
+          check(field, values[i], at, issues, above, copies);
         }
       }
       if (pushed > 0) above.pop();
@@ -105,14 +114,14 @@ export function check(node: Node, x: unknown, path: Path, issues: Issue[], above
       const at = own.keys.indexOf(node.key);
       const variant = at < 0 ? undefined : variantOf(node, own.values[at]);
       if (variant === undefined) issues.push({ path: [...path, node.key], rule: "discriminant" });
-      else check(variant, x, path, issues, above);
+      else check(variant, x, path, issues, above, copies);
       break;
     }
     case "anyOf": {
       let last: Issue[] = [];
       for (const member of node.members) {
         last = [];
-        check(member, x, path, last, above);
+        check(member, x, path, last, above, copies);
         if (last.length === 0) return;
       }
       issues.push(...last);

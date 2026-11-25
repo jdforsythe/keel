@@ -3,7 +3,7 @@ status: conformance-covered
 
 **Package.** `@keel/std-headless`, client-safe, no config, no capability, no CSS. Widgets: `Listbox`, `Combobox`, `Menu`, `Tabs` (std.options), `Dialog`, `Disclosure`, `Toaster` (here); charts `optionsChart`, `openChart`, `toastChart`; `listChart`, `stableRows` (std.lists); types `Option`, `ToastItem`. Each widget is a component file (`.ts`) that calls `Part` (k.aria), base elements and `For` and `If` as functions. Keyboard, focus and ARIA follow the APG 1.2 pattern each widget names. Read once: `id`, `label` or `labelledBy`, `styles`, a Dialog's `level` and `alert`, a Menu item's role.
 
-**Ids.** A widget takes `id` and gives each part the id `<id>.<part>` from its table (k.component). Option, tab and toast keys become id segments: 1 to 64 characters of `[A-Za-z0-9_-]`, unique in the widget, else E2801 at render. Tests address parts by these ids.
+**Ids.** A widget takes `id` and gives each part the id `<id>.<part>` from its table (k.component); a widget that wraps its parts in a `Box` gives it `<id>.root`, and a slot rendered in a `span` (an option's slot, Combobox's `empty`) gives the span `<part id>.content`. Option, tab and toast keys become id segments: 1 to 64 characters of `[A-Za-z0-9_-]`, unique in the widget, else E2801 at render. Tests address parts by these ids.
 
 **Text.** No widget holds copy: each string a person sees or hears is a prop (`label`, an option's `text`, `title`, `dismiss`) or a slot's output, so it comes from a message set (std.messages). A widget with a name takes `label` (written as `aria-label`) or `labelledBy` (an element id), exactly one.
 

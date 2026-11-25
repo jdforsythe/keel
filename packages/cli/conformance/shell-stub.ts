@@ -5,6 +5,7 @@
 // Each call of the target's `build` appends one JSON line to `build-calls.txt` of the project: `{ dir, origin, connect, platform, release, www, a, keys, envKeys }` (`www` and `a`: whether `www/index.html` and `a.json` were already in `dir`; `keys` the keys of the `ShellBuild` it was given, `envKeys` those of its `env`; `origin` is absent from the line when the build has none).
 // The project has a `node` deployable `api` beside `web` unless `stubProject(cfg, false)` asks for `web` alone (k.shell Without a server); `run` sets `KEEL_ORIGIN` to `ORIGIN` unless given another value, `""` (empty) or `UNSET`.
 // The stub is plain JavaScript (a `.ts` file under `node_modules` is not run by Node); its `.` and `./shellMount` re-export the real package's drivers and `shellMount`, so the shell entry bundles.
+import { testTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -150,7 +151,7 @@ export function run(
     cwd: dir,
     encoding: "utf8",
     env,
-    timeout: 240_000,
+    timeout: testTime(240_000),
   });
   const records: Rec[] = [];
   for (const line of r.stdout.split("\n")) {

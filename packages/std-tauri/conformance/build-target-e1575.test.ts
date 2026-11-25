@@ -3,6 +3,7 @@
 // Seed: 1337.
 // No native tool runs: `PATH` is a directory (or several) that holds no executable, so the toolchain step (k.shell Build 3, before any work) reports the missing tool.
 // UNTESTABLE without a tool: "too old" (the spec does not say how a version is read, and any reading means running a tool); the Capacitor, Gradle and Xcode toolchains (JDK 21, Android SDK, Xcode 26): the spec does not say how they are found.
+import { testTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -66,7 +67,7 @@ function build(dirs: readonly string[]): { status: number | null; records: Rec[]
     cwd: project,
     encoding: "utf8",
     env,
-    timeout: 120_000,
+    timeout: testTime(120_000),
   });
   const records: Rec[] = [];
   for (const line of r.stdout.split("\n")) {

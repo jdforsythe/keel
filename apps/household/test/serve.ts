@@ -69,7 +69,7 @@ export const webApp = (ctx: SimCtx, lines: string[] = []) =>
  * an API token through the members API: `fetch` sends that token with every request that carries no `cookie` or
  * `authorization` of its own, for tests that call the API directly, and `user` is the member's id. `app` is the
  * `createApp` result, as `renderRoute`'s `app`: with `user` the page and every request it sends are the member's
- * (k.user Testing). `sent` lists `METHOD /path` of what `fetch` sent, and `lines` every line the server logged. With
+ * (k.user Testing); `cookie` is the session cookie the member's sign-in set (`''` when not signed in). `sent` lists `METHOD /path` of what `fetch` sent, and `lines` every line the server logged. With
  * `using` (a `simulate` run's ctx) the server runs on that ctx, whose clock the run drives; otherwise on a ctx of its
  * own from `seed`, whose clock the test moves.
  */
@@ -84,6 +84,7 @@ export async function served(
   fetch: Fetch;
   raw: Fetch;
   user: string;
+  cookie: string;
   token: string;
   app: Awaited<ReturnType<typeof createApp>>;
 }> {
@@ -91,7 +92,7 @@ export async function served(
   const lines: string[] = [];
   const web = await webApp(ctx, lines);
   const raw: Fetch = (req) => web.fetch(req);
-  if (signedIn) await signIn(raw);
+  const cookie = signedIn ? await signIn(raw) : "";
   const rows = await membersDb(ctx).query(sql(UserRow)`select user_id as "userId" from members`);
   const user = rows.ok ? (rows.value[0]?.userId ?? "") : "";
   const minted = user === "" ? null : await membersApi.mint({ body: { days: 30 }, user }, ctx);
@@ -104,8 +105,16 @@ export async function served(
     headers.set("authorization", `Bearer ${token}`);
     return web.fetch(new Request(req, { headers }));
   };
-  return { ctx, sent, lines, fetch, raw, user, token, app: web };
+  return { ctx, sent, lines, fetch, raw, user, cookie, token, app: web };
 }
+
+/**
+ * The time bound of a test that signs members up and in: `hashes` password hashes at the sign-in library's own scrypt
+ * cost (a sign-up, a sign-in and a submitted sign-in form are one each: `served` makes two, `household` four), about
+ * 45 ms each here, and `pages` list or member pages rendered and driven, about 100 ms each here, each twenty times
+ * over, beside vitest's 5 s for the rest of the test.
+ */
+export const boundFor = (hashes: number, pages: number): number => 5_000 + 20 * (45 * hashes + 100 * pages);
 
 /** A JSON request as a services client sends it. */
 export const asJson = (method: string, path: string, body?: unknown, headers: Record<string, string> = {}): Request =>

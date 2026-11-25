@@ -58,6 +58,7 @@ export function Combobox<K extends string>(
     return true;
   };
   return Box({
+    id: `${id}.root`,
     children: () => [
       Part({
         ...props.styles?.input,
@@ -103,7 +104,7 @@ export function Combobox<K extends string>(
                   l.choose();
                   props.onChange(key);
                 },
-                children: () => content(o, props.option, s),
+                children: () => content({ id: l.partId(key), current: o, slot: props.option, state: s }),
               });
             },
           }),
@@ -117,7 +118,7 @@ export function Combobox<K extends string>(
             get when() {
               return l.open.get() && none.get();
             },
-            children: () => Text({ as: "span", children: () => props.empty?.() ?? "" }),
+            children: () => Text({ id: `${id}.empty.content`, as: "span", children: () => props.empty?.() ?? "" }),
           }),
       }),
     ],

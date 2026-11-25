@@ -5,9 +5,9 @@ import type { Signal } from "@keel/reactive";
 import { render } from "@keel/testing";
 import { Text } from "@keel/ui";
 import { expect, test } from "vitest";
-import { page, simCtx } from "../conformance/fixtures.ts";
 import type { Option } from "../src/Option.ts";
 import { Tabs } from "../src/Tabs.ts";
+import { page, simCtx } from "./support.ts";
 
 const tabs: readonly Option[] = [
   { key: "a", text: "A" },

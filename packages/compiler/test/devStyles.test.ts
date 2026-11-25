@@ -32,6 +32,8 @@ beforeEach(() => {
   write("node_modules/brand-faces/brand.woff2", "woff2");
 });
 afterEach(async () => {
+  // fetch keeps its connections alive; closing them lets the listener close now rather than when they idle out.
+  server?.closeAllConnections();
   await new Promise<void>((resolve) => (server === undefined ? resolve() : server.close(() => resolve())));
   await vite?.close();
   server = undefined;

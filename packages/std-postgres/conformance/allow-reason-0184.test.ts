@@ -10,13 +10,13 @@ import { database } from "@keel/std-postgres/server";
 import { ready } from "@keel/std-postgres/testing";
 import fc from "fast-check";
 import { beforeAll, expect, test } from "vitest";
-import { SEED, fresh, migrationsOf, simCtx } from "./fixtures.ts";
+import { ENGINE_BOUND, SEED, fresh, migrationsOf, simCtx } from "./fixtures.ts";
 import { s } from "@keel/schema";
 import { dbFile, found, project } from "./rules-fixtures.ts";
 
 beforeAll(async () => {
   await ready();
-});
+}, ENGINE_BOUND);
 const Any = s.object({ v: s.json() });
 
 function setup() {

@@ -6,7 +6,7 @@ import path from "node:path";
 import { compile } from "@keel/compiler";
 import { render } from "@keel/testing";
 import { afterAll, expect, test } from "vitest";
-import { el, isRecord, shown, simCtx } from "../conformance/fixtures.ts";
+import { isOpen, isRecord, shown, simCtx } from "./support.ts";
 
 const dir = path.join(import.meta.dirname, "fixtures");
 const out = path.join(dir, "Shipping.compiled.ts");
@@ -32,14 +32,14 @@ test("JSX children, slot props returning JSX and a `close` callback render throu
     },
   );
   expect(t.find("ship.button").text).toBe("Shipping");
-  expect(shown("ship.panel")).toBe(false);
+  expect(shown(t, "ship.panel")).toBe(false);
   await t.fire("ship.button", { type: "click" });
   expect(t.find("ship.body").text).toBe("Ships in two days.");
-  expect(shown("ship.panel")).toBe(true);
+  expect(shown(t, "ship.panel")).toBe(true);
   await t.fire("dlg.trigger", { type: "click" });
-  expect(el("dlg.dialog")?.hasAttribute("open")).toBe(true);
+  expect(isOpen(t, "dlg")).toBe(true);
   await t.fire("dlg.ok", { type: "click" });
-  expect(el("dlg.dialog")?.hasAttribute("open")).toBe(false);
+  expect(isOpen(t, "dlg")).toBe(false);
   expect(t.find("tb.body.box").text).toBe("box");
   t.dispose();
 });

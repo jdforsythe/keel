@@ -19,6 +19,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { run } from "./output.ts";
+import { dryRunJson } from "./turbo-dry.mjs";
 
 const root = new URL("..", import.meta.url).pathname;
 const SKIP = new Set(["node_modules", "dist", "fixtures", "reports", "coverage"]);
@@ -101,7 +102,7 @@ function testTasks(filters = []) {
     maxBuffer: 256 * 1024 * 1024,
   });
   if (r.status !== 0) throw new Error(`turbo --dry failed: ${r.stderr.trim().split("\n").at(-1)}`);
-  return JSON.parse(r.stdout)
+  return dryRunJson(r.stdout)
     .tasks.filter((t) => t.task === "test" && t.command !== "<NONEXISTENT>")
     .map((t) => ({ name: t.package, dir: t.directory }));
 }

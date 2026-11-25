@@ -32,12 +32,17 @@ describe("simulate run()", () => {
     expect(seen).toEqual(["200"]);
   });
 
-  it("property: under any schedule the request has an outcome once run() resolves", async () => {
-    await simulate(
-      async ({ ctx, run }) => {
-        expect(await answered(ctx, run)).toHaveLength(1);
-      },
-      { runs: 20 },
-    );
-  });
+  // Each run's route reads this file 20 times: about 50 ms a run here, so 1 s a run for the 20 runs.
+  it(
+    "property: under any schedule the request has an outcome once run() resolves",
+    { timeout: 20 * 1_000 },
+    async () => {
+      await simulate(
+        async ({ ctx, run }) => {
+          expect(await answered(ctx, run)).toHaveLength(1);
+        },
+        { runs: 20 },
+      );
+    },
+  );
 });

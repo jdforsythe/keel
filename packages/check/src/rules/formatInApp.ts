@@ -8,11 +8,12 @@ import type { RuleDef } from "../types/RuleDef.ts";
 /**
  * E1106 (k.schema): `s.format` in app code. Reported at each `<s>.format` member, `<s>` a local name bound to `s`
  * from `@keel/schema` (renamed imports too) or `<ns>.s` of a namespace import. No fix: the app uses a stdlib format
- * type instead, which is a choice of type, not an edit.
+ * type instead, which is a choice of type, not an edit. `check()` drops the finding in a library's `src/` and `unsafe/`
+ * files, where `s.format` declares the library's format types (k.formats Who declares).
  */
 export const formatInApp: RuleDef = {
   code: "E1106",
-  message: () => "`s.format` in app code; use a stdlib format type",
+  message: () => "`s.format` in app code; use a library's format type",
   see: "k.schema",
   check: ({ file, ast }) => {
     if (!isAppPath(file.path)) return [];

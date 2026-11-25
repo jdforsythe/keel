@@ -10,7 +10,7 @@ import type { RouteTable } from "@keel/router";
 import { createApp, topology } from "@keel/server";
 import { renderRoute } from "@keel/testing";
 import { afterAll, beforeAll, expect, test } from "vitest";
-import { isRecord } from "../conformance/fixtures.ts";
+import { isRecord } from "./support.ts";
 
 const dir = path.join(import.meta.dirname, "fixtures");
 const out = path.join(dir, "TwoBrowsers.compiled.ts");

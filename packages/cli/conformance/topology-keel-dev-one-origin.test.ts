@@ -2,6 +2,7 @@
 // Seed 1337 (no generated input: one fixture, one spawn). Spawns the real binary over a temp project with `@keel/*` and `vite`
 // linked, `keel dev --port p` with `p` from a closed listener on port 0, as dev-port-0091.test.ts does. The wait is a retry, with a fixed pause,
 // of a socket connection, bounded by a count of pauses. Only the child this test started is signalled (its process group), in a `finally`; every child is ended in `afterEach`.
+import { testTime } from "@keel/tooling/test-time";
 import { type ChildProcess, spawn, spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readdirSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import http from "node:http";
@@ -150,7 +151,7 @@ type Reply = { readonly status: number; readonly body: string };
  */
 const get = (port: number, path: string, headers: Record<string, string> = {}): Promise<Reply | null> =>
   new Promise((done) => {
-    const req = http.get({ host: "localhost", port, path, headers, agent: false, timeout: 10_000 }, (res) => {
+    const req = http.get({ host: "localhost", port, path, headers, agent: false, timeout: testTime(10_000) }, (res) => {
       const chunks: Buffer[] = [];
       res.on("data", (c: Buffer) => chunks.push(c));
       res.on("end", () => done({ status: res.statusCode ?? 0, body: Buffer.concat(chunks).toString("utf8") }));

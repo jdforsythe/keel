@@ -14,11 +14,13 @@ vi.mock("@capacitor/core", async (original) => {
 
 const run = { seed: 1337, numRuns: 100 };
 const ORIGIN = new URL("https://golden-1.example");
+/** The plugin answers within a few microtasks: poll each millisecond, not vitest's default 50 ms, which a run would wait out. */
+const POLL = { interval: 1 };
 const b64 = (b: Uint8Array): string => Buffer.from(b).toString("base64");
 
 /** Waits until the request has been sent, then returns its `id`. */
 async function sent(n: number): Promise<string> {
-  await vi.waitFor(() => expect(fakeKeelHttp.ids.length).toBeGreaterThanOrEqual(n));
+  await vi.waitFor(() => expect(fakeKeelHttp.ids.length).toBeGreaterThanOrEqual(n), POLL);
   return fakeKeelHttp.ids[n - 1] ?? "";
 }
 
@@ -44,7 +46,7 @@ describe("capacitorNet over KeelHttp", () => {
         fakeKeelHttp.emit("end", { id });
         const all = Buffer.concat(parts.map((p) => Buffer.from(p)));
         expect(Buffer.from(await body).equals(all)).toBe(true);
-        await vi.waitFor(() => expect(fakeKeelHttp.live()).toBe(0));
+        await vi.waitFor(() => expect(fakeKeelHttp.live()).toBe(0), POLL);
         expect(fakeKeelHttp.cancelled).toEqual([]);
       }),
       run,
@@ -76,7 +78,7 @@ describe("capacitorNet over KeelHttp", () => {
             abort.abort();
             await expect(reader.read()).rejects.toBe(abort.signal.reason);
           } else await reader.cancel();
-          await vi.waitFor(() => expect(fakeKeelHttp.live()).toBe(0));
+          await vi.waitFor(() => expect(fakeKeelHttp.live()).toBe(0), POLL);
           expect(fakeKeelHttp.cancelled).toEqual(how === "fail" ? [] : [id]);
           fakeKeelHttp.emit("chunk", { id, data: b64(new Uint8Array([1])) });
           fakeKeelHttp.emit("end", { id });

@@ -7,7 +7,7 @@ import { expect, it } from "vitest";
 import mount from "../identity.ts";
 import { shoppingDb } from "../modules/shopping/shoppingDb.server.ts";
 import { household, listPage } from "./household.ts";
-import { asJson, formPost } from "./serve.ts";
+import { asJson, boundFor, formPost } from "./serve.ts";
 
 const click = { type: "click" } as const;
 const Count = s.object({ n: s.int() });
@@ -48,46 +48,54 @@ function entryKey(page: { state(): Readonly<Record<string, unknown>> }): string 
   return Array.isArray(entries) && entries.length > 0 ? String(Reflect.get(Object(entries[0]), "key")) : "";
 }
 
-it("keeps a mark made offline on the page and sends it once when the connection is back", async () => {
-  const { h, page, milk } = await markedOffline(81);
-  expect(page.find(`shopping.waiting.${milk.id}`).text).toBe("Bought, waiting to send");
-  expect(page.find(`shopping.waiting.${milk.id}`).role).toBe("status");
-  expect(page.find("shopping.live").text).toContain("Offline");
-  expect(await stored(h)).toMatchObject([{ name: "Milk", bought: false, rev: 0 }]);
-  expect(await committed(h)).toBe(0);
+it(
+  "keeps a mark made offline on the page and sends it once when the connection is back",
+  { timeout: boundFor(4, 1) },
+  async () => {
+    const { h, page, milk } = await markedOffline(81);
+    expect(page.find(`shopping.waiting.${milk.id}`).text).toBe("Bought, waiting to send");
+    expect(page.find(`shopping.waiting.${milk.id}`).role).toBe("status");
+    expect(page.find("shopping.live").text).toContain("Offline");
+    expect(await stored(h)).toMatchObject([{ name: "Milk", bought: false, rev: 0 }]);
+    expect(await committed(h)).toBe(0);
 
-  h.ctx.net.setOnline(true);
-  await page.settle();
-  expect(await stored(h)).toMatchObject([{ name: "Milk", bought: true, rev: 1 }]);
-  expect(await committed(h)).toBe(1);
-  expect(page.find(`shopping.waiting.${milk.id}`).text).toBe("");
-  expect(page.find(`shopping.toggle.${milk.id}`).text).toBe("Back on the list");
-  expect(entryKey(page)).toBe("");
-  page.dispose();
-});
+    h.ctx.net.setOnline(true);
+    await page.settle();
+    expect(await stored(h)).toMatchObject([{ name: "Milk", bought: true, rev: 1 }]);
+    expect(await committed(h)).toBe(1);
+    expect(page.find(`shopping.waiting.${milk.id}`).text).toBe("");
+    expect(page.find(`shopping.toggle.${milk.id}`).text).toBe("Back on the list");
+    expect(entryKey(page)).toBe("");
+    page.dispose();
+  },
+);
 
-it("shows a mark the server refused because the item changed at home, and applies it when the member says so", async () => {
-  const { h, page, milk } = await markedOffline(82);
-  await h.raw(asJson("POST", "/api/items", { name: "Milk" }, { cookie: h.graceCookie }));
-  h.ctx.net.setOnline(true);
-  await page.settle();
-  const key = entryKey(page);
-  expect(page.find(`shopping.outbox.why.${key}`).text).toBe(
-    "Milk × 2: someone at home changed this item while your mark waited",
-  );
-  expect(page.find(`shopping.outbox.why.${key}`).role).toBe("alert");
-  expect(await stored(h)).toMatchObject([{ name: "Milk", qty: 2, bought: false, rev: 1 }]);
-  expect(await committed(h)).toBe(0);
+it(
+  "shows a mark the server refused because the item changed at home, and applies it when the member says so",
+  { timeout: boundFor(4, 1) },
+  async () => {
+    const { h, page, milk } = await markedOffline(82);
+    await h.raw(asJson("POST", "/api/items", { name: "Milk" }, { cookie: h.graceCookie }));
+    h.ctx.net.setOnline(true);
+    await page.settle();
+    const key = entryKey(page);
+    expect(page.find(`shopping.outbox.why.${key}`).text).toBe(
+      "Milk × 2: someone at home changed this item while your mark waited",
+    );
+    expect(page.find(`shopping.outbox.why.${key}`).role).toBe("alert");
+    expect(await stored(h)).toMatchObject([{ name: "Milk", qty: 2, bought: false, rev: 1 }]);
+    expect(await committed(h)).toBe(0);
 
-  await page.fire(`shopping.outbox.mine.${key}`, click);
-  expect(await stored(h)).toMatchObject([{ name: "Milk", qty: 2, bought: true, rev: 2 }]);
-  expect(await committed(h)).toBe(1);
-  expect(entryKey(page)).toBe("");
-  expect(page.find(`shopping.toggle.${milk.id}`).text).toBe("Back on the list");
-  page.dispose();
-});
+    await page.fire(`shopping.outbox.mine.${key}`, click);
+    expect(await stored(h)).toMatchObject([{ name: "Milk", qty: 2, bought: true, rev: 2 }]);
+    expect(await committed(h)).toBe(1);
+    expect(entryKey(page)).toBe("");
+    expect(page.find(`shopping.toggle.${milk.id}`).text).toBe("Back on the list");
+    page.dispose();
+  },
+);
 
-it("leaves the item as it is at home when the member says so", async () => {
+it("leaves the item as it is at home when the member says so", { timeout: boundFor(4, 1) }, async () => {
   const { h, page } = await markedOffline(83);
   await h.raw(asJson("POST", "/api/items", { name: "Milk" }, { cookie: h.graceCookie }));
   h.ctx.net.setOnline(true);
@@ -99,82 +107,94 @@ it("leaves the item as it is at home when the member says so", async () => {
   page.dispose();
 });
 
-it("says so when the item was removed at home, and the member dismisses the mark", async () => {
-  const { h, page, milk } = await markedOffline(84);
-  await h.raw(asJson("DELETE", `/api/items/${milk.id}`, undefined, { cookie: h.graceCookie }));
-  h.ctx.net.setOnline(true);
-  await page.settle();
-  const key = entryKey(page);
-  expect(page.find(`shopping.outbox.why.${key}`).text).toBe("An item: this item is no longer on the list");
-  await page.fire(`shopping.outbox.theirs.${key}`, click);
-  expect(entryKey(page)).toBe("");
-  expect(await stored(h)).toEqual([]);
-  page.dispose();
-});
+it(
+  "says so when the item was removed at home, and the member dismisses the mark",
+  { timeout: boundFor(4, 1) },
+  async () => {
+    const { h, page, milk } = await markedOffline(84);
+    await h.raw(asJson("DELETE", `/api/items/${milk.id}`, undefined, { cookie: h.graceCookie }));
+    h.ctx.net.setOnline(true);
+    await page.settle();
+    const key = entryKey(page);
+    expect(page.find(`shopping.outbox.why.${key}`).text).toBe("An item: this item is no longer on the list");
+    await page.fire(`shopping.outbox.theirs.${key}`, click);
+    expect(entryKey(page)).toBe("");
+    expect(await stored(h)).toEqual([]);
+    page.dispose();
+  },
+);
 
-it("commits a write sent twice once, and refuses a write for another member, for no one, or with no owner", async () => {
-  const h = await household(85);
-  await h.raw(asJson("POST", "/api/items", { name: "Milk" }, { cookie: h.graceCookie }));
-  const [milk] = await stored(h);
-  const mark = (owner: string, cookie: string, key = "Write_one") =>
-    h.raw(
-      asJson(
-        "POST",
-        `/api/items/${milk?.id}/bought`,
-        { bought: true, write: { key, base: 0, owner } },
-        cookie === "" ? {} : { cookie },
-      ),
-    );
-  const code = async (res: Response) => (await res.json()).error?.code;
+it(
+  "commits a write sent twice once, and refuses a write for another member, for no one, or with no owner",
+  { timeout: boundFor(4, 0) },
+  async () => {
+    const h = await household(85);
+    await h.raw(asJson("POST", "/api/items", { name: "Milk" }, { cookie: h.graceCookie }));
+    const [milk] = await stored(h);
+    const mark = (owner: string, cookie: string, key = "Write_one") =>
+      h.raw(
+        asJson(
+          "POST",
+          `/api/items/${milk?.id}/bought`,
+          { bought: true, write: { key, base: 0, owner } },
+          cookie === "" ? {} : { cookie },
+        ),
+      );
+    const code = async (res: Response) => (await res.json()).error?.code;
 
-  const other = await mark(h.user, h.graceCookie);
-  expect([other.status, await code(other)]).toEqual([400, "offline.owner"]);
-  const signedOut = await mark(h.user, "");
-  expect([signedOut.status, await code(signedOut)]).toEqual([400, "offline.signin"]);
-  const noOne = await mark("", "");
-  expect([noOne.status, await code(noOne)]).toEqual([403, "keel.denied"]);
-  expect(await stored(h)).toMatchObject([{ bought: false, rev: 0 }]);
+    const other = await mark(h.user, h.graceCookie);
+    expect([other.status, await code(other)]).toEqual([400, "offline.owner"]);
+    const signedOut = await mark(h.user, "");
+    expect([signedOut.status, await code(signedOut)]).toEqual([400, "offline.signin"]);
+    const noOne = await mark("", "");
+    expect([noOne.status, await code(noOne)]).toEqual([403, "keel.denied"]);
+    expect(await stored(h)).toMatchObject([{ bought: false, rev: 0 }]);
 
-  expect((await mark(h.user, h.adaCookie)).status).toBe(200);
-  expect((await mark(h.user, h.adaCookie)).status).toBe(200);
-  expect(await stored(h)).toMatchObject([{ bought: true, rev: 1 }]);
-  expect(await committed(h)).toBe(1);
-  const stale = await mark(h.user, h.adaCookie, "Write_two");
-  expect(stale.status).toBe(409);
-  expect((await stale.json()).error).toMatchObject({
-    code: "keel.conflict",
-    data: { transaction: "shopping.mark", head: 1 },
-  });
+    expect((await mark(h.user, h.adaCookie)).status).toBe(200);
+    expect((await mark(h.user, h.adaCookie)).status).toBe(200);
+    expect(await stored(h)).toMatchObject([{ bought: true, rev: 1 }]);
+    expect(await committed(h)).toBe(1);
+    const stale = await mark(h.user, h.adaCookie, "Write_two");
+    expect(stale.status).toBe(409);
+    expect((await stale.json()).error).toMatchObject({
+      code: "keel.conflict",
+      data: { transaction: "shopping.mark", head: 1 },
+    });
 
-  await h.raw(formPost(mount.href("/sign-out"), {}, h.adaCookie));
-  const after = await mark(h.user, h.adaCookie, "Write_three");
-  expect([after.status, await code(after)]).toEqual([400, "offline.signin"]);
-});
+    await h.raw(formPost(mount.href("/sign-out"), {}, h.adaCookie));
+    const after = await mark(h.user, h.adaCookie, "Write_three");
+    expect([after.status, await code(after)]).toEqual([400, "offline.signin"]);
+  },
+);
 
-it("keeps a write key to the member who sent it: two members' marks with one key both apply, one member's twice once", async () => {
-  const h = await household(86);
-  await h.raw(asJson("POST", "/api/items", { name: "Milk" }, { cookie: h.graceCookie }));
-  await h.raw(asJson("POST", "/api/items", { name: "Eggs" }, { cookie: h.graceCookie }));
-  const items = await stored(h);
-  const [first, second] = items;
-  if (first === undefined || second === undefined) throw new Error("the list holds fewer than two items");
-  const mark = (id: string, owner: string, cookie: string) =>
-    h.raw(
-      asJson(
-        "POST",
-        `/api/items/${id}/bought`,
-        { bought: true, write: { key: "Write_shared", base: 0, owner } },
-        { cookie },
-      ),
-    );
+it(
+  "keeps a write key to the member who sent it: two members' marks with one key both apply, one member's twice once",
+  { timeout: boundFor(4, 0) },
+  async () => {
+    const h = await household(86);
+    await h.raw(asJson("POST", "/api/items", { name: "Milk" }, { cookie: h.graceCookie }));
+    await h.raw(asJson("POST", "/api/items", { name: "Eggs" }, { cookie: h.graceCookie }));
+    const items = await stored(h);
+    const [first, second] = items;
+    if (first === undefined || second === undefined) throw new Error("the list holds fewer than two items");
+    const mark = (id: string, owner: string, cookie: string) =>
+      h.raw(
+        asJson(
+          "POST",
+          `/api/items/${id}/bought`,
+          { bought: true, write: { key: "Write_shared", base: 0, owner } },
+          { cookie },
+        ),
+      );
 
-  expect((await mark(first.id, h.user, h.adaCookie)).status).toBe(200);
-  expect((await mark(second.id, h.graceId, h.graceCookie)).status).toBe(200);
-  expect((await stored(h)).map((i) => [i.id, i.bought, i.rev])).toEqual(items.map((i) => [i.id, true, 1]));
-  expect(await committed(h)).toBe(2);
+    expect((await mark(first.id, h.user, h.adaCookie)).status).toBe(200);
+    expect((await mark(second.id, h.graceId, h.graceCookie)).status).toBe(200);
+    expect((await stored(h)).map((i) => [i.id, i.bought, i.rev])).toEqual(items.map((i) => [i.id, true, 1]));
+    expect(await committed(h)).toBe(2);
 
-  expect((await mark(first.id, h.user, h.adaCookie)).status).toBe(200);
-  expect((await mark(second.id, h.graceId, h.graceCookie)).status).toBe(200);
-  expect((await stored(h)).map((i) => i.rev)).toEqual([1, 1]);
-  expect(await committed(h)).toBe(2);
-});
+    expect((await mark(first.id, h.user, h.adaCookie)).status).toBe(200);
+    expect((await mark(second.id, h.graceId, h.graceCookie)).status).toBe(200);
+    expect((await stored(h)).map((i) => i.rev)).toEqual([1, 1]);
+    expect(await committed(h)).toBe(2);
+  },
+);

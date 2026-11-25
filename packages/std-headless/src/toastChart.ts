@@ -1,7 +1,5 @@
-import { s } from "@keel/schema";
 import { chart } from "@keel/std-statecharts";
-
-const none = s.object({});
+import { none } from "./internal/none.schema.ts";
 
 /**
  * One toast's life (std.headless): `showing` until it expires or is dismissed, `paused` while focus is inside it,

@@ -51,36 +51,37 @@ import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { pathToFileURL } from "node:url";
 import { run } from "../output.ts";
+import { fixedTime, testTime } from "../test-time.ts";
 import { BOARD_KEY, app, freePort, root, row, wait } from "./built.mjs";
 import { actionsOf, boardDiff, labelled, linkTo, normalized, outboxIn, outboxInPairs } from "./shellReplay.mjs";
 
 /** How long recording and replaying the session under simulation may take. */
-const SIM_MS = 180_000;
+const SIM_MS = testTime(180_000);
 /** How long the built api has to answer. */
-const LISTEN_MS = 20_000;
+const LISTEN_MS = testTime(20_000);
 /** How long the shell has to start, load its entry and read the board. */
-const LOAD_MS = 180_000;
+const LOAD_MS = testTime(180_000);
 /** How long an element named by an action has to appear, and a followed link to change the route. */
-const ELEMENT_MS = 15_000;
+const ELEMENT_MS = testTime(15_000);
 /** How long the proxy must see no request in flight before an action counts as settled. */
-const QUIET_MS = 600;
+const QUIET_MS = fixedTime(600);
 /** How long one action has to settle. */
-const SETTLE_MS = 20_000;
+const SETTLE_MS = testTime(20_000);
 /** How long the stored board must stay unchanged after the last action, and the most that may take. */
-const STILL_MS = 1_500;
-const STORED_MS = 15_000;
+const STILL_MS = fixedTime(1_500);
+const STORED_MS = testTime(15_000);
 /** How long the queued writes have to reach the shell's store, a killed app to be gone, and a drained store to empty. */
-const QUEUED_MS = 30_000;
+const QUEUED_MS = testTime(30_000);
 /** How long the driver has to build (`swiftc`, `xcodebuild build-for-testing`), and the UI test to start. */
-const BUILD_MS = 600_000;
-const READY_MS = 300_000;
+const BUILD_MS = testTime(600_000);
+const READY_MS = testTime(300_000);
 /** How long a simulator has to boot, and one `simctl` command to end. */
-const BOOT_MS = 300_000;
-const SIMCTL_MS = 120_000;
+const BOOT_MS = testTime(300_000);
+const SIMCTL_MS = testTime(120_000);
 /** How long one accessibility call has to end. */
-const AX_MS = 20_000;
+const AX_MS = testTime(20_000);
 /** The pause between two polls. */
-const POLL_MS = 100;
+const POLL_MS = fixedTime(100);
 /** The app id of golden-1's shells (`topology.ts`). */
 const APP_ID = "dev.keel.golden1";
 /** The app `xcodebuild` installs to run the UI test (`ShellDrive.xcodeproj`'s bundle id and `.xctrunner`). */
@@ -464,7 +465,7 @@ function iosDriver(tmp, state) {
         if (asking !== undefined) {
           queued = { kind: "end" };
           hand();
-          await until(() => test.out.exited !== undefined, 20_000);
+          await until(() => test.out.exited !== undefined, testTime(20_000));
         }
         await stop(test);
       }
@@ -566,7 +567,7 @@ await run("shell-drive", async () => {
       });
       const listening = await until(
         () =>
-          fetch(`http://127.0.0.1:${apiPort}/api/lists`, { signal: AbortSignal.timeout(2_000) }).then(
+          fetch(`http://127.0.0.1:${apiPort}/api/lists`, { signal: AbortSignal.timeout(testTime(2_000)) }).then(
             (r) => r.ok,
             () => false,
           ),
@@ -643,7 +644,7 @@ await run("shell-drive", async () => {
     const offline = async () => {
       doing = "stop the server";
       await unserve();
-      const refused = await fetch(new URL("/api/lists", origin), { signal: AbortSignal.timeout(2_000) }).then(
+      const refused = await fetch(new URL("/api/lists", origin), { signal: AbortSignal.timeout(testTime(2_000)) }).then(
         () => false,
         () => true,
       );

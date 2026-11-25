@@ -69,12 +69,12 @@ test("optionsChart agrees with a naive list model under generated event sequence
         const i = instance(optionsChart, `p${n}`);
         let m: Naive = { open: false, list: [], active: null, back: false };
         for (const x of evs) {
-          if (x.e === "open") tx(i.events.open, { count: x.count, at: x.at });
-          else if (x.e === "close") tx(i.events.close, { back: x.back });
-          else if (x.e === "choose") tx(i.events.choose, {});
-          else if (x.e === "move") tx(i.events.move, { by: x.by, wrap: x.wrap });
-          else if (x.e === "jump") tx(i.events.jump, { to: x.to });
-          else tx(i.events.items, { count: x.count });
+          if (x.e === "open") void tx(i.events.open, { count: x.count, at: x.at });
+          else if (x.e === "close") void tx(i.events.close, { back: x.back });
+          else if (x.e === "choose") void tx(i.events.choose, {});
+          else if (x.e === "move") void tx(i.events.move, { by: x.by, wrap: x.wrap });
+          else if (x.e === "jump") void tx(i.events.jump, { to: x.to });
+          else void tx(i.events.items, { count: x.count });
           m = step(m, x);
           const v = i.store.snapshot().state;
           expect(v.state).toBe(m.open ? "open" : "closed");

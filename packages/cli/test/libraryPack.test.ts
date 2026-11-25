@@ -177,6 +177,13 @@ describe("the package step", () => {
       "files",
       "files ships tokens.ts",
     ],
+    [
+      "a code file outside the read places shipped",
+      { ...PKG, files: [...PKG.files, "lib"] },
+      { ...FILES, "lib/x.ts": "export const x = 1\n" },
+      "files",
+      "files ships lib/x.ts, code outside module.ts, src/ and unsafe/",
+    ],
   ];
   for (const [what, pkg, files, field, message] of refused)
     it(`refuses ${what}: one E1164 at the ${field} field, its message beginning with package`, () => {
@@ -193,6 +200,17 @@ describe("the package step", () => {
 
   it("a .env not selected by files is not refused: the tarball never holds it", () => {
     expect(shape(PKG, { ...FILES, ".env": "SECRET=1\n", "tokens.ts": "export const tokens = {}\n" })).toBeUndefined();
+  });
+});
+
+describe("the package step, code outside the read places", () => {
+  it("passes a library shipping only module.ts, src/, unsafe/ and dist/ code", () => {
+    const pkg = { ...PKG, files: [...PKG.files, "unsafe"] };
+    const files = { ...FILES, "unsafe/raw.ts": "export const raw = 1\n", "dist/src/index.js": "export {}\n" };
+    expect(shape(pkg, files)).toBeUndefined();
+  });
+  it("does not refuse a code file that files leaves out of the tarball", () => {
+    expect(shape(PKG, { ...FILES, "lib/x.ts": "export const x = 1\n" })).toBeUndefined();
   });
 });
 

@@ -2,6 +2,7 @@
 // Spec: k.testing, clause "Under `keelConfig`, a test whose one `properties` call names 100 runs and declares no timeout has 30 s; one that declares a timeout keeps it; a test with no `properties` or `simulate` call keeps the configured timeout."
 // k.testing, Properties "Under `keelConfig` a test that calls `properties` or `simulate` and declares no timeout is given 300 ms per run its calls name, at least the configured test timeout; a call reached through a helper is not counted, and a call inside a loop counts once."
 // Seed: 1337 (fc.sample below picks the run counts). Method: child `vitest run` under `keelConfig` over small fixture files; each fixture test appends its `task.timeout` to a file.
+import { testTime } from "@keel/tooling/test-time";
 import { execFile } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -53,8 +54,10 @@ export default keelConfig({ test: { include: ["*.test.ts"], environment: "happy-
   writeFileSync(out, "");
   await run(vitestBin, ["run", "--config", join(dir, "vitest.config.ts"), "--root", dir], {
     cwd: pkg,
-    env: { ...process.env, KEEL_TIMEOUT_OUT: out },
-    timeout: 120_000,
+    // The clause states its numbers at scale 1 (300 ms per run, 30 s, the configured timeout): the child runs at scale 1
+    // whatever scale this run has, so the values it records are the clause's own.
+    env: { ...process.env, KEEL_TIMEOUT_OUT: out, KEEL_TEST_TIME_SCALE: "1" },
+    timeout: testTime(120_000),
   }).catch((e: unknown) => {
     const text =
       typeof e === "object" && e !== null && "stdout" in e

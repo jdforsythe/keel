@@ -10,6 +10,7 @@ import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { chromium } from "@playwright/test";
+import { testTime } from "../test-time.ts";
 import { BOARD_KEY, buildCopy, freePort, keepOutput, ready, recorder, row, serve, stop } from "./built.mjs";
 
 const { step, finish, caught } = recorder();
@@ -42,37 +43,39 @@ try {
   const answered = async (suffix, act) => {
     const [r] = await Promise.all([
       p.waitForResponse((x) => x.request().method() === "POST" && new URL(x.url()).pathname.endsWith(suffix), {
-        timeout: 10_000,
+        timeout: testTime(10_000),
       }),
       act(),
     ]);
     return r.status();
   };
   const checkedIs = (want) =>
-    p.waitForFunction((w) => document.querySelector('input[type="checkbox"]')?.checked === w, want, { timeout: 5_000 });
+    p.waitForFunction((w) => document.querySelector('input[type="checkbox"]')?.checked === w, want, {
+      timeout: testTime(5_000),
+    });
 
   await p.goto(url, { waitUntil: "load" });
   await p.getByLabel("List name").fill(name);
   const created = await answered("/api/lists", () => p.click("#todos\\.addList"));
-  await listLink().waitFor({ timeout: 5_000 });
+  await listLink().waitFor({ timeout: testTime(5_000) });
   step("create list", created === 200, JSON.stringify(name));
 
   await p.reload({ waitUntil: "load" });
-  await listLink().waitFor({ timeout: 10_000 });
+  await listLink().waitFor({ timeout: testTime(10_000) });
   step("list after reload", (await listLink().count()) === 1);
 
   await listLink().click();
-  await p.locator("#todos\\.list\\.title", { hasText: name }).waitFor({ timeout: 5_000 });
+  await p.locator("#todos\\.list\\.title", { hasText: name }).waitFor({ timeout: testTime(5_000) });
   const listUrl = new URL(p.url()).pathname;
   step("open list", listUrl.startsWith("/lists/"), listUrl);
 
   await p.getByLabel("Title").fill("Milk");
   const added = await answered("/todos", () => p.click("#todos\\.addTodo"));
-  await box().waitFor({ timeout: 5_000 });
+  await box().waitFor({ timeout: testTime(5_000) });
   step("add todo", added === 200);
 
   await p.reload({ waitUntil: "load" });
-  await box().waitFor({ timeout: 10_000 });
+  await box().waitFor({ timeout: testTime(10_000) });
   const title = await p.locator("#todos\\.list\\.title").innerText();
   step("todo after reload", title === name && (await box().count()) === 1, new URL(p.url()).pathname);
 
@@ -85,7 +88,7 @@ try {
   step("undo", undone === 200 && !(await box().isChecked()));
 
   await p.reload({ waitUntil: "load" });
-  await box().waitFor({ timeout: 10_000 });
+  await box().waitFor({ timeout: testTime(10_000) });
   step("undo after reload", !(await box().isChecked()));
 
   const stored = row(file, BOARD_KEY) ?? "";

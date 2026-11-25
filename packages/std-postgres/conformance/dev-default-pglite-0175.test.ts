@@ -12,7 +12,7 @@ import { sql } from "@keel/std-postgres";
 import { database } from "@keel/std-postgres/server";
 import fc from "fast-check";
 import { afterEach, expect, test } from "vitest";
-import { SEED, fresh, migrationsOf, okOf, sqlName } from "./fixtures.ts";
+import { FOLDER_BOUND, SEED, fresh, migrationsOf, okOf, sqlName } from "./fixtures.ts";
 
 const saved = { url: process.env.KEEL_POSTGRES_URL, dev: process.env.KEEL_DEV_DIR };
 afterEach(() => {
@@ -25,25 +25,32 @@ afterEach(() => {
   }
 });
 
-test("With `KEEL_POSTGRES_URL` unset and `KEEL_DEV_DIR` a folder `d`, a `query` answers from PGlite in `d/postgres`, which exists after it", async () => {
-  await fc.assert(
-    fc.asyncProperty(fc.integer({ min: 1, max: 1000 }), async (v) => {
-      const d = mkdtempSync(join(tmpdir(), "keel-dev-"));
-      try {
-        const { cap, table } = fresh();
-        Reflect.deleteProperty(process.env, "KEEL_POSTGRES_URL");
-        process.env.KEEL_DEV_DIR = d;
-        const db = database(cap, {
-          migrations: migrationsOf(`create table ${table} (n int); insert into ${table} values (${v})`),
-        });
-        const ctx = createCtx({ mode: "real", seed: SEED });
-        const r = await db(ctx).query(sql(s.object({ n: s.number() }))`select n::int as n from ${sqlName(table)}`);
-        expect(okOf(r)).toEqual([{ n: v }]);
-        expect(existsSync(join(d, "postgres")) && statSync(join(d, "postgres")).isDirectory()).toBe(true);
-      } finally {
-        rmSync(d, { recursive: true, force: true });
-      }
-    }),
-    { seed: SEED, numRuns: 3 },
-  );
-}, 60_000);
+/** Generated values the case runs: one PGlite folder a run. */
+const RUNS = 3;
+
+test(
+  "With `KEEL_POSTGRES_URL` unset and `KEEL_DEV_DIR` a folder `d`, a `query` answers from PGlite in `d/postgres`, which exists after it",
+  async () => {
+    await fc.assert(
+      fc.asyncProperty(fc.integer({ min: 1, max: 1000 }), async (v) => {
+        const d = mkdtempSync(join(tmpdir(), "keel-dev-"));
+        try {
+          const { cap, table } = fresh();
+          Reflect.deleteProperty(process.env, "KEEL_POSTGRES_URL");
+          process.env.KEEL_DEV_DIR = d;
+          const db = database(cap, {
+            migrations: migrationsOf(`create table ${table} (n int); insert into ${table} values (${v})`),
+          });
+          const ctx = createCtx({ mode: "real", seed: SEED });
+          const r = await db(ctx).query(sql(s.object({ n: s.number() }))`select n::int as n from ${sqlName(table)}`);
+          expect(okOf(r)).toEqual([{ n: v }]);
+          expect(existsSync(join(d, "postgres")) && statSync(join(d, "postgres")).isDirectory()).toBe(true);
+        } finally {
+          rmSync(d, { recursive: true, force: true });
+        }
+      }),
+      { seed: SEED, numRuns: RUNS },
+    );
+  },
+  RUNS * FOLDER_BOUND,
+);

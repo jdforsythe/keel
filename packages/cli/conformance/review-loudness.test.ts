@@ -112,15 +112,26 @@ function cell(repo: Repo, from: number, to: number, row: Row): string | undefine
   return hits[0]?.loud;
 }
 
-test("Each cell of Loudness, and the opt-in step, holds on a fixture; the exit is 1 exactly when a finding is `fail`, and under `--fail-on warn` also when one is `warn`.", () => {
-  for (const row of rows) {
-    const put = (text: string): Tree => ({ [row.path]: text });
-    withRepo([PROJECT, put(row.text), put(row.edit(row.text))], (repo) => {
-      expect(cell(repo, 0, 1, row), `${row.name}: new`).toBe(row.loud[0]);
-      expect(cell(repo, 1, 2, row), `${row.name}: changed`).toBe(row.loud[1]);
-    });
-    withRepo([{ ...PROJECT, ...put(row.text) }, put(`\n${row.text}`)], (repo) => {
-      expect(cell(repo, 0, 1, row), `${row.name}: standing`).toBe(row.loud[2]);
-    });
-  }
-});
+/**
+ * What the Loudness case bounds: for each of the six rows, three cells of three `keel review` runs each, 54 runs and
+ * their fixture repositories, about 0.2 s a run here alone and up to 0.5 s beside the suite's other work. The bound is
+ * 10 s a run, so a runner ten times slower (scale 0.1) still has 1 s a run, twice the loaded time.
+ */
+const LOUDNESS_BOUND = 6 * 3 * 3 * 10_000;
+
+test(
+  "Each cell of Loudness, and the opt-in step, holds on a fixture; the exit is 1 exactly when a finding is `fail`, and under `--fail-on warn` also when one is `warn`.",
+  () => {
+    for (const row of rows) {
+      const put = (text: string): Tree => ({ [row.path]: text });
+      withRepo([PROJECT, put(row.text), put(row.edit(row.text))], (repo) => {
+        expect(cell(repo, 0, 1, row), `${row.name}: new`).toBe(row.loud[0]);
+        expect(cell(repo, 1, 2, row), `${row.name}: changed`).toBe(row.loud[1]);
+      });
+      withRepo([{ ...PROJECT, ...put(row.text) }, put(`\n${row.text}`)], (repo) => {
+        expect(cell(repo, 0, 1, row), `${row.name}: standing`).toBe(row.loud[2]);
+      });
+    }
+  },
+  LOUDNESS_BOUND,
+);

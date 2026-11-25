@@ -3,6 +3,7 @@
 // Seed: 1337 (no generated inputs: one fixed cross-process case).
 // Pending (rfc:0192): skipped until the build lands; the builder un-skips by changing the `test.skip` to `test` in this file.
 // Assumption: runs only with `KEEL_TEST_POSTGRES_URL` (describe.skipIf). B is this test process, A is a child `node --experimental-strip-types follow-child.ts` that inserts row 1 and calls `tx.changed` in one transaction.
+import { testTime } from "@keel/tooling/test-time";
 import { execFile } from "node:child_process";
 import { join } from "node:path";
 import { createCtx } from "@keel/ctx";
@@ -20,7 +21,7 @@ const processA = (cap: string, table: string): Promise<string> =>
     execFile(
       process.execPath,
       ["--experimental-strip-types", CHILD, cap, table],
-      { env: { ...process.env, KEEL_POSTGRES_URL: PG17 }, timeout: 50_000 },
+      { env: { ...process.env, KEEL_POSTGRES_URL: PG17 }, timeout: testTime(50_000) },
       (e, stdout) => (stdout.trim() === "" ? reject(e ?? new Error("no output")) : resolve(stdout.trim())),
     );
   });

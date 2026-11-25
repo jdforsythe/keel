@@ -1,7 +1,5 @@
-import { s } from "@keel/schema";
 import { chart } from "@keel/std-statecharts";
-
-const none = s.object({});
+import { none } from "./internal/none.schema.ts";
 
 /** The open or closed state of a Dialog or Disclosure (std.headless): `open`, `close` and `toggle`. */
 export const openChart = chart("headless.open", {
