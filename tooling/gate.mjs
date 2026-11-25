@@ -21,12 +21,14 @@ import {
   failLines,
   instances,
   nodeMajor,
+  keepNodeModules,
   planJobs,
   resultPath,
   runsAfterFailure,
   stepName,
   verdict,
   versionCheck,
+  workspaceGlobs,
 } from "./gate-plan.mjs";
 
 const FORBIDDEN_PORTS = new Set([5173, 5214, 5432, 8080]);
@@ -205,10 +207,13 @@ const rootDir = verify;
 const snapshot = path.join(out, "turbo-cache");
 // A copy-on-write clone of the cache folder (APFS).
 const copyTree = "cp -cR";
-/** A runner's fresh checkout: the commit, no untracked or ignored file but node_modules, no tool cache in them. */
+/** A runner's fresh checkout: the commit, no untracked or ignored file but the installed node_modules, no tool cache in them. */
+const KEEP = keepNodeModules(workspaceGlobs(fs.readFileSync(path.join(verify, "pnpm-workspace.yaml"), "utf8")))
+  .map((p) => `-e '${p}'`)
+  .join(" ");
 const RESET = [
   `git reset -q --hard ${sha}`,
-  "git clean -ffdxq -e node_modules",
+  `git clean -ffdxq ${KEEP}`,
   "rm -rf node_modules/.vite node_modules/.cache */*/node_modules/.vite */*/node_modules/.cache",
 ].join("\n");
 

@@ -292,3 +292,26 @@ export function verdict(jobs, allowSkip = new Set()) {
 
 /** The result file of a gated commit, under the main worktree's `.keel-gate/`. */
 export const resultPath = (main, sha) => path.join(main, ".keel-gate", `${sha}.json`);
+
+/** The workspace globs of a `pnpm-workspace.yaml`'s `packages:` list. */
+export function workspaceGlobs(yaml) {
+  const globs = [];
+  let inList = false;
+  for (const line of yaml.split("\n")) {
+    if (/^packages:\s*$/.test(line)) inList = true;
+    else if (inList) {
+      const m = /^\s+-\s+['"]?([^'"\s]+)['"]?\s*$/.exec(line);
+      if (m === null) break;
+      globs.push(m[1]);
+    }
+  }
+  return globs;
+}
+
+/**
+ * The `git clean -e` patterns that keep the installed `node_modules` of the root and of each workspace package and
+ * nothing deeper: a `node_modules` a test wrote under a fixture folder is untracked and goes, as it does on a runner.
+ */
+export function keepNodeModules(globs) {
+  return ["/node_modules", ...globs.map((g) => `/${g}/node_modules`)];
+}

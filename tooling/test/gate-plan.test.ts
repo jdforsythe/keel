@@ -10,6 +10,7 @@ import {
   expr,
   failLines,
   instances,
+  keepNodeModules,
   nodeMajor,
   planJobs,
   resultPath,
@@ -17,6 +18,7 @@ import {
   stepName,
   verdict,
   versionCheck,
+  workspaceGlobs,
 } from "../gate-plan.mjs";
 
 const setup = [
@@ -272,5 +274,17 @@ describe("verdict, stepName and resultPath", () => {
   });
   it("puts the result file under the main worktree's .keel-gate", () => {
     expect(resultPath("/repo", "abc123")).toBe(path.join("/repo", ".keel-gate", "abc123.json"));
+  });
+  it("keeps the node_modules of the root and each workspace package, not one under a fixture", () => {
+    const yaml = "packages:\n  - 'packages/*'\n  - 'apps/*'\n  - 'tooling'\n\nallowBuilds:\n  esbuild: false\n";
+    expect(workspaceGlobs(yaml)).toEqual(["packages/*", "apps/*", "tooling"]);
+    expect(keepNodeModules(workspaceGlobs(yaml))).toEqual([
+      "/node_modules",
+      "/packages/*/node_modules",
+      "/apps/*/node_modules",
+      "/tooling/node_modules",
+    ]);
+    const real = fs.readFileSync(path.join(import.meta.dirname, "..", "..", "pnpm-workspace.yaml"), "utf8");
+    expect(workspaceGlobs(real)).toContain("packages/*");
   });
 });
