@@ -14,8 +14,8 @@ const read = (file: string): string | undefined => (existsSync(file) ? readFileS
  * The libraries of the project at `cwd` whose files are `files` (k.library Ledger), by name: each library of kind
  * `library` its manifests reach (`libraryFiles`), installed (its real folder in a `node_modules` folder) or linked. Its
  * counts are over its files' real paths; a file the project read holds at a path `projectCounts` names is counted
- * once, as the project's. An installed library's `.keel/ledger.json` gives its records (`readLibraryLedger`; a missing
- * or misshapen file gives none), each `{ item: '<name>/<file>#<export>', rung, evidence: 'library <version>' }`.
+ * once, as the project's. An installed library's `.keel/ledger.json` gives its records (`readLibraryLedger`; a file
+ * missing, misshapen or stating counts other than these gives none), each `{ item: '<name>/<file>#<export>', rung, evidence: 'library <version>' }`.
  */
 export function libraryLedgers(cwd: string, files: readonly SourceFile[]): LibraryLedger[] {
   const libs = libraryFiles(cwd, files).filter((l) => l.kind === "library");
@@ -41,8 +41,11 @@ export function libraryLedgers(cwd: string, files: readonly SourceFile[]): Libra
     }
     const installed = lib.dir.split(path.sep).includes("node_modules");
     const shipped = installed ? readLibraryLedger(read(path.join(lib.dir, ".keel", "ledger.json"))) : undefined;
+    // A file whose counts disagree with the recount fails (E1162): its items are not shown.
+    const holds =
+      shipped?.ok === true && shipped.value.unsafe === unsafe && shipped.value.hostElements === hostElements;
     const records =
-      shipped?.ok === true
+      holds && shipped?.ok === true
         ? shipped.value.exports.map((e) => ({
             item: `${lib.name}/${e.file}#${e.name}`,
             rung: e.rung,

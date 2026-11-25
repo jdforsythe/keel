@@ -110,3 +110,35 @@ test("LedgerFileSchema reads version 1 with six rung names and optional librarie
   expect(LedgerFileSchema.parse({ ...file, exports: [entry] }).ok).toBe(false);
   expect(LedgerFileSchema.parse({ ...file, clauses: [{ item: "k.a#1", rung: "proven" }] }).ok).toBe(true);
 });
+
+test("readLibraryLedger reads at most 262,144 UTF-8 bytes, and takes the last of duplicate keys", () => {
+  const body = JSON.stringify(GOOD);
+  const pad = (n: number): string => `${body}${" ".repeat(n - body.length)}`;
+  expect(readLibraryLedger(pad(262_144)).ok).toBe(true);
+  expect(readLibraryLedger(pad(262_145))).toEqual({ ok: false, fault: "size" });
+  // A two-byte character counts two bytes.
+  expect(readLibraryLedger(`${pad(262_143)}é`)).toEqual({ ok: false, fault: "size" });
+  const dup = readLibraryLedger('{"version":1,"unsafe":5,"unsafe":0,"hostElements":0,"exports":[]}');
+  expect(dup.ok && dup.value.unsafe).toBe(0);
+  // A count past six digits is an integer: it holds the shape (E1162 then compares it).
+  expect(readLibraryLedger(JSON.stringify({ ...GOOD, unsafe: 1_234_567, hostElements: 1_000_000 })).ok).toBe(true);
+});
+
+test("E1162 over the byte bound is its own message, and the counts message reaches 87 units at six-digit counts", () => {
+  const name = "@acme-charts-widgets/chart-library-xyz";
+  const at = (files: File[]): string[] =>
+    e1162(
+      files.map((f) => ({
+        ...f,
+        path: f.path.replace("@acme/charts", name),
+        source: f.source.replace("'@acme/charts'", `'${name}'`).replace('"@acme/charts"', `"${name}"`),
+      })),
+    );
+  const big = at(project(" ".repeat(262_145)));
+  expect(big).toEqual([`${name} .keel/ledger.json is over 262144 bytes`]);
+  expect(big[0]?.length).toBe(77);
+  const hosts = `import { Host } from '@keel/ui'\n${"Host({});".repeat(100_000)}\n`;
+  const counts = at(project(JSON.stringify({ ...GOOD, hostElements: 999_999 }), { "src/h.ts": hosts }));
+  expect(counts).toEqual([`${name} ships hostElements 999999, its files hold 100000`]);
+  expect(counts[0]?.length).toBe(87);
+}, 120_000);

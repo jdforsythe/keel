@@ -6,6 +6,7 @@ import { readLibraryLedger } from "../../readLibraryLedger.ts";
 import type { Diagnostic } from "../../types/Diagnostic.ts";
 import type { SourceFile } from "../../types/SourceFile.ts";
 import type { Checked } from "../Checked.ts";
+import { LIBRARY_LEDGER_BYTES } from "../LIBRARY_LEDGER_BYTES.ts";
 import { isCodePath } from "../isCodePath.ts";
 import type { ModuleInfo } from "./ModuleInfo.ts";
 import { discoverModules } from "./discoverModules.ts";
@@ -38,9 +39,11 @@ function ledgerFaults(lib: ModuleInfo, files: readonly SourceFile[]): string[] {
     return [
       read.fault === "missing"
         ? `${name} ships no .keel/ledger.json`
-        : read.fault === "object"
-          ? `${name} .keel/ledger.json is not a JSON object`
-          : `${name} .keel/ledger.json fails its shape at ${read.key ?? ""}`,
+        : read.fault === "size"
+          ? `${name} .keel/ledger.json is over ${LIBRARY_LEDGER_BYTES} bytes`
+          : read.fault === "object"
+            ? `${name} .keel/ledger.json is not a JSON object`
+            : `${name} .keel/ledger.json fails its shape at ${read.key ?? ""}`,
     ];
   let unsafe = 0;
   let hostElements = 0;

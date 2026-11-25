@@ -9,6 +9,6 @@ export type LibraryLedger = {
   /** The part of those counts the project's own count does not already hold (a file inside the project root). */
   readonly ownUnsafe: number;
   readonly ownHostElements: number;
-  /** One per entry of its ledger file's `exports`, in file order, for an installed library whose file holds its shape. */
+  /** One per entry of its ledger file's `exports`, in file order, for an installed library whose file holds its shape and these counts. */
   readonly records: readonly { readonly item: string; readonly rung: string; readonly evidence: string }[];
 };
