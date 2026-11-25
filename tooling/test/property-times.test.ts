@@ -48,4 +48,31 @@ describe("propertyTimes", () => {
     const body = `describe("d", () => {\n  it("p", async () => {\n    await properties(A);\n  });\n});\n`;
     expect(times(body)?.split("\n").length).toBe((IMPORT + body).split("\n").length);
   });
+  it("times fast-check's assert by its numRuns, through a default, namespace or by-name import", () => {
+    const run = (imp: string, call: string) =>
+      propertyTimes(
+        `${imp}\nit("p", () => { ${call}(fc.property(A, f), { numRuns: 50, seed: 1 }); });`,
+        (c) => parseAst(c),
+        5000,
+      );
+    expect(run(`import fc from "fast-check";`, "fc.assert")).toContain(
+      `it("p", { timeout: ${50 * PER_RUN_MS} }, () =>`,
+    );
+    expect(run(`import * as fc from "fast-check";`, "fc.assert")).toContain(`{ timeout: ${50 * PER_RUN_MS} }`);
+    expect(run(`import { assert as check } from "fast-check";`, "check")).toContain(`{ timeout: ${50 * PER_RUN_MS} }`);
+    const bare = `import fc from "fast-check";\nit("p", () => { fc.assert(fc.property(A, f)); });`;
+    expect(propertyTimes(bare, (c) => parseAst(c), 5000)).toContain(`{ timeout: ${100 * PER_RUN_MS} }`);
+  });
+  it("leaves an assert that is not fast-check's, and fast-check's other calls", () => {
+    expect(
+      propertyTimes(`import fc from "./mine.ts";\nit("p", () => { fc.assert(x); });`, (c) => parseAst(c), 5000),
+    ).toBeUndefined();
+    expect(
+      propertyTimes(
+        `import fc from "fast-check";\nit("p", () => { fc.sample(A, { seed: 1, numRuns: 3 }); });`,
+        (c) => parseAst(c),
+        5000,
+      ),
+    ).toBeUndefined();
+  });
 });
