@@ -1,14 +1,14 @@
 // Spec: k.server-deps, the first two Conformance clauses, each quoted whole:
 // 1. "In a project with `node` deployables `x` (modules `['a']`) and `y` (modules `['b']`), where `modules/a/module.ts` lists `'@acme/store'` in `deps` and `node_modules/@acme/store/module.ts` holds `env: ['ACME_STORE_URL']`, `deploy/compose.yaml` passes `ACME_STORE_URL: ${ACME_STORE_URL:?}` to `x` and holds no `ACME_STORE_URL` for `y`."
 // 2. "In that project, `env: ['NOTES_URL']` in `modules/b/module.ts` makes `deploy/compose.yaml` pass `NOTES_URL: ${NOTES_URL:?}` to `y` only; `env: ['notes_url']`, `env: ['KEEL_SECRET']` and `env: ['KEEL_PEER_X']` there are each one E1167 at the entry."
-// Environment: "A module manifest (k.module), a library's root `module.ts` included (k.library), may hold `env`: an array of string literals, the environment variables its server code reads. A `node` deployable needs the `env` names of each module its `modules` list and of each library those modules' manifests list, transitively. `deploy/compose.yaml` passes each name a deployable needs from the environment, required (`NAME: ${NAME:?}`), once per service, after the k.deploy keys and sorted, and no generated file holds a value. The names are read by server code only: no browser build holds one (k.bundle Environment)."
-// Rules: "E1167 an `env` entry that is not a string literal matching `[A-Z][A-Z0-9_]*`, or that is a key `DeployEnv` parses (`PORT`, `KEEL_SECRET`, `KEEL_ORIGIN`, `KEEL_DATABASE_URL`, `KEEL_ALLOW_ORIGINS`) or begins with `KEEL_PEER_`, at the entry"
+// Environment: "A module manifest (k.module), a library's root `module.ts` included (k.library), may hold `env`: an array of string literals, the environment variables its server code reads. A `node` deployable needs the `env` names of each module its `modules` list and of each library those modules' manifests list, transitively. `deploy/compose.yaml` (its layout: k.deploy Deploy files) passes each name a deployable needs from the environment, required (`NAME: ${NAME:?}`), once in the deployable's service, after the k.deploy keys and sorted, and no generated file holds a value. The names are read by server code only: no browser build holds one (k.bundle Environment)."
+// Rules: "E1167 an `env` entry that is not a string literal matching `[A-Z][A-Z0-9_]*`, or that is a key `DeployEnv` parses (`PORT`, `KEEL_SECRET`, `KEEL_ORIGIN`, `KEEL_DATABASE_URL`, `KEEL_ALLOW_ORIGINS`) or begins with `KEEL_PEER_`, at the entry: its line and the column of its first character, a string literal's opening quote (an `env` that is no array literal: at its value); messages `env entry is not a string literal`, `env name "<name>" does not match [A-Z][A-Z0-9_]*`, `env name "<name>" is a key DeployEnv reads`, `<name>` clipped to 28 units, each within 89; no fix"
 // Seed: 1337 (every property; the compose cases read one built project).
 // Binary runs: 3 (`keel build` of the clause-1 project; `keel build` of the richer project; `keel check` of that project with three refused entries). The E1167 property runs `check()` in process.
 // Library fixture: `@acme/store` (library-support.ts `dataLibrary`), a made-up data battery; no stdlib package name appears in any fixture or case.
-// ASSUMPTIONS (spec silent): compose layout is `services:` then a two-space `<name>:` header per service with `NAME: value` lines indented below it; "at the entry" is the entry's line and a column from its first
-// character to its last (a quoted literal from opening to closing quote); E1167's message text is not stated, so only its presence is asserted; `deploy/x/Dockerfile`, `deploy/y/Dockerfile` and `.github/workflows/ci.yml` hold no `env` name
-// ("no generated file holds a value", and `DeployEnv` values are set where the image runs); "once per service" is read as: a name two libraries (or a library and the module) hold appears once in a service.
+// ASSUMPTIONS (spec silent): compose layout is `services:` then a two-space `<name>:` header per service with `NAME: value` lines indented below it; a position is 1-based (as every neighbouring file reads it); `<name>` "clipped to 28 units" is read by k.check's clip rule at that width (a longer name keeps its first 25 units, 24 before the first half of a surrogate pair, then `...`);
+// the `KEEL_PEER_` names take the message `env name "<name>" is a key DeployEnv reads` (the closest of the three; the spec lists no fourth); an `env` that is no array literal is asserted by its position and a message within the bound only (the text gives it none); `deploy/x/Dockerfile`, `deploy/y/Dockerfile` and `.github/workflows/ci.yml` hold no `env` name
+// ("no generated file holds a value", and `DeployEnv` values are set where the image runs); "once in the deployable's service" is read as: a name two libraries (or a library and the module) hold appears once in a service.
 // "no browser build holds one" is asserted in k.bundle's conformance (bundle-env.test.ts), not here.
 import { check } from "@keel/check";
 import fc from "fast-check";
@@ -198,8 +198,8 @@ describe(`k.server-deps 2: ${CLAUSE_2}`, () => {
         const mine = hits.filter((h) => h.line === line);
         expect(mine, e).toHaveLength(1);
         expect(mine[0]?.path).toBe("modules/b/module.ts");
-        expect(mine[0]?.col).toBeGreaterThanOrEqual(col);
-        expect(mine[0]?.col).toBeLessThanOrEqual(col + e.length + 1);
+        expect(mine[0]?.col).toBe(col);
+        expect(mine[0]?.message).toBe(e === "notes_url" ? noMatch(e) : isKey(e));
       }
       expect(r.status).toBe(1);
     },
@@ -227,6 +227,7 @@ function e1167Files(host: "app" | "library", entries: string[]): { path: string;
     { path: "modules/b/module.ts", source: appManifest },
   ];
 }
+/** The diagnostics, and where `entry` stands in the host's manifest: its line and 1-based column. */
 function e1167Of(host: "app" | "library", entry: string) {
   const files = e1167Files(host, [entry]);
   const path = FILE(host);
@@ -235,22 +236,38 @@ function e1167Of(host: "app" | "library", entry: string) {
   const idx = source.indexOf(entry, source.indexOf("env: ["));
   const line = source.slice(0, idx).split("\n").length;
   const col = idx - source.slice(0, idx).lastIndexOf("\n");
-  return { found, path, line, col, width: entry.length };
+  return { found, path, line, col };
 }
+/** The three messages whole, `<name>` clipped to 28 units. */
+const clip = (n: string): string => {
+  if (n.length <= 28) return n;
+  const code = n.charCodeAt(24);
+  return `${n.slice(0, code >= 0xd800 && code <= 0xdbff ? 24 : 25)}...`;
+};
+const NOT_LITERAL = "env entry is not a string literal";
+const noMatch = (n: string): string => `env name "${clip(n)}" does not match [A-Z][A-Z0-9_]*`;
+const isKey = (n: string): string => `env name "${clip(n)}" is a key DeployEnv reads`;
 
 const allowed = fc
   .stringMatching(/^[A-Z][A-Z0-9_]{0,12}$/)
   .filter((n) => !DEPLOY_KEYS.includes(n) && !n.startsWith("KEEL_PEER_"));
-const refusedLiteral = fc.oneof(
+const badPattern = fc.oneof(
   fc.stringMatching(/^[a-z][a-zA-Z0-9_]{0,10}$/), // lower-case first character
   fc.stringMatching(/^[0-9_][A-Z0-9_]{0,8}$/), // not a letter first
   fc.stringMatching(/^[A-Z][A-Z0-9_]{0,5}[-. a-z][A-Z0-9_]{0,5}$/), // a character outside the pattern
+  fc.stringMatching(/^[a-z][a-z0-9_]{27,50}$/), // longer than the clip
+  fc.constant(""), // empty: matches nothing
+);
+const keyName = fc.oneof(
   fc.constantFrom(...DEPLOY_KEYS),
   fc.stringMatching(/^[A-Z][A-Z0-9_]{0,8}$/).map((t) => `KEEL_PEER_${t}`),
+  fc
+    .stringMatching(/^[A-Z][A-Z0-9_]{20,40}$/)
+    .map((t) => `KEEL_PEER_${t}`), // longer than the clip
 );
 const refusedSource = fc.constantFrom("NAME", "`NOTES_${'URL'}`", "'A' + 'B'", "String('X')", "42", "['X']");
 
-describe("k.server-deps Rules: E1167 an `env` entry that is not a string literal matching `[A-Z][A-Z0-9_]*`, or that is a key `DeployEnv` parses or begins with `KEEL_PEER_`, at the entry", () => {
+describe("k.server-deps Rules: E1167 an `env` entry that is not a string literal matching `[A-Z][A-Z0-9_]*`, or that is a key `DeployEnv` parses or begins with `KEEL_PEER_`, at the entry: its line and the column of its first character", () => {
   for (const host of ["app", "library"] as const) {
     test(`a ${host} manifest's string literal matching \`[A-Z][A-Z0-9_]*\` that is no \`DeployEnv\` key and does not begin with \`KEEL_PEER_\` is no E1167`, () => {
       fc.assert(
@@ -261,31 +278,66 @@ describe("k.server-deps Rules: E1167 an `env` entry that is not a string literal
       );
     });
 
-    test(`a ${host} manifest's literal outside the pattern, a \`DeployEnv\` key or a \`KEEL_PEER_\` name is one E1167 at the entry`, () => {
+    test(`a ${host} manifest's literal outside the pattern is one E1167 at the opening quote, \`env name "<name>" does not match [A-Z][A-Z0-9_]*\`, \`<name>\` clipped to 28 units, within 89`, () => {
       fc.assert(
-        fc.property(refusedLiteral, (name) => {
+        fc.property(badPattern, (name) => {
           const r = e1167Of(host, `'${name}'`);
           expect(r.found, name).toHaveLength(1);
           expect(r.found[0]?.path).toBe(r.path);
           expect(r.found[0]?.line).toBe(r.line);
-          expect(r.found[0]?.col).toBeGreaterThanOrEqual(r.col);
-          expect(r.found[0]?.col).toBeLessThanOrEqual(r.col + r.width);
-          expect((r.found[0]?.message ?? "").length).toBeGreaterThan(0);
+          expect(r.found[0]?.col).toBe(r.col);
+          expect(r.found[0]?.message).toBe(noMatch(name));
+          expect((r.found[0]?.message ?? "").length).toBeLessThanOrEqual(89);
         }),
         { seed: SEED, numRuns: 40 },
       );
     });
 
-    test(`a ${host} manifest's entry that is not a string literal is one E1167 at the entry`, () => {
+    test(`a ${host} manifest's \`DeployEnv\` key or \`KEEL_PEER_\` name is one E1167 at the opening quote, \`env name "<name>" is a key DeployEnv reads\`, \`<name>\` clipped to 28 units, within 89`, () => {
+      fc.assert(
+        fc.property(keyName, (name) => {
+          const r = e1167Of(host, `'${name}'`);
+          expect(r.found, name).toHaveLength(1);
+          expect(r.found[0]?.path).toBe(r.path);
+          expect(r.found[0]?.line).toBe(r.line);
+          expect(r.found[0]?.col).toBe(r.col);
+          expect(r.found[0]?.message).toBe(isKey(name));
+          expect((r.found[0]?.message ?? "").length).toBeLessThanOrEqual(89);
+        }),
+        { seed: SEED, numRuns: 40 },
+      );
+    });
+
+    test(`a ${host} manifest's entry that is not a string literal is one E1167 at its first character, \`env entry is not a string literal\``, () => {
       fc.assert(
         fc.property(refusedSource, (entry) => {
           const r = e1167Of(host, entry);
           expect(r.found, entry).toHaveLength(1);
           expect(r.found[0]?.path).toBe(r.path);
           expect(r.found[0]?.line).toBe(r.line);
+          expect(r.found[0]?.col).toBe(r.col);
+          expect(r.found[0]?.message).toBe(NOT_LITERAL);
         }),
         { seed: SEED, numRuns: 12 },
       );
+    });
+
+    test(`a ${host} manifest's \`env\` that is no array literal is one E1167 at its value`, () => {
+      for (const value of ["'ACME_URL'", "names", "['ACME_URL'].concat(['B_URL'])", "{}", "undefined"]) {
+        const files = e1167Files(host, []);
+        const path = FILE(host);
+        const source = (files.find((f) => f.path === path)?.source ?? "").replace(/env: \[\n {2}\],/, `env: ${value},`);
+        const edited = files.map((f) => (f.path === path ? { path, source } : f));
+        const found = check(edited, { types: false }).diagnostics.filter((d) => d.code === "E1167");
+        const idx = source.indexOf(`env: ${value}`) + "env: ".length;
+        const before = source.slice(0, idx);
+        expect(found, value).toHaveLength(1);
+        expect(found[0]?.path).toBe(path);
+        expect(found[0]?.line).toBe(before.split("\n").length);
+        expect(found[0]?.col).toBe(idx - before.lastIndexOf("\n"));
+        expect(found[0]?.message.length).toBeGreaterThan(0);
+        expect(found[0]?.message.length).toBeLessThanOrEqual(89);
+      }
     });
   }
 
@@ -295,6 +347,7 @@ describe("k.server-deps Rules: E1167 an `env` entry that is not a string literal
     expect(found).toHaveLength(1);
     const src = files.find((f) => f.path === "modules/b/module.ts")?.source ?? "";
     expect(found[0]?.line).toBe(src.split("\n").findIndex((l) => l.includes("'notes_url'")) + 1);
+    expect(found[0]?.message).toBe(noMatch("notes_url"));
   });
 });
 
