@@ -52,6 +52,7 @@ export function Menu<K extends string>(
     return true;
   };
   return Box({
+    id: `${id}.root`,
     children: () => [
       Part({
         ...props.styles?.trigger,
@@ -92,7 +93,7 @@ export function Menu<K extends string>(
                   l.jump(l.indexOf(key));
                   select(o.get());
                 },
-                children: () => content(o, props.item, s),
+                children: () => content({ id: l.partId(key), current: o, slot: props.item, state: s }),
               };
               // The role is chosen when the row is made: an item is a checkbox item while it has `checked`.
               return o.get()?.checked === undefined

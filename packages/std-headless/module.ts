@@ -4,7 +4,7 @@ import { module } from "@keel/compiler";
 export default module({
   id: "headless",
   deps: ["@keel/std-statecharts"],
-  capabilities: [],
+  capabilities: ["clock"],
   public: {
     exports: [
       "Combobox",

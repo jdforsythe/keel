@@ -70,7 +70,7 @@ export function Toaster(
       timer = run;
       ctx.clock.after(Math.max(LEAST, props.duration), run.signal).then(
         () => {
-          tx(c.events.expire, {});
+          void tx(c.events.expire, {});
           after();
         },
         () => undefined,
@@ -92,14 +92,14 @@ export function Toaster(
           controls: part,
           onFocus: () => {
             timer?.abort();
-            tx(c.events.pause, {});
+            void tx(c.events.pause, {});
           },
           onBlur: () => {
-            tx(c.events.resume, {});
+            void tx(c.events.resume, {});
             if (c.store.get("state") === "showing") start();
           },
           onClick: () => {
-            tx(c.events.dismiss, {});
+            void tx(c.events.dismiss, {});
             after();
           },
           children: () => computed(() => props.dismiss),
@@ -127,5 +127,5 @@ export function Toaster(
         }),
     });
   };
-  return Box({ children: () => [region("status"), region("alert")] });
+  return Box({ id: `${id}.root`, children: () => [region("status"), region("alert")] });
 }

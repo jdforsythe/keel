@@ -50,9 +50,9 @@ export function listChart<O extends Option>(
     const was = known.get();
     if (keys.length === was.length && keys.every((k, i) => k === was[i])) return;
     const at = index.get();
-    if (c.store.get("data").count !== size()) tx(c.events.items, { count: size() });
+    if (c.store.get("data").count !== size()) void tx(c.events.items, { count: size() });
     known.set(keys);
-    if (open.get() && c.store.get("data").active !== at) tx(c.events.jump, { to: at });
+    if (open.get() && c.store.get("data").active !== at) void tx(c.events.jump, { to: at });
   };
   const partId = (key: string) => `${id}.${part}.${key}`;
   const activeId = computed(() => {
@@ -61,7 +61,7 @@ export function listChart<O extends Option>(
   });
   const jump = (to: number) => {
     sync();
-    tx(c.events.jump, { to });
+    void tx(c.events.jump, { to });
   };
   let buffer = "";
   let last = Number.NEGATIVE_INFINITY;
@@ -81,19 +81,19 @@ export function listChart<O extends Option>(
     indexOf: (key: string) => list.get().findIndex((o) => o.key === key),
     opened: (at: number) => {
       sync();
-      if (!open.get()) tx(c.events.open, { count: size(), at: Math.min(at, 9999) });
+      if (!open.get()) void tx(c.events.open, { count: size(), at: Math.min(at, 9999) });
     },
     close: (back: boolean) => {
       sync();
-      if (open.get()) tx(c.events.close, { back });
+      if (open.get()) void tx(c.events.close, { back });
     },
     choose: () => {
       sync();
-      tx(c.events.choose, {});
+      void tx(c.events.choose, {});
     },
     move: (by: "next" | "prev" | "first" | "last", wrap: boolean) => {
       sync();
-      tx(c.events.move, { by, wrap });
+      void tx(c.events.move, { by, wrap });
     },
     jump,
     /** A printable key without `mod` extends the buffer and jumps to the next option whose text starts with it. */
@@ -102,12 +102,12 @@ export function listChart<O extends Option>(
       const now = ctx?.clock.now();
       if (now === undefined || now - last >= PAUSE) buffer = "";
       last = now ?? last;
-      buffer += k.key.toLocaleLowerCase();
+      buffer += k.key.toLocaleLowerCase("und");
       const xs = list.get();
       const from = index.get();
       for (let n = 1; n <= xs.length; n++) {
         const i = (from + n) % xs.length;
-        if (xs[i]?.text.toLocaleLowerCase().startsWith(buffer) === true) {
+        if (xs[i]?.text.toLocaleLowerCase("und").startsWith(buffer) === true) {
           jump(i);
           break;
         }

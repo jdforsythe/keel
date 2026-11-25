@@ -87,7 +87,7 @@ export function Listbox<K extends string>(
               l.jump(l.indexOf(key));
               pick(o.get());
             },
-            children: () => content(o, props.option, s),
+            children: () => content({ id: l.partId(key), current: o, slot: props.option, state: s }),
           });
         },
       }),

@@ -42,6 +42,7 @@ export function Tabs<K extends string>(
     return true;
   };
   return Box({
+    id: `${id}.root`,
     children: () => [
       Part({
         ...props.styles?.list,
@@ -79,7 +80,7 @@ export function Tabs<K extends string>(
                   l.jump(l.indexOf(key));
                   props.onChange(key);
                 },
-                children: () => content(o, props.tab, s),
+                children: () => content({ id: l.partId(key), current: o, slot: props.tab, state: s }),
               });
             },
           }),

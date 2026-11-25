@@ -23,6 +23,7 @@ export function Disclosure(
   const c = instance(openChart, id);
   const open = computed(() => c.store.get("state") === "open");
   return Box({
+    id: `${id}.root`,
     children: () => [
       Part({
         ...props.styles?.button,
