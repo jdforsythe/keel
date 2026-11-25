@@ -95,7 +95,8 @@ function unprefixed({ file, module, facts, routes }: Scanned): Diagnostic[] {
  * binding's `layout` naming a layout id of another module (k.routes Layouts, at `layout`) needs the two related by `deps`
  * in either direction: this module lists the layout's, or the layout's module, which composes the page, lists this
  * one (E1152 when neither does; the `layout` adds no `deps` edge). An import, unless
- * it is that module's contract, the export in its `public.exports` (E1151). Fixes add the missing entry
+ * it is that module's contract or an entry its `exports` write whole (`./server`, `./tools`), the export in its
+ * `public.exports` (E1151). Fixes add the missing entry
  * to a manifest list: the target's `public.exports` (E1151), this module's `deps` (E1152) or `capabilities` (E1156).
  */
 function access({ file, module, facts, layouts }: Scanned, man: Manifest, p: Project): Diagnostic[] {
@@ -111,7 +112,7 @@ function access({ file, module, facts, layouts }: Scanned, man: Manifest, p: Pro
       out.push(moduleDiag("E1152", file, imp.start, msg, addEntryFix(module.file, man.deps, r.module.key)));
     }
     const tm = r.module.manifest;
-    if (tm === null || r.contract || r.name === null || values(tm, "exports").has(r.name)) continue;
+    if (tm === null || r.contract || r.entry || r.name === null || values(tm, "exports").has(r.name)) continue;
     const msg = `${short(r.name)} is not in public.exports of module ${t}; ${own} cannot import it`;
     out.push(moduleDiag("E1151", file, imp.start, msg, addEntryFix(r.module.file, tm.exports, r.name)));
   }

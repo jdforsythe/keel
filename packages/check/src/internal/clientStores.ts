@@ -1,5 +1,5 @@
 import { SERVER_ONLY_NAME } from "@keel/compiler/internal";
-import type { Program } from "oxc-parser";
+import type { CallExpression, Program } from "oxc-parser";
 import type { Diagnostic } from "../types/Diagnostic.ts";
 import type { SourceFile } from "../types/SourceFile.ts";
 import type { Checked } from "./Checked.ts";
@@ -15,8 +15,12 @@ import { addEntryFix } from "./modules/addEntryFix.ts";
 import { moduleDiag } from "./modules/moduleDiag.ts";
 import { moduleOf } from "./modules/moduleOf.ts";
 import { short } from "./modules/short.ts";
-import { parseFile } from "./parseFile.ts";
 import { storeClasses } from "./storeClasses.ts";
+import type { SiteRead } from "./storeMakers/SiteRead.ts";
+import { calleeKey } from "./storeMakers/calleeKey.ts";
+import { deferredTo } from "./storeMakers/deferredTo.ts";
+import { fnKeyOf } from "./storeMakers/fnKeyOf.ts";
+import { makerRead } from "./storeMakers/makerRead.ts";
 import { topRefs } from "./topRefs.ts";
 import { topologyFor } from "./topologyFor.ts";
 
@@ -148,11 +152,87 @@ function judges(file: SourceFile, modules: readonly ModuleInfo[], project: reado
   return [...found].sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
 }
 
+/** A site E1107 reads: a `store` call (its first argument) or a store maker's call (every argument). */
+type Site = { readonly call: CallExpression; readonly maker: boolean };
+
+/** The `store` calls and store makers' calls of `file`, `makers` holding the makers' keys. */
+function sitesOf(
+  file: SourceFile,
+  program: Program,
+  uses: readonly Use[],
+  makers: ReadonlySet<string>,
+  project: readonly SourceFile[],
+): Site[] {
+  const calls = callsByStart(program);
+  const out: Site[] = [];
+  const stores = new Set<number>();
+  for (const use of uses) {
+    if (!("call" in use) || use.name !== "store") continue;
+    const call = calls.get(use.call);
+    if (call === undefined) continue;
+    stores.add(call.start);
+    out.push({ call, maker: false });
+  }
+  if (makers.size > 0)
+    for (const call of calls.values()) {
+      if (stores.has(call.start)) continue;
+      const key = calleeKey(call, file, project);
+      if (key !== undefined && makers.has(key)) out.push({ call, maker: true });
+    }
+  return out.sort((a, b) => a.call.start - b.call.start);
+}
+
+const readSite = (site: Site, file: SourceFile, project: readonly SourceFile[]): SiteRead | undefined => {
+  if (site.maker) return makerRead(site.call, file, project);
+  const arg = site.call.arguments[0];
+  return arg === undefined ? undefined : storeClasses(arg, file, project);
+};
+
 /**
- * E1107 (k.leave E1107) over the checked files: each `store` call of `@keel/store` whose state schema holds a
- * `.pii(class)` a judging module's `clientPii` does not list (the fix adds the classes when one module lacks them),
- * a state schema it cannot read, a `stores()` call, and `store` or `stores` used other than as a call; none of the
- * last three has a fix. `projectOf` gives each file's project.
+ * The store makers of the libraries' files and the sites they defer (k.leave E1107): a top-level function of a
+ * library file holding a `store` call, or a call of another store maker, whose state schema it cannot read only at
+ * that function's parameters (or their members) is a store maker, and the site is judged at the maker's callers.
+ * Read again until no maker is added, so a maker calling a maker is one.
+ */
+function storeMakers(
+  checked: readonly Checked[],
+  modules: readonly ModuleInfo[],
+  projectOf: (path: string) => readonly SourceFile[],
+): { readonly makers: ReadonlySet<string>; readonly deferred: ReadonlySet<string> } {
+  const makers = new Set<string>();
+  const deferred = new Set<string>();
+  const libs = checked.filter(
+    ({ file }) => moduleOf(file.path, modules)?.library === true && !isTestPath(file.path) && !SERVER_ONLY_NAME.test(file.path),
+  );
+  for (let grew = true; grew; ) {
+    grew = false;
+    for (const { file, parsed } of libs) {
+      const project = projectOf(file.path);
+      const program = parsed.program;
+      for (const site of sitesOf(file, program, storeUses(file, program, project), makers, project)) {
+        const at = `${file.path}:${site.call.start}`;
+        if (deferred.has(at)) continue;
+        const read = readSite(site, file, project);
+        const fn = read === undefined ? undefined : deferredTo(read, site.call.start, file, program);
+        if (fn === undefined) continue;
+        deferred.add(at);
+        const key = fnKeyOf(file, fn);
+        if (!makers.has(key)) {
+          makers.add(key);
+          grew = true;
+        }
+      }
+    }
+  }
+  return { makers, deferred };
+}
+
+/**
+ * E1107 (k.leave E1107) over the checked files: each `store` call of `@keel/store`, and each call of a library's store
+ * maker (`storeMakers`, every argument read), whose state schema holds a `.pii(class)` a judging module's `clientPii`
+ * does not list (the fix adds the classes when one module lacks them), a state schema it cannot read, a `stores()`
+ * call, and `store` or `stores` used other than as a call; none of the last three has a fix. `projectOf` gives each
+ * file's project.
  */
 export function clientStores(
   checked: readonly Checked[],
@@ -160,32 +240,28 @@ export function clientStores(
   projectOf: (path: string) => readonly SourceFile[],
 ): Diagnostic[] {
   const out: Diagnostic[] = [];
+  const { makers, deferred } = storeMakers(checked, modules, projectOf);
   for (const { file, parsed } of checked) {
     if (LIBRARY.test(file.path) || isTestPath(file.path)) continue;
     const project = projectOf(file.path);
     const uses = storeUses(file, parsed.program, project);
-    if (uses.length === 0) continue;
+    if (uses.length === 0 && makers.size === 0) continue;
     const judging = judges(file, modules, project).filter((m) => m.manifest !== null);
     if (judging.length === 0) continue;
     const at = (pos: number, message: string, fix?: string): void => {
       out.push({ ...moduleDiag("E1107", file, pos, message, fix), see: "k.leave" });
     };
     for (const use of uses) {
-      if ("other" in use) {
-        at(use.other, unfollowed(use.name));
-        continue;
-      }
-      const call = callsByStart(parseFile(file).program).get(use.call);
-      if (call === undefined) continue;
-      if (use.name === "stores") {
-        at(call.start, STORES);
-        continue;
-      }
-      const arg = call.arguments[0];
-      if (arg === undefined) continue;
-      const read = storeClasses(arg, file, project);
+      if ("other" in use) at(use.other, unfollowed(use.name));
+      else if (use.name === "stores") at(use.call, STORES);
+    }
+    for (const site of sitesOf(file, parsed.program, uses, makers, project)) {
+      if (deferred.has(`${file.path}:${site.call.start}`)) continue;
+      const read = readSite(site, file, project);
+      if (read === undefined) continue;
+      const pos = site.maker ? site.call.start : (site.call.arguments[0]?.start ?? site.call.start);
       if ("unread" in read) {
-        at(arg.start, notReadable(read.unread));
+        at(pos, notReadable(read.unread));
         continue;
       }
       const classes = read.classes;
@@ -203,7 +279,7 @@ export function clientStores(
         lacking.length === 1 && man !== null
           ? addEntryFix(first.m.file, man.clientPii, first.missing, { key: "clientPii", at: man.tail })
           : undefined;
-      at(arg.start, msg, fix);
+      at(pos, msg, fix);
     }
   }
   return out;

@@ -18,6 +18,18 @@ function parse(source: string | undefined): unknown {
   }
 }
 
+/** The subpaths of a `package.json` `exports` object written whole, other than `.`, with no `./` (`./server` -> `server`). */
+function entriesOf(pkg: unknown): ReadonlySet<string> {
+  if (typeof pkg !== "object" || pkg === null || !("exports" in pkg)) return new Set();
+  const exp = pkg.exports;
+  if (typeof exp !== "object" || exp === null) return new Set();
+  return new Set(
+    Object.keys(exp)
+      .filter((k) => k.startsWith("./") && k !== "./" && !k.includes("*"))
+      .map((k) => k.slice(2)),
+  );
+}
+
 /**
  * Every module manifest among the checked files, sorted by key then path: app modules at `modules/<id>/module.ts`
  * (key and prefix: the folder id) and libraries' root manifests at `node_modules/<name>/module.ts` (k.library Kind;
@@ -32,12 +44,13 @@ export function discoverModules(checked: readonly Checked[], files: readonly Sou
     const name = app === null ? PACKAGE.exec(file.path)?.[1] : undefined;
     const root = file.path.slice(0, file.path.lastIndexOf("/") + 1);
     const pkg = name === undefined ? undefined : files.find((f) => f.path === `${root}package.json`)?.source;
-    const library = name !== undefined && libraryKind(parse(pkg), name) !== undefined;
+    const json = parse(pkg);
+    const library = name !== undefined && libraryKind(json, name) !== undefined;
     const key = app?.[1] ?? (library ? name : undefined);
     if (key === undefined) continue;
     const manifest = readManifest(parsed.program);
     const prefix = app === null ? (manifest?.id ?? key) : key;
-    out.push({ key, prefix, root, file, manifest, library });
+    out.push({ key, prefix, root, file, manifest, library, entries: entriesOf(json) });
   }
   out.sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : a.root < b.root ? -1 : a.root > b.root ? 1 : 0));
   return out.filter((m, i) => out[i - 1]?.key !== m.key);
