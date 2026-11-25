@@ -8,7 +8,6 @@ import type { TestEvent } from "@keel/testing";
 import { a11yRules, criteriaOf } from "@keel/testing/a11y";
 import { Text } from "@keel/ui";
 import { expect, test } from "vitest";
-import { fruit, isRecord, page, simCtx } from "../conformance/fixtures.ts";
 import { Combobox } from "../src/Combobox.ts";
 import { Dialog } from "../src/Dialog.ts";
 import { Disclosure } from "../src/Disclosure.ts";
@@ -16,6 +15,7 @@ import { Listbox } from "../src/Listbox.ts";
 import { Menu } from "../src/Menu.ts";
 import { Tabs } from "../src/Tabs.ts";
 import { Toaster } from "../src/Toaster.ts";
+import { fruit, isRecord, page, simCtx } from "./support.ts";
 
 const mapped = a11yRules().filter((r) => criteriaOf(r).length > 0);
 

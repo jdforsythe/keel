@@ -7,10 +7,10 @@ import { If } from "@keel/runtime-dom";
 import { render } from "@keel/testing";
 import { Box, Button } from "@keel/ui";
 import { expect, test } from "vitest";
-import { el, fruit, page, simCtx } from "../conformance/fixtures.ts";
 import { Combobox } from "../src/Combobox.ts";
 import { Dialog } from "../src/Dialog.ts";
 import { Menu } from "../src/Menu.ts";
+import { fruit, isOpen, page, rendered, simCtx } from "./support.ts";
 
 const flag = (start: boolean): Signal<boolean> => {
   const made: Signal<boolean>[] = [];
@@ -19,7 +19,6 @@ const flag = (start: boolean): Signal<boolean> => {
   if (s === undefined) throw new Error("no signal");
   return s;
 };
-const isOpen = (id: string): boolean => el(id)?.hasAttribute("open") === true;
 const focused = (): string => document.activeElement?.id ?? "";
 
 test("Escape in a Menu inside a Dialog closes the menu only and focuses its trigger", async () => {
@@ -42,10 +41,10 @@ test("Escape in a Menu inside a Dialog closes the menu only and focuses its trig
   expect(t.find("m.trigger").state.expanded).toBe(true);
   await t.fire("m.menu", { type: "keydown", key: "Escape" });
   expect(t.find("m.trigger").state.expanded).toBe(false);
-  expect(isOpen("d.dialog")).toBe(true);
+  expect(isOpen(t, "d")).toBe(true);
   expect(focused()).toBe("m.trigger");
   await t.fire("m.trigger", { type: "keydown", key: "Escape" });
-  expect(isOpen("d.dialog")).toBe(false);
+  expect(isOpen(t, "d")).toBe(false);
   t.dispose();
 });
 
@@ -73,7 +72,7 @@ test("Escape in an open Combobox inside a Dialog closes the list only and keeps 
   await t.fire("c.input", { type: "keydown", key: "ArrowDown" });
   await t.fire("c.input", { type: "keydown", key: "Escape" });
   expect(t.find("c.input").state.expanded).toBe(false);
-  expect(isOpen("d.dialog")).toBe(true);
+  expect(isOpen(t, "d")).toBe(true);
   expect(focused()).toBe("c.input");
   t.dispose();
 });
@@ -95,10 +94,10 @@ test("Escape in a Dialog inside a Dialog closes the inner one and focuses its tr
   );
   await t.fire("outer.trigger", { type: "click" });
   await t.fire("inner.trigger", { type: "click" });
-  expect(isOpen("inner.dialog")).toBe(true);
+  expect(isOpen(t, "inner")).toBe(true);
   await t.fire("inner.dialog", { type: "keydown", key: "Escape" });
-  expect(isOpen("inner.dialog")).toBe(false);
-  expect(isOpen("outer.dialog")).toBe(true);
+  expect(isOpen(t, "inner")).toBe(false);
+  expect(isOpen(t, "outer")).toBe(true);
   expect(focused()).toBe("inner.trigger");
   t.dispose();
 });
@@ -110,7 +109,7 @@ test("a click that left focus on body returns focus to the trigger at close", as
   );
   expect(focused()).toBe("");
   await t.fire("d.trigger", { type: "click" });
-  expect(isOpen("d.dialog")).toBe(true);
+  expect(isOpen(t, "d")).toBe(true);
   await t.fire("d.dialog", { type: "keydown", key: "Escape" });
   expect(focused()).toBe("d.trigger");
   t.dispose();
@@ -154,7 +153,7 @@ test("a Dialog whose trigger is gone at close returns focus to `main`", async ()
   await t.fire("d.trigger", { type: "click" });
   await t.fire("d.yes", { type: "click" });
   await t.settle();
-  expect(el("d.trigger")).toBeNull();
+  expect(rendered(t, "d.trigger")).toBe(false);
   expect(focused()).toBe("page");
   t.dispose();
 });

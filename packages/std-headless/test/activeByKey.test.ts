@@ -5,11 +5,11 @@ import { scope, signal } from "@keel/reactive";
 import type { Signal } from "@keel/reactive";
 import { render } from "@keel/testing";
 import { expect, test } from "vitest";
-import { page, simCtx } from "../conformance/fixtures.ts";
 import { Combobox } from "../src/Combobox.ts";
 import { Listbox } from "../src/Listbox.ts";
 import { Menu } from "../src/Menu.ts";
 import type { Option } from "../src/Option.ts";
+import { page, simCtx } from "./support.ts";
 
 const opts = (...keys: string[]): readonly Option[] => keys.map((key) => ({ key, text: key.toUpperCase() }));
 const held = (start: readonly Option[]): Signal<readonly Option[]> => {

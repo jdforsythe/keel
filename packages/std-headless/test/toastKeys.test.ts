@@ -5,10 +5,10 @@ import type { Signal } from "@keel/reactive";
 import { instance } from "@keel/std-statecharts";
 import { render } from "@keel/testing";
 import { expect, test } from "vitest";
-import { page, shown, simCtx } from "../conformance/fixtures.ts";
 import type { ToastItem } from "../src/ToastItem.ts";
 import { Toaster } from "../src/Toaster.ts";
 import { openChart } from "../src/openChart.ts";
+import { page, shown, simCtx } from "./support.ts";
 
 const held = (): Signal<readonly ToastItem[]> => {
   const made: Signal<readonly ToastItem[]>[] = [];
@@ -29,7 +29,7 @@ test("a 64-character Toaster id shows toast after toast, past the tenth and the 
     items.set([...items.get().slice(-3), { id: `n${n}`, text: "Saved", tone: "alert" }]);
     await t.settle();
   }
-  expect(shown(`${id}.toast.n120`)).toBe(true);
+  expect(shown(t, `${id}.toast.n120`)).toBe(true);
   t.dispose();
 });
 
