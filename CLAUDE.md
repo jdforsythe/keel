@@ -4,7 +4,7 @@ You are building Keel. The repo is the memory; your context is a cache. Anything
 
 **Read order on every fresh start:** `docs/HANDOFF.md` -> `docs/PRINCIPLES.md` -> `docs/GLOSSARY.md` -> `docs/ARCHITECTURE.md`. Load the `keel-architecture` skill. Run `/resume`. Do not read `spec/` or `docs/adr/` wholesale; retrieve sections with `pnpm spec <topic>`.
 
-**Commands:** `pnpm check` · `pnpm test` · `pnpm build` · `pnpm eval` · `pnpm spec <topic>`. All emit compact structured output by default (see `docs/OUTPUT.md`); use `--format=pretty` only for a human.
+**Commands:** `pnpm check` · `pnpm test` · `pnpm build` · `pnpm eval` · `pnpm spec <topic>` · `pnpm gate [<sha>]` (CI's jobs on this machine, before a push; `docs/GATE.md`). All emit compact structured output by default (see `docs/OUTPUT.md`); use `--format=pretty` only for a human.
 
 **Rules**
 1. One task per context window, unless the operator says otherwise: when told to keep working, close the task (`/handoff`), take the next unblocked backlog line and continue in the same context; make the decisions the work needs, record each in `PLAN.md` and `docs/HANDOFF.md` for the operator to confirm or reverse, and stop only for a real blocker. Done means the task's `PLAN.md` verification section is green.
