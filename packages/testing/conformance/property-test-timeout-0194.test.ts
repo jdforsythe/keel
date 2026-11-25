@@ -54,7 +54,9 @@ export default keelConfig({ test: { include: ["*.test.ts"], environment: "happy-
   writeFileSync(out, "");
   await run(vitestBin, ["run", "--config", join(dir, "vitest.config.ts"), "--root", dir], {
     cwd: pkg,
-    env: { ...process.env, KEEL_TIMEOUT_OUT: out },
+    // The clause states its numbers at scale 1 (300 ms per run, 30 s, the configured timeout): the child runs at scale 1
+    // whatever scale this run has, so the values it records are the clause's own.
+    env: { ...process.env, KEEL_TIMEOUT_OUT: out, KEEL_TEST_TIME_SCALE: "1" },
     timeout: testTime(120_000),
   }).catch((e: unknown) => {
     const text =
