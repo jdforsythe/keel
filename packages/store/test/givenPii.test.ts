@@ -45,3 +45,26 @@ test("givenPii(store) gives the marked values of the state as last given: initia
     { seed: 1337, numRuns: 30 },
   );
 });
+
+test("givenPii(store) after a restore holds the snapshot's state and initial; an undo gives back the values of the entry now latest, or the base's", () => {
+  fc.assert(
+    fc.property(fc.stringMatching(/^[a-z]{8}$/), fc.stringMatching(/^[a-z]{8}$/), (k, v) => {
+      scope(() => {
+        const S = s.object({ p: s.object({}).pii("contact") });
+        const st = store(S, { p: {} }, { id: "given.undo", logLimit: 1 });
+        expect(st.restore({ state: { p: {} }, log: [], initial: { p: { [`i${k}`]: `i${v}` } } }).ok).toBe(true);
+        expect(givenPii(st)).toEqual([`i${k}`, `i${v}`]);
+        let next: Record<string, string> = { [`a${k}`]: `a${v}` };
+        const set = transaction(st, "given.set", s.object({}), () => ({ p: next }));
+        expect(tx(set, {}).ok).toBe(true);
+        next = {};
+        expect(tx(set, {}).ok).toBe(true);
+        expect(givenPii(st)).toEqual([]);
+        // logLimit 1: the first commit is folded into the base, so an undo gives the base's values, the first commit's.
+        expect(st.undo()).toBe(true);
+        expect(givenPii(st)).toEqual([`a${k}`, `a${v}`]);
+      }).dispose();
+    }),
+    { seed: 1337, numRuns: 30 },
+  );
+});

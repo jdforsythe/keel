@@ -14,11 +14,14 @@ const REMEMBERED = 256;
 const isObject = (v: JsonValue): v is { readonly [k: string]: JsonValue } =>
   typeof v === "object" && v !== null && !Array.isArray(v);
 
-/** `v` with each string (and number, as text) passed through `fn`, depth first; an unchanged value keeps its type. */
-function each(v: JsonValue, fn: (x: string) => string): JsonValue {
-  if (Array.isArray(v)) return v.map((x) => each(x, fn));
+/**
+ * `v` with each string (and number, as text) passed through `fn`, depth first, and with `keys` each object key too;
+ * an unchanged value keeps its type.
+ */
+function each(v: JsonValue, fn: (x: string) => string, keys = false): JsonValue {
+  if (Array.isArray(v)) return v.map((x) => each(x, fn, keys));
   if (typeof v === "object" && v !== null)
-    return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, each(x, fn)]));
+    return Object.fromEntries(Object.entries(v).map(([k, x]) => [keys ? fn(k) : k, each(x, fn, keys)]));
   if (typeof v !== "string" && typeof v !== "number") return v;
   const out = fn(String(v));
   return out === String(v) ? v : out;
@@ -118,7 +121,7 @@ export function redactionOf(entries: readonly string[], seed: number): Redaction
     error(error: KeelError<string, JsonValue>) {
       const at = under(`error:${error.code}`, "data.");
       const data = at.length === 0 ? error.data : apply(json, error.data, `error:${error.code}`, at);
-      const out = each(data, scrub);
+      const out = each(data, scrub, true);
       // `data.at` names where the error fired and feeds the fingerprint: only an `error:` entry masks it.
       const where = isObject(data) ? data.at : undefined;
       return {

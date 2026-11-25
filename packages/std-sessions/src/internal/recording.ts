@@ -238,6 +238,10 @@ export function recording(ctx: Ctx, options: RecordOptions): Live {
       const error: Raw = { code: event.error.code, message: event.error.message, data: jsonOf(event.error.data) };
       pushError(error);
       if (base === undefined) return;
+      // Each store's state as last given, read now: a `restore` or an undo since the last snapshot made no log entry.
+      own.run(() => {
+        for (const [, st] of stores()) for (const v of givenPii(st)) redaction.remember(v);
+      });
       const route = current?.id ?? base.route.id;
       const kept = event.at !== undefined && !prior.complete;
       append({ at, kind: "error", route, error: kept ? redaction.blind(error) : redaction.error(error) });

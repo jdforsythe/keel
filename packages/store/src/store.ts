@@ -77,6 +77,14 @@ export function store<T extends object>(
   // `givenPii(store)`: the marked values of the state as last given, before a codec copy drops undeclared keys.
   const stateMarked = piiPaths(schema).length > 0;
   let statePii: readonly string[] = stateMarked && start.ok ? piiValues(schema, initial) : [];
+  // The same of the base `undo` replays from, so an undo to it gives its values back.
+  let basePii = statePii;
+  const piiOf = (v: unknown): readonly string[] => (stateMarked ? piiValues(schema, v) : []);
+  /** `basePii` after `trim` folded the oldest of `before` into the base, leaving `after`. */
+  const folded = (before: readonly Row<T>[], after: readonly Row<T>[]): void => {
+    const n = before.length - after.length;
+    if (n > 0) basePii = before[n - 1]?.pii ?? basePii;
+  };
   if (!start.ok) throw new Error(`store ${id}: initial state invalid: ${start.error.message}`);
   let base = freeze(start.value);
   let root = signal(base);
@@ -107,7 +115,6 @@ export function store<T extends object>(
       );
 
   const commit = (state: T, next: Row<T>[]): void => {
-    if (stateMarked) statePii = piiValues(schema, state);
     if (making) {
       current = state;
       rows = next;
@@ -149,6 +156,8 @@ export function store<T extends object>(
     if (rows.length === 0) return false;
     const kept = rows.slice(0, -1);
     seq++;
+    // The state undo returns to is the one the entry before made: its values as given then.
+    statePii = kept.at(-1)?.pii ?? basePii;
     commit(
       kept.reduce((st, r) => freeze(r.apply(st)), base),
       kept,
@@ -203,9 +212,12 @@ export function store<T extends object>(
       };
       const frozen = freeze(entry);
       if (bound.value.given !== undefined) givenPiiOf.set(frozen, bound.value.given);
-      rows.push({ entry: frozen, apply: bound.value.apply });
+      const pii = piiOf(next);
+      rows.push({ entry: frozen, apply: bound.value.apply, ...(stateMarked ? { pii } : {}) });
       const kept = trim(base, rows, limit);
+      folded(rows, kept.rows);
       base = kept.base;
+      statePii = pii;
       if (key.value !== undefined) keys.add({ name: t.name, key: key.value });
       commit(next, kept.rows);
       return ok(next);
@@ -299,14 +311,24 @@ export function store<T extends object>(
       const state = copy(schema, parsed.value.state);
       if (!state.ok) return state;
       const restored = freeze(state.value);
-      const given = stateMarked ? piiValues(schema, parsed.value.state) : [];
+      // Every state the snapshot gives (its state and its `initial`): an undo may return to the base, and the snapshot's
+      // own entries are not judged one by one.
+      const initialGiven = s.object({ initial: schema }).parse(snap);
+      const given = stateMarked
+        ? [...new Set([...piiOf(parsed.value.state), ...(initialGiven.ok ? piiOf(initialGiven.value.initial) : [])])]
+        : [];
       // A log this code cannot replay (an undeclared transaction, a refused payload) folds into `state` (k.persist).
       const log = s.object({ log: codec }).parse(snap);
       let next: Row<T>[] | undefined = log.ok ? [] : undefined;
       for (const e of log.ok ? log.value.log : []) {
         const bound = binders.get(e.name)?.(e.payload);
         if (bound === undefined || !bound.ok) next = undefined;
-        else next?.push({ entry: freeze({ ...e, payload: bound.value.payload }), apply: bound.value.apply });
+        else
+          next?.push({
+            entry: freeze({ ...e, payload: bound.value.payload }),
+            apply: bound.value.apply,
+            ...(stateMarked ? { pii: given } : {}),
+          });
       }
       let kept: { base: T; rows: Row<T>[] } = { base: restored, rows: [] };
       if (next !== undefined) {
@@ -319,8 +341,9 @@ export function store<T extends object>(
       seq = head.value.head ?? last;
       base = kept.base;
       keys.reset(restoredKeys);
-      commit(restored, kept.rows);
+      basePii = given;
       statePii = given;
+      commit(restored, kept.rows);
       return ok(restored);
     },
     undo() {
