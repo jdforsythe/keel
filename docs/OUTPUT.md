@@ -51,4 +51,4 @@ Fields: `code` (stable, one letter and four digits, never renumbered) · `path:l
 **Internal rule.** Keel's own scripts, runners, and hooks obey this contract from task 0001.
 
 subject: tooling/output.ts tooling/*.mjs tooling/budgets.json packages/cli/src/
-verified: 3190e26ae653272180ea7a368098f885a7615f09
+verified: a5b4e7a72a2fbcabbd2ea361288d0ac4bcfdf12b
