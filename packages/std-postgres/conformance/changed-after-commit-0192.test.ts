@@ -11,11 +11,11 @@ import fc from "fast-check";
 import { beforeAll, describe, expect, test } from "vitest";
 import type { SimCtx } from "@keel/ctx";
 import { boardChannel, changed, flush, keyOf, watch } from "./follow-fixtures.ts";
-import { MODES, Row, SEED, fresh, none, notesDb, okOf, simCtx, sqlName } from "./fixtures.ts";
+import { ENGINE_BOUND, MODES, Row, SEED, fresh, none, notesDb, okOf, simCtx, sqlName } from "./fixtures.ts";
 
 beforeAll(async () => {
   await ready();
-});
+}, ENGINE_BOUND);
 
 for (const m of MODES) {
   describe(m.name, () => {

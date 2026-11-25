@@ -10,12 +10,12 @@ import { NoRows, sql } from "@keel/std-postgres";
 import { ready } from "@keel/std-postgres/testing";
 import fc from "fast-check";
 import { beforeAll, expect, test } from "vitest";
-import { Row, SEED, errOf, fresh, notesDb, okOf, simCtx, sqlName } from "./fixtures.ts";
+import { ENGINE_BOUND, Row, SEED, errOf, fresh, notesDb, okOf, simCtx, sqlName } from "./fixtures.ts";
 import { boardChannel, changed } from "./follow-fixtures.ts";
 
 beforeAll(async () => {
   await ready();
-});
+}, ENGINE_BOUND);
 
 const unavailable = [{ delay: 0, fault: "unavailable" as const }];
 const marker = (n: number) => `SECRET-${n}-MARK`;

@@ -12,7 +12,7 @@ import { sql } from "@keel/std-postgres";
 import { database } from "@keel/std-postgres/server";
 import fc from "fast-check";
 import { afterEach, expect, test } from "vitest";
-import { SEED, fresh, migrationsOf, okOf, sqlName } from "./fixtures.ts";
+import { FOLDER_BOUND, SEED, fresh, migrationsOf, okOf, sqlName } from "./fixtures.ts";
 
 const saved = { url: process.env.KEEL_POSTGRES_URL, dev: process.env.KEEL_DEV_DIR };
 afterEach(() => {
@@ -24,6 +24,9 @@ afterEach(() => {
     else process.env[k] = v;
   }
 });
+
+/** Generated values the case runs: one PGlite folder a run. */
+const RUNS = 3;
 
 test("With `KEEL_POSTGRES_URL` unset and `KEEL_DEV_DIR` a folder `d`, a `query` answers from PGlite in `d/postgres`, which exists after it", async () => {
   await fc.assert(
@@ -44,6 +47,6 @@ test("With `KEEL_POSTGRES_URL` unset and `KEEL_DEV_DIR` a folder `d`, a `query` 
         rmSync(d, { recursive: true, force: true });
       }
     }),
-    { seed: SEED, numRuns: 3 },
+    { seed: SEED, numRuns: RUNS },
   );
-}, 60_000);
+}, RUNS * FOLDER_BOUND);

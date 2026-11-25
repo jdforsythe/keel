@@ -13,7 +13,7 @@ import { sql } from "@keel/std-postgres";
 import { database } from "@keel/std-postgres/server";
 import fc from "fast-check";
 import { afterEach, expect, test } from "vitest";
-import { SEED, fresh, migrationsOf, okOf, sqlName } from "./fixtures.ts";
+import { FOLDER_BOUND, SEED, fresh, migrationsOf, okOf, sqlName } from "./fixtures.ts";
 
 const before = process.env.KEEL_POSTGRES_URL;
 afterEach(() => {
@@ -21,6 +21,9 @@ afterEach(() => {
   else process.env.KEEL_POSTGRES_URL = before;
 });
 const Count = s.object({ c: s.number() });
+
+/** Generated values the case runs: one PGlite folder a run. */
+const RUNS = 3;
 
 test("a migration referencing a table that does not exist rejects the first `query` with its error; once another database on that folder makes the table, the next `query` on the same ctx applies the migration and answers", async () => {
   await fc.assert(
@@ -43,6 +46,6 @@ test("a migration referencing a table that does not exist rejects the first `que
         rmSync(dir, { recursive: true, force: true });
       }
     }),
-    { seed: SEED, numRuns: 3 },
+    { seed: SEED, numRuns: RUNS },
   );
-}, 60_000);
+}, RUNS * FOLDER_BOUND);

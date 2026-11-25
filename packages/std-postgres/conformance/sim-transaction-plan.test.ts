@@ -10,11 +10,11 @@ import { NoRows, sql } from "@keel/std-postgres";
 import { ready } from "@keel/std-postgres/testing";
 import fc from "fast-check";
 import { beforeAll, expect, test } from "vitest";
-import { Row, SEED, errOf, fresh, none, notesDb, okOf, simCtx, sqlName } from "./fixtures.ts";
+import { ENGINE_BOUND, Row, SEED, errOf, fresh, none, notesDb, okOf, simCtx, sqlName } from "./fixtures.ts";
 
 beforeAll(async () => {
   await ready();
-});
+}, ENGINE_BOUND);
 const C = { delay: 0, fault: "conflict" as const };
 const N = { delay: 0, fault: "none" as const };
 

@@ -8,9 +8,11 @@ import { s } from "@keel/schema";
 import { NoRows, sql } from "@keel/std-postgres";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { MODES, Row, SEED, errOf, fresh, notesDb, okOf, sqlName } from "./fixtures.ts";
+import { FOLDER_BOUND, MODES, Row, SEED, errOf, fresh, notesDb, okOf, sqlName } from "./fixtures.ts";
 
 const SECRETISH = fc.stringMatching(/^[a-z]{12,20}$/);
+/** Generated inputs each property case runs: on PGlite, one folder a run. */
+const RUNS = 5;
 
 for (const m of MODES) {
   describe(m.name, () => {
@@ -36,9 +38,9 @@ for (const m of MODES) {
             }
           },
         ),
-        { seed: SEED, numRuns: 5 },
+        { seed: SEED, numRuns: RUNS },
       );
-    });
+    }, RUNS * FOLDER_BOUND);
 
     test("a row failing the schema is `postgres.result`, holding no value", async () => {
       await fc.assert(
@@ -59,9 +61,9 @@ for (const m of MODES) {
             mode.done();
           }
         }),
-        { seed: SEED, numRuns: 5 },
+        { seed: SEED, numRuns: RUNS },
       );
-    });
+    }, RUNS * FOLDER_BOUND);
 
     test("`one` of no row is `keel.notFound`", async () => {
       const { cap, table } = fresh();

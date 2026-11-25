@@ -12,11 +12,11 @@ import { ready } from "@keel/std-postgres/testing";
 import { simulate } from "@keel/testing";
 import fc from "fast-check";
 import { beforeAll, expect, test } from "vitest";
-import { Row, SEED, fresh, notesDb, okOf, sqlName } from "./fixtures.ts";
+import { ENGINE_BOUND, Row, SEED, fresh, notesDb, okOf, sqlName } from "./fixtures.ts";
 
 beforeAll(async () => {
   await ready();
-});
+}, ENGINE_BOUND);
 
 type Step = { delay: number; fault: "none" };
 const replayOf = (cap: string, plan: Step[]) => ({

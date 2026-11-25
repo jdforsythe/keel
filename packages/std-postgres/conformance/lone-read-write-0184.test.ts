@@ -9,11 +9,11 @@ import { database } from "@keel/std-postgres/server";
 import { ready } from "@keel/std-postgres/testing";
 import { beforeAll, expect, test } from "vitest";
 import type { SimCtx } from "@keel/ctx";
-import { fresh, migrationsOf, okOf, simCtx, sqlName } from "./fixtures.ts";
+import { ENGINE_BOUND, fresh, migrationsOf, okOf, simCtx, sqlName } from "./fixtures.ts";
 
 beforeAll(async () => {
   await ready();
-});
+}, ENGINE_BOUND);
 /** Runs `calls` started together, advancing the sim clock to its next deadline whenever one is pending, until they settle. */
 async function drive<T>(ctx: SimCtx, calls: Promise<T>[]): Promise<T[]> {
   let done = false;

@@ -11,10 +11,13 @@ import { database } from "@keel/std-postgres/server";
 import type { Database } from "@keel/std-postgres/server";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { MODES, SEED, errOf, fresh, migrationsOf, notesDb, okOf, sqlName } from "./fixtures.ts";
+import { FOLDER_BOUND, MODES, SEED, errOf, fresh, migrationsOf, notesDb, okOf, sqlName } from "./fixtures.ts";
 
 const e2457 = (e: unknown): boolean =>
   String(Reflect.get(Object(e), "code")) === "E2457" || String(e).includes("E2457");
+
+/** Generated names the unique-index case runs: on PGlite, one folder a run. */
+const RUNS = 5;
 
 for (const m of MODES) {
   describe(m.name, () => {
@@ -36,9 +39,9 @@ for (const m of MODES) {
             mode.done();
           }
         }),
-        { seed: SEED, numRuns: 5 },
+        { seed: SEED, numRuns: RUNS },
       );
-    });
+    }, RUNS * FOLDER_BOUND);
 
     test("a foreign key, check or not-null violation is `postgres.constraint` with kind `foreign`, `check` or `notNull`", async () => {
       const { cap, table } = fresh();
