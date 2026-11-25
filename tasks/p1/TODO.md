@@ -26,9 +26,7 @@ The `unsafe` count measures escapes from the type system in code that runs. Nega
 
 ### Gate and tooling health (first: every other lane trips over these)
 - [ ] `running` backlog 1102: `@keel/check` fails Stryker's initial test run; a mutation run that hangs past its bound; a type cache written beside an app (`lane-m1102`)
-- [ ] `next` backlog 1040: the whole root test needs several runs under load
-- [ ] `next` backlog 1103: `canary.mjs` fails under load
-- [ ] `next` backlog 0991: a scaffolded project builds on first run
+- [ ] `running` backlog 1040, 1103, 0991: the whole root test reliable under load, `canary.mjs` under load, a scaffolded project builds on first run (`lane-gate`)
 - [ ] `next` check's 13 mutation chunks on the main line after 1102
 
 ### W1 Freeze
@@ -37,7 +35,8 @@ The `unsafe` count measures escapes from the type system in code that runs. Nega
 - [ ] `blocked` (RFC 0163) k.parity's second part: kind gates, lint S0013, conformance for clauses 5 and 6
 - [ ] `blocked` (k.parity) every kernel section `conformance-covered`, then the `frozen` flip
 - [ ] `next` backlog 1100: the largest sections split so the map plus any one section fits principle 8; the section cap returns to 3,100
-- [ ] `running` RFC and ADR status lines say what is built (`lane-rfcstat`)
+- [x] `done` RFC and ADR status lines say what is built
+- [ ] `next` RFC 0191's last part: the `Box as="nav"` conformance case (backlog 0580)
 
 ### W2 Weakness clearance
 - [ ] `running` the backlog triaged with decisions, in fix lanes (`lane-triage`; `tasks/p1/weaknesses.md`)
@@ -46,7 +45,9 @@ The `unsafe` count measures escapes from the type system in code that runs. Nega
 - [ ] `blocked` (fix lanes) a red-team pass that files no new high or medium line
 
 ### W3 Evidence and coverage
-- [ ] `running` the survey: per package, mutation, survivors, exports and clauses by rung, coverage
+- [x] `done` the survey (`tasks/p1/evidence-survey.md`)
+- [ ] `running` a11y evidence: the item key per project, the four criteria at `none`, routes with no evidence outside household (`lane-a11y`)
+- [ ] `running` household: a test that renders each route and evidence for its 135 exports (`lane-household`)
 - [ ] `running` RFC 0229: `unsafe` counts runtime escapes; negative type tests have their own home and count; six uses removed (`lane-unsafe`)
 - [ ] `blocked` (survey) tier 1 packages to target, one lane per package
 - [ ] `blocked` (tier 1) tier 2, then tier 3
@@ -86,7 +87,6 @@ Each of these is started as early as its inputs allow, since they have the longe
 - [ ] A newcomer reviewer: one person who writes TypeScript and has never seen the repo, to read the docs and the walkthrough.
 - [ ] A domain and a static host account for the site.
 - [ ] The npm organization and the GitHub organization for the fresh public repository.
-- [ ] A Codex account the evals can use on this machine, if the installed `codex` CLI is not already signed in.
 - [ ] The licence, chosen at launch.
 - [ ] An address a person answers, for `SECURITY.md`.
 
