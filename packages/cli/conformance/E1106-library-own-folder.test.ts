@@ -1,6 +1,6 @@
-// Spec: k.formats, clause "In a folder whose `package.json` is that library's and whose root `module.ts` is that manifest, `keel check` reports no E1106 for `EVEN` in `src/Even.schema.ts`, in `src/Even.test.ts` or in `test/Even.test.ts`, and one E1106, at `modules/shop/Even.schema.ts`, for `EVEN` there."
+// Spec: k.formats, clause "In a folder whose `package.json` is that library's and whose root `module.ts` is that manifest, `keel check` reports no E1106 for `EVEN` in `src/Even.schema.ts`, in `src/Even.test.ts` or in `test/Even.test.ts`."
 // Seed: 1337 (no generated input). Binary runs: 1, the folder shared by the cases (the real `keel` binary; no std package is imported).
-// ASSUMPTION (spec silent): `modules/shop/` holds only `Even.schema.ts`; no manifest is given for it, as the clause names none.
+// Also checked (k.formats Who declares: the own-folder reading reads no file under `modules/`): a `modules/shop/Even.schema.ts` in the folder brings no E1106.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { SLOW, cleanup, diags, keel, manifestOf, materialize, type Tree } from "./library-support.ts";
 
@@ -36,11 +36,7 @@ describe("E1106 in a library's own folder", () => {
     expect(paths).not.toContain("test/Even.test.ts");
   });
 
-  it("`keel check` in the library's folder reports one E1106, at `modules/shop/Even.schema.ts`", () => {
-    expect(paths.filter((p) => p === "modules/shop/Even.schema.ts")).toEqual(["modules/shop/Even.schema.ts"]);
-  });
-
-  it("`keel check` in the library's folder reports no E1106 but the one at `modules/shop/Even.schema.ts`", () => {
-    expect(paths).toEqual(["modules/shop/Even.schema.ts"]);
+  it("`keel check` in the library's folder reads no file under `modules/`: `modules/shop/Even.schema.ts` brings no E1106", () => {
+    expect(paths).toEqual([]);
   });
 });
