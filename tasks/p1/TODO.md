@@ -34,8 +34,8 @@ The `unsafe` count measures escapes from the type system in code that runs. Nega
 ### W1 Freeze
 - [x] `done` RFC 0163, the library format: RFC, ADR and spec made true against the tree; the build order is the RFC's last section
 - [x] `done` slice 1, the library kind, on `lane-lib`, the RFC's integration line
-- [ ] `running` slices 2a and 2b side by side (`lane-lib2a`, `lane-lib2b`)
-- [ ] `blocked` (2a, 2b) slice 3, then 4 (the stdlib on the format) beside 4b (the app data seam, k.server-deps)
+- [x] `done` slices 2a, 2b, 3 and 4b, merged into the main line
+- [ ] `next` slice 4, then 4 (the stdlib on the format) beside 4b (the app data seam, k.server-deps)
 - [ ] `blocked` (slices 4 and 4b) k.parity's second part: kind gates, lint S0013, conformance for clauses 5 and 6
 - [ ] `blocked` (k.parity) every kernel section `conformance-covered`, then the `frozen` flip
 - [ ] `next` backlog 1100: the largest sections split so the map plus any one section fits principle 8 (the section cap is back at 3,100)
