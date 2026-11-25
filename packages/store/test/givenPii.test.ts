@@ -1,11 +1,10 @@
-// `givenPii`: a committed entry of a `.pii()`-marked payload schema carries, in memory, the marked values of the
+// k.store `givenPii`: a committed entry of a `.pii()`-marked payload schema carries, in memory, the marked values of the
 // payload as given, an open object's undeclared keys and values among them, which the copied payload drops. Seed 1337.
 import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { store, transaction, tx } from "../src/index.ts";
-import { givenPii } from "../src/internal/index.ts";
+import { givenPii, store, transaction, tx } from "../src/index.ts";
 
 test("a marked open payload's undeclared keys and values are in givenPii, not in the logged payload", () => {
   fc.assert(
@@ -18,8 +17,8 @@ test("a marked open payload's undeclared keys and values are in givenPii, not in
         expect(tx(plain, { p: { [`k${k}`]: `v${v}` } }).ok).toBe(true);
         const [a, b] = st.log();
         expect(a?.payload).toEqual({ p: {} });
-        expect(a === undefined ? [] : givenPii.get(a)).toEqual([`k${k}`, `v${v}`, "n", String(n)]);
-        expect(b === undefined ? "none" : givenPii.get(b)).toBeUndefined();
+        expect(a === undefined ? [] : givenPii(a)).toEqual([`k${k}`, `v${v}`, "n", String(n)]);
+        expect(b === undefined ? ["none"] : givenPii(b)).toEqual([]);
       }).dispose();
     }),
     { seed: 1337, numRuns: 30 },

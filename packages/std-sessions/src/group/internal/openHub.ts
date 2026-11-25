@@ -1,7 +1,7 @@
 import { type SimCtx, createCtx } from "@keel/ctx";
 import type { JsonValue } from "@keel/schema";
 import type { Snapshot } from "@keel/store";
-import { snapshotKeys } from "@keel/store/internal";
+import { snapshotKeys } from "@keel/store";
 import type { Serve } from "../Serve.ts";
 import type { Hub } from "./Hub.ts";
 import type { Outgoing } from "./Outgoing.ts";

@@ -2,8 +2,7 @@ import { stdConfig } from "@keel/compiler/std/stdConfig";
 import { type Ctx, type CtxEvent, observe, seedOf } from "@keel/ctx";
 import { type Computed, effect, scope } from "@keel/reactive";
 import { type Id, type JsonValue, type KeelError, type Result, err } from "@keel/schema";
-import { type Store, stores } from "@keel/store";
-import { givenPii } from "@keel/store/internal";
+import { type Store, givenPii, stores } from "@keel/store";
 import type { RecordOptions } from "../RecordOptions.ts";
 import type { Session } from "../Session.schema.ts";
 import type { SessionEvent } from "../SessionEvent.ts";
@@ -94,7 +93,7 @@ export function recording(ctx: Ctx, options: RecordOptions): Live {
         if (e.id <= last) continue;
         seen.set(id, e.id);
         const schema = st.payloads.get(e.name);
-        for (const v of givenPii.get(e) ?? []) redaction.remember(v);
+        for (const v of givenPii(e)) redaction.remember(v);
         const payload = redaction.tx(e.name, schema, e.payload);
         if (base === undefined) continue;
         append({ at: ctx.clock.now(), kind: "tx", store: id, name: e.name, payload });

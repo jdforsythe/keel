@@ -3,7 +3,7 @@ type WriteKey = { readonly name: string; readonly key: string };
 
 /**
  * The write keys a restore of `snapshot` takes (k.sync Write key): its `keys` when present, else the keys of its log
- * entries in log order. `restore` and std-sessions' hub both read a stored snapshot's keys through it.
+ * entries in log order. `restore` reads a snapshot's keys through it.
  */
 export function snapshotKeys(snapshot: {
   readonly keys?: readonly WriteKey[] | undefined;
