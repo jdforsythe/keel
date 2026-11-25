@@ -12,7 +12,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { testTime } from "../test-time.ts";
+import { fixedTime, testTime } from "../test-time.ts";
 import {
   BOARD_KEY,
   REMOVAL_KEY,
@@ -165,8 +165,10 @@ try {
   const kept = await until(async () => {
     const r = await removals();
     return r.rows.length === 1 && r.rows.every((i) => i.state === "kept");
-  }, testTime(10_000));
-  step("kept within 10s", kept);
+    // The resumed step waits its own 2,000 ms and its 3,000 ms timeout is planted above: inputs, not bounds. The
+    // restart and the settle take about 1 s; the allowance on top is 30 s.
+  }, fixedTime(5_000) + testTime(30_000));
+  step("kept within 35s", kept);
   const end = await removals();
   const runs = end.names.filter((n) => n === "api.removal.attempt").length;
   step("step ran twice", runs === 2, `attempts ${runs}`);
