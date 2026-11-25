@@ -13,7 +13,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | E140x | k.component, k.place | E145x | k.errors |
 | E150x | k.router, k.contract, k.guards, k.prefix, k.api | E155x | k.server, k.topology, k.deploy, k.shell, k.compat, k.hosting, k.security, k.origins, k.leave, k.user, k.mount |
 | E160x | k.ctx, k.sim, k.persist, k.data | E165x | k.services |
-| E170x | k.testing, k.model, k.prove, k.ledger | E175x | k.check, k.host |
+| E170x | k.testing, k.model, k.prove, k.ledger | E175x | k.check, k.host, k.unsafe |
 | E18xx | k.ui, k.a11y, k.aria | E19xx | k.forms |
 | E200x | std.sessions, std.multi, std.monitor | E210x | std.brands |
 | E215x | std.db | E230x | std.i18n |
@@ -104,6 +104,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.parity | Stdlib parity | proposed | seams |
 | k.review | Review of escapes | conformance-covered | ranges |
 | k.escapes | Escape codes | conformance-covered | R codes |
+| k.unsafe | Unsafe, type tests | proposed | count |
 
 ## Stdlib
 Sections: `spec/std/README.md`.
