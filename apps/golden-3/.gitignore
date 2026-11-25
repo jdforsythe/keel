@@ -1,8 +1,0 @@
-node_modules
-dist
-.turbo
-coverage
-reports
-.stryker-tmp
-.keel-dev/
-.keel/sessions/

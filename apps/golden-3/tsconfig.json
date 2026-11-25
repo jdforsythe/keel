@@ -1,8 +1,0 @@
-{
-  "extends": "@keel/compiler/tsconfig.strict.json",
-  "compilerOptions": {
-    "jsxImportSource": "@keel/runtime-dom",
-    "types": ["node", "@keel/compiler/client"]
-  },
-  "include": ["tokens.ts", "topology.ts", "vite.config.ts", "modules", "test"]
-}
