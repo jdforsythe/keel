@@ -48,7 +48,9 @@ The triage is `tasks/p1/weaknesses.md`: 102 lines to fix now in 17 lanes (A1), 1
 - [x] `done` lane 06 server-scrub-and-streams: RFC 0230
 - [ ] `running` lane 07 check-security-rules: RFC 0231 (`lane-sec07`)
 - [x] `done` lane 08 router-identity: RFC 0232
-- [ ] `next` lanes 02 to 05 and 09 to 17, in the triage's order, as lanes free up
+- [x] `done` lane 09 pii-and-data: RFC 0236
+- [ ] `running` lane 03 ledger-integrity: RFC 0235, its spec, header migration and skipped conformance on the main line; the builder's steps 2, 4, 5 and 6 next
+- [ ] `next` lanes 02, 04, 05 and 10 to 17 and 33, in the triage's order, as lanes free up
 - [ ] `blocked` (A1) the A2 lanes 18 to 32
 - [ ] `blocked` (fix lanes) a red-team pass, by Claude and by Codex, that files no new high or medium line
 
