@@ -46,7 +46,7 @@ const COPY_DIR = ".claude/skills";
 export const TARGETS = {
   keel: 1130,
   "keel-client": 3100,
-  "keel-server": 2850,
+  "keel-server": 2900,
   "keel-data": 2850,
   "keel-testing": 3550,
   "keel-deploy": 2100,

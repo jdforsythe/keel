@@ -114,7 +114,7 @@ export const RecipesText = messages(AppLocale, { title: {}, count: { n: s.int({ 
 export default RecipesText.text({ title: 'Rezepte', count: { plural: 'n', one: '# Rezept', other: '# Rezepte' } })
 // loader: ok({ text: await RecipesText.load(params.locale) })  // page: formatMessage(props.data.text.count, { n }, locale)
 ```
-`text` parses its entry with the set: a locale file the set refuses throws when it is imported.
+`text` parses its entry: a bad locale file throws on import.
 Format with `formatNumber`, `formatMoney`, `formatDate`, `formatDuration` and `plural(n, locale, { one, other })`, passing `props.params.locale`. `toLocaleString` is E1758, an `Intl` formatter with a locale E2301. A plural form applies where the locale selects its category or the number is its exact key: `{ plural: 'n', '=0': 'No receipts yet', one: '# receipt', other: '# receipts' }`; `zero`, or a category the file's locale never selects, is E2407 (fix: `zero` becomes `'=0'`). Money typed in a form is an `s.string()` field read in the action by `parseMoney(input.amount, input.currency, params.locale)` (`12,50 €` in `de-DE`; `12,50` in `en-US` is an error, never rounded), answering `keel.fields` from the error's `code`.
 
 **Test.** `renderRoute`, `fire`, `find(id).state`, `focusOrder()`; it runs the a11y checks. See keel-testing.
