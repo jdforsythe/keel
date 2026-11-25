@@ -1,5 +1,6 @@
 import type { Ctx } from "@keel/ctx";
 import { type Id, type KeelError, type Result, err, ok, pathToString } from "@keel/schema";
+import { refuse } from "../../unsafe/refuse.ts";
 import type { EnqueueOptions } from "../EnqueueOptions.ts";
 import type { JobTable } from "../JobTable.ts";
 import { chanOf } from "./chanOf.ts";
@@ -19,7 +20,7 @@ export async function enqueue(
   opts: EnqueueOptions,
 ): Promise<Result<Id<"Job">, KeelError<string, unknown>>> {
   const j = table[id];
-  if (j === undefined) throw new Error(`std.jobs: no job ${id} in this queue`);
+  if (j === undefined) refuse(`std.jobs: no job ${id} in this queue`);
   const r = j.input.parse(input);
   if (!r.ok) {
     const data = Object.fromEntries(r.error.data.issues.map((i) => [pathToString(i.path), i.rule]));

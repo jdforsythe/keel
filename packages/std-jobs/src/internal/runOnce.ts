@@ -1,5 +1,5 @@
 import type { Ctx } from "@keel/ctx";
-import type { JsonValue } from "@keel/schema";
+import { type JsonValue, attempt } from "@keel/schema";
 import type { Job } from "../Job.type.ts";
 
 /**
@@ -18,19 +18,15 @@ export async function runOnce(
   if (!parsed.ok) return "keel.fields";
   const t = new AbortController();
   a.signal.addEventListener("abort", () => t.abort(), { once: true });
-  try {
-    const r = await Promise.race([
-      j.fn(parsed.value, ctx, a.signal),
-      ctx.clock.after(j.timeoutMs, t.signal).then(() => null),
-    ]);
-    if (r === null) {
-      a.abort();
-      return "jobs.timeout";
-    }
-    return r.ok ? undefined : r.error.code;
-  } catch {
-    return "jobs.thrown";
-  } finally {
-    t.abort();
+  const raced = await attempt(() =>
+    Promise.race([j.fn(parsed.value, ctx, a.signal), ctx.clock.after(j.timeoutMs, t.signal).then(() => null)]),
+  );
+  t.abort();
+  if (!raced.ok) return "jobs.thrown";
+  const r = raced.value;
+  if (r === null) {
+    a.abort();
+    return "jobs.timeout";
   }
+  return r.ok ? undefined : r.error.code;
 }

@@ -1,5 +1,6 @@
 import type { Runner } from "@keel/server";
 import type { JobTable, Queue } from "@keel/std-jobs";
+import { refuse } from "../unsafe/refuse.ts";
 import type { ScheduleEntry } from "./ScheduleEntry.ts";
 import type { Planned } from "./internal/Planned.ts";
 import { entryError } from "./internal/entryError.ts";
@@ -21,14 +22,13 @@ export function schedule<T extends JobTable>(
     const zone = e.zone ?? "UTC";
     const why = entryError(e.cron, zone);
     const cron = parseCron(e.cron);
-    if (why !== undefined || typeof cron === "string") throw new Error(`E2551 schedule ${id}: ${why}`);
+    if (why !== undefined || typeof cron === "string") refuse(`E2551 schedule ${id}: ${why}`);
     const mod = id.split(".")[0];
     const target = Object.hasOwn(queue.table, e.job) ? queue.table[e.job] : undefined;
-    if (target === undefined)
-      throw new Error(`E2554 schedule ${id}: job '${String(e.job).slice(0, 40)}' is not in the queue`);
+    if (target === undefined) refuse(`E2554 schedule ${id}: job '${String(e.job).slice(0, 40)}' is not in the queue`);
     if (!String(e.job).startsWith(`${mod}.`))
-      throw new Error(`E2554 schedule ${id}: job '${String(e.job).slice(0, 40)}' belongs to another module`);
-    if (!target.input.parse(e.input).ok) throw new Error(`E2554 schedule ${id}: input is refused by job '${e.job}'`);
+      refuse(`E2554 schedule ${id}: job '${String(e.job).slice(0, 40)}' belongs to another module`);
+    if (!target.input.parse(e.input).ok) refuse(`E2554 schedule ${id}: input is refused by job '${e.job}'`);
     plan.push({ id, cron, zone, job: e.job, input: e.input, once: e.missed !== "skip" });
   }
   const module = Object.keys(table)[0]?.split(".")[0] ?? "";

@@ -169,7 +169,17 @@ await run("budgets", async () => {
     // A subpath with no folder index is the file `packages/<pkg>/src/<subpath>.ts` (`@keel/std-sessions/routes`, 0093).
     const nested = path.join(root, "packages", pkg, "src", ...sub, "index.ts");
     const file = path.join(root, "packages", pkg, "src", `${sub.join("/")}.ts`);
-    const entry = sub.length > 0 && !fs.existsSync(nested) ? file : nested;
+    // A library's `exports` entry names its source under `keel` (`./src/index.server.ts`, k.library-pack).
+    const pj = path.join(root, "packages", pkg, "package.json");
+    const target = fs.existsSync(pj)
+      ? JSON.parse(fs.readFileSync(pj, "utf8")).exports?.[sub.length > 0 ? `./${sub.join("/")}` : "."]?.keel
+      : undefined;
+    const entry =
+      typeof target === "string"
+        ? path.join(root, "packages", pkg, target)
+        : sub.length > 0 && !fs.existsSync(nested)
+          ? file
+          : nested;
     if (!m || !fs.existsSync(entry)) continue;
     const bundle = await build({
       entryPoints: [entry],

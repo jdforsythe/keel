@@ -9,6 +9,7 @@ import { module, ModuleSchema } from "@keel/compiler";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { type Files, SEED, codesOf, exportFile, has, lowerId, manifestFile, pascal } from "./module-support.ts";
+import { CHECK_CASE_BOUND } from "./check-time.ts";
 
 const AUTH = "node_modules/@keel/std-auth";
 const MONEY = "node_modules/@keel/std-money";
@@ -45,22 +46,26 @@ const stdManifest = fc.record({
   }),
 });
 
-test("ModuleSchema accepts a stdlib manifest with a lowerCamel id and package names in deps", () => {
-  fc.assert(
-    fc.property(stdManifest, (m) => {
-      expect(ModuleSchema.parse(m).ok).toBe(true);
-    }),
-    { seed: SEED, numRuns: 40 },
-  );
-  expect(
-    ModuleSchema.parse({
-      id: "auth",
-      deps: ["@keel/std-money"],
-      capabilities: ["net"],
-      public: { exports: ["Session"] },
-    }).ok,
-  ).toBe(true);
-});
+test(
+  "ModuleSchema accepts a stdlib manifest with a lowerCamel id and package names in deps",
+  () => {
+    fc.assert(
+      fc.property(stdManifest, (m) => {
+        expect(ModuleSchema.parse(m).ok).toBe(true);
+      }),
+      { seed: SEED, numRuns: 40 },
+    );
+    expect(
+      ModuleSchema.parse({
+        id: "auth",
+        deps: ["@keel/std-money"],
+        capabilities: ["net"],
+        public: { exports: ["Session"] },
+      }).ok,
+    ).toBe(true);
+  },
+  CHECK_CASE_BOUND,
+);
 
 const BASE = {
   id: "auth",
@@ -80,74 +85,107 @@ const MALFORMED: Record<string, unknown> = {
 };
 
 for (const [why, m] of Object.entries(MALFORMED)) {
-  test(`ModuleSchema rejects a malformed stdlib manifest: ${why}`, () => {
-    expect(ModuleSchema.parse(m).ok).toBe(false);
-  });
-  test(`module() throws on a malformed stdlib manifest: ${why}`, () => {
-    expect(() => Reflect.apply(module, undefined, [m])).toThrow();
-  });
+  test(
+    `ModuleSchema rejects a malformed stdlib manifest: ${why}`,
+    () => {
+      expect(ModuleSchema.parse(m).ok).toBe(false);
+    },
+    CHECK_CASE_BOUND,
+  );
+  test(
+    `module() throws on a malformed stdlib manifest: ${why}`,
+    () => {
+      expect(() => Reflect.apply(module, undefined, [m])).toThrow();
+    },
+    CHECK_CASE_BOUND,
+  );
 }
 
-test("module() returns a valid stdlib manifest unchanged in id, deps, and public surface", () => {
-  fc.assert(
-    fc.property(stdManifest, (m) => {
-      const out = module(m);
-      expect(out.id).toBe(m.id);
-      expect(out.deps).toEqual(m.deps);
-      expect(out.public).toEqual(m.public);
-      expect(ModuleSchema.parse(out).ok).toBe(true);
-    }),
-    { seed: SEED, numRuns: 30 },
-  );
-});
+test(
+  "module() returns a valid stdlib manifest unchanged in id, deps, and public surface",
+  () => {
+    fc.assert(
+      fc.property(stdManifest, (m) => {
+        const out = module(m);
+        expect(out.id).toBe(m.id);
+        expect(out.deps).toEqual(m.deps);
+        expect(out.public).toEqual(m.public);
+        expect(ModuleSchema.parse(out).ok).toBe(true);
+      }),
+      { seed: SEED, numRuns: 30 },
+    );
+  },
+  CHECK_CASE_BOUND,
+);
 
 // ---- the same rules on a stdlib module ----
 
-test("E1151: a non-public export of a stdlib module (id auth) imported by an app module is reported; public is clean", () => {
-  fc.assert(
-    fc.property(pascal, (name) => {
-      const mk = (exports: string[]) => [
-        auth({ exports }),
-        exportFile(AUTH, name),
-        orders(["@keel/std-auth"]),
-        importing(name),
-      ];
-      expect(has(mk([]), "E1151")).toBe(true);
-      expect(has(mk([name]), "E1151")).toBe(false);
-    }),
-    { seed: SEED, numRuns: 20 },
-  );
-});
+test(
+  "E1151: a non-public export of a stdlib module (id auth) imported by an app module is reported; public is clean",
+  () => {
+    fc.assert(
+      fc.property(pascal, (name) => {
+        const mk = (exports: string[]) => [
+          auth({ exports }),
+          exportFile(AUTH, name),
+          orders(["@keel/std-auth"]),
+          importing(name),
+        ];
+        expect(has(mk([]), "E1151")).toBe(true);
+        expect(has(mk([name]), "E1151")).toBe(false);
+      }),
+      { seed: SEED, numRuns: 20 },
+    );
+  },
+  CHECK_CASE_BOUND,
+);
 
-test("E1152: importing a stdlib module absent from deps is reported even when the export is public", () => {
-  fc.assert(
-    fc.property(pascal, (name) => {
-      expect(has([auth({ exports: [name] }), exportFile(AUTH, name), orders([]), importing(name)], "E1152")).toBe(true);
-      expect(
-        has([auth({ exports: [name] }), exportFile(AUTH, name), orders(["@keel/std-auth"]), importing(name)], "E1152"),
-      ).toBe(false);
-    }),
-    { seed: SEED, numRuns: 20 },
-  );
-});
+test(
+  "E1152: importing a stdlib module absent from deps is reported even when the export is public",
+  () => {
+    fc.assert(
+      fc.property(pascal, (name) => {
+        expect(has([auth({ exports: [name] }), exportFile(AUTH, name), orders([]), importing(name)], "E1152")).toBe(
+          true,
+        );
+        expect(
+          has(
+            [auth({ exports: [name] }), exportFile(AUTH, name), orders(["@keel/std-auth"]), importing(name)],
+            "E1152",
+          ),
+        ).toBe(false);
+      }),
+      { seed: SEED, numRuns: 20 },
+    );
+  },
+  CHECK_CASE_BOUND,
+);
 
-test("E1154: a stdlib public export that does not exist is reported; the file present clears it", () => {
-  fc.assert(
-    fc.property(pascal, (name) => {
-      expect(has([auth({ exports: [name] })], "E1154")).toBe(true);
-      expect(has([auth({ exports: [name] }), exportFile(AUTH, name)], "E1154")).toBe(false);
-    }),
-    { seed: SEED, numRuns: 20 },
-  );
-});
+test(
+  "E1154: a stdlib public export that does not exist is reported; the file present clears it",
+  () => {
+    fc.assert(
+      fc.property(pascal, (name) => {
+        expect(has([auth({ exports: [name] })], "E1154")).toBe(true);
+        expect(has([auth({ exports: [name] }), exportFile(AUTH, name)], "E1154")).toBe(false);
+      }),
+      { seed: SEED, numRuns: 20 },
+    );
+  },
+  CHECK_CASE_BOUND,
+);
 
-test("E1153: stdlib modules auth and money listing each other in deps produce exactly one E1153 naming both", () => {
-  const d = codesOf([auth({ deps: ["@keel/std-money"] }), money({ deps: ["@keel/std-auth"] })], "E1153");
-  expect(d.length).toBe(1);
-  expect(d[0]?.message).toContain("auth");
-  expect(d[0]?.message).toContain("money");
-  expect(has([auth({ deps: ["@keel/std-money"] }), money({})], "E1153")).toBe(false);
-});
+test(
+  "E1153: stdlib modules auth and money listing each other in deps produce exactly one E1153 naming both",
+  () => {
+    const d = codesOf([auth({ deps: ["@keel/std-money"] }), money({ deps: ["@keel/std-auth"] })], "E1153");
+    expect(d.length).toBe(1);
+    expect(d[0]?.message).toContain("auth");
+    expect(d[0]?.message).toContain("money");
+    expect(has([auth({ deps: ["@keel/std-money"] }), money({})], "E1153")).toBe(false);
+  },
+  CHECK_CASE_BOUND,
+);
 
 const STORE = (storeId: string) => ({
   path: `${AUTH}/session.ts`,
@@ -162,49 +200,65 @@ const ERR = (code: string) => ({
   source: `import { s } from '@keel/schema'\nexport const Denied = s.error('${code}', s.object({}))\n`,
 });
 
-test("E1155: a stdlib route login without the auth. prefix is reported; auth.login is clean", () => {
-  const d = codesOf([auth({}), routesAt(AUTH, ["login"])], "E1155");
-  expect(d.length).toBeGreaterThanOrEqual(1);
-  expect(d[0]?.path).toBe(`${AUTH}/contract.ts`);
-  expect(has([auth({}), routesAt(AUTH, ["auth.login"])], "E1155")).toBe(false);
-});
+test(
+  "E1155: a stdlib route login without the auth. prefix is reported; auth.login is clean",
+  () => {
+    const d = codesOf([auth({}), routesAt(AUTH, ["login"])], "E1155");
+    expect(d.length).toBeGreaterThanOrEqual(1);
+    expect(d[0]?.path).toBe(`${AUTH}/contract.ts`);
+    expect(has([auth({}), routesAt(AUTH, ["auth.login"])], "E1155")).toBe(false);
+  },
+  CHECK_CASE_BOUND,
+);
 
-test("E1155: a stdlib store id, transaction name, and error code without the auth. prefix are reported; prefixed are clean", () => {
-  fc.assert(
-    fc.property(lowerId, (name) => {
-      for (const mk of [STORE, TX, ERR]) {
-        expect(has([auth({}), mk(`${name}x.${name}`)], "E1155")).toBe(true);
-        expect(has([auth({}), mk(`auth.${name}`)], "E1155")).toBe(false);
-      }
-    }),
-    { seed: SEED, numRuns: 20 },
-  );
-});
+test(
+  "E1155: a stdlib store id, transaction name, and error code without the auth. prefix are reported; prefixed are clean",
+  () => {
+    fc.assert(
+      fc.property(lowerId, (name) => {
+        for (const mk of [STORE, TX, ERR]) {
+          expect(has([auth({}), mk(`${name}x.${name}`)], "E1155")).toBe(true);
+          expect(has([auth({}), mk(`auth.${name}`)], "E1155")).toBe(false);
+        }
+      }),
+      { seed: SEED, numRuns: 20 },
+    );
+  },
+  CHECK_CASE_BOUND,
+);
 
 const RUN = `import type { Ctx } from '@keel/ctx'\nexport const Run = (ctx: Ctx) => ctx.clock.now()\n`;
 
-test("E1156: a stdlib file using ctx.clock.now() without clock in capabilities is reported; with it, clean", () => {
-  const run = { path: `${AUTH}/Run.ts`, source: RUN };
-  const d = codesOf([auth({ capabilities: [] }), run], "E1156");
-  expect(d.length).toBeGreaterThanOrEqual(1);
-  expect(d[0]?.path).toBe(`${AUTH}/Run.ts`);
-  expect(has([auth({ capabilities: ["clock"] }), run], "E1156")).toBe(false);
-});
+test(
+  "E1156: a stdlib file using ctx.clock.now() without clock in capabilities is reported; with it, clean",
+  () => {
+    const run = { path: `${AUTH}/Run.ts`, source: RUN };
+    const d = codesOf([auth({ capabilities: [] }), run], "E1156");
+    expect(d.length).toBeGreaterThanOrEqual(1);
+    expect(d[0]?.path).toBe(`${AUTH}/Run.ts`);
+    expect(has([auth({ capabilities: ["clock"] }), run], "E1156")).toBe(false);
+  },
+  CHECK_CASE_BOUND,
+);
 
-test("importing a stdlib module's `./contract` needs `deps` only: absent is E1152, listed is none and no E1151", () => {
-  const mk = (deps: string[]) => [
-    auth({}),
-    routesAt(AUTH, ["auth.login"]),
-    orders(deps),
-    {
-      path: "modules/orders/Back.ts",
-      source: `import { auth } from '@keel/std-auth/contract'\nexport const Back = auth.href('auth.login')\n`,
-    },
-  ];
-  expect(has(mk([]), "E1152")).toBe(true);
-  expect(has(mk(["@keel/std-auth"]), "E1152")).toBe(false);
-  expect(has(mk(["@keel/std-auth"]), "E1151")).toBe(false);
-});
+test(
+  "importing a stdlib module's `./contract` needs `deps` only: absent is E1152, listed is none and no E1151",
+  () => {
+    const mk = (deps: string[]) => [
+      auth({}),
+      routesAt(AUTH, ["auth.login"]),
+      orders(deps),
+      {
+        path: "modules/orders/Back.ts",
+        source: `import { auth } from '@keel/std-auth/contract'\nexport const Back = auth.href('auth.login')\n`,
+      },
+    ];
+    expect(has(mk([]), "E1152")).toBe(true);
+    expect(has(mk(["@keel/std-auth"]), "E1152")).toBe(false);
+    expect(has(mk(["@keel/std-auth"]), "E1151")).toBe(false);
+  },
+  CHECK_CASE_BOUND,
+);
 
 // ---- app / stdlib parity ----
 
@@ -247,30 +301,38 @@ const sortedCodes = (files: Files) =>
     .filter((c) => NAMED.has(c))
     .sort();
 
-test("a module as an app module and as a stdlib package yield the same multiset of diagnostic codes for each of E1151-E1156", () => {
-  fc.assert(
-    fc.property(fc.constantFrom(...Object.keys(SCENARIOS)), lowerId, (code, x) => {
-      const make = SCENARIOS[code];
-      if (make === undefined) throw new Error(code);
-      const asApp = sortedCodes(make("app", x));
-      const asStd = sortedCodes(make("std", x));
-      expect(asApp).toContain(code);
-      expect(asStd).toEqual(asApp);
-    }),
-    { seed: SEED, numRuns: 60 },
-  );
-});
+test(
+  "a module as an app module and as a stdlib package yield the same multiset of diagnostic codes for each of E1151-E1156",
+  () => {
+    fc.assert(
+      fc.property(fc.constantFrom(...Object.keys(SCENARIOS)), lowerId, (code, x) => {
+        const make = SCENARIOS[code];
+        if (make === undefined) throw new Error(code);
+        const asApp = sortedCodes(make("app", x));
+        const asStd = sortedCodes(make("std", x));
+        expect(asApp).toContain(code);
+        expect(asStd).toEqual(asApp);
+      }),
+      { seed: SEED, numRuns: 60 },
+    );
+  },
+  CHECK_CASE_BOUND,
+);
 
-test("a diagnostic located under node_modules/ carries no fix, and no fix names a node_modules path", () => {
-  fc.assert(
-    fc.property(fc.constantFrom(...Object.keys(SCENARIOS)), lowerId, (code, x) => {
-      const make = SCENARIOS[code];
-      if (make === undefined) throw new Error(code);
-      for (const d of check(make("std", x), NO_TYPES).diagnostics) {
-        if (d.path.includes("node_modules/")) expect(d.fix).toBeUndefined();
-        if (d.fix !== undefined) expect(d.fix).not.toContain("node_modules/");
-      }
-    }),
-    { seed: SEED, numRuns: 40 },
-  );
-});
+test(
+  "a diagnostic located under node_modules/ carries no fix, and no fix names a node_modules path",
+  () => {
+    fc.assert(
+      fc.property(fc.constantFrom(...Object.keys(SCENARIOS)), lowerId, (code, x) => {
+        const make = SCENARIOS[code];
+        if (make === undefined) throw new Error(code);
+        for (const d of check(make("std", x), NO_TYPES).diagnostics) {
+          if (d.path.includes("node_modules/")) expect(d.fix).toBeUndefined();
+          if (d.fix !== undefined) expect(d.fix).not.toContain("node_modules/");
+        }
+      }),
+      { seed: SEED, numRuns: 40 },
+    );
+  },
+  CHECK_CASE_BOUND,
+);

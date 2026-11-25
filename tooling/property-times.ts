@@ -7,8 +7,9 @@
 // test calls is not seen; such a test declares its own time. The watchdog reads each test's timeout, so a hang is
 // still bounded from it.
 import type { Plugin } from "vite";
+import { testTime } from "./test-time.ts";
 
-/** The time one generated run may take: 100 runs are 30 s. */
+/** The time one generated run may take: 100 runs are 30 s, scaled by `KEEL_TEST_TIME_SCALE` (test-time.ts). */
 export const PER_RUN_MS = 300;
 /** Runs `properties`, `simulate` and fast-check's `assert` make when the call names none (k.testing Properties, k.sim). */
 const DEFAULT_RUNS = 100;
@@ -134,7 +135,7 @@ export function propertyTimes(code: string, parse: (code: string) => unknown, te
       else if (isFastCheckAssert(c.callee, fc)) runs += runsOf(c, "numRuns");
     });
     if (runs === 0) return;
-    inserts.push({ at: at.start, text: `{ timeout: ${Math.max(testTimeout, runs * PER_RUN_MS)} }, ` });
+    inserts.push({ at: at.start, text: `{ timeout: ${Math.max(testTimeout, testTime(runs * PER_RUN_MS))} }, ` });
   });
   if (inserts.length === 0) return undefined;
   let out = code;

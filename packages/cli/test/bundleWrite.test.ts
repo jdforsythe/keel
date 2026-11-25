@@ -337,7 +337,7 @@ describe("bundleWrite: the bundle", () => {
   );
 
   test(
-    "a check error still writes the bundle: E1060 names the counts and the manifest, and runs counts the error",
+    "a check error still writes the bundle: each check error comes first, then E1060 naming the counts, the manifest and the first error, and runs counts the error",
     async () => {
       const tree = { ...base(), "modules/a/Bad.ts": "export const Bad = 1\nexport const Extra = 2\n" };
       const { cwd, io } = make(tree);
@@ -346,12 +346,17 @@ describe("bundleWrite: the bundle", () => {
       expect(errors).toBeGreaterThan(0);
       expect(readJson(join(cwd, "bundle", "manifest.json")).runs).toEqual({ checkErrors: errors, failedTests: 0 });
       const word = errors === 1 ? "error" : "errors";
-      expect(out.records).toEqual([
+      const shown = out.records.filter((r) => r.kind === "diag" && r.code !== "E1060");
+      expect(shown.length).toBe(errors);
+      const first = shown[0];
+      expect(first).toMatchObject({ code: "E1752", path: "modules/a/Bad.ts" });
+      expect(out.records.slice(errors)).toEqual([
         {
           kind: "diag",
           code: "E1060",
           path: "bundle/manifest.json",
           message: `bundle written with ${errors} check ${word} and 0 failed tests`,
+          fix: `first: modules/a/Bad.ts:${String(first?.line)}:${String(first?.col)} ${String(first?.message)}`,
           see: "k.evidence",
         },
         { kind: "summary", ok: false, name: "evidence", counts: { files: 6 } },

@@ -19,6 +19,12 @@ import type { Snapshot } from "@keel/store";
 import { Box, Button, Input, Text } from "@keel/ui";
 
 export const SEED = 1337;
+/**
+ * What a case bounds for each group it opens or replays: a worker realm started for each of its users, the script
+ * driven and the group stopped, about 1 s here on a quiet machine and up to 3 s beside the suite's other groups. The
+ * bound is 60,000 ms a group, so a runner ten times slower (scale 0.1) still has 6 s a group, twice the loaded time.
+ */
+export const GROUP_BOUND = 60_000;
 export const ORIGIN = "http://group.test";
 export const USER = new URL("./group-fixtures.ts", import.meta.url).href;
 

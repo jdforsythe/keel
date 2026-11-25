@@ -8,6 +8,7 @@
 // is the test's own timeout, and the drain bound (10,000 ms) is exercised with a request that never ends.
 // The dev half of the Process clauses is in packages/cli/conformance/dev-uncaught.test.ts.
 import fs from "node:fs";
+import { fixedTime, testTime } from "@keel/tooling/test-time";
 import { afterAll, afterEach, beforeAll, describe, expect, test } from "vitest";
 import {
   type Server,
@@ -39,6 +40,11 @@ async function up(extra: Record<string, string> = {}): Promise<Server> {
 const GET = (server: Server, pathname: string): Promise<number> => statusOf(server.port, pathname);
 /** Each case ends within this bound: the exit the clauses name is at most 11 s after the record, startup is a second or two. */
 const SLOW = 20_000;
+/**
+ * The drain the clause names: the server waits 10,000 ms for a request that never ends. That wait is the server's own
+ * time, so it does not scale; the startup and requests around it take the case's scaled bound.
+ */
+const DRAIN = 10_000;
 
 describe("k.leave Process: server.mjs handles an uncaught exception or rejection with one E1577 record, drains and exits 1", () => {
   test(
@@ -75,7 +81,7 @@ describe("k.leave Process: server.mjs handles an uncaught exception or rejection
       expect(await server.until(() => server.e1577().length > 0)).toBe(true);
       expect(await server.exited).toBe(1);
     },
-    SLOW,
+    fixedTime(DRAIN) + testTime(SLOW),
   );
 
   test(
@@ -108,7 +114,7 @@ describe("k.leave Process: server.mjs handles an uncaught exception or rejection
       for (const r of records) expect(r.message).toContain("uncaught exception in work of route app.twice");
       expect(server.text()).not.toContain(THROWN);
     },
-    SLOW,
+    fixedTime(DRAIN) + testTime(SLOW),
   );
 
   test(

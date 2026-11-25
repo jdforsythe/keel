@@ -3,6 +3,7 @@
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { SEED, type Files, codesOf, lowerId, manifestFile } from "./module-support.ts";
+import { CHECK_CASE_BOUND } from "./check-time.ts";
 
 const distinct = fc.tuple(lowerId, lowerId).filter(([a, b]) => a !== b);
 
@@ -29,27 +30,35 @@ const files = (a: string, b: string, aDeps: string[], bDeps: string[]): Files =>
   },
 ];
 
-test("a page of `b` naming a layout of `a`, where `a` lists `b` in `deps`, reports no E1152 and no E1153", () => {
-  fc.assert(
-    fc.property(distinct, ([a, b]) => {
-      const f = files(a, b, [b], []);
-      expect(codesOf(f, "E1152")).toEqual([]);
-      expect(codesOf(f, "E1153")).toEqual([]);
-    }),
-    { seed: SEED, numRuns: 20 },
-  );
-});
+test(
+  "a page of `b` naming a layout of `a`, where `a` lists `b` in `deps`, reports no E1152 and no E1153",
+  () => {
+    fc.assert(
+      fc.property(distinct, ([a, b]) => {
+        const f = files(a, b, [b], []);
+        expect(codesOf(f, "E1152")).toEqual([]);
+        expect(codesOf(f, "E1153")).toEqual([]);
+      }),
+      { seed: SEED, numRuns: 20 },
+    );
+  },
+  CHECK_CASE_BOUND,
+);
 
-test("`a` and `b` listing each other in `deps`, with a page of `b` naming a layout of `a`, produce one E1153 naming both and no E1152", () => {
-  fc.assert(
-    fc.property(distinct, ([a, b]) => {
-      const f = files(a, b, [b], [a]);
-      const d = codesOf(f, "E1153");
-      expect(d.length).toBe(1);
-      expect(d[0]?.message).toContain(a);
-      expect(d[0]?.message).toContain(b);
-      expect(codesOf(f, "E1152")).toEqual([]);
-    }),
-    { seed: SEED, numRuns: 20 },
-  );
-});
+test(
+  "`a` and `b` listing each other in `deps`, with a page of `b` naming a layout of `a`, produce one E1153 naming both and no E1152",
+  () => {
+    fc.assert(
+      fc.property(distinct, ([a, b]) => {
+        const f = files(a, b, [b], [a]);
+        const d = codesOf(f, "E1153");
+        expect(d.length).toBe(1);
+        expect(d[0]?.message).toContain(a);
+        expect(d[0]?.message).toContain(b);
+        expect(codesOf(f, "E1152")).toEqual([]);
+      }),
+      { seed: SEED, numRuns: 20 },
+    );
+  },
+  CHECK_CASE_BOUND,
+);

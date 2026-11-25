@@ -1,7 +1,8 @@
 import { type Finding, type RuleDef, defineRule } from "@keel/check";
-import { lineCol, propOf } from "@keel/std-jobs/tools/internal";
 import { cut } from "./internal/cut.ts";
 import { entries } from "./internal/entries.ts";
+import { lineCol } from "./internal/lineCol.ts";
+import { propOf } from "./internal/propOf.ts";
 import { readyFlows } from "./internal/readyFlows.ts";
 import { str } from "./internal/str.ts";
 

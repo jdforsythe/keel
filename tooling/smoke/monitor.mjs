@@ -10,6 +10,7 @@ import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { chromium } from "@playwright/test";
+import { testTime } from "../test-time.ts";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const app = join(root, "apps", "golden-1");
@@ -17,7 +18,7 @@ const cli = join(root, "packages", "cli", "src", "bin.ts");
 const port = Number(process.env.SMOKE_PORT ?? 4196);
 const origin = `http://127.0.0.1:${port}`;
 const out = process.env.SMOKE_OUT ?? join(app, ".keel", "monitored.json");
-const MERGE_WAIT_MS = 90_000;
+const MERGE_WAIT_MS = testTime(90_000);
 const SKIP = new Set(["node_modules", "dist", ".keel", ".keel-dev", ".turbo", ".api.storage"]);
 
 const lines = [];
@@ -75,7 +76,7 @@ try {
     if (failed > 0) for (const l of serverLog.slice(-8)) console.log(`api ${l}`);
   });
   const listening = await new Promise((resolve) => {
-    const timer = setTimeout(() => resolve(false), 20_000);
+    const timer = setTimeout(() => resolve(false), testTime(20_000));
     server.stdout.on("data", (d) => {
       if (String(d).includes("listening")) {
         clearTimeout(timer);
@@ -105,17 +106,17 @@ try {
     const addTodo = async (p, title) => {
       await p.getByLabel("Title").fill(title);
       await p.click("#todos\\.addTodo");
-      await done(p, title).waitFor({ timeout: 5000 });
+      await done(p, title).waitFor({ timeout: testTime(5000) });
     };
     // User 0 makes the board: Home with Milk and Bread.
     // The board stream stays open, so a page never goes network-idle: wait for the board to show Live.
-    const live = (p) => p.locator("#todos\\.live", { hasText: "Live" }).waitFor({ timeout: 10_000 });
+    const live = (p) => p.locator("#todos\\.live", { hasText: "Live" }).waitFor({ timeout: testTime(10_000) });
     await u0.goto(`${origin}/`, { waitUntil: "load" });
     await live(u0);
     await u0.getByLabel("List name").fill("Home");
     await u0.click("#todos\\.addList");
     await u0.locator("#todos\\.main").getByRole("link", { name: "Home", exact: true }).click();
-    await u0.locator("#todos\\.list\\.title", { hasText: "Home" }).waitFor({ timeout: 5000 });
+    await u0.locator("#todos\\.list\\.title", { hasText: "Home" }).waitFor({ timeout: testTime(5000) });
     await addTodo(u0, "Milk");
     await addTodo(u0, "Bread");
     const list = u0.url();
@@ -132,27 +133,27 @@ try {
     step("live toggle", seen);
     // User 1 opens Milk's edit page, goes offline, saves priority high and marks Bread done: both wait.
     await u1.getByRole("link", { name: "Edit Milk" }).click();
-    await u1.locator("#todos\\.save").waitFor({ timeout: 5000 });
+    await u1.locator("#todos\\.save").waitFor({ timeout: testTime(5000) });
     await c1.setOffline(true);
     await u1.getByLabel("Priority").selectOption("high");
     await u1.click("#todos\\.save");
-    await done(u1, "Bread").waitFor({ timeout: 5000 });
+    await done(u1, "Bread").waitFor({ timeout: testTime(5000) });
     await done(u1, "Bread").click();
     step("offline writes", (await u1.locator("#todos\\.outbox").count()) === 1);
     // User 0 renames Milk to Oat milk and adds Eggs.
     await u0.getByRole("link", { name: "Edit Milk" }).click();
-    await u0.locator("#todos\\.save").waitFor({ timeout: 5000 });
+    await u0.locator("#todos\\.save").waitFor({ timeout: testTime(5000) });
     await u0.getByLabel("Title").fill("Oat milk");
     await u0.click("#todos\\.save");
-    await done(u0, "Oat milk").waitFor({ timeout: 5000 });
+    await done(u0, "Oat milk").waitFor({ timeout: testTime(5000) });
     await addTodo(u0, "Eggs");
     step("rename and add", true);
     // User 1 comes back: the toggle lands, the edit is refused; Keep theirs drops it.
     await c1.setOffline(false);
     const theirs = u1.getByRole("button", { name: "Keep theirs" });
-    await theirs.waitFor({ timeout: 10_000 });
+    await theirs.waitFor({ timeout: testTime(10_000) });
     await theirs.click();
-    await u1.locator("#todos\\.outbox").waitFor({ state: "detached", timeout: 5000 });
+    await u1.locator("#todos\\.outbox").waitFor({ state: "detached", timeout: testTime(5000) });
     step("conflict kept theirs", true);
     for (const e of errors) step("pageerror", false, e);
   } catch (e) {

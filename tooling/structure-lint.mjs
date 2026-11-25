@@ -1,14 +1,16 @@
-// Structure lint. S0001/S0002/S0004/S0005 delegate to @keel/check (E1752/E1757/E1754), and E1760 and E1761 pass through; S0014 (an `unsafe(` call in `packages/*` whose lifted range holds no E1757 finding, or in a library's package no finding of a lifted code, k.unsafe), S0003, S0006, S0012 (a stdlib file names a kernel `internal` entry `deps.json` does not list, k.parity) live here; S0015 (a fast-check run with no seed, in the scanned files, conformance included, and every app's, example's and library's test files) is unseeded-properties.mjs; S0009 (a std package's runtime entry reaches a CLI-time package) is std-entries.mjs. Usage: node tooling/structure-lint.mjs [--root dir] [--format=..] [--quiet] [--limit N]
+// Structure lint. S0001/S0002/S0004/S0005 delegate to @keel/check (E1752/E1757/E1754), and E1760 and E1761 pass through; S0014 (an `unsafe(` call in `packages/*` whose lifted range holds no E1757 finding, or in a library's package no finding of a lifted code, k.unsafe), S0003, S0006, S0012 (a stdlib file names a kernel `internal` entry `deps.json` does not list, k.parity) live here; S0015 (a fast-check run with no seed, in the scanned files, conformance included, and every app's, example's and library's test files) is unseeded-properties.mjs; S0016 (a hard-coded time in test code, not through testTime or fixedTime) is hard-times.mjs; S0009 (a std package's runtime entry reaches a CLI-time package) is std-entries.mjs. Usage: node tooling/structure-lint.mjs [--root dir] [--format=..] [--quiet] [--limit N]
 import fs from "node:fs";
 import path from "node:path";
 import { Visitor } from "oxc-parser";
 import { check } from "../packages/check/src/index.ts";
+import { LIBRARY_LIFTED_CODES } from "../packages/check/src/internal/LIBRARY_LIFTED_CODES.ts";
 import { LIFTED_CODES } from "../packages/check/src/internal/LIFTED_CODES.ts";
 import { liftedRanges } from "../packages/check/src/internal/liftedRanges.ts";
 import { parseFile } from "../packages/check/src/internal/parseFile.ts";
 import { noUnsafeSyntax } from "../packages/check/src/rules/noUnsafeSyntax.ts";
 import { parseArgs, run } from "./output.ts";
 import { CODE_EXT, rel, scrub, walk } from "./scan.mjs";
+import { hardTimes } from "./hard-times.mjs";
 import { stdEntryDiags } from "./std-entries.mjs";
 import { unseededProperties } from "./unseeded-properties.mjs";
 
@@ -122,6 +124,40 @@ for (const file of [...files, ...appTests()]) {
   for (const d of unseededProperties(src, file)) add("S0015", file, d.line, d.col, d.message);
 }
 
+// S0016: a hard-coded time in test code (hard-times.mjs): package tests and conformance, tooling's tests and smokes,
+// and every app's and example's test files. A conformance file's times are listed in hard-times-conformance.json
+// (path and text) until the conformance-writer moves each through testTime or fixedTime; a listed time no longer in
+// its file is an S0016 too, so the list only shrinks.
+const TEST_CODE = /^(?:packages\/[^/]+\/(?:test|conformance)|tooling\/(?:test|smoke)|(?:apps|examples)\/.+\/test)\//;
+const listFile = path.join(root, "tooling", "hard-times-conformance.json");
+const listed = fs.existsSync(listFile) ? JSON.parse(fs.readFileSync(listFile, "utf8")) : [];
+const unseen = new Map();
+for (const e of listed) {
+  const key = `${e.path}\t${e.text}`;
+  unseen.set(key, [...(unseen.get(key) ?? []), e]);
+}
+const appCode = ["apps", "examples"].flatMap((top) =>
+  walk(path.join(root, top)).filter((f) => CODE_EXT.test(f) && TEST_CODE.test(rel(root, f))),
+);
+for (const file of [...new Set([...files.filter((f) => TEST_CODE.test(rel(root, f))), ...appTests(), ...appCode])]) {
+  const r = rel(root, file);
+  const src = fs.readFileSync(file, "utf8");
+  for (const d of hardTimes(src, file)) {
+    const key = `${r}\t${d.text}`;
+    const left = unseen.get(key);
+    if (r.includes("/conformance/") && left !== undefined && left.length > 0) left.pop();
+    else add("S0016", file, d.line, d.col, d.message);
+  }
+}
+for (const e of [...unseen.values()].flat())
+  add(
+    "S0016",
+    path.join(root, e.path),
+    1,
+    1,
+    `${e.text} is listed in hard-times-conformance.json and no longer in the file`,
+  );
+
 /** Whether `packages/<name>/` of a repository path is a library (`"keel": "library"` in its `package.json`, k.library). */
 function inLibrary(p) {
   const m = /^packages\/[^/]+\//.exec(p);
@@ -151,6 +187,10 @@ function s0014(file) {
     // The app's reading of the file, its `unsafe/` segments renamed so no lifted range drops a finding.
     const seen = { path: file.path.replace(/(^|\/)unsafe\//g, "$1lifted/"), source: file.source };
     for (const d of check([seen], { types: false }).diagnostics) if (LIFTED_CODES.has(d.code)) escapes.push(at(d));
+    // E1207 reads a file under `packages/` as kernel code; the app reads a library's file as a module's.
+    const asModule = { path: seen.path.replace(/^packages\/[^/]+\//, "modules/lib/"), source: file.source };
+    for (const d of check([asModule], { types: false }).diagnostics)
+      if (LIBRARY_LIFTED_CODES.has(d.code)) escapes.push(at(d));
   }
   const ranges = liftedRanges(file);
   new Visitor({

@@ -27,11 +27,21 @@ import { observe } from "@keel/ctx";
 import { s } from "@keel/schema";
 import { clone, on, template } from "@keel/runtime-dom/ops";
 import { render, simulate } from "@keel/testing";
+import { fixedTime, testTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { SEED } from "./fixtures.ts";
 
 const replay = { seed: 1, schedule: { net: [], storage: [], offline: [], plans: {} } };
+
+/**
+ * What a property case with real timers bounds, for each `raced` or `fireLate` its runs make: the real delay the run
+ * starts, at most 40 ms, an input that does not scale; and the run around it, a few milliseconds here, given 300 ms so
+ * a runner ten times slower (scale 0.1) still has 30 ms. `simulate` takes its budget from the case's timeout, so the
+ * fixed part keeps the delays inside it at every scale.
+ */
+const REAL_MS = 40;
+const RUN_MS = 300;
 
 type Real =
   | { kind: "timeout"; ms: number }
@@ -108,48 +118,60 @@ test("In an empty replay, for each `d` of 0, 12 and 50, a scenario that starts `
   }
 });
 
-test("a bare `setTimeout(d)` for any real `d` from 0 to 40 ms, in the scenario or in a `ctx.net` route, records `real` at 0 and then `timer` at 10", async () => {
-  await fc.assert(
-    fc.asyncProperty(
-      fc.integer({ min: 0, max: 40 }),
-      fc.constantFrom("scenario" as const, "route" as const),
-      async (ms, where) => {
-        expect(await raced({ kind: "timeout", ms }, where)).toEqual([
+test(
+  "a bare `setTimeout(d)` for any real `d` from 0 to 40 ms, in the scenario or in a `ctx.net` route, records `real` at 0 and then `timer` at 10",
+  async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        fc.integer({ min: 0, max: 40 }),
+        fc.constantFrom("scenario" as const, "route" as const),
+        async (ms, where) => {
+          expect(await raced({ kind: "timeout", ms }, where)).toEqual([
+            { name: "real", at: 0 },
+            { name: "timer", at: 10 },
+          ]);
+        },
+      ),
+      { seed: SEED, numRuns: 20 },
+    );
+  },
+  fixedTime(20 * REAL_MS) + testTime(20 * RUN_MS),
+);
+
+test(
+  "real work of any kind (a `setTimeout`, a chain of `setImmediate`, a file read, a hash on the thread pool), started in the scenario or in a `ctx.net` route, never changes the trace and never lets the clock pass it: `real` at 0, `timer` at 10, the same on every run",
+  async () => {
+    await fc.assert(
+      fc.asyncProperty(realArb, fc.constantFrom("scenario" as const, "route" as const), async (w, where) => {
+        const first = await raced(w, where);
+        const second = await raced(w, where);
+        expect(first).toEqual([
           { name: "real", at: 0 },
           { name: "timer", at: 10 },
         ]);
-      },
-    ),
-    { seed: SEED, numRuns: 20 },
-  );
-});
+        expect(second).toEqual(first);
+      }),
+      { seed: SEED, numRuns: 20 },
+    );
+  },
+  fixedTime(20 * 2 * REAL_MS) + testTime(20 * 2 * RUN_MS),
+);
 
-test("real work of any kind (a `setTimeout`, a chain of `setImmediate`, a file read, a hash on the thread pool), started in the scenario or in a `ctx.net` route, never changes the trace and never lets the clock pass it: `real` at 0, `timer` at 10, the same on every run", async () => {
-  await fc.assert(
-    fc.asyncProperty(realArb, fc.constantFrom("scenario" as const, "route" as const), async (w, where) => {
-      const first = await raced(w, where);
-      const second = await raced(w, where);
-      expect(first).toEqual([
-        { name: "real", at: 0 },
-        { name: "timer", at: 10 },
-      ]);
-      expect(second).toEqual(first);
-    }),
-    { seed: SEED, numRuns: 20 },
-  );
-});
-
-test("real work pending across `run(ms)` holds the clock where it was: `run(ms)` with the work in flight still ends at `t + ms` with `real` at 0 and `timer` at 10 when `ms` passes 10", async () => {
-  await fc.assert(
-    fc.asyncProperty(realArb, fc.integer({ min: 10, max: 500 }), async (w, span) => {
-      expect(await raced(w, "scenario", span)).toEqual([
-        { name: "real", at: 0 },
-        { name: "timer", at: 10 },
-      ]);
-    }),
-    { seed: SEED, numRuns: 15 },
-  );
-});
+test(
+  "real work pending across `run(ms)` holds the clock where it was: `run(ms)` with the work in flight still ends at `t + ms` with `real` at 0 and `timer` at 10 when `ms` passes 10",
+  async () => {
+    await fc.assert(
+      fc.asyncProperty(realArb, fc.integer({ min: 10, max: 500 }), async (w, span) => {
+        expect(await raced(w, "scenario", span)).toEqual([
+          { name: "real", at: 0 },
+          { name: "timer", at: 10 },
+        ]);
+      }),
+      { seed: SEED, numRuns: 15 },
+    );
+  },
+  fixedTime(15 * REAL_MS) + testTime(15 * RUN_MS),
+);
 
 test("In an empty replay, a scenario that starts a `ctx.clock.after(5)` waiter recording whether a `node:crypto` `pbkdf2` of 100,000 iterations started before it has answered, then awaits the hash and `run()`: the waiter records `true` at clock 5.", async () => {
   const seen: { answered: boolean; at: number }[] = [];
@@ -279,14 +301,18 @@ test("In an empty replay, for each `d` of 1, 2 and 20, `fire` on a `render` hand
   for (const d of [1, 2, 20]) expect(await fireLate(d)).toBe("late");
 });
 
-test("`fire` waits for the real timer its handler starts, for any real delay from 0 to 40 ms", async () => {
-  await fc.assert(
-    fc.asyncProperty(fc.integer({ min: 0, max: 40 }), async (d) => {
-      expect(await fireLate(d)).toBe("late");
-    }),
-    { seed: SEED, numRuns: 12 },
-  );
-});
+test(
+  "`fire` waits for the real timer its handler starts, for any real delay from 0 to 40 ms",
+  async () => {
+    await fc.assert(
+      fc.asyncProperty(fc.integer({ min: 0, max: 40 }), async (d) => {
+        expect(await fireLate(d)).toBe("late");
+      }),
+      { seed: SEED, numRuns: 12 },
+    );
+  },
+  fixedTime(12 * REAL_MS) + testTime(12 * RUN_MS),
+);
 
 test("In an empty replay under `budget: 300`, a scenario that calls `node:crypto` `pbkdf2Sync` of 1,000 iterations and `node:zlib` `gzipSync`, then awaits `ctx.clock.after(10)`, resolves `simulate` with `ctx.clock.now()` 10 after the await.", async () => {
   let now = -1;

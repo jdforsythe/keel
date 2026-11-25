@@ -5,7 +5,7 @@
 // Spec: k.library, clause "In that project, `import x from '../../outside.ts'` in `src/Badge.tsx` is one E1163 at the specifier."
 // Rules: "E1161 an element in a library file whose `id` Ids does not accept (fix: none)"
 // Rules: "E1163 a library file whose relative import, re-export or literal `import()` resolves outside its package folder, at the specifier, or a library manifest `deps` entry that does not begin with `@`, at the entry (fix: none; the entry names no module, so it is no E1153 edge and no E1165)" (the manifest half is in library-manifest.test.ts)
-// In an app: "`keel check` reads them and runs every rule over them, its type pass included, against the app's `tokens.ts`, kernel packages and `topology.ts`. Wherever a section reads app code or a file under `modules/<id>/` (k.check App code, k.boundary Reach), it reads a library's file `<f>` as it reads `modules/<id>/<f>`, `<id>` the library's, and its `unsafe/` files with their lifted ranges; a section's exclusion of `node_modules/` does not cover library files. A diagnostic in a library file is the app's: located at `node_modules/<name>/<f>`, whichever `node_modules` holds it, and carrying no `fix`. Nothing in the app turns a rule off for a library file. A bare import there is read as in an app file and resolves from the library's folder, so its package is one of the library's `dependencies`; it is no E1163."
+// In an app: "`keel check` runs every rule but E1106 (k.formats Who declares) over them, the type pass included, against the app's `tokens.ts`, kernel packages and `topology.ts`. Where a section reads app code or `modules/<id>/` (k.check App code, k.boundary Reach), it reads a library's file `<f>` as `modules/<id>/<f>`, its `unsafe/` files with their lifted ranges. A diagnostic in one is the app's, at `node_modules/<name>/<f>`, with no `fix`; nothing turns a rule off there. A bare import there resolves from the library's folder, to one of its `dependencies`, and is no E1163."
 // Ids: "**Ids.** Each `@keel/ui` base element (k.ui, `Host` among them) and `@keel/ui/aria` `Part` a library file renders, as JSX or a call, takes an `id` check reads as built from its component's `id` prop (`<id>.<part>`, k.component IDs; a derived id holds the file's path, which changes with the installer): `<p>.id`, `<p>` a top-level function's first parameter; a name bound to such a value or destructured as `id`; a template literal with one; a conditional of two; a call whose callee check reads (a function of the library's or another library's files, a closure, a member of an object it reads back to a literal or a call) and whose every returned expression is one, parameters standing for the arguments and closure names read where bound (a function met again while its read is open, or past eight calls, is not read); or such an `id` in an object literal, spread or not, no later unreadable spread follows. Anything else is E1161: none, a literal, a concatenation, a call of a global, a parameter or a package that is no library."
 // Seed 1337
 // A call is read through its callee (function, closure or object member), parameters standing for the arguments; the generated accepted trees call a readable identity helper `ident`, the dropped-id mutation gives one E1161.
@@ -21,6 +21,7 @@ import fc from "fast-check";
 import { expect, test } from "vitest";
 import { CODE_FIXTURES } from "./fixtures-by-code.ts";
 import { type Files, SEED, manifestFile } from "./module-support.ts";
+import { CHECK_CASE_BOUND } from "./check-time.ts";
 
 const NO_TYPES = { types: false } as const;
 const NAME = "@acme/charts";
@@ -66,35 +67,51 @@ const scoped = fc
   .tuple(fc.stringMatching(/^[a-z]{4,8}$/), fc.stringMatching(/^[a-z]{4,8}$/))
   .map(([a, b]) => `@${a}/${b}`);
 
-test("In that project, `check()` reports no diagnostic", () => {
-  expect(check(project(), NO_TYPES).diagnostics).toEqual([]);
-});
+test(
+  "In that project, `check()` reports no diagnostic",
+  () => {
+    expect(check(project(), NO_TYPES).diagnostics).toEqual([]);
+  },
+  CHECK_CASE_BOUND,
+);
 
-test("In that project, `<box />` in `src/Badge.tsx` is one E1805 in the app's `keel check`, at `node_modules/@acme/charts/src/Badge.tsx`, with no `fix`", () => {
-  const d = hitsOf(inBadge(badge("<box />")), "E1805");
-  expect(d.length).toBe(1);
-  expect(d[0]?.path).toBe("node_modules/@acme/charts/src/Badge.tsx");
-  expect(d[0]?.fix).toBeUndefined();
-});
+test(
+  "In that project, `<box />` in `src/Badge.tsx` is one E1805 in the app's `keel check`, at `node_modules/@acme/charts/src/Badge.tsx`, with no `fix`",
+  () => {
+    const d = hitsOf(inBadge(badge("<box />")), "E1805");
+    expect(d.length).toBe(1);
+    expect(d[0]?.path).toBe("node_modules/@acme/charts/src/Badge.tsx");
+    expect(d[0]?.fix).toBeUndefined();
+  },
+  CHECK_CASE_BOUND,
+);
 
-test("E1805 in a library file is located at `node_modules/<name>/<f>` and carries no fix, whatever the package name and the file", () => {
-  fc.assert(
-    fc.property(scoped, fc.constantFrom("src/Badge.tsx", "src/Deep.tsx"), (name, file) => {
-      const files = project([lib(file, badge("<box />"), name)], name, "pkg");
-      const d = hitsOf(files, "E1805");
-      expect(d.length).toBe(1);
-      expect(d[0]?.path).toBe(`node_modules/${name}/${file}`);
-      expect(d[0]?.fix).toBeUndefined();
-    }),
-    { seed: SEED, numRuns: 20 },
-  );
-});
+test(
+  "E1805 in a library file is located at `node_modules/<name>/<f>` and carries no fix, whatever the package name and the file",
+  () => {
+    fc.assert(
+      fc.property(scoped, fc.constantFrom("src/Badge.tsx", "src/Deep.tsx"), (name, file) => {
+        const files = project([lib(file, badge("<box />"), name)], name, "pkg");
+        const d = hitsOf(files, "E1805");
+        expect(d.length).toBe(1);
+        expect(d[0]?.path).toBe(`node_modules/${name}/${file}`);
+        expect(d[0]?.fix).toBeUndefined();
+      }),
+      { seed: SEED, numRuns: 20 },
+    );
+  },
+  CHECK_CASE_BOUND,
+);
 
-test("a library file under `unsafe/` is read with its lifted ranges: E1805 there is reported at the library's path", () => {
-  const files = project([lib("unsafe/Raw.tsx", badge("<box />"))]);
-  const d = hitsOf(files, "E1805");
-  expect(d.map((x) => x.path)).toEqual(["node_modules/@acme/charts/unsafe/Raw.tsx"]);
-});
+test(
+  "a library file under `unsafe/` is read with its lifted ranges: E1805 there is reported at the library's path",
+  () => {
+    const files = project([lib("unsafe/Raw.tsx", badge("<box />"))]);
+    const d = hitsOf(files, "E1805");
+    expect(d.map((x) => x.path)).toEqual(["node_modules/@acme/charts/unsafe/Raw.tsx"]);
+  },
+  CHECK_CASE_BOUND,
+);
 
 const E1161_BAD: ReadonlyArray<readonly [string, string]> = [
   ['<Box p="2" />', badge('<Box p="2" />')],
@@ -103,102 +120,138 @@ const E1161_BAD: ReadonlyArray<readonly [string, string]> = [
   ["Box({ p: '2' })", badge("Box({ p: '2' })")],
 ];
 for (const [what, source] of E1161_BAD) {
-  test(`In that project, \`${what}\` in \`src/Badge.tsx\` is one E1161, at the library's path, with no fix`, () => {
-    const d = hitsOf(inBadge(source), "E1161");
-    expect(d.length).toBe(1);
-    expect(d[0]?.path).toBe("node_modules/@acme/charts/src/Badge.tsx");
-    expect(d[0]?.fix).toBeUndefined();
-  });
+  test(
+    `In that project, \`${what}\` in \`src/Badge.tsx\` is one E1161, at the library's path, with no fix`,
+    () => {
+      const d = hitsOf(inBadge(source), "E1161");
+      expect(d.length).toBe(1);
+      expect(d[0]?.path).toBe("node_modules/@acme/charts/src/Badge.tsx");
+      expect(d[0]?.fix).toBeUndefined();
+    },
+    CHECK_CASE_BOUND,
+  );
 }
 
-test("In that project, `<Box id={`${props.id}.box`} />` in `src/Badge.tsx` is no E1161", () => {
-  expect(hitsOf(inBadge(badge("<Box id={`${props.id}.box`} />")), "E1161")).toEqual([]);
-});
+test(
+  "In that project, `<Box id={`${props.id}.box`} />` in `src/Badge.tsx` is no E1161",
+  () => {
+    expect(hitsOf(inBadge(badge("<Box id={`${props.id}.box`} />")), "E1161")).toEqual([]);
+  },
+  CHECK_CASE_BOUND,
+);
 
 const CLOSURE = "const partId = (k: string): string => `${props.id}.${k}`\n";
 const inComponent = (before: string, ret: string): string =>
   `${UI}export default function Badge(props: { id: string }) {\n  ${before}return ${ret}\n}\n`;
 
-test("In that project, `<Box id={partId('box')} />`, `partId` the closure `(k) => `${props.id}.${k}``, in `src/Badge.tsx` is no E1161", () => {
-  expect(hitsOf(inBadge(inComponent(`${CLOSURE}  `, "<Box id={partId('box')} />")), "E1161")).toEqual([]);
-});
+test(
+  "In that project, `<Box id={partId('box')} />`, `partId` the closure `(k) => `${props.id}.${k}``, in `src/Badge.tsx` is no E1161",
+  () => {
+    expect(hitsOf(inBadge(inComponent(`${CLOSURE}  `, "<Box id={partId('box')} />")), "E1161")).toEqual([]);
+  },
+  CHECK_CASE_BOUND,
+);
 
-test("In that project, with `partId` `(k) => k`, `<Box id={partId('box')} />` is one E1161; given `props.id` it is none", () => {
-  const ident = "const partId = (k: string): string => k\n  ";
-  expect(hitsOf(inBadge(inComponent(ident, "<Box id={partId('box')} />")), "E1161").length).toBe(1);
-  expect(hitsOf(inBadge(inComponent(ident, "<Box id={partId(props.id)} />")), "E1161")).toEqual([]);
-});
+test(
+  "In that project, with `partId` `(k) => k`, `<Box id={partId('box')} />` is one E1161; given `props.id` it is none",
+  () => {
+    const ident = "const partId = (k: string): string => k\n  ";
+    expect(hitsOf(inBadge(inComponent(ident, "<Box id={partId('box')} />")), "E1161").length).toBe(1);
+    expect(hitsOf(inBadge(inComponent(ident, "<Box id={partId(props.id)} />")), "E1161")).toEqual([]);
+  },
+  CHECK_CASE_BOUND,
+);
 
-test("E1161: an element whose `id` is a string literal or a template literal without an expression is one E1161 per element, whatever the text; one built from `props.id` is none", () => {
-  fc.assert(
-    fc.property(
-      fc.stringMatching(/^[a-z]{1,8}(\.[a-z]{1,8}){0,2}$/),
-      fc.constantFrom("string", "template", "built"),
-      (text, form) => {
-        const id =
-          form === "string" ? `"${text}"` : form === "template" ? `{\`${text}\`}` : `{\`\${props.id}.${text}\`}`;
-        const d = hitsOf(inBadge(badge(`<Box id=${id} />`)), "E1161");
-        expect(d.length).toBe(form === "built" ? 0 : 1);
-        for (const x of d) expect(x.path).toBe("node_modules/@acme/charts/src/Badge.tsx");
-      },
-    ),
-    { seed: SEED, numRuns: 30 },
-  );
-});
+test(
+  "E1161: an element whose `id` is a string literal or a template literal without an expression is one E1161 per element, whatever the text; one built from `props.id` is none",
+  () => {
+    fc.assert(
+      fc.property(
+        fc.stringMatching(/^[a-z]{1,8}(\.[a-z]{1,8}){0,2}$/),
+        fc.constantFrom("string", "template", "built"),
+        (text, form) => {
+          const id =
+            form === "string" ? `"${text}"` : form === "template" ? `{\`${text}\`}` : `{\`\${props.id}.${text}\`}`;
+          const d = hitsOf(inBadge(badge(`<Box id=${id} />`)), "E1161");
+          expect(d.length).toBe(form === "built" ? 0 : 1);
+          for (const x of d) expect(x.path).toBe("node_modules/@acme/charts/src/Badge.tsx");
+        },
+      ),
+      { seed: SEED, numRuns: 30 },
+    );
+  },
+  CHECK_CASE_BOUND,
+);
 
-test("E1161: a `Host` in a library file with no `id`, or a literal one, is one E1161; one built from `props.id` is none", () => {
-  const host = (id: string) =>
-    `import { Host } from '@keel/ui'\nimport { s } from '@keel/schema'\nconst In = s.object({ n: s.number() })\nexport default function Badge(props: { id: string }) {\n  return <Host ${id} role="img" label="Chart" input={In} value={{ n: 1 }} code={() => import('./chart.ts').then((m) => m.chart)} />\n}\n`;
-  expect(hitsOf(inBadge(host("")), "E1161").length).toBe(1);
-  expect(hitsOf(inBadge(host('id="chart"')), "E1161").length).toBe(1);
-  expect(hitsOf(inBadge(host("id={`${props.id}.chart`}")), "E1161")).toEqual([]);
-});
+test(
+  "E1161: a `Host` in a library file with no `id`, or a literal one, is one E1161; one built from `props.id` is none",
+  () => {
+    const host = (id: string) =>
+      `import { Host } from '@keel/ui'\nimport { s } from '@keel/schema'\nconst In = s.object({ n: s.number() })\nexport default function Badge(props: { id: string }) {\n  return <Host ${id} role="img" label="Chart" input={In} value={{ n: 1 }} code={() => import('./chart.ts').then((m) => m.chart)} />\n}\n`;
+    expect(hitsOf(inBadge(host("")), "E1161").length).toBe(1);
+    expect(hitsOf(inBadge(host('id="chart"')), "E1161").length).toBe(1);
+    expect(hitsOf(inBadge(host("id={`${props.id}.chart`}")), "E1161")).toEqual([]);
+  },
+  CHECK_CASE_BOUND,
+);
 
 const PART = "import { Part } from '@keel/ui/aria'\n";
 const partIn = (body: string): string =>
   `${PART}export default function Badge(props: { id: string }) {\n  return ${body}\n}\n`;
 
-test("E1161: a `Part` from `@keel/ui/aria` with no `id`, a string literal, a template literal without an expression, or called with a literal `id` is one E1161; one built from `props.id` is none", () => {
-  for (const body of ["<Part />", '<Part id="box" />', "<Part id={`box`} />", "Part({ id: 'box' })"]) {
-    const d = hitsOf(inBadge(partIn(body)), "E1161");
-    expect(d.length, body).toBe(1);
-    expect(d[0]?.path, body).toBe("node_modules/@acme/charts/src/Badge.tsx");
-    expect(d[0]?.fix, body).toBeUndefined();
-  }
-  expect(hitsOf(inBadge(partIn("<Part id={`${props.id}.box`} />")), "E1161")).toEqual([]);
-  expect(hitsOf(inBadge(partIn("Part({ id: `${props.id}.box` })")), "E1161")).toEqual([]);
-});
+test(
+  "E1161: a `Part` from `@keel/ui/aria` with no `id`, a string literal, a template literal without an expression, or called with a literal `id` is one E1161; one built from `props.id` is none",
+  () => {
+    for (const body of ["<Part />", '<Part id="box" />', "<Part id={`box`} />", "Part({ id: 'box' })"]) {
+      const d = hitsOf(inBadge(partIn(body)), "E1161");
+      expect(d.length, body).toBe(1);
+      expect(d[0]?.path, body).toBe("node_modules/@acme/charts/src/Badge.tsx");
+      expect(d[0]?.fix, body).toBeUndefined();
+    }
+    expect(hitsOf(inBadge(partIn("<Part id={`${props.id}.box`} />")), "E1161")).toEqual([]);
+    expect(hitsOf(inBadge(partIn("Part({ id: `${props.id}.box` })")), "E1161")).toEqual([]);
+  },
+  CHECK_CASE_BOUND,
+);
 
-test("E1161: each `@keel/ui` base element (`Host` among them), as JSX or as a call, with a literal `id` is one E1161", () => {
-  const BASES = [
-    "Box",
-    "Text",
-    "Button",
-    "Checkbox",
-    "Heading",
-    "Frame",
-    "Host",
-    "Image",
-    "Input",
-    "Link",
-    "Select",
-    "TextArea",
-  ];
-  fc.assert(
-    fc.property(fc.constantFrom(...BASES), fc.constantFrom("jsx", "call"), (el, form) => {
-      const lit = form === "jsx" ? `<${el} id="x" />` : `${el}({ id: 'x' })`;
-      const src = `import { ${el} } from '@keel/ui'\nexport default function Badge(props: { id: string }) {\n  return ${lit}\n}\n`;
-      expect(hitsOf(inBadge(src), "E1161").length, lit).toBe(1);
-    }),
-    { seed: SEED, numRuns: 48 },
-  );
-});
+test(
+  "E1161: each `@keel/ui` base element (`Host` among them), as JSX or as a call, with a literal `id` is one E1161",
+  () => {
+    const BASES = [
+      "Box",
+      "Text",
+      "Button",
+      "Checkbox",
+      "Heading",
+      "Frame",
+      "Host",
+      "Image",
+      "Input",
+      "Link",
+      "Select",
+      "TextArea",
+    ];
+    fc.assert(
+      fc.property(fc.constantFrom(...BASES), fc.constantFrom("jsx", "call"), (el, form) => {
+        const lit = form === "jsx" ? `<${el} id="x" />` : `${el}({ id: 'x' })`;
+        const src = `import { ${el} } from '@keel/ui'\nexport default function Badge(props: { id: string }) {\n  return ${lit}\n}\n`;
+        expect(hitsOf(inBadge(src), "E1161").length, lit).toBe(1);
+      }),
+      { seed: SEED, numRuns: 48 },
+    );
+  },
+  CHECK_CASE_BOUND,
+);
 
-test("E1161: an element with a spread and an `id` is judged by that `id`: a literal one is one E1161, a string literal in braces too", () => {
-  expect(hitsOf(inBadge(badge('<Box {...props} id="box" />')), "E1161").length).toBe(1);
-  expect(hitsOf(inBadge(badge("<Box id={'box'} />")), "E1161").length).toBe(1);
-  expect(hitsOf(inBadge(badge("<Box {...props} id={`${props.id}.box`} />")), "E1161")).toEqual([]);
-});
+test(
+  "E1161: an element with a spread and an `id` is judged by that `id`: a literal one is one E1161, a string literal in braces too",
+  () => {
+    expect(hitsOf(inBadge(badge('<Box {...props} id="box" />')), "E1161").length).toBe(1);
+    expect(hitsOf(inBadge(badge("<Box id={'box'} />")), "E1161").length).toBe(1);
+    expect(hitsOf(inBadge(badge("<Box {...props} id={`${props.id}.box`} />")), "E1161")).toEqual([]);
+  },
+  CHECK_CASE_BOUND,
+);
 
 type El = { readonly name: string; readonly from: string };
 const ELS: readonly El[] = [
@@ -293,52 +346,76 @@ const REJECTED: readonly IdCase[] = [
 ];
 const FORMS = ["jsx", "call"] as const;
 
-test("E1161: each form `Ids` lists, as JSX or as a call, for `Box`, `Host` and `Part`, is no E1161", () => {
-  for (const el of ELS)
-    for (const form of FORMS)
-      for (const c of ACCEPTED) {
-        const src = renderEl(el, form, "props", c.pre("props"), c.attrs("props"));
-        expect(hitsOf(inBadge(src), "E1161"), `${el.name} ${form} ${c.what}`).toEqual([]);
-      }
-});
+test(
+  "E1161: each form `Ids` lists, as JSX or as a call, for `Box`, `Host` and `Part`, is no E1161",
+  () => {
+    for (const el of ELS)
+      for (const form of FORMS)
+        for (const c of ACCEPTED) {
+          const src = renderEl(el, form, "props", c.pre("props"), c.attrs("props"));
+          expect(hitsOf(inBadge(src), "E1161"), `${el.name} ${form} ${c.what}`).toEqual([]);
+        }
+  },
+  CHECK_CASE_BOUND,
+);
 
-test("E1161: anything else, as JSX or as a call, for `Box`, `Host` and `Part`, is one E1161 at the library's path with no fix", () => {
-  for (const el of ELS)
-    for (const form of FORMS)
-      for (const c of REJECTED) {
-        const src = renderEl(el, form, "props", c.pre("props"), c.attrs("props"));
-        const d = hitsOf(inBadge(src), "E1161");
-        expect(d.length, `${el.name} ${form} ${c.what}`).toBe(1);
-        expect(d[0]?.path).toBe("node_modules/@acme/charts/src/Badge.tsx");
-        expect(d[0]?.fix).toBeUndefined();
-      }
-});
+test(
+  "E1161: anything else, as JSX or as a call, for `Box`, `Host` and `Part`, is one E1161 at the library's path with no fix",
+  () => {
+    for (const el of ELS)
+      for (const form of FORMS)
+        for (const c of REJECTED) {
+          const src = renderEl(el, form, "props", c.pre("props"), c.attrs("props"));
+          const d = hitsOf(inBadge(src), "E1161");
+          expect(d.length, `${el.name} ${form} ${c.what}`).toBe(1);
+          expect(d[0]?.path).toBe("node_modules/@acme/charts/src/Badge.tsx");
+          expect(d[0]?.fix).toBeUndefined();
+        }
+  },
+  CHECK_CASE_BOUND,
+);
 
-test("E1161: a call whose argument is no object literal (`Box(props)`, `Box(args)` with `args` a `const` object holding a literal `id`) is one E1161, for `Box`, `Host` and `Part`", () => {
-  for (const el of ELS) {
-    const head = `import { ${el.name} } from '${el.from}'\n`;
-    const viaParam = `${head}export default function Badge(props: { id: string }) {\n  return ${el.name}(props)\n}\n`;
-    const viaConst = `${head}const args = { id: 'box' }\nexport default function Badge(props: { id: string }) {\n  return ${el.name}(args)\n}\n`;
-    expect(hitsOf(inBadge(viaParam), "E1161").length, `${el.name}(props)`).toBe(1);
-    expect(hitsOf(inBadge(viaConst), "E1161").length, `${el.name}(args)`).toBe(1);
-  }
-});
+test(
+  "E1161: a call whose argument is no object literal (`Box(props)`, `Box(args)` with `args` a `const` object holding a literal `id`) is one E1161, for `Box`, `Host` and `Part`",
+  () => {
+    for (const el of ELS) {
+      const head = `import { ${el.name} } from '${el.from}'\n`;
+      const viaParam = `${head}export default function Badge(props: { id: string }) {\n  return ${el.name}(props)\n}\n`;
+      const viaConst = `${head}const args = { id: 'box' }\nexport default function Badge(props: { id: string }) {\n  return ${el.name}(args)\n}\n`;
+      expect(hitsOf(inBadge(viaParam), "E1161").length, `${el.name}(props)`).toBe(1);
+      expect(hitsOf(inBadge(viaConst), "E1161").length, `${el.name}(args)`).toBe(1);
+    }
+  },
+  CHECK_CASE_BOUND,
+);
 
-test("E1161: a literal `id` smuggled as `<Box {...{ id: 'box' }} />` or `const args = { id: 'box' }; Box(args)` is one E1161 (no longer unjudged)", () => {
-  const viaConst = `${UI}const args = { id: 'box' }\nexport default function Badge(props: { id: string }) {\n  return Box(args)\n}\n`;
-  for (const src of [badge("<Box {...{ id: 'box' }} />"), viaConst])
-    expect(hitsOf(inBadge(src), "E1161").length, src).toBe(1);
-});
+test(
+  "E1161: a literal `id` smuggled as `<Box {...{ id: 'box' }} />` or `const args = { id: 'box' }; Box(args)` is one E1161 (no longer unjudged)",
+  () => {
+    const viaConst = `${UI}const args = { id: 'box' }\nexport default function Badge(props: { id: string }) {\n  return Box(args)\n}\n`;
+    for (const src of [badge("<Box {...{ id: 'box' }} />"), viaConst])
+      expect(hitsOf(inBadge(src), "E1161").length, src).toBe(1);
+  },
+  CHECK_CASE_BOUND,
+);
 
-test("E1161: a spread with no `id`, `<Box {...props} />` and `Box({ ...props })`, is one E1161", () => {
-  for (const body of ["<Box {...props} />", "Box({ ...props })"])
-    expect(hitsOf(inBadge(badge(body)), "E1161").length, body).toBe(1);
-});
+test(
+  "E1161: a spread with no `id`, `<Box {...props} />` and `Box({ ...props })`, is one E1161",
+  () => {
+    for (const body of ["<Box {...props} />", "Box({ ...props })"])
+      expect(hitsOf(inBadge(badge(body)), "E1161").length, body).toBe(1);
+  },
+  CHECK_CASE_BOUND,
+);
 
-test("E1161: a call of a global whose result is a literal, `id={String('box')}` and `id={(() => 'box')()}`, is one E1161 each (every returned expression must be id-built)", () => {
-  for (const e of ["String('box')", "(() => 'box')()"])
-    expect(hitsOf(inBadge(badge(`<Box id={${e}} />`)), "E1161").length, e).toBe(1);
-});
+test(
+  "E1161: a call of a global whose result is a literal, `id={String('box')}` and `id={(() => 'box')()}`, is one E1161 each (every returned expression must be id-built)",
+  () => {
+    for (const e of ["String('box')", "(() => 'box')()"])
+      expect(hitsOf(inBadge(badge(`<Box id={${e}} />`)), "E1161").length, e).toBe(1);
+  },
+  CHECK_CASE_BOUND,
+);
 
 const OTHER = "@acme/other";
 /** A second library, listed in the charts library's `deps`, whose `src/ids.ts` exports `partId`. */
@@ -455,15 +532,19 @@ function callSrc(el: El, form: "jsx" | "call", c: CallCase): string {
   const use = form === "jsx" ? `<${el.name} id={${c.expr}} />` : `${el.name}({ id: ${c.expr} })`;
   return `import { ${el.name} } from '${el.from}'\n${c.head ?? ""}export default function Badge(${c.params ?? "props: { id: string }"}) {\n  ${c.pre ?? ""}return ${use}\n}\n`;
 }
-test("E1161: a call whose callee check reads and whose every returned expression is id-built is no E1161; a call of a global, a parameter, a package that is no library, a computed member, a branch returning a literal or a recursive helper is one E1161, for `Box`, `Host` and `Part`, as JSX or a call", () => {
-  for (const el of ELS)
-    for (const form of FORMS)
-      for (const c of CALLS) {
-        const d = hitsOf(project([...(c.extra ?? []), lib("src/Badge.tsx", callSrc(el, form, c))]), "E1161");
-        expect(d.length, `${el.name} ${form} ${c.what}`).toBe(c.good ? 0 : 1);
-        for (const x of d) expect(x.path).toBe("node_modules/@acme/charts/src/Badge.tsx");
-      }
-});
+test(
+  "E1161: a call whose callee check reads and whose every returned expression is id-built is no E1161; a call of a global, a parameter, a package that is no library, a computed member, a branch returning a literal or a recursive helper is one E1161, for `Box`, `Host` and `Part`, as JSX or a call",
+  () => {
+    for (const el of ELS)
+      for (const form of FORMS)
+        for (const c of CALLS) {
+          const d = hitsOf(project([...(c.extra ?? []), lib("src/Badge.tsx", callSrc(el, form, c))]), "E1161");
+          expect(d.length, `${el.name} ${form} ${c.what}`).toBe(c.good ? 0 : 1);
+          for (const x of d) expect(x.path).toBe("node_modules/@acme/charts/src/Badge.tsx");
+        }
+  },
+  CHECK_CASE_BOUND,
+);
 
 // A chain of n helpers, `h<n>` calling `h<n-1>` down to `h1` the identity, is n calls: eight are read, nine are not.
 const chain = (n: number): CallCase => ({
@@ -472,15 +553,24 @@ const chain = (n: number): CallCase => ({
   expr: `h${n}(props.id)`,
   good: n <= 8,
 });
-test("E1161: a chain of eight calls is read and a chain of nine is not (one E1161), for `Box`, `Host` and `Part`, as JSX or a call", () => {
-  fc.assert(
-    fc.property(fc.integer({ min: 1, max: 12 }), fc.constantFrom(...ELS), fc.constantFrom(...FORMS), (n, el, form) => {
-      const d = hitsOf(inBadge(callSrc(el, form, chain(n))), "E1161");
-      expect(d.length, `${el.name} ${form} ${n}`).toBe(n <= 8 ? 0 : 1);
-    }),
-    { seed: SEED, numRuns: 36 },
-  );
-});
+test(
+  "E1161: a chain of eight calls is read and a chain of nine is not (one E1161), for `Box`, `Host` and `Part`, as JSX or a call",
+  () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 1, max: 12 }),
+        fc.constantFrom(...ELS),
+        fc.constantFrom(...FORMS),
+        (n, el, form) => {
+          const d = hitsOf(inBadge(callSrc(el, form, chain(n))), "E1161");
+          expect(d.length, `${el.name} ${form} ${n}`).toBe(n <= 8 ? 0 : 1);
+        },
+      ),
+      { seed: SEED, numRuns: 36 },
+    );
+  },
+  CHECK_CASE_BOUND,
+);
 
 /** Ids drawn from the accepted grammar, as data: leaves and the forms built from them. */
 type Leaf = "prop" | "bound" | "destr" | "other" | "otherBound" | "lit" | "litConst" | "concat";
@@ -550,97 +640,129 @@ function build(ast: Ast, p: string, pre: string[]): string {
 }
 const PARAMS = fc.constantFrom("props", "p", "input", "args");
 
-test("E1161: an id drawn from the accepted grammar (`<p>.id`, a `const`, a destructured `id`, templates, conditionals, calls of those) is no E1161, whatever the parameter's name, the element and the form", () => {
-  fc.assert(
-    fc.property(
-      asts(GOOD_LEAVES, true),
-      PARAMS,
-      fc.constantFrom(...ELS),
-      fc.constantFrom(...FORMS),
-      (ast, p, el, form) => {
-        const pre: string[] = [];
-        const expr = build(ast, p, pre);
-        const src = renderEl(el, form, p, pre, [id(expr)]);
-        expect(hitsOf(inBadge(src), "E1161"), src).toEqual([]);
-      },
-    ),
-    { seed: SEED, numRuns: 60 },
-  );
-});
+test(
+  "E1161: an id drawn from the accepted grammar (`<p>.id`, a `const`, a destructured `id`, templates, conditionals, calls of those) is no E1161, whatever the parameter's name, the element and the form",
+  () => {
+    fc.assert(
+      fc.property(
+        asts(GOOD_LEAVES, true),
+        PARAMS,
+        fc.constantFrom(...ELS),
+        fc.constantFrom(...FORMS),
+        (ast, p, el, form) => {
+          const pre: string[] = [];
+          const expr = build(ast, p, pre);
+          const src = renderEl(el, form, p, pre, [id(expr)]);
+          expect(hitsOf(inBadge(src), "E1161"), src).toEqual([]);
+        },
+      ),
+      { seed: SEED, numRuns: 60 },
+    );
+  },
+  CHECK_CASE_BOUND,
+);
 
-test("E1161: the same grammar with the `id` part dropped from every leaf is one E1161, whatever the parameter's name, the element and the form", () => {
-  fc.assert(
-    fc.property(
-      asts(DROPPED_LEAVES, true),
-      PARAMS,
-      fc.constantFrom(...ELS),
-      fc.constantFrom(...FORMS),
-      (ast, p, el, form) => {
-        const pre: string[] = [];
-        const expr = build(ast, p, pre);
-        const src = renderEl(el, form, p, pre, [id(expr)]);
-        expect(hitsOf(inBadge(src), "E1161").length, src).toBe(1);
-      },
-    ),
-    { seed: SEED, numRuns: 60 },
-  );
-});
+test(
+  "E1161: the same grammar with the `id` part dropped from every leaf is one E1161, whatever the parameter's name, the element and the form",
+  () => {
+    fc.assert(
+      fc.property(
+        asts(DROPPED_LEAVES, true),
+        PARAMS,
+        fc.constantFrom(...ELS),
+        fc.constantFrom(...FORMS),
+        (ast, p, el, form) => {
+          const pre: string[] = [];
+          const expr = build(ast, p, pre);
+          const src = renderEl(el, form, p, pre, [id(expr)]);
+          expect(hitsOf(inBadge(src), "E1161").length, src).toBe(1);
+        },
+      ),
+      { seed: SEED, numRuns: 60 },
+    );
+  },
+  CHECK_CASE_BOUND,
+);
 
 // What keeps a literal id out of the shapes E1161 does not judge: k.library names nothing else. A red case is a hole in the gate (a literal id built into the file's derived id changes with the installer).
-test("a literal `id` reaching a base element through a spread of an object literal, or a call argument held in a variable, is reported by some rule at the library's path (HOLE if red: E1161 does not judge it and no rule of the spec does)", () => {
-  const smuggled = [
-    badge("<Box {...{ id: 'box' }} />"),
-    `${UI}const args = { id: 'box' }\nexport default function Badge(props: { id: string }) {\n  return Box(args)\n}\n`,
-  ];
-  for (const src of smuggled) {
-    const d = check(inBadge(src), {}).diagnostics.filter((x) => x.path === "node_modules/@acme/charts/src/Badge.tsx");
-    expect(
-      d.map((x) => x.code),
-      src,
-    ).not.toEqual([]);
-  }
-});
+test(
+  "a literal `id` reaching a base element through a spread of an object literal, or a call argument held in a variable, is reported by some rule at the library's path (HOLE if red: E1161 does not judge it and no rule of the spec does)",
+  () => {
+    const smuggled = [
+      badge("<Box {...{ id: 'box' }} />"),
+      `${UI}const args = { id: 'box' }\nexport default function Badge(props: { id: string }) {\n  return Box(args)\n}\n`,
+    ];
+    for (const src of smuggled) {
+      const d = check(inBadge(src), {}).diagnostics.filter((x) => x.path === "node_modules/@acme/charts/src/Badge.tsx");
+      expect(
+        d.map((x) => x.code),
+        src,
+      ).not.toEqual([]);
+    }
+  },
+  CHECK_CASE_BOUND,
+);
 
-test("E1161: the same elements in an app module's file are not E1161 (the rule reads library files)", () => {
-  const files = [...project(), { path: "modules/shop/Plain.tsx", source: badge('<Box id="box" p="2" />') }];
-  expect(hitsOf(files, "E1161").map((d) => d.path)).toEqual([]);
-});
+test(
+  "E1161: the same elements in an app module's file are not E1161 (the rule reads library files)",
+  () => {
+    const files = [...project(), { path: "modules/shop/Plain.tsx", source: badge('<Box id="box" p="2" />') }];
+    expect(hitsOf(files, "E1161").map((d) => d.path)).toEqual([]);
+  },
+  CHECK_CASE_BOUND,
+);
 
-test("In that project, a cast `x as string` in `src/Badge.tsx` is one E1757 at `node_modules/@acme/charts/src/Badge.tsx`", () => {
-  const src = `${UI}declare const x: unknown\nexport default function Badge(props: { id: string }) {\n  const s = x as string\n  return <Box id={\`\${props.id}.box\`}>{s}</Box>\n}\n`;
-  const d = hitsOf(inBadge(src), "E1757", {});
-  expect(d.length).toBe(1);
-  expect(d[0]?.path).toBe("node_modules/@acme/charts/src/Badge.tsx");
-  expect(d[0]?.fix).toBeUndefined();
-});
+test(
+  "In that project, a cast `x as string` in `src/Badge.tsx` is one E1757 at `node_modules/@acme/charts/src/Badge.tsx`",
+  () => {
+    const src = `${UI}declare const x: unknown\nexport default function Badge(props: { id: string }) {\n  const s = x as string\n  return <Box id={\`\${props.id}.box\`}>{s}</Box>\n}\n`;
+    const d = hitsOf(inBadge(src), "E1757", {});
+    expect(d.length).toBe(1);
+    expect(d[0]?.path).toBe("node_modules/@acme/charts/src/Badge.tsx");
+    expect(d[0]?.fix).toBeUndefined();
+  },
+  CHECK_CASE_BOUND,
+);
 
-test("In that project, an import of `@keel/store/internal` in `src/Badge.tsx` is one E1576, at the library's path", () => {
-  const src = badge(
-    "<Box id={`${props.id}.box`} />",
-    `${UI}import { serverState } from '@keel/store/internal'\nvoid serverState\n`,
-  );
-  const d = hitsOf(inBadge(src), "E1576");
-  expect(d.length).toBe(1);
-  expect(d[0]?.path).toBe("node_modules/@acme/charts/src/Badge.tsx");
-});
+test(
+  "In that project, an import of `@keel/store/internal` in `src/Badge.tsx` is one E1576, at the library's path",
+  () => {
+    const src = badge(
+      "<Box id={`${props.id}.box`} />",
+      `${UI}import { serverState } from '@keel/store/internal'\nvoid serverState\n`,
+    );
+    const d = hitsOf(inBadge(src), "E1576");
+    expect(d.length).toBe(1);
+    expect(d[0]?.path).toBe("node_modules/@acme/charts/src/Badge.tsx");
+  },
+  CHECK_CASE_BOUND,
+);
 
-test("E1757 in a library file: a cast in `unsafe/` outside an `unsafe()` call is reported at the library's path, one inside the call is not", () => {
-  const outside = lib("unsafe/u.ts", "declare const c: unknown\nexport const u = (): string => c as string\n");
-  const inside = lib("unsafe/u.ts", "declare const c: unknown\nexport const u = unsafe('r', () => c as string)\n");
-  const bad = hitsOf(project([outside]), "E1757", {});
-  expect(bad.map((d) => d.path)).toEqual(["node_modules/@acme/charts/unsafe/u.ts"]);
-  expect(hitsOf(project([inside]), "E1757", {})).toEqual([]);
-});
+test(
+  "E1757 in a library file: a cast in `unsafe/` outside an `unsafe()` call is reported at the library's path, one inside the call is not",
+  () => {
+    const outside = lib("unsafe/u.ts", "declare const c: unknown\nexport const u = (): string => c as string\n");
+    const inside = lib("unsafe/u.ts", "declare const c: unknown\nexport const u = unsafe('r', () => c as string)\n");
+    const bad = hitsOf(project([outside]), "E1757", {});
+    expect(bad.map((d) => d.path)).toEqual(["node_modules/@acme/charts/unsafe/u.ts"]);
+    expect(hitsOf(project([inside]), "E1757", {})).toEqual([]);
+  },
+  CHECK_CASE_BOUND,
+);
 
-test("E1757: a cast reached only through a chain of re-exports is reported at the file holding it", () => {
-  const files = project([
-    lib("src/index.ts", "export { default as Badge } from './Badge.tsx'\nexport * from './deep/index.ts'\n"),
-    lib("src/deep/index.ts", "export * from './inner.ts'\n"),
-    lib("src/deep/inner.ts", "declare const v: unknown\nexport const inner = v as string\n"),
-  ]);
-  const d = hitsOf(files, "E1757", {});
-  expect(d.map((x) => x.path)).toEqual(["node_modules/@acme/charts/src/deep/inner.ts"]);
-});
+test(
+  "E1757: a cast reached only through a chain of re-exports is reported at the file holding it",
+  () => {
+    const files = project([
+      lib("src/index.ts", "export { default as Badge } from './Badge.tsx'\nexport * from './deep/index.ts'\n"),
+      lib("src/deep/index.ts", "export * from './inner.ts'\n"),
+      lib("src/deep/inner.ts", "declare const v: unknown\nexport const inner = v as string\n"),
+    ]);
+    const d = hitsOf(files, "E1757", {});
+    expect(d.map((x) => x.path)).toEqual(["node_modules/@acme/charts/src/deep/inner.ts"]);
+  },
+  CHECK_CASE_BOUND,
+);
 
 // A library is where a third party's code enters an app: every rule reports in a library file as in an app's own. A by-code fixture of one source file (its `modules/<x>/module.ts`
 // manifest aside) is placed at `src/<basename>` in the library and, as the control, at `modules/charts/src/<basename>` in an app holding the same other files.
@@ -680,19 +802,23 @@ const SMUGGLED: ReadonlyArray<readonly [string, string]> = [
   ["a host element (an element outside the base set)", "E1805"],
 ];
 for (const [what, code] of SMUGGLED) {
-  test(`${what}: the by-code fixture of ${code} placed in a library file is reported ${code} at the library's path, with no fix`, () => {
-    const fx = CODE_FIXTURES[code];
-    expect(fx).toBeDefined();
-    const only = fx === undefined ? undefined : theFile(fx);
-    expect(only, `${code} is a one-file fixture`).toBeDefined();
-    const base = (only?.path ?? "x.ts").split("/").at(-1) ?? "x.ts";
-    const d = hitsOf(inLibrary(base, only?.source ?? ""), code, fx === undefined ? {} : optsOf(fx));
-    expect(d.length).toBeGreaterThanOrEqual(1);
-    for (const x of d) {
-      expect(x.path).toBe(`node_modules/@acme/charts/src/${base}`);
-      expect(x.fix).toBeUndefined();
-    }
-  });
+  test(
+    `${what}: the by-code fixture of ${code} placed in a library file is reported ${code} at the library's path, with no fix`,
+    () => {
+      const fx = CODE_FIXTURES[code];
+      expect(fx).toBeDefined();
+      const only = fx === undefined ? undefined : theFile(fx);
+      expect(only, `${code} is a one-file fixture`).toBeDefined();
+      const base = (only?.path ?? "x.ts").split("/").at(-1) ?? "x.ts";
+      const d = hitsOf(inLibrary(base, only?.source ?? ""), code, fx === undefined ? {} : optsOf(fx));
+      expect(d.length).toBeGreaterThanOrEqual(1);
+      for (const x of d) {
+        expect(x.path).toBe(`node_modules/@acme/charts/src/${base}`);
+        expect(x.fix).toBeUndefined();
+      }
+    },
+    CHECK_CASE_BOUND,
+  );
 }
 
 /** The by-code fixtures of one source file: no exclusion by code. */
@@ -704,36 +830,48 @@ const ONE_FILE = Object.entries(CODE_FIXTURES).flatMap(([code, fx]) => {
 });
 /** Rules only a library has (k.library Rules): reported in a library file, never in an app's. */
 const LIBRARY_ONLY = new Set(["E1161", "E1162", "E1163", "E1166"]);
+/** `keel check` runs every rule but E1106 (k.formats Who declares) over a library's files (k.library In an app): E1106 is left out of the comparison. */
+const NOT_OVER_LIBRARY = new Set(["E1106"]);
 
 // The space is finite (every one-file fixture of the table), so each is visited once, not sampled.
-test("for every one-file by-code fixture, placed in a library file it reports the codes the same source reports placed in an app module at `modules/<id>/<f>`, at the library's path with no fix", () => {
-  expect(ONE_FILE.length).toBeGreaterThan(50);
-  let reportedInApp = 0;
-  const differs: string[] = [];
-  for (const { code, source, base, opts } of ONE_FILE) {
-    const inLib = codesAt(inLibrary(base, source), `node_modules/${NAME}/src/${base}`, opts);
-    const inApplication = codesAt(inApp(base, source), `modules/charts/src/${base}`, opts);
-    if (inApplication.codes.length > 0) reportedInApp++;
-    const extra = inLib.codes.filter((c) => !inApplication.codes.includes(c) && !LIBRARY_ONLY.has(c));
-    const missing = inApplication.codes.filter((c) => !inLib.codes.includes(c));
-    if (extra.length > 0 || missing.length > 0 || inLib.fixes > 0)
-      differs.push(`${code}: library [${inLib.codes}] app [${inApplication.codes}] fixes ${inLib.fixes}`);
-  }
-  expect(reportedInApp, "fixtures the app twin reports on").toBeGreaterThan(30);
-  expect(differs).toEqual([]);
-});
+test(
+  "for every one-file by-code fixture but E1106, placed in a library file it reports the codes the same source reports placed in an app module at `modules/<id>/<f>`, at the library's path with no fix",
+  () => {
+    expect(ONE_FILE.length).toBeGreaterThan(50);
+    let reportedInApp = 0;
+    const differs: string[] = [];
+    for (const { code, source, base, opts } of ONE_FILE) {
+      const inLib = codesAt(inLibrary(base, source), `node_modules/${NAME}/src/${base}`, opts);
+      const inApplication = codesAt(inApp(base, source), `modules/charts/src/${base}`, opts);
+      inLib.codes = inLib.codes.filter((c) => !NOT_OVER_LIBRARY.has(c));
+      inApplication.codes = inApplication.codes.filter((c) => !NOT_OVER_LIBRARY.has(c));
+      if (inApplication.codes.length > 0) reportedInApp++;
+      const extra = inLib.codes.filter((c) => !inApplication.codes.includes(c) && !LIBRARY_ONLY.has(c));
+      const missing = inApplication.codes.filter((c) => !inLib.codes.includes(c));
+      if (extra.length > 0 || missing.length > 0 || inLib.fixes > 0)
+        differs.push(`${code}: library [${inLib.codes}] app [${inApplication.codes}] fixes ${inLib.fixes}`);
+    }
+    expect(reportedInApp, "fixtures the app twin reports on").toBeGreaterThan(30);
+    expect(differs).toEqual([]);
+  },
+  CHECK_CASE_BOUND,
+);
 
-test("In that project, `import x from '../../outside.ts'` in `src/Badge.tsx` is one E1163 at the specifier", () => {
-  const src = badge("<Box id={`${props.id}.box`} />", `${UI}import x from '../../outside.ts'\nvoid x\n`);
-  const d = hitsOf(inBadge(src), "E1163");
-  expect(d.length).toBe(1);
-  expect(d[0]?.path).toBe("node_modules/@acme/charts/src/Badge.tsx");
-  expect(d[0]?.line).toBe(2);
-  expect(d[0]?.fix).toBeUndefined();
-  const col = `import x from '../../outside.ts'`.indexOf("'") + 1;
-  expect(d[0]?.col).toBeGreaterThanOrEqual(col);
-  expect(d[0]?.col).toBeLessThanOrEqual(col + "'../../outside.ts'".length - 1);
-});
+test(
+  "In that project, `import x from '../../outside.ts'` in `src/Badge.tsx` is one E1163 at the specifier",
+  () => {
+    const src = badge("<Box id={`${props.id}.box`} />", `${UI}import x from '../../outside.ts'\nvoid x\n`);
+    const d = hitsOf(inBadge(src), "E1163");
+    expect(d.length).toBe(1);
+    expect(d[0]?.path).toBe("node_modules/@acme/charts/src/Badge.tsx");
+    expect(d[0]?.line).toBe(2);
+    expect(d[0]?.fix).toBeUndefined();
+    const col = `import x from '../../outside.ts'`.indexOf("'") + 1;
+    expect(d[0]?.col).toBeGreaterThanOrEqual(col);
+    expect(d[0]?.col).toBeLessThanOrEqual(col + "'../../outside.ts'".length - 1);
+  },
+  CHECK_CASE_BOUND,
+);
 
 /** `n` levels of `../` in a file `depth` folders under `src/`: the target leaves the package folder when `n` is more than `depth + 1`. */
 type Form = "import" | "reexport" | "dynamic";
@@ -754,85 +892,105 @@ const upFrom = (
   return { files: project([file]), leaves: n > depth + 1, spec };
 };
 
-test("E1163: a relative import, re-export or literal `import()` that climbs out of the package folder is one E1163 at its specifier, one that stays inside is none, at any depth", () => {
-  fc.assert(
-    fc.property(
-      fc.integer({ min: 0, max: 4 }),
-      fc.integer({ min: 1, max: 8 }),
-      fc.constantFrom<Form[]>("import", "reexport", "dynamic"),
-      (depth, n, form) => {
-        const { files, leaves } = upFrom(depth, n, form);
-        const d = hitsOf(files, "E1163");
-        expect(d.length).toBe(leaves ? 1 : 0);
-        for (const x of d) {
-          expect(x.path.startsWith("node_modules/@acme/charts/src/")).toBe(true);
-          expect(x.fix).toBeUndefined();
-        }
-      },
-    ),
-    { seed: SEED, numRuns: 80 },
-  );
-});
+test(
+  "E1163: a relative import, re-export or literal `import()` that climbs out of the package folder is one E1163 at its specifier, one that stays inside is none, at any depth",
+  () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 0, max: 4 }),
+        fc.integer({ min: 1, max: 8 }),
+        fc.constantFrom<Form[]>("import", "reexport", "dynamic"),
+        (depth, n, form) => {
+          const { files, leaves } = upFrom(depth, n, form);
+          const d = hitsOf(files, "E1163");
+          expect(d.length).toBe(leaves ? 1 : 0);
+          for (const x of d) {
+            expect(x.path.startsWith("node_modules/@acme/charts/src/")).toBe(true);
+            expect(x.fix).toBeUndefined();
+          }
+        },
+      ),
+      { seed: SEED, numRuns: 80 },
+    );
+  },
+  CHECK_CASE_BOUND,
+);
 
-test("E1163: a library file reaching the app's module by a relative path, or another library's folder by one, is one E1163 (a smuggled import of app code)", () => {
-  const toApp = "../../../../modules/shop/Page.tsx";
-  const toSibling = "../../other/src/index.ts";
-  for (const spec of [toApp, toSibling]) {
-    const files = project([lib("src/Reach.ts", `import { x } from '${spec}'\nexport const reach = x\n`)]);
-    const d = hitsOf(files, "E1163");
-    expect(d.length, spec).toBe(1);
-    expect(d[0]?.path).toBe("node_modules/@acme/charts/src/Reach.ts");
-  }
-});
+test(
+  "E1163: a library file reaching the app's module by a relative path, or another library's folder by one, is one E1163 (a smuggled import of app code)",
+  () => {
+    const toApp = "../../../../modules/shop/Page.tsx";
+    const toSibling = "../../other/src/index.ts";
+    for (const spec of [toApp, toSibling]) {
+      const files = project([lib("src/Reach.ts", `import { x } from '${spec}'\nexport const reach = x\n`)]);
+      const d = hitsOf(files, "E1163");
+      expect(d.length, spec).toBe(1);
+      expect(d[0]?.path).toBe("node_modules/@acme/charts/src/Reach.ts");
+    }
+  },
+  CHECK_CASE_BOUND,
+);
 
-test("E1163: a library file importing itself, a package of `@keel/*` or another library by its package name is no E1163", () => {
-  const other = [
-    lib(
-      "package.json",
-      JSON.stringify({
-        name: "@acme/other",
-        version: "1.0.0",
-        type: "module",
-        keel: "library",
-        exports: { ".": { keel: "./src/index.ts", default: "./index.js" } },
+test(
+  "E1163: a library file importing itself, a package of `@keel/*` or another library by its package name is no E1163",
+  () => {
+    const other = [
+      lib(
+        "package.json",
+        JSON.stringify({
+          name: "@acme/other",
+          version: "1.0.0",
+          type: "module",
+          keel: "library",
+          exports: { ".": { keel: "./src/index.ts", default: "./index.js" } },
+        }),
+        "@acme/other",
+      ),
+      lib("index.js", "export {}\n", "@acme/other"),
+      { ...manifestFile({ id: "other", exports: ["O"] }, "node_modules/@acme/other") },
+      lib("src/index.ts", "export const O = 1\n", "@acme/other"),
+      lib(".keel/ledger.json", LEDGER, "@acme/other"),
+    ];
+    const files = [
+      ...project([
+        lib(
+          "module.ts",
+          `import { module } from '@keel/compiler'\nexport default module({ id: 'charts', deps: ['@acme/other'], capabilities: [], public: { exports: ['Badge'] } })\n`,
+        ),
+        lib(
+          "src/Uses.ts",
+          "import { O } from '@acme/other'\nimport { Badge } from './Badge.tsx'\nexport const u = [O, Badge]\n",
+        ),
+      ]),
+      ...other,
+    ];
+    expect(hitsOf(files, "E1163")).toEqual([]);
+  },
+  CHECK_CASE_BOUND,
+);
+
+test(
+  "A bare import in a library file is read as in an app file and is no E1163, whatever the package",
+  () => {
+    fc.assert(
+      fc.property(fc.stringMatching(/^[a-z]{4,10}$/), (pkg) => {
+        const files = project([lib("src/Uses.ts", `import { x } from '${pkg}'\nexport const u = x\n`)]);
+        expect(hitsOf(files, "E1163")).toEqual([]);
       }),
-      "@acme/other",
-    ),
-    lib("index.js", "export {}\n", "@acme/other"),
-    { ...manifestFile({ id: "other", exports: ["O"] }, "node_modules/@acme/other") },
-    lib("src/index.ts", "export const O = 1\n", "@acme/other"),
-    lib(".keel/ledger.json", LEDGER, "@acme/other"),
-  ];
-  const files = [
-    ...project([
-      lib(
-        "module.ts",
-        `import { module } from '@keel/compiler'\nexport default module({ id: 'charts', deps: ['@acme/other'], capabilities: [], public: { exports: ['Badge'] } })\n`,
-      ),
-      lib(
-        "src/Uses.ts",
-        "import { O } from '@acme/other'\nimport { Badge } from './Badge.tsx'\nexport const u = [O, Badge]\n",
-      ),
-    ]),
-    ...other,
-  ];
-  expect(hitsOf(files, "E1163")).toEqual([]);
-});
+      { seed: SEED, numRuns: 20 },
+    );
+  },
+  CHECK_CASE_BOUND,
+);
 
-test("A bare import in a library file is read as in an app file and is no E1163, whatever the package", () => {
-  fc.assert(
-    fc.property(fc.stringMatching(/^[a-z]{4,10}$/), (pkg) => {
-      const files = project([lib("src/Uses.ts", `import { x } from '${pkg}'\nexport const u = x\n`)]);
-      expect(hitsOf(files, "E1163")).toEqual([]);
-    }),
-    { seed: SEED, numRuns: 20 },
-  );
-});
-
-test("A bare import there is read as in an app file: a `node:` import an app file is refused for (E1759) is refused in the library file at the library's path, and in the app twin alike", () => {
-  const source = "import { readFileSync } from 'node:fs'\nexport const r = readFileSync\n";
-  const inLib = hitsOf(inLibrary("Read.ts", source), "E1759", {});
-  expect(inLib.map((x) => x.path)).toEqual(["node_modules/@acme/charts/src/Read.ts"]);
-  expect(inLib[0]?.fix).toBeUndefined();
-  expect(hitsOf(inApp("Read.ts", source), "E1759", {}).map((x) => x.path)).toEqual(["modules/charts/src/Read.ts"]);
-});
+test(
+  "A bare import there is read as in an app file: a `node:` import an app file is refused for (E1759) is refused in the library file at the library's path, and in the app twin alike",
+  () => {
+    const source = "import { readFileSync } from 'node:fs'\nexport const r = readFileSync\n";
+    const inLib = hitsOf(inLibrary("Read.ts", source), "E1759", {});
+    expect(inLib.map((x) => x.path)).toEqual(["node_modules/@acme/charts/src/Read.ts"]);
+    expect(inLib[0]?.fix).toBeUndefined();
+    expect(hitsOf(inApp("Read.ts", source), "E1759", {}).map((x) => x.path)).toEqual(["modules/charts/src/Read.ts"]);
+  },
+  CHECK_CASE_BOUND,
+);

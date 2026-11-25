@@ -3,6 +3,7 @@
 // Assumption: `workflow(...)` returns `{ stores, jobs }` and `flows(queue, [workflow])` is built from it, as in the spec's example.
 // Assumption: `<flow>` in the step key `<id>:<flow>:<entered>` is the workflow's id.
 // Assumption: `createApp` needs no `routes` for a deployable whose module only has runners.
+import { fixedTime } from "@keel/tooling/test-time";
 import { type SimCtx, createCtx } from "@keel/ctx";
 import { type KeelError, type Result, s } from "@keel/schema";
 import { ok } from "@keel/schema";
@@ -83,7 +84,7 @@ export type FlowOptions = { run: Run; attempts?: number; timeoutMs?: number; ms?
 export function makeFlow(o: FlowOptions) {
   const id = nextId("removal");
   const c = removalChart();
-  const ms = o.ms ?? 5000;
+  const ms = o.ms ?? fixedTime(5000);
   const wf = workflow(id, {
     chart: c,
     steps: {

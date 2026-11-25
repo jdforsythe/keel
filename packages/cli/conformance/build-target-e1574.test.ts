@@ -5,6 +5,7 @@
 // Seed: 1337.
 // No native tool runs: `PATH`, `HOME`, `CARGO_HOME` and `RUSTUP_HOME` point at an empty directory, so "proceeds" is read as "reports no E1574";
 // it then stops at the toolchain step (E1575, k.shell Build 2), before any tool runs. `KEEL_ORIGIN` validity is decided by step 1, before any work.
+import { testTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -61,7 +62,7 @@ function build(origin: string | undefined, format = "json"): { status: number | 
     cwd: project,
     encoding: "utf8",
     env,
-    timeout: 120_000,
+    timeout: testTime(120_000),
   });
   const records: Rec[] = [];
   for (const line of r.stdout.split("\n")) {

@@ -6,6 +6,7 @@
 // Assumption: the Tauri tool is run as `npx ... tauri build ...` (the spec names the tool, not the runner).
 // AMBIGUOUS: "writes Keel's mark there": `there` read as the build folder `dist/web/tauri/icons/icon.png` (std.tauri Build: "into `dir`"); that `deploy/web/tauri/icons/icon.png` stays absent is kept from "committed and not generated".
 // UNTESTABLE: that `capabilities/http.json` allows `KEEL_ORIGIN` only (the spec gives no permission shape): asserted as "`capabilities/http.json` mentions the origin".
+import { testTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
 import {
   chmodSync,
@@ -129,7 +130,7 @@ function build(
     cwd: project,
     encoding: "utf8",
     env,
-    timeout: 240_000,
+    timeout: testTime(240_000),
   });
   const records: Rec[] = [];
   for (const line of r.stdout.split("\n")) {

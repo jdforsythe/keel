@@ -17,6 +17,17 @@ import { database } from "@keel/std-postgres/server";
 import { ready } from "@keel/std-postgres/testing";
 
 export const SEED = 1337;
+/**
+ * What a hook that calls `ready()` bounds: loading the PGlite engine (its WebAssembly and initdb), about 1.5 s here and
+ * over 10 s on a slow runner. The bound is 60,000 ms, the bound the apps give a PGlite folder's first open.
+ */
+export const ENGINE_BOUND = 60_000;
+/**
+ * What a case bounds for each PGlite folder it opens: the folder made (initdb), its migrations and queries, and its
+ * close, about 0.5 s here on a quiet machine and up to 1.2 s beside the suite's other PGlite files. The bound is 25,000
+ * ms a folder, so a runner ten times slower (scale 0.1) still has 2.5 s a folder.
+ */
+export const FOLDER_BOUND = 25_000;
 export const PG17 = process.env.KEEL_TEST_POSTGRES_URL ?? "";
 
 let counter = 0;

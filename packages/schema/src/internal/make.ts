@@ -23,11 +23,11 @@ import { toJson } from "./toJson.ts";
 export function make<T, O extends boolean>(node: Node, isOptional: O): Schema<T, O> {
   freezeNode(node);
   let issues: Issue[] = [];
-  const is = (x: unknown): x is T => {
+  const is = (x: unknown, copies: ReadonlySet<object> = new Set()): x is T => {
     issues = [];
     // A value whose shape cannot be read (a revoked Proxy, a throwing trap) is not plain data.
     try {
-      check(node, x, [], issues);
+      check(node, x, [], issues, [], copies);
     } catch {
       issues = [{ path: [], rule: "type" }];
     }
@@ -42,9 +42,10 @@ export function make<T, O extends boolean>(node: Node, isOptional: O): Schema<T,
     // value the seal, check or freeze cannot walk is an err, never a throw.
     try {
       const made: unknown[] = [];
-      const value = seal(node, input, made);
-      if (!is(value)) return err(invalid(issues));
-      for (const v of made) freeze(v);
+      const copies = new Set<object>();
+      const value = seal(node, input, made, copies);
+      if (!is(value, copies)) return err(invalid(issues));
+      for (const v of made) freeze(v, copies);
       return ok(value);
     } catch {
       return err(invalid([{ path: [], rule: "type" }]));

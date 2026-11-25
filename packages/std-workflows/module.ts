@@ -6,7 +6,7 @@ import { module } from "@keel/compiler";
  */
 export default module({
   id: "workflows",
-  deps: [],
-  capabilities: ["clock", "random", "storage"],
+  deps: ["@keel/std-jobs", "@keel/std-statecharts"],
+  capabilities: ["clock", "observe", "random", "storage"],
   public: { exports: ["workflow", "flows"] },
 });

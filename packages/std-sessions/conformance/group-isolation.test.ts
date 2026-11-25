@@ -4,46 +4,54 @@
 import { openGroup } from "@keel/std-sessions/group";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { SEED, drive, groupOptions, texts } from "./group-fixtures.ts";
+import { GROUP_BOUND, SEED, drive, groupOptions, texts } from "./group-fixtures.ts";
 
 describe("std.multi: users are isolated", () => {
-  test("Two users of one group get distinct `caller`s", async () => {
-    const g = await openGroup(groupOptions(SEED));
-    await drive(g, [
-      { u: 0, do: "refresh" },
-      { u: 1, do: "refresh" },
-    ]);
-    const [a0, a1] = await texts(g, "board.caller");
-    await drive(g, [
-      { u: 0, do: "refresh" },
-      { u: 1, do: "refresh" },
-    ]);
-    const [b0, b1] = await texts(g, "board.caller");
-    await g.stop();
-    expect(a0).not.toBe("");
-    expect(a1).not.toBe("");
-    expect(a0).not.toBe(a1);
-    // each user's own cookie jar keeps its caller across requests
-    expect(b0).toBe(a0);
-    expect(b1).toBe(a1);
-  }, 60_000);
+  test(
+    "Two users of one group get distinct `caller`s",
+    async () => {
+      const g = await openGroup(groupOptions(SEED));
+      await drive(g, [
+        { u: 0, do: "refresh" },
+        { u: 1, do: "refresh" },
+      ]);
+      const [a0, a1] = await texts(g, "board.caller");
+      await drive(g, [
+        { u: 0, do: "refresh" },
+        { u: 1, do: "refresh" },
+      ]);
+      const [b0, b1] = await texts(g, "board.caller");
+      await g.stop();
+      expect(a0).not.toBe("");
+      expect(a1).not.toBe("");
+      expect(a0).not.toBe(a1);
+      // each user's own cookie jar keeps its caller across requests
+      expect(b0).toBe(a0);
+      expect(b1).toBe(a1);
+    },
+    GROUP_BOUND,
+  );
 
-  test("one user's `find` never returns the other's elements", async () => {
-    await fc.assert(
-      fc.asyncProperty(fc.stringMatching(/^[a-z]{1,8}$/), fc.constantFrom<0 | 1>(0, 1), async (note, who) => {
-        const g = await openGroup(groupOptions(SEED));
-        const other = who === 0 ? 1 : 0;
-        const otherBefore = await g.user(other).state();
-        await drive(g, [{ u: who, do: "note", v: note }]);
-        const mine = await g.user(who).find("board.local");
-        const theirs = await g.user(other).find("board.local");
-        const otherAfter = await g.user(other).state();
-        await g.stop();
-        expect(mine.text).toBe(note);
-        expect(theirs.text).toBe("");
-        expect(otherAfter).toEqual(otherBefore);
-      }),
-      { seed: 1337, numRuns: 4 },
-    );
-  }, 120_000);
+  test(
+    "one user's `find` never returns the other's elements",
+    async () => {
+      await fc.assert(
+        fc.asyncProperty(fc.stringMatching(/^[a-z]{1,8}$/), fc.constantFrom<0 | 1>(0, 1), async (note, who) => {
+          const g = await openGroup(groupOptions(SEED));
+          const other = who === 0 ? 1 : 0;
+          const otherBefore = await g.user(other).state();
+          await drive(g, [{ u: who, do: "note", v: note }]);
+          const mine = await g.user(who).find("board.local");
+          const theirs = await g.user(other).find("board.local");
+          const otherAfter = await g.user(other).state();
+          await g.stop();
+          expect(mine.text).toBe(note);
+          expect(theirs.text).toBe("");
+          expect(otherAfter).toEqual(otherBefore);
+        }),
+        { seed: 1337, numRuns: 4 },
+      );
+    },
+    4 * GROUP_BOUND,
+  );
 });

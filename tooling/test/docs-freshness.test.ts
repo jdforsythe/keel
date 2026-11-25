@@ -41,6 +41,8 @@ describe("freshness", () => {
     git("init", "-q");
     git("config", "user.email", "t@example.com");
     git("config", "user.name", "t");
+    // A machine's own commit signing costs a process per commit; these commits need none.
+    git("config", "commit.gpgsign", "false");
     commit("docs/A.md", "# A\n\nsubject: src/a/\nverified: 0000000\n");
     commit("docs/B.md", "# B\n");
     commit("packages/p/README.md", "# p\n");

@@ -1,6 +1,6 @@
 import { inspector } from "@keel/compiler/inspect/inspector";
 import type { KeyValueStorage } from "@keel/ctx";
-import { WorkflowsInstances } from "../WorkflowsInstances.ts";
+import { WorkflowsInstances } from "../WorkflowsInstances.schema.ts";
 
 const seen = new WeakMap<KeyValueStorage, Record<string, Readonly<Record<string, number>>>>();
 

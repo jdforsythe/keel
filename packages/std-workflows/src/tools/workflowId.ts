@@ -1,6 +1,9 @@
 import { type Finding, type RuleDef, defineRule } from "@keel/check";
-import { callsOf, editOf, lineCol, moduleFile } from "@keel/std-jobs/tools/internal";
+import { callsOf } from "./internal/callsOf.ts";
 import { cut } from "./internal/cut.ts";
+import { editOf } from "./internal/editOf.ts";
+import { lineCol } from "./internal/lineCol.ts";
+import { moduleFile } from "./internal/moduleFile.ts";
 
 /**
  * E2351 (std.workflows, k.check registry): a `workflow` call outside `*.server.ts`, or one whose id is not prefixed by

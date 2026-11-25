@@ -10,11 +10,11 @@ import { NoRows, sql } from "@keel/std-postgres";
 import { ready } from "@keel/std-postgres/testing";
 import { beforeAll, expect, test } from "vitest";
 import { database } from "@keel/std-postgres/server";
-import { errOf, fresh, migrationsOf, okOf, simCtx, sqlName } from "./fixtures.ts";
+import { ENGINE_BOUND, errOf, fresh, migrationsOf, okOf, simCtx, sqlName } from "./fixtures.ts";
 
 beforeAll(async () => {
   await ready();
-});
+}, ENGINE_BOUND);
 const C = { delay: 0, fault: "conflict" as const };
 const N = { delay: 0, fault: "none" as const };
 const Counter = s.object({ n: s.int() });

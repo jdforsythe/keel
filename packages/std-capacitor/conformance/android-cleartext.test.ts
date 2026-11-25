@@ -5,6 +5,7 @@
 // Assumptions (the clause names no paths): the config and the manifest are found by name anywhere under the project (outside `node_modules`); a network security config is an `.xml` file under a `res/xml` folder whose root is `network-security-config`;
 // "named in `AndroidManifest.xml`" is `android:networkSecurityConfig="@xml/<file name without .xml>"`; "cleartext domain" is a `<domain>` inside a `<domain-config>` that permits cleartext, and no `<base-config>` permits it.
 // "The generated one" is held to: the `capacitor.config.json` files are the same after each build (the origin aside), and none turns on Capacitor's own cleartext switch (`server.cleartext`, or `usesCleartextTraffic` in the manifest).
+import { testTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
 import {
   chmodSync,
@@ -141,7 +142,7 @@ function build(origin: string, extra: readonly string[]): number | null {
   const r = spawnSync(
     process.execPath,
     [BIN, "build", "--target", "capacitor", "--platform", "android", ...extra, "--format=json"],
-    { cwd: project, encoding: "utf8", env: { ...env, KEEL_ORIGIN: origin }, timeout: 240_000 },
+    { cwd: project, encoding: "utf8", env: { ...env, KEEL_ORIGIN: origin }, timeout: testTime(240_000) },
   );
   return r.status;
 }

@@ -1,6 +1,8 @@
 // A WebDriver client of the few W3C commands tooling/smoke/shell.mjs needs, over HTTP with fetch. Every command has a
 // time limit; a WebDriver error rejects with its `error` and `message`.
 
+import { testTime } from "../test-time.ts";
+
 const ELEMENT = "element-6066-11e4-a07c-4bf9f9a6f5c5";
 
 /** The id of an element reference: the W3C key, else the one key a driver gave it. */
@@ -35,7 +37,11 @@ async function command(base, method, path, body, ms) {
  * session's methods: `url()`, `navigate(url)`, `find(css)` (an element handle, or rejects `no such element`),
  * `click(el)`, `clear(el)`, `type(el, text)`, `execute(script, args)` and `quit()`.
  */
-export async function openSession(base, capabilities, { commandMs = 30_000, startMs = 60_000 } = {}) {
+export async function openSession(
+  base,
+  capabilities,
+  { commandMs = testTime(30_000), startMs = testTime(60_000) } = {},
+) {
   const opened = await command(base, "POST", "/session", { capabilities: { alwaysMatch: capabilities } }, startMs);
   const id = String(opened?.sessionId ?? "");
   if (id === "") throw new Error("POST /session answered no sessionId");
@@ -57,7 +63,7 @@ export async function openSession(base, capabilities, { commandMs = 30_000, star
 
 /** True once the driver at `base` answers `GET /status`. */
 export const driverReady = (base) =>
-  fetch(`${base}/status`, { signal: AbortSignal.timeout(2_000) }).then(
+  fetch(`${base}/status`, { signal: AbortSignal.timeout(testTime(2_000)) }).then(
     (r) => r.ok,
     () => false,
   );

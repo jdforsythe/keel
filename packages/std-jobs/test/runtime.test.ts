@@ -5,7 +5,7 @@ import { type KeelError, type Result, err, ok, s } from "@keel/schema";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { job, queue } from "../src/index.ts";
-import { State } from "../src/internal/State.ts";
+import { State } from "../src/internal/State.schema.ts";
 
 const SEED = 1337;
 const KEY = "std.jobs.orders";
@@ -323,7 +323,7 @@ test("An enqueue wakes an idle runner without the clock moving", async () => {
   });
   const r = start(jobs, ctx);
   await settle();
-  await jobs.enqueue(ctx, "orders.work", { n: 7 });
+  void (await jobs.enqueue(ctx, "orders.work", { n: 7 }));
   await settle();
   expect(ran).toEqual([7]);
   await r.end();
@@ -344,9 +344,9 @@ test("For any timing of a running job's result against an enqueue, every job run
         }),
       });
       const r = start(jobs, ctx);
-      await jobs.enqueue(ctx, "orders.work", { n: 1 });
+      void (await jobs.enqueue(ctx, "orders.work", { n: 1 }));
       await settle();
-      await jobs.enqueue(ctx, "orders.work", { n: 2 });
+      void (await jobs.enqueue(ctx, "orders.work", { n: 2 }));
       await turns(lag);
       gates[0]?.();
       await settle();
@@ -439,6 +439,6 @@ test("A queue refuses an input holding s.secret naming the job and the path, and
   await r.end();
   expect(await ctx.storage.get("std.jobs.")).not.toBeNull();
   const dotted = queue({ "orders.a.b": job({ input }, async () => ok(null)) });
-  await dotted.enqueue(ctx, "orders.a.b", { n: 1 });
+  void (await dotted.enqueue(ctx, "orders.a.b", { n: 1 }));
   expect(await ctx.storage.get(KEY)).not.toBeNull();
 });

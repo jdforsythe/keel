@@ -8,6 +8,7 @@
     "./output": "./output.ts",
     "./quick-first": "./quick-first.ts",
     "./repo-root": "./repo-root.ts",
+    "./test-time": "./test-time.ts",
     "./vitest-config": "./vitest-config.ts",
     "./vitest-reporter": "./vitest-reporter.ts"
   },

@@ -5,6 +5,7 @@ import { check } from "@keel/check";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { SEED, type Files, codesOf, lowerId, manifestFile } from "./module-support.ts";
+import { CHECK_CASE_BOUND } from "./check-time.ts";
 
 const distinct = fc.tuple(lowerId, lowerId).filter(([a, b]) => a !== b);
 const NO_TYPES = { types: false } as const;
@@ -50,85 +51,113 @@ function app(
 }
 const withShell = (b: string): string => `'${b}.shell': { layout: true }, '${b}.page': { path: '/p' }`;
 
-test("keel check reports E1152 at a `layout` naming a layout of a module missing from `deps`", () => {
-  fc.assert(
-    fc.property(distinct, ([a, b]) => {
-      const files = app(a, b, `${b}.shell`, withShell(b), [], { web: [a, b] });
-      const d = codesOf(files, "E1152").filter((x) => x.path === `modules/${a}/routes.ts`);
-      expect(d.length).toBeGreaterThanOrEqual(1);
-    }),
-    { seed: SEED, numRuns: 20 },
-  );
-});
+test(
+  "keel check reports E1152 at a `layout` naming a layout of a module missing from `deps`",
+  () => {
+    fc.assert(
+      fc.property(distinct, ([a, b]) => {
+        const files = app(a, b, `${b}.shell`, withShell(b), [], { web: [a, b] });
+        const d = codesOf(files, "E1152").filter((x) => x.path === `modules/${a}/routes.ts`);
+        expect(d.length).toBeGreaterThanOrEqual(1);
+      }),
+      { seed: SEED, numRuns: 20 },
+    );
+  },
+  CHECK_CASE_BOUND,
+);
 
-test("the E1152 at a foreign `layout` clears when the fix adds the module to `deps`", () => {
-  fc.assert(
-    fc.property(distinct, ([a, b]) => {
-      const bad = app(a, b, `${b}.shell`, withShell(b), [], { web: [a, b] });
-      const d = codesOf(bad, "E1152").find((x) => x.path === `modules/${a}/routes.ts`);
-      expect(d).toBeDefined();
-      expect(d?.fix).toBeDefined();
-      const fixed = app(a, b, `${b}.shell`, withShell(b), [b], { web: [a, b] });
-      expect(codesOf(fixed, "E1152")).toEqual([]);
-      expect(codesOf(fixed, "E1506")).toEqual([]);
-    }),
-    { seed: SEED, numRuns: 20 },
-  );
-});
+test(
+  "the E1152 at a foreign `layout` clears when the fix adds the module to `deps`",
+  () => {
+    fc.assert(
+      fc.property(distinct, ([a, b]) => {
+        const bad = app(a, b, `${b}.shell`, withShell(b), [], { web: [a, b] });
+        const d = codesOf(bad, "E1152").find((x) => x.path === `modules/${a}/routes.ts`);
+        expect(d).toBeDefined();
+        expect(d?.fix).toBeDefined();
+        const fixed = app(a, b, `${b}.shell`, withShell(b), [b], { web: [a, b] });
+        expect(codesOf(fixed, "E1152")).toEqual([]);
+        expect(codesOf(fixed, "E1506")).toEqual([]);
+      }),
+      { seed: SEED, numRuns: 20 },
+    );
+  },
+  CHECK_CASE_BOUND,
+);
 
-test("E1506 per deployable's table: a foreign `layout` naming a page of its module, not a layout entry, is reported", () => {
-  fc.assert(
-    fc.property(distinct, ([a, b]) => {
-      const files = app(a, b, `${b}.page`, withShell(b), [b], { web: [a, b] });
-      expect(codesOf(files, "E1506").length).toBeGreaterThanOrEqual(1);
-    }),
-    { seed: SEED, numRuns: 20 },
-  );
-});
+test(
+  "E1506 per deployable's table: a foreign `layout` naming a page of its module, not a layout entry, is reported",
+  () => {
+    fc.assert(
+      fc.property(distinct, ([a, b]) => {
+        const files = app(a, b, `${b}.page`, withShell(b), [b], { web: [a, b] });
+        expect(codesOf(files, "E1506").length).toBeGreaterThanOrEqual(1);
+      }),
+      { seed: SEED, numRuns: 20 },
+    );
+  },
+  CHECK_CASE_BOUND,
+);
 
-test("E1506 per deployable's table: a foreign `layout` naming no entry of its module is reported", () => {
-  fc.assert(
-    fc.property(distinct, ([a, b]) => {
-      const files = app(a, b, `${b}.ghost`, withShell(b), [b], { web: [a, b] });
-      expect(codesOf(files, "E1506").length).toBeGreaterThanOrEqual(1);
-    }),
-    { seed: SEED, numRuns: 20 },
-  );
-});
+test(
+  "E1506 per deployable's table: a foreign `layout` naming no entry of its module is reported",
+  () => {
+    fc.assert(
+      fc.property(distinct, ([a, b]) => {
+        const files = app(a, b, `${b}.ghost`, withShell(b), [b], { web: [a, b] });
+        expect(codesOf(files, "E1506").length).toBeGreaterThanOrEqual(1);
+      }),
+      { seed: SEED, numRuns: 20 },
+    );
+  },
+  CHECK_CASE_BOUND,
+);
 
-test("E1506 per deployable's table: a foreign `layout` whose module is placed in another deployable is reported, and is clean when both share one", () => {
-  fc.assert(
-    fc.property(distinct, ([a, b]) => {
-      const split = app(a, b, `${b}.shell`, withShell(b), [b], { web: [a], api: [b] });
-      expect(codesOf(split, "E1506").length).toBeGreaterThanOrEqual(1);
-      const shared = app(a, b, `${b}.shell`, withShell(b), [b], { web: [a, b] });
-      expect(codesOf(shared, "E1506")).toEqual([]);
-    }),
-    { seed: SEED, numRuns: 20 },
-  );
-});
+test(
+  "E1506 per deployable's table: a foreign `layout` whose module is placed in another deployable is reported, and is clean when both share one",
+  () => {
+    fc.assert(
+      fc.property(distinct, ([a, b]) => {
+        const split = app(a, b, `${b}.shell`, withShell(b), [b], { web: [a], api: [b] });
+        expect(codesOf(split, "E1506").length).toBeGreaterThanOrEqual(1);
+        const shared = app(a, b, `${b}.shell`, withShell(b), [b], { web: [a, b] });
+        expect(codesOf(shared, "E1506")).toEqual([]);
+      }),
+      { seed: SEED, numRuns: 20 },
+    );
+  },
+  CHECK_CASE_BOUND,
+);
 
-test("E1506 per deployable's table: a foreign `layout` that closes a cycle across modules is reported", () => {
-  fc.assert(
-    fc.property(distinct, ([a, b]) => {
-      const files: Files = [
-        manifestFile({ id: a, deps: [b] }),
-        contract(a, `'${a}.shell': { layout: true }`),
-        binding(a, `'${a}.shell': { component: Page, layout: '${b}.shell' }`),
-        manifestFile({ id: b, deps: [a] }),
-        contract(b, `'${b}.shell': { layout: true }`),
-        binding(b, `'${b}.shell': { component: Page, layout: '${a}.shell' }`),
-        topo({ web: [a, b] }),
-      ];
-      expect(codesOf(files, "E1506").length).toBeGreaterThanOrEqual(1);
-    }),
-    { seed: SEED, numRuns: 20 },
-  );
-});
+test(
+  "E1506 per deployable's table: a foreign `layout` that closes a cycle across modules is reported",
+  () => {
+    fc.assert(
+      fc.property(distinct, ([a, b]) => {
+        const files: Files = [
+          manifestFile({ id: a, deps: [b] }),
+          contract(a, `'${a}.shell': { layout: true }`),
+          binding(a, `'${a}.shell': { component: Page, layout: '${b}.shell' }`),
+          manifestFile({ id: b, deps: [a] }),
+          contract(b, `'${b}.shell': { layout: true }`),
+          binding(b, `'${b}.shell': { component: Page, layout: '${a}.shell' }`),
+          topo({ web: [a, b] }),
+        ];
+        expect(codesOf(files, "E1506").length).toBeGreaterThanOrEqual(1);
+      }),
+      { seed: SEED, numRuns: 20 },
+    );
+  },
+  CHECK_CASE_BOUND,
+);
 
-test("a foreign `layout` naming a layout entry of a module in the same deployable's table, listed in `deps`, is no E1506 and no E1152", () => {
-  const files = app("a", "b", "b.shell", withShell("b"), ["b"], { web: ["a", "b"] });
-  const codes = check(files, NO_TYPES).diagnostics.map((d) => d.code);
-  expect(codes).not.toContain("E1506");
-  expect(codes).not.toContain("E1152");
-});
+test(
+  "a foreign `layout` naming a layout entry of a module in the same deployable's table, listed in `deps`, is no E1506 and no E1152",
+  () => {
+    const files = app("a", "b", "b.shell", withShell("b"), ["b"], { web: ["a", "b"] });
+    const codes = check(files, NO_TYPES).diagnostics.map((d) => d.code);
+    expect(codes).not.toContain("E1506");
+    expect(codes).not.toContain("E1152");
+  },
+  CHECK_CASE_BOUND,
+);

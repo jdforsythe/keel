@@ -6,12 +6,20 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { fixedTime, testTime } from "../test-time.ts";
 
 const root = path.join(import.meta.dirname, "..", "..");
 const fixtures = path.join(import.meta.dirname, "..", "fixtures", "watchdog");
 const vitest = path.join(root, "node_modules", "vitest", "vitest.mjs");
-// testTimeout and hookTimeout 200 ms (the fixture config): allowed 200 + 2 * 200, bound 600 * 2 + 500 = 1.7 s.
-const env = { ...process.env, KEEL_WATCHDOG_GRACE_MS: "500", KEEL_WATCHDOG_TICK_MS: "100", KEEL_AGENT: "1" };
+// testTimeout and hookTimeout 200 ms (the fixture config): allowed 200 + 2 * 200, bound 600 * 2 + 500 = 1.7 s. The
+// fixture's times are the watchdog's input, so the child vitest runs them unscaled; this file's own waits scale.
+const env = {
+  ...process.env,
+  KEEL_WATCHDOG_GRACE_MS: "500",
+  KEEL_WATCHDOG_TICK_MS: "100",
+  KEEL_AGENT: "1",
+  KEEL_TEST_TIME_SCALE: "1",
+};
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -65,13 +73,13 @@ describe("watchdog", () => {
     try {
       const code = await new Promise<number | null>((resolve) => child.once("exit", (c) => resolve(c)));
       expect(code).not.toBe(0);
-      expect(performance.now() - t0).toBeLessThan(25_000);
+      expect(performance.now() - t0).toBeLessThan(fixedTime(1_700) + testTime(23_000));
       const lines = out.split("\n").filter((l) => l.includes("watchdog"));
       expect(lines).toHaveLength(1);
       expect(lines[0]).toMatch(
         /^T0001 spin\.fixture\.ts:1:1 watchdog killed "spins without yielding" after \d+\.\ds \(bound 1\.7s\)$/,
       );
-      expect(await within(10_000, () => child.pid !== undefined && group(child.pid).length === 0)).toBe(true);
+      expect(await within(testTime(10_000), () => child.pid !== undefined && group(child.pid).length === 0)).toBe(true);
     } finally {
       killGroup(child.pid);
     }
@@ -82,11 +90,11 @@ describe("watchdog", () => {
     const ready = path.join(dir, "ready");
     const child = run("orphan.fixture.ts", { KEEL_WATCHDOG_READY: ready });
     try {
-      expect(await within(15_000, () => fs.existsSync(ready))).toBe(true);
+      expect(await within(testTime(15_000), () => fs.existsSync(ready))).toBe(true);
       const worker = Number(fs.readFileSync(ready, "utf8"));
       expect(child.pid === undefined ? [] : group(child.pid)).toContain(worker);
       child.kill("SIGKILL");
-      expect(await within(3000, () => child.pid !== undefined && group(child.pid).length === 0)).toBe(true);
+      expect(await within(testTime(3000), () => child.pid !== undefined && group(child.pid).length === 0)).toBe(true);
     } finally {
       killGroup(child.pid);
       fs.rmSync(dir, { recursive: true, force: true });
@@ -116,13 +124,13 @@ describe("watchdog", () => {
         const child = run("child.fixture.ts", { KEEL_WATCHDOG_READY: ready });
         let pids: number[] = [];
         try {
-          expect(await within(20_000, () => fs.existsSync(ready) && fs.readFileSync(ready, "utf8").includes(" "))).toBe(
-            true,
-          );
+          expect(
+            await within(testTime(20_000), () => fs.existsSync(ready) && fs.readFileSync(ready, "utf8").includes(" ")),
+          ).toBe(true);
           pids = fs.readFileSync(ready, "utf8").split(" ").map(Number);
           expect(pids.every(alive)).toBe(true);
           if (child.pid !== undefined) end(child.pid);
-          expect(await within(8000, () => !pids.some(alive))).toBe(true);
+          expect(await within(testTime(8000), () => !pids.some(alive))).toBe(true);
         } finally {
           for (const pid of pids) {
             try {

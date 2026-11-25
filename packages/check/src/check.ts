@@ -112,7 +112,8 @@ function expectedHashes(files: readonly SourceFile[], opts: CheckOptions): Reado
  *
  * A library's files among the files (k.library In an app, `libraryFolders`) are read by every step at
  * `modules/<id>/<f>` but the type pass, the k.module pass and E1013, which read them where they lie; each diagnostic in
- * one is located at `node_modules/<name>/<f>` with no fix. E1161 and E1163's import half judge them there.
+ * one is located at `node_modules/<name>/<f>` with no fix. E1161 and E1163's import half judge them there; E1106 reports
+ * in none of them.
  */
 export function check(given: readonly SourceFile[], options: CheckOptions = {}): CheckResult {
   const realAll = options.project === undefined ? given : [...given, ...options.project];
@@ -262,12 +263,15 @@ export function check(given: readonly SourceFile[], options: CheckOptions = {}):
   );
 
   // A diagnostic in a library file is located where the file lies and carries no fix (k.library In an app).
-  const located = out.map((d): Diagnostic => {
-    const at = libs.real(d.path);
-    if (!isLibrary(at)) return d;
-    const { kind, code, line, col, message, see } = d;
-    return { kind, code, path: at, line, col, message, ...(see === undefined ? {} : { see }) };
-  });
+  // E1106 alone reads a library's file as the library's: `s.format` is what a library declares (k.formats Who declares).
+  const located = out
+    .filter((d) => d.code !== "E1106" || !isLibrary(libs.real(d.path)))
+    .map((d): Diagnostic => {
+      const at = libs.real(d.path);
+      if (!isLibrary(at)) return d;
+      const { kind, code, line, col, message, see } = d;
+      return { kind, code, path: at, line, col, message, ...(see === undefined ? {} : { see }) };
+    });
   // A lifted range (k.check, App code) reports none of its nine codes.
   const diagnostics = normalize(dropLifted(located, realCode));
   return { diagnostics, summary: summarize(diagnostics) };

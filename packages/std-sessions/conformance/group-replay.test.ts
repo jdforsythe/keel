@@ -4,7 +4,17 @@
 import { openGroup, replayGroup } from "@keel/std-sessions/group";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { ItemsState, SEED, type Step, TitleState, USER, drive, groupOptions, serve } from "./group-fixtures.ts";
+import {
+  GROUP_BOUND,
+  ItemsState,
+  SEED,
+  type Step,
+  TitleState,
+  USER,
+  drive,
+  groupOptions,
+  serve,
+} from "./group-fixtures.ts";
 
 const word = fc.stringMatching(/^[a-z]{1,6}$/);
 const user = fc.constantFrom<0 | 1>(0, 1);
@@ -35,44 +45,59 @@ async function record(script: readonly Step[]) {
   return { group: await g.stop(), liveState, liveTitle, liveItems };
 }
 
+/** Generated scripts each case runs: a group recorded and replayed once a run, or twice in the byte-equal case. */
+const RUNS = 4;
+
 describe("std.multi: replayGroup", () => {
-  test("`replayGroup` of a recorded group ends with every server store equal to the live group's final store", async () => {
-    await fc.assert(
-      fc.asyncProperty(fc.array(stepArb, { maxLength: 8 }), async (script) => {
-        const live = await record(script);
-        const r = await replayGroup(live.group, { user: USER, serve });
-        // `server` holds the stores stored under `keel.store.<id>`: `board` was seeded, `log` is stored once saved.
-        const board = TitleState.parse(r.server.board?.state);
-        expect(board.ok && board.value.title).toBe(live.liveTitle);
-        const log = ItemsState.parse(r.server.log?.state);
-        if (log.ok) expect(log.value.items.join(",")).toBe(live.liveItems);
-        else expect(live.liveItems).toBe("");
-      }),
-      { seed: 1337, numRuns: 4 },
-    );
-  }, 120_000);
+  test(
+    "`replayGroup` of a recorded group ends with every server store equal to the live group's final store",
+    async () => {
+      await fc.assert(
+        fc.asyncProperty(fc.array(stepArb, { maxLength: 8 }), async (script) => {
+          const live = await record(script);
+          const r = await replayGroup(live.group, { user: USER, serve });
+          // `server` holds the stores stored under `keel.store.<id>`: `board` was seeded, `log` is stored once saved.
+          const board = TitleState.parse(r.server.board?.state);
+          expect(board.ok && board.value.title).toBe(live.liveTitle);
+          const log = ItemsState.parse(r.server.log?.state);
+          if (log.ok) expect(log.value.items.join(",")).toBe(live.liveItems);
+          else expect(live.liveItems).toBe("");
+        }),
+        { seed: 1337, numRuns: RUNS },
+      );
+    },
+    RUNS * 2 * GROUP_BOUND,
+  );
 
-  test("`replayGroup` of a recorded group ends with each user's `state()` equal to its live final state", async () => {
-    await fc.assert(
-      fc.asyncProperty(fc.array(stepArb, { maxLength: 8 }), async (script) => {
-        const live = await record(script);
-        const r = await replayGroup(live.group, { user: USER, serve });
-        expect(r.users.map((u) => u.state)).toEqual(live.liveState);
-        expect(r.reproduced).toBe(true);
-      }),
-      { seed: 1337, numRuns: 4 },
-    );
-  }, 120_000);
+  test(
+    "`replayGroup` of a recorded group ends with each user's `state()` equal to its live final state",
+    async () => {
+      await fc.assert(
+        fc.asyncProperty(fc.array(stepArb, { maxLength: 8 }), async (script) => {
+          const live = await record(script);
+          const r = await replayGroup(live.group, { user: USER, serve });
+          expect(r.users.map((u) => u.state)).toEqual(live.liveState);
+          expect(r.reproduced).toBe(true);
+        }),
+        { seed: 1337, numRuns: RUNS },
+      );
+    },
+    RUNS * 2 * GROUP_BOUND,
+  );
 
-  test("two replays of one group are byte-equal", async () => {
-    await fc.assert(
-      fc.asyncProperty(fc.array(stepArb, { maxLength: 8 }), async (script) => {
-        const { group } = await record(script);
-        const a = await replayGroup(group, { user: USER, serve });
-        const b = await replayGroup(group, { user: USER, serve });
-        expect(JSON.stringify(a)).toBe(JSON.stringify(b));
-      }),
-      { seed: 1337, numRuns: 4 },
-    );
-  }, 120_000);
+  test(
+    "two replays of one group are byte-equal",
+    async () => {
+      await fc.assert(
+        fc.asyncProperty(fc.array(stepArb, { maxLength: 8 }), async (script) => {
+          const { group } = await record(script);
+          const a = await replayGroup(group, { user: USER, serve });
+          const b = await replayGroup(group, { user: USER, serve });
+          expect(JSON.stringify(a)).toBe(JSON.stringify(b));
+        }),
+        { seed: 1337, numRuns: RUNS },
+      );
+    },
+    RUNS * 3 * GROUP_BOUND,
+  );
 });

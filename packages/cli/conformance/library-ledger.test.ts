@@ -1228,11 +1228,22 @@ test(
   SLOW,
 );
 
-test("E1162 `<name> ships <field> <shipped>, its files hold <counted>` with a counted value of six digits is whole: `unsafe` 999999 shipped and 100000 counted, at a name of 38 units", () => {
-  // The 87-unit form (`hostElements`, counted 100000) is untestable: 100,000 `Host` elements exhaust the checker's 4 GB heap; only the `unsafe` form (81 units) is asserted.
-  const name = "@acme-charts-widgets/chart-library-xyz";
-  expect(name.length).toBe(38);
-  const hits = checkOf(withLedger(shipped({ unsafe: 999999 }), { "unsafe/u.ts": unsafeSrc(100000) }, name));
-  expect(messages(hits)).toEqual([`${name} ships unsafe 999999, its files hold 100000`]);
-  expect(String(hits[0]?.message).length).toBe(81);
-}, 600_000);
+/**
+ * What the six-digit case bounds: one `keel check` over a library file of 100,000 `unsafe(...)` statements. The work
+ * is about 0.6 ms a statement here (60 s) and grows with the statement count, not with the clause's text; the bound is
+ * 12 ms a statement, 20 times that, so a runner ten times slower (scale 0.1) still has twice the work's time.
+ */
+const SIX_DIGITS_BOUND = 100_000 * 12;
+
+test(
+  "E1162 `<name> ships <field> <shipped>, its files hold <counted>` with a counted value of six digits is whole: `unsafe` 999999 shipped and 100000 counted, at a name of 38 units",
+  () => {
+    // The 87-unit form (`hostElements`, counted 100000) is untestable: 100,000 `Host` elements exhaust the checker's 4 GB heap; only the `unsafe` form (81 units) is asserted.
+    const name = "@acme-charts-widgets/chart-library-xyz";
+    expect(name.length).toBe(38);
+    const hits = checkOf(withLedger(shipped({ unsafe: 999999 }), { "unsafe/u.ts": unsafeSrc(100000) }, name));
+    expect(messages(hits)).toEqual([`${name} ships unsafe 999999, its files hold 100000`]);
+    expect(String(hits[0]?.message).length).toBe(81);
+  },
+  SIX_DIGITS_BOUND,
+);

@@ -29,7 +29,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 |-|-|-|-|
 | k.schema | Schemas | conformance-covered | codecs |
 | k.formats | Format types | conformance-covered | brands |
-| k.reactive | Reactivity | conformance-covered | signals |
+| k.reactive | Reactivity | implemented | signals |
 | k.store | Store, transactions | conformance-covered | log |
 | k.component | Components | conformance-covered | props |
 | k.compiler | Compiler, artifacts | conformance-covered | JSX |
@@ -70,7 +70,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.ledger | Ledger, evidence | implemented | rungs |
 | k.ledger-items | Ledger items, runs | implemented | keys |
 | k.server | Thin server | conformance-covered | loads |
-| k.leave | What a request leaves | conformance-covered | state |
+| k.leave | What a request leaves | implemented | state |
 | k.user | User, caller | conformance-covered | user |
 | k.mount | Mount pages | conformance-covered | submit |
 | k.mount-scope | Mount scope | conformance-covered | proxy |
@@ -90,7 +90,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.head | Document head | conformance-covered | title |
 | k.services | Thin services | conformance-covered | clients |
 | k.openapi | OpenAPI import | conformance-covered | clients |
-| k.module | Module manifest | conformance-covered | surface |
+| k.module | Module manifest | implemented | surface |
 | k.library | Libraries | proposed | packages |
 | k.library-pack | Library publishing | implemented | pack |
 | k.server-deps | Server dependencies | implemented | env |

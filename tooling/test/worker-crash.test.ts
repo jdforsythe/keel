@@ -3,6 +3,7 @@
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { testTime } from "../test-time.ts";
 import { crashDiags, endDiags, isCrash } from "../vitest-reporter.ts";
 import { describeExit, lastSaid, requestFiles } from "../worker-exits.ts";
 
@@ -16,7 +17,7 @@ describe("a worker that dies mid-run", () => {
       cwd: fixtures,
       env: { ...process.env, KEEL_AGENT: "1" },
       encoding: "utf8",
-      timeout: 60_000,
+      timeout: testTime(60_000),
     });
     expect(r.status).toBe(1);
     const lines = r.stdout.split("\n").filter((l) => l.startsWith("T0001 "));
@@ -36,7 +37,7 @@ describe("a run vitest fails with no failed test", () => {
       cwd: fixtures,
       env: { ...process.env, KEEL_AGENT: "1" },
       encoding: "utf8",
-      timeout: 60_000,
+      timeout: testTime(60_000),
     });
     expect(r.status).toBe(1);
     expect(r.stdout).toMatch(/^T0001 no test ran: vitest ended the run as failed$/m);

@@ -3,6 +3,7 @@
 // UNTESTABLE blind: iOS `CFBundleURLTypes` (the `Info.plist` belongs to the platform project, and the spec does not say how the build finds Xcode 26, so no fake toolchain can be written from the spec).
 // Fake tools: as in android-cleartext.test.ts (a fake `npx` answering `cap`, `java`, `ANDROID_HOME`); the fake `cap add android` writes a manifest with a launcher activity and no scheme.
 // ASSUMPTION: "an Android intent filter" is an `<intent-filter>` of the manifest holding the action `android.intent.action.VIEW`, the categories `android.intent.category.DEFAULT` and `android.intent.category.BROWSABLE`, and a `<data android:scheme="<id>"/>`.
+import { testTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
 import {
   chmodSync,
@@ -133,7 +134,7 @@ function build(project: string, env: Record<string, string>): number | null {
   const r = spawnSync(
     process.execPath,
     [BIN, "build", "--target", "capacitor", "--platform", "android", "--format=json"],
-    { cwd: project, encoding: "utf8", env: { ...env, KEEL_ORIGIN: ORIGIN }, timeout: 240_000 },
+    { cwd: project, encoding: "utf8", env: { ...env, KEEL_ORIGIN: ORIGIN }, timeout: testTime(240_000) },
   );
   return r.status;
 }
