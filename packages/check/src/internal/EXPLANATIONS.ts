@@ -95,6 +95,20 @@ const ROWS: readonly Row[] = [
     "k.bundle",
   ],
   [
+    "E1015",
+    "a relative specifier resolving outside the project",
+    "keel check reads the project's files only, so no rule (E1004, E1107, E1111, E1571) follows that file.",
+    "move the file into the project, or publish it as a workspace package",
+    "k.boundary",
+  ],
+  [
+    "E1016",
+    "a type reference, or an import.meta declaration not Keel's",
+    "A browser build's import.meta.env holds BASE_URL, MODE, DEV, PROD and SSR (k.boundary Environment); @keel/compiler/client types exactly those. Another declaration (vite/client, a declare global) types keys the build never holds.",
+    "delete the reference; read config through clientStd",
+    "k.boundary",
+  ],
+  [
     "W1012",
     "a project root holding index.html: Keel writes every document and never reads the file",
     "Dev and build write each document's head, so what the file held would show nowhere: markup, scripts, stylesheets.",

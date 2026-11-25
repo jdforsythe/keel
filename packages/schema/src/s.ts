@@ -66,7 +66,7 @@ function format<const N extends string, T, F>(
 /** The object schema of an object node: `make` plus `decodeStrings`, and `.pii` keeping both. */
 function objectOf<T>(node: Node): ObjectSchema<T> {
   const base = make<T, false>(node, false);
-  return {
+  const schema: ObjectSchema<T> = {
     ...base,
     decodeStrings: (input: StringInput) => {
       const entries = stringEntries(input);
@@ -75,6 +75,7 @@ function objectOf<T>(node: Node): ObjectSchema<T> {
     },
     pii: (cls) => objectOf<T>(mark(node, cls)),
   };
+  return Object.freeze(schema);
 }
 
 type NumberBounds = { readonly min?: number; readonly max?: number };
@@ -109,8 +110,8 @@ function union(keyOrMembers: string | readonly Schema<unknown>[], variants: read
   return make<unknown, false>({ kind: "union", key, variants: nodes }, false);
 }
 
-/** The schema namespace. One builder per primitive; modifiers are `.optional()` and `.nullable()`. */
-export const s = {
+/** The schema namespace, frozen. One builder per primitive; modifiers are `.optional()` and `.nullable()`. */
+export const s = Object.freeze({
   string: (opts: { readonly min?: number; readonly max?: number } = {}): Schema<string> => {
     const min = opts.min ?? 0;
     if (opts.max !== undefined && min > opts.max) throw new Error(`string min ${min} exceeds max ${opts.max}`);
@@ -125,9 +126,9 @@ export const s = {
     opts: { readonly pathDefault?: string } = {},
   ): Schema<E[number]> => {
     const d = opts.pathDefault;
-    if (d === undefined) return make({ kind: "enum", values }, false);
+    if (d === undefined) return make({ kind: "enum", values: [...values] }, false);
     if (!values.includes(d)) throw new Error(`enum pathDefault ${clip(d)} is not one of its values`);
-    return make({ kind: "enum", values, pathDefault: d }, false);
+    return make({ kind: "enum", values: [...values], pathDefault: d }, false);
   },
   json: (): Schema<JsonValue> => make({ kind: "json" }, false),
   secret: <S extends Schema<unknown>>(inner: S): Schema<Secret<Infer<S>>> =>
@@ -156,7 +157,7 @@ export const s = {
       },
     };
     const make_ = (value: Infer<D>, message: string = code): KeelError<C, Infer<D>> => ({ code, message, data: value });
-    return { ...make<KeelError<C, Infer<D>>, false>(node, false), make: make_ };
+    return Object.freeze({ ...make<KeelError<C, Infer<D>>, false>(node, false), make: make_ });
   },
   result: <T extends Schema<unknown>, E extends Schema<unknown>>(
     value: T,
@@ -179,7 +180,7 @@ export const s = {
     registry.set(name, schema);
   },
   registry: (): ReadonlyMap<string, Schema<unknown, boolean>> => new Map(registry),
-};
+});
 
 /** Type-level members of the namespace: `s.infer<typeof X>`. */
 export declare namespace s {

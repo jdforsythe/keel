@@ -22,9 +22,9 @@ export type Registration = s.infer<typeof Registration>;
 ```
 
 - `.pii(class)` goes on each field that holds a person's data, in a `*.schema.ts` file; classes are `name`, `contact`, `location`, `identifier`, `financial`, `special`, `network`, `content`. A stored user id is marked too.
-- Marked and secret fields belong in an action `input`, never in a route's `params` or `search`: a URL reaches history and proxy logs Keel cannot redact (E1111). Post a token or an id as action input.
+- Marked and secret fields belong in an action `input`, never in a route's `params` or `search`: a URL reaches history and proxy logs Keel cannot redact (E1111). Post a token or an id as action input. A field object such a schema reads is passed to nothing but `s.<name>(…)`, or check cannot read it (E1111).
 - `.pii` values serialize where the app sends them, are stored as written (encrypt the disk), and are redacted in session capture, server logs, error text and the evidence bundle.
-- A store a client file reaches ships its state in `#k-state`. List each `.pii` class such a store holds in the module manifest, or `keel check` reports E1107 and the fix adds the class:
+- A store a client file reaches ships its state in `#k-state`. List each `.pii` class such a store holds in the module manifest, or `keel check` reports E1107 and the fix adds the class. A loader's store lives in a `*.server.ts` file; in other files a state schema check cannot read, `stores()` and `store` passed as a value are E1107 too:
 
 ```ts
 // module.ts

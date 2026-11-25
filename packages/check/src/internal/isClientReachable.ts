@@ -1,13 +1,14 @@
 import { SERVER_ONLY_NAME, clientReach } from "@keel/compiler/internal";
 import type { SourceFile } from "../types/SourceFile.ts";
 import { dirPrograms } from "./dirPrograms.ts";
+import { reachResolve } from "./reachResolve.ts";
 import { topologyFor } from "./topologyFor.ts";
 
 const reaches = new WeakMap<readonly SourceFile[], Map<string, ReadonlySet<string>>>();
 
 /**
  * Whether `path` is client-reachable (k.boundary Reach, E1004's reachability): read from `clientReach` over the files of
- * its project's `topology.ts` directory, once per project; with no `topology.ts`, any file not named `*.server.*` or
+ * its project's `topology.ts` directory, each specifier followed by `reachResolve`, once per project; with no `topology.ts`, any file not named `*.server.*` or
  * `*.guard.*`.
  */
 export function isClientReachable(path: string, project: readonly SourceFile[]): boolean {
@@ -17,7 +18,9 @@ export function isClientReachable(path: string, project: readonly SourceFile[]):
   reaches.set(project, byDir);
   let subject = byDir.get(read.dir);
   if (subject === undefined) {
-    subject = clientReach(dirPrograms(read.dir, project), read.topology).subject;
+    const files = dirPrograms(read.dir, project);
+    const resolve = reachResolve(project, read.dir, new Set(files.map((f) => f.path)));
+    subject = clientReach(files, read.topology, resolve).subject;
     byDir.set(read.dir, subject);
   }
   return subject.has(path.slice(read.dir.length));

@@ -143,7 +143,7 @@ export type FixtureOptions = {
   extra?: Tree;
 };
 
-/** A `node` deployable `web` (module `a`, with `.pii()` schema, store and test) and a `client` one `app` (module `c`). */
+/** A `node` deployable `web` (module `a`, with `.pii()` schema, a store in a `*.server.ts` file, which k.leave E1107 does not judge, and a test) and a `client` one `app` (module `c`). */
 export function fixtureTree(o: FixtureOptions = {}): Tree {
   const probabilistic = o.probabilisticSinks ?? SINK_CLAUSES.map((c) => c.id);
   const tree: Tree = {
@@ -163,7 +163,7 @@ export function fixtureTree(o: FixtureOptions = {}): Tree {
     "modules/a/routes.ts": routesSrc("a", "/a"),
     "modules/a/a.contract.ts": contractSrc("a", "/a"),
     "modules/a/User.schema.ts": o.userSchema ?? USER_SCHEMA_SOURCE,
-    "modules/a/Profile.ts": `import { store } from "@keel/store";
+    "modules/a/Profile.server.ts": `import { store } from "@keel/store";
 import { User } from "./User.schema.ts";
 
 export const Profile = store(

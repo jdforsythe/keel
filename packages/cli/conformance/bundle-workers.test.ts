@@ -8,7 +8,7 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
 import { filesHolding, filesUnder, keelRun, linesWith, viteBuild } from "./boundary-support.ts";
-import { ALIVE, CANARY_NOTES, REF, bare, chainOf, inProject, nodeWith, page, reasonOf } from "./bundle-support.ts";
+import { ALIVE, CANARY_NOTES, bare, chainOf, inProject, nodeWith, page, reasonOf } from "./bundle-support.ts";
 
 const keysOf = <T extends object>(o: T): (keyof T)[] => {
   const out: (keyof T)[] = [];
@@ -70,7 +70,7 @@ describe("k.bundle: a worker a page starts ships no server-only code", () => {
 });
 
 describe("k.bundle: a server-only file a worker imports fails the build with one E1007 whose chain runs through the worker", () => {
-  const RAW_W = `${REF}import src from './notes.server.ts?raw'\nself.postMessage(src)\n`;
+  const RAW_W = `import src from './notes.server.ts?raw'\nself.postMessage(src)\n`;
   for (const spelling of keysOf(SPELLINGS)) {
     test(`\`${spelling}\` with \`lib/w.ts\` importing \`./notes.server.ts?raw\`: exit 1, one E1007 \`server-only file\`, a chain ending \`modules/a/Page.tsx -> lib/w.ts -> lib/notes.server.ts?raw\`, nothing written`, async () => {
       const files = fixture(spelling, RAW_W);

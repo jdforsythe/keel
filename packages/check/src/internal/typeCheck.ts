@@ -12,7 +12,9 @@ import { annotateProps } from "./annotateProps.ts";
 import { applyEdits } from "./applyEdits.ts";
 import { dateReads } from "./dateReads.ts";
 import { formatLiterals } from "./formatLiterals.ts";
+import { importMetaDeclarations } from "./importMetaDeclarations.ts";
 import { isAppPath } from "./isAppPath.ts";
+import { isCodePath } from "./isCodePath.ts";
 import { judgeFormat } from "./judgeFormat.ts";
 import { lineCol } from "./lineCol.ts";
 import { mapTsDiagnostic } from "./mapTsDiagnostic.ts";
@@ -20,6 +22,7 @@ import { ownCode } from "./ownCode.ts";
 import { packageName } from "./packageName.ts";
 import { probeRecorder } from "./probeRecorder.ts";
 import { probesHold } from "./probesHold.ts";
+import { referenceDirectives } from "./referenceDirectives.ts";
 import { resultDiscards } from "./resultDiscards.ts";
 import { textNodes } from "./textNodes.ts";
 import { tsCode } from "./tsCode.ts";
@@ -35,7 +38,9 @@ const JSX_DTS = `declare namespace JSX {
 }
 `;
 const JSX_NAME = "__keel_check_jsx__.d.ts";
-const CODE = /\.[cm]?[jt]sx?$/;
+const DECLARATION = /\.d\.[cm]?ts$/;
+/** Kernel and stdlib code and generated output, at the root: E1576's files are the others. */
+const LIBRARY = /^(?:packages|node_modules|\.keel)\//;
 
 const JSX_SOURCE = "@keel/runtime-dom";
 /**
@@ -72,6 +77,19 @@ const FROM_ROOT: ts.CompilerOptions = { ...tsCompilerOptions(), typeRoots: [] };
 
 const byPath = ([a]: readonly [string, unknown], [b]: readonly [string, unknown]): number =>
   a < b ? -1 : a > b ? 1 : 0;
+
+/**
+ * `view` with each type reference directive of a project file blanked (E1016 reports it; k.boundary Ambient types):
+ * `import.meta` and the libs are typed by the pass alone. Offsets are kept, so `original` holds.
+ */
+function unreferenced(file: SourceFile, view: Annotated): Annotated {
+  if (LIBRARY.test(file.path)) return view;
+  const found = referenceDirectives(view.text);
+  if (found.length === 0) return view;
+  let text = view.text;
+  for (const { start, end } of found) text = text.slice(0, start) + " ".repeat(end - start) + text.slice(end);
+  return { text, original: view.original };
+}
 
 /** The key's hash (k.check-cache Key). */
 function keyOf(code: readonly SourceFile[], base: string, skip: ReadonlyMap<string, ReadonlySet<string>>): string {
@@ -119,7 +137,9 @@ function remember(key: string, entry: TypeEntry): void {
  * encode a Keel rule are reported under that code (`mapTsDiagnostic`); the rest are E1751. Mapped codes the compiler
  * already reported in the same file are dropped (`skip`). Also finds discarded `Result` expression statements (E1453),
  * the `formatLiteral` calls (E1108), the date receivers E1758 reads and the JSX children that render nothing (E1406),
- * which need types.
+ * which need types. The project's declaration files are in the program too, and its type reference directives are
+ * not (`unreferenced`): a declaration of the global `ImportMeta` or `ImportMetaEnv` outside TypeScript's lib,
+ * `@types/node` and `@keel/compiler/client` is E1016 (`importMetaDeclarations`).
  *
  * Every file system question the program asks goes through a recording host (k.check-cache Probes). A pass is kept by
  * key in this process and, with `cacheDir`, on disk (`typeCache`); a kept pass is used only when every recorded
@@ -132,10 +152,11 @@ export function typeCheck(
   scope: ReadonlySet<string>,
   cacheDir?: string,
 ): Typed {
-  const code = files.filter((f) => CODE.test(f.path) && !f.path.endsWith(".d.ts"));
-  if (code.length === 0) return { diagnostics: [], dates: new Map() };
+  const code = files.filter((f) => isCodePath(f.path));
+  const decls = files.filter((f) => DECLARATION.test(f.path) && !LIBRARY.test(f.path));
+  if (code.length === 0 && decls.length === 0) return { diagnostics: [], dates: new Map() };
   const base = norm(path.resolve(root));
-  const key = keyOf(code, base, skip);
+  const key = keyOf([...code, ...decls], base, skip);
   const held = memo.get(key);
   if (held !== undefined && probesHold(held.probes)) return resolve(held, code, scope);
   const kept = cacheDir === undefined ? undefined : typeCache(cacheDir, key);
@@ -144,7 +165,7 @@ export function typeCheck(
     remember(key, loaded);
     return resolve(loaded, code, scope);
   }
-  const { entry, whole } = pass(code, base, skip, key);
+  const { entry, whole } = pass(code, decls, base, skip, key);
   if (whole) {
     remember(key, entry);
     kept?.save(entry);
@@ -155,6 +176,7 @@ export function typeCheck(
 /** One TypeScript program over `code`, every disk question recorded; `whole` is false when the disk changed under it. */
 function pass(
   code: readonly SourceFile[],
+  decls: readonly SourceFile[],
   base: string,
   skip: ReadonlyMap<string, ReadonlySet<string>>,
   key: string,
@@ -163,7 +185,12 @@ function pass(
   const views = new Map<string, Annotated>();
   for (const f of code) {
     byName.set(`${base}/${f.path}`, f);
-    views.set(`${base}/${f.path}`, annotateProps(f.path, f.source));
+    views.set(`${base}/${f.path}`, unreferenced(f, annotateProps(f.path, f.source)));
+  }
+  const declNames = new Map<string, SourceFile>();
+  for (const f of decls) {
+    declNames.set(`${base}/${f.path}`, f);
+    views.set(`${base}/${f.path}`, unreferenced(f, { text: f.source, original: (p) => p }));
   }
   const jsxName = `${base}/${JSX_NAME}`;
   const strict = tsCompilerOptions();
@@ -173,9 +200,9 @@ function pass(
   host.getCurrentDirectory = () => base;
   host.getEnvironmentVariable = () => undefined;
   host.writeFile = () => undefined;
-  host.fileExists = (fileName) => byName.has(norm(fileName)) || norm(fileName) === jsxName || rec.fileExists(fileName);
+  host.fileExists = (fileName) => views.has(norm(fileName)) || norm(fileName) === jsxName || rec.fileExists(fileName);
   // In-memory files may sit in folders that are not on disk; module resolution asks for those folders first.
-  const dirs = new Set([...byName.keys()].flatMap((n) => n.split("/").map((_, i, p) => p.slice(0, i).join("/"))));
+  const dirs = new Set([...views.keys()].flatMap((n) => n.split("/").map((_, i, p) => p.slice(0, i).join("/"))));
   host.directoryExists = (d) => dirs.has(norm(d).replace(/\/$/, "")) || rec.directoryExists(d);
   // `sys.realpath` missing leaves the host without one too (`createCompilerHost`): no lookup is asked.
   if (rec.realpath !== undefined) host.realpath = rec.realpath;
@@ -215,6 +242,7 @@ function pass(
   const program = ts.createProgram({
     rootNames: [
       ...byName.keys(),
+      ...declNames.keys(),
       ...(shim ? [jsxName] : []),
       ...[nodeTypes, clientTypes].flatMap((t) => (t === undefined ? [] : [t])),
     ],
@@ -272,6 +300,14 @@ function pass(
       for (const t of textNodes(sf, checker))
         push("E1406", t.at, "JSX child renders nothing; call the prop", "k.place", t.fix);
   }
+  const held = new Map(
+    [...byName, ...declNames].map(([name, f]) => [
+      name,
+      { path: f.path, source: f.source, original: views.get(name)?.original ?? ((p: number) => p) },
+    ]),
+  );
+  const libDir = norm(path.dirname(host.getDefaultLibFileName(options)));
+  out.push(...importMetaDeclarations(program, host, base, held, { libDir, nodeTypes, clientTypes }));
   const probes = rec.probes();
   return { entry: { key, probes: probes ?? [], items: out, dates }, whole: probes !== undefined };
 }

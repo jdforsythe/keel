@@ -990,6 +990,21 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       f("modules/app/Page.tsx", "import { lib } from '../notes/lib.ts'\nexport const Page = lib\n"),
     ],
   },
+  // E1015 (k.boundary Following): `../../../shared/x.ts` from `modules/a/Page.tsx` resolves outside the project root.
+  E1015: {
+    opts: NO_TYPES,
+    bad: [manifest("a"), f("modules/a/Page.tsx", "import { x } from '../../../shared/x.ts'\nexport const Page = x\n")],
+    clean: [
+      manifest("a"),
+      f("modules/a/Page.tsx", "import { y } from '../b/y.ts'\nexport const Page = y\n"),
+      f("modules/b/y.ts", "export const y = 1\n"),
+    ],
+  },
+  // E1016 (k.boundary Ambient types): a type reference as the first line of a project file; its fix deletes the line.
+  E1016: {
+    bad: [f("modules/a/Page.tsx", '/// <reference lib="dom" />\nexport const Page = 1\n')],
+    clean: [f("modules/a/Page.tsx", "export const Page = 1\n")],
+  },
   E1570: {
     opts: NO_TYPES,
     bad: [

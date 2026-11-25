@@ -3,6 +3,7 @@
 // Spec: k.check, clause "Every fix a diagnostic carries applies to its fixture with `git apply`, and re-checking reports no diagnostic of that code. Fixtures of E1003, E1005 (bytes only), E1151, E1152, E1154-E1156, E1401, E1403 (`&&`, `?:` with `If` imported), E1405, E1451, E1452 (`try`), E1601, E1652, E1653, E1757 (`!`, `any`, suppression), E1805, and E1808 carry one; RFC 0035 lists why the others cannot."
 // RFC 0157 / 0162: E1157 is retired (no fixture); E1154-E1156 keep theirs; E1407, E1510 and E1515 each carry one (k.component, k.contract); E1513 and E1514 carry none. k.check's sentence still names E1157 and omits these: see the report.
 // RFC 0219: E1730 carries one (k.guards Test files); its exact result is asserted in testing-E1730-identity-mount.test.ts.
+// RFC 0231: E1016 carries one (k.boundary Ambient types; its fix deletes the reference line); E1015 carries none.
 // RFC 0225: E1013 carries one (k.bundle Aliases); its exact diff is asserted in bundle-E1013-aliased-import.test.ts.
 // RFC 0204: E1165 carries one (its fix removes the `deps` entry).
 // Invariant (not a sentence of k.module now): no fix edits a file under `node_modules/`.
@@ -152,6 +153,7 @@ const FIXED: FixedCase[] = [
   },
   { name: "E1156", code: "E1156", ...fixtureOf("E1156") },
   { name: "E1013 (the alias replaced by the relative specifier)", code: "E1013", ...fixtureOf("E1013") },
+  { name: "E1016 (the reference line deleted)", code: "E1016", ...fixtureOf("E1016") },
   {
     name: "E1401",
     code: "E1401",
@@ -342,6 +344,7 @@ const FIX = [
   "E1809",
   "E1010",
   "E1013",
+  "E1016",
   "E1407",
   "E1515",
 ];
@@ -350,6 +353,7 @@ const NO_FIX = [
   "E1001", // the key field is a choice of the author
   "E1002", // the safe replacement depends on intent (text vs. markup)
   "E1004", // moving server code is a design change
+  "E1015", // k.boundary Rules: fix none; the remedy is to make the code a package
   "E1009", // k.boundary Rules: fix none; moving the guard to a `*.guard.*` file is a file move
   "E1104", // renaming the file would break imports in other files
   "E1105", // moving to a .server file is a design change

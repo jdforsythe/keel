@@ -92,7 +92,7 @@ describe("applyWrites and symlinks", () => {
     expect(readFileSync(join(real, "docs/x.md"), "utf8")).toBe("x\n");
   });
 
-  it("the binary reports each refused path as E1357, exit 1", () => {
+  it("the binary reports a refused set as one E1357 at its first refused path, exit 1", () => {
     const r = refusedRun([SKILL], ["docs", "--sync", "--format=json"], { cwd: "/p" });
     expect(r.code).toBe(1);
     const recs = r.stdout

@@ -27,13 +27,13 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 ## Kernel
 | id | section | status | one line |
 |-|-|-|-|
-| k.schema | Schemas | conformance-covered | codecs |
+| k.schema | Schemas | implemented | codecs |
 | k.formats | Format types | conformance-covered | brands |
 | k.reactive | Reactivity | conformance-covered | signals |
 | k.store | Store, transactions | conformance-covered | log |
 | k.component | Components | conformance-covered | props |
 | k.compiler | Compiler, artifacts | conformance-covered | JSX |
-| k.boundary | Server boundary | conformance-covered | stubs |
+| k.boundary | Server boundary | implemented | stubs |
 | k.bundle | Browser bundles | conformance-covered | workers |
 | k.runtime | DOM runtime, islands | conformance-covered | nodes |
 | k.resume | Documents, resume | conformance-covered | regions |
@@ -69,7 +69,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.drive-law | Replays agree | conformance-covered | replays |
 | k.ledger | Ledger, evidence | implemented | rungs |
 | k.server | Thin server | implemented | loads |
-| k.leave | What a request leaves | conformance-covered | state |
+| k.leave | What a request leaves | implemented | state |
 | k.user | User, caller | conformance-covered | user |
 | k.mount | Mount pages | conformance-covered | submit |
 | k.mount-scope | Mount scope | conformance-covered | proxy |

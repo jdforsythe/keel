@@ -8,6 +8,7 @@ import type { Node } from "./Node.ts";
 import { check } from "./check.ts";
 import { docOf } from "./docOf.ts";
 import { freeze } from "./freeze.ts";
+import { freezeNode } from "./freezeNode.ts";
 import { hasSecret } from "./hasSecret.ts";
 import { invalid } from "./invalid.ts";
 import { issueText } from "./issueText.ts";
@@ -15,8 +16,12 @@ import { mark } from "./mark.ts";
 import { seal } from "./seal.ts";
 import { toJson } from "./toJson.ts";
 
-/** Build the public Schema object for a node. The type guard below is the only place unknown becomes T. */
+/**
+ * Build the public Schema object for a node, frozen with the node and everything under it. The type guard below is
+ * the only place unknown becomes T.
+ */
 export function make<T, O extends boolean>(node: Node, isOptional: O): Schema<T, O> {
+  freezeNode(node);
   let issues: Issue[] = [];
   const is = (x: unknown): x is T => {
     issues = [];
@@ -38,7 +43,7 @@ export function make<T, O extends boolean>(node: Node, isOptional: O): Schema<T,
       return err(invalid([{ path: [], rule: "type" }]));
     }
   };
-  return {
+  const schema: Schema<T, O> = {
     node,
     isOptional,
     parse,
@@ -58,4 +63,5 @@ export function make<T, O extends boolean>(node: Node, isOptional: O): Schema<T,
       );
     },
   };
+  return Object.freeze(schema);
 }
