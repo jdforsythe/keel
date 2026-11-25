@@ -48,15 +48,15 @@ describe("a11y claims and static findings", () => {
     });
   });
 
-  it("finds E1802 through the check pipeline in a routed project's module", () => {
+  it("finds E1802 through the check pipeline in a routed project's module", async () => {
     const page = {
       path: "app/modules/m/Page.tsx",
       source: `import { Image } from "@keel/ui";\nexport function Page() {\n  return <Image src="/a.png" />;\n}\n`,
     };
     // A root whose node_modules resolves `@keel/ui`, so the type pass sees the required props.
     const root = path.join(repoRoot(import.meta.dirname), "packages", "testing");
-    const found = a11yFindings(root, [...files, page]);
+    const found = await a11yFindings(root, [...files, page]);
     expect(found).toContainEqual({ code: "E1802", path: "app/modules/m/Page.tsx" });
-    expect(a11yFindings(root, [page])).toEqual([]);
+    expect(await a11yFindings(root, [page])).toEqual([]);
   });
 });
