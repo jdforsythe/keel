@@ -1,16 +1,17 @@
 // Fixture for std.channels-limits conformance: one createApp serving one to three modules `a`, `b`, `c`, each with its own channel route and its own config.
 // Assumptions: as twoModules.ts. `member` is true for every caller unless a module sets `refuseAnonymous` (then false for caller `""`).
-// With `identity: true` the identity source answers `user:<sid>` for a request whose cookie holds `sid=<sid>`, else `""` (a person signed in, whatever their caller cookie).
+// With `identity: true` the identity source answers `user:<sid>` for a request whose cookie holds `sid=<sid>`, else `""` (an empty `sid` is a token it refuses; a person signed in, whatever their caller cookie).
 // `appMaxStreams` is `createApp({ maxStreams })`.
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { stdArtifact } from "@keel/compiler";
 import { createCtx } from "@keel/ctx";
-import { manifest, routeTable } from "@keel/router";
+import { loader, manifest, routeTable, routesArtifact } from "@keel/router";
 import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { createApp, identity, topology } from "@keel/server";
+import { service } from "@keel/services";
 import { channel } from "@keel/std-channels";
 import { channelRoute } from "@keel/std-channels/server";
 import { store, transaction } from "@keel/store";
@@ -46,12 +47,18 @@ export interface OpenOptions {
   readonly cookie?: string;
   /** Sent as `x-forwarded-for`: Keel counts no address. */
   readonly address?: string;
+  /** Further request headers, for example `x-keel-user`. */
+  readonly headers?: Readonly<Record<string, string>>;
 }
 
 export interface Modules {
   open(m: Mod, o?: OpenOptions): Promise<Opened>;
   /** A fresh caller cookie (`keel-caller=<v>`), minted by a write. */
   mint(): Promise<string>;
+  /** Advances the sim clock of the served app and of the signing peer together. */
+  advance(ms: number): void;
+  /** With `signed: true`: an `x-keel-user` value for `user` on module `a`'s route, captured from a real `service` call of a peer deployable under the app's secret. */
+  sign(user: string): Promise<string>;
   dispose(): Promise<void>;
 }
 
@@ -130,7 +137,12 @@ function tableC(c: Cfg) {
 export interface ServeOptions {
   readonly identity?: boolean;
   readonly appMaxStreams?: number;
+  /** The app has a `secret` and a deployable name, and a peer deployable that can sign `x-keel-user` for module `a`. */
+  readonly signed?: boolean;
 }
+const simCtx = () => createCtx({ mode: "sim", seed: 1337 });
+type SimCtx = ReturnType<typeof simCtx>;
+const SECRET = "conformance-secret-channels-0123456789abcdef0123456789abcdef";
 
 /** Serves modules `a`, `b`, `c` in order, one per config given (one to three). */
 export async function serveModules(cfgs: readonly Cfg[], o: ServeOptions = {}): Promise<Modules> {
@@ -143,25 +155,40 @@ export async function serveModules(cfgs: readonly Cfg[], o: ServeOptions = {}): 
   const std = join(dir, "std.json");
   const { data, hash } = stdArtifact(mods.map((m, i) => moduleSource(m, cfgs[i] ?? {})));
   writeFileSync(std, JSON.stringify({ data, hash }));
+  const ctx = simCtx();
+  const t =
+    o.signed === true
+      ? topology({ web: { modules: [...mods], adapter: "node" }, gw: { modules: ["s"], adapter: "node" } })
+      : topology({ web: { modules: [...mods], adapter: "node" } });
   const app = await createApp({
-    topology: topology({ web: { modules: [...mods], adapter: "node" } }),
+    topology: t,
     routes,
-    ctx: createCtx({ mode: "sim", seed: 1337 }),
+    ctx,
     mode: "dev",
     std,
+    ...(o.signed === true ? { deployable: "web", secret: SECRET } : {}),
     ...(o.appMaxStreams === undefined ? {} : { maxStreams: o.appMaxStreams }),
     ...(o.identity === true
       ? {
           identity: identity({
             identify: async ({ request }) => {
               const m = /(?:^|;\s*)sid=([^;]*)/.exec(request.headers.get("cookie") ?? "");
-              return m?.[1] === undefined ? "" : `user:${m[1]}`;
+              return m?.[1] === undefined || m[1] === "" ? "" : `user:${m[1]}`;
             },
           }),
         }
       : {}),
   });
+  const signer = o.signed === true ? await senderOf(t, dir) : undefined;
   return {
+    advance: (ms) => {
+      ctx.clock.advance(ms);
+      signer?.ctx.clock.advance(ms);
+    },
+    sign: async (user) => {
+      if (signer === undefined) throw new Error("serveModules: sign needs { signed: true }");
+      return signer.sign(user);
+    },
     mint: async () => {
       const res = await app.fetch(
         new Request(`${BASE}${pathOf("a")}`, {
@@ -181,6 +208,7 @@ export async function serveModules(cfgs: readonly Cfg[], o: ServeOptions = {}): 
             accept: "text/event-stream",
             ...(opened.cookie === undefined ? {} : { cookie: opened.cookie }),
             ...(opened.address === undefined ? {} : { "x-forwarded-for": opened.address }),
+            ...(opened.headers ?? {}),
           },
           signal: ac.signal,
         }),
@@ -227,4 +255,48 @@ export async function serveModules(cfgs: readonly Cfg[], o: ServeOptions = {}): 
       rmSync(dir, { recursive: true, force: true });
     },
   };
+}
+
+/** A peer deployable `gw` under the app's secret; a `service` call from it for module `a`'s events route carries the `x-keel-user` the receiver verifies. */
+async function senderOf(
+  t: ReturnType<typeof topology>,
+  dir: string,
+): Promise<{ ctx: SimCtx; sign: (user: string) => Promise<string> }> {
+  const Params = s.object({});
+  const a = contract("a", { "a.room": { method: "GET", path: pathOf("a"), query: Params, events: true, output: Msg } });
+  const room = Reflect.apply(loader, undefined, [a, "a.room", {}, async function* () {}]);
+  const artifacts = join(dir, "artifacts");
+  mkdirSync(artifacts);
+  writeFileSync(
+    join(artifacts, "routes.json"),
+    JSON.stringify({ data: routesArtifact(manifest(a, { "a.room": { loader: room } })), hash: "" }),
+  );
+  const ctxX = simCtx();
+  const sContract = contract("s", { "s.show": { path: "/s/:n", params: s.object({ n: s.string() }) } });
+  await createApp({
+    topology: t,
+    deployable: "gw",
+    peers: { web: "http://web.test" },
+    artifacts,
+    routes: manifest(sContract, { "s.show": { component: () => document.createElement("main") } }),
+    ctx: ctxX,
+    mode: "production",
+    secret: SECRET,
+  });
+  const captured: { header: string | null } = { header: null };
+  ctxX.net.route("http://web.test/*", (req) => {
+    captured.header = req.headers.get("x-keel-user");
+    return new Response(null, { status: 204 });
+  });
+  const api = service({ contract: a });
+  const sign = async (user: string): Promise<string> => {
+    captured.header = null;
+    const it = api.room({ query: {}, user }, ctxX)[Symbol.asyncIterator]();
+    void it.next();
+    for (let i = 0; i < 50 && captured.header === null; i++) await Promise.resolve();
+    await it.return?.();
+    if (captured.header === null) throw new Error("sign: the peer sent no x-keel-user");
+    return captured.header;
+  };
+  return { ctx: ctxX, sign };
 }

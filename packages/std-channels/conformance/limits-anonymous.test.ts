@@ -2,10 +2,13 @@
 // Spec: std.channels-limits, clause "With `a` at `perAnonymous: 4`, `b` at `perAnonymous: 10` and 4 cookieless streams open on `b`'s route, a cookieless open on `a`'s route is full and one on `b`'s is served; with 10 cookieless streams open across both routes, a cookieless open on `b`'s route is full."
 // Spec: std.channels-limits, clause "With `a` and `b` at the default caps and 64 cookieless streams open across their routes, a caller with a cookie is served 8 opens on `a`'s route and 8 on `b`'s and its ninth on either is full; an open whose cookie does not verify is full; and a cookieless open on a route whose `member` refuses `""` gets `{ kind: 'closed', reason: 'denied' }` as its only event."
 // Spec: std.channels-limits, clause "For every sequence of up to 200 opens and ends on the channel routes of one to three modules, each with `perCaller`, `perAnonymous` and `maxStreams` generated from 1 to 12, by cookieless callers and up to four callers with cookies, every `member` admitting every caller, an open is served exactly when Config finds it not full, and a full open's only event is `{ kind: 'closed', reason: 'full' }`."
+// Spec: std.channels-limits, Config "An anonymous stream counts against `perAnonymous` and `maxStreams`, never `perCaller`; a stream with a user or a caller counts against that user's or caller's `perCaller` and `maxStreams`, never `perAnonymous`."
+// Spec: std.channels-limits, What the caps bound "A signed-in person, with or without a caller cookie, has their own `perCaller` streams per module, which no anonymous flood and no other user takes; a client cannot assert a user, since only the identity source or a signed `x-keel-user` gives one."
+// Spec: std.channels-limits, What the caps bound "An app without identity has no user, and every stream counts by caller."
 // Seed 1337.
 // Assumptions: as modules.ts and twoModules.ts: config reaches `createApp({ std })` from each module's manifest `std: { '@keel/std-channels': { ... } }`; a cookieless open sends no cookie; a caller with a cookie sends one minted by a write (`mint`); an open "ends" when the client aborts its request, and the place it held is free a few event-loop turns later (`settle`).
 // Reading (Limits): "while it holds the app's pool every event-stream open in the process, a signed-in person's included, is 503 until its streams end" is asserted as status 503 with `keel.busy` in the body, and a served open once one stream ends.
-// Reading (Config): a person signed in whose request carries no caller cookie has caller `""`, so is cookieless: the spec defines the caller by the cookie, and counts streams "by caller, not by `user`".
+// Reading (Config): a request is anonymous only with no user and no verified caller cookie; "has a user" means the identity source answered one or the request carries a verified (signed) `x-keel-user`. The identity fixture answers `user:<sid>` for a cookie holding `sid=<sid>`, `""` otherwise. A signed `x-keel-user` is captured from a real `service` call of a peer deployable (the header's format is not specified).
 // Untestable here, said once: "Limiting opens per client address belongs to the proxy or platform in front of the app" is a statement of what Keel leaves out; the address tests below show only that Keel counts none.
 import fc from "fast-check";
 import { expect, test } from "vitest";
@@ -21,7 +24,7 @@ const caller = (cookie: string): OpenOptions => ({ cookie });
 async function withModules(
   cfgs: readonly Cfg[],
   body: (h: Modules, open: (m: Mod, o?: OpenOptions) => Promise<Opened>) => Promise<void>,
-  o: { identity?: boolean; appMaxStreams?: number } = {},
+  o: { identity?: boolean; appMaxStreams?: number; signed?: boolean } = {},
 ): Promise<void> {
   const h = await serveModules(cfgs, o);
   const all: Opened[] = [];
@@ -315,30 +318,229 @@ test("std.channels-limits Config: a stream with a caller counts against perCalle
   );
 }, 120_000);
 
-test("std.channels-limits Config: a person signed in is counted by their caller, not their user: two callers of one user hold perCaller each, one caller of two users holds perCaller in all, and a signed-in request with no caller cookie is cookieless", async () => {
+const asUser = (sid: string, cookie?: string): OpenOptions => ({
+  cookie: cookie === undefined ? `sid=${sid}` : `sid=${sid}; ${cookie}`,
+});
+const serveds = (xs: readonly Opened[]): void => {
+  for (const st of xs) expectServed(st);
+};
+
+test("std.channels-limits Config: a signed-in request with no caller cookie opens a stream while the anonymous count is full, and counts against its user's perCaller, never perAnonymous", async () => {
+  await fc.assert(
+    fc.asyncProperty(fc.integer({ min: 1, max: 4 }), fc.integer({ min: 1, max: 4 }), async (pa, pc) => {
+      await withModules(
+        [{ perAnonymous: pa, perCaller: pc, maxStreams: 40 }],
+        async (_h, open) => {
+          const flood: Opened[] = [];
+          for (let i = 0; i < pa; i++) flood.push(await open("a"));
+          await expectFull(await open("a"));
+          const mine: Opened[] = [];
+          for (let i = 0; i < pc; i++) mine.push(await open("a", asUser("u1")));
+          serveds(mine);
+          await expectFull(await open("a", asUser("u1")));
+          // the user's streams free no anonymous place
+          for (const st of mine) st.close();
+          await settle(80);
+          await expectFull(await open("a"));
+          serveds(flood);
+        },
+        { identity: true },
+      );
+    }),
+    { seed: 1337, numRuns: 4 },
+  );
+}, 120_000);
+
+test("std.channels-limits Config: one user across two caller cookies shares one count: the 9th stream of one user at perCaller 8 is refused, whichever cookie it comes with", async () => {
+  for (const ninth of ["x", "y", "none"] as const) {
+    await withModules(
+      [{}],
+      async (h, open) => {
+        const x = await h.mint();
+        const y = await h.mint();
+        const held: Opened[] = [];
+        for (let i = 0; i < 8; i++) held.push(await open("a", asUser("u1", i % 2 === 0 ? x : y)));
+        serveds(held);
+        await expectFull(
+          await open("a", ninth === "x" ? asUser("u1", x) : ninth === "y" ? asUser("u1", y) : asUser("u1")),
+        );
+        for (const st of held) expect(st.ended()).toBe(false);
+      },
+      { identity: true },
+    );
+  }
+});
+
+test("std.channels-limits Config: for every assignment of one user's opens to cookies, they are served exactly while fewer than perCaller are open, whatever the cookie", async () => {
+  await fc.assert(
+    fc.asyncProperty(
+      fc.integer({ min: 1, max: 6 }),
+      fc.array(fc.constantFrom("x", "y", "z", "none"), { minLength: 2, maxLength: 14 }),
+      async (pc, picks) => {
+        await withModules(
+          [{ perCaller: pc, perAnonymous: 20, maxStreams: 40 }],
+          async (h, open) => {
+            const jar: Record<string, string> = { x: await h.mint(), y: await h.mint(), z: await h.mint() };
+            let held = 0;
+            for (const p of picks) {
+              const cookie = jar[p];
+              const st = await open("a", asUser("u1", cookie));
+              if (held < pc) {
+                expectServed(st);
+                held++;
+              } else await expectFull(st);
+            }
+          },
+          { identity: true },
+        );
+      },
+    ),
+    { seed: 1337, numRuns: 8 },
+  );
+}, 120_000);
+
+test("std.channels-limits Config: two users do not share a count, on one caller cookie or on two", async () => {
   await withModules(
-    [{ perCaller: 2, perAnonymous: 3 }],
+    [{ perCaller: 2 }],
     async (h, open) => {
       const x = await h.mint();
       const y = await h.mint();
-      const asUser = (sid: string, cookie: string): OpenOptions => ({ cookie: `sid=${sid}; ${cookie}` });
-      // one user, two callers: 2 + 2 are served, a third from either caller is full
-      const served: Opened[] = [];
-      for (const c of [x, y]) for (let i = 0; i < 2; i++) served.push(await open("a", asUser("u1", c)));
-      for (const st of served) expectServed(st);
-      await expectFull(await open("a", asUser("u1", x)));
-      await expectFull(await open("a", asUser("u1", y)));
-      // one caller, other users: the caller's place count is shared (x already holds 2)
-      await expectFull(await open("a", asUser("u2", x)));
-      // a signed-in person with no caller cookie has caller "": three such opens fill perAnonymous, the fourth is full
-      const bare: Opened[] = [];
-      for (let i = 0; i < 3; i++) bare.push(await open("a", { cookie: "sid=u1" }));
-      for (const st of bare) expectServed(st);
-      await expectFull(await open("a", { cookie: "sid=u3" }));
-      await expectFull(await open("a"));
+      const held: Opened[] = [];
+      for (const [sid, cookie] of [
+        ["u1", x],
+        ["u2", x],
+        ["u1", y],
+        ["u2", y],
+      ] as const) {
+        held.push(await open("a", asUser(sid, cookie)));
+      }
+      held.push(await open("a", asUser("u1", x)), await open("a", asUser("u2", y)));
+      // u1 and u2 hold 2 each, on one cookie x and then another
+      serveds(held.slice(0, 4));
+      await expectFull(held[4] ?? (await open("a")));
+      await expectFull(held[5] ?? (await open("a")));
+      await expectFull(await open("a", asUser("u1")));
+      await expectFull(await open("a", asUser("u2")));
+      serveds([await open("a", asUser("u3", x)), await open("a", asUser("u3"))]);
     },
     { identity: true },
   );
+});
+
+test("std.channels-limits What the caps bound: a client cannot assert a user: an unsigned x-keel-user, a forged signature, an expired one and a token the identity source refuses are each anonymous", async () => {
+  await withModules(
+    [{ perAnonymous: 4, perCaller: 1, maxStreams: 40 }],
+    async (h, open) => {
+      const real = await h.sign("u1");
+      const mid = Math.floor(real.length / 2);
+      const forged = `${real.slice(0, mid)}${real[mid] === "A" ? "B" : "A"}${real.slice(mid + 1)}`;
+      expect(forged).not.toBe(real);
+      const stale = await h.sign("u1");
+      h.advance(61_000);
+      const fresh = await h.sign("user:u1");
+      // fresh is valid, stale (signed 61 s ago) is not
+      const anon: readonly OpenOptions[] = [
+        { headers: { "x-keel-user": "user:u1" } },
+        { headers: { "x-keel-user": forged } },
+        { headers: { "x-keel-user": stale } },
+        { cookie: "sid=" },
+      ];
+      const held: Opened[] = [];
+      for (const o of anon) held.push(await open("a", o));
+      // perCaller is 1, yet four such opens are served: they count by perAnonymous (4), not by any user
+      serveds(held);
+      for (const [k, o] of anon.entries()) {
+        const st = await open("a", o);
+        await settle();
+        expect([k, st.events]).toEqual([k, FULL]);
+      }
+      await expectFull(await open("a"));
+      // a verified header is a user: it counts there, not toward perAnonymous
+      const mine = await open("a", { headers: { "x-keel-user": fresh } });
+      expectServed(mine);
+      await expectFull(await open("a", { headers: { "x-keel-user": await h.sign("user:u1") } }));
+      // the identity source's `user:u1` and a verified header for `user:u1` are one user, so one count
+      await expectFull(await open("a", asUser("u1")));
+      serveds([await open("a", asUser("u2"))]);
+    },
+    { identity: true, signed: true },
+  );
+});
+
+test("std.channels-limits What the caps bound: a signed x-keel-user is a user in an app with no identity source, counting against that user's perCaller", async () => {
+  await withModules(
+    [{ perCaller: 2, perAnonymous: 1 }],
+    async (h, open) => {
+      const hdr = { "x-keel-user": await h.sign("u1") };
+      const x = await h.mint();
+      serveds([
+        await open("a", { headers: hdr }),
+        await open("a", { cookie: x, headers: { "x-keel-user": await h.sign("u1") } }),
+      ]);
+      await expectFull(await open("a", { headers: { "x-keel-user": await h.sign("u1") } }));
+      serveds([await open("a")]);
+      await expectFull(await open("a"));
+    },
+    { signed: true },
+  );
+});
+
+test("std.channels-limits Config (attacker): minting many caller cookies gives one user no more than perCaller streams, and filling perAnonymous leaves signed-in users their own", async () => {
+  await fc.assert(
+    fc.asyncProperty(fc.integer({ min: 1, max: 3 }), fc.integer({ min: 3, max: 6 }), async (pc, cookies) => {
+      await withModules(
+        [{ perCaller: pc, perAnonymous: 2, maxStreams: 40 }],
+        async (h, open) => {
+          let served = 0;
+          for (let c = 0; c < cookies; c++) {
+            const cookie = await h.mint();
+            for (let i = 0; i < pc; i++) {
+              const st = await open("a", asUser("u1", cookie));
+              if (served < pc) {
+                expectServed(st);
+                served++;
+              } else await expectFull(st);
+            }
+          }
+          expect(served).toBe(pc);
+          // the anonymous count full: other signed-in users still open, each with its own perCaller, with or without a cookie
+          const flood = [await open("a"), await open("a")];
+          await expectFull(await open("a"));
+          for (const sid of ["u2", "u3", "u4"]) {
+            const mine: Opened[] = [];
+            for (let i = 0; i < pc; i++)
+              mine.push(await open("a", asUser(sid, i % 2 === 0 ? undefined : await h.mint())));
+            serveds(mine);
+            await expectFull(await open("a", asUser(sid)));
+          }
+          serveds(flood);
+        },
+        { identity: true },
+      );
+    }),
+    { seed: 1337, numRuns: 4 },
+  );
+}, 120_000);
+
+test("std.channels-limits Config: an app with no identity counts by caller exactly as before: a sid cookie or an unsigned x-keel-user is no user", async () => {
+  await withModules([{ perCaller: 2, perAnonymous: 3 }], async (h, open) => {
+    const x = await h.mint();
+    const y = await h.mint();
+    // one sid, two callers: each caller holds perCaller
+    const held: Opened[] = [];
+    for (const c of [x, y]) for (let i = 0; i < 2; i++) held.push(await open("a", asUser("u1", c)));
+    serveds(held);
+    await expectFull(await open("a", asUser("u1", x)));
+    await expectFull(await open("a", asUser("u1", y)));
+    // no caller cookie: anonymous, whatever sid or header it carries
+    const bare = [
+      await open("a", { cookie: "sid=u1" }),
+      await open("a", { cookie: "sid=u2" }),
+      await open("a", { headers: { "x-keel-user": "user:u1" } }),
+    ];
+    serveds(bare);
+    await expectFull(await open("a", { cookie: "sid=u3" }));
+  });
 });
 
 test("std.channels-limits Limits: callers minted by writes each hold perCaller streams on each module; only maxStreams bounds them, and the cookieless count is untouched", async () => {
