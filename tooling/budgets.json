@@ -34,7 +34,7 @@
       "platform": "node"
     },
     "@keel/compiler": {
-      "max": "35.5kb",
+      "max": "36kb",
       "platform": "node"
     },
     "@keel/ctx": "4.7kb",

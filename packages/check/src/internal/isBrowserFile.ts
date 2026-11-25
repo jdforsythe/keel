@@ -1,5 +1,7 @@
 import { SERVER_ONLY_NAME } from "@keel/compiler/internal";
 import type { SourceFile } from "../types/SourceFile.ts";
+import { isClientReachable } from "./isClientReachable.ts";
+import { projectLibraries } from "./projectLibraries.ts";
 import { topologyFor } from "./topologyFor.ts";
 
 const SERVER_NAME = SERVER_ONLY_NAME;
@@ -8,11 +10,13 @@ const SERVER_NAME = SERVER_ONLY_NAME;
  * A file the browser can load (k.host Node globals): with a `topology.ts` in its project, under `modules/<id>/` of a
  * module a deployable lists and not server-only (k.boundary: a `*.server.*` or `*.guard.*` file is, unless only
  * `client` deployables list its module), except the `routes.ts` of a module no `client` or `static` deployable lists.
- * With no `topology.ts`, every file not named `*.server.*` or `*.guard.*`.
+ * With no `topology.ts`, every file not named `*.server.*` or `*.guard.*`. A library's file (`projectLibraries`) is one
+ * when the app's client code reaches it (`isClientReachable`), since no deployable lists a library by placement alone.
  */
 export function isBrowserFile(path: string, project: readonly SourceFile[]): boolean {
   const read = topologyFor(path, project);
   if (read === undefined) return !SERVER_NAME.test(path);
+  if (projectLibraries.get(project)?.files.has(path) === true) return isClientReachable(path, project);
   const m = /^modules\/([^/]+)\/(.+)$/.exec(path.slice(read.dir.length));
   if (m === null) return false;
   const [, id = "", rest = ""] = m;

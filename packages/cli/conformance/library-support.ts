@@ -3,7 +3,7 @@
 // the library's files under `node_modules/@acme/charts/`. No std package appears in it: the library is written here.
 import { type Tree, base, manifestSrc } from "./boundary-support.ts";
 
-export { SEED, SLOW, built, cleanup, keelRun, materialize, recordsOf, write } from "./boundary-support.ts";
+export { SEED, SLOW, built, cleanup, filesUnder, keelRun, materialize, recordsOf, write } from "./boundary-support.ts";
 export type { Tree } from "./boundary-support.ts";
 export { diags, keel } from "./compat-support.ts";
 export type { Rec } from "./compat-support.ts";
@@ -60,6 +60,10 @@ export type ProjectShape = {
   readonly modules?: string[];
   /** `modules/shop/Page.tsx` importing `Badge` from the library; the build fixtures leave it out (see library-deps.test.ts). */
   readonly page?: boolean;
+  /** The one deployable's adapter: `node` (named `api`, the default) or `static` (named `site`, whose build writes `dist/site/index.html` for `/`). */
+  readonly adapter?: "node" | "static";
+  /** `modules/shop/Home.tsx`, the page at `/`, renders `<Badge id="shop.badge" />` from the library. */
+  readonly home?: boolean;
   readonly libraries?: Tree[];
 };
 
@@ -68,15 +72,16 @@ export function project(sh: ProjectShape = {}): Tree {
   const page = sh.page ?? true;
   return {
     ...base(),
-    "topology.ts": `import { topology } from '@keel/server'\nexport default topology({ api: { modules: ${JSON.stringify(sh.modules ?? ["shop"]).replaceAll('"', "'")}, adapter: 'node' } })\n`,
+    "topology.ts": `import { topology } from '@keel/server'\nexport default topology({ ${sh.adapter === "static" ? "site" : "api"}: { modules: ${JSON.stringify(sh.modules ?? ["shop"]).replaceAll('"', "'")}, adapter: '${sh.adapter ?? "node"}' } })\n`,
     "modules/shop/module.ts": manifestSrc("shop").replace(
       "deps: []",
       `deps: ${JSON.stringify(sh.deps ?? [NAME]).replaceAll('"', "'")}`,
     ),
     "modules/shop/shop.contract.ts":
       "import { contract } from '@keel/router/contract'\nexport const shop = contract('shop', { 'shop.home': { path: '/' } })\n",
-    "modules/shop/Home.tsx":
-      "import { Box, Text } from '@keel/ui'\nexport default function Home() {\n  return (\n    <Box as=\"main\">\n      <Text>shop</Text>\n    </Box>\n  )\n}\n",
+    "modules/shop/Home.tsx": sh.home
+      ? `import { Box, Text } from '@keel/ui'\nimport { Badge } from '${NAME}'\nexport default function Home() {\n  return (\n    <Box as="main">\n      <Text>shop</Text>\n      <Badge id="shop.badge" />\n    </Box>\n  )\n}\n`
+      : "import { Box, Text } from '@keel/ui'\nexport default function Home() {\n  return (\n    <Box as=\"main\">\n      <Text>shop</Text>\n    </Box>\n  )\n}\n",
     "modules/shop/routes.ts":
       "import { manifest } from '@keel/router'\nimport Home from './Home.tsx'\nimport { shop } from './shop.contract.ts'\nexport const routes = manifest(shop, { 'shop.home': { component: Home } })\n",
     ...(page
@@ -196,3 +201,16 @@ export function linkInside(dir: string, rel: string, name = NAME): void {
   renameSync(join(dir, "node_modules", name), real);
   symlinkSync(real, join(dir, "node_modules", name));
 }
+
+/** The app's `tokens.ts` of the `site` project: a color pair and the space scale `p="2"` reads. */
+export const TOKENS =
+  'import { defineTokens } from "@keel/ui";\nexport const tokens = defineTokens({ color: { fg: "#111111", bg: "#ffffff" }, space: { 1: "4px", 2: "8px", 3: "16px" } });\n';
+
+/** The `site` project of the second Conformance clause of k.library: `project` with a `static` deployable `site` whose `/` page renders `<Badge id="shop.badge" />`, and the app's `tokens.ts`. */
+export const siteTree = (libraries?: Tree[]): Tree => ({
+  ...project({ adapter: "static", home: true, ...(libraries === undefined ? {} : { libraries }) }),
+  "tokens.ts": TOKENS,
+});
+
+/** The library's `src/Badge.tsx` in a project tree. */
+export const BADGE_PATH = `${LIB}/src/Badge.tsx`;

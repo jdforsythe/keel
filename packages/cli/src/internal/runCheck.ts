@@ -3,9 +3,11 @@ import { join } from "node:path";
 import { check } from "@keel/check";
 import { importDeps } from "@keel/compiler/std/importDeps";
 import type { SourceFile } from "../types/SourceFile.ts";
+import { CODE_FILE } from "./CODE_FILE.ts";
 import type { CheckDiagnostic } from "./CheckDiagnostic.ts";
 import type { Diag } from "./Diag.ts";
 import { checkTokens } from "./checkTokens.ts";
+import { libraryProjectFiles } from "./libraryProjectFiles.ts";
 import { projectTopology } from "./projectTopology.ts";
 import { relPath } from "./relPath.ts";
 
@@ -20,13 +22,19 @@ import { relPath } from "./relPath.ts";
  * `keel build` (whose check runs here too) over the same files reuses the build's; a reused result is the one a run
  * with the folder deleted gives. Each project's `tokens.ts` is evaluated first (`checkTokens`, k.a11y-static Tokens): its
  * tokens reach the rules that judge them (E1804, E1809, E1801 over `base` and looks), and one that gives none is E1807.
+ * The files of the libraries `project`'s manifests reach (`libraryProjectFiles`, k.library In an app, read once here)
+ * join `project`, and with `libraries` their code files join the checked files.
  */
 export async function runCheck(
   cwd: string,
   files: readonly SourceFile[],
   project: readonly SourceFile[] = files,
   base?: unknown,
+  libraries = false,
 ): Promise<Diag[]> {
+  const libs = libraryProjectFiles(cwd, project);
+  const all = libs.length === 0 ? project : [...project, ...libs];
+  const checked = libraries ? [...files, ...libs.filter((f) => CODE_FILE.test(f.path))] : files;
   const loaded = await importDeps(cwd, project);
   const topology = projectTopology(project);
   const options = topology === undefined ? {} : { topology };
@@ -37,12 +45,12 @@ export async function runCheck(
     ...loaded,
     ...tokens.diags,
     ...check(
-      files.map((f) => ({ path: f.path, source: f.source })),
+      checked.map((f) => ({ path: f.path, source: f.source })),
       {
         root: cwd,
         ...options,
         ...cache,
-        project,
+        project: all,
         ...(Object.keys(tokens.projectArtifacts).length === 0 ? {} : { projectArtifacts: tokens.projectArtifacts }),
         ...(base === undefined ? {} : { base }),
       },

@@ -52,11 +52,15 @@ import { unmappedModule } from "./internal/unmappedModule.ts";
 import { urlLiterals } from "./internal/urlLiterals.ts";
 import { writeArtifact } from "./internal/writeArtifact.ts";
 import { writeStatic } from "./internal/writeStatic.ts";
+import { appLibraries } from "./std/appLibraries.ts";
 import { clientStdData } from "./std/clientStdData.ts";
 import { importDeps } from "./std/importDeps.ts";
+import { libraryRel } from "./std/libraryRel.ts";
+import { librarySources } from "./std/librarySources.ts";
 import { stdRoutes } from "./std/stdRoutes.ts";
 import { stdArtifact } from "./stdArtifact.ts";
 import type { Artifacts } from "./types/Artifacts.ts";
+import type { Library } from "./types/Library.ts";
 import type { Output } from "./types/Output.ts";
 import type { RouteEntry } from "./types/RouteEntry.ts";
 import type { Topology } from "./types/Topology.ts";
@@ -221,12 +225,20 @@ type WorkerPlugin = {
   transform: (code: string, id: string) => null;
   buildEnd: (this: Ctx, error?: Error) => void;
 };
-/** What `config` returns: the locked `envPrefix`, the worker bundles' plugin (Vite adds the project's), and a deployable build's own settings. */
-type Config = { envPrefix: string; define?: Record<string, string>; worker: { plugins: () => WorkerPlugin[] } } & (
-  | BuildConfig
-  | ClientConfig
-  | Record<never, never>
-);
+/** Vite's default conditions, which an environment that sets none resolves with (k.library adds `keel` to them). */
+const CLIENT_CONDITIONS = ["module", "browser", "development|production"];
+const SERVER_CONDITIONS = ["module", "node", "development|production"];
+/**
+ * What `config` returns: the locked `envPrefix`, the worker bundles' plugin (Vite adds the project's), the app's
+ * libraries kept from pre-bundling and from Node, and a deployable build's own settings.
+ */
+type Config = {
+  envPrefix: string;
+  define?: Record<string, string>;
+  worker: { plugins: () => WorkerPlugin[] };
+  ssr: { noExternal: string[] };
+  optimizeDeps: { exclude: string[] };
+} & (BuildConfig | ClientConfig | Record<never, never>);
 /** What the plugin reads of the project's config before Vite resolves it. */
 type UserConfig = { root?: string; envPrefix?: unknown; define?: unknown };
 
@@ -266,6 +278,10 @@ export default function (): {
   name: string;
   enforce: "pre";
   config: (user: UserConfig, env: { command: "build" | "serve"; isSsrBuild?: boolean }) => Config;
+  configEnvironment: (
+    name: string,
+    env: { consumer?: "client" | "server"; resolve?: { conditions?: string[] } },
+  ) => { resolve: { conditions: string[] } } | null;
   configResolved: (config: {
     root: string;
     command?: "build" | "serve";
@@ -286,6 +302,8 @@ export default function (): {
   watchChange: (id: string, change: { event: "create" | "update" | "delete" }) => void;
 } {
   let root = process.cwd();
+  /** The app's libraries (`appLibraries`), compiled as its own files; read again when a manifest changes. */
+  let libraries: Library[] = [];
   /** Whether `configResolved` set `root`; until then no artifact is written. */
   let resolved = false;
   let command: "build" | "serve" | undefined;
@@ -436,7 +454,11 @@ export default function (): {
   const relOf = (id: string): string | null => {
     if (id.startsWith("\0") || id.startsWith("/@keel/") || id === CSS_ID) return null;
     const file = id.split("?")[0] ?? id;
-    if (!CODE.test(file) || file.includes("/node_modules/") || file.endsWith(".d.ts")) return null;
+    if (!CODE.test(file) || file.endsWith(".d.ts")) return null;
+    // A library's file, wherever it lies, is compiled as the app's (k.library In an app).
+    const lib = path.isAbsolute(file) ? libraryRel(libraries, file) : undefined;
+    if (lib !== undefined) return lib;
+    if (file.includes("/node_modules/")) return null;
     // only app code under the root: linked workspace packages resolve to real paths outside it
     const rel = path.relative(root, file);
     if (rel.startsWith("..") || path.isAbsolute(rel)) return null;
@@ -697,7 +719,8 @@ export default function (): {
   };
 
   const flush = (): { id: string; file: string }[] => {
-    // Only app sources feed the artifacts, by the rule `keel build` and `keel check` share.
+    // Only app sources, a library's files among them (`librarySources`), feed the artifacts, by the rule `keel build`
+    // and `keel check` share.
     const keys = [...modules.keys()].filter(isSourcePath).sort();
     const parts: Artifacts[] = [];
     for (const k of keys) {
@@ -813,9 +836,14 @@ export default function (): {
       const file = path.join(path.resolve(user.root ?? process.cwd()), "topology.ts");
       projectEnv = user.envPrefix !== undefined || user.define !== undefined;
       ssrBuild = env.isSsrBuild === true;
-      // A build is the production one whatever `vite.config.ts` sets `process.env.NODE_ENV` to (k.deploy Build).
+      libraries = appLibraries(path.resolve(user.root ?? process.cwd()));
+      const names = libraries.map((l) => l.name);
+      // A build is the production one whatever `vite.config.ts` sets `process.env.NODE_ENV` to (k.deploy Build). A
+      // library resolves with the `keel` condition on every surface and is never pre-bundled or left to Node.
       const own = {
         envPrefix: NO_ENV,
+        ssr: { noExternal: names },
+        optimizeDeps: { exclude: names },
         ...(env.command === "build"
           ? { define: { "import.meta.env.DEV": "false", "import.meta.env.PROD": "true" } }
           : {}),
@@ -922,6 +950,18 @@ export default function (): {
         },
       };
     },
+    // Every environment (dev, build, test) resolves with the `keel` condition beside its own, so a library's entry is
+    // its source (k.library In an app); one that sets none gets Vite's defaults with it.
+    configEnvironment(name, env) {
+      const own = env.resolve?.conditions;
+      if (own?.includes("keel") === true) return null;
+      const client = env.consumer === "client" || (env.consumer === undefined && name === "client");
+      return {
+        resolve: {
+          conditions: ["keel", ...(own === undefined ? (client ? CLIENT_CONDITIONS : SERVER_CONDITIONS) : [])],
+        },
+      };
+    },
     configResolved(config) {
       root = config.root;
       resolved = true;
@@ -938,6 +978,9 @@ export default function (): {
     },
     configureServer(s) {
       server = s;
+      // A linked library's real folder may sit outside Vite's served roots.
+      const allow = s.config?.server.fs.allow;
+      for (const l of libraries) if (allow !== undefined && !allow.includes(l.dir)) allow.push(l.dir);
       s.middlewares.use(inspect);
       hasNode = Object.values(topology ?? {}).some((d) => d.adapter === "node" || d.adapter === "static");
       if (hasNode) {
@@ -963,6 +1006,8 @@ export default function (): {
       if (w !== undefined) warn = (m) => w.call(this, m);
       readTopology();
       for (const rel of listSources(root)) compileModule(rel, fs.readFileSync(path.join(root, rel), "utf8"));
+      libraries = appLibraries(root);
+      for (const f of librarySources(root)) compileModule(f.path, f.source);
       const bad = await stdProblems();
       if (bad.length > 0 && command === "build" && !clientBuild) throw new Error(bad.join("\n"));
       for (const b of bad) warn(`keel: ${b}`);
@@ -1166,6 +1211,7 @@ export default function (): {
       }
       if (rel !== null && change.event === "delete" && modules.delete(rel)) flush();
       else if (rel !== null && MANIFEST.test(rel) && exists(rel)) {
+        libraries = appLibraries(root);
         compileModule(rel, fs.readFileSync(path.join(root, rel), "utf8"));
         // New deps load before std.json is rewritten; problems go where dev's other ones do.
         void stdProblems()

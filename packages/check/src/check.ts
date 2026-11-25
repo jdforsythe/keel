@@ -23,12 +23,16 @@ import { guardRedirectLoops } from "./internal/guardRedirectLoops.ts";
 import { indexHtmlDiag } from "./internal/indexHtmlDiag.ts";
 import { isCodePath } from "./internal/isCodePath.ts";
 import { isSqlPath } from "./internal/isSqlPath.ts";
+import { libraryFolders } from "./internal/libraryFolders.ts";
+import { libraryIds } from "./internal/libraryIds.ts";
+import { libraryImports } from "./internal/libraryImports.ts";
 import { libraryLedgers } from "./internal/modules/libraryLedgers.ts";
 import { moduleChecks } from "./internal/modules/moduleChecks.ts";
 import { normalize } from "./internal/normalize.ts";
 import { outsideImports } from "./internal/outsideImports.ts";
 import { parseFile } from "./internal/parseFile.ts";
 import { placedWithoutRoutes } from "./internal/placedWithoutRoutes.ts";
+import { projectLibraries } from "./internal/projectLibraries.ts";
 import { projectRoots } from "./internal/projectRoots.ts";
 import { reachResolve } from "./internal/reachResolve.ts";
 import { registerNames } from "./internal/registerNames.ts";
@@ -105,8 +109,25 @@ function expectedHashes(files: readonly SourceFile[], opts: CheckOptions): Reado
  * against the hashes the compiler derives from each artifact's project, W1005, E1454, E1607, E1550, E1508, E1511, E1566, E1586, E1587, W1012, E1580-E1582, E1584, E1589, E1592, E1753, E1755, the k.module pass
  * E1151-E1158, E1013, the contract passes (E1155, E1502-E1504, E1509, E1513, E1514), and the k.compat pass E1562, E1563,
  * W1564, W1568 over `.keel/surface.json`), (4) dedupe and sort. Static only: no app code is evaluated (rendered a11y is `keel test`, rfc:0023). Pure and deterministic for equal inputs.
+ *
+ * A library's files among the files (k.library In an app, `libraryFolders`) are read by every step at
+ * `modules/<id>/<f>` but the type pass, the k.module pass and E1013, which read them where they lie; each diagnostic in
+ * one is located at `node_modules/<name>/<f>` with no fix. E1161 and E1163's import half judge them there.
  */
-export function check(files: readonly SourceFile[], opts: CheckOptions = {}): CheckResult {
+export function check(given: readonly SourceFile[], options: CheckOptions = {}): CheckResult {
+  const realAll = options.project === undefined ? given : [...given, ...options.project];
+  const libs = libraryFolders(realAll);
+  const isLibrary = (p: string): boolean => libs.folder(p) !== undefined;
+  // Each library's folder (`<p>node_modules/<name>/`): where the k.module pass finds it, and its files' view.
+  const libraryRoots = new Set(libs.packages.map((f) => f.path.slice(0, -"package.json".length)));
+  const viewed = (f: SourceFile): SourceFile => {
+    const v = libs.view(f.path);
+    return v === f.path ? f : { path: v, source: f.source };
+  };
+  const files = given.map(viewed);
+  const opts: CheckOptions =
+    options.project === undefined ? options : { ...options, project: options.project.map(viewed) };
+  const realCode = given.filter((f) => isCodePath(f.path));
   const code = files.filter((f) => isCodePath(f.path));
   // One compile per project, with its paths and topology, so a workspace root sees what the app sees (rfc:0059).
   const all = opts.project === undefined ? files : [...files, ...opts.project];
@@ -127,6 +148,9 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
     const project = Object.freeze([...members.values()]);
     projectRoots.set(project, path.resolve(opts.root ?? process.cwd()));
     for (const f of group) projectOf.set(f.path, project);
+    // The rules that follow the client's reach follow an import of a library into its files (k.library In an app).
+    const libraryFiles = new Set([...members.keys()].filter((p) => isLibrary(libs.real(p))));
+    projectLibraries.set(project, { entries: libs.entries, files: libraryFiles });
     const topology = topologyOf(dir, all, opts);
     const sources = group.map((f) => ({ path: f.path.slice(dir.length), source: f.source }));
     const top = all.find((f) => f.path === `${dir}topology.ts`)?.source;
@@ -182,8 +206,11 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
   // The `@keel/*` packages this call's app manifests reach: a std package's formats apply only among them, and so do
   // the rules of one `importDeps` imported first, whatever an earlier call in this process loaded (k.check-cache).
   const scope = stdInScope(all, opts.root ?? process.cwd());
+  const skip = new Map([...reported].map(([p, codes]) => [libs.real(p), codes]));
   const typed =
-    opts.types === false ? undefined : typeCheck(files, opts.root ?? process.cwd(), reported, scope, opts.typeCache);
+    opts.types === false
+      ? undefined
+      : typeCheck(given, opts.root ?? process.cwd(), skip, scope, opts.typeCache, isLibrary, libs.packages);
   // E1016's directive half is textual: it holds with the type pass off too (k.boundary Ambient types).
   out.push(...typeReferences(files));
   // One diagnostic per fault: where the compiler reports E1403 at an expression, E1406 does not.
@@ -199,28 +226,49 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
     checked.push({ file, parsed });
     const artifacts = artifactsOf.get(file.path) ?? { ...opts.artifacts };
     const project = projectOf.get(file.path) ?? [file];
-    const dates = typed?.dates.get(file.path) ?? (typed === undefined ? undefined : new Set<number>());
+    const dates = typed?.dates.get(libs.real(file.path)) ?? (typed === undefined ? undefined : new Set<number>());
     const input = { file, ast: parsed.program, artifacts, project };
-    out.push(...runRules(registered, dates === undefined ? input : { ...input, dates }));
+    // One by one: a file may give more findings than a spread call takes arguments.
+    for (const d of runRules(registered, dates === undefined ? input : { ...input, dates })) out.push(d);
   }
   for (const file of files) if (isSqlPath(file.path)) out.push(...runSqlRules(registered, file));
+  // The passes that read a library's files where they lie.
+  // A file that is no library's keeps its object: the readers that follow names key on it.
+  const realChecked = checked.map((c) => {
+    const at = libs.real(c.file.path);
+    return at === c.file.path ? c : { file: { path: at, source: c.file.source }, parsed: c.parsed };
+  });
   out.push(
     ...duplicateErrorCodes(checked),
     ...registerNames(checked, dirs),
     ...chainStoreIds(checked, dirs, all),
-    ...moduleChecks(checked, all, (p) => projectOf.get(p) ?? []),
-    ...libraryLedgers(checked, all, opts.root ?? process.cwd()),
-    ...aliasedImports(checked, path.resolve(opts.root ?? process.cwd()), dirs),
+    ...moduleChecks(realChecked, realAll, (p) => projectOf.get(p) ?? [], {
+      checked,
+      root: (m) =>
+        libraryRoots.has(m.root) ? m.root.replace(/node_modules\/[^/]+\/[^/]+\/$/, `modules/${m.prefix}/`) : m.root,
+    }),
+    ...libraryLedgers(realChecked, realAll, opts.root ?? process.cwd()),
+    ...aliasedImports(realChecked, path.resolve(opts.root ?? process.cwd()), dirs, isLibrary),
     ...outsideImports(checked, path.resolve(opts.root ?? process.cwd()), dirs),
+    ...libraryIds(realChecked, isLibrary, new Map([...libs.entries].map(([spec, at]) => [spec, libs.real(at)]))),
+    ...libraryImports(realChecked, libs.folder),
     ...guardRedirectLoops(checked),
     ...contractChecks(checked, all, opts.topology),
     ...ruleCodeDeclarations(checked),
     ...budgetBreaches(opts.budgets ?? []),
+    // E1005 derives each artifact from the files that wrote it: the app's sources and its libraries' at `modules/<id>/<f>`.
     ...generatedEdits(files, expectedHashes(files, opts), opts.project ?? files),
     ...compatChecks(files, opts.project ?? files, (dir) => compatTopology(dir, all, opts), opts.base),
   );
 
+  // A diagnostic in a library file is located where the file lies and carries no fix (k.library In an app).
+  const located = out.map((d): Diagnostic => {
+    const at = libs.real(d.path);
+    if (!isLibrary(at)) return d;
+    const { kind, code, line, col, message, see } = d;
+    return { kind, code, path: at, line, col, message, ...(see === undefined ? {} : { see }) };
+  });
   // A lifted range (k.check, App code) reports none of its nine codes.
-  const diagnostics = normalize(dropLifted(out, code));
+  const diagnostics = normalize(dropLifted(located, realCode));
   return { diagnostics, summary: summarize(diagnostics) };
 }

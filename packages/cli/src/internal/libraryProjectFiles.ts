@@ -9,7 +9,8 @@ import { CODE_FILE } from "./CODE_FILE.ts";
  * The files of the libraries (kind `library`, k.library In an app) each project of `files` reaches, read from each
  * library's real folder and placed at `<p>node_modules/<name>/`, `<p>` the project dir whose manifests list it: its
  * `package.json`, root `module.ts`, `.keel/ledger.json` and the code files under its `src/` and `unsafe/`. A path
- * `files` already holds is left out. `keel check` adds them to the project it reads (E1162, k.library Rules).
+ * `files` already holds is left out. `runCheck` reads them once and adds them to the project it reads (E1162,
+ * k.library Rules) and, over every code file, to the checked files (k.library In an app).
  */
 export function libraryProjectFiles(cwd: string, files: readonly SourceFile[]): SourceFile[] {
   const have = new Set(files.map((f) => f.path));

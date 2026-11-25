@@ -375,6 +375,13 @@ const ROWS: readonly Row[] = [
     "k.module",
   ],
   [
+    "E1161",
+    "an element in a library file whose id is missing or a literal",
+    "A library's element ids are built from its component's id prop (<id>.<part>): a literal id repeats in every place the component renders, and a derived one holds the installer's path.",
+    "build the id from the component's id prop: id={`${props.id}.part`}",
+    "k.library",
+  ],
+  [
     "E1162",
     "an installed library's .keel/ledger.json is missing, misshapen, or disagrees with its files' counts",
     "The app counts unsafe calls and host elements over a library's own files; a published file cannot understate them.",

@@ -3,6 +3,8 @@ import { join, relative } from "node:path";
 import { compile, contractCallers, isSourcePath, parseTopology } from "@keel/compiler";
 import { sourceHash } from "@keel/compiler/internal";
 import { entryDependency } from "@keel/compiler/internal/entry/entryDependency";
+import { appLibraries } from "@keel/compiler/std/appLibraries";
+import { libraryRel } from "@keel/compiler/std/libraryRel";
 import { stdContract } from "@keel/compiler/std/stdContract";
 import { stdRoutes } from "@keel/compiler/std/stdRoutes";
 import { createViteServer } from "vitest/node";
@@ -74,7 +76,8 @@ const contractsIn = (m: Readonly<Record<string, unknown>>): unknown[] =>
  * Binary only: `keel build`'s `.keel/surface.json` (k.compat Surface), written read-only as `{ data, hash }`. Each
  * app `modules/<m>/<m>.contract.ts` and `modules/<m>/routes.ts`, and each placed stdlib module's package `./contract`
  * and `./routes` (`stdContract`, `stdRoutes`, named by their real file), is evaluated in Node through a Vite SSR
- * server rooted at `cwd` (app files compiled by `@keel/compiler`, as the build evaluates them). `surfaceOf` reads the
+ * server rooted at `cwd` (app files and the app's libraries' files, resolved with the `keel` condition, compiled by
+ * `@keel/compiler`, as the build evaluates them; k.library In an app). `surfaceOf` reads the
  * contracts, the bindings of each `routes` route table (`bindingsOf` of the evaluated `@keel/router/internal`) and
  * the callers (`contractCallers`); the hash of every app file the evaluation read is recorded so `keel check` reports
  * a stale surface (E1005). A contract file that throws is a note `E1006 <file> failed to evaluate: <message>`,
@@ -91,6 +94,7 @@ export async function surfaceRun(cwd: string): Promise<{ code: number; notes: st
   const root = realpathSync(cwd);
   const files = readProject(root, "query").filter((f) => isSourcePath(f.path));
   const text = new Map(files.map((f) => [f.path, f.source]));
+  const libraries = appLibraries(root);
   const rel = (id: string): string | undefined => {
     const r = relative(root, id.split("?")[0] ?? id);
     return text.has(r) ? r : undefined;
@@ -133,11 +137,17 @@ export async function surfaceRun(cwd: string): Promise<{ code: number; notes: st
             appType: "custom",
             server: { middlewareMode: true, hmr: false, watch: null },
             optimizeDeps: { noDiscovery: true, include: [] },
+            ssr: {
+              resolve: { conditions: ["keel", "module", "node", "development|production"] },
+              noExternal: libraries.map((l) => l.name),
+            },
             plugins: [
               {
                 name: "keel-surface",
                 enforce: "pre",
                 transform(code, id) {
+                  const lib = libraryRel(libraries, id.split("?")[0] ?? id);
+                  if (lib !== undefined) return compile([{ path: lib, source: code }]).outputs[0]?.code ?? null;
                   const path = rel(id);
                   if (path === undefined) return null;
                   sources[path] = sourceHash(path, text.get(path) ?? code) ?? "unparsed";

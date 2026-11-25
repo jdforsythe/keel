@@ -393,11 +393,40 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
     bad: [mod("b", [], ["Pub"]), exp("b", "Pub"), mod("a", ["b"], [])],
     clean: [mod("b", [], ["Pub"]), exp("b", "Pub"), mod("a", ["b"], []), use("a", "b", "Pub")],
   },
-  // E1163 (rfc:0163): a library manifest `deps` entry that does not begin with `@`, at the entry. Its import half (a relative import out of the package folder) is a later slice.
+  // E1163 (rfc:0163): both halves, each one E1163: a library manifest `deps` entry that does not begin with `@`, at the entry, and a relative import out of the package folder, at the specifier.
   E1163: {
     opts: NO_TYPES,
-    bad: [mod("shop", ["@acme/charts"], []), ...library("charts", ["shop"])],
-    clean: [mod("shop", ["@acme/charts"], []), ...library("charts", [])],
+    bad: [
+      mod("shop", ["@acme/charts"], []),
+      ...library("charts", ["shop"]),
+      f("node_modules/@acme/charts/src/x.ts", "import { y } from '../../outside.ts'\nexport const x = y\n"),
+    ],
+    clean: [
+      mod("shop", ["@acme/charts"], []),
+      ...library("charts", []),
+      f("node_modules/@acme/charts/src/y.ts", "export const y = 1\n"),
+      f("node_modules/@acme/charts/src/x.ts", "import { y } from './y.ts'\nexport const x = y\n"),
+    ],
+  },
+  // E1161 (rfc:0163): a base element in a library file whose `id` is missing; the clean counterpart builds it from the component's `id` prop.
+  E1161: {
+    opts: NO_TYPES,
+    bad: [
+      mod("shop", ["@acme/charts"], []),
+      ...library("charts", []),
+      f(
+        "node_modules/@acme/charts/src/Badge.tsx",
+        `${UI}export default function Badge(props: { id: string }) { return <Box p="2" /> }\n`,
+      ),
+    ],
+    clean: [
+      mod("shop", ["@acme/charts"], []),
+      ...library("charts", []),
+      f(
+        "node_modules/@acme/charts/src/Badge.tsx",
+        `${UI}export default function Badge(props: { id: string }) { return <Box id={\`\${props.id}.box\`} p="2" /> }\n`,
+      ),
+    ],
   },
   // E1166 (rfc:0163): a library whose `id` is a project module's id, at the `deps` entry that names it.
   E1166: {
