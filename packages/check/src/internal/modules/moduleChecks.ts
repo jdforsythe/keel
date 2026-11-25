@@ -3,10 +3,10 @@ import type { Diagnostic } from "../../types/Diagnostic.ts";
 import type { SourceFile } from "../../types/SourceFile.ts";
 import type { Checked } from "../Checked.ts";
 import { bindingCalls } from "../bindingCalls.ts";
+import { clientStores } from "../clientStores.ts";
 import { contractCalls } from "../contractCalls.ts";
 import { isTestPath } from "../isTestPath.ts";
 import { propertyOf } from "../propertyOf.ts";
-import { schemaMarks } from "../schemaMarks.ts";
 import { stemOf } from "../stemOf.ts";
 import type { Entry } from "./Entry.ts";
 import type { FileFacts } from "./FileFacts.ts";
@@ -16,7 +16,6 @@ import { addEntryFix } from "./addEntryFix.ts";
 import { depsCycles } from "./depsCycles.ts";
 import { discoverModules } from "./discoverModules.ts";
 import { guardEdges } from "./guardEdges.ts";
-import { joinPath } from "./joinPath.ts";
 import { libraryManifests } from "./libraryManifests.ts";
 import { moduleDiag } from "./moduleDiag.ts";
 import { moduleOf } from "./moduleOf.ts";
@@ -32,50 +31,12 @@ type Scanned = {
   readonly file: SourceFile;
   readonly module: ModuleInfo;
   readonly facts: FileFacts;
-  readonly client: boolean;
   /** The keys of the file's `contract(...)` calls. */
   readonly routes: readonly Entry[];
   /** The literal `layout` values of the file's `manifest(...)` bindings. */
   readonly layouts: readonly Entry[];
 };
 
-const SERVER = /\.server\.[cm]?[jt]sx?$/;
-
-/**
- * E1107 (k.leave Snapshots): a `store(...)` call in a client-reachable file (a `.tsx` or `.jsx` file, or a file one imports
- * through relative imports, never a `*.server.*` file) whose state schema holds a `.pii(class)` of a class its
- * module's `clientPii` does not list; once per call, the fix adds the classes to `clientPii`.
- */
-function clientPii(scanned: readonly Scanned[], files: readonly SourceFile[]): Diagnostic[] {
-  const byPath = new Map(scanned.map((s) => [s.file.path, s]));
-  const todo = scanned.filter((s) => s.client);
-  const reached = new Set(todo);
-  for (let s = todo.pop(); s !== undefined; s = todo.pop()) {
-    const dir = s.file.path.slice(0, Math.max(0, s.file.path.lastIndexOf("/")));
-    for (const imp of s.facts.imports) {
-      const next = imp.value.startsWith(".") ? byPath.get(joinPath(dir, imp.value)) : undefined;
-      if (next === undefined || reached.has(next) || SERVER.test(next.file.path)) continue;
-      reached.add(next);
-      todo.push(next);
-    }
-  }
-  const out: Diagnostic[] = [];
-  for (const { file, module, facts } of reached) {
-    const man = module.manifest;
-    if (man === null) continue;
-    const listed = values(man, "clientPii");
-    for (const arg of facts.stores) {
-      const classes = new Set<string>();
-      schemaMarks(arg, file, files, new Set(), classes);
-      const missing = [...classes].filter((c) => !listed.has(c));
-      if (missing.length === 0) continue;
-      const msg = `store state reaching #k-state holds .pii('${short(missing.join("', '"))}'), not in clientPii`;
-      const fix = addEntryFix(module.file, man.clientPii, missing, { key: "clientPii", at: man.tail });
-      out.push({ ...moduleDiag("E1107", file, arg.start, msg, fix), see: "k.leave" });
-    }
-  }
-  return out;
-}
 type Project = {
   readonly modules: readonly ModuleInfo[];
   readonly byKey: ReadonlyMap<string, ModuleInfo>;
@@ -182,7 +143,11 @@ function access({ file, module, facts, layouts }: Scanned, man: Manifest, p: Pro
  * cross-module access from imports and `ctx` capability uses. Files outside every module are not checked.
  * Deterministic: files are visited in path order and the caller sorts the result.
  */
-export function moduleChecks(checked: readonly Checked[], files: readonly SourceFile[]): Diagnostic[] {
+export function moduleChecks(
+  checked: readonly Checked[],
+  files: readonly SourceFile[],
+  projectOf: (path: string) => readonly SourceFile[] = () => checked.map((c) => c.file),
+): Diagnostic[] {
   const modules = discoverModules(checked, files);
   if (modules.length === 0) return [];
   const byKey = new Map(modules.map((m) => [m.key, m]));
@@ -193,12 +158,10 @@ export function moduleChecks(checked: readonly Checked[], files: readonly Source
     const module = moduleOf(file.path, modules);
     if (module === undefined || isTestPath(file.path.slice(module.root.length))) continue;
     const facts = scanFile(parsed.program);
-    const client = !SERVER.test(file.path) && /\.[jt]sx$/.test(file.path);
     scanned.push({
       file,
       module,
       facts,
-      client,
       routes: contractRoutes(file, parsed.program),
       layouts: bindingLayouts(file, parsed.program),
     });
@@ -207,10 +170,7 @@ export function moduleChecks(checked: readonly Checked[], files: readonly Source
   const project: Project = { modules, byKey };
   const out: Diagnostic[] = [
     ...depsCycles(modules, byKey, guardEdges(scanned, { modules, byKey })),
-    ...clientPii(
-      scanned,
-      checked.map((c) => c.file),
-    ),
+    ...clientStores(checked, modules, projectOf),
     ...libraryManifests(modules, byKey),
   ];
   for (const m of modules) {

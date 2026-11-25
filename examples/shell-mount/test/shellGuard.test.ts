@@ -59,11 +59,16 @@ it("sends a signed-out reader to sign-in and back to the note after signing in, 
   const { ctx, sent } = await shell();
   const t = await renderRoute("notes.home", { routes, shell: { id: "dev.keel.shellmount" }, ctx, mount });
   try {
+    expect(t.focusOrder()).toEqual(["notes.home.toNote"]);
     await t.fire("notes.home.toNote", { type: "click" });
+    // The sign-in form: a labelled name field, then its button, in that order for the keyboard.
+    expect(t.find("notes.signinForm:name")).toMatchObject({ role: "textbox", name: "Name" });
+    expect(t.focusOrder()).toEqual(["notes.signinForm:name", "notes.signinSubmit"]);
     await t.fire("notes.signinForm:name", { type: "input", value: "Ada" });
     await t.fire("notes.signinSubmit", { type: "click" });
     expect(sent.filter((s) => s.startsWith("POST"))).toHaveLength(1);
     expect(t.route()).toMatchObject({ id: "notes.note", params: { noteId: "n1" } });
+    expect(t.a11y("notes.note.title")).toMatchObject({ role: "heading", name: "Note n1" });
     expect(t.find("notes.note.title").text).toBe("Note n1");
   } finally {
     t.dispose();

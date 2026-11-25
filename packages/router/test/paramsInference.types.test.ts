@@ -61,7 +61,7 @@ describe("loader and action params/search", () => {
 
   it("a loader bound at an entry it was not declared for fails at manifest with E1515", () => {
     const bad = () =>
-      // The type error is in unsafe/negativeTypes.ts; called untyped here.
+      // The type error is in negativeTypes.test-d.ts; called untyped here.
       Reflect.apply(manifest, undefined, [
         t,
         {

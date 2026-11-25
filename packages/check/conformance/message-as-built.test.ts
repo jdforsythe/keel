@@ -1,6 +1,6 @@
 // Spec: k.claim, E1258's message "**E1258's message.** `<prop>: an element made before the call; make it inside a thunk` (`icon`: 61 units)."
 // Spec: k.ui, E1808's message "**E1808's message.** `<base> children made before it; pass a thunk` (`Box`: 41 units)."
-// Spec: k.security, E1571's message "**E1571's message.** `absolute URL fetched from client code; the policy allows this origin only` (73 units)."
+// Spec: k.security, E1571's message "`absolute URL fetched from client code; its origin is not declared under connect` (79 units)."
 // Spec: k.topology, E1552's key message "**E1552's key message.** A deployable key the Declaration omits: `<name>: <key> is not a deployable key` (`web: cache is not a deployable key`, 34 units); the keys it may hold are `keel explain`'s."
 // Seed 1337 (the property). E1258, E1808 and E1571 read their fixtures from fixtures-by-code.ts, with the names and counts those fixtures have; E1552 is an in-memory topology.
 import { check } from "@keel/check";
@@ -47,11 +47,12 @@ describe("messages stated as built", () => {
     expect("Box children made before it; pass a thunk".length).toBe(41);
   });
 
-  test("E1571 is `absolute URL fetched from client code; the policy allows this origin only`, 73 units", () => {
+  test("E1571 is `absolute URL fetched from client code; its origin is not declared under connect`, 79 units", () => {
     const m = messagesOf("E1571");
     expect(m.length).toBeGreaterThan(0);
-    for (const x of m) expect(x).toBe("absolute URL fetched from client code; the policy allows this origin only");
-    expect("absolute URL fetched from client code; the policy allows this origin only".length).toBe(73);
+    for (const x of m)
+      expect(x).toBe("absolute URL fetched from client code; its origin is not declared under connect");
+    expect("absolute URL fetched from client code; its origin is not declared under connect".length).toBe(79);
   });
 
   test("a deployable key the Declaration omits is E1552 `<name>: <key> is not a deployable key`, `web: cache is not a deployable key` 34 units", () => {

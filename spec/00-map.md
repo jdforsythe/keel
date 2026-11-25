@@ -13,7 +13,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | E140x | k.component, k.place | E145x | k.errors |
 | E150x | k.router, k.contract, k.guards, k.prefix, k.api | E155x | k.server, k.topology, k.deploy, k.shell, k.compat, k.hosting, k.security, k.origins, k.leave, k.user, k.mount |
 | E160x | k.ctx, k.sim, k.persist, k.data | E165x | k.services |
-| E170x | k.testing, k.model, k.prove, k.ledger | E175x | k.check, k.host |
+| E170x | k.testing, k.model, k.prove, k.ledger | E175x | k.check, k.host, k.unsafe |
 | E18xx | k.ui, k.a11y, k.aria | E19xx | k.forms |
 | E200x | std.sessions, std.multi, std.monitor | E210x | std.brands |
 | E215x | std.db | E230x | std.i18n |
@@ -27,13 +27,13 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 ## Kernel
 | id | section | status | one line |
 |-|-|-|-|
-| k.schema | Schemas | conformance-covered | codecs |
+| k.schema | Schemas | implemented | codecs |
 | k.formats | Format types | conformance-covered | brands |
 | k.reactive | Reactivity | conformance-covered | signals |
 | k.store | Store, transactions | conformance-covered | log |
 | k.component | Components | conformance-covered | props |
 | k.compiler | Compiler, artifacts | conformance-covered | JSX |
-| k.boundary | Server boundary | conformance-covered | stubs |
+| k.boundary | Server boundary | implemented | stubs |
 | k.bundle | Browser bundles | conformance-covered | workers |
 | k.runtime | DOM runtime, islands | conformance-covered | nodes |
 | k.resume | Documents, resume | conformance-covered | regions |
@@ -45,7 +45,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.routes | Route table | conformance-covered | union |
 | k.guards | Guards | conformance-covered | deny |
 | k.prefix | Path prefix | conformance-covered | enums |
-| k.forms | Forms | conformance-covered | fields |
+| k.forms | Forms | implemented | fields |
 | k.ui | Tokens, styling | conformance-covered | CSS |
 | k.ctx | Capabilities | conformance-covered | clock |
 | k.owner | Ctx owner | conformance-covered | dispose |
@@ -67,16 +67,16 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.sim | Simulation | conformance-covered | faults |
 | k.drive | Sim clock drive | conformance-covered | idle |
 | k.drive-law | Replays agree | conformance-covered | replays |
-| k.ledger | Ledger, evidence | conformance-covered | rungs |
-| k.server | Thin server | conformance-covered | loads |
-| k.leave | What a request leaves | conformance-covered | state |
+| k.ledger | Ledger, evidence | implemented | rungs |
+| k.server | Thin server | implemented | loads |
+| k.leave | What a request leaves | implemented | state |
 | k.user | User, caller | conformance-covered | user |
 | k.mount | Mount pages | conformance-covered | submit |
 | k.mount-scope | Mount scope | conformance-covered | proxy |
 | k.return | Shell mount | conformance-covered | net |
 | k.opening | Openings | conformance-covered | once |
 | k.links | Links in | conformance-covered | ids |
-| k.serverlog | Server log | conformance-covered | bounds |
+| k.serverlog | Server log | implemented | bounds |
 | k.sync | Concurrent writes | conformance-covered | heads |
 | k.persist | Storage, durable state | conformance-covered | drivers |
 | k.data | App data | conformance-covered | seam |
@@ -87,26 +87,27 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.api | API routes | conformance-covered | JSON |
 | k.hosting | Client hosting | conformance-covered | servedBy |
 | k.head | Document head | conformance-covered | title |
-| k.services | Thin services | conformance-covered | clients |
+| k.services | Thin services | implemented | clients |
 | k.openapi | OpenAPI import | conformance-covered | clients |
 | k.module | Module manifest | conformance-covered | surface |
 | k.library | Libraries | proposed | packages |
 | k.library-pack | Library publishing | proposed | pack |
 | k.server-deps | Server dependencies | proposed | env |
-| k.a11y | Accessibility | conformance-covered | WCAG |
+| k.a11y | Accessibility | implemented | WCAG |
 | k.aria | Widget parts | conformance-covered | roles |
 | k.roles | Part roles | conformance-covered | grid |
 | k.host-element | Host elements | conformance-covered | charts |
 | k.host-code | Host code | conformance-covered | d3 |
 | k.security | Headers, CSP | conformance-covered | CSP |
 | k.origins | Declared origins | conformance-covered | CSP |
-| k.privacy | Secrets, personal data | conformance-covered | secrets |
+| k.privacy | Secrets, personal data | implemented | secrets |
 | k.reveal | Revealed values | conformance-covered | E1112 |
 | k.privacy-reads | Static privacy reads | conformance-covered | readers |
 | k.evidence | Evidence bundle | conformance-covered | bundle |
 | k.parity | Stdlib parity | proposed | seams |
 | k.review | Review of escapes | conformance-covered | ranges |
 | k.escapes | Escape codes | conformance-covered | R codes |
+| k.unsafe | Unsafe, type tests | conformance-covered | count |
 
 ## Stdlib
 Sections: `spec/std/README.md`.

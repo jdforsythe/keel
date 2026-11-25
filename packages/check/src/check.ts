@@ -25,8 +25,11 @@ import { isCodePath } from "./internal/isCodePath.ts";
 import { isSqlPath } from "./internal/isSqlPath.ts";
 import { moduleChecks } from "./internal/modules/moduleChecks.ts";
 import { normalize } from "./internal/normalize.ts";
+import { outsideImports } from "./internal/outsideImports.ts";
 import { parseFile } from "./internal/parseFile.ts";
 import { placedWithoutRoutes } from "./internal/placedWithoutRoutes.ts";
+import { projectRoots } from "./internal/projectRoots.ts";
+import { reachResolve } from "./internal/reachResolve.ts";
 import { registerNames } from "./internal/registerNames.ts";
 import { ruleCodeDeclarations } from "./internal/ruleCodeDeclarations.ts";
 import { ruleInScope } from "./internal/ruleInScope.ts";
@@ -39,6 +42,7 @@ import { summarize } from "./internal/summarize.ts";
 import { topologyDiags } from "./internal/topologyDiags.ts";
 import { topologyNeeds } from "./internal/topologyNeeds.ts";
 import { typeCheck } from "./internal/typeCheck.ts";
+import { typeReferences } from "./internal/typeReferences.ts";
 import { unifiedDiff } from "./internal/unifiedDiff.ts";
 import { rules } from "./rules.ts";
 import type { CheckOptions } from "./types/CheckOptions.ts";
@@ -120,13 +124,15 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
       if (isCodePath(f.path) && !members.has(f.path) && dirs.find((d) => f.path.startsWith(d)) === dir)
         members.set(f.path, f);
     const project = Object.freeze([...members.values()]);
+    projectRoots.set(project, path.resolve(opts.root ?? process.cwd()));
     for (const f of group) projectOf.set(f.path, project);
     const topology = topologyOf(dir, all, opts);
     const sources = group.map((f) => ({ path: f.path.slice(dir.length), source: f.source }));
     const top = all.find((f) => f.path === `${dir}topology.ts`)?.source;
     // E1004 reads placement from the project's own `topology.ts` when the caller passes none (k.boundary Reach).
     const placed = topology ?? (top === undefined ? undefined : parseTopology(top).topology);
-    const compiled = compile(sources, placed === undefined ? {} : { topology: placed });
+    const resolve = reachResolve(project, dir, new Set(sources.map((f) => f.path)));
+    const compiled = compile(sources, placed === undefined ? { resolve } : { topology: placed, resolve });
     if (topology !== undefined) {
       const evaluated = all.find((f) => f.path === `${dir}.keel/routes.json`)?.source;
       out.push(...apiWithoutServer(dir, sources, topology, path.join(opts.root ?? process.cwd(), dir), top, evaluated));
@@ -175,7 +181,9 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
   // the rules of one `importDeps` imported first, whatever an earlier call in this process loaded (k.check-cache).
   const scope = stdInScope(all, opts.root ?? process.cwd());
   const typed =
-    opts.types === false ? undefined : typeCheck(code, opts.root ?? process.cwd(), reported, scope, opts.typeCache);
+    opts.types === false ? undefined : typeCheck(files, opts.root ?? process.cwd(), reported, scope, opts.typeCache);
+  // E1016's directive half is textual: it holds with the type pass off too (k.boundary Ambient types).
+  out.push(...typeReferences(files));
   // One diagnostic per fault: where the compiler reports E1403 at an expression, E1406 does not.
   const e1403 = new Set(out.filter((d) => d.code === "E1403").map((d) => `${d.path}:${d.line}:${d.col}`));
   if (typed !== undefined)
@@ -198,8 +206,9 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
     ...duplicateErrorCodes(checked),
     ...registerNames(checked, dirs),
     ...chainStoreIds(checked, dirs, all),
-    ...moduleChecks(checked, all),
+    ...moduleChecks(checked, all, (p) => projectOf.get(p) ?? []),
     ...aliasedImports(checked, path.resolve(opts.root ?? process.cwd()), dirs),
+    ...outsideImports(checked, path.resolve(opts.root ?? process.cwd()), dirs),
     ...guardRedirectLoops(checked),
     ...contractChecks(checked, all, opts.topology),
     ...ruleCodeDeclarations(checked),

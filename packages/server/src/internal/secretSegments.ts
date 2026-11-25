@@ -18,7 +18,8 @@ const formOf = (part: string): string | undefined => {
  * are skipped. A route is lined up from the first non-empty segment by its segments up to and including the marked
  * param: a param fits any segment, a static segment fits one equal to it decoded once in either letter case, or one
  * that does not decode. A route led by a param (a prefix param, which a path may leave out) is also lined up without
- * its first segment. When a non-empty segment follows the marked one, the path is cut there: that segment and the rest
+ * its first segment. A mark or a cut takes in the `/`s before its segment but one, and a mark at the last non-empty
+ * segment the `/`s after it, so no slash of a value is left; slashes before a static segment stay. When a non-empty segment follows the marked one, the path is cut there: that segment and the rest
  * become one mark, so a value holding a raw `/` leaves no part and no slash count behind. When the table has a secret
  * param, the first segment whose raw text holds `%2F` or `%5C` in either case is a cut as `[secret]` too. With several
  * cuts the earliest wins, `[secret]` at a tie, and the marks before it stay. A path no route lines up with, and a table
@@ -63,7 +64,21 @@ export function secretSegments(table: readonly Located[]): (path: string) => str
         tail = mark;
       }
     }
-    const kept = pieces.slice(0, cut).map((p, i) => marked[i] ?? p);
-    return (cut < pieces.length ? [...kept, tail] : kept).join("/");
+    // The text is rebuilt from the non-empty segments and the runs of `/` between them. A mark or the cut keeps one
+    // slash before it (none at the path's very start when there was none); a mark at the last segment drops the
+    // slashes after it, and the cut takes the rest of the path.
+    let out = "";
+    let prev = -1;
+    for (const i of where) {
+      if (i >= cut) break;
+      const gap = i - (prev < 0 ? 0 : prev);
+      const m = marked[i];
+      out += "/".repeat(m !== undefined && gap > 0 ? 1 : gap) + (m ?? pieces[i] ?? "");
+      prev = i;
+    }
+    if (cut < pieces.length) return `${out}${"/".repeat(cut - (prev < 0 ? 0 : prev) > 0 ? 1 : 0)}${tail}`;
+    const last = where[where.length - 1];
+    if (last === undefined) return "/".repeat(pieces.length - 1);
+    return out + (marked[last] === undefined ? "/".repeat(pieces.length - 1 - last) : "");
   };
 }

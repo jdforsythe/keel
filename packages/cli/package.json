@@ -65,7 +65,7 @@
   },
   "files": ["dist", "docs", "skills"],
   "scripts": {
-    "check": "tsc --noEmit && biome check src test unsafe",
+    "check": "tsc --noEmit && biome check src test",
     "test": "vitest run",
     "coverage": "node ../../tooling/coverage.mjs",
     "build": "tsc -p tsconfig.build.json",
@@ -83,6 +83,7 @@
     "@keel/store": "workspace:*",
     "@keel/testing": "workspace:*",
     "typescript": "^5.6",
+    "vite": "^8.3.6",
     "vitest": "^4.1.12"
   },
   "devDependencies": {

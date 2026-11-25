@@ -12,6 +12,8 @@ it("shows the quote the imported client fetched", async () => {
   ctx.net.route(QUOTES, () => Response.json({ id: "q1", text: "Small is fast.", author: "Ada" }));
   const app = await createApp({ topology, routes, ctx });
   const page = await renderRoute("app.home", { routes, params: {}, ctx, app });
+  expect(page.find("app.home").role).toBe("main");
+  expect(page.a11y("app.home.title").role).toBe("heading");
   expect(page.find("app.home.quote").text).toBe("Small is fast.");
   expect(page.find("app.home.author").text).toBe("Ada");
   page.dispose();

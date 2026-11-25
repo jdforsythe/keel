@@ -1,4 +1,4 @@
-/** Binary only: `applyWrites` refused an edit set because these paths lead out of the project through a symlink. */
+/** Binary only: `applyWrites` refused an edit set because a link carries these paths out of the project (k.scaffold Links). */
 export class WriteRefused extends Error {
   readonly paths: readonly string[];
   constructor(paths: readonly string[]) {

@@ -19,7 +19,8 @@
     "k.security",
     "k.server-deps",
     "k.shell",
-    "k.topology"
+    "k.topology",
+    "k.unsafe"
   ],
   "@keel/compiler": ["k.bundle", "k.compiler"],
   "@keel/ctx": ["k.ctx", "k.data", "k.owner", "k.persist", "k.sim"],

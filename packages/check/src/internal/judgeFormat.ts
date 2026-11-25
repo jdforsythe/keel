@@ -7,12 +7,13 @@ import { lineCol } from "./lineCol.ts";
 const STD = /^@keel\/std-/;
 
 /**
- * E1108 (k.formats) at one `formatLiteral` call: its `format` names no one registered format, its `text` is no string
- * literal, or the registered format's `parse` refuses it. The registry is the process's (`keel check` imports the
- * `@keel/std-*` packages in `deps` first, and no app code runs), held to `scope`: a format a `@keel/std-*` package
- * declares counts only while that package is in `scope` (`stdInScope`), as in a fresh process. A format that is not
- * registered and whose `@keel/std-*` package the module's `deps` do not list carries the fix that lists it (`depsFix`).
- * `files`: the checked files' texts by path.
+ * E1108 (k.formats) at one `formatLiteral` call: its `format` names no one registered format, its declaring package
+ * cannot be told, its `text` is no string literal, or the registered format's `parse` refuses it. The registry is the
+ * process's (`keel check` imports the `@keel/std-*` packages in `deps` first, and no app code runs), and it is
+ * consulted only when the declaring package is a `@keel/std-*` package in `scope` (`stdInScope`); any other owner (a
+ * kernel package, the app) names no registered format, so the answer depends on `deps` alone, as in a fresh process.
+ * A format that is not registered and whose `@keel/std-*` package the module's `deps` do not list carries the fix that
+ * lists it (`depsFix`). `files`: the checked files' texts by path.
  */
 export function judgeFormat(
   site: FormatSite,
@@ -34,15 +35,17 @@ export function judgeFormat(
       });
   };
   const name = site.names.length === 1 ? site.names[0] : undefined;
-  const gone = site.owner !== null && STD.test(site.owner) && !scope.has(site.owner);
-  const schema = name === undefined || gone ? undefined : s.registry().get(name);
+  const consulted = site.owner !== null && STD.test(site.owner) && scope.has(site.owner);
+  const schema = name === undefined || !consulted ? undefined : s.registry().get(name);
   if (schema === undefined)
     at(
       site.formatAt,
       site.names.length === 0
         ? "formatLiteral format is no format type over a string"
-        : `formatLiteral format ${site.names.join(" & ")} is not one registered format`,
-      site.names.length === 0 ? "" : depsFix(site.path, site.pkg, files),
+        : site.owner === null
+          ? "formatLiteral format's package cannot be told; write the format as its import"
+          : `formatLiteral format ${site.names.join(" & ")} is not one registered format`,
+      site.names.length === 0 || site.owner === null ? "" : depsFix(site.path, site.pkg, files),
     );
   if (site.text === null) at(site.textAt, "formatLiteral text is not a string literal");
   else if (schema !== undefined) {

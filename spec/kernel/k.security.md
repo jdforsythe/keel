@@ -21,7 +21,7 @@ object-src 'none'; require-trusted-types-for 'script'; trusted-types keel; repor
 
 **Rules.** E1570 a literal absolute `http(s)` URL in `src`, `poster`, `data`, `srcset`, `action`, `formaction` or `Image src`: the policy blocks an undeclared origin (k.origins; fix: none) · E1571 a literal absolute `http(s)` URL given to `ctx.net.fetch` or `service({ base })` in client-reachable code (E1004's reach) · E1576 a `@keel/*` internal entry (a specifier with an `internal` path segment) named by an import, re-export, or literal `import()` or `require` in a file outside `packages/`, `node_modules/` and `.keel/`, tests included: internal entries are kernel and stdlib seams such as the server state runner (fix: none). So is any `#` specifier (no `package.json` is read).
 
-**E1571's message.** `absolute URL fetched from client code; the policy allows this origin only` (73 units).
+**E1571's message.** `absolute URL fetched from client code; its origin is not declared under connect` (79 units).
 
 **Conformance.**
 - Every `createApp` response, a 404, a 413 and an asset included, carries the six headers; `Strict-Transport-Security` only on https.

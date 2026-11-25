@@ -2,7 +2,7 @@
 // Spec: k.contract, clause "A loader declared for `a.x` bound at `a.y` does not compile and `manifest` throws E1515."
 // Spec: k.contract Handlers: "`params` is `Infer` of the entry's `params` (`{}` without), `search` of a page's `search` or an API entry's `query`; ... `fn` is never annotated." Seed 1337.
 // Spec: k.router, clause "A loader of an entry with `params: P` gives `fn` `params` of type `Infer<typeof P>`."
-// Compile-time half of each "does not compile" claim: ../unsafe/conformanceNegativeTypes.ts; the calls here are untyped.
+// Compile-time half of each "does not compile" claim: ./negative-types.test-d.ts; the calls here are untyped.
 import { action, loader, manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
 import { type Infer, ok, s } from "@keel/schema";
@@ -95,7 +95,7 @@ describe("k.contract handlers name their entry", () => {
       expectTypeOf(search).toEqualTypeOf<Infer<typeof Query>>();
       return ok({ n: 1 });
     });
-    // the answer that is not the entry's `output` does not compile: ../unsafe/conformanceNegativeTypes.ts
+    // the answer that is not the entry's `output` does not compile: ./negative-types.test-d.ts
     expect(true).toBe(true);
   });
 

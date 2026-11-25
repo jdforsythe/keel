@@ -21,8 +21,8 @@ const outside = (root: string, abs: string): boolean => {
 /**
  * Binary only: apply an edit set under `cwd`, all or nothing on paths: any write that resolves outside `cwd`
  * (absolute, `..`, or `cwd` itself) rejects the whole set before anything is written. So does, with `WriteRefused`,
- * a write whose target is a symlink or whose nearest existing ancestor's real path is outside `cwd`'s (k.scaffold
- * E1357): a link never carries a write out of the project. Existing files keep their
+ * a write a link carries out of `cwd`'s real path (`linkEscapes`, k.scaffold Links, E1357): a symlink target, an
+ * existing file with more than one hard link, or a nearest existing ancestor whose real path is outside. Existing files keep their
  * mode (generated read-only files are made writable for the write, then restored); `readonly` writes end at
  * 0444. `null` content removes the file, then each parent directory it leaves empty, up to `cwd`.
  */

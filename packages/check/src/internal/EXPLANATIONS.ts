@@ -95,6 +95,20 @@ const ROWS: readonly Row[] = [
     "k.bundle",
   ],
   [
+    "E1015",
+    "a relative specifier resolving outside the project",
+    "keel check reads the project's files only, so no rule (E1004, E1107, E1111, E1571) follows that file.",
+    "move the file into the project, or publish it as a workspace package",
+    "k.boundary",
+  ],
+  [
+    "E1016",
+    "a type reference, or an import.meta declaration not Keel's",
+    "A browser build's import.meta.env holds BASE_URL, MODE, DEV, PROD and SSR (k.boundary Environment); @keel/compiler/client types exactly those. Another declaration (vite/client, a declare global) types keys the build never holds.",
+    "delete the reference; read config through clientStd",
+    "k.boundary",
+  ],
+  [
     "W1012",
     "a project root holding index.html: Keel writes every document and never reads the file",
     "Dev and build write each document's head, so what the file held would show nowhere: markup, scripts, stylesheets.",
@@ -977,6 +991,13 @@ const ROWS: readonly Row[] = [
     "k.user",
   ],
   [
+    "E1593",
+    "an identityMount call that is not identity.ts's default export",
+    "The build reads the mount from identity.ts beside topology.ts: only its default export reaches the router and a shell. A call elsewhere opens no path and alone carries the /__keel/user read into the bundle, an app half opted in to identity. keel check, at the call; test files are exempt.",
+    "import mount from './identity.ts'; mount.href('/sign-in')",
+    "k.mount",
+  ],
+  [
     "E1601",
     "Date.now, new Date(), Temporal.Now, Math.random, crypto.randomUUID, fetch, sendBeacon, localStorage in app code",
     "Effects go through ctx so sim runs are deterministic. Aliases, destructuring and literal keys count.",
@@ -1246,6 +1267,13 @@ const ROWS: readonly Row[] = [
     "k.testing",
   ],
   [
+    "W1731",
+    "keel ledger: a layout in a project's .keel/routes.json that no page route's chain holds",
+    "A layout's markup is checked only in the renderRoute runs of the pages it wraps, so this one is in no render check and no a11y item. A warning: the item count does not move.",
+    "give a page `layout: <id>` in its contract, or remove the layout",
+    "k.ledger",
+  ],
+  [
     "E1751",
     "TS type error with no Keel rule code (message starts with the TS code)",
     "",
@@ -1307,6 +1335,20 @@ const ROWS: readonly Row[] = [
     "@types/node makes process, Buffer and node: imports type-check; the browser has none, and no ES module has require.",
     "__dirname -> import.meta.dirname (outside a browser file); else move the code to a *.server.ts file",
     "k.host",
+  ],
+  [
+    "E1760",
+    "unsafe justification string of fewer than 8 words",
+    "The reason argues the escape holds: the invariant that makes it safe and what keeps it true. Review judges it.",
+    "unsafe('ids are minted by asId and never parsed from input', () => x as Id)",
+    "k.unsafe",
+  ],
+  [
+    "E1761",
+    "a *.test-d.ts(x) file outside test/ or conformance/, an import of one, or an unsafe() call in one",
+    "A negative type test is type-checked, never run; under test/ it stays out of dist and of the unsafe count.",
+    "modules/m/a.test-d.ts -> modules/m/test/a.test-d.ts; drop the import or the unsafe() wrapper",
+    "k.unsafe",
   ],
   ["E1801", "raw value where a token is required", "", 'p="12px" -> p="3" (nearest token)', "k.ui"],
   [

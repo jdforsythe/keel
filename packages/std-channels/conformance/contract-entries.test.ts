@@ -108,7 +108,7 @@ describe("std.contracts: std-channels", () => {
       "a.ev": { method: "GET", path: "/api/a/other", query: Room, events: true, output: ch.events },
       "a.pub": { method: "POST", path: "/api/a/events", query: Room, body: ch.body, output: s.object({}) },
     });
-    // compile-time half: ../unsafe/conformanceNegativeTypes.ts
+    // compile-time half: ./negative-types.test-d.ts
     const e = messageOf(Reflect.apply(bind, undefined, [a]));
     expect(e.code).toBe("E1515");
     expect(e.message).toContain("path");
@@ -119,7 +119,7 @@ describe("std.contracts: std-channels", () => {
       "a.ev": { method: "GET", path: "/api/a/events", query: Other, events: true, output: ch.events },
       "a.pub": { method: "POST", path: "/api/a/events", query: Room, body: ch.body, output: s.object({}) },
     });
-    // compile-time half: ../unsafe/conformanceNegativeTypes.ts
+    // compile-time half: ./negative-types.test-d.ts
     const e = messageOf(Reflect.apply(bind, undefined, [a]));
     expect(e.code).toBe("E1515");
     expect(e.message).toContain("query");
@@ -130,7 +130,7 @@ describe("std.contracts: std-channels", () => {
       "a.ev": { method: "GET", path: "/api/a/events", query: Room, events: true, output: s.object({}) },
       "a.pub": { method: "POST", path: "/api/a/events", query: Room, body: ch.body, output: s.object({}) },
     });
-    // compile-time half: ../unsafe/conformanceNegativeTypes.ts
+    // compile-time half: ./negative-types.test-d.ts
     const e = messageOf(Reflect.apply(bind, undefined, [a]));
     expect(e.code).toBe("E1515");
     expect(e.message).toContain("output");
@@ -141,7 +141,7 @@ describe("std.contracts: std-channels", () => {
       "a.ev": { method: "GET", path: "/api/a/events", query: Room, events: true, output: ch.events },
       "a.pub": { method: "POST", path: "/api/a/events", query: Room, body: s.object({}), output: s.object({}) },
     });
-    // compile-time half: ../unsafe/conformanceNegativeTypes.ts
+    // compile-time half: ./negative-types.test-d.ts
     const e = messageOf(Reflect.apply(bind, undefined, [a]));
     expect(e.code).toBe("E1515");
     expect(e.message).toContain("body");
@@ -152,7 +152,7 @@ describe("std.contracts: std-channels", () => {
       "a.ev": { method: "PUT", path: "/api/a/events", query: Room, body: ch.body, output: ch.events },
       "a.pub": { method: "POST", path: "/api/a/events", query: Room, body: ch.body, output: s.object({}) },
     });
-    // compile-time half: ../unsafe/conformanceNegativeTypes.ts
+    // compile-time half: ./negative-types.test-d.ts
     const e = messageOf(Reflect.apply(bind, undefined, [a]));
     expect(e.code).toBe("E1515");
     expect(e.message).toContain("method");
@@ -163,7 +163,7 @@ describe("std.contracts: std-channels", () => {
       "a.ev": { method: "GET", path: "/api/a/events", query: Room, output: ch.events },
       "a.pub": { method: "POST", path: "/api/a/events", query: Room, body: ch.body, output: s.object({}) },
     });
-    // compile-time half: ../unsafe/conformanceNegativeTypes.ts
+    // compile-time half: ./negative-types.test-d.ts
     const e = messageOf(Reflect.apply(bind, undefined, [a]));
     expect(e.code).toBe("E1515");
     expect(e.message).toContain("events");
@@ -174,7 +174,7 @@ describe("std.contracts: std-channels", () => {
       "a.ev": { method: "GET", path: "/api/a/other", query: Other, events: true, output: ch.events },
       "a.pub": { method: "POST", path: "/api/a/events", query: Room, body: ch.body, output: s.object({}) },
     });
-    // compile-time half: ../unsafe/conformanceNegativeTypes.ts
+    // compile-time half: ./negative-types.test-d.ts
     const e = messageOf(Reflect.apply(bind, undefined, [a]));
     expect(e.code).toBe("E1515");
     expect(e.message).toContain("path");
@@ -188,7 +188,7 @@ describe("std.contracts: std-channels", () => {
   // The spec says `publish` is required when the channel has `message` and names no error code for its absence: this test asserts the compile-time half only.
   test("`publish` is required when the channel has `message`: without it `channelRoute` does not compile", () => {
     const a = good();
-    // compile-time half: ../unsafe/conformanceNegativeTypes.ts
+    // compile-time half: ./negative-types.test-d.ts
     const run = () => Reflect.apply(channelRoute, undefined, [a, ch, { id: "a.ev", stores, member }]);
     expect(typeof run).toBe("function");
   });
@@ -198,7 +198,7 @@ describe("std.contracts: std-channels", () => {
       "a.ev": { method: "GET", path: "/api/a/plain", query: Room, events: true, output: plain.events },
       "a.pub": { method: "POST", path: "/api/a/plain", query: Room, body: s.object({}), output: s.object({}) },
     });
-    // compile-time half: ../unsafe/conformanceNegativeTypes.ts
+    // compile-time half: ./negative-types.test-d.ts
     const e = messageOf(() =>
       Reflect.apply(channelRoute, undefined, [a, plain, { id: "a.ev", publish: "a.pub", stores, member }]),
     );

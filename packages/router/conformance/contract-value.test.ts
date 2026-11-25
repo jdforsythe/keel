@@ -3,7 +3,7 @@
 // Spec: k.routes, Where rules fire "| E1155 | a contract key | `contract` | contract keys |"
 // Spec: RFC 0157 Proposal 1, "`contract` returns a frozen `{ kind: 'keel.contract', module, entries, href }`. It holds schemas and strings only." (RFC 0157 Proposal 1)
 // Seed 1337.
-// Compile-time half of each "does not compile" claim: ../unsafe/conformanceNegativeTypes.ts; the calls here are untyped.
+// Compile-time half of each "does not compile" claim: ./negative-types.test-d.ts; the calls here are untyped.
 import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import fc from "fast-check";
@@ -32,7 +32,7 @@ describe("k.contract value", () => {
 
   it("a key `b.home` in contract `a` does not compile", () => {
     const bad = () => Reflect.apply(contract, undefined, ["a", { "a.home": { path: "/" }, "b.home": { path: "/b" } }]);
-    // the type half is claimed in ../unsafe/conformanceNegativeTypes.ts; `contract` throws E1155 for it
+    // the type half is claimed in ./negative-types.test-d.ts; `contract` throws E1155 for it
     expect(thrown(bad)?.code).toBe("E1155");
   });
 

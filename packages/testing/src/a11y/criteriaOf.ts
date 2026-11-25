@@ -1,4 +1,4 @@
-import { axeRuleList } from "../../unsafe/axeRuleList.ts";
+import { axeRuleList } from "../internal/axeRuleList.ts";
 import { WCAG_CRITERIA } from "./WCAG_CRITERIA.ts";
 
 /** Keel's own codes and the criteria they check (k.a11y Claims). */

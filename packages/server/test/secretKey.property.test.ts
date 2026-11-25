@@ -116,8 +116,9 @@ describe("secretKey cost", () => {
     const n = s.object({ rec: s.record(s.object({ pw: s.secret(s.string()), name: s.string() })) }).node;
     expect(secretKey(n, "rec.a.b.pw")).toBe(true);
     expect(secretKey(n, "rec.a.pw")).toBe(true);
-    // Past a record holding a secret every key is secret: a sibling under it is dropped too, the safe direction.
-    expect(secretKey(n, "rec.a.b.name")).toBe(true);
+    // A plain sibling of the secret under a record's value is kept, whether the record key holds dots or not.
+    expect(secretKey(n, "rec.a.b.name")).toBe(false);
+    expect(secretKey(n, "rec.a.name")).toBe(false);
     expect(secretKey(s.object({ rec: s.record(s.string()), x: s.string() }).node, "rec.a.b")).toBe(false);
   });
 });

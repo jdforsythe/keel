@@ -1,13 +1,20 @@
 import { type Ctx, createCtx } from "@keel/ctx";
-import { withCallbacks } from "../unsafe/withCallbacks.ts";
 import { clip } from "./internal/clip.ts";
 import { fail } from "./internal/fail.ts";
+import { harnessArtifacts } from "./internal/harnessArtifacts.ts";
 import { openHarness } from "./internal/openHarness.ts";
 import { seedFrom } from "./internal/seedFrom.ts";
 import { seedStores } from "./internal/seedStores.ts";
 import type { Harness } from "./types/Harness.ts";
 import type { RenderOptions } from "./types/RenderOptions.ts";
+import type { RenderProps } from "./types/RenderProps.ts";
 import type { TestComponent } from "./types/TestComponent.ts";
+
+/**
+ * A component `render` takes: one whose props are `A`, and which a schema's parsed `P` with the props `A` adds beyond
+ * the schema also fits. The compiler checks the second at each call, with the component's own types.
+ */
+type Renderable<P, A extends P> = TestComponent<P, A> & ((props: P & Omit<A, keyof P>, ctx: Ctx) => Node);
 
 /**
  * Render `component` for a test (k.testing Harness). `props` is parsed by `component.Props` and every
@@ -20,28 +27,36 @@ import type { TestComponent } from "./types/TestComponent.ts";
  * `ctx` is typed as the one it runs on: `SimCtx` when none is given, else the given ctx's type.
  */
 export function render<P, A extends P = P>(
-  component: TestComponent<P, A>,
-  options: RenderOptions & { readonly ctx?: undefined },
+  component: Renderable<P, A>,
+  options: RenderOptions<RenderProps<P, NoInfer<A>>> & { readonly ctx?: undefined },
 ): Harness;
 export function render<P, A extends P, C extends Ctx>(
-  component: TestComponent<P, A>,
-  options: RenderOptions & { readonly ctx: C },
+  component: Renderable<P, A>,
+  options: RenderOptions<RenderProps<P, NoInfer<A>>> & { readonly ctx: C },
 ): Harness<C>;
-export function render<P, A extends P = P>(component: TestComponent<P, A>, options: RenderOptions): Harness<Ctx>;
-export function render<P, A extends P = P>(component: TestComponent<P, A>, options: RenderOptions): Harness<Ctx> {
+export function render<P, A extends P = P>(
+  component: Renderable<P, A>,
+  options: RenderOptions<RenderProps<P, NoInfer<A>>>,
+): Harness<Ctx>;
+export function render<P, A extends P = P>(
+  component: Renderable<P, A>,
+  options: RenderOptions<RenderProps<P, A>>,
+): Harness<Ctx> {
   const schema = component.Props;
   if (schema === undefined) throw fail("schema.invalid", "component has no Props (export `Props` from its file)", null);
   const parsed = schema.parse(options.props);
   if (!parsed.ok) throw fail("schema.invalid", `props: ${clip(parsed.error.message, 80)}`, parsed.error.data);
+  const artifacts = harnessArtifacts(options.artifacts);
   const seeded = seedStores(options.state ?? []);
   const ctx = options.ctx ?? createCtx({ mode: "sim", seed: seedFrom(undefined) });
   const name = component.name === "" ? "anonymous" : component.name;
   const { harness, check } = openHarness({
-    view: () => component(withCallbacks<P, A>(parsed.value), ctx),
+    // The parsed props over the given ones: the schema's values as it parsed them, the callback and slot props as given.
+    view: () => component({ ...options.props, ...parsed.value }, ctx),
     ctx,
     seeded,
     target: () => ({ route: null, component: name }),
-    artifacts: options.artifacts,
+    artifacts,
   });
   try {
     check();

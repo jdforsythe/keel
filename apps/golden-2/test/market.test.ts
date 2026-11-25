@@ -10,7 +10,6 @@ import { distanceKm } from "../modules/recipes/distanceKm.ts";
 import { markets } from "../modules/recipes/markets.ts";
 import { nearestMarket } from "../modules/recipes/nearestMarket.ts";
 import { routes } from "../modules/recipes/routes.ts";
-import { artifacts } from "./artifacts.ts";
 import { catalogApi } from "./catalogFixture.ts";
 
 const live: { dispose(): void }[] = [];
@@ -21,7 +20,7 @@ afterEach(() => {
 /** The catalog page's shopping list tab in `locale`, over a sim ctx of `seed`: its geo position is that seed's. */
 async function listTab(locale: "en-US" | "de-DE" | "ja-JP", seed: number) {
   const api = await catalogApi(seed);
-  const r = await renderRoute("recipes.catalog", { routes, params: { locale }, ctx: api.ctx, artifacts, mount });
+  const r = await renderRoute("recipes.catalog", { routes, params: { locale }, ctx: api.ctx, mount });
   live.push(r);
   await r.fire("recipes.views.tab.list", { type: "click" });
   return { api, r };

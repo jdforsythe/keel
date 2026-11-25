@@ -1,6 +1,6 @@
 ---
 name: keel
-description: "Read first in a Keel app: app shape, one export per file, the rules, the commands, and which Keel skill to load next; E1104, E1108, E1013, E1155, E1165, E1401, E1403, E1407, E145x, E1501, E1515, E1601, W1608, E1301, E1752, E1757"
+description: "Read first in a Keel app: app shape, one export per file, the rules, the commands, and which Keel skill to load next; E1104, E1108, E1013, E1015, E1155, E1165, E1401, E1403, E1407, E145x, E1501, E1515, E1601, W1608, E1301, E1752, E1757, E1760, E1761"
 ---
 
 # Building a Keel app
@@ -38,7 +38,7 @@ export default function TodoList(props: Infer<typeof Props>) {
 **Rules.**
 - Failures are values: return `err(...)`, never `throw` (E1451); wrap throwing code in `attempt`, never `try` (E1452); never drop a `Result` (E1453).
 - No `Date`, `Math.random`, `fetch`, `setTimeout` or `localStorage` (E1601): use `ctx.clock`, `ctx.random.id('Todo')`, `ctx.storage`, a `service` for HTTP (E1651). An `import()` is W1608, a warning: a `simulate` run does not wait for the load; use a static import.
-- No `any`, casts, `!` or `@ts-ignore` outside `unsafe(reason, fn)` (E1757); no `@keel/*` import with an `internal` segment (E1576). Import a `modules/` file by a relative path (E1013).
+- No `any`, casts, `!` or `@ts-ignore` outside `unsafe(reason, fn)` (E1757), whose reason, 8 words or more, says why the escape holds (E1760). A claim that a call must not compile is a negative type test: `test/<name>.test-d.ts`, each `// @ts-expect-error <what must not compile>` one claim, imported by nothing (E1761); no `@keel/*` import with an `internal` segment (E1576). Import a `modules/` file by a relative path (E1013); code outside the project is a workspace package, never a relative path out of it (E1015).
 - A format value written in source (a chart's `start`, a store's initial value, a fixture) is `formatLiteral(Instant, '1970-01-01T00:00:00.000Z')` (`@keel/schema`): a string literal `keel check` parses with the format, E1108 when it does not. Data from outside reads with `parse` and answers a `Result`.
 
 **Commands.** `keel check` · `keel test` · `keel build` · `keel dev` · `keel review origin/main..HEAD` · `keel scaffold project|module|route|component|store|service <name>` · `keel codemod rename|move|place`: prefer them to hand edits.

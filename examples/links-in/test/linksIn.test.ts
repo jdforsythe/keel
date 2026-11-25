@@ -11,9 +11,15 @@ const id = "dev.keel.linksin";
 it("opens the place a link names while the shell runs", async () => {
   const t = await renderRoute("places.home", { routes, shell: { id } });
   try {
+    expect(t.find("places.home").role).toBe("main");
+    expect(t.focusOrder()).toEqual(["places.home.toLisbon"]);
     await t.returnLink(`${id}:/places/oslo`);
     expect(t.route()).toMatchObject({ id: "places.place", params: { placeId: "oslo" } });
     expect(t.find("places.place.title").text).toBe("oslo");
+    // The place page names itself in its heading and offers one link back, the only stop for the keyboard.
+    expect(t.a11y("places.place.title")).toMatchObject({ role: "heading", name: "oslo" });
+    expect(t.focusOrder()).toEqual(["places.place.toHome"]);
+    expect(t.find("places.place.toHome").name).toBe("All places");
   } finally {
     t.dispose();
   }

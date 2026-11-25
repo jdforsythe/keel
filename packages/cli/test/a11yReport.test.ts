@@ -33,7 +33,8 @@ const map: A11yCriteriaMap = new Map([
   ["2.4.3", { render: [], static: ["E1820"] }],
 ]);
 const claim = (route: string, criterion: string, rung: "none" | "example"): A11yClaim => ({
-  item: `a11y:${route}#${criterion}`,
+  project: ".",
+  item: `a11y:.:${route}#${criterion}`,
   route,
   criterion,
   rung,

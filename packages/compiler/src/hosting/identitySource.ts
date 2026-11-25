@@ -1,4 +1,5 @@
 import { type Expression, type ObjectExpression, parseSync } from "oxc-parser";
+import { assetsProblem } from "./assetsProblem.ts";
 
 const bare = (e: Expression): Expression =>
   e.type === "ParenthesizedExpression" || e.type === "TSAsExpression" || e.type === "TSSatisfiesExpression"
@@ -13,7 +14,8 @@ function prop(o: ObjectExpression, key: string): Expression | undefined {
 
 /**
  * The project's `identity.server.ts` read statically (k.user Identity source): `problem`, the E1579 message when it
- * has no default export that is an `identity(...)` call or its `handle.path` literal is not of lowercase `/` segments;
+ * has no default export that is an `identity(...)` call or its `handle.path` literal is not of lowercase `/` segments
+ * or is at or under `/assets` (`assetsProblem`);
  * `path`, that `handle.path` when it is a string literal; `mounted`, when it is `<x>.path` with `x` the default import
  * of `./identity.ts` (k.mount Declaration). Nothing is executed.
  */
@@ -52,7 +54,11 @@ export function identitySource(source: string): {
   )
     return { mounted: true };
   if (at?.type !== "Literal" || typeof at.value !== "string") return {};
-  return /^(\/[a-z0-9-]+)+$/.test(at.value)
-    ? { path: at.value }
-    : { problem: `handle.path ${JSON.stringify(at.value).slice(0, 40)} is not lowercase / segments`, path: at.value };
+  if (!/^(\/[a-z0-9-]+)+$/.test(at.value))
+    return {
+      problem: `handle.path ${JSON.stringify(at.value).slice(0, 40)} is not lowercase / segments`,
+      path: at.value,
+    };
+  const assets = assetsProblem(at.value);
+  return assets === undefined ? { path: at.value } : { problem: assets, path: at.value };
 }

@@ -10,7 +10,7 @@ const file = {
     { pkg: "a", name: "y", file: "packages/a/src/y.ts", rung: "none" },
   ],
   clauses: [{ item: "k.one#1", rung: "example" }],
-  a11y: [{ item: "a11y:r#1.1.1", rung: "example" }],
+  a11y: [{ item: "a11y:.:r#1.1.1", rung: "example" }],
 };
 const tree = {
   records: [
@@ -19,9 +19,10 @@ const tree = {
     { item: "k.one#1", rung: "example" },
   ],
   unsafe: 2,
+  negativeTypes: 0,
   rungs: { example: 2, probabilistic: 1, exhaustive: 0, proven: 0, monitored: 0 },
 };
-const treeWithA11y = { ...tree, records: [...tree.records, { item: "a11y:r#1.1.1", rung: "example" }] };
+const treeWithA11y = { ...tree, records: [...tree.records, { item: "a11y:.:r#1.1.1", rung: "example" }] };
 const messages = (f: unknown, t: typeof tree, a11y = false) =>
   compareLedger(f, t, a11y).map((d: { message: string }) => d.message);
 
@@ -58,9 +59,27 @@ describe("compareLedger", () => {
     const edited = { ...file, a11y: [], rungs: { ...file.rungs, example: 99 } };
     expect(messages(edited, tree)).toEqual([]);
     expect(messages(edited, treeWithA11y, true)).toEqual([
-      "a11y:r#1.1.1 (example) is in the tree and not in the ledger file",
+      "a11y:.:r#1.1.1 (example) is in the tree and not in the ledger file",
       "example is held by 99 items in the ledger file, 2 in the tree",
     ]);
+  });
+
+  it("reports a committed WCAG item of the form without a project as gone from the tree, and the keyed one as new", () => {
+    const old = { ...file, a11y: [{ item: "a11y:r#1.1.1", rung: "example" }] };
+    expect(messages(old, treeWithA11y, true)).toEqual([
+      "a11y:r#1.1.1 is in the ledger file and not in the tree",
+      "a11y:.:r#1.1.1 (example) is in the tree and not in the ledger file",
+    ]);
+  });
+
+  it("finds a changed negativeTypes count in either direction, a missing one as zero", () => {
+    expect(messages({ ...file, negativeTypes: 3 }, { ...tree, negativeTypes: 2 })).toEqual([
+      "negativeTypes is 3 in the ledger file, 2 in the tree",
+    ]);
+    expect(messages({ ...file, negativeTypes: 1 }, { ...tree, negativeTypes: 2 })).toEqual([
+      "negativeTypes is 1 in the ledger file, 2 in the tree",
+    ]);
+    expect(messages(file, { ...tree, negativeTypes: 0 })).toEqual([]);
   });
 
   it("treats a missing unsafe count as zero", () => {
@@ -75,7 +94,7 @@ describe("committedRungs", () => {
       "packages/a/src/y.ts#y",
       "k.one#1",
     ]);
-    expect([...committedRungs(file, true).keys()]).toContain("a11y:r#1.1.1");
+    expect([...committedRungs(file, true).keys()]).toContain("a11y:.:r#1.1.1");
   });
 });
 
@@ -91,6 +110,7 @@ describe("parseFresh", () => {
     expect(parseFresh(text)).toEqual({
       records: [{ item: "k.one#1", rung: "example" }],
       unsafe: 4,
+      negativeTypes: 0,
       rungs: { example: 1, probabilistic: 0, exhaustive: 0, proven: 0, monitored: 0 },
     });
   });

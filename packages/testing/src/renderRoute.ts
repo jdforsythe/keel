@@ -8,6 +8,7 @@ import { serverState } from "@keel/store/internal";
 import { browserFront } from "./internal/browserFront.ts";
 import { documentRoute } from "./internal/documentRoute.ts";
 import { fail } from "./internal/fail.ts";
+import { harnessArtifacts } from "./internal/harnessArtifacts.ts";
 import { memoryHistory } from "./internal/memoryHistory.ts";
 import { openHarness } from "./internal/openHarness.ts";
 import { requestLog } from "./internal/requestLog.ts";
@@ -65,9 +66,12 @@ export async function renderRoute<T extends RouteTable>(
   id: string,
   options: RouteRenderOptions<T>,
 ): Promise<RouteHarness<RouteStateOf<T>, Ctx>> {
+  // The project's artifacts under `keel test` when none are given; E1807 for an unusable `tokens.ts` before anything renders.
+  const artifacts = harnessArtifacts(options.artifacts);
   const given = options.routes;
   // With `app` the page is a built node page: requested from the app and resumed, no router.
-  if (options.app !== undefined) return documentRoute(id, options, options.app);
+  if (options.app !== undefined)
+    return documentRoute(id, artifacts === undefined ? options : { ...options, artifacts }, options.app);
   if (typeof given === "function")
     throw fail("E1722", `renderRoute(${JSON.stringify(id)}): routes as an import needs app; pass the route table`, {
       option: "routes",
@@ -181,7 +185,7 @@ export async function renderRoute<T extends RouteTable>(
       restoreHead();
       window.scrollTo(0, 0);
     },
-    artifacts: options.artifacts,
+    artifacts,
   });
   try {
     await settle(document.body, () => undefined, busy, undefined, watchOf(outer));
@@ -198,9 +202,21 @@ export async function renderRoute<T extends RouteTable>(
       return harness.fire(id, event);
     },
     route: () => router.route.get(),
+    // The router's refusal (E1501, k.router) is the handle's: it rejects once the page has settled. A rejection after
+    // that has no caller left and stays unhandled, so it still surfaces.
     navigate: async (href) => {
-      void router.navigate(href);
-      await harness.settle();
+      const refused: unknown[] = [];
+      let waited = false;
+      void router.navigate(href).catch((error: unknown) => {
+        if (waited) throw error;
+        refused.push(error);
+      });
+      try {
+        await harness.settle();
+      } finally {
+        waited = true;
+      }
+      if (refused.length > 0) throw refused[0];
     },
     location: () => ({ entries: history.length(), scrollY: window.scrollY }),
     documents: () => [...documents],

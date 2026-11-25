@@ -26,10 +26,15 @@ it("renders the home page and navigates to the releases with no server, asking o
   const { ctx } = world(() => json(TWO));
   const page = await renderRoute("app.home", { routes, params: {}, ctx });
   expect(page.find("app.home.title").text).toBe("A site with no server");
+  // A keyboard user meets the masthead's page links first, then the link in the text, as they read.
+  expect(page.focusOrder()).toEqual(["app.nav.home", "app.nav.releases", "app.home.toReleases"]);
+  expect(page.find("app.home.toReleases")).toMatchObject({ role: "link", name: "See the latest Node.js releases" });
   expect(page.requests()).toEqual([]);
   await page.navigate(app.href("app.releases"));
   await page.settle();
   expect(page.route().id).toBe("app.releases");
+  expect(page.a11y("app.releases.title")).toMatchObject({ role: "heading", name: "Latest Node.js releases" });
+  expect(page.find("app.releases.list").role).toBe("list");
   expect(page.find("app.releases.list").text).toContain("v25.1.0");
   expect(page.find("app.releases.list").text).toContain("v24.9.0");
   await page.navigate(app.href("app.home"));

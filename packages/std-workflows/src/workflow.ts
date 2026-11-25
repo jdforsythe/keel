@@ -1,7 +1,7 @@
 import type { Schema } from "@keel/schema";
 import type { Job } from "@keel/std-jobs";
 import type { StateSpec } from "@keel/std-statecharts";
-import { asEvents } from "../unsafe/asEvents.ts";
+import { asEvents } from "@keel/std-statecharts/internal";
 import { looseChart } from "../unsafe/looseChart.ts";
 import type { StepSpec } from "./StepSpec.ts";
 import type { WaitSpec } from "./WaitSpec.ts";

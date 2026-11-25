@@ -1,6 +1,5 @@
 // Spec: k.privacy-reads, Conformance "With `names` `[{ from: '@keel/std-tokens', name: 'Digested' }]`, `schemaHolds` is `'yes'` for `s.object({ d: Digested })`, `D.optional()` with `D` an alias of it, `t.Digested` of a namespace import, and a `const` of an imported `*.schema.ts` holding one; `'unknown'` for `s.object({ d: make() })`; `'no'` for `s.object({ d: s.string() })` and for a schema imported from another package."
-// Spec: k.privacy-reads, Readers "`schemaHolds(expr, input, names): 'yes' | 'unknown' | 'no'` reads the schema expression `expr` of `input.file` through `const`s, project imports and re-exports, object literal fields, spreads, array elements, call arguments, a call's receiver (`X.optional()` reads `X`) and both branches of `?:`."
-// Spec: k.privacy-reads, Readers "The answer is `'yes'` when a part is listed; else `'unknown'` when a part is a call whose callee is not a member (a factory), a binding it cannot follow, a computed member, an object literal's getter, setter or method, or a binding the file changes after its literal; else `'no'`. An import from a package `names` does not list is `'no'`: a package's schemas are its own (k.privacy E1111)."
+// Spec: k.privacy-reads, Readers "`schemaHolds(expr, input, names): 'yes' | 'unknown' | 'no'` reads the schema expression `expr` of `input.file` through `const`s, project imports and re-exports, object literal fields, spreads, array elements, call arguments, a call's receiver (`X.optional()` reads `X`) and both branches of `?:`. A part is listed when it is `{ from, name }` of `names` imported by name under any local name, or `<ns>.<name>` of a namespace import of `from`. The answer is `'yes'` when a part is listed; else `'unknown'` when a part is a call whose callee is not a member (a factory), a binding it cannot follow, a computed member, an object literal's getter, setter or method, or a literal binding that is not held (Held); else `'no'`. An import from a package `names` does not list is `'no'`: a package's schemas are its own (k.privacy E1111)."
 // Seed: 1337.
 // Not yet built: `test.skip` until `schemaHolds` is exported by `@keel/check`; remove the `.skip` in the build that adds it.
 // Assumption: signature `schemaHolds(expr, input, names)`, `expr` a node of `input.ast`, `names` an array of `{ from, name }`; see privacy-reads-probe.ts.
@@ -88,9 +87,9 @@ test("`schemaHolds` reads through spreads, array elements, call arguments, a cal
   expect(got).toEqual(["yes", "yes", "yes", "yes", "yes", "yes"]);
 });
 
-test("`schemaHolds` is 'unknown' for a factory call, a binding it cannot follow, a computed member, an object literal's getter or method, and a binding the file changes after its literal", () => {
+test("`schemaHolds` is 'unknown' for a factory call, a binding it cannot follow, a computed member, an object literal's getter or method, and a literal binding that is not held (Held)", () => {
   const got = answer([
-    `const mutable = s.object({ d: s.string() })`,
+    `const mutable = { d: s.string() }`,
     `mutable.d = Digested`,
     `const cm = { d: Digested }`,
     `probe(s.object({ d: cm[key] }))`,

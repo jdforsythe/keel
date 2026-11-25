@@ -57,7 +57,7 @@ describe("matchUrl over an exported table", () => {
   it("manifest rejects an unknown layout with E1506", () => {
     const a = contract("a", { "a.x": { path: "/x" } });
     expect(() =>
-      // The type error is in unsafe/negativeTypes.ts; called untyped here.
+      // The type error is in negativeTypes.test-d.ts; called untyped here.
       Reflect.apply(manifest, undefined, [a, { "a.x": { component: p, layout: "a.missing" } }]),
     ).toThrow(/^E1506/);
   });

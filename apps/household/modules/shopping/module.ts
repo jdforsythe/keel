@@ -12,6 +12,7 @@ export default module({
     "@keel/std-schedules",
     "@keel/std-statecharts",
     "@keel/std-temporal",
+    "@keel/std-text",
     "@keel/std-workflows",
   ],
   capabilities: ["clock", "random", "storage", "shopping.db"],

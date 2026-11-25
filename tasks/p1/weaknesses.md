@@ -65,7 +65,7 @@ Rules:
 - [ ] 1073 household `keel test` ended once in a Node crash trailer
 
 ### Lane 05 first-run · scaffold, compiler, cli, every package's publish config · RFC (k.cli, 1012) · L
-- [ ] 0991 the scaffold omits `esbuild`, so a new project's `keel build` fails
+- [x] 0991 the scaffold omits `esbuild`, so a new project's `keel build` fails
 - [ ] 1005 packages export `src/*.ts` while `files` is `dist`; published packages break
 - [ ] 0414 a scaffolded project has no `node` deployable, so `route --api` is E1511
 - [ ] 0677 a scaffolded module is placed in no deployable; the API route misfits writes
@@ -73,31 +73,31 @@ Rules:
 - [ ] 1012 `keel check --quiet` hides the failing code; decided: a failing quiet trailer names the first code
 
 ### Lane 06 server-scrub-and-streams · server, services · RFC (k.privacy, 0974) · L
-- [ ] 0970 URL copies of a secret from common encoders slip the scrub; match a decoded view
-- [ ] 0971 hex, `\/`, entities, NFD and unaligned base64 copies slip; decided: add what matches cleanly, state the rest as limits
-- [ ] 0974 the whole-text mark and the covered encodings are stated in the README only
-- [ ] 0756 a secret starting or ending with `/` leaves the slash in the `req` line
-- [ ] 0729 the scrub costs 1.2 s of event loop on a 790 KB body, a cheap stall
-- [ ] 0972 non-ASCII secrets reach the scrub's cap about 2.2 times sooner
-- [ ] 0442 plain siblings of an `s.secret` drop from a 422 re-render; restore and re-base the budget
-- [ ] 1001 an event stream has no cap on one event's size, server or client
+- [x] 0970 URL copies of a secret from common encoders slip the scrub; match a decoded view
+- [x] 0971 hex, `\/`, entities, NFD and unaligned base64 copies slip; decided: add what matches cleanly, state the rest as limits
+- [x] 0974 the whole-text mark and the covered encodings are stated in the README only
+- [x] 0756 a secret starting or ending with `/` leaves the slash in the `req` line
+- [x] 0729 the scrub costs 1.2 s of event loop on a 790 KB body, a cheap stall
+- [x] 0972 non-ASCII secrets reach the scrub's cap about 2.2 times sooner
+- [x] 0442 plain siblings of an `s.secret` drop from a 422 re-render; restore and re-base the budget
+- [x] 1001 an event stream has no cap on one event's size, server or client
 
 ### Lane 07 check-security-rules · check, cli · RFC (k.boundary, 0884) · M
-- [ ] 0975 E1111 misses aliases, destructured `assign`, reassigned `let`, cross-file changes
-- [ ] 0884 `/// <reference types="vite/client" />` passes; decided: forbid it, type `import.meta.env` through a Keel declaration
-- [ ] 0880 E1107 keeps its own client reach instead of the shared one
-- [ ] 0994 `declaredFor` follows relative imports only, so an alias skips E1570
-- [ ] 1101 E1108 can accept in an editor what a fresh `keel check` refuses
-- [ ] 1099 E1571's message reads two ways; reword within 89 units
-- [ ] 0995 `linkEscapes`, behind E1357 and E1585, has no unit or property test
+- [x] 0975 E1111 misses aliases, destructured `assign`, reassigned `let`, cross-file changes
+- [x] 0884 `/// <reference types="vite/client" />` passes; decided: forbid it, type `import.meta.env` through a Keel declaration
+- [x] 0880 E1107 keeps its own client reach instead of the shared one
+- [x] 0994 `declaredFor` follows relative imports only, so an alias skips E1570
+- [x] 1101 E1108 can accept in an editor what a fresh `keel check` refuses
+- [x] 1099 E1571's message reads two ways; reword within 89 units
+- [x] 0995 `linkEscapes`, behind E1357 and E1585, has no unit or property test
 
 ### Lane 08 router-identity · router, check (E1584, E1580), compiler (E1579) · RFC (k.opening, 0969) · M
-- [ ] 0968 an admitted return link re-arms the gate through app code
-- [ ] 0969 a failed `record` leaves the older opening; state it in k.opening
-- [ ] 0976 an `identityMount` call outside `identity.ts` adds unchecked mount paths
-- [ ] 0336 `navigate` with `\` gives `//x`; `settle` spins on a sim clock; locale and `issueText` leads
-- [ ] 0314 after a titled server-rendered first page, untitled pages keep that title
-- [ ] 0895 `handle.path` `/assets` shadows built assets and E1579 allows it
+- [x] 0968 an admitted return link re-arms the gate through app code
+- [x] 0969 a failed `record` leaves the older opening; state it in k.opening
+- [x] 0976 an `identityMount` call outside `identity.ts` adds unchecked mount paths
+- [x] 0336 `navigate` with `\` gives `//x`; `settle` spins on a sim clock; locale and `issueText` leads
+- [x] 0314 after a titled server-rendered first page, untitled pages keep that title
+- [x] 0895 `handle.path` `/assets` shadows built assets and E1579 allows it
 
 ### Lane 09 pii-and-data · std-sessions, schema, std-channels, store, docs (THREAT-MODEL) · RFC (k.schema 0980, std.channels 0973) · M
 - [ ] 0977 `redact` skips an open object's undeclared keys, so personal data stays recorded
@@ -158,6 +158,12 @@ Rules:
 - [ ] 0826 plugin-store does not fsync, so power loss can lose a save
 - [ ] 1088 CI's `shell-ios` failed twice at action 3 of the outbox session drive
 - [ ] 1060 a tap on the `Done: Bread` label makes no `change` on the iOS Simulator
+
+### Lane 33 found-by-household · schema, testing · no RFC unless k.testing must name the value · S
+- [ ] 1106 a generated `s.id` has no shape a server mints; `properties` breaks on it
+- [ ] 1107 `find().text` of an input is always empty
+- [ ] 1109 `renderRoute` with `app` records any string as a document, never E1501
+- [ ] 1110 a statechart guard's payload is typed as every event's fields (RFC)
 
 ### Owned by a P1 workstream or in flight
 - [ ] 0034 the freeze review and status flips (W1)
@@ -299,6 +305,7 @@ Rules:
 - [ ] 1035 walkthrough findings L7-5 and L7-7 to L7-9 are open
 - [ ] 1095 three household scenarios pass `law: false`; give each run its own server
 - [ ] 1074 `list_writes` keeps every write key; decided: retention by age on a workflow
+- [ ] 1108 nine things the skills did not tell an agent testing household
 
 ### Owned by a P1 workstream
 - [ ] 0220 SVG system diagrams (W6 step 1)

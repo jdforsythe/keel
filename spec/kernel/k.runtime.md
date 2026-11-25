@@ -12,7 +12,7 @@ status: conformance-covered
 - `data-k="<elementId>"` on every bound element, from its template;
 - `data-k-island="<componentId>"` on each island root (a k.server route level whose returned element has a `data-k` element outside nested islands, keyed by route id);
 - `<script type="module" src="/@keel/entry.ts">` only when the page has an island: the generated resume entry. It imports `components` (by route id; best effort) from `/@keel/islands.ts` and calls `resume(document.body, components, { ctx, stores, mode })` with a real `ctx`;
-- one `<script type="application/json" id="k-state">` with store snapshots, island props, the served `route` (`{ id, path, href, params, search }`), encoded by their schema codecs, and a failed loader's `error` (`code`, `data.at` only).
+- one `<script type="application/json" id="k-state">` with the fallback `title` (the deployable's name, k.head), store snapshots, island props, the served `route` (`{ id, path, href, params, search }`), encoded by their schema codecs, and a failed loader's `error` (`code`, `data.at` only).
 
 Resume restores stores, finds bound nodes by `data-k`, attaches bindings and delegated handlers, and neither re-renders nor re-runs loaders. All islands resume at load. `resume` first reports `route` as a `nav`, then that `error`; per island it then fires `input` on each control off its default value with none queued, then replays queued events in order, reporting each before its handlers.
 

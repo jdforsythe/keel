@@ -5,6 +5,7 @@
 // carries `x-keel: 1`.
 import { createCtx } from "@keel/ctx";
 import { createApp } from "@keel/server";
+import { renderRoute } from "@keel/testing";
 import { expect, it } from "vitest";
 import source from "../identity.server.ts";
 import { routes as front } from "../modules/front/routes.ts";
@@ -14,7 +15,7 @@ import topology from "../topology.ts";
 const secret = "compose-peers-test-secret-of-32-bytes";
 const API = "http://api.test";
 
-/** Both deployables over their own sim ctx; `seen` lists each request `api` received with whether it carried the user header and its `x-keel` value. */
+/** Both deployables over their own sim ctx; `ctx` is web's; `seen` lists each request `api` received with whether it carried the user header and its `x-keel` value. */
 async function peers() {
   const api = await createApp({
     topology,
@@ -41,7 +42,7 @@ async function peers() {
     secret,
     peers: { api: new URL(API) },
   });
-  return { api, web, seen };
+  return { api, web, seen, ctx };
 }
 
 const page = (user?: string) =>
@@ -66,4 +67,17 @@ it("ignores a user header the api did not sign", async () => {
     new Request(`${API}/api/hello`, { headers: { accept: "application/json", "x-keel-user": "Ada" } }),
   );
   expect(res.status).toBe(403);
+});
+
+it("renders the front page as a browser gets it: one main landmark, a named heading, the greeting as text", async () => {
+  const { web, ctx } = await peers();
+  const page = await renderRoute("front.home", { routes: front, params: {}, ctx, app: web });
+  try {
+    expect(page.find("front.home").role).toBe("main");
+    expect(page.a11y("front.home.title")).toMatchObject({ role: "heading", name: "Two peers" });
+    expect(page.find("front.home.greeting").text).toContain("api.status");
+    expect(page.focusOrder()).toEqual([]);
+  } finally {
+    page.dispose();
+  }
 });

@@ -272,15 +272,14 @@ it("E1111 counts `secret` only on the @keel/schema namespace, not on any object 
     ).map((d) => d.message.split(";")[0] ?? "");
   const marked = ["personal data or a secret in route search"];
   const schema = "import { s } from '@keel/schema'\n";
-  expect(ran(`${schema}const cfg = { secret: (x) => x }\n`, "s.object({ q: cfg.secret() })")).toEqual([]);
-  expect(ran(`${schema}const kit = { s }\n`, "s.object({ q: kit.s.secret(s.string()) })")).toEqual(marked);
-  expect(ran(`${schema}const kit = { s: other }\n`, "s.object({ q: kit.s.secret(s.string()) })")).toEqual([
-    "route search not readable statically",
-  ]);
-  expect(ran(`${schema}const kit = { inner: { secret: () => 1 } }\n`, "s.object({ q: kit.inner.secret() })")).toEqual(
-    [],
-  );
   const unread = ["route search not readable statically"];
+  // A literal whose member is called is not held (k.privacy-reads Held): the call may change it.
+  expect(ran(`${schema}const cfg = { secret: (x) => x }\n`, "s.object({ q: cfg.secret() })")).toEqual(unread);
+  expect(ran(`${schema}const kit = { s }\n`, "s.object({ q: kit.s.secret(s.string()) })")).toEqual(marked);
+  expect(ran(`${schema}const kit = { s: other }\n`, "s.object({ q: kit.s.secret(s.string()) })")).toEqual(unread);
+  expect(ran(`${schema}const kit = { inner: { secret: () => 1 } }\n`, "s.object({ q: kit.inner.secret() })")).toEqual(
+    unread,
+  );
   expect(ran(`${schema}import { cfg } from 'elsewhere'\n`, "s.object({ q: cfg.secret() })")).toEqual(unread);
   expect(ran(schema, "s.object({ q: other.secret(s.string()) })")).toEqual(unread);
   expect(ran(schema, "s.object({ q: s.secret(s.string()) })")).toEqual(marked);
@@ -313,7 +312,7 @@ it("E1111 reads a getter, setter or method in a schema's object literal as unrea
   expect(ran("s.object({ ['token']: s.string() })")).toEqual([]);
 });
 
-it("E1111 reads a schema object changed after its literal as unread, in the route table and in a schema", () => {
+it("E1111 reads a literal binding that is not held as unread, in the route table and in a schema", () => {
   const ran = (head: string, search: string, tail = "") =>
     codes(
       [
@@ -337,17 +336,15 @@ it("E1111 reads a schema object changed after its literal as unread, in the rout
     expect(ran(`${base}${change}\n`, "s.object(FIELDS)")).toEqual([unread]);
     expect(ran(base, "s.object(FIELDS)", `${change}\n`)).toEqual([unread]);
   }
-  expect(ran("const S = s.object({ q: s.string() })\nObject.assign(S, {})\n", "S")).toEqual([unread]);
+  // A schema value is frozen (k.schema Frozen), so a call given it changes nothing the read took.
+  expect(ran("const S = s.object({ q: s.string() })\nObject.assign(S, {})\n", "S")).toEqual([]);
   expect(
     ran("const DEF = { path: '/c', search: s.object({}) }\nDEF.search = s.object({ t: s.secret() })\n", "DEF.search"),
   ).toEqual([unread]);
-  // Reading a binding or changing another one stays clean.
-  expect(
-    ran(
-      `${base}const OTHER = {}\nOTHER.x = 1\nObject.assign(OTHER, FIELDS)\nconsole.log(FIELDS.q)\n`,
-      "s.object(FIELDS)",
-    ),
-  ).toEqual([]);
+  // Changing another binding stays clean; passing the binding to any call but `s.<name>(…)` leaves it not held.
+  expect(ran(`${base}const OTHER = {}\nOTHER.x = 1\n`, "s.object(FIELDS)")).toEqual([]);
+  expect(ran(`${base}const OTHER = {}\nObject.assign(OTHER, FIELDS)\n`, "s.object(FIELDS)")).toEqual([unread]);
+  expect(ran(`${base}console.log(FIELDS.q)\n`, "s.object(FIELDS)")).toEqual([unread]);
 });
 
 it("E1570 reads `/\\host` and `\\\\host` as the absolute URLs a browser makes of them, any slash mix", () => {
