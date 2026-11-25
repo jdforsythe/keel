@@ -8,7 +8,7 @@
     },
     "test": {
       "dependsOn": ["^build"],
-      "outputs": ["coverage/**"]
+      "outputs": ["coverage/**", "reports/tests/**"]
     },
     "build": {
       "dependsOn": ["^build"],

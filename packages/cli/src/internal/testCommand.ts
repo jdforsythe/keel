@@ -1,6 +1,6 @@
 /// <reference types="vitest/config" />
 import { Writable } from "node:stream";
-import { type TestReport, testResults } from "@keel/testing";
+import { type TestReport, testResults, writeTestReport } from "@keel/testing";
 import { writeA11yReport } from "@keel/testing/a11y";
 import { type Vitest, startVitest } from "vitest/node";
 import type { Input } from "../types/Input.ts";
@@ -47,7 +47,9 @@ async function vitestRun(root: string, filters: readonly string[], claims: boole
     },
     onTestRunEnd: (_modules: readonly unknown[], errors: readonly unknown[], reason: string): void => {
       const r = run === undefined ? NOT_STARTED : testResults(run.state.getFiles(), errors, root);
-      // Every render check the harness recorded, to `reports/a11y.json` (k.a11y Claims; `keel ledger` reads it).
+      // The run report (k.test-run Run report), and every render check the harness recorded to `reports/a11y.json`
+      // (k.a11y Claims); `keel ledger` reads both.
+      if (run !== undefined) writeTestReport(root, run.state.getFiles());
       if (run !== undefined && claims) writeA11yReport(root, a11yCases(run.state.getFiles(), root));
       report = reason === "passed" || r.failed > 0 || r.errors > 0 ? r : notPassed(r, reason);
     },
@@ -65,7 +67,14 @@ async function vitestRun(root: string, filters: readonly string[], claims: boole
         "test",
         [...filters],
         // Forks, whatever the project's config says: each test process then starts with the environment set above.
-        { root, watch: false, pool: "forks", reporters: [collector], env: { KEEL_TEST: "1", UV_THREADPOOL_SIZE: "1" } },
+        {
+          root,
+          watch: false,
+          pool: "forks",
+          includeTaskLocation: true,
+          reporters: [collector],
+          env: { KEEL_TEST: "1", UV_THREADPOOL_SIZE: "1" },
+        },
         artifactsSetupConfig(root),
         { stdout: sink(), stderr: sink() },
       );
@@ -89,7 +98,8 @@ async function vitestRun(root: string, filters: readonly string[], claims: boole
  * files, so a render given no `artifacts` takes the project's (k.a11y Artifacts);
  * vitest's own output is discarded and `@keel/testing` `testResults` (the same walk the repository's
  * KeelReporter uses) turns results into T0001 diagnostics plus a summary (not ok when any
- * test failed); every render check the harness recorded goes to `reports/a11y.json` (`writeA11yReport`), but in a
+ * test failed); the run report goes to `reports/tests/run.json` (`writeTestReport`, with vitest's `includeTaskLocation`
+ * set) and every render check the harness recorded to `reports/a11y.json` (`writeA11yReport`), but in a
  * library's own folder (`ownLibrary`), which then writes nothing. Skipped (the empty run) when `io.files` holds no test file and no vitest config, so an in-memory
  * project never touches disk.
  */

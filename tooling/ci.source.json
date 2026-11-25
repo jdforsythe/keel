@@ -113,6 +113,19 @@
             "TURBO_TEAM": "${{ vars.TURBO_TEAM }}"
           },
           "run": "node tooling/ci-shards.mjs ${{ matrix.shard }}"
+        },
+        {
+          "name": "run reports: every project's reports/tests/*.json this shard wrote, paths kept, for the ledger",
+          "run": "find . -path '*/node_modules' -prune -o -path '*/reports/tests/*.json' -print | tar -cf test-reports.tar -T -"
+        },
+        {
+          "uses": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2",
+          "with": {
+            "name": "test-reports-${{ matrix.shard }}",
+            "path": "test-reports.tar",
+            "if-no-files-found": "error",
+            "retention-days": 7
+          }
         }
       ]
     },

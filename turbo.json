@@ -16,7 +16,8 @@
         "^build"
       ],
       "outputs": [
-        "coverage/**"
+        "coverage/**",
+        "reports/tests/**"
       ]
     },
     "build": {

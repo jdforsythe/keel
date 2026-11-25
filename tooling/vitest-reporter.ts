@@ -3,10 +3,13 @@
 // shared with `keel test`. Imported by path: tooling is private and @keel/testing depends on it.
 // A fork worker that dies mid-run is one T0001 per test file it was running, at that file, naming the test it was
 // in and what ended it (worker-exits.ts): `T0001 test/a.test.ts:1:1 orders > saves: worker killed by SIGKILL`.
+// Each run writes its report with `writeTestReport` (k.test-run Run report): `reports/tests/run.json` in the package,
+// or `<i>-of-<k>.json` for a `--shard=<i>/<k>` part.
 import path from "node:path";
 import type { TestCase, TestModule, Vitest } from "vitest/node";
 import type { Reporter } from "vitest/reporters";
 import { testResults } from "../packages/testing/src/testResults.ts";
+import { writeTestReport } from "../packages/testing/src/writeTestReport.ts";
 import type { Diag, Summary } from "./output.ts";
 import { emit } from "./output.ts";
 import { type WorkerExit, describeExit, watchWorkerExits, workerExits } from "./worker-exits.ts";
@@ -136,6 +139,8 @@ export class KeelReporter implements Reporter {
       started ? errors.filter((e) => !isCrash(e)) : [new Error("vitest ended the run without starting it")],
       process.cwd(),
     );
+    // The run report the ledger reads (k.test-run Run report): `<root>/reports/tests/run.json`, or this part's file.
+    if (this.run !== undefined) writeTestReport(this.run.config.root, this.run.state.getFiles(), this.run.config.shard);
     const modules = this.run?.state.getTestModules() ?? [];
     const unfinished = [...this.open].map(([file, test]) => ({
       file,
