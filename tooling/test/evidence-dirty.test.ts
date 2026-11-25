@@ -9,10 +9,14 @@ const root = fs.mkdtempSync(path.join(os.tmpdir(), "keel-evidence-dirty-"));
 afterAll(() => fs.rmSync(root, { recursive: true, force: true }));
 
 const git = (...args: string[]) => {
-  const r = spawnSync("git", ["-c", "user.name=t", "-c", "user.email=t@example.com", ...args], {
-    cwd: root,
-    encoding: "utf8",
-  });
+  const r = spawnSync(
+    "git",
+    ["-c", "user.name=t", "-c", "user.email=t@example.com", "-c", "commit.gpgsign=false", ...args],
+    {
+      cwd: root,
+      encoding: "utf8",
+    },
+  );
   expect(r.status).toBe(0);
 };
 const put = (rel: string, text: string) => {
