@@ -5,7 +5,7 @@
 // Spec: k.library, clause "In that project, `import x from '../../outside.ts'` in `src/Badge.tsx` is one E1163 at the specifier."
 // Rules: "E1161 an element in a library file whose `id` Ids does not accept (fix: none)"
 // Rules: "E1163 a library file whose relative import, re-export or literal `import()` resolves outside its package folder, at the specifier, or a library manifest `deps` entry that does not begin with `@`, at the entry (fix: none; the entry names no module, so it is no E1153 edge and no E1165)" (the manifest half is in library-manifest.test.ts)
-// In an app: "`keel check` reads them and runs every rule over them, its type pass included, against the app's `tokens.ts`, kernel packages and `topology.ts`. Wherever a section reads app code or a file under `modules/<id>/` (k.check App code, k.boundary Reach), it reads a library's file `<f>` as it reads `modules/<id>/<f>`, `<id>` the library's, and its `unsafe/` files with their lifted ranges; a section's exclusion of `node_modules/` does not cover library files. A diagnostic in a library file is the app's: located at `node_modules/<name>/<f>`, whichever `node_modules` holds it, and carrying no `fix`. Nothing in the app turns a rule off for a library file. A bare import there is read as in an app file and resolves from the library's folder, so its package is one of the library's `dependencies`; it is no E1163."
+// In an app: "`keel check` runs every rule but E1106 (k.formats Who declares) over them, the type pass included, against the app's `tokens.ts`, kernel packages and `topology.ts`. Where a section reads app code or `modules/<id>/` (k.check App code, k.boundary Reach), it reads a library's file `<f>` as `modules/<id>/<f>`, its `unsafe/` files with their lifted ranges. A diagnostic in one is the app's, at `node_modules/<name>/<f>`, with no `fix`; nothing turns a rule off there. A bare import there resolves from the library's folder, to one of its `dependencies`, and is no E1163."
 // Ids: "**Ids.** Each `@keel/ui` base element (k.ui, `Host` among them) and `@keel/ui/aria` `Part` a library file renders, as JSX or a call, takes an `id` check reads as built from its component's `id` prop (`<id>.<part>`, k.component IDs; a derived id holds the file's path, which changes with the installer): `<p>.id`, `<p>` a top-level function's first parameter; a name bound to such a value or destructured as `id`; a template literal with one; a conditional of two; a call whose callee check reads (a function of the library's or another library's files, a closure, a member of an object it reads back to a literal or a call) and whose every returned expression is one, parameters standing for the arguments and closure names read where bound (a function met again while its read is open, or past eight calls, is not read); or such an `id` in an object literal, spread or not, no later unreadable spread follows. Anything else is E1161: none, a literal, a concatenation, a call of a global, a parameter or a package that is no library."
 // Seed 1337
 // A call is read through its callee (function, closure or object member), parameters standing for the arguments; the generated accepted trees call a readable identity helper `ident`, the dropped-id mutation gives one E1161.
@@ -704,15 +704,19 @@ const ONE_FILE = Object.entries(CODE_FIXTURES).flatMap(([code, fx]) => {
 });
 /** Rules only a library has (k.library Rules): reported in a library file, never in an app's. */
 const LIBRARY_ONLY = new Set(["E1161", "E1162", "E1163", "E1166"]);
+/** `keel check` runs every rule but E1106 (k.formats Who declares) over a library's files (k.library In an app): E1106 is left out of the comparison. */
+const NOT_OVER_LIBRARY = new Set(["E1106"]);
 
 // The space is finite (every one-file fixture of the table), so each is visited once, not sampled.
-test("for every one-file by-code fixture, placed in a library file it reports the codes the same source reports placed in an app module at `modules/<id>/<f>`, at the library's path with no fix", () => {
+test("for every one-file by-code fixture but E1106, placed in a library file it reports the codes the same source reports placed in an app module at `modules/<id>/<f>`, at the library's path with no fix", () => {
   expect(ONE_FILE.length).toBeGreaterThan(50);
   let reportedInApp = 0;
   const differs: string[] = [];
   for (const { code, source, base, opts } of ONE_FILE) {
     const inLib = codesAt(inLibrary(base, source), `node_modules/${NAME}/src/${base}`, opts);
     const inApplication = codesAt(inApp(base, source), `modules/charts/src/${base}`, opts);
+    inLib.codes = inLib.codes.filter((c) => !NOT_OVER_LIBRARY.has(c));
+    inApplication.codes = inApplication.codes.filter((c) => !NOT_OVER_LIBRARY.has(c));
     if (inApplication.codes.length > 0) reportedInApp++;
     const extra = inLib.codes.filter((c) => !inApplication.codes.includes(c) && !LIBRARY_ONLY.has(c));
     const missing = inApplication.codes.filter((c) => !inLib.codes.includes(c));
