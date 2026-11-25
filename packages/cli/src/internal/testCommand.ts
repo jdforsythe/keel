@@ -1,5 +1,6 @@
-import { existsSync, readdirSync } from "node:fs";
 /// <reference types="vitest/config" />
+
+import { existsSync, readdirSync } from "node:fs";
 import { Writable } from "node:stream";
 import { type TestReport, testResults, writeTestReport } from "@keel/testing";
 import { writeA11yReport } from "@keel/testing/a11y";
