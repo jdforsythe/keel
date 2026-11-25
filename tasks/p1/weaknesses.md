@@ -162,6 +162,8 @@ Rules:
 ### Lane 33 found-by-household · schema, testing · no RFC unless k.testing must name the value · S
 - [ ] 1106 a generated `s.id` has no shape a server mints; `properties` breaks on it
 - [ ] 1107 `find().text` of an input is always empty
+- [ ] 1109 `renderRoute` with `app` records any string as a document, never E1501
+- [ ] 1110 a statechart guard's payload is typed as every event's fields (RFC)
 
 ### Owned by a P1 workstream or in flight
 - [ ] 0034 the freeze review and status flips (W1)
