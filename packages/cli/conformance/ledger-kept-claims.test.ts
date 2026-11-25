@@ -74,8 +74,7 @@ const compactLine = (dir: string, args: readonly string[]): string => {
 };
 
 describe("k.ledger: kept a11y claims and the unscored mutation file", () => {
-  // Pending (rfc:0235 step 5): skipped until the build lands; the builder un-skips by changing `it.skip` to `it`, and removes the case after it, which asserts `keptNoReport`.
-  it.skip("in a project with page route `r` and no `reports/a11y.json`, `--write` over a ledger holding `a11y:.:r#1.4.3` at `example` writes it at `none`, reports one W1733 at `reports/a11y.json`, holds no `keptNoReport` in `counts`, and `--diff` reports E1706 for it", () => {
+  it("in a project with page route `r` and no `reports/a11y.json`, `--write` over a ledger holding `a11y:.:r#1.4.3` at `example` writes it at `none`, reports one W1733 at `reports/a11y.json`, holds no `keptNoReport` in `counts`, and `--diff` reports E1706 for it", () => {
     const dir = project("ledger-no-report", { ".keel/routes.json": ROUTES });
     commit(dir, [{ item: ITEM, rung: "example" }]);
     const written = keel(dir, ["ledger", "--write", COMMITTED]);

@@ -2,7 +2,6 @@
 // Spec: k.ledger-items, clause "An `it.each([1, 2])` test whose report holds two tests at its line, one `passed` and one `failed`, gives no evidence; with both `passed` it gives `example`."
 // Spec: k.ledger-items, clause "A test file held at its `sha` by both `reports/tests/run.json` and `reports/tests/1-of-2.json` gives no evidence, and `keel ledger` reports one W1733."
 // Spec: k.ledger-items, clause "An export of `packages/p/src/f.ts` referenced only by a test its report records `failed` is `none`."
-// Pending (rfc:0235 step 5): skipped until the build lands; the builder un-skips by changing each `it.skip` to `it` in this file.
 // Seed: 1337 (the one property, 5 runs). Binary runs: 1 per case (`keel ledger`, no report written for the fixture: `reports: "none"`), 2 for the property's run (the report stands again once the file is restored).
 // The real `keel` binary over temp projects (OS tmpdir). Package `p` is `packages/p` with a `package.json`; the cited section `k.x` is `spec/kernel/k.x.md`; the file's call is lines 3 to 5.
 // The brief's list gives "a report where the test failed" and "a report listing the file but not the test" one W1733 each; k.ledger-items Run evidence gives W1733 for a missing report, a stale
@@ -69,8 +68,7 @@ const project = (prefix: string, files: Record<string, string>): string => {
 };
 
 describe("k.ledger-items: a test is passing when a run report says so", () => {
-  // Pending (rfc:0235 step 5): skipped until the build lands; the builder un-skips by changing each `it.skip` to `it` in this file.
-  it.skip(
+  it(
     "with `packages/p/reports/tests/run.json` holding `conformance/a.test.ts` at the file's `sha` with `{ line: 3, state: 'passed' }`, the clause is `example`",
     () => {
       inProject("items-run-pass", pkg("p", "k.x"), (dir) => {
@@ -82,7 +80,7 @@ describe("k.ledger-items: a test is passing when a run report says so", () => {
     SLOW,
   );
 
-  it.skip(
+  it(
     "with `failed` or `skipped` in place of `passed`, or `line: 7`, the clause is `none`, and a fresh report is no W1733",
     () => {
       const cases: [string, ReportedTest][] = [
@@ -102,7 +100,7 @@ describe("k.ledger-items: a test is passing when a run report says so", () => {
     SLOW,
   );
 
-  it.skip(
+  it(
     "a report line from the first to the last line of the test's call counts and one outside it does not (every line 1 to 8)",
     () => {
       const lines = [1, 2, 3, 4, 5, 6, 7, 8];
@@ -117,7 +115,7 @@ describe("k.ledger-items: a test is passing when a run report says so", () => {
     SLOW,
   );
 
-  it.skip(
+  it(
     "with another `sha`, the clause is `none` and `keel ledger` reports one W1733 at `packages/p/reports/tests/`",
     () => {
       inProject("items-run-sha", pkg("p", "k.x", { sha: sha256("another source") }), (dir) => {
@@ -130,7 +128,7 @@ describe("k.ledger-items: a test is passing when a run report says so", () => {
     SLOW,
   );
 
-  it.skip(
+  it(
     "with no `reports/tests/`, the clause is `none` and `keel ledger` reports one W1733 at `packages/p/reports/tests/`",
     () => {
       inProject("items-run-none", pkg("p", "k.x", { report: null }), (dir) => {
@@ -142,7 +140,7 @@ describe("k.ledger-items: a test is passing when a run report says so", () => {
     SLOW,
   );
 
-  it.skip(
+  it(
     "a project with two test files and no report is one W1733 naming 2 test files and the first; each project without a report has its own",
     () => {
       const files = {
@@ -160,7 +158,7 @@ describe("k.ledger-items: a test is passing when a run report says so", () => {
     SLOW,
   );
 
-  it.skip(
+  it(
     "an `it.each([1, 2])` test whose report holds two tests at its line, one `passed` and one `failed`, gives no evidence; with both `passed` it gives `example`",
     () => {
       const source = [
@@ -190,7 +188,7 @@ describe("k.ledger-items: a test is passing when a run report says so", () => {
     SLOW,
   );
 
-  it.skip(
+  it(
     "a test file held at its `sha` by both `reports/tests/run.json` and `reports/tests/1-of-2.json` gives no evidence, and `keel ledger` reports one W1733",
     () => {
       const files = {
@@ -207,7 +205,7 @@ describe("k.ledger-items: a test is passing when a run report says so", () => {
     SLOW,
   );
 
-  it.skip(
+  it(
     "two shard reports that each hold a different test file both stand: no W1733, each file's clause is `example`",
     () => {
       const b = citingFile([citeLine("k.y", ONE)]);
@@ -233,7 +231,7 @@ describe("k.ledger-items: a test is passing when a run report says so", () => {
     SLOW,
   );
 
-  it.skip(
+  it(
     "an export of `packages/p/src/f.ts` referenced only by a test its report records `failed` is `none`; passed it is `example`",
     () => {
       const test = [
@@ -272,7 +270,7 @@ describe("k.ledger-items: a test is passing when a run report says so", () => {
     SLOW,
   );
 
-  it.skip(
+  it(
     "a test renamed since the report gives no evidence: its file's `sha` is no longer the report's",
     () => {
       const renamed = citingFile(HEADER, { title: "holds under another name" }).source;
@@ -284,7 +282,7 @@ describe("k.ledger-items: a test is passing when a run report says so", () => {
     SLOW,
   );
 
-  it.skip("a report edited by hand to say `passed` for a test whose file changed keeps no rung: any edit of the file after the run voids it (property)", () => {
+  it("a report edited by hand to say `passed` for a test whose file changed keeps no rung: any edit of the file after the run voids it (property)", () => {
     fc.assert(
       fc.property(fc.stringMatching(/^[a-z ]{1,12}$/), fc.constantFrom("append", "weaken", "fail"), (text, how) => {
         const edited =

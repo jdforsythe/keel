@@ -1,6 +1,5 @@
 // Spec: k.test-run, clause "`writeTestReport` with `shard` `{ index: 1, count: 2 }` over a `reports/tests/` holding `run.json` and `1-of-3.json` leaves the folder holding `1-of-2.json` alone; then without `shard`, `run.json` alone."
 // k.test-run Run report (a paragraph, not a clause): the shape of the report, the shard names and which files a write removes are asserted by the cases below beside the clause above.
-// Pending (rfc:0235 step 5): skipped until the build lands; the builder un-skips by changing each `it.skip` to `it` in this file.
 // Seed: 1337 (the properties, 50 runs each: no binary, a temp folder per run).
 // ASSUMED: "the folder's other files" is read as the report files (`run.json`, `<i>-of-<k>.json`); the spec says nothing of a file of another name. `files` is typed `unknown[]` here because the
 // spec fixes no type for a finished run's files; the reading is vitest's `File` tasks (below).
@@ -76,8 +75,7 @@ const seedFolder = (rootDir: string, names: readonly string[]): void => {
 };
 
 describe("k.test-run: `writeTestReport` writes a run's report into `<root>/reports/tests/`", () => {
-  // Pending (rfc:0235 step 5): skipped until the build lands; the builder un-skips by changing each `it.skip` to `it` in this file.
-  it.skip("`writeTestReport` with `shard` `{ index: 1, count: 2 }` over a `reports/tests/` holding `run.json` and `1-of-3.json` leaves the folder holding `1-of-2.json` alone; then without `shard`, `run.json` alone", () => {
+  it("`writeTestReport` with `shard` `{ index: 1, count: 2 }` over a `reports/tests/` holding `run.json` and `1-of-3.json` leaves the folder holding `1-of-2.json` alone; then without `shard`, `run.json` alone", () => {
     const dir = root();
     seedFolder(dir, ["run.json", "1-of-3.json"]);
     write(dir, [], { index: 1, count: 2 });
@@ -86,14 +84,14 @@ describe("k.test-run: `writeTestReport` writes a run's report into `<root>/repor
     expect(folder(dir)).toEqual(["run.json"]);
   });
 
-  it.skip("a shard write keeps the other shards of its own count and removes `run.json` and the shards of another count", () => {
+  it("a shard write keeps the other shards of its own count and removes `run.json` and the shards of another count", () => {
     const dir = root();
     seedFolder(dir, ["run.json", "2-of-2.json", "1-of-3.json", "2-of-3.json"]);
     write(dir, [], { index: 1, count: 2 });
     expect(folder(dir)).toEqual(["1-of-2.json", "2-of-2.json"]);
   });
 
-  it.skip("for any shard and any report files already there, a shard write leaves the shard's own file and the other files of its count, and a write without `shard` leaves `run.json` alone (property)", () => {
+  it("for any shard and any report files already there, a shard write leaves the shard's own file and the other files of its count, and a write without `shard` leaves `run.json` alone (property)", () => {
     const names = fc.uniqueArray(
       fc.oneof(
         fc.constant("run.json"),
@@ -116,7 +114,7 @@ describe("k.test-run: `writeTestReport` writes a run's report into `<root>/repor
     );
   });
 
-  it.skip("the report is `{ v: 1, files: { [path]: { sha, tests: [{ line, state }] } } }` as `JSON.stringify(value, null, 2)` and a line feed, one entry per test file the run collected, `path` relative to the root, `sha` the SHA-256 hex of the file's source", () => {
+  it("the report is `{ v: 1, files: { [path]: { sha, tests: [{ line, state }] } } }` as `JSON.stringify(value, null, 2)` and a line feed, one entry per test file the run collected, `path` relative to the root, `sha` the SHA-256 hex of the file's source", () => {
     const dir = root();
     const a = "// a\nit('x', () => {});\n";
     const b = "// b\n";
@@ -142,7 +140,7 @@ describe("k.test-run: `writeTestReport` writes a run's report into `<root>/repor
     expect(readFileSync(join(dir, "reports/tests/run.json"), "utf8")).toBe(`${JSON.stringify(expected, null, 2)}\n`);
   });
 
-  it.skip("a file that failed to load, or holds no test, holds `tests: []`", () => {
+  it("a file that failed to load, or holds no test, holds `tests: []`", () => {
     const dir = root();
     put(dir, "test/broken.test.ts", "throw new Error('x');\n");
     put(dir, "test/empty.test.ts", "// nothing\n");
@@ -157,7 +155,7 @@ describe("k.test-run: `writeTestReport` writes a run's report into `<root>/repor
     });
   });
 
-  it.skip("per test case vitest ran or skipped, in a suite or nested ones, `{ line, state }` ordered by line, then as run (property)", () => {
+  it("per test case vitest ran or skipped, in a suite or nested ones, `{ line, state }` ordered by line, then as run (property)", () => {
     const state = fc.constantFrom<"pass" | "fail" | "skip">("pass", "fail", "skip");
     fc.assert(
       fc.property(
@@ -182,7 +180,7 @@ describe("k.test-run: `writeTestReport` writes a run's report into `<root>/repor
     );
   });
 
-  it.skip("a sharded write holds the same report as an unsharded one, under `<i>-of-<k>.json`", () => {
+  it("a sharded write holds the same report as an unsharded one, under `<i>-of-<k>.json`", () => {
     const dir = root();
     put(dir, "test/a.test.ts", "// a\n");
     const files = [fileTask(dir, "test/a.test.ts", [testTask(2, "pass")])];

@@ -1,6 +1,5 @@
 // Spec: k.ledger-items, clause "In a folder holding `apps/a` whose `apps/a/reports/mutation/mutation.json` holds `modules/m/f.ts` with the tree's source and one Killed mutant, `keel ledger --write` stores a claim for `apps/a/modules/m/f.ts` and a `mutation.projects` entry `apps/a`; an `apps/a/mutation-justified.json` entry that justifies no mutant of that report is E1725."
 // Spec: k.ledger-items, clause "Run in a project folder whose `reports/mutation/mutation.json` holds `modules/m/f.ts` with the tree's source and one Killed mutant, `keel ledger --write` stores a claim for `modules/m/f.ts` and a `mutation.projects` entry `.`."
-// Pending (rfc:0235 step 5): skipped until the build lands; the builder un-skips by changing each `it.skip` to `it` in this file.
 // Seed: 1337 (the one property, 5 runs). Binary runs: 1 per case, 2 for the first (an app with and without a justification), 1 per property run. No report is written for a fixture (`reports: "none"`).
 // The real `keel` binary over temp projects (OS tmpdir); the mutation report is hand-written JSON in Stryker's shape (ledger-fixture-kinds.ts); `--write out.json` is read back.
 // ASSUMED: a claim's `file` for an app project is `apps/a/modules/m/f.ts`, as the clause says; a mutation report's keys are paths relative to its project, as Stryker writes them;
@@ -49,8 +48,7 @@ const a11yRung = (dir: string, item: string): unknown =>
   collect(written(dir).a11y, ["item", "rung"]).find((x) => x.item === item)?.rung;
 
 describe("k.ledger-items: a project is a folder whose tests and reports the ledger reads", () => {
-  // Pending (rfc:0235 step 5): skipped until the build lands; the builder un-skips by changing each `it.skip` to `it` in this file.
-  it.skip(
+  it(
     "In a folder holding `apps/a` whose `apps/a/reports/mutation/mutation.json` holds `modules/m/f.ts` with the tree's source and one Killed mutant, `keel ledger --write` stores a claim for `apps/a/modules/m/f.ts` and a `mutation.projects` entry `apps/a`; an `apps/a/mutation-justified.json` entry that justifies no mutant of that report is E1725",
     () => {
       const dir = project("items-proj-app", {
@@ -78,7 +76,7 @@ describe("k.ledger-items: a project is a folder whose tests and reports the ledg
     SLOW,
   );
 
-  it.skip(
+  it(
     "Run in a project folder whose `reports/mutation/mutation.json` holds `modules/m/f.ts` with the tree's source and one Killed mutant, `keel ledger --write` stores a claim for `modules/m/f.ts` and a `mutation.projects` entry `.`",
     () => {
       const dir = project("items-proj-dot", {
@@ -92,7 +90,7 @@ describe("k.ledger-items: a project is a folder whose tests and reports the ledg
     SLOW,
   );
 
-  it.skip(
+  it(
     "a package is the project `packages/<p>`: its mutation is `mutation.projects['packages/p']`, its claims keep their path from the folder, and `mutation.packages` is gone",
     () => {
       const dir = project("items-proj-pkg", {
@@ -109,7 +107,7 @@ describe("k.ledger-items: a project is a folder whose tests and reports the ledg
     SLOW,
   );
 
-  it.skip(
+  it(
     "an app project's `mutation-justified.json` justifies the survivors of its own report: the claim holds `justified` 1 and the project's `scoreJustified` is above its `score`",
     () => {
       const key = "modules/m/clamp.ts";
@@ -131,7 +129,7 @@ describe("k.ledger-items: a project is a folder whose tests and reports the ledg
     SLOW,
   );
 
-  it.skip(
+  it(
     "a project's a11y items are `a11y:<project>:<routeId>#<criterion>` and rest on its own `reports/a11y.json`; with none, they are `none` and one W1733 is at `<project>/reports/a11y.json`",
     () => {
       const withReport = project("items-proj-a11y", {
@@ -154,7 +152,7 @@ describe("k.ledger-items: a project is a folder whose tests and reports the ledg
     SLOW,
   );
 
-  it.skip(
+  it(
     "an app outside a monorepo is the project `.`: its a11y items are `a11y:.:…`, its W1733 is at `reports/tests/` and `reports/a11y.json`",
     () => {
       const dir = project("items-proj-app-dot", {
@@ -172,7 +170,7 @@ describe("k.ledger-items: a project is a folder whose tests and reports the ledg
     SLOW,
   );
 
-  it.skip(
+  it(
     "an `examples/<e>` with a `package.json` is a project, named `examples/<e>`; one without is not, and an installed library is not a project of the app",
     () => {
       const dir = project("items-proj-examples", {
@@ -190,7 +188,7 @@ describe("k.ledger-items: a project is a folder whose tests and reports the ledg
     SLOW,
   );
 
-  it.skip(
+  it(
     "a project with no test file the ledger reads has no W1733 for its tests",
     () => {
       const dir = project("items-proj-notests", { "packages/q/package.json": packageJson("q") });
@@ -199,7 +197,7 @@ describe("k.ledger-items: a project is a folder whose tests and reports the ledg
     SLOW,
   );
 
-  it.skip("for any names, each `packages/<p>`, `apps/<a>` and `examples/<e>` with a `package.json` and a test file but no report is named by its path in one W1733 at `<path>/reports/tests/` (property)", () => {
+  it("for any names, each `packages/<p>`, `apps/<a>` and `examples/<e>` with a `package.json` and a test file but no report is named by its path in one W1733 at `<path>/reports/tests/` (property)", () => {
     const name = fc.stringMatching(/^[a-z]{1,6}$/);
     const names = fc.uniqueArray(name, { minLength: 1, maxLength: 3 });
     fc.assert(

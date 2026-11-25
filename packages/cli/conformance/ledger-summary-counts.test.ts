@@ -181,8 +181,7 @@ it("explores ${name}", () => {
     expectOrder(keys);
   }, 120_000);
 
-  // Pending (rfc:0235 step 5): skipped until the build lands; the builder un-skips by changing `it.skip` to `it`, and removes the case after it, which asserts `keptNoReport`.
-  it.skip("a committed a11y item with no `reports/a11y.json` is written at `none` and `counts` never holds `keptNoReport`", () => {
+  it("a committed a11y item with no `reports/a11y.json` is written at `none` and `counts` never holds `keptNoReport`", () => {
     const routes = `${JSON.stringify({ data: { r: { path: "/r" } }, hash: "fnv1a:00000000" })}\n`;
     const keys = withProject("counts-no-kept", { ".keel/routes.json": routes }, (dir) => {
       expect(keel(dir, ["ledger", "--write", COMMITTED]).status).toBe(0);

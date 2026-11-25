@@ -1,5 +1,4 @@
 // Spec: k.test-run, clause "`keel test` over a project whose `test/a.test.ts` holds one passing and one `it.skip` test and whose `test/b.test.ts` throws while loading has a summary with `tests` 3, `failed` 1 and `skipped` 1, and is not ok; `reports/tests/run.json` holds `test/b.test.ts` with `tests: []`."
-// Pending (rfc:0235 step 5): skipped until the build lands; the builder un-skips by changing each `it.skip` to `it` in this file.
 // k.test-run Summary (a paragraph, not a clause): the summary counts `tests`, `failed` and `skipped` over the run report; the cases below assert it with the clause above.
 // Seed: 1337 (the one property, 6 runs). Binary runs: 1 `keel test` per case, 1 per property run. The real `keel` binary over temp projects (OS tmpdir); no vitest config unless the case writes one.
 // ASSUMED: a count the summary leaves out reads as 0; the compact line opens `ok test 0 tests` (the binary's default output when stdout is not a terminal; zero counts may follow it, as in `, 0 failed`).
@@ -49,8 +48,7 @@ const reportOf = (dir: string): Record<string, { tests: { state: string }[] }> =
 };
 
 describe("k.test-run: the summary of `keel test` counts over the run report", () => {
-  // Pending (rfc:0235 step 5): skipped until the build lands; the builder un-skips by changing each `it.skip` to `it` in this file.
-  it.skip(
+  it(
     "`keel test` over a project whose `test/a.test.ts` holds one passing and one `it.skip` test and whose `test/b.test.ts` throws while loading has a summary with `tests` 3, `failed` 1 and `skipped` 1, and is not ok; `reports/tests/run.json` holds `test/b.test.ts` with `tests: []`",
     () => {
       const a =
@@ -69,7 +67,7 @@ describe("k.test-run: the summary of `keel test` counts over the run report", ()
     SLOW,
   );
 
-  it.skip(
+  it(
     "a file that holds no test is one failed test, as one that fails to load is: `tests` 1, `failed` 1, and its report entry is `tests: []`",
     () => {
       const dir = project("test-run-empty", { "test/e.test.ts": EMPTY });
@@ -81,7 +79,7 @@ describe("k.test-run: the summary of `keel test` counts over the run report", ()
     SLOW,
   );
 
-  it.skip(
+  it(
     "a skipped test counts in `tests` and in `skipped`, and a run of passing and skipped tests only is ok",
     () => {
       const dir = project("test-run-skipped", { "test/a.test.ts": PASS, "test/s.test.ts": SKIP });
@@ -97,7 +95,7 @@ describe("k.test-run: the summary of `keel test` counts over the run report", ()
     SLOW,
   );
 
-  it.skip(
+  it(
     "with no test file and no vitest config, `keel test` runs nothing, writes no report and prints `ok test 0 tests`",
     () => {
       const dir = project("test-run-nothing", { "README.md": "no tests here\n" });
@@ -117,7 +115,7 @@ describe("k.test-run: the summary of `keel test` counts over the run report", ()
     SLOW,
   );
 
-  it.skip(
+  it(
     "with a vitest config and no test file it is one T0001 `no test ran: vitest ended the run as failed`, and the run is not ok",
     () => {
       const dir = project("test-run-config-only", { "vitest.config.ts": "export default {};\n" });
@@ -131,7 +129,7 @@ describe("k.test-run: the summary of `keel test` counts over the run report", ()
     SLOW,
   );
 
-  it.skip(
+  it(
     "for any mix of passing, failing, skipped, unloadable and empty files, `failed` never exceeds `tests`, the run is ok exactly when `failed` is 0, and the summary's counts are the run report's (property)",
     () => {
       const sources = { pass: PASS, fail: FAIL, skip: SKIP, broken: BROKEN, empty: EMPTY } as const;
