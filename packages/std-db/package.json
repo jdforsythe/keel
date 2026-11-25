@@ -11,14 +11,14 @@
       "default": "./src/index.ts"
     },
     "./sqlite": {
-      "keel": "./src/sqlite/index.ts",
-      "types": "./src/sqlite/index.ts",
-      "default": "./src/sqlite/index.ts"
+      "keel": "./src/sqlite/index.server.ts",
+      "types": "./src/sqlite/index.server.ts",
+      "default": "./src/sqlite/index.server.ts"
     },
     "./postgres": {
-      "keel": "./src/postgres/index.ts",
-      "types": "./src/postgres/index.ts",
-      "default": "./src/postgres/index.ts"
+      "keel": "./src/postgres/index.server.ts",
+      "types": "./src/postgres/index.server.ts",
+      "default": "./src/postgres/index.server.ts"
     },
     "./tools": {
       "keel": "./src/tools/index.ts",
@@ -34,14 +34,14 @@
         "default": "./dist/src/index.js"
       },
       "./sqlite": {
-        "keel": "./src/sqlite/index.ts",
-        "types": "./dist/src/sqlite/index.d.ts",
-        "default": "./dist/src/sqlite/index.js"
+        "keel": "./src/sqlite/index.server.ts",
+        "types": "./dist/src/sqlite/index.server.d.ts",
+        "default": "./dist/src/sqlite/index.server.js"
       },
       "./postgres": {
-        "keel": "./src/postgres/index.ts",
-        "types": "./dist/src/postgres/index.d.ts",
-        "default": "./dist/src/postgres/index.js"
+        "keel": "./src/postgres/index.server.ts",
+        "types": "./dist/src/postgres/index.server.d.ts",
+        "default": "./dist/src/postgres/index.server.js"
       },
       "./tools": {
         "keel": "./src/tools/index.ts",

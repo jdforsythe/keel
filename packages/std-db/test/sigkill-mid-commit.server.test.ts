@@ -3,9 +3,9 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { sqlite } from "@keel/std-db/sqlite";
 import { expect, test } from "vitest";
-import { closeStorage, removeDir, spawnNode, tempDir, writeScript } from "./support.ts";
+import { closeStorage, removeDir, spawnNode, tempDir, writeScript } from "./support.server.ts";
 
-const driver = new URL("../src/sqlite/index.ts", import.meta.url).href;
+const driver = new URL("../src/sqlite/index.server.ts", import.meta.url).href;
 const loop = `import { sqlite } from "${driver}";
 const storage = await sqlite(new URL(process.env.KEEL_DATABASE_URL));
 for (let n = 0; ; n++) {

@@ -12,7 +12,7 @@ import { createApp, topology } from "@keel/server";
 import { store, transaction, tx } from "@keel/store";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { KINDS, NOTES_KEY, SEED, field, makeRig } from "./support.ts";
+import { KINDS, NOTES_KEY, SEED, field, makeRig } from "./support.server.ts";
 
 const Notes = s.object({ items: s.array(s.string()) });
 const Add = s.object({ text: s.string() });

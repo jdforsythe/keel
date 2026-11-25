@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { sqlite } from "@keel/std-db/sqlite";
 import { afterEach, expect, test, vi } from "vitest";
-import { removeDir, tempDir } from "./support.ts";
+import { removeDir, tempDir } from "./support.server.ts";
 
 const seen = vi.hoisted(() => {
   const state: { executed: string[]; closed: number; refuse: string } = { executed: [], closed: 0, refuse: "" };

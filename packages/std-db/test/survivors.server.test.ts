@@ -15,7 +15,7 @@ import { checkLayout } from "../src/internal/checkLayout.ts";
 import { dbError } from "../src/internal/dbError.ts";
 import { distinctKeys } from "../src/internal/distinctKeys.ts";
 import { opFailed } from "../src/internal/opFailed.ts";
-import { removeDir, tempDir } from "./support.ts";
+import { removeDir, tempDir } from "./support.server.ts";
 
 /** The rejection of `p`; fails when `p` resolves. */
 async function rejection(p: Promise<unknown>): Promise<unknown> {

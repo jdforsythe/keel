@@ -1,7 +1,7 @@
 // Property: generated sequences of `set`, `commit` and `read` on each driver agree with a model map (k.persist Storage).
 import fc from "fast-check";
 import { afterEach, describe, expect, test } from "vitest";
-import { KINDS, type Rig, makeRig } from "./support.ts";
+import { KINDS, type Rig, makeRig } from "./support.server.ts";
 
 const KEYS = ["a", "b", "c", "d"] as const;
 const VALUES = ["", "x", "y", "é\u{1F600}z", "'; drop table keel_kv; --"] as const;

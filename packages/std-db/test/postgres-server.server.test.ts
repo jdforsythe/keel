@@ -11,7 +11,7 @@ import fc from "fast-check";
 import pg from "pg";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import type { DbStorage } from "../src/DbStorage.ts";
-import { SEED } from "./support.ts";
+import { SEED } from "./support.server.ts";
 
 const SERVER = process.env.KEEL_TEST_POSTGRES_URL ?? "";
 const LOCK = "select pg_advisory_xact_lock(hashtextextended($1, 0))";
