@@ -1,3 +1,4 @@
+import { BarChart } from "@keel-libs/charts";
 import { form } from "@keel/forms";
 import { Form } from "@keel/router";
 import { For, If } from "@keel/runtime-dom";
@@ -9,6 +10,7 @@ import { BookData } from "./BookData.schema.ts";
 import { BookParams } from "./BookParams.schema.ts";
 import { NewReceipt } from "./NewReceipt.schema.ts";
 import { receipts } from "./receipts.contract.ts";
+import { spendOf } from "./spendOf.ts";
 
 export const Props = s.object({ params: BookParams, data: BookData });
 
@@ -70,6 +72,25 @@ export default function BookPage(props: Infer<typeof Props>) {
           )}
         </For>
       </Box>
+      <For each={spendOf(props.data.receipts)} key="currency">
+        {(c) => (
+          <BarChart
+            id={`receipts.spend.${c.currency}`}
+            label={formatMessage(props.data.text.spendLabel, { currency: c.currency }, props.params.locale)}
+            summary={formatMessage(
+              props.data.text.spendSummary,
+              { alex: formatMoney(c.alex, props.params.locale), sam: formatMoney(c.sam, props.params.locale) },
+              props.params.locale,
+            )}
+            points={[
+              { name: props.data.text.alex, value: c.alex.amount, shown: formatMoney(c.alex, props.params.locale) },
+              { name: props.data.text.sam, value: c.sam.amount, shown: formatMoney(c.sam, props.params.locale) },
+            ]}
+            text={{ numbers: props.data.text.numbers, name: props.data.text.payer, value: props.data.text.paid }}
+            styles={{ chart: { fg: "accent" }, summary: { fontSize: "sm", fg: "textSecondary" } }}
+          />
+        )}
+      </For>
       <Box h="hairline" bg="divider" />
       <Heading id="receipts.formHeading" level={2} fontSize="lg">
         {props.data.text.formHeading}

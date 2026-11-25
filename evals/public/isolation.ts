@@ -61,13 +61,17 @@ export async function probe(dir: string, repo: string, claudeReply?: string): Pr
 export function replyFindings(reply: string, project: string, repo: string): Finding[] {
   const home = homedir();
   const found: Finding[] = [];
-  for (const m of reply.matchAll(/(?:~|\/)[\w.@+/-]*/g)) {
+  // macOS reports a temp folder as /private/var/...; the project may be spelled /var/...
+  const projects = [project, project.startsWith("/private/") ? project.slice("/private".length) : `/private${project}`];
+  const inProject = (p: string): boolean => projects.some((b) => within(p, b));
+  for (const m of reply.matchAll(/(?:~|\/|\.{0,2}[\w.@+-]*\/)[\w.@+/-]*/g)) {
     const p = m[0];
     if (p.length < 4) continue;
-    const abs = p.startsWith("~") ? join(home, p.slice(1)) : p;
+    // A relative path (`.claude/skills/keel/SKILL.md`) is the project's own.
+    const abs = p.startsWith("~") ? join(home, p.slice(1)) : p.startsWith("/") ? p : join(project, p);
     if (within(abs, repo) || within(abs, join(home, ".claude")))
       found.push({ code: "V0008", where: p, message: "the agent reports a skill or memory file outside the project" });
-    else if (abs.startsWith("/") && !within(abs, project) && /(CLAUDE|MEMORY|SKILL)\.md$/.test(abs))
+    else if (abs.startsWith("/") && !inProject(abs) && /(CLAUDE|MEMORY|SKILL)\.md$/.test(abs))
       found.push({ code: "V0008", where: p, message: "the agent reports a skill or memory file outside the project" });
   }
   return found;
