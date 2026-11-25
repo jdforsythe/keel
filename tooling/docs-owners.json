@@ -10,6 +10,7 @@
     "k.escapes",
     "k.evidence",
     "k.ledger",
+    "k.ledger-items",
     "k.module",
     "k.origins",
     "k.parity",

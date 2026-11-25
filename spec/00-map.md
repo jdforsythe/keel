@@ -13,7 +13,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | E140x | k.component, k.place | E145x | k.errors |
 | E150x | k.router, k.contract, k.guards, k.prefix, k.api | E155x | k.server, k.topology, k.deploy, k.shell, k.compat, k.hosting, k.security, k.origins, k.leave, k.user, k.mount |
 | E160x | k.ctx, k.sim, k.persist, k.data | E165x | k.services |
-| E170x | k.testing, k.model, k.prove, k.ledger | E175x | k.check, k.host, k.unsafe |
+| E170x | k.testing, k.model, k.prove, k.ledger, k.ledger-items | E175x | k.check, k.host, k.unsafe |
 | E18xx | k.ui, k.a11y, k.aria | E19xx | k.forms |
 | E200x | std.sessions, std.multi, std.monitor | E210x | std.brands |
 | E215x | std.db | E230x | std.i18n |
@@ -60,14 +60,15 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.scaffold-shell | Shell scaffold | conformance-covered | shells |
 | k.scaffold-service | Service scaffold | conformance-covered | clients |
 | k.testing | Harness, properties | conformance-covered | fire |
-| k.test-run | Test end, results | conformance-covered | dispose |
+| k.test-run | Test end, results | implemented | dispose |
 | k.requests | Requests sent | conformance-covered | sent |
 | k.model | Store exploration | conformance-covered | traces |
 | k.prove | Proving invariants | conformance-covered | Z3 |
 | k.sim | Simulation | conformance-covered | faults |
 | k.drive | Sim clock drive | conformance-covered | idle |
 | k.drive-law | Replays agree | conformance-covered | replays |
-| k.ledger | Ledger, evidence | conformance-covered | rungs |
+| k.ledger | Ledger, evidence | implemented | rungs |
+| k.ledger-items | Ledger items, runs | implemented | keys |
 | k.server | Thin server | conformance-covered | loads |
 | k.leave | What a request leaves | conformance-covered | state |
 | k.user | User, caller | conformance-covered | user |
