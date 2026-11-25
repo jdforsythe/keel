@@ -87,6 +87,19 @@ describe("the package step", () => {
       'exports "./x" lists keel after another',
     ],
     [
+      "keel nested under another condition",
+      {
+        ...PKG,
+        exports: {
+          ".": { ...PKG.exports["."] },
+          "./x": { import: { default: "./dist/src/index.js", keel: "./src/index.ts" } },
+        },
+      },
+      undefined,
+      "exports",
+      'exports "./x" nests keel under another condition',
+    ],
+    [
       "a keel target outside src/",
       { ...PKG, exports: { ".": { keel: "./index.ts" } } },
       undefined,

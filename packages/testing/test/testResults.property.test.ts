@@ -75,6 +75,28 @@ describe("testResults", () => {
     expect([r.failed, r.errors]).toEqual([2, 1]);
   });
 
+  it("a file that failed outside any test is one failed test: `failed` never exceeds `tests`", () => {
+    fc.assert(
+      fc.property(fc.array(fc.tuple(fc.boolean(), fc.nat(3)), { maxLength: 8 }), (shape) => {
+        const files = shape.map(([broken, n], i) => ({
+          filepath: `/repo/pkg/f${i}.test.ts`,
+          tasks: Array.from({ length: broken ? 0 : n }, (_, j) => ({
+            type: "test",
+            name: `t${j}`,
+            result: { state: "pass" },
+          })),
+          ...(broken ? { result: { state: "fail", errors: [{ message: "did not load" }] } } : {}),
+        }));
+        const r = testResults(files, [], CWD);
+        const brokenFiles = shape.filter(([b]) => b).length;
+        expect(r.failed).toBe(brokenFiles);
+        expect(r.tests).toBe(brokenFiles + shape.filter(([b]) => !b).reduce((t, [, n]) => t + n, 0));
+        expect(r.failed).toBeLessThanOrEqual(r.tests);
+      }),
+      { seed: SEED, numRuns: 100 },
+    );
+  });
+
   it("counts: every test node counted once; failures, skips and passes partition them; output is deterministic", () => {
     const state = fc.constantFrom("pass", "fail", "skip", "todo");
     fc.assert(

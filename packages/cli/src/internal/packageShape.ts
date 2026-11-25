@@ -38,6 +38,10 @@ function kernelImports(dir: string): string[] {
   return [...out].sort();
 }
 
+/** Whether a conditions value holds a `keel` key at any depth. */
+const nestsKeel = (value: unknown): boolean =>
+  isRecord(value) && (Object.hasOwn(value, "keel") || Object.values(value).some(nestsKeel));
+
 /** Each string target of an `exports` value, its conditions nested or not, with the condition naming it. */
 const targets = (value: unknown, cond = "default"): [string, string][] =>
   typeof value === "string"
@@ -49,7 +53,8 @@ const targets = (value: unknown, cond = "default"): [string, string][] =>
 /**
  * Binary only: the first reason the library at `dir` (`pkg` its parsed `package.json`, `text` the file) is no package
  * an app reads, checks and trusts as the folder does (k.library-pack Pack, step `package`), or undefined, in this order:
- * no root `module.ts`; an `exports` with no `"."` entry whose `keel` condition comes first, or an entry listing `keel`
+ * no root `module.ts`; an `exports` with no `"."` entry whose `keel` condition comes first, an entry holding `keel`
+ * nested under another condition, or an entry listing `keel`
  * after another condition; a `keel` target that is no `.ts` or `.tsx` file under `src/` or `unsafe/`; a `files` list
  * missing, or not selecting `module.ts`, `.keel/ledger.json`, every file under `src/` and `unsafe/`, or an `exports`
  * target; a `@keel/*` package its files import, or the compiler's output of its JSX imports, that `peerDependencies`
@@ -70,7 +75,12 @@ export function packageShape(dir: string, pkg: Readonly<Record<string, unknown>>
   if (!isRecord(dot) || Object.keys(dot)[0] !== "keel")
     return at("exports", 'exports "." lists no keel condition first');
   for (const [key, value] of Object.entries(exports)) {
-    if (!isRecord(value) || !Object.hasOwn(value, "keel")) continue;
+    if (!isRecord(value)) continue;
+    // The check reads an entry's `keel` at its top level alone, and a resolver takes the first matching condition at
+    // each depth, so a `keel` under another condition is read by no reader of the library as its source.
+    if (Object.values(value).some(nestsKeel))
+      return at("exports", `exports ${clip(JSON.stringify(key))} nests keel under another condition`);
+    if (!Object.hasOwn(value, "keel")) continue;
     if (Object.keys(value)[0] !== "keel")
       return at("exports", `exports ${clip(JSON.stringify(key))} lists keel after another`);
     const source = typeof value.keel === "string" ? value.keel.replace(/^\.\//, "") : "";
