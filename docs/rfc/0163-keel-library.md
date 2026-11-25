@@ -1,6 +1,6 @@
 # RFC 0163: a Keel library: a package kind checked again by the app
 
-Status: accepted (ADR-0185), confirmed by the operator on 2026-11-25; not yet built. The library format is built before the public release and before the second part of k.parity (RFC 0169 Build B, which needs the library kind). Sections k.library and k.library-pack hold the contract. This is W15 step 4 of `tasks/p1/PLAN.md` and D49 of `tasks/0963-to-p1/PLAN.md`.
+Status: accepted (ADR-0185), confirmed by the operator on 2026-11-25; slice 1 (the library kind) built, slices 2a to 5 not yet. The library format is built before the public release and before the second part of k.parity (RFC 0169 Build B, which needs the library kind). Sections k.library and k.library-pack hold the contract. This is W15 step 4 of `tasks/p1/PLAN.md` and D49 of `tasks/0963-to-p1/PLAN.md`.
 
 ## Decisions
 - D1: a library is a package whose `package.json` has `"keel": "library"` and a scoped name. Its root `module.ts` is a k.module manifest, unchanged: `public.exports` is its surface, `id` its prefix. A second manifest shape would be a second way (principle 1).
