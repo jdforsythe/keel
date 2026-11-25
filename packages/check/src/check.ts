@@ -206,7 +206,7 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
     ...duplicateErrorCodes(checked),
     ...registerNames(checked, dirs),
     ...chainStoreIds(checked, dirs, all),
-    ...moduleChecks(checked),
+    ...moduleChecks(checked, (p) => projectOf.get(p) ?? []),
     ...aliasedImports(checked, path.resolve(opts.root ?? process.cwd()), dirs),
     ...outsideImports(checked, path.resolve(opts.root ?? process.cwd()), dirs),
     ...guardRedirectLoops(checked),
