@@ -1,4 +1,4 @@
-// Spec: std.headless, Conformance "`optionsChart`, `openChart` and `toastChart` hold the transitions in the table"
+// Spec: std.headless, clause "`optionsChart`, `openChart` and `toastChart` hold the transitions in the table; under `explore`'s closed form `openChart` and `toastChart` are `complete` and `coverage` is empty; `explore` of `optionsChart` from `initial` with counts 0, 1 and 3, `at` and `to` -1, 0, 2 and 5, every `by`, `wrap` and `back`, at depth 6, finds no state breaking its invariant."
 // Seed: 1337.
 // Assumptions: `instance(chart, key)` is imported from `@keel/std-statecharts`; `choose` takes `{}`; `expire` from `showing` goes to `gone`
 // (the table gives only "`expire` (in `showing`)"); `open` while open, and events a state does not list, leave the state unchanged;

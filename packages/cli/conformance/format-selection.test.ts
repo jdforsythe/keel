@@ -1,4 +1,4 @@
-// Spec: k.cli "Output": --format=compact|json|pretty; default compact when stdout is not a TTY or KEEL_AGENT=1, else pretty.
+// k.cli "Output": --format=compact|json|pretty; default compact when stdout is not a TTY or KEEL_AGENT=1, else pretty.
 import { describe, expect, it } from "vitest";
 import { SEED, dirtyProject, keel, parseJsonLines } from "./fixtures";
 

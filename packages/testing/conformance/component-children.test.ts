@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.component Conformance, "A component's JSX children arrive as `props.children` and render inside the child's scope; a base element given JSX text children renders that text". Seed: 1337.
+// Spec: k.component, clause "A component's JSX children arrive as `props.children` and render inside the child's scope."
+// Spec: k.component, clause "A base element given JSX text children renders that text."
 // Real base elements from @keel/ui under the real harness.
 import type { Scope } from "@keel/reactive";
 import { owner } from "@keel/reactive";

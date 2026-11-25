@@ -131,7 +131,7 @@ describe("k.ledger-items: a citation is one `// Spec:` line of one form", () => 
     () => {
       const run = sharedRun();
       expect(rung(run, "k.c", ONE)).toBe("none");
-      expect(at(run, "c")).toEqual([expect.objectContaining({ line: 1 })]);
+      expect(at(run, "c")).toEqual([expect.objectContaining({ line: 1, code: "E1732" })]);
     },
     SLOW,
   );
@@ -151,7 +151,7 @@ describe("k.ledger-items: a citation is one `// Spec:` line of one form", () => 
     () => {
       const run = sharedRun();
       expect(rung(run, "k.e", HI)).toBe("none");
-      expect(at(run, "e")).toEqual([expect.objectContaining({ line: 1 })]);
+      expect(at(run, "e")).toEqual([expect.objectContaining({ line: 1, code: "E1732" })]);
     },
     SLOW,
   );
@@ -162,7 +162,7 @@ describe("k.ledger-items: a citation is one `// Spec:` line of one form", () => 
       const run = sharedRun();
       const found = at(run, "f");
       expect(found).toHaveLength(1);
-      expect(found[0]).toMatchObject({ line: 1 });
+      expect(found[0]).toMatchObject({ code: "E1732", line: 1 });
       expect(String(found[0]?.message)).toContain("B is two.");
       expect(String(found[0]?.message)).toContain("k.f#2");
     },
@@ -174,7 +174,7 @@ describe("k.ledger-items: a citation is one `// Spec:` line of one form", () => 
     () => {
       const run = sharedRun();
       for (const file of ["g-nope", "g-rules", "g-two"])
-        expect(at(run, file)).toEqual([expect.objectContaining({ line: 1 })]);
+        expect(at(run, file)).toEqual([expect.objectContaining({ line: 1, code: "E1732" })]);
       expect(rung(run, "k.g", ONE)).toBe("none");
       expect(rung(run, "k.g", TWO)).toBe("none");
     },

@@ -1,4 +1,4 @@
-// Spec: k.store, clause "`snapshotKeys(snapshot)` gives the write keys a `restore` of `snapshot` takes: its `keys` when present, `[]` included (then no key, whatever its log holds), else, when `keys` is absent, its log entries' keys in log order (k.sync)."
+// k.store, clause "`snapshotKeys(snapshot)` gives the write keys a `restore` of `snapshot` takes: its `keys` when present, `[]` included (then no key, whatever its log holds), else, when `keys` is absent, its log entries' keys in log order (k.sync)."
 // Seed 1337 (fast-check `seed: 1337`).
 // Reading: the "write keys" are the `{ name, key }` pairs `snapshot().keys` holds (k.sync Write key), so a log entry yields `{ name, key }` of its own name and key, and an entry committed without a `key` yields none. A snapshot "without `keys`" is one whose `keys` property is absent; one holding `[]` has keys, so gives `[]`.
 import { scope } from "@keel/reactive";

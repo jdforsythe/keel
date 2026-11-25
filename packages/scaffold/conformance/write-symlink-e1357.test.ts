@@ -2,7 +2,7 @@
 // Spec: k.scaffold, clause "`keel scaffold project <name>`, with or without `--workspace`, writes only under `<name>/`."
 // k.explain, Agent files "`keel docs --sync` writes them all or none". RFC 0151 Conformance diff, the two E1357 bullets.
 // k.explain, Agent files "`CLAUDE.md` holding `@AGENTS.md` when nothing exists there (an existing one is never written, a dangling symlink is E1357)"
-// Spec: k.scaffold "`--sync` ... keeps a `CLAUDE.md`, linked or not."
+// Spec: k.scaffold, clause "`--sync` restores an edited block and copy, keeps text outside the block, reruns as no-op; creates absent files; keeps a `CLAUDE.md`, linked or not."
 // Seed: none (examples; real temp directories, real symlinks, the real `keel` binary). Also drives `keel mcp` for the MCP path.
 // ASSUMED: the `path` of the E1357 diagnostic starts with the linked path (`.claude`, `.claude/skills`, `AGENTS.md`, `CLAUDE.md`);
 // the spec names the field `path` and says it is the linked write. Rest of the set written: `AGENTS.md` exists afterwards. The MCP `docs` tool takes `{ sync: true, format: "json" }`.

@@ -2,11 +2,11 @@
 // Spec: k.ledger-items, clause "The bullets ``- `A` is “one”.`` and `- a  is \"one\"` have one key."
 // Spec: k.ledger-items, clause "Over a committed ledger holding `k.x`'s clause `A is one.` at `example`, rewording it to `A is two.` makes `keel ledger --diff` report no E1706, and, with `k.x` `conformance-covered` and no file citing `A is two.`, E1707 at that bullet's line naming `k.x#1`."
 // Spec: k.ledger-items, clause "Bullets `A is one.` and `a is one` in one section are one E1733 at the second's line, and the ledger holds one item for them."
-// Pending (rfc:0235 step 4): skipped until the build lands; the builder un-skips by changing each `it.skip` to `it` in this file.
-// Seed: 1337 (every property, 5 runs each: a run is one `keel ledger`). Binary runs: 1 per case, 2 for the two `--diff` cases (`--write`, then `--diff`).
+// Seed: 1337 (every property, 5 runs each: a run is one `keel ledger`). Binary runs: 1 per case, 3 for the two reword and addition cases (`--write`, `--diff`, then `keel ledger`).
 // The real `keel` binary over temp projects (OS tmpdir). A clause record `{ kind: 'ledger', item, rung, evidence, n }` holds `n` (k.ledger-items Clause key).
 // The normal form is implemented again in ledger-items-support.ts from the spec's words (backticks dropped, `\"` and typographic quotes made straight,
 // white space runs one space, ends trimmed, lower case, one final period dropped); the key literals below are computed apart from it.
+// The spec says `--diff` compares and reports its diagnostics (k.ledger File), and that `keel ledger` emits the clause records (k.ledger Ledger); it does not say `--diff` prints them, so the records are read from a plain `keel ledger` run over the same tree.
 // ASSUMED: `--diff` reads the committed ledger at `.keel/ledger.json` as ledger-diff-e1706-cli.test.ts does; "one addition" is read as one E1707 for the new item and no E1706.
 import { createHash } from "node:crypto";
 import fc from "fast-check";
@@ -107,7 +107,7 @@ describe("k.ledger-items: a clause is keyed by its text", () => {
     );
   }, 600_000);
 
-  it.skip(
+  it(
     "Over a committed ledger holding `k.x`'s clause `A is one.` at `example`, rewording it to `A is two.` makes `keel ledger --diff` report no E1706, and, with `k.x` `conformance-covered` and no file citing `A is two.`, E1707 at that bullet's line naming `k.x#1`",
     () => {
       const start = files({ "k.x": { bullets: ["A is one."], status: "conformance-covered" } });
@@ -122,14 +122,15 @@ describe("k.ledger-items: a clause is keyed by its text", () => {
         expect(String(e1707[0]?.message)).toContain("k.x#1");
         expect(diff.status).toBe(1);
         // a removal and an addition: the old item is gone and the new one holds no evidence of the old text's
-        expect(clauseRecord(diff, itemOf("k.x", "A is one."))).toBeUndefined();
-        expect(clauseRecord(diff, itemOf("k.x", "A is two."))).toMatchObject({ n: 1, rung: "none" });
+        const records = keel(dir, ["ledger"]);
+        expect(clauseRecord(records, itemOf("k.x", "A is one."))).toBeUndefined();
+        expect(clauseRecord(records, itemOf("k.x", "A is two."))).toMatchObject({ n: 1, rung: "none" });
       });
     },
     SLOW,
   );
 
-  it.skip(
+  it(
     "a bullet added at position 10 of a 12-bullet section is one addition: `--diff` reports no E1706 and one E1707, at its line, naming `k.x#10`",
     () => {
       const bullets = Array.from({ length: 12 }, (_, i) => `Clause number ${"abcdefghijkl"[i]} holds.`);
@@ -144,11 +145,12 @@ describe("k.ledger-items: a clause is keyed by its text", () => {
         expect(e1707).toHaveLength(1);
         expect(e1707[0]).toMatchObject({ path: specPath("k.x"), line: bulletLine(10) });
         expect(String(e1707[0]?.message)).toContain("k.x#10");
-        expect(clausesOf(diff, "k.x")).toHaveLength(13);
-        bullets.forEach((b, i) => {
-          expect(clauseRecord(diff, itemOf("k.x", b))).toMatchObject({ n: i < 9 ? i + 1 : i + 2, rung: "example" });
-        });
         expect(diff.status).toBe(1);
+        const records = keel(dir, ["ledger"]);
+        expect(clausesOf(records, "k.x")).toHaveLength(13);
+        bullets.forEach((b, i) => {
+          expect(clauseRecord(records, itemOf("k.x", b))).toMatchObject({ n: i < 9 ? i + 1 : i + 2, rung: "example" });
+        });
       });
     },
     SLOW,
@@ -203,7 +205,7 @@ describe("k.ledger-items: a clause is keyed by its text", () => {
         const run = keel(dir, ["ledger"]);
         const found = diagsOf(run, "E1733");
         expect(found).toHaveLength(1);
-        expect(found[0]).toMatchObject({ path: specPath("k.x"), line: bulletLine(2) });
+        expect(found[0]).toMatchObject({ code: "E1733", path: specPath("k.x"), line: bulletLine(2) });
         expect(clausesOf(run, "k.x")).toHaveLength(1);
       });
     },
@@ -225,7 +227,9 @@ describe("k.ledger-items: a clause is keyed by its text", () => {
             const found = diagsOf(run, "E1733");
             expect(found).toHaveLength(pairs.length);
             pairs.forEach((_, i) => {
-              expect(found).toContainEqual(expect.objectContaining({ path: specPath(`k.d${i}`), line: bulletLine(2) }));
+              expect(found).toContainEqual(
+                expect.objectContaining({ code: "E1733", path: specPath(`k.d${i}`), line: bulletLine(2) }),
+              );
               expect(clausesOf(run, `k.d${i}`)).toHaveLength(1);
             });
           });

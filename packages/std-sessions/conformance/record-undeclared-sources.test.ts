@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: std.sessions, clause "Later error messages and `data` also drop each undeclared key of a `.pii()`-marked open object, and each non-empty string and number under it, in a payload as given to `tx`, a state as last given to its store (`initial`, a `restore`, a commit; k.store `givenPii`) and route values."
-// Spec: k.store, clause "`givenPii(store)` gives the same of the store's state as last given: `initial` at creation, the state a `restore` was given, or the state a commit or undo made."
+// std.sessions, clause "Later error messages and `data` also drop each undeclared key of a `.pii()`-marked open object, and each non-empty string and number under it, in a payload as given to `tx`, a state as last given to its store (`initial`, a `restore`, a commit; k.store `givenPii`) and route values."
+// k.store, clause "`givenPii(store)` gives the same of the store's state as last given: `initial` at creation, the state a `restore` was given, or the state a commit or undo made."
 // Seed 1337 (fast-check `seed: 1337`).
 // Sources crossed with channels: each source of marked values the sentence names (a `tx` payload, `initial`, a `restore`, a commit, an undo, route params, route search) by each channel the spec names for dropped text (an error's `message`, its `data`). The recording's JSON holds neither an undeclared key's name nor a value under it.
 // The channels of std.sessions-redact (a nested `cause`, a loader throwing, a rejected promise, data keys) are crossed with every source in record-undeclared-channels.test.ts.

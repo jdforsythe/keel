@@ -1,4 +1,4 @@
-// Spec: k.scaffold "`keel check`: fresh, no W1356; an edited or removed copy or edited block, one W1356 there; no block, none."
+// Spec: k.scaffold, clause "`keel check`: fresh, no W1356; an edited or removed copy or edited block, one W1356 there; no block, none. Unclosed block: `--sync` E1355, exit 1, writes nothing."
 // k.scaffold Rules W1356 "agent file stale or block malformed (`keel docs --sync`)"; k.docs D5 "at the file's path, line 1".
 // Seed: none. Red: no agent files are scaffolded and `keel check` never reports W1356.
 import { join } from "node:path";

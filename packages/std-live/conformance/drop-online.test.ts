@@ -1,4 +1,4 @@
-// Spec: std.live, clause "`status()` is `live` while the stream is open and the latest read since its `reset` succeeded; `connecting` while the stream opens or a read is pending or failed; `offline` while `ctx.net.online()` is false; `denied` once the channel denies."
+// std.live, clause "`status()` is `live` while the stream is open and the latest read since its `reset` succeeded; `connecting` while the stream opens or a read is pending or failed; `offline` while `ctx.net.online()` is false; `denied` once the channel denies."
 // Spec: std.live, clause "After the stream opens, `read` runs once and its value is committed with `hydrate`; `status()` is `connecting` before that commit and `live` after it."
 // Seed 1337
 // Assumption: a drop while online is `server.drop()` (the stream ends, `online()` stays true); the first reopen is 1 s later on `ctx.clock` (std.channels).

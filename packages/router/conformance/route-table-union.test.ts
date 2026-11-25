@@ -3,7 +3,7 @@
 // Spec: k.routes, clause "`manifest(c, b)` has `kind` `keel.routeTable`, `contract` `c`, `contracts` `[c]` and no `routes`; `routeTable(m)` has no `contract`."
 // Spec: k.routes, clause "`routeTable(a, b)` where `b` has a page on the path pattern of a page of `a`, or of an API entry of `a` at another method, throws E1502 naming both ids; `routeTable(a, a)` throws E1502 naming `a`."
 // Spec: k.routes, clause "`routeTable(c)` of a contract does not compile."
-// Spec: k.routes, Conformance "With `a` holding a prefixed route (k.prefix) and `b` a page at `/de-DE/about`, `routeTable(a, b)` throws E1509"
+// Spec: k.routes, clause "With `a` holding a prefixed route (k.prefix) and `b` a page at `/de-DE/about`, `routeTable(a, b)` throws E1509, and `keel check` with `a` and `b` in one deployable reports one E1509 at `b`'s `path`; in two deployables, none."
 // Seed 1337 (fc.assert below). The server half (createApp answering both modules) is packages/server/conformance/route-table-serve.test.ts.
 // Compile-time half of each "does not compile" claim: ./negative-types.test-d.ts; the calls here are untyped.
 import { manifest, routeTable } from "@keel/router";

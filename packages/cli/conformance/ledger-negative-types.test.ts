@@ -152,7 +152,7 @@ describe("k.unsafe Ledger: no item evidence", () => {
   const specText = ["# k.fx: Fixture", "status: conformance-covered", "", "**Conformance.**", `- ${CLAUSE}`, ""].join(
     "\n",
   );
-  const header = `// Spec: k.fx, Conformance "${CLAUSE}"\n`;
+  const header = `// Spec: k.fx, clause "${CLAUSE}"\n`;
   const rung = (files: Readonly<Record<string, string>>): unknown => {
     const dir = project("ledger-negtypes-rung", { [SPEC]: specText, ...files });
     return ledgerRecord(keel(dir, ["ledger"]), itemOf("k.fx", CLAUSE))?.rung;
