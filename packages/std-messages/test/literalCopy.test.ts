@@ -1,7 +1,7 @@
 // E2406 literal copy reached through JSX expression children and literal branches, and the shapes it leaves alone.
 import "@keel/std-messages/tools";
 import { describe, expect, it } from "vitest";
-import { codesOf, tree } from "../conformance/fixtures/support.ts";
+import { codesOf, tree } from "./support.ts";
 
 const view = (body: string): string =>
   `export default function RecipeList(props) {\n  const t = props.data.text\n  return ${body}\n}\n`;

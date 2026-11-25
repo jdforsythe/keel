@@ -2085,19 +2085,16 @@ importers:
 
   packages/std-messages:
     dependencies:
-      '@keel/check':
-        specifier: workspace:*
-        version: link:../check
-      '@keel/schema':
-        specifier: workspace:*
-        version: link:../schema
-      '@keel/std-i18n':
-        specifier: workspace:*
-        version: link:../std-i18n
       oxc-parser:
         specifier: ^0.157.0
         version: 0.157.0
     devDependencies:
+      '@keel/check':
+        specifier: workspace:*
+        version: link:../check
+      '@keel/cli':
+        specifier: workspace:*
+        version: link:../cli
       '@keel/compiler':
         specifier: workspace:*
         version: link:../compiler
@@ -2113,9 +2110,15 @@ importers:
       '@keel/runtime-dom':
         specifier: workspace:*
         version: link:../runtime-dom
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../schema
       '@keel/server':
         specifier: workspace:*
         version: link:../server
+      '@keel/std-i18n':
+        specifier: workspace:*
+        version: link:../std-i18n
       '@keel/testing':
         specifier: workspace:*
         version: link:../testing
