@@ -42,6 +42,7 @@ Rules:
 - [ ] 1003 the CI smokes are not part of the local pre-push gate
 - [ ] 1105 `mutate.mjs --stop` waits without a bound; a run blocked in `open()` holds the lock
 - [ ] 1115 the gate's slow run does not reach CI's slowness (8.5 times)
+- [ ] 1119 the shard runner throws on the first dry run after a clean
 
 ### Lane 02 conformance-files · testing, scaffold, check, std-schedules, runtime-dom, compiler · `rfc:` conformance commits only · M
 - [ ] 1098 `sim-stalls` real 100 ms timer against a 300 ms budget is load-sensitive
