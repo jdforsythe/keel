@@ -37,7 +37,7 @@ function controlId(nodes: readonly A11yNode[], name: string): string {
 }
 
 /** `first` comes before `then` in the page's focus order, both in it. */
-function before(order: readonly string[], first: string, then: string): boolean {
+function comesBefore(order: readonly string[], first: string, then: string): boolean {
   return order.includes(first) && order.includes(then) && order.indexOf(first) < order.indexOf(then);
 }
 
@@ -52,7 +52,7 @@ describe("page accessibility", () => {
       expect(r.a11y("todos.lists.title").role).toBe("heading");
       const name = controlId(r.a11y(), "List name");
       expect(r.find(name).role).toBe("textbox");
-      expect(before(r.focusOrder(), name, "todos.addList")).toBe(true);
+      expect(comesBefore(r.focusOrder(), name, "todos.addList")).toBe(true);
       // Undo is disabled with nothing to undo, so the keyboard skips it.
       expect(r.find("todos.undo").state.disabled).toBe(true);
       expect(r.focusOrder()).not.toContain("todos.undo");
@@ -69,7 +69,7 @@ describe("page accessibility", () => {
       expect(r.a11y("todos.list.title")).toMatchObject({ role: "heading", name: "Home" });
       const title = controlId(r.a11y(), "Title");
       expect(r.find(title).role).toBe("textbox");
-      expect(before(r.focusOrder(), title, "todos.addTodo")).toBe(true);
+      expect(comesBefore(r.focusOrder(), title, "todos.addTodo")).toBe(true);
       await r.fire("todos.addTodo", { type: "click" });
       expect(r.find(title).state.focused).toBe(true);
       expect(r.find(`${title}:error`).text).not.toBe("");
@@ -87,7 +87,7 @@ describe("page accessibility", () => {
       const title = controlId(r.a11y(), "Title");
       expect(r.find(title).role).toBe("textbox");
       expect(r.find("todos.save")).toMatchObject({ role: "button" });
-      expect(before(r.focusOrder(), title, "todos.save")).toBe(true);
+      expect(comesBefore(r.focusOrder(), title, "todos.save")).toBe(true);
     } finally {
       r.dispose();
     }
