@@ -1,3 +1,4 @@
+import { boundFault } from "../unsafe/boundFault.ts";
 import { segmenter } from "./segmenter.ts";
 
 /**
@@ -6,7 +7,7 @@ import { segmenter } from "./segmenter.ts";
  */
 export function truncate(s: string, max: number): string {
   if (!Number.isInteger(max) || max < 1)
-    throw new RangeError(`truncate: max must be an integer of at least 1, got ${max}`);
+    return boundFault(`truncate: max must be an integer of at least 1, got ${max}`);
   // Segmenting stops at max + 1 graphemes: the rest of a longer string is never read.
   const parts: string[] = [];
   for (const x of segmenter.segment(s)) {

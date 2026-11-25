@@ -2540,14 +2540,19 @@ importers:
         version: 3.23.2
 
   packages/std-text:
-    dependencies:
+    devDependencies:
+      '@keel/cli':
+        specifier: workspace:*
+        version: link:../cli
+      '@keel/compiler':
+        specifier: workspace:*
+        version: link:../compiler
       '@keel/schema':
         specifier: workspace:*
         version: link:../schema
       '@keel/std-i18n':
         specifier: workspace:*
         version: link:../std-i18n
-    devDependencies:
       '@keel/std-temporal':
         specifier: workspace:*
         version: link:../std-temporal

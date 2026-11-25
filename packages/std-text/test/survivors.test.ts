@@ -2,8 +2,8 @@
 import { gen } from "@keel/schema/gen";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { Email } from "../src/Email.ts";
-import { Slug } from "../src/Slug.ts";
+import { Email } from "../src/Email.schema.ts";
+import { Slug } from "../src/Slug.schema.ts";
 import { graphemes } from "../src/graphemes.ts";
 import { line } from "../src/line.ts";
 import { para } from "../src/para.ts";

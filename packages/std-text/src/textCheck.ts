@@ -1,3 +1,4 @@
+import { boundFault } from "../unsafe/boundFault.ts";
 import { segmenter } from "./segmenter.ts";
 
 // Unicode Cc, lone surrogates (Cs), U+2028, U+2029 and Bidi_Control; para allows U+000A.
@@ -12,7 +13,7 @@ const VISIBLE = /[^\p{White_Space}\p{Default_Ignorable_Code_Point}\p{Cf}\p{M}\u2
  */
 export function textCheck(min: number, max: number, newline: boolean): (v: string) => boolean {
   if (!Number.isInteger(min) || !Number.isInteger(max) || min < 0 || min > max || max < 1 || max > 10000) {
-    throw new RangeError(`text bounds must be integers with 0 <= min <= max and 1 <= max <= 10000, got ${min}..${max}`);
+    return boundFault(`text bounds must be integers with 0 <= min <= max and 1 <= max <= 10000, got ${min}..${max}`);
   }
   const forbidden = newline ? PARA : LINE;
   return (v) => {
