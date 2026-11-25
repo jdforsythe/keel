@@ -1,5 +1,5 @@
-// Spec: k.testing, Conformance "`app` with `state` or `shell` rejects E1722, `app` unrequested; W1723 fires on `renderRoute('f.page', { routes })` when a `node` deployable serves `f`, not with `app` nor for a `client` one."
-// Spec: k.testing, Rules "W1723 a literal `renderRoute` id of a `node` deployable's module, no `app` (`keel check`; fix: pass `app`)."
+// Spec: k.testing, clause "`app` with `state` or `shell` rejects E1722, `app` unrequested; W1723 fires on `renderRoute('f.page', { routes })` when a `node` deployable serves `f`, not with `app` nor for a `client` one."
+// k.testing, Rules "W1723 a literal `renderRoute` id of a `node` deployable's module, no `app` (`keel check`; fix: pass `app`)."
 // Seed 1337 (fc.assert below). Pending: W1723 is not reported yet.
 // ASSUMPTIONS: a test file is `modules/f/f.test.ts`; the route id prefix `f` names module `f`; the rule is registered by `check` itself.
 import { check } from "@keel/check";

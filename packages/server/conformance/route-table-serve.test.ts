@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.routes, Conformance "`createApp` serving `routeTable(a, b)` of two modules' manifests answers a route of each; `routeTable(routeTable(a), b)` and `routeTable(b, a)` answer every request alike, and `createApp({ routes: a })` as `routeTable(a)` does."
+// Spec: k.routes, clause "`createApp` serving `routeTable(a, b)` of two modules' manifests answers a route of each; `routeTable(routeTable(a), b)` and `routeTable(b, a)` answer every request alike, and `createApp({ routes: a })` as `routeTable(a)` does."
 // Seed 1337 (fc.assert below).
 import { manifest, routeTable } from "@keel/router";
 import { contract } from "@keel/router/contract";

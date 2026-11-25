@@ -1,5 +1,5 @@
-// Spec: std.postgres, Conformance "Under sim, on PGlite and on Postgres 17, `sql(S)`show transaction_isolation`` answers `serializable` in a `transaction` and alone, `repeatable read` with `allow: 'write skew'`, `read committed` with `allow: 'lost updates'`."
-// Spec: std.postgres, API "`transaction(fn, { allow?, reason? })`: ... in one `serializable` transaction"
+// Spec: std.postgres, clause "Under sim, on PGlite and on Postgres 17, `` sql(S)`show transaction_isolation` `` answers `serializable` in a `transaction` and alone, `repeatable read` with `allow: 'write skew'`, `read committed` with `allow: 'lost updates'`."
+// std.postgres, API "`transaction(fn, { allow?, reason? })`: ... in one `serializable` transaction"
 // Seed: 1337 (reasons are generated; fc seed below).
 // Pending (rfc:0184): skipped until the build lands; the builder un-skips by changing each `test.skip` to `test` in this file.
 // Assumption: Postgres 17 runs when `KEEL_TEST_POSTGRES_URL` is set (MODES).

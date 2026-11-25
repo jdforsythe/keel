@@ -1,4 +1,4 @@
-// Spec: k.compiler, clause "A literal `poster="javascript:alert(1)"` is E1003, and the same value bound dynamically renders as `about:blank`."
+// Spec: k.compiler, clause "A literal `poster=\"javascript:alert(1)\"` is E1003, and the same value bound dynamically renders as `about:blank`."
 // @vitest-environment happy-dom
 // Seed 1337 (no generated inputs; the clause names one value).
 import { createCtx } from "@keel/ctx";

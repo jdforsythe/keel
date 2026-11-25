@@ -1,5 +1,5 @@
 // Spec: k.ledger, clause "An entry without `note`, or with a `reason` outside `equivalent`, `unreachable` and `performance`, makes `keel ledger` report E1725 with or without a report on disk."
-// Spec: k.ledger, Rules "E1725 a package's `mutation-justified.json` fails its shape (a field missing, a reason outside the set, two equal entries)".
+// k.ledger, Rules "E1725 a package's `mutation-justified.json` fails its shape (a field missing, a reason outside the set, two equal entries)".
 // The real `keel` binary over a temp project (OS tmpdir). Seed: 1337 (no property here).
 import { describe, expect, it } from "vitest";
 import { PKG_REPORT, diags, withProject } from "./ledger-fixture-kinds.ts";

@@ -1,4 +1,4 @@
-// Spec: k.services Conformance, "An `events` endpoint against a live loader yielding `ok(1)` then `ok(2)` iterates exactly those, then ends; a `data:` line failing `output` yields one `api.decode` and ends; an aborted `signal` ends it with no further request."
+// Spec: k.services, clause "An `events` endpoint against a live loader yielding `ok(1)` then `ok(2)` iterates exactly those, then ends; a `data:` line failing `output` yields one `api.decode` and ends; an aborted `signal` ends it with no further request."
 // Seed 1337 (fc.assert below). No wall time: the stream is a sim net route; `events` is not in `Endpoint` yet, so the schema is built from a plain object.
 import { createCtx } from "@keel/ctx";
 import { s } from "@keel/schema";

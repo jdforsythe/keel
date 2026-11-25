@@ -1,4 +1,4 @@
-// Spec: std.live, Conformance "Under sim, with callers A and B live on one page, A through a `createApp` on ctx `a` and B through one on `replica(a)` (k.sim Replicas), a write by A to a store the channel's `stores` creates is in B's hydrated store after B's next read, with no input from B."
+// Spec: std.live, clause "Under sim, with callers A and B live on one page, A through a `createApp` on ctx `a` and B through one on `replica(a)` (k.sim Replicas), a write by A to a store the channel's `stores` creates is in B's hydrated store after B's next read, with no input from B."
 // Seed: 1337.
 // Reading: "live on one page" is two `live` calls in one test, A's on ctx `a` against origin `https://a.example.com` and B's on `replica(a)` against origin `https://b.example.com`; the ctxs share one net, so each origin is routed to its own `createApp`.
 // Reading: a `read` is the app's own read of the stores it serves: B's reads the board store through B's ctx storage (a loader reads the same snapshot); `hydrate` commits it. "No input from B" is: B's page does nothing after its `live` call.

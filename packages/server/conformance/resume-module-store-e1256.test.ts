@@ -3,9 +3,9 @@ import { action, guard, loader, manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
 import type { RouteProps } from "@keel/router";
 // @vitest-environment happy-dom
-// Spec: k.resume, Conformance "A loader, guard or component writing a module store fails its level with a throw starting `E1256`, the store unchanged; such an action answers 500. Two requests in turn never see each other's request stores."
-// Spec: k.resume, Rules "E1256 a write to a module store during a request (k.leave)."
-// Spec: k.resume, Stores "During a request `createApp` serves (guards, loaders, action, renders, across `await`s), `tx` on a module store (k.store Registries) throws E1256, changing nothing: a level fails as a throw does; an action answers 500."
+// Spec: k.resume, clause "A loader, guard or component writing a module store fails its level with a throw starting `E1256`, the store unchanged; such an action answers 500. Two requests in turn never see each other's request stores."
+// k.resume, Rules "E1256 a write to a module store during a request (k.leave)."
+// k.resume, Stores "During a request `createApp` serves (guards, loaders, action, renders, across `await`s), `tx` on a module store (k.store Registries) throws E1256, changing nothing: a level fails as a throw does; an action answers 500."
 // Property seed: 1337 (fc.assert seed below). Real createApp over a module store defined in this test graph; the store sits in the module registry.
 import type { KeelError } from "@keel/schema";
 import { ok, s } from "@keel/schema";

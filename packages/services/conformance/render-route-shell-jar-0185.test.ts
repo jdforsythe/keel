@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.return, Conformance "Under `renderRoute(id, { shell: true, ctx })`, `ctx.net` routing the origin to a `createApp` whose `handle` answers a mount `Form` POST 303 to a page with `set-cookie: s=1`: the router navigates there and the page's next `service({ contract })` call carries `cookie` `s=1`."
-// Spec: k.return, Testing "mount requests and the page's other requests to its origin go to the sim `net` through the harness's cookie jar (k.mount Testing)".
+// Spec: k.return, clause "Under `renderRoute(id, { shell: true, ctx })`, `ctx.net` routing the origin to a `createApp` whose `handle` answers a mount `Form` POST 303 to a page with `set-cookie: s=1`: the router navigates there and the page's next `service({ contract })` call carries `cookie` `s=1`."
+// k.return, Testing "mount requests and the page's other requests to its origin go to the sim `net` through the harness's cookie jar (k.mount Testing)".
 // Seed: 1337 (fc.assert below; the cookie value is generated, `1` is its default). Pending: RFC 0185 is not built. To un-skip: change `test.skip` to `test` in this file once a shell harness owns a cookie jar.
 // ASSUMPTION: the route `*` on the shell ctx's net takes every request to the page's origin (as return-support.ts does); the request's `cookie` is read as it reaches that route. See render-route-user-support.ts.
 import { createCtx } from "@keel/ctx";

@@ -1,5 +1,5 @@
-// Spec: k.docs "Under a root with `spec/00-map.md` and no `node_modules/@keel/` docs, `keel docs k.cli` prints `spec/kernel/k.cli.md` and `--for` reads `spec/`."
-// Spec: k.docs "The Keel repo": the map is `spec/00-map.md` as one `docs.section` with id `map`; skills at `packages/cli/skills/<name>/SKILL.md`.
+// Spec: k.docs, clause "Under a root with `spec/00-map.md` and no `node_modules/@keel/` docs, `keel docs k.cli` prints `spec/kernel/k.cli.md` and `--for` reads `spec/`."
+// k.docs "The Keel repo": the map is `spec/00-map.md` as one `docs.section` with id `map`; skills at `packages/cli/skills/<name>/SKILL.md`.
 // Seed: none. Red: `docs` is absent (E1051).
 import { describe, expect, it } from "vitest";
 import { jsonRecords } from "./docs-support";

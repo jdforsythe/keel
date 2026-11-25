@@ -1,5 +1,5 @@
-// Spec: k.origins, Conformance "With no `origins`, and with `origins: {}`, a fixture's production and dev documents, `csp.txt` and shell policies are byte-equal to k.security's."
-// Spec: k.origins, Declaration "No `origins`, `origins: {}` and an empty directive are the same declaration: none."
+// Spec: k.origins, clause "With no `origins`, and with `origins: {}`, a fixture's production and dev documents, `csp.txt` and shell policies are byte-equal to k.security's."
+// k.origins, Declaration "No `origins`, `origins: {}` and an empty directive are the same declaration: none."
 // Seed 1337 (no generated input: one fixture, spawned builds). This file: `csp.txt` and the Tauri `tauri.conf.json`. Documents: packages/server/conformance/origins-none-byte-equal.test.ts.
 // The Capacitor meta policy is in origins-shells.test.ts. "byte-equal to k.security's" is read as equal to the build with no `origins`, whose directives are k.security's `client` policy.
 import { afterAll, beforeAll, describe, expect, test } from "vitest";

@@ -1,4 +1,4 @@
-// Spec: k.prove, Conformance "A store whose `initial` breaks an invariant rejects E1716 with that state and no payload."
+// Spec: k.prove, clause "A store whose `initial` breaks an invariant rejects E1716 with that state and no payload."
 // Seed: 1337.
 import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";

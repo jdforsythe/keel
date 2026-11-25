@@ -1,4 +1,4 @@
-// Spec: std.lists, Conformance "`stableRows` returns the same object for a key kept across a list change and a new one for an added key."
+// Spec: std.lists, clause "`stableRows` returns the same object for a key kept across a list change and a new one for an added key."
 // Seed: 1337. Assumptions in lists-support.ts.
 import { signal } from "@keel/reactive";
 import { stableRows } from "@keel/std-headless";

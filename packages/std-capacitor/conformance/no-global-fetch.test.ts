@@ -1,4 +1,4 @@
-// Spec: std.shells, Conformance "Neither package replaces the global `fetch`."
+// Spec: std.shells, clause "Neither package replaces the global `fetch`."
 // Seed: 1337.
 // @vitest-environment happy-dom
 // Assumption: `globalThis.fetch` is replaced by a function that fails the test for the duration of each test and restored in `finally`; the driver's requests, cookies and storage must not call it.

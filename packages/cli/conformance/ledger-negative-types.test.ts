@@ -1,5 +1,5 @@
-// Spec: k.unsafe, Conformance "`keel ledger --write` of a fixture whose `packages/p/unsafe/a.ts` holds two `unsafe(` calls and one in a comment, whose `packages/p/unsafe/unsafe.ts` declares `function unsafe<T>(`, and whose `packages/p/test/a.test-d.ts` holds three expectations writes `unsafe: 2` and `negativeTypes: 3`; then a fourth expectation makes `--diff` report no E1706, and a third call makes it report E1706."
-// Spec: k.unsafe, Conformance "A clause cited by the `// Spec:` header of `packages/p/conformance/a.test-d.ts` alone is `none` in `keel ledger`."
+// Spec: k.unsafe, clause "`keel ledger --write` of a fixture whose `packages/p/unsafe/a.ts` holds two `unsafe(` calls and one in a comment, whose `packages/p/unsafe/unsafe.ts` declares `function unsafe<T>(`, and whose `packages/p/test/a.test-d.ts` holds three expectations writes `unsafe: 2` and `negativeTypes: 3`; then a fourth expectation makes `--diff` report no E1706, and a third call makes it report E1706."
+// Spec: k.unsafe, clause "A clause cited by the `// Spec:` header of `packages/p/conformance/a.test-d.ts` alone is `none` in `keel ledger`."
 // Seed 1337 (the property below). The real `keel` binary over temp projects in the OS tmpdir; the ledger file is read as
 // JSON. Directive and call text is built from constants so this file holds neither. Spec ambiguities: the value form of
 // `--scope` is not written in k.unsafe; the scope case passes the app folder as a path prefix (as ledger-host-elements does),

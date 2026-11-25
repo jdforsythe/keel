@@ -1,4 +1,4 @@
-// Spec: k.sim, Conformance "A registered capability with a `plan` schema receives `plans[name]` in its sim factory; a plan step that fails its schema, or `schedule` on a real ctx, throws E1604."
+// Spec: k.sim, clause "A registered capability with a `plan` schema receives `plans[name]` in its sim factory; a plan step that fails its schema, or `schedule` on a real ctx, throws E1604."
 // Seed: 1337.
 import { createCtx, register } from "@keel/ctx";
 import { s } from "@keel/schema";

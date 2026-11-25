@@ -1,9 +1,9 @@
-// Spec: std.statecharts, Conformance "`keel check` reports E2751 to E2755 on fixtures and nothing on their clean twins; E2751 carries a fix to the nearest name and E2753 one adding `final: true`."
-// Spec: std.statecharts, rule E2751: `initial` or a `to` naming no state (fix: the nearest state name).
-// Spec: std.statecharts, rule E2752: a state unreachable from `initial` through `on` targets.
-// Spec: std.statecharts, rule E2753: a non-final state with no target to another state (fix: add `final: true`).
-// Spec: std.statecharts, rule E2754: a final state with `on`, an `on` event missing from `events`, or a `guard` or `do` naming no entry.
-// Spec: std.statecharts, rule E2755: a `chart` whose `initial`, `events`, `guards`, `actions`, `states`, `on` keys or targets are not literals: a variable, a spread or a computed key (the checker cannot prove it).
+// Spec: std.statecharts, clause "`keel check` reports E2751 to E2755 on fixtures and nothing on their clean twins; E2751 carries a fix to the nearest name and E2753 one adding `final: true`."
+// std.statecharts, rule E2751: `initial` or a `to` naming no state (fix: the nearest state name).
+// std.statecharts, rule E2752: a state unreachable from `initial` through `on` targets.
+// std.statecharts, rule E2753: a non-final state with no target to another state (fix: add `final: true`).
+// std.statecharts, rule E2754: a final state with `on`, an `on` event missing from `events`, or a `guard` or `do` naming no entry.
+// std.statecharts, rule E2755: a `chart` whose `initial`, `events`, `guards`, `actions`, `states`, `on` keys or targets are not literals: a variable, a spread or a computed key (the checker cannot prove it).
 // Seed: 1337.
 // Assumption: as for std.jobs E2501, `check()` imports nothing, so the rules register by importing `@keel/std-statecharts/tools`;
 // a module is the files under `modules/<id>/` with a `module.ts` listing `deps`; the chart file is `modules/todos/editorChart.ts` (a client-safe file named for its export).

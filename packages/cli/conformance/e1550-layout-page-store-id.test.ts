@@ -1,5 +1,5 @@
-// Spec: k.server, Rules "E1550 ... `keel check` at the deeper loader's `stores` value ...; `keel build` and `createApp` run each factory once on a sim ctx (k.compat Surface) and refuse it"
-// Spec: k.server, Conformance "A layout whose loader names factory `a` and a page under it whose loader names `b`, where `b` spreads `a()` and both create store id `x.s`, is one E1550 in `keel check` at the page loader's `stores` value naming `a`, `b`, `x.s` and the layout's id, and `createApp` throws E1550; with both loaders naming `a`, neither, and a GET of the page answers 200 with `a` run once."
+// k.server, Rules "E1550 ... `keel check` at the deeper loader's `stores` value ...; `keel build` and `createApp` run each factory once on a sim ctx (k.compat Surface) and refuse it"
+// Spec: k.server, clause "A layout whose loader names factory `a` and a page under it whose loader names `b`, where `b` spreads `a()` and both create store id `x.s`, is one E1550 in `keel check` at the page loader's `stores` value naming `a`, `b`, `x.s` and the layout's id, and `createApp` throws E1550; with both loaders naming `a`, neither, and a GET of the page answers 200 with `a` run once."
 // Seed: 1337.
 // In-memory project through `run(['check'])` and `run(['build'])`, as topology-e1558-unreadable.test.ts.
 // Not built yet: `test.skip`; the builder changes each to `test`.

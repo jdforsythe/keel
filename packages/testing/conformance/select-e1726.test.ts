@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.testing Rules "E1726 `fire` `change` with `value` a person cannot pick (`<id> has no enabled option with that value`; `<id> takes no value on change: not a single select`)"
-// Spec: k.testing Conformance "`change` with a `value` of no option or of a disabled one rejects E1726 `<id> has no enabled option with that value`; on an `<input>` or a `multiple` select, E1726 `<id> takes no value on change: not a single select`; each with `data` `{ id, type: 'change' }`, no handler run, the value unchanged. `change` without `value` runs the `change` handler alone; `input` with `value` the `input` handler alone."
+// k.testing Rules "E1726 `fire` `change` with `value` a person cannot pick (`<id> has no enabled option with that value`; `<id> takes no value on change: not a single select`)"
+// Spec: k.testing, clause "`change` with a `value` of no option or of a disabled one rejects E1726 `<id> has no enabled option with that value`; on an `<input>` or a `multiple` select, E1726 `<id> takes no value on change: not a single select`; each with `data` `{ id, type: 'change' }`, no handler run, the value unchanged. `change` without `value` runs the `change` handler alone; `input` with `value` the `input` handler alone."
 // The message omitting the value is RFC 0202 Proposal 3 ("Neither names the value"), not spec text.
 // Seed: 1337 (fc.assert below). ASSUMED: the compact line is the error's `message` including its code, as E1705's is.
 import * as fc from "fast-check";

@@ -1,4 +1,4 @@
-// Spec: k.ui Rules E1801 (raw value where a token is required) and E1807 (`tokens.ts` fails `TokenSchema`): the thrown
+// k.ui Rules E1801 (raw value where a token is required) and E1807 (`tokens.ts` fails `TokenSchema`): the thrown
 // error carries the code (rfc:0065, backlog 0186). No random inputs.
 import { defineTokens } from "@keel/ui";
 import { compileStyles } from "@keel/ui/css";

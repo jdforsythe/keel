@@ -1,4 +1,4 @@
-// Spec: k.scaffold, Conformance "`route { id: 'orders.about', path: '/about', 'no-loader': true }` creates the page component and the route test alone, adds the contract entry, and binds `'orders.about'` to `{ component }`: no `*.server.ts` file is created and `routes.ts` gains no loader import; `keel check` and `keel test` are clean in the default and the `node` project. With `api: true` it is E1052, nothing written."
+// Spec: k.scaffold, clause "`route { id: 'orders.about', path: '/about', 'no-loader': true }` creates the page component and the route test alone, adds the contract entry, and binds `'orders.about'` to `{ component }`: no `*.server.ts` file is created and `routes.ts` gains no loader import; `keel check` and `keel test` are clean in the default and the `node` project. With `api: true` it is E1052, nothing written."
 // seed 1337 (property over route names and paths).
 import fc from "fast-check";
 import { afterAll, describe, expect, it } from "vitest";

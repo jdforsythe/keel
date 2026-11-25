@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.testing, Conformance "With `app`, a valid submit whose action answers `keel.fields` `{ amount: 'Too many decimals' }` leaves the amount field `invalid` holding the submitted value and that message, and one POST in `documents()` of exactly the named fields; an invalid submit reaches no action."
-// Spec: k.testing, Harness "With `app` (a `createApp` result) `renderRoute` runs a built `node` page, no router: a GET through `app.fetch` ... A valid `<Form>` submit (k.mount Form) is POSTed urlencoded, `sec-fetch-site: same-origin`, to `app`; ... the answer (a 422 too) replaces the page, resumed, before `fire` resolves."
+// Spec: k.testing, clause "With `app`, a valid submit whose action answers `keel.fields` `{ amount: 'Too many decimals' }` leaves the amount field `invalid` holding the submitted value and that message, and one POST in `documents()` of exactly the named fields; an invalid submit reaches no action."
+// k.testing, Harness "With `app` (a `createApp` result) `renderRoute` runs a built `node` page, no router: a GET through `app.fetch` ... A valid `<Form>` submit (k.mount Form) is POSTed urlencoded, `sec-fetch-site: same-origin`, to `app`; ... the answer (a 422 too) replaces the page, resumed, before `fire` resolves."
 // Seed: 1337 (fc.assert below). Pending: `renderRoute` has no `app` option yet. See render-route-document-support.ts for the assumed fixture shape.
 import { renderRoute } from "@keel/testing";
 import fc from "fast-check";

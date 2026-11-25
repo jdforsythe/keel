@@ -1,6 +1,6 @@
-// Spec: k.user, Conformance "With `identify` answering `''`, a request carrying `x-keel-user: u2`, `?user=u2`, a body field `user` and a cookie `user=u2` gets `user` `''`."
-// Spec: k.user, User "No header, cookie, search or body value of the client sets `user`."
-// Spec: k.user, Across deployables "A server that verifies it uses it as `user` and runs no `identify`; any other `x-keel-user` is ignored."
+// Spec: k.user, clause "With `identify` answering `''`, a request carrying `x-keel-user: u2`, `?user=u2`, a body field `user` and a cookie `user=u2` gets `user` `''`."
+// k.user, User "No header, cookie, search or body value of the client sets `user`."
+// k.user, Across deployables "A server that verifies it uses it as `user` and runs no `identify`; any other `x-keel-user` is ignored."
 // Seed 1337 (fc.assert below). The signed header's own cases are in identity-peers.test.ts.
 // @vitest-environment node
 import fc from "fast-check";

@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.a11y, Conformance "`focusOrder()` lists focusable element ids in document order without disabled or hidden ones."
+// Spec: k.a11y, clause "`focusOrder()` lists focusable element ids in document order without disabled or hidden ones."
 // Seed: 1337.
 // Assumed: `focusOrder()` is a method of the `render` handle returning `string[]`; a hidden element is one with the `hidden` attribute.
 import { element } from "@keel/runtime-dom/ops";

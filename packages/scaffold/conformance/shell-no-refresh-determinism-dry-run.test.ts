@@ -1,5 +1,5 @@
-// Spec: k.scaffold-shell, Conformance "In a project where `keel build` ran, the operation writes no file under `.keel/`, `deploy/` or `dist/`, and its trailer is `ok scaffold shell 0 created, 2 changed, 0 removed`, with no `artifacts`. Two runs on equal trees give equal edit sets; `--dry-run` writes nothing and prints the diff a following apply writes."
-// Spec: k.scaffold, Refresh "`--dry-run`, a project with no such artifact, and `shell`, refresh nothing."
+// Spec: k.scaffold-shell, clause "In a project where `keel build` ran, the operation writes no file under `.keel/`, `deploy/` or `dist/`, and its trailer is `ok scaffold shell 0 created, 2 changed, 0 removed`, with no `artifacts`. Two runs on equal trees give equal edit sets; `--dry-run` writes nothing and prints the diff a following apply writes."
+// k.scaffold, Refresh "`--dry-run`, a project with no such artifact, and `shell`, refresh nothing."
 // Seed 1337 (property over ids and names). ASSUMED json edit record, as dry-run.test.ts: { kind: "scaffold.edit", action, path, diff }.
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";

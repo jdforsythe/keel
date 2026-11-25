@@ -1,4 +1,4 @@
-// Spec: std.workflows, Conformance "A `run` that returns `err` 3 times with `attempts: 3` leaves the instance after its `failed` event with that code; one that never settles ends there with `workflows.attempts`."
+// Spec: std.workflows, clause "A `run` that returns `err` 3 times with `attempts: 3` leaves the instance after its `failed` event with that code; one that never settles ends there with `workflows.attempts`."
 // Seed: 1337.
 // Assumption: the clock is moved in 1,000 ms steps over 120 s, past every backoff and lease of the sim; the `failed` event of the step is `stuck`, whose payload `code` the chart keeps in `data.code`.
 import { err, ok } from "@keel/schema";

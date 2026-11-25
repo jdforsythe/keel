@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.ui Conformance, "Two `Box as="nav"` with distinct `label`s pass axe; a `nav` without one is E1802."
-// Spec: RFC 0091 G, "Two landmarks of one role with equal labels stay a test-time E1703 (axe `landmark-unique`)."
+// Spec: k.ui, clause "Two `Box as=\"nav\"` with distinct `label`s pass axe; a `nav` without one is E1802."
+// RFC 0091 G, "Two landmarks of one role with equal labels stay a test-time E1703 (axe `landmark-unique`)."
 // Seed: 1337 (fast-check). The harness `render` runs axe after the first render and throws E1703 on a violation.
 // Untestable here: "a `nav` without a label is E1802" is a type error that `keel check` maps; asserted by tsc in packages/ui/conformance/box-label-0091.test.ts.
 // Undefined by the spec: a lone unlabeled landmark; label comparison (case, whitespace) for uniqueness is left to axe.

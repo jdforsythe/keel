@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.aria, Conformance "A `mousedown` on an `option` is default-prevented."
+// Spec: k.aria, clause "A `mousedown` on an `option` is default-prevented."
 // Seed: 1337.
 // Behavior extras: the same for `menuitem` and `menuitemcheckbox`, so a click leaves focus where it was; not for other roles.
 import { createCtx } from "@keel/ctx";

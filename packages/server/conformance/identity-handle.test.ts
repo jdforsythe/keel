@@ -1,6 +1,6 @@
-// Spec: k.user, Identity source "`handle: { path, fn }`: a request at `path` or under it goes to `fn(request, ctx, { routes })` with its body (`maxBodyBytes`), `routes` the deployable's route table, so a `next` it carries becomes a 303 `location` through `pageHref` (k.router Return targets), after the same-site check for a write; its `Response`, `set-cookie` included, is returned with k.security's headers added. An auth library's endpoints live here."
-// Spec: k.user, Conformance "With `identify` and a `handle` whose `fn` sets `sid`, no response but `fn`'s sets a cookie other than the caller cookie; `fn`'s `set-cookie` reaches the client; a cross-site POST under `handle.path` is 403 and `fn` is not called."
-// Spec: k.user, intro "Keel authenticates no one: it carries what a function the app supplies answers, and never reads, writes, mints, rotates or stores a credential, session or token for it."
+// k.user, Identity source "`handle: { path, fn }`: a request at `path` or under it goes to `fn(request, ctx, { routes })` with its body (`maxBodyBytes`), `routes` the deployable's route table, so a `next` it carries becomes a 303 `location` through `pageHref` (k.router Return targets), after the same-site check for a write; its `Response`, `set-cookie` included, is returned with k.security's headers added. An auth library's endpoints live here."
+// Spec: k.user, clause "With `identify` and a `handle` whose `fn` sets `sid`, no response but `fn`'s sets a cookie other than the caller cookie; `fn`'s `set-cookie` reaches the client; a cross-site POST under `handle.path` is 403 and `fn` is not called."
+// k.user, intro "Keel authenticates no one: it carries what a function the app supplies answers, and never reads, writes, mints, rotates or stores a credential, session or token for it."
 // Seed 1337 (fc.assert below). Runs under plain Node: happy-dom strips cookie headers.
 // @vitest-environment node
 import fc from "fast-check";

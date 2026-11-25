@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.testing, Properties "`properties(target, { runs = 100, seed? })` asserts, for a component: renders without throwing, matches `a11y.json`, no axe violations, two renders with one seed are equal. For a transaction: output parses with the store schema, every `invariant` of the store holds, equal inputs give equal outputs, `undo` restores the input."
-// Spec: k.store, Log meta "`snapshot({ meta: true })` keeps it and `restore` keeps the `meta` of the entries it restores." (meta survives exactly when the log does)
+// k.testing, Properties "`properties(target, { runs = 100, seed? })` asserts, for a component: renders without throwing, matches `a11y.json`, no axe violations, two renders with one seed are equal. For a transaction: output parses with the store schema, every `invariant` of the store holds, equal inputs give equal outputs, `undo` restores the input."
+// k.store, Log meta "`snapshot({ meta: true })` keeps it and `restore` keeps the `meta` of the entries it restores." (meta survives exactly when the log does)
 // Seed: 1337 (rfc:0028, backlog 0104). properties() and a harness dispose must leave a store's log, with its meta, as they found it.
 import type { Ctx } from "@keel/ctx";
 import { scope } from "@keel/reactive";

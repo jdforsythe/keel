@@ -1,9 +1,8 @@
 import { computed, effect, owner, scope, signal } from "@keel/reactive";
 import type { Effect, Scope } from "@keel/reactive";
 import * as fc from "fast-check";
-// Spec: k.reactive Conformance, clause "A throwing `onDispose` hook stops no disposal: every owned node is disposed and
-// every later hook runs, `dispose()` rethrows the first error in disposal order (owned nodes before the node's own
-// hooks, hooks in registration order), and `scope(fn)` rethrows `fn`'s error over a hook's." Property seed: 1337.
+// Spec: k.reactive, clause "A throwing `onDispose` hook stops no disposal: every owned node is disposed and every later hook runs, `dispose()` rethrows the first error in disposal order (owned nodes before the node's own hooks, hooks in registration order), and `scope(fn)` rethrows `fn`'s error over a hook's."
+// Property seed: 1337.
 import { describe, expect, it } from "vitest";
 
 const SEED = 1337;

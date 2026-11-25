@@ -1,4 +1,4 @@
-// Spec: std.db, Conformance "After a value is overwritten, its entry folded and the driver closed, the SQLite file's bytes do not hold it."
+// Spec: std.db, clause "After a value is overwritten, its entry folded and the driver closed, the SQLite file's bytes do not hold it."
 // Seed: 1337.
 // Assumption: at the driver level "its entry folded" is a `commit` that overwrites the key: the store's `logLimit` folding (k.persist, k.server)
 // ends in such a commit, and the spec names no way to fold through the driver alone. The driver's `close()` is read without a cast (fixtures.ts).

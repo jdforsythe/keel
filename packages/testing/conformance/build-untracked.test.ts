@@ -1,4 +1,4 @@
-// Spec: k.component, Conformance "A component reading a signal at its top level, rendered from JSX, from a `.ts` call and as a route page, keeps its nodes, focus and local signals when the signal changes; a binding reading it updates."
+// Spec: k.component, clause "A component reading a signal at its top level, rendered from JSX, from a `.ts` call and as a route page, keeps its nodes, focus and local signals when the signal changes; a binding reading it updates."
 // Seed: 1337.
 // @vitest-environment happy-dom
 // This file holds the JSX and route page forms (they need the compiler and the router, which runtime-dom may not import);

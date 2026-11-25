@@ -1,5 +1,5 @@
-// Spec: k.aria, Rules "E1823 unreadable `styles` (no fix)."
-// Spec: k.aria, Part styles "Any other value, part or spread is E1823, except `props.styles` or its members, collected where written."
+// k.aria, Rules "E1823 unreadable `styles` (no fix)."
+// k.aria, Part styles "Any other value, part or spread is E1823, except `props.styles` or its members, collected where written."
 // Seed: 1337.
 // Collection of readable `styles` is packages/compiler/conformance/part-styles-any-component.test.ts.
 // Pending: not implemented yet.

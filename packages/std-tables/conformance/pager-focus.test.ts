@@ -1,4 +1,4 @@
-// Spec: std.tables, Conformance "After Next on the next-to-last page, focus is on `status`."
+// Spec: std.tables, clause "After Next on the next-to-last page, focus is on `status`."
 // Seed: 1337.
 // @vitest-environment happy-dom
 import { renderRoute } from "@keel/testing";

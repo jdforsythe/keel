@@ -1,5 +1,5 @@
-// Spec: k.a11y, Required props ("A blank literal `label` (no visible character, as std.text `line` defines it; a `Cc` control or JSX named reference is not one) is E1802 too; a computed one is unchecked") and Conformance bullet 10:
-// "`keel check` without types reports E1802 for `<Box as="nav" label="">` and `Input({ label: " " })`; `label="Main"`, `label={name}` and a `store` option `label: ""` report none."
+// k.a11y Required props ("A blank literal `label` (no visible character, as std.text `line` defines it; a `Cc` control or JSX named reference is not one) is E1802 too; a computed one is unchecked") and
+// Spec: k.a11y, clause "`keel check` without types reports E1802 for `<Box as=\"nav\" label=\"\">` and `Input({ label: \" \" })`; `label=\"Main\"`, `label={name}` and a `store` option `label: \"\"` report none."
 // Seed 1337
 // E1802 for a blank label has no fix: the name is the author's choice.
 import { check } from "@keel/check";

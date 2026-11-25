@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.runtime Rules E1253. ASSUMPTION: resume(root, { [componentId]: Component }, { ctx }) returns { warnings: unknown[] }.
+// k.runtime Rules E1253. ASSUMPTION: resume(root, { [componentId]: Component }, { ctx }) returns { warnings: unknown[] }.
 import { createCtx } from "@keel/ctx";
 import { resume } from "@keel/runtime-dom/ops";
 import { describe, expect, it } from "vitest";

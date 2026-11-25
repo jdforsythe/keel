@@ -1,4 +1,4 @@
-// Spec: std.tauri, Conformance "`tauri.conf.json` holds the declared `identifier` and `productName`, the `package.json` `version`, and the deployable's policy with `ipc: http://ipc.localhost` in `connect-src`."
+// Spec: std.tauri, clause "`tauri.conf.json` holds the declared `identifier` and `productName`, the `package.json` `version`, and the deployable's policy with `ipc: http://ipc.localhost` in `connect-src`."
 // Seed: 1337 (identifier, name and version are generated).
 // The real binary over a temp project (`keel-cli.ts`): `keel build` writes `deploy/web/tauri/tauri.conf.json` and `dist/web/csp.txt`.
 // ASSUMPTION: `app.security.csp` is the policy as one string, as `csp.txt` is; "the deployable's policy with ... added" is read as the same directive set as `csp.txt`, `connect-src` gaining the source `ipc: http://ipc.localhost`

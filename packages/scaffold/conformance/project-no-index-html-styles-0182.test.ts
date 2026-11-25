@@ -1,4 +1,4 @@
-// Spec: k.scaffold, Conformance "`keel scaffold project p` and `keel scaffold project p --workspace` write no `index.html`, and `topology.ts`'s deployable has `styles: ['@keel/ui/fonts']`."
+// Spec: k.scaffold, clause "`keel scaffold project p` and `keel scaffold project p --workspace` write no `index.html`, and `topology.ts`'s deployable has `styles: ['@keel/ui/fonts']`."
 // Seed: none (no generated input beyond the three adapters; spawns are costly). Pending: `project` still writes `index.html` and no `styles`.
 // ASSUMPTION: `topology.ts` is written with `styles` on the one deployable, in either quote style; with `--workspace` the project folder is still `<name>/`.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";

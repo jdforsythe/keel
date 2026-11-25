@@ -1,5 +1,5 @@
-// Spec: k.services Conformance, "An `events` endpoint against a live loader yielding `ok(1)` then `ok(2)` iterates exactly those, then ends; a `data:` line failing `output` yields one `api.decode` and ends; an aborted `signal` ends it with no further request."
-// Spec: RFC 0157 Conformance diff: "An `events: true` entry bound to a loader whose `fn` is not an async generator throws E1515; with one, the client iterates its yields." Seed 1337 (fc.assert below).
+// Spec: k.services, clause "An `events` endpoint against a live loader yielding `ok(1)` then `ok(2)` iterates exactly those, then ends; a `data:` line failing `output` yields one `api.decode` and ends; an aborted `signal` ends it with no further request."
+// RFC 0157 Conformance diff: "An `events: true` entry bound to a loader whose `fn` is not an async generator throws E1515; with one, the client iterates its yields." Seed 1337 (fc.assert below).
 // The server half is a sim net route streaming `data:` lines; the entry is `events: true` of a contract.
 import { createCtx } from "@keel/ctx";
 import { contract } from "@keel/router/contract";

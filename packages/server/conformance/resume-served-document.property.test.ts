@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.resume, Conformance "For every route of a test app, the body of the document `createApp` serves, resumed with the app's compiled components by route id and its stores, returns no warning, keeps every server node, and a handler fired on a server element runs and updates the bindings it writes."
+// Spec: k.resume, clause "For every route of a test app, the body of the document `createApp` serves, resumed with the app's compiled components by route id and its stores, returns no warning, keeps every server node, and a handler fired on a server element runs and updates the bindings it writes."
 // Seed: 1337 (fc.assert seed below). Generated trees of layout, static and island levels and structural ops; real compiled TSX, real createApp, real resume.
 import fc from "fast-check";
 import { afterEach, describe, expect, it } from "vitest";

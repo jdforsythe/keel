@@ -1,5 +1,5 @@
-// Spec: k.hosting, Conformance "The same fixture with a route whose loader returns `err` (`keel.notFound`) exits 1 with one E1588 naming that route id and 404."
-// Spec: k.hosting, Rules "E1588 a `static` route whose build GET answers other than 200 (names the route id and status)"
+// Spec: k.hosting, clause "The same fixture with a route whose loader returns `err` (`keel.notFound`) exits 1 with one E1588 naming that route id and 404."
+// k.hosting, Rules "E1588 a `static` route whose build GET answers other than 200 (names the route id and status)"
 // Seed: 1337 (no generated input: one fixture per variant; see static-support.ts).
 // ASSUMPTION: the diagnostic message names the route id `s.about` and the status as decimal digits; only the `keel.notFound` status (404) is named by the spec,
 // so a guard that denies or a throw is asserted to give one E1588 naming the route id and some three-digit status other than 200.

@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.host-element, Conformance "A throw from `mount` renders the nearest `Boundary`'s fallback with `data.at` the element's id."
-// Spec: k.host-code, Events "A throw from `code`, `mount`, `update`, `onEvent` or an `emit` that fails `events` is caught by the nearest `Boundary` (`data.at` the element's id); a throw from `dispose` is reported to the ctx and dropped."
+// Spec: k.host-element, clause "A throw from `mount` renders the nearest `Boundary`'s fallback with `data.at` the element's id."
+// k.host-code, Events "A throw from `code`, `mount`, `update`, `onEvent` or an `emit` that fails `events` is caught by the nearest `Boundary` (`data.at` the element's id); a throw from `dispose` is reported to the ctx and dropped."
 // Seed: 1337.
 import { Boundary, mount } from "@keel/runtime-dom";
 import { Host, hostCode } from "@keel/ui";

@@ -1,7 +1,7 @@
-// Spec: std.tables, Conformance "`tableSearch` parses `{}` and drops a `sort` outside `sort` columns (k.router); E2852 fires for a filter named `page` and a `.pii()` search column."
+// Spec: std.tables, clause "`tableSearch` parses `{}` and drops a `sort` outside `sort` columns (k.router); E2852 fires for a filter named `page` and a `.pii()` search column."
 // Seed: 1337.
 // @vitest-environment happy-dom
-// Spec: std.tables, Rules "E2852 a filter column with a reserved name, or a `.pii()` `search` or `filter` column"
+// std.tables, Rules "E2852 a filter column with a reserved name, or a `.pii()` `search` or `filter` column"
 // Assumption: E2852 is thrown by `columns` or by `tableSearch` over it; both calls sit inside the asserted thunk.
 import { s } from "@keel/schema";
 import { columns, tableSearch } from "@keel/std-tables";

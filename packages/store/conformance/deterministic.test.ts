@@ -1,5 +1,6 @@
 import fc from "fast-check";
-// Spec: k.store Conformance, "Transactions are deterministic for equal inputs". Seed 1337.
+// Spec: k.store, clause "Transactions are deterministic for equal inputs."
+// k.store Seed 1337.
 import { describe, expect, it } from "vitest";
 import { applyOp, makeCart, opArb, opts } from "./fixtures";
 

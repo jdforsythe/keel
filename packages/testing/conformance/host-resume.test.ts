@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
-// Spec: k.host-element, Conformance "After resume, `mount` runs once with the served value and the element's node; the server node is kept and no E1253 is reported."
-// Spec: k.host-element, Lifecycle "`code` runs after the element's island resumes or mounts: the import resolves, then `mount` runs in the next animation frame with the current value."
-// Spec: k.host-element, Lifecycle "Resume never compares or claims the element's children (no E1253 from them)."
+// Spec: k.host-element, clause "After resume, `mount` runs once with the served value and the element's node; the server node is kept and no E1253 is reported."
+// k.host-element, Lifecycle "`code` runs after the element's island resumes or mounts: the import resolves, then `mount` runs in the next animation frame with the current value."
+// k.host-element, Lifecycle "Resume never compares or claims the element's children (no E1253 from them)."
 // Seed: 1337. The server document is the client render written into a scratch host with no frame run, so it holds the element and no children, as the server writes it.
 import { mount } from "@keel/runtime-dom";
 import { resume } from "@keel/runtime-dom/ops";

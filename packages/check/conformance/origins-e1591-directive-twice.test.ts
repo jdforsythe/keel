@@ -1,5 +1,5 @@
 // rfc:0160 conformance: `img` written twice in one `origins` is one E1591 at the second.
-// Spec: k.origins, Rules "E1591 one origin twice in one directive (fix: delete the second entry). So is a directive twice; the first is read."
+// k.origins, Rules "E1591 one origin twice in one directive (fix: delete the second entry). So is a directive twice; the first is read."
 // Seed 1337 (fc.assert below).
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";

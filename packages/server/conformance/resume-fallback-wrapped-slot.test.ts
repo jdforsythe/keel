@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.resume, Conformance "A layout island with its slot in an `If` in a wrapper element, mismatching before calling `children`, re-renders with one wrapper around the page island's server nodes; a click queued on the layout is dropped, one on the page replays."
-// Spec: k.resume, Nested islands "The server writes `<!--k-->` first in a child level's content; a layout island mismatching before its `children` call holds only that comment's region."
+// Spec: k.resume, clause "A layout island with its slot in an `If` in a wrapper element, mismatching before calling `children`, re-renders with one wrapper around the page island's server nodes; a click queued on the layout is dropped, one on the page replays."
+// k.resume, Nested islands "The server writes `<!--k-->` first in a child level's content; a layout island mismatching before its `children` call holds only that comment's region."
 // Seed: 1337 (no generated inputs). Real compiled TSX, real createApp, real resume; the client layout has an extra element ahead of the `If`.
 import { afterEach, describe, expect, it } from "vitest";
 import {

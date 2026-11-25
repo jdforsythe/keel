@@ -1,4 +1,4 @@
-// Spec: std.shells, Conformance "A cookie set by a response from `origin` is sent on the next request to `origin` and on none to another origin."
+// Spec: std.shells, clause "A cookie set by a response from `origin` is sent on the next request to `origin` and on none to another origin."
 // Seed: 1337.
 // @vitest-environment happy-dom
 // Assumption: the native side keeps the cookie jar (stand-in in fixtures.ts), so the driver's part is to pass the request and its `set-cookie` response through untouched and keep cookies out of the page;

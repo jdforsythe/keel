@@ -1,5 +1,5 @@
-// Spec: std.postgres, Conformance "On Postgres 17, each pair waiting until both have read: two `transaction`s writing a counter's value read + 1 are each `ok` or `keel.conflict`, a `fn` runs twice, and the counter equals the `ok` count; two that each take their own doctor off call when two are on call leave one on call, or none with `allow: 'write skew'`."
-// Spec: std.postgres, API "in one `serializable` transaction: committed ones have the effect of some serial order: no lost update, no write skew."
+// Spec: std.postgres, clause "On Postgres 17, each pair waiting until both have read: two `transaction`s writing a counter's value read + 1 are each `ok` or `keel.conflict`, a `fn` runs twice, and the counter equals the `ok` count; two that each take their own doctor off call when two are on call leave one on call, or none with `allow: 'write skew'`."
+// std.postgres, API "in one `serializable` transaction: committed ones have the effect of some serial order: no lost update, no write skew."
 // Seed: 1337 (no generated inputs: the cases are fixed races).
 // Pending (rfc:0184): skipped until the build lands; the builder un-skips by changing each `test.skip` to `test` in this file.
 // Assumption: runs only with `KEEL_TEST_POSTGRES_URL` (describe.skipIf); the barrier releases once both have arrived and stays open, so a rerun does not wait.

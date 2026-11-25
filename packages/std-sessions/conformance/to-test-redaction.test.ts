@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 // Spec: std.sessions, clause "A `to-test` file holds no recorded `s.string()` value outside `expose`, and no `s.secret` or password value."
-// Spec: std.sessions, clause "A recording is redacted once, at capture: `sessions.ingest` redacts nothing, and the server log's marks (k.privacy) never cover a filed session. `to-test` writes each `s.string()` no `expose` entry names as `x` repeated."
+// std.sessions, clause "A recording is redacted once, at capture: `sessions.ingest` redacts nothing, and the server log's marks (k.privacy) never cover a filed session. `to-test` writes each `s.string()` no `expose` entry names as `x` repeated."
 // Seed 1337
 // Reading: a session file reaching `to-test` may hold what `sessions.ingest` filed (it redacts nothing), including keys and values under an open object that its store's schema does not declare; `to-test` holds none of them, as key or as value, nested or inside an array.
 import { run } from "@keel/cli";

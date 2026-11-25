@@ -1,4 +1,4 @@
-// Spec: std.shells, Conformance "With `tauriDrivers`, a save cut at any byte of `keel.json` or `keel.b.json` leaves a new driver reading the earlier or the new value of every key; a copy of a lower generation or a wrong checksum is not read; with no whole copy and `keel.json` present every call rejects and both files keep their bytes."
+// Spec: std.shells, clause "With `tauriDrivers`, a save cut at any byte of `keel.json` or `keel.b.json` leaves a new driver reading the earlier or the new value of every key; a copy of a lower generation or a wrong checksum is not read; with no whole copy and `keel.json` present every call rejects and both files keep their bytes."
 // Seed: 1337 (the cases here are exhaustive over the offsets of a fixed save; the generated ones are in crash-copies.property.test.ts).
 // @vitest-environment happy-dom
 // Assumption: the store plugin stand-in of fixtures.ts keeps files as bytes, a `save` empties its file and then writes it (as `fs::write` does) and `cutSave(path, bytes)` kills the process inside it after `bytes` bytes;

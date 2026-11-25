@@ -1,4 +1,4 @@
-// Spec: k.aria, Conformance "`styles={{ option: { p: '2', states: { highlighted: { bg: 'accent' } } } }}` on a stdlib component puts the `2` rule and an `accent` rule under `[data-k-highlighted]` into the CSS file, once each."
+// Spec: k.aria, clause "`styles={{ option: { p: '2', states: { highlighted: { bg: 'accent' } } } }}` on a stdlib component puts the `2` rule and an `accent` rule under `[data-k-highlighted]` into the CSS file, once each."
 // Seed: 1337.
 // This file is the collection half: the usages `compile` writes to `styles.json`. The compiler may not import `@keel/ui`, so the CSS half
 // (`compileStyles` of those usages, rules once each under `[data-k-highlighted]`) is packages/ui/conformance/aria-states-css.test.ts.

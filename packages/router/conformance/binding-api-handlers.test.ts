@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.contract (Binding) "an API GET `{ loader, guard? }`; an API write `{ action, guard? }`"; RFC 0157 Proposal 2 "A page's actions sit in its entry by verb; an API entry's one handler sits under `loader` or `action`, its method being the contract's."
+// k.contract (Binding) "an API GET `{ loader, guard? }`; an API write `{ action, guard? }`"; RFC 0157 Proposal 2 "A page's actions sit in its entry by verb; an API entry's one handler sits under `loader` or `action`, its method being the contract's."
 // Spec: k.api, clause "An API entry bound with a `component` does not compile and `manifest()` throws E1510." Seed 1337.
 // Compile-time half of each "does not compile" claim: ./negative-types.test-d.ts; the calls here are untyped.
 import { action, guard, loader, manifest, routesArtifact } from "@keel/router";

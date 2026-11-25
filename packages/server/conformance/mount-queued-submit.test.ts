@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.mount, Form "A queued submit (k.defaults) runs this at replay: sent once if valid, never if not."
-// Spec: k.mount, Conformance "A submit queued before resume is sent once when valid, never when invalid."
+// k.mount, Form "A queued submit (k.defaults) runs this at replay: sent once if valid, never if not."
+// Spec: k.mount, clause "A submit queued before resume is sent once when valid, never when invalid."
 // Seed 1337 (fc.assert below). The sign-in page of packages/testing/conformance/mount-pages.ts is served by `createApp`, its body is put into the
 // document, a `submit` is dispatched on its form before `resume`, then the page resumes with its compiled component. As in k.defaults, a native
 // submit is the runtime calling `submit` or `requestSubmit` on the form: both are replaced by recorders of the form data at the call.

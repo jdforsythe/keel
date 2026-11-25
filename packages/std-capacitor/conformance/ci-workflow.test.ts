@@ -1,5 +1,5 @@
-// Spec: std.capacitor, Conformance "The generated workflow of a project declaring `capacitor` has a `web-android` job and a `web-ios` job that runs on `workflow_dispatch` only."
-// Spec: std.capacitor, CI "Two `ShellJob`s: `android` on `ubuntu-24.04` with JDK 21, uploading the debug APK; `ios` on `macos-15` with Xcode 26, `manual`."
+// Spec: std.capacitor, clause "The generated workflow of a project declaring `capacitor` has a `web-android` job and a `web-ios` job that runs on `workflow_dispatch` only."
+// std.capacitor, CI "Two `ShellJob`s: `android` on `ubuntu-24.04` with JDK 21, uploading the debug APK; `ios` on `macos-15` with Xcode 26, `manual`."
 // Seed: 1337 (the id and name are generated).
 // The real binary over a temp project (`keel-cli.ts`): `keel build` writes `.github/workflows/ci.yml`.
 // ASSUMPTION: a job is a two-space-indented key under `jobs:`; "runs on `workflow_dispatch` only" is the `web-ios` block naming `workflow_dispatch` (its gate) and the `web-android` block not naming it;

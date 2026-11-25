@@ -1,4 +1,4 @@
-// Spec: k.shell, Conformance "The `www` entry's drivers call carries `connect: []` with no `origins`; with `origins.connect` declaring `https://api.example` and `KEEL_PEER_API=https://peer.example`, `connect: [\"https://peer.example\", \"https://api.example\"]`, which `build` is given as `connect` too; a declared origin equal to `KEEL_ORIGIN` is left out."
+// Spec: k.shell, clause "The `www` entry's drivers call carries `connect: []` with no `origins`; with `origins.connect` declaring `https://api.example` and `KEEL_PEER_API=https://peer.example`, `connect: [\"https://peer.example\", \"https://api.example\"]`, which `build` is given as `connect` too; a declared origin equal to `KEEL_ORIGIN` is left out."
 // Seed: 1337 (the declared origins are generated; the project is fixed).
 // Over a stub `@keel/std-tauri` (`shell-stub.ts`): the stub's `build` records the `connect` it is given in `build-calls.txt`.
 // ASSUMPTIONS: the `www` bundle is minified, so the drivers call is read as the `connect:[...]` array literal next to the origin strings in `www/assets/*.js`;

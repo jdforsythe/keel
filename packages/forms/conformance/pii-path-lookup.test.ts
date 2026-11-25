@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.schema, Conformance "`piiPaths` lists each marked leaf once with its class, an array item as `*`, and every leaf under a marked object, then `*` for its undeclared keys when it is open; a control bound (k.forms) to a declared object under it carries its nearest mark's class as `data-k-pii`." (rfc:0154)
+// Spec: k.schema, clause "`piiPaths` lists each marked leaf once with its class, an array item as `*`, and every leaf under a marked object, then `*` for its undeclared keys when it is open; a control bound (k.forms) to a declared object under it carries its nearest mark's class as `data-k-pii`." (rfc:0154)
 // Seed: 1337 (no random input).
 // Set up as privacy-input-mask.test.ts does: a `form` over the schema, controls bound with `field(path).bind(el)`, mounted with
 // runtime-dom under a sim ctx; `data-k-pii` is read from the element. The schema is

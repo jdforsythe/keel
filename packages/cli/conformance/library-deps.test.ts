@@ -1,7 +1,7 @@
-// Spec: k.library, the three clauses on `deps` naming a package, each quoted whole:
-// 10. "In that project, `deps: ['@acme/none']`, naming no installed package, is one E1159 at the entry; so is `'@acme/plain'`, installed with a `package.json` that has no `keel` field."
-// 11. "In that project, with `node_modules/@acme/charts/tools.js` registering a rule that reports `E2999` on every app file and `exports` gaining `\"./tools\": \"./tools.js\"`, `keel check` reports `E2999`; with `modules/shop/module.ts` listing no `'@acme/charts'`, it does not."
-// 12. "In that project, with `exports` gaining `\"./routes\": \"./routes.js\"`, whose `routes` table holds route `charts.about` at `/about`, the `routes.json` `keel build` writes for a deployable whose `topology.ts` `modules` is `['shop']` holds no `charts.about`, and for one whose `modules` is `['shop', 'charts']` it holds it."
+// k.library the three clauses on `deps` naming a package, each quoted whole
+// Spec: k.library, clause "In that project, `deps: ['@acme/none']`, naming no installed package, is one E1159 at the entry; so is `'@acme/plain'`, installed with a `package.json` that has no `keel` field."
+// Spec: k.library, clause "In that project, with `node_modules/@acme/charts/tools.js` registering a rule that reports `E2999` on every app file and `exports` gaining `\"./tools\": \"./tools.js\"`, `keel check` reports `E2999`; with `modules/shop/module.ts` listing no `'@acme/charts'`, it does not."
+// Spec: k.library, clause "In that project, with `exports` gaining `\"./routes\": \"./routes.js\"`, whose `routes` table holds route `charts.about` at `/about`, the `routes.json` `keel build` writes for a deployable whose `topology.ts` `modules` is `['shop']` holds no `charts.about`, and for one whose `modules` is `['shop', 'charts']` it holds it."
 // "That project" is the first Conformance clause of k.library (library-support.ts builds it in a temporary project; `keel` runs as the real binary).
 // Rules: E1159 "A package `deps` entry that resolves to no package with `\"keel\": \"library\"` is E1159 (k.module)."
 // In an app: "A `deps` entry that begins with `@` names a package; any other entry is a module id of the project."

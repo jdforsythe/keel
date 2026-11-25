@@ -1,5 +1,5 @@
 // Spec: std.jobs, clause "A job returning `err` twice then `ok` with `attempts: 3` runs at 0, 1,000 and 3,000 ms; with `attempts: 2` it ends in `failed` with its code and no input."
-// Spec: std.jobs, run: an `err` waits `min(1000 * 2^(attempt-1), 3600000)` ms on `ctx.clock`; after `attempts` the job moves to `failed`.
+// std.jobs, run: an `err` waits `min(1000 * 2^(attempt-1), 3600000)` ms on `ctx.clock`; after `attempts` the job moves to `failed`.
 // Seed 1337
 // Assumption: `createApp` needs no `routes` for a deployable whose module only has runners (`@keel/router` is not a dependency of this package).
 // Assumption: `failed` is read from the `jobs.queue` inspector section (dev `/__keel/inspect`), an object holding `failed: { id, job, code, at }[]`.

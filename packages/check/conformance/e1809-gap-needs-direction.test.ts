@@ -1,5 +1,5 @@
-// Spec: k.ui, Conformance "`<Box gap="2">` with no `direction` is E1809 and its fix adds `direction="column"`; with `direction={{ base: 'column', md: 'row' }}`, or a look that sets `direction`, it is clean and is a row at 1024px; `gap={{ base: '2' }}` with `direction={{ md: 'row' }}` is E1809."
-// Spec: k.ui, Rules "E1809 `gap` with no `direction` (fix: `direction="column"`)"
+// Spec: k.ui, clause "`<Box gap=\"2\">` with no `direction` is E1809 and its fix adds `direction=\"column\"`; with `direction={{ base: 'column', md: 'row' }}`, or a look that sets `direction`, it is clean and is a row at 1024px; `gap={{ base: '2' }}` with `direction={{ md: 'row' }}` is E1809."
+// k.ui, Rules "E1809 `gap` with no `direction` (fix: `direction="column"`)"
 // Seed: 1337 (property over gap tokens and direction values).
 // Not built yet: every case is `test.skip`; the builder changes `test.skip` to `test` in each. Owed after the build, for a conformance writer (they would turn live suites red before it):
 // the E1809 entry in fixtures-by-code.ts, and "E1809" in the `FIX` list with a Bad entry in fix-diffs.test.ts (the spec gives it a fix; it is not a `NO_FIX` code).

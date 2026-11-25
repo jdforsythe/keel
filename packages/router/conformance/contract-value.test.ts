@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 // Spec: k.contract, clause "`contract('a', { 'a.home': { path: '/' } })` has `kind` `keel.contract` and `module` `a`; a key `b.home` does not compile; an API id `a.x.y` throws E1513."
-// Spec: k.routes, Where rules fire "| E1155 | a contract key | `contract` | contract keys |"
-// Spec: RFC 0157 Proposal 1, "`contract` returns a frozen `{ kind: 'keel.contract', module, entries, href }`. It holds schemas and strings only." (RFC 0157 Proposal 1)
+// k.routes, Where rules fire "| E1155 | a contract key | `contract` | contract keys |"
+// RFC 0157 Proposal 1, "`contract` returns a frozen `{ kind: 'keel.contract', module, entries, href }`. It holds schemas and strings only." (RFC 0157 Proposal 1)
 // Seed 1337.
 // Compile-time half of each "does not compile" claim: ./negative-types.test-d.ts; the calls here are untyped.
 import { contract } from "@keel/router/contract";

@@ -1,4 +1,4 @@
-// Spec: k.data, Conformance "`keel build` of a fixture whose `node` deployable serves module `a` holding `modules/a/migrations/0001-x.sql` writes `dist/<name>/modules/a/migrations/0001-x.sql` with the same bytes, and no folder for a module of a `client` deployable."
+// Spec: k.data, clause "`keel build` of a fixture whose `node` deployable serves module `a` holding `modules/a/migrations/0001-x.sql` writes `dist/<name>/modules/a/migrations/0001-x.sql` with the same bytes, and no folder for a module of a `client` deployable."
 // Seed 1337 (the file name number comes from `fc.integer`). Assumes: the build writes the copy at `dist/<deployable>/modules/<id>/migrations/<file>`; fixture in app-data-support.ts (module `m` on node `api`, `w` on client `web`).
 // Pending: the build does not copy yet.
 import { existsSync, readFileSync, writeFileSync } from "node:fs";

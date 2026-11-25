@@ -1,4 +1,4 @@
-// Spec: std.capacitor, Conformance "The Capacitor shell files register `id` as a scheme: an Android intent filter, iOS `CFBundleURLTypes`."
+// Spec: std.capacitor, clause "The Capacitor shell files register `id` as a scheme: an Android intent filter, iOS `CFBundleURLTypes`."
 // Seed: 1337 (the reverse-DNS `id` is generated). This file is the Android part (the `AndroidManifest.xml` a Capacitor build leaves).
 // UNTESTABLE blind: iOS `CFBundleURLTypes` (the `Info.plist` belongs to the platform project, and the spec does not say how the build finds Xcode 26, so no fake toolchain can be written from the spec).
 // Fake tools: as in android-cleartext.test.ts (a fake `npx` answering `cap`, `java`, `ANDROID_HOME`); the fake `cap add android` writes a manifest with a launcher activity and no scheme.

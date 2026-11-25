@@ -1,4 +1,4 @@
-// Spec: k.security, Conformance "`keel build` of a fixture with a `client` deployable writes its `csp.txt` with `script-src 'self'`."
+// Spec: k.security, clause "`keel build` of a fixture with a `client` deployable writes its `csp.txt` with `script-src 'self'`."
 // Seed: 1337 (no generated input: one fixture, spawned builds). The real binary over a temp project with `@keel/*` linked, as compat-support.ts does.
 // ASSUMPTION: the `client` deployable `w` writes `dist/w/csp.txt`; the peer origin comes from `KEEL_PEER_<NAME>` at build (k.hosting).
 import { spawnSync } from "node:child_process";

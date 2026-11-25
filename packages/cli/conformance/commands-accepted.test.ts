@@ -1,4 +1,4 @@
-// Spec: k.cli, "Commands" table. Every listed command is accepted by `run` (never E1051).
+// k.cli, "Commands" table. Every listed command is accepted by `run` (never E1051).
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { COMMANDS, SEED, cleanProject, keel } from "./fixtures";

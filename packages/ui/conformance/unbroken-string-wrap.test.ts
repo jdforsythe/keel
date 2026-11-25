@@ -1,4 +1,4 @@
-// Spec: k.ui, Conformance "A 200-character unbroken string in a 320px `Box` keeps the document 320px wide."
+// Spec: k.ui, clause "A 200-character unbroken string in a 320px `Box` keeps the document 320px wide."
 // Seed: 1337 (property over string length).
 // Not built yet: the cases are `test.skip`; the builder changes `test.skip` to `test` in each.
 // The document width in Chromium is not testable here (no browser in this suite); the `body` rule `overflow-wrap: anywhere` in the `keel.base` layer is what it follows from, and is asserted.

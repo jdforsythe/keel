@@ -1,5 +1,5 @@
-// Spec: k.scaffold, Conformance "With `node` deployables `api` and `my-api`, `deploy/compose.yaml` sets `KEEL_PEER_MY_API` for `api`; `place b --to apiEdge --adapter node` is E1352 and writes nothing."
-// Spec: k.scaffold, Rules "deployable names as k.topology E1552"
+// Spec: k.scaffold, clause "With `node` deployables `api` and `my-api`, `deploy/compose.yaml` sets `KEEL_PEER_MY_API` for `api`; `place b --to apiEdge --adapter node` is E1352 and writes nothing."
+// k.scaffold, Rules "deployable names as k.topology E1552"
 // Seed 1337 (fc.assert below). ASSUMPTIONS: `place` is a scaffold operation taking `{ module, to, adapter? }` (k.scaffold Codemods);
 // the compose peer key is read from the generated `deploy/compose.yaml` text.
 import fc from "fast-check";

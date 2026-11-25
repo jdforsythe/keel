@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.sim, simulate "Each run draws a `SimRun` `{ seed, schedule }` from fast-check, ... creates that sim ctx, and awaits `scenario({ ctx, seed, schedule, run })`."
-// Spec: k.sim, net "The n-th `fetch` of the ctx (from 0) takes `net[n]`... It waits `delay` ms on the sim clock, then: `none` runs the route and resolves its response."
+// k.sim, simulate "Each run draws a `SimRun` `{ seed, schedule }` from fast-check, ... creates that sim ctx, and awaits `scenario({ ctx, seed, schedule, run })`."
+// k.sim, net "The n-th `fetch` of the ctx (from 0) takes `net[n]`... It waits `delay` ms on the sim clock, then: `none` runs the route and resolves its response."
 // Spec: k.testing, clause "`renderRoute(id, { routes, params, search?, state?, ctx?, caller? })` ... then renders its chain; it resolves when the page is ready."
 // No conformance sentence names a `renderRoute` on a `simulate` run's ctx; the nearest text is the `simulate` example of k.sim, whose scenario awaits `renderRoute(..., { ctx })`.
 // Seed 1337 (fc.assert below; replay runs one SimRun with the seed 1337).

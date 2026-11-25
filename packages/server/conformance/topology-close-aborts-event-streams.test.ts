@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.topology Runners, "`app.close()` aborts each runner's `signal` and open event stream and resolves when every `run` has settled."
-// Spec: k.server Request flow, event-stream GET runs "until `fn` returns or `signal` aborts (request abort, `close()`)".
+// k.topology Runners, "`app.close()` aborts each runner's `signal` and open event stream and resolves when every `run` has settled."
+// k.server Request flow, event-stream GET runs "until `fn` returns or `signal` aborts (request abort, `close()`)".
 // Seed 1337: no generated input (one fixed stream).
 import { ok, s } from "@keel/schema";
 import { describe, expect, test } from "vitest";

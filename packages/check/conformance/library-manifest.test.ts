@@ -1,6 +1,6 @@
-// Spec: k.library, the two clauses on a library's manifest and ids, each quoted whole:
-// 8. "In that project, `deps: ['shop']` in the library's `module.ts` is one E1163 at the entry; `deps: ['@acme/other']`, naming a library holding the same files with `id: 'other'`, is not."
-// 9. "In that project, with `modules/charts/module.ts` an app module of id `charts`, `keel check` reports one E1166 at the `'@acme/charts'` entry, message `module id charts is held by charts and @acme/charts`."
+// k.library the two clauses on a library's manifest and ids, each quoted whole
+// Spec: k.library, clause "In that project, `deps: ['shop']` in the library's `module.ts` is one E1163 at the entry; `deps: ['@acme/other']`, naming a library holding the same files with `id: 'other'`, is not."
+// Spec: k.library, clause "In that project, with `modules/charts/module.ts` an app module of id `charts`, `keel check` reports one E1166 at the `'@acme/charts'` entry, message `module id charts is held by charts and @acme/charts`."
 // Rules: E1163 "a library file whose relative import, re-export or literal `import()` resolves outside its package folder, at the specifier, or a library manifest `deps` entry that does not begin with `@`, at the entry" (the manifest half; the import half is in library-rules.test.ts)
 // Rules: E1166 "a library whose `id` is a project module's id or another of the app's libraries' ids, at each `deps` entry that names one of them (message `module id <id> is held by <a> and <b>`)"
 // "That project" is the first Conformance clause of k.library, as `check()` files: `modules/shop/module.ts` listing `'@acme/charts'`, the library's files under `node_modules/@acme/charts/`.

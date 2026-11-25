@@ -1,6 +1,6 @@
 import { ok } from "@keel/schema";
 import { tx } from "@keel/store";
-// Spec: std.workflows, Conformance "Restoring the store's snapshot and replaying its log from `initial` gives its state."
+// Spec: std.workflows, clause "Restoring the store's snapshot and replaying its log from `initial` gives its state."
 // Seed: 1337.
 // Assumption: `store.snapshot()` is `{ state, log, initial, head }` with log entries `{ name, payload }`, and `store.restore(snapshot)` accepts it (k.store);
 // a log entry's transaction is found as the one of the workflow's stores whose `schema` is `store.payloads.get(entry.name)` (k.store `payloads`).

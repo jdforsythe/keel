@@ -1,4 +1,4 @@
-// Spec: k.module Rules, E1152 "import from a module not in `deps`"; k.contract "importing the contract needs `deps` only (E1152), never `public.exports`."
+// k.module Rules, E1152 "import from a module not in `deps`"; k.contract "importing the contract needs `deps` only (E1152), never `public.exports`."
 // Seed 1337. Module `y` plays `b`: module `a` calls it with `service({ contract: y })`. Real binary over a temp project (see compat-support.ts).
 import { afterAll, expect, test } from "vitest";
 import { buildAndCheck, cleanup, diags, materialize, project } from "./compat-support.ts";

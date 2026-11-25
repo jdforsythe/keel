@@ -1,6 +1,6 @@
-// Spec: std.tables, Conformance "For generated rows and searches, `applyQuery` is deterministic, `total` counts the filtered rows, its pages concatenate to the filtered sorted list, and each page has at most `pageSize` rows."
+// Spec: std.tables, clause "For generated rows and searches, `applyQuery` is deterministic, `total` counts the filtered rows, its pages concatenate to the filtered sorted list, and each page has at most `pageSize` rows."
 // Seed: 1337.
-// Spec: std.tables, Rules "E2853 `pageSize` outside 1 to 500, `locale` not a `Locale`, or a key repeated or not id-safe"
+// std.tables, Rules "E2853 `pageSize` outside 1 to 500, `locale` not a `Locale`, or a key repeated or not id-safe"
 // Assumption: `applyQuery` returns `{ rows, total, page, pages }` (tablePage); the rows are the input row objects.
 import { s } from "@keel/schema";
 import { applyQuery, columns } from "@keel/std-tables";

@@ -1,9 +1,9 @@
 // @vitest-environment happy-dom
-// Spec: k.guards, Conformance "A client router in a project with `identity.ts` beside `topology.ts`, its net answering `/__keel/user` with `'u1'`: a guard on the first and on a second navigation gets `'u1'`, after one GET; answered 500, or the fetch rejecting, `''`; a router in a project without it sends no GET and its guard gets `''`."
-// Spec: k.guards, Client "A `client` deployable's router, in a project with `identity.ts` beside `topology.ts` (k.mount), sends that GET to its page's origin once before its first guard runs, and again after each mount request's answer in a shell (k.return); a guard waits for the answer in flight."
-// Spec: k.guards, Client "Its guards, loaders and actions get that `user`: `''` before any answer, and after a failure or an answer other than 200."
-// Spec: k.guards, Client "the router holds it in memory, never in `ctx.storage`, a log or a URL"
-// Spec: k.guards, Client "A router with no `identity.ts` sends none, and `user` is `''`."
+// Spec: k.guards, clause "A client router in a project with `identity.ts` beside `topology.ts`, its net answering `/__keel/user` with `'u1'`: a guard on the first and on a second navigation gets `'u1'`, after one GET; answered 500, or the fetch rejecting, `''`; a router in a project without it sends no GET and its guard gets `''`."
+// k.guards, Client "A `client` deployable's router, in a project with `identity.ts` beside `topology.ts` (k.mount), sends that GET to its page's origin once before its first guard runs, and again after each mount request's answer in a shell (k.return); a guard waits for the answer in flight."
+// k.guards, Client "Its guards, loaders and actions get that `user`: `''` before any answer, and after a failure or an answer other than 200."
+// k.guards, Client "the router holds it in memory, never in `ctx.storage`, a log or a URL"
+// k.guards, Client "A router with no `identity.ts` sends none, and `user` is `''`."
 // Seed: 1337 (fc.assert below). Pending: RFC 0186 is not built. To un-skip: change `test.skip` to `test` in each skipped case once the client router reads `/__keel/user`.
 // ASSUMPTION: the spec names no router option that says "its modules import identity.ts"; the cases pass `mount: mount.path` to `createRouter` (the identity mount's path, k.mount) for that. The builder amends the one `startRouter` below if the signal is another.
 // ASSUMPTION: the sim net route `*` takes every request to the page's origin; a request counts as the read when its path is `/__keel/user`.

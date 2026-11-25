@@ -1,4 +1,4 @@
-// Spec: std.lists, Conformance "A key that is not 1 to 64 of `[A-Za-z0-9_-]` in `options` throws E2801 at the `listChart` call."
+// Spec: std.lists, clause "A key that is not 1 to 64 of `[A-Za-z0-9_-]` in `options` throws E2801 at the `listChart` call."
 // Seed: 1337. The code is read from the thrown message, as keys-e2801.test.ts does.
 import { listChart } from "@keel/std-headless";
 import fc from "fast-check";

@@ -1,4 +1,4 @@
-// Spec: k.persist, Conformance "For generated interleavings of `commit`s from two apps on one sim ctx, the stored values equal a serial order of the commits that resolved `true`, and a `read` never returns a value from between two writes of one `commit`."
+// Spec: k.persist, clause "For generated interleavings of `commit`s from two apps on one sim ctx, the stored values equal a serial order of the commits that resolved `true`, and a `read` never returns a value from between two writes of one `commit`."
 // Seed: 1337.
 // The two apps are two actors issuing calls on one sim ctx's `ctx.storage` (the shared storage of k.persist Storage).
 // Every commit writes keys `a` and `b` the same value under the same `expect`, so a read of both that differs would show a cut between two writes.

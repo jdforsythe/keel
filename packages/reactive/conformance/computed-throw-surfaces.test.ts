@@ -1,5 +1,5 @@
-// Spec: k.reactive Conformance, "An effect reading a computed that throws after a later write gets that throw from
-// its own `get()`, where a `try` around the read catches it; no `onError` receives it." API: "A computed's throw
+// Spec: k.reactive, clause "An effect reading a computed that throws after a later write gets that throw from its own `get()`, where a `try` around the read catches it; no `onError` receives it."
+// API: "A computed's throw
 // surfaces in the computation reading it: the computed runs once per commit and keeps the error, each reader's
 // `get()` throws it until a source changes, and its first value after a throw counts as a change."
 // Seed 1337.

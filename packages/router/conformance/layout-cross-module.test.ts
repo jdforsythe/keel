@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.routes, Layouts "Another module's id compiles; `routeTable`, or a manifest served alone, throws E1506 naming both ids if it names no layout entry of the table or closes a cycle."
-// Spec: k.routes, Layouts "An id of the own module that is no layout of the contract, or one not `<module>.<name>`, is a type error and `manifest` throws E1506"
+// k.routes, Layouts "Another module's id compiles; `routeTable`, or a manifest served alone, throws E1506 naming both ids if it names no layout entry of the table or closes a cycle."
+// k.routes, Layouts "An id of the own module that is no layout of the contract, or one not `<module>.<name>`, is a type error and `manifest` throws E1506"
 // Seed 1337 (no random input: fixed modules).
 // Compile-time half of each "does not compile" claim: ./negative-types.test-d.ts; the calls here are untyped.
 import { type RouteProps, manifest, routeTable } from "@keel/router";

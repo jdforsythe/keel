@@ -1,4 +1,4 @@
-// Spec: k.security, Conformance "No document of the fixture app has an inline script other than `#k-state`, a `<style>`, a `style` attribute or an `on*` attribute."
+// Spec: k.security, clause "No document of the fixture app has an inline script other than `#k-state`, a `<style>`, a `style` attribute or an `on*` attribute."
 // Seed: 1337.
 // @vitest-environment happy-dom
 import type { Ctx } from "@keel/ctx";

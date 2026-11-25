@@ -1,9 +1,9 @@
 // @vitest-environment happy-dom
-// Spec: k.mount, Declaration "`identity.ts` beside `topology.ts` default-exports `identityMount(path, { links }?)` (`@keel/router`): `{ path, href, links }`, `path` a literal of lowercase `/` segments."
-// Spec: k.mount, Declaration "`href(subpath?, search?)` returns a `MountHref`, an `Href` (k.router): `path`, `subpath`, then `?` and the `search` string map's keys sorted, keys and values encoded by `encodeURIComponent`; no `?` for an empty map. `subpath` is `''` or `/`-led segments of `[A-Za-z0-9._~-]`, none `.` or `..`; else (`//`, `..`, `?`, `#`, `%`, `\`, a scheme) it throws E1582. So it is root-relative under `path`, never absolute or protocol-relative."
-// Spec: k.mount, Conformance "With `path` `/api/auth`, `href('/sign-in/email', { b: '2', a: 'x y' })` is `/api/auth/sign-in/email?a=x%20y&b=2` and `href()` is `/api/auth`; `'//x.example'`, `'/../x'`, `'/a/..'`, `'/a?b'`, `'/a#b'`, `'/a%2f'` and `'https://x'` each throw E1582."
-// Spec: k.mount, Form "`method` must be `'POST'` when `action` is a `MountHref` (a type error otherwise)."
-// Spec: k.mount, Navigation "`Link to`, `navigate` and an action's `ok(href)` take it as any `Href`."
+// k.mount, Declaration "`identity.ts` beside `topology.ts` default-exports `identityMount(path, { links }?)` (`@keel/router`): `{ path, href, links }`, `path` a literal of lowercase `/` segments."
+// k.mount, Declaration "`href(subpath?, search?)` returns a `MountHref`, an `Href` (k.router): `path`, `subpath`, then `?` and the `search` string map's keys sorted, keys and values encoded by `encodeURIComponent`; no `?` for an empty map. `subpath` is `''` or `/`-led segments of `[A-Za-z0-9._~-]`, none `.` or `..`; else (`//`, `..`, `?`, `#`, `%`, `\`, a scheme) it throws E1582. So it is root-relative under `path`, never absolute or protocol-relative."
+// Spec: k.mount, clause "With `path` `/api/auth`, `href('/sign-in/email', { b: '2', a: 'x y' })` is `/api/auth/sign-in/email?a=x%20y&b=2` and `href()` is `/api/auth`; `'//x.example'`, `'/../x'`, `'/a/..'`, `'/a?b'`, `'/a#b'`, `'/a%2f'` and `'https://x'` each throw E1582."
+// k.mount, Form "`method` must be `'POST'` when `action` is a `MountHref` (a type error otherwise)."
+// k.mount, Navigation "`Link to`, `navigate` and an action's `ok(href)` take it as any `Href`."
 // Seed 1337 (fc.assert below). `Link to` is checked at run time in packages/testing/conformance/mount-navigation.test.ts (the router package does not depend on @keel/ui). The type clauses are expectTypeOf assertions with the `.not` forms (no suppression comments).
 import {
   type Form,

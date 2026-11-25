@@ -1,4 +1,4 @@
-// Spec: k.router, Conformance "After a search-only navigation each guard and loader of the chain ran once more and the page keeps its nodes, focus and local signals, and its `props.search` and `props.data` bindings update; a loader `err` renders the `errorElement`, a params change a new page."
+// Spec: k.router, clause "After a search-only navigation each guard and loader of the chain ran once more and the page keeps its nodes, focus and local signals, and its `props.search` and `props.data` bindings update; a loader `err` renders the `errorElement`, a params change a new page."
 // Seed: 1337.
 // @vitest-environment happy-dom
 // ASSUMPTIONS (as in fixtures.ts): createRouter(routes, { ctx, history }) returns { App, navigate, route, dispose }; a layout receives

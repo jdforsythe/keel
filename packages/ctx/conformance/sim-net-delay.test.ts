@@ -1,4 +1,4 @@
-// Spec: k.sim, Conformance "With `net` `[{ delay: 50, fault: 'none' }, { delay: 10, fault: 'none' }]`, two fetches made at time 0 resolve the second at 10 and the first at 50, and a route that records calls sees the second first."
+// Spec: k.sim, clause "With `net` `[{ delay: 50, fault: 'none' }, { delay: 10, fault: 'none' }]`, two fetches made at time 0 resolve the second at 10 and the first at 50, and a route that records calls sees the second first."
 // Seed: 1337.
 import { createCtx } from "@keel/ctx";
 import fc from "fast-check";

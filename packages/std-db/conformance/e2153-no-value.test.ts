@@ -1,5 +1,5 @@
-// Spec: std.db, Conformance "A refused connection prints one E2153 naming `KEEL_DATABASE_URL` and no part of its value."
-// Spec: std.db, Rules "E2153 the database cannot be opened or refuses the connection, naming `KEEL_DATABASE_URL` and no part of its value (at startup)"
+// Spec: std.db, clause "A refused connection prints one E2153 naming `KEEL_DATABASE_URL` and no part of its value."
+// std.db, Rules "E2153 the database cannot be opened or refuses the connection, naming `KEEL_DATABASE_URL` and no part of its value (at startup)"
 // Seed: 1337.
 // Assumption: a child process opens the driver on `KEEL_DATABASE_URL` and nothing else, with no catch, so whatever the driver prints is the whole output;
 // the spec does not say whether the driver prints E2153 itself or throws and leaves the print to the generated entry (k.deploy: "a failure: ... E2153, exit 1").

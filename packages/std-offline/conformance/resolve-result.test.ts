@@ -1,4 +1,4 @@
-// Spec: std.offline Conformance 12: "Online, `resolve(ctx, o, key, 'mine')` resolves `sent` with the endpoint's output once the re-send answers; offline, `queued`; for a key with no `conflict` entry, `false`. `'theirs'` resolves `true` when it removed an entry, else `false`."
+// Spec: std.offline, clause "Online, `resolve(ctx, o, key, 'mine')` resolves `sent` with the endpoint's output once the re-send answers; offline, `queued`; for a key with no `conflict` entry, `false`. `'theirs'` resolves `true` when it removed an entry, else `false`."
 // Seed 1337
 import { resolve, send } from "@keel/std-offline";
 import { expect, test } from "vitest";

@@ -1,5 +1,5 @@
-// Spec: k.docs "A package's `docs/`, `docs/*.json`, `docs/<id>.md` or `skills/<name>/SKILL.md` whose real path leaves the package's real folder, or over 1,000,000 bytes, is absent and never read."
-// Spec: k.docs Rules E1066 "... the message names the package and its version." (RFC 0151 Conformance diff, symlink bullets.)
+// k.docs "A package's `docs/`, `docs/*.json`, `docs/<id>.md` or `skills/<name>/SKILL.md` whose real path leaves the package's real folder, or over 1,000,000 bytes, is absent and never read."
+// k.docs Rules E1066 "... the message names the package and its version." (RFC 0151 Conformance diff, symlink bullets.)
 // Seed: none (examples; real temp directories, real symlinks, the real `keel` binary).
 // Untestable here: a `skills/<name>/SKILL.md` link, since the skills come from the running `@keel/cli`, which is the repo's own.
 import { mkdirSync, mkdtempSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";

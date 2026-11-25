@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
-// Spec: k.ui, Conformance "The `keel.base` layer holds `th{text-align:inherit}` and `.k-scroll{overflow-x:auto;min-width:0}` with any tokens, `brandTokens` and tokens with no `base` alike."
-// Spec: k.ui, Conformance "`<Box scroll="x" label="Prices">` renders a `div` with `role="region"`, `tabindex="0"`, `aria-label="Prices"` and class `k-scroll`, in server and client output, and has no axe violations holding a `table`; `labelledBy="t"` writes `aria-labelledby="t"` and no `aria-label`; a `Box` without `scroll` writes none of these."
-// Spec: k.ui, Conformance "`scroll` with `as`, `scroll="y"`, and `scroll="x"` with neither or both of `label` and `labelledBy` are type errors."
+// Spec: k.ui, clause "The `keel.base` layer holds `th{text-align:inherit}` and `.k-scroll{overflow-x:auto;min-width:0}` with any tokens, `brandTokens` and tokens with no `base` alike."
+// Spec: k.ui, clause "`<Box scroll=\"x\" label=\"Prices\">` renders a `div` with `role=\"region\"`, `tabindex=\"0\"`, `aria-label=\"Prices\"` and class `k-scroll`, in server and client output, and has no axe violations holding a `table`; `labelledBy=\"t\"` writes `aria-labelledby=\"t\"` and no `aria-label`; a `Box` without `scroll` writes none of these."
+// Spec: k.ui, clause "`scroll` with `as`, `scroll=\"y\"`, and `scroll=\"x\"` with neither or both of `label` and `labelledBy` are type errors."
 // Seed: 1337.
 // Not built yet (rfc:0203): the cases fail until `Box` takes `scroll`; plain `test`, not skipped. `tsc` reports the new props as unknown until then.
 // The server-output half is packages/server/conformance/scroll-region-server.test.ts; axe is real axe-core with the page-level rules off, as base-elements-axe-core.test.ts.

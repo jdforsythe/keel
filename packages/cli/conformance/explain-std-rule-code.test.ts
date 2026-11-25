@@ -1,6 +1,6 @@
-// Spec: k.check, explain and docs "`keel explain <code>` prints at most 120 tokens: the message, the rule's `explain` (or the spec's Rules entry for kernel codes), one fix example, and `see`."
-// Spec: k.check, Codes "`reportedCodes()` lists every code `keel check` produces: the pipeline's and each registered rule's."
-// Spec: k.module, Std config "`keel check` (every surface) and `keel build` import each `@keel/std-*` package in an app module's `deps` once, and its `./tools` export"
+// k.check, explain and docs "`keel explain <code>` prints at most 120 tokens: the message, the rule's `explain` (or the spec's Rules entry for kernel codes), one fix example, and `see`."
+// k.check, Codes "`reportedCodes()` lists every code `keel check` produces: the pipeline's and each registered rule's."
+// k.module, Std config "`keel check` (every surface) and `keel build` import each `@keel/std-*` package in an app module's `deps` once, and its `./tools` export"
 // Seed 1337 (the case is one project per code; no generated inputs). The real binary runs in a subprocess so the check-rule registry starts empty.
 // Not asserted (spec silent): the exact text for a code no rule or spec names (the binary says `is not a known code`).
 import { spawnSync } from "node:child_process";

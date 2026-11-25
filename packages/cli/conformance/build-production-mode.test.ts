@@ -1,5 +1,5 @@
-// Spec: k.deploy Conformance 11, "`keel build` under `NODE_ENV=staging`, or with `NODE_ENV=development` in `.env`, builds an entry with `mode` `'production'` and no inspect reporter."
-// Spec: k.deploy Build, "`keel build` runs Vite with `NODE_ENV=production`, whatever the shell or `.env` sets: the entries' `mode` is `'production'` and `import.meta.env.DEV` is `false`."
+// Spec: k.deploy, clause "`keel build` under `NODE_ENV=staging`, or with `NODE_ENV=development` in `.env`, builds an entry with `mode` `'production'` and no inspect reporter."
+// k.deploy Build, "`keel build` runs Vite with `NODE_ENV=production`, whatever the shell or `.env` sets: the entries' `mode` is `'production'` and `import.meta.env.DEV` is `false`."
 // Seed: 1337 (no random input: the environments are enumerated).
 // The real binary over one temp `client` project with `@keel/*` and `vite` linked, built once per environment into `dist/<name>/assets/*.js`.
 // The route component holds one string outside any condition and one only inside `if (import.meta.env.DEV)`: a production bundle holds the first, never the second, and never the inspect reporter's endpoint (a dev build holds both).

@@ -1,4 +1,4 @@
-// Spec: k.reactive, rules E1201, E1202, E1203.
+// k.reactive, rules E1201, E1202, E1203.
 import { describe, expect, it } from "vitest";
 import { signal, computed, effect, scope } from "@keel/reactive";
 

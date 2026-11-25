@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.router (Links) "`Link to`, `navigate`, `Form action` and an action's `ok` take `Href` only, rechecked when run (server and client): else `Link` renders `about:blank`, `Form` throws E1501, `ok` is `keel.unexpected` (nothing saved or followed), and `navigate` rejects (E1501) unless it is one once `\` reads as `/` and `#…` drops."
+// k.router (Links) "`Link to`, `navigate`, `Form action` and an action's `ok` take `Href` only, rechecked when run (server and client): else `Link` renders `about:blank`, `Form` throws E1501, `ok` is `keel.unexpected` (nothing saved or followed), and `navigate` rejects (E1501) unless it is one once `\` reads as `/` and `#…` drops."
 // rfc:0157 conformance: `navigate` of a value that is no `Href` rejects with E1501 and nothing moves; a raw `/a/\x` stays a same-origin document navigation (k.mount-scope, packages/testing/conformance/mount-router-scope.test.ts).
 // Seed 1337 (fc.assert below). Both the router's `navigate` and the free `navigate` are called.
 import { createCtx } from "@keel/ctx";

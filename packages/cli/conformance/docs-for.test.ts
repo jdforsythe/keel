@@ -1,4 +1,4 @@
-// Spec: k.docs "`keel docs --for <code>` prints each line citing the code in the installed sections listing it and none from a package not installed; a code cited nowhere prints no `docs.cite`, exit 0."
+// Spec: k.docs, clause "`keel docs --for <code>` prints each line citing the code in the installed sections listing it and none from a package not installed; a code cited nowhere prints no `docs.cite`, exit 0."
 // Seed: none. Compact `k.cli:43 <text>` and the 160-character cut from k.docs "Forms". Red: `docs` is absent (E1051).
 import { describe, expect, it } from "vitest";
 import { baseline, jsonRecords, lines, pkg, run } from "./docs-support";

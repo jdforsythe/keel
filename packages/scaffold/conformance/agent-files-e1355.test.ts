@@ -1,5 +1,5 @@
 // Spec: k.scaffold "Unclosed block: `--sync` E1355, exit 1, writes nothing."
-// Spec: k.scaffold Rules E1355 "Keel block not one start and one end line". Also covers a block with the end line only and a start line twice.
+// k.scaffold Rules E1355 "Keel block not one start and one end line". Also covers a block with the end line only and a start line twice.
 // Seed: none. Red: `keel docs` is absent (E1051, exit 2).
 import { describe, expect, it } from "vitest";
 import { END, PKG, START, cleanup, diffPaths, keel, projectWith, readTree } from "./agent-files-support.ts";

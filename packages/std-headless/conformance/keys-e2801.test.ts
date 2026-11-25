@@ -1,6 +1,6 @@
-// Spec: std.headless, Conformance "A key `a b` or a repeated key throws E2801."
+// Spec: std.headless, clause "A key `a b` or a repeated key throws E2801."
 // Seed: 1337.
-// Spec: std.headless, Rules "E2801 an option, tab or toast key that is not 1 to 64 of `[A-Za-z0-9_-]` or repeats in its widget (thrown at render)."
+// std.headless, Rules "E2801 an option, tab or toast key that is not 1 to 64 of `[A-Za-z0-9_-]` or repeats in its widget (thrown at render)."
 // @vitest-environment happy-dom
 // Assumptions: the thrown error carries `code: "E2801"`; every key-taking widget (Listbox, Combobox, Menu, Tabs, Toaster) is checked on its keys at its first render.
 import type { Ctx } from "@keel/ctx";

@@ -1,4 +1,4 @@
-// Spec: k.topology Conformance, "`keel dev` answers a `client` page and a path of each `node` deployable from one process on one origin."
+// Spec: k.topology, clause "`keel dev` answers a `client` page and a path of each `node` deployable from one process on one origin."
 // Seed 1337 (no generated input: one fixture, one spawn). Spawns the real binary over a temp project with `@keel/*` and `vite`
 // linked, `keel dev --port p` with `p` from a closed listener on port 0, as dev-port-0091.test.ts does. The wait is a retry, with a fixed pause,
 // of a socket connection, bounded by a count of pauses. Only the child this test started is signalled (its process group), in a `finally`; every child is ended in `afterEach`.

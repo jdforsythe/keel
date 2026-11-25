@@ -1,6 +1,6 @@
-// Spec: k.model, Conformance "A closed form over a store whose space closes returns `complete: true`; one missing a transaction of the store, or whose space exceeds `maxStates`, fails with E1710 or E1709."
+// Spec: k.model, clause "A closed form over a store whose space closes returns `complete: true`; one missing a transaction of the store, or whose space exceeds `maxStates`, fails with E1710 or E1709."
 // Seed: 1337.
-// Spec: k.model, Rules "E1709 `maxStates` reached before the space or `depth` was exhausted, or a closed form that did not close"
+// k.model, Rules "E1709 `maxStates` reached before the space or `depth` was exhausted, or a closed form that did not close"
 import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";
 import { store, transaction } from "@keel/store";

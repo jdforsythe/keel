@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 // Spec: k.component, clause "Each caller passes a component a ctx second; `mount` without `ctx` does not compile."
-// Spec: RFC 0162 Conformance diff: "`mount(C, el, { ctx })` calls `C` with `({}, ctx)`, the same object; `mount` without `ctx` does not compile." and "A component declared `(props)` renders unchanged from JSX, `mount` and `render`."
+// RFC 0162 Conformance diff: "`mount(C, el, { ctx })` calls `C` with `({}, ctx)`, the same object; `mount` without `ctx` does not compile." and "A component declared `(props)` renders unchanged from JSX, `mount` and `render`."
 // Seed: 1337. Only the runtime (`mount`) is observable from this package; the router's, the server's and the harness's calls are in their own packages.
 import { createCtx } from "@keel/ctx";
 import type { Ctx } from "@keel/ctx";

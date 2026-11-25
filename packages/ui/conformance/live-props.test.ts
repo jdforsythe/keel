@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.ui Conformance, "A getter `label` over a signal on an `Input`, `Select`, `TextArea`, `Checkbox` and `Box as="nav"` shows each write on the same element."
+// Spec: k.ui, clause "A getter `label` over a signal on an `Input`, `Select`, `TextArea`, `Checkbox` and `Box as=\"nav\"` shows each write on the same element."
 // Seed: 1337.
 import { createCtx } from "@keel/ctx";
 import { type Signal, scope, signal } from "@keel/reactive";

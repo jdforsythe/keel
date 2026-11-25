@@ -1,7 +1,7 @@
-// Spec: std.tokens, API "A matching token whose digest has an expiry at or before now is `credentials.expired`."
-// Spec: std.tokens, API "The expiry is in `digest`, so the app stores no other field for `check` to read."
-// Spec: std.tokens, Conformance "Under sim, a token minted at clock 0 with `ttl` 3,600,000 is `ok` after `advance(3599999)`, `credentials.expired` after one more millisecond and after any later `advance`; a `ttl: null` token is `ok` after `advance(1e12)`."
-// Spec: std.tokens, Conformance "Another token presented against an expired row is `credentials.mismatch`, never `credentials.expired`."
+// std.tokens, API "A matching token whose digest has an expiry at or before now is `credentials.expired`."
+// std.tokens, API "The expiry is in `digest`, so the app stores no other field for `check` to read."
+// Spec: std.tokens, clause "Under sim, a token minted at clock 0 with `ttl` 3,600,000 is `ok` after `advance(3599999)`, `credentials.expired` after one more millisecond and after any later `advance`; a `ttl: null` token is `ok` after `advance(1e12)`."
+// Spec: std.tokens, clause "Another token presented against an expired row is `credentials.mismatch`, never `credentials.expired`."
 // Seed: 1337.
 // Assumption: the real case replaces `exp=<ms>` of a minted digest with `exp=1`; the digest part is the token's hash, which `exp` does not enter.
 // Assumption: "the app stores no other field" is shown by presenting the row `{ digest }` alone (no `id`) and reading its verdict.

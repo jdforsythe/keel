@@ -1,4 +1,4 @@
-// Spec: k.ctx, Rules "... W1608 is a warning: it never fails `keel check` (k.check Diagnostics). No fix."
+// k.ctx, Rules "... W1608 is a warning: it never fails `keel check` (k.check Diagnostics). No fix."
 // Spec: k.check, clause "A tree with only W diagnostics exits 0." Driven through `run`. Seed 1337 (no generated inputs).
 import { describe, expect, it } from "vitest";
 import { dirtyFile, keel, lines } from "./fixtures";

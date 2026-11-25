@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.testing, Conformance "`renderRoute(id, { routes, app, mount })` rejects E1722, `app` unrequested."
-// Spec: k.testing, Rules "E1722 `renderRoute` given `app` with `state`, `shell` or `mount`, or `routes` as an import without `app`"
+// Spec: k.testing, clause "`renderRoute(id, { routes, app, mount })` rejects E1722, `app` unrequested."
+// k.testing, Rules "E1722 `renderRoute` given `app` with `state`, `shell` or `mount`, or `routes` as an import without `app`"
 // Seed: 1337 (fc.assert below). `mount` is `identityMount('/api/auth')`, the value a test imports from `identity.ts`.
 // ASSUMPTION: E1722 is the rejection's `code`, as render-route-document-e1722-0180.test.ts reads it; "`app` unrequested" is `app.requests` still `[]`.
 // `mount` is passed in options held by a variable, so the file compiles before `renderRoute`'s type names `mount`.

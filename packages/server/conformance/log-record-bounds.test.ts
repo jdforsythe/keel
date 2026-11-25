@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
-// Spec: k.serverlog, Conformance "An action throwing an `Error` whose message is 1,000,000 `a`, and a runner rejecting with it, log in compact and json a `diag` whose message is its first 2,048 characters then `…+<n>`, `n` the characters left out; every json line parses."
-// Spec: k.serverlog, Conformance "A request for a 5,000-character path logs a `req` path of its first 2,048 characters then `…+2952`, in compact and json."
-// Spec: k.serverlog, Conformance "An action that reveals a secret and throws 2,000,001 characters logs `action <id> threw: [secret]`; with no secret or `.pii()` value it logs the first 2,048 characters then `…+<n>`."
-// Spec: k.serverlog, Conformance "For a thrown message of 1,000,000 `"`, U+20AC or U+0001, every logged line is at most 8,192 characters and 12,288 bytes of UTF-8."
+// Spec: k.serverlog, clause "An action throwing an `Error` whose message is 1,000,000 `a`, and a runner rejecting with it, log in compact and json a `diag` whose message is its first 2,048 characters then `…+<n>`, `n` the characters left out; every json line parses."
+// Spec: k.serverlog, clause "A request for a 5,000-character path logs a `req` path of its first 2,048 characters then `…+2952`, in compact and json."
+// Spec: k.serverlog, clause "An action that reveals a secret and throws 2,000,001 characters logs `action <id> threw: [secret]`; with no secret or `.pii()` value it logs the first 2,048 characters then `…+<n>`."
+// Spec: k.serverlog, clause "For a thrown message of 1,000,000 `\"`, U+20AC or U+0001, every logged line is at most 8,192 characters and 12,288 bytes of UTF-8."
 // Seed 1337 (no random input: every case is a fixed large text, built once per file).
 import { createCtx } from "@keel/ctx";
 import { action, manifest } from "@keel/router";

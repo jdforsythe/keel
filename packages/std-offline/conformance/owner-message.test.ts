@@ -1,5 +1,5 @@
-// Spec: std.outbox Conformance: "With owners `a` and `b`, after `send` with `a` offline and then `send` with `b`, `a`'s entry `error` is `{ code: 'offline.owner', message: <id>, data: {} }`."
-// Spec: std.outbox Conformance, bullet 14: "Online, with the flush's `sending` `set` for owner `a`'s entry held, `drain` with owner `b` and then the write released, the entry is not posted and `a`'s `send` resolves `failed` with `offline.owner`."
+// Spec: std.outbox, clause "With owners `a` and `b`, after `send` with `a` offline and then `send` with `b`, `a`'s entry `error` is `{ code: 'offline.owner', message: <id>, data: {} }`."
+// Spec: std.outbox, clause "Online, with the flush's `sending` `set` for owner `a`'s entry held, `drain` with owner `b` and then the write released, the entry is not posted and `a`'s `send` resolves `failed` with `offline.owner`."
 // Seed 1337
 import { send } from "@keel/std-offline";
 import fc from "fast-check";

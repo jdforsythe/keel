@@ -1,5 +1,5 @@
 // Spec: k.shell, Conformance "(Files) with `deploy/web/tauri/` a symlink to a folder outside the project, or `deploy/web/tauri/a.json` a symlink, `keel check` reports one E1585 and `keel build` writes nothing under `deploy/web/tauri/` or the link's target."
-// Spec: k.shell, Files "`files` gives the shell files, read-only deploy files (k.deploy; E1005, fix: the regenerated file); a path with a `..` segment, a `\\` or a leading `/`, or one a link carries out of the folder (k.scaffold Links), is E1585: none of the set is written. Another file there is the app's. Removing a shell removes its files."
+// k.shell, Files "`files` gives the shell files, read-only deploy files (k.deploy; E1005, fix: the regenerated file); a path with a `..` segment, a `\\` or a leading `/`, or one a link carries out of the folder (k.scaffold Links), is E1585: none of the set is written. Another file there is the app's. Removing a shell removes its files."
 // Seed: 1337 (no generated input: the two link shapes are the closed set).
 // Over a stub `@keel/std-tauri` (`shell-stub.ts`) with real temp directories and real symlinks. The link target lives in a second temp directory outside the project.
 // ASSUMPTION: "writes nothing" is read as: the target folder or file is byte for byte unchanged, no entry appears beside it, and the stub's `build` is never called.

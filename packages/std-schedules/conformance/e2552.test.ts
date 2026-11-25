@@ -1,5 +1,5 @@
 // Spec: std.schedules, clause "E2552 and E2553 each fire on a fixture and not on its clean twin." (E2552)
-// Spec: std.schedules, rule E2552: a `schedule` key not prefixed by its module id, or a `schedule` outside `modules/<id>/schedules.server.ts` (fix prefixes the key).
+// std.schedules, rule E2552: a `schedule` key not prefixed by its module id, or a `schedule` outside `modules/<id>/schedules.server.ts` (fix prefixes the key).
 // Assumption: as for std.i18n E2301, `check()` imports nothing, so the rules register by importing `@keel/std-jobs/tools`;
 // a module is the files under `modules/<id>/` with a `module.ts` listing `deps`.
 import { execFileSync } from "node:child_process";

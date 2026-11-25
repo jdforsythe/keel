@@ -1,5 +1,5 @@
-// Spec: k.openapi, Conformance "For the OpenAPI fixture, `openapi(doc, { name: 'gitHub' })` returns `ok`, and each of its `schema` and `service` texts equals the same text of `openapi(doc, { name: 'orders' })` with every `OrdersApi` replaced by `GitHubApi`."
-// Spec: k.openapi, Conformance "`openapi(doc, { name })` throws a `RangeError` for each `name` of `Orders`, `my_api`, `order-items`, `1x` and `''`, and returns a `Result` for `orders`, `gitHub` and `v2`."
+// Spec: k.openapi, clause "For the OpenAPI fixture, `openapi(doc, { name: 'gitHub' })` returns `ok`, and each of its `schema` and `service` texts equals the same text of `openapi(doc, { name: 'orders' })` with every `OrdersApi` replaced by `GitHubApi`."
+// Spec: k.openapi, clause "`openapi(doc, { name })` throws a `RangeError` for each `name` of `Orders`, `my_api`, `order-items`, `1x` and `''`, and returns a `Result` for `orders`, `gitHub` and `v2`."
 // seed 1337 (every fast-check run below passes { seed: 1337 }); no wall clock, no Math.random.
 import { readFileSync } from "node:fs";
 import { openapi } from "@keel/services/openapi";

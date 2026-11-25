@@ -1,4 +1,4 @@
-// Spec: k.docs "An installed package whose `index.json` lists an id `map.json` lacks: `keel docs` lists it and `keel docs <id>` prints it."
+// Spec: k.docs, clause "An installed package whose `index.json` lists an id `map.json` lacks: `keel docs` lists it and `keel docs <id>` prints it."
 // Seed: none. Red: `docs` is absent (E1051).
 import { describe, expect, it } from "vitest";
 import { baseline, jsonRecords, pkg } from "./docs-support";

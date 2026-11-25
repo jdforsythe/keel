@@ -1,4 +1,4 @@
-// Spec: k.scaffold "`scaffold route` with `method` and no `api` is E1052 and writes nothing; with `api` and `method: 'POST'` it adds an API write entry, its binding and its handler."
+// Spec: k.scaffold, clause "`scaffold route` with `method` and no `api` is E1052 and writes nothing; with `api` and `method: 'POST'` it adds an API write entry, its binding and its handler."
 // Seed 1337 (fast-check).
 import fc from "fast-check";
 import { expect, it } from "vitest";

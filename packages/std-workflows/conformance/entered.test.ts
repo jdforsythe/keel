@@ -1,4 +1,4 @@
-// Spec: std.workflows, Store "a taken target with a `to`, its own state too, raises `entered` by one and `attempt` resets to 0"
+// std.workflows, Store "a taken target with a `to`, its own state too, raises `entered` by one and `attempt` resets to 0"
 // Seed: 1337.
 // Assumption: as in self-entry.test.ts; the instance row is read through `commitStores`, and `entered` is compared before and after the `pick` event, so its start value is not fixed.
 // Assumption: a workflow with no step and no wait is valid; the chart's `pick` event has `[{ to: <own state>, guard: a }, { guard: b }]`.

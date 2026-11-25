@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 // rfc:0160 conformance: `Frame` with a `src` of the document's own origin renders `about:blank`.
-// Spec: k.origins, Frame "A `src` not absolute `http` or `https`, relative too, or of the document's origin renders `about:blank`."
+// k.origins, Frame "A `src` not absolute `http` or `https`, relative too, or of the document's origin renders `about:blank`."
 // Seed 1337 (fc.assert below). The document's origin is set with happy-dom's `setURL`.
 import { createCtx } from "@keel/ctx";
 import { mount } from "@keel/runtime-dom";

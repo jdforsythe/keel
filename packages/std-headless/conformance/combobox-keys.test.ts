@@ -1,4 +1,4 @@
-// Spec: std.options, Conformance "A Combobox's ArrowDown opens the list with `aria-expanded="true"` and the first option active; Enter calls `onChange` with its key and closes the list; Escape closes an open list and clears the text of a closed one."
+// Spec: std.options, clause "A Combobox's ArrowDown opens the list with `aria-expanded=\"true\"` and the first option active; Enter calls `onChange` with its key and closes the list; Escape closes an open list and clears the text of a closed one."
 // Seed: 1337.
 // @vitest-environment happy-dom
 // Assumptions: keys are fired at the part `<id>.input`; "clears the text" is `onInput('')`, which the fixture stores in a signal read by `text`; the options are static (the app's filtering is not under test).

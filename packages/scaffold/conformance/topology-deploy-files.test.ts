@@ -1,4 +1,4 @@
-// Spec: k.deploy Conformance, deploy files. Seed 1337 (fixed fixture; the byte position of the tamper is generated).
+// k.deploy Conformance, deploy files. Seed 1337 (fixed fixture; the byte position of the tamper is generated).
 // ASSUMPTIONS: `place` takes `{ module, to, adapter? }` (k.scaffold Codemods: `place <module> --to <deployable> --adapter <adapter>`),
 // the pure `scaffold(op, input, files)` regenerates deploy files like `keel build`, and E1005 is read from `keel check` on the materialized tree.
 import fs from "node:fs";

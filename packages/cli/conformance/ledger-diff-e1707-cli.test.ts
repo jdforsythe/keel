@@ -1,5 +1,5 @@
 // Spec: k.ledger, clause "A `conformance-covered` section with a clause no conformance test cites makes `keel ledger --diff` report E1707 at that clause's line."
-// Spec: k.ledger, Rules "E1707".
+// k.ledger, Rules "E1707".
 // The real `keel` binary over a temp project (OS tmpdir): a `conformance-covered` section with two clauses, one cited.
 // Property seed: 1337 (no property in this file; the fixture tests are trivial).
 import { afterAll, beforeAll, describe, expect, it } from "vitest";

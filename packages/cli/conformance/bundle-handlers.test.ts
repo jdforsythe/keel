@@ -1,5 +1,5 @@
-// Spec: k.bundle, Conformance "In a plain file, `R.loader(...)` through `import * as R from '@keel/router'`, `loader` re-exported through `lib/r.ts`, `const L = loader`, and `R.guard(...)`: each one E1551 (E1009 for the guard) in `keel check` and one E1007 `handler` in `vite build`."
-// Spec: k.bundle, Handlers "E1551, E1009 and E1007's reason `handler` use this one definition."
+// Spec: k.bundle, clause "In a plain file, `R.loader(...)` through `import * as R from '@keel/router'`, `loader` re-exported through `lib/r.ts`, `const L = loader`, and `R.guard(...)`: each one E1551 (E1009 for the guard) in `keel check` and one E1007 `handler` in `vite build`."
+// k.bundle, Handlers "E1551, E1009 and E1007's reason `handler` use this one definition."
 // Seed 1337 (no random input: each spelling is enumerated). `vite build` with `KEEL_DEPLOYABLE=api` over a temp project and the real `keel check` over the same files. The check half over in-memory trees is packages/check/conformance/bundle-handlers.test.ts.
 // `Page.tsx` imports `modules/a/plain.ts` and reads it. For the spelling that re-exports through `lib/r.ts` the E1007 may name `plain.ts` (which calls it) or `lib/r.ts` (which re-exports it) as its last step: the spec says one E1007 and names neither.
 import { existsSync } from "node:fs";

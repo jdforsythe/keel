@@ -1,4 +1,4 @@
-// Spec: k.sim, Conformance "A `fail` storage step rejects that call and a failed `set` leaves the key's earlier value."
+// Spec: k.sim, clause "A `fail` storage step rejects that call and a failed `set` leaves the key's earlier value."
 // Seed: 1337.
 import { createCtx } from "@keel/ctx";
 import fc from "fast-check";

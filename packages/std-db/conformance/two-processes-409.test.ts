@@ -1,5 +1,5 @@
 import { join } from "node:path";
-// Spec: std.db, Conformance "Two processes on one SQLite file, each serving `createApp` on its driver, with overlapping actions on one store: one saves, the other is 409, and the file holds the first's snapshot."
+// Spec: std.db, clause "Two processes on one SQLite file, each serving `createApp` on its driver, with overlapping actions on one store: one saves, the other is 409, and the file holds the first's snapshot."
 // Seed: 1337.
 // Assumption: the children are `node --experimental-strip-types` on a script written to a temporary directory (fixtures.ts `appScript`);
 // the action holds after its transaction until the parent sends `release`, so the overlap is made by messages and no timer.

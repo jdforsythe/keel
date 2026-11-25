@@ -1,6 +1,6 @@
 import fc from "fast-check";
-// Spec: k.shell, Conformance "A `build` whose `error` has an `error:` line then 20 more prints 12 from it and exits 1; one returning an `artifact` prints it in the trailer."
-// Spec: k.shell, Build "5. `build`, writing only under `dir` and the app's files: an `error` (a tool's output) ends the build with its lines from the first error line, at most 12; the trailer names each `artifact`."
+// Spec: k.shell, clause "A `build` whose `error` has an `error:` line then 20 more prints 12 from it and exits 1; one returning an `artifact` prints it in the trailer."
+// k.shell, Build "5. `build`, writing only under `dir` and the app's files: an `error` (a tool's output) ends the build with its lines from the first error line, at most 12; the trailer names each `artifact`."
 // Seed: 1337 (the lines before the `error:` line and the artifact path are generated).
 // Over a stub `@keel/std-tauri` (`shell-stub.ts`). ASSUMPTION: "prints 12 from it" is the error line and the 11 after it, none of the lines before it, as RFC 0161 says "from the first error line, at most 12".
 // ASSUMPTION: the trailer is the compact output's last summary (`ok build web tauri <artifact>`); read as the output text holding the artifact path.

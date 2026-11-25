@@ -1,9 +1,9 @@
-// Spec: k.module, the five clauses on E1165, each quoted whole:
-// 1. "Module `a` listing `b` in `deps`, with no file of `a` importing from `b`, reports one E1165 at the entry, as it does when only a test file of `a` imports from `b`; its fix removes the entry, and `keel check` then reports neither E1165 nor E1152."
-// 2. "No E1165 for `b` when one non-test file of `a` holds any one of `import { X } from '../b/X.ts'` (`X` public), `import type { X } from '../b/X.ts'`, `export { X } from '../b/X.ts'`, `import('../b/X.ts')`, or an import of `b`'s contract alone."
-// 3. "With `app` (deps `['shop']`) holding a layout `app.frame` and `shop` (deps `[]`) a page bound with `layout: 'app.frame'`, and no import between them, no E1165; with `shop` listing `app` and `app` listing nothing, none either."
-// 4. "Modules `receipts`, `setup` and `shopping`, where `shopping` lists `setup` and `receipts`, `receipts` lists `setup`, with no import behind any of the three, and `setup` lists `shopping` and imports from it: one E1153 and three E1165, one at each of the three entries; after their three fixes, neither code."
-// 5. "A `@keel/std-*` entry the module imports nothing from reports no E1165; an entry `ghost` naming no module of the project reports one."
+// k.module the five clauses on E1165, each quoted whole
+// Spec: k.module, clause "Module `a` listing `b` in `deps`, with no file of `a` importing from `b`, reports one E1165 at the entry, as it does when only a test file of `a` imports from `b`; its fix removes the entry, and `keel check` then reports neither E1165 nor E1152."
+// Spec: k.module, clause "No E1165 for `b` when one non-test file of `a` holds any one of `import { X } from '../b/X.ts'` (`X` public), `import type { X } from '../b/X.ts'`, `export { X } from '../b/X.ts'`, `import('../b/X.ts')`, or an import of `b`'s contract alone."
+// Spec: k.module, clause "With `app` (deps `['shop']`) holding a layout `app.frame` and `shop` (deps `[]`) a page bound with `layout: 'app.frame'`, and no import between them, no E1165; with `shop` listing `app` and `app` listing nothing, none either."
+// Spec: k.module, clause "Modules `receipts`, `setup` and `shopping`, where `shopping` lists `setup` and `receipts`, `receipts` lists `setup`, with no import behind any of the three, and `setup` lists `shopping` and imports from it: one E1153 and three E1165, one at each of the three entries; after their three fixes, neither code."
+// Spec: k.module, clause "A `@keel/std-*` entry the module imports nothing from reports no E1165; an entry `ghost` naming no module of the project reports one."
 // Rules: E1165 "a `deps` entry, other than a `@keel/std-*` package, that the module does not use (Checks), a module id the project lacks among them, at the entry, one per entry (fix removes it)."
 // Seed 1337
 import { execFileSync } from "node:child_process";

@@ -1,5 +1,5 @@
-// Spec: k.cli, Rules "E1053 formatter kind, std command or shell target registered twice"
-// Spec: k.shell, Shell target "`shellTarget(shell, target)` (`@keel/cli`) once; a second throws E1053."
+// k.cli, Rules "E1053 formatter kind, std command or shell target registered twice"
+// k.shell, Shell target "`shellTarget(shell, target)` (`@keel/cli`) once; a second throws E1053."
 // Seed: 1337 (no generated input: the two shells are the closed set).
 // The registry is per process: each shell is registered once in this file (the first call succeeds, the second throws).
 import { shellTarget } from "@keel/cli";

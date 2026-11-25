@@ -1,5 +1,5 @@
 // Spec: k.component, clause "`{a ? <b/> : <i/>}`, `{a && <b/>}`, `{[<b/>]}` and `{xs.map((x) => <li/>)}` as children are each one E1403 and render nothing; `<If when={a} fallback={() => <i/>}>` renders `<i>` while `a` is falsy."
-// Spec: k.component, Control flow: "Elements in a JSX child expression are E1403 and bind nothing" (rfc:0061).
+// k.component, Control flow: "Elements in a JSX child expression are E1403 and bind nothing" (rfc:0061).
 // @vitest-environment happy-dom
 // Seed 1337 (fc.assert seed below). RFC 0061.
 import { createCtx } from "@keel/ctx";

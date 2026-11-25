@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.test-run Disposal "A handle made outside a test (`beforeAll`, a `describe` body, module scope) is disposed only by `dispose()`, which an `afterAll` makes."
-// Spec: k.test-run Conformance "An `afterEach` hook of the test that made a render finds it in the document; a render made in `beforeAll` is in the document in each test of its suite and is gone after an `afterAll` `dispose()`."
+// k.test-run Disposal "A handle made outside a test (`beforeAll`, a `describe` body, module scope) is disposed only by `dispose()`, which an `afterAll` makes."
+// Spec: k.test-run, clause "An `afterEach` hook of the test that made a render finds it in the document; a render made in `beforeAll` is in the document in each test of its suite and is gone after an `afterAll` `dispose()`."
 // Seed: 1337 (n/a: no generated inputs). The cases run in order.
 import { render } from "@keel/testing";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";

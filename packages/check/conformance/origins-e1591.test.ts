@@ -1,5 +1,5 @@
-// Spec: k.origins, Conformance "One key twice in `img` is one E1591 without types; one origin under `img` and `font` is none."
-// Spec: k.origins, Rules "E1591 one origin twice in one directive (fix: delete the second entry)."
+// Spec: k.origins, clause "One key twice in `img` is one E1591 without types; one origin under `img` and `font` is none."
+// k.origins, Rules "E1591 one origin twice in one directive (fix: delete the second entry)."
 // Seed 1337 (fc.assert below).
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";

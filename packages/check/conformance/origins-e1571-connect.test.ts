@@ -1,5 +1,5 @@
-// Spec: k.origins, Conformance "`ctx.net.fetch(new Request('https://c.example/e'))` in a client-reachable file is no E1571 with `connect` declaring `https://c.example`, and E1571 with it under `img` only."
-// Spec: k.origins, Rules "`connect` for E1571."
+// Spec: k.origins, clause "`ctx.net.fetch(new Request('https://c.example/e'))` in a client-reachable file is no E1571 with `connect` declaring `https://c.example`, and E1571 with it under `img` only."
+// k.origins, Rules "`connect` for E1571."
 // Seed 1337 (fc.assert below).
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";

@@ -1,7 +1,7 @@
-// Spec: std.monitor, Conformance "E2009 fires on a fixture and not on its clean twin."
+// Spec: std.monitor, clause "E2009 fires on a fixture and not on its clean twin."
 // Seed: 1337.
-// Spec: std.monitor, Rules "E2009 `monitor` in the runners of a non-`node` deployable"
-// Spec: std.monitor, Rules "E2010 `session monitor`: the tally URL is unreachable, not 2xx, or not a `Tally`."
+// std.monitor, Rules "E2009 `monitor` in the runners of a non-`node` deployable"
+// std.monitor, Rules "E2010 `session monitor`: the tally URL is unreachable, not 2xx, or not a `Tally`."
 // @vitest-environment node
 // Skipped until the rules exist. E2009 is a `check` rule (as E2005); E2010 is driven through `keel session monitor`.
 // Assumption: `monitor` is listed in `modules/cart/runners.server.ts` as `export const runners = [monitor]`.

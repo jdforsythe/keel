@@ -1,4 +1,4 @@
-// Spec: k.library-pack, Pack: "`test`: `test: <f> of <n> tests failed; nothing packed` (`1 test`), counted as `keel test` counts them, a test file that fails to load one failed test; or `test: the run did not pass; nothing packed` when none failed and the run still failed (an error outside any test, such as an unhandled rejection); nowhere, after the test's diagnostics."
+// k.library-pack, Pack: "`test`: `test: <f> of <n> tests failed; nothing packed` (`1 test`), counted as `keel test` counts them, a test file that fails to load one failed test; or `test: the run did not pass; nothing packed` when none failed and the run still failed (an error outside any test, such as an unhandled rejection); nowhere, after the test's diagnostics."
 // The real `keel` binary runs `keel test` over temp projects (OS tmpdir). Seed 1337 (the property over mixes of files).
 // MISSING SENTENCE: k.test-run and k.testing state no summary count for `keel test`; the one sentence that states how
 // `keel test` counts a file that fails to load is the one above (from k.library-pack). What it gives: a file that fails

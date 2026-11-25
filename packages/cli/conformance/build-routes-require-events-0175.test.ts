@@ -1,4 +1,4 @@
-// Spec: k.compiler, Conformance "A `routes.ts` whose graph reaches a `*.server.ts` file importing a CommonJS package that `require`s `events` evaluates: `routes.json` lists its routes and no E1006 is printed."
+// Spec: k.compiler, clause "A `routes.ts` whose graph reaches a `*.server.ts` file importing a CommonJS package that `require`s `events` evaluates: `routes.json` lists its routes and no E1006 is printed."
 // Seed 1337 (no generated input). Assumes: `keel build` writes `dist/api/routes.json` for deployable `api` and the file's text names the route id `m.dirs`; the CommonJS package is a fixture in `node_modules/cjs-events`.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";

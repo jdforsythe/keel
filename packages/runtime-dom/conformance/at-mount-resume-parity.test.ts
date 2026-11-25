@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.errors, clause "The same component and the same click report the same `data.at` under `mount` and after `resume`, for a handler's throw, for a binding's throw (the element the binding writes) and for the component's own `effect` throw (`""`), when the handler's write makes the computed they read throw."
+// Spec: k.errors, clause "The same component and the same click report the same `data.at` under `mount` and after `resume`, for a handler's throw, for a binding's throw (the element the binding writes) and for the component's own `effect` throw (`\"\"`), when the handler's write makes the computed they read throw."
 // Seed 1337
 import { type CtxEvent, createCtx, observe } from "@keel/ctx";
 import { computed, effect, signal } from "@keel/reactive";

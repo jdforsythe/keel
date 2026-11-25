@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: RFC 0162 D4 "the kernel's runtime ops and elements (`If`, `For`, `Match`, `Case`, `Boundary`, `@keel/ui` base elements, `Part`, `Link`, `Form`) take no ctx and are still called as `Op(props)` from a `.ts` file."
+// RFC 0162 D4 "the kernel's runtime ops and elements (`If`, `For`, `Match`, `Case`, `Boundary`, `@keel/ui` base elements, `Part`, `Link`, `Form`) take no ctx and are still called as `Op(props)` from a `.ts` file."
 // Seed: 1337 (no generated inputs). A type-level test: the assertions are checked by `tsc --noEmit`; the runtime half renders each element from one argument.
 import { Box, type Button, type Heading, type Link, Text } from "@keel/ui";
 import type { Part } from "@keel/ui/aria";

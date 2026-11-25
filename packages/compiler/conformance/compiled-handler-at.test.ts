@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.errors, clause "In a compiled module, a throwing `onClick` on a k.ui base element with a literal `id` (a `.tsx` tag or a `.ts` call `Button({ id: "…" })`) reports that id as `data.at`; with `id={expr}` and no stamped ancestor it reports `""`; on a plain element it reports the element's compiler id."
+// Spec: k.errors, clause "In a compiled module, a throwing `onClick` on a k.ui base element with a literal `id` (a `.tsx` tag or a `.ts` call `Button({ id: \"…\" })`) reports that id as `data.at`; with `id={expr}` and no stamped ancestor it reports `\"\"`; on a plain element it reports the element's compiler id."
 // Seed 1337 (no random inputs: three fixed shapes).
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";

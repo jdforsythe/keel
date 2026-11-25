@@ -1,5 +1,5 @@
-// Spec: k.scaffold-shell, Conformance "`tauri` then `capacitor` on `web` leaves `shells` with both entries, `tauri` first; `tauri` twice is E1351 the second time, nothing written."
-// Spec: k.scaffold-shell, Refusals "The deployable already declares `<shell>`: E1351."
+// Spec: k.scaffold-shell, clause "`tauri` then `capacitor` on `web` leaves `shells` with both entries, `tauri` first; `tauri` twice is E1351 the second time, nothing written."
+// k.scaffold-shell, Refusals "The deployable already declares `<shell>`: E1351."
 import { describe, expect, it } from "vitest";
 import { errText, read, snap } from "./fixtures.ts";
 import { p, shell, shellApply, squash } from "./shell-support.ts";

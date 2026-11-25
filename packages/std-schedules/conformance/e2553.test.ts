@@ -1,5 +1,5 @@
 // Spec: std.schedules, clause "E2552 and E2553 each fire on a fixture and not on its clean twin." (E2553)
-// Spec: std.schedules, rule E2553: a module with `schedules.server.ts` whose `runners` lacks `schedules` (fix adds it).
+// std.schedules, rule E2553: a module with `schedules.server.ts` whose `runners` lacks `schedules` (fix adds it).
 // Assumption: as for std.i18n E2301, `check()` imports nothing, so the rules register by importing `@keel/std-jobs/tools`;
 // a module is the files under `modules/<id>/` with a `module.ts` listing `deps`.
 import { execFileSync } from "node:child_process";

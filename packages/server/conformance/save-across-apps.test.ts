@@ -1,4 +1,4 @@
-// Spec: k.persist, Conformance "Two `createApp`s on one sim ctx, overlapping actions that read one store and save another: the later save is 409 and the stored values are the earlier one's."
+// Spec: k.persist, clause "Two `createApp`s on one sim ctx, overlapping actions that read one store and save another: the later save is 409 and the stored values are the earlier one's."
 // Seed: 1337. Runs under plain Node; only runtime (JSON) requests are used. Interleavings use deferreds; no timers.
 // Action A reads `lists` and saves `todos`; action B reads `todos` and saves `lists`; A goes to the first app, B to the second.
 import { createCtx } from "@keel/ctx";

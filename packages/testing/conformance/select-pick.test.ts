@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.testing Harness "`change` with `value` is a person's pick in a `<select>` without `multiple`: the enabled option whose value is `value` becomes selected, then `input` (bubbling, composed) and `change` (bubbling) are dispatched at the select, in that order, each seeing the new value. A pick of the option already selected dispatches nothing."
-// Spec: k.testing Conformance "On a `<select>` of `alex` (selected) and `sam`, `fire(id, { type: 'change', value: 'sam' })` runs its `input` handler, then its `change` handler, each reading `sam`, and an ancestor's too; the same call again runs none."
+// k.testing Harness "`change` with `value` is a person's pick in a `<select>` without `multiple`: the enabled option whose value is `value` becomes selected, then `input` (bubbling, composed) and `change` (bubbling) are dispatched at the select, in that order, each seeing the new value. A pick of the option already selected dispatches nothing."
+// Spec: k.testing, clause "On a `<select>` of `alex` (selected) and `sam`, `fire(id, { type: 'change', value: 'sam' })` runs its `input` handler, then its `change` handler, each reading `sam`, and an ancestor's too; the same call again runs none."
 // Seed: 1337 (fc.assert below).
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";

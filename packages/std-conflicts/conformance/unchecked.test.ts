@@ -1,5 +1,5 @@
 // Spec: std.conflicts, clause "A rebased entry whose `base` is older than the kept log is `unchecked` `folded`; one after an undo since the kept log's start is `unchecked` `undo`."
-// Spec: std.conflicts, rule W2702: a rebased entry whose base state cannot be rebuilt (`folded`, `undo`).
+// std.conflicts, rule W2702: a rebased entry whose base state cannot be rebuilt (`folded`, `undo`).
 // Seed 1337
 // Assumption: with `logLimit` 2, the kept log's initial state is the state after the entry just before the kept log, so a
 // `base` equal to that entry's id is rebuildable and an older one is `folded`.

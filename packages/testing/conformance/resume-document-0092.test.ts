@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 // Spec: k.testing, clause "`resumeDocument` of an island document from `createApp` lets `fire` run the island's handlers; an island missing from `routes` is E1720; an island whose component throws `new Error('boom')` while claiming is E1720 whose text holds `boom`."
-// Spec: k.testing, rule E1720 (`resumeDocument`).
+// k.testing, rule E1720 (`resumeDocument`).
 // Property seed: 1337 (fc.assert seed below).
 // Assumption: `@keel/server` is not a dependency of this package, so the island document is written by hand in the shape k.runtime
 // gives a server document: `data-k-island="<route id>"` on the island root, one `#k-state` script with `islands`; the island root

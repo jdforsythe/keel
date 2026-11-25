@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.testing, Conformance "`renderRoute` of a page whose loader names `stores` shows the snapshot `ctx.storage` holds; a `Form` submit to its `stores` action saves, and the page's loaders then read the saved state."
-// Spec: k.testing, Harness `renderRoute`: a loader's or action's `stores` run over `ctx.storage`, a navigation or submit one request; an action's `err` or a throw saves nothing; a stale read is `keel.conflict`; `state` and `state()` hold no factory store. k.server Server state: client routers (the public `createRouter`) refuse `stores`.
+// Spec: k.testing, clause "`renderRoute` of a page whose loader names `stores` shows the snapshot `ctx.storage` holds; a `Form` submit to its `stores` action saves, and the page's loaders then read the saved state."
+// k.testing, Harness `renderRoute`: a loader's or action's `stores` run over `ctx.storage`, a navigation or submit one request; an action's `err` or a throw saves nothing; a stale read is `keel.conflict`; `state` and `state()` hold no factory store. k.server Server state: client routers (the public `createRouter`) refuse `stores`.
 // Seed: 1337.
 // The stale-read clause (`keel.conflict`) is tested in packages/server/conformance/render-route-shared-copy-0093.test.ts: a competing write needs a second writer, and `createApp` on the same ctx is the only public non-rendering one.
 // ASSUMPTIONS (spec names no shape): a harness submit is `fire(inputId, { type: 'input', value })` then `fire(formId, { type: 'submit' })`;

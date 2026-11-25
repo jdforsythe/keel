@@ -1,4 +1,5 @@
-// Spec: k.cli Conformance "`keel docs k.cli` prints <= 1,500 tokens"; Commands `explain <code>` (<= 120 tokens), `docs --for <code>` (k.check: every installed spec line citing the code).
+// Spec: k.cli, clause "`keel docs k.cli` prints <= 1,500 tokens."
+// k.cli Commands `explain <code>` (<= 120 tokens), `docs --for <code>` (k.check: every installed spec line citing the code).
 // Untestable (spec silent): `explain` on an unknown code, and `--format` selection by a registered custom formatter name.
 // Token counting stand-in: ceil(chars / 4) (see fixtures).
 import { describe, expect, it } from "vitest";

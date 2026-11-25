@@ -1,5 +1,5 @@
-// Spec: k.prove, API "`prove(transactions, { rlimit? })` takes transactions of one store, each once. It resolves `{ proven, z3 }` (the names proven; the Z3 version as `major.minor.build`, `5.3.3`)"
-// Spec: k.prove, API "An empty or mixed list, a repeated transaction, or an `rlimit` that is not an integer from 1 to 2^32 - 1 rejects E1710 (k.model)."
+// k.prove, API "`prove(transactions, { rlimit? })` takes transactions of one store, each once. It resolves `{ proven, z3 }` (the names proven; the Z3 version as `major.minor.build`, `5.3.3`)"
+// k.prove, API "An empty or mixed list, a repeated transaction, or an `rlimit` that is not an integer from 1 to 2^32 - 1 rejects E1710 (k.model)."
 // Seed: 1337.
 import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";

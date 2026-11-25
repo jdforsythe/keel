@@ -1,5 +1,5 @@
-// Spec: k.test-run Results "Each error outside any test's result, an unhandled error or rejection vitest reports or one `keel test` catches around the run, is one T0001 `uncaught: <first line>` ... located at its first app frame ..."
-// Spec: k.test-run Conformance "`keel test` over a project whose test leaves a `setTimeout` that throws `new Error('late')` after the test ends prints `T0001 <file>:<line>:<col> uncaught: late` at the `throw`, and the run fails."
+// k.test-run Results "Each error outside any test's result, an unhandled error or rejection vitest reports or one `keel test` catches around the run, is one T0001 `uncaught: <first line>` ... located at its first app frame ..."
+// Spec: k.test-run, clause "`keel test` over a project whose test leaves a `setTimeout` that throws `new Error('late')` after the test ends prints `T0001 <file>:<line>:<col> uncaught: late` at the `throw`, and the run fails."
 // The real `keel` binary runs `keel test` (compact) over a temp project (OS tmpdir). No generated inputs; seed n/a.
 // The fixture's timer is spelled so its source is data here. A second test of the fixture waits, so the throw lands after the first test ended.
 // The column is read as the position of the `throw` keyword or of the `new Error` it throws (V8 reports the latter); the spec says only "at the `throw`".

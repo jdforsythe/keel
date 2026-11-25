@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.a11y, Conformance "A `render` of a component reports no document rule; a `renderRoute` of a titled route reports no `document-title` or `html-has-lang` violation."
+// Spec: k.a11y, clause "A `render` of a component reports no document rule; a `renderRoute` of a titled route reports no `document-title` or `html-has-lang` violation."
 // Seed: 1337.
 // Untestable here: that a document rule "is not run" for `render` beyond "does not fail"; the spec names no report accessor in the harness (the run list is in reports/a11y.json, k.a11y Claims).
 import { manifest } from "@keel/router";

@@ -1,4 +1,4 @@
-// Spec: k.check, Conformance "For each code `reportedCodes()` lists, every diagnostic of that code its fixture reports has a message of at most 89 UTF-16 code units that does not end in `...`."
+// Spec: k.check, clause "For each code `reportedCodes()` lists, every diagnostic of that code its fixture reports has a message of at most 89 UTF-16 code units that does not end in `...`."
 // Seed n/a: the fixtures are the table in fixtures-by-code.ts (`bad`, with its options), and for E1756 a registered rule that throws (as explain-and-fixture-per-code.test.ts); no generated input.
 // ASSUMPTION: "its fixture" is the code's entry in fixtures-by-code.ts. The W codes `reportedCodes()` lists (W1005, W1012, W1564, W1723) have no entry there and no fixture in this folder: UNTESTABLE for want of a fixture, named by the last test so the gap shows.
 import { check, defineRule, reportedCodes } from "@keel/check";

@@ -1,4 +1,4 @@
-// Spec: k.formats, clause "`parse` runs `base`, then `check`; false fails with rule `format` at that path." (rfc:0079)
+// k.formats, clause "`parse` runs `base`, then `check`; false fails with rule `format` at that path." (rfc:0079)
 // Seed 1337.
 import { s } from "@keel/schema";
 import fc from "fast-check";

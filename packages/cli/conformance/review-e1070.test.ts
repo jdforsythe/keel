@@ -1,4 +1,4 @@
-// Spec: k.review, rule "E1070 `keel-review.json` does not parse, or holds an `id` twice"
+// k.review, rule "E1070 `keel-review.json` does not parse, or holds an `id` twice"
 // Seed: n/a.
 // ASSUMED: exit 2, one `diag` E1070; the file is read at `<base>` for a range and from the working tree for `--all`.
 import { expect, test } from "vitest";

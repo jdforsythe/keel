@@ -1,4 +1,4 @@
-// Spec: k.persist, Conformance "`restore` of a snapshot whose log names an undeclared transaction returns `ok`, keeps `state` and `head()`, and leaves `log()` empty and `snapshot().initial` equal to `state`."
+// Spec: k.persist, clause "`restore` of a snapshot whose log names an undeclared transaction returns `ok`, keeps `state` and `head()`, and leaves `log()` empty and `snapshot().initial` equal to `state`."
 // Seed: 1337.
 import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";

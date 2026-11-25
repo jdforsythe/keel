@@ -1,4 +1,4 @@
-// Spec: k.module, Conformance clause 15: "A page of `b` naming a layout of `a`, where `a` lists `b` in `deps`, reports no E1152 and no E1153; `a` and `b` listing each other produce one E1153 naming both."
+// Spec: k.module, clause "A page of `b` naming a layout of `a`, where `a` lists `b` in `deps`, reports no E1152 and no E1153; `a` and `b` listing each other produce one E1153 naming both."
 // Seed 1337: the module ids are generated.
 import fc from "fast-check";
 import { expect, test } from "vitest";

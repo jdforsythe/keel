@@ -1,4 +1,4 @@
-// Spec: k.server, clause "`caller` is the hash of a server-signed cookie token, else of a fresh one set as a cookie on a write, else `""`."
+// Spec: k.server, clause "`caller` is the hash of a server-signed cookie token, else of a fresh one set as a cookie on a write, else `\"\"`."
 // The hash is the base64url SHA-256 (no padding) of the whole cookie value the server set (everything after `name=`).
 // Seed 1337. Runs under plain Node: happy-dom strips cookie headers. Only runtime (JSON) requests are used over http, so the name is `keel-caller`.
 // @vitest-environment node

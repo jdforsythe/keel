@@ -1,5 +1,5 @@
 // Spec: k.topology, clause "A placed stdlib module whose `./contract` export resolves and `./routes` does not is one E1586 at its `topology.ts` id in `keel check` and `keel build`; both or neither is none."
-// Spec: k.topology, Rules "E1586 a placed stdlib module whose `./contract` resolves and `./routes` does not (at its id)"
+// k.topology, Rules "E1586 a placed stdlib module whose `./contract` resolves and `./routes` does not (at its id)"
 // Seed: 1337 (module ids are drawn by fast-check). The `keel check` half; the `keel build` half is
 // packages/cli/conformance/topology-e1586-build.test.ts (this package does not depend on @keel/cli).
 // PENDING: unbuilt (RFC 0172 build); skipped until `check()` reports E1586. The fixture lives here, not in

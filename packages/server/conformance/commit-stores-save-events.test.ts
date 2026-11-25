@@ -1,4 +1,4 @@
-// Spec: k.persist, Conformance "`commitStores` reports one `save` event per changed store and none when nothing changed."
+// Spec: k.persist, clause "`commitStores` reports one `save` event per changed store and none when nothing changed."
 // Seed: 1337.
 // ASSUMED (k.persist Server saves, k.sync Saves): the observer is added to the ctx passed to `commitStores`; `from` is the store's head before the save.
 import { createCtx, observe } from "@keel/ctx";

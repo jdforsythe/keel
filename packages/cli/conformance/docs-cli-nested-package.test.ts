@@ -1,4 +1,4 @@
-// Spec: k.docs "A package present only under `@keel/cli`'s own `node_modules` resolves: `keel docs <its id>` prints its section."
+// Spec: k.docs, clause "A package present only under `@keel/cli`'s own `node_modules` resolves: `keel docs <its id>` prints its section."
 // Seed: none (example). Red: the `docs` operation is absent (E1051).
 import { describe, expect, it } from "vitest";
 import { jsonRecords, pkg, project, cliPkg, CLIENT_SKILL, ROUTER } from "./docs-support";

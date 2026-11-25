@@ -1,5 +1,5 @@
-// Spec: k.scaffold, Generators "`store` / `transaction`: `*.schema.ts`, store or transaction file, invariant test."
-// Spec: k.scaffold, Rules "E1351 target id already exists (fix: use a codemod)"
+// k.scaffold, Generators "`store` / `transaction`: `*.schema.ts`, store or transaction file, invariant test."
+// k.scaffold, Rules "E1351 target id already exists (fix: use a codemod)"
 // RFC 0036: `transaction { id: "<module>.<store>.<name>" }` needs the store <module>.<store> and writes
 // modules/<module>/<Name>Payload.schema.ts, modules/<module>/<name>.transaction.ts, modules/<module>/<name>.transaction.test.ts.
 // seed 1337

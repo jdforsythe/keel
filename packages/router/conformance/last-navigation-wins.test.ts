@@ -1,4 +1,4 @@
-// Spec: k.router, Conformance "Of two navigations started before either settles, the later one's page shows in either settle order."
+// Spec: k.router, clause "Of two navigations started before either settles, the later one's page shows in either settle order."
 // Seed: 1337.
 // @vitest-environment happy-dom
 // ASSUMPTIONS (as in fixtures.ts): createRouter(routes, { ctx, history }) returns { App, navigate, route, dispose }; `navigate` returns a promise

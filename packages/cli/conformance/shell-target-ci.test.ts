@@ -1,5 +1,5 @@
-// Spec: k.shell, Conformance "A `ShellJob` `{ job: 'tauri', manual: true }` is a `web-tauri` job running `keel build --target tauri` on `workflow_dispatch` only."
-// Spec: k.shell, CI "A `manual` job's `if` adds `github.event_name == 'workflow_dispatch'`, then a workflow trigger."
+// Spec: k.shell, clause "A `ShellJob` `{ job: 'tauri', manual: true }` is a `web-tauri` job running `keel build --target tauri` on `workflow_dispatch` only."
+// k.shell, CI "A `manual` job's `if` adds `github.event_name == 'workflow_dispatch'`, then a workflow trigger."
 // Seed: 1337 (the other fields of the job, `runsOn` and `steps`, are generated).
 // Over a stub `@keel/std-tauri` (`shell-stub.ts`): `keel build` writes `.github/workflows/ci.yml`.
 // ASSUMPTION: a job is a two-space-indented key under `jobs:`; "on `workflow_dispatch` only" is the job's block naming `workflow_dispatch` where a job with `manual: false` does not; the spec gives no YAML for the gate.

@@ -1,4 +1,4 @@
-// Spec: std.workflows, Conformance "A wait state moves by its event when the sim clock passes `ms`, not before; an undo sent first leaves the wake job doing nothing."
+// Spec: std.workflows, clause "A wait state moves by its event when the sim clock passes `ms`, not before; an undo sent first leaves the wake job doing nothing."
 // Seed: 1337.
 // Assumption: a wait lasts at least `ms` and at most `ms` plus the 60,000 ms poll of the runner (Run paragraph), so the move is looked for in that window.
 import { ok } from "@keel/schema";

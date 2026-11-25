@@ -1,6 +1,6 @@
-// Spec: k.user, Rules "E1578 `caller` on a deployable other than `node`, or `days` not an integer 1 to 400 · E1579 `identity.server.ts` without a default `identity(...)` export, or a `handle.path` not of lowercase `/` segments, or with a route of any deployable at or under it (`keel check`, `keel build`; `createApp` throws it). Fix: none."
-// Spec: k.user, Conformance "`caller: { days: 0 }`, `{ days: 401 }`, `{ days: 1.5 }`, `caller` on a `client` deployable, and `handle.path` `/api` with a route `/api/x` are each one diagnostic (E1578, E1579)."
-// Spec: k.user, Caller lifetime "A `node` deployable may set `caller: { days }` in `topology.ts` (an integer 1 to 400)"
+// k.user, Rules "E1578 `caller` on a deployable other than `node`, or `days` not an integer 1 to 400 · E1579 `identity.server.ts` without a default `identity(...)` export, or a `handle.path` not of lowercase `/` segments, or with a route of any deployable at or under it (`keel check`, `keel build`; `createApp` throws it). Fix: none."
+// Spec: k.user, clause "`caller: { days: 0 }`, `{ days: 401 }`, `{ days: 1.5 }`, `caller` on a `client` deployable, and `handle.path` `/api` with a route `/api/x` are each one diagnostic (E1578, E1579)."
+// k.user, Caller lifetime "A `node` deployable may set `caller: { days }` in `topology.ts` (an integer 1 to 400)"
 // Seed 1337 (fc.assert below). The E1579 cases are identity-source-e1579.test.ts and packages/cli/conformance/identity-e1579-build.test.ts.
 import { check } from "@keel/check";
 import fc from "fast-check";

@@ -1,5 +1,5 @@
-// Spec: k.scaffold-shell, Edits "A package already listed in `dependencies` or `devDependencies` is kept as written, except a `plugins` entry (k.shell Plugins) at another version text, which is set to the declared one."
-// Spec: k.scaffold-shell, Conformance "A `package.json` with `@tauri-apps/cli` `^2` in `devDependencies` keeps it; one with `@capacitor/app` `^8.0.0` in `dependencies` gets the declared version, `keel check` then reporting no E1572 for it."
+// k.scaffold-shell, Edits "A package already listed in `dependencies` or `devDependencies` is kept as written, except a `plugins` entry (k.shell Plugins) at another version text, which is set to the declared one."
+// Spec: k.scaffold-shell, clause "A `package.json` with `@tauri-apps/cli` `^2` in `devDependencies` keeps it; one with `@capacitor/app` `^8.0.0` in `dependencies` gets the declared version, `keel check` then reporting no E1572 for it."
 // Seed 1337 (property over kept ranges).
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";

@@ -1,5 +1,6 @@
-// Spec: k.check, clauses "`--code E1501` emits only E1501 diagnostics while the summary counts every code." and
-// "A tree with only W diagnostics exits 0." Driven through `run`. Seed 1337 (no generated inputs).
+// Spec: k.check, clause "`--code E1501` emits only E1501 diagnostics while the summary counts every code."
+// Spec: k.check, clause "A tree with only W diagnostics exits 0."
+// Driven through `run`. Seed 1337 (no generated inputs).
 import { defineRule } from "@keel/check";
 import { describe, expect, it } from "vitest";
 import { dirtyFile, keel, lines, parseJsonLines } from "./fixtures";

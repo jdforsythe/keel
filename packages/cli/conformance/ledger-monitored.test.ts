@@ -1,5 +1,5 @@
 // Spec: k.ledger, clause "A `.keel/monitored.json` naming `todos.editor.save` with runs 3 gives `monitored` evidence to the export whose file holds `'todos.editor'` and to no other; a file failing its shape is E1711."
-// Spec: k.ledger, Rules "E1711 `.keel/monitored.json` fails its shape".
+// k.ledger, Rules "E1711 `.keel/monitored.json` fails its shape".
 // The real `keel` binary over a temp project (OS tmpdir). Seed: 1337 (no property in this file).
 import { describe, expect, it } from "vitest";
 import { diags, evidenceText, ledgerRecord, withProject } from "./ledger-fixture-kinds.ts";

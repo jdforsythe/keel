@@ -1,5 +1,5 @@
 // rfc:0160 conformance: a `keel dev` document framing `http://localhost:<its port>` has a `frame-src` without it.
-// Spec: k.origins, Frame "A `frame` origin of the app's own is E1590 in `keel build` (a `KEEL_PEER_<NAME>`, `KEEL_ORIGIN`) and `createApp` (`origin`, a URL peer); a document drops its own from `frame-src` (dev: one E1590 logged)."
+// k.origins, Frame "A `frame` origin of the app's own is E1590 in `keel build` (a `KEEL_PEER_<NAME>`, `KEEL_ORIGIN`) and `createApp` (`origin`, a URL peer); a document drops its own from `frame-src` (dev: one E1590 logged)."
 // Seed 1337 (no generated input: one fixture, one spawn). Spawns the real binary over a temp project with `@keel/*` and `vite` linked, `keel dev --port p`
 // with `p` from a closed listener on port 0, as topology-keel-dev-one-origin.test.ts does. The wait is a retry, with a fixed pause, of a socket connection, bounded by a count of pauses.
 // Only the child this test started is signalled (its process group), in a `finally`; every child is ended in `afterEach`.

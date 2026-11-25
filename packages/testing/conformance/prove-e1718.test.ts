@@ -1,5 +1,5 @@
-// Spec: k.prove, Conformance "Without `z3-solver`, `prove` rejects E1718."
-// Spec: k.prove, Rules "E1718 the optional peer dependency `z3-solver` is not installed (fix adds it to `devDependencies`)."
+// Spec: k.prove, clause "Without `z3-solver`, `prove` rejects E1718."
+// k.prove, Rules "E1718 the optional peer dependency `z3-solver` is not installed (fix adds it to `devDependencies`)."
 // Seed: 1337. The package is made absent by mocking its import to fail as an uninstalled package does.
 import { afterEach, describe, expect, it, vi } from "vitest";
 

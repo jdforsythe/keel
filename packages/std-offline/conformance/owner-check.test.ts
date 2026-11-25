@@ -1,6 +1,6 @@
-// Spec: std.outbox-owner Conformance, bullet 1: "`writeFor({ key, base, owner: 'a' }, 'a')` is `ok({ key, base })`; with owner `'b'` it is `err` with `{ code: 'offline.owner', message: 'owner', data: {} }`; `writeFor({ key, base, owner: "" }, "")` is `ok`."
-// Spec: std.outbox-owner Conformance, bullet 2: "With entries queued offline under owner `a` and a route whose action passes `writeFor` owner `b`, `drain` with `a` online posts each with `body.write.owner` `a`, the server store commits nothing, and each entry is `failed` with `{ code: 'offline.owner', message: <id>, data: {} }`."
-// Spec: std.outbox-owner Conformance, bullet 3: "After that refusal, `drain` with `a` on a new ctx over that storage posts nothing, and a `send` with `a` to a route whose owner is `a` is posted and resolves `sent`."
+// Spec: std.outbox-owner, clause "`writeFor({ key, base, owner: 'a' }, 'a')` is `ok({ key, base })`; with owner `'b'` it is `err` with `{ code: 'offline.owner', message: 'owner', data: {} }`; `writeFor({ key, base, owner: \"\" }, \"\")` is `ok`."
+// Spec: std.outbox-owner, clause "With entries queued offline under owner `a` and a route whose action passes `writeFor` owner `b`, `drain` with `a` online posts each with `body.write.owner` `a`, the server store commits nothing, and each entry is `failed` with `{ code: 'offline.owner', message: <id>, data: {} }`."
+// Spec: std.outbox-owner, clause "After that refusal, `drain` with `a` on a new ctx over that storage posts nothing, and a `send` with `a` to a route whose owner is `a` is posted and resolves `sent`."
 // Seed 1337
 // Assumption: the sim route answers an `offline.owner` err 400 `{ ok: false, error }` (fixtures.ts), as k.server does.
 import { send, writeFor } from "@keel/std-offline";

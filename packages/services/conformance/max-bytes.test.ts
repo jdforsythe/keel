@@ -1,4 +1,4 @@
-// Spec: k.services API, "A call reads at most `maxBytes` (a `service` option, default 1 MiB) of a response body; a longer 2xx body is `api.decode`, another `api.status` with `body` `null`."
+// k.services API, "A call reads at most `maxBytes` (a `service` option, default 1 MiB) of a response body; a longer 2xx body is `api.decode`, another `api.status` with `body` `null`."
 // Seed 1337 (fc.assert below). Sim net only; a `base` service over one GET endpoint with a declared 409 error schema.
 import { createCtx } from "@keel/ctx";
 import { s } from "@keel/schema";

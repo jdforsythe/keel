@@ -1,4 +1,4 @@
-// Spec: std.tables, Conformance "With two of five page rows selected `selectAll` is `mixed`; activating it calls `onSelect` with all five and the keys of other pages."
+// Spec: std.tables, clause "With two of five page rows selected `selectAll` is `mixed`; activating it calls `onSelect` with all five and the keys of other pages."
 // Seed: 1337.
 // @vitest-environment happy-dom
 // Assumption: `selected` is `() => readonly key[]` and `onSelect` receives the complete key list (an array or a set; read with spread).

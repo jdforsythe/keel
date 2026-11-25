@@ -1,4 +1,4 @@
-// Spec: k.privacy, URLs "a marked or `s.secret` node in a route's `params`, `search` or `query` schema is E1111: a path or query reaches history and proxy logs Keel cannot redact."
+// k.privacy, URLs "a marked or `s.secret` node in a route's `params`, `search` or `query` schema is E1111: a path or query reaches history and proxy logs Keel cannot redact."
 // Seed: 1337.
 import { check } from "@keel/check";
 import fc from "fast-check";

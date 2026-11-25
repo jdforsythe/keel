@@ -1,4 +1,4 @@
-// Spec: k.ui, Conformance "`textAlign="end"` on a `Part role="cell"` compiles to one rule declaring `text-align:end` and no `display`; `textAlign={{ base: 'start', md: 'end' }}` puts the `end` rule inside the `md` media block; `textAlign="right"` is E1801."
+// Spec: k.ui, clause "`textAlign=\"end\"` on a `Part role=\"cell\"` compiles to one rule declaring `text-align:end` and no `display`; `textAlign={{ base: 'start', md: 'end' }}` puts the `end` rule inside the `md` media block; `textAlign=\"right\"` is E1801."
 // Seed: 1337 (properties over the logical and the physical values).
 // Not built yet (rfc:0203): the cases fail until `textAlign` is a style prop; they are plain `test`, not skipped.
 // The usage is the compiled form of the prop on any element: `Part role="cell"` adds no rule of its own, so one usage stands for it.

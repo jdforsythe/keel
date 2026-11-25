@@ -1,4 +1,5 @@
-// Spec: k.sync Conformance, bullet 11 "The same `key` on another transaction commits; a `key` whose entry `undo` removed, or that folded out of the log, still commits nothing, and commits again once `keyLimit` later commits with a `key` have passed it." and bullet 12 "`keys` survives `snapshot()`, a JSON round trip and `restore`; a snapshot without `keys` restores its log entries' keys."
+// Spec: k.sync, clause "The same `key` on another transaction commits; a `key` whose entry `undo` removed, or that folded out of the log, still commits nothing, and commits again once `keyLimit` later commits with a `key` have passed it."
+// Spec: k.sync, clause "`keys` survives `snapshot()`, a JSON round trip and `restore`; a snapshot without `keys` restores its log entries' keys."
 // Seed 1337 (fast-check `seed: 1337`).
 import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";

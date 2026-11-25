@@ -1,4 +1,4 @@
-// Spec: std.jobs, Conformance "Two `createApp`s on one sim ctx, each running the queue with five due jobs: each job's `fn` runs once."
+// Spec: std.jobs, clause "Two `createApp`s on one sim ctx, each running the queue with five due jobs: each job's `fn` runs once."
 // Seed: 1337.
 // Assumption: `createApp` needs no `routes` for a deployable whose module only has runners (`@keel/router` is not a dependency of this package).
 // Assumption: two `createApp`s on one sim ctx share its storage as two processes do (k.persist), so the second sees the first's leases.

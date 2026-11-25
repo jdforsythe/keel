@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.services, Conformance "A `base` call naming `user: 'u1'`, on a ctx a `createApp` bound and on one none bound, is `api.input` at `user` and sends nothing; under `renderRoute(id, { user: 'u1' })` a `base` call naming none carries no `x-keel-user`."
-// Spec: k.services, API "`user` is k.user's, on a `contract` service only; a `base` service call naming it is `api.input` at `user` and sends nothing."
+// Spec: k.services, clause "A `base` call naming `user: 'u1'`, on a ctx a `createApp` bound and on one none bound, is `api.input` at `user` and sends nothing; under `renderRoute(id, { user: 'u1' })` a `base` call naming none carries no `x-keel-user`."
+// k.services, API "`user` is k.user's, on a `contract` service only; a `base` service call naming it is `api.input` at `user` and sends nothing."
 // Seed: 1337.
 // Live: a `base` `user` is already `api.input`, and a `base` call under `renderRoute` already sends no `x-keel-user`.
 // ASSUMPTION: `renderRoute(id, { routes, app, ctx, user })` as packages/services/conformance/render-route-user-support.ts uses it; a page loader's `ctx` is the app's bound ctx.

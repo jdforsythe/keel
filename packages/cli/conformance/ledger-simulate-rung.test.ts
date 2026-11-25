@@ -1,5 +1,5 @@
 // Spec: k.ledger, clause "A passing `simulate` with `runs: 100` and a literal seed makes the exports its scenario names `probabilistic`."
-// Spec: k.ledger, Ledger "`probabilistic`: a passing seeded property with >= 100 runs; evidence lists runs and seed."
+// k.ledger, Ledger "`probabilistic`: a passing seeded property with >= 100 runs; evidence lists runs and seed."
 // The real `keel` binary over a temp project (OS tmpdir). `simulate` is @keel/testing's (k.sim); its options are read
 // from literals or imported constants. Seed: 1337.
 import { describe, expect, it } from "vitest";

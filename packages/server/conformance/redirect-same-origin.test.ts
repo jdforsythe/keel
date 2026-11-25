@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.server, Request flow "run it, 303 to the target (document; one no `Href` (k.router Links) is 500 with no `Location`) or `Result` JSON (runtime)."
-// Spec: k.router (Links) "An `Href` starts with one `/` and holds no `\`, control character or `#`."
+// k.server, Request flow "run it, 303 to the target (document; one no `Href` (k.router Links) is 500 with no `Location`) or `Result` JSON (runtime)."
+// k.router (Links) "An `Href` starts with one `/` and holds no `\`, control character or `#`."
 // Seed 1337 (fc.assert below). An action's link is a raw string typed as an `Href` through a type predicate.
 import { type Href, action, manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";

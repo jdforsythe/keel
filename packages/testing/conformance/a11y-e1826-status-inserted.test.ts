@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.a11y, Conformance "A `fire` that inserts `<Text id="done" role="status">Saved</Text>` under an element rendered before it fails with E1826 naming `done`; a `Text role="status"` rendered empty at the first render and given `Saved` by the `fire` passes, as do a `Text role="alert"` inserted holding text and a `role="status"` region inside a subtree the `fire` inserted whole."
-// Spec: k.a11y, Rules "E1826 a `status` region inserted holding text (render; no criterion in Claims)"
+// Spec: k.a11y, clause "A `fire` that inserts `<Text id=\"done\" role=\"status\">Saved</Text>` under an element rendered before it fails with E1826 naming `done`; a `Text role=\"status\"` rendered empty at the first render and given `Saved` by the `fire` passes, as do a `Text role=\"alert\"` inserted holding text and a `role=\"status\"` region inside a subtree the `fire` inserted whole."
+// k.a11y, Rules "E1826 a `status` region inserted holding text (render; no criterion in Claims)"
 // Seed: 1337 (RFC 0176 clause k.a11y #13).
 // Pending: not built. The failing-case tests are skipped; the passing cases run and must stay green.
 // No fixtures-by-code entry exists for E1826: a render check has no static fixture (builder: add none).

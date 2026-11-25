@@ -1,5 +1,5 @@
 // Spec: k.mount, clause "`identityMount('/api/auth', { links: ['/verify'] })` is clean, its `links` `['/verify']`; entries `''`, `'verify'`, `'/a?b'`, `'/../x'`, a second `'/verify'` and a variable each give one E1584 under `keel check`, and the call throws E1584 for each literal." (the `keel check` half; the run-time half: packages/router/conformance/mount-links-e1584.test.ts)
-// Spec: k.mount, Rules "E1580 ... optionally with `{ links: [...] }` ..." (E1580 accepts the second argument).
+// k.mount, Rules "E1580 ... optionally with `{ links: [...] }` ..." (E1580 accepts the second argument).
 // Seed 1337 (fc.assert below). In-memory project, `check(files, { types: false })`.
 import { check } from "@keel/check";
 import fc from "fast-check";

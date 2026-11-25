@@ -1,6 +1,6 @@
-// Spec: std.postgres, Conformance "An insert breaking a unique index is `postgres.constraint` naming it, `kind` `unique`; a `Secret` or `undefined` parameter throws E2457."
-// Spec: std.postgres, Errors "a unique, foreign key, check or not-null violation is `postgres.constraint`, data `{ constraint, kind }`, `kind` `unique`, `foreign`, `check` or `notNull`"
-// Spec: std.postgres, Rules "E2457 a parameter that is not a JSON value; ... E2457 throw"; API "anything else, a `Secret` too, throws E2457 naming its position."
+// Spec: std.postgres, clause "An insert breaking a unique index is `postgres.constraint` naming it, `kind` `unique`; a `Secret` or `undefined` parameter throws E2457."
+// std.postgres, Errors "a unique, foreign key, check or not-null violation is `postgres.constraint`, data `{ constraint, kind }`, `kind` `unique`, `foreign`, `check` or `notNull`"
+// std.postgres, Rules "E2457 a parameter that is not a JSON value; ... E2457 throw"; API "anything else, a `Secret` too, throws E2457 naming its position."
 // Seed: 1337.
 // Assumption: E2457 is a thrown error whose `code` is "E2457" or whose message holds it; thrown by the `sql` tag or by the query, so tests await both inside one async function.
 // Assumption: "naming its position" is the 1-based number of the parameter (`$N`), shown in the message as its digits.

@@ -1,5 +1,5 @@
-// Spec: k.services, Conformance "From a third party, a 200 body `{ \"ok\": false, \"error\": { \"code\": \"keel.denied\", \"message\": \"x\" } }` against an `output` it fails is `api.decode`; a 403 with that body and no `errors[403]` is `api.status` 403 with `body: null`; neither is `api.network`."
-// Spec: k.services, Encoding "a third party's body shaped like one is data (a 2xx one failing `output` is `api.decode`; a non-2xx one, a 502 `keel.unreachable` too, `api.status`)"
+// Spec: k.services, clause "From a third party, a 200 body `{ \"ok\": false, \"error\": { \"code\": \"keel.denied\", \"message\": \"x\" } }` against an `output` it fails is `api.decode`; a 403 with that body and no `errors[403]` is `api.status` 403 with `body: null`; neither is `api.network`."
+// k.services, Encoding "a third party's body shaped like one is data (a 2xx one failing `output` is `api.decode`; a non-2xx one, a 502 `keel.unreachable` too, `api.status`)"
 // Seed: 1337. A ctx no `createApp` bound, so the origin is a third party. The 502 `keel.unreachable` case is the Encoding sentence's own.
 import { s } from "@keel/schema";
 import { endpoints, service } from "@keel/services";

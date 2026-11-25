@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.aria, Conformance "`option` renders `<li role="option" aria-selected="false">`; `tab` a `<button type="button" role="tab">`; `columnheader` a `<th scope="col">` and `dialog` a `<dialog>`, neither with a `role` attribute."
+// Spec: k.aria, clause "`option` renders `<li role=\"option\" aria-selected=\"false\">`; `tab` a `<button type=\"button\" role=\"tab\">`; `columnheader` a `<th scope=\"col\">` and `dialog` a `<dialog>`, neither with a `role` attribute."
 // Seed: 1337.
 // Roles paragraph (tag, ARIA props, `role` written only where it differs from the tag's implicit role) is covered by the extra tests below.
 import { createCtx } from "@keel/ctx";

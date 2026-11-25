@@ -1,5 +1,5 @@
-// Spec: std.postgres, Conformance "On a `pglite:` folder, a migration referencing a table that does not exist rejects the first `query` with its error; once another database on that folder makes the table, the next `query` on the same ctx applies the migration and answers."
-// Spec: std.postgres, Migrations "a failed pass keeps nothing ... Any other failure rejects that call. The next call, on that ctx or another, runs the pass again."
+// Spec: std.postgres, clause "On a `pglite:` folder, a migration referencing a table that does not exist rejects the first `query` with its error; once another database on that folder makes the table, the next `query` on the same ctx applies the migration and answers."
+// std.postgres, Migrations "a failed pass keeps nothing ... Any other failure rejects that call. The next call, on that ctx or another, runs the pass again."
 // Seed: 1337 (the inserted value is generated).
 // Assumption: database `a` (migration `insert into T values (v)`, T absent) and database `b` (migration `create table T (n int)`) share one `pglite:<folder>` and one real ctx; `fresh()` names both and T, so a shared Postgres is untouched.
 // Assumption: the rejection is a thrown error (not a `Result`) because "any other failure rejects that call".

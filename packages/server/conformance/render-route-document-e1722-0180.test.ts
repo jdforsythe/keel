@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.testing, Conformance "`app` with `state` or `shell` rejects E1722, `app` unrequested; W1723 fires on `renderRoute('f.page', { routes })` when a `node` deployable serves `f`, not with `app` nor for a `client` one."
-// Spec: k.testing, Rules "E1722 `renderRoute` given `app` with `state` or `shell`" (W1723 is packages/check/conformance/render-route-w1723-0180.test.ts).
+// Spec: k.testing, clause "`app` with `state` or `shell` rejects E1722, `app` unrequested; W1723 fires on `renderRoute('f.page', { routes })` when a `node` deployable serves `f`, not with `app` nor for a `client` one."
+// k.testing, Rules "E1722 `renderRoute` given `app` with `state` or `shell`" (W1723 is packages/check/conformance/render-route-w1723-0180.test.ts).
 // Seed: 1337 (no generated input beyond the two options). Pending: `renderRoute` has no `app` option yet.
 // ASSUMPTION: `state` is `[]` (a list of store, value pairs) and `shell` is `true` (return-support.ts); E1722 is the rejection's `code`, as E1720 is for `resumeDocument`.
 import { renderRoute } from "@keel/testing";

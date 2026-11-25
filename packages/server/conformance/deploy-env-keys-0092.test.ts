@@ -1,4 +1,4 @@
-// Spec: k.deploy Build, "`KEEL_ORIGIN` (optional ...) ... `KEEL_PEER_<NAME>` (`my-api`: `KEEL_PEER_MY_API`), an http(s) URL, required per other `node` deployable"
+// k.deploy Build, "`KEEL_ORIGIN` (optional ...) ... `KEEL_PEER_<NAME>` (`my-api`: `KEEL_PEER_MY_API`), an http(s) URL, required per other `node` deployable"
 // Seed 1337 (fc.assert below). Spawns the built `server.mjs` of a `keel build` fixture with two `node` deployables, `web` and `my-api`;
 // a port comes from a listener on port 0 (never 8080) and the child is stopped in a `finally`.
 import { spawn, spawnSync } from "node:child_process";

@@ -1,5 +1,5 @@
-// Spec: std.postgres, Conformance "`sql(S)`select ${"x'; drop table t"}` has `text` `select $1` and `params` `["x'; drop table t"]`; `sql(S)`a ${1} ${fragment`b ${2}`} ${3}` has `text` `a $1 b $2 $3`."
-// Spec: std.postgres, API "Each `${value}` is a parameter, never text, numbered `$1`, ... in template order; a `fragment` value is spliced, its own parameters numbered in place; nothing else is spliced."
+// Spec: std.postgres, clause "`sql(S)`select ${\"x'; drop table t\"}` has `text` `select $1` and `params` `[\"x'; drop table t\"]`; `sql(S)`a ${1} ${fragment`b ${2}`} ${3}` has `text` `a $1 b $2 $3`."
+// std.postgres, API "Each `${value}` is a parameter, never text, numbered `$1`, ... in template order; a `fragment` value is spliced, its own parameters numbered in place; nothing else is spliced."
 // Seed: 1337.
 // Assumption: `sql` and `fragment` are pure, so tests need no ctx; `Query<T>` is `{ text, params }`; `fragment` is a template tag whose value `sql` splices.
 import { s } from "@keel/schema";

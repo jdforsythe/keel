@@ -1,4 +1,4 @@
-// Spec: std.lists, Conformance "Under a sim ctx, `typeahead` of `b` then `a` within 500 ms makes the first option after the active one whose text starts `ba` active; a key 600 ms later starts a new buffer; `typeahead` of `ArrowDown` returns false."
+// Spec: std.lists, clause "Under a sim ctx, `typeahead` of `b` then `a` within 500 ms makes the first option after the active one whose text starts `ba` active; a key 600 ms later starts a new buffer; `typeahead` of `ArrowDown` returns false."
 // Seed: 1337. Assumptions in lists-support.ts. A `KeyInput` is `{ key, shift, alt, mod }` (k.aria).
 import { listChart } from "@keel/std-headless";
 import fc from "fast-check";

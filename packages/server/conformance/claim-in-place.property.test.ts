@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.claim, In place "During `resume` a MutationObserver sees under island roots no element or region comment removed and no element added, unless an island mismatches (E1253) or writes state; text may be replaced and empty anchors added. So content of several items (a component's, a fragment's, an op's branch or row) keeps each served element in its region. A `resumeDocument` handle's `detached()` counts those removed, put back or not."
+// k.claim, In place "During `resume` a MutationObserver sees under island roots no element or region comment removed and no element added, unless an island mismatches (E1253) or writes state; text may be replaced and empty anchors added. So content of several items (a component's, a fragment's, an op's branch or row) keeps each served element in its region. A `resumeDocument` handle's `detached()` counts those removed, put back or not."
 // Seed: 1337 (fc.assert below). Property: over random trees of components with one to four children, structural ops with
 // multi-child branches and rows, fragments and text, a served page resumes with no element or region comment removed, no element added,
 // each served element the same object in the same region, and `detached()` 0.

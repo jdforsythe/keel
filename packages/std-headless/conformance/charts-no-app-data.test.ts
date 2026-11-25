@@ -1,4 +1,4 @@
-// Spec: std.headless, Conformance "No chart's state or log holds a key, a text or a typed character after any widget flow in this section or std.options."
+// Spec: std.headless, clause "No chart's state or log holds a key, a text or a typed character after any widget flow in this section or std.options."
 // Seed: 1337.
 // @vitest-environment happy-dom
 // Assumptions: the harness leaves `stores()` holding the live widget chart instances (ids `headless.*`) until `dispose()`; keys, texts and typed characters

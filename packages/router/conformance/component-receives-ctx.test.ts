@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.router (Manifest) "`component` receives `{ params, search, data }` and a ctx: in a browser the router's, on the server the `createApp({ ctx })` object itself, the one its loaders get"; RFC 0162 D5 "route `component` and `errorElement` are components: both get `(props, ctx)`."
-// Spec: RFC 0162 Conformance diff: "A route page and its `errorElement` receive the router's ctx." Seed 1337.
+// k.router (Manifest) "`component` receives `{ params, search, data }` and a ctx: in a browser the router's, on the server the `createApp({ ctx })` object itself, the one its loaders get"; RFC 0162 D5 "route `component` and `errorElement` are components: both get `(props, ctx)`."
+// RFC 0162 Conformance diff: "A route page and its `errorElement` receive the router's ctx." Seed 1337.
 import { createCtx } from "@keel/ctx";
 import type { Ctx } from "@keel/ctx";
 import { createRouter, loader, manifest } from "@keel/router";

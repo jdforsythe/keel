@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.server Request flow, "GET with `accept: text/event-stream` to a live loader's route ... Other routes: 406."
+// k.server Request flow, "GET with `accept: text/event-stream` to a live loader's route ... Other routes: 406."
 // Seed 1337: no generated input.
 import { describe, expect, test } from "vitest";
 import { topology } from "@keel/server";

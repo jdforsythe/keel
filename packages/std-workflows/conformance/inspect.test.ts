@@ -1,5 +1,5 @@
 import { ok } from "@keel/schema";
-// Spec: std.workflows, Conformance "`workflows.instances` holds counts and no `data` value."
+// Spec: std.workflows, clause "`workflows.instances` holds counts and no `data` value."
 // Seed: 1337.
 // Assumption: as for std.jobs `jobs.queue`, the dev `/__keel/inspect` body has `sections['workflows.instances']` as `{ doc, value }`; its value holds, per workflow, a number per state; the test finds the object holding a `queued` or `hidden` key.
 // Assumption: a state with no instance may be absent or 0 in the counts.

@@ -1,4 +1,4 @@
-// Spec: k.reactive API "scope.run(fn) runs fn with that scope as owner, untracked (writes are still checked), and
+// k.reactive API "scope.run(fn) runs fn with that scope as owner, untracked (writes are still checked), and
 // returns its value"; Rules E1206 "run on a disposed scope"; Conformance "nodes created inside scope.run(fn) are
 // disposed with that scope; run on a disposed scope throws E1206; reads inside run do not register dependencies of
 // an enclosing effect".

@@ -1,6 +1,6 @@
-// Spec: k.shell, Conformance "`keel check` with a stub `plugins` entry `{ plugin: '@aaaaaaaa/bbbbbbbb', version: '10.20.30', need }`, `need` 24 `n`s: one E1572, `web: tauri needs @aaaaaaaa/bbbbbbbb 10.20.30 (<need>)` (71 units). `keel build --target tauri` with a `tools` entry of `tool` 30 `t`s, `need` 30 `n`s: one E1575, `<tool> missing or too old: needs <need>` (87)."
-// Spec: k.shell, Plugins "`plugin` at the exact `version`, `need` what uses it, the three at most 50 characters together."
-// Spec: k.shell, Rules "E1575 a shell build's tool missing or too old, `<tool> missing or too old: needs <need>`, the two at most 60 characters together"
+// Spec: k.shell, clause "`keel check` with a stub `plugins` entry `{ plugin: '@aaaaaaaa/bbbbbbbb', version: '10.20.30', need }`, `need` 24 `n`s: one E1572, `web: tauri needs @aaaaaaaa/bbbbbbbb 10.20.30 (<need>)` (71 units). `keel build --target tauri` with a `tools` entry of `tool` 30 `t`s, `need` 30 `n`s: one E1575, `<tool> missing or too old: needs <need>` (87)."
+// k.shell, Plugins "`plugin` at the exact `version`, `need` what uses it, the three at most 50 characters together."
+// k.shell, Rules "E1575 a shell build's tool missing or too old, `<tool> missing or too old: needs <need>`, the two at most 60 characters together"
 // Seed: 1337 (the split of each bound between its texts is generated; the projects are otherwise fixed).
 // Over a stub `@keel/std-tauri` (`shell-stub.ts`). ASSUMPTION: "(71 units)" and "(87)" are the length of the diag's whole `message`, which a clip (k.check Diagnostics) would end with `...`.
 import fc from "fast-check";

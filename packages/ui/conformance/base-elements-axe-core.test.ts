@@ -1,9 +1,10 @@
 // @vitest-environment happy-dom
-// Spec: k.ui Conformance, "Every base element rendered with only its required props has no axe violations". Seed: 1337 (no generated inputs; every case is enumerated).
+// Spec: k.ui, clause "Every base element rendered with only its required props has no axe violations."
+// k.ui Seed: 1337 (no generated inputs; every case is enumerated).
 // Real axe-core (not the 4-rule harness subset in @keel/testing). Rules run: WCAG 2.0/2.1/2.2 A and AA tags plus best-practice.
 // Disabled rules, all page-level (they depend on the surrounding page, not on the element under test):
-//   region, landmark-one-main, page-has-heading-one, landmark-no-duplicate-main, landmark-unique, landmark-complementary-is-top-level,
-//   landmark-main-is-top-level, landmark-banner-is-top-level, landmark-contentinfo-is-top-level, bypass, skip-link.
+// region, landmark-one-main, page-has-heading-one, landmark-no-duplicate-main, landmark-unique, landmark-complementary-is-top-level,
+// landmark-main-is-top-level, landmark-banner-is-top-level, landmark-contentinfo-is-top-level, bypass, skip-link.
 // `color-contrast` is disabled because happy-dom computes no layout or computed colors, so the rule cannot produce a verdict (E1804 covers contrast).
 import { createCtx } from "@keel/ctx";
 import { mount } from "@keel/runtime-dom";

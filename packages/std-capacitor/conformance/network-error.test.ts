@@ -1,4 +1,4 @@
-// Spec: std.shells, Conformance "A refused connection rejects with a `TypeError`, and a k.services call over it is `api.network`."
+// Spec: std.shells, clause "A refused connection rejects with a `TypeError`, and a k.services call over it is `api.network`."
 // Seed: 1337.
 // @vitest-environment happy-dom
 // Assumption: the stand-in native client rejects with a plain `Error` for a refused connection, so the driver is what makes it a `TypeError`; the ctx is `createCtx({ mode: 'shell', drivers })` (k.persist);

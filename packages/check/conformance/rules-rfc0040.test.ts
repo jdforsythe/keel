@@ -1,6 +1,6 @@
 // Seed 1337
-// Spec: k.router, Rules "E1501 string path where an `Href` is required" (the `navigate` half: any parameter typed `Href`).
-// Spec: k.testing, Rules "E1701 DOM selector or DOM query in a test (`querySelector`, `getByRole`, `container`)" (destructured).
+// k.router, Rules "E1501 string path where an `Href` is required" (the `navigate` half: any parameter typed `Href`).
+// k.testing, Rules "E1701 DOM selector or DOM query in a test (`querySelector`, `getByRole`, `container`)" (destructured).
 // RFC 0040 (backlog 0109). Links use a contract's `href(id)` (rfc:0157); the contract is declared here, as a value of the type its `href` has.
 import { fileURLToPath } from "node:url";
 import { check } from "@keel/check";

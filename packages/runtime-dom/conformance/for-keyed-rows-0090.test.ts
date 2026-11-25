@@ -4,7 +4,8 @@ import type { Signal } from "@keel/reactive";
 import { mount } from "@keel/runtime-dom";
 import { clone, list, template, text } from "@keel/runtime-dom/ops";
 // @vitest-environment happy-dom
-// Spec: k.component, Control flow and Conformance clause "Replacing `each` with new objects of the same keys keeps each surviving row's element and `document.activeElement`, and updates the changed row's text."
+// Spec: k.component, clause "Replacing `each` with new objects of the same keys keeps each surviving row's element and `document.activeElement`, and updates the changed row's text."
+// k.component Control flow and Conformance
 // RFC 0090, ADR-0113. Property seed: 1337.
 // ASSUMPTION: the compiled `For` is the `list` op from `@keel/runtime-dom/ops`: list(anchor, each, key, render(item, index), empty?),
 // where `item()` reads the row's current item. The hand-built `For` keeps its present behavior (RFC 0090 D3), so it is not tested here.

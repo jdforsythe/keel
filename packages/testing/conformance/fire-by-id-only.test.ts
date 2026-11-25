@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.testing, Harness "Tests address elements by id only."
+// k.testing, Harness "Tests address elements by id only."
 // Seed: 1337.
 import { render } from "@keel/testing";
 import * as fc from "fast-check";

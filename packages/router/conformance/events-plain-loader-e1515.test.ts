@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 // Spec: k.contract, clause "An `events: true` entry bound to a plain loader throws E1515; an async generator loader declared for a page, or an API GET without `events`, does not compile and `manifest` throws E1515."
-// Spec: RFC 0157 Conformance diff: "An `events: true` entry bound to a loader whose `fn` is not an async generator throws E1515; with one, the client iterates its yields." (the client half: packages/services/conformance/contract-events.test.ts) Seed 1337.
+// RFC 0157 Conformance diff: "An `events: true` entry bound to a loader whose `fn` is not an async generator throws E1515; with one, the client iterates its yields." (the client half: packages/services/conformance/contract-events.test.ts) Seed 1337.
 // Compile-time half of each "does not compile" claim: ./negative-types.test-d.ts; the calls here are untyped.
 import { loader, manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";

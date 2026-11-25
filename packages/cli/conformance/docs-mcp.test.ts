@@ -1,4 +1,4 @@
-// Spec: k.docs "The MCP tools include `docs`, not `spec`; `docs` on `{ id: 'k.cli' }` yields the records of `keel docs k.cli --format=json`."
+// Spec: k.docs, clause "The MCP tools include `docs`, not `spec`; `docs` on `{ id: 'k.cli' }` yields the records of `keel docs k.cli --format=json`."
 // The tool takes `format` like every command (k.cli: every command accepts --format); the default is compact, so the call passes json to compare records.
 // Seed: none. Red: the tool `docs` is absent and `spec` is still listed.
 import { mcp, run } from "@keel/cli";

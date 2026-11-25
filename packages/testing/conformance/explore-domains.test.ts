@@ -1,6 +1,6 @@
-// Spec: k.model, Conformance "A three-member enum, a boolean and an integer with `min` 0 and `max` 2 payload field give 3 × 2 × 3 payloads in the declared order; an `s.string()` field with no `payloads` entry is E1710 and runs no edge."
+// Spec: k.model, clause "A three-member enum, a boolean and an integer with `min` 0 and `max` 2 payload field give 3 × 2 × 3 payloads in the declared order; an `s.string()` field with no `payloads` entry is E1710 and runs no edge."
 // Seed: 1337.
-// Spec: k.model, Rules "E1710 transactions of several stores or repeated names, a `from` or `payloads` value that fails its schema, a transaction with no finite domain (message names it: give `payloads`), or a closed form missing a transaction or starting from a store with log entries."
+// k.model, Rules "E1710 transactions of several stores or repeated names, a `from` or `payloads` value that fails its schema, a transaction with no finite domain (message names it: give `payloads`), or a closed form missing a transaction or starting from a store with log entries."
 import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";
 import { invariant, store, transaction, tx } from "@keel/store";

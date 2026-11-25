@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.origins, Conformance "`img: { 'https://a.example': 'r', 'https://b.example': 'r' }` on a `node` deployable: its documents carry `img-src 'self' https://a.example https://b.example`, the rest as k.security; its JSON responses are unchanged."
-// Spec: k.origins, Policy "`img`, `font` and `connect` append theirs to `img-src`, `font-src` and `connect-src` after `'self'`"; "So do a `node` document in production and dev (Report-Only)"; "A response that is not a document keeps `default-src 'none'; frame-ancestors 'none'`."
+// Spec: k.origins, clause "`img: { 'https://a.example': 'r', 'https://b.example': 'r' }` on a `node` deployable: its documents carry `img-src 'self' https://a.example https://b.example`, the rest as k.security; its JSON responses are unchanged."
+// k.origins, Policy "`img`, `font` and `connect` append theirs to `img-src`, `font-src` and `connect-src` after `'self'`"; "So do a `node` document in production and dev (Report-Only)"; "A response that is not a document keeps `default-src 'none'; frame-ancestors 'none'`."
 // Seed 1337 (fc.assert below; sim ctx seed 1337).
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";

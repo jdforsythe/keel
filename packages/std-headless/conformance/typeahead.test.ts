@@ -1,4 +1,4 @@
-// Spec: std.options, Conformance "Typing `b`, `e` within 500 ms highlights the first option after the active one whose text starts with `be`; after 500 ms with no key a new buffer starts."
+// Spec: std.options, clause "Typing `b`, `e` within 500 ms highlights the first option after the active one whose text starts with `be`; after 500 ms with no key a new buffer starts."
 // Seed: 1337.
 // @vitest-environment happy-dom
 // Assumptions: time moves with `ctx.clock.advance(ms)` then `await t.settle()`; a buffer is cleared when 500 ms have passed since the last key (at 499 ms it is still held);

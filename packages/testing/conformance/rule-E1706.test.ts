@@ -1,4 +1,4 @@
-// Spec: k.ledger, Rules "E1706 ledger rung lower than committed, or unsafe count higher"
+// k.ledger, Rules "E1706 ledger rung lower than committed, or unsafe count higher"
 // Seed: 1337.
 import { ledgerDiff } from "@keel/testing";
 import { describe, expect, it } from "vitest";
