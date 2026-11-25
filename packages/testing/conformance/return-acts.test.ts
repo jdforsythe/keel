@@ -4,13 +4,17 @@
 // Spec: k.opening, clause "With no opening first, a `fire` `click` on a `Link` to `/auto` records `https://provider.example/a` in `documents()`; the link then sends one GET."
 // Spec: k.opening, clause "With no opening first, a `fire` `submit` of a valid `Form` whose action answers `ok(mount.href('/login/github'))` records `https://provider.example/a` in `documents()`; the link then sends one GET."
 // Spec: k.opening, clause "An opening at 0 ms (sim clock), then a second at 300000 ms with a `ctx.storage` whose `set` now fails, its `commit` still working: the link at 599999 ms sends one GET; delivered first at 600000 ms instead, it sends nothing."
-// Seed 1337 (the sim ctx's seed is 1337). Fixture: act-pages.ts (its own routes; the start request is a GET of /api/auth/login/github).
+// Spec: k.opening, clause "The link's GET answered 302 to `/private`, a page whose guard redirects every reader to `/auto`, records `https://provider.example/a` in `documents()` again; a second delivery of the link then sends nothing."
+// Spec: k.opening, clause "With no opening first, over any sequence of `fire` `keydown` `a`, `navigate('/private')` and deliveries of the link, each answered 302 to `/private`, a `navigate` records an opening unless a delivery was taken since the last act, and a delivery sends one GET exactly when an opening is pending, taking it."
+// Seed 1337 (fc.assert below; the sim ctx's seed is 1337). Fixture: act-pages.ts (its own routes; the start request is a GET of /api/auth/login/github).
+// ASSUMED: `/private` is `ac.private` of act-pages.ts, a page whose guard denies every reader and redirects to `ac.auto`; the property's model is return-acts-sequence.test.ts's with `navigate('/private')` for `navigate('/auto')`, each delivery answered 302 to `/private`.
 // ASSUMED: `fire(id, { type: "keydown", key })` carries the key; `fire(formId, { type: "submit" })` submits the Form with that id; `handle.navigate(path)` returns a promise or nothing.
 // ASSUMED: the link's own GET is answered 303 to `/` (opens nothing) unless a case says otherwise; a link not admitted sends no `net` request; documents() holds the provider URL as given.
 import { createCtx } from "@keel/ctx";
+import fc from "fast-check";
 import type { TestEvent } from "@keel/testing";
 import { afterEach, describe, expect, it } from "vitest";
-import { HOME_HREF, START, mount, routes } from "./act-pages.ts";
+import { HOME_HREF, PRIVATE_HREF, START, mount, routes } from "./act-pages.ts";
 import { PROVIDER, SCHEME, SEED, closeAll, openShellOver, redirect, ticks } from "./return-support.ts";
 import type { Answer } from "./return-support.ts";
 
@@ -113,5 +117,63 @@ describe("k.opening: the older pending opening stays when the set fails", () => 
 
   it("an opening at 0 ms, then a second at 300000 ms with a ctx.storage whose set now fails, its commit still working: delivered first at 600000 ms, the link sends nothing", async () => {
     expect(await linkAt(600000)).toBe(0);
+  });
+});
+
+describe("k.opening: a guard's redirect to a page that navigates to the mount on render", () => {
+  it("The link's GET answered 302 to `/private`, a page whose guard redirects every reader to `/auto`, records `https://provider.example/a` in `documents()` again; a second delivery of the link then sends nothing.", async () => {
+    const { handle, sent } = await openShellOver(routes, "ac.home", (s, i) =>
+      s.url === CB_PATH ? redirect(302, "/private") : base(s, i),
+    );
+    await opening(handle);
+    expect(providerDocs(handle)).toBe(1);
+    await handle.returnLink(CALLBACK);
+    await ticks();
+    expect(providerDocs(handle)).toBe(2);
+    expect(callbacks(sent)).toBe(1);
+    await handle.returnLink(CALLBACK);
+    await ticks();
+    expect(callbacks(sent)).toBe(1);
+    handle.dispose();
+  });
+
+  it("With no opening first, over any sequence of `fire` `keydown` `a`, `navigate('/private')` and deliveries of the link, each answered 302 to `/private`, a `navigate` records an opening unless a delivery was taken since the last act, and a delivery sends one GET exactly when an opening is pending, taking it.", async () => {
+    type Op = "key" | "private" | "link";
+    await fc.assert(
+      fc.asyncProperty(
+        fc.array(fc.constantFrom<Op>("key", "private", "link"), { minLength: 1, maxLength: 14 }),
+        async (ops) => {
+          closeAll();
+          const { handle, sent } = await openShellOver(routes, "ac.home", (s) =>
+            s.url === START ? redirect(302, PROVIDER) : redirect(302, "/private"),
+          );
+          let pending = false;
+          let linkStarted = false;
+          let gets = 0;
+          for (const op of ops) {
+            await handle.navigate(HOME_HREF);
+            await ticks();
+            if (op === "key") {
+              await handle.fire("ac.home.field", { type: "keydown", key: "a" });
+              linkStarted = false;
+            } else if (op === "private") {
+              await handle.navigate(PRIVATE_HREF);
+              if (!linkStarted) pending = true;
+            } else {
+              await handle.returnLink(CALLBACK);
+              if (pending) {
+                gets += 1;
+                pending = false;
+                linkStarted = true;
+              }
+            }
+            await ticks();
+            expect(callbacks(sent)).toBe(gets);
+          }
+          handle.dispose();
+        },
+      ),
+      { seed: SEED, numRuns: 40 },
+    );
   });
 });

@@ -1,5 +1,7 @@
-// Spec: k.user, Rules "E1579 `identity.server.ts` without a default `identity(...)` export, or a `handle.path` not of lowercase `/` segments, or with a route of any deployable at or under it (`keel check`, `keel build`; `createApp` throws it). Fix: none."
+// Spec: k.user, Rules "E1579 `identity.server.ts` without a default `identity(...)` export, or a `handle.path` (a literal, or `identity.ts`'s through `.path`) not of lowercase `/` segments, or at or under `/assets`, where a built client's files are served (k.deploy), or with a route of any deployable at or under it (`keel check`, `keel build`; `createApp` throws it). The `/assets` one is at `identity.server.ts`'s first line: `handle.path <p> is at or under /assets (built files)`, `<p>` the path's JSON text cut to 40 units (89)"
+// Spec: k.user, Conformance "For every `handle.path` `p` of lowercase `/` segments and no route at or under it, `keel check`, `keel build` and `createApp` each report E1579 exactly when `p` is `/assets` or begins `/assets/`: `/assets` and `/assets/auth` give one each, `/assetsx` and `/api/assets` none; the same holds for `p` given as `identity.ts`'s `.path`."
 // Seed 1337 (fc.assert below). ASSUMPTION: createApp rejects with an error whose message holds the code, as e1553-static-params.test.ts assumes.
+// Untestable here: createApp's thrown text for the `/assets` case is not stated by the spec text, so only the code is asserted; `keel check` and `keel build` are packages/check/conformance/identity-e1579-assets.test.ts and packages/cli/conformance/identity-e1579-assets-build.test.ts.
 // @vitest-environment node
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
@@ -40,5 +42,25 @@ describe("k.user: createApp throws E1579", () => {
   test("`createApp` with `handle.path` `/auth` beside a route `/app` does not throw", async () => {
     const app = await boot("/auth", "/app");
     expect(typeof app.fetch).toBe("function");
+  });
+
+  test("with no route at or under it, `createApp` throws E1579 for a `handle.path` exactly when it is `/assets` or begins `/assets/`: `/assets` and `/assets/auth` throw, `/assetsx` and `/api/assets` do not", async () => {
+    await expect(boot("/assets", "/zz")).rejects.toThrow(/E1579/);
+    await expect(boot("/assets/auth", "/zz")).rejects.toThrow(/E1579/);
+    expect(typeof (await boot("/assetsx", "/zz")).fetch).toBe("function");
+    expect(typeof (await boot("/api/assets", "/zz")).fetch).toBe("function");
+    await fc.assert(
+      fc.asyncProperty(
+        fc.constantFrom("assets", "assetsx", "api", "my-assets"),
+        fc.array(fc.stringMatching(/^[a-z]{1,5}$/), { maxLength: 3 }),
+        async (head, rest) => {
+          const p = `/${[head, ...rest].join("/")}`;
+          const refused = p === "/assets" || p.startsWith("/assets/");
+          if (refused) await expect(boot(p, "/zz")).rejects.toThrow(/E1579/);
+          else expect(typeof (await boot(p, "/zz")).fetch).toBe("function");
+        },
+      ),
+      { seed: SEED, numRuns: 20 },
+    );
   });
 });
