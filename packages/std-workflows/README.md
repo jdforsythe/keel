@@ -28,7 +28,7 @@ Uses the **module manifest** (k.module: stdlib module `workflows`), an **inspect
 
 ## Unsafe
 
-count: 1
+count: 3
 - `unsafe/looseChart.ts`: the chart's `next` and `taken` are called with an event name from its `events` and that event's parsed payload.
-
-The per-event transaction table is typed with std.statecharts' `asEvents` (`@keel/std-statecharts/internal`).
+- `unsafe/refuse.ts`: the throws std.workflows specifies at declaration (E2352, E2355).
+- `unsafe/asEvents.ts`: the per-event transaction table is typed by each event's payload schema.

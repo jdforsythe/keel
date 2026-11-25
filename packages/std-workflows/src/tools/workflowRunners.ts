@@ -1,5 +1,5 @@
 import { type Finding, type RuleDef, defineRule } from "@keel/check";
-import { callsOf, lineCol, moduleFile, runnersEdits } from "@keel/std-jobs/tools/internal";
+import { callsOf, lineCol, moduleFile, runnersEdits } from "@keel/std-jobs/tools";
 import { cut } from "./internal/cut.ts";
 import { importsOf } from "./internal/importsOf.ts";
 

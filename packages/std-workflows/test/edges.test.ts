@@ -10,9 +10,9 @@ import { tx } from "@keel/store";
 import fc from "fast-check";
 import { parseSync } from "oxc-parser";
 import { expect, test } from "vitest";
-import { nextId, sim } from "../conformance/fixtures.ts";
 import { workflow } from "../src/index.ts";
 import { stepState, undoneStep } from "../src/tools/index.ts";
+import { nextId, sim } from "./support.ts";
 
 const empty = s.object({});
 
@@ -210,10 +210,10 @@ const guarded = () =>
 async function entered(self: boolean, stay: boolean): Promise<number> {
   const wf = workflow(nextId("pick"), { chart: guarded() });
   const r = await commitStores(sim(), wf.stores, (S) => {
-    tx(S.start, { id: "f", data: { self: false, stay: false } });
-    tx(S.events.go, { id: "f", payload: {} });
-    tx(S.events.set, { id: "f", payload: { self, stay } });
-    tx(S.events.pick, { id: "f", payload: {} });
+    void tx(S.start, { id: "f", data: { self: false, stay: false } });
+    void tx(S.events.go, { id: "f", payload: {} });
+    void tx(S.events.set, { id: "f", payload: { self, stay } });
+    void tx(S.events.pick, { id: "f", payload: {} });
     return ok(S.store.get("instances").f?.entered ?? -1);
   });
   if (!r.ok) throw new Error(r.error.code);

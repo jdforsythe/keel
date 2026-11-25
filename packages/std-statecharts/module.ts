@@ -6,6 +6,17 @@ export default module({
   deps: [],
   capabilities: [],
   public: {
-    exports: ["Chart", "chart", "ChartInstance", "ChartSpec", "ChartState", "Coverage", "coverage", "instance", "StateSpec", "Target"],
+    exports: [
+      "Chart",
+      "chart",
+      "ChartInstance",
+      "ChartSpec",
+      "ChartState",
+      "Coverage",
+      "coverage",
+      "instance",
+      "StateSpec",
+      "Target",
+    ],
   },
 });

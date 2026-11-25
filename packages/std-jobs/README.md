@@ -27,4 +27,5 @@ Uses the **module manifest** (k.module: stdlib module `jobs` and `std` config `{
 
 ## Unsafe
 
-count: 0
+count: 1
+- `unsafe/refuse.ts`: the throws std.jobs specifies at declaration (E2503, E2505), an unknown job id and a stored value that is not a queue.

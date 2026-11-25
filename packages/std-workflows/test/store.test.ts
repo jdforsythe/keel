@@ -5,8 +5,8 @@ import { commitStores, createApp, topology } from "@keel/server";
 import { queue } from "@keel/std-jobs";
 import { tx } from "@keel/store";
 import { expect, test } from "vitest";
-import { close, nextId, pass, removalChart, settle, sim } from "../conformance/fixtures.ts";
 import { flows, workflow } from "../src/index.ts";
+import { close, nextId, pass, removalChart, settle, sim } from "./support.ts";
 
 const data = { n: 0, freed: 0, code: "" };
 
@@ -18,8 +18,8 @@ test("`start` past `limit` instances not final fails `store.invariant`", async (
       const t = tx(S.start, { id, data });
       return t.ok ? "ok" : t.error.code;
     });
-    tx(S.events.hide, { id: "a", payload: {} });
-    tx(S.events.expired, { id: "a", payload: {} });
+    void tx(S.events.hide, { id: "a", payload: {} });
+    void tx(S.events.expired, { id: "a", payload: {} });
     const after = tx(S.start, { id: "c", data });
     return ok([...codes, after.ok ? "ok" : after.error.code]);
   });
@@ -40,14 +40,14 @@ test("A final instance is forgotten `keepMs` after the runner saw it; `forget` l
     const r = await commitStores(ctx, wf.stores, (S) => ok(Object.keys(S.store.get("instances"))));
     return r.ok ? r.value : [];
   };
-  await commitStores(ctx, wf.stores, (S) => {
-    tx(S.start, { id: "gone", data });
-    tx(S.start, { id: "open", data });
-    tx(S.forget, { id: "open" });
-    tx(S.events.hide, { id: "gone", payload: {} });
-    tx(S.events.expired, { id: "gone", payload: {} });
+  void (await commitStores(ctx, wf.stores, (S) => {
+    void tx(S.start, { id: "gone", data });
+    void tx(S.start, { id: "open", data });
+    void tx(S.forget, { id: "open" });
+    void tx(S.events.hide, { id: "gone", payload: {} });
+    void tx(S.events.expired, { id: "gone", payload: {} });
     return ok(null);
-  });
+  }));
   await settle();
   await pass(ctx, 9000);
   expect(await rows()).toEqual(["gone", "open"]);

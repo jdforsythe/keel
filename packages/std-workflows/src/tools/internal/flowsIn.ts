@@ -1,4 +1,4 @@
-import { callsOf, propOf } from "@keel/std-jobs/tools/internal";
+import { callsOf, propOf } from "@keel/std-jobs/tools";
 import type { Ast } from "./Ast.ts";
 import type { Flow } from "./Flow.ts";
 import { importsOf } from "./importsOf.ts";

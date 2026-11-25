@@ -1,4 +1,4 @@
-import { chartCalls, literalShape, unwrap } from "@keel/std-statecharts/tools/internal";
+import { chartCalls, literalShape, unwrap } from "@keel/std-statecharts/tools";
 import type { Ast } from "./Ast.ts";
 import type { Flow } from "./Flow.ts";
 

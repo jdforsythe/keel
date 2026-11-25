@@ -9,8 +9,8 @@ import { chart } from "@keel/std-statecharts";
 import { tx } from "@keel/store";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { type Sim, close, nextId, pass, sim } from "../conformance/fixtures.ts";
 import { flows, workflow } from "../src/index.ts";
+import { type Sim, close, nextId, pass, sim } from "./support.ts";
 
 const empty = s.object({});
 
@@ -99,11 +99,11 @@ async function launch(ctx: Sim, f: Poll, first: "go" | "nap", max: number) {
     runners: { api: [f.jobs, flows(f.jobs, [f.wf])] },
   });
   const id = ctx.random.id("Flow");
-  await commitStores(ctx, f.wf.stores, (S) => {
-    tx(S.start, { id, data: { n: 0, max, marks: 0 } });
-    tx(S.events[first], { id, payload: {} });
+  void (await commitStores(ctx, f.wf.stores, (S) => {
+    void tx(S.start, { id, data: { n: 0, max, marks: 0 } });
+    void tx(S.events[first], { id, payload: {} });
     return ok(null);
-  });
+  }));
   return { app, id };
 }
 
@@ -164,16 +164,16 @@ test("A target with no `to`, or a guarded self target not taken, stays in the en
   const ctx = sim();
   const r = await commitStores(ctx, f.wf.stores, (S) => {
     const id = "f1";
-    tx(S.start, { id, data: { n: 0, max: 3, marks: 0 } });
-    tx(S.events.go, { id, payload: {} });
-    tx(S.attempt, { id, entered: 1 });
+    void tx(S.start, { id, data: { n: 0, max: 3, marks: 0 } });
+    void tx(S.events.go, { id, payload: {} });
+    void tx(S.attempt, { id, entered: 1 });
     const at = () => structuredClone(S.store.get("instances")[id]);
     const before = at();
-    tx(S.events.note, { id, payload: {} });
+    void tx(S.events.note, { id, payload: {} });
     const noted = at();
-    tx(S.events.probe, { id, payload: {} });
+    void tx(S.events.probe, { id, payload: {} });
     const probed = at();
-    tx(S.events.tick, { id, payload: {} });
+    void tx(S.events.tick, { id, payload: {} });
     return ok({ before, noted, probed, ticked: at() });
   });
   if (!r.ok) throw new Error(r.error.code);

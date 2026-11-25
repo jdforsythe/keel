@@ -2630,9 +2630,16 @@ importers:
 
   packages/std-workflows:
     dependencies:
+      oxc-parser:
+        specifier: ^0.157.0
+        version: 0.157.0
+    devDependencies:
       '@keel/check':
         specifier: workspace:*
         version: link:../check
+      '@keel/cli':
+        specifier: workspace:*
+        version: link:../cli
       '@keel/compiler':
         specifier: workspace:*
         version: link:../compiler
@@ -2654,10 +2661,6 @@ importers:
       '@keel/store':
         specifier: workspace:*
         version: link:../store
-      oxc-parser:
-        specifier: ^0.157.0
-        version: 0.157.0
-    devDependencies:
       '@keel/testing':
         specifier: workspace:*
         version: link:../testing

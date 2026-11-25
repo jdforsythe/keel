@@ -1,5 +1,5 @@
 import { type Finding, type RuleDef, defineRule } from "@keel/check";
-import { callsOf, lineCol, propOf } from "@keel/std-jobs/tools/internal";
+import { callsOf, lineCol, propOf } from "@keel/std-jobs/tools";
 import { entryError } from "../internal/entryError.ts";
 
 /**
