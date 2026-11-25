@@ -44,7 +44,7 @@ describe("k.testing: a property failing at a seed reports that seed; re-running 
   });
 
   it("the reported seed, set as KEEL_SEED, reproduces the same shrunk case", async () => {
-    const first = messageOf(await thrown(() => properties(addAny, { runs: 100 })));
+    const first = messageOf(await thrown(() => properties(addAny, { runs: 100, seed: SEED })));
     const seed = /seed (-?\d+)/.exec(first)?.[1];
     expect(seed).toBeDefined();
     if (seed === undefined) return;
