@@ -28,7 +28,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | id | section | status | one line |
 |-|-|-|-|
 | k.schema | Schemas | conformance-covered | codecs |
-| k.formats | Format types | implemented | brands |
+| k.formats | Format types | conformance-covered | brands |
 | k.reactive | Reactivity | conformance-covered | signals |
 | k.store | Store, transactions | conformance-covered | log |
 | k.component | Components | conformance-covered | props |

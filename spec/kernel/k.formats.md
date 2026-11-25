@@ -1,5 +1,5 @@
 # k.formats: Format types
-status: implemented
+status: conformance-covered
 A format type narrows a schema (k.schema) by a predicate. Format types are declared in libraries (k.library): the stdlib's dates, text and messages are format types; app code declares none (E1106, k.schema).
 
 **Who declares.** E1106 reports `s.format` in app code (k.check App code) but in a library's files: those under `src/` and `unsafe/` of a package folder whose `package.json` has `"keel": "library"` and a scoped name (k.library Kind), whether an app holds the library installed or linked, or `keel check` reads its own folder (k.library-pack Own folder). Every other rule reads such a file as `modules/<id>/<f>`; E1106 alone reads it as the library's. Any other file of such a folder, one under `modules/` among them, is the project's and keeps the rule. Test code is no app code, so `s.format` in a test file, an app's or a library's (its `test/` folder or a co-located `*.test.*`), is no E1106.
