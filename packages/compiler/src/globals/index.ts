@@ -4,6 +4,8 @@
 // compares `.keel/` files by, and the static reading of a contract the routes.json reader (W1005) and E1111 share.
 // Not app-facing.
 export { clientReach } from "../internal/clientReach.ts";
+export type { Resolve } from "../internal/Resolve.ts";
+export { relativeResolve } from "../internal/relativeResolve.ts";
 export { globalRefs } from "./globalRefs.ts";
 export type { Ref } from "./Ref.ts";
 export { references } from "./references.ts";

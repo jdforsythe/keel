@@ -123,7 +123,7 @@ function compileFiles(files: readonly SourceFile[], options: CompileOptions): Co
   diagnostics.push(...duplicateIds(done));
   // E1004 (k.boundary Reach): a server-only import in client-reachable code, with the chain from a client entry.
   const byPath = new Map(done.map((d) => [d.a.path, d.a]));
-  for (const h of clientReach([...byPath.values()], options.topology).hits) {
+  for (const h of clientReach([...byPath.values()], options.topology, options.resolve).hits) {
     const a = byPath.get(h.path);
     if (a !== undefined) diagnostics.push(diag(a, "E1004", h.start, reachMessage(h.chain, h.file), "k.compiler"));
   }

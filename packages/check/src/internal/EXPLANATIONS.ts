@@ -95,6 +95,13 @@ const ROWS: readonly Row[] = [
     "k.bundle",
   ],
   [
+    "E1015",
+    "a relative specifier resolving outside the project",
+    "keel check reads the project's files only, so no rule (E1004, E1107, E1111, E1571) follows that file.",
+    "move the file into the project, or publish it as a workspace package",
+    "k.boundary",
+  ],
+  [
     "W1012",
     "a project root holding index.html: Keel writes every document and never reads the file",
     "Dev and build write each document's head, so what the file held would show nowhere: markup, scripts, stylesheets.",

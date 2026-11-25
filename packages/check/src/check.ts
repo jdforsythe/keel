@@ -25,8 +25,11 @@ import { isCodePath } from "./internal/isCodePath.ts";
 import { isSqlPath } from "./internal/isSqlPath.ts";
 import { moduleChecks } from "./internal/modules/moduleChecks.ts";
 import { normalize } from "./internal/normalize.ts";
+import { outsideImports } from "./internal/outsideImports.ts";
 import { parseFile } from "./internal/parseFile.ts";
 import { placedWithoutRoutes } from "./internal/placedWithoutRoutes.ts";
+import { projectRoots } from "./internal/projectRoots.ts";
+import { reachResolve } from "./internal/reachResolve.ts";
 import { registerNames } from "./internal/registerNames.ts";
 import { ruleCodeDeclarations } from "./internal/ruleCodeDeclarations.ts";
 import { ruleInScope } from "./internal/ruleInScope.ts";
@@ -120,13 +123,15 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
       if (isCodePath(f.path) && !members.has(f.path) && dirs.find((d) => f.path.startsWith(d)) === dir)
         members.set(f.path, f);
     const project = Object.freeze([...members.values()]);
+    projectRoots.set(project, path.resolve(opts.root ?? process.cwd()));
     for (const f of group) projectOf.set(f.path, project);
     const topology = topologyOf(dir, all, opts);
     const sources = group.map((f) => ({ path: f.path.slice(dir.length), source: f.source }));
     const top = all.find((f) => f.path === `${dir}topology.ts`)?.source;
     // E1004 reads placement from the project's own `topology.ts` when the caller passes none (k.boundary Reach).
     const placed = topology ?? (top === undefined ? undefined : parseTopology(top).topology);
-    const compiled = compile(sources, placed === undefined ? {} : { topology: placed });
+    const resolve = reachResolve(project, dir, new Set(sources.map((f) => f.path)));
+    const compiled = compile(sources, placed === undefined ? { resolve } : { topology: placed, resolve });
     if (topology !== undefined) {
       const evaluated = all.find((f) => f.path === `${dir}.keel/routes.json`)?.source;
       out.push(...apiWithoutServer(dir, sources, topology, path.join(opts.root ?? process.cwd(), dir), top, evaluated));
@@ -200,6 +205,7 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
     ...chainStoreIds(checked, dirs, all),
     ...moduleChecks(checked),
     ...aliasedImports(checked, path.resolve(opts.root ?? process.cwd()), dirs),
+    ...outsideImports(checked, path.resolve(opts.root ?? process.cwd()), dirs),
     ...guardRedirectLoops(checked),
     ...contractChecks(checked, all, opts.topology),
     ...ruleCodeDeclarations(checked),
