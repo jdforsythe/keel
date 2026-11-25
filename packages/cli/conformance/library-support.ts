@@ -110,3 +110,16 @@ import { contract } from "@keel/router/contract";
 const charts = contract("charts", { "charts.about": { path: "/about" } });
 export const routes = manifest(charts, { "charts.about": { component: () => null } });
 `;
+
+/** The app's `tokens.ts` of the `site` project: a color pair and the space scale `p="2"` reads. */
+export const TOKENS =
+  'import { defineTokens } from "@keel/ui";\nexport const tokens = defineTokens({ color: { fg: "#111111", bg: "#ffffff" }, space: { 1: "4px", 2: "8px", 3: "16px" } });\n';
+
+/** The `site` project of the second Conformance clause of k.library: `project` with a `static` deployable `site` whose `/` page renders `<Badge id="shop.badge" />`, and the app's `tokens.ts`. */
+export const siteTree = (libraries?: Tree[]): Tree => ({
+  ...project({ adapter: "static", home: true, ...(libraries === undefined ? {} : { libraries }) }),
+  "tokens.ts": TOKENS,
+});
+
+/** The library's `src/Badge.tsx` in a project tree. */
+export const BADGE_PATH = `${LIB}/src/Badge.tsx`;

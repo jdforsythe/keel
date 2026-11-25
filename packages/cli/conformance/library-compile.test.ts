@@ -1,22 +1,25 @@
 // Spec: k.library, the clauses on the app compiling and checking a library's files, each quoted whole:
 // 1. "In a project whose `modules/shop/module.ts` lists `'@acme/charts'` in `deps`, whose `node_modules/@acme/charts/` holds `package.json` `{\"name\":\"@acme/charts\",\"version\":\"1.0.0\",\"type\":\"module\",\"keel\":\"library\",\"exports\":{\".\":{\"keel\":\"./src/index.ts\",\"default\":\"./index.js\"}}}`, `index.js` holding `export {}`, a `module.ts` with `id: 'charts'`, `deps: []`, `capabilities: []` and `public: { exports: ['Badge'] }`, `src/index.ts` holding `export { default as Badge } from './Badge.tsx'`, `src/Badge.tsx` whose `Badge` renders `<Box id={`${props.id}.box`} p=\"2\" />`, and `.keel/ledger.json` as `keel ledger --write .keel/ledger.json` writes it in that folder, and whose `modules/shop/Page.tsx` imports `Badge` from `'@acme/charts'` and renders `<Badge id=\"shop.badge\" />`, `keel check` reports no diagnostic."
-// 2. "In that project, the page `keel build` renders holds an element with id `shop.badge.box`, and the app's CSS file holds its padding rule."
+// 2. "In that project, with the app's `tokens.ts` and a `static` deployable `site` whose `/` page renders `<Badge id=\"shop.badge\" />`, `keel build`'s `dist/site/index.html` holds an element with id `shop.badge.box`, and a `.css` file under `dist/site/` holds the atomic rule of `p=\"2\"`, which the same build without `p=\"2\"` in the library lacks."
 // 4. "In that project, with `node_modules/@acme/charts` a symbolic link to a folder beside the project holding the same files, `<box />` in its `src/Badge.tsx` is one E1805 at `node_modules/@acme/charts/src/Badge.tsx`."
-// Spec: k.library In an app (the prose the clauses rest on), "A diagnostic in a library file is the app's: located at `node_modules/<name>/<f>`, whichever `node_modules` holds it, and carrying no `fix`." and "`keel check` reads them and runs every rule over them, its type pass included".
-// Real binary over a temporary project (library-support.ts); no std package is imported: the library is written by the test. Seed 1337.
-// ASSUMPTIONS (spec silent): "the page `keel build` renders" is `dist/site/index.html` of a `static` deployable `site` whose `/` page (`modules/shop/Home.tsx`) renders the Badge;
-// "the app's CSS file" is the `.css` files under `dist/`; "its padding rule" is a `padding` declaration there, which the same build without `p="2"` in the library does not write (the fixture app uses none).
-// A folder "beside the project" is `<project>-lib`; it gets a `node_modules/@keel` link so its files resolve `@keel/ui` from their real path, as a workspace package does.
-// Untested here (no Conformance sentence): the `keel` condition on dev and `keel test`; the build and check cases cover the condition and the type pass.
+// In an app (compiler): "The compiler resolves imports with the `keel` condition on every surface (dev, build, test) and transforms a library's files as the app's, read at `modules/<id>/<f>`: JSX, element ids, and style props into the app's CSS file against the app's `tokens.ts`; the `.keel/` artifacts derive from a library's files at those paths as from the app's, and E1005 compares them over the same files, so a reader of an artifact (E1702, the inspector) judges a library's element as an app's. A linked library's imports resolve from its real folder, as Node's do, so the kernel packages it imports must resolve there to the app's (one workspace install)."
+// In an app (check): "`keel check` reads them and runs every rule over them, its type pass included, against the app's `tokens.ts`, kernel packages and `topology.ts`. Wherever a section reads app code or a file under `modules/<id>/` (k.check App code, k.boundary Reach), it reads a library's file `<f>` as it reads `modules/<id>/<f>`, `<id>` the library's, and its `unsafe/` files with their lifted ranges; a section's exclusion of `node_modules/` does not cover library files. A diagnostic in a library file is the app's: located at `node_modules/<name>/<f>`, whichever `node_modules` holds it, and carrying no `fix`. Nothing in the app turns a rule off for a library file. A bare import there is read as in an app file and resolves from the library's folder, so its package is one of the library's `dependencies`; it is no E1163."
+// Real binary over a temporary project (library-support.ts); no std package is imported: the library is written by the test. Seed 1337 (every property).
+// Binary runs: 2 builds shared by the build cases (with and without `p="2"` in the library), 1 build of the linked library, 1 check shared by the six smuggled-file cases, 6 other checks (clause 1 and its
+// property of 3 runs, the linked library twice, the folder case).
+// ASSUMPTIONS (spec silent): "the atomic rule of `p=\"2\"`" is the rule of each class the library's element with id `shop.badge.box` carries in `dist/site/index.html` that the build without `p="2"` does not give it,
+// found in the `.css` files under `dist/site/` as `.<class>{...padding...}`; the tokens are `{ color: { fg, bg }, space: { 1, 2, 3 } }`. A folder "beside the project" is `<project>-lib`; it gets a `node_modules/@keel` link so its files
+// resolve `@keel/ui` from their real path, as a workspace package does (the spec: "one workspace install").
 import { mkdirSync, readFileSync, symlinkSync } from "node:fs";
 import { join } from "node:path";
 import fc from "fast-check";
-import { expect, test } from "vitest";
+import { afterAll, beforeAll, expect, test } from "vitest";
 import {
   LIB,
   NAME,
   SEED,
   SLOW,
+  siteTree,
   type Rec,
   type Tree,
   cleanup,
@@ -74,45 +77,59 @@ test(
   SLOW,
 );
 
-/** The `dist/site` page and every `.css` under `dist/` that `keel build` writes for a static project. */
-function builtSite(tree: Tree): { html: string; css: string } {
-  const dir = materialize(tree);
-  try {
-    const r = keel(dir, ["build"]);
-    expect(r.status).toBe(0);
-    const css = filesUnder(join(dir, "dist"))
-      .filter((p) => p.endsWith(".css"))
-      .map((p) => readFileSync(p, "utf8"))
-      .join("\n");
-    return { html: readFileSync(join(dir, "dist/site/index.html"), "utf8"), css };
-  } finally {
-    cleanup(dir);
-  }
+/** The `dist/site` page and every `.css` under `dist/site` that `keel build` writes for a static project. */
+function builtSite(dir: string): { status: number | null; html: string; css: string } {
+  const r = keel(dir, ["build"]);
+  const css = filesUnder(join(dir, "dist/site"))
+    .filter((p) => p.endsWith(".css"))
+    .map((p) => readFileSync(p, "utf8"))
+    .join("\n");
+  return { status: r.status, html: readFileSync(join(dir, "dist/site/index.html"), "utf8"), css };
 }
 
-const SITE = { adapter: "static", home: true } as const;
+/** The classes of the element with id `id` in `html`. */
+function classesOf(html: string, id: string): string[] {
+  const tag = [...html.matchAll(/<[a-z][^>]*>/g)].map((m) => m[0]).find((t) => t.includes(`id="${id}"`)) ?? "";
+  return (/\bclass="([^"]*)"/.exec(tag)?.[1] ?? "").split(/\s+/).filter((c) => c !== "");
+}
+const ruleOf = (css: string, cls: string): string | undefined =>
+  new RegExp(`\\.${cls.replace(/[^\w-]/g, "\\$&")}\\{[^}]*\\}`).exec(css)?.[0];
+
+let withP: ReturnType<typeof builtSite> | undefined;
+let without: ReturnType<typeof builtSite> | undefined;
+const dirs: string[] = [];
+beforeAll(() => {
+  const a = materialize(siteTree());
+  const b = materialize(siteTree([library({ files: { "src/Badge.tsx": badge("<Box id={`${props.id}.box`} />") } })]));
+  dirs.push(a, b);
+  withP = builtSite(a);
+  without = builtSite(b);
+}, SLOW);
+afterAll(() => {
+  for (const d of dirs) cleanup(d);
+});
 
 test(
-  "In that project, the page `keel build` renders holds an element with id `shop.badge.box`",
+  "In that project, with the app's `tokens.ts` and a `static` deployable `site` whose `/` page renders `<Badge id=\"shop.badge\" />`, `keel build`'s `dist/site/index.html` holds an element with id `shop.badge.box`",
   () => {
-    const { html } = builtSite(project(SITE));
-    expect(html).toContain('id="shop.badge.box"');
+    expect(withP?.status).toBe(0);
+    expect(withP?.html).toContain('id="shop.badge.box"');
+    expect(without?.status).toBe(0);
+    expect(without?.html).toContain('id="shop.badge.box"');
   },
   SLOW,
 );
 
 test(
-  "In that project, the app's CSS file holds the padding rule of the library's `p=\"2\"`, and holds none when the library's element has no `p`",
+  'In that project, with the app\'s `tokens.ts`, a `.css` file under `dist/site/` holds the atomic rule of `p="2"`, which the same build without `p="2"` in the library lacks',
   () => {
-    const withP = builtSite(project(SITE));
-    expect(withP.css).toMatch(/padding/);
-    const without = builtSite(
-      project({
-        ...SITE,
-        libraries: [library({ files: { "src/Badge.tsx": badge("<Box id={`${props.id}.box`} />") } })],
-      }),
-    );
-    expect(without.css).not.toMatch(/padding/);
+    const bare = new Set(classesOf(without?.html ?? "", "shop.badge.box"));
+    const own = classesOf(withP?.html ?? "", "shop.badge.box").filter((c) => !bare.has(c));
+    expect(own.length, 'classes the library\'s `p="2"` gives the element').toBeGreaterThan(0);
+    for (const cls of own) {
+      expect(ruleOf(withP?.css ?? "", cls), `rule of .${cls} with p`).toMatch(/padding/);
+      expect(ruleOf(without?.css ?? "", cls), `rule of .${cls} without p`).toBeUndefined();
+    }
   },
   SLOW,
 );
@@ -152,6 +169,20 @@ test(
 );
 
 test(
+  "In that project, with `node_modules/@acme/charts` a symbolic link to a folder beside the project holding the same files, `keel build` writes the page with `shop.badge.box` and the atomic rule of `p=\"2\"`: the library's imports resolve from its real folder to the app's kernel packages",
+  () => {
+    const out = linkedRun(siteTree(), (dir) => builtSite(dir));
+    expect(out.status).toBe(0);
+    expect(out.html).toContain('id="shop.badge.box"');
+    const bare = new Set(classesOf(without?.html ?? "", "shop.badge.box"));
+    const own = classesOf(out.html, "shop.badge.box").filter((c) => !bare.has(c));
+    expect(own.length).toBeGreaterThan(0);
+    for (const cls of own) expect(ruleOf(out.css, cls)).toMatch(/padding/);
+  },
+  SLOW,
+);
+
+test(
   "In that project, with `node_modules/@acme/charts` a symbolic link to a folder beside the project holding the same files, `<box />` in its `src/Badge.tsx` is one E1805 at `node_modules/@acme/charts/src/Badge.tsx`, with no fix",
   () => {
     const r = linkedRun(withBadge(badge("<box />")), (dir) => keel(dir, ["check"]));
@@ -179,7 +210,7 @@ test(
   SLOW,
 );
 
-// A library is where a third party's code enters an app: each smuggled file below is reported at the library's path, as the app's own file would be.
+// A library is where a third party's code enters an app: each smuggled file below is reported at the library's path, as the app's own file would be. One project holds all of them, one check reads it.
 const SMUGGLED: ReadonlyArray<readonly [string, string, string, string]> = [
   ["a cast outside unsafe/", "E1757", "src/cast.ts", "declare const v: unknown\nexport const x = v as string\n"],
   ["a type error the type pass finds", "E1751", "src/type.ts", "export const x: number = 'a'\n"],
@@ -203,24 +234,28 @@ const SMUGGLED: ReadonlyArray<readonly [string, string, string, string]> = [
     "import { serverState } from '@keel/store/internal'\nexport const x = serverState\n",
   ],
 ];
+let smuggledRun: Rec[] | undefined;
+const smuggled = (): Rec[] => {
+  if (smuggledRun !== undefined) return smuggledRun;
+  const dir = materialize({
+    ...project(),
+    ...Object.fromEntries(SMUGGLED.map(([, , file, source]) => [`${LIB}/${file}`, source])),
+  });
+  try {
+    smuggledRun = keel(dir, ["check"]).records.filter((x) => x.kind === "diag");
+    return smuggledRun;
+  } finally {
+    cleanup(dir);
+  }
+};
 
-for (const [what, code, file, source] of SMUGGLED) {
+for (const [what, code, file] of SMUGGLED) {
   test(
-    `In that project, ${what} in a library file is one ${code} at \`node_modules/@acme/charts/${file}\` from \`keel check\`, with no fix`,
+    `In that project, ${what} in a library file is reported ${code} at \`node_modules/@acme/charts/${file}\` from \`keel check\`, with no fix`,
     () => {
-      const hits = (() => {
-        const dir = materialize({ ...project(), [`${LIB}/${file}`]: source });
-        try {
-          return diags(keel(dir, ["check"]), code);
-        } finally {
-          cleanup(dir);
-        }
-      })();
+      const hits = smuggled().filter((x) => x.code === code && x.path === `${LIB}/${file}`);
       expect(hits.length).toBeGreaterThanOrEqual(1);
-      for (const h of hits) {
-        expect(h.path).toBe(`${LIB}/${file}`);
-        expect(h.fix).toBeUndefined();
-      }
+      for (const h of hits) expect(h.fix).toBeUndefined();
     },
     SLOW,
   );

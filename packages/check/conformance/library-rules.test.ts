@@ -3,14 +3,16 @@
 // 5. "In that project, `<Box p=\"2\" />`, `<Box id=\"box\" />`, `<Box id={`box`} />` and `Box({ p: '2' })` in `src/Badge.tsx` are each one E1161; `<Box id={`${props.id}.box`} />` and `<Box id={partId('box')} />`, `partId` a function of that file, are not."
 // 6. "In that project, a cast `x as string` in `src/Badge.tsx` is one E1757 at `node_modules/@acme/charts/src/Badge.tsx`, and an import of `@keel/store/internal` there is one E1576."
 // 7. "In that project, `import x from '../../outside.ts'` in `src/Badge.tsx` is one E1163 at the specifier."
-// Rules: E1161 "an element in a library file whose `id` is missing, a string literal, or a template literal without an expression (fix: none)"
-// Rules: E1163 "a library file whose relative import, re-export or literal `import()` resolves outside its package folder, at the specifier" (the manifest half is in library-manifest.test.ts)
-// In an app: "`keel check` reads them and runs every rule over them, its type pass included, ... a section's exclusion of `node_modules/` does not cover library files. A diagnostic in a library file is the app's: located at `node_modules/<name>/<f>`, whichever `node_modules` holds it, and carrying no `fix`. Nothing in the app turns a rule off for a library file."
+// Rules: "E1161 an element in a library file whose `id` is missing, a string literal, or a template literal without an expression (fix: none)"
+// Rules: "E1163 a library file whose relative import, re-export or literal `import()` resolves outside its package folder, at the specifier, or a library manifest `deps` entry that does not begin with `@`, at the entry (fix: none; the entry names no module, so it is no E1153 edge and no E1165)" (the manifest half is in library-manifest.test.ts)
+// In an app: "`keel check` reads them and runs every rule over them, its type pass included, against the app's `tokens.ts`, kernel packages and `topology.ts`. Wherever a section reads app code or a file under `modules/<id>/` (k.check App code, k.boundary Reach), it reads a library's file `<f>` as it reads `modules/<id>/<f>`, `<id>` the library's, and its `unsafe/` files with their lifted ranges; a section's exclusion of `node_modules/` does not cover library files. A diagnostic in a library file is the app's: located at `node_modules/<name>/<f>`, whichever `node_modules` holds it, and carrying no `fix`. Nothing in the app turns a rule off for a library file. A bare import there is read as in an app file and resolves from the library's folder, so its package is one of the library's `dependencies`; it is no E1163."
+// Ids: "**Ids.** Each `@keel/ui` base element (k.ui, `Host` among them) and `@keel/ui/aria` `Part` that a library file renders, as JSX or as a call, takes an `id` prop that is neither a string literal nor a template literal without an expression: it is built from its component's own `id` prop as `<id>.<part>` (k.component IDs), because a derived id holds the file's path, which changes with the installer and the version. Any other is E1161; an element with a spread and no `id`, or a call whose argument is no object literal, is not judged."
 // Seed 1337
 // ASSUMPTIONS (spec silent): `check()` is given the library's files at `node_modules/<name>/...` with its `package.json`, `module.ts` and ledger file, as library-manifest.test.ts does; "at the specifier" is the
-// specifier's line and a column from its opening quote to its closing one. A library file reads as `modules/charts/<f>`, so a fixture of the by-code table placed at `src/<basename>` reports its code (the table's
-// single-file fixtures are used; a fixture reporting E1161 or needing a sibling file is left out). `Part` is not in the public API of any package, so E1161 is asserted for `Box` and `Host`. Of a bare import of a package that
-// is no library, k.library says nothing (E1163 reads relative imports, re-exports and literal `import()` only): not asserted.
+// specifier's line and a column from its opening quote to its closing one. A library file reads as `modules/charts/<f>` ("it reads a library's file `<f>` as it reads `modules/<id>/<f>`"): the by-code table's one-file fixtures
+// (a fixture of one source file, its `modules/<x>/module.ts` manifest aside) are placed at `src/<basename>` in the library and, as the control, at `modules/charts/src/<basename>` in an app with the same other files.
+// `Part` is imported from `@keel/ui/aria`. Of a bare import's package, `check()` reads no disk: the cases here assert only that no E1163 is reported and what an app file would be refused for (library-imports.test.ts in the cli
+// package builds one with its package installed). The by-code E1161 and E1163 fixtures are the library-only rules (k.library Rules), E1162 and E1166 too: the one-file property allows them as extras in a library.
 import { check } from "@keel/check";
 import fc from "fast-check";
 import { expect, test } from "vitest";
@@ -140,6 +142,78 @@ test("E1161: a `Host` in a library file with no `id`, or a literal one, is one E
   expect(hitsOf(inBadge(host("id={`${props.id}.chart`}")), "E1161")).toEqual([]);
 });
 
+const PART = "import { Part } from '@keel/ui/aria'\n";
+const partIn = (body: string): string =>
+  `${PART}export default function Badge(props: { id: string }) {\n  return ${body}\n}\n`;
+
+test("E1161: a `Part` from `@keel/ui/aria` with no `id`, a string literal, a template literal without an expression, or called with a literal `id` is one E1161; one built from `props.id` is none", () => {
+  for (const body of ["<Part />", '<Part id="box" />', "<Part id={`box`} />", "Part({ id: 'box' })"]) {
+    const d = hitsOf(inBadge(partIn(body)), "E1161");
+    expect(d.length, body).toBe(1);
+    expect(d[0]?.path, body).toBe("node_modules/@acme/charts/src/Badge.tsx");
+    expect(d[0]?.fix, body).toBeUndefined();
+  }
+  expect(hitsOf(inBadge(partIn("<Part id={`${props.id}.box`} />")), "E1161")).toEqual([]);
+  expect(hitsOf(inBadge(partIn("Part({ id: `${props.id}.box` })")), "E1161")).toEqual([]);
+});
+
+test("E1161: each `@keel/ui` base element (`Host` among them), as JSX or as a call, with a literal `id` is one E1161", () => {
+  const BASES = [
+    "Box",
+    "Text",
+    "Button",
+    "Checkbox",
+    "Heading",
+    "Frame",
+    "Host",
+    "Image",
+    "Input",
+    "Link",
+    "Select",
+    "TextArea",
+  ];
+  fc.assert(
+    fc.property(fc.constantFrom(...BASES), fc.constantFrom("jsx", "call"), (el, form) => {
+      const lit = form === "jsx" ? `<${el} id="x" />` : `${el}({ id: 'x' })`;
+      const src = `import { ${el} } from '@keel/ui'\nexport default function Badge(props: { id: string }) {\n  return ${lit}\n}\n`;
+      expect(hitsOf(inBadge(src), "E1161").length, lit).toBe(1);
+    }),
+    { seed: SEED, numRuns: 48 },
+  );
+});
+
+test("E1161: an element with a spread and an `id` is judged by that `id`: a literal one is one E1161, a string literal in braces too", () => {
+  expect(hitsOf(inBadge(badge('<Box {...props} id="box" />')), "E1161").length).toBe(1);
+  expect(hitsOf(inBadge(badge("<Box id={'box'} />")), "E1161").length).toBe(1);
+  expect(hitsOf(inBadge(badge("<Box {...props} id={`${props.id}.box`} />")), "E1161")).toEqual([]);
+});
+
+test("E1161: an element with a spread and no `id`, or a call whose argument is no object literal, is not judged", () => {
+  const notJudged = [
+    badge("<Box {...props} />"),
+    badge("<Box {...{ id: 'box' }} />"),
+    badge("Box({ ...props })"),
+    `${UI}const args = { id: 'box' }\nexport default function Badge(props: { id: string }) {\n  return Box(args)\n}\n`,
+    badge("Box(props)"),
+  ];
+  for (const src of notJudged) expect(hitsOf(inBadge(src), "E1161"), src).toEqual([]);
+});
+
+// What keeps a literal id out of the shapes E1161 does not judge: k.library names nothing else. A red case is a hole in the gate (a literal id built into the file's derived id changes with the installer).
+test("a literal `id` reaching a base element through a spread of an object literal, or a call argument held in a variable, is reported by some rule at the library's path (HOLE if red: E1161 does not judge it and no rule of the spec does)", () => {
+  const smuggled = [
+    badge("<Box {...{ id: 'box' }} />"),
+    `${UI}const args = { id: 'box' }\nexport default function Badge(props: { id: string }) {\n  return Box(args)\n}\n`,
+  ];
+  for (const src of smuggled) {
+    const d = check(inBadge(src), {}).diagnostics.filter((x) => x.path === "node_modules/@acme/charts/src/Badge.tsx");
+    expect(
+      d.map((x) => x.code),
+      src,
+    ).not.toEqual([]);
+  }
+});
+
 test("E1161: the same elements in an app module's file are not E1161 (the rule reads library files)", () => {
   const files = [...project(), { path: "modules/shop/Plain.tsx", source: badge('<Box id="box" p="2" />') }];
   expect(hitsOf(files, "E1161").map((d) => d.path)).toEqual([]);
@@ -181,8 +255,33 @@ test("E1757: a cast reached only through a chain of re-exports is reported at th
   expect(d.map((x) => x.path)).toEqual(["node_modules/@acme/charts/src/deep/inner.ts"]);
 });
 
-// A library is where a third party's code enters an app: every rule reports in a library file as in an app's own. Each fixture below is the by-code table's single-file
-// fixture placed at `src/<basename>` in the library.
+// A library is where a third party's code enters an app: every rule reports in a library file as in an app's own. A by-code fixture of one source file (its `modules/<x>/module.ts`
+// manifest aside) is placed at `src/<basename>` in the library and, as the control, at `modules/charts/src/<basename>` in an app holding the same other files.
+type Fixture = (typeof CODE_FIXTURES)[string];
+const MANIFEST = /^modules\/[^/]+\/module\.ts$/;
+/** The one file of a one-file fixture (a lone file, or the one file beside its manifest), else undefined. */
+function theFile(fx: Fixture): { path: string; source: string } | undefined {
+  if (fx.bad.length === 1) return fx.bad[0];
+  const rest = fx.bad.filter((x) => !MANIFEST.test(x.path));
+  return rest.length === 1 ? rest[0] : undefined;
+}
+const optsOf = (fx: Fixture): Parameters<typeof check>[1] => fx.badOpts ?? fx.opts ?? {};
+
+/** The library project with `source` at `src/<base>`. */
+const inLibrary = (base: string, source: string): Files => project([lib(`src/${base}`, source)]);
+/** An app with the module `charts`: the library's own files at `modules/charts/<f>` (its package files left out) and `source` at `src/<base>`; the module `shop` lists no dependency. */
+function inApp(base: string, source: string): Files {
+  const root = `node_modules/${NAME}/`;
+  const moved = inLibrary(base, source)
+    .filter((x) => x.path.startsWith(root) && !/^(package\.json|index\.js|\.keel\/)/.test(x.path.slice(root.length)))
+    .map((x) => ({ path: `modules/charts/${x.path.slice(root.length)}`, source: x.source }));
+  return [manifestFile({ id: "shop" }), ...moved];
+}
+const codesAt = (files: Files, path: string, opts: Parameters<typeof check>[1]) => {
+  const d = check(files, opts).diagnostics.filter((x) => x.path === path);
+  return { codes: d.map((x) => x.code).sort(), fixes: d.filter((x) => x.fix !== undefined).length };
+};
+
 const SMUGGLED: ReadonlyArray<readonly [string, string]> = [
   ["a pii or secret read (reveal outside a server file)", "E1105"],
   ["an ambient capability (crypto.randomUUID)", "E1601"],
@@ -195,12 +294,10 @@ for (const [what, code] of SMUGGLED) {
   test(`${what}: the by-code fixture of ${code} placed in a library file is reported ${code} at the library's path, with no fix`, () => {
     const fx = CODE_FIXTURES[code];
     expect(fx).toBeDefined();
-    const bad = fx?.bad ?? [];
-    expect(bad.length).toBe(1);
-    const only = bad[0];
+    const only = fx === undefined ? undefined : theFile(fx);
+    expect(only, `${code} is a one-file fixture`).toBeDefined();
     const base = (only?.path ?? "x.ts").split("/").at(-1) ?? "x.ts";
-    const files = project([lib(`src/${base}`, only?.source ?? "")]);
-    const d = hitsOf(files, code, fx?.badOpts ?? fx?.opts ?? {});
+    const d = hitsOf(inLibrary(base, only?.source ?? ""), code, fx === undefined ? {} : optsOf(fx));
     expect(d.length).toBeGreaterThanOrEqual(1);
     for (const x of d) {
       expect(x.path).toBe(`node_modules/@acme/charts/src/${base}`);
@@ -209,35 +306,32 @@ for (const [what, code] of SMUGGLED) {
   });
 }
 
-/** The by-code fixtures that are one file placed in a library as `src/<basename>`: no library-only code, no manifest, topology or `.keel/` file, no fixture of a code the library's own files report. */
-const SAMPLE = Object.entries(CODE_FIXTURES).flatMap(([code, fx]) => {
-  const only = fx.bad[0];
-  if (fx.bad.length !== 1 || only === undefined) return [];
-  if (["E1161", "E1163", "E1166", "E1752", "E1756", "E1801"].includes(code)) return [];
-  if (
-    !/\.(ts|tsx)$/.test(only.path) ||
-    /(^|\/)(module|topology)\.ts$/.test(only.path) ||
-    only.path.startsWith(".keel/")
-  )
-    return [];
-  return [
-    { code, source: only.source, base: only.path.split("/").at(-1) ?? "x.ts", opts: fx.badOpts ?? fx.opts ?? {} },
-  ];
+/** The by-code fixtures of one source file: no exclusion by code. */
+const ONE_FILE = Object.entries(CODE_FIXTURES).flatMap(([code, fx]) => {
+  const only = theFile(fx);
+  return only === undefined
+    ? []
+    : [{ code, source: only.source, base: only.path.split("/").at(-1) ?? "x.ts", opts: optsOf(fx) }];
 });
+/** Rules only a library has (k.library Rules): reported in a library file, never in an app's. */
+const LIBRARY_ONLY = new Set(["E1161", "E1162", "E1163", "E1166"]);
 
-test("for every rule code in the by-code fixtures that are one file, that file placed in a library reports the same code at the library's path", () => {
-  expect(SAMPLE.length).toBeGreaterThan(10);
-  fc.assert(
-    fc.property(fc.constantFrom(...SAMPLE), ({ code, source, base, opts }) => {
-      const d = hitsOf(project([lib(`src/${base}`, source)]), code, opts);
-      expect(d.length, code).toBeGreaterThanOrEqual(1);
-      for (const x of d) {
-        expect(x.path, code).toBe(`node_modules/@acme/charts/src/${base}`);
-        expect(x.fix, code).toBeUndefined();
-      }
-    }),
-    { seed: SEED, numRuns: Math.max(SAMPLE.length * 2, 30) },
-  );
+// The space is finite (every one-file fixture of the table), so each is visited once, not sampled.
+test("for every one-file by-code fixture, placed in a library file it reports the codes the same source reports placed in an app module at `modules/<id>/<f>`, at the library's path with no fix", () => {
+  expect(ONE_FILE.length).toBeGreaterThan(50);
+  let reportedInApp = 0;
+  const differs: string[] = [];
+  for (const { code, source, base, opts } of ONE_FILE) {
+    const inLib = codesAt(inLibrary(base, source), `node_modules/${NAME}/src/${base}`, opts);
+    const inApplication = codesAt(inApp(base, source), `modules/charts/src/${base}`, opts);
+    if (inApplication.codes.length > 0) reportedInApp++;
+    const extra = inLib.codes.filter((c) => !inApplication.codes.includes(c) && !LIBRARY_ONLY.has(c));
+    const missing = inApplication.codes.filter((c) => !inLib.codes.includes(c));
+    if (extra.length > 0 || missing.length > 0 || inLib.fixes > 0)
+      differs.push(`${code}: library [${inLib.codes}] app [${inApplication.codes}] fixes ${inLib.fixes}`);
+  }
+  expect(reportedInApp, "fixtures the app twin reports on").toBeGreaterThan(30);
+  expect(differs).toEqual([]);
 });
 
 test("In that project, `import x from '../../outside.ts'` in `src/Badge.tsx` is one E1163 at the specifier", () => {
@@ -334,4 +428,22 @@ test("E1163: a library file importing itself, a package of `@keel/*` or another 
     ...other,
   ];
   expect(hitsOf(files, "E1163")).toEqual([]);
+});
+
+test("A bare import in a library file is read as in an app file and is no E1163, whatever the package", () => {
+  fc.assert(
+    fc.property(fc.stringMatching(/^[a-z]{4,10}$/), (pkg) => {
+      const files = project([lib("src/Uses.ts", `import { x } from '${pkg}'\nexport const u = x\n`)]);
+      expect(hitsOf(files, "E1163")).toEqual([]);
+    }),
+    { seed: SEED, numRuns: 20 },
+  );
+});
+
+test("A bare import there is read as in an app file: a `node:` import an app file is refused for (E1759) is refused in the library file at the library's path, and in the app twin alike", () => {
+  const source = "import { readFileSync } from 'node:fs'\nexport const r = readFileSync\n";
+  const inLib = hitsOf(inLibrary("Read.ts", source), "E1759", {});
+  expect(inLib.map((x) => x.path)).toEqual(["node_modules/@acme/charts/src/Read.ts"]);
+  expect(inLib[0]?.fix).toBeUndefined();
+  expect(hitsOf(inApp("Read.ts", source), "E1759", {}).map((x) => x.path)).toEqual(["modules/charts/src/Read.ts"]);
 });
