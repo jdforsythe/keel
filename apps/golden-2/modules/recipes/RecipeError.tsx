@@ -1,8 +1,9 @@
 import { type Infer, s } from "@keel/schema";
 import { Box, Heading, Text } from "@keel/ui";
 
+// The message is the heading's accessible name, so it is never empty (WCAG 2.4.6: a heading names its section).
 export const Props = s.object({
-  error: s.object({ code: s.string(), message: s.string() }),
+  error: s.object({ code: s.string(), message: s.string({ min: 1 }) }),
 });
 
 /** `errorElement` of `recipes.show`: it gets no params, so its heading is the message the loader wrote in its locale. */
