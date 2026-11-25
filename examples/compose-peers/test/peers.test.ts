@@ -11,7 +11,6 @@ import source from "../identity.server.ts";
 import { routes as front } from "../modules/front/routes.ts";
 import { routes as greet } from "../modules/greet/routes.ts";
 import topology from "../topology.ts";
-import { artifacts } from "./artifacts.ts";
 
 const secret = "compose-peers-test-secret-of-32-bytes";
 const API = "http://api.test";
@@ -72,7 +71,7 @@ it("ignores a user header the api did not sign", async () => {
 
 it("renders the front page as a browser gets it: one main landmark, a named heading, the greeting as text", async () => {
   const { web, ctx } = await peers();
-  const page = await renderRoute("front.home", { routes: front, params: {}, ctx, app: web, artifacts });
+  const page = await renderRoute("front.home", { routes: front, params: {}, ctx, app: web });
   try {
     expect(page.find("front.home").role).toBe("main");
     expect(page.a11y("front.home.title")).toMatchObject({ role: "heading", name: "Two peers" });

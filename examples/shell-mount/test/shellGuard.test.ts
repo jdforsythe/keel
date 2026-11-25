@@ -15,7 +15,6 @@ import { routes as api } from "../modules/api/routes.ts";
 import { notes } from "../modules/notes/notes.contract.ts";
 import { routes } from "../modules/notes/routes.ts";
 import topology from "../topology.ts";
-import { artifacts } from "./artifacts.ts";
 
 /** The `api` deployable over its own sim ctx, and a shell ctx whose net reaches it; `sent` lists what was sent. */
 async function shell() {
@@ -58,7 +57,7 @@ it("sends a signed-out reader to sign-in with the note as next; the sign-in post
 
 it("sends a signed-out reader to sign-in and back to the note after signing in, the param carried", async () => {
   const { ctx, sent } = await shell();
-  const t = await renderRoute("notes.home", { routes, shell: { id: "dev.keel.shellmount" }, ctx, mount, artifacts });
+  const t = await renderRoute("notes.home", { routes, shell: { id: "dev.keel.shellmount" }, ctx, mount });
   try {
     expect(t.focusOrder()).toEqual(["notes.home.toNote"]);
     await t.fire("notes.home.toNote", { type: "click" });

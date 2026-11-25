@@ -1,10 +1,9 @@
 import { renderRoute } from "@keel/testing";
 import { expect, it } from "vitest";
 import { routes } from "../modules/app/routes.ts";
-import { artifacts } from "./artifacts.ts";
 
 it("renders the home page in the browser with no server", async () => {
-  const page = await renderRoute("app.home", { routes, params: {}, artifacts });
+  const page = await renderRoute("app.home", { routes, params: {} });
   try {
     expect(page.find("app.home.title").text).toBe("Static files only");
     // A screen reader user lands on one named level-1 heading; nothing on the page takes focus.

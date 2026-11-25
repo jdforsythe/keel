@@ -11,12 +11,11 @@ import { renderRoute } from "@keel/testing";
 import { expect, it } from "vitest";
 import { routes } from "../modules/ops/routes.ts";
 import topology from "../topology.ts";
-import { artifacts } from "./artifacts.ts";
 
 it("is one main landmark with a heading and one button that shows and hides the limits", async () => {
   const ctx = createCtx({ mode: "sim", seed: 1337 });
   const app = await createApp({ topology, deployable: "sessions", routes: routeTable(routes, sessionsRoutes), ctx });
-  const page = await renderRoute("ops.home", { routes, ctx, app, artifacts });
+  const page = await renderRoute("ops.home", { routes, ctx, app });
   try {
     expect(page.find("ops.home").role).toBe("main");
     expect(page.find("ops.home.endpoint").text).toBe("http://localhost/sessions");
