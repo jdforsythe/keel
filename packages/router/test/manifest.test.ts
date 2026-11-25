@@ -42,7 +42,7 @@ describe("contract validation", () => {
   });
 
   it("E1510 for a layout carrying a path", () => {
-    // The type error is in unsafe/negativeTypes.ts; called untyped here.
+    // The type error is in negativeTypes.test-d.ts; called untyped here.
     expect(codeOf(() => Reflect.apply(contract, undefined, ["v12", { "v12.l": { layout: true, path: "/l" } }]))).toBe(
       "E1510",
     );

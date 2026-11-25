@@ -32,12 +32,12 @@ export default function Home() {
   });
 `,
   "unsafe/later.ts": `${LIFT}export const later = (ms: number, work: () => void): void =>
-  unsafe("the fixture needs a timer", () => {
+  unsafe("the fixture needs a timer that only fires its own callback", () => {
     ${TIMER}(work, ms);
   });
 `,
   "unsafe/announce.ts": `${LIFT}export const announce = (text: string): void =>
-  unsafe("the fixture writes to the process's stdout", () => {
+  unsafe("the fixture writes to the process's stdout one given string only", () => {
     process.stdout.write(text);
   });
 `,

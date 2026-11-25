@@ -25,4 +25,4 @@ Uses the **check rule registry** (k.check: E2751 to E2755 from `./tools`).
 
 count: 2
 - `unsafe/loosen.ts`: guards and actions are typed with every event's payload fields at once and called with one event's payload.
-- `unsafe/asEvents.ts`: the per-event transaction table is typed by each event's payload schema.
+- `unsafe/asEvents.ts`: the per-event transaction table is typed by each event's payload schema; `@keel/std-statecharts/internal` shares it with std.workflows.

@@ -2,7 +2,7 @@
 // Spec: k.contract, clause "`c.href` of a layout or API id does not compile; of a page with params it requires them."
 // Spec: k.router, clause "`c.href` output is identical for equal inputs and omits absent optional search keys; a layout id or a missing or mistyped param does not compile."
 // Spec: k.router (Links) "A contract's `href`, a router, and guard redirects resolve ids only in their own module." Seed 1337.
-// Compile-time half of each "does not compile" claim: ../unsafe/conformanceNegativeTypes.ts; the calls here are untyped.
+// Compile-time half of each "does not compile" claim: ./negative-types.test-d.ts; the calls here are untyped.
 import { type Href, manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
 import { matchHref } from "@keel/router/match";

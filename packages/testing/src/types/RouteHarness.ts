@@ -8,7 +8,8 @@ export interface RouteHarness<S, C extends Ctx = SimCtx> extends Harness<C> {
   route(): S;
   /**
    * Navigate the harness's router to `href` (a push); resolves when the new route is rendered and its loaders have
-   * settled, the quiescence `fire` waits for, then runs the render checks.
+   * settled, the quiescence `fire` waits for, then runs the render checks. A value the router refuses (E1501, k.router
+   * Links) rejects with its error once the page has settled.
    */
   navigate(href: Href): Promise<void>;
   /** The in-memory history's entry count (a `replace` leaves it, a push adds one) and `window.scrollY`. */

@@ -15,4 +15,6 @@
 
 ## Unsafe
 
-count: 0
+count: 2
+- `unsafe/asId.ts`: a fresh uuid typed as `Id<B>`, whose brand is type-only.
+- `unsafe/narrowAccessor.ts`: a re-registered capability's stored accessor typed by the identical `impls` object's `T`.

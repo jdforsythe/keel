@@ -92,12 +92,12 @@ Rules:
 - [x] 0995 `linkEscapes`, behind E1357 and E1585, has no unit or property test
 
 ### Lane 08 router-identity · router, check (E1584, E1580), compiler (E1579) · RFC (k.opening, 0969) · M
-- [ ] 0968 an admitted return link re-arms the gate through app code
-- [ ] 0969 a failed `record` leaves the older opening; state it in k.opening
-- [ ] 0976 an `identityMount` call outside `identity.ts` adds unchecked mount paths
-- [ ] 0336 `navigate` with `\` gives `//x`; `settle` spins on a sim clock; locale and `issueText` leads
-- [ ] 0314 after a titled server-rendered first page, untitled pages keep that title
-- [ ] 0895 `handle.path` `/assets` shadows built assets and E1579 allows it
+- [x] 0968 an admitted return link re-arms the gate through app code
+- [x] 0969 a failed `record` leaves the older opening; state it in k.opening
+- [x] 0976 an `identityMount` call outside `identity.ts` adds unchecked mount paths
+- [x] 0336 `navigate` with `\` gives `//x`; `settle` spins on a sim clock; locale and `issueText` leads
+- [x] 0314 after a titled server-rendered first page, untitled pages keep that title
+- [x] 0895 `handle.path` `/assets` shadows built assets and E1579 allows it
 
 ### Lane 09 pii-and-data · std-sessions, schema, std-channels, store, docs (THREAT-MODEL) · RFC (k.schema 0980, std.channels 0973) · M
 - [ ] 0977 `redact` skips an open object's undeclared keys, so personal data stays recorded
@@ -162,6 +162,8 @@ Rules:
 ### Lane 33 found-by-household · schema, testing · no RFC unless k.testing must name the value · S
 - [ ] 1106 a generated `s.id` has no shape a server mints; `properties` breaks on it
 - [ ] 1107 `find().text` of an input is always empty
+- [ ] 1109 `renderRoute` with `app` records any string as a document, never E1501
+- [ ] 1110 a statechart guard's payload is typed as every event's fields (RFC)
 
 ### Owned by a P1 workstream or in flight
 - [ ] 0034 the freeze review and status flips (W1)

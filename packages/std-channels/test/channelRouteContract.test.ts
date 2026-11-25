@@ -88,7 +88,7 @@ test("an entry that is not the channel's is E1515 naming each member that differ
 });
 
 test("type errors: entries missing from the contract, a missing publish with message, a publish without", () => {
-  // The type errors are in unsafe/negativeTypes.ts; called untyped here.
+  // The type errors are in negativeTypes.test-d.ts; called untyped here.
   const bare = contract("chat", { "chat.board": { method: "GET", path: "/api/chat/board", output: Board } });
   const call = (...args: unknown[]): unknown => Reflect.apply(channelRoute, undefined, args);
   expect(() => call(bare, room, { id: "chat.room", publish: "chat.post", stores: flags, member })).toThrow();

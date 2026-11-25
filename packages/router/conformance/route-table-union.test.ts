@@ -5,7 +5,7 @@
 // Spec: k.routes, Conformance "`routeTable(c)` of a contract does not compile."
 // Spec: k.routes, Conformance "With `a` holding a prefixed route (k.prefix) and `b` a page at `/de-DE/about`, `routeTable(a, b)` throws E1509"
 // Seed 1337 (fc.assert below). The server half (createApp answering both modules) is packages/server/conformance/route-table-serve.test.ts.
-// Compile-time half of each "does not compile" claim: ../unsafe/conformanceNegativeTypes.ts; the calls here are untyped.
+// Compile-time half of each "does not compile" claim: ./negative-types.test-d.ts; the calls here are untyped.
 import { manifest, routeTable } from "@keel/router";
 import { contract } from "@keel/router/contract";
 import { matchHref } from "@keel/router/match";
