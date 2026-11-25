@@ -24,7 +24,13 @@ const SCHEMA = "@keel/schema";
 type Fn = FunctionNode | ArrowFunctionExpression;
 /** Inside a package function: its parameters (read at the call), its body's top-level `const`s, the depth. */
 type Scope = { readonly params: ReadonlySet<string>; readonly locals: ReadonlyMap<string, Expression> };
-type Ctx = { readonly app: readonly SourceFile[]; readonly scope: Scope | undefined; readonly depth: number };
+/** `active`: the package functions being read on the way here, so a cycle among them is not read as finished. */
+type Ctx = {
+  readonly app: readonly SourceFile[];
+  readonly scope: Scope | undefined;
+  readonly depth: number;
+  readonly active: ReadonlySet<string>;
+};
 
 const worst = (a: SchemaAnswer, b: SchemaAnswer): SchemaAnswer =>
   a === "yes" || b === "yes" ? "yes" : a === "unknown" || b === "unknown" ? "unknown" : "no";
@@ -145,6 +151,9 @@ function readFunction(
   seen: Set<string>,
   ctx: Ctx,
 ): SchemaAnswer {
+  // A function met again while its read is open (direct or mutual recursion) never finishes here: unknown.
+  const id = `${file.path}:${fn.start}`;
+  if (ctx.active.has(id)) return "unknown";
   const params = new Set<string>();
   const defaults: unknown[] = [];
   for (const p of fn.params satisfies ParamPattern[]) bound(p, params, defaults);
@@ -155,7 +164,7 @@ function readFunction(
         for (const v of st.declarations)
           if (v.id.type === "Identifier" && v.init !== null && v.init !== undefined) locals.set(v.id.name, v.init);
   const scope: Scope = { params, locals };
-  const inner: Ctx = { app: ctx.app, scope, depth: ctx.depth + 1 };
+  const inner: Ctx = { app: ctx.app, scope, depth: ctx.depth + 1, active: new Set([...ctx.active, id]) };
   const read = (x: Expression | null): SchemaAnswer => (x === null ? "no" : readIn(x, file, files, q, seen, inner));
   const fromDefaults = fn.params.flatMap((p) => (p.type === "AssignmentPattern" ? [read(p.right)] : []));
   return [...returned(fn, file).map(read), ...fromDefaults].reduce(worst, "no");
@@ -303,5 +312,5 @@ export function schemaRead(
   q: SchemaQuestion,
   seen: Set<string> = new Set(),
 ): SchemaAnswer {
-  return readIn(expr, file, project, q, seen, { app: project, scope: undefined, depth: 0 });
+  return readIn(expr, file, project, q, seen, { app: project, scope: undefined, depth: 0, active: new Set() });
 }

@@ -159,4 +159,59 @@ describe("E1107 reads a stdlib schema factory as it reads a local schema (k.leav
       "store state not readable at opaque(); cannot show its .pii() classes",
     ]);
   });
+
+  /** A package `name` at `node_modules/<dir>` whose `src/index.ts` is `index` and whose other files are `more`. */
+  const pkg = (dir: string, name: string, index: string, more: Record<string, string> = {}): Files => [
+    {
+      path: `node_modules/${dir}/package.json`,
+      source: `{"name":"${name}","type":"module","exports":{".":{"types":"./src/index.ts","default":"./src/index.ts"}}}\n`,
+    },
+    { path: `node_modules/${dir}/src/index.ts`, source: index },
+    ...Object.entries(more).map(([f, source]) => ({ path: `node_modules/${dir}/src/${f}`, source })),
+  ];
+  const S = "import { s } from '@keel/schema'\n";
+  const unreadAt = (part: string) => `store state not readable at ${part}; cannot show its .pii() classes`;
+
+  it("a cycle among package functions is not read as finished: direct, mutual, and through a parameter returned after it", () => {
+    const shapes = [
+      `${S}export const tree = (n: number): unknown => tree(n)\n`,
+      `${S}const ping = (n: number): unknown => pong(n)\nconst pong = (n: number): unknown => ping(n)\nexport const tree = (n: number) => ping(n)\n`,
+      `${S}export const tree = (n: number, x: unknown): unknown => (n > 0 ? tree(n - 1, x) : x)\n`,
+    ];
+    for (const index of shapes)
+      expect(e1107(page("import { tree } from 'cyc'", "tree(3, s.string())"), pkg("cyc", "cyc", index))).toEqual([
+        unreadAt("tree()"),
+      ]);
+  });
+
+  it("recursion with a base case that marks is one E1107: the recursive branch is not read, so neither are all its classes", () => {
+    const index = `${S}export const tree = (n: number): unknown => (n === 0 ? s.object({ e: s.string().pii('contact') }) : tree(n - 1))\n`;
+    expect(e1107(page("import { tree } from 'cyc'", "tree(2)"), pkg("cyc", "cyc", index))).toEqual([
+      unreadAt("tree()"),
+    ]);
+  });
+
+  it("a cycle of re-exports finds no function: the call is not readable", () => {
+    const files = pkg("loop", "loop", "export { f } from './a.ts'\n", {
+      "a.ts": "export { f } from './b.ts'\n",
+      "b.ts": "export { f } from './a.ts'\n",
+    });
+    expect(e1107(page("import { f } from 'loop'", "f()"), files)).toEqual([unreadAt("f()")]);
+  });
+
+  it("two packages with one name and one file layout are read apart: each one's own marks count", () => {
+    const marked = `${S}export const f = () => s.string().pii('contact')\n`;
+    const plain = `${S}export const f = () => s.string()\n`;
+    const files = [...pkg("one", "same", plain), ...pkg("two", "same", marked)];
+    const head = "import { f } from 'one'\nimport { f as g } from 'two'";
+    expect(e1107(page(head, "f()"), files)).toEqual([]);
+    expect(e1107(page(head, "g()"), files)[0]).toContain("'contact'");
+  });
+
+  it("a chain of eight package functions is read and a ninth is not, the project's own call not counted", () => {
+    const chain = (n: number): string =>
+      `${S}${Array.from({ length: n }, (_, i) => `const f${i} = (): unknown => ${i === n - 1 ? "s.string().pii('contact')" : `f${i + 1}()`}`).join("\n")}\nexport const f = () => f0()\n`;
+    expect(e1107(page("import { f } from 'deep'", "f()"), pkg("deep", "deep", chain(7)))[0]).toContain("'contact'");
+    expect(e1107(page("import { f } from 'deep'", "f()"), pkg("deep", "deep", chain(8)))).toEqual([unreadAt("f()")]);
+  });
 });

@@ -47,7 +47,7 @@ function wholePackage(real: string, cache: Map<string, ReadPackage | null>): Rea
   let whole = cache.get(key) ?? undefined;
   if (whole === undefined) {
     const files = codeFiles(pkg.dir).map(({ rel, abs }) => {
-      const f: SourceFile = { path: `${pkg.name}/${rel}`, source: fs.readFileSync(abs, "utf8") };
+      const f: SourceFile = { path: abs.split(path.sep).join("/"), source: fs.readFileSync(abs, "utf8") };
       origins.set(f, abs);
       return f;
     });
@@ -56,7 +56,7 @@ function wholePackage(real: string, cache: Map<string, ReadPackage | null>): Rea
     whole = { entry: first, files };
     cache.set(key, whole);
   }
-  const at = `${pkg.name}/${path.relative(pkg.dir, real).split(path.sep).join("/")}`;
+  const at = real.split(path.sep).join("/");
   const entry = whole.files.find((f) => f.path === at);
   return entry === undefined ? undefined : { entry, files: whole.files };
 }
