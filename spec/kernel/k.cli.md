@@ -17,6 +17,7 @@ status: conformance-covered
 | `ledger` | emit and diff the ledger |
 | `evidence [--verify dir --key id]` | signed evidence bundle (k.evidence) |
 | `review [range \| --all]` | escapes by danger and novelty (k.review) |
+| `pack [--check]` | a library's gate: check, test, ledger (k.library-pack) |
 
 `session` runs the operation std.sessions registers with `stdCommand('session', op)` after importing the project's std `deps`; unfilled, I1055. `report`: std.report.
 

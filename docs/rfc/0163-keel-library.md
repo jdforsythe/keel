@@ -1,6 +1,6 @@
 # RFC 0163: a Keel library: a package kind checked again by the app
 
-Status: accepted (ADR-0185), confirmed by the operator on 2026-11-25; slices 1 (the library kind), 2a (the app compiles and checks a library's files) and 2b (the ledger over libraries) built, slices 3 to 5 not yet. The library format is built before the public release and before the second part of k.parity (RFC 0169 Build B, which needs the library kind). Sections k.library and k.library-pack hold the contract. This is W15 step 4 of `tasks/p1/PLAN.md` and D49 of `tasks/0963-to-p1/PLAN.md`.
+Status: accepted (ADR-0185), confirmed by the operator on 2026-11-25; slices 1 (the library kind), 2a (the app compiles and checks a library's files), 2b (the ledger over libraries) and 3 (`keel pack` and `keel scaffold library`) built, slices 4 to 5 not yet. The library format is built before the public release and before the second part of k.parity (RFC 0169 Build B, which needs the library kind). Sections k.library and k.library-pack hold the contract. This is W15 step 4 of `tasks/p1/PLAN.md` and D49 of `tasks/0963-to-p1/PLAN.md`.
 
 ## Decisions
 - D1: a library is a package whose `package.json` has `"keel": "library"` and a scoped name. Its root `module.ts` is a k.module manifest, unchanged: `public.exports` is its surface, `id` its prefix. A second manifest shape would be a second way (principle 1).
@@ -13,6 +13,11 @@ Status: accepted (ADR-0185), confirmed by the operator on 2026-11-25; slices 1 (
 - D8: the stdlib packages are libraries in this format, so the kernel reads each by its kind and never by its name (RFC 0169, k.parity). Three named closed sets remain: shells, topology storage and the CLI command slots.
 - D9: a library reaches only itself and other libraries (E1163), and its `id` is unique in the app (E1166).
 - D10: app data stays a seam (D43). What the kernel gives `@keel/std-postgres` by name today, any package gets by the same means (k.server-deps): a manifest's `env` names the variables `deploy/compose.yaml` passes; the server build copies the files a bundled package reads beside itself through `new URL(<literal>, import.meta.url)`; and a file importing a library export that calls `register` counts as registering a capability under `keel dev`.
+- D11: a library's `peerDependencies` hold the `@keel/*` packages its files import and `@keel/reactive` and `@keel/runtime-dom`, which the compiler's output of its JSX imports from the library's folder; `keel pack` refuses one a peer list omits or `dependencies` lists. `@keel/runtime-dom/jsx-runtime` gains `jsx`, `jsxs` and `Fragment` that throw, so a `tsc` build (`"jsx": "react-jsx"`) imports in Node and renders nothing.
+- D12: `keel pack`'s steps are `kind`, `package`, `check`, `test` and `ledger`, each E1164 message beginning with its step. `package` holds one rule: a library an app could not read, check or trust as its folder is read does not pack (k.library-pack Pack lists the cases).
+- D13: the own folder is read as an app holds the library installed, so its `keel check` is the app's reading; its `keel test` writes no `.keel/` artifact or `reports/a11y.json`; its ledger counts what an app counts over its files.
+- D14: `keel scaffold library` writes source alone (a committed generated file is stale at the first edit): as written the library passes `keel check` and `keel test`, and `keel pack` writes the ledger.
+- D15: an app's `keel check` and `keel build` import a library's built entry, so a linked library is built first; `keel dev` and `keel test` read its source alone.
 
 ## Problem
 These are the facts as the tree stands.
