@@ -77,6 +77,16 @@ describe("the package step", () => {
       "lists no keel condition first",
     ],
     [
+      "keel after another condition in a subpath entry",
+      {
+        ...PKG,
+        exports: { ...PKG.exports, "./x": { default: "./dist/src/index.js", keel: "./src/index.ts" } },
+      },
+      undefined,
+      "exports",
+      'exports "./x" lists keel after another',
+    ],
+    [
       "a keel target outside src/",
       { ...PKG, exports: { ".": { keel: "./index.ts" } } },
       undefined,
