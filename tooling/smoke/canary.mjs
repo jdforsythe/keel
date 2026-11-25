@@ -10,7 +10,7 @@
 // and verify. The database is the one place they may be: its files are checked to
 // hold the email, so the run is known to have carried it. Usage: node tooling/smoke/canary.mjs. The bundle goes to the
 // temporary folder; each app's own folder is only read.
-import { execFile, spawn } from "node:child_process";
+import { spawn } from "node:child_process";
 import { generateKeyPairSync } from "node:crypto";
 import { mkdir, mkdtemp, readFile, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -127,47 +127,48 @@ async function bundle(name, cwd, canaries) {
   const { privateKey } = generateKeyPairSync("ed25519");
   const key = privateKey.export({ type: "pkcs8", format: "pem" });
   const out = join(tmp, `evidence-${name}`);
-  const evidence = await new Promise((resolve) => {
-    const child = execFile(
-      process.execPath,
-      ["--disable-warning=ExperimentalWarning", cli, "evidence", "--out", out],
-      {
-        cwd,
-        env: { ...process.env, KEEL_AGENT: "1", KEEL_EVIDENCE_KEY: key },
-        maxBuffer: 64 * 1024 * 1024,
-        timeout: 180_000,
-      },
-      (err, stdout) =>
-        resolve({ code: err === null ? 0 : (err.code ?? 1), last: stdout.trim().split("\n").at(-1) ?? "" }),
-    );
-    children.add(child);
-  });
+  const evidence = await keel(`evidence ${name}`, ["evidence", "--out", out], cwd, { KEEL_EVIDENCE_KEY: key });
   const manifest = await readFile(join(out, "manifest.json"), "utf8").then(JSON.parse, () => null);
-  step(
-    `evidence written for apps/${name}`,
-    manifest !== null && evidence.code === 0,
-    `exit ${evidence.code}, ${evidence.last}`,
-  );
+  step(`evidence written for apps/${name}`, manifest !== null && evidence.code === 0, evidence.detail);
   const inBundle = await leakedFiles(out, canaries);
   step(`sink evidence bundle of apps/${name}`, manifest !== null && inBundle.length === 0, inBundle.join(" | "));
-  const verified = await new Promise((resolve) => {
-    execFile(
-      process.execPath,
-      [
-        "--disable-warning=ExperimentalWarning",
-        cli,
-        "evidence",
-        "--verify",
-        out,
-        "--key",
-        String(manifest?.keyId ?? ""),
-      ],
-      { cwd, env: { ...process.env, KEEL_AGENT: "1" }, timeout: 60_000 },
-      (err, stdout) =>
-        resolve({ code: err === null ? 0 : (err.code ?? 1), last: stdout.trim().split("\n").at(-1) ?? "" }),
-    );
+  const keyId = String(manifest?.keyId ?? "");
+  const verified = await keel(`evidence --verify ${name}`, ["evidence", "--verify", out, "--key", keyId], cwd, {});
+  step(`evidence bundle of apps/${name} verifies`, verified.code === 0, verified.detail);
+}
+
+/**
+ * `keel <args>` in `cwd`, its stdout and stderr kept for the failure file. `keel evidence` runs the app's whole `keel
+ * test`, `keel check` and `keel ledger`, minutes on a loaded runner; the one bound on it is the smoke's own time limit,
+ * which names itself when it fires. `detail` is the trailer on success; on failure the exit code or signal and the
+ * last lines the command printed.
+ */
+function keel(label, args, cwd, env) {
+  return new Promise((resolve) => {
+    const lines = [];
+    keepOutput(label, lines);
+    const child = spawn(process.execPath, ["--disable-warning=ExperimentalWarning", cli, ...args], {
+      cwd,
+      env: { ...process.env, KEEL_AGENT: "1", ...env },
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    children.add(child);
+    let rest = { stdout: "", stderr: "" };
+    const read = (which) => (chunk) => {
+      const text = rest[which] + chunk;
+      const parts = text.split("\n");
+      rest = { ...rest, [which]: parts.pop() ?? "" };
+      for (const l of parts) if (l.trim() !== "") lines.push(l);
+    };
+    child.stdout.setEncoding("utf8").on("data", read("stdout"));
+    child.stderr.setEncoding("utf8").on("data", read("stderr"));
+    child.on("close", (code, signal) => {
+      for (const l of [rest.stdout, rest.stderr]) if (l.trim() !== "") lines.push(l);
+      const tail = lines.slice(-3).join(" | ");
+      const ended = signal === null ? `exit ${code}` : `killed by ${signal}`;
+      resolve({ code: code ?? 1, detail: code === 0 ? (lines.at(-1) ?? "") : `${ended}: ${tail}` });
+    });
   });
-  step(`evidence bundle of apps/${name} verifies`, verified.code === 0, verified.last);
 }
 
 /** The files under `dir` holding a canary, as `path: fields`; `[]` when none. Bytes are read as latin1, so any text form matches. */

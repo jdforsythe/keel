@@ -20,6 +20,8 @@ export function turboVerdict(status, output) {
 }
 
 const DIAG = /^[A-Z]\d{4} /;
+/** A line of a task's log that states an error: Node's `Error: ...`, a fatal error, vitest's startup or unhandled error. */
+const ERROR_LINE = /\b\w*Error\b|FATAL|Startup Error|failed to load|Unhandled/;
 const CONT = /^ {2}(fix|see): |^ {7}\S/;
 
 /**
@@ -74,7 +76,8 @@ export function taskFailures(failed, output, dirs) {
 /**
  * The E0005 message of a failed run that names, per failed task, where each failed test is
  * (`turbo test failed: @keel/cli#test packages/cli/test/a.test.ts:4; 3 of 60 tasks unfinished`); a task that named
- * no test says how it ended (`@keel/std-postgres#test exit 1, no test named`).
+ * no test says how it ended and the last error line it wrote, else its last line
+ * (`@keel/std-postgres#test exit 137: Error: listen EADDRINUSE 127.0.0.1:5432`), or `no test named` when it wrote none.
  * @param {string} task
  * @param {ReturnType<typeof turboVerdict>} v
  * @param {ReturnType<typeof taskFailures>} failures
@@ -83,7 +86,11 @@ export function failVerdict(task, v, failures) {
   const per = failures.map((f) => {
     const at = [...new Set(f.diags.map((d) => /^[A-Z]\d{4} (\S+?:\d+)(?::\d+)? /.exec(d)?.[1] ?? d.slice(6, 40)))];
     if (at.length > 0) return `${f.task} ${at.join(", ")}`;
-    return `${f.task} exit ${f.exit ?? "?"}, no test named`;
+    const said = [...f.tail].reverse().find((l) => ERROR_LINE.test(l)) ?? f.tail.at(-1);
+    const how = `${f.task} exit ${f.exit ?? "?"}`;
+    return said === undefined
+      ? `${how}, no test named`
+      : `${how}: ${said.length > 100 ? `${said.slice(0, 97)}...` : said}`;
   });
   const what = [...per];
   if (v.unfinished > 0) what.push(`${v.unfinished} of ${v.total} tasks unfinished`);
