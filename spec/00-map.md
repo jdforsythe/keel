@@ -27,7 +27,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 ## Kernel
 | id | section | status | one line |
 |-|-|-|-|
-| k.schema | Schemas | implemented | codecs |
+| k.schema | Schemas | conformance-covered | codecs |
 | k.formats | Format types | conformance-covered | brands |
 | k.reactive | Reactivity | conformance-covered | signals |
 | k.store | Store, transactions | conformance-covered | log |
@@ -45,7 +45,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.routes | Route table | conformance-covered | union |
 | k.guards | Guards | conformance-covered | deny |
 | k.prefix | Path prefix | conformance-covered | enums |
-| k.forms | Forms | implemented | fields |
+| k.forms | Forms | conformance-covered | fields |
 | k.ui | Tokens, styling | conformance-covered | CSS |
 | k.ctx | Capabilities | conformance-covered | clock |
 | k.owner | Ctx owner | conformance-covered | dispose |
@@ -56,7 +56,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.host | Host reads | conformance-covered | zone |
 | k.cli | CLI, MCP, LSP | conformance-covered | flags |
 | k.docs | Installed docs | conformance-covered | read |
-| k.scaffold | Scaffold, codemods | conformance-covered | edits |
+| k.scaffold | Scaffold, codemods | implemented | edits |
 | k.scaffold-shell | Shell scaffold | conformance-covered | shells |
 | k.scaffold-service | Service scaffold | conformance-covered | clients |
 | k.testing | Harness, properties | conformance-covered | fire |
@@ -67,8 +67,8 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.sim | Simulation | conformance-covered | faults |
 | k.drive | Sim clock drive | conformance-covered | idle |
 | k.drive-law | Replays agree | conformance-covered | replays |
-| k.ledger | Ledger, evidence | implemented | rungs |
-| k.server | Thin server | implemented | loads |
+| k.ledger | Ledger, evidence | conformance-covered | rungs |
+| k.server | Thin server | conformance-covered | loads |
 | k.leave | What a request leaves | implemented | state |
 | k.user | User, caller | conformance-covered | user |
 | k.mount | Mount pages | conformance-covered | submit |
@@ -76,7 +76,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.return | Shell mount | conformance-covered | net |
 | k.opening | Openings | conformance-covered | once |
 | k.links | Links in | conformance-covered | ids |
-| k.serverlog | Server log | implemented | bounds |
+| k.serverlog | Server log | conformance-covered | bounds |
 | k.sync | Concurrent writes | conformance-covered | heads |
 | k.persist | Storage, durable state | conformance-covered | drivers |
 | k.data | App data | conformance-covered | seam |
@@ -87,17 +87,17 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.api | API routes | conformance-covered | JSON |
 | k.hosting | Client hosting | conformance-covered | servedBy |
 | k.head | Document head | conformance-covered | title |
-| k.services | Thin services | implemented | clients |
+| k.services | Thin services | conformance-covered | clients |
 | k.openapi | OpenAPI import | conformance-covered | clients |
 | k.module | Module manifest | conformance-covered | surface |
-| k.a11y | Accessibility | implemented | WCAG |
+| k.a11y | Accessibility | conformance-covered | WCAG |
 | k.aria | Widget parts | conformance-covered | roles |
 | k.roles | Part roles | conformance-covered | grid |
 | k.host-element | Host elements | conformance-covered | charts |
 | k.host-code | Host code | conformance-covered | d3 |
 | k.security | Headers, CSP | conformance-covered | CSP |
 | k.origins | Declared origins | conformance-covered | CSP |
-| k.privacy | Secrets, personal data | implemented | secrets |
+| k.privacy | Secrets, personal data | conformance-covered | secrets |
 | k.reveal | Revealed values | conformance-covered | E1112 |
 | k.privacy-reads | Static privacy reads | conformance-covered | readers |
 | k.evidence | Evidence bundle | conformance-covered | bundle |

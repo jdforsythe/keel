@@ -1,5 +1,5 @@
 # k.forms: Forms
-status: implemented
+status: conformance-covered
 
 **API.**
 ```tsx

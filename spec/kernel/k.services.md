@@ -1,5 +1,5 @@
 # k.services: Thin services
-status: implemented
+status: conformance-covered
 
 **API.**
 ```ts

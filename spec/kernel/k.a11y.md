@@ -1,5 +1,5 @@
 # k.a11y: Accessibility
-status: implemented
+status: conformance-covered
 **Target.** WCAG 2.2 Level A and AA. Each criterion is checked statically (`keel check`), at render (`keel test`) or by a person; the ledger and k.evidence say which.
 
 **Required props.** The `@keel/ui` types require (E1802): `Heading level`; `Image alt` or `decorative`; `label` on `Input`, `TextArea`, `Select`, `Checkbox`, and on `Box as` `nav` or `aside` (`aria-label`; optional on other landmarks); `label` or `labelledBy`, exactly one, on `Box scroll` (k.ui Scroll regions: WCAG 2.1.1 and 4.1.2 for a region the keyboard scrolls); `Link to: Href` with text; `Button` children (text or a named `Image`; no `label`). A blank literal `label` (no visible character, as std.text `line` defines it; a `Cc` control or JSX named reference is not one) is E1802 too; a computed one is unchecked. `Input`, `TextArea` and `Select` take `autocomplete: Autofill` (the attribute): a WCAG 2.2 input-purpose autofill name or `off`.
