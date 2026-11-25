@@ -149,6 +149,7 @@ Rules:
 - [ ] 0979 some std sections have no row in the spec map or the std table
 - [ ] 0855 E1759's clause for a project with no `topology.ts` would report Node tooling
 - [ ] 1014 `keel check` reads every `.js` and `.mjs`; decided: k.check names app code as modules, root config and tests
+- [ ] 1120 no spec sentence states what `keel test`'s summary counts
 
 ### Lane 16 spec-size · tooling, spec · RFC (principle 8 bound, the section splits) · M
 - [ ] 0981 k.module is over its 6,000-character limit and the budgets gate passes
