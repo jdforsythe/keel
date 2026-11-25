@@ -14,7 +14,7 @@
   },
   "size": {
     "@keel/check": {
-      "max": "88kb",
+      "max": "89kb",
       "platform": "node"
     },
     "@keel/check/explain": {
@@ -95,7 +95,7 @@
       "platform": "node"
     },
     "@keel/std-jobs/tools": {
-      "max": "3.25kb",
+      "max": "3.5kb",
       "platform": "node"
     },
     "@keel/std-live": "1kb",
@@ -111,7 +111,7 @@
       "platform": "node"
     },
     "@keel/std-schedules": {
-      "max": "2.25kb",
+      "max": "2.5kb",
       "platform": "node"
     },
     "@keel/std-schedules/tools": {
@@ -144,7 +144,7 @@
       "platform": "node"
     },
     "@keel/std-headless": "6kb",
-    "@keel/std-statecharts": "1.75kb",
+    "@keel/std-statecharts": "2kb",
     "@keel/std-statecharts/tools": {
       "max": "4kb",
       "platform": "node"

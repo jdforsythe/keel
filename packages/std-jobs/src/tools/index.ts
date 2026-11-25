@@ -1,6 +1,6 @@
 // re-exports only. `@keel/std-jobs/tools` is the node-only half `importDeps` loads for `keel check` and `keel build`:
 // rules E2501-E2506, the std config schema and the `jobs.queue` inspector section, each registered at import, and the
-// rule helpers `@keel/std-schedules/tools` and `@keel/std-workflows/tools` share (module-prefixed table keys, `runners`
+// readers `@keel/std-schedules/tools` and `@keel/std-workflows/tools` build their rules on (module-prefixed table keys, `runners`
 // membership and their edits).
 import "../internal/snapshot.ts";
 export { JobsConfig } from "../JobsConfig.schema.ts";

@@ -1,7 +1,10 @@
 import { type Finding, type RuleDef, defineRule } from "@keel/check";
-import { callsOf, lineCol, moduleFile, runnersEdits } from "@keel/std-jobs/tools";
+import { runnersEdits } from "@keel/std-jobs/tools";
+import { callsOf } from "./internal/callsOf.ts";
 import { cut } from "./internal/cut.ts";
 import { importsOf } from "./internal/importsOf.ts";
+import { lineCol } from "./internal/lineCol.ts";
+import { moduleFile } from "./internal/moduleFile.ts";
 
 const DECL = /const\s+([\w$]+)\s*=\s*workflow\(/g;
 const WF = "@keel/std-workflows";

@@ -7,4 +7,3 @@ export { stuckState } from "./stuckState.ts";
 export { unknownName } from "./unknownName.ts";
 export { unknownState } from "./unknownState.ts";
 export { unreachableState } from "./unreachableState.ts";
-export { unwrap } from "./internal/unwrap.ts";

@@ -5,8 +5,8 @@ import { commitStores, createApp, topology } from "@keel/server";
 import { queue } from "@keel/std-jobs";
 import { tx } from "@keel/store";
 import { expect, test } from "vitest";
-import { flows, workflow } from "../src/index.ts";
-import { close, nextId, pass, removalChart, settle, sim } from "./support.ts";
+import { flows, workflow } from "../src/index.server.ts";
+import { close, nextId, pass, removalChart, settle, sim } from "./support.server.ts";
 
 const data = { n: 0, freed: 0, code: "" };
 

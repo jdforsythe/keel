@@ -1,7 +1,7 @@
 import type { Runner } from "@keel/server";
 import type { FlowQueue } from "./FlowQueue.ts";
 import type { Planned } from "./internal/Planned.ts";
-import { runFlows } from "./internal/runFlows.ts";
+import { runFlows } from "./internal/runFlows.server.ts";
 
 /**
  * The runner of `workflows` (std.workflows Run, k.topology), listed in `runners.server.ts` beside `queue`: at start,

@@ -1,15 +1,70 @@
-import type { Argument, CallExpression } from "oxc-parser";
+import type { Argument, CallExpression, Expression } from "oxc-parser";
 import type { SourceFile } from "../../types/SourceFile.ts";
+import { followRef } from "../followRef.ts";
 import { storeClasses } from "../storeClasses.ts";
+import type { MakerPath } from "./MakerPath.ts";
 import type { SiteRead } from "./SiteRead.ts";
 
-/** The classes every argument of a store maker's call holds, or the first part not read and every such part. */
-export function makerRead(call: CallExpression, file: SourceFile, project: readonly SourceFile[]): SiteRead {
+type At = { readonly expr: Argument; readonly file: SourceFile };
+
+const unwrap = (e: Expression): Expression =>
+  e.type === "ParenthesizedExpression" || e.type === "TSAsExpression" || e.type === "TSSatisfiesExpression"
+    ? unwrap(e.expression)
+    : e;
+
+/** The field `name` of the object literal `e`, or undefined when a spread or computed key hides it or none holds it. */
+function fieldOf(e: Expression, name: string): Expression | undefined {
+  if (e.type !== "ObjectExpression") return undefined;
+  let found: Expression | undefined;
+  for (const p of e.properties) {
+    if (p.type === "SpreadElement" || p.computed) return undefined;
+    const key = p.key.type === "Identifier" ? p.key.name : p.key.type === "Literal" ? String(p.key.value) : undefined;
+    if (key === name) found = p.value;
+  }
+  return found;
+}
+
+/**
+ * The expression a path's `members` reach from `node`: an object literal's field, through a top-level `const` bound to
+ * one; where a step cannot be taken (a spread, a computed key, any other expression), the node reached so far.
+ */
+function reach(node: Argument, file: SourceFile, members: readonly string[], project: readonly SourceFile[]): At {
+  let at: At = { expr: node, file };
+  for (const name of members) {
+    if (at.expr.type === "SpreadElement") return at;
+    let e = unwrap(at.expr);
+    let f = at.file;
+    if (e.type === "Identifier") {
+      const to = followRef(e, f, project);
+      if (to === null || to === "global" || "package" in to) return at;
+      e = unwrap(to.expr);
+      f = to.file;
+    }
+    const next = fieldOf(e, name);
+    if (next === undefined) return at;
+    at = { expr: next, file: f };
+  }
+  return at;
+}
+
+/**
+ * The classes a store maker's call holds at the argument paths its state schema reads (k.leave E1107), or the first
+ * part not read and every such part. A path that reaches no argument reads nothing.
+ */
+export function makerRead(
+  call: CallExpression,
+  file: SourceFile,
+  project: readonly SourceFile[],
+  paths: readonly MakerPath[],
+): SiteRead {
   const classes = new Set<string>();
   let first: string | undefined;
   const parts: { readonly part: Argument; readonly file: SourceFile }[] = [];
-  for (const a of call.arguments) {
-    const read = storeClasses(a, file, project);
+  for (const path of paths) {
+    const arg = call.arguments[path.index];
+    if (arg === undefined) continue;
+    const at = reach(arg, file, path.members, project);
+    const read = storeClasses(at.expr, at.file, project);
     if ("parts" in read) {
       first ??= read.unread;
       parts.push(...read.parts);

@@ -1,6 +1,8 @@
 import { type Finding, type RuleDef, defineRule } from "@keel/check";
-import { callsOf, lineCol, propOf } from "@keel/std-jobs/tools";
 import { entryError } from "../internal/entryError.ts";
+import { callsOf } from "./internal/callsOf.ts";
+import { lineCol } from "./internal/lineCol.ts";
+import { propOf } from "./internal/propOf.ts";
 
 /**
  * E2551 (std.schedules, k.check registry): a `cron` or `zone` string literal of a `schedule` entry that does not parse,

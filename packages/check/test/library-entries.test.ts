@@ -51,9 +51,12 @@ it("another library's file importing a library's ./tools entry is no E1151", () 
     { path: "node_modules/@acme/flows/module.ts", source: manifest("flows", ["@acme/jobs"]) },
   ];
   const path = "node_modules/@acme/flows/src/tools/rule.ts";
-  const found = check([...files, { path, source: "import { lineCol } from '@acme/jobs/tools'\nexport const y = lineCol\n" }], {
-    types: false,
-  }).diagnostics.filter((d) => d.path === path && d.code === "E1151");
+  const found = check(
+    [...files, { path, source: "import { lineCol } from '@acme/jobs/tools'\nexport const y = lineCol\n" }],
+    {
+      types: false,
+    },
+  ).diagnostics.filter((d) => d.path === path && d.code === "E1151");
   expect(found).toEqual([]);
 });
 

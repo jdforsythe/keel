@@ -40,7 +40,7 @@ test("Two processes over one storage run each of five due jobs once", async () =
           return ok(null);
         }),
       });
-      for (const n of [1, 2, 3, 4, 5]) void await jobs.enqueue(ctx, "orders.work", { n });
+      for (const n of [1, 2, 3, 4, 5]) void (await jobs.enqueue(ctx, "orders.work", { n }));
       const stop = new AbortController();
       const a = jobs.run(process2(ctx, delay), stop.signal);
       const b = jobs.run(process2(ctx, delay), stop.signal);

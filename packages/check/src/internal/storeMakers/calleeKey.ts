@@ -22,4 +22,3 @@ export function calleeKey(call: CallExpression, file: SourceFile, project: reado
   const hit = entry === undefined ? undefined : exportedFunction(c.property.name, entry, fileOf);
   return hit === undefined ? undefined : fnKeyOf(hit.file, hit.fn);
 }
-

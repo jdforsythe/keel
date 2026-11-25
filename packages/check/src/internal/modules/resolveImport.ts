@@ -18,7 +18,10 @@ export function resolveImport(
   spec: string,
   modules: readonly ModuleInfo[],
   byKey: ReadonlyMap<string, ModuleInfo>,
-): { readonly module: ModuleInfo; readonly name: string | null; readonly contract: boolean;
+): {
+  readonly module: ModuleInfo;
+  readonly name: string | null;
+  readonly contract: boolean;
   readonly entry: boolean;
 } | null {
   if (spec.startsWith("./") || spec.startsWith("../")) {

@@ -1,5 +1,7 @@
 import { type RuleDef, defineRule } from "@keel/check";
-import { callsOf, editOf, keyFindings } from "@keel/std-jobs/tools";
+import { keyFindings } from "@keel/std-jobs/tools";
+import { callsOf } from "./internal/callsOf.ts";
+import { editOf } from "./internal/editOf.ts";
 
 /**
  * E2552 (std.schedules, k.check registry): a `schedule` call outside `modules/<id>/schedules.server.ts`, or a key of

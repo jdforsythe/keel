@@ -10,13 +10,13 @@ import type { Workflow } from "./Workflow.type.ts";
 import type { WorkflowSpec } from "./WorkflowSpec.ts";
 import type { FlowInput } from "./internal/FlowInput.schema.ts";
 import type { Model } from "./internal/Model.ts";
-import { compileStores } from "./internal/compileStores.ts";
+import { compileStores } from "./internal/compileStores.server.ts";
 import { entryOf } from "./internal/entryOf.ts";
-import { forgetJob } from "./internal/forgetJob.ts";
+import { forgetJob } from "./internal/forgetJob.server.ts";
 import { planKey } from "./internal/planKey.ts";
-import { scanOf } from "./internal/scanOf.ts";
-import { stepJob } from "./internal/stepJob.ts";
-import { wakeJob } from "./internal/wakeJob.ts";
+import { scanOf } from "./internal/scanOf.server.ts";
+import { stepJob } from "./internal/stepJob.server.ts";
+import { wakeJob } from "./internal/wakeJob.server.ts";
 
 /**
  * Declare a workflow (std.workflows) in a `*.server.ts` file: the chart run per instance in the one store `id`, its

@@ -24,7 +24,8 @@ export function dropLifted(diags: readonly Diagnostic[], files: readonly SourceF
   const sources = new Map<string, string>();
   for (const f of files) sources.set(f.path, f.source);
   return diags.filter((d) => {
-    const lifts = LIFTED_CODES.has(d.code) || (LIBRARY_LIFTED_CODES.has(d.code) && /(?:^|\/)node_modules\//.test(d.path));
+    const lifts =
+      LIFTED_CODES.has(d.code) || (LIBRARY_LIFTED_CODES.has(d.code) && /(?:^|\/)node_modules\//.test(d.path));
     if (!lifts || !/(?:^|\/)unsafe\//.test(d.path)) return true;
     const source = sources.get(d.path);
     const file = files.find((f) => f.path === d.path);

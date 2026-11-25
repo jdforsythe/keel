@@ -9,8 +9,8 @@ import { chart } from "@keel/std-statecharts";
 import { tx } from "@keel/store";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { flows, workflow } from "../src/index.ts";
-import { type Sim, close, nextId, pass, sim } from "./support.ts";
+import { flows, workflow } from "../src/index.server.ts";
+import { type Sim, close, nextId, pass, sim } from "./support.server.ts";
 
 const empty = s.object({});
 

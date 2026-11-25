@@ -10,8 +10,8 @@ import { chart } from "@keel/std-statecharts";
 import { tx } from "@keel/store";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { flows, workflow } from "../src/index.ts";
-import { type Data, close, nextId, pass, settle, sim } from "./support.ts";
+import { flows, workflow } from "../src/index.server.ts";
+import { type Data, close, nextId, pass, settle, sim } from "./support.server.ts";
 
 const Codes = ["api.nope", "workflows.attempts", "schema.invalid"] as const;
 type Code = (typeof Codes)[number];

@@ -105,6 +105,9 @@ importers:
       '@keel/std-money':
         specifier: workspace:*
         version: link:../../packages/std-money
+      '@keel/std-statecharts':
+        specifier: workspace:*
+        version: link:../../packages/std-statecharts
       '@keel/std-text':
         specifier: workspace:*
         version: link:../../packages/std-text
@@ -305,6 +308,9 @@ importers:
       '@keel/std-sessions':
         specifier: workspace:*
         version: link:../../packages/std-sessions
+      '@keel/std-statecharts':
+        specifier: workspace:*
+        version: link:../../packages/std-statecharts
       '@keel/std-tables':
         specifier: workspace:*
         version: link:../../packages/std-tables
@@ -2373,10 +2379,16 @@ importers:
         version: 3.23.2
 
   packages/std-statecharts:
-    dependencies:
+    devDependencies:
       '@keel/check':
         specifier: workspace:*
         version: link:../check
+      '@keel/cli':
+        specifier: workspace:*
+        version: link:../cli
+      '@keel/compiler':
+        specifier: workspace:*
+        version: link:../compiler
       '@keel/reactive':
         specifier: workspace:*
         version: link:../reactive
@@ -2386,13 +2398,6 @@ importers:
       '@keel/store':
         specifier: workspace:*
         version: link:../store
-    devDependencies:
-      '@keel/cli':
-        specifier: workspace:*
-        version: link:../cli
-      '@keel/compiler':
-        specifier: workspace:*
-        version: link:../compiler
       '@keel/testing':
         specifier: workspace:*
         version: link:../testing

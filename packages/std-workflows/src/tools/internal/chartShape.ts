@@ -1,6 +1,7 @@
-import { chartCalls, literalShape, unwrap } from "@keel/std-statecharts/tools";
+import { chartCalls, literalShape } from "@keel/std-statecharts/tools";
 import type { Ast } from "./Ast.ts";
 import type { Flow } from "./Flow.ts";
+import { unwrap } from "./unwrap.ts";
 
 /** The literal shape of a flow's chart in `ast`, the file that declares it; undefined when it is not a literal. */
 export function chartShape(ast: Ast, chart: Flow["chart"]): ReturnType<typeof literalShape>["shape"] {

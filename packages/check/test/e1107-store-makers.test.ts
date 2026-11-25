@@ -1,5 +1,5 @@
 // k.leave E1107 with k.library In an app: a library function that builds a store from a schema its caller passes (a
-// store maker) is judged at each call in client-reachable code, every argument read as the state; the library's own
+// store maker) is judged at each call in client-reachable code, at the argument paths its state reads (`spec.data`); the library's own
 // `store` call, unreadable only at the function's parameters, is not judged there. `s.enum` values are no schema.
 import { expect, it } from "vitest";
 import { check } from "../src/index.ts";
@@ -82,6 +82,19 @@ it("clientPii listing the class, a schema with none, or a server-only caller cle
 });
 
 it("a caller passing a schema check cannot read is told so at the call", () => {
-  const got = hits(project([page("const make = () => s.string()\nexport const a = chart('shop.a', { data: make(), states: [] })")]));
+  const got = hits(
+    project([page("const make = () => s.string()\nexport const a = chart('shop.a', { data: make(), states: [] })")]),
+  );
   expect(got).toContain("modules/shop/Page.tsx:5 store state not readable at make(); cannot show its .pii() classes");
+});
+
+it("only the argument paths the maker's state reads are read: other fields are values", () => {
+  const got = hits(
+    project([
+      page(
+        "const make = () => s.string()\nexport const a = chart('shop.a', { data: s.string(), start: make(), states: [] })",
+      ),
+    ]),
+  );
+  expect(got.filter((x) => x.startsWith("modules/"))).toEqual([]);
 });

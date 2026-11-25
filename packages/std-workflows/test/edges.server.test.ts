@@ -10,9 +10,9 @@ import { tx } from "@keel/store";
 import fc from "fast-check";
 import { parseSync } from "oxc-parser";
 import { expect, test } from "vitest";
-import { workflow } from "../src/index.ts";
+import { workflow } from "../src/index.server.ts";
 import { stepState, undoneStep } from "../src/tools/index.ts";
-import { nextId, sim } from "./support.ts";
+import { nextId, sim } from "./support.server.ts";
 
 const empty = s.object({});
 
