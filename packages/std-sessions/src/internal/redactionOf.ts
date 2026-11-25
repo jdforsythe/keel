@@ -71,21 +71,19 @@ export function redactionOf(entries: readonly string[], seed: number): Redaction
    * first, a marked open object's undeclared keys and what is under them among them: the encoded value no longer
    * holds those, and a later error may.
    */
-  const apply = (
-    schema: Schema<unknown, boolean>,
-    held: unknown,
-    salt: string,
-    at: readonly string[],
-    value: JsonValue = jsonOf(held, schema),
-  ) => {
+  const apply = (schema: Schema<unknown, boolean>, held: unknown, salt: string, at: readonly string[]) => {
     for (const v of piiValues(schema, held)) found(v);
-    return redact(schema, value, { paths: [...at, ...piiPaths(schema).map((m) => m.path)], seed, salt, found });
+    return redact(schema, jsonOf(held, schema), {
+      paths: [...at, ...piiPaths(schema).map((m) => m.path)],
+      seed,
+      salt,
+      found,
+    });
   };
 
   return {
     tx: (name, schema, payload) => apply(schema ?? json, payload, `tx:${name}`, paths.get(`tx:${name}`) ?? []),
-    state: (id, schema, value, held = value) =>
-      apply(schema, held, `store:${id}`, paths.get(`store:${id}`) ?? [], jsonOf(value, schema)),
+    state: (id, schema, value) => apply(schema, value, `store:${id}`, paths.get(`store:${id}`) ?? []),
     nav(event) {
       const r = event.route;
       const key = `route:${r.id}`;

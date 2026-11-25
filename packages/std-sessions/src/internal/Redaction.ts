@@ -7,8 +7,8 @@ import type { Route } from "./Route.ts";
 export type Redaction = {
   /** The payload as recorded: `payload` (as held) as its schema encodes it, redacted. */
   tx(name: string, schema: Schema<unknown, boolean> | undefined, payload: unknown): JsonValue;
-  /** The state as recorded: `value` as its schema encodes it, redacted; `held` is the state as the store holds it. */
-  state(id: string, schema: Schema<unknown, boolean>, value: unknown, held?: unknown): JsonValue;
+  /** The state as recorded: `value` as its schema encodes it, redacted. */
+  state(id: string, schema: Schema<unknown, boolean>, value: unknown): JsonValue;
   nav(event: Extract<CtxEvent, { kind: "nav" }>): { readonly route: Route; readonly href: string };
   fire(event: Extract<SessionEvent, { kind: "fire" }>): Extract<SessionEvent, { kind: "fire" }>;
   error(error: KeelError<string, JsonValue>): KeelError<string, JsonValue>;

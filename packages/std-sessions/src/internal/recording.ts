@@ -1,8 +1,8 @@
 import { stdConfig } from "@keel/compiler/std/stdConfig";
 import { type Ctx, type CtxEvent, observe, seedOf } from "@keel/ctx";
-import { type Computed, effect, scope } from "@keel/reactive";
+import { effect, scope } from "@keel/reactive";
 import { type Id, type JsonValue, type KeelError, type Result, err } from "@keel/schema";
-import { type Store, givenPii, stores } from "@keel/store";
+import { givenPii, stores } from "@keel/store";
 import type { RecordOptions } from "../RecordOptions.ts";
 import type { Session } from "../Session.schema.ts";
 import type { SessionEvent } from "../SessionEvent.ts";
@@ -59,20 +59,14 @@ export function recording(ctx: Ctx, options: RecordOptions): Live {
   let uploaded = false;
   let done: Session | undefined;
 
-  // Each store's state as it holds it, read once per snapshot: what a `.pii()`-marked open object keeps undeclared is
-  // remembered for the error scrub, though the recorded state (as its schema encodes it) holds none of it.
-  const held = new WeakMap<Store<unknown>, Computed<unknown>>();
-  const heldOf = (st: Store<unknown>): unknown => {
-    let c = held.get(st);
-    if (c === undefined) {
-      c = st.select((v) => v);
-      held.set(st, c);
-    }
-    return c.get();
-  };
   const snapshot = (): JsonObject => {
     const out: Record<string, JsonValue> = {};
-    for (const [id, st] of stores()) out[id] = redaction.state(id, st.schema, st.snapshot().state, heldOf(st));
+    for (const [id, st] of stores()) {
+      // The marked values of the state as last given (`initial`, a restore, a commit), which the snapshot, a codec
+      // copy, no longer holds where an open object leaves them undeclared: later error text drops them.
+      for (const v of givenPii(st)) redaction.remember(v);
+      out[id] = redaction.state(id, st.schema, st.snapshot().state);
+    }
     return out;
   };
 
@@ -89,6 +83,7 @@ export function recording(ctx: Ctx, options: RecordOptions): Live {
   const pull = (): void => {
     for (const [id, st] of stores()) {
       const last = seen.get(id) ?? Number.NEGATIVE_INFINITY;
+      if (st.log().some((e) => e.id > last)) for (const v of givenPii(st)) redaction.remember(v);
       for (const e of st.log()) {
         if (e.id <= last) continue;
         seen.set(id, e.id);

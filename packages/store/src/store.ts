@@ -24,6 +24,7 @@ import { registries } from "./internal/registries.ts";
 import { registryOf } from "./internal/registryOf.ts";
 import { registryPulse } from "./internal/registryPulse.ts";
 import { secretGuard } from "./internal/secretGuard.ts";
+import { statePiiOf } from "./internal/statePiiOf.ts";
 import { storePayloads } from "./internal/storePayloads.ts";
 import { storeReads } from "./internal/storeReads.ts";
 import { trim } from "./internal/trim.ts";
@@ -73,6 +74,9 @@ export function store<T extends object>(
   if (!Number.isInteger(keyLimit) || keyLimit < 1)
     throw new Error(`store ${id}: keyLimit ${keyLimit} is not a positive integer`);
   const start = copy(schema, initial);
+  // `givenPii(store)`: the marked values of the state as last given, before a codec copy drops undeclared keys.
+  const stateMarked = piiPaths(schema).length > 0;
+  let statePii: readonly string[] = stateMarked && start.ok ? piiValues(schema, initial) : [];
   if (!start.ok) throw new Error(`store ${id}: initial state invalid: ${start.error.message}`);
   let base = freeze(start.value);
   let root = signal(base);
@@ -103,6 +107,7 @@ export function store<T extends object>(
       );
 
   const commit = (state: T, next: Row<T>[]): void => {
+    if (stateMarked) statePii = piiValues(schema, state);
     if (making) {
       current = state;
       rows = next;
@@ -294,6 +299,7 @@ export function store<T extends object>(
       const state = copy(schema, parsed.value.state);
       if (!state.ok) return state;
       const restored = freeze(state.value);
+      const given = stateMarked ? piiValues(schema, parsed.value.state) : [];
       // A log this code cannot replay (an undeclared transaction, a refused payload) folds into `state` (k.persist).
       const log = s.object({ log: codec }).parse(snap);
       let next: Row<T>[] | undefined = log.ok ? [] : undefined;
@@ -314,6 +320,7 @@ export function store<T extends object>(
       base = kept.base;
       keys.reset(restoredKeys);
       commit(restored, kept.rows);
+      statePii = given;
       return ok(restored);
     },
     undo() {
@@ -376,6 +383,7 @@ export function store<T extends object>(
   };
   // signal() above already threw E1203 outside a scope, so an owner exists here.
   registry.set(id, self);
+  statePiiOf.set(self, () => statePii);
   storePayloads.set(self, payloads);
   owner()?.onDispose(() => {
     if (registry.get(id) !== self) return;

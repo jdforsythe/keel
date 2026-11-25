@@ -24,3 +24,24 @@ test("a marked open payload's undeclared keys and values are in givenPii, not in
     { seed: 1337, numRuns: 30 },
   );
 });
+
+test("givenPii(store) gives the marked values of the state as last given: initial, a restore, a commit", () => {
+  fc.assert(
+    fc.property(fc.stringMatching(/^[a-z]{8}$/), fc.stringMatching(/^[a-z]{8}$/), (k, v) => {
+      scope(() => {
+        const S = s.object({ p: s.object({}).pii("contact") });
+        const st = store(S, { p: { [`i${k}`]: `i${v}` } }, { id: "given.state" });
+        expect(st.snapshot().state).toEqual({ p: {} });
+        expect(givenPii(st)).toEqual([`i${k}`, `i${v}`]);
+        expect(st.restore({ state: { p: { [`r${k}`]: `r${v}` } }, log: [], initial: { p: {} } }).ok).toBe(true);
+        expect(givenPii(st)).toEqual([`r${k}`, `r${v}`]);
+        const add = transaction(st, "given.add", s.object({}), (x) => ({ p: { ...x.p, [`t${k}`]: `t${v}` } }));
+        expect(tx(add, {}).ok).toBe(true);
+        expect(givenPii(st)).toEqual([`t${k}`, `t${v}`]);
+        const plain = store(s.object({ p: s.object({}) }), { p: { [k]: v } }, { id: "given.plainState" });
+        expect(givenPii(plain)).toEqual([]);
+      }).dispose();
+    }),
+    { seed: 1337, numRuns: 30 },
+  );
+});
