@@ -43,6 +43,11 @@ describe("testTimes", () => {
     expect(out).toContain(`describe("c", () => {});`);
   });
 
+  it("leaves a bound that scales its own parts through testTime or fixedTime", () => {
+    const code = `${VITEST}it("a", () => {}, fixedTime(10_000) + testTime(20_000));\nit("b", { timeout: testTime(9) }, () => {});`;
+    expect(run(code)).toBeUndefined();
+  });
+
   it("follows modifiers, each tables and aliased imports, and keeps every line where it was", () => {
     const code = `import { it as check } from "vitest";\ncheck.concurrent("a", async () => {}, 9);\ncheck.each([1])("b %i", (n) => {}, 30);\ncheck.skipIf(false)("c", { timeout: 40 }, () => {});`;
     const out = run(code) ?? "";

@@ -4,7 +4,8 @@
 // not a function (an options object) and the one after the callback (a number or an options object), and the
 // argument after a hook's callback (`beforeAll`, `afterAll`, `beforeEach`, `afterEach`), are wrapped in a call that
 // multiplies a number, or an object's numeric `timeout`, by the scale. Whatever form the bound takes (a literal, a
-// const, an expression), it scales, so a test file cannot set a vitest bound that does not.
+// const, an expression), it scales, so a test file cannot set a vitest bound that does not; but for one that calls
+// `testTime` or `fixedTime` itself, which scales its own parts (a protocol's fixed wait plus the work around it).
 import type { Plugin } from "vite";
 
 const TESTS = new Set(["it", "test", "describe", "suite"]);
@@ -62,6 +63,15 @@ function baseOf(callee: unknown): string | undefined {
   return undefined;
 }
 
+/** Whether `n` calls `testTime` or `fixedTime` itself: a bound that holds a fixed part (`fixedTime(10_000) + testTime(20_000)`) scales its own parts. */
+function timedByHand(n: Node): boolean {
+  let found = false;
+  walk(n, (c) => {
+    if (c.type === "CallExpression" && (name(c.callee) === "testTime" || name(c.callee) === "fixedTime")) found = true;
+  });
+  return found;
+}
+
 const isFunction = (n: unknown): boolean =>
   isNode(n) && (n.type === "ArrowFunctionExpression" || n.type === "FunctionExpression");
 
@@ -84,7 +94,7 @@ export function boundRanges(program: Node): [number, number][] {
     const at: number[] = TESTS.has(imported) ? [1, 2] : HOOKS.has(imported) ? [1] : [];
     for (const i of at) {
       const a = args[i];
-      if (!isNode(a) || isFunction(a) || a.type === "SpreadElement") continue;
+      if (!isNode(a) || isFunction(a) || a.type === "SpreadElement" || timedByHand(a)) continue;
       if (typeof a.start === "number" && typeof a.end === "number") ranges.push([a.start, a.end]);
     }
   });
