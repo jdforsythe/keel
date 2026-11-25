@@ -26,6 +26,12 @@ import {
 } from "./surface-normal-support.ts";
 
 const SEED = 1337;
+/**
+ * What the edit-by-edit case bounds: for each of its 21 edits a `keel check` and a `keel build` of the fixture, about
+ * 1.5 s a run here (65 s in all). The bound is 40 s a run, so a runner ten times slower (scale 0.1) still has twice
+ * the work's time.
+ */
+const EACH_EDIT_BOUND = 21 * 2 * 40_000;
 let dir = "";
 let recorded = "";
 beforeAll(() => {
@@ -68,7 +74,7 @@ test(
       restore();
     }
   },
-  SLOW,
+  EACH_EDIT_BOUND,
 );
 
 test(
