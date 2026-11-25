@@ -3,7 +3,13 @@ import { expect, it } from "vitest";
 import { BarChart } from "../src/index.ts";
 import { week, words } from "./fixtures.ts";
 
-const props = { id: "spend", label: "Spend per day", summary: "Highest on Thursday, 40.00 €", points: week, text: words };
+const props = {
+  id: "spend",
+  label: "Spend per day",
+  summary: "Highest on Thursday, 40.00 €",
+  points: week,
+  text: words,
+};
 
 it("is one picture named by its label and described by its summary", () => {
   const view = render(BarChart, { props });

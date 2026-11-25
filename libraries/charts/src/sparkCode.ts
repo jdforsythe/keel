@@ -23,7 +23,8 @@ function draw(svg: Element, value: Infer<typeof Series>): void {
     "stroke-linejoin": "round",
   });
   const last = at[at.length - 1];
-  const dot = last === undefined ? [] : [svgNode(doc, "circle", { cx: last.x, cy: last.y, r: 2, fill: "currentColor" })];
+  const dot =
+    last === undefined ? [] : [svgNode(doc, "circle", { cx: last.x, cy: last.y, r: 2, fill: "currentColor" })];
   svg.replaceChildren(line, ...dot);
 }
 

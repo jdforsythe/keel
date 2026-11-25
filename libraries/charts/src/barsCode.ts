@@ -23,7 +23,13 @@ function draw(svg: Element, value: Infer<typeof Series>): void {
     if (!words) return [rect];
     const mid = b.x + b.width / 2;
     const above = point.value >= 0 ? b.y - 4 : b.y + b.height + 12;
-    const shown = svgNode(doc, "text", { x: mid, y: above, "text-anchor": "middle", "font-size": 10, fill: "currentColor" });
+    const shown = svgNode(doc, "text", {
+      x: mid,
+      y: above,
+      "text-anchor": "middle",
+      "font-size": 10,
+      fill: "currentColor",
+    });
     shown.textContent = point.shown;
     const name = svgNode(doc, "text", {
       x: mid,
