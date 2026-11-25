@@ -1,6 +1,6 @@
 # ADR-0207: k.user Testing: a `renderRoute` page is signed in for its own requests, one browser per harness (RFC 0185)
 
-**Status:** accepted (orchestrator, under the RFC defaults; for the operator to confirm).
+**Status:** accepted (orchestrator, under the RFC defaults).
 
 **Context.** `renderRoute`'s `user` reaches guards, loaders and actions only. A component's own service call on the `createApp` ctx is answered in process with no identity, so a signed-in page whose components call a guarded API gets 403 under test and passes in a browser. One ctx has one service binding, so two signed-in users on one app cannot be expressed. Under happy-dom a `Response` drops `set-cookie` and a `Request` drops `cookie`, so the harness's cookie jar is empty in practice, and shell mode has no cookie store: a sign-in round trip through the identity mount cannot be tested in process.
 

@@ -1,6 +1,6 @@
 # RFC 0198: k.shell: a shell's net sends to declared origins only, and a shell names the plugins an app must list
 
-Status: proposed (ADR-0220). Amends k.shell, std.shells, std.capacitor, std.tauri. Under D103, D104, D106 and D108.
+Status: implemented (ADR-0220). Amends k.shell, std.shells, std.capacitor, std.tauri. Under D103, D104, D106 and D108.
 
 ## Decisions
 - D1: one rule for a shell's `net`: it sends to `KEEL_ORIGIN`, the build's `keel-peer` origins and the deployable's declared `origins.connect` origins, the list a browser's `connect-src` holds for the same `client`. Nothing else is sent.

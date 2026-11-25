@@ -1,6 +1,6 @@
 # ADR-0113: a keyed `For` row keeps its element; a one-time prop read that reaches the DOM is E1405 (RFC 0090)
 
-**Status:** accepted by the orchestrator (2026-11-12) under the WORKFLOW RFC defaults 1 and 6; awaiting the user's confirmation.
+**Status:** accepted by the orchestrator (2026-11-12) under the WORKFLOW RFC defaults 1 and 6.
 
 **Context.** A refresh replaced every item object, every `For` row re-rendered, and focus fell to `<body>` after each write. Keeping the row exposes components that read a prop once: they show the old value in a kept row.
 

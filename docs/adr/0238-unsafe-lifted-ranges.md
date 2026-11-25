@@ -1,6 +1,6 @@
 # ADR-0238: k.check: an `unsafe/` file is app code outside its `unsafe(` calls (RFC 0216)
 
-**Status:** accepted (orchestrator, 2026-11-24, for the operator to confirm).
+**Status:** accepted (orchestrator, 2026-11-24).
 
 **Context.** `keel check` dropped every file under `unsafe/` from app code and from E1757, so one justified `unsafe(` call exempted every line of its file from about 50 kernel codes and the stdlib rules that filter `unsafe/`. `keel review` lists the call (R1001) and a file with no call (R1058), not the other lines. k.check did not define app code.
 

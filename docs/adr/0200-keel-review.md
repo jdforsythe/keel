@@ -1,6 +1,6 @@
 # ADR-0200: k.review, k.escapes: `keel review` lists every escape from the framework's protections, ranked by danger and novelty (RFC 0178)
 
-**Status:** accepted (the owner accepted `keel review` for 1.0; the design decisions are the orchestrator's, for the owner to confirm or reverse).
+**Status:** accepted (the owner accepted `keel review` for 1.0; the design decisions are the orchestrator's).
 
 **Context.** Agents write most Keel apps, often with no person reading the diff. The framework sanctions some escapes by name (`unsafe`, declared origins, `reveal`, a mounted handle, `KEEL_ALLOW_ORIGINS`), and TypeScript lets code take shapes `keel check` does not read. Of 43 ways out counted in RFC 0178, 11 are caught or listed for an app today, 3 partly, 5 only in this repository's tooling and 24 by nothing; three of the four evasions seen in this repository's own agent work are among the 24.
 

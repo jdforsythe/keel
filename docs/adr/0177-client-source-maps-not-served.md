@@ -1,6 +1,6 @@
 # ADR-0177: k.deploy: a `*.map` file under `assets/` is not served (RFC 0155)
 
-**Status:** accepted (orchestrator, under the RFC defaults; for the user to confirm).
+**Status:** accepted (orchestrator, under the RFC defaults).
 
 **Context.** A Vite config that sets `build.sourcemap` writes client maps, with `sourcesContent`, beside the chunks under `assets/`, and production `createApp({ assets })` served every regular file there. The server map is already never served.
 

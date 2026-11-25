@@ -1,6 +1,6 @@
 # ADR-0239: k.compat: `sources` hashes each file's normal form (RFC 0217)
 
-**Status:** accepted (orchestrator, 2026-11-24, for the operator to confirm).
+**Status:** accepted (orchestrator, 2026-11-24).
 
 **Context.** `.keel/surface.json` records each file the surface run evaluated with the hash of its text, so a formatter's import sort, re-indent or quote change in any of them made `keel check` report E1005 and skip `--base` comparisons until `keel build`, which then rewrote the file with new hashes and nothing else. E1005 there protects `--base` verdicts (E1562, E1563, W1564) and agents' reads from a surface that no longer matches its code; `keel check` never evaluates app code, so it cannot recompute the surface.
 

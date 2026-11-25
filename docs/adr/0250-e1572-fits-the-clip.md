@@ -1,6 +1,6 @@
 # ADR-0250: k.shell: E1572's plugin message fits 89 units whole; a shell target's texts are bounded (RFC 0228)
 
-**Status:** accepted (orchestrator, 2026-11-24, for the operator to confirm).
+**Status:** accepted (orchestrator, 2026-11-24).
 
 **Context.** k.check clips every `diag` message at 89 UTF-16 code units and says each is written to fit. E1572's plugin form, `<deployable>: <shell> needs <plugin> <version> in package.json dependencies (<need>)` with `need` up to 60, runs to 96 and 112 units at `@keel/std-capacitor`'s real plugins, so they are clipped and the conformance expecting them whole fails. k.check#23 measures each code's one `check()` fixture; the plugin form is built only by the CLI's shell pass from a package's `./tools`, so no fixture reached it. E1575's text is a target's free text with no bound either.
 

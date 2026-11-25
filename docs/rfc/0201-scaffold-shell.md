@@ -1,6 +1,6 @@
 # RFC 0201: k.scaffold-shell: `keel scaffold shell <tauri|capacitor>` adds a native shell
 
-Status: implemented (ADR-0223), accepted by the orchestrator on 2026-11-24, for the operator to confirm. New section k.scaffold-shell; amends k.scaffold (Operations, Generators, Guarantee, Refresh, Rules), std.tauri and std.capacitor (new **App packages**, Tools, Conformance), the map. Under D103. From examples finding 18.
+Status: implemented (ADR-0223), accepted by the orchestrator on 2026-11-24. New section k.scaffold-shell; amends k.scaffold (Operations, Generators, Guarantee, Refresh, Rules), std.tauri and std.capacitor (new **App packages**, Tools, Conformance), the map. Under D103. From examples finding 18.
 
 ## Decisions
 - D1: `keel scaffold shell <tauri|capacitor> --id <reverse-dns> [--name <title>] [--to <deployable>]` is a generator. It changes `topology.ts` and `package.json`, and no other file.

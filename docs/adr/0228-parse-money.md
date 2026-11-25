@@ -1,6 +1,6 @@
 # ADR-0228: std.money: `parseMoney(text, currency, locale)` reads typed amounts (RFC 0206)
 
-**Status:** accepted (orchestrator, 2026-11-24, for the operator to confirm).
+**Status:** accepted (orchestrator, 2026-11-24).
 
 **Context.** `formatMoney` writes an amount for a locale and nothing reads one back. Each app that takes an amount in a form writes its own reader; the household app's takes `.` or `,` as the decimal in every locale, so `1.250` in `de-DE` is read as 125 euros.
 

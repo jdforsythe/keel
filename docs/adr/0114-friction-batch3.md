@@ -1,6 +1,6 @@
 # ADR-0114: focus moves on `fire`, blank required text fails, `keel dev --port`, `keel.unreachable`, one deployable name form, a landmark `Box` is labeled (RFC 0091)
 
-**Status:** accepted by the orchestrator (2026-11-12) under the WORKFLOW RFC defaults; awaiting the user's confirmation.
+**Status:** accepted by the orchestrator (2026-11-12) under the WORKFLOW RFC defaults.
 
 **Context.** Seven frictions from the golden apps: a test cannot move focus; `s.string({ min: 1 })` accepts whitespace and reports an empty value as `min` on one form and `required` on another; `keel dev` cannot choose a port and Vite moves silently; an unreachable peer answers 502 with `keel.unexpected`; `my-api` gives the key `KEEL_PEER_MY-API` and `codemod place` refuses `my-api`; axe `landmark-unique` fails on unnamed `nav` landmarks.
 

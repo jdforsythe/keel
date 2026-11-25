@@ -1,6 +1,6 @@
 # ADR-0211: k.shell: a shell delivers page links with or without an identity source (RFC 0189)
 
-**Status:** accepted (orchestrator; for the operator to confirm).
+**Status:** accepted (orchestrator).
 
 **Context.** k.links says a link from outside reaches a page as a web link does. k.shell had the shell entry call `shellMount`, the only deep-link listener, only when the project has `identity.ts`. A shell project without one registers its scheme, opens on a link and ignores it, while `renderRoute(..., { shell })` delivers the same link, so its tests pass.
 

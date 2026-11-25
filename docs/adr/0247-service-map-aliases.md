@@ -1,6 +1,6 @@
 # ADR-0247: k.bundle: the service map and E1011 stated, and an aliased import of a module file is E1013 (RFC 0225)
 
-**Status:** accepted (orchestrator, 2026-11-24, for the operator to confirm).
+**Status:** accepted (orchestrator, 2026-11-24).
 
 **Context.** E1011 was one line in k.bundle Rules; its conformance assumed what the service map is. The scan that builds the map follows relative specifiers only, so an aliased import of a server module ends in E1011. `keel check`'s module rules (E1151, E1152, E1165) also resolve relative specifiers only, so the same alias reaches a private file of a module not in `deps` unseen. `keel check` reads no `tsconfig.json`, so a `paths` alias is already E1751.
 

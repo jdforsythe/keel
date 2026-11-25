@@ -1,6 +1,6 @@
 # RFC 0154: k.schema: `piiPaths` lists a marked open object's undeclared keys as `*`
 
-Status: implemented (ADR-0176) under the RFC defaults (4: privacy by default), for the orchestrator to confirm. For backlog 0595.
+Status: implemented (ADR-0176) under the RFC defaults (4: privacy by default). For backlog 0595.
 
 ## Decisions
 - D1: for each open object under a mark (its own or inherited), `piiPaths` lists `<object path>.*` with that mark's class, after the object's declared leaves (`*` alone for a marked open root). A closed object, and an open one under no mark, add nothing.

@@ -1,6 +1,6 @@
 # RFC 0202: k.testing: renders disposed at test end, events sent where a browser sends them, uncaught errors located
 
-Status: implemented (ADR-0224), accepted by the orchestrator on 2026-11-24, for the operator to confirm. Amends k.testing (Harness, Rules, Conformance) and adds k.test-run (disposal at test end, results). From walkthrough findings L2-4, L2-5 and L3-5, and the `keel test` reporter.
+Status: implemented (ADR-0224), accepted by the orchestrator on 2026-11-24. Amends k.testing (Harness, Rules, Conformance) and adds k.test-run (disposal at test end, results). From walkthrough findings L2-4, L2-5 and L3-5, and the `keel test` reporter.
 
 ## Decisions
 - D1: a harness handle made while a test runs is disposed when that test ends, passed or failed, after its `afterEach` hooks. A handle made outside a test is never disposed by a test's end.

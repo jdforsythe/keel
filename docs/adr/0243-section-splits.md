@@ -1,6 +1,6 @@
 # ADR-0243: k.scaffold, std.sessions and std.postgres split so every section fits 3,100 tokens (RFC 0221)
 
-**Status:** accepted (orchestrator, 2026-11-24, for the operator to confirm).
+**Status:** accepted (orchestrator, 2026-11-24).
 
 **Context.** Principle 8 caps the spec a task needs at 4k tokens. `spec.section` and `docs.section` stood at 3,400 for k.scaffold (3,387); std.sessions (3,171) and std.postgres (3,104) were also over 3,100. The operator kept the principle and the 3,100 budget (D134).
 

@@ -1,6 +1,6 @@
 # RFC 0211: `keel dev` polls under `KEEL_DEV_POLL`; what `files` counts in the `check` and `build` trailers
 
-Status: accepted (ADR-0233), accepted by the orchestrator on 2026-11-24, for the operator to confirm. Amends k.topology (Dev watcher, Conformance), k.check (Trailer, Conformance), k.deploy (Build, Conformance), the map. From backlog 1057 and 1059.
+Status: accepted (ADR-0233), accepted by the orchestrator on 2026-11-24. Amends k.topology (Dev watcher, Conformance), k.check (Trailer, Conformance), k.deploy (Build, Conformance), the map. From backlog 1057 and 1059.
 
 ## Decisions
 - D1: `keel dev` polls for file changes when `KEEL_DEV_POLL` is `1`: it passes Vite `server.watch` `usePolling: true` and `interval: 100` over the project's own `server.watch`. Unset, empty or `0`: Keel passes no `server.watch`. Any other value: one E1560 naming the key, no server, exit 1.

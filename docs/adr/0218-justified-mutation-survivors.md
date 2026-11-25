@@ -1,6 +1,6 @@
 # ADR-0218: justified mutation survivors in a checked-in file per package (RFC 0196)
 
-**Status:** accepted (operator, 2026-11-22: the file's existence; the threshold choice below is for the operator to confirm).
+**Status:** accepted (operator, 2026-11-22: the file's existence).
 
 **Context.** P1 asks that every mutation survivor be killed or justified, and a justification has no home the ledger can read. Survivors move with every edit, so a record keyed by line drifts. A record nobody checks rots once the survivor is killed or the code moves.
 

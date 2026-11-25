@@ -1,6 +1,6 @@
 # ADR-0187: k.user: a recorded session keeps no `meta.caller`, whatever the caller lifetime (RFC 0165)
 
-**Status:** accepted (orchestrator, under the RFC defaults; for the user to confirm).
+**Status:** accepted (orchestrator, under the RFC defaults).
 
 **Context.** k.user said std.sessions' capture replaces a recorded `meta.caller` under `caller: { days }`, but the recorder runs in the browser and cannot know `days`, a `topology.ts` field. The recorder already keeps no transaction `meta` (a `tx` event is store, name and payload; `state` comes from `snapshot()`, which drops `meta`).
 

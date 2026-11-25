@@ -1,6 +1,6 @@
 # RFC 0153: k.schema: an open object refuses a `Secret` under an undeclared key
 
-Status: implemented (ADR-0175) under the RFC defaults (4: secrets never persist; 6: enforce in the kernel), for the orchestrator to confirm. For backlog 0261.
+Status: implemented (ADR-0175) under the RFC defaults (4: secrets never persist; 6: enforce in the kernel). For backlog 0261.
 
 ## Decisions
 - D1: `parse` of an open object fails with rule `type` at the path of each `Secret` found under an undeclared key, at any depth. Undeclared data is already scanned for prototype keys (the same walk), so the check costs no second pass.

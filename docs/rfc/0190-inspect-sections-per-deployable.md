@@ -1,6 +1,6 @@
 # RFC 0190: k.cli Inspect: each deployable's sections under `keel dev`
 
-Status: draft (ADR-0212 accepted). Backlog 0954.
+Status: implemented (ADR-0212). Backlog 0954.
 
 ## Decisions
 - D1: under `keel dev` of a topology with a `node` deployable, the inspect document gains `deployables`, `{ [name]: { sections } }`: each `node` deployable's own sections and the sections the page of each `client` deployable last posted, under that deployable's name.

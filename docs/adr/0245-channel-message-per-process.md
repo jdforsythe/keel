@@ -1,6 +1,6 @@
 # ADR-0245: std.channels: a channel message stays in the process that serves its publish (RFC 0223)
 
-**Status:** accepted (orchestrator, 2026-11-24, for the operator to confirm).
+**Status:** accepted (orchestrator, 2026-11-24).
 
 **Context.** A store's save reaches the live streams of every replica through the storage's `watch` (RFC 0214), and a followed `changed` through std-postgres. A channel `message` reaches only the streams open in the process that served its publish. The spec said so in one sentence, without saying what an author uses instead, where a message falls against saves on a stream, or what a reconnecting stream gets.
 

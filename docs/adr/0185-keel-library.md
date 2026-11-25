@@ -1,6 +1,6 @@
 # ADR-0185: a Keel library: a package kind checked again by the app (RFC 0163)
 
-**Status:** accepted (operator, 2026-11-25); not yet built. Built before the public release and before RFC 0169's second part.
+**Status:** accepted (operator, 2026-11-25). Not built: the build comes before the public release, before k.parity's second part.
 
 **Context.** The compiler does not transform `node_modules` or linked packages, and `keel check` does not read them, so a published Keel component reaches an app unchecked, uncompiled and uncounted. The kernel tells a stdlib package by its `@keel/std-*` name. D49 asks for one blessed way to publish Keel code with the guarantees built in, and k.parity asks that the stdlib hold no power such a package lacks.
 

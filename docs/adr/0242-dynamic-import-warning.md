@@ -1,6 +1,6 @@
 # ADR-0242: k.ctx: an `import()` in app code is W1608 (RFC 0220)
 
-**Status:** accepted (orchestrator, 2026-11-24, for the operator to confirm).
+**Status:** accepted (orchestrator, 2026-11-24).
 
 **Context.** A module load started by `import()` is I/O no ctx owns. A `simulate` run (k.sim) neither waits for it nor orders it by seed, so one seed can give two traces. `keel check` reports every other ambient effect (E1601) and not this one. The operator chose a warning (D137).
 

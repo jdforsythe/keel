@@ -1,6 +1,6 @@
 # ADR-0217: two factories of one route chain that create one store id are E1550 (RFC 0195)
 
-**Status:** accepted (orchestrator; a plain consequence of k.store Registries and k.server Server state, for the operator to confirm).
+**Status:** accepted (orchestrator; a plain consequence of k.store Registries and k.server Server state).
 
 **Context.** A request holds one live store per id (k.store Registries), and each factory a request's loaders name opens once (k.server Server state). A layout's loader and its page's loader naming two factories that both create one id therefore throw on every request, and the second loader's 500 is the first sign; `keel check` passes the app.
 

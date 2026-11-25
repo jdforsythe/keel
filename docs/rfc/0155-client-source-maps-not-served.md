@@ -1,6 +1,6 @@
 # RFC 0155: k.deploy: a `*.map` file under `assets/` is not served
 
-Status: implemented (ADR-0177) under the RFC defaults (4: privacy by default; 6: kernel-level enforcement), for the orchestrator to confirm. For backlog 0569.
+Status: implemented (ADR-0177) under the RFC defaults (4: privacy by default; 6: kernel-level enforcement). For backlog 0569.
 
 ## Decisions
 - D1: production `createApp({ assets })` neither reads nor serves a file under `assets/` whose name ends `.map`, at any depth. A GET of one is answered as any path the build does not hold.

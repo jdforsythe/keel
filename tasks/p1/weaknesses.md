@@ -1,409 +1,498 @@
 # P1 weakness triage
 
-The triage of every unchecked line of `tasks/BACKLOG.md` on 2026-11-19 (W2 steps 1 and 2 of `tasks/p1/PLAN.md`), under the definition recommended in decision O1: a weakness is any line tagged high, medium, red-team or security, any a11y or privacy gap, any missing conformance, and any low line where a user's data, a user's access or a false claim is at stake. The operator confirms this list once (O1).
-
-Each unchecked backlog line appears in exactly one of the four lists below.
+Every unchecked line of `tasks/BACKLOG.md` has one disposition here, decided by the engineering lead under the operator's delegation (W2 steps 1 and 2 of `tasks/p1/PLAN.md`, decision O1). The standard: Keel goes public hardened, tested well enough that a serious outside engineer, auditor or first user finds no false claim, loses no data, is not misled and is not locked out. A wrong diagnostic, a flaky gate, a silent failure, a scaffold that does not build and a doc that lies are weaknesses; a cosmetic nit is not. No kernel or std feature leaves 1.0: a line that finishes a 1.0 feature is A work, never C.
 
 | List | Lines |
 | --- | --- |
-| 1 Weaknesses, fixed in P1 | 128 |
-| 2 Docs sweep (W12 step 4) | 29 |
-| 3 Feature ideas for `tasks/FUTURE.md` | 7 |
-| 4 Other | 131 |
-| Total | 295 |
+| A1 Before public, fix now | 102 |
+| A2 Before public, after A1 | 105 |
+| B Docs sweep (W12 step 4) | 24 |
+| C After public, in `tasks/FUTURE.md` | 7 |
+| D Closed now | 52 |
+| H Needs a human | 2 |
+| Total | 292 |
 
-Verify the counts and that no id appears twice or goes missing:
+Lists A1, A2, B and H hold the open lines, unchecked; C and D are checked here and in the backlog. Verify that every open backlog id appears exactly once, and the counts:
 
 ```sh
 diff <(grep '^- \[ \]' tasks/BACKLOG.md | cut -c7-10 | sort) \
-     <(grep -E '^- \[[ x]\] [0-9]{4} ' tasks/p1/weaknesses.md | cut -c7-10 | sort) && echo same
-for s in 1 2 3 4; do awk -v s="$s" '/^## /{n=substr($2,1,1)} n==s && /^- \[[ x]\] [0-9]{4} /' tasks/p1/weaknesses.md | wc -l; done
+     <(grep -E '^- \[ \] [0-9]{4} ' tasks/p1/weaknesses.md | cut -c7-10 | sort) && echo same
+grep -E '^- \[[ x]\] [0-9]{4} ' tasks/p1/weaknesses.md | cut -c7-10 | sort | uniq -d
+for s in A1 A2 B C D H; do awk -v s="$s" '/^## /{n=$2} n==s && /^- \[[ x]\] [0-9]{4} /' tasks/p1/weaknesses.md | wc -l; done
 ```
 
-Rules applied:
-- A defect where Keel does other than its spec or a page says is a false claim and a weakness when a user's data, access or safety, or a security, privacy or a11y statement, rests on it. A checker rule that misses a case is a weakness when the rule guards privacy, security or a11y; a miss in any other rule is 1.0 completion work (list 4).
-- A gap in `docs/THREAT-MODEL.md` or in the k.privacy and k.security text is a weakness, since the outside reviews (W4) read those documents; any other spec or docs correction is sweep work.
-- No kernel or std feature is cut from 1.0: a line that finishes a 1.0 feature goes to list 4 as 1.0 completion work, never to list 3.
-- Lines in flight today are marked `in flight` and belong to no fix lane.
+Rules:
+- A1 is correctness, security, privacy, a11y, data, false claims, gate reliability, the scaffold and first run, missing conformance, and anything an auditor or a newcomer meets. A2 is a real defect of lower stakes, or a tooling rough edge that slows the team.
+- A lane is one builder in one sitting. Lanes run in their order; at most two test-running lanes at once, one mutation run at a time. RFC means a spec or kernel behaviour change; a fix against the spec needs none. A conformance file changes only in an `rfc:` commit by the conformance-writer.
+- Sizes: S fits in an hour, M in half a context window, L in a whole one.
+- Where a line asks the operator for an engineering call, the call is made here (`decided:`) and the lane builds it; the operator may reverse it.
+- In flight now, in no fix lane: 1102 (its own lane); RFC 0163, the library format and k.parity (0953, 0998); the `unsafe` count and the negative type fixtures; the RFC status lines.
 
-## 1 Weaknesses, fixed in P1
+## A1 Before public, fix now
 
-Sizes: S fits in an hour, M in half a context window, L in a whole one. The lane is the fix lane below.
+### Lane 01 gate-flakes · tooling, cli, check · no RFC · L
+- [ ] 1040 root `pnpm test` under load needs several whole runs; name every failure
+- [ ] 0938 a cold parallel `pnpm test` fails one task in three runs
+- [ ] 0762 root test flakes under load; the quiet output hides failed tasks
+- [ ] 0515 vitest main, Stryker core and `keel dev` servers outlive the watchdog
+- [ ] 0417 E1155 conformance case failed once under load
+- [ ] 1004 one `packages/cli` test fails now and then under load
+- [ ] 0868 the browser resume smoke crashed once, cause unknown
+- [ ] 1103 `canary.mjs` fails six steps under load; evidence bundle not written
+- [ ] 1003 the CI smokes are not part of the local pre-push gate
+- [ ] 1105 `mutate.mjs --stop` waits without a bound; a run blocked in `open()` holds the lock
 
-### Security and privacy
+### Lane 02 conformance-files · testing, scaffold, check, std-schedules, runtime-dom, compiler · `rfc:` conformance commits only · M
+- [ ] 1098 `sim-stalls` real 100 ms timer against a 300 ms budget is load-sensitive
+- [ ] 0464 `topology-deploy-files` takes 18.6 s and times out under load
+- [ ] 0996 check fixture conformance passes only when started in `packages/check`
+- [ ] 0514 a failing `next-fire` property shrinks for hours; cache the matcher
+- [ ] 1041 resume with `mode: "dev"` still has no conformance case
+- [ ] 1032 `shell-entry-mount` carries a stale `SKIPPED` header
+- [ ] 0580 neither a11y agreement file has a labelled `Box as="nav"` case
 
-- [x] 0501 std-offline · M · a stored outbox entry posts to its stored `origin` unchecked and to the next signed-in user's caller; build RFC 0120 · lane 01
-- [x] 0509 std-offline · M · the outbox sends through `service({ module })`, `send` takes no origin and entries carry none (RFC 0120, with 0501) · lane 01
-- [x] 0797 std-offline · S · red-team: the flush's retry timer outlives `drain`'s scope and still posts · lane 01
-- [x] 0798 std-offline · S · red-team: an `events: true` endpoint in an outbox leaves its entry `sending` across reloads · lane 01
-- [x] 0799 std-offline · S · red-team: two ctxs over one module-level outbox fail each other's entries · lane 01
-- [ ] 0800 std-offline · S · red-team: two tabs overwrite each other's stored outbox, so a reload loses the other tab's queued writes · lane 01
-- [x] 0945 std-offline, std-channels · S · confirm with a test that the 0501 and 0478 fixes are built, then close both · lane 01
-- [x] 0478 std-channels · S · every cookieless caller shares one `perCaller` allowance; build RFC 0121 · lane 01
-- [x] 0777 std-channels · S · red-team: the bounds read the opener module's config but count every module's sinks · lane 01
-- [x] 0441 server · S · an input that becomes `type="password"` only in the browser keeps its value in `#k-state` · lane 02
-- [ ] 0442 server · S · plain siblings of an `s.secret` under an array, record or union drop from a 422 re-render (server budget) · lane 02
-- [x] 0671 server · S · another package replacing or clearing the `onSecret` slot leaves a running app unscrubbed · lane 02
-- [x] 0683 server · M · copies of a secret in other encodings (`+`, `encodeURI`, double encoding, JSON `\u`) are not scrubbed · lane 02
-- [x] 0722 server · S · the dev body of a component that throws while rendering is clipped and not scrubbed · lane 02
-- [ ] 0729 server · S · red-team: the scrub costs about 1.2 s of event-loop time on a 790 KB body of secret items · lane 02
-- [x] 0737 server · S · red-team: some 404 path shapes (`;jsessionid`, `%20`, homoglyphs, `&code=`) are written raw · lane 02
-- [ ] 0756 server · S · a secret beginning or ending with `/` leaves that slash beside `[secret]` in the `req` log line · lane 02
-- [ ] 0894 router · S · red-team: `identityMount` does not validate `path` at runtime, so `/\evil.example` resolves off-origin · lane 03
-- [ ] 0893 compiler, router · S · red-team: E1579 misses a param route matching `handle.path`, and the client router swallows mount links · lane 03
-- [ ] 0895 compiler · S · red-team: a `handle.path` of `/assets` shadows built assets and E1579 allows it · lane 03
-- [ ] 0336 router, testing, std-messages, forms · M · red-team leads: `navigate` with `\` gives an off-origin `//x`; `settle` spins on a sim clock; direct locale imports are unparsed; `issueText` gets user-chosen keys · lane 03
-- [ ] 0503 server, std-channels · M · one stream pool for every live loader lets one client starve every channel subscriber; THREAT-MODEL and std.channels say nothing caps streams · lane 04
-- [ ] 0364 server · S · the per-deployable cap on concurrent event streams is unconfirmed (low, suspected); settle with 0503 · lane 04
-- [ ] 0350 server · S · an outside request carrying `x-keel-forwarded` gets 404 instead of a forward; a loop guard only, or signed from `KEEL_SECRET` · lane 04
-- [ ] 0569 server · S · client `.map` files a Vite config turns on are served from `assets/` · lane 04
-- [ ] 0415 server · S · a GET to an API route with no loader answers 405 before its guards run, with no body · lane 04
-- [ ] 0274 server, apps/sessions · S · W1557 (`secure` not set) fires behind a proxy and the sessions app has no switch for `secure: true` · lane 04
-- [ ] 0865 tooling, server · S · no built `server.mjs` with an `identity.server.ts` has run; add it to the built smokes · lane 04
-- [ ] 0733 check · S · E1111 reads a schema object changed after its literal as clean · lane 05
-- [ ] 0831 check · S · E1303 misses `reveal` in helpers, re-exported reducers and `export { reveal as open }` · lane 05
-- [ ] 0856 check · S · k.security says E1571 decides by E1004's reachability; the rule decides by filename only · lane 05
-- [ ] 0880 check · S · E1107 keeps its own client reach instead of the shared one · lane 05
-- [ ] 0884 check · S · `/// <reference types="vite/client" />` passes `keel check` though only Node's ambient types are allowed · lane 05
-- [ ] 0519 check · S · E1567 misses a namespace import of `@keel/services` (budget at 18 B over) · lane 05
-- [ ] 0386 compiler, check, apps/golden-1 · M · a `.server.ts` loader in a `client` deployable runs in the browser; golden-1's smaller hand-build items with it · lane 06
-- [ ] 0521 compiler · S · `stdRoutes.ts` reads a stdlib manifest by path, so a published std package serves no routes · lane 06
-- [ ] 0517 cli · M · `surfaceRun` drops a `routes.ts` that throws, so `keel build` exits 0 and E1562 can pass a break (needs a design) · lane 06
-- [ ] 0261 store, schema · M · red-team: a spread copies an `s.secret` payload into open-object state, so live state holds a secret that `snapshot()` drops · lane 07
-- [ ] 0595 schema · S · a marked open object's undeclared keys have no `piiPaths` entry though `piiValues` returns them · lane 07
-- [ ] 0801 schema · S · red-team: the `s.json()` check overflows the stack on about 200k nesting from a JSON body · lane 07
-- [ ] 0802 store · S · red-team: a large `keyLimit` costs O(keyLimit) per keyed write; `restore` parses a forged `keys` array whole · lane 07
-- [x] 0402 tooling · S · the `pnpm.overrides` pins (`minimatch`, `qs`) are ignored by this pnpm; move them, pin `packageManager`, rerun `pnpm audit` · lane 08
-- [x] 0942 tooling · S · CI workflows declare no `permissions:`, pin actions by tag and hand `TURBO_TOKEN` to every step · lane 08
-- [ ] 0353 docs, spec · S · one `KEEL_SECRET` signs callers for every deployable; state it in k.topology and THREAT-MODEL · lane 09
-- [ ] 0748 store, docs · S · THREAT-MODEL does not name `keys` in `#k-state`; `openHub.ts` re-derives keys `restore` derives · lane 09
-- [ ] 0785 docs, spec · S · state the decided limit: app code holding the ctx can `dispose()` its online and offline events · lane 09
-- [ ] 0787 docs · S · THREAT-MODEL (stored logs) does not mention the store's `keyLimit` · lane 09
-- [ ] 0656 spec · S · k.privacy's `[pii]` sentence for a later throw names a path no request reaches; reword it · lane 09
-- [ ] 0690 docs, spec · S · the server README lists the scrubbed encodings and k.privacy does not; spec them or mark the README as no contract · lane 09
-- [ ] 0674 spec, skills · S · neither k.guards nor k.api says whether a bearer check denies in a guard or a loader · lane 09
-- [ ] 0867 spec, server, testing · M · how a recorded session learns the caller lifetime is described by RFC 0139 and not specified · lane 09
-- [ ] 0282 runtime-dom, compiler · M · a throwing binding carries the element's runtime `id`, which may be app data, into `data.at`; k.runtime needs a trim first · lane 10
-- [ ] 0775 cli, compiler · S · red-team: a `vite.config.ts` that sets `NODE_ENV` gives app code `DEV === true` under `keel build` · lane 10
-- [ ] 0424 compiler · S · the client entry embeds the deployable-to-module map, so server module names reach the browser · lane 16
-- [ ] 0953 compiler · M · a build-time assertion that a server bundle reaches no CLI-time package through a `deps` package (RFC, reserved code) · lane 16
-- [ ] 0332 apps/golden-2 · S · the URL's `recipeId` renders as the not-found page's `h1`, so any sentence shows in the app's voice · lane 11
-- [ ] 0688 apps/golden-2 · S · sign-up answers "Already signed up", which tells anyone whether an email has an account · lane 11
-- [ ] 0903 apps/golden-2 · S · `identify` returns the bearer answer whenever an `authorization` header is present and never reads the session cookie · lane 11
-- [ ] 0911 apps/golden-2 · S · `POST /api/recipes` writes without a signed-in user while `/recipes/new` is guarded · lane 11
-- [ ] 0608 std-capacitor, spec · M · Capacitor's net driver sends a URL on another origin while Tauri's scope refuses it; one rule for k.shell · lane 14
-- [ ] 0616 std-jobs, check · M · no tools rule reports a revealed value passed to `enqueue` (needs E1112's value walk exported) · lane 15
-- [ ] 0617 forms, check · S · no warning when a password control binds a field that is not `s.secret` · lane 15
-- [ ] 0638 std-tokens, check · S · E2203, a `Digested` node in a loader `output`, waits on the checker exporting its schema reader · lane 15
-- [ ] 0957 check, std-capacitor · S · a Capacitor app with `identity.ts` missing `@capacitor/app` or `@capacitor/browser` is not reported (extend E1572) · lane 15
-- [ ] 0434 check · M · a module's declared `capabilities` are not enforced (golden-1 `api` used storage with `["random"]`) · lane 15
-- [ ] 0812 std-db · S · `sslmode=require` reads as full verification with a multi-line warning; TLS ran against a local server only · lane 19
-- [ ] 0829 tooling, std-db · S · the three TLS cases skip in CI; start Postgres with a certificate in a step · lane 19
-- [ ] 0302 std-sessions · S · red-team: E2005 misses `createRequire`, `module.require`, aliased `require` and non-literal `import()` · lane 18
-- [ ] 0779 std-temporal · S · red-team: `TimeZone.parse` builds an `Intl.DateTimeFormat` per call; cache per name · lane 18
-- [ ] 0525 std-sessions · S · serving `sessions.tally` also serves `POST /sessions` and `GET /sessions/list` on that deployable · lane 18
-- [ ] 0943 release · S · 40 packages are publishable; mark them private until launch · in flight
-- [ ] 0944 release, docs · S · `.gitignore` gaps, no `SECURITY.md` or `CONTRIBUTING.md`, THREAT-MODEL out of date on streams · in flight
-- [ ] 0946 release · M · strip home paths and quotations of the operator before the public repository; a check that fails on either · in flight
-- [ ] 0956 router, std-capacitor, std-tauri · L · any page can open a shell return link with native cookies; RFC 0147 build · in flight
+### Lane 03 ledger-integrity · cli (ledger), tooling · RFC (k.ledger, 0719) · M
+- [ ] 0719 ledger clauses keyed by position, so `--diff` compares different clauses; decided: key by clause text
+- [ ] 0999 the golden apps' `keel test` rewrites committed `surface.json` in a clean checkout
+- [ ] 0992 nothing checks that a conformance `// Spec:` quote appears in its section
+- [ ] 1054 `mutate-justified` reads apps, the ledger reads `packages/` only; decided: the ledger reads apps (with 0919)
 
-### Accessibility
+### Lane 04 store-backed-flakes · std-db, std-postgres, apps/golden-2, apps/household · no RFC · M
+- [ ] 0651 the PGlite vitest worker dies with a V8 fatal error under load
+- [ ] 1039 a vitest worker crashed twice in the std-postgres suite
+- [ ] 1064 std-db `serial-commits` property failed once during a mutation run
+- [ ] 1058 golden-2 `racing-recipes` failed once; find the race or bound it
+- [ ] 1073 household `keel test` ended once in a Node crash trailer
 
-- [ ] 0314 router, server · S · after a server-rendered first page with a route title, later untitled pages keep that title · lane 03
-- [ ] 0796 check · S · red-team: E1802 passes a label of C0 and C1 controls · lane 05
-- [ ] 0463 compiler · S · the E1805 fix writes `<Box as="aside">` with no label, which is E1802 · lane 10
-- [ ] 0396 apps/golden-1 · M · golden-1 a11y: one title per deployable, two unlabelled `nav`, every row link named "Edit", unlabelled counts, body-colour errors · lane 12
-- [ ] 0475 testing · S · `landmark-unique` does not collapse whitespace and counts hidden landmarks · lane 12
-- [ ] 0572 testing, cli, spec · S · the 1.3.2 and 2.4.3 claims map only to E1820 and are always `none`; earn or drop them · lane 12
-- [ ] 0573 testing · M · harness `click` moves no focus, `th scope=row` reads as `columnheader`, `aria-rowindex` has no state key · lane 12
-- [ ] 0580 testing · S · neither a11y agreement file has a labelled `Box as="nav"` or `"section"` case (conformance, `rfc:` commit) · lane 12
-- [ ] 0874 ui · S · `Text` has no `role` · lane 12
-- [ ] 0932 ui · M · no app-level live region, so a result line after an action is not announced · lane 12
-- [ ] 0964 apps/golden-1, ui · S · on the iOS Simulator a tap on the `Done: Bread` label text makes no `change` · lane 14
+### Lane 05 first-run · scaffold, compiler, cli, every package's publish config · RFC (k.cli, 1012) · L
+- [ ] 0991 the scaffold omits `esbuild`, so a new project's `keel build` fails
+- [ ] 1005 packages export `src/*.ts` while `files` is `dist`; published packages break
+- [ ] 0414 a scaffolded project has no `node` deployable, so `route --api` is E1511
+- [ ] 0677 a scaffolded module is placed in no deployable; the API route misfits writes
+- [ ] 0378 golden-1 hand setup leans on the repo root; export the reporter from `@keel/testing`
+- [ ] 1012 `keel check --quiet` hides the failing code; decided: a failing quiet trailer names the first code
 
-### Missing conformance and false claims
+### Lane 06 server-scrub-and-streams · server, services · RFC (k.privacy, 0974) · L
+- [ ] 0970 URL copies of a secret from common encoders slip the scrub; match a decoded view
+- [ ] 0971 hex, `\/`, entities, NFD and unaligned base64 copies slip; decided: add what matches cleanly, state the rest as limits
+- [ ] 0974 the whole-text mark and the covered encodings are stated in the README only
+- [ ] 0756 a secret starting or ending with `/` leaves the slash in the `req` line
+- [ ] 0729 the scrub costs 1.2 s of event loop on a 790 KB body, a cheap stall
+- [ ] 0972 non-ASCII secrets reach the scrub's cap about 2.2 times sooner
+- [ ] 0442 plain siblings of an `s.secret` drop from a 422 re-render; restore and re-base the budget
+- [ ] 1001 an event stream has no cap on one event's size, server or client
 
-- [ ] 0270 cli, std-sessions · S · red-team: the ledger counts a range clause covered when any one file cites it · lane 13
-- [ ] 0531 spec · S · the k.ledger sentence for 0270 and the k.testing RFC for 0317 · lane 13
-- [ ] 0346 cli, spec · M · k.topology gives no programmatic way to start `keel dev` from a test · lane 13
-- [ ] 0349 server, scaffold, cli · M · k.topology clauses 2, 6 and 9 have no evidence; complete the tests or narrow the sentences, then flip · lane 13
-- [ ] 0423 server, services · S · k.hosting clause 2's `service({ module })` half has no conformance assertion · lane 13
-- [ ] 0693 server · S · k.hosting clause 2's fetch URL, `credentials: 'include'` and unset case are observed by no test · lane 13
-- [ ] 0689 apps/golden-2, server · S · k.api's "never 303" bullet has no named test; golden-2 `tokens.test.ts` asserts only wiring · lane 11
-- [ ] 0334 router, apps/golden-2, evals · S · tests that check little: no param second segment in the prefix property, a not-found test that asserts length · lane 11
-- [ ] 0366 evals · S · `golden-1-api` acceptance hardcodes topologies and its hop count is a tautology · lane 11
-- [ ] 0692 compiler · S · k.shell clause 6's test matches the word `drivers`, which any bundle holds · lane 16
-- [ ] 0747 runtime-dom · S · `resume` with `mode: "dev"` has no conformance case · lane 10
-- [x] 0783 std-channels · S · the std.channels sentence on a member refusing `""` has no test of its own · lane 01
-- [ ] 0281 runtime-dom · S · a nested `Boundary` inside a resumed island on the claim path has no test (rfc:0075 leads) · lane 10
-- [ ] 0287 reactive, store · S · `untrack` and `scope.run` reads of a thrown computed, and effects disposed while queued, are untested · lane 07
-- [ ] 0469 schema, cli, router · M · values a user sees as blank pass `required`, and JSON Schema `\S` disagrees with Python; decide the blank set in k.schema · lane 07
-- [ ] 0328 std-text · S · `line` and `para` accept text that shows as nothing or reorders; build RFC 0116 · lane 05
-- [ ] 0804 std-text, check · S · the visible-character regex lives in three places and check and std-text disagree on a lone surrogate · lane 05
-- [ ] 0507 std-live · S · a `read` that never resolves leaves `status()` at `live`; build RFC 0114 · lane 18
-- [ ] 0304 compiler, server · M · a node deployable's build emits no CSS, so node-rendered pages link no stylesheet · lane 16
-- [ ] 0372 compiler · S · a stdlib module placed directly in a deployable is omitted from the server entry silently (suspected) · lane 06
-- [ ] 0486 compiler, check, std-sessions · M · E1559 and the artifact hashes read app `routes.ts` only, so stdlib-served paths go unchecked · lane 06
-- [ ] 0926 compiler · M · a placed stdlib module that resolves no routes is silent; report it (RFC for the diagnostic) · lane 06
-- [ ] 0954 spec, compiler · M · k.cli Inspect says nothing of one origin serving two deployables' sections; golden-2's page timings are hidden (RFC) · lane 16
-- [ ] 0368 scaffold, check · S · generated CI runs `keel check` without `--base` when the base surface is missing, disabling E1562 silently · lane 17
-- [ ] 0371 check, compiler, std-jobs · M · compat `accepts`, `routeFor`, `pathCollisions` and std-jobs `callsOf` each miss a case · lane 17
-- [ ] 0883 scaffold · S · `keel scaffold service` in a client-only module writes a file that fails E1571 · lane 17
-- [ ] 0330 check, router · M · a guard redirect carries params by name only; check the carried fields' schemas in E1508's static half · lane 15
-- [ ] 0918 check, testing · S · a rule that throws becomes E1756, which tests filtering for one code never see · lane 15
-- [ ] 0936 check, cli · S · `keel build`'s check step reads a `dist/` left by `vite build` and reports E1561 · lane 15
-- [ ] 0826 std-tauri · M · a kill inside a store save and power loss are not shown; plugin-store does not fsync · lane 19
-- [x] 0292 apps, tooling · S · `keel check` reports 7 errors in apps/sessions and no app's `check` script runs the checker · lane 08
-- [ ] 0958 std-capacitor, std-tauri, apps, tooling · L · the return-link path has no device proof and no app with `identity.ts` has a shell · lane 14
-- [ ] 0836 evals, apps/golden-3 · L · golden-3 has never been built; owned by W1 step 4, not a fix lane
-- [ ] 0914 std-health, std-geo, std-i18n, std-brands, std-text · L · tests to kill surviving mutants under threshold in the std packages · lane 21
-- [ ] 0916 tooling · S · the mutation cache reuses a result after tests are added; key it on the test files · lane 20
-- [ ] 0919 tooling · M · mutation for `apps/*`: the tool and the ledger read `packages/` only · lane 20
-- [ ] 0960 testing, tooling · M · S0009 does not walk past `@keel/testing` because of a dynamic `vitest` import · lane 20
-- [ ] 0877 tooling · S · `pnpm evidence:report` writes data from a dirty tree without refusing · in flight
-- [ ] 0892 tooling · M · red-team: no gate catches a committed ledger or evidence file that differs from what the tree produces · in flight
-- [ ] 0938 tooling, cli · M · a cold parallel `pnpm test` fails one task in three runs and passes on rerun · in flight
-- [ ] 0965 tooling, shells · S · the `shell-drive.mjs` steps have not run on a GitHub runner · in flight
-- [ ] 0966 std-sessions, tooling · S · std-sessions mutation is unmeasurable for want of a mutation vitest config · in flight
-- [ ] 0967 server · L · 961 server mutants survive; find whether tests miss them and write the tests · in flight
+### Lane 07 check-security-rules · check, cli · RFC (k.boundary, 0884) · M
+- [ ] 0975 E1111 misses aliases, destructured `assign`, reassigned `let`, cross-file changes
+- [ ] 0884 `/// <reference types="vite/client" />` passes; decided: forbid it, type `import.meta.env` through a Keel declaration
+- [ ] 0880 E1107 keeps its own client reach instead of the shared one
+- [ ] 0994 `declaredFor` follows relative imports only, so an alias skips E1570
+- [ ] 1101 E1108 can accept in an editor what a fresh `keel check` refuses
+- [ ] 1099 E1571's message reads two ways; reword within 89 units
+- [ ] 0995 `linkEscapes`, behind E1357 and E1585, has no unit or property test
 
-## 2 Docs sweep (W12 step 4)
+### Lane 08 router-identity · router, check (E1584, E1580), compiler (E1579) · RFC (k.opening, 0969) · M
+- [ ] 0968 an admitted return link re-arms the gate through app code
+- [ ] 0969 a failed `record` leaves the older opening; state it in k.opening
+- [ ] 0976 an `identityMount` call outside `identity.ts` adds unchecked mount paths
+- [ ] 0336 `navigate` with `\` gives `//x`; `settle` spins on a sim clock; locale and `issueText` leads
+- [ ] 0314 after a titled server-rendered first page, untitled pages keep that title
+- [ ] 0895 `handle.path` `/assets` shadows built assets and E1579 allows it
 
-- [ ] 0229 docs, spec, packages · the sweep and reset for 1.0 itself
-- [ ] 0497 store, server · RFC ids in older code comments
-- [ ] 0598 docs · RFC and backlog ids in package READMEs and `docs/guide/**`
-- [ ] 0745 std-schedules · an RFC tag on line 1 of a conformance file (`rfc:` commit)
-- [ ] 0275 router, spec · invalid search values fall back to defaults with 200; state the default in k.router
-- [ ] 0289 spec · state the decided Boundary reset behaviour (an outside computed keeps its error until a source changes)
-- [ ] 0313 spec · state that `routes.ts` is evaluated on Node with no DOM, or install the server DOM first
-- [ ] 0318 check, std-i18n, std-messages · `keel explain` entries for E2301 and E2401 to E2406
-- [ ] 0485 std-sessions · `keel explain` entries for E2002 to E2004
-- [ ] 0341 spec · add the route error answer and E1006 for an endpoints file to k.compat
-- [ ] 0348 spec · state the runner rejection code and the `KEEL_ORIGIN` and `KEEL_PEER_<NAME>` requirements in k.topology
-- [ ] 0388 spec · state the opaque redirect a browser gives a `client` deployable's service call
-- [ ] 0416 docs · a derived file count in `docs/guide/build-golden-1.md`
-- [ ] 0425 docs · the unrun nginx example and the "7 artifacts" claim in `docs/guide/deploy-client.md`
-- [ ] 0481 spec · std.offline writes `Write` with an option `s.number` does not take
-- [ ] 0484 spec · state the same-`at` replay order limit in std.multi
-- [ ] 0529 skills · a line in keel-testing on a fresh `createApp` per `simulate` run
-- [ ] 0574 testing · `HarnessArtifacts` says `keel test` passes it; correct the doc
-- [ ] 0655 spec · k.server's `action` bullet omits `bearer` (section at its token limit)
-- [ ] 0676 skills · the capabilities `credentials(ctx)` needs, and the missing-dependency case
-- [ ] 0678 skills, apps · the stale golden-2 forms example and the import-order lint note
-- [ ] 0730 docs · RFC 0108 D2 lists the wrong subpaths
-- [ ] 0828 spec · std.db names no pool timeout
-- [ ] 0855 spec · E1759's clause for a project with no `topology.ts`
-- [ ] 0881 docs · principle 2 against build-time stubs of server-only files
-- [ ] 0904 spec · k.bundle's environment exception omits `KEEL_DEPLOYABLE`, `KEEL_SHELL`, `KEEL_INSPECT_ORIGINS`
-- [ ] 0909 spec · the dev server and the identity `handle.path` and server-only stubs
-- [ ] 0931 spec · E2101 runs project-wide once one module lists std-brands
-- [ ] 0948 spec, docs · k.shell's CI paragraph and ROADMAP on iOS and macOS Tauri jobs
+### Lane 09 pii-and-data · std-sessions, schema, std-channels, store, docs (THREAT-MODEL) · RFC (k.schema 0980, std.channels 0973) · M
+- [ ] 0977 `redact` skips an open object's undeclared keys, so personal data stays recorded
+- [ ] 0980 a `Secret` in a `Map`, `Set` or symbol key under an undeclared key parses; decided: refuse non-JSON values there
+- [ ] 0973 one cookieless client opens 64 streams per module; decided: a process-wide anonymous count
+- [ ] 0748 THREAT-MODEL does not name `keys` in `#k-state`; `openHub` re-derives keys
 
-## 3 Feature ideas for `tasks/FUTURE.md`
+### Lane 10 offline-and-live-data · std-offline, std-live, apps/golden-1 · RFC (std.offline, 0800) · M
+- [ ] 0800 two tabs overwrite each other's stored outbox and lose queued writes; decided: per-tab keys
+- [ ] 1025 golden-1 opened first while offline says "Not found"; decided: an offline state from std-offline's status
+- [ ] 0806 std-live aborts a read's signal on dispose after the read settled
 
-- [ ] 0383 services · derive client reply types from the route surface: a new derivation; hand-written reply schemas work today
-- [ ] 0603 check · E1111 reading `x-keel-pii` from `routes.json`: a refactor of a rule that works
-- [ ] 0604 ui · label props taking a signal or computed directly: a new API shape, getters work today
-- [ ] 0621 store · a public replay function: a new API; the restart smoke checks the log structurally
-- [ ] 0627 check · an E1112 false positive that waits on the types-mode FUTURE line
-- [ ] 0640 std-tokens · `$hmac-sha256$` digests once Keel has an app key path: a new digest kind
-- [ ] 0930 std-timings, server · a timings reader in a build (`Server-Timing` or a log record): the dev reader is the 1.0 feature
+### Lane 11 dev-loop · cli, compiler · RFC (k.compat 0461, k.topology 0400) · L
+- [ ] 0400 a `keel dev` failure is an unstyled 500, and k.topology claims HMR; decided: the spec says full reload, HMR stays in FUTURE
+- [ ] 0461 `surface.json` goes stale in dev, so `keel check` reports E1005 until a build
+- [ ] 0340 the surface builder lives in the cli binary; an MCP build writes none
+- [ ] 0343 `keel dev` with a client and a node deployable resumes no node islands
+- [ ] 0908 an unmatched path answers Vite's 404 in dev, Keel's in a build
+- [ ] 0955 a dev reload keeps a removed inspector section; `s.register` fails on edit
+- [ ] 0520 `server.port: 0` gives a false E1560; decided: skip the probe, report the bound port
 
-## 4 Other
+### Lane 12 runtime-ids · runtime-dom, ctx, testing · RFC (k.runtime, k.ctx) · M
+- [ ] 0282 binding ops take `data.at` from the element's `id`, which may be app data
+- [ ] 0997 `createRoot` adds seven capture listeners that no spec sentence states
+- [ ] 1096 a hold settling after its run's `stop` runs on the dead run
 
-### In flight or owned by a named workstream
-- [ ] 0034 W1 step 1: the freeze review, in flight
+### Lane 13 a11y-harness · testing, std-headless, std-widgets · RFC (k.testing) · M
+- [ ] 0989 `fire` sends one event, so a widget with no `onClick` passes; add a real click
+- [ ] 0990 no conformance states that a press selects a tab; audit every widget's pointer path
+- [ ] 0573 harness `click` moves no focus; `th scope=row` role; no `aria-rowindex` state key
+- [ ] 0317 harness `find` exposes no `lang` and no stable node handle
+
+### Lane 14 silent-compiler · compiler, check, apps/sessions · RFC (k.bundle 1093) · M
+- [ ] 0602 a non-literal style value on a base element is dropped with no diagnostic
+- [ ] 0578 a component called as a function in JSX renders nothing, silently
+- [ ] 0601 the sessions app's hand-built `Box` calls ship classes with no CSS
+- [ ] 1093 the service map does not follow `new URL(...)` or `?worker`; decided: the scan follows both
+- [ ] 1007 an app module with a contract and no `routes.ts` serves 404s silently; decided: E1586 reaches app modules
+
+### Lane 15 spec-claims-and-explain · check, cli, spec, std-i18n, std-messages, std-sessions, std-postgres · RFC (k.ui 1051, k.check 1014) · M
+- [ ] 0978 `keel explain` answers nothing for codes a section states; add a check
+- [ ] 0318 `keel explain` has no entry for E2301 and E2401 to E2406
+- [ ] 0485 `keel explain` has no entry for E2002 to E2004
+- [ ] 1051 k.ui says E1801's fix is the nearest token; no fix is offered for a look
+- [ ] 1033 E2460 is explain-only while std.postgres lists it among the `/tools` rules
+- [ ] 0979 some std sections have no row in the spec map or the std table
+- [ ] 0855 E1759's clause for a project with no `topology.ts` would report Node tooling
+- [ ] 1014 `keel check` reads every `.js` and `.mjs`; decided: k.check names app code as modules, root config and tests
+
+### Lane 16 spec-size · tooling, spec · RFC (principle 8 bound, the section splits) · M
+- [ ] 0981 k.module is over its 6,000-character limit and the budgets gate passes
+- [ ] 0807 `keel spec` and `tooling/budgets.mjs` measure a section differently; make them one
+- [ ] 1100 the spec map plus the largest section is over principle 8's 4,000 tokens; decided: a section bound that keeps the sum under it
+- [ ] 1043 std.postgres is about 3,065 tokens; split it with 1100
+
+### Lane 17 shells-proof · std-tauri, apps with `identity.ts`, CI shell jobs · no RFC · L
+- [ ] 0958 the return-link path has no device proof and no shell app has `identity.ts`
+- [ ] 0826 plugin-store does not fsync, so power loss can lose a save
+- [ ] 1088 CI's `shell-ios` failed twice at action 3 of the outbox session drive
+- [ ] 1060 a tap on the `Done: Bread` label makes no `change` on the iOS Simulator
+
+### Owned by a P1 workstream or in flight
+- [ ] 0034 the freeze review and status flips (W1)
+- [ ] 0413 `docs/freeze-review.md` "Tested, not stated" list unchecked against the suites (W1)
+- [ ] 0605 `styles` reserved on every component (W1); decided: keep it reserved, give E1823 the k.aria file scope and `unsafe/` exemption, the fix renames the prop
+- [ ] 0836 golden-3 has never been built (W1 step 4, the audit target)
 - [ ] 0963 the active task to the start of P1
-- [ ] 0230 program: the lane table, the orchestrator's
-- [ ] 0312 S6 stage: closes with W4
-- [ ] 0337 S7 stage
-- [ ] 0220 W6 step 1
-- [ ] 0221 W6 step 2
-- [ ] 0355 W6 step 3
-- [ ] 0839 W6 step 3
-- [ ] 0308 W7: the scaffold's locale template, decided (D7)
-- [ ] 0222 W5 step 4
-- [ ] 0429 W5: the `golden-1` eval task
-- [ ] 0577 W5: the `golden-2-catalog` eval twins
-- [ ] 0673 W5 step 4: carrying a signed-in caller's cookie in tests, a decision
-- [ ] 0675 W5 step 4: `renderRoute` has no log option
-- [ ] 0807 W5 step 5: `keel spec` and the budgets measure differently
-- [ ] 0223 W12 step 6: the launch checklist
-- [ ] 0941 W12 step 1: the licence (operator, O4)
-- [ ] 0906 operator: GitHub Actions spending limit
+- [x] 1102 the 2026-11-24 mutation pass stopped unfinished
+- [ ] 0953 a build-time check that a server bundle reaches no CLI-time package · in flight (RFC 0163)
+- [ ] 0998 k.host-element names k.library before that section exists · in flight (RFC 0163)
 
-### W1: freeze decisions and k.shell
-- [ ] 0316 route `title` props are untyped
-- [ ] 0317 harness `find` exposes no `lang` or stable node handle
-- [ ] 0339 whether `service({ module })` unwraps the loader envelope
-- [ ] 0380 endpoint file naming against k.services and ADR-0028
-- [ ] 0413 `docs/freeze-review.md` "Tested, not stated" list
-- [ ] 0605 `styles` reserved on every component (user decision)
-- [ ] 0845 `@keel/check` consolidation before the freeze
-- [ ] 0609 no native build has run
-- [ ] 0634 Tauri on Windows: `icon.ico`, no installer
-- [ ] 0824 no physical device run
-- [ ] 0825 the shell replay is one user's half
-- [ ] 0827 no Android emulator replay
-- [ ] 0866 device checks for a cookie that survives relaunch
+## A2 Before public, after A1
 
-### W3: evidence and mutation
-- [ ] 0749 the evidence ramp
-- [ ] 0403 mutation timeouts in rule files
-- [ ] 0404 load-dependent kills
-- [ ] 0405 ui scoped score below threshold
-- [ ] 0443 mutation-only test exclusions
-- [ ] 0524 scores fell, above threshold
-- [ ] 0532 exports at `none` in the ledger
-- [ ] 0625 scores fell on 2026-11-16
-- [ ] 0626 check mutation budget and sandbox lists
-- [ ] 0629 stale claims after RFC 0101
-- [ ] 0713 slow scrub mutants
-- [ ] 0718 `pnpm mutate:stale` measured run
-- [ ] 0719 ledger clauses keyed by position
-- [ ] 0761 `mutate:stale` counts disagree
-- [ ] 0805 snapshot size with the default `keyLimit`
-- [ ] 0816 coverage run bound for std-sessions
-- [ ] 0821 PR mutation job, nightly chosen
-- [ ] 0920 static mutants survive
-- [ ] 0922 server Stryker exclusions
-- [ ] 0924 never-mutated files
+### Lane 18 mutation-tooling · tooling · RFC only for 0403's loop bounds · L
+- [ ] 0403 212 mutation timeouts sit in rule files with no loop
+- [ ] 0404 five `@keel/check` mutants flip between killed and survived by load
+- [ ] 0405 a scoped ui run printed a score under threshold; run it whole
+- [ ] 0443 tests excluded from mutation only, for want of repo paths in the sandbox
+- [ ] 0530 two stale-lock takeovers of `keel-mutate.lock` can both win
+- [ ] 0542 `holderAlive` accepts any pid naming "mutate"; the stall clock counts dry runs
+- [ ] 0626 `@keel/check` needs its own mutation budget; move exclusions to `ROOT_SANDBOX`
+- [ ] 0713 the scrub's mutants run at 2 to 5 a minute
+- [ ] 0761 `mutate:stale` and `pnpm ledger` disagree on what is stale
+- [ ] 0924 files with no ledger claim are never mutated by the stale planner
 
-### Tooling, flakes and budgets
-- [ ] 0291 Node declarations slow the type pass
-- [ ] 0293 vitest 5
-- [x] 0294 `pnpm.overrides` location, joins 0402
-- [ ] 0417 E1155 flake under load
-- [ ] 0464 a slow scaffold conformance file
-- [ ] 0514 std-schedules shrink time (`rfc:` edit)
-- [ ] 0515 unbounded processes after the watchdog
-- [ ] 0530 mutate lock race
-- [ ] 0542 `holderAlive` and the stall clock
-- [ ] 0570 quiet output hides the failing task
-- [ ] 0579 format-check reads `reports/`
-- [ ] 0651 PGlite V8 crash
-- [ ] 0762 root test flakes under load
-- [ ] 0767 inspector smoke not rerun
-- [ ] 0808 regenerate STAGES and COVERAGE
-- [ ] 0814 format-check reads ignored build output
-- [ ] 0868 resume smoke crash
-- [ ] 0878 docs-freshness cadence
-- [ ] 0923 devStubs fixture resolution
-- [ ] 0335 budget on golden-2's client entry
-- [ ] 0342 scaffold budget headroom
-- [ ] 0418 router budget headroom
-- [ ] 0427 server budget headroom
-- [ ] 0576 golden-2 client entry has no budget
-- [ ] 0721 server budget headroom
+### Lane 19 mutation-evidence (W3) · every package's tests, tooling · no RFC · L
+- [ ] 0749 the evidence ramp: every survivor killed or justified, rungs raised (W3)
+- [ ] 0914 tests to kill survivors in std-health, std-geo, std-i18n, std-brands, std-text
+- [ ] 0967 961 server mutants survive; write the tests that kill them
+- [ ] 0919 mutation for `apps/*`: the ledger reads `packages/` only and no app has a config
+- [ ] 0920 module-top-level literals survive under Stryker's runner; count or exclude by rule
+- [ ] 0922 five server `keel build` tests excluded from mutation may now run
+- [ ] 0718 measure one `pnpm mutate:stale` run and the load beside it (runs need no ask)
+- [ ] 0532 28 exports at `none` in the ledger; name each in a test or narrow the kinds
+- [ ] 0816 the std-sessions `to-test` case hits its bound under `pnpm coverage`
 
-### 1.0 completion work, stays in the backlog behind the weakness gate
-- [ ] 0315 E1509 is not per deployable
-- [ ] 0325 E2301 and E1106 resolve by identifier only
-- [ ] 0331 `formatMessage` renders `NaN`, `''` and `-0` with no diag
-- [ ] 0340 the surface builder lives in the cli binary
-- [ ] 0343 `keel dev` serves one resume entry for two deployables
-- [ ] 0344 E1559 from `keel check`
-- [ ] 0378 golden-1 hand setup leans on the repo root
-- [ ] 0381 `Form` inside a helper named `children`
-- [ ] 0400 `keel dev` failure page and HMR
-- [ ] 0414 the scaffolded project has no `node` deployable
-- [ ] 0428 E1561 against a narrow declared error shape
-- [ ] 0430 batch `codemod move`
-- [ ] 0436 an uncoded unavailable-storage error
-- [ ] 0447 E1405 misses cases
-- [ ] 0461 `surface.json` goes stale in dev
-- [ ] 0483 a made-up E1720 in a fixture
-- [ ] 0496 ctx listener and kill-function retention (RFC 0115)
-- [ ] 0506 `replayGroup` has no worker cap or call timeout
-- [ ] 0508 MCP `build` diagnostics as records
-- [ ] 0510 the `offline.storage` code (RFC 0112)
-- [ ] 0513 std-sessions runtime deps on vite and vitest
-- [ ] 0520 `server.port: 0` and the E1560 probe
-- [ ] 0527 `resolve(..., 'mine')` answer (RFC 0112)
-- [ ] 0538 tally merge needs compare-and-set storage
-- [ ] 0578 a component called as a function in JSX renders nothing
-- [ ] 0600 std-tables links re-apply the old `q`
-- [ ] 0601 sessions app hand-built `Box` calls ship no CSS
-- [ ] 0602 a non-literal style value is dropped silently
-- [ ] 0611 SQLite `BEGIN IMMEDIATE` blocks the event loop
-- [ ] 0619 E2351 and E2501 apply to test files
-- [ ] 0677 scaffolded module placement and write-only routes
-- [ ] 0765 sim net kill-function retention
-- [ ] 0766 `NODE_ENV` for native build steps
-- [ ] 0782 an unused `RESUME_ENTRY.ts`
-- [ ] 0806 std-live aborts a settled read's signal
-- [ ] 0813 every connect failure is E2153
-- [ ] 0818 `keel build` deletes Cargo's target
-- [ ] 0838 golden-1 lists unused std packages
-- [ ] 0844 `resumeDocument` mounts no router
-- [ ] 0857 E1406 not run over `packages/` with types
-- [ ] 0859 std-headless uses `toLocaleLowerCase`
-- [ ] 0872 `Button` has no `name` or `value`
-- [ ] 0873 E2406 only for modules that list std-messages
-- [ ] 0875 no helper for a redirect carrying an auth library's cookies
+### Lane 20 tooling-rough-edges · tooling, cli · no RFC · M
+- [ ] 0291 Node's declarations add 0.3 s to each fresh type pass program
+- [ ] 0814 `format-check` reads git-ignored build output
+- [ ] 0767 the inspector smoke has not run since `--port 4180`
+- [ ] 0878 docs-freshness (D0001) trips several docs at once; give the re-verify a cadence
+- [ ] 0923 `devStubs.test.ts` resolves `@keel/router/internal` only through `NODE_PATH`
+- [ ] 1076 the smokes CI does not run keep no crash output
+- [ ] 1065 `shell-drive.mjs --shell tauri` times out on a locked screen instead of saying so
+- [ ] 1044 `tasks/p1/review-findings.md` is undecided; decided: the lead decides each finding, a `keel-review.json` only if one needs it
+
+### Lane 21 budgets · tooling, check · no RFC · M
+- [ ] 0993 the one size review before P1: trim the cheap, set every budget to measured plus headroom
+- [ ] 0335 no budget measures an app's client entry; add golden-2's
+- [ ] 0845 `@keel/check` grew to its budget; a consolidation pass over the rules
+
+### Lane 22 check-rules · check, std-i18n, std-text, std-tokens · RFC where a rule's spec line changes · M
+- [ ] 0315 E1509 treats every file as one route table; group by deployable
+- [ ] 0325 E2301 and E1106 resolve by identifier only, not through `globalRefs`
+- [ ] 0344 E1559 is reported by `keel build` only, not by `keel check`
+- [ ] 0428 E1561 refuses a declared error shape narrower than any error
+- [ ] 0857 E1406 has not run over `packages/` and `evals/` with types
+- [ ] 0873 E2406 runs only for modules that list std-messages
+- [ ] 0905 `keel check` reports E1010 for code files only
+- [ ] 0804 the visible-character regex lives in three places that disagree on a lone surrogate
+- [ ] 0676 a missing std dependency is E1005 only, and `credentials(ctx)` capabilities are unstated
+
+### Lane 23 compiler-small · compiler, cli, std-messages, std-workflows · no RFC · M
+- [ ] 0447 E1405 misses a `let`, nested reads, derived locals and called functions
+- [ ] 0782 `RESUME_ENTRY.ts` is unused and a second way to build the resume entry
+- [ ] 0910 a vitest `vmThreads` or `vmForks` pool would get stubs
+- [ ] 1000 `routes.json` writes `guard: null` for no guard and for a guard without `redirect`
+- [ ] 0935 three copies of `entryOf`; share one
+
+### Lane 24 cli-records · cli, check · RFC (k.cli, 0508) · M
+- [ ] 0508 an MCP `build` returns diagnostics as stderr text; decided: the result carries records
+- [ ] 0879 `keel build` prints E1007 on stderr only, not as a record
+- [ ] 0901 a build stopped by check ends with a `check` trailer; warnings dropped on success
+- [ ] 1104 E1007's build line runs past 100 units unclipped
+- [ ] 1097 `keel test` forces a `forks` pool silently; decided: a warning diagnostic
+
+### Lane 25 scaffold-codemod · scaffold · no RFC · M
+- [ ] 0308 the app template starts with the locale path param (decided D7)
+- [ ] 0430 `keel codemod move` aborts on an interim cycle; a batch move
+- [ ] 0959 the Tauri single-instance callback does not focus the window
+
+### Lane 26 testing-ctx-store · testing, ctx, store, std-geo, tooling (S0009) · RFC (k.testing 0673, `@keel/testing` entries 0960) · M
+- [ ] 0673 no way to carry a signed-in caller's cookie into a test; decided: one `@keel/testing` shape by RFC
+- [ ] 0675 `renderRoute` has no log option
+- [ ] 0844 `resumeDocument` mounts no router, so link-driven controls cannot be followed
+- [ ] 0765 the sim net keeps a kill function per open body until it ends
+- [ ] 1094 `simulate` runs a full collection when a pending set is read twice
+- [ ] 0929 the std-geo sim gives one position and never `geo.unavailable`
+- [ ] 0960 S0009 does not walk past `@keel/testing` because of a dynamic `vitest` import
+- [ ] 0436 unavailable storage is an uncoded `Error`; give it a code
+- [ ] 0805 the default `keyLimit` makes snapshots up to four times larger; measure it
+
+### Lane 27 std-fixes · std-sessions, std-messages, std-headless, std-tables, std-workflows, std-tokens · RFC (std.tokens 0984) · M
+- [ ] 0302 E2005 misses `createRequire`, `module.require`, aliased `require`, non-literal `import()`
+- [ ] 0331 `formatMessage` renders `NaN`, `''` and `-0` with no dev diag
+- [ ] 0506 `replayGroup` has no worker cap and no call timeout, so a hang leaks workers
+- [ ] 0513 std-sessions depends on `vite` and `vitest` at runtime; decided: optional peers for `./group`
+- [ ] 0600 a table link during a search load re-applies the old `q` and drops typed text
+- [ ] 0619 E2351 and E2501 apply to test files, so a test cannot declare a twin
+- [ ] 0859 std-headless typeahead uses `toLocaleLowerCase`, which E1758 reports
+- [ ] 0984 std-tokens `check` takes a synchronous `find`, so tokens cannot live in a database
+
+### Lane 28 std-db · std-db, CI · no RFC · M
+- [ ] 0611 SQLite `BEGIN IMMEDIATE` with a 5 s busy timeout can block the event loop
+- [ ] 0812 `sslmode=require` reads as full verification; decided: keep it, state it in std.db
+- [ ] 0813 every connect failure is the same E2153
+- [ ] 0828 a pool wait past the connect timeout is unexercised and unstated
+
+### Lane 29 server-identity-deploy · server, compiler, std-sessions · RFC (k.user 0875, k.security 0867) · M
+- [ ] 0875 no helper answers a redirect that carries an auth library's cookies
 - [ ] 0876 `identify` cannot open a Keel store
-- [ ] 0879 E1007 on stderr only
-- [ ] 0901 check warnings dropped on a successful build
-- [ ] 0905 E1010 for code files only
-- [ ] 0908 dev and build answer an unmatched path differently
-- [ ] 0910 vitest `vmThreads` pools get stubs
-- [ ] 0929 std-geo sim has one position and no refusal
-- [ ] 0935 three copies of `entryOf`
-- [ ] 0955 dev reload leaves a removed inspector section
-- [ ] 0959 Tauri single-instance does not focus the window
+- [ ] 0867 how a recorded session learns the caller lifetime is not specified
+- [ ] 1030 every peer needs `KEEL_PEER_<NAME>` for peers it never calls; decided: only for called peers
+- [ ] 0538 the tally merge can lose counts across processes; decided: state single-writer in std.monitor, CAS stays in FUTURE
 
-## Fix lanes
+### Lane 30 shells-native · cli, std-capacitor, std-tauri, CI · RFC 0198 for 1063 · L
+- [ ] 0634 Tauri on Windows lacks `icon.ico`, and `--release` makes no installer
+- [ ] 0766 `cargo` and `cap` keep the shell's `NODE_ENV`; decided: native steps follow production
+- [ ] 0818 every `keel build` deletes Cargo's target, so a rebuild takes 60 s
+- [ ] 0825 the shell replay runs one user's half of the race script
+- [ ] 0827 no Android emulator replay of a recorded session
+- [ ] 0866 an auth cookie surviving relaunch is unchecked on Android, iOS and Tauri
+- [ ] 1062 no smoke runs an Android shell on an emulator
+- [ ] 1063 `@capacitor/browser` ships without `identity.ts`; decided: RFC 0198's direction, the lead accepts it
+- [ ] 1072 CI builds no native shell of the two native examples
 
-Lanes are ordered by severity. Each lane is one agent and one context window over the packages named; lanes that run at the same time share no package. Tier: opus where a kernel change, a spec decision or an RFC is needed, otherwise sonnet. A conformance file changes only in an `rfc:` commit by the conformance-writer.
+### Lane 31 ui-and-brand · ui, apps/golden-1, apps/golden-2 · RFC (k.ui 0872, k.ui and k.security 0985) · M
+- [ ] 0872 `Button` has no `name` or `value`, so a native post cannot tell buttons apart
+- [ ] 0985 no `Video` or `Audio` element and no `media-src`; build after W15, captions required
+- [ ] 1042 a brand pass on golden-1 and golden-2 from screenshots
+- [ ] 1049 no button hover, disabled or checkbox style; decided: from BRAND.md's palette, stated in k.ui Base
+- [ ] 0396 golden-1 left: filter links' current state, Undo's reason, `/digest` count labels
+- [ ] 0838 golden-1 lists four std packages it does not import; decided: drop what no build reads
 
-| Lane | Packages | Lines | Count | Tier | Tests |
-| --- | --- | --- | --- | --- | --- |
-| 01 offline-channels | std-offline, std-channels | 0501 0509 0797 0798 0799 0800 0945 0478 0777 0783 | 10 | opus | yes |
-| 02 server-scrub | server | 0441 0442 0671 0683 0722 0729 0737 0756 | 8 | sonnet | yes |
-| 03 router-mount | router, compiler (E1579), testing, std-messages, forms | 0894 0893 0895 0336 0314 | 5 | sonnet | yes |
-| 04 server-edges | server, apps/sessions, tooling smokes | 0503 0364 0350 0569 0415 0274 0865 | 7 | opus | yes |
-| 05 check-privacy | check, std-text | 0733 0831 0856 0880 0884 0519 0796 0328 0804 | 9 | sonnet | yes |
-| 06 compiler-routes | compiler, cli, check, std-sessions, apps/golden-1 | 0386 0521 0517 0372 0486 0926 | 6 | opus | yes |
-| 07 kernel-data | schema, store, reactive | 0261 0595 0801 0802 0287 0469 | 6 | opus | yes |
-| 08 supply-chain | tooling, `.github`, apps check scripts | 0402 0942 0292 | 3 | sonnet | no (audit and `keel check` only) |
-| 09 threat-model | docs, spec, skills | 0353 0748 0785 0787 0656 0690 0674 0867 | 8 | opus | no |
-| 10 runtime-errors | runtime-dom, compiler, cli | 0282 0775 0463 0747 0281 | 5 | opus | yes |
-| 11 golden-2-access | apps/golden-2, evals | 0332 0688 0903 0911 0689 0334 0366 | 7 | sonnet | yes |
-| 12 a11y | testing, ui, apps/golden-1 | 0396 0475 0572 0573 0580 0874 0932 | 7 | opus | yes |
-| 13 conformance-topology | server, scaffold, cli, services | 0349 0346 0423 0693 0270 0531 | 6 | opus | yes |
-| 14 shells | std-capacitor, std-tauri, apps (identity shell), golden-1 | 0608 0958 0964 | 3 | opus | yes (devices) |
-| 15 check-tools | check, std-jobs, forms, std-tokens, std-capacitor | 0616 0617 0638 0957 0434 0330 0918 0936 | 8 | opus | yes |
-| 16 compiler-boundary | compiler, server | 0424 0953 0954 0304 0692 | 5 | opus | yes |
-| 17 compat | scaffold, check, compiler, std-jobs | 0368 0371 0883 | 3 | sonnet | yes |
-| 18 std-runtime | std-live, std-sessions, std-temporal | 0507 0302 0525 0779 | 4 | sonnet | yes |
-| 19 std-storage | std-db, std-tauri | 0812 0829 0826 | 3 | sonnet | yes |
-| 20 mutation-tooling | tooling, testing | 0916 0919 0960 | 3 | sonnet | yes (mutation) |
-| 21 std-mutation | std-health, std-geo, std-i18n, std-brands, std-text | 0914 | 1 | sonnet | yes (mutation, quiet machine) |
+### Lane 32 evals-and-walkthrough · evals, apps/household, skills · no RFC · M
+- [ ] 0429 eval `golden-1` expects files the app no longer has; update it
+- [ ] 0577 `golden-2-catalog` lacks the two package twins of its gate
+- [ ] 0987 the head-to-head Keel arm needs a kit of packed tarballs (W16)
+- [ ] 1035 walkthrough findings L7-5 and L7-7 to L7-9 are open
+- [ ] 1095 three household scenarios pass `law: false`; give each run its own server
+- [ ] 1074 `list_writes` keeps every write key; decided: retention by age on a workflow
 
-Lane total: 117 lines. With 0836 (W1 step 4) and the 10 in-flight lines that makes the 128 entries of list 1. Each list 1 entry names its lane, and the lane column above holds the same ids:
+### Owned by a P1 workstream
+- [ ] 0220 SVG system diagrams (W6 step 1)
+- [ ] 0221 the human guided tour (W6 step 2); its newcomer review is O9
+- [ ] 0222 agent documentation and the `public-docs` eval (W5 step 4)
+- [ ] 0223 the launch checklist script (W12 step 6)
+- [ ] 0355 a guide to building a Keel app by hand (W6 step 3)
+- [ ] 0839 no getting-started guide; the walkthrough app answers it (W7)
 
-```sh
-diff <(awk -F'|' '/^\| [0-9][0-9] /{print $4}' tasks/p1/weaknesses.md | tr ' ' '\n' | grep -E '^[0-9]{4}$' | sort) \
-     <(awk '/^## /{n=substr($2,1,1)} n==1 && /^- \[ \] [0-9]{4} / && !/in flight|W1 step 4/' tasks/p1/weaknesses.md | cut -c7-10 | sort) && echo same
-```
+## B Docs sweep
 
-### Waves
+Closes with the sweep (W12 step 4).
 
-At most two test-running lanes at once; the writing lanes (08, 09) run beside any wave.
+- [ ] 0229 the sweep and reset for 1.0 itself
+- [ ] 0497 RFC ids in older code comments
+- [ ] 0598 RFC and backlog ids in package READMEs and `docs/guide/**`
+- [ ] 0745 an RFC tag on line 1 of a conformance file (`rfc:` commit)
+- [ ] 0983 `spec/std/README.md` holds history
+- [ ] 0275 invalid search values fall back to defaults; decided: state the default in k.router, 422 stays in FUTURE
+- [ ] 0289 state the Boundary reset behaviour for an outside computed
+- [ ] 0313 state that `routes.ts` is evaluated on Node with no DOM
+- [ ] 0341 add the route error answer and E1006 for an endpoints file to k.compat
+- [ ] 0348 state the runner rejection code and the `KEEL_ORIGIN` and peer requirements
+- [ ] 0416 a derived file count in `docs/guide/build-golden-1.md`
+- [ ] 0425 the unrun nginx example and "7 artifacts" in `docs/guide/deploy-client.md`
+- [ ] 0481 std.offline writes an option `s.number` does not take
+- [ ] 0484 state the same-`at` replay order limit in std.multi
+- [ ] 0529 keel-testing: a fresh `createApp` per `simulate` run
+- [ ] 0574 `HarnessArtifacts` says `keel test` passes it; correct the doc
+- [ ] 0655 k.server's `action` bullet omits `bearer`
+- [ ] 0678 the stale golden-2 forms example; decided: Biome's import order wins, the lint note follows
+- [ ] 0881 principle 2 against build-time stubs of server-only files
+- [ ] 0904 k.bundle's environment exception omits three `KEEL_` names
+- [ ] 0909 state that dev serves the identity `handle.path` and server-only stubs
+- [ ] 0931 state that E2101 runs project-wide once one module lists std-brands
+- [ ] 0982 the golden-2 README contradicts k.boundary on loader imports
+- [ ] 1046 k.hosting's client artifact list leaves out `csp.txt`
 
-| Wave | Test lanes | Waits for |
-| --- | --- | --- |
-| 1 | 01, 05 | none |
-| 2 | 07, 03 | 03 after 0956 lands (router, std-capacitor) |
-| 3 | 02, 12 | 02 after 0967 lands (server) |
-| 4 | 04, 15 | 15 after 0956 (std-capacitor) |
-| 5 | 06, 11 | 06 after 0966 lands (std-sessions) |
-| 6 | 10, 18 | none |
-| 7 | 13, 14 | 14 after 0956 and 0965 |
-| 8 | 16, 19 | 19 after 0965 (CI file) |
-| 9 | 17, 20 | 20 after 0966 and 0967 |
-| 10 | 21 | a quiet machine |
+## C After public
 
-- Writing lanes: 09 starts after 0944 lands (both edit `docs/THREAT-MODEL.md`); 08 takes 0402 and 0292 at once and 0942 after 0965 lands (both edit `.github/workflows`).
-- Lane 13 closes W1 step 2's blocking items (0349); when the freeze review needs it first, it swaps with lane 02 in wave 3, since both touch server.
-- Lanes 01, 07 and 10 open with the RFC their lines name (0120, 0121; the k.schema blank set; the k.runtime trim) under the RFC defaults.
+Moved to `tasks/FUTURE.md` with a reason; none is a missing piece of a 1.0 feature.
+
+- [x] 0293 vitest 5: no advisory on 4.x; bump when 4.x stops getting fixes
+- [x] 0603 E1111 reading `x-keel-pii` from `routes.json`: a refactor of a rule that works
+- [x] 0604 label props taking a signal directly: a new API shape, getters work
+- [x] 0621 a public replay function: a new API; the restart smoke checks the log
+- [x] 0627 the E1112 false positive on a `s.secret` field: waits on the types-mode line
+- [x] 0640 `$hmac-sha256$` digests: a new digest kind once an app key path exists
+- [x] 0930 a timings reader in a build: the dev reader is the 1.0 feature
+
+## D Closed now
+
+Each verified in the tree; checked in the backlog with its reason.
+
+- [x] 0230 S2 to S8 ran as lanes; S6 waits on W4 (0312); P1 lanes live in its plan
+- [x] 0281 `resumeBoundary.test.ts` covers the nested Boundary; production shows `keel.unexpected`
+- [x] 0294 pnpm 11 is pinned and the overrides sit in `pnpm-workspace.yaml`
+- [x] 0304 `headHtml.ts` links each CSS file of the client build's entry chunk
+- [x] 0316 route `title` takes `TitleProps` typed from params, search and loader
+- [x] 0334 the prefix property has a param second segment; no length-only assertion
+- [x] 0337 S7 is CLOSED in `tasks/STAGES.md`
+- [x] 0339 the client takes a GET's `results[id]` (`routeResult.ts`)
+- [x] 0342 overtaken by 0993: an overrun is re-based and recorded
+- [x] 0346 `dev-port-0091` starts `keel dev`; k.topology is conformance-covered
+- [x] 0349 k.topology is `conformance-covered`
+- [x] 0368 a missing base surface is W1568
+- [x] 0371 `accepts`, `pathCollisions`, `callsOf` fixed; `routeFor` is gone
+- [x] 0372 the server entry falls back to the package's `./routes` (`stdRoutes`)
+- [x] 0380 contracts replace endpoint files; no `*.service.ts` remains
+- [x] 0381 golden-1 has no `Form({...})` call left
+- [x] 0383 the duplicated reply schemas are gone; a contract declares each output once
+- [x] 0388 k.services states the opaque redirect as `status` 0
+- [x] 0418 overtaken by 0993
+- [x] 0423 `hosting-peer-binding.test.ts` covers the binding
+- [x] 0427 overtaken by 0993
+- [x] 0434 E1156 reports any `ctx` capability outside `capabilities`
+- [x] 0475 `landmark-unique` is the axe-core rule
+- [x] 0483 the std-sessions tests no longer use E1720
+- [x] 0486 route literals and hashes read `projectManifests`, stdlib routes included
+- [x] 0496 RFC 0115 is implemented; `realNet` listeners end on `signal`
+- [x] 0507 std-live bounds a read (RFC 0114)
+- [x] 0510 RFC 0112 is implemented
+- [x] 0524 overtaken by 0749: every survivor killed or justified
+- [x] 0525 std.monitor states that placing `sessions` serves the tally
+- [x] 0527 RFC 0112 is implemented
+- [x] 0531 the k.ledger half is done; the k.testing half is 0317
+- [x] 0570 duplicate of 1040, which asks the compact reporter to name each failure
+- [x] 0576 duplicate of 0335
+- [x] 0579 `biome.json` ignores `apps/*/reports/**`
+- [x] 0609 CI's four shell jobs build natively; `shell-entry.test.ts` runs; the crash half is 0826
+- [x] 0625 overtaken by 0749
+- [x] 0629 overtaken by 0749, which clears every stale claim
+- [x] 0688 a sign-up with a known email answers as a success
+- [x] 0689 `api-routes-0086` asserts no 303; the tokens test runs real sessions
+- [x] 0690 duplicate of 0974
+- [x] 0721 overtaken by 0993
+- [x] 0730 an RFC's text is not edited; the RFC set is rewritten at the reset (0229)
+- [x] 0779 `TimeZone.ts` builds no `Intl.DateTimeFormat`
+- [x] 0808 `COVERAGE.md` is generated and checked in CI; `STAGES.md` is kept by its own rule
+- [x] 0821 mutation runs nightly (`mutate-nightly.yml`); the PR job stays label-gated
+- [x] 0906 CI runs again: b4812607 is green on every job
+- [x] 0936 `readProject.ts` skips `dist`; the endpoints file is gone
+- [x] 0964 duplicate of 1060, which carries the repro plan
+- [x] 0965 `shell-drive.mjs` ran on GitHub runners (the runs in 1088)
+- [x] 1020 RFC 0182 is implemented with W1012 and its conformance
+- [x] 1031 k.ui states both fixes with conformance bullets (RFC 0188)
+
+## H Needs a human
+
+- [ ] 0312 S6 exit: the external a11y audit and pen test need the two firms (O10)
+- [ ] 0824 a physical Android and iOS device run and a Windows machine for Tauri
+
+## Cleared
+
+Lines of the earlier W2 lists that are checked in the backlog.
+
+- [x] 0261 red-team: a spread copies an `s.secret` payload into open-object state, so live state holds a secret that `snapshot()` drops
+- [x] 0270 red-team: the ledger counts a range clause covered when any one file cites it
+- [x] 0274 W1557 (`secure` not set) fires behind a proxy and the sessions app has no switch for `secure: true`
+- [x] 0287 `untrack` and `scope.run` reads of a thrown computed, and effects disposed while queued, are untested
+- [x] 0292 `keel check` reports 7 errors in apps/sessions and no app's `check` script runs the checker
+- [x] 0328 `line` and `para` accept text that shows as nothing or reorders; build RFC 0116
+- [x] 0330 a guard redirect carries params by name only; check the carried fields' schemas in E1508's static half
+- [x] 0332 the URL's `recipeId` renders as the not-found page's `h1`, so any sentence shows in the app's voice
+- [x] 0350 an outside request carrying `x-keel-forwarded` gets 404 instead of a forward; a loop guard only, or signed from `KEEL_SECRET`
+- [x] 0353 one `KEEL_SECRET` signs callers for every deployable; state it in k.topology and THREAT-MODEL
+- [x] 0364 the per-deployable cap on concurrent event streams is unconfirmed (low, suspected); settle with 0503
+- [x] 0366 `golden-1-api` acceptance hardcodes topologies and its hop count is a tautology
+- [x] 0386 a `.server.ts` loader in a `client` deployable runs in the browser; golden-1's smaller hand-build items with it
+- [x] 0402 the `pnpm.overrides` pins (`minimatch`, `qs`) are ignored by this pnpm; move them, pin `packageManager`, rerun `pnpm audit`
+- [x] 0415 a GET to an API route with no loader answers 405 before its guards run, with no body
+- [x] 0424 the client entry embeds the deployable-to-module map, so server module names reach the browser
+- [x] 0441 an input that becomes `type="password"` only in the browser keeps its value in `#k-state`
+- [x] 0463 the E1805 fix writes `<Box as="aside">` with no label, which is E1802
+- [x] 0469 values a user sees as blank pass `required`, and JSON Schema `\S` disagrees with Python; decide the blank set in k.schema
+- [x] 0478 every cookieless caller shares one `perCaller` allowance; build RFC 0121
+- [x] 0501 a stored outbox entry posts to its stored `origin` unchecked and to the next signed-in user's caller; build RFC 0120
+- [x] 0503 one stream pool for every live loader lets one client starve every channel subscriber; THREAT-MODEL and std.channels say nothing caps streams
+- [x] 0509 the outbox sends through `service({ module })`, `send` takes no origin and entries carry none (RFC 0120, with 0501)
+- [x] 0517 `surfaceRun` drops a `routes.ts` that throws, so `keel build` exits 0 and E1562 can pass a break (needs a design)
+- [x] 0519 E1567 misses a namespace import of `@keel/services` (budget at 18 B over)
+- [x] 0521 `stdRoutes.ts` reads a stdlib manifest by path, so a published std package serves no routes
+- [x] 0569 client `.map` files a Vite config turns on are served from `assets/`
+- [x] 0572 the 1.3.2 and 2.4.3 claims map only to E1820 and are always `none`; earn or drop them
+- [x] 0595 a marked open object's undeclared keys have no `piiPaths` entry though `piiValues` returns them
+- [x] 0608 Capacitor's net driver sends a URL on another origin while Tauri's scope refuses it; one rule for k.shell
+- [x] 0616 no tools rule reports a revealed value passed to `enqueue` (needs E1112's value walk exported)
+- [x] 0617 no warning when a password control binds a field that is not `s.secret`
+- [x] 0638 E2203, a `Digested` node in a loader `output`, waits on the checker exporting its schema reader
+- [x] 0656 k.privacy's `[pii]` sentence for a later throw names a path no request reaches; reword it
+- [x] 0671 another package replacing or clearing the `onSecret` slot leaves a running app unscrubbed
+- [x] 0674 neither k.guards nor k.api says whether a bearer check denies in a guard or a loader
+- [x] 0683 copies of a secret in other encodings (`+`, `encodeURI`, double encoding, JSON `
+- [x] 0692 k.shell clause 6's test matches the word `drivers`, which any bundle holds
+- [x] 0693 k.hosting clause 2's fetch URL, `credentials: 'include'` and unset case are observed by no test
+- [x] 0722 the dev body of a component that throws while rendering is clipped and not scrubbed
+- [x] 0733 E1111 reads a schema object changed after its literal as clean
+- [x] 0737 red-team: some 404 path shapes (`;jsessionid`, `%20`, homoglyphs, `&code=`) are written raw
+- [x] 0747 `resume` with `mode: "dev"` has no conformance case
+- [x] 0775 red-team: a `vite.config.ts` that sets `NODE_ENV` gives app code `DEV === true` under `keel build`
+- [x] 0777 red-team: the bounds read the opener module's config but count every module's sinks
+- [x] 0783 the std.channels sentence on a member refusing `""` has no test of its own
+- [x] 0785 state the decided limit: app code holding the ctx can `dispose()` its online and offline events
+- [x] 0787 THREAT-MODEL (stored logs) does not mention the store's `keyLimit`
+- [x] 0796 red-team: E1802 passes a label of C0 and C1 controls
+- [x] 0797 red-team: the flush's retry timer outlives `drain`'s scope and still posts
+- [x] 0798 red-team: an `events: true` endpoint in an outbox leaves its entry `sending` across reloads
+- [x] 0799 red-team: two ctxs over one module-level outbox fail each other's entries
+- [x] 0801 red-team: the `s.json()` check overflows the stack on about 200k nesting from a JSON body
+- [x] 0802 red-team: a large `keyLimit` costs O(keyLimit) per keyed write; `restore` parses a forged `keys` array whole
+- [x] 0829 the three TLS cases skip in CI; start Postgres with a certificate in a step
+- [x] 0831 E1303 misses `reveal` in helpers, re-exported reducers and `export { reveal as open }`
+- [x] 0856 k.security says E1571 decides by E1004's reachability; the rule decides by filename only
+- [x] 0865 no built `server.mjs` with an `identity.server.ts` has run; add it to the built smokes
+- [x] 0874 `Text` has no `role`
+- [x] 0877 `pnpm evidence:report` writes data from a dirty tree without refusing
+- [x] 0883 `keel scaffold service` in a client-only module writes a file that fails E1571
+- [x] 0892 red-team: no gate catches a committed ledger or evidence file that differs from what the tree produces
+- [x] 0893 red-team: E1579 misses a param route matching `handle.path`, and the client router swallows mount links
+- [x] 0894 red-team: `identityMount` does not validate `path` at runtime, so `/vil.example` resolves off-origin
+- [x] 0903 `identify` returns the bearer answer whenever an `authorization` header is present and never reads the session cookie
+- [x] 0911 `POST /api/recipes` writes without a signed-in user while `/recipes/new` is guarded
+- [x] 0916 the mutation cache reuses a result after tests are added; key it on the test files
+- [x] 0918 a rule that throws becomes E1756, which tests filtering for one code never see
+- [x] 0926 a placed stdlib module that resolves no routes is silent; report it (RFC for the diagnostic)
+- [x] 0932 no app-level live region, so a result line after an action is not announced
+- [x] 0941 W12 step 1: the licence (operator, O4)
+- [x] 0942 CI workflows declare no `permissions:`, pin actions by tag and hand `TURBO_TOKEN` to every step
+- [x] 0943 40 packages are publishable; mark them private until launch
+- [x] 0944 `.gitignore` gaps, no `SECURITY.md` or `CONTRIBUTING.md`, THREAT-MODEL out of date on streams
+- [x] 0945 confirm with a test that the 0501 and 0478 fixes are built, then close both
+- [x] 0946 strip home paths and quotations of the operator before the public repository; a check that fails on either
+- [x] 0948 k.shell's CI paragraph and ROADMAP on iOS and macOS Tauri jobs
+- [x] 0954 k.cli Inspect says nothing of one origin serving two deployables' sections; golden-2's page timings are hidden (RFC)
+- [x] 0956 any page can open a shell return link with native cookies; RFC 0147 build
+- [x] 0957 a Capacitor app with `identity.ts` missing `@capacitor/app` or `@capacitor/browser` is not reported (extend E1572)
+- [x] 0966 std-sessions mutation is unmeasurable for want of a mutation vitest config

@@ -1,6 +1,6 @@
 # RFC 0099: S7 follow-ups (getter props in k.ui, `styles` on any component and E1823, the audited search list, `#` specifiers)
 
-Status: implemented. Accepted (2026-11-13, orchestrator, WORKFLOW RFC defaults 2, 3, 6; open questions answered as recommended; the user confirms or reverses, tasks/0337-s7-ui-modules/PLAN.md D29). For backlog 0594, 0596, 0597, 0599. Each decision cites the WORKFLOW RFC default it applies; what the defaults leave open is under Questions with a recommendation. ADR-0122 records it.
+Status: implemented. Accepted (2026-11-13, orchestrator, WORKFLOW RFC defaults 2, 3, 6; open questions answered as recommended; tasks/0337-s7-ui-modules/PLAN.md D29). For backlog 0594, 0596, 0597, 0599. Each decision cites the WORKFLOW RFC default it applies; what the defaults leave open is under Questions with a recommendation. ADR-0122 records it.
 
 ## Decisions
 - D1 (0599): the gap is in hand-built calls and in the spec, not in the runtime or the types. Every k.ui base element already binds a prop given as a getter, and compiled JSX passes every non-literal value as one. k.ui states the rule once: a getter prop updates what it writes as its reads change; `as`, `level`, `role`, `field`, `children`, event props and an id derived from `label` are read at build. `TableSearch` passes `label` to `Input` as a getter. No type widens: a signal or computed stays where k.ui lists it today (defaults 2, 3).
