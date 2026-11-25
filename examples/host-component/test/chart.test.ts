@@ -4,11 +4,13 @@ import { renderRoute } from "@keel/testing";
 import { expect, it } from "vitest";
 import { routes } from "../modules/app/routes.ts";
 import topology from "../topology.ts";
+import { artifacts } from "./artifacts.ts";
 
 it("names the chart and hands it the loader's bars", async () => {
   const ctx = createCtx({ mode: "sim", seed: 1 });
   const app = await createApp({ topology, routes, ctx });
-  const page = await renderRoute("app.home", { routes, params: {}, ctx, app });
+  const page = await renderRoute("app.home", { routes, params: {}, ctx, app, artifacts });
+  expect(page.find("app.home").role).toBe("main");
   const chart = page.find("app.home.chart");
   expect(chart.role).toBe("img");
   expect(chart.name).toBe("Rainfall by month, in millimeters");

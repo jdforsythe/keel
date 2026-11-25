@@ -25,29 +25,37 @@ The `unsafe` count measures escapes from the type system in code that runs. Nega
 ## In, by workstream
 
 ### Gate and tooling health (first: every other lane trips over these)
-- [ ] `running` backlog 1102: `@keel/check` fails Stryker's initial test run; a mutation run that hangs past its bound; a type cache written beside an app (`lane-m1102`)
+- [x] `done` backlog 1102: check's mutation run gets past its initial test run; no test writes a type cache beside an app
+- [ ] `next` backlog 1105: a bound on `mutate.mjs --stop`
 - [ ] `running` backlog 1040, 1103, 0991: the whole root test reliable under load, `canary.mjs` under load, a scaffolded project builds on first run (`lane-gate`)
-- [ ] `next` check's 13 mutation chunks on the main line after 1102
+- [ ] `next` check's 13 mutation chunks on the main line, when the machine is quiet
 
 ### W1 Freeze
-- [ ] `running` RFC 0163, the library format: RFC, ADR and spec made true against the tree, build order written (`lane-lib`)
-- [ ] `blocked` (the line above) RFC 0163 built, slice by slice
-- [ ] `blocked` (RFC 0163) k.parity's second part: kind gates, lint S0013, conformance for clauses 5 and 6
+- [x] `done` RFC 0163, the library format: RFC, ADR and spec made true against the tree; the build order is the RFC's last section
+- [ ] `running` slice 1, the library kind (`lane-lib`)
+- [ ] `blocked` (slice 1) slices 2a and 2b side by side, then 3, then 4 (the stdlib on the format) beside 4b (the app data seam, k.server-deps)
+- [ ] `blocked` (slices 4 and 4b) k.parity's second part: kind gates, lint S0013, conformance for clauses 5 and 6
 - [ ] `blocked` (k.parity) every kernel section `conformance-covered`, then the `frozen` flip
 - [ ] `next` backlog 1100: the largest sections split so the map plus any one section fits principle 8; the section cap returns to 3,100
 - [x] `done` RFC and ADR status lines say what is built
 - [ ] `next` RFC 0191's last part: the `Box as="nav"` conformance case (backlog 0580)
 
 ### W2 Weakness clearance
-- [ ] `running` the backlog triaged with decisions, in fix lanes (`lane-triage`; `tasks/p1/weaknesses.md`)
-- [ ] `blocked` (triage) the A1 fix lanes, in the triage's order
-- [ ] `blocked` (A1) the A2 fix lanes
-- [ ] `blocked` (fix lanes) a red-team pass that files no new high or medium line
+The triage is `tasks/p1/weaknesses.md`: 102 lines to fix now in 17 lanes (A1), 105 after them in 15 lanes (A2), 24 for the docs sweep, 7 moved to `tasks/FUTURE.md`, 52 closed as done or overtaken, 2 that need a person.
+- [x] `done` the backlog triaged with decisions, in fix lanes
+- [ ] `running` lane 01 gate-flakes: three of its nine lines (`lane-gate`)
+- [ ] `running` lane 06 server-scrub-and-streams: RFC 0230 (`lane-w06`)
+- [ ] `running` lane 07 check-security-rules: RFC 0231 (`lane-sec07`)
+- [ ] `running` lane 08 router-identity: RFC 0232 (`lane-sec08`)
+- [ ] `next` lanes 02 to 05 and 09 to 17, in the triage's order, as lanes free up
+- [ ] `blocked` (A1) the A2 lanes 18 to 32
+- [ ] `blocked` (fix lanes) a red-team pass, by Claude and by Codex, that files no new high or medium line
 
 ### W3 Evidence and coverage
 - [x] `done` the survey (`tasks/p1/evidence-survey.md`)
 - [ ] `running` a11y evidence: the item key per project, the four criteria at `none`, routes with no evidence outside household (`lane-a11y`)
-- [ ] `running` household: a test that renders each route and evidence for its 135 exports (`lane-household`)
+- [x] `done` household: every export has evidence; every page route rendered with its a11y checks
+- [ ] `next` backlog 1106, 1107: a generated `s.id` with a shape a server mints; a found input gives its value
 - [ ] `running` RFC 0229: `unsafe` counts runtime escapes; negative type tests have their own home and count; six uses removed (`lane-unsafe`)
 - [ ] `blocked` (survey) tier 1 packages to target, one lane per package
 - [ ] `blocked` (tier 1) tier 2, then tier 3
@@ -83,6 +91,7 @@ The `unsafe` count measures escapes from the type system in code that runs. Nega
 
 Each of these is started as early as its inputs allow, since they have the longest lead times.
 
+- [ ] A physical Android device, a physical iOS device and a Windows machine, for the shell runs CI cannot make (backlog 0824).
 - [ ] Accessibility audit and penetration test: choose and pay one firm for each (scope: golden-3 and the site, a retest included). The lead writes the scope documents and a vendor shortlist.
 - [ ] A newcomer reviewer: one person who writes TypeScript and has never seen the repo, to read the docs and the walkthrough.
 - [ ] A domain and a static host account for the site.

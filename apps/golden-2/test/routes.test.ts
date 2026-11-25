@@ -5,6 +5,7 @@ import mount from "../identity.ts";
 import { Box } from "../modules/kitchen/Box.schema.ts";
 import { recipes } from "../modules/recipes/recipes.contract.ts";
 import { routes } from "../modules/recipes/routes.ts";
+import { artifacts } from "./artifacts.ts";
 import { asJson, draft, simApi } from "./simApi.ts";
 
 type Api = Awaited<ReturnType<typeof simApi>>;
@@ -110,7 +111,13 @@ describe("recipes.new", () => {
   });
   it("sends nothing on an invalid submit, focuses the first invalid field and shows its rule", async () => {
     const api = await simApi();
-    const r = await renderRoute("recipes.new", { routes, params: { locale: "de-DE" }, ctx: api.ctx, mount });
+    const r = await renderRoute("recipes.new", { routes, params: { locale: "de-DE" }, ctx: api.ctx, mount, artifacts });
+    // The fields come in the order they read, each a labelled textbox, and Save after them.
+    const order = r.focusOrder();
+    expect(order).toEqual(expect.arrayContaining(["recipes.draft:title", "recipes.draft:minutes", "recipes.save"]));
+    expect(order.indexOf("recipes.draft:title")).toBeLessThan(order.indexOf("recipes.draft:minutes"));
+    expect(order.indexOf("recipes.draft:minutes")).toBeLessThan(order.indexOf("recipes.save"));
+    expect(r.find("recipes.draft:title")).toMatchObject({ role: "textbox", name: "Titel" });
     await r.fire("recipes.save", { type: "click" });
     expect(api.sent).toEqual([]);
     expect(r.find("recipes.draft:title").state.focused).toBe(true);
