@@ -2,7 +2,7 @@
 // 1. "In a project with `node` deployables `x` (modules `['a']`) and `y` (modules `['b']`), where `modules/a/module.ts` lists `'@acme/store'` in `deps` and `node_modules/@acme/store/module.ts` holds `env: ['ACME_STORE_URL']`, `deploy/compose.yaml` passes `ACME_STORE_URL: ${ACME_STORE_URL:?}` to `x` and holds no `ACME_STORE_URL` for `y`."
 // 2. "In that project, `env: ['NOTES_URL']` in `modules/b/module.ts` makes `deploy/compose.yaml` pass `NOTES_URL: ${NOTES_URL:?}` to `y` only; `env: ['notes_url']`, `env: ['KEEL_SECRET']` and `env: ['KEEL_PEER_X']` there are each one E1167 at the entry."
 // Environment: "A module manifest (k.module), a library's root `module.ts` included (k.library), may hold `env`: an array of string literals, the environment variables its server code reads. A `node` deployable needs the `env` names of each module its `modules` list and of each library those modules' manifests list, transitively. `deploy/compose.yaml` (its layout: k.deploy Deploy files) passes each name a deployable needs from the environment, required (`NAME: ${NAME:?}`), once in the deployable's service, after the k.deploy keys and sorted, and no generated file holds a value. The names are read by server code only: no browser build holds one (k.bundle Environment)."
-// Rules: "E1167 an `env` entry that is not a string literal matching `[A-Z][A-Z0-9_]*`, or that is a key `DeployEnv` parses (`PORT`, `KEEL_SECRET`, `KEEL_ORIGIN`, `KEEL_DATABASE_URL`, `KEEL_ALLOW_ORIGINS`) or begins with `KEEL_PEER_`, at the entry: its line and the column of its first character, a string literal's opening quote (an `env` that is no array literal: at its value); messages `env entry is not a string literal`, `env name "<name>" does not match [A-Z][A-Z0-9_]*`, `env name "<name>" is a key DeployEnv reads`, `<name>` clipped to 28 units, each within 89; no fix"
+// Rules: "A clipped `<name>` (28 units), `<f>` (40), `<other>` (36), `<export>` or `<id>` (20) ends in `...`, by k.check Diagnostics' clip at that width, and every message is within 89. E1167 an `env` entry that is not a string literal matching `[A-Z][A-Z0-9_]*`, or that is a key `DeployEnv` parses (`PORT`, `KEEL_SECRET`, `KEEL_ORIGIN`, `KEEL_DATABASE_URL`, `KEEL_ALLOW_ORIGINS`) or begins with `KEEL_PEER_`, at the entry: its line and the column of its first character, a string literal's opening quote (an `env` that is no array literal: at its value); messages `env entry is not a string literal` (an entry or an `env` that is no string literal), `env name "<name>" does not match [A-Z][A-Z0-9_]*`, and `env name "<name>" is a key DeployEnv reads` (a `DeployEnv` key, or a name in the pattern beginning with `KEEL_PEER_`); no fix · E1014 `keel build`: a bundled package file's `new URL(<a>, import.meta.url)` whose `<a>` is of no form Files a bundled package reads copies or leaves alone, names a missing path, or names a path another bundled package file names for a file of other bytes; located at the package file (a library's at `node_modules/<name>/<f>`, any other by its path from its last `node_modules/` folder); messages `reads <f>, which is missing`, `reads <f>, outside its own folder`, `reads <f>, as <other> reads another file`, `reads new URL(x, import.meta.url) with x no string literal`, `<f>` the first argument as written, a leading `./` kept, `<other>` the other package file as located; the build fails and writes no `dist/<name>/`."
 // Seed: 1337 (every property; the compose cases read one built project).
 // Binary runs: 3 (`keel build` of the clause-1 project; `keel build` of the richer project; `keel check` of that project with three refused entries). The E1167 property runs `check()` in process.
 // Library fixture: `@acme/store` (library-support.ts `dataLibrary`), a made-up data battery; no stdlib package name appears in any fixture or case.
@@ -335,11 +335,36 @@ describe("k.server-deps Rules: E1167 an `env` entry that is not a string literal
         expect(found[0]?.path).toBe(path);
         expect(found[0]?.line).toBe(before.split("\n").length);
         expect(found[0]?.col).toBe(idx - before.lastIndexOf("\n"));
-        expect(found[0]?.message.length).toBeGreaterThan(0);
-        expect(found[0]?.message.length).toBeLessThanOrEqual(89);
+        expect(found[0]?.message).toBe(NOT_LITERAL);
       }
     });
   }
+
+  test("`<name>` clipped to 28 units: a name of 27 and of 28 units is whole, one of 29 ends in `...` and keeps 25 units (`does not match` and `is a key DeployEnv reads`)", () => {
+    for (const len of [27, 28, 29]) {
+      const lower = "a".repeat(len);
+      const peer = `KEEL_PEER_${"X".repeat(len - 10)}`;
+      for (const host of ["app", "library"] as const) {
+        const m = e1167Of(host, `'${lower}'`).found;
+        expect(m, lower).toHaveLength(1);
+        expect(m[0]?.message).toBe(
+          `env name "${len <= 28 ? lower : `${"a".repeat(25)}...`}" does not match [A-Z][A-Z0-9_]*`,
+        );
+        const k = e1167Of(host, `'${peer}'`).found;
+        expect(k, peer).toHaveLength(1);
+        expect(k[0]?.message).toBe(
+          `env name "${len <= 28 ? peer : `${peer.slice(0, 25)}...`}" is a key DeployEnv reads`,
+        );
+      }
+    }
+  });
+
+  test('a `KEEL_PEER_` name matching the pattern is `env name "<name>" is a key DeployEnv reads`, at the opening quote', () => {
+    const r = e1167Of("app", "'KEEL_PEER_X'");
+    expect(r.found).toHaveLength(1);
+    expect(r.found[0]?.message).toBe('env name "KEEL_PEER_X" is a key DeployEnv reads');
+    expect(r.found[0]?.col).toBe(r.col);
+  });
 
   test("each entry of one `env` is judged alone: one valid and one refused entry give one E1167, at the refused one", () => {
     const files = e1167Files("app", ["'NOTES_URL'", "'notes_url'"]);
