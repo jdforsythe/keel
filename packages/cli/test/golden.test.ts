@@ -1,8 +1,9 @@
 // The golden apps are the repo's own proof: `keel check` over apps/golden-1 reports nothing.
-import { readFileSync, readdirSync, realpathSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, realpathSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it } from "vitest";
 import { run } from "../src/index.ts";
+import { linkedProject } from "./support/linkedProject.ts";
 
 // Repo root via a workspace link, so this also holds in Stryker's sandbox copy (where ../../.. is not the repo root).
 const PACKAGES = dirname(realpathSync(join(import.meta.dirname, "..", "node_modules", "@keel", "schema")));
@@ -20,10 +21,15 @@ function read(dir: string): { path: string; source: string }[] {
 }
 
 describe("golden-1", () => {
+  // The check runs from a stand-in root, so its type cache is never written into the app.
+  const project = linkedProject(ROOT);
+  afterAll(project.remove);
   it("keel check reports no diagnostics", async () => {
-    const r = await run(["check", "--format=json"], { cwd: ROOT, files: read(ROOT) });
+    const r = await run(["check", "--format=json"], { cwd: project.root, files: read(ROOT) });
     const diags = r.stdout.split("\n").filter((l) => l.includes('"kind":"diag"'));
     expect(diags).toEqual([]);
     expect(r.code).toBe(0);
+    expect(readdirSync(join(project.root, "node_modules", ".cache", "keel")).length).toBeGreaterThan(0);
+    expect(existsSync(join(ROOT, ".cache"))).toBe(false);
   });
 });
