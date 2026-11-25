@@ -224,16 +224,18 @@ type WorkerPlugin = {
   transform: (code: string, id: string) => null;
   buildEnd: (this: Ctx, error?: Error) => void;
 };
-/** What `config` returns: the locked `envPrefix`, the worker bundles' plugin (Vite adds the project's), and a deployable build's own settings. */
-/** The `keel` export condition first, then Vite's defaults (k.library Kind): a library's entry resolves to its source. */
-const CLIENT_CONDITIONS = ["keel", "module", "browser", "development|production"];
-const SERVER_CONDITIONS = ["keel", "module", "node", "development|production"];
+/** Vite's default conditions, which an environment that sets none resolves with (k.library adds `keel` to them). */
+const CLIENT_CONDITIONS = ["module", "browser", "development|production"];
+const SERVER_CONDITIONS = ["module", "node", "development|production"];
+/**
+ * What `config` returns: the locked `envPrefix`, the worker bundles' plugin (Vite adds the project's), the app's
+ * libraries kept from pre-bundling and from Node, and a deployable build's own settings.
+ */
 type Config = {
   envPrefix: string;
   define?: Record<string, string>;
   worker: { plugins: () => WorkerPlugin[] };
-  resolve: { conditions: string[] };
-  ssr: { resolve: { conditions: string[] }; noExternal: string[] };
+  ssr: { noExternal: string[] };
   optimizeDeps: { exclude: string[] };
 } & (BuildConfig | ClientConfig | Record<never, never>);
 /** What the plugin reads of the project's config before Vite resolves it. */
@@ -275,6 +277,10 @@ export default function (): {
   name: string;
   enforce: "pre";
   config: (user: UserConfig, env: { command: "build" | "serve"; isSsrBuild?: boolean }) => Config;
+  configEnvironment: (
+    name: string,
+    env: { consumer?: "client" | "server"; resolve?: { conditions?: string[] } },
+  ) => { resolve: { conditions: string[] } } | null;
   configResolved: (config: {
     root: string;
     command?: "build" | "serve";
@@ -842,8 +848,7 @@ export default function (): {
       // library resolves with the `keel` condition on every surface and is never pre-bundled or left to Node.
       const own = {
         envPrefix: NO_ENV,
-        resolve: { conditions: CLIENT_CONDITIONS },
-        ssr: { resolve: { conditions: SERVER_CONDITIONS }, noExternal: names },
+        ssr: { noExternal: names },
         optimizeDeps: { exclude: names },
         ...(env.command === "build"
           ? { define: { "import.meta.env.DEV": "false", "import.meta.env.PROD": "true" } }
@@ -948,6 +953,18 @@ export default function (): {
             for (const c of Object.keys(top).filter((n) => top[n]?.adapter === "client" && top[n]?.servedBy === name))
               hostClient(path.join(at, "dist", c), path.join(at, out), c);
           },
+        },
+      };
+    },
+    // Every environment (dev, build, test) resolves with the `keel` condition beside its own, so a library's entry is
+    // its source (k.library In an app); one that sets none gets Vite's defaults with it.
+    configEnvironment(name, env) {
+      const own = env.resolve?.conditions;
+      if (own?.includes("keel") === true) return null;
+      const client = env.consumer === "client" || (env.consumer === undefined && name === "client");
+      return {
+        resolve: {
+          conditions: ["keel", ...(own === undefined ? (client ? CLIENT_CONDITIONS : SERVER_CONDITIONS) : [])],
         },
       };
     },

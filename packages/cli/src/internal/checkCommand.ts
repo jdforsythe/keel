@@ -24,12 +24,15 @@ import { summary } from "./summary.ts";
  * source's `handle.path`, from `identityDiags`. Each declared shell's target loads first (`shellTargets`: E1159, E1585),
  * and each plugin it names that `package.json` lacks is one E1572, once per plugin (k.shell Plugins).
  * W1356 for a stale agent file, where `AGENTS.md` holds the Keel block.
+ * Run over every code file, it checks the files of the app's libraries too (`runCheck`, k.library In an app).
  */
 export async function checkCommand(input: Input, io: Io): Promise<OutRecord[]> {
   const files = codeFiles(io, input.paths, true);
   const base = baseInput(input, io);
   const project = projectFiles(io);
-  const checked = await runCheck(io.cwd, files, project, base.value);
+  // Without paths, or with paths that cover every code file, the app's libraries are checked too (k.library In an app).
+  const whole = files.length === codeFiles(io, undefined, true).length;
+  const checked = await runCheck(io.cwd, files, project, base.value, whole);
   const topology = projectTopology(project);
   const policy = await shellPolicy(io.cwd, project);
   const loaded = await loadShells(io.cwd, project, policy);
