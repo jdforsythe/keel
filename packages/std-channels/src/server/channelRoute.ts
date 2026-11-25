@@ -100,9 +100,9 @@ export function channelRoute<P, M, S, const Id extends string, const Pub extends
  * must be `{ method: 'GET', path, query: params, events: true, output: events }` and at `publish` `{ method: 'POST',
  * path, query: params, body, output }` with `output` taking `{}`, `path`, `params`, `events` and `body` the
  * channel's own (std.contracts): another contract is a type error and throws E1515 naming the members that differ. At
- * `id` a live loader: when `member` is false its only event is `closed` `denied`; past the serving module's
- * `maxStreams`, or its `perCaller` (a caller with a cookie) or `perAnonymous` (all cookieless opens together), each
- * counted over that module's own channel streams in the process, `closed` `full`; else it follows each `follows`
+ * `id` a live loader: when `member` is false its only event is `closed` `denied`; past a cap (std.channels-limits:
+ * the serving module's `maxStreams` over its streams, its `perCaller` over one caller's streams on it, its
+ * `perAnonymous` over the cookieless streams of every module served on the ctx), `closed` `full`; else it follows each `follows`
  * entry at the canonical JSON of its params, then yields `reset`, then `saved` after each save of a store `stores`
  * creates (with `member` re-checked against the stores as saved: false, or a failed re-read, ends it with `closed`
  * `denied`), `changed` after each followed change (with `member` re-run first) and `message` per publish to the same
