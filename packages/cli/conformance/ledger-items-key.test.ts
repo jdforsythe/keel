@@ -2,7 +2,6 @@
 // Spec: k.ledger-items, clause "The bullets ``- `A` is “one”.`` and `- a  is \"one\"` have one key."
 // Spec: k.ledger-items, clause "Over a committed ledger holding `k.x`'s clause `A is one.` at `example`, rewording it to `A is two.` makes `keel ledger --diff` report no E1706, and, with `k.x` `conformance-covered` and no file citing `A is two.`, E1707 at that bullet's line naming `k.x#1`."
 // Spec: k.ledger-items, clause "Bullets `A is one.` and `a is one` in one section are one E1733 at the second's line, and the ledger holds one item for them."
-// Pending (rfc:0235 step 4): skipped until the build lands; the builder un-skips by changing each `it.skip` to `it` in this file.
 // Seed: 1337 (every property, 5 runs each: a run is one `keel ledger`). Binary runs: 1 per case, 2 for the two `--diff` cases (`--write`, then `--diff`).
 // The real `keel` binary over temp projects (OS tmpdir). A clause record `{ kind: 'ledger', item, rung, evidence, n }` holds `n` (k.ledger-items Clause key).
 // The normal form is implemented again in ledger-items-support.ts from the spec's words (backticks dropped, `\"` and typographic quotes made straight,
@@ -47,7 +46,7 @@ const files = (sections: Readonly<Record<string, Section>>): Record<string, stri
 };
 
 describe("k.ledger-items: a clause is keyed by its text", () => {
-  it.skip(
+  it(
     "a section `k.x` whose Conformance list is `- A is one.` gives the item `k.x#` and the first 8 hex digits of the SHA-256 of `a is one`, with `n` 1",
     () => {
       inProject("items-key-one", files({ "k.x": { bullets: ["A is one."] } }), (dir) => {
@@ -61,7 +60,7 @@ describe("k.ledger-items: a clause is keyed by its text", () => {
     SLOW,
   );
 
-  it.skip(
+  it(
     "with `- B is two.` added before it, the same item with `n` 2",
     () => {
       inProject("items-key-before", files({ "k.x": { bullets: ["B is two.", "A is one."] } }), (dir) => {
@@ -74,7 +73,7 @@ describe("k.ledger-items: a clause is keyed by its text", () => {
     SLOW,
   );
 
-  it.skip("for any bullets and any position, a bullet added there changes no other clause's item, and each `n` is its 1-based position (property)", () => {
+  it("for any bullets and any position, a bullet added there changes no other clause's item, and each `n` is its 1-based position (property)", () => {
     const bullet = fc.stringMatching(/^[A-Z][a-z]{2,7}( [a-z]{2,7}){1,4}\.$/);
     fc.assert(
       fc.property(
@@ -107,7 +106,7 @@ describe("k.ledger-items: a clause is keyed by its text", () => {
     );
   }, 600_000);
 
-  it.skip(
+  it(
     "Over a committed ledger holding `k.x`'s clause `A is one.` at `example`, rewording it to `A is two.` makes `keel ledger --diff` report no E1706, and, with `k.x` `conformance-covered` and no file citing `A is two.`, E1707 at that bullet's line naming `k.x#1`",
     () => {
       const start = files({ "k.x": { bullets: ["A is one."], status: "conformance-covered" } });
@@ -129,7 +128,7 @@ describe("k.ledger-items: a clause is keyed by its text", () => {
     SLOW,
   );
 
-  it.skip(
+  it(
     "a bullet added at position 10 of a 12-bullet section is one addition: `--diff` reports no E1706 and one E1707, at its line, naming `k.x#10`",
     () => {
       const bullets = Array.from({ length: 12 }, (_, i) => `Clause number ${"abcdefghijkl"[i]} holds.`);
@@ -154,7 +153,7 @@ describe("k.ledger-items: a clause is keyed by its text", () => {
     SLOW,
   );
 
-  it.skip(
+  it(
     'The bullets ``- `A` is “one”.`` and `- a  is "one"` have one key',
     () => {
       const first = "`A` is “one”.";
@@ -168,7 +167,7 @@ describe("k.ledger-items: a clause is keyed by its text", () => {
     SLOW,
   );
 
-  it.skip("two texts with one normal form have one key, and a one-character change of substance has another (property over backticks, quote style, spacing, case and the final period)", () => {
+  it("two texts with one normal form have one key, and a one-character change of substance has another (property over backticks, quote style, spacing, case and the final period)", () => {
     const word = fc.stringMatching(/^[a-z]{3,8}$/);
     const base = fc.tuple(word, word, word, word);
     const quoteStyle = fc.constantFrom("straight", "typographic", "escaped");
@@ -196,7 +195,7 @@ describe("k.ledger-items: a clause is keyed by its text", () => {
     );
   }, 600_000);
 
-  it.skip(
+  it(
     "Bullets `A is one.` and `a is one` in one section are one E1733 at the second's line, and the ledger holds one item for them",
     () => {
       inProject("items-key-e1733", { [specPath("k.x")]: specText("k.x", ["A is one.", "a is one"]) }, (dir) => {
@@ -210,7 +209,7 @@ describe("k.ledger-items: a clause is keyed by its text", () => {
     SLOW,
   );
 
-  it.skip("for any bullet and a variant of it with one normal form in one section, there is one E1733 at the variant's line and one item (property)", () => {
+  it("for any bullet and a variant of it with one normal form in one section, there is one E1733 at the variant's line and one item (property)", () => {
     const word = fc.stringMatching(/^[a-z]{3,8}$/);
     fc.assert(
       fc.property(
