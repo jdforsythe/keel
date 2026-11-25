@@ -6,7 +6,7 @@ import type { Store, Transaction } from "@keel/store";
 import type { OutboxEntry } from "../OutboxEntry.schema.ts";
 import type { Resolution } from "../Resolution.schema.ts";
 import type { Flow } from "./Flow.ts";
-import type { OutboxState } from "./OutboxState.ts";
+import type { OutboxState } from "./OutboxState.schema.ts";
 
 type State = Infer<typeof OutboxState>;
 type Settle = {

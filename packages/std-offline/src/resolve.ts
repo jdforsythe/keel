@@ -51,10 +51,10 @@ export async function resolve<const D extends object>(
   // Only an entry this ctx added or loaded.
   const state = flowOf(c, ctx).held.has(key) ? c.store.get("entries").find((e) => e.key === key)?.state : undefined;
   if (state !== "conflict" && (resolution === "mine" || state !== "failed")) return false;
-  tx(c.resolve, { key, resolution });
+  void tx(c.resolve, { key, resolution });
   if (resolution === "theirs") {
     flowOf(c, ctx).held.delete(key);
-    if (!(await attempt(() => persist(ctx, c))).ok) await attempt(() => persist(ctx, c));
+    if (!(await attempt(() => persist(ctx, c))).ok) void (await attempt(() => persist(ctx, c)));
     return true;
   }
   const error = await admit(ctx, c, key);

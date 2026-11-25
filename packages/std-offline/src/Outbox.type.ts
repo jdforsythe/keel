@@ -1,6 +1,6 @@
 import type { Infer } from "@keel/schema";
 import type { Store } from "@keel/store";
-import type { OutboxState } from "./internal/OutboxState.ts";
+import type { OutboxState } from "./internal/OutboxState.schema.ts";
 
 declare const endpointsOf: unique symbol;
 type State = Store<Infer<typeof OutboxState>>;
