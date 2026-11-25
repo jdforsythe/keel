@@ -7,7 +7,7 @@ status: implemented
 'recipes.show': { path: '/:locale/recipes/:recipeId', params: RecipeParams, loader: loadRecipe,
   component: RecipePage, title: (p) => formatMessage(p.data.text.showTitle, { title: p.data.recipe.title }, p.params.locale) },
 ```
-The document's title is the matched route's `title`. Without one, when a loader in the chain returns `err`, and for a 404, it is the fallback: the served deployable's name: a server's, and a `client` deployable's `index.html` title (read once at `mount`).
+The document's title is the matched route's `title`. Without one, when a loader in the chain returns `err`, and for a 404, it is the fallback: the served deployable's name: a server's, which its document's `#k-state` carries as `title` (k.runtime), and a `client` deployable's `index.html` title. The client router reads it once as it starts: `#k-state`'s `title`, else `document.title`.
 
 **Language.** `<html lang>` is the matched route's value of its prefix param (k.prefix), read from the matched params; a route without a prefix param, and a 404, give `en`.
 
