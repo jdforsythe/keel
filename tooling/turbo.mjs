@@ -15,7 +15,7 @@ const ROOT = new URL("..", import.meta.url).pathname;
 function workspaceDirs(root) {
   /** @type {Record<string, string>} */
   const dirs = {};
-  const tops = ["packages", "apps", "examples"].flatMap((d) =>
+  const tops = ["packages", "apps", "examples", "libraries"].flatMap((d) =>
     fs.existsSync(path.join(root, d)) ? fs.readdirSync(path.join(root, d)).map((n) => `${d}/${n}`) : [],
   );
   for (const d of [...tops, "tooling", "evals"]) {
