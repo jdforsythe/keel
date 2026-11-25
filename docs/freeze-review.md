@@ -121,7 +121,8 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | std.lists | 6 | **conformance-covered** | none |
 | std.tauri | 10 | **conformance-covered** | `UNTESTABLE` toolchain lookups and capability file shape |
 | k.unsafe | 9 | **conformance-covered** | none |
-| **total** | **1396** | 114 of 115 covered | |
+| k.a11y-static | 8 | **conformance-covered** | none |
+| **total** | **1404** | 115 of 116 covered | |
 
 ## 2. One-way audit (principle 1)
 
