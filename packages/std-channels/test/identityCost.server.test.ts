@@ -27,8 +27,9 @@ const c = contract("cost", {
 /** The 5,000 ms wait the stream's open makes for its storage `watch` (k.persist Watch): the sim storage has one. It is no identify's. */
 const WATCH_BOUND = 1;
 
+/** Lets the stream's pending work run: `n` macrotask turns, each after the microtasks the last one queued. */
 const turns = async (n = 25): Promise<void> => {
-  for (let i = 0; i < n * 8; i++) await Promise.resolve();
+  for (let i = 0; i < n; i++) await new Promise<void>((r) => setImmediate(r));
 };
 
 async function rig(identify: (() => string) | undefined, open = true) {
