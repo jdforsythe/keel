@@ -6,8 +6,8 @@ const base = strykerConfig("check", 70);
 export default {
   ...base,
   ...ROOT_SANDBOX,
-  // Half the cores: the vitest runner is CPU-bound.
-  concurrency: Math.max(1, Math.floor(os.cpus().length / 2)),
+  // `KEEL_MUTATE_CONCURRENCY` when set (the base config carries it), else half the cores: the vitest runner is CPU-bound.
+  concurrency: base.concurrency ?? Math.max(1, Math.floor(os.cpus().length / 2)),
   vitest: { configFile: "vitest.mutate.config.ts" },
   mutate: [
     ...base.mutate,

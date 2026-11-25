@@ -40,6 +40,7 @@ Rules:
 - [ ] 0868 the browser resume smoke crashed once, cause unknown
 - [ ] 1103 `canary.mjs` fails six steps under load; evidence bundle not written
 - [ ] 1003 the CI smokes are not part of the local pre-push gate
+- [ ] 1105 `mutate.mjs --stop` waits without a bound; a run blocked in `open()` holds the lock
 
 ### Lane 02 conformance-files · testing, scaffold, check, std-schedules, runtime-dom, compiler · `rfc:` conformance commits only · M
 - [ ] 1098 `sim-stalls` real 100 ms timer against a 300 ms budget is load-sensitive
@@ -164,7 +165,7 @@ Rules:
 - [ ] 0605 `styles` reserved on every component (W1); decided: keep it reserved, give E1823 the k.aria file scope and `unsafe/` exemption, the fix renames the prop
 - [ ] 0836 golden-3 has never been built (W1 step 4, the audit target)
 - [ ] 0963 the active task to the start of P1
-- [ ] 1102 the 2026-11-24 mutation pass stopped unfinished · in flight
+- [x] 1102 the 2026-11-24 mutation pass stopped unfinished
 - [ ] 0953 a build-time check that a server bundle reaches no CLI-time package · in flight (RFC 0163)
 - [ ] 0998 k.host-element names k.library before that section exists · in flight (RFC 0163)
 

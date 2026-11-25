@@ -2,13 +2,19 @@
 // the bundles over the tree after it (`Io.refresh`, never `Io.build`), so the artifacts it makes stale (`surface.json`
 // for a changed contract) are rewritten and `keel check` stays clean; a dry run, and a project never built, refresh nothing.
 import { fileURLToPath } from "node:url";
-import { describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it } from "vitest";
 import { run } from "../src/index.ts";
 import { buildCommand } from "../src/internal/buildCommand.ts";
 import { runEngine } from "../src/internal/runEngine.ts";
+import { linkedProject } from "./support/linkedProject.ts";
 
-/** An example project of the repository, so the scaffolded sources resolve its installed `@keel/*` packages. */
-const CWD = fileURLToPath(new URL("../../../examples/client-only-api", import.meta.url));
+/**
+ * A stand-in for an example project of the repository, so the scaffolded sources resolve its installed `@keel/*`
+ * packages while the type cache of each check stays out of the example.
+ */
+const PROJECT = linkedProject(fileURLToPath(new URL("../../../examples/client-only-api", import.meta.url)));
+const CWD = PROJECT.root;
+afterAll(PROJECT.remove);
 type Files = { path: string; source: string }[];
 const applied = (files: Files, writes: readonly { path: string; content: string | null }[]): Files => {
   const m = new Map(files.map((f) => [f.path, f.source]));
