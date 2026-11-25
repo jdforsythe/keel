@@ -151,24 +151,24 @@
     },
     "@keel/std-tables": "4.25kb",
     "@keel/std-db/sqlite": {
-      "max": "1.5kb",
+      "max": "1.9kb",
       "platform": "node"
     },
     "@keel/std-db/postgres": {
-      "max": "2.6kb",
+      "max": "3.1kb",
       "platform": "node"
     },
     "@keel/std-db/tools": {
       "max": "1.5kb",
       "platform": "node"
     },
-    "@keel/std-postgres": "1kb",
+    "@keel/std-postgres": "1.05kb",
     "@keel/std-postgres/server": {
-      "max": "7.7kb",
+      "max": "8.1kb",
       "platform": "node"
     },
     "@keel/std-postgres/testing": {
-      "max": "0.8kb",
+      "max": "1.25kb",
       "platform": "node"
     },
     "@keel/std-postgres/tools": {

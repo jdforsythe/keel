@@ -1832,12 +1832,6 @@ importers:
 
   packages/std-db:
     dependencies:
-      '@keel/check':
-        specifier: workspace:*
-        version: link:../check
-      '@keel/ctx':
-        specifier: workspace:*
-        version: link:../ctx
       pg:
         specifier: 8.23.1
         version: 8.23.1
@@ -1845,9 +1839,18 @@ importers:
       '@electric-sql/pglite':
         specifier: 0.5.16
         version: 0.5.16
+      '@keel/check':
+        specifier: workspace:*
+        version: link:../check
+      '@keel/cli':
+        specifier: workspace:*
+        version: link:../cli
       '@keel/compiler':
         specifier: workspace:*
         version: link:../compiler
+      '@keel/ctx':
+        specifier: workspace:*
+        version: link:../ctx
       '@keel/router':
         specifier: workspace:*
         version: link:../router
@@ -2218,9 +2221,16 @@ importers:
       '@electric-sql/pglite':
         specifier: 0.5.16
         version: 0.5.16
+      pg:
+        specifier: 8.23.1
+        version: 8.23.1
+    devDependencies:
       '@keel/check':
         specifier: workspace:*
         version: link:../check
+      '@keel/cli':
+        specifier: workspace:*
+        version: link:../cli
       '@keel/compiler':
         specifier: workspace:*
         version: link:../compiler
@@ -2230,10 +2240,9 @@ importers:
       '@keel/schema':
         specifier: workspace:*
         version: link:../schema
-      pg:
-        specifier: 8.23.1
-        version: 8.23.1
-    devDependencies:
+      '@keel/server':
+        specifier: workspace:*
+        version: link:../server
       '@keel/testing':
         specifier: workspace:*
         version: link:../testing

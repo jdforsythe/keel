@@ -197,7 +197,7 @@
         {
           "name": "std-db files that take KEEL_TEST_POSTGRES_URL, one at a time on one database",
           "working-directory": "packages/std-db",
-          "run": "set -e\nfor f in conformance/driver-contract.test.ts conformance/serial-commits.test.ts conformance/layout-e2152.test.ts conformance/e2153-no-value.test.ts conformance/postgres-watch.test.ts test/model.test.ts test/racing-writes.test.ts; do pnpm exec vitest run \"$f\"; done"
+          "run": "set -e\nfor f in conformance/driver-contract.test.ts conformance/serial-commits.test.ts conformance/layout-e2152.test.ts conformance/e2153-no-value.test.ts conformance/postgres-watch.test.ts test/model.server.test.ts test/racing-writes.server.test.ts; do pnpm exec vitest run \"$f\"; done"
         },
         {
           "name": "std-db Postgres driver cases, TLS ones included, on the ssl server",
@@ -205,7 +205,7 @@
           "env": {
             "KEEL_TEST_POSTGRES_URL": "postgres://postgres:keel-ci-throwaway@127.0.0.1:5433/postgres"
           },
-          "run": "pnpm exec vitest run test/postgres-server.test.ts"
+          "run": "pnpm exec vitest run test/postgres-server.server.test.ts"
         },
         {
           "name": "std-postgres on Postgres 17, its files one at a time on one database",

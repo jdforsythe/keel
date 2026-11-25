@@ -270,8 +270,8 @@ export function spawnNode(script: string, env: Readonly<Record<string, string>>)
 const pkgUrl = (pkg: string): string => new URL(`../../${pkg}/src/index.ts`, import.meta.url).href;
 // ASSUMPTION: the `@keel/router/contract` entry resolves from the package folder at `src/contract/index.ts`.
 const contractUrl = (): string => new URL("../../router/src/contract/index.ts", import.meta.url).href;
-const sqliteUrl = (): string => new URL("../src/sqlite/index.ts", import.meta.url).href;
-const postgresUrl = (): string => new URL("../src/postgres/index.ts", import.meta.url).href;
+const sqliteUrl = (): string => new URL("../src/sqlite/index.server.ts", import.meta.url).href;
+const postgresUrl = (): string => new URL("../src/postgres/index.server.ts", import.meta.url).href;
 
 export function writeScript(dir: string, name: string, source: string): string {
   const file = join(dir, name);

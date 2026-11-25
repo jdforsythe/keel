@@ -56,4 +56,6 @@ Uses the **capability registry** (k.ctx `register(name, { real, shell, sim, plan
 
 ## Unsafe
 
-count: 0
+count: 2
+- `unsafe/raise.ts`: the throws std.postgres specifies (E2453 to E2457, E2460, an `allow` with no reason, `one` of several rows), a database error that is no statement's answer, and a caught driver error passed on unchanged.
+- `unsafe/settle.ts`: the catch that reads the driver's error object (SQLSTATE and severity) to tell a rerun, a constraint and a lost connection apart.

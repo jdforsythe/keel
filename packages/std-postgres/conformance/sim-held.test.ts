@@ -28,15 +28,13 @@ test("Under `simulate` with `replay` of a `SimRun` of seed 1 whose plan for the 
   const { cap, table } = fresh();
   const db = notesDb(cap, table);
   const T = sqlName(table);
-  const seen: number[] = [];
   await simulate(
     async ({ ctx }) => {
       okOf(await db(ctx).query(sql(Row)`select id, name from ${T}`));
-      seen.push(ctx.clock.now());
+      expect(ctx.clock.now()).toBe(500);
     },
     { replay: replayOf(cap, [{ delay: 500, fault: "none" }]) },
   );
-  expect(seen).toEqual([500]);
 });
 
 test("a lone `query` under a plan step of any `delay` is answered with `ctx.clock.now()` equal to the delay, with no `run`", async () => {
@@ -45,15 +43,13 @@ test("a lone `query` under a plan step of any `delay` is answered with `ctx.cloc
       const { cap, table } = fresh();
       const db = notesDb(cap, table);
       const T = sqlName(table);
-      const seen: number[] = [];
       await simulate(
         async ({ ctx }) => {
           okOf(await db(ctx).query(sql(Row)`select id, name from ${T}`));
-          seen.push(ctx.clock.now());
+          expect(ctx.clock.now()).toBe(delay);
         },
         { replay: replayOf(cap, [{ delay, fault: "none" }]) },
       );
-      expect(seen).toEqual([delay]);
     }),
     { seed: SEED, numRuns: 10 },
   );
@@ -63,8 +59,6 @@ test("with that plan empty, a `transaction` whose `fn` runs a `tx` statement, aw
   const { cap, table } = fresh();
   const db = notesDb(cap, table);
   const T = sqlName(table);
-  const seen: { now: number; rows: { id: number; name: string }[] }[] = [];
-  let answeredAt = -1;
   await simulate(
     async ({ ctx }) => {
       const r = await db(ctx).transaction(async (tx) => {
@@ -73,17 +67,15 @@ test("with that plan empty, a `transaction` whose `fn` runs a `tx` statement, aw
         okOf(await tx.run(sql(NoRows)`insert into ${T} values (2, 'b')`));
         return ok(true);
       });
-      answeredAt = ctx.clock.now();
       okOf(r);
-      seen.push({ now: answeredAt, rows: okOf(await db(ctx).query(sql(Row)`select id, name from ${T} order by id`)) });
+      expect(ctx.clock.now()).toBe(100);
+      expect(okOf(await db(ctx).query(sql(Row)`select id, name from ${T} order by id`))).toEqual([
+        { id: 1, name: "a" },
+        { id: 2, name: "b" },
+      ]);
     },
     { replay: replayOf(cap, []) },
   );
-  expect(answeredAt).toBe(100);
-  expect(seen[0]?.rows).toEqual([
-    { id: 1, name: "a" },
-    { id: 2, name: "b" },
-  ]);
 });
 
 test("a `transaction` whose `fn` awaits `ctx.clock.after(d)` between statements answers at `d` and commits all its statements, for any `d`", async () => {
@@ -121,10 +113,8 @@ test("a lone statement started while a `transaction` is open waits for the datab
   const { cap, table } = fresh();
   const db = notesDb(cap, table);
   const T = sqlName(table);
-  const seen: { txAt: number; queryAt: number; rows: number }[] = [];
   await simulate(
     async ({ ctx }) => {
-      let txAt = -1;
       const tx = db(ctx).transaction(async (t) => {
         okOf(await t.run(sql(NoRows)`insert into ${T} values (1, 'a')`));
         await ctx.clock.after(250);
@@ -132,21 +122,19 @@ test("a lone statement started while a `transaction` is open waits for the datab
       });
       const q = db(ctx).query(sql(Row)`select id, name from ${T}`);
       okOf(await tx);
-      txAt = ctx.clock.now();
-      const rows = okOf(await q);
-      seen.push({ txAt, queryAt: ctx.clock.now(), rows: rows.length });
+      const txAt = ctx.clock.now();
+      okOf(await q);
+      expect(txAt).toBe(250);
+      expect(ctx.clock.now()).toBeGreaterThanOrEqual(250);
     },
     { replay: replayOf(cap, []) },
   );
-  expect(seen[0]?.txAt).toBe(250);
-  expect(seen[0]?.queryAt).toBeGreaterThanOrEqual(250);
 });
 
 test("a `transaction` whose `fn` returns `err` rolls back with every PGlite call held and answered, the clock unmoved", async () => {
   const { cap, table } = fresh();
   const db = notesDb(cap, table);
   const T = sqlName(table);
-  const seen: { now: number; rows: number }[] = [];
   await simulate(
     async ({ ctx }) => {
       const r = await db(ctx).transaction(async (tx) => {
@@ -154,18 +142,17 @@ test("a `transaction` whose `fn` returns `err` rolls back with every PGlite call
         return err({ code: "t.no" });
       });
       expect(r.ok).toBe(false);
-      seen.push({ now: ctx.clock.now(), rows: okOf(await db(ctx).query(sql(Row)`select id, name from ${T}`)).length });
+      expect(ctx.clock.now()).toBe(0);
+      expect(okOf(await db(ctx).query(sql(Row)`select id, name from ${T}`)).length).toBe(0);
     },
     { replay: replayOf(cap, []) },
   );
-  expect(seen).toEqual([{ now: 0, rows: 0 }]);
 });
 
 test("In an empty replay (k.drive), a first `query` on a database no earlier run used, started beside a `ctx.clock.after(1)` waiter, answers with `ctx.clock.now()` 0 and the waiter not resolved.", async () => {
   const { cap, table } = fresh();
   const db = notesDb(cap, table);
   const T = sqlName(table);
-  const seen: { now: number; waiter: boolean }[] = [];
   await simulate(
     async ({ ctx }) => {
       let resolved = false;
@@ -177,13 +164,12 @@ test("In an empty replay (k.drive), a first `query` on a database no earlier run
         () => undefined,
       );
       okOf(await db(ctx).query(sql(Row)`select id, name from ${T}`));
-      seen.push({ now: ctx.clock.now(), waiter: resolved });
+      expect({ now: ctx.clock.now(), waiter: resolved }).toEqual({ now: 0, waiter: false });
       ac.abort();
       await w;
     },
     { replay: replayOf(cap, []) },
   );
-  expect(seen).toEqual([{ now: 0, waiter: false }]);
 });
 
 test("a first `query` on a database no earlier run used answers at `ctx.clock.now()` 0 beside a `ctx.clock.after(d)` waiter of any `d`, the waiter not resolved", async () => {
@@ -192,7 +178,6 @@ test("a first `query` on a database no earlier run used answers at `ctx.clock.no
       const { cap, table } = fresh();
       const db = notesDb(cap, table);
       const T = sqlName(table);
-      const seen: { now: number; waiter: boolean }[] = [];
       await simulate(
         async ({ ctx }) => {
           let resolved = false;
@@ -204,13 +189,12 @@ test("a first `query` on a database no earlier run used answers at `ctx.clock.no
             () => undefined,
           );
           okOf(await db(ctx).query(sql(Row)`select id, name from ${T}`));
-          seen.push({ now: ctx.clock.now(), waiter: resolved });
+          expect({ now: ctx.clock.now(), waiter: resolved }).toEqual({ now: 0, waiter: false });
           ac.abort();
           await w;
         },
         { replay: replayOf(cap, []) },
       );
-      expect(seen).toEqual([{ now: 0, waiter: false }]);
     }),
     { seed: SEED, numRuns: 5 },
   );

@@ -1,5 +1,5 @@
 import type { Result } from "@keel/schema";
-import type { NoRows } from "../NoRows.ts";
+import type { NoRows } from "../NoRows.schema.ts";
 import type { NotFound } from "../NotFound.ts";
 import type { Query } from "../Query.ts";
 import type { StatementError } from "../StatementError.ts";
