@@ -1,24 +1,25 @@
 import { Visitor } from "oxc-parser";
 import type {
   Argument,
-  ArrowFunctionExpression,
   BindingProperty,
   Expression,
-  Function as FunctionNode,
   JSXAttributeItem,
   ObjectExpression,
   Program,
   VariableDeclarator,
 } from "oxc-parser";
 import type { SourceFile } from "../types/SourceFile.ts";
-import { importTarget } from "./importTarget.ts";
+import { READ_DEPTH } from "./functionRead/READ_DEPTH.ts";
+import type { ReadFn } from "./functionRead/ReadFn.ts";
+import { fileOfIn } from "./functionRead/fileOfIn.ts";
+import { fnKey } from "./functionRead/fnKey.ts";
+import { localFunction } from "./functionRead/localFunction.ts";
+import { returned } from "./functionRead/returned.ts";
 import { keyName } from "./keyName.ts";
 import { parseFile } from "./parseFile.ts";
 
-/** How deep a read goes through calls and re-exports, as the factory read of k.privacy-reads goes. */
-const MAX_DEPTH = 8;
-
-type Fn = FunctionNode | ArrowFunctionExpression;
+/** A function the reader reads (`functionRead`). */
+type Fn = ReadFn;
 /** An expression and the scope it is read in. */
 type Val = { readonly expr: Expression; readonly env: Env };
 /**
@@ -56,27 +57,6 @@ const idKey = (p: BindingProperty): boolean =>
 const isFn = (e: Expression | null | undefined): e is Fn =>
   e !== null && e !== undefined && (e.type === "ArrowFunctionExpression" || e.type === "FunctionExpression");
 
-/** The expressions `fn` returns (none of a nested function's); `null` for a bare `return`. */
-function returned(fn: Fn, program: Program): (Expression | null)[] {
-  if (fn.type === "ArrowFunctionExpression" && fn.expression && fn.body.type !== "BlockStatement") return [fn.body];
-  const body = fn.body;
-  if (body === null) return [];
-  const nested: { start: number; end: number }[] = [];
-  const out: { at: number; arg: Expression | null }[] = [];
-  const inner = (n: { start: number; end: number }): void => {
-    if (n.start > body.start && n.end <= body.end) nested.push(n);
-  };
-  new Visitor({
-    FunctionDeclaration: inner,
-    FunctionExpression: inner,
-    ArrowFunctionExpression: inner,
-    ReturnStatement: (r) => {
-      if (r.start >= body.start && r.end <= body.end) out.push({ at: r.start, arg: r.argument });
-    },
-  }).visit(program);
-  return out.filter((r) => !nested.some((n) => r.at > n.start && r.at < n.end)).map((r) => r.arg);
-}
-
 /**
  * The reader E1161 judges a library element's `id` with (k.library Ids): over `files` (the checked files, where they
  * lie) and `entries` (each library specifier to the file its `exports` give). An `id` is built from its component's
@@ -84,8 +64,9 @@ function returned(fn: Fn, program: Program): (Expression | null)[] {
  * template literal with such an expression, a conditional whose two branches are, or a call whose callee the reader
  * reads (a function of the file, a closure, an import from the library's own files or another library, a member of an
  * object it reads back to a literal or a call) and every expression it returns is, its parameters standing for the
- * arguments and closure names read where they are bound. A function met again while its read is open, or more than
- * eight calls deep, is not read. Anything else is not built.
+ * arguments and closure names read where they are bound. Where a function is and what it returns is the shared reader's
+ * (`functionRead`): a function met again while its read is open, or more than eight calls deep, is not read. Anything
+ * else is not built.
  */
 export function idReader(
   files: readonly SourceFile[],
@@ -94,7 +75,7 @@ export function idReader(
   readonly jsxBad: (attributes: readonly JSXAttributeItem[], file: SourceFile) => boolean;
   readonly callBad: (arg: Argument | undefined, file: SourceFile) => boolean;
 } {
-  const byPath = new Map(files.map((f) => [f.path, f]));
+  const fileOf = fileOfIn(files, entries);
   const namesOf = new Map<string, Names>();
   const root = (file: SourceFile): Env => ({ file, vars: new Map(), parent: undefined, depth: 0, active: new Set() });
   const program = (file: SourceFile): Program => parseFile(file).program;
@@ -107,7 +88,7 @@ export function idReader(
     return undefined;
   };
 
-  /** The `const` initializers and function declarations of `file` by name, anywhere in it; a name held twice is none. */
+  /** The bindings of `file` by name, anywhere in it, for the objects `objectOf` reads back; a name held twice is none. */
   const decls = new Map<string, Map<string, Expression | Fn | null>>();
   const declsOf = (file: SourceFile): Map<string, Expression | Fn | null> => {
     const held = decls.get(file.path);
@@ -126,71 +107,6 @@ export function idReader(
     return out;
   };
 
-  /** The function `file` exports as `name`: declared there, a local exported under it, a re-export or `export *`. */
-  const exported = (name: string, file: SourceFile, hops: number): { fn: Fn; file: SourceFile } | undefined => {
-    if (hops > MAX_DEPTH) return undefined;
-    for (const st of program(file).body) {
-      if (st.type === "ExportDefaultDeclaration" && name === "default") {
-        const d = st.declaration;
-        if (d.type === "FunctionDeclaration" || d.type === "FunctionExpression" || d.type === "ArrowFunctionExpression")
-          return { fn: d, file };
-        if (d.type === "Identifier") return local(d.name, file, hops + 1);
-      } else if (st.type === "ExportNamedDeclaration" && st.declaration !== null && st.declaration !== undefined) {
-        const d = st.declaration;
-        const declares =
-          (d.type === "FunctionDeclaration" && d.id?.name === name) ||
-          (d.type === "VariableDeclaration" &&
-            d.declarations.some((v) => v.id.type === "Identifier" && v.id.name === name));
-        if (declares) return local(name, file, hops + 1);
-      } else if (st.type === "ExportNamedDeclaration")
-        for (const sp of st.specifiers) {
-          const out = sp.exported.type === "Identifier" ? sp.exported.name : sp.exported.value;
-          const inner = sp.local.type === "Identifier" ? sp.local.name : sp.local.value;
-          if (out !== name) continue;
-          if (st.source === null) return local(inner, file, hops + 1);
-          const target = fileOf(file, st.source.value);
-          return target === undefined ? undefined : exported(inner, target, hops + 1);
-        }
-      else if (st.type === "ExportAllDeclaration" && st.exported === null) {
-        const target = fileOf(file, st.source.value);
-        const hit = target === undefined ? undefined : exported(name, target, hops + 1);
-        if (hit !== undefined) return hit;
-      }
-    }
-    return undefined;
-  };
-
-  /** The file `spec` names from `from`: a relative path among the files, or a library's entry. */
-  const fileOf = (from: SourceFile, spec: string): SourceFile | undefined => {
-    const lib = entries.get(spec);
-    return lib !== undefined ? byPath.get(lib) : importTarget(from.path, spec, files);
-  };
-
-  /** The function `name` is in `file`: declared or bound to a `const` there (once), or imported by name. */
-  const local = (name: string, file: SourceFile, hops: number): { fn: Fn; file: SourceFile } | undefined => {
-    if (hops > MAX_DEPTH) return undefined;
-    for (const st of program(file).body)
-      if (st.type === "ImportDeclaration" && st.importKind !== "type")
-        for (const sp of st.specifiers)
-          if (sp.local.name === name) {
-            const target = fileOf(file, st.source.value);
-            const imported =
-              sp.type === "ImportDefaultSpecifier"
-                ? "default"
-                : sp.type === "ImportSpecifier"
-                  ? sp.imported.type === "Identifier"
-                    ? sp.imported.name
-                    : sp.imported.value
-                  : undefined;
-            return target === undefined || imported === undefined ? undefined : exported(imported, target, hops + 1);
-          }
-    const d = declsOf(file).get(name);
-    if (d === null || d === undefined) return undefined;
-    if (d.type === "FunctionDeclaration") return { fn: d, file };
-    const init = unwrap(d);
-    return isFn(init) ? { fn: init, file } : undefined;
-  };
-
   /** The function `callee` names in `env`, with the scope it was made in. */
   const fnOf = (callee: Expression, env: Env): { fn: Fn; env: Env } | undefined => {
     const x = unwrap(callee);
@@ -198,7 +114,7 @@ export function idReader(
     if (x.type === "Identifier") {
       const v = lookup(x.name, env);
       if (v !== undefined) return fnOf(v.expr, v.env);
-      const hit = local(x.name, env.file, 0);
+      const hit = localFunction(x.name, env.file, fileOf);
       return hit === undefined ? undefined : { fn: hit.fn, env: root(hit.file) };
     }
     if (x.type === "MemberExpression" && !x.computed && x.property.type === "Identifier") {
@@ -221,8 +137,8 @@ export function idReader(
 
   /** A scope for reading a call of `f`: its parameters bound to `args` read in `caller`, its body `const`s in it. */
   const enter = (f: { fn: Fn; env: Env }, args: readonly Argument[], caller: Env): Env | undefined => {
-    const id = `${f.env.file.path}:${f.fn.start}`;
-    if (f.env.active.has(id) || caller.active.has(id) || caller.depth >= MAX_DEPTH) return undefined;
+    const id = fnKey(f.env.file, f.fn);
+    if (f.env.active.has(id) || caller.active.has(id) || caller.depth >= READ_DEPTH) return undefined;
     const vars = new Map<string, Val>();
     const env: Env = {
       file: f.env.file,

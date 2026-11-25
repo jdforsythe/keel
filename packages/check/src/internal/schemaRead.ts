@@ -1,32 +1,32 @@
-import {
-  type Argument,
-  type ArrowFunctionExpression,
-  type CallExpression,
-  type Expression,
-  type Function as FunctionNode,
-  type ParamPattern,
-  Visitor,
-} from "oxc-parser";
+import type { Argument, CallExpression, Expression, ParamPattern } from "oxc-parser";
 import type { SourceFile } from "../types/SourceFile.ts";
+import type { ReadPackage } from "./ReadPackage.ts";
 import type { SchemaAnswer } from "./SchemaAnswer.ts";
 import type { SchemaQuestion } from "./SchemaQuestion.ts";
 import { followRef } from "./followRef.ts";
+import { READ_DEPTH } from "./functionRead/READ_DEPTH.ts";
+import type { ReadFn } from "./functionRead/ReadFn.ts";
+import { bound } from "./functionRead/bound.ts";
+import { exportedFunction } from "./functionRead/exportedFunction.ts";
+import { fileOfIn } from "./functionRead/fileOfIn.ts";
+import { fnKey } from "./functionRead/fnKey.ts";
+import { localFunction } from "./functionRead/localFunction.ts";
+import { returned } from "./functionRead/returned.ts";
 import { held } from "./held.ts";
-import { importTarget } from "./importTarget.ts";
-import { isAstNode } from "./isAstNode.ts";
 import { packageSource } from "./packageSource.ts";
 import { parseFile } from "./parseFile.ts";
+import { projectLibraries } from "./projectLibraries.ts";
 
-const MAX_DEPTH = 8;
 /** The package whose exports are the schema constructors themselves, read by their receiver and arguments. */
 const SCHEMA = "@keel/schema";
 
-type Fn = FunctionNode | ArrowFunctionExpression;
 /** Inside a package function: its parameters (read at the call), its body's top-level `const`s, the depth. */
 type Scope = { readonly params: ReadonlySet<string>; readonly locals: ReadonlyMap<string, Expression> };
 /** `active`: the package functions being read on the way here, so a cycle among them is not read as finished. */
 type Ctx = {
   readonly app: readonly SourceFile[];
+  /** The app's libraries' `exports` entries to the files they give among `app` (k.library In an app). */
+  readonly entries: ReadonlyMap<string, string>;
   readonly scope: Scope | undefined;
   readonly depth: number;
   readonly active: ReadonlySet<string>;
@@ -40,111 +40,19 @@ const unwrap = (e: Expression): Expression =>
     ? unwrap(e.expression)
     : e;
 
-/** The names a parameter pattern binds, and the default values it holds. */
-function bound(p: unknown, names: Set<string>, defaults: unknown[]): void {
-  if (!isAstNode(p)) return;
-  if (p.type === "Identifier" && typeof p.name === "string") names.add(p.name);
-  else if (p.type === "AssignmentPattern") {
-    bound(p.left, names, defaults);
-    defaults.push(p.right);
-  } else if (p.type === "RestElement") bound(p.argument, names, defaults);
-  else if (p.type === "TSParameterProperty") bound(p.parameter, names, defaults);
-  else if (p.type === "ArrayPattern" && Array.isArray(p.elements))
-    for (const e of p.elements) bound(e, names, defaults);
-  else if (p.type === "ObjectPattern" && Array.isArray(p.properties))
-    for (const q of p.properties)
-      bound(isAstNode(q) && q.type === "RestElement" ? q.argument : isAstNode(q) ? q.value : q, names, defaults);
-}
-
-/** The function `name` is in `file` at the top level (a declaration with a body, or a `const` bound to one), or through a relative import. */
-function localFunction(
-  name: string,
-  file: SourceFile,
-  files: readonly SourceFile[],
-  hops: number,
-): { fn: Fn; file: SourceFile } | undefined {
-  if (hops > MAX_DEPTH) return undefined;
-  for (const st of parseFile(file).program.body) {
-    const d = st.type === "ExportNamedDeclaration" || st.type === "ExportDefaultDeclaration" ? st.declaration : st;
-    if (d?.type === "FunctionDeclaration" && d.id?.name === name && d.body !== null) return { fn: d, file };
-    if (d?.type === "VariableDeclaration" && d.kind === "const")
-      for (const v of d.declarations) {
-        const init = v.init === null || v.init === undefined ? undefined : unwrap(v.init);
-        if (v.id.type === "Identifier" && v.id.name === name)
-          return init?.type === "ArrowFunctionExpression" || init?.type === "FunctionExpression"
-            ? { fn: init, file }
-            : undefined;
-      }
-    if (st.type === "ImportDeclaration")
-      for (const sp of st.specifiers)
-        if (sp.local.name === name && sp.type === "ImportSpecifier") {
-          const target = importTarget(file.path, st.source.value, files);
-          const imported = sp.imported.type === "Identifier" ? sp.imported.name : sp.imported.value;
-          return target === undefined ? undefined : exportedFunction(imported, target, files, hops + 1);
-        }
-  }
-  return undefined;
-}
-
-/** The function `file` exports as `name`: declared there, a local exported under it, a re-export or `export *`. */
-function exportedFunction(
-  name: string,
-  file: SourceFile,
-  files: readonly SourceFile[],
-  hops: number,
-): { fn: Fn; file: SourceFile } | undefined {
-  if (hops > MAX_DEPTH) return undefined;
-  for (const st of parseFile(file).program.body) {
-    if (st.type === "ExportNamedDeclaration" && st.declaration !== null && st.declaration !== undefined) {
-      const hit = localFunction(name, file, files, hops + 1);
-      const d = st.declaration;
-      const declares =
-        (d.type === "FunctionDeclaration" && d.id?.name === name) ||
-        (d.type === "VariableDeclaration" &&
-          d.declarations.some((v) => v.id.type === "Identifier" && v.id.name === name));
-      if (declares) return hit;
-    } else if (st.type === "ExportNamedDeclaration")
-      for (const sp of st.specifiers) {
-        const exported = sp.exported.type === "Identifier" ? sp.exported.name : sp.exported.value;
-        const local = sp.local.type === "Identifier" ? sp.local.name : sp.local.value;
-        if (exported !== name) continue;
-        if (st.source === null) return localFunction(local, file, files, hops + 1);
-        const target = importTarget(file.path, st.source.value, files);
-        return target === undefined ? undefined : exportedFunction(local, target, files, hops + 1);
-      }
-    else if (st.type === "ExportAllDeclaration" && st.exported === null) {
-      const target = importTarget(file.path, st.source.value, files);
-      const hit = target === undefined ? undefined : exportedFunction(name, target, files, hops + 1);
-      if (hit !== undefined) return hit;
-    }
-  }
-  return undefined;
-}
-
-/** The expressions `fn` of `file` returns (none of a nested function's); `null` for a bare `return`. */
-function returned(fn: Fn, file: SourceFile): (Expression | null)[] {
-  if (fn.type === "ArrowFunctionExpression" && fn.expression && fn.body.type !== "BlockStatement") return [fn.body];
-  const body = fn.body;
-  if (body === null) return [];
-  const nested: { start: number; end: number }[] = [];
-  const out: { at: number; arg: Expression | null }[] = [];
-  const inner = (n: { start: number; end: number }): void => {
-    if (n.start > body.start && n.end <= body.end) nested.push(n);
-  };
-  new Visitor({
-    FunctionDeclaration: inner,
-    FunctionExpression: inner,
-    ArrowFunctionExpression: inner,
-    ReturnStatement: (r) => {
-      if (r.start >= body.start && r.end <= body.end) out.push({ at: r.start, arg: r.argument });
-    },
-  }).visit(parseFile(file).program);
-  return out.filter((r) => !nested.some((n) => r.at > n.start && r.at < n.end)).map((r) => r.arg);
+/**
+ * A library the app lists (k.library In an app) is read from the project's own read of its files, where reach finds
+ * them (`reachResolve`): the file its `exports` entry `spec` gives, and the app's files, its own among them.
+ */
+function listedLibrary(spec: string, ctx: Ctx): ReadPackage | undefined {
+  const at = ctx.entries.get(spec);
+  const entry = at === undefined ? undefined : ctx.app.find((f) => f.path === at);
+  return entry === undefined ? undefined : { entry, files: ctx.app, entries: ctx.entries };
 }
 
 /** What the call of package function `fn` (in `file` of `files`) returns, its parameters read at the call. */
 function readFunction(
-  fn: Fn,
+  fn: ReadFn,
   file: SourceFile,
   files: readonly SourceFile[],
   q: SchemaQuestion,
@@ -152,7 +60,7 @@ function readFunction(
   ctx: Ctx,
 ): SchemaAnswer {
   // A function met again while its read is open (direct or mutual recursion) never finishes here: unknown.
-  const id = `${file.path}:${fn.start}`;
+  const id = fnKey(file, fn);
   if (ctx.active.has(id)) return "unknown";
   const params = new Set<string>();
   const defaults: unknown[] = [];
@@ -164,10 +72,16 @@ function readFunction(
         for (const v of st.declarations)
           if (v.id.type === "Identifier" && v.init !== null && v.init !== undefined) locals.set(v.id.name, v.init);
   const scope: Scope = { params, locals };
-  const inner: Ctx = { app: ctx.app, scope, depth: ctx.depth + 1, active: new Set([...ctx.active, id]) };
+  const inner: Ctx = {
+    app: ctx.app,
+    entries: ctx.entries,
+    scope,
+    depth: ctx.depth + 1,
+    active: new Set([...ctx.active, id]),
+  };
   const read = (x: Expression | null): SchemaAnswer => (x === null ? "no" : readIn(x, file, files, q, seen, inner));
   const fromDefaults = fn.params.flatMap((p) => (p.type === "AssignmentPattern" ? [read(p.right)] : []));
-  return [...returned(fn, file).map(read), ...fromDefaults].reduce(worst, "no");
+  return [...returned(fn, parseFile(file).program).map(read), ...fromDefaults].reduce(worst, "no");
 }
 
 /**
@@ -196,8 +110,11 @@ function packageCall(
   }
   if (target === undefined || target.package === SCHEMA) return undefined;
   const args = e.arguments.map((a) => readIn(a, file, files, q, seen, ctx)).reduce(worst, "no");
-  const pkg = ctx.depth < MAX_DEPTH ? packageSource(target.package, file, ctx.app) : undefined;
-  const fn = pkg === undefined ? undefined : exportedFunction(target.name, pkg.entry, pkg.files, 0);
+  const pkg =
+    ctx.depth < READ_DEPTH
+      ? (listedLibrary(target.package, ctx) ?? packageSource(target.package, file, ctx.app))
+      : undefined;
+  const fn = pkg === undefined ? undefined : exportedFunction(target.name, pkg.entry, fileOfIn(pkg.files, pkg.entries));
   const body =
     pkg === undefined || fn === undefined ? "unknown" : readFunction(fn.fn, fn.file, pkg.files, q, seen, ctx);
   if (body === "unknown") q.unread?.(e, file);
@@ -216,9 +133,9 @@ function helperCall(
   seen: Set<string>,
   ctx: Ctx,
 ): SchemaAnswer | undefined {
-  if (ctx.scope === undefined || e.callee.type !== "Identifier" || ctx.depth >= MAX_DEPTH) return undefined;
+  if (ctx.scope === undefined || e.callee.type !== "Identifier" || ctx.depth >= READ_DEPTH) return undefined;
   if (ctx.scope.params.has(e.callee.name) || ctx.scope.locals.has(e.callee.name)) return undefined;
-  const fn = localFunction(e.callee.name, file, files, 0);
+  const fn = localFunction(e.callee.name, file, fileOfIn(files, ctx.entries));
   if (fn === undefined) return undefined;
   const args = e.arguments.map((a) => readIn(a, file, files, q, seen, ctx)).reduce(worst, "no");
   return worst(args, readFunction(fn.fn, fn.file, files, q, seen, ctx));
@@ -312,5 +229,6 @@ export function schemaRead(
   q: SchemaQuestion,
   seen: Set<string> = new Set(),
 ): SchemaAnswer {
-  return readIn(expr, file, project, q, seen, { app: project, scope: undefined, depth: 0, active: new Set() });
+  const entries = projectLibraries.get(project)?.entries ?? new Map<string, string>();
+  return readIn(expr, file, project, q, seen, { app: project, entries, scope: undefined, depth: 0, active: new Set() });
 }

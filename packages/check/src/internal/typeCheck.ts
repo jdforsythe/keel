@@ -217,7 +217,10 @@ function pass(
   host.getEnvironmentVariable = () => undefined;
   host.writeFile = () => undefined;
   host.fileExists = (fileName) =>
-    views.has(norm(fileName)) || packageText.has(norm(fileName)) || norm(fileName) === jsxName || rec.fileExists(fileName);
+    views.has(norm(fileName)) ||
+    packageText.has(norm(fileName)) ||
+    norm(fileName) === jsxName ||
+    rec.fileExists(fileName);
   // In-memory files may sit in folders that are not on disk; module resolution asks for those folders first.
   const dirs = new Set(
     [...views.keys(), ...packageText.keys()].flatMap((n) => n.split("/").map((_, i, p) => p.slice(0, i).join("/"))),
