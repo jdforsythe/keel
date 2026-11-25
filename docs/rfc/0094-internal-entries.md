@@ -1,6 +1,6 @@
 # RFC 0094: `keel check` refuses `@keel/*` internal entries in app code
 
-Status: implemented (2026-11-13, orchestrator, WORKFLOW RFC defaults 5, 6; the user confirms or reverses, tasks/0312-s6-compliance/PLAN.md D21). For backlog 0561. Each decision cites the WORKFLOW RFC default it applies; none of the points the defaults escalate arise (Questions). ADR-0117 records it.
+Status: implemented (2026-11-13, orchestrator, WORKFLOW RFC defaults 5, 6; tasks/0312-s6-compliance/PLAN.md D21). For backlog 0561. Each decision cites the WORKFLOW RFC default it applies; none of the points the defaults escalate arise (Questions). ADR-0117 records it.
 
 ## Decision
 One new kernel rule, E1576 in k.security: a project file outside `packages/`, `node_modules/` and `.keel/` (app modules, tests, `unsafe/`, tool scripts) that names a `@keel/*` entry with an `internal` path segment, in an import, a re-export, or a literal `import()` or `require`, is an error with no fix. Kernel and stdlib source keeps importing internal entries; the rule tells them from app code by path, as E1207 does. It applies defaults 6 (a check, not the "not public" sentence k.router has today), 5 (server state stays on the server), 3 (the check pipeline and E1251's import visitor, no new mechanism) and 7 (`@keel/check` is re-based).

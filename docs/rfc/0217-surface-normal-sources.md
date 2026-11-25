@@ -1,6 +1,6 @@
 # RFC 0217: k.compat: `sources` hashes each file's normal form, so a formatter's change is not E1005
 
-Status: accepted (ADR-0239), accepted by the orchestrator on 2026-11-24, for the operator to confirm. Amends k.compat (Surface, a new Sources paragraph, Conformance), the map. From backlog 1015.
+Status: accepted (ADR-0239), accepted by the orchestrator on 2026-11-24. Amends k.compat (Surface, a new Sources paragraph, Conformance), the map. From backlog 1015.
 
 ## Decisions
 - D1: `sources` keeps its place and its shape (`{ [path]: "fnv1a:…" }`); each value is the hash of the file's normal form instead of its text. `version` stays 2.

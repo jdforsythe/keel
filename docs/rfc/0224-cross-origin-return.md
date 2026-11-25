@@ -1,6 +1,6 @@
 # RFC 0224: k.user: a sign-in returns only to a page its own origin answers; E1592
 
-Status: accepted (ADR-0246), accepted by the orchestrator on 2026-11-24, for the operator to confirm. Amends k.user (Identity source, Rules, Conformance), the map. From backlog 1077.
+Status: accepted (ADR-0246), accepted by the orchestrator on 2026-11-24. Amends k.user (Identity source, Rules, Conformance), the map. From backlog 1077.
 
 ## Decisions
 - D1: a return target is a page the origin of the `handle` answers. A page another origin serves is never one. `Href` stays root-relative, and `pageHref` and its rules are unchanged.

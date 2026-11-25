@@ -1,6 +1,6 @@
 # RFC 0220: k.ctx: an `import()` in app code is W1608
 
-Status: accepted (ADR-0242) by the orchestrator on 2026-11-24, for the operator to confirm. Amends k.ctx (Rules, Conformance), k.check (App code), the map. From the operator's D137 (backlog 1090).
+Status: accepted (ADR-0242) by the orchestrator on 2026-11-24. Amends k.ctx (Rules, Conformance), k.check (App code), the map. From the operator's D137 (backlog 1090).
 
 ## Decisions
 - D1: one new code, W1608, a warning: an `import()` expression in app code, at `import`, whatever its specifier and however its result is used.

@@ -1,6 +1,6 @@
 # RFC 0208: k.formats: a format literal, checked by `keel check` (E1108)
 
-Status: implemented (ADR-0230), accepted by the orchestrator on 2026-11-23, for the operator to confirm. Amends k.formats (Literals, Rules, Conformance), std.temporal (API, one sentence), the map. From `apps/household` (walkthrough finding L9-3, backlog 1036).
+Status: implemented (ADR-0230), accepted by the orchestrator on 2026-11-23. Amends k.formats (Literals, Rules, Conformance), std.temporal (API, one sentence), the map. From `apps/household` (walkthrough finding L9-3, backlog 1036).
 
 ## Decisions
 - D1: one constructor for every format type, `formatLiteral(format, text)` in `@keel/schema`, typed `Format<string, N>`, with no `Result` to unwrap.

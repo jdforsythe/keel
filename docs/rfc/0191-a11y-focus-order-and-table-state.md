@@ -1,6 +1,6 @@
 # RFC 0191: k.a11y, k.testing: focus order checked at render, table state
 
-Status: draft (ADR-0213 accepted). Backlog 0572, 0573, 0580. D1, D3, D4 and D5 are built.
+Status: accepted (ADR-0213). Backlog 0572, 0573, 0580. D1, D3 and D4 are built; D5 (the conformance case, backlog 0580) is not.
 
 ## Decisions
 - D1 (0572): E1820 also runs at render. With tokens, an element whose resting atomic classes give `direction` `row-reverse` or `column-reverse`, at the base or any breakpoint, over two or more elements of its sequential focus order (`focusOrder` within it) is E1820 naming its element id. A run records `E1820` among its rules, as it records E1804. The claim map is unchanged (E1820 1.3.2, 2.4.3), so those criteria earn `example` from a passing `renderRoute` run with no static E1820, as every other criterion does, and a `direction` computed at run time is checked.

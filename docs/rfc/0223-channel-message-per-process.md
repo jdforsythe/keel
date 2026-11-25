@@ -1,6 +1,6 @@
 # RFC 0223: std.channels: a channel message stays in the process that serves its publish
 
-Status: accepted (ADR-0245) by the orchestrator on 2026-11-24, for the operator to confirm. Amends std.channels (Serve, Conformance), k.deploy (Storage, one sentence), the std index. From backlog 1082.
+Status: accepted (ADR-0245) by the orchestrator on 2026-11-24. Amends std.channels (Serve, Conformance), k.deploy (Storage, one sentence), the std index. From backlog 1082.
 
 ## Decisions
 - D1: a `message` reaches the member streams open in the process that serves its publish, and no other. No `watch`, notification, broker or stored record carries it. This is the promise for one process and for many, under sim and on every storage.

@@ -1,6 +1,6 @@
 # ADR-0171: std.channels: each serving module's bounds count its own channel routes' streams (RFC 0149)
 
-**Status:** accepted (orchestrator, under the RFC defaults; for the user to confirm).
+**Status:** accepted (orchestrator, under the RFC defaults).
 
 **Context.** `channelRoute` read the opener module's bounds but counted every module's open streams, so one module's streams used up another's `maxStreams` and `perCaller`.
 

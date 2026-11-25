@@ -1,6 +1,6 @@
 # ADR-0193: k.privacy-reads: the checker's privacy readers for stdlib rules, and three rules on them (RFC 0170)
 
-**Status:** accepted (orchestrator, under the RFC defaults; for the operator to confirm).
+**Status:** accepted (orchestrator, under the RFC defaults).
 
 **Context.** A revealed value given to a job queue is stored in plain text, a password control can bind a plain `s.string()` field, and a token digest can be sent in an `output`; no rule reports any of them. The stdlib rules that would cannot reach E1111's and E1112's readers, which `@keel/check` keeps internal.
 

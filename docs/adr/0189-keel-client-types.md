@@ -1,6 +1,6 @@
 # ADR-0189: k.bundle: `@keel/compiler/client` types `import.meta.env` and the worker and url imports (RFC 0167)
 
-**Status:** accepted (orchestrator, under the RFC defaults; for the user to confirm).
+**Status:** accepted (orchestrator, under the RFC defaults).
 
 **Context.** `keel check` said its only ambient types were Node's, yet accepted `/// <reference types="vite/client" />`, which cli conformance uses to type `import.meta.env` and `?worker` imports. Vite's types make every unknown `import.meta.env` key `any` and add APIs no section specifies.
 

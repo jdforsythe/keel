@@ -1,6 +1,6 @@
 # ADR-0115: module services unwrap the route's `Result`, `Io.build`, a stream cap, sound `accepts`, schedules and jobs validate, `resumeDocument`, k.deploy and k.openapi (RFC 0092)
 
-**Status:** accepted by the orchestrator (2026-11-12) under the WORKFLOW RFC defaults; awaiting the user's confirmation.
+**Status:** accepted by the orchestrator (2026-11-12) under the WORKFLOW RFC defaults.
 
 **Context.** S3 left gaps between code and spec and a few unsafe defaults: undocumented error answers and E1006 for endpoints files; `node` documents in dev that never resume their islands; three k.topology clauses without evidence; one `KEEL_SECRET` whose reach is unstated; a cron day rule that differs from Vixie cron; unbounded event streams; E1562 dropped silently in CI; schedules and jobs that accept what they cannot run; an `accepts` unsound for open objects; stdlib routes dropped from the entries; module calls that decode the k.server envelope; MCP `build` writing no `.keel/` files or bundles; tests that resume server HTML by hand; a golden-2 call to its own app through `service({ base })`. k.topology, k.server and k.services were at the section limit.
 

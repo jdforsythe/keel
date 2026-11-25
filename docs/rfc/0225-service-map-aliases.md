@@ -1,6 +1,6 @@
 # RFC 0225: k.bundle: the service map and E1011 stated, and an aliased import of a module file is E1013
 
-Status: accepted (ADR-0247), accepted by the orchestrator on 2026-11-24, for the operator to confirm. Amends k.bundle (Service map, Aliases, Rules, Conformance), the map. Backlog 1006.
+Status: accepted (ADR-0247), accepted by the orchestrator on 2026-11-24. Amends k.bundle (Service map, Aliases, Rules, Conformance), the map. Backlog 1006.
 
 ## Decisions
 - D1: k.bundle states the service map and E1011 as built: what the map holds, what the scan follows, when the client build fails, the message, and where it is not reported.

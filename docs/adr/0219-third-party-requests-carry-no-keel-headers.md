@@ -1,6 +1,6 @@
 # ADR-0219: a request to a third-party origin carries no Keel header (RFC 0197)
 
-**Status:** accepted (orchestrator, D104; for the operator to confirm).
+**Status:** accepted (orchestrator, D104).
 
 **Context.** A Keel front end with no back end that calls another organisation's API must be possible and easy. Every service request sent `x-keel: 1`, k.server's same-site proof, so each browser call to a third party was a preflighted CORS request, and an API whose preflight does not allow the header refused it. App code cannot call the API another way (E1651).
 

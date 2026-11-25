@@ -1,6 +1,6 @@
 # RFC 0210: k.scaffold and k.openapi: `keel scaffold service --name`
 
-Status: implemented (ADR-0232), accepted by the orchestrator on 2026-11-24, for the operator to confirm. Amends k.scaffold (Operations example, Generators, Service, Rules, Conformance), k.openapi (API, Conformance), the map, the section budget. From `examples/openapi-import` (examples finding 6, backlog 1013).
+Status: implemented (ADR-0232), accepted by the orchestrator on 2026-11-24. Amends k.scaffold (Operations example, Generators, Service, Rules, Conformance), k.openapi (API, Conformance), the map, the section budget. From `examples/openapi-import` (examples finding 6, backlog 1013).
 
 ## Decisions
 - D1: `keel scaffold service <module>` takes `--name <name>` with `--openapi` and with `--base`; the operation's input gains `name?`. The declaration is `<Name>Api` in `<Name>Api.schema.ts`, `<Name>` being `name` with its first letter upper-cased.

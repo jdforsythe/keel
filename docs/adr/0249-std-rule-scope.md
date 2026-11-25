@@ -1,6 +1,6 @@
 # ADR-0249: k.check-cache: a std rule is left out only when `deps` loaded it and dropped it (RFC 0227)
 
-**Status:** accepted (orchestrator, 2026-11-24, for the operator to confirm).
+**Status:** accepted (orchestrator, 2026-11-24).
 
 **Context.** k.check-cache scoped a `@keel/std-*` package's formats and rules by the `deps` of the call. `check()` registers nothing from `deps`, so a rule a test or tool registered itself ran only while a manifest listed its package: nine std suites, conformance cases among them, got no findings, and `check()` answered as no fresh process would.
 

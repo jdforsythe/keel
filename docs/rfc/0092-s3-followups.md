@@ -1,6 +1,6 @@
 # RFC 0092: S3 follow-ups (surface answers, deploy section, stream cap, schedules and jobs rules, module services, resume in tests)
 
-Status: implemented. Accepted by the orchestrator (2026-11-12) under the WORKFLOW RFC defaults, after the user said to keep working; the user confirms or reverses it (`docs/HANDOFF.md`, pending decisions). For backlog 0339, 0340, 0341, 0342, 0343, 0344, 0346, 0348, 0349, 0350, 0353, 0354, 0360, 0363, 0364, 0368, 0369, 0370, 0371, 0372, 0388. Each decision cites the WORKFLOW RFC default it applies; the points the defaults say to escalate are under Questions.
+Status: implemented. Accepted by the orchestrator (2026-11-12) under the WORKFLOW RFC defaults, after the user said to keep working. For backlog 0339, 0340, 0341, 0342, 0343, 0344, 0346, 0348, 0349, 0350, 0353, 0354, 0360, 0363, 0364, 0368, 0369, 0370, 0371, 0372, 0388. Each decision cites the WORKFLOW RFC default it applies; the points the defaults say to escalate are under Questions.
 
 ## Decisions
 Group A: spec text and conformance for behavior that exists or has one answer.

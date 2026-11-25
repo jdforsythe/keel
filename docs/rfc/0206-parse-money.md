@@ -1,6 +1,6 @@
 # RFC 0206: std.money: `parseMoney(text, currency, locale)` reads typed amounts
 
-Status: implemented (ADR-0228), accepted by the orchestrator on 2026-11-24, for the operator to confirm. Amends std.money (API, Rules, Conformance) and `spec/std/README.md`'s row. From backlog 1010.
+Status: implemented (ADR-0228), accepted by the orchestrator on 2026-11-24. Amends std.money (API, Rules, Conformance) and `spec/std/README.md`'s row. From backlog 1010.
 
 ## Decisions
 - D1: `parseMoney(text, currency, locale): Result<Money, ParseMoneyError>` beside `formatMoney`; the currency is an argument, never inferred from the text.

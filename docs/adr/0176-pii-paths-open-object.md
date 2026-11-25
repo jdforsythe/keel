@@ -1,6 +1,6 @@
 # ADR-0176: k.schema: `piiPaths` lists a marked open object's undeclared keys as `*` (RFC 0154)
 
-**Status:** accepted (orchestrator, under the RFC defaults; for the user to confirm).
+**Status:** accepted (orchestrator, under the RFC defaults).
 
 **Context.** `piiValues` treats the undeclared keys of a marked open object as personal data, but `piiPaths` listed declared leaves only, so path-driven sinks (session redaction, the evidence report) had no entry for them.
 

@@ -1,6 +1,6 @@
 # RFC 0169: k.parity: the stdlib holds no power a library lacks
 
-Status: proposed (ADR-0191), for the operator to confirm. For decision D67 item 3 (with D49, D54, D57) and RFC 0163's D8 and its first question to the operator.
+Status: accepted (ADR-0191), first part built: the public entries and lint S0012. The second part, the kind gates (S0013), is not built and follows RFC 0163. For decision D67 item 3 (with D49, D54, D57) and RFC 0163's D8 and its first question to the operator.
 
 ## Decisions
 - D1: no `@keel/std-*` package's shipped code imports a kernel `internal` entry, but for one stated exception: `@keel/std-capacitor` and `@keel/std-tauri` import `mountRequests` from `@keel/router/internal` while the shell set is closed (D54).

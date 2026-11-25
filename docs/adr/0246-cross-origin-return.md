@@ -1,6 +1,6 @@
 # ADR-0246: k.user: a sign-in returns only to a page its own origin answers; E1592 (RFC 0224)
 
-**Status:** accepted (orchestrator, 2026-11-24, for the operator to confirm).
+**Status:** accepted (orchestrator, 2026-11-24).
 
 **Context.** `handle.fn` gets its deployable's own route table, and `examples/shell-mount` joins a `servedBy` client's table so `pageHref` can name its pages. Nothing said what a sign-in returns to when the pages are on another origin. Joining such a table gives a root-relative `location` that names nothing where the browser reads it, and an absolute return URL would reopen the open redirect RFC 0207 closed. A sign-in's cookie is per origin (k.mount Origins), so a person returned to another origin arrives signed out.
 

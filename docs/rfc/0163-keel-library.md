@@ -1,6 +1,6 @@
 # RFC 0163: a Keel library: a package kind checked again by the app
 
-Status: proposed (ADR-0185), for the operator to read before the freeze flip. The build waits until after the first real apps. This is W15 step 4 of `tasks/p1/PLAN.md` (designed here) and D49 of `tasks/0963-to-p1/PLAN.md`. Custom components themselves are RFC 0159.
+Status: accepted (ADR-0185). Not built: it is built before the public release, before k.parity's second part. This is W15 step 4 of `tasks/p1/PLAN.md` (designed here) and D49 of `tasks/0963-to-p1/PLAN.md`. Custom components themselves are RFC 0159.
 
 ## Decisions
 - D1: a library is a package whose `package.json` has `"keel": "library"`. It ships source, never built files, together with a k.module manifest (`module.ts`), `keel-library.json` and packed `docs/`.

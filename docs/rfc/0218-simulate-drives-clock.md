@@ -1,6 +1,6 @@
 # RFC 0218: k.drive: `simulate` drives the run's clock when no work of the run is pending
 
-Status: implemented (ADR-0240) by the orchestrator on 2026-11-24, amended the same day after reviews of the first three builds, for the operator to confirm; the fourth amendment carries the operator's D134 and D135, the fifth the third review's findings and the orchestrator's D139, the sixth the fourth review's. Adds k.drive and k.drive-law; amends k.sim (Schedule plans, simulate), k.testing (Rules), std.postgres (Modes, Conformance), the map. From `apps/household` (walkthrough finding L9-7, backlog 1038).
+Status: implemented (ADR-0240) by the orchestrator on 2026-11-24, amended the same day after reviews of the first three builds; the fourth amendment carries the operator's D134 and D135, the fifth the third review's findings and the orchestrator's D139, the sixth the fourth review's. Adds k.drive and k.drive-law; amends k.sim (Schedule plans, simulate), k.testing (Rules), std.postgres (Modes, Conformance), the map. From `apps/household` (walkthrough finding L9-7, backlog 1038).
 
 ## Decisions
 - D1: one drive. While a run's scenario is pending, `simulate` advances the run's clock to its next moment on each drive turn where no work of the run is pending. No harness call moves the clock. `run(ms?)` only says how far to wait.

@@ -1,6 +1,6 @@
 # ADR-0181: custom components: `Part` open to apps, the host element (RFC 0159)
 
-**Status:** accepted (orchestrator, for the operator to confirm before the freeze flip).
+**Status:** accepted (orchestrator).
 
 **Context.** An app could not write a widget the stdlib does not ship, because E1822 kept `Part` from app code. Nothing gave outside code, such as a chart library, d3 or a custom element, a node, a lifecycle or a text alternative. The stdlib's list behaviour was private. D44, D48 and D50 set the shape of the fix.
 

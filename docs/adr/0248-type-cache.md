@@ -1,6 +1,6 @@
 # ADR-0248: k.check-cache: the type pass keeps results across processes, keyed by content (RFC 0226)
 
-**Status:** accepted (orchestrator, 2026-11-24, for the operator to confirm).
+**Status:** accepted (orchestrator, 2026-11-24).
 
 **Context.** To keep the cli conformance files inside their bounds under load, a disk cache of the type pass was built that reuses an entry while the files it read keep their modification times. In a scratch project it hid an E1751 after a rewrite with the old time, a dependency's `package.json` change, and a new file shadowing a resolution. `keel check` is the gate, and k.check promised an incremental pass with no cross-process text.
 

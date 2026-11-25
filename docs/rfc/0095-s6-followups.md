@@ -1,6 +1,6 @@
 # RFC 0095: S6 follow-ups (throw frames in the log, shipped sink rungs, E1558 for server state, a fair CSP window, E1004's reach, kernel-only entries)
 
-Status: implemented. Accepted (2026-11-13, orchestrator, WORKFLOW RFC defaults 3, 4, 6; open questions answered as recommended; the user confirms or reverses, tasks/0312-s6-compliance/PLAN.md D24). For backlog 0543, 0544, 0548, 0557, 0558, 0565. Each decision cites the WORKFLOW RFC default it applies; the points the defaults leave open are under Questions with a recommendation. ADR-0118 records it.
+Status: implemented. Accepted (2026-11-13, orchestrator, WORKFLOW RFC defaults 3, 4, 6; open questions answered as recommended; tasks/0312-s6-compliance/PLAN.md D24). For backlog 0543, 0544, 0548, 0557, 0558, 0565. Each decision cites the WORKFLOW RFC default it applies; the points the defaults leave open are under Questions with a recommendation. ADR-0118 records it.
 
 ## Decisions
 - D1 (0543): a throw's `diag` record gains `frames`, the first 5 stack positions in app code (E1576's definition: outside `packages/`, `node_modules/` and `.keel/`), each `<path>:<line>:<col>` relative to the working directory, scrubbed with the request's `piiValues` like the message. The server keeps the thrown value itself; `attempt` and the `keel.unexpected` KeelError stay as they are (defaults 4, 2).

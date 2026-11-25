@@ -1,6 +1,6 @@
 # ADR-0235: std.sessions: `capture` with no recorder is E1056; the session-id rule is spec, groups included (RFC 0213)
 
-**Status:** accepted (orchestrator, 2026-11-24, for the operator to confirm).
+**Status:** accepted (orchestrator, 2026-11-24).
 
 **Context.** std.sessions said only that `capture [url]` saves `sessions.live`. A page with no `record` reports `null`; the code answered that with E1056, a page without std-sessions the same way, and an `error` section with `ok` and nothing written. The session-id rule `^[A-Za-z0-9_-]{1,64}$` lived in a `parse` override on `sessions.Session`, so schemas nesting it (`SessionGroup.users`, the ingest `Archive`) skipped it, and no spec text stated it. No session id becomes a file path, URL or storage key today: files are named by fingerprint and a counter, group users by index; the id reaches output records and issue bodies.
 

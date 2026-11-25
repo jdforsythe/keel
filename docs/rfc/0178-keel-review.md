@@ -1,6 +1,6 @@
 # RFC 0178: k.review, k.escapes: `keel review` lists every escape from the framework's protections, ranked by danger and novelty
 
-Status: implemented (ADR-0200). The owner accepted `keel review` for 1.0 and delegated its design decisions to the orchestrator; D12 to D19 resolve what was open and D20 to D30 what the build found, for the owner to confirm or reverse. k.review and k.escapes are `implemented`.
+Status: implemented (ADR-0200). The owner accepted `keel review` for 1.0 and delegated its design decisions to the orchestrator; D12 to D19 resolve what was open and D20 to D30 what the build found. k.review and k.escapes are `implemented`.
 
 ## Decisions
 - D1: two new kernel sections, k.review (command, findings, danger, novelty, loudness, baseline, CI job) and k.escapes (the codes), and a new command, `keel review [<base>..<head> | --all]`, in `@keel/cli`. `keel check` stays the per-file correctness gate and keeps its exit code; review is a separate, diff-aware report over a range or a tree.

@@ -1,6 +1,6 @@
 # ADR-0227: std.messages and std.i18n: exact plural forms (`'=0'`) (RFC 0205)
 
-**Status:** accepted (orchestrator, 2026-11-24, for the operator to confirm).
+**Status:** accepted (orchestrator, 2026-11-24).
 
 **Context.** A plural message picks a form by the CLDR category `Intl.PluralRules` selects. `zero` is a category, not the number 0, and none of the eleven supported locales selects it, nor `two` or `few`; `ja-JP`, `ko-KR` and `zh-CN` select only `other`. A `zero` form type-checks, parses and never renders, and a message cannot say "No receipts yet" for 0.
 
