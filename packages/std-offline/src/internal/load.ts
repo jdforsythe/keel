@@ -44,9 +44,9 @@ async function read(ctx: Ctx, c: Config): Promise<void> {
     }
     const next = { ...e, state: e.state === "sending" ? ("queued" as const) : e.state };
     if (full(c, [...entries, next])) break;
-    tx(c.add, next);
+    void tx(c.add, next);
     flowOf(c, ctx).held.add(next.key);
     moved ||= foreign;
   }
-  if (moved) await attempt(() => persist(ctx, c));
+  if (moved) void (await attempt(() => persist(ctx, c)));
 }

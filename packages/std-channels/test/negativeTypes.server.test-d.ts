@@ -4,7 +4,7 @@ import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
 import { store } from "@keel/store";
 import { channel } from "../src/channel.ts";
-import { channelRoute } from "../src/server/channelRoute.ts";
+import { channelRoute } from "../src/server/channelRoute.server.ts";
 
 export function negativeTypes(): void {
   const flags = () => ({ flag: store(s.object({ on: s.boolean() }), { on: true }, { id: "chat.flag" }) });

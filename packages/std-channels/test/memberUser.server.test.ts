@@ -8,7 +8,7 @@ import { createApp, identity, topology } from "@keel/server";
 import { store } from "@keel/store";
 import { expect, test } from "vitest";
 import { channel } from "../src/channel.ts";
-import { channelRoute } from "../src/server/channelRoute.ts";
+import { channelRoute } from "../src/server/channelRoute.server.ts";
 
 const flags = () => ({ flag: store(s.object({ on: s.boolean() }), { on: true }, { id: "u.flag" }) });
 const room = channel("u.room", {

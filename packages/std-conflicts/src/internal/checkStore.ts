@@ -1,4 +1,5 @@
 import type { Snapshot, Store, Transaction } from "@keel/store";
+import { raise } from "../../unsafe/raise.ts";
 import type { Race } from "../Race.ts";
 import type { RaceReport } from "../RaceReport.ts";
 import type { Unchecked } from "../Unchecked.ts";
@@ -16,7 +17,7 @@ export function checkStore(
 ): RaceReport {
   const txs = new Map(all.filter((t) => t.store === st).map((t) => [t.name, t]));
   for (const e of snap.log)
-    if (!txs.has(e.name)) throw new Error(`std.conflicts: the factory returns no transaction ${e.name} of ${st.id}`);
+    if (!txs.has(e.name)) return raise(`std.conflicts: the factory returns no transaction ${e.name} of ${st.id}`);
   const log = snap.log;
   // `initial` is the state at the head before the first kept entry.
   const start = (log[0]?.id ?? 1) - 1;

@@ -1,7 +1,7 @@
 // `@keel/std-conflicts/tools`: the CLI-time half that `importDeps` loads for `keel check` and `keel build`: the
 // `conflicts.race` record formatter and the check rules E2701 and W2702. No exports.
 import { formatter } from "@keel/cli";
-import { RaceRecord } from "../RaceRecord.ts";
+import { RaceRecord } from "../RaceRecord.schema.ts";
 import "./raceFound.ts";
 import "./raceUnchecked.ts";
 

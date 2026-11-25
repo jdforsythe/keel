@@ -1,6 +1,7 @@
 import type { Ctx } from "@keel/ctx";
 import { tx } from "@keel/store";
 import { asResult } from "../unsafe/asResult.ts";
+import { raise } from "../unsafe/raise.ts";
 import type { Outbox } from "./Outbox.type.ts";
 import type { OutboxResult } from "./OutboxResult.ts";
 import type { SendInput } from "./SendInput.ts";
@@ -55,7 +56,7 @@ export async function send<const D extends object, K extends keyof D & string>(
     return { state: "failed", error: { code: "offline.full", message: c.id, data } };
   }
   const added = tx(c.add, entry);
-  if (!added.ok) throw new Error(added.error.message);
+  if (!added.ok) return raise(added.error.message);
   flowOf(c, ctx).held.add(key);
   const error = await admit(ctx, c, key);
   if (error) return { state: "failed", error };

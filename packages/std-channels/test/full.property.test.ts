@@ -1,7 +1,7 @@
 import { createCtx } from "@keel/ctx";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { ChannelsConfig } from "../src/server/ChannelsConfig.ts";
+import { ChannelsConfig } from "../src/server/ChannelsConfig.schema.ts";
 import type { Sink } from "../src/server/internal/Sink.ts";
 import { full } from "../src/server/internal/full.ts";
 import { hubOf } from "../src/server/internal/hubOf.ts";

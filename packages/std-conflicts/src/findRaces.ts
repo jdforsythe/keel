@@ -1,3 +1,4 @@
+import { attempt } from "@keel/schema";
 import { type SessionGroup, replayGroup } from "@keel/std-sessions/group";
 import type { FindRacesOptions } from "./FindRacesOptions.ts";
 import type { FindRacesResult } from "./FindRacesResult.ts";
@@ -34,9 +35,7 @@ export async function findRaces(group: SessionGroup, options: FindRacesOptions):
 
 // A stored value as JSON text is parsed; text that is not JSON is `undefined`, which no store restores.
 const parse = (raw: unknown): unknown => {
-  try {
-    return typeof raw === "string" ? JSON.parse(raw) : raw;
-  } catch {
-    return undefined;
-  }
+  if (typeof raw !== "string") return raw;
+  const parsed = attempt((): unknown => JSON.parse(raw));
+  return parsed.ok ? parsed.value : undefined;
 };

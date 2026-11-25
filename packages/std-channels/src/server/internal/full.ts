@@ -1,4 +1,4 @@
-import type { ChannelsConfig } from "../ChannelsConfig.ts";
+import type { ChannelsConfig } from "../ChannelsConfig.schema.ts";
 
 /**
  * Whether an open counted as `caller` (`Sink.caller`: a signed-in user's key, else the caller) on a channel route of serving module `module` is past a cap of that module's config

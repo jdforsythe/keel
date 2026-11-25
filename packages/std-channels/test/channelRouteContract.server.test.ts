@@ -8,7 +8,7 @@ import { ok, s } from "@keel/schema";
 import { store } from "@keel/store";
 import { expect, test } from "vitest";
 import { channel } from "../src/channel.ts";
-import { channelRoute } from "../src/server/channelRoute.ts";
+import { channelRoute } from "../src/server/channelRoute.server.ts";
 
 const flags = () => ({ flag: store(s.object({ on: s.boolean() }), { on: true }, { id: "chat.flag" }) });
 const Room = s.object({ room: s.string() });

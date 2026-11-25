@@ -11,7 +11,7 @@ import { createApp, identity, topology } from "@keel/server";
 import { store, transaction, tx } from "@keel/store";
 import { expect, test } from "vitest";
 import { channel } from "../src/channel.ts";
-import { channelRoute } from "../src/server/channelRoute.ts";
+import { channelRoute } from "../src/server/channelRoute.server.ts";
 
 const Room = s.object({ room: s.string() });
 const room = channel("cost.room", { path: "/api/room/events", params: Room });
@@ -27,8 +27,9 @@ const c = contract("cost", {
 /** The 5,000 ms wait the stream's open makes for its storage `watch` (k.persist Watch): the sim storage has one. It is no identify's. */
 const WATCH_BOUND = 1;
 
+/** Lets the stream's pending work run: `n` macrotask turns, each after the microtasks the last one queued. */
 const turns = async (n = 25): Promise<void> => {
-  for (let i = 0; i < n; i++) await new Promise<void>((r) => setTimeout(r, 0));
+  for (let i = 0; i < n; i++) await new Promise<void>((r) => setImmediate(r));
 };
 
 async function rig(identify: (() => string) | undefined, open = true) {
@@ -59,7 +60,7 @@ async function rig(identify: (() => string) | undefined, open = true) {
     },
   };
   const bump = action(c, "cost.bump", { stores: factory }, async (_b, { stores }) => {
-    tx(stores.bump, {});
+    void tx(stores.bump, {});
     return ok({});
   });
   const source =

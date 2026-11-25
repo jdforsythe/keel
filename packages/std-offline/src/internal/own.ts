@@ -19,6 +19,6 @@ export async function own(ctx: Ctx, c: Config, owner: string): Promise<void> {
   if (owner === "") return;
   const { held } = f;
   const others = c.store.get("entries").filter((e) => held.has(e.key) && e.owner !== owner && e.state !== "failed");
-  for (const e of others) tx(c.settle, { key: e.key, state: "failed", error: fault(c, "offline.owner") });
-  if (others[0]) await attempt(() => persist(ctx, c));
+  for (const e of others) void tx(c.settle, { key: e.key, state: "failed", error: fault(c, "offline.owner") });
+  if (others[0]) void (await attempt(() => persist(ctx, c)));
 }

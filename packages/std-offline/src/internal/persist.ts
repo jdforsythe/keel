@@ -1,4 +1,5 @@
 import type { Ctx } from "@keel/ctx";
+import { attempt } from "@keel/schema";
 import type { Config } from "./Config.ts";
 import { flowOf } from "./flowOf.ts";
 
@@ -15,7 +16,7 @@ export async function persist(ctx: Ctx, c: Config): Promise<void> {
   const entries = [...c.store.get("entries").filter((e) => held.has(e.key)), ...kept];
   const set = ctx.storage.set(`keel.outbox.${c.id}`, JSON.stringify({ entries }));
   set.then(
-    () => void (gone && persist(ctx, c).catch(() => undefined)),
+    () => void (gone && attempt(() => persist(ctx, c))),
     () => undefined,
   );
   return Promise.race([

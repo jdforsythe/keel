@@ -1,26 +1,20 @@
-import { owner, scope } from "@keel/reactive";
+import { owner } from "@keel/reactive";
 import type { Contract } from "@keel/router/contract";
 import { s, secretPath } from "@keel/schema";
 import { type Endpoint, service } from "@keel/services";
 import { store, transaction } from "@keel/store";
+import { detached } from "../unsafe/detached.ts";
+import { raise } from "../unsafe/raise.ts";
 import type { Outbox } from "./Outbox.type.ts";
 import { OutboxEntry } from "./OutboxEntry.schema.ts";
 import { Resolution } from "./Resolution.schema.ts";
 import type { Writes } from "./Writes.ts";
 import type { Config } from "./internal/Config.ts";
-import { OutboxState } from "./internal/OutboxState.ts";
+import { OutboxState } from "./internal/OutboxState.schema.ts";
+import { Resolve } from "./internal/Resolve.schema.ts";
+import { Settle } from "./internal/Settle.schema.ts";
 import { declareConfig } from "./internal/declareConfig.ts";
 import { isWrite } from "./internal/isWrite.ts";
-
-/** `<id>.settle`: an entry's next state (`sent` removes it), with a conflict's `head` or the `error`. */
-const Settle = s.object({
-  key: s.string(),
-  state: s.enum(["sent", "queued", "sending", "conflict", "failed"]),
-  head: s.int({ min: 0 }).optional(),
-  error: s.json().optional(),
-});
-/** `<id>.resolve`. */
-const Resolve = s.object({ key: s.string(), resolution: Resolution });
 
 /**
  * Declare an outbox (std.offline) over the API write entries of `contract` (k.contract), sent through
@@ -43,7 +37,7 @@ export function outbox<const C extends Contract>(
     const at = e.body === undefined ? null : secretPath(e.body);
     if (at !== null) {
       const message = `E2651 outbox ${id} endpoint ${name} body holds s.secret at ${at || "(root)"}`;
-      throw Object.assign(new Error(message), { code: "E2651" });
+      return raise(message, "E2651");
     }
     api[name] = e;
   }
@@ -93,7 +87,7 @@ export function outbox<const C extends Contract>(
   });
   if (sc) make();
   // Declared outside a scope (module level): the store lives as long as the module, as a module-level `store` does.
-  const cfg = (): Config => c ?? scope(() => undefined, { detached: true }).run(make);
+  const cfg = (): Config => c ?? detached(make);
   const st = () => cfg().store;
   const o: Outbox<Writes<C>> = {
     id,
