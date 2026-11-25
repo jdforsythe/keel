@@ -335,25 +335,29 @@ describe.skipIf(SERVER === "")("postgres driver over TLS", () => {
 });
 
 // The driver's own 10 s connect timeout is waited out in full, then 20 s bounds the server and the work around it.
-test("a server that accepts and never answers rejects E2153 after the 10 s connect timeout", async () => {
-  const sockets: { destroy(): void }[] = [];
-  const silent = createServer((socket) => {
-    sockets.push(socket);
-  });
-  await new Promise<void>((resolve) => silent.listen(0, "127.0.0.1", resolve));
-  const a = silent.address();
-  const port = typeof a === "object" && a !== null ? a.port : 0;
-  try {
-    const e = await postgres(new URL(`postgres://u:p@127.0.0.1:${port}/d?sslmode=disable`)).then(
-      () => null,
-      (x: unknown) => x,
-    );
-    expect(String(e)).toMatch(/^Error: E2153 KEEL_DATABASE_URL/);
-  } finally {
-    for (const s of sockets) s.destroy();
-    await new Promise<void>((resolve) => silent.close(() => resolve()));
-  }
-}, fixedTime(10_000) + testTime(20_000));
+test(
+  "a server that accepts and never answers rejects E2153 after the 10 s connect timeout",
+  async () => {
+    const sockets: { destroy(): void }[] = [];
+    const silent = createServer((socket) => {
+      sockets.push(socket);
+    });
+    await new Promise<void>((resolve) => silent.listen(0, "127.0.0.1", resolve));
+    const a = silent.address();
+    const port = typeof a === "object" && a !== null ? a.port : 0;
+    try {
+      const e = await postgres(new URL(`postgres://u:p@127.0.0.1:${port}/d?sslmode=disable`)).then(
+        () => null,
+        (x: unknown) => x,
+      );
+      expect(String(e)).toMatch(/^Error: E2153 KEEL_DATABASE_URL/);
+    } finally {
+      for (const s of sockets) s.destroy();
+      await new Promise<void>((resolve) => silent.close(() => resolve()));
+    }
+  },
+  fixedTime(10_000) + testTime(20_000),
+);
 
 function permutations<T>(xs: readonly T[]): T[][] {
   if (xs.length <= 1) return [[...xs]];
