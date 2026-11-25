@@ -41,6 +41,7 @@ Rules:
 - [ ] 1103 `canary.mjs` fails six steps under load; evidence bundle not written
 - [ ] 1003 the CI smokes are not part of the local pre-push gate
 - [ ] 1105 `mutate.mjs --stop` waits without a bound; a run blocked in `open()` holds the lock
+- [ ] 1115 the gate's slow run does not reach CI's slowness (8.5 times)
 
 ### Lane 02 conformance-files · testing, scaffold, check, std-schedules, runtime-dom, compiler · `rfc:` conformance commits only · M
 - [ ] 1098 `sim-stalls` real 100 ms timer against a 300 ms budget is load-sensitive
@@ -167,6 +168,7 @@ Rules:
 - [ ] 1110 a statechart guard's payload is typed as every event's fields (RFC)
 - [ ] 1111 `keel check` runs out of heap at 100,000 host elements
 - [ ] 1114 colour tokens used with no `tokens.ts` are an error nowhere
+- [ ] 1116 an app author's unseeded property passes `keel check` (RFC, E1731)
 
 ### Owned by a P1 workstream or in flight
 - [ ] 0034 the freeze review and status flips (W1)
