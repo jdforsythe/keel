@@ -54,7 +54,7 @@
   "@keel/services": ["k.openapi", "k.services"],
   "@keel/std-brands": ["std.brands"],
   "@keel/std-capacitor": ["std.capacitor", "std.shells"],
-  "@keel/std-channels": ["std.channels", "std.contracts"],
+  "@keel/std-channels": ["std.channels", "std.channels-limits", "std.contracts"],
   "@keel/std-conflicts": ["std.conflicts"],
   "@keel/std-db": ["std.db"],
   "@keel/std-geo": ["std.geo"],
