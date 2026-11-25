@@ -57,7 +57,10 @@ function asKeelTest(): { env: Record<string, string>; setup: string[] } {
   const cwd = process.cwd();
   if (process.env.KEEL_TEST === "1" || !existsSync(join(cwd, "topology.ts"))) return { env: {}, setup: [] };
   try {
-    return { env: { KEEL_TEST: "1" }, setup: [createRequire(join(cwd, "package.json")).resolve("@keel/testing/setup")] };
+    return {
+      env: { KEEL_TEST: "1" },
+      setup: [createRequire(join(cwd, "package.json")).resolve("@keel/testing/setup")],
+    };
   } catch {
     return { env: {}, setup: [] };
   }
