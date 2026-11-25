@@ -10,6 +10,7 @@ import { gapWithoutDirection } from "../rules/gapWithoutDirection.ts";
 import { guardInGuardFile } from "../rules/guardInGuardFile.ts";
 import { hostCodeImport } from "../rules/hostCodeImport.ts";
 import { identityFile } from "../rules/identityFile.ts";
+import { identityMountElsewhere } from "../rules/identityMountElsewhere.ts";
 import { identityMountMissing } from "../rules/identityMountMissing.ts";
 import { loaderInServerFile } from "../rules/loaderInServerFile.ts";
 import { lowContrast } from "../rules/lowContrast.ts";
@@ -64,6 +65,7 @@ export const KERNEL_RULES: readonly RuleDef[] = [
   txWhileBuilding,
   nodePageWithoutApp,
   identityMountMissing,
+  identityMountElsewhere,
   revealedValue,
   noNetFetchInApp,
   pathParamsMatch,
