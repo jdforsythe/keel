@@ -3,7 +3,7 @@
 // Spec: k.library-pack, Scaffold: "- `module.ts`: `id` the base in lowerCamel (`keel-charts` gives `keelCharts`), `deps: []`, `capabilities: []`, `public: { exports: ['Example'] }`;"
 // Spec: k.library-pack, Scaffold: "- `src/index.ts` re-exporting `Example`; `src/Example.tsx`, a component whose props are `{ id: string }`, with its `Props` schema (k.testing renders by it), and which renders one `Text` with id `` `${props.id}.text` ``; `test/Example.test.ts`, rendering it and finding `<id>.text`;"
 // Spec: k.library-pack, Scaffold: "- `tokens.ts` as `keel scaffold project` writes it, `tsconfig.json`, `tsconfig.build.json` (`src/` built to `dist/`), `vitest.config.ts` (tests under `test/` and `src/`) and `README.md`, whose presence alone is fixed."
-// Spec: k.library-pack, Scaffold: "It writes source alone: as written the library passes `keel check` and `keel test`, and holds no `.keel/ledger.json`, since a generated file a scaffold commits is stale at the first edit, so `keel pack --check` is E1164 naming `ledger` until `keel pack` writes it, and passes after. An existing `<base>/` is E1351 and a `<name>` of another form E1352 (k.scaffold); either writes nothing."
+// Spec: k.library-pack, Scaffold: "It writes source alone: as written the library passes `keel check` and `keel test`, and holds no `.keel/ledger.json`, since a generated file a scaffold commits is stale at the first edit, so `keel pack --check` is E1164 naming `ledger` until `keel pack` writes it, and passes after. No `<name>` is k.cli E1052 `library: input does not fit its schema at name (required)`. An existing `<base>/` is E1351 and a `<name>` of another form E1352 (k.scaffold); either writes nothing."
 // Spec: k.library-pack, Package: "A library (k.library) publishes, as its `package.json` `files`: `module.ts`, `src/`, `unsafe/` when it has one, `dist/` (its `tsc` build: declarations, and the `./tools` file Node imports), `.keel/ledger.json` and its `README.md`. Each `exports` key maps `keel` to the source file, then `types` and `default` to the built files; `publishConfig.exports`, where a package has one, keeps `keel` at the source path. The `@keel/*` packages its files import, and `@keel/reactive` and `@keel/runtime-dom`, which the compiler's output of its JSX imports, are `peerDependencies` and never `dependencies`, so each resolves to the app's copy. Its root `tokens.ts` is not published: an app checks the library against its own."
 // Spec: k.library-pack, Package: "No check imports a library's entry: `keel check`, `keel build` and every path that registers a package's rules, formats and config (E1159, k.module) import a library only through its `./tools` export, when it declares one, and read its components from source. So a library, linked or installed, with no `./tools` needs no build for the app's `keel check`, `keel dev`, `keel test` or `keel build`;"
 // Spec: k.library-pack, Conformance 2: "`keel scaffold library charts` and `keel scaffold library @acme/Charts` are each one E1352 and write nothing; run twice with `@acme/charts`, the second run is one E1351 and writes nothing."
@@ -17,7 +17,6 @@
 //  - "lowerCamel": a base of `-`-joined segments, each a letter then letters and digits, gives its first segment then each other with its first letter in upper case.
 //  - "`<name>` of another form": no scope, no base, empty scope, an uppercase letter, `_ . ! ~ $` or a space in scope or base, a second `/`.
 //  - `module.ts` and `Example.tsx` may use either quote style: the spec fixes the values, not the bytes.
-//  - `keel scaffold library` with no name: k.cli says a failing input schema is E1052; the spec gives no message; `library: input does not fit its schema at name` is the one the orchestrator's brief names (reported as a missing sentence).
 //  - The app of the link case lists the library by a symbolic link from `node_modules/@acme/keel-charts` to the scaffolded folder, unbuilt: no `dist/`, no `./tools`.
 // by-code table: E1351 and E1352 are the scaffold package's codes (`check()` does not report them); they have no row in packages/check/conformance/fixtures-by-code.ts.
 import { spawnSync } from "node:child_process";
@@ -316,7 +315,7 @@ describe("Scaffold: keel scaffold library <name>", () => {
   );
 
   test(
-    "Scaffold (k.cli E1052): `keel scaffold library` with no name is one E1052, message `library: input does not fit its schema at name`, and writes nothing",
+    "Scaffold (k.cli E1052): `keel scaffold library` with no name is one E1052, message `library: input does not fit its schema at name (required)`, and writes nothing",
     () => {
       const dir = tmp();
       expect(scaffoldLibrary(dir, "@acme/other").status).toBe(0);
@@ -324,7 +323,7 @@ describe("Scaffold: keel scaffold library <name>", () => {
       const r = keel(dir, ["scaffold", "library"]);
       const found = diags(r, "E1052");
       expect(found.length, JSON.stringify(r.records).slice(0, 400)).toBe(1);
-      expect(String(found[0]?.message)).toMatch(/^library: input does not fit its schema at name\b/);
+      expect(found[0]?.message).toBe("library: input does not fit its schema at name (required)");
       expect(r.status).not.toBe(0);
       expect(snapshot(dir)).toEqual(before);
     },

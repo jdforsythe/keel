@@ -2,9 +2,9 @@
 // Spec: k.library-pack, Pack (`--check`): "`keel pack --check` runs the same steps and writes nothing; its `ledger` step is E1164 when `.keel/ledger.json` is missing, fails its shape as an app reads it (Ledger file), or holds an `unsafe`, `hostElements` or `exports` other than the ones `keel pack` would write; other keys are not judged. Writing nothing, it changes nothing in the folder but under `node_modules/`, where the type cache lives (k.check-cache). A tarball is made by the package manager, whose `prepack` runs `keel pack --check`; it holds what `files` selects and what the package manager always packs (`package.json`, `README`, `LICENSE`), never a `node_modules` folder, and `keel pack` reads that list."
 // Spec: k.library-pack, Pack (what an E1164 is): "By one rule, a library an app could not read, check or trust as its folder is read does not pack. Each E1164, whole within 89 units for a path, key or name of up to 28 units (40 for `kind`'s name), is at `package.json` for a field, its line and a column at the start of its value, at the file for a file, and nowhere for a step:"
 // Spec: k.library-pack, Pack: "- `kind`: no `package.json` (`kind: no package.json here, so no library`, nowhere); one that is no JSON (`kind: package.json is not JSON`, at line 1); no `"keel": "library"` (`kind: package.json has no "keel": "library"`, at `keel`, else line 1); a name that is no scoped package name (k.library Kind: `kind: name "<name>" is no scoped package name`, at `name`)."
-// Spec: k.library-pack, Pack: "- `package`, the first in this order, at the field: no root `module.ts` (`package has no root module.ts, the library's manifest`, at `keel`); an `exports` whose `"."` entry lists no `keel` condition first (`package exports "." lists no keel condition first`), an entry listing `keel` after another condition (`package exports "<key>" lists keel after another`), or a `keel` target that is no `.ts` or `.tsx` file under `src/` or `unsafe/` (`package exports "<key>" keel is no file under src/ or unsafe/`), at `exports`; no `files` (`package lists no files, so a tarball would hold everything`, at `keel`); a `files` that does not select `module.ts`, `.keel/ledger.json` or a file under `src/` or `unsafe/` (`package files omits <path>`) or an `exports` target (`package files omits <path>, exports "<key>"`), at `files`; a `@keel/*` package the files import, or the compiler's output of a `.tsx` file imports, that `dependencies` lists (`package dependencies lists <name>; a peer resolves to the app's`, at `dependencies`) or `peerDependencies` omits (`package peerDependencies omits <name>`, at `peerDependencies`, else `keel`); a tarball holding a `.env` file, whose secrets would leave with it (`package files ships <path>, a secret's file`), or the root `tokens.ts`, the library's own check fixture where an app reads its own (`package files ships tokens.ts; an app checks the library against its own`), at `files`. A `node_modules` folder is not judged: the package manager never packs one."
+// Spec: k.library-pack, Pack: "`package`, the first in this order, at the field: no root `module.ts` (`package has no root module.ts, the library's manifest`, at `keel`); an `exports` whose `"."` entry lists no `keel` condition first (`package exports "." lists no keel condition first`), another entry listing `keel` after another condition (`package exports "<key>" lists keel after another`; Node and the compiler take an entry's first matching condition, and `default` matches both, so `keel` must lead or the compiler reads the built file), or a `keel` target that is no `.ts` or `.tsx` file under `src/` or `unsafe/` (`package exports "<key>" keel is no file under src/ or unsafe/`), at `exports`; no `files` (`package lists no files, so a tarball would hold everything`, at `keel`); a `files` that does not select `module.ts`, then `.keel/ledger.json`, then a file under `src/`, then `unsafe/`, sorted by path (`package files omits <path>`), or an `exports` target, entries and conditions in the order written (`package files omits <path>, exports "<key>"`), at `files`, `<path>` package-relative with no `./` (`src/Badge.tsx`, `dist/src/index.d.ts`); a `@keel/*` package the files import, or the compiler's output of a `.tsx` file imports, that `dependencies` lists (`package dependencies lists <name>; a peer resolves to the app's`, at `dependencies`) or `peerDependencies` omits (`package peerDependencies omits <name>`, at `peerDependencies`, else `keel`); a tarball holding a `.env` file, whose secrets would leave with it (`package files ships <path>, a secret's file`), or the root `tokens.ts`, the library's own check fixture where an app reads its own (`package files ships tokens.ts; an app checks the library against its own`), at `files`. A `node_modules` folder is not judged: the package manager never packs one."
 // Spec: k.library-pack, Pack: "- `check`: `check: <n> errors; nothing packed` (`1 error`), nowhere, after the check's diagnostics."
-// Spec: k.library-pack, Pack: "- `test`: `test: <f> of <n> tests failed; nothing packed`, or `test: the run did not pass; nothing packed` when none failed, nowhere, after the test's diagnostics."
+// Spec: k.library-pack, Pack: "`test`: `test: <f> of <n> tests failed; nothing packed` (`1 test`), counted as `keel test` counts them, a test file that fails to load one failed test; or `test: the run did not pass; nothing packed` when none failed and the run still failed (an error outside any test, such as an unhandled rejection); nowhere, after the test's diagnostics."
 // Spec: k.library-pack, Pack: "- `ledger`: `ledger: .keel is not a folder` (at `.keel`) or `ledger: .keel/ledger.json cannot be written here` (at the file) when it cannot write; under `--check`, `ledger: .keel/ledger.json is missing; keel pack writes it` (nowhere), `ledger: .keel/ledger.json fails its shape; keel pack writes it again` and `ledger: .keel/ledger.json is stale at <field>; keel pack writes it again`, `<field>` the first of `unsafe`, `hostElements` and `exports` that differs (at the file, line 1)."
 // Spec: k.library-pack, Rules: "E1164 `keel pack`: the step its message begins with failed (`kind`, `package`, `check`, `test`, `ledger`; Pack); nothing is written."
 // Seed: 1337 (the order property over pairs of `package` refusals; every other case is an example). Binary runs: 1 scaffold and 1 `keel pack` shared by the cases that copy the folder;
@@ -12,12 +12,11 @@
 // ASSUMPTIONS (spec silent, readings asserted):
 //  - "at the file" is `path` the file's repository path, and a "column at the start of its value" the 1-based column after `"<key>": ` on the key's line, `package.json` written as `JSON.stringify(value, null, 2)` (keys at two spaces).
 //  - "nowhere" is a record with no `path` and no `line`.
-//  - `package files omits <path>` for a file under `src/`: `<path>` is the repository path of one file under it (`src/Example.tsx` or `src/index.ts`); for an `exports` target the `types` or `default` file of the entry.
 //  - the order of the `exports` messages among themselves and of the two `dependencies`/`peerDependencies` messages is not asserted (the spec lists them in one clause); the order property compares clauses.
 //  - `package peerDependencies omits <name>` with no `peerDependencies` at all names one of the five `@keel/*` packages the files import, at `keel`.
 //  - `.keel/ledger.json cannot be written here` is made with a `.keel` folder without write permission.
 import { chmodSync, existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import fc from "fast-check";
 import { afterAll, describe, expect, test } from "vitest";
 import type { Rec, Run } from "./compat-support.ts";
@@ -315,49 +314,81 @@ describe("package: a library an app could not read, check or trust does not pack
       SLOW,
     );
 
+  const omit = (lib: string, drop: string[]): string => {
+    const pkg = readPkg(lib);
+    return writePkg(lib, { ...pkg, files: listOf(pkg.files).filter((f) => !drop.includes(f)) });
+  };
+  const refuseOmit = (lib: string, text: string, message: string): void =>
+    expectRefusal(lib, snapshot(lib), pack(lib), message, { path: "package.json", ...valueAt(text, "files") });
+
   test(
     "package: a files that omits `.keel/ledger.json` is one E1164 `package files omits .keel/ledger.json` at `files`",
     () => {
       const lib = fresh();
-      const pkg = readPkg(lib);
-      const text = writePkg(lib, { ...pkg, files: listOf(pkg.files).filter((f) => f !== ".keel/ledger.json") });
-      const before = snapshot(lib);
-      expectRefusal(lib, before, pack(lib), "package files omits .keel/ledger.json", {
-        path: "package.json",
-        ...valueAt(text, "files"),
-      });
+      refuseOmit(lib, omit(lib, [".keel/ledger.json"]), "package files omits .keel/ledger.json");
     },
     SLOW,
   );
 
   test(
-    "package: a files that omits `src` is one E1164 `package files omits <path>`, `<path>` a file under `src/`, at `files`",
+    "package: a files that selects nothing the check names is one E1164, the first in the order `module.ts`, `.keel/ledger.json`, `src/`, `unsafe/`, `exports` targets: `package files omits module.ts`, not one per file omitted",
     () => {
       const lib = fresh();
-      const pkg = readPkg(lib);
-      const text = writePkg(lib, { ...pkg, files: listOf(pkg.files).filter((f) => f !== "src") });
-      const before = snapshot(lib);
-      expectRefusal(lib, before, pack(lib), /^package files omits src\/[^ ,]+$/, {
-        path: "package.json",
-        ...valueAt(text, "files"),
-      });
+      const text = writePkg(lib, { ...readPkg(lib), files: ["README.md"] });
+      refuseOmit(lib, text, "package files omits module.ts");
     },
     SLOW,
   );
 
   test(
-    "package: a library with an `unsafe/` folder whose files does not name `unsafe` is one E1164 `package files omits <path>`, `<path>` a file under `unsafe/`, at `files`; naming it, `keel pack` passes",
+    "package: a files that omits `module.ts` and `.keel/ledger.json` names `module.ts`; one that omits `.keel/ledger.json` and `src` names `.keel/ledger.json`",
+    () => {
+      const a = fresh();
+      refuseOmit(a, omit(a, ["module.ts", ".keel/ledger.json"]), "package files omits module.ts");
+      const b = fresh();
+      refuseOmit(b, omit(b, [".keel/ledger.json", "src", "dist"]), "package files omits .keel/ledger.json");
+    },
+    SLOW,
+  );
+
+  test(
+    "package: a files that omits `src` is one E1164 `package files omits src/Example.tsx`, the first file under `src/` sorted by path, at `files`",
+    () => {
+      const lib = fresh();
+      refuseOmit(lib, omit(lib, ["src"]), "package files omits src/Example.tsx");
+    },
+    SLOW,
+  );
+
+  test(
+    "package: a files that omits `src` names the first file under `src/` sorted by path whichever files it holds (property over sets of added files)",
+    () => {
+      const pool = ["A.ts", "Zz.ts", "b.ts", "_x.ts", "sub/c.ts", "Sub/d.ts"];
+      fc.assert(
+        fc.property(fc.subarray(pool, { minLength: 1 }), (added) => {
+          const lib = fresh();
+          for (const name of added) {
+            mkdirSync(join(lib, "src", dirname(name)), { recursive: true });
+            writeFileSync(join(lib, "src", name), "export const x = 1;\n");
+          }
+          const all = [...added.map((n) => `src/${n}`), "src/Example.tsx", "src/index.ts"].sort();
+          refuseOmit(lib, omit(lib, ["src"]), `package files omits ${all[0]}`);
+        }),
+        { seed: SEED, numRuns: 6 },
+      );
+    },
+    SLOW * 6,
+  );
+
+  test(
+    "package: a library with an `unsafe/` folder whose files does not name `unsafe` is one E1164 `package files omits unsafe/a.ts`, the first file under `unsafe/` sorted by path, at `files`; naming it, `keel pack` passes",
     () => {
       const lib = fresh();
       mkdirSync(join(lib, "unsafe"));
-      writeFileSync(join(lib, "unsafe/raw.ts"), CLEAN_UNSAFE);
+      writeFileSync(join(lib, "unsafe/b.ts"), CLEAN_UNSAFE.replace("raw", "b"));
+      writeFileSync(join(lib, "unsafe/a.ts"), CLEAN_UNSAFE.replace("raw", "a"));
       const pkg = readPkg(lib);
-      const text = writePkg(lib, pkg);
-      const before = snapshot(lib);
-      expectRefusal(lib, before, pack(lib), /^package files omits unsafe\/[^ ,]+$/, {
-        path: "package.json",
-        ...valueAt(text, "files"),
-      });
+      refuseOmit(lib, writePkg(lib, pkg), "package files omits unsafe/a.ts");
       writePkg(lib, { ...pkg, files: [...listOf(pkg.files), "unsafe"] });
       const ok = pack(lib);
       expect(ok.status, JSON.stringify(ok.records).slice(0, 600)).toBe(0);
@@ -366,16 +397,47 @@ describe("package: a library an app could not read, check or trust does not pack
   );
 
   test(
-    'package: a files that omits `dist`, which an `exports` target names, is one E1164 `package files omits <path>, exports "."` at `files`',
+    "package: a files that omits both `src` and `unsafe` names the file under `src/` before the one under `unsafe/`",
     () => {
       const lib = fresh();
-      const pkg = readPkg(lib);
-      const text = writePkg(lib, { ...pkg, files: listOf(pkg.files).filter((f) => f !== "dist") });
-      const before = snapshot(lib);
-      expectRefusal(lib, before, pack(lib), /^package files omits dist\/src\/index\.(d\.ts|js), exports "\."$/, {
-        path: "package.json",
-        ...valueAt(text, "files"),
+      mkdirSync(join(lib, "unsafe"));
+      writeFileSync(join(lib, "unsafe/a.ts"), CLEAN_UNSAFE.replace("raw", "a"));
+      refuseOmit(lib, omit(lib, ["src"]), "package files omits src/Example.tsx");
+    },
+    SLOW,
+  );
+
+  test(
+    'package: a files that omits `dist`, which `exports` targets name, is one E1164 `package files omits dist/src/index.d.ts, exports "."`, the first target in the order written (`types` before `default`), package-relative with no `./`, at `files`',
+    () => {
+      const lib = fresh();
+      refuseOmit(lib, omit(lib, ["dist"]), 'package files omits dist/src/index.d.ts, exports "."');
+    },
+    SLOW,
+  );
+
+  test(
+    "package: `exports` targets are taken entries and conditions in the order written: `default` written before `types` names the `default` file, an entry written before `.` names its own",
+    () => {
+      const a = fresh();
+      const pa = readPkg(a);
+      const textA = writePkg(a, {
+        ...pa,
+        files: listOf(pa.files).filter((f) => f !== "dist"),
+        exports: { ".": { keel: "./src/index.ts", default: DEFAULT, types: TYPES } },
       });
+      refuseOmit(a, textA, 'package files omits dist/src/index.js, exports "."');
+      const b = fresh();
+      const pb = readPkg(b);
+      const textB = writePkg(b, {
+        ...pb,
+        files: listOf(pb.files).filter((f) => f !== "dist"),
+        exports: {
+          "./extra": { keel: "./src/index.ts", types: "./dist/extra.d.ts", default: "./dist/extra.js" },
+          ...objOf(pb.exports),
+        },
+      });
+      refuseOmit(b, textB, 'package files omits dist/extra.d.ts, exports "./extra"');
     },
     SLOW,
   );
@@ -456,6 +518,60 @@ describe("package: a library an app could not read, check or trust does not pack
       expect(existsSync(join(lib, "node_modules"))).toBe(true);
       const r = pack(lib);
       expect(r.status, JSON.stringify(r.records).slice(0, 600)).toBe(0);
+    },
+    SLOW,
+  );
+
+  const SRC = "./src/index.ts";
+  const orders: [string, Record<string, string>][] = [
+    ["after `default`", { default: DEFAULT, keel: SRC, types: TYPES }],
+    ["after `import`", { import: DEFAULT, keel: SRC, types: TYPES, default: DEFAULT }],
+    ["after `types`", { types: TYPES, keel: SRC, default: DEFAULT }],
+  ];
+  for (const [what, entry] of orders) {
+    test(
+      `package: the "." entry with keel ${what} is one E1164 \`package exports "." lists no keel condition first\` at \`exports\``,
+      () => {
+        const lib = fresh();
+        const text = writePkg(lib, { ...readPkg(lib), exports: { ".": entry } });
+        expectRefusal(lib, snapshot(lib), pack(lib), 'package exports "." lists no keel condition first', {
+          path: "package.json",
+          ...valueAt(text, "exports"),
+        });
+      },
+      SLOW,
+    );
+    test(
+      `package: a "./x" entry with keel ${what} is one E1164 \`package exports "./x" lists keel after another\` at \`exports\``,
+      () => {
+        const lib = fresh();
+        const pkg = readPkg(lib);
+        const text = writePkg(lib, { ...pkg, exports: { ...objOf(pkg.exports), "./x": entry } });
+        expectRefusal(lib, snapshot(lib), pack(lib), 'package exports "./x" lists keel after another', {
+          path: "package.json",
+          ...valueAt(text, "exports"),
+        });
+      },
+      SLOW,
+    );
+  }
+
+  // Untestable: the spec does not say how a nested conditions object that carries `keel` counts for the keel-first rule.
+
+  test(
+    "package: an entry that lists `keel` first, before `types` and `default`, in `.` and in `./x`, is no E1164",
+    () => {
+      const lib = fresh();
+      const pkg = readPkg(lib);
+      writePkg(lib, {
+        ...pkg,
+        exports: { ".": { keel: SRC, types: TYPES, default: DEFAULT }, "./x": { keel: SRC, default: DEFAULT } },
+      });
+      const r = pack(lib);
+      expect(
+        e1164(r).map((x) => x.message),
+        JSON.stringify(r.records).slice(0, 600),
+      ).toEqual([]);
     },
     SLOW,
   );
@@ -544,10 +660,25 @@ describe("test: the step's own diagnostics, then `test: <f> of <n> tests failed;
     );
 
   test(
-    "test: a run that did not pass with no test failed (a test file that throws as it loads) is `test: the run did not pass; nothing packed`, nowhere",
+    "test: a test file that fails to load is one failed test, as `keel test` counts it: `test: 1 of 1 test failed; nothing packed`, nowhere",
     () => {
       const lib = fresh();
+      rmSync(join(lib, "test/Example.test.ts"));
       writeFileSync(join(lib, "test/Boom.test.ts"), "throw new Error('does not load')\n");
+      const before = snapshot(lib);
+      expectRefusal(lib, before, pack(lib), "test: 1 of 1 test failed; nothing packed", "nowhere");
+    },
+    SLOW,
+  );
+
+  test(
+    "test: a run that did not pass with no test failed (a passing test that leaves a rejection unhandled) is `test: the run did not pass; nothing packed`, nowhere",
+    () => {
+      const lib = fresh();
+      writeFileSync(
+        join(lib, "test/Late.test.ts"),
+        "import { it } from 'vitest'\nit('passes', () => {\n  Promise.reject(new Error('late'))\n})\n",
+      );
       const before = snapshot(lib);
       expectRefusal(lib, before, pack(lib), "test: the run did not pass; nothing packed", "nowhere");
     },
