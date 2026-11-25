@@ -159,6 +159,10 @@ Rules:
 - [ ] 1088 CI's `shell-ios` failed twice at action 3 of the outbox session drive
 - [ ] 1060 a tap on the `Done: Bread` label makes no `change` on the iOS Simulator
 
+### Lane 33 found-by-household · schema, testing · no RFC unless k.testing must name the value · S
+- [ ] 1106 a generated `s.id` has no shape a server mints; `properties` breaks on it
+- [ ] 1107 `find().text` of an input is always empty
+
 ### Owned by a P1 workstream or in flight
 - [ ] 0034 the freeze review and status flips (W1)
 - [ ] 0413 `docs/freeze-review.md` "Tested, not stated" list unchecked against the suites (W1)
@@ -299,6 +303,7 @@ Rules:
 - [ ] 1035 walkthrough findings L7-5 and L7-7 to L7-9 are open
 - [ ] 1095 three household scenarios pass `law: false`; give each run its own server
 - [ ] 1074 `list_writes` keeps every write key; decided: retention by age on a workflow
+- [ ] 1108 nine things the skills did not tell an agent testing household
 
 ### Owned by a P1 workstream
 - [ ] 0220 SVG system diagrams (W6 step 1)
