@@ -23,4 +23,4 @@
 
 ## Unsafe
 
-count: 1: `unsafe/runCommonJs.ts`: `new Function` to run compile output in-process (test helper `evaluate` only).
+count: 0. The test helper `evaluate` runs compile output in-process with `new Function` (`src/testing/runCommonJs.ts`, left out of the published build).

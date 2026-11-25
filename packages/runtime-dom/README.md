@@ -16,4 +16,4 @@ None.
 
 ## Unsafe
 
-count: 0
+count: 1 (`unsafe/narrow.ts`: a `Case`'s value typed as the variant its tag selects, which `Match` renders it for)
