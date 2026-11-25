@@ -68,7 +68,7 @@ const evidenceFor = (refs: readonly TestRef[], name: string, file: string): Ledg
  * `apps/<app>/**`, and the host elements per file of a root `modules/**`; and the expectations of the negative type
  * tests (`countExpectations`) of `packages/<pkg>/**`, per app in `apps/<app>/**` and in a root `test/**` or
  * `modules/**`, also per file (k.unsafe). A file under `node_modules/` (a library's, k.library) is counted by
- * `libraryLedger`, not here. `z3` is the Z3
+ * `libraryLedger`, not here, its negative type tests not at all. `z3` is the Z3
  * version a `prove` call's `proven` evidence names (default: the installed `z3-solver`'s, `z3Version`).
  */
 export function buildLedger(
@@ -101,7 +101,9 @@ export function buildLedger(
   const negativeTypeFiles: Record<string, number> = {};
   for (const f of code) {
     const app = APP.exec(f.path)?.[1];
-    const counted = f.path.startsWith("packages/") || app !== undefined || /^(?:test|modules)\//.test(f.path);
+    const counted =
+      !NODE_MODULES.test(f.path) &&
+      (f.path.startsWith("packages/") || app !== undefined || /^(?:test|modules)\//.test(f.path));
     const expected = counted && isNegativeTypeTest(f.path) ? countExpectations(f.path, f.source) : 0;
     if (expected > 0) {
       negativeTypes += expected;

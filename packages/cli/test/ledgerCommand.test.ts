@@ -472,6 +472,36 @@ describe("ledgerCommand --diff", () => {
     expect(written).toMatchObject({ negativeTypes: 7 });
   });
 
+  test("negativeTypes counts no negative type test under node_modules/: a library's are not the project's", () => {
+    const D = `// @ts-${"expect-error"}`;
+    const two = `${D} a number is no string\nexport const a: string = 1\n${D} b is no string\nexport const b: string = 2\n`;
+    const files = [
+      ...base,
+      file("modules/r/test/n.test-d.ts", two),
+      file("node_modules/@acme/lib/test/n.test-d.ts", two),
+      file("apps/h/node_modules/@acme/lib/test/n.test-d.ts", two),
+      file("packages/b/node_modules/@acme/lib/conformance/n.test-d.ts", two),
+      file("modules/r/node_modules/@acme/lib/test/n.test-d.ts", two),
+    ];
+    const t = trailer(call({}, files).records);
+    expect(t?.kind === "summary" ? t.counts : undefined).toMatchObject({ negativeTypes: 2 });
+    const h = trailer(call({ scope: "h:" }, files).records);
+    expect(h?.kind === "summary" ? h.counts : undefined).not.toHaveProperty("negativeTypes");
+    const written = JSON.parse(call({ write: LEDGER }, files).writes[0]?.content ?? "{}");
+    expect(written).toMatchObject({ negativeTypes: 2 });
+    expect(Object.keys(written)).toEqual([
+      "version",
+      "unsafe",
+      "hostElements",
+      "negativeTypes",
+      "rungs",
+      "exports",
+      "clauses",
+      "a11y",
+      "libraries",
+    ]);
+  });
+
   test("host elements: counted in packages' src, apps and a root modules/ folder, by binding; E1706 on a rise without --scope", () => {
     const HOST = "import { Host as H } from '@keel/ui'\nimport * as ui from '@keel/ui'\n";
     const files = [

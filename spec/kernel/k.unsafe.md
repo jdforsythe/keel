@@ -9,7 +9,7 @@ status: conformance-covered
 
 **Ledger.** `keel ledger --write` writes two counts at the ledger file's top level (k.ledger File):
 - `unsafe`: the `unsafe(` and `unsafe<T>(` calls, outside comments and strings, in the `src` and `unsafe` directories of `packages/*`, every file of `apps/*` and the root `modules/**` of an app; the declaration `function unsafe<T>(` is no call. E1706 reports a count above the committed one; with `--scope` the count is the apps' in scope and E1706 reports one above 0.
-- `negativeTypes`, after `hostElements`: the expectations in the negative type tests of `packages/*`, `apps/*` and an app's root `test/**` and `modules/**`; with `--scope <prefix>`, those of the apps the prefix selects by item key (`golden-1:`) and of the negative type tests whose path starts with it (`apps/golden-1/`). It is written and never compared.
+- `negativeTypes`, after `hostElements`: the expectations in the negative type tests of `packages/*`, `apps/*` and an app's root `test/**` and `modules/**`, none under `node_modules/` (a library's, k.library); with `--scope <prefix>`, those of the apps the prefix selects by item key (`golden-1:`) and of the negative type tests whose path starts with it (`apps/golden-1/`). It is written and never compared.
 
 A negative type test gives no item evidence: the runner reports no test in it, so a clause it asserts takes its rung from its run-time half (k.ledger).
 
