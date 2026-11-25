@@ -1,5 +1,5 @@
 # k.server: Thin server
-status: conformance-covered
+status: implemented
 
 **API.** App code imports only `topology` and `commitStores` (k.persist) from `@keel/server` (a test also imports `createApp`); `loader`/`action` (`@keel/router`) run over HTTP.
 - `loader(contract, id, { output?, stores? }, fn)`: `fn` gets `{ params, search, url, caller, user, bearer, stores }` and `ctx`; returns `Promise<Result<T, KeelError>>` encoded with `output` (the entry's on an API entry, k.contract).
@@ -11,7 +11,7 @@ status: conformance-covered
 
 **Request flow.** Match routes -> parse params (fail: 404), search (fail: defaults) -> guard (deny: redirect) ->
 - GET: run the chain's loaders concurrently, then stream HTML. A loader `err` renders the route's `errorElement`.
-- GET with `accept: text/event-stream` to a live loader's route: guard denial 403 `keel.denied`; past `createApp({ maxStreams })` (default 1,000) open streams 503 `keel.busy` (`data: { limit }`); else a `data:` line per yield (its `Result` JSON), a `:` line per 15 s of `ctx.clock`, until `fn` returns or `signal` aborts (request abort, `close()`). Other routes: 406.
+- GET with `accept: text/event-stream` to a live loader's route: guard denial 403 `keel.denied`; past `createApp({ maxStreams })` (default 1,000) open streams 503 `keel.busy` (`data: { limit }`); else a `data:` line per yield (its `Result` JSON), a `:` line per 15 s of `ctx.clock`, until `fn` returns or `signal` aborts (request abort, `close()`). An event over 1,048,576 bytes of UTF-8 as written (`data: `, the JSON and its two line feeds) is not written: the stream writes the `keel.unexpected` `err` line a throw of `fn` gives, logs one `diag` `keel.unexpected` `loader <id> event over 1048576 bytes`, and ends, returning `fn`'s iterator. Other routes: 406.
 - POST, PUT, PATCH, DELETE: first the same-site check (`Sec-Fetch-Site` `same-origin`/`none`, its own `Origin` or an allowed one (k.hosting), `accept: application/json` with `x-keel: 1`, or neither; else 403 `keel.denied`, nothing runs). `_method` overrides POST only. A body over `createApp({ maxBodyBytes })` (default 1 MiB) is `keel.payloadTooLarge` (`data: { limit }`). Then decode FormData or JSON (empty: `{}`) by `input` (fail: `keel.fields`), run it, 303 to the target (document; one no `Href` (k.router Links) is 500 with no `Location`) or `Result` JSON (runtime).
 
 Status: `keel.notFound` 404 · `keel.denied` 403 · `keel.fields` 422 · `keel.payloadTooLarge` 413 · `keel.conflict` 409 · `keel.unreachable` 502 (names no host) · `keel.busy` 503 · other `err` 400 · uncaught throw 500 `keel.unexpected` (production: message `unexpected`). `mode` defaults to `production`. `#k-state` stores: k.leave.
@@ -38,6 +38,7 @@ Status: `keel.notFound` 404 · `keel.denied` 403 · `keel.fields` 422 · `keel.p
 - `caller` is the hash of a server-signed cookie token, else of a fresh one set as a cookie on a write, else `""`.
 - A save is 409 `keel.conflict` if a store the action only read was saved since; no request sees one store before a save and another after it.
 - An event-stream GET of a live loader yielding `ok(1)`, `ok(2)` gets two `data:` lines in order; a JSON GET answers `ok(1)`; aborting the request aborts `signal`; a denying guard gives 403.
+- A live loader of `output` `s.string()` yielding `ok` of 1,048,546 `a` (its event `data: {"ok":true,"value":"<s>"}` and two line feeds, 1,048,576 bytes), then of 1,048,547 `a`, then `ok('b')` gives the first event, then one `data:` line holding a `keel.unexpected` `err`, then the end; `b` is never written, and one `diag` `loader <id> event over 1048576 bytes` is logged.
 - With `maxStreams: 2`, a third open event-stream GET is 503 `keel.busy` and runs no loader; once one closes, the next is served.
 - With a `client` and a `node` deployable in dev, the `node` one's island document scripts `/@keel/entry.ts?d=<name>`, which resumes its islands.
 - A `log.write` that throws on the `req` record gives a 500 and one `keel.unexpected` `diag` naming the route id; one that always throws gives one fixed stderr line per process.

@@ -1,13 +1,15 @@
 // @vitest-environment node
-// The log scrub's cost and reach without a clock (k.privacy Server log): each text is read once, in steps linear in its
-// length however many values the request has; the build is linear in the forms; no copy as written is left; and the
-// cases that broke the scan. The cap and the 400,000-character shapes are in scrubSteps.scale.test.ts. Seed 1337.
+// The log scrub's cost and reach without a clock (k.privacy Copies, Views, Cost): each reading of a text is walked once,
+// in steps linear in its length however many values the request has; the build is linear in the forms' units; no copy
+// as written is left; and the cases that broke the scan. The cap and the 400,000-character shapes are in
+// scrubSteps.scale.test.ts. Seed 1337.
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { scrubbed } from "../src/internal/scrubbed.ts";
+import { stepBounds } from "./stepBounds.ts";
 
 const SEED = 1337;
-const counter = () => ({ build: 0, walk: 0, forms: 0 });
+const counter = () => ({ build: 0, walk: 0 });
 const one = (message: string, secrets: readonly string[], pii: readonly string[] = []): string =>
   scrubbed(message, [
     [new Set(secrets), "[secret]"],
@@ -40,11 +42,9 @@ const UNITS = [
 ];
 const textOf = (min: number, max: number) =>
   fc.array(fc.constantFrom(...UNITS), { minLength: min, maxLength: max }).map((u) => u.join(""));
-/** At most this many forms per value: as written, JSON-escaped, URL-encoded, and two base64 forms. */
-const FORMS = 5;
 
 describe("linear steps", () => {
-  it("property: the walk takes at most 5 steps per text unit and the build at most 4 per form unit and 2 per form", () => {
+  it("property: at most 6 readings, the walk at most 5 steps per unit of each, and the build within its derived bound", () => {
     fc.assert(
       fc.property(
         fc.array(textOf(1, 30), { minLength: 1, maxLength: 40 }),
@@ -53,16 +53,21 @@ describe("linear steps", () => {
         (secrets, pii, filler) => {
           const message = `${filler}${secrets.join(filler)}${pii.join(" ")}`;
           const count = counter();
+          const sets = [new Set(secrets), new Set(pii)];
           scrubbed(
             message,
             [
-              [new Set(secrets), "[secret]"],
-              [new Set(pii), "[pii]"],
+              [sets[0] ?? new Set(), "[secret]"],
+              [sets[1] ?? new Set(), "[pii]"],
             ],
             count,
           );
-          expect(count.walk).toBeLessThanOrEqual(5 * message.length + 5);
-          expect(count.build).toBeLessThanOrEqual(4 * count.forms + 2 * FORMS * (secrets.length + pii.length));
+          const most = stepBounds(message, sets);
+          expect(most.readings.length).toBeLessThanOrEqual(6);
+          for (const n of most.readings) expect(n).toBeLessThanOrEqual(message.length);
+          expect(count.walk).toBeLessThanOrEqual(most.walk);
+          expect(count.walk).toBeLessThanOrEqual(30 * message.length);
+          expect(count.build).toBeLessThanOrEqual(most.build);
         },
       ),
       { seed: SEED, numRuns: 300 },
@@ -139,12 +144,21 @@ describe("the cases the scan broke on", () => {
     expect(one("e\u0301ab x", ["ab"])).toBe("e\u0301ab x");
     expect(one("\u00e9ab x", ["ab"])).toBe("\u00e9ab x");
     expect(one("ab\u0301 x", ["ab"])).toBe("ab\u0301 x");
-    // The short value's longer encoded copies are replaced wherever they stand.
-    expect(one("caf%C3%A9 and caf\u00e9", ["\u00e9"])).toBe("caf[secret] and caf\u00e9");
+    // A URL-encoded copy is the value in the decoded view, where the same rule holds.
+    expect(one("caf%C3%A9 and caf\u00e9", ["\u00e9"])).toBe("caf%C3%A9 and caf\u00e9");
+    expect(one("caf %C3%A9 and caf \u00e9", ["\u00e9"])).toBe("caf [secret] and caf [secret]");
+    // Its padded base64, 4 units, is replaced wherever it stands.
+    expect(one("cafw6k= and caf\u00e9", ["\u00e9"])).toBe("caf[secret] and caf\u00e9");
   });
 
   it("two secrets that overlap without one holding the other are marked as one run", () => {
     expect(one("joined aaaa-bbbb-cccc", ["aaaa-bbbb", "bbbb-cccc"])).toBe("joined [secret]");
+  });
+
+  it("a run of overlapping copies is `[secret]` if any copy is a secret's, however long the pii copy", () => {
+    expect(one("x aaaa-bbbb-cccc-dddd y", ["dddd"], ["aaaa-bbbb-cccc-dd"])).toBe("x [secret] y");
+    expect(one("x aaaa-bbbb-cccc-dddd y", ["aaaa"], ["aaa-bbbb-cccc-dddd"])).toBe("x [secret] y");
+    expect(one("x aaaa-bbbb y", [], ["aaaa-bb", "a-bbbb"])).toBe("x [pii] y");
   });
 
   it("a secret holding a pii value is marked whole as the secret", () => {

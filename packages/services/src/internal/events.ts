@@ -13,8 +13,10 @@ import { sseData } from "./sseData.ts";
 /**
  * Read an `events: true` endpoint (k.services): one request with `accept: text/event-stream`; `ms` bounds the wait for
  * the response to start (`api.timeout`). A non-2xx answer is decoded as by a plain call (at most `limit` bytes) and ends it; then each event is
- * yielded (`decodeEvent`) until the stream ends, an `err` or a decode failure (yielded, then the end), the body errors
- * (`api.network`) or the input's `signal` aborts (no further result). It never reconnects; leaving it early aborts the request.
+ * yielded (`decodeEvent`) until the stream ends, an `err` or a decode failure (yielded, then the end), an event passes
+ * `limit` bytes (`api.decode` with `rule: 'max'`, the body cancelled, as a 2xx body over `limit` gives; then the end),
+ * the body errors (`api.network`) or the input's `signal` aborts (no further result). It never reconnects; leaving it
+ * early aborts the request.
  */
 export async function* events(
   e: Endpoint,
@@ -65,7 +67,11 @@ export async function* events(
     const body = res.body;
     let failed = false;
     try {
-      for await (const data of sseData(body, controller.signal)) {
+      for await (const data of sseData(body, controller.signal, limit)) {
+        if (data === null) {
+          yield err(fail.decode([{ path: [], rule: "max" }]));
+          return;
+        }
         const r = decodeEvent(e, data);
         if (controller.signal.aborted) return;
         yield r;

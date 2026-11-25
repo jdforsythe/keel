@@ -60,11 +60,11 @@ describe("a live stream making a fresh secret per tick", () => {
   });
 
   it("past the scrub's cap the set stops growing and the thrown text in its diag is one [secret] mark", async () => {
-    // Each value is 1,000 characters as is and about 1,333 as base64: the forms pass the cap on the 857th tick.
+    // Each value is 1,000 ASCII characters, 1,000 bytes: the 66th takes the scope past 65,536 bytes.
     const { sizes, messages } = await stream(1000, 1000);
-    // One value per tick until the 857th, whose forms take the set past the cap; then 858 values on every later tick.
-    expect(sizes.slice(0, 857).every((n, i) => n === i + 2)).toBe(true);
-    expect(sizes.slice(856).every((n) => n === 858)).toBe(true);
+    // One value per tick until the 66th, which takes the set past the cap; then 67 values (with "") on every later tick.
+    expect(sizes.slice(0, 66).every((n, i) => n === i + 2)).toBe(true);
+    expect(sizes.slice(65).every((n) => n === 67)).toBe(true);
     expect(messages).toEqual(["loader api.live threw: [secret]"]);
   });
 });

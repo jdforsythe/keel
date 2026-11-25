@@ -1,37 +1,46 @@
 const UTF8 = new TextEncoder();
-const json = (x: string): string => JSON.stringify(x).slice(1, -1);
+const LONE = /[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/;
+const HEX = "0123456789abcdef";
+
+const base64 = (bytes: Uint8Array, k: number): string => {
+  let binary = "\0".repeat(k);
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return btoa(binary);
+};
+const urlSafe = (b: string): string => b.replace(/\+/g, "-").replace(/\//g, "_");
 
 /**
- * The written forms of `v`, each with its padding count, not folded: as is; JSON-escaped, again with `\u` for each
- * non-ASCII unit, and twice (JSON inside a JSON string); `encodeURIComponent`, once and twice over, `encodeURI` and
- * form-encoded (`URLSearchParams`, `+` for a space), none for a value with a lone surrogate; and base64 of its UTF-8
- * bytes. A value of letters, digits, `_`, `.` and `-` only has no other text form. Under 8 bytes base64 is the padded
- * form only; from 8 bytes (11 or more characters, too long to stand in ordinary text by chance) the unpadded standard
- * and base64url forms, which take in the padding that follows them.
+ * The forms of `v` the scrub matches (k.privacy Copies and Base64), not folded, each with the count of characters its
+ * mark takes in before and after it (0 or 1; a mark that takes one after also takes the `=` right after that):
+ * the value; its NFC and its NFD where they differ; and, unless it holds a lone surrogate (its UTF-8 would hold U+FFFD
+ * and not be the value), from base64 of its UTF-8 in the standard and the URL-safe alphabet and, from 8 bytes, the hex
+ * of those bytes. Under 8 bytes base64 is the padded encoding, whole. From 8 bytes it is, for each alignment k of 0, 1
+ * and 2 (the value's first byte at a byte offset of k modulo 3), the core: the characters whose six bits all come from
+ * the value's bytes, indexes ⌈8k/6⌉ to ⌊8(k+n)/6⌋ − 1 of the encoding of k filler bytes then the value, taking in the
+ * character before it when 8k mod 6 ≠ 0 and the one after it when 8(k+n) mod 6 ≠ 0. A form may repeat.
  */
-export function formsOf(v: string): [string, number][] {
+export function formsOf(v: string): [string, number, number][] {
+  const forms: [string, number, number][] = [[v, 0, 0]];
+  const nfc = v.normalize("NFC");
+  const nfd = v.normalize("NFD");
+  if (nfc !== v) forms.push([nfc, 0, 0]);
+  if (nfd !== v && nfd !== nfc) forms.push([nfd, 0, 0]);
+  if (v === "" || LONE.test(v)) return forms;
   const bytes = UTF8.encode(v);
-  let binary = "";
-  for (const b of bytes) binary += String.fromCharCode(b);
-  const padded = btoa(binary);
-  const texts = [v];
-  if (!/^[\w.-]*$/.test(v)) {
-    const j = json(v);
-    texts.push(
-      j,
-      json(j),
-      j.replace(/[^\0-\x7f]/g, (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, "0")}`),
-    );
-    // A lone surrogate has no URL form: `encodeURIComponent` throws on it.
-    try {
-      const u = encodeURIComponent(v);
-      texts.push(u, encodeURI(v), encodeURIComponent(u), `${new URLSearchParams([["", v]])}`.slice(1));
-    } catch {}
+  const n = bytes.length;
+  if (n < 8) {
+    const b = base64(bytes, 0);
+    forms.push([b, 0, 0], [urlSafe(b), 0, 0]);
+    return forms;
   }
-  const short = bytes.length < 8;
-  const pad = short ? 0 : (3 - (bytes.length % 3)) % 3;
-  const b = padded.slice(0, padded.length - pad);
-  const forms = texts.map((f): [string, number] => [f, 0]);
-  forms.push([b, pad], [short ? b : b.replace(/\+/g, "-").replace(/\//g, "_"), pad]);
+  let hex = "";
+  for (const b of bytes) hex += (HEX[b >> 4] ?? "") + (HEX[b & 15] ?? "");
+  forms.push([hex, 0, 0]);
+  for (let k = 0; k < 3; k++) {
+    const core = base64(bytes, k).slice(Math.ceil((8 * k) / 6), Math.floor((8 * (k + n)) / 6));
+    const before = (8 * k) % 6 === 0 ? 0 : 1;
+    const after = (8 * (k + n)) % 6 === 0 ? 0 : 1;
+    forms.push([core, before, after], [urlSafe(core), before, after]);
+  }
   return forms;
 }

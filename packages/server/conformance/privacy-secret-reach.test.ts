@@ -5,8 +5,8 @@ import path from "node:path";
 // Spec: k.server, Log "`diag` per diagnostic or uncaught throw"
 // Spec: k.privacy, Sinks "A runner's `run` is scoped alike."
 // Spec: k.privacy, Conformance "An action throwing the revealed value of a `Secret` input or `bearer`, as a string or in an `Error` message, logs a `diag` record holding `[secret]` and not the value, in dev and production, as does a loader or action throwing one parsed after an `await` or made earlier and revealed in it, a record or `json` key in one, and a runner's; a boolean or declared field name logs as is; of two overlapping requests each marks only its own."
-// Spec: k.privacy, Sinks "Past 2,000,000 characters of these values' written forms or 100,000 secret values, a message after its prefix (`loader <id> threw: `), each frame and the path are one mark, `[secret]` if it holds a secret."
-// Spec: k.privacy, Conformance "A secret route param is `[secret]` in the `req` path, escaped any way, in `/%52ESET/<v>` and `//reset//<v>/`, with and without a prefix param, and forwarded to a peer; `/reset/ab/<v>` and `/confirm/a/<v>/done` (of `/confirm/:token/done`) log `/reset/[secret]` and `/confirm/[secret]`; `/en/reset/<v>` logs as sent; a failed forward logs no path. Past 100,000 secret values a loader's throw logs `loader <id> threw: [secret]`."
+// SPEC k.privacy|Sinks|Server log (k.server):
+// SPEC k.privacy|Sinks|Cost:
 // Seed: 1337.
 // A `Secret` is made with `made(s.secret(s.string()).parse(text))` inside the handler, after an `await`: the scope that marks it follows the call chain of the request.
 // The two-request case orders the requests on the sim clock (`ctx.clock.advance`), with no timers.
@@ -38,6 +38,9 @@ const kind = (line: string): unknown => {
   const rec: unknown = JSON.parse(line);
   return typeof rec === "object" && rec !== null ? Reflect.get(rec, "kind") : undefined;
 };
+/** `n` distinct 8-character strings (8 bytes each). */
+const eights = (n: number): string[] => Array.from({ length: n }, (_, i) => `v${String(i).padStart(7, "0")}`);
+const FIRST = "v0000000";
 const range = (n: number): number[] => Array.from({ length: n }, (_, i) => i);
 const fieldOf = (line: string, name: string): unknown => {
   const rec: unknown = JSON.parse(line);
@@ -534,7 +537,7 @@ describe("k.privacy secret reach", () => {
   };
 
   for (const mode of modes) {
-    it(`Past 2,000,000 characters of a secret's written forms, the \`diag\` message and each frame are one mark \`[secret]\` and no line holds the value, in ${mode}.`, async () => {
+    it(`Past 65,536 bytes of a scope's distinct values (a secret's), the \`diag\` message and each frame are one mark \`[secret]\` and no line holds the value, in ${mode}.`, async () => {
       const t = await boot(mode, { act: keysAction, artifacts });
       await (await t.app.fetch(sendKeys(2000))).text();
       const diags = diagsOf(t.lines);
@@ -546,7 +549,7 @@ describe("k.privacy secret reach", () => {
       for (const line of t.lines) expect(line).not.toContain("@@@@");
     }, 60_000);
 
-    it(`Under 2,000,000 characters of a secret's written forms, the \`diag\` message is \`refused [secret]\` and the frames keep their file paths, in ${mode}.`, async () => {
+    it(`Under 65,536 bytes of a scope's distinct values (a secret's), the \`diag\` message is \`refused [secret]\` and the frames keep their file paths, in ${mode}.`, async () => {
       const t = await boot(mode, { act: keysAction, artifacts });
       await (await t.app.fetch(sendKeys(10))).text();
       const diags = diagsOf(t.lines);
@@ -591,7 +594,7 @@ describe("k.privacy secret reach", () => {
     });
 
   for (const mode of modes) {
-    it(`Past 2,000,000 characters of personal-data values' written forms, with a secret that adds no value, the \`diag\` message and each frame are one mark \`[secret]\` and no line holds the values, in ${mode}.`, async () => {
+    it(`Past 65,536 bytes of a scope's personal-data values, with a secret that adds no value, the \`diag\` message and each frame are one mark \`[secret]\` and no line holds the values, in ${mode}.`, async () => {
       const t = await boot(mode, { act: withFlagAction, artifacts });
       await (await t.app.fetch(sendNotes({ flag: true, notes: manyKeys(2000) }))).text();
       const diags = diagsOf(t.lines);
@@ -603,7 +606,7 @@ describe("k.privacy secret reach", () => {
       for (const line of t.lines) expect(line).not.toContain("@@@@");
     }, 60_000);
 
-    it(`Past 2,000,000 characters of personal-data values' written forms, with no secret in the request, the \`diag\` message and each frame are one mark \`[pii]\` and no line holds the values, in ${mode}.`, async () => {
+    it(`Past 65,536 bytes of a scope's personal-data values, with no secret in the request, the \`diag\` message and each frame are one mark \`[pii]\` and no line holds the values, in ${mode}.`, async () => {
       const t = await boot(mode, { act: notesOnlyAction, artifacts });
       await (await t.app.fetch(sendNotes({ notes: manyKeys(2000) }))).text();
       const diags = diagsOf(t.lines);
@@ -657,20 +660,20 @@ describe("k.privacy secret reach", () => {
   const countedLoader = (n: number) =>
     loader(appContract, "app.a", { output: Nothing }, async () => {
       await Promise.resolve();
-      made(s.secret(s.array(s.int())).parse(range(n)));
-      throw stackOf("refused 7");
+      made(s.secret(s.array(s.string())).parse(eights(n)));
+      throw stackOf(`refused ${FIRST}`);
     });
   const countedLive = (n: number) =>
     liveLoader(liveContract, "app.live", async function* () {
       await Promise.resolve();
-      made(s.secret(s.array(s.int())).parse(range(n)));
+      made(s.secret(s.array(s.string())).parse(eights(n)));
       yield await Promise.resolve(ok({}));
-      throw stackOf("refused 7");
+      throw stackOf(`refused ${FIRST}`);
     });
 
   for (const mode of modes) {
-    it(`Past 100,000 secret values a loader's throw on a document GET logs one \`diag\` \`loader app.a threw: [secret]\` with each frame \`[secret]\`, in ${mode}${mode === "dev" ? "; the response body holds `[secret]` and not `refused 7`" : ""}.`, async () => {
-      const t = await boot(mode, { loader: countedLoader(100_001), artifacts });
+    it(`Past 65,536 bytes (8,193 distinct 8-character secret strings) a loader's throw on a document GET logs one \`diag\` \`loader app.a threw: [secret]\` with each frame \`[secret]\`, in ${mode}${mode === "dev" ? "; the response body holds `[secret]` and not `refused ${FIRST}`" : ""}.`, async () => {
+      const t = await boot(mode, { loader: countedLoader(8_193), artifacts });
       const body = await (await t.app.fetch(get("/a"))).text();
       const diags = diagsOf(t.lines);
       expect(diags).toHaveLength(1);
@@ -678,15 +681,15 @@ describe("k.privacy secret reach", () => {
         expect(fieldOf(line, "message")).toBe("loader app.a threw: [secret]");
         expect(framesOf(line)).toEqual(["[secret]", "[secret]"]);
       }
-      for (const line of t.lines) expect(line).not.toContain("refused 7");
+      for (const line of t.lines) expect(line).not.toContain(`refused ${FIRST}`);
       if (mode === "dev") {
         expect(body).toContain("[secret]");
-        expect(body).not.toContain("refused 7");
+        expect(body).not.toContain(`refused ${FIRST}`);
       }
     }, 60_000);
 
-    it(`At 100,000 secret values a loader's throw on a document GET logs a message starting \`loader app.a threw: \` and holding \`refused [secret]\`, in ${mode}.`, async () => {
-      const t = await boot(mode, { loader: countedLoader(100_000), artifacts });
+    it(`At 65,536 bytes (8,192 distinct 8-character secret strings) a loader's throw on a document GET logs a message starting \`loader app.a threw: \` and holding \`refused [secret]\`, in ${mode}.`, async () => {
+      const t = await boot(mode, { loader: countedLoader(8_192), artifacts });
       await (await t.app.fetch(get("/a"))).text();
       const diags = diagsOf(t.lines);
       expect(diags).toHaveLength(1);
@@ -696,8 +699,8 @@ describe("k.privacy secret reach", () => {
       }
     }, 60_000);
 
-    it(`Past 100,000 secret values a live loader's throw on an event-stream GET logs one \`diag\` \`loader app.live threw: [secret]\` with each frame \`[secret]\`, in ${mode}${mode === "dev" ? "; the last `data:` line holds `[secret]` and not `refused 7`" : ""}.`, async () => {
-      const t = await boot(mode, { live: countedLive(100_001), artifacts });
+    it(`Past 65,536 bytes (8,193 distinct 8-character secret strings) a live loader's throw on an event-stream GET logs one \`diag\` \`loader app.live threw: [secret]\` with each frame \`[secret]\`, in ${mode}${mode === "dev" ? "; the last `data:` line holds `[secret]` and not `refused ${FIRST}`" : ""}.`, async () => {
+      const t = await boot(mode, { live: countedLive(8_193), artifacts });
       const text = (
         await readChunks(await t.app.fetch(new Request("http://localhost/api/live", { headers: sse })), 16)
       ).join("");
@@ -707,7 +710,7 @@ describe("k.privacy secret reach", () => {
         expect(fieldOf(line, "message")).toBe("loader app.live threw: [secret]");
         expect(framesOf(line)).toEqual(["[secret]", "[secret]"]);
       }
-      for (const line of t.lines) expect(line).not.toContain("refused 7");
+      for (const line of t.lines) expect(line).not.toContain(`refused ${FIRST}`);
       if (mode === "dev") {
         const last =
           text
@@ -715,12 +718,12 @@ describe("k.privacy secret reach", () => {
             .filter((l) => l.startsWith("data:"))
             .pop() ?? "";
         expect(last).toContain("[secret]");
-        expect(last).not.toContain("refused 7");
+        expect(last).not.toContain(`refused ${FIRST}`);
       }
     }, 60_000);
 
-    it(`At 100,000 secret values a live loader's throw on an event-stream GET logs a message starting \`loader app.live threw: \` and holding \`refused [secret]\`, in ${mode}.`, async () => {
-      const t = await boot(mode, { live: countedLive(100_000), artifacts });
+    it(`At 65,536 bytes (8,192 distinct 8-character secret strings) a live loader's throw on an event-stream GET logs a message starting \`loader app.live threw: \` and holding \`refused [secret]\`, in ${mode}.`, async () => {
+      const t = await boot(mode, { live: countedLive(8_192), artifacts });
       await readChunks(await t.app.fetch(new Request("http://localhost/api/live", { headers: sse })), 16);
       const diags = diagsOf(t.lines);
       expect(diags).toHaveLength(1);

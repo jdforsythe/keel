@@ -4,15 +4,15 @@ import { holdSecrets } from "./holdSecrets.ts";
 import { notedSecrets } from "./notedSecrets.ts";
 import { pastCap } from "./pastCap.ts";
 import { requestSecrets } from "./requestSecrets.ts";
+import { tallyOf } from "./tallyOf.ts";
 
 /**
  * Adds the revealed strings, numbers and data keys of `made` (`secretWalk`) to the set of the request or runner `run`
  * running, if any, and the empty string, which matches nothing: the set then holds a value whenever the scope made or
- * revealed a secret, a boolean one too, so past a scrub cap its texts are marked `[secret]` (`scrubbed`). Each `Secret`
- * is walked once per set (`notedSecrets`); outside every scope nothing is read or kept. Once the set is past a cap
- * (100,000 values or 2,000,000 characters of forms) it takes no more values (`holdSecrets`). A read of `made` cut at
- * its 1,000,000 values left values unread, so the set is past its cap (`pastCap`) and every text of the scope is one
- * mark.
+ * revealed a secret, a boolean one too, so past the scrub's cap its texts are marked `[secret]` (`scrubbed`). Each
+ * `Secret` is walked once per set (`notedSecrets`); outside every scope nothing is read or kept. Once the scope is past
+ * 65,536 bytes of distinct values it takes no more (`holdSecrets`). A read of `made` cut at its 1,000,000 values left
+ * values unread, so every set of the scope is past the cap (`pastCap`) and every text of the scope is one mark.
  */
 // 1 while a probe `Secret` is made; the listener sets it back to 0.
 let probing = 0;
@@ -34,7 +34,7 @@ const note: SecretListener = (made) => {
   noted.add(made);
   const read = secretWalk(made);
   holdSecrets(into, read.values);
-  if (read.cut) pastCap.add(into);
+  if (read.cut) for (const set of tallyOf(into).sets) pastCap.add(set);
 };
 
 /**
