@@ -49,7 +49,7 @@ async function drive(concurrency: number | undefined, count: number): Promise<{ 
       std: file,
       runners: { orders: [jobs] },
     });
-    for (let n = 0; n < count; n++) await jobs.enqueue(ctx, "orders.work", { n });
+    for (let n = 0; n < count; n++) void (await jobs.enqueue(ctx, "orders.work", { n }));
     await settle();
     for (let guard = 0; guard < count * 2 && done < count; guard++) {
       gates.shift()?.();

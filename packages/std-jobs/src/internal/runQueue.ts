@@ -1,15 +1,14 @@
 import { stdConfig } from "@keel/compiler/std/stdConfig";
 import type { Ctx } from "@keel/ctx";
+import { attempt } from "@keel/schema";
 import type { JobTable } from "../JobTable.ts";
-import { JobsConfig } from "../JobsConfig.ts";
+import { JobsConfig } from "../JobsConfig.schema.ts";
 import { chanOf } from "./chanOf.ts";
 import { finish } from "./finish.ts";
 import { idle } from "./idle.ts";
 import { runOnce } from "./runOnce.ts";
 import { transact } from "./transact.ts";
 import { wake } from "./wake.ts";
-
-const noop = (): void => undefined;
 
 /**
  * The queue's runner (std.jobs Run, Restart): due jobs whose lease is free or past its end start in `at`, then `id`
@@ -47,13 +46,13 @@ export async function runQueue(ctx: Ctx, signal: AbortSignal, module: string, ta
       const a = live.get(x.id);
       const j = table[x.job];
       if (a === undefined || signal.aborted) break;
-      runOnce(ctx, j, x.input, a)
-        .then((code) => {
+      void attempt(() =>
+        runOnce(ctx, j, x.input, a).then((code) => {
           if (signal.aborted) return;
           live.delete(x.id);
           return finish(ctx, module, x.id, code, j?.attempts ?? 1).then(() => wake(c));
-        })
-        .catch(noop);
+        }),
+      );
     }
     await idle(ctx, c, v, live.size >= max ? Number.POSITIVE_INFINITY : next - now, signal);
   }
