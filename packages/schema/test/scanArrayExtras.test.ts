@@ -1,5 +1,5 @@
-// The undeclared-data scan walks an array by index: an array's own extra properties are not data and are ignored,
-// while a prototype key inside an item is reported at its index (k.schema).
+// The undeclared-data scan walks an array by index: an array with an own extra property is not a plain array and is
+// refused at its own path, while a prototype key inside an item is reported at its index (k.schema Plain data).
 import { describe, expect, it } from "vitest";
 import { s } from "../src/index.ts";
 
@@ -8,9 +8,9 @@ const proto = (): unknown => JSON.parse('{"__proto__":1}');
 const rules = (r: ReturnType<typeof O.parse>) => (r.ok ? [] : r.error.data.issues.map((i) => [i.path, i.rule]));
 
 describe("undeclared array under an open object", () => {
-  it("an array's extra own property holding __proto__ is ignored", () => {
+  it("an array with an extra own property is refused at the array's path, nothing under it read", () => {
     const arr = Object.assign([1], { extra: proto() });
-    expect(O.parse({ id: 1, e: arr }).ok).toBe(true);
+    expect(rules(O.parse({ id: 1, e: arr }))).toEqual([[["e"], "type"]]);
   });
 
   it("a prototype key inside an item is reported at the item's index", () => {

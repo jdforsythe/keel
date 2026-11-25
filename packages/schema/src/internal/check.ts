@@ -2,16 +2,20 @@ import { Secret } from "../Secret.ts";
 import type { Issue } from "./Issue.ts";
 import type { Node } from "./Node.ts";
 import { formats } from "./formats.ts";
-import { hasProtoKey } from "./hasProtoKey.ts";
 import { isJson } from "./isJson.ts";
-import { isRecord } from "./isRecord.ts";
 import { leafRule } from "./leafRule.ts";
+import { plainEntries } from "./plainEntries.ts";
+import { plainItems } from "./plainItems.ts";
 import { scanExtras } from "./scanExtras.ts";
 import { variantOf } from "./variantOf.ts";
 
 type Path = (string | number)[];
 
-/** Validate `x` against `node`, appending every failure to `issues`. Never throws. */
+/**
+ * Validate `x` against `node`, appending every failure to `issues`. A container node judges the value's own shape
+ * first (k.schema Plain data) and reads nothing under a value that is not a plain container. A Proxy whose trap
+ * throws makes it throw; `make` turns that into an issue.
+ */
 export function check(node: Node, x: unknown, path: Path, issues: Issue[]): void {
   switch (node.kind) {
     case "nullable":
@@ -35,42 +39,52 @@ export function check(node: Node, x: unknown, path: Path, issues: Issue[]): void
     case "json":
       if (!isJson(x)) issues.push({ path, rule: "type" });
       break;
-    case "array":
-      if (!Array.isArray(x)) issues.push({ path, rule: "type" });
-      else for (const [i, item] of x.entries()) check(node.item, item, [...path, i], issues);
+    case "array": {
+      const items = plainItems(x);
+      if (items === undefined) issues.push({ path, rule: "type" });
+      else for (const [i, item] of items.entries()) check(node.item, item, [...path, i], issues);
       break;
-    case "record":
-      if (!isRecord(x) || hasProtoKey(x)) issues.push({ path, rule: "type" });
-      else for (const key of Object.keys(x)) check(node.value, x[key], [...path, key], issues);
+    }
+    case "record": {
+      const entries = plainEntries(x);
+      if (entries === undefined) issues.push({ path, rule: "type" });
+      else for (const [key, v] of entries) check(node.value, v, [...path, key], issues);
       break;
-    case "object":
-      if (!isRecord(x) || hasProtoKey(x)) {
+    }
+    case "object": {
+      const entries = plainEntries(x);
+      if (entries === undefined) {
         issues.push({ path, rule: "type" });
         break;
       }
-      for (const key of Object.keys(x)) {
+      for (const [key, v] of entries) {
         if (Object.hasOwn(node.fields, key)) continue;
         if (node.closed === true) issues.push({ path: [...path, key], rule: "unknown-key" });
-        else scanExtras(x[key], [...path, key], issues);
+        else scanExtras(v, [...path, key], issues);
       }
       for (const [key, field] of Object.entries(node.fields)) {
         const at = [...path, key];
-        if (!Object.hasOwn(x, key)) {
+        const found = entries.find((e) => e[0] === key);
+        const v = found?.[1];
+        if (found === undefined) {
           if (field.kind !== "optional")
             issues.push({ path: at, rule: field.kind === "nullable" ? "nullable-absent" : "required" });
-        } else if (x[key] === null && field.kind === "optional" && field.inner.kind !== "nullable") {
+        } else if (v === null && field.kind === "optional" && field.inner.kind !== "nullable") {
           issues.push({ path: at, rule: "optional-null" });
         } else {
-          check(field, x[key], at, issues);
+          check(field, v, at, issues);
         }
       }
       break;
+    }
     case "union": {
-      if (!isRecord(x) || hasProtoKey(x)) {
+      const entries = plainEntries(x);
+      if (entries === undefined) {
         issues.push({ path, rule: "type" });
         break;
       }
-      const variant = Object.hasOwn(x, node.key) ? variantOf(node, x[node.key]) : undefined;
+      const tag = entries.find(([k]) => k === node.key);
+      const variant = tag === undefined ? undefined : variantOf(node, tag[1]);
       if (variant === undefined) issues.push({ path: [...path, node.key], rule: "discriminant" });
       else check(variant, x, path, issues);
       break;

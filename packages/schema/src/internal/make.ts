@@ -25,14 +25,21 @@ export function make<T, O extends boolean>(node: Node, isOptional: O): Schema<T,
   let issues: Issue[] = [];
   const is = (x: unknown): x is T => {
     issues = [];
-    check(node, x, [], issues);
+    // A value whose shape cannot be read (a revoked Proxy, a throwing trap) is not plain data.
+    try {
+      check(node, x, [], issues);
+    } catch {
+      issues = [{ path: [], rule: "type" }];
+    }
     return issues.length === 0;
   };
   const sealing = hasSecret(node);
   const parse = (input: unknown): Result<T, SchemaError> => {
     if (!sealing) return is(input) ? ok(input) : err(invalid(issues));
-    // Each sealed value is frozen deep only once the whole value passes, so a failed parse leaves the input as it
-    // was; a value the seal, check or freeze cannot walk (a throwing getter, a revoked Proxy) is an err, never a throw.
+    // The input is judged before `seal` copies it, so a getter or a key the copy would flatten or drop is refused
+    // (k.schema Plain data). Each sealed value is frozen deep only once the whole value passes, so a failed parse
+    // leaves the input as it was; a value the seal, check or freeze cannot walk is an err, never a throw.
+    if (!is(input)) return err(invalid(issues));
     try {
       const made: unknown[] = [];
       const value = seal(node, input, made);

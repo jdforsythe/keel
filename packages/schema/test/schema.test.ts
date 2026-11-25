@@ -160,15 +160,20 @@ describe("containers", () => {
       }),
     );
   });
-  it("object: absent optional stays absent through encode; unknown keys are dropped", () => {
+  it("object: absent optional stays absent through encode; unknown keys holding plain data are dropped", () => {
     const T = s.object({ a: s.string().optional() });
     fc.assert(
-      fc.property(fc.string(), fc.anything(), (extra, junk) => {
-        if (extra === "a") return;
+      fc.property(fc.string(), fc.jsonValue(), (extra, junk) => {
+        if (extra === "a" || extra === "__proto__" || extra === "constructor" || extra === "prototype") return;
         const j = T.encode({ [extra]: junk });
         expect(j).toEqual({});
       }),
     );
+  });
+  it("object: encode throws on an unknown key holding a value that is not plain data (k.schema Plain data)", () => {
+    const T = s.object({ a: s.string().optional() });
+    for (const junk of [new Map(), undefined, Number.NaN, () => 1, new Uint8Array(1)])
+      expect(() => T.encode({ x: junk })).toThrow();
   });
   it("rules optional-null, nullable-absent, required", () => {
     const Opt = s.object({ a: s.int().optional() });
