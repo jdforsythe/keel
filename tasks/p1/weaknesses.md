@@ -56,6 +56,7 @@ Rules:
 - [ ] 0999 the golden apps' `keel test` rewrites committed `surface.json` in a clean checkout
 - [ ] 0992 nothing checks that a conformance `// Spec:` quote appears in its section
 - [ ] 1054 `mutate-justified` reads apps, the ledger reads `packages/` only; decided: the ledger reads apps (with 0919)
+- [ ] 1112 the ledger counts an unskipped test as passing without a run result
 
 ### Lane 04 store-backed-flakes · std-db, std-postgres, apps/golden-2, apps/household · no RFC · M
 - [ ] 0651 the PGlite vitest worker dies with a V8 fatal error under load
@@ -164,6 +165,7 @@ Rules:
 - [ ] 1107 `find().text` of an input is always empty
 - [ ] 1109 `renderRoute` with `app` records any string as a document, never E1501
 - [ ] 1110 a statechart guard's payload is typed as every event's fields (RFC)
+- [ ] 1111 `keel check` runs out of heap at 100,000 host elements
 
 ### Owned by a P1 workstream or in flight
 - [ ] 0034 the freeze review and status flips (W1)
@@ -214,6 +216,7 @@ Rules:
 - [ ] 0993 the one size review before P1: trim the cheap, set every budget to measured plus headroom
 - [ ] 0335 no budget measures an app's client entry; add golden-2's
 - [ ] 0845 `@keel/check` grew to its budget; a consolidation pass over the rules
+- [ ] 1113 the held walk re-walks the import graph; share one graph
 
 ### Lane 22 check-rules · check, std-i18n, std-text, std-tokens · RFC where a rule's spec line changes · M
 - [ ] 0315 E1509 treats every file as one route table; group by deployable
