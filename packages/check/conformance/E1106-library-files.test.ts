@@ -3,10 +3,13 @@
 // Fixture libraries are written into the project's `node_modules/`; no std package is imported.
 // ASSUMPTION (spec silent): `unsafe/` files are given as plain files (no `unsafe(` lift), since the clause names none.
 import { check } from "@keel/check";
+import { mkdirSync } from "node:fs";
+import { dirname, join } from "node:path";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { type Files, manifestFile } from "./module-support.ts";
 import { SEED } from "./support.ts";
+import { freshDir, linkAt, removeDir, rootOption, writeTree } from "./security-support.ts";
 
 const ROOT = "node_modules/@acme/units";
 const even = (name: string): string =>
@@ -66,5 +69,21 @@ describe("E1106 and a library's files", () => {
       { path: "modules/shop/Even.schema.ts", source: EVEN },
     ]);
     expect(e1106(files)).toEqual(["modules/shop/Even.schema.ts"]);
+  });
+
+  // ASSUMPTION (spec silent on how a link is given to check()): the library's real folder is `<root>/libs/units`, `<root>/node_modules/@acme/units` is a symlink to it, and the files are passed at the `node_modules/` path with `root` the project folder.
+  it("E1106: `s.format` in `src/Even.schema.ts` of a workspace-linked library the app lists reports no E1106", () => {
+    const dir = freshDir("keel-e1106");
+    try {
+      const lib = project([{ path: `${ROOT}/src/Even.schema.ts`, source: EVEN }]).filter((f) => f.path.startsWith(ROOT));
+      writeTree(join(dir, "libs", "units"), lib.map((f) => ({ path: f.path.slice(`${ROOT}/`.length), source: f.source })));
+      mkdirSync(dirname(join(dir, ROOT)), { recursive: true });
+      linkAt(dir, ROOT, join(dir, "libs", "units"));
+      const files = project([{ path: `${ROOT}/src/Even.schema.ts`, source: EVEN }]);
+      const out = check(files, { types: false, root: rootOption(dir) }).diagnostics.filter((d) => d.code === "E1106");
+      expect(out.map((d) => d.path)).toEqual([]);
+    } finally {
+      removeDir(dir);
+    }
   });
 });
