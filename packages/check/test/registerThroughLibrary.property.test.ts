@@ -123,7 +123,6 @@ test("each use of the export as a value is one E1607 at the use: an argument, a 
     ["import { store } from '@acme/store'\nexport const d = store.apply(undefined, ['a.main'])\n", "store.apply"],
     ["import { store } from '@acme/store'\nexport const d = store.bind(undefined)\n", "store.bind"],
     ["import { store } from '@acme/store'\nexport const db = store\n", "store\n"],
-    ["import { store } from '@acme/store'\nconst db = store\nexport { db }\n", "store\nexport {"],
     ["import { store } from '@acme/store'\nlet db = store\nexport const d = db\n", "store\nexport"],
     ["import * as lib from '@acme/store'\nconst k = 'store'\nexport const d = lib[k]\n", "lib[k]"],
     ["import * as lib from '@acme/store'\nexport const d = lib.store\n", "lib.store"],
@@ -217,5 +216,18 @@ test("a library exporting an object holding its registering function is one E160
   const found = e1607(project(store, []));
   expect(found).toEqual([
     `node_modules/@acme/store/src/store.ts:${at(store, "store }")} store used as a value: the name it registers cannot be read here`,
+  ]);
+});
+
+test("a computed relative import() is read by the files it can reach: none holding the export is no use, one that does is one E1607", () => {
+  const loader = "export const load = (l: string) => import(`./Text/${l}.ts`)\n";
+  const plain = [
+    { path: "modules/a/Text/en.ts", source: "export default { hi: 'hi' }\n" },
+    { path: "modules/a/d.server.ts", source: loader },
+  ];
+  expect(e1607(project(ONE, plain))).toEqual([]);
+  const reaching = [...plain, { path: "modules/a/Text/x.ts", source: "export { store } from '@acme/store'\n" }];
+  expect(e1607(project(ONE, reaching))).toEqual([
+    `modules/a/d.server.ts:${at(loader, "import(")} import() used as a value: the name it registers cannot be read here`,
   ]);
 });

@@ -5,6 +5,7 @@ import type { SourceFile } from "../types/SourceFile.ts";
 import type { Checked } from "./Checked.ts";
 import type { RegisterLibraries } from "./RegisterLibraries.ts";
 import { diagAt } from "./diagAt.ts";
+import { READ_DEPTH } from "./functionRead/READ_DEPTH.ts";
 import type { ReadFn } from "./functionRead/ReadFn.ts";
 import { exportedFunction } from "./functionRead/exportedFunction.ts";
 import { fileOfIn } from "./functionRead/fileOfIn.ts";
@@ -152,9 +153,15 @@ export function registerNames(
       .filter((c) => !later.calls.has(c))
       .map((c) => ({ at: c.start, name: literal(c.arguments[0]), by: "register" }));
     if (later.params.size > 0)
-      for (const use of libraryUses(checked, fileOf, later.params)) {
-        if (use.kind === "value") {
-          const message = `${clipMessage(use.name, 20)} used as a value: the name it registers cannot be read here`;
+      for (const use of libraryUses(
+        checked,
+        fileOf,
+        later.params,
+        files.map((c) => c.file),
+      )) {
+        if (use.kind !== "call") {
+          const why = use.kind === "deep" ? `comes through more than ${READ_DEPTH} files` : "used as a value";
+          const message = `${clipMessage(use.name, 20)} ${why}: the name it registers cannot be read here`;
           out.push(diagAt(file, use.at, "E1607", message, "k.server-deps"));
           continue;
         }
