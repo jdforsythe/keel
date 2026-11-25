@@ -1,6 +1,7 @@
 import { createCtx } from "@keel/ctx";
 import { gen } from "@keel/schema/gen";
 import { properties, render, renderRoute } from "@keel/testing";
+import { testTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
 import { afterEach, expect, it } from "vitest";
 import { app } from "../modules/app/app.contract.ts";
@@ -142,37 +143,45 @@ const idOf = (n: number) => {
   return r.value.id;
 };
 
-it("renders the list page and the list for any copy and any items, each with an id as the server mints them", () => {
-  // `properties` hands an item an id such as `" `, which no server mints and no CSS selector can address.
-  const ctx = createCtx({ mode: "sim", seed: 45 });
-  fc.assert(
-    fc.property(gen(ListPageProps), (props) => {
-      const keys = new Set<string>();
-      const staples = props.data.text.staples.filter((s) => !keys.has(s.key) && keys.add(s.key));
-      const data = {
-        ...props.data,
-        text: { ...props.data.text, staples },
-        items: props.data.items.map((item, n) => ({ ...item, id: idOf(n) })),
-      };
-      const page = render(ListPage, { props: { data }, ctx });
-      try {
-        expect(page.find("shopping.heading").text.trim()).toBe(data.text.heading.trim());
-        expect(page.focusOrder().filter((id) => id.startsWith("shopping.toggle."))).toHaveLength(
-          data.items.filter((i) => !i.bought).length,
-        );
-      } finally {
-        page.dispose();
-      }
-      const board = render(ShoppingList, { props: { text: data.text, items: data.items, member: data.member }, ctx });
-      try {
-        expect(board.find("shopping.live").role).toBe("status");
-      } finally {
-        board.dispose();
-      }
-    }),
-    { numRuns: 50, seed: SEED },
-  );
-});
+const LIST_RUNS = 50;
+/** One run renders the list page and the list and reads them: 20 ms on a quiet machine, times 8.5 for the CI runner, times 3 for the other workers on its cores. */
+const LIST_RUN_MS = 540;
+
+it(
+  "renders the list page and the list for any copy and any items, each with an id as the server mints them",
+  () => {
+    // `properties` hands an item an id such as `" `, which no server mints and no CSS selector can address.
+    const ctx = createCtx({ mode: "sim", seed: 45 });
+    fc.assert(
+      fc.property(gen(ListPageProps), (props) => {
+        const keys = new Set<string>();
+        const staples = props.data.text.staples.filter((s) => !keys.has(s.key) && keys.add(s.key));
+        const data = {
+          ...props.data,
+          text: { ...props.data.text, staples },
+          items: props.data.items.map((item, n) => ({ ...item, id: idOf(n) })),
+        };
+        const page = render(ListPage, { props: { data }, ctx });
+        try {
+          expect(page.find("shopping.heading").text.trim()).toBe(data.text.heading.trim());
+          expect(page.focusOrder().filter((id) => id.startsWith("shopping.toggle."))).toHaveLength(
+            data.items.filter((i) => !i.bought).length,
+          );
+        } finally {
+          page.dispose();
+        }
+        const board = render(ShoppingList, { props: { text: data.text, items: data.items, member: data.member }, ctx });
+        try {
+          expect(board.find("shopping.live").role).toBe("status");
+        } finally {
+          board.dispose();
+        }
+      }),
+      { numRuns: LIST_RUNS, seed: SEED },
+    );
+  },
+  LIST_RUNS * testTime(LIST_RUN_MS),
+);
 
 it("renders the outbox note and the weekly panel for any copy and items the schemas allow", async () => {
   await properties(OutboxNote, { runs: 50, seed: 43 });
