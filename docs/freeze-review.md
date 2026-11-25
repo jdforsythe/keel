@@ -6,8 +6,8 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 
 | section | clauses | status | missing tests |
 | --- | --- | --- | --- |
-| k.schema | 15 | **conformance-covered** | none |
-| k.formats | 7 | **conformance-covered** | none |
+| k.schema | 16 | **conformance-covered** | none |
+| k.formats | 8 | **conformance-covered** | none |
 | k.reactive | 20 | **conformance-covered** | none |
 | k.store | 25 | **conformance-covered** | none |
 | k.ctx | 24 | **conformance-covered** | none |
@@ -17,19 +17,19 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.runtime | 13 | **conformance-covered** | none |
 | k.ui | 27 | **conformance-covered** | none |
 | k.router | 20 | **conformance-covered** | none |
-| k.prefix | 7 | **conformance-covered** | none |
-| k.head | 10 | **conformance-covered** | none |
-| k.forms | 17 | **conformance-covered** | none |
-| k.server | 18 | **conformance-covered** | none |
+| k.prefix | 8 | **conformance-covered** | none |
+| k.head | 11 | **conformance-covered** | none |
+| k.forms | 19 | **conformance-covered** | none |
+| k.server | 19 | **conformance-covered** | none |
 | k.topology | 17 | **conformance-covered** | none |
 | k.compat | 15 | **conformance-covered** | none |
 | k.api | 14 | **conformance-covered** | none |
-| k.services | 16 | **conformance-covered** | none |
+| k.services | 17 | **conformance-covered** | none |
 | k.check | 23 | **conformance-covered** | none |
 | k.check-cache | 13 | **conformance-covered** | none |
 | k.cli | 20 | **conformance-covered** | none |
 | k.module | 22 | **conformance-covered** | none |
-| k.scaffold | 19 | **conformance-covered** | none |
+| k.scaffold | 20 | **conformance-covered** | none |
 | k.scaffold-service | 8 | **conformance-covered** | none |
 | k.scaffold-shell | 9 | **conformance-covered** | none |
 | k.testing | 27 | **conformance-covered** | none |
@@ -47,13 +47,13 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.bundle | 13 | **conformance-covered** | none |
 | k.explain | 4 | **conformance-covered** | none |
 | k.return | 6 | **conformance-covered** | none |
-| k.opening | 14 | **conformance-covered** | none |
+| k.opening | 16 | **conformance-covered** | none |
 | k.hosting | 9 | **conformance-covered** | none |
 | k.openapi | 3 | **conformance-covered** | none |
-| k.a11y | 16 | **conformance-covered** | none |
+| k.a11y | 23 | **conformance-covered** | none |
 | k.security | 13 | **conformance-covered** | none |
-| k.privacy | 10 | **conformance-covered** | none |
-| k.privacy-reads | 4 | **conformance-covered** | none |
+| k.privacy | 15 | **conformance-covered** | none |
+| k.privacy-reads | 6 | **conformance-covered** | none |
 | k.evidence | 10 | **conformance-covered** | none |
 | k.aria | 10 | **conformance-covered** | none |
 | k.guards | 11 | **conformance-covered** | none |
@@ -65,14 +65,14 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.claim | 9 | **conformance-covered** | none |
 | k.defaults | 6 | **conformance-covered** | none |
 | k.host | 5 | **conformance-covered** | none |
-| k.leave | 10 | **conformance-covered** | none |
-| k.mount | 11 | **conformance-covered** | none |
+| k.leave | 14 | **conformance-covered** | none |
+| k.mount | 13 | **conformance-covered** | none |
 | k.owner | 5 | **conformance-covered** | none |
 | k.place | 5 | **conformance-covered** | none |
 | k.resume | 13 | **conformance-covered** | none |
-| k.serverlog | 7 | **conformance-covered** | none |
-| k.user | 15 | **conformance-covered** | none |
-| k.boundary | 8 | **conformance-covered** | not audited clause by clause; the environment and limits suites run `keel build` on fixtures whose `env.d.ts` the type pass does not read |
+| k.serverlog | 8 | **conformance-covered** | none |
+| k.user | 16 | **conformance-covered** | none |
+| k.boundary | 12 | **conformance-covered** | none |
 | std.brands | 7 | **conformance-covered** | none |
 | std.channels | 26 | **conformance-covered** | none |
 | std.conflicts | 10 | **conformance-covered** | none |
@@ -88,7 +88,7 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | std.i18n | 9 | **conformance-covered** | none |
 | std.jobs | 12 | **conformance-covered** | none |
 | std.live | 15 | **conformance-covered** | none |
-| std.messages | 11 | **conformance-covered** | none |
+| std.messages | 12 | **conformance-covered** | none |
 | std.money | 10 | **conformance-covered** | none |
 | std.monitor | 7 | **conformance-covered** | none |
 | std.multi | 8 | **conformance-covered** | none |
@@ -112,7 +112,7 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.host-element | 11 | **conformance-covered** | none |
 | k.links | 12 | **conformance-covered** | none |
 | k.mount-scope | 1 | **conformance-covered** | none |
-| k.origins | 11 | **conformance-covered** | none |
+| k.origins | 12 | **conformance-covered** | none |
 | k.parity | 6 | proposed | clauses 5 and 6: no test; S0013, the kind gates, is not built |
 | k.roles | 8 | **conformance-covered** | none |
 | k.routes | 10 | **conformance-covered** | none |
@@ -120,7 +120,8 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | std.contracts | 7 | **conformance-covered** | none |
 | std.lists | 6 | **conformance-covered** | none |
 | std.tauri | 10 | **conformance-covered** | `UNTESTABLE` toolchain lookups and capability file shape |
-| **total** | **1348** | 113 of 114 covered | |
+| k.unsafe | 9 | **conformance-covered** | none |
+| **total** | **1396** | 114 of 115 covered | |
 
 ## 2. One-way audit (principle 1)
 

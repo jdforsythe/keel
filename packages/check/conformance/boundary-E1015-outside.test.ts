@@ -1,9 +1,9 @@
 // Spec: k.boundary, Following "Reach, and k.origins' file importing another, follow a specifier to the project file k.bundle Aliases resolves it to (relative, the project's own name, a workspace link or a `node_modules` symlink whose real path is a project file), its query stripped; one resolving under `node_modules/` or outside the project is a package's, not followed (E1007 holds at build). An `import()` of a template literal whose text before its first substitution starts `./` or `../` reaches each project file its pattern matches, each substitution read as `*` within one path segment, as Vite expands it; any other non-literal `import()` (W1608) reaches nothing, and E1007 holds at build. E1015 is a relative specifier in a non-test project code file that resolves to a file outside the project root: `keel check` reads only the project's files, so no rule follows it; shared code is a package. Message `'<specifier>' resolves outside the project; check reads only its files`, the specifier cut from its front to fit 89 units (59 without it); no fix."
 // Spec: k.boundary, Rules "E1015 a relative specifier resolving outside the project (Following; fix: none)."
-// Spec: k.boundary, Conformance "`import { x } from '../../shared/x.ts'` in `modules/a/Page.tsx`, resolving to a file outside the project root, is one E1015 at the specifier with no fix; the same import in `modules/a/a.test.ts`, and `import { y } from '../b/y.ts'` resolving inside the project, are none."
+// Spec: k.boundary, Conformance "`import { x } from '../../../shared/x.ts'` in `modules/a/Page.tsx`, resolving to a file outside the project root, is one E1015 at the specifier's opening quote with no fix; the same import in `modules/a/a.test.ts`, and `import { y } from '../b/y.ts'` resolving inside the project, are none."
 // Seed 1337 (the properties below). The type pass is off: the rule reads syntax and paths, and the target of an outside specifier is never on disk.
 // Reading: the diagnostic sits at the specifier's opening quote, as E1013's does (k.bundle Aliases).
-// Reading: the spec's example `'../../shared/x.ts'` from `modules/a/Page.tsx` resolves to `<root>/shared/x.ts`, inside the root; the cases below use `'../../../shared/x.ts'`, which leaves it, and the property ranges over the depth.
+// Reading: from `modules/a/Page.tsx` the specifier `'../../../shared/x.ts'` resolves to `<root>/../shared/x.ts`, outside the root; the property ranges over the depth.
 // Reading: a test file is one named `*.test.ts` or `*.test.tsx`.
 import { check } from "@keel/check";
 import fc from "fast-check";
@@ -15,7 +15,7 @@ const e1015 = (files: Files) => check(files, { types: false }).diagnostics.filte
 const TAIL = "' resolves outside the project; check reads only its files";
 
 describe("k.boundary Following: E1015 is a relative specifier in a non-test project code file resolving outside the project root", () => {
-  test("`import { x } from '../../shared/x.ts'` in `modules/a/Page.tsx`, resolving to a file outside the project root, is one E1015 at the specifier with no fix; the same import in `modules/a/a.test.ts`, and `import { y } from '../b/y.ts'` resolving inside the project, are none", () => {
+  test("`import { x } from '../../../shared/x.ts'` in `modules/a/Page.tsx`, resolving to a file outside the project root, is one E1015 at the specifier's opening quote with no fix; the same import in `modules/a/a.test.ts`, and `import { y } from '../b/y.ts'` resolving inside the project, are none.", () => {
     const outside = "import { x } from '../../../shared/x.ts'\nexport const Page = x\n";
     const ds = e1015([f("modules/a/Page.tsx", outside)]);
     expect(ds).toHaveLength(1);

@@ -1,5 +1,5 @@
 # k.serverlog: Server log records
-status: implemented
+status: conformance-covered
 
 **Purpose.** How the server writes each record of its log (k.server Log, docs/OUTPUT.md), so that no request or thrown value makes a record long, splits it across lines or fakes a cut, and no cut shows what the scrub (k.privacy Server log) marked.
 
