@@ -1,6 +1,6 @@
 import type { Ctx } from "@keel/ctx";
 import { restockStores } from "../shopping/restockStores.server.ts";
-import { householdStores } from "./householdStores.ts";
+import { householdStores } from "./householdStores.server.ts";
 
 /**
  * The stores the frame and the setup page under it read: the household's name and the weekly runs. Both loaders name

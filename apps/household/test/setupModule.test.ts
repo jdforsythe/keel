@@ -13,7 +13,7 @@ import SetupPage from "../modules/setup/SetupPage.tsx";
 import { SetupSearch } from "../modules/setup/SetupSearch.schema.ts";
 import { frameStores } from "../modules/setup/frameStores.server.ts";
 import { getHousehold } from "../modules/setup/getHousehold.server.ts";
-import { householdStores } from "../modules/setup/householdStores.ts";
+import { householdStores } from "../modules/setup/householdStores.server.ts";
 import { loadSetup } from "../modules/setup/loadSetup.server.ts";
 import { routes as setupRoutes } from "../modules/setup/routes.ts";
 import { saveSetup } from "../modules/setup/saveSetup.server.ts";
