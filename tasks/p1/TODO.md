@@ -39,10 +39,15 @@ The `unsafe` count measures escapes from the type system in code that runs. Nega
 - [ ] `next` RFC 0191's last part: the `Box as="nav"` conformance case (backlog 0580)
 
 ### W2 Weakness clearance
-- [ ] `running` the backlog triaged with decisions, in fix lanes (`lane-triage`; `tasks/p1/weaknesses.md`)
-- [ ] `blocked` (triage) the A1 fix lanes, in the triage's order
-- [ ] `blocked` (A1) the A2 fix lanes
-- [ ] `blocked` (fix lanes) a red-team pass that files no new high or medium line
+The triage is `tasks/p1/weaknesses.md`: 102 lines to fix now in 17 lanes (A1), 105 after them in 15 lanes (A2), 24 for the docs sweep, 7 moved to `tasks/FUTURE.md`, 52 closed as done or overtaken, 2 that need a person.
+- [x] `done` the backlog triaged with decisions, in fix lanes
+- [ ] `running` lane 01 gate-flakes: three of its nine lines (`lane-gate`)
+- [ ] `running` lane 06 server-scrub-and-streams: RFC 0230 (`lane-w06`)
+- [ ] `running` lane 07 check-security-rules: RFC 0231 (`lane-sec07`)
+- [ ] `running` lane 08 router-identity: RFC 0232 (`lane-sec08`)
+- [ ] `next` lanes 02 to 05 and 09 to 17, in the triage's order, as lanes free up
+- [ ] `blocked` (A1) the A2 lanes 18 to 32
+- [ ] `blocked` (fix lanes) a red-team pass, by Claude and by Codex, that files no new high or medium line
 
 ### W3 Evidence and coverage
 - [x] `done` the survey (`tasks/p1/evidence-survey.md`)
@@ -83,6 +88,7 @@ The `unsafe` count measures escapes from the type system in code that runs. Nega
 
 Each of these is started as early as its inputs allow, since they have the longest lead times.
 
+- [ ] A physical Android device, a physical iOS device and a Windows machine, for the shell runs CI cannot make (backlog 0824).
 - [ ] Accessibility audit and penetration test: choose and pay one firm for each (scope: golden-3 and the site, a retest included). The lead writes the scope documents and a vendor shortlist.
 - [ ] A newcomer reviewer: one person who writes TypeScript and has never seen the repo, to read the docs and the walkthrough.
 - [ ] A domain and a static host account for the site.
