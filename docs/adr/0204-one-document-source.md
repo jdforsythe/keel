@@ -1,6 +1,6 @@
 # ADR-0204: k.head, k.topology: Keel writes every document; a deployable's `styles` carries its CSS (RFC 0182)
 
-**Status:** accepted (orchestrator, under the RFC defaults; for the operator to confirm).
+**Status:** accepted (orchestrator, under the RFC defaults).
 
 **Context.** `keel dev` serves a `client` project's own `index.html`, and a `node` deployable's documents, in dev and build, never read it. What an author puts there, a header or the brand fonts, shows in one path only, and the fonts never ship for a `node` deployable. No other way brings a stylesheet to a document: k.head has `title` only, and a `.css` import in app code is E1825.
 

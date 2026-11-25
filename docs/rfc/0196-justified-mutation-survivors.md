@@ -1,6 +1,6 @@
 # RFC 0196: k.ledger: justified mutation survivors
 
-Status: accepted (ADR-0218). Amends k.ledger (Mutation, File, Rules; Conformance in the conformance commit).
+Status: implemented (ADR-0218). Amends k.ledger (Mutation, File, Rules; Conformance in the conformance commit).
 
 ## Problem
 The P1 bar asks that every mutation survivor be killed or justified. Some survivors cannot be killed: an equivalent mutant (`i < n` to `i <= n` where index `n` reads `undefined` and the loop skips it), a defensive branch the types already exclude, a cache whose removal changes only speed. Today there is nowhere to write that down. A justification in a commit message or a code comment is invisible to the ledger, drifts from the code, and lets nobody tell a reviewed survivor from an unreviewed one.

@@ -1,6 +1,6 @@
 # RFC 0207: k.router: `pageHref` reads a string into an `Href` of a page of the route table
 
-Status: implemented (ADR-0229), accepted by the orchestrator on 2026-11-23, for the operator to confirm. Amends k.router (Links, a new Return targets paragraph, Execution, Conformance), k.server (API), k.user (Identity source), k.guards (Guards), the map. From `apps/household` (walkthrough finding L4-3, backlog 1008).
+Status: implemented (ADR-0229), accepted by the orchestrator on 2026-11-23. Amends k.router (Links, a new Return targets paragraph, Execution, Conformance), k.server (API), k.user (Identity source), k.guards (Guards), the map. From `apps/household` (walkthrough finding L4-3, backlog 1008).
 
 ## Decisions
 - D1: one reader, `pageHref(routes, text)` in `@keel/router/match`, `Result<Href, KeelError<'keel.notFound', null>>`. It is the only way a string becomes an `Href` other than a contract's `href` and an identity mount's `href`.

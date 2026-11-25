@@ -1,6 +1,6 @@
 # ADR-0174: k.schema: one blank set for `required`, and a portable JSON Schema pattern (RFC 0152)
 
-**Status:** accepted (orchestrator, under the RFC defaults; for the user to confirm).
+**Status:** accepted (orchestrator, under the RFC defaults).
 
 **Context.** `required` read a string as blank only when JavaScript's `\s` covered it, so zero-width, filler, format and combining-mark-only values passed; the JSON Schema `pattern: "\\S"` is read differently by Python `re` and JavaScript.
 

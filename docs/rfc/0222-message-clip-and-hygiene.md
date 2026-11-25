@@ -1,6 +1,6 @@
 # RFC 0222: a diagnostic's message is clipped by one exact rule; `replay` and `minimize` take `mount`; std.db conformance-covered
 
-Status: accepted (ADR-0244), accepted by the orchestrator on 2026-11-24, for the operator to confirm. Amends k.check (Diagnostics, Conformance), k.test-run (Results, Conformance), k.ledger (File, Conformance), std.sessions (API, Conformance), std.db (status), the map, the std index, `docs/OUTPUT.md`, `docs/TESTING.md`, `docs/freeze-review.md`. Carries conformance hygiene under its tag. From backlog 1080, 1092, 1091, 1085, 1023; owns the k.ledger File change built for 1083 and 1021.
+Status: accepted (ADR-0244), accepted by the orchestrator on 2026-11-24. Amends k.check (Diagnostics, Conformance), k.test-run (Results, Conformance), k.ledger (File, Conformance), std.sessions (API, Conformance), std.db (status), the map, the std index, `docs/OUTPUT.md`, `docs/TESTING.md`, `docs/freeze-review.md`. Carries conformance hygiene under its tag. From backlog 1080, 1092, 1091, 1085, 1023; owns the k.ledger File change built for 1083 and 1021.
 
 ## For the operator
 1. **The clip rule lives in k.check, not k.errors.** k.errors is Results and boundaries; k.check's Diagnostics paragraph already owns "`message` is one line under 90 chars" and its Pipeline step 4 owns rendering. One place states it.

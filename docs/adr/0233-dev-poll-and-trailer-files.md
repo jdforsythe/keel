@@ -1,6 +1,6 @@
 # ADR-0233: `keel dev` polls under `KEEL_DEV_POLL`; each trailer states what `files` counts (RFC 0211)
 
-**Status:** accepted (orchestrator, 2026-11-24, for the operator to confirm).
+**Status:** accepted (orchestrator, 2026-11-24).
 
 **Context.** `keel dev` turned on Vite's polling watcher when `CHOKIDAR_USEPOLLING` was set, with no spec sentence; the cli suite depends on it because this machine drops file events, and containers and network file systems do too. The `check` and `build` trailers both print `files` and count different sets, with no sentence for either.
 

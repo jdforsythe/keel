@@ -1,6 +1,6 @@
 # ADR-0111: `createCtx({ storage })` backs `ctx.storage`; `fileStorage` keeps one JSON file on Node (RFC 0088)
 
-**Status:** accepted by the orchestrator (2026-11-12) under the WORKFLOW RFC defaults 1 and 3; awaiting the user's confirmation of the API shape.
+**Status:** accepted by the orchestrator (2026-11-12) under the WORKFLOW RFC defaults 1 and 3.
 
 **Context.** `keel dev` runs every `node` deployable in one plain Node process, where the platform `localStorage` does not exist, so any module using `ctx.storage` failed. k.topology already places dev storage in `.keel-dev/`.
 

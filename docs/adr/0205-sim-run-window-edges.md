@@ -1,6 +1,6 @@
 # ADR-0205: k.sim: `run()` steps to the edges of the schedule's offline windows (RFC 0183)
 
-**Status:** accepted (orchestrator, under the RFC defaults; for the operator to confirm).
+**Status:** accepted (orchestrator, under the RFC defaults).
 
 **Context.** `simulate`'s `run()` steps only to pending `after` deadlines, which `clock.next()` returns. A schedule's offline window opens and closes on clock timers `next()` leaves out, so a run can stop inside a window with the net offline. The golden-1 scenario tests step past every window by hand.
 

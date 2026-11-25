@@ -1,6 +1,6 @@
 # ADR-0231: k.requests: a harness logs the requests its page sends, and a route harness reads `/__keel/user` as the built app does (RFC 0209)
 
-**Status:** accepted (orchestrator, 2026-11-24, for the operator to confirm).
+**Status:** accepted (orchestrator, 2026-11-24).
 
 **Context.** A test could not show that a client-only app sends no `/__keel/user` request. A harness keeps no request log, so a test sees a request only by routing its URL, and `renderRoute` without `app` reads `/__keel/user` only when the test passes `mount`, while the built entry reads whenever the project has `identity.ts`. `examples/client-only-api`'s test passed unchanged for a project with `identity.ts`; only the built app in Chromium showed the difference.
 

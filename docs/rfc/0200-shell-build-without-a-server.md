@@ -1,6 +1,6 @@
 # RFC 0200: k.shell: a shell build of an app with no server reads no `KEEL_ORIGIN`
 
-Status: implemented (ADR-0222), accepted by the orchestrator on 2026-11-23, for the operator to confirm. Amends k.shell (Shell ctx, new **Without a server**, Shell target, Build, CI, Rules, Conformance), std.shells, std.tauri and std.capacitor. Under D103. From examples finding 19.
+Status: implemented (ADR-0222), accepted by the orchestrator on 2026-11-23. Amends k.shell (Shell ctx, new **Without a server**, Shell target, Build, CI, Rules, Conformance), std.shells, std.tauri and std.capacitor. Under D103. From examples finding 19.
 
 ## Decisions
 - D1: an app has a server when its topology has a `node` deployable. Nothing else counts: `identity.ts` without one is already E1589, a `static` deployable answers no request at run time, and a `keel-peer` origin exists only for a `node` deployable.

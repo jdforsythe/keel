@@ -1,6 +1,6 @@
 # ADR-0234: k.guards: a guard several modules bind lives in a module of its own; E1153 names the guard (RFC 0212)
 
-**Status:** accepted (orchestrator, 2026-11-24, for the operator to confirm).
+**Status:** accepted (orchestrator, 2026-11-24).
 
 **Context.** A `routes.ts` binds a guard by value import, so the binder lists the guard's module in `deps`. A link imports the target's contract, which is a `deps` entry too. When the guard's module links to a page of a module that binds the guard, `deps` is a cycle (E1153). The walkthrough moved the guard into a module that links to nothing, but neither the spec nor the diagnostic named that arrangement. A guard file outside every module escapes the `deps` checks and is refused by a `client` build (E1007).
 

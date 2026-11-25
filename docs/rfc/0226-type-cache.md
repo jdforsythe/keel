@@ -1,6 +1,6 @@
 # RFC 0226: k.check-cache: the type pass keeps results across processes, keyed by content
 
-Status: implemented (ADR-0248), accepted by the orchestrator on 2026-11-24, for the operator to confirm. Adds k.check-cache; amends k.check (Pipeline, one sentence), k.compat (Rules, E1562's message), the map. Decides the conformance changes and the bound rule of backlog 1079.
+Status: implemented (ADR-0248), accepted by the orchestrator on 2026-11-24. Adds k.check-cache; amends k.check (Pipeline, one sentence), k.compat (Rules, E1562's message), the map. Decides the conformance changes and the bound rule of backlog 1079.
 
 ## Decisions
 - D1: Keel has a type cache, as a specified part of `keel check`, keyed by content. The mtime cache the lane built is replaced, not kept.

@@ -1,6 +1,6 @@
 # ADR-0236: k.persist and std.channels: a store save reaches the live streams of every replica (RFC 0214)
 
-**Status:** accepted (orchestrator, 2026-11-24, for the operator to confirm).
+**Status:** accepted (orchestrator, 2026-11-24).
 
 **Context.** A server store's save is a `save` event on the saving process's ctx, and std.channels delivers `saved` only to the streams open there. Two replicas of a `node` deployable on `storage: 'postgres'` share the data and the 409 rule, but a save on one never reaches a live page held by the other. App data already crosses through std-postgres's `changed` and `follow`. Two `createApp`s on one sim ctx share its observers, so sim tests could not show the gap.
 

@@ -1,6 +1,6 @@
 # ADR-0230: k.formats: a format literal, checked by `keel check` (RFC 0208)
 
-**Status:** accepted (orchestrator, 2026-11-23, for the operator to confirm).
+**Status:** accepted (orchestrator, 2026-11-23).
 
 **Context.** A format value written in source (a chart's `start`, a store's initial value, a test fixture) has no form: a string literal is not the branded type, and `parse` and the readers (`instantOf`) answer a `Result`, so the value needs a cast or a fallback. The household kept a run's time as epoch milliseconds for this reason.
 

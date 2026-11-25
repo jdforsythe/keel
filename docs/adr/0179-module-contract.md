@@ -1,6 +1,6 @@
 # ADR-0179: k.contract: one contract per module (RFC 0157)
 
-**Status:** accepted (orchestrator's lane, under decisions D41 and D42; for the operator to confirm).
+**Status:** accepted (orchestrator's lane, under decisions D41 and D42).
 
 **Context.** An endpoint between two modules is declared by the serving module's `routes.ts` and again by each caller's `endpoints` file; k.compat E1561 compares the copies at `keel check`. golden-1 declares `/api/lists` in three caller files. Handlers repeat the route's schemas (E1507, E1512). Pages import `routes.ts`, and with it every view and handler, to build links. ADR-0052 split actions into `routes.actions` because an action returning `ok(routes.href(...))` made the manifest's initializer circular (TS7022).
 

@@ -1,6 +1,6 @@
 # ADR-0240: k.drive: `simulate` drives the run's clock when no work of the run is pending (RFC 0218)
 
-**Status:** accepted (orchestrator, 2026-11-24, amended six times the same day, for the operator to confirm).
+**Status:** accepted (orchestrator, 2026-11-24, amended six times the same day).
 
 **Context.** Under `simulate` a scenario that awaited server work waiting on the clock hung. A drive that moved the clock after quiet macrotask turns fixed the hang, but let machine speed reorder events: a real `setTimeout(12)` ran after a 10 ms sim waiter, and the run passed. Unheld work (`app.fetch` behind a harness, a password hash, PGlite's boot and session wait) needed app-side helpers. Tests are deterministic without the author thinking about it, so the law must hold by construction.
 

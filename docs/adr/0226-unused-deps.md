@@ -1,6 +1,6 @@
 # ADR-0226: k.module: a `deps` entry the module does not use is E1165 (RFC 0204)
 
-**Status:** accepted (orchestrator, 2026-11-23, for the operator to confirm).
+**Status:** accepted (orchestrator, 2026-11-23).
 
 **Context.** `keel check` reports a missing `deps` entry (E1152) and not a surplus one, and E1153 builds its graph from every entry. In the household three entries no file imported closed a cycle the moment a fourth, needed one was added. `keel codemod move` adds the entries a move needs and removes none.
 

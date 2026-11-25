@@ -1,6 +1,6 @@
 # ADR-0241: k.guards: a test names the identity mount; `keel test` loads nothing before a test file (RFC 0219)
 
-**Status:** accepted (orchestrator, 2026-11-24, for the operator to confirm).
+**Status:** accepted (orchestrator, 2026-11-24).
 
 **Context.** RFC 0209 made the project's `identity.ts` a vitest setup file, both through the `keel()` plugin and in `keel test`. `renderRoute` then took the first identity mount made in the process. A route test's request log, its guard's `user` and its mount scope therefore depended on a file the test never named, which breaks principle 2 (nothing outside a file changes what it does). The operator held the principle (D136).
 

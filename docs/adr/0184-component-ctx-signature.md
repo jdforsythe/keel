@@ -1,6 +1,6 @@
 # ADR-0184: k.component: the signature `(props, ctx)`, `ctx` required (RFC 0162)
 
-**Status:** accepted (orchestrator's lane, under decision D41; for the operator to confirm).
+**Status:** accepted (orchestrator's lane, under decision D41).
 
 **Context.** A component is `(props, slots?: undefined, ctx?: Ctx) => Node`. The second argument carries nothing, and `ctx` is optional in `Component`, `MountOptions` and `ResumeOptions`, so components that reach an effect branch on its absence: Toaster skips auto-dismiss, typeahead loses its clock, `TableSearch` falls back to the router's ctx, and two golden components render placeholders. No generated entry or harness call reaches those branches.
 

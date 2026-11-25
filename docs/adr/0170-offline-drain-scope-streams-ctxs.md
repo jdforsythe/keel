@@ -1,6 +1,6 @@
 # ADR-0170: std.offline: a drain's scope drops its retry, stream endpoints are refused, ctxs keep their entries apart (RFC 0148)
 
-**Status:** accepted (orchestrator, under the RFC defaults; for the user to confirm).
+**Status:** accepted (orchestrator, under the RFC defaults).
 
 **Context.** A module-level outbox outlives the page scope that drains it, so its retry timer posted after that scope ended. An `events: true` endpoint made the flush throw and left its entry `sending` across reloads. One outbox used from two ctxs shared one flush and let one ctx's owner fail the other's entries.
 

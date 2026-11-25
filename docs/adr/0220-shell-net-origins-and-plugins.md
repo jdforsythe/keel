@@ -1,6 +1,6 @@
 # ADR-0220: a shell's net sends to declared origins only, and a shell names the plugins an app must list (RFC 0198)
 
-**Status:** proposed (for the operator to confirm).
+**Status:** accepted.
 
 **Context.** A shell's native HTTP client is outside the content security policy. Capacitor's driver sent any URL; Tauri's capability allowed `KEEL_ORIGIN` alone, and `tauri-plugin-http` 2.9 follows a redirect out of its scope unless `plugins.http.scopeRedirects` is set. A browser client sends to its own origin, its `keel-peer` origins and its declared `origins.connect` origins. Separately, `cap sync` installs a native plugin only when the app's own `package.json` lists it, and a missing one failed silently at run time.
 

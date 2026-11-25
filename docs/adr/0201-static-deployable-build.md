@@ -1,6 +1,6 @@
 # ADR-0201: k.hosting, k.topology: what `keel build` writes for a `static` deployable (RFC 0179)
 
-**Status:** accepted (orchestrator, under the RFC defaults; for the operator to confirm).
+**Status:** accepted (orchestrator, under the RFC defaults).
 
 **Context.** k.topology calls a `static` deployable "prerendered HTML", but no section states its artifact. `keel build` writes a blank page through the project's own build into `dist/`, while its `csp.txt` lands in `dist/<name>/`.
 

@@ -1,6 +1,6 @@
 # ADR-0223: k.scaffold-shell: `keel scaffold shell <tauri|capacitor>` adds a native shell (RFC 0201)
 
-**Status:** accepted (orchestrator, 2026-11-24, for the operator to confirm; under D103).
+**Status:** accepted (orchestrator, 2026-11-24; under D103).
 
 **Context.** A native shell is declared as `shells` on a `client` deployable, and the app lists the shell's std package, its plugins and the shell's CLI and platform packages. Each was a hand edit, and the CLI and platform versions were known only to the apps that listed them. `@keel/scaffold` cannot import the std packages (they depend on `@keel/cli`), and before the install the std package cannot be read from the project.
 

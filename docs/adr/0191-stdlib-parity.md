@@ -1,6 +1,6 @@
 # ADR-0191: k.parity: the stdlib holds no power a library lacks (RFC 0169)
 
-**Status:** proposed (for the operator to confirm).
+**Status:** accepted (operator, 2026-11-25). The first part is built; the second part, the kind gates (S0013), is not and follows ADR-0185.
 
 **Context.** The stdlib imports kernel `internal` entries eight times for five functions (`secretPathOf`, `sampleFormat`, `report`, `findRouter`, `mountRequests`), which E1576 refuses to app and library code, and the kernel gates `./tools`, `std` config, module discovery, `./routes`, a component heuristic and an E1111 allowance on the name `@keel/std-*`. D49 asks that the stdlib hold no power a library lacks; RFC 0163 checks a library's files as app code.
 

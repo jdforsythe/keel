@@ -1,6 +1,6 @@
 # RFC 0093: `renderRoute` runs server stores
 
-Status: implemented. Accepted (2026-11-13, orchestrator, WORKFLOW RFC defaults 3, 5, 7; the user confirms or reverses, tasks/0312-s6-compliance/PLAN.md D14). For backlog 0546. Each decision cites the WORKFLOW RFC default it applies; none of the points the defaults escalate arise (Questions).
+Status: implemented. Accepted (2026-11-13, orchestrator, WORKFLOW RFC defaults 3, 5, 7; tasks/0312-s6-compliance/PLAN.md D14). For backlog 0546. Each decision cites the WORKFLOW RFC default it applies; none of the points the defaults escalate arise (Questions).
 
 ## Decision
 `renderRoute` runs a loader's or action's `stores` factory over the harness ctx's `ctx.storage` through the same runner `createApp` uses, each navigation or submit being one request. The runner (`openStores`, `saveStores` and their helpers) moves from `packages/server/src/internal/` down to a new internal subpath, `@keel/store/internal`, which `@keel/server` and `@keel/testing` both import; the in-process copy of saved snapshots is kept per `ctx.storage`, so a harness and a `createApp` on one ctx see one state. The router gains an internal entry, `createRouterWith(routes, options, state)`, that takes the runner; the public `createRouter` passes none and keeps refusing `stores`.

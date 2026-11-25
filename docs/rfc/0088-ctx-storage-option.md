@@ -1,6 +1,6 @@
 # RFC 0088: `createCtx({ storage })` and a file storage for Node
 
-Status: implemented. Accepted by the orchestrator (2026-11-12) under WORKFLOW RFC defaults 1 and 3; it adds a hand-written API shape, so the user confirms or reverses it (`docs/HANDOFF.md`, pending decisions). For backlog 0374.
+Status: implemented. Accepted by the orchestrator (2026-11-12) under WORKFLOW RFC defaults 1 and 3. For backlog 0374.
 
 ## Problem
 k.topology says `keel dev` runs each `node` deployable with "real `ctx`, storage in `.keel-dev/`". The real `ctx.storage` is the platform `localStorage`, which Node has only when started with `--experimental-webstorage --localstorage-file`. `keel dev` is one plain `node` process, so every request of a module using `ctx.storage` answered 500 `keel.unexpected` and each runner logged a rejection every second. One global `localStorage` file would also be shared by every deployable in the process.

@@ -1,6 +1,6 @@
 # ADR-0185: a Keel library: a package kind checked again by the app (RFC 0163)
 
-**Status:** proposed (orchestrator, for the operator to confirm before the freeze flip). The build comes after the first real apps.
+**Status:** accepted (operator, 2026-11-25). Not built: the build comes before the public release, before k.parity's second part.
 
 **Context.** Today the compiler does not transform `node_modules` or linked packages, and `keel check` does not read them. A published Keel component therefore reaches an app unchecked, uncompiled and uncounted. D49 asks for a blessed way to publish components with the guarantees built in.
 

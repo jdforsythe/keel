@@ -1,6 +1,6 @@
 # ADR-0164: a shell signs in through the app's auth library (RFC 0142)
 
-**Status:** accepted (orchestrator under the operator's direction of 2026-11-18, and its leave of 2026-11-19 to go ahead on the orchestrator's recommendation; for the operator to confirm).
+**Status:** accepted (orchestrator under the operator's direction of 2026-11-18, and its leave of 2026-11-19 to go ahead on the orchestrator's recommendation).
 
 **Context.** A shell build's pages load from a bundled origin while the identity mount lives on `KEEL_ORIGIN`, so a `MountHref` navigation leaves the app and E1581 refuses the import. Keel is not an authentication library: it mints, stores, rotates and verifies no sign-in credential and sets no sign-in cookie. Shell requests through `ctx.net` already go through one native cookie store per platform, which keeps the caller cookie and which the page cannot read. OAuth providers expect an external browser for native apps. Outbox entries of a user whose sign-in expired are failed for good today.
 
