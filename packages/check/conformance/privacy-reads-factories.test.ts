@@ -1,7 +1,7 @@
-// Spec: k.privacy-reads, Factories "A call of a package's export, by name or as a namespace member, other than `@keel/schema`'s own constructors, is read through the package's source when `keel check` resolves the specifier, as k.bundle Aliases does, to a `.ts` or `.tsx` file that is not a declaration file (a workspace package's `exports` give one; a package that ships only built code and types gives none): its arguments are read at the call, and each expression the function returns is read in the package's files, a parameter standing for its argument, the body's top-level `const`s and the package's own functions followed, eight calls deep at most. What it cannot read there makes the call `'unknown'`."
+// Spec: k.privacy-reads, Factories "A call of a package's export, by name or as a namespace member, other than `@keel/schema`'s own constructors, is read through the package's source when `keel check` resolves the specifier, as k.bundle Aliases does, to a `.ts` or `.tsx` file that is not a declaration file (a workspace package's `exports` give one; a package that ships only built code and types gives none): its arguments are read at the call, and each expression the function returns is read in the package's files, a parameter standing for its argument, the body's top-level `const`s and the package's own functions followed. At most eight package functions are read on one path, the project's own call not counted (a chain of eight is read, a ninth is not), and a function met again while its read is open (recursion, direct or mutual) is not read again. What it does not finish there, a function past the bound or met again among it, makes the call `'unknown'`."
 // Spec: k.leave, E1107 "The check judges each `store` call of `@keel/store`, under any local name, as a namespace member, through a `const` alias or a project re-export, in a client-reachable file (k.boundary Reach) of a `node` or `static` module, or in a file outside every module that such a module's file imports, directly or not (k.boundary Following). It reports E1107 at the call when the state schema holds a `.pii(class)` node of a class the module manifest's `clientPii` (a list of `PiiClass`, default empty) does not list, for a file outside every module the `clientPii` of each module whose files import it: `store state reaching #k-state holds .pii('<classes>'), not in clientPii`, the classes cut to fit 89 units; the fix adds the classes, none when more than one manifest lacks them. Also E1107, no fix, in such a file: a state schema the static read (k.privacy-reads) answers `'unknown'` for, a `.pii()` whose class is not a string literal among them, `store state not readable at <part>; cannot show its .pii() classes`, `<part>` the first part of the file the read could not take (a call as its callee and `()`), cut from its front to fit 89 units; a call of `stores()`, by which an island root puts every live request store, a loader's among them, in `#k-state`, `stores() in client code can send every request store to #k-state`; and `store` or `stores` of `@keel/store` used other than as a callee or through an alias above (passed as a value, destructured from a namespace, a computed member), `<name> of @keel/store used other than as a call; check cannot follow it`. A file of a module only `client` deployables list writes no `#k-state` and is not judged; a store a package creates is the package's."
 // Seed 1337. Each case is `keel check`'s E1107 (k.leave) over a `node` module `a` whose `modules/a/Page.tsx` makes a `store` over a call of a package `fpkg` written under `node_modules/` (a `.ts` entry named by its `exports`), so the answer of the read is seen as the message: a class named, `not readable at <part>`, or none.
-// Reading: "eight calls deep at most" counts the package functions called from the project's call, so a chain `f1 -> f2 -> ... -> fN` is read for N up to 8 and unknown from 9.
+// Reading: "At most eight package functions are read on one path, the project's own call not counted" counts the package functions called from the project's call, so a chain `f1 -> f2 -> ... -> fN` is read for N up to 8 and unknown from 9.
 // Reading: a marked schema held in a function's local, a parameter, a default parameter, a destructured parameter, a closure variable or a returned object's field is "caught" when the `store` call is one E1107 and never clean: the message names the class or says the call is not readable; the spec leaves which to the read ("a binding it cannot follow" is `'unknown'`; the body's `const`s and parameters standing for arguments are followed).
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
@@ -287,7 +287,7 @@ describe("k.privacy-reads Factories: a call of a package's export is read throug
     expect(e1107In(pageFiles(head, "pick(true)"), { fpkg: half })).toHaveLength(1);
   });
 
-  test("a recursive factory with a base case marking a class is read to the depth bound and stops: one E1107", () => {
+  test("a recursive factory with a base case marking a class is read once, the call met again is not read again: one E1107", () => {
     const head = "import { tree } from 'fpkg'";
     const based = `${SCHEMA}export const tree = (n) => n === 0 ? s.object({ e: ${PII("contact")} }) : tree(n - 1)\n`;
     const ds = e1107In(pageFiles(head, "tree(3)"), { fpkg: based });
@@ -295,14 +295,14 @@ describe("k.privacy-reads Factories: a call of a package's export is read throug
     expect(caught("contact")(ds[0]?.message ?? "")).toBe(true);
   });
 
-  test("a recursive factory with no base case is past the depth bound, so unreadable: one E1107 naming the call", () => {
+  test("a recursive factory with no base case is met again while its read is open, so not read again and unreadable: one E1107 naming the call", () => {
     const head = "import { tree } from 'fpkg'";
     const ds = e1107In(pageFiles(head, "tree(3)"), { fpkg: `${SCHEMA}export const tree = (n) => tree(n)\n` });
     expect(ds).toHaveLength(1);
     expect(ds[0]?.message).toBe(notReadable("tree()"));
   });
 
-  test("two package functions that call each other with no base case are past the depth bound, so unreadable: one E1107 naming the call", () => {
+  test("two package functions that call each other with no base case (mutual recursion) are met again while read, so unreadable: one E1107 naming the call", () => {
     const head = "import { tree } from 'fpkg'";
     const mutual = `${SCHEMA}const ping = (n) => pong(n)\nconst pong = (n) => ping(n)\nexport const tree = (n) => ping(n)\n`;
     const ds = e1107In(pageFiles(head, "tree(3)"), { fpkg: mutual });
