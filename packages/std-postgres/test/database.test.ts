@@ -11,6 +11,7 @@ import { NoRows, fragment, sql } from "@keel/std-postgres";
 import type { Tx } from "@keel/std-postgres/server";
 import { database } from "@keel/std-postgres/server";
 import { ready } from "@keel/std-postgres/testing";
+import { testTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
 import { afterEach, beforeAll, expect, test, vi } from "vitest";
 
@@ -148,7 +149,7 @@ const child = (url: string, cap: string, files: Record<string, string>): Promise
     execFile(
       process.execPath,
       ["--experimental-strip-types", CHILD, cap, JSON.stringify(files)],
-      { env: { ...process.env, KEEL_POSTGRES_URL: url }, timeout: 50_000 },
+      { env: { ...process.env, KEEL_POSTGRES_URL: url }, timeout: testTime(50_000) },
       (_e, stdout) => resolve(stdout.trim()),
     );
   });

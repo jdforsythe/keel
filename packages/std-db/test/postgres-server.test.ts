@@ -4,6 +4,7 @@
 // without it; the TLS cases also need that server to have `ssl` on.
 import { createServer } from "node:net";
 import { setTimeout as sleep } from "node:timers/promises";
+import { testTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
 import pg from "pg";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
@@ -67,7 +68,7 @@ async function waiting(c: pg.Client, app: string): Promise<number[]> {
 }
 
 /** Polls `probe` every 25 ms until it returns true, for at most `ms`. */
-async function until(probe: () => Promise<boolean>, ms = 5_000): Promise<boolean> {
+async function until(probe: () => Promise<boolean>, ms = testTime(5_000)): Promise<boolean> {
   for (let waited = 0; waited < ms; waited += 25) {
     if (await probe()) return true;
     await sleep(25);

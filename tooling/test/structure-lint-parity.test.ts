@@ -6,6 +6,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
+import { testTime } from "../test-time.ts";
 
 const lint = path.join(import.meta.dirname, "..", "structure-lint.mjs");
 const made: string[] = [];
@@ -19,7 +20,10 @@ function s0012(file: string, source: string): { code: string; path: string }[] {
   made.push(root);
   fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
   fs.writeFileSync(path.join(root, file), source);
-  const r = spawnSync(process.execPath, [lint, "--root", root, "--format=json"], { encoding: "utf8", timeout: 60_000 });
+  const r = spawnSync(process.execPath, [lint, "--root", root, "--format=json"], {
+    encoding: "utf8",
+    timeout: testTime(60_000),
+  });
   return r.stdout
     .split("\n")
     .filter((l) => l.startsWith("{"))

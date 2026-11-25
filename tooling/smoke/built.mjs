@@ -9,6 +9,7 @@ import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { testTime } from "../test-time.ts";
 
 export const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 export const app = join(root, "apps", "golden-1");
@@ -202,7 +203,7 @@ export const post = (base, path, body = {}) =>
   );
 
 /** Poll `GET /api/lists` for 200, at most `ms`. */
-export async function ready(base, ms = 20_000) {
+export async function ready(base, ms = testTime(20_000)) {
   for (const end = Date.now() + ms; Date.now() < end; ) {
     if ((await get(base, "/api/lists")).status === 200) return true;
     await wait(100);

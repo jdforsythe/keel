@@ -23,11 +23,12 @@ import { existsSync, watch, writeFileSync } from "node:fs";
 import { appendFile, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { testTime } from "../test-time.ts";
 import { copyApp, freePort, keepOutput, recorder, root, wait } from "./built.mjs";
 
-const LIMIT_MS = 240_000;
+const LIMIT_MS = testTime(240_000);
 /** How long an edit may take to reach the dev server's watcher. */
-const EDIT_MS = 60_000;
+const EDIT_MS = testTime(60_000);
 const cli = join(root, "packages", "cli", "src", "bin.ts");
 const { step, finish, caught } = recorder();
 let dev;
@@ -109,7 +110,7 @@ const reloadsOf = (file) => dev.log.filter((l) => l.includes("page reload") && l
 async function quiet(file) {
   let last = reloadsOf(file);
   let since = Date.now();
-  for (const end = Date.now() + 5_000; Date.now() < end && Date.now() - since < 300; await wait(50)) {
+  for (const end = Date.now() + testTime(5_000); Date.now() < end && Date.now() - since < 300; await wait(50)) {
     const now = reloadsOf(file);
     if (now !== last) [last, since] = [now, Date.now()];
   }
@@ -124,7 +125,7 @@ async function heard(file, write) {
   const before = reloadsOf(file);
   for (const end = Date.now() + EDIT_MS; Date.now() < end; ) {
     await write();
-    for (const until = Date.now() + 5_000; Date.now() < until; await wait(100))
+    for (const until = Date.now() + testTime(5_000); Date.now() < until; await wait(100))
       if (reloadsOf(file) > before) return true;
   }
   return false;
@@ -134,7 +135,7 @@ async function heard(file, write) {
  * stderr arrives on another pipe than the response's socket.
  */
 async function marked(mark) {
-  for (const end = Date.now() + 5_000; Date.now() < end; await wait(50))
+  for (const end = Date.now() + testTime(5_000); Date.now() < end; await wait(50))
     if (dev.log.some((l) => l.includes(mark))) return true;
   return false;
 }
@@ -150,7 +151,7 @@ const text = (base, path, headers = html) =>
   );
 
 /** Poll the sign-in page, served by the `api` deployable, for a 200, at most `ms`; false when the server exits first. */
-async function ready(base, ms = 40_000) {
+async function ready(base, ms = testTime(40_000)) {
   for (const end = Date.now() + ms; Date.now() < end; await wait(150)) {
     if (dev.child.exitCode !== null) return false;
     if ((await text(base, "/account/signin")).status === 200) return true;
@@ -193,7 +194,7 @@ const report = (dir, base) =>
     execFile(
       process.execPath,
       ["--disable-warning=ExperimentalWarning", cli, "report", base],
-      { cwd: dir, env: { ...process.env, KEEL_AGENT: "1" }, timeout: 30_000 },
+      { cwd: dir, env: { ...process.env, KEEL_AGENT: "1" }, timeout: testTime(30_000) },
       (err, stdout, stderr) => resolve({ code: err === null ? 0 : (err.code ?? 1), out: `${stdout}${stderr}` }),
     );
   });

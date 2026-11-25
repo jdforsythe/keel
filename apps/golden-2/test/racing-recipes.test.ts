@@ -65,10 +65,10 @@ const realServer = (url: string) => (): Ctx => {
  */
 const OPEN_MS = 60_000;
 
-const MODES: { name: string; server: () => Ctx; open?: number }[] = [
-  { name: "sim", server: () => simServer() },
-  { name: "pglite", server: realServer(`pglite:${join(dir, "pg")}`), open: OPEN_MS },
-  ...(PG17 === "" ? [] : [{ name: "postgres 17", server: realServer(PG17), open: OPEN_MS }]),
+const MODES: { name: string; server: () => Ctx; opens: boolean }[] = [
+  { name: "sim", server: () => simServer(), opens: false },
+  { name: "pglite", server: realServer(`pglite:${join(dir, "pg")}`), opens: true },
+  ...(PG17 === "" ? [] : [{ name: "postgres 17", server: realServer(PG17), opens: true }]),
 ];
 
 /** Two api replicas over one database, each request made by its own user. */
@@ -95,12 +95,15 @@ let tag = 0;
 for (const m of MODES) {
   describe(`two users add one title at once on ${m.name}`, () => {
     // The database opens here, under its own bound, so the test's bound holds the property runs alone.
-    beforeAll(async () => {
-      const { ana, ben } = await twoUsers(m.server());
-      await titlesOf(ana);
-      await ana.close();
-      await ben.close();
-    }, m.open);
+    beforeAll(
+      async () => {
+        const { ana, ben } = await twoUsers(m.server());
+        await titlesOf(ana);
+        await ana.close();
+        await ben.close();
+      },
+      m.opens ? OPEN_MS : undefined,
+    );
     it("saves exactly one; the other gets 422 keel.fields on title", async () => {
       await fc.assert(
         fc.asyncProperty(

@@ -16,9 +16,10 @@ import { mkdir, mkdtemp, readFile, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
+import { testTime } from "../test-time.ts";
 import { buildIn, copyApp, freePort, keepOutput, recorder, root, wait } from "./built.mjs";
 
-const LIMIT_MS = 420_000;
+const LIMIT_MS = testTime(420_000);
 const SECRET = "golden-2-smoke-secret-of-32-bytes-or-more";
 const AUTH_SECRET = "golden-2-smoke-auth-secret-of-32-characters";
 const golden2 = join(root, "apps", "golden-2");
@@ -96,7 +97,7 @@ function serve(dir, port, data, format) {
 }
 
 /** Poll the sign-in page for a 200, at most `ms`; false when the server exits first. */
-async function up(base, server, ms = 30_000) {
+async function up(base, server, ms = testTime(30_000)) {
   for (const end = Date.now() + ms; Date.now() < end; await wait(100)) {
     if (server.child.exitCode !== null) return false;
     const ok = await fetch(`${base}/account/signin`, { headers: { accept: "text/html" } }).then(

@@ -1,11 +1,12 @@
 import { createCtx } from "@keel/ctx";
 import { s } from "@keel/schema";
+import { fixedTime } from "@keel/tooling/test-time";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { endpoints, service } from "../src/index.ts";
 
 const api = service({
   base: "https://api.test",
-  timeout: 1_000,
+  timeout: fixedTime(1_000),
   schema: endpoints({ get: { method: "GET", path: "/", output: s.object({}) } }),
 });
 

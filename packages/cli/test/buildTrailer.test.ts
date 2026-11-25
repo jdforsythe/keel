@@ -12,6 +12,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { delimiter, dirname, join } from "node:path";
+import { testTime } from "@keel/tooling/test-time";
 import { afterAll, describe, expect, test } from "vitest";
 import { cleanup, materialize } from "../conformance/compat-support.ts";
 
@@ -35,7 +36,12 @@ const env = (): Record<string, string> => {
   return e;
 };
 const keel = (cwd: string, args: string[]): { code: number | null; lines: string[]; stdout: string } => {
-  const r = spawnSync(process.execPath, [BIN, ...args], { cwd, env: env(), encoding: "utf8", timeout: 100_000 });
+  const r = spawnSync(process.execPath, [BIN, ...args], {
+    cwd,
+    env: env(),
+    encoding: "utf8",
+    timeout: testTime(100_000),
+  });
   return { code: r.status, lines: r.stdout.split("\n").filter((l) => l !== ""), stdout: r.stdout };
 };
 
@@ -141,7 +147,7 @@ describe("build trailer", () => {
       cwd: app,
       env: e,
       encoding: "utf8",
-      timeout: 200_000,
+      timeout: testTime(200_000),
     });
     cleanup(app);
     const lines = r.stdout.split("\n").filter((l) => l !== "");

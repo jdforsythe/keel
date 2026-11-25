@@ -11,6 +11,7 @@ import { spawn } from "node:child_process";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { testTime } from "../test-time.ts";
 import { buildIn, copyApp, freePort, recorder, root, serve, stop, wait } from "./built.mjs";
 
 const { step, finish, caught } = recorder();
@@ -25,7 +26,7 @@ let api;
 let node;
 
 /** Poll `base+path` for an answer at most `ms`; resolves the response, or null. */
-async function answer(base, path, accept, ms = 20_000) {
+async function answer(base, path, accept, ms = testTime(20_000)) {
   for (const end = Date.now() + ms; Date.now() < end; await wait(100)) {
     const res = await fetch(`${base}${path}`, { headers: { accept } }).catch(() => null);
     if (res !== null) return res;
