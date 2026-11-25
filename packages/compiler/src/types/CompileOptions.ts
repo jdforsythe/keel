@@ -7,10 +7,13 @@ import type { Topology } from "./Topology.ts";
  * `looks`: the `look` group of `tokens.ts` as data; a literal `look` on a base element or in a part style lowers to the
  * set's classes for every prop and state it does not set itself (without it, `look` adds no class).
  * `routes`: a precomputed `routes.json` (the Vite plugin derives it with `routesArtifact`); default `{}`.
+ * `libraries`: each library specifier (`@acme/charts`) to the path among the files of the source its `exports` give,
+ * so E1004's reach follows an import of a library into its files (k.library In an app).
  */
 export type CompileOptions = {
   readonly mode?: "client" | "server";
   readonly topology?: Topology;
   readonly routes?: Readonly<Record<string, RouteEntry>>;
   readonly looks?: Readonly<Record<string, unknown>>;
+  readonly libraries?: Readonly<Record<string, string>>;
 };

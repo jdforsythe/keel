@@ -26,6 +26,7 @@ function parse(source: string): unknown {
 export function libraryFolders(files: readonly SourceFile[]): LibraryView {
   const ids = new Map<string, string>();
   const packages: SourceFile[] = [];
+  const entries = new Map<string, string>();
   const byPath = new Map(files.map((f) => [f.path, f]));
   for (const f of files) {
     const m = PACKAGE.exec(f.path);
@@ -36,8 +37,15 @@ export function libraryFolders(files: readonly SourceFile[]): LibraryView {
     if (manifest === undefined) continue;
     const parsed = parseFile(manifest);
     const id = parsed.ok ? readManifest(parsed.program)?.id : undefined;
-    ids.set(`${prefix}node_modules/${name}/`, `${prefix}modules/${id ?? name}/`);
+    const under = `${prefix}modules/${id ?? name}/`;
+    ids.set(`${prefix}node_modules/${name}/`, under);
     packages.push(f);
+    const exports = Reflect.get(Object(parse(f.source)), "exports");
+    for (const [key, target] of Object.entries(typeof exports === "object" && exports !== null ? exports : {})) {
+      const keel = typeof target === "object" && target !== null ? Reflect.get(target, "keel") : undefined;
+      const rel = typeof keel === "string" ? keel.replace(/^\.\//, "") : "";
+      if (key.startsWith(".") && /^(?:src|unsafe)\//.test(rel)) entries.set(`${name}${key.slice(1)}`, `${under}${rel}`);
+    }
   }
   const toView = new Map<string, string>();
   const toReal = new Map<string, string>();
@@ -59,5 +67,6 @@ export function libraryFolders(files: readonly SourceFile[]): LibraryView {
     real: (p) => toReal.get(p) ?? p,
     folder: (p) => folders.get(p),
     packages,
+    entries,
   };
 }

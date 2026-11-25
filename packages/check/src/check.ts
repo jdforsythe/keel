@@ -23,6 +23,7 @@ import { guardRedirectLoops } from "./internal/guardRedirectLoops.ts";
 import { indexHtmlDiag } from "./internal/indexHtmlDiag.ts";
 import { isCodePath } from "./internal/isCodePath.ts";
 import { isSqlPath } from "./internal/isSqlPath.ts";
+import { libraryEntriesUnder } from "./internal/libraryEntriesUnder.ts";
 import { libraryFolders } from "./internal/libraryFolders.ts";
 import { libraryIds } from "./internal/libraryIds.ts";
 import { libraryImports } from "./internal/libraryImports.ts";
@@ -30,6 +31,7 @@ import { moduleChecks } from "./internal/modules/moduleChecks.ts";
 import { normalize } from "./internal/normalize.ts";
 import { parseFile } from "./internal/parseFile.ts";
 import { placedWithoutRoutes } from "./internal/placedWithoutRoutes.ts";
+import { projectLibraries } from "./internal/projectLibraries.ts";
 import { registerNames } from "./internal/registerNames.ts";
 import { ruleCodeDeclarations } from "./internal/ruleCodeDeclarations.ts";
 import { ruleInScope } from "./internal/ruleInScope.ts";
@@ -139,12 +141,16 @@ export function check(given: readonly SourceFile[], options: CheckOptions = {}):
         members.set(f.path, f);
     const project = Object.freeze([...members.values()]);
     for (const f of group) projectOf.set(f.path, project);
+    // The rules that follow the client's reach follow an import of a library into its files (k.library In an app).
+    const own = new Set([...members.keys()].filter((p) => isLibrary(libs.real(p))));
+    projectLibraries.set(project, { entries: libs.entries, files: own });
     const topology = topologyOf(dir, all, opts);
     const sources = group.map((f) => ({ path: f.path.slice(dir.length), source: f.source }));
     const top = all.find((f) => f.path === `${dir}topology.ts`)?.source;
     // E1004 reads placement from the project's own `topology.ts` when the caller passes none (k.boundary Reach).
     const placed = topology ?? (top === undefined ? undefined : parseTopology(top).topology);
-    const compiled = compile(sources, placed === undefined ? {} : { topology: placed });
+    const libraries = libraryEntriesUnder(dir, project);
+    const compiled = compile(sources, placed === undefined ? { libraries } : { topology: placed, libraries });
     if (topology !== undefined) {
       const evaluated = all.find((f) => f.path === `${dir}.keel/routes.json`)?.source;
       out.push(...apiWithoutServer(dir, sources, topology, path.join(opts.root ?? process.cwd(), dir), top, evaluated));

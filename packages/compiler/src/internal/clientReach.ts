@@ -17,11 +17,14 @@ const ROUTES = /(?:^|\/)routes\.ts$/;
  * file by value imports, literal `import()` and `new URL(<literal>, import.meta.url)`, a query (`?worker`, `?url`)
  * naming its file; so a worker a client entry starts is a client entry. Server-only is by name, any extension, any case.
  * With none, every file but server-only ones. `hits` are their imports of server-only files (a query names its file;
- * a `routes.ts` reports none), with the chain when an entry reaches the importer.
+ * a `routes.ts` reports none), with the chain when an entry reaches the importer. A bare specifier that `libraries`
+ * names (a library's `exports` entry, k.library) leads to the file it gives, so a library's files are reached as a
+ * module's are.
  */
 export function clientReach(
   files: readonly { readonly path: string; readonly program: Program }[],
   topology: Topology | undefined,
+  libraries: Readonly<Record<string, string>> = {},
 ): { readonly subject: ReadonlySet<string>; readonly hits: readonly ReachHit[] } {
   const byPath = new Map(files.map((f) => [f.path, f]));
   const owners = (p: string) => {
@@ -32,6 +35,8 @@ export function clientReach(
   const serverOnly = (p: string): boolean => NAME.test(p) && !client(p);
   const target = (from: string, source: string): { file: string | undefined; name: string; server: boolean } => {
     const spec = source.split("?")[0] ?? source;
+    const entry = Object.hasOwn(libraries, spec) ? libraries[spec] : undefined;
+    if (entry !== undefined && byPath.has(entry)) return { file: entry, name: entry, server: serverOnly(entry) };
     if (!spec.startsWith(".")) return { file: undefined, name: spec, server: NAME.test(spec) };
     const at = path.posix.join(path.posix.dirname(from), spec);
     const file = EXT.map((e) => at + e).find((c) => byPath.has(c));
