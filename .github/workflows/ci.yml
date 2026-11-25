@@ -34,7 +34,7 @@ jobs:
           TURBO_TEAM: "${{ vars.TURBO_TEAM }}"
         run: pnpm check
       - name: "a11y reports for the ledger from every app and example whose routes it carries (keel test writes reports/a11y.json)"
-        run: "pnpm --workspace-concurrency=1 --filter golden-1 --filter golden-2 --filter household --filter \"./examples/*\" exec keel test"
+        run: "pnpm --workspace-concurrency=1 --filter golden-1 --filter golden-2 --filter household --filter inspector --filter sessions --filter \"./examples/*\" exec keel test"
       - run: pnpm ledger --diff
       - name: "the committed ledger matches the tree, WCAG items and rung counts included (the a11y reports exist now)"
         run: node tooling/ledger-fresh.mjs --a11y
@@ -474,7 +474,7 @@ jobs:
           restore-keys: "stryker-${{ github.base_ref || 'master' }}-${{ github.sha }}-\nstryker-${{ github.base_ref || 'master' }}-\nstryker-master-"
       - run: node tooling/mutate-changed.mjs
       - name: "a11y reports for the ledger from every app and example whose routes it carries (keel test writes reports/a11y.json)"
-        run: "pnpm --workspace-concurrency=1 --filter golden-1 --filter golden-2 --filter household --filter \"./examples/*\" exec keel test"
+        run: "pnpm --workspace-concurrency=1 --filter golden-1 --filter golden-2 --filter household --filter inspector --filter sessions --filter \"./examples/*\" exec keel test"
       - run: pnpm ledger --diff
       - if: "always()"
         uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
