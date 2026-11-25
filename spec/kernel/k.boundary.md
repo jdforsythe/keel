@@ -1,5 +1,5 @@
 # k.boundary: The server boundary
-status: implemented
+status: conformance-covered
 
 Which code reaches a browser, decided by the deployable that lists the code's module (k.topology); with no `topology.ts` (tests, `renderRoute`), as on `node`.
 

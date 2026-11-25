@@ -29,7 +29,7 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.check-cache | 13 | **conformance-covered** | none |
 | k.cli | 20 | **conformance-covered** | none |
 | k.module | 22 | **conformance-covered** | none |
-| k.scaffold | 20 | implemented | clause 20: its conformance header quotes an earlier wording |
+| k.scaffold | 20 | **conformance-covered** | none |
 | k.scaffold-service | 8 | **conformance-covered** | none |
 | k.scaffold-shell | 9 | **conformance-covered** | none |
 | k.testing | 27 | **conformance-covered** | none |
@@ -65,14 +65,14 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.claim | 9 | **conformance-covered** | none |
 | k.defaults | 6 | **conformance-covered** | none |
 | k.host | 5 | **conformance-covered** | none |
-| k.leave | 14 | implemented | clause 14: no conformance header quotes it (`check/conformance/leave-E1107-std-schema-factories.test.ts` cites the E1107 paragraph) |
+| k.leave | 14 | **conformance-covered** | none |
 | k.mount | 13 | **conformance-covered** | none |
 | k.owner | 5 | **conformance-covered** | none |
 | k.place | 5 | **conformance-covered** | none |
 | k.resume | 13 | **conformance-covered** | none |
 | k.serverlog | 8 | **conformance-covered** | none |
 | k.user | 16 | **conformance-covered** | none |
-| k.boundary | 12 | implemented | clause 11: its conformance header quotes an earlier wording |
+| k.boundary | 12 | **conformance-covered** | none |
 | std.brands | 7 | **conformance-covered** | none |
 | std.channels | 26 | **conformance-covered** | none |
 | std.conflicts | 10 | **conformance-covered** | none |
@@ -121,7 +121,7 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | std.lists | 6 | **conformance-covered** | none |
 | std.tauri | 10 | **conformance-covered** | `UNTESTABLE` toolchain lookups and capability file shape |
 | k.unsafe | 9 | **conformance-covered** | none |
-| **total** | **1396** | 111 of 115 covered | |
+| **total** | **1396** | 114 of 115 covered | |
 
 ## 2. One-way audit (principle 1)
 
