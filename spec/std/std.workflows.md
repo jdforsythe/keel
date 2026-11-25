@@ -1,5 +1,5 @@
 # std.workflows: Workflows
-status: conformance-covered
+status: implemented
 
 **Extension points.** Module manifest (k.module): `@keel/std-workflows` is stdlib module `workflows`; a module with workflows lists it, `@keel/std-jobs` and `@keel/std-statecharts` in `deps`, `clock`, `random` and `storage` in `capabilities`, and is placed in a `node` deployable. Inspector hooks: section `workflows.instances`. Check rule registry: `@keel/std-workflows/tools`, E2351-E2355.
 
@@ -16,7 +16,7 @@ export const runners = [jobs, flows(jobs, [removal])]                  // module
 tx(s.removal.start, { id: ctx.random.id('Flow'), data: { list } })    // in an action whose `stores` include `removal.stores`
 tx(s.removal.events.undo, { id, payload: {} })
 ```
-`workflow(id, { chart, steps?, waits?, keepMs = 86_400_000, limit = 1000, attempts = 3, timeoutMs = 60_000 })`. A step names a state, its `run`, the chart events for its `done` and `failed` (payload `{ code }`) and optional `attempts` and `timeoutMs`; a wait names a state, `ms` and an event with payload `{}`. The package's entry is server-only, `src/index.server.ts` (k.boundary): a value import of `@keel/std-workflows` from client code is E1004; its types import anywhere.
+`workflow(id, { chart, steps?, waits?, keepMs = 86_400_000, limit = 1000, attempts = 3, timeoutMs = 60_000 })`. A step names a state, its `run`, the chart events for its `done` and `failed` (payload `{ code }`) and optional `attempts` and `timeoutMs`; a wait names a state, `ms` and an event with payload `{}`. The package's entry `.` is the server-only file `src/index.server.ts` (k.boundary Server-only): a value import of `@keel/std-workflows` in client-reachable code (k.boundary Reach) is E1004, and a type-only import is none.
 
 **Store.** `removal.stores(ctx)` creates the store `id`, state `{ instances: { [Id<'Flow'>]: { state, data, entered, attempt } } }`, and its transactions: `start` `{ id, data }` (an existing id: unchanged; past `limit` instances not final: `store.invariant`), one per chart event `{ id, payload }` (the instance moves by `chart.next`; a taken target with a `to`, its own state too, raises `entered` by one and `attempt` resets to 0; an unknown or final instance: unchanged), `attempt` `{ id, entered }` and `forget` `{ id }` (removes a final instance). Transactions are named `<id>.start`, `<id>.<event>`, `<id>.attempt` and `<id>.forget`. Each changes one instance, so an invariant of the chart's `{ state, data }` that a closed-form `explore` of the chart proves holds for every instance. Every instance lives in this one store, so one `stores` factory and one `commit` hold any number.
 
@@ -37,3 +37,4 @@ tx(s.removal.events.undo, { id, payload: {} })
 - Restoring the store's snapshot and replaying its log from `initial` gives its state.
 - `workflows.instances` holds counts and no `data` value.
 - E2351, E2352, W2353, E2354 and E2355 each fire on a fixture and not on its clean twin; `workflow` throws E2352 and E2355.
+- In a project with no `topology.ts` whose module `shop` lists `'@keel/std-workflows'` in `deps`, `keel check` reports one E1004 at `import { workflow } from '@keel/std-workflows'` in `modules/shop/flows.ts`, none for it in `modules/shop/flows.server.ts`, and none for `import type { Workflow } from '@keel/std-workflows'` in `modules/shop/flows.ts`.
