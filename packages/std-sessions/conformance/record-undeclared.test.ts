@@ -13,7 +13,7 @@ import { report } from "@keel/ctx/internal";
 import { scope } from "@keel/reactive";
 import { manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
-import { type Schema, s } from "@keel/schema";
+import { type ObjectSchema, type Schema, s } from "@keel/schema";
 import { gen } from "@keel/schema/gen";
 import { type Session, record } from "@keel/std-sessions";
 import { store, transaction, tx } from "@keel/store";
@@ -149,14 +149,17 @@ async function capture(o: {
   readonly sent: unknown;
   readonly params?: Record<string, unknown>;
   readonly search?: Record<string, unknown>;
+  /** The route's `params` and `search` schemas (default `{ id: string }` and `{ q?: string }`). */
+  readonly paramsSchema?: ObjectSchema<unknown>;
+  readonly searchSchema?: ObjectSchema<unknown>;
   readonly after?: (ctx: SimCtx) => void;
 }): Promise<Captured> {
   const storeId = `usr${runs++}`;
   const txName = `${storeId}.set`;
   const ctx: SimCtx = createCtx({ mode: "sim", seed: SEED });
   const rec = record(ctx);
-  const Params = s.object({ id: s.string() });
-  const Search = s.object({ q: s.string().optional() });
+  const Params = o.paramsSchema ?? s.object({ id: s.string() });
+  const Search = o.searchSchema ?? s.object({ q: s.string().optional() });
   const c = contract("usr", { "usr.show": { path: "/usr/:id", params: Params, search: Search } });
   const built: { st: ReturnType<typeof store>; routes: ReturnType<typeof manifest> }[] = [];
   const owner = scope(() => {
@@ -411,6 +414,100 @@ describe("std.sessions: errors after a tx drop a .pii() open object's undeclared
           expect(c.session.events.some((e) => e.kind === "error")).toBe(true);
         },
       ),
+      opts,
+    );
+  });
+});
+
+describe("std.sessions: where a .pii() open object's undeclared values are read: a state as its store holds it and route values", () => {
+  const Pii = s.object({ p: s.object({}).pii("contact") });
+  const none = s.object({});
+  const reportError = (ctx: SimCtx, message: string, data: unknown): void => {
+    report(ctx, { kind: "error", error: { code: "usr.bad", message, data } });
+  };
+  const nested = (key: string, str: string, num: number): Record<string, unknown> => ({
+    [`k${key}`]: `v${str}`,
+    n: num,
+    deep: { [`d${key}`]: [`e${str}`] },
+  });
+  const markers = (key: string, str: string, num: number): string[] => [
+    `k${key}`,
+    `v${str}`,
+    String(num),
+    `d${key}`,
+    `e${str}`,
+  ];
+  const errorWith = (ms: readonly string[]): ((ctx: SimCtx) => void) => {
+    return (ctx) => reportError(ctx, `bad ${ms.join(" ")}`, { all: ms });
+  };
+
+  test("a state as its store holds it: an error naming an undeclared key, string or number under a marked open object of the store's state is recorded without it", async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        fc.stringMatching(/^[a-z]{16}$/),
+        fc.stringMatching(/^[a-z]{16}$/),
+        fc.integer({ min: 100000000, max: 999999999 }),
+        async (key, str, num) => {
+          const ms = markers(key, str, num);
+          const c = await capture({
+            state: Pii,
+            initial: { p: nested(key, str, num) },
+            payload: none,
+            sent: {},
+            after: errorWith(ms),
+          });
+          const out = text(c.session);
+          expect(c.session.events.some((e) => e.kind === "error")).toBe(true);
+          for (const m of ms) expect(out).not.toContain(m);
+        },
+      ),
+      opts,
+    );
+  });
+
+  test("route values: an error naming a marked params string, a marked search string or a marked search number is recorded without it", async () => {
+    // Reading: a route's `params` and `search` hold scalars (a contract refuses an object there), so a route value under a mark is a marked leaf.
+    await fc.assert(
+      fc.asyncProperty(
+        fc.stringMatching(/^[a-z]{16}$/),
+        fc.stringMatching(/^[a-z]{16}$/),
+        fc.integer({ min: 100000000, max: 999999999 }),
+        fc.stringMatching(/^[a-z]{16}$/),
+        async (_key, str, num, id) => {
+          const ms = [`q${str}`, String(num), `i${id}`];
+          const c = await capture({
+            state: none,
+            initial: {},
+            payload: none,
+            sent: {},
+            paramsSchema: s.object({ id: s.string().pii("contact") }),
+            searchSchema: s.object({ q: s.string().pii("contact").optional(), n: s.int().pii("contact").optional() }),
+            params: { id: `i${id}` },
+            search: { q: `q${str}`, n: num },
+            after: errorWith(ms),
+          });
+          const out = text(c.session);
+          expect(c.session.events.some((e) => e.kind === "error")).toBe(true);
+          for (const m of ms) expect(out).not.toContain(m);
+        },
+      ),
+      opts,
+    );
+  });
+
+  test("a marker no marked path holds is kept in the error's message and data", async () => {
+    await fc.assert(
+      fc.asyncProperty(fc.stringMatching(/^[a-z]{16}$/), async (str) => {
+        const c = await capture({
+          state: none,
+          initial: {},
+          payload: Pii,
+          sent: { p: { u: `u${str}` } },
+          after: (ctx) => reportError(ctx, `bad t${str}`, { v: `t${str}` }),
+        });
+        expect(c.session.error?.message).toContain(`t${str}`);
+        expect(text(c.session)).not.toContain(`u${str}`);
+      }),
       opts,
     );
   });

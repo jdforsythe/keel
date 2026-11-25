@@ -1,0 +1,125 @@
+// Spec: k.store, clause "`givenPii(entry)` gives the non-empty strings and numbers under a `.pii()` mark of a committed entry's payload as `tx` was given it (`piiValues`, k.schema), a marked open object's undeclared keys and all under them among them, which the logged payload no longer holds; empty for an unmarked payload schema or an entry this process did not commit."
+// Spec: k.store, clause "It is held in memory only and never in a snapshot; a session recorder drops these values from later error text (std.sessions)."
+// Seed 1337 (fast-check `seed: 1337`).
+// Reading: the result is compared as a set (no order or multiplicity is stated); a number is `String(n)` as `piiValues` gives it. "An entry this process did not commit" is asserted for an entry of a store that only `restore`d a snapshot and for an entry built by hand. "Never in a snapshot": the undeclared keys and values, which the logged payload no longer holds, appear in no `snapshot()`; values the payload's schema declares are in the payload, so in the snapshot as the payload.
+import { scope } from "@keel/reactive";
+import { piiValues, s } from "@keel/schema";
+import { givenPii, isolate, store, transaction, tx } from "@keel/store";
+import fc from "fast-check";
+import { describe, expect, it } from "vitest";
+
+const opts = { seed: 1337, numRuns: 60 };
+const Doc = s.object({ n: s.int() });
+const Marked = s.object({ n: s.int(), contact: s.object({ email: s.string() }).pii("contact"), note: s.string() });
+const Unmarked = s.object({ n: s.int(), contact: s.object({ email: s.string() }), note: s.string() });
+
+function isolated<T>(fn: () => T): T {
+  const sc = scope(() => {});
+  isolate(sc);
+  return sc.run(fn);
+}
+function make() {
+  return isolated(() => {
+    const id = "pure.pii";
+    const doc = store(Doc, { n: 0 }, { id });
+    const marked = transaction(doc, `${id}.marked`, Marked, (st) => st);
+    const unmarked = transaction(doc, `${id}.unmarked`, Unmarked, (st) => st);
+    return { doc, marked, unmarked };
+  });
+}
+const word = fc.stringMatching(/^[a-z]{16}$/);
+const sorted = (xs: readonly string[]): string[] => [...xs].sort();
+const last = <T>(xs: readonly T[]): T => {
+  const x = xs[xs.length - 1];
+  if (x === undefined) throw new Error("no entry");
+  return x;
+};
+
+/** A payload whose marked open `contact` holds undeclared keys, strings, numbers and nested values, each marker distinct. */
+const payloadArb = fc
+  .tuple(word, word, word, word, word, fc.integer({ min: 100000, max: 999999 }), fc.integer({ min: -9, max: 9 }))
+  .map(([email, k1, v1, k2, v2, num, n]) => ({
+    markers: { email, k1, v1, k2, v2, num: String(num) },
+    payload: {
+      n,
+      note: "kept",
+      contact: { email, [`a${k1}`]: `b${v1}`, num, deep: { [`c${k2}`]: [`d${v2}`, "", 7] }, empty: "" },
+    },
+  }));
+
+describe("k.store: givenPii", () => {
+  it("gives the non-empty strings and numbers under a `.pii()` mark of a committed entry's payload as `tx` was given it, undeclared keys and all under them among them", () => {
+    fc.assert(
+      fc.property(payloadArb, ({ markers, payload }) => {
+        const k = make();
+        expect(tx(k.marked, payload).ok).toBe(true);
+        const entry = last(k.doc.log());
+        const got = givenPii(entry);
+        expect(sorted(got)).toEqual(sorted(piiValues(Marked, payload)));
+        for (const m of [
+          `a${markers.k1}`,
+          `b${markers.v1}`,
+          `c${markers.k2}`,
+          `d${markers.v2}`,
+          markers.email,
+          markers.num,
+        ])
+          expect(got).toContain(m);
+        expect(got).toContain("7");
+        expect(got).not.toContain("");
+        // the logged payload no longer holds the undeclared ones
+        const logged = JSON.stringify(entry.payload);
+        for (const m of [`a${markers.k1}`, `b${markers.v1}`, `c${markers.k2}`, `d${markers.v2}`])
+          expect(logged).not.toContain(m);
+      }),
+      opts,
+    );
+  });
+
+  it("is empty for an unmarked payload schema", () => {
+    fc.assert(
+      fc.property(payloadArb, ({ payload }) => {
+        const k = make();
+        expect(tx(k.unmarked, payload).ok).toBe(true);
+        expect(givenPii(last(k.doc.log()))).toEqual([]);
+      }),
+      opts,
+    );
+  });
+
+  it("is empty for an entry this process did not commit: one a store restored, and one built by hand", () => {
+    fc.assert(
+      fc.property(payloadArb, ({ payload }) => {
+        const a = make();
+        const b = make();
+        tx(a.marked, payload);
+        expect(givenPii(last(a.doc.log())).length).toBeGreaterThan(0);
+        b.doc.restore(a.doc.snapshot());
+        expect(b.doc.log().length).toBe(1);
+        expect(givenPii(last(b.doc.log()))).toEqual([]);
+        const byHand = { ...last(a.doc.log()) };
+        expect(givenPii(byHand)).toEqual([]);
+      }),
+      opts,
+    );
+  });
+
+  it("is held in memory only and never in a snapshot: no snapshot of the store holds an undeclared key or value, and a snapshot's JSON round trip restores to an entry with none", () => {
+    fc.assert(
+      fc.property(payloadArb, ({ markers, payload }) => {
+        const a = make();
+        tx(a.marked, payload);
+        const undeclared = [`a${markers.k1}`, `b${markers.v1}`, `c${markers.k2}`, `d${markers.v2}`];
+        for (const snap of [a.doc.snapshot(), a.doc.snapshot({ meta: true })]) {
+          const text = JSON.stringify(snap);
+          for (const m of undeclared) expect(text).not.toContain(m);
+        }
+        const b = make();
+        b.doc.restore(JSON.parse(JSON.stringify(a.doc.snapshot())));
+        expect(givenPii(last(b.doc.log()))).toEqual([]);
+        expect(givenPii(last(a.doc.log())).length).toBeGreaterThan(0);
+      }),
+      opts,
+    );
+  });
+});
