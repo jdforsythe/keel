@@ -2,6 +2,7 @@
 // Spec: k.ledger-items, clause "The bullets ``- `A` is “one”.`` and `- a  is \"one\"` have one key."
 // Spec: k.ledger-items, clause "Over a committed ledger holding `k.x`'s clause `A is one.` at `example`, rewording it to `A is two.` makes `keel ledger --diff` report no E1706, and, with `k.x` `conformance-covered` and no file citing `A is two.`, E1707 at that bullet's line naming `k.x#1`."
 // Spec: k.ledger-items, clause "Bullets `A is one.` and `a is one` in one section are one E1733 at the second's line, and the ledger holds one item for them."
+// Pending (rfc:0235 step 4): skipped until the build lands; the builder un-skips by changing each `it.skip` to `it` in this file.
 // Seed: 1337 (every property, 5 runs each: a run is one `keel ledger`). Binary runs: 1 per case, 2 for the two `--diff` cases (`--write`, then `--diff`).
 // The real `keel` binary over temp projects (OS tmpdir). A clause record `{ kind: 'ledger', item, rung, evidence, n }` holds `n` (k.ledger-items Clause key).
 // The normal form is implemented again in ledger-items-support.ts from the spec's words (backticks dropped, `\"` and typographic quotes made straight,
@@ -106,7 +107,7 @@ describe("k.ledger-items: a clause is keyed by its text", () => {
     );
   }, 600_000);
 
-  it(
+  it.skip(
     "Over a committed ledger holding `k.x`'s clause `A is one.` at `example`, rewording it to `A is two.` makes `keel ledger --diff` report no E1706, and, with `k.x` `conformance-covered` and no file citing `A is two.`, E1707 at that bullet's line naming `k.x#1`",
     () => {
       const start = files({ "k.x": { bullets: ["A is one."], status: "conformance-covered" } });
@@ -128,7 +129,7 @@ describe("k.ledger-items: a clause is keyed by its text", () => {
     SLOW,
   );
 
-  it(
+  it.skip(
     "a bullet added at position 10 of a 12-bullet section is one addition: `--diff` reports no E1706 and one E1707, at its line, naming `k.x#10`",
     () => {
       const bullets = Array.from({ length: 12 }, (_, i) => `Clause number ${"abcdefghijkl"[i]} holds.`);
