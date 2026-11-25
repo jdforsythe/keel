@@ -1,5 +1,5 @@
 # k.prefix: Implied path prefix
-status: implemented
+status: conformance-covered
 
 **Purpose.** An app serves a second value of a leading path param (a second locale) without moving the first value's URLs. Only the URL codec changes: the param is present and typed in `params` on every URL.
 

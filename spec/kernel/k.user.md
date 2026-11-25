@@ -1,5 +1,5 @@
 # k.user: Request user and caller lifetime
-status: implemented
+status: conformance-covered
 
 A request has two identities. `caller` (k.server, k.security) is an anonymous per-browser token and grants nothing. `user` is whoever the app's identity source says made the request. Keel authenticates no one: it carries what a function the app supplies answers, and never reads, writes, mints, rotates or stores a credential, session or token for it.
 

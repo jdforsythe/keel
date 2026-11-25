@@ -19,4 +19,4 @@
 - `*` for record keys in `path`: it would name a path no field has.
 - A short `settle` bound tied to the sim clock: trips on an unrelated deadline.
 
-**Consequences.** The sections touched read `implemented` until their ten new clauses are covered. A test may still call `identityMount`; a module may not. A locale file pays one parse when it evaluates. No app changes: the golden apps, household and `examples/shell-mount` call `identityMount` only in `identity.ts`.
+**Consequences.** A test may still call `identityMount`; a module may not. A locale file pays one parse when it evaluates. No app changes: the golden apps, household and `examples/shell-mount` call `identityMount` only in `identity.ts`.

@@ -1,5 +1,5 @@
 # k.head: Document head
-status: implemented
+status: conformance-covered
 **Purpose.** Every document names its page and its language. The server writes both, and the client router keeps them current on navigation without re-rendering text.
 
 **Title.** A path route may declare `title: (props) => string`, given the route component's props `{ params, search, data }` (k.router), `params` and `search` typed from the route's schemas and `data`, its loader's `ok` value, from the loader's `output`. A layout with `title` does not compile.

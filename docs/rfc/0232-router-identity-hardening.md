@@ -1,6 +1,6 @@
 # RFC 0232: the identity mount and the router: one mount, no shadowed assets, stated fallbacks
 
-Status: accepted (ADR-0254), accepted by the orchestrator on 2026-11-25. Amends k.mount (Declaration, Rules, Messages, Conformance), k.user (Rules, Conformance), k.opening, k.head, k.prefix (Conformance), k.forms (Validation, Conformance), std.messages (Set, Conformance), the map and the std index. From fix lane 08 "router-identity" of the P1 weakness triage (backlog 0968, 0969, 0976, 0336, 0314, 0895).
+Status: implemented (ADR-0254), accepted by the orchestrator on 2026-11-25. Amends k.mount (Declaration, Rules, Messages, Conformance), k.user (Rules, Conformance), k.opening, k.head, k.prefix (Conformance), k.forms (Validation, Conformance), std.messages (Set, Conformance), the map and the std index. From fix lane 08 "router-identity" of the P1 weakness triage (backlog 0968, 0969, 0976, 0336, 0314, 0895).
 
 ## For the operator
 1. **A stray `identityMount` call is an error, E1593, not a warning.** Recommended: yes. The call reaches no router or shell, and on its own it puts the `/__keel/user` read in the bundle: an app half opted in to identity, which the project makes a check error.
