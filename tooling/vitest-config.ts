@@ -8,7 +8,9 @@
 // `KEEL_TEST_WORKERS=<n>` (root `pnpm test` sets it from the machine's load, tooling/test-slots.mjs) a run uses at
 // most n workers, unless the config sets `maxWorkers` itself; without it, a run sizes itself the same way as one task
 // of `testSlots` from the load when it starts, at most vitest's own default (one fewer than the cores). A test that runs `properties` or `simulate` and declares
-// no options is given a timeout for its runs (property-times.ts). In a Keel project (a `topology.ts` in the working
+// no options is given a timeout for its runs (property-times.ts). With `KEEL_TEST_TIME_SCALE=<n>` every time bound
+// is multiplied by n: `testTimeout`, `hookTimeout`, the property-time transform's time per run and each timeout a test
+// file passes to vitest (test-time.ts, test-times.ts). In a Keel project (a `topology.ts` in the working
 // directory) a run outside `keel test` gets what `keel test` gives it: `KEEL_TEST=1` and `@keel/testing/setup`, so a
 // harness render given no `artifacts` takes the project's `.keel/a11y.json` and `tokens.ts` (k.a11y Artifacts).
 import { existsSync } from "node:fs";
@@ -21,6 +23,8 @@ import type { TestModule } from "vitest/node";
 import type { Reporter } from "vitest/reporters";
 import { coverageOptions } from "./coverage-config.ts";
 import { propertyTimesPlugin } from "./property-times.ts";
+import { testTime, testTimeScale } from "./test-time.ts";
+import { testTimesPlugin } from "./test-times.ts";
 import { testSlots } from "./test-slots.mjs";
 import { KeelReporter } from "./vitest-reporter.ts";
 
@@ -70,13 +74,16 @@ export function keelConfig(config: ViteUserConfig = {}): ViteUserConfig {
   const test = config.test ?? {};
   const workers = test.maxWorkers ?? workersFromEnv();
   const own = test.setupFiles ?? [];
-  const testTimeout = test.testTimeout ?? 5000;
+  const testTimeout = testTime(test.testTimeout ?? 5000);
+  const hookTimeout = testTime(test.hookTimeout ?? 10_000);
   const keelTest = asKeelTest();
   return {
     ...config,
-    plugins: [...(config.plugins ?? []), propertyTimesPlugin(testTimeout)],
+    plugins: [...(config.plugins ?? []), testTimesPlugin(testTimeScale()), propertyTimesPlugin(testTimeout)],
     test: {
       ...test,
+      testTimeout,
+      hookTimeout,
       ...(workers === undefined ? {} : { maxWorkers: workers }),
       setupFiles: [WATCHDOG, NODE_FETCH_SETUP, ...(typeof own === "string" ? [own] : own), ...keelTest.setup],
       env: { ...keelTest.env, ...test.env },
@@ -85,7 +92,7 @@ export function keelConfig(config: ViteUserConfig = {}): ViteUserConfig {
       ...(process.env.KEEL_COVERAGE === "1" ? { coverage: coverageOptions(process.cwd()) } : {}),
       provide: {
         ...test.provide,
-        keelWatchdog: { testTimeout, hookTimeout: test.hookTimeout ?? 10_000 },
+        keelWatchdog: { testTimeout, hookTimeout },
       },
     },
   };

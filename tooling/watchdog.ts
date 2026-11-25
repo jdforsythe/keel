@@ -11,6 +11,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Worker, isMainThread } from "node:worker_threads";
 import { afterAll, afterEach, beforeAll, beforeEach, expect, inject } from "vitest";
+import { testTime } from "./test-time.ts";
 
 declare module "vitest" {
   interface ProvidedContext {
@@ -26,8 +27,11 @@ const ALLOWED = 2;
 const LEN = 3;
 const LABEL_BYTES = 1024;
 const KEY = Symbol.for("keel.watchdog");
-/** Import of a cold file (TypeScript, the compiler) under a loaded machine takes tens of seconds; nothing else bounds it. */
-const COLLECT_MS = 60_000;
+/**
+ * Import of a cold file (TypeScript, the compiler) under a loaded machine takes tens of seconds; nothing else bounds
+ * it. Scaled by `KEEL_TEST_TIME_SCALE` (test-time.ts), as the grace is.
+ */
+const COLLECT_MS = testTime(60_000);
 
 // A path, not a URL: under a DOM test environment the global `URL` is the DOM's, which `Worker` refuses.
 const THREAD = path.join(path.dirname(fileURLToPath(import.meta.url)), "watchdog-thread.mjs");
@@ -67,7 +71,7 @@ function heartbeat(): Beat {
       base,
       ppid: process.ppid,
       tick: envMs("KEEL_WATCHDOG_TICK_MS", 1000),
-      grace: envMs("KEEL_WATCHDOG_GRACE_MS", 30_000),
+      grace: envMs("KEEL_WATCHDOG_GRACE_MS", testTime(30_000)),
     },
     execArgv: [],
     stdout: false,
