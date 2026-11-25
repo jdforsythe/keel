@@ -73,7 +73,7 @@ describe("steps linear in the set's bytes and the text's length", () => {
 
   it("the shapes that are quadratic for a naive matcher stay within the bounds", () => {
     const shapes: [string[], string][] = [
-      [["a".repeat(30_000) + "b"], "a".repeat(200_000)],
+      [[`${"a".repeat(30_000)}b`], "a".repeat(200_000)],
       [Array.from({ length: 200 }, (_, i) => "a".repeat(i + 3)), "a".repeat(100_000)],
       [Array.from({ length: 50 }, (_, i) => `${"ab".repeat(300)}${String(i)}`), "ab".repeat(50_000)],
       [["%41".repeat(1_000)], "%2541".repeat(20_000)],
