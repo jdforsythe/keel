@@ -1,6 +1,6 @@
 # RFC 0090: a keyed `For` row keeps its element
 
-Status: implemented. Accepted by the orchestrator (2026-11-12) under WORKFLOW RFC defaults 1 and 6, after the user said to decide and keep moving; the user confirms or reverses it (`docs/HANDOFF.md`, pending decisions). For backlog 0392 and 0439.
+Status: implemented. Accepted by the orchestrator (2026-11-12) under WORKFLOW RFC defaults 1 and 6, after the user said to decide and keep moving. For backlog 0392 and 0439.
 
 ## Decisions (orchestrator, 2026-11-12)
 - D1: the guarantee of Proposal 1 as written.

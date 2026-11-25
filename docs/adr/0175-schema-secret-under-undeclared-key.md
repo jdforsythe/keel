@@ -1,6 +1,6 @@
 # ADR-0175: k.schema: an open object refuses a `Secret` under an undeclared key (RFC 0153)
 
-**Status:** accepted (orchestrator, under the RFC defaults; for the user to confirm).
+**Status:** accepted (orchestrator, under the RFC defaults).
 
 **Context.** A transaction spreading a payload that holds `s.secret` into an open state object committed the `Secret` under an undeclared key: live state held a secret that `snapshot()` dropped, although `store()` refuses a state schema with a secret.
 

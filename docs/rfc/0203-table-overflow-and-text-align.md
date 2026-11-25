@@ -1,6 +1,6 @@
 # RFC 0203: k.ui: a scroll region for a wide table, and `textAlign`
 
-Status: implemented (ADR-0225), accepted by the orchestrator on 2026-11-24, for the operator to confirm. Amends k.ui (Base elements, Style props, new **Scroll regions**, Base, Conformance), k.a11y (Required props, Order and focus, Conformance), std.tables (DataTable, Parts, `styles`, Rules, Conformance; status `implemented`) and the std map row. From backlog 1052.
+Status: implemented (ADR-0225), accepted by the orchestrator on 2026-11-24. Amends k.ui (Base elements, Style props, new **Scroll regions**, Base, Conformance), k.a11y (Required props, Order and focus, Conformance), std.tables (DataTable, Parts, `styles`, Rules, Conformance; status `implemented`) and the std map row. From backlog 1052.
 
 ## Decisions
 - D1: `Box scroll="x"` is the one scroll container. It renders a `div` with `role="region"`, `tabindex="0"`, class `k-scroll` and a name from `label` or `labelledBy`, exactly one (E1802). It is a structural prop read at build, not a style prop: it changes the element's role and Tab order, which a look, a `base` set, a state or a breakpoint must not do.

@@ -1,6 +1,6 @@
 # RFC 0209: k.requests: a harness logs the requests its page sends, and a route harness reads `/__keel/user` as the built app does
 
-Status: implemented (ADR-0231), accepted by the orchestrator on 2026-11-24, for the operator to confirm. Adds k.requests; amends k.guards (Client, Conformance), k.mount-scope (Test), k.testing (one pointer), the map. From `examples/client-only-api` (examples finding 15, backlog 1047).
+Status: implemented (ADR-0231), accepted by the orchestrator on 2026-11-24. Adds k.requests; amends k.guards (Client, Conformance), k.mount-scope (Test), k.testing (one pointer), the map. From `examples/client-only-api` (examples finding 15, backlog 1047).
 
 ## Decisions
 - D1: every harness handle (`render`, `renderRoute`, `resumeDocument`) has `requests()`: one `{ method, url, headers }` per `fetch` its page's net was given while it was open, in order. `headers` are the names only, lower case, sorted, as the request entered `ctx.net` (after the jar and `x-keel-user`). No header value, no body.

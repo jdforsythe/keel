@@ -1,6 +1,6 @@
 # ADR-0229: k.router: `pageHref` reads a string into an `Href` of a page of the route table (RFC 0207)
 
-**Status:** accepted and implemented (orchestrator, 2026-11-23, for the operator to confirm).
+**Status:** accepted and implemented (orchestrator, 2026-11-23).
 
 **Context.** A guard redirect carries `next`, the denied request's path and query, as a string. An action's `ok` takes a branded `Href`, and nothing public turns a string into one, so the household's setup action cannot follow `next`. The household's and `examples/shell-mount`'s identity sources each wrote their own `next` check and copy the string into a 303 `location`; both admit `/\t/evil.example/x`, which a URL parser reads as `//evil.example/x`.
 

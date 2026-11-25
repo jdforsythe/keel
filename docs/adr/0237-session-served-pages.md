@@ -1,6 +1,6 @@
 # ADR-0237: std.sessions: a session of a served page replays through its app (RFC 0215)
 
-**Status:** accepted (orchestrator, 2026-11-24, for the operator to confirm).
+**Status:** accepted (orchestrator, 2026-11-24).
 
 **Context.** `keel session to-test` writes `renderRoute(<id>, { routes, state, ... })` through a router for every page, and W1723 (k.testing) warns on that for a page a `node` deployable serves. `replay`, which `to-test` runs to prove a reproduction before writing a file, is defined for router mode only. A recording keeps no user and no server state, and `renderRoute` with `app` rejects `state` (E1722).
 

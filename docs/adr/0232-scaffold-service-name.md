@@ -1,6 +1,6 @@
 # ADR-0232: k.scaffold and k.openapi: `keel scaffold service --name` (RFC 0210)
 
-**Status:** accepted (orchestrator, 2026-11-24, for the operator to confirm).
+**Status:** accepted (orchestrator, 2026-11-24).
 
 **Context.** `keel scaffold service <module>` names the endpoint declaration after the module (`AppApi` in `examples/openapi-import`), while `openapi(doc, { name })` takes a name and the command offers no flag for it. A hand-written client such as `examples/client-only-api`'s names its declaration after the API it describes (`GitHubApi`).
 

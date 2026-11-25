@@ -1,6 +1,6 @@
 # ADR-0188: k.leave: E1107 reads its own reach, narrower than k.boundary's (RFC 0166)
 
-**Status:** accepted (orchestrator, under the RFC defaults; for the user to confirm).
+**Status:** accepted (orchestrator, under the RFC defaults).
 
 **Context.** k.leave, k.boundary and k.bundle said E1107 uses E1004's reach, which counts every non-server file of a served module. `@keel/check` and its conformance use a narrower one, from component files by relative imports, and expect golden-2's server-only `.pii()` stores to be clean.
 

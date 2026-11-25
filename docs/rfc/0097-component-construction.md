@@ -1,6 +1,6 @@
 # RFC 0097: components and op children are built untracked
 
-Status: implemented. Accepted (2026-11-13, orchestrator, WORKFLOW RFC defaults 1, 3, 6; open questions answered as recommended; the user confirms or reverses, tasks/0337-s7-ui-modules/PLAN.md D20). For backlog 0571; backlog 0593 gets its own RFC (section 0593 below). Each decision cites the WORKFLOW RFC default it applies; what the defaults leave open is under Questions with a recommendation. ADR-0120 records it.
+Status: implemented. Accepted (2026-11-13, orchestrator, WORKFLOW RFC defaults 1, 3, 6; open questions answered as recommended; tasks/0337-s7-ui-modules/PLAN.md D20). For backlog 0571; backlog 0593 gets its own RFC (section 0593 below). Each decision cites the WORKFLOW RFC default it applies; what the defaults leave open is under Questions with a recommendation. ADR-0120 records it.
 
 ## Decisions
 - D1 (0571): every unit render is untracked. `renderUnit` (`@keel/runtime-dom`), which builds each child of `If`, `For`, `Match`/`Case`, `Boundary`, a route page and the `mount` root, runs its render through `Scope.run`, so a reactive read made while a component or an op child is built is its value at build and subscribes nothing. This covers every component however it is called: compiled JSX, a hand-built `.ts` call, stdlib widgets, the router, `mount` and the harness. Only bindings, `computed` and `effect` made there, and each op's own input (`when`, `each` and its keys, `on` and its tag, a Boundary's `reset`) track (defaults 1, 6, 3).

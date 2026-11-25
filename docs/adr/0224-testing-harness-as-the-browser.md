@@ -1,6 +1,6 @@
 # ADR-0224: k.testing: renders disposed at test end, events sent where a browser sends them, uncaught errors located (RFC 0202)
 
-**Status:** accepted (orchestrator, 2026-11-24, for the operator to confirm).
+**Status:** accepted (orchestrator, 2026-11-24).
 
 **Context.** `@keel/testing` aims to behave as the browser would for the events it offers. Four places fall short. A render ends only at `dispose()`, so a test that fails before it leaves its page in the document and the next page's render checks fail on it. `fire` sends a `keydown` to its target whatever holds focus, where a browser sends a key press only to the focused element (UI Events; HTML's focused area of the document), so a widget that acts on focus, such as APG Tabs, ignores it. `change` takes no `value`, so a select pick changes nothing, where a browser sets the option's selectedness and fires `input` then `change`. An error vitest reports outside a test is a T0001 with no location, while one `keel test` catches around the run carries a frame that may be a dependency's.
 

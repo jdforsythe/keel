@@ -1,6 +1,6 @@
 # RFC 0228: k.shell: E1572's plugin message fits 89 units whole; a shell target's texts are bounded
 
-Status: accepted (ADR-0250), accepted by the orchestrator on 2026-11-24, for the operator to confirm. Amends k.shell (Plugins, Rules, Conformance), std.capacitor (Plugins, Conformance), the map. From the first whole test run of task 0963 (D145) and backlog 1061.
+Status: accepted (ADR-0250), accepted by the orchestrator on 2026-11-24. Amends k.shell (Plugins, Rules, Conformance), std.capacitor (Plugins, Conformance), the map. From the first whole test run of task 0963 (D145) and backlog 1061.
 
 ## For the operator
 1. **`in package.json dependencies` leaves the plugin form only.** The storage and shell-package form (`api: sqlite needs @keel/std-db in package.json dependencies`, 59 units; 69 at most for `web`) keeps it: it fits, and no clause or test changes for it. The plugin form is told where to add the entry by its `fix` (a `package.json` hunk under `dependencies`, printed with the line) and by `keel explain E1572`.

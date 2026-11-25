@@ -1,6 +1,6 @@
 # RFC 0205: std.messages and std.i18n: exact plural forms (`'=0'`)
 
-Status: implemented (ADR-0227), accepted by the orchestrator on 2026-11-24, for the operator to confirm. Amends std.i18n (`PluralForms`, `plural`, Conformance) and std.messages (Extension points, the entry bullet, new **Plurals**, Rules E2407, Conformance). From backlog 1009.
+Status: implemented (ADR-0227), accepted by the orchestrator on 2026-11-24. Amends std.i18n (`PluralForms`, `plural`, Conformance) and std.messages (Extension points, the entry bullet, new **Plurals**, Rules E2407, Conformance). From backlog 1009.
 
 ## Decisions
 - D1: an exact form is a plural form keyed `'=n'`, `n` a non-negative safe integer in canonical decimal (`'=0'`, `'=1'`, `'=12'`): ICU's spelling, flat beside the category forms.

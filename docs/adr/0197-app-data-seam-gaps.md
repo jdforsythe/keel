@@ -1,6 +1,6 @@
 # ADR-0197: k.data, std.postgres: migrations found by module, a build that fails on E1006, retried migration passes, dev and compose defaults (RFC 0175)
 
-**Status:** accepted (orchestrator, under the RFC defaults; for the operator to confirm).
+**Status:** accepted (orchestrator, under the RFC defaults).
 
 **Context.** Golden-2 on `@keel/std-postgres` found five gaps. The build evaluation cannot load a graph reaching `pg`, and its E1006 leaves the build green with routes missing from `routes.json`. Migrations reach `database` through Vite's `import.meta.glob`. A refused connection at the first query is a 500, and a failed migration pass poisons the ctx, so a server's process. `keel dev` and `compose.yaml` have no `KEEL_POSTGRES_URL`. A loader's `run` needs `stores: {}` in tests.
 

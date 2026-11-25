@@ -1,6 +1,6 @@
 # RFC 0091: friction batch 3 (focus in tests, blank strings, required text, dev port, unreachable peers, deployable names, landmark names)
 
-Status: implemented. Accepted by the orchestrator (2026-11-12) under the WORKFLOW RFC defaults, after the user said to keep working; the user confirms or reverses it (`docs/HANDOFF.md`, pending decisions). For backlog 0446, 0394, 0395, 0377, 0387, 0449, 0450 and the golden-2 landmark finding. Each decision cites the WORKFLOW RFC default it applies; the points the defaults say to escalate are under Questions.
+Status: implemented. Accepted by the orchestrator (2026-11-12) under the WORKFLOW RFC defaults, after the user said to keep working. For backlog 0446, 0394, 0395, 0377, 0387, 0449, 0450 and the golden-2 landmark finding. Each decision cites the WORKFLOW RFC default it applies; the points the defaults say to escalate are under Questions.
 
 ## Decisions
 - D-A (0446): `fire` `focus` and `blur` move focus; the existing `focused` flag of `find(id).state` and `a11y()` is the one focus query. New E1719.

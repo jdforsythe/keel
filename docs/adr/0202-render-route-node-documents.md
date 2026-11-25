@@ -1,6 +1,6 @@
 # ADR-0202: k.testing: `renderRoute` with `app` runs a `node` page as the build serves it (RFC 0180)
 
-**Status:** accepted (orchestrator, under the RFC defaults; for the operator to confirm).
+**Status:** accepted (orchestrator, under the RFC defaults).
 
 **Context.** A built `node` page has no client router, so its `<Form>` posts natively and the reader sees the server's answer document. `renderRoute` always mounts the client router and calls the action in process, so the 422 document and the 303 are never exercised under test. A real fault in that path passed every app test.
 

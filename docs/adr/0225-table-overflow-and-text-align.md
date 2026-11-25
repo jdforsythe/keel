@@ -1,6 +1,6 @@
 # ADR-0225: k.ui: a scroll region for a wide table, and `textAlign` (RFC 0203)
 
-**Status:** accepted (orchestrator, 2026-11-24, for the operator to confirm).
+**Status:** accepted (orchestrator, 2026-11-24).
 
 **Context.** A table keeps its words whole, so at a narrow viewport it can be wider than the page: golden-2's catalog table is 569px at 390px (582px in de-DE) and the whole page scrolls sideways. The style vocabulary has no overflow, and a plain scroll container a keyboard cannot reach, or one with no name, fails WCAG 2.1.1 and 4.1.2. Every `th` is centred by the browser's own stylesheet over cells that start at the start, and the vocabulary has no text alignment, so a numeric column cannot be aligned to its end either. The compiler collects style props only from the app's own literals, so a std component cannot pick a class itself.
 

@@ -1,6 +1,6 @@
 # ADR-0206: std.postgres: serializable by default, `allow` with a reason, lone statements serializable (RFC 0184)
 
-**Status:** accepted (orchestrator, under the RFC defaults; for the operator to confirm).
+**Status:** accepted (orchestrator, under the RFC defaults).
 
 **Context.** On Postgres 17 at `read committed`, the default, two interleaved `transaction` calls that read a counter and write the value read + 1 both answer `ok` and one increment is lost; no serialization failure is raised, so nothing reruns. Sim and PGlite run transactions one after another, so an app's tests cannot show it. Keel's default must be the safe one, with danger opted into visibly.
 

@@ -1,6 +1,6 @@
 # ADR-0180: k.data and std.postgres: app data outside the kernel (RFC 0158)
 
-**Status:** accepted (W14 step 1, decision D43; for the operator to confirm).
+**Status:** accepted (W14 step 1, decision D43).
 
 **Context.** Every record golden-2 keeps (recipes, API tokens, profiles) is a server store, restored and saved whole per request through `ctx.storage`. That holds for bounded state and fails for records: no index or query, every write to one store conflicts, every request reads every row. The spec states no stance on an app's own database, no name rule for an app capability, and nothing of what simulation and the ledger mean once data leaves `ctx.storage`; `keel dev` would throw E1602 when an app file that calls `register` is edited.
 

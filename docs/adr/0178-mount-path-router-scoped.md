@@ -1,6 +1,6 @@
 # ADR-0178: k.mount: the identity mount path is the router's own; E1580 at run time; no page at a path holding a `\` (RFC 0156)
 
-**Status:** accepted (orchestrator, under review decision D39; for the user to confirm).
+**Status:** accepted (orchestrator, under review decision D39).
 
 **Context.** `identityMount` checked its `path` only under `keel check`. A router matched whatever its table matched, so a `:param` route took a path under the identity mount client-side. A first fix held every mount path in one process-wide set that only grows, so one app's or test's mount changed another's routing.
 

@@ -1,6 +1,6 @@
 # RFC 0149: std.channels: each serving module's bounds count its own channel routes' streams
 
-Status: implemented (ADR-0171) under the RFC defaults (6: enforce in the library), for the orchestrator to confirm. For backlog 0777.
+Status: implemented (ADR-0171) under the RFC defaults (6: enforce in the library). For backlog 0777.
 
 ## Decisions
 - D1: `perCaller`, `perAnonymous` and `maxStreams` of a module's `std['@keel/std-channels']` count the streams open in the process on that module's channel routes, not every module's.

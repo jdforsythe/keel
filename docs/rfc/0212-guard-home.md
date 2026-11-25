@@ -1,6 +1,6 @@
 # RFC 0212: k.guards: a guard several modules bind lives in a module of its own; E1153 names the guard
 
-Status: accepted (ADR-0234), accepted by the orchestrator on 2026-11-24, for the operator to confirm. Amends k.guards (a Home paragraph), k.module (Rules E1153, Conformance). From `apps/household` (walkthrough finding L4-4, backlog 1019).
+Status: accepted (ADR-0234), accepted by the orchestrator on 2026-11-24. Amends k.guards (a Home paragraph), k.module (Rules E1153, Conformance). From `apps/household` (walkthrough finding L4-4, backlog 1019).
 
 ## Decisions
 - D1: no new construct. A guard lives in a `*.guard.*` file of a module and is bound by value import, as today. A guard bound by modules that link to one another lives in a module of its own: no pages, its files guards and what they import, its `deps` reaching no module that binds them. Each binding module lists it. This is the one home, stated in k.guards Home.

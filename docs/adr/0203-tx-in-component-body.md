@@ -1,6 +1,6 @@
 # ADR-0203: k.store: a `tx` in a component body is E1304; a view store seeded from loader data is created with it (RFC 0181)
 
-**Status:** accepted (orchestrator, under the RFC defaults; for the operator to confirm).
+**Status:** accepted (orchestrator, under the RFC defaults).
 
 **Context.** An author seeded a client store from loader data with a `tx` in a component body. The write throws E1201 at render, which `renderRoute` once swallowed into an empty page. `keel check` says nothing, and no section tells an author how a store gets its first value from a loader. A store created in a component scope with `initial`, resumed from its snapshot, already does that.
 

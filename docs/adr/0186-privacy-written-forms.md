@@ -1,6 +1,6 @@
 # ADR-0186: k.privacy: the written forms the server log scrub marks (RFC 0164)
 
-**Status:** accepted (orchestrator, under the RFC defaults; for the user to confirm).
+**Status:** accepted (orchestrator, under the RFC defaults).
 
 **Context.** The server's scrub marks a value in a dozen written forms (JSON, URL and base64 encodings, case-folded), but k.privacy said only that a value becomes `[secret]` or `[pii]`, and the server README called every form but the plain one "no contract". k.privacy was at its 1,500-token limit.
 

@@ -1,6 +1,6 @@
 # ADR-0222: k.shell: a shell build of an app with no server reads no `KEEL_ORIGIN` (RFC 0200)
 
-**Status:** accepted (orchestrator, 2026-11-23, for the operator to confirm; under D103).
+**Status:** accepted (orchestrator, 2026-11-23; under D103).
 
 **Context.** A shell build stops with E1574 unless `KEEL_ORIGIN` is a valid origin, whatever the topology. The origin receives the shell's page-origin requests, with Keel's headers and the caller cookie, and the native allow lists open it. In an app whose topology has no `node` deployable no deployable answers there, so `examples/native-tauri`, `examples/native-capacitor` and `examples/links-in` build only with an invented `http://localhost:4182`. A front end with no back end is a first-class app and carries no config for a server it does not have.
 

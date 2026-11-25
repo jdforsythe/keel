@@ -1,6 +1,6 @@
 # RFC 0221: k.scaffold, std.sessions and std.postgres split so every section fits 3,100 tokens
 
-Status: accepted (ADR-0243), accepted by the orchestrator on 2026-11-24, for the operator to confirm. Amends k.scaffold, std.sessions, std.postgres, the map, the std index; adds k.scaffold-service, std.sessions-served, std.postgres-changes. Changes no behaviour.
+Status: accepted (ADR-0243), accepted by the orchestrator on 2026-11-24. Amends k.scaffold, std.sessions, std.postgres, the map, the std index; adds k.scaffold-service, std.sessions-served, std.postgres-changes. Changes no behaviour.
 
 ## For the operator
 - Seams: k.scaffold gives its service operation (Service, its edits, E1358, eight clauses) to k.scaffold-service, as it gave the shell operation to k.scaffold-shell. std.sessions gives replay and `to-test` of a page a `node` deployable serves (Served pages, the `node` `to-test` file, three clauses) to std.sessions-served. std.postgres gives `changed`, its wire form and `follow` (three API items, E2460, six clauses) to std.postgres-changes.

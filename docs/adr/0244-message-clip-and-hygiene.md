@@ -1,6 +1,6 @@
 # ADR-0244: a diagnostic's message is clipped by one exact rule; `replay` and `minimize` take `mount`; std.db conformance-covered (RFC 0222)
 
-**Status:** accepted (orchestrator, 2026-11-24, for the operator to confirm).
+**Status:** accepted (orchestrator, 2026-11-24).
 
 **Context.** The spec said only "under 90 chars". Three clip functions in the build disagreed (89 with whitespace folding, 89 without, 90), all cut UTF-16 code units and could split a surrogate pair, and the formatters relied on each producer to clip. std.sessions stated `replay` and `minimize` with `mount` in prose only. std.db stayed `proposed` after CI's `postgres` job began running its Postgres 17 cases.
 
