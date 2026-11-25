@@ -94,7 +94,8 @@ export async function packCommand(input: Input, io: Io): Promise<Outcome> {
   const errors = checked.filter(isError).length;
   if (errors > 0)
     return stop(checked, makeDiag("E1164", `check: ${plural(errors, "error")}; nothing packed`, { see: SEE }));
-  const tested = await testCommand({}, io);
+  // The test step writes no run report: a pack writes `.keel/ledger.json` alone (k.library-pack Pack).
+  const tested = await testCommand({}, io, false);
   const trailer = tested.find((r) => r.kind === "summary");
   if (trailer?.ok !== true) {
     const counts = isRecord(trailer?.counts) ? trailer.counts : {};

@@ -5,17 +5,18 @@ import type { Diag } from "./Diag.ts";
 import type { LedgerItem } from "./LedgerItem.ts";
 import { TEST_FILE } from "./TEST_FILE.ts";
 import type { TestRef } from "./TestRef.ts";
-import { citesClause } from "./citesClause.ts";
+import { clauseCitations } from "./clauseCitations.ts";
+import { clauseKey } from "./clauseKey.ts";
 import { countExpectations } from "./countExpectations.ts";
 import { headerCodes } from "./headerCodes.ts";
 import { isNegativeTypeTest } from "./isNegativeTypeTest.ts";
 import { makeDiag } from "./makeDiag.ts";
 import { monitoredEvidence } from "./monitoredEvidence.ts";
+import { normClause } from "./normClause.ts";
 import { projectCounts } from "./projectCounts.ts";
 import { rangeCodes } from "./rangeCodes.ts";
 import { scrubCode } from "./scrubCode.ts";
 import { specClauses } from "./specClauses.ts";
-import { specHeaders } from "./specHeaders.ts";
 import { testEvidence } from "./testEvidence.ts";
 import { z3Version } from "./z3Version.ts";
 
@@ -61,11 +62,11 @@ const evidenceFor = (refs: readonly TestRef[], name: string, file: string): Ledg
  *   non-skipped test body or a helper it calls; never a comment, a string, or a skipped test);
  * - every export of `apps/<app>/modules/**` except manifests and component parts (`<app>:<path>#<name>`), with
  *   evidence from the app's `test/` and co-located tests;
- * - every spec Conformance clause (`k.cli#7`), with the non-skipped tests of every conformance file, in any package,
- *   with a leading `// Spec: <id>` header block (`specHeaders`, which may wrap) that quotes the clause (`citesClause`:
- *   backticks, quote style, spacing and case aside). A range clause (`rangeCodes`) has evidence only while each of its
- *   codes is named outside the quote (`headerCodes`) in the header of a citing file with a non-skipped test. A
- *   `// Clause:` header is not read; it is W1706 with the fix.
+ * - every spec Conformance clause (`<section>#<key>`, `clauseKey`, with its position `n`), with the non-skipped tests
+ *   of every conformance file, in any package, whose header cites it (`clauseCitations`: E1732 for a `// Spec:` line
+ *   that cites nothing); a second bullet of a section with one normal form is E1733 at its line and no item. A range
+ *   clause (`rangeCodes`) has evidence only while each of its codes is named outside the quote (`headerCodes`) in the
+ *   header of a citing file with a non-skipped test. A `// Clause:` header is not read; it is W1706 with the fix.
  * Export items also get `monitored` evidence from `.keel/monitored.json` (`monitoredEvidence`; E1711 when it fails its
  * shape). Also `ledgerCount` (`unsafe(...)` calls and host elements) over the files `projectCounts` names, per app over
  * `apps/<app>/**`, and the host elements per file of a root `modules/**`; and the expectations of the negative type
@@ -174,7 +175,8 @@ export function buildLedger(
   }));
   items.sort((x, y) => (x.item < y.item ? -1 : x.item > y.item ? 1 : 0));
 
-  const sections = new Set(specClauses(files).map((c) => c.id));
+  const clauses = specClauses(files);
+  const sections = new Set(clauses.map((c) => c.id));
   const conformance = code.filter((f) => PKG.exec(f.path)?.[2] === "conformance" && TEST_FILE.test(f.path));
   const diags: Diag[] = [...monitored.diags];
   const headed = conformance.map((f) => {
@@ -195,18 +197,39 @@ export function buildLedger(
     }
     return {
       path: f.path,
+      lines: head,
       head: head.map((h) => h.text),
-      blocks: specHeaders(head),
       tests: (refs.get(`packages/${PKG.exec(f.path)?.[1] ?? ""}`) ?? []).filter((r) => r.path === f.path),
     };
   });
-  for (const { id, n, text } of specClauses(files)) {
-    const citing = headed.filter((h) => h.blocks.some((b) => b.section === id && citesClause(b.text, text)));
+  const citations = clauseCitations(
+    headed.map((h) => ({ path: h.path, head: h.lines })),
+    clauses,
+  );
+  diags.push(...citations.diags);
+  const seen = new Map<string, number>();
+  for (const { id, n, text, line } of clauses) {
+    const item = `${id}#${clauseKey(text)}`;
+    const first = seen.get(item);
+    if (first !== undefined) {
+      const path = files.find((f) => f.path === `spec/kernel/${id}.md` || f.path === `spec/std/${id}.md`)?.path;
+      diags.push(
+        makeDiag("E1733", `clause ${id}#${n} has the normal form of ${id}#${first}: "${normClause(text)}"`, {
+          path,
+          line,
+          col: 1,
+          see: "k.ledger-items",
+        }),
+      );
+      continue;
+    }
+    seen.set(item, n);
+    const citing = headed.filter((h) => citations.cited.get(h.path)?.has(item) === true);
     const range = rangeCodes(text);
     const named = new Set(citing.filter((h) => h.tests.length > 0).flatMap((h) => [...headerCodes(h.head, text)]));
     const held = range === undefined || range.every((c) => named.has(c));
     const evidence = held ? citing.flatMap((h) => h.tests.map((t) => ({ ev: t.ev, path: t.path }))) : [];
-    items.push({ item: `${id}#${n}`, evidence });
+    items.push({ item, n, evidence });
   }
   return {
     items,

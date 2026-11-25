@@ -132,12 +132,14 @@ const ledgerFile = (
 };
 
 /**
- * `keel ledger` (k.ledger), the one ledger implementation: one `ledger` record per export and per spec clause, rung by
+ * `keel ledger` (k.ledger), the one ledger implementation: one `ledger` record per export and per spec clause (with
+ * its position `n`, k.ledger-items Clause key), rung by
  * `@keel/testing` `ledger`, one per page route of each project and WCAG criterion (`a11yClaims` over `a11yMap`, k.a11y Claims; a committed a11y
  * item of no current page route is dropped), and one
  * after them one per entry of an installed library's ledger file (`libraryLedgers`, k.library Ledger: shown, never in
  * the summary counts, the written `exports` and `rungs` or `--diff`), and one
- * `ledger.mutation` record per mutation claim (`mutationClaims`), after any W1706
+ * `ledger.mutation` record per mutation claim (`mutationClaims`), after any E1732 and E1733 (`buildLedger`; reported
+ * under any `--scope` too), W1706
  * header notes, W1731 (a layout no page route's chain holds, `pagelessLayouts`), E1711, E1725 (a `mutation-justified.json` that fails its shape, by `justifiedFiles`, or an entry that
  * justifies no mutant of its package's report on disk) and W1714 (a stale claim). `--write <file>` names the ledger file: `keel ledger` writes the
  * records there instead (with `rungs` and `mutation`, the reports on disk merged into the file's claims; stdout keeps
@@ -233,7 +235,9 @@ export function ledgerCommand(
       }),
     );
   const layouts = a11yMap.size === 0 ? [] : pagelessLayouts(files);
-  const notes = scope === "" ? [...built.diags, ...misshapen, ...unjustified, ...stale, ...layouts] : [];
+  // A citation or a clause list the ledger cannot read (E1732, E1733) is reported in every mode and scope.
+  const unread = built.diags.filter((d) => d.code === "E1732" || d.code === "E1733");
+  const notes = scope === "" ? [...built.diags, ...misshapen, ...unjustified, ...stale, ...layouts] : unread;
   const held = (cs: readonly A11yClaim[], r: Record<string, number>): Record<string, number> => {
     const n = cs.filter((c) => c.rung === "example").length;
     return n === 0 ? r : { ...r, example: (r.example ?? 0) + n };
@@ -258,12 +262,16 @@ export function ledgerCommand(
   };
   if (input.diff !== true) {
     const out: OutRecord[] = [
-      ...records.map((r) => ({
-        kind: "ledger",
-        item: r.item,
-        rung: r.rung,
-        evidence: r.evidence === "none" ? "none" : describe(byItem.get(r.item)),
-      })),
+      ...records.map((r) => {
+        const n = byItem.get(r.item)?.n;
+        return {
+          kind: "ledger",
+          item: r.item,
+          rung: r.rung,
+          evidence: r.evidence === "none" ? "none" : describe(byItem.get(r.item)),
+          ...(n === undefined ? {} : { n }),
+        };
+      }),
       ...claims.map((c) => ({ kind: "ledger", item: c.item, rung: c.rung, evidence: c.evidence })),
       ...libRecords.map((r) => ({ kind: "ledger", ...r })),
       ...mutation.claims

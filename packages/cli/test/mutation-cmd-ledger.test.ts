@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { run } from "../src/index.ts";
 import { buildLedger } from "../src/internal/buildLedger.ts";
+import { clauseKey } from "../src/internal/clauseKey.ts";
 import type { Write } from "../src/types/Write.ts";
 
 const CWD = "/work/app";
@@ -179,19 +180,30 @@ describe("buildLedger", () => {
     ]);
     expect(items).toEqual([
       {
-        item: "k.a.b#1",
-        evidence: [
-          { ev: prop(100, 1), path: "packages/a/conformance/yes.test.ts" },
-          { ev: EX, path: "packages/a/conformance/split.test.ts" },
-        ],
+        item: `k.a.b#${clauseKey("One works.")}`,
+        n: 1,
+        evidence: [{ ev: prop(100, 1), path: "packages/a/conformance/yes.test.ts" }],
       },
-      { item: "k.a.b#2", evidence: [{ ev: EX, path: "packages/a/conformance/two.test.ts" }] },
-      { item: "s.c#1", evidence: [{ ev: EX, path: "packages/a/conformance/std.test.ts" }] },
+      {
+        item: `k.a.b#${clauseKey("Two works.")}`,
+        n: 2,
+        evidence: [{ ev: EX, path: "packages/a/conformance/two.test.ts" }],
+      },
+      {
+        item: `s.c#${clauseKey("Std clause.")}`,
+        n: 1,
+        evidence: [{ ev: EX, path: "packages/a/conformance/std.test.ts" }],
+      },
     ]);
-    expect(diags).toEqual([]);
+    // An unknown section, and a `// Spec:` line whose quote is on the next line, cite nothing: E1732 at the line.
+    expect(diags.map((d) => [d.code, d.path, d.line])).toEqual([
+      ["E1732", "packages/a/conformance/lookalike.test.ts", 1],
+      ["E1732", "packages/a/conformance/longer.test.ts", 1],
+      ["E1732", "packages/a/conformance/split.test.ts", 1],
+    ]);
   });
 
-  it("a clause is cited by its quoted text: backticks, quote style, spacing, case and final period aside (rfc:0049)", () => {
+  it("a clause is cited by one formed `// Spec:` line whose quote has its normal form; any other `// Spec:` line is E1732", () => {
     const spec = file(
       "spec/kernel/k.x.md",
       [
@@ -206,7 +218,7 @@ describe("buildLedger", () => {
     );
     const body = 'import { it } from "vitest";\nit("t", () => {});\n';
     const at = (path: string, head: string) => file(`packages/${path}`, `${head}\n${body}`);
-    const { items } = buildLedger([
+    const { items, diags } = buildLedger([
       spec,
       file("spec/kernel/k.y.md", "# k.y\n**Conformance.**\n- A tree attaches N listeners.\n"),
       at("a/conformance/bare.test.ts", '// Spec: k.x, clause "mount then dispose leaves zero listeners"'),
@@ -218,14 +230,27 @@ describe("buildLedger", () => {
       at("a/conformance/unquoted.test.ts", "// Spec: k.x Conformance: A tree attaches N listeners."),
       at("a/conformance/other.test.ts", '// Spec: k.y\n// Spec: k.z, clause "A tree attaches N listeners."'),
       at("b/conformance/cross.test.ts", '// Spec: k.x, clause "`caller` is `""` when absent."'),
+      at("b/conformance/escaped.test.ts", '// Spec: k.x, clause "`caller` is `\\"\\"` when absent."'),
       at("a/conformance/notx.test.ts", '// Spec: k.xy, clause "A tree attaches N listeners."'),
     ]);
     const paths = (item: string) => items.find((i) => i.item === item)?.evidence.map((e) => e.path);
-    expect(paths("k.x#1")).toEqual(["packages/a/conformance/bare.test.ts", "packages/a/conformance/curly.test.ts"]);
-    expect(paths("k.x#2")).toEqual([]);
-    expect(paths("k.x#3")).toEqual(["packages/a/conformance/wrap.test.ts"]);
-    expect(paths("k.x#4")).toEqual(["packages/b/conformance/cross.test.ts"]);
-    expect(paths("k.y#1")).toEqual([]);
+    const x = (text: string) => `k.x#${clauseKey(text)}`;
+    expect(paths(x("`mount` then `dispose` leaves zero listeners."))).toEqual(["packages/a/conformance/bare.test.ts"]);
+    expect(paths(x("A tree attaches N listeners."))).toEqual([]);
+    expect(paths(x("A tree attaches N listeners to its root."))).toEqual(["packages/a/conformance/wrap.test.ts"]);
+    expect(paths(x('`caller` is `""` when absent.'))).toEqual(["packages/b/conformance/escaped.test.ts"]);
+    expect(paths(`k.y#${clauseKey("A tree attaches N listeners.")}`)).toEqual([]);
+    expect(diags.filter((d) => d.code === "E1732").map((d) => (d.path ?? "").split("/").pop())).toEqual([
+      "curly.test.ts",
+      "gap.test.ts",
+      "cut.test.ts",
+      "number.test.ts",
+      "unquoted.test.ts",
+      "other.test.ts",
+      "other.test.ts",
+      "cross.test.ts",
+      "notx.test.ts",
+    ]);
   });
 
   it("a // Clause: header is not evidence; it is W1706 with the // Spec: rewrite as fix", () => {
@@ -238,7 +263,7 @@ describe("buildLedger", () => {
       file("packages/b/conformance/two.test.ts", 'import { it } from "vitest";\n// Clause: Two.\nit("t", () => {});\n'),
       file("packages/b/conformance/late.test.ts", 'it("t", () => {});\n// Clause: Late.\n'),
     ]);
-    expect(items).toEqual([{ item: "k.a#1", evidence: [] }]);
+    expect(items).toEqual([{ item: `k.a#${clauseKey("One works.")}`, n: 1, evidence: [] }]);
     expect(diags).toEqual([
       {
         kind: "diag",
@@ -378,7 +403,7 @@ describe("ledger command", () => {
         { pkg: "a", name: "baz", file: "packages/a/src/baz.ts", rung: "example" },
         { pkg: "a", name: "foo", file: "packages/a/src/foo.ts", rung: "probabilistic" },
       ],
-      clauses: [{ item: "k.a#1", rung: "none" }],
+      clauses: [{ item: `k.a#${clauseKey("One works.")}`, rung: "none" }],
       a11y: [],
       libraries: {},
     });
@@ -438,8 +463,8 @@ describe("ledger command", () => {
         hostElements: 0,
         exports: [{ pkg: "g", name: "add", file: "g:todos/add.ts", rung: "example" }],
         clauses: [
-          { item: "k.a#1", rung: "example" },
-          { item: "std.s#1", rung: "example" },
+          { item: `k.a#${clauseKey("One works.")}`, rung: "example" },
+          { item: `std.s#${clauseKey("One works.")}`, rung: "example" },
         ],
       }),
     );

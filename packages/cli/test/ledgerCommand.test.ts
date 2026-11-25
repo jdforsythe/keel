@@ -5,6 +5,7 @@ import { createHash } from "node:crypto";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 import type { A11yCriteriaMap } from "../src/internal/A11yCriteriaMap.ts";
+import { clauseKey } from "../src/internal/clauseKey.ts";
 import { ledgerCommand } from "../src/internal/ledgerCommand.ts";
 import type { Input } from "../src/types/Input.ts";
 import type { OutRecord } from "../src/types/OutRecord.ts";
@@ -197,7 +198,7 @@ describe("ledgerCommand: the plain ledger", () => {
         { pkg: "a", name: "foo", file: "packages/a/src/foo.ts", rung: "probabilistic" },
         { pkg: "b", name: "qux", file: "packages/b/src/qux.ts", rung: "none" },
       ],
-      clauses: [{ item: "k.a#1", rung: "none" }],
+      clauses: [{ item: `k.a#${clauseKey("One works.")}`, rung: "none" }],
       a11y: [],
       libraries: {},
     });
@@ -401,8 +402,8 @@ describe("ledgerCommand --diff", () => {
       unsafe: 0,
       a11y: [{ item: "a11y:app:m.r#1.1.1", rung: "example" }],
       clauses: [
-        { item: "k.a#1", rung: "example" },
-        { item: "std.s#1", rung: "example" },
+        { item: `k.a#${clauseKey("One works.")}`, rung: "example" },
+        { item: `std.s#${clauseKey("One works.")}`, rung: "example" },
       ],
     });
     const out = call(

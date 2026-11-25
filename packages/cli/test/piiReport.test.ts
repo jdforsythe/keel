@@ -36,10 +36,10 @@ export const Plain = s.object({ n: s.int() });
 export const notASchema = 3;
 `;
 const SINKS = [
-  ["sessions", "std.sessions#2"],
-  ["inputs", "k.privacy#7"],
-  ["log", "k.privacy#6"],
-  ["bundle", "k.evidence#5"],
+  ["sessions", "std.sessions#971e9dd1"],
+  ["inputs", "k.privacy#6e6a9059"],
+  ["log", "k.privacy#322775dc"],
+  ["bundle", "k.evidence#d28b776b"],
 ] as const;
 const all = (r: Rung) => (): Rung => r;
 
@@ -109,13 +109,13 @@ describe("piiReport", () => {
     const asked: string[] = [];
     const r = await piiReport(p.dir, p.files, (c) => {
       asked.push(c);
-      return c === "k.privacy#7" ? "example" : "proven";
+      return c === "k.privacy#6e6a9059" ? "example" : "proven";
     });
     expect(r.sinks).toEqual([
-      { sink: "sessions", clause: "std.sessions#2", rung: "proven" },
-      { sink: "inputs", clause: "k.privacy#7", rung: "example" },
-      { sink: "log", clause: "k.privacy#6", rung: "proven" },
-      { sink: "bundle", clause: "k.evidence#5", rung: "proven" },
+      { sink: "sessions", clause: "std.sessions#971e9dd1", rung: "proven" },
+      { sink: "inputs", clause: "k.privacy#6e6a9059", rung: "example" },
+      { sink: "log", clause: "k.privacy#322775dc", rung: "proven" },
+      { sink: "bundle", clause: "k.evidence#d28b776b", rung: "proven" },
     ]);
     expect(asked.sort()).toEqual(SINKS.map((s) => s[1]).sort());
   });
