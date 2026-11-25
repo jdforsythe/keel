@@ -10,6 +10,8 @@
     "k.escapes",
     "k.evidence",
     "k.ledger",
+    "k.library",
+    "k.library-pack",
     "k.module",
     "k.origins",
     "k.parity",

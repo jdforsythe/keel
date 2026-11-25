@@ -7,7 +7,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | block | owner | block | owner |
 |-|-|-|-|
 | E100x | k.compiler, k.boundary, k.bundle, k.head | E105x | k.cli, k.evidence, k.docs, k.review |
-| E110x | k.schema, k.formats, k.privacy, k.reveal, k.leave, k.privacy-reads | E115x | k.module |
+| E110x | k.schema, k.formats, k.privacy, k.reveal, k.leave, k.privacy-reads | E115x | k.module, k.library, k.library-pack |
 | E120x | k.reactive | E125x | k.runtime, k.resume, k.claim |
 | E130x | k.store | E135x | k.scaffold, k.scaffold-shell, k.scaffold-service |
 | E140x | k.component, k.place | E145x | k.errors |
@@ -90,6 +90,8 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.services | Thin services | conformance-covered | clients |
 | k.openapi | OpenAPI import | conformance-covered | clients |
 | k.module | Module manifest | conformance-covered | surface |
+| k.library | Libraries | proposed | packages |
+| k.library-pack | Library publishing | proposed | pack |
 | k.a11y | Accessibility | conformance-covered | WCAG |
 | k.aria | Widget parts | conformance-covered | roles |
 | k.roles | Part roles | conformance-covered | grid |
