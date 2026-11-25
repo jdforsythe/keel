@@ -12,6 +12,12 @@
     "needs": "testTime"
   },
   {
+    "path": "packages/cli/conformance/library-support.ts",
+    "line": 575,
+    "text": "600_000",
+    "needs": "testTime"
+  },
+  {
     "path": "packages/cli/conformance/origins-dev-own-frame.test.ts",
     "line": 149,
     "text": "10_000",

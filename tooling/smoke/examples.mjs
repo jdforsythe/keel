@@ -583,7 +583,7 @@ const proofs = {
       page.on("pageerror", (e) => errors.push(String(e)));
       await page.goto(`${server.base}/`);
       const rects = page.locator('[id="app.rain.chart"] svg rect');
-      await rects.nth(2).waitFor({ timeout: 15_000 });
+      await rects.nth(2).waitFor({ timeout: testTime(15_000) });
       const drawn = await rects.count();
       return [
         served && drawn === 3 && errors.length === 0,
