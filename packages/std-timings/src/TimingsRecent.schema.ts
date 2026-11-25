@@ -1,5 +1,5 @@
 import { s } from "@keel/schema";
-import { Timings } from "./Timings.ts";
+import { Timings } from "./Timings.schema.ts";
 
 /**
  * The `timings.recent` inspect section (std.timings, rfc:0059): the ctx's `timingsOf` and `dropped`, the names it

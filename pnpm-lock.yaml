@@ -2580,23 +2580,25 @@ importers:
         version: 3.23.2
 
   packages/std-timings:
-    dependencies:
+    devDependencies:
+      '@keel/cli':
+        specifier: workspace:*
+        version: link:../cli
       '@keel/compiler':
         specifier: workspace:*
         version: link:../compiler
       '@keel/ctx':
         specifier: workspace:*
         version: link:../ctx
-      '@keel/schema':
-        specifier: workspace:*
-        version: link:../schema
-    devDependencies:
       '@keel/router':
         specifier: workspace:*
         version: link:../router
       '@keel/runtime-dom':
         specifier: workspace:*
         version: link:../runtime-dom
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../schema
       '@keel/server':
         specifier: workspace:*
         version: link:../server
