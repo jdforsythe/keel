@@ -8,5 +8,5 @@
     "outDir": "dist",
     "rootDir": "."
   },
-  "include": ["src", "module.ts"]
+  "include": ["src", "unsafe", "module.ts"]
 }
