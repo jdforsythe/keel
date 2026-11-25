@@ -18,4 +18,8 @@ export default ReceiptsText.text({
   amountFormat: "Schreibe den Betrag mit bis zu zwei Nachkommastellen, etwa 12,50",
   full: "Das Buch fasst 200 Belege. Entferne einen, um einen neuen hinzuzufügen.",
   switchTo: "English",
+  spendLabel: { text: "Bezahlt pro Mitglied in {currency}" },
+  spendSummary: { text: "Alex hat {alex} bezahlt, Sam {sam}." },
+  numbers: "Zahlen zeigen",
+  paid: "Bezahlt",
 });

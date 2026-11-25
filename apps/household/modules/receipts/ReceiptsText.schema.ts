@@ -22,6 +22,10 @@ export const ReceiptsText = messages(
     amountFormat: {},
     full: {},
     switchTo: {},
+    spendLabel: { currency: s.string() },
+    spendSummary: { alex: s.string(), sam: s.string() },
+    numbers: {},
+    paid: {},
   },
   (locale) => import(`./ReceiptsText/${locale}.ts`),
 );

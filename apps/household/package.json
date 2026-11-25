@@ -10,6 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@keel-libs/charts": "workspace:*",
     "@keel/compiler": "workspace:*",
     "@keel/ctx": "workspace:*",
     "@keel/forms": "workspace:*",
