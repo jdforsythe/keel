@@ -22,7 +22,7 @@ const LIBRARY = JSON.stringify({ name: "@x/p", type: "module", keel: "library" }
 const KERNEL = JSON.stringify({ name: "@x/p", type: "module" });
 
 /** structure-lint over a throwaway root holding `files`; its S0014 findings. */
-function s0014(files: Readonly<Record<string, string>>): { code: string; path: string }[] {
+function s0014(files: Readonly<Record<string, string>>): { code: string; path: string; line: number }[] {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "keel-s0014-lib-"));
   made.push(root);
   for (const [file, source] of Object.entries(files)) {
@@ -48,5 +48,16 @@ describe("k.unsafe S0014 in a library's package", () => {
 
   it("a lifted range holding no lifted finding is one S0014 in a library's package", () => {
     expect(s0014({ "packages/p/package.json": LIBRARY, "packages/p/unsafe/a.ts": PLAIN })).toHaveLength(1);
+  }, 90_000);
+
+  it("a finding outside the call's range does not lift it: one S0014 in a library's package", () => {
+    const source = `${PLAIN}export const g = (): never => {\n  throw new Error("x");\n};\n`;
+    expect(s0014({ "packages/p/package.json": LIBRARY, "packages/p/unsafe/a.ts": source })).toHaveLength(1);
+  }, 90_000);
+
+  it("two calls, one lifting a finding and one lifting nothing: the second is the one S0014", () => {
+    const source = `export const f = (): never => ${U}("${REASON}", () => {\n  throw new Error("x");\n});\nexport const g = (): number => ${U}("${REASON}", () => 1);\n`;
+    const found = s0014({ "packages/p/package.json": LIBRARY, "packages/p/unsafe/a.ts": source });
+    expect(found.map((d) => d.line)).toEqual([4]);
   }, 90_000);
 });
