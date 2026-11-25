@@ -2,10 +2,11 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { CODE_FILE } from "./CODE_FILE.ts";
 import type { Diag } from "./Diag.ts";
+import { filesSelect } from "./filesSelect.ts";
 import { isRecord } from "./isRecord.ts";
 import { jsonFieldAt } from "./jsonFieldAt.ts";
 import { makeDiag } from "./makeDiag.ts";
-import { filesSelect, packFiles } from "./packFiles.ts";
+import { packFiles } from "./packFiles.ts";
 
 /** The paths `files` must select: what an app reads of a library (k.library-pack Package). */
 const NEEDED = ["module.ts", ".keel/ledger.json"];

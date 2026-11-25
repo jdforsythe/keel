@@ -6,8 +6,9 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import fc from "fast-check";
 import { afterAll, describe, expect, it } from "vitest";
+import { filesSelect } from "../src/internal/filesSelect.ts";
 import { jsonFieldAt } from "../src/internal/jsonFieldAt.ts";
-import { filesSelect, packFiles } from "../src/internal/packFiles.ts";
+import { packFiles } from "../src/internal/packFiles.ts";
 import { packageShape } from "../src/internal/packageShape.ts";
 
 const SEED = 1337;

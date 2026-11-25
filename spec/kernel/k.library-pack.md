@@ -1,5 +1,5 @@
 # k.library-pack: Library publishing
-status: proposed
+status: implemented
 
 **Package.** A library (k.library) publishes, as its `package.json` `files`: `module.ts`, `src/`, `unsafe/` when it has one, `dist/` (its `tsc` build, which Node imports), `.keel/ledger.json` and its `README.md`. Each `exports` key maps `keel` to the source file, then `types` and `default` to the built files; `publishConfig.exports`, where a package has one, keeps `keel` at the source path. The `@keel/*` packages its files import, and `@keel/reactive` and `@keel/runtime-dom`, which the compiler's output of its JSX imports, are `peerDependencies` and never `dependencies`, so each resolves to the app's copy. Its `tsc` build compiles JSX to `@keel/runtime-dom/jsx-runtime` calls, whose `jsx`, `jsxs` and `Fragment` throw: the built files import in Node and render nothing, since an app renders the source. Its root `tokens.ts` is not published: an app checks the library against its own. An app's `keel check` and `keel build` import a library's built entry (k.library In an app), so a linked library is built (its `build` script) before them, as a workspace's task graph builds a dependency first; `keel dev` and `keel test` read its source alone.
 

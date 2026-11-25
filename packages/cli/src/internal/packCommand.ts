@@ -1,6 +1,7 @@
 import { constants, accessSync, existsSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { readLibraryLedger } from "@keel/check";
+import { libraryKind } from "@keel/compiler/std/libraryKind";
 import type { Input } from "../types/Input.ts";
 import type { Io } from "../types/Io.ts";
 import type { OutRecord } from "../types/OutRecord.ts";
@@ -25,12 +26,15 @@ function kind(
 ):
   | { readonly ok: true; readonly pkg: Readonly<Record<string, unknown>>; readonly text: string }
   | { readonly ok: false; readonly diag: OutRecord } {
-  const fail = (message: string, at?: { line: number; col: number }): { ok: false; diag: OutRecord } => ({
+  /** One E1164 naming `kind`: at `package.json`, at `at` (line 1 by default), unless `nowhere`. */
+  const fail = (
+    message: string,
+    at?: { line: number; col: number },
+    nowhere = false,
+  ): { ok: false; diag: OutRecord } => ({
     ok: false,
     diag: makeDiag("E1164", `kind: ${message}`, {
-      ...(at === undefined && message.startsWith("no package.json")
-        ? {}
-        : { path: "package.json", ...(at ?? { line: 1, col: 1 }) }),
+      ...(nowhere ? {} : { path: "package.json", ...(at ?? { line: 1, col: 1 }) }),
       see: SEE,
     }),
   });
@@ -38,7 +42,7 @@ function kind(
   try {
     text = readFileSync(join(cwd, "package.json"), "utf8");
   } catch {
-    return fail("no package.json here, so no library");
+    return fail("no package.json here, so no library", undefined, true);
   }
   let pkg: unknown;
   try {
@@ -49,7 +53,7 @@ function kind(
   if (!isRecord(pkg) || pkg.keel !== "library")
     return fail('package.json has no "keel": "library"', isRecord(pkg) ? jsonFieldAt(text, "keel") : undefined);
   const name = typeof pkg.name === "string" ? pkg.name : "";
-  if (!/^@[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._-]*$/.test(name))
+  if (libraryKind(pkg, name) !== "library")
     return fail(`name ${JSON.stringify(name.slice(0, 40))} is no scoped package name`, jsonFieldAt(text, "name"));
   return { ok: true, pkg, text };
 }
