@@ -33,6 +33,13 @@ import { summary } from "./summary.ts";
 import { testCommand } from "./testCommand.ts";
 
 const SEE = { see: "k.evidence" };
+
+/** `path:line:col ` of a diagnostic record, as much of it as the record holds; `''` without a path. */
+const whereOf = (r: OutRecord): string => {
+  if (typeof r.path !== "string") return "";
+  const at = [r.path, r.line, r.col].filter((x) => typeof x === "string" || typeof x === "number").join(":");
+  return `${at} `;
+};
 const RUNGS = ["none", "monitored", "example", "probabilistic", "exhaustive", "proven"] as const;
 type Rung = (typeof RUNGS)[number];
 const isRung = (x: unknown): x is Rung => RUNGS.some((r) => r === x);
@@ -58,7 +65,8 @@ const plural = (n: number, one: string): string => `${n} ${one}${n === 1 ? "" : 
  * the `test`, `check` and `ledger` operations run in process, and the six report files, `manifest.json` and its
  * Ed25519 signature `manifest.sig` are written to `<dir>` (default `evidence/<date>`, the UTC date of
  * `ctx.clock.now()`; a sim ctx under `KEEL_SEED`, so its clock is pinned), whether the runs fail or not: a failing run
- * is E1060 after the bundle is written.
+ * is E1060 after the bundle is written, preceded by what failed (each failed test's T0001 as `keel test` prints it, with
+ * its `fix` line, and each check error), and its own `fix` names the first of them, so the last lines name the failure.
  */
 export async function bundleWrite(input: Input, io: Io): Promise<Outcome> {
   const env = io.env ?? {};
@@ -137,6 +145,11 @@ export async function bundleWrite(input: Input, io: Io): Promise<Outcome> {
   ];
   for (const [path, text] of all) writeFileSync(join(out, path), text);
 
+  const why = [
+    ...test.filter((r) => r.kind === "diag"),
+    ...check.filter((r) => r.kind === "diag" && String(r.code).startsWith("E")),
+  ];
+  const first = why[0];
   const failing =
     checkErrors + failedTests === 0
       ? []
@@ -144,8 +157,13 @@ export async function bundleWrite(input: Input, io: Io): Promise<Outcome> {
           makeDiag(
             "E1060",
             `bundle written with ${plural(checkErrors, "check error")} and ${plural(failedTests, "failed test")}`,
-            { path: `${outDir.replace(/\/$/, "")}/manifest.json`, ...SEE },
+            {
+              path: `${outDir.replace(/\/$/, "")}/manifest.json`,
+              ...SEE,
+              ...(first === undefined ? {} : { fix: `first: ${whereOf(first)}${String(first.message ?? "")}` }),
+            },
           ),
         ];
-  return { records: [...failing, summary("evidence", failing, { files: reports.length })], writes: [] };
+  const shown = failing.length === 0 ? [] : why;
+  return { records: [...shown, ...failing, summary("evidence", failing, { files: reports.length })], writes: [] };
 }
