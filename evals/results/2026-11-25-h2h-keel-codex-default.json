@@ -1,0 +1,40 @@
+{
+  "task": "h2h-recipe-box",
+  "arm": "keel",
+  "agent": "codex",
+  "stack": "@keel/server@^0.0.0",
+  "start": "scaffold, published skills, packed packages",
+  "skill": "published",
+  "specSections": [],
+  "model": "default",
+  "runner": "codex",
+  "converged": true,
+  "iterations": 1,
+  "tokens": {
+    "input": 4982157,
+    "output": 31620
+  },
+  "tokensToGreen": 5013777,
+  "costUsd": 0,
+  "builds": true,
+  "timedOut": false,
+  "durationMs": 915524,
+  "scoreMs": 33499,
+  "startedAt": "2026-11-25T17:21:08.247Z",
+  "acceptance": {
+    "passed": 28,
+    "total": 28,
+    "failed": []
+  },
+  "security": {
+    "defects": 0,
+    "checks": 37,
+    "found": []
+  },
+  "a11y": {
+    "defects": 0,
+    "nodes": 0,
+    "pages": 5,
+    "found": []
+  }
+}
