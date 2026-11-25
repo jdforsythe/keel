@@ -76,8 +76,8 @@ async function load(
  * is imported (once per process, one at a time), which registers its target (`shellTarget`), held for that file: the
  * project reads the target its own root resolves. For a declared shell, an entry that does not import is E1159, one
  * registering a shell twice E1053, a package registering no target E1585, and a target whose `files` give a path
- * outside the shell's folder one E1585: by its text, or because the path is a symlink or its nearest existing
- * ancestor's real path is outside the folder's (`linkEscapes`). `shells` are the targets as the deploy generator reads
+ * outside the shell's folder one E1585: by its text, or because a link carries it out of the folder's real path
+ * (`linkEscapes`, k.scaffold Links). `shells` are the targets as the deploy generator reads
  * them, giving no file of a set holding such a path; `apps` each declared shell's app, holding `policy` for its deployable's declared
  * origins (k.origins); `paths`
  * the shell files they give; `topology` the parsed root `topology.ts`; `needs` the E1572 of each plugin a target's
