@@ -1,5 +1,6 @@
 import { loader } from "@keel/router";
-import { err, ok } from "@keel/schema";
+import { err, formatLiteral, ok } from "@keel/schema";
+import { Slug } from "@keel/std-text";
 import { ListData } from "./ListData.schema.ts";
 import { listOf } from "./listOf.server.ts";
 import { shopping } from "./shopping.contract.ts";
@@ -14,11 +15,11 @@ export const loadList = loader(shopping, "shopping.list", { output: ListData }, 
       heading: "Shopping list",
       addStaple: "Add a staple",
       staples: [
-        { key: "milk", text: "Milk" },
-        { key: "bread", text: "Bread" },
-        { key: "eggs", text: "Eggs" },
-        { key: "rice", text: "Rice" },
-        { key: "apples", text: "Apples" },
+        { key: formatLiteral(Slug, "milk"), text: "Milk" },
+        { key: formatLiteral(Slug, "bread"), text: "Bread" },
+        { key: formatLiteral(Slug, "eggs"), text: "Eggs" },
+        { key: formatLiteral(Slug, "rice"), text: "Rice" },
+        { key: formatLiteral(Slug, "apples"), text: "Apples" },
       ],
       views: "Which items",
       toBuy: "To buy",
