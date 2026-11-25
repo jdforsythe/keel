@@ -1,6 +1,4 @@
-// Spec: k.reactive Conformance, "an effect that throws inside a scope with onError delivers the error to that
-// scope's onError and no outer scope's; the throwing effect does not run again; sibling effects still run;
-// without onError the error rethrows from batch".
+// Spec: k.reactive, clause "An effect that throws inside a scope with onError delivers the error to that scope's onError and no outer scope's; the throwing effect does not run again; sibling effects still run; without onError the error rethrows from batch."
 import { describe, expect, it } from "vitest";
 import { batch, computed, effect, scope, signal } from "@keel/reactive";
 

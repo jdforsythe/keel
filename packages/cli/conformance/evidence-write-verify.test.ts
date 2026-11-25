@@ -1,4 +1,4 @@
-// Spec: k.evidence, Conformance "On a fixture project with `KEEL_EVIDENCE_KEY` set, `keel evidence` writes exactly the eight files above, and `--verify` of the result emits one `evidence` record and exits 0."
+// Spec: k.evidence, clause "On a fixture project with `KEEL_EVIDENCE_KEY` set, `keel evidence` writes exactly the eight files above, and `--verify` of the result emits one `evidence` record and exits 0."
 // Seed: 1337.
 // Also covers the Signing and Verify paragraphs (manifest shape, signature, `evidence` record, compact line).
 // Not testable here: "Every file parses with a schema `@keel/cli/evidence` exports" (the spec names no schema export); the

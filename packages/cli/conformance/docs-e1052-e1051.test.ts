@@ -1,4 +1,4 @@
-// Spec: k.docs "`keel docs nope` and `keel docs k.cli --for E1051` emit E1052, exit 2. `keel spec` emits E1051."
+// Spec: k.docs, clause "`keel docs nope` and `keel docs k.cli --for E1051` emit E1052, exit 2. `keel spec` emits E1051."
 // Seed: none. Red: `docs` is absent, so the first two answer E1051 not E1052; `spec` is still an operation, so E1051 is not yet emitted.
 import { describe, expect, it } from "vitest";
 import { baseline, run } from "./docs-support";

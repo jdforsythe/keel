@@ -1,6 +1,7 @@
 import { tx } from "@keel/store";
 import fc from "fast-check";
-// Spec: k.store Conformance, "log replay reproduces state". Seed 1337.
+// Spec: k.store, clause "Log replay reproduces state."
+// k.store Seed 1337.
 import { describe, expect, it } from "vitest";
 import { applyOp, makeCart, opArb, opts } from "./fixtures";
 

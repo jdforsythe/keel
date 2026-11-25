@@ -1,6 +1,6 @@
-// Spec: k.compat, Conformance "With a base where store `s` has state `{ a }`, adding a required field `b` is one E1563 at `b` whose fix leaves none, adding an optional one is none, removing a transaction of `s` is one W1564, and without `--base` there is neither."
-// Spec: k.compat, Rules "E1563 a state schema change a base store's stored states fail, naming the store and the first refused path; fix as E1562"
-// Spec: k.compat, Rules "W1564 a base transaction removed or its payload narrowed, naming it; no fix"
+// Spec: k.compat, clause "With a base where store `s` has state `{ a }`, adding a required field `b` is one E1563 at `b` whose fix leaves none, adding an optional one is none, removing a transaction of `s` is one W1564, and without `--base` there is neither."
+// k.compat, Rules "E1563 a state schema change a base store's stored states fail, naming the store and the first refused path; fix as E1562"
+// k.compat, Rules "W1564 a base transaction removed or its payload narrowed, naming it; no fix"
 // Seed: 1337.
 // ASSUMPTIONS (spec names no fixture layout): the stores factory lives in `modules/m/factory.server.ts` and is named by an action's `stores`;
 // the surface is read through the real binary (`keel build` writes `.keel/surface.json`, `keel check --base <file>`), because the surface needs

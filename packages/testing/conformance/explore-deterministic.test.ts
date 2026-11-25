@@ -1,4 +1,4 @@
-// Spec: k.model, Conformance "Two calls with equal arguments return equal results."
+// Spec: k.model, clause "Two calls with equal arguments return equal results."
 // Seed: 1337.
 import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";

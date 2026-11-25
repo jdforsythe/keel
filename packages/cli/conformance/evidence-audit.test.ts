@@ -1,5 +1,5 @@
-// Spec: k.evidence, Conformance "An `--audit` file that is not `pnpm audit --json` output is E1064; without `--audit`, `deps.json` has `advisories: null`."
-// Spec: k.evidence, Rules "E1064 `--audit` file is not `pnpm audit --json` output"
+// Spec: k.evidence, clause "An `--audit` file that is not `pnpm audit --json` output is E1064; without `--audit`, `deps.json` has `advisories: null`."
+// k.evidence, Rules "E1064 `--audit` file is not `pnpm audit --json` output"
 // Seed: 1337. The audit input is a hand-written file in `pnpm audit --json` shape; nothing touches the network.
 import { rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";

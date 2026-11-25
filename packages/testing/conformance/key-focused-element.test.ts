@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.testing Harness "`keydown` goes to the document's focused element, as a key press does. With focus on `id` or inside it, it is dispatched there and bubbles through `id`, and no focus event fires."
-// Spec: k.testing Conformance "With focus on an `input` inside an unfocusable container, `fire(container, { type: 'keydown', key: 'Enter' })` calls the input's and the container's keydown handlers once each, `event.target` the input, and no focus or blur handler."
+// k.testing Harness "`keydown` goes to the document's focused element, as a key press does. With focus on `id` or inside it, it is dispatched there and bubbles through `id`, and no focus event fires."
+// Spec: k.testing, clause "With focus on an `input` inside an unfocusable container, `fire(container, { type: 'keydown', key: 'Enter' })` calls the input's and the container's keydown handlers once each, `event.target` the input, and no focus or blur handler."
 // Seed: 1337 (fc.assert below).
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";

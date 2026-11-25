@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.mount, Testing "`renderRoute` and `resumeDocument` handles have `documents()`: the document navigations the page started, in order, `{ method, url, body }` (`body` the urlencoded text, `null` for a GET); none is made and the page stays."
+// k.mount, Testing "`renderRoute` and `resumeDocument` handles have `documents()`: the document navigations the page started, in order, `{ method, url, body }` (`body` the urlencoded text, `null` for a GET); none is made and the page stays."
 // Seed 1337 (fc.assert below). The `resumeDocument` handle's `documents()` is read in packages/server/conformance/mount-placement.test.ts, where a served document exists.
 import fc from "fast-check";
 import { afterEach, describe, expect, it } from "vitest";

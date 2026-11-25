@@ -1,4 +1,4 @@
-// Spec: std.headless, Conformance "A Disclosure's button click shows the panel and sets `aria-expanded="true"`; a second click hides it."
+// Spec: std.headless, clause "A Disclosure's button click shows the panel and sets `aria-expanded=\"true\"`; a second click hides it."
 // Seed: 1337.
 // @vitest-environment happy-dom
 // Assumptions: "shows the panel" is the part `<id>.panel` without `hidden`, read by id; `aria-expanded` is `find(id).state.expanded`.

@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.testing, Conformance "`find(id).state` has `rowindex: 2` for a row with `aria-rowindex="2"` and `rowcount: 10` for a grid with `aria-rowcount="10"`, and no key for a value that is not an integer; `a11y()` gives a `th scope="row"` role `rowheader`."
+// Spec: k.testing, clause "`find(id).state` has `rowindex: 2` for a row with `aria-rowindex=\"2\"` and `rowcount: 10` for a grid with `aria-rowcount=\"10\"`, and no key for a value that is not an integer; `a11y()` gives a `th scope=\"row\"` role `rowheader`."
 // Seed: 1337.
 // Assumed: the elements are addressed by `id` through the delegated `data-k` table, as in state-active-sort-mixed.test.ts; `state.rowindex` and `state.rowcount` are numbers.
 import { clone, template } from "@keel/runtime-dom/ops";

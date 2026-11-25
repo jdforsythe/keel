@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.user, Conformance "With `app` and no `user`, `identify` runs for each page request, given that page's caller; `user` on a `ctx` no `createApp` of `app` bound: E1724, `app` unrequested."
-// Spec: k.user, Rules "E1724 `renderRoute` `user` with `app` on a `ctx` no `createApp` of `app` bound".
+// Spec: k.user, clause "With `app` and no `user`, `identify` runs for each page request, given that page's caller; `user` on a `ctx` no `createApp` of `app` bound: E1724, `app` unrequested."
+// k.user, Rules "E1724 `renderRoute` `user` with `app` on a `ctx` no `createApp` of `app` bound".
 // Seed: 1337 (fc.assert below). Pending: RFC 0185 is not built. To un-skip: change `test.skip` to `test` in this file once `renderRoute` with `app` rejects E1724 and gives each harness its own jar.
 // "`app` unrequested" is observed server-side: no `identify`, guard, loader or action ran. See render-route-user-support.ts.
 import { createCtx } from "@keel/ctx";

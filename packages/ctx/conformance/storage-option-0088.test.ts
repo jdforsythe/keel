@@ -1,4 +1,4 @@
-// Spec: k.persist, Conformance "A second ctx on `f` reads a value set through `createCtx({ mode: 'real', drivers: { storage: fileStorage(f) } })`."
+// Spec: k.persist, clause "A second ctx on `f` reads a value set through `createCtx({ mode: 'real', drivers: { storage: fileStorage(f) } })`."
 // Seed 1337.
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";

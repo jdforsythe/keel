@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.serverlog, Conformance "With a revealed 64-character secret in a thrown message at each offset that puts the 2,048th written character inside it, no logged line holds 8 consecutive characters of the secret, in compact and json."
+// Spec: k.serverlog, clause "With a revealed 64-character secret in a thrown message at each offset that puts the 2,048th written character inside it, no logged line holds 8 consecutive characters of the secret, in compact and json."
 // Seed 1337 (fc.assert below). The secret is 64 characters of A-Z and 0-9; the prefix before it is lowercase ASCII, a double quote or U+0001 (six written characters), padded with `x` so the cut falls after `kept` characters of the secret, `kept` from 1 to 63.
 import { createCtx } from "@keel/ctx";
 import { action, manifest } from "@keel/router";

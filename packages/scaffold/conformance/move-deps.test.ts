@@ -1,5 +1,5 @@
-// Spec: k.scaffold, Codemods "`move` relocates a file to another module, updating imports and manifests: a module gains each `deps` entry the move makes it need (k.module E1152) and loses each entry the move leaves unused (E1165)."
-// Spec: k.scaffold, Conformance "`move F --to c`, `F` the only file of `a` importing from `b`, removes `b` from `a`'s `deps` and adds it to `c`'s; a module `d` whose one import from `a` was `F` gains `c` and loses `a`; `keel check`, clean before, is clean after, with no E1165."
+// k.scaffold, Codemods "`move` relocates a file to another module, updating imports and manifests: a module gains each `deps` entry the move makes it need (k.module E1152) and loses each entry the move leaves unused (E1165)."
+// Spec: k.scaffold, clause "`move F --to c`, `F` the only file of `a` importing from `b`, removes `b` from `a`'s `deps` and adds it to `c`'s; a module `d` whose one import from `a` was `F` gains `c` and loses `a`; `keel check`, clean before, is clean after, with no E1165."
 // Seed 1337. The last half of the sentence (`keel check` clean) needs @keel/check, which this package's conformance does not depend on:
 // it is asserted through the manifests (the entries E1152 asks for, and no others) and by module-E1165-unused-dep.test.ts in @keel/check.
 import fc from "fast-check";

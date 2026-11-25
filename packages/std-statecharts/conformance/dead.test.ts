@@ -1,4 +1,4 @@
-// Spec: std.statecharts, Conformance "A state whose every exit is guarded false from some reachable `data` appears in `dead`."
+// Spec: std.statecharts, clause "A state whose every exit is guarded false from some reachable `data` appears in `dead`."
 // Seed: 1337.
 // Assumption: as in closed-explore.test.ts; `dead` is an array of state names, compared sorted.
 import { s } from "@keel/schema";

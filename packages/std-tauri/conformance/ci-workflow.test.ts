@@ -1,4 +1,4 @@
-// Spec: std.tauri, Conformance "The generated workflow of a project declaring `tauri` has a `web-tauri` job on `ubuntu-24.04` that installs `libwebkit2gtk-4.1-dev` and runs `keel build --target tauri`."
+// Spec: std.tauri, clause "The generated workflow of a project declaring `tauri` has a `web-tauri` job on `ubuntu-24.04` that installs `libwebkit2gtk-4.1-dev` and runs `keel build --target tauri`."
 // Seed: 1337 (the id and name are generated).
 // The real binary over a temp project (`keel-cli.ts`): `keel build` writes `.github/workflows/ci.yml`.
 // ASSUMPTION: a job is a two-space-indented key under `jobs:`; "on `ubuntu-24.04`" is `runs-on: ubuntu-24.04` in its block.

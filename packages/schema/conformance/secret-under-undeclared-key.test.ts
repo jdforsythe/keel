@@ -1,5 +1,5 @@
-// Spec: k.schema, Conformance "An open object with a `Secret` under an undeclared key, at any depth, fails with rule `type` at the `Secret`'s path." (rfc:0153)
-// Spec: k.schema, Closed objects "(open objects ignore them, but fail rule `type` at what under one is not plain data, a `Secret` among it; `encode` drops them)"
+// Spec: k.schema, clause "An open object with a `Secret` under an undeclared key, at any depth, fails with rule `type` at the `Secret`'s path." (rfc:0153)
+// k.schema, Closed objects "(open objects ignore them, but fail rule `type` at what under one is not plain data, a `Secret` among it; `encode` drops them)"
 // Seed 1337. A `Secret` is built by parsing a raw value with `s.secret(...)`. Nesting is generated: objects and arrays under the
 // undeclared key, an undeclared key at the root or under a declared open object.
 import { type Secret, s } from "@keel/schema";

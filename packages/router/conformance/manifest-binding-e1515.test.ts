@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 // Spec: k.contract, clause "`manifest(c, binding)` missing an entry of `c`, or with a key `c` lacks, does not compile and throws E1515 naming the id."
-// Spec: k.routes, Conformance "`manifest(c, b)` has `kind` `keel.routeTable`, `contract` `c`, `contracts` `[c]` and no `routes`; `routeTable(m)` has no `contract`."
-// Spec: RFC 0157 Conformance diff: "with every entry bound it returns a table whose `routes.json` lists every id." Seed 1337.
+// Spec: k.routes, clause "`manifest(c, b)` has `kind` `keel.routeTable`, `contract` `c`, `contracts` `[c]` and no `routes`; `routeTable(m)` has no `contract`."
+// RFC 0157 Conformance diff: "with every entry bound it returns a table whose `routes.json` lists every id." Seed 1337.
 // Compile-time half of each "does not compile" claim: ./negative-types.test-d.ts; the calls here are untyped.
 import { manifest, routesArtifact } from "@keel/router";
 import { contract } from "@keel/router/contract";

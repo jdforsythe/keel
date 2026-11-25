@@ -1,5 +1,5 @@
-// Spec: k.topology, Conformance "With `styles: ['@keel/ui/fonts']`, a built `node` document's head and a built `client` `index.html` each link a stylesheet holding that file's `@font-face` rules; without it, neither does."
-// Spec: k.topology, Declaration "`styles` lists package specifiers whose export is a `.css` file (`['@keel/ui/fonts']`): each is imported by the deployable's entry, so its documents link it (k.head) in dev and build."
+// Spec: k.topology, clause "With `styles: ['@keel/ui/fonts']`, a built `node` document's head and a built `client` `index.html` each link a stylesheet holding that file's `@font-face` rules; without it, neither does."
+// k.topology, Declaration "`styles` lists package specifiers whose export is a `.css` file (`['@keel/ui/fonts']`): each is imported by the deployable's entry, so its documents link it (k.head) in dev and build."
 // Seed: 1337 (no generated input: two fixtures, spawned builds). Pending: `styles` is not read yet.
 // ASSUMPTIONS: the node deployable `api` serves its built document from `node dist/api/server.mjs` (PORT, KEEL_SECRET) and its stylesheet at the linked `href`; the client
 // `dist/web/index.html` links a stylesheet whose file is under `dist/web/`; "holding that file's `@font-face` rules" is the text containing `@font-face`.

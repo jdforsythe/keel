@@ -1,4 +1,4 @@
-// Spec: k.formats, clause "The node is `{ kind: 'format', name, base }`; `check` and `gen` stay in memory, so a serialized node keeps the name." (rfc:0079)
+// k.formats, clause "The node is `{ kind: 'format', name, base }`; `check` and `gen` stay in memory, so a serialized node keeps the name." (rfc:0079)
 // Seed 1337. ASSUMPTION (the spec names no accessor): a schema value serializes through JSON.stringify to its node.
 import { s } from "@keel/schema";
 import fc from "fast-check";

@@ -1,5 +1,5 @@
-// Spec: k.mount-scope (rfc:0156), Test "`identityMount` throws E1580 for any `path` that is not lowercase `/` segments."
-// Spec: rfc:0156, clause "`identityMount(p)` throws E1580 for each of `'/\evil.example'`, `'//x.example'`, `''`, `'/'`, `'api'`, `'/API'`, `'/a/'`, `'/a b'`, `'/a?b'`; `identityMount('/api/auth').path` is `'/api/auth'`."
+// k.mount-scope (rfc:0156), Test "`identityMount` throws E1580 for any `path` that is not lowercase `/` segments."
+// rfc:0156, clause "`identityMount(p)` throws E1580 for each of `'/\evil.example'`, `'//x.example'`, `''`, `'/'`, `'api'`, `'/API'`, `'/a/'`, `'/a b'`, `'/a?b'`; `identityMount('/api/auth').path` is `'/api/auth'`."
 // Seed 1337 (fc.assert below).
 import { identityMount } from "@keel/router";
 import fc from "fast-check";

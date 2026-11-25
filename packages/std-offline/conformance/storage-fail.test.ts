@@ -1,5 +1,6 @@
-// Spec: std.offline Conformance 11 and the Write paragraph (a rejected write in a `'mine'` `resolve`): "With a sim schedule `storage: ['ok', 'fail']` (the load's `get`, then `send`'s `set`), `send` resolves `failed` with `offline.storage`, posts nothing and leaves the entry `failed`; with `['ok', 'ok', 'fail']` the flush's `set` fails, the entry is `failed` with `offline.storage`, and the next `send` posts."
-// Spec: std.outbox, Storage writes: "A `ctx.storage` write in `send`, a flush or `resolve` that rejects, or has not settled 10 s after it began on `ctx.clock`, leaves the entry `failed` with `offline.storage` in memory, writes the outbox once more and releases the flush, posting no more." (the cases under a running flush)
+// Spec: std.offline, clause "With a sim schedule `storage: ['ok', 'fail']` (the load's `get`, then `send`'s `set`), `send` resolves `failed` with `offline.storage`, posts nothing and leaves the entry `failed`; with `['ok', 'ok', 'fail']` the flush's `set` fails, the entry is `failed` with `offline.storage`, and the next `send` posts."
+// std.offline the Write paragraph (a rejected write in a `'mine'` `resolve`)
+// std.outbox, Storage writes: "A `ctx.storage` write in `send`, a flush or `resolve` that rejects, or has not settled 10 s after it began on `ctx.clock`, leaves the entry `failed` with `offline.storage` in memory, writes the outbox once more and releases the flush, posting no more." (the cases under a running flush)
 // Seed 1337
 import type { SimCtx } from "@keel/ctx";
 import { resolve, send } from "@keel/std-offline";

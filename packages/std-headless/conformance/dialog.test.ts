@@ -1,4 +1,4 @@
-// Spec: std.headless, Conformance "A Dialog's trigger click opens the dialog with focus on its first button; Escape closes it and focuses the trigger; an `alert` Dialog renders `alertdialog` with `aria-describedby`."
+// Spec: std.headless, clause "A Dialog's trigger click opens the dialog with focus on its first button; Escape closes it and focuses the trigger; an `alert` Dialog renders `alertdialog` with `aria-describedby`."
 // Seed: 1337.
 // @vitest-environment happy-dom
 // Assumptions: Escape is fired at the part `<id>.dialog`; "open" is the `open` attribute of the `<dialog>` element, read by id;

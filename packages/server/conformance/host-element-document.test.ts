@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.host-element, Conformance "A server document with a `Host` holds `<div data-k-host data-k=... role="img" aria-label=...>` with no children; its island loads the resume entry."
-// Spec: k.host-element, Lifecycle "Client only. The server writes the element with its attributes and no children."
+// Spec: k.host-element, clause "A server document with a `Host` holds `<div data-k-host data-k=... role=\"img\" aria-label=...>` with no children; its island loads the resume entry."
+// k.host-element, Lifecycle "Client only. The server writes the element with its attributes and no children."
 // Seed: 1337. Same app shape as route-of-base-elements-island.test.ts; the element's `code` is never called on the server.
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";

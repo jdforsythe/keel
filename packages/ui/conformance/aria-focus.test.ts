@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
-// Spec: k.aria, Conformance "`focus` turning true focuses the element; `focus` true at the first render, and at resume, leaves focus where it was."
+// Spec: k.aria, clause "`focus` turning true focuses the element; `focus` true at the first render, and at resume, leaves focus where it was."
 // Seed: 1337.
-// Spec: k.a11y, Order and focus "No base element takes `tabindex` but `Part` (k.aria), which takes only `0` or `-1`"
+// k.a11y, Order and focus "No base element takes `tabindex` but `Part` (k.aria), which takes only `0` or `-1`"
 import { createCtx } from "@keel/ctx";
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";

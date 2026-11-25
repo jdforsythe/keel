@@ -1,6 +1,6 @@
-// Spec: k.shell, Conformance "With `api`, `keel build --target tauri` with `KEEL_ORIGIN` unset, and with it empty, prints one E1574 naming it and builds nothing; with `http://localhost:8080` it proceeds."
-// Spec: k.shell, Build 2 "With a `node` deployable in the topology, `KEEL_ORIGIN` unset or empty, or not `https:` outside `localhost`, is E1574 `KEEL_ORIGIN must be an https: origin (http: on localhost only)`; ... Neither names the value."
-// Spec: k.shell, Rules "E1574 a shell build's `KEEL_ORIGIN` unset, empty or invalid with a `node` deployable, or set with none (names the key)"
+// Spec: k.shell, clause "With `api`, `keel build --target tauri` with `KEEL_ORIGIN` unset, and with it empty, prints one E1574 naming it and builds nothing; with `http://localhost:8080` it proceeds."
+// k.shell, Build 2 "With a `node` deployable in the topology, `KEEL_ORIGIN` unset or empty, or not `https:` outside `localhost`, is E1574 `KEEL_ORIGIN must be an https: origin (http: on localhost only)`; ... Neither names the value."
+// k.shell, Rules "E1574 a shell build's `KEEL_ORIGIN` unset, empty or invalid with a `node` deployable, or set with none (names the key)"
 // The fixture has a `node` deployable `api` beside `web` (the clause's `api`).
 // Seed: 1337.
 // No native tool runs: `PATH`, `HOME`, `CARGO_HOME` and `RUSTUP_HOME` point at an empty directory, so "proceeds" is read as "reports no E1574";

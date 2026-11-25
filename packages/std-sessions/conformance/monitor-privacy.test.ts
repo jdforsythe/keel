@@ -1,4 +1,4 @@
-// Spec: std.monitor, Conformance "No value of a payload, a caller hash or a store state appears in `sessions.tally` or in the written file."
+// Spec: std.monitor, clause "No value of a payload, a caller hash or a store state appears in `sessions.tally` or in the written file."
 // Seed: 1337.
 // @vitest-environment node
 // Skipped until `monitor` exists. Payloads (which also enter the store's state) hold a marker; the caller token and its hash are

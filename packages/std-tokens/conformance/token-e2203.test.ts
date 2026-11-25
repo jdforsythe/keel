@@ -1,6 +1,6 @@
-// Spec: std.tokens, Rules "E2203 an `output` (`outputSchemas`, k.privacy-reads) for which `schemaHolds` of `Digested` is `'yes'` (no fix)."
-// Spec: std.tokens, Conformance "A page `loader` `output` and an API entry `output` holding `digest: Digested` are each one E2203; a store schema holding it is none."
-// Spec: std.tokens, API "The token leaves once, as `reveal(token)` in the `*.server.ts` file that sends it (in `tx`, storage, a log or a throw: E1112). Its `digest` never leaves (E2203)."
+// std.tokens, Rules "E2203 an `output` (`outputSchemas`, k.privacy-reads) for which `schemaHolds` of `Digested` is `'yes'` (no fix)."
+// Spec: std.tokens, clause "A page `loader` `output` and an API entry `output` holding `digest: Digested` are each one E2203; a store schema holding it is none."
+// std.tokens, API "The token leaves once, as `reveal(token)` in the `*.server.ts` file that sends it (in `tx`, storage, a log or a throw: E1112). Its `digest` never leaves (E2203)."
 // Seed: 1337.
 // Not yet built: `test.skip` until `check()` reports E2203; remove the `.skip` in the build that adds it.
 // Assumption: as in token-e1112.test.ts, `check()` imports nothing, so the rule registers by importing `@keel/std-tokens/tools`.

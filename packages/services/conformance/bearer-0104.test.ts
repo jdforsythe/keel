@@ -1,6 +1,6 @@
-// Spec: k.services, API "A client method takes `{ params?, query?, body?, signal?, bearer?, user? }` and `ctx`. `bearer`, a `Secret<string>`, is sent as `authorization: Bearer <token>`; a token outside k.api's Bearer form is `api.input` at `bearer`. Requests go through `ctx.net.fetch` (k.ctx), so tests run under sim."
-// Spec: k.services, Conformance "With `bearer` a secret of `abc`, the request carries `authorization: Bearer abc`; with `a b`, the call is `api.input` with issue path `bearer` and sends no request."
-// Spec: k.privacy, Rules "E1113 an `s.secret` in an `output`, thrown by `contract` or `loader` (k.routes; fix: none)."
+// k.services, API "A client method takes `{ params?, query?, body?, signal?, bearer?, user? }` and `ctx`. `bearer`, a `Secret<string>`, is sent as `authorization: Bearer <token>`; a token outside k.api's Bearer form is `api.input` at `bearer`. Requests go through `ctx.net.fetch` (k.ctx), so tests run under sim."
+// Spec: k.services, clause "With `bearer` a secret of `abc`, the request carries `authorization: Bearer abc`; with `a b`, the call is `api.input` with issue path `bearer` and sends no request."
+// k.privacy, Rules "E1113 an `s.secret` in an `output`, thrown by `contract` or `loader` (k.routes; fix: none)."
 // Seed: 1337.
 // Sim net only. The call's contract service is `service({ contract })` over module `b`'s entries (k.contract).
 // The `endpoints` case of the RFC list (an `output` holding `s.secret` is no E1113) is here and not in packages/router: this package depends on `@keel/services`.

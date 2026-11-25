@@ -1,4 +1,4 @@
-// Spec: std.monitor, Conformance "Aborting `signal` merges the counts not yet stored, and `run` resolves."
+// Spec: std.monitor, clause "Aborting `signal` merges the counts not yet stored, and `run` resolves."
 // Seed: 1337.
 // @vitest-environment node
 // Skipped until `monitor` exists. No clock advance reaches 60,000 ms before the abort, so nothing is stored until it.

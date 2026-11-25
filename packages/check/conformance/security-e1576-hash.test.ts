@@ -1,4 +1,4 @@
-// Spec: k.security, Rules "So is any `#` specifier (no `package.json` is read)."
+// k.security, Rules "So is any `#` specifier (no `package.json` is read)."
 // Seed: 1337.
 // Scope as E1576 (security-e1576.test.ts): a file outside `packages/`, `node_modules/` and `.keel/`, tests included.
 // Pending: not implemented yet.

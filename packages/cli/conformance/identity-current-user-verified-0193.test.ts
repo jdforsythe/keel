@@ -1,4 +1,4 @@
-// Spec: k.user, Conformance "With `identify` answering `'u1'` at open and `''` after, a live loader's `currentUser()` answers `''`, one `identify` call per call; a stream opened with a verified `x-keel-user: u1`, `'u1'` with no `identify` call."
+// Spec: k.user, clause "With `identify` answering `'u1'` at open and `''` after, a live loader's `currentUser()` answers `''`, one `identify` call per call; a stream opened with a verified `x-keel-user: u1`, `'u1'` with no `identify` call."
 // Seed 1337
 // Pending (rfc:0193): skipped until the build lands; the builder un-skips by changing `test.skip` to `test` in this file.
 // Assumption: the header's format is not specified, so it is captured from a real `service` call; a split `x`/`y` pair as in identity-peers.test.ts, `y` serving one live entry whose loader answers `currentUser()`. The header is resent to `y` as an event-stream GET of the same method and path.

@@ -1,4 +1,4 @@
-// Spec: k.data, clause 1 (k.data#1): "In `modules/notes/mongoNotes.server.ts`, `register('notes.mongo', ...)` is no E1607; `register('mongo', ...)`, `register('other.mongo', ...)`, `register('notes.Mongo', ...)` and `register(name, ...)` with `name` a variable are each one E1607, and a second file registering `notes.mongo` is one E1607, in the file whose path sorts later."
+// Spec: k.data, clause "In `modules/notes/mongoNotes.server.ts`, `register('notes.mongo', ...)` is no E1607; `register('mongo', ...)`, `register('other.mongo', ...)`, `register('notes.Mongo', ...)` and `register(name, ...)` with `name` a variable are each one E1607, and a second file registering `notes.mongo` is one E1607, in the file whose path sorts later."
 // Seed 1337
 // ASSUMPTION: the report is at the `register` call (path, line, col of the call expression); the spec says "at the call".
 import { check } from "@keel/check";

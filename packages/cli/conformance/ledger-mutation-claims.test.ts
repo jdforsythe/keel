@@ -1,5 +1,5 @@
 // Spec: k.ledger, clause "From a report whose sources match the tree, `keel ledger --write` stores one claim per mutated file with Stryker's counts, and the package score over them; after one file changes, its claim is stale (W1714) and the package score omits it."
-// Spec: k.ledger, Rules "W1714 a mutation claim is stale (its file changed since the run)".
+// k.ledger, Rules "W1714 a mutation claim is stale (its file changed since the run)".
 // The real `keel` binary over a temp project (OS tmpdir). The mutation report is hand-written JSON in Stryker's shape;
 // Stryker never runs. Report keys are paths relative to the package, as Stryker writes them. Seed: 1337 (no property here).
 import { describe, expect, it } from "vitest";

@@ -1,4 +1,4 @@
-// Spec: std.tables, Conformance "`sort.price` links to `dir=desc` when sorted `asc` by price, drops `page`, and after its activation focus stays on it and scroll is unchanged."
+// Spec: std.tables, clause "`sort.price` links to `dir=desc` when sorted `asc` by price, drops `page`, and after its activation focus stays on it and scroll is unchanged."
 // Seed: 1337.
 // @vitest-environment happy-dom
 // Assumption: scroll is read as `window.scrollY` under happy-dom, as k.router's own scroll tests do; a link click inside the router navigates client-side.

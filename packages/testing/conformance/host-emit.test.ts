@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.host-code, Conformance "`emit(e)` with an `e` that parses calls `onEvent` once and reaches an observer as a `fire` of `type: 'emit'`; one that fails `events` calls nothing and reaches the `Boundary`."
-// Spec: k.host-code, Events "`emit(e)` parses `e` with `events`, reports `{ kind: 'fire', id, event: { type: 'emit', detail: e } }` to the ctx observers, then calls `onEvent(e)` as a handler: what the app does with it is a transaction, so it is logged, recorded in a session and replayed without the outside code."
+// Spec: k.host-code, clause "`emit(e)` with an `e` that parses calls `onEvent` once and reaches an observer as a `fire` of `type: 'emit'`; one that fails `events` calls nothing and reaches the `Boundary`."
+// k.host-code, Events "`emit(e)` parses `e` with `events`, reports `{ kind: 'fire', id, event: { type: 'emit', detail: e } }` to the ctx observers, then calls `onEvent(e)` as a handler: what the app does with it is a transaction, so it is logged, recorded in a session and replayed without the outside code."
 // Seed: 1337.
 import { observe } from "@keel/ctx";
 import type { CtxEvent } from "@keel/ctx";

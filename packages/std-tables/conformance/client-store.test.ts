@@ -1,4 +1,4 @@
-// Spec: std.tables, Conformance "A client table over a store re-sorts when a transaction changes its rows and renders `empty` at `total` 0."
+// Spec: std.tables, clause "A client table over a store re-sorts when a transaction changes its rows and renders `empty` at `total` 0."
 // Seed: 1337.
 // @vitest-environment happy-dom
 // Assumptions: `tx(transaction, payload)` may be called from a test with the route page mounted; `empty` is `() => Node`;

@@ -1,4 +1,4 @@
-// Spec: k.user, User "In those cases `currentUser.fixed` is true, else false." ("those cases": no identity source; a stream whose `user` came from a verified `x-keel-user` or from `renderRoute`'s `user`.)
+// k.user, User "In those cases `currentUser.fixed` is true, else false." ("those cases": no identity source; a stream whose `user` came from a verified `x-keel-user` or from `renderRoute`'s `user`.)
 // Seed 1337 (fc.assert below).
 // Assumption: a live loader reads `currentUser.fixed` from its args' `currentUser`. The verified `x-keel-user` and `renderRoute` cases need other packages (`service`, `@keel/render`): covered only by the no-identity-source and identify cases here.
 // @vitest-environment node

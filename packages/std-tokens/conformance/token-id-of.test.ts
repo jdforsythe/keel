@@ -1,7 +1,7 @@
-// Spec: std.tokens, Conformance "Under real and sim, `idOf` is `ok` with `id` for a minted token, for it with one `secret` character changed, and under sim for it after expiry."
-// Spec: std.tokens, Conformance "`idOf` of `hunter2`, `''`, a minted token with one hex letter upper-cased, and under real and shell a sim token equals `check`'s `credentials.mismatch` for `hunter2`."
-// Spec: std.tokens, Conformance "`JSON.stringify` and `util.inspect` of `idOf` of a minted token hold no `secret`; `idOf` calls no `console` method."
-// Spec: std.tokens, API "`idOf(token)` is `ok` with the id `check` reads, so the row can be fetched before `check`; a value `check` answers `credentials.mismatch` without calling `find` gets that constant. It reads no row, digest or clock, so `ok` means well formed, not valid. It is synchronous, never throws, and neither returns nor logs the secret."
+// Spec: std.tokens, clause "Under real and sim, `idOf` is `ok` with `id` for a minted token, for it with one `secret` character changed, and under sim for it after expiry."
+// Spec: std.tokens, clause "`idOf` of `hunter2`, `''`, a minted token with one hex letter upper-cased, and under real and shell a sim token equals `check`'s `credentials.mismatch` for `hunter2`."
+// Spec: std.tokens, clause "`JSON.stringify` and `util.inspect` of `idOf` of a minted token hold no `secret`; `idOf` calls no `console` method."
+// std.tokens, API "`idOf(token)` is `ok` with the id `check` reads, so the row can be fetched before `check`; a value `check` answers `credentials.mismatch` without calling `find` gets that constant. It reads no row, digest or clock, so `ok` means well formed, not valid. It is synchronous, never throws, and neither returns nor logs the secret."
 // Seed: 1337.
 // Not yet built: every case is `test.skip` until `idOf` ships; remove the `.skip` in the build that adds it.
 // Assumption: `idOf` is reached through `Reflect` (the types do not carry it yet); its signature is

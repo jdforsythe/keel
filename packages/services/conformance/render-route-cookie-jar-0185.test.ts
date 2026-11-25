@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.mount, Conformance "With `app` and no `user`, a mount `Form` POST answered 303 with `set-cookie: s=1; HttpOnly`: the followed GET and each later request of that page carry `s=1`, a second harness's none; after an answer with `s=; Max-Age=0`, none does."
-// Spec: k.mount, Testing "Its cookie jar holds that origin's cookies: each such request enters `ctx.net` with `cookie` set to the jar's pairs, and each `set-cookie` line of its answer (a followed redirect's or a `redirect: 'manual'` 3xx's too) is applied".
+// Spec: k.mount, clause "With `app` and no `user`, a mount `Form` POST answered 303 with `set-cookie: s=1; HttpOnly`: the followed GET and each later request of that page carry `s=1`, a second harness's none; after an answer with `s=; Max-Age=0`, none does."
+// k.mount, Testing "Its cookie jar holds that origin's cookies: each such request enters `ctx.net` with `cookie` set to the jar's pairs, and each `set-cookie` line of its answer (a followed redirect's or a `redirect: 'manual'` 3xx's too) is applied".
 // Seed: 1337 (fc.assert below; the cookie value `s` is generated, `1` is its default). Pending: RFC 0185 is not built. To un-skip: change `test.skip` to `test` in this file once the harness owns a cookie jar.
 // A request's `cookie` is read where the app sees it, in `identify` (page loads and API calls, which the page's requests are). See render-route-user-support.ts.
 import { renderRoute } from "@keel/testing";

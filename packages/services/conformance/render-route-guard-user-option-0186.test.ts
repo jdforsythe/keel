@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
-// Spec: k.guards, Conformance "`renderRoute(id, { routes, user: 'u1' })` over a module importing `identity.ts`: its guard gets `'u1'` and no `/__keel/user` GET is sent."
-// Spec: k.guards, Client "Under `renderRoute` its `user` option stands for the answer, and no GET is sent."
-// Spec: k.guards, Client "A router with no `identity.ts` sends none, and `user` is `''`."
+// Spec: k.guards, clause "`renderRoute(id, { routes, user: 'u1' })` over a module importing `identity.ts`: its guard gets `'u1'` and no `/__keel/user` GET is sent."
+// k.guards, Client "Under `renderRoute` its `user` option stands for the answer, and no GET is sent."
+// k.guards, Client "A router with no `identity.ts` sends none, and `user` is `''`."
 // Seed: 1337 (fc.assert below). Pending: RFC 0186 is not built. To un-skip: change `test.skip` to `test` once the client router's read exists and `renderRoute` leaves it unsent under `user`; the no-GET assertion of the first case already holds, so the case can run live when `user` already reaches the guard.
 // ASSUMPTION: the route `*` on the ctx's net takes every request to the page's origin. Fixture: render-route-guard-user-support.ts.
 import { createCtx } from "@keel/ctx";

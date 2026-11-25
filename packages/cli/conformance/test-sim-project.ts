@@ -6,6 +6,7 @@ import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { writeRunReports } from "./ledger-run-report.ts";
 
 export const root = fileURLToPath(new URL("../../../", import.meta.url));
 const BIN = join(root, "packages", "cli", "src", "bin.ts");
@@ -66,8 +67,13 @@ const parse = (stdout: string): CliRecord[] => {
   return out;
 };
 
-/** The real `keel` binary (`node packages/cli/src/bin.ts`) in `dir`, `--format=json`. */
-export function keel(dir: string, args: readonly string[]): Run {
+/**
+ * The real `keel` binary (`node packages/cli/src/bin.ts`) in `dir`, `--format=json`.
+ * Before a `ledger` run each project of `dir` gets the run report of its test files as they are
+ * (ledger-run-report.ts), so a fixture's rung stands on a run; `reports: "none"` leaves `dir` as the case made it.
+ */
+export function keel(dir: string, args: readonly string[], opts: { reports?: "auto" | "none" } = {}): Run {
+  if (args[0] === "ledger" && opts.reports !== "none") writeRunReports(dir);
   const r = spawnSync(process.execPath, [BIN, ...args, "--format=json"], {
     cwd: dir,
     encoding: "utf8",

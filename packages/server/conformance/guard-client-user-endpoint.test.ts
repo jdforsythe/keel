@@ -1,7 +1,7 @@
-// Spec: k.guards, Conformance "A `createApp` with `identify` answering `'u1'` answers `GET /__keel/user` with `x-keel: 1` 200 `{ \"user\": \"u1\" }` and `cache-control: no-store`, one `identify` call; without `x-keel: 1`, 403 and `identify` uncalled; with no identity source, 404."
-// Spec: k.guards, Client "A `node` deployable with an identity source answers `GET /__keel/user` carrying `x-keel: 1` with `{ user }`, `identify`'s answer (k.user), and `cache-control: no-store`; without `x-keel: 1`, 403 `keel.denied`."
-// Spec: k.user, Identity source "It runs once per request the deployable answers on a route (page, API route, event stream), after the same-site check and before guards; never for assets, `/__keel/*` but `/__keel/user` (k.guards Client), a forwarded path or `handle`."
-// Spec: k.user, User "No header, cookie, search or body value of the client sets `user`."
+// Spec: k.guards, clause "A `createApp` with `identify` answering `'u1'` answers `GET /__keel/user` with `x-keel: 1` 200 `{ \"user\": \"u1\" }` and `cache-control: no-store`, one `identify` call; without `x-keel: 1`, 403 and `identify` uncalled; with no identity source, 404."
+// k.guards, Client "A `node` deployable with an identity source answers `GET /__keel/user` carrying `x-keel: 1` with `{ user }`, `identify`'s answer (k.user), and `cache-control: no-store`; without `x-keel: 1`, 403 `keel.denied`."
+// k.user, Identity source "It runs once per request the deployable answers on a route (page, API route, event stream), after the same-site check and before guards; never for assets, `/__keel/*` but `/__keel/user` (k.guards Client), a forwarded path or `handle`."
+// k.user, User "No header, cookie, search or body value of the client sets `user`."
 // Seed 1337 (fc.assert below). Pending: RFC 0186 is not built. To un-skip: change `test.skip` to `test` in each skipped case once `createApp` answers `/__keel/user`. The no-identity-source case is live.
 // @vitest-environment node
 import fc from "fast-check";

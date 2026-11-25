@@ -1,4 +1,4 @@
-// Spec: k.module Rules: E1152 "import from a module not in `deps`" and, k.contract, "importing the contract needs `deps` only (E1152), never `public.exports`." Seed 1337.
+// k.module Rules: E1152 "import from a module not in `deps`" and, k.contract, "importing the contract needs `deps` only (E1152), never `public.exports`." Seed 1337.
 // Spec: k.contract, clause "Module `b` importing `modules/a/a.contract.ts` without `a` in `deps` is one E1152; with it none, and no E1151."
 // A caller reaches another module's API through `service({ contract })` over that module's contract file (k.services).
 import fc from "fast-check";

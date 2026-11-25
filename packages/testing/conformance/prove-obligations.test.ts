@@ -1,5 +1,5 @@
-// Spec: k.prove, Obligations "The goal also holds what each function needs to run as written: an option it reads through is present, each `+`, `-` and `*` result is within ±2^53, a map key it reads is present or no `Object.prototype` name, a key it writes is not `__proto__`, `constructor` or `prototype`; a string under a length rule takes only a value of that rule, else E1715."
-// Spec: k.prove, Fragment "index reads (`undefined` past the length; `m[k]` likewise for a missing key)"
+// k.prove, Obligations "The goal also holds what each function needs to run as written: an option it reads through is present, each `+`, `-` and `*` result is within ±2^53, a map key it reads is present or no `Object.prototype` name, a key it writes is not `__proto__`, `constructor` or `prototype`; a string under a length rule takes only a value of that rule, else E1715."
+// k.prove, Fragment "index reads (`undefined` past the length; `m[k]` likewise for a missing key)"
 // Seed: 1337.
 import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";

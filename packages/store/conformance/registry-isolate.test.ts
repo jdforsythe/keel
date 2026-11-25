@@ -1,6 +1,6 @@
 import { scope } from "@keel/reactive";
 import { isolate, store, stores } from "@keel/store";
-// Spec: k.store Registries (RFC 0022): isolate(scope) gives a scope its own registry; store() registers in, and stores() reads,
+// k.store Registries (RFC 0022): isolate(scope) gives a scope its own registry; store() registers in, and stores() reads,
 // Spec: k.store, clause "Two isolated scopes each hold a live store with the same id, `stores()` under each lists only its own and outside both lists neither."
 // the registry of the nearest isolated scope on the owner() chain, else the module registry; a duplicate live id throws only within one registry.
 import { describe, expect, it } from "vitest";

@@ -1,4 +1,4 @@
-// Spec: k.docs "`keel docs` emits a `docs.entry` per `map.json` section in map order, then one per skill; `keel docs keel-client` prints `skills/keel-client/SKILL.md` byte for byte."
+// Spec: k.docs, clause "`keel docs` emits a `docs.entry` per `map.json` section in map order, then one per skill; `keel docs keel-client` prints `skills/keel-client/SKILL.md` byte for byte."
 // Seed 1337 (map order property). Red: `docs` is absent (E1051).
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";

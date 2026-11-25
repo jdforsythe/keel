@@ -1,4 +1,4 @@
-// Spec: k.aria, Conformance "An app file importing `Part` from `@keel/ui/aria` reports no diagnostic, and its `styles` are collected as a stdlib component's."
+// Spec: k.aria, clause "An app file importing `Part` from `@keel/ui/aria` reports no diagnostic, and its `styles` are collected as a stdlib component's."
 // Seed: 1337. The diagnostic half; the collection half is packages/compiler/conformance/part-styles-app-part.test.ts.
 // The code E1822 is retired and not reused: no diagnostic of that code is reported for any import of `@keel/ui/aria`.
 import { check } from "@keel/check";

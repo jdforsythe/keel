@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.testing, Rules "E1722 `renderRoute` given `app` with `state` or `shell`, or `routes` as an import without `app`".
-// Spec: k.testing, Harness "With `routes: () => import(path)` the page resumes likewise (E1722 without `app`)".
+// k.testing, Rules "E1722 `renderRoute` given `app` with `state` or `shell`, or `routes` as an import without `app`".
+// k.testing, Harness "With `routes: () => import(path)` the page resumes likewise (E1722 without `app`)".
 // Seed: 1337 (no generated input). E1722 is the rejection's `code`, as E1720 is for `resumeDocument`.
 import { createCtx } from "@keel/ctx";
 import { renderRoute } from "@keel/testing";

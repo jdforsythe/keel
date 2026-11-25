@@ -1,7 +1,6 @@
-// Spec: std.health, clauses:
-//  "An app module with `@keel/std-health` in `deps` that imports `@keel/std-health/Health` gets no k.module diagnostic."
-//  "The same import without `@keel/std-health` in `deps` reports E1152 at the import."
-//  "Importing `@keel/std-health/loadHealth`, a non-public file, reports E1151, even with the package in `deps`."
+// Spec: std.health, clause "An app module with `@keel/std-health` in `deps` that imports `@keel/std-health/Health` gets no k.module diagnostic."
+// Spec: std.health, clause "The same import without `@keel/std-health` in `deps` reports E1152 at the import."
+// Spec: std.health, clause "Importing `@keel/std-health/loadHealth`, a non-public file, reports E1151, even with the package in `deps`."
 // Seed 1337
 import { check } from "@keel/check";
 import { expect, test } from "vitest";

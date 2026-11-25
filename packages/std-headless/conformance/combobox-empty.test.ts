@@ -1,4 +1,4 @@
-// Spec: std.options, Conformance "A Combobox with no options while open hides the `listbox` and shows `empty` in a `status`."
+// Spec: std.options, clause "A Combobox with no options while open hides the `listbox` and shows `empty` in a `status`."
 // Seed: 1337.
 // @vitest-environment happy-dom
 // Assumptions: the Combobox opens by typing (`input` event), which opens at -1 even with no options; `hidden` is read by id because `find(id)` does not return it.

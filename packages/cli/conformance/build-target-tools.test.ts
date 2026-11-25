@@ -1,4 +1,4 @@
-// Spec: k.shell, Build "4. The shell entry and web build into `dist/<name>/<shell>/www/` (the Vite plugin, given `KEEL_SHELL`), `deploy/<name>/<shell>/` copied beside it."
+// k.shell, Build "4. The shell entry and web build into `dist/<name>/<shell>/www/` (the Vite plugin, given `KEEL_SHELL`), `deploy/<name>/<shell>/` copied beside it."
 // Seed: 1337 (no generated input: the build is the one the clause names; the origin is fixed).
 // Over a stub `@keel/std-tauri` (`shell-stub.ts`): the stub's `build` records whether `www/index.html` and the copied `a.json` were already in `dir`, and its `dir`.
 // The "at most 12" case is shell-target-build.test.ts; the icon, `package.json` and http-permission cases are std-tauri's and std-capacitor's `build-tools.test.ts`.

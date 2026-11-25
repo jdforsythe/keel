@@ -1,5 +1,5 @@
-// Spec: k.origins, Conformance "A `client` deployable with `connect: { 'https://api.test': 'r', 'https://c.example': 'r' }` and `KEEL_PEER_API=https://api.test`: `csp.txt` has `connect-src 'self' https://api.test https://c.example`; its `host` serves it with that policy; the host's own documents lack `https://c.example`."
-// Spec: k.origins, Policy "(in `connect-src` after the `keel-peer` origins; one equal to a peer once, in its place)"; "the `client` `index.html` a `host` serves (the `client`'s origins, not the host's)"
+// Spec: k.origins, clause "A `client` deployable with `connect: { 'https://api.test': 'r', 'https://c.example': 'r' }` and `KEEL_PEER_API=https://api.test`: `csp.txt` has `connect-src 'self' https://api.test https://c.example`; its `host` serves it with that policy; the host's own documents lack `https://c.example`."
+// k.origins, Policy "(in `connect-src` after the `keel-peer` origins; one equal to a peer once, in its place)"; "the `client` `index.html` a `host` serves (the `client`'s origins, not the host's)"
 // Seed 1337 (no generated input: one fixture, a built server on a free port, no timers).
 // ASSUMPTIONS: `node dist/a/server.mjs` with `PORT` and `KEEL_SECRET` as k.hosting's conformance runs it; the policy of the served `index.html` is its `Content-Security-Policy` header;
 // the host `a` has a route `/a` (a document of its own) and `KEEL_PEER_API` names the node deployable `api`.

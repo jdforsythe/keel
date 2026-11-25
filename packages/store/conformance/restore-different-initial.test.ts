@@ -1,4 +1,5 @@
-// Spec: k.store Conformance, "`restore` replaces the base `undo` replays from with the snapshot's `initial`". Seed 1337.
+// Spec: k.store, clause "`restore` replaces the base `undo` replays from with the snapshot's `initial`."
+// k.store Seed 1337.
 import { s } from "@keel/schema";
 import { store, transaction } from "@keel/store";
 import fc from "fast-check";

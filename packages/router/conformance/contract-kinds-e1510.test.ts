@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 // Spec: k.contract, clause "An entry with `method` and `search`, with `layout: true` and `path`, or a page with `output` does not compile, and `contract` throws E1510."
-// Spec: k.contract Rules, E1510 "an entry of no kind or with a member its kind refuses ... a type error, thrown by `contract` or `manifest`". Seed 1337.
+// k.contract Rules, E1510 "an entry of no kind or with a member its kind refuses ... a type error, thrown by `contract` or `manifest`". Seed 1337.
 // Compile-time half of each "does not compile" claim: ./negative-types.test-d.ts; the calls here are untyped.
 import { fixedTime } from "@keel/tooling/test-time";
 import { manifest } from "@keel/router";

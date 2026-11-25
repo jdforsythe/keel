@@ -1,4 +1,4 @@
-// Spec: std.db, Conformance "A process killed with SIGKILL after an action's response restarts on the same database and serves the same stored snapshot byte for byte; its next commit's head is one higher."
+// Spec: std.db, clause "A process killed with SIGKILL after an action's response restarts on the same database and serves the same stored snapshot byte for byte; its next commit's head is one higher."
 // Seed: 1337.
 // Assumption: the snapshot JSON (`snapshot({ meta: true })`, k.persist) has a numeric top-level `head`; "one higher" is `head + 1`.
 // The child is a real process and the signal is a real SIGKILL (POSIX); on a platform without it the test cannot run.

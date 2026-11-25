@@ -1,5 +1,5 @@
-// Spec: std.postgres-changes, Conformance "On Postgres 17, terminating the listening connection's backend reports `lost` to each open follow; the next `follow` opens a new connection and gets the next change."
-// Spec: std.postgres, Modes "a lost one is `lost` to every follow on it, and the next `follow` opens it again" and std.postgres-changes, API "`on({ kind: 'lost' })` once if delivery stops".
+// Spec: std.postgres-changes, clause "On Postgres 17, terminating the listening connection's backend reports `lost` to each open follow; the next `follow` opens a new connection and gets the next change."
+// std.postgres, Modes "a lost one is `lost` to every follow on it, and the next `follow` opens it again" and std.postgres-changes, API "`on({ kind: 'lost' })` once if delivery stops".
 // Seed: 1337 (no generated inputs: one fixed case).
 // Pending (rfc:0192): skipped until the build lands; the builder un-skips by changing the `test.skip` to `test` in this file.
 // Assumption: runs only with `KEEL_TEST_POSTGRES_URL`. The listening backend is this process's own, the one whose `application_name` is `keel-listen-<pid of this process>` (std.postgres Modes), so other processes' listeners on the same server are left alone.

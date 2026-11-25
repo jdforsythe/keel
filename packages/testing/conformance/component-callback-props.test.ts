@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.component, Slot props "Slot and callback props (`onChange: (v: T) => void`) are typed with the component's props, outside its `Props` schema."
+// k.component, Slot props "Slot and callback props (`onChange: (v: T) => void`) are typed with the component's props, outside its `Props` schema."
 // Seed: 1337.
 // Assumed: `render` passes a function-valued prop that `Props` does not name through to the component untouched, as it does a slot prop; the sentence says "typed", so the callback's type is checked at compile time with `expectTypeOf`.
 import { compile } from "@keel/compiler";

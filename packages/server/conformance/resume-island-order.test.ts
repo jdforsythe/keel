@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.resume, Conformance "Islands resume in document order: an `effect` in each records its route id, layout before page."
+// Spec: k.resume, clause "Islands resume in document order: an `effect` in each records its route id, layout before page."
 // Seed: 1337 (fc.assert seed below). Real compiled TSX, real createApp, real resume.
 import fc from "fast-check";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";

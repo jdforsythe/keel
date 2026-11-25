@@ -1,4 +1,4 @@
-// Spec: k.persist, Conformance "`createCtx({ mode: 'real', drivers: { storage } })` returns `storage` as `ctx.storage`."
+// Spec: k.persist, clause "`createCtx({ mode: 'real', drivers: { storage } })` returns `storage` as `ctx.storage`."
 // Seed: 1337.
 import { createCtx } from "@keel/ctx";
 import fc from "fast-check";

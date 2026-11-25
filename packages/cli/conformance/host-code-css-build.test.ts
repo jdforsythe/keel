@@ -1,5 +1,5 @@
-// Spec: k.host-code, Conformance "The build of an app whose host element code file imports `./chart.css` emits it as a `.css` asset and inlines it in no document or chunk."
-// Spec: k.host-code, Styles and policy "The build serves it from the app's origin and loads it with the code's chunk, which `style-src 'self'` allows."
+// Spec: k.host-code, clause "The build of an app whose host element code file imports `./chart.css` emits it as a `.css` asset and inlines it in no document or chunk."
+// k.host-code, Styles and policy "The build serves it from the app's origin and loads it with the code's chunk, which `style-src 'self'` allows."
 // Seed: 1337 (no generated inputs). The real `keel build` over a temp project.
 // Ambiguous: the build's output folder is not named in k.host-code; the test walks `dist` for built files.
 import { readFileSync, readdirSync, statSync } from "node:fs";

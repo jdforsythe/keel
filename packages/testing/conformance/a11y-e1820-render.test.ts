@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.a11y, Conformance "A `renderRoute` page with tokens whose `Box` takes a computed `direction` `row-reverse` over two `Button`s fails with E1820 naming the `Box`'s id; over one `Button`, or with `row`, it passes, and after `keel test` with that passing run `keel ledger` gives the route's `#2.4.3` and `#1.3.2` rung `example`."
-// Spec: k.a11y, Order and focus "At render, with tokens, an element whose atomic classes give a reversed `direction` at any breakpoint over two or more elements of its focus order is E1820 too, naming its element id."
+// Spec: k.a11y, clause "A `renderRoute` page with tokens whose `Box` takes a computed `direction` `row-reverse` over two `Button`s fails with E1820 naming the `Box`'s id; over one `Button`, or with `row`, it passes, and after `keel test` with that passing run `keel ledger` gives the route's `#2.4.3` and `#1.3.2` rung `example`."
+// k.a11y, Order and focus "At render, with tokens, an element whose atomic classes give a reversed `direction` at any breakpoint over two or more elements of its focus order is E1820 too, naming its element id."
 // Seed: 1337. Assumed (spec names no seam): the tokens reach `renderRoute` as `artifacts: { tokens }`, as in a11y-render-contrast.test.ts.
 // The `keel ledger` half (#2.4.3, #1.3.2) is packages/cli/conformance/a11y-ledger-e1820-0191.test.ts.
 import { manifest } from "@keel/router";

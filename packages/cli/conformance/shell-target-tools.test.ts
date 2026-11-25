@@ -1,4 +1,4 @@
-// Spec: k.shell, Conformance "With `tools` giving two entries, the build prints two E1575, each naming its `tool` and `need`, exits 1, writes nothing under `dist/web/tauri/` and calls no `build`."
+// Spec: k.shell, clause "With `tools` giving two entries, the build prints two E1575, each naming its `tool` and `need`, exits 1, writes nothing under `dist/web/tauri/` and calls no `build`."
 // Seed: 1337 (the two entries are generated).
 // Over a stub `@keel/std-tauri` (`shell-stub.ts`); the stub's `build` logs each call to `build-calls.txt`.
 // ASSUMPTION: "naming its `tool` and `need`" is the message holding both strings (the RFC gives the message `<tool> missing or too old: needs <need>`; the spec gives no text).

@@ -1,6 +1,6 @@
-// Spec: std.tables, Conformance "`columns` derives each kind from the schema and throws E2851 for a `value` column in `sort` without `compare`, a `number` in `search` and an unknown field."
+// Spec: std.tables, clause "`columns` derives each kind from the schema and throws E2851 for a `value` column in `sort` without `compare`, a `number` in `search` and an unknown field."
 // Seed: 1337.
-// Spec: std.tables, Rules "E2851 a `columns` entry naming no field or a field of the wrong kind"
+// std.tables, Rules "E2851 a `columns` entry naming no field or a field of the wrong kind"
 // Assumption: `columns` returns no kind table the spec names, so a derived kind is observed through which lists accept it.
 import { type Schema, s } from "@keel/schema";
 import { columns } from "@keel/std-tables";

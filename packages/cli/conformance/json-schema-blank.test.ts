@@ -1,5 +1,5 @@
-// Spec: k.schema, Conformance "`s.string({ min: 1 })` fails `''`, `' '`, U+200B, U+3164 and a lone U+0301 with rule `required`; `decodeStrings` drops each if optional; the JSON Schema `pattern` refuses exactly the blank values without `M`, `Cs` or non-BMP characters." (rfc:0152)
-// Spec: k.schema, Primitives "JSON Schema adds a `pattern` of `\u` ranges for its BMP part but `M` and `Cs`, read alike by ECMA-262 and Python"
+// Spec: k.schema, clause "`s.string({ min: 1 })` fails `''`, `' '`, U+200B, U+3164 and a lone U+0301 with rule `required`; `decodeStrings` drops each if optional; the JSON Schema `pattern` refuses exactly the blank values without `M`, `Cs` or non-BMP characters." (rfc:0152)
+// k.schema, Primitives "JSON Schema adds a `pattern` of `\u` ranges for its BMP part but `M` and `Cs`, read alike by ECMA-262 and Python"
 // Seed: 1337. The MCP input schema of an operation holding a `min: 1` string is read through the public seam: `stdCommand('session', op)`
 // fills the slot (process-wide, once per file) and `mcp(...).receive` answers `tools/list` with the tool's `inputSchema`.
 // The blank set is the oracle below, written from the spec. Python `re` is not run: "read alike" is checked as the same answer

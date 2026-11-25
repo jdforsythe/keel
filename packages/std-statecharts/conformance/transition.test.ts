@@ -1,4 +1,4 @@
-// Spec: std.statecharts, Conformance "`tx` of an event moves to the first target whose guard holds and applies its `do`; with no applicable target the state and `data` are unchanged."
+// Spec: std.statecharts, clause "`tx` of an event moves to the first target whose guard holds and applies its `do`; with no applicable target the state and `data` are unchanged."
 // Seed: 1337.
 // Assumption: `tx` of an event with no applicable target may return ok or err; only the store's state is asserted.
 import { s } from "@keel/schema";

@@ -1,10 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
 // @vitest-environment happy-dom
-// Spec: k.privacy, Sinks "Each string, number and key but a declared field name (not a boolean) in a `Secret` made or revealed while the request runs (`bearer` too) becomes `[secret]`."
-// Spec: k.server, Log "`diag` per diagnostic or uncaught throw"
-// Spec: k.privacy, Sinks "A runner's `run` is scoped alike."
-// Spec: k.privacy, Conformance "An action throwing the revealed value of a `Secret` input or `bearer`, as a string or in an `Error` message, logs a `diag` record holding `[secret]` and not the value, in dev and production, as does a loader or action throwing one parsed after an `await` or made earlier and revealed in it, a record or `json` key in one, and a runner's; a boolean or declared field name logs as is; of two overlapping requests each marks only its own."
+// k.privacy, Sinks "Each string, number and key but a declared field name (not a boolean) in a `Secret` made or revealed while the request runs (`bearer` too) becomes `[secret]`."
+// k.server, Log "`diag` per diagnostic or uncaught throw"
+// k.privacy, Sinks "A runner's `run` is scoped alike."
+// Spec: k.privacy, clause "An action throwing the revealed value of a `Secret` input or `bearer`, as a string or in an `Error` message, logs a `diag` record holding `[secret]` and not the value, in dev and production, as does a loader or action throwing one parsed after an `await` or made earlier and revealed in it, a record or `json` key in one, and a runner's; a boolean or declared field name logs as is; of two overlapping requests each marks only its own."
 // SPEC k.privacy|Sinks|Server log (k.server):
 // SPEC k.privacy|Sinks|Cost:
 // Seed: 1337.

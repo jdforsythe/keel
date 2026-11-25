@@ -1,6 +1,6 @@
-// Spec: std.postgres-changes, Conformance "Under sim, on a `pglite:` folder and on Postgres 17 in CI, a `follow` started before a `transaction` that calls `changed(ch, { b: 'x' })` twice and commits gets one `changed`; one whose `fn` returns `err` gets none; under sim a plan `conflict`, `none` that calls `changed` in each run gets one."
-// Spec: std.postgres, Modes "Under sim, delivery of a change happens when the committing step settles, in step order, with no timer."
-// Spec: std.postgres-changes, API "On the database object it is its own transaction, delivered when it commits."
+// Spec: std.postgres-changes, clause "Under sim, on a `pglite:` folder and on Postgres 17 in CI, a `follow` started before a `transaction` that calls `changed(ch, { b: 'x' })` twice and commits gets one `changed`; one whose `fn` returns `err` gets none; under sim a plan `conflict`, `none` that calls `changed` in each run gets one."
+// std.postgres, Modes "Under sim, delivery of a change happens when the committing step settles, in step order, with no timer."
+// std.postgres-changes, API "On the database object it is its own transaction, delivered when it commits."
 // Seed: 1337.
 // Pending (rfc:0192): skipped until the build lands; the builder un-skips by changing each `test.skip` to `test` in this file.
 // Assumption: Postgres 17 runs only with `KEEL_TEST_POSTGRES_URL` (MODES holds it only then, as `hasPg17`); "none" is shown by `flush` (a later commit on the same connection arriving).

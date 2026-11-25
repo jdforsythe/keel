@@ -1,8 +1,8 @@
-// Spec: k.user, Conformance "With `identify` answering `'u1'`, a guard, a loader, an action and a live loader's stream each get `user` `'u1'`, one `identify` call per request; with no identity source, `''`; `renderRoute(id, { user: 'u1' })` gives guard and loader `'u1'`."
-// Spec: k.user, User "Guards, loaders (live too) and actions get `user: string` beside `caller`: `identify`'s answer; `''` with no identity source, on a `client` deployable, or under `renderRoute` without its `user` option."
-// Spec: k.user, Identity source "`identify({ request, caller }, ctx)` returns `Promise<string>`: a user id, `''` for no one. `request` is the incoming `Request` without its body."
-// Spec: k.user, Identity source "It runs once per request the deployable answers on a route (page, API route, event stream), after the same-site check and before guards; never for assets, `/__keel/*`, a forwarded path or `handle`. The kernel keeps no answer across requests."
-// Spec: k.user, User "An event stream keeps the `user` it opened with until it closes."
+// Spec: k.user, clause "With `identify` answering `'u1'`, a guard, a loader, an action and a live loader's stream each get `user` `'u1'`, one `identify` call per request; with no identity source, `''`; `renderRoute(id, { user: 'u1' })` gives guard and loader `'u1'`."
+// k.user, User "Guards, loaders (live too) and actions get `user: string` beside `caller`: `identify`'s answer; `''` with no identity source, on a `client` deployable, or under `renderRoute` without its `user` option."
+// k.user, Identity source "`identify({ request, caller }, ctx)` returns `Promise<string>`: a user id, `''` for no one. `request` is the incoming `Request` without its body."
+// k.user, Identity source "It runs once per request the deployable answers on a route (page, API route, event stream), after the same-site check and before guards; never for assets, `/__keel/*`, a forwarded path or `handle`. The kernel keeps no answer across requests."
+// k.user, User "An event stream keeps the `user` it opened with until it closes."
 // Seed 1337 (fc.assert below). renderRoute's half is packages/testing/conformance/render-route-user.test.ts; the forwarded path, in identity-peers.test.ts; `handle`, in identity-handle.test.ts.
 // Runs under plain Node; every request is a runtime (JSON) request or an event stream.
 // @vitest-environment node

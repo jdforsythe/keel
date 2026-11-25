@@ -1,4 +1,4 @@
-// Spec: std.shells, Conformance "A value `set` through one driver is read by a new driver over the same native store, as after an app restart."
+// Spec: std.shells, clause "A value `set` through one driver is read by a new driver over the same native store, as after an app restart."
 // Seed: 1337.
 // @vitest-environment happy-dom
 // Assumption: a restart is `world.restart()` (nothing to drop for Capacitor: `localStorage` is the native store) and a new `capacitorDrivers` over the same store; a value a `true` `commit` stored is held to the same rule.

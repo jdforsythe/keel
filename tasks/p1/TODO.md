@@ -28,7 +28,8 @@ The `unsafe` count measures escapes from the type system in code that runs. Nega
 - [x] `done` backlog 1102: check's mutation run gets past its initial test run; no test writes a type cache beside an app
 - [ ] `next` backlog 1105: a bound on `mutate.mjs --stop`
 - [x] `done` backlog 0991: a scaffolded project builds on first run
-- [ ] `next` backlog 1040 (the concurrency cap, measured on a quiet machine) and 1103 (not reproduced; the smoke now keeps its command's output)
+- [ ] `running` the gate equals CI: the whole test as CI's six shards from trees with no build output (done); every test time bound through one scale, the suites swept at one tenth (`lane-slowci`, built; its conformance bounds being routed through the helpers); then CI green on the pushed head
+- [ ] `next` backlog 1040 (the concurrency cap), 1103, 1115, 1119
 - [ ] `next` check's 13 mutation chunks on the main line, when the machine is quiet
 
 ### W1 Freeze
@@ -44,18 +45,21 @@ The `unsafe` count measures escapes from the type system in code that runs. Nega
 ### W2 Weakness clearance
 The triage is `tasks/p1/weaknesses.md`: 102 lines to fix now in 17 lanes (A1), 105 after them in 15 lanes (A2), 24 for the docs sweep, 7 moved to `tasks/FUTURE.md`, 52 closed as done or overtaken, 2 that need a person.
 - [x] `done` the backlog triaged with decisions, in fix lanes
-- [ ] `running` lane 01 gate-flakes: three of its nine lines (`lane-gate`)
+- [ ] `running` lane 01 gate-flakes: 0991 done; the rest with the gate work above
 - [x] `done` lane 06 server-scrub-and-streams: RFC 0230
-- [ ] `running` lane 07 check-security-rules: RFC 0231 (`lane-sec07`)
+- [x] `done` lane 07 check-security-rules: RFC 0231
 - [x] `done` lane 08 router-identity: RFC 0232
-- [ ] `next` lanes 02 to 05 and 09 to 17, in the triage's order, as lanes free up
+- [x] `done` lane 09 pii-and-data: RFC 0236
+- [ ] `running` lane 03 ledger-integrity: RFC 0235, its spec, header migration and skipped conformance on the main line; the builder's steps 2, 4, 5 and 6 next
+- [ ] `next` lanes 02, 04, 05 and 10 to 17 and 33, in the triage's order, as lanes free up
 - [ ] `blocked` (A1) the A2 lanes 18 to 32
 - [ ] `blocked` (fix lanes) a red-team pass, by Claude and by Codex, that files no new high or medium line
 
 ### W3 Evidence and coverage
 - [x] `done` the survey (`tasks/p1/evidence-survey.md`)
 - [x] `done` every page route outside household rendered with its a11y checks
-- [ ] `running` RFC 0233: the a11y item key per project, `keel test` passing the artifacts by default, items per page route (`lane-a11yrfc`)
+- [x] `done` RFC 0233: an a11y item per page route and per project, `keel test` passing the artifacts by default: 620 of 620 items with evidence
+- [x] `done` RFC 0234: static contrast judged from the command line
 - [x] `done` household: every export has evidence; every page route rendered with its a11y checks
 - [ ] `next` backlog 1106, 1107: a generated `s.id` with a shape a server mints; a found input gives its value
 - [x] `done` RFC 0229: `unsafe` counts escapes in code that runs (13, from 35); negative type tests have their own home and count (90)
@@ -66,13 +70,15 @@ The triage is `tasks/p1/weaknesses.md`: 102 lines to fix now in 17 lanes (A1), 1
 
 ### W5 Agent docs, W7 the walkthrough app, golden-3, W16 head to head (the apps that prove it)
 - [ ] `next` `keel docs <topic>` reading the docs shipped in the packages; `AGENTS.md`; the app-work skills checked against the tree
-- [ ] `next` the walkthrough app, ten layers, each chapter run once as an eval
+- [x] `done` the walkthrough app's design (`tasks/p1/walkthrough-design.md`): Evenly, a group trip's shared costs, fourteen layers from a page with no server to native shells
+- [ ] `running` Evenly layers 1 to 3 (`lane-evenly`)
+- [ ] `blocked` (spike A: a browser data capability `place` can move to the server) layer 4 on; layer 6 after library slice 4; layer 13 after the session-to-test fixes; chapter evals after the agent docs
 - [ ] `blocked` (agent docs) golden-3 built by an agent run of its eval with Claude, then with Codex; every finding filed
 - [ ] `blocked` (golden-3) the `public-docs` eval converging with Claude and with Codex
 - [ ] `blocked` (walkthrough) head to head: the harness and three pairs against the comparison list, each result dated and versioned
 
 ### W6 Human docs, W8 the site, W9 the pitch, W10 showing it, W11 research
-- [ ] `next` W11: the steal list verified
+- [x] `done` W11: the steal list verified against the live sites (`tasks/p1/research.md`: 22 items checked, 14 added, the six frameworks' current versions, what the first five minutes should be)
 - [ ] `blocked` (freeze) diagrams, the tour, the guides, the generated reference
 - [ ] `blocked` (W6, W11) the site built in Keel: zero axe violations, CSP served, budgets met, every number read from `evidence.json` with a claim check
 - [ ] `blocked` (W3, W8) the comparison pages, each claim about another framework sourced
@@ -84,22 +90,14 @@ The triage is `tasks/p1/weaknesses.md`: 102 lines to fix now in 17 lanes (A1), 1
 - [ ] `blocked` (RFC 0163) a third-party style library built in the format as an example
 
 ### W12 Release
-- [ ] `next` release hygiene (backlog 0941, 0943, 0944, 0946)
+- [x] `done` release hygiene (backlog 0941, 0943, 0944, 0946): `LICENSE`, `UNLICENSED`, every package private, `SECURITY.md`, `CONTRIBUTING.md`, each held by a hygiene check; `hygiene --launch` fails on the security address placeholder until it is set
 - [ ] `blocked` (W6, W7, W9 stable) the docs sweep and reset: final ADRs distilled and checked against the code, numbered RFC, ADR and backlog references gone, a check that fails on one
 - [ ] `blocked` (sweep) `changeset version` and `pnpm publish --dry-run` with provenance in CI; a clean-runner job that scaffolds from the packed tarballs and runs `keel check`
 - [ ] `blocked` (all above) the release checklist
 
 ## Needs a human
 
-Each of these is started as early as its inputs allow, since they have the longest lead times.
-
-- [ ] A physical Android device, a physical iOS device and a Windows machine, for the shell runs CI cannot make (backlog 0824).
-- [ ] Accessibility audit and penetration test: choose and pay one firm for each (scope: golden-3 and the site, a retest included). The lead writes the scope documents and a vendor shortlist.
-- [ ] A newcomer reviewer: one person who writes TypeScript and has never seen the repo, to read the docs and the walkthrough.
-- [ ] A domain and a static host account for the site.
-- [ ] The npm organization and the GitHub organization for the fresh public repository.
-- [ ] The licence, chosen at launch.
-- [ ] An address a person answers, for `SECURITY.md`.
+Nothing blocks on a person now. Near the end of P1, in one sitting: a domain and a static host for the site; the npm and GitHub organizations; the licence; the address `SECURITY.md` names (`hygiene --launch` fails until it is set) and GitHub private vulnerability reporting turned on; a newcomer reviewer for the docs. The outside accessibility audit and penetration test run after P1 or at its end (`docs/reviews/` holds the scope documents and a shortlist for then); S6 is closed unless they reopen it.
 
 ## Launch (P2)
 

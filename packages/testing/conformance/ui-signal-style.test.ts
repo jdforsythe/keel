@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.ui Conformance, "A signal bound to a style prop changes only the element's class list; no element ever has a `style` attribute". Seed: 1337.
+// Spec: k.ui, clause "A signal bound to a style prop changes only the element's class list; no element ever has a `style` attribute."
+// k.ui Seed: 1337.
 // A Button driven by the harness `fire` sets the signal; `a11y()` and `find` show nothing but the class changed.
 import { signal } from "@keel/reactive";
 import { render } from "@keel/testing";

@@ -1,5 +1,5 @@
-// Spec: k.shell, Conformance "`shells` on a `node` deployable is one E1573; `id: 'golden'` is one E1573."
-// Spec: k.shell, Rules "E1573 `shells` on a deployable that is not `client`, or an `id` that is not reverse-DNS"
+// Spec: k.shell, clause "`shells` on a `node` deployable is one E1573; `id: 'golden'` is one E1573."
+// k.shell, Rules "E1573 `shells` on a deployable that is not `client`, or an `id` that is not reverse-DNS"
 // Seed: 1337.
 // ASSUMPTION: `check` reads `topology.ts` from the file list, as the other topology rules do (E1509); `package.json` lists the shell packages so E1572 does not enter.
 import { check } from "@keel/check";

@@ -1,4 +1,4 @@
-// Spec: std.options, Conformance "A Menu trigger's Enter opens the menu with focus on `menu` and the first item highlighted; ArrowUp on the first wraps to the last; Enter calls `onSelect` and returns focus to the trigger; Escape returns focus without a call; Tab closes it without moving focus back."
+// Spec: std.options, clause "A Menu trigger's Enter opens the menu with focus on `menu` and the first item highlighted; ArrowUp on the first wraps to the last; Enter calls `onSelect` and returns focus to the trigger; Escape returns focus without a call; Tab closes it without moving focus back."
 // Seed: 1337.
 // @vitest-environment happy-dom
 // Assumptions: keys in the open menu are fired at `<id>.menu`; the harness's `keydown` does not move focus itself, so "Tab closes it without moving focus back" is

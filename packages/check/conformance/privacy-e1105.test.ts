@@ -1,4 +1,4 @@
-// Spec: k.privacy, Rules "E1105 `reveal` imported in an app file other than `*.server.ts`, test files included."
+// k.privacy, Rules "E1105 `reveal` imported in an app file other than `*.server.ts`, test files included."
 // Seed: 1337.
 // Skipped until the rule is attributed to k.privacy; it has no fix (fix-diffs.test.ts records it).
 import { check } from "@keel/check";

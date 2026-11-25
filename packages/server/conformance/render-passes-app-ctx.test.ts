@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: RFC 0162 Conformance diff: "A route page and its `errorElement` receive the router's ctx; a server-rendered page the `createApp({ ctx })` object itself (`===`), the one its loader gets" and k.component "every caller (runtime root, router, server render, harness, JSX parent) passes `ctx`". Seed 1337.
+// RFC 0162 Conformance diff: "A route page and its `errorElement` receive the router's ctx; a server-rendered page the `createApp({ ctx })` object itself (`===`), the one its loader gets" and k.component "every caller (runtime root, router, server render, harness, JSX parent) passes `ctx`". Seed 1337.
 // The page records the second argument it was called with; the app was created with one sim ctx.
 import { createCtx } from "@keel/ctx";
 import type { Ctx } from "@keel/ctx";

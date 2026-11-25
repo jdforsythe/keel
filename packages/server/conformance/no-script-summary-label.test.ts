@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.forms, Conformance "A no-script post that fails `amount` (an `Input` labelled `Amount`) answers 422 with a `.k-summary` item reading `Amount: <message>` whose link targets `#<field id>`."
-// Spec: k.forms, "The page carries a summary before its content, `role="alert"` with class `k-summary` (k.ui Base): one item per error, a link to the field's control (`#<field id>`) named by the text of its `<label for>` (else the path), then the message."
+// Spec: k.forms, clause "A no-script post that fails `amount` (an `Input` labelled `Amount`) answers 422 with a `.k-summary` item reading `Amount: <message>` whose link targets `#<field id>`."
+// k.forms, "The page carries a summary before its content, `role="alert"` with class `k-summary` (k.ui Base): one item per error, a link to the field's control (`#<field id>`) named by the text of its `<label for>` (else the path), then the message."
 // Seed: 1337 (property over labels).
 // Not built yet: every case is `test.skip`; the builder changes `test.skip` to `test` in each.
 // Assumed: an item is a list item holding one link and then the message; its text, whitespace collapsed, is `<link text>: <message>`, and `<message>` is the text of the element the control's `aria-describedby` names.

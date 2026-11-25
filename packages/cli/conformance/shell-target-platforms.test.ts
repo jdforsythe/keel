@@ -1,6 +1,6 @@
 import fc from "fast-check";
-// Spec: k.shell, Conformance "With `platforms: ['x']`, `--platform y` and no `--platform` are each one E1052; a stub registering nothing, or a path `../a.json`, is one E1585."
-// Spec: k.shell, Rules "E1585 a shell package registering no target, or a shell file path outside its folder."
+// Spec: k.shell, clause "With `platforms: ['x']`, `--platform y` and no `--platform` are each one E1052; a stub registering nothing, or a path `../a.json`, is one E1585."
+// k.shell, Rules "E1585 a shell package registering no target, or a shell file path outside its folder."
 // E1052 is a usage error, exit 2 (k.cli Output: "2 usage error"; rules-e1052.test.ts reads an unknown flag the same).
 // Seed: 1337 (the wrong platform and the paths outside the folder are generated).
 // Over a stub `@keel/std-tauri` (`shell-stub.ts`). ASSUMPTION: the E1585 of a path is read from `keel build --target tauri` and from `keel check` (k.shell Files: "a path with a `..` segment, a `\` or a leading `/` is E1585"); each prints exactly one.

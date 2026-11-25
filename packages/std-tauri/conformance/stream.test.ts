@@ -1,4 +1,4 @@
-// Spec: std.shells, Conformance "With each package, a response whose body the native side sends in two chunks resolves before the second is sent and its body yields the first; aborting it cancels the native request; no `set-cookie` header reaches the page."
+// Spec: std.shells, clause "With each package, a response whose body the native side sends in two chunks resolves before the second is sent and its body yields the first; aborting it cancels the native request; no `set-cookie` header reaches the page."
 // Same clause as packages/std-capacitor/conformance/stream.test.ts.
 // Seed: 1337.
 // @vitest-environment happy-dom

@@ -1,4 +1,4 @@
-// Spec: k.compiler, Conformance "`export * from './a.server'` and `import('./a.server')` in client-reachable code are each E1004; `export type` from it is not."
+// Spec: k.compiler, clause "`export * from './a.server'` and `import('./a.server')` in client-reachable code are each E1004; `export type` from it is not."
 // Seed: 1337.
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";

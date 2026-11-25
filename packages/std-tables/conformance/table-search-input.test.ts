@@ -1,4 +1,4 @@
-// Spec: std.tables, Conformance "`TableSearch` navigates once, 300 ms after the last of three inputs, with `replace` and no `page`."
+// Spec: std.tables, clause "`TableSearch` navigates once, 300 ms after the last of three inputs, with `replace` and no `page`."
 // Seed: 1337.
 // @vitest-environment happy-dom
 // Assumption: one navigation is observed as one loader run of the route (`dataset.loads`) and the resulting `route().search`.

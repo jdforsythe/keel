@@ -1,5 +1,6 @@
 // Seed 1337
-// Spec: k.compiler Rules E1000 and Conformance "A file with a syntax error yields only E1000, also in routes.ts at build time."
+// Spec: k.compiler, clause "A file with a syntax error yields only E1000, also in `routes.ts` at build time."
+// k.compiler E1000 and
 import { compile } from "@keel/compiler";
 import fc from "fast-check";
 import { expect, test } from "vitest";

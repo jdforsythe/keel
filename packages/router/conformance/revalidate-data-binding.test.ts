@@ -1,4 +1,4 @@
-// Spec: k.router, Conformance "After an `ok(null)` action, a binding reading `props.data` shows the new value and the page keeps its nodes and focus."
+// Spec: k.router, clause "After an `ok(null)` action, a binding reading `props.data` shows the new value and the page keeps its nodes and focus."
 // Seed: 1337.
 // @vitest-environment happy-dom
 // ASSUMPTIONS (as in fixtures.ts): createRouter(routes, { ctx, history }) returns { App, dispose }; a `Form` is called as a function with

@@ -1,4 +1,4 @@
-// Spec: k.cli "One engine": `keel mcp` and `keel lsp` serve the same engine (RFC 0020). Public API only:
+// k.cli "One engine": `keel mcp` and `keel lsp` serve the same engine (RFC 0020). Public API only:
 // `run`, `mcp`, `lsp`, `operations` from '@keel/cli'. Seed 1337.
 // Spec: k.cli, clause "For a fixture project, `keel check --format=json`, the MCP `check` tool, and LSP diagnostics yield the same set of (code, path, line, col, message)."
 import { lsp, mcp, operations, run } from "@keel/cli";

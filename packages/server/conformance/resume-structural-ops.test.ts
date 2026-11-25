@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.resume, Conformance "An island page with a `Boundary` around a `Match` whose case holds a `For` whose rows hold an `If`: it resumes with no warning; flipping the `If` in one row, adding and removing a row, changing the case and resetting the Boundary each update in place, keeping the other nodes."
+// Spec: k.resume, clause "An island page with a `Boundary` around a `Match` whose case holds a `For` whose rows hold an `If`: it resumes with no warning; flipping the `If` in one row, adding and removing a row, changing the case and resetting the Boundary each update in place, keeping the other nodes."
 // Seed: 1337. Real compiled TSX, real createApp, real resume.
 import { afterEach, describe, expect, it } from "vitest";
 import { click, componentsOf, elementsOf, expectKept, install, maybe, q, resumeBody, serve } from "./resume-app.ts";

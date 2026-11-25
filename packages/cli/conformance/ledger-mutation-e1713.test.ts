@@ -1,5 +1,5 @@
 // Spec: k.ledger, clause "A report whose package score is below its `thresholds.break`, or whose `thresholds.break` is below the committed threshold, makes `--diff` report E1713."
-// Spec: k.ledger, Rules "E1713 `--diff`: a package's score over fresh claims is below its threshold, or its threshold is below the committed one".
+// k.ledger, Rules "E1713 `--diff`: a package's score over fresh claims is below its threshold, or its threshold is below the committed one".
 // The real `keel` binary over a temp project (OS tmpdir). The mutation report is hand-written JSON in Stryker's shape;
 // Stryker never runs. The committed ledger is stored by `keel ledger --write` from a report at 100% with break 70.
 // Seed: 1337 (no property in this file).

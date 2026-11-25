@@ -1,5 +1,5 @@
 // Spec: k.ctx, clause "A real `ctx.net.fetch` to a port nothing listens on, and to a server that resets the connection as it is set up, each rejects with a `TypeError`, with no uncaught exception."
-// Spec: k.ctx API, "A real `ctx.net.fetch` whose connection is refused or reset rejects with a `TypeError` and never throws outside the returned promise."
+// k.ctx API, "A real `ctx.net.fetch` whose connection is refused or reset rejects with a `TypeError` and never throws outside the returned promise."
 // Seed 1337 (the ctx's seed; the requests carry no random input).
 // The cases run in a plain `node` child with the test preload (`--import`, through keelConfig) left out: that preload
 // (tooling/node-fetch.mjs) wraps each undici socket's `setTypeOfService` to swallow EINVAL, which is the very throw this

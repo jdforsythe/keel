@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.user, Conformance "With `identify` answering `'u1'`, a guard, a loader, an action and a live loader's stream each get `user` `'u1'`, one `identify` call per request; with no identity source, `''`; `renderRoute(id, { user: 'u1' })` gives guard and loader `'u1'`."
-// Spec: k.user, User "Guards, loaders (live too) and actions get `user: string` beside `caller`: `identify`'s answer; `''` with no identity source, on a `client` deployable, or under `renderRoute` without its `user` option."
+// Spec: k.user, clause "With `identify` answering `'u1'`, a guard, a loader, an action and a live loader's stream each get `user` `'u1'`, one `identify` call per request; with no identity source, `''`; `renderRoute(id, { user: 'u1' })` gives guard and loader `'u1'`."
+// k.user, User "Guards, loaders (live too) and actions get `user: string` beside `caller`: `identify`'s answer; `''` with no identity source, on a `client` deployable, or under `renderRoute` without its `user` option."
 // The createApp half is packages/server/conformance/identity-user.test.ts. Seed 1337 (fc.assert below).
 // Untestable here: `user` `''` on a `client` deployable (its loaders run in a browser; no public harness runs one beyond this renderRoute default).
 import { guard, loader, manifest } from "@keel/router";

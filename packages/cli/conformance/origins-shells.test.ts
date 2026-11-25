@@ -1,5 +1,5 @@
-// Spec: k.origins, Conformance "A Tauri shell of a deployable declaring `connect` has `connect-src 'self' <origins> ipc: http://ipc.localhost`; `csp.txt`, a Capacitor meta policy's source before any tool runs, holds a declared `frame-src`."
-// Spec: k.origins, Policy "Tauri's `tauri.conf.json` (`ipc: http://ipc.localhost` last in `connect-src`), Capacitor's meta policy (`csp.txt` less what a meta tag ignores)."
+// Spec: k.origins, clause "A Tauri shell of a deployable declaring `connect` has `connect-src 'self' <origins> ipc: http://ipc.localhost`; `csp.txt`, a Capacitor meta policy's source before any tool runs, holds a declared `frame-src`."
+// k.origins, Policy "Tauri's `tauri.conf.json` (`ipc: http://ipc.localhost` last in `connect-src`), Capacitor's meta policy (`csp.txt` less what a meta tag ignores)."
 // Seed 1337 (no generated input: spawned builds).
 // ASSUMPTION: `keel build` writes `deploy/w/tauri/tauri.conf.json` with `app.security.csp` as one string (k.shell, as scaffold's tauri-conf test reads it).
 // The Capacitor case reads `dist/w/csp.txt` after a plain `keel build`: no JDK, Android SDK or platform build runs.

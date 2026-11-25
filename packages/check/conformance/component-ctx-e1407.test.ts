@@ -1,6 +1,6 @@
 // Spec: k.component, clause "`(props, _slots?: undefined, ctx?: Ctx)` and `(props, ctx?: Ctx)` are each one E1407 whose fix clears it; `(props, ctx: Ctx)` and `(props)` are none."
-// Spec: RFC 0162 Conformance diff: "`(props, _slots?: undefined, ctx?: Ctx)` as a component file's default export is one E1407 whose fix yields `(props, ctx: Ctx)` and clears it; `(props, ctx?: Ctx)` and `(props, ctx: Ctx = x)` are E1407; `(props, ctx: Ctx)` is none."
-// Spec: RFC 0162 Proposal 4: "a component's second parameter is optional, has a default, is destructured or is not typed `Ctx`, or a third parameter exists."
+// RFC 0162 Conformance diff: "`(props, _slots?: undefined, ctx?: Ctx)` as a component file's default export is one E1407 whose fix yields `(props, ctx: Ctx)` and clears it; `(props, ctx?: Ctx)` and `(props, ctx: Ctx = x)` are E1407; `(props, ctx: Ctx)` is none."
+// RFC 0162 Proposal 4: "a component's second parameter is optional, has a default, is destructured or is not typed `Ctx`, or a third parameter exists."
 // Seed 1337. In-memory `check`; the fix is applied by text, as `git apply` would, over the one-file tree.
 import { check } from "@keel/check";
 import fc from "fast-check";

@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
-// Spec: k.claim, Server "In the runtime's server mode an element made in a level's render and placed by an `element` fill, a slot or a structural op that started after it was made is E1257: `createApp` logs a `diag` record with the code and the route id (k.server Log) the first time a route renders one, in every mode, and serves the document unchanged. Another level's content and parsed HTML are not checked."
-// Spec: k.claim, Conformance "A served page passing an eager element to `Form`, a base element or a component reading its prop first logs one E1257 with its route id over two requests; its thunked twin, nested islands and every packaged component log none."
-// Spec: k.claim, Rules "E1257 an element placed by an op that started after it was made, in a served render"
+// k.claim, Server "In the runtime's server mode an element made in a level's render and placed by an `element` fill, a slot or a structural op that started after it was made is E1257: `createApp` logs a `diag` record with the code and the route id (k.server Log) the first time a route renders one, in every mode, and serves the document unchanged. Another level's content and parsed HTML are not checked."
+// Spec: k.claim, clause "A served page passing an eager element to `Form`, a base element or a component reading its prop first logs one E1257 with its route id over two requests; its thunked twin, nested islands and every packaged component log none."
+// k.claim, Rules "E1257 an element placed by an op that started after it was made, in a served render"
 // Seed: 1337 (no generated inputs). Each page is served twice per app. The packaged components' own E1257 checks are in the packages that own them.
 import { afterEach, describe, expect, it } from "vitest";
 import { routes as caseRoutes } from "./claim-cases-routes.ts";

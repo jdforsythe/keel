@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.resume, Regions "every structural op (`If`, `For`, `Match`, `Boundary`) writes its content in a region `<!--[-->` … `<!--]-->` right before its anchor (k.runtime Resume markup), an empty region when it renders nothing; so does every template slot other than a component slot `<!--+-->`: a slot call such as `children()`, or a JSX expression of elements. A `For` region holds its rows in order, or its `empty` content. The root Boundary of a level's render writes no region."
+// k.resume, Regions "every structural op (`If`, `For`, `Match`, `Boundary`) writes its content in a region `<!--[-->` … `<!--]-->` right before its anchor (k.runtime Resume markup), an empty region when it renders nothing; so does every template slot other than a component slot `<!--+-->`: a slot call such as `children()`, or a JSX expression of elements. A `For` region holds its rows in order, or its `empty` content. The root Boundary of a level's render writes no region."
 // Seed: 1337. Real compiled TSX, real createApp; the markers are read from the served document.
 import { afterEach, describe, expect, it } from "vitest";
 import { everyRegionClosesBeforeAnAnchor, install, q, regionTree, serve } from "./resume-app.ts";

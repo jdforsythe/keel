@@ -1,4 +1,4 @@
-// Spec: k.sim, Conformance "With `b = replica(a)` of a sim ctx `a`: a value `set` through `a.storage` is what `b.storage.get` returns; `b.clock.now()` equals `a.clock.now()` after `advance(100)` on `a`'s clock; a capability accessor returns the same object for `a` and `b`; `replica` of a real ctx throws E1604."
+// Spec: k.sim, clause "With `b = replica(a)` of a sim ctx `a`: a value `set` through `a.storage` is what `b.storage.get` returns; `b.clock.now()` equals `a.clock.now()` after `advance(100)` on `a`'s clock; a capability accessor returns the same object for `a` and `b`; `replica` of a real ctx throws E1604."
 // Seed: 1337.
 // Reading: "advance(100) on a's clock" is `a.clock.advance(100)`; the clause also holds for any generated advance, and for a `set` through either side.
 // Reading: `replica` is called through `Reflect.apply` for a real or shell ctx, whose type it may refuse.

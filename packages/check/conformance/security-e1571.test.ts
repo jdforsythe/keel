@@ -1,5 +1,5 @@
-// Spec: k.security, Conformance "`ctx.net.fetch(new Request('https://api.example/x'))` in a client-reachable file is E1571; in a `*.server.ts` file it is not."
-// Spec: k.security, Rules "E1571 a literal absolute `http(s)` URL given to `ctx.net.fetch` or `service({ base })` in client-reachable code (E1004's reachability)."
+// Spec: k.security, clause "`ctx.net.fetch(new Request('https://api.example/x'))` in a client-reachable file is E1571; in a `*.server.ts` file it is not."
+// k.security, Rules "E1571 a literal absolute `http(s)` URL given to `ctx.net.fetch` or `service({ base })` in client-reachable code (E1004's reachability)."
 // Seed: 1337.
 import { check } from "@keel/check";
 import fc from "fast-check";

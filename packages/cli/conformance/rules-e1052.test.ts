@@ -1,4 +1,4 @@
-// Spec: k.cli Rules E1052 unknown flag, or flag value invalid for the input schema.
+// k.cli Rules E1052 unknown flag, or flag value invalid for the input schema.
 // Note: the spec does not assign E1052 to an unknown `explain` code; that behavior is unspecified and untested.
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";

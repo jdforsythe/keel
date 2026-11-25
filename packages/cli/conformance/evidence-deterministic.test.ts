@@ -1,4 +1,4 @@
-// Spec: k.evidence, Conformance "Under one sim seed and clock, two runs on an unchanged project write byte-equal bundles."
+// Spec: k.evidence, clause "Under one sim seed and clock, two runs on an unchanged project write byte-equal bundles."
 // Seed: 1337 (`KEEL_SEED`). The key is the fixed test key from the fixture helper (Ed25519 signatures are deterministic),
 // so the signature bytes compare too. The clock is not pinned by the test: the spec names no way to set it from outside.
 import { rmSync } from "node:fs";

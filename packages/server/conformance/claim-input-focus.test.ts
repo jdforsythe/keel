@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.claim, Conformance "A focused `Input` keeps focus, typed value and caret across resume."
+// Spec: k.claim, clause "A focused `Input` keeps focus, typed value and caret across resume."
 // Seed: 1337 (no generated inputs). Real compiled TSX, real createApp, real resume.
 import { manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";

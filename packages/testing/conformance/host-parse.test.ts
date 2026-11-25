@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.host-element, Conformance "Under `mode: 'dev'` a `value` that fails `input` renders the nearest `Boundary`'s fallback with `data.at` the element's id and calls no `mount`; without `mode`, `mount` gets the same value as given."
-// Spec: k.host-element, Parse "Under `mount` or `resume` with `mode: 'dev'` (`keel dev`) and in the harness, `input` parses each value before `mount` or `update` gets it, and in the harness before `find(id).value` encodes it. A value that fails is a `KeelError` `schema.invalid` thrown to the nearest `Boundary` (`data.at` the element's id), and neither `mount` nor `update` runs with it. Production (`mode` `'production'`, the default) does not parse: the value reaches the code as typed, unchecked."
+// Spec: k.host-element, clause "Under `mode: 'dev'` a `value` that fails `input` renders the nearest `Boundary`'s fallback with `data.at` the element's id and calls no `mount`; without `mode`, `mount` gets the same value as given."
+// k.host-element, Parse "Under `mount` or `resume` with `mode: 'dev'` (`keel dev`) and in the harness, `input` parses each value before `mount` or `update` gets it, and in the harness before `find(id).value` encodes it. A value that fails is a `KeelError` `schema.invalid` thrown to the nearest `Boundary` (`data.at` the element's id), and neither `mount` nor `update` runs with it. Production (`mode` `'production'`, the default) does not parse: the value reaches the code as typed, unchecked."
 // Seed: 1337. The harness half is in host-harness.test.ts.
 import { Boundary, mount } from "@keel/runtime-dom";
 import { Host } from "@keel/ui";

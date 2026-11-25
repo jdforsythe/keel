@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.resume, Conformance "A served layout island whose template mismatches (E1253) re-renders while the island page in its slot keeps its server nodes and its handler runs; a page island that mismatches re-renders while the layout keeps its nodes and its slot holds the re-rendered page."
+// Spec: k.resume, clause "A served layout island whose template mismatches (E1253) re-renders while the island page in its slot keeps its server nodes and its handler runs; a page island that mismatches re-renders while the layout keeps its nodes and its slot holds the re-rendered page."
 // Seed: 1337. Real compiled TSX, real createApp, real resume; the client component differs from the one the server rendered.
 import { afterEach, describe, expect, it } from "vitest";
 import {

@@ -1,5 +1,5 @@
-// Spec: k.scaffold-service, Conformance "In the default project, each is E1353 naming E1590, nothing written: `base: 'http://api.example.com'` with a `reason`; a `reason` of 201 characters; an origin that would be the 17th under `connect`. In the `node` project `base: 'http://internal:8080'` applies."
-// Spec: k.scaffold-service, Edits "An origin or reason k.origins refuses, or a 17th `connect` origin, is E1353 naming E1590."
+// Spec: k.scaffold-service, clause "In the default project, each is E1353 naming E1590, nothing written: `base: 'http://api.example.com'` with a `reason`; a `reason` of 201 characters; an origin that would be the 17th under `connect`. In the `node` project `base: 'http://internal:8080'` applies."
+// k.scaffold-service, Edits "An origin or reason k.origins refuses, or a 17th `connect` origin, is E1353 naming E1590."
 // seed 1337 (property over reason lengths).
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";

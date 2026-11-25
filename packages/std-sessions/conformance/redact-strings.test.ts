@@ -1,4 +1,4 @@
-// Spec: std.sessions, clause "`redact(schema, value, { paths, seed, salt, strings?, found? })` (`./redact`) is that redaction, pure; it drops undeclared keys, and `strings: { except }` writes each string not under an `except` path as `x` repeated."
+// std.sessions, clause "`redact(schema, value, { paths, seed, salt, strings?, found? })` (`./redact`) is that redaction, pure; it drops undeclared keys, and `strings: { except }` writes each string not under an `except` path as `x` repeated."
 // Seed 1337 (fast-check `seed: 1337`).
 // Readings: `redact` returns the redacted value; `paths` of `[]` redacts no entry; `strings: { except }` takes dotted paths as `piiPaths` writes them; "`x` repeated" is `x` repeated to the string's length; a string not under `except` includes one under an open object's declared field and an array item.
 import { s } from "@keel/schema";

@@ -1,4 +1,4 @@
-// Spec: k.review, rule "E1069 not a git repository, or a revision of the range does not resolve"
+// k.review, rule "E1069 not a git repository, or a revision of the range does not resolve"
 // Seed: n/a.
 // ASSUMED: a usage error is one `diag` record with its code and exit 2 (k.cli Output); the message text is not asserted.
 import { mkdtempSync, rmSync } from "node:fs";

@@ -1,4 +1,4 @@
-// Spec: k.data, clause 3 (k.data#3): "An app-registered accessor called twice with one sim ctx returns one object, made once; two sim ctxs of one seed get two objects, whose `sim` factories received equal `seed`s, and a write through one is not read through the other."
+// Spec: k.data, clause "An app-registered accessor called twice with one sim ctx returns one object, made once; two sim ctxs of one seed get two objects, whose `sim` factories received equal `seed`s, and a write through one is not read through the other."
 // fast-check seed: 1337
 import { createCtx, register } from "@keel/ctx";
 import fc from "fast-check";

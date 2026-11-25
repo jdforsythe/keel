@@ -1,6 +1,6 @@
 import fc from "fast-check";
-// Spec: k.shell, Conformance "With `web` alone, `keel build --target tauri` with `KEEL_ORIGIN` unset, and with it empty, prints no E1574 and proceeds; `build` is given no `origin` and an `env` without `KEEL_ORIGIN`; the `www` entry's drivers call is `{ connect: [] }` and its `shellMount` call `{ id }`, neither with an `origin`. With `KEEL_PEER_API=https://peer.example` set too, the same."
-// Spec: k.shell, Without a server "Its shell build reads no `KEEL_ORIGIN` and has no `origin`: the entry passes none to the drivers or `shellMount`, `build` is given none, and its `env` holds no `KEEL_ORIGIN`."
+// Spec: k.shell, clause "With `web` alone, `keel build --target tauri` with `KEEL_ORIGIN` unset, and with it empty, prints no E1574 and proceeds; `build` is given no `origin` and an `env` without `KEEL_ORIGIN`; the `www` entry's drivers call is `{ connect: [] }` and its `shellMount` call `{ id }`, neither with an `origin`. With `KEEL_PEER_API=https://peer.example` set too, the same."
+// k.shell, Without a server "Its shell build reads no `KEEL_ORIGIN` and has no `origin`: the entry passes none to the drivers or `shellMount`, `build` is given none, and its `env` holds no `KEEL_ORIGIN`."
 // Seed: 1337 (the peer origin of the last case is generated; the project is fixed).
 // Over a stub `@keel/std-tauri` (`shell-stub.ts`) and a topology of `web` alone. This is the proof that an app with no server carries no origin config.
 // ASSUMPTIONS: "no `origin`" in `build`'s argument is read as no `origin` key; the minified `www` bundle is read by the object literals of the drivers call and the `shellMount` call (`shell-stub.ts`).

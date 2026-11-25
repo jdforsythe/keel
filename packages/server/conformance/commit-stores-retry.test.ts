@@ -1,4 +1,4 @@
-// Spec: k.persist, Conformance "`commitStores` whose `commit` is refused twice then accepted runs `fn` three times and saves once; refused three times it returns `keel.conflict` and saves nothing."
+// Spec: k.persist, clause "`commitStores` whose `commit` is refused twice then accepted runs `fn` three times and saves once; refused three times it returns `keel.conflict` and saves nothing."
 // Seed: 1337.
 // ASSUMED (k.persist Server saves): `commitStores(ctx, factory, fn)` resolves `fn`'s `Result` on a save, so a save is `ok`.
 // The ctx is a real ctx over a storage driver whose `commit` is refused (resolves `false`, stores nothing) its first `refusals` times.

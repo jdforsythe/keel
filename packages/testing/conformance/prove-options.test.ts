@@ -1,8 +1,8 @@
-// Spec: k.prove, Fragment "Options both `undefined`, or both `null`, are `===` whatever their sorts."
-// Spec: k.prove, Fragment "A spread's absent optional field leaves the value before it."
-// Spec: k.prove, Fragment "A `Set` of objects or arrays is E1715."
-// Spec: k.prove, Obligations "A key an object literal writes holds no `undefined`."
-// Spec: k.prove, Sorts "`optional` outside an object field as its inner sort"
+// k.prove, Fragment "Options both `undefined`, or both `null`, are `===` whatever their sorts."
+// k.prove, Fragment "A spread's absent optional field leaves the value before it."
+// k.prove, Fragment "A `Set` of objects or arrays is E1715."
+// k.prove, Obligations "A key an object literal writes holds no `undefined`."
+// k.prove, Sorts "`optional` outside an object field as its inner sort"
 // Seed: 1337.
 import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";

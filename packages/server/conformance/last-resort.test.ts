@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.server, Conformance "A `log.write` that throws on the `req` record gives a 500 and one `keel.unexpected` `diag` naming the route id; one that always throws gives one fixed stderr line per process."
-// Spec: k.server, Log "A throw past the handler's guards (a throwing `log.write`) is a bare 500 and one fixed `keel.unexpected` `diag` naming the matched route id, if any; if that write throws, one fixed stderr line, once per process. Neither holds a thrown or request value."
+// Spec: k.server, clause "A `log.write` that throws on the `req` record gives a 500 and one `keel.unexpected` `diag` naming the route id; one that always throws gives one fixed stderr line per process."
+// k.server, Log "A throw past the handler's guards (a throwing `log.write`) is a bare 500 and one fixed `keel.unexpected` `diag` naming the matched route id, if any; if that write throws, one fixed stderr line, once per process. Neither holds a thrown or request value."
 // Seed: 1337.
 // The stderr line is once per process, so the always-throwing case is the first test of this file and the only one that reaches stderr. Its text and format are not in the spec; only its count is asserted.
 import { createCtx } from "@keel/ctx";

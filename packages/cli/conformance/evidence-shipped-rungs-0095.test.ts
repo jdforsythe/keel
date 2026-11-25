@@ -1,4 +1,4 @@
-// Spec: k.evidence, Conformance "In a fixture with no `spec/` and no conformance files, each `pii.json` sink carries the rung `@keel/cli` ships for its clause, and `coverage` is 1 when those are all `probabilistic` or higher."
+// Spec: k.evidence, clause "In a fixture with no `spec/` and no conformance files, each `pii.json` sink carries the rung `@keel/cli` ships for its clause, and `coverage` is 1 when those are all `probabilistic` or higher."
 // Seed: 1337.
 // ASSUMED (the spec names no field): an object of `pii.json` that names a sink clause (`std.sessions#2`, ...) holds its
 // rung as a string value that is one of the ledger's rung names. The shipped rung of each clause is not read from the

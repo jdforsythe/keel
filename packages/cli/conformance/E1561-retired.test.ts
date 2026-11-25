@@ -1,5 +1,5 @@
 // Spec: k.compat, clause "No input makes `keel check` report E1561." (RFC 0157 D6: the client and the handler read one entry, so E1561 is unrepresentable.)
-// Spec: RFC 0157 Conformance diff: "No diagnostic of `keel check` has code E1561, E1507, E1512 or E1157 for any input, and `keel explain E1561` names k.contract."
+// RFC 0157 Conformance diff: "No diagnostic of `keel check` has code E1561, E1507, E1512 or E1157 for any input, and `keel explain E1561` names k.contract."
 // Seed 1337. Real binary over a temp project (see compat-support.ts). Each input varies what E1561 compared: the caller's body, the answer and the route.
 import fc from "fast-check";
 import { afterAll, expect, test } from "vitest";

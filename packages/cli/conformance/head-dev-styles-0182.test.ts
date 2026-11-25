@@ -1,4 +1,4 @@
-// Spec: k.head, Conformance "Under `keel dev`, a `node` deployable's document and a `client` deployable's `index.html` each link a stylesheet that answers 200 as `text/css` and holds the atomic rules of every `k-*` class the served page uses and the `@font-face` rules of its `styles`."
+// Spec: k.head, clause "Under `keel dev`, a `node` deployable's document and a `client` deployable's `index.html` each link a stylesheet that answers 200 as `text/css` and holds the atomic rules of every `k-*` class the served page uses and the `@font-face` rules of its `styles`."
 // Seed: 1337 (no generated input: two fixtures, one `keel dev` each on a free port from a closed port-0 listener, the child's group ended in `finally`).
 // ASSUMPTIONS: the node document is GET `/` with `accept: text/html`; "holds the atomic rule of a class" is the stylesheet text containing `.<class>`;
 // a `client` document is the empty `#app` shell (its page renders in the browser), so the `k-*` check is made on the node document only.

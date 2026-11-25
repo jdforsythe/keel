@@ -1,10 +1,10 @@
-// Spec: std.tokens, API "`mint({ ttl })`: `ttl` is required, milliseconds as an integer from 60,000 to 31,536,000,000 (365 days), or `null` for a token that does not expire; any other value is `credentials.ttl` (data `{ min: 60000, max: 31536000000 }`)."
-// Spec: std.tokens, API "It returns the new `token` as a `Secret<string>`, its `id` (non-secret, the row's key), the `digest` to store, and `expiresAt`, `ctx.clock.now()` plus `ttl`, or `null`."
-// Spec: std.tokens, Forms "Token: `keel_<id>_<secret>`, `id` 16 and `secret` 64 lowercase hex characters (64 and 256 random bits), 86 characters."
-// Spec: std.tokens, Forms "Digest: `$sha256$exp=<ms>$<digest>`, or `$sha256$<digest>` with no expiry: `<ms>` is `expiresAt` in decimal, `<digest>` the SHA-256 of the token's text in base64 without padding."
-// Spec: std.tokens, Conformance "Under real, `mint({ ttl: null })` gives a token of the token form whose id part is `id`, `expiresAt` `null`, and a `digest` `$sha256$<digest>` that parses with `Digested`; two mints share no `id`, `secret` or `digest`."
-// Spec: std.tokens, Conformance "`mint({ ttl })` for `ttl` 60,000 and 31,536,000,000 is `ok` with `expiresAt` `ctx.clock.now()` plus `ttl` and `exp=<expiresAt>` in `digest`; 59,999, 31,536,000,001, 60,000.5 and `NaN` are `credentials.ttl`."
-// Spec: std.tokens, Conformance "`String`, `JSON.stringify` and `util.inspect` of a minted `token` give `[secret]`."
+// std.tokens, API "`mint({ ttl })`: `ttl` is required, milliseconds as an integer from 60,000 to 31,536,000,000 (365 days), or `null` for a token that does not expire; any other value is `credentials.ttl` (data `{ min: 60000, max: 31536000000 }`)."
+// std.tokens, API "It returns the new `token` as a `Secret<string>`, its `id` (non-secret, the row's key), the `digest` to store, and `expiresAt`, `ctx.clock.now()` plus `ttl`, or `null`."
+// std.tokens, Forms "Token: `keel_<id>_<secret>`, `id` 16 and `secret` 64 lowercase hex characters (64 and 256 random bits), 86 characters."
+// std.tokens, Forms "Digest: `$sha256$exp=<ms>$<digest>`, or `$sha256$<digest>` with no expiry: `<ms>` is `expiresAt` in decimal, `<digest>` the SHA-256 of the token's text in base64 without padding."
+// Spec: std.tokens, clause "Under real, `mint({ ttl: null })` gives a token of the token form whose id part is `id`, `expiresAt` `null`, and a `digest` `$sha256$<digest>` that parses with `Digested`; two mints share no `id`, `secret` or `digest`."
+// Spec: std.tokens, clause "`mint({ ttl })` for `ttl` 60,000 and 31,536,000,000 is `ok` with `expiresAt` `ctx.clock.now()` plus `ttl` and `exp=<expiresAt>` in `digest`; 59,999, 31,536,000,001, 60,000.5 and `NaN` are `credentials.ttl`."
+// Spec: std.tokens, clause "`String`, `JSON.stringify` and `util.inspect` of a minted `token` give `[secret]`."
 // Seed: 1337.
 // Assumption: "ttl is required" is a type-level rule and is not tested; `Infinity` is refused like `NaN` (not an integer in range).
 // Assumption: the 100 mints for "share no `id`, `secret` or `digest`" are made on one real ctx.

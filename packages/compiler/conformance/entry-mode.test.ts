@@ -1,8 +1,8 @@
-// Spec: k.runtime API, clause "Both take `mode` (k.errors): `'dev'` only under `keel dev`, else `'production'` (k.deploy)."
-// Spec: k.runtime Islands: the generated resume entry calls `resume(document.body, components, { ctx, stores, mode })`.
-// Spec: k.router Client: `createRouter(routes, { ctx, history, mode? })` takes `mount`'s `mode`.
-// Spec: k.deploy Build: "`keel build` runs Vite with `NODE_ENV=production`, whatever the shell or `.env` sets: the entries' `mode` is `'production'`."
-// Spec: k.runtime API, the entries carry `"dev"` only when Vite's command is exactly `serve`; a missing or unknown command gives `"production"`.
+// k.runtime API, clause "Both take `mode` (k.errors): `'dev'` only under `keel dev`, else `'production'` (k.deploy)."
+// k.runtime Islands: the generated resume entry calls `resume(document.body, components, { ctx, stores, mode })`.
+// k.router Client: `createRouter(routes, { ctx, history, mode? })` takes `mount`'s `mode`.
+// k.deploy Build: "`keel build` runs Vite with `NODE_ENV=production`, whatever the shell or `.env` sets: the entries' `mode` is `'production'`."
+// k.runtime API, the entries carry `"dev"` only when Vite's command is exactly `serve`; a missing or unknown command gives `"production"`.
 // Seed: 1337 (no random input: the entries and `import.meta.env` stand-ins are enumerated).
 // The served entries are read as the Vite dev server serves `/@keel/entry.ts` for a fixture app; the built entries are read as the plugin's `load` hands them to a Vite build; `resumeEntry()` is called unbundled.
 import { mkdirSync, mkdtempSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";

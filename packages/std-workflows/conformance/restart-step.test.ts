@@ -1,4 +1,4 @@
-// Spec: std.workflows, Conformance "After `close()` while `run` is pending, a new `createApp` on the same ctx runs it again with the same `key`, and the instance takes its `done` event once."
+// Spec: std.workflows, clause "After `close()` while `run` is pending, a new `createApp` on the same ctx runs it again with the same `key`, and the instance takes its `done` event once."
 // Seed: 1337.
 // Assumption: as for std.jobs restart, `close()` frees the lease, and the clock is also moved past `timeoutMs` plus 1,000 ms so a lease that was not freed has ended; the second `createApp` needs no `routes`.
 import { ok } from "@keel/schema";

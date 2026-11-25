@@ -1,4 +1,4 @@
-// Spec: k.ui Rule E1807. Property seed: 1337.
+// k.ui Rule E1807. Property seed: 1337.
 import { TokenSchema } from "@keel/ui";
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";

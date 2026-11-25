@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.component Conformance. JSX children arrive as `props.children`; base elements render them.
+// k.component Conformance. JSX children arrive as `props.children`; base elements render them.
 import { createCtx } from "@keel/ctx";
 import { mount } from "@keel/runtime-dom";
 import { expect, test } from "vitest";

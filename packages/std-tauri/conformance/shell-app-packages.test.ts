@@ -1,5 +1,5 @@
-// Spec: std.tauri, Conformance "`keel scaffold shell tauri` writes `@tauri-apps/cli` into `devDependencies` at the version `@keel/std-tauri`'s `package.json` `peerDependencies` hold, which is exact; after the install and `keel build`, `keel check` reports no diagnostic and `keel build --target tauri` with every native tool present prints no E1572, E1574 or E1575."
-// Spec: std.tauri, App packages "in `devDependencies`, `@tauri-apps/cli` at the exact version this package's `package.json` `peerDependencies` hold, marked optional in `peerDependenciesMeta`. Nothing in `dependencies`."
+// Spec: std.tauri, clause "`keel scaffold shell tauri` writes `@tauri-apps/cli` into `devDependencies` at the version `@keel/std-tauri`'s `package.json` `peerDependencies` hold, which is exact; after the install and `keel build`, `keel check` reports no diagnostic and `keel build --target tauri` with every native tool present prints no E1572, E1574 or E1575."
+// std.tauri, App packages "in `devDependencies`, `@tauri-apps/cli` at the exact version this package's `package.json` `peerDependencies` hold, marked optional in `peerDependenciesMeta`. Nothing in `dependencies`."
 // Seed: 1337 (no generated input: one fixed project).
 // Fake tools (as build-tools.test.ts): `PATH` holds a `cargo`, a `rustc`, a `pkg-config` and an `npx` written by the test; the fake `npx` hands `vite` to the real `npx` and answers `tauri`.
 // The install is simulated: `node_modules/@tauri-apps/cli` and `.bin/tauri` are written from the versions the scaffold wrote. No real native toolchain runs.

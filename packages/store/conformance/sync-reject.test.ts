@@ -1,4 +1,4 @@
-// Spec: k.sync Conformance, "Under `'reject'`, `tx` with a `base` other than `head()` returns `err` `keel.conflict` with data `{ store, transaction, base, head }` and changes nothing; with `base` equal to `head()` it commits an entry without `base`."
+// Spec: k.sync, clause "Under `'reject'`, `tx` with a `base` other than `head()` returns `err` `keel.conflict` with data `{ store, transaction, base, head }` and changes nothing; with `base` equal to `head()` it commits an entry without `base`."
 // Seed 1337 (fast-check `seed: 1337`).
 import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";

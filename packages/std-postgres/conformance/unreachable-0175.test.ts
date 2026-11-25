@@ -1,5 +1,5 @@
-// Spec: std.postgres, Conformance "With `KEEL_POSTGRES_URL` a `postgres:` URL whose port refuses connections, the first `query` is `err` `keel.unreachable`, and an API loader returning it answers 502."
-// Spec: std.postgres, Migrations "A refused or lost connection, opening the store or in the pass, is that call's `keel.unreachable`, as a statement's is."
+// Spec: std.postgres, clause "With `KEEL_POSTGRES_URL` a `postgres:` URL whose port refuses connections, the first `query` is `err` `keel.unreachable`, and an API loader returning it answers 502."
+// std.postgres, Migrations "A refused or lost connection, opening the store or in the pass, is that call's `keel.unreachable`, as a statement's is."
 // Seed: 1337 (the closed port is whatever the OS just freed; the user and database names are generated).
 // Assumption: "refused" is a `127.0.0.1` port nothing listens on; the answer is the `Result`'s `err` with `code` "keel.unreachable", for `query`, `one`, `run` and `transaction` alike is not asserted (the spec names `query`).
 // UNTESTABLE here: "an API loader returning it answers 502" is k.data's status table, asserted in packages/server/conformance/data-capability-err-status.test.ts.

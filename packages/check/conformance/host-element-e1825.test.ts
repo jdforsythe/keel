@@ -1,6 +1,6 @@
-// Spec: k.host-code, Rules "E1825 a `.css` import outside a host element code file."
-// Spec: k.host-code, Conformance "`import 'x/a.css'` in a component file is E1825 and in a host element code file is not."
-// Spec: k.host-code, Styles and policy "A host element code file (one a `code` prop imports) may import a same-origin `.css` file of a package, emitted as its own stylesheet."
+// k.host-code, Rules "E1825 a `.css` import outside a host element code file."
+// Spec: k.host-code, clause "`import 'x/a.css'` in a component file is E1825 and in a host element code file is not."
+// k.host-code, Styles and policy "A host element code file (one a `code` prop imports) may import a same-origin `.css` file of a package, emitted as its own stylesheet."
 // Seed: 1337.
 import { check } from "@keel/check";
 import fc from "fast-check";

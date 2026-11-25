@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
-// Spec: k.host-element, Conformance "Removing the element through an `If` calls `dispose` once and aborts `signal`; removing it before the import resolves calls neither `mount` nor `dispose`."
-// Spec: k.host-element, Lifecycle "Disposing the element's scope (an `If`, a `For` row, a navigation) cancels a pending frame, calls `dispose` if `mount` ran and removes the node; `mount` never runs after it."
-// Spec: k.host-code, Code "`dispose(state)`: runs once, then `signal` aborts."
-// Spec: k.host-code, Events "a throw from `dispose` is reported to the ctx and dropped."
+// Spec: k.host-element, clause "Removing the element through an `If` calls `dispose` once and aborts `signal`; removing it before the import resolves calls neither `mount` nor `dispose`."
+// k.host-element, Lifecycle "Disposing the element's scope (an `If`, a `For` row, a navigation) cancels a pending frame, calls `dispose` if `mount` ran and removes the node; `mount` never runs after it."
+// k.host-code, Code "`dispose(state)`: runs once, then `signal` aborts."
+// k.host-code, Events "a throw from `dispose` is reported to the ctx and dropped."
 // Seed: 1337.
 import { observe } from "@keel/ctx";
 import type { CtxEvent } from "@keel/ctx";

@@ -1,5 +1,5 @@
-// Spec: k.host-element, Rules "E1824 a `code` prop that is not `() => import("<relative path>").then((m) => m.<export>)`, or a `Host` without `input`."
-// Spec: k.host-element, Conformance "A `Host` with neither `label` nor `labelledBy`, with both, or with `label=" "` is E1802 without types, and one with `label="Added"` or `labelledBy="c.title"` is not; `code={load}` is E1824."
+// k.host-element, Rules "E1824 a `code` prop that is not `() => import("<relative path>").then((m) => m.<export>)`, or a `Host` without `input`."
+// Spec: k.host-element, clause "A `Host` with neither `label` nor `labelledBy`, with both, or with `label=\" \"` is E1802 without types, and one with `label=\"Added\"` or `labelledBy=\"c.title\"` is not; `code={load}` is E1824."
 // Seed: 1337.
 import { check } from "@keel/check";
 import fc from "fast-check";

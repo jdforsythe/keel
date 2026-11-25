@@ -1,4 +1,4 @@
-// Spec: k.unsafe, Conformance "In `tooling/structure-lint.mjs` over a root holding `packages/p/unsafe/a.ts` with `unsafe(\"one two three four five six seven eight\", () => 1)`, one S0014; with `() => c as T` in place of `() => 1`, none."
+// Spec: k.unsafe, clause "In `tooling/structure-lint.mjs` over a root holding `packages/p/unsafe/a.ts` with `unsafe(\"one two three four five six seven eight\", () => 1)`, one S0014; with `() => c as T` in place of `() => 1`, none."
 // Seed 1337 (the property). Home: the RFC names `packages/cli/conformance/` for this file (k.unsafe is `@keel/cli`'s in
 // `tooling/docs-owners.json`, so the clause takes its rung from here); S0012's neighbour sits in `tooling/test/`. The real
 // `tooling/structure-lint.mjs --root <tmp>` runs over a throwaway root holding one file; its S0014 findings are read.

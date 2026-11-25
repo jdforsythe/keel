@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.ui, Conformance "`styles={{ label: { fg: 'accent' }, error: { fg: 'error' } }}` on an `Input` with a `field` puts those classes on its `<label>` and its error element."
-// Spec: k.ui, Base: "Base elements carry their role class whatever the tokens (`k-heading`, `k-link`, `k-button`, `k-control`, `k-label`, `k-error`)."
+// Spec: k.ui, clause "`styles={{ label: { fg: 'accent' }, error: { fg: 'error' } }}` on an `Input` with a `field` puts those classes on its `<label>` and its error element."
+// k.ui, Base: "Base elements carry their role class whatever the tokens (`k-heading`, `k-link`, `k-button`, `k-control`, `k-label`, `k-error`)."
 // Seed: 1337 (no random inputs; the label text varies in no-script-summary-label.test.ts).
 // Not built yet: every case is `test.skip`; the builder changes `test.skip` to `test` in each.
 // Asserted on the served 422 document, where the error element exists: the `<label for>` of the control and the element its `aria-describedby` names.

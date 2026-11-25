@@ -1,4 +1,4 @@
-// Spec: k.evidence, Conformance "`security.json` holds the k.security policy with `<nonce>` for each `node` deployable and the `csp.txt` text for each `client` one."
+// Spec: k.evidence, clause "`security.json` holds the k.security policy with `<nonce>` for each `node` deployable and the `csp.txt` text for each `client` one."
 // Seed: 1337. ASSUMED (the spec gives `security.json` no field names): found by text. The fixture has `node` deployable
 // `web` and `client` deployable `app`; the `csp.txt` text is the file `keel build` writes at `dist/app/csp.txt`.
 import { readFileSync, rmSync } from "node:fs";

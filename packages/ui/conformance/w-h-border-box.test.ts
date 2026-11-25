@@ -1,5 +1,5 @@
-// Spec: k.ui, Conformance "An `Input` with `w="full" px="2" border="control"` in a 320px container is 320px wide in Chromium; the `w` rule declares `box-sizing:border-box`."
-// Spec: k.ui, Conformance "`w` and `h` size the border box." (Style props paragraph)
+// Spec: k.ui, clause "An `Input` with `w=\"full\" px=\"2\" border=\"control\"` in a 320px container is 320px wide in Chromium; the `w` rule declares `box-sizing:border-box`."
+// k.ui, Conformance "`w` and `h` size the border box." (Style props paragraph)
 // Seed: 1337 (property over size and space tokens).
 // Live on the main line. The 320px width in Chromium is not testable here (no browser in this suite); the `box-sizing:border-box` declaration is what it follows from.
 import { defineTokens } from "@keel/ui";

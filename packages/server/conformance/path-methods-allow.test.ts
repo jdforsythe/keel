@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
-// Spec: k.api, Requests "A request matches the pattern by path, then the entry by method; that entry's guard and handler run. HEAD runs the GET entry and sends no body."
-// Spec: k.api, Requests "A method no entry at the pattern has is 405, no guard run, with `allow` the pattern's methods in the order GET, HEAD, POST, PUT, PATCH, DELETE (HEAD with GET)."
-// Spec: k.api, Requests "OPTIONS is no entry method: a preflight is k.hosting's, any other OPTIONS 405."
-// Spec: k.api, Conformance "A GET to a path with only a `POST` entry is 405 with `allow: POST`; with a GET entry too, a PUT is 405 `allow: GET, HEAD, POST`, a HEAD runs the GET entry's loader and sends no body, and a plain OPTIONS is 405 with that `allow`."
+// k.api, Requests "A request matches the pattern by path, then the entry by method; that entry's guard and handler run. HEAD runs the GET entry and sends no body."
+// k.api, Requests "A method no entry at the pattern has is 405, no guard run, with `allow` the pattern's methods in the order GET, HEAD, POST, PUT, PATCH, DELETE (HEAD with GET)."
+// k.api, Requests "OPTIONS is no entry method: a preflight is k.hosting's, any other OPTIONS 405."
+// Spec: k.api, clause "A GET to a path with only a `POST` entry is 405 with `allow: POST`; with a GET entry too, a PUT is 405 `allow: GET, HEAD, POST`, a HEAD runs the GET entry's loader and sends no body, and a plain OPTIONS is 405 with that `allow`."
 // Seed 1337. The guards and loaders count their runs in a variable, never a clock.
 import { action, guard, loader, manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";

@@ -1,4 +1,4 @@
-// Spec: k.runtime, Ops "`attr` binds nothing for an `on*` name, a `<base>` `href` or a `<meta>` `http-equiv`."
+// k.runtime, Ops "`attr` binds nothing for an `on*` name, a `<base>` `href` or a `<meta>` `http-equiv`."
 // @vitest-environment happy-dom
 // RFC 0058 / backlog 0158: `<meta http-equiv="refresh" content={x}>` redirected on load. The server owns document
 // headers, so app code never sets `http-equiv`. Property seed: 1337.

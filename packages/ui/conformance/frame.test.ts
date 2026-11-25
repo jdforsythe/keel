@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.origins, Frame "`Frame` from `@keel/ui` renders `<iframe>` with `src`, a required `title` (E1802, blank too), `allow` from `autoplay`, `encrypted-media`, `fullscreen`, `picture-in-picture` (joined `; `), `loading="lazy"`, `referrerpolicy="strict-origin"` and `sandbox="allow-scripts allow-same-origin allow-popups allow-presentation"`; it takes `id`, `lang` and the style props (k.ui). A `src` not absolute `http` or `https`, relative too, or of the document's origin renders `about:blank`."
-// Spec: k.origins, Conformance "`Frame src="https://v.example/e/1" title="Demo"` renders the attributes above; without `title`, or with `title=" "`, E1802; `src="javascript:x"` renders `about:blank`; `src="/e/1"` is E1570."
+// k.origins, Frame "`Frame` from `@keel/ui` renders `<iframe>` with `src`, a required `title` (E1802, blank too), `allow` from `autoplay`, `encrypted-media`, `fullscreen`, `picture-in-picture` (joined `; `), `loading="lazy"`, `referrerpolicy="strict-origin"` and `sandbox="allow-scripts allow-same-origin allow-popups allow-presentation"`; it takes `id`, `lang` and the style props (k.ui). A `src` not absolute `http` or `https`, relative too, or of the document's origin renders `about:blank`."
+// Spec: k.origins, clause "`Frame src=\"https://v.example/e/1\" title=\"Demo\"` renders the attributes above; without `title`, or with `title=\" \"`, E1802; `src=\"javascript:x\"` renders `about:blank`; `src=\"/e/1\"` is E1570."
 // Seed 1337 (fc.assert below). The E1802 and E1570 cases through `keel check`: packages/check/conformance/origins-e1570-directives.test.ts.
 import { createCtx } from "@keel/ctx";
 import { mount } from "@keel/runtime-dom";

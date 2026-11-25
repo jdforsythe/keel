@@ -1,4 +1,4 @@
-// Spec: std.capacitor, Conformance "With `web` declaring `capacitor`, `keel build` writes `deploy/web/capacitor/capacitor.config.json` with `appId`, `appName` and `webDir` `www`, and no Tauri file."
+// Spec: std.capacitor, clause "With `web` declaring `capacitor`, `keel build` writes `deploy/web/capacitor/capacitor.config.json` with `appId`, `appName` and `webDir` `www`, and no Tauri file."
 // Seed: 1337 (the id and name are generated).
 // The real binary over a temp project (`keel-cli.ts`): `keel build` writes the shell files.
 // ASSUMPTION: "no Tauri file" is no path outside `node_modules/` whose name has `tauri` in it; the generated set under `deploy/web/capacitor/` is exactly `capacitor.config.json` (std.capacitor Files names no other).

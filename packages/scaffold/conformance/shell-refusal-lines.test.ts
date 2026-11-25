@@ -1,4 +1,4 @@
-// Spec: k.scaffold-shell, Conformance "Each refusal's compact line has a message under 90 characters."
+// Spec: k.scaffold-shell, clause "Each refusal's compact line has a message under 90 characters."
 // ASSUMED compact diagnostic line (docs/OUTPUT.md): `<code> <path>[:<line>[:<col>]] <message>`; the message is what follows the location (or the code when there is none).
 // No random input: one fixed project per refusal, run through the real `keel` binary in the default (compact) format.
 import { describe, expect, it } from "vitest";

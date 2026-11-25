@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.compiler, clause "A string containing `<script>` or `"><img onerror=x>` rendered as a child or attribute value appears verbatim as text or attribute value and creates no element."
+// Spec: k.compiler, clause "A string containing `<script>` or `\"><img onerror=x>` rendered as a child or attribute value appears verbatim as text or attribute value and creates no element."
 // Seed 1337 (fc.assert seed below).
 import { createCtx } from "@keel/ctx";
 import { mount } from "@keel/runtime-dom";

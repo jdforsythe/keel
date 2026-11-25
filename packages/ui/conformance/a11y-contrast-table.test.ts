@@ -1,4 +1,4 @@
-// Spec: k.a11y, Conformance "`contrastTable(tokens)` has one entry per ordered pair of distinct color tokens per scheme, each ratio WCAG's to two decimals."
+// Spec: k.a11y, clause "`contrastTable(tokens)` has one entry per ordered pair of distinct color tokens per scheme, each ratio WCAG's to two decimals."
 // Seed: 1337.
 // Assumed (spec names no entry shape): `contrastTable(tokens)` returns an array of `{ scheme: 'light' | 'dark', fg: string, bg: string, ratio: number }`,
 // `fg` and `bg` being color token names; a color given as a single value counts in both schemes.

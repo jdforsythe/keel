@@ -1,4 +1,4 @@
-// Spec: k.security, Conformance "In one window, 50 reports with `x-forwarded-for: 192.0.2.1` log 10 and a later one from `192.0.2.2` is logged; `dropped: 40` follows the window; no record holds an address."
+// Spec: k.security, clause "In one window, 50 reports with `x-forwarded-for: 192.0.2.1` log 10 and a later one from `192.0.2.2` is logged; `dropped: 40` follows the window; no record holds an address."
 // Seed: 1337.
 // @vitest-environment happy-dom
 import { createCtx } from "@keel/ctx";

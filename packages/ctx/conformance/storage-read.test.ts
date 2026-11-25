@@ -1,4 +1,4 @@
-// Spec: k.persist, Conformance "`read(keys)` returns each key's value in the order asked, `null` for an absent key."
+// Spec: k.persist, clause "`read(keys)` returns each key's value in the order asked, `null` for an absent key."
 // Seed: 1337.
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";

@@ -1,9 +1,9 @@
 // @vitest-environment happy-dom
-// Spec: k.roles, Conformance "`slider` renders `<input type="range" min max value aria-label>` with no `role` attribute; `valueText` writes `aria-valuetext`; `fire(id, { type: 'input', value: '4' })` calls `onInput(4)`."
-// Spec: k.roles, Conformance "Two `radio` parts with one `name` in a `radiogroup`: `fire(id, { type: 'change' })` on the second calls its `onChange` once; neither has a `role` attribute."
-// Spec: k.roles, Native controls "A `div` with role `slider` or `radio` is not offered: it would rebuild a native control."
-// Spec: k.roles, Attributes "Each optional prop writes one attribute (ARIA names unless marked HTML); a prop left undefined writes none."
-// Spec: k.roles, Attributes "An ARIA boolean writes `"true"` or `"false"`; an HTML boolean is present or absent."
+// Spec: k.roles, clause "`slider` renders `<input type=\"range\" min max value aria-label>` with no `role` attribute; `valueText` writes `aria-valuetext`; `fire(id, { type: 'input', value: '4' })` calls `onInput(4)`."
+// Spec: k.roles, clause "Two `radio` parts with one `name` in a `radiogroup`: `fire(id, { type: 'change' })` on the second calls its `onChange` once; neither has a `role` attribute."
+// k.roles, Native controls "A `div` with role `slider` or `radio` is not offered: it would rebuild a native control."
+// k.roles, Attributes "Each optional prop writes one attribute (ARIA names unless marked HTML); a prop left undefined writes none."
+// k.roles, Attributes "An ARIA boolean writes `"true"` or `"false"`; an HTML boolean is present or absent."
 // Seed: 1337. The `fire` halves run under the harness in packages/testing/conformance/roles-harness.test.ts; here the DOM `input` and `change` events stand in.
 import { Part } from "@keel/ui/aria";
 import fc from "fast-check";

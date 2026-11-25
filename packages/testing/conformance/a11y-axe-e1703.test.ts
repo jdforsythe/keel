@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.a11y, Conformance "An unlabeled `input` made with the runtime's `element` fails its render with E1703 naming rule `label` and the element id."
+// Spec: k.a11y, clause "An unlabeled `input` made with the runtime's `element` fails its render with E1703 naming rule `label` and the element id."
 // Seed: 1337.
 import { element } from "@keel/runtime-dom/ops";
 import { render } from "@keel/testing";

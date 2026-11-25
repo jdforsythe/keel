@@ -1,4 +1,4 @@
-// Spec: k.deploy, Assets paragraph "Production `createApp({ assets: 'dist/<name>' })` loads the client" (first eight words); rfc:0155 states the `*.map` exclusion there.
+// k.deploy, Assets paragraph "Production `createApp({ assets: 'dist/<name>' })` loads the client" (first eight words); rfc:0155 states the `*.map` exclusion there.
 // Seed: none (no generated inputs). The dist/web fixture is hand-built in a realpath'd tmp dir; `keel build` is not run.
 // @vitest-environment node
 import fs from "node:fs";

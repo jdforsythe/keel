@@ -1,5 +1,5 @@
-// Spec: k.scaffold-shell, Input "`name` (`--name`) is the shell's title; its default is the `package.json` `name` with any `@scope/` dropped, split at `-`, `_` and `.`, each word's first letter upper-cased, joined by spaces (`native-tauri` gives `Native Tauri`)."
-// Spec: k.scaffold-shell, Conformance "In `pw`, `tauri` with no `name` gives `name: \"Native Tauri\"`; a `package.json` `name` of `@acme/my_app.desktop` gives `My App Desktop`; `name: 'Acme'` is written as given; no `package.json` `name` and no `name` is E1052."
+// k.scaffold-shell, Input "`name` (`--name`) is the shell's title; its default is the `package.json` `name` with any `@scope/` dropped, split at `-`, `_` and `.`, each word's first letter upper-cased, joined by spaces (`native-tauri` gives `Native Tauri`)."
+// Spec: k.scaffold-shell, clause "In `pw`, `tauri` with no `name` gives `name: \"Native Tauri\"`; a `package.json` `name` of `@acme/my_app.desktop` gives `My App Desktop`; `name: 'Acme'` is written as given; no `package.json` `name` and no `name` is E1052."
 // Seed 1337 (property over words and separators).
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";

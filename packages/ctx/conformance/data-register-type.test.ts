@@ -1,4 +1,4 @@
-// Spec: k.data, clause 2 (k.data#2): "A `register<T>` call whose `sim` returns an object missing a member of `T` does not typecheck."
+// Spec: k.data, clause "A `register<T>` call whose `sim` returns an object missing a member of `T` does not typecheck."
 // Type-level, as owner-type.test.ts does it: `expectTypeOf` assertions, no suppression comments; the package's type check fails
 // while a sim side missing a member of `T` is accepted. ASSUMPTION: `register<T>(name, impls)`'s `impls` is `{ real, shell, sim }`,
 // each a factory returning `T`.

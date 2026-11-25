@@ -1,4 +1,4 @@
-// Spec: k.schema, Conformance "For every generated value of a fixture schema, `piiValues` returns exactly the non-empty strings and the numbers under marked paths."
+// Spec: k.schema, clause "For every generated value of a fixture schema, `piiValues` returns exactly the non-empty strings and the numbers under marked paths."
 // Seed: 1337.
 // Skipped until `piiValues` exists. The spec does not say whether the result is an array or a set, or whether it repeats a value
 // found twice: results are compared as distinct sorted strings.

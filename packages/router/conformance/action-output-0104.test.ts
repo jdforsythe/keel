@@ -1,10 +1,10 @@
 // @vitest-environment happy-dom
-// Spec: k.api, Output "An API entry's handler returns `Result<T, KeelError>` for its `output`'s type `T`; a page's action declares no `output` (k.contract Handlers)."
-// Spec: k.api, Conformance "An API action returning a value its entry's `output` refuses does not compile."
-// Spec: k.api, Output "`output` holds no `s.secret` (E1113, k.privacy): a secret leaves a `loader` or `action` `output` as `reveal(secret)` in an `s.string()` field."
-// Spec: k.privacy, Rules "E1113 an `s.secret` in an `output`, thrown by `contract` or `loader` (k.routes; fix: none)."
-// Spec: k.privacy, Conformance "An API entry or page loader whose `output` has an `s.secret` field throws E1113; with `s.string()`, none."
-// Spec: k.guards, Guards "`caller` and `user` are k.server's and k.user's (`''` if none or client-only); `bearer` is k.api's (`undefined` off an API route; a redirect hop's guards get none)."
+// k.api, Output "An API entry's handler returns `Result<T, KeelError>` for its `output`'s type `T`; a page's action declares no `output` (k.contract Handlers)."
+// Spec: k.api, clause "An API action returning a value its entry's `output` refuses does not compile."
+// k.api, Output "`output` holds no `s.secret` (E1113, k.privacy): a secret leaves a `loader` or `action` `output` as `reveal(secret)` in an `s.string()` field."
+// k.privacy, Rules "E1113 an `s.secret` in an `output`, thrown by `contract` or `loader` (k.routes; fix: none)."
+// Spec: k.privacy, clause "An API entry or page loader whose `output` has an `s.secret` field throws E1113; with `s.string()`, none."
+// k.guards, Guards "`caller` and `user` are k.server's and k.user's (`''` if none or client-only); `bearer` is k.api's (`undefined` off an API route; a redirect hop's guards get none)."
 // Seed: 1337.
 // The `endpoints` case of the RFC list (`@keel/services` takes no E1113) lives in packages/services/conformance/bearer-0104.test.ts: this package does not depend on `@keel/services`.
 // Compile failures are asserted by type-checking in-memory modules (never written to disk) with packages/router/tsconfig.json: a control module

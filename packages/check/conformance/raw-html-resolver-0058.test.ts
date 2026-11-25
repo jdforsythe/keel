@@ -1,5 +1,5 @@
 // Seed 1337
-// Spec: k.compiler, Rules "E1002 raw HTML (`innerHTML` family, `DOMParser`, `document.write`, `on*` strings, also spread; data in `script`/`style`; rfc:0053, 0058)"
+// k.compiler, Rules "E1002 raw HTML (`innerHTML` family, `DOMParser`, `document.write`, `on*` strings, also spread; data in `script`/`style`; rfc:0053, 0058)"
 // RFC 0058 / backlog 0154: E1002 resolves names through the rfc:0053 resolver E1601 uses (aliases, destructuring,
 // `globalThis`, constant-string keys), and reports `execCommand('insertHTML', ...)`. Each repro in `modules/app/a.ts`
 // after `declare const el: HTMLElement`.

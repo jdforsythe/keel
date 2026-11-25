@@ -1,5 +1,5 @@
-// Spec: k.user, Conformance "With `caller: { days: 30 }`, `pii.json` has `caller: { days: 30, class: 'network' }`; without it, `{ days: null, class: null }`."
-// Spec: k.user, Caller lifetime "The caller hash is then a long-lived device identifier: k.privacy treats it as `.pii('network')`, and the evidence bundle's `pii.json` holds `caller: { days, class: 'network' }` (`{ days: null, class: null }` without it)."
+// Spec: k.user, clause "With `caller: { days: 30 }`, `pii.json` has `caller: { days: 30, class: 'network' }`; without it, `{ days: null, class: null }`."
+// k.user, Caller lifetime "The caller hash is then a long-lived device identifier: k.privacy treats it as `.pii('network')`, and the evidence bundle's `pii.json` holds `caller: { days, class: 'network' }` (`{ days: null, class: null }` without it)."
 // Seed 1337 (the days are drawn with fc.sample). The real `keel` binary over a temp project, as the other evidence files do.
 // The std.sessions half is packages/std-sessions/conformance/caller-network.test.ts.
 import { rmSync } from "node:fs";

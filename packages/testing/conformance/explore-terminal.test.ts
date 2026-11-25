@@ -1,4 +1,4 @@
-// Spec: k.model, Conformance "`terminal` holds a state from which every transaction returns that state unchanged, and no state with an edge to another."
+// Spec: k.model, clause "`terminal` holds a state from which every transaction returns that state unchanged, and no state with an edge to another."
 // Seed: 1337.
 // Untestable here: the `err` arm of `terminal` (an edge returning `err`); explore throws for invariant breaks and no other err is reachable from a valid payload.
 import { scope } from "@keel/reactive";

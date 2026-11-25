@@ -1,4 +1,4 @@
-// Spec: k.aria, Part styles "`styles` on any component is `{ <part>: { <style props> } }`: the compiler collects each part's style props from that literal as a base element's (k.ui), and the component passes them to the part's `Part` or base element."
+// k.aria, Part styles "`styles` on any component is `{ <part>: { <style props> } }`: the compiler collects each part's style props from that literal as a base element's (k.ui), and the component passes them to the part's `Part` or base element."
 // Seed: 1337.
 // Collection half. E1823 (unreadable `styles`) is reported by `keel check`: packages/check/conformance/rule-E1823.test.ts.
 // Pending: not implemented yet.

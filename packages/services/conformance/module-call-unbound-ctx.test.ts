@@ -1,4 +1,4 @@
-// Spec: k.services Conformance, "On an unbound sim ctx, `service({ contract: b })` of module `b` sends its request to `http://b.keel.invalid` plus the entry's path."
+// Spec: k.services, clause "On an unbound sim ctx, `service({ contract: b })` of module `b` sends its request to `http://b.keel.invalid` plus the entry's path."
 // Seed 1337 (fc.assert below).
 import { createCtx } from "@keel/ctx";
 import { contract } from "@keel/router/contract";

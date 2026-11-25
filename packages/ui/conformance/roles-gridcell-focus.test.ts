@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.roles, Conformance "A `gridcell` with `tabIndex` and `focus` from a signal: moving the signal from one cell to another focuses the second and leaves one cell with `tabindex="0"`."
+// Spec: k.roles, clause "A `gridcell` with `tabIndex` and `focus` from a signal: moving the signal from one cell to another focuses the second and leaves one cell with `tabindex=\"0\"`."
 // Seed: 1337.
 import { Part } from "@keel/ui/aria";
 import fc from "fast-check";

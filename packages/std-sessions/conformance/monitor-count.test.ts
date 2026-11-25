@@ -1,4 +1,4 @@
-// Spec: std.monitor, Conformance "Under sim, after three saves of a store whose actions committed `api.addTodo` twice and `api.toggleTodo` once, and one clock advance of 60,000 ms, `sessions.tally` holds `tx` `{ 'api.addTodo': 2, 'api.toggleTodo': 1 }`."
+// Spec: std.monitor, clause "Under sim, after three saves of a store whose actions committed `api.addTodo` twice and `api.toggleTodo` once, and one clock advance of 60,000 ms, `sessions.tally` holds `tx` `{ 'api.addTodo': 2, 'api.toggleTodo': 1 }`."
 // Seed: 1337.
 // @vitest-environment node
 // Skipped until `monitor` exists. `monitor.run(ctx, signal)` is called directly with the ctx `createApp` serves.

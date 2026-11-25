@@ -1,4 +1,4 @@
-// Spec: k.ctx registry (order independence: a capability resolves on any ctx, whenever the ctx was created)
+// k.ctx registry (order independence: a capability resolves on any ctx, whenever the ctx was created)
 import { describe, expect, test } from "vitest";
 import { capabilities, createCtx, register } from "@keel/ctx";
 

@@ -1,4 +1,4 @@
-// Spec: k.ui Conformance 2. Property seed: 1337 (property over space tokens).
+// k.ui Conformance 2. Property seed: 1337 (property over space tokens).
 // Assumed: responsive `p={{ base, md }}` compiles to a base usage plus a usage with breakpoint "md".
 import { compileStyles } from "@keel/ui/css";
 import * as fc from "fast-check";

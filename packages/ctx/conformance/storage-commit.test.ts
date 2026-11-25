@@ -1,4 +1,4 @@
-// Spec: k.persist, Conformance "`commit` stores every `value` and resolves `true` when each `expect` matches; with one `expect` stale it stores nothing and resolves `false`; a write without `value` is checked and not stored."
+// Spec: k.persist, clause "`commit` stores every `value` and resolves `true` when each `expect` matches; with one `expect` stale it stores nothing and resolves `false`; a write without `value` is checked and not stored."
 // Seed: 1337.
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";

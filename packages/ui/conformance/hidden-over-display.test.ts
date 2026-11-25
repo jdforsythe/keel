@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.ui, Conformance "A `Part` with `hidden` and `direction="column"` is not displayed: the CSS holds `[hidden]{display:none!important}` before the atomic rules."
-// Spec: k.ui, Conformance "An element with `hidden` is not displayed whatever its style props." (Style props paragraph)
+// Spec: k.ui, clause "A `Part` with `hidden` and `direction=\"column\"` is not displayed: the CSS holds `[hidden]{display:none!important}` before the atomic rules."
+// k.ui, Conformance "An element with `hidden` is not displayed whatever its style props." (Style props paragraph)
 // Seed: 1337 (property over the four `direction` values).
 // Live on the main line. "Not displayed" in a browser follows from the rule and `!important`; the computed `display` is Chromium's and is not asserted here.
 import { Part } from "@keel/ui/aria";

@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: std.tables, Conformance "With `scroll="x"` and `label="Recipes"`, `<id>.scroll` is a `div` with `role="region"`, `tabindex="0"` and `aria-label="Recipes"` whose one child is `<id>.table`, and `<id>.pager` is outside it; with `labelledBy="h"`, both carry `aria-labelledby="h"`; without `scroll`, `<id>.table`'s parent is `<id>`."
-// Spec: std.tables, Conformance "`styles={{ cell: { px: '2', textAlign: 'start' }, 'column.price': { textAlign: 'end' } }}` gives `header.price` and every `cell.<key>.price` the `textAlign` `end` class and not the `start` one, keeps their `px` `2` class, and gives no other column the `end` class; `'column.nope'` is E2851."
+// Spec: std.tables, clause "With `scroll=\"x\"` and `label=\"Recipes\"`, `<id>.scroll` is a `div` with `role=\"region\"`, `tabindex=\"0\"` and `aria-label=\"Recipes\"` whose one child is `<id>.table`, and `<id>.pager` is outside it; with `labelledBy=\"h\"`, both carry `aria-labelledby=\"h\"`; without `scroll`, `<id>.table`'s parent is `<id>`."
+// Spec: std.tables, clause "`styles={{ cell: { px: '2', textAlign: 'start' }, 'column.price': { textAlign: 'end' } }}` gives `header.price` and every `cell.<key>.price` the `textAlign` `end` class and not the `start` one, keeps their `px` `2` class, and gives no other column the `end` class; `'column.nope'` is E2851."
 // Seed: 1337.
 // Not built yet (rfc:0203): the cases fail until `DataTable` takes `scroll` and `column.<col>` styles; plain `test`, not skipped. `tsc` reports those props as unknown until then.
 // Assumptions: the id of the region is `<id>.scroll` as the spec says; the class names of `textAlign` and `px` are read from `compileStyles` over the same tokens, so no naming is assumed;

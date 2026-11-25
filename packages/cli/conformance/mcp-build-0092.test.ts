@@ -1,4 +1,5 @@
-// Spec: k.cli Conformance (rfc:0092), "An MCP `build` writes the `.keel/` files `keel build` writes."
+// Spec: k.cli, clause "An MCP `build` writes the `.keel/` files `keel build` writes."
+// k.cli (rfc:0092)
 // Also the rfc:0092 B2 sentence: an MCP `build` and `keel build` on one fixture write equal `routes.json` and `surface.json`.
 // Seed 1337 (the one generated input, the fixture's field name). Drives the real binary: `keel build` in one temp project,
 // `keel mcp` with one `tools/call` of `build` in a second temp project of the same files; the trees are compared.

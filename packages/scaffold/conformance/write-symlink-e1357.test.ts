@@ -1,7 +1,7 @@
-// Spec: k.scaffold, Rules "E1357 a write a link carries out of the project (Links)"
-// Spec: k.scaffold "`keel scaffold project <name>`, with or without `--workspace`, writes only under `<name>/`."
-// Spec: k.explain, Agent files "`keel docs --sync` writes them all or none". RFC 0151 Conformance diff, the two E1357 bullets.
-// Spec: k.explain, Agent files "`CLAUDE.md` holding `@AGENTS.md` when nothing exists there (an existing one is never written, a dangling symlink is E1357)"
+// k.scaffold, Rules "E1357 a write a link carries out of the project (Links)"
+// Spec: k.scaffold, clause "`keel scaffold project <name>`, with or without `--workspace`, writes only under `<name>/`."
+// k.explain, Agent files "`keel docs --sync` writes them all or none". RFC 0151 Conformance diff, the two E1357 bullets.
+// k.explain, Agent files "`CLAUDE.md` holding `@AGENTS.md` when nothing exists there (an existing one is never written, a dangling symlink is E1357)"
 // Spec: k.scaffold "`--sync` ... keeps a `CLAUDE.md`, linked or not."
 // Seed: none (examples; real temp directories, real symlinks, the real `keel` binary). Also drives `keel mcp` for the MCP path.
 // ASSUMED: the `path` of the E1357 diagnostic starts with the linked path (`.claude`, `.claude/skills`, `AGENTS.md`, `CLAUDE.md`);

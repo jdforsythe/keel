@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.component, Conformance "A slot prop a component calls inside a `For` renders in that row's scope: removing the row disposes what the call rendered."
+// Spec: k.component, clause "A slot prop a component calls inside a `For` renders in that row's scope: removing the row disposes what the call rendered."
 // Seed: 1337.
 // ASSUMPTION: the compiled `For` is the `list` op from `@keel/runtime-dom/ops` (as in for-keyed-rows-0090); the slot prop is a plain function
 // `(item, state) => Node` the component calls from its row callback; "what the call rendered" is observed through a text binding's reads.

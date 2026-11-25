@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.ui Conformance 7 (RFC 0009). Real DOM events on the element found by id; handlers register via the delegated `on`.
+// k.ui Conformance 7 (RFC 0009). Real DOM events on the element found by id; handlers register via the delegated `on`.
 import { createCtx } from "@keel/ctx";
 import { mount } from "@keel/runtime-dom";
 import { Box, Button, Checkbox, Input, Select, TextArea } from "@keel/ui";

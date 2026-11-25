@@ -1,5 +1,5 @@
 import { type Transaction, tx } from "@keel/store";
-// Spec: k.store a payload not assignable to the transaction's payload type is a compile error and an `unknown` one compiles. Seed 1337.
+// k.store a payload not assignable to the transaction's payload type is a compile error and an `unknown` one compiles. Seed 1337.
 // Type-level (no ts-expect-error, per brands.test.ts): `Callable` asks whether some `tx` overload accepts the arguments;
 // `toEqualTypeOf<true|false>` fails tsc if a bad payload starts compiling or a good one stops.
 import { describe, expect, expectTypeOf, it } from "vitest";

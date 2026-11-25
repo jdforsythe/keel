@@ -1,6 +1,6 @@
-// Spec: std.postgres, Conformance "`allow: 'phantoms'`, or no `reason`, throws; E2459 fires on `{ allow: 'write skew' }` and on a variable `reason`, not on `reason: 'audit rows only'`."
-// Spec: std.postgres, Rules "E2459 `allow` in a `.transaction(` options object without a `reason` that is a non-empty string literal."
-// Spec: std.postgres, API "Another value, or no `reason`, throws."
+// Spec: std.postgres, clause "`allow: 'phantoms'`, or no `reason`, throws; E2459 fires on `{ allow: 'write skew' }` and on a variable `reason`, not on `reason: 'audit rows only'`."
+// std.postgres, Rules "E2459 `allow` in a `.transaction(` options object without a `reason` that is a non-empty string literal."
+// std.postgres, API "Another value, or no `reason`, throws."
 // Seed: 1337.
 // Pending (rfc:0184): skipped until the build lands; the builder un-skips by changing each `test.skip` to `test` in this file.
 // Assumption: the throw is a rejection of the `transaction` call (or a synchronous throw); both are caught by awaiting inside an async wrapper. An empty-string `reason` also throws (API: "refused at run time when missing or empty", RFC D4).

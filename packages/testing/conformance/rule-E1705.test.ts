@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.testing, Rules "E1705 `fire` or `find` with an id absent from `ids.json` (message lists the nearest ids)"
+// k.testing, Rules "E1705 `fire` or `find` with an id absent from `ids.json` (message lists the nearest ids)"
 // Seed: 1337.
 import { render } from "@keel/testing";
 import * as fc from "fast-check";

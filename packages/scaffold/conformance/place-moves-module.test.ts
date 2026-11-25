@@ -1,4 +1,4 @@
-// Spec: k.scaffold, Codemods "`place` moves a module to a deployable in `topology.ts` (a new deployable needs `--adapter`; an emptied one is removed) and regenerates the deploy files; nothing else changes."
+// k.scaffold, Codemods "`place` moves a module to a deployable in `topology.ts` (a new deployable needs `--adapter`; an emptied one is removed) and regenerates the deploy files; nothing else changes."
 // Seed 1337 (fast-check). Real `keel` binary over a temp project; each run spawns it, so numRuns is small.
 import fc from "fast-check";
 import { afterAll, describe, expect, test } from "vitest";

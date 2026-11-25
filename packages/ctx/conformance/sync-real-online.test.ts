@@ -1,4 +1,4 @@
-// Spec: k.sync Conformance, "Under real with no global `navigator`, `online()` is true."
+// Spec: k.sync, clause "Under real with no global `navigator`, `online()` is true."
 // Seed 1337 (no generated inputs). Node 22 defines a global `navigator`, so the test stubs it away with vi.stubGlobal.
 // Untestable here: "updated on the window's `online` and `offline` events" needs a real window; the last test only
 // stubs a minimal `window`/`navigator` pair and passes also for an implementation that reads `navigator.onLine` directly.

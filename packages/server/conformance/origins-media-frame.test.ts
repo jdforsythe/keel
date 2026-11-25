@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.origins, Conformance "`media` and `frame` declared: `media-src` then `frame-src` directly follow `connect-src`, neither holding `'self'`."
-// Spec: k.origins, Policy "`media` and `frame` add `media-src` then `frame-src` directly after `connect-src`, holding the declared origins alone."
+// Spec: k.origins, clause "`media` and `frame` declared: `media-src` then `frame-src` directly follow `connect-src`, neither holding `'self'`."
+// k.origins, Policy "`media` and `frame` add `media-src` then `frame-src` directly after `connect-src`, holding the declared origins alone."
 // Seed 1337 (fc.assert below; sim ctx seed 1337).
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";

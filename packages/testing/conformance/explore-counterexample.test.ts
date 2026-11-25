@@ -1,6 +1,6 @@
-// Spec: k.model, Conformance "A transaction that breaks a declared invariant from a reachable state fails with E1708 whose `data.snapshot` log has the fewest entries of any path to it, and `restore` of that snapshot followed by `tx` of `data.transaction` with `data.payload` returns `store.invariant`."
+// Spec: k.model, clause "A transaction that breaks a declared invariant from a reachable state fails with E1708 whose `data.snapshot` log has the fewest entries of any path to it, and `restore` of that snapshot followed by `tx` of `data.transaction` with `data.payload` returns `store.invariant`."
 // Seed: 1337.
-// Spec: k.model, Rules "E1708 an invariant broke, or a transaction threw, on an explored edge"
+// k.model, Rules "E1708 an invariant broke, or a transaction threw, on an explored edge"
 import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";
 import { invariant, store, transaction, tx } from "@keel/store";

@@ -1,5 +1,5 @@
-// Spec: k.boundary, Conformance "A page importing `./x.server.ts?raw` or `?url`, a plain file calling `loader`, or one importing `node:path` fails `vite build` with one E1007 naming the chain; `keel build` stops at `keel check`."
-// Spec: k.boundary, Build gate "`keel build` runs `keel check` first; an error ends it with exit 1 and nothing written, a warning does not. `vite build` alone runs no check; the stubs and E1007 still hold."
+// Spec: k.boundary, clause "A page importing `./x.server.ts?raw` or `?url`, a plain file calling `loader`, or one importing `node:path` fails `vite build` with one E1007 naming the chain; `keel build` stops at `keel check`."
+// k.boundary, Build gate "`keel build` runs `keel check` first; an error ends it with exit 1 and nothing written, a warning does not. `vite build` alone runs no check; the stubs and E1007 still hold."
 // Seed 1337 (no random input). The real binary over the node fixture of boundary-support.ts with one change each; `.keel/` and `dist/` are read after the run.
 // The error is unrelated to the boundary: a Node-only global (E1759) in a browser file that nothing imports. The warning case spreads an entry into the binding after one `keel build` has written `.keel/routes.json` (W1005).
 import { existsSync } from "node:fs";

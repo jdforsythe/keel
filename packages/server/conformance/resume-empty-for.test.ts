@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.resume, Conformance "A `For` with no rows and an `empty` branch is served as a region holding that content; it resumes keeping it; a first row replaces it."
+// Spec: k.resume, clause "A `For` with no rows and an `empty` branch is served as a region holding that content; it resumes keeping it; a first row replaces it."
 // Seed: 1337. Real compiled TSX, real createApp, real resume.
 import { afterEach, describe, expect, it } from "vitest";
 import {

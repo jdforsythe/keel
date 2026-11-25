@@ -1,4 +1,4 @@
-// Spec: k.persist, Conformance "An action saving two stores whose `commit` resolves `false` stores neither."
+// Spec: k.persist, clause "An action saving two stores whose `commit` resolves `false` stores neither."
 // Seed: 1337. Runs under plain Node; only runtime (JSON) requests are used.
 // The ctx is a real ctx over a storage driver whose `commit` is refused (resolves `false`) without storing.
 import { createCtx } from "@keel/ctx";

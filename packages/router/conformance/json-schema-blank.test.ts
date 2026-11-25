@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.schema, Conformance "`s.string({ min: 1 })` fails `''`, `' '`, U+200B, U+3164 and a lone U+0301 with rule `required`; `decodeStrings` drops each if optional; the JSON Schema `pattern` refuses exactly the blank values without `M`, `Cs` or non-BMP characters." (rfc:0152)
+// Spec: k.schema, clause "`s.string({ min: 1 })` fails `''`, `' '`, U+200B, U+3164 and a lone U+0301 with rule `required`; `decodeStrings` drops each if optional; the JSON Schema `pattern` refuses exactly the blank values without `M`, `Cs` or non-BMP characters." (rfc:0152)
 // Seed: 1337 (no random input: every BMP code point is enumerated).
 // ASSUMED seam: the router derives JSON Schema for a route's `params` and `search` into `routesArtifact(manifest)` (k.compat: "Schemas
 // are JSON Schema, as in `routes.json`"); the spec does not name the artifact's keys, so the test reads `<id>.params.properties.<key>.pattern`

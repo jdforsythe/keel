@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.testing, Rules "E1701 DOM selector or DOM query in a test (`querySelector`, `getByRole`, `container`)"
+// k.testing, Rules "E1701 DOM selector or DOM query in a test (`querySelector`, `getByRole`, `container`)"
 // Seed: 1337.
 import { check } from "@keel/check";
 import { render } from "@keel/testing";

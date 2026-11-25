@@ -1,5 +1,5 @@
-// Spec: std.lists, Conformance "`opened(2)` on a closed list of five makes `index.get()` 2 and `open.get()` true; `opened(5)` makes `index.get()` -1; `opened(0)` on an open list leaves `index.get()` as it was."
-// Spec: std.lists, listChart "`opened(at)` opens a closed list with option `at` active, and none active when `at` is -1 or not below the list's length; on an open list it does nothing."
+// Spec: std.lists, clause "`opened(2)` on a closed list of five makes `index.get()` 2 and `open.get()` true; `opened(5)` makes `index.get()` -1; `opened(0)` on an open list leaves `index.get()` as it was."
+// std.lists, listChart "`opened(at)` opens a closed list with option `at` active, and none active when `at` is -1 or not below the list's length; on an open list it does nothing."
 // Seed: 1337. Assumptions in lists-support.ts.
 import { listChart } from "@keel/std-headless";
 import fc from "fast-check";

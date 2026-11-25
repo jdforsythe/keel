@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.ui, Conformance "`<Box scroll="x" label="Prices">` renders a `div` with `role="region"`, `tabindex="0"`, `aria-label="Prices"` and class `k-scroll`, in server and client output, and has no axe violations holding a `table`; `labelledBy="t"` writes `aria-labelledby="t"` and no `aria-label`; a `Box` without `scroll` writes none of these."
+// Spec: k.ui, clause "`<Box scroll=\"x\" label=\"Prices\">` renders a `div` with `role=\"region\"`, `tabindex=\"0\"`, `aria-label=\"Prices\"` and class `k-scroll`, in server and client output, and has no axe violations holding a `table`; `labelledBy=\"t\"` writes `aria-labelledby=\"t\"` and no `aria-label`; a `Box` without `scroll` writes none of these."
 // Seed 1337. The server-output half; the client half and axe are packages/ui/conformance/scroll-region.test.ts.
 // Not built yet (rfc:0203): the cases fail until `Box` takes `scroll`; plain `test`, not skipped.
 import { createCtx } from "@keel/ctx";

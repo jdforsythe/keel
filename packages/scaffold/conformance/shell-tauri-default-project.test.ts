@@ -1,4 +1,4 @@
-// Spec: k.scaffold-shell, Conformance "In `p`, `shell { shell: 'tauri', id: 'com.acme.p' }` changes `package.json` and `topology.ts` alone; `web` gains `shells: { tauri: { id: \"com.acme.p\", name: \"P\" } }` as its last property, one property per line, its other properties unchanged; `dependencies` gains `@keel/std-tauri` at `@keel/server`'s text, `devDependencies` gains `@tauri-apps/cli`, nothing else is added, and each object's keys are sorted."
+// Spec: k.scaffold-shell, clause "In `p`, `shell { shell: 'tauri', id: 'com.acme.p' }` changes `package.json` and `topology.ts` alone; `web` gains `shells: { tauri: { id: \"com.acme.p\", name: \"P\" } }` as its last property, one property per line, its other properties unchanged; `dependencies` gains `@keel/std-tauri` at `@keel/server`'s text, `devDependencies` gains `@tauri-apps/cli`, nothing else is added, and each object's keys are sorted."
 // Seed 1337 (property over ids).
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";

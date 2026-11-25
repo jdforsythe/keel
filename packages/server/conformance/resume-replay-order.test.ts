@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
-// Spec: k.resume, Conformance "Clicks queued on a page island's button, then its layout island's, replay after both resume, page first; a layout handler on an element enclosing the page's button runs after the page's, unless the page's calls `stopPropagation`."
-// Spec: k.resume, Replay "Events queued before resume replay once all islands resume, in fired order, each as a live one: from the target through each enclosing island, until `stopPropagation`; one in a re-rendered island's own nodes is dropped."
-// Spec: k.runtime, Resume "per island it then fires `input` on each control off its default value with none queued, then replays queued events in order, reporting each before its handlers."
+// Spec: k.resume, clause "Clicks queued on a page island's button, then its layout island's, replay after both resume, page first; a layout handler on an element enclosing the page's button runs after the page's, unless the page's calls `stopPropagation`."
+// k.resume, Replay "Events queued before resume replay once all islands resume, in fired order, each as a live one: from the target through each enclosing island, until `stopPropagation`; one in a re-rendered island's own nodes is dropped."
+// k.runtime, Resume "per island it then fires `input` on each control off its default value with none queued, then replays queued events in order, reporting each before its handlers."
 // Seed: 1337 (no generated inputs). Real compiled TSX, real createApp, real resume on a sim ctx with an observer.
 import { afterEach, describe, expect, it } from "vitest";
 import { type Component, type Level, componentsOf, install, q, serve } from "./resume-app.ts";

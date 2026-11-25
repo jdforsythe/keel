@@ -1,4 +1,4 @@
-// Spec: std.statecharts, Conformance "An event's transaction passes `properties` for a chart whose guards and actions are pure."
+// Spec: std.statecharts, clause "An event's transaction passes `properties` for a chart whose guards and actions are pure."
 // Seed: 1337.
 // Assumption: `properties(target, { runs, seed })` returns (or resolves to) a result and throws E1704 on failure, so passing is "does not reject".
 import { properties } from "@keel/testing";

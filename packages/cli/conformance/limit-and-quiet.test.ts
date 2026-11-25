@@ -1,4 +1,4 @@
-// Spec: k.cli Conformance "With 20 diagnostics of one code, compact prints 5 plus one `... +15 more` line; `--limit 2` prints 2."
+// Spec: k.cli, clause "With 20 diagnostics of one code, compact prints 5 plus one `... +15 more` line; `--limit 2` prints 2."
 // and OUTPUT.md: --quiet prints the trailer only; --code keeps only that code.
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";

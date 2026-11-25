@@ -1,6 +1,6 @@
 import { s } from "@keel/schema";
-// Spec: std.postgres, Conformance "Under sim, two ctxs of one seed give equal answers to the same calls; one ctx sees none of another's rows; a plan step `unavailable` is `keel.unreachable` and writes nothing."
-// Spec: std.postgres, Modes "Under sim each database is PGlite in memory, migrated, one per sim ctx and capability, `setseed` from the capability seed; ... `fault` `none`, `unavailable` (`keel.unreachable`, runs nothing) or `conflict`"
+// Spec: std.postgres, clause "Under sim, two ctxs of one seed give equal answers to the same calls; one ctx sees none of another's rows; a plan step `unavailable` is `keel.unreachable` and writes nothing."
+// std.postgres, Modes "Under sim each database is PGlite in memory, migrated, one per sim ctx and capability, `setseed` from the capability seed; ... `fault` `none`, `unavailable` (`keel.unreachable`, runs nothing) or `conflict`"
 // Seed: 1337.
 // Assumption: "equal answers" is `toEqual` on the whole `Result` of each call, including a `select random()` (the capability seed sets Postgres's `setseed`; W2456 is a lint, not a runtime error).
 // Assumption: a plan consumed past its end gives `none`; tests pad with explicit `none` steps.

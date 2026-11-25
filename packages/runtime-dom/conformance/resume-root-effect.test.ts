@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.errors, clause "After `resume`, an `effect` created in an island's component that throws on a later `signal.set` reports one `keel.unexpected` with `data.at` `""` (no stamped parent) and renders the root fallback in place of the island, also for an island re-rendered on the client after a mismatch; the other islands keep handling events."
+// Spec: k.errors, clause "After `resume`, an `effect` created in an island's component that throws on a later `signal.set` reports one `keel.unexpected` with `data.at` `\"\"` (no stamped parent) and renders the root fallback in place of the island, also for an island re-rendered on the client after a mismatch; the other islands keep handling events."
 // Boundaries: a throw at no element of its own (the root component's own `effect`, `computed` or render) has `data.at` the `data-k` at the root's place (the `mount` element, the island's parent), else `""`.
 // Seed 1337
 import { type CtxEvent, createCtx, observe } from "@keel/ctx";

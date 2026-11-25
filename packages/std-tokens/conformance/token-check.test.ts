@@ -1,11 +1,11 @@
-// Spec: std.tokens, API "`check(token, find)` reads the id from the presented `Secret<string>`, calls `find(id)` once for the row (an object with `digest: Digested`), compares in constant time (`timingSafeEqual`), then reads `ctx.clock.now()`, and returns `ok(row)`."
-// Spec: std.tokens, API "A presented value that is not in the token form (`find` is not called), a `find` that returns `undefined`, and a digest that does not match are `credentials.mismatch`."
-// Spec: std.tokens, API "An unreadable `digest` is `credentials.malformed`, data `{ reason }`: `format` (not `Digested`), `parameters` (an id other than `sha256` or `sha256-sim`, a parameter other than `exp=<ms>`, or a digest that is not 32 bytes) or `sim` (a sim form outside sim)."
-// Spec: std.tokens, API "Both are synchronous and neither throws, a throw from `find` aside. Each error is one constant per code and `reason`."
-// Spec: std.tokens, API "`Digested` (`tokens.Digested`) is a format type over `s.string()`: `$id$digest` or `$id$params$digest`, at most 128 characters."
-// Spec: std.tokens, Conformance "`check` of a minted token, with `find` returning a row holding its `digest`, is `ok` with that row, and `find` was called once with its `id`."
-// Spec: std.tokens, Conformance "Under real, `check` is `credentials.mismatch` for: a token with one `secret` character changed; one token's `id` with another's `secret`; `hunter2` (`find` not called); `find` returning `undefined`."
-// Spec: std.tokens, Conformance "A row whose `digest` is `$md5$` plus 43 characters, or has `exp=soon`, is `credentials.malformed` `parameters`."
+// std.tokens, API "`check(token, find)` reads the id from the presented `Secret<string>`, calls `find(id)` once for the row (an object with `digest: Digested`), compares in constant time (`timingSafeEqual`), then reads `ctx.clock.now()`, and returns `ok(row)`."
+// std.tokens, API "A presented value that is not in the token form (`find` is not called), a `find` that returns `undefined`, and a digest that does not match are `credentials.mismatch`."
+// std.tokens, API "An unreadable `digest` is `credentials.malformed`, data `{ reason }`: `format` (not `Digested`), `parameters` (an id other than `sha256` or `sha256-sim`, a parameter other than `exp=<ms>`, or a digest that is not 32 bytes) or `sim` (a sim form outside sim)."
+// std.tokens, API "Both are synchronous and neither throws, a throw from `find` aside. Each error is one constant per code and `reason`."
+// std.tokens, API "`Digested` (`tokens.Digested`) is a format type over `s.string()`: `$id$digest` or `$id$params$digest`, at most 128 characters."
+// Spec: std.tokens, clause "`check` of a minted token, with `find` returning a row holding its `digest`, is `ok` with that row, and `find` was called once with its `id`."
+// Spec: std.tokens, clause "Under real, `check` is `credentials.mismatch` for: a token with one `secret` character changed; one token's `id` with another's `secret`; `hunter2` (`find` not called); `find` returning `undefined`."
+// Spec: std.tokens, clause "A row whose `digest` is `$md5$` plus 43 characters, or has `exp=soon`, is `credentials.malformed` `parameters`."
 // Seed: 1337.
 // Assumption: a row is `{ id, digest }`; `find` is a spy over an array of rows keyed by `id`.
 // Assumption: a digest `hunter2` (not of the `Digested` shape) is `credentials.malformed` `format`, it reaches `check` through `rawCheck`, since the types refuse it.

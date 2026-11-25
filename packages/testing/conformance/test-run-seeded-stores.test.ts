@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.test-run Disposal "... its seeded stores are restored."
-// Spec: k.test-run Conformance "A `render` given `state: [[store, v]]` and never disposed: the next test reads the store's value from before the render. Disposed by hand and the store written after it in the same test: the next test reads the write, and a second `dispose()` throws nothing."
+// k.test-run Disposal "... its seeded stores are restored."
+// Spec: k.test-run, clause "A `render` given `state: [[store, v]]` and never disposed: the next test reads the store's value from before the render. Disposed by hand and the store written after it in the same test: the next test reads the write, and a second `dispose()` throws nothing."
 // Seed: 1337 (n/a: no generated inputs). The cases run in order.
 import { render } from "@keel/testing";
 import { describe, expect, it } from "vitest";

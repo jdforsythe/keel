@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 // Spec: k.store, clause "A page component creating `store(S, { items: props.data.items }, { id })` in its body shows the loader's items under `renderRoute`, a click handler's `tx` on it updates the page and `state()`, and `resumeDocument` of its `createApp` document gives `state()` for that id equal to the server's."
-// Spec: k.store, View stores "A store a component creates is owned by its scope and starts from `initial` on the server and in a client router."
+// k.store, View stores "A store a component creates is owned by its scope and starts from `initial` on the server and in a client router."
 // Seed: 1337 (fc.assert below). Pending: the clause is not in the spec text yet beyond the RFC diff; the fixture is view-store-page.ts.
 import { renderRoute } from "@keel/testing";
 import fc from "fast-check";

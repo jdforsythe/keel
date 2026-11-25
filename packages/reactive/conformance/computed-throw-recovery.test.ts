@@ -1,8 +1,5 @@
-// Spec: k.reactive Conformance:
-// "A computed that threw and then returns its value from before the throw reruns its readers (also with `equals`,
-// through a computed chain, and for a `resource` fetcher reading it)."
-// "A throwing computed runs at most once per commit however many readers and dependent computeds read it, and every
-// reader's `get()` throws that one error."
+// Spec: k.reactive, clause "A computed that threw and then returns its value from before the throw reruns its readers (also with `equals`, through a computed chain, and for a `resource` fetcher reading it)."
+// Spec: k.reactive, clause "A throwing computed runs at most once per commit however many readers and dependent computeds read it, and every reader's `get()` throws that one error."
 // Seed 1337.
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";

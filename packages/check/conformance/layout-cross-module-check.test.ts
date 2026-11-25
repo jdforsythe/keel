@@ -1,5 +1,5 @@
-// Spec: k.routes, Layouts "Another module's id compiles; `routeTable`, or a manifest served alone, throws E1506 naming both ids if it names no layout entry of the table or closes a cycle. `deps` must list its module (`keel check` E1152 at `layout`)."
-// Spec: RFC 0157 D13 "`keel check` reports E1152 at a `layout` whose module is not in `deps`"; k.routes Layouts: `routeTable` throws E1506 "if it names no layout entry of the table or closes a cycle", one table per deployable (a module placed in another deployable is not in the table).
+// k.routes, Layouts "Another module's id compiles; `routeTable`, or a manifest served alone, throws E1506 naming both ids if it names no layout entry of the table or closes a cycle. `deps` must list its module (`keel check` E1152 at `layout`)."
+// RFC 0157 D13 "`keel check` reports E1152 at a `layout` whose module is not in `deps`"; k.routes Layouts: `routeTable` throws E1506 "if it names no layout entry of the table or closes a cycle", one table per deployable (a module placed in another deployable is not in the table).
 // Seed 1337: the module ids are generated; the shapes (which entry, which deployable) are enumerated.
 import { check } from "@keel/check";
 import fc from "fast-check";

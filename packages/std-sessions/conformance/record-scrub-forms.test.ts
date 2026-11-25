@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: std.sessions-redact, clause "Each dropped value is written as `x` repeated, found as written, URL-encoded and JSON-escaped, in any letter case; one under 3 characters only as a whole token."
-// Spec: std.sessions-redact, clause "Other free text, and any other encoding of a value, is not scrubbed."
+// std.sessions-redact, clause "Each dropped value is written as `x` repeated, found as written, URL-encoded and JSON-escaped, in any letter case; one under 3 characters only as a whole token."
+// std.sessions-redact, clause "Other free text, and any other encoding of a value, is not scrubbed."
 // Seed 1337 (fast-check `seed: 1337`).
 // Forms asserted, as far as the sentences reach: the value (and an undeclared key's name) as written, as a substring of a longer string, in upper and lower case, URL-encoded (`encodeURIComponent`) and JSON-escaped (`JSON.stringify` without its quotes), each in an error's message, a `data` string and a thrown `Error`'s message; a value of 1 or 2 characters as a whole space-delimited token.
 // Not reached by any sentence, so not asserted (missing sentences, each a form "any other encoding" or "other free text" leaves unscrubbed): a value split across two `data` strings; a number rendered in another base or with separators; a key differing only by Unicode normalization; the server log's further encodings (k.privacy: double escaping, HTML entities, hex, base64) are not claimed for a recording. "Whole token" does not say what delimits a token; a space is asserted, and that a short value inside a longer word is kept is not.

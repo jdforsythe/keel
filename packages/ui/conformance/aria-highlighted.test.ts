@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.aria, Conformance "Setting `activeDescendant` to an option's id gives that option `data-k-highlighted` and removes it from the one before."
+// Spec: k.aria, clause "Setting `activeDescendant` to an option's id gives that option `data-k-highlighted` and removes it from the one before."
 // Seed: 1337.
 // Behavior extra: the named element is scrolled into view with `block: 'nearest'`.
 import { createCtx } from "@keel/ctx";

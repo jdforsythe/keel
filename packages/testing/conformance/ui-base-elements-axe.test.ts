@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.ui Conformance, "Every base element rendered with only its required props has no axe violations". Seed: 1337.
+// Spec: k.ui, clause "Every base element rendered with only its required props has no axe violations."
+// k.ui Seed: 1337.
 // The harness `render` runs the axe rules after the first render (E1703); a violation throws, so a returned harness means none.
 import { render } from "@keel/testing";
 import { Box, Button, Checkbox, Heading, Image, Input, Link, Select, Text, TextArea } from "@keel/ui";

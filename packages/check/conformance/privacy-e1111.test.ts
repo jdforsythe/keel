@@ -1,4 +1,5 @@
-// Spec: k.privacy, Rules "E1111 a `.pii()` or `s.secret` node in a route `params` or `search` schema (fix: none), or a route table, entry, `params` or `search` it cannot read statically (a factory call, a computed key)" Conformance "A marked or `s.secret` field in a route's `params` or `search` schema is E1111; in an action `input` it is not."
+// Spec: k.privacy, clause "A marked or `s.secret` field in a route's `params` or `search` schema is E1111; in an action `input` it is not."
+// k.privacy "E1111 a `.pii()` or `s.secret` node in a route `params` or `search` schema (fix: none), or a route table, entry, `params` or `search` it cannot read statically (a factory call, a computed key)"
 // Seed: 1337.
 // Skipped until E1111 exists. E1111 has no fix; the no-fix list in fix-diffs.test.ts records it.
 import { check } from "@keel/check";

@@ -1,4 +1,4 @@
-// Spec: k.cli Inspect and Rules E1056 (RFC 0020): `keel inspect [url]` fetches GET /__keel/inspect and prints one
+// k.cli Inspect and Rules E1056 (RFC 0020): `keel inspect [url]` fetches GET /__keel/inspect and prints one
 // `inspect.store` record per store and a summary; an unreachable, non-2xx, or non-inspect target is E1056, exit 1.
 // Driven through `run(['inspect', url], { fetch })` with an injected fetch. Seed 1337.
 // Spec: k.cli, clause "`keel inspect` against an unreachable url emits E1056 and exits 1."

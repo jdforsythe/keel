@@ -1,5 +1,5 @@
 // Spec: k.ledger, clause "An entry whose texts match only a Killed mutant, or no mutant, of the report on disk makes `keel ledger` report E1725 naming the entry."
-// Spec: k.ledger, Rules "E1725 a package's `mutation-justified.json` fails its shape (a field missing, a reason outside the set, two equal entries), or, with a report on disk, has an entry that justifies no mutant of it".
+// k.ledger, Rules "E1725 a package's `mutation-justified.json` fails its shape (a field missing, a reason outside the set, two equal entries), or, with a report on disk, has an entry that justifies no mutant of it".
 // The real `keel` binary over a temp project (OS tmpdir). Seed: 1337 (no property here).
 import { describe, expect, it } from "vitest";
 import { PKG_REPORT, diags, withProject } from "./ledger-fixture-kinds.ts";

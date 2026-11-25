@@ -1,4 +1,4 @@
-// Spec: k.compiler Rules E1049 (internal compiler failure: message verbatim, no app location or code). A failure is
+// k.compiler Rules E1049 (internal compiler failure: message verbatim, no app location or code). A failure is
 // injected through the public API (a source that throws when read); rfc:0065, backlog 0186. No random inputs.
 import { compile } from "@keel/compiler";
 import { expect, test } from "vitest";

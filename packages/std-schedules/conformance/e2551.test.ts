@@ -1,5 +1,5 @@
 // Spec: std.schedules, clause "`60 * * * *`, `* * * *`, `@daily` and `0 0 * * MON` are each one E2551, and `schedule` throws E2551 for each."
-// Spec: std.schedules, rule E2551: a `cron` or `zone` literal that does not parse, naming the field (no fix; `schedule` also throws it).
+// std.schedules, rule E2551: a `cron` or `zone` literal that does not parse, naming the field (no fix; `schedule` also throws it).
 // Assumption: as for std.i18n E2301, `check()` imports nothing, so the rules register by importing `@keel/std-jobs/tools`;
 // a module is the files under `modules/<id>/` with a `module.ts` listing `deps`.
 import { execFileSync } from "node:child_process";

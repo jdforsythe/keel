@@ -1,4 +1,4 @@
-// Spec: k.data, clause 6 (k.data#6): "`capabilities()` lists an app-registered name after its file is imported."
+// Spec: k.data, clause "`capabilities()` lists an app-registered name after its file is imported."
 // fast-check seed: 1337
 import { capabilities, register } from "@keel/ctx";
 import fc from "fast-check";

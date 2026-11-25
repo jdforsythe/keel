@@ -1,4 +1,5 @@
-// Spec: k.component, Shape and Conformance clause "`const label = props.label` at a component's top level with `{label}` as a text child is one E1405; `{props.label}` is none."
+// Spec: k.component, clause "`const label = props.label` at a component's top level with `{label}` as a text child is one E1405; `{props.label}` is none."
+// k.component Shape and Conformance
 // RFC 0090, ADR-0113. Seed 1337.
 // The fix-applies clause for E1405 (k.check) is covered by fix-diffs.test.ts, not repeated here.
 // ASSUMPTION: the diagnostic code is "E1405", one diagnostic per top-level read that reaches a sink, and it carries `fix`.

@@ -1,4 +1,4 @@
-// Spec: std.tables, Conformance "A page-2 server table of 12 rows at size 5 has `aria-rowcount="13"` and rows `aria-rowindex` 7 to 11; `header.price` has `aria-sort="ascending"` under `sort=price` and no other header has `aria-sort`."
+// Spec: std.tables, clause "A page-2 server table of 12 rows at size 5 has `aria-rowcount=\"13\"` and rows `aria-rowindex` 7 to 11; `header.price` has `aria-sort=\"ascending\"` under `sort=price` and no other header has `aria-sort`."
 // Seed: 1337.
 // @vitest-environment happy-dom
 // Assumption: `aria-rowcount` and `aria-rowindex` are read with getElementById (the a11y state has no key for them); `aria-sort` through `find(id).state.sort` (k.testing).

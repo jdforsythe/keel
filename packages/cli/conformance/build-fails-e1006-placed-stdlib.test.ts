@@ -1,5 +1,5 @@
-// Spec: k.compiler, Conformance "`keel build` of a project whose `modules/a/routes.ts` throws prints one E1006 naming that file, counts it among its summary's errors and exits 1, with a `client` deployable and with `node` ones only."
-// Spec: k.compiler, Build-time evaluation "a `routes.ts` throwing or exporting no `routes` ... is E1006, with file and message" (a placed stdlib package's `./routes` is one of "each `routes.ts`"; "In `keel build` ... the build exits 1").
+// Spec: k.compiler, clause "`keel build` of a project whose `modules/a/routes.ts` throws prints one E1006 naming that file, counts it among its summary's errors and exits 1, with a `client` deployable and with `node` ones only."
+// k.compiler, Build-time evaluation "a `routes.ts` throwing or exporting no `routes` ... is E1006, with file and message" (a placed stdlib package's `./routes` is one of "each `routes.ts`"; "In `keel build` ... the build exits 1").
 // Seed: 1337 (no property: one fixed shape; the message is a fixed string). Assumes: a stdlib package is found through an app module's `deps` in the project's `node_modules`, its module id is the `id` of its root `module.ts`; one `diag` record with code E1006 whose text names the package's `routes.js`; the final `summary` record carries `counts.errors` of at least 1; exit status 1; no `surface.json` outside `node_modules`.
 // Beside the app `routes.ts` case in build-fails-e1006-0175.test.ts.
 import fs from "node:fs";

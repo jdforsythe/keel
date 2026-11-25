@@ -1,5 +1,5 @@
 // Spec: std.health, clause "`health.href('health.status')` is `/health`."
-// Spec: std.health API "It may import `Health`, `routes` and the `./contract` export `health`". Seed 1337
+// std.health API "It may import `Health`, `routes` and the `./contract` export `health`". Seed 1337
 import { health } from "@keel/std-health/contract";
 import { expect, test } from "vitest";
 

@@ -1,5 +1,5 @@
 // Spec: k.scaffold, clause "An operation whose edit set would introduce a diagnostic writes no file and reports E1353."
-// Spec: k.scaffold, Rules "E1353 operation aborted, would break check; nothing written"
+// k.scaffold, Rules "E1353 operation aborted, would break check; nothing written"
 // Scenario: catalog keeps a second non-test file importing orders' contract, so the move's removal of unused deps
 // (k.scaffold move) leaves `orders` in catalog's deps; OrdersPage imports OrderCard, so orders gains `catalog`: a
 // deps cycle (E1153). The clean counterpart moves it without that dependency.

@@ -1,4 +1,4 @@
-// Spec: k.routes, Conformance clause 10: "With module `app` (deps `['shop']`) holding a layout `app.frame` and module `shop` (deps `[]`) a page bound with `layout: 'app.frame'`, `keel check` reports no E1152 and no E1153 and the page renders inside `app.frame`'s component; with `app`'s `deps` `[]` as well, one E1152 at `layout`."
+// Spec: k.routes, clause "With module `app` (deps `['shop']`) holding a layout `app.frame` and module `shop` (deps `[]`) a page bound with `layout: 'app.frame'`, `keel check` reports no E1152 and no E1153 and the page renders inside `app.frame`'s component; with `app`'s `deps` `[]` as well, one E1152 at `layout`."
 // Seed 1337: the module ids are generated.
 import fc from "fast-check";
 import { expect, test } from "vitest";

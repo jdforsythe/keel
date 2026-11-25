@@ -1,4 +1,4 @@
-// Spec: std.statecharts, Conformance "`enabled(state, event, payload)` is true exactly when `tx` of that event changes the state's name or applies a `do`."
+// Spec: std.statecharts, clause "`enabled(state, event, payload)` is true exactly when `tx` of that event changes the state's name or applies a `do`."
 // Seed: 1337.
 // Assumption: `state` is the store's state value `{ state, data }` (the guards need `data`).
 // Not tested: an applicable target with `to` absent and no `do`; the Compiles-to paragraph ("true when a target applies") and this sentence disagree on it.

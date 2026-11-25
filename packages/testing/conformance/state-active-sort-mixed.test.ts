@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.testing, Conformance "`find(id).state` has `active: 'c.option.b'` for a combobox whose `aria-activedescendant` is `c.option.b`, `sort: 'ascending'` for a header with that `aria-sort`, and `checked: 'mixed'` for a mixed checkbox."
+// Spec: k.testing, clause "`find(id).state` has `active: 'c.option.b'` for a combobox whose `aria-activedescendant` is `c.option.b`, `sort: 'ascending'` for a header with that `aria-sort`, and `checked: 'mixed'` for a mixed checkbox."
 // Seed: 1337.
 // Assumed: a mixed checkbox is `role="checkbox"` with `aria-checked="mixed"`; the elements are addressed by `id` through the delegated `data-k` table, as in fire-focus-0091.
 import { clone, template } from "@keel/runtime-dom/ops";

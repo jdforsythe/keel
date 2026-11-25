@@ -1,5 +1,5 @@
-// Spec: std.channels, prose (not a Conformance bullet) "A head below the last `saved` of that store the stream delivered (the store's count restarted because its storage was replaced, k.sync Heads) is delivered as `{ kind: 'reset' }` in its place, and the stream counts from that head on."
-// Spec: std.channels, prose (not a Conformance bullet) "After a stream's `reset`, each save of a store in its `stores`, by any process on the same data, is followed on that stream by a `saved` of that store with that head or a later one, or by the stream's end."
+// std.channels, prose (not a Conformance bullet) "A head below the last `saved` of that store the stream delivered (the store's count restarted because its storage was replaced, k.sync Heads) is delivered as `{ kind: 'reset' }` in its place, and the stream counts from that head on."
+// std.channels, prose (not a Conformance bullet) "After a stream's `reset`, each save of a store in its `stores`, by any process on the same data, is followed on that stream by a `saved` of that store with that head or a later one, or by the stream's end."
 // Seed: 1337.
 // Reading: "storage was replaced" is shown by `set` through the shared `a.storage` of an earlier snapshot of `chan.log`; a restore names a head already saved, and is a no-op while none is; the next `bump` on A or B then saves from that head.
 // Reading: a head equal to the last delivered is not above it, so nothing is delivered ("one head may stand for several saves"); above it is `saved`; below it is `reset`.

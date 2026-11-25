@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.resume, Conformance "An island layout around an island page: both resume, each with its own props; the page's root is the server element in the layout's slot region; a handler in each runs once per event."
+// Spec: k.resume, clause "An island layout around an island page: both resume, each with its own props; the page's root is the server element in the layout's slot region; a handler in each runs once per event."
 // Seed: 1337. Real compiled TSX, real createApp, real resume.
 import { afterEach, describe, expect, it } from "vitest";
 import {

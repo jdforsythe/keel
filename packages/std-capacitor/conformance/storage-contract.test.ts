@@ -1,4 +1,4 @@
-// Spec: std.shells, Conformance "Each package's `storage` passes k.persist's storage clauses."
+// Spec: std.shells, clause "Each package's `storage` passes k.persist's storage clauses."
 // Seed: 1337.
 // @vitest-environment happy-dom
 // Assumption: the k.persist storage clauses are tested here over the driver's `storage` alone: `get`/`set`, `read` order, `commit` (all, stale, condition-only),

@@ -1,5 +1,5 @@
-// Spec: std.postgres-changes, Conformance "On Postgres 17, with two processes on one URL, a `follow` in process B and a committed `changed` in process A: B's `on` gets `changed`, and a read in B started after it sees A's rows."
-// Spec: std.postgres-changes, API "`select pg_notify('keel_changes', $1)` ... Postgres delivers a notification only after its transaction commits."
+// Spec: std.postgres-changes, clause "On Postgres 17, with two processes on one URL, a `follow` in process B and a committed `changed` in process A: B's `on` gets `changed`, and a read in B started after it sees A's rows."
+// std.postgres-changes, API "`select pg_notify('keel_changes', $1)` ... Postgres delivers a notification only after its transaction commits."
 // Seed: 1337 (no generated inputs: one fixed cross-process case).
 // Pending (rfc:0192): skipped until the build lands; the builder un-skips by changing the `test.skip` to `test` in this file.
 // Assumption: runs only with `KEEL_TEST_POSTGRES_URL` (describe.skipIf). B is this test process, A is a child `node --experimental-strip-types follow-child.ts` that inserts row 1 and calls `tx.changed` in one transaction.

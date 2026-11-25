@@ -1,5 +1,5 @@
-// Spec: k.prove, Rules "E1721 `prove` called in a worker thread, where Z3 can abort or hang (fix: vitest `pool: "forks"`)."
-// Spec: k.prove, Conformance "In a worker thread, `prove` rejects E1721."
+// k.prove, Rules "E1721 `prove` called in a worker thread, where Z3 can abort or hang (fix: vitest `pool: "forks"`)."
+// Spec: k.prove, clause "In a worker thread, `prove` rejects E1721."
 // Seed: 1337. The worker body is prove-e1721.worker.ts, loaded through Node's type stripping.
 import { testTime } from "@keel/tooling/test-time";
 import { once } from "node:events";

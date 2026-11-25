@@ -1,6 +1,6 @@
 // Spec: std.conflicts, clause "The `conflicts.race` formatter renders a race as E2701 and an unchecked entry as W2702 in compact and json."
-// Spec: std.conflicts, rule E2701: a rebased entry races its concurrent entries (diag at the file, 1:1).
-// Spec: std.conflicts, rule W2702: a rebased entry whose base state cannot be rebuilt (diag at the file, 1:1).
+// std.conflicts, rule E2701: a rebased entry races its concurrent entries (diag at the file, 1:1).
+// std.conflicts, rule W2702: a rebased entry whose base state cannot be rebuilt (diag at the file, 1:1).
 // Seed 1337
 // Records are built by `raceRecords(path, { races, unchecked }, server)` from `races` on the fixtures and rendered
 // with `respond` from `@keel/cli/testing`; the registration test relies only on k.cli: a second `formatter` of one kind is E1053.

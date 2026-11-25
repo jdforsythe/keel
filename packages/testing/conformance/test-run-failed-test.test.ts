@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.test-run Disposal "A `render`, `renderRoute` or `resumeDocument` handle made while a test runs ... is disposed when that test ends, passed or failed ..."
-// Spec: k.test-run Conformance "A test that `renderRoute`s a page with a `<main>` landmark and fails before `dispose()` leaves no element of it in the document once it ends, and the next test's `renderRoute` of that page passes its render checks."
+// k.test-run Disposal "A `render`, `renderRoute` or `resumeDocument` handle made while a test runs ... is disposed when that test ends, passed or failed ..."
+// Spec: k.test-run, clause "A test that `renderRoute`s a page with a `<main>` landmark and fails before `dispose()` leaves no element of it in the document once it ends, and the next test's `renderRoute` of that page passes its render checks."
 // Seed: 1337 (n/a: no generated inputs). The first case fails on purpose (`it.fails` passes when its body throws); the cases run in order.
 import { renderRoute } from "@keel/testing";
 import { describe, expect, it } from "vitest";

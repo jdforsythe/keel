@@ -1,4 +1,4 @@
-// Spec: std.workflows, Conformance "Under sim, a started instance reaching a step state runs `run` once with `key` `<id>:<flow>:<entered>` and moves by its `done` event with the `ok` value."
+// Spec: std.workflows, clause "Under sim, a started instance reaching a step state runs `run` once with `key` `<id>:<flow>:<entered>` and moves by its `done` event with the `ok` value."
 // Seed: 1337.
 // Assumption: as in fixtures.ts; the instance data and the instance row are read through `commitStores`.
 import { ok } from "@keel/schema";

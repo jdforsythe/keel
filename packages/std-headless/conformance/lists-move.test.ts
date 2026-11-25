@@ -1,4 +1,4 @@
-// Spec: std.lists, Conformance "`move('next', false)` at the last option leaves it active; with `wrap` true the first becomes active."
+// Spec: std.lists, clause "`move('next', false)` at the last option leaves it active; with `wrap` true the first becomes active."
 // Seed: 1337. Assumptions in lists-support.ts.
 import { listChart } from "@keel/std-headless";
 import fc from "fast-check";

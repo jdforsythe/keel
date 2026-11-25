@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.router Matching prose (not a Conformance sentence): "static beats `:param`". Seed 1337.
+// k.router Matching prose (not a Conformance sentence): "static beats `:param`". Seed 1337.
 import { beforeEach, describe, expect, it } from "vitest";
 import { appContract, now, resetObservations, settle, start } from "./fixtures.ts";
 

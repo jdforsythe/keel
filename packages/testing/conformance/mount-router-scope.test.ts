@@ -1,8 +1,9 @@
 // @vitest-environment happy-dom
-// Spec: k.mount-scope (rfc:0156), Test "A router matches no page at or under its own `mount` (a `createRouter` option; a build with `identity.ts` passes its `path`, `renderRoute` its `mount` option's `path` (k.testing), `createApp` `handle.path`), nor at a path holding a raw `\`, which a URL parser reads as `/`; `%5C` in a path is an ordinary character."
-// Spec: k.mount-scope (rfc:0156), Test "At or under is read on the path's segments decoded as the matcher decodes them, joined by `/`, case-sensitive, on the client (`createRouter`, `renderRoute`) and the server alike"
-// Spec: k.mount-scope (rfc:0156), Limits "with the mount `/gate`, `/GATE` renders a page"
-// Spec: k.mount-scope (rfc:0156), Conformance "With `path` `/gate`, a router matches no page at `/gate`, `/gate/x` or `/%67ate`, nor at `/\x`; `/GATE` is matched by the table as any path; the server answers `/%67ate` 404 without calling `handle`."
+// k.mount-scope (rfc:0156), Test "A router matches no page at or under its own `mount` (a `createRouter` option; a build with `identity.ts` passes its `path`, `renderRoute` its `mount` option's `path` (k.testing), `createApp` `handle.path`), nor at a path holding a raw `\`, which a URL parser reads as `/`; `%5C` in a path is an ordinary character."
+// k.mount-scope (rfc:0156), Test "At or under is read on the path's segments decoded as the matcher decodes them, joined by `/`, case-sensitive, on the client (`createRouter`, `renderRoute`) and the server alike"
+// k.mount-scope (rfc:0156), Limits "with the mount `/gate`, `/GATE` renders a page"
+// Spec: k.mount-scope, clause "With `path` `/gate`, a router matches no page at `/gate`, `/gate/x` or `/%67ate`, nor at `/\x`; `/GATE` is matched by the table as any path; the server answers `/%67ate` 404 without calling `handle`."
+// k.mount-scope (rfc:0156)
 // The server half of that clause is asserted in server/conformance/mount-handle-path-params.test.ts.
 // This file makes the identity mounts `/gate` and `/other` and passes one as `mount` to each router: `open()` passes `/gate`, `openOther()` `/other`. The case of a router given no `mount` is mount-router-scope-none.test.ts.
 // Seed 1337 (fc.assert below). A raw `/a/\x` has no manifest `href`; `raw` below types it as an `Href` through a type predicate.

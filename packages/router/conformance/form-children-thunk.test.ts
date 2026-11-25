@@ -1,5 +1,5 @@
-// Spec: k.claim, Types "A component a Keel package exports takes content only as a thunk or render function. `Form` (k.router) takes `children?: () => Node | readonly Node[] | string`; `Disclosure` (std.headless) takes `children: () => Child`."
-// Spec: k.claim, Conformance "`Form` or `Disclosure` given `children` as a node, an array of nodes or a string is a type error; a thunk is not."
+// k.claim, Types "A component a Keel package exports takes content only as a thunk or render function. `Form` (k.router) takes `children?: () => Node | readonly Node[] | string`; `Disclosure` (std.headless) takes `children: () => Child`."
+// Spec: k.claim, clause "`Form` or `Disclosure` given `children` as a node, an array of nodes or a string is a type error; a thunk is not."
 // Seed: 1337 (no generated inputs). A type-level test: the assertions are checked by `tsc --noEmit`, the runtime half only confirms the export.
 import { Form } from "@keel/router";
 import type { FormProps } from "@keel/router";

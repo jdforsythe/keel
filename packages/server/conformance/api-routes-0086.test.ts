@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 // Spec: k.api, clause "A GET with `accept: text/html` to an API route with a loader gets the JSON body and status a runtime GET gets."
-// Spec: k.api, Conformance "A GET to a path with only a `POST` entry is 405 with `allow: POST`; with a GET entry too, a PUT is 405 `allow: GET, HEAD, POST`, a HEAD runs the GET entry's loader and sends no body, and a plain OPTIONS is 405 with that `allow`."
+// Spec: k.api, clause "A GET to a path with only a `POST` entry is 405 with `allow: POST`; with a GET entry too, a PUT is 405 `allow: GET, HEAD, POST`, a HEAD runs the GET entry's loader and sends no body, and a plain OPTIONS is 405 with that `allow`."
 // The GET-entry half (PUT, HEAD, OPTIONS) is path-methods-allow.test.ts.
 // Spec: k.api, clause "A form POST to an API route gets the action's `Result` as JSON with no `Location`."
 // Spec: k.api, clause "A denying guard with a `redirect` answers 403 `keel.denied` and no `Location`."

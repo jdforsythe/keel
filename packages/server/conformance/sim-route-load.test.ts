@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.drive, Conformance "In an empty replay, with a `ctx.clock.after(10)` waiter pending, `renderRoute` given `app` and `routes` as `() => import(path)` resolves with `ctx.clock.now()` 0 and the waiter not resolved."
+// Spec: k.drive, clause "In an empty replay, with a `ctx.clock.after(10)` waiter pending, `renderRoute` given `app` and `routes` as `() => import(path)` resolves with `ctx.clock.now()` 0 and the waiter not resolved."
 // Seed: 1337 (fc.assert below); replays use a SimRun of seed 1 and an empty schedule.
 // Lives in packages/server/conformance because the case needs `createApp` (`@keel/testing` imports no server package).
 // ASSUMPTION: `path` is the routes module of sim-route-load-routes.ts, which re-exports the page of render-route-document-support.ts as `routes`; the app is `createApp` over the same ctx, made inside the scenario.

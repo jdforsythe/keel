@@ -1,6 +1,6 @@
 import { s } from "@keel/schema";
 import { gen } from "@keel/schema/gen";
-// Spec: k.schema prototype-pollution keys: parse rejects own __proto__, constructor, prototype keys at any depth; decodeStrings behaves identically. Seed 1337, 100 runs.
+// k.schema prototype-pollution keys: parse rejects own __proto__, constructor, prototype keys at any depth; decodeStrings behaves identically. Seed 1337, 100 runs.
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { RUNS, SEED } from "./fixtures";

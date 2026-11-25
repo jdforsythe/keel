@@ -6,8 +6,8 @@
 // Spec: k.hosting, clause "A request from an allowed origin with `sec-fetch-site: cross-site` logs W1567 once for that origin."
 // Spec: k.hosting, clause "With `servedBy: 'api'`, `node dist/api/server.mjs` answers `GET /` and `GET /no/such/page` with the client `index.html`, an unmatched runtime GET with 404, and a client asset as `immutable`; `servedBy` naming a `client` deployable is E1566."
 // Spec: k.hosting, clause "A deployable with `host: 'api'` is one E1552 naming `host` (k.topology); `topology()` throws E1552 for it."
-// Spec: k.topology Rules "A deployable key the Declaration omits is E1552 too."
-// Spec: k.hosting Rules E1565, E1566, W1567
+// k.topology Rules "A deployable key the Declaration omits is E1552 too."
+// k.hosting Rules E1565, E1566, W1567
 // Seed 1337.
 // ASSUMPTIONS: `createApp({ allow: string[] })`; `topology({ <name>: { servedBy } })`; `KEEL_ALLOW_ORIGINS` is read by the built `server.mjs`;
 // the client artifact copy lands at `dist/<servedBy>/index.html` and `dist/<servedBy>/assets/`; the W1567 diag is a JSON log line with kind "diag" (dev mode sink).

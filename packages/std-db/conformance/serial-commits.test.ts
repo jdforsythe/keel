@@ -1,4 +1,4 @@
-// Spec: std.db, Conformance "For generated sequences of commits from two connections, the stored values equal a serial order of the commits that resolved `true`."
+// Spec: std.db, clause "For generated sequences of commits from two connections, the stored values equal a serial order of the commits that resolved `true`."
 // Seed: 1337.
 // Each driver runs the property on two connections to one database (two `open()` calls: two SQLite connections on one file, two pools on one Postgres).
 // Values come from a three-element domain so that `expect`s match often enough for both outcomes to occur.

@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
-// Spec: k.mount, Conformance "One page module under `renderRoute` and served by `createApp` then `resumeDocument` records equal `documents()` for equal input."
-// Spec: k.mount, Origins "`href` resolves against the page's origin, which must mount `handle`: every `node` deployable does (k.user), a `client` one through its `servedBy`."
-// Spec: k.mount, Navigation "Without a router (a server-rendered page) links and an action's 303 are the browser's."
-// Spec: k.mount, Testing "`renderRoute` and `resumeDocument` handles have `documents()`: the document navigations the page started, in order, `{ method, url, body }` (`body` the urlencoded text, `null` for a GET); none is made and the page stays."
+// Spec: k.mount, clause "One page module under `renderRoute` and served by `createApp` then `resumeDocument` records equal `documents()` for equal input."
+// k.mount, Origins "`href` resolves against the page's origin, which must mount `handle`: every `node` deployable does (k.user), a `client` one through its `servedBy`."
+// k.mount, Navigation "Without a router (a server-rendered page) links and an action's 303 are the browser's."
+// k.mount, Testing "`renderRoute` and `resumeDocument` handles have `documents()`: the document navigations the page started, in order, `{ method, url, body }` (`body` the urlencoded text, `null` for a GET); none is made and the page stays."
 // Not testable here: "Cookies are per origin ... an app serves one public origin and forwards to peers" is a rule of deployment (no check sees the deploy's origins).
 // Seed 1337 (fc.assert below). The page module is packages/testing/conformance/mount-pages.ts: compiled TSX, so the one module runs in a client router
 // (`renderRoute`), is rendered by `createApp` and is resumed in a graph of its own, where no router encloses its Form.

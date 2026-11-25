@@ -1,4 +1,5 @@
-// Spec: k.sync Conformance, bullet 13 "With `logLimit: 0`, a keyed write retried commits once; with `logLimit: 2`, a write keyed `k1` after `k1`, `k2`, `k3` commits nothing under `keyLimit: 8` and commits under `keyLimit: 2`." and bullet 14 "`store` throws for a `keyLimit` of 0, -1 or 1.5; `restore` of a snapshot holding more than `keyLimit` keys keeps the latest `keyLimit`."
+// Spec: k.sync, clause "With `logLimit: 0`, a keyed write retried commits once; with `logLimit: 2`, a write keyed `k1` after `k1`, `k2`, `k3` commits nothing under `keyLimit: 8` and commits under `keyLimit: 2`."
+// Spec: k.sync, clause "`store` throws for a `keyLimit` of 0, -1 or 1.5; `restore` of a snapshot holding more than `keyLimit` keys keeps the latest `keyLimit`."
 // Seed 1337 (fast-check `seed: 1337`).
 import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";

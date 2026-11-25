@@ -1,4 +1,4 @@
-// Spec: k.docs "With fixture packages under `node_modules/@keel/`, `keel docs <id>` prints that package's `docs/<id>.md` byte for byte, exit 0; in json, one `docs.section` with the package's `version`."
+// Spec: k.docs, clause "With fixture packages under `node_modules/@keel/`, `keel docs <id>` prints that package's `docs/<id>.md` byte for byte, exit 0; in json, one `docs.section` with the package's `version`."
 // Seed 1337 (recorded in the property). Red: the `docs` operation is absent (E1051).
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";

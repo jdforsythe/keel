@@ -1,6 +1,6 @@
 import { tx } from "@keel/store";
 // @vitest-environment happy-dom
-// Spec: k.sim, Conformance "A module store written by one run holds its pre-`simulate` state when the next run starts and after `simulate` resolves."
+// Spec: k.sim, clause "A module store written by one run holds its pre-`simulate` state when the next run starts and after `simulate` resolves."
 // Seed: 1337.
 import { simulate } from "@keel/testing";
 import { describe, expect, it } from "vitest";

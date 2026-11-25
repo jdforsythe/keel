@@ -1,5 +1,5 @@
-// Spec: k.contract, Static reading "Keys are literal; the entries and each entry are object literals in the call, `method`, `path`, `layout` and `events` literals, `params`, `search` and `query` schemas read through consts and imports, other members any expression. A spread, call or name there (a const object's too) is W1005 and E1111 at it; the entries beside it are read."
-// Spec: k.compiler, Rules "W1005 `routes.json` parts not literal in a contract or `routes.ts` (k.contract Static reading), named; builds rewrite it, warning if it differs"
+// k.contract, Static reading "Keys are literal; the entries and each entry are object literals in the call, `method`, `path`, `layout` and `events` literals, `params`, `search` and `query` schemas read through consts and imports, other members any expression. A spread, call or name there (a const object's too) is W1005 and E1111 at it; the entries beside it are read."
+// k.compiler, Rules "W1005 `routes.json` parts not literal in a contract or `routes.ts` (k.contract Static reading), named; builds rewrite it, warning if it differs"
 // This file covers the compiler's reading (W1005 names each part `routeLiterals` leaves unread); the E1111 half is in @keel/check's conformance.
 // Examples only: fixed projects. No random inputs (a fast-check seed would be 1337).
 import fs from "node:fs";

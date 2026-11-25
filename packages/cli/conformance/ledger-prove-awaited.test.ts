@@ -1,4 +1,4 @@
-// Spec: k.ledger, Ledger "a passing `prove` its body awaits or returns"
+// k.ledger, Ledger "a passing `prove` its body awaits or returns"
 // The real `keel` binary over a temp project (OS tmpdir). Each case has its own one-transaction store, so one `keel ledger` run
 // reports every case. `prove` is @keel/testing/prove's (k.prove). Seed: 1337 (no property in this file).
 // Assumption: a test that names a transaction without a credited `prove` holds the rung `example` (k.ledger, `example`: a passing test references the item).

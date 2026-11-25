@@ -1,4 +1,4 @@
-// Spec: k.security, Conformance "The 101st report within 60 s of the sim clock is not logged; one `csp` record with `dropped: 1` follows the window; a 17 KiB body is 413 and logs nothing."
+// Spec: k.security, clause "The 101st report within 60 s of the sim clock is not logged; one `csp` record with `dropped: 1` follows the window; a 17 KiB body is 413 and logs nothing."
 // Seed: 1337.
 // @vitest-environment happy-dom
 import { createCtx } from "@keel/ctx";

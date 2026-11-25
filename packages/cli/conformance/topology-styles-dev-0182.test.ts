@@ -1,4 +1,4 @@
-// Spec: k.topology, Conformance "With `styles: ['@keel/ui/fonts']`, a `node` document served by `keel dev` links a stylesheet holding that file's `@font-face` rules, each `url()` answering 200; without it, the stylesheet holds none."
+// Spec: k.topology, clause "With `styles: ['@keel/ui/fonts']`, a `node` document served by `keel dev` links a stylesheet holding that file's `@font-face` rules, each `url()` answering 200; without it, the stylesheet holds none."
 // Seed: 1337 (no generated input: two fixtures, one `keel dev` each on a free port, the child's group ended in `finally`).
 // ASSUMPTIONS: the document is GET `/` with `accept: text/html`; a `url()` resolves against the stylesheet's URL; `data:` urls are not fetched.
 import { afterAll, afterEach, beforeAll, expect, test } from "vitest";
