@@ -42,6 +42,7 @@ import { summarize } from "./internal/summarize.ts";
 import { topologyDiags } from "./internal/topologyDiags.ts";
 import { topologyNeeds } from "./internal/topologyNeeds.ts";
 import { typeCheck } from "./internal/typeCheck.ts";
+import { typeReferences } from "./internal/typeReferences.ts";
 import { unifiedDiff } from "./internal/unifiedDiff.ts";
 import { rules } from "./rules.ts";
 import type { CheckOptions } from "./types/CheckOptions.ts";
@@ -180,7 +181,9 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
   // the rules of one `importDeps` imported first, whatever an earlier call in this process loaded (k.check-cache).
   const scope = stdInScope(all, opts.root ?? process.cwd());
   const typed =
-    opts.types === false ? undefined : typeCheck(code, opts.root ?? process.cwd(), reported, scope, opts.typeCache);
+    opts.types === false ? undefined : typeCheck(files, opts.root ?? process.cwd(), reported, scope, opts.typeCache);
+  // E1016's directive half is textual: it holds with the type pass off too (k.boundary Ambient types).
+  out.push(...typeReferences(files));
   // One diagnostic per fault: where the compiler reports E1403 at an expression, E1406 does not.
   const e1403 = new Set(out.filter((d) => d.code === "E1403").map((d) => `${d.path}:${d.line}:${d.col}`));
   if (typed !== undefined)
