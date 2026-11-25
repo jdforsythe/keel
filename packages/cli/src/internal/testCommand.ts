@@ -59,7 +59,10 @@ async function vitestRun(
       if (run !== undefined && runReport === true) writeTestReport(root, run.state.getFiles());
       else if (run !== undefined && runReport !== true) runReport(testRunReport(root, run.state.getFiles()));
       if (run !== undefined && claims) writeA11yReport(root, a11yCases(run.state.getFiles(), root));
-      report = reason === "passed" || r.failed > 0 || r.errors > 0 ? r : notPassed(r, reason);
+      // A project with a vitest config and no test file, run without a filter, is the empty run; only a filter that
+      // matches no file is a failure to show.
+      const empty = r.tests === 0 && filters.length === 0;
+      report = reason === "passed" || r.failed > 0 || r.errors > 0 || empty ? r : notPassed(r, reason);
     },
   };
   const exitCode = process.exitCode;
