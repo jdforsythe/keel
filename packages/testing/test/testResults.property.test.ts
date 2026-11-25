@@ -140,3 +140,54 @@ describe("testResults: harness failures", () => {
     expect(r.diagnostics[0]?.fix).toBe("at src/internal/modelError.ts:7:24\nat src/explore.ts:100:19");
   });
 });
+
+describe("testResults: a failure the message cannot hold", () => {
+  const LONG =
+    "renders the list page and the list for any copy and any items, each with an id as the server mints them";
+  const one = (message: string) => {
+    const t = { type: "test", name: LONG, result: { state: "fail", errors: [{ message }] } };
+    const [d] = testResults([{ filepath: "/repo/pkg/a.test.ts", tasks: [t] }], [], CWD).diagnostics;
+    return d;
+  };
+
+  it("a timeout under a long test name: the message is clipped, the fix holds the line it cut", () => {
+    const d = one("Test timed out in 5000ms.\nIf this is a long-running test, pass a timeout value.");
+    expect(d?.message).toBe(`${LONG.slice(0, 86)}...`);
+    expect(d?.fix).toBe("Test timed out in 5000ms.");
+  });
+
+  it("a fast-check failure: the fix holds its seed and path, counterexample, shrink count and error, never its stack", () => {
+    const message = [
+      "Property failed after 3 tests",
+      '{ seed: 7, path: "2:3:4", endOnFailure: true }',
+      'Counterexample: ["    "]',
+      "Shrunk 4 time(s)",
+      "Got error: too long",
+      "    at /repo/pkg/test/a.test.ts:3:9",
+      "",
+      "Hint: Enable verbose mode in order to have the list of all failing values encountered during the run",
+    ].join("\n");
+    expect(one(message)?.fix).toBe(
+      [
+        "Property failed after 3 tests",
+        '{ seed: 7, path: "2:3:4", endOnFailure: true }',
+        'Counterexample: ["    "]',
+        "Shrunk 4 time(s)",
+        "Got error: too long",
+      ].join("\n"),
+    );
+  });
+
+  it("each detail line is at most 512 UTF-16 code units, and a message that fits adds no detail", () => {
+    fc.assert(
+      fc.property(fc.string({ minLength: 0, maxLength: 2000 }), (counter) => {
+        const d = one(`Property failed after 1 tests\n{ seed: 1, path: "0" }\nCounterexample: [${counter}]`);
+        for (const l of (d?.fix ?? "").split("\n")) expect(l.length).toBeLessThanOrEqual(512);
+      }),
+      { seed: SEED, numRuns: 100 },
+    );
+    const t = { type: "test", name: "t", result: { state: "fail", errors: [{ message: "boom\nmore" }] } };
+    const [d] = testResults([{ filepath: "/repo/pkg/a.test.ts", tasks: [t] }], [], CWD).diagnostics;
+    expect(d?.fix).toBeUndefined();
+  });
+});
