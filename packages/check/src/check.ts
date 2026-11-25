@@ -240,7 +240,7 @@ export function check(given: readonly SourceFile[], options: CheckOptions = {}):
   });
   out.push(
     ...duplicateErrorCodes(checked),
-    ...registerNames(checked, dirs),
+    ...registerNames(checked, dirs, { entries: libs.entries, isLibrary: (p) => libs.real(p) !== p }),
     ...chainStoreIds(checked, dirs, all),
     ...moduleChecks(realChecked, realAll, (p) => projectOf.get(p) ?? [], {
       checked,

@@ -237,11 +237,55 @@ function devServer(load: (n: number) => Promise<Record<string, unknown>>): {
 }
 const idle = { fetch: () => Promise.resolve(new Response(null)), close: () => Promise.resolve() };
 
+/** A library `@acme/store` under `root` whose `store` (re-exported by its entry) calls `register`; `modules/a` lists it. */
+function storeLibrary(): string {
+  const lib = path.join(root, "node_modules/@acme/store");
+  fs.mkdirSync(path.join(lib, "src"), { recursive: true });
+  fs.mkdirSync(path.join(root, "modules/a"), { recursive: true });
+  const exports = { ".": { keel: "./src/index.ts", default: "./src/index.ts" } };
+  fs.writeFileSync(path.join(lib, "package.json"), JSON.stringify({ name: "@acme/store", keel: "library", exports }));
+  fs.writeFileSync(
+    path.join(lib, "module.ts"),
+    `export default { id: "store", deps: [], capabilities: [], public: { exports: ["store"] } };\n`,
+  );
+  fs.writeFileSync(path.join(lib, "src/index.ts"), `export { store } from "./store.ts";\n`);
+  fs.writeFileSync(
+    path.join(lib, "src/store.ts"),
+    `import { register } from "@keel/ctx";\nexport const store = (name: string) => register(name, {} as never);\n`,
+  );
+  const manifest = path.join(root, "modules/a/module.ts");
+  fs.writeFileSync(
+    manifest,
+    `export default { id: "a", deps: ["@acme/store"], capabilities: [], public: { exports: [] } };\n`,
+  );
+  return manifest;
+}
+
+it("an edit to a file importing a registering library export, before it registered, loads the server graph whole", async () => {
+  const s = devServer(() => Promise.resolve({ apps: [["api", idle, () => false]] }));
+  const manifest = storeLibrary();
+  const db = path.join(root, "modules/a/db.server.ts");
+  fs.writeFileSync(db, "export const db = 1;\n");
+  await s.request();
+  s.p.watchChange(manifest, { event: "update" });
+  const before = s.all();
+  s.p.watchChange(db, { event: "update" });
+  expect(s.all()).toBe(before);
+  await s.request();
+  fs.writeFileSync(db, `import { store } from "@acme/store";\nexport const db = store("a.db");\n`);
+  s.p.watchChange(db, { event: "update" });
+  expect(s.all()).toBe(before + 1);
+  await s.request();
+  fs.writeFileSync(db, `import { sql } from "@acme/other";\nexport const db = sql;\n`);
+  s.p.watchChange(db, { event: "update" });
+  expect(s.all()).toBe(before + 1);
+});
+
 it("an edit to a registering file after another edit, before any request, still loads the server graph whole", async () => {
   const s = devServer(() => Promise.resolve({ apps: [["api", idle, () => false]] }));
   fs.mkdirSync(path.join(root, "modules/a"), { recursive: true });
   const db = path.join(root, "modules/a/db.server.ts");
-  fs.writeFileSync(db, `import { database } from "@keel/std-postgres/server";\nexport const db = database("a.db");\n`);
+  fs.writeFileSync(db, `import { register } from "@keel/ctx";\nexport const db = register("a.db", {} as never);\n`);
   await s.request();
   s.p.watchChange(path.join(root, "modules/a/page.ts"), { event: "update" });
   expect(s.all()).toBe(0);
