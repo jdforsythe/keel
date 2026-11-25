@@ -1,7 +1,7 @@
-/// <reference lib="es2023.intl" />
-// es2023.intl types `Intl.NumberFormat#format` over a decimal string (`StringNumericLiteral`), which every runtime runs.
 import type { Locale } from "@keel/std-i18n";
-import type { Money } from "./Money.ts";
+import { formatDecimal } from "../unsafe/formatDecimal.ts";
+import { noDecimalForm } from "../unsafe/noDecimalForm.ts";
+import type { Money } from "./Money.schema.ts";
 import { EXPONENT } from "./internal/EXPONENT.ts";
 
 const DECIMAL = /^-?\d+(?:\.\d+)?$/;
@@ -27,9 +27,8 @@ function decimal(amount: number, e: number): string {
  * `en-US` and `12,50 €` in `de-DE`. Reads no host locale.
  */
 export function formatMoney(m: Money, locale: Locale): string {
-  if (!Number.isSafeInteger(m.amount) || Math.abs(m.amount) > 1e15)
-    throw new Error(`money amount ${m.amount} has no decimal form`);
+  if (!Number.isSafeInteger(m.amount) || Math.abs(m.amount) > 1e15) return noDecimalForm(m.amount);
   const d = decimal(m.amount, EXPONENT[m.currency]);
-  if (!isDecimal(d)) throw new Error(`money amount ${m.amount} has no decimal form`);
-  return new Intl.NumberFormat(locale, { style: "currency", currency: m.currency }).format(d);
+  if (!isDecimal(d)) return noDecimalForm(m.amount);
+  return formatDecimal(new Intl.NumberFormat(locale, { style: "currency", currency: m.currency }), d);
 }

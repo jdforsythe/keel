@@ -1,5 +1,5 @@
 import { type Result, err, ok } from "@keel/schema";
-import { Money } from "./Money.ts";
+import { Money } from "./Money.schema.ts";
 import type { MoneyError } from "./MoneyError.ts";
 
 /** Sum two amounts of one currency (std.money). Mixed currencies and out-of-bounds sums are `err`, never thrown. */

@@ -1,7 +1,7 @@
 import { type Result, err, ok } from "@keel/schema";
 import type { Locale } from "@keel/std-i18n";
-import type { Currency } from "./Currency.ts";
-import { Money } from "./Money.ts";
+import type { Currency } from "./Currency.schema.ts";
+import { Money } from "./Money.schema.ts";
 import type { ParseMoneyError } from "./ParseMoneyError.ts";
 import { EXPONENT } from "./internal/EXPONENT.ts";
 import { localeMarks } from "./internal/localeMarks.ts";

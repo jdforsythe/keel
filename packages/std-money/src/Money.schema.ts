@@ -1,5 +1,5 @@
 import { s } from "@keel/schema";
-import { Currency } from "./Currency.ts";
+import { Currency } from "./Currency.schema.ts";
 
 /**
  * An amount in integer minor units of one currency (std.money); registered as `money.Money`. Bounded at 1e15 so every sum of two amounts is exact. Closed: an undeclared

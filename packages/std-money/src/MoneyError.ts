@@ -1,5 +1,5 @@
 import type { KeelError } from "@keel/schema";
-import type { Currency } from "./Currency.ts";
+import type { Currency } from "./Currency.schema.ts";
 
 /** Why `addMoney` failed (std.money): mixed currencies, or a sum outside the amount bounds (1e15). */
 export type MoneyError =

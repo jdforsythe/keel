@@ -1,5 +1,5 @@
 import type { Locale } from "@keel/std-i18n";
-import type { Currency } from "../Currency.ts";
+import type { Currency } from "../Currency.schema.ts";
 import type { CurrencyMarks } from "./CurrencyMarks.ts";
 import { normalized } from "./normalized.ts";
 
