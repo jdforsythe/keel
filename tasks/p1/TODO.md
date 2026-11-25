@@ -77,7 +77,7 @@ The triage is `tasks/p1/weaknesses.md`: 102 lines to fix now in 17 lanes (A1), 1
 - [ ] `blocked` (walkthrough) head to head: the harness and three pairs against the comparison list, each result dated and versioned
 
 ### W6 Human docs, W8 the site, W9 the pitch, W10 showing it, W11 research
-- [ ] `running` W11: the steal list verified against the live sites (`lane-p1-research`)
+- [x] `done` W11: the steal list verified against the live sites (`tasks/p1/research.md`: 22 items checked, 14 added, the six frameworks' current versions, what the first five minutes should be)
 - [ ] `blocked` (freeze) diagrams, the tour, the guides, the generated reference
 - [ ] `blocked` (W6, W11) the site built in Keel: zero axe violations, CSP served, budgets met, every number read from `evidence.json` with a claim check
 - [ ] `blocked` (W3, W8) the comparison pages, each claim about another framework sourced
