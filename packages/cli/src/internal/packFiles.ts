@@ -12,7 +12,15 @@ const matcher = (entry: string): ((p: string) => boolean) => {
   if (!/[*?]/.test(e)) return (p) => p === e || p.startsWith(`${e}/`);
   const glob = e
     .split(/(\*\*\/?|\*|\?)/)
-    .map((t) => (t === "**" || t === "**/" ? ".*" : t === "*" ? "[^/]*" : t === "?" ? "[^/]" : t.replace(/[.+^${}()|[\]\\]/g, "\\$&")))
+    .map((t) =>
+      t === "**" || t === "**/"
+        ? ".*"
+        : t === "*"
+          ? "[^/]*"
+          : t === "?"
+            ? "[^/]"
+            : t.replace(/[.+^${}()|[\]\\]/g, "\\$&"),
+    )
     .join("");
   const re = new RegExp(`^${glob}(?:/.*)?$`);
   return (p) => re.test(p);

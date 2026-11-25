@@ -1,7 +1,10 @@
 import { jsonText } from "../internal/jsonText.ts";
 
-/** The `@keel/*` packages a library's files import: peers, so they resolve to the app's copies (k.library-pack Package). */
-const PEERS = ["@keel/compiler", "@keel/runtime-dom", "@keel/schema", "@keel/ui"];
+/**
+ * The `@keel/*` packages a library's files import, and those the compiler's output of its JSX imports (`@keel/reactive`,
+ * `@keel/runtime-dom`): peers, so they resolve to the app's copies (k.library-pack Package).
+ */
+const PEERS = ["@keel/compiler", "@keel/reactive", "@keel/runtime-dom", "@keel/schema", "@keel/ui"];
 
 /**
  * `package.json` of a library (k.library-pack Scaffold): `"keel": "library"`, the `keel` condition first in `exports`,

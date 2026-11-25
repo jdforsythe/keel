@@ -50,7 +50,11 @@ export function scaffoldInput(
         "no-loader": input["no-loader"],
       });
     case "library":
-      return pick({ name: a, version: cliVersion(), exists: a === undefined ? undefined : exists?.(a.slice(a.indexOf("/") + 1)) });
+      return pick({
+        name: a,
+        version: cliVersion(),
+        exists: a === undefined ? undefined : exists?.(a.slice(a.indexOf("/") + 1)),
+      });
     case "shell":
       return pick({ shell: a, id: input.id, name: input.name, to: input.to });
     case "rename":

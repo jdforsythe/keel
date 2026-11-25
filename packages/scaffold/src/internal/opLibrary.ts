@@ -34,11 +34,7 @@ export function opLibrary(input: unknown, files: ReadonlyMap<string, string>): R
   const { name, version = "0.0.0", exists = false } = r.value;
   const base = NAME.exec(name)?.[1];
   if (base === undefined)
-    return fail(
-      "E1352",
-      "package.json",
-      `library name ${name.slice(0, 40)} is not @<scope>/<base> of a-z, 0-9 and -`,
-    );
+    return fail("E1352", "package.json", `library name ${name.slice(0, 40)} is not @<scope>/<base> of a-z, 0-9 and -`);
   const dir = `${base}/`;
   if (exists || [...files.keys()].some((p) => p.startsWith(dir)))
     return fail("E1351", `${dir}package.json`, `${base}/ already exists; scaffold the library elsewhere`);

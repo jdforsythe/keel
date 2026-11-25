@@ -10,8 +10,8 @@ import { codeFiles } from "./codeFiles.ts";
 import { deployFreshness } from "./deployFreshness.ts";
 import { loadShells } from "./loadShells.ts";
 import { makeDiag } from "./makeDiag.ts";
-import { projectFiles } from "./projectFiles.ts";
 import { ownLibrary } from "./ownLibrary.ts";
+import { projectFiles } from "./projectFiles.ts";
 import { projectTopology } from "./projectTopology.ts";
 import { relPath } from "./relPath.ts";
 import { runCheck } from "./runCheck.ts";
@@ -70,6 +70,7 @@ export async function checkCommand(input: Input, given: Io): Promise<OutRecord[]
   ];
   const errors = diags.filter((d) => d.code.startsWith("E")).length;
   const warnings = diags.filter((d) => d.code.startsWith("W")).length;
-  const shown = view === undefined ? diags : diags.map((d) => (d.path === undefined ? d : { ...d, path: view.back(d.path) }));
+  const shown =
+    view === undefined ? diags : diags.map((d) => (d.path === undefined ? d : { ...d, path: view.back(d.path) }));
   return [...shown, summary("check", diags, { files: files.length, errors, warnings })];
 }

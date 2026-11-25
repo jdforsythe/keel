@@ -130,7 +130,8 @@ export function buildLedger(
     if (a[2].startsWith("test/") || (a[2].startsWith("modules/") && TEST_FILE.test(f.path))) add(`apps/${a[1]}`, f);
   }
   if (own !== undefined)
-    for (const f of code) if (f.path.startsWith("test/") || (OWN_SRC.test(f.path) && TEST_FILE.test(f.path))) add(OWN, f);
+    for (const f of code)
+      if (f.path.startsWith("test/") || (OWN_SRC.test(f.path) && TEST_FILE.test(f.path))) add(OWN, f);
   const known = new Set(code.map((f) => f.path));
   const refs = new Map([...areas].map(([area, fs]) => [area, testEvidence(fs, known, z3)]));
   const monitored = monitoredEvidence(files);

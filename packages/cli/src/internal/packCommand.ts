@@ -1,4 +1,4 @@
-import { accessSync, constants, existsSync, readFileSync, statSync } from "node:fs";
+import { constants, accessSync, existsSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { readLibraryLedger } from "@keel/check";
 import type { Input } from "../types/Input.ts";
@@ -20,13 +20,17 @@ const SEE = "k.library-pack";
 const plural = (n: number, one: string): string => `${n} ${one}${n === 1 ? "" : "s"}`;
 
 /** The `kind` step: the folder's `package.json` marks a library under a scoped name, else why not. */
-function kind(cwd: string):
+function kind(
+  cwd: string,
+):
   | { readonly ok: true; readonly pkg: Readonly<Record<string, unknown>>; readonly text: string }
   | { readonly ok: false; readonly diag: OutRecord } {
   const fail = (message: string, at?: { line: number; col: number }): { ok: false; diag: OutRecord } => ({
     ok: false,
     diag: makeDiag("E1164", `kind: ${message}`, {
-      ...(at === undefined && message.startsWith("no package.json") ? {} : { path: "package.json", ...(at ?? { line: 1, col: 1 }) }),
+      ...(at === undefined && message.startsWith("no package.json")
+        ? {}
+        : { path: "package.json", ...(at ?? { line: 1, col: 1 }) }),
       see: SEE,
     }),
   });
@@ -84,7 +88,8 @@ export async function packCommand(input: Input, io: Io): Promise<Outcome> {
   if (shape !== undefined) return stop([], shape);
   const checked = (await checkCommand({}, io)).filter((r) => r.kind !== "summary");
   const errors = checked.filter(isError).length;
-  if (errors > 0) return stop(checked, makeDiag("E1164", `check: ${plural(errors, "error")}; nothing packed`, { see: SEE }));
+  if (errors > 0)
+    return stop(checked, makeDiag("E1164", `check: ${plural(errors, "error")}; nothing packed`, { see: SEE }));
   const tested = await testCommand({}, io);
   const trailer = tested.find((r) => r.kind === "summary");
   if (trailer?.ok !== true) {
@@ -101,7 +106,11 @@ export async function packCommand(input: Input, io: Io): Promise<Outcome> {
   const content = written.writes[0]?.content;
   const fresh = readLibraryLedger(typeof content === "string" ? content : undefined);
   if (!fresh.ok) return stop([], makeDiag("E1164", "ledger: the ledger it would write fails its shape", { see: SEE }));
-  const counts = { unsafe: fresh.value.unsafe, hostElements: fresh.value.hostElements, exports: fresh.value.exports.length };
+  const counts = {
+    unsafe: fresh.value.unsafe,
+    hostElements: fresh.value.hostElements,
+    exports: fresh.value.exports.length,
+  };
   const at = { path: LEDGER, line: 1, col: 1, see: SEE };
   if (input.check === true) {
     const file = join(io.cwd, LEDGER);
@@ -122,7 +131,10 @@ export async function packCommand(input: Input, io: Io): Promise<Outcome> {
   }
   const why = unwritable(io.cwd);
   if (why !== undefined)
-    return stop([], makeDiag("E1164", `ledger: ${why}`, { path: why.startsWith(".keel is") ? ".keel" : LEDGER, see: SEE }));
+    return stop(
+      [],
+      makeDiag("E1164", `ledger: ${why}`, { path: why.startsWith(".keel is") ? ".keel" : LEDGER, see: SEE }),
+    );
   return {
     records: [summary(name, [], counts)],
     writes: [{ path: LEDGER, content: typeof content === "string" ? content : "", readonly: false }],

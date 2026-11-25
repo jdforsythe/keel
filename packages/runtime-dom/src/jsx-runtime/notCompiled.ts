@@ -4,5 +4,7 @@
  * `keel check` can load it, and renders nothing: an app renders the library's source through the `keel` condition.
  */
 export function notCompiled(): never {
-  throw new Error("JSX from a tsc build does not render: Keel renders the source it compiles (keel docs k.library-pack)");
+  throw new Error(
+    "JSX from a tsc build does not render: Keel renders the source it compiles (keel docs k.library-pack)",
+  );
 }
