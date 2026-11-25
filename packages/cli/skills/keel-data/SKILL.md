@@ -104,7 +104,7 @@ const todoEvents = channelRoute(api, todoChannel, { id: 'api.todoEvents', stores
 export const routes = manifest(api, { 'api.todoEvents': { loader: todoEvents.loader }, 'api.addTodo': { action: postTodo } })
 ```
 
-Caps, in the module's `std['@keel/std-channels']` (`keel docs std.channels-limits`): `perCaller` 8 per caller per module, `maxStreams` 1,000 per module, and `perAnonymous` 64 for the cookieless streams of every module in the process together; an open past one gets `{ kind: 'closed', reason: 'full' }` and `subscribe` backs off.
+Caps, in the module's `std['@keel/std-channels']` (`keel docs std.channels-limits`): `perCaller` 8 per signed-in user, else per caller, per module, `maxStreams` 1,000 per module, and `perAnonymous` 64 for the anonymous streams (no user, no caller cookie) of every module in the process together; an open past one gets `{ kind: 'closed', reason: 'full' }` and `subscribe` backs off.
 
 A client view store changes only through a transaction. `live` runs in a scope, and its `hydrate` is listed in the component's `uses` (E1301):
 

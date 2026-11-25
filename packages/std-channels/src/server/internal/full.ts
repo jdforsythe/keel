@@ -1,10 +1,10 @@
 import type { ChannelsConfig } from "../ChannelsConfig.ts";
 
 /**
- * Whether an open by `caller` on a channel route of serving module `module` is past a cap of that module's config
- * (std.channels-limits): `maxStreams` (default 1,000) over that module's open streams, then, for a cookieless caller
- * (`""`, which a cookie that does not verify also yields), `perAnonymous` (default 64) over the cookieless streams of
- * every module in `sinks` (the process's), else `perCaller` (default 8) over that caller's streams on that module.
+ * Whether an open counted as `caller` (`Sink.caller`: a signed-in user's key, else the caller) on a channel route of serving module `module` is past a cap of that module's config
+ * (std.channels-limits): `maxStreams` (default 1,000) over that module's open streams, then, for an anonymous open
+ * (`""`: no user and no caller cookie that verifies), `perAnonymous` (default 64) over the anonymous streams of
+ * every module in `sinks` (the process's), else `perCaller` (default 8) over that user's or caller's streams on that module.
  */
 export function full(
   sinks: Iterable<{ readonly caller: string; readonly module: string }>,
