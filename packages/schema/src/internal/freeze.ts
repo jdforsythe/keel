@@ -14,9 +14,9 @@ export function freeze<T>(v: T, copies: ReadonlySet<object> = new Set()): T {
     if (o === undefined || seen.has(o)) continue;
     seen.add(o);
     Object.freeze(o);
-    if (Array.isArray(o) && copies.has(o)) {
-      for (const item of o) if (isObject(item)) todo.push(item);
-    } else for (const d of Object.values(Object.getOwnPropertyDescriptors(o))) if (isObject(d.value)) todo.push(d.value);
+    const items =
+      Array.isArray(o) && copies.has(o) ? o : Object.values(Object.getOwnPropertyDescriptors(o)).map((d) => d.value);
+    for (const item of items) if (isObject(item)) todo.push(item);
   }
   return v;
 }
