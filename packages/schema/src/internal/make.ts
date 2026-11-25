@@ -36,10 +36,10 @@ export function make<T, O extends boolean>(node: Node, isOptional: O): Schema<T,
   const sealing = hasSecret(node);
   const parse = (input: unknown): Result<T, SchemaError> => {
     if (!sealing) return is(input) ? ok(input) : err(invalid(issues));
-    // The input is judged before `seal` copies it, so a getter or a key the copy would flatten or drop is refused
-    // (k.schema Plain data). Each sealed value is frozen deep only once the whole value passes, so a failed parse
-    // leaves the input as it was; a value the seal, check or freeze cannot walk is an err, never a throw.
-    if (!is(input)) return err(invalid(issues));
+    // `seal` copies only plain containers, read through their descriptors, so the one check of the copy judges every
+    // value read once (k.schema Plain data): a getter or a hidden key is refused, never flattened or dropped. Each
+    // sealed value is frozen deep only once the whole value passes, so a failed parse leaves the input as it was; a
+    // value the seal, check or freeze cannot walk is an err, never a throw.
     try {
       const made: unknown[] = [];
       const value = seal(node, input, made);

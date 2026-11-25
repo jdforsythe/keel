@@ -58,9 +58,9 @@ export function plainWalk(x: unknown, bad: (keys: Path) => boolean): void {
     if (items !== undefined)
       for (let i = items.length - 1; i >= 0; i--) todo.push({ v: items[i], at: { key: i, up: at } });
     else if (entries !== undefined)
-      for (let i = entries.length - 1; i >= 0; i--) {
-        const e = entries[i];
-        if (e !== undefined) todo.push({ v: e[1], at: { key: e[0], up: at } });
+      for (let i = entries.keys.length - 1; i >= 0; i--) {
+        const key = entries.keys[i];
+        if (key !== undefined) todo.push({ v: entries.values[i], at: { key, up: at } });
       }
   }
 }

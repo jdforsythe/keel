@@ -46,45 +46,51 @@ export function check(node: Node, x: unknown, path: Path, issues: Issue[]): void
       break;
     }
     case "record": {
-      const entries = plainEntries(x);
-      if (entries === undefined) issues.push({ path, rule: "type" });
-      else for (const [key, v] of entries) check(node.value, v, [...path, key], issues);
+      const own = plainEntries(x);
+      if (own === undefined) issues.push({ path, rule: "type" });
+      else
+        own.keys.forEach((key, i) => {
+          check(node.value, own.values[i], [...path, key], issues);
+        });
       break;
     }
     case "object": {
-      const entries = plainEntries(x);
-      if (entries === undefined) {
+      const own = plainEntries(x);
+      if (own === undefined) {
         issues.push({ path, rule: "type" });
         break;
       }
-      for (const [key, v] of entries) {
-        if (Object.hasOwn(node.fields, key)) continue;
+      const { keys, values } = own;
+      for (let i = 0; i < keys.length; i++) {
+        const key = keys[i];
+        if (key === undefined || Object.hasOwn(node.fields, key)) continue;
         if (node.closed === true) issues.push({ path: [...path, key], rule: "unknown-key" });
-        else scanExtras(v, [...path, key], issues);
+        else scanExtras(values[i], [...path, key], issues);
       }
-      for (const [key, field] of Object.entries(node.fields)) {
+      for (const key in node.fields) {
+        const field = node.fields[key];
+        if (field === undefined) continue;
         const at = [...path, key];
-        const found = entries.find((e) => e[0] === key);
-        const v = found?.[1];
-        if (found === undefined) {
+        const i = keys.indexOf(key);
+        if (i < 0) {
           if (field.kind !== "optional")
             issues.push({ path: at, rule: field.kind === "nullable" ? "nullable-absent" : "required" });
-        } else if (v === null && field.kind === "optional" && field.inner.kind !== "nullable") {
+        } else if (values[i] === null && field.kind === "optional" && field.inner.kind !== "nullable") {
           issues.push({ path: at, rule: "optional-null" });
         } else {
-          check(field, v, at, issues);
+          check(field, values[i], at, issues);
         }
       }
       break;
     }
     case "union": {
-      const entries = plainEntries(x);
-      if (entries === undefined) {
+      const own = plainEntries(x);
+      if (own === undefined) {
         issues.push({ path, rule: "type" });
         break;
       }
-      const tag = entries.find(([k]) => k === node.key);
-      const variant = tag === undefined ? undefined : variantOf(node, tag[1]);
+      const at = own.keys.indexOf(node.key);
+      const variant = at < 0 ? undefined : variantOf(node, own.values[at]);
       if (variant === undefined) issues.push({ path: [...path, node.key], rule: "discriminant" });
       else check(variant, x, path, issues);
       break;

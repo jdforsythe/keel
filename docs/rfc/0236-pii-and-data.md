@@ -87,7 +87,7 @@ None. No app is released. The builder runs the suites of every package that pars
 
 ## Build plan
 1. This commit: RFC, ADR, spec text, threat model, budget. 2. `conformance-writer`: the fourteen clauses. 3. Build:
-- `packages/schema/src/internal/`: `plainItems.ts`, `plainEntries.ts`, `plainWalk.ts` (new); `isJson.ts` and `scanExtras.ts` walk with them; `check.ts`'s `object`, `record`, `union` and `array` cases test the container shape on the value as given, before `seal` copies it (`make.ts`: judge the input's own descriptors first, so a getter or a non-enumerable key is refused rather than flattened or dropped by the spread).
+- `packages/schema/src/internal/`: `plainItems.ts`, `plainEntries.ts`, `plainWalk.ts` (new); `isJson.ts` and `scanExtras.ts` walk with them; `check.ts`'s `object`, `record`, `union` and `array` cases test the container shape by its own keys and descriptors; `seal.ts` copies only plain containers, read the same way, so one check of the copy judges every value read once and a getter or a non-enumerable key is refused rather than flattened or dropped.
 - `packages/std-sessions/src/internal/recording.ts` (state through `jsonOf(state, st.schema)`), `jsonOf.ts` (unencodable: `null`), `redact.ts` (an object node drops undeclared keys), `redactionOf.ts` (`found` over a marked open object's undeclared keys and values, read from the value as held).
 - `packages/std-channels/src/server/internal/full.ts`: the cookieless count over every sink of the hub; `ChannelsConfig.ts`'s doc.
 - `packages/store/src/internal/snapshotKeys.ts` (new) and `openHub.ts` (0748).
