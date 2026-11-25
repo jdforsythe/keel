@@ -59,7 +59,7 @@ const targets = (value: unknown, cond = "default"): [string, string][] =>
  * missing, or not selecting `module.ts`, `.keel/ledger.json`, every file under `src/` and `unsafe/`, or an `exports`
  * target; a `@keel/*` package its files import, or the compiler's output of its JSX imports, that `peerDependencies`
  * omits or `dependencies` lists (`kernelImports`: a library's kernel imports resolve to the app's copies); or a tarball by `files` holding a
- * `.env` file or the root `tokens.ts`. One E1164 at the `package.json` field,
+ * `.env` file or the root `tokens.ts`, or a code file outside `module.ts`, `src/`, `unsafe/` and `dist/`. One E1164 at the `package.json` field,
  * a column into its value; its message begins `package`.
  */
 export function packageShape(dir: string, pkg: Readonly<Record<string, unknown>>, text: string): Diag | undefined {
@@ -113,5 +113,8 @@ export function packageShape(dir: string, pkg: Readonly<Record<string, unknown>>
   if (secret !== undefined) return at("files", `files ships ${clip(secret)}, a secret's file`);
   if (shipped.includes("tokens.ts"))
     return at("files", "files ships tokens.ts; an app checks the library against its own");
+  // `keel check` reads a library's `module.ts`, `src/`, `unsafe/` and `test/` alone (asInstalled): code elsewhere would ship unread.
+  const unread = shipped.find((p) => CODE_FILE.test(p) && !/^(?:module\.ts$|(?:src|unsafe|dist)\/)/.test(p));
+  if (unread !== undefined) return at("files", `files ships ${clip(unread)}, code outside module.ts, src/ and unsafe/`);
   return undefined;
 }

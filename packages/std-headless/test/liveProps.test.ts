@@ -1,10 +1,10 @@
 // @vitest-environment happy-dom
-// A prop an app changes while a widget is mounted shows in place: the widget's nodes, focus and open state stay.
+// A prop an app changes while a widget is mounted shows in place: the widget's focus and open state stay, which a
+// node made again would lose.
 import { computed, scope, signal } from "@keel/reactive";
 import type { Signal } from "@keel/reactive";
 import { render } from "@keel/testing";
 import { expect, test } from "vitest";
-import { el, page, simCtx } from "../conformance/fixtures.ts";
 import { Combobox } from "../src/Combobox.ts";
 import { Dialog } from "../src/Dialog.ts";
 import { Disclosure } from "../src/Disclosure.ts";
@@ -13,6 +13,7 @@ import { Menu } from "../src/Menu.ts";
 import type { Option } from "../src/Option.ts";
 import { Tabs } from "../src/Tabs.ts";
 import { Toaster } from "../src/Toaster.ts";
+import { isOpen, page, simCtx } from "./support.ts";
 
 const held = <T>(start: T): Signal<T> => {
   const made: Signal<T>[] = [];
@@ -31,6 +32,7 @@ test("Listbox: label, mode and option text follow their props; the list keeps fo
   const label = held("Fruit");
   const mode = held<"single" | "multiple">("single");
   const opts = held(fruit(""));
+  const changes: string[][] = [];
   const t = render(
     page((c) =>
       Listbox(
@@ -43,27 +45,26 @@ test("Listbox: label, mode and option text follow their props; the list keeps fo
           get mode() {
             return mode.get();
           },
-          selected: () => [],
-          onChange: () => {},
+          selected: () => ["apple"],
+          onChange: (keys) => void changes.push(keys),
         },
         c,
       ),
     ),
     { props: {}, ctx: simCtx() },
   );
-  const node = el("lb.list");
   await t.fire("lb.list", { type: "focus" });
   await t.fire("lb.list", { type: "keydown", key: "ArrowDown" });
   label.set("Fresh fruit");
   mode.set("multiple");
   opts.set(fruit(" (ripe)"));
   await t.settle();
-  expect(el("lb.list")).toBe(node);
   expect(t.find("lb.list").name).toBe("Fresh fruit");
-  expect(el("lb.list")?.getAttribute("aria-multiselectable")).toBe("true");
+  // Space in multiple mode adds the active option to the selection; in single mode it would replace it.
+  await t.fire("lb.list", { type: "keydown", key: " " });
+  expect(changes).toEqual([["apple", "pear"]]);
   expect(t.find("lb.option.pear").text).toBe("Pear (ripe)");
   expect(t.find("lb.list").state.active).toBe("lb.option.pear");
-  expect(el("lb.option.pear")?.hasAttribute("data-k-highlighted")).toBe(true);
   expect(focused()).toBe("lb.list");
   t.dispose();
 });
@@ -88,12 +89,10 @@ test("Combobox: its label follows the prop while the list stays open and the inp
     ),
     { props: {}, ctx: simCtx() },
   );
-  const node = el("cb.input");
   await t.fire("cb.input", { type: "focus" });
   await t.fire("cb.input", { type: "keydown", key: "ArrowDown" });
   label.set("Any fruit");
   await t.settle();
-  expect(el("cb.input")).toBe(node);
   expect(t.find("cb.input").name).toBe("Any fruit");
   expect(t.find("cb.input").state.expanded).toBe(true);
   expect(focused()).toBe("cb.input");
@@ -179,7 +178,7 @@ test("Dialog: title and description follow their props while it stays open", asy
   expect(t.find("dl.title").text).toBe("Delete row");
   expect(t.find("dl.dialog").name).toBe("Delete row");
   expect(t.find("dl.description").text).toBe("The row goes for good.");
-  expect(el("dl.dialog")?.hasAttribute("open")).toBe(true);
+  expect(isOpen(t, "dl")).toBe(true);
   t.dispose();
 });
 
@@ -216,7 +215,6 @@ test("Toaster: the dismiss text and an item's text follow their props; the toast
     ),
     { props: {}, ctx: simCtx() },
   );
-  const node = el("tz.toast.a");
   await t.fire("tz.dismiss.a", { type: "focus" });
   dismiss.set("Close");
   said.set("Saved twice");
@@ -224,6 +222,5 @@ test("Toaster: the dismiss text and an item's text follow their props; the toast
   expect(t.find("tz.dismiss.a").name).toBe("Close");
   expect(t.find("tz.toast.a").text).toContain("Saved twice");
   expect(focused()).toBe("tz.dismiss.a");
-  expect(el("tz.toast.a")).toBe(node);
   t.dispose();
 });

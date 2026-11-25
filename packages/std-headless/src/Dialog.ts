@@ -25,8 +25,8 @@ export function Dialog(
 ): Node {
   const id = props.id;
   const c = instance(openChart, id);
-  const open = () => tx(c.events.open, {});
-  const close = () => tx(c.events.close, {});
+  const open = (): void => void tx(c.events.open, {});
+  const close = (): void => void tx(c.events.close, {});
   const onTrigger = (k: KeyInput): boolean => {
     if (k.key !== "Enter" && k.key !== " ") return false;
     open();
@@ -56,6 +56,7 @@ export function Dialog(
     children: body,
   };
   return Box({
+    id: `${id}.root`,
     children: () => [
       Part({
         ...props.styles?.trigger,

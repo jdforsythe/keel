@@ -3,9 +3,9 @@ import { scope, signal } from "@keel/reactive";
 import type { Signal } from "@keel/reactive";
 import { render } from "@keel/testing";
 import { expect, test } from "vitest";
-import { fruit, page, simCtx } from "../conformance/fixtures.ts";
 import { Combobox } from "../src/Combobox.ts";
 import { Listbox } from "../src/Listbox.ts";
+import { fruit, page, simCtx } from "./support.ts";
 
 const text = (): Signal<string> => {
   const made: Signal<string>[] = [];
