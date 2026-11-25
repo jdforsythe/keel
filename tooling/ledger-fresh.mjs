@@ -3,9 +3,11 @@
 // hand upward, an item whose source is gone and an item the tree gained all pass it; this fails S0011 on each, and
 // passes on each E1732 and E1733 `keel ledger` reports (a citation or a clause list it cannot read). Clauses compare by
 // key; a message names a clause the tree holds by its position too.
-// Usage: node tooling/ledger-fresh.mjs           exports, clauses and the unsafe count (what a tree alone decides)
-//        node tooling/ledger-fresh.mjs --a11y    also the WCAG items and the count per rung; needs the apps'
-//                                                reports/a11y.json (`keel test` in golden-1, golden-2, household and each example, as CI does)
+// Usage: node tooling/ledger-fresh.mjs          which export and clause items exist, and the unsafe and negative type
+//                                               counts (what a tree alone decides)
+//        node tooling/ledger-fresh.mjs --runs   also every rung, the WCAG items and the count per rung; needs every
+//                                               project's reports/tests/*.json (`pnpm test`) and the apps' reports/a11y.json
+//                                               (`keel test` in golden-1, golden-2, household, inspector, sessions and each example)
 // Not compared: the mutation section (its claims come from reports/mutation/mutation.json, written by nightly runs).
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
@@ -15,7 +17,7 @@ import { parseArgs, run } from "./output.ts";
 
 const root = path.join(import.meta.dirname, "..");
 const FILE = "tooling/ledger/ledger.json";
-const withA11y = parseArgs().flags.has("a11y");
+const withRuns = parseArgs().flags.has("runs");
 
 await run("ledger-fresh", () => {
   const committed = JSON.parse(fs.readFileSync(path.join(root, FILE), "utf8"));
@@ -28,7 +30,7 @@ await run("ledger-fresh", () => {
   if (r.status !== 0 && r.status !== 1)
     throw new Error(`keel ledger exited ${r.status}: ${r.stderr.trim().split("\n")[0] ?? ""}`);
   const fresh = parseFresh(r.stdout);
-  const diffs = compareLedger(committed, fresh, withA11y);
+  const diffs = compareLedger(committed, fresh, withRuns);
   const unread = fresh.unread.map((d) => ({
     kind: "diag",
     code: d.code,
@@ -48,7 +50,7 @@ await run("ledger-fresh", () => {
   }));
   return {
     diags: [...unread, ...diags],
-    counts: { items: fresh.records.length, ...(withA11y ? {} : { notA11y: committed.a11y?.length ?? 0 }) },
+    counts: { items: fresh.records.length, ...(withRuns ? {} : { notRuns: committed.a11y?.length ?? 0 }) },
     ...(diags.length + unread.length > 0 ? { exit: 2 } : {}),
   };
 });

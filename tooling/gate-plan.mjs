@@ -28,6 +28,15 @@ export const JOBS = {
       { from: "127.0.0.1:5433/", to: "127.0.0.1:{port:pg-ssl}/" },
     ],
   },
+  ledger: {
+    run: true,
+    rewrites: [
+      {
+        from: 'for t in test-reports/test-reports-*/test-reports.tar; do tar -xf "$t"; done',
+        to: "echo the run reports are the ones the test-shard jobs of this gate wrote in this tree",
+      },
+    ],
+  },
   "built-smokes": { run: true },
   build: { run: true },
   budgets: { run: true },
@@ -70,6 +79,7 @@ export const ACTIONS = {
   "actions/cache/save": "cache-save",
   "actions/cache/restore": "cache-restore",
   "actions/upload-artifact": "artifact",
+  "actions/download-artifact": "download",
 };
 
 /** Variables that tell a tool an agent is driving it (std-env's agent list, which vitest reads): CI has none. */

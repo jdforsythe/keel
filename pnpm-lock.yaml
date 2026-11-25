@@ -1750,9 +1750,16 @@ importers:
 
   packages/std-channels:
     dependencies:
+      oxc-parser:
+        specifier: ^0.157.0
+        version: 0.157.0
+    devDependencies:
       '@keel/check':
         specifier: workspace:*
         version: link:../check
+      '@keel/cli':
+        specifier: workspace:*
+        version: link:../cli
       '@keel/compiler':
         specifier: workspace:*
         version: link:../compiler
@@ -1777,10 +1784,6 @@ importers:
       '@keel/store':
         specifier: workspace:*
         version: link:../store
-      oxc-parser:
-        specifier: ^0.157.0
-        version: 0.157.0
-    devDependencies:
       '@keel/testing':
         specifier: workspace:*
         version: link:../testing
@@ -1795,16 +1798,25 @@ importers:
         version: 3.23.2
 
   packages/std-conflicts:
-    dependencies:
+    devDependencies:
       '@keel/check':
         specifier: workspace:*
         version: link:../check
       '@keel/cli':
         specifier: workspace:*
         version: link:../cli
+      '@keel/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+      '@keel/ctx':
+        specifier: workspace:*
+        version: link:../ctx
       '@keel/reactive':
         specifier: workspace:*
         version: link:../reactive
+      '@keel/router':
+        specifier: workspace:*
+        version: link:../router
       '@keel/schema':
         specifier: workspace:*
         version: link:../schema
@@ -1814,13 +1826,6 @@ importers:
       '@keel/store':
         specifier: workspace:*
         version: link:../store
-    devDependencies:
-      '@keel/ctx':
-        specifier: workspace:*
-        version: link:../ctx
-      '@keel/router':
-        specifier: workspace:*
-        version: link:../router
       '@keel/testing':
         specifier: workspace:*
         version: link:../testing
@@ -2075,32 +2080,37 @@ importers:
         version: 3.23.2
 
   packages/std-live:
-    dependencies:
+    devDependencies:
+      '@keel/cli':
+        specifier: workspace:*
+        version: link:../cli
+      '@keel/compiler':
+        specifier: workspace:*
+        version: link:../compiler
       '@keel/ctx':
         specifier: workspace:*
         version: link:../ctx
       '@keel/reactive':
         specifier: workspace:*
         version: link:../reactive
-      '@keel/schema':
-        specifier: workspace:*
-        version: link:../schema
-      '@keel/std-channels':
-        specifier: workspace:*
-        version: link:../std-channels
-      '@keel/store':
-        specifier: workspace:*
-        version: link:../store
-    devDependencies:
       '@keel/router':
         specifier: workspace:*
         version: link:../router
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../schema
       '@keel/server':
         specifier: workspace:*
         version: link:../server
       '@keel/services':
         specifier: workspace:*
         version: link:../services
+      '@keel/std-channels':
+        specifier: workspace:*
+        version: link:../std-channels
+      '@keel/store':
+        specifier: workspace:*
+        version: link:../store
       '@keel/testing':
         specifier: workspace:*
         version: link:../testing
@@ -2198,9 +2208,19 @@ importers:
 
   packages/std-offline:
     dependencies:
+      oxc-parser:
+        specifier: ^0.157.0
+        version: 0.157.0
+    devDependencies:
       '@keel/check':
         specifier: workspace:*
         version: link:../check
+      '@keel/cli':
+        specifier: workspace:*
+        version: link:../cli
+      '@keel/compiler':
+        specifier: workspace:*
+        version: link:../compiler
       '@keel/ctx':
         specifier: workspace:*
         version: link:../ctx
@@ -2219,10 +2239,6 @@ importers:
       '@keel/store':
         specifier: workspace:*
         version: link:../store
-      oxc-parser:
-        specifier: ^0.157.0
-        version: 0.157.0
-    devDependencies:
       '@keel/testing':
         specifier: workspace:*
         version: link:../testing

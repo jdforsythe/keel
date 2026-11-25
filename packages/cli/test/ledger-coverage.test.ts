@@ -1,9 +1,9 @@
 // E1707 (rfc:0049): `keel ledger --diff` reports every clause of a conformance-covered or frozen section at `none`.
 import { describe, expect, it } from "vitest";
-import { run } from "../src/index.ts";
 import { clauseKey } from "../src/internal/clauseKey.ts";
 import { coverageGaps } from "../src/internal/coverageGaps.ts";
 import { specStatus } from "../src/internal/specStatus.ts";
+import { ledgerRun as run } from "./ledgerRun.ts";
 
 const CWD = "/work/app";
 const file = (path: string, source: string) => ({ path, source });

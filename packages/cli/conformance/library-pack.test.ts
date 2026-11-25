@@ -131,10 +131,13 @@ describe("Conformance 1: scaffold, pack, pack --check", () => {
   );
 
   test(
-    "Pack: the ledger `keel pack` writes is the file `keel ledger --write .keel/ledger.json` writes, and lists `Example` of the library `keelCharts`",
+    "Pack: the ledger `keel pack` writes is the file `keel ledger --write .keel/ledger.json` writes after `keel test` wrote its report, and lists `Example` of the library `keelCharts`",
     () => {
       const f = packed();
-      const again = writeLedger(f.lib, "again.json");
+      // `keel pack`'s `test` step writes no report: a plain `keel ledger --write` over no report has `none` rungs, so the equality is against a ledger run after `keel test`.
+      const lib = packedCopy();
+      expect(keel(lib, ["test"]).status).toBe(0);
+      const again = writeLedger(lib, "again.json");
       expect(again.run.status).toBe(0);
       expect(again.text).toBe(readText(f.lib, ".keel/ledger.json"));
       const exports = ledgerIn(f.lib).exports;
@@ -142,6 +145,15 @@ describe("Conformance 1: scaffold, pack, pack --check", () => {
         ? exports.filter(isRecord).map((e) => `${String(e.pkg)}:${String(e.name)}`)
         : [];
       expect(names).toContain(`${LIB_ID}:Example`);
+    },
+    SLOW,
+  );
+
+  test(
+    "Pack: `keel pack`'s `test` step writes no report: the folder holds no `reports/tests/` after `keel pack`",
+    () => {
+      const f = packed();
+      expect(existsSync(join(f.lib, "reports/tests"))).toBe(false);
     },
     SLOW,
   );

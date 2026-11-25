@@ -3,6 +3,7 @@ import { computed, owner, signal } from "@keel/reactive";
 import { type Result, attempt } from "@keel/schema";
 import { type Channel, subscribe } from "@keel/std-channels";
 import { type Transaction, tx } from "@keel/store";
+import { outsideScope } from "../unsafe/outsideScope.ts";
 import type { LiveStatus } from "./LiveStatus.schema.ts";
 
 const FIRST_MS = 1000;
@@ -36,7 +37,7 @@ export function live<C extends Ctx, T, P, Q, M, E>(
   opts: { readonly read: (ctx: C, signal: AbortSignal) => Promise<Result<P, E>>; readonly hydrate: Transaction<T, P> },
 ): () => LiveStatus {
   const sc = owner();
-  if (sc === undefined) throw new Error("E1203: live() called outside any scope; wrap it in scope(fn)");
+  if (sc === undefined) return outsideScope();
   const fresh = signal(false);
   const denied = signal(false);
   let alive = true;

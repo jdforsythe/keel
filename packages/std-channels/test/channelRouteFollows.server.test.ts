@@ -9,7 +9,7 @@ import { createApp, topology } from "@keel/server";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { channel } from "../src/channel.ts";
-import { channelRoute } from "../src/server/channelRoute.ts";
+import { channelRoute } from "../src/server/channelRoute.server.ts";
 import { canonicalJson } from "../src/server/internal/canonicalJson.ts";
 
 const BASE = "http://localhost";

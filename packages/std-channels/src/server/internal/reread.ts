@@ -1,3 +1,4 @@
+import { attempt } from "@keel/schema";
 import type { Restorable } from "./Restorable.ts";
 
 /**
@@ -11,12 +12,8 @@ export async function reread(
   for (const st of list) {
     const raw = await read(`keel.store.${st.id}`);
     if (raw === null) continue;
-    try {
-      const json: unknown = JSON.parse(raw);
-      if (!st.restore(json).ok) return false;
-    } catch {
-      return false;
-    }
+    const restored = attempt(() => st.restore(JSON.parse(raw)).ok);
+    if (!restored.ok || !restored.value) return false;
   }
   return true;
 }

@@ -6,7 +6,7 @@ import { RUNG } from "./internal/RUNG.ts";
 /**
  * The committed ledger file as `keel ledger` reads it (k.ledger File; `tooling/ledger/ledger.json`, or
  * `.keel/ledger.json` in an app): `version` 1, the `unsafe`, `hostElements` and `negativeTypes` counts, items per rung,
- * mutation (per package `{ score, scoreJustified, threshold, killed, survived, noCoverage, justified }` and the
+ * mutation (per project, keyed by project name, `{ score, scoreJustified, threshold, killed, survived, noCoverage, justified }` and the
  * claims), exports, spec clauses and a11y claims at one of the six rungs, and `libraries` (k.library Ledger).
  * `negativeTypes`, `rungs`, `mutation`, `clauses`, `a11y` and `libraries` may be absent and, present, hold their
  * form; other keys are kept and never read. A library's file is judged on `LEDGER_HEAD` alone (`readLibraryLedger`).
@@ -17,7 +17,7 @@ export const LedgerFileSchema = s.object({
   rungs: s.record(s.int({ min: 0 })).optional(),
   mutation: s
     .object({
-      packages: s.record(
+      projects: s.record(
         s.object({
           score: s.number().optional(),
           scoreJustified: s.number().optional(),

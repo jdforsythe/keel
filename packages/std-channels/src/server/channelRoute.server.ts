@@ -2,14 +2,15 @@ import { stdConfig } from "@keel/compiler/std/stdConfig";
 import type { Ctx } from "@keel/ctx";
 import { action, loader } from "@keel/router";
 import type { Contract } from "@keel/router/contract";
-import { type KeelError, err, ok } from "@keel/schema";
+import { type KeelError, attempt, err, ok } from "@keel/schema";
+import { fault } from "../../unsafe/fault.ts";
 import type { Channel } from "../Channel.type.ts";
 import type { ChannelEntries } from "../ChannelEntries.type.ts";
 import type { ChannelEvent } from "../ChannelEvent.ts";
 import type { PublishEntry } from "../internal/PublishEntry.ts";
 import type { StreamEntry } from "../internal/StreamEntry.ts";
 import type { ChannelRoute } from "./ChannelRoute.type.ts";
-import { ChannelsConfig } from "./ChannelsConfig.ts";
+import { ChannelsConfig } from "./ChannelsConfig.schema.ts";
 import type { Member } from "./Member.ts";
 import type { Followed } from "./internal/Followed.ts";
 import { allowed } from "./internal/allowed.ts";
@@ -76,9 +77,7 @@ function holding<E extends object>(
 ): Contract<string, Readonly<Record<string, E>>> {
   if (holds<E>(c, id, want, nothing)) return c;
   const members = differing(c, id, want, nothing).join(", ");
-  throw Object.assign(new Error(`E1515 channelRoute: ${c.module} entry ${id} is not its channel's, at ${members}`), {
-    code: "E1515",
-  });
+  return fault("E1515", `E1515 channelRoute: ${c.module} entry ${id} is not its channel's, at ${members}`);
 }
 
 /** A channel without `message`: the stream entry's loader only; `publish` does not compile. */
@@ -126,8 +125,10 @@ export function channelRoute<P, M, S>(
   const { module } = contract;
   const { path, params: query, events: output, body, message } = channel;
   if (publish !== undefined && (message === undefined || body === undefined)) {
-    const text = `E1510 channelRoute: channel ${channel.name} declares no message, so ${publish} has nothing to publish`;
-    throw Object.assign(new Error(text), { code: "E1510" });
+    return fault(
+      "E1510",
+      `E1510 channelRoute: channel ${channel.name} declares no message, so ${publish} has nothing to publish`,
+    );
   }
   const streams = holding<StreamEntry<P, M>>(contract, id, { method: "GET", path, query, events: true, output });
   const instance = (key: string): string => `${channel.name}\n${key}`;
@@ -185,12 +186,10 @@ export function channelRoute<P, M, S>(
     /** `event` after `member` and, when there is one to judge, the user check; a member check that fails is a denial. */
     const deliver = (event: Event, member: () => Promise<boolean> | boolean): Step => {
       if (out) return;
-      let m: Promise<boolean> | boolean;
-      try {
-        m = member();
-      } catch {
-        return verdict(event, false);
-      }
+      // The wrapper object keeps a returned promise from being awaited by `attempt`: only a synchronous throw is caught.
+      const asked = attempt(() => ({ answer: member() }));
+      if (!asked.ok) return verdict(event, false);
+      const m = asked.value.answer;
       return typeof m === "boolean"
         ? judge(event, m)
         : m.then(

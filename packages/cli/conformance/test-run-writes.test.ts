@@ -46,8 +46,7 @@ const reportDir = (dir: string): string[] =>
 const runJson = (dir: string): string => readFileSync(join(dir, "reports/tests/run.json"), "utf8");
 
 describe("k.test-run: a test run writes under `reports/` only", () => {
-  // Pending (rfc:0235 step 5; the git case waits for step 6): skipped until the build lands; the builder un-skips by changing each `it.skip` to `it` in this file.
-  it.skip(
+  it(
     "`keel test` over a project whose `test/a.test.ts` holds a passing test at line 3, a failing one at line 6 and an `it.skip` at line 9 writes `reports/tests/run.json` holding `test/a.test.ts` with the SHA-256 of its source and the tests `{ line: 3, state: 'passed' }`, `{ line: 6, state: 'failed' }` and `{ line: 9, state: 'skipped' }`, and no other file in `reports/tests/`",
     () => {
       const dir = project("test-run-writes", { "test/a.test.ts": A_TEST });
@@ -73,7 +72,7 @@ describe("k.test-run: a test run writes under `reports/` only", () => {
     SLOW,
   );
 
-  it.skip(
+  it(
     "a run holds one entry per test file it collected, its path relative to the project, and a run after an edit holds the edited file's new `sha`",
     () => {
       const other = 'import { expect, it } from "vitest";\nit("b", () => {\n  expect(2).toBe(2);\n});\n';
@@ -92,7 +91,7 @@ describe("k.test-run: a test run writes under `reports/` only", () => {
     SLOW,
   );
 
-  it.skip(
+  it(
     "an unsharded run removes the folder's other files: a stale `1-of-2.json` beside it is gone after `keel test`",
     () => {
       const dir = project("test-run-clears", {
@@ -107,7 +106,7 @@ describe("k.test-run: a test run writes under `reports/` only", () => {
     SLOW,
   );
 
-  it.skip(
+  it(
     "for any tests in a file, each test case is `{ line, state }` at its 1-based line, ordered by line, `passed`, `failed` or `skipped` as it ended (property)",
     () => {
       const kind = fc.constantFrom<"pass" | "fail" | "skip">("pass", "fail", "skip");

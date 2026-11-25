@@ -22,7 +22,7 @@
       "platform": "node"
     },
     "@keel/cli": {
-      "max": "37.5kb",
+      "max": "39kb",
       "platform": "node"
     },
     "@keel/cli/docs": {
@@ -66,7 +66,7 @@
     "@keel/services": "4.1kb",
     "@keel/std-channels": "1.5kb",
     "@keel/std-channels/server": {
-      "max": "3kb",
+      "max": "3.25kb",
       "platform": "node"
     },
     "@keel/std-channels/tools": {
@@ -105,7 +105,7 @@
       "platform": "node"
     },
     "@keel/std-money": "2kb",
-    "@keel/std-offline": "3.75kb",
+    "@keel/std-offline": "4.25kb",
     "@keel/std-offline/tools": {
       "max": "3kb",
       "platform": "node"

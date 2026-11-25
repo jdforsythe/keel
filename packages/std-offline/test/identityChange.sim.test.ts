@@ -52,7 +52,8 @@ for (const path of paths) {
     await simulate(
       async ({ ctx, run, schedule }) => {
         const srv = server(ctx);
-        const id = `ident${++n}.outbox`;
+        // The same id on every run and replay of a path: the run disposes its outbox, and a replay's trace names the store.
+        const id = `ident${path.length}.outbox`;
         const held: { o?: ReturnType<typeof outbox<typeof Api>> } = {};
         const decl = scope(() => {
           held.o = outbox(id, Api);

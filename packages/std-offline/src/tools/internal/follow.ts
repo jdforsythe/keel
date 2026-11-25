@@ -1,7 +1,7 @@
-import { posix } from "node:path";
 import type { SourceFile } from "@keel/check";
 import { parseSync } from "oxc-parser";
 import type { At } from "./At.ts";
+import { joinPath } from "./joinPath.ts";
 
 const nameOf = (n: unknown): unknown =>
   typeof n === "object" && n !== null && Reflect.get(n, "type") === "Identifier" ? Reflect.get(n, "name") : undefined;
@@ -21,7 +21,7 @@ export function follow(at: At, project: readonly SourceFile[], depth = 0): At {
     if (st.type !== "ImportDeclaration" || !st.source.value.startsWith(".")) continue;
     for (const sp of st.specifiers) {
       if (sp.type !== "ImportSpecifier" || sp.local.name !== name) continue;
-      const path = posix.join(posix.dirname(at.file.path), st.source.value);
+      const path = joinPath(at.file.path.slice(0, Math.max(0, at.file.path.lastIndexOf("/"))), st.source.value);
       const file = project.find((f) => f.path === path || f.path.replace(/\.[cm]?[jt]sx?$/, "") === path);
       if (file === undefined) return at;
       const ast = parseSync(file.path, file.source, { sourceType: "module" }).program;

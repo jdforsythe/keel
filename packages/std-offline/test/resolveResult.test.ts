@@ -2,17 +2,8 @@
 import type { SimCtx } from "@keel/ctx";
 import fc from "fast-check";
 import { expect, expectTypeOf, test } from "vitest";
-import {
-  OWNER,
-  SEED,
-  type SimSchedule,
-  createServer,
-  edit,
-  entriesOf,
-  makeClient,
-  simCtx,
-} from "../conformance/fixtures.ts";
 import { type OutboxResult, type Resolution, resolve, send } from "../src/index.ts";
+import { OWNER, SEED, type SimSchedule, createServer, edit, entriesOf, makeClient, simCtx } from "./support.ts";
 
 type Edited = { head: number; title: string };
 

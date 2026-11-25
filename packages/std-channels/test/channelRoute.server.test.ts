@@ -12,7 +12,7 @@ import { createApp, topology } from "@keel/server";
 import { store } from "@keel/store";
 import { afterEach, expect, test } from "vitest";
 import { channel } from "../src/channel.ts";
-import { channelRoute } from "../src/server/channelRoute.ts";
+import { channelRoute } from "../src/server/channelRoute.server.ts";
 import { hubOf } from "../src/server/internal/hubOf.ts";
 
 const BASE = "http://localhost";

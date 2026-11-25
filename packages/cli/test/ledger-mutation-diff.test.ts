@@ -1,7 +1,7 @@
 // `keel ledger --diff` and mutation claims (k.ledger Mutation): a package whose every claim is stale is E1713.
 import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { run } from "../src/index.ts";
+import { ledgerRun as run } from "./ledgerRun.ts";
 
 const CWD = "/work/app";
 const file = (path: string, source: string) => ({ path, source });
@@ -14,7 +14,7 @@ const committed = (source: string) =>
       unsafe: 0,
       hostElements: 0,
       mutation: {
-        packages: { a: { score: 100, threshold: 70 } },
+        projects: { "packages/a": { score: 100, threshold: 70 } },
         claims: [{ file: "packages/a/src/a.ts", sha: sha(source), killed: 3, survived: 0, noCoverage: 0, score: 100 }],
       },
       exports: [],

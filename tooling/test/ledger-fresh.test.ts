@@ -23,8 +23,8 @@ const tree = {
   rungs: { example: 2, probabilistic: 1, exhaustive: 0, proven: 0, monitored: 0 },
 };
 const treeWithA11y = { ...tree, records: [...tree.records, { item: "a11y:.:r#1.1.1", rung: "example" }] };
-const messages = (f: unknown, t: typeof tree, a11y = false) =>
-  compareLedger(f, t, a11y).map((d: { message: string }) => d.message);
+const messages = (f: unknown, t: typeof tree, runs = false) =>
+  compareLedger(f, t, runs).map((d: { message: string }) => d.message);
 
 describe("compareLedger", () => {
   it("finds nothing when the file is what the tree produces", () => {
@@ -32,9 +32,14 @@ describe("compareLedger", () => {
     expect(messages(file, treeWithA11y, true)).toEqual([]);
   });
 
-  it("finds a rung raised by hand, which `ledger --diff` accepts", () => {
+  it("finds a rung raised by hand, which `ledger --diff` accepts, when the runs are present", () => {
     const edited = { ...file, clauses: [{ item: "k.one#1", rung: "proven" }] };
-    expect(messages(edited, tree)).toEqual(["k.one#1 is proven in the ledger file, example in the tree"]);
+    expect(messages(edited, treeWithA11y, true)).toEqual(["k.one#1 is proven in the ledger file, example in the tree"]);
+  });
+
+  it("leaves rungs alone without the runs: a tree with no run reports decides which items exist, not their rungs", () => {
+    const edited = { ...file, clauses: [{ item: "k.one#1", rung: "proven" }] };
+    expect(messages(edited, tree)).toEqual([]);
   });
 
   it("finds an item whose source is gone (a deleted export still listed as verified)", () => {
@@ -66,7 +71,7 @@ describe("compareLedger", () => {
     expect(messages({ ...file, unsafe: 3 }, tree)).toEqual(["unsafe count is 3 in the ledger file, 2 in the tree"]);
   });
 
-  it("leaves WCAG items and rung counts alone until asked", () => {
+  it("leaves WCAG items and rung counts alone without the runs", () => {
     const edited = { ...file, a11y: [], rungs: { ...file.rungs, example: 99 } };
     expect(messages(edited, tree)).toEqual([]);
     expect(messages(edited, treeWithA11y, true)).toEqual([

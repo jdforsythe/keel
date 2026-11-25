@@ -24,8 +24,8 @@ export function admit(
         ? fault(c, "offline.owner")
         : undefined;
     const error = fault(c, "offline.storage");
-    tx(c.settle, { key, state: "failed", error });
-    await attempt(() => persist(ctx, c));
+    void tx(c.settle, { key, state: "failed", error });
+    void (await attempt(() => persist(ctx, c)));
     return error;
   });
   c.writes.set(key, written);

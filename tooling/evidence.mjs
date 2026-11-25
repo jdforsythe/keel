@@ -244,13 +244,13 @@ const day = (ms) => new Date(ms).toISOString().slice(0, 10);
  * reason.
  */
 export function mutationPart(root, ledger, unitList, previous = {}) {
-  const scores = ledger.mutation?.packages ?? {};
+  // `mutation.projects` is keyed by project name (k.ledger-items Projects), the unit's own path.
+  const scores = ledger.mutation?.projects ?? {};
   const claims = ledger.mutation?.claims ?? [];
   const packages = {};
   let stale = 0;
   for (const u of unitList) {
-    const name = u.split("/")[1];
-    const s = u.startsWith("packages/") ? scores[name] : undefined;
+    const s = scores[u];
     if (s === undefined) {
       packages[u] = previous[u]?.reason === null ? previous[u] : { ...MUTATION_NONE, reason: "no mutation run" };
       continue;

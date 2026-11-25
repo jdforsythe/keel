@@ -191,6 +191,15 @@ describe("applyRewrites", () => {
     expect(text).not.toContain("--name pg-tls");
     expect(text).not.toContain("docker exec pg-tls");
   });
+  it("turns the ledger job's artifact unpacking into a no-op and keeps its other steps", () => {
+    const source = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, "..", "ci.source.json"), "utf8"));
+    const steps = expandSteps(source, "ledger");
+    const out = applyRewrites(source.jobs.ledger, steps, JOBS.ledger.rewrites, {});
+    const text = JSON.stringify(out);
+    expect(text).not.toContain("tar -xf");
+    expect(text).toContain("node tooling/ledger-fresh.mjs --runs");
+    expect(out.steps.length).toBe(steps.length);
+  });
 });
 
 describe("failLines", () => {

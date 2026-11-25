@@ -4,5 +4,5 @@
     "allowImportingTsExtensions": true,
     "noEmit": true
   },
-  "include": ["src", "test", "conformance"]
+  "include": ["module.ts", "src", "unsafe", "test", "conformance"]
 }

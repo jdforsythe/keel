@@ -2,6 +2,7 @@ import ts from "typescript";
 import type { FileFacts } from "./FileFacts.ts";
 import type { NumRef } from "./NumRef.ts";
 import type { PropRun } from "./PropRun.ts";
+import type { TestCall } from "./TestCall.ts";
 import type { Use } from "./Use.ts";
 import { shadowed } from "./shadowed.ts";
 
@@ -411,7 +412,7 @@ export function testFacts(path: string, source: string): FileFacts {
       }
   }
 
-  const tests: Use[] = [];
+  const tests: TestCall[] = [];
   const walk = (n: ts.Node, skipped: boolean): void => {
     const c = ts.isCallExpression(n) && !inChain(n) ? chainOf(n) : undefined;
     if (c === undefined) {
@@ -427,7 +428,9 @@ export function testFacts(path: string, source: string): FileFacts {
     if (!skip && body) {
       const use = useOf(c.args);
       const named = c.args.filter((a) => ts.isIdentifier(a)).map((a) => a.text);
-      tests.push({ ...use, proves: proves(c.args), calls: new Set([...use.calls, ...named]) });
+      const from = sf.getLineAndCharacterOfPosition(n.getStart(sf)).line + 1;
+      const to = sf.getLineAndCharacterOfPosition(n.getEnd()).line + 1;
+      tests.push({ ...use, proves: proves(c.args), calls: new Set([...use.calls, ...named]), from, to });
     }
   };
   walk(sf, false);
