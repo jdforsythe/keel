@@ -9,13 +9,12 @@ import path from "node:path";
  * job is NOT RUN and fails the verdict unless `--allow-skip <job>`. `services`: for each of the job's services, the
  * container the gate starts and the name of the free port its first container port is published on. `containers`: containers a step starts, removed at the end. `rewrites`: text replaced in the job's
  * commands and environment before it runs (`{port:<name>}` is a free port the gate picks for that name); each must
- * match the source at least once, so a changed command fails the gate instead of running unrewritten. `linux`: the
- * job runs under `--linux`. A job of the source that is not here fails the gate: a new CI job is decided here first.
+ * match the source at least once, so a changed command fails the gate instead of running unrewritten. A job of the source that is not here fails the gate: a new CI job is decided here first.
  */
 export const JOBS = {
-  check: { run: true, linux: true },
-  "test-shard": { run: true, linux: true },
-  test: { run: true, linux: true },
+  check: { run: true },
+  "test-shard": { run: true },
+  test: { run: true },
   postgres: {
     run: true,
     requires: "docker",
@@ -111,7 +110,7 @@ const needsOf = (job) => (job.needs === undefined ? [] : Array.isArray(job.needs
  * The gate's plan: every job of the source in an order that keeps `needs` (source order among equals), each with
  * `run` or `skip` and why. `unknown` lists jobs the table does not name.
  * @param {{ jobs: Record<string, { needs?: string | string[] }> }} source
- * @param {{ with?: Set<string>, only?: Set<string>, linux?: boolean, table?: Record<string, object> }} opts
+ * @param {{ with?: Set<string>, only?: Set<string>, table?: Record<string, object> }} opts
  */
 export function planJobs(source, opts = {}) {
   const table = opts.table ?? JOBS;
@@ -133,8 +132,6 @@ export function planJobs(source, opts = {}) {
       const how = rule.flag === true ? ` (--with ${name})` : "";
       return { name, decision: "skip", reason: `${rule.skip ?? "not run here"}${how}`, rule };
     }
-    if (opts.linux === true && rule.linux !== true)
-      return { name, decision: "skip", reason: "--linux runs check and test-shard", rule };
     if (opts.only !== undefined && !opts.only.has(name))
       return { name, decision: "skip", reason: "not in --only", rule };
     return { name, decision: "run", rule };

@@ -3,7 +3,7 @@
 // tooling/ci.source.json, so the gate and CI cannot drift. The job table, expressions and verdict are in
 // tooling/gate-plan.mjs; docs/GATE.md says what runs, what is skipped and why.
 // Usage: node tooling/gate.mjs [<rev>] [--scale <n>] [--with <job,...>] [--allow-skip <job,...>] [--only <job,...>]
-//          [--fail-fast] [--max-load <n>] [--load-wait <minutes>] [--worktree <path>] [--linux]
+//          [--fail-fast] [--quiet] [--max-load <n>] [--load-wait <minutes>] [--worktree <path>]
 //        node tooling/gate.mjs --status [<rev>]
 import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
@@ -30,8 +30,6 @@ import {
 } from "./gate-plan.mjs";
 
 const FORBIDDEN_PORTS = new Set([5173, 5214, 5432, 8080]);
-const LINUX = "keel-gate-linux";
-const LINUX_ROOT = "/work";
 const t0 = performance.now();
 const say = (text) => fs.writeSync(1, `${text}\n`);
 const secs = (ms) => `${(ms / 1000).toFixed(1)}s`;
@@ -49,6 +47,12 @@ for (let i = 0; i < argv.length; i++) {
   else if (a.includes("=")) values.set(a.slice(2, a.indexOf("=")), a.slice(a.indexOf("=") + 1));
   else if (VALUE.has(a.slice(2)) && argv[i + 1] !== undefined) values.set(a.slice(2), argv[++i]);
   else flags.add(a.slice(2));
+}
+const FLAGS = new Set(["status", "fail-fast", "quiet"]);
+const unknownFlags = [...flags].filter((f) => !FLAGS.has(f)).concat([...values.keys()].filter((k) => !VALUE.has(k)));
+if (unknownFlags.length > 0) {
+  fs.writeSync(1, `fail gate unknown flag --${unknownFlags.join(", --")}\n`);
+  process.exit(2);
 }
 const list = (k) => new Set((values.get(k) ?? "").split(",").filter(Boolean));
 const git = (args, cwd) => spawnSync("git", args, { cwd, encoding: "utf8" });
@@ -86,7 +90,6 @@ if (flags.has("status")) {
   process.exit(0);
 }
 
-const linux = flags.has("linux");
 const withJobs = list("with");
 const allowSkip = list("allow-skip");
 const only = values.has("only") ? list("only") : undefined;
@@ -157,7 +160,7 @@ async function cleanup() {
   return left;
 }
 
-// ---- executors: the host's bash, or bash in a Linux container ----
+// ---- the executor: the host's bash ----
 const bash = fs.existsSync("/opt/homebrew/bin/bash") ? "/opt/homebrew/bin/bash" : "bash";
 
 /**
@@ -168,31 +171,12 @@ function runScript(script, { cwd, env, log, deadline }) {
   const fd = fs.openSync(log, "a");
   const file = `${log}.sh`;
   fs.writeFileSync(file, script);
-  const child = linux
-    ? spawn(
-        "docker",
-        [
-          "exec",
-          "-w",
-          cwd,
-          ...Object.entries(env).flatMap(([k, v]) => ["-e", `${k}=${v}`]),
-          LINUX,
-          "bash",
-          "--noprofile",
-          "--norc",
-          "-eo",
-          "pipefail",
-          "-c",
-          script,
-        ],
-        { detached: true, stdio: ["ignore", fd, fd] },
-      )
-    : spawn(bash, ["--noprofile", "--norc", "-eo", "pipefail", file], {
-        cwd,
-        env,
-        detached: true,
-        stdio: ["ignore", fd, fd],
-      });
+  const child = spawn(bash, ["--noprofile", "--norc", "-eo", "pipefail", file], {
+    cwd,
+    env,
+    detached: true,
+    stdio: ["ignore", fd, fd],
+  });
   fs.closeSync(fd);
   if (child.pid !== undefined) {
     groups.add(child.pid);
@@ -217,9 +201,10 @@ function runScript(script, { cwd, env, log, deadline }) {
   });
 }
 
-const rootDir = linux ? LINUX_ROOT : verify;
-const snapshot = linux ? "/tmp/keel-gate-turbo-cache" : path.join(out, "turbo-cache");
-const copyTree = linux ? "cp -a" : "cp -cR";
+const rootDir = verify;
+const snapshot = path.join(out, "turbo-cache");
+// A copy-on-write clone of the cache folder (APFS).
+const copyTree = "cp -cR";
 /** A runner's fresh checkout: the commit, no untracked or ignored file but node_modules, no tool cache in them. */
 const RESET = [
   `git reset -q --hard ${sha}`,
@@ -229,7 +214,6 @@ const RESET = [
 
 // ---- environment ----
 const nodeDir = (() => {
-  if (linux) return undefined;
   const major = nodeMajor(source);
   const have = spawnSync("node", ["--version"], { encoding: "utf8" }).stdout.trim();
   if (major === undefined || have.replace(/^v/, "").split(".")[0] === major) return undefined;
@@ -245,12 +229,10 @@ const nodeDir = (() => {
 })();
 
 function baseEnv() {
-  const env = linux ? { HOME: "/root", COREPACK_ENABLE_DOWNLOAD_PROMPT: "0" } : { ...process.env };
+  const env = { ...process.env };
   for (const k of [...AGENT_VARS, "KEEL_TEST_TIME_SCALE", "FORCE_COLOR"]) delete env[k];
-  if (!linux) {
-    const cargo = path.join(os.homedir(), ".cargo", "bin");
-    env.PATH = [nodeDir, fs.existsSync(cargo) ? cargo : undefined, env.PATH].filter(Boolean).join(path.delimiter);
-  }
+  const cargo = path.join(os.homedir(), ".cargo", "bin");
+  env.PATH = [nodeDir, fs.existsSync(cargo) ? cargo : undefined, env.PATH].filter(Boolean).join(path.delimiter);
   env.CI = "true";
   env.GITHUB_ACTIONS = "true";
   if (scaled) env.KEEL_TEST_TIME_SCALE = scale;
@@ -335,12 +317,12 @@ async function runInstance(name, job, inst, rule, needs) {
   const ctx = {
     matrix: inst.matrix,
     workspace: rootDir,
-    runnerOs: linux ? "Linux" : "macOS",
+    runnerOs: "macOS",
     runnerArch: os.arch() === "arm64" ? "ARM64" : "X64",
     needs,
   };
   const env = baseEnv();
-  const temp = linux ? `/tmp/runner-temp-${slug(inst.label)}` : path.join(dir, "runner-temp");
+  const temp = path.join(dir, "runner-temp");
   let steps = expandSteps(source, name);
   let jobEnv = job.env ?? {};
   try {
@@ -354,7 +336,7 @@ async function runInstance(name, job, inst, rule, needs) {
       jobEnv = rewritten.env;
     }
     Object.assign(env, exprEnv(jobEnv, ctx), { RUNNER_TEMP: temp });
-    const reset = await runScript(`${RESET}\n${linux ? `rm -rf ${temp}; ` : ""}mkdir -p ${JSON.stringify(temp)}`, {
+    const reset = await runScript(`${RESET}\nmkdir -p ${JSON.stringify(temp)}`, {
       cwd: rootDir,
       env,
       log: path.join(dir, "00-reset.log"),
@@ -464,7 +446,7 @@ async function runStep(step, { env, ctx, log, deadline }) {
   }
   if (kind === "java") {
     const major = String(step.with?.["java-version"] ?? "");
-    const home = linux ? undefined : javaHome(major);
+    const home = javaHome(major);
     if (home === undefined) {
       fs.writeFileSync(log, `no JDK ${major} here (actions/setup-java sets one up on the runner)\n`);
       return { status: "fail", detail: { want: `java ${major}` } };
@@ -474,43 +456,6 @@ async function runStep(step, { env, ctx, log, deadline }) {
     return { status: "ok" };
   }
   throw new Error(`unknown action ${step.uses}: decide in tooling/gate-plan.mjs`);
-}
-
-// ---- the Linux container ----
-async function startLinux(major) {
-  containers.add(LINUX);
-  docker(["rm", "-f", "-v", LINUX]);
-  const image = `node:${major}`;
-  const r = docker(
-    [
-      "run",
-      "-d",
-      "--name",
-      LINUX,
-      "--cpus",
-      "2",
-      "--memory",
-      "7g",
-      "-v",
-      `${common}:/repo.git:ro`,
-      image,
-      "sleep",
-      "infinity",
-    ],
-    { timeout: 600_000 },
-  );
-  if (r.status !== 0) throw new Error(`docker run ${image}: ${r.stderr.trim()}`);
-  const log = path.join(out, "linux-setup.log");
-  const setup = await runScript(
-    [
-      "git config --global --add safe.directory '*'",
-      `git clone -q --no-checkout /repo.git ${LINUX_ROOT}`,
-      `git -C ${LINUX_ROOT} checkout -q --detach ${sha}`,
-      `cd ${LINUX_ROOT} && corepack enable`,
-    ].join("\n"),
-    { cwd: "/", env: { HOME: "/root", COREPACK_ENABLE_DOWNLOAD_PROMPT: "0" }, log, deadline: Date.now() + 1_800_000 },
-  );
-  if (setup.code !== 0) throw new Error(`the Linux checkout failed: ${log}`);
 }
 
 // ---- the run ----
@@ -527,7 +472,7 @@ async function finish(extra = []) {
   const scaleText = scaled ? `scale ${scale}` : "no time scale on this commit";
   const tools = records.tools ?? "";
   const first = v.first ?? problems[0] ?? (interrupted ? "interrupted" : "");
-  const partial = only !== undefined ? `, partial (--only ${[...only].join(",")})` : linux ? ", partial (--linux)" : "";
+  const partial = only !== undefined ? `, partial (--only ${[...only].join(",")})` : "";
   const counts = ok
     ? `${ran} jobs, ${skipped} skipped, ${scaleText}${tools}${partial}`
     : `${v.failed} failed of ${ran + records.filter((r) => r.status === "not-run").length}, ${skipped} skipped, ${scaleText}${tools}${partial} first: ${first}`;
@@ -538,10 +483,9 @@ async function finish(extra = []) {
     sha,
     ok,
     line,
-    partial: only !== undefined || linux,
-    partialReason: only !== undefined ? `--only ${[...only].join(",")}` : linux ? "--linux" : undefined,
+    partial: only !== undefined,
+    partialReason: only !== undefined ? `--only ${[...only].join(",")}` : undefined,
     scale: scaled ? Number(scale) : null,
-    linux,
     with: [...withJobs],
     allowSkip: [...allowSkip],
     logs: out,
@@ -552,6 +496,11 @@ async function finish(extra = []) {
   fs.writeFileSync(resultPath(main, sha), `${JSON.stringify(result, null, 2)}\n`);
   process.exit(ok ? 0 : 1);
 }
+
+/** A job's line, unless --quiet asks for the last line only. */
+const sayJob = (r) => {
+  if (!flags.has("quiet")) say(jobLine(r));
+};
 
 function jobLine(r) {
   if (r.status === "skip") return `skip ${r.label}: ${r.reason}`;
@@ -577,13 +526,11 @@ for (const signal of ["SIGINT", "SIGTERM"])
   });
 
 try {
-  const plan = planJobs(source, { with: withJobs, only, linux });
+  const plan = planJobs(source, { with: withJobs, only });
   if (plan.unknown.length > 0) {
     for (const u of plan.unknown) say(`E0013 tooling/ci.source.json unknown job: decide (${u})`);
     await finish([`unknown job ${plan.unknown.join(", ")}: name it in the JOBS table of tooling/gate-plan.mjs`]);
   }
-  const major = nodeMajor(source) ?? "22";
-  if (linux) await startLinux(major);
   // The versions the steps see, against what the source's setup pins.
   const probeLog = path.join(out, "versions.log");
   const probe = await runScript("node --version\npnpm --version", {
@@ -606,7 +553,7 @@ try {
           `${m.tool} ${m.found} here, the CI source pins ${m.want}${m.tool === "node" ? ` (no installed node ${m.want} found under ~/.nvm)` : ""}`,
       ),
     );
-  records.tools = `, node ${node}${nodeDir === undefined ? "" : " (nvm)"}, pnpm ${pnpm}${linux ? ", linux" : ""}`;
+  records.tools = `, node ${node}${nodeDir === undefined ? "" : " (nvm)"}, pnpm ${pnpm}`;
   const needs = {};
   for (const p of plan.jobs) {
     const job = source.jobs[p.name];
@@ -614,30 +561,30 @@ try {
       const r = { label: p.name, name: p.name, status: "skip", reason: p.reason };
       records.push(r);
       needs[p.name] = "skipped";
-      say(jobLine(r));
+      sayJob(r);
       continue;
     }
     if (flags.has("fail-fast") && records.some((r) => r.status === "fail")) {
       const r = { label: p.name, name: p.name, status: "not-run", reason: "after a failure (--fail-fast)" };
       records.push(r);
       needs[p.name] = "skipped";
-      say(jobLine(r));
+      sayJob(r);
       continue;
     }
     const env = baseEnv();
-    const met = p.rule.requires === undefined || linux ? true : requirement(p.rule.requires, env);
+    const met = p.rule.requires === undefined ? true : requirement(p.rule.requires, env);
     if (met !== true) {
       const r = { label: p.name, name: p.name, status: "not-run", reason: met };
       records.push(r);
       needs[p.name] = "skipped";
-      say(jobLine(r));
+      sayJob(r);
       continue;
     }
     let all = true;
     for (const inst of instances(p.name, job)) {
       const r = await runInstance(p.name, job, inst, p.rule, { ...needs });
       records.push(r);
-      say(jobLine(r));
+      sayJob(r);
       if (r.status !== "ok") all = false;
     }
     needs[p.name] = all ? "success" : "failure";

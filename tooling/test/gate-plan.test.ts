@@ -38,8 +38,8 @@ const fixture = {
 };
 
 const table = {
-  first: { run: true, linux: true },
-  middle: { run: true, linux: true },
+  first: { run: true },
+  middle: { run: true },
   late: { run: true },
   optional: { skip: "minutes of a toolchain", flag: true },
   never: { skip: "schedule only" },
@@ -75,11 +75,6 @@ describe("planJobs", () => {
     const plan = planJobs(fixture, { table, with: new Set(["optional"]), only: new Set(["first", "optional"]) });
     expect(plan.jobs.filter((j) => j.decision === "run").map((j) => j.name)).toEqual(["first", "optional"]);
     expect(plan.jobs.find((j) => j.name === "late")?.reason).toBe("not in --only");
-  });
-
-  it("runs only the linux jobs under --linux", () => {
-    const plan = planJobs(fixture, { table, linux: true });
-    expect(plan.jobs.filter((j) => j.decision === "run").map((j) => j.name)).toEqual(["first", "middle"]);
   });
 
   it("refuses needs that loop", () => {

@@ -44,16 +44,18 @@ A job runs even when a job it needs failed, so one gate reports every failure; C
 - `--scale <n>`: `KEEL_TEST_TIME_SCALE`; default `0.1`.
 - `--max-load <n>`, `--load-wait <minutes>`: the wait before each step.
 - `--worktree <path>`: another registered clean checkout.
-- `--linux`: `check` and `test-shard` in a `node:<major>` container (2 CPUs, 7 GB), from a clone of the repository's git dir mounted read-only. The result is marked partial.
+- `--quiet`: the last line only.
 - `--status [<rev>]`: `ok gate-status` when the commit has a full green gate; `fail gate-status` when it has none, a failed one or a partial one.
+
+Any other flag fails with exit 2.
 
 ## Output
 
-One line per job: `ok check 912.4s, load 21.3`, `skip eval: runs only on the weekly schedule (--with eval)`, or `fail test-shard 2 ...` with the step, its exit, up to five `fail ` lines and its log. The last line is `ok gate <sha> 9 jobs, 7 skipped, scale 0.1, node v22.23.1 (nvm), pnpm 11.17.0 (10920.4s)` or `fail gate <sha> ... first: <job>/<step>`. Each step's log is under `$TMPDIR/keel-gate-<sha>/<job>/`. The record of the run, every job and step with its time and load, is `.keel-gate/<sha>.json` in the main worktree.
+One line per job: `ok check 912.4s, load 21.3`, `skip eval: runs only on the weekly schedule (--with eval)`, or `fail test-shard 2 ...` with the step, its exit, up to five `fail ` lines and its log. The last line is `ok gate <sha> 13 jobs, 7 skipped, scale 0.1, node v22.23.1 (nvm), pnpm 11.17.0 (10920.4s)` or `fail gate <sha> ... first: <job>/<step>`. Each step's log is under `$TMPDIR/keel-gate-<sha>/<job>/`. The record of the run, every job and step with its time and load, is `.keel-gate/<sha>.json` in the main worktree. On SIGINT or SIGTERM the gate stops its process groups and containers, checks that none is left, writes the record and fails. The images `golden-1-images` builds stay, tagged `golden-1-<deployable>`, for `docker rmi` to remove.
 
 ## Equal to CI
 
-The commands come from `tooling/ci.source.json` and nowhere else. What the gate cannot read from the source is in `tooling/gate-plan.mjs`: the job table, the actions it knows, the expressions it answers and the postgres rewrites, and the tests in `tooling/test/gate-plan.test.ts` run every one of them against the real source. A change to the source that the gate has not decided (a job, an action, an expression, a step condition, a rewrite that no longer matches) fails the gate before it runs. Two differences remain: this machine is macOS on arm64 where CI is Ubuntu on x64 (`--linux` covers the operating system, not the architecture), and its cores are faster, which the time scale answers.
+The commands come from `tooling/ci.source.json` and nowhere else. What the gate cannot read from the source is in `tooling/gate-plan.mjs`: the job table, the actions it knows, the expressions it answers and the postgres rewrites. `tooling/test/gate-plan.test.ts` checks the table and the rewrites against the real source in `pnpm test`. A change to the source that the gate has not decided (a job, an action, an expression, a step condition, a rewrite that no longer matches) fails the gate before it runs. Two differences remain. This machine is macOS on arm64 where CI is Ubuntu on x64, so a fault of one operating system or architecture shows only in CI. Its cores are faster, which the time scale answers.
 
 subject: tooling/gate.mjs tooling/gate-plan.mjs tooling/ci.source.json
-verified: b80c8a0b0d4d29429b3aac010d824b2c7981759c
+verified: 78b224a7724305c9f7a6c285c9cb6343f31d22bb
