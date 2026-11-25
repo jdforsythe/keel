@@ -22,7 +22,13 @@ import { parseTopology } from "../src/internal/parseTopology.ts";
 import keel from "../src/vite.ts";
 
 /** What the plugin's `config` always gives: the locked `envPrefix` and the worker bundles' plugin. */
-const SERVE = { envPrefix: "\0", worker: { plugins: expect.any(Function) } };
+/** Every config the plugin returns: the app's libraries are never pre-bundled or left to Node (none here). */
+const SERVE = {
+  envPrefix: "\0",
+  worker: { plugins: expect.any(Function) },
+  ssr: { noExternal: [] },
+  optimizeDeps: { exclude: [] },
+};
 /** A build defines `DEV` and `PROD` itself, whatever the project config sets `process.env.NODE_ENV` to. */
 const OWN = { ...SERVE, define: { "import.meta.env.DEV": "false", "import.meta.env.PROD": "true" } };
 

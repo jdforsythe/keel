@@ -189,14 +189,14 @@ at?.onDispose(() => timer?.cancel());
 "names": [
   "packages/check/src/internal/topologyNeeds.ts",
   "packages/check/src/internal/EXPLANATIONS.ts",
-  "packages/cli/src/shell/shellBuild.ts",
+  "packages/cli/src/internal/shellTargets.ts",
   "packages/compiler/src/internal/entryCode.ts",
   "packages/compiler/src/internal/serverEntryCode.ts"
 ]
 ```
 `tooling/structure-lint.mjs`, beside S0003, which already parses these import forms:
 - S0012: a file in `packages/std-*/{src,unsafe}/` names `@keel/<k>/...` with an `internal` path segment, `<k>` a kernel package (in `order`, not `std-*`), in an import, re-export, `import()` or `require()`, and `internal[<pkg>]` does not list that specifier. Message: `<pkg> may not import <spec>: the stdlib holds no power a library lacks (k.parity)`.
-- S0013: code outside comments in `packages/<kernel>/src/` names `@keel/std-` in a file `names` does not list. `EXPLANATIONS.ts` is listed because its text names the stdlib package that fixes a diagnostic, which is advice, not a gate.
+- S0013: code outside comments in `packages/<kernel>/src/` names `@keel/std-` in a file `names` does not list. Build B sets `names` to the files that still name a package after the kind gates land, each one a stated exception's; the list above is the floor. The kernel sites that name `@keel/std-postgres` (the deploy files, the server build's PGlite files, `registersCapability`) name it no more once k.server-deps is built (RFC 0163 slice 4b), so none joins the list; the shell scaffold's `packages/scaffold/src/internal/shellManifest.ts` joins it if its code, not only its comments, names a shell package. `EXPLANATIONS.ts` is listed because its text names the stdlib package that fixes a diagnostic, which is advice, not a gate.
 
 In an app, `keel check` holds it through E1576 over library files (RFC 0163 D4) with the shell allowance, so an installed stdlib package is held to the same line. `keel check` cannot see kernel code, so S0013 has no app-side twin; it guards this repository.
 
@@ -229,7 +229,7 @@ By the `conformance-writer`, under `rfc:0169`:
 1. This commit: RFC, ADR, k.parity, the k.formats and std.sessions sentences.
 2. `conformance-writer`: the bullets above.
 3. Build A (now): `secretPath` and the store and three stdlib callers; `sampleFormat` in `@keel/schema` and `fake.ts`; `Live.note` and `reportUnapplied`; `TableSearch`; `deps.json` `internal` and S0012. The `@keel/schema/internal` and `@keel/router/internal` header comments drop their stdlib readers.
-4. Build B (after RFC 0163's build): the name gates of items 3 to 8 and 11 become kind gates; E1207's stdlib sites move to `unsafe/`; `deps.json` `names` and S0013; E1576's shell allowance over library files; the section text of Spec diff's last bullet.
+4. Build B (RFC 0163's Build order, slice 5): the name gates of items 3 to 8 and 11 become kind gates; E1207's stdlib sites move to `unsafe/`; `deps.json` `names` and S0013; E1576's shell allowance over library files; the section text of Spec diff's last bullet.
 
 ## Decided
 - `sampleFormat` is public in `@keel/schema` (D68), not in `@keel/testing`.

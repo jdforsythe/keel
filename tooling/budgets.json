@@ -3,10 +3,10 @@
     "check.injected10": 600,
     "test.failing3": 400,
     "spec.section": 3100,
-    "spec.map": 1600,
+    "spec.map": 1640,
     "explain": 300,
-    "mcp.tools-list": 2050,
-    "docs.map": 1650,
+    "mcp.tools-list": 2150,
+    "docs.map": 1670,
     "docs.section": 3100,
     "docs.skill": 3600,
     "docs.for": 400,
@@ -14,15 +14,15 @@
   },
   "size": {
     "@keel/check": {
-      "max": "78.5kb",
+      "max": "88kb",
       "platform": "node"
     },
     "@keel/check/explain": {
-      "max": "21kb",
+      "max": "22kb",
       "platform": "node"
     },
     "@keel/cli": {
-      "max": "33kb",
+      "max": "37kb",
       "platform": "node"
     },
     "@keel/cli/docs": {
@@ -34,7 +34,7 @@
       "platform": "node"
     },
     "@keel/compiler": {
-      "max": "35.5kb",
+      "max": "36kb",
       "platform": "node"
     },
     "@keel/ctx": "4.7kb",
@@ -46,7 +46,7 @@
     "@keel/runtime-dom": "6kb",
     "@keel/runtime-dom/ops": "10.75kb",
     "@keel/scaffold": {
-      "max": "22kb",
+      "max": "23.5kb",
       "platform": "node"
     },
     "@keel/scaffold/agents": {

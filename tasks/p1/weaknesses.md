@@ -224,6 +224,7 @@ Rules:
 - [ ] 0845 `@keel/check` grew to its budget; a consolidation pass over the rules
 - [ ] 1113 the held walk re-walks the import graph; share one graph
 - [ ] 1117 no time budget: parse can slide and nothing fails
+- [ ] 1121 E1607's trace has its own walker beside `functionRead/`
 
 ### Lane 22 check-rules · check, std-i18n, std-text, std-tokens · RFC where a rule's spec line changes · M
 - [ ] 0315 E1509 treats every file as one route table; group by deployable

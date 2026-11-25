@@ -9,7 +9,7 @@ const reaches = new WeakMap<readonly SourceFile[], Map<string, ReadonlySet<strin
 /**
  * Whether `path` is client-reachable (k.boundary Reach, E1004's reachability): read from `clientReach` over the files of
  * its project's `topology.ts` directory, each specifier followed by `reachResolve`, once per project; with no `topology.ts`, any file not named `*.server.*` or
- * `*.guard.*`.
+ * `*.guard.*`. An import of a library's `exports` entry leads into its files (`reachResolve`).
  */
 export function isClientReachable(path: string, project: readonly SourceFile[]): boolean {
   const read = topologyFor(path, project);

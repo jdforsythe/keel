@@ -10,7 +10,8 @@ import { resolveImport } from "./resolveImport.ts";
 import { short } from "./short.ts";
 
 /**
- * E1165 (k.module Checks): a `deps` entry, other than a `@keel/std-*` package, that the module does not use; once per
+ * E1165 (k.module Checks): a `deps` entry, other than a package entry (one beginning with `@`: a library is used by
+ * being listed, k.library, and one that names none is E1159), that the module does not use; once per
  * entry, at the entry, the fix removes it. A module uses an app module when E1152 would ask for the entry: one of its
  * non-test files imports from that module (contract included), or a binding of either module names a layout of the
  * other. Manifests under `node_modules/` and opaque manifests are not judged.
@@ -47,7 +48,7 @@ export function unusedDeps(
     if (man === null || inNodeModules(m.file.path)) continue;
     const mine = used.get(m);
     man.deps.entries.forEach((e, i) => {
-      if (e.value.startsWith("@keel/std-") || mine?.has(e.value) === true) return;
+      if (e.value.startsWith("@") || mine?.has(e.value) === true) return;
       const msg = `module ${short(m.key)} lists ${short(e.value)} in deps and does not use it`;
       out.push(moduleDiag("E1165", m.file, e.start, msg, removeEntryFix(m.file, man.deps, i)));
     });

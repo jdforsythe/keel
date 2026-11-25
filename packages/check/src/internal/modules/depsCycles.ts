@@ -3,10 +3,15 @@ import { stemOf } from "../stemOf.ts";
 import type { ModuleInfo } from "./ModuleInfo.ts";
 import { moduleDiag } from "./moduleDiag.ts";
 
-/** Sorted, distinct deps of a module that name a discovered (non-opaque) module. */
+/**
+ * Sorted, distinct deps of a module that name a discovered (non-opaque) module; a library's entries that do not begin
+ * with `@` name no module (E1163).
+ */
 function edges(m: ModuleInfo, byKey: ReadonlyMap<string, ModuleInfo>): string[] {
   const ds =
-    m.manifest?.deps.entries.map((e) => e.value).filter((k) => (byKey.get(k)?.manifest ?? null) !== null) ?? [];
+    m.manifest?.deps.entries
+      .map((e) => e.value)
+      .filter((k) => (!m.library || k.startsWith("@")) && (byKey.get(k)?.manifest ?? null) !== null) ?? [];
   return [...new Set(ds)].sort();
 }
 

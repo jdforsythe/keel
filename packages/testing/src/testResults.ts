@@ -106,7 +106,7 @@ function compactDiff(d: string | undefined): string | undefined {
  * at the test file's own frame, the message `first line (suite > test)`; each with
  * a `fix` carrying the failure's first line when the message cut it, a fast-check failure's seed and path,
  * counterexample, shrink count and error line, the compact diff and up to four more app frames; a file that failed outside any test gets
- * one T0001 at line 1; each error outside any test's result (vitest's unhandled errors, or one `keel test` held
+ * one T0001 at line 1 and counts as one test, failed (so `failed` never exceeds `tests`); each error outside any test's result (vitest's unhandled errors, or one `keel test` held
  * around the run) one T0001 `uncaught: <code> <first line>` at its first app frame, else at 1:1 of its
  * `VITEST_TEST_PATH`, else unlocated. Pure; shared by the cli and the repository's vitest reporter.
  */
@@ -167,6 +167,8 @@ export function testResults(files: readonly unknown[], errors: readonly unknown[
     for (const t of Array.isArray(f.tasks) ? f.tasks : []) walk(t, path, []);
     const result = isRec(f.result) ? f.result : {};
     if (result.state === "fail" && failed === before) {
+      // A file that failed outside any test (it did not load, or holds no test) is one failed test, counted in both.
+      tests++;
       failed++;
       const first: unknown = Array.isArray(result.errors) ? result.errors[0] : undefined;
       const message = firstLine((isRec(first) ? str(first.message) : undefined) ?? "file failed to run");

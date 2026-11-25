@@ -1,3 +1,4 @@
+import { ledgerCount } from "@keel/check";
 import type { SourceFile } from "../types/SourceFile.ts";
 import { CODE_FILE } from "./CODE_FILE.ts";
 import type { Diag } from "./Diag.ts";
@@ -6,11 +7,11 @@ import { TEST_FILE } from "./TEST_FILE.ts";
 import type { TestRef } from "./TestRef.ts";
 import { citesClause } from "./citesClause.ts";
 import { countExpectations } from "./countExpectations.ts";
-import { countHosts } from "./countHosts.ts";
 import { headerCodes } from "./headerCodes.ts";
 import { isNegativeTypeTest } from "./isNegativeTypeTest.ts";
 import { makeDiag } from "./makeDiag.ts";
 import { monitoredEvidence } from "./monitoredEvidence.ts";
+import { projectCounts } from "./projectCounts.ts";
 import { rangeCodes } from "./rangeCodes.ts";
 import { scrubCode } from "./scrubCode.ts";
 import { specClauses } from "./specClauses.ts";
@@ -23,13 +24,16 @@ const APP_DEFAULT = /^export\s+default\b/;
 /** A component's `Props` and `uses` belong to the component; `module.ts` and `routes.ts` are manifests. */
 const APP_PARTS = new Set(["Props", "uses"]);
 const APP_MANIFESTS = new Set(["module.ts", "routes.ts"]);
-/** `unsafe(...)` and `unsafe<T>(...)` calls; the declaration `function unsafe<T>(` is not a use. */
-const UNSAFE_CALL = /(?<!function\s)\bunsafe\s*(?:<[^<>()]*(?:<[^<>()]*>[^<>()]*)*>)?\s*\(/g;
 const PKG = /^packages\/([^/]+)\/([^/]+)\//;
 const APP = /^apps\/([^/]+)\/(.+)$/;
 /** An app's own modules when `keel ledger` runs in the app's folder. */
 const ROOT_APP = /^modules\//;
+/** A library's files, wherever the project read places them (k.library Ledger). */
+const NODE_MODULES = /(?:^|\/)node_modules\//;
 const OTHER_HEADER = "// Clause:";
+/** A library's own source in its own folder (k.library-pack Own folder), and the area its tests form. */
+const OWN_SRC = /^src\//;
+const OWN = "library";
 
 /**
  * A file's header comments, with 1-based line numbers: the `//` lines before its first statement other than an
@@ -45,9 +49,6 @@ const header = (source: string): { line: number; text: string }[] => {
   }
   return out;
 };
-
-const countUnsafe = (source: string): number =>
-  scrubCode(source).reduce((n, l) => n + (l.match(UNSAFE_CALL) ?? []).length, 0);
 
 /** Evidence for `name` from an area's executed tests (`testEvidence`): every test that reaches it. */
 const evidenceFor = (refs: readonly TestRef[], name: string, file: string): LedgerItem["evidence"] =>
@@ -66,15 +67,19 @@ const evidenceFor = (refs: readonly TestRef[], name: string, file: string): Ledg
  *   codes is named outside the quote (`headerCodes`) in the header of a citing file with a non-skipped test. A
  *   `// Clause:` header is not read; it is W1706 with the fix.
  * Export items also get `monitored` evidence from `.keel/monitored.json` (`monitoredEvidence`; E1711 when it fails its
- * shape). Also the `unsafe(...)` calls in `packages/<pkg>/{src,unsafe}`, in a root `modules/**` (an app's own folder)
- * and, per app, in `apps/<app>/**`, and the host elements (`countHosts`) in those files and, per file, in a root
- * `modules/**`; and the expectations of the negative type tests (`countExpectations`) of `packages/<pkg>/**`, per app in
- * `apps/<app>/**` and in a root `test/**` or `modules/**`, also per file (k.unsafe). `z3` is the Z3
+ * shape). Also `ledgerCount` (`unsafe(...)` calls and host elements) over the files `projectCounts` names, per app over
+ * `apps/<app>/**`, and the host elements per file of a root `modules/**`; and the expectations of the negative type
+ * tests (`countExpectations`) of `packages/<pkg>/**`, per app in `apps/<app>/**` and in a root `test/**` or
+ * `modules/**`, also per file (k.unsafe). A file under `node_modules/` (a library's, k.library) is counted by
+ * `libraryLedger`, not here, its negative type tests not at all. With `own`, the module id of the library whose own
+ * folder the files are (k.library-pack Own folder), also every export of its `src/**` files but tests, `Props` and
+ * `uses` (`<file>#<name>`, `pkg` the id), with evidence from its `test/` and co-located tests. `z3` is the Z3
  * version a `prove` call's `proven` evidence names (default: the installed `z3-solver`'s, `z3Version`).
  */
 export function buildLedger(
   files: readonly SourceFile[],
   z3: string | undefined = z3Version(),
+  own?: string,
 ): {
   items: LedgerItem[];
   unsafe: number;
@@ -102,7 +107,9 @@ export function buildLedger(
   const negativeTypeFiles: Record<string, number> = {};
   for (const f of code) {
     const app = APP.exec(f.path)?.[1];
-    const counted = f.path.startsWith("packages/") || app !== undefined || /^(?:test|modules)\//.test(f.path);
+    const counted =
+      !NODE_MODULES.test(f.path) &&
+      (f.path.startsWith("packages/") || app !== undefined || /^(?:test|modules)\//.test(f.path));
     const expected = counted && isNegativeTypeTest(f.path) ? countExpectations(f.path, f.source) : 0;
     if (expected > 0) {
       negativeTypes += expected;
@@ -110,25 +117,21 @@ export function buildLedger(
       if (app !== undefined) appNegativeTypes[app] = (appNegativeTypes[app] ?? 0) + expected;
     }
     const p = PKG.exec(f.path);
-    const a = APP.exec(f.path);
+    const a = NODE_MODULES.test(f.path) ? null : APP.exec(f.path);
     if (p?.[1] !== undefined && (p[2] === "test" || p[2] === "conformance")) add(`packages/${p[1]}`, f);
-    if (p?.[1] !== undefined && (p[2] === "src" || p[2] === "unsafe")) {
-      unsafe += countUnsafe(f.source);
-      hostElements += countHosts(f.path, f.source);
-    }
-    if (ROOT_APP.test(f.path)) {
-      unsafe += countUnsafe(f.source);
-      const n = countHosts(f.path, f.source);
-      hostElements += n;
-      if (n > 0) rootHosts[f.path] = n;
-    }
+    const by = projectCounts(f.path);
+    const n = by.hostElements || a !== null ? ledgerCount(f.path, f.source) : { unsafe: 0, hostElements: 0 };
+    if (by.unsafe) unsafe += n.unsafe;
+    if (by.hostElements) hostElements += n.hostElements;
+    if (ROOT_APP.test(f.path) && n.hostElements > 0) rootHosts[f.path] = n.hostElements;
     if (a?.[1] === undefined || a[2] === undefined) continue;
-    appUnsafe[a[1]] = (appUnsafe[a[1]] ?? 0) + countUnsafe(f.source);
-    const hosts = countHosts(f.path, f.source);
-    hostElements += hosts;
-    appHosts[a[1]] = (appHosts[a[1]] ?? 0) + hosts;
+    appUnsafe[a[1]] = (appUnsafe[a[1]] ?? 0) + n.unsafe;
+    appHosts[a[1]] = (appHosts[a[1]] ?? 0) + n.hostElements;
     if (a[2].startsWith("test/") || (a[2].startsWith("modules/") && TEST_FILE.test(f.path))) add(`apps/${a[1]}`, f);
   }
+  if (own !== undefined)
+    for (const f of code)
+      if (f.path.startsWith("test/") || (OWN_SRC.test(f.path) && TEST_FILE.test(f.path))) add(OWN, f);
   const known = new Set(code.map((f) => f.path));
   const refs = new Map([...areas].map(([area, fs]) => [area, testEvidence(fs, known, z3)]));
   const monitored = monitoredEvidence(files);
@@ -143,9 +146,14 @@ export function buildLedger(
         const name = EXPORT.exec(l)?.[1];
         if (name !== undefined) push(`${f.path}#${name}`, p[1], `packages/${p[1]}`, name, f.path);
       }
+    const base = f.path.split("/").pop() ?? "";
+    if (own !== undefined && OWN_SRC.test(f.path) && !TEST_FILE.test(f.path))
+      for (const l of scrubCode(f.source)) {
+        const name = EXPORT.exec(l)?.[1] ?? (APP_DEFAULT.test(l) ? base.split(".")[0] : undefined);
+        if (name !== undefined && !APP_PARTS.has(name)) push(`${f.path}#${name}`, own, OWN, name, f.path);
+      }
     const a = APP.exec(f.path);
     const rel = a?.[2]?.startsWith("modules/") ? a[2].slice("modules/".length) : undefined;
-    const base = f.path.split("/").pop() ?? "";
     if (a?.[1] === undefined || rel === undefined || TEST_FILE.test(f.path) || APP_MANIFESTS.has(base)) continue;
     for (const l of scrubCode(f.source)) {
       const name = EXPORT.exec(l)?.[1] ?? (APP_DEFAULT.test(l) ? base.split(".")[0] : undefined);

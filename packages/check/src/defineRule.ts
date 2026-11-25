@@ -9,7 +9,7 @@ import type { RuleDef } from "./types/RuleDef.ts";
 /**
  * Register a rule (k.check registry). Stdlib codes are E2xxx/W2xxx; a code outside that range, or one
  * already registered, throws an error whose message starts with E1753. Returns the registered rule. A rule a
- * `@keel/std-*` package registers while `importDeps` imports it first runs only while `deps` reach the package
+ * library (k.library) registers while `importDeps` imports it first runs only while `deps` reach the package
  * (k.check-cache In one process).
  */
 export function defineRule(def: RuleDef & { readonly explain: string }): RuleDef {

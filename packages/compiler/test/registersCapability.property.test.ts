@@ -31,25 +31,42 @@ test("a namespace import calling `.register` is one; a name that only contains `
   expect(registersCapability('import { createCtx } from "@keel/ctx";\nconst registered = 1;\n')).toBe(false);
 });
 
-test("a file importing `database` from @keel/std-postgres is one; importing only `sql` is not", () => {
-  expect(
-    registersCapability(
-      'import { database } from "@keel/std-postgres";\nexport const db = database("notes.db", {});\n',
-    ),
-  ).toBe(true);
-  expect(registersCapability('import { sql } from "@keel/std-postgres";\n')).toBe(false);
+test("a subpath of @keel/ctx is the package", () => {
+  expect(registersCapability('import { register } from "@keel/ctx/internal";\n')).toBe(true);
 });
 
-test("a subpath of either package is the package: `database` from @keel/std-postgres/server is one", () => {
+// k.server-deps Registration through a library: a name imported from a library counts when `library(spec, name)` holds.
+/** Text around the imports that keeps the file parsing: a line comment. */
+const comment = body.map((t) => `// ${t.replace(/[\n\r\u2028\u2029]/g, " ")}`);
+
+test("a file importing a name `library` holds is one, under any local name and as a re-export; any other name is not", () => {
+  const library = (spec: string, name: string): boolean => spec === "@acme/store" && name === "store";
   fc.assert(
-    fc.property(body, fc.constantFrom("@keel/std-postgres/server", "@keel/std-postgres"), (text, from) => {
-      expect(
-        registersCapability(`import { database } from "${from}";\n${text}\nexport const d = database("a.db");\n`),
-      ).toBe(true);
-      expect(registersCapability(`import { sql } from "${from}";\n${text}\n`)).toBe(false);
+    fc.property(comment, fc.constantFrom("store", "keep"), fc.constantFrom('"', "'"), (text, local, q) => {
+      const as = local === "store" ? "store" : `store as ${local}`;
+      expect(registersCapability(`import { ${as} } from ${q}@acme/store${q};\n${text}\n`, library)).toBe(true);
+      expect(registersCapability(`export { store } from ${q}@acme/store${q};\n${text}\n`, library)).toBe(true);
+      expect(registersCapability(`import { other } from ${q}@acme/store${q};\n${text}\n`, library)).toBe(false);
+      expect(registersCapability(`import { store } from ${q}@acme/other${q};\n${text}\n`, library)).toBe(false);
     }),
     FC,
   );
-  expect(registersCapability('import { register } from "@keel/ctx/internal";\n')).toBe(true);
-  expect(registersCapability('import { database } from "@keel/std-postgresql";\n')).toBe(false);
+});
+
+test("a type-only import of a registering name is not one; a namespace import asks for `*`", () => {
+  const seen: string[] = [];
+  const library = (spec: string, name: string): boolean => {
+    seen.push(`${spec} ${name}`);
+    return name === "store" || name === "*";
+  };
+  expect(registersCapability('import type { store } from "@acme/store";\n', library)).toBe(false);
+  expect(registersCapability('import { type store } from "@acme/store";\n', library)).toBe(false);
+  expect(registersCapability('import * as s from "@acme/store";\n', library)).toBe(true);
+  expect(seen).toEqual(["@acme/store *"]);
+});
+
+test("a file that does not parse counts when a specifier it names has a registering export", () => {
+  const library = (spec: string, name: string): boolean => spec === "@acme/store" && name === "*";
+  expect(registersCapability('import { other } from "@acme/store";\nconst = ;\n', library)).toBe(true);
+  expect(registersCapability('import { other } from "@acme/plain";\nconst = ;\n', library)).toBe(false);
 });

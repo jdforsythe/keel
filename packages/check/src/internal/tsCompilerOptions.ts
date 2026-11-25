@@ -2,7 +2,8 @@ import ts from "typescript";
 
 /**
  * The strict profile of `tsconfig.base.json` as compiler options, plus what an in-memory check needs:
- * `noEmit`, `.ts` import paths, global JSX typing (no `jsxImportSource`), and no ambient `@types` (`typeCheck` adds Node's when the project has them).
+ * `noEmit`, `.ts` import paths, global JSX typing (no `jsxImportSource`), no ambient `@types` (`typeCheck` adds Node's when the project has them),
+ * and the `keel` export condition, so a library's entry resolves to its source (k.library Kind).
  */
 export function tsCompilerOptions(): ts.CompilerOptions {
   return {
@@ -20,5 +21,6 @@ export function tsCompilerOptions(): ts.CompilerOptions {
     noEmit: true,
     allowImportingTsExtensions: true,
     types: [],
+    customConditions: ["keel"],
   };
 }

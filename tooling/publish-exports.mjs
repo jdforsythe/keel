@@ -2,7 +2,7 @@
 // (and `publishConfig.bin`) point the packed tarball at the built files. Every package under packages/ is checked: the
 // `private` flag is lifted at release, so a package that is private today still has to pack correctly.
 // P0001 an `exports` key without a `publishConfig.exports` counterpart; P0002 a published path no build wrote (or a `*`
-// pattern that matches nothing); P0003 a published path outside what `files` ships; P0004 a `bin` that points at source
+// pattern that matches nothing; a `keel` condition's source path too); P0003 a published path outside what `files` ships; P0004 a `bin` that points at source
 // with no `publishConfig.bin`, or a published bin that is missing or outside `files`.
 // Usage: node tooling/publish-exports.mjs --check (after `pnpm build`) | --fix (derive the missing entries from `exports`).
 import fs from "node:fs";
@@ -14,9 +14,12 @@ const ALWAYS = new Set(["package.json"]);
 const isDeclarationFile = (p) => p.endsWith(".d.ts") || p.endsWith(".d.mts") || p.endsWith(".d.cts");
 const isSource = (p) => /\.(ts|mts|cts)$/.test(p) && !isDeclarationFile(p);
 
-/** Where the build writes a source path: `./src/a.ts` to `./dist/src/a.js` (or `.d.ts` for a `types` condition). */
+/**
+ * Where the build writes a source path: `./src/a.ts` to `./dist/src/a.js` (or `.d.ts` for a `types` condition). A
+ * `keel` condition keeps its source path: a library ships its source for the app's compiler (k.library-pack Package).
+ */
 export function builtPath(p, condition) {
-  if (!isSource(p)) return p;
+  if (!isSource(p) || condition === "keel") return p;
   const stem = p.replace(/\.(ts|mts|cts)$/, "");
   return `./dist/${stem.slice(2)}${condition === "types" ? ".d.ts" : ".js"}`;
 }

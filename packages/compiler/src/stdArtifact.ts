@@ -9,7 +9,6 @@ import type { SourceFile } from "./types/SourceFile.ts";
 import type { StdData } from "./types/StdData.ts";
 
 const MANIFEST = /^modules\/([^/]+)\/module\.[cm]?[jt]s$/;
-const STD = /^@keel\/std-[^/]+$/;
 const Json = s.json();
 /** `v` as `std.json` will hold it, after a JSON round-trip (backlog 0195); undefined when JSON cannot hold it. */
 const viaJson = (v: JsonValue | undefined): JsonValue | undefined => {
@@ -21,7 +20,7 @@ const clip = (x: string): string => (x.length > 28 ? `${x.slice(0, 25)}...` : x)
 /**
  * The data of `.keel/std.json` (k.module Std config, rfc:0066): every app manifest's (`modules/<id>/module.ts`,
  * root-relative) `std` entries, read statically, as `{ [pkg]: { [moduleId]: config } }`. An entry whose key is not a
- * `@keel/std-*` package in that module's `deps`, whose value is not literal JSON, or whose value fails the schema
+ * package entry (a library, k.library; one that is none is E1159) of that module's `deps`, whose value is not literal JSON, or whose value fails the schema
  * registered under its package (`s.register`), checked as `std.json` holds it (after a JSON round-trip), is E1158,
  * worded as `keel check`'s, and left out. An opaque manifest
  * contributes nothing. `hash` is the artifact's content hash of `data`. Pure over `files` and the schema registry.
@@ -40,7 +39,7 @@ export function stdArtifact(files: readonly SourceFile[]): { data: StdData; hash
       const value = viaJson(e.value);
       const issue = stdIssue(registry.get(e.key), value);
       const message =
-        !STD.test(e.key) || !deps.has(e.key)
+        !e.key.startsWith("@") || !deps.has(e.key)
           ? `std key ${k} is not a stdlib package in deps of module ${clip(id)}`
           : value === undefined
             ? `std config for ${k} in module ${clip(id)} is not literal JSON`

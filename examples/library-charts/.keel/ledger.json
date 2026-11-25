@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "unsafe": 0,
+  "hostElements": 1,
+  "negativeTypes": 0,
+  "rungs": {
+    "example": 2,
+    "probabilistic": 0,
+    "exhaustive": 0,
+    "proven": 0,
+    "monitored": 0
+  },
+  "exports": [
+    {
+      "pkg": "libraryCharts",
+      "name": "BarChart",
+      "file": "src/BarChart.tsx",
+      "rung": "example"
+    },
+    {
+      "pkg": "libraryCharts",
+      "name": "Bars",
+      "file": "src/Bars.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "libraryCharts",
+      "name": "Example",
+      "file": "src/Example.tsx",
+      "rung": "example"
+    },
+    {
+      "pkg": "libraryCharts",
+      "name": "barsCode",
+      "file": "src/barsCode.ts",
+      "rung": "none"
+    }
+  ],
+  "clauses": [],
+  "a11y": [],
+  "libraries": {}
+}

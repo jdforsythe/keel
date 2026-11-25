@@ -956,13 +956,13 @@ describe("testResults details", () => {
     expect(path({})).toBe("");
   });
 
-  it("a file that failed outside any test is one T0001 at line 1; failed tests suppress it", () => {
+  it("a file that failed outside any test is one T0001 at line 1 and one failed test of one; failed tests suppress it", () => {
     const failedFile = (extra: Record<string, unknown>, tasks: unknown[] = []) =>
       testResults([{ file: { filepath: "/repo/pkg/test/x.test.ts" }, tasks, ...extra }], [], CWD);
     const r = failedFile({ result: { state: "fail", errors: [{ message: "import broke\nstack" }] } });
     expect(r).toStrictEqual({
       diagnostics: [{ kind: "diag", code: "T0001", path: "test/x.test.ts", line: 1, col: 1, message: "import broke" }],
-      tests: 0,
+      tests: 1,
       failed: 1,
       skipped: 0,
       errors: 0,

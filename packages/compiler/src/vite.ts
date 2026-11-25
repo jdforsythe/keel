@@ -19,9 +19,9 @@ import { SERVER_ONLY_NAME } from "./internal/SERVER_ONLY_NAME.ts";
 import { STUB_NAME } from "./internal/STUB_NAME.ts";
 import { artifactText } from "./internal/artifactText.ts";
 import { browserBreach } from "./internal/browserBreach.ts";
+import { bundledFiles } from "./internal/bundledFiles.ts";
 import { calledModules } from "./internal/calledModules.ts";
 import { canonicalJson } from "./internal/canonicalJson.ts";
-import { copyPgliteFiles } from "./internal/copyPgliteFiles.ts";
 import { devEntryCode } from "./internal/devEntryCode.ts";
 import { devMiddleware } from "./internal/devMiddleware.ts";
 import { entryCode } from "./internal/entryCode.ts";
@@ -34,6 +34,7 @@ import { isNodeBuiltin } from "./internal/isNodeBuiltin.ts";
 import { isSourcePath } from "./internal/isSourcePath.ts";
 import { islandsCode } from "./internal/islandsCode.ts";
 import { keelMark } from "./internal/keelMark.ts";
+import { libraryRegisters } from "./internal/libraryRegisters.ts";
 import { listSources } from "./internal/listSources.ts";
 import { mergeArtifacts } from "./internal/mergeArtifacts.ts";
 import { noDeployable } from "./internal/noDeployable.ts";
@@ -42,6 +43,7 @@ import { pageMiddleware } from "./internal/pageMiddleware.ts";
 import { parseTopology } from "./internal/parseTopology.ts";
 import { projectHandlerUses } from "./internal/projectHandlerUses.ts";
 import { projectManifests } from "./internal/projectManifests.ts";
+import { readJson } from "./internal/readJson.ts";
 import { registeredIn } from "./internal/registeredIn.ts";
 import { registersCapability } from "./internal/registersCapability.ts";
 import { serverEntryCode } from "./internal/serverEntryCode.ts";
@@ -52,11 +54,17 @@ import { unmappedModule } from "./internal/unmappedModule.ts";
 import { urlLiterals } from "./internal/urlLiterals.ts";
 import { writeArtifact } from "./internal/writeArtifact.ts";
 import { writeStatic } from "./internal/writeStatic.ts";
+import { allLibraries } from "./std/allLibraries.ts";
+import { appLibraries } from "./std/appLibraries.ts";
 import { clientStdData } from "./std/clientStdData.ts";
 import { importDeps } from "./std/importDeps.ts";
+import { libraryKind } from "./std/libraryKind.ts";
+import { libraryRel } from "./std/libraryRel.ts";
+import { librarySources } from "./std/librarySources.ts";
 import { stdRoutes } from "./std/stdRoutes.ts";
 import { stdArtifact } from "./stdArtifact.ts";
 import type { Artifacts } from "./types/Artifacts.ts";
+import type { Library } from "./types/Library.ts";
 import type { Output } from "./types/Output.ts";
 import type { RouteEntry } from "./types/RouteEntry.ts";
 import type { Topology } from "./types/Topology.ts";
@@ -100,14 +108,18 @@ function copyMigrations(root: string, out: string, modules: readonly string[]): 
   }
 }
 
-/** The folder of the PGlite package `@keel/std-postgres` resolves from the project at `at`, if it resolves. */
-function pgliteDist(at: string): string | undefined {
-  try {
-    const server = createRequire(path.join(at, "package.json")).resolve("@keel/std-postgres/server");
-    return path.dirname(createRequire(server).resolve("@electric-sql/pglite"));
-  } catch {
-    return undefined;
+/** The module ids of a server build's output chunks (`RolldownOutput`, or a list of them). */
+function chunkModules(output: unknown): string[] {
+  const outputs = Array.isArray(output) ? output : [output];
+  const ids: string[] = [];
+  for (const o of outputs) {
+    const chunks: unknown = typeof o === "object" && o !== null ? Reflect.get(o, "output") : undefined;
+    for (const c of Array.isArray(chunks) ? chunks : []) {
+      const list: unknown = typeof c === "object" && c !== null ? Reflect.get(c, "moduleIds") : undefined;
+      for (const id of Array.isArray(list) ? list : []) if (typeof id === "string") ids.push(id);
+    }
   }
+  return ids;
 }
 /**
  * `node:sqlite` in a build: read when the driver first runs, not linked at load, so `server.mjs` starts on a Node
@@ -221,12 +233,20 @@ type WorkerPlugin = {
   transform: (code: string, id: string) => null;
   buildEnd: (this: Ctx, error?: Error) => void;
 };
-/** What `config` returns: the locked `envPrefix`, the worker bundles' plugin (Vite adds the project's), and a deployable build's own settings. */
-type Config = { envPrefix: string; define?: Record<string, string>; worker: { plugins: () => WorkerPlugin[] } } & (
-  | BuildConfig
-  | ClientConfig
-  | Record<never, never>
-);
+/** Vite's default conditions, which an environment that sets none resolves with (k.library adds `keel` to them). */
+const CLIENT_CONDITIONS = ["module", "browser", "development|production"];
+const SERVER_CONDITIONS = ["module", "node", "development|production"];
+/**
+ * What `config` returns: the locked `envPrefix`, the worker bundles' plugin (Vite adds the project's), the app's
+ * libraries kept from pre-bundling and from Node, and a deployable build's own settings.
+ */
+type Config = {
+  envPrefix: string;
+  define?: Record<string, string>;
+  worker: { plugins: () => WorkerPlugin[] };
+  ssr: { noExternal: string[] };
+  optimizeDeps: { exclude: string[] };
+} & (BuildConfig | ClientConfig | Record<never, never>);
 /** What the plugin reads of the project's config before Vite resolves it. */
 type UserConfig = { root?: string; envPrefix?: unknown; define?: unknown };
 
@@ -253,7 +273,8 @@ type UserConfig = { root?: string; envPrefix?: unknown; define?: unknown };
  * `serverEntryCode`) with every dependency into `dist/<name>/server.mjs` beside `routes.json`, every module's routes
  * (`projectManifests` over every placed module, evaluated), and a copy of `.keel/std.json` (k.topology Build), and writes no `.keel/` artifacts (the project's own build does); any other build keeps the project's own Vite config. `buildStart` also imports the stdlib packages in the app
  * manifests' `deps` and writes `std.json` (`stdArtifact`); there a bad dep (E1159) or `std` entry (E1158) fails a build
- * and warns in dev, as does a changed manifest, whose new deps load before `std.json` is rewritten.
+ * and warns in dev, as does a changed manifest, whose new deps load before `std.json` is rewritten. In a library's own
+ * folder (its `package.json` marks it `"keel": "library"`, k.library-pack Own folder) no `.keel/` artifact is written.
  *
  * With a `node` deployable, the dev server is `keel dev`'s one origin (k.topology Local topology): a request a `node`
  * deployable's route matches is answered by that deployable's dev app (`DEV_ENTRY`, `devMiddleware`), anything else by
@@ -266,6 +287,10 @@ export default function (): {
   name: string;
   enforce: "pre";
   config: (user: UserConfig, env: { command: "build" | "serve"; isSsrBuild?: boolean }) => Config;
+  configEnvironment: (
+    name: string,
+    env: { consumer?: "client" | "server"; resolve?: { conditions?: string[] } },
+  ) => { resolve: { conditions: string[] } } | null;
   configResolved: (config: {
     root: string;
     command?: "build" | "serve";
@@ -286,6 +311,16 @@ export default function (): {
   watchChange: (id: string, change: { event: "create" | "update" | "delete" }) => void;
 } {
   let root = process.cwd();
+  /** The app's libraries (`appLibraries`), compiled as its own files; read again when a manifest changes. */
+  let libraries: Library[] = [];
+  /** Whether a library export registers (`libraryRegisters`), kept while `libraries` is the same list. */
+  let follow:
+    | { readonly of: readonly Library[]; readonly registers: (spec: string, name: string) => boolean }
+    | undefined;
+  const registering = (): ((spec: string, name: string) => boolean) => {
+    if (follow?.of !== libraries) follow = { of: libraries, registers: libraryRegisters(libraries) };
+    return follow.registers;
+  };
   /** Whether `configResolved` set `root`; until then no artifact is written. */
   let resolved = false;
   let command: "build" | "serve" | undefined;
@@ -303,6 +338,8 @@ export default function (): {
   let problems: readonly string[] = [];
   /** A node deployable's client build (`config`) leaves `.keel/` to the project's own build: no artifact writes. */
   let clientBuild = false;
+  /** The root is a library's own folder (k.library-pack Own folder): its `.keel/` holds the ledger file alone. */
+  let ownLibrary = false;
   /** The `client` deployable a `vite build` with `KEEL_DEPLOYABLE` naming one writes to `dist/<name>/` (k.hosting). */
   let hosting: string | undefined;
   /** The app modules the client entry's service map names, and the client's own; unset until the entry loads. */
@@ -436,7 +473,11 @@ export default function (): {
   const relOf = (id: string): string | null => {
     if (id.startsWith("\0") || id.startsWith("/@keel/") || id === CSS_ID) return null;
     const file = id.split("?")[0] ?? id;
-    if (!CODE.test(file) || file.includes("/node_modules/") || file.endsWith(".d.ts")) return null;
+    if (!CODE.test(file) || file.endsWith(".d.ts")) return null;
+    // A library's file, wherever it lies, is compiled as the app's (k.library In an app).
+    const lib = path.isAbsolute(file) ? libraryRel(libraries, file) : undefined;
+    if (lib !== undefined) return lib;
+    if (file.includes("/node_modules/")) return null;
     // only app code under the root: linked workspace packages resolve to real paths outside it
     const rel = path.relative(root, file);
     if (rel.startsWith("..") || path.isAbsolute(rel)) return null;
@@ -697,7 +738,8 @@ export default function (): {
   };
 
   const flush = (): { id: string; file: string }[] => {
-    // Only app sources feed the artifacts, by the rule `keel build` and `keel check` share.
+    // Only app sources, a library's files among them (`librarySources`), feed the artifacts, by the rule `keel build`
+    // and `keel check` share.
     const keys = [...modules.keys()].filter(isSourcePath).sort();
     const parts: Artifacts[] = [];
     for (const k of keys) {
@@ -706,10 +748,11 @@ export default function (): {
     }
     const { artifacts, duplicates } = mergeArtifacts(parts);
     artifacts["routes.json"] = routes;
-    if (resolved) fs.mkdirSync(path.join(root, ".keel"), { recursive: true });
+    const writes = resolved && !clientBuild && !ownLibrary;
+    if (writes) fs.mkdirSync(path.join(root, ".keel"), { recursive: true });
     const texts: [string, string][] = NAMES.map((n) => [n, artifactText(artifacts[n])]);
     texts.push(["std.json", artifactText(stdArtifact(manifests()).data)]);
-    for (const [name, text] of clientBuild || !resolved ? [] : texts) {
+    for (const [name, text] of writes ? texts : []) {
       if (written.get(name) === text) continue;
       writeArtifact(root, name, text);
       written.set(name, text);
@@ -813,9 +856,14 @@ export default function (): {
       const file = path.join(path.resolve(user.root ?? process.cwd()), "topology.ts");
       projectEnv = user.envPrefix !== undefined || user.define !== undefined;
       ssrBuild = env.isSsrBuild === true;
-      // A build is the production one whatever `vite.config.ts` sets `process.env.NODE_ENV` to (k.deploy Build).
+      libraries = appLibraries(path.resolve(user.root ?? process.cwd()));
+      const names = libraries.map((l) => l.name);
+      // A build is the production one whatever `vite.config.ts` sets `process.env.NODE_ENV` to (k.deploy Build). A
+      // library resolves with the `keel` condition on every surface and is never pre-bundled or left to Node.
       const own = {
         envPrefix: NO_ENV,
+        ssr: { noExternal: names },
+        optimizeDeps: { exclude: names },
         ...(env.command === "build"
           ? { define: { "import.meta.env.DEV": "false", "import.meta.env.PROD": "true" } }
           : {}),
@@ -887,7 +935,7 @@ export default function (): {
         builder: {
           buildApp: async (b) => {
             await b.build(b.environments.client);
-            await b.build(b.environments.ssr);
+            const bundled = await b.build(b.environments.ssr);
             if (built) {
               const std = path.join(at, ".keel", "std.json");
               const failed = await writeStatic(
@@ -901,7 +949,14 @@ export default function (): {
               if (failed.length > 0) throw evaluationFailed(failed);
               return;
             }
-            copyPgliteFiles(path.join(at, out), () => pgliteDist(at));
+            // The files bundled package files read beside themselves (k.server-deps); a problem fails the build, which
+            // then leaves no `dist/<name>/` (E1014).
+            const read = bundledFiles(chunkModules(bundled), allLibraries(at));
+            if (read.problems.length > 0) {
+              fs.rmSync(path.join(at, out), { recursive: true, force: true });
+              throw evaluationFailed(read.problems);
+            }
+            for (const c of read.copies) fs.cpSync(c.from, path.join(at, out, c.rel), { recursive: true });
             // Every module's routes, not the project build's: forwarding needs each peer deployable's paths.
             // Each deployable read as `node`, so the client's modules and every placed stdlib module are listed.
             const asNode = (d: { modules: readonly string[] }): Topology[string] => ({
@@ -922,9 +977,24 @@ export default function (): {
         },
       };
     },
+    // Every environment (dev, build, test) resolves with the `keel` condition beside its own, so a library's entry is
+    // its source (k.library In an app); one that sets none gets Vite's defaults with it.
+    configEnvironment(name, env) {
+      const own = env.resolve?.conditions;
+      if (own?.includes("keel") === true) return null;
+      const client = env.consumer === "client" || (env.consumer === undefined && name === "client");
+      return {
+        resolve: {
+          conditions: ["keel", ...(own === undefined ? (client ? CLIENT_CONDITIONS : SERVER_CONDITIONS) : [])],
+        },
+      };
+    },
     configResolved(config) {
       root = config.root;
       resolved = true;
+      const pkg = readJson(path.join(root, "package.json"));
+      const name = typeof pkg === "object" && pkg !== null ? Reflect.get(pkg, "name") : undefined;
+      ownLibrary = typeof name === "string" && libraryKind(pkg, name) === "library";
       command = config.command;
       // The plugin owns the inlining switches (k.bundle Environment): a project `envPrefix` or `define` fails a browser
       // build before bundling, as does a prefix another plugin merged into the lock.
@@ -938,6 +1008,9 @@ export default function (): {
     },
     configureServer(s) {
       server = s;
+      // A linked library's real folder may sit outside Vite's served roots.
+      const allow = s.config?.server.fs.allow;
+      for (const l of libraries) if (allow !== undefined && !allow.includes(l.dir)) allow.push(l.dir);
       s.middlewares.use(inspect);
       hasNode = Object.values(topology ?? {}).some((d) => d.adapter === "node" || d.adapter === "static");
       if (hasNode) {
@@ -963,6 +1036,8 @@ export default function (): {
       if (w !== undefined) warn = (m) => w.call(this, m);
       readTopology();
       for (const rel of listSources(root)) compileModule(rel, fs.readFileSync(path.join(root, rel), "utf8"));
+      libraries = appLibraries(root);
+      for (const f of librarySources(root)) compileModule(f.path, f.source);
       const bad = await stdProblems();
       if (bad.length > 0 && command === "build" && !clientBuild) throw new Error(bad.join("\n"));
       for (const b of bad) warn(`keel: ${b}`);
@@ -1148,24 +1223,26 @@ export default function (): {
       const rel = relOf(id);
       // A source outside the project (a linked package) is evaluated again by the modules that import it, not by the
       // ones it registered with: the whole server graph loads again, so a registry and its registrations agree.
+      if (rel === null && linked(id)) follow = undefined;
       if (rel === null && evaluated && linked(id)) {
         invalidateWhole();
         reloadDev();
       }
       if (rel !== null && evaluated && (rel.startsWith("modules/") || PROJECT_FILE.test(rel))) {
         // An app file that registered a capability, itself or through a helper it called, or that names a registering
-        // export, loads the server graph again whole (k.data Dev): the registry starts empty, and a capability two
-        // files register is still E1602.
+        // export (of `@keel/ctx`, or of a library: k.server-deps Registration through a library), loads the server graph
+        // again whole (k.data Dev): the registry starts empty, and a capability two files register is still E1602.
         const abs = path.join(root, rel);
         if (
           registeredIn(registrations.values(), abs) ||
-          (exists(rel) && registersCapability(fs.readFileSync(abs, "utf8")))
+          (exists(rel) && registersCapability(fs.readFileSync(abs, "utf8"), registering(), rel))
         )
           invalidateWhole();
         reloadDev();
       }
       if (rel !== null && change.event === "delete" && modules.delete(rel)) flush();
       else if (rel !== null && MANIFEST.test(rel) && exists(rel)) {
+        libraries = appLibraries(root);
         compileModule(rel, fs.readFileSync(path.join(root, rel), "utf8"));
         // New deps load before std.json is rewritten; problems go where dev's other ones do.
         void stdProblems()
