@@ -1,8 +1,7 @@
 import { s } from "@keel/schema";
 import { chart } from "@keel/std-statecharts";
-
-const index = s.int({ min: -1, max: 9999 });
-const count = s.int({ min: 0, max: 10_000 });
+import { activeIndex as index } from "./internal/activeIndex.schema.ts";
+import { count } from "./internal/count.schema.ts";
 
 /**
  * The open state and active option of a list (std.options). `active` is an index, -1 for none, always below `count`
