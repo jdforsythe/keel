@@ -13,7 +13,8 @@ const REPO_ROOT = nodePath.resolve(
 );
 const BIN = nodePath.join(REPO_ROOT, "packages/cli/src/bin.ts");
 const ADAPTERS = ["client", "node", "static"] as const;
-const SCRIPTS = (_adapter: string): string[] => ["check", "test", "build"];
+// A workspace project holds a vitest config and no test file, which `keel test` ends as one T0001 (k.test-run Summary).
+const SCRIPTS = (workspace: boolean): string[] => (workspace ? ["check", "build"] : ["check", "test", "build"]);
 
 /** A fresh project on disk with the repo's packages and tools linked in, so its scripts resolve `keel`, `tsc` and `biome` as an install would. */
 function onDisk(files: Files, dir: string): void {
@@ -65,10 +66,10 @@ describe("a fresh scaffold passes its own scripts untouched", () => {
           const pkg = JSON.parse(fs.readFileSync(nodePath.join(dir, "package.json"), "utf8"));
           expect(pkg.devDependencies["@keel/cli"]).toBeDefined();
           expect(pkg.scripts.check).toContain("keel check");
-          const results = SCRIPTS(adapter).map((n) => ({ n, ...script(dir, n) }));
+          const results = SCRIPTS(workspace).map((n) => ({ n, ...script(dir, n) }));
           expect(
             results.map((r) => (r.status === 0 ? `${r.n} 0` : `${r.n} ${r.status}\n${r.out.slice(-1500)}`)),
-          ).toEqual(SCRIPTS(adapter).map((n) => `${n} 0`));
+          ).toEqual(SCRIPTS(workspace).map((n) => `${n} 0`));
         } finally {
           fs.rmSync(dir, { recursive: true, force: true });
         }
