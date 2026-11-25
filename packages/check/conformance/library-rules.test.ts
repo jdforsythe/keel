@@ -1,14 +1,14 @@
 // Spec: k.library, the clauses on `check()` reading a library's files, each quoted whole (the project of the first clause: `modules/shop/module.ts` lists `'@acme/charts'`, `node_modules/@acme/charts/` holds the library, `modules/shop/Page.tsx` renders `<Badge id="shop.badge" />`):
 // 3. "In that project, `<box />` in `src/Badge.tsx` is one E1805 in the app's `keel check`, at `node_modules/@acme/charts/src/Badge.tsx`, with no `fix`."
-// 5. "In that project, `<Box p=\"2\" />`, `<Box id=\"box\" />`, `<Box id={`box`} />` and `Box({ p: '2' })` in `src/Badge.tsx` are each one E1161; `<Box id={`${props.id}.box`} />` and `<Box id={partId('box')} />`, `partId` a function of that file, are not."
+// 5. "In that project, `<Box p=\"2\" />`, `<Box id=\"box\" />`, `<Box id={`box`} />` and `Box({ p: '2' })` in `src/Badge.tsx` are each one E1161; `<Box id={`${props.id}.box`} />` and `<Box id={partId('box')} />`, `partId` the closure ``(k) => `${props.id}.${k}` ``, are not; with `partId` `(k) => k`, it is one E1161."
 // 6. "In that project, a cast `x as string` in `src/Badge.tsx` is one E1757 at `node_modules/@acme/charts/src/Badge.tsx`, and an import of `@keel/store/internal` there is one E1576."
 // 7. "In that project, `import x from '../../outside.ts'` in `src/Badge.tsx` is one E1163 at the specifier."
 // Rules: "E1161 an element in a library file whose `id` Ids does not accept (fix: none)"
 // Rules: "E1163 a library file whose relative import, re-export or literal `import()` resolves outside its package folder, at the specifier, or a library manifest `deps` entry that does not begin with `@`, at the entry (fix: none; the entry names no module, so it is no E1153 edge and no E1165)" (the manifest half is in library-manifest.test.ts)
 // In an app: "`keel check` reads them and runs every rule over them, its type pass included, against the app's `tokens.ts`, kernel packages and `topology.ts`. Wherever a section reads app code or a file under `modules/<id>/` (k.check App code, k.boundary Reach), it reads a library's file `<f>` as it reads `modules/<id>/<f>`, `<id>` the library's, and its `unsafe/` files with their lifted ranges; a section's exclusion of `node_modules/` does not cover library files. A diagnostic in a library file is the app's: located at `node_modules/<name>/<f>`, whichever `node_modules` holds it, and carrying no `fix`. Nothing in the app turns a rule off for a library file. A bare import there is read as in an app file and resolves from the library's folder, so its package is one of the library's `dependencies`; it is no E1163."
-// Ids: "**Ids.** Each `@keel/ui` base element (k.ui, `Host` among them) and `@keel/ui/aria` `Part` a library file renders, as JSX or a call, takes an `id` check reads as built from its component's `id` prop (`<id>.<part>`, k.component IDs), since a derived id holds the file's path, which changes with the installer and the version: `<p>.id`, `<p>` a function's first parameter; a `const` bound to it or destructured as `id`; a template literal with such an expression; a `const` or conditional of those; a call (`partId(key)`); or such an `id` in an object literal, spread or not, that no later spread check cannot read follows. Anything else is E1161: none, a call's argument that is no object literal, a literal, a concatenation."
+// Ids: "**Ids.** Each `@keel/ui` base element (k.ui, `Host` among them) and `@keel/ui/aria` `Part` a library file renders, as JSX or a call, takes an `id` check reads as built from its component's `id` prop (`<id>.<part>`, k.component IDs; a derived id holds the file's path, which changes with the installer): `<p>.id`, `<p>` a top-level function's first parameter; a name bound to such a value or destructured as `id`; a template literal with one; a conditional of two; a call whose callee check reads (a function of the library's or another library's files, a closure, a member of an object it reads back to a literal or a call) and whose every returned expression is one, parameters standing for the arguments and closure names read where bound (a function met again while its read is open, or past eight calls, is not read); or such an `id` in an object literal, spread or not, no later unreadable spread follows. Anything else is E1161: none, a literal, a concatenation, a call of a global, a parameter or a package that is no library."
 // Seed 1337
-// A call is accepted whatever it calls (the sentence lists "a call (`partId(key)`)" and bounds no callee); the generated rejections therefore hold no call.
+// A call is read through its callee (function, closure or object member), parameters standing for the arguments; the generated accepted trees call a readable identity helper `ident`, the dropped-id mutation gives one E1161.
 // ASSUMPTIONS (spec silent): `check()` is given the library's files at `node_modules/<name>/...` with its `package.json`, `module.ts` and ledger file, as library-manifest.test.ts does; "at the specifier" is the
 // specifier's line and a column from its opening quote to its closing one. A library file reads as `modules/charts/<f>` ("it reads a library's file `<f>` as it reads `modules/<id>/<f>`"): the by-code table's one-file fixtures
 // (a fixture of one source file, its `modules/<x>/module.ts` manifest aside) are placed at `src/<basename>` in the library and, as the control, at `modules/charts/src/<basename>` in an app with the same other files.
@@ -115,9 +115,18 @@ test("In that project, `<Box id={`${props.id}.box`} />` in `src/Badge.tsx` is no
   expect(hitsOf(inBadge(badge("<Box id={`${props.id}.box`} />")), "E1161")).toEqual([]);
 });
 
-test("In that project, `<Box id={partId('box')} />`, `partId` a function of that file, in `src/Badge.tsx` is no E1161", () => {
-  const src = `${UI}const partId = (part: string) => part\nexport default function Badge(props: { id: string }) {\n  return <Box id={partId('box')} />\n}\n`;
-  expect(hitsOf(inBadge(src), "E1161")).toEqual([]);
+const CLOSURE = "const partId = (k: string): string => `${props.id}.${k}`\n";
+const inComponent = (before: string, ret: string): string =>
+  `${UI}export default function Badge(props: { id: string }) {\n  ${before}return ${ret}\n}\n`;
+
+test("In that project, `<Box id={partId('box')} />`, `partId` the closure `(k) => `${props.id}.${k}``, in `src/Badge.tsx` is no E1161", () => {
+  expect(hitsOf(inBadge(inComponent(`${CLOSURE}  `, "<Box id={partId('box')} />")), "E1161")).toEqual([]);
+});
+
+test("In that project, with `partId` `(k) => k`, `<Box id={partId('box')} />` is one E1161; given `props.id` it is none", () => {
+  const ident = "const partId = (k: string): string => k\n  ";
+  expect(hitsOf(inBadge(inComponent(ident, "<Box id={partId('box')} />")), "E1161").length).toBe(1);
+  expect(hitsOf(inBadge(inComponent(ident, "<Box id={partId(props.id)} />")), "E1161")).toEqual([]);
 });
 
 test("E1161: an element whose `id` is a string literal or a template literal without an expression is one E1161 per element, whatever the text; one built from `props.id` is none", () => {
@@ -200,7 +209,8 @@ const ELS: readonly El[] = [
 type Attr = { readonly kind: "id" | "spread"; readonly expr: string };
 const id = (expr: string): Attr => ({ kind: "id", expr });
 const spread = (expr: string): Attr => ({ kind: "spread", expr });
-const PART_ID = "const partId = (k: string): string => k\n";
+const PART_ID = "const ident = (k: string): string => k\n";
+const closure = (p: string): string => `const partId = (k: string): string => \`\${${p}.id}.\${k}\``;
 /** A library file rendering `el` as JSX or a call over `attrs`, inside a function whose first parameter is `p`, after the lines `pre`. */
 function renderEl(el: El, form: "jsx" | "call", p: string, pre: readonly string[], attrs: readonly Attr[]): string {
   const use =
@@ -233,11 +243,15 @@ const ACCEPTED: readonly IdCase[] = [
     attrs: () => [id("k")],
   },
   {
-    what: "a call `partId(key)`, `key` built from `<p>.id`",
+    what: "a call `ident(key)` of the identity helper, `key` built from `<p>.id`",
     pre: (p) => [`const key = ${p}.id`],
-    attrs: () => [id("partId(key)")],
+    attrs: () => [id("ident(key)")],
   },
-  { what: "a call `partId('box')`", pre: () => [], attrs: () => [id("partId('box')")] },
+  {
+    what: "a call `partId('box')`, `partId` the closure `(k) => `${p.id}.${k}`` declared in the function",
+    pre: (p) => [closure(p)],
+    attrs: () => [id("partId('box')")],
+  },
   {
     what: "an `id` built from `<p>.id` after a spread check cannot read",
     pre: (p) => [`const { name, ...rest } = ${p}`, "void name"],
@@ -258,6 +272,8 @@ const ACCEPTED: readonly IdCase[] = [
 const REJECTED: readonly IdCase[] = [
   { what: "no `id` and no spread", pre: () => [], attrs: () => [] },
   { what: "a string literal", pre: () => [], attrs: () => [id("'box'")] },
+  { what: "the identity helper given a literal `ident('box')`", pre: () => [], attrs: () => [id("ident('box')")] },
+  { what: "a call of an undeclared `partId('box')`", pre: () => [], attrs: () => [id("partId('box')")] },
   { what: "a template literal without an expression", pre: () => [], attrs: () => [id("`box`")] },
   { what: "a concatenation of literals `'a' + 'b'`", pre: () => [], attrs: () => [id("'a' + 'b'")] },
   { what: "a concatenation of `<p>.id` and a literal", pre: () => [], attrs: (p) => [id(`${p}.id + '.x'`)] },
@@ -319,9 +335,151 @@ test("E1161: a spread with no `id`, `<Box {...props} />` and `Box({ ...props })`
     expect(hitsOf(inBadge(badge(body)), "E1161").length, body).toBe(1);
 });
 
-test("E1161: a call is accepted whatever it calls: `id={String('box')}` and `id={(() => 'box')()}` are no E1161 (the sentence bounds no callee: a literal id passes through any call, a HOLE)", () => {
+test("E1161: a call of a global whose result is a literal, `id={String('box')}` and `id={(() => 'box')()}`, is one E1161 each (every returned expression must be id-built)", () => {
   for (const e of ["String('box')", "(() => 'box')()"])
-    expect(hitsOf(inBadge(badge(`<Box id={${e}} />`)), "E1161"), e).toEqual([]);
+    expect(hitsOf(inBadge(badge(`<Box id={${e}} />`)), "E1161").length, e).toBe(1);
+});
+
+const OTHER = "@acme/other";
+/** A second library, listed in the charts library's `deps`, whose `src/ids.ts` exports `partId`. */
+const otherLibrary = (): Files => [
+  manifestFile({ id: "charts", deps: [OTHER], exports: ["Badge"] }, `node_modules/${NAME}`),
+  ...project([], OTHER, "other")
+    .filter((x) => x.path.startsWith(`node_modules/${OTHER}/`))
+    .map((x) =>
+      x.path.endsWith("/module.ts")
+        ? manifestFile({ id: "other", deps: [], exports: ["partId"] }, `node_modules/${OTHER}`)
+        : x.path.endsWith("/src/index.ts")
+          ? { path: x.path, source: "export { partId } from './ids.ts'\n" }
+          : x,
+    ),
+  lib("src/ids.ts", "export const partId = (id: string, k: string): string => `${id}.${k}`\n", OTHER),
+];
+const TPL_HELPER = "const partId = (id: string, k: string): string => `${id}.${k}`\n";
+type CallCase = {
+  readonly what: string;
+  readonly head?: string;
+  readonly params?: string;
+  readonly pre?: string;
+  readonly expr: string;
+  readonly extra?: Files;
+  readonly good: boolean;
+};
+const CALLS: readonly CallCase[] = [
+  { what: "a call of a global, `String(props.id)`", expr: "String(props.id)", good: false },
+  {
+    what: "a call of a global member, `Symbol.keyFor(Symbol.for('x'))`",
+    expr: "Symbol.keyFor(Symbol.for('x'))",
+    good: false,
+  },
+  {
+    what: "a call of a parameter, `f('x')`",
+    params: "props: { id: string }, f: (k: string) => string",
+    expr: "f('x')",
+    good: false,
+  },
+  {
+    what: "a call of an import from a package that is no library",
+    head: "import { make } from 'left-pad'\n",
+    expr: "make(props.id)",
+    good: false,
+  },
+  {
+    what: "a helper in the library's own file that returns an id-built template",
+    head: TPL_HELPER,
+    expr: "partId(props.id, 'a')",
+    good: true,
+  },
+  {
+    what: "a helper in another file of the library that returns an id-built template",
+    head: "import { partId } from './ids.ts'\n",
+    expr: "partId(props.id, 'a')",
+    extra: [lib("src/ids.ts", `export ${TPL_HELPER}`)],
+    good: true,
+  },
+  {
+    what: "a helper in another listed library",
+    head: `import { partId } from '${OTHER}'\n`,
+    expr: "partId(props.id, 'a')",
+    extra: otherLibrary(),
+    good: true,
+  },
+  {
+    what: "the helper of another listed library given a literal",
+    head: `import { partId } from '${OTHER}'\n`,
+    expr: "partId('box', 'a')",
+    extra: otherLibrary(),
+    good: false,
+  },
+  {
+    what: "a member of an object read back to a literal, `l.partId('a')`",
+    pre: "const l = { partId: (k: string): string => `${props.id}.${k}` }\n  ",
+    expr: "l.partId('a')",
+    good: true,
+  },
+  {
+    what: "a member of an object read back to a call, `const l = make(props.id)`",
+    head: "const make = (id: string) => ({ partId: (k: string): string => `${id}.${k}` })\n",
+    pre: "const l = make(props.id)\n  ",
+    expr: "l.partId('a')",
+    good: true,
+  },
+  {
+    what: "a member of an object read back to a call, whose member returns a literal",
+    head: "const make = (id: string) => ({ partId: (k: string): string => `box.${k}${id.length}` })\n",
+    pre: "const l = make(props.id)\n  ",
+    expr: "l.partId('a')",
+    good: false,
+  },
+  {
+    what: "a computed member, `l[name]('a')`",
+    pre: "const l = { partId: (k: string): string => `${props.id}.${k}` }\n  const name = 'partId'\n  ",
+    expr: "l[name]('a')",
+    good: false,
+  },
+  {
+    what: "a helper that returns an id-built value on one branch and a literal on another",
+    head: "const pick = (id: string, b: boolean): string => {\n  if (b) return id\n  return 'box'\n}\n",
+    expr: "pick(props.id, true)",
+    good: false,
+  },
+  {
+    what: "a recursive helper",
+    head: "const rec = (id: string, n: number): string => (n === 0 ? id : rec(id, n - 1))\n",
+    expr: "rec(props.id, 2)",
+    good: false,
+  },
+];
+/** A library file rendering `el` as JSX or a call over `c`. */
+function callSrc(el: El, form: "jsx" | "call", c: CallCase): string {
+  const use = form === "jsx" ? `<${el.name} id={${c.expr}} />` : `${el.name}({ id: ${c.expr} })`;
+  return `import { ${el.name} } from '${el.from}'\n${c.head ?? ""}export default function Badge(${c.params ?? "props: { id: string }"}) {\n  ${c.pre ?? ""}return ${use}\n}\n`;
+}
+test("E1161: a call whose callee check reads and whose every returned expression is id-built is no E1161; a call of a global, a parameter, a package that is no library, a computed member, a branch returning a literal or a recursive helper is one E1161, for `Box`, `Host` and `Part`, as JSX or a call", () => {
+  for (const el of ELS)
+    for (const form of FORMS)
+      for (const c of CALLS) {
+        const d = hitsOf(project([...(c.extra ?? []), lib("src/Badge.tsx", callSrc(el, form, c))]), "E1161");
+        expect(d.length, `${el.name} ${form} ${c.what}`).toBe(c.good ? 0 : 1);
+        for (const x of d) expect(x.path).toBe("node_modules/@acme/charts/src/Badge.tsx");
+      }
+});
+
+// A chain of n helpers, `h<n>` calling `h<n-1>` down to `h1` the identity, is n calls: eight are read, nine are not.
+const chain = (n: number): CallCase => ({
+  what: `a chain of ${n} calls`,
+  head: `const h1 = (k: string): string => k\n${Array.from({ length: n - 1 }, (_, i) => `const h${i + 2} = (k: string): string => h${i + 1}(k)\n`).join("")}`,
+  expr: `h${n}(props.id)`,
+  good: n <= 8,
+});
+test("E1161: a chain of eight calls is read and a chain of nine is not (one E1161), for `Box`, `Host` and `Part`, as JSX or a call", () => {
+  fc.assert(
+    fc.property(fc.integer({ min: 1, max: 12 }), fc.constantFrom(...ELS), fc.constantFrom(...FORMS), (n, el, form) => {
+      const d = hitsOf(inBadge(callSrc(el, form, chain(n))), "E1161");
+      expect(d.length, `${el.name} ${form} ${n}`).toBe(n <= 8 ? 0 : 1);
+    }),
+    { seed: SEED, numRuns: 36 },
+  );
 });
 
 /** Ids drawn from the accepted grammar, as data: leaves and the forms built from them. */
@@ -382,7 +540,7 @@ function build(ast: Ast, p: string, pre: string[]): string {
       return v;
     }
     case "call":
-      return `partId(${build(ast.a, p, pre)})`;
+      return `ident(${build(ast.a, p, pre)})`;
     case "cond": {
       const a = build(ast.a, p, pre);
       const b = build(ast.b, p, pre);
@@ -413,7 +571,7 @@ test("E1161: an id drawn from the accepted grammar (`<p>.id`, a `const`, a destr
 test("E1161: the same grammar with the `id` part dropped from every leaf is one E1161, whatever the parameter's name, the element and the form", () => {
   fc.assert(
     fc.property(
-      asts(DROPPED_LEAVES, false),
+      asts(DROPPED_LEAVES, true),
       PARAMS,
       fc.constantFrom(...ELS),
       fc.constantFrom(...FORMS),
