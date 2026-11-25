@@ -1,8 +1,9 @@
 // The public mode of an eval task (`task.json` `"docs": "public"`): the agent builds in a fresh project outside the
 // repository from the packed `@keel/*` kit, reading what a public user's agent reads; the harness then imports the
 // project into `apps/<name>/` and the task's own `pass.ts` judges it from the repository root.
-import { access, readFile, readdir, rm } from "node:fs/promises";
-import { join } from "node:path";
+import { access, copyFile, readFile, readdir, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { basename, join } from "node:path";
 import { callClaude } from "./agent.ts";
 import { importApp } from "./importApp.ts";
 import { PROBE_PROMPT, audit, probe, replyFindings } from "./isolation.ts";
@@ -125,6 +126,7 @@ export async function runPublic(task: PublicTask, run: PublicRun, taskDir: strin
         if (bad.length > 0) {
           result.findings.push(...bad);
           result.audit = "failed";
+          await copyFile(file, join(tmpdir(), `keel-audit-failed-${Date.now()}-${basename(file)}`));
           return result;
         }
       }

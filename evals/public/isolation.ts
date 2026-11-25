@@ -114,6 +114,18 @@ const PATH_KEYS = ["file_path", "path", "notebook_path", "cwd", "directory"];
 export function audit(transcript: string, project: string, repo: string): Finding[] {
   const home = homedir();
   const forbidden = [repo, join(home, ".claude")];
+  // Claude Code spills a tool result that is too large into `~/.claude/projects/<project>/<session>/tool-results/` and
+  // tells the agent to read it from there (with a `*` for the project folder, as often): a spill file is not a read of
+  // the user's `~/.claude`.
+  const projects = join(home, ".claude", "projects");
+  const spillText = new RegExp(
+    `${projects.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}/[^/\\s"']+/[0-9a-f-]{36}/tool-results/`,
+    "g",
+  );
+  const isSpill = (path: string): boolean => {
+    const parts = within(path, projects) ? path.slice(projects.length + 1).split(sep) : [];
+    return parts.length > 3 && /^[0-9a-f-]{36}$/.test(parts[1] ?? "") && parts[2] === "tool-results";
+  };
   const spelled = (s: string): string =>
     s
       .replaceAll("$HOME", home)
@@ -131,14 +143,14 @@ export function audit(transcript: string, project: string, repo: string): Findin
       .filter((v): v is string => typeof v === "string");
     for (const t of targets)
       for (const f of forbidden)
-        if (within(spelled(t), f))
+        if (within(spelled(t), f) && !isSpill(spelled(t)))
           found.push({ code: "V0009", where: t, message: `${use.name} reads outside the project` });
     for (const t of texts)
       for (const f of forbidden)
-        if (spelled(t).includes(f))
+        if (spelled(t).replace(spillText, "").includes(f))
           found.push({
             code: "V0009",
-            where: t.slice(0, 120),
+            where: `${f}: ${t.slice(0, 400)}`,
             message: `${use.name} names a path outside the project`,
           });
   }
