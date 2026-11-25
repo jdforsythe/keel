@@ -44,8 +44,8 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.contract | Module contract | conformance-covered | entries |
 | k.routes | Route table | conformance-covered | union |
 | k.guards | Guards | conformance-covered | deny |
-| k.prefix | Path prefix | conformance-covered | enums |
-| k.forms | Forms | conformance-covered | fields |
+| k.prefix | Path prefix | implemented | enums |
+| k.forms | Forms | implemented | fields |
 | k.ui | Tokens, styling | conformance-covered | CSS |
 | k.ctx | Capabilities | conformance-covered | clock |
 | k.owner | Ctx owner | conformance-covered | dispose |
@@ -70,11 +70,11 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.ledger | Ledger, evidence | conformance-covered | rungs |
 | k.server | Thin server | conformance-covered | loads |
 | k.leave | What a request leaves | conformance-covered | state |
-| k.user | User, caller | conformance-covered | user |
-| k.mount | Mount pages | conformance-covered | submit |
+| k.user | User, caller | implemented | user |
+| k.mount | Mount pages | implemented | submit |
 | k.mount-scope | Mount scope | conformance-covered | proxy |
 | k.return | Shell mount | conformance-covered | net |
-| k.opening | Openings | conformance-covered | once |
+| k.opening | Openings | implemented | once |
 | k.links | Links in | conformance-covered | ids |
 | k.serverlog | Server log | conformance-covered | bounds |
 | k.sync | Concurrent writes | conformance-covered | heads |
@@ -86,7 +86,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.compat | Surface compatibility | conformance-covered | accepts |
 | k.api | API routes | conformance-covered | JSON |
 | k.hosting | Client hosting | conformance-covered | servedBy |
-| k.head | Document head | conformance-covered | title |
+| k.head | Document head | implemented | title |
 | k.services | Thin services | conformance-covered | clients |
 | k.openapi | OpenAPI import | conformance-covered | clients |
 | k.module | Module manifest | conformance-covered | surface |

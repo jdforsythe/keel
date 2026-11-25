@@ -1,5 +1,5 @@
 # k.head: Document head
-status: conformance-covered
+status: implemented
 **Purpose.** Every document names its page and its language. The server writes both, and the client router keeps them current on navigation without re-rendering text.
 
 **Title.** A path route may declare `title: (props) => string`, given the route component's props `{ params, search, data }` (k.router), `params` and `search` typed from the route's schemas and `data`, its loader's `ok` value, from the loader's `output`. A layout with `title` does not compile.
@@ -30,3 +30,4 @@ The document's title is the matched route's `title`. Without one, when a loader 
 - After a search-only navigation, `document.title` is the route's `title` for the new search and data, and the focused element and every `role="status"` node are the same nodes as before.
 - With a project `index.html` holding `<header>Only here</header>`, neither `keel dev`'s nor the built `dist/web/index.html` of `client` deployable `web` holds that text, the built one's `<title>` is `web`, and `keel check` prints one W1012 naming `index.html`; without the file, none.
 - Under `keel dev`, a `node` deployable's document and a `client` deployable's `index.html` each link a stylesheet that answers 200 as `text/css` and holds the atomic rules of every `k-*` class the served page uses and the `@font-face` rules of its `styles`.
+- After `resume` of a document served by `node` deployable `api` for a route whose `title` returns `Notes`, over any sequence of client navigations to that route, to a route without `title` and to a route whose loader returns `err`, `document.title` is `Notes` on the titled route and `api` on each other.

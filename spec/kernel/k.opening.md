@@ -1,5 +1,5 @@
 # k.opening: Return-link openings
-status: conformance-covered
+status: implemented
 
 Which mount requests (k.return) record an opening, and which stored value is one. An opening admits one return link under the mount (k.links); these rules keep a link from outside from recording the next, directly or through a page it lands on.
 
@@ -34,3 +34,5 @@ Which mount requests (k.return) record an opening, and which stored value is one
 - The link's GET answered 303 to `/`, then a `fire` `input` on a field and the handle's `navigate('/auto')`, records `https://provider.example/a` in `documents()`; a second delivery of the link then sends nothing. With a `fire` `keydown` `Escape` on the field instead it sends nothing; with `keydown` `a`, one GET.
 - With no opening first, over any sequence of `fire` `keydown` `a`, `navigate('/auto')` and deliveries of the link, each answered 303 to `/`, a `navigate` records an opening unless a delivery was taken since the last act, and a delivery sends one GET exactly when an opening is pending, taking it.
 - With a `ctx.storage` whose `commit` fails, the link sends nothing; a new ctx given that ctx's `keel.return` value then admits the link once.
+- The link's GET answered 302 to `/private`, a page whose guard redirects every reader to `/auto`, records `https://provider.example/a` in `documents()` again; a second delivery of the link then sends nothing.
+- With no opening first, over any sequence of `fire` `keydown` `a`, `navigate('/private')` and deliveries of the link, each answered 302 to `/private`, a `navigate` records an opening unless a delivery was taken since the last act, and a delivery sends one GET exactly when an opening is pending, taking it.
