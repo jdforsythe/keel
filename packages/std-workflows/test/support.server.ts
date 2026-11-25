@@ -11,6 +11,7 @@ import { queue } from "@keel/std-jobs";
 import { chart } from "@keel/std-statecharts";
 import { flows, workflow } from "@keel/std-workflows";
 import { tx } from "@keel/store";
+import { fixedTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
 
 export const settle = async () => {
@@ -83,7 +84,7 @@ export type FlowOptions = { run: Run; attempts?: number; timeoutMs?: number; ms?
 export function makeFlow(o: FlowOptions) {
   const id = nextId("removal");
   const c = removalChart();
-  const ms = o.ms ?? 5000;
+  const ms = o.ms ?? fixedTime(5000);
   const wf = workflow(id, {
     chart: c,
     steps: {
