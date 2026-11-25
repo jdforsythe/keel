@@ -31,3 +31,4 @@ A route is prefixed when its path's first segment is `:p` and its params field `
 - A guard on a prefixed route that redirects to a prefixed route keeps `p`: `/de-DE/...` redirects under `/de-DE/`, an unprefixed URL to an unprefixed one.
 - Beside `x.show`, each of `/de-DE/about`, `/:slug`, `/:p/:slug` and `/items/:id` is E1509, the fix applied leaves no E1509, and without `pathDefault` none of them is E1509.
 - `s.enum(['en-US'], { pathDefault: 'fr-FR' })` throws.
+- With `x.show` as above, `navigate('/en-US/\\x')` (one raw backslash) records one GET of `'/en-US/\\x'` in `documents()` and leaves `route()` unchanged; for every generated string `t`, `navigate(t)` rejects with E1501, or ends on a page of the table, or records one entry in `documents()` whose `url`, resolved against the page's URL, has the page's origin.

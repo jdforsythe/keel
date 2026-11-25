@@ -963,6 +963,13 @@ const ROWS: readonly Row[] = [
     "k.user",
   ],
   [
+    "E1593",
+    "an identityMount call that is not identity.ts's default export",
+    "The build reads the mount from identity.ts beside topology.ts: only its default export reaches the router and a shell. A call elsewhere opens no path and alone carries the /__keel/user read into the bundle, an app half opted in to identity. keel check, at the call; test files are exempt.",
+    "import mount from './identity.ts'; mount.href('/sign-in')",
+    "k.mount",
+  ],
+  [
     "E1601",
     "Date.now, new Date(), Temporal.Now, Math.random, crypto.randomUUID, fetch, sendBeacon, localStorage in app code",
     "Effects go through ctx so sim runs are deterministic. Aliases, destructuring and literal keys count.",

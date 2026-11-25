@@ -111,9 +111,9 @@ import type { ServerApp } from "./types/ServerApp.ts";
  * gets 503 `keel.busy` (`data: { limit }`) and runs no loader; a stream frees its place when it ends. A `maxStreams` that is
  * not an integer of at least 1 rejects with E1560.
  * `identity` is the project's identity source (k.user): a request at its `handle.path` or under it goes to `handle.fn`
- * (`handle`), and every routed one gets the `user` `userOf` answers; a `handle.path` not of lowercase `/` segments, or
- * with a route whose literal path is at or under it, rejects with E1579; no page matches at or under it (a `:param`
- * route that would fit there is not matched). A caller cookie a deployable with `caller: { days }` mints carries
+ * (`handle`), and every routed one gets the `user` `userOf` answers; a `handle.path` not of lowercase `/` segments, at
+ * or under `/assets` (the built files), or with a route whose literal path is at or under it, rejects with E1579; no
+ * page matches at or under it (a `:param` route that would fit there is not matched). A caller cookie a deployable with `caller: { days }` mints carries
  * `Max-Age`; service client calls made on `ctx` sign their `user` as `x-keel-user` under `secret`. With `identity`,
  * `GET /__keel/user` answers the request's `user` to the page's router (`userEntry`, k.guards Client).
  * Every response carries the k.security headers (`secured`); every document its own nonce policy (report-only in dev),
@@ -154,9 +154,11 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
   const mountPath = opts.identity?.handle?.path;
   if (
     mountPath !== undefined &&
-    (!/^(\/[a-z0-9-]+)+$/.test(mountPath) || table.some((r) => `${r.def.path}/`.startsWith(`${mountPath}/`)))
+    (!/^(\/[a-z0-9-]+)+$/.test(mountPath) ||
+      `${mountPath}/`.startsWith("/assets/") ||
+      table.some((r) => `${r.def.path}/`.startsWith(`${mountPath}/`)))
   )
-    throw codedError("E1579", "identity handle.path: lowercase / segments, no route under it");
+    throw codedError("E1579", "identity handle.path: lowercase / segments, not /assets, no route under it");
   if (opts.std !== undefined) bindStd(opts.ctx, await loadStd(opts.std));
   const log = opts.log;
   if (deployed && opts.secret === undefined)

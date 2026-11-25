@@ -1168,6 +1168,21 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       ),
     ],
   },
+  E1593: {
+    opts: NO_TYPES,
+    bad: [
+      manifest("a"),
+      f("identity.ts", `${MOUNT_HEAD}export default identityMount('/api/auth')\n`),
+      f("identity.server.ts", MOUNT_SERVER),
+      f("modules/a/extra.ts", `${MOUNT_HEAD}export const extra = identityMount('/x', { links: ['/v'] })\n`),
+    ],
+    clean: [
+      manifest("a"),
+      f("identity.ts", `${MOUNT_HEAD}export default identityMount('/api/auth')\n`),
+      f("identity.server.ts", MOUNT_SERVER),
+      f("modules/a/extra.test.ts", `${MOUNT_HEAD}export const extra = identityMount('/x', { links: ['/v'] })\n`),
+    ],
+  },
   E1730: {
     opts: NO_TYPES,
     bad: [

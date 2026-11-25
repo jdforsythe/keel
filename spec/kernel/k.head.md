@@ -7,7 +7,7 @@ status: conformance-covered
 'recipes.show': { path: '/:locale/recipes/:recipeId', params: RecipeParams, loader: loadRecipe,
   component: RecipePage, title: (p) => formatMessage(p.data.text.showTitle, { title: p.data.recipe.title }, p.params.locale) },
 ```
-The document's title is the matched route's `title`. Without one, when a loader in the chain returns `err`, and for a 404, it is the fallback: the served deployable's name: a server's, and a `client` deployable's `index.html` title (read once at `mount`).
+The document's title is the matched route's `title`. Without one, when a loader in the chain returns `err`, and for a 404, it is the fallback: the served deployable's name: a server's, which its document's `#k-state` carries as `title` (k.runtime), and a `client` deployable's `index.html` title. The client router reads it once as it starts: `#k-state`'s `title`, else `document.title`.
 
 **Language.** `<html lang>` is the matched route's value of its prefix param (k.prefix), read from the matched params; a route without a prefix param, and a 404, give `en`.
 
@@ -30,3 +30,4 @@ The document's title is the matched route's `title`. Without one, when a loader 
 - After a search-only navigation, `document.title` is the route's `title` for the new search and data, and the focused element and every `role="status"` node are the same nodes as before.
 - With a project `index.html` holding `<header>Only here</header>`, neither `keel dev`'s nor the built `dist/web/index.html` of `client` deployable `web` holds that text, the built one's `<title>` is `web`, and `keel check` prints one W1012 naming `index.html`; without the file, none.
 - Under `keel dev`, a `node` deployable's document and a `client` deployable's `index.html` each link a stylesheet that answers 200 as `text/css` and holds the atomic rules of every `k-*` class the served page uses and the `@font-face` rules of its `styles`.
+- After `resume` of a document served by `node` deployable `api` for a route whose `title` returns `Notes`, over any sequence of client navigations to that route, to a route without `title` and to a route whose loader returns `err`, `document.title` is `Notes` on the titled route and `api` on each other.
