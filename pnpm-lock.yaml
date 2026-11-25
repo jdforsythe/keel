@@ -1983,16 +1983,22 @@ importers:
 
   packages/std-i18n:
     dependencies:
-      '@keel/check':
-        specifier: workspace:*
-        version: link:../check
-      '@keel/schema':
-        specifier: workspace:*
-        version: link:../schema
       oxc-parser:
         specifier: ^0.157.0
         version: 0.157.0
     devDependencies:
+      '@keel/check':
+        specifier: workspace:*
+        version: link:../check
+      '@keel/cli':
+        specifier: workspace:*
+        version: link:../cli
+      '@keel/compiler':
+        specifier: workspace:*
+        version: link:../compiler
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../schema
       '@keel/tooling':
         specifier: workspace:*
         version: link:../../tooling
