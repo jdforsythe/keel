@@ -3,6 +3,7 @@
 // `tooling/docs-owners.json`, so the clause takes its rung from here); S0012's neighbour sits in `tooling/test/`. The real
 // `tooling/structure-lint.mjs --root <tmp>` runs over a throwaway root holding one file; its S0014 findings are read.
 // Fixture text is built from constants so this file's own source holds no literal `unsafe(` call.
+import { testTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -37,7 +38,10 @@ function s0014(files: Readonly<Record<string, string>>): Finding[] {
     mkdirSync(dirname(join(dir, file)), { recursive: true });
     writeFileSync(join(dir, file), source);
   }
-  const r = spawnSync(process.execPath, [LINT, "--root", dir, "--format=json"], { encoding: "utf8", timeout: 60_000 });
+  const r = spawnSync(process.execPath, [LINT, "--root", dir, "--format=json"], {
+    encoding: "utf8",
+    timeout: testTime(60_000),
+  });
   return r.stdout
     .split("\n")
     .filter((l) => l.startsWith("{"))

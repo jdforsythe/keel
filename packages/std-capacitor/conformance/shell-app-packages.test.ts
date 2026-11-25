@@ -5,6 +5,7 @@
 // The install is simulated: `node_modules/<package>` and `.bin/cap` are written from the versions the scaffold wrote. No real native toolchain runs.
 // The identity case covers the written versions and `keel check` reporting no E1572; the clean check and the build of an identity project are UNTESTABLE here: the spec gives no source for `identity.ts` beyond a `node` deployable serving it.
 // ASSUMED: `scaffold("shell", ...)` takes `{ shell, id }` over a file map and `scaffold("project", { name, workspace: true })` writes `package.json` and `topology.ts` at the map's root.
+import { testTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
 import {
   chmodSync,
@@ -160,7 +161,7 @@ function keel(
     cwd: dir,
     encoding: "utf8",
     env,
-    timeout: 240_000,
+    timeout: testTime(240_000),
   });
   const records: Rec[] = [];
   for (const line of r.stdout.split("\n")) {

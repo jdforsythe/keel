@@ -2,6 +2,7 @@
 // ASSUMED API: the operation is `scaffold("shell", { shell, id, name?, to? }, files)` (RFC 0201), the same pure function as every other operation.
 // `scaffold`'s `Op` type does not name `shell` until the operation is built, so the call goes through `Reflect.apply`, which keeps this file type-correct before and after.
 // Project `p` is `keel scaffold project p`; `pw` is `keel scaffold project native-tauri --workspace` (k.scaffold-shell Conformance).
+import { testTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -115,7 +116,7 @@ export function keelText(dir: string, args: string[]): { status: number | null; 
     cwd: dir,
     encoding: "utf8",
     env,
-    timeout: 110_000,
+    timeout: testTime(110_000),
   });
   return { status: r.status, lines: r.stdout.split("\n").filter((l) => l.trim() !== "") };
 }

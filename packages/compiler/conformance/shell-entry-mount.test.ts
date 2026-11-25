@@ -4,6 +4,7 @@
 // ASSUMED: the bundle is minified, so `shellMount` is found by its argument object: `{ id: 'dev.keel.golden', origin: ... }` and a `mount` key in that object or not.
 // "Before the router starts" is untestable from the bundle text without running the entry; it is not asserted.
 // SKIPPED until the RFC 0189 build lands (`entryCode` calls `shellMount` without `identity.ts`). To un-skip: change `test.skip` to `test` below.
+import { testTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
 import {
   chmodSync,
@@ -133,7 +134,7 @@ function shellBuild(dir: string): string {
     cwd: dir,
     encoding: "utf8",
     env,
-    timeout: 150_000,
+    timeout: testTime(150_000),
   });
   expect(r.status, r.stdout + r.stderr).toBe(0);
   const out: string[] = [];

@@ -1,6 +1,7 @@
 // Spec: k.deploy, Conformance "With `storage: 'postgres'`, `server.mjs` with `KEEL_DATABASE_URL` unset, or set to a `file:` URL, exits 1 with one E1560 naming `KEEL_DATABASE_URL` and no value."
 // Seed: 1337.
 // ASSUMPTION: the fixture lists `@keel/std-db` in `dependencies` (E1572) and `keel build` needs no database; startup fails in `DeployEnv` before storage opens.
+import { testTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
@@ -112,7 +113,7 @@ describe("k.deploy: KEEL_DATABASE_URL of a 'postgres' deployable", () => {
           cwd: fixture,
           encoding: "utf8",
           env: deployEnv(env),
-          timeout: 30_000,
+          timeout: testTime(30_000),
         });
         expect(r.status).toBe(1);
         const out = `${r.stdout}${r.stderr}`;

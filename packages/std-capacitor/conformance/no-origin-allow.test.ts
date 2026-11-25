@@ -3,6 +3,7 @@
 // Seed: 1337 (the declared origins of the property are generated; the build writes files and binds no port, 8080 is only text).
 // Fake tools and the fake `cap add android` as android-cleartext.test.ts. ASSUMPTIONS (the clause names no paths): `capacitor.config.json` is read at `dist/web/capacitor/`;
 // a network security config is an `.xml` file under a `res/xml` folder whose root is `network-security-config`, "none" meaning no such file and no `networkSecurityConfig` attribute in `AndroidManifest.xml`; no `server.cleartext` in the config.
+import { testTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
 import {
   chmodSync,
@@ -147,7 +148,7 @@ function build(origin: string | undefined, extra: readonly string[] = []): numbe
       cwd: project,
       encoding: "utf8",
       env: origin === undefined ? env : { ...env, KEEL_ORIGIN: origin },
-      timeout: 240_000,
+      timeout: testTime(240_000),
     },
   );
   return r.status;

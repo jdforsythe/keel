@@ -2,6 +2,7 @@
 // Assumption: `changed(channel, params)` is a method of the database object and of `tx`; `follow(channel, key, on)` is a method of the database object. Neither is typed in the package yet, so each is reached through `Reflect.get` and checked at runtime.
 // Assumption: `channel` is a plain `{ name, params }` (the spec: "any value with `name` and a `params` schema"); `key` of `follow` is the canonical JSON text of the params (keys sorted), as `changed` keys them.
 // Assumption: a follow's delivery over a socket is awaited with `vi.waitFor` (bounded); a delivery that must NOT happen is shown by a later commit on the same connection arriving (`flush`), since notifications arrive in commit order.
+import { testTime } from "@keel/tooling/test-time";
 import type { Result } from "@keel/schema";
 import { err, ok, s } from "@keel/schema";
 import { expect, vi } from "vitest";
@@ -55,7 +56,7 @@ export async function watch(
 }
 
 export const until = (pred: () => boolean): Promise<void> =>
-  vi.waitFor(() => expect(pred()).toBe(true), { timeout: 15_000, interval: 5 });
+  vi.waitFor(() => expect(pred()).toBe(true), { timeout: testTime(15_000), interval: 5 });
 
 let flushes = 0;
 /** Commits one change on a channel of its own and waits for it: every earlier commit on the connection has been delivered by then. */

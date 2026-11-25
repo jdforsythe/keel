@@ -4,6 +4,7 @@
 // The cases run in a plain `node` child with the test preload (`--import`, through keelConfig) left out: that preload
 // (tooling/node-fetch.mjs) wraps each undici socket's `setTypeOfService` to swallow EINVAL, which is the very throw this
 // clause rules out, so in-process it would mask the behaviour under test. NODE_OPTIONS is cleared for the child.
+import { testTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { describe, expect, test } from "vitest";
@@ -13,7 +14,7 @@ const COUNT = 500;
 
 const run = () => {
   const env = { ...process.env, NODE_OPTIONS: undefined };
-  const r = spawnSync(process.execPath, [script, String(COUNT)], { encoding: "utf8", timeout: 120_000, env });
+  const r = spawnSync(process.execPath, [script, String(COUNT)], { encoding: "utf8", timeout: testTime(120_000), env });
   const parsed: unknown = r.status === 0 ? JSON.parse(r.stdout) : null;
   return { r, parsed };
 };

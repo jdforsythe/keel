@@ -1,6 +1,7 @@
 // Spec: std.workflows, Conformance "A wait state moves by its event when the sim clock passes `ms`, not before; an undo sent first leaves the wake job doing nothing."
 // Seed: 1337.
 // Assumption: a wait lasts at least `ms` and at most `ms` plus the 60,000 ms poll of the runner (Run paragraph), so the move is looked for in that window.
+import { fixedTime } from "@keel/tooling/test-time";
 import { ok } from "@keel/schema";
 import fc from "fast-check";
 import { expect, test } from "vitest";
@@ -11,7 +12,7 @@ const idle = async () => ok({ freed: 0 });
 test("A wait state moves by its event when the sim clock passes `ms`, not before.", async () => {
   await fc.assert(
     fc.asyncProperty(fc.integer({ min: 1, max: 6 }), async (secs) => {
-      const ms = secs * 1000;
+      const ms = fixedTime(secs * 1000);
       const ctx = sim();
       const f = makeFlow({ run: idle, ms });
       const app = await boot(ctx, f);
@@ -39,7 +40,7 @@ test("A wait state moves by its event when the sim clock passes `ms`, not before
 test("an undo sent first leaves the wake job doing nothing.", async () => {
   await fc.assert(
     fc.asyncProperty(fc.integer({ min: 1, max: 6 }), fc.integer({ min: 0, max: 5 }), async (secs, before) => {
-      const ms = secs * 1000;
+      const ms = fixedTime(secs * 1000);
       const ctx = sim();
       const f = makeFlow({ run: idle, ms });
       const app = await boot(ctx, f);

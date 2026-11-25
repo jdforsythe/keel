@@ -4,6 +4,7 @@
 // Assumption: the two-process test needs a Postgres 17 (`KEEL_TEST_POSTGRES_URL`) and is skipped without one; children are `node --experimental-strip-types` on `migrate-child.ts`, which resolves `@keel/*` through the package's node_modules.
 // Assumption: E2454 is shown on a PGlite folder by two child runs in sequence (one process at a time on PGlite); E2453 and E2454 are thrown errors whose `code` is that string or whose text holds it.
 // Assumption: a file gone is shown by a run with 0001 and 0002 (variant `c`), then a run with 0001 only: the row of 0002 has no file.
+import { testTime } from "@keel/tooling/test-time";
 import { execFile } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -20,7 +21,7 @@ const run = (url: string, cap: string, table: string, variant: string): Promise<
     execFile(
       process.execPath,
       ["--experimental-strip-types", CHILD, cap, table, variant],
-      { env: { ...process.env, KEEL_POSTGRES_URL: url }, timeout: 50_000 },
+      { env: { ...process.env, KEEL_POSTGRES_URL: url }, timeout: testTime(50_000) },
       (e, stdout) => {
         const line = stdout.trim().split("\n").at(-1) ?? "";
         try {

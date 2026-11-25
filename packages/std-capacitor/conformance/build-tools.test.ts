@@ -7,6 +7,7 @@
 // Assumption: the Capacitor tool is run as `npx ... cap ...` (the spec names the tool, not the runner).
 // Assumption: "the directives a meta tag ignores" are `frame-ancestors`, `report-uri` and `sandbox` (the CSP spec's list); every other directive of `dist/web/csp.txt` is in the `<meta>`.
 // UNTESTABLE: the iOS build (`xcodebuild`, Xcode 26): the spec does not say how Xcode is found.
+import { testTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
 import {
   chmodSync,
@@ -139,7 +140,7 @@ function build(
     cwd: project,
     encoding: "utf8",
     env,
-    timeout: 240_000,
+    timeout: testTime(240_000),
   });
   const records: Rec[] = [];
   for (const line of r.stdout.split("\n")) {

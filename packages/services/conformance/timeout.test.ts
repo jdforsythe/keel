@@ -1,3 +1,4 @@
+import { fixedTime } from "@keel/tooling/test-time";
 import { createCtx } from "@keel/ctx";
 import { s } from "@keel/schema";
 import { endpoints, service } from "@keel/services";
@@ -77,8 +78,8 @@ describe("k.services: timeout", () => {
   it("an endpoint `timeout` overrides the service timeout", async () => {
     const api = service({
       base: BASE,
-      timeout: 50000,
-      schema: endpoints({ get: { method: "GET", path: "/slow", output: s.object({}), timeout: 100 } }),
+      timeout: fixedTime(50000),
+      schema: endpoints({ get: { method: "GET", path: "/slow", output: s.object({}), timeout: fixedTime(100) } }),
     });
     const ctx = createCtx({ mode: "sim", seed: 1337 });
     ctx.net.route(`${BASE}/slow`, () => new Promise<Response>(() => {}));

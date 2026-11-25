@@ -7,6 +7,7 @@
 // Reading: the fixture's `web` client deployable is named `web`, so "writes nothing for it" is read as no `dist/web` after the build. The E1011 line is read from the text `keel build` prints (lines holding `E1011`).
 // Reading: `app` lists `notes` in `deps` when its page imports it by a relative specifier and `notes` is public in `lib` and `T`, so the module rules (E1151, E1152) have nothing to say of the relative imports.
 // Reading: k.check allows one export per file (E1752), so the page's `load` is a `const` in the body of its default export (`export const load` would be a second export); the computed `import()` is the same.
+import { testTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -125,9 +126,19 @@ function buildFixture(
     env[k] = v;
   }
   env.KEEL_AGENT = "1";
-  const r = spawnSync(process.execPath, [BIN, "build"], { cwd: dir, encoding: "utf8", env, timeout: 150_000 });
+  const r = spawnSync(process.execPath, [BIN, "build"], {
+    cwd: dir,
+    encoding: "utf8",
+    env,
+    timeout: testTime(150_000),
+  });
   const out = `${r.stdout}\n${r.stderr}`;
-  const c = spawnSync(process.execPath, [BIN, "check"], { cwd: dir, encoding: "utf8", env, timeout: 150_000 });
+  const c = spawnSync(process.execPath, [BIN, "check"], {
+    cwd: dir,
+    encoding: "utf8",
+    env,
+    timeout: testTime(150_000),
+  });
   return {
     status: r.status,
     e1011: out.split("\n").filter((l) => l.includes("E1011")),

@@ -3,6 +3,7 @@
 // The test builds a fixture whose `node_modules/.bin/tauri` and `PATH` tools (`cargo`, `rustc`, `npx`) are fakes that exit 0 without compiling, then reads
 // the `www` entry the build writes. "The package's drivers" is read as the `drivers` argument beside `mode: 'shell'` being a call to a function whose body builds `storage` and `net`.
 // ASSUMED: the bundle is minified, so the export's name is gone; the call's callee is identified by its body and by the store file name `keel.b.json` in the bundle.
+import { testTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
 import {
   chmodSync,
@@ -120,7 +121,7 @@ function build(args: string[]): number | null {
     cwd: dir,
     encoding: "utf8",
     env,
-    timeout: 150_000,
+    timeout: testTime(150_000),
   }).status;
 }
 

@@ -4,6 +4,7 @@
 // with `p` from a closed listener on port 0, as topology-keel-dev-one-origin.test.ts does. The wait is a retry, with a fixed pause, of a socket connection, bounded by a count of pauses.
 // Only the child this test started is signalled (its process group), in a `finally`; every child is ended in `afterEach`.
 // ASSUMPTION: the dev document carries its policy in `Content-Security-Policy-Report-Only` (k.security, dev); the E1590 log line is a `diag` record on the process's output.
+import { testTime } from "@keel/tooling/test-time";
 import { type ChildProcess, spawn } from "node:child_process";
 import { mkdirSync, mkdtempSync, readdirSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import http from "node:http";
@@ -146,7 +147,7 @@ type Reply = { readonly status: number; readonly policy: string };
 const get = (port: number, path: string): Promise<Reply | null> =>
   new Promise((done) => {
     const req = http.get(
-      { host: "localhost", port, path, headers: { accept: "text/html" }, agent: false, timeout: 10_000 },
+      { host: "localhost", port, path, headers: { accept: "text/html" }, agent: false, timeout: testTime(10_000) },
       (res) => {
         res.resume();
         const policy = String(res.headers["content-security-policy-report-only"] ?? "");

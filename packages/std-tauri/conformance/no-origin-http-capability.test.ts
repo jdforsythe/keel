@@ -3,6 +3,7 @@
 // Seed: 1337 (the declared origins of the property are generated).
 // The real binary over a temp project and fake tools, as shell-scope.test.ts. ASSUMPTIONS: the http permission's allowed URLs are the strings of `capabilities/http.json` that are `http:` or `https:` URLs;
 // the earlier build is the clause's (with `api` and `KEEL_ORIGIN`), and a stale file is also put into `dist/web/tauri/capabilities/` by hand before the later build, for a build that does not empty `dir`.
+import { testTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
 import {
   chmodSync,
@@ -101,7 +102,7 @@ function build(dir: string, origin: string | undefined): number | null {
     cwd: dir,
     encoding: "utf8",
     env,
-    timeout: 240_000,
+    timeout: testTime(240_000),
   }).status;
 }
 const HTTP = (dir: string): string => join(dir, "dist", "web", "tauri", "capabilities", "http.json");

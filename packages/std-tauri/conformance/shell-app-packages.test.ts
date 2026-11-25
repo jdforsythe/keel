@@ -4,6 +4,7 @@
 // Fake tools (as build-tools.test.ts): `PATH` holds a `cargo`, a `rustc`, a `pkg-config` and an `npx` written by the test; the fake `npx` hands `vite` to the real `npx` and answers `tauri`.
 // The install is simulated: `node_modules/@tauri-apps/cli` and `.bin/tauri` are written from the versions the scaffold wrote. No real native toolchain runs.
 // ASSUMED: `scaffold("shell", ...)` takes `{ shell, id }` over a file map and `scaffold("project", { name, workspace: true })` writes `package.json` and `topology.ts` at the map's root, as `@keel/scaffold`'s own conformance uses them.
+import { testTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
 import {
   chmodSync,
@@ -115,7 +116,7 @@ function keel(args: readonly string[], env: Record<string, string>): { status: n
     cwd: project,
     encoding: "utf8",
     env,
-    timeout: 240_000,
+    timeout: testTime(240_000),
   });
   const records: Rec[] = [];
   for (const line of r.stdout.split("\n")) {

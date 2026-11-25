@@ -5,6 +5,7 @@
 // The real binary over a temp project. The target's `plugins` is read through `keel check`: with `@keel/std-capacitor` alone in `dependencies` the E1572 diagnostics are the plugins the target gives, one each,
 // so "and no other" is the count; the message form is k.shell Plugins, the `need` texts are the ones of std.capacitor's table.
 // Fake tools for the build: as build-tools.test.ts (`npx` hands `vite` to the real `npx`, answers `cap`; `java`, `JAVA_HOME`, `ANDROID_HOME`).
+import { testTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
 import {
   chmodSync,
@@ -148,7 +149,7 @@ function buildAndroid(dir: string): number | null {
       cwd: dir,
       encoding: "utf8",
       env: { ...env, KEEL_ORIGIN: SELF },
-      timeout: 240_000,
+      timeout: testTime(240_000),
     },
   );
   return r.status;
