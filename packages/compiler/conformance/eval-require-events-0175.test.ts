@@ -1,5 +1,5 @@
-// Spec: k.compiler, Conformance "A `routes.ts` whose graph reaches a `*.server.ts` file importing a CommonJS package that `require`s `events` evaluates: `routes.json` lists its routes and no E1006 is printed."
-// Spec: k.compiler, Build-time evaluation "bundled as the server build bundles: a package's CommonJS code may `require` Node built-ins and other packages (`pg` does)."
+// Spec: k.compiler, clause "A `routes.ts` whose graph reaches a `*.server.ts` file importing a CommonJS package that `require`s `events` evaluates: `routes.json` lists its routes and no E1006 is printed."
+// k.compiler, Build-time evaluation "bundled as the server build bundles: a package's CommonJS code may `require` Node built-ins and other packages (`pg` does)."
 // Seed 1337 (the exported name is generated). Assumes: the plugin's build-time evaluation reports through the `warn` of `buildStart` as build-eval-routes.test.ts reads it; the CommonJS package is a fixture in `node_modules/cjs-events` (`pg-pool` does the same `require("events")`).
 // `routes.json` itself is written by the CLI build and is not read here: the `routes.json` half needs the CLI build.
 import fs from "node:fs";

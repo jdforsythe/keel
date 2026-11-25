@@ -5,7 +5,7 @@ import { endpoints, service } from "@keel/services";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 // Spec: k.services, clause "A rejected `fetch`, or a 502 `keel.unreachable` err to a `contract` service, yields `api.network`; to a `base` service, `api.status`."
-// Spec: k.services, ApiError "`api.network` `{}`: `fetch` rejected, or a `contract` service got a 502 JSON `keel.unreachable` err of at most 1 KiB."
+// k.services, ApiError "`api.network` `{}`: `fetch` rejected, or a `contract` service got a 502 JSON `keel.unreachable` err of at most 1 KiB."
 // seed 1337 (fast-check runs below pass { seed: 1337 }); no wall clock, no Math.random.
 // ASSUMPTION (public API not visible from index.ts): sim net is `ctx.net.route(url, handler)` where the
 // handler receives a request with `url`/`signal` and returns a standard Response; sim clock has `advance(ms)`.

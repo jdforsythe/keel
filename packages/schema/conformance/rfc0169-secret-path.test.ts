@@ -1,4 +1,4 @@
-// Spec: k.parity, clause "`secretPath(s.secret(s.string()))` is `""`; over `{ a: int, b: { c: secret(int) } }` it is `b.c`; over `{ x: secret, y: secret }` `x`; over `array(record({ k: secret(int).nullable() }))` `k`; over `union([int, { m: secret(int).optional() }])` `m`; over `{ a: json, b: array(enum) }` null."
+// Spec: k.parity, clause "`secretPath(s.secret(s.string()))` is `\"\"`; over `{ a: int, b: { c: secret(int) } }` it is `b.c`; over `{ x: secret, y: secret }` `x`; over `array(record({ k: secret(int).nullable() }))` `k`; over `union([int, { m: secret(int).optional() }])` `m`; over `{ a: json, b: array(enum) }` null."
 // Seed: 1337.
 import { type Schema, s, secretPath } from "@keel/schema";
 import fc from "fast-check";

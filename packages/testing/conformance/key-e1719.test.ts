@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.testing Rules "E1719 ... or `keydown` on an unfocusable one with focus outside it (`<id> cannot take focus, so no key press reaches it`)"
-// Spec: k.testing Conformance "With focus outside it, `fire(id, keydown)` on an unfocusable element rejects E1719 `<id> cannot take focus, so no key press reaches it` with `data` `{ id, type: 'keydown' }`; no handler runs and focus stays."
+// k.testing Rules "E1719 ... or `keydown` on an unfocusable one with focus outside it (`<id> cannot take focus, so no key press reaches it`)"
+// Spec: k.testing, clause "With focus outside it, `fire(id, keydown)` on an unfocusable element rejects E1719 `<id> cannot take focus, so no key press reaches it` with `data` `{ id, type: 'keydown' }`; no handler runs and focus stays."
 // Seed: 1337 (fc.assert below). ASSUMED: the compact line is the error's `message` including its code, as E1705's is.
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";

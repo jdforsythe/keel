@@ -1,5 +1,5 @@
 // rfc:0160 conformance: a `frame` origin equal to `KEEL_PEER_API` at `keel build` is one E1590 naming the key.
-// Spec: k.origins, Frame "A `frame` origin of the app's own is E1590 in `keel build` (a `KEEL_PEER_<NAME>`, `KEEL_ORIGIN`) and `createApp` (`origin`, a URL peer); a document drops its own from `frame-src` (dev: one E1590 logged)."
+// k.origins, Frame "A `frame` origin of the app's own is E1590 in `keel build` (a `KEEL_PEER_<NAME>`, `KEEL_ORIGIN`) and `createApp` (`origin`, a URL peer); a document drops its own from `frame-src` (dev: one E1590 logged)."
 // Seed 1337 (no generated input: spawned builds).
 // ASSUMPTION: the E1590 record's message names the environment key, as k.origins' "naming the key" says; `KEEL_ORIGIN` is read the same way for the deployable's own origin.
 import { afterAll, beforeAll, describe, expect, test } from "vitest";

@@ -1,7 +1,7 @@
 import type { Ctx } from "@keel/ctx";
 // @vitest-environment happy-dom
 // Seed 1337
-// Spec: k.compiler, clause "`<img alt="">`, an unnamed `<section>`, `<td>` and `<li>` with text render with no E1702."
+// Spec: k.compiler, clause "`<img alt=\"\">`, an unnamed `<section>`, `<td>` and `<li>` with text render with no E1702."
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
 import { s } from "@keel/schema";

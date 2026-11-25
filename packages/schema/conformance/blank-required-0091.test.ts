@@ -1,6 +1,6 @@
-// Spec: k.schema, Primitives "`string` (`{ min, max }`; with `min` >= 1, a blank value fails rule `required` (no character outside `White_Space`, `Default_Ignorable_Code_Point`, `Cc`, `Cf`, `Cs`, `M`, U+2800)"
-// Spec: k.schema, Conformance "`s.string({ min: 1 })` fails `''`, `' '`, U+200B, U+3164 and a lone U+0301 with rule `required`; `decodeStrings` drops each if optional; the JSON Schema `pattern` refuses exactly the blank values without `M`, `Cs` or non-BMP characters." (rfc:0091, rfc:0152)
-// Spec: k.schema, `decodeStrings`: "for an optional key `''` is absent, as is a blank value for a `string` with `min` >= 1;"
+// k.schema, Primitives "`string` (`{ min, max }`; with `min` >= 1, a blank value fails rule `required` (no character outside `White_Space`, `Default_Ignorable_Code_Point`, `Cc`, `Cf`, `Cs`, `M`, U+2800)"
+// Spec: k.schema, clause "`s.string({ min: 1 })` fails `''`, `' '`, U+200B, U+3164 and a lone U+0301 with rule `required`; `decodeStrings` drops each if optional; the JSON Schema `pattern` refuses exactly the blank values without `M`, `Cs` or non-BMP characters." (rfc:0091, rfc:0152)
+// k.schema, `decodeStrings`: "for an optional key `''` is absent, as is a blank value for a `string` with `min` >= 1;"
 // Seed 1337. Parsing never trims (RFC 0091 B). The spec text does not state the rule of `id` for `''`: not tested.
 // The blank set is the oracle `BLANK` below, written from the spec's list. The JSON Schema `pattern` clause is untestable from
 // @keel/schema (no derivation is exported): packages/cli/conformance/json-schema-blank.test.ts covers it.

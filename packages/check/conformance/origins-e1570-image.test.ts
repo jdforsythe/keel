@@ -1,5 +1,5 @@
-// Spec: k.origins, Conformance "`Image src="https://a.example/x.png"` in a module of a deployable declaring `img` `https://a.example` is no E1570; of one that does not, or under `frame` only, it is; `action="https://a.example/"` stays E1570."
-// Spec: k.origins, Rules "E1570 and E1571 (k.security) do not report a URL whose origin is declared under its directive on each deployable listing the module that holds the file or a file importing it, directly or not (none: every deployable)."
+// Spec: k.origins, clause "`Image src=\"https://a.example/x.png\"` in a module of a deployable declaring `img` `https://a.example` is no E1570; of one that does not, or under `frame` only, it is; `action=\"https://a.example/\"` stays E1570."
+// k.origins, Rules "E1570 and E1571 (k.security) do not report a URL whose origin is declared under its directive on each deployable listing the module that holds the file or a file importing it, directly or not (none: every deployable)."
 // Seed 1337 (fc.assert below).
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";

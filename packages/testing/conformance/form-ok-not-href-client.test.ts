@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.router (Links) "`Link to`, `navigate`, `Form action` and an action's `ok` take `Href` only, rechecked when run (server and client): else `Link` renders `about:blank`, `Form` throws E1501, `ok` is `keel.unexpected` (nothing saved or followed), and `navigate` rejects (E1501) unless it is one once `\` reads as `/` and `#…` drops."
+// k.router (Links) "`Link to`, `navigate`, `Form action` and an action's `ok` take `Href` only, rechecked when run (server and client): else `Link` renders `about:blank`, `Form` throws E1501, `ok` is `keel.unexpected` (nothing saved or followed), and `navigate` rejects (E1501) unless it is one once `\` reads as `/` and `#…` drops."
 // rfc:0157 conformance: in a client router, a `Form` submit to an action returning a non-`Href` navigates nowhere, starts no document navigation, pushes no history entry, and its `error` slot gets `keel.unexpected`.
 // Seed 1337 (no generated inputs). "Nothing saved" is untestable on the client: no store of the action is observable from the harness.
 import { afterEach, describe, expect, it } from "vitest";

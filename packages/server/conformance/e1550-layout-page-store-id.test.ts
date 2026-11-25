@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.server, Conformance "A layout whose loader names factory `a` and a page under it whose loader names `b`, where `b` spreads `a()` and both create store id `x.s`, is one E1550 in `keel check` at the page loader's `stores` value naming `a`, `b`, `x.s` and the layout's id, and `createApp` throws E1550; with both loaders naming `a`, neither, and a GET of the page answers 200 with `a` run once."
-// Spec: k.server, Rules "`keel build` and `createApp` run each factory once on a sim ctx (k.compat Surface) and refuse it (`createApp` throws)"
+// Spec: k.server, clause "A layout whose loader names factory `a` and a page under it whose loader names `b`, where `b` spreads `a()` and both create store id `x.s`, is one E1550 in `keel check` at the page loader's `stores` value naming `a`, `b`, `x.s` and the layout's id, and `createApp` throws E1550; with both loaders naming `a`, neither, and a GET of the page answers 200 with `a` run once."
+// k.server, Rules "`keel build` and `createApp` run each factory once on a sim ctx (k.compat Surface) and refuse it (`createApp` throws)"
 // Seed 1337: no generated input.
 // ASSUMPTION: the thrown error's message mentions `E1550`, as e1558-live-loader-non-node.test.ts reads E1558.
 // Not built yet: the refusal case is `test.skip`; the builder changes it to `test`. The shared-factory case is live.

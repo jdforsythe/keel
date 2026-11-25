@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.testing Harness "With focus elsewhere and `id` focusable as `focus` requires, `fire` first moves focus to `id` as `focus` does and settles, then dispatches at `id`."
-// Spec: k.testing Conformance "With focus on another input, `fire(id, keydown)` on a focusable element runs the other input's blur handler, then `id`'s focus handler, then its keydown handler, and `find(id).state.focused` is then true; on the focused element it runs no focus or blur handler."
+// k.testing Harness "With focus elsewhere and `id` focusable as `focus` requires, `fire` first moves focus to `id` as `focus` does and settles, then dispatches at `id`."
+// Spec: k.testing, clause "With focus on another input, `fire(id, keydown)` on a focusable element runs the other input's blur handler, then `id`'s focus handler, then its keydown handler, and `find(id).state.focused` is then true; on the focused element it runs no focus or blur handler."
 // Seed: 1337 (fc.assert below).
 import * as fc from "fast-check";
 import { describe, expect, it } from "vitest";

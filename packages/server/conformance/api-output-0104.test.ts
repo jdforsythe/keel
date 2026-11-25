@@ -1,13 +1,13 @@
 // @vitest-environment happy-dom
-// Spec: k.api, Output "An API entry's handler returns `Result<T, KeelError>` for its `output`'s type `T`; a page's action declares no `output` (k.contract Handlers)."
-// Spec: k.api, Output "An `ok` value is parsed by `output` before any store is saved (fail: E1554, nothing saved), then the stores are saved (k.server Server state), then the answer is 200 `application/json` `{ "ok": true, "value": <encoded> }`; a 409 `keel.conflict` sends no value."
-// Spec: k.api, Output "A write that answers nothing declares `output: s.object({})` and returns `ok({})`."
-// Spec: k.api, Output "Every write's answer is `Cache-Control: no-store`."
-// Spec: k.api, Conformance "An action with `output: s.object({ n: s.int() })` returning `ok({ n: 1 })` answers 200 `{ "ok": true, "value": { "n": 1 } }`, `cache-control: no-store`; returning `ok({ n: 0.5 })`, 500 and no store saved."
-// Spec: k.api, Conformance "An API action returning a value its entry's `output` refuses does not compile."
-// Spec: k.api, Conformance "A form POST to an API route gets the action's `Result` as JSON with no `Location`."
-// Spec: k.server, API "`action(contract, id, { input?, stores? }, fn)` ... returns `Result<Href | null, KeelError>` on a page (an API entry's `output` on one: k.api); the binding places it (k.contract)."
-// Spec: k.server, Rules "E1554 loader or action data fails its output schema (dev diag; production 500)"
+// k.api, Output "An API entry's handler returns `Result<T, KeelError>` for its `output`'s type `T`; a page's action declares no `output` (k.contract Handlers)."
+// k.api, Output "An `ok` value is parsed by `output` before any store is saved (fail: E1554, nothing saved), then the stores are saved (k.server Server state), then the answer is 200 `application/json` `{ "ok": true, "value": <encoded> }`; a 409 `keel.conflict` sends no value."
+// k.api, Output "A write that answers nothing declares `output: s.object({})` and returns `ok({})`."
+// k.api, Output "Every write's answer is `Cache-Control: no-store`."
+// Spec: k.api, clause "An action with `output: s.object({ n: s.int() })` returning `ok({ n: 1 })` answers 200 `{ \"ok\": true, \"value\": { \"n\": 1 } }`, `cache-control: no-store`; returning `ok({ n: 0.5 })`, 500 and no store saved."
+// Spec: k.api, clause "An API action returning a value its entry's `output` refuses does not compile."
+// Spec: k.api, clause "A form POST to an API route gets the action's `Result` as JSON with no `Location`."
+// k.server, API "`action(contract, id, { input?, stores? }, fn)` ... returns `Result<Href | null, KeelError>` on a page (an API entry's `output` on one: k.api); the binding places it (k.contract)."
+// k.server, Rules "E1554 loader or action data fails its output schema (dev diag; production 500)"
 // Seed: 1337.
 // One module, `api`: one entry per method (`api.notes` GET, `api.add` POST, `api.replace` PUT, `api.slow` PATCH, `api.fail` DELETE) at `/api/notes`, plus a page `api.page`.
 // A handler that must return a value its entry refuses is built with `Reflect.apply`, since the type refuses it (the unchecked caller of k.api Conformance).

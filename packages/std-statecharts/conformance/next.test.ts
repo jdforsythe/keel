@@ -1,4 +1,4 @@
-// Spec: std.statecharts, Conformance "For generated `{ state, data }` and payloads, `next` equals the state `tx` of that event gives from it, and `taken` is the first target of `on[event]` whose guard holds."
+// Spec: std.statecharts, clause "For generated `{ state, data }` and payloads, `next` equals the state `tx` of that event gives from it, and `taken` is the first target of `on[event]` whose guard holds."
 // Seed: 1337.
 // Assumption: `next({ state, data }, event, payload)` is called with the event's name; a state is put in a chart's store with `setState` from fixtures.ts, and `tx` of an event with no applicable target leaves it unchanged.
 import { s } from "@keel/schema";

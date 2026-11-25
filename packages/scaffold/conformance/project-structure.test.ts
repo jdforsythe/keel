@@ -1,4 +1,4 @@
-// Spec: k.scaffold, Generators "`project`: `package.json`, `.gitignore`, `tokens.ts`, `topology.ts` (`--adapter client|node|static`, default `client`), `vite.config.ts`, module `app`, generated turbo, CI and deploy files (k.deploy), agent files (k.explain);"
+// k.scaffold, Generators "`project`: `package.json`, `.gitignore`, `tokens.ts`, `topology.ts` (`--adapter client|node|static`, default `client`), `vite.config.ts`, module `app`, generated turbo, CI and deploy files (k.deploy), agent files (k.explain);"
 import { describe, expect, it } from "vitest";
 import { apply, find, read } from "./fixtures.ts";
 

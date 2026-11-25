@@ -1,4 +1,4 @@
-// Spec: k.ledger, Ledger "`keel ledger` emits one NDJSON record `{ kind: 'ledger', item, rung, evidence }` per public export (`<file>#<name>`) and per spec clause (`k.router#3`, the 1-based Conformance sentence)."
+// k.ledger, Ledger "`keel ledger` emits one NDJSON record `{ kind: 'ledger', item, rung, evidence }` per public export (`<file>#<name>`) and per spec clause (`k.router#3`, the 1-based Conformance sentence)."
 // Seed: 1337.
 import { ledger } from "@keel/testing";
 import * as fc from "fast-check";

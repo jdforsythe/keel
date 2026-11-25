@@ -1,4 +1,4 @@
-// Spec: std.options, Conformance "A Listbox focused with nothing selected highlights `option.<first>`: the list's `aria-activedescendant` names it and `find` gives `state.active`; ArrowDown at the last option stays there; End then Home highlight the last and the first."
+// Spec: std.options, clause "A Listbox focused with nothing selected highlights `option.<first>`: the list's `aria-activedescendant` names it and `find` gives `state.active`; ArrowDown at the last option stays there; End then Home highlight the last and the first."
 // Seed: 1337.
 // @vitest-environment happy-dom
 // Assumptions: the list is `<id>.list` and keys are fired at it; `find(list).state.active` is the id `aria-activedescendant` names.

@@ -1,4 +1,4 @@
-// Spec: k.shell, Conformance "`keel build` writes `deploy/web/tauri/a.json`; a changed byte is E1005 whose fix restores it; removing `tauri` removes it; a file `files` does not give stays."
+// Spec: k.shell, clause "`keel build` writes `deploy/web/tauri/a.json`; a changed byte is E1005 whose fix restores it; removing `tauri` removes it; a file `files` does not give stays."
 // Seed: 1337 (the byte position and the replacement byte of the tamper are generated).
 // Over a stub `@keel/std-tauri` whose target gives `a.json` (`shell-stub.ts`); the real binary: `keel build` writes it, `keel check` reads E1005 and its fix (a unified diff of the changed file).
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";

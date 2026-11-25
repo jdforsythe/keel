@@ -1,5 +1,5 @@
-// Spec: std.postgres, Conformance "Under sim, two callers started together on one ctx, each a lone `one` of a counter then a lone `run` of the value read + 1 held 10 sim ms by the plan, end it at 1; each in a `transaction`, at 2."
-// Spec: std.postgres, API "a write using another call's read goes in one `transaction` with it."
+// Spec: std.postgres, clause "Under sim, two callers started together on one ctx, each a lone `one` of a counter then a lone `run` of the value read + 1 held 10 sim ms by the plan, end it at 1; each in a `transaction`, at 2."
+// std.postgres, API "a write using another call's read goes in one `transaction` with it."
 // Seed: 1337.
 // Pending (rfc:0184): skipped until the build lands; the builder un-skips by changing each `test.skip` to `test` in this file.
 // Assumption: "held 10 sim ms by the plan" is every plan step `{ delay: 10, fault: 'none' }`; callers are started with Promise.all; the final read also takes a plan step, so it is driven too.

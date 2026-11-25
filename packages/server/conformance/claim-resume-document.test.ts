@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
-// Spec: k.claim, Packaged components "A `resumeDocument` handle has `removed()`: the elements under the served island roots not in the document when it resolved."
-// Spec: k.claim, In place "A `resumeDocument` handle's `detached()` counts those removed, put back or not."
-// Spec: k.claim, Conformance "An island whose `effect` hides at resume an `If` branch the server showed has `removed()` equal to that branch's elements."
-// Spec: k.claim, Conformance "With one, two and array children of a component, nested components, `Form` with one and several, `Part`, `If`, `For` rows, `Match` and `Boundary` with several, a fragment in a slot and text beside elements: no element removed or added, each in its region, handlers work, `detached()` 0; only a mismatching island removes."
+// k.claim, Packaged components "A `resumeDocument` handle has `removed()`: the elements under the served island roots not in the document when it resolved."
+// k.claim, In place "A `resumeDocument` handle's `detached()` counts those removed, put back or not."
+// Spec: k.claim, clause "An island whose `effect` hides at resume an `If` branch the server showed has `removed()` equal to that branch's elements."
+// Spec: k.claim, clause "With one, two and array children of a component, nested components, `Form` with one and several, `Part`, `If`, `For` rows, `Match` and `Boundary` with several, a fragment in a slot and text beside elements: no element removed or added, each in its region, handlers work, `detached()` 0; only a mismatching island removes."
 // Seed: 1337 (no generated inputs). The served pages are real createApp output; the client side is `resumeDocument`.
 // Assumption: `removed()` and `detached()` return counts.
 import { resumeDocument } from "@keel/testing";

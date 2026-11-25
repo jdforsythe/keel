@@ -1,5 +1,5 @@
-// Spec: k.scaffold-service, Conformance "In the default project, with no `reason`, that input and the `{ id, schema, service }` form are each E1358 naming `web` and `https://api.example.com`, nothing written; with `connect` already declaring that origin, each applies without a `reason` and leaves `topology.ts` byte-identical, and with one is E1052."
-// Spec: k.scaffold-service, Rules "E1358 `service` in a module of a `client` deployable whose origin that deployable does not declare under `connect`, with no `reason`; names the deployable and the origin"
+// Spec: k.scaffold-service, clause "In the default project, with no `reason`, that input and the `{ id, schema, service }` form are each E1358 naming `web` and `https://api.example.com`, nothing written; with `connect` already declaring that origin, each applies without a `reason` and leaves `topology.ts` byte-identical, and with one is E1052."
+// k.scaffold-service, Rules "E1358 `service` in a module of a `client` deployable whose origin that deployable does not declare under `connect`, with no `reason`; names the deployable and the origin"
 // seed 1337 (property over hosts and module ids).
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";

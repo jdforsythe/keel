@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.sim, Conformance "Two `simulate` runs with one seed pass the same `SimRun`s to the scenario in the same order."
+// Spec: k.sim, clause "Two `simulate` runs with one seed pass the same `SimRun`s to the scenario in the same order."
 // Seed: 1337.
 import { simulate } from "@keel/testing";
 import * as fc from "fast-check";

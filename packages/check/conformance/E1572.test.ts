@@ -1,5 +1,5 @@
-// Spec: k.deploy, Conformance "`storage: 'sqlite'` without `@keel/std-db` in `dependencies` is one E1572 whose fix adds it; with it, none."
-// Spec: k.deploy, Rules "E1572 a deployable's `storage` or `shells` needs a package the app's `dependencies` lack (fix adds it)."
+// Spec: k.deploy, clause "`storage: 'sqlite'` without `@keel/std-db` in `dependencies` is one E1572 whose fix adds it; with it, none."
+// k.deploy, Rules "E1572 a deployable's `storage` or `shells` needs a package the app's `dependencies` lack (fix adds it)."
 // Seed: 1337.
 // ASSUMPTION: `check` reads `topology.ts` and `package.json` from the file list; the fix is a unified diff of `package.json`, applied below to its text.
 import { check } from "@keel/check";

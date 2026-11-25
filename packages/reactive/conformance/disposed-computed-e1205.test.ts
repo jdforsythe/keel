@@ -1,7 +1,8 @@
 import { computed, effect, scope, signal } from "@keel/reactive";
 import type { Computed, Signal } from "@keel/reactive";
-// Spec: k.reactive Rules E1205 "reading a `computed` whose scope is disposed is E1205"; Conformance "reading a
-// computed after its scope is disposed throws E1205, also from a live effect that reads it". Property seed: 1337.
+// Spec: k.reactive, clause "Reading a computed after its scope is disposed throws E1205, also from a live effect that reads it."
+// k.reactive E1205 "reading a `computed` whose scope is disposed is E1205"
+// Property seed: 1337.
 // The effect case has no onError on its scope, so the throw surfaces from the `set` that re-runs the effect.
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";

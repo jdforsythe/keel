@@ -1,5 +1,5 @@
 // Spec: std.channels, clause "`channel` throws E2602 for a message schema with a nested `s.secret`; `keel check` reports E2601 and E2602 on fixtures and nothing on their clean twins."
-// Spec: std.channels, rules E2601 (`channelRoute` outside a `*.server.ts` file) and E2602 (a channel `message` schema holding an `s.secret`).
+// std.channels, rules E2601 (`channelRoute` outside a `*.server.ts` file) and E2602 (a channel `message` schema holding an `s.secret`).
 // Seed 1337
 // Assumption: as for std.jobs E2501, `check()` imports nothing, so the rules register by importing `@keel/std-channels/tools`;
 // a module is the files under `modules/<id>/` with a `module.ts` listing `deps`.

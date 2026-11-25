@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.ui, clause "`Text role="status"` and `Text role="alert"` write that `role` attribute in server and client output; a `Text` without `role` writes none; any other `role` is a type error."
+// Spec: k.ui, clause "`Text role=\"status\"` and `Text role=\"alert\"` write that `role` attribute in server and client output; a `Text` without `role` writes none; any other `role` is a type error."
 // Seed 1337 (RFC 0176 clause k.ui #16). The server-output half; the client half is packages/ui/conformance/text-role-live.test.ts.
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";

@@ -1,4 +1,4 @@
-// Spec: std.options, Conformance "In single mode Space calls `onChange([key])` with the active key; in multiple it adds or removes the key and keeps the others; a disabled option is never in a call."
+// Spec: std.options, clause "In single mode Space calls `onChange([key])` with the active key; in multiple it adds or removes the key and keeps the others; a disabled option is never in a call."
 // Seed: 1337.
 // @vitest-environment happy-dom
 // Assumptions: `onChange` receives the whole new selection; in multiple the order of the keys in a call is not asserted (compared sorted); `selected` is read afresh on each call.

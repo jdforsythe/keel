@@ -1,4 +1,4 @@
-// Spec: std.multi, Conformance "Under one `schedule`, two runs of one script on `openGroup` give byte-equal groups, and with a `lost` step on a user's write the server holds one entry for that write's key."
+// Spec: std.multi, clause "Under one `schedule`, two runs of one script on `openGroup` give byte-equal groups, and with a `lost` step on a user's write the server holds one entry for that write's key."
 // Seed: 1337.
 // Skipped until `openGroup({ schedule })` exists. A `Schedule` is passed as a plain object (k.sim: `net`, `storage`, `offline`, `plans`).
 // Assumption: the shared fixture's write carries no `key`, so "the server holds one entry for that write's key" is read as

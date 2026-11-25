@@ -1,4 +1,4 @@
-// Spec: k.evidence, Conformance "`pii.json` lists every `.pii()` path of the fixture's schema exports with its class; `coverage` is 1 when every sink clause is `probabilistic` or higher, and drops when one is lower."
+// Spec: k.evidence, clause "`pii.json` lists every `.pii()` path of the fixture's schema exports with its class; `coverage` is 1 when every sink clause is `probabilistic` or higher, and drops when one is lower."
 // Seed: 1337. ASSUMED path text: array items are `*` and a marked object covers every leaf under it (k.privacy `piiPaths`),
 // compared as dotted text whether `pii.json` writes the path as a string or as an array. Each sink clause is cited by a
 // 100-run seeded property (`probabilistic`) or by one example (`example`) in the fixture project.

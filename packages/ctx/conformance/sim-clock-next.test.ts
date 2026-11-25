@@ -1,4 +1,4 @@
-// Spec: k.sim, Conformance "`clock.next()` is the earliest pending `after` deadline, and `null` once `advance` has passed every one or each waiter aborted."
+// Spec: k.sim, clause "`clock.next()` is the earliest pending `after` deadline, and `null` once `advance` has passed every one or each waiter aborted."
 // Seed: 1337.
 import { createCtx } from "@keel/ctx";
 import fc from "fast-check";

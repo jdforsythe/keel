@@ -1,4 +1,4 @@
-// Spec: k.topology, Conformance "In a module a `client` deployable serves, a `loader` naming `stores`, an `action` naming `stores` and a loader whose `fn` is `async function*` are each one E1558 in `keel check` and `keel build`, and `createApp` for that deployable throws E1558; in a `node` deployable's module none is."
+// Spec: k.topology, clause "In a module a `client` deployable serves, a `loader` naming `stores`, an `action` naming `stores` and a loader whose `fn` is `async function*` are each one E1558 in `keel check` and `keel build`, and `createApp` for that deployable throws E1558; in a `node` deployable's module none is."
 // Seed: 1337.
 // @vitest-environment happy-dom
 // In-memory project through `run(['check'])` and `run(['build'])`, as topology-e1559-same-path.test.ts. ASSUMPTION: the

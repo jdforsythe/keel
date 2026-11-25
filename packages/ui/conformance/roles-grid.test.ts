@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
-// Spec: k.roles, Conformance "`grid` renders `<table role="grid" aria-label=...>`; `gridcell` a `<td role="gridcell">`; `current: 'date'` writes `aria-current="date"`."
-// Spec: k.roles, Conformance "A `columnheader` with `abbr="Monday"` writes the `abbr` attribute."
-// Spec: k.roles, Attributes "Each optional prop writes one attribute (ARIA names unless marked HTML); a prop left undefined writes none."
-// Spec: k.roles, Attributes "An ARIA boolean writes `"true"` or `"false"`; an HTML boolean is present or absent."
+// Spec: k.roles, clause "`grid` renders `<table role=\"grid\" aria-label=...>`; `gridcell` a `<td role=\"gridcell\">`; `current: 'date'` writes `aria-current=\"date\"`."
+// Spec: k.roles, clause "A `columnheader` with `abbr=\"Monday\"` writes the `abbr` attribute."
+// k.roles, Attributes "Each optional prop writes one attribute (ARIA names unless marked HTML); a prop left undefined writes none."
+// k.roles, Attributes "An ARIA boolean writes `"true"` or `"false"`; an HTML boolean is present or absent."
 // Seed: 1337.
 // Assumed attribute names for the optional props are the ARIA ones: rowCount aria-rowcount, colCount aria-colcount, multiselectable aria-multiselectable, readOnly aria-readonly, selected aria-selected, colSpan colspan.
 import { Part } from "@keel/ui/aria";

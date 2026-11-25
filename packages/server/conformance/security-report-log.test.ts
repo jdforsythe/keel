@@ -1,4 +1,4 @@
-// Spec: k.security, Conformance "A `csp-report` POST answers 204 and logs one `csp` record whose `blocked` is the blocked URL's origin and `route` the document's route id; no record holds the document's path or query."
+// Spec: k.security, clause "A `csp-report` POST answers 204 and logs one `csp` record whose `blocked` is the blocked URL's origin and `route` the document's route id; no record holds the document's path or query."
 // Seed: 1337.
 // @vitest-environment happy-dom
 import { createCtx } from "@keel/ctx";

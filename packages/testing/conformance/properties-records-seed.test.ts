@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.testing, Properties "Every run records its seed; `KEEL_SEED=<n>` replays it."
+// k.testing, Properties "Every run records its seed; `KEEL_SEED=<n>` replays it."
 // Seed: 1337.
 import { properties } from "@keel/testing";
 import * as fc from "fast-check";

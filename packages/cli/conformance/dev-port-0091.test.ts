@@ -1,5 +1,5 @@
 // Spec: k.cli, clause "`keel dev --port <p>`, or `server.port: <p>` in the Vite config, serves on `p`; with `p` in use it prints one E1560 line and exits 1." (rfc:0091)
-// Spec: k.cli Commands "`dev [--port N]` | dev server and log stream (default Vite's `server.port` or 5173; in use: E1560)"; Rules E1052 "flag value invalid for the input schema".
+// k.cli Commands "`dev [--port N]` | dev server and log stream (default Vite's `server.port` or 5173; in use: E1560)"; Rules E1052 "flag value invalid for the input schema".
 // Seed 1337. Spawns the real binary over a temp project with `vite` linked. The wait for the server is a retry, with a fixed pause, of
 // an `http.get`, bounded by a count of pauses. Ports come from a listener on port 0 that is closed first; a busy port is held by the
 // test's own listener. Only processes the test started are signalled (the child's process group); every child is ended in `afterEach`.

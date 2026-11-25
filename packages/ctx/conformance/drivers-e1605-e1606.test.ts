@@ -1,6 +1,6 @@
-// Spec: k.persist, Conformance "`createCtx({ mode: 'sim', drivers: {} })` throws E1605; a `commit` naming one key twice throws E1606."
-// Spec: k.persist, Rules "E1605 `drivers` on a `sim` ctx (throws)"
-// Spec: k.persist, Rules "E1606 one key twice in a `commit` (throws)"
+// Spec: k.persist, clause "`createCtx({ mode: 'sim', drivers: {} })` throws E1605; a `commit` naming one key twice throws E1606."
+// k.persist, Rules "E1605 `drivers` on a `sim` ctx (throws)"
+// k.persist, Rules "E1606 one key twice in a `commit` (throws)"
 // Seed: 1337.
 // A `commit` is asynchronous: whether E1606 is thrown synchronously or by the returned promise is not stated, so the call is awaited inside a `try` and both count.
 import { mkdtempSync, rmSync } from "node:fs";

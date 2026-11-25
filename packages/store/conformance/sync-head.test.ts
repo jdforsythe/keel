@@ -1,4 +1,4 @@
-// Spec: k.sync Conformance, "`head()` is 0 for a new store and rises by exactly one per commit and per undo that undoes; a refused `tx` leaves it unchanged; each entry's `id` is the head after its commit."
+// Spec: k.sync, clause "`head()` is 0 for a new store and rises by exactly one per commit and per undo that undoes; a refused `tx` leaves it unchanged; each entry's `id` is the head after its commit."
 // Seed 1337 (fast-check `seed: 1337`).
 import { s } from "@keel/schema";
 import { invariant, store, transaction, tx } from "@keel/store";

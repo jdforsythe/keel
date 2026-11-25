@@ -1,5 +1,6 @@
 import fc from "fast-check";
-// Spec: k.store Conformance, "snapshot round-trips through JSON". Seed 1337.
+// Spec: k.store, clause "Snapshot round-trips through JSON."
+// k.store Seed 1337.
 import { describe, expect, it } from "vitest";
 import { applyOp, makeCart, opArb, opts } from "./fixtures";
 

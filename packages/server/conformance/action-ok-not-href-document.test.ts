@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.router (Links) "`Link to`, `navigate`, `Form action` and an action's `ok` take `Href` only, rechecked when run (server and client): else `Link` renders `about:blank`, `Form` throws E1501, `ok` is `keel.unexpected` (nothing saved or followed), and `navigate` rejects (E1501) unless it is one once `\` reads as `/` and `#…` drops."
+// k.router (Links) "`Link to`, `navigate`, `Form action` and an action's `ok` take `Href` only, rechecked when run (server and client): else `Link` renders `about:blank`, `Form` throws E1501, `ok` is `keel.unexpected` (nothing saved or followed), and `navigate` rejects (E1501) unless it is one once `\` reads as `/` and `#…` drops."
 // rfc:0157 conformance: a page action returning a raw non-`Href` answers a document POST 500 with no `location` and saves no store it changed.
 // Seed 1337 (fc.assert below).
 import fc from "fast-check";

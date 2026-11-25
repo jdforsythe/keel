@@ -1,4 +1,4 @@
-// Spec: k.ctx, Conformance "Under a stub `window`, aborting the `signal` a real ctx was made with removes its `online` and `offline` listeners once each; a second abort removes nothing."
+// Spec: k.ctx, clause "Under a stub `window`, aborting the `signal` a real ctx was made with removes its `online` and `offline` listeners once each; a second abort removes nothing."
 // Seed 1337 (no generated inputs). Each test pins the sentence for one mode or driver set named by the API paragraph of k.ctx.
 // A stub `window` records live listeners, whether they end through `removeEventListener` or through the `signal` they
 // were added with (./window-stub.ts).

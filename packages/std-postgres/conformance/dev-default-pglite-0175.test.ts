@@ -1,5 +1,5 @@
-// Spec: std.postgres, Conformance "With `KEEL_POSTGRES_URL` unset and `KEEL_DEV_DIR` a folder `d`, a `query` answers from PGlite in `d/postgres`, which exists after it."
-// Spec: std.postgres, Modes "Missing, it is `pglite:<KEEL_DEV_DIR>/postgres` when `KEEL_DEV_DIR` is set (`keel dev`, k.data Files); else E2455 as now."
+// Spec: std.postgres, clause "With `KEEL_POSTGRES_URL` unset and `KEEL_DEV_DIR` a folder `d`, a `query` answers from PGlite in `d/postgres`, which exists after it."
+// std.postgres, Modes "Missing, it is `pglite:<KEEL_DEV_DIR>/postgres` when `KEEL_DEV_DIR` is set (`keel dev`, k.data Files); else E2455 as now."
 // Seed: 1337 (the table value is generated).
 // Assumption: `d/postgres` is the PGlite data folder, so it exists as a directory after the first answered query; `d` itself exists beforehand.
 // Pending: a missing URL is E2455 everywhere today.

@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.router (Links) "`Link to`, `navigate`, `Form action` and an action's `ok` take `Href` only, rechecked when run (server and client): else `Link` renders `about:blank`, `Form` throws E1501, `ok` is `keel.unexpected` (nothing saved or followed), and `navigate` rejects (E1501) unless it is one once `\` reads as `/` and `#…` drops."
+// k.router (Links) "`Link to`, `navigate`, `Form action` and an action's `ok` take `Href` only, rechecked when run (server and client): else `Link` renders `about:blank`, `Form` throws E1501, `ok` is `keel.unexpected` (nothing saved or followed), and `navigate` rejects (E1501) unless it is one once `\` reads as `/` and `#…` drops."
 // rfc:0157 conformance: for generated action results (`null`, `c.href` links, strings from a hostile alphabet), after a submit over each transport the next location (a 303 `location`, a JSON `value`) is `null` or a path of the origin.
 // The client transport is in packages/testing/conformance/form-ok-location-on-origin.test.ts.
 // Seed 1337 (fc.assert below).

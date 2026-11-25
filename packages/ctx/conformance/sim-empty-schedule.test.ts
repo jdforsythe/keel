@@ -1,4 +1,4 @@
-// Spec: k.sim, Conformance "A ctx with an empty schedule gives the same results and observer events as one without."
+// Spec: k.sim, clause "A ctx with an empty schedule gives the same results and observer events as one without."
 // Seed: 1337.
 import type { CtxEvent, SimCtx } from "@keel/ctx";
 import { createCtx, observe } from "@keel/ctx";

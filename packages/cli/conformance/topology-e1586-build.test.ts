@@ -1,5 +1,5 @@
 // Spec: k.topology, clause "A placed stdlib module whose `./contract` export resolves and `./routes` does not is one E1586 at its `topology.ts` id in `keel check` and `keel build`; both or neither is none."
-// Spec: k.topology, Rules "E1586 a placed stdlib module whose `./contract` resolves and `./routes` does not (at its id)"
+// k.topology, Rules "E1586 a placed stdlib module whose `./contract` resolves and `./routes` does not (at its id)"
 // Seed: 1337 (no property: four fixed shapes). The `keel build` half (and `keel check`, through the real command) of
 // packages/check/conformance/E1586-placed-module-no-routes.test.ts.
 // ASSUMPTION: a stdlib package is found through an app

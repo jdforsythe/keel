@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.testing, Harness "`resumeDocument(html, { routes: () => import(path) })` resumes in a module graph of its own: each module the import reaches, `@keel/store` too, evaluated anew."
-// Spec: k.testing, Conformance "`resumeDocument` with `routes` as an import: a module store written before the request is initial in `state()`; a `fire` leaves the test's instance unchanged."
+// k.testing, Harness "`resumeDocument(html, { routes: () => import(path) })` resumes in a module graph of its own: each module the import reaches, `@keel/store` too, evaluated anew."
+// Spec: k.testing, clause "`resumeDocument` with `routes` as an import: a module store written before the request is initial in `state()`; a `fire` leaves the test's instance unchanged."
 // Property seed: 1337 (fc.assert seed below). The island document is written by hand in the shape k.runtime gives a server document
 // (`data-k-island="<route id>"`, one `#k-state`), rendered here with this test's own instance of the routes module and its store.
 import { mount } from "@keel/runtime-dom";

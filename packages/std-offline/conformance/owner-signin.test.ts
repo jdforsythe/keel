@@ -1,4 +1,4 @@
-// Spec: std.outbox-owner Conformance, bullet 4: "`writeFor({ key, base, owner: 'a' }, "")` is `err` with `{ code: 'offline.signin', message: 'signin', data: {} }`; entries of owner `a` refused with it stay `queued`, a `drain` with `""` posts none and fails none, and a later `drain` with `a` posts each once with its key."
+// Spec: std.outbox-owner, clause "`writeFor({ key, base, owner: 'a' }, \"\")` is `err` with `{ code: 'offline.signin', message: 'signin', data: {} }`; entries of owner `a` refused with it stay `queued`, a `drain` with `\"\"` posts none and fails none, and a later `drain` with `a` posts each once with its key."
 // Seed 1337
 // Assumptions: the sim route (fixtures.ts) answers a `writeFor` err 400 `{ ok: false, error }`; `server.takesCallerAs("")` is the request with no user.
 // "posts each once with its key": after the refused first post, the later `drain` with `a` posts every entry once more at most, each with the key it was queued under, and the server commits each once, in order.

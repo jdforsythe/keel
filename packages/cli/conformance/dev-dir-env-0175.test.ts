@@ -1,4 +1,4 @@
-// Spec: k.data, Conformance "Under `keel dev`, a loader answering `process.env.KEEL_DEV_DIR` answers the absolute path of the app's `.keel-dev/`."
+// Spec: k.data, clause "Under `keel dev`, a loader answering `process.env.KEEL_DEV_DIR` answers the absolute path of the app's `.keel-dev/`."
 // Seed 1337 (no generated input: one scenario). Assumes: the variable is `KEEL_DEV_DIR`; the answer is `<project>/.keel-dev` with no trailing slash, the project path realpath'd.
 // Pending: keel dev does not set it yet.
 import { realpathSync } from "node:fs";

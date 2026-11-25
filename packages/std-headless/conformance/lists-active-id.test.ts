@@ -1,5 +1,5 @@
-// Spec: std.lists, Conformance "`activeId.get()` is `w.option.k2` when option `k2` of widget `w` is active, and `""` before `opened`."
-// Spec: std.lists, listChart "`activeId` (the part id `<id>.<part>.<key>` of the active option, `""` when none)"
+// Spec: std.lists, clause "`activeId.get()` is `w.option.k2` when option `k2` of widget `w` is active, and `\"\"` before `opened`."
+// std.lists, listChart "`activeId` (the part id `<id>.<part>.<key>` of the active option, `""` when none)"
 // Seed: 1337. Assumptions in lists-support.ts.
 import { listChart } from "@keel/std-headless";
 import fc from "fast-check";

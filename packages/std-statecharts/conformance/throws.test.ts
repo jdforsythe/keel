@@ -1,4 +1,4 @@
-// Spec: std.statecharts, Conformance "`chart` throws E2751, E2753 and E2754 for those fixtures."
+// Spec: std.statecharts, clause "`chart` throws E2751, E2753 and E2754 for those fixtures."
 // Seed: 1337.
 // Assumption: the thrown error's message or `code` carries the rule code; asserted as a match on the code text.
 // E2752 and E2755 are not thrown (Checked paragraph names only E2751, E2753 and E2754), so a chart with an unreachable state does not throw.

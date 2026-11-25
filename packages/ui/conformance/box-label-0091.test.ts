@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.a11y Required props, "`label` on ... `Box as` `nav` or `aside` (`aria-label`; optional on other landmarks)"
-// Spec: k.ui Conformance, "Two `Box as="nav"` with distinct `label`s pass axe; a `nav` without one is E1802." (axe half: packages/testing/conformance)
+// k.a11y Required props, "`label` on ... `Box as` `nav` or `aside` (`aria-label`; optional on other landmarks)"
+// Spec: k.ui, clause "Two `Box as=\"nav\"` with distinct `label`s pass axe; a `nav` without one is E1802." (axe half: packages/testing/conformance)
 // Seed 1337 (fast-check). Type-level assertions are checked by `tsc`; the runtime expects keep the file a test.
 import { createCtx } from "@keel/ctx";
 import { scope, signal } from "@keel/reactive";

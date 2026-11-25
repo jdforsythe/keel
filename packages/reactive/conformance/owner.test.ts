@@ -1,5 +1,4 @@
-// Spec: k.reactive Conformance, "owner() inside scope(fn) returns that scope's handle; outside any scope it
-// returns undefined; inside an effect it returns the scope that owns the effect".
+// Spec: k.reactive, clause "`owner()` inside `scope(fn)` returns that scope's handle; outside any scope it returns undefined; inside an effect it returns the scope that owns the effect."
 import { describe, expect, it } from "vitest";
 import { effect, owner, scope } from "@keel/reactive";
 import type { Scope } from "@keel/reactive";

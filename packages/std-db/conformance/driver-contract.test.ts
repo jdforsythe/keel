@@ -1,4 +1,4 @@
-// Spec: std.db, Conformance "Each driver, on a temporary SQLite file and on Postgres (PGlite, and a Postgres 17 service in CI), passes k.persist's storage clauses."
+// Spec: std.db, clause "Each driver, on a temporary SQLite file and on Postgres (PGlite, and a Postgres 17 service in CI), passes k.persist's storage clauses."
 // Seed: 1337.
 // Assumption: a rejected promise from `commit` is how "throws E1606" shows (every storage operation returns a promise); the error's message names E1606.
 // Postgres runs on PGlite unless KEEL_TEST_POSTGRES_URL is set (see fixtures.ts).

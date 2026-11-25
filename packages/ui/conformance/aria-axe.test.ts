@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.aria, Conformance "Each role with its required props, parent and children (a `listbox` with one `option`, a `table` with one `row` of one `cell`) has no axe violations."
+// Spec: k.aria, clause "Each role with its required props, parent and children (a `listbox` with one `option`, a `table` with one `row` of one `cell`) has no axe violations."
 // Seed: 1337 (no generated inputs; every case is enumerated).
 // Real axe-core, same rule set and disabled page-level rules as base-elements-axe-core.test.ts; `color-contrast` is off because happy-dom computes no layout.
 // Optional props are passed alongside the required ones where the Roles table is unclear which are required.

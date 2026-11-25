@@ -1,5 +1,5 @@
-// Spec: k.docs "A `docs/` or `docs/<id>.md` linked outside its package is absent (E1066); a package folder linked into a store reads."
-// Spec: k.docs "A skill whose `description` is `Build pages; E1401, E19xx` is listed with `title` `Build pages`."
+// Spec: k.docs, clause "A `docs/` or `docs/<id>.md` linked outside its package is absent (E1066); a package folder linked into a store reads."
+// Spec: k.docs, clause "A skill whose `description` is `Build pages; E1401, E19xx` is listed with `title` `Build pages`."
 // Seed: none (examples; real temp directories, real symlinks, the real `keel` binary; the title test uses the in-process runner).
 import { mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";

@@ -1,5 +1,5 @@
 // Spec: std.conflicts, clause "A rebased entry setting a todo's title after a concurrent entry setting it to another value is one `order` race whose `against` names that entry."
-// Spec: std.conflicts, rule E2701: a rebased entry races its concurrent entries.
+// std.conflicts, rule E2701: a rebased entry races its concurrent entries.
 // Seed 1337
 import { races } from "@keel/std-conflicts";
 import fc from "fast-check";

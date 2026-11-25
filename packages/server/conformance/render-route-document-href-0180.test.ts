@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.testing, Conformance "With `app`, an action's `ok(href)` leaves `route().id` the target's, `location().entries` 2, and the target's loader run once through `app`."
+// Spec: k.testing, clause "With `app`, an action's `ok(href)` leaves `route().id` the target's, `location().entries` 2, and the target's loader run once through `app`."
 // Seed: 1337 (fc.assert below). Pending: `renderRoute` has no `app` option yet. See render-route-document-support.ts for the assumed fixture shape.
 import { renderRoute } from "@keel/testing";
 import fc from "fast-check";

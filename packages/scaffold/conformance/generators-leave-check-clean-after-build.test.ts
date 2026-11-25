@@ -1,4 +1,4 @@
-// Spec: k.scaffold, Guarantee "If `keel check` was clean before an operation, it is clean after."
+// k.scaffold, Guarantee "If `keel check` was clean before an operation, it is clean after."
 // Real: each case materializes a project, runs the real `keel build` once (so `.keel/` and the generated build files exist), confirms `keel check` is clean,
 // runs the real `keel scaffold <generator>` and asserts the generator exits 0, `keel check` is clean again, and no record anywhere carries E1005.
 // No random input: one fixed project per generator.

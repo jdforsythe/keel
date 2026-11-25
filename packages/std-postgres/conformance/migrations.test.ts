@@ -1,5 +1,5 @@
-// Spec: std.postgres, Conformance "Two processes on one `postgres:` URL apply each pending migration once; a changed applied file is E2454; `0001`, `0003` is E2453."
-// Spec: std.postgres, Migrations "`migrations` maps `./migrations/NNNN-<kebab>.sql` to its text, numbered from 0001 without a gap; another key or a gap throws E2453 when `database` runs. ... A `keel_migrations` row of the capability whose file is gone or whose SHA-256 differs from its `digest` is E2454. After a failed pass every query of that database on the ctx rejects with its error."
+// Spec: std.postgres, clause "Two processes on one `postgres:` URL apply each pending migration once; a changed applied file is E2454; `0001`, `0003` is E2453."
+// std.postgres, Migrations "`migrations` maps `./migrations/NNNN-<kebab>.sql` to its text, numbered from 0001 without a gap; another key or a gap throws E2453 when `database` runs. ... A `keel_migrations` row of the capability whose file is gone or whose SHA-256 differs from its `digest` is E2454. After a failed pass every query of that database on the ctx rejects with its error."
 // Seed: 1337.
 // Assumption: the two-process test needs a Postgres 17 (`KEEL_TEST_POSTGRES_URL`) and is skipped without one; children are `node --experimental-strip-types` on `migrate-child.ts`, which resolves `@keel/*` through the package's node_modules.
 // Assumption: E2454 is shown on a PGlite folder by two child runs in sequence (one process at a time on PGlite); E2453 and E2454 are thrown errors whose `code` is that string or whose text holds it.

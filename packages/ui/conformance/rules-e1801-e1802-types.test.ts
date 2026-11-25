@@ -1,4 +1,4 @@
-// Spec: k.ui Rules E1801 (raw value where a token is required); k.a11y Rules E1802 (missing a11y-required prop).
+// k.ui Rules E1801 (raw value where a token is required); k.a11y Rules E1802 (missing a11y-required prop).
 // Type-level: assertions are checked by `tsc`/vitest typecheck; the runtime expect only keeps the file a test.
 import type { Box, Button, Checkbox, Heading, Image, Input, Link, Select, TextArea } from "@keel/ui";
 import { describe, expect, expectTypeOf, it } from "vitest";

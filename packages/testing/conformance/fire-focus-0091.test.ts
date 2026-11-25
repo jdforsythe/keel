@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.testing Conformance, "`fire(id, { type: 'focus' })` on an input makes `find(id).state.focused` true; `blur` makes it false."
-// Spec: k.testing Harness `fire` ("`focus`, `blur`; both move focus") and Rules "E1719 `fire` `focus` on an unfocusable element, or `blur` off an unfocused one". Seed: 1337.
+// Spec: k.testing, clause "`fire(id, { type: 'focus' })` on an input makes `find(id).state.focused` true; `blur` makes it false."
+// k.testing Harness `fire` ("`focus`, `blur`; both move focus") and Rules "E1719 `fire` `focus` on an unfocusable element, or `blur` off an unfocused one". Seed: 1337.
 // Assumed: the delegated `on(id, "focus" | "blur", handler)` of `@keel/runtime-dom/ops` receives the events the DOM dispatches.
 import { clone, on, template } from "@keel/runtime-dom/ops";
 import { s } from "@keel/schema";

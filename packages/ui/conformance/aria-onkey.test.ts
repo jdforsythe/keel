@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.aria, Conformance "`fire(id, { type: 'keydown', key: 'ArrowDown' })` calls `onKey` with `{ key: 'ArrowDown', shift: false, alt: false, mod: false }`; a true return cancels the event, a false one does not."
+// Spec: k.aria, clause "`fire(id, { type: 'keydown', key: 'ArrowDown' })` calls `onKey` with `{ key: 'ArrowDown', shift: false, alt: false, mod: false }`; a true return cancels the event, a false one does not."
 // Seed: 1337.
 // `fire` is the @keel/testing harness call; here the same event is dispatched on the element so the delegated table (k.runtime) is the path under test.
 // Behavior extras: `KeyInput` is `{ key, shift, alt, mod }`; `onClick`, `onFocus`, `onBlur` and `onInput` on `combobox`.

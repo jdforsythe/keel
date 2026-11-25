@@ -1,4 +1,6 @@
-// Spec: k.compiler Build-time evaluation, Rules E1000/E1006/E1049, Conformance "A file with a syntax error yields only E1000, also in routes.ts at build time" and "A routes.ts throwing a plain Error is E1006; throwing { code: 'E1502' } keeps E1502."
+// Spec: k.compiler, clause "A file with a syntax error yields only E1000, also in `routes.ts` at build time."
+// Spec: k.compiler, clause "A `routes.ts` throwing a plain Error is E1006; throwing `{ code: 'E1502' }` keeps E1502."
+// k.compiler Build-time evaluation, Rules E1000/E1006/E1049, Conformance and
 import fs from "node:fs";
 import path from "node:path";
 import keel from "@keel/compiler/vite";

@@ -1,4 +1,4 @@
-// Spec: k.sync Conformance, "`restore(snapshot())` keeps `head()`; a snapshot without `head` restores its latest entry's `id`, else 0; folding past `logLimit` or a secret leaves `head()` unchanged."
+// Spec: k.sync, clause "`restore(snapshot())` keeps `head()`; a snapshot without `head` restores its latest entry's `id`, else 0; folding past `logLimit` or a secret leaves `head()` unchanged."
 // Seed 1337 (fast-check `seed: 1337`).
 import { s } from "@keel/schema";
 import { store, transaction, tx } from "@keel/store";

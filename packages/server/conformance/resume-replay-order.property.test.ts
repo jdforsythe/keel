@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.resume, Replay "Events queued before resume replay once all islands resume, in fired order, each as a live one: from the target through each enclosing island, until `stopPropagation`; one in a re-rendered island's own nodes is dropped."
-// Spec: k.resume, Conformance "Clicks queued on a page island's button, then its layout island's, replay after both resume, page first; a layout handler on an element enclosing the page's button runs after the page's, unless the page's calls `stopPropagation`."
+// k.resume, Replay "Events queued before resume replay once all islands resume, in fired order, each as a live one: from the target through each enclosing island, until `stopPropagation`; one in a re-rendered island's own nodes is dropped."
+// Spec: k.resume, clause "Clicks queued on a page island's button, then its layout island's, replay after both resume, page first; a layout handler on an element enclosing the page's button runs after the page's, unless the page's calls `stopPropagation`."
 // Property seed: 1337 (fc.assert seed below). A chain of one to four island levels, a random sequence of clicks fired before resume:
 // the handlers run in fired order, each click through the handler of its button, then each enclosing level's wrapper, innermost first.
 import fc from "fast-check";

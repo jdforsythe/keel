@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.data, clause 4 (k.data#4): "An API loader returning its capability's `err` `keel.unreachable`, `keel.conflict` or `keel.notFound` answers 502, 409 or 404; one returning `ok` of a value failing the entry's `output` answers 500 and, in dev, an E1554 `diag`."
+// Spec: k.data, clause "An API loader returning its capability's `err` `keel.unreachable`, `keel.conflict` or `keel.notFound` answers 502, 409 or 404; one returning `ok` of a value failing the entry's `output` answers 500 and, in dev, an E1554 `diag`."
 // Seed: 1337. The capability is registered by the test through `@keel/ctx`'s `register` (the app-registered accessor of k.data); its sim side
 // answers the planned `Result`, and the loader returns the accessor's answer as its own. A value the entry's `output` refuses is built through
 // `Reflect.apply`, since the type refuses it.

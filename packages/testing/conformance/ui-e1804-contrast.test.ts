@@ -1,4 +1,5 @@
-// Spec: k.ui Conformance, "`fg="fg" bg="bg"` with the tokens above passes E1804 in both schemes; a pair at 3:1 fails it". Seed: 1337.
+// Spec: k.ui, clause "`fg=\"fg\" bg=\"bg\"` with the tokens above passes E1804 in both schemes; a pair at 3:1 fails it."
+// k.ui Seed: 1337.
 // The real diagnostic through `check()` on a fixture of `<Box fg bg>` and the spec tokens (the `tokens` project artifact).
 import { check } from "@keel/check";
 import { defineTokens } from "@keel/ui";

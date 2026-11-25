@@ -1,5 +1,5 @@
-// Spec: RFC 0162 Conformance diff: "A Toaster toast with `duration` dismisses itself after that time on the ctx's clock, rendered by `render` with no ctx given."
-// Spec: std.headless Toaster "a `status` item with `duration` 5,000 calls `onDismiss` after 5,000 ms of sim clock and not before". Seed: 1337.
+// RFC 0162 Conformance diff: "A Toaster toast with `duration` dismisses itself after that time on the ctx's clock, rendered by `render` with no ctx given."
+// std.headless Toaster "a `status` item with `duration` 5,000 calls `onDismiss` after 5,000 ms of sim clock and not before". Seed: 1337.
 // @vitest-environment happy-dom
 // A `duration` below 5,000 counts as 5,000 (std.headless Toaster), so durations run from 5,000 up.
 // ASSUMPTION: the handle exposes the sim ctx `render` made as `ctx` (RFC 0162 Conformance diff: "the same one its handle exposes as `ctx`"); time moves with `t.ctx.clock.advance(ms)` then `await t.settle()`.

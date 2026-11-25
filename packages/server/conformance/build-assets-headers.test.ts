@@ -1,5 +1,5 @@
 // Spec: k.deploy, clause "Built files are `nosniff`, unhashed ones `no-cache`; a symlink out of `assets/` is not served."
-// Spec: k.deploy Rules E1555 (a manifest entry whose file escapes the build dir)
+// k.deploy Rules E1555 (a manifest entry whose file escapes the build dir)
 // Seed: 1337 (no generated inputs). The dist/web fixture is hand-built in a realpath'd tmp dir; `keel build` is not run.
 // @vitest-environment node
 import fs from "node:fs";

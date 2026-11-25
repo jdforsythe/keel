@@ -1,4 +1,4 @@
-// Spec: k.scaffold, Generators "`project`: ... module `app`, generated turbo, CI and deploy files (k.deploy), agent files (k.explain); `--workspace` (an app inside the Keel monorepo) adds `vitest.config.ts` instead of turbo, CI, agent files. No `index.html`."
+// k.scaffold, Generators "`project`: ... module `app`, generated turbo, CI and deploy files (k.deploy), agent files (k.explain); `--workspace` (an app inside the Keel monorepo) adds `vitest.config.ts` instead of turbo, CI, agent files. No `index.html`."
 // Seed 1337 (fast-check). Generated in process (Op "project"); ASSUMED input keys `name`, `adapter` and `workspace`.
 import fc from "fast-check";
 import { expect, test } from "vitest";

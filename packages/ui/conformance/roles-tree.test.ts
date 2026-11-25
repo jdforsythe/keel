@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
-// Spec: k.roles, Conformance "`tree` renders a `<ul role="tree">`; a `treeitem` with `expanded` false writes `aria-expanded="false"`, a leaf none; a `group` with `list` renders a `<ul role="group">`."
-// Spec: k.roles, Attributes "Each optional prop writes one attribute (ARIA names unless marked HTML); a prop left undefined writes none."
-// Spec: k.roles, Attributes "An ARIA boolean writes `"true"` or `"false"`; an HTML boolean is present or absent."
+// Spec: k.roles, clause "`tree` renders a `<ul role=\"tree\">`; a `treeitem` with `expanded` false writes `aria-expanded=\"false\"`, a leaf none; a `group` with `list` renders a `<ul role=\"group\">`."
+// k.roles, Attributes "Each optional prop writes one attribute (ARIA names unless marked HTML); a prop left undefined writes none."
+// k.roles, Attributes "An ARIA boolean writes `"true"` or `"false"`; an HTML boolean is present or absent."
 // Seed: 1337.
 // Assumed attribute names are the ARIA ones: aria-activedescendant, aria-multiselectable, aria-level, aria-setsize, aria-posinset, aria-selected.
 import { Part } from "@keel/ui/aria";

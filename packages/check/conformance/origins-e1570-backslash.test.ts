@@ -1,5 +1,5 @@
 // rfc:0160 conformance: `Image src` beginning `/\evil.example/x`, and beginning two backslashes then `evil.example/x`, are each E1570.
-// Spec: k.origins, Rules "E1570 also reports a literal `Frame src` that is not absolute, and reads `\` as `/` (`/\host`)"
+// k.origins, Rules "E1570 also reports a literal `Frame src` that is not absolute, and reads `\` as `/` (`/\host`)"
 // Seed 1337 (fc.assert below).
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";

@@ -1,5 +1,5 @@
 // Spec: std.schedules, clause "`0 0 */2 * 1` fires on Mondays that are odd days of the month and on no other day." (rfc:0092 A6)
-// Spec: std.schedules, API: "A day field not starting with `*` is restricted; when both are, a day matching either matches, else both must match."
+// std.schedules, API: "A day field not starting with `*` is restricted; when both are, a day matching either matches, else both must match."
 // Seed 1337
 // Assumption: a fire is observed by spying `jobs.enqueue`, as in next-fire-matches-cron.test.ts; the oracle reads UTC calendar days with `Date`'s UTC getters on a given instant (no clock reads).
 import { createCtx } from "@keel/ctx";

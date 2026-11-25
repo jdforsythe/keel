@@ -1,5 +1,5 @@
-// Spec: std.tauri, Files "`icons/icon.png` there is the app's own, committed and not generated; without one the build uses Keel's mark."
-// Spec: std.tauri, Conformance "A build runs `tauri build --debug --no-bundle` in `dist/web/tauri/`, beside `www/`, with `capabilities/http.json` allowing `KEEL_ORIGIN`; without `icons/icon.png` in `deploy/web/tauri/` it writes Keel's mark there, with one it copies the app's."
+// std.tauri, Files "`icons/icon.png` there is the app's own, committed and not generated; without one the build uses Keel's mark."
+// Spec: std.tauri, clause "A build runs `tauri build --debug --no-bundle` in `dist/web/tauri/`, beside `www/`, with `capabilities/http.json` allowing `KEEL_ORIGIN`; without `icons/icon.png` in `deploy/web/tauri/` it writes Keel's mark there, with one it copies the app's."
 // Seed: 1337.
 // Fake tools: `PATH` holds a `cargo`, a `rustc` and an `npx` written by the test. The fake `npx` hands `vite` to the real
 // `npx` (the web build runs for real) and records the arguments and working directory of `tauri`.

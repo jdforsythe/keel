@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.api Requests, "`accept: text/event-stream` on an entry that is not live: 406 after the guard and before `query`, so a denial is 403 first."
+// k.api Requests, "`accept: text/event-stream` on an entry that is not live: 406 after the guard and before `query`, so a denial is 403 first."
 // Seed 1337 (fc.assert below).
 import { guard, loader, manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";

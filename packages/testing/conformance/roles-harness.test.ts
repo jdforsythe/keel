@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.roles, Conformance "`slider` renders `<input type="range" min max value aria-label>` with no `role` attribute; `valueText` writes `aria-valuetext`; `fire(id, { type: 'input', value: '4' })` calls `onInput(4)`."
-// Spec: k.roles, Conformance "Two `radio` parts with one `name` in a `radiogroup`: `fire(id, { type: 'change' })` on the second calls its `onChange` once; neither has a `role` attribute."
+// Spec: k.roles, clause "`slider` renders `<input type=\"range\" min max value aria-label>` with no `role` attribute; `valueText` writes `aria-valuetext`; `fire(id, { type: 'input', value: '4' })` calls `onInput(4)`."
+// Spec: k.roles, clause "Two `radio` parts with one `name` in a `radiogroup`: `fire(id, { type: 'change' })` on the second calls its `onChange` once; neither has a `role` attribute."
 // Seed: 1337. The rendering halves are in packages/ui/conformance/roles-native-controls.test.ts; here `fire` runs under the harness.
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";

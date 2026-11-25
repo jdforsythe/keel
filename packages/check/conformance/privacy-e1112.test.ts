@@ -1,8 +1,9 @@
-// Spec: k.reveal, Rules "E1112 a value `reveal` returns reaching a sink, in app code (no fix): one finding per sink, at the first carrying argument."
-// Spec: k.reveal, Flow "A value carries one when it is:" (each item) and "Any other call, a parameter and an import end it (a hash passes; a helper is not read)."
-// Spec: k.reveal, Conformance "In a `*.server.ts` file, `tx(t, { v: reveal(p.k) })`, the same through a `const` or in `meta`, `ctx.storage.set(k, reveal(p.k))`, `console.log(reveal(p.k))` and `new Error('x' + reveal(p.k))` are each one E1112; `tx(t, { v: hash(reveal(p.k)) })`, `reveal(p.k) === h` and a call of a local named `reveal` are none."
-// Spec: k.reveal, Sinks (each sentence) and Conformance "Each sink above, and each carrier above wrapped 1 to 4 deep, is one E1112; the same under one local call is none."
-// Spec: k.reveal, Conformance "`reveal(p.k).length`, `.startsWith('a')`, `reveal(p.k) && y`, `o.b` of `{ a: reveal(p.k), b: 1 }`, a `let` reassigned to a hash, and `set` on a `new Map()` named `storage` are none."
+// k.reveal, Rules "E1112 a value `reveal` returns reaching a sink, in app code (no fix): one finding per sink, at the first carrying argument."
+// k.reveal, Flow "A value carries one when it is:" (each item) and "Any other call, a parameter and an import end it (a hash passes; a helper is not read)."
+// Spec: k.reveal, clause "In a `*.server.ts` file, `tx(t, { v: reveal(p.k) })`, the same through a `const` or in `meta`, `ctx.storage.set(k, reveal(p.k))`, `console.log(reveal(p.k))` and `new Error('x' + reveal(p.k))` are each one E1112; `tx(t, { v: hash(reveal(p.k)) })`, `reveal(p.k) === h` and a call of a local named `reveal` are none."
+// Spec: k.reveal, clause "Each sink above, and each carrier above wrapped 1 to 4 deep, is one E1112; the same under one local call is none."
+// k.reveal Sinks (each sentence) and
+// Spec: k.reveal, clause "`reveal(p.k).length`, `.startsWith('a')`, `reveal(p.k) && y`, `o.b` of `{ a: reveal(p.k), b: 1 }`, a `let` reassigned to a hash, and `set` on a `new Map()` named `storage` are none."
 // Seed: 1337.
 // E1112 has no fix; fix-diffs.test.ts records it.
 // Loose: the spec gives no exact message or column, so findings are asserted by code, path and the line of the argument.

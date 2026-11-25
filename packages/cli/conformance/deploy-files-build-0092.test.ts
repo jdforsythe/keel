@@ -1,4 +1,5 @@
-// Spec: k.deploy Conformance (rfc:0092), "With `node` deployables `x`, `y` and a `client` one, `keel build` writes `deploy/x/Dockerfile`, `deploy/y/Dockerfile`, `deploy/compose.yaml` and no other Dockerfile; a changed byte is E1005 whose fix restores it; moving `b` from `y` to `x` changes only `topology.ts`, `deploy/` and the CI workflow."
+// Spec: k.deploy, clause "With `node` deployables `x`, `y` and a `client` one, `keel build` writes `deploy/x/Dockerfile`, `deploy/y/Dockerfile`, `deploy/compose.yaml` and no other Dockerfile; a changed byte is E1005 whose fix restores it; moving `b` from `y` to `x` changes only `topology.ts`, `deploy/` and the CI workflow."
+// k.deploy (rfc:0092)
 // Seed 1337 (the byte position comes from `fc.nat`). The real binary (the host `Io` path of `build`) over a temp project with
 // `@keel/*` and `vite` linked; `keel check` reads E1005. The fix is applied with the small unified-diff applier below.
 import { chmodSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";

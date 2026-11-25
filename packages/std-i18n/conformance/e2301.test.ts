@@ -1,5 +1,5 @@
 // Spec: std.i18n, clause "With `@keel/std-i18n` in a module's `deps`, `keel check` reports one E2301 each for `new Intl.NumberFormat('de-DE')` and `a.localeCompare(b, 'de-DE')` in its files and none for them in a module without it; `n.toLocaleString()` reports E1758 and no E2301."
-// Spec: std.i18n, rule E2301: a formatter or toLocale*/localeCompare call with a locale argument; the message names the stdlib function to call; no fix.
+// std.i18n, rule E2301: a formatter or toLocale*/localeCompare call with a locale argument; the message names the stdlib function to call; no fix.
 // Seed 1337
 // Assumption: `check()` imports nothing (k.module), so the rule is registered by importing `@keel/std-i18n/tools`;
 // a module is the files under `modules/<id>/` with a `module.ts` manifest listing `deps`.

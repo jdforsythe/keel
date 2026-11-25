@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.router (Links) "Params are encoded by schema then URL-encoded, one segment each (`''` throws E1503); search keys are sorted and absent optionals omitted. An `Href` starts with one `/` and holds no `\`, control character or `#`."
+// k.router (Links) "Params are encoded by schema then URL-encoded, one segment each (`''` throws E1503); search keys are sorted and absent optionals omitted. An `Href` starts with one `/` and holds no `\`, control character or `#`."
 // Seed 1337 (fc.assert below).
 import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";

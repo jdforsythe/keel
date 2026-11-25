@@ -1,7 +1,7 @@
 // rfc:0160 conformance: a spread, a computed key or a repeated key in a deployable is E1552 in `keel check` and `keel build`, and nothing is emitted that holds the origin written there.
-// Spec: k.topology, Rules "E1552 `topology.ts` not statically readable, a name not `[a-z][a-z0-9-]*`, a module unknown or in two deployables."
-// Spec: k.hosting, Rules "E1552 (k.topology) also covers a spread, computed key or key twice in a deployable of `topology.ts`."
-// Spec: k.origins, Policy "All read the static read's declaration: the entries pass it as `createApp({ origins })`."
+// k.topology, Rules "E1552 `topology.ts` not statically readable, a name not `[a-z][a-z0-9-]*`, a module unknown or in two deployables."
+// k.hosting, Rules "E1552 (k.topology) also covers a spread, computed key or key twice in a deployable of `topology.ts`."
+// k.origins, Policy "All read the static read's declaration: the entries pass it as `createApp({ origins })`."
 // Seed 1337 (no generated input: one fixture per form, spawned binary).
 // The build stops at E1552, so no `server.mjs`, `csp.txt`, shell policy or `security.json` is written; the test reads every file the command left outside the sources and finds the origin in none.
 // The served header of a runtime-only origin is packages/server/conformance/origins-own-frame-and-one-source.test.ts.

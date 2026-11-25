@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
-// Spec: k.routes, Where rules fire "A code is a type error, a throw, a `keel check` diagnostic, or several."
-// Spec: k.routes, Where rules fire "| E1155 | a contract key | `contract` | contract keys |"
-// Spec: k.routes, Where rules fire "| E1513 | | `contract` (an API name only) | every case |"
+// k.routes, Where rules fire "A code is a type error, a throw, a `keel check` diagnostic, or several."
+// k.routes, Where rules fire "| E1155 | a contract key | `contract` | contract keys |"
+// k.routes, Where rules fire "| E1513 | | `contract` (an API name only) | every case |"
 // One test per row of the table, its type-error and thrown columns; the `keel check` column, with each type error under its row's code and never as E1751, is packages/check/conformance/where-codes-check.test.ts.
 // Seed 1337 (no random input: one fixture per row). A type error is claimed in ./negative-types.test-d.ts and the call is also run here, untyped.
 import { action, loader, manifest, routeTable } from "@keel/router";

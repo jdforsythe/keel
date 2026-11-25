@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.origins, Conformance "With no `origins`, and with `origins: {}`, a fixture's production and dev documents, `csp.txt` and shell policies are byte-equal to k.security's."
+// Spec: k.origins, clause "With no `origins`, and with `origins: {}`, a fixture's production and dev documents, `csp.txt` and shell policies are byte-equal to k.security's."
 // Seed 1337 (sim ctx). This file: the production and dev documents. `csp.txt` and the shell policies: packages/cli/conformance/origins-none-byte-equal.test.ts.
 // Also: an empty directive is the same declaration as none (k.origins Declaration).
 import { describe, expect, test } from "vitest";

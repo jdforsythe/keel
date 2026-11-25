@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
-// Spec: k.host-code, Conformance "`customElement('x-dial', { set })` creates one `x-dial` child, calls `set` at mount and on each update, and removes the child at dispose."
-// Spec: k.host-code, Conformance "With `events: { 'dial-pick': (ev) => ({ at: 1 }) }`, a `dial-pick` event dispatched on the `x-dial` child calls `onEvent` once with `{ at: 1 }`; the same event dispatched on the `div`, or on the child after dispose, calls nothing."
-// Spec: k.host-code, customElement "Each `events` key is a DOM event type the custom element dispatches (`'change'`, `'dial-pick'`), and its entry `(ev: Event) => E` maps the event to what `emit` carries: `mount` listens for that type on the child, not on the `div`, with `out.signal`, and passes each result to `out.emit`, so the `Host`'s `events` schema parses it as any `emit`."
+// Spec: k.host-code, clause "`customElement('x-dial', { set })` creates one `x-dial` child, calls `set` at mount and on each update, and removes the child at dispose."
+// Spec: k.host-code, clause "With `events: { 'dial-pick': (ev) => ({ at: 1 }) }`, a `dial-pick` event dispatched on the `x-dial` child calls `onEvent` once with `{ at: 1 }`; the same event dispatched on the `div`, or on the child after dispose, calls nothing."
+// k.host-code, customElement "Each `events` key is a DOM event type the custom element dispatches (`'change'`, `'dial-pick'`), and its entry `(ev: Event) => E` maps the event to what `emit` carries: `mount` listens for that type on the child, not on the `div`, with `out.signal`, and passes each result to `out.emit`, so the `Host`'s `events` schema parses it as any `emit`."
 // Seed: 1337.
 import { If, mount } from "@keel/runtime-dom";
 import { Host, customElement } from "@keel/ui";

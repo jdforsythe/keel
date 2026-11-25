@@ -1,4 +1,4 @@
-// Spec: k.aria, Conformance "An app file importing `Part` from `@keel/ui/aria` reports no diagnostic, and its `styles` are collected as a stdlib component's."
+// Spec: k.aria, clause "An app file importing `Part` from `@keel/ui/aria` reports no diagnostic, and its `styles` are collected as a stdlib component's."
 // Seed: 1337. The collection half: an app file's `Part` style props and `states` reach `styles.json` as a base element's do.
 import { compile } from "@keel/compiler";
 import fc from "fast-check";

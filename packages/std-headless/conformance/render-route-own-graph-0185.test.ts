@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.testing, Conformance "Two harnesses of one page with `app`, `routes` as an import, a client store and a widget each resume and keep their own client state."
-// Spec: k.testing, Harness "With `routes: () => import(path)` the page resumes likewise (E1722 without `app`), so each harness owns its client stores, widgets and islands; server state on `ctx` is shared."
+// Spec: k.testing, clause "Two harnesses of one page with `app`, `routes` as an import, a client store and a widget each resume and keep their own client state."
+// k.testing, Harness "With `routes: () => import(path)` the page resumes likewise (E1722 without `app`), so each harness owns its client stores, widgets and islands; server state on `ctx` is shared."
 // Seed: 1337 (no generated input). `renderRoute` rejects E1720 on a resume warning, so a harness that returns resumed with none.
 // ASSUMPTION: a submit is `fire('og.note', input)` then `fire('og.save', click)`; `h.navigate('/p')` reloads the page from `app`.
 // See render-route-own-graph-routes.ts.

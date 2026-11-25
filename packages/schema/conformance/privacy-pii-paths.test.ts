@@ -1,4 +1,4 @@
-// Spec: k.schema, Conformance "`piiPaths` lists each marked leaf once with its class, an array item as `*`, and every leaf under a marked object, then `*` for its undeclared keys when it is open; a control bound (k.forms) to a declared object under it carries its nearest mark's class as `data-k-pii`." (rfc:0154; the `data-k-pii` half: packages/forms/conformance/pii-path-lookup.test.ts)
+// Spec: k.schema, clause "`piiPaths` lists each marked leaf once with its class, an array item as `*`, and every leaf under a marked object, then `*` for its undeclared keys when it is open; a control bound (k.forms) to a declared object under it carries its nearest mark's class as `data-k-pii`." (rfc:0154; the `data-k-pii` half: packages/forms/conformance/pii-path-lookup.test.ts)
 // Seed: 1337.
 // Skipped until `piiPaths` exists. Path text is compared dotted: the spec does not say whether `path` is a string or segments.
 import { piiPaths, s } from "@keel/schema";

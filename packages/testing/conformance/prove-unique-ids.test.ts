@@ -1,4 +1,4 @@
-// Spec: k.prove, Conformance "Appending `p` to an array under `!a.some(x => x.id === p.id)` proves `new Set(a.map(x => x.id)).size === a.length`; without the guard it rejects E1716 with a state holding `p.id`."
+// Spec: k.prove, clause "Appending `p` to an array under `!a.some(x => x.id === p.id)` proves `new Set(a.map(x => x.id)).size === a.length`; without the guard it rejects E1716 with a state holding `p.id`."
 // Seed: 1337.
 import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";

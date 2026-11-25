@@ -1,4 +1,4 @@
-// Spec: k.docs "With `@keel/std-tables` installed nowhere, `keel docs std.tables` emits E1065 naming `@keel/std-tables`, exit 1, and `keel docs` lists `std.tables` with `installed: false`."
+// Spec: k.docs, clause "With `@keel/std-tables` installed nowhere, `keel docs std.tables` emits E1065 naming `@keel/std-tables`, exit 1, and `keel docs` lists `std.tables` with `installed: false`."
 // Seed: none. Compact ` not installed` suffix from k.docs "Forms" (`docs.entry` compact). Red: `docs` is absent (E1051).
 import { describe, expect, it } from "vitest";
 import { baseline, jsonRecords, lines, run } from "./docs-support";

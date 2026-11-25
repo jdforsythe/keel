@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
-// Spec: k.guards, Conformance "Under `renderRoute(id, { routes, shell: true, ctx })`, the origin routed to a `createApp` whose `handle` answers a mount `Form` POST 303 to a page guarded by `user !== ''` with `set-cookie: s=1`, and whose `identify` answers `'u1'` for `s=1`: a second `/__keel/user` GET carries `s=1`, and the page renders without a redirect."
-// Spec: k.guards, Client "again after each mount request's answer in a shell (k.return)"
-// Spec: k.return, Mount requests "the router reads `user` again (k.guards Client) before it acts on them."
-// Spec: k.guards, Client "the router holds it in memory, never in `ctx.storage`, a log or a URL"
+// Spec: k.guards, clause "Under `renderRoute(id, { routes, shell: true, ctx })`, the origin routed to a `createApp` whose `handle` answers a mount `Form` POST 303 to a page guarded by `user !== ''` with `set-cookie: s=1`, and whose `identify` answers `'u1'` for `s=1`: a second `/__keel/user` GET carries `s=1`, and the page renders without a redirect."
+// k.guards, Client "again after each mount request's answer in a shell (k.return)"
+// k.return, Mount requests "the router reads `user` again (k.guards Client) before it acts on them."
+// k.guards, Client "the router holds it in memory, never in `ctx.storage`, a log or a URL"
 // Seed: 1337 (no generated input). Pending: RFC 0186 is not built. To un-skip: change `test.skip` to `test` in each case once the client router reads `/__keel/user` and re-reads it after a mount answer in a shell.
 // ASSUMPTION: the route `*` on the shell ctx's net takes every request to the page's origin; the request's `cookie` is read as it reaches that route. Fixture: render-route-guard-user-support.ts.
 import { createCtx } from "@keel/ctx";

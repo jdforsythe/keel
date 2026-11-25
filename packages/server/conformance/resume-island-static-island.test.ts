@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.resume, Conformance "An island layout around a static layout around an island page: the static level's nodes are kept, unclaimed; the page resumes; handlers in the layout and the page run."
+// Spec: k.resume, clause "An island layout around a static layout around an island page: the static level's nodes are kept, unclaimed; the page resumes; handlers in the layout and the page run."
 // Seed: 1337. Real compiled TSX, real createApp, real resume.
 import { afterEach, describe, expect, it } from "vitest";
 import {

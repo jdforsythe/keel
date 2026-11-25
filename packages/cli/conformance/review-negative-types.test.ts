@@ -1,4 +1,4 @@
-// Spec: k.unsafe, Conformance "`keel review` reports no R1050 for `// @ts-expect-error a page guard needs a redirect` in `test/a.test-d.ts` of a range adding it, and one R1050 for `// @ts-expect-error` with nothing after it there."
+// Spec: k.unsafe, clause "`keel review` reports no R1050 for `// @ts-expect-error a page guard needs a redirect` in `test/a.test-d.ts` of a range adding it, and one R1050 for `// @ts-expect-error` with nothing after it there."
 // Seed 1337 (the property). `keel review --list` over a temp git repository (review-support.ts): the range adds the file
 // under test. Directive text is built from constants so this file's own source holds none.
 import fc from "fast-check";

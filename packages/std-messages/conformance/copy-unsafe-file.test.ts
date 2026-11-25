@@ -1,5 +1,5 @@
-// Spec: std.copy, Files "Every app `*.tsx` file of the module, with or without `export default` and whatever its name, and its `routes.ts` (the route `title` only). Calls (below) are read in every app file of the module except the set's locale files. Tests and `.keel/` are not read; a file under `unsafe/` is read whole, its `unsafe(` calls included (k.check App code)."
-// Spec: std.copy, Conformance "In a module listing `@keel/std-messages`, `<Input placeholder="Search" />` in `modules/m/unsafe/Field.tsx` is one E2406 at the file's top level and one inside the arrow function given to `unsafe('r', () => ...)`."
+// std.copy, Files "Every app `*.tsx` file of the module, with or without `export default` and whatever its name, and its `routes.ts` (the route `title` only). Calls (below) are read in every app file of the module except the set's locale files. Tests and `.keel/` are not read; a file under `unsafe/` is read whole, its `unsafe(` calls included (k.check App code)."
+// Spec: std.copy, clause "In a module listing `@keel/std-messages`, `<Input placeholder=\"Search\" />` in `modules/m/unsafe/Field.tsx` is one E2406 at the file's top level and one inside the arrow function given to `unsafe('r', () => ...)`."
 // Seed 1337 (the property below). The fixture is a project of one module `m` listing `@keel/std-messages`; the `unsafe` call is built from a constant so this file's own source holds no literal call.
 import fc from "fast-check";
 import { expect, test } from "vitest";

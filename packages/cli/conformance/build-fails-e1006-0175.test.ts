@@ -1,4 +1,4 @@
-// Spec: k.compiler, Conformance "`keel build` of a project whose `modules/a/routes.ts` throws prints one E1006 naming that file, counts it among its summary's errors and exits 1, with a `client` deployable and with `node` ones only."
+// Spec: k.compiler, clause "`keel build` of a project whose `modules/a/routes.ts` throws prints one E1006 naming that file, counts it among its summary's errors and exits 1, with a `client` deployable and with `node` ones only."
 // Seed 1337 (the exported value is generated: a routes export that is no route table is E1006). Assumes: exit status 1; one `diag` record with code E1006 whose path or message names `modules/a/routes.ts`; the final `summary` record carries a numeric `counts.errors` of at least 1 (docs/OUTPUT.md).
 import fc from "fast-check";
 import { expect, test } from "vitest";

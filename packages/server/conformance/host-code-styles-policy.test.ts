@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.host-code, Styles and policy "In production a `<style>` element or a `style` attribute that outside code adds does not apply; `dev` serves the policy report-only, so there it applies and is reported."
-// Spec: k.host-code, Conformance "In Chromium under a production document's policy, a `<style>` element and a `style` attribute that `mount` adds change no computed style, and `node.style.color` set by `mount` does."
+// k.host-code, Styles and policy "In production a `<style>` element or a `style` attribute that outside code adds does not apply; `dev` serves the policy report-only, so there it applies and is reported."
+// Spec: k.host-code, clause "In Chromium under a production document's policy, a `<style>` element and a `style` attribute that `mount` adds change no computed style, and `node.style.color` set by `mount` does."
 // Seed: 1337 (no generated inputs). The Chromium clause needs a real browser's computed style and is untestable under happy-dom: only the policy header that causes it is asserted here.
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";

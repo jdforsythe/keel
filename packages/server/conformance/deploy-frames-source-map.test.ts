@@ -1,4 +1,4 @@
-// Spec: k.deploy, Conformance "A loader throwing in `modules/a/a.server.ts` of a `keel build` fixture logs, from `node dist/<name>/server.mjs` in json, `frames` starting `modules/a/a.server.ts:`; `server.mjs.map` has no `sourcesContent`, and no response to `GET /server.mjs.map` contains its `mappings`."
+// Spec: k.deploy, clause "A loader throwing in `modules/a/a.server.ts` of a `keel build` fixture logs, from `node dist/<name>/server.mjs` in json, `frames` starting `modules/a/a.server.ts:`; `server.mjs.map` has no `sourcesContent`, and no response to `GET /server.mjs.map` contains its `mappings`."
 // Seed: 1337.
 // ASSUMED shape (k.server Log): `frames` is an array of strings in json mode; stdout carries one json record per line.
 // Pattern of topology-server-mjs.test.ts: symlinked workspace packages, the real CLI builds once, the listening wait is a

@@ -1,4 +1,4 @@
-// Spec: k.sim, Conformance "An `offline` window `{ at: 100, ms: 50 }` makes `ctx.net.online()` false from clock time 100 to 150, and an observer gets the two `net` events."
+// Spec: k.sim, clause "An `offline` window `{ at: 100, ms: 50 }` makes `ctx.net.online()` false from clock time 100 to 150, and an observer gets the two `net` events."
 // Seed: 1337.
 import type { CtxEvent } from "@keel/ctx";
 import { createCtx, observe } from "@keel/ctx";

@@ -1,4 +1,4 @@
-// Spec: k.ui Conformance 7 and k.a11y Rules E1804. Property seed: 1337.
+// k.ui Conformance 7 and k.a11y Rules E1804. Property seed: 1337.
 // Expected ratios are computed in the test from the WCAG formula.
 import { contrast } from "@keel/ui/css";
 import * as fc from "fast-check";

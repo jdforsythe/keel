@@ -1,5 +1,5 @@
-// Spec: k.scaffold "`--sync` restores an edited block and copy, keeps text outside the block, reruns as no-op; creates absent files; keeps a `CLAUDE.md`, linked or not."
-// Spec: k.explain, Agent files "`keel docs --sync` writes them all or none, replacing or appending the block."
+// Spec: k.scaffold, clause "`--sync` restores an edited block and copy, keeps text outside the block, reruns as no-op; creates absent files; keeps a `CLAUDE.md`, linked or not."
+// k.explain, Agent files "`keel docs --sync` writes them all or none, replacing or appending the block."
 // Seed: none. Red: `keel docs` is absent (E1051), so --sync writes nothing and the scaffold writes no agent files.
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";

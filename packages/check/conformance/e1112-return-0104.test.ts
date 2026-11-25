@@ -1,5 +1,5 @@
-// Spec: k.reveal, Flow "A `return` is not a sink: an API action's `output` is where a revealed value leaves on purpose (k.api)."
-// Spec: k.reveal, Conformance "`return ok({ token: reveal(p.k) })` in an action is none."
+// k.reveal, Flow "A `return` is not a sink: an API action's `output` is where a revealed value leaves on purpose (k.api)."
+// Spec: k.reveal, clause "`return ok({ token: reveal(p.k) })` in an action is none."
 // Seed: 1337.
 // Loose: the spec gives no exact message or column, so findings are asserted by code and count.
 import { check } from "@keel/check";

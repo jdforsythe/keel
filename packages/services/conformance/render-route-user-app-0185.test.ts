@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.user, Conformance "With `app`, harnesses on one `ctx` with `user` `'u1'` and `'u2'`: each page's load, submit, service call and stream reach `app` as its `user`, with two callers; page 1's write reaches page 2's open stream."
-// Spec: k.user, Testing "Two harnesses over one `app` are two users, jars and callers of one server state."
+// Spec: k.user, clause "With `app`, harnesses on one `ctx` with `user` `'u1'` and `'u2'`: each page's load, submit, service call and stream reach `app` as its `user`, with two callers; page 1's write reaches page 2's open stream."
+// k.user, Testing "Two harnesses over one `app` are two users, jars and callers of one server state."
 // Seed: 1337 (no generated input: two fixed users). Pending: RFC 0185 is not built. To un-skip: change `test.skip` to `test` in this file once `renderRoute` with `app` signs the page in as `user`.
 // ASSUMPTION: `fire` resolves while an event stream the page opened stays open; the stream is read by a component through `service({ contract }).watch`.
 // One case per surface. See render-route-user-support.ts.

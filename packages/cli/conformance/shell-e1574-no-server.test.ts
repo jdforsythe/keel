@@ -1,5 +1,5 @@
-// Spec: k.shell, Conformance "With `web` alone and `KEEL_ORIGIN=https://app.example`, the build prints one E1574 `KEEL_ORIGIN is set and topology.ts has no node deployable to answer it`, holding no part of the value, exits 1, writes nothing under `dist/web/tauri/` and calls no `build`."
-// Spec: k.shell, Build 2 "With none, a `KEEL_ORIGIN` set and not empty is E1574 `KEEL_ORIGIN is set and topology.ts has no node deployable to answer it` ... Neither names the value."
+// Spec: k.shell, clause "With `web` alone and `KEEL_ORIGIN=https://app.example`, the build prints one E1574 `KEEL_ORIGIN is set and topology.ts has no node deployable to answer it`, holding no part of the value, exits 1, writes nothing under `dist/web/tauri/` and calls no `build`."
+// k.shell, Build 2 "With none, a `KEEL_ORIGIN` set and not empty is E1574 `KEEL_ORIGIN is set and topology.ts has no node deployable to answer it` ... Neither names the value."
 // Seed: 1337 (the value is generated, valid and invalid; the project is fixed).
 // Over a stub `@keel/std-tauri` (`shell-stub.ts`) and a topology of `web` alone. The compact line is read as `E1574 <message>` then `  see: keel docs k.shell` (RFC 0200, Problem and Proposal); an empty value counts as unset (no E1574), covered by shell-no-origin.test.ts.
 import { existsSync } from "node:fs";

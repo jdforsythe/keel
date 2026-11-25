@@ -1,7 +1,7 @@
 // rfc:0160 conformance: a reason of a no-break space alone, or holding NUL, a tab or U+202E, is E1590; `https://[::1]` is E1590 with no fix.
-// Spec: k.origins, Declaration "A reason is 1 to 200 characters on one line, one visible. A directive holds at most 16 origins. Visible: outside k.schema's blank set; no control or format character."
-// Spec: k.origins, Declaration "no IPv6 literal"
-// Spec: k.origins, Rules "E1590 an `origins` the static read cannot take (not an object literal, a spread or computed key), a key outside the five, an origin that is not exact (fix: the key as its `originOf` serialization when that is exact; none for a path, as `https://cdn.example/img`), a reason out of form, or a directive over 16"
+// k.origins, Declaration "A reason is 1 to 200 characters on one line, one visible. A directive holds at most 16 origins. Visible: outside k.schema's blank set; no control or format character."
+// k.origins, Declaration "no IPv6 literal"
+// k.origins, Rules "E1590 an `origins` the static read cannot take (not an object literal, a spread or computed key), a key outside the five, an origin that is not exact (fix: the key as its `originOf` serialization when that is exact; none for a path, as `https://cdn.example/img`), a reason out of form, or a directive over 16"
 // Seed 1337 (fc.assert below; the control and format characters are every code point of \p{Cc} and \p{Cf}).
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";

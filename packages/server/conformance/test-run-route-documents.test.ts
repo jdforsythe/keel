@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.test-run Disposal "A route handle is disposed with every document it opened."
-// Spec: k.test-run Conformance "A `renderRoute` with `app` whose `<Form>` submit is answered 303 leaves no element of either document after the test."
+// k.test-run Disposal "A route handle is disposed with every document it opened."
+// Spec: k.test-run, clause "A `renderRoute` with `app` whose `<Form>` submit is answered 303 leaves no element of either document after the test."
 // Seed: 1337 (n/a: no generated inputs). The cases run in order. Lives in packages/server/conformance because `createApp` and the
 // `f.page` fixture (render-route-document-support.ts) are this package's; `@keel/testing` does not depend on `@keel/server`.
 // `renderRoute`'s `app` option is passed through a variable, as the neighbouring cases do.

@@ -1,4 +1,4 @@
-// Spec: std.headless, Conformance "Every widget of this section and std.options rendered with its required props has no axe violations open and closed."
+// Spec: std.headless, clause "Every widget of this section and std.options rendered with its required props has no axe violations open and closed."
 // Seed: 1337.
 // @vitest-environment happy-dom
 // Assumptions: the harness's render checks run axe (E1703) after the first render and after every `fire`, so a harness that returns from `render` and `fire` has no violation;

@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.errors, clause "A handler registered with `on(element, …)` on an element whose `id` is set at runtime throws with `data.at` the `data-k` of its nearest ancestor that has one, else `""`; `attr(el, "data-k", …)` sets nothing."
+// Spec: k.errors, clause "A handler registered with `on(element, …)` on an element whose `id` is set at runtime throws with `data.at` the `data-k` of its nearest ancestor that has one, else `\"\"`; `attr(el, \"data-k\", …)` sets nothing."
 // Seed 1337
 import { type CtxEvent, createCtx, observe } from "@keel/ctx";
 import { mount } from "@keel/runtime-dom";

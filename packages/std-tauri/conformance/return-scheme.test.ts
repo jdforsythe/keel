@@ -1,4 +1,4 @@
-// Spec: std.tauri, Conformance "The Tauri shell files register `id` as a scheme: Tauri's deep-link schemes."
+// Spec: std.tauri, clause "The Tauri shell files register `id` as a scheme: Tauri's deep-link schemes."
 // Seed: 1337 (the reverse-DNS `id` is generated). The iOS and Android parts are std.capacitor's (packages/std-capacitor/conformance/return-scheme.test.ts).
 // ASSUMPTION: Tauri's deep-link schemes are `plugins["deep-link"].desktop.schemes` of `tauri.conf.json` (std.tauri Return links), an array holding the `id` as it is (no `:`).
 import { readFileSync } from "node:fs";

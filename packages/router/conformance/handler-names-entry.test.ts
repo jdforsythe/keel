@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 // Spec: k.contract, clause "A loader declared for `a.x` bound at `a.y` does not compile and `manifest` throws E1515."
-// Spec: k.contract Handlers: "`params` is `Infer` of the entry's `params` (`{}` without), `search` of a page's `search` or an API entry's `query`; ... `fn` is never annotated." Seed 1337.
+// k.contract Handlers: "`params` is `Infer` of the entry's `params` (`{}` without), `search` of a page's `search` or an API entry's `query`; ... `fn` is never annotated." Seed 1337.
 // Spec: k.router, clause "A loader of an entry with `params: P` gives `fn` `params` of type `Infer<typeof P>`."
 // Compile-time half of each "does not compile" claim: ./negative-types.test-d.ts; the calls here are untyped.
 import { action, loader, manifest } from "@keel/router";

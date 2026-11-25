@@ -1,4 +1,4 @@
-// Spec: k.a11y, Conformance "A `Box` with `direction="row-reverse"` over two `Button`s is E1820 and its fix leaves `direction="row"` with the children reversed; over one `Button` it is clean."
+// Spec: k.a11y, clause "A `Box` with `direction=\"row-reverse\"` over two `Button`s is E1820 and its fix leaves `direction=\"row\"` with the children reversed; over one `Button` it is clean."
 // Seed: 1337.
 // Assumed: the fix is a unified diff applied with `git apply` (as fix-applies.test.ts); `direction` token names `row`, `row-reverse`, `column`, `column-reverse` are written as string props.
 import { execFileSync } from "node:child_process";

@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: RFC 0162 Conformance diff: "`<Child />` in a component's JSX gives `Child` the parent's ctx, also when the parent declares one parameter, and in an island resumed by `resume`."
-// Spec: RFC 0162 Proposal 2: "The compiler lowers `<Child a={x} />` inside a component to `Child({ get a() { ... } }, ctx)`, where `ctx` is the enclosing component's second parameter, which `ctxParams` adds ... when the function has fewer than two." Seed 1337.
+// RFC 0162 Conformance diff: "`<Child />` in a component's JSX gives `Child` the parent's ctx, also when the parent declares one parameter, and in an island resumed by `resume`."
+// RFC 0162 Proposal 2: "The compiler lowers `<Child a={x} />` inside a component to `Child({ get a() { ... } }, ctx)`, where `ctx` is the enclosing component's second parameter, which `ctxParams` adds ... when the function has fewer than two." Seed 1337.
 // Components are compiled in memory and evaluated; the child is a hand-written function of the harness recording its second argument.
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";

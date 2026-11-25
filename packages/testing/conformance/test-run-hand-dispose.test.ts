@@ -1,7 +1,7 @@
 import { tx } from "@keel/store";
 // @vitest-environment happy-dom
-// Spec: k.test-run Disposal "A handle already disposed is not disposed again, so a write after a hand `dispose()` stays; a second `dispose()` does nothing, and a disposed handle's methods are E1705."
-// Spec: k.test-run Conformance "A `render` given `state: [[store, v]]` and never disposed: the next test reads the store's value from before the render. Disposed by hand and the store written after it in the same test: the next test reads the write, and a second `dispose()` throws nothing."
+// k.test-run Disposal "A handle already disposed is not disposed again, so a write after a hand `dispose()` stays; a second `dispose()` does nothing, and a disposed handle's methods are E1705."
+// Spec: k.test-run, clause "A `render` given `state: [[store, v]]` and never disposed: the next test reads the store's value from before the render. Disposed by hand and the store written after it in the same test: the next test reads the write, and a second `dispose()` throws nothing."
 // Seed: 1337 (n/a: no generated inputs). The cases run in order.
 import { render } from "@keel/testing";
 import { describe, expect, it } from "vitest";

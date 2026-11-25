@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.server Request flow, "a `:` line per 15 s of `ctx.clock`". Seed 1337 (fc.assert below).
+// k.server Request flow, "a `:` line per 15 s of `ctx.clock`". Seed 1337 (fc.assert below).
 // The 15 s are observed on the sim clock: `ctx.clock.advance` only, no timers.
 import { manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";

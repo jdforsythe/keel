@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.user, Conformance "`renderRoute` without `app`, `user: 'u1'`, on a ctx a `createApp` bound, `identify` answering `''`: a component's `service({ contract })` call naming no `user` reaches the guard as `'u1'`, `identify` uncalled; naming `user: 'u2'`, as `'u2'`. A second open harness there with `user: 'u3'`: E1724."
-// Spec: k.user, Rules "E1724 `renderRoute` `user` ... without `app` beside an open harness on `ctx` with another `user`."
+// Spec: k.user, clause "`renderRoute` without `app`, `user: 'u1'`, on a ctx a `createApp` bound, `identify` answering `''`: a component's `service({ contract })` call naming no `user` reaches the guard as `'u1'`, `identify` uncalled; naming `user: 'u2'`, as `'u2'`. A second open harness there with `user: 'u3'`: E1724."
+// k.user, Rules "E1724 `renderRoute` `user` ... without `app` beside an open harness on `ctx` with another `user`."
 // Seed: 1337 (fc.assert below). Pending: RFC 0185 is not built. To un-skip: change `test.skip` to `test` in this file once `renderRoute` carries `user` on a router-mode module call.
 // See render-route-user-support.ts for the fixture (TSX page, `createApp` ctx, `identify` answering `''`).
 import { renderRoute } from "@keel/testing";

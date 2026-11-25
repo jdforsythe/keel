@@ -1,6 +1,6 @@
 // Spec: std.schedules, clause "`schedule` throws E2554 for a `job` absent from `queue`, one of another module, and an `input` its job's schema refuses." (rfc:0092 A9)
-// Spec: std.schedules, rule E2554: a `schedule` entry's `job` or `input` refused (thrown by `schedule`).
-// Spec: std.schedules, Run: "on `ok` stores `t` as the entry's mark ... An `err` stores no mark and rejects `run`, which k.topology runs again." (rfc:0092 A9; no Conformance sentence, tested here)
+// std.schedules, rule E2554: a `schedule` entry's `job` or `input` refused (thrown by `schedule`).
+// std.schedules, Run: "on `ok` stores `t` as the entry's mark ... An `err` stores no mark and rejects `run`, which k.topology runs again." (rfc:0092 A9; no Conformance sentence, tested here)
 // Seed 1337
 // Assumption: a refused entry is built through `Reflect.apply` so the type system does not stop the call; a fire is observed by spying `jobs.enqueue` and the mark by spying `ctx.storage.set`.
 import { createCtx } from "@keel/ctx";

@@ -1,6 +1,6 @@
 // Seed 1337 (fast-check seed, recorded in each fc.assert below)
 // Spec: k.module, clause "A stdlib module's manifest is validated by the same schema and enforced by the same rules as an app module's."
-// Spec: k.module, Manifest, "Stdlib modules ship the same manifest (extension point) at the package root; `deps` name the package and its `id` is its prefix."
+// k.module, Manifest, "Stdlib modules ship the same manifest (extension point) at the package root; `deps` name the package and its `id` is its prefix."
 // Invariant (not a sentence of k.module now): no fix edits a file under `node_modules/`.
 // Fixture assumption (spec silent on specifiers): stdlib files are imported as `@keel/std-x/<File>`; app modules by relative path.
 // module() on invalid input: the spec only says manifests are validated by ModuleSchema; the implementation throws, asserted here.

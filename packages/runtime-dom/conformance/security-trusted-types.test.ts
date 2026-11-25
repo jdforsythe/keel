@@ -1,4 +1,4 @@
-// Spec: k.security, Conformance "With a stub `trustedTypes` global, `template()` passes its HTML through policy `keel`, created once."
+// Spec: k.security, clause "With a stub `trustedTypes` global, `template()` passes its HTML through policy `keel`, created once."
 // Seed: 1337.
 // Untestable here: "a string assigned to any other HTML sink throws" is enforced by the browser's `require-trusted-types-for`, not by a stub.
 // @vitest-environment happy-dom

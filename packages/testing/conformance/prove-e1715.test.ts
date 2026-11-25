@@ -1,6 +1,6 @@
-// Spec: k.prove, Conformance "A transaction calling an imported helper rejects E1715 naming the call."
-// Spec: k.prove, Rules "E1715 a function outside the fragment, naming the construct and its offset in the function's source, or a schema without a sort (Sorts), naming its path; there is no claim, and `explore` remains."
-// Spec: k.prove, Rules "The message is `<tx>: <construct> at offset <n> is outside the fragment; explore remains` (`<store> invariant <i>` in place of `<tx>` for an invariant), or `<tx>: no sort for <kind> at state.<path>; explore remains` (`payload.<path>` in a payload)."
+// Spec: k.prove, clause "A transaction calling an imported helper rejects E1715 naming the call."
+// k.prove, Rules "E1715 a function outside the fragment, naming the construct and its offset in the function's source, or a schema without a sort (Sorts), naming its path; there is no claim, and `explore` remains."
+// k.prove, Rules "The message is `<tx>: <construct> at offset <n> is outside the fragment; explore remains` (`<store> invariant <i>` in place of `<tx>` for an invariant), or `<tx>: no sort for <kind> at state.<path>; explore remains` (`payload.<path>` in a payload)."
 // Seed: 1337.
 import { isDeepStrictEqual } from "node:util";
 import { scope } from "@keel/reactive";

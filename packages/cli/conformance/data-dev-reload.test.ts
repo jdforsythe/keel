@@ -1,4 +1,4 @@
-// Spec: k.data, clause 5 (k.data#5): "Under `keel dev`, editing and saving `modules/notes/mongoNotes.server.ts` twice: the next request to a loader calling its accessor answers with the edited code, and no E1602 is thrown or logged."
+// Spec: k.data, clause "Under `keel dev`, editing and saving `modules/notes/mongoNotes.server.ts` twice: the next request to a loader calling its accessor answers with the edited code, and no E1602 is thrown or logged."
 // Seed: 1337 (no generated inputs: a fixed process scenario). Spawns the real binary over a temp project with `vite` linked, as
 // packages/cli/conformance/dev-uncaught.test.ts does; the port is one the OS just freed and the child's process group is killed.
 // Waits are bounded retries with a fixed pause. ASSUMPTION: `keel dev` is `packages/cli/src/bin.ts dev --port N --format=json`.

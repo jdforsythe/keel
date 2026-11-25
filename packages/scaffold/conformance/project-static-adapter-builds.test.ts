@@ -1,5 +1,5 @@
-// Spec: k.scaffold, Codemods "`project`: `package.json`, `.gitignore`, `tokens.ts`, `topology.ts` (`--adapter client|node|static`, default `client`), `vite.config.ts`, module `app`, ... `--workspace` (an app inside the Keel monorepo) adds `index.html` and `vitest.config.ts` instead of turbo, CI, agent files."
-// Spec: k.topology, Declaration "Adapters: `node` (serves the resume entry), `static` (prerendered HTML), `client` (loaders, actions in the browser; entry `mount(App, el)`, real `ctx`)."
+// k.scaffold, Codemods "`project`: `package.json`, `.gitignore`, `tokens.ts`, `topology.ts` (`--adapter client|node|static`, default `client`), `vite.config.ts`, module `app`, ... `--workspace` (an app inside the Keel monorepo) adds `index.html` and `vitest.config.ts` instead of turbo, CI, agent files."
+// k.topology, Declaration "Adapters: `node` (serves the resume entry), `static` (prerendered HTML), `client` (loaders, actions in the browser; entry `mount(App, el)`, real `ctx`)."
 // Seed 1337 (no generated inputs: one project per form, the real `keel` binary). No clause names the result of building a scaffolded `--adapter static` project;
 // the nearest text is the two above, so the case asserts what a project of any adapter must do: `keel build` exits 0.
 import { existsSync, readFileSync } from "node:fs";

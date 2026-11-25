@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
-// Spec: k.api, Requests "Paths: the router keys its table by path pattern, and a pattern holds one page or one contract's API entries at distinct methods (else E1502, k.routes)."
-// Spec: k.api, Conformance "In one contract, two POST entries at `/x`, or a page and an API entry at `/x`, make `contract` throw E1502 naming both ids; a GET and a POST entry at `/x` do not."
-// Spec: k.routes, Where rules fire "Across modules any shared path pattern is E1502, methods aside: a path's 405 `allow` lists one module's entries."
+// k.api, Requests "Paths: the router keys its table by path pattern, and a pattern holds one page or one contract's API entries at distinct methods (else E1502, k.routes)."
+// Spec: k.api, clause "In one contract, two POST entries at `/x`, or a page and an API entry at `/x`, make `contract` throw E1502 naming both ids; a GET and a POST entry at `/x` do not."
+// k.routes, Where rules fire "Across modules any shared path pattern is E1502, methods aside: a path's 405 `allow` lists one module's entries."
 // Seed 1337 (fc.assert below).
 import { manifest, routeTable } from "@keel/router";
 import { contract } from "@keel/router/contract";

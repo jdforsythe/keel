@@ -1,5 +1,5 @@
-// Spec: k.shell, Conformance "With `web` alone declaring `origins.connect` `https://api.example`, the drivers call is `{ connect: [\"https://api.example\"] }`, which `build` is given as `connect`."
-// Spec: k.shell, Without a server "`connect` is then the declared `origins.connect` origins alone, as no `keel-peer` origin exists."
+// Spec: k.shell, clause "With `web` alone declaring `origins.connect` `https://api.example`, the drivers call is `{ connect: [\"https://api.example\"] }`, which `build` is given as `connect`."
+// k.shell, Without a server "`connect` is then the declared `origins.connect` origins alone, as no `keel-peer` origin exists."
 // Seed: 1337 (the declared origins are generated; the project is fixed).
 // Over a stub `@keel/std-tauri` (`shell-stub.ts`), a topology of `web` alone and no `KEEL_ORIGIN`. `origins.connect` is `{ '<origin>': '<reason>' }` as in k.origins.
 import { writeFileSync } from "node:fs";

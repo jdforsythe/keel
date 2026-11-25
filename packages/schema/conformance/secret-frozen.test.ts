@@ -1,5 +1,5 @@
-// Spec: k.reveal, Conformance "For every generated secret over an object or array, the revealed value and each object and array under it are frozen."
-// Spec: k.reveal, Purpose "What `reveal` returns (k.privacy Secrets) is plain data, frozen deep when the secret is made, so it cannot change after a reveal; an inner schema that passes its input through (`s.json()`) leaves the caller's object frozen."
+// Spec: k.reveal, clause "For every generated secret over an object or array, the revealed value and each object and array under it are frozen."
+// k.reveal, Purpose "What `reveal` returns (k.privacy Secrets) is plain data, frozen deep when the secret is made, so it cannot change after a reveal; an inner schema that passes its input through (`s.json()`) leaves the caller's object frozen."
 // Seed: 1337.
 import { reveal, s } from "@keel/schema";
 import { gen } from "@keel/schema/gen";

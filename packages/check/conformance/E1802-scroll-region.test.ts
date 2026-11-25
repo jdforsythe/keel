@@ -1,5 +1,5 @@
-// Spec: k.a11y, Conformance "`keel check` without types reports E1802 for `<Box scroll="x">`, for `<Box scroll="x" label="Prices" labelledBy="t">` and for `<Box scroll="x" label=" ">`; `label="Prices"`, `label={name}` and `labelledBy="t"` report none."
-// Spec: k.a11y, Required props "`label` or `labelledBy`, exactly one, on `Box scroll`"
+// Spec: k.a11y, clause "`keel check` without types reports E1802 for `<Box scroll=\"x\">`, for `<Box scroll=\"x\" label=\"Prices\" labelledBy=\"t\">` and for `<Box scroll=\"x\" label=\" \">`; `label=\"Prices\"`, `label={name}` and `labelledBy=\"t\"` report none."
+// k.a11y, Required props "`label` or `labelledBy`, exactly one, on `Box scroll`"
 // Seed 1337
 // Not built yet (rfc:0203): the E1802 cases fail until the check rule covers `Box scroll`; plain `test`, not skipped. The "report none" cases pass today and keep passing.
 import { check } from "@keel/check";

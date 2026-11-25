@@ -1,5 +1,5 @@
-// Spec: std.shells, Conformance "With each package's drivers given `{ connect: ['https://other.example'] }` and no `origin`, from a page at `capacitor://localhost` or `tauri://localhost`, `fetch('/api/lists')` and `fetch('capacitor://localhost/x')` reject with a `TypeError` whose message holds no part of the URL and make no native request; `https://other.example/x` keeps its URL; with `connect: []` every request rejects so."
-// Spec: std.shells, API "`net.fetch` maps a request on the page's origin to `origin`, and with no `origin` refuses it"
+// Spec: std.shells, clause "With each package's drivers given `{ connect: ['https://other.example'] }` and no `origin`, from a page at `capacitor://localhost` or `tauri://localhost`, `fetch('/api/lists')` and `fetch('capacitor://localhost/x')` reject with a `TypeError` whose message holds no part of the URL and make no native request; `https://other.example/x` keeps its URL; with `connect: []` every request rejects so."
+// std.shells, API "`net.fetch` maps a request on the page's origin to `origin`, and with no `origin` refuses it"
 // Seed: 1337.
 // @vitest-environment happy-dom
 // Assumption: as origin-map.test.ts, the page is the stubbed `location` and a request to the page is an absolute URL on it, as the relative `/api/lists` resolves to one;

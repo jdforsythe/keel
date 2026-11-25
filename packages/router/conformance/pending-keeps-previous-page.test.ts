@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.router, Client "`pending` is true while a navigation or action runs; the previous page stays rendered until the new chain's loaders finish, and the last navigation started wins." (prose, not a Conformance sentence)
+// k.router, Client "`pending` is true while a navigation or action runs; the previous page stays rendered until the new chain's loaders finish, and the last navigation started wins." (prose, not a Conformance sentence)
 import { beforeEach, describe, expect, it } from "vitest";
 import { appContract, control, defer, now, resetObservations, settle, start } from "./fixtures.ts";
 

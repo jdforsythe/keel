@@ -1,5 +1,5 @@
-// Spec: k.user, Caller lifetime "The caller cookie has no `Max-Age` by default: a browser quit or a shell restart is a new caller. A `node` deployable may set `caller: { days }` in `topology.ts` (an integer 1 to 400): a caller cookie it mints carries `Max-Age=<days × 86,400>`, from that write, never extended. It is still not a credential."
-// Spec: k.user, Conformance "A caller cookie minted with no `caller` option has no `Max-Age`; with `caller: { days: 30 }`, `Max-Age=2592000`, and a request presenting it gets no new caller cookie."
+// k.user, Caller lifetime "The caller cookie has no `Max-Age` by default: a browser quit or a shell restart is a new caller. A `node` deployable may set `caller: { days }` in `topology.ts` (an integer 1 to 400): a caller cookie it mints carries `Max-Age=<days × 86,400>`, from that write, never extended. It is still not a credential."
+// Spec: k.user, clause "A caller cookie minted with no `caller` option has no `Max-Age`; with `caller: { days: 30 }`, `Max-Age=2592000`, and a request presenting it gets no new caller cookie."
 // Seed 1337 (fc.assert below). Runs under plain Node: happy-dom strips cookie headers. Over http the name is `keel-caller`.
 // A `client` deployable's refusal of `caller` is a check rule: packages/check/conformance/caller-days-e1578.test.ts.
 // @vitest-environment node

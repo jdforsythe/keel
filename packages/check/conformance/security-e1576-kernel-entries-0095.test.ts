@@ -1,4 +1,4 @@
-// Spec: k.security, Rules "E1576 a `@keel/*` internal entry (a specifier with an `internal` path segment) named by an import, re-export, or literal `import()` or `require` in a file outside `packages/`, `node_modules/` and `.keel/`, tests included: internal entries are kernel and stdlib seams such as the server state runner (fix: none)."
+// k.security, Rules "E1576 a `@keel/*` internal entry (a specifier with an `internal` path segment) named by an import, re-export, or literal `import()` or `require` in a file outside `packages/`, `node_modules/` and `.keel/`, tests included: internal entries are kernel and stdlib seams such as the server state runner (fix: none)."
 // Seed: 1337.
 // No Conformance sentence names the kernel-only entries `@keel/server/internal/dom`, `@keel/server/internal/start` and
 // `@keel/compiler/internal/entry/*` (ADR-0118 D6: "E1576 covers them with no rule change"); this file holds the rule over those specifiers.

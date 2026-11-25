@@ -1,5 +1,5 @@
-// Spec: k.persist, Rules "E1551 (k.server) also covers `commitStores` outside `*.server.ts`, and reads app code only (k.check), not the root's `packages/` (kernel and stdlib code)."
-// Spec: k.persist, Conformance "A `commitStores` call and a `loader` call in `packages/p/src/run.ts` are no E1551; the same file at `modules/a/run.ts` is two."
+// k.persist, Rules "E1551 (k.server) also covers `commitStores` outside `*.server.ts`, and reads app code only (k.check), not the root's `packages/` (kernel and stdlib code)."
+// Spec: k.persist, clause "A `commitStores` call and a `loader` call in `packages/p/src/run.ts` are no E1551; the same file at `modules/a/run.ts` is two."
 // Seed: 1337.
 import { check } from "@keel/check";
 import fc from "fast-check";

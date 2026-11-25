@@ -1,5 +1,5 @@
-// Spec: k.scaffold, Generators "`service`: a client of an API no app module serves (k.services): `modules/<id>/<Name>Api.schema.ts` and `api.server.ts`, with `@keel/services` in `package.json` (k.scaffold-service)."
-// Spec: k.scaffold, Turbo emission "Generated files are read-only (E1005)."
+// k.scaffold, Generators "`service`: a client of an API no app module serves (k.services): `modules/<id>/<Name>Api.schema.ts` and `api.server.ts`, with `@keel/services` in `package.json` (k.scaffold-service)."
+// k.scaffold, Turbo emission "Generated files are read-only (E1005)."
 // RFC 0036, RFC 0039: `service { id: "<module>", schema, service }` places the two sources `@keel/services/openapi`
 // generates at modules/<module>/<Module>Api.schema.ts (filename equals its one export `<Module>Api`, k.check E1752) and
 // modules/<module>/api.server.ts. A later operation that would change or delete a file whose

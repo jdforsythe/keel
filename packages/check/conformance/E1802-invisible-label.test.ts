@@ -1,7 +1,5 @@
-// Spec: k.a11y Conformance, bullet 11:
-// "Without types, E1802 also fires for `<Input label={"\u{200B}"} />`, `label="&#x2800;"`, `label={"\u{301}"}` and `Input({ label: "\u{3164}\u{200D}" })`, not for `label={"a\u{200B}"}`."
-// Spec: k.a11y Conformance, bullet 12:
-// "Without types, E1802 fires for `label="&zwnj;"`, `label="&copy;"` and `Input({ label: "\u{1}" })`, not for `label="&copy;2"`."
+// Spec: k.a11y, clause "Without types, E1802 also fires for `<Input label={\"\u{200B}\"} />`, `label=\"&#x2800;\"`, `label={\"\u{301}\"}` and `Input({ label: \"\u{3164}\u{200D}\" })`, not for `label={\"a\u{200B}\"}`."
+// Spec: k.a11y, clause "Without types, E1802 fires for `label=\"&zwnj;\"`, `label=\"&copy;\"` and `Input({ label: \"\u{1}\" })`, not for `label=\"&copy;2\"`."
 // Seed 1337
 // A label is blank when it holds no visible character: every character is White_Space, Default_Ignorable_Code_Point, Cf, M or U+2800.
 import { check } from "@keel/check";

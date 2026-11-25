@@ -1,5 +1,5 @@
 import fc from "fast-check";
-// Spec: k.store API, "cart.log() ordered entries { name, payload, at, id }". Seed 1337.
+// k.store API, "cart.log() ordered entries { name, payload, at, id }". Seed 1337.
 import { describe, expect, it } from "vitest";
 import { applyOp, makeCart, opArb, opts } from "./fixtures";
 

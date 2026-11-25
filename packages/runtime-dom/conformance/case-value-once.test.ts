@@ -1,4 +1,4 @@
-// Spec: k.component, Conformance "A `Case` reading `value()` at its top level renders once per tag; its binding reading `value()` shows each new value."
+// Spec: k.component, clause "A `Case` reading `value()` at its top level renders once per tag; its binding reading `value()` shows each new value."
 // Seed: 1337.
 // @vitest-environment happy-dom
 // ASSUMPTION: the compiled `Match`/`Case` is the `match` op from `@keel/runtime-dom/ops`: match(anchor, on, "tag", { [tag]: (value) => Node }),

@@ -1,5 +1,5 @@
 // Spec: std.conflicts, clause "On a group whose replayed server holds a rebased lost update, `findRaces` reports it, and on the same group with that transaction `'reject'` it reports none; two runs are byte-equal."
-// Spec: std.conflicts, rule E2701: a rebased entry races its concurrent entries.
+// std.conflicts, rule E2701: a rebased entry races its concurrent entries.
 // Seed 1337
 // Assumptions: `findRaces`'s `stores` is an array of factories (the spec's "a factory in `stores`"); its `races` is the
 // `Race[]` of the replayed store. The group is recorded with `editTodo` `'rebase'`, then replayed against a server and a

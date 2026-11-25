@@ -1,4 +1,4 @@
-// Spec: k.security, Conformance "A dev document carries `Content-Security-Policy-Report-Only` with `'unsafe-inline'` in `style-src` and nowhere else; JSON and event-stream responses carry `default-src 'none'; frame-ancestors 'none'`."
+// Spec: k.security, clause "A dev document carries `Content-Security-Policy-Report-Only` with `'unsafe-inline'` in `style-src` and nowhere else; JSON and event-stream responses carry `default-src 'none'; frame-ancestors 'none'`."
 // Seed: 1337.
 // @vitest-environment happy-dom
 import { manifest } from "@keel/router";

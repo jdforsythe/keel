@@ -20,6 +20,7 @@ const citing = (header: string, skip = false): string =>
 const cite = (clause: string, codes: string, skip = false): string =>
   citing(`// Spec: k.fx, clause "${clause}"${codes === "" ? "" : ` (${codes})`}`, skip);
 
+// Replaced at step 4 of rfc:0235: a clause item is `<section>#<key>` (itemOf in ledger-items-support.ts), not `<section>#<n>`; the lookup below changes with it.
 const rungs = (clauses: readonly string[], tests: Readonly<Record<string, string>>): (unknown | undefined)[] => {
   const dir = makeProject("ledger-range", { [SPEC]: specText(clauses), ...tests });
   try {

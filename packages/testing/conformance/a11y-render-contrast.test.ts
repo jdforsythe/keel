@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.a11y, Conformance "A `renderRoute` page whose text is 4.4:1 against a `bg` set in another component fails with E1804 naming the text's element id; at 4.6:1 it passes."
+// Spec: k.a11y, clause "A `renderRoute` page whose text is 4.4:1 against a `bg` set in another component fails with E1804 naming the text's element id; at 4.6:1 it passes."
 // Seed: 1337.
 // Assumed (spec names no seam): the tokens reach `renderRoute` as `artifacts: { tokens }`, as `a11y.json` reaches `render`.
 import { manifest } from "@keel/router";

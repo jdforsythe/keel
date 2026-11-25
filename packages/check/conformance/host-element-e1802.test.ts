@@ -1,5 +1,5 @@
-// Spec: k.host-element, Conformance "A `Host` with neither `label` nor `labelledBy`, with both, or with `label=" "` is E1802 without types, and one with `label="Added"` or `labelledBy="c.title"` is not; `code={load}` is E1824."
-// Spec: k.host-element, Text alternative "Exactly one of `label` (`aria-label`) and `labelledBy` (`aria-labelledby`, an element id). E1802, without types: a `Host` with neither, with both, or with a literal `label` holding no visible character (blank as k.a11y reads it). A computed `label` and any `labelledBy` are not checked statically, and with a spread only the types check presence; `a11y()` checks the name at render."
+// Spec: k.host-element, clause "A `Host` with neither `label` nor `labelledBy`, with both, or with `label=\" \"` is E1802 without types, and one with `label=\"Added\"` or `labelledBy=\"c.title\"` is not; `code={load}` is E1824."
+// k.host-element, Text alternative "Exactly one of `label` (`aria-label`) and `labelledBy` (`aria-labelledby`, an element id). E1802, without types: a `Host` with neither, with both, or with a literal `label` holding no visible character (blank as k.a11y reads it). A computed `label` and any `labelledBy` are not checked statically, and with a spread only the types check presence; `a11y()` checks the name at render."
 // Seed: 1337. `keel check` without types, as the k.a11y E1802 clauses.
 import { check } from "@keel/check";
 import fc from "fast-check";

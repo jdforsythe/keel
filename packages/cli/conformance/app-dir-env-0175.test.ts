@@ -1,4 +1,4 @@
-// Spec: k.data, Conformance "A loader answering `process.env.KEEL_APP_DIR`, from `node dist/<name>/server.mjs` started in another working directory, answers the absolute path of `dist/<name>`; with `KEEL_APP_DIR` set before start, that value."
+// Spec: k.data, clause "A loader answering `process.env.KEEL_APP_DIR`, from `node dist/<name>/server.mjs` started in another working directory, answers the absolute path of `dist/<name>`; with `KEEL_APP_DIR` set before start, that value."
 // Seed 1337 (the explicit value is a generated folder name). Assumes: the env var is `KEEL_APP_DIR`; the answer is `<project>/dist/api` as an absolute path (the project path is realpath'd, as /tmp may be a symlink).
 // Pending: server.mjs does not set it yet.
 import { mkdtempSync, realpathSync } from "node:fs";

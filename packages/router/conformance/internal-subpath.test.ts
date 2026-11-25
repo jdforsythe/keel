@@ -1,4 +1,4 @@
-// Spec: k.router Execution prose, RFC 0045: server-only internals live in `@keel/router/internal`, not in public API.
+// k.router Execution prose, RFC 0045: server-only internals live in `@keel/router/internal`, not in public API.
 // Property seed: 1337 (no generated inputs; the export surface is finite).
 import { describe, expect, it } from "vitest";
 

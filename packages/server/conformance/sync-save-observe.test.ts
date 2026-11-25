@@ -1,4 +1,4 @@
-// Spec: k.sync Conformance, "An action that saves two stores reports two `save` events to an observer of the server ctx, after both are stored, each with its store's new head; a 409 or `err` action reports none."
+// Spec: k.sync, clause "An action that saves two stores reports two `save` events to an observer of the server ctx, after both are stored, each with its store's new head; a 409 or `err` action reports none."
 // Seed 1337. Runs under plain Node; only runtime (JSON) requests are used. Interleavings use deferreds and bounded microtask yields; no timers.
 // ASSUMPTION (as read-set-conflict.test.ts): the observer is added to the same ctx object that is passed to `createApp`.
 import { createCtx, observe } from "@keel/ctx";

@@ -1,6 +1,6 @@
-// Spec: std.postgres, Conformance "Under sim, a plan `conflict`, `none` runs a lone `run` twice, changing its row once; `conflict` three times is `keel.conflict`, nothing changed."
-// Spec: std.postgres, API "A lone `query`, `one` or `run` is its own `serializable` transaction, rerun as `fn` is"
-// Spec: std.postgres, Modes "each run of a lone statement or of `fn` takes one step"
+// Spec: std.postgres, clause "Under sim, a plan `conflict`, `none` runs a lone `run` twice, changing its row once; `conflict` three times is `keel.conflict`, nothing changed."
+// std.postgres, API "A lone `query`, `one` or `run` is its own `serializable` transaction, rerun as `fn` is"
+// std.postgres, Modes "each run of a lone statement or of `fn` takes one step"
 // Seed: 1337.
 // Pending (rfc:0184): skipped until the build lands; the builder un-skips by changing each `test.skip` to `test` in this file.
 // Assumption: "runs twice" is observed as two plan steps consumed: a following lone `run` meets the third step; the row's change is observed by a read after the plan's end (`none`).

@@ -1,4 +1,4 @@
-// Spec: k.scaffold "`keel check`: fresh, no W1356; an edited or removed copy or edited block, one W1356 there; no block, none. Unclosed block: `--sync` E1355, exit 1, writes nothing."
+// Spec: k.scaffold, clause "`keel check`: fresh, no W1356; an edited or removed copy or edited block, one W1356 there; no block, none. Unclosed block: `--sync` E1355, exit 1, writes nothing."
 // Seed: none (examples; each spawns the real `keel` binary).
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";

@@ -1,4 +1,4 @@
-// Spec: k.store Conformance "`check(state)` returns ok iff every invariant holds and never changes state or log" (rfc:0011). Seed 1337.
+// Spec: k.store, clause "`check(state)` returns ok iff every invariant holds and never changes state or log." (rfc:0011). Seed 1337.
 import { invariant, tx } from "@keel/store";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";

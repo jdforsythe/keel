@@ -1,4 +1,4 @@
-// Spec: std.monitor, Conformance "A caller outside `readers` gets 403 `keel.denied` from `sessions.tally`; a reader gets the `Tally`."
+// Spec: std.monitor, clause "A caller outside `readers` gets 403 `keel.denied` from `sessions.tally`; a reader gets the `Tally`."
 // Seed: 1337.
 // @vitest-environment node
 // A reader is a caller whose hash is in `readers`, as in the std.sessions ingest tests.

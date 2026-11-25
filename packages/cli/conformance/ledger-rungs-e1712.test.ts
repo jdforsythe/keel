@@ -1,5 +1,5 @@
 // Spec: k.ledger, clause "With a committed ledger whose `rungs.monitored` is 1, removing `.keel/monitored.json` makes `--diff` report E1712."
-// Spec: k.ledger, Rules "E1712 `--diff` without `--scope`: a rung the committed `rungs` counts above 0 is held by no item".
+// k.ledger, Rules "E1712 `--diff` without `--scope`: a rung the committed `rungs` counts above 0 is held by no item".
 // The real `keel` binary over a temp project (OS tmpdir). The committed ledger is the one `keel ledger --write` stores
 // at `.keel/ledger.json` while `.keel/monitored.json` gives one export `monitored`. Seed: 1337 (no property in this file).
 import { describe, expect, it } from "vitest";

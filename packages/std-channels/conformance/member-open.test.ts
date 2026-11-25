@@ -1,4 +1,4 @@
-// Spec: std.channels, clause "A caller for whom `member` is false at open gets `{ kind: 'closed', reason: 'denied' }` as its only event; a cookieless open has caller `""` and its response sets no cookie."
+// Spec: std.channels, clause "A caller for whom `member` is false at open gets `{ kind: 'closed', reason: 'denied' }` as its only event; a cookieless open has caller `\"\"` and its response sets no cookie."
 // Seed 1337
 import fc from "fast-check";
 import { expect, test } from "vitest";

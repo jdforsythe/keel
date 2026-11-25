@@ -1,4 +1,4 @@
-// Spec: k.scaffold, Turbo emission "Any operation adding or removing a module or package regenerates `turbo.json`, CI workflows and deploy files (k.deploy) from the task graph and topology (ADR-0009)."
+// k.scaffold, Turbo emission "Any operation adding or removing a module or package regenerates `turbo.json`, CI workflows and deploy files (k.deploy) from the task graph and topology (ADR-0009)."
 // Seed 1337 (fast-check). In-process generators; ASSUMED: the CI workflow names each deployable, compose.yaml names each node deployable, both carry a generated header.
 import fc from "fast-check";
 import { expect, test } from "vitest";

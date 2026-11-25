@@ -1,4 +1,4 @@
-// Spec: k.deploy, Conformance "The Dockerfile of a `'sqlite'` deployable declares `/data` and runs `server.mjs` without `--localstorage-file`; of a `'postgres'` one declares no volume; `compose.yaml` passes `KEEL_DATABASE_URL` from the environment and holds no URL."
+// Spec: k.deploy, clause "The Dockerfile of a `'sqlite'` deployable declares `/data` and runs `server.mjs` without `--localstorage-file`; of a `'postgres'` one declares no volume; `compose.yaml` passes `KEEL_DATABASE_URL` from the environment and holds no URL."
 // Seed: 1337.
 // ASSUMPTION: `deployDrift(tree, true)` on a tree holding `topology.ts` yields the generated files as `want` (what `keel build` writes); the
 // tree needs only `topology.ts` and `package.json`. "Declares `/data`" is read as a `VOLUME` line naming `/data`; "no volume" as no `VOLUME` line.

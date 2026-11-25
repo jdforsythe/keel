@@ -1,4 +1,4 @@
-// Spec: k.topology, Conformance "In a `client` module's `*.server.ts`, `loader(c, 'a.feed', {}, feed)` with `const feed = async function* …`, `r.loader(c, 'a.home', { output, stores }, fn)` through `import * as r`, and `loader(c, 'a.home', { ...base, output }, fn)` are each one E1558 in `keel check` and `keel build`; `loader(c, 'a.home', { output }, load)` with `load` an `async function` of the file is none."
+// Spec: k.topology, clause "In a `client` module's `*.server.ts`, `loader(c, 'a.feed', {}, feed)` with `const feed = async function* …`, `r.loader(c, 'a.home', { output, stores }, fn)` through `import * as r`, and `loader(c, 'a.home', { ...base, output }, fn)` are each one E1558 in `keel check` and `keel build`; `loader(c, 'a.home', { output }, load)` with `load` an `async function` of the file is none."
 // Seed: 1337.
 // In-memory project through `run(['check'])` and `run(['build'])`, as topology-e1558-client-stores-0095.test.ts.
 // ASSUMPTION: the diagnostic is reported at the call in `modules/<id>/<id>.server.ts`; each diagnostic is one line of the json stream.

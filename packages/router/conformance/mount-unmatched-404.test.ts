@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.mount, Navigation "An initial load or a history pop of an unmatched path still renders the 404."
+// k.mount, Navigation "An initial load or a history pop of an unmatched path still renders the 404."
 // Seed 1337 (fc.assert below). A router over the fixture table, with an in-memory history; the 404 is the `keel.notFound`
 // default alert of k.head, `<h1>Not found</h1>`, and no page of the table renders.
 import fc from "fast-check";

@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
-// Spec: k.routes, Layouts "A page or layout binding names the layout it renders in with `layout`, a layout id of its contract or of another module's, so a chain nests to any depth, outermost first"
-// Spec: k.routes, Conformance "A page bound with `layout: 'a.inner'`, `a.inner` with `layout: 'a.outer'`, renders inside `a.inner`'s component, inside `a.outer`'s."
-// Spec: k.routes, Conformance "A `layout` naming a page id does not compile and `manifest` throws E1506; two layouts naming each other make `manifest` throw E1506 naming both."
+// k.routes, Layouts "A page or layout binding names the layout it renders in with `layout`, a layout id of its contract or of another module's, so a chain nests to any depth, outermost first"
+// Spec: k.routes, clause "A page bound with `layout: 'a.inner'`, `a.inner` with `layout: 'a.outer'`, renders inside `a.inner`'s component, inside `a.outer`'s."
+// Spec: k.routes, clause "A `layout` naming a page id does not compile and `manifest` throws E1506; two layouts naming each other make `manifest` throw E1506 naming both."
 // Seed 1337 (no random input: fixed chains).
 // Compile-time half of each "does not compile" claim: ./negative-types.test-d.ts; the calls here are untyped.
 import { type RouteProps, manifest } from "@keel/router";

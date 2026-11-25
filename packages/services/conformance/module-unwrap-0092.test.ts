@@ -1,6 +1,6 @@
-// Spec: k.services Encoding, "a `contract` service reads the route's `Result` (GET: `results[id]`, the matched route's own) and decodes its `ok` value with `output` and, on a non-2xx, its `error` with `errors[status]`."
+// k.services Encoding, "a `contract` service reads the route's `Result` (GET: `results[id]`, the matched route's own) and decodes its `ok` value with `output` and, on a non-2xx, its `error` with `errors[status]`."
 // Spec: k.services, clause "A `contract` GET entry yields `ok(v)` for its loader's `ok(v)`; a loader `err` `keel.notFound` yields `api.status` 404 with `body` the KeelError decoded by `errors[404]`."
-// Spec: k.services API, "Neither follows a redirect: a 3xx is `api.status` (in a browser `status` 0, an opaque redirect)."
+// k.services API, "Neither follows a redirect: a 3xx is `api.status` (in a browser `status` 0, an opaque redirect)."
 // Seed 1337 (fc.assert below). Sim net only; the contract service is `service({ contract })` over module `b`.
 import { createCtx } from "@keel/ctx";
 import { s } from "@keel/schema";

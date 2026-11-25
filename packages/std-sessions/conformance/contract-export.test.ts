@@ -1,6 +1,6 @@
 // @vitest-environment node
-// Spec: std.contracts, Conformance "`@keel/std-sessions/contract` exports `sessions` of module `sessions` with API entries `sessions.ingest` (`POST /sessions`) and `sessions.list` (`GET /sessions/list`); `createApp` serving its `./routes` answers a `GET /sessions/list?since=x` (failing `ListSearch`) with 422 `keel.fields` and an issue at `query.since`."
-// Spec: std.contracts, Conformance "`service({ contract: sessions })` has methods `ingest` and `list`, and `ingest` of a valid `Session` answers `ok({})`."
+// Spec: std.contracts, clause "`@keel/std-sessions/contract` exports `sessions` of module `sessions` with API entries `sessions.ingest` (`POST /sessions`) and `sessions.list` (`GET /sessions/list`); `createApp` serving its `./routes` answers a `GET /sessions/list?since=x` (failing `ListSearch`) with 422 `keel.fields` and an issue at `query.since`."
+// Spec: std.contracts, clause "`service({ contract: sessions })` has methods `ingest` and `list`, and `ingest` of a valid `Session` answers `ok({})`."
 // Seed 1337 (no random input: fixed fixtures).
 import { createHash } from "node:crypto";
 import { bindStd } from "@keel/compiler/std/bindStd";

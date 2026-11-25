@@ -1,4 +1,4 @@
-// Spec: k.schema, clause "`enum` (`{ pathDefault }`: the value a leading path param leaves out of the URL, k.prefix)" (rfc:0079); ADR-0070: parse, encode and gen ignore `pathDefault`.
+// k.schema, clause "`enum` (`{ pathDefault }`: the value a leading path param leaves out of the URL, k.prefix)" (rfc:0079); ADR-0070: parse, encode and gen ignore `pathDefault`.
 // Seed 1337.
 import { s } from "@keel/schema";
 import { gen } from "@keel/schema/gen";

@@ -1,4 +1,4 @@
-// Spec: k.privacy, clause "`s.string().pii('contact')` has `doc()` `string pii(contact)` and JSON Schema `x-keel-pii: "contact"`."
+// Spec: k.privacy, clause "`s.string().pii('contact')` has `doc()` `string pii(contact)` and JSON Schema `x-keel-pii: \"contact\"`."
 // Seed: 1337 (the pii class is drawn by fast-check over the closed `PiiClass` set).
 // The JSON Schema derivation is not exported by `@keel/schema`; the public path is `keel build`, whose `.keel/surface.json` holds a route's loader
 // `output` as JSON Schema (k.compat Surface: "Schemas are JSON Schema, as in `routes.json`"). Real binary over a temp project (see compat-support.ts).

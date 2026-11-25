@@ -1,5 +1,5 @@
-// Spec: k.privacy-reads, Conformance "`carriesReveal` is true for `reveal(p.k)`, `{ a: reveal(p.k) }` and a `const` bound to `` `${reveal(p.k)}` ``, and false for `hash(reveal(p.k))`, `reveal(p.k).length`, `reveal(p.k) === h` and a parameter."
-// Spec: k.privacy-reads, Readers "`carriesReveal(node, input): boolean`: whether the expression `node` of `input.ast` carries a value `reveal` returns, by k.reveal Flow, a local's value read where `node` stands. What ends a value there ends it here: any other call, a parameter, an import."
+// Spec: k.privacy-reads, clause "`carriesReveal` is true for `reveal(p.k)`, `{ a: reveal(p.k) }` and a `const` bound to `` `${reveal(p.k)}` ``, and false for `hash(reveal(p.k))`, `reveal(p.k).length`, `reveal(p.k) === h` and a parameter."
+// k.privacy-reads, Readers "`carriesReveal(node, input): boolean`: whether the expression `node` of `input.ast` carries a value `reveal` returns, by k.reveal Flow, a local's value read where `node` stands. What ends a value there ends it here: any other call, a parameter, an import."
 // Seed: 1337.
 // Not yet built: `test.skip` until `carriesReveal` is exported by `@keel/check`; remove the `.skip` in the build that adds it.
 // Assumption: signature `carriesReveal(node, input): boolean`, `node` a node of `input.ast`; see privacy-reads-probe.ts for how a test reaches both.

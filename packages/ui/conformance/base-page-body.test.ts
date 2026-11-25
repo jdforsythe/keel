@@ -1,5 +1,5 @@
-// Spec: k.ui, Conformance "With tokens `base.page { fg: 'fg', bg: 'bg' }` and no style props on the page, `body`'s computed color and background are the tokens'; a `fg` at a use wins."
-// Spec: k.ui, Base paragraph clauses asserted here: each `base` set sits on its role in the `keel.base` layer, its `states` under the role selector, atomic rules are unlayered, base elements carry their role class, tokens with no `base` give no role rules.
+// Spec: k.ui, clause "With tokens `base.page { fg: 'fg', bg: 'bg' }` and no style props on the page, `body`'s computed color and background are the tokens'; a `fg` at a use wins."
+// k.ui, Base paragraph clauses asserted here: each `base` set sits on its role in the `keel.base` layer, its `states` under the role selector, atomic rules are unlayered, base elements carry their role class, tokens with no `base` give no role rules.
 // Seed: 1337 (property over the role names).
 // Not built yet: the cases are `test.skip`; the builder changes `test.skip` to `test` in each, except the last (live: tokens with no `base` give no role rules).
 // Assumed: `compileStyles({ tokens, usages })` returns the whole compiled CSS file in `css`, `keel.base` included, written `@layer keel.base{...}`.

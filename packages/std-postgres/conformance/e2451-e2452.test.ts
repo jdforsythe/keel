@@ -1,5 +1,5 @@
-// Spec: std.postgres, Conformance "E2451, E2452, E2458 and W2456 each fire on a fixture, not on its clean twin; a missing `KEEL_POSTGRES_URL` is E2455."
-// Spec: std.postgres, Rules "E2451 `@keel/std-postgres/server` imported (static or `import()`) outside a `*.server.ts` file, tests and type-only imports aside · E2452 that import in a module a deployable other than `node` serves"
+// Spec: std.postgres, clause "E2451, E2452, E2458 and W2456 each fire on a fixture, not on its clean twin; a missing `KEEL_POSTGRES_URL` is E2455."
+// std.postgres, Rules "E2451 `@keel/std-postgres/server` imported (static or `import()`) outside a `*.server.ts` file, tests and type-only imports aside · E2452 that import in a module a deployable other than `node` serves"
 // Seed: 1337.
 // Assumption: a `client` deployable (adapter `client`) is "a deployable other than `node`"; a test file is a path ending `.test.ts`.
 import fc from "fast-check";

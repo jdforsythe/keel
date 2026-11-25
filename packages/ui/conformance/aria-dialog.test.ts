@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.aria, Conformance "A `dialog` given `open` true has the `open` attribute and focus on its first `button`; a `cancel` event calls `onDismiss` and leaves it open; `open` false closes it and focuses the element focused before."
+// Spec: k.aria, clause "A `dialog` given `open` true has the `open` attribute and focus on its first `button`; a `cancel` event calls `onDismiss` and leaves it open; `open` false closes it and focuses the element focused before."
 // Seed: 1337.
 // Behavior extras: the focus fallback, `showModal()` after the commit, platform `close`, a trigger no longer connected.
 // `onDismiss` is not in the Roles table's props for `dialog`; the Behavior paragraph names it, so it is passed here.

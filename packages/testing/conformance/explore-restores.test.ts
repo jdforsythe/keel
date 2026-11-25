@@ -1,4 +1,4 @@
-// Spec: k.model, Conformance "After `explore` returns or throws, the store's state, log and log `meta` equal those before the call."
+// Spec: k.model, clause "After `explore` returns or throws, the store's state, log and log `meta` equal those before the call."
 // Seed: 1337.
 import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";

@@ -1,4 +1,4 @@
-// Spec: k.topology, Rules "A project root is the root or any folder without a `modules` segment that holds a `.keel/` artifact or a `topology.ts` with a default export, readable or not; an unreadable one is E1552 at its path and the folder's files are checked as that project's"
+// k.topology, Rules "A project root is the root or any folder without a `modules` segment that holds a `.keel/` artifact or a `topology.ts` with a default export, readable or not; an unreadable one is E1552 at its path and the folder's files are checked as that project's"
 // Seed: 1337.
 // Assumption: a `topology.ts` whose default export is `topology(t)` over a variable is unreadable; an import of a private export of a sibling module is an E1151, which shows which project a module file is checked in.
 import { check } from "@keel/check";

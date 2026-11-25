@@ -1,6 +1,6 @@
-// Spec: std.postgres, Conformance "`query` parses every row with the schema; a row failing it is `postgres.result`, holding no value; `one` of no row is `keel.notFound`; `run` of a statement returning a row is `postgres.result`."
-// Spec: std.postgres, API "`one(q)`: the one row; none is `keel.notFound`, more than one throws. `run(q)`: the count of rows changed; `q` is `sql(NoRows)`, which refuses any row."
-// Spec: std.postgres, API "a row failing its schema is `postgres.result`, data `{ row, issues }` (its index; paths, rules)"
+// Spec: std.postgres, clause "`query` parses every row with the schema; a row failing it is `postgres.result`, holding no value; `one` of no row is `keel.notFound`; `run` of a statement returning a row is `postgres.result`."
+// std.postgres, API "`one(q)`: the one row; none is `keel.notFound`, more than one throws. `run(q)`: the count of rows changed; `q` is `sql(NoRows)`, which refuses any row."
+// std.postgres, API "a row failing its schema is `postgres.result`, data `{ row, issues }` (its index; paths, rules)"
 // Seed: 1337.
 // Assumption: the accessor's `query`, `one`, `run` return a `Result`; `one` of two rows rejects (the spec says "throws"); run on sim, PGlite and, with KEEL_TEST_POSTGRES_URL, Postgres 17.
 // Assumption: `postgres.result` data `row` is the zero-based index of the failing row and `issues` holds `{ path, rule }`; the error and its data hold no row value.

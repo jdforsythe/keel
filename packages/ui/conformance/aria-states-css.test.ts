@@ -1,4 +1,4 @@
-// Spec: k.aria, Part styles "There and on `Part`, `states` also takes `selected` (`[aria-selected="true"]`), `checked` (`[aria-checked="true"]`, `:checked`), `expanded` (`[aria-expanded="true"]`) and `highlighted` (`[data-k-highlighted]`)."
+// k.aria, Part styles "There and on `Part`, `states` also takes `selected` (`[aria-selected="true"]`), `checked` (`[aria-checked="true"]`, `:checked`), `expanded` (`[aria-expanded="true"]`) and `highlighted` (`[data-k-highlighted]`)."
 // Seed: 1337. The CSS half of the k.aria Conformance clause on part styles quoted in packages/compiler/conformance/part-styles.test.ts.
 // Assumed: a usage `{ props, state }` takes the states `selected`, `checked`, `expanded` and `highlighted` as it takes `hover`.
 import { compileStyles } from "@keel/ui/css";

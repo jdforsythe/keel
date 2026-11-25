@@ -1,4 +1,4 @@
-// Spec: k.head, Conformance "After a search-only navigation, `document.title` is the route's `title` for the new search and data, and the focused element and every `role="status"` node are the same nodes as before."
+// Spec: k.head, clause "After a search-only navigation, `document.title` is the route's `title` for the new search and data, and the focused element and every `role=\"status\"` node are the same nodes as before."
 // Seed: 1337.
 // @vitest-environment happy-dom
 // ASSUMPTIONS (as in head-fixtures.ts): createRouter(routes, { ctx, history }) from @keel/router, memoryHistory from fixtures.ts; the title function

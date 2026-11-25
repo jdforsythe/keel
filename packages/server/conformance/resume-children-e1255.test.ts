@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.resume, Conformance "A layout that calls `children` twice in its body: a request fails its level as a throw whose message starts with `E1255`. After resume, a layout island whose added `For` row calls `children` while another row holds the content throws E1255 to its root Boundary."
-// Spec: k.resume, Rules "E1255 a layout called `children` twice while it builds, or while its content is in the document."
+// Spec: k.resume, clause "A layout that calls `children` twice in its body: a request fails its level as a throw whose message starts with `E1255`. After resume, a layout island whose added `For` row calls `children` while another row holds the content throws E1255 to its root Boundary."
+// k.resume, Rules "E1255 a layout called `children` twice while it builds, or while its content is in the document."
 // Seed: 1337. Real compiled TSX, real createApp, real resume.
 import { afterEach, describe, expect, it } from "vitest";
 import {

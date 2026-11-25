@@ -1,4 +1,4 @@
-// Spec: k.sync Conformance, "Under `'rebase'`, `tx` with a `base` other than `head()` commits on the current state and the entry holds that `base`; an invariant failure is `store.invariant` and commits nothing."
+// Spec: k.sync, clause "Under `'rebase'`, `tx` with a `base` other than `head()` commits on the current state and the entry holds that `base`; an invariant failure is `store.invariant` and commits nothing."
 // Seed 1337 (fast-check `seed: 1337`).
 import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";

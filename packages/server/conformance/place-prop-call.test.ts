@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.place, Conformance "`function Card(props: { icon: () => Node })` rendering `<Box>{props.icon()}</Box>` with `icon: () => <Text>i</Text>`: served by `createApp`, the document holds the `Text` element in the `Box`; resumed by `resumeDocument`, no warning, `removed()` and `detached()` 0, and a handler on the icon's element runs. The same with `props.icon?.()`, `props.icon?.() ?? 'none'` with `icon` absent (`none` as text), two elements beside text, and inside `If` and `For` content."
-// Spec: k.place, Conformance "`{props.label()}` with `label: () => 'Hi'` renders `Hi` once in its place; `{String(props.count())}` updates when the signal it reads changes."
+// Spec: k.place, clause "`function Card(props: { icon: () => Node })` rendering `<Box>{props.icon()}</Box>` with `icon: () => <Text>i</Text>`: served by `createApp`, the document holds the `Text` element in the `Box`; resumed by `resumeDocument`, no warning, `removed()` and `detached()` 0, and a handler on the icon's element runs. The same with `props.icon?.()`, `props.icon?.() ?? 'none'` with `icon` absent (`none` as text), two elements beside text, and inside `If` and `For` content."
+// Spec: k.place, clause "`{props.label()}` with `label: () => 'Hi'` renders `Hi` once in its place; `{String(props.count())}` updates when the signal it reads changes."
 // Seed: 1337 (no generated inputs). The served pages are real createApp output (./place-routes.ts); the client side is
 // `resumeDocument` in a module graph of its own. Assumption: `removed()` and `detached()` return counts.
 // Not covered by the click step: the `For` case, whose rows hold an icon with no id to fire.

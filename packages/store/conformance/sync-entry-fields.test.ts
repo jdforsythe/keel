@@ -1,4 +1,4 @@
-// Spec: k.sync Conformance, "An entry's `base` and `key` survive `snapshot()`, a JSON round trip and `restore`."
+// Spec: k.sync, clause "An entry's `base` and `key` survive `snapshot()`, a JSON round trip and `restore`."
 // Seed 1337 (fast-check `seed: 1337`).
 import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";

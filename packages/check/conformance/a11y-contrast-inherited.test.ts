@@ -1,4 +1,4 @@
-// Spec: k.a11y, Conformance "A `Text` whose `fg` is 4.4:1 against the `bg` of its nearest ancestor in the same component is E1804; at `fontSize` 18.66px and `weight` 700, or under `states.disabled`, it is not."
+// Spec: k.a11y, clause "A `Text` whose `fg` is 4.4:1 against the `bg` of its nearest ancestor in the same component is E1804; at `fontSize` 18.66px and `weight` 700, or under `states.disabled`, it is not."
 // Seed: 1337.
 // Assumed: tokens are passed as `artifacts: { tokens }` (as ui-e1804 does); `weight` tokens are strings such as "700".
 import { check } from "@keel/check";

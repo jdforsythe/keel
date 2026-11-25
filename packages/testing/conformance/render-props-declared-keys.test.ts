@@ -1,7 +1,7 @@
 import { attr, clone, template } from "@keel/runtime-dom/ops";
 import { s } from "@keel/schema";
 // @vitest-environment happy-dom
-// Spec: k.testing, clause "`render(Component, { props, state?, ctx? })` -> `{ a11y(id?), state(store?), fire(id, event), settle(), find(id), ctx, dispose() }`; `ctx` is the one it runs on (`SimCtx` if none given). `props` (an open `Props` object: its declared keys, slot and callback props passed as given, k.component) and each `[store, value]` in `state` are schema-parsed first."
+// k.testing, clause "`render(Component, { props, state?, ctx? })` -> `{ a11y(id?), state(store?), fire(id, event), settle(), find(id), ctx, dispose() }`; `ctx` is the one it runs on (`SimCtx` if none given). `props` (an open `Props` object: its declared keys, slot and callback props passed as given, k.component) and each `[store, value]` in `state` are schema-parsed first."
 // Spec: k.testing, clause "`render` with props that fail the `Props` schema rejects with `schema.invalid` before rendering."
 // Seed: 1337.
 // Reading: "an open `Props` object: its declared keys ... are schema-parsed first" is asserted as: a declared key is parsed (a failing one rejects `schema.invalid`, the body never runs; a valid one reaches the body as parsed); a key `Props` does not declare is no part of the parse, so a value of any kind there (a function, a slot, a Map, a class instance, `undefined`, `NaN`) neither fails `render` nor is copied: the body receives that very value.

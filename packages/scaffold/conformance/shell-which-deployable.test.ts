@@ -1,5 +1,5 @@
-// Spec: k.scaffold-shell, Conformance "With `client` deployables `web` and `admin` and a `node` deployable `api`: no `to` is one E1359 naming `web` and `admin`; `to: 'admin'` edits `admin` alone; `to: 'api'` is E1359 naming `api`; `to: 'nope'` is E1052. In `keel scaffold project q --adapter node`, no `to` is E1359. Nothing is written in each refusal."
-// Spec: k.scaffold-shell, Rules "E1359 ... none, several and no `--to`, or `--to` naming another adapter; names them".
+// Spec: k.scaffold-shell, clause "With `client` deployables `web` and `admin` and a `node` deployable `api`: no `to` is one E1359 naming `web` and `admin`; `to: 'admin'` edits `admin` alone; `to: 'api'` is E1359 naming `api`; `to: 'nope'` is E1052. In `keel scaffold project q --adapter node`, no `to` is E1359. Nothing is written in each refusal."
+// k.scaffold-shell, Rules "E1359 ... none, several and no `--to`, or `--to` naming another adapter; names them".
 import { describe, expect, it } from "vitest";
 import { errText, read, snap } from "./fixtures.ts";
 import { multiTopology, pNode, rec, shell, shellApply, squash } from "./shell-support.ts";

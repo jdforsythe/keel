@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 // Spec: k.api, clause "An API GET whose `query` requires `q`, sent without it, answers 422 `keel.fields` at `query.q` and runs no loader; with a denying guard, 403 and `query` unread."
-// Spec: k.api Requests: "After the guard it decodes `query` (fail: 422 `keel.fields`, issue paths prefixed `query`; nothing runs)." RFC 0157 Proposal 6: "match, params (fail: 404), guard (deny: 403), then `query` and `body` (fail: 422 `keel.fields`, issue paths prefixed `query` or `body`, no loader or action runs)." Seed 1337.
+// k.api Requests: "After the guard it decodes `query` (fail: 422 `keel.fields`, issue paths prefixed `query`; nothing runs)." RFC 0157 Proposal 6: "match, params (fail: 404), guard (deny: 403), then `query` and `body` (fail: 422 `keel.fields`, issue paths prefixed `query` or `body`, no loader or action runs)." Seed 1337.
 import { action, guard, loader, manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
 import { err, ok, s } from "@keel/schema";

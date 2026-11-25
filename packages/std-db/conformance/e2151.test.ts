@@ -1,5 +1,5 @@
-// Spec: std.db, Conformance "An app file importing `@keel/std-db/sqlite` is E2151; the generated entry is not."
-// Spec: std.db, Rules "E2151 an app file imports `@keel/std-db` (no fix)"
+// Spec: std.db, clause "An app file importing `@keel/std-db/sqlite` is E2151; the generated entry is not."
+// std.db, Rules "E2151 an app file imports `@keel/std-db` (no fix)"
 // Seed: 1337.
 // Assumption: as for std.jobs E2501, `check()` imports nothing, so the rule registers by importing `@keel/std-db/tools`.
 // Assumption: the generated entry is not a project file `check` reads (k.deploy writes `server.mjs` into `dist/`); "the generated entry is not" is

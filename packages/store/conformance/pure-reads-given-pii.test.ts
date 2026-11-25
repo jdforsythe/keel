@@ -1,5 +1,5 @@
-// Spec: k.store, clause "`givenPii(entry)` gives the non-empty strings and numbers under a `.pii()` mark of a committed entry's payload as `tx` was given it (`piiValues`, k.schema), a marked open object's undeclared keys and all under them among them, which the logged payload no longer holds; empty for an unmarked payload schema or an entry this process did not commit."
-// Spec: k.store, clause "It is held in memory only and never in a snapshot; a session recorder drops these values from later error text (std.sessions)."
+// k.store, clause "`givenPii(entry)` gives the non-empty strings and numbers under a `.pii()` mark of a committed entry's payload as `tx` was given it (`piiValues`, k.schema), a marked open object's undeclared keys and all under them among them, which the logged payload no longer holds; empty for an unmarked payload schema or an entry this process did not commit."
+// k.store, clause "It is held in memory only and never in a snapshot; a session recorder drops these values from later error text (std.sessions)."
 // Spec: k.store, clause "`givenPii(store)` gives the same of the store's state as last given: `initial` at creation, the state a `restore` was given, or the state a commit or undo made."
 // Seed 1337 (fast-check `seed: 1337`).
 // Undo sequences: k.store says `givenPii(store)` after an undo gives "what it gave when the entry now latest was committed (with none left, the base's: `initial`, a `restore`'s values, or those of the last entry the log limit folded into it)". k.store names no redo, so none is asserted.

@@ -2,7 +2,7 @@
 // Spec: k.ctx, clause "`const D = Date; D.now()`, `` Date[`now`]() ``, and `const { random } = Math; random()` are each one E1601, at the call; after `const Date = ctx.clock`, `Date.now()` is not E1601."
 // Spec: k.ctx, clause "For an alias chain of depth 1 to 4 to `Date.now` or `Math.random`, E1601 is reported exactly once, at the call."
 // Spec: k.ctx, clause "`eval(s)`, `Function(s)`, `new Function(s)`, and `const e = eval; e(s)` are each one E1603; a locally declared `Function` is not."
-// Spec: k.ctx, Rules "An alias is reported at its uses, not where it is declared, unless it is exported there."
+// k.ctx, Rules "An alias is reported at its uses, not where it is declared, unless it is exported there."
 // Backlog 0151 (exported aliases), 0153 (constructor constants and `instanceof` operands stay clean).
 import { check } from "@keel/check";
 import fc from "fast-check";

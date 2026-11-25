@@ -1,4 +1,4 @@
-// Spec: k.review, rule "E1068 a range with `--all`"
+// k.review, rule "E1068 a range with `--all`"
 // Seed: n/a.
 // ASSUMED: exit 2 and one `diag` E1068, whichever order the two are given.
 import { expect, test } from "vitest";

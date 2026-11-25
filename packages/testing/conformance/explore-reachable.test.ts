@@ -1,4 +1,4 @@
-// Spec: k.model, Conformance "From `from`, with payload lists, `explore` visits exactly the states reachable within `depth` edges, each once and the start first, and `edges` counts one per expanded state, transaction and payload."
+// Spec: k.model, clause "From `from`, with payload lists, `explore` visits exactly the states reachable within `depth` edges, each once and the start first, and `edges` counts one per expanded state, transaction and payload."
 // Seed: 1337.
 import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";

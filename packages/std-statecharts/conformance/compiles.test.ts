@@ -1,4 +1,4 @@
-// Spec: std.statecharts, Conformance "The compiled store's schema parses `{ state: initial, data: start }` and refuses a state name outside `states`; each event's transaction is named `<id>.<event>` and its `schema` is that event's payload schema."
+// Spec: std.statecharts, clause "The compiled store's schema parses `{ state: initial, data: start }` and refuses a state name outside `states`; each event's transaction is named `<id>.<event>` and its `schema` is that event's payload schema."
 // Seed: 1337.
 // Assumption: a transaction's name is observable as the key of `store.payloads` and as the `name` of its log entry.
 // `chart.states` is not asserted beyond the names the fixture declares: the spec does not give its shape.

@@ -1,4 +1,4 @@
-// Spec: k.topology, Conformance "`keel dev` answers a `static` deployable's route with the document its `createApp` renders, its loader's text in it."
+// Spec: k.topology, clause "`keel dev` answers a `static` deployable's route with the document its `createApp` renders, its loader's text in it."
 // Seed: 1337 (no generated input: one fixture, one spawn). `keel dev --port p` with `p` from a closed listener on port 0, a bounded retry of a GET, the child's group ended in `finally` (static-support.ts).
 // Pending: dev serves no `static` deployable's paths yet. ASSUMPTION: a document request is a GET with `accept: text/html`; the document holds the loader's text.
 import { setTimeout as pause } from "node:timers/promises";

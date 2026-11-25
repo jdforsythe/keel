@@ -1,4 +1,4 @@
-// Spec: k.component, Conformance "Called as a function with `each` a getter, `For` renders a kept key's row anew for a new item object and keeps every other row's nodes."
+// Spec: k.component, clause "Called as a function with `each` a getter, `For` renders a kept key's row anew for a new item object and keeps every other row's nodes."
 // Seed: 1337.
 // @vitest-environment happy-dom
 // ASSUMPTION: `For({ each, key, children })` with `children: (item) => Node` called per row; `item` is the row's item value, not an accessor.

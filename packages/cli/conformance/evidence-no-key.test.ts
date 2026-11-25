@@ -1,5 +1,5 @@
-// Spec: k.evidence, Conformance "Without `KEEL_EVIDENCE_KEY`, or with an RSA key, the command writes nothing and reports E1061."
-// Spec: k.evidence, Rules "E1061 `KEEL_EVIDENCE_KEY` absent or not Ed25519; nothing is written"
+// Spec: k.evidence, clause "Without `KEEL_EVIDENCE_KEY`, or with an RSA key, the command writes nothing and reports E1061."
+// k.evidence, Rules "E1061 `KEEL_EVIDENCE_KEY` absent or not Ed25519; nothing is written"
 // Seed: 1337. "Writes nothing": the `--out` directory does not exist and the project tree is unchanged.
 import { rmSync } from "node:fs";
 import { join } from "node:path";

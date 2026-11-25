@@ -1,5 +1,5 @@
-// Spec: k.topology, Conformance "`styles` entries `'./x.css'`, `'@keel/ui'` and a variable are each one E1587 in `keel check` and `keel build`."
-// Spec: k.topology, Rules "E1587 a `styles` entry that is not a string literal or whose export is not a `.css` file (`keel check`, `keel build`)"
+// Spec: k.topology, clause "`styles` entries `'./x.css'`, `'@keel/ui'` and a variable are each one E1587 in `keel check` and `keel build`."
+// k.topology, Rules "E1587 a `styles` entry that is not a string literal or whose export is not a `.css` file (`keel check`, `keel build`)"
 // Seed: 1337 (no generated input: one fixture per entry, spawned). Pending: `styles` is not read yet.
 // ASSUMPTION: a failing `keel build` exits 1; `'./x.css'` names a file that exists in the project (a relative path is still not a package export).
 import { afterAll, beforeAll, expect, test } from "vitest";

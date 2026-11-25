@@ -1,4 +1,4 @@
-// Spec: k.prove, Conformance "Two runs give byte-equal verdicts and counterexamples."
+// Spec: k.prove, clause "Two runs give byte-equal verdicts and counterexamples."
 // Seed: 1337.
 import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";

@@ -1,5 +1,5 @@
-// Spec: k.a11y, Conformance "With tokens `base.focus: 'fg'`, a `Button` reached by Tab has a 2px solid outline in `fg` at 2px offset in Chromium and one focused by a pointer click has none; a `base.focus` color at 2:1 against `base.page`'s `bg` is E1807, and `brandTokens` passes."
-// Spec: k.a11y, Rules "E1807" via k.ui: "a `base.focus` color under 3:1 against `base.page`'s `bg` in either scheme is E1807."
+// Spec: k.a11y, clause "With tokens `base.focus: 'fg'`, a `Button` reached by Tab has a 2px solid outline in `fg` at 2px offset in Chromium and one focused by a pointer click has none; a `base.focus` color at 2:1 against `base.page`'s `bg` is E1807, and `brandTokens` passes."
+// k.a11y, Rules "E1807" via k.ui: "a `base.focus` color under 3:1 against `base.page`'s `bg` in either scheme is E1807."
 // Seed: 1337 (property over grey pairs).
 // Not built yet: every case is `test.skip`; the builder changes `test.skip` to `test` in each.
 // Assumed: the E1807 for a low `base.focus` is thrown by `defineTokens` and by `compileStyles`, as the other E1807 causes are (rules-e1801-e1807-codes-0065.test.ts), and `TokenSchema.parse` returns `ok: false`.

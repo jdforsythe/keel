@@ -1,4 +1,4 @@
-// Spec: k.docs "A diagnostic with `see` `k.ui` prints `see: keel docs k.ui` in compact and pretty, and `"see":"k.ui"` in json."
+// Spec: k.docs, clause "A diagnostic with `see` `k.ui` prints `see: keel docs k.ui` in compact and pretty, and `\"see\":\"k.ui\"` in json."
 // Seed: none. Red: compact and pretty print `see: keel spec k.ui` today.
 import { defineRule } from "@keel/check";
 import { describe, expect, it } from "vitest";

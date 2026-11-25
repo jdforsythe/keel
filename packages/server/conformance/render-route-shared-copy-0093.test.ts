@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.testing, Conformance "On one ctx, a save through `renderRoute` is read by `createApp`, and a save through `createApp` by the next `renderRoute` navigation."
-// Spec: k.server Server state: the saved copy is one per `ctx.storage`, shared by every `createApp` and harness render on that ctx; a stale save is 409 `keel.conflict`.
+// Spec: k.testing, clause "On one ctx, a save through `renderRoute` is read by `createApp`, and a save through `createApp` by the next `renderRoute` navigation."
+// k.server Server state: the saved copy is one per `ctx.storage`, shared by every `createApp` and harness render on that ctx; a stale save is 409 `keel.conflict`.
 // Seed: 1337.
 // ASSUMPTIONS (spec names no shape): a harness submit is `fire(inputId, { type: 'input', value })` then `fire(formId, { type: 'submit' })`;
 // `createApp` is read through a runtime (JSON) GET and written through a runtime (JSON) POST; the GET answers the envelope `{ id, results: { [id]: Result } }` and the route's `Result` is `{ ok, value }`.

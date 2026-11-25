@@ -1,4 +1,4 @@
-// Spec: k.sync Conformance, "A transaction declared without `concurrent` exposes `concurrent` `'reject'`."
+// Spec: k.sync, clause "A transaction declared without `concurrent` exposes `concurrent` `'reject'`."
 // Seed 1337 (fast-check `seed: 1337`).
 import { s } from "@keel/schema";
 import { store, transaction } from "@keel/store";

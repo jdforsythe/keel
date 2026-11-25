@@ -1,5 +1,5 @@
-// Spec: k.evidence, Conformance "No bundle file of a fixture whose stores and tests hold generated `.pii()` values contains any of them."
-// Spec: k.evidence, Command "No file holds an app value: records carry ids, codes, paths, counts and hashes."
+// Spec: k.evidence, clause "No bundle file of a fixture whose stores and tests hold generated `.pii()` values contains any of them."
+// k.evidence, Command "No file holds an app value: records carry ids, codes, paths, counts and hashes."
 // Seed: 1337. The 100 cases are drawn with `fc.sample` (seed 1337) and written into one fixture project, each as a
 // generated schema with `.pii()` nodes (leaf, nested object, array item), a store holding generated values and a test
 // holding them; `keel evidence` runs once, then a 100-run property checks every case's values against every bundle file.

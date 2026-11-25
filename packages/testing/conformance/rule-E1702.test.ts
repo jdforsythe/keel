@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.testing, Rules "E1702 rendered role or name differs from `a11y.json`"
+// k.testing, Rules "E1702 rendered role or name differs from `a11y.json`"
 // Seed: 1337.
 // The artifact is the real compiler output for a small component; mismatches are made by patching its entry.
 import { compile } from "@keel/compiler";

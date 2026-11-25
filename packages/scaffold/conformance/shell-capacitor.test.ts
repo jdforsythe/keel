@@ -1,5 +1,5 @@
-// Spec: k.scaffold-shell, Conformance "In `p`, `shell: 'capacitor'` adds `@keel/std-capacitor`, `@capacitor/core`, `@capacitor/preferences` and `@capacitor/app` to `dependencies` and `@capacitor/cli`, `@capacitor/android` and `@capacitor/ios` to `devDependencies`; with `identity.ts` in the tree, `@capacitor/browser` too."
-// Spec: k.scaffold-shell, Edits "each in the field and at the version the shell's package declares" (the versions are read from `@keel/std-capacitor`'s own package.json).
+// Spec: k.scaffold-shell, clause "In `p`, `shell: 'capacitor'` adds `@keel/std-capacitor`, `@capacitor/core`, `@capacitor/preferences` and `@capacitor/app` to `dependencies` and `@capacitor/cli`, `@capacitor/android` and `@capacitor/ios` to `devDependencies`; with `identity.ts` in the tree, `@capacitor/browser` too."
+// k.scaffold-shell, Edits "each in the field and at the version the shell's package declares" (the versions are read from `@keel/std-capacitor`'s own package.json).
 import { describe, expect, it } from "vitest";
 import { added, declared, p, serverText, shellApply, withIdentity } from "./shell-support.ts";
 

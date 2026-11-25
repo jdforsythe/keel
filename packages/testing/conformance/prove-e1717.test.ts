@@ -1,5 +1,5 @@
-// Spec: k.prove, Conformance "`rlimit: 1` rejects E1717 where the default proves."
-// Spec: k.prove, Rules "E1717 no verdict within `rlimit` (default 10,000,000 Z3 resource units, a count rather than time, so a verdict repeats)."
+// Spec: k.prove, clause "`rlimit: 1` rejects E1717 where the default proves."
+// k.prove, Rules "E1717 no verdict within `rlimit` (default 10,000,000 Z3 resource units, a count rather than time, so a verdict repeats)."
 // Seed: 1337.
 import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";

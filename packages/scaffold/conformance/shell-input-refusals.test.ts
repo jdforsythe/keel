@@ -1,5 +1,5 @@
-// Spec: k.scaffold-shell, Conformance "`shell: 'electron'`, and no `id`, are each E1052; `id: 'shop'` is E1353 naming E1573. Nothing is written."
-// Spec: k.scaffold-shell, Refusals "`shell` neither `tauri` nor `capacitor`, no `id`, no `name` and no `package.json` `name` to derive one from, `to` naming no deployable, no `topology.ts`, or a `package.json` that is not a JSON object: E1052. An `id` that is not reverse-DNS: E1353 naming E1573. ... Its deployable or `shells` written as something other than an object literal: E1052." Judged in that order.
+// Spec: k.scaffold-shell, clause "`shell: 'electron'`, and no `id`, are each E1052; `id: 'shop'` is E1353 naming E1573. Nothing is written."
+// k.scaffold-shell, Refusals "`shell` neither `tauri` nor `capacitor`, no `id`, no `name` and no `package.json` `name` to derive one from, `to` naming no deployable, no `topology.ts`, or a `package.json` that is not a JSON object: E1052. An `id` that is not reverse-DNS: E1353 naming E1573. ... Its deployable or `shells` written as something other than an object literal: E1052." Judged in that order.
 // Seed 1337 (property over ids).
 // UNTESTABLE: the exact reverse-DNS grammar (the spec names E1573 and gives `shop` as the one refused example): the property uses one-segment ids and `com.<word>.<word>` ids only.
 import fc from "fast-check";

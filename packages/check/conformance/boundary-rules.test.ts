@@ -1,5 +1,5 @@
-// Spec: k.boundary, Conformance "In a `client` module `process.env.X` in `load.server.ts` is E1759; in a `node` module's `a.guard.ts` it is not; `guard(...)` in `modules/a/auth.ts` is E1009."
-// Spec: k.boundary, Rules "E1007 server code in a browser build (names the chain) · E1008 a stub of a server-only export called · E1009 `guard` from `@keel/router` used (k.bundle) outside a `*.guard.*` or `*.server.*` file (fix: none)."
+// Spec: k.boundary, clause "In a `client` module `process.env.X` in `load.server.ts` is E1759; in a `node` module's `a.guard.ts` it is not; `guard(...)` in `modules/a/auth.ts` is E1009."
+// k.boundary, Rules "E1007 server code in a browser build (names the chain) · E1008 a stub of a server-only export called · E1009 `guard` from `@keel/router` used (k.bundle) outside a `*.guard.*` or `*.server.*` file (fix: none)."
 // Seed 1337 (the properties below). `check` over in-memory project trees (the type pass is off: the rules read syntax and the topology).
 // E1759 reads which files are browser files from `topology.ts`: a `client` module's `*.server.*` and `*.guard.*` files are, a `node` module's are not.
 import fc from "fast-check";

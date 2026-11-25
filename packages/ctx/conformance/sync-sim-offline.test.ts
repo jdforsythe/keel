@@ -1,4 +1,4 @@
-// Spec: k.sync Conformance, "Under sim, after `setOnline(false)`, `online()` is false, `fetch` rejects with a `TypeError`, an open sim response body errors, and an observer gets one `{ kind: 'net', online: false }`; `setOnline(true)` reverses each."
+// Spec: k.sync, clause "Under sim, after `setOnline(false)`, `online()` is false, `fetch` rejects with a `TypeError`, an open sim response body errors, and an observer gets one `{ kind: 'net', online: false }`; `setOnline(true)` reverses each."
 // Seed 1337 (fast-check `seed: 1337`).
 // ASSUMPTION (as the neighbouring conformance files): a sim route is `ctx.net.route(url, handler)` returning a standard Response.
 import { createCtx, observe } from "@keel/ctx";

@@ -1,5 +1,5 @@
-// Spec: k.evidence, Conformance "A fixture with a failing test still gets a verifying bundle whose `runs` counts it; the command exits 1 with E1060."
-// Spec: k.evidence, Rules "E1060 the bundle records a check error or a failed test"
+// Spec: k.evidence, clause "A fixture with a failing test still gets a verifying bundle whose `runs` counts it; the command exits 1 with E1060."
+// k.evidence, Rules "E1060 the bundle records a check error or a failed test"
 // Seed: 1337. ASSUMED (the spec gives `runs` no key names): `runs` is an object of the check error count and the failed
 // test count, so the test sums its numeric values: 0 for the clean fixture, 1 for one failure or one check error.
 import { rmSync } from "node:fs";

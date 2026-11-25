@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 // Spec: k.contract, clause "A page action in its entry returning `ok(c.href('a.home'))` compiles unannotated; its document POST answers 303 to `/`." (the document POST: packages/server/conformance/contract-action-303.test.ts)
-// Spec: RFC 0157 Conformance diff: "a POST to the page answers 303 to `/` (document) or `ok('/')` (runtime)." Spec: k.router "An action returning `ok(c.href(id))` compiles unannotated and navigates to `id`." Seed 1337.
+// RFC 0157 Conformance diff: "a POST to the page answers 303 to `/` (document) or `ok('/')` (runtime)." Spec: k.router "An action returning `ok(c.href(id))` compiles unannotated and navigates to `id`." Seed 1337.
 // Spec: k.router, clause "An action returning `ok(c.href(id))` compiles unannotated and navigates to `id`."
 import { Form, action, manifest, routesArtifact } from "@keel/router";
 import { contract } from "@keel/router/contract";

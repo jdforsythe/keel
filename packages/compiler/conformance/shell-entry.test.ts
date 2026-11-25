@@ -1,4 +1,4 @@
-// Spec: k.shell, Conformance "The `www` entry a shell build writes creates its ctx with `mode: 'shell'` and the package's drivers; the plain `client` entry is unchanged."
+// Spec: k.shell, clause "The `www` entry a shell build writes creates its ctx with `mode: 'shell'` and the package's drivers; the plain `client` entry is unchanged."
 // Seed: 1337.
 // The test builds a fixture whose `node_modules/.bin/tauri` and `PATH` tools (`cargo`, `rustc`, `npx`) are fakes that exit 0 without compiling, then reads
 // the `www` entry the build writes. "The package's drivers" is read as the `drivers` argument beside `mode: 'shell'` being a call to a function whose body builds `storage` and `net`.

@@ -1,4 +1,4 @@
-// Spec: k.sim, Conformance "`drop` and `unavailable` never run the route; `lost` runs it once and the fetch rejects with a `TypeError`; `unavailable` resolves status 503."
+// Spec: k.sim, clause "`drop` and `unavailable` never run the route; `lost` runs it once and the fetch rejects with a `TypeError`; `unavailable` resolves status 503."
 // Seed: 1337.
 import { createCtx } from "@keel/ctx";
 import fc from "fast-check";

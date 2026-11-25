@@ -1,4 +1,4 @@
-// Spec: std.timings, clause "A ctx keeps at most 256 names (rfc:0062). A call to a kept name is a repeat call. The protected names are the (at most) 192 kept names whose last call was a repeat call, latest first; the rest are unprotected. A name becomes unprotected at its first call, or when it drops out of the protected 192. A new name at the cap first evicts the name unprotected longest. So a kept name with `count` 2 or more is evicted only after 192 other names had a repeat call since its last call."
+// std.timings, clause "A ctx keeps at most 256 names (rfc:0062). A call to a kept name is a repeat call. The protected names are the (at most) 192 kept names whose last call was a repeat call, latest first; the rest are unprotected. A name becomes unprotected at its first call, or when it drops out of the protected 192. A new name at the cap first evicts the name unprotected longest. So a kept name with `count` 2 or more is evicted only after 192 other names had a repeat call since its last call."
 // Seed 1337
 // @vitest-environment happy-dom
 import { createCtx } from "@keel/ctx";

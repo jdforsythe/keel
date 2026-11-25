@@ -1,4 +1,4 @@
-// Spec: std.workflows, Store "a taken target with a `to`, its own state too, raises `entered` by one"
+// std.workflows, Store "a taken target with a `to`, its own state too, raises `entered` by one"
 // Seed: 1337.
 // Assumption: as in fixtures.ts; the instance row is read through `commitStores`. A step state whose `done` event's target leads back to the state itself (guarded by a count in `data`) runs `run` on each entry; the entry count `entered` starts at a value the spec does not fix, so keys and rows are compared with the `entered` read after `begin`.
 // Assumption: a target with no `to` (`{ do }` alone) is the chart's "stay", which applies `do` and leaves the state, so `entered` stays.

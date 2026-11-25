@@ -1,6 +1,6 @@
 // Spec: std.multi, clause "E2007 and E2008 each fire on a fixture and not on its clean twin."
-// Spec: std.multi, rule E2007: a group file fails `SessionGroup` (diag at the file, 1:1).
-// Spec: std.multi, rule E2008: a group user's session has no `seed` (diag at the file, 1:1).
+// std.multi, rule E2007: a group file fails `SessionGroup` (diag at the file, 1:1).
+// std.multi, rule E2008: a group user's session has no `seed` (diag at the file, 1:1).
 // Seed 1337
 // Driven through `keel session replay <f>` (the surface E2002 uses), on a file with a top-level `users` key.
 // Assumption: the command writes compact lines `<code> <file>:1:1 ...` to stdout by default, as for E2002.

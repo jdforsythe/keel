@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
-// Spec: k.host-element, Conformance "`fire(id, { type: 'emit', detail })` calls `onEvent` with the parsed detail; a session holding that event replays to the same `state()`."
-// Spec: k.host-code, Events "`emit(e)` parses `e` with `events`, reports `{ kind: 'fire', id, event: { type: 'emit', detail: e } }` to the ctx observers, then calls `onEvent(e)` as a handler: what the app does with it is a transaction, so it is logged, recorded in a session and replayed without the outside code."
-// Spec: k.host-element, Harness and replay "a session's `emit` replays the same way."
+// Spec: k.host-element, clause "`fire(id, { type: 'emit', detail })` calls `onEvent` with the parsed detail; a session holding that event replays to the same `state()`."
+// k.host-code, Events "`emit(e)` parses `e` with `events`, reports `{ kind: 'fire', id, event: { type: 'emit', detail: e } }` to the ctx observers, then calls `onEvent(e)` as a handler: what the app does with it is a transaction, so it is logged, recorded in a session and replayed without the outside code."
+// k.host-element, Harness and replay "a session's `emit` replays the same way."
 // Seed 1337. The element's `code` imports a file that does not exist: neither the recording nor the replay may load it.
 import { createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";

@@ -1,4 +1,4 @@
-// Spec: std.options, Conformance "Tabs: ArrowRight on the last tab calls `onChange` with the first key and focuses it; only the selected tab has `tabindex="0"` and only its panel is shown; `focusOrder()` (k.a11y) holds one tab."
+// Spec: std.options, clause "Tabs: ArrowRight on the last tab calls `onChange` with the first key and focuses it; only the selected tab has `tabindex=\"0\"` and only its panel is shown; `focusOrder()` (k.a11y) holds one tab."
 // Seed: 1337.
 // @vitest-environment happy-dom
 // Assumptions: the app holds `selected` in a signal that `onChange` sets; "only its panel is shown" is read by id (`hidden`); "only the selected tab has `tabindex="0"`" is

@@ -1,4 +1,4 @@
-// Spec: k.prove, Conformance "An invariant true in every reachable state but not inductive rejects E1716 with a state no transaction reaches."
+// Spec: k.prove, clause "An invariant true in every reachable state but not inductive rejects E1716 with a state no transaction reaches."
 // Seed: 1337.
 import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";

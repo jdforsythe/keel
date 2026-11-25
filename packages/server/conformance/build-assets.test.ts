@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 // Spec: k.deploy, clause "`createApp({ assets })` on a `keel build` node fixture scripts a 200 JavaScript `resume` entry, `immutable`; no manifest: E1555." (RFC 0048)
-// Spec: k.deploy Rules E1555
-// Spec: k.head, Server "a `<link rel=\"stylesheet\">` for each `.css` file under `/assets/` that the build manifest's entry chunk names"
+// k.deploy Rules E1555
+// k.head, Server "a `<link rel=\"stylesheet\">` for each `.css` file under `/assets/` that the build manifest's entry chunk names"
 // Seed: 1337 (no generated inputs; the fixture is built once through the real CLI). In-process createApp, no listening server.
 import type { Ctx } from "@keel/ctx";
 import { spawnSync } from "node:child_process";

@@ -1,4 +1,4 @@
-// Spec: std.report, clause "`keel report --format=json` prints each tally as one line equal to the record and a last line with `kind: "summary"`, `name: "report"` and `counts: { tallies }`."
+// Spec: std.report, clause "`keel report --format=json` prints each tally as one line equal to the record and a last line with `kind: \"summary\"`, `name: \"report\"` and `counts: { tallies }`."
 // Seed 1337
 import { run } from "@keel/cli";
 import { tallyOf } from "@keel/std-report";

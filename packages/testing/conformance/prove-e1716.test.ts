@@ -1,6 +1,6 @@
-// Spec: k.prove, Rules "E1716 a counterexample: the state (or `initial`) and the payload, as JSON on the next line. The state may be unreachable; then the invariant is true but not inductive: strengthen it, or `explore`."
-// Spec: k.prove, Rules "The JSON is `{"transaction","state","payload"}` (`{"state"}` for `initial`); a string is the model's literal, else `a`, `b`, ... in order of first appearance."
-// Spec: k.prove, Rules "When only an integer range breaks (Sorts, Obligations), the first line is `<tx> leaves the safe integer range from this state; bound the schema or guard it`."
+// k.prove, Rules "E1716 a counterexample: the state (or `initial`) and the payload, as JSON on the next line. The state may be unreachable; then the invariant is true but not inductive: strengthen it, or `explore`."
+// k.prove, Rules "The JSON is `{"transaction","state","payload"}` (`{"state"}` for `initial`); a string is the model's literal, else `a`, `b`, ... in order of first appearance."
+// k.prove, Rules "When only an integer range breaks (Sorts, Obligations), the first line is `<tx> leaves the safe integer range from this state; bound the schema or guard it`."
 // Seed: 1337.
 import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";

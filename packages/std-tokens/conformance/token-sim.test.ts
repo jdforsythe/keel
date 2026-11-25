@@ -1,6 +1,6 @@
-// Spec: std.tokens, Modes "Real and shell draw `id` and `secret` from `randomBytes` of `node:crypto`. Sim draws them from the capability seed and a call count and writes `keelsim_<id>_<secret>` and `$sha256-sim$...`; it reads both forms."
-// Spec: std.tokens, Modes "A real or shell ctx answers `credentials.mismatch` for a sim token and `credentials.malformed` `sim` for a sim digest."
-// Spec: std.tokens, Conformance "Under sim, ctxs with one seed mint equal tokens and digests call by call, and two seeds do not; under real and shell, a sim token is `credentials.mismatch`, and a row with a sim digest or any generated `Digested` is `credentials.malformed` `sim`."
+// std.tokens, Modes "Real and shell draw `id` and `secret` from `randomBytes` of `node:crypto`. Sim draws them from the capability seed and a call count and writes `keelsim_<id>_<secret>` and `$sha256-sim$...`; it reads both forms."
+// std.tokens, Modes "A real or shell ctx answers `credentials.mismatch` for a sim token and `credentials.malformed` `sim` for a sim digest."
+// Spec: std.tokens, clause "Under sim, ctxs with one seed mint equal tokens and digests call by call, and two seeds do not; under real and shell, a sim token is `credentials.mismatch`, and a row with a sim digest or any generated `Digested` is `credentials.malformed` `sim`."
 // Seed: 1337.
 // Assumption: "equal call by call" is read for the first three mints with `ttl: null`; "two seeds do not" for the first mint.
 // Assumption: "any generated `Digested`" is 50 values of `gen(Digested)` (`@keel/schema/gen`) sampled with seed 1337, presented with a real token.

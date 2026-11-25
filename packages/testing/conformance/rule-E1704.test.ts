@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.testing, Rules "E1704 property failed"
+// k.testing, Rules "E1704 property failed"
 // Seed: 1337.
 import { properties } from "@keel/testing";
 import { describe, expect, it } from "vitest";

@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 // rfc:0160 conformance: `createApp` with `origin: 'https://a.example'` for a deployable framing `https://a.example` rejects with E1590.
 // rfc:0160 conformance: the topology's own `origins` do not widen a policy once the static read's are passed to `createApp`.
-// Spec: k.origins, Frame "A `frame` origin of the app's own is E1590 in `keel build` (a `KEEL_PEER_<NAME>`, `KEEL_ORIGIN`) and `createApp` (`origin`, a URL peer); a document drops its own from `frame-src` (dev: one E1590 logged)."
-// Spec: k.origins, Policy "All read the static read's declaration: the entries pass it as `createApp({ origins })`."
+// k.origins, Frame "A `frame` origin of the app's own is E1590 in `keel build` (a `KEEL_PEER_<NAME>`, `KEEL_ORIGIN`) and `createApp` (`origin`, a URL peer); a document drops its own from `frame-src` (dev: one E1590 logged)."
+// k.origins, Policy "All read the static read's declaration: the entries pass it as `createApp({ origins })`."
 // Seed 1337 (fc.assert below; sim ctx seed 1337).
 import { manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";

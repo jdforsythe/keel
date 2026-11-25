@@ -1,5 +1,5 @@
-// Spec: k.privacy-reads, Conformance "`outputSchemas` lists the `output` of an API entry in `contract(...)` and of a page `loader`'s declaration, inline and through a `const`, and nothing for a `loader` given `decl()`."
-// Spec: k.privacy-reads, Readers "`outputSchemas(input)`: the `output` expressions of `input.ast`, each with its position: of every entry of a `contract` call (`@keel/router/contract`), entries read as k.contract Static reading reads them, and of the declaration of every `loader` call (`@keel/router`), an object literal or a `const` of the file bound to one. An `output` given another way is not listed."
+// Spec: k.privacy-reads, clause "`outputSchemas` lists the `output` of an API entry in `contract(...)` and of a page `loader`'s declaration, inline and through a `const`, and nothing for a `loader` given `decl()`."
+// k.privacy-reads, Readers "`outputSchemas(input)`: the `output` expressions of `input.ast`, each with its position: of every entry of a `contract` call (`@keel/router/contract`), entries read as k.contract Static reading reads them, and of the declaration of every `loader` call (`@keel/router`), an object literal or a `const` of the file bound to one. An `output` given another way is not listed."
 // Seed: 1337.
 // Not yet built: `test.skip` until `outputSchemas` is exported by `@keel/check`; remove the `.skip` in the build that adds it.
 // Assumption: signature `outputSchemas(input)` returns an array; each item is `{ expr, line, col }`, `expr` the `output` expression node

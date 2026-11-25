@@ -1,4 +1,4 @@
-// Spec: k.shell, Conformance "The `www` entry of a project with no `identity.ts` calls the package's `shellMount` with the shell's `id` and no `mount`, before the router starts; with `identity.ts`, with its default export as `mount`."
+// Spec: k.shell, clause "The `www` entry of a project with no `identity.ts` calls the package's `shellMount` with the shell's `id` and no `mount`, before the router starts; with `identity.ts`, with its default export as `mount`."
 // Seed: 1337 (no random input; the two projects are fixed).
 // Builds two fixtures as shell-entry.test.ts does (fake `cargo`, `rustc`, `npx`, `tauri`), one without and one with `identity.ts`, and reads the `www` bundle the shell build writes.
 // ASSUMED: the bundle is minified, so `shellMount` is found by its argument object: `{ id: 'dev.keel.golden', origin: ... }` and a `mount` key in that object or not.

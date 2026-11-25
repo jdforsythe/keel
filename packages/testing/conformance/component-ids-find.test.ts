@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.component Conformance, "every element addressable by id in the harness". Seed: 1337.
+// Spec: k.component, clause "Every element addressable by id in the harness."
+// k.component Seed: 1337.
 // Every `ids.json` key of a compiled component resolves through the harness `find(id)`.
 import { s } from "@keel/schema";
 import { render } from "@keel/testing";

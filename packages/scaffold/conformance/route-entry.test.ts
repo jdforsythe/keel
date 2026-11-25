@@ -1,4 +1,4 @@
-// Spec: k.scaffold, Generators "`route`: contract entry and binding (k.contract), `*.server.ts` loader, page component, route test; with `--api` (and `--method`, default `GET`) an API entry, its handler and a JSON request test, no component."
+// k.scaffold, Generators "`route`: contract entry and binding (k.contract), `*.server.ts` loader, page component, route test; with `--api` (and `--method`, default `GET`) an API entry, its handler and a JSON request test, no component."
 import fc from "fast-check";
 import { expect, it } from "vitest";
 import { RUNS, SEED, apply, errText, esc, lowerName, only, read, scaffoldRaw, snap, withOrders } from "./fixtures.ts";

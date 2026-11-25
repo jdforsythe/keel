@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: RFC 0162 Conformance diff: "`render(C, { props })` a sim ctx, the same one its handle exposes as `ctx`." and D2 "the harness (`render`, `renderRoute`, `resumeDocument`, which make a sim ctx when given none)".
-// Spec: k.testing Harness "**ctx.** Harness renders always use a sim ctx (k.ctx)." Seed 1337.
+// RFC 0162 Conformance diff: "`render(C, { props })` a sim ctx, the same one its handle exposes as `ctx`." and D2 "the harness (`render`, `renderRoute`, `resumeDocument`, which make a sim ctx when given none)".
+// k.testing Harness "**ctx.** Harness renders always use a sim ctx (k.ctx)." Seed 1337.
 // ASSUMPTION: the `render` handle exposes the ctx as `ctx` (the RFC says so); `renderRoute` is given `ctx` here, and one made when none is given is observed through the component's second argument.
 // Not built: the handle's `ctx` (RFC 0162: "the same one its handle exposes as `ctx`"); `Harness` in k.testing lists no `ctx`, so those assertions stay and fail until it exists.
 import { createCtx } from "@keel/ctx";

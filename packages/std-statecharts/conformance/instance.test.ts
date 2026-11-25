@@ -1,4 +1,4 @@
-// Spec: std.statecharts, Conformance "`instance(c, 'a')` and `instance(c, 'b')` in one scope are stores `<id>:a` and `<id>:b`; a `tx` on one leaves the other unchanged; disposing the scope drops both from `stores()`; `instance(c, 'a b')` throws."
+// Spec: std.statecharts, clause "`instance(c, 'a')` and `instance(c, 'b')` in one scope are stores `<id>:a` and `<id>:b`; a `tx` on one leaves the other unchanged; disposing the scope drops both from `stores()`; `instance(c, 'a b')` throws."
 // Seed: 1337.
 // Assumption: a throwing `instance` call surfaces as a thrown error from the call itself, inside or outside a scope.
 import { scope } from "@keel/reactive";

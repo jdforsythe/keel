@@ -4,7 +4,7 @@ import { endpoints, service } from "@keel/services";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 // Spec: k.services, clause "Param value `a/b` is sent as `a%2Fb`."
-// Spec: k.services, Encoding "Path params are URL-encoded, one segment each (`''`, `.` or `..` is `api.input` at the param, nothing sent)"
+// k.services, Encoding "Path params are URL-encoded, one segment each (`''`, `.` or `..` is `api.input` at the param, nothing sent)"
 // seed 1337 (fast-check runs below pass { seed: 1337 }); no wall clock, no Math.random.
 // ASSUMPTION (public API not visible from index.ts): sim net is `ctx.net.route(url, handler)` where the
 // handler receives a request with `url`/`signal` and returns a standard Response; sim clock has `advance(ms)`.

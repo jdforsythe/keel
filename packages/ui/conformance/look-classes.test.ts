@@ -1,5 +1,5 @@
-// Spec: k.ui, Conformance "`<Button look="primary" px="1">` has the look's classes for every prop but `px`, and `k-px-1`; `look="nope"` is E1801."
-// Spec: k.ui, Style props paragraph: "`look="<name>"` on a base element or `Part`, or in a part style, applies that `look` set's classes; the element's own props replace the set's per prop and state; a missing look is E1801."
+// Spec: k.ui, clause "`<Button look=\"primary\" px=\"1\">` has the look's classes for every prop but `px`, and `k-px-1`; `look=\"nope\"` is E1801."
+// k.ui, Style props paragraph: "`look="<name>"` on a base element or `Part`, or in a part style, applies that `look` set's classes; the element's own props replace the set's per prop and state; a missing look is E1801."
 // Seed: 1337 (property over the space tokens).
 // Assumed (the spec names no entry shape): a `look` usage is `{ props, look: '<name>', state? }` to `compileStyles`, whose class list holds the look's classes
 // for every prop and state the usage does not set, and the usage's own; class names are `k-<prop>-<token>`.

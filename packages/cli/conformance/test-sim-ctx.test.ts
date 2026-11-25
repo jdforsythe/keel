@@ -1,6 +1,6 @@
 // Spec: k.ctx, clause "In `keel test`, a ctx created with no options is sim, with seed 0."
-// Spec: k.testing, Harness "`keel test` sets `KEEL_TEST=1`, so `ctx` created anywhere in a test defaults to sim."
-// Spec: k.cli, Commands "`test [paths]` | harness under sim ctx (k.testing)".
+// k.testing, Harness "`keel test` sets `KEEL_TEST=1`, so `ctx` created anywhere in a test defaults to sim."
+// k.cli, Commands "`test [paths]` | harness under sim ctx (k.testing)".
 // The real `keel` binary runs `keel test` over a temp project (OS tmpdir) whose test builds `createCtx({})` with no
 // options and records what it got. Control: the same project under plain vitest, without `keel`, sees `real`, so
 // this test fails if `keel test` stopped setting the sim contract. No generated inputs; seed n/a.

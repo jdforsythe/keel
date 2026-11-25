@@ -1,4 +1,4 @@
-// Spec: std.headless, Conformance "A Toaster renders empty `status` and `alert` regions; a `status` item with `duration` 5,000 calls `onDismiss` after 5,000 ms of sim clock and not before; focus inside it holds it past 5,000 ms; an `alert` item stays."
+// Spec: std.headless, clause "A Toaster renders empty `status` and `alert` regions; a `status` item with `duration` 5,000 calls `onDismiss` after 5,000 ms of sim clock and not before; focus inside it holds it past 5,000 ms; an `alert` item stays."
 // Seed: 1337.
 // @vitest-environment happy-dom
 // Assumptions: time moves with `ctx.clock.advance(ms)` then `await t.settle()`; the dismiss button `<id>.dismiss.<item>` is "inside the item", so focus on it sends `pause`

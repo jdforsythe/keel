@@ -1,4 +1,4 @@
-// Spec: std.monitor, Conformance "`keel session monitor` against a served tally writes `.keel/monitored.json` that k.ledger reads; against an unreachable URL it reports E2010 and writes nothing."
+// Spec: std.monitor, clause "`keel session monitor` against a served tally writes `.keel/monitored.json` that k.ledger reads; against an unreachable URL it reports E2010 and writes nothing."
 // Seed: 1337.
 // @vitest-environment node
 // Skipped until the `monitor` command exists. Driven through `run(['session', 'monitor', url], { cwd, env, fetch })` over a

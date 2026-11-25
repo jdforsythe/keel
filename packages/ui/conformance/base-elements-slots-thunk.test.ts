@@ -1,5 +1,5 @@
-// Spec: k.claim, Types "Base elements keep k.ui's Standard slots."
-// Spec: k.claim, Types "A component a Keel package exports takes content only as a thunk or render function."
+// k.claim, Types "Base elements keep k.ui's Standard slots."
+// k.claim, Types "A component a Keel package exports takes content only as a thunk or render function."
 // Seed: 1337 (no generated inputs). A type-level test: the assertions are checked by `tsc --noEmit`, the runtime half only confirms the exports.
 import { Box, type Button, type Heading, Text } from "@keel/ui";
 import { describe, expect, expectTypeOf, it } from "vitest";

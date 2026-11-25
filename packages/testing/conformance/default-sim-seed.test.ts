@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 // Spec: k.testing, clause "In a harness render `ctx.clock.now()` is the sim clock's, and two runs with one seed give equal `state()`."
 // Seed: 1337.
-// Spec: k.testing, Harness "**ctx.** Harness renders always use a sim ctx (k.ctx). `keel test` sets `KEEL_TEST=1`, so `ctx` created anywhere in a test defaults to sim."
+// k.testing, Harness "**ctx.** Harness renders always use a sim ctx (k.ctx). `keel test` sets `KEEL_TEST=1`, so `ctx` created anywhere in a test defaults to sim."
 // Default sim: `render` without a `ctx` builds a sim ctx from KEEL_SEED (default 1337); state that depends on the seed is equal for one seed.
 import { type Ctx, createCtx } from "@keel/ctx";
 import { scope } from "@keel/reactive";

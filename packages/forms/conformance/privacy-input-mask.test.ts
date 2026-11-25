@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.privacy, Conformance "Under a sim ctx, an `input` fired on an `Input` bound to a marked field reaches `observe` as `x` repeated, and the element has `data-k-pii`."
+// Spec: k.privacy, clause "Under a sim ctx, an `input` fired on an `Input` bound to a marked field reaches `observe` as `x` repeated, and the element has `data-k-pii`."
 // Seed: 1337.
 // Skipped until `.pii(class)` and the input mask exist. Form schemas are generated objects of string fields (some nested), some
 // nodes marked, no mark under another mark; unmarked fields are the control: their value arrives unchanged, with no `data-k-pii`.

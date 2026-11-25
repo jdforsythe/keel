@@ -1,4 +1,4 @@
-// Spec: k.security, Conformance "Every `createApp` response, a 404, a 413 and an asset included, carries the six headers; `Strict-Transport-Security` only on https."
+// Spec: k.security, clause "Every `createApp` response, a 404, a 413 and an asset included, carries the six headers; `Strict-Transport-Security` only on https."
 // Seed: 1337.
 // @vitest-environment happy-dom
 import fs from "node:fs";

@@ -1,5 +1,5 @@
-// Spec: std.db, Conformance "An empty database opens at layout 1; a database at layout 2 is E2152 and exit 1."
-// Spec: std.db, Rules "E2152 the database's `layout` is newer than the package's (at startup)"
+// Spec: std.db, clause "An empty database opens at layout 1; a database at layout 2 is E2152 and exit 1."
+// std.db, Rules "E2152 the database's `layout` is newer than the package's (at startup)"
 // Seed: 1337.
 // Assumption: the spec does not say whether `sqlite(url)` / `postgres(url)` call `process.exit(1)` themselves or reject and leave the exit to the caller.
 // These tests need the exit code 1 and the text E2152 on stdout or stderr from the driver alone: SQLite runs in a real child process that opens the

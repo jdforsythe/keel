@@ -1,6 +1,6 @@
-// Spec: k.head, Conformance "With a project `index.html` holding `<header>Only here</header>`, neither `keel dev`'s nor the built `dist/web/index.html` of `client` deployable `web` holds that text, the built one's `<title>` is `web`, and `keel check` prints one W1012 naming `index.html`; without the file, none."
-// Spec: k.head, Rules "W1012 a project root holding `index.html`, once per `keel check`, `keel dev` and `keel build`, naming it (fix: move markup into a layout, stylesheets into `styles`)."
-// Spec: k.head, Document source "A project's own `index.html` is never read."
+// Spec: k.head, clause "With a project `index.html` holding `<header>Only here</header>`, neither `keel dev`'s nor the built `dist/web/index.html` of `client` deployable `web` holds that text, the built one's `<title>` is `web`, and `keel check` prints one W1012 naming `index.html`; without the file, none."
+// k.head, Rules "W1012 a project root holding `index.html`, once per `keel check`, `keel dev` and `keel build`, naming it (fix: move markup into a layout, stylesheets into `styles`)."
+// k.head, Document source "A project's own `index.html` is never read."
 // Seed: 1337 (no generated input: one fixture per variant, spawned). Pending: the project `index.html` is still read and W1012 is not reported.
 // ASSUMPTION: the diagnostic is a `diag` record of the json stream whose `path` or `message` holds `index.html`; a dev document is a GET of `/` with `accept: text/html`.
 import { existsSync } from "node:fs";

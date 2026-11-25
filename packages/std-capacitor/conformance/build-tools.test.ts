@@ -1,6 +1,6 @@
-// Spec: std.capacitor, Build "Into `dir`: the app's `package.json` (the Capacitor CLI reads the app's plugins from it); `www/index.html` carries the `client` policy in a `<meta http-equiv>`, without the directives a meta tag ignores."
-// Spec: std.capacitor, Conformance "A build runs `cap sync android` in `dist/web/capacitor/` beside `www/` and the app's `package.json`, and `www/index.html` holds the policy in a `<meta http-equiv>`."
-// Spec: std.capacitor, Conformance "`--target capacitor` with no `java` on `PATH` and no `JAVA_HOME` prints one E1575 naming `java` and JDK 21."
+// std.capacitor, Build "Into `dir`: the app's `package.json` (the Capacitor CLI reads the app's plugins from it); `www/index.html` carries the `client` policy in a `<meta http-equiv>`, without the directives a meta tag ignores."
+// Spec: std.capacitor, clause "A build runs `cap sync android` in `dist/web/capacitor/` beside `www/` and the app's `package.json`, and `www/index.html` holds the policy in a `<meta http-equiv>`."
+// Spec: std.capacitor, clause "`--target capacitor` with no `java` on `PATH` and no `JAVA_HOME` prints one E1575 naming `java` and JDK 21."
 // Seed: 1337.
 // Fake tools: `PATH` holds an `npx` written by the test. It hands `vite` to the real `npx` (the web build runs for real) and records the arguments and working directory of `cap`;
 // `java`, `JAVA_HOME` and `ANDROID_HOME` (holding `platform-tools`) satisfy the tools check (std.capacitor Tools); the fake `cap add android` makes the platform folder.

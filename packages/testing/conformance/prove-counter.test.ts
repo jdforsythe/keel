@@ -1,8 +1,8 @@
-// Spec: k.prove, Conformance "A store `{ n: s.int({ min: 0, max: 9 }) }` with invariant `n >= 0`, `inc` (`n < 9 ? n + 1 : n`) and `dec` (`n > 0 ? n - 1 : n`) proves; with `dec` as `n - 1` it rejects E1716 with state `{ n: 0 }`."
-// Spec: k.prove, Sorts "`s.int` as integers within its bounds, state and payload values also within ±(2^53 − 1)"
-// Spec: k.prove, Sorts "A post-state integer is held within ±(2^53 − 1) too, as `s.int` parses it: `n + 1` with no bound and no guard is a counterexample at 2^53 − 1."
-// Spec: k.prove, Conformance "With no `max`, `inc` as `n + 1` rejects E1716 with state `{ n: 9007199254740991 }` and the safe-range line, and `n: a.length + 1` over a state array `a` proves."
-// Spec: k.prove, Sorts "a state or payload array holding at most 2^32 − 1 items"
+// Spec: k.prove, clause "A store `{ n: s.int({ min: 0, max: 9 }) }` with invariant `n >= 0`, `inc` (`n < 9 ? n + 1 : n`) and `dec` (`n > 0 ? n - 1 : n`) proves; with `dec` as `n - 1` it rejects E1716 with state `{ n: 0 }`."
+// k.prove, Sorts "`s.int` as integers within its bounds, state and payload values also within ±(2^53 − 1)"
+// k.prove, Sorts "A post-state integer is held within ±(2^53 − 1) too, as `s.int` parses it: `n + 1` with no bound and no guard is a counterexample at 2^53 − 1."
+// Spec: k.prove, clause "With no `max`, `inc` as `n + 1` rejects E1716 with state `{ n: 9007199254740991 }` and the safe-range line, and `n: a.length + 1` over a state array `a` proves."
+// k.prove, Sorts "a state or payload array holding at most 2^32 − 1 items"
 // Seed: 1337.
 import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";

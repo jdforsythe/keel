@@ -1,5 +1,5 @@
 // Spec: k.origins, Conformance "`topology()` throws E1590 for `https://cdn.example/`."
-// Spec: k.origins, Rules "(check, build, dev; `topology()` throws `Error('E1590 <deployable>: ...')`)"
+// k.origins, Rules "(check, build, dev; `topology()` throws `Error('E1590 <deployable>: ...')`)"
 // Seed 1337 (fc.assert below).
 import { topology } from "@keel/server";
 import fc from "fast-check";

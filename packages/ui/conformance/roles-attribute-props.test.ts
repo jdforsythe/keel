@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.roles, Conformance "A `grid` with `rowCount` 6 and `readOnly` true writes `aria-rowcount="6"` and `aria-readonly="true"`; a `treeitem` with `level` 2, `setSize` 3 and `posInSet` 1 writes `aria-level="2" aria-setsize="3" aria-posinset="1"`; a `gridcell` with `colSpan` 2 writes `colspan="2"`; a `slider` with `disabled` writes the `disabled` attribute and no `aria-disabled`."
+// Spec: k.roles, clause "A `grid` with `rowCount` 6 and `readOnly` true writes `aria-rowcount=\"6\"` and `aria-readonly=\"true\"`; a `treeitem` with `level` 2, `setSize` 3 and `posInSet` 1 writes `aria-level=\"2\" aria-setsize=\"3\" aria-posinset=\"1\"`; a `gridcell` with `colSpan` 2 writes `colspan=\"2\"`; a `slider` with `disabled` writes the `disabled` attribute and no `aria-disabled`."
 // Seed: 1337 (fc.assert below).
 import { Part } from "@keel/ui/aria";
 import fc from "fast-check";

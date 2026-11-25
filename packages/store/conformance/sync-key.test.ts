@@ -1,4 +1,5 @@
-// Spec: k.sync Conformance, bullet 6 "`tx` with a `key` that `keys` holds for its transaction returns `ok`, commits nothing and leaves `head()` unchanged, also when its `base` is stale." and bullet 11 "The same `key` on another transaction commits; a `key` whose entry `undo` removed, or that folded out of the log, still commits nothing, and commits again once `keyLimit` later commits with a `key` have passed it."
+// Spec: k.sync, clause "`tx` with a `key` that `keys` holds for its transaction returns `ok`, commits nothing and leaves `head()` unchanged, also when its `base` is stale."
+// Spec: k.sync, clause "The same `key` on another transaction commits; a `key` whose entry `undo` removed, or that folded out of the log, still commits nothing, and commits again once `keyLimit` later commits with a `key` have passed it."
 // Seed 1337 (fast-check `seed: 1337`).
 import { scope } from "@keel/reactive";
 import { s } from "@keel/schema";

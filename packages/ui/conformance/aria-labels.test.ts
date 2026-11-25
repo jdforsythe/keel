@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.aria, Conformance "`label` writes `aria-label` and `labelledBy` `aria-labelledby`; a signal bound to `expanded` changes only that attribute."
+// Spec: k.aria, clause "`label` writes `aria-label` and `labelledBy` `aria-labelledby`; a signal bound to `expanded` changes only that attribute."
 // Seed: 1337.
 // Roles paragraph prop rules (exactly one of `label` and `labelledBy`, booleans as "true"/"false", `disabled` on `button` and `input` versus `aria-disabled`) are the extra tests below.
 import { createCtx } from "@keel/ctx";

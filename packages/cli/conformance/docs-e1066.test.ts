@@ -1,5 +1,5 @@
-// Spec: k.docs "An installed package lacking the file for its `map.json` section emits E1066 naming the package and version, exit 1."
-// Spec: k.docs Rules E1066 "... or no readable `docs/index.json`, or `@keel/cli` has no `docs/map.json`; the message names the package and its version."
+// Spec: k.docs, clause "An installed package lacking the file for its `map.json` section emits E1066 naming the package and version, exit 1."
+// k.docs Rules E1066 "... or no readable `docs/index.json`, or `@keel/cli` has no `docs/map.json`; the message names the package and its version."
 // Seed: none. Red: `docs` is absent (E1051).
 import { describe, expect, it } from "vitest";
 import { CLI_VERSION, ROUTER, cliPkg, jsonRecords, pkg, project, run } from "./docs-support";

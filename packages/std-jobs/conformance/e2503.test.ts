@@ -1,5 +1,5 @@
 // Spec: std.jobs, clause "E2501-E2504 each fire on a fixture and not on its clean twin; a `queue` whose input holds `s.secret` throws E2503." (E2503)
-// Spec: std.jobs, rule E2503: a job `input` schema holding `s.secret` (no fix; `queue` also throws it).
+// std.jobs, rule E2503: a job `input` schema holding `s.secret` (no fix; `queue` also throws it).
 // Spec: std.jobs, clause "E2503 fires for `job` reached through `import * as jobs` and not for a `.secret()` call on an object other than `@keel/schema`'s `s`." (rfc:0092)
 // Seed 1337
 // Assumption: as for std.i18n E2301, `check()` imports nothing, so the rules register by importing `@keel/std-jobs/tools`;

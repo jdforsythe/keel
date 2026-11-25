@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.topology Runners, clause "A `run` that rejects before `signal` aborts is a `keel.unexpected` `diag` and runs again 1,000 ms later on `ctx.clock`."
+// k.topology Runners, clause "A `run` that rejects before `signal` aborts is a `keel.unexpected` `diag` and runs again 1,000 ms later on `ctx.clock`."
 // Seed 1337 (fc.assert below). The restart delay is observed on the sim clock only; the diag is a JSON log line with kind "diag".
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";

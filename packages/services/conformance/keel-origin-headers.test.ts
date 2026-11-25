@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-// Spec: k.services, Conformance "The same `base` client with `base` the document's origin in a browser, a `keel-peer` origin, or a URL peer of the `createApp` that bound `ctx` (the app's own `node` deployable) sends `x-keel: 1` besides; every `service({ contract })` request carries `x-keel: 1`, in process too."
-// Spec: k.services, Encoding "to a Keel origin it also carries `x-keel: 1` (k.server's same-site proof)"
+// Spec: k.services, clause "The same `base` client with `base` the document's origin in a browser, a `keel-peer` origin, or a URL peer of the `createApp` that bound `ctx` (the app's own `node` deployable) sends `x-keel: 1` besides; every `service({ contract })` request carries `x-keel: 1`, in process too."
+// k.services, Encoding "to a Keel origin it also carries `x-keel: 1` (k.server's same-site proof)"
 // Seed: 1337. Observed on the sim net, except the in-process case, which is observed at the app's `identify` (it is handed the request).
 // Live: the pre-RFC client already sends `x-keel: 1` everywhere, so the Keel-origin cases pass before and after the build.
 // Pending: the `keel-peer` case needs the built client entry, which binds the document's `keel-peer` tags to its `ctx` (k.hosting Peers; packages/cli/conformance/hosting-peer-binding.test.ts builds one). To un-skip: run it in that build rig, or change `test.skip` to `test` once a `ctx` bound by tags is constructible from the public API.

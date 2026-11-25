@@ -1,4 +1,4 @@
-// Spec: std.statecharts, Conformance "Under `explore`'s closed form, a chart with finite `data` and payloads returns `complete: true`, and `coverage` lists a state whose only entry is guarded by an unsatisfiable guard in `unreached`."
+// Spec: std.statecharts, clause "Under `explore`'s closed form, a chart with finite `data` and payloads returns `complete: true`, and `coverage` lists a state whose only entry is guarded by an unsatisfiable guard in `unreached`."
 // Seed: 1337.
 // Assumption: `explore` comes from `@keel/testing` (k.model); `coverage` is imported from `@keel/std-statecharts` (the spec does not say where it lives);
 // `unreached` and `dead` are arrays of state names, compared sorted.

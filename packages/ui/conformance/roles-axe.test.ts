@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.roles, Conformance "A `grid` with one `row` of one `gridcell`, a `tree` with one `treeitem`, a `slider` and a `radiogroup` with two `radio`s each have no axe violations."
+// Spec: k.roles, clause "A `grid` with one `row` of one `gridcell`, a `tree` with one `treeitem`, a `slider` and a `radiogroup` with two `radio`s each have no axe violations."
 // Seed: 1337 (no generated inputs; every case is enumerated).
 // Real axe-core with the rule set and disabled page-level rules of aria-axe.test.ts; `color-contrast` is off because happy-dom computes no layout.
 import { createCtx } from "@keel/ctx";

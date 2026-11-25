@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.resume, Conformance "A layout island rendering `children()` inside an `If`: served with the branch shown, hiding it detaches the page and showing it puts back the same nodes, whose handler still runs with its state kept; served with it hidden, it resumes with no warning and showing it renders nothing."
+// Spec: k.resume, clause "A layout island rendering `children()` inside an `If`: served with the branch shown, hiding it detaches the page and showing it puts back the same nodes, whose handler still runs with its state kept; served with it hidden, it resumes with no warning and showing it renders nothing."
 // Seed: 1337. Real compiled TSX, real createApp, real resume.
 import { afterEach, describe, expect, it } from "vitest";
 import {

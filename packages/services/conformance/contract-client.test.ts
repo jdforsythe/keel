@@ -1,7 +1,7 @@
 // Spec: k.contract, clause "`service({ contract: c })` has a method per API entry named by the id after the module, none for a page."
-// Spec: k.services Conformance, "A `contract` GET entry yields `ok(v)` for its loader's `ok(v)`; a loader `err` `keel.notFound` yields `api.status` 404 with `body` the KeelError decoded by `errors[404]`." (packages/services/conformance/module-unwrap-0092.test.ts)
-// Spec: k.services API, "`service({ contract, timeout? })` calls the API entries of the contract's module, one method per entry named by its id after the module."
-// Spec: RFC 0157 Conformance diff: "a call's answer decodes the loader's `ok` value with the entry's `output`, and a 404 `keel.notFound` with `errors[404]`." Seed 1337.
+// Spec: k.services, clause "A `contract` GET entry yields `ok(v)` for its loader's `ok(v)`; a loader `err` `keel.notFound` yields `api.status` 404 with `body` the KeelError decoded by `errors[404]`." (packages/services/conformance/module-unwrap-0092.test.ts)
+// k.services API, "`service({ contract, timeout? })` calls the API entries of the contract's module, one method per entry named by its id after the module."
+// RFC 0157 Conformance diff: "a call's answer decodes the loader's `ok` value with the entry's `output`, and a 404 `keel.notFound` with `errors[404]`." Seed 1337.
 import { createCtx } from "@keel/ctx";
 import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";

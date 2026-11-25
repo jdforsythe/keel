@@ -1,5 +1,5 @@
-// Spec: k.a11y, Order and focus: "`brandTokens` sets `focus: 'text'`, Charcoal `#1a191e`: 16.60:1 on `surface`, 15.75:1 on `surfaceLow`, 17.47:1 on `card`."
-// Spec: k.ui, Tokens: "`base` holds optional style sets `page`, `heading`, `link`, `button`, `control`, `label`, `fieldError`, `summary` ... and `focus`, a color token. `look` maps a name to such a set" (docs/BRAND.md 4: `brandTokens` carries both; `look` names `primary`, `control`, `secondary`).
+// k.a11y, Order and focus: "`brandTokens` sets `focus: 'text'`, Charcoal `#1a191e`: 16.60:1 on `surface`, 15.75:1 on `surfaceLow`, 17.47:1 on `card`."
+// k.ui, Tokens: "`base` holds optional style sets `page`, `heading`, `link`, `button`, `control`, `label`, `fieldError`, `summary` ... and `focus`, a color token. `look` maps a name to such a set" (docs/BRAND.md 4: `brandTokens` carries both; `look` names `primary`, `control`, `secondary`).
 // Seed: 1337 (property over the three surfaces).
 // Not built yet: the cases about `brandTokens.base` and `brandTokens.look` are `test.skip`; the builder changes `test.skip` to `test` in each. The contrast ratios are live: they are the existing palette's.
 // `brandTokens.base` and `.look` are read with `Reflect.get` so the file type-checks before `Tokens` names the groups.

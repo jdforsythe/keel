@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.testing, Rules "E1720 (`resumeDocument`; a throw while an island claims is named with its thrown text, as the harness shows what a page threw while resuming)" (rfc:0194)
+// k.testing, Rules "E1720 (`resumeDocument`; a throw while an island claims is named with its thrown text, as the harness shows what a page threw while resuming)" (rfc:0194)
 // Spec: k.testing, Conformance "an island whose component throws `new Error('boom')` while claiming is E1720 whose text holds `boom`."
 // Seed: 1337 (fc.assert below). The island document is written as in resume-document-0092.test.ts; the route's component is the thrower.
 // ASSUMPTION: "text" is the rejection's `message`.

@@ -1,4 +1,4 @@
-// Spec: k.compiler, clause "An id, `path`, `layout`, `actions` or guard `redirect` unlike its contract or `routes.ts` literal (a placed stdlib module's: its package's `./contract` and `./routes`) is E1005."
+// k.compiler, clause "An id, `path`, `layout`, `actions` or guard `redirect` unlike its contract or `routes.ts` literal (a placed stdlib module's: its package's `./contract` and `./routes`) is E1005."
 // This file covers the reader half of the clause: `routeLiterals` reads a placed stdlib module's `./contract` and `./routes` files, never an app file's spread.
 // Examples only: the inputs are fixed projects built in a temp dir. No random inputs (a fast-check seed would be 1337).
 // A stdlib module is placed by its manifest id (`frag`) in a deployable's `modules` list of the `topology` option; its package's `module.ts` holds the manifest and the app module's `deps` name the package (k.module).

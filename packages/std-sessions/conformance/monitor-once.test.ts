@@ -1,4 +1,4 @@
-// Spec: std.monitor, Conformance "Entries committed before `run` started are not counted, and each entry is counted once across saves and merges."
+// Spec: std.monitor, clause "Entries committed before `run` started are not counted, and each entry is counted once across saves and merges."
 // Seed: 1337.
 // @vitest-environment node
 // Skipped until `monitor` exists. A store holding entries when `run` starts is read from `ctx.storage`.

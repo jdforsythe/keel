@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
-// Spec: k.routes, Union "`routeTable` returns a frozen `{ kind: 'keel.routeTable', contracts }`, the contracts in argument order; a route table given to it adds its contracts. A manifest is the route table of its one module, `{ kind: 'keel.routeTable', contract, contracts: [contract] }`. A table's bindings are no public member"
-// Spec: k.routes, Conformance "`manifest(c, b)` has `kind` `keel.routeTable`, `contract` `c`, `contracts` `[c]` and no `routes`; `routeTable(m)` has no `contract`."
-// Spec: k.routes, Conformance "`routeTable(a, b)` where `b` has a page on the path pattern of a page of `a`, or of an API entry of `a` at another method, throws E1502 naming both ids; `routeTable(a, a)` throws E1502 naming `a`."
-// Spec: k.routes, Conformance "`routeTable(c)` of a contract does not compile."
+// k.routes, Union "`routeTable` returns a frozen `{ kind: 'keel.routeTable', contracts }`, the contracts in argument order; a route table given to it adds its contracts. A manifest is the route table of its one module, `{ kind: 'keel.routeTable', contract, contracts: [contract] }`. A table's bindings are no public member"
+// Spec: k.routes, clause "`manifest(c, b)` has `kind` `keel.routeTable`, `contract` `c`, `contracts` `[c]` and no `routes`; `routeTable(m)` has no `contract`."
+// Spec: k.routes, clause "`routeTable(a, b)` where `b` has a page on the path pattern of a page of `a`, or of an API entry of `a` at another method, throws E1502 naming both ids; `routeTable(a, a)` throws E1502 naming `a`."
+// Spec: k.routes, clause "`routeTable(c)` of a contract does not compile."
 // Spec: k.routes, Conformance "With `a` holding a prefixed route (k.prefix) and `b` a page at `/de-DE/about`, `routeTable(a, b)` throws E1509"
 // Seed 1337 (fc.assert below). The server half (createApp answering both modules) is packages/server/conformance/route-table-serve.test.ts.
 // Compile-time half of each "does not compile" claim: ./negative-types.test-d.ts; the calls here are untyped.

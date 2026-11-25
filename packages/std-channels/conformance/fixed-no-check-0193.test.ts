@@ -1,4 +1,4 @@
-// Spec: std.channels, Serve "With `currentUser.fixed` (no identity source) the route asks nothing: no check, clock read or timer on a delivery."
+// std.channels, Serve "With `currentUser.fixed` (no identity source) the route asks nothing: no check, clock read or timer on a delivery."
 // Seed 1337 (fc.assert below).
 // Untestable from the public surface: "no clock read or timer"; only "no check" is observable here, as deliveries that arrive in order and are never closed `denied`, with the sim clock never advanced.
 // Assumption: with no identity source the stream's `user` is `''`, so `member` here accepts `''`.
