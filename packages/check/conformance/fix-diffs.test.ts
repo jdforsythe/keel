@@ -362,6 +362,7 @@ const NO_FIX = [
   "E1112", // what to derive is the author's choice
   "E1153", // which dependency edge to cut is a design choice
   "E1158", // adding the dep or dropping the entry is the author's choice
+  "E1162", // k.library Rules: fix none; shipping the file is the library author's act
   "E1163", // k.library Rules: no fix; a diagnostic in a library file carries none (k.library In an app)
   "E1166", // k.library Rules: no fix stated; which of the two ids to rename is the author's choice
   "E1204", // the Case per resource state is the author's

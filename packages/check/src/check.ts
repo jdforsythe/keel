@@ -23,6 +23,7 @@ import { guardRedirectLoops } from "./internal/guardRedirectLoops.ts";
 import { indexHtmlDiag } from "./internal/indexHtmlDiag.ts";
 import { isCodePath } from "./internal/isCodePath.ts";
 import { isSqlPath } from "./internal/isSqlPath.ts";
+import { libraryLedgers } from "./internal/modules/libraryLedgers.ts";
 import { moduleChecks } from "./internal/modules/moduleChecks.ts";
 import { normalize } from "./internal/normalize.ts";
 import { outsideImports } from "./internal/outsideImports.ts";
@@ -207,6 +208,7 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
     ...registerNames(checked, dirs),
     ...chainStoreIds(checked, dirs, all),
     ...moduleChecks(checked, all, (p) => projectOf.get(p) ?? []),
+    ...libraryLedgers(checked, all, opts.root ?? process.cwd()),
     ...aliasedImports(checked, path.resolve(opts.root ?? process.cwd()), dirs),
     ...outsideImports(checked, path.resolve(opts.root ?? process.cwd()), dirs),
     ...guardRedirectLoops(checked),

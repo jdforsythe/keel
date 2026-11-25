@@ -1,6 +1,6 @@
 # RFC 0163: a Keel library: a package kind checked again by the app
 
-Status: accepted (ADR-0185), confirmed by the operator on 2026-11-25; slice 1 (the library kind) built, slices 2a to 5 not yet. The library format is built before the public release and before the second part of k.parity (RFC 0169 Build B, which needs the library kind). Sections k.library and k.library-pack hold the contract. This is W15 step 4 of `tasks/p1/PLAN.md` and D49 of `tasks/0963-to-p1/PLAN.md`.
+Status: accepted (ADR-0185), confirmed by the operator on 2026-11-25; slices 1 (the library kind) and 2b (the ledger over libraries) built, slices 2a and 3 to 5 not yet. The library format is built before the public release and before the second part of k.parity (RFC 0169 Build B, which needs the library kind). Sections k.library and k.library-pack hold the contract. This is W15 step 4 of `tasks/p1/PLAN.md` and D49 of `tasks/0963-to-p1/PLAN.md`.
 
 ## Decisions
 - D1: a library is a package whose `package.json` has `"keel": "library"` and a scoped name. Its root `module.ts` is a k.module manifest, unchanged: `public.exports` is its surface, `id` its prefix. A second manifest shape would be a second way (principle 1).
@@ -113,9 +113,9 @@ Clause numbers are 1-based Conformance bullets. Every slice leaves the main line
 - Conformance: `packages/cli/conformance/library-compile.test.ts` (1, 2, 4); `packages/check/conformance/library-rules.test.ts` (3, 5, 6, 7).
 
 **Slice 2b: the ledger over libraries (M).** Depends on slice 1. Runs beside 2a.
-- Delivers: `unsafe` and `hostElements` counted over library files, once for a library inside the project root; library item records; `libraries` in the ledger file; E1162 for an installed library.
-- Packages: `@keel/cli` (`buildLedger`, ledger command), `@keel/check` (E1162 at `deps` entries).
-- Clauses: k.library 13, 14.
+- Delivers: `unsafe` and `hostElements` counted over library files, once for a library inside the project root; library item records; `libraries` in the ledger file; E1162 for an installed library, its four message forms; `LedgerFileSchema` gaining optional `negativeTypes` and `libraries` and reading `rung` as one of the six rung names (k.ledger File).
+- Packages: `@keel/cli` (`buildLedger`, ledger command, `LedgerFileSchema`), `@keel/check` (E1162 at `deps` entries).
+- Clauses: k.library 13 to 16.
 - Conformance: `packages/cli/conformance/library-ledger.test.ts`.
 
 **Slice 3: `keel pack` and `keel scaffold library` (M).** Depends on 2a and 2b.
