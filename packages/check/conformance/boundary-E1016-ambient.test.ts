@@ -1,4 +1,4 @@
-// Spec: k.boundary, Ambient types "`import.meta` is typed by TypeScript's lib, `@types/node` and k.bundle's Types alone. E1016 is a `/// <reference …/>` directive (`types`, `path`, `lib` or `no-default-lib`) in a project code file (E1576's files, k.security), tests included: `type reference in project code; import.meta.env and import types are Keel's` (75 units), at the directive, fix: delete its line. E1016, no fix, is also a declaration of the global `ImportMeta` or `ImportMetaEnv` in any other file the type pass loads (a project `declare global`, or Vite's, through `import 'vite/client'` or `import type {} from 'vite/client'`): once per declaring file, at its first such declaration when it is a project file, else at the first import, by path then position, of a project file through which the pass loads it: `<file> declares import.meta types; they are Keel's and Node's only`, `<file>` the project-relative path or package specifier of the declaring file, cut from its front to fit 89 units (60 without it)."
+// Spec: k.boundary, Ambient types "`import.meta` is typed by TypeScript's lib, `@types/node` and k.bundle's Types alone. E1016 is a `/// <reference …/>` directive (`types`, `path`, `lib` or `no-default-lib`) in a project code file (E1576's files, k.security), tests included: `type reference in project code; import.meta.env and import types are Keel's` (75 units), at the directive, fix: delete its line. E1016, no fix, is also a declaration of the global `ImportMeta` or `ImportMetaEnv` in any other file the type pass loads (a project `declare global`, or Vite's, through `import 'vite/client'` or `import type {} from 'vite/client'`): once per declaring file, at its first such declaration when it is a project file, else at the first import, by path then position, of a project file through which the pass loads it: `<file> declares import.meta types; they are Keel's and Node's only`, `<file>` the project-relative path or package specifier of the declaring file, cut from its front to fit 89 units (60 without it): whole leading segments are dropped behind `.../` (`.../c/env.d.ts`), and a last segment still too long keeps its end behind `...`."
 // Spec: k.boundary, Rules "E1016 a type reference, or an `import.meta` declaration not Keel's, Node's or TypeScript's (Ambient types; fix deletes a reference)"
 // Spec: k.boundary, Conformance "`/// <reference types=\"vite/client\" />`, `/// <reference path=\"./g.d.ts\" />` and `/// <reference lib=\"dom\" />`, each as the first line of `modules/a/Page.tsx`, and the first as the first line of `modules/a/a.test.ts`, are each one E1016 at line 1, col 1, whose fix deletes that line; `/// <reference lib=\"es2023.intl\" />` in a file under `packages/` is none."
 // Spec: k.boundary, Conformance "`import 'vite/client'` as the only import of `modules/a/Page.tsx` is one E1016 at that import whose message starts `vite/` and contains `declares import.meta types`; a file `modules/a/env.d.ts` holding `export {}` and `declare global { interface ImportMetaEnv { VITE_X: string } }` is one E1016 at `interface`; a project with neither, whose test file imports `vitest` and `@keel/testing`, reports no E1016."
@@ -201,14 +201,57 @@ describe("k.boundary Ambient types: a declaration of the global ImportMeta or Im
         expect(m.endsWith(DECL_TAIL)).toBe(true);
         if (path.length + DECL_TAIL.length <= 89) expect(m).toBe(`${path}${DECL_TAIL}`);
         else {
-          // Reading: the cut file is `path` with leading segments dropped (behind one `.../` as k.check Diagnostics drops them, or bare), and it fits the 29 units the tail leaves.
           const shown = m.slice(0, m.length - DECL_TAIL.length);
           expect(shown.length).toBeLessThanOrEqual(29);
-          expect(shown.length).toBeGreaterThan(0);
-          expect(path.endsWith(shown.replace(/^\.\.\.\//, ""))).toBe(true);
+          expect(shown.startsWith(".../")).toBe(true);
         }
       }),
       { seed: SEED, numRuns: 12 },
+    );
+  });
+
+  // Reading: "cut from its front" drops as few whole leading segments as fit the 29 units the tail leaves, the `.../` counted.
+  test("whole leading segments are dropped behind `.../` (`.../c/env.d.ts`)", () => {
+    const path = "modules/aaaaaaaaaaaaaaaa/bbbbbbbbbbbbbbbbbbbb/c/env.d.ts";
+    expect(path.length + DECL_TAIL.length).toBeGreaterThan(89);
+    const ds = e1016([f(path, "export {}\ndeclare global { interface ImportMeta { x: string } }\n")]);
+    expect(ds).toHaveLength(1);
+    expect(ds[0]?.message).toBe(`.../c/env.d.ts${DECL_TAIL}`);
+  });
+
+  test("property: the cut keeps the fewest whole trailing segments that fit behind `.../`, the one form for a path of whole segments", () => {
+    fc.assert(
+      fc.property(fc.array(fc.integer({ min: 1, max: 14 }), { minLength: 2, maxLength: 10 }), (widths) => {
+        const segments = [...widths.map((w, i) => `${"s".repeat(w)}${i}`), "env.d.ts"];
+        const path = segments.join("/");
+        fc.pre(path.length + DECL_TAIL.length > 89);
+        const ds = e1016([f(path, "export {}\ndeclare global { interface ImportMetaEnv { A: string } }\n")]);
+        expect(ds).toHaveLength(1);
+        const shown = (ds[0]?.message ?? "").slice(0, (ds[0]?.message ?? "").length - DECL_TAIL.length);
+        let kept = segments.length - 1;
+        while (kept > 0 && `.../${segments.slice(kept - 1).join("/")}`.length <= 29) kept -= 1;
+        expect(shown).toBe(`.../${segments.slice(kept).join("/")}`);
+      }),
+      { seed: SEED, numRuns: 30 },
+    );
+  });
+
+  test("a last segment still too long keeps its end behind `...`", () => {
+    fc.assert(
+      fc.property(fc.integer({ min: 30, max: 90 }), (n) => {
+        const last = `${"x".repeat(n)}Y.d.ts`;
+        const path = `modules/a/${last}`;
+        const ds = e1016([f(path, "export {}\ndeclare global { interface ImportMeta { x: string } }\n")]);
+        expect(ds).toHaveLength(1);
+        const m = ds[0]?.message ?? "";
+        const shown = m.slice(0, m.length - DECL_TAIL.length);
+        expect(m.length).toBeLessThanOrEqual(89);
+        expect(shown.startsWith("...")).toBe(true);
+        expect(shown.startsWith(".../")).toBe(false);
+        expect(shown.length).toBe(29);
+        expect(last.endsWith(shown.slice(3))).toBe(true);
+      }),
+      { seed: SEED, numRuns: 20 },
     );
   });
 });
