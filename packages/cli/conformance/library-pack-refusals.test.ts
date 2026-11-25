@@ -2,14 +2,15 @@
 // Spec: k.library-pack, Pack (`--check`): "`keel pack --check` runs the same steps and writes nothing; its `ledger` step is E1164 when `.keel/ledger.json` is missing, fails its shape as an app reads it (Ledger file), or holds an `unsafe`, `hostElements` or `exports` other than the ones `keel pack` would write; other keys are not judged. Writing nothing, it changes nothing in the folder but under `node_modules/`, where the type cache lives (k.check-cache). A tarball is made by the package manager, whose `prepack` runs `keel pack --check`; it holds what `files` selects and what the package manager always packs (`package.json`, `README`, `LICENSE`), never a `node_modules` folder, and `keel pack` reads that list."
 // Spec: k.library-pack, Pack (what an E1164 is): "By one rule, a library an app could not read, check or trust as its folder is read does not pack. Each E1164, whole within 89 units for a path, key or name of up to 28 units (40 for `kind`'s name), is at `package.json` for a field, its line and a column at the start of its value, at the file for a file, and nowhere for a step:"
 // Spec: k.library-pack, Pack: "- `kind`: no `package.json` (`kind: no package.json here, so no library`, nowhere); one that is no JSON (`kind: package.json is not JSON`, at line 1); no `"keel": "library"` (`kind: package.json has no "keel": "library"`, at `keel`, else line 1); a name that is no scoped package name (k.library Kind: `kind: name "<name>" is no scoped package name`, at `name`)."
-// Spec: k.library-pack, Pack: "`package`, the first in this order, at the field: no root `module.ts` (`package has no root module.ts, the library's manifest`, at `keel`); an `exports` whose `"."` entry lists no `keel` condition first (`package exports "." lists no keel condition first`), another entry listing `keel` after another condition (`package exports "<key>" lists keel after another`; Node and the compiler take an entry's first matching condition, and `default` matches both, so `keel` must lead or the compiler reads the built file), or a `keel` target that is no `.ts` or `.tsx` file under `src/` or `unsafe/` (`package exports "<key>" keel is no file under src/ or unsafe/`), at `exports`; no `files` (`package lists no files, so a tarball would hold everything`, at `keel`); a `files` that does not select `module.ts`, then `.keel/ledger.json`, then a file under `src/`, then `unsafe/`, sorted by path (`package files omits <path>`), or an `exports` target, entries and conditions in the order written (`package files omits <path>, exports "<key>"`), at `files`, `<path>` package-relative with no `./` (`src/Badge.tsx`, `dist/src/index.d.ts`); a `@keel/*` package the files import, or the compiler's output of a `.tsx` file imports, that `dependencies` lists (`package dependencies lists <name>; a peer resolves to the app's`, at `dependencies`) or `peerDependencies` omits (`package peerDependencies omits <name>`, at `peerDependencies`, else `keel`); a tarball holding a `.env` file, whose secrets would leave with it (`package files ships <path>, a secret's file`), or the root `tokens.ts`, the library's own check fixture where an app reads its own (`package files ships tokens.ts; an app checks the library against its own`), at `files`. A `node_modules` folder is not judged: the package manager never packs one."
+// Spec: k.library-pack, Pack: "`package`, the first in this order, at the field: no root `module.ts` (`package has no root module.ts, the library's manifest`, at `keel`); an `exports` whose `"."` entry lists no `keel` condition first (`package exports "." lists no keel condition first`), an entry holding `keel` under another condition at any depth (`package exports "<key>" nests keel under another condition`, read at the top level alone), another entry listing `keel` after another condition (`package exports "<key>" lists keel after another`; resolvers take the first matching condition, and `default` matches all, so `keel` leads or the compiler reads the built file), or a `keel` target that is no `.ts` or `.tsx` file under `src/` or `unsafe/` (`package exports "<key>" keel is no file under src/ or unsafe/`), at `exports`; no `files` (`package lists no files, so a tarball would hold everything`, at `keel`); a `files` that does not select `module.ts`, then `.keel/ledger.json`, then a file under `src/`, then `unsafe/`, sorted by path (`package files omits <path>`), or an `exports` target, entries and conditions in the order written (`package files omits <path>, exports "<key>"`), at `files`, `<path>` package-relative with no `./` (`src/Badge.tsx`, `dist/src/index.d.ts`); a `@keel/*` package the files import, or the compiler's output of a `.tsx` file imports, that `dependencies` lists (`package dependencies lists <name>; a peer resolves to the app's`, at `dependencies`) or `peerDependencies` omits (`package peerDependencies omits <name>`, at `peerDependencies`, else `keel`); a tarball holding a `.env` file, whose secrets would leave with it (`package files ships <path>, a secret's file`), or the root `tokens.ts`, the library's own check fixture where an app reads its own (`package files ships tokens.ts; an app checks the library against its own`), at `files`. A `node_modules` folder is not judged: the package manager never packs one."
 // Spec: k.library-pack, Pack: "- `check`: `check: <n> errors; nothing packed` (`1 error`), nowhere, after the check's diagnostics."
 // Spec: k.library-pack, Pack: "`test`: `test: <f> of <n> tests failed; nothing packed` (`1 test`), counted as `keel test` counts them, a test file that fails to load one failed test; or `test: the run did not pass; nothing packed` when none failed and the run still failed (an error outside any test, such as an unhandled rejection); nowhere, after the test's diagnostics."
 // Spec: k.library-pack, Pack: "- `ledger`: `ledger: .keel is not a folder` (at `.keel`) or `ledger: .keel/ledger.json cannot be written here` (at the file) when it cannot write; under `--check`, `ledger: .keel/ledger.json is missing; keel pack writes it` (nowhere), `ledger: .keel/ledger.json fails its shape; keel pack writes it again` and `ledger: .keel/ledger.json is stale at <field>; keel pack writes it again`, `<field>` the first of `unsafe`, `hostElements` and `exports` that differs (at the file, line 1)."
 // Spec: k.library-pack, Rules: "E1164 `keel pack`: the step its message begins with failed (`kind`, `package`, `check`, `test`, `ledger`; Pack); nothing is written."
-// Seed: 1337 (the order property over pairs of `package` refusals; every other case is an example). Binary runs: 1 scaffold and 1 `keel pack` shared by the cases that copy the folder;
+// Seed: 1337 (the order property over pairs of `package` refusals and the nested-`keel` property; every other case is an example). Binary runs: 1 scaffold and 1 `keel pack` shared by the cases that copy the folder;
 // each `package` and `kind` refusal runs `keel pack` then `keel pack --check` once (they stop before `keel check`: about 1 s each); each `check`, `test` and `ledger` refusal runs the steps up to its own once.
 // ASSUMPTIONS (spec silent, readings asserted):
+//  - an entry holding `keel` under another condition is refused whether or not it also lists a correct top-level `keel`; a `.` entry with only a nested `keel` is refused by one of the two `.` messages.
 //  - "at the file" is `path` the file's repository path, and a "column at the start of its value" the 1-based column after `"<key>": ` on the key's line, `package.json` written as `JSON.stringify(value, null, 2)` (keys at two spaces).
 //  - "nowhere" is a record with no `path` and no `line`.
 //  - the order of the `exports` messages among themselves and of the two `dependencies`/`peerDependencies` messages is not asserted (the spec lists them in one clause); the order property compares clauses.
@@ -557,6 +558,110 @@ describe("package: a library an app could not read, check or trust does not pack
   }
 
   // Untestable: the spec does not say how a nested conditions object that carries `keel` counts for the keel-first rule.
+
+  /** An exports entry whose `keel` sits under `path` (outer condition first); `top` also lists a correct `keel` first. */
+  const nestedEntry = (path: string[], top: boolean, target: string): Record<string, unknown> => {
+    const leaf = path.reduceRight<unknown>((inner, cond) => ({ [cond]: inner }), { keel: target });
+    const nested = objOf(leaf);
+    const tail: Record<string, unknown> = { types: TYPES, default: DEFAULT };
+    const head = top ? { keel: "./src/index.ts" } : {};
+    const [cond] = path;
+    return cond === "default" || cond === "types" ? { ...head, ...tail, ...nested } : { ...head, ...nested, ...tail };
+  };
+  const withEntry = (key: string, entry: Record<string, unknown>): string => {
+    const lib = fresh();
+    const pkg = readPkg(lib);
+    const base = objOf(pkg.exports);
+    return writePkg(lib, { ...pkg, exports: key === "." ? { ...base, ".": entry } : { ...base, [key]: entry } });
+  };
+  const NESTS = (key: string): string => `package exports "${key}" nests keel under another condition`;
+
+  test(
+    'package: a `./x` entry holding `keel` one level down, under `import`, is one E1164 `package exports "./x" nests keel under another condition` at `exports`',
+    () => {
+      const lib = fresh();
+      const pkg = readPkg(lib);
+      const text = writePkg(lib, {
+        ...pkg,
+        exports: { ...objOf(pkg.exports), "./x": nestedEntry(["import"], false, "./src/Example.tsx") },
+      });
+      expectRefusal(lib, snapshot(lib), pack(lib), NESTS("./x"), { path: "package.json", ...valueAt(text, "exports") });
+    },
+    SLOW,
+  );
+
+  test(
+    'package: a `.` entry that lists a correct `keel` first and holds another `keel` two levels down, under `node` then `import`, is one E1164 `package exports "." nests keel under another condition` at `exports`',
+    () => {
+      const lib = fresh();
+      const pkg = readPkg(lib);
+      const text = writePkg(lib, {
+        ...pkg,
+        exports: { ".": nestedEntry(["node", "import"], true, "./src/index.ts") },
+      });
+      expectRefusal(lib, snapshot(lib), pack(lib), NESTS("."), { path: "package.json", ...valueAt(text, "exports") });
+    },
+    SLOW,
+  );
+
+  test(
+    'package: a `./x` entry that lists a correct `keel` first and also holds `keel` under `default` is still one E1164 `package exports "./x" nests keel under another condition` (an entry holding `keel` under another condition, at any depth)',
+    () => {
+      const lib = fresh();
+      const pkg = readPkg(lib);
+      const text = writePkg(lib, {
+        ...pkg,
+        exports: { ...objOf(pkg.exports), "./x": nestedEntry(["default"], true, "./src/Example.tsx") },
+      });
+      expectRefusal(lib, snapshot(lib), pack(lib), NESTS("./x"), { path: "package.json", ...valueAt(text, "exports") });
+    },
+    SLOW,
+  );
+
+  test(
+    'package: a `.` entry whose only `keel` is nested lists no `keel` at its top level, so it is refused (`package exports "." lists no keel condition first` or `package exports "." nests keel under another condition`), never packed',
+    () => {
+      const lib = fresh();
+      const pkg = readPkg(lib);
+      const text = writePkg(lib, { ...pkg, exports: { ".": nestedEntry(["import"], false, "./src/index.ts") } });
+      expectRefusal(
+        lib,
+        snapshot(lib),
+        pack(lib),
+        /^package exports "\." (lists no keel condition first|nests keel under another condition)$/,
+        { path: "package.json", ...valueAt(text, "exports") },
+      );
+    },
+    SLOW,
+  );
+
+  test(
+    "package: whatever the entry (`.` or `./x`), the conditions it nests `keel` under (one or two of `import`, `default`, `node`), and the nested target, an entry with a nested `keel` is one E1164 naming its key, read at the top level alone (property)",
+    () => {
+      const conds = fc.constantFrom("import", "default", "node");
+      fc.assert(
+        fc.property(
+          fc.constantFrom(".", "./x"),
+          fc.array(conds, { minLength: 1, maxLength: 2 }).filter((p) => p.length < 2 || p[0] !== p[1]),
+          fc.constantFrom("./src/Example.tsx", "./nope.js"),
+          (key, path, target) => {
+            const lib = fresh();
+            const pkg = readPkg(lib);
+            const text = writePkg(lib, {
+              ...pkg,
+              exports: { ...objOf(pkg.exports), [key]: nestedEntry(path, true, target) },
+            });
+            expectRefusal(lib, snapshot(lib), pack(lib), NESTS(key), {
+              path: "package.json",
+              ...valueAt(text, "exports"),
+            });
+          },
+        ),
+        { seed: SEED, numRuns: 6 },
+      );
+    },
+    SLOW * 6,
+  );
 
   test(
     "package: an entry that lists `keel` first, before `types` and `default`, in `.` and in `./x`, is no E1164",
