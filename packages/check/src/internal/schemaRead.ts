@@ -3,7 +3,7 @@ import type { SourceFile } from "../types/SourceFile.ts";
 import type { SchemaAnswer } from "./SchemaAnswer.ts";
 import type { SchemaQuestion } from "./SchemaQuestion.ts";
 import { followRef } from "./followRef.ts";
-import { mutatedBinding } from "./mutatedBinding.ts";
+import { held } from "./held.ts";
 
 const worst = (a: SchemaAnswer, b: SchemaAnswer): SchemaAnswer =>
   a === "yes" || b === "yes" ? "yes" : a === "unknown" || b === "unknown" ? "unknown" : "no";
@@ -14,7 +14,7 @@ const worst = (a: SchemaAnswer, b: SchemaAnswer): SchemaAnswer =>
  * arguments, a call's receiver (`X.optional()` reads `X`) and both branches of `?:`, each part asked `q`. `yes` when
  * a part answers `yes`; else `unknown` when a part cannot be read: a call whose callee is not a member (a factory) and
  * that `q.call` does not answer, a binding it cannot follow, a computed member, an object literal's getter, setter or
- * method, or a binding the file changes after its literal; else `no`. A part reached twice answers `no` the second time.
+ * method, or a literal binding that is not held (`held`, k.privacy-reads Held); else `no`. A part reached twice answers `no` the second time.
  */
 export function schemaRead(
   expr: Argument,
@@ -32,7 +32,7 @@ export function schemaRead(
   if (seen.has(key)) return "no";
   seen.add(key);
   const e = at.expr;
-  if (mutatedBinding(e, at.file)) return "unknown";
+  if (!held(e, at.file, project)) return "unknown";
   const sub = (x: Argument | null): SchemaAnswer => (x === null ? "no" : schemaRead(x, at.file, project, q, seen));
   switch (e.type) {
     case "CallExpression": {

@@ -6,6 +6,7 @@
 export { clientReach } from "../internal/clientReach.ts";
 export type { Resolve } from "../internal/Resolve.ts";
 export { relativeResolve } from "../internal/relativeResolve.ts";
+export { templatePattern } from "../internal/templatePattern.ts";
 export { globalRefs } from "./globalRefs.ts";
 export type { Ref } from "./Ref.ts";
 export { references } from "./references.ts";
