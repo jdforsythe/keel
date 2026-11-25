@@ -32,7 +32,7 @@ E1106 keeps `s.format` out of app code (RFC 0079): an app-written predicate brin
 Applied in this commit.
 - k.formats: opening sentence (format types are declared in libraries); **Who declares** (new paragraph); Conformance #9 and #10. Status `implemented` (accepted, conformance owed), from `conformance-covered`; the map row follows.
 - k.schema: E1106's Rules entry. Its clauses are unchanged, so its status stays.
-- k.library and k.library-pack, each at its 3,100-token budget, are unchanged: Who declares states the one exception to k.library In an app. k.parity's By kind sentence already states the outcome.
+- k.library: In an app's second bullet runs every rule but E1106 (k.formats Who declares), and drops "no exclusion of `node_modules/` covers them", which "nothing turns a rule off there" states. k.library-pack is unchanged. k.parity's By kind sentence already states the outcome.
 - No new diagnostic code; no glossary term.
 
 ## Conformance diff
