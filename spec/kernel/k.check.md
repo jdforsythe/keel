@@ -1,5 +1,5 @@
 # k.check: Checker and diagnostics
-status: implemented
+status: conformance-covered
 **Pipeline.** `keel check [paths]`: one pass, incremental, under 1s warm on golden app 1. Static only: it never evaluates app code (rendered a11y checks are k.testing).
 1. Parse (oxc) and TS strict type check. Ambient types: Node's when `@types/node` resolves from the project root, and k.bundle's Types.
 2. Compiler diagnostics (k.compiler transform of every file). They flow through unchanged.

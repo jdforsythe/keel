@@ -1,5 +1,5 @@
 # k.check-cache: Type cache
-status: implemented
+status: conformance-covered
 The type pass of `keel check` (k.check Pipeline, step 1) keeps its results across processes, so a `keel check` after a `keel build` or another `keel check` over the same inputs runs no TypeScript program. A result taken from the cache is the result a fresh process computes: the cache changes the time a run takes, never its output, its exit code or its trailer. The same holds for each `check()` call in a long-lived process (an editor session, `keel mcp`): nothing an earlier call parsed, loaded or registered changes a later call's answer.
 
 **Where.** `keel check` and the check `keel build` runs keep entries in `<root>/node_modules/.cache/keel/`, where `<root>` is the project root, when `<root>/node_modules` exists; without it there is no cache and nothing is created. `check()` keeps entries in the folder its `typeCache` option names, and none without it. Deleting the folder is always safe and is the one way to clear it; there is no flag.

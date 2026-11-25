@@ -1,5 +1,5 @@
 # k.scaffold: Scaffold and codemods
-status: implemented
+status: conformance-covered
 **Operations.** Every structural edit is one operation. It computes a complete edit set from the project's artifacts (`.keel/ids.json`, `routes.json`, `deps.json`, module manifests), never from text search, and applies it atomically: all files or none. The same operations are MCP tools (k.cli). `--dry-run` prints the edit set as unified diffs and writes nothing. An edit set is `{ files, created, changed, removed }`: the tree after the operation and the sorted paths it creates, changes, deletes; a dry run returns the same.
 ```sh
 keel scaffold project shop

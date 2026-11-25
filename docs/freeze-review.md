@@ -10,7 +10,7 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.formats | 7 | **conformance-covered** | none |
 | k.reactive | 20 | **conformance-covered** | none |
 | k.store | 25 | **conformance-covered** | none |
-| k.ctx | 19 | **conformance-covered** | none |
+| k.ctx | 24 | **conformance-covered** | none |
 | k.errors | 14 | **conformance-covered** | none |
 | k.compiler | 22 | **conformance-covered** | none |
 | k.component | 17 | **conformance-covered** | none |
@@ -25,24 +25,26 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.compat | 15 | **conformance-covered** | none |
 | k.api | 14 | **conformance-covered** | none |
 | k.services | 16 | **conformance-covered** | none |
-| k.check | 23 | implemented | clauses 22 and 23 at `none` |
+| k.check | 23 | **conformance-covered** | none |
+| k.check-cache | 13 | **conformance-covered** | none |
 | k.cli | 20 | **conformance-covered** | none |
 | k.module | 22 | **conformance-covered** | none |
-| k.scaffold | 18 | **conformance-covered** | none |
+| k.scaffold | 19 | **conformance-covered** | none |
 | k.scaffold-service | 8 | **conformance-covered** | none |
 | k.scaffold-shell | 9 | **conformance-covered** | none |
-| k.testing | 26 | **conformance-covered** | none |
-| k.test-run | 7 | implemented | clause 7 at `none` |
+| k.testing | 27 | **conformance-covered** | none |
+| k.test-run | 7 | **conformance-covered** | none |
 | k.requests | 4 | **conformance-covered** | none |
 | k.model | 7 | **conformance-covered** | none |
 | k.sim | 14 | **conformance-covered** | none |
 | k.drive | 23 | **conformance-covered** | none |
-| k.ledger | 19 | implemented | clauses 16 to 19 at `none` |
+| k.drive-law | 11 | **conformance-covered** | none |
+| k.ledger | 19 | **conformance-covered** | none |
 | k.sync | 14 | **conformance-covered** | none |
 | k.deploy | 13 | **conformance-covered** | none |
 | k.review | 8 | **conformance-covered** | none |
 | k.escapes | 9 | **conformance-covered** | none |
-| k.bundle | 7 | **conformance-covered** | none |
+| k.bundle | 13 | **conformance-covered** | none |
 | k.explain | 4 | **conformance-covered** | none |
 | k.return | 6 | **conformance-covered** | none |
 | k.opening | 14 | **conformance-covered** | none |
@@ -54,12 +56,12 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.privacy-reads | 4 | **conformance-covered** | none |
 | k.evidence | 10 | **conformance-covered** | none |
 | k.aria | 10 | **conformance-covered** | none |
-| k.guards | 10 | **conformance-covered** | none |
+| k.guards | 11 | **conformance-covered** | none |
 | k.persist | 16 | **conformance-covered** | none |
 | k.data | 10 | **conformance-covered** | none |
 | k.prove | 10 | **conformance-covered** | none |
 | k.reveal | 9 | **conformance-covered** | none |
-| k.shell | 17 | **conformance-covered** | none |
+| k.shell | 18 | **conformance-covered** | none |
 | k.claim | 9 | **conformance-covered** | none |
 | k.defaults | 6 | **conformance-covered** | none |
 | k.host | 5 | **conformance-covered** | none |
@@ -69,14 +71,14 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.place | 5 | **conformance-covered** | none |
 | k.resume | 13 | **conformance-covered** | none |
 | k.serverlog | 7 | **conformance-covered** | none |
-| k.user | 14 | **conformance-covered** | none |
+| k.user | 15 | **conformance-covered** | none |
 | k.boundary | 8 | **conformance-covered** | not audited clause by clause; the environment and limits suites run `keel build` on fixtures whose `env.d.ts` the type pass does not read |
 | std.brands | 7 | **conformance-covered** | none |
-| std.channels | 24 | **conformance-covered** | none |
+| std.channels | 26 | **conformance-covered** | none |
 | std.conflicts | 10 | **conformance-covered** | none |
 | std.copy | 3 | **conformance-covered** | none |
 | std.db | 13 | **conformance-covered** | none; clause 1 meets Postgres 17 in CI's `postgres` job |
-| std.postgres | 17 | **conformance-covered** | not audited clause by clause; clauses 5 and 7 meet Postgres 17 in CI's `postgres` job only |
+| std.postgres | 20 | **conformance-covered** | not audited clause by clause; clauses 5 and 7 meet Postgres 17 in CI's `postgres` job only |
 | std.postgres-changes | 6 | **conformance-covered** | not audited clause by clause |
 | std.outbox | 14 | **conformance-covered** | none |
 | std.outbox-owner | 6 | **conformance-covered** | not audited clause by clause |
@@ -94,7 +96,7 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | std.options | 7 | **conformance-covered** | none |
 | std.report | 19 | **conformance-covered** | none |
 | std.schedules | 9 | **conformance-covered** | none |
-| std.sessions | 16 | **conformance-covered** | none |
+| std.sessions | 19 | **conformance-covered** | none |
 | std.sessions-served | 3 | **conformance-covered** | none |
 | std.shells | 13 | **conformance-covered** | none |
 | std.statecharts | 10 | **conformance-covered** | none |
@@ -118,7 +120,7 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | std.contracts | 7 | **conformance-covered** | none |
 | std.lists | 6 | **conformance-covered** | none |
 | std.tauri | 10 | **conformance-covered** | `UNTESTABLE` toolchain lookups and capability file shape |
-| **total** | **1293** | 107 of 109 covered | |
+| **total** | **1348** | 113 of 114 covered | |
 
 ## 2. One-way audit (principle 1)
 
@@ -165,7 +167,7 @@ Golden apps: `apps/golden-1` and `apps/golden-2` have converged evals (`evals/re
 
 ## Status
 
-No section is `frozen`. The kernel is provisionally frozen: a kernel change goes through an RFC with an ADR, a conformance update and a migration note, and the `frozen` flip waits until the stdlib stages have exercised the kernel (`tasks/0034-freeze/PLAN.md`). k.parity (clauses 5 and 6 at `none`) is `proposed`, and k.check (clauses 22 and 23 at `none`) k.ledger (clauses 16 to 19 at `none`) and k.test-run (clause 7 at `none`) are `implemented`; the other 107 of 111 are `conformance-covered`.
+No section is `frozen`. The kernel is provisionally frozen: a kernel change goes through an RFC with an ADR, a conformance update and a migration note, and the `frozen` flip waits until the stdlib stages have exercised the kernel (`tasks/0034-freeze/PLAN.md`). k.parity (clauses 5 and 6 at `none`) is `proposed`; the other 113 of 114 are `conformance-covered`.
 
 subject: spec/ packages/*/conformance/
 verified: 454c7318e4169f30dff33d1aecdc9677e2ca9489

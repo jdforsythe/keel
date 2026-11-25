@@ -1,5 +1,5 @@
 # k.shell: Native shells
-status: implemented
+status: conformance-covered
 **Declaration.** A `client` deployable may name the native shells that package it: `shells: { capacitor?: { id, name }, tauri?: { id, name } }` in `topology.ts`. `id` is a reverse-DNS app id and its return links' scheme (k.return), `name` its title; the version the app's `package.json` `version`. Each shell's package provides it and must be in `dependencies` (E1572, k.deploy): `capacitor` (Android, iOS) `@keel/std-capacitor`, `tauri` (desktop) `@keel/std-tauri`. So must each native plugin its target names (Plugins). The rest: std.capacitor, std.tauri. `shells` on another adapter, or an `id` that is not reverse-DNS, is E1573.
 
 **Shell ctx.** A shell build's entry is the `client` entry with `createCtx({ mode: 'shell', drivers })`, `drivers` the package's `<shell>Drivers({ origin?, connect })`, `origin` the build's origin as a URL (Build 2; absent when it has none), `connect` the build's other origins (Origins): its `storage` and `net` (k.persist). The page loads from the shell's own origin, so the drivers keep this contract:

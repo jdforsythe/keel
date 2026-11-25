@@ -16,4 +16,4 @@ Each principle names its consequence. Reviews cite these by number.
 12. **Tokens are a budget.** Docs, spec, and every tool output are measured in tokens and gated in CI.
 
 subject: docs/adr/ spec/00-map.md
-verified: 74b0c5dadf2f08ad441eb304eb40d2a8f2e124fe
+verified: 488afdab204c634ea817fdf52a3196f591559bc1

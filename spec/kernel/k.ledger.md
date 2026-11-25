@@ -1,5 +1,5 @@
 # k.ledger: Ledger and evidence
-status: implemented
+status: conformance-covered
 
 **Ledger.** `keel ledger` emits one NDJSON record `{ kind: 'ledger', item, rung, evidence }` per public export (`<file>#<name>`), per spec clause (`k.router#3`, 1-based Conformance sentence) and per route and WCAG criterion (`a11y:<routeId>#1.4.3`, k.a11y). A conformance test names its clause in a header comment, `// Spec: k.router, clause "<sentence>"`, quoted verbatim (backticks, quote style, spacing, case and final period aside; it may wrap onto later `//` lines). A clause with `each` and a code range (`E2001-E2005`, `E2401 to E2406`) has evidence only while each of its codes is named, outside the quote, in the header of a citing file with a non-skipped test (`(E2003)`; a range names its ends). `rung` is the highest held:
 - `example`: a passing test references the item.

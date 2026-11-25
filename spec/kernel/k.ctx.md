@@ -1,5 +1,5 @@
 # k.ctx: Capabilities
-status: implemented
+status: conformance-covered
 
 **API.** `ctx.clock.now()`, `ctx.clock.after(ms, signal?): Promise<void>`, `ctx.random.float()`, `ctx.random.id(brand): Id<B>` (a v4 uuid as `s.id(brand)`; the one way to mint an id or token), `ctx.net.fetch(req)`, `ctx.storage` (k.persist), no `dispose`: only the ctx's maker ends it, with `createCtx`'s `signal` (k.owner). A real `ctx.net.fetch` whose connection is refused or reset rejects with a `TypeError` and never throws outside the returned promise. Registry: `register(name, { real, shell, sim })` with factories `(opts: { seed }) => Impl`; returns the accessor `(ctx) => Impl`, the only access path; a factory's seed derives from the ctx seed and the name; `capabilities()` lists names; re-registering the identical implementations object returns the same accessor; another duplicate is E1602. Sim mode, schedules and plans: k.sim.
 

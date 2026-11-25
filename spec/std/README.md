@@ -19,7 +19,7 @@ S8 adds std.db, std.workflows, std.shells and std.tokens.
 ## Sections
 | id | section | status | one line |
 | --- | --- | --- | --- |
-| std.sessions | Sessions | implemented | capture, ingest, replay, minimize, to-test; GitHub Action |
+| std.sessions | Sessions | conformance-covered | capture, ingest, replay, minimize, to-test; GitHub Action |
 | std.sessions-served | Served-page sessions | conformance-covered | std-sessions: replay and to-test of a page a `node` deployable serves |
 | std.i18n | Locales | conformance-covered | schema type registry and check rule registry: `i18n.Locale`, numbers, plurals |
 | std.money | Money | conformance-covered | schema type registry: `money.Money`, add, format and parse for a locale |
@@ -34,7 +34,7 @@ S8 adds std.db, std.workflows, std.shells and std.tokens.
 | std.report | Tally report | conformance-covered | formatter registry: `report.tally`; `keel report` |
 | std.jobs | Background jobs | conformance-covered | module manifest and inspector hooks: durable jobs, retry, lease, E2501-E2506 |
 | std.schedules | Schedules | conformance-covered | module manifest: cron in a zone, catch-up, E2551-E2553 |
-| std.channels | Channels | implemented | module manifest and check rule registry: named channels over a server event stream, stores and followed app data, E2601-E2602 |
+| std.channels | Channels | conformance-covered | module manifest and check rule registry: named channels over a server event stream, stores and followed app data, E2601-E2602 |
 | std.live | Live views | conformance-covered | composes std.channels: a client store re-read on every push |
 | std.offline | Outbox | conformance-covered | check rule registry: queued writes with keys and bases, resolve, E2651 |
 | std.contracts | Stdlib contracts | proposed | std-health, std-sessions, std-channels and std-offline over k.contract |

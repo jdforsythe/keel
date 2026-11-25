@@ -1,5 +1,5 @@
 # k.drive: Driving a simulation
-status: implemented
+status: conformance-covered
 
 How `simulate` (k.sim) moves a run's clock: when no work of the run is pending, to its next moment, so a scenario that awaits work waiting on the clock is answered and two runs of one `SimRun` give one trace. The law two runs keep and its check are k.drive-law. An *empty replay* is `simulate(scenario, { replay })` of a `SimRun` of seed 1 whose schedule is `{ net: [], storage: [], offline: [], plans: {} }`.
 

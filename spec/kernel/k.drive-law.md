@@ -1,5 +1,5 @@
 # k.drive-law: Replays agree
-status: implemented
+status: conformance-covered
 
 The law two runs of one `SimRun` keep under `simulate` (k.sim, driven as k.drive says), and the law check that replays a run to compare its traces. An *empty replay* is as k.drive defines it.
 

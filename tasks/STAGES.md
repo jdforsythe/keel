@@ -15,7 +15,7 @@ Open backlog counts are unchecked lines in `tasks/BACKLOG.md` matched to a stage
 | G0 Factory | CLOSED | CI green on empty workspace, one eval end to end | `tasks/0001-factory/PLAN.md` CLOSED, 2026-11-06 | kernel lines only |
 | G1 Kernel renders | CLOSED | agent builds golden app 1 to ledger green | `docs/ROADMAP.md` "passed 2026-11-06"; `evals/results/2026-11-06-golden-1-claude-sonnet-5-5.json` converged true | kernel lines only |
 | G2 Kernel full stack | CLOSED | golden app 1 has a real API; inspector in Keel | `docs/ROADMAP.md` "passed 2026-11-06" | kernel lines only |
-| G3 Kernel freeze | BUILT, EXIT WAITS ON SOMETHING EXTERNAL | every section covered, then `frozen` | `docs/ROADMAP.md` "criteria met 2026-11-07" and "64 of 77"; `tasks/0034-freeze/PLAN.md` open | 0034, 0349 |
+| G3 Kernel freeze | BUILT, EXIT WAITS ON SOMETHING EXTERNAL | every section covered, then `frozen` | `docs/ROADMAP.md` "criteria met 2026-11-07" and "76 of 77"; `tasks/0034-freeze/PLAN.md` open | 0034, 0349 |
 | S1 Sessions | CLOSED | nightly loop closes a bug in apps/sessions | `docs/HANDOFF.md` "S1 EXIT MET (2026-11-09" | 1 / 13 |
 | S2 Values | CLOSED | golden-2 prices and dates in 3 locales | `docs/ROADMAP.md` "passed 2026-11-10"; `evals/results/2026-11-10-golden-2-none.json` converged true | 5 / 16 |
 | S3 Server depth | CLOSED | split topology without source changes | `tasks/0309-s3-server-depth/PLAN.md` CLOSED 2026-11-11; `evals/results/2026-11-11-golden-1-api-none.json` converged true | 0 / 27 |
@@ -53,10 +53,10 @@ Open backlog counts are unchecked lines in `tasks/BACKLOG.md` matched to a stage
 ## G3 Kernel freeze
 
 1. Exit criterion, `docs/ROADMAP.md`: "Every section conformance-covered; each extension point used by >= 1 stdlib module; two golden apps; evals improving".
-2. Not met as written. `docs/ROADMAP.md` says "criteria met 2026-11-07" in the same cell that says "38 of 40 kernel sections are conformance-covered, k.hosting is implemented and k.shell proposed". `tasks/0034-freeze/PLAN.md` has Status "open" and every Verification box unticked, including "`spec/00-map.md`: every kernel row `frozen`". Its D8 (2026-11-09, user) makes the kernel provisionally frozen and holds the `frozen` flip until the S stages (S1-S8) have exercised the kernel.
+2. Not met as written. `docs/ROADMAP.md` says "criteria met 2026-11-07" in the same cell that says "76 of 77 kernel sections are conformance-covered and k.parity is proposed". `tasks/0034-freeze/PLAN.md` has Status "open" and every Verification box unticked, including "`spec/00-map.md`: every kernel row `frozen`". Its D8 (2026-11-09, user) makes the kernel provisionally frozen and holds the `frozen` flip until the S stages (S1-S8) have exercised the kernel.
 3. Built: the review, `docs/freeze-review.md`; the stdlib packages cover the extension points.
 4. Open: 0034 itself; 0349 (k.topology clauses 2, 6 and 9 have no evidence). The flip is also launch checklist item 0223 in P1.
-5. Verdict: BUILT, EXIT WAITS ON SOMETHING EXTERNAL: the user's hold on the `frozen` flip, plus the two sections not yet conformance-covered.
+5. Verdict: BUILT, EXIT WAITS ON SOMETHING EXTERNAL: the user's hold on the `frozen` flip, plus k.parity, not yet conformance-covered.
 
 ## S1 Sessions
 
