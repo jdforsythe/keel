@@ -57,6 +57,11 @@ export async function execute(op: Operation, input: Input, io: Io): Promise<Outc
         map.size === 0 ? [] : await (await import("./a11yFindings.ts")).a11yFindings(io.cwd, projectFiles(io));
       return ledgerCommand(input, io, map, findings);
     }
+    case "pack": {
+      // Loaded only when the command runs: it brings in the checker, the test harness and typescript.
+      const { packCommand } = await import("./packCommand.ts");
+      return packCommand(input, io);
+    }
     case "evidence": {
       // Behind its own entry, loaded only when the command runs (`@keel/cli` size budget).
       const { evidenceCommand } = await import("@keel/cli/evidence");

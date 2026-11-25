@@ -4,6 +4,8 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { build } from "esbuild";
 import { compile } from "../compile.ts";
+import { appLibraries } from "../std/appLibraries.ts";
+import { libraryRel } from "../std/libraryRel.ts";
 import type { RouteEntry } from "../types/RouteEntry.ts";
 import type { StyleUsage } from "../types/StyleUsage.ts";
 import { contractOf } from "./contractOf.ts";
@@ -101,7 +103,8 @@ function entrySource(
 
 /**
  * Evaluate the app's `tokens.ts`, contracts and `routes.ts` bindings at build time (D24): bundle a generated entry with
- * esbuild from `root` (app modules under `root` go through `compile`, as in Vite; packages are bundled as is, with a
+ * esbuild from `root` (app modules under `root` and the app's libraries' files, resolved with the `keel` condition, go
+ * through `compile`, as in Vite (k.library In an app); other packages are bundled as is, with a
  * `require` from `createRequire` as the server build has), run its module top levels once in Node, and read back the atomic CSS (`compileStyles` from `@keel/ui/css` over `usages`), the tokens' `look` sets as data and the merged
  * `routes.json` (`routesArtifact` from `@keel/router` per manifest). Usages with an unknown token are left out
  * of the CSS and listed in `problems` (E1801; `keel check` reports them at their source). Error mapping (k.compiler
@@ -128,6 +131,7 @@ export async function evaluateProject(input: {
   if (input.tokensFile !== undefined && !fs.existsSync(path.join(root, input.tokensFile)))
     throw new Error(`keel: Could not resolve "./${input.tokensFile}" (tokens file)`);
   const syntax: string[] = [];
+  const libraries = appLibraries(root);
   const bundled = build({
     stdin: {
       contents: entrySource(
@@ -148,8 +152,8 @@ export async function evaluateProject(input: {
     // As the server build: `import.meta.env` holds Vite's built-in values only (the plugin's `envPrefix` admits none).
     define: { "import.meta.env": SERVER_ENV },
     // Node's own conditions (`node`, `import`, `default`), without esbuild's `module`: the file a package's `exports`
-    // gives here is the one Node imports and the one `routeLiterals` reads.
-    conditions: [],
+    // gives here is the one Node imports and the one `routeLiterals` reads; `keel` first gives a library's source.
+    conditions: ["keel"],
     target: "node20",
     logLevel: "silent",
     // A stylesheet a host element code file imports (k.host-code) is the browser build's asset: here it is nothing.
@@ -169,7 +173,8 @@ export async function evaluateProject(input: {
             loader: "text",
           }));
           b.onLoad({ filter: /\.[cm]?[jt]sx?$/ }, (args) => {
-            const rel = path.relative(root, args.path).split(path.sep).join("/");
+            const own = path.relative(root, args.path).split(path.sep).join("/");
+            const rel = libraryRel(libraries, args.path) ?? own;
             if (rel.startsWith("../") || path.isAbsolute(rel) || rel.split("/").includes("node_modules"))
               return undefined;
             const r = compile([{ path: rel, source: fs.readFileSync(args.path, "utf8") }]);

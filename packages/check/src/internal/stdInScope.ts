@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { libraryFiles } from "@keel/compiler/std/libraryFiles";
 import type { SourceFile } from "../types/SourceFile.ts";
 import { isRecord } from "./compat/isRecord.ts";
 import { readManifest } from "./modules/readManifest.ts";
@@ -29,8 +30,9 @@ function packageDir(dir: string, name: string): string | undefined {
 /**
  * The `@keel/*` packages a fresh `keel check` of `files` loads (k.check-cache In one process): each name in the `deps`
  * of an app manifest (`modules/<id>/module.ts` at any depth, resolved from its folder), and the `@keel/*` packages
- * their `package.json` `dependencies` and `peerDependencies` name, transitively. A `@keel/std-*` package's formats
- * and rules apply only when it is among them, however long the process has held it. Read from the disk on each call.
+ * their `package.json` `dependencies` and `peerDependencies` name, transitively, and the app's libraries with the
+ * `@keel/*` packages theirs name (`libraryFiles`, k.library In an app). A library's formats and rules apply only when
+ * it is among them, however long the process has held it. Read from the disk on each call.
  */
 export function stdInScope(files: readonly SourceFile[], root: string): ReadonlySet<string> {
   const out = new Set<string>();
@@ -51,5 +53,6 @@ export function stdInScope(files: readonly SourceFile[], root: string): Readonly
     const dir = path.dirname(path.resolve(root, f.path));
     for (const d of manifest.deps.entries) visit(dir, d.value);
   }
+  for (const lib of libraryFiles(root, files)) visit(lib.dir, lib.name);
   return out;
 }

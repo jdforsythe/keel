@@ -1,8 +1,8 @@
 // Spec: k.deploy, Conformance "With module `a` listing `@keel/std-postgres` in `deps`, served by `node` deployable `x` beside `y`, `deploy/compose.yaml` passes `KEEL_POSTGRES_URL` to `x` as a required value from the environment and to `y` not at all, and holds no URL."
-// Spec: k.deploy, Deploy files "`KEEL_POSTGRES_URL` from the environment, required, for one serving a module whose `deps` list `@keel/std-postgres`."
+// Spec: k.server-deps, Environment "A `node` deployable needs the `env` names of each module its `modules` list and of each library those modules' manifests list, transitively. `deploy/compose.yaml` (its layout: k.deploy Deploy files) passes each name a deployable needs from the environment, required (`NAME: ${NAME:?}`), once in the deployable's service, after the k.deploy keys and sorted, and no generated file holds a value."
 // Seed: 1337. Assumes (as dockerfile-storage.test.ts): `deployDrift(tree, true)` yields the generated files as `want`; the tree holds `topology.ts`, `package.json` and `modules/<id>/module.ts` manifests.
+// The clause stays in k.deploy. The generator knows no package by name: the name comes from the `env` of the library's manifest, so the tree holds the std-postgres manifest as source text at `node_modules/@keel/std-postgres/module.ts` (no import: kernel packages never import std packages) and its `package.json` marking it a library.
 // Assumes "required, from the environment" is Compose's `${KEEL_POSTGRES_URL:?...}` form, as the RFC writes it (`${KEEL_POSTGRES_URL:?}`); a service's block is the lines from its `  <name>:` key to the next two-space key.
-// Pending: composeYaml does not pass it yet.
 import { deployDrift } from "@keel/scaffold";
 import fc from "fast-check";
 import { expect, test } from "vitest";
@@ -10,6 +10,17 @@ import { expect, test } from "vitest";
 const SEED = 1337;
 const manifest = (id: string, deps: string[]): string =>
   `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: ${JSON.stringify(deps)}, capabilities: [], public: { exports: [] } })\n`;
+
+const libraryFiles: [string, string][] = [
+  [
+    "node_modules/@keel/std-postgres/package.json",
+    `${JSON.stringify({ name: "@keel/std-postgres", version: "1.0.0", type: "module", keel: "library" })}\n`,
+  ],
+  [
+    "node_modules/@keel/std-postgres/module.ts",
+    "import { module } from '@keel/compiler'\nexport default module({ id: 'postgres', deps: [], capabilities: [], public: { exports: [] }, env: ['KEEL_POSTGRES_URL'] })\n",
+  ],
+];
 
 function compose(x: string, y: string): string {
   const tree = new Map<string, string>([
@@ -20,6 +31,7 @@ function compose(x: string, y: string): string {
     ],
     ["modules/a/module.ts", manifest("a", ["@keel/std-postgres"])],
     ["modules/b/module.ts", manifest("b", [])],
+    ...libraryFiles,
   ]);
   for (const d of deployDrift(tree, true)) if (d.path === "deploy/compose.yaml" && d.want !== null) return d.want;
   throw new Error("deploy/compose.yaml not generated");

@@ -1,6 +1,7 @@
 import type { Expression, ObjectExpression, ObjectProperty, Program } from "oxc-parser";
 import { keyName } from "../keyName.ts";
 import type { Entry } from "./Entry.ts";
+import type { EnvEntry } from "./EnvEntry.ts";
 import type { Manifest } from "./Manifest.ts";
 import type { ManifestList } from "./ManifestList.ts";
 import type { StdEntry } from "./StdEntry.ts";
@@ -41,6 +42,20 @@ function listOf(e: Expression | undefined): ManifestList | null {
     entries.push({ value: v, start: el.start, end: el.end });
   }
   return { entries, span: { start: e.start, end: e.end } };
+}
+
+/**
+ * `env` entries (k.server-deps Environment), each judged alone: a string literal's value, any other element (a spread
+ * among them) as null at its start; an `env` that is no array literal is one null entry at its value. Absent: none.
+ */
+function envOf(e: Expression | undefined): EnvEntry[] {
+  if (e === undefined) return [];
+  if (e.type !== "ArrayExpression") return [{ value: null, start: e.start }];
+  return e.elements.flatMap((el) =>
+    el === null
+      ? []
+      : [{ value: el.type === "Literal" && typeof el.value === "string" ? el.value : null, start: el.start }],
+  );
 }
 
 /** `std` entries (RFC 0047): an absent `std` is empty; `null` when it is not a literal object with static keys. */
@@ -106,6 +121,7 @@ export function readManifest(program: Program): Manifest | null {
     exports,
     std,
     clientPii,
+    env: envOf(props.get("env")),
     tail,
   };
 }

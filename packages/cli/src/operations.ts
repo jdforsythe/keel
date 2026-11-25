@@ -149,6 +149,14 @@ export const operations: readonly Operation[] = [
     scope: "ledger",
   },
   {
+    name: "pack",
+    description: "A library's gate: check, test and write .keel/ledger.json; --check writes nothing (k.library-pack).",
+    input: s.object({ check: s.boolean().optional(), ...diagnostic }),
+    output: outputOf(),
+    positional: [],
+    scope: "ledger",
+  },
+  {
     name: "evidence",
     description: "Write a signed evidence bundle, or --verify one with --key <keyId>.",
     input: s.object({

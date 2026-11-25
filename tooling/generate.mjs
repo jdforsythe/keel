@@ -7,6 +7,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { PII_SINKS } from "../packages/cli/src/internal/PII_SINKS.ts";
+import { libraryFiles } from "../packages/compiler/src/std/libraryFiles.ts";
 import { deployDrift } from "../packages/scaffold/src/deployDrift.ts";
 import { capacitorTarget } from "../packages/std-capacitor/src/tools/capacitorTarget.ts";
 import { tauriTarget } from "../packages/std-tauri/src/tools/tauriTarget.ts";
@@ -81,9 +82,13 @@ function deployTree(dir) {
     add(rel);
   const deploy = path.join(root, dir, "deploy");
   if (fs.existsSync(deploy)) for (const name of fs.readdirSync(deploy).sort()) add(`deploy/${name}/Dockerfile`);
-  // Module manifests: their `deps` decide a deployable's `KEEL_POSTGRES_URL` and its CI job's paths.
+  // Module manifests and the manifests of the libraries they reach: their `env` decide a deployable's environment
+  // (k.server-deps Environment), and their `deps` its CI job's paths.
   const modules = path.join(root, dir, "modules");
   if (fs.existsSync(modules)) for (const id of fs.readdirSync(modules).sort()) add(`modules/${id}/module.ts`);
+  const manifests = [...tree].filter(([rel]) => rel.startsWith("modules/")).map(([p, source]) => ({ path: p, source }));
+  for (const lib of libraryFiles(path.join(root, dir), manifests))
+    if (lib.manifest !== undefined) tree.set(`node_modules/${lib.name}/module.ts`, lib.manifest);
   return tree;
 }
 

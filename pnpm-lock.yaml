@@ -695,6 +695,97 @@ importers:
         specifier: ^8.3.6
         version: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)
 
+  examples/library-app:
+    dependencies:
+      '@example/library-charts':
+        specifier: workspace:*
+        version: link:../library-charts
+      '@keel/compiler':
+        specifier: workspace:*
+        version: link:../../packages/compiler
+      '@keel/ctx':
+        specifier: workspace:*
+        version: link:../../packages/ctx
+      '@keel/forms':
+        specifier: workspace:*
+        version: link:../../packages/forms
+      '@keel/reactive':
+        specifier: workspace:*
+        version: link:../../packages/reactive
+      '@keel/router':
+        specifier: workspace:*
+        version: link:../../packages/router
+      '@keel/runtime-dom':
+        specifier: workspace:*
+        version: link:../../packages/runtime-dom
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../../packages/schema
+      '@keel/server':
+        specifier: workspace:*
+        version: link:../../packages/server
+      '@keel/store':
+        specifier: workspace:*
+        version: link:../../packages/store
+      '@keel/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+    devDependencies:
+      '@keel/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@keel/testing':
+        specifier: workspace:*
+        version: link:../../packages/testing
+      '@keel/tooling':
+        specifier: workspace:*
+        version: link:../../tooling
+      '@types/node':
+        specifier: ^22
+        version: 22.20.5
+      vite:
+        specifier: ^8.3.6
+        version: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)
+
+  examples/library-charts:
+    devDependencies:
+      '@keel/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@keel/compiler':
+        specifier: workspace:*
+        version: link:../../packages/compiler
+      '@keel/reactive':
+        specifier: workspace:*
+        version: link:../../packages/reactive
+      '@keel/runtime-dom':
+        specifier: workspace:*
+        version: link:../../packages/runtime-dom
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../../packages/schema
+      '@keel/testing':
+        specifier: workspace:*
+        version: link:../../packages/testing
+      '@keel/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      '@types/node':
+        specifier: ^22
+        version: 22.20.5
+      happy-dom:
+        specifier: ^21.0.4
+        version: 21.0.4
+      typescript:
+        specifier: ^5.6
+        version: 5.9.3
+      vite:
+        specifier: ^8.3.6
+        version: 8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15)
+      vitest:
+        specifier: ^4.1.12
+        version: 4.1.12(@types/node@22.20.5)(@vitest/coverage-v8@4.1.12)(happy-dom@21.0.4)(vite@8.3.6(@types/node@22.20.5)(esbuild@0.28.2)(tsx@4.23.15))
+
   examples/links-in:
     dependencies:
       '@keel/compiler':

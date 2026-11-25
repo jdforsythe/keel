@@ -6,6 +6,7 @@ import type { ScaffoldError } from "../types/ScaffoldError.ts";
 import { fail } from "./fail.ts";
 import { opAddField } from "./opAddField.ts";
 import { opComponent } from "./opComponent.ts";
+import { opLibrary } from "./opLibrary.ts";
 import { opModule } from "./opModule.ts";
 import { opMove } from "./opMove.ts";
 import { opPlace } from "./opPlace.ts";
@@ -28,6 +29,7 @@ const OPS: ReadonlyMap<string, Impl> = new Map<Op, Impl>([
   ["transaction", opTransaction],
   ["service", opService],
   ["shell", opShell],
+  ["library", opLibrary],
   ["rename", opRename],
   ["move", opMove],
   ["place", opPlace],

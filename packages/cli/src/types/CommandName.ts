@@ -13,5 +13,6 @@ export type CommandName =
   | "ledger"
   | "evidence"
   | "review"
+  | "pack"
   | "session"
   | "report";

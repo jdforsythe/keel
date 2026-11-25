@@ -26,6 +26,7 @@ keel codemod place digest --to jobs --adapter node
 - `store` / `transaction`: `*.schema.ts`, store or transaction file, invariant test.
 - `service`: a client of an API no app module serves (k.services): `modules/<id>/<Name>Api.schema.ts` and `api.server.ts`, with `@keel/services` in `package.json` (k.scaffold-service).
 - `shell`: a native shell on a `client` deployable, `shells` in `topology.ts` and the shell's packages in `package.json` (k.scaffold-shell).
+- `library`: a library package under `<base>/` (k.library-pack Scaffold); `keel scaffold library <name>`.
 
 **Codemods.**
 - `rename` (component, route, store, transaction, schema, field, module) updates the declaration, file name, every import, `href()` call (free or a contract's), `uses:` list, element-id prefix, test, contract entry and binding.

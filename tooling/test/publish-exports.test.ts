@@ -63,6 +63,19 @@ describe("checking a package", () => {
       [],
     );
   });
+  it("keeps a keel condition at its source path, which `files` must ship and the tree must hold", () => {
+    const m = {
+      name: "@a/lib",
+      exports: { ".": { keel: "./src/index.ts", default: "./src/index.ts" } },
+      files: ["dist"],
+    };
+    const derived = deriveExports(m.exports);
+    expect(derived).toEqual({ ".": { keel: "./src/index.ts", default: "./dist/src/index.js" } });
+    const lib = { ...m, publishConfig: { exports: derived } };
+    expect(codes(repo(lib, ["dist/src/index.js", "src/index.ts"]))).toEqual(["P0003"]);
+    expect(codes(repo({ ...lib, files: ["dist", "src"] }, ["dist/src/index.js"]))).toEqual(["P0002"]);
+    expect(codes(repo({ ...lib, files: ["dist", "src"] }, ["dist/src/index.js", "src/index.ts"]))).toEqual([]);
+  });
   it("holds a bin that points at source to a publishConfig.bin", () => {
     const m = { name: "p", bin: { k: "./src/bin.ts" }, files: ["dist"] };
     expect(codes(repo(m, ["src/bin.ts"]))).toEqual(["P0004"]);

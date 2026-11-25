@@ -11,6 +11,7 @@ import { a11yCases } from "./a11yCases.ts";
 import { artifactsSetupConfig } from "./artifactsSetupConfig.ts";
 import { catchingStray } from "./catchingStray.ts";
 import { makeDiag } from "./makeDiag.ts";
+import { ownLibrary } from "./ownLibrary.ts";
 import { projectFiles } from "./projectFiles.ts";
 
 const sink = (): Writable => new Writable({ write: (_chunk, _enc, done) => done() });
@@ -37,7 +38,7 @@ const notPassed = (r: TestReport, reason: string): TestReport => ({
   errors: 1,
 });
 
-async function vitestRun(root: string, filters: readonly string[]): Promise<TestReport> {
+async function vitestRun(root: string, filters: readonly string[], claims: boolean): Promise<TestReport> {
   let report = EMPTY;
   let run: Vitest | undefined;
   const collector = {
@@ -47,7 +48,7 @@ async function vitestRun(root: string, filters: readonly string[]): Promise<Test
     onTestRunEnd: (_modules: readonly unknown[], errors: readonly unknown[], reason: string): void => {
       const r = run === undefined ? NOT_STARTED : testResults(run.state.getFiles(), errors, root);
       // Every render check the harness recorded, to `reports/a11y.json` (k.a11y Claims; `keel ledger` reads it).
-      if (run !== undefined) writeA11yReport(root, a11yCases(run.state.getFiles(), root));
+      if (run !== undefined && claims) writeA11yReport(root, a11yCases(run.state.getFiles(), root));
       report = reason === "passed" || r.failed > 0 || r.errors > 0 ? r : notPassed(r, reason);
     },
   };
@@ -88,12 +89,14 @@ async function vitestRun(root: string, filters: readonly string[]): Promise<Test
  * files, so a render given no `artifacts` takes the project's (k.a11y Artifacts);
  * vitest's own output is discarded and `@keel/testing` `testResults` (the same walk the repository's
  * KeelReporter uses) turns results into T0001 diagnostics plus a summary (not ok when any
- * test failed); every render check the harness recorded goes to `reports/a11y.json` (`writeA11yReport`). Skipped (the empty run) when `io.files` holds no test file and no vitest config, so an in-memory
+ * test failed); every render check the harness recorded goes to `reports/a11y.json` (`writeA11yReport`), but in a
+ * library's own folder (`ownLibrary`), which then writes nothing. Skipped (the empty run) when `io.files` holds no test file and no vitest config, so an in-memory
  * project never touches disk.
  */
 export async function testCommand(input: Input, io: Io): Promise<OutRecord[]> {
   const runnable = projectFiles(io).some((f) => TEST_FILE.test(f.path) || VITEST_CONFIG.test(f.path));
-  const r = runnable ? await vitestRun(io.cwd, input.paths ?? []) : EMPTY;
+  // A library holds no page route, so its own folder keeps no render claims (k.library-pack Own folder).
+  const r = runnable ? await vitestRun(io.cwd, input.paths ?? [], ownLibrary(io.cwd) === undefined) : EMPTY;
   const diags = r.diagnostics.map((d) => makeDiag(d.code, d.message, d));
   const counts = { tests: r.tests, failed: r.failed, skipped: r.skipped };
   return [...diags, { kind: "summary", ok: r.failed === 0 && r.errors === 0, name: "test", counts }];

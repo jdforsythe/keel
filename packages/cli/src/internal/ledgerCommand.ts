@@ -1,3 +1,5 @@
+import { LedgerFileSchema } from "@keel/check";
+import { libraryAt } from "@keel/compiler/std/libraryAt";
 import type { Infer } from "@keel/schema";
 import { type Evidence, type LedgerRecord, ledger, ledgerDiff } from "@keel/testing";
 import type { Input } from "../types/Input.ts";
@@ -6,20 +8,24 @@ import type { OutRecord } from "../types/OutRecord.ts";
 import type { A11yClaim } from "./A11yClaim.ts";
 import type { A11yCriteriaMap } from "./A11yCriteriaMap.ts";
 import type { Diag } from "./Diag.ts";
-import { LedgerFileSchema } from "./LedgerFileSchema.ts";
 import type { LedgerItem } from "./LedgerItem.ts";
+import type { LibraryLedger } from "./LibraryLedger.ts";
 import type { Outcome } from "./Outcome.ts";
 import { a11yClaims } from "./a11yClaims.ts";
 import { buildLedger } from "./buildLedger.ts";
 import { coverageGaps } from "./coverageGaps.ts";
 import { justifiedFiles } from "./justifiedFiles.ts";
 import { justifiedText } from "./justifiedText.ts";
+import { libraryCount } from "./libraryCount.ts";
+import { libraryLedgers } from "./libraryLedgers.ts";
 import { makeDiag } from "./makeDiag.ts";
 import { mutationClaims } from "./mutationClaims.ts";
+import { ownLibrary } from "./ownLibrary.ts";
 import { packageInScope } from "./packageInScope.ts";
 import { pagelessLayouts } from "./pagelessLayouts.ts";
 import { projectFiles } from "./projectFiles.ts";
 import { summary } from "./summary.ts";
+import { z3Version } from "./z3Version.ts";
 
 type Mutation = NonNullable<Infer<typeof LedgerFileSchema>["mutation"]>;
 
@@ -83,8 +89,8 @@ const rungCounts = (items: readonly LedgerItem[]): Record<string, number> => {
 };
 
 /**
- * The ledger file: unsafe count, host element count, negative type test expectations, rungs, mutation, exports (`{ pkg, name, file, rung }`), clauses (`{ item, rung }`) and
- * the a11y claims (`{ item, rung }`).
+ * The ledger file: unsafe count, host element count, negative type test expectations, rungs, mutation, exports (`{ pkg, name, file, rung }`), clauses (`{ item, rung }`),
+ * the a11y claims (`{ item, rung }`) and the libraries (`{ [name]: { version, unsafe, hostElements } }`, by name).
  */
 const ledgerFile = (
   records: readonly LedgerRecord[],
@@ -95,6 +101,7 @@ const ledgerFile = (
   rungs: Readonly<Record<string, number>>,
   mutation: Mutation,
   a11y: readonly A11yClaim[],
+  libs: readonly LibraryLedger[],
 ): string => {
   const exports: { pkg: string; name: string; file: string; rung: string }[] = [];
   const clauses: { item: string; rung: string }[] = [];
@@ -106,13 +113,30 @@ const ledgerFile = (
   }
   const mut = mutation.claims.length > 0 || Object.keys(mutation.packages).length > 0 ? { mutation } : {};
   const claims = a11y.map((c) => ({ item: c.item, rung: c.rung }));
-  return `${JSON.stringify({ version: 1, unsafe, hostElements, negativeTypes, rungs, ...mut, exports, clauses, a11y: claims }, null, 2)}\n`;
+  const libraries = Object.fromEntries(
+    libs.map((l) => [l.name, { version: l.version, unsafe: l.unsafe, hostElements: l.hostElements }]),
+  );
+  const file = {
+    version: 1,
+    unsafe,
+    hostElements,
+    negativeTypes,
+    rungs,
+    ...mut,
+    exports,
+    clauses,
+    a11y: claims,
+    libraries,
+  };
+  return `${JSON.stringify(file, null, 2)}\n`;
 };
 
 /**
  * `keel ledger` (k.ledger), the one ledger implementation: one `ledger` record per export and per spec clause, rung by
  * `@keel/testing` `ledger`, one per page route of each project and WCAG criterion (`a11yClaims` over `a11yMap`, k.a11y Claims; a committed a11y
  * item of no current page route is dropped), and one
+ * after them one per entry of an installed library's ledger file (`libraryLedgers`, k.library Ledger: shown, never in
+ * the summary counts, the written `exports` and `rungs` or `--diff`), and one
  * `ledger.mutation` record per mutation claim (`mutationClaims`), after any W1706
  * header notes, W1731 (a layout no page route's chain holds, `pagelessLayouts`), E1711, E1725 (a `mutation-justified.json` that fails its shape, by `justifiedFiles`, or an entry that
  * justifies no mutant of its package's report on disk) and W1714 (a stale claim). `--write <file>` names the ledger file: `keel ledger` writes the
@@ -122,12 +146,16 @@ const ledgerFile = (
  * (no `--scope`) when the host element count rose, E1707
  * per clause of a `conformance-covered` section left at `none` (`coverageGaps`), E1712 (no `--scope`) per rung the
  * file counts above 0 that no item holds, E1713 per package whose fresh score is below its threshold (a package
- * with claims and none fresh has no score and fails too) or whose threshold is below the committed one. `--scope <prefix>` keeps the items whose key starts with it; the unsafe count
+ * with claims and none fresh has no score and fails too) or whose threshold is below the committed one. Without `--scope` the unsafe and host element
+ * counts add each library's that the project's own count does not hold. `--scope <prefix>` keeps the items whose key
+ * starts with it (a library's included); the unsafe count
  * is then the matching apps' (`golden-1:`), compared with zero, and the host element count theirs plus a root
  * `modules/**` file's whose path starts with it. `negativeTypes` (written, never compared) is then the matching apps'
  * plus each negative type test's whose path starts with it. The summary counts the items on each rung and the
  * stale claims, each when above 0. `findings` are the static a11y codes of the project (`a11yFindings`, which the
- * caller awaits: it evaluates each project's `tokens.ts`).
+ * caller awaits: it evaluates each project's `tokens.ts`). In a library's own folder (`ownLibrary`, k.library-pack Own
+ * folder) the items are its exports and its spec clauses, `unsafe` and `hostElements` the counts an app makes over its
+ * `src/` and `unsafe/` files (`libraryAt`, `libraryCount`), and `libraries` is empty.
  */
 export function ledgerCommand(
   input: Input,
@@ -136,7 +164,15 @@ export function ledgerCommand(
   findings: readonly { code: string; path: string }[] = [],
 ): Outcome {
   const files = projectFiles(io);
-  const built = buildLedger(files);
+  // A library's own folder (k.library-pack Own folder): its exports, and the counts an app makes over its files.
+  const own = ownLibrary(io.cwd);
+  const self = own === undefined ? undefined : libraryAt(io.cwd, own.name);
+  const built = buildLedger(files, z3Version(), self === undefined ? undefined : (self.id ?? self.name));
+  const libs = self === undefined ? libraryLedgers(io.cwd, files) : [];
+  const counted = self === undefined ? undefined : libraryCount(self.files);
+  const totalUnsafe = counted?.unsafe ?? libs.reduce((n, l) => n + l.ownUnsafe, built.unsafe);
+  const totalHosts = counted?.hostElements ?? libs.reduce((n, l) => n + l.ownHostElements, built.hostElements);
+  const libRecords = libs.flatMap((l) => l.records).filter((r) => r.item.startsWith(input.scope ?? ""));
   const byItem = new Map(built.items.map((i) => [i.item, i]));
   const all = ledger(built.items.map((i) => ({ item: i.item, evidence: i.evidence.map((e) => e.ev) })));
   const scope = input.scope ?? "";
@@ -153,10 +189,10 @@ export function ledgerCommand(
   const records = all.filter((r) => r.item.startsWith(scope));
   const claims = a11y.filter((c) => c.item.startsWith(scope));
   const apps = Object.keys(built.appUnsafe).filter((a) => `${a}:`.startsWith(scope) || scope.startsWith(`${a}:`));
-  const unsafe = scope === "" ? built.unsafe : apps.reduce((n, a) => n + (built.appUnsafe[a] ?? 0), 0);
+  const unsafe = scope === "" ? totalUnsafe : apps.reduce((n, a) => n + (built.appUnsafe[a] ?? 0), 0);
   const hostElements =
     scope === ""
-      ? built.hostElements
+      ? totalHosts
       : apps.reduce((n, a) => n + (built.appHosts[a] ?? 0), 0) +
         Object.entries(built.rootHosts).reduce((n, [path, k]) => n + (path.startsWith(scope) ? k : 0), 0);
   // Written for the scope, never compared: the apps it selects by key, and the files whose path starts with it.
@@ -229,6 +265,7 @@ export function ledgerCommand(
         evidence: r.evidence === "none" ? "none" : describe(byItem.get(r.item)),
       })),
       ...claims.map((c) => ({ kind: "ledger", item: c.item, rung: c.rung, evidence: c.evidence })),
+      ...libRecords.map((r) => ({ kind: "ledger", ...r })),
       ...mutation.claims
         .filter((c) => c.file.startsWith(scope))
         .map((c) => ({
@@ -239,7 +276,7 @@ export function ledgerCommand(
           fresh: fresh.has(c.file),
         })),
     ];
-    const content = ledgerFile(all, byItem, built.unsafe, built.hostElements, negativeTypes, rungs, mutation, a11y);
+    const content = ledgerFile(all, byItem, totalUnsafe, totalHosts, negativeTypes, rungs, mutation, a11y, libs);
     return {
       records: [...notes, ...(input.write === undefined ? out : []), summary("ledger", notes, counts)],
       writes: input.write === undefined ? [] : [{ path: input.write, content, readonly: false }],
