@@ -6,7 +6,7 @@ export type { RaceReport } from "./RaceReport.ts";
 export type { Ref } from "./Ref.ts";
 export type { StoresFactory } from "./StoresFactory.ts";
 export type { Unchecked } from "./Unchecked.ts";
-export { RaceRecord } from "./RaceRecord.ts";
+export { RaceRecord } from "./RaceRecord.schema.ts";
 export { findRaces } from "./findRaces.ts";
 export { raceRecords } from "./raceRecords.ts";
 export { races } from "./races.ts";

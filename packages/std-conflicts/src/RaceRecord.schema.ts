@@ -1,6 +1,5 @@
 import { s } from "@keel/schema";
-
-const RefRecord = s.object({ id: s.int({ min: 0 }), name: s.string(), key: s.string().optional() }, { closed: true });
+import { RefRecord } from "./internal/RefRecord.schema.ts";
 
 /**
  * Output record kind `conflicts.race` (std.conflicts): one diagnostic at `path` 1:1, the file the analysis read. `code`

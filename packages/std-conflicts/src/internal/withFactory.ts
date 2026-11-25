@@ -1,5 +1,6 @@
 import { owner, scope } from "@keel/reactive";
 import { isolate } from "@keel/store";
+import { raise } from "../../unsafe/raise.ts";
 import type { StoresFactory } from "../StoresFactory.ts";
 import type { Made } from "./Made.ts";
 import { isStore } from "./isStore.ts";
@@ -22,6 +23,6 @@ export function withFactory<R>(factory: StoresFactory, use: (made: Made) => R): 
   );
   sc.dispose();
   const [r] = out;
-  if (r === undefined) throw new Error("std.conflicts: the stores factory produced nothing");
+  if (r === undefined) return raise("std.conflicts: the stores factory produced nothing");
   return r;
 }

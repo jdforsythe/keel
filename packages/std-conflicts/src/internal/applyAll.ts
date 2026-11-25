@@ -1,3 +1,4 @@
+import { attempt } from "@keel/schema";
 import type { LogEntry, Store, Transaction } from "@keel/store";
 import { tx } from "@keel/store";
 import { canonical } from "./canonical.ts";
@@ -17,11 +18,8 @@ export function applyAll(
     const t = txs.get(e.name);
     const payload = st.payloads.get(e.name)?.parse(e.payload);
     if (t === undefined || payload === undefined || !payload.ok) return undefined;
-    try {
-      if (!tx(t, payload.value).ok) return undefined;
-    } catch {
-      return undefined;
-    }
+    const applied = attempt(() => tx(t, payload.value).ok);
+    if (!applied.ok || !applied.value) return undefined;
   }
   const next = st.snapshot().state;
   return { state: next, text: canonical(next) };

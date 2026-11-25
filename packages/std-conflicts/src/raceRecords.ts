@@ -1,5 +1,5 @@
 import type { Snapshot } from "@keel/store";
-import type { RaceRecord } from "./RaceRecord.ts";
+import type { RaceRecord } from "./RaceRecord.schema.ts";
 import type { RaceReport } from "./RaceReport.ts";
 import type { Ref } from "./Ref.ts";
 import { refOf } from "./internal/refOf.ts";
