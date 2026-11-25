@@ -200,7 +200,13 @@ describe("k.boundary Ambient types: a declaration of the global ImportMeta or Im
         expect(m.length).toBeLessThanOrEqual(89);
         expect(m.endsWith(DECL_TAIL)).toBe(true);
         if (path.length + DECL_TAIL.length <= 89) expect(m).toBe(`${path}${DECL_TAIL}`);
-        else expect(m.endsWith(path.slice(-8))).toBe(true);
+        else {
+          // Reading: the cut file is `path` with leading segments dropped (behind one `.../` as k.check Diagnostics drops them, or bare), and it fits the 29 units the tail leaves.
+          const shown = m.slice(0, m.length - DECL_TAIL.length);
+          expect(shown.length).toBeLessThanOrEqual(29);
+          expect(shown.length).toBeGreaterThan(0);
+          expect(path.endsWith(shown.replace(/^\.\.\.\//, ""))).toBe(true);
+        }
       }),
       { seed: SEED, numRuns: 12 },
     );

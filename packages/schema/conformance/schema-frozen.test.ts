@@ -1,6 +1,7 @@
-// Spec: k.schema, Frozen "The `s` namespace, every schema `@keel/schema` makes and its `node`, with every object and array under it, are frozen when made, so in a module an assignment, `delete` or `Object.defineProperty` on one throws a `TypeError` and the schema stays as made; static reads of a schema (k.privacy-reads) rest on it."
+// Spec: k.schema, Frozen "The `s` namespace, every schema `@keel/schema` makes and its `node`, with every object and array under it, are frozen when made, so in a module an assignment, a `delete` or an `Object.defineProperty` that would change one throws a `TypeError` and the schema stays as made; static reads of a schema (k.privacy-reads) rest on it."
 // Spec: k.schema, Conformance "`Object.isFrozen` is true of `s`, of `s.object({ a: s.string().pii('name') })`, of its `node` and of each object under the node; `S.node.fields.b = s.secret(s.string()).node` and `delete S.node.fields.a` each throw a `TypeError` and leave `S.doc()` as it was."
 // Seed: 1337.
+// Reading: a `defineProperty` "that would change" a property gives it a value that is not the one it holds (JavaScript lets a frozen object's own property be redefined with the same value), so the case defines a fresh object.
 // Reading: "in a module" is strict code, as every ES module is, so an assignment or `delete` on a frozen object throws a `TypeError`; a test file is such a module.
 // Reading: "every object and array under" a node is found by walking own enumerable properties of plain objects and arrays; a function in a node (a format's `check`) is not one.
 import { s } from "@keel/schema";
@@ -26,7 +27,7 @@ const remove = (target: Record<string, unknown>, key: string): void => {
   delete target[key];
 };
 const define = (target: object, key: string): void => {
-  Object.defineProperty(target, key, { value: 1 });
+  Object.defineProperty(target, key, { value: {} });
 };
 
 const A = s.object({ a: s.string().pii("name") });
