@@ -25,27 +25,31 @@ const Count = s.object({ c: s.number() });
 /** Generated values the case runs: one PGlite folder a run. */
 const RUNS = 3;
 
-test("a migration referencing a table that does not exist rejects the first `query` with its error; once another database on that folder makes the table, the next `query` on the same ctx applies the migration and answers", async () => {
-  await fc.assert(
-    fc.asyncProperty(fc.integer({ min: 1, max: 1000 }), async (v) => {
-      const dir = mkdtempSync(join(tmpdir(), "keel-pg-"));
-      try {
-        const a = fresh();
-        const b = fresh();
-        const T = sqlName(b.table);
-        process.env.KEEL_POSTGRES_URL = `pglite:${dir}`;
-        const dbA = database(a.cap, { migrations: migrationsOf(`insert into ${b.table} values (${v})`) });
-        const dbB = database(b.cap, { migrations: migrationsOf(`create table ${b.table} (n int)`) });
-        const ctx = createCtx({ mode: "real", seed: SEED });
-        const q = sql(Count)`select coalesce(sum(n), 0)::int as c from ${T}`;
-        await expect(dbA(ctx).query(q)).rejects.toThrow(/does not exist/);
-        expect(okOf(await dbB(ctx).query(q))[0]?.c).toBeTypeOf("number");
-        expect(okOf(await dbA(ctx).query(q))[0]?.c).toBe(v);
-        expect(okOf(await dbA(ctx).query(q))[0]?.c).toBe(v);
-      } finally {
-        rmSync(dir, { recursive: true, force: true });
-      }
-    }),
-    { seed: SEED, numRuns: RUNS },
-  );
-}, RUNS * FOLDER_BOUND);
+test(
+  "a migration referencing a table that does not exist rejects the first `query` with its error; once another database on that folder makes the table, the next `query` on the same ctx applies the migration and answers",
+  async () => {
+    await fc.assert(
+      fc.asyncProperty(fc.integer({ min: 1, max: 1000 }), async (v) => {
+        const dir = mkdtempSync(join(tmpdir(), "keel-pg-"));
+        try {
+          const a = fresh();
+          const b = fresh();
+          const T = sqlName(b.table);
+          process.env.KEEL_POSTGRES_URL = `pglite:${dir}`;
+          const dbA = database(a.cap, { migrations: migrationsOf(`insert into ${b.table} values (${v})`) });
+          const dbB = database(b.cap, { migrations: migrationsOf(`create table ${b.table} (n int)`) });
+          const ctx = createCtx({ mode: "real", seed: SEED });
+          const q = sql(Count)`select coalesce(sum(n), 0)::int as c from ${T}`;
+          await expect(dbA(ctx).query(q)).rejects.toThrow(/does not exist/);
+          expect(okOf(await dbB(ctx).query(q))[0]?.c).toBeTypeOf("number");
+          expect(okOf(await dbA(ctx).query(q))[0]?.c).toBe(v);
+          expect(okOf(await dbA(ctx).query(q))[0]?.c).toBe(v);
+        } finally {
+          rmSync(dir, { recursive: true, force: true });
+        }
+      }),
+      { seed: SEED, numRuns: RUNS },
+    );
+  },
+  RUNS * FOLDER_BOUND,
+);

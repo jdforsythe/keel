@@ -28,25 +28,29 @@ afterEach(() => {
 /** Generated values the case runs: one PGlite folder a run. */
 const RUNS = 3;
 
-test("With `KEEL_POSTGRES_URL` unset and `KEEL_DEV_DIR` a folder `d`, a `query` answers from PGlite in `d/postgres`, which exists after it", async () => {
-  await fc.assert(
-    fc.asyncProperty(fc.integer({ min: 1, max: 1000 }), async (v) => {
-      const d = mkdtempSync(join(tmpdir(), "keel-dev-"));
-      try {
-        const { cap, table } = fresh();
-        Reflect.deleteProperty(process.env, "KEEL_POSTGRES_URL");
-        process.env.KEEL_DEV_DIR = d;
-        const db = database(cap, {
-          migrations: migrationsOf(`create table ${table} (n int); insert into ${table} values (${v})`),
-        });
-        const ctx = createCtx({ mode: "real", seed: SEED });
-        const r = await db(ctx).query(sql(s.object({ n: s.number() }))`select n::int as n from ${sqlName(table)}`);
-        expect(okOf(r)).toEqual([{ n: v }]);
-        expect(existsSync(join(d, "postgres")) && statSync(join(d, "postgres")).isDirectory()).toBe(true);
-      } finally {
-        rmSync(d, { recursive: true, force: true });
-      }
-    }),
-    { seed: SEED, numRuns: RUNS },
-  );
-}, RUNS * FOLDER_BOUND);
+test(
+  "With `KEEL_POSTGRES_URL` unset and `KEEL_DEV_DIR` a folder `d`, a `query` answers from PGlite in `d/postgres`, which exists after it",
+  async () => {
+    await fc.assert(
+      fc.asyncProperty(fc.integer({ min: 1, max: 1000 }), async (v) => {
+        const d = mkdtempSync(join(tmpdir(), "keel-dev-"));
+        try {
+          const { cap, table } = fresh();
+          Reflect.deleteProperty(process.env, "KEEL_POSTGRES_URL");
+          process.env.KEEL_DEV_DIR = d;
+          const db = database(cap, {
+            migrations: migrationsOf(`create table ${table} (n int); insert into ${table} values (${v})`),
+          });
+          const ctx = createCtx({ mode: "real", seed: SEED });
+          const r = await db(ctx).query(sql(s.object({ n: s.number() }))`select n::int as n from ${sqlName(table)}`);
+          expect(okOf(r)).toEqual([{ n: v }]);
+          expect(existsSync(join(d, "postgres")) && statSync(join(d, "postgres")).isDirectory()).toBe(true);
+        } finally {
+          rmSync(d, { recursive: true, force: true });
+        }
+      }),
+      { seed: SEED, numRuns: RUNS },
+    );
+  },
+  RUNS * FOLDER_BOUND,
+);

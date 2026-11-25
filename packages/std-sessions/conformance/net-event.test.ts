@@ -10,7 +10,18 @@ import { openGroup, replayGroup } from "@keel/std-sessions/group";
 import { renderRoute } from "@keel/testing";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { EMPTY_VIEW, GROUP_BOUND, SEED, USER, base, clientView, drive, groupOptions, routes, serve } from "./group-fixtures.ts";
+import {
+  EMPTY_VIEW,
+  GROUP_BOUND,
+  SEED,
+  USER,
+  base,
+  clientView,
+  drive,
+  groupOptions,
+  routes,
+  serve,
+} from "./group-fixtures.ts";
 
 const netOf = (events: readonly { readonly kind: string }[]): boolean[] =>
   events.flatMap((e) => ("online" in e && typeof e.online === "boolean" && e.kind === "net" ? [e.online] : []));
@@ -52,27 +63,31 @@ describe("std.multi: net events", () => {
     );
   }, 60_000);
 
-  test("A `net` event that `record` captured is applied by `replayGroup` as a `setOnline` call and recorded again", async () => {
-    await fc.assert(
-      fc.asyncProperty(fc.array(fc.boolean(), { minLength: 1, maxLength: 4 }), async (switches) => {
-        const g = await openGroup(groupOptions(SEED));
-        for (const b of switches) {
-          await drive(g, [
-            { u: 1, do: "online", b },
-            { u: 1, do: "probe" },
-          ]);
-        }
-        const live = [await g.user(0).state(), await g.user(1).state()];
-        const group = await g.stop();
-        expect(netOf(group.users[1]?.events ?? [])).toEqual(changes(switches));
-        expect(netOf(group.users[0]?.events ?? [])).toEqual([]);
+  test(
+    "A `net` event that `record` captured is applied by `replayGroup` as a `setOnline` call and recorded again",
+    async () => {
+      await fc.assert(
+        fc.asyncProperty(fc.array(fc.boolean(), { minLength: 1, maxLength: 4 }), async (switches) => {
+          const g = await openGroup(groupOptions(SEED));
+          for (const b of switches) {
+            await drive(g, [
+              { u: 1, do: "online", b },
+              { u: 1, do: "probe" },
+            ]);
+          }
+          const live = [await g.user(0).state(), await g.user(1).state()];
+          const group = await g.stop();
+          expect(netOf(group.users[1]?.events ?? [])).toEqual(changes(switches));
+          expect(netOf(group.users[0]?.events ?? [])).toEqual([]);
 
-        const r = await replayGroup(group, { user: USER, serve });
-        expect(r.users.map((u) => u.state)).toEqual(live);
-        expect(netOf(r.users[1]?.observed ?? [])).toEqual(changes(switches));
-        expect(netOf(r.users[0]?.observed ?? [])).toEqual([]);
-      }),
-      { seed: 1337, numRuns: 4 },
-    );
-  }, 4 * 2 * GROUP_BOUND);
+          const r = await replayGroup(group, { user: USER, serve });
+          expect(r.users.map((u) => u.state)).toEqual(live);
+          expect(netOf(r.users[1]?.observed ?? [])).toEqual(changes(switches));
+          expect(netOf(r.users[0]?.observed ?? [])).toEqual([]);
+        }),
+        { seed: 1337, numRuns: 4 },
+      );
+    },
+    4 * 2 * GROUP_BOUND,
+  );
 });

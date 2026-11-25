@@ -72,25 +72,29 @@ afterEach(async () => {
 
 for (const kind of KINDS) {
   describe(`${kind} driver`, () => {
-    test("For generated sequences of commits from two connections, the stored values equal a serial order of the commits that resolved `true`.", async () => {
-      await fc.assert(
-        fc.asyncProperty(sequenceArb, sequenceArb, async (seqA, seqB) => {
-          const rig = await makeRig(kind);
-          rigs.push(rig);
-          const [a, b] = [await rig.open(), await rig.open()];
-          const resolved: Commit[] = [];
-          const run = async (storage: typeof a, seq: readonly Commit[]): Promise<void> => {
-            for (const c of seq) if (await storage.commit(c.map((w) => ({ ...w })))) resolved.push(c);
-          };
-          await Promise.all([run(a, seqA), run(b, seqB)]);
-          const stored = await a.read([...KEYS]);
-          expect(await b.read([...KEYS])).toEqual(stored);
-          expect(serialOrderExists(resolved, stored)).toBe(true);
-          await rig.stop();
-          rigs.pop();
-        }),
-        { seed: SEED, numRuns: RUNS },
-      );
-    }, BOUND[kind]);
+    test(
+      "For generated sequences of commits from two connections, the stored values equal a serial order of the commits that resolved `true`.",
+      async () => {
+        await fc.assert(
+          fc.asyncProperty(sequenceArb, sequenceArb, async (seqA, seqB) => {
+            const rig = await makeRig(kind);
+            rigs.push(rig);
+            const [a, b] = [await rig.open(), await rig.open()];
+            const resolved: Commit[] = [];
+            const run = async (storage: typeof a, seq: readonly Commit[]): Promise<void> => {
+              for (const c of seq) if (await storage.commit(c.map((w) => ({ ...w })))) resolved.push(c);
+            };
+            await Promise.all([run(a, seqA), run(b, seqB)]);
+            const stored = await a.read([...KEYS]);
+            expect(await b.read([...KEYS])).toEqual(stored);
+            expect(serialOrderExists(resolved, stored)).toBe(true);
+            await rig.stop();
+            rigs.pop();
+          }),
+          { seed: SEED, numRuns: RUNS },
+        );
+      },
+      BOUND[kind],
+    );
   });
 }

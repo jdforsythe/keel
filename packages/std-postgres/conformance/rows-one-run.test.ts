@@ -16,54 +16,62 @@ const RUNS = 5;
 
 for (const m of MODES) {
   describe(m.name, () => {
-    test("`query` parses every row with the schema", async () => {
-      await fc.assert(
-        fc.asyncProperty(
-          fc.uniqueArray(fc.stringMatching(/^[a-z]{3,10}$/), { minLength: 0, maxLength: 6 }),
-          async (names) => {
+    test(
+      "`query` parses every row with the schema",
+      async () => {
+        await fc.assert(
+          fc.asyncProperty(
+            fc.uniqueArray(fc.stringMatching(/^[a-z]{3,10}$/), { minLength: 0, maxLength: 6 }),
+            async (names) => {
+              const { cap, table } = fresh();
+              const mode = m.make();
+              try {
+                const db = notesDb(cap, table);
+                const ctx = await mode.ctx(cap);
+                for (const [i, name] of names.entries()) {
+                  expect(
+                    okOf(await db(ctx).run(sql(NoRows)`insert into ${sqlName(table)} values (${i}, ${name})`)),
+                  ).toBe(1);
+                }
+                const rows = okOf(await db(ctx).query(sql(Row)`select id, name from ${sqlName(table)} order by id`));
+                expect(rows).toEqual(names.map((name, id) => ({ id, name })));
+              } finally {
+                mode.done();
+              }
+            },
+          ),
+          { seed: SEED, numRuns: RUNS },
+        );
+      },
+      RUNS * FOLDER_BOUND,
+    );
+
+    test(
+      "a row failing the schema is `postgres.result`, holding no value",
+      async () => {
+        await fc.assert(
+          fc.asyncProperty(SECRETISH, async (value) => {
             const { cap, table } = fresh();
             const mode = m.make();
             try {
               const db = notesDb(cap, table);
               const ctx = await mode.ctx(cap);
-              for (const [i, name] of names.entries()) {
-                expect(okOf(await db(ctx).run(sql(NoRows)`insert into ${sqlName(table)} values (${i}, ${name})`))).toBe(
-                  1,
-                );
-              }
-              const rows = okOf(await db(ctx).query(sql(Row)`select id, name from ${sqlName(table)} order by id`));
-              expect(rows).toEqual(names.map((name, id) => ({ id, name })));
+              okOf(await db(ctx).run(sql(NoRows)`insert into ${sqlName(table)} values (1, ${value})`));
+              const Bad = s.object({ id: s.int(), name: s.int() });
+              const e = errOf(await db(ctx).query(sql(Bad)`select id, name from ${sqlName(table)}`));
+              if (e.code !== "postgres.result") throw new Error(`expected postgres.result, got ${e.code}`);
+              expect(e.data.row).toBe(0);
+              expect(e.data.issues.length).toBeGreaterThan(0);
+              expect(JSON.stringify(e)).not.toContain(value);
             } finally {
               mode.done();
             }
-          },
-        ),
-        { seed: SEED, numRuns: RUNS },
-      );
-    }, RUNS * FOLDER_BOUND);
-
-    test("a row failing the schema is `postgres.result`, holding no value", async () => {
-      await fc.assert(
-        fc.asyncProperty(SECRETISH, async (value) => {
-          const { cap, table } = fresh();
-          const mode = m.make();
-          try {
-            const db = notesDb(cap, table);
-            const ctx = await mode.ctx(cap);
-            okOf(await db(ctx).run(sql(NoRows)`insert into ${sqlName(table)} values (1, ${value})`));
-            const Bad = s.object({ id: s.int(), name: s.int() });
-            const e = errOf(await db(ctx).query(sql(Bad)`select id, name from ${sqlName(table)}`));
-            if (e.code !== "postgres.result") throw new Error(`expected postgres.result, got ${e.code}`);
-            expect(e.data.row).toBe(0);
-            expect(e.data.issues.length).toBeGreaterThan(0);
-            expect(JSON.stringify(e)).not.toContain(value);
-          } finally {
-            mode.done();
-          }
-        }),
-        { seed: SEED, numRuns: RUNS },
-      );
-    }, RUNS * FOLDER_BOUND);
+          }),
+          { seed: SEED, numRuns: RUNS },
+        );
+      },
+      RUNS * FOLDER_BOUND,
+    );
 
     test("`one` of no row is `keel.notFound`", async () => {
       const { cap, table } = fresh();

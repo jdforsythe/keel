@@ -59,45 +59,53 @@ const CLAUSE =
   "Under one `schedule`, two runs of one script on `openGroup` give byte-equal groups, and with a `lost` step on a user's write the server holds one entry for that write's key.";
 
 describe("std.multi: group schedule", () => {
-  test(`${CLAUSE} (byte-equal groups, and the group keeps the schedule)`, async () => {
-    // Workers make runs slow: few runs, each a pair of full group recordings.
-    await fc.assert(
-      fc.asyncProperty(scheduleArb, fc.array(stepArb, { maxLength: 8 }), async (schedule, script) => {
-        const a = await play(schedule, script);
-        const b = await play(schedule, script);
-        expect(a).toBe(b);
-        expect(Reflect.get(Object(JSON.parse(a)), "schedule")).toEqual(schedule);
-      }),
-      { seed: 1337, numRuns: 5 },
-    );
-  }, 5 * 2 * GROUP_BOUND);
+  test(
+    `${CLAUSE} (byte-equal groups, and the group keeps the schedule)`,
+    async () => {
+      // Workers make runs slow: few runs, each a pair of full group recordings.
+      await fc.assert(
+        fc.asyncProperty(scheduleArb, fc.array(stepArb, { maxLength: 8 }), async (schedule, script) => {
+          const a = await play(schedule, script);
+          const b = await play(schedule, script);
+          expect(a).toBe(b);
+          expect(Reflect.get(Object(JSON.parse(a)), "schedule")).toEqual(schedule);
+        }),
+        { seed: 1337, numRuns: 5 },
+      );
+    },
+    5 * 2 * GROUP_BOUND,
+  );
 
-  test(`${CLAUSE} (a lost write leaves one entry)`, async () => {
-    // Two users: user i gets steps i, i + 2, ... of `net`, so `net[w]` is user w's first request, its write.
-    await fc.assert(
-      fc.asyncProperty(user, word, async (writer, note) => {
-        const reader: 0 | 1 = writer === 0 ? 1 : 0;
-        const net: Schedule["net"] = [
-          { delay: 0, fault: writer === 0 ? "lost" : "none" },
-          { delay: 0, fault: writer === 1 ? "lost" : "none" },
-        ];
-        const schedule: Schedule = { net, storage: [], offline: [], plans: {} };
-        const g = await openGroup({ ...groupOptions(SEED), schedule });
-        await step(g, { u: writer, do: "note", v: note });
-        await step(g, { u: writer, do: "write" });
-        // the writer's fetch rejected with a TypeError: its page shows the offline status
-        expect((await g.user(writer).find("board.status")).text).toBe("offline");
-        await step(g, { u: reader, do: "refresh" });
-        // the route ran once: the other user reads exactly one entry
-        const expected = ["", ""];
-        expected[reader] = note;
-        expect(await texts(g, "board.items")).toEqual(expected);
-        const group = await g.stop();
-        const r = await replayGroup(group, { user: USER, serve });
-        const log = ItemsState.parse(r.server.log?.state);
-        expect(log.ok && log.value.items).toEqual([note]);
-      }),
-      { seed: 1337, numRuns: 4 },
-    );
-  }, 4 * 2 * GROUP_BOUND);
+  test(
+    `${CLAUSE} (a lost write leaves one entry)`,
+    async () => {
+      // Two users: user i gets steps i, i + 2, ... of `net`, so `net[w]` is user w's first request, its write.
+      await fc.assert(
+        fc.asyncProperty(user, word, async (writer, note) => {
+          const reader: 0 | 1 = writer === 0 ? 1 : 0;
+          const net: Schedule["net"] = [
+            { delay: 0, fault: writer === 0 ? "lost" : "none" },
+            { delay: 0, fault: writer === 1 ? "lost" : "none" },
+          ];
+          const schedule: Schedule = { net, storage: [], offline: [], plans: {} };
+          const g = await openGroup({ ...groupOptions(SEED), schedule });
+          await step(g, { u: writer, do: "note", v: note });
+          await step(g, { u: writer, do: "write" });
+          // the writer's fetch rejected with a TypeError: its page shows the offline status
+          expect((await g.user(writer).find("board.status")).text).toBe("offline");
+          await step(g, { u: reader, do: "refresh" });
+          // the route ran once: the other user reads exactly one entry
+          const expected = ["", ""];
+          expected[reader] = note;
+          expect(await texts(g, "board.items")).toEqual(expected);
+          const group = await g.stop();
+          const r = await replayGroup(group, { user: USER, serve });
+          const log = ItemsState.parse(r.server.log?.state);
+          expect(log.ok && log.value.items).toEqual([note]);
+        }),
+        { seed: 1337, numRuns: 4 },
+      );
+    },
+    4 * 2 * GROUP_BOUND,
+  );
 });

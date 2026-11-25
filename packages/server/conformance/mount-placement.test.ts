@@ -85,22 +85,26 @@ describe("k.mount: one page module records equal documents() under renderRoute a
     expect(await resumedPost(html, VALID)).toEqual(post);
   });
 
-  it("for generated input, valid or not, the two placements record equal documents()", async () => {
-    const html = await served("/sign-in");
-    const typed = fc.record({
-      email: fc.stringMatching(/^[a-z0-9@.]{0,8}$/),
-      password: fc.stringMatching(/^[a-z0-9]{0,5}$/),
-    });
-    await fc.assert(
-      fc.asyncProperty(typed, async (input) => {
-        const rendered = await renderedPost(input);
-        const resumed = await resumedPost(html, input);
-        expect(resumed).toEqual(rendered);
-        expect(rendered.length).toBe(input.email.length >= 3 && input.password.length >= 2 ? 1 : 0);
-      }),
-      { seed: SEED, numRuns: RUNS },
-    );
-  }, GENERATED_BOUND);
+  it(
+    "for generated input, valid or not, the two placements record equal documents()",
+    async () => {
+      const html = await served("/sign-in");
+      const typed = fc.record({
+        email: fc.stringMatching(/^[a-z0-9@.]{0,8}$/),
+        password: fc.stringMatching(/^[a-z0-9]{0,5}$/),
+      });
+      await fc.assert(
+        fc.asyncProperty(typed, async (input) => {
+          const rendered = await renderedPost(input);
+          const resumed = await resumedPost(html, input);
+          expect(resumed).toEqual(rendered);
+          expect(rendered.length).toBe(input.email.length >= 3 && input.password.length >= 2 ? 1 : 0);
+        }),
+        { seed: SEED, numRuns: RUNS },
+      );
+    },
+    GENERATED_BOUND,
+  );
 
   it("a Link to the mount records one GET in both, and the served link is the mount's Href as written", async () => {
     const html = await served("/");

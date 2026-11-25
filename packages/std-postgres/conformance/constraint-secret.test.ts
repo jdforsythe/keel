@@ -21,27 +21,31 @@ const RUNS = 5;
 
 for (const m of MODES) {
   describe(m.name, () => {
-    test("An insert breaking a unique index is `postgres.constraint` naming it, `kind` `unique`, and carries no parameter value", async () => {
-      // Values are upper case: the constraint name, table name, code and kind are lower case, so a value never occurs in them by chance.
-      await fc.assert(
-        fc.asyncProperty(fc.stringMatching(/^[A-Z]{6,12}$/), async (name) => {
-          const { cap, table } = fresh();
-          const mode = m.make();
-          try {
-            const db = notesDb(cap, table);
-            const ctx = await mode.ctx(cap);
-            okOf(await db(ctx).run(sql(NoRows)`insert into ${sqlName(table)} values (1, ${name})`));
-            const e = errOf(await db(ctx).run(sql(NoRows)`insert into ${sqlName(table)} values (2, ${name})`));
-            expect(e.code).toBe("postgres.constraint");
-            expect(e.data).toEqual({ constraint: `${table}_name_key`, kind: "unique" });
-            expect(JSON.stringify(e)).not.toContain(name);
-          } finally {
-            mode.done();
-          }
-        }),
-        { seed: SEED, numRuns: RUNS },
-      );
-    }, RUNS * FOLDER_BOUND);
+    test(
+      "An insert breaking a unique index is `postgres.constraint` naming it, `kind` `unique`, and carries no parameter value",
+      async () => {
+        // Values are upper case: the constraint name, table name, code and kind are lower case, so a value never occurs in them by chance.
+        await fc.assert(
+          fc.asyncProperty(fc.stringMatching(/^[A-Z]{6,12}$/), async (name) => {
+            const { cap, table } = fresh();
+            const mode = m.make();
+            try {
+              const db = notesDb(cap, table);
+              const ctx = await mode.ctx(cap);
+              okOf(await db(ctx).run(sql(NoRows)`insert into ${sqlName(table)} values (1, ${name})`));
+              const e = errOf(await db(ctx).run(sql(NoRows)`insert into ${sqlName(table)} values (2, ${name})`));
+              expect(e.code).toBe("postgres.constraint");
+              expect(e.data).toEqual({ constraint: `${table}_name_key`, kind: "unique" });
+              expect(JSON.stringify(e)).not.toContain(name);
+            } finally {
+              mode.done();
+            }
+          }),
+          { seed: SEED, numRuns: RUNS },
+        );
+      },
+      RUNS * FOLDER_BOUND,
+    );
 
     test("a foreign key, check or not-null violation is `postgres.constraint` with kind `foreign`, `check` or `notNull`", async () => {
       const { cap, table } = fresh();

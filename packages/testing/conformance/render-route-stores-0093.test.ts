@@ -141,94 +141,117 @@ const seeded = async (ctx: Ctx, values: readonly string[]): Promise<void> => {
   h.dispose();
 };
 
-test("renderRoute of a page whose loader names `stores` shows the snapshot `ctx.storage` holds", async () => {
-  await fc.assert(
-    fc.asyncProperty(texts, async (values) => {
-      reset();
-      const ctx = simCtx();
-      const empty = await open(ctx);
-      expect(empty.find("st.items").text).toBe("");
-      expect(await ctx.storage.get(KEY)).toBeNull();
-      empty.dispose();
-      await seeded(ctx, values);
-      const h = await open(ctx);
-      expect(h.find("st.items").text).toBe(values.join(","));
-      h.dispose();
-    }),
-    { seed: SEED, numRuns: 15 },
-  );
-});
+/**
+ * What a property case here bounds for each run: a few renderRoutes of the page and up to a dozen fires, about 20 ms
+ * here on a quiet machine and up to 50 ms beside other work. The bound is 1,000 ms a run, so a runner ten times slower
+ * (scale 0.1) still has 100 ms a run.
+ */
+const RUN_BOUND = 1_000;
 
-test("a `Form` submit to a `stores` action saves its changed stores, and the page's loaders then read the saved state", async () => {
-  await fc.assert(
-    fc.asyncProperty(texts, async (values) => {
-      reset();
-      const ctx = simCtx();
-      const h = await open(ctx);
-      for (const [i, v] of values.entries()) {
-        await submit(h, v);
-        expect(await savedItems(ctx)).toEqual(values.slice(0, i + 1));
-        expect(h.find("st.items").text).toBe(values.slice(0, i + 1).join(","));
-      }
-      h.dispose();
-    }),
-    { seed: SEED, numRuns: 15 },
-  );
-});
-
-test("an action's `err` or a throw saves nothing: the stored text stays as it was", async () => {
-  await fc.assert(
-    fc.asyncProperty(
-      texts,
-      fc.stringMatching(/^[a-z]{1,8}$/),
-      fc.constantFrom<"err" | "throw">("err", "throw"),
-      async (values, v, mode) => {
+test(
+  "renderRoute of a page whose loader names `stores` shows the snapshot `ctx.storage` holds",
+  async () => {
+    await fc.assert(
+      fc.asyncProperty(texts, async (values) => {
         reset();
         const ctx = simCtx();
-        expect(await savedItems(ctx)).toBeNull();
-        const fresh = await open(ctx);
-        control.mode = mode;
-        await thrown(() => submit(fresh, v));
+        const empty = await open(ctx);
+        expect(empty.find("st.items").text).toBe("");
         expect(await ctx.storage.get(KEY)).toBeNull();
-        fresh.dispose();
-        control.mode = "ok";
+        empty.dispose();
         await seeded(ctx, values);
-        const before = await ctx.storage.get(KEY);
         const h = await open(ctx);
-        control.mode = mode;
-        await thrown(() => submit(h, v));
-        expect(await ctx.storage.get(KEY)).toBe(before);
-        control.mode = "ok";
-        await h.settle();
         expect(h.find("st.items").text).toBe(values.join(","));
         h.dispose();
-      },
-    ),
-    { seed: SEED, numRuns: 10 },
-  );
-});
+      }),
+      { seed: SEED, numRuns: 15 },
+    );
+  },
+  15 * RUN_BOUND,
+);
 
-test("a navigation is one request: each run of the loader opens its stores from `ctx.storage` and reads an earlier harness's save", async () => {
-  await fc.assert(
-    fc.asyncProperty(texts, fc.stringMatching(/^[a-z]{1,8}$/), async (values, extra) => {
-      reset();
-      const ctx = simCtx();
-      await seeded(ctx, values);
-      control.loads = 0;
-      const a = await open(ctx);
-      expect(control.loads).toBe(1);
-      expect(a.find("st.items").text).toBe(values.join(","));
-      await submit(a, extra);
-      const before = control.loads;
-      await a.navigate(stContract.href("st.other"));
-      await a.navigate(stContract.href("st.page"));
-      expect(control.loads).toBe(before + 1);
-      expect(a.find("st.items").text).toBe([...values, extra].join(","));
-      a.dispose();
-    }),
-    { seed: SEED, numRuns: 10 },
-  );
-});
+test(
+  "a `Form` submit to a `stores` action saves its changed stores, and the page's loaders then read the saved state",
+  async () => {
+    await fc.assert(
+      fc.asyncProperty(texts, async (values) => {
+        reset();
+        const ctx = simCtx();
+        const h = await open(ctx);
+        for (const [i, v] of values.entries()) {
+          await submit(h, v);
+          expect(await savedItems(ctx)).toEqual(values.slice(0, i + 1));
+          expect(h.find("st.items").text).toBe(values.slice(0, i + 1).join(","));
+        }
+        h.dispose();
+      }),
+      { seed: SEED, numRuns: 15 },
+    );
+  },
+  15 * RUN_BOUND,
+);
+
+test(
+  "an action's `err` or a throw saves nothing: the stored text stays as it was",
+  async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        texts,
+        fc.stringMatching(/^[a-z]{1,8}$/),
+        fc.constantFrom<"err" | "throw">("err", "throw"),
+        async (values, v, mode) => {
+          reset();
+          const ctx = simCtx();
+          expect(await savedItems(ctx)).toBeNull();
+          const fresh = await open(ctx);
+          control.mode = mode;
+          await thrown(() => submit(fresh, v));
+          expect(await ctx.storage.get(KEY)).toBeNull();
+          fresh.dispose();
+          control.mode = "ok";
+          await seeded(ctx, values);
+          const before = await ctx.storage.get(KEY);
+          const h = await open(ctx);
+          control.mode = mode;
+          await thrown(() => submit(h, v));
+          expect(await ctx.storage.get(KEY)).toBe(before);
+          control.mode = "ok";
+          await h.settle();
+          expect(h.find("st.items").text).toBe(values.join(","));
+          h.dispose();
+        },
+      ),
+      { seed: SEED, numRuns: 10 },
+    );
+  },
+  10 * RUN_BOUND,
+);
+
+test(
+  "a navigation is one request: each run of the loader opens its stores from `ctx.storage` and reads an earlier harness's save",
+  async () => {
+    await fc.assert(
+      fc.asyncProperty(texts, fc.stringMatching(/^[a-z]{1,8}$/), async (values, extra) => {
+        reset();
+        const ctx = simCtx();
+        await seeded(ctx, values);
+        control.loads = 0;
+        const a = await open(ctx);
+        expect(control.loads).toBe(1);
+        expect(a.find("st.items").text).toBe(values.join(","));
+        await submit(a, extra);
+        const before = control.loads;
+        await a.navigate(stContract.href("st.other"));
+        await a.navigate(stContract.href("st.page"));
+        expect(control.loads).toBe(before + 1);
+        expect(a.find("st.items").text).toBe([...values, extra].join(","));
+        a.dispose();
+      }),
+      { seed: SEED, numRuns: 10 },
+    );
+  },
+  10 * RUN_BOUND,
+);
 
 test("`state()` and `state(store)` hold no factory store", async () => {
   reset();
