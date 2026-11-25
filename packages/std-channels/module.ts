@@ -7,6 +7,6 @@ import { module } from "@keel/compiler";
 export default module({
   id: "channels",
   deps: [],
-  capabilities: ["clock", "net", "observe"],
-  public: { exports: ["channel", "subscribe", "publish", "server"] },
+  capabilities: ["clock", "net", "observe", "storage"],
+  public: { exports: ["channel", "subscribe", "publish"] },
 });

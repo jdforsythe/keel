@@ -14,7 +14,7 @@ import { s } from "@keel/schema";
 import { createApp, identity, topology } from "@keel/server";
 import { afterEach, beforeEach, expect, test } from "vitest";
 import { channel } from "../src/channel.ts";
-import { channelRoute } from "../src/server/channelRoute.ts";
+import { channelRoute } from "../src/server/channelRoute.server.ts";
 
 const room = channel("q.room", { path: "/api/q/events", params: s.object({}) });
 /** The identity source: a session token the app issued names its user; anything else is no user. */
