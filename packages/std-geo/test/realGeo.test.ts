@@ -46,7 +46,10 @@ test("a platform that throws is geo.unavailable, never a throw", async () => {
     throw new Error("boom");
   });
   const r = await realGeo().position();
-  expect(r).toEqual({ ok: false, error: { code: "geo.unavailable", message: "geolocation threw: boom", data: {} } });
+  expect(r).toEqual({
+    ok: false,
+    error: { code: "geo.unavailable", message: "geolocation threw: Error: boom", data: {} },
+  });
   fakeNavigator(() => {
     throw "plain";
   });
