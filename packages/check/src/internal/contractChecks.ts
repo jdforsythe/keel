@@ -34,8 +34,8 @@ export function contractChecks(
   };
   const tables = contractTables(contracts, topologyOf);
   const std = new Set(
-    discoverModules(files)
-      .filter((m) => m.key.startsWith("@keel/"))
+    discoverModules(files, project)
+      .filter((m) => m.library)
       .map((m) => m.prefix),
   );
   return [

@@ -17,6 +17,7 @@ import { depsCycles } from "./depsCycles.ts";
 import { discoverModules } from "./discoverModules.ts";
 import { guardEdges } from "./guardEdges.ts";
 import { joinPath } from "./joinPath.ts";
+import { libraryManifests } from "./libraryManifests.ts";
 import { moduleDiag } from "./moduleDiag.ts";
 import { moduleOf } from "./moduleOf.ts";
 import { prefixFix } from "./prefixFix.ts";
@@ -174,14 +175,15 @@ function access({ file, module, facts, layouts }: Scanned, man: Manifest, p: Pro
 }
 
 /**
- * The k.module project pass (E1151-E1158) over every parsed code file: discover manifests (`modules/<id>/module.ts`
- * and stdlib `node_modules/@keel/std-x/module.ts`), map each non-test file to its module by folder, read the
- * manifests statically, then check deps cycles, the public surface, `std` config (E1158), id prefixes (contract keys
- * among them), and cross-module access from imports and `ctx` capability uses. Files outside every module are not
- * checked. Deterministic: files are visited in path order and the caller sorts the result.
+ * The k.module project pass (E1151-E1158, E1165) and the k.library manifest rules (E1163, E1166) over every parsed
+ * code file: discover manifests (`modules/<id>/module.ts` and a library's `node_modules/<name>/module.ts`, its
+ * `package.json` read from `files`), map each non-test file to its module by folder, read the manifests statically,
+ * then check deps cycles, the public surface, `std` config (E1158), id prefixes (contract keys among them), and
+ * cross-module access from imports and `ctx` capability uses. Files outside every module are not checked.
+ * Deterministic: files are visited in path order and the caller sorts the result.
  */
-export function moduleChecks(checked: readonly Checked[]): Diagnostic[] {
-  const modules = discoverModules(checked);
+export function moduleChecks(checked: readonly Checked[], files: readonly SourceFile[]): Diagnostic[] {
+  const modules = discoverModules(checked, files);
   if (modules.length === 0) return [];
   const byKey = new Map(modules.map((m) => [m.key, m]));
   const scanned: Scanned[] = [];
@@ -203,10 +205,13 @@ export function moduleChecks(checked: readonly Checked[]): Diagnostic[] {
     stems.set(module, (stems.get(module) ?? new Set()).add(stemOf(file.path)));
   }
   const project: Project = { modules, byKey };
-  const files = checked.map((c) => c.file);
   const out: Diagnostic[] = [
     ...depsCycles(modules, byKey, guardEdges(scanned, { modules, byKey })),
-    ...clientPii(scanned, files),
+    ...clientPii(
+      scanned,
+      checked.map((c) => c.file),
+    ),
+    ...libraryManifests(modules, byKey),
   ];
   for (const m of modules) {
     out.push(...publicMissing(m, stems.get(m) ?? new Set()));
