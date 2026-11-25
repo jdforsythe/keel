@@ -63,11 +63,7 @@
       }
     }
   },
-  "files": [
-    "dist",
-    "docs",
-    "skills"
-  ],
+  "files": ["dist", "docs", "skills"],
   "scripts": {
     "check": "tsc --noEmit && biome check src test",
     "test": "vitest run",
