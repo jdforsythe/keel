@@ -177,6 +177,27 @@ describe("a secret holding the characters the views rewrite", () => {
     expect(mark(`h=${named("p\\n<q1234")} end`, "p\\n<q1234")).toBe("h=[secret] end");
   });
 
+  it("is found under the same escaping applied twice, at every offset, a family's view applying twice", () => {
+    let raw = 0;
+    fc.assert(
+      fc.property(family, plain, plain, fc.nat(ESCAPINGS.length - 1), (v, p, q, w) => {
+        const [, e, kinds] = ESCAPINGS[w] ?? ESCAPINGS[0] ?? ["", (x: string) => x, []];
+        fc.pre(!p.includes(v) && !q.includes(v));
+        if (limit(v, e, kinds)) raw++;
+        const text = e(e(v));
+        for (let cut = 0; cut <= p.length; cut++) {
+          const before = p.slice(0, cut);
+          expect(once(mark(`${before}${text}${q}`, v), before, q, text), `${before}|${text}|${q}`).toBe(true);
+        }
+      }),
+      { seed: SEED, numRuns: 800 },
+    );
+    expect(raw).toBeGreaterThan(25);
+    const twice = JSON.stringify(JSON.stringify('a"b%41'));
+    expect(twice).toBe('"\\"a\\\\\\"b%41\\""');
+    expect(mark(`pw=${twice} end`, 'a"b%41')).toBe('pw="\\"[secret]\\"" end');
+  });
+
   it('the limit that remains is nested: `a"b%41` JSON-escaped, then URL-encoded, logs as written', () => {
     const thrown = encodeURIComponent(JSON.stringify('a"b%41').slice(1, -1));
     expect(mark(`x ${thrown} y`, 'a"b%41')).toBe(`x ${thrown} y`);

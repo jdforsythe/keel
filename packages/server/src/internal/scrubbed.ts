@@ -31,7 +31,7 @@ const splits = (v: View, k: number): boolean =>
 
 /**
  * `message` with each copy of a value of each pass replaced by that pass's mark (k.privacy Copies, Views, Base64).
- * Each reading of the message (`readingsOf`: as is and up to nine decoded views) is walked once with the matcher of
+ * Each reading of the message (`readingsOf`: as is and up to thirteen decoded views) is walked once with the matcher of
  * every form of every pass's values (`automatonOf`), folded. At each unit the deepest form of 3 or more units ending
  * there is a copy, widened by the characters and `=` its form takes in; so is each form of 1 or 2 units ending there
  * that stands as a whole token (no letter, digit, mark or `_` beside it in that reading) and splits no surrogate pair.

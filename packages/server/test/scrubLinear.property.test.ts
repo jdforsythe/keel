@@ -62,7 +62,7 @@ describe("steps linear in the set's bytes and the text's length", () => {
             held++;
             expect(count.build).toBeLessThanOrEqual(BUILD_PER_BYTE * bytes + 1_000);
             expect(count.walk).toBeLessThanOrEqual(WALK_PER_UNIT * read);
-            expect(read).toBeLessThanOrEqual(10 * text.length);
+            expect(read).toBeLessThanOrEqual(14 * text.length);
           },
         ),
         { seed: SEED, numRuns: runs },
