@@ -1,19 +1,19 @@
 import { createHash, timingSafeEqual } from "node:crypto";
-import { ok, s } from "@keel/schema";
-import { Digested } from "../../Digested.ts";
+import { ok } from "@keel/schema";
+import { Digested } from "../../Digested.schema.ts";
 import type { Tokens } from "../Tokens.type.ts";
 import { EXPIRED } from "./EXPIRED.ts";
 import type { Engine } from "./Engine.ts";
 import { MISMATCH } from "./MISMATCH.ts";
+import { SecretText } from "./SecretText.schema.ts";
 import { TTL } from "./TTL.ts";
 import { malformed } from "./malformed.ts";
-import { readDigested } from "./readDigested.ts";
-import { textOf } from "./textOf.ts";
+import { readDigested } from "./readDigested.server.ts";
+import { textOf } from "./textOf.server.ts";
 
 const TTL_MIN = 60000;
 const TTL_MAX = 31536000000;
 const TOKEN = /^(keel|keelsim)_([0-9a-f]{16})_[0-9a-f]{64}$/;
-const SecretText = s.secret(s.string());
 
 /** The id `check` and `idOf` read: the token's non-secret part, or `undefined` for what `check` refuses before `find`. */
 function idOfText(text: string, sim: boolean): string | undefined {

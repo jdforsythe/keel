@@ -1,11 +1,12 @@
 // Seed 1337. `check` under sim: a token with one character replaced, and any generated string, never matches the
 // minted row; `expired` exactly when `now >= expiresAt`; the clock is read only after a match.
-import { type Secret, reveal, s } from "@keel/schema";
+import { type Secret, s } from "@keel/schema";
 import { Digested } from "@keel/std-tokens";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { simEngine } from "../src/server/internal/simEngine.ts";
-import { tokensOf } from "../src/server/internal/tokensOf.ts";
+import { simEngine } from "../src/server/internal/simEngine.server.ts";
+import { tokensOf } from "../src/server/internal/tokensOf.server.ts";
+import { revealed } from "./revealed.server.ts";
 
 const SEED = 1337;
 const SecretText = s.secret(s.string());
@@ -25,7 +26,7 @@ const minted = (now: () => number, ttl: number | null) => {
 
 test("a sim token with any one character replaced never matches its row", () => {
   const { c, m, find } = minted(() => 0, null);
-  const text = reveal(m.token);
+  const text = revealed(m.token);
   fc.assert(
     fc.property(fc.nat({ max: text.length - 1 }), fc.constantFrom(..."0123456789abcdefgkls_Z"), (at, ch) => {
       fc.pre(text.charAt(at) !== ch);
@@ -38,7 +39,7 @@ test("a sim token with any one character replaced never matches its row", () => 
 
 test("any generated string never matches the minted row", () => {
   const { c, m, row } = minted(() => 0, null);
-  const text = reveal(m.token);
+  const text = revealed(m.token);
   fc.assert(
     fc.property(fc.oneof(fc.string(), fc.stringMatching(/^keelsim_[0-9a-f]{16}_[0-9a-f]{64}$/)), (v) => {
       fc.pre(v !== text);
@@ -75,7 +76,7 @@ test("the clock is read only after a match", () => {
     return 0;
   }, 60000);
   reads = 0;
-  const text = reveal(m.token);
+  const text = revealed(m.token);
   const wrong = `${text.slice(0, -1)}${text.endsWith("0") ? "1" : "0"}`;
   expect(c.check(secretOf(wrong), find)).toMatchObject({ ok: false, error: { code: "credentials.mismatch" } });
   expect(c.check(secretOf("hunter2"), find)).toMatchObject({ ok: false, error: { code: "credentials.mismatch" } });
@@ -121,7 +122,7 @@ test("a presented value that is not a `Secret` string answers `credentials.misma
     { seed: SEED, numRuns: 100 },
   );
   // The minted text itself, presented as a plain string rather than a Secret, is no token either.
-  const r: unknown = Reflect.apply(c.check, c, [reveal(m.token), () => undefined]);
+  const r: unknown = Reflect.apply(c.check, c, [revealed(m.token), () => undefined]);
   expect(r).toMatchObject({ ok: false, error: { code: "credentials.mismatch" } });
 });
 

@@ -5,14 +5,17 @@
   "type": "module",
   "exports": {
     ".": {
+      "keel": "./src/index.ts",
       "types": "./src/index.ts",
       "default": "./src/index.ts"
     },
     "./server": {
-      "types": "./src/server/index.ts",
-      "default": "./src/server/index.ts"
+      "keel": "./src/server/index.server.ts",
+      "types": "./src/server/index.server.ts",
+      "default": "./src/server/index.server.ts"
     },
     "./tools": {
+      "keel": "./src/tools/index.ts",
       "types": "./src/tools/index.ts",
       "default": "./src/tools/index.ts"
     }
@@ -20,14 +23,17 @@
   "publishConfig": {
     "exports": {
       ".": {
+        "keel": "./src/index.ts",
         "types": "./dist/src/index.d.ts",
         "default": "./dist/src/index.js"
       },
       "./server": {
-        "types": "./dist/src/server/index.d.ts",
-        "default": "./dist/src/server/index.js"
+        "keel": "./src/server/index.server.ts",
+        "types": "./dist/src/server/index.server.d.ts",
+        "default": "./dist/src/server/index.server.js"
       },
       "./tools": {
+        "keel": "./src/tools/index.ts",
         "types": "./dist/src/tools/index.d.ts",
         "default": "./dist/src/tools/index.js"
       }
@@ -36,23 +42,28 @@
   "engines": {
     "node": ">=22"
   },
-  "files": ["dist", "docs"],
+  "files": ["module.ts", "src", "dist", ".keel/ledger.json", "docs", "README.md"],
   "scripts": {
     "check": "tsc --noEmit && biome check src test",
     "test": "vitest run",
     "coverage": "node ../../tooling/coverage.mjs",
     "build": "tsc -p tsconfig.build.json",
     "mutate": "node ../../tooling/mutate.mjs",
-    "prepack": "node ../../tooling/docs-pack.mjs"
+    "prepack": "tsc -p tsconfig.build.json && node ../../tooling/docs-pack.mjs && keel pack"
   },
-  "dependencies": {
+  "peerDependencies": {
     "@keel/check": "workspace:*",
     "@keel/compiler": "workspace:*",
     "@keel/ctx": "workspace:*",
     "@keel/schema": "workspace:*"
   },
   "devDependencies": {
+    "@keel/check": "workspace:*",
+    "@keel/cli": "workspace:*",
+    "@keel/compiler": "workspace:*",
+    "@keel/ctx": "workspace:*",
     "@keel/router": "workspace:*",
+    "@keel/schema": "workspace:*",
     "@keel/server": "workspace:*",
     "@keel/services": "workspace:*",
     "@keel/store": "workspace:*",

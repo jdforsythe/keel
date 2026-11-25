@@ -2607,23 +2607,25 @@ importers:
         version: 21.0.4
 
   packages/std-tokens:
-    dependencies:
+    devDependencies:
       '@keel/check':
         specifier: workspace:*
         version: link:../check
+      '@keel/cli':
+        specifier: workspace:*
+        version: link:../cli
       '@keel/compiler':
         specifier: workspace:*
         version: link:../compiler
       '@keel/ctx':
         specifier: workspace:*
         version: link:../ctx
-      '@keel/schema':
-        specifier: workspace:*
-        version: link:../schema
-    devDependencies:
       '@keel/router':
         specifier: workspace:*
         version: link:../router
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../schema
       '@keel/server':
         specifier: workspace:*
         version: link:../server

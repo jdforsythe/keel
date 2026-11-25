@@ -3,7 +3,7 @@ import { gen } from "@keel/schema/gen";
 import { Digested } from "@keel/std-tokens";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { readDigested } from "../src/server/internal/readDigested.ts";
+import { readDigested } from "../src/server/internal/readDigested.server.ts";
 
 const SEED = 1337;
 

@@ -1,11 +1,11 @@
 // Seed 1337. `mint`'s `ttl` at and around both bounds and off the integers; the digest's `exp` equals `expiresAt`.
 import { createCtx } from "@keel/ctx";
-import { reveal } from "@keel/schema";
 import { tokens } from "@keel/std-tokens/server";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { simEngine } from "../src/server/internal/simEngine.ts";
-import { tokensOf } from "../src/server/internal/tokensOf.ts";
+import { simEngine } from "../src/server/internal/simEngine.server.ts";
+import { tokensOf } from "../src/server/internal/tokensOf.server.ts";
+import { revealed } from "./revealed.server.ts";
 
 const SEED = 1337;
 const TTL = { ok: false, error: { code: "credentials.ttl", data: { min: 60000, max: 31536000000 } } };
@@ -41,7 +41,7 @@ test("the digest's exp equals expiresAt; ttl null writes none", () => {
       if (!r.ok) throw new Error("mint failed");
       expect(r.value.expiresAt).toBe(now + ttl);
       expect(r.value.digest).toMatch(new RegExp(`^\\$sha256-sim\\$exp=${now + ttl}\\$[A-Za-z0-9+/]{43}$`));
-      expect(reveal(r.value.token)).toMatch(new RegExp(`^keelsim_${r.value.id}_[0-9a-f]{64}$`));
+      expect(revealed(r.value.token)).toMatch(new RegExp(`^keelsim_${r.value.id}_[0-9a-f]{64}$`));
     }),
     { seed: SEED, numRuns: 200 },
   );

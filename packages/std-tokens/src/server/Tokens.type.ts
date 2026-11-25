@@ -1,5 +1,5 @@
 import type { KeelError, Result, Secret } from "@keel/schema";
-import type { Digested } from "../Digested.ts";
+import type { Digested } from "../Digested.schema.ts";
 
 type Mismatch = KeelError<"credentials.mismatch", Record<string, never>>;
 type Expired = KeelError<"credentials.expired", Record<string, never>>;

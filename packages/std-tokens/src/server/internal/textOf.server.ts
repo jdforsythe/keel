@@ -1,6 +1,5 @@
-import { reveal, s } from "@keel/schema";
-
-const SecretText = s.secret(s.string());
+import { reveal } from "@keel/schema";
+import { SecretText } from "./SecretText.schema.ts";
 
 /** A presented token's text: the package's one `reveal`; `""` for a value that is not a `Secret` string, so it is no token. */
 export function textOf(secret: unknown): string {

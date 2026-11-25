@@ -1,11 +1,12 @@
 // Seed 1337. For any string, `idOf` is `ok` exactly when `check` reaches `find`, with the same id, and a result never
 // holds the secret part.
-import { type Secret, reveal, s } from "@keel/schema";
+import { type Secret, s } from "@keel/schema";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { realEngine } from "../src/server/internal/realEngine.ts";
-import { simEngine } from "../src/server/internal/simEngine.ts";
-import { tokensOf } from "../src/server/internal/tokensOf.ts";
+import { realEngine } from "../src/server/internal/realEngine.server.ts";
+import { simEngine } from "../src/server/internal/simEngine.server.ts";
+import { tokensOf } from "../src/server/internal/tokensOf.server.ts";
+import { revealed } from "./revealed.server.ts";
 
 const SEED = 1337;
 const SecretText = s.secret(s.string());
@@ -58,7 +59,7 @@ test("idOf of a well formed token returns its id and never its secret", () => {
         if (!m.ok) throw new Error("mint failed");
         const r = c.idOf(m.value.token);
         expect(r).toEqual({ ok: true, value: m.value.id });
-        const secret = reveal(m.value.token).split("_")[2] ?? "";
+        const secret = revealed(m.value.token).split("_")[2] ?? "";
         expect(JSON.stringify(r)).not.toContain(secret);
       }),
       { seed: SEED, numRuns: 20 },
