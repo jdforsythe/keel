@@ -1,8 +1,9 @@
 // The scrub's views read a `+` either way (k.privacy Views): a secret holding `+` is found under every escaping the
 // views cover, whether the escaping wrote `+` as `%2B` or left it as is, alone or nested two deep, at every offset in
 // a text. The second property covers the rest of the family: a secret holding the characters the views rewrite (`%`,
-// `&`, `\`, `+`, a space, `;`, `#`) is found unless it holds an escape the views read that its escaping left as is
-// and the escaping changed another character, the stated limit. Seed 1337.
+// `&`, `\`, `+`, a space, `;`, `#`) and escape-looking sequences of every family is found under each single escaping at
+// every offset, the ones that leave another family's escape as is included (the one-family views). Under two
+// escapings, one of which leaves such an escape as is, it is the stated limit. Seed 1337.
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { holdSecrets } from "../src/internal/holdSecrets.ts";
@@ -42,7 +43,7 @@ const holds = (v: string, kind: Kind): boolean =>
     : kind === "entity"
       ? /&(amp|lt|gt|quot|apos);|&#[0-9]{1,7};|&#[xX][0-9a-fA-F]{1,6};/.test(v)
       : /\\(["\\/bfnrt]|u[0-9a-fA-F]{4})/.test(v);
-/** Whether escaping `v` with `e`, whose left-as-is kinds are `kinds`, is the stated limit. */
+/** Whether escaping `v` with `e`, whose left-as-is kinds are `kinds`, leaves an escape of `v` as is and changes `v`. */
 const limit = (v: string, e: (v: string) => string, kinds: readonly Kind[]): boolean =>
   e(v) !== v && kinds.some((k) => holds(v, k));
 
@@ -82,7 +83,7 @@ describe("a secret holding `+`", () => {
     fc.assert(
       fc.property(withPlus, plain, plain, fc.nat(ESCAPINGS.length - 1), (v, p, q, w) => {
         const [, e, kinds] = ESCAPINGS[w] ?? ESCAPINGS[0] ?? ["", (x: string) => x, []];
-        fc.pre(!limit(v, e, kinds) && !p.includes(v) && !q.includes(v));
+        fc.pre(!p.includes(v) && !q.includes(v));
         const text = e(v);
         for (let cut = 0; cut <= p.length; cut++) {
           const before = p.slice(0, cut);
@@ -149,26 +150,36 @@ const family = fc
   .filter((v) => new TextEncoder().encode(v).length >= 8);
 
 describe("a secret holding the characters the views rewrite", () => {
-  it("is found under each escaping unless it is the stated limit", () => {
-    let limits = 0;
-    let found = 0;
+  it("is found under each single escaping at every offset, one that leaves another family's escape as is included", () => {
+    let raw = 0;
     fc.assert(
       fc.property(family, plain, plain, fc.nat(ESCAPINGS.length - 1), (v, p, q, w) => {
         const [, e, kinds] = ESCAPINGS[w] ?? ESCAPINGS[0] ?? ["", (x: string) => x, []];
         fc.pre(!p.includes(v) && !q.includes(v));
-        if (limit(v, e, kinds)) {
-          limits++;
-          return;
-        }
-        found++;
+        if (limit(v, e, kinds)) raw++;
         const text = e(v);
-        expect(once(mark(`${p}${text}${q}`, v), p, q, text), text).toBe(true);
+        for (let cut = 0; cut <= p.length; cut++) {
+          const before = p.slice(0, cut);
+          expect(once(mark(`${before}${text}${q}`, v), before, q, text), `${before}|${text}|${q}`).toBe(true);
+        }
       }),
       { seed: SEED, numRuns: 1500 },
     );
-    // The run reaches both sides of the limit.
-    expect(found).toBeGreaterThan(500);
-    expect(limits).toBeGreaterThan(50);
+    // The run reaches the cases only a one-family view finds.
+    expect(raw).toBeGreaterThan(50);
+  });
+
+  it('a password `a"b%41` written by JSON.stringify, `x&amp;y"z1` by JSON and encodeURI, `p\\n<q1234` by HTML named entities are found', () => {
+    const named = ESCAPINGS.find(([n]) => n === "HTML named")?.[1] ?? ((x: string) => x);
+    expect(mark(`pw=${JSON.stringify('a"b%41')} end`, 'a"b%41')).toBe('pw="[secret]" end');
+    expect(mark(`pw=${JSON.stringify('x&amp;y"z1')} end`, 'x&amp;y"z1')).toBe('pw="[secret]" end');
+    expect(mark(`u=${encodeURI("x&amp;y z1")} end`, "x&amp;y z1")).toBe("u=[secret] end");
+    expect(mark(`h=${named("p\\n<q1234")} end`, "p\\n<q1234")).toBe("h=[secret] end");
+  });
+
+  it('the limit that remains is nested: `a"b%41` JSON-escaped, then URL-encoded, logs as written', () => {
+    const thrown = encodeURIComponent(JSON.stringify('a"b%41').slice(1, -1));
+    expect(mark(`x ${thrown} y`, 'a"b%41')).toBe(`x ${thrown} y`);
   });
 
   it("a secret that is itself hex or base64 of other bytes is found as itself under each escaping", () => {

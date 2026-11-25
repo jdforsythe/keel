@@ -50,10 +50,18 @@ const NAMED: readonly (readonly [string, number])[] = [
  * digits and `;`, and `&#x` or `&#X` with 1 to 6 hex digits and `;`, as their character, a numeric one only for a code
  * point up to U+10FFFF that is no surrogate; any other unit as is. Each unit of the view maps to the first and last
  * character of the raw text its escape came from, through `src`'s own maps, so a view of a view maps to the raw text.
- * `undefined` when the view is `src` itself (nothing read as an escape). No unit is written twice and no escape is
+ * `family` names the escapes read: `"all"`, or one family alone (`"url"`: `%` escapes and `+`; `"json"`: the
+ * backslash ones; `"html"`: entities), a unit of another family then as is. `undefined` when the view is `src` itself (nothing read as an escape). No unit is written twice and no escape is
  * shorter than what it stands for, so the view is at most `src.n` units, made in steps linear in `src.n`.
  */
-export function decodedView(src: View, plus: boolean): View | undefined {
+export function decodedView(
+  src: View,
+  plus: boolean,
+  family: "all" | "url" | "json" | "html" = "all",
+): View | undefined {
+  const url = family === "all" || family === "url";
+  const json = family === "all" || family === "json";
+  const html = family === "all" || family === "html";
   const { units: u, n } = src;
   const units = new Uint16Array(n);
   const first = new Int32Array(n);
@@ -78,7 +86,7 @@ export function decodedView(src: View, plus: boolean): View | undefined {
   let i = 0;
   while (i < n) {
     const c = u[i] ?? 0;
-    if (c === 37 && i + 2 < n && hexOf(u[i + 1] ?? 0) >= 0 && hexOf(u[i + 2] ?? 0) >= 0) {
+    if (url && c === 37 && i + 2 < n && hexOf(u[i + 1] ?? 0) >= 0 && hexOf(u[i + 2] ?? 0) >= 0) {
       bytes ??= new Uint8Array(Math.floor(n / 3) + 1);
       at ??= new Int32Array(Math.floor(n / 3) + 1);
       let m = 0;
@@ -108,13 +116,13 @@ export function decodedView(src: View, plus: boolean): View | undefined {
       i = j;
       continue;
     }
-    if (c === 43) {
+    if (url && c === 43) {
       put(plus ? 43 : 32, i, i);
       if (!plus) changed = true;
       i++;
       continue;
     }
-    if (c === 92 && i + 1 < n) {
+    if (json && c === 92 && i + 1 < n) {
       const d = u[i + 1] ?? 0;
       if (d === 117 && i + 5 < n) {
         const h = [2, 3, 4, 5].map((k) => hexOf(u[i + k] ?? 0));
@@ -137,7 +145,7 @@ export function decodedView(src: View, plus: boolean): View | undefined {
         continue;
       }
     }
-    if (c === 38) {
+    if (html && c === 38) {
       const end = entityEnd(u, n, i);
       if (end !== undefined) {
         putPoint(end[1], i, end[0]);
