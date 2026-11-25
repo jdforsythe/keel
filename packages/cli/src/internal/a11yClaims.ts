@@ -13,15 +13,13 @@ import { routeChain } from "./routeChain.ts";
  * passing test's render of the route made in that project's `reports/a11y.json`, none is in any of those runs'
  * violations, and `findings` (the static a11y codes, `a11yFindings`) hold none of the criterion's static codes under
  * `modules/<module>/` of an entry of the route's chain (`routeChain`: the page and the layouts that wrap it); else
- * `none`. Layouts and API entries have no item. A project with no `reports/a11y.json` on disk keeps the rung
- * `committed` holds for an item of this form (`kept`); an item `committed` does not hold, or a project whose report
- * is present, is computed. Committed items of any other form are not read, so a written ledger drops them.
+ * `none`. Layouts and API entries have no item. A project with no `reports/a11y.json` gives `none` for each of its
+ * items (k.ledger-items Run evidence; `a11yReportGaps` names it).
  */
 export function a11yClaims(
   files: readonly SourceFile[],
   map: A11yCriteriaMap,
   findings: readonly { readonly code: string; readonly path: string }[] = [],
-  committed: ReadonlyMap<string, "none" | "example"> = new Map(),
 ): A11yClaim[] {
   const out: A11yClaim[] = [];
   for (const { project, dir, entries } of a11yProjects(files)) {
@@ -43,9 +41,7 @@ export function a11yClaims(
           rules.render.every((r) => ran.has(r) && !violated.has(r)) &&
           !rules.static.some((c) => found.has(c));
         const item = `a11y:${project}:${route}#${criterion}`;
-        const was = reportFile === undefined ? committed.get(item) : undefined;
-        const rung = was ?? (held ? "example" : "none");
-        const kept: { readonly kept?: true } = was === undefined ? {} : { kept: true };
+        const rung = reportFile !== undefined && held ? "example" : "none";
         out.push({
           item,
           project,
@@ -53,7 +49,6 @@ export function a11yClaims(
           criterion,
           rung,
           evidence: rung === "example" ? `example ${report}` : "none",
-          ...kept,
         });
       }
     }

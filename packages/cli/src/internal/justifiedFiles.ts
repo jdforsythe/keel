@@ -5,11 +5,12 @@ import { justifiedShape } from "./justifiedShape.ts";
 import { justifiedText } from "./justifiedText.ts";
 import { makeDiag } from "./makeDiag.ts";
 
-const FILE = /^packages\/([^/]+)\/mutation-justified\.json$/;
+/** A project's justified survivors (k.ledger-items Projects): `[1]` the project's folder, absent for `.`. */
+const FILE = /^(?:((?:packages|apps|examples)\/[^/]+)\/)?mutation-justified\.json$/;
 
 /**
- * Each package's `mutation-justified.json` (k.ledger Justified survivors): the entries of every file that holds its
- * shape, by package with the file's path, and E1725 per bad entry of a file that does not (such a file justifies nothing).
+ * Each project's `mutation-justified.json` (k.ledger Justified survivors): the entries of every file that holds its
+ * shape, by project name (`packages/cli`, `apps/golden-1`, `.`) with the file's path, and E1725 per bad entry of a file that does not (such a file justifies nothing).
  */
 export function justifiedFiles(files: readonly SourceFile[]): {
   readonly justified: ReadonlyMap<string, { readonly path: string; readonly entries: readonly JustifiedEntry[] }>;
@@ -18,8 +19,9 @@ export function justifiedFiles(files: readonly SourceFile[]): {
   const justified = new Map<string, { path: string; entries: readonly JustifiedEntry[] }>();
   const diags: Diag[] = [];
   for (const f of files) {
-    const pkg = FILE.exec(f.path)?.[1];
-    if (pkg === undefined) continue;
+    const m = FILE.exec(f.path);
+    if (m === null) continue;
+    const pkg = m[1] ?? ".";
     const at = { path: f.path, line: 1, col: 1, see: "k.ledger" };
     let doc: unknown;
     try {

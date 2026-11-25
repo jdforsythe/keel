@@ -167,7 +167,7 @@ describe("k.a11y: the project is in the item", () => {
     }
   });
 
-  it("a project with no `reports/a11y.json` keeps the rung its own committed item holds, not the rung of another project's item of the same route id", () => {
+  it("a project with no `reports/a11y.json` has its items `none` whatever its own committed item holds, with one W1733 at its own `reports/a11y.json`", () => {
     const dir = track(
       keelProject("a11y-ledger-kept-two", {
         "apps/a/.keel/routes.json": routesJson(["m.r"]),
@@ -182,9 +182,16 @@ describe("k.a11y: the project is in the item", () => {
       { item: "a11y:apps/b:m.r#1.4.3", rung: "none" },
     ];
     writeFiles(dir, { [COMMITTED]: `${JSON.stringify({ ...led, a11y }, null, 2)}\n` });
-    expect(keel(dir, ["ledger", "--write", COMMITTED]).status).toBe(0);
+    const run = keel(dir, ["ledger", "--write", COMMITTED]);
+    expect(run.status).toBe(0);
     const written = collect(JSON.parse(readFileSync(join(dir, COMMITTED), "utf8")), ["item", "rung"]);
-    expect(written.find((x) => x.item === "a11y:apps/a:m.r#1.4.3")?.rung).toBe("example");
+    expect(written.find((x) => x.item === "a11y:apps/a:m.r#1.4.3")?.rung).toBe("none");
+    expect(
+      run.records
+        .filter((r) => r.code === "W1733")
+        .map((r) => r.path)
+        .sort(),
+    ).toEqual(["apps/a/reports/a11y.json", "apps/b/reports/a11y.json"]);
     expect(written.find((x) => x.item === "a11y:apps/b:m.r#1.4.3")?.rung).toBe("none");
   }, 60_000);
 

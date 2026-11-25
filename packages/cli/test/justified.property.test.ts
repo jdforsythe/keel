@@ -99,7 +99,7 @@ describe("justifiedFiles", () => {
       bad,
       { path: "packages/r/mutation-justified.json", source: "{" },
     ]);
-    expect([...justified.keys()]).toEqual(["p"]);
+    expect([...justified.keys()]).toEqual(["packages/p"]);
     expect(diags.map((d) => [d.code, d.path])).toEqual([
       ["E1725", bad.path],
       ["E1725", bad.path],
@@ -134,7 +134,7 @@ describe("mutationClaims with justified entries", () => {
         },
       ],
       undefined,
-      new Map([["p", { entries: justifiedShape({ justified: entries }).entries }]]),
+      new Map([["packages/p", { entries: justifiedShape({ justified: entries }).entries }]]),
     );
   const le = {
     file: "src/a.ts",
@@ -152,11 +152,11 @@ describe("mutationClaims with justified entries", () => {
         fc.array(fc.constantFrom("Survived", "NoCoverage", "Killed", "Timeout"), { minLength: 1, maxLength: 8 }),
         (first, rest) => {
           const { mutation, unmatched } = claimsOf([first, ...rest], [le]);
-          const pkg = mutation.packages.p;
+          const pkg = mutation.projects["packages/p"];
           const undetected = first === "Survived" || first === "NoCoverage";
           expect(pkg?.justified).toBe(undetected ? 1 : 0);
           expect(mutation.claims[0]?.justified).toBe(pkg?.justified);
-          expect(unmatched.p ?? []).toEqual(undetected ? [] : [0]);
+          expect(unmatched["packages/p"] ?? []).toEqual(undetected ? [] : [0]);
           const killed = pkg?.killed ?? 0;
           const total = killed + (pkg?.survived ?? 0) + (pkg?.noCoverage ?? 0);
           expect(pkg?.score).toBeCloseTo((100 * killed) / total, 1);
@@ -171,7 +171,7 @@ describe("mutationClaims with justified entries", () => {
 
   it("with no entries every count of justified is 0 and scoreJustified is the score", () => {
     const { mutation, unmatched } = claimsOf(["Survived", "Killed"], []);
-    expect(mutation.packages.p).toEqual({
+    expect(mutation.projects["packages/p"]).toEqual({
       score: 50,
       scoreJustified: 50,
       threshold: 50,

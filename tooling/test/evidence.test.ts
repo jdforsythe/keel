@@ -65,7 +65,7 @@ const ledger = {
   ],
   a11y: [{ item: "a11y:apps/a:m.r#1.1.1", rung: "example" }],
   mutation: {
-    packages: { a: { score: 81.5, scoreJustified: 84, justified: 2, threshold: 70 } },
+    projects: { "packages/a": { score: 81.5, scoreJustified: 84, justified: 2, threshold: 70 } },
     claims: [
       { file: "packages/a/src/x.ts", sha: crypto.createHash("sha256").update("export const x = 1;\n").digest("hex") },
       { file: "packages/a/src/gone.ts", sha: "0" },

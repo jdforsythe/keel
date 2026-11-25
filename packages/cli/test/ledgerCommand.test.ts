@@ -10,6 +10,7 @@ import { ledgerCommand } from "../src/internal/ledgerCommand.ts";
 import type { Input } from "../src/types/Input.ts";
 import type { OutRecord } from "../src/types/OutRecord.ts";
 import type { SourceFile } from "../src/types/SourceFile.ts";
+import { runReported } from "./runReported.ts";
 
 const CWD = "/work/app";
 const file = (path: string, source: string): SourceFile => ({ path, source });
@@ -20,7 +21,7 @@ const spec = (path: string, body: string, head = ""): SourceFile =>
   file(path, `${head}import { it } from "vitest";\nit("t", () => {\n  ${body}\n});\n`);
 const LEDGER = "tooling/ledger/ledger.json";
 const call = (input: Input, files: SourceFile[], map?: A11yCriteriaMap) =>
-  ledgerCommand(input, { cwd: CWD, files }, map);
+  ledgerCommand(input, { cwd: CWD, files: runReported(files) }, map);
 const diags = (records: readonly OutRecord[]) => records.filter((r) => r.kind === "diag");
 const of = (records: readonly OutRecord[], kind: string) => records.filter((r) => r.kind === kind);
 const trailer = (records: readonly OutRecord[]) => records.at(-1);
@@ -215,11 +216,11 @@ describe("ledgerCommand: the plain ledger", () => {
       file("packages/a/src/a.ts", "src src/a.ts"),
     ]);
     expect(JSON.parse(withClaim.writes[0]?.content ?? "")).toMatchObject({
-      mutation: { packages: { a: { threshold: 50 } } },
+      mutation: { projects: { "packages/a": { threshold: 50 } } },
     });
     const onlyThreshold = call({ write: "l.json" }, [...base, report({ "src/a.ts": ["Ignored"] }, 50)]);
     expect(JSON.parse(onlyThreshold.writes[0]?.content ?? "")).toMatchObject({
-      mutation: { packages: { a: { threshold: 50 } }, claims: [] },
+      mutation: { projects: { "packages/a": { threshold: 50 } }, claims: [] },
     });
   });
 });
@@ -574,7 +575,7 @@ describe("ledgerCommand --diff: mutation (E1713)", () => {
   const srcA = file("packages/a/src/a.ts", "src src/a.ts");
   const withPkg = (score: number | undefined, threshold: number) =>
     committed({
-      mutation: { packages: { a: score === undefined ? { threshold } : { score, threshold } }, claims: [] },
+      mutation: { projects: { "packages/a": score === undefined ? { threshold } : { score, threshold } }, claims: [] },
     });
 
   test("a fresh score below the package's threshold is E1713 at the report, naming both; equal passes", () => {
@@ -584,7 +585,7 @@ describe("ledgerCommand --diff: mutation (E1713)", () => {
         kind: "diag",
         code: "E1713",
         path: at,
-        message: "mutation a 66.67% is below its threshold 80%",
+        message: "mutation packages/a 66.67% is below its threshold 80%",
         see: "k.ledger",
       },
     ]);
@@ -606,20 +607,20 @@ describe("ledgerCommand --diff: mutation (E1713)", () => {
   test("a package whose every claim is stale is E1713 at the report when one is on disk, else at the ledger file", () => {
     const old = committed({
       mutation: {
-        packages: { a: { score: 90, threshold: 70 } },
+        projects: { "packages/a": { score: 90, threshold: 70 } },
         claims: [claimOf("packages/a/src/a.ts", "old", 9, 1)],
       },
     });
     const out = call({ diff: true }, [...base, old, srcA]);
     expect(diags(out.records).map((d) => [d.code, d.path, d.message])).toEqual([
       ["W1714", "packages/a/src/a.ts", "mutation claim stale: packages/a/src/a.ts changed since the run"],
-      ["E1713", LEDGER, "mutation a: every claim is stale, so no score meets 70%"],
+      ["E1713", LEDGER, "mutation packages/a: every claim is stale, so no score meets 70%"],
     ]);
     const fresh = call({ diff: true }, [
       ...base,
       committed({
         mutation: {
-          packages: { a: { score: 90, threshold: 70 } },
+          projects: { "packages/a": { score: 90, threshold: 70 } },
           claims: [claimOf("packages/a/src/a.ts", "src src/a.ts", 9, 1)],
         },
       }),
@@ -630,7 +631,7 @@ describe("ledgerCommand --diff: mutation (E1713)", () => {
       ...base,
       committed({
         mutation: {
-          packages: { z: { score: 90, threshold: 70 } },
+          projects: { "packages/z": { score: 90, threshold: 70 } },
           claims: [claimOf("packages/a/src/a.ts", "old", 9, 1)],
         },
       }),
@@ -647,7 +648,7 @@ describe("ledgerCommand --diff: mutation (E1713)", () => {
         kind: "diag",
         code: "E1713",
         path: at,
-        message: "mutation a threshold 60% is below the committed 70%",
+        message: "mutation packages/a threshold 60% is below the committed 70%",
         see: "k.ledger",
       },
     ]);
@@ -677,7 +678,7 @@ describe("ledgerCommand --diff: mutation (E1713)", () => {
       ...base,
       srcA,
       report({ "src/a.ts": ["Killed"] }, 10),
-      committed({ mutation: { packages: {}, claims: [] } }),
+      committed({ mutation: { projects: {}, claims: [] } }),
     ]);
     expect(diags(out.records)).toEqual([]);
   });
@@ -690,8 +691,8 @@ describe("ledgerCommand --diff: mutation (E1713)", () => {
       withPkg(100, 70),
     ]);
     expect(diags(out.records).map((d) => d.message)).toEqual([
-      "mutation a 50% is below its threshold 60%",
-      "mutation a threshold 60% is below the committed 70%",
+      "mutation packages/a 50% is below its threshold 60%",
+      "mutation packages/a threshold 60% is below the committed 70%",
     ]);
   });
 

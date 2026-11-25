@@ -361,17 +361,34 @@ describe("mutationClaims", () => {
       ["packages/a/src/a.ts", 2, 1, 1, 50],
       ["packages/b/src/a.ts", 2, 1, 0, 66.67],
     ]);
-    expect(mutation.packages).toEqual({
-      a: { score: 50, scoreJustified: 50, threshold: 50, killed: 2, survived: 1, noCoverage: 1, justified: 0 },
-      b: { score: 66.67, scoreJustified: 66.67, threshold: 50, killed: 2, survived: 1, noCoverage: 0, justified: 0 },
-      c: { threshold: 50, killed: 0, survived: 0, noCoverage: 0, justified: 0 },
+    expect(mutation.projects).toEqual({
+      "apps/x": { threshold: 50, killed: 0, survived: 0, noCoverage: 0, justified: 0 },
+      "packages/a": {
+        score: 50,
+        scoreJustified: 50,
+        threshold: 50,
+        killed: 2,
+        survived: 1,
+        noCoverage: 1,
+        justified: 0,
+      },
+      "packages/b": {
+        score: 66.67,
+        scoreJustified: 66.67,
+        threshold: 50,
+        killed: 2,
+        survived: 1,
+        noCoverage: 0,
+        justified: 0,
+      },
+      "packages/c": { threshold: 50, killed: 0, survived: 0, noCoverage: 0, justified: 0 },
     });
     expect([...fresh]).toEqual(["packages/a/src/a.ts", "packages/b/src/a.ts"]);
   });
 
   it("a changed file's claim is stale and its package score omits it; committed claims are kept", () => {
     const committed = {
-      packages: { a: { score: 100, threshold: 70 } },
+      projects: { "packages/a": { score: 100, threshold: 70 } },
       claims: [{ file: "packages/a/src/b.ts", sha: "0", killed: 1, survived: 0, noCoverage: 0, score: 100 }],
     };
     const { mutation, fresh } = mutationClaims(
@@ -384,7 +401,9 @@ describe("mutationClaims", () => {
     );
     expect(mutation.claims.map((c) => c.file)).toEqual(["packages/a/src/a.ts", "packages/a/src/b.ts"]);
     expect(fresh.size).toBe(0);
-    expect(mutation.packages).toEqual({ a: { threshold: 50, killed: 0, survived: 0, noCoverage: 0, justified: 0 } });
+    expect(mutation.projects).toEqual({
+      "packages/a": { threshold: 50, killed: 0, survived: 0, noCoverage: 0, justified: 0 },
+    });
   });
 });
 
@@ -393,7 +412,7 @@ describe("readProject ledger scope", () => {
   afterEach(() => {
     for (const d of made.splice(0)) rmSync(d, { recursive: true, force: true });
   });
-  it("adds packages/<pkg>/reports/mutation/mutation.json to the query files; query and tree skip reports", () => {
+  it("adds each project's mutation report, run reports and package.json to the query files; query and tree skip reports", () => {
     const d = realpathSync(mkdtempSync(join(tmpdir(), "keel-ledger-scope-")));
     made.push(d);
     for (const [rel, text] of [
@@ -403,14 +422,25 @@ describe("readProject ledger scope", () => {
       ["packages/a/reports/other/mutation.json", "{}"],
       ["reports/mutation/mutation.json", "{}"],
       ["packages/a/b/reports/mutation/mutation.json", "{}"],
+      ["packages/a/package.json", "{}"],
+      ["packages/a/reports/tests/run.json", "{}"],
+      ["packages/a/reports/tests/1-of-2.json", "{}"],
+      ["packages/a/reports/tests/deep/run.json", "{}"],
     ]) {
       const abs = join(d, rel ?? "");
       mkdirSync(dirname(abs), { recursive: true });
       writeFileSync(abs, text ?? "");
     }
     const paths = (scope: "query" | "ledger" | "tree") => readProject(d, scope).map((f) => f.path);
-    expect(paths("ledger")).toEqual(["packages/a/reports/mutation/mutation.json", "packages/a/src/a.ts"]);
+    expect(paths("ledger")).toEqual([
+      "packages/a/package.json",
+      "packages/a/reports/mutation/mutation.json",
+      "packages/a/reports/tests/1-of-2.json",
+      "packages/a/reports/tests/run.json",
+      "packages/a/src/a.ts",
+      "reports/mutation/mutation.json",
+    ]);
     expect(paths("query")).toEqual(["packages/a/src/a.ts"]);
-    expect(paths("tree")).toEqual(["packages/a/src/a.ts"]);
+    expect(paths("tree")).toEqual(["packages/a/package.json", "packages/a/src/a.ts"]);
   });
 });

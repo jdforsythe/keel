@@ -1,6 +1,11 @@
 // Ledger items take evidence through a relative import only from the file it resolves to (k.ledger).
 import { describe, expect, it } from "vitest";
-import { buildLedger } from "../src/internal/buildLedger.ts";
+import { buildLedger as buildOver } from "../src/internal/buildLedger.ts";
+import type { SourceFile } from "../src/types/SourceFile.ts";
+import { runReported } from "./runReported.ts";
+
+/** `buildLedger` over `files` with the run report of a run in which every test passed. */
+const buildLedger = (files: readonly SourceFile[], z3?: string, own?: string) => buildOver(runReported(files), z3, own);
 
 const file = (path: string, source: string) => ({ path, source });
 

@@ -1,10 +1,15 @@
 import { createHash } from "node:crypto";
 // Mutation-killing tests for the ledger: item discovery (buildLedger) and its rendering, file and diff (ledgerCommand).
 import { describe, expect, it } from "vitest";
-import { run } from "../src/index.ts";
-import { buildLedger } from "../src/internal/buildLedger.ts";
+import { buildLedger as buildOver } from "../src/internal/buildLedger.ts";
 import { clauseKey } from "../src/internal/clauseKey.ts";
+import type { SourceFile } from "../src/types/SourceFile.ts";
 import type { Write } from "../src/types/Write.ts";
+import { ledgerRun as run } from "./ledgerRun.ts";
+import { runReported } from "./runReported.ts";
+
+/** `buildLedger` over `files` with the run report of a run in which every test passed. */
+const buildLedger = (files: readonly SourceFile[], z3?: string, own?: string) => buildOver(runReported(files), z3, own);
 
 const CWD = "/work/app";
 const lines = (out: string): string[] => out.split("\n").filter((l) => l !== "");
@@ -375,8 +380,8 @@ describe("ledger command", () => {
       negativeTypes: 0,
       rungs: { example: 2, probabilistic: 1, exhaustive: 0, proven: 0, monitored: 0 },
       mutation: {
-        packages: {
-          a: {
+        projects: {
+          "packages/a": {
             score: 66.67,
             scoreJustified: 66.67,
             threshold: 50,

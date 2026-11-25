@@ -9,6 +9,7 @@ export { SimRun } from "./SimRun.schema.ts";
 export { renderRoute } from "./renderRoute.ts";
 export { resumeDocument } from "./resumeDocument.ts";
 export { testResults } from "./testResults.ts";
+export { testRunReport } from "./testRunReport.ts";
 export { writeTestReport } from "./writeTestReport.ts";
 export type { A11yNode } from "./types/A11yNode.ts";
 export type { HarnessArtifacts } from "./types/HarnessArtifacts.ts";
