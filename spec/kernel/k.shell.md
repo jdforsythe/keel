@@ -30,7 +30,7 @@ type ShellTarget = {
 
 **Plugins.** `plugins` gives the npm packages whose native half the shell's own tool installs only when the app lists them: `plugin` at the exact `version`, `need` what uses it, the three at most 50 characters together. It reads `app` alone, so a plugin of a feature the app has not turned on (`identity` false) is not given and nothing is reported for it. Each one absent from the app's `package.json` `dependencies`, or there at another version text, is one E1572 at the deployable's key in `topology.ts`, `<deployable>: <shell> needs <plugin> <version> (<need>)`, its fix that entry added or set, keys sorted; once per plugin in a project. `keel check` reports them; so does `keel build --target <shell>`, with its tools. No `package.json`, or one that is not a JSON object: none.
 
-**Files.** `files` gives the shell files, read-only deploy files (k.deploy; E1005, fix: the regenerated file); a path with a `..` segment, a `\` or a leading `/`, a symlink, or one resolving outside the folder is E1585: none of the set is written. Another file there is the app's. Removing a shell removes its files.
+**Files.** `files` gives the shell files, read-only deploy files (k.deploy; E1005, fix: the regenerated file); a path with a `..` segment, a `\` or a leading `/`, or one a link carries out of the folder (k.scaffold Links), is E1585: none of the set is written. Another file there is the app's. Removing a shell removes its files.
 
 **Build.** `keel build --target <shell>` [`--platform <p>`] [`--release`] builds each `client` deployable declaring it:
 1. A shell no `client` deployable declares, or a `--platform` not in the target's `platforms` or missing while it has some, is E1052; a package registering no target, E1585.

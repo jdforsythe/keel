@@ -1,5 +1,5 @@
 # k.schema: Schemas
-status: conformance-covered
+status: implemented
 
 **API.**
 ```ts
@@ -16,6 +16,8 @@ Primitives: `string` (`{ min, max }`; with `min` >= 1, a blank value fails rule 
 **Closed objects and member unions.** `s.object(shape, { closed: true })` fails each own undeclared key with rule `unknown-key` at that key's path (open objects ignore them, but fail rule `type` at a `Secret` anywhere under one; `encode` drops them); `doc()` writes it `{| a: T |}`; JSON Schema derivations add `additionalProperties: false`; `decodeStrings` reads declared keys only. `s.union([a, b, ...])` (two or more members, no discriminant) accepts a value when the first member that accepts it does; when none does, the issues are the last member's. `encode` uses the first accepting member, `decodeStrings` the first member whose candidate parses; `gen` picks a member by seed; `doc()` is `a | b`; JSON Schema is `anyOf`.
 
 **SchemaError** is the KeelError `schema.invalid` (k.errors): with `data: { issues: { path: (string | number)[], rule: Rule }[] }`. `Rule` is closed: `type` · `finite` · `int` · `min` · `max` · `literal` · `enum` · `required` · `optional-null` (null given to an optional, non-nullable key) · `nullable-absent` (key absent for a nullable, non-optional key) · `discriminant` · `unknown-key` (an undeclared key of a closed object) · `secret-missing` (the marker where a secret is required) · `format` (a format type's `check` refused the value). Parse never throws; `encode` of an invalid value throws (unexpected). Re-registering a name with a different schema throws.
+
+**Frozen.** The `s` namespace, every schema `@keel/schema` makes and its `node`, with every object and array under it, are frozen when made, so in a module an assignment, `delete` or `Object.defineProperty` on one throws a `TypeError` and the schema stays as made; static reads of a schema (k.privacy-reads) rest on it.
 
 **Rules** (checker, on source). E1104 schema declared outside a `*.schema.ts` file · E1106 `s.format` in app code (format types are stdlib's).
 
@@ -35,3 +37,4 @@ Primitives: `string` (`{ min, max }`; with `min` >= 1, a blank value fails rule 
 - Every generated value of a closed object round-trips, and adding an undeclared key fails with rule `unknown-key` at that key.
 - Every generated value of a member union round-trips; a value no member accepts fails with the last member's issues.
 - An open object with a `Secret` under an undeclared key, at any depth, fails with rule `type` at the `Secret`'s path.
+- `Object.isFrozen` is true of `s`, of `s.object({ a: s.string().pii('name') })`, of its `node` and of each object under the node; `S.node.fields.b = s.secret(s.string()).node` and `delete S.node.fields.a` each throw a `TypeError` and leave `S.doc()` as it was.
