@@ -4,8 +4,8 @@
   "hostElements": 0,
   "negativeTypes": 90,
   "rungs": {
-    "example": 2418,
-    "probabilistic": 441,
+    "example": 2461,
+    "probabilistic": 442,
     "exhaustive": 16,
     "proven": 81,
     "monitored": 8
@@ -21576,7 +21576,7 @@
     },
     {
       "item": "k.boundary#11",
-      "rung": "none"
+      "rung": "probabilistic"
     },
     {
       "item": "k.boundary#12",
@@ -23076,7 +23076,7 @@
     },
     {
       "item": "k.leave#14",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.ledger#1",
@@ -24372,7 +24372,7 @@
     },
     {
       "item": "k.scaffold#20",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "k.schema#1",
@@ -28054,163 +28054,163 @@
     },
     {
       "item": "a11y:apps/inspector:inspector.index#1.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:apps/inspector:inspector.index#1.2.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:apps/inspector:inspector.index#1.3.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:apps/inspector:inspector.index#1.3.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:apps/inspector:inspector.index#1.3.5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:apps/inspector:inspector.index#1.4.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:apps/inspector:inspector.index#1.4.3",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:apps/inspector:inspector.index#1.4.4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:apps/inspector:inspector.index#1.4.12",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:apps/inspector:inspector.index#2.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:apps/inspector:inspector.index#2.2.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:apps/inspector:inspector.index#2.2.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:apps/inspector:inspector.index#2.4.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:apps/inspector:inspector.index#2.4.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:apps/inspector:inspector.index#2.4.3",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:apps/inspector:inspector.index#2.4.4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:apps/inspector:inspector.index#3.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:apps/inspector:inspector.index#3.1.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:apps/inspector:inspector.index#3.3.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:apps/inspector:inspector.index#4.1.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:apps/sessions:ops.home#1.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:apps/sessions:ops.home#1.2.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:apps/sessions:ops.home#1.3.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:apps/sessions:ops.home#1.3.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:apps/sessions:ops.home#1.3.5",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:apps/sessions:ops.home#1.4.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:apps/sessions:ops.home#1.4.3",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:apps/sessions:ops.home#1.4.4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:apps/sessions:ops.home#1.4.12",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:apps/sessions:ops.home#2.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:apps/sessions:ops.home#2.2.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:apps/sessions:ops.home#2.2.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:apps/sessions:ops.home#2.4.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:apps/sessions:ops.home#2.4.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:apps/sessions:ops.home#2.4.3",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:apps/sessions:ops.home#2.4.4",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:apps/sessions:ops.home#3.1.1",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:apps/sessions:ops.home#3.1.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:apps/sessions:ops.home#3.3.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:apps/sessions:ops.home#4.1.2",
-      "rung": "none"
+      "rung": "example"
     },
     {
       "item": "a11y:examples/client-only-api:app.home#1.1.1",
