@@ -67,7 +67,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.sim | Simulation | conformance-covered | faults |
 | k.drive | Sim clock drive | conformance-covered | idle |
 | k.drive-law | Replays agree | conformance-covered | replays |
-| k.ledger | Ledger, evidence | conformance-covered | rungs |
+| k.ledger | Ledger, evidence | implemented | rungs |
 | k.server | Thin server | conformance-covered | loads |
 | k.leave | What a request leaves | conformance-covered | state |
 | k.user | User, caller | conformance-covered | user |
@@ -90,7 +90,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.services | Thin services | conformance-covered | clients |
 | k.openapi | OpenAPI import | conformance-covered | clients |
 | k.module | Module manifest | conformance-covered | surface |
-| k.a11y | Accessibility | conformance-covered | WCAG |
+| k.a11y | Accessibility | implemented | WCAG |
 | k.aria | Widget parts | conformance-covered | roles |
 | k.roles | Part roles | conformance-covered | grid |
 | k.host-element | Host elements | conformance-covered | charts |
