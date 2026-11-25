@@ -1,6 +1,5 @@
-// JSX types for Keel app code (k.component, k.compiler). The compiler lowers JSX to runtime ops, so the runtime
-// `jsx`, `jsxs` and `Fragment` (src/jsx-runtime/) only throw: a `tsc` build of JSX imports and never renders.
-// Resolved by `jsxImportSource: "@keel/runtime-dom"`.
+// JSX types for Keel app code (k.component, k.compiler). Types only: the compiler lowers JSX to runtime ops,
+// so there is no jsx() runtime. Resolved by `jsxImportSource: "@keel/runtime-dom"`.
 
 /** An event handler attribute (`onClick`, `onInput`, ...). */
 type Handler = (event: Event) => unknown;
