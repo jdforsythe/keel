@@ -2257,14 +2257,10 @@ importers:
         version: 3.23.2
 
   packages/std-report:
-    dependencies:
+    devDependencies:
       '@keel/cli':
         specifier: workspace:*
         version: link:../cli
-      '@keel/schema':
-        specifier: workspace:*
-        version: link:../schema
-    devDependencies:
       '@keel/compiler':
         specifier: workspace:*
         version: link:../compiler
@@ -2274,12 +2270,18 @@ importers:
       '@keel/router':
         specifier: workspace:*
         version: link:../router
+      '@keel/schema':
+        specifier: workspace:*
+        version: link:../schema
       '@keel/server':
         specifier: workspace:*
         version: link:../server
       '@keel/tooling':
         specifier: workspace:*
         version: link:../../tooling
+      '@types/node':
+        specifier: ^22
+        version: 22.20.5
       esbuild:
         specifier: ^0.28.2
         version: 0.28.2
