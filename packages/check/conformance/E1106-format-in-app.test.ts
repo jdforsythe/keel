@@ -1,5 +1,5 @@
 // k.schema Rules, "E1106 `s.format` in app code (format types are stdlib's)." (rfc:0079)
-// Spec: k.formats, Conformance "`s.format` in an app file is E1106." (rfc:0079)
+// Spec: k.formats, clause "For a fixture format type, every generated value parses and round-trips; a value `base` accepts and `check` refuses fails with rule `format` at its path; `doc()` is its name; JSON Schema adds `format`; `s.format` in an app file is E1106."
 // Seed 1337.
 import { check } from "@keel/check";
 import fc from "fast-check";

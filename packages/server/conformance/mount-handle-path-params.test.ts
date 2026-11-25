@@ -1,6 +1,6 @@
 // rfc:0156 (k.mount-scope names `createApp` `handle.path`), clause "`createApp` with `handle.path` `/api/auth` and a page `/:locale/:slug` starts; a GET of `/api/auth/session` reaches `handle.fn`, and a GET of `/en/about` renders the page."
 // k.mount-scope Test "with `path` `/api/auth`, `/%61pi/auth` is under it, and the server answers it 404 without `handle`."
-// Spec: k.mount-scope Conformance "the server answers `/%67ate` 404 without calling `handle`."
+// Spec: k.mount-scope, clause "With `path` `/gate`, a router matches no page at `/gate`, `/gate/x` or `/%67ate`, nor at `/\x`; `/GATE` is matched by the table as any path; the server answers `/%67ate` 404 without calling `handle`."
 // Seed 1337 (fc.assert below).
 // @vitest-environment node
 import { createCtx } from "@keel/ctx";

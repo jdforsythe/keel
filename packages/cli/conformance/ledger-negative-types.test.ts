@@ -9,6 +9,7 @@ import { join } from "node:path";
 import fc from "fast-check";
 import { afterAll, describe, expect, it } from "vitest";
 import { ledgerRecord } from "./ledger-fixture-kinds.ts";
+import { itemOf } from "./ledger-items-support.ts";
 import { type Run, keel, makeProject, removeProject, summaryOf, writeFiles } from "./test-sim-project.ts";
 
 const COMMITTED = ".keel/ledger.json";
@@ -151,11 +152,10 @@ describe("k.unsafe Ledger: no item evidence", () => {
   const specText = ["# k.fx: Fixture", "status: conformance-covered", "", "**Conformance.**", `- ${CLAUSE}`, ""].join(
     "\n",
   );
-  const header = `// Spec: k.fx, Conformance "${CLAUSE}"\n`;
+  const header = `// Spec: k.fx, clause "${CLAUSE}"\n`;
   const rung = (files: Readonly<Record<string, string>>): unknown => {
     const dir = project("ledger-negtypes-rung", { [SPEC]: specText, ...files });
-    // Replaced at step 4 of rfc:0235: the item is `k.fx#<key>` (itemOf in ledger-items-support.ts), not `k.fx#1`.
-    return ledgerRecord(keel(dir, ["ledger"]), "k.fx#1")?.rung;
+    return ledgerRecord(keel(dir, ["ledger"]), itemOf("k.fx", CLAUSE))?.rung;
   };
 
   it("A clause cited by the `// Spec:` header of `packages/p/conformance/a.test-d.ts` alone is `none` in `keel ledger`", () => {

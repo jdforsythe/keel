@@ -1,9 +1,10 @@
 // Spec: k.ledger, clause "\"E2001-E2003 each fire.\" cited by files adding `(E2001)`, `(E2002)`, `(E2003)` is `example`; skipping one file's tests, or one file adding `(E2001-E2003)` alone, gives `none`; \"No E2001-E2003.\" cited by a file naming no code is `example`." (E2001, E2002, E2003)
 // The real `keel` binary over a temp project (OS tmpdir): one spec section whose clauses are the three cases, cited by
-// in-memory conformance files. Clause items are `<section>#<n>` (1-based Conformance sentence). Property seed: 1337.
+// in-memory conformance files. Clause items are `<section>#<key>` (itemOf in ledger-items-support.ts). Property seed: 1337.
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { ledgerRecord } from "./ledger-fixture-kinds.ts";
+import { itemOf } from "./ledger-items-support.ts";
 import { keel, makeProject, removeProject } from "./test-sim-project.ts";
 
 const SPEC = "spec/kernel/k.fx.md";
@@ -20,12 +21,11 @@ const citing = (header: string, skip = false): string =>
 const cite = (clause: string, codes: string, skip = false): string =>
   citing(`// Spec: k.fx, clause "${clause}"${codes === "" ? "" : ` (${codes})`}`, skip);
 
-// Replaced at step 4 of rfc:0235: a clause item is `<section>#<key>` (itemOf in ledger-items-support.ts), not `<section>#<n>`; the lookup below changes with it.
 const rungs = (clauses: readonly string[], tests: Readonly<Record<string, string>>): (unknown | undefined)[] => {
   const dir = makeProject("ledger-range", { [SPEC]: specText(clauses), ...tests });
   try {
     const run = keel(dir, ["ledger"]);
-    return clauses.map((_, i) => ledgerRecord(run, `k.fx#${i + 1}`)?.rung);
+    return clauses.map((c) => ledgerRecord(run, itemOf("k.fx", c))?.rung);
   } finally {
     removeProject(dir);
   }

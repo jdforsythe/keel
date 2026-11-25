@@ -1,4 +1,4 @@
-// Spec: k.ctx Conformance, "`keel test` runs under sim by default" (KEEL_TEST=1 contract for every capability).
+// Spec: k.ctx, clause "In `keel test`, a ctx created with no options is sim, with seed 0."
 // The cli half (that `keel test` sets KEEL_TEST=1) cannot be tested from ctx. Default seed 0 is documented in packages/ctx/README.md.
 import { expect, test } from "vitest";
 import { createCtx, register } from "@keel/ctx";

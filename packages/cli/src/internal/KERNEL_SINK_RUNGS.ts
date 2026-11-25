@@ -3,8 +3,8 @@ type Rung = "none" | "monitored" | "example" | "probabilistic" | "exhaustive" | 
 
 /** The kernel ledger's rung of each sink clause (`PII_SINKS`), shipped with `@keel/cli` (k.evidence `pii.json`). */
 export const KERNEL_SINK_RUNGS: Readonly<Record<string, Rung>> = {
-  "std.sessions#2": "probabilistic",
-  "k.privacy#7": "probabilistic",
-  "k.privacy#6": "probabilistic",
-  "k.evidence#5": "probabilistic",
+  "std.sessions#971e9dd1": "none",
+  "k.privacy#6e6a9059": "none",
+  "k.privacy#322775dc": "none",
+  "k.evidence#d28b776b": "none",
 };

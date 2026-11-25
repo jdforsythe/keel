@@ -78,6 +78,8 @@ export function keelConfig(config: ViteUserConfig = {}): ViteUserConfig {
     test: {
       ...test,
       ...(workers === undefined ? {} : { maxWorkers: workers }),
+      // Each test's location line, which the run report records (k.test-run Run report).
+      includeTaskLocation: true,
       setupFiles: [WATCHDOG, NODE_FETCH_SETUP, ...(typeof own === "string" ? [own] : own), ...keelTest.setup],
       env: { ...keelTest.env, ...test.env },
       execArgv: ["--import", NODE_FETCH, ...(test.execArgv ?? [])],

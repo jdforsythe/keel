@@ -1,6 +1,8 @@
 // The ledger gate: the committed tooling/ledger/ledger.json against what `keel ledger` produces from the tree now.
 // `pnpm ledger --diff` only reports a lowered rung, a higher unsafe count and a missed threshold, so a file edited by
-// hand upward, an item whose source is gone and an item the tree gained all pass it; this fails S0011 on each.
+// hand upward, an item whose source is gone and an item the tree gained all pass it; this fails S0011 on each, and
+// passes on each E1732 and E1733 `keel ledger` reports (a citation or a clause list it cannot read). Clauses compare by
+// key; a message names a clause the tree holds by its position too.
 // Usage: node tooling/ledger-fresh.mjs           exports, clauses and the unsafe count (what a tree alone decides)
 //        node tooling/ledger-fresh.mjs --a11y    also the WCAG items and the count per rung; needs the apps'
 //                                                reports/a11y.json (`keel test` in golden-1, golden-2, household and each example, as CI does)
@@ -22,9 +24,18 @@ await run("ledger-fresh", () => {
     encoding: "utf8",
     maxBuffer: 256 * 1024 * 1024,
   });
-  if (r.status !== 0) throw new Error(`keel ledger exited ${r.status}: ${r.stderr.trim().split("\n")[0] ?? ""}`);
+  // Exit 1 is an error diagnostic of the run's own (E1732, E1733), passed on below; anything else is no ledger.
+  if (r.status !== 0 && r.status !== 1)
+    throw new Error(`keel ledger exited ${r.status}: ${r.stderr.trim().split("\n")[0] ?? ""}`);
   const fresh = parseFresh(r.stdout);
   const diffs = compareLedger(committed, fresh, withA11y);
+  const unread = fresh.unread.map((d) => ({
+    kind: "diag",
+    code: d.code,
+    ...(d.path === undefined ? {} : { path: d.path, line: d.line ?? 1, col: d.col ?? 1 }),
+    message: d.message,
+    see: d.see ?? "k.ledger-items",
+  }));
   const diags = diffs.map((d) => ({
     kind: "diag",
     code: "S0011",
@@ -36,8 +47,8 @@ await run("ledger-fresh", () => {
     see: "tooling/ledger-fresh.mjs",
   }));
   return {
-    diags,
+    diags: [...unread, ...diags],
     counts: { items: fresh.records.length, ...(withA11y ? {} : { notA11y: committed.a11y?.length ?? 0 }) },
-    ...(diags.length > 0 ? { exit: 2 } : {}),
+    ...(diags.length + unread.length > 0 ? { exit: 2 } : {}),
   };
 });

@@ -2,7 +2,6 @@
 // Spec: k.ledger-items, clause "The bullet `` `\"hi\"` is shown.`` is cited by `// Spec: k.x, clause \"\"hi\" is shown.\"`; `// Spec: k.x, clause \"\"hi\" is shown.\"` is E1732."
 // Spec: k.ledger-items, clause "With bullets `A is one.` and `B is two now.` in `k.x`, `// Spec: k.x, clause \"B is two.\"` is one E1732 whose message holds `B is two.` and `k.x#2`."
 // Spec: k.ledger-items, clause "`// Spec: k.nope, clause \"A is one.\"`, `// Spec: k.x Rules, \"A is one.\"` and `// Spec: k.x, clause \"A is one.\" \"B is two now.\"` are each one E1732."
-// Pending (rfc:0235 step 4): skipped until the build lands; the builder un-skips by changing each `it.skip` to `it` in this file.
 // Seed: 1337 (the two properties, 5 runs each). Binary runs: 1 for every fixed case (one project of eleven sections, read by one `keel ledger`), 1 per property run.
 // Each section of the shared project holds its own spec file and conformance files, so a file's citation is read apart from the others'.
 // ASSUMED: E1732's `path` is the conformance file and its `line` the 1-based line of the `// Spec:` line; "a note holding `\"`" is read as a `// Spec:` line of another form (E1732);
@@ -107,8 +106,7 @@ const at = (run: Run, file: string) => diagsOf(run, "E1732").filter((d) => d.pat
 const rung = (run: Run, id: string, bullet: string): unknown => clauseRecord(run, itemOf(id, bullet))?.rung;
 
 describe("k.ledger-items: a citation is one `// Spec:` line of one form", () => {
-  // Pending (rfc:0235 step 4): skipped until the build lands; the builder un-skips by changing each `it.skip` to `it` in this file.
-  it.skip(
+  it(
     '`// Spec: k.x, clause "a is one"` cites `A is one.`',
     () => {
       const run = sharedRun();
@@ -118,7 +116,7 @@ describe("k.ledger-items: a citation is one `// Spec:` line of one form", () => 
     SLOW,
   );
 
-  it.skip(
+  it(
     '`// Spec: k.x, clause "A is` with `// one."` on the next line cites `A is one.`',
     () => {
       const run = sharedRun();
@@ -128,17 +126,17 @@ describe("k.ledger-items: a citation is one `// Spec:` line of one form", () => 
     SLOW,
   );
 
-  it.skip(
+  it(
     '`// Spec: k.x, clause "A is"` cites nothing and is E1732 at its line',
     () => {
       const run = sharedRun();
       expect(rung(run, "k.c", ONE)).toBe("none");
-      expect(at(run, "c")).toEqual([expect.objectContaining({ line: 1 })]);
+      expect(at(run, "c")).toEqual([expect.objectContaining({ line: 1, code: "E1732" })]);
     },
     SLOW,
   );
 
-  it.skip(
+  it(
     'The bullet `` `"hi"` is shown.`` is cited by `// Spec: k.x, clause "\\"hi\\" is shown."`',
     () => {
       const run = sharedRun();
@@ -148,42 +146,42 @@ describe("k.ledger-items: a citation is one `// Spec:` line of one form", () => 
     SLOW,
   );
 
-  it.skip(
+  it(
     '`// Spec: k.x, clause ""hi" is shown."` is E1732',
     () => {
       const run = sharedRun();
       expect(rung(run, "k.e", HI)).toBe("none");
-      expect(at(run, "e")).toEqual([expect.objectContaining({ line: 1 })]);
+      expect(at(run, "e")).toEqual([expect.objectContaining({ line: 1, code: "E1732" })]);
     },
     SLOW,
   );
 
-  it.skip(
+  it(
     'With bullets `A is one.` and `B is two now.` in `k.x`, `// Spec: k.x, clause "B is two."` is one E1732 whose message holds `B is two.` and `k.x#2`',
     () => {
       const run = sharedRun();
       const found = at(run, "f");
       expect(found).toHaveLength(1);
-      expect(found[0]).toMatchObject({ line: 1 });
+      expect(found[0]).toMatchObject({ code: "E1732", line: 1 });
       expect(String(found[0]?.message)).toContain("B is two.");
       expect(String(found[0]?.message)).toContain("k.f#2");
     },
     SLOW,
   );
 
-  it.skip(
+  it(
     '`// Spec: k.nope, clause "A is one."`, `// Spec: k.x Rules, "A is one."` and `// Spec: k.x, clause "A is one." "B is two now."` are each one E1732',
     () => {
       const run = sharedRun();
       for (const file of ["g-nope", "g-rules", "g-two"])
-        expect(at(run, file)).toEqual([expect.objectContaining({ line: 1 })]);
+        expect(at(run, file)).toEqual([expect.objectContaining({ line: 1, code: "E1732" })]);
       expect(rung(run, "k.g", ONE)).toBe("none");
       expect(rung(run, "k.g", TWO)).toBe("none");
     },
     SLOW,
   );
 
-  it.skip(
+  it(
     "a `// Spec:` line of any other form (no comma, no `clause`, a label, single quotes, no section, no quote, a quote still open) is one E1732 at its line and cites nothing",
     () => {
       const run = sharedRun();
@@ -195,7 +193,7 @@ describe("k.ledger-items: a citation is one `// Spec:` line of one form", () => 
     SLOW,
   );
 
-  it.skip(
+  it(
     "no other comment is read: a quote of a bullet in a comment that is no `// Spec:` line cites nothing and is no E1732, and a `// Spec:` line after the first statement is not read",
     () => {
       const run = sharedRun();
@@ -207,7 +205,7 @@ describe("k.ledger-items: a citation is one `// Spec:` line of one form", () => 
     SLOW,
   );
 
-  it.skip(
+  it(
     'text after the closing quote that holds no `"` is a note and cites as without it; a note holding `"` is E1732',
     () => {
       const run = sharedRun();
@@ -220,7 +218,7 @@ describe("k.ledger-items: a citation is one `// Spec:` line of one form", () => 
     SLOW,
   );
 
-  it.skip("a quote that differs from a bullet only by backticks, quote style, spacing, case and the final period cites it, and one character of substance more or less does not (property)", () => {
+  it("a quote that differs from a bullet only by backticks, quote style, spacing, case and the final period cites it, and one character of substance more or less does not (property)", () => {
     const word = fc.stringMatching(/^[a-z]{3,8}$/);
     fc.assert(
       fc.property(
@@ -252,7 +250,7 @@ describe("k.ledger-items: a citation is one `// Spec:` line of one form", () => 
     );
   }, 600_000);
 
-  it.skip('a `"` of a bullet is written `\\"` in a quote: for any quoted words, the escaped quote cites the bullet and the quote with raw `"` is E1732 (property)', () => {
+  it('a `"` of a bullet is written `\\"` in a quote: for any quoted words, the escaped quote cites the bullet and the quote with raw `"` is E1732 (property)', () => {
     const word = fc.stringMatching(/^[a-z]{3,8}$/);
     fc.assert(
       fc.property(fc.tuple(word, word), ([a, b]) => {

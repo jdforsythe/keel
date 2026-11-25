@@ -1309,6 +1309,27 @@ const ROWS: readonly Row[] = [
     "k.ledger",
   ],
   [
+    "E1732",
+    "keel ledger: a // Spec: header line not of the citation form, naming no section, or quoting no Conformance bullet of it",
+    'A citation is `// Spec: <section>, clause "<quote>"`, one clause per line, inner `"` written `\\"`; the quote must equal a bullet after backticks, quote style, spacing, case and the final period. The message names the nearest bullet.',
+    "quote the bullet the test proves, or move a quote of other prose to a plain comment",
+    "k.ledger-items",
+  ],
+  [
+    "E1733",
+    "keel ledger: two Conformance bullets of one section with one normal form",
+    "A clause's item is keyed by its normal form, so the two would be one item; the ledger holds it once.",
+    "merge the two bullets, or reword one",
+    "k.ledger-items",
+  ],
+  [
+    "W1733",
+    "keel ledger: a project's tests or page routes with no run report the ledger can use",
+    "A rung rests on a run: a test file missing from reports/tests/, held at another sha or in two report files, or no reports/a11y.json, gives no evidence.",
+    "run the project's tests (pnpm test, keel test), then keel ledger",
+    "k.ledger-items",
+  ],
+  [
     "E1751",
     "TS type error with no Keel rule code (message starts with the TS code)",
     "",

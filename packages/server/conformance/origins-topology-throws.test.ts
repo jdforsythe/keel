@@ -1,4 +1,4 @@
-// Spec: k.origins, Conformance "`topology()` throws E1590 for `https://cdn.example/`."
+// Spec: k.origins, clause "E1590: `https://*.cdn.example`, `https://cdn.example/img`, `http://cdn.example`, `script: {...}`, reason `''`, a reason with a line break, one of 201 characters, `origins: shared`, 17 origins; `https://cdn.example/`, `https://CDN.example` and `https://cdn.example:443` with the fix `https://cdn.example`; `http://localhost:9000` and `https://cdn.example:8443` are none; `topology()` throws E1590 for `https://cdn.example/`."
 // k.origins, Rules "(check, build, dev; `topology()` throws `Error('E1590 <deployable>: ...')`)"
 // Seed 1337 (fc.assert below).
 import { topology } from "@keel/server";

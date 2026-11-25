@@ -45,6 +45,17 @@ describe("compareLedger", () => {
     expect(messages(gone, tree)).toEqual(["packages/c/src/h.ts#Hashed is in the ledger file and not in the tree"]);
   });
 
+  it("names a clause the tree holds by its position too", () => {
+    const keyed = {
+      ...tree,
+      records: [...tree.records.slice(0, 2), { item: "k.one#3f9a1b2c", rung: "example", n: 2 }],
+    };
+    expect(messages(file, keyed)).toEqual([
+      "k.one#1 is in the ledger file and not in the tree",
+      "k.one#3f9a1b2c [k.one#2] (example) is in the tree and not in the ledger file",
+    ]);
+  });
+
   it("finds an item the tree gained and the file lacks", () => {
     const fewer = { ...file, clauses: [] };
     expect(messages(fewer, tree)).toEqual(["k.one#1 (example) is in the tree and not in the ledger file"]);
@@ -112,7 +123,21 @@ describe("parseFresh", () => {
       unsafe: 4,
       negativeTypes: 0,
       rungs: { example: 1, probabilistic: 0, exhaustive: 0, proven: 0, monitored: 0 },
+      unread: [],
     });
+  });
+
+  it("keeps a clause's position and the E1732 and E1733 diagnostics", () => {
+    const e1732 = { kind: "diag", code: "E1732", path: "p.test.ts", line: 1, col: 1, message: "cites no clause" };
+    const text = [
+      '{"kind":"ledger","item":"k.one#3f9a1b2c","rung":"none","evidence":"none","n":4}',
+      JSON.stringify(e1732),
+      '{"kind":"diag","code":"W1714","message":"m"}',
+      '{"kind":"summary","ok":false,"name":"ledger","counts":{"items":1}}',
+    ].join("\n");
+    const fresh = parseFresh(text);
+    expect(fresh.records).toEqual([{ item: "k.one#3f9a1b2c", rung: "none", n: 4 }]);
+    expect(fresh.unread).toEqual([e1732]);
   });
 
   it("throws on output without a summary", () => {

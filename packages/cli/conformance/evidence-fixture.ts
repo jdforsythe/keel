@@ -9,6 +9,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { type Tree, materialize } from "./compat-support.ts";
+import { itemOf } from "./ledger-items-support.ts";
 
 export const SEED = 1337;
 const root = fileURLToPath(new URL("../../../", import.meta.url));
@@ -76,13 +77,13 @@ export const USER_PII: readonly { path: string; class: string }[] = [
 ];
 
 /** The four sink clauses whose rung decides `pii.json` coverage: section and 1-based Conformance sentence. */
-export const SINK_CLAUSES = [
-  { id: "std.sessions#2", spec: "spec/std/std.sessions.md", section: "std.sessions", n: 2 },
-  { id: "k.privacy#7", spec: "spec/kernel/k.privacy.md", section: "k.privacy", n: 7 },
-  { id: "k.privacy#6", spec: "spec/kernel/k.privacy.md", section: "k.privacy", n: 6 },
-  { id: "k.evidence#5", spec: "spec/kernel/k.evidence.md", section: "k.evidence", n: 5 },
+const SINKS = [
+  { spec: "spec/std/std.sessions.md", section: "std.sessions", n: 2 },
+  { spec: "spec/kernel/k.privacy.md", section: "k.privacy", n: 7 },
+  { spec: "spec/kernel/k.privacy.md", section: "k.privacy", n: 6 },
+  { spec: "spec/kernel/k.evidence.md", section: "k.evidence", n: 5 },
 ] as const;
-export type SinkId = (typeof SINK_CLAUSES)[number]["id"];
+export type SinkId = string;
 
 const repoFile = (path: string): string => readFileSync(join(root, path), "utf8");
 
@@ -99,6 +100,10 @@ export function clauseText(specPath: string, n: number): string {
   if (text === undefined) throw new Error(`${specPath} has no clause ${n}`);
   return text;
 }
+
+/** The sink clauses, each with its item `<section>#<key>` (`itemOf`, k.ledger-items Clause key) as `id`. */
+const sink = <C extends (typeof SINKS)[number]>(c: C) => ({ ...c, id: itemOf(c.section, clauseText(c.spec, c.n)) });
+export const SINK_CLAUSES = [sink(SINKS[0]), sink(SINKS[1]), sink(SINKS[2]), sink(SINKS[3])] as const;
 
 const citingTest = (section: string, clause: string, property: boolean): string =>
   property

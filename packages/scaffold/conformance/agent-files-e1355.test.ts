@@ -1,4 +1,4 @@
-// Spec: k.scaffold "Unclosed block: `--sync` E1355, exit 1, writes nothing."
+// Spec: k.scaffold, clause "`keel check`: fresh, no W1356; an edited or removed copy or edited block, one W1356 there; no block, none. Unclosed block: `--sync` E1355, exit 1, writes nothing."
 // k.scaffold Rules E1355 "Keel block not one start and one end line". Also covers a block with the end line only and a start line twice.
 // Seed: none. Red: `keel docs` is absent (E1051, exit 2).
 import { describe, expect, it } from "vitest";

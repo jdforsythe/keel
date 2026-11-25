@@ -1,4 +1,4 @@
-// Spec: k.compat, clause "Removing an `output` field a base entry requires is one E1562 with no fix; adding a field to an open output object is none."
+// Spec: k.compat, clause "Removing an `output` field a base entry requires is one E1562 with no fix; adding a field to an open output object is none; removing a base entry is one E1562 with no fix."
 // Seed 1337. Cross-deployable caller `a` (deployable x) of the contract `y` (deployable y). Every field is an entry `y.load<j>` of one project
 // (`projectMany`), so the case is three builds and two checks.
 import { afterAll, expect, test } from "vitest";
