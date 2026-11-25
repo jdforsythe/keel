@@ -1,6 +1,6 @@
 # RFC 0230: the log scrub reads decoded views under a byte cap; one event has a size cap
 
-Status: accepted (ADR-0252), accepted by the orchestrator on 2026-11-25 on standing authority, for the operator to confirm. Amends k.privacy (Sinks, Conformance), k.serverlog (Path, Conformance), k.server (Request flow, Conformance), k.services (events, Conformance), k.forms (Conformance), the map. Fix lane 06 of the weakness triage (`tasks/p1/weaknesses.md`): backlog 0970, 0971, 0974, 0756, 0729, 0972, 0442, 1001.
+Status: implemented (ADR-0252), accepted by the orchestrator on 2026-11-25 on standing authority, for the operator to confirm. Amends k.privacy (Sinks, Conformance), k.serverlog (Path, Conformance), k.server (Request flow, Conformance), k.services (events, Conformance), k.forms (Conformance), the map. Fix lane 06 of the weakness triage (`tasks/p1/weaknesses.md`): backlog 0970, 0971, 0974, 0756, 0729, 0972, 0442, 1001.
 
 ## Decisions
 - D1: the scrub stops listing encoder outputs. It reads each text three times: as is, as its decoded view, and as the decoded view of that view. One decoder reads `%` escapes, `+`, JSON escapes and five named and all numeric HTML entities. A copy found in a view marks the raw text it came from.

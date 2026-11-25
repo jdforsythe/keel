@@ -73,14 +73,14 @@ Rules:
 - [ ] 1012 `keel check --quiet` hides the failing code; decided: a failing quiet trailer names the first code
 
 ### Lane 06 server-scrub-and-streams · server, services · RFC (k.privacy, 0974) · L
-- [ ] 0970 URL copies of a secret from common encoders slip the scrub; match a decoded view
-- [ ] 0971 hex, `\/`, entities, NFD and unaligned base64 copies slip; decided: add what matches cleanly, state the rest as limits
-- [ ] 0974 the whole-text mark and the covered encodings are stated in the README only
-- [ ] 0756 a secret starting or ending with `/` leaves the slash in the `req` line
-- [ ] 0729 the scrub costs 1.2 s of event loop on a 790 KB body, a cheap stall
-- [ ] 0972 non-ASCII secrets reach the scrub's cap about 2.2 times sooner
-- [ ] 0442 plain siblings of an `s.secret` drop from a 422 re-render; restore and re-base the budget
-- [ ] 1001 an event stream has no cap on one event's size, server or client
+- [x] 0970 URL copies of a secret from common encoders slip the scrub; match a decoded view
+- [x] 0971 hex, `\/`, entities, NFD and unaligned base64 copies slip; decided: add what matches cleanly, state the rest as limits
+- [x] 0974 the whole-text mark and the covered encodings are stated in the README only
+- [x] 0756 a secret starting or ending with `/` leaves the slash in the `req` line
+- [x] 0729 the scrub costs 1.2 s of event loop on a 790 KB body, a cheap stall
+- [x] 0972 non-ASCII secrets reach the scrub's cap about 2.2 times sooner
+- [x] 0442 plain siblings of an `s.secret` drop from a 422 re-render; restore and re-base the budget
+- [x] 1001 an event stream has no cap on one event's size, server or client
 
 ### Lane 07 check-security-rules · check, cli · RFC (k.boundary, 0884) · M
 - [ ] 0975 E1111 misses aliases, destructured `assign`, reassigned `let`, cross-file changes
