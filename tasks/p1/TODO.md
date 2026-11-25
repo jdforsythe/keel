@@ -99,7 +99,8 @@ The triage is `tasks/p1/weaknesses.md`: 102 lines to fix now in 17 lanes (A1), 1
 Each of these is started as early as its inputs allow, since they have the longest lead times.
 
 - [ ] A physical Android device, a physical iOS device and a Windows machine, for the shell runs CI cannot make (backlog 0824).
-- [ ] Accessibility audit and penetration test: choose and pay one firm for each (scope: golden-3 and the site, a retest included). The scope documents, a vendor shortlist with a recommendation and the readiness list are being written (`lane-p1-reviews`, `docs/reviews/`).
+- [ ] Accessibility audit and penetration test: choose and pay one firm for each. `docs/reviews/vendors.md` holds the shortlist with sources and a recommendation (accessibility: TetraLogical or AbilityNet; pen test: Cure53 or 7ASecurity); `docs/reviews/a11y-audit-scope.md` and `pen-test-scope.md` can be sent as they are; `docs/reviews/readiness.md` lists what must be true before a firm starts.
+- [ ] Turn on GitHub private vulnerability reporting for the repository (`SECURITY.md` points to it and it is off).
 - [ ] A newcomer reviewer: one person who writes TypeScript and has never seen the repo, to read the docs and the walkthrough.
 - [ ] A domain and a static host account for the site.
 - [ ] The npm organization and the GitHub organization for the fresh public repository.
