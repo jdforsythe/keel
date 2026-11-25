@@ -1,6 +1,7 @@
 import { compile, isSourcePath, pathCollisions, projectDirs, serverOnlyCalls, stdArtifact } from "@keel/compiler";
 import { identityDiags } from "@keel/compiler/hosting/identityDiags";
 import { importDeps } from "@keel/compiler/std/importDeps";
+import { librarySources } from "@keel/compiler/std/librarySources";
 import type { Input } from "../types/Input.ts";
 import type { Io } from "../types/Io.ts";
 import type { OutRecord } from "../types/OutRecord.ts";
@@ -59,7 +60,8 @@ export async function buildCommand(io: Io, input: Input = {}, refresh = false): 
   );
   const topology = projectTopology(project);
   const loaded = await importDeps(io.cwd, files);
-  const r = compile(files, topology === undefined ? {} : { topology });
+  // The artifacts derive from the app's sources and its libraries' files (k.library In an app), as the plugin's do.
+  const r = compile([...files, ...librarySources(io.cwd)], topology === undefined ? {} : { topology });
   const std = stdArtifact(files);
   const paths = [
     ...identityDiags(project, io.cwd, true),

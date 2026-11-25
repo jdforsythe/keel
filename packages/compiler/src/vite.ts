@@ -56,6 +56,7 @@ import { appLibraries } from "./std/appLibraries.ts";
 import { clientStdData } from "./std/clientStdData.ts";
 import { importDeps } from "./std/importDeps.ts";
 import { libraryRel } from "./std/libraryRel.ts";
+import { librarySources } from "./std/librarySources.ts";
 import { stdRoutes } from "./std/stdRoutes.ts";
 import { stdArtifact } from "./stdArtifact.ts";
 import type { Artifacts } from "./types/Artifacts.ts";
@@ -303,8 +304,6 @@ export default function (): {
   let root = process.cwd();
   /** The app's libraries (`appLibraries`), compiled as its own files; read again when a manifest changes. */
   let libraries: Library[] = [];
-  /** The paths library files are compiled at (`libraryRel`): the app's CSS holds their styles, `.keel/` does not. */
-  const fromLibrary = new Set<string>();
   /** Whether `configResolved` set `root`; until then no artifact is written. */
   let resolved = false;
   let command: "build" | "serve" | undefined;
@@ -458,10 +457,7 @@ export default function (): {
     if (!CODE.test(file) || file.endsWith(".d.ts")) return null;
     // A library's file, wherever it lies, is compiled as the app's (k.library In an app).
     const lib = path.isAbsolute(file) ? libraryRel(libraries, file) : undefined;
-    if (lib !== undefined) {
-      fromLibrary.add(lib);
-      return lib;
-    }
+    if (lib !== undefined) return lib;
     if (file.includes("/node_modules/")) return null;
     // only app code under the root: linked workspace packages resolve to real paths outside it
     const rel = path.relative(root, file);
@@ -723,8 +719,9 @@ export default function (): {
   };
 
   const flush = (): { id: string; file: string }[] => {
-    // Only app sources feed the artifacts, by the rule `keel build` and `keel check` share; a library's files do not.
-    const keys = [...modules.keys()].filter((k) => isSourcePath(k) && !fromLibrary.has(k)).sort();
+    // Only app sources, a library's files among them (`librarySources`), feed the artifacts, by the rule `keel build`
+    // and `keel check` share.
+    const keys = [...modules.keys()].filter(isSourcePath).sort();
     const parts: Artifacts[] = [];
     for (const k of keys) {
       const e = modules.get(k);
@@ -740,10 +737,7 @@ export default function (): {
       writeArtifact(root, name, text);
       written.set(name, text);
     }
-    // The CSS holds the libraries' styles too (`refresh`).
-    const all =
-      fromLibrary.size === 0 ? artifacts : mergeArtifacts([...modules.values()].map((e) => e.artifacts)).artifacts;
-    const usages = canonicalJson(all["styles.json"]);
+    const usages = canonicalJson(artifacts["styles.json"]);
     if (usages !== usageKeys) {
       usageKeys = usages;
       stale = true;
@@ -1013,11 +1007,7 @@ export default function (): {
       readTopology();
       for (const rel of listSources(root)) compileModule(rel, fs.readFileSync(path.join(root, rel), "utf8"));
       libraries = appLibraries(root);
-      for (const lib of libraries)
-        for (const f of lib.files) {
-          const rel = relOf(f);
-          if (rel !== null) compileModule(rel, fs.readFileSync(f, "utf8"));
-        }
+      for (const f of librarySources(root)) compileModule(f.path, f.source);
       const bad = await stdProblems();
       if (bad.length > 0 && command === "build" && !clientBuild) throw new Error(bad.join("\n"));
       for (const b of bad) warn(`keel: ${b}`);

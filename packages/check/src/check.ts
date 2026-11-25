@@ -215,10 +215,6 @@ export function check(given: readonly SourceFile[], options: CheckOptions = {}):
     out.push(...runRules(registered, dates === undefined ? input : { ...input, dates }));
   }
   for (const file of files) if (isSqlPath(file.path)) out.push(...runSqlRules(registered, file));
-  // The `.keel/` artifacts and the surface derive from the app's own files, not a library's (k.library In an app).
-  const mine = (f: SourceFile): boolean => !isLibrary(libs.real(f.path));
-  const own = files.filter(mine);
-  const ownOpts: CheckOptions = opts.project === undefined ? opts : { ...opts, project: opts.project.filter(mine) };
   // The passes that read a library's files where they lie.
   const realChecked = checked.map((c) => ({
     file: { path: libs.real(c.file.path), source: c.file.source },
@@ -236,8 +232,9 @@ export function check(given: readonly SourceFile[], options: CheckOptions = {}):
     ...contractChecks(checked, all, opts.topology),
     ...ruleCodeDeclarations(checked),
     ...budgetBreaches(opts.budgets ?? []),
-    ...generatedEdits(own, expectedHashes(own, ownOpts), ownOpts.project ?? own),
-    ...compatChecks(own, ownOpts.project ?? own, (dir) => compatTopology(dir, all, opts), opts.base),
+    // E1005 derives each artifact from the files that wrote it: the app's sources and its libraries' at `modules/<id>/<f>`.
+    ...generatedEdits(files, expectedHashes(files, opts), opts.project ?? files),
+    ...compatChecks(files, opts.project ?? files, (dir) => compatTopology(dir, all, opts), opts.base),
   );
 
   // A diagnostic in a library file is located where the file lies and carries no fix (k.library In an app).
