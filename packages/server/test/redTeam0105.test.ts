@@ -169,9 +169,9 @@ describe("overlapping values leave no part of a secret", () => {
     expect(redacted("k abcd-XYZW-9876", rq(["abcd-XYZW-9876"], ["XYZW"]))).toBe("k [secret]");
   });
 
-  it("a pii value that holds a secret is marked whole, as the longer one", () => {
+  it("a pii value that holds a secret is marked whole, and the run is [secret] since one copy in it is a secret's", () => {
     const out = redacted("to john-SECRETX-doe now", rq(["SECRETX"], ["john-SECRETX-doe"]));
-    expect(out).toBe("to [pii] now");
+    expect(out).toBe("to [secret] now");
   });
 
   it("of two secrets where one is a prefix, a suffix or an infix of the other, the longer is marked whole", () => {

@@ -1,47 +1,55 @@
 // @vitest-environment node
-// The scrub's automaton at small scale (k.privacy Server log): the counts of a build and a walk on texts of a few
-// characters, the failure links, the padding a form takes in, the case folding table, and the cache of a built
-// automaton. The 400,000-character shapes are in scrubSteps.scale.test.ts.
+// The scrub's automaton at small scale (k.privacy Copies, Base64, Cost): the counts of a build and a walk on texts of a
+// few characters, the failure links, the characters and padding a base64 form takes in, the case folding table, the
+// cache of a built automaton, and the byte cap at its boundary. The 400,000-character shapes are in
+// scrubSteps.scale.test.ts.
 import { describe, expect, it } from "vitest";
 import { automatonOf } from "../src/internal/automatonOf.ts";
+import { holdValues } from "../src/internal/holdValues.ts";
 import { pastCap } from "../src/internal/pastCap.ts";
 import { scrubbed } from "../src/internal/scrubbed.ts";
+import { tallyOf } from "../src/internal/tallyOf.ts";
 
-const counter = () => ({ build: 0, walk: 0, forms: 0 });
+const counter = () => ({ build: 0, walk: 0 });
 const mask = (text: string, values: readonly string[]): string => scrubbed(text, [[new Set(values), "[S]"]]);
 
 describe("counts of a build and a walk", () => {
-  it("counts one value's build: the value, the trie's units and the links, and the forms' characters", () => {
+  it("counts one value's build: forming, splitting the trie breadth-first, and the links", () => {
     const c = counter();
-    // Forms `ab` and `ywi=` (base64, folded): 1 value formed, trie steps (0+1)+2 + (0+1)+4, one link step per
-    // node under the first level (b, w, i, =).
+    // Forms `ab`, `ywi=` and `ywi=` (padded base64 in both alphabets, folded). Forming: each form's units + 1 (13).
+    // Splitting, per node its forms and, where it branches, the sort and its forms and children: root 3 + 1 + 5,
+    // `a` 1 + 2, `y` 2 + 3, `ab` 1, `yw` 2 + 3, `ywi` 2 + 3, `ywi=` 2 (30). One link step per node under the first
+    // level: `ab`, `yw`, `ywi`, `ywi=` (4).
     automatonOf([new Set(["ab"])], c);
-    expect(c).toEqual({ build: 13, walk: 0, forms: 6 });
+    expect(c).toEqual({ build: 47, walk: 0 });
   });
 
   it("counts a walk one step per unit and one per form ending at it", () => {
     const c = counter();
     expect(scrubbed(" ab", [[new Set(["ab"]), "[S]"]], c)).toBe(" [S]");
-    expect(c).toEqual({ build: 13, walk: 4, forms: 6 });
+    expect(c).toEqual({ build: 47, walk: 4 });
   });
 
-  it("counts values formed across sets, trie steps and link steps, one more where a link takes two hops", () => {
+  it("counts forms across sets, the sort of a node's children, and one more link step where a link takes two hops", () => {
     const c = counter();
-    // 3 values formed; forms ab, cd, ef, y2q=, ywi=, zwy= (18 characters); trie steps are each form's length plus one
-    // (24); 12 nodes below the first level take one link step each, and `zwy=` takes two (its parent fails to `y`,
-    // which has no `=` child, so the walk goes on to the root): 3 + 24 + 13.
+    // 9 forms: ab, cd, ef and twice each ywi=, y2q=, zwy= (39 forming steps). Splitting: the root's 9 forms, its
+    // children a, y, c, e, z sorted by insertion in 6 steps, then 9 + 5 (29); a, c, e 3 each; y 4 + 2 + 6; z 5;
+    // ab, cd, ef 1 each; y2, yw, zw 5 each; y2q, ywi, zwy 5 each; y2q=, ywi=, zwy= 2 each (94). Links: 12 nodes under
+    // the first level take one step each, and `zwy=` takes two (its parent fails to `y`, which has no `=` child, so
+    // the walk goes on to the root) (13).
     automatonOf([new Set(["ab", "cd"]), new Set(["ef"])], c);
-    expect(c).toEqual({ build: 40, walk: 0, forms: 18 });
+    expect(c).toEqual({ build: 146, walk: 0 });
   });
 
-  it("stops forming at the cap: the values formed so far are counted, and the later sets are not formed", () => {
-    const over = counter();
-    expect(automatonOf([new Set(["abcdef"]), new Set(["x"]), new Set(["y"])], over, 5)).toBe("over");
-    expect(over.build).toBe(1);
-    expect(over.forms).toBeGreaterThan(5);
-    const same = counter();
-    expect(automatonOf([new Set(["ab"]), new Set(["ab"]), new Set(["cd"])], same, 6)).toBe("over");
-    expect(same).toEqual({ build: 3, walk: 0, forms: 12 });
+  it("builds nothing for a list holding a set past the cap, wherever it stands, and reads no later set", () => {
+    const past = new Set<string>();
+    holdValues(past, ["abcdef"], 5);
+    expect(pastCap.has(past)).toBe(true);
+    for (const sets of [[past], [past, new Set(["x"]), new Set(["y"])], [new Set(["ab"]), new Set(["ab"]), past]]) {
+      const c = counter();
+      expect(automatonOf(sets, c)).toBe("over");
+      expect(c).toEqual(counter());
+    }
   });
 });
 
@@ -68,35 +76,44 @@ describe("failure links", () => {
   });
 });
 
-describe("padding", () => {
-  // `abcdefgh` is 8 bytes: its unpadded base64 `YWJjZGVmZ2g` takes in the one `=` that follows it.
+describe("the characters and padding a base64 form takes in", () => {
+  // `abcdefgh` is 8 bytes: its base64 is `YWJjZGVmZ2g=`. At alignment 0 its core is `YWJjZGVmZ2`, the characters whose
+  // six bits all come from its bytes; the mark takes in the one after (`g`, part its bits) and the `=` after that.
   const B64 = "YWJjZGVmZ2g";
-  it("takes in the padding after an unpadded base64 form", () => {
+  const CORE = "YWJjZGVmZ2";
+  it("takes in the character after the core and every `=` after it", () => {
     expect(mask(`x ${B64}= y`, ["abcdefgh"])).toBe("x [S] y");
     expect(mask(`x ${B64} y`, ["abcdefgh"])).toBe("x [S] y");
-    expect(mask(`x ${B64}== y`, ["abcdefgh"])).toBe("x [S]= y");
+    expect(mask(`x ${B64}== y`, ["abcdefgh"])).toBe("x [S] y");
+    expect(mask(`x ${CORE} y`, ["abcdefgh"])).toBe("x [S]y");
   });
 
-  it("keeps the larger padding when two values give the same form, in either order", () => {
-    expect(mask(`x ${B64}= y`, ["abcdefgh", B64])).toBe("x [S] y");
-    expect(mask(`x ${B64}= y`, [B64, "abcdefgh"])).toBe("x [S] y");
+  it("takes in the character before a core at another alignment", () => {
+    // At alignment 1 (one byte before it) the core is `FiY2RlZmdo`; the character before holds two of its bits.
+    expect(mask("x QFiY2RlZmdo y", ["abcdefgh"])).toBe("x [S] y");
+  });
+
+  it("keeps the widening when a value is itself another value's core, in either order", () => {
+    expect(mask(`x ${B64}= y`, ["abcdefgh", CORE])).toBe("x [S] y");
+    expect(mask(`x ${B64}= y`, [CORE, "abcdefgh"])).toBe("x [S] y");
+    expect(mask(`x ${B64}= y`, [CORE])).toBe("x [S]g= y");
     expect(
       scrubbed(`x ${B64}= y`, [
-        [new Set([B64]), "[A]"],
+        [new Set([CORE]), "[A]"],
         [new Set(["abcdefgh"]), "[B]"],
       ]),
     ).toBe("x [A] y");
     expect(
       scrubbed(`x ${B64}= y`, [
         [new Set(["abcdefgh"]), "[B]"],
-        [new Set([B64]), "[A]"],
+        [new Set([CORE]), "[A]"],
       ]),
     ).toBe("x [B] y");
   });
 
-  it("gives a form that ends with another the padding of the one it ends with", () => {
-    expect(mask(`a x${B64}= b`, ["abcdefgh", `x${B64}`])).toBe("a [S] b");
-    expect(mask(`a x${B64}= b`, [`x${B64}`])).toBe("a [S]= b");
+  it("gives a form that ends with a core the widening of that core", () => {
+    expect(mask(`a x${B64}= b`, ["abcdefgh", `x${CORE}`])).toBe("a [S] b");
+    expect(mask(`a x${B64}= b`, [`x${CORE}`])).toBe("a [S]g= b");
   });
 });
 
@@ -155,7 +172,7 @@ describe("case folding", () => {
 });
 
 describe("the cache of a built automaton", () => {
-  it("gives the same automaton again for the same sets and cap, without building", () => {
+  it("gives the same automaton again for the same sets, without building", () => {
     const a = new Set(["one"]);
     const c = counter();
     const first = automatonOf([a], c);
@@ -164,14 +181,15 @@ describe("the cache of a built automaton", () => {
     expect(c).toEqual(after);
   });
 
-  it("builds again for another cap, in either direction", () => {
-    const a = new Set(["one"]);
-    const big = automatonOf([a]);
-    expect(big).not.toBe("over");
-    expect(automatonOf([a], undefined, 3)).toBe("over");
-    expect(automatonOf([a])).not.toBe("over");
-    const b = new Set(["two"]);
-    expect(automatonOf([b], undefined, 3)).toBe("over");
+  it("reads the cap before the cache: a set put past it is over at once, and a twin below it still builds", () => {
+    const a = new Set<string>();
+    holdValues(a, ["one"], 3);
+    const built = automatonOf([a]);
+    expect(built).not.toBe("over");
+    holdValues(a, ["t"], 3);
+    expect(pastCap.has(a)).toBe(true);
+    expect(automatonOf([a])).toBe("over");
+    const b = new Set(["one", "t"]);
     expect(automatonOf([b])).not.toBe("over");
   });
 
@@ -200,13 +218,13 @@ describe("the cache of a built automaton", () => {
   });
 
   it("keeps `over` however the sets grow, without building again", () => {
-    const a = new Set(["abcdefgh"]);
+    const a = new Set<string>();
+    holdValues(a, ["abcdefgh"], 4);
     const c = counter();
-    expect(automatonOf([a], c, 4)).toBe("over");
-    const after = { ...c };
+    expect(automatonOf([a], c)).toBe("over");
     a.add("more");
-    expect(automatonOf([a], c, 4)).toBe("over");
-    expect(c).toEqual(after);
+    expect(automatonOf([a], c)).toBe("over");
+    expect(c).toEqual(counter());
   });
 
   it("is `over` for a list holding a set past its cap, before anything is read", () => {
@@ -225,18 +243,36 @@ describe("the cache of a built automaton", () => {
   });
 });
 
-describe("the cap", () => {
-  it("is over when the forms pass the cap, not at it", () => {
-    // `ab` forms `ab` and `ywi=`: 6 characters.
-    expect(automatonOf([new Set(["ab"])], undefined, 5)).toBe("over");
-    expect(automatonOf([new Set(["ab"])], undefined, 6)).not.toBe("over");
-    expect(automatonOf([new Set(["ab"])], undefined, 7)).not.toBe("over");
+describe("the byte cap", () => {
+  it("is past when the bytes pass the cap, not at it", () => {
+    // `ab` is 2 bytes.
+    for (const [cap, past] of [
+      [1, true],
+      [2, false],
+      [3, false],
+    ] as const) {
+      const set = new Set<string>();
+      holdValues(set, ["ab"], cap);
+      expect(pastCap.has(set)).toBe(past);
+      expect(automatonOf([set]) === "over").toBe(past);
+    }
   });
 
-  it("counts a form shared by two sets once, and forms every value until the cap is passed", () => {
+  it("counts a value in two sets of one scope once, and builds both sets' forms below the cap", () => {
+    const secrets = new Set<string>();
+    const pii = new Set<string>();
+    tallyOf(pii, secrets);
+    holdValues(secrets, ["ab"], 2);
+    holdValues(pii, ["ab"], 2);
+    expect(tallyOf(secrets).bytes).toBe(2);
+    expect(pastCap.has(pii)).toBe(false);
     const c = counter();
-    expect(automatonOf([new Set(["ab"]), new Set(["ab"])], c, 6)).not.toBe("over");
-    expect(c.build).toBeGreaterThanOrEqual(2);
-    expect(c.forms).toBe(6);
+    expect(automatonOf([secrets, pii], c)).not.toBe("over");
+    // The forms of `ab` once per set, on one trie: forming 26; splitting root 6 + 1 + 8, `a` 2 + 3, `y` 4 + 5, `ab` 2,
+    // `yw` and `ywi` 4 + 5 each, `ywi=` 4 (53); links 4.
+    expect(c.build).toBe(83);
+    holdValues(pii, ["c"], 2);
+    expect(pastCap.has(secrets)).toBe(true);
+    expect(automatonOf([secrets, pii])).toBe("over");
   });
 });

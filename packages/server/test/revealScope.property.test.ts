@@ -1,17 +1,17 @@
 // @vitest-environment node
 // k.privacy Server log: a `Secret` made outside a scope and revealed inside a request or runner `run` joins that
 // scope's set with exactly its written values; each `Secret` is walked once per set; outside every scope a reveal
-// reads nothing and keeps nothing; the caps hold for revealed values; overlapping scopes do not share. Seed 1337.
+// reads nothing and keeps nothing; the byte cap holds for revealed values; overlapping scopes do not share. Seed 1337.
 import { type Secret, reveal, s } from "@keel/schema";
 import { secretWalk } from "@keel/schema/internal";
 import fc from "fast-check";
 import { beforeAll, describe, expect, it } from "vitest";
-import { SECRETS_CAP } from "../src/internal/SECRETS_CAP.ts";
 import { holdSecrets } from "../src/internal/holdSecrets.ts";
 import { noteRequestSecrets } from "../src/internal/noteRequestSecrets.ts";
 import { notedSecrets } from "../src/internal/notedSecrets.ts";
 import { pastCap } from "../src/internal/pastCap.ts";
 import { requestSecrets } from "../src/internal/requestSecrets.ts";
+import { tallyOf } from "../src/internal/tallyOf.ts";
 
 const SEED = 1337;
 const value = fc.stringMatching(/^v[a-z0-9-]{3,16}$/);
@@ -98,13 +98,14 @@ describe("reveal outside every scope", () => {
   });
 });
 
-describe("the caps hold for revealed values", () => {
-  it("a revealed secret that takes a set past SECRETS_CAP values puts it past its cap", () => {
+describe("the byte cap holds for revealed values", () => {
+  it("a revealed secret that takes a set past 65,536 bytes puts it past its cap, keeps that value and no later one", () => {
     const into = new Set<string>();
     holdSecrets(
       into,
-      Array.from({ length: SECRETS_CAP }, (_, i) => `v${i}`),
+      Array.from({ length: 8_192 }, (_, i) => `v${String(i).padStart(7, "0")}`),
     );
+    expect(tallyOf(into).bytes).toBe(65_536);
     expect(pastCap.has(into)).toBe(false);
     const made = madeOutside(s.secret(s.string()).parse("one-more-5a6b"));
     requestSecrets.run(into, () => reveal(made));
@@ -115,12 +116,17 @@ describe("the caps hold for revealed values", () => {
     expect(into.has("later-9f0e")).toBe(false);
   });
 
-  it("a revealed secret whose forms pass SCRUB_CAP characters puts the set past its cap", () => {
-    const big = Array.from({ length: 3 }, (_, i) => `${"abcdefghij".repeat(100_000)}${i}`);
-    const made = madeOutside(s.secret(s.array(s.string())).parse(big));
-    const into = new Set<string>();
-    requestSecrets.run(into, () => reveal(made));
-    expect(pastCap.has(into)).toBe(true);
+  it("a revealed secret of 65,536 bytes holds the set at its cap, and one of 65,537 puts it past", () => {
+    const reveals = (values: string[]): Set<string> => {
+      const made = madeOutside(s.secret(s.array(s.string())).parse(values));
+      const into = new Set<string>();
+      requestSecrets.run(into, () => reveal(made));
+      return into;
+    };
+    const at = reveals(["abcdefghij".repeat(6_553), "abcdef"]);
+    expect(tallyOf(at).bytes).toBe(65_536);
+    expect(pastCap.has(at)).toBe(false);
+    expect(pastCap.has(reveals(["abcdefghij".repeat(6_553), "abcdefg"]))).toBe(true);
   });
 });
 

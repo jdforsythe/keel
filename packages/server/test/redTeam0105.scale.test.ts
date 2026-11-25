@@ -6,6 +6,7 @@ import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { redacted } from "../src/internal/redacted.ts";
 import { scrubbed } from "../src/internal/scrubbed.ts";
+import { stepBounds } from "./stepBounds.ts";
 
 const SEED = 1337;
 // The cases scrub texts of hundreds of thousands of characters and run 300 generated cases; a starved worker needs
@@ -91,13 +92,16 @@ describe("no secret or pii value makes the scrub throw", { timeout: SCALE_MS }, 
 });
 
 describe("a long value is found in steps linear in the text", { timeout: SCALE_MS }, () => {
-  // A clock is not read in tests (S0006): each case counts the walk's steps against the text's length and the build's
-  // against the forms' length, and runs the adversarial shape, which a scan restarted at every position would not finish
-  // in the test's time.
+  // A clock is not read in tests (S0006): each case counts the walk's steps against its derived bound, 5 per unit of
+  // each reading of the text, and the build's against its bound from the forms' units, the forms and the trie's nodes
+  // (stepBounds.ts), and runs the adversarial shape, which a scan restarted at every position would not finish in the
+  // test's time. The sets are larger than a scope may hold, so the matcher is driven directly.
   const scanned = (message: string, secrets: readonly string[]): { out: string; linear: boolean } => {
-    const count = { build: 0, walk: 0, forms: 0 };
-    const out = scrubbed(message, [[new Set(secrets), "[secret]"]], count);
-    const linear = count.walk <= 5 * message.length + 5 && count.build <= 4 * count.forms + 10 * secrets.length;
+    const count = { build: 0, walk: 0 };
+    const set = new Set(secrets);
+    const out = scrubbed(message, [[set, "[secret]"]], count);
+    const most = stepBounds(message, [set]);
+    const linear = count.walk <= most.walk && count.walk <= 5 * message.length + 5 && count.build <= most.build;
     return { out, linear };
   };
 

@@ -55,7 +55,7 @@
     },
     "@keel/schema": "5.75kb",
     "@keel/server": {
-      "max": "27.5kb",
+      "max": "30.5kb",
       "platform": "node"
     },
     "@keel/server/internal/dom": "4.75kb",
@@ -63,7 +63,7 @@
       "max": "2.5kb",
       "platform": "node"
     },
-    "@keel/services": "3.8kb",
+    "@keel/services": "4.1kb",
     "@keel/std-channels": "1.5kb",
     "@keel/std-channels/server": {
       "max": "3kb",

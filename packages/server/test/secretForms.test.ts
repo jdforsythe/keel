@@ -34,7 +34,9 @@ describe("other encodings of a secret", () => {
 
   it("marks a JSON copy with `\\u` for each non-ASCII unit, in either case", () => {
     expect(one(`{"k":"${asciiJson(SECRET)}"}`, SECRET)).toBe('{"k":"[secret]"}');
-    expect(one(`{"k":"${asciiJson(SECRET).toUpperCase()}"}`, SECRET)).toBe('{"k":"[secret]"}');
+    const upper = asciiJson(SECRET).replace(/\\u([0-9a-f]{4})/g, (_, h: string) => `\\u${h.toUpperCase()}`);
+    expect(upper).not.toBe(asciiJson(SECRET));
+    expect(one(`{"k":"${upper}"}`, SECRET)).toBe('{"k":"[secret]"}');
     expect(one(`{"k":"${asciiJson("😀 émoji")}"}`, "😀 émoji")).toBe('{"k":"[secret]"}');
   });
 

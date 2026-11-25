@@ -51,6 +51,7 @@ import { secured } from "./internal/secured.ts";
 import { selectDeployable } from "./internal/selectDeployable.ts";
 import { serving } from "./internal/serving.ts";
 import { slotSince } from "./internal/slotSince.ts";
+import { tallyOf } from "./internal/tallyOf.ts";
 import { unexpected } from "./internal/unexpected.ts";
 import { withCors } from "./internal/withCors.ts";
 import type { AppOptions } from "./types/AppOptions.ts";
@@ -276,6 +277,8 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
     const secrets = new Set<string>();
     slotSince.set(secrets, noteRequestSecrets());
     const pii = new Set<string>();
+    // The two sets count toward one cap (k.privacy Cost).
+    tallyOf(pii, secrets);
     // While it runs, and in all the work it schedules, a write to a module store throws E1256 (`serving`, `refuseModuleWrites`).
     const routed = () =>
       requestSecrets.run(secrets, () =>

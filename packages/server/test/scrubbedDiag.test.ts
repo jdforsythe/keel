@@ -20,10 +20,12 @@ const lead = fc.constantFrom(...LEADS);
 const value = fc.stringMatching(/^[a-z0-9-]{6,12}$/);
 const text = fc.string({ maxLength: 40 });
 
-/** A secret set past the count cap: `most` 1 and two values. */
+/** A secret set past the byte cap: a cap of 10 bytes, at it with `first-past`, past it with `second-past`. */
 const pastSet = (): Set<string> => {
   const into = new Set<string>();
-  holdSecrets(into, ["first-past", "second-past"], undefined, undefined, 1);
+  holdSecrets(into, ["first-past"], 10);
+  if (pastCap.has(into)) throw new Error("a set at the cap is not past it");
+  holdSecrets(into, ["second-past"], 10);
   return into;
 };
 
@@ -45,6 +47,16 @@ describe("scrubbedDiag", () => {
     );
   });
 
+  it("at the byte cap still scrubs each copy and keeps the rest of the message", () => {
+    const into = new Set<string>();
+    holdSecrets(into, ["first-past"], 10);
+    const rq = { secrets: into, pii: new Set<string>() };
+    const l = "loader app.a threw: ";
+    expect(scrubbedDiag({ code: "keel.unexpected", lead: l, message: `${l}got first-past` }, rq).message).toBe(
+      `${l}got [secret]`,
+    );
+  });
+
   it("scrubs a lead that holds a value below the caps", () => {
     const rq = { secrets: new Set(["", "app-secretid"]), pii: new Set<string>() };
     const l = "loader app-secretid threw: ";
@@ -53,7 +65,7 @@ describe("scrubbedDiag", () => {
     );
   });
 
-  it("past the count cap keeps the lead, marks the rest, and marks each frame", () => {
+  it("past the byte cap keeps the lead, marks the rest, and marks each frame", () => {
     fc.assert(
       fc.property(lead, text, fc.array(text, { minLength: 1, maxLength: 3 }), (l, rest, frames) => {
         const rq = { secrets: pastSet(), pii: new Set(["someone"]) };
