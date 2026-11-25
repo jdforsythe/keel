@@ -43,7 +43,7 @@ function stdPackage(arg: ts.Expression, checker: ts.TypeChecker): string | undef
  * The `formatLiteral` calls of `sf` (E1108, k.formats), however imported: the offsets of the `format` and `text`
  * arguments, the format names the call's type carries, and the literal text (`'..'`, `".."` or a template without
  * substitution), or `null` for any other argument, and the package declaring the `format` value (`ownerOf` of its
- * file), and the `@keel/std-*` package an identifier `format` is imported from (`null` otherwise). `judgeFormat`
+ * file; `""` for a file no `package.json` names, `null` when no declaration can be told), and the `@keel/std-*` package an identifier `format` is imported from (`null` otherwise). `judgeFormat`
  * judges each against the registry.
  */
 export function formatLiterals(
@@ -76,7 +76,7 @@ export function formatLiterals(
           textAt: text.getStart(sf),
           names: namesOf(n, checker),
           text: ts.isStringLiteral(text) || ts.isNoSubstitutionTemplateLiteral(text) ? text.text : null,
-          owner: declared === undefined ? null : ownerOf(declared),
+          owner: declared === undefined ? null : (ownerOf(declared) ?? ""),
           pkg: stdPackage(format, checker) ?? null,
         });
     }
