@@ -1,0 +1,37 @@
+{
+  "name": "golden-3",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "tsc --noEmit && biome check modules test && keel check --quiet",
+    "test": "keel test",
+    "build": "keel build",
+    "dev": "keel dev",
+    "web": "node --experimental-webstorage --localstorage-file=.web.storage --disable-warning=ExperimentalWarning dist/web/server.mjs"
+  },
+  "dependencies": {
+    "@keel/compiler": "workspace:*",
+    "@keel/ctx": "workspace:*",
+    "@keel/forms": "workspace:*",
+    "@keel/reactive": "workspace:*",
+    "@keel/router": "workspace:*",
+    "@keel/runtime-dom": "workspace:*",
+    "@keel/schema": "workspace:*",
+    "@keel/server": "workspace:*",
+    "@keel/store": "workspace:*",
+    "@keel/ui": "workspace:*",
+    "@keel/std-text": "workspace:*",
+    "@keel/std-sessions": "workspace:*"
+  },
+  "devDependencies": {
+    "@keel/cli": "workspace:*",
+    "@keel/testing": "workspace:*",
+    "@types/node": "^22",
+    "happy-dom": "^21.0.4",
+    "typescript": "^5.6",
+    "vite": "^8.3.6",
+    "vitest": "^4.1.12",
+    "@keel/tooling": "workspace:*"
+  }
+}

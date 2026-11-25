@@ -109,6 +109,14 @@ async function selftest(t0: number): Promise<void> {
     "probe flagged project files",
   );
   must(
+    replyFindings(
+      `/private${project}/CLAUDE.md\n.claude/skills/keel/SKILL.md\n- CLAUDE.md`,
+      project,
+      repoRoot,
+    ).length === 0,
+    "probe flagged the project's files by realpath or relative path",
+  );
+  must(
     replyFindings(`${project}/CLAUDE.md\n${home}/.claude/CLAUDE.md`, project, repoRoot).length === 1,
     "probe missed a user memory file",
   );
