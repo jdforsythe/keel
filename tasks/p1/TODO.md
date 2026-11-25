@@ -70,8 +70,9 @@ The triage is `tasks/p1/weaknesses.md`: 102 lines to fix now in 17 lanes (A1), 1
 
 ### W5 Agent docs, W7 the walkthrough app, golden-3, W16 head to head (the apps that prove it)
 - [ ] `next` `keel docs <topic>` reading the docs shipped in the packages; `AGENTS.md`; the app-work skills checked against the tree
-- [ ] `running` the walkthrough app's design: subject, layers, chapters, build plan (`lane-p1-walk`)
-- [ ] `blocked` (design) the walkthrough app built layer by layer, each chapter run once as an eval
+- [x] `done` the walkthrough app's design (`tasks/p1/walkthrough-design.md`): Evenly, a group trip's shared costs, fourteen layers from a page with no server to native shells
+- [ ] `running` Evenly layers 1 to 3 (`lane-evenly`)
+- [ ] `blocked` (spike A: a browser data capability `place` can move to the server) layer 4 on; layer 6 after library slice 4; layer 13 after the session-to-test fixes; chapter evals after the agent docs
 - [ ] `blocked` (agent docs) golden-3 built by an agent run of its eval with Claude, then with Codex; every finding filed
 - [ ] `blocked` (golden-3) the `public-docs` eval converging with Claude and with Codex
 - [ ] `blocked` (walkthrough) head to head: the harness and three pairs against the comparison list, each result dated and versioned
