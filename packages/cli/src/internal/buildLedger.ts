@@ -152,7 +152,10 @@ export function buildLedger(
   const known = new Set(code.map((f) => f.path));
   // A test gives evidence only while its project's run reports record it passing (k.ledger-items Run evidence).
   const refs = new Map(
-    [...areas].map(([area, fs]) => [area, testEvidence(fs, known, z3).filter((r) => runs.passes(r.path, r.from, r.to))]),
+    [...areas].map(([area, fs]) => [
+      area,
+      testEvidence(fs, known, z3).filter((r) => runs.passes(r.path, r.from, r.to)),
+    ]),
   );
   const monitored = monitoredEvidence(files);
   const found: { item: string; pkg: string; area: string; name: string; path: string }[] = [];

@@ -27,7 +27,9 @@ function entriesOf(source: string): Map<string, Entry> {
   for (const [path, e] of Object.entries(doc.files)) {
     if (!isRecord(e) || typeof e.sha !== "string" || !Array.isArray(e.tests)) continue;
     const tests = e.tests.flatMap((t: unknown) =>
-      isRecord(t) && typeof t.line === "number" && typeof t.state === "string" ? [{ line: t.line, state: t.state }] : [],
+      isRecord(t) && typeof t.line === "number" && typeof t.state === "string"
+        ? [{ line: t.line, state: t.state }]
+        : [],
     );
     out.set(path, { sha: e.sha, tests });
   }

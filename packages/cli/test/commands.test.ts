@@ -1,9 +1,10 @@
 // Command behaviour beyond the conformance suite: unavailable commands, docs, explain, ledger, custom formatters.
 import { s } from "@keel/schema";
 import { describe, expect, it } from "vitest";
-import { formatter, run } from "../src/index.ts";
+import { formatter } from "../src/index.ts";
 import { normalize } from "../src/internal/normalize.ts";
 import { render } from "../src/internal/render.ts";
+import { ledgerRun as run } from "./ledgerRun.ts";
 
 const CWD = "/work/app";
 const lines = (out: string): string[] => out.split("\n").filter((l) => l !== "");

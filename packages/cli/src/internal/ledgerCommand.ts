@@ -17,23 +17,24 @@ import { buildLedger } from "./buildLedger.ts";
 import { coverageGaps } from "./coverageGaps.ts";
 import { justifiedFiles } from "./justifiedFiles.ts";
 import { justifiedText } from "./justifiedText.ts";
-import { libraryCount } from "./libraryCount.ts";
 import { ledgerProjects } from "./ledgerProjects.ts";
+import { libraryCount } from "./libraryCount.ts";
 import { libraryLedgers } from "./libraryLedgers.ts";
 import { makeDiag } from "./makeDiag.ts";
 import { mutationClaims } from "./mutationClaims.ts";
 import { ownLibrary } from "./ownLibrary.ts";
-import { projectInScope } from "./projectInScope.ts";
 import { pagelessLayouts } from "./pagelessLayouts.ts";
-import { projectOf } from "./projectOf.ts";
 import { projectFiles } from "./projectFiles.ts";
+import { projectInScope } from "./projectInScope.ts";
+import { projectOf } from "./projectOf.ts";
 import { summary } from "./summary.ts";
 import { z3Version } from "./z3Version.ts";
 
 type Mutation = NonNullable<Infer<typeof LedgerFileSchema>["mutation"]>;
 
 const COMMITTED = [".keel/ledger.json", "tooling/ledger/ledger.json"];
-const PROJECT_MUTATION = /^((?:packages|apps|examples)\/[^/]+)\/(?:reports\/mutation\/mutation|mutation-justified)\.json$/;
+const PROJECT_MUTATION =
+  /^((?:packages|apps|examples)\/[^/]+)\/(?:reports\/mutation\/mutation|mutation-justified)\.json$/;
 
 const safeJson = (text: string): unknown => {
   try {
@@ -244,7 +245,8 @@ export function ledgerCommand(
   const layouts = a11yMap.size === 0 ? [] : pagelessLayouts(files);
   // A citation or a clause list the ledger cannot read (E1732, E1733) is reported in every mode and scope.
   const unread = built.diags.filter((d) => d.code === "E1732" || d.code === "E1733");
-  const notes = scope === "" ? [...built.diags, ...unreported, ...misshapen, ...unjustified, ...stale, ...layouts] : unread;
+  const notes =
+    scope === "" ? [...built.diags, ...unreported, ...misshapen, ...unjustified, ...stale, ...layouts] : unread;
   const held = (cs: readonly A11yClaim[], r: Record<string, number>): Record<string, number> => {
     const n = cs.filter((c) => c.rung === "example").length;
     return n === 0 ? r : { ...r, example: (r.example ?? 0) + n };

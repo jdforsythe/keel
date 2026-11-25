@@ -99,7 +99,7 @@ describe("justifiedFiles", () => {
       bad,
       { path: "packages/r/mutation-justified.json", source: "{" },
     ]);
-    expect([...justified.keys()]).toEqual(["p"]);
+    expect([...justified.keys()]).toEqual(["packages/p"]);
     expect(diags.map((d) => [d.code, d.path])).toEqual([
       ["E1725", bad.path],
       ["E1725", bad.path],
@@ -134,7 +134,7 @@ describe("mutationClaims with justified entries", () => {
         },
       ],
       undefined,
-      new Map([["p", { entries: justifiedShape({ justified: entries }).entries }]]),
+      new Map([["packages/p", { entries: justifiedShape({ justified: entries }).entries }]]),
     );
   const le = {
     file: "src/a.ts",

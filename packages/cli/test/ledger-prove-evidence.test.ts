@@ -2,9 +2,14 @@
 // body awaits or returns so its rejection fails the test, is `proven` and names the Z3 version; without an installed
 // Z3, a call expected to reject, one whose rejection is handled or not awaited, or a local `prove`, it is `example`.
 import { describe, expect, it } from "vitest";
-import { buildLedger } from "../src/internal/buildLedger.ts";
+import { buildLedger as buildOver } from "../src/internal/buildLedger.ts";
 import { testEvidence } from "../src/internal/testEvidence.ts";
 import { z3Version } from "../src/internal/z3Version.ts";
+import type { SourceFile } from "../src/types/SourceFile.ts";
+import { runReported } from "./runReported.ts";
+
+/** `buildLedger` over `files` with the run report of a run in which every test passed. */
+const buildLedger = (files: readonly SourceFile[], z3?: string, own?: string) => buildOver(runReported(files), z3, own);
 
 const T = "packages/a/test/t.test.ts";
 const KP = 'import { prove } from "@keel/testing/prove";\n';

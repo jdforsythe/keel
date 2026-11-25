@@ -15,6 +15,8 @@ export function a11yReportGaps(files: readonly SourceFile[]): Diag[] {
     const path = `${dir}reports/a11y.json`;
     if (pages === 0 || paths.has(path)) return [];
     const what = `${pages} page ${pages === 1 ? "route" : "routes"}`;
-    return [makeDiag("W1733", `no reports/a11y.json for ${what}; its a11y items are none`, { path, see: "k.ledger-items" })];
+    return [
+      makeDiag("W1733", `no reports/a11y.json for ${what}; its a11y items are none`, { path, see: "k.ledger-items" }),
+    ];
   });
 }

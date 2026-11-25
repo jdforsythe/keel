@@ -32,7 +32,8 @@ const PROJECT = "(?:(?:packages|apps|examples)\\/[^/]+\\/)?";
 /** Each project's Stryker report and run reports, read by `ledger` only: the walk enters `reports` only on the path to them. */
 const PROJECT_REPORT = new RegExp(`^${PROJECT}reports\\/(?:mutation\\/mutation|tests\\/[^/]+)\\.json$`);
 /** A project's justified survivors (k.ledger Justified survivors) and the `package.json` that makes a folder a project. */
-const PROJECT_FILE = /^(?:(?:packages|apps|examples)\/[^/]+\/)?mutation-justified\.json$|^(?:packages|apps|examples)\/[^/]+\/package\.json$/;
+const PROJECT_FILE =
+  /^(?:(?:packages|apps|examples)\/[^/]+\/)?mutation-justified\.json$|^(?:packages|apps|examples)\/[^/]+\/package\.json$/;
 const TO_REPORT = new RegExp(`^${PROJECT}reports(?:\\/mutation|\\/tests)?$`);
 /** A project's render checks (k.a11y Claims), read by `ledger` only; the walk enters any `reports` directory for it. */
 const A11Y_REPORT = /(?:^|\/)reports\/a11y\.json$/;

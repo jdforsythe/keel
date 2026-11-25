@@ -1,7 +1,7 @@
+import { existsSync, readdirSync } from "node:fs";
 /// <reference types="vitest/config" />
 import { Writable } from "node:stream";
-import { existsSync, readdirSync } from "node:fs";
-import { type TestReport, type TestRunReport, testResults, testRunReport, writeTestReport } from "@keel/testing";
+import { type TestReport, testResults, writeTestReport } from "@keel/testing";
 import { writeA11yReport } from "@keel/testing/a11y";
 import { type Vitest, startVitest } from "vitest/node";
 import type { Input } from "../types/Input.ts";
@@ -43,7 +43,7 @@ async function vitestRun(
   root: string,
   filters: readonly string[],
   claims: boolean,
-  runReport: true | ((report: TestRunReport) => void),
+  writeReport: boolean,
 ): Promise<TestReport> {
   let report = EMPTY;
   let run: Vitest | undefined;
@@ -55,8 +55,7 @@ async function vitestRun(
       const r = run === undefined ? NOT_STARTED : testResults(run.state.getFiles(), errors, root);
       // The run report (k.test-run Run report), and every render check the harness recorded to `reports/a11y.json`
       // (k.a11y Claims); `keel ledger` reads both.
-      if (run !== undefined && runReport === true) writeTestReport(root, run.state.getFiles());
-      else if (run !== undefined && runReport !== true) runReport(testRunReport(root, run.state.getFiles()));
+      if (run !== undefined && writeReport) writeTestReport(root, run.state.getFiles());
       if (run !== undefined && claims) writeA11yReport(root, a11yCases(run.state.getFiles(), root));
       report = reason === "passed" || r.failed > 0 || r.errors > 0 ? r : notPassed(r, reason);
     },
@@ -107,15 +106,11 @@ async function vitestRun(
  * KeelReporter uses) turns results into T0001 diagnostics plus a summary (not ok when any
  * test failed); the run report goes to `reports/tests/run.json` (`writeTestReport`, with vitest's `includeTaskLocation`
  * set) and every render check the harness recorded to `reports/a11y.json` (`writeA11yReport`), but in a
- * library's own folder (`ownLibrary`), which then writes no `reports/a11y.json`. With `report` a function (`keel pack`'s
- * test step, which writes no file) the run report (`testRunReport`) is handed to it and not written. Skipped (the
- * empty run) when `io.files` holds no test file and `io.cwd` no vitest config, so an in-memory project never touches disk.
+ * library's own folder (`ownLibrary`), which then writes no `reports/a11y.json`. With `report` false (`keel pack`'s
+ * test step, which writes no file) no run report is written either. Skipped (the empty run) when `io.files` holds no
+ * test file and `io.cwd` no vitest config, so an in-memory project never touches disk.
  */
-export async function testCommand(
-  input: Input,
-  io: Io,
-  report: true | ((run: TestRunReport) => void) = true,
-): Promise<OutRecord[]> {
+export async function testCommand(input: Input, io: Io, report = true): Promise<OutRecord[]> {
   const configured = existsSync(io.cwd) && readdirSync(io.cwd).some((n) => VITEST_CONFIG.test(n));
   const runnable = configured || projectFiles(io).some((f) => TEST_FILE.test(f.path));
   // A library holds no page route, so its own folder keeps no render claims (k.library-pack Own folder).
