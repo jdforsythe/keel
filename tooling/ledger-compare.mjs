@@ -14,10 +14,10 @@ export function committedRungs(file, withA11y) {
 }
 
 /**
- * Differences between the committed file and the fresh records `[{ item, rung }]` (with `unsafe` and, for a complete
- * run, `rungs`). A WCAG item (`a11y:`) is compared only when `withA11y`, because its rung comes from the apps' test
+ * Differences between the committed file and the fresh records `[{ item, rung }]` (with `unsafe`, `negativeTypes` and,
+ * for a complete run, `rungs`). A WCAG item (`a11y:`) is compared only when `withA11y`, because its rung comes from the apps' test
  * reports. Each difference is `{ item, message }`: an item the file lists and the tree lacks, an item the tree has
- * and the file lacks, a different rung, a different unsafe count, and with `withA11y` a different count per rung.
+ * and the file lacks, a different rung, a different unsafe or negative type count, and with `withA11y` a different count per rung.
  */
 export function compareLedger(file, fresh, withA11y) {
   const have = committedRungs(file, withA11y);
@@ -37,6 +37,11 @@ export function compareLedger(file, fresh, withA11y) {
       item: "unsafe",
       message: `unsafe count is ${file.unsafe ?? 0} in the ledger file, ${fresh.unsafe} in the tree`,
     });
+  if ((file.negativeTypes ?? 0) !== (fresh.negativeTypes ?? 0))
+    out.push({
+      item: "negativeTypes",
+      message: `negativeTypes is ${file.negativeTypes ?? 0} in the ledger file, ${fresh.negativeTypes ?? 0} in the tree`,
+    });
   if (withA11y && fresh.rungs !== undefined)
     for (const r of RUNG_KEYS)
       if ((file.rungs?.[r] ?? 0) !== (fresh.rungs[r] ?? 0))
@@ -47,7 +52,7 @@ export function compareLedger(file, fresh, withA11y) {
   return out;
 }
 
-/** Parses the NDJSON of `keel ledger --format=json`: the `ledger` records and the summary's unsafe count and rungs. */
+/** Parses the NDJSON of `keel ledger --format=json`: the `ledger` records and the summary's unsafe and negative type counts and rungs. */
 export function parseFresh(text) {
   const records = [];
   let summary;
@@ -62,6 +67,7 @@ export function parseFresh(text) {
   return {
     records,
     unsafe: counts.unsafe ?? 0,
+    negativeTypes: counts.negativeTypes ?? 0,
     rungs: Object.fromEntries(RUNG_KEYS.map((r) => [r, counts[r] ?? 0])),
   };
 }
