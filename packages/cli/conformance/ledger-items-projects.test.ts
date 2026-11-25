@@ -180,7 +180,7 @@ describe("k.ledger-items: a project is a folder whose tests and reports the ledg
         "node_modules/@acme/charts/package.json": `${JSON.stringify({ name: "@acme/charts", version: "0.1.0", keel: "library" })}\n`,
         "node_modules/@acme/charts/test/x.test.ts": TEST_FILE,
       });
-      const run: Run = ledgerAsIs(dir);
+      const run: Run = ledgerAsIs(dir, ["--write", OUT]);
       const paths = diagsOf(run, "W1733").map((d) => String(d.path));
       expect(paths).toEqual(["examples/e/reports/tests/"]);
       expect(Object.keys(projectsOf(dir))).toEqual([]);

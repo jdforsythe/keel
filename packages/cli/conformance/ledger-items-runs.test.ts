@@ -305,4 +305,56 @@ describe("k.ledger-items: a test is passing when a run report says so", () => {
       { seed: SEED, numRuns: 5 },
     );
   }, 600_000);
+
+  it(
+    "a report that exists but holds no entry for a test file gives that file no evidence and is one W1733 naming the file",
+    () => {
+      const other = citingFile([citeLine("k.y", ONE)]);
+      const files = {
+        ...pkg("p", "k.x", {
+          report: reportText({
+            "conformance/other.test.ts": { source: other.source, tests: [{ line: 3, state: "passed" }] },
+          }),
+        }),
+        "packages/p/conformance/other.test.ts": other.source,
+        [specPath("k.y")]: specText("k.y", [ONE]),
+      };
+      const run = ledgerAsIs(project("items-run-lacks", files));
+      expect(rungOf(run, "k.x")).toBe("none");
+      expect(rungOf(run, "k.y")).toBe("example");
+      expect(w1733(run)).toEqual([expect.objectContaining({ path: "packages/p/reports/tests/" })]);
+      expect(String(w1733(run)[0]?.message)).toContain(A);
+    },
+    SLOW,
+  );
+
+  it(
+    "W1733 names the first file by its path from the project in UTF-16 order: `conformance/B.test.ts` before `conformance/a.test.ts`",
+    () => {
+      const files = {
+        ...pkg("p", "k.x", { report: null }),
+        "packages/p/conformance/B.test.ts": CITING.source,
+      };
+      const run = ledgerAsIs(project("items-run-utf16", files));
+      expect(w1733(run)).toHaveLength(1);
+      const message = String(w1733(run)[0]?.message);
+      expect(message).toContain("B.test.ts");
+      expect(message).not.toContain("a.test.ts");
+    },
+    SLOW,
+  );
+
+  it(
+    "a project's report counts only for its own files: a report in `packages/p` holding a file path `packages/q` also has gives `packages/q` no evidence and its own W1733",
+    () => {
+      const files = {
+        ...pkg("p", "k.x"),
+        "packages/q/package.json": packageJson("q"),
+        [`packages/q/${A}`]: CITING.source,
+      };
+      const run = ledgerAsIs(project("items-run-own", files));
+      expect(w1733(run).map((d) => d.path)).toEqual(["packages/q/reports/tests/"]);
+    },
+    SLOW,
+  );
 });

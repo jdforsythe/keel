@@ -85,23 +85,6 @@ describe("k.ledger: kept a11y claims and the unscored mutation file", () => {
     expect(diags(keel(dir, ["ledger", "--diff"]), "E1706").length).toBeGreaterThan(0);
   }, 60_000);
 
-  // Replaced at step 5 of rfc:0235 by the case above: a rung no run produced is `none`, and `keptNoReport` is gone.
-  it("with no `reports/a11y.json`, `a11y:.:r#1.4.3` stays at `example`, `counts` hold `keptNoReport: 1` and the compact trailer ends `, 1 keptNoReport`; over a ledger lacking it, it is `none` with no `keptNoReport`", () => {
-    const dir = project("ledger-kept", { ".keel/routes.json": ROUTES });
-    commit(dir, [{ item: ITEM, rung: "example" }]);
-    const kept = keel(dir, ["ledger", "--write", COMMITTED]);
-    expect(kept.status).toBe(0);
-    expect(rungOf(dir, ITEM)).toBe("example");
-    expect(countsOf(kept)).toMatchObject({ keptNoReport: 1 });
-    commit(dir, [{ item: ITEM, rung: "example" }]);
-    expect(compactLine(dir, ["ledger", "--write", COMMITTED])).toMatch(/, 1 keptNoReport$/);
-
-    commit(dir, []);
-    const lacking = keel(dir, ["ledger", "--write", COMMITTED]);
-    expect(rungOf(dir, ITEM)).toBe("none");
-    expect(countsOf(lacking)).not.toHaveProperty("keptNoReport");
-  }, 60_000);
-
   it("with a `reports/a11y.json` holding one failed run of `r` with an E1804 violation, `--write` writes `a11y:.:r#1.4.3` at `none`, no `keptNoReport`, and `--diff` reports E1706; with the run passed and no violations it is `example`", () => {
     const dir = project("ledger-recomputed", { ".keel/routes.json": ROUTES, "reports/a11y.json": FAILED });
     commit(dir, [{ item: ITEM, rung: "example" }]);
