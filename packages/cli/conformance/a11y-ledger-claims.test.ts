@@ -91,6 +91,15 @@ const routesJson = (ids: readonly string[]): string =>
     hash: "fnv1a:00000000",
   })}\n`;
 
+/**
+ * What the hook bounds: 11 binary runs (a `keel build`, a `keel test` and a `keel ledger` for each of the two single
+ * projects, then a build and a test in each of `apps/a` and `apps/b` and one ledger), the file's 13 s
+ * alone here, about 1 s a run. The allowance is 45 s a run: 1 s times 10 (a runner ten times slower) times 3 (the suite
+ * runs files in parallel) times 1.5 (margin), so at scale 0.1 each run has 4.5 s.
+ */
+const BINARY_RUN = 45_000;
+const HOOK_BOUND = 11 * BINARY_RUN;
+
 let passing: Run;
 let violating: Run;
 let violatingDir = "";
@@ -108,7 +117,7 @@ beforeAll(() => {
   expect(buildAndTest(join(parentDir, "apps", "a")).status).toBe(0);
   expect(buildAndTest(join(parentDir, "apps", "b")).status).toBe(0);
   parent = keel(parentDir, ["ledger"]);
-}, 360_000);
+}, HOOK_BOUND);
 afterAll(() => {
   for (const d of created) removeProject(d);
 });

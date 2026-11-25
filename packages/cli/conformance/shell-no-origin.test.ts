@@ -32,6 +32,14 @@ const build = (origin: string | null, extra: Record<string, string> = {}) => {
   return run(dir, ["build", "--target", "tauri"], origin, "json", extra);
 };
 
+/**
+ * The generated case builds 2 peers times 2 origins per property run, two property runs: 8 `keel build`s, 10.5 s alone
+ * here, 1.3 s a build. The allowance is 60 s a build: 1.3 s times 10 (a runner ten times slower) times 3 (the suite
+ * runs files in parallel) times 1.5 (margin), 59 s rounded up, so at scale 0.1 each build has 6 s.
+ */
+const BUILD_RUN = 60_000;
+const PEER_CASE_BOUND = 2 * 2 * 2 * BUILD_RUN;
+
 describe("k.shell: a shell build with no node deployable", () => {
   test(
     "with `web` alone, `keel build --target tauri` with `KEEL_ORIGIN` unset, and with it empty, prints no E1574 and proceeds",
@@ -100,6 +108,6 @@ describe("k.shell: a shell build with no node deployable", () => {
         { seed: SEED, numRuns: 2 },
       );
     },
-    SLOW,
+    PEER_CASE_BOUND,
   );
 });

@@ -4,8 +4,13 @@
 import { afterAll, expect, test } from "vitest";
 import { baseSurface, buildAndCheck, cleanup, diags, e1562Of, projectMany, write } from "./compat-support.ts";
 
-/** The case spawns three `keel build` and two `keel check`. */
-const SLOW = 120_000;
+/**
+ * The case spawns three `keel build` and two `keel check`: 5 binary runs, 4.2 s alone here, 0.84 s a run. The allowance
+ * is 40 s a run: 0.84 s times 10 (a runner ten times slower) times 3 (the suite runs files in parallel) times 1.5
+ * (margin), 38 s rounded up, so at scale 0.1 each run has 4 s.
+ */
+const BINARY_RUN = 40_000;
+const SLOW = 5 * BINARY_RUN;
 
 const dirs: string[] = [];
 afterAll(() => {
