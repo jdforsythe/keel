@@ -20,6 +20,9 @@ const Huge = s.secret(s.array(s.int()));
 // bounds the work with a margin of twenty. A parse of `huge()` reads 1,000,001 values.
 const VALUE_MS = 0.005;
 const PARSE_MS = 1_000_001 * VALUE_MS;
+// An app made on a sim ctx and one POST through `app.fetch`, beside the parse: about 50 ms here, 1,000 ms with the
+// same margin.
+const APP_MS = 1_000;
 
 describe("a secret whose read is cut", () => {
   it("puts the scope's set past its cap", { timeout: 2 * PARSE_MS }, () => {
@@ -32,7 +35,7 @@ describe("a secret whose read is cut", () => {
     expect(pastCap.has(small)).toBe(false);
   });
 
-  it("an action that makes one and throws logs its message as one mark", { timeout: PARSE_MS }, async () => {
+  it("an action that makes one and throws logs its message as one mark", { timeout: PARSE_MS + APP_MS }, async () => {
     const lines: string[] = [];
     const c = contract("app", { "app.a": { path: "/a" } });
     const routes = manifest(c, {

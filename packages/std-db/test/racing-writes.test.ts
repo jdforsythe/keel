@@ -57,6 +57,16 @@ async function replica(options: Parameters<typeof createCtx>[0]) {
 }
 
 const word = fc.stringMatching(/^[a-z]{1,8}$/);
+/** Generated races the overlapping case runs on each driver. */
+const RUNS = 5;
+/**
+ * What the overlapping case bounds on each driver: per run, a fresh database, two replicas made on it and two actions.
+ * On Postgres without `KEEL_TEST_POSTGRES_URL` the database is a PGlite engine started and closed, about 400 ms a run
+ * here on a quiet machine and up to 1 s beside the suite's other PGlite files; the first run also loads the engine's
+ * WebAssembly, about 1.5 s. The bound is 12,000 ms a run and 15,000 ms for the load, so a runner ten times slower
+ * (scale 0.1) still has 1.2 s a run and 1.5 s to load. SQLite takes the same bound and a small part of it.
+ */
+const RACE_BOUND = RUNS * 12_000 + 15_000;
 
 for (const kind of KINDS) {
   describe(`${kind} driver`, () => {
@@ -101,9 +111,9 @@ for (const kind of KINDS) {
             await rig.stop();
           }
         }),
-        { seed: SEED, numRuns: 5 },
+        { seed: SEED, numRuns: RUNS },
       );
-    });
+    }, RACE_BOUND);
 
     test("actions that do not overlap on two replicas both save, in order", async () => {
       const rig = await makeRig(kind);
