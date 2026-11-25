@@ -88,6 +88,34 @@ it("records a receipt and shows it in each locale's money format", async () => {
   de.dispose();
 });
 
+it("charts what each member paid, in each currency, with the same numbers as a table", async () => {
+  const page = await open("en-US");
+  const record = async (shop: string, amount: string, paidBy: "alex" | "sam") => {
+    await page.fire("receipts.new:shop", { type: "input", value: shop });
+    await page.fire("receipts.new:amount", { type: "input", value: amount });
+    await page.fire("receipts.new:paidBy", { type: "input", value: paidBy });
+    await page.fire("receipts.save", { type: "click" });
+  };
+  await record("Corner shop", "12.50", "alex");
+  await record("Bakery", "4.00", "sam");
+  await record("Market", "3.20", "alex");
+  expect(page.find("receipts.count").text).toBe("3 receipts");
+  const chart = page.find("receipts.spend.EUR.chart");
+  expect(chart).toMatchObject({ role: "img", name: "Paid by each member in EUR" });
+  expect(chart.value).toEqual({
+    points: [
+      { name: "Alex", value: 1570, shown: "€15.70" },
+      { name: "Sam", value: 400, shown: "€4.00" },
+    ],
+  });
+  expect(page.find("receipts.spend.EUR.summary").text).toBe("Alex paid €15.70, Sam paid €4.00.");
+  await page.fire("receipts.spend.EUR.button", { type: "click" });
+  expect(page.find("receipts.spend.EUR.table")).toMatchObject({ role: "table", name: "Paid by each member in EUR" });
+  expect(page.find("receipts.spend.EUR.row.0.value").text).toBe("€15.70");
+  expect(page.find("receipts.spend.EUR.row.1.name").text).toBe("Sam");
+  page.dispose();
+});
+
 it("loads a complete message set for each locale", async () => {
   expect((await ReceiptsText.load("de-DE")).heading).toBe("Belege");
   expect((await ReceiptsText.load("en-US")).heading).toBe("Receipts");

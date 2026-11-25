@@ -18,4 +18,8 @@ export default ReceiptsText.text({
   amountFormat: "Write the amount with up to two decimals, such as 12.50",
   full: "The book holds 200 receipts. Remove one to add another.",
   switchTo: "Deutsch",
+  spendLabel: { text: "Paid by each member in {currency}" },
+  spendSummary: { text: "Alex paid {alex}, Sam paid {sam}." },
+  numbers: "Show the numbers",
+  paid: "Paid",
 });

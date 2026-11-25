@@ -1,4 +1,4 @@
-// Structure lint. S0001/S0002/S0004/S0005 delegate to @keel/check (E1752/E1757/E1754), and E1760 and E1761 pass through; S0014 (an `unsafe(` call in `packages/*` whose lifted range holds no E1757 finding, k.unsafe), S0003, S0006, S0012 (a stdlib file names a kernel `internal` entry `deps.json` does not list, k.parity) live here; S0015 (a fast-check run with no seed, in the scanned files, conformance included, and every app's and example's test files) is unseeded-properties.mjs; S0009 (a std package's runtime entry reaches a CLI-time package) is std-entries.mjs. Usage: node tooling/structure-lint.mjs [--root dir] [--format=..] [--quiet] [--limit N]
+// Structure lint. S0001/S0002/S0004/S0005 delegate to @keel/check (E1752/E1757/E1754), and E1760 and E1761 pass through; S0014 (an `unsafe(` call in `packages/*` whose lifted range holds no E1757 finding, k.unsafe), S0003, S0006, S0012 (a stdlib file names a kernel `internal` entry `deps.json` does not list, k.parity) live here; S0015 (a fast-check run with no seed, in the scanned files, conformance included, and every app's, example's and library's test files) is unseeded-properties.mjs; S0009 (a std package's runtime entry reaches a CLI-time package) is std-entries.mjs. Usage: node tooling/structure-lint.mjs [--root dir] [--format=..] [--quiet] [--limit N]
 import fs from "node:fs";
 import path from "node:path";
 import { Visitor } from "oxc-parser";
@@ -38,10 +38,10 @@ function targets() {
   return [...set].sort();
 }
 
-/** Every app's and example's test files (S0015 only). */
+/** Every app's, example's and library's test files (S0015 only). */
 function appTests() {
   const out = [];
-  for (const top of ["apps", "examples"]) {
+  for (const top of ["apps", "examples", "libraries"]) {
     const dir = path.join(root, top);
     if (!fs.existsSync(dir)) continue;
     for (const f of walk(dir)) if (TEST_FILE.test(f)) out.push(f);

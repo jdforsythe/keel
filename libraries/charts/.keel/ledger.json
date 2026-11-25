@@ -1,0 +1,120 @@
+{
+  "version": 1,
+  "unsafe": 0,
+  "hostElements": 3,
+  "negativeTypes": 4,
+  "rungs": {
+    "example": 6,
+    "probabilistic": 4,
+    "exhaustive": 0,
+    "proven": 0,
+    "monitored": 0
+  },
+  "exports": [
+    {
+      "pkg": "charts",
+      "name": "BarChart",
+      "file": "src/BarChart.tsx",
+      "rung": "example"
+    },
+    {
+      "pkg": "charts",
+      "name": "ChartNumbers",
+      "file": "src/ChartNumbers.tsx",
+      "rung": "none"
+    },
+    {
+      "pkg": "charts",
+      "name": "ChartText",
+      "file": "src/ChartText.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "charts",
+      "name": "LineChart",
+      "file": "src/LineChart.tsx",
+      "rung": "example"
+    },
+    {
+      "pkg": "charts",
+      "name": "Point",
+      "file": "src/Point.schema.ts",
+      "rung": "example"
+    },
+    {
+      "pkg": "charts",
+      "name": "Series",
+      "file": "src/Series.schema.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "charts",
+      "name": "Sparkline",
+      "file": "src/Sparkline.tsx",
+      "rung": "example"
+    },
+    {
+      "pkg": "charts",
+      "name": "barLayout",
+      "file": "src/barLayout.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "charts",
+      "name": "barsCode",
+      "file": "src/barsCode.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "charts",
+      "name": "extent",
+      "file": "src/extent.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "charts",
+      "name": "fraction",
+      "file": "src/fraction.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "charts",
+      "name": "lineCode",
+      "file": "src/lineCode.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "charts",
+      "name": "lineLayout",
+      "file": "src/lineLayout.ts",
+      "rung": "probabilistic"
+    },
+    {
+      "pkg": "charts",
+      "name": "numbered",
+      "file": "src/numbered.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "charts",
+      "name": "sparkCode",
+      "file": "src/sparkCode.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "charts",
+      "name": "svgNode",
+      "file": "src/svgNode.ts",
+      "rung": "none"
+    },
+    {
+      "pkg": "charts",
+      "name": "svgRoot",
+      "file": "src/svgRoot.ts",
+      "rung": "none"
+    }
+  ],
+  "clauses": [],
+  "a11y": [],
+  "libraries": {}
+}
