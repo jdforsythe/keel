@@ -71,8 +71,25 @@ const projectFiles = (fg: string, test: string): Record<string, string> => ({
   "tokens.ts": tokensSource(fg),
   "modules/m/test/r.test.ts": test,
 });
+/** A `routes.json` of page entries in the k.compiler Artifacts shape. */
 const routesJson = (ids: readonly string[]): string =>
-  `${JSON.stringify({ data: Object.fromEntries(ids.map((id) => [id, { path: `/${id}` }])), hash: "fnv1a:00000000" })}\n`;
+  `${JSON.stringify({
+    data: Object.fromEntries(
+      ids.map((id) => [
+        id,
+        {
+          path: `/${id}`,
+          params: {},
+          search: {},
+          actions: [],
+          layout: null,
+          guard: null,
+          module: id.slice(0, id.indexOf(".")),
+        },
+      ]),
+    ),
+    hash: "fnv1a:00000000",
+  })}\n`;
 
 let passing: Run;
 let violating: Run;
@@ -179,25 +196,24 @@ describe("k.a11y: the project is in the item", () => {
       fc.tuple(projectDir, fc.uniqueArray(fc.constantFrom(...pool), { minLength: 1, maxLength: 3 })),
       { selector: ([dir]) => dir, minLength: 1, maxLength: 3 },
     );
-    fc.assert(
-      fc.property(tree, (projects) => {
-        const files: Record<string, string> = {};
-        for (const [dir, ids] of projects) files[`${dir}/.keel/routes.json`] = routesJson(ids);
-        const dir = keelProject("a11y-ledger-inj", files);
-        try {
-          const items = a11yItems(keel(dir, ["ledger"]));
-          const wanted = projects.flatMap(([project, ids]) => ids.map((id) => `a11y:${project}:${id}#1.4.3`));
-          // every pair has a key of its own
-          expect(new Set(wanted).size).toBe(wanted.length);
-          // no emitted key is emitted twice
-          expect(new Set(items).size).toBe(items.length);
-          // the keys of one criterion are exactly the (project, page route) pairs
-          expect(items.filter((i) => i.endsWith("#1.4.3")).sort()).toEqual([...wanted].sort());
-        } finally {
-          removeProject(dir);
-        }
-      }),
-      { seed: 1337, numRuns: 25 },
+    // the 25 sampled trees are projects of one directory (`t00/`, `t01/`, ...), read by one `keel ledger`
+    const trees = fc.sample(tree, { seed: 1337, numRuns: 25 });
+    const files: Record<string, string> = {};
+    trees.forEach((projects, i) => {
+      for (const [dir, ids] of projects)
+        files[`t${String(i).padStart(2, "0")}/${dir}/.keel/routes.json`] = routesJson(ids);
+    });
+    const items = a11yItems(keel(track(keelProject("a11y-ledger-inj", files)), ["ledger"]));
+    const wanted = trees.flatMap((projects, i) =>
+      projects.flatMap(([project, ids]) =>
+        ids.map((id) => `a11y:t${String(i).padStart(2, "0")}/${project}:${id}#1.4.3`),
+      ),
     );
-  }, 300_000);
+    // every pair has a key of its own
+    expect(new Set(wanted).size).toBe(wanted.length);
+    // no emitted key is emitted twice
+    expect(new Set(items).size).toBe(items.length);
+    // the keys of one criterion are exactly the (project, page route) pairs
+    expect(items.filter((i) => i.endsWith("#1.4.3")).sort()).toEqual([...wanted].sort());
+  }, 120_000);
 });
