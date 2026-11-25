@@ -46,7 +46,7 @@ The `unsafe` count measures escapes from the type system in code that runs. Nega
 The triage is `tasks/p1/weaknesses.md`: 102 lines to fix now in 17 lanes (A1), 105 after them in 15 lanes (A2), 24 for the docs sweep, 7 moved to `tasks/FUTURE.md`, 52 closed as done or overtaken, 2 that need a person.
 - [x] `done` the backlog triaged with decisions, in fix lanes
 - [ ] `running` lane 01 gate-flakes: three of its nine lines (`lane-gate`)
-- [ ] `running` lane 06 server-scrub-and-streams: RFC 0230 (`lane-w06`)
+- [x] `done` lane 06 server-scrub-and-streams: RFC 0230
 - [ ] `running` lane 07 check-security-rules: RFC 0231 (`lane-sec07`)
 - [x] `done` lane 08 router-identity: RFC 0232
 - [ ] `next` lanes 02 to 05 and 09 to 17, in the triage's order, as lanes free up
