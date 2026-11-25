@@ -4,14 +4,17 @@ import type { Input } from "../types/Input.ts";
 import type { Io } from "../types/Io.ts";
 import type { OutRecord } from "../types/OutRecord.ts";
 import { agentDrift } from "./agentDrift.ts";
+import { asInstalled } from "./asInstalled.ts";
 import { baseInput } from "./baseInput.ts";
 import { codeFiles } from "./codeFiles.ts";
 import { deployFreshness } from "./deployFreshness.ts";
 import { libraryManifestFiles } from "./libraryManifestFiles.ts";
 import { loadShells } from "./loadShells.ts";
 import { makeDiag } from "./makeDiag.ts";
+import { ownLibrary } from "./ownLibrary.ts";
 import { projectFiles } from "./projectFiles.ts";
 import { projectTopology } from "./projectTopology.ts";
+import { relPath } from "./relPath.ts";
 import { runCheck } from "./runCheck.ts";
 import { shellPolicy } from "./shellPolicy.ts";
 import { summary } from "./summary.ts";
@@ -26,14 +29,28 @@ import { summary } from "./summary.ts";
  * and each plugin it names that `package.json` lacks is one E1572, once per plugin (k.shell Plugins).
  * W1356 for a stale agent file, where `AGENTS.md` holds the Keel block.
  * Run over every code file, it checks the files of the app's libraries too (`runCheck`, k.library In an app).
+ * In a library's own folder (`ownLibrary`) it reads the folder as an app holds the library installed (`asInstalled`):
+ * every k.library rule holds and E1162 does not; the libraries its manifest lists are read and imported as an app's
+ * are, and each diagnostic is located at the folder's own path (k.library-pack Own folder).
  */
-export async function checkCommand(input: Input, io: Io): Promise<OutRecord[]> {
-  const files = codeFiles(io, input.paths, true);
+export async function checkCommand(input: Input, given: Io): Promise<OutRecord[]> {
+  // A library's own folder is read as an app holds the library installed (k.library-pack Own folder).
+  const own = ownLibrary(given.cwd);
+  const view = own === undefined ? undefined : asInstalled(own.name, own.text, projectFiles(given));
+  const io = view === undefined ? given : { ...given, files: view.files };
+  const files = codeFiles(
+    io,
+    view === undefined ? input.paths : input.paths?.map((p) => view.to(relPath(io.cwd, p).replace(/\/+$/, ""))),
+    true,
+  );
   const base = baseInput(input, io);
   const project = projectFiles(io);
   // Without paths, or with paths that cover every code file, the app's libraries are checked too (k.library In an app).
   const whole = files.length === codeFiles(io, undefined, true).length;
-  const checked = await runCheck(io.cwd, files, project, base.value, whole);
+  // In a library's own folder, the libraries its manifest lists are found and imported from it.
+  const manifest = view === undefined ? undefined : project.find((f) => f.path === view.to("module.ts"));
+  const reach = manifest === undefined ? project : [{ path: "modules/library/module.ts", source: manifest.source }];
+  const checked = await runCheck(io.cwd, files, project, base.value, whole, reach);
   const topology = projectTopology(project);
   const policy = await shellPolicy(io.cwd, project);
   const loaded = await loadShells(io.cwd, project, policy);
@@ -54,5 +71,7 @@ export async function checkCommand(input: Input, io: Io): Promise<OutRecord[]> {
   ];
   const errors = diags.filter((d) => d.code.startsWith("E")).length;
   const warnings = diags.filter((d) => d.code.startsWith("W")).length;
-  return [...diags, summary("check", diags, { files: files.length, errors, warnings })];
+  const shown =
+    view === undefined ? diags : diags.map((d) => (d.path === undefined ? d : { ...d, path: view.back(d.path) }));
+  return [...shown, summary("check", diags, { files: files.length, errors, warnings })];
 }

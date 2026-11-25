@@ -22,7 +22,7 @@ export type LibraryShape = {
   readonly id?: string;
   readonly deps?: string[];
   /** Added to the `exports` of `package.json`, beside `"."`. */
-  readonly exports?: Record<string, string>;
+  readonly exports?: Record<string, string | Record<string, string>>;
   /** Extra files, relative to the package folder. */
   readonly files?: Tree;
   readonly keel?: string | null;
@@ -402,3 +402,222 @@ export function serviceNames(compose: string): string[] {
 
 /** Whether a `DeployEnv` key (k.deploy): `PORT` or a `KEEL_` name. */
 export const isDeployKey = (n: string): boolean => n === "PORT" || n.startsWith("KEEL_");
+
+// ---- slice 3: `keel pack` and `keel scaffold library` ----
+import { spawnSync } from "node:child_process";
+import {
+  chmodSync,
+  cpSync,
+  existsSync,
+  lstatSync,
+  mkdtempSync,
+  readdirSync,
+  realpathSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { basename } from "node:path";
+import { fileURLToPath } from "node:url";
+import { materialize as linked } from "./boundary-support.ts";
+
+export const REPO = fileURLToPath(new URL("../../..", import.meta.url));
+export const LIB_NAME = "@acme/keel-charts";
+export const LIB_BASE = "keel-charts";
+export const LIB_ID = "keelCharts";
+
+export const isRecord = (v: unknown): v is Record<string, unknown> =>
+  typeof v === "object" && v !== null && !Array.isArray(v);
+export const str = (v: unknown): string => (typeof v === "string" ? v : "");
+
+/** A scratch folder whose `node_modules` holds the repo's packages, plus `keel` and `tsc` shims in `.bin`, so a package manager's scripts find them. */
+export function scratch(): string {
+  const dir = realpathSync(linked({}));
+  const bin = join(dir, "node_modules/.bin");
+  mkdirSync(bin, { recursive: true });
+  const shims: [string, string][] = [
+    ["keel", join(REPO, "packages/cli/src/bin.ts")],
+    ["tsc", join(REPO, "node_modules/typescript/bin/tsc")],
+  ];
+  for (const [name, target] of shims) {
+    const p = join(bin, name);
+    writeFileSync(p, `#!/bin/sh\nexec "${process.execPath}" "${target}" "$@"\n`);
+    chmodSync(p, 0o755);
+  }
+  return dir;
+}
+
+/** Links `<lib>/node_modules` to the scratch folder's: the library's dependencies are installed. */
+export function installDeps(lib: string, scratchDir: string): void {
+  symlinkSync(join(scratchDir, "node_modules"), join(lib, "node_modules"));
+}
+
+/** `keel scaffold library <name>` in `cwd`. */
+export const scaffoldLibrary = (cwd: string, name: string, extra: string[] = []): Run =>
+  keel(cwd, ["scaffold", "library", name, ...extra]);
+
+/** A scaffolded library: a scratch folder, `keel scaffold library @acme/keel-charts` run in it, its dependencies installed. */
+export function scaffolded(): { scratchDir: string; lib: string; run: Run } {
+  const scratchDir = scratch();
+  const run = scaffoldLibrary(scratchDir, LIB_NAME);
+  const lib = join(scratchDir, LIB_BASE);
+  if (existsSync(lib)) installDeps(lib, scratchDir);
+  return { scratchDir, lib, run };
+}
+
+let clones = 0;
+/** A copy of the library folder `from` beside it (its `node_modules` link made again), for a case that edits it. */
+export function cloneLibrary(from: string): string {
+  const to = join(dirname(from), `copy${++clones}`);
+  cpSync(from, to, { recursive: true, filter: (src) => basename(src) !== "node_modules" });
+  installDeps(to, dirname(from));
+  return to;
+}
+
+/** Every path under `dir` but its root `node_modules`, to its text (`dir` for a folder, `link` for a link): what "writes no file" compares. */
+export function snapshot(dir: string, rel = ""): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const name of readdirSync(join(dir, rel)).sort()) {
+    if (rel === "" && name === "node_modules") continue;
+    const p = rel === "" ? name : `${rel}/${name}`;
+    const st = lstatSync(join(dir, p));
+    if (st.isSymbolicLink()) out[p] = "link";
+    else if (st.isDirectory()) {
+      out[p] = "dir";
+      Object.assign(out, snapshot(dir, p));
+    } else out[p] = readFileSync(join(dir, p), "utf8");
+  }
+  return out;
+}
+
+export const readText = (dir: string, rel: string): string => readFileSync(join(dir, rel), "utf8");
+
+/** The parsed JSON file at `rel` under `dir`, or undefined when it is missing or not JSON. */
+export function readJson(dir: string, rel: string): unknown {
+  try {
+    return JSON.parse(readText(dir, rel));
+  } catch {
+    return undefined;
+  }
+}
+
+/** `keel pack` (or `keel pack --check`) in `dir`. */
+export const pack = (dir: string, check = false): Run => keel(dir, check ? ["pack", "--check"] : ["pack"]);
+
+/** The names among `check`, `test`, `ledger` and `kind` a message holds as whole words, in that order. */
+export const stepsNamed = (message: unknown): string[] =>
+  ["check", "test", "ledger", "kind"].filter((s) => new RegExp(`\\b${s}\\b`).test(str(message)));
+
+/** Whether `run` holds exactly one E1164 whose message begins with `step` and a colon, and names no other of `check`, `test`, `ledger`, `kind`. */
+export const namesOnly = (run: Run, step: string): boolean => {
+  const found = run.records.filter((r) => r.kind === "diag" && r.code === "E1164");
+  return (
+    found.length === 1 && str(found[0]?.message).startsWith(`${step}:`) && stepsNamed(found[0]?.message).join() === step
+  );
+};
+
+/** `src/index.ts` and `src/Example.tsx` of a scaffolded library written again: `head` the imports, `body` the expression `Example` returns. */
+export function writeExample(lib: string, body: string, head = ""): void {
+  writeFileSync(join(lib, "src/index.ts"), "export { default as Example } from './Example.tsx'\n");
+  writeFileSync(
+    join(lib, "src/Example.tsx"),
+    `${head}export default function Example(props: { id: string }) {\n  return ${body}\n}\n`,
+  );
+}
+
+/** `unsafe/raw.ts`, a file `keel check` reads clean: one export named as its file, one counted `unsafe(...)` call with a reason of eight words or more. */
+export const CLEAN_UNSAFE =
+  'declare function unsafe<T>(why: string, fn: () => T): T;\nexport const raw = unsafe("fixture call counted by the ledger and held by this test", () => 1);\n';
+
+/** A `src/Example.tsx` rendering one `Text` and `n` labelled `Host` elements (none when `n` is 0): a library `keel check` reads clean (its schema in a `*.schema.ts` file, its code a `hostCode`, a `Box` for the wrapper). */
+export function exampleWithHost(lib: string, n: number): void {
+  const host = (i: number): string =>
+    `<Host id={\`\${props.id}.c${i}\`} role="img" label="L" input={In} value={{ n: 1 }} code={() => import('./chart.ts').then((m) => m.chart)} />`;
+  writeFileSync(
+    join(lib, "src/In.schema.ts"),
+    "import { s } from '@keel/schema'\nexport const In = s.object({ n: s.number() })\n",
+  );
+  writeFileSync(
+    join(lib, "src/chart.ts"),
+    "import { hostCode } from '@keel/ui'\nexport const chart = hostCode<{ n: number }>({ mount: () => undefined })\n",
+  );
+  writeFileSync(join(lib, "src/index.ts"), "export { default as Example } from './Example.tsx'\n");
+  writeFileSync(
+    join(lib, "src/Example.tsx"),
+    `import { s } from '@keel/schema'\nimport { Box, Host, Text } from '@keel/ui'\nimport { In } from './In.schema.ts'\nexport const Props = s.object({ id: s.string() })\nexport default function Example(props: { id: string }) {\n  return (\n    <Box id={\`\${props.id}.box\`}>\n      <Text id={\`\${props.id}.text\`}>Example</Text>\n${Array.from({ length: n }, (_, i) => `      ${host(i)}\n`).join("")}    </Box>\n  )\n}\n`,
+  );
+}
+
+/** The environment of a child process the way `keel()` gives it, without the package manager's own variables. */
+function childEnv(): Record<string, string> {
+  const env: Record<string, string> = {};
+  for (const [k, v] of Object.entries(process.env)) {
+    if (v === undefined || k.startsWith("VITEST") || k === "NODE_OPTIONS" || k === "TEST" || k === "KEEL_AGENT")
+      continue;
+    if (k.toLowerCase().startsWith("npm_")) continue;
+    env[k] = v;
+  }
+  return env;
+}
+
+/** `pnpm pack` in `lib` into a new folder (its `prepack` runs unless `ignoreScripts`): the exit status, its output and the tarball made. */
+export function packTarball(
+  lib: string,
+  ignoreScripts = false,
+): { status: number | null; output: string; tgz: string | undefined } {
+  const out = mkdtempSync(join(realpathSync(tmpdir()), "keel-tarball-"));
+  const r = spawnSync(
+    "pnpm",
+    ["pack", "--pack-destination", out, ...(ignoreScripts ? ["--config.ignore-scripts=true"] : [])],
+    {
+      cwd: lib,
+      encoding: "utf8",
+      env: childEnv(),
+      timeout: 600_000,
+    },
+  );
+  const tgz = readdirSync(out).find((n) => n.endsWith(".tgz"));
+  return { status: r.status, output: `${r.stdout}${r.stderr}`, tgz: tgz === undefined ? undefined : join(out, tgz) };
+}
+
+/** A copy of the tarball `tgz` (in a new folder) whose file `rel` is `edit` of its text: the files unpacked, one rewritten, packed again under the same top folder. */
+export function editTarball(tgz: string, rel: string, edit: (text: string) => string): string {
+  const work = mkdtempSync(join(realpathSync(tmpdir()), "keel-tarball-edit-"));
+  spawnSync("tar", ["-xzf", tgz, "-C", work], { encoding: "utf8" });
+  const file = join(work, "package", rel);
+  writeFileSync(file, edit(readFileSync(file, "utf8")));
+  const out = join(mkdtempSync(join(realpathSync(tmpdir()), "keel-tarball-")), "edited.tgz");
+  spawnSync("tar", ["-czf", out, "-C", work, "package"], { encoding: "utf8" });
+  return out;
+}
+
+/** The paths a tarball holds. */
+export function tarEntries(tgz: string): string[] {
+  const r = spawnSync("tar", ["-tzf", tgz], { encoding: "utf8" });
+  return r.stdout.split("\n").filter((l) => l !== "");
+}
+
+/** Installs the tarball as a package manager's isolated layout holds it: the files under a store folder inside `node_modules`, `@keel` linked beside them, the package linked from the app's `node_modules`. */
+export function installTarball(app: string, tgz: string, name = LIB_NAME): string {
+  const store = join(app, "node_modules/.keel-store", name.replace("/", "+"), "node_modules");
+  const real = join(store, name);
+  mkdirSync(real, { recursive: true });
+  spawnSync("tar", ["-xzf", tgz, "-C", real, "--strip-components=1"], { encoding: "utf8" });
+  symlinkSync(join(app, "node_modules/@keel"), join(store, "@keel"));
+  mkdirSync(dirname(join(app, "node_modules", name)), { recursive: true });
+  symlinkSync(real, join(app, "node_modules", name));
+  return real;
+}
+
+/** The app of the round trip: module `shop` listing `@acme/keel-charts` in `deps`, a `static` deployable `site` whose `/` page renders `<Example id="shop.example" />`, the app's `tokens.ts`. */
+export const roundTripApp = (): Tree => ({
+  ...project({ adapter: "static", page: false, deps: [LIB_NAME], libraries: [] }),
+  "tokens.ts": TOKENS,
+  "modules/shop/Home.tsx": `import { Box, Text } from '@keel/ui'\nimport { Example } from '${LIB_NAME}'\nexport default function Home() {\n  return (\n    <Box as="main">\n      <Text>shop</Text>\n      <Example id="shop.example" />\n    </Box>\n  )\n}\n`,
+});
+
+/** A new app of `roundTripApp` with the tarball of `lib` installed. */
+export function appWithTarball(tgz: string): string {
+  const app = realpathSync(linked(roundTripApp()));
+  installTarball(app, tgz);
+  return app;
+}

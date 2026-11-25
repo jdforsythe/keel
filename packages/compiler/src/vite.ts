@@ -43,6 +43,7 @@ import { pageMiddleware } from "./internal/pageMiddleware.ts";
 import { parseTopology } from "./internal/parseTopology.ts";
 import { projectHandlerUses } from "./internal/projectHandlerUses.ts";
 import { projectManifests } from "./internal/projectManifests.ts";
+import { readJson } from "./internal/readJson.ts";
 import { registeredIn } from "./internal/registeredIn.ts";
 import { registersCapability } from "./internal/registersCapability.ts";
 import { serverEntryCode } from "./internal/serverEntryCode.ts";
@@ -57,6 +58,7 @@ import { allLibraries } from "./std/allLibraries.ts";
 import { appLibraries } from "./std/appLibraries.ts";
 import { clientStdData } from "./std/clientStdData.ts";
 import { importDeps } from "./std/importDeps.ts";
+import { libraryKind } from "./std/libraryKind.ts";
 import { libraryRel } from "./std/libraryRel.ts";
 import { librarySources } from "./std/librarySources.ts";
 import { stdRoutes } from "./std/stdRoutes.ts";
@@ -271,7 +273,8 @@ type UserConfig = { root?: string; envPrefix?: unknown; define?: unknown };
  * `serverEntryCode`) with every dependency into `dist/<name>/server.mjs` beside `routes.json`, every module's routes
  * (`projectManifests` over every placed module, evaluated), and a copy of `.keel/std.json` (k.topology Build), and writes no `.keel/` artifacts (the project's own build does); any other build keeps the project's own Vite config. `buildStart` also imports the stdlib packages in the app
  * manifests' `deps` and writes `std.json` (`stdArtifact`); there a bad dep (E1159) or `std` entry (E1158) fails a build
- * and warns in dev, as does a changed manifest, whose new deps load before `std.json` is rewritten.
+ * and warns in dev, as does a changed manifest, whose new deps load before `std.json` is rewritten. In a library's own
+ * folder (its `package.json` marks it `"keel": "library"`, k.library-pack Own folder) no `.keel/` artifact is written.
  *
  * With a `node` deployable, the dev server is `keel dev`'s one origin (k.topology Local topology): a request a `node`
  * deployable's route matches is answered by that deployable's dev app (`DEV_ENTRY`, `devMiddleware`), anything else by
@@ -335,6 +338,8 @@ export default function (): {
   let problems: readonly string[] = [];
   /** A node deployable's client build (`config`) leaves `.keel/` to the project's own build: no artifact writes. */
   let clientBuild = false;
+  /** The root is a library's own folder (k.library-pack Own folder): its `.keel/` holds the ledger file alone. */
+  let ownLibrary = false;
   /** The `client` deployable a `vite build` with `KEEL_DEPLOYABLE` naming one writes to `dist/<name>/` (k.hosting). */
   let hosting: string | undefined;
   /** The app modules the client entry's service map names, and the client's own; unset until the entry loads. */
@@ -743,10 +748,11 @@ export default function (): {
     }
     const { artifacts, duplicates } = mergeArtifacts(parts);
     artifacts["routes.json"] = routes;
-    if (resolved) fs.mkdirSync(path.join(root, ".keel"), { recursive: true });
+    const writes = resolved && !clientBuild && !ownLibrary;
+    if (writes) fs.mkdirSync(path.join(root, ".keel"), { recursive: true });
     const texts: [string, string][] = NAMES.map((n) => [n, artifactText(artifacts[n])]);
     texts.push(["std.json", artifactText(stdArtifact(manifests()).data)]);
-    for (const [name, text] of clientBuild || !resolved ? [] : texts) {
+    for (const [name, text] of writes ? texts : []) {
       if (written.get(name) === text) continue;
       writeArtifact(root, name, text);
       written.set(name, text);
@@ -986,6 +992,9 @@ export default function (): {
     configResolved(config) {
       root = config.root;
       resolved = true;
+      const pkg = readJson(path.join(root, "package.json"));
+      const name = typeof pkg === "object" && pkg !== null ? Reflect.get(pkg, "name") : undefined;
+      ownLibrary = typeof name === "string" && libraryKind(pkg, name) === "library";
       command = config.command;
       // The plugin owns the inlining switches (k.bundle Environment): a project `envPrefix` or `define` fails a browser
       // build before bundling, as does a prefix another plugin merged into the lock.

@@ -403,6 +403,13 @@ const ROWS: readonly Row[] = [
     "k.library",
   ],
   [
+    "E1164",
+    "keel pack refused the library: the step its message begins with failed (kind, package, check, test, ledger)",
+    "A library an app could not read, check or trust as its folder is read does not pack; nothing is written.",
+    "fix what the step reports, then run keel pack again; under --check, keel pack writes the ledger",
+    "k.library-pack",
+  ],
+  [
     "E1166",
     "a library's module id is held by an app module or another library",
     "Module ids prefix route ids, store ids, transaction names and error codes, so each holder needs its own.",

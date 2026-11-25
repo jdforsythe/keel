@@ -31,6 +31,9 @@ const ROOT_APP = /^modules\//;
 /** A library's files, wherever the project read places them (k.library Ledger). */
 const NODE_MODULES = /(?:^|\/)node_modules\//;
 const OTHER_HEADER = "// Clause:";
+/** A library's own source in its own folder (k.library-pack Own folder), and the area its tests form. */
+const OWN_SRC = /^src\//;
+const OWN = "library";
 
 /**
  * A file's header comments, with 1-based line numbers: the `//` lines before its first statement other than an
@@ -68,12 +71,15 @@ const evidenceFor = (refs: readonly TestRef[], name: string, file: string): Ledg
  * `apps/<app>/**`, and the host elements per file of a root `modules/**`; and the expectations of the negative type
  * tests (`countExpectations`) of `packages/<pkg>/**`, per app in `apps/<app>/**` and in a root `test/**` or
  * `modules/**`, also per file (k.unsafe). A file under `node_modules/` (a library's, k.library) is counted by
- * `libraryLedger`, not here, its negative type tests not at all. `z3` is the Z3
+ * `libraryLedger`, not here, its negative type tests not at all. With `own`, the module id of the library whose own
+ * folder the files are (k.library-pack Own folder), also every export of its `src/**` files but tests, `Props` and
+ * `uses` (`<file>#<name>`, `pkg` the id), with evidence from its `test/` and co-located tests. `z3` is the Z3
  * version a `prove` call's `proven` evidence names (default: the installed `z3-solver`'s, `z3Version`).
  */
 export function buildLedger(
   files: readonly SourceFile[],
   z3: string | undefined = z3Version(),
+  own?: string,
 ): {
   items: LedgerItem[];
   unsafe: number;
@@ -123,6 +129,9 @@ export function buildLedger(
     appHosts[a[1]] = (appHosts[a[1]] ?? 0) + n.hostElements;
     if (a[2].startsWith("test/") || (a[2].startsWith("modules/") && TEST_FILE.test(f.path))) add(`apps/${a[1]}`, f);
   }
+  if (own !== undefined)
+    for (const f of code)
+      if (f.path.startsWith("test/") || (OWN_SRC.test(f.path) && TEST_FILE.test(f.path))) add(OWN, f);
   const known = new Set(code.map((f) => f.path));
   const refs = new Map([...areas].map(([area, fs]) => [area, testEvidence(fs, known, z3)]));
   const monitored = monitoredEvidence(files);
@@ -137,9 +146,14 @@ export function buildLedger(
         const name = EXPORT.exec(l)?.[1];
         if (name !== undefined) push(`${f.path}#${name}`, p[1], `packages/${p[1]}`, name, f.path);
       }
+    const base = f.path.split("/").pop() ?? "";
+    if (own !== undefined && OWN_SRC.test(f.path) && !TEST_FILE.test(f.path))
+      for (const l of scrubCode(f.source)) {
+        const name = EXPORT.exec(l)?.[1] ?? (APP_DEFAULT.test(l) ? base.split(".")[0] : undefined);
+        if (name !== undefined && !APP_PARTS.has(name)) push(`${f.path}#${name}`, own, OWN, name, f.path);
+      }
     const a = APP.exec(f.path);
     const rel = a?.[2]?.startsWith("modules/") ? a[2].slice("modules/".length) : undefined;
-    const base = f.path.split("/").pop() ?? "";
     if (a?.[1] === undefined || rel === undefined || TEST_FILE.test(f.path) || APP_MANIFESTS.has(base)) continue;
     for (const l of scrubCode(f.source)) {
       const name = EXPORT.exec(l)?.[1] ?? (APP_DEFAULT.test(l) ? base.split(".")[0] : undefined);

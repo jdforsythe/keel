@@ -51,11 +51,11 @@ describe("keel test", () => {
     expect(lines(none.stdout).at(-1)).toMatch(/^(ok|fail) test 0 tests, 0 failed, 0 skipped$/);
   }, 60_000);
 
-  it("a file that cannot load is an error: the run is not ok although no test failed", async () => {
+  it("a file that cannot load is one test, failed: the run is not ok", async () => {
     const p = project({ "c.test.mjs": 'throw new Error("cannot load");\n' });
     const r = await run(["test"], p);
     expect(r.code).toBe(1);
-    expect(r.stdout).toBe("T0001 c.test.mjs:1:1 cannot load\nfail test 0 tests, 1 failed, 0 skipped\n");
+    expect(r.stdout).toBe("T0001 c.test.mjs:1:1 cannot load\nfail test 1 tests, 1 failed, 0 skipped\n");
   }, 60_000);
 
   it("an unhandled error with every test passing still makes the run not ok, located at its throw", async () => {
