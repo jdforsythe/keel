@@ -1,5 +1,6 @@
 // Spec: k.store, clause "`givenPii(entry)` gives the non-empty strings and numbers under a `.pii()` mark of a committed entry's payload as `tx` was given it (`piiValues`, k.schema), a marked open object's undeclared keys and all under them among them, which the logged payload no longer holds; empty for an unmarked payload schema or an entry this process did not commit."
 // Spec: k.store, clause "It is held in memory only and never in a snapshot; a session recorder drops these values from later error text (std.sessions)."
+// Spec: k.store, clause "`givenPii(store)` gives the same of the store's state as last given: `initial` at creation, the state a `restore` was given, or the state a commit or undo made."
 // Seed 1337 (fast-check `seed: 1337`).
 // Reading: the result is compared as a set (no order or multiplicity is stated); a number is `String(n)` as `piiValues` gives it. "An entry this process did not commit" is asserted for an entry of a store that only `restore`d a snapshot and for an entry built by hand. "Never in a snapshot": the undeclared keys and values, which the logged payload no longer holds, appear in no `snapshot()`; values the payload's schema declares are in the payload, so in the snapshot as the payload.
 import { scope } from "@keel/reactive";
@@ -121,5 +122,70 @@ describe("k.store: givenPii", () => {
       }),
       opts,
     );
+  });
+
+  describe("givenPii(store): the store's state as last given", () => {
+    // A state whose `p` is a marked open object: its undeclared keys, and every non-empty string and number under it, are the values.
+    const St = s.object({ p: s.object({}).pii("contact"), n: s.int() });
+    const none = s.object({});
+    const stateArb = fc.tuple(word, word, fc.integer({ min: 100000, max: 999999 })).map(([k, v, num]) => ({
+      markers: [`a${k}`, `b${v}`, String(num), `c${k}`, `d${v}`],
+      state: { n: 1, p: { [`a${k}`]: `b${v}`, num, deep: { [`c${k}`]: [`d${v}`, ""] }, empty: "" } },
+    }));
+    const empty = { n: 0, p: {} };
+    const build = (initial: object) =>
+      isolated(() => {
+        const st = store(St, initial, { id: "pure.state.pii" });
+        let next: object = empty;
+        const set = transaction(st, "pure.state.set", none, () => next);
+        return { st, commit: (n: object) => ((next = n), tx(set, {})) };
+      });
+
+    it("is the marked values of `initial` at creation, undeclared keys and all under them among them, and empty for an unmarked state", () => {
+      fc.assert(
+        fc.property(stateArb, ({ markers, state }) => {
+          const k = build(state);
+          const got = givenPii(k.st);
+          expect(sorted(got)).toEqual(sorted(piiValues(St, state)));
+          for (const m of markers) expect(got).toContain(m);
+          expect(got).not.toContain("");
+          expect(givenPii(build(empty).st)).toEqual([]);
+        }),
+        opts,
+      );
+    });
+
+    it("is the marked values of the state a `restore` was given", () => {
+      fc.assert(
+        fc.property(stateArb, ({ markers, state }) => {
+          const k = build(empty);
+          expect(givenPii(k.st)).toEqual([]);
+          k.st.restore({ ...k.st.snapshot(), initial: state, log: [], keys: [] });
+          const got = givenPii(k.st);
+          expect(sorted(got)).toEqual(sorted(piiValues(St, state)));
+          for (const m of markers) expect(got).toContain(m);
+        }),
+        opts,
+      );
+    });
+
+    it("is the marked values of the state a commit made, and of the state an undo made", () => {
+      fc.assert(
+        fc.property(stateArb, ({ markers, state }) => {
+          const k = build(empty);
+          expect(k.commit(state).ok).toBe(true);
+          const afterCommit = givenPii(k.st);
+          expect(sorted(afterCommit)).toEqual(sorted(piiValues(St, state)));
+          for (const m of markers) expect(afterCommit).toContain(m);
+          expect(k.commit(empty).ok).toBe(true);
+          expect(givenPii(k.st)).toEqual([]);
+          expect(k.st.undo()).toBe(true);
+          const afterUndo = givenPii(k.st);
+          expect(sorted(afterUndo)).toEqual(sorted(piiValues(St, state)));
+          for (const m of markers) expect(afterUndo).toContain(m);
+        }),
+        opts,
+      );
+    });
   });
 });

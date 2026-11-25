@@ -8,7 +8,7 @@
 // Spec: k.schema, clause "A value is plain data when it is `null`, a boolean, a string, a finite number, or a plain array or plain object each item and value of which is plain data, no container being its own ancestor."
 // Spec: k.schema, clause "So a `Secret`, a `Map`, a `Set`, a `Date`, a typed array or `Buffer`, a class instance, a function (an own `toJSON` method among them), a `bigint`, `undefined`, `NaN`, an array with a hole and a container with a symbol key, a non-enumerable key or a getter are not plain data."
 // Spec: k.schema, clause "`json` accepts exactly plain data; anything else fails rule `type` at the `json` node's path."
-// Spec: k.schema, clause "Under an undeclared key of an open object, at any depth, each value reached through plain arrays and plain objects that is none of `null`, a boolean, a string, a finite number, a plain array or a plain object, and each container met again inside itself, fails rule `type` at its path; nothing under it is read. A plain container met again elsewhere (not inside itself) is not walked again, so what is under it is reported at its first path only; parse fails either way."
+// Spec: k.schema, clause "Under an undeclared key of an open object, at any depth, each value reached through plain arrays and plain objects that is none of `null`, a boolean, a string, a finite number, a plain array or a plain object, and each container met again inside itself (the declared containers above the undeclared key counted as its ancestors), fails rule `type` at the path where it is met again; nothing under it is read. So with `a.self = a`, `s.object({ a: s.object({}) }).parse({ a })` fails at `['a', 'self']` only. A container met again at a declared position is judged by that position's node like any value: the schema bounds its depth, and the repeat's issue, if any, sits where an undeclared key or a `json` node below meets it. A plain container met again elsewhere (not inside itself) is not walked again, so what is under it is reported at its first path only; parse fails either way."
 // Spec: k.schema, clause "At a declared position, an `object`, `record` or `union` node fails rule `type` at its path on a value that is not a plain object by the test above, and an `array` node on a value that is not a plain array, and then reads nothing under it; on a plain container, each item, field and record value is judged by its own node, and each undeclared key as above, so the issues below are theirs."
 // Spec: k.schema, clause "So a value `parse` accepts is plain data but for the `Secret` at each `secret` node (k.privacy), and every value in it, outside each `Secret`, is reached by a walk of own enumerable string keys and array items, as `JSON.stringify`, `encode`, `piiValues`, the server log's value set (k.privacy), sessions' `redact` (std.sessions) and `#k-state` (k.leave) walk it; nothing in it is out of their reach."
 // Spec: k.schema, clause "Limits: a Proxy is judged by what its traps answer while `parse` reads it (its own keys and property descriptors; under an undeclared key or a `json` node no `get`), and one whose trap throws, or a revoked one, fails rule `type` at `[]`; `parse` of a schema with no `secret` node returns the value it was given, so a change to that value after `parse` returns is not judged."
@@ -717,7 +717,7 @@ describe("k.schema plain data: shared and cyclic containers", () => {
     expect(s.json().parse({ a: shared, b: shared }).ok).toBe(true);
   });
 
-  it("a container met again inside itself fails with rule type at its path, and nothing under it is read", () => {
+  it("a container met again inside itself fails with rule type at the path where it is met again, the declared containers above an undeclared key counted as its ancestors, and nothing under it is read", () => {
     const self: Record<string, unknown> = {};
     self.self = self;
     expect(issuesOf(s.object({}).parse({ x: self }))).toEqual([typeAt(["x", "self"])]);
@@ -728,11 +728,18 @@ describe("k.schema plain data: shared and cyclic containers", () => {
     ring.push(ring);
     expect(issuesOf(s.object({}).parse({ x: ring }))).toEqual([typeAt(["x", 0])]);
     expect(issuesOf(s.json().parse(self))).toEqual([typeAt([])]);
-    // a container at a declared position that holds itself: the first path of the repeat is not stated (at ['a','self'] or one level below), so only that it fails by rule type
-    const D = s.object({ a: s.object({}) });
-    const declared = issuesOf(D.parse({ a: self }));
-    expect(declared.length).toBeGreaterThan(0);
-    expect(declared.every((i) => i.rule === "type" && i.path[0] === "a" && i.path.length >= 2)).toBe(true);
+    // `a.self = a` under a declared `a`: the declared container above the undeclared key `self` counts as its ancestor
+    const a: Record<string, unknown> = {};
+    a.self = a;
+    expect(issuesOf(s.object({ a: s.object({}) }).parse({ a }))).toEqual([typeAt(["a", "self"])]);
+    // a repeat at a declared position is judged by that position's node: `b` is declared `s.object({})`, so `a` read there meets its own undeclared key `b`
+    const b: Record<string, unknown> = {};
+    b.b = b;
+    expect(issuesOf(s.object({ a: s.object({ b: s.object({}) }) }).parse({ a: b }))).toEqual([typeAt(["a", "b", "b"])]);
+    // and at a `json` node below it the whole repeat fails at the json node's path
+    const j: Record<string, unknown> = {};
+    j.j = j;
+    expect(issuesOf(s.object({ a: s.object({ j: s.json() }) }).parse({ a: j }))).toEqual([typeAt(["a", "j"])]);
   });
 });
 

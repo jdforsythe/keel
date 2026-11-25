@@ -419,7 +419,7 @@ describe("std.sessions: errors after a tx drop a .pii() open object's undeclared
   });
 });
 
-describe("std.sessions: where a .pii() open object's undeclared values are read: a state as its store holds it and route values", () => {
+describe("std.sessions: where a .pii() open object's undeclared values are read: a state as last given to its store and route values", () => {
   const Pii = s.object({ p: s.object({}).pii("contact") });
   const none = s.object({});
   const reportError = (ctx: SimCtx, message: string, data: unknown): void => {
@@ -441,7 +441,7 @@ describe("std.sessions: where a .pii() open object's undeclared values are read:
     return (ctx) => reportError(ctx, `bad ${ms.join(" ")}`, { all: ms });
   };
 
-  test("a state as its store holds it: an error naming an undeclared key, string or number under a marked open object of the store's state is recorded without it", async () => {
+  test("a state as last given to its store (`initial`): an error naming an undeclared key, string or number under a marked open object of the store's state is recorded without it", async () => {
     await fc.assert(
       fc.asyncProperty(
         fc.stringMatching(/^[a-z]{16}$/),

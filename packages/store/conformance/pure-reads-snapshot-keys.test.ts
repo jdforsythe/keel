@@ -1,4 +1,4 @@
-// Spec: k.store, clause "`snapshotKeys(snapshot)` gives the write keys a `restore` of `snapshot` takes: its `keys`, else its log entries' keys in log order (k.sync)."
+// Spec: k.store, clause "`snapshotKeys(snapshot)` gives the write keys a `restore` of `snapshot` takes: its `keys` when present, `[]` included (then no key, whatever its log holds), else, when `keys` is absent, its log entries' keys in log order (k.sync)."
 // Seed 1337 (fast-check `seed: 1337`).
 // Reading: the "write keys" are the `{ name, key }` pairs `snapshot().keys` holds (k.sync Write key), so a log entry yields `{ name, key }` of its own name and key, and an entry committed without a `key` yields none. A snapshot "without `keys`" is one whose `keys` property is absent; one holding `[]` has keys, so gives `[]`.
 import { scope } from "@keel/reactive";
@@ -76,6 +76,23 @@ describe("k.store: snapshotKeys", () => {
           { name: "pure.other", key: b },
         ]);
         expect(snapshotKeys({ ...snap, keys: [] })).toEqual([]);
+      }),
+      opts,
+    );
+  });
+
+  it("gives `[]` for a snapshot whose `keys` is `[]`, whatever its log holds", () => {
+    fc.assert(
+      fc.property(writesArb.filter(distinctKeys), (writes) => {
+        const k = make();
+        for (const [i, w] of writes.entries()) {
+          const t = w.which === "push" ? k.push : k.other;
+          tx(t, { v: i }, w.key === undefined ? undefined : { key: w.key });
+        }
+        const snap = k.bag.snapshot();
+        expect(snapshotKeys({ ...snap, keys: [] })).toEqual([]);
+        expect(snapshotKeys({ ...snap, keys: [] }).length).toBe(0);
+        expect({ ...snap, keys: [] }.log.length).toBe(k.bag.log().length);
       }),
       opts,
     );
