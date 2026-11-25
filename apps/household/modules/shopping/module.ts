@@ -5,6 +5,7 @@ export default module({
   deps: [
     "members",
     "@keel/std-channels",
+    "@keel/std-headless",
     "@keel/std-jobs",
     "@keel/std-live",
     "@keel/std-offline",

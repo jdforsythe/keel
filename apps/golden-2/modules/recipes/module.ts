@@ -6,6 +6,7 @@ export default module({
     "kitchen",
     "@keel/std-brands",
     "@keel/std-geo",
+    "@keel/std-headless",
     "@keel/std-i18n",
     "@keel/std-money",
     "@keel/std-temporal",
