@@ -14,7 +14,7 @@
   },
   "size": {
     "@keel/check": {
-      "max": "69kb",
+      "max": "71kb",
       "platform": "node"
     },
     "@keel/check/explain": {
@@ -22,7 +22,7 @@
       "platform": "node"
     },
     "@keel/cli": {
-      "max": "31.5kb",
+      "max": "32kb",
       "platform": "node"
     },
     "@keel/cli/docs": {
@@ -34,7 +34,7 @@
       "platform": "node"
     },
     "@keel/compiler": {
-      "max": "35kb",
+      "max": "35.5kb",
       "platform": "node"
     },
     "@keel/ctx": "4.7kb",

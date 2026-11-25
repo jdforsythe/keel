@@ -1,6 +1,6 @@
 // k.library Rules E1162 and k.library-pack Ledger file: `readLibraryLedger`, `ledgerCount` and E1162 over `check()`
 // files. Seed 1337.
-import { check, ledgerCount, readLibraryLedger } from "@keel/check";
+import { LedgerFileSchema, check, ledgerCount, readLibraryLedger } from "@keel/check";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 
@@ -96,4 +96,17 @@ test("E1162 is one per entry for a missing file, and none for a package that is 
     f.path.endsWith("package.json") ? { ...f, source: JSON.stringify({ name: "@acme/charts", version: "1.0.0" }) } : f,
   );
   expect(e1162(plain)).toEqual([]);
+});
+
+test("LedgerFileSchema reads version 1 with six rung names and optional libraries, and refuses another version or rung", () => {
+  const file = {
+    ...GOOD,
+    negativeTypes: 0,
+    libraries: { "@acme/charts": { version: "1.0.0", unsafe: 1, hostElements: 0 } },
+  };
+  expect(LedgerFileSchema.parse(file).ok).toBe(true);
+  expect(LedgerFileSchema.parse({ ...file, version: 2 }).ok).toBe(false);
+  const entry = { pkg: "a", name: "b", file: "src/b.ts", rung: "tested" };
+  expect(LedgerFileSchema.parse({ ...file, exports: [entry] }).ok).toBe(false);
+  expect(LedgerFileSchema.parse({ ...file, clauses: [{ item: "k.a#1", rung: "proven" }] }).ok).toBe(true);
 });
