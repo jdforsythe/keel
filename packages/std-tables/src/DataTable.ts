@@ -3,6 +3,8 @@ import { For, If } from "@keel/runtime-dom";
 import { formatNumber } from "@keel/std-i18n";
 import { Box, type Child, Link } from "@keel/ui";
 import { Part, type PartStyle } from "@keel/ui/aria";
+import { focusLost } from "../unsafe/focusLost.ts";
+import { tableFault } from "../unsafe/tableFault.ts";
 import type { DataTableProps } from "./DataTableProps.ts";
 import type { Field } from "./Field.ts";
 import type { TablePage } from "./TablePage.type.ts";
@@ -34,7 +36,7 @@ export function DataTable<T extends object, S extends Field<T>, F extends Field<
   const styles: TableStyles = props.styles ?? {};
   for (const key of Object.keys(styles))
     if (key.startsWith("column.") && !cols.show.some((c) => c === key.slice(7)))
-      throw new Error(`E2851 styles key ${JSON.stringify(key.slice(0, 40))} names no shown column`);
+      tableFault("E2851", `styles key ${JSON.stringify(key.slice(0, 40))} names no shown column`);
   const columnStyle = (col: string): PartStyle => styles[`column.${col}`] ?? {};
   const text = () => props.text;
   const view = computed(
@@ -277,7 +279,7 @@ export function DataTable<T extends object, S extends Field<T>, F extends Field<
     if ((was === "next" && v.page >= v.pages) || (was === "previous" && v.page <= 1)) {
       was = "";
       queueMicrotask(() => {
-        const lost = document.activeElement === null || document.activeElement === document.body;
+        const lost = focusLost();
         const s = made.status;
         if (lost && s instanceof HTMLElement && s.isConnected) s.focus();
       });

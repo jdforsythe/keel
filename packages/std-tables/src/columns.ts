@@ -1,4 +1,5 @@
 import { type ObjectSchema, piiPaths } from "@keel/schema";
+import { tableFault } from "../unsafe/tableFault.ts";
 import type { ColumnKind } from "./ColumnKind.ts";
 import type { ColumnSpec } from "./ColumnSpec.ts";
 import type { Columns } from "./Columns.type.ts";
@@ -6,9 +7,7 @@ import type { Field } from "./Field.ts";
 import { fieldsOf } from "./internal/fieldsOf.ts";
 import { kindOf } from "./internal/kindOf.ts";
 
-const fail = (message: string): never => {
-  throw new Error(`E2851 ${message}`);
-};
+const fail = (message: string): never => tableFault("E2851", message);
 
 /**
  * A table over rows of the `s.object` schema `row` (std.tables Columns). Each field's kind comes from its schema;

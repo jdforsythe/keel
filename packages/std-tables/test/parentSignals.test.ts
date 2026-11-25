@@ -6,8 +6,8 @@ import { s } from "@keel/schema";
 import { render } from "@keel/testing";
 import { Box, Button, Text } from "@keel/ui";
 import { expect, test } from "vitest";
-import { CELLS, LOCALE, TEXT, catalogColumns, makeRows, serverHref, simCtx } from "../conformance/fixtures.ts";
 import { DataTable } from "../src/DataTable.ts";
+import { CELLS, LOCALE, TEXT, catalogColumns, makeRows, serverHref, simCtx } from "./support.ts";
 
 const Page = Object.assign((_props: Record<string, never>, _ctx: Ctx): Node => view(), {
   Props: s.object({}),

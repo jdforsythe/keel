@@ -1,4 +1,5 @@
 import { Locale } from "@keel/std-i18n";
+import { tableFault } from "../unsafe/tableFault.ts";
 import type { Columns } from "./Columns.type.ts";
 import type { Field } from "./Field.ts";
 import type { TablePage } from "./TablePage.type.ts";
@@ -6,9 +7,7 @@ import type { TableQuery } from "./TableQuery.ts";
 import { checkKeys } from "./internal/checkKeys.ts";
 import { compareBy } from "./internal/compareBy.ts";
 
-const fail = (message: string): never => {
-  throw new Error(`E2853 ${message}`);
-};
+const fail = (message: string): never => tableFault("E2853", message);
 
 const byKey = (x: unknown, y: unknown): number => {
   if (typeof x === "number" && typeof y === "number") return x - y;

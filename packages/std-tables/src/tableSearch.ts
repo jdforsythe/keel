@@ -1,5 +1,6 @@
 import { type ObjectSchema, type Schema, piiPaths, s } from "@keel/schema";
 import { asQuerySchema } from "../unsafe/asQuerySchema.ts";
+import { tableFault } from "../unsafe/tableFault.ts";
 import type { Columns } from "./Columns.type.ts";
 import type { Field } from "./Field.ts";
 import type { TableQuery } from "./TableQuery.ts";
@@ -9,9 +10,7 @@ import { fieldsOf } from "./internal/fieldsOf.ts";
 const RESERVED: readonly string[] = ["sort", "dir", "page", "q"];
 const made = new WeakMap<object, ObjectSchema<unknown>>();
 
-const fail = (message: string): never => {
-  throw new Error(`E2852 ${message}`);
-};
+const fail = (message: string): never => tableFault("E2852", message);
 
 function filterSchema(node: Schema<unknown>["node"] | undefined): Schema<unknown, true> {
   if (node?.kind === "boolean") return s.boolean().optional();
