@@ -30,7 +30,10 @@ function s0014(files: Readonly<Record<string, string>>): { code: string; path: s
     fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
     fs.writeFileSync(path.join(root, file), source);
   }
-  const r = spawnSync(process.execPath, [lint, "--root", root, "--format=json"], { encoding: "utf8", timeout: testTime(60_000) });
+  const r = spawnSync(process.execPath, [lint, "--root", root, "--format=json"], {
+    encoding: "utf8",
+    timeout: testTime(60_000),
+  });
   return r.stdout
     .split("\n")
     .filter((l) => l.startsWith("{"))
