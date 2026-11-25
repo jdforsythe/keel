@@ -37,9 +37,9 @@ One function, the normal form (today's `normClause` with the final period droppe
 E1732 covers a malformed `// Spec:` line, an unknown section, or a quote that cites no bullet. It runs in every `keel ledger` mode, so `pnpm check` (through `ledger-fresh`) fails on it before a merge. Its message gives the quote's first six words and the nearest bullet, the one sharing the most distinct normal-form words, the earliest on a tie. It has no fix, because which bullet was meant is a judgement. E1733 flags identical bullets in one section, which would otherwise collapse into one item without notice.
 
 ### Projects
-A project is `.` plus `packages/<p>` and `apps/<a>` with a `package.json`, named by path, as `a11y:<project>:` already does (RFC 0233). `mutationClaims` reads `<project>/reports/mutation/mutation.json` and `justifiedFiles` reads `<project>/mutation-justified.json`. Claims stay keyed by repository-relative file. `mutation.projects` replaces `mutation.packages`. An app author's own `keel ledger` in their app folder is the project `.`: its `reports/tests/`, `reports/a11y.json` and `reports/mutation/` are read the same way.
+A project is the folder `keel ledger` runs in plus each `packages/<p>`, `apps/<a>` and `examples/<e>` with a `package.json`. It is named by its path from there, `.` for the folder itself, as `a11y:<project>:` already does (RFC 0233). The name keys `a11y` items, `mutation.projects` and W1733's path. `exports` keep their `pkg` folder-name label (k.ledger File). `mutationClaims` reads `<project>/reports/mutation/mutation.json` and `justifiedFiles` reads `<project>/mutation-justified.json`; claims stay keyed by path from the ledger's folder. An app author's own `keel ledger` in their app folder is the project `.`: its `reports/tests/`, `reports/a11y.json` and `reports/mutation/` are read the same way, and its installed libraries are listed beside it.
 
-RFC 0163's `libraries` entry (lane-lib2b) sits beside this unchanged. A library is not a project of this ledger: its `{ version, unsafe, hostElements }` come from the library's own shipped ledger file, which its own runs produced. Merging lane-lib2b's File paragraph needs three edits: drop its `keptNoReport` sentence for D3, rename `mutation.packages` to `projects` keyed by project name, and describe `clauses` `item` as `<section>#<key>`.
+RFC 0163's `libraries` entry sits beside this unchanged. An installed library is not a project of the app's ledger: `libraries` lists it by package name with the `{ version, unsafe, hostElements }` of the ledger it ships, which its own runs produced (k.library Ledger). In the library's own folder, its `keel ledger` makes it the project `.`. The k.ledger File paragraph takes three edits on the main line's text: `keptNoReport` gives way to `none` with W1733, `mutation.packages` becomes `mutation.projects` keyed by project name, and `clauses` `item` is `<section>#<key>`.
 
 ### Writes (0999)
 A test run writes under `reports/` only. `.keel/` files the compiler plugin writes during a test hold `keel build`'s bytes. The builder first runs `keel build` alone in a clean checkout to tell a stale commit from a test-time writer. If the plugin's partial `flush` is the cause, it writes nothing under `vitest` (the `KEEL_TEST` environment) and leaves the artifacts to `keel build`. Then `generate --check`, or `keel check`'s E1005, covers `surface.json`.
@@ -54,9 +54,9 @@ A test run writes under `reports/` only. `.keel/` files the compiler plugin writ
 
 ## Spec diff
 Applied in this commit.
-- New k.ledger-items (`implemented`, about 1,730 tokens): Clause key, Citation, Projects, Run evidence, Rules (E1732, E1733, W1733), 14 clauses.
+- New k.ledger-items (`implemented`, about 1,880 tokens): Clause key, Citation, Projects, Run evidence, Rules (E1732, E1733, W1733), 14 clauses.
 - k.ledger (to `implemented`; about 2,470 tokens): the clause item and the header form point to k.ledger-items, and "a passing test" points to Run evidence. Mutation and Justified survivors are per project. File gains `mutation.projects`, `clauses` by key and a11y with no report at `none`, and loses `keptNoReport`. Rules lists the new codes. The keptNoReport clause and its sibling are reworded because the behaviour changes. No other bullet's wording changes.
-- k.test-run (to `implemented`; about 1,420 tokens): Run report, Writes, three clauses.
+- k.test-run (to `implemented`; about 1,660 tokens): Run report, Summary (what `keel test`'s counts are, agreeing with the report; backlog 1120), Writes, four clauses.
 - k.evidence (stays `conformance-covered`): the `pii.json` row reads each sink's clause by item.
 - Map: k.ledger-items row; k.ledger and k.test-run `implemented`; E170x owner gains k.ledger-items. `spec.map` re-based from 1,570 to 1,590 and `docs.map` from 1,600 to 1,620 (the row).
 
@@ -67,13 +67,13 @@ By the `conformance-writer`, from the spec text only.
 - `packages/cli/conformance/ledger-items-runs.test.ts`: clauses 9 to 12 (run reports, W1733).
 - `packages/cli/conformance/ledger-items-projects.test.ts`: clauses 13 and 14.
 - `packages/cli/conformance/ledger-a11y-*.test.ts`: the two reworded k.ledger a11y clauses.
-- `packages/testing/conformance/test-run-report.test.ts`: the k.test-run Run report clauses. The Writes clause goes in `packages/cli/conformance/test-run-writes.test.ts`, which runs `keel test` in a git fixture.
+- `packages/testing/conformance/test-run-report.test.ts`: the k.test-run Run report clauses. The Summary clause goes in `packages/cli/conformance/test-run-summary.test.ts`. The Writes clause goes in `packages/cli/conformance/test-run-writes.test.ts`, which runs `keel test` in a git fixture.
 - Existing ledger conformance (`packages/cli/conformance/ledger-*.test.ts` and any fixture asserting a rung) gains a `reports/tests/run.json` in its fixture. A rung now needs one, though no bullet's wording changes.
 - Every `// Spec:` header in `packages/*/conformance/**` moves to the Citation form, in an `rfc:0235` commit (see Migration).
 
 ## Migration
 No release, no migration notes. The builder rewrites the tree:
-1. Every `// Spec:` header line: a quote equal to a bullet becomes its own `// Spec: <id>, clause "<quote>"` line, with inner `"` escaped. A quote of another paragraph becomes a plain comment (`// k.claim Check: …`). A label form (`Conformance "…"`, `Rules, "…"`) is rewritten. A one-off script in the build commit does this, never kept in `tooling/`, and every E1732 it leaves is fixed by hand against the section.
+1. Every `// Spec:` header line, 2,606 in 1,450 files, of which 688 already open with `<id>, clause "`: a quote equal to a bullet becomes its own `// Spec: <id>, clause "<quote>"` line, with inner `"` escaped. A quote of another paragraph becomes a plain comment (`// k.claim Check: …`). A label form (`Conformance "…"`, `Rules, "…"`) is rewritten. The `conformance-writer` does this from the spec text with a one-off script, never kept in `tooling/`, and fixes by hand every quote the script cannot place.
 2. `PII_SINKS.ts` names each clause by key, and `generate.mjs`'s `KERNEL_SINK_RUNGS` follows.
 3. The committed ledger is regenerated on the main line after a full run.
 4. CI's ledger steps move out of the `check` job into a `ledger` job that needs `test-shard`. Each shard uploads `**/reports/tests/*.json`, and the a11y `keel test` runs move into the new job. It downloads them, runs `pnpm ledger --diff`, `node tooling/ledger-fresh.mjs --runs` (today's `--a11y`, now covering every rung) and `pnpm evidence:report --check`. The `check` job keeps `ledger-fresh` without `--runs`, which compares item keys, `unsafe` and `negativeTypes` (what the tree alone decides) and fails on E1732 and E1733. `mutate-pr` runs the package tests it needs before `ledger --diff`.
@@ -84,14 +84,14 @@ No release, no migration notes. The builder rewrites the tree:
 - `@keel/cli` and `@keel/testing`: one report reader and one writer; size measured in the build.
 
 ## Build plan
-Order that keeps the main line green at each merge:
+Order that keeps the main line green at each merge. Steps 2, 4, 5 and 6 touch no conformance file except to remove a skip marker; step 3 is the `conformance-writer`'s alone.
 1. This commit: RFC, ADR, spec text. No conformance, no build.
-2. Report writer only: `writeTestReport` in `@keel/testing`, `KeelReporter` and `keel test` writing it, `includeTaskLocation`, turbo `reports/tests/**`, CI shards uploading. Nothing reads reports yet, so nothing changes.
-3. `conformance-writer`: the clauses above, with skip markers on the cases the build has not met.
-4. Header migration and E1732 and E1733 in one `rfc:0235` commit. Every header is valid before the check exists in `pnpm check`. The ledger key change goes in the same commit: `specClauses` gains `key`, and items, `coverageGaps`, `ledger-compare`, `evidence.mjs`, `PII_SINKS` and the ledger are regenerated after a full run.
-5. Run evidence and projects: the ledger reads reports, W1733, a11y `none`, `mutation.projects`. CI's `ledger` job lands in the same commit, because from here a rung needs reports. Skip markers come off, and the ledger is regenerated after a full run.
-6. 0999: find the writer, fix it, and cover `surface.json` freshness. Its clause's skip comes off.
-Files: `packages/cli/src/internal/{buildLedger,testEvidence,specClauses,citesClause,specHeaders,normClause,coverageGaps,ledgerCommand,mutationClaims,justifiedFiles,LedgerFileSchema,PII_SINKS,testCommand}.ts`, new `runReports.ts`; `packages/testing/src/writeTestReport.ts`; `packages/compiler/src/vite.ts` (if the cause); `tooling/{vitest-config.ts,vitest-reporter.ts,ledger-fresh.mjs,ledger-compare.mjs,evidence.mjs,generate.mjs,ci.source.json,turbo.source.json}`; `packages/check/src/internal/EXPLANATIONS.ts`; `docs/TESTING.md`; the `keel-testing` skill's code list; every `packages/*/conformance/**` header; `tooling/ledger/ledger.json` (regenerated, never hand-edited).
+2. Builder: the report writer only. `writeTestReport` in `@keel/testing`, `KeelReporter` and `keel test` writing it, `includeTaskLocation`, turbo `reports/tests/**`, CI shards uploading their reports. Nothing reads reports yet, so nothing changes.
+3. `conformance-writer`, in `rfc:0235` commits: the new clauses, with skip markers; a `reports/tests/run.json` in each existing ledger fixture that asserts a rung (today's ledger ignores it, so those cases stay green); and the header migration above. Migrated headers still cite under today's `citesClause`, which normalizes `\"`, so the ledger does not move.
+4. Builder: clause key, E1732 and E1733, `n` in records, `coverageGaps`, `ledger-compare`, `evidence.mjs`, `PII_SINKS`; the skip markers of k.ledger-items 1 to 8 come off; the ledger is regenerated after a full run.
+5. Builder: run evidence and projects. The ledger reads reports, W1733, a11y `none`, `mutation.projects`, `examples/<e>`. CI's `ledger` job lands in the same commit, because from here a rung needs reports. Remaining skips come off, and the ledger is regenerated after a full run.
+6. Builder: 0999. Find the writer, fix it, cover `surface.json` freshness; its clause's skip comes off.
+Files: `packages/cli/src/internal/{buildLedger,testEvidence,specClauses,citesClause,specHeaders,normClause,coverageGaps,ledgerCommand,mutationClaims,justifiedFiles,PII_SINKS,testCommand}.ts`, `packages/check/src/internal/LedgerFileSchema.ts`, new `runReports.ts`; `packages/testing/src/writeTestReport.ts`; `packages/compiler/src/vite.ts` (if the cause); `tooling/{vitest-config.ts,vitest-reporter.ts,ledger-fresh.mjs,ledger-compare.mjs,evidence.mjs,generate.mjs,ci.source.json,turbo.source.json}`; `packages/check/src/internal/EXPLANATIONS.ts`; `docs/TESTING.md`; the `keel-testing` skill's code list; every `packages/*/conformance/**` header; `tooling/ledger/ledger.json` (regenerated, never hand-edited).
 
 ## For the operator
 1. **Reports are not committed (D2).** Recommended: yes. The cost is that `pnpm ledger --diff` locally needs `pnpm test` first.
