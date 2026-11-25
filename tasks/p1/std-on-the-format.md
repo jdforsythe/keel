@@ -105,3 +105,10 @@ Lanes 1 to 4 can start at once. At the end of slice 4 the `@keel/std-*` name pas
 Order within the stdlib: `std-statecharts` before `std-workflows` (and `std-headless`, done, already lists it as a peer); `std-i18n` before `std-messages`, `std-money`, `std-tables`, `std-temporal`, `std-text`; `std-temporal` and `std-jobs` before `std-schedules`; `std-channels` before `std-live`; `std-sessions` before `std-conflicts`. A package can move before the one it imports, since a library's `deps` may list an unmarked `@keel/std-*` package; the order only keeps a lane from fixing findings that its dependency's lane is also fixing.
 
 Shells: `std-capacitor` and `std-tauri` stay a closed exception (k.parity: they import `@keel/router/internal`, and generated entries name them); they take the format with E1576's shell allowance in slice 5, not here.
+
+## Lane 3 (sync) notes
+
+- std-channels, std-live, std-offline, std-conflicts are marked `"keel": "library"`; own-folder `keel check` is 0 errors for channels and live, and E1207 alone (slice 5) for offline and conflicts, where `keel pack` refuses until it is lifted.
+- A server file in a library is a `*.server.ts` file, and every importer of one is too (E1004 reads each other file as client code with no `topology.ts`): std-channels' `channelRoute.server.ts`, `index.server.ts` (the `./server` entry) and its tests that import it, named `*.server.test.ts`.
+- Open: `public.exports` cannot name a library's `exports` subpath (`server` is no file stem: E1154 when listed, E1151 at `@keel/std-channels/server` imports in golden-1 and household when not). Fix belongs in `@keel/check` (`moduleChecks.ts`: count the `exports` subpath names as stems).
+- Throws go through one `unsafe/` helper per package (`fault`, `outsideScope`, `raise`, `afterRejection`, `recovering`); `try/catch` and `.catch` become `attempt(fn)` where the error value is not rethrown.
