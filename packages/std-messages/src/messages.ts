@@ -2,7 +2,6 @@ import { type Schema, type SchemaError, s } from "@keel/schema";
 import type { Locale } from "@keel/std-i18n";
 import { asEntry } from "../unsafe/asEntry.ts";
 import type { MessageSet } from "./MessageSet.ts";
-import type { Entry } from "./internal/Entry.ts";
 import type { Keys } from "./internal/Keys.ts";
 import type { ParamKind } from "./internal/ParamKind.ts";
 import { genMessage } from "./internal/genMessage.ts";
@@ -38,7 +37,8 @@ function messageType(params: ReadonlyMap<string, ParamKind>): Schema<unknown> {
 /**
  * Declare a message set (std.messages) in a `*.schema.ts` file: the app's `locales` enum, each key's params
  * (`s.string()`, `line`, `para`, `s.int()`, `s.number()` or `s.enum()`; any other throws) and
- * ``(locale) => import(`./<Set>/${locale}.ts`)``. The set is the closed object schema of one locale's entry.
+ * ``(locale) => import(`./<Set>/${locale}.ts`)``. The set is the closed object schema of one locale's entry; `text`
+ * parses a locale file's entry with it and throws `load`'s rejection for one that fails.
  */
 export function messages<L extends Locale, const K extends Keys>(
   locales: Schema<L>,
@@ -60,7 +60,12 @@ export function messages<L extends Locale, const K extends Keys>(
   const set = asEntry<MessageSet<L, K>>(s.object(shape, { closed: true }));
   return {
     ...set,
-    text: (entry) => asEntry<Entry<K>>(entry),
+    // A locale file's default export: parsed here, so a file failing the set throws however it is imported.
+    text: (entry) => {
+      const r = set.parse(entry);
+      if (r.ok) return r.value;
+      throw fails(r.error);
+    },
     load: async (locale) => {
       // The locale is parsed before `load` runs, so no value outside the set's enum reaches the dynamic import.
       const tag = locales.parse(locale);
