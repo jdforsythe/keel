@@ -83,3 +83,67 @@ test("a library register whose name is a parameter of a function its file does n
   expect(found).toHaveLength(1);
   expect(found[0]).toMatch(/^node_modules\/@acme\/store\/src\/store\.ts:3:/);
 });
+
+const ONE = `import { register } from '@keel/ctx'\n${IMPL}export function store(name: string) {\n  return register(name, { real: impl, shell: impl, sim: impl })\n}\n`;
+const at = (source: string, needle: string): string => {
+  const i = source.lastIndexOf(needle);
+  const before = source.slice(0, i);
+  return `${before.split("\n").length}:${i - before.lastIndexOf("\n")}`;
+};
+
+test("a const alias in the file and a project file's re-export are followed to the call, which is judged", () => {
+  fc.assert(
+    fc.property(fc.stringMatching(/^[a-z][a-zA-Z0-9]{0,6}$/), (tail) => {
+      const alias = (arg: string) =>
+        `import { store } from '@acme/store'\nconst db = store\nconst again = db\nexport const d = again(${arg})\n`;
+      expect(e1607(project(ONE, [{ path: "modules/a/d.server.ts", source: alias(`'a.${tail}'`) }]))).toEqual([]);
+      const bad = alias(`'${tail}'`);
+      expect(e1607(project(ONE, [{ path: "modules/a/d.server.ts", source: bad }]))).toEqual([
+        `modules/a/d.server.ts:${at(bad, `'${tail}')`)} store of "${tail}": name it 'a.<lowerCamel>'`,
+      ]);
+      const through = [
+        { path: "modules/a/lib.ts", source: "export { store as keep } from '@acme/store'\n" },
+        {
+          path: "modules/a/d.server.ts",
+          source: `import { keep } from './lib.ts'\nexport const d = keep('${tail}')\n`,
+        },
+      ];
+      expect(e1607(project(ONE, through))).toHaveLength(1);
+    }),
+    { seed: 1337, numRuns: 15 },
+  );
+});
+
+test("each use of the export as a value is one E1607 at the use: an argument, a property, .call, .apply, .bind, an exported alias, a computed namespace member", () => {
+  const shapes: [string, string][] = [
+    ["import { store } from '@acme/store'\nconst run = (f: unknown) => f\nexport const d = run(store)\n", "store)"],
+    ["import { store } from '@acme/store'\nexport const d = { make: store }\n", "store }"],
+    ["import { store } from '@acme/store'\nexport const d = { store }\n", "store }"],
+    ["import { store } from '@acme/store'\nexport const d = store.call(undefined, 'a.main')\n", "store.call"],
+    ["import { store } from '@acme/store'\nexport const d = store.apply(undefined, ['a.main'])\n", "store.apply"],
+    ["import { store } from '@acme/store'\nexport const d = store.bind(undefined)\n", "store.bind"],
+    ["import { store } from '@acme/store'\nexport const db = store\n", "store\n"],
+    ["import { store } from '@acme/store'\nconst db = store\nexport { db }\n", "store\nexport {"],
+    ["import { store } from '@acme/store'\nlet db = store\nexport const d = db\n", "store\nexport"],
+    ["import * as lib from '@acme/store'\nconst k = 'store'\nexport const d = lib[k]\n", "lib[k]"],
+    ["import * as lib from '@acme/store'\nexport const d = lib.store\n", "lib.store"],
+    ["import * as lib from '@acme/store'\nconst run = (f: unknown) => f\nexport const d = run(lib)\n", "lib)"],
+  ];
+  for (const [source, needle] of shapes) {
+    const found = e1607(project(ONE, [{ path: "modules/a/d.server.ts", source }]));
+    const who = needle.startsWith("lib") && needle !== "lib.store" ? "lib" : "store";
+    expect(found, source).toEqual([
+      `modules/a/d.server.ts:${at(source, needle)} ${who} used as a value: the name it registers cannot be read here`,
+    ]);
+  }
+});
+
+test("a spread argument, a type position and a re-export are no value use; a spread is judged as no literal", () => {
+  const typed = "import { store } from '@acme/store'\nexport type S = typeof store\nexport { store }\n";
+  expect(e1607(project(ONE, [{ path: "modules/a/d.server.ts", source: typed }]))).toEqual([]);
+  const spread =
+    "import { store } from '@acme/store'\nconst args = ['a.main'] as const\nexport const d = store(...args)\n";
+  expect(e1607(project(ONE, [{ path: "modules/a/d.server.ts", source: spread }]))).toEqual([
+    `modules/a/d.server.ts:${at(spread, "...args")} store of a name that is not a string literal: name it 'a.<lowerCamel>'`,
+  ]);
+});

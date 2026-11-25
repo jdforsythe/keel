@@ -10,6 +10,7 @@ import { exportedFunction } from "./functionRead/exportedFunction.ts";
 import { fileOfIn } from "./functionRead/fileOfIn.ts";
 import { localFunction } from "./functionRead/localFunction.ts";
 import { isAppPath } from "./isAppPath.ts";
+import { libraryUses } from "./libraryUses.ts";
 import { lineCol } from "./lineCol.ts";
 import { localNames } from "./modules/localNames.ts";
 import { namespaceNames } from "./modules/namespaceNames.ts";
@@ -119,47 +120,11 @@ function deferred(
   return { calls, params };
 }
 
-/**
- * The calls in `checked` of a library export whose `register` name is its parameter (`params`), each with the argument
- * for that parameter: the export imported by name from a library specifier, or read off a namespace import of one.
- */
-function libraryCalls(
-  checked: Checked,
-  libs: RegisterLibraries,
-  fileOf: ReturnType<typeof fileOfIn>,
-  params: ReadonlyMap<string, number>,
-): { call: CallExpression; name: string; arg: Argument | undefined }[] {
-  const program = checked.parsed.program;
-  const names = new Set<string>();
-  const spaces = new Map<string, string>();
-  for (const st of program.body) {
-    if (st.type !== "ImportDeclaration" || st.importKind === "type" || !libs.entries.has(st.source.value)) continue;
-    for (const sp of st.specifiers)
-      if (sp.type === "ImportNamespaceSpecifier") spaces.set(sp.local.name, st.source.value);
-      else names.add(sp.local.name);
-  }
-  if (names.size === 0 && spaces.size === 0) return [];
-  const out: { call: CallExpression; name: string; arg: Argument | undefined }[] = [];
-  new Visitor({
-    CallExpression: (n) => {
-      const c = n.callee;
-      let found: { fn: ReadFn; file: SourceFile } | undefined;
-      let name = "";
-      if (c.type === "Identifier" && names.has(c.name)) {
-        name = c.name;
-        found = localFunction(c.name, checked.file, fileOf);
-      } else if (c.type === "MemberExpression" && !c.computed && c.object.type === "Identifier") {
-        const spec = spaces.get(c.object.name);
-        const entry = spec === undefined ? undefined : fileOf(checked.file, spec);
-        name = c.property.name;
-        found = entry === undefined ? undefined : exportedFunction(c.property.name, entry, fileOf);
-      }
-      const index = found === undefined ? undefined : params.get(fnKey(found.file.path, found.fn));
-      if (index !== undefined) out.push({ call: n, name, arg: n.arguments[index] });
-    },
-  }).visit(program);
-  return out;
-}
+/** The library folder (`modules/<id>/`, as rules read a library's files) of a library file's view path, else none. */
+const libraryFolder =
+  (libs: RegisterLibraries) =>
+  (path: string): string | undefined =>
+    libs.isLibrary(path) ? /^(.*?modules\/[^/]+\/)/.exec(path)?.[1] : undefined;
 
 /**
  * E1607 (k.data, k.server-deps Registration through a library): a `register` of `@keel/ctx` in a file under
@@ -167,7 +132,8 @@ function libraryCalls(
  * app file of the project registers too, at the call in the file whose path sorts later. In a library's file, a
  * `register` whose name is a parameter of the exported function holding it is judged at each call of that export
  * instead: by the argument for the parameter, against the calling file's `<id>` (at the argument; at the call when it
- * has none), and a literal one joins the names the duplicate half compares. `dirs` are the project roots
+ * has none), and a literal one joins the names the duplicate half compares; a use of that export the read cannot follow
+ * to a call (`libraryUses`) is one E1607 at the use. `dirs` are the project roots
  * (`projectDirs`), deepest first.
  */
 export function registerNames(
@@ -192,12 +158,15 @@ export function registerNames(
       .filter((c) => !later.calls.has(c))
       .map((c) => ({ at: c.start, name: literal(c.arguments[0]), by: "register" }));
     if (later.params.size > 0)
-      for (const { call, name, arg } of libraryCalls(checked, libs, fileOf, later.params))
-        calls.push({
-          at: arg === undefined ? call.start : arg.start,
-          name: literal(arg),
-          by: clipMessage(name, 20),
-        });
+      for (const use of libraryUses(checked, fileOf, later.params, libraryFolder(libs))) {
+        if (use.kind === "value") {
+          const message = `${clipMessage(use.name, 20)} used as a value: the name it registers cannot be read here`;
+          out.push(diagAt(file, use.at, "E1607", message, "k.server-deps"));
+          continue;
+        }
+        const { call, name, arg } = use;
+        calls.push({ at: arg === undefined ? call.start : arg.start, name: literal(arg), by: clipMessage(name, 20) });
+      }
     calls.sort((x, y) => x.at - y.at);
     for (const call of calls) {
       if (id !== undefined && !wellNamed(call.name, id)) {
