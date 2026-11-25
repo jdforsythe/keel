@@ -10,6 +10,7 @@ The stdlib holds no power a library lacks: a `@keel/std-*` package reaches the k
 **Exceptions.** Each is a closed set for 1.0; opening one is additive.
 - Shells (k.shell): `@keel/std-capacitor` and `@keel/std-tauri` import `mountRequests` from `@keel/router/internal`, the router's mount-request intake a shell drives. A third shell package would need the same seam.
 - Topology storage and shells: the generated entries import `@keel/std-db/<storage>`, `@keel/std-capacitor` and `@keel/std-tauri` by name, and `keel check` names them as the dependency a `topology.ts` value needs.
+- App data (k.data, k.deploy): the deploy files, the dev database and the `database` capability's registration name `@keel/std-postgres`, the one app data battery, as the package a module lists to keep app data.
 - Commands (k.cli): `session` and `report` are the slots `stdCommand` fills; a package adds rules and formatters, no command.
 
 **Rules.** In this repository `tooling/structure-lint.mjs` enforces the section from `tooling/deps.json`: S0012 a file in a stdlib package's `src/` or `unsafe/` names a kernel `internal` entry (import, re-export, `import()`, `require()`) that `deps.json` `internal` does not list for that package · S0013 code (not a comment) in a kernel package's `src/` naming `@keel/std-` in a file `deps.json` `names` does not list. In an app, E1576 (k.security) applies to a library's files, the stdlib's included, with the shell exception as its one allowance.
