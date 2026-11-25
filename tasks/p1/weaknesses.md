@@ -65,7 +65,7 @@ Rules:
 - [ ] 1073 household `keel test` ended once in a Node crash trailer
 
 ### Lane 05 first-run · scaffold, compiler, cli, every package's publish config · RFC (k.cli, 1012) · L
-- [ ] 0991 the scaffold omits `esbuild`, so a new project's `keel build` fails
+- [x] 0991 the scaffold omits `esbuild`, so a new project's `keel build` fails
 - [ ] 1005 packages export `src/*.ts` while `files` is `dist`; published packages break
 - [ ] 0414 a scaffolded project has no `node` deployable, so `route --api` is E1511
 - [ ] 0677 a scaffolded module is placed in no deployable; the API route misfits writes

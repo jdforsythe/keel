@@ -3,7 +3,7 @@
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { crashDiags, isCrash } from "../vitest-reporter.ts";
+import { crashDiags, endDiags, isCrash } from "../vitest-reporter.ts";
 import { describeExit, lastSaid, requestFiles } from "../worker-exits.ts";
 
 const root = path.join(import.meta.dirname, "..", "..");
@@ -28,6 +28,40 @@ describe("a worker that dies mid-run", () => {
     expect(lines.some((l) => l.includes("[vitest-pool]"))).toBe(false);
     expect(r.stdout).toMatch(/^fail 3 tests, 3 failed, 0 skipped/m);
   }, 90_000);
+});
+
+describe("a run vitest fails with no failed test", () => {
+  it("is a T0001 line and a fail trailer, never an ok trailer over exit 1", () => {
+    const r = spawnSync(process.execPath, [vitest, "run", "matches-no-file"], {
+      cwd: fixtures,
+      env: { ...process.env, KEEL_AGENT: "1" },
+      encoding: "utf8",
+      timeout: 60_000,
+    });
+    expect(r.status).toBe(1);
+    expect(r.stdout).toMatch(/^T0001 no test ran: vitest ended the run as failed$/m);
+    expect(r.stdout).toMatch(/^fail 0 tests, 0 failed, 0 skipped/m);
+  }, 90_000);
+});
+
+describe("endDiags", () => {
+  const open = [{ file: "/r/a.test.ts", test: "a > one" }];
+  it("is nothing for a passed run", () => {
+    expect(endDiags("passed", false, open, 3, "/r")).toEqual([]);
+  });
+  it("names each file an interrupted run left unfinished, failures or not", () => {
+    const at = (failing: boolean) =>
+      endDiags("interrupted", failing, open, 3, "/r").map((d) => `${d.path} ${d.message}`);
+    expect(at(false)).toEqual(["a.test.ts a > one: vitest ended the run as interrupted"]);
+    expect(at(true)).toEqual(at(false));
+  });
+  it("is one unlocated line for a failed run with no failure of its own", () => {
+    expect(endDiags("failed", false, [], 0, "/r")).toEqual([
+      { kind: "diag", code: "T0001", message: "no test ran: vitest ended the run as failed" },
+    ]);
+    expect(endDiags("failed", false, [], 2, "/r")[0]?.message).toBe("no test failed: vitest ended the run as failed");
+    expect(endDiags("failed", true, [], 2, "/r")).toEqual([]);
+  });
 });
 
 describe("crashDiags", () => {

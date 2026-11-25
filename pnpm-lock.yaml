@@ -1189,6 +1189,9 @@ importers:
       '@keel/store':
         specifier: workspace:*
         version: link:../store
+      esbuild:
+        specifier: ^0.28.2
+        version: 0.28.2
       magic-string:
         specifier: ^1.4.5
         version: 1.4.5
@@ -1202,9 +1205,6 @@ importers:
       '@types/node':
         specifier: ^22
         version: 22.20.5
-      esbuild:
-        specifier: ^0.28.2
-        version: 0.28.2
       fast-check:
         specifier: ^3
         version: 3.23.2

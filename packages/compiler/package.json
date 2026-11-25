@@ -112,21 +112,13 @@
     "@keel/runtime-dom": "workspace:*",
     "@keel/schema": "workspace:*",
     "@keel/store": "workspace:*",
+    "esbuild": "^0.28.2",
     "magic-string": "^1.4.5",
     "oxc-parser": "^0.157.0"
-  },
-  "peerDependencies": {
-    "esbuild": "^0.28.2"
-  },
-  "peerDependenciesMeta": {
-    "esbuild": {
-      "optional": true
-    }
   },
   "devDependencies": {
     "@keel/tooling": "workspace:*",
     "@types/node": "^22",
-    "esbuild": "^0.28.2",
     "fast-check": "^3",
     "happy-dom": "^21.0.4"
   }
