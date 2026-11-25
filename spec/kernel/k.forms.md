@@ -1,5 +1,5 @@
 # k.forms: Forms
-status: conformance-covered
+status: implemented
 
 **API.**
 ```tsx
@@ -47,4 +47,5 @@ Without JS the server runs the same flow: it decodes FormData with the action's 
 - Two `form()` calls in separate render roots with one schema and one `id` give equal field ids; a second live one in the same root gets `~2`.
 - With `issueText`, an invalid field's error text is exactly its return value for that field's issue, whose `rule`, `path` and constraint match the schema; without it, a `format` issue shows `Invalid value`.
 - No 422 response carries a submitted `s.secret` or password-input value.
+- Of input `s.object({ cards: s.record(s.object({ name: s.string({ min: 3 }), pin: s.secret(s.string()) })), pay: s.union('kind', [s.object({ kind: s.literal('card'), cvc: s.secret(s.string()) }), s.object({ kind: s.literal('cash'), note: s.string() })]) })`, a no-script post of `cards.a.name=x`, `cards.a.pin=pin-7781`, `pay.kind=cash`, `pay.note=hi` and `pay.cvc=cvc-7781` answers 422 whose `#k-state` `form` holds `cards.a.name` `x`, `pay.kind` `cash` and `pay.note` `hi` and no `cards.a.pin` or `pay.cvc` key, and whose body holds neither `pin-7781` nor `cvc-7781`.
 - A no-script post that fails `amount` (an `Input` labelled `Amount`) answers 422 with a `.k-summary` item reading `Amount: <message>` whose link targets `#<field id>`.
