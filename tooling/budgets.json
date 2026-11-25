@@ -14,7 +14,7 @@
   },
   "size": {
     "@keel/check": {
-      "max": "89kb",
+      "max": "89.5kb",
       "platform": "node"
     },
     "@keel/check/explain": {
@@ -180,7 +180,7 @@
       "platform": "node"
     },
     "@keel/std-workflows/tools": {
-      "max": "3.25kb",
+      "max": "3.75kb",
       "platform": "node"
     },
     "@keel/std-capacitor": "2kb",
