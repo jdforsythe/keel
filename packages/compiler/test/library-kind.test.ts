@@ -95,7 +95,7 @@ describe("libraryFiles and the gates", () => {
     }
   });
 
-  it("importDeps imports each library, transitively, and reports E1159 for a package entry that is no library", async () => {
+  it("importDeps finds each library, transitively, never runs a library's entry, and reports E1159 for a package entry that is no library", async () => {
     lib(root, "@acme/charts", "charts", ["@acme/other", "@acme/gone"]);
     lib(root, "@acme/other", "other", []);
     fs.mkdirSync(path.join(root, "node_modules", "@acme", "plain"), { recursive: true });
@@ -106,7 +106,8 @@ describe("libraryFiles and the gates", () => {
       "E1159 modules/shop/module.ts library dep @acme/none of module shop cannot be imported (not found)",
       "E1159 node_modules/@acme/charts/module.ts library dep @acme/gone of module charts cannot be imported (not found)",
     ]);
-    expect(Reflect.get(globalThis, "__keelLib")).toEqual(["@acme/charts", "@acme/other"]);
+    // A library is imported only through its `./tools` (k.library-pack Package): neither entry ran.
+    expect(Reflect.get(globalThis, "__keelLib")).toEqual([]);
   });
 
   it("stdPlacedExports finds a placed library's package by its manifest id", () => {
