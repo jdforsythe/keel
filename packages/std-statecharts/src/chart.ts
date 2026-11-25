@@ -3,6 +3,7 @@ import { type Schema, s } from "@keel/schema";
 import { store, transaction } from "@keel/store";
 import { asEvents } from "../unsafe/asEvents.ts";
 import { loosen } from "../unsafe/loosen.ts";
+import { refuse } from "../unsafe/refuse.ts";
 import type { Chart } from "./Chart.type.ts";
 import type { ChartInstance } from "./ChartInstance.ts";
 import type { ChartSpec } from "./ChartSpec.ts";
@@ -30,11 +31,11 @@ export function chart<
 >(id: string, spec: ChartSpec<D, Ev, S, G, A>): Chart<D, Ev, S, G, A> {
   const declared: Readonly<Record<string, LooseState>> = spec.states;
   const problem = analyze(shapeOf({ ...spec, states: declared }))[0];
-  if (problem !== undefined) throw new Error(`${problem.code} chart ${id}: ${problem.message}`);
+  if (problem !== undefined) refuse(`${problem.code} chart ${id}: ${problem.message}`);
   const names: S[] = [];
   for (const name in spec.states) names.push(name);
   const [first, ...rest] = names;
-  if (first === undefined) throw new Error(`E2751 chart ${id}: no states`);
+  if (first === undefined) refuse(`E2751 chart ${id}: no states`);
   const guards = loosen<D, boolean>(spec.guards);
   const actions = loosen<D, D>(spec.actions);
   const pick = (cur: ChartState<string, D>, event: string, payload: unknown) => {

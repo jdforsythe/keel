@@ -2381,6 +2381,12 @@ importers:
         specifier: workspace:*
         version: link:../store
     devDependencies:
+      '@keel/cli':
+        specifier: workspace:*
+        version: link:../cli
+      '@keel/compiler':
+        specifier: workspace:*
+        version: link:../compiler
       '@keel/testing':
         specifier: workspace:*
         version: link:../testing

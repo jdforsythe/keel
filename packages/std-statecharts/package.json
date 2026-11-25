@@ -3,20 +3,25 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "keel": "library",
   "exports": {
     ".": {
+      "keel": "./src/index.ts",
       "types": "./src/index.ts",
       "default": "./src/index.ts"
     },
     "./tools": {
+      "keel": "./src/tools/index.ts",
       "types": "./src/tools/index.ts",
       "default": "./src/tools/index.ts"
     },
     "./tools/internal": {
+      "keel": "./src/tools/internal/index.ts",
       "types": "./src/tools/internal/index.ts",
       "default": "./src/tools/internal/index.ts"
     },
     "./internal": {
+      "keel": "./src/internal/index.ts",
       "types": "./src/internal/index.ts",
       "default": "./src/internal/index.ts"
     }
@@ -24,45 +29,68 @@
   "publishConfig": {
     "exports": {
       ".": {
+        "keel": "./src/index.ts",
         "types": "./dist/src/index.d.ts",
         "default": "./dist/src/index.js"
       },
       "./tools": {
+        "keel": "./src/tools/index.ts",
         "types": "./dist/src/tools/index.d.ts",
         "default": "./dist/src/tools/index.js"
       },
       "./tools/internal": {
+        "keel": "./src/tools/internal/index.ts",
         "types": "./dist/src/tools/internal/index.d.ts",
         "default": "./dist/src/tools/internal/index.js"
       },
       "./internal": {
+        "keel": "./src/internal/index.ts",
         "types": "./dist/src/internal/index.d.ts",
         "default": "./dist/src/internal/index.js"
       }
     }
   },
-  "files": ["dist", "docs"],
+  "files": [
+    "module.ts",
+    "src",
+    "unsafe",
+    "dist",
+    ".keel/ledger.json",
+    "docs",
+    "README.md"
+  ],
   "scripts": {
-    "check": "tsc --noEmit && biome check src test unsafe",
+    "check": "tsc --noEmit && biome check src unsafe test && keel check",
     "test": "vitest run",
     "coverage": "node ../../tooling/coverage.mjs",
     "build": "tsc -p tsconfig.build.json",
     "mutate": "node ../../tooling/mutate.mjs",
-    "prepack": "node ../../tooling/docs-pack.mjs"
+    "prepack": "tsc -p tsconfig.build.json && node ../../tooling/docs-pack.mjs && keel pack"
+  },
+  "peerDependencies": {
+    "@keel/check": "workspace:*",
+    "@keel/compiler": "workspace:*",
+    "@keel/reactive": "workspace:*",
+    "@keel/schema": "workspace:*",
+    "@keel/store": "workspace:*",
+    "fast-check": "^3"
+  },
+  "devDependencies": {
+    "@keel/check": "workspace:*",
+    "@keel/cli": "workspace:*",
+    "@keel/compiler": "workspace:*",
+    "@keel/reactive": "workspace:*",
+    "@keel/schema": "workspace:*",
+    "@keel/store": "workspace:*",
+    "@keel/testing": "workspace:*",
+    "@keel/tooling": "workspace:*",
+    "@types/node": "^22",
+    "fast-check": "^3"
   },
   "dependencies": {
     "@keel/check": "workspace:*",
     "@keel/reactive": "workspace:*",
     "@keel/schema": "workspace:*",
     "@keel/store": "workspace:*"
-  },
-  "devDependencies": {
-    "@keel/testing": "workspace:*",
-    "@keel/tooling": "workspace:*",
-    "@types/node": "^22",
-    "fast-check": "^3"
-  },
-  "peerDependencies": {
-    "fast-check": "^3"
   }
 }
