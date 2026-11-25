@@ -15,6 +15,7 @@ import { deployBuildWrites } from "./deployBuildWrites.ts";
 import { hostingDiags } from "./hostingDiags.ts";
 import { inWorkspace } from "./inWorkspace.ts";
 import { isError } from "./isError.ts";
+import { libraryManifestFiles } from "./libraryManifestFiles.ts";
 import { loadShells } from "./loadShells.ts";
 import { makeDiag } from "./makeDiag.ts";
 import { projectFiles } from "./projectFiles.ts";
@@ -80,7 +81,9 @@ export async function buildCommand(io: Io, input: Input = {}, refresh = false): 
       : hostingDiags(topology, io.env ?? {}, project.find((f) => f.path === "topology.ts")?.source)),
   ];
   const failed = diags.some(isError);
-  const deploy = failed ? [] : deployBuildWrites(project, !inWorkspace(io), policy, targets.shells);
+  // The libraries' manifests join the tree: their `env` names reach `deploy/compose.yaml` (k.server-deps Environment).
+  const deployTree = [...project, ...libraryManifestFiles(io.cwd, project)];
+  const deploy = failed ? [] : deployBuildWrites(deployTree, !inWorkspace(io), policy, targets.shells);
   const writes: Write[] = failed
     ? []
     : [
