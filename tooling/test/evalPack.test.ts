@@ -62,6 +62,15 @@ describe("pack rewrite", () => {
       exports: { "./client": { types: "./src/client.d.ts" } },
     });
   });
+
+  it("stages `publishConfig.exports` when the package has it, a `null` subpath included", () => {
+    const staged = stagedManifest({
+      name: "@keel/x",
+      exports: { ".": "./src/index.ts", "./testing": "./src/testing/a.ts" },
+      publishConfig: { exports: { ".": "./dist/src/index.js", "./testing": null } },
+    });
+    expect(staged).toEqual({ name: "@keel/x", exports: { ".": "./dist/src/index.js", "./testing": null } });
+  });
 });
 
 describe("pack lint", () => {
