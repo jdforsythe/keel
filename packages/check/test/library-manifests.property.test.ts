@@ -23,6 +23,11 @@ const library = (name: string, mid: string, deps: readonly string[] = [], keel: 
     source: JSON.stringify({ name, version: "1.0.0", type: "module", ...(keel === null ? {} : { keel }) }),
   },
   manifest(`node_modules/${name}/module.ts`, mid, deps),
+  // A truthful ledger file, so E1162 (k.library) holds.
+  {
+    path: `node_modules/${name}/.keel/ledger.json`,
+    source: JSON.stringify({ version: 1, unsafe: 0, hostElements: 0, exports: [] }),
+  },
 ];
 const diags = (files: File[], code: string) => check(files, NO_TYPES).diagnostics.filter((d) => d.code === code);
 

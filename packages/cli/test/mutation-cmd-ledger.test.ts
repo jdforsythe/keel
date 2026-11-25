@@ -379,6 +379,7 @@ describe("ledger command", () => {
       ],
       clauses: [{ item: "k.a#1", rung: "none" }],
       a11y: [],
+      libraries: {},
     });
     expect(writes[0]?.content?.endsWith("}\n")).toBe(true);
     const none: Write[] = [];

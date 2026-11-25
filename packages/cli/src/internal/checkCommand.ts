@@ -7,6 +7,7 @@ import { agentDrift } from "./agentDrift.ts";
 import { baseInput } from "./baseInput.ts";
 import { codeFiles } from "./codeFiles.ts";
 import { deployFreshness } from "./deployFreshness.ts";
+import { libraryProjectFiles } from "./libraryProjectFiles.ts";
 import { loadShells } from "./loadShells.ts";
 import { makeDiag } from "./makeDiag.ts";
 import { projectFiles } from "./projectFiles.ts";
@@ -23,9 +24,12 @@ import { summary } from "./summary.ts";
  * from `pathCollisions` and `serverOnlyCalls`, the functions `keel build` calls; E1579 for a route under the identity
  * source's `handle.path`, from `identityDiags`. Each declared shell's target loads first (`shellTargets`: E1159, E1585),
  * and each plugin it names that `package.json` lacks is one E1572, once per plugin (k.shell Plugins).
- * W1356 for a stale agent file, where `AGENTS.md` holds the Keel block.
+ * W1356 for a stale agent file, where `AGENTS.md` holds the Keel block. The project read gains its libraries' files
+ * (`libraryProjectFiles`) for E1162.
  */
-export async function checkCommand(input: Input, io: Io): Promise<OutRecord[]> {
+export async function checkCommand(input: Input, given: Io): Promise<OutRecord[]> {
+  const read = projectFiles(given);
+  const io: Io = { ...given, files: [...read, ...libraryProjectFiles(given.cwd, read)] };
   const files = codeFiles(io, input.paths, true);
   const base = baseInput(input, io);
   const project = projectFiles(io);

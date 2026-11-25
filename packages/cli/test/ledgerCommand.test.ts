@@ -198,6 +198,7 @@ describe("ledgerCommand: the plain ledger", () => {
       ],
       clauses: [{ item: "k.a#1", rung: "none" }],
       a11y: [],
+      libraries: {},
     });
     expect(w?.content?.endsWith("}\n")).toBe(true);
     expect(w?.content).toContain('\n  "version": 1,');

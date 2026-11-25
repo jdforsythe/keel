@@ -361,6 +361,13 @@ const ROWS: readonly Row[] = [
     "k.module",
   ],
   [
+    "E1162",
+    "an installed library's .keel/ledger.json is missing, misshapen, or disagrees with its files' counts",
+    "The app counts unsafe calls and host elements over a library's own files; a published file cannot understate them.",
+    "publish a library version whose keel ledger --write file matches its files",
+    "k.library",
+  ],
+  [
     "E1163",
     "a library's manifest deps entry does not begin with @, or a library file reaches outside its package",
     "A library reaches only its own files and other libraries; an entry without @ names a module of the app, which a library cannot know.",
