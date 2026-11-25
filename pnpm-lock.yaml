@@ -187,6 +187,9 @@ importers:
       '@keel/std-db':
         specifier: workspace:*
         version: link:../../packages/std-db
+      '@keel/std-i18n':
+        specifier: workspace:*
+        version: link:../../packages/std-i18n
       '@keel/std-jobs':
         specifier: workspace:*
         version: link:../../packages/std-jobs
@@ -208,6 +211,9 @@ importers:
       '@keel/std-tauri':
         specifier: workspace:*
         version: link:../../packages/std-tauri
+      '@keel/std-temporal':
+        specifier: workspace:*
+        version: link:../../packages/std-temporal
       '@keel/std-workflows':
         specifier: workspace:*
         version: link:../../packages/std-workflows
