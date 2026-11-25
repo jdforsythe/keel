@@ -2,9 +2,10 @@
 // Spec: k.store, clause "It is held in memory only and never in a snapshot; a session recorder drops these values from later error text (std.sessions)."
 // Spec: k.store, clause "`givenPii(store)` gives the same of the store's state as last given: `initial` at creation, the state a `restore` was given, or the state a commit or undo made."
 // Seed 1337 (fast-check `seed: 1337`).
+// Undo sequences: k.store says `givenPii(store)` after an undo gives "what it gave when the entry now latest was committed (with none left, the base's: `initial`, a `restore`'s values, or those of the last entry the log limit folded into it)". k.store names no redo, so none is asserted.
 // Reading: the result is compared as a set (no order or multiplicity is stated); a number is `String(n)` as `piiValues` gives it. "An entry this process did not commit" is asserted for an entry of a store that only `restore`d a snapshot and for an entry built by hand. "Never in a snapshot": the undeclared keys and values, which the logged payload no longer holds, appear in no `snapshot()`; values the payload's schema declares are in the payload, so in the snapshot as the payload.
 import { scope } from "@keel/reactive";
-import { piiValues, s } from "@keel/schema";
+import { type Infer, piiValues, s } from "@keel/schema";
 import { givenPii, isolate, store, transaction, tx } from "@keel/store";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -133,12 +134,12 @@ describe("k.store: givenPii", () => {
       state: { n: 1, p: { [`a${k}`]: `b${v}`, num, deep: { [`c${k}`]: [`d${v}`, ""] }, empty: "" } },
     }));
     const empty = { n: 0, p: {} };
-    const build = (initial: object) =>
+    const build = (initial: Infer<typeof St>, logLimit?: number) =>
       isolated(() => {
-        const st = store(St, initial, { id: "pure.state.pii" });
-        let next: object = empty;
+        const st = store(St, initial, { id: "pure.state.pii", ...(logLimit === undefined ? {} : { logLimit }) });
+        let next: Infer<typeof St> = empty;
         const set = transaction(st, "pure.state.set", none, () => next);
-        return { st, commit: (n: object) => ((next = n), tx(set, {})) };
+        return { st, commit: (n: Infer<typeof St>) => ((next = n), tx(set, {})) };
       });
 
     it("is the marked values of `initial` at creation, undeclared keys and all under them among them, and empty for an unmarked state", () => {
@@ -183,6 +184,61 @@ describe("k.store: givenPii", () => {
           const afterUndo = givenPii(k.st);
           expect(sorted(afterUndo)).toEqual(sorted(piiValues(St, state)));
           for (const m of markers) expect(afterUndo).toContain(m);
+        }),
+        opts,
+      );
+    });
+
+    const sameAs = (got: readonly string[], state: Infer<typeof St>): void => {
+      expect(sorted(got)).toEqual(sorted(piiValues(St, state)));
+    };
+    const four = fc.tuple(stateArb, stateArb, stateArb, stateArb);
+
+    it("after an undo is what it gave when the entry now latest was committed, and with none left the base's `initial` values", () => {
+      fc.assert(
+        fc.property(stateArb, stateArb, stateArb, (i, a, b) => {
+          const k = build(i.state);
+          expect(k.commit(a.state).ok).toBe(true);
+          expect(k.commit(b.state).ok).toBe(true);
+          sameAs(givenPii(k.st), b.state);
+          expect(k.st.undo()).toBe(true);
+          sameAs(givenPii(k.st), a.state);
+          expect(k.st.undo()).toBe(true);
+          sameAs(givenPii(k.st), i.state);
+          expect(k.st.undo()).toBe(false);
+          sameAs(givenPii(k.st), i.state);
+        }),
+        opts,
+      );
+    });
+
+    it("after an undo with none left gives the values of a `restore` that made the base", () => {
+      fc.assert(
+        fc.property(stateArb, stateArb, stateArb, (i, r, a) => {
+          const k = build(i.state);
+          k.st.restore({ ...k.st.snapshot(), initial: r.state, state: r.state, log: [], keys: [] });
+          expect(k.commit(a.state).ok).toBe(true);
+          sameAs(givenPii(k.st), a.state);
+          expect(k.st.undo()).toBe(true);
+          sameAs(givenPii(k.st), r.state);
+        }),
+        opts,
+      );
+    });
+
+    it("after an undo with none left gives the values of the last entry the log limit folded into the base", () => {
+      fc.assert(
+        fc.property(four, ([a, b, c, d]) => {
+          const k = build(empty, 2);
+          for (const x of [a, b, c, d]) expect(k.commit(x.state).ok).toBe(true);
+          expect(k.st.log().length).toBe(2);
+          sameAs(givenPii(k.st), d.state);
+          expect(k.st.undo()).toBe(true);
+          sameAs(givenPii(k.st), c.state);
+          expect(k.st.undo()).toBe(true);
+          sameAs(givenPii(k.st), b.state);
+          expect(k.st.undo()).toBe(false);
+          sameAs(givenPii(k.st), b.state);
         }),
         opts,
       );

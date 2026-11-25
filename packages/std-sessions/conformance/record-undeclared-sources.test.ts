@@ -3,7 +3,7 @@
 // Spec: k.store, clause "`givenPii(store)` gives the same of the store's state as last given: `initial` at creation, the state a `restore` was given, or the state a commit or undo made."
 // Seed 1337 (fast-check `seed: 1337`).
 // Sources crossed with channels: each source of marked values the sentence names (a `tx` payload, `initial`, a `restore`, a commit, an undo, route params, route search) by each channel the spec names for dropped text (an error's `message`, its `data`). The recording's JSON holds neither an undeclared key's name nor a value under it.
-// Missing sentences (named by the brief, not by the spec, so not asserted): std.sessions says "error messages and `data`" only; it does not say a nested `cause`, an `Error` thrown by a loader, a string thrown by a loader, or a rejected promise has marked values dropped. Nothing here asserts those channels.
+// The channels of std.sessions-redact (a nested `cause`, a loader throwing, a rejected promise, data keys) are crossed with every source in record-undeclared-channels.test.ts.
 // Readings: "a commit" is a transaction whose reducer makes a state holding the marked values (the payload carries none); an undo is read as a source because k.store `givenPii(store)` names "a commit or undo"; route params and search hold scalars, so a marked route value is a marked leaf and has no key name to drop.
 import { createCtx } from "@keel/ctx";
 import type { SimCtx } from "@keel/ctx";
