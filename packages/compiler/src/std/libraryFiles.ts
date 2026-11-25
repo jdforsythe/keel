@@ -1,30 +1,10 @@
-import fs from "node:fs";
 import path from "node:path";
 import { appManifest } from "../internal/appManifest.ts";
 import { libraryDir } from "../internal/libraryDir.ts";
-import { manifestSource } from "../internal/manifestSource.ts";
-import { readJson } from "../internal/readJson.ts";
 import type { Library } from "../types/Library.ts";
-import { libraryKind } from "./libraryKind.ts";
+import { libraryAt } from "./libraryAt.ts";
 
 const MANIFEST = /(?:^|\/)modules\/[^/]+\/module\.[cm]?[jt]s$/;
-const CODE = ["src", "unsafe"];
-
-/** The real paths of the files under `dir`, recursively, sorted; none when it is not a folder. */
-function walk(dir: string): string[] {
-  let entries: fs.Dirent[];
-  try {
-    entries = fs.readdirSync(dir, { withFileTypes: true });
-  } catch {
-    return [];
-  }
-  return entries
-    .flatMap((e) => {
-      const at = path.join(dir, e.name);
-      return e.isDirectory() ? walk(at) : e.isFile() ? [fs.realpathSync(at)] : [];
-    })
-    .sort();
-}
 
 /**
  * The libraries of the app whose files are `files` (paths relative to `root`, or absolute), sorted by name (k.library In
@@ -41,14 +21,11 @@ export function libraryFiles(
   const visit = (from: string, name: string): void => {
     if (out.has(name)) return;
     const at = libraryDir(from, name);
-    const kind = at === undefined ? undefined : libraryKind(readJson(path.join(at, "package.json")), name);
-    if (at === undefined || kind === undefined) return;
-    const dir = fs.realpathSync(at);
-    const manifest = manifestSource(dir);
-    const read = manifest === undefined ? null : appManifest(manifest);
-    const files = CODE.flatMap((d) => walk(path.join(dir, d)));
-    out.set(name, { name, dir, kind, id: read?.id, manifest, files });
-    for (const d of read?.deps ?? []) visit(dir, d.value);
+    const lib = at === undefined ? undefined : libraryAt(at, name);
+    if (lib === undefined) return;
+    out.set(name, lib);
+    const read = lib.manifest === undefined ? null : appManifest(lib.manifest);
+    for (const d of read?.deps ?? []) visit(lib.dir, d.value);
   };
   for (const f of files) {
     if (!MANIFEST.test(f.path)) continue;

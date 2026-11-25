@@ -22,7 +22,8 @@
       "default": "./src/url/index.ts"
     },
     "./jsx-runtime": {
-      "types": "./jsx-runtime.d.ts"
+      "types": "./jsx-runtime.d.ts",
+      "default": "./src/jsx-runtime/index.ts"
     }
   },
   "publishConfig": {
@@ -44,7 +45,8 @@
         "default": "./dist/src/url/index.js"
       },
       "./jsx-runtime": {
-        "types": "./jsx-runtime.d.ts"
+        "types": "./jsx-runtime.d.ts",
+        "default": "./dist/src/jsx-runtime/index.js"
       }
     }
   },

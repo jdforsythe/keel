@@ -1,4 +1,5 @@
 import { LedgerFileSchema } from "@keel/check";
+import { libraryAt } from "@keel/compiler/std/libraryAt";
 import type { Infer } from "@keel/schema";
 import { type Evidence, type LedgerRecord, ledger, ledgerDiff } from "@keel/testing";
 import type { Input } from "../types/Input.ts";
@@ -15,13 +16,16 @@ import { buildLedger } from "./buildLedger.ts";
 import { coverageGaps } from "./coverageGaps.ts";
 import { justifiedFiles } from "./justifiedFiles.ts";
 import { justifiedText } from "./justifiedText.ts";
+import { libraryCount } from "./libraryCount.ts";
 import { libraryLedgers } from "./libraryLedgers.ts";
 import { makeDiag } from "./makeDiag.ts";
 import { mutationClaims } from "./mutationClaims.ts";
+import { ownLibrary } from "./ownLibrary.ts";
 import { packageInScope } from "./packageInScope.ts";
 import { pagelessLayouts } from "./pagelessLayouts.ts";
 import { projectFiles } from "./projectFiles.ts";
 import { summary } from "./summary.ts";
+import { z3Version } from "./z3Version.ts";
 
 type Mutation = NonNullable<Infer<typeof LedgerFileSchema>["mutation"]>;
 
@@ -149,7 +153,9 @@ const ledgerFile = (
  * `modules/**` file's whose path starts with it. `negativeTypes` (written, never compared) is then the matching apps'
  * plus each negative type test's whose path starts with it. The summary counts the items on each rung and the
  * stale claims, each when above 0. `findings` are the static a11y codes of the project (`a11yFindings`, which the
- * caller awaits: it evaluates each project's `tokens.ts`).
+ * caller awaits: it evaluates each project's `tokens.ts`). In a library's own folder (`ownLibrary`, k.library-pack Own
+ * folder) the items are its exports and its spec clauses, `unsafe` and `hostElements` the counts an app makes over its
+ * `src/` and `unsafe/` files (`libraryAt`, `libraryCount`), and `libraries` is empty.
  */
 export function ledgerCommand(
   input: Input,
@@ -158,10 +164,14 @@ export function ledgerCommand(
   findings: readonly { code: string; path: string }[] = [],
 ): Outcome {
   const files = projectFiles(io);
-  const built = buildLedger(files);
-  const libs = libraryLedgers(io.cwd, files);
-  const totalUnsafe = libs.reduce((n, l) => n + l.ownUnsafe, built.unsafe);
-  const totalHosts = libs.reduce((n, l) => n + l.ownHostElements, built.hostElements);
+  // A library's own folder (k.library-pack Own folder): its exports, and the counts an app makes over its files.
+  const own = ownLibrary(io.cwd);
+  const self = own === undefined ? undefined : libraryAt(io.cwd, own.name);
+  const built = buildLedger(files, z3Version(), self === undefined ? undefined : (self.id ?? self.name));
+  const libs = self === undefined ? libraryLedgers(io.cwd, files) : [];
+  const counted = self === undefined ? undefined : libraryCount(self.files);
+  const totalUnsafe = counted?.unsafe ?? libs.reduce((n, l) => n + l.ownUnsafe, built.unsafe);
+  const totalHosts = counted?.hostElements ?? libs.reduce((n, l) => n + l.ownHostElements, built.hostElements);
   const libRecords = libs.flatMap((l) => l.records).filter((r) => r.item.startsWith(input.scope ?? ""));
   const byItem = new Map(built.items.map((i) => [i.item, i]));
   const all = ledger(built.items.map((i) => ({ item: i.item, evidence: i.evidence.map((e) => e.ev) })));

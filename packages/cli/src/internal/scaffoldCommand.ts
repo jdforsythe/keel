@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { type Op, type ScaffoldDiag, scaffold } from "@keel/scaffold";
 import type { Input } from "../types/Input.ts";
 import type { Io } from "../types/Io.ts";
@@ -25,6 +27,7 @@ const GENERATORS: readonly Op[] = [
   "transaction",
   "service",
   "shell",
+  "library",
 ];
 const CODEMODS: readonly Op[] = ["rename", "move", "add-field", "place"];
 /** A `.keel/` artifact `keel build` writes; the ledger's own files are not among them (k.ledger). */
@@ -86,7 +89,7 @@ export async function scaffoldCommand(name: "scaffold" | "codemod", input: Input
       : undefined;
   if (generated !== undefined && !generated.ok)
     return { records: [generated.diag, summary(`${name} ${op}`, [generated.diag], {})], writes: [] };
-  const base = scaffoldInput(op, input, generated?.value);
+  const base = scaffoldInput(op, input, generated?.value, (d) => d !== "" && existsSync(join(io.cwd, d)));
   const from = typeof base.from === "string" ? base.from : "";
   const kinds =
     op === "rename" && input.kind === undefined
@@ -119,7 +122,8 @@ export async function scaffoldCommand(name: "scaffold" | "codemod", input: Input
   const counts = { created: edit.created.length, changed: edit.changed.length, removed: edit.removed.length };
   const built = into === "" && [...files.keys()].some((p) => BUILT.test(p));
   // `shell` refreshes nothing: the new shell package is not installed yet, so its target cannot load (k.scaffold-shell).
-  if (dry || !built || writes.length === 0 || op === "shell")
+  // `library` writes a package of its own beside the project (k.library-pack Scaffold), none of the project's files.
+  if (dry || !built || writes.length === 0 || op === "shell" || op === "library")
     return {
       records: [...records, summary(dry ? `${label} --dry-run` : label, [], counts)],
       writes: dry ? [] : writes,
