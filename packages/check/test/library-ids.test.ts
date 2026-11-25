@@ -151,21 +151,9 @@ function sources(dir: string): string[] {
   );
 }
 
-/**
- * The stdlib's elements E1161 reports today: each a wrapping `Box` or `Text` called with no `id` at all, which slice 4
- * gives `id: \`${id}.<part>\``; no stdlib `id` form is refused.
- */
+/** The stdlib's elements E1161 reports, by package: none, each wrapping element taking an id built from its `id`. */
 const NO_ID: Readonly<Record<string, readonly string[]>> = {
-  "std-headless": [
-    "Combobox.ts:60",
-    "Combobox.ts:120",
-    "Dialog.ts:58",
-    "Disclosure.ts:25",
-    "Menu.ts:54",
-    "Tabs.ts:44",
-    "Toaster.ts:130",
-    "internal/content.ts:23",
-  ],
+  "std-headless": [],
   "std-tables": [],
 };
 
