@@ -2,6 +2,7 @@ import { constants, accessSync, existsSync, readFileSync, statSync } from "node:
 import { join } from "node:path";
 import { readLibraryLedger } from "@keel/check";
 import { libraryKind } from "@keel/compiler/std/libraryKind";
+import type { TestRunReport } from "@keel/testing";
 import type { Input } from "../types/Input.ts";
 import type { Io } from "../types/Io.ts";
 import type { OutRecord } from "../types/OutRecord.ts";
@@ -13,10 +14,13 @@ import { jsonFieldAt } from "./jsonFieldAt.ts";
 import { ledgerCommand } from "./ledgerCommand.ts";
 import { makeDiag } from "./makeDiag.ts";
 import { packageShape } from "./packageShape.ts";
+import { relPath } from "./relPath.ts";
 import { summary } from "./summary.ts";
 import { testCommand } from "./testCommand.ts";
 
 const LEDGER = ".keel/ledger.json";
+const RUN_REPORT = "reports/tests/run.json";
+const RUN_REPORTS = /^reports\/tests\//;
 const SEE = "k.library-pack";
 const plural = (n: number, one: string): string => `${n} ${one}${n === 1 ? "" : "s"}`;
 
@@ -74,7 +78,8 @@ function unwritable(cwd: string): string | undefined {
 /**
  * `keel pack [--check]` (k.library-pack Pack), in a library's own folder: the steps `kind` (the folder's
  * `package.json` marks a library under a scoped name), `package` (`packageShape`), `check` (`keel check` there),
- * `test` (`keel test` there) and `ledger` (`keel ledger --write .keel/ledger.json`; with `--check`, the shipped file's
+ * `test` (`keel test` there, its run report held, not written) and `ledger` (`keel ledger --write .keel/ledger.json`
+ * over that run's report in place of any on disk; with `--check`, the shipped file's
  * `unsafe`, `hostElements` and `exports` as an app reads them, `readLibraryLedger`, against the ones it would write).
  * It stops at the first step that fails: that step's own records, then one E1164 whose message begins with the step's
  * name. On success one summary whose `counts` are the written ledger's `{ unsafe, hostElements, exports }`, and, without
@@ -94,8 +99,12 @@ export async function packCommand(input: Input, io: Io): Promise<Outcome> {
   const errors = checked.filter(isError).length;
   if (errors > 0)
     return stop(checked, makeDiag("E1164", `check: ${plural(errors, "error")}; nothing packed`, { see: SEE }));
-  // The test step writes no run report: a pack writes `.keel/ledger.json` alone (k.library-pack Pack).
-  const tested = await testCommand({}, io, false);
+  // The test step writes no run report: a pack writes `.keel/ledger.json` alone (k.library-pack Pack). The ledger step
+  // reads that run's report, held here, in place of any `reports/tests/` on disk.
+  let run: TestRunReport = { v: 1, files: {} };
+  const tested = await testCommand({}, io, (r) => {
+    run = r;
+  });
   const trailer = tested.find((r) => r.kind === "summary");
   if (trailer?.ok !== true) {
     const counts = isRecord(trailer?.counts) ? trailer.counts : {};
@@ -107,7 +116,9 @@ export async function packCommand(input: Input, io: Io): Promise<Outcome> {
       makeDiag("E1164", `test: ${why}; nothing packed`, { see: SEE }),
     );
   }
-  const written = ledgerCommand({ write: LEDGER }, io);
+  const own = { path: RUN_REPORT, source: `${JSON.stringify(run, null, 2)}\n` };
+  const files = (io.files ?? []).filter((f) => !RUN_REPORTS.test(relPath(io.cwd, f.path)));
+  const written = ledgerCommand({ write: LEDGER }, { ...io, files: [...files, own] });
   const content = written.writes[0]?.content;
   const fresh = readLibraryLedger(typeof content === "string" ? content : undefined);
   if (!fresh.ok) return stop([], makeDiag("E1164", "ledger: the ledger it would write fails its shape", { see: SEE }));
