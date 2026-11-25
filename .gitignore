@@ -22,3 +22,4 @@ packages/*/.keel/
 .cargo-target/
 .claude/settings.local.json
 packages/*/docs
+.keel-gate/

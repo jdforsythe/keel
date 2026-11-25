@@ -24,6 +24,7 @@
     "ledger": "node packages/cli/src/bin.ts ledger --write tooling/ledger/ledger.json",
     "evidence:report": "node tooling/evidence-report.mjs",
     "handoff": "node tooling/handoff.mjs",
+    "gate": "node tooling/gate.mjs",
     "generate": "node tooling/generate.mjs",
     "docs:pack": "node tooling/docs-pack.mjs --all",
     "budgets": "node tooling/budgets.mjs",
