@@ -1,9 +1,9 @@
 import { createHook } from "node:async_hooks";
-import { fullCollection } from "../../unsafe/fullCollection.ts";
 import type { Hold } from "./Hold.ts";
 import type { Piece } from "./Piece.ts";
 import type { RunHandle } from "./RunHandle.ts";
 import type { RunState } from "./RunState.ts";
+import { fullCollection } from "./fullCollection.ts";
 import { onThreadPool } from "./onThreadPool.ts";
 import { runStorage } from "./runStorage.ts";
 

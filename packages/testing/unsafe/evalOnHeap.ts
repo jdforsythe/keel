@@ -18,7 +18,10 @@ interface Heap {
  * is full, so the address is never 0.
  */
 export async function evalOnHeap(em: unknown, c: Z3_context, text: string): Promise<string> {
-  const m = unsafe("z3-solver types its Emscripten module as any", () => em as Heap);
+  const m = unsafe(
+    "the z3-solver peer is pinned to 5.3.3, whose Emscripten module holds every Heap member declared above; the prove tests call each of them",
+    () => em as Heap,
+  );
   const bytes = new TextEncoder().encode(`${text}\0`);
   const at = m._malloc(bytes.length);
   try {
