@@ -2,7 +2,7 @@ import { For } from "@keel/runtime-dom";
 import { type Infer, s } from "@keel/schema";
 import { Box, Text } from "@keel/ui";
 import balances from "./balances.ts";
-import euros from "./euros.ts";
+import money from "./money.ts";
 import nameOf from "./nameOf.ts";
 import { trip } from "./trip.ts";
 
@@ -16,7 +16,7 @@ export default function BalancesPanel(_props: Infer<typeof Props>) {
         <For each={balances({ people: trip.get("people"), costs: trip.get("costs") })} key="person">
           {(b) => (
             <Box as="li" id={`trip.balances.${b.person}`}>
-              {nameOf(trip.get("people"), b.person)}: {euros(b.cents)} EUR
+              {nameOf(trip.get("people"), b.person)}: {money(b.amount, trip.get("costs")[0]?.currency ?? "EUR")}
             </Box>
           )}
         </For>
