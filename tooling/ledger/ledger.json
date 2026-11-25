@@ -1,10 +1,10 @@
 {
   "version": 1,
-  "unsafe": 33,
+  "unsafe": 35,
   "hostElements": 0,
   "rungs": {
-    "example": 2026,
-    "probabilistic": 378,
+    "example": 2092,
+    "probabilistic": 422,
     "exhaustive": 16,
     "proven": 81,
     "monitored": 8
@@ -12,39 +12,39 @@
   "mutation": {
     "packages": {
       "check": {
-        "score": 73.1,
-        "scoreJustified": 73.1,
+        "score": 73.14,
+        "scoreJustified": 73.14,
         "threshold": 70,
-        "killed": 13279,
-        "survived": 4129,
-        "noCoverage": 757,
+        "killed": 10107,
+        "survived": 3093,
+        "noCoverage": 618,
         "justified": 0
       },
       "cli": {
-        "score": 71.61,
-        "scoreJustified": 71.61,
+        "score": 71.5,
+        "scoreJustified": 71.5,
         "threshold": 70,
-        "killed": 8691,
-        "survived": 2433,
-        "noCoverage": 1013,
+        "killed": 8730,
+        "survived": 2459,
+        "noCoverage": 1021,
         "justified": 0
       },
       "compiler": {
-        "score": 73.15,
-        "scoreJustified": 73.15,
+        "score": 72.32,
+        "scoreJustified": 72.32,
         "threshold": 70,
-        "killed": 11635,
-        "survived": 3435,
-        "noCoverage": 836,
+        "killed": 11676,
+        "survived": 3453,
+        "noCoverage": 1015,
         "justified": 0
       },
       "ctx": {
-        "score": 87.73,
-        "scoreJustified": 87.73,
+        "score": 84,
+        "scoreJustified": 84,
         "threshold": 70,
-        "killed": 779,
-        "survived": 79,
-        "noCoverage": 30,
+        "killed": 782,
+        "survived": 93,
+        "noCoverage": 56,
         "justified": 0
       },
       "forms": {
@@ -69,7 +69,7 @@
         "score": 90.2,
         "scoreJustified": 90.94,
         "threshold": 80,
-        "killed": 3783,
+        "killed": 3782,
         "survived": 378,
         "noCoverage": 33,
         "justified": 34
@@ -84,20 +84,20 @@
         "justified": 0
       },
       "scaffold": {
-        "score": 78.35,
-        "scoreJustified": 78.35,
+        "score": 78.69,
+        "scoreJustified": 78.69,
         "threshold": 70,
-        "killed": 4010,
-        "survived": 922,
+        "killed": 4044,
+        "survived": 909,
         "noCoverage": 186,
         "justified": 0
       },
       "schema": {
-        "score": 91.24,
-        "scoreJustified": 91.24,
+        "score": 90.01,
+        "scoreJustified": 90.01,
         "threshold": 80,
         "killed": 1657,
-        "survived": 144,
+        "survived": 169,
         "noCoverage": 15,
         "justified": 0
       },
@@ -246,12 +246,12 @@
         "justified": 0
       },
       "std-postgres": {
-        "score": 88.23,
-        "scoreJustified": 88.49,
+        "score": 87.88,
+        "scoreJustified": 88.13,
         "threshold": 70,
-        "killed": 1507,
-        "survived": 187,
-        "noCoverage": 14,
+        "killed": 1530,
+        "survived": 193,
+        "noCoverage": 18,
         "justified": 5
       },
       "std-report": {
@@ -273,12 +273,12 @@
         "justified": 0
       },
       "std-sessions": {
-        "score": 89.71,
-        "scoreJustified": 89.71,
+        "score": 88.99,
+        "scoreJustified": 88.99,
         "threshold": 70,
-        "killed": 5903,
-        "survived": 545,
-        "noCoverage": 132,
+        "killed": 5926,
+        "survived": 574,
+        "noCoverage": 159,
         "justified": 0
       },
       "std-statecharts": {
@@ -363,12 +363,12 @@
         "justified": 0
       },
       "testing": {
-        "score": 78.66,
-        "scoreJustified": 78.66,
+        "score": 78.31,
+        "scoreJustified": 78.31,
         "threshold": 70,
-        "killed": 4224,
-        "survived": 651,
-        "noCoverage": 495,
+        "killed": 4564,
+        "survived": 748,
+        "noCoverage": 516,
         "justified": 0
       },
       "ui": {
@@ -516,15 +516,6 @@
         "noCoverage": 7,
         "justified": 0,
         "score": 67.42
-      },
-      {
-        "file": "packages/check/src/internal/clip.ts",
-        "sha": "df6674a96ae240b826205f1966fe49117bb39773ef5900bbf626c9dbfe922798",
-        "killed": 14,
-        "survived": 0,
-        "noCoverage": 0,
-        "justified": 0,
-        "score": 100
       },
       {
         "file": "packages/check/src/internal/compareDiagnostics.ts",
@@ -762,12 +753,12 @@
       },
       {
         "file": "packages/check/src/internal/dropLifted.ts",
-        "sha": "bbabaa2fcf72e17407e82c60b09d9900432fed546379b1fdcd5edb7a5078ae1a",
-        "killed": 42,
-        "survived": 11,
+        "sha": "59576f40e63c83b3c8d273b7417482f87531d7b7911136208a8eab2d3bec3964",
+        "killed": 47,
+        "survived": 6,
         "noCoverage": 1,
         "justified": 0,
-        "score": 77.78
+        "score": 87.04
       },
       {
         "file": "packages/check/src/internal/dropMember.ts",
@@ -1832,6 +1823,15 @@
         "score": 63.24
       },
       {
+        "file": "packages/check/src/rules/dynamicImport.ts",
+        "sha": "e585cd5e586b70e0adc2870537f8488f8b2fd0021d7c7e5752ef07cd2e295aee",
+        "killed": 69,
+        "survived": 18,
+        "noCoverage": 1,
+        "justified": 0,
+        "score": 78.41
+      },
+      {
         "file": "packages/check/src/rules/fieldInForm.ts",
         "sha": "33b13716a0b669c7a413de8a232e880d43f4015bf4c40079f4c7068a320af04a",
         "killed": 45,
@@ -2247,10 +2247,10 @@
       },
       {
         "file": "packages/cli/src/bin.ts",
-        "sha": "99a46e9563b85666595ff45af60e2d2d69605f7e92bc7dc4bddd7594382ba392",
+        "sha": "352890eb7dc0ac74773d785934cb1d5075cfab6c09b136b9d8654a148815f42a",
         "killed": 0,
         "survived": 0,
-        "noCoverage": 48,
+        "noCoverage": 5,
         "justified": 0,
         "score": 0
       },
@@ -2346,12 +2346,12 @@
       },
       {
         "file": "packages/cli/src/internal/a11yClaims.ts",
-        "sha": "b84027617729a3b799cecbb19ca5ceef0cc4a3d9ea6fa4576f6a3773b26577e3",
-        "killed": 53,
-        "survived": 22,
-        "noCoverage": 3,
+        "sha": "638a9ac8fc5464b0fd45918050a508a472e6848a96e0e69e73ec41a80c5ca20b",
+        "killed": 64,
+        "survived": 27,
+        "noCoverage": 4,
         "justified": 0,
-        "score": 67.95
+        "score": 67.37
       },
       {
         "file": "packages/cli/src/internal/a11yFindings.ts",
@@ -2949,12 +2949,12 @@
       },
       {
         "file": "packages/cli/src/internal/ledgerCommand.ts",
-        "sha": "4533f48b3d128c093dc73c374dbf98c197cd02b7c3d48a3c030ee4f59aa955a6",
-        "killed": 385,
-        "survived": 28,
-        "noCoverage": 22,
+        "sha": "acf3ed610fa020dd44b6beb4677aa1d0b8c21c24595f1d089cc65faf5fadb5cb",
+        "killed": 404,
+        "survived": 37,
+        "noCoverage": 26,
         "justified": 0,
-        "score": 88.51
+        "score": 86.51
       },
       {
         "file": "packages/cli/src/internal/linkEscapes.ts",
@@ -3021,8 +3021,8 @@
       },
       {
         "file": "packages/cli/src/internal/makeDiag.ts",
-        "sha": "e5bee937f26678d6b645215cb8e1b39a56ac6069156786c26d3196af0784a5df",
-        "killed": 29,
+        "sha": "aca8d8f61f85b7f616e4ee82d1ce874b427b9fd424b180ecc48a5a1a148075bf",
+        "killed": 23,
         "survived": 0,
         "noCoverage": 0,
         "justified": 0,
@@ -3075,12 +3075,12 @@
       },
       {
         "file": "packages/cli/src/internal/mutationClaims.ts",
-        "sha": "21dd1c3704bac475bf48bd6ed0f814d39cb1c62ba1b0e97317f7f487ca5a9048",
-        "killed": 157,
-        "survived": 46,
+        "sha": "aff1d296635b9fbca60d4f707c07e843a3a13a466e5d2edb8c544edd131b70e7",
+        "killed": 160,
+        "survived": 58,
         "noCoverage": 3,
         "justified": 0,
-        "score": 76.21
+        "score": 72.4
       },
       {
         "file": "packages/cli/src/internal/normClause.ts",
@@ -3093,12 +3093,12 @@
       },
       {
         "file": "packages/cli/src/internal/normalize.ts",
-        "sha": "867966161e46b0f62bee463b8e926a8891c282c567225c97e8ed76945255bb57",
-        "killed": 17,
-        "survived": 0,
+        "sha": "62b5c9e956ccd3b764bade76707ac3e31142feecefc8eab15f4dde7e10de0697",
+        "killed": 27,
+        "survived": 3,
         "noCoverage": 0,
         "justified": 0,
-        "score": 100
+        "score": 90
       },
       {
         "file": "packages/cli/src/internal/noteDiag.ts",
@@ -3327,12 +3327,12 @@
       },
       {
         "file": "packages/cli/src/internal/runCheck.ts",
-        "sha": "941ac3e4fc116677a39981092c7f4b7419de922fad2328eab8bfa93d333c4593",
-        "killed": 34,
-        "survived": 1,
+        "sha": "bd07b6ccb652a724c09d309997ab59e2abbbf8c4dcf9768ff52b71c45f177901",
+        "killed": 35,
+        "survived": 4,
         "noCoverage": 1,
         "justified": 0,
-        "score": 94.44
+        "score": 87.5
       },
       {
         "file": "packages/cli/src/internal/runEngine.ts",
@@ -3525,12 +3525,12 @@
       },
       {
         "file": "packages/cli/src/internal/testCommand.ts",
-        "sha": "bccbb7c31e26bc5be942fd87371a3c6d0baf3484dc35ab6a7080a35c77407efa",
-        "killed": 62,
-        "survived": 36,
+        "sha": "b48de6d653655820e64d851195e202355f32a3d2b7e581c343e0b213a9e05015",
+        "killed": 63,
+        "survived": 34,
         "noCoverage": 3,
         "justified": 0,
-        "score": 61.39
+        "score": 63
       },
       {
         "file": "packages/cli/src/internal/testEvidence.ts",
@@ -3704,6 +3704,15 @@
         "score": 100
       },
       {
+        "file": "packages/cli/src/main.ts",
+        "sha": "89ae913161c926c8221ce30cfc50fb3e2d03f367efe08bf4f903b5f0adba5a39",
+        "killed": 0,
+        "survived": 0,
+        "noCoverage": 48,
+        "justified": 0,
+        "score": 0
+      },
+      {
         "file": "packages/cli/src/mcp.ts",
         "sha": "796e235c7719034e80a3d7c20257d99bc1f7c44a4fae1ad24dfa749ed599b9a6",
         "killed": 27,
@@ -3831,12 +3840,12 @@
       },
       {
         "file": "packages/cli/src/review/placed.ts",
-        "sha": "044f88a12ddfdeead145de55c35c2aa54d4a6a3996769801ab70de2c2bf0a7f2",
+        "sha": "00430ee8070e8a0aa80f9d0f4ac1d9dfae4f3a2c6e407cbfb1e2387e8bfe24d8",
         "killed": 9,
-        "survived": 22,
-        "noCoverage": 3,
+        "survived": 18,
+        "noCoverage": 1,
         "justified": 0,
-        "score": 26.47
+        "score": 32.14
       },
       {
         "file": "packages/cli/src/review/rangeEscapes.ts",
@@ -4002,12 +4011,12 @@
       },
       {
         "file": "packages/compiler/src/compile.ts",
-        "sha": "ddf5a0f8c91c114e5aa9e6a6ef92d1e9efd0a5dcb6b06e0eb27744415f6317b9",
-        "killed": 113,
-        "survived": 12,
-        "noCoverage": 9,
+        "sha": "4dd4467bf54cd9e70388ece0752f18b1249a6fc98b5dcd00b72ca57c603239cf",
+        "killed": 109,
+        "survived": 7,
+        "noCoverage": 12,
         "justified": 0,
-        "score": 84.33
+        "score": 85.16
       },
       {
         "file": "packages/compiler/src/contractCallers.ts",
@@ -4109,22 +4118,22 @@
         "score": 87.5
       },
       {
+        "file": "packages/compiler/src/hosting/foreignRoutesDiags.ts",
+        "sha": "adf3477c9ced07bcc9acc83fa6cacfad2f72db5e3f43c14ef9c16ad8244be777",
+        "killed": 6,
+        "survived": 11,
+        "noCoverage": 104,
+        "justified": 0,
+        "score": 4.96
+      },
+      {
         "file": "packages/compiler/src/hosting/identityDiags.ts",
-        "sha": "7826cbf92a84372c1c414ff0dbf58f2e099b006032c2469bd4efe7c409f5ca7a",
+        "sha": "cdf1193d8bb2254f5402922cdaebbea5786acc7817f4344203687105d76a3112",
         "killed": 47,
         "survived": 21,
         "noCoverage": 2,
         "justified": 0,
         "score": 67.14
-      },
-      {
-        "file": "packages/compiler/src/hosting/identitySetupFiles.ts",
-        "sha": "6e0f07ff179e51a01c6b3cd74ceaab6a30b05a3d4ec717300004352f68c758f8",
-        "killed": 3,
-        "survived": 0,
-        "noCoverage": 1,
-        "justified": 0,
-        "score": 75
       },
       {
         "file": "packages/compiler/src/hosting/identitySource.ts",
@@ -4164,21 +4173,21 @@
       },
       {
         "file": "packages/compiler/src/hosting/mountDiags.ts",
-        "sha": "30140d65cd97ece673be0ec25098a1e353a56730f48ec1912152400e74d6ad7a",
-        "killed": 223,
-        "survived": 32,
-        "noCoverage": 1,
+        "sha": "d8abdac53be0aa3214e2ca99535711f4e47277c905d94b4cb2e4940f5e457f73",
+        "killed": 171,
+        "survived": 10,
+        "noCoverage": 0,
         "justified": 0,
-        "score": 87.11
+        "score": 94.48
       },
       {
         "file": "packages/compiler/src/hosting/mountSource.ts",
-        "sha": "746199b5f0c3a19c6e661b2c19ffaadcecb6199013dfb41d7173cab6a830626b",
-        "killed": 105,
-        "survived": 36,
+        "sha": "deb7d432d65225c53b005bf8d2099a1f81924e9964c3899a0f8f168ed1eb2fd6",
+        "killed": 106,
+        "survived": 35,
         "noCoverage": 0,
         "justified": 0,
-        "score": 74.47
+        "score": 75.18
       },
       {
         "file": "packages/compiler/src/hosting/originDirectiveProblem.ts",
@@ -4244,6 +4253,15 @@
         "score": 85
       },
       {
+        "file": "packages/compiler/src/hosting/servedByEdit.ts",
+        "sha": "59831aefe7ca8822ce91af913b74c3521a36e8a478409ba49624177441f672f1",
+        "killed": 0,
+        "survived": 0,
+        "noCoverage": 25,
+        "justified": 0,
+        "score": 0
+      },
+      {
         "file": "packages/compiler/src/hosting/servedByProblems.ts",
         "sha": "7b427547dde225f7e6b477ae56d0924aae1272a491386f53d3f7603ce2ccb8b1",
         "killed": 26,
@@ -4263,12 +4281,21 @@
       },
       {
         "file": "packages/compiler/src/hosting/stylesProblems.ts",
-        "sha": "5d6b4f47843b9b4ee247721c7faf1243b67f37409c43ec5903774fee527f4125",
-        "killed": 149,
+        "sha": "497afc2d6be40c2b98fababf0de878605d21815f8075b16576c4af77b715f42d",
+        "killed": 154,
         "survived": 20,
         "noCoverage": 2,
         "justified": 0,
-        "score": 87.13
+        "score": 87.5
+      },
+      {
+        "file": "packages/compiler/src/hosting/topologyEntry.ts",
+        "sha": "867c07d88753bbab7d5d2e8b38eda3072ed7d9f36d0040b7bd13977a7f23288e",
+        "killed": 53,
+        "survived": 30,
+        "noCoverage": 3,
+        "justified": 0,
+        "score": 61.63
       },
       {
         "file": "packages/compiler/src/hosting/topologyReadProblems.ts",
@@ -4461,12 +4488,12 @@
       },
       {
         "file": "packages/compiler/src/internal/clientReach.ts",
-        "sha": "8d910f3b0bdd4b58928fccfb425b91853f7ab0902de2272d9dd90c4f0f0b11d7",
-        "killed": 141,
-        "survived": 22,
+        "sha": "ad4c6fb53e3501299574479f5f4f5cbb1ec79d730a093747d195b6d25ee7b722",
+        "killed": 142,
+        "survived": 21,
         "noCoverage": 2,
         "justified": 0,
-        "score": 85.45
+        "score": 86.06
       },
       {
         "file": "packages/compiler/src/internal/collectElements.ts",
@@ -4647,6 +4674,15 @@
         "noCoverage": 0,
         "justified": 0,
         "score": 100
+      },
+      {
+        "file": "packages/compiler/src/internal/fitChain.ts",
+        "sha": "1fdc873f4750b7faef37935033c545a9a93ab5b8f1da83752c76030698eeec83",
+        "killed": 0,
+        "survived": 0,
+        "noCoverage": 46,
+        "justified": 0,
+        "score": 0
       },
       {
         "file": "packages/compiler/src/internal/fnv1a.ts",
@@ -4947,12 +4983,12 @@
       },
       {
         "file": "packages/compiler/src/internal/parseTopology.ts",
-        "sha": "1d824949004befa5d467db569624b28547a5c1735e3ea961728fcce86022683d",
-        "killed": 319,
+        "sha": "5990497b37a13d137a6020948fca79a7a245e0b2c4ccd2e2740c4c45a6dcbf9f",
+        "killed": 317,
         "survived": 82,
         "noCoverage": 2,
         "justified": 0,
-        "score": 79.16
+        "score": 79.05
       },
       {
         "file": "packages/compiler/src/internal/patternIdents.ts",
@@ -5117,6 +5153,15 @@
         "score": 91.04
       },
       {
+        "file": "packages/compiler/src/internal/shortPath.ts",
+        "sha": "7e0086ac118f6d04ef4d025e4be4c0a5686144fded1e9c87d056751ddfc641ce",
+        "killed": 6,
+        "survived": 8,
+        "noCoverage": 1,
+        "justified": 0,
+        "score": 40
+      },
+      {
         "file": "packages/compiler/src/internal/sourceForm.ts",
         "sha": "abaface4e996ca6e4e260a3d5253e858f5c89ab6c1014ee7a367ac60b37a268e",
         "killed": 251,
@@ -5217,12 +5262,12 @@
       },
       {
         "file": "packages/compiler/src/internal/unmappedModule.ts",
-        "sha": "d0205c9ad284b7ae0aa1966fe484be02824be009f5b6c3c670ffe19cea314287",
-        "killed": 13,
-        "survived": 1,
-        "noCoverage": 0,
+        "sha": "c41428483ef93111786bc764922d0f6d9b9aa2f9ace992d26fd3464afbacc56d",
+        "killed": 27,
+        "survived": 2,
+        "noCoverage": 1,
         "justified": 0,
-        "score": 92.86
+        "score": 90
       },
       {
         "file": "packages/compiler/src/internal/unreadModules.ts",
@@ -5343,12 +5388,12 @@
       },
       {
         "file": "packages/compiler/src/std/importDeps.ts",
-        "sha": "110bf71e3b738a8a47f9839feecb4cd9b16b763de01c70f05e3e2d7697c287da",
-        "killed": 54,
+        "sha": "3ac88442b3215c1947e978bd3a938702416f844f6bfef2a627436a0e23e757f0",
+        "killed": 64,
         "survived": 6,
         "noCoverage": 2,
         "justified": 0,
-        "score": 87.1
+        "score": 88.89
       },
       {
         "file": "packages/compiler/src/std/readStd.ts",
@@ -5372,6 +5417,15 @@
         "file": "packages/compiler/src/std/stdContract.ts",
         "sha": "9ada5e9adc63437ca1d627a78b6164601ba5f6757124631fe50371206ecf0834",
         "killed": 2,
+        "survived": 0,
+        "noCoverage": 0,
+        "justified": 0,
+        "score": 100
+      },
+      {
+        "file": "packages/compiler/src/std/stdImporting.ts",
+        "sha": "39725ea050f6bad000382056e877303add5da3f4290cd012d354b5d75ae0fec2",
+        "killed": 1,
         "survived": 0,
         "noCoverage": 0,
         "justified": 0,
@@ -5415,12 +5469,12 @@
       },
       {
         "file": "packages/compiler/src/vite.ts",
-        "sha": "72b0c03b335f647ff5bc16cdd325a7060d1657558712506c0002fcb95ddc813c",
-        "killed": 914,
-        "survived": 584,
-        "noCoverage": 174,
+        "sha": "70580ac2be1ee1d986cc057fd6dd313fe69a5d9ade2e32d4441c79d7c73587f4",
+        "killed": 919,
+        "survived": 581,
+        "noCoverage": 172,
         "justified": 0,
-        "score": 54.67
+        "score": 54.96
       },
       {
         "file": "packages/ctx/src/NetStep.schema.ts",
@@ -5529,6 +5583,42 @@
         "noCoverage": 0,
         "justified": 0,
         "score": 83.33
+      },
+      {
+        "file": "packages/ctx/src/internal/driven.ts",
+        "sha": "164489d78ea3b883eff6d5e5828e412b7737642d407887654d58bf1f622826b9",
+        "killed": 0,
+        "survived": 1,
+        "noCoverage": 0,
+        "justified": 0,
+        "score": 0
+      },
+      {
+        "file": "packages/ctx/src/internal/heldOf.ts",
+        "sha": "3dbf94e32e9e1697636dbbb3762245f655489e677cac4b3ce33889670131b09c",
+        "killed": 0,
+        "survived": 0,
+        "noCoverage": 7,
+        "justified": 0,
+        "score": 0
+      },
+      {
+        "file": "packages/ctx/src/internal/heldWork.ts",
+        "sha": "d7057bb7af2433183f442a23dd786d4782a5b1c1eb0420dbaa97de977ee3045f",
+        "killed": 0,
+        "survived": 0,
+        "noCoverage": 2,
+        "justified": 0,
+        "score": 0
+      },
+      {
+        "file": "packages/ctx/src/internal/holdOn.ts",
+        "sha": "898818a76eb5b64c282c9709b18fc31df92c739136cf3584f12cab91564aa57a",
+        "killed": 0,
+        "survived": 1,
+        "noCoverage": 16,
+        "justified": 0,
+        "score": 0
       },
       {
         "file": "packages/ctx/src/internal/hubOf.ts",
@@ -5712,12 +5802,12 @@
       },
       {
         "file": "packages/ctx/src/internal/simClock.ts",
-        "sha": "f120b2022138f27ca1fc04055f6014c83553f044ea581184d28c85ba68ea6883",
-        "killed": 58,
+        "sha": "6b81cb01c8581e701e8dafc6064887d4516a04e39ad3dc290a3fa0749d5185f6",
+        "killed": 59,
         "survived": 10,
         "noCoverage": 1,
         "justified": 0,
-        "score": 84.06
+        "score": 84.29
       },
       {
         "file": "packages/ctx/src/internal/simNet.ts",
@@ -5739,12 +5829,21 @@
       },
       {
         "file": "packages/ctx/src/internal/simStorage.ts",
-        "sha": "460dde9618b0b9fdc3f7a1f6c2cf87397cfa31c020fbdd8bf617d6b6521e293b",
-        "killed": 52,
-        "survived": 4,
+        "sha": "6fe12a9a54a27c0c54690a19aeca14c8c5c3e989f4c8d1bb5b44f30690f6c5a5",
+        "killed": 53,
+        "survived": 6,
+        "noCoverage": 1,
+        "justified": 0,
+        "score": 88.33
+      },
+      {
+        "file": "packages/ctx/src/internal/storageWrites.ts",
+        "sha": "86cb55670f4e5495537656b1f4518b66f3e10ffad84b7f4ae30caad9ac6509bc",
+        "killed": 0,
+        "survived": 10,
         "noCoverage": 0,
         "justified": 0,
-        "score": 92.86
+        "score": 0
       },
       {
         "file": "packages/ctx/src/internal/tapNet.ts",
@@ -5802,7 +5901,7 @@
       },
       {
         "file": "packages/ctx/src/register.ts",
-        "sha": "126d6610776e5f8506f20ac541376f472d27b5339171d3bbfa3e5637c01a229c",
+        "sha": "455c48a04b9ff72ac3a9e43a7804f4cc39db1a4ac43989a1d58c1217d5f9217f",
         "killed": 35,
         "survived": 0,
         "noCoverage": 0,
@@ -5811,12 +5910,12 @@
       },
       {
         "file": "packages/ctx/src/replica.ts",
-        "sha": "1c6e189596255d8f3c44d71e9570669ad7261e612ec944264a101875516a0d99",
-        "killed": 12,
+        "sha": "1c3fb9be77ec2038c23961dc6c147775dd6c6611958cba1b893e8bcd394ffd9d",
+        "killed": 13,
         "survived": 8,
         "noCoverage": 1,
         "justified": 0,
-        "score": 57.14
+        "score": 59.09
       },
       {
         "file": "packages/ctx/src/seedOf.ts",
@@ -6351,12 +6450,12 @@
       },
       {
         "file": "packages/router/src/identityMount.ts",
-        "sha": "ec6bd3603dffafd3f5d53566df5f5f3483c1aff9828b6dface4e4ad5c5c93111",
-        "killed": 57,
+        "sha": "ec946a0a8814ec7421f220209c171c48df78602ea5915601155f56d8d0b02215",
+        "killed": 56,
         "survived": 1,
         "noCoverage": 1,
         "justified": 0,
-        "score": 96.61
+        "score": 96.55
       },
       {
         "file": "packages/router/src/internal/METHODS.ts",
@@ -6513,7 +6612,7 @@
       },
       {
         "file": "packages/router/src/internal/createRouterWith.ts",
-        "sha": "3104f3ab68116d4fd14389557f614cb4222a64c90f4516a870be6307ddb8ee54",
+        "sha": "d14fb45fe76773f9b6f65edd585fbad5e04a73ec8b5a6787c90c144f978fddb0",
         "killed": 500,
         "survived": 107,
         "noCoverage": 8,
@@ -8475,21 +8574,21 @@
       },
       {
         "file": "packages/scaffold/src/internal/opRoute.ts",
-        "sha": "03caeca35c0eacce2fbb0a6742cdbc7d5192f1de69781fb8ff091a61bbb811c1",
-        "killed": 281,
+        "sha": "25bc32c4e5f056f3d8b4097aaf77addd53caec639176106397aeb38ecc943649",
+        "killed": 290,
         "survived": 45,
         "noCoverage": 2,
         "justified": 0,
-        "score": 85.67
+        "score": 86.05
       },
       {
         "file": "packages/scaffold/src/internal/opService.ts",
-        "sha": "f538644e37be45e6edc97dec1ba63b6bbbd7ed0309b15ccc7db28d5fc90180eb",
+        "sha": "623728cf199cdb455faf1e127f4e25cb0e02ce5680b3f5373daa42c2b11bd503",
         "killed": 147,
-        "survived": 55,
+        "survived": 56,
         "noCoverage": 12,
         "justified": 0,
-        "score": 68.69
+        "score": 68.37
       },
       {
         "file": "packages/scaffold/src/internal/opShell.ts",
@@ -8853,7 +8952,7 @@
       },
       {
         "file": "packages/scaffold/src/templates/apiSchemaTs.ts",
-        "sha": "b9c12e9439e16e830dff2ad1a5ce253043d5b84de71818216c64f5f305f15347",
+        "sha": "d939190d2e8872584e6e8e3a7f07b801a830cf4ed54ab691e0fcdcf67b4347bc",
         "killed": 7,
         "survived": 0,
         "noCoverage": 0,
@@ -8862,7 +8961,7 @@
       },
       {
         "file": "packages/scaffold/src/templates/apiServerTs.ts",
-        "sha": "6fca9e104d6b73eedb0d167ac7f43bfc0a7163e11370b1739614c994892bd35a",
+        "sha": "f44b68f83afb91c35dda20135e0111a0521df0e462fc596957a552b5b64ac3bc",
         "killed": 8,
         "survived": 0,
         "noCoverage": 0,
@@ -8979,12 +9078,12 @@
       },
       {
         "file": "packages/scaffold/src/templates/routeTest.ts",
-        "sha": "7c6eac4d7101fcbf9bc7656050db8c61ddea7bde042b0b5a9df8fa894e0a20b7",
-        "killed": 61,
-        "survived": 18,
+        "sha": "23cca930b312a90dea088de1ab26578021c84ef74702f36ed7c9875118470844",
+        "killed": 86,
+        "survived": 4,
         "noCoverage": 2,
         "justified": 0,
-        "score": 75.31
+        "score": 93.48
       },
       {
         "file": "packages/scaffold/src/templates/routesTs.ts",
@@ -9165,6 +9264,15 @@
         "noCoverage": 0,
         "justified": 0,
         "score": 100
+      },
+      {
+        "file": "packages/schema/src/internal/clipMessage.ts",
+        "sha": "ed0058fbd4e8880c1acd99357387d3e1ae68036b3177c9b148b1be0383796363",
+        "killed": 0,
+        "survived": 25,
+        "noCoverage": 0,
+        "justified": 0,
+        "score": 0
       },
       {
         "file": "packages/schema/src/internal/copyJson.ts",
@@ -11355,7 +11463,7 @@
       },
       {
         "file": "packages/std-capacitor/src/tools/capacitorPlugins.ts",
-        "sha": "3e52da387acb17e7d0a23a3690517425eee7ab93d0375f52b94a07fcf8332339",
+        "sha": "56a3b0f2f187d7ca2158bbbd8f133f21a71685a0f4283ff3c108c5eab0aee8aa",
         "killed": 18,
         "survived": 1,
         "noCoverage": 1,
@@ -11622,15 +11730,6 @@
         "noCoverage": 0,
         "justified": 0,
         "score": 67.92
-      },
-      {
-        "file": "packages/std-conflicts/src/RaceRecord.ts",
-        "sha": "c3f8833688a8da309042352e316f84d3c1bb67bb6142b9c9f607ab3b3e63f043",
-        "killed": 20,
-        "survived": 7,
-        "noCoverage": 1,
-        "score": 71.43,
-        "justified": 0
       },
       {
         "file": "packages/std-conflicts/src/findRaces.ts",
@@ -13092,7 +13191,7 @@
       },
       {
         "file": "packages/std-postgres/src/server/database.ts",
-        "sha": "c1db16599aac16c4f18934d3fc1f45726e573031c14f3beecaa2883694c43075",
+        "sha": "da54441ae340fc8fd3cd5fee401b43545b77f434c20de9c94f525f9e99d6ab1d",
         "killed": 21,
         "survived": 0,
         "noCoverage": 0,
@@ -13236,7 +13335,7 @@
       },
       {
         "file": "packages/std-postgres/src/server/internal/payloadOf.ts",
-        "sha": "4738641323db32b33aef563a99467e785f4bfbccfb85d58fdfa68ff44676532c",
+        "sha": "1574a1ff2d2fb6cb029b3f49c4632f11a52d0b3dd854953b5ee31347399ec5d3",
         "killed": 1,
         "survived": 0,
         "noCoverage": 0,
@@ -13263,12 +13362,12 @@
       },
       {
         "file": "packages/std-postgres/src/server/internal/pgliteEngine.ts",
-        "sha": "45a276f25f5a9dff65bc4b3b4857abd576016476c7be1f5c4fdd90570bf2a628",
-        "killed": 24,
-        "survived": 0,
-        "noCoverage": 1,
+        "sha": "cbf4dce3c27e29a50a2d87fccea1003c0fb21e206d703cde5ce736a873dc6a92",
+        "killed": 44,
+        "survived": 3,
+        "noCoverage": 5,
         "justified": 0,
-        "score": 96
+        "score": 84.62
       },
       {
         "file": "packages/std-postgres/src/server/internal/postgresUrl.ts",
@@ -13326,12 +13425,12 @@
       },
       {
         "file": "packages/std-postgres/src/server/internal/simBackend.ts",
-        "sha": "b93589289906cc3d7a717a76d52229be98488b5ec91e231d92e39aac1fcda80b",
-        "killed": 25,
-        "survived": 6,
+        "sha": "3d1ac7a7abefef1f4d1a031a01e1d38ae6e99952ef23a660558b58cc4d7ea18c",
+        "killed": 28,
+        "survived": 9,
         "noCoverage": 0,
         "justified": 0,
-        "score": 80.65
+        "score": 75.68
       },
       {
         "file": "packages/std-postgres/src/server/internal/simEngine.ts",
@@ -13398,7 +13497,7 @@
       },
       {
         "file": "packages/std-postgres/src/tools/changedParams.ts",
-        "sha": "2748e1de17af7a668c911fa465715fc22253ac215387f9d293ea7850070fee3f",
+        "sha": "3c9b3389dd85ca508b5b08ce34826719e28224e7dcb17de71c6d8c0cac80edcd",
         "killed": 1,
         "survived": 0,
         "noCoverage": 0,
@@ -13740,12 +13839,12 @@
       },
       {
         "file": "packages/std-sessions/src/commandJob.ts",
-        "sha": "4ec27de31db9114ca41e9a61422e7b4b67e33996a418f8ef7636ad10a2f2d175",
+        "sha": "9c78af748727665014347f4c2f499c381c74a6b8bcaf4684ef86412be29c9dcf",
         "killed": 53,
-        "survived": 17,
-        "noCoverage": 6,
+        "survived": 20,
+        "noCoverage": 7,
         "justified": 0,
-        "score": 69.74
+        "score": 66.25
       },
       {
         "file": "packages/std-sessions/src/group/SessionGroup.schema.ts",
@@ -14037,12 +14136,12 @@
       },
       {
         "file": "packages/std-sessions/src/internal/commandRun.ts",
-        "sha": "22db6fde532a79d5acd0a7174efcd287b3d64b99b49e70b3e904e05a72cb0460",
-        "killed": 301,
-        "survived": 25,
-        "noCoverage": 2,
+        "sha": "b7b9db84229b85a305269882af6b7e5bc69b76ca021721fa6ff8217fad1c5ff2",
+        "killed": 307,
+        "survived": 35,
+        "noCoverage": 6,
         "justified": 0,
-        "score": 91.77
+        "score": 88.22
       },
       {
         "file": "packages/std-sessions/src/internal/currentValues.ts",
@@ -14397,12 +14496,12 @@
       },
       {
         "file": "packages/std-sessions/src/internal/replayRun.ts",
-        "sha": "5780f60b3f92ebf369e92d98d77f67270d7de195eeba0fd78f5446c1764a7982",
+        "sha": "6d5ef60394892c44c89eaa60960d95c615fb06915dbfccd6e2de7fa39e01a93d",
         "killed": 73,
-        "survived": 10,
-        "noCoverage": 4,
+        "survived": 13,
+        "noCoverage": 21,
         "justified": 0,
-        "score": 83.91
+        "score": 68.22
       },
       {
         "file": "packages/std-sessions/src/internal/replayStep.ts",
@@ -14433,12 +14532,12 @@
       },
       {
         "file": "packages/std-sessions/src/internal/runJob.ts",
-        "sha": "8050f00e7d4622ea2c74b085c324695b5f7df10dda592a60d75ad476e10bb8dd",
-        "killed": 111,
-        "survived": 17,
-        "noCoverage": 0,
+        "sha": "44bce120aed1aa04481c75e161009b15fa8226de2bd3f7d10fac9ff7d5b61859",
+        "killed": 117,
+        "survived": 22,
+        "noCoverage": 2,
         "justified": 0,
-        "score": 86.72
+        "score": 82.98
       },
       {
         "file": "packages/std-sessions/src/internal/safeUrl.ts",
@@ -14622,12 +14721,12 @@
       },
       {
         "file": "packages/std-sessions/src/minimize.ts",
-        "sha": "138b5049c02921491786cfbe4b24180cd972c14e7333ac906680e94b2fc810be",
+        "sha": "9217deda193d7fc7cb0f7d86fc6eff9ba169df2eb33551e10af2f7adb8705f38",
         "killed": 82,
-        "survived": 28,
-        "noCoverage": 5,
+        "survived": 31,
+        "noCoverage": 6,
         "justified": 0,
-        "score": 71.3
+        "score": 68.91
       },
       {
         "file": "packages/std-sessions/src/monitor/Tally.schema.ts",
@@ -14721,7 +14820,7 @@
       },
       {
         "file": "packages/std-sessions/src/replay.ts",
-        "sha": "b071b8208586ad4a8a9aecf95aef7a366d55df27c06aa584d232b234c4d97e8a",
+        "sha": "9e4248f3d65dcbe922f6bb23947bc57297726c72f74ebcbd75f77472282da517",
         "killed": 1,
         "survived": 0,
         "noCoverage": 0,
@@ -14829,12 +14928,12 @@
       },
       {
         "file": "packages/std-sessions/src/toTest.ts",
-        "sha": "8ae6980314af7e9c96fa20ae0a776e390f766615be23936c8cfc6a55dbc01f88",
-        "killed": 240,
-        "survived": 18,
-        "noCoverage": 0,
+        "sha": "53f4fad38b65dd7f61f06c9cf506c43bb09e45e4b1c61346bd233548bca2e94d",
+        "killed": 251,
+        "survived": 23,
+        "noCoverage": 2,
         "justified": 0,
-        "score": 93.02
+        "score": 90.94
       },
       {
         "file": "packages/std-sessions/src/tools.ts",
@@ -15411,15 +15510,6 @@
         "noCoverage": 1,
         "justified": 0,
         "score": 60
-      },
-      {
-        "file": "packages/std-temporal/src/UTC.ts",
-        "sha": "45bddcb1199cc8a67d5ec8b11b07b086f8c81790fd71bcacb8adf514245f479f",
-        "killed": 0,
-        "survived": 0,
-        "noCoverage": 1,
-        "justified": 0,
-        "score": 0
       },
       {
         "file": "packages/std-temporal/src/addDays.ts",
@@ -16421,6 +16511,15 @@
         "score": 6
       },
       {
+        "file": "packages/testing/src/internal/budgetDeadline.ts",
+        "sha": "c2a8a2f6e81326f190a7b3e4b3aeec7a89b24972d01b1a9e5f1348f4efc8aa3f",
+        "killed": 26,
+        "survived": 1,
+        "noCoverage": 0,
+        "justified": 0,
+        "score": 96.3
+      },
+      {
         "file": "packages/testing/src/internal/cannotBeFocused.ts",
         "sha": "12fcc1e8823c46a8c64bfb481587ccb4e1c496d433e6d07a18bb409d87e3feee",
         "killed": 31,
@@ -16466,13 +16565,13 @@
         "score": 100
       },
       {
-        "file": "packages/testing/src/internal/clockStep.ts",
-        "sha": "daefb51c8e6b2a0f15dbfd32a492fdc6b805a9337044a41920226f24c3dbd445",
-        "killed": 3,
-        "survived": 2,
+        "file": "packages/testing/src/internal/codeOf.ts",
+        "sha": "2f175a6d3a8c02c90ebf1cb7139a34200469181ed25f837b997beaa2248e3e08",
+        "killed": 9,
+        "survived": 1,
         "noCoverage": 0,
         "justified": 0,
-        "score": 60
+        "score": 90
       },
       {
         "file": "packages/testing/src/internal/contentText.ts",
@@ -16494,10 +16593,10 @@
       },
       {
         "file": "packages/testing/src/internal/documentRoute.ts",
-        "sha": "31ccd02bbf7b2e375671cedcec5e51b7c96df82c973315b82ba26d34af9d54f4",
+        "sha": "ecd2c1ab10e04b5337188b95fa57ca2c9539704aad0655497a4ede6caea611a0",
         "killed": 0,
         "survived": 0,
-        "noCoverage": 274,
+        "noCoverage": 278,
         "justified": 0,
         "score": 0
       },
@@ -16509,6 +16608,24 @@
         "noCoverage": 0,
         "justified": 0,
         "score": 78.72
+      },
+      {
+        "file": "packages/testing/src/internal/drained.ts",
+        "sha": "f6ebb7bc9aeadd313e640c894e89acf407fe9ce64232e6c28c1c1a841e6d5351",
+        "killed": 7,
+        "survived": 0,
+        "noCoverage": 0,
+        "justified": 0,
+        "score": 100
+      },
+      {
+        "file": "packages/testing/src/internal/drive.ts",
+        "sha": "3f81def60a101df9374bdd6179d5b9ead9526c901f5af942502f187924cf14f3",
+        "killed": 152,
+        "survived": 47,
+        "noCoverage": 5,
+        "justified": 0,
+        "score": 74.51
       },
       {
         "file": "packages/testing/src/internal/elementsWithId.ts",
@@ -16709,13 +16826,22 @@
         "score": 100
       },
       {
+        "file": "packages/testing/src/internal/onThreadPool.ts",
+        "sha": "35683935f585a39b82f57f7ab3ecc7659e05a2b0ab7f30a399d1c874120c14f9",
+        "killed": 8,
+        "survived": 0,
+        "noCoverage": 0,
+        "justified": 0,
+        "score": 100
+      },
+      {
         "file": "packages/testing/src/internal/openHarness.ts",
-        "sha": "57314c14c7bb8314cd1423ec406d80edb9470cec182bf17fed4a1dd5039d9b5f",
-        "killed": 104,
-        "survived": 21,
+        "sha": "ef89ddf4c6763dc0a103e450bd249d03a55472dc445354da3f8805239f3acc35",
+        "killed": 106,
+        "survived": 19,
         "noCoverage": 6,
         "justified": 0,
-        "score": 79.39
+        "score": 80.92
       },
       {
         "file": "packages/testing/src/internal/pickOption.ts",
@@ -16826,6 +16952,15 @@
         "score": 100
       },
       {
+        "file": "packages/testing/src/internal/runTracker.ts",
+        "sha": "43f82a04578a5d5cf2bbdeecb901b65a62bb99d200df11b79851f110315c4bdd",
+        "killed": 76,
+        "survived": 40,
+        "noCoverage": 2,
+        "justified": 0,
+        "score": 64.41
+      },
+      {
         "file": "packages/testing/src/internal/rungOf.ts",
         "sha": "393029fe081879d3b438f3cf26161a4756b84d419931a87f744c949cdc034110",
         "killed": 27,
@@ -16854,12 +16989,12 @@
       },
       {
         "file": "packages/testing/src/internal/settle.ts",
-        "sha": "98b8764850456845909fc573062cd65ae9996c1078d766f30cbdc0853d73f196",
+        "sha": "dbc03366bd79a36b4324614a84ee0aa11e120fe2949893e6a5dcb4ba4cfaedea",
         "killed": 65,
         "survived": 32,
-        "noCoverage": 4,
+        "noCoverage": 2,
         "justified": 0,
-        "score": 64.36
+        "score": 65.66
       },
       {
         "file": "packages/testing/src/internal/signIn.ts",
@@ -16898,6 +17033,15 @@
         "score": 68.75
       },
       {
+        "file": "packages/testing/src/internal/traceEvent.ts",
+        "sha": "d74fcb3aaaf999b9e270f08b0711e7942451f93052f748f2e0eb8d8158e74f3b",
+        "killed": 0,
+        "survived": 9,
+        "noCoverage": 11,
+        "justified": 0,
+        "score": 0
+      },
+      {
         "file": "packages/testing/src/internal/treeOf.ts",
         "sha": "67179db4804b644114e77cec0417261384017dbbbd8516d95b4cff80fbbe9926",
         "killed": 11,
@@ -16932,6 +17076,15 @@
         "noCoverage": 1,
         "justified": 0,
         "score": 84
+      },
+      {
+        "file": "packages/testing/src/internal/watchOf.ts",
+        "sha": "e1ce9651e8018d008f4d8afa6d637bd3d7690b8906c2979766f708c01415d906",
+        "killed": 10,
+        "survived": 2,
+        "noCoverage": 0,
+        "justified": 0,
+        "score": 83.33
       },
       {
         "file": "packages/testing/src/internal/where.ts",
@@ -17052,39 +17205,39 @@
       },
       {
         "file": "packages/testing/src/renderRoute.ts",
-        "sha": "834055dd03d590c94c887fc2e784a81296e8c307ff14906b2cd4e3740db4b189",
-        "killed": 102,
-        "survived": 21,
-        "noCoverage": 11,
+        "sha": "0d264a9bb302cddc3c9b3273f1d87888a2a474fecbb3b91638a828aefc3c699d",
+        "killed": 108,
+        "survived": 19,
+        "noCoverage": 10,
         "justified": 0,
-        "score": 76.12
+        "score": 78.83
       },
       {
         "file": "packages/testing/src/resumeDocument.ts",
-        "sha": "692d48670286a39b758dc420dcb2e79306b06554816022da057698a373f93255",
-        "killed": 32,
-        "survived": 25,
+        "sha": "3dc6fa482c9483ca7ba1ca001e9128ad7a30495df603901d292da38cba254952",
+        "killed": 33,
+        "survived": 26,
         "noCoverage": 8,
         "justified": 0,
-        "score": 49.23
+        "score": 49.25
       },
       {
         "file": "packages/testing/src/simulate.ts",
-        "sha": "c56b15bf9eec958e245a831eaa3cc63a6f92289028e54af7e3e4cd022c6d05a2",
-        "killed": 86,
-        "survived": 18,
-        "noCoverage": 6,
+        "sha": "7578de882cbd8810f23171ae62dce7fda3dac8ef672e9d7a349381bebd880b39",
+        "killed": 138,
+        "survived": 20,
+        "noCoverage": 8,
         "justified": 0,
-        "score": 78.18
+        "score": 83.13
       },
       {
         "file": "packages/testing/src/testResults.ts",
-        "sha": "d9657e2fa1e9908c32c1379a1393d8fddfdaca60bca8fd1887bd89b9905735d7",
-        "killed": 334,
+        "sha": "65a1a2a8a755ee8a392816236edefbb1c4f4d357a825daa0710c465ec9047491",
+        "killed": 328,
         "survived": 29,
         "noCoverage": 1,
         "justified": 0,
-        "score": 91.76
+        "score": 91.62
       },
       {
         "file": "packages/ui/src/TokenSchema.ts",
@@ -20597,7 +20750,7 @@
       "pkg": "std-postgres",
       "name": "NoRows",
       "file": "packages/std-postgres/src/NoRows.ts",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "pkg": "std-postgres",
@@ -21422,6 +21575,82 @@
       "rung": "example"
     },
     {
+      "item": "k.bundle#8",
+      "rung": "example"
+    },
+    {
+      "item": "k.bundle#9",
+      "rung": "example"
+    },
+    {
+      "item": "k.bundle#10",
+      "rung": "example"
+    },
+    {
+      "item": "k.bundle#11",
+      "rung": "example"
+    },
+    {
+      "item": "k.bundle#12",
+      "rung": "example"
+    },
+    {
+      "item": "k.bundle#13",
+      "rung": "example"
+    },
+    {
+      "item": "k.check-cache#1",
+      "rung": "example"
+    },
+    {
+      "item": "k.check-cache#2",
+      "rung": "example"
+    },
+    {
+      "item": "k.check-cache#3",
+      "rung": "example"
+    },
+    {
+      "item": "k.check-cache#4",
+      "rung": "example"
+    },
+    {
+      "item": "k.check-cache#5",
+      "rung": "example"
+    },
+    {
+      "item": "k.check-cache#6",
+      "rung": "example"
+    },
+    {
+      "item": "k.check-cache#7",
+      "rung": "example"
+    },
+    {
+      "item": "k.check-cache#8",
+      "rung": "example"
+    },
+    {
+      "item": "k.check-cache#9",
+      "rung": "example"
+    },
+    {
+      "item": "k.check-cache#10",
+      "rung": "example"
+    },
+    {
+      "item": "k.check-cache#11",
+      "rung": "example"
+    },
+    {
+      "item": "k.check-cache#12",
+      "rung": "example"
+    },
+    {
+      "item": "k.check-cache#13",
+      "rung": "example"
+    },
+    {
       "item": "k.check#1",
       "rung": "example"
     },
@@ -21503,6 +21732,14 @@
     },
     {
       "item": "k.check#21",
+      "rung": "example"
+    },
+    {
+      "item": "k.check#22",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.check#23",
       "rung": "example"
     },
     {
@@ -21935,7 +22172,7 @@
     },
     {
       "item": "k.ctx#14",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "item": "k.ctx#15",
@@ -21951,10 +22188,30 @@
     },
     {
       "item": "k.ctx#18",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "item": "k.ctx#19",
+      "rung": "example"
+    },
+    {
+      "item": "k.ctx#20",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.ctx#21",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.ctx#22",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.ctx#23",
+      "rung": "example"
+    },
+    {
+      "item": "k.ctx#24",
       "rung": "example"
     },
     {
@@ -22124,6 +22381,142 @@
     {
       "item": "k.docs#13",
       "rung": "example"
+    },
+    {
+      "item": "k.drive-law#1",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.drive-law#2",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.drive-law#3",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.drive-law#4",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.drive-law#5",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.drive-law#6",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.drive-law#7",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.drive-law#8",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.drive-law#9",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.drive-law#10",
+      "rung": "example"
+    },
+    {
+      "item": "k.drive-law#11",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.drive#1",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.drive#2",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.drive#3",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.drive#4",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.drive#5",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.drive#6",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.drive#7",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.drive#8",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.drive#9",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.drive#10",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.drive#11",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.drive#12",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.drive#13",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.drive#14",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.drive#15",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.drive#16",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.drive#17",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.drive#18",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.drive#19",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.drive#20",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.drive#21",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.drive#22",
+      "rung": "probabilistic"
+    },
+    {
+      "item": "k.drive#23",
+      "rung": "probabilistic"
     },
     {
       "item": "k.errors#1",
@@ -22410,6 +22803,10 @@
       "rung": "example"
     },
     {
+      "item": "k.guards#11",
+      "rung": "example"
+    },
+    {
       "item": "k.head#1",
       "rung": "example"
     },
@@ -22671,6 +23068,22 @@
     },
     {
       "item": "k.ledger#15",
+      "rung": "example"
+    },
+    {
+      "item": "k.ledger#16",
+      "rung": "example"
+    },
+    {
+      "item": "k.ledger#17",
+      "rung": "example"
+    },
+    {
+      "item": "k.ledger#18",
+      "rung": "example"
+    },
+    {
+      "item": "k.ledger#19",
       "rung": "example"
     },
     {
@@ -23694,6 +24107,38 @@
       "rung": "example"
     },
     {
+      "item": "k.scaffold-service#1",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold-service#2",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold-service#3",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold-service#4",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold-service#5",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold-service#6",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold-service#7",
+      "rung": "example"
+    },
+    {
+      "item": "k.scaffold-service#8",
+      "rung": "example"
+    },
+    {
       "item": "k.scaffold-shell#1",
       "rung": "example"
     },
@@ -23803,34 +24248,6 @@
     },
     {
       "item": "k.scaffold#19",
-      "rung": "example"
-    },
-    {
-      "item": "k.scaffold#20",
-      "rung": "example"
-    },
-    {
-      "item": "k.scaffold#21",
-      "rung": "example"
-    },
-    {
-      "item": "k.scaffold#22",
-      "rung": "example"
-    },
-    {
-      "item": "k.scaffold#23",
-      "rung": "example"
-    },
-    {
-      "item": "k.scaffold#24",
-      "rung": "example"
-    },
-    {
-      "item": "k.scaffold#25",
-      "rung": "example"
-    },
-    {
-      "item": "k.scaffold#26",
       "rung": "example"
     },
     {
@@ -24178,6 +24595,10 @@
       "rung": "example"
     },
     {
+      "item": "k.shell#18",
+      "rung": "example"
+    },
+    {
       "item": "k.sim#1",
       "rung": "probabilistic"
     },
@@ -24414,6 +24835,10 @@
       "rung": "example"
     },
     {
+      "item": "k.test-run#7",
+      "rung": "probabilistic"
+    },
+    {
       "item": "k.testing#1",
       "rung": "example"
     },
@@ -24515,6 +24940,10 @@
     },
     {
       "item": "k.testing#26",
+      "rung": "example"
+    },
+    {
+      "item": "k.testing#27",
       "rung": "example"
     },
     {
@@ -24750,6 +25179,10 @@
       "rung": "example"
     },
     {
+      "item": "k.user#15",
+      "rung": "example"
+    },
+    {
       "item": "std.brands#1",
       "rung": "example"
     },
@@ -24915,6 +25348,14 @@
     },
     {
       "item": "std.channels#24",
+      "rung": "example"
+    },
+    {
+      "item": "std.channels#25",
+      "rung": "example"
+    },
+    {
+      "item": "std.channels#26",
       "rung": "example"
     },
     {
@@ -25610,6 +26051,30 @@
       "rung": "example"
     },
     {
+      "item": "std.postgres-changes#1",
+      "rung": "example"
+    },
+    {
+      "item": "std.postgres-changes#2",
+      "rung": "example"
+    },
+    {
+      "item": "std.postgres-changes#3",
+      "rung": "example"
+    },
+    {
+      "item": "std.postgres-changes#4",
+      "rung": "example"
+    },
+    {
+      "item": "std.postgres-changes#5",
+      "rung": "example"
+    },
+    {
+      "item": "std.postgres-changes#6",
+      "rung": "example"
+    },
+    {
       "item": "std.postgres#1",
       "rung": "probabilistic"
     },
@@ -25679,27 +26144,15 @@
     },
     {
       "item": "std.postgres#18",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "item": "std.postgres#19",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "item": "std.postgres#20",
-      "rung": "example"
-    },
-    {
-      "item": "std.postgres#21",
-      "rung": "example"
-    },
-    {
-      "item": "std.postgres#22",
-      "rung": "example"
-    },
-    {
-      "item": "std.postgres#23",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "item": "std.report#1",
@@ -25811,6 +26264,18 @@
     },
     {
       "item": "std.schedules#9",
+      "rung": "example"
+    },
+    {
+      "item": "std.sessions-served#1",
+      "rung": "example"
+    },
+    {
+      "item": "std.sessions-served#2",
+      "rung": "example"
+    },
+    {
+      "item": "std.sessions-served#3",
       "rung": "example"
     },
     {
