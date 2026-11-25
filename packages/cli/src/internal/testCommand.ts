@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { createRequire } from "node:module";
 import { join } from "node:path";
 import { Writable } from "node:stream";
