@@ -113,9 +113,9 @@ Clause numbers are 1-based Conformance bullets. Every slice leaves the main line
 - Conformance: `packages/cli/conformance/library-compile.test.ts` (1, 2, 4); `packages/check/conformance/library-rules.test.ts` (3, 5, 6, 7).
 
 **Slice 2b: the ledger over libraries (M).** Depends on slice 1. Runs beside 2a.
-- Delivers: `unsafe` and `hostElements` counted over library files, once for a library inside the project root; library item records; `libraries` in the ledger file; E1162 for an installed library.
-- Packages: `@keel/cli` (`buildLedger`, ledger command), `@keel/check` (E1162 at `deps` entries).
-- Clauses: k.library 13, 14.
+- Delivers: `unsafe` and `hostElements` counted over library files, once for a library inside the project root; library item records; `libraries` in the ledger file; E1162 for an installed library, its four message forms; `LedgerFileSchema` gaining optional `negativeTypes` and `libraries` and reading `rung` as one of the six rung names (k.ledger File).
+- Packages: `@keel/cli` (`buildLedger`, ledger command, `LedgerFileSchema`), `@keel/check` (E1162 at `deps` entries).
+- Clauses: k.library 13 to 16.
 - Conformance: `packages/cli/conformance/library-ledger.test.ts`.
 
 **Slice 3: `keel pack` and `keel scaffold library` (M).** Depends on 2a and 2b.
