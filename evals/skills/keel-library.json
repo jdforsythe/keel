@@ -1,0 +1,16 @@
+{
+  "skill": "keel-library",
+  "maxTokens": 1200,
+  "prompt": "Write a Keel library @acme/charts with one bar chart component an app installs: scaffold it, colour it from the app's tokens, give a person who cannot see it the numbers, and publish it.",
+  "expect": [
+    "keel scaffold library",
+    "currentColor",
+    "PartStyle",
+    "props.id",
+    "describedBy",
+    "shown",
+    "keel pack",
+    "peerDependencies",
+    "E1161"
+  ]
+}
