@@ -45,6 +45,28 @@ describe("plain data", () => {
     expect(s.json().parse(c).ok).toBe(false);
   });
 
+  it("a declared container met again under an undeclared key fails where it is met again, the declared containers counted as ancestors", () => {
+    fc.assert(
+      fc.property(fc.stringMatching(/^z[a-z]{0,5}$/), (key) => {
+        const a: Record<string, unknown> = {};
+        a[key] = a;
+        expect(paths(s.object({ a: s.object({}) }).parse({ a }))).toEqual([[["a", key], "type"]]);
+        const root: Record<string, unknown> = {};
+        root[key] = root;
+        expect(paths(s.object({}).parse(root))).toEqual([[[key], "type"]]);
+        const b: Record<string, unknown> = { x: {} };
+        Object.assign(Object(b.x), { [key]: b });
+        expect(paths(s.object({ a: s.object({ x: s.object({}) }) }).parse({ a: b }))).toEqual([
+          [["a", "x", key], "type"],
+        ]);
+        const items: unknown[] = [];
+        items.push({ [key]: items });
+        expect(paths(s.object({ l: s.array(s.object({})) }).parse({ l: items }))).toEqual([[["l", 0, key], "type"]]);
+      }),
+      run,
+    );
+  });
+
   it("a container held at many paths, not inside itself, is plain data and is walked once", () => {
     fc.assert(
       fc.property(fc.integer({ min: 1, max: 40 }), (depth) => {

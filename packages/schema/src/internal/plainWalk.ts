@@ -1,3 +1,4 @@
+import type { Above } from "./Above.ts";
 import { plainEntries } from "./plainEntries.ts";
 import { plainItems } from "./plainItems.ts";
 
@@ -17,12 +18,13 @@ const keysOf = (at: Link): Path => {
 /**
  * Walk `x` through plain arrays and plain objects (k.schema Plain data). `bad` gets the keys from `x` to each value
  * that is none of `null`, a boolean, a string, a finite number, a plain array or a plain object (nothing under it is
- * read), and to each container met again inside itself; the walk stops when `bad` returns false. A container is
+ * read), and to each container met again inside itself, `outer` (the declared containers `x` stands under) counted
+ * among its ancestors; the walk stops when `bad` returns false. A container is
  * judged in full before any value under it is read, and a plain container already walked is not walked again, so a
  * value that holds one at many paths costs one walk of it; what is not plain data is reported at each path it is met. Walked with a list rather than
  * recursion, so deep data cannot overflow the stack.
  */
-export function plainWalk(x: unknown, bad: (keys: Path) => boolean): void {
+export function plainWalk(x: unknown, bad: (keys: Path) => boolean, outer: Above = []): void {
   const above = new Set<object>();
   const done = new Set<object>();
   const todo: Frame[] = [{ v: x, at: undefined }];
@@ -43,7 +45,7 @@ export function plainWalk(x: unknown, bad: (keys: Path) => boolean): void {
       continue;
     }
     if (done.has(v)) continue;
-    if (above.has(v)) {
+    if (above.has(v) || outer.includes(v)) {
       if (!bad(keysOf(at))) return;
       continue;
     }

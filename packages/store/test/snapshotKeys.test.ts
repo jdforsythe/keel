@@ -30,3 +30,15 @@ test("snapshotKeys gives keys when present, else the log's, and restore takes th
     { seed: 1337, numRuns: 50 },
   );
 });
+
+test("snapshotKeys takes keys [] as given: no key, whatever the log holds; restore agrees", () => {
+  const log = [{ id: 1, name: "k.t", payload: {}, at: 1, key: "a" }];
+  const snap = { state: { n: 0 }, log, initial: { n: 0 }, head: 1, keys: [] };
+  expect(snapshotKeys(snap)).toEqual([]);
+  expect(snapshotKeys({ log })).toEqual([{ name: "k.t", key: "a" }]);
+  scope(() => {
+    const st = store(s.object({ n: s.int() }), { n: 0 }, { id: "k.keysEmpty" });
+    expect(st.restore(snap).ok).toBe(true);
+    expect(st.snapshot().keys).toEqual([]);
+  }).dispose();
+});
