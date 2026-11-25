@@ -53,7 +53,10 @@ const keel = (dir: string, args: readonly string[]) => {
 };
 const coded = (records: readonly Rec[], code: string) =>
   records.filter((r) => r.kind === "diag" && r.code === code).map((r) => `${String(r.path)}:${String(r.line)}`);
-const io = (cwd: string): Io => ({ cwd, load: (scope) => (scope === "none" ? [] : readProject(cwd, scope)) });
+const io = (cwd: string): Io => ({
+  cwd,
+  load: (scope) => (scope === "none" || scope === "docs" ? [] : readProject(cwd, scope)),
+});
 
 describe("k.a11y-static: every check path reads tokens.ts", () => {
   const dir = project({ "modules/m/module.ts": MODULE, "modules/m/C.tsx": PAIR, "tokens.ts": BRAND });

@@ -13,7 +13,12 @@ const tokens = defineTokens({
   fontSize: { md: "16px", lg: "24px", big: "18.66px" },
   weight: { regular: "400", bold: "700" },
 });
-type Level = { fg?: string; bg?: string; fontSize?: string; weight?: string };
+type Level = {
+  fg?: string | undefined;
+  bg?: string | undefined;
+  fontSize?: string | undefined;
+  weight?: string | undefined;
+};
 const pick = <T>(xs: readonly T[]) => fc.option(fc.constantFrom(...xs), { nil: undefined });
 const level = fc.record(
   {
