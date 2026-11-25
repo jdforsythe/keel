@@ -12,17 +12,20 @@ import type { LedgerItem } from "./LedgerItem.ts";
 import type { LibraryLedger } from "./LibraryLedger.ts";
 import type { Outcome } from "./Outcome.ts";
 import { a11yClaims } from "./a11yClaims.ts";
+import { a11yReportGaps } from "./a11yReportGaps.ts";
 import { buildLedger } from "./buildLedger.ts";
 import { coverageGaps } from "./coverageGaps.ts";
 import { justifiedFiles } from "./justifiedFiles.ts";
 import { justifiedText } from "./justifiedText.ts";
 import { libraryCount } from "./libraryCount.ts";
+import { ledgerProjects } from "./ledgerProjects.ts";
 import { libraryLedgers } from "./libraryLedgers.ts";
 import { makeDiag } from "./makeDiag.ts";
 import { mutationClaims } from "./mutationClaims.ts";
 import { ownLibrary } from "./ownLibrary.ts";
-import { packageInScope } from "./packageInScope.ts";
+import { projectInScope } from "./projectInScope.ts";
 import { pagelessLayouts } from "./pagelessLayouts.ts";
+import { projectOf } from "./projectOf.ts";
 import { projectFiles } from "./projectFiles.ts";
 import { summary } from "./summary.ts";
 import { z3Version } from "./z3Version.ts";
@@ -30,6 +33,7 @@ import { z3Version } from "./z3Version.ts";
 type Mutation = NonNullable<Infer<typeof LedgerFileSchema>["mutation"]>;
 
 const COMMITTED = [".keel/ledger.json", "tooling/ledger/ledger.json"];
+const PROJECT_MUTATION = /^((?:packages|apps|examples)\/[^/]+)\/(?:reports\/mutation\/mutation|mutation-justified)\.json$/;
 
 const safeJson = (text: string): unknown => {
   try {
@@ -111,7 +115,7 @@ const ledgerFile = (
     if (pkg === undefined) clauses.push({ item: r.item, rung: r.rung });
     else exports.push({ pkg, name: r.item.slice(at + 1), file: r.item.slice(0, at), rung: r.rung });
   }
-  const mut = mutation.claims.length > 0 || Object.keys(mutation.packages).length > 0 ? { mutation } : {};
+  const mut = mutation.claims.length > 0 || Object.keys(mutation.projects).length > 0 ? { mutation } : {};
   const claims = a11y.map((c) => ({ item: c.item, rung: c.rung }));
   const libraries = Object.fromEntries(
     libs.map((l) => [l.name, { version: l.version, unsafe: l.unsafe, hostElements: l.hostElements }]),
@@ -135,19 +139,20 @@ const ledgerFile = (
  * `keel ledger` (k.ledger), the one ledger implementation: one `ledger` record per export and per spec clause (with
  * its position `n`, k.ledger-items Clause key), rung by
  * `@keel/testing` `ledger`, one per page route of each project and WCAG criterion (`a11yClaims` over `a11yMap`, k.a11y Claims; a committed a11y
- * item of no current page route is dropped), and one
+ * item of no current page route is dropped; a project with a page route and no `reports/a11y.json` gives `none` and
+ * one W1733, `a11yReportGaps`), and one
  * after them one per entry of an installed library's ledger file (`libraryLedgers`, k.library Ledger: shown, never in
  * the summary counts, the written `exports` and `rungs` or `--diff`), and one
  * `ledger.mutation` record per mutation claim (`mutationClaims`), after any E1732 and E1733 (`buildLedger`; reported
- * under any `--scope` too), W1706
+ * under any `--scope` too), W1733 (a project's test files with no usable run report, `buildLedger`), W1706
  * header notes, W1731 (a layout no page route's chain holds, `pagelessLayouts`), E1711, E1725 (a `mutation-justified.json` that fails its shape, by `justifiedFiles`, or an entry that
- * justifies no mutant of its package's report on disk) and W1714 (a stale claim). `--write <file>` names the ledger file: `keel ledger` writes the
+ * justifies no mutant of its project's report on disk) and W1714 (a stale claim). `--write <file>` names the ledger file: `keel ledger` writes the
  * records there instead (with `rungs` and `mutation`, the reports on disk merged into the file's claims; stdout keeps
  * the notes and the trailer); `--diff` compares with it (default `.keel/ledger.json`, else
  * `tooling/ledger/ledger.json`) and writes nothing: E1706 per lowered rung, E1706 when the unsafe count rose, E1706
  * (no `--scope`) when the host element count rose, E1707
  * per clause of a `conformance-covered` section left at `none` (`coverageGaps`), E1712 (no `--scope`) per rung the
- * file counts above 0 that no item holds, E1713 per package whose fresh score is below its threshold (a package
+ * file counts above 0 that no item holds, E1713 per project whose fresh score is below its threshold (a project
  * with claims and none fresh has no score and fails too) or whose threshold is below the committed one. Without `--scope` the unsafe and host element
  * counts add each library's that the project's own count does not hold. `--scope <prefix>` keeps the items whose key
  * starts with it (a library's included); the unsafe count
@@ -182,12 +187,8 @@ export function ledgerCommand(
   const file = files.find((f) => f.path === name);
   const parsed = file === undefined ? undefined : LedgerFileSchema.parse(safeJson(file.source));
   const committed = parsed?.ok === true ? parsed.value : undefined;
-  const keptRungs = new Map(
-    (committed?.a11y ?? []).flatMap((c) =>
-      c.rung === "example" || c.rung === "none" ? [[c.item, c.rung] as const] : [],
-    ),
-  );
-  const a11y = a11yMap.size === 0 ? [] : a11yClaims(files, a11yMap, findings, keptRungs);
+  const a11y = a11yMap.size === 0 ? [] : a11yClaims(files, a11yMap, findings);
+  const unreported = a11yMap.size === 0 ? [] : a11yReportGaps(files);
   const records = all.filter((r) => r.item.startsWith(scope));
   const claims = a11y.filter((c) => c.item.startsWith(scope));
   const apps = Object.keys(built.appUnsafe).filter((a) => `${a}:`.startsWith(scope) || scope.startsWith(`${a}:`));
@@ -203,8 +204,14 @@ export function ledgerCommand(
       ? built.negativeTypes
       : apps.reduce((n, a) => n + (built.appNegativeTypes[a] ?? 0), 0) +
         Object.entries(built.negativeTypeFiles).reduce((n, [path, k]) => n + (path.startsWith(scope) ? k : 0), 0);
-  const { justified, diags: misshapen } = justifiedFiles(files);
-  const { mutation, fresh, reports, unmatched } = mutationClaims(files, committed?.mutation, justified);
+  // A mutation report or justified file counts only in a project's folder (k.ledger-items Projects).
+  const projects = ledgerProjects(files);
+  const ofProjects = files.filter((f) => {
+    const dir = PROJECT_MUTATION.exec(f.path)?.[1];
+    return dir === undefined || projects.includes(dir);
+  });
+  const { justified, diags: misshapen } = justifiedFiles(ofProjects);
+  const { mutation, fresh, reports, unmatched } = mutationClaims(ofProjects, committed?.mutation, justified);
   const unjustified = Object.entries(unmatched).flatMap(([pkg, indexes]) => {
     const file = justified.get(pkg);
     return indexes.flatMap((i) => {
@@ -237,7 +244,7 @@ export function ledgerCommand(
   const layouts = a11yMap.size === 0 ? [] : pagelessLayouts(files);
   // A citation or a clause list the ledger cannot read (E1732, E1733) is reported in every mode and scope.
   const unread = built.diags.filter((d) => d.code === "E1732" || d.code === "E1733");
-  const notes = scope === "" ? [...built.diags, ...misshapen, ...unjustified, ...stale, ...layouts] : unread;
+  const notes = scope === "" ? [...built.diags, ...unreported, ...misshapen, ...unjustified, ...stale, ...layouts] : unread;
   const held = (cs: readonly A11yClaim[], r: Record<string, number>): Record<string, number> => {
     const n = cs.filter((c) => c.rung === "example").length;
     return n === 0 ? r : { ...r, example: (r.example ?? 0) + n };
@@ -249,14 +256,13 @@ export function ledgerCommand(
     verified: records.filter((r) => r.rung !== "none").length + claims.filter((c) => c.rung !== "none").length,
     unsafe,
     warnings: notes.length,
-    // Host element, negative type, rung, stale and kept counts (a11y items kept for want of a project's report) only when above 0, so a trailer stays one short line.
+    // Host element, negative type, rung and stale counts only when above 0, so a trailer stays one short line.
     ...Object.fromEntries(
       Object.entries({
         hostElements,
         negativeTypes,
         ...shown,
         stale: stale.length,
-        keptNoReport: claims.filter((c) => c.kept === true).length,
       }).filter(([, n]) => n > 0),
     ),
   };
@@ -316,19 +322,20 @@ export function ledgerCommand(
           makeDiag("E1712", `rung ${rung} is held by no item (committed ${n})`, { path: name, see: "k.ledger" }),
         );
   let outside = 0;
-  for (const [pkg, p] of Object.entries(mutation.packages)) {
+  const named = Object.keys(mutation.projects);
+  for (const [pkg, p] of Object.entries(mutation.projects)) {
     const mine: Diag[] = [];
     const at = { path: reports[pkg] ?? name, see: "k.ledger" };
-    const claimed = mutation.claims.some((c) => c.file.startsWith(`packages/${pkg}/`));
+    const claimed = mutation.claims.some((c) => projectOf(c.file, named) === pkg);
     if (p.score !== undefined && p.score < p.threshold)
       mine.push(makeDiag("E1713", `mutation ${pkg} ${p.score}% is below its threshold ${p.threshold}%`, at));
     // Claims with none fresh score nothing: no evidence the threshold still holds.
     else if (p.score === undefined && claimed)
       mine.push(makeDiag("E1713", `mutation ${pkg}: every claim is stale, so no score meets ${p.threshold}%`, at));
-    const was = committed?.mutation?.packages[pkg]?.threshold;
+    const was = committed?.mutation?.projects[pkg]?.threshold;
     if (was !== undefined && p.threshold < was)
       mine.push(makeDiag("E1713", `mutation ${pkg} threshold ${p.threshold}% is below the committed ${was}%`, at));
-    if (packageInScope(pkg, scope)) diags.push(...mine);
+    if (projectInScope(pkg, scope)) diags.push(...mine);
     else outside += mine.length;
   }
   const gaps = coverageGaps(files, records, scope);

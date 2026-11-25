@@ -10,11 +10,13 @@ import { clauseKey } from "./clauseKey.ts";
 import { countExpectations } from "./countExpectations.ts";
 import { headerCodes } from "./headerCodes.ts";
 import { isNegativeTypeTest } from "./isNegativeTypeTest.ts";
+import { ledgerProjects } from "./ledgerProjects.ts";
 import { makeDiag } from "./makeDiag.ts";
 import { monitoredEvidence } from "./monitoredEvidence.ts";
 import { normClause } from "./normClause.ts";
 import { projectCounts } from "./projectCounts.ts";
 import { rangeCodes } from "./rangeCodes.ts";
+import { runReports } from "./runReports.ts";
 import { scrubCode } from "./scrubCode.ts";
 import { specClauses } from "./specClauses.ts";
 import { testEvidence } from "./testEvidence.ts";
@@ -27,6 +29,9 @@ const APP_PARTS = new Set(["Props", "uses"]);
 const APP_MANIFESTS = new Set(["module.ts", "routes.ts"]);
 const PKG = /^packages\/([^/]+)\/([^/]+)\//;
 const APP = /^apps\/([^/]+)\/(.+)$/;
+/** An example's tests, or a root app's (k.ledger-items Projects): read for their run reports alone. */
+const EXAMPLE_TEST = /^examples\/([^/]+)\/(?:test|modules)\//;
+const ROOT_TEST = /^(?:test|modules)\//;
 /** An app's own modules when `keel ledger` runs in the app's folder. */
 const ROOT_APP = /^modules\//;
 /** A library's files, wherever the project read places them (k.library Ledger). */
@@ -60,6 +65,9 @@ const evidenceFor = (refs: readonly TestRef[], name: string, file: string): Ledg
  * - every export (`const`, `let`, `function`, `class`) of `packages/<pkg>/src/*.ts` (`<file>#<name>`), with evidence from the package's
  *   `test/` and `conformance/` tests that reach it (`testEvidence`: an import or a call by name inside a
  *   non-skipped test body or a helper it calls; never a comment, a string, or a skipped test);
+ * - a test gives evidence only while its project's run reports record it passing (`runReports`, k.ledger-items Run
+ *   evidence, over the projects `ledgerProjects` names); the test files read, with an example's and a root
+ *   `test/` or `modules/**` one's, that no report holds fresh and once are W1733 per project;
  * - every export of `apps/<app>/modules/**` except manifests and component parts (`<app>:<path>#<name>`), with
  *   evidence from the app's `test/` and co-located tests;
  * - every spec Conformance clause (`<section>#<key>`, `clauseKey`, with its position `n`), with the non-skipped tests
@@ -133,8 +141,19 @@ export function buildLedger(
   if (own !== undefined)
     for (const f of code)
       if (f.path.startsWith("test/") || (OWN_SRC.test(f.path) && TEST_FILE.test(f.path))) add(OWN, f);
+  const projects = ledgerProjects(files);
+  const read = new Set([...areas.values()].flatMap((fs) => fs.map((f) => f.path).filter((p) => TEST_FILE.test(p))));
+  for (const f of code) {
+    const e = EXAMPLE_TEST.exec(f.path)?.[1];
+    const mine = e === undefined ? own === undefined && ROOT_TEST.test(f.path) : projects.includes(`examples/${e}`);
+    if (mine && TEST_FILE.test(f.path)) read.add(f.path);
+  }
+  const runs = runReports(files, projects, [...read]);
   const known = new Set(code.map((f) => f.path));
-  const refs = new Map([...areas].map(([area, fs]) => [area, testEvidence(fs, known, z3)]));
+  // A test gives evidence only while its project's run reports record it passing (k.ledger-items Run evidence).
+  const refs = new Map(
+    [...areas].map(([area, fs]) => [area, testEvidence(fs, known, z3).filter((r) => runs.passes(r.path, r.from, r.to))]),
+  );
   const monitored = monitoredEvidence(files);
   const found: { item: string; pkg: string; area: string; name: string; path: string }[] = [];
   const push = (item: string, pkg: string, area: string, name: string, path: string): void => {
@@ -178,7 +197,7 @@ export function buildLedger(
   const clauses = specClauses(files);
   const sections = new Set(clauses.map((c) => c.id));
   const conformance = code.filter((f) => PKG.exec(f.path)?.[2] === "conformance" && TEST_FILE.test(f.path));
-  const diags: Diag[] = [...monitored.diags];
+  const diags: Diag[] = [...monitored.diags, ...runs.diags];
   const headed = conformance.map((f) => {
     const head = header(f.source);
     for (const h of head.filter((x) => x.text.startsWith(OTHER_HEADER))) {

@@ -57,21 +57,6 @@
           "run": "pnpm check"
         },
         {
-          "name": "a11y reports for the ledger from every app, example and library whose routes it carries (keel test writes reports/a11y.json)",
-          "run": "pnpm --workspace-concurrency=1 --filter golden-1 --filter golden-2 --filter household --filter inspector --filter sessions --filter \"./examples/*\" --filter \"./libraries/*\" exec keel test"
-        },
-        {
-          "run": "pnpm ledger --diff"
-        },
-        {
-          "name": "the committed ledger matches the tree, WCAG items and rung counts included (the a11y reports exist now)",
-          "run": "node tooling/ledger-fresh.mjs --a11y"
-        },
-        {
-          "name": "the committed evidence report matches the ledger and the tests (coverage is compared only where measured)",
-          "run": "pnpm evidence:report --check"
-        },
-        {
           "name": "every test task is in exactly one test-shard",
           "run": "node tooling/ci-shards.mjs --verify"
         },
@@ -138,6 +123,51 @@
         {
           "name": "every test-shard passed",
           "run": "test \"${{ needs.test-shard.result }}\" = success"
+        }
+      ]
+    },
+    "ledger": {
+      "if": "github.event_name != 'schedule'",
+      "needs": "test-shard",
+      "runs-on": "ubuntu-latest",
+      "timeout-minutes": 30,
+      "steps": [
+        "$setup",
+        {
+          "name": "turbo cache: the builds the check job ran",
+          "uses": "actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0",
+          "with": {
+            "path": ".turbo/cache",
+            "key": "turbo-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}",
+            "restore-keys": "turbo-${{ github.sha }}-${{ github.run_id }}-"
+          }
+        },
+        {
+          "name": "every test-shard's run reports",
+          "uses": "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0",
+          "with": {
+            "pattern": "test-reports-*",
+            "path": "test-reports"
+          }
+        },
+        {
+          "name": "put each project's run reports where the ledger reads them (reports/tests/*.json, paths kept)",
+          "run": "set -e\nfor t in test-reports/test-reports-*/test-reports.tar; do tar -xf \"$t\"; done"
+        },
+        {
+          "name": "a11y reports for the ledger from every app, example and library whose routes it carries (keel test writes reports/a11y.json)",
+          "run": "pnpm --workspace-concurrency=1 --filter golden-1 --filter golden-2 --filter household --filter inspector --filter sessions --filter \"./examples/*\" --filter \"./libraries/*\" exec keel test"
+        },
+        {
+          "run": "pnpm ledger --diff"
+        },
+        {
+          "name": "the committed ledger matches the tree and the runs: every rung, WCAG items and rung counts included",
+          "run": "node tooling/ledger-fresh.mjs --runs"
+        },
+        {
+          "name": "the committed evidence report matches the ledger and the tests (coverage is compared only where measured)",
+          "run": "pnpm evidence:report --check"
         }
       ]
     },
@@ -607,6 +637,18 @@
         },
         {
           "run": "node tooling/mutate-changed.mjs"
+        },
+        {
+          "name": "every test-shard's run reports",
+          "uses": "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0",
+          "with": {
+            "pattern": "test-reports-*",
+            "path": "test-reports"
+          }
+        },
+        {
+          "name": "put each project's run reports where the ledger reads them (reports/tests/*.json, paths kept)",
+          "run": "set -e\nfor t in test-reports/test-reports-*/test-reports.tar; do tar -xf \"$t\"; done"
         },
         {
           "name": "a11y reports for the ledger from every app, example and library whose routes it carries (keel test writes reports/a11y.json)",

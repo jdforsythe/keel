@@ -104,7 +104,7 @@ export function testEvidence(
                   ...(best.runs === undefined ? {} : { runs: best.runs }),
                   ...(best.seed === undefined ? {} : { seed: best.seed }),
                 };
-      out.push({ path, names, pinned, ev });
+      out.push({ path, names, pinned, ev, from: test.from, to: test.to });
     }
   }
   return out;

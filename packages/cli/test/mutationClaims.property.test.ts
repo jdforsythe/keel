@@ -43,7 +43,7 @@ describe("mutationClaims", () => {
         expect(sum("noCoverage")).toBe(n("NoCoverage"));
         expect(fresh.size).toBe(mutation.claims.length);
         const scored = n("Killed", "Timeout", "Survived", "NoCoverage");
-        const pkg = mutation.packages.p;
+        const pkg = mutation.projects["packages/p"];
         expect(pkg?.threshold).toBe(breakAt);
         if (scored === 0) expect(pkg?.score).toBeUndefined();
         else expect(pkg?.score).toBeCloseTo((100 * n("Killed", "Timeout")) / scored, 1);
@@ -56,12 +56,12 @@ describe("mutationClaims", () => {
     const sha = "0".repeat(64);
     const claim = (file: string) => ({ file, sha, killed: 1, survived: 0, noCoverage: 0, score: 100 });
     const { mutation, fresh } = mutationClaims([{ path: "packages/p/src/kept.ts", source: "changed" }], {
-      packages: { p: { score: 100, threshold: 70 } },
+      projects: { "packages/p": { score: 100, threshold: 70 } },
       claims: [claim("packages/p/src/gone.ts"), claim("packages/p/src/kept.ts")],
     });
     expect(mutation.claims.map((c) => c.file)).toEqual(["packages/p/src/kept.ts"]);
     expect([...fresh]).toEqual([]);
-    expect(mutation.packages.p).toEqual({ threshold: 70, killed: 0, survived: 0, noCoverage: 0, justified: 0 });
+    expect(mutation.projects["packages/p"]).toEqual({ threshold: 70, killed: 0, survived: 0, noCoverage: 0, justified: 0 });
   });
 
   it("a report entry for a file that left the tree gives no claim", () => {

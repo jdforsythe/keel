@@ -4,12 +4,12 @@
 /** The rungs `rungs` counts, in the ledger file's order. */
 const RUNG_KEYS = ["example", "probabilistic", "exhaustive", "proven", "monitored"];
 
-/** Item -> rung of the committed file: exports as `file#name`, clauses as their item, WCAG items when `withA11y`. */
-export function committedRungs(file, withA11y) {
+/** Item -> rung of the committed file: exports as `file#name`, clauses as their item, WCAG items when `withRuns`. */
+export function committedRungs(file, withRuns) {
   const out = new Map();
   for (const e of file.exports ?? []) out.set(`${e.file}#${e.name}`, e.rung);
   for (const c of file.clauses ?? []) out.set(c.item, c.rung);
-  if (withA11y) for (const a of file.a11y ?? []) out.set(a.item, a.rung);
+  if (withRuns) for (const a of file.a11y ?? []) out.set(a.item, a.rung);
   return out;
 }
 
@@ -18,20 +18,22 @@ const label = (item, n) => (n === undefined ? item : `${item} [${item.slice(0, i
 
 /**
  * Differences between the committed file and the fresh records `[{ item, rung, n? }]` (with `unsafe`, `negativeTypes` and,
- * for a complete run, `rungs`). A WCAG item (`a11y:`) is compared only when `withA11y`, because its rung comes from the apps' test
- * reports. Each difference is `{ item, message }`: an item the file lists and the tree lacks, an item the tree has
- * and the file lacks, a different rung, a different unsafe or negative type count, and with `withA11y` a different count per rung.
+ * for a complete run, `rungs`). Without `withRuns` only what the tree alone decides is compared: which export and clause
+ * items exist, and the unsafe and negative type counts. With `withRuns` (every project's run reports and the apps'
+ * `reports/a11y.json` present, k.ledger-items Run evidence) also each item's rung, the WCAG items (`a11y:`) and the count
+ * per rung. Each difference is `{ item, message }`: an item the file lists and the tree lacks, an item the tree has
+ * and the file lacks, a different rung, a different unsafe or negative type count, or a different count per rung.
  * Items compare by key; a clause the tree holds is named with its position as well (`label`).
  */
-export function compareLedger(file, fresh, withA11y) {
-  const have = committedRungs(file, withA11y);
-  const kept = fresh.records.filter((r) => withA11y || !r.item.startsWith("a11y:"));
+export function compareLedger(file, fresh, withRuns) {
+  const have = committedRungs(file, withRuns);
+  const kept = fresh.records.filter((r) => withRuns || !r.item.startsWith("a11y:"));
   const now = new Map(kept.map((r) => [r.item, r.rung]));
   const at = new Map(kept.map((r) => [r.item, r.n]));
   const out = [];
   for (const [item, rung] of have) {
     if (!now.has(item)) out.push({ item, message: `${item} is in the ledger file and not in the tree` });
-    else if (now.get(item) !== rung)
+    else if (withRuns && now.get(item) !== rung)
       out.push({
         item,
         message: `${label(item, at.get(item))} is ${rung} in the ledger file, ${now.get(item)} in the tree`,
@@ -50,7 +52,7 @@ export function compareLedger(file, fresh, withA11y) {
       item: "negativeTypes",
       message: `negativeTypes is ${file.negativeTypes ?? 0} in the ledger file, ${fresh.negativeTypes ?? 0} in the tree`,
     });
-  if (withA11y && fresh.rungs !== undefined)
+  if (withRuns && fresh.rungs !== undefined)
     for (const r of RUNG_KEYS)
       if ((file.rungs?.[r] ?? 0) !== (fresh.rungs[r] ?? 0))
         out.push({

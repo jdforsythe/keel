@@ -361,17 +361,26 @@ describe("mutationClaims", () => {
       ["packages/a/src/a.ts", 2, 1, 1, 50],
       ["packages/b/src/a.ts", 2, 1, 0, 66.67],
     ]);
-    expect(mutation.packages).toEqual({
-      a: { score: 50, scoreJustified: 50, threshold: 50, killed: 2, survived: 1, noCoverage: 1, justified: 0 },
-      b: { score: 66.67, scoreJustified: 66.67, threshold: 50, killed: 2, survived: 1, noCoverage: 0, justified: 0 },
-      c: { threshold: 50, killed: 0, survived: 0, noCoverage: 0, justified: 0 },
+    expect(mutation.projects).toEqual({
+      "apps/x": { threshold: 50, killed: 0, survived: 0, noCoverage: 0, justified: 0 },
+      "packages/a": { score: 50, scoreJustified: 50, threshold: 50, killed: 2, survived: 1, noCoverage: 1, justified: 0 },
+      "packages/b": {
+        score: 66.67,
+        scoreJustified: 66.67,
+        threshold: 50,
+        killed: 2,
+        survived: 1,
+        noCoverage: 0,
+        justified: 0,
+      },
+      "packages/c": { threshold: 50, killed: 0, survived: 0, noCoverage: 0, justified: 0 },
     });
     expect([...fresh]).toEqual(["packages/a/src/a.ts", "packages/b/src/a.ts"]);
   });
 
   it("a changed file's claim is stale and its package score omits it; committed claims are kept", () => {
     const committed = {
-      packages: { a: { score: 100, threshold: 70 } },
+      projects: { "packages/a": { score: 100, threshold: 70 } },
       claims: [{ file: "packages/a/src/b.ts", sha: "0", killed: 1, survived: 0, noCoverage: 0, score: 100 }],
     };
     const { mutation, fresh } = mutationClaims(
@@ -384,7 +393,9 @@ describe("mutationClaims", () => {
     );
     expect(mutation.claims.map((c) => c.file)).toEqual(["packages/a/src/a.ts", "packages/a/src/b.ts"]);
     expect(fresh.size).toBe(0);
-    expect(mutation.packages).toEqual({ a: { threshold: 50, killed: 0, survived: 0, noCoverage: 0, justified: 0 } });
+    expect(mutation.projects).toEqual({
+      "packages/a": { threshold: 50, killed: 0, survived: 0, noCoverage: 0, justified: 0 },
+    });
   });
 });
 
