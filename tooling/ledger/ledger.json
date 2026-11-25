@@ -4,8 +4,8 @@
   "hostElements": 0,
   "negativeTypes": 90,
   "rungs": {
-    "example": 2461,
-    "probabilistic": 442,
+    "example": 2469,
+    "probabilistic": 443,
     "exhaustive": 16,
     "proven": 81,
     "monitored": 8
@@ -22,12 +22,12 @@
         "justified": 0
       },
       "cli": {
-        "score": 71.38,
-        "scoreJustified": 71.38,
+        "score": 71.5,
+        "scoreJustified": 71.5,
         "threshold": 70,
-        "killed": 7299,
-        "survived": 2027,
-        "noCoverage": 900,
+        "killed": 7080,
+        "survived": 1951,
+        "noCoverage": 871,
         "justified": 0
       },
       "compiler": {
@@ -364,12 +364,12 @@
         "justified": 0
       },
       "testing": {
-        "score": 78.91,
-        "scoreJustified": 78.91,
+        "score": 77.97,
+        "scoreJustified": 77.97,
         "threshold": 70,
-        "killed": 4100,
-        "survived": 611,
-        "noCoverage": 485,
+        "killed": 3772,
+        "survived": 582,
+        "noCoverage": 484,
         "justified": 0
       },
       "ui": {
@@ -21347,6 +21347,38 @@
   ],
   "clauses": [
     {
+      "item": "k.a11y-static#1",
+      "rung": "example"
+    },
+    {
+      "item": "k.a11y-static#2",
+      "rung": "example"
+    },
+    {
+      "item": "k.a11y-static#3",
+      "rung": "example"
+    },
+    {
+      "item": "k.a11y-static#4",
+      "rung": "example"
+    },
+    {
+      "item": "k.a11y-static#5",
+      "rung": "example"
+    },
+    {
+      "item": "k.a11y-static#6",
+      "rung": "example"
+    },
+    {
+      "item": "k.a11y-static#7",
+      "rung": "example"
+    },
+    {
+      "item": "k.a11y-static#8",
+      "rung": "example"
+    },
+    {
       "item": "k.a11y#1",
       "rung": "probabilistic"
     },
@@ -22168,7 +22200,7 @@
     },
     {
       "item": "k.ctx#4",
-      "rung": "example"
+      "rung": "probabilistic"
     },
     {
       "item": "k.ctx#5",
