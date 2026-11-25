@@ -1,5 +1,5 @@
 # std.channels-limits: Channel stream caps
-status: implemented
+status: conformance-covered
 How many channel streams (std.channels) a process holds open, and what an open past a cap gets.
 
 **Config.** A module's `std['@keel/std-channels']: { perCaller?, perAnonymous?, maxStreams? }` (server-only; each a positive integer; defaults 8, 64 and 1,000) bounds the streams open in the process. An open is counted once `member` admits it and holds its place until its stream ends. It counts as its `user` (k.user: what the identity source answers, or a verified `x-keel-user`; `""` without identity or sign-in) when that is not `""`, else as its caller (k.server); it is anonymous when both are `""`. An open on a channel route of serving module `m` is full when:

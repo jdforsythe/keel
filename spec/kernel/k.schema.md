@@ -1,5 +1,5 @@
 # k.schema: Schemas
-status: implemented
+status: conformance-covered
 
 **API.**
 ```ts
