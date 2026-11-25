@@ -1,10 +1,10 @@
 // A fresh project outside the repository, the way a public user has one: the scaffold run by the packed `@keel/cli`,
 // every `@keel/*` range pointed at the kit's tarballs through `overrides` in `pnpm-workspace.yaml`, installed from the
 // shared pnpm store. Nothing of the repository is on its path, so no parent `CLAUDE.md` or `.claude/` is found.
-import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { isRecord, sh } from "./run.ts";
+import { sh } from "./run.ts";
 import type { Step } from "./run.ts";
 
 export type Project = {
@@ -57,7 +57,6 @@ export async function setupProject(kit: string, name: string, into?: string): Pr
     await rm(boot, { recursive: true, force: true });
     const dir = join(parent, name);
     await writeFile(join(dir, "pnpm-workspace.yaml"), yaml);
-    await addPeerTools(dir);
     must("install", await sh("pnpm", ["install", "--prefer-offline"], dir));
     return { parent, dir };
   } catch (e) {
@@ -65,18 +64,6 @@ export async function setupProject(kit: string, name: string, into?: string): Pr
     await rm(join(parent, ".bootstrap"), { recursive: true, force: true });
     throw e;
   }
-}
-
-/**
- * `keel build` loads the project through esbuild, which `@keel/compiler` lists as an optional peer and the scaffold's
- * `package.json` does not list, so the project declares it (the version the compiler names) before the install.
- */
-async function addPeerTools(dir: string): Promise<void> {
-  const file = join(dir, "package.json");
-  const pkg: unknown = JSON.parse(await readFile(file, "utf8"));
-  if (!isRecord(pkg)) throw new Error("scaffold wrote a package.json that is not an object");
-  const dev = isRecord(pkg["devDependencies"]) ? pkg["devDependencies"] : {};
-  await writeFile(file, `${JSON.stringify({ ...pkg, devDependencies: { ...dev, esbuild: "^0.28.2" } }, null, 2)}\n`);
 }
 
 /** Proves a project is whole: `keel check`, `keel docs` (the map), `keel test`, `keel build`. Returns the failing step's label. */
