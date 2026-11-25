@@ -5,22 +5,32 @@
   "type": "module",
   "exports": {
     ".": {
+      "keel": "./src/index.ts",
       "types": "./src/index.ts",
       "default": "./src/index.ts"
     },
     "./module": {
+      "keel": "./module.ts",
       "types": "./module.ts",
       "default": "./module.ts"
     },
     "./routes": {
+      "keel": "./src/routes.ts",
       "types": "./src/routes.ts",
       "default": "./src/routes.ts"
     },
     "./contract": {
+      "keel": "./src/health.contract.ts",
       "types": "./src/health.contract.ts",
       "default": "./src/health.contract.ts"
     },
+    "./Health": {
+      "keel": "./src/Health.schema.ts",
+      "types": "./src/Health.schema.ts",
+      "default": "./src/Health.schema.ts"
+    },
     "./*": {
+      "keel": "./src/*.ts",
       "types": "./src/*.ts",
       "default": "./src/*.ts"
     }
@@ -28,37 +38,47 @@
   "publishConfig": {
     "exports": {
       ".": {
+        "keel": "./src/index.ts",
         "types": "./dist/src/index.d.ts",
         "default": "./dist/src/index.js"
       },
       "./module": {
+        "keel": "./module.ts",
         "types": "./dist/module.d.ts",
         "default": "./dist/module.js"
       },
       "./routes": {
+        "keel": "./src/routes.ts",
         "types": "./dist/src/routes.d.ts",
         "default": "./dist/src/routes.js"
       },
       "./contract": {
+        "keel": "./src/health.contract.ts",
         "types": "./dist/src/health.contract.d.ts",
         "default": "./dist/src/health.contract.js"
       },
+      "./Health": {
+        "keel": "./src/Health.schema.ts",
+        "types": "./dist/src/Health.schema.d.ts",
+        "default": "./dist/src/Health.schema.js"
+      },
       "./*": {
+        "keel": "./src/*.ts",
         "types": "./dist/src/*.d.ts",
         "default": "./dist/src/*.js"
       }
     }
   },
-  "files": ["dist", "docs"],
+  "files": ["module.ts", "src", "dist", ".keel/ledger.json", "docs", "README.md"],
   "scripts": {
     "check": "tsc --noEmit && biome check src test module.ts",
     "test": "vitest run",
     "coverage": "node ../../tooling/coverage.mjs",
     "build": "tsc -p tsconfig.build.json",
     "mutate": "node ../../tooling/mutate.mjs",
-    "prepack": "node ../../tooling/docs-pack.mjs"
+    "prepack": "tsc -p tsconfig.build.json && node ../../tooling/docs-pack.mjs && keel pack"
   },
-  "dependencies": {
+  "peerDependencies": {
     "@keel/compiler": "workspace:*",
     "@keel/ctx": "workspace:*",
     "@keel/router": "workspace:*",
@@ -67,10 +87,16 @@
   },
   "devDependencies": {
     "@keel/check": "workspace:*",
+    "@keel/cli": "workspace:*",
+    "@keel/compiler": "workspace:*",
+    "@keel/ctx": "workspace:*",
+    "@keel/router": "workspace:*",
     "@keel/runtime-dom": "workspace:*",
+    "@keel/schema": "workspace:*",
     "@keel/server": "workspace:*",
     "@keel/testing": "workspace:*",
     "@keel/tooling": "workspace:*",
+    "@keel/ui": "workspace:*",
     "@types/node": "^22",
     "fast-check": "^3",
     "happy-dom": "^21"

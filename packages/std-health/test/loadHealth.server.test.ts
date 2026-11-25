@@ -2,7 +2,7 @@
 import { createCtx } from "@keel/ctx";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { Health } from "../src/Health.ts";
+import { Health } from "../src/Health.schema.ts";
 import { loadHealth } from "../src/loadHealth.server.ts";
 
 const SEED = 1337;

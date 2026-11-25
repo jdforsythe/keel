@@ -1,5 +1,5 @@
 import { Box } from "@keel/ui";
-import type { Health } from "./Health.ts";
+import type { Health } from "./Health.schema.ts";
 
 /** Document view of `health.status` (std.health): a `main` with id `health.status` and the status text. */
 export default function HealthView(props: { readonly data: Health }): Node {

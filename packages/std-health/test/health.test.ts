@@ -3,7 +3,7 @@
 import { createCtx } from "@keel/ctx";
 import { createApp, topology } from "@keel/server";
 import { expect, test, vi } from "vitest";
-import { Health } from "../src/Health.ts";
+import { Health } from "../src/Health.schema.ts";
 import { routes } from "../src/routes.ts";
 
 test("Health accepts the ok report and nothing else", () => {
@@ -30,10 +30,8 @@ test("the page of health.status is a main with id health.status holding the stat
   const app = await serve();
   const res = await app.fetch(new Request("http://localhost/health", { headers: { accept: "text/html" } }));
   expect(res.status).toBe(200);
-  const doc = new DOMParser().parseFromString(await res.text(), "text/html");
-  const main = doc.getElementById("health.status");
-  expect(main?.tagName).toBe("MAIN");
-  expect(main?.textContent).toBe("ok");
+  // The served element, attributes in any order: `<main ... id="health.status" ...>ok</main>`.
+  expect(await res.text()).toMatch(/<main\b[^>]*\sid="health\.status"[^>]*>ok<\/main>/);
 });
 
 test("the route table holds health.status at /health, answering with the loader result", async () => {
