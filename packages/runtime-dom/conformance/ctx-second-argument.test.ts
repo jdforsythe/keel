@@ -43,7 +43,7 @@ describe("k.component: every caller passes a ctx second", () => {
 
   it("`mount` without `ctx` does not compile", () => {
     const container = host();
-    // compile-time half: ../unsafe/conformanceNegativeTypes.ts
+    // compile-time half: ./negative-types.test-d.ts
     const bare = () => Reflect.apply(mount, undefined, [() => document.createElement("p"), container, {}]);
     const none = () => Reflect.apply(mount, undefined, [() => document.createElement("p"), container]);
     expect(typeof bare).toBe("function");
@@ -88,7 +88,7 @@ describe("k.component: every caller passes a ctx second", () => {
   it("the old three-parameter form `(props, slots?: undefined, ctx?: Ctx)` is not a component: it does not compile where a `Component` is expected", () => {
     const container = host();
     const ctx = createCtx({ mode: "sim", seed: SEED });
-    // compile-time half: ../unsafe/conformanceNegativeTypes.ts
+    // compile-time half: ./negative-types.test-d.ts
     const old = () =>
       Reflect.apply(mount, undefined, [
         (_p: Record<string, never>, _slots?: undefined, _ctx?: Ctx) => document.createElement("p"),

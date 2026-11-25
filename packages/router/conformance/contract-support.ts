@@ -2,7 +2,7 @@
 // ASSUMPTIONS (the spec states them; the build does not exist yet):
 //  - `contract`, `manifest`, `loader`, `action` come from `@keel/router`; a thrown rule is an Error with a `code` member and the
 //    first offending id in its message (E1510, E1513, E1515).
-//  - Where a rule is "a type error, and `contract` or `manifest` throws it", the type error is claimed in ../unsafe/conformanceNegativeTypes.ts and the call is run untyped here.
+//  - Where a rule is "a type error, and `contract` or `manifest` throws it", the type error is claimed in ./negative-types.test-d.ts and the call is run untyped here.
 //  - Which of `contract` and `manifest` throws E1503/E1504 is unstated; `codeOf` runs both.
 import { createCtx } from "@keel/ctx";
 import { action, createRouter, loader } from "@keel/router";
