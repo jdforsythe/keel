@@ -13,6 +13,11 @@ import { SEED, cleanup, keel, materialize, project } from "./compat-support.ts";
 
 const BIN = resolve(dirname(fileURLToPath(import.meta.url)), "..", "src", "bin.ts");
 const SLOW = 120_000;
+/**
+ * What the case bounds: two runs of a `keel build` and an MCP `build` each, four binary runs, about 3 s a run here beside other work. The bound is 60 s a run, so a runner ten times slower (scale 0.1) still has
+ * 6 s a run.
+ */
+const BUILDS_BOUND = 2 * 2 * 60_000;
 
 const dirs: string[] = [];
 afterAll(() => {
@@ -76,5 +81,5 @@ test(
       { seed: SEED, numRuns: 2 },
     );
   },
-  SLOW,
+  BUILDS_BOUND,
 );

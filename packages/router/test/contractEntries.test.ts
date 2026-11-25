@@ -1,6 +1,7 @@
 // k.contract entries: what `contract` refuses, by code and message, and what a declared API entry keeps (its query,
 // body, errors, timeout and events) for the server that answers it.
 import { ok, s } from "@keel/schema";
+import { fixedTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
 import { describe, expect, it, vi } from "vitest";
 import { action } from "../src/action.ts";
@@ -153,7 +154,7 @@ describe("an API entry", () => {
       expect(refusal({ ...get, events: v })).toBe('E1510 t.x: "events" is a boolean');
       expect(codeOf({ ...get, events: v })).toBe("E1510");
     }
-    expect(refusal({ ...get, timeout: 100, events: false })).toBeNull();
+    expect(refusal({ ...get, timeout: fixedTime(100), events: false })).toBeNull();
   });
 
   it("E1653 for a body on a GET", () => {
@@ -183,7 +184,7 @@ describe("an API entry", () => {
         params: Id,
         query: Query,
         output: Out,
-        timeout: 250,
+        timeout: fixedTime(250),
         events: false,
       },
       "k.write": { method: "POST", path: "/api/k/:id", params: Id, body: Body, output: Out, errors: { 404: NotFound } },
@@ -255,7 +256,7 @@ describe("a contract loaded afresh", () => {
       body: Body,
       output: Out,
       errors: { 404: NotFound },
-      timeout: 100,
+      timeout: fixedTime(100),
       events: false,
     };
     expect(declare("t.all", all)).toBeNull();

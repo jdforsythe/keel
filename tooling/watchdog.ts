@@ -10,7 +10,9 @@ import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Worker, isMainThread } from "node:worker_threads";
-import { afterAll, afterEach, beforeAll, beforeEach, expect, inject } from "vitest";
+import { type RunnerTestSuite, afterAll, afterEach, beforeAll, beforeEach, expect, inject } from "vitest";
+import { getHooks } from "vitest/suite";
+import { testTime } from "./test-time.ts";
 
 declare module "vitest" {
   interface ProvidedContext {
@@ -26,8 +28,11 @@ const ALLOWED = 2;
 const LEN = 3;
 const LABEL_BYTES = 1024;
 const KEY = Symbol.for("keel.watchdog");
-/** Import of a cold file (TypeScript, the compiler) under a loaded machine takes tens of seconds; nothing else bounds it. */
-const COLLECT_MS = 60_000;
+/**
+ * Import of a cold file (TypeScript, the compiler) under a loaded machine takes tens of seconds; nothing else bounds
+ * it. Scaled by `KEEL_TEST_TIME_SCALE` (test-time.ts), as the grace is.
+ */
+const COLLECT_MS = testTime(60_000);
 
 // A path, not a URL: under a DOM test environment the global `URL` is the DOM's, which `Worker` refuses.
 const THREAD = path.join(path.dirname(fileURLToPath(import.meta.url)), "watchdog-thread.mjs");
@@ -67,7 +72,7 @@ function heartbeat(): Beat {
       base,
       ppid: process.ppid,
       tick: envMs("KEEL_WATCHDOG_TICK_MS", 1000),
-      grace: envMs("KEEL_WATCHDOG_GRACE_MS", 30_000),
+      grace: envMs("KEEL_WATCHDOG_GRACE_MS", testTime(30_000)),
     },
     execArgv: [],
     stdout: false,
@@ -132,7 +137,25 @@ if (isMainThread && Reflect.get(process, KEY) === undefined) {
 const beat = heartbeat();
 const encoder = new TextEncoder();
 const timeouts = inject("keelWatchdog") ?? { testTimeout: 5000, hookTimeout: 10_000 };
-const between = Math.max(3 * timeouts.hookTimeout, COLLECT_MS);
+/** Where vitest keeps the timeout a `beforeAll` or `afterAll` hook was registered with. */
+const HOOK_TIMEOUT = Symbol.for("VITEST_CLEANUP_TIMEOUT");
+
+/**
+ * The bounds the `beforeAll` and `afterAll` hooks of `suite` and the suites in it declare, summed: the phase between
+ * two tests may run several of them, and the watchdog must not cut a hook inside the bound its file states.
+ */
+function declaredHooks(suite: Readonly<RunnerTestSuite>): number {
+  const hooks = getHooks(suite);
+  let sum = 0;
+  for (const hook of [...hooks.beforeAll, ...hooks.afterAll]) {
+    const t: unknown = Reflect.get(hook, HOOK_TIMEOUT);
+    if (typeof t === "number" && t > 0 && t < 2 ** 28) sum += t;
+  }
+  for (const task of suite.tasks) if (task.type === "suite") sum += declaredHooks(task);
+  return sum;
+}
+
+let between = Math.max(3 * timeouts.hookTimeout, COLLECT_MS);
 const file = path.relative(process.cwd(), expect.getState().testPath ?? "");
 
 function mark(test: string, allowed: number): void {
@@ -145,7 +168,11 @@ function mark(test: string, allowed: number): void {
 }
 
 mark("", Math.max(timeouts.hookTimeout, COLLECT_MS));
-beforeAll(() => mark("", between));
+// biome-ignore lint/correctness/noEmptyPattern: vitest reads a hook's first argument as its fixtures and refuses one that is not a destructuring pattern; the suite is the second
+beforeAll(({}, suite) => {
+  between = Math.max(between, declaredHooks(suite));
+  mark("", between);
+});
 // The bracket holds the test and its own beforeEach and afterEach hooks: setup hooks run first and, in the
 // default stack order, their afterEach runs last.
 // A test without a timeout (0) still gets the configured one: the watchdog bounds every test.

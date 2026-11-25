@@ -16,6 +16,12 @@ import { afterAll, describe, expect, test } from "vitest";
 
 const SEED = 1337;
 const SLOW = 300_000;
+/**
+ * What the `check --base` case bounds: two property runs of fourteen binary runs each (four `against` calls of two
+ * builds and a check, a rebuild and a check), about 1.25 s a run here (35 s in all, up to 60 s beside other work). The
+ * bound is 30 s a binary run, 24 times that, so a runner ten times slower (scale 0.1) still has room.
+ */
+const BASE_CASE_BOUND = 2 * 14 * 30_000;
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const BIN = join(REPO, "packages", "cli", "src", "bin.ts");
 
@@ -161,7 +167,7 @@ describe("k.compat: stored-schema checks through `check --base`", () => {
         { seed: SEED, numRuns: 2 },
       );
     },
-    SLOW,
+    BASE_CASE_BOUND,
   );
 
   test(

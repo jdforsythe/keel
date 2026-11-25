@@ -8,14 +8,15 @@
 // written inside the repo; the dev server, the file server and the browser are stopped on every path.
 import { spawn } from "node:child_process";
 import { readFile } from "node:fs/promises";
-import { createServer } from "node:http";
 import { mkdtemp, rm } from "node:fs/promises";
+import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { extname, join, normalize } from "node:path";
 import { chromium } from "@playwright/test";
+import { testTime } from "../test-time.ts";
 import { copyApp, freePort, keepOutput, recorder, root, wait } from "./built.mjs";
 
-const LIMIT_MS = 180_000;
+const LIMIT_MS = testTime(180_000);
 const cli = join(root, "packages", "cli", "src", "bin.ts");
 const dist = join(root, "apps", "inspector", "dist");
 const types = {
@@ -103,7 +104,7 @@ try {
       (r) => (r.status === 200 ? r.json() : undefined),
       () => undefined,
     );
-  const up = (await until(reported, 60_000)) !== undefined;
+  const up = (await until(reported, testTime(60_000))) !== undefined;
   step("dev serve", up);
   if (!up) throw new Error(`dev server did not answer: ${log.slice(-3).join(" | ")}`);
 
@@ -121,20 +122,23 @@ try {
   await app.goto(`${target}/`, { waitUntil: "load" });
   await app.getByLabel("List name").fill("Groceries");
   await app.click("#todos\\.addList");
-  await app.getByRole("link", { name: "Groceries", exact: true }).waitFor({ timeout: 10_000 });
+  await app.getByRole("link", { name: "Groceries", exact: true }).waitFor({ timeout: testTime(10_000) });
   step("add list", true);
 
   // The dev entry reports after mount and at most once a second: wait for a report holding the list.
   const doc = await until(async () => {
     const d = await reported();
     return d?.live === true && (d.stores?.["todos.outbox"]?.log?.length ?? 0) > 0 ? d : undefined;
-  }, 30_000);
+  }, testTime(30_000));
   step("reported", doc !== undefined, doc === undefined ? "no live report with an outbox entry" : "");
 
   const p = await browser.newPage();
   watch(p, "inspector");
   await p.goto(`${inspector}/?url=${encodeURIComponent(target)}`, { waitUntil: "load" });
-  await p.locator("#inspector\\.graph, [id='inspector.error.message']").first().waitFor({ timeout: 15_000 });
+  await p
+    .locator("#inspector\\.graph, [id='inspector.error.message']")
+    .first()
+    .waitFor({ timeout: testTime(15_000) });
   const view = await p.evaluate(() => {
     const text = (id) => document.getElementById(id)?.innerText ?? null;
     const items = (id) => [...(document.getElementById(id)?.querySelectorAll("li") ?? [])].map((li) => li.innerText);

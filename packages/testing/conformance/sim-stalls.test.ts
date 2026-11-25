@@ -33,6 +33,7 @@ import { clearInterval, clearTimeout, setImmediate, setInterval, setTimeout } fr
 import { register } from "@keel/ctx";
 import type { SimCtx } from "@keel/ctx";
 import { simulate } from "@keel/testing";
+import { fixedTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { SEED, codeOf, messageOf, thrown } from "./fixtures.ts";
@@ -235,7 +236,8 @@ test("A capability registered with a `sim` factory whose `work()` returns `hold(
 
 test(
   "In a vitest test declaring a 2,000 ms timeout, an empty replay with no `budget` whose scenario awaits `work()` of a capability whose `work()` returns `hold('probe', () => new Promise(() => {}))` rejects `simulate` with E1704 whose first line holds `E1728 the budget ran out with work in flight: probe`, between 1,800 and 2,000 ms of real time after the test started.",
-  { timeout: 2000 },
+  // The 2,000 ms timeout is the clause's input: `simulate` takes its budget from it, so it does not scale.
+  { timeout: fixedTime(2000) },
   async () => {
     const start = process.hrtime.bigint();
     const sinceStart = (): number => Number(process.hrtime.bigint() - start) / 1e6;

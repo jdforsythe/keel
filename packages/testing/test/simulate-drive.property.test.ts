@@ -3,6 +3,7 @@ import { pbkdf2 } from "node:crypto";
 import { setTimeout } from "node:timers";
 import { register } from "@keel/ctx";
 import { simulate } from "@keel/testing";
+import { fixedTime, testTime } from "@keel/tooling/test-time";
 import * as fc from "fast-check";
 import { afterAll, expect, it } from "vitest";
 
@@ -82,30 +83,38 @@ async function trace(steps: Step[], offline: { at: number; ms: number }[], seed:
   return out;
 }
 
-it("one SimRun and one scenario take the same moments at the same clock times whatever the real durations of the work they observe", async () => {
-  await fc.assert(
-    fc.asyncProperty(
-      fc.array(stepArb, { minLength: 1, maxLength: 6 }),
-      fc.array(windowArb, { maxLength: 2 }),
-      fc.integer({ min: 0, max: 2 ** 31 - 1 }),
-      fc.integer({ min: 1, max: 40 }),
-      async (steps, offline, seed, pace) => {
-        const quick = await trace(steps, offline, seed, 1);
-        const slow = await trace(steps, offline, seed, pace);
-        expect(slow).toEqual(quick);
-        // Each chain is seen at its wait's time: real and held work add no sim time.
-        for (const [name, at] of quick.moves) {
-          const step = steps[Number(name)];
-          if (step !== undefined) expect(at).toBe(step.wait);
-        }
-        // `run(300)` takes the clock to exactly 300 past the moment the last chain was seen, never earlier.
-        const last = Math.max(0, ...steps.map((s) => s.wait));
-        expect(quick.end).toBeGreaterThanOrEqual(last + 300);
-      },
-    ),
-    { seed: SEED, numRuns: 25 },
-  );
-});
+// 25 runs of two traces: each trace's real timers wait up to 6 * 40 ms, a fixed time, and the rest is work at 300 ms a
+// run, the property-time default.
+it(
+  "one SimRun and one scenario take the same moments at the same clock times whatever the real durations of the work they observe",
+  {
+    timeout: fixedTime(25 * 2 * 6 * 40) + testTime(25 * 300),
+  },
+  async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        fc.array(stepArb, { minLength: 1, maxLength: 6 }),
+        fc.array(windowArb, { maxLength: 2 }),
+        fc.integer({ min: 0, max: 2 ** 31 - 1 }),
+        fc.integer({ min: 1, max: 40 }),
+        async (steps, offline, seed, pace) => {
+          const quick = await trace(steps, offline, seed, 1);
+          const slow = await trace(steps, offline, seed, pace);
+          expect(slow).toEqual(quick);
+          // Each chain is seen at its wait's time: real and held work add no sim time.
+          for (const [name, at] of quick.moves) {
+            const step = steps[Number(name)];
+            if (step !== undefined) expect(at).toBe(step.wait);
+          }
+          // `run(300)` takes the clock to exactly 300 past the moment the last chain was seen, never earlier.
+          const last = Math.max(0, ...steps.map((s) => s.wait));
+          expect(quick.end).toBeGreaterThanOrEqual(last + 300);
+        },
+      ),
+      { seed: SEED, numRuns: 25 },
+    );
+  },
+);
 
 it("the clock never moves while held work is pending, whatever its length in round trips", async () => {
   await fc.assert(

@@ -1,6 +1,7 @@
 // Fixture project for the k.library conformance files in this folder (not a test file). Seed 1337 for every property.
 // The first Conformance clause of k.library as a `Tree` for `materialize` (boundary-support.ts): `modules/shop` listing `@acme/charts`,
 // the library's files under `node_modules/@acme/charts/`. No std package appears in it: the library is written here.
+import { testTime } from "@keel/tooling/test-time";
 import { type Tree, base, manifestSrc } from "./boundary-support.ts";
 
 export { SEED, SLOW, built, cleanup, filesUnder, keelRun, materialize, recordsOf, write } from "./boundary-support.ts";
@@ -572,7 +573,7 @@ export function packTarball(
       cwd: lib,
       encoding: "utf8",
       env: childEnv(),
-      timeout: 600_000,
+      timeout: testTime(600_000),
     },
   );
   const tgz = readdirSync(out).find((n) => n.endsWith(".tgz"));

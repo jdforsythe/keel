@@ -4,7 +4,7 @@
 // Values come from a three-element domain so that `expect`s match often enough for both outcomes to occur.
 import fc from "fast-check";
 import { afterEach, describe, expect, test } from "vitest";
-import { KINDS, type Rig, SEED, makeRig } from "./fixtures.ts";
+import { KINDS, type Kind, type Rig, SEED, makeRig } from "./fixtures.ts";
 
 const KEYS = ["k0", "k1", "k2"] as const;
 const VALUES = ["x", "y", "z"] as const;
@@ -53,6 +53,18 @@ const serialOrderExists = (resolved: readonly Commit[], stored: readonly (string
     return sameAs(model ?? new Map(), stored);
   });
 
+/** Generated pairs of sequences the property runs on each driver. */
+const RUNS = 20;
+/**
+ * What each driver's case bounds: per run, a fresh database and two connections, at most six commits and two reads.
+ * On SQLite that is a file, a few milliseconds a run. On Postgres without `KEEL_TEST_POSTGRES_URL` it is a PGlite
+ * engine started and closed, about 300 ms a run here on a quiet machine and up to 1 s beside the suite's other PGlite
+ * files; the first run also loads the engine's WebAssembly, about 1.5 s. The bound is 1,000 ms a run on SQLite, and on
+ * Postgres 12,000 ms a run and 15,000 ms for the load, so a runner ten times slower (scale 0.1) still has 1.2 s a run
+ * and 1.5 s to load.
+ */
+const BOUND: Readonly<Record<Kind, number>> = { sqlite: RUNS * 1_000, postgres: RUNS * 12_000 + 15_000 };
+
 const rigs: Rig[] = [];
 afterEach(async () => {
   for (const r of rigs.splice(0)) await r.stop();
@@ -60,25 +72,29 @@ afterEach(async () => {
 
 for (const kind of KINDS) {
   describe(`${kind} driver`, () => {
-    test("For generated sequences of commits from two connections, the stored values equal a serial order of the commits that resolved `true`.", async () => {
-      await fc.assert(
-        fc.asyncProperty(sequenceArb, sequenceArb, async (seqA, seqB) => {
-          const rig = await makeRig(kind);
-          rigs.push(rig);
-          const [a, b] = [await rig.open(), await rig.open()];
-          const resolved: Commit[] = [];
-          const run = async (storage: typeof a, seq: readonly Commit[]): Promise<void> => {
-            for (const c of seq) if (await storage.commit(c.map((w) => ({ ...w })))) resolved.push(c);
-          };
-          await Promise.all([run(a, seqA), run(b, seqB)]);
-          const stored = await a.read([...KEYS]);
-          expect(await b.read([...KEYS])).toEqual(stored);
-          expect(serialOrderExists(resolved, stored)).toBe(true);
-          await rig.stop();
-          rigs.pop();
-        }),
-        { seed: SEED, numRuns: 20 },
-      );
-    });
+    test(
+      "For generated sequences of commits from two connections, the stored values equal a serial order of the commits that resolved `true`.",
+      async () => {
+        await fc.assert(
+          fc.asyncProperty(sequenceArb, sequenceArb, async (seqA, seqB) => {
+            const rig = await makeRig(kind);
+            rigs.push(rig);
+            const [a, b] = [await rig.open(), await rig.open()];
+            const resolved: Commit[] = [];
+            const run = async (storage: typeof a, seq: readonly Commit[]): Promise<void> => {
+              for (const c of seq) if (await storage.commit(c.map((w) => ({ ...w })))) resolved.push(c);
+            };
+            await Promise.all([run(a, seqA), run(b, seqB)]);
+            const stored = await a.read([...KEYS]);
+            expect(await b.read([...KEYS])).toEqual(stored);
+            expect(serialOrderExists(resolved, stored)).toBe(true);
+            await rig.stop();
+            rigs.pop();
+          }),
+          { seed: SEED, numRuns: RUNS },
+        );
+      },
+      BOUND[kind],
+    );
   });
 }

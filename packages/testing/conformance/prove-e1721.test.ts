@@ -1,6 +1,7 @@
 // k.prove, Rules "E1721 `prove` called in a worker thread, where Z3 can abort or hang (fix: vitest `pool: "forks"`)."
 // Spec: k.prove, clause "In a worker thread, `prove` rejects E1721."
 // Seed: 1337. The worker body is prove-e1721.worker.ts, loaded through Node's type stripping.
+import { testTime } from "@keel/tooling/test-time";
 import { once } from "node:events";
 import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -23,7 +24,7 @@ const findLoader = (from: string): string => {
   return findLoader(parent);
 };
 const TSX_LOADER = findLoader(import.meta.dirname);
-const WORKER_BOUND_MS = 30_000;
+const WORKER_BOUND_MS = testTime(30_000);
 
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null;
 

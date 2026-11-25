@@ -11,6 +11,7 @@ import { NoRows, fragment, sql } from "@keel/std-postgres";
 import type { Tx } from "@keel/std-postgres/server";
 import { database } from "@keel/std-postgres/server";
 import { ready } from "@keel/std-postgres/testing";
+import { testTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
 import { afterEach, beforeAll, expect, test, vi } from "vitest";
 
@@ -29,9 +30,11 @@ const notesOf = (cap: string, name: string) =>
 const sim = (cap: string, plan: { delay: number; fault: string }[] = []): SimCtx =>
   createCtx({ mode: "sim", seed: SEED, schedule: { net: [], storage: [], offline: [], plans: { [cap]: plan } } });
 
+// `ready()` loads the PGlite engine (its WebAssembly and initdb): about 1.5 s here, over 10 s on a slow runner, so the
+// hook states 60 s, the bound the apps give a PGlite folder's first open.
 beforeAll(async () => {
   await ready();
-});
+}, 60_000);
 afterEach(() => {
   vi.restoreAllMocks();
 });
@@ -148,7 +151,7 @@ const child = (url: string, cap: string, files: Record<string, string>): Promise
     execFile(
       process.execPath,
       ["--experimental-strip-types", CHILD, cap, JSON.stringify(files)],
-      { env: { ...process.env, KEEL_POSTGRES_URL: url }, timeout: 50_000 },
+      { env: { ...process.env, KEEL_POSTGRES_URL: url }, timeout: testTime(50_000) },
       (_e, stdout) => resolve(stdout.trim()),
     );
   });

@@ -3166,7 +3166,8 @@ describe("type check mapping (E1751, E1802, E1001, E1501, E1003, E1453)", () => 
       .map((d) => `${d.code} ${d.line}:${d.col} ${d.message}`)
       .join("\n");
   const ui = "import { Box, Button, Checkbox, Heading, Image, Input, Link, Select, TextArea, Text } from '@keel/ui'\n";
-  it("pins each mapped code with location and message", () => {
+  // Each block runs `check` with the type checker over a component file: about 4 s for the lot here, so 120 s.
+  it("pins each mapped code with location and message", { timeout: 120_000 }, () => {
     const out = [
       block("button missing", T("src/A.tsx", `${ui}export default function A() { return <Button id="b" /> }\n`)),
       block(

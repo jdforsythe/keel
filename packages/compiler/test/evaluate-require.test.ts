@@ -4,6 +4,7 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import keel from "@keel/compiler/vite";
+import { testTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
 import { afterEach, beforeEach, expect, test } from "vitest";
 
@@ -50,7 +51,7 @@ test("a routes.ts whose graph requires `events` through a CommonJS package evalu
       // Plain Node, not this runner: vitest's module loader gives an imported bundle a `require` Node does not.
       const out = execFileSync(process.execPath, [path.join(import.meta.dirname, "evaluate-child.ts"), root], {
         encoding: "utf8",
-        timeout: 50_000,
+        timeout: testTime(50_000),
       });
       expect(JSON.parse(out)).toEqual({ problems: [], routes: [`m.${id}`] });
     }),

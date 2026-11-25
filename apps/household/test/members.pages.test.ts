@@ -8,7 +8,7 @@ import SignupPage from "../modules/members/SignupPage.tsx";
 import TokenPanel from "../modules/members/TokenPanel.tsx";
 import VisitorFrame from "../modules/members/VisitorFrame.tsx";
 import { shellText } from "../modules/members/shellText.ts";
-import { EMAIL, NAME, PASSWORD, served, signIn, webRoutes } from "./serve.ts";
+import { EMAIL, NAME, PASSWORD, boundFor, served, signIn, webRoutes } from "./serve.ts";
 
 /** Every id in an a11y tree. */
 const idsOf = (nodes: readonly A11yNode[]): string[] => nodes.flatMap((n) => [n.id, ...idsOf(n.children)]);
@@ -74,44 +74,52 @@ it("refuses an empty sign-in and a short password in the form, sending nothing",
   page.dispose();
 });
 
-it("signs a member in and goes on to the start page, or to the page the guard named", async () => {
-  const at = await served(103, false);
-  await signIn(at.raw);
-  for (const [search, to] of [
-    [{}, "app.start"],
-    [{ next: "/list" }, "shopping.list"],
-  ] as const) {
+it(
+  "signs a member in and goes on to the start page, or to the page the guard named",
+  { timeout: boundFor(4, 2) },
+  async () => {
+    const at = await served(103, false);
+    await signIn(at.raw);
+    for (const [search, to] of [
+      [{}, "app.start"],
+      [{ next: "/list" }, "shopping.list"],
+    ] as const) {
+      const page = await renderRoute("members.signin", {
+        routes: webRoutes,
+        params: {},
+        search,
+        ctx: at.ctx,
+        app: at.app,
+      });
+      await type(page, { "members.signinForm:email": EMAIL, "members.signinForm:password": PASSWORD });
+      await page.fire("members.signinSubmit", { type: "click" });
+      expect(page.route().id).toBe(to);
+      page.dispose();
+    }
+  },
+);
+
+it(
+  "comes back to the sign-in page with the refusal named when the password is wrong, keeping the next page",
+  { timeout: boundFor(3, 1) },
+  async () => {
+    const at = await served(104, false);
+    await signIn(at.raw);
     const page = await renderRoute("members.signin", {
       routes: webRoutes,
       params: {},
-      search,
+      search: { next: "/list" },
       ctx: at.ctx,
       app: at.app,
     });
-    await type(page, { "members.signinForm:email": EMAIL, "members.signinForm:password": PASSWORD });
+    await type(page, { "members.signinForm:email": EMAIL, "members.signinForm:password": "a different password" });
     await page.fire("members.signinSubmit", { type: "click" });
-    expect(page.route().id).toBe(to);
+    expect(page.route()).toMatchObject({ id: "members.signin", search: { error: "credentials", next: "/list" } });
+    expect(page.find("members.signinError").text).toBe("Wrong email or password.");
+    expect(page.find("members.signinForm:password").text).toBe("");
     page.dispose();
-  }
-});
-
-it("comes back to the sign-in page with the refusal named when the password is wrong, keeping the next page", async () => {
-  const at = await served(104, false);
-  await signIn(at.raw);
-  const page = await renderRoute("members.signin", {
-    routes: webRoutes,
-    params: {},
-    search: { next: "/list" },
-    ctx: at.ctx,
-    app: at.app,
-  });
-  await type(page, { "members.signinForm:email": EMAIL, "members.signinForm:password": "a different password" });
-  await page.fire("members.signinSubmit", { type: "click" });
-  expect(page.route()).toMatchObject({ id: "members.signin", search: { error: "credentials", next: "/list" } });
-  expect(page.find("members.signinError").text).toBe("Wrong email or password.");
-  expect(page.find("members.signinForm:password").text).toBe("");
-  page.dispose();
-});
+  },
+);
 
 it("moves between the sign-in and sign-up pages, carrying the next page", async () => {
   const { page } = await visitor(105, "members.signin", { next: "/setup" });

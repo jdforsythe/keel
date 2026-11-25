@@ -38,23 +38,24 @@ import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { run } from "../output.ts";
+import { fixedTime, testTime } from "../test-time.ts";
 import { app, freePort, root, wait } from "./built.mjs";
 
 /** How long the built api has to answer. */
-const LISTEN_MS = 20_000;
+const LISTEN_MS = testTime(20_000);
 /** How long a launched app has to read the board and open its event stream. */
-const LOAD_MS = 180_000;
+const LOAD_MS = testTime(180_000);
 /** How long a simulator has to boot (a hosted runner's first boot migrates its data for about five minutes), and one
  * `simctl` command to end. */
-const BOOT_MS = 900_000;
-const SIMCTL_MS = 120_000;
+const BOOT_MS = testTime(900_000);
+const SIMCTL_MS = testTime(120_000);
 /** How many times `simctl launch` is tried, and the wait between tries. */
 const LAUNCH_TRIES = 3;
-const LAUNCH_WAIT_MS = 10_000;
+const LAUNCH_WAIT_MS = testTime(10_000);
 /** How long a killed app has to be gone. */
-const GONE_MS = 15_000;
+const GONE_MS = testTime(15_000);
 /** The pause between two polls. */
-const POLL_MS = 100;
+const POLL_MS = fixedTime(100);
 /** The cookie the proxy sets, and its lifetime in seconds. */
 const COOKIE = "keel-smoke";
 const MAX_AGE = 86_400;
@@ -74,7 +75,7 @@ const shellName = arg("shell");
 const reboot = argv.includes("--reboot");
 const dropData = argv.includes("--drop-data");
 /** How long the first launch runs on after it first sent the cookie, before the kill (iOS writes its store late). */
-const holdMs = Number(arg("hold") ?? 0) * 1000;
+const holdMs = fixedTime(Number(arg("hold") ?? 0) * 1000);
 const binary = path.resolve(
   root,
   arg("binary") ??
@@ -233,7 +234,7 @@ await run("shell-launch", async () => {
     });
     const listening = await until(
       () =>
-        fetch(`http://127.0.0.1:${apiPort}/api/lists`, { signal: AbortSignal.timeout(2_000) }).then(
+        fetch(`http://127.0.0.1:${apiPort}/api/lists`, { signal: AbortSignal.timeout(testTime(2_000)) }).then(
           (r) => r.ok,
           () => false,
         ),

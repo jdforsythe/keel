@@ -11,9 +11,11 @@ vi.mock("@capacitor/core", async (original) => {
 });
 
 const ORIGIN = new URL("https://golden-1.example");
+/** The plugin answers within a few microtasks: poll each millisecond, not vitest's default 50 ms, which a run would wait out. */
+const POLL = { interval: 1 };
 
 async function sent(n: number): Promise<string> {
-  await vi.waitFor(() => expect(fakeKeelHttp.ids.length).toBeGreaterThanOrEqual(n));
+  await vi.waitFor(() => expect(fakeKeelHttp.ids.length).toBeGreaterThanOrEqual(n), POLL);
   return fakeKeelHttp.ids[n - 1] ?? "";
 }
 
@@ -29,7 +31,7 @@ describe("capacitorNet over KeelHttp", () => {
     );
     expect(error).toBeInstanceOf(TypeError);
     expect(String(error)).not.toContain("secret-path");
-    await vi.waitFor(() => expect(fakeKeelHttp.live()).toBe(0));
+    await vi.waitFor(() => expect(fakeKeelHttp.live()).toBe(0), POLL);
   });
 
   test("an abort before the headers cancels the native request and rejects with the signal's reason", async () => {
@@ -40,7 +42,7 @@ describe("capacitorNet over KeelHttp", () => {
     expect(fakeKeelHttp.cancelled).toEqual([id]);
     fakeKeelHttp.refuse(id);
     await expect(pending).rejects.toBe(abort.signal.reason);
-    await vi.waitFor(() => expect(fakeKeelHttp.live()).toBe(0));
+    await vi.waitFor(() => expect(fakeKeelHttp.live()).toBe(0), POLL);
   });
 
   test("each request has its own id, and events of another id do not reach it", async () => {
@@ -71,6 +73,6 @@ describe("capacitorNet over KeelHttp", () => {
     expect(res.headers.get("x-a")).toBe("1");
     expect(res.headers.get("set-cookie")).toBeNull();
     fakeKeelHttp.emit("end", { id });
-    await vi.waitFor(() => expect(fakeKeelHttp.live()).toBe(0));
+    await vi.waitFor(() => expect(fakeKeelHttp.live()).toBe(0), POLL);
   });
 });

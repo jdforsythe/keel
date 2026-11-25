@@ -17,6 +17,7 @@ import fc from "fast-check";
 import { expect, test } from "vitest";
 import { CODE_FIXTURES } from "./fixtures-by-code.ts";
 import { FIXTURES, type Files, SEED } from "./support.ts";
+import { CHECK_CASE_BOUND } from "./check-time.ts";
 
 type Options = NonNullable<Parameters<typeof check>[1]>;
 const NO_TYPES: Options = { types: false };
@@ -287,24 +288,32 @@ const FIXED: FixedCase[] = [
   },
 ];
 
-test("a genuine compiler artifact is clean, and its re-indented copy is the E1005 bytes-only fixture", () => {
-  const { canonical, edited } = reindentedArtifact();
-  expect(check(canonical, NO_TYPES).diagnostics.map((d) => d.code)).toEqual([]);
-  expect(check(edited, NO_TYPES).diagnostics.map((d) => d.code)).toEqual(["E1005"]);
-});
+test(
+  "a genuine compiler artifact is clean, and its re-indented copy is the E1005 bytes-only fixture",
+  () => {
+    const { canonical, edited } = reindentedArtifact();
+    expect(check(canonical, NO_TYPES).diagnostics.map((d) => d.code)).toEqual([]);
+    expect(check(edited, NO_TYPES).diagnostics.map((d) => d.code)).toEqual(["E1005"]);
+  },
+  CHECK_CASE_BOUND,
+);
 
 for (const c of FIXED) {
-  test(`${c.name}: its fix applies with git apply and re-checking reports no ${c.code}`, () => {
-    const diags = check(c.files, c.opts).diagnostics.filter((d) => d.code === c.code);
-    expect(diags.length).toBe(1);
-    const fix = diags[0]?.fix;
-    expect(typeof fix).toBe("string");
-    if (fix === undefined) return;
-    expect(fix.startsWith("--- a/")).toBe(true);
-    const patched = applyFix(c.files, fix);
-    expect(patched).not.toEqual(c.files);
-    expect(check(patched, c.opts).diagnostics.map((d) => d.code)).not.toContain(c.code);
-  });
+  test(
+    `${c.name}: its fix applies with git apply and re-checking reports no ${c.code}`,
+    () => {
+      const diags = check(c.files, c.opts).diagnostics.filter((d) => d.code === c.code);
+      expect(diags.length).toBe(1);
+      const fix = diags[0]?.fix;
+      expect(typeof fix).toBe("string");
+      if (fix === undefined) return;
+      expect(fix.startsWith("--- a/")).toBe(true);
+      const patched = applyFix(c.files, fix);
+      expect(patched).not.toEqual(c.files);
+      expect(check(patched, c.opts).diagnostics.map((d) => d.code)).not.toContain(c.code);
+    },
+    CHECK_CASE_BOUND,
+  );
 }
 
 const FIX = [
@@ -432,14 +441,18 @@ const NO_FIX = [
   "W1114", // s.secret also changes how the server reads the value (reveal), which the author writes
 ];
 
-test("fix-bearing codes and no-fix codes partition exactly the fixtured codes", () => {
-  const fixtured = new Set([...Object.keys(CODE_FIXTURES), ...FIXTURES.map((x) => x.code)]);
-  const all = [...FIX, ...NO_FIX];
-  expect(new Set(all).size).toBe(all.length);
-  expect(FIX.filter((c) => NO_FIX.includes(c))).toEqual([]);
-  expect([...fixtured].filter((c) => !all.includes(c)).sort()).toEqual([]);
-  expect(all.filter((c) => !fixtured.has(c)).sort()).toEqual([]);
-});
+test(
+  "fix-bearing codes and no-fix codes partition exactly the fixtured codes",
+  () => {
+    const fixtured = new Set([...Object.keys(CODE_FIXTURES), ...FIXTURES.map((x) => x.code)]);
+    const all = [...FIX, ...NO_FIX];
+    expect(new Set(all).size).toBe(all.length);
+    expect(FIX.filter((c) => NO_FIX.includes(c))).toEqual([]);
+    expect([...fixtured].filter((c) => !all.includes(c)).sort()).toEqual([]);
+    expect(all.filter((c) => !fixtured.has(c)).sort()).toEqual([]);
+  },
+  CHECK_CASE_BOUND,
+);
 
 interface Bad {
   code: string;
@@ -459,22 +472,26 @@ const BAD: Bad[] = [
   })),
 ];
 
-test("every fix on every bad fixture applies with git apply, reports strictly fewer of its code, and never names node_modules/", () => {
-  fc.assert(
-    fc.property(fc.constantFrom(...BAD), (bad) => {
-      const before = check(bad.files, bad.opts).diagnostics;
-      for (const d of before) {
-        if (d.fix === undefined) continue;
-        for (const line of d.fix.split("\n")) {
-          if (line.startsWith("--- a/") || line.startsWith("+++ b/")) expect(line).not.toContain("node_modules/");
+test(
+  "every fix on every bad fixture applies with git apply, reports strictly fewer of its code, and never names node_modules/",
+  () => {
+    fc.assert(
+      fc.property(fc.constantFrom(...BAD), (bad) => {
+        const before = check(bad.files, bad.opts).diagnostics;
+        for (const d of before) {
+          if (d.fix === undefined) continue;
+          for (const line of d.fix.split("\n")) {
+            if (line.startsWith("--- a/") || line.startsWith("+++ b/")) expect(line).not.toContain("node_modules/");
+          }
+          const patched = applyFix(bad.files, d.fix);
+          const after = check(patched, bad.opts).diagnostics;
+          expect(after.filter((x) => x.code === d.code).length).toBeLessThan(
+            before.filter((x) => x.code === d.code).length,
+          );
         }
-        const patched = applyFix(bad.files, d.fix);
-        const after = check(patched, bad.opts).diagnostics;
-        expect(after.filter((x) => x.code === d.code).length).toBeLessThan(
-          before.filter((x) => x.code === d.code).length,
-        );
-      }
-    }),
-    { seed: SEED, numRuns: BAD.length * 2 },
-  );
-});
+      }),
+      { seed: SEED, numRuns: BAD.length * 2 },
+    );
+  },
+  CHECK_CASE_BOUND,
+);

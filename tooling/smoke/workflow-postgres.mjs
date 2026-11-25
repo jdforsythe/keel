@@ -12,6 +12,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { testTime } from "../test-time.ts";
 import {
   BOARD_KEY,
   REMOVAL_KEY,
@@ -41,7 +42,9 @@ let client;
 /** Run `docker` with `args`; resolves its trimmed stdout, or null when it fails. */
 const docker = (args) =>
   new Promise((resolve) =>
-    execFile("docker", args, { timeout: 60_000 }, (e, out) => resolve(e === null ? String(out).trim() : null)),
+    execFile("docker", args, { timeout: testTime(60_000) }, (e, out) =>
+      resolve(e === null ? String(out).trim() : null),
+    ),
   );
 process.on("exit", () => {
   if (container !== undefined) execFile("docker", ["rm", "-f", container], () => undefined);
@@ -64,7 +67,7 @@ async function postgres17() {
   const port = (await docker(["port", id, "5432/tcp"]))?.split("\n")[0]?.split(":").at(-1);
   if (port === undefined) return null;
   // The image's init runs a server on the socket only; a TCP answer inside the container is the final server.
-  for (const end = Date.now() + 60_000; Date.now() < end; await wait(250)) {
+  for (const end = Date.now() + testTime(60_000); Date.now() < end; await wait(250)) {
     if ((await docker(["exec", id, "pg_isready", "-q", "-h", "127.0.0.1", "-U", "postgres"])) !== null)
       return `postgres://postgres:smoke@127.0.0.1:${port}/postgres`;
   }
@@ -142,7 +145,7 @@ try {
   step("undo", (await post(base, `/api/removals/${flow}/undo`)) === 200);
   const running = await until(
     async () => (await removals()).rows.some((r) => r.state === "restoring" && r.attempt === 1),
-    10_000,
+    testTime(10_000),
   );
   step("step running", running);
   // The step is mid-wait (2,000 ms): the process dies inside it.
@@ -162,7 +165,7 @@ try {
   const kept = await until(async () => {
     const r = await removals();
     return r.rows.length === 1 && r.rows.every((i) => i.state === "kept");
-  }, 10_000);
+  }, testTime(10_000));
   step("kept within 10s", kept);
   const end = await removals();
   const runs = end.names.filter((n) => n === "api.removal.attempt").length;

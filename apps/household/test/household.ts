@@ -9,14 +9,16 @@ import { served, signIn } from "./serve.ts";
 const UserRow = s.object({ userId: s.string() });
 export const GRACE = "grace@example.com";
 
-/** One household with two members: Ada (`served`'s member) and Grace, each signed in with a session cookie. `using` is a `simulate` run's ctx. */
+/**
+ * One household with two members: Ada (`served`'s member) and Grace, each signed up and signed in once, with the session
+ * cookie that sign-in set. `using` is a `simulate` run's ctx.
+ */
 export async function household(seed: number, using?: SimCtx) {
   const app = await served(seed, true, using);
   const grace = await signIn(app.raw, GRACE, "Grace Hopper");
   const rows = await membersDb(app.ctx).query(sql(UserRow)`select user_id as "userId" from members`);
   const graceId = (rows.ok ? rows.value : []).map((r) => r.userId).find((id) => id !== app.user) ?? "";
-  const ada = await signIn(app.raw);
-  return { ...app, adaCookie: ada, graceCookie: grace, graceId };
+  return { ...app, adaCookie: app.cookie, graceCookie: grace, graceId };
 }
 
 /**

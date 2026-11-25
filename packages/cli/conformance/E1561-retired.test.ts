@@ -7,6 +7,11 @@ import { SEED, buildAndCheck, cleanup, diags, keel, materialize, project } from 
 
 /** Property runs spawn several `keel build` and `keel check` processes each. */
 const SLOW = 120_000;
+/**
+ * What the property case bounds: four runs of a `keel build` and a `keel check` each, eight binary runs, about 3 s a run here beside other work. The bound is 60 s a run, so a runner ten times slower (scale 0.1) still has
+ * 6 s a run.
+ */
+const PROPERTY_BOUND = 4 * 2 * 60_000;
 
 const RETIRED = ["E1561", "E1507", "E1512", "E1157"];
 const dirs: string[] = [];
@@ -33,7 +38,7 @@ test(
       { seed: SEED, numRuns: 4 },
     );
   },
-  SLOW,
+  PROPERTY_BOUND,
 );
 
 test(

@@ -19,6 +19,7 @@ import { createServer } from "node:http";
 import { createServer as createSecureServer } from "node:https";
 import { extname, join, normalize } from "node:path";
 import { chromium } from "@playwright/test";
+import { testTime } from "../test-time.ts";
 import { freePort, recorder, root, wait } from "./built.mjs";
 
 const cli = join(root, "packages", "cli", "src", "bin.ts");
@@ -93,7 +94,7 @@ async function serveFiles(folder, headers = {}, fallback = false, seen = []) {
 }
 
 /** Poll `GET base+path` until it answers, at most `ms`; resolves to the response or null. */
-async function answer(base, path, ms = 20_000) {
+async function answer(base, path, ms = testTime(20_000)) {
   for (const end = Date.now() + ms; Date.now() < end; ) {
     const res = await fetch(`${base}${path}`, { headers: { accept: "text/html" } }).catch(() => null);
     if (res !== null) return res;
@@ -163,7 +164,7 @@ const proofs = {
       page.on("pageerror", (e) => errors.push(String(e)));
       await page.goto(`${server.base}/`);
       const rects = page.locator('[id="app.home.chart"] svg rect');
-      await rects.nth(2).waitFor({ timeout: 15_000 });
+      await rects.nth(2).waitFor({ timeout: testTime(15_000) });
       const drawn = await rects.count();
       return [
         served && drawn === 3 && errors.length === 0,
@@ -285,7 +286,7 @@ const proofs = {
       page.on("pageerror", (e) => errors.push(String(e)));
       await page.goto(`${server.base}/places/oslo`);
       const title = page.locator('[id="places.place.title"]');
-      await title.waitFor({ timeout: 15_000 });
+      await title.waitFor({ timeout: testTime(15_000) });
       const text = await title.textContent();
       const scheme = conf.includes('"schemes": ["dev.keel.linksin"]');
       return [
@@ -451,14 +452,14 @@ const proofs = {
       page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
       page.on("pageerror", (e) => errors.push(String(e)));
       await page.goto(`${server.base}/`);
-      await page.locator('[id="app.home.title"]').waitFor({ timeout: 15_000 });
+      await page.locator('[id="app.home.title"]').waitFor({ timeout: testTime(15_000) });
       const home = await page.locator('[id="app.home.title"]').textContent();
       await page.locator('[id="app.nav.releases"]').click();
       const list = page.locator('[id="app.releases.list"]');
-      await list.waitFor({ timeout: 15_000 });
+      await list.waitFor({ timeout: testTime(15_000) });
       const clicked = (await list.textContent()) ?? "";
       await page.reload();
-      await list.waitFor({ timeout: 15_000 });
+      await list.waitFor({ timeout: testTime(15_000) });
       const reloaded = (await list.textContent()) ?? "";
       const refused = await page.evaluate(
         (u) =>
@@ -550,7 +551,7 @@ const proofs = {
       page.on("pageerror", (e) => errors.push(String(e)));
       await page.goto(`${server.base}/`);
       const title = page.locator('[id="app.home.title"]');
-      await title.waitFor({ timeout: 15_000 });
+      await title.waitFor({ timeout: testTime(15_000) });
       const text = await title.textContent();
       return [text === "Static files only" && errors.length === 0, `heading "${text}", ${errors.length} errors`];
     } finally {
@@ -582,7 +583,7 @@ const proofs = {
       page.on("pageerror", (e) => errors.push(String(e)));
       await page.goto(`${server.base}/`);
       const rects = page.locator('[id="app.rain.chart"] svg rect');
-      await rects.nth(2).waitFor({ timeout: 15_000 });
+      await rects.nth(2).waitFor({ timeout: testTime(15_000) });
       const drawn = await rects.count();
       return [
         served && drawn === 3 && errors.length === 0,
@@ -625,7 +626,7 @@ async function shellPage(dir, file, needle, heading) {
     page.on("pageerror", (e) => errors.push(String(e)));
     await page.goto(`${server.base}/`);
     const title = page.locator('[id="app.home.title"]');
-    await title.waitFor({ timeout: 15_000 });
+    await title.waitFor({ timeout: testTime(15_000) });
     const text = await title.textContent();
     const keelCalls = seen.filter((p) => p.startsWith("/__keel/"));
     return [

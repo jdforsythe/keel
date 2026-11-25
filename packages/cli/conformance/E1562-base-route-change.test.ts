@@ -17,6 +17,12 @@ import {
 
 /** Property runs spawn several `keel build` and `keel check` processes each. */
 const SLOW = 120_000;
+/**
+ * What the first case bounds: six binary runs, two `keel build`s of a base and three `keel build` and `keel check`
+ * pairs less the one cut short, about 3 s a run here (18 s in all). The bound is 60 s a run, so a runner ten times
+ * slower (scale 0.1) still has twice the work's time.
+ */
+const SPLIT_CASE_BOUND = 6 * 60_000;
 
 const dirs: string[] = [];
 afterAll(() => {
@@ -57,7 +63,7 @@ test(
       { seed: SEED, numRuns: 1 },
     );
   },
-  SLOW,
+  SPLIT_CASE_BOUND,
 );
 
 test("E1562: modules in one deployable are not compared; moving `a` to another deployable makes the same change E1562", () => {

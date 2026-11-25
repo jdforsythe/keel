@@ -231,14 +231,22 @@ test("every value the read by value alone gives is still given", () => {
   );
 });
 
-test("a 1,000,000-deep json secret returns without overflowing the stack, and gives nothing past the visit cap", () => {
-  let deep: unknown = "bottom";
-  for (let i = 0; i < 1_000_000; i++) deep = [deep];
-  expect(secretValues(Secret.of(deep, json))).toEqual([]);
-  let shallow: unknown = "bottom";
-  for (let i = 0; i < 999_998; i++) shallow = [shallow];
-  expect(secretValues(Secret.of(shallow, json))).toEqual(["bottom"]);
-});
+// Two reads of about 1,000,000 values each: about 0.2 us a value here, so 5 us a value bounds them with a margin of
+// twenty-five.
+test(
+  "a 1,000,000-deep json secret returns without overflowing the stack, and gives nothing past the visit cap",
+  {
+    timeout: 2 * 1_000_000 * 0.005,
+  },
+  () => {
+    let deep: unknown = "bottom";
+    for (let i = 0; i < 1_000_000; i++) deep = [deep];
+    expect(secretValues(Secret.of(deep, json))).toEqual([]);
+    let shallow: unknown = "bottom";
+    for (let i = 0; i < 999_998; i++) shallow = [shallow];
+    expect(secretValues(Secret.of(shallow, json))).toEqual(["bottom"]);
+  },
+);
 
 test("Secret.innerOf gives the node a secret was made under, and the secret stays frozen", () => {
   const nodes = fc.constantFrom<Node>(json, s.string().node, s.record(s.int()).node, s.object({ a: s.json() }).node);

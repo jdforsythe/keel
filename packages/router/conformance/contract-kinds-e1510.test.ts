@@ -2,6 +2,7 @@
 // Spec: k.contract, clause "An entry with `method` and `search`, with `layout: true` and `path`, or a page with `output` does not compile, and `contract` throws E1510."
 // k.contract Rules, E1510 "an entry of no kind or with a member its kind refuses ... a type error, thrown by `contract` or `manifest`". Seed 1337.
 // Compile-time half of each "does not compile" claim: ./negative-types.test-d.ts; the calls here are untyped.
+import { fixedTime } from "@keel/tooling/test-time";
 import { manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
@@ -91,7 +92,7 @@ describe("k.contract kinds", () => {
         body: Out,
         output: Out,
         errors: { 422: Out },
-        timeout: 100,
+        timeout: fixedTime(100),
       }),
     ).toBe(null);
     expect(make({ method: "GET", path: "/x", output: Out, events: true })).toBe(null);

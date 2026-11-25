@@ -2,6 +2,7 @@
 // (compat-support.ts). Seed 1337 for every property.
 // ASSUMPTIONS (spec names no fixture layout): module `s` serves routes `/` and `/about` whose loaders return `{ text }`
 // and whose page shows `props.data.text` beside a button with a handler (an island); a deployable `site` has adapter `static`; a failing loader returns `err` of a `keel.notFound` error.
+import { testTime } from "@keel/tooling/test-time";
 import { type ChildProcess, spawn } from "node:child_process";
 import http from "node:http";
 import net from "node:net";
@@ -132,7 +133,7 @@ export type Reply = { readonly status: number; readonly body: string };
 export const get = (port: number, path: string): Promise<Reply | null> =>
   new Promise((done) => {
     const req = http.get(
-      { host: "localhost", port, path, headers: { accept: "text/html" }, agent: false, timeout: 10_000 },
+      { host: "localhost", port, path, headers: { accept: "text/html" }, agent: false, timeout: testTime(10_000) },
       (res) => {
         const chunks: Buffer[] = [];
         res.on("data", (c: Buffer) => chunks.push(c));

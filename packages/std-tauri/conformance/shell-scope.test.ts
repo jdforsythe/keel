@@ -5,6 +5,7 @@
 // "the opener in all three" for `default.json` is the string `opener:` in it; the http permission's allowed URLs are the strings of `capabilities/http.json` that are `http:` or `https:` URLs;
 // "`plugins` is `[]`" is read from `keel check`: a project whose `dependencies` hold `@keel/std-tauri` alone has no E1572, with and without `identity.ts`.
 // Fake tools for the `dist` build: `cargo`, `rustc`, `pkg-config` and an `npx` that hands `vite` to the real `npx` and answers `tauri` with success.
+import { testTime } from "@keel/tooling/test-time";
 import { spawnSync } from "node:child_process";
 import {
   chmodSync,
@@ -115,7 +116,7 @@ function buildTarget(dir: string, origin: string): number | null {
     cwd: dir,
     encoding: "utf8",
     env,
-    timeout: 240_000,
+    timeout: testTime(240_000),
   });
   return r.status;
 }

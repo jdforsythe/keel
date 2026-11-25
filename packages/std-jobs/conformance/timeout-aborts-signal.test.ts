@@ -1,5 +1,6 @@
 // Spec: std.jobs, clause "An `fn` not settled after `timeoutMs` sees its `signal` aborted, and the run counts as an attempt."
 // Seed 1337
+import { fixedTime } from "@keel/tooling/test-time";
 import { createCtx } from "@keel/ctx";
 import { job, queue } from "@keel/std-jobs";
 import { s } from "@keel/schema";
@@ -13,7 +14,7 @@ const settle = async () => {
 test("An `fn` not settled after `timeoutMs` sees its `signal` aborted, and the run counts as an attempt.", async () => {
   await fc.assert(
     fc.asyncProperty(fc.integer({ min: 1, max: 20 }), async (units) => {
-      const timeoutMs = units * 1000;
+      const timeoutMs = fixedTime(units * 1000);
       const ctx = createCtx({ mode: "sim", seed: 1337 });
       const signals: AbortSignal[] = [];
       const starts: number[] = [];

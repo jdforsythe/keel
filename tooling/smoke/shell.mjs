@@ -35,29 +35,30 @@ import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { pathToFileURL } from "node:url";
 import { run } from "../output.ts";
+import { fixedTime, testTime } from "../test-time.ts";
 import { BOARD_KEY, app, freePort, root, row, wait } from "./built.mjs";
 import { actionsOf, boardDiff, normalized, outboxIn } from "./shellReplay.mjs";
 import { driverReady, openSession } from "./webdriver.mjs";
 
 /** How long recording and replaying the session under simulation may take. */
-const SIM_MS = 180_000;
+const SIM_MS = testTime(180_000);
 /** How long the built api, and the driver, have to answer. */
-const LISTEN_MS = 20_000;
+const LISTEN_MS = testTime(20_000);
 /** How long the shell has to start, load its entry and read the board. */
-const LOAD_MS = 90_000;
+const LOAD_MS = testTime(90_000);
 /** How long an element named by an action has to appear, and a followed link to change the route. */
-const ELEMENT_MS = 15_000;
+const ELEMENT_MS = testTime(15_000);
 /** How long the proxy must see no request in flight before an action counts as settled. */
-const QUIET_MS = 600;
+const QUIET_MS = fixedTime(600);
 /** How long one action has to settle. */
-const SETTLE_MS = 20_000;
+const SETTLE_MS = testTime(20_000);
 /** How long the stored board must stay unchanged after the last action, and the most that may take. */
-const STILL_MS = 1_500;
-const STORED_MS = 15_000;
+const STILL_MS = fixedTime(1_500);
+const STORED_MS = testTime(15_000);
 /** How long the queued writes have to reach the shell's store files, and a killed app to be gone. */
-const QUEUED_MS = 15_000;
+const QUEUED_MS = testTime(15_000);
 /** The pause between two polls. */
-const POLL_MS = 100;
+const POLL_MS = fixedTime(100);
 
 const argv = process.argv.slice(2);
 const arg = (name) => {
@@ -276,7 +277,7 @@ await run("shell", async () => {
       });
       const listening = await until(
         () =>
-          fetch(`http://127.0.0.1:${apiPort}/api/lists`, { signal: AbortSignal.timeout(2_000) }).then(
+          fetch(`http://127.0.0.1:${apiPort}/api/lists`, { signal: AbortSignal.timeout(testTime(2_000)) }).then(
             (r) => r.ok,
             () => false,
           ),
@@ -373,7 +374,7 @@ await run("shell", async () => {
     const offline = async () => {
       doing = "stop the server";
       await unserve();
-      const refused = await fetch(new URL("/api/lists", origin), { signal: AbortSignal.timeout(2_000) }).then(
+      const refused = await fetch(new URL("/api/lists", origin), { signal: AbortSignal.timeout(testTime(2_000)) }).then(
         () => false,
         () => true,
       );

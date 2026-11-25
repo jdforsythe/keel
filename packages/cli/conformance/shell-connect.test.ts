@@ -45,6 +45,13 @@ const build = (extra: Record<string, string> = {}, origin?: string) => {
   return run(dir, ["build", "--target", "tauri"], origin ?? "https://app.example", "json", extra);
 };
 
+/**
+ * What the property case bounds: five `keel build --target tauri` runs over the stub, about 2.5 s a build here alone
+ * and up to 6 s beside the suite's other builds. The bound is 120 s a build, so a runner ten times slower (scale 0.1)
+ * still has 12 s a build, twice the loaded time.
+ */
+const PROPERTY_BOUND = 5 * 120_000;
+
 describe("k.shell: the drivers' connect list", () => {
   test(
     "the `www` entry's drivers call carries `connect: []` with no `origins`, and `build` is given `connect` as `[]`",
@@ -86,6 +93,6 @@ describe("k.shell: the drivers' connect list", () => {
         { seed: SEED, numRuns: 5 },
       );
     },
-    SLOW,
+    PROPERTY_BOUND,
   );
 });

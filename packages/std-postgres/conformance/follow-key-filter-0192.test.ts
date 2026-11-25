@@ -6,12 +6,12 @@
 import { ready } from "@keel/std-postgres/testing";
 import fc from "fast-check";
 import { beforeAll, describe, expect, test } from "vitest";
-import { MODES, SEED, fresh, notesDb, okOf, simCtx } from "./fixtures.ts";
+import { ENGINE_BOUND, MODES, SEED, fresh, notesDb, okOf, simCtx } from "./fixtures.ts";
 import { boardChannel, canonical, changed, flush, keyOf, otherChannel, pairChannel, watch } from "./follow-fixtures.ts";
 
 beforeAll(async () => {
   await ready();
-});
+}, ENGINE_BOUND);
 
 for (const m of MODES) {
   describe(m.name, () => {

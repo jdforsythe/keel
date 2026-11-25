@@ -4,6 +4,7 @@
 // Assumption: the working-directory half runs in a child process whose cwd is a temp app folder (a vitest worker cannot chdir); `app-dir-child.ts` prints one JSON line. The `KEEL_APP_DIR` halves run in-process, the variable set after `database(...)` ran and before its first call (files are read at the first call).
 // Assumption: `<moduleId>` is the part of the name before the dot, so `fresh().cap` (`t.db<N>`) reads `modules/t/migrations`; tables are per-process-tagged by `fresh()`; E2453 is a rejection whose `code` is "E2453" or whose text holds it.
 // Assumption: a query on a missing table is undefined_table (SQLSTATE 42P01), an unexpected database error (std.postgres Errors), so it rejects with the SQLSTATE in its code or text.
+import { testTime } from "@keel/tooling/test-time";
 import { execFile } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -109,7 +110,7 @@ test("with `KEEL_APP_DIR` unset, in a working directory holding `modules/<id>/mi
     execFile(
       process.execPath,
       ["--experimental-strip-types", CHILD, cap, table],
-      { cwd: app, env, timeout: 50_000 },
+      { cwd: app, env, timeout: testTime(50_000) },
       (e, out) =>
         out.trim() === "" ? reject(e ?? new Error("no output")) : resolve(out.trim().split("\n").at(-1) ?? ""),
     ),

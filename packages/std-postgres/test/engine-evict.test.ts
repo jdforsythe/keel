@@ -3,6 +3,7 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { testTime } from "@keel/tooling/test-time";
 import { afterAll, expect, test, vi } from "vitest";
 
 const KEY = Symbol.for("keel.postgres.engines");
@@ -86,5 +87,5 @@ test("an open folder that is evicted closes its PGlite", async () => {
   const ex = await engineFor(x ?? "");
   await engineFor(y ?? "");
   await engineFor(z ?? "");
-  await vi.waitFor(async () => expect(ex.statement("select 1", [])).rejects.toThrow(), { timeout: 10_000 });
+  await vi.waitFor(async () => expect(ex.statement("select 1", [])).rejects.toThrow(), { timeout: testTime(10_000) });
 });

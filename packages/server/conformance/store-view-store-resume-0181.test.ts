@@ -13,27 +13,40 @@ import { appOf } from "./resume-graph-app.ts";
 
 const items = fc.array(fc.stringMatching(/^[a-z]{1,6}$/), { maxLength: 4 });
 const FRESH = () => import("../../testing/conformance/view-store-page.ts");
+/** Generated item lists the property case runs. */
+const RUNS = 8;
+/**
+ * What the property case bounds: per run, an app made and its page served, one renderRoute, one resumeDocument that
+ * imports the page and one fire, about 45 ms here on a quiet machine and up to 100 ms beside other work; the first run
+ * also loads the page's modules, about 100 ms. The bound is 1,000 ms a run and 2,000 ms for the loading, so a runner ten
+ * times slower (scale 0.1) still has 100 ms a run and 200 ms to load.
+ */
+const RESUME_BOUND = RUNS * 1_000 + 2_000;
 
-test("`resumeDocument` of the page's document from `createApp` gives `state()['v.list']` equal to the server's.", async () => {
-  await fc.assert(
-    fc.asyncProperty(items, items, async (served, later) => {
-      control.items = served;
-      const app = await appOf(routes, ["v"]);
-      const res = await app.fetch(new Request("http://localhost/v", { headers: { accept: "text/html" } }));
-      expect(res.status).toBe(200);
-      const html = await res.text();
-      const reference = await renderRoute("v.page", { routes, ctx: simCtx() });
-      const server = reference.state()["v.list"];
-      reference.dispose();
-      expect(server).toBeDefined();
-      control.items = later;
-      const t = await resumeDocument(html, { routes: FRESH });
-      expect(t.state()["v.list"]).toEqual(server);
-      expect(t.find("v.items").text).toBe(served.join(","));
-      await t.fire("v.add", { type: "click" });
-      expect(t.find("v.items").text).toBe([...served, "new"].join(","));
-      t.dispose();
-    }),
-    { seed: SEED, numRuns: 8 },
-  );
-});
+test(
+  "`resumeDocument` of the page's document from `createApp` gives `state()['v.list']` equal to the server's.",
+  async () => {
+    await fc.assert(
+      fc.asyncProperty(items, items, async (served, later) => {
+        control.items = served;
+        const app = await appOf(routes, ["v"]);
+        const res = await app.fetch(new Request("http://localhost/v", { headers: { accept: "text/html" } }));
+        expect(res.status).toBe(200);
+        const html = await res.text();
+        const reference = await renderRoute("v.page", { routes, ctx: simCtx() });
+        const server = reference.state()["v.list"];
+        reference.dispose();
+        expect(server).toBeDefined();
+        control.items = later;
+        const t = await resumeDocument(html, { routes: FRESH });
+        expect(t.state()["v.list"]).toEqual(server);
+        expect(t.find("v.items").text).toBe(served.join(","));
+        await t.fire("v.add", { type: "click" });
+        expect(t.find("v.items").text).toBe([...served, "new"].join(","));
+        t.dispose();
+      }),
+      { seed: SEED, numRuns: RUNS },
+    );
+  },
+  RESUME_BOUND,
+);
