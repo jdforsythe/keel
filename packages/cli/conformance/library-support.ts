@@ -105,3 +105,94 @@ import { contract } from "@keel/router/contract";
 const charts = contract("charts", { "charts.about": { path: "/about" } });
 export const routes = manifest(charts, { "charts.about": { component: () => null } });
 `;
+
+// ---- slice 2b: the ledger over libraries ----
+import { mkdirSync, readFileSync, renameSync, symlinkSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { type Rec, type Run, keel } from "./compat-support.ts";
+
+/** A ledger file as `JSON.stringify` and a line feed write it, `over` replacing keys of the valid empty file. */
+export const shipped = (over: Record<string, unknown> = {}): string =>
+  `${JSON.stringify({ version: 1, unsafe: 0, hostElements: 0, exports: [], ...over })}\n`;
+
+/** The `Badge` entry of a library ledger's `exports`, at `rung`. */
+export const badgeEntry = (rung: string): Record<string, string> => ({
+  pkg: "charts",
+  name: "Badge",
+  file: "src/Badge.tsx",
+  rung,
+});
+
+/** `n` counted `unsafe(...)` calls (none when `n` is 0), as a file. */
+export const unsafeSrc = (n: number): string =>
+  n === 0
+    ? "export const nothing = 1\n"
+    : `declare function unsafe<T>(why: string, fn: () => T): T;\n${Array.from({ length: n }, (_, i) => `export const raw${i} = unsafe("fixture: counted", () => ${i});`).join("\n")}\n`;
+
+/** Library files holding `n` `Host` elements in `src/Chart.tsx` (none when `n` is 0). */
+export function hostFiles(n: number): Tree {
+  if (n === 0) return {};
+  const el = (i: number): string =>
+    `<Host id={\`\${props.id}.c${i}\`} role="img" label="L" input={In} value={{ n: 1 }} code={() => import('./chart.ts').then((m) => m.chart)} />`;
+  return {
+    "src/chart.ts": "export const chart = undefined\n",
+    "src/Chart.tsx": `import { s } from '@keel/schema'\nimport { Host } from '@keel/ui'\nconst In = s.object({ n: s.number() })\nexport default function Chart(props: { id: string }) {\n  return <div>{${Array.from({ length: n }, (_, i) => el(i)).join("")}}</div>\n}\n`,
+  };
+}
+
+/** Whether `r` lies on the `'entry'` of the file `tree` holds at `r.path`, from its opening quote to its closing one. */
+export function atEntryOf(tree: Tree, r: Rec, entry: string): boolean {
+  const src = typeof r.path === "string" ? (tree[r.path] ?? "") : "";
+  const idx = src.indexOf(`'${entry}'`);
+  if (idx < 0 || typeof r.line !== "number" || typeof r.col !== "number") return false;
+  const before = src.slice(0, idx);
+  const quoteCol = idx - before.lastIndexOf("\n");
+  return r.line === before.split("\n").length && r.col >= quoteCol && r.col <= quoteCol + entry.length + 1;
+}
+
+/** The last `summary` record's `counts` of `run`. */
+export const countsOf = (run: Run): unknown => run.records.filter((r) => r.kind === "summary").at(-1)?.counts;
+
+/** The `ledger` records of `run`, in order. */
+export const ledgerRecs = (run: Run): Rec[] => run.records.filter((r) => r.kind === "ledger");
+
+/** `keel ledger --write <out>` in `dir`, and the file it wrote parsed (undefined when none) beside its text. */
+export function writeLedger(
+  dir: string,
+  out = "out.json",
+  extra: string[] = [],
+): { run: Run; text: string; json: unknown } {
+  const run = keel(dir, ["ledger", "--write", out, ...extra]);
+  let text = "";
+  try {
+    text = readFileSync(join(dir, out), "utf8");
+  } catch {
+    text = "";
+  }
+  let json: unknown;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    json = undefined;
+  }
+  return { run, text, json };
+}
+
+/** Moves the installed library of `dir` to `<dir>-lib/charts` and links it back, as a linked package outside the project root; returns the folder to clean up. */
+export function linkBeside(dir: string, name = NAME): string {
+  const beside = `${dir}-lib`;
+  const real = join(beside, "pkg");
+  mkdirSync(beside, { recursive: true });
+  renameSync(join(dir, "node_modules", name), real);
+  symlinkSync(real, join(dir, "node_modules", name));
+  symlinkSync(join(dir, "node_modules"), join(beside, "node_modules"));
+  return beside;
+}
+
+/** Moves the installed library of `dir` to `<dir>/<rel>` and links it back: a library whose real path is inside the project root. */
+export function linkInside(dir: string, rel: string, name = NAME): void {
+  const real = join(dir, rel);
+  mkdirSync(dirname(real), { recursive: true });
+  renameSync(join(dir, "node_modules", name), real);
+  symlinkSync(real, join(dir, "node_modules", name));
+}
