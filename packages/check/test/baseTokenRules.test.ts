@@ -68,7 +68,9 @@ describe("E1804 reads the base sets", () => {
     const t = { color: COLOR, base: { page: { fg: "mid", bg: "white" } } };
     expect(atElements('<Box bg="white">x</Box>', t)).toHaveLength(1);
     expect(atElements('<Box bg="white" fg="ink">x</Box>', t)).toEqual([]);
-    expect(atElements('<Box fg="ink" />', { color: COLOR, base: { page: { bg: "black" } } })).toHaveLength(1);
+    expect(atElements('<Box bg="white"><Text>x</Text></Box>', t)).toHaveLength(1);
+    // `base.page`'s bg is the page's, not found inside a component: the render check judges it.
+    expect(atElements('<Box fg="ink">x</Box>', { color: COLOR, base: { page: { bg: "black" } } })).toEqual([]);
   });
   it("a role's fg and bg fill what the element does not set", () => {
     const t = { color: COLOR, base: { button: { fg: "white", bg: "black" } } };
@@ -89,8 +91,8 @@ describe("E1804 reads the base sets", () => {
     };
     const ds = codes("<Box />", "E1804", t);
     expect(ds.map((d) => d.message)).toEqual([
-      'base.link: fg "mid" on bg "white" is 3.03:1 in light',
-      'look.quiet: fg "mid" on bg "paper" is 2.78:1 in light',
+      'base.link: fg "mid" on bg "white" is 3.03:1 in light, needs 4.5:1',
+      'look.quiet: fg "mid" on bg "paper" is 2.78:1 in light, needs 4.5:1',
     ]);
   });
 });

@@ -80,7 +80,8 @@ export async function bundleWrite(input: Input, io: Io): Promise<Outcome> {
   const files = projectFiles(fresh);
   const check = await checkCommand({}, fresh);
   const map = a11yRuleMap();
-  const ledger = ledgerCommand({}, fresh, map);
+  const findings = await a11yFindings(fresh.cwd, files);
+  const ledger = ledgerCommand({}, fresh, map, findings);
   const checkErrors = check.filter((r) => r.kind === "diag" && String(r.code).startsWith("E")).length;
   const trailer = test.find((r) => r.kind === "summary");
   const counts = isRecord(trailer?.counts) ? trailer.counts : {};
@@ -98,7 +99,7 @@ export async function bundleWrite(input: Input, io: Io): Promise<Outcome> {
       json(
         await a11yReport(
           io.cwd,
-          a11yClaims(files, map, a11yFindings(io.cwd, files)),
+          a11yClaims(files, map, findings),
           map,
           files.some((f) => f.path === "tokens.ts"),
         ),
