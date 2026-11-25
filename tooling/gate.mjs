@@ -272,6 +272,20 @@ function freePort() {
 function requirement(tool, env) {
   if (tool === "docker")
     return docker(["info", "--format", "{{.ServerVersion}}"]).status === 0 || "docker is not running";
+  if (tool === "registry") {
+    const up = requirement("docker", env);
+    if (up !== true) return up;
+    // A pull asks the credential helper first; a locked one hangs every pull until the job's timeout.
+    const config = path.join(env.DOCKER_CONFIG ?? path.join(os.homedir(), ".docker"), "config.json");
+    const store = fs.existsSync(config) ? JSON.parse(fs.readFileSync(config, "utf8")).credsStore : undefined;
+    if (typeof store !== "string") return true;
+    const r = spawnSync(`docker-credential-${store}`, ["list"], {
+      stdio: "ignore",
+      timeout: 10_000,
+      killSignal: "SIGKILL",
+    });
+    return r.status === 0 || `docker's credential helper (${store}) did not answer in 10s, so a pull would hang`;
+  }
   if (tool === "xcode")
     return spawnSync("xcrun", ["simctl", "help"], { stdio: "ignore" }).status === 0 || "Xcode's simctl is not here";
   if (tool === "rustup")
@@ -513,9 +527,10 @@ async function finish(extra = []) {
   const scaleText = scaled ? `scale ${scale}` : "no time scale on this commit";
   const tools = records.tools ?? "";
   const first = v.first ?? problems[0] ?? (interrupted ? "interrupted" : "");
+  const partial = only !== undefined ? `, partial (--only ${[...only].join(",")})` : linux ? ", partial (--linux)" : "";
   const counts = ok
-    ? `${ran} jobs, ${skipped} skipped, ${scaleText}${tools}`
-    : `${v.failed} failed of ${ran + records.filter((r) => r.status === "not-run").length}, ${skipped} skipped, ${scaleText}${tools} first: ${first}`;
+    ? `${ran} jobs, ${skipped} skipped, ${scaleText}${tools}${partial}`
+    : `${v.failed} failed of ${ran + records.filter((r) => r.status === "not-run").length}, ${skipped} skipped, ${scaleText}${tools}${partial} first: ${first}`;
   const line = `${ok ? "ok" : "fail"} gate ${short} ${counts} (${secs(performance.now() - t0)})`;
   for (const p of problems) say(`fail gate ${p}`);
   say(line);

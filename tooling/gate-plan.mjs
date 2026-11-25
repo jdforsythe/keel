@@ -32,7 +32,7 @@ export const JOBS = {
   "built-smokes": { run: true },
   build: { run: true },
   budgets: { run: true },
-  "golden-1-images": { run: true, requires: "docker" },
+  "golden-1-images": { run: true, requires: "registry" },
   changes: {
     skip: "decides only whether the shell jobs run on a pull request; the gate names its shell jobs itself",
   },
