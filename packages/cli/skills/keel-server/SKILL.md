@@ -1,6 +1,6 @@
 ---
 name: keel-server
-description: "Keel server state: loaders and actions over server stores, guards on a node deployable, identity source and mount, API routes and bearer, service clients, OpenAPI import; E1510, E1513-E1515, E1550, E1558, E1551, E1579-E1583, E1651"
+description: "Keel server state: loaders and actions over server stores, guards on a node deployable, identity source and mount, API routes and bearer, service clients, OpenAPI import; E1510, E1513-E1515, E1550, E1558, E1551, E1579-E1583, E1593, E1651"
 ---
 
 # Server state and API
@@ -88,7 +88,7 @@ Bind it as `{ loader, guard: admit }`. A page or layout guard has a `redirect` (
 
 ## Identity
 
-Keel authenticates no one. `identity.ts` beside `topology.ts` default-exports `identityMount('/api/auth')`; `identity.server.ts` default-exports `identity({ identify, handle? })`. `identify` returns the user id (`''` for no one), once per request; handlers get it as `user`. A live loader keeps the `user` it opened with; its `currentUser()` runs `identify` again on the opening request (`''` with no identity source). `handle: { path, fn }` hosts an auth library's endpoints and cookies; `fn(request, ctx, { routes })`, and a sign-in's 303 goes to `pageHref(routes, next)` (`@keel/router/match`: `ok` is an `Href` of a page, `err` an unknown or hostile `next`; never copy `next` into `location`); no route sits under it (E1579, E1580).
+Keel authenticates no one. `identity.ts` beside `topology.ts` default-exports `identityMount('/api/auth')`; `identity.server.ts` default-exports `identity({ identify, handle? })`. `identify` returns the user id (`''` for no one), once per request; handlers get it as `user`. A live loader keeps the `user` it opened with; its `currentUser()` runs `identify` again on the opening request (`''` with no identity source). `handle: { path, fn }` hosts an auth library's endpoints and cookies; `fn(request, ctx, { routes })`, and a sign-in's 303 goes to `pageHref(routes, next)` (`@keel/router/match`: `ok` is an `Href` of a page, `err` an unknown or hostile `next`; never copy `next` into `location`); no route sits under it, and it is not `/assets` or under it, where the built files are (E1579, E1580).
 
 ```ts fragment
 // identity.server.ts
@@ -100,7 +100,7 @@ export default identity({
 })
 ```
 
-Pages reach it through `Link to={mount.href('/login/github')}` or a native `Form` post (no file input: E1583) to `mount.href('/sign-in/email')`; a `subpath` with `..`, `?` or `//` throws E1582. With `identity.ts`, each deployable is `node` or a hosted `client` (E1581, E1589). With an identity source a `node` deployable answers `GET /__keel/user` (`x-keel: 1`, else 403) with `{ user }`; a `client` page's router reads it per document and after a shell's sign-in or out, so its guards read `user`. That `user` only steers navigation: each API route guards itself. A shell build goes through `KEEL_ORIGIN`. Another origin's `routes` is E1592. `caller: { days }` in `topology.ts` is only on a `node` deployable (E1578).
+`identity.ts`'s default export is the only mount: a page imports it, and an `identityMount` call anywhere else outside a test is E1593. Pages reach it through `Link to={mount.href('/login/github')}` or a native `Form` post (no file input: E1583) to `mount.href('/sign-in/email')`; a `subpath` with `..`, `?` or `//` throws E1582. With `identity.ts`, each deployable is `node` or a hosted `client` (E1581, E1589). With an identity source a `node` deployable answers `GET /__keel/user` (`x-keel: 1`, else 403) with `{ user }`; a `client` page's router reads it per document and after a shell's sign-in or out, so its guards read `user`. That `user` only steers navigation: each API route guards itself. A shell build goes through `KEEL_ORIGIN`. Another origin's `routes` is E1592. `caller: { days }` in `topology.ts` is only on a `node` deployable (E1578).
 
 ## Calling a module or another service
 
