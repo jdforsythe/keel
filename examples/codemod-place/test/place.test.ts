@@ -5,9 +5,11 @@
 import { createCtx } from "@keel/ctx";
 import { routeTable } from "@keel/router";
 import { createApp, topology } from "@keel/server";
+import { renderRoute } from "@keel/testing";
 import { expect, it } from "vitest";
 import { routes as shop } from "../modules/shop/routes.ts";
 import { routes as stock } from "../modules/stock/routes.ts";
+import { artifacts } from "./artifacts.ts";
 
 const secret = "codemod-place-test-secret-of-32-bytes";
 const before = topology({ web: { modules: ["shop", "stock"], adapter: "node", styles: ["@keel/ui/fonts"] } });
@@ -51,4 +53,19 @@ it("shows the same count once stock is placed on an api deployable", async () =>
   });
   expect(await (await web.fetch(home())).text()).toContain("4 lamps on the shelf");
   expect(seen).toEqual(["/api/stock/lamp"]);
+});
+
+it("renders the shop page as a browser gets it: one main landmark, a named heading, the count as text", async () => {
+  const ctx = createCtx({ mode: "sim", seed: 1 });
+  const table = routeTable(shop, stock);
+  const web = await createApp({ topology: before, routes: table, ctx, deployable: "web" });
+  const page = await renderRoute("shop.home", { routes: table, params: {}, ctx, app: web, artifacts });
+  try {
+    expect(page.find("shop.home").role).toBe("main");
+    expect(page.a11y("shop.home.title")).toMatchObject({ role: "heading", name: "Shop" });
+    expect(page.find("shop.home.shelf").text).toBe("4 lamps on the shelf");
+    expect(page.focusOrder()).toEqual([]);
+  } finally {
+    page.dispose();
+  }
 });
