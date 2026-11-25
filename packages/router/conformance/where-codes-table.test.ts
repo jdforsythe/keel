@@ -3,7 +3,7 @@
 // Spec: k.routes, Where rules fire "| E1155 | a contract key | `contract` | contract keys |"
 // Spec: k.routes, Where rules fire "| E1513 | | `contract` (an API name only) | every case |"
 // One test per row of the table, its type-error and thrown columns; the `keel check` column, with each type error under its row's code and never as E1751, is packages/check/conformance/where-codes-check.test.ts.
-// Seed 1337 (no random input: one fixture per row). A type error is claimed in ../unsafe/conformanceNegativeTypes.ts and the call is also run here, untyped.
+// Seed 1337 (no random input: one fixture per row). A type error is claimed in ./negative-types.test-d.ts and the call is also run here, untyped.
 import { action, loader, manifest, routeTable } from "@keel/router";
 import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";

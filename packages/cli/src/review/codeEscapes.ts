@@ -1,11 +1,14 @@
 import { type Expression, type ObjectExpression, type PropertyKey, Visitor, parseSync } from "oxc-parser";
+import { isExpectation } from "../internal/isExpectation.ts";
+import { isNegativeTypeTest } from "../internal/isNegativeTypeTest.ts";
 import type { Danger } from "./Danger.ts";
 import type { FileKind } from "./FileKind.ts";
 import type { Raw } from "./Raw.ts";
 import { foldString } from "./foldString.ts";
 
 /** A TypeScript suppression comment, as E1757 reads one. */
-const SUPPRESSION = /@ts-(?:ignore|expect-error|nocheck)\b/;
+/** A ts-suppression comment: a line of its text starts with a directive, leading white space, `/` and `*` aside. */
+const SUPPRESSION = /^[\s/*]*@ts-(?:ignore|expect-error|nocheck)\b/m;
 /** A lint suppression comment's start (R1051). */
 const LINT_OFF = /^[\s*]*(?:eslint-disable|biome-ignore|oxlint-disable)/;
 /** A folded string that would act as a suppression directive once written into a comment (R1052). */
@@ -293,8 +296,11 @@ export function codeEscapes(path: string, source: string, kind: FileKind): Raw[]
     },
   }).visit(parsed.program);
 
+  // In a negative type test an expectation (a directive with a description) is none (k.unsafe).
+  const typeTest = isNegativeTypeTest(path);
+  const suppresses = (text: string): boolean => SUPPRESSION.test(text) && !(typeTest && isExpectation(text));
   for (const c of parsed.comments) {
-    if (!kind.app && SUPPRESSION.test(c.value))
+    if (!kind.app && suppresses(c.value))
       add("R1050", c.start, c.end, { message: "a ts suppression comment where keel check does not read" });
     if (LINT_OFF.test(c.value)) add("R1051", c.start, c.end);
   }

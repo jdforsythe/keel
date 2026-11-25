@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 // Spec: k.router (Links) "`Link to`, `navigate`, `Form action` and an action's `ok` take `Href` only, rechecked when run (server and client): else `Link` renders `about:blank`, `Form` throws E1501, `ok` is `keel.unexpected` (nothing saved or followed), and `navigate` rejects (E1501) unless it is one once `\` reads as `/` and `#…` drops."
-// rfc:0157 conformance: a `Form` with an `action` that is no `Href` throws E1501, outside a router and inside one. The type half: ../unsafe/conformanceNegativeTypes.ts.
+// rfc:0157 conformance: a `Form` with an `action` that is no `Href` throws E1501, outside a router and inside one. The type half: ./negative-types.test-d.ts.
 // Seed 1337 (fc.assert below).
 import { createCtx } from "@keel/ctx";
 import { Form, createRouter, manifest } from "@keel/router";

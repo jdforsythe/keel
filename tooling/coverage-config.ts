@@ -28,7 +28,7 @@ function generatedIn(root: string, dir: string): string[] {
 
 /**
  * Measured: `src/**` and `unsafe/**` (a package), `modules/**` (an app). Left out: tests (`test/`, `conformance/`,
- * `*.test.*`), type-only files (`types/`, `*.d.ts`) and the files tooling/generate.mjs writes.
+ * `*.test.*`, negative type tests `*.test-d.*`), type-only files (`types/`, `*.d.ts`) and the files tooling/generate.mjs writes.
  */
 export function coverageOptions(root: string): Coverage {
   const dirs = ["src", "unsafe", "modules"];
@@ -40,6 +40,7 @@ export function coverageOptions(root: string): Coverage {
       "**/test/**",
       "**/conformance/**",
       "**/*.test.*",
+      "**/*.test-d.*",
       "**/types/**",
       "**/*.d.ts",
       ...dirs.flatMap((d) => generatedIn(root, d)),

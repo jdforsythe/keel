@@ -8,7 +8,7 @@ export function loosen<D, R>(
   fns: Readonly<Record<string, (data: D, payload: never) => R>> | undefined,
 ): Readonly<Record<string, (data: D, payload: unknown) => R>> {
   return unsafe(
-    "a target's guard and do names are checked against guards and actions, but not the payload fields they read",
+    "chart() calls each only from an event's transaction, on the payload that event's schema parsed; a field of another event PayloadOf names reads undefined",
     () => (fns ?? {}) as Readonly<Record<string, (data: D, payload: unknown) => R>>,
   );
 }

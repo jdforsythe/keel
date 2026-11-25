@@ -32,7 +32,7 @@ describe("k.contract client", () => {
     expectTypeOf(api).toHaveProperty("box");
     expectTypeOf(api).toHaveProperty("add");
     expectTypeOf(api).toHaveProperty("catalog");
-    // compile-time half: ../unsafe/conformanceNegativeTypes.ts
+    // compile-time half: ./negative-types.test-d.ts
     expect(Reflect.get(api, "home")).toBeUndefined();
     expect(Reflect.get(api, "shell")).toBeUndefined();
   });
@@ -48,7 +48,7 @@ describe("k.contract client", () => {
           headers: { "content-type": "application/json" },
         }),
     );
-    // compile-time half: ../unsafe/conformanceNegativeTypes.ts
+    // compile-time half: ./negative-types.test-d.ts
     const missing = () => Reflect.apply(api.catalog, api, [{}, ctx]);
     expect(typeof missing).toBe("function");
     const extra = () => Reflect.apply(api.box, api, [{ body: { title: "x" } }, ctx]);
@@ -113,7 +113,7 @@ describe("k.contract client", () => {
       sent += 1;
       return new Response("{}", { status: 200 });
     });
-    // compile-time half: ../unsafe/conformanceNegativeTypes.ts
+    // compile-time half: ./negative-types.test-d.ts
     const r = await Reflect.apply(api.catalog, api, [{ params: { locale: "en" }, query: { q: 5 } }, ctx]);
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error.code).toBe("api.input");

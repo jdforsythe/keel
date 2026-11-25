@@ -38,6 +38,7 @@ Canonical names. Changing one requires an RFC.
 - **replica**: `replica(ctx)` of a sim ctx, a sim ctx standing for another process on the same storage, as two replicas of a `node` deployable are (k.sim, k.persist).
 - **watch**: the one optional part of a storage's contract, `watch(on)`, reporting the saves other processes commit to the same data (k.persist).
 - **lifted range**: the function written as the second argument of a justified `unsafe(` call in an `unsafe/` file, where a listed set of kernel codes is not reported (k.check).
+- **negative type test**: a `*.test-d.ts` or `*.test-d.tsx` file under `test/` or `conformance/`, type-checked and never run or imported, whose described `@ts-expect-error` lines each assert that a misuse does not compile; counted in the ledger as `negativeTypes`, apart from `unsafe` (k.unsafe).
 - **scroll region**: `Box scroll="x"`, a named, keyboard-reachable region whose wider content scrolls inside it (k.ui, k.a11y).
 - **exact form**: a plural form keyed `=n` that applies when the count is n (std.messages, std.i18n).
 - **identity mount**: the path under which the identity source's `handle` answers, declared by `identity.ts`'s default export `identityMount(path, { links }?)` (`@keel/router`); a page on any deployable sends the browser there with its `href`, and a test names it as `renderRoute`'s `mount` (k.mount, k.testing).

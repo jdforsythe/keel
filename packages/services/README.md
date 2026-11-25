@@ -18,4 +18,4 @@ None. Retries, caching, getting and refreshing tokens, and interceptors are stdl
 
 ## Unsafe
 
-count: 1 (`unsafe/asClient.ts`: Object.fromEntries typed as the mapped `Client<D>`)
+count: 0
