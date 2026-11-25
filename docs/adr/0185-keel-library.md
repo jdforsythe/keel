@@ -1,23 +1,25 @@
 # ADR-0185: a Keel library: a package kind checked again by the app (RFC 0163)
 
-**Status:** proposed (orchestrator, for the operator to confirm before the freeze flip). The build comes after the first real apps.
+**Status:** accepted (operator, 2026-11-25); not yet built. Built before the public release and before RFC 0169's second part.
 
-**Context.** Today the compiler does not transform `node_modules` or linked packages, and `keel check` does not read them. A published Keel component therefore reaches an app unchecked, uncompiled and uncounted. D49 asks for a blessed way to publish components with the guarantees built in.
+**Context.** The compiler does not transform `node_modules` or linked packages, and `keel check` does not read them, so a published Keel component reaches an app unchecked, uncompiled and uncounted. The kernel tells a stdlib package by its `@keel/std-*` name. D49 asks for one blessed way to publish Keel code with the guarantees built in, and k.parity asks that the stdlib hold no power such a package lacks.
 
 **Decision.**
-- A library is a package marked `"keel": "library"`. It ships source, a k.module manifest naming its tokens, a `keel-library.json` that `keel pack` writes (surface, tokens, `unsafe` and `hostElements` counts, ledger items, docs), and packed docs.
-- The app's compiler and `keel check` treat its source as app code. Every rule runs, and the counts are recomputed (E1162).
-- Library elements take explicit ids from an `id` prop (E1161).
-- The app's ledger shows the library's rungs without counting them, and adds its `unsafe` and `hostElements` counts.
-- `keel scaffold library` creates one. `keel pack` is the publish check and refuses a library that fails its own gate (E1164).
-- The stdlib uses the format.
+- A library is a scoped package marked `"keel": "library"` with a root k.module manifest. It ships its source for the app's compiler (a `keel` export condition) and its build for what Node imports at check time.
+- An app lists it in `deps`; an entry beginning with `@` names a package.
+- The app's compiler and `keel check` read a library file `<f>` as `modules/<id>/<f>`: every rule runs, no `node_modules/` exclusion applies, diagnostics carry no fix.
+- Library elements take non-literal ids from an `id` prop (E1161). A library reaches only itself and other libraries (E1163), and its `id` is unique in the app (E1166).
+- The library ships its own ledger file. The app recounts `unsafe` and `hostElements`, compares them for an installed library (E1162), shows the library's items without counting them, and records `libraries` in its ledger.
+- `keel pack` is the publish gate (E1164); `keel scaffold library` writes a library that passes it.
+- The stdlib packages are libraries, read by kind; four named closed sets remain (k.parity).
 
 **Alternatives.**
 - Built JS with a signed claim: the app would trust it, and it could not match the app's tokens.
-- A separate manifest file: a second shape for k.module's.
+- Source only: Node does not strip types under `node_modules`.
+- A separate `keel-library.json` and a token list in the manifest: second statements of the ledger file and the source.
 - Counting library rungs: claims without evidence.
-- A registry or a signing service: out of scope.
 
 **Consequences.**
-- Sharing a component means publishing a package that the app checks in full, at a compile cost per app build.
-- Stdlib imports of kernel `internal` entries must become public seams or a named exception (RFC 0163, For the operator).
+- Sharing Keel code means publishing a package the app checks in full, at a compile cost per app build.
+- Adopting or upgrading a library is a ledger change a reviewer sees.
+- The stdlib's own code is held to app rules; the work of slice 4 fixes what that reading reports.

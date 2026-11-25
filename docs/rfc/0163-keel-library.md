@@ -1,39 +1,46 @@
 # RFC 0163: a Keel library: a package kind checked again by the app
 
-Status: proposed (ADR-0185), for the operator to read before the freeze flip. The build waits until after the first real apps. This is W15 step 4 of `tasks/p1/PLAN.md` (designed here) and D49 of `tasks/0963-to-p1/PLAN.md`. Custom components themselves are RFC 0159.
+Status: accepted (ADR-0185), confirmed by the operator on 2026-11-25; not yet built. The library format is built before the public release and before the second part of k.parity (RFC 0169 Build B, which needs the library kind). Sections k.library and k.library-pack hold the contract. This is W15 step 4 of `tasks/p1/PLAN.md` and D49 of `tasks/0963-to-p1/PLAN.md`.
 
 ## Decisions
-- D1: a library is a package whose `package.json` has `"keel": "library"`. It ships source, never built files, together with a k.module manifest (`module.ts`), `keel-library.json` and packed `docs/`.
-- D2: the manifest is the k.module one, adding `library: { tokens }`. `public.exports` is the library's surface. A second manifest shape would be a second way (principle 1).
-- D3: `keel-library.json` is written by `keel pack`, never by hand (principle 7). It holds the surface, token names, `unsafe` and `hostElements` counts, the library's own ledger items, and the docs index.
-- D4: the app's compiler and `keel check` treat a library's `src/` and `unsafe/` as app code, wherever the package resolves. Every rule runs, and the app cannot switch one off for a library. The counts are recomputed and compared (E1162). The app checks the guarantees again rather than trusting them.
-- D5: library elements carry explicit ids built from an `id` prop. A derived id is E1161, because a path inside `node_modules/` changes with the installer and the version.
-- D6: the library's ledger items appear in the app's ledger under `evidence: 'library <version>'` and are left out of the app's rung counts (principle 11: the app ran none of that evidence). Its `unsafe` and `hostElements` counts add to the app's, so adopting one is a reviewed ledger change (E1706).
-- D7: `keel scaffold library <name>`, plus `keel pack`, which is the publish check. It refuses with E1164 when the library fails its own check, test or ledger. `prepack` runs `keel pack --check`.
-- D8: the stdlib uses this format, with no power a library lacks. RFC 0169 decided it; section k.parity holds the rule and its closed exceptions, and says how E1106 and E1207 read a library's files.
+- D1: a library is a package whose `package.json` has `"keel": "library"` and a scoped name. Its root `module.ts` is a k.module manifest, unchanged: `public.exports` is its surface, `id` its prefix. A second manifest shape would be a second way (principle 1).
+- D2: a library ships its source (`src/`, `unsafe/`) for the app's compiler and checker, and its `tsc` build (`dist/`) for what Node imports at check time (its entry and `./tools`). An `exports` entry lists a `keel` condition first, pointing at the source; the compiler and the type pass resolve with it.
+- D3: an app lists a library in a module's `deps` by package name. An entry that begins with `@` names a package; any other names a project module. The libraries an app reads are found transitively through library manifests.
+- D4: the app's compiler and `keel check` treat a library's files as the app's: a library file `<f>` reads as `modules/<id>/<f>` would, every rule runs, no `node_modules/` exclusion covers it, and the app cannot switch a rule off. Diagnostics are located at `node_modules/<name>/<f>` and carry no fix.
+- D5: library elements take explicit, non-literal ids built from the component's `id` prop (E1161).
+- D6: a library ships its own ledger file, `.keel/ledger.json` (k.ledger File), and no other manifest. The app counts `unsafe` and `hostElements` over the library's files, compares them with the shipped file for an installed library (E1162), shows the library's items under `evidence: 'library <version>'` and leaves them out of the app's rungs. The ledger file gains `libraries`.
+- D7: `keel pack` is the library's gate (check, test, ledger write; E1164). `keel scaffold library @scope/name` writes one that passes it.
+- D8: the stdlib packages are libraries in this format, so the kernel reads each by its kind and never by its name (RFC 0169, k.parity). Four named closed sets remain: shells, topology storage, the app data battery and the CLI command slots.
+- D9: a library reaches only itself and other libraries (E1163), and its `id` is unique in the app (E1166).
 
 ## Problem
 These are the facts as the tree stands.
-- **The compiler skips dependencies.** The Vite plugin's `transform` calls `relOf` (`packages/compiler/src/vite.ts:313-321`). That returns null for any path containing `/node_modules/` and for any path outside the root, so a dependency's `.tsx` gets no Keel JSX transform, no `styles` collection and no ids. A workspace-linked package resolves outside the root and is skipped in the same way.
-- **`keel check` never reads `node_modules`.** The project walk's `SKIP` (`packages/cli/src/internal/readProject.ts:6`, applied at `:50`) excludes it, as do `evaluateProject.ts:136` and `isSourcePath.ts:3`.
-- **Some rules exempt `node_modules`.** E1822 (`packages/check/src/rules/ariaImport.ts:8`) and E1576 (`noInternalEntry.ts:10`) exempt a top-level `node_modules/`, so an outside package could import `Part` or an internal entry and no check would see it. RFC 0159 retires E1822. E1576 still exempts it.
-- **The stdlib is source with no package manifest.** Its `exports` point at `./src/index.ts` (`packages/std-headless/package.json:6-11`). Stdlib widgets are written as `.ts` calling `Part` as a function, precisely because nothing compiles their JSX. The only manifests are k.module's `module.ts` (a stdlib package that ships routes or config has one, `packages/std-sessions/module.ts`) and the packed docs (`tooling/docs-pack.mjs`, `tooling/docs-owners.json`).
-- **The unsafe count stops at the app.** `buildLedger.ts` counts `packages/<pkg>/{src,unsafe}` and `apps/<app>/` (`:23-24`, `:83-85`), so nothing in `node_modules` is counted.
-- **Scaffold has no library kind.** It has project, module, route, component, store, transaction and service (`packages/scaffold/src/internal/run.ts:17-30`).
+- **The compiler skips dependencies.** The Vite plugin's `relOf` (`packages/compiler/src/vite.ts:436-445`) returns null for any path containing `/node_modules/` and for any path outside the root, so a dependency's `.tsx` gets no Keel JSX transform, no style collection and no ids. A workspace-linked package resolves outside the root and is skipped in the same way; `linked` (`:447`) only re-evaluates such a file for the modules that import it.
+- **`keel check` never reads `node_modules`.** The project walk's `SKIP` (`packages/cli/src/internal/readProject.ts:6`, applied at `:58`) excludes it. k.check's App code excludes `node_modules/`, E1757 (casts, `any`) exempts it, and E1576 (`packages/check/src/rules/noInternalEntry.ts:10`) exempts every file under `packages/`, `node_modules/` and `.keel/`.
+- **The kernel tells a stdlib package by its name.** `importDeps` (`packages/compiler/src/std/importDeps.ts`) imports a `deps` entry's entry and `./tools` only when it matches `@keel/std-[a-z0-9-]+`, and reports E1159 otherwise. `stdInScope` and `ruleInScope` (`packages/check/src/internal/`) scope rules by that prefix; `stdModuleDir` finds a placed module's package by it; E1158 accepts a `std` key only for it; E1165 exempts it. 37 kernel `src/` files name `@keel/std-`. Any other package in `deps` reads as a module id the project lacks (E1165).
+- **The stdlib publishes built files.** Every package's `exports` point at `./src/*.ts` for the monorepo, and `publishConfig.exports` point the tarball at `./dist/src/*.js` (`tooling/publish-exports.mjs`); `files` is `["dist", "docs"]`. Installed from npm, a stdlib package would give the app's compiler built JS it does not transform. Node also refuses to strip types from a `.ts` file under `node_modules`, so what `keel check` imports at check time must be built.
+- **Six stdlib packages have a manifest.** `module.ts` at the package root exists for std-channels, std-health, std-jobs, std-schedules, std-sessions and std-workflows; the other 20 have none. A placed stdlib module's routes come from its `./routes` export (k.topology Route table).
+- **Module ids can collide unseen.** `stdModuleDir` takes an app module `modules/<id>/` over a stdlib package with the same `id`, silently.
+- **The counts stop at the app.** `buildLedger.ts` (`packages/cli/src/internal/buildLedger.ts:89-110`) counts `unsafe` and host elements in `packages/<pkg>/{src,unsafe}`, `apps/<app>/**` and a root `modules/**`. k.host-element Ledger already adds "each library's `hostElements` (k.library)", a section that does not exist.
+- **Scaffold has no library kind.** `keel scaffold` has project, module, route, component, store, transaction, service and shell, and the codemods. There is no `keel pack`.
+- **What already serves a library.** Custom components and `Part` are open to app code (E1822 is retired), `Host` and host code exist (k.host-element, k.host-code), k.module has `deps` use (E1165) and the module contract (k.contract), the check type cache reads `node_modules` declaration files (k.check-cache), and k.parity's first part made the stdlib's kernel imports public, but for the shell exception.
 
 The result: a component published to npm today reaches an app unchecked, uncompiled and uncounted. The only safe way to share one is to copy its files.
 
 ## Proposal
-k.library holds the contract. Here is why each part has the shape it does.
-- **Source, not built files.** The guarantees are properties of source as the app's compiler sees it: ids, atomic CSS against the app's tokens, a11y props, the boundary walk, and no `any`. A built file would have to be trusted, and source can be checked again. Libraries are small, and the compile cost is paid once per app build, as for the app's own modules.
-- **One manifest.** A library is a module from the outside (`deps`, `capabilities`, `public.exports`, its `id` as the prefix of its ids and stores), so it uses k.module's `module.ts`. The stdlib already ships that manifest where it needs one.
-- **Token names in the manifest.** The app's `tokens.ts` is the only source of style values. A library states the names it needs, for example `color.accent` and `space.2`, so a missing one is reported once, as E1163, before any file is compiled. An agent reads the contract from the manifest without reading the code.
-- **Counts recomputed.** `unsafe` and `hostElements` in `keel-library.json` tell a reader and an agent what they are taking on. The app's check recomputes them from the source it compiles, so the file cannot understate them (E1162).
-- **The library's evidence is shown and not adopted.** The app's ledger lists the library's rungs so they are visible, attributed to the version. It counts only the evidence the app ran, so a library cannot raise the app's claims (principle 11).
-- **The publish check.** `keel pack` is the library's gate: its own `keel check` against its `tokens.ts` fixture, `keel test`, and `keel ledger --write`. It packs the docs (the `docs-pack` step stdlib packages run as `prepack` today) and writes `keel-library.json`. It refuses when any step fails. A library that does not pass its own gate is never published by Keel's tooling.
-- **Linked packages.** In this monorepo the golden apps reach the stdlib through workspace links outside the root. The compiler identifies a library by its `package.json` (`"keel": "library"`) at the real path, not by the path prefix, so linked and installed libraries are handled alike.
+k.library and k.library-pack hold the contract. Here is why each part has the shape it does.
+- **Source the app compiles, built files Node imports.** The guarantees are properties of source as the app's compiler sees it: ids, atomic CSS against the app's tokens, a11y props, the boundary walk, no `any`. A built file would have to be trusted. The `keel` export condition names the source in the same `exports` map, so one import specifier serves both readers: the compiler and the type pass resolve `keel`, and Node resolves `default` when `keel check` imports the entry and `./tools`. Every package in the repository already builds `dist/`.
+- **The manifest k.module already has.** A library is a module from the outside (`deps`, `capabilities`, `public.exports`, `id` as the prefix of its route ids, stores and error codes). Nothing new goes in it.
+- **Package entries by the `@`.** Module ids are lowerCamel and never begin with `@`; a scoped package always does. The rule is visible in the source and needs no lookup to tell the two apart. Any npm user may publish under a scope, so it costs a library author nothing.
+- **The app's reading, made exact.** Rather than list every rule, k.library says a library file `<f>` is read where a section reads `modules/<id>/<f>`, and that no `node_modules/` exclusion covers it. So E1757, E1576, k.boundary's reach, E1805 and the type pass hold over it with no further text. A diagnostic carries no fix, since the app does not edit `node_modules/` (k.module).
+- **The ledger file is the manifest of evidence.** `keel ledger --write` already writes `unsafe`, `hostElements` and every export's rung. A second file holding the same counts would be a second way, so a library ships that file at `.keel/ledger.json`. The app recomputes the counts from the source it reads and compares them for an installed library (E1162), so the published file cannot understate them. A linked library (a workspace) has no published claim to compare.
+- **The library's evidence is shown and not adopted.** The app's ledger lists the library's items, attributed to the version, and counts only the evidence the app ran (principle 11). `libraries` in the ledger file makes adopting or upgrading a library a visible ledger change, and its counts make a rise in `unsafe` an E1706 review.
+- **Tokens come from the app.** A library's style props name tokens; the app's `tokens.ts` resolves them, and a name the app lacks is reported at the library's file as at the app's (k.ui). A list of token names in the manifest would state again what the source says.
+- **Guarantees extend by reading, not by trust.** Personal data and secrets, the content security policy, accessibility, host elements, internal entries and detached scopes each run over library files. A library declares no origin (the app's `topology.ts` does), and its routes reach a deployable only when `topology.ts` places its `id`, so listing a library adds no route, no server code and no identity (principle: identity and server concepts cost nothing until the app opts in).
+- **What a library may do.** Everything the stdlib may: register rules, formatters and a config schema through `./tools` (code that runs at check time, like any dev dependency), ship routes and a contract, declare format types, take `std` config. It reaches only its own files and other libraries (E1163), and its `id` is unique in the app (E1166).
+- **The publish gate.** `keel pack` runs the library's own `keel check` against its `tokens.ts` fixture, `keel test` and `keel ledger --write`, and refuses with E1164 when one fails. `prepack` runs `keel pack --check`, so a package manager does not pack a library whose ledger is stale.
 
-Worked example: RFC 0159's `AddedChart`, `addedChart` and `MonthCount` move into a library `@acme/keel-charts`:
+Worked example: RFC 0159's chart moves into a library `@acme/keel-charts`:
 ```ts
 // module.ts
 import { module } from "@keel/compiler";
@@ -43,42 +50,97 @@ export default module({
   deps: ["@keel/std-headless"],
   capabilities: [],
   public: { exports: ["AddedChart", "MonthCount"] },
-  library: { tokens: ["color.text", "color.accent", "size.chart", "space.2"] },
 });
 ```
-The chart's ids become `<id>.chart`, `<id>.data` and `<id>.table` from an `id` prop (E1161). The app then lists `@acme/keel-charts` in its module's `deps`, and `keel check` compiles and checks the library's three files. The app's ledger gains `hostElements: 1` and the library's items.
+```json
+{
+  "name": "@acme/keel-charts",
+  "version": "1.0.0",
+  "type": "module",
+  "keel": "library",
+  "exports": {
+    ".": { "keel": "./src/index.ts", "types": "./dist/src/index.d.ts", "default": "./dist/src/index.js" }
+  },
+  "files": ["module.ts", "src", "unsafe", "dist", ".keel/ledger.json", "README.md"],
+  "peerDependencies": { "@keel/compiler": "1.0.0", "@keel/ui": "1.0.0", "@keel/std-headless": "1.0.0" }
+}
+```
+The chart's elements take ids `${props.id}.chart`, `${props.id}.data` and `${props.id}.table` (E1161). The app's `modules/stats/module.ts` lists `"@acme/keel-charts"` in `deps`, a page renders `<AddedChart id="stats.added" ... />`, and `keel check` compiles and checks the library's three files with the app's. The app's ledger gains `hostElements: 1`, the library's items, and `libraries: { "@acme/keel-charts": { version: "1.0.0", unsafe: 0, hostElements: 1 } }`.
 
 ## Alternatives
-- **Ship built JS plus a signed claim.** The app would trust the claim, and a build of ids and CSS against tokens the library cannot know would not fit the app's tokens.
-- **A separate manifest file (`keel.library.ts`).** That is a second manifest shape for what k.module already says.
-- **Count library rungs in the app's ledger.** This gives claims without evidence the app holds.
-- **A registry or a signing service.** These are out of scope. npm and the app's own check suffice, and nothing in the design needs a Keel service.
-- **Derived ids with the package name as the prefix.** A component rendered twice would still need an `id` prop to tell the two apart, and an explicit id is the stdlib's existing rule.
+- **Ship built JS plus a signed claim.** The app would trust the claim, and ids and CSS built against tokens the library cannot know would not fit the app's tokens.
+- **Ship only source.** Node refuses to strip types under `node_modules`, so `keel check` could not import the entry or `./tools` without a loader of its own.
+- **A separate `keel-library.json`.** It held the counts and items the library's ledger file already holds; one file, written by one command, is enough.
+- **Token names in the manifest (`library.tokens`).** A second statement of what the source says; the use site reports a missing token already.
+- **Tell a package from a module by lookup** (a module folder first, then a package). An unscoped name could then mean either, and a typo reads as the other kind.
+- **Count library rungs in the app's ledger.** Claims without evidence the app holds.
+- **A registry or a signing service.** Out of scope: npm and the app's own check suffice.
+- **Pack a library's docs for `keel docs`.** k.docs reads the `@keel/*` packages; opening it to libraries is additive and waits for a need (For the operator).
 
 ## Spec diff
-- k.library is a new section (proposed): the kind, the app's treatment, ids, ledger, commands, and E1161 to E1164 (E115x block, k.module's range).
-- The map gains a k.library row, and the E115x owner cell names it.
-- The glossary gains **library**.
-- These sections are full, so k.library states their changes and the build updates the section text when a section has room, or adds a pointer: k.module (`library` in the manifest), k.ledger (library items, counts), k.scaffold (`library`), k.cli (`pack`) and k.security's E1576 (no `node_modules/` exemption for a library's files, which are app code).
+- k.library (new, proposed, owner `@keel/cli`): Kind, In an app, Guarantees, Ids, Ledger, Rules (E1161, E1162, E1163, E1166), Conformance.
+- k.library-pack (new, proposed, owner `@keel/cli`): Package, Own folder, Pack, Scaffold, Rules (E1164), Conformance.
+- Map: rows `k.library | Libraries | proposed | packages` and `k.library-pack | Library publishing | proposed | pack`; the E115x owner cell names both.
+- Glossary: **library**.
+- k.parity Exceptions: the app data battery, `@keel/std-postgres`, as a fourth named closed set (RFC 0169 amended to match).
+- These sections are full or conformance-covered, so k.library states their changes and the build updates their text where it has room: k.module (an `@` entry names a library; E1159 reads "a package entry that resolves to no library"; E1158 and Std config read "library" for "`@keel/std-*`"), k.check App code and E1757 (no `node_modules/` exclusion for library files), k.ledger File (`libraries`), k.scaffold (`library`), k.cli (`pack`), k.security E1576 (k.parity Rules). Their existing Conformance bullets keep their wording unless the behaviour changes, which only k.security's `node_modules/@keel/std-x/a.ts` case does (slice 5, under RFC 0169).
+
+E1161 to E1164 were held for this RFC and are still free in the code table; E1166 is the next free code in k.module's block.
 
 ## Conformance diff
-The `conformance-writer` turns the Conformance list of `spec/kernel/k.library.md` into tests under `rfc:0163`, in `packages/cli/conformance/` with a fixture library under the fixture app's `node_modules/`. It writes them when the build is scheduled, after the first real apps.
+The `conformance-writer` turns the Conformance lists of k.library and k.library-pack into tests under `rfc:0163`, slice by slice (Build order). Kernel packages never import a std package, tests included: fixture libraries are written into a temporary project's `node_modules/`, never a `@keel/std-*` package.
+
+## Migration
+None: nothing is released.
 
 ## Token impact
-k.library is about 1,300 tokens. The map gains one row and the glossary one term.
+k.library about 2,480 tokens and k.library-pack about 1,090, of 3,110 each. The map grows two rows (`spec.map` re-based from 1,545 to 1,580) and the packed docs map two entries (`docs.map` re-based from 1,590 to 1,610). The glossary gains one term; k.parity one line.
 
 ## Build order
-1. This commit: the RFC, ADR-0185, the spec and the glossary.
-2. The stdlib packages take the format: each gains `"keel": "library"`, a `module.ts` where it has none, and `keel pack --check` in `prepack` in place of `docs-pack.mjs`; the `apps/*` ledgers then count the stdlib's `unsafe` and `hostElements`, both 0 as far as the build verifies.
-3. After the first real apps: the `conformance-writer`, then the build:
-   - the compiler's library detection and transform;
-   - `readProject` reading library source;
-   - the ledger;
-   - `keel pack`;
-   - `keel scaffold library`;
-   - the stdlib in the format.
+Clause numbers are 1-based Conformance bullets. Every slice leaves the main line green and mergeable; until slice 4 ends, a `@keel/std-*` package passes as a library by its name, so no stdlib package changes before its turn.
+
+**Slice 1: the library kind (M).** Depends on nothing.
+- Delivers: an `@` `deps` entry read as a package; the kind read from `package.json`; libraries found transitively and listed with their files (one helper, `libraryFiles`, that slices 2a and 2b share); every kernel gate that reads a stdlib package by name (`importDeps`, `stdInScope`, `ruleInScope`, `stdModuleDir`, `stdExport`, `stdRoutes`, `stdContract`, `stdPlacedExports`, E1158, `unusedDeps`) also passing a library; E1159 by kind; E1163's manifest half; E1166.
+- Packages: `@keel/compiler` (`src/std/`, `src/internal/std*`), `@keel/check` (`src/internal/modules/`, `stdInScope`, `ruleInScope`).
+- Clauses: k.library 8, 9, 10, 11, 12.
+- Conformance: `packages/check/conformance/library-manifest.test.ts` (8, 9: `check()` over the fixture's files); `packages/cli/conformance/library-deps.test.ts` (10, 11, 12: `keel check` and `keel build` in a temporary project).
+
+**Slice 2a: the app compiles and checks a library's files (L).** Depends on slice 1. Runs beside 2b.
+- Delivers: the `keel` condition in the Vite plugin's resolution on dev, build and test, and in the type pass; `relOf` and the check's project read take library files, mapped to `modules/<id>/<f>` for every rule; locations at `node_modules/<name>/<f>` with no fix; E1757 and E1576 over library files; E1161; E1163's import half.
+- Packages: `@keel/compiler` (`vite.ts`), `@keel/check` (`isAppPath`, rule scopes, the type pass), `@keel/cli` (`readProject`, `runCheck`).
+- Clauses: k.library 1 to 7.
+- Conformance: `packages/cli/conformance/library-compile.test.ts` (1, 2, 4); `packages/check/conformance/library-rules.test.ts` (3, 5, 6, 7).
+
+**Slice 2b: the ledger over libraries (M).** Depends on slice 1. Runs beside 2a.
+- Delivers: `unsafe` and `hostElements` counted over library files, once for a library inside the project root; library item records; `libraries` in the ledger file; E1162 for an installed library.
+- Packages: `@keel/cli` (`buildLedger`, ledger command), `@keel/check` (E1162 at `deps` entries).
+- Clauses: k.library 13, 14.
+- Conformance: `packages/cli/conformance/library-ledger.test.ts`.
+
+**Slice 3: `keel pack` and `keel scaffold library` (M).** Depends on 2a and 2b.
+- Delivers: the own-folder reading of a library; `keel pack` and `--check` (E1164) as a k.cli operation; `keel scaffold library`; `examples/library-charts/` (a scaffolded library with one `Host` chart) and `examples/library-app/` (an app listing it through a workspace link), both in `pnpm test`.
+- Packages: `@keel/cli`, `@keel/scaffold`; `tooling/publish-exports.mjs` keeps a `keel` condition at its source path (its P0002 and P0003 read `src` as shipped).
+- Clauses: k.library-pack 1 to 5.
+- Conformance: `packages/cli/conformance/library-pack.test.ts` (1, 3, 4, 5); `packages/cli/conformance/library-scaffold.test.ts` (2).
+
+**Slice 4: the stdlib on the format (pilot M, then L).** Depends on slice 3. The pilot is `@keel/std-headless` (widgets, ids from `id` props, no manifest yet). Then the other 25, in parallel lanes by group (data: db, postgres, offline, conflicts, channels, live; jobs: jobs, schedules, workflows, statecharts; ui: tables, messages, i18n, text, tokens, geo, money, temporal, timings; tools: brands, report, sessions, health; shells: capacitor, tauri).
+- Delivers per package: `"keel": "library"`; a root `module.ts` where none exists, its `id` checked against every golden app's module ids (E1166); the `keel` condition in `exports` and `publishConfig.exports`; `files` gaining `module.ts`, `src`, `unsafe` and `.keel/ledger.json`; `prepack` running the build, `docs-pack.mjs` and `keel pack --check`; whatever the app's reading reports in the package (E1161, casts to `unsafe/`, E1801), fixed in the package. The golden apps' and examples' ledgers are written again, since their `unsafe` and `hostElements` now count the stdlib's. At the end: the `@keel/std-*` name pass of slice 1 is removed, so the kind alone admits a package.
+- Clauses: none new; k.library's clauses hold over the stdlib.
+- Conformance: none owed; the golden apps' `keel check` is the proof.
+
+**Slice 5: k.parity's second part (M).** Depends on slice 4. This is RFC 0169 Build B.
+- Delivers: the name gates of RFC 0169 items 3 to 8 and 11 become kind gates; E1207's four stdlib sites move to `unsafe/`; `tooling/deps.json` `names` and S0013; E1576's shell allowance over library files (k.security's `node_modules/@keel/std-x/a.ts` bullet changes under `rfc:0169`); the k.module, k.reactive and k.schema text of RFC 0169's Spec diff.
+- Packages: `@keel/check`, `@keel/compiler`, `@keel/cli`, `@keel/scaffold`, the four stdlib packages with detached scopes, `tooling/structure-lint.mjs`.
+- Clauses: k.parity 5 and 6, after which k.parity can be marked covered.
+- Conformance: `tooling/test/structure-lint.test.mjs` (5, 6, by the build lane); `packages/check/conformance/parity-e1576-library.test.ts` (the E1576 allowance).
+
+Parallel lanes: 2a beside 2b; slice 4's groups beside each other once the pilot merges. Slices 1, 3 and 5 are each one lane.
 
 ## For the operator
-1. **The stdlib's extra powers.** Decided by RFC 0169: the stdlib reaches the kernel only through public entries, with a closed list of exceptions, in section k.parity. E1106 and E1207 read a library's files as a package's, as k.parity states. Nothing remains open here.
-2. **`./tools` for libraries.** A library's `./tools` runs code inside the app's `keel check`. The stdlib has this power, so D49 gives it to libraries too. I recommend allowing it, stated in the docs as running the library's code at check time, like any dev dependency.
-3. **Compile cost.** Compiling library source on every app build costs time. I recommend accepting it now and caching per package version later if `keel check` latency (its budget) shows the cost.
+1. **Libraries must be scoped** (`@scope/name`) so a `deps` entry tells a package from a module by its first character. I recommend it: one rule, read without a lookup, free to every npm user.
+2. **The ledger file replaces `keel-library.json`, and `library.tokens` is dropped.** Both stated again what an existing file or the source already says. Reverse to restore them.
+3. **`./tools` runs a library's code at check time,** as the stdlib's does. Recommended and stated in k.library.
+4. **No capability inheritance.** A library's `capabilities` hold its own code to E1156; a module listing it does not need them. Adding that is additive.
+5. **No docs for libraries in `keel docs`.** A library documents itself in its README; opening k.docs to libraries is additive.
+6. **Library rule codes share the stdlib's range** (E1753, E2xxx). A range of their own is in `tasks/FUTURE.md` (RFC 0169).
+7. **Compile cost.** The app compiles library source on every build; the check type cache covers the type pass. I recommend measuring at slice 4 against the `keel check` budget before caching more.
