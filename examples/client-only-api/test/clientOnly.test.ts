@@ -3,7 +3,6 @@ import { renderRoute } from "@keel/testing";
 import { expect, it } from "vitest";
 import { app } from "../modules/app/app.contract.ts";
 import { routes } from "../modules/app/routes.ts";
-import { artifacts } from "./artifacts.ts";
 
 const RELEASES = "https://api.github.com/repos/nodejs/node/releases?per_page=5";
 const TWO = [
@@ -25,7 +24,7 @@ const json = (body: unknown, status = 200) =>
 
 it("renders the home page and navigates to the releases with no server, asking only GitHub", async () => {
   const { ctx } = world(() => json(TWO));
-  const page = await renderRoute("app.home", { routes, params: {}, ctx, artifacts });
+  const page = await renderRoute("app.home", { routes, params: {}, ctx });
   expect(page.find("app.home.title").text).toBe("A site with no server");
   // A keyboard user meets the masthead's page links first, then the link in the text, as they read.
   expect(page.focusOrder()).toEqual(["app.nav.home", "app.nav.releases", "app.home.toReleases"]);

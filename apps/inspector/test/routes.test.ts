@@ -5,7 +5,6 @@ import { InspectDoc } from "../modules/inspector/InspectDoc.schema.ts";
 import { Inspection } from "../modules/inspector/Inspection.schema.ts";
 import { loadInspect } from "../modules/inspector/loadInspect.server.ts";
 import { routes } from "../modules/inspector/routes.ts";
-import { artifacts } from "./artifacts.ts";
 
 const TARGET = "http://localhost:4180";
 /** What a golden-1 dev build serves at `/__keel/inspect` after one `todos.addList`. */
@@ -60,7 +59,7 @@ const json =
 describe("inspector.index", () => {
   it("renders the graph, stores and ids of the url's inspect document", async () => {
     const ctx = simWith(`${TARGET}/__keel/inspect`, json(DOC));
-    const r = await renderRoute("inspector.index", { routes, search: { url: `${TARGET}/` }, ctx, artifacts });
+    const r = await renderRoute("inspector.index", { routes, search: { url: `${TARGET}/` }, ctx });
     expect(r.find("inspector.title").text).toBe(`Inspector: ${TARGET}`);
     // One main landmark, a level-1 heading naming the target and a level-2 heading per panel; nothing takes focus.
     expect(r.find("inspector.page").role).toBe("main");
@@ -100,7 +99,6 @@ describe("inspector.index", () => {
       routes,
       search: { url: TARGET },
       ctx: simWith(`${TARGET}/__keel/inspect`, json({}, 500)),
-      artifacts,
     });
     expect(down.find("inspector.error.message").text).toBe(`${TARGET} answered 500`);
     expect(down.a11y("inspector.error.title").role).toBe("heading");

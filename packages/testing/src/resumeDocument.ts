@@ -8,6 +8,7 @@ import type { Snapshot, Store } from "@keel/store";
 import { stores } from "@keel/store";
 import { fail } from "./internal/fail.ts";
 import { freshGraph } from "./internal/freshGraph.ts";
+import { harnessArtifacts } from "./internal/harnessArtifacts.ts";
 import { openHarness } from "./internal/openHarness.ts";
 import { seedFrom } from "./internal/seedFrom.ts";
 import type { DocumentNavigation } from "./types/DocumentNavigation.ts";
@@ -37,6 +38,7 @@ export function resumeDocument<C extends Ctx>(
 ): Promise<ResumedHarness<C>>;
 export function resumeDocument(html: string, options: ResumeDocumentOptions): Promise<ResumedHarness<Ctx>>;
 export async function resumeDocument(html: string, options: ResumeDocumentOptions): Promise<ResumedHarness<Ctx>> {
+  const artifacts = harnessArtifacts(options.artifacts);
   const given = options.routes;
   const ctx = options.ctx ?? createCtx({ mode: "sim", seed: seedFrom(undefined) });
   // The test runner answers the import over a channel made before the run: the load is held (k.drive Seams).
@@ -76,7 +78,7 @@ export async function resumeDocument(html: string, options: ResumeDocumentOption
     documents,
     teardown: () => islands.dispose(),
     target: () => ({ route: null, component: "resumeDocument" }),
-    artifacts: options.artifacts,
+    artifacts,
   });
   try {
     const [first] = warnings;

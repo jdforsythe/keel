@@ -9,7 +9,6 @@ import { renderRoute } from "@keel/testing";
 import { expect, it } from "vitest";
 import { routes as shop } from "../modules/shop/routes.ts";
 import { routes as stock } from "../modules/stock/routes.ts";
-import { artifacts } from "./artifacts.ts";
 
 const secret = "codemod-place-test-secret-of-32-bytes";
 const before = topology({ web: { modules: ["shop", "stock"], adapter: "node", styles: ["@keel/ui/fonts"] } });
@@ -59,7 +58,7 @@ it("renders the shop page as a browser gets it: one main landmark, a named headi
   const ctx = createCtx({ mode: "sim", seed: 1 });
   const table = routeTable(shop, stock);
   const web = await createApp({ topology: before, routes: table, ctx, deployable: "web" });
-  const page = await renderRoute("shop.home", { routes: table, params: {}, ctx, app: web, artifacts });
+  const page = await renderRoute("shop.home", { routes: table, params: {}, ctx, app: web });
   try {
     expect(page.find("shop.home").role).toBe("main");
     expect(page.a11y("shop.home.title")).toMatchObject({ role: "heading", name: "Shop" });

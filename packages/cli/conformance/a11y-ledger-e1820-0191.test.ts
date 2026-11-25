@@ -87,11 +87,11 @@ afterAll(() => {
 describe("k.a11y: ledger claims for E1820 (#2.4.3, #1.3.2)", () => {
   for (const criterion of ["2.4.3", "1.3.2"]) {
     it(`after \`keel test\` with a passing \`renderRoute\` of a route with \`direction\` \`row\` over two \`Button\`s, \`keel ledger\` gives the route's \`#${criterion}\` rung \`example\``, () => {
-      expect(claim(passing, `a11y:m.r#${criterion}`)).toMatchObject({ rung: "example" });
+      expect(claim(passing, `a11y:.:m.r#${criterion}`)).toMatchObject({ rung: "example" });
     });
 
     it(`a render that fails with E1820 makes the route's \`#${criterion}\` rung \`none\``, () => {
-      expect(claim(violating, `a11y:m.r#${criterion}`)).toMatchObject({ rung: "none" });
+      expect(claim(violating, `a11y:.:m.r#${criterion}`)).toMatchObject({ rung: "none" });
     });
   }
 

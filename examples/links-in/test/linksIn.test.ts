@@ -4,13 +4,12 @@
 import { renderRoute } from "@keel/testing";
 import { expect, it } from "vitest";
 import { routes } from "../modules/places/routes.ts";
-import { artifacts } from "./artifacts.ts";
 
 /** The Tauri shell's id in `topology.ts`, and so its scheme. */
 const id = "dev.keel.linksin";
 
 it("opens the place a link names while the shell runs", async () => {
-  const t = await renderRoute("places.home", { routes, shell: { id }, artifacts });
+  const t = await renderRoute("places.home", { routes, shell: { id } });
   try {
     expect(t.find("places.home").role).toBe("main");
     expect(t.focusOrder()).toEqual(["places.home.toLisbon"]);

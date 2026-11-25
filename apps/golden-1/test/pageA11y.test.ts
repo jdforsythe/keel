@@ -6,7 +6,6 @@ import { afterEach, describe, expect, it } from "vitest";
 import { boardOutbox } from "../modules/todos/boardOutbox.ts";
 import { routes } from "../modules/todos/routes.ts";
 import { view } from "../modules/todos/view.ts";
-import { artifacts } from "./artifacts.ts";
 import { boardOf } from "./at.ts";
 import { resetApi, seedBoard, simApi } from "./simApi.ts";
 
@@ -45,7 +44,7 @@ describe("page accessibility", () => {
   it("todos.index: a named heading, a labelled list name, and the field before its button", async () => {
     await seedBoard(boardOf(seeded));
     const { ctx } = await simApi();
-    const r = await renderRoute("todos.index", { routes, ctx, artifacts });
+    const r = await renderRoute("todos.index", { routes, ctx });
     try {
       expect(r.find("todos.main").role).toBe("main");
       expect(r.find("todos.nav").role).toBe("navigation");
@@ -64,7 +63,7 @@ describe("page accessibility", () => {
   it("todos.list: the list's name as its heading; an empty add moves focus to the labelled title with its error", async () => {
     await seedBoard(boardOf(seeded));
     const { ctx } = await simApi();
-    const r = await renderRoute("todos.list", { routes, params: { listId: "l1" }, ctx, artifacts });
+    const r = await renderRoute("todos.list", { routes, params: { listId: "l1" }, ctx });
     try {
       expect(r.a11y("todos.list.title")).toMatchObject({ role: "heading", name: "Home" });
       const title = controlId(r.a11y(), "Title");
@@ -81,7 +80,7 @@ describe("page accessibility", () => {
   it("todos.edit: the title field is labelled and Save follows it", async () => {
     await seedBoard(boardOf(seeded));
     const { ctx } = await simApi();
-    const r = await renderRoute("todos.edit", { routes, params: { listId: "l1", todoId: "t1" }, ctx, artifacts });
+    const r = await renderRoute("todos.edit", { routes, params: { listId: "l1", todoId: "t1" }, ctx });
     try {
       expect(r.a11y("todos.edit.title").role).toBe("heading");
       const title = controlId(r.a11y(), "Title");

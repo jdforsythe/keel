@@ -8,7 +8,6 @@ import { recipes } from "../modules/recipes/recipes.contract.ts";
 import { routes } from "../modules/recipes/routes.ts";
 import topology from "../topology.ts";
 import { apiRoutes } from "./apiRoutes.ts";
-import { artifacts } from "./artifacts.ts";
 import { apiApp, apiCtx, asJson, draft } from "./simApi.ts";
 
 describe("timings of the kitchen's catalog query", () => {
@@ -49,7 +48,7 @@ describe("timings of the recipes pages' api calls", () => {
       ctx.clock.advance(new URL(req.url).pathname.startsWith("/api/catalog/") ? 40 : 15);
       return app.fetch(req);
     });
-    const r = await renderRoute("recipes.catalog", { routes, params: { locale: "en-US" }, ctx, artifacts, mount });
+    const r = await renderRoute("recipes.catalog", { routes, params: { locale: "en-US" }, ctx, mount });
     expect(timingsOf(ctx)).toEqual({
       "recipes.api.box": { count: 1, totalMs: 15, maxMs: 15, lastMs: 15 },
       "recipes.api.catalog": { count: 1, totalMs: 40, maxMs: 40, lastMs: 40 },

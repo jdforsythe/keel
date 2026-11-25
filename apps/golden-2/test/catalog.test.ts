@@ -4,7 +4,6 @@ import mount from "../identity.ts";
 import { routes } from "../modules/recipes/routes.ts";
 import { shoppingList } from "../modules/recipes/shoppingList.ts";
 import { toasts } from "../modules/recipes/toasts.ts";
-import { artifacts } from "./artifacts.ts";
 import { catalogApi } from "./catalogFixture.ts";
 
 const NBSP = "\u00a0";
@@ -22,8 +21,8 @@ type Api = Awaited<ReturnType<typeof catalogApi>>;
 async function open(api: Api, locale: "en-US" | "de-DE" | "ja-JP" = "en-US", url?: string) {
   const r =
     url === undefined
-      ? await renderRoute("recipes.catalog", { routes, params: { locale }, ctx: api.ctx, artifacts, mount })
-      : await renderRoute("recipes.catalog", { routes, url, ctx: api.ctx, artifacts, mount });
+      ? await renderRoute("recipes.catalog", { routes, params: { locale }, ctx: api.ctx, mount })
+      : await renderRoute("recipes.catalog", { routes, url, ctx: api.ctx, mount });
   live.push(r);
   return r;
 }

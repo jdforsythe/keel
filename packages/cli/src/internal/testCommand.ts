@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { Writable } from "node:stream";
 import { type TestReport, testResults } from "@keel/testing";
 import { writeA11yReport } from "@keel/testing/a11y";
@@ -7,6 +8,7 @@ import type { Io } from "../types/Io.ts";
 import type { OutRecord } from "../types/OutRecord.ts";
 import { TEST_FILE } from "./TEST_FILE.ts";
 import { a11yCases } from "./a11yCases.ts";
+import { artifactsSetupConfig } from "./artifactsSetupConfig.ts";
 import { catchingStray } from "./catchingStray.ts";
 import { makeDiag } from "./makeDiag.ts";
 import { projectFiles } from "./projectFiles.ts";
@@ -63,7 +65,7 @@ async function vitestRun(root: string, filters: readonly string[]): Promise<Test
         [...filters],
         // Forks, whatever the project's config says: each test process then starts with the environment set above.
         { root, watch: false, pool: "forks", reporters: [collector], env: { KEEL_TEST: "1", UV_THREADPOOL_SIZE: "1" } },
-        {},
+        artifactsSetupConfig(root),
         { stdout: sink(), stderr: sink() },
       );
       await vitest?.close();
@@ -82,7 +84,8 @@ async function vitestRun(root: string, filters: readonly string[]): Promise<Test
 
 /**
  * `keel test [paths]`: vitest, programmatically, on `io.cwd` with `KEEL_TEST=1` (k.testing: ctx defaults to sim) and
- * `UV_THREADPOOL_SIZE=1` over any value set (k.drive-law Order);
+ * `UV_THREADPOOL_SIZE=1` over any value set (k.drive-law Order), and `@keel/testing/setup` after the project's setup
+ * files, so a render given no `artifacts` takes the project's (k.a11y Artifacts);
  * vitest's own output is discarded and `@keel/testing` `testResults` (the same walk the repository's
  * KeelReporter uses) turns results into T0001 diagnostics plus a summary (not ok when any
  * test failed); every render check the harness recorded goes to `reports/a11y.json` (`writeA11yReport`). Skipped (the empty run) when `io.files` holds no test file and no vitest config, so an in-memory

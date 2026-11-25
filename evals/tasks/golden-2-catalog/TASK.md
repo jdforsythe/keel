@@ -32,7 +32,7 @@ Add a catalog page to `apps/golden-2/` (built by `evals/tasks/golden-2`): every 
 | dismiss | `Dismiss` | `Schließen` | `閉じる` |
 
 ## Tests (`@keel/testing` only; ids only)
-- `test/catalog.test.ts`: `renderRoute('recipes.catalog', { ..., artifacts: { "a11y.json", tokens } })` in each locale over a sim api seeded with twelve recipes over three currencies; one flow per widget by `fire` with `keydown` (the flows below).
+- `test/catalog.test.ts`: `renderRoute('recipes.catalog', { ... })` in each locale (under `keel test` it checks with the project's `a11y.json` and tokens) over a sim api seeded with twelve recipes over three currencies; one flow per widget by `fire` with `keydown` (the flows below).
 - `test/catalogColumns.test.ts`: `applyQuery` over the fixture (sort, search, filters, paging, clamping), a seeded property over generated rows and queries, `CatalogSearch` parse, `properties()` on the client transactions, and a `render` of `CatalogPage` and `BoxShell`.
 
 ## Acceptance (checked by `pass.ts`)

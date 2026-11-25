@@ -63,7 +63,7 @@ const ledger = {
     { pkg: "a", name: "x", file: "packages/a/src/x.ts", rung: "proven" },
     { pkg: "b", name: "b", file: "packages/b/src/b.ts", rung: "none" },
   ],
-  a11y: [{ item: "a11y:r#1.1.1", rung: "example" }],
+  a11y: [{ item: "a11y:apps/a:m.r#1.1.1", rung: "example" }],
   mutation: {
     packages: { a: { score: 81.5, scoreJustified: 84, justified: 2, threshold: 70 } },
     claims: [
@@ -151,6 +151,21 @@ describe("ledgerPart", () => {
     expect(l.exports.byRung).toMatchObject({ proven: 1, none: 1 });
     expect(l.exports.packages.a).toMatchObject({ total: 1, verified: 1 });
     expect(l.a11y).toMatchObject({ total: 1, verified: 1 });
+    expect(l.a11y.projects).toEqual({
+      "apps/a": { byRung: expect.objectContaining({ example: 1 }), total: 1, verified: 1 },
+    });
+  });
+
+  it("tallies WCAG items per project, `.` for the run's own directory", () => {
+    const items = [
+      { item: "a11y:.:m.r#1.1.1", rung: "example" },
+      { item: "a11y:apps/a:m.r#1.1.1", rung: "none" },
+      { item: "a11y:apps/a:m.s#1.4.3", rung: "example" },
+    ];
+    const l = ledgerPart({ ...ledger, a11y: items }, {});
+    expect(Object.keys(l.a11y.projects).sort()).toEqual([".", "apps/a"]);
+    expect(l.a11y.projects["apps/a"]).toMatchObject({ total: 2, verified: 1 });
+    expect(l.a11y.projects["."]).toMatchObject({ total: 1, verified: 1 });
   });
 });
 
