@@ -62,6 +62,16 @@ describe("k.a11y-static: what check does not read is left to the render", () => 
   ])("%s reports no E1804", (jsx) => {
     expect(e1804(jsx)).toEqual([]);
   });
+  it("an own literal is read whatever the look; a prop the element does not write follows a computed look unread", () => {
+    expect(e1804('<Box bg="card"><Text look={tone} fg="divider" bg="card">x</Text></Box>')).toHaveLength(1);
+    expect(e1804('<Box bg="card"><Text look={tone} fg="divider">x</Text></Box>')).toEqual([]);
+    expect(e1804('<Box bg="card"><Text look={tone}>x</Text></Box>')).toEqual([]);
+  });
+  it("a literal look's set gives what the element does not write", () => {
+    const t = { ...brandTokens, look: { faint: { fg: "divider" } } };
+    expect(e1804('<Box bg="card"><Text look="faint">x</Text></Box>', t)).toHaveLength(1);
+    expect(e1804('<Box bg="card"><Text look="faint" fg="text">x</Text></Box>', t)).toEqual([]);
+  });
   it("a literal written after the spread is read", () => {
     expect(e1804('<Box bg="card"><Text {...rest} fg="divider" bg="card">x</Text></Box>')).toHaveLength(1);
     expect(e1804('<Box bg="card"><Text {...rest} fg="divider">x</Text></Box>')).toEqual([]);
@@ -87,6 +97,32 @@ describe("k.a11y-static: what holds text and what is exempt", () => {
     '<Box fg="divider" bg="card">{on ? "a" : "b"}</Box>',
   ])("%s reports one E1804", (jsx) => {
     expect(e1804(jsx)).toHaveLength(1);
+  });
+});
+
+describe("k.a11y-static: token sets are judged where tokens.ts declares them", () => {
+  const sets = (tokens: unknown) =>
+    check(
+      [
+        { path: "tokens.ts", source: "export const tokens = { base: { page: {}, link: {} }, look: { quiet: {} } }\n" },
+        { path: "modules/m/C.tsx", source: "export const C = 1\n" },
+      ],
+      { artifacts: { tokens }, types: false },
+    )
+      .diagnostics.filter((d) => d.code === "E1804")
+      .map((d) => `${d.path} ${d.message}`);
+  it("each base set but focus, page among them, and each look with an fg or a bg, prefixed by its name", () => {
+    const color = { ink: "#111111", mid: "#949494", white: "#ffffff" };
+    expect(
+      sets({
+        color,
+        base: { page: { fg: "mid", bg: "white" }, link: { fg: "ink" }, focus: "mid" },
+        look: { quiet: { fg: "mid" }, none: { p: "1" } },
+      }),
+    ).toEqual([
+      'tokens.ts base.page: fg "mid" on bg "white" is 3.03:1 in light, needs 4.5:1',
+      'tokens.ts look.quiet: fg "mid" on bg "white" is 3.03:1 in light, needs 4.5:1',
+    ]);
   });
 });
 
