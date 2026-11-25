@@ -1,8 +1,8 @@
 // `pnpm eval:public pack [--out <dir>] [--no-build]`: packs every package into a kit folder (default `<tmp>/keel-kit`).
-// `pnpm eval:public prove [--kit <dir>]`: a fresh project from the kit runs `keel check`, `keel docs`, `keel test` and
-// `keel build`, and the isolation probe finds nothing from the repository. `pnpm eval:public selftest`: the transcript
-// audit on a transcript that reads a forbidden path and one that does not, the import into a throwaway `apps/`, and the
-// pack-time rewrite. Nothing here runs an agent.
+// `pnpm eval:public prove [--kit <dir>]`: a fresh project from the kit, given a page with JSX `If` and a `Form`
+// (`proofPage.ts`), runs `keel check`, `keel docs`, `keel test` and `keel build`, and the isolation probe finds nothing
+// from the repository. `pnpm eval:public selftest`: the transcript audit on a transcript that reads a forbidden path and
+// one that does not, the import into a throwaway `apps/`, and the pack-time rewrite. Nothing here runs an agent.
 import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -10,8 +10,9 @@ import { emit } from "../../tooling/output.ts";
 import type { Diag } from "../../tooling/output.ts";
 import { importApp } from "./importApp.ts";
 import { audit, probe, replyFindings } from "./isolation.ts";
-import { packKit, repoRoot, rewriteExports, stagedManifest } from "./pack.ts";
+import { PackFindings, packKit, repoRoot, rewriteExports, stagedManifest } from "./pack.ts";
 import { proveProject, setupProject } from "./project.ts";
+import { writeProofPage } from "./proofPage.ts";
 import { isRecord } from "./run.ts";
 
 const diag = (code: string, path: string, message: string): Diag => ({ kind: "diag", code, path, message });
@@ -33,17 +34,29 @@ function finish(diags: Diag[], trailer: string, t0: number): void {
 
 async function pack(argv: readonly string[], t0: number): Promise<void> {
   const out = resolve(flag(argv, "out") ?? join(tmpdir(), "keel-kit"));
-  const packed = await packKit(repoRoot, out, { build: !argv.includes("--no-build") });
+  const packed = await packKit(repoRoot, out, { build: !argv.includes("--no-build") }).catch(findings);
+  if (packed === undefined) return;
   finish([], `ok eval-public pack ${packed.length} tarballs -> ${out}`, t0);
+}
+
+/** A failed pack lint as the run's diagnostics (`undefined` to the caller); any other error rethrown. */
+function findings(e: unknown): undefined {
+  if (!(e instanceof PackFindings)) throw e;
+  finish(e.diags, "", 0);
+  return undefined;
 }
 
 async function prove(argv: readonly string[], t0: number): Promise<void> {
   const given = flag(argv, "kit");
   const kit = given === undefined ? await mkdtemp(join(tmpdir(), "keel-kit-")) : resolve(given);
-  if (given === undefined) await packKit(repoRoot, kit);
+  if (given === undefined && (await packKit(repoRoot, kit).catch(findings)) === undefined) {
+    await rm(kit, { recursive: true, force: true });
+    return;
+  }
   const diags: Diag[] = [];
   const project = await setupProject(kit, "proof-app");
   try {
+    await writeProofPage(project.dir);
     for (const f of await probe(project.dir, repoRoot)) diags.push(diag(f.code, f.where, f.message));
     const r = await proveProject(project.dir);
     for (const s of r.steps)
@@ -102,12 +115,14 @@ async function selftest(t0: number): Promise<void> {
   const exports = rewriteExports({
     ".": { types: "./src/index.ts", default: "./src/index.ts" },
     "./module": { default: "./module.ts" },
+    "./client": { types: "./src/client.d.ts" },
   });
   must(
     line(exports) ===
       line({
         ".": { types: "./dist/src/index.d.ts", default: "./dist/src/index.js" },
         "./module": { default: "./dist/module.js" },
+        "./client": { types: "./src/client.d.ts" },
       }),
     "rewriteExports",
   );
