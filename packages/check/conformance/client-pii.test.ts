@@ -1,4 +1,4 @@
-// Spec: k.leave, Snapshots "The check reports E1107 at a `store` call in a `.tsx` or `.jsx` file not named `*.server.*`, or in a file one reaches by relative `import`, `export … from` and literal `import()` through no `*.server.*` file, whose state schema holds a `.pii(class)` node of a class its module manifest's `clientPii` (a list of `PiiClass`, default empty) does not list; the fix adds the class. That reach is narrower than k.boundary's: a plain `.ts` file no component file imports, say one only loaders use, is not in it, and a store an island finds only by `stores()` id or a package import is not reported."
+// Spec: k.leave, E1107 "The check judges each `store` call of `@keel/store`, under any local name, as a namespace member, through a `const` alias or a project re-export, in a client-reachable file (k.boundary Reach) of a `node` or `static` module, or in a file outside every module that such a module's file imports, directly or not (k.boundary Following). It reports E1107 at the call when the state schema holds a `.pii(class)` node of a class the module manifest's `clientPii` (a list of `PiiClass`, default empty) does not list, for a file outside every module the `clientPii` of each module whose files import it: `store state reaching #k-state holds .pii('<classes>'), not in clientPii`, the classes cut to fit 89 units; the fix adds the classes, none when more than one manifest lacks them. Also E1107, no fix, in such a file: a state schema the static read (k.privacy-reads) answers `'unknown'` for, a `.pii()` whose class is not a string literal among them, `store state not readable statically; cannot show its .pii() classes`; a call of `stores()`, by which an island root puts every live request store, a loader's among them, in `#k-state`, `stores() in client code can send every request store to #k-state`; and `store` or `stores` of `@keel/store` used other than as a callee or through an alias above (passed as a value, destructured from a namespace, a computed member), `<name> of @keel/store used other than as a call; check cannot follow it`. A file of a module only `client` deployables list writes no `#k-state` and is not judged; a store a package creates is the package's."
 // Spec: k.leave, Rules "E1107 a `.pii()` class reaching `#k-state` that `clientPii` does not list (fix adds it)"
 // Spec: k.leave, Conformance "`store(Contact, …)` with `email: s.string().pii('contact')` in a component file is E1107 when the module has no `clientPii`, and with `clientPii: ['name']`; with `clientPii: ['contact']`, or in a `*.server.ts` file, it is not; the fix adds `'contact'`."
 // Seed 1337 (the properties below). The type pass is off: the fixtures name packages that resolve only on disk.
@@ -185,7 +185,7 @@ describe("k.leave Rules: E1107 a store call in a client-reachable file whose sta
   });
 });
 
-describe("k.leave Snapshots: the reach of E1107 is narrower than k.boundary's", () => {
+describe("k.leave E1107: the reach is k.boundary's, a plain `.ts` file of a module included", () => {
   const stores = f("modules/app/stores.ts", inline("contact"));
   const loadServer = f(
     "modules/app/load.server.ts",
@@ -197,12 +197,16 @@ describe("k.leave Snapshots: the reach of E1107 is narrower than k.boundary's", 
   );
   const topology = topologyOf({ api: { modules: ["app"], adapter: "node" } });
 
-  test("a `.pii('contact')` store in `modules/app/stores.ts` that only `load.server.ts` imports is clean without a `topology.ts`", () => {
-    expect(e1107([module_(), stores, loadServer])).toEqual([]);
+  test("a `.pii('contact')` store in `modules/app/stores.ts` that only `load.server.ts` imports is one E1107 at `stores.ts` without a `topology.ts` (every file but server-only ones is reachable)", () => {
+    const ds = e1107([module_(), stores, loadServer]);
+    expect(ds).toHaveLength(1);
+    expect(ds[0]?.path).toBe("modules/app/stores.ts");
   });
 
-  test("the same file is clean with a `topology.ts` listing the module on a `node` deployable", () => {
-    expect(e1107([topology, module_(), stores, loadServer])).toEqual([]);
+  test("the same file is one E1107 with a `topology.ts` listing the module on a `node` deployable (a file under `modules/<id>/`, not server-only)", () => {
+    const ds = e1107([topology, module_(), stores, loadServer]);
+    expect(ds).toHaveLength(1);
+    expect(ds[0]?.path).toBe("modules/app/stores.ts");
   });
 
   test("the same file imported by `Card.tsx` is one E1107 at `stores.ts`, with and without a `topology.ts`", () => {
