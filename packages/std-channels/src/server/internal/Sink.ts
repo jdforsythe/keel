@@ -1,6 +1,7 @@
-/** One open member stream in a hub: its channel instance `key`, its `caller`, its serving `module`, and how events reach it. */
+/** One open member stream in a hub: its channel instance `key`, who it counts as, its serving `module`, and how events reach it. */
 export interface Sink {
   readonly key: string;
+  /** Who the caps count it as: `user:<id>` for a signed-in stream, else its caller (`""`: anonymous). */
   readonly caller: string;
   /** The module whose channel route opened it: that module's bounds count it. */
   readonly module: string;

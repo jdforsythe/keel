@@ -74,7 +74,7 @@ Keep `id`, `digest` (`Digested`) and the user in an app database row (keel-data)
 
 ## Caller
 
-`caller: { days }` on a `node` deployable in `topology.ts` (integer 1 to 400; E1578 otherwise) makes the caller cookie last that long. The caller hash is a device identifier of class `network`; `pii.json` records it. A std.sessions recording keeps no `meta.caller` and no user: `keel session replay|minimize|to-test --user <id>` signs the replay in as a test account you name, and `to-test` writes that id only when given, and no recorded store value for a `node` page; a caller hash in store state needs `.pii('network')`. It grants nothing.
+`caller: { days }` on a `node` deployable in `topology.ts` (integer 1 to 400; E1578 otherwise) makes the caller cookie last that long. The caller hash is a device identifier of class `network`; `pii.json` records it. A std.sessions recording keeps no `meta.caller` and no user: `keel session replay|minimize|to-test --user <id>` signs the replay in as a test account you name, and `to-test` writes that id only when given, and no recorded store value for a `node` page; a caller hash in store state needs `.pii('network')`. A recording holds store state, `tx` payloads and route values as their schema encodes them: a key an open object leaves undeclared is never recorded, so declare a key (a field or `s.record`) to record it. `sessions.ingest` redacts nothing: a recording is redacted once, in the browser. It grants nothing.
 
 ## Content security policy
 

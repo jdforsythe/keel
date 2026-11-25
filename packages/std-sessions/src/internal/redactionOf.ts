@@ -1,4 +1,4 @@
-import { type JsonValue, type KeelError, type Schema, piiPaths, s } from "@keel/schema";
+import { type JsonValue, type KeelError, type Schema, piiPaths, piiValues, s } from "@keel/schema";
 import { redact } from "../redact.ts";
 import type { JsonObject } from "./JsonObject.ts";
 import type { Redaction } from "./Redaction.ts";
@@ -14,11 +14,14 @@ const REMEMBERED = 256;
 const isObject = (v: JsonValue): v is { readonly [k: string]: JsonValue } =>
   typeof v === "object" && v !== null && !Array.isArray(v);
 
-/** `v` with each string (and number, as text) passed through `fn`, depth first; an unchanged value keeps its type. */
-function each(v: JsonValue, fn: (x: string) => string): JsonValue {
-  if (Array.isArray(v)) return v.map((x) => each(x, fn));
+/**
+ * `v` with each string (and number, as text) passed through `fn`, depth first, and with `keys` each object key too;
+ * an unchanged value keeps its type.
+ */
+function each(v: JsonValue, fn: (x: string) => string, keys = false): JsonValue {
+  if (Array.isArray(v)) return v.map((x) => each(x, fn, keys));
   if (typeof v === "object" && v !== null)
-    return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, each(x, fn)]));
+    return Object.fromEntries(Object.entries(v).map(([k, x]) => [keys ? fn(k) : k, each(x, fn, keys)]));
   if (typeof v !== "string" && typeof v !== "number") return v;
   const out = fn(String(v));
   return out === String(v) ? v : out;
@@ -66,8 +69,20 @@ export function redactionOf(entries: readonly string[], seed: number): Redaction
   };
   const under = (key: string, prefix: string): string[] =>
     (paths.get(key) ?? []).filter((p) => p.startsWith(prefix)).map((p) => p.slice(prefix.length));
-  const apply = (schema: Schema<unknown, boolean>, value: JsonValue, salt: string, at: readonly string[]) =>
-    redact(schema, value, { paths: [...at, ...piiPaths(schema).map((m) => m.path)], seed, salt, found });
+  /**
+   * `held` as `schema` encodes it, redacted. Every non-empty string and number under a mark in `held` is remembered
+   * first, a marked open object's undeclared keys and what is under them among them: the encoded value no longer
+   * holds those, and a later error may.
+   */
+  const apply = (schema: Schema<unknown, boolean>, held: unknown, salt: string, at: readonly string[]) => {
+    for (const v of piiValues(schema, held)) found(v);
+    return redact(schema, jsonOf(held, schema), {
+      paths: [...at, ...piiPaths(schema).map((m) => m.path)],
+      seed,
+      salt,
+      found,
+    });
+  };
 
   return {
     tx: (name, schema, payload) => apply(schema ?? json, payload, `tx:${name}`, paths.get(`tx:${name}`) ?? []),
@@ -75,12 +90,8 @@ export function redactionOf(entries: readonly string[], seed: number): Redaction
     nav(event) {
       const r = event.route;
       const key = `route:${r.id}`;
-      const params = objectOf(
-        apply(r.schemas.params ?? json, jsonOf(r.params, r.schemas.params), key, under(key, "params.")),
-      );
-      const search = objectOf(
-        apply(r.schemas.search ?? json, jsonOf(r.search, r.schemas.search), key, under(key, "search.")),
-      );
+      const params = objectOf(apply(r.schemas.params ?? json, r.params, key, under(key, "params.")));
+      const search = objectOf(apply(r.schemas.search ?? json, r.search, key, under(key, "search.")));
       // The href is always rebuilt from the redacted values, so an `s.secret` param or search never stays in it.
       return { route: { id: r.id, params, search }, href: hrefOf(r.path, params, search) };
     },
@@ -110,7 +121,7 @@ export function redactionOf(entries: readonly string[], seed: number): Redaction
     error(error: KeelError<string, JsonValue>) {
       const at = under(`error:${error.code}`, "data.");
       const data = at.length === 0 ? error.data : apply(json, error.data, `error:${error.code}`, at);
-      const out = each(data, scrub);
+      const out = each(data, scrub, true);
       // `data.at` names where the error fired and feeds the fingerprint: only an `error:` entry masks it.
       const where = isObject(data) ? data.at : undefined;
       return {

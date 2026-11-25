@@ -44,7 +44,14 @@ export function render<P, A extends P = P>(
 ): Harness<Ctx> {
   const schema = component.Props;
   if (schema === undefined) throw fail("schema.invalid", "component has no Props (export `Props` from its file)", null);
-  const parsed = schema.parse(options.props);
+  // Slot and callback props are typed outside the `Props` schema (k.component): an open schema parses its own fields.
+  const node = schema.node;
+  const given: unknown = options.props;
+  const own =
+    node.kind === "object" && node.closed !== true && typeof given === "object" && given !== null
+      ? Object.fromEntries(Object.entries(given).filter(([k]) => Object.hasOwn(node.fields, k)))
+      : given;
+  const parsed = schema.parse(own);
   if (!parsed.ok) throw fail("schema.invalid", `props: ${clip(parsed.error.message, 80)}`, parsed.error.data);
   const artifacts = harnessArtifacts(options.artifacts);
   const seeded = seedStores(options.state ?? []);

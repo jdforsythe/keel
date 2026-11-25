@@ -53,7 +53,7 @@
       "max": "1.5kb",
       "platform": "node"
     },
-    "@keel/schema": "6kb",
+    "@keel/schema": "6.5kb",
     "@keel/server": {
       "max": "30.5kb",
       "platform": "node"
@@ -196,13 +196,13 @@
     },
     "@keel/std-temporal": "5kb",
     "@keel/std-text": "1.5kb",
-    "@keel/store": "3.75kb",
+    "@keel/store": "4kb",
     "@keel/store/internal": {
       "max": "2.25kb",
       "platform": "node"
     },
     "@keel/testing": {
-      "max": "21kb",
+      "max": "21.25kb",
       "platform": "node"
     },
     "@keel/testing/prove": {

@@ -100,9 +100,10 @@ export function channelRoute<P, M, S, const Id extends string, const Pub extends
  * must be `{ method: 'GET', path, query: params, events: true, output: events }` and at `publish` `{ method: 'POST',
  * path, query: params, body, output }` with `output` taking `{}`, `path`, `params`, `events` and `body` the
  * channel's own (std.contracts): another contract is a type error and throws E1515 naming the members that differ. At
- * `id` a live loader: when `member` is false its only event is `closed` `denied`; past the serving module's
- * `maxStreams`, or its `perCaller` (a caller with a cookie) or `perAnonymous` (all cookieless opens together), each
- * counted over that module's own channel streams in the process, `closed` `full`; else it follows each `follows`
+ * `id` a live loader: when `member` is false its only event is `closed` `denied`; past a cap (std.channels-limits:
+ * the serving module's `maxStreams` over its streams; its `perCaller` over one signed-in user's streams on it, else
+ * over one caller's; its `perAnonymous` over the streams with no user and no caller of every module served on the
+ * ctx), `closed` `full`; else it follows each `follows`
  * entry at the canonical JSON of its params, then yields `reset`, then `saved` after each save of a store `stores`
  * creates (with `member` re-checked against the stores as saved: false, or a failed re-read, ends it with `closed`
  * `denied`), `changed` after each followed change (with `member` re-run first) and `message` per publish to the same
@@ -142,7 +143,10 @@ export function channelRoute<P, M, S>(
     const cfg = stdConfig(ctx, "@keel/std-channels", ChannelsConfig)[module] ?? {};
     // The count and the join below run in one turn, so no other open lands between them; a stream's place is its
     // sink in the hub, which `leave` removes (a second removal is a no-op).
-    if (full(hub.sinks, caller, module, cfg)) {
+    // A signed-in stream counts as its `user` (a key no caller hash matches: base64url holds no `:`), else as its
+    // caller; only a stream with neither counts as `""`, the anonymous count.
+    const counted = user === "" ? caller : `user:${user}`;
+    if (full(hub.sinks, counted, module, cfg)) {
       yield closed("full");
       return;
     }
@@ -196,7 +200,7 @@ export function channelRoute<P, M, S>(
     };
     const leave = join(ctx, hub, {
       key: instance(keyOf(search)),
-      caller,
+      caller: counted,
       module,
       // Messages queue behind any pending re-check, so a stream it revokes gets none.
       post: (m) => {

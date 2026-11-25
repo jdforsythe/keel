@@ -102,10 +102,10 @@ Rules:
 - [x] 0895 `handle.path` `/assets` shadows built assets and E1579 allows it
 
 ### Lane 09 pii-and-data · std-sessions, schema, std-channels, store, docs (THREAT-MODEL) · RFC (k.schema 0980, std.channels 0973) · M
-- [ ] 0977 `redact` skips an open object's undeclared keys, so personal data stays recorded
-- [ ] 0980 a `Secret` in a `Map`, `Set` or symbol key under an undeclared key parses; decided: refuse non-JSON values there
-- [ ] 0973 one cookieless client opens 64 streams per module; decided: a process-wide anonymous count
-- [ ] 0748 THREAT-MODEL does not name `keys` in `#k-state`; `openHub` re-derives keys
+- [x] 0977 `redact` skips an open object's undeclared keys, so personal data stays recorded
+- [x] 0980 a `Secret` in a `Map`, `Set` or symbol key under an undeclared key parses; decided: refuse non-JSON values there
+- [x] 0973 one cookieless client opens 64 streams per module; decided: a process-wide anonymous count
+- [x] 0748 THREAT-MODEL does not name `keys` in `#k-state`; `openHub` re-derives keys
 
 ### Lane 10 offline-and-live-data · std-offline, std-live, apps/golden-1 · RFC (std.offline, 0800) · M
 - [ ] 0800 two tabs overwrite each other's stored outbox and lose queued writes; decided: per-tab keys

@@ -4,7 +4,7 @@
 // one project (`projectMany`), so a run is two builds and one check whatever its size.
 // Schemas: s.string(), s.number(), s.enum([...]), s.array(x), s.object({...}), x.optional(), x.nullable(); the top level is an
 // object (an action's `input` is an object schema). Only the entry's `body` differs between base and current.
-// `gen(B)` values of an open object carry extra keys of any type (k.compat Accepts: a field an open `B` lacks is accepted only if `A`'s field accepts any value).
+// `gen(B)` yields values `B` parses, and an open object parses an undeclared key only holding plain data (k.schema Plain data: anything else fails rule `type`), so the extra keys of an open `B`'s value range over every plain shape (`fc.jsonValue()`: null, booleans, strings, finite numbers, arrays and objects of them, nested), not over `NaN`, `undefined`, `Map`, typed arrays or class instances, which no `B` value holds. A field an open `B` lacks is accepted only if `A`'s field accepts any value (k.compat Accepts).
 import { type Schema, s } from "@keel/schema";
 import fc from "fast-check";
 import { afterAll, expect, test } from "vitest";
@@ -91,6 +91,11 @@ const build = (d: D): Schema<unknown> => {
   }
 };
 
+/** Plain data (k.schema): `fc.jsonValue()` without the keys `parse` rejects (`__proto__`, `constructor`, `prototype`). */
+const plainData: fc.Arbitrary<unknown> = fc
+  .jsonValue()
+  .filter((v) => !/"(__proto__|constructor|prototype)"\s*:/.test(JSON.stringify(v)));
+
 const gen = (d: D): fc.Arbitrary<unknown> => {
   switch (d.k) {
     case "string":
@@ -108,7 +113,7 @@ const gen = (d: D): fc.Arbitrary<unknown> => {
       for (const [n, f] of Object.entries(d.f)) req[n] = gen(f);
       // `B` is open: a value of it may carry keys it does not declare, of any type, including names `A` declares.
       const extra = fc
-        .dictionary(fc.constantFrom("name", "note", "qty", "zz"), fc.anything(), { maxKeys: 3 })
+        .dictionary(fc.constantFrom("name", "note", "qty", "zz"), plainData, { maxKeys: 3 })
         .map((e) => Object.fromEntries(Object.entries(e).filter(([n]) => !(n in d.f))));
       return fc
         .tuple(fc.record(req, { requiredKeys: Object.keys(d.f).filter((n) => !d.opt.includes(n)) }), extra)
