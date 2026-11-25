@@ -43,7 +43,7 @@ export async function runCheck(
         ...options,
         ...cache,
         project,
-        projectArtifacts: tokens.projectArtifacts,
+        ...(Object.keys(tokens.projectArtifacts).length === 0 ? {} : { projectArtifacts: tokens.projectArtifacts }),
         ...(base === undefined ? {} : { base }),
       },
     ).diagnostics,
