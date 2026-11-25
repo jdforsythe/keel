@@ -169,6 +169,7 @@ Rules:
 - [ ] 1111 `keel check` runs out of heap at 100,000 host elements
 - [ ] 1114 colour tokens used with no `tokens.ts` are an error nowhere
 - [ ] 1116 an app author's unseeded property passes `keel check` (RFC, E1731)
+- [ ] 1118 a bundled file above its reader's folder is refused (PGlite contrib)
 
 ### Owned by a P1 workstream or in flight
 - [ ] 0034 the freeze review and status flips (W1)
@@ -220,6 +221,7 @@ Rules:
 - [ ] 0335 no budget measures an app's client entry; add golden-2's
 - [ ] 0845 `@keel/check` grew to its budget; a consolidation pass over the rules
 - [ ] 1113 the held walk re-walks the import graph; share one graph
+- [ ] 1117 no time budget: parse can slide and nothing fails
 
 ### Lane 22 check-rules · check, std-i18n, std-text, std-tokens · RFC where a rule's spec line changes · M
 - [ ] 0315 E1509 treats every file as one route table; group by deployable
