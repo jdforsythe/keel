@@ -4,7 +4,7 @@ import type { HarnessArtifacts } from "./HarnessArtifacts.ts";
 
 /**
  * Options of `render`: `props` and every `[store, value]` in `state` are parsed by their schemas first.
- * `artifacts` (the compiler's `.keel/` data, passed by `keel test`) enables the `a11y.json` check (E1702), and its `tokens` the render contrast check (E1804).
+ * `artifacts` enables the `a11y.json` check (E1702) and its `tokens` the render contrast check (E1804); under `keel test` a render given none takes the project's (`HarnessArtifacts`).
  */
 export interface RenderOptions {
   readonly props: unknown;

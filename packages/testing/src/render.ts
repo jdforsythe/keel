@@ -2,6 +2,7 @@ import { type Ctx, createCtx } from "@keel/ctx";
 import { withCallbacks } from "../unsafe/withCallbacks.ts";
 import { clip } from "./internal/clip.ts";
 import { fail } from "./internal/fail.ts";
+import { harnessArtifacts } from "./internal/harnessArtifacts.ts";
 import { openHarness } from "./internal/openHarness.ts";
 import { seedFrom } from "./internal/seedFrom.ts";
 import { seedStores } from "./internal/seedStores.ts";
@@ -33,6 +34,7 @@ export function render<P, A extends P = P>(component: TestComponent<P, A>, optio
   if (schema === undefined) throw fail("schema.invalid", "component has no Props (export `Props` from its file)", null);
   const parsed = schema.parse(options.props);
   if (!parsed.ok) throw fail("schema.invalid", `props: ${clip(parsed.error.message, 80)}`, parsed.error.data);
+  const artifacts = harnessArtifacts(options.artifacts);
   const seeded = seedStores(options.state ?? []);
   const ctx = options.ctx ?? createCtx({ mode: "sim", seed: seedFrom(undefined) });
   const name = component.name === "" ? "anonymous" : component.name;
@@ -41,7 +43,7 @@ export function render<P, A extends P = P>(component: TestComponent<P, A>, optio
     ctx,
     seeded,
     target: () => ({ route: null, component: name }),
-    artifacts: options.artifacts,
+    artifacts,
   });
   try {
     check();

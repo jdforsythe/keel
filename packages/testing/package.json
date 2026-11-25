@@ -15,6 +15,10 @@
     "./prove": {
       "types": "./src/prove/index.ts",
       "default": "./src/prove/index.ts"
+    },
+    "./setup": {
+      "types": "./src/projectArtifactsSetup.ts",
+      "default": "./src/projectArtifactsSetup.ts"
     }
   },
   "publishConfig": {
@@ -30,10 +34,17 @@
       "./prove": {
         "types": "./dist/src/prove/index.d.ts",
         "default": "./dist/src/prove/index.js"
+      },
+      "./setup": {
+        "types": "./dist/src/projectArtifactsSetup.d.ts",
+        "default": "./dist/src/projectArtifactsSetup.js"
       }
     }
   },
-  "files": ["dist", "docs"],
+  "files": [
+    "dist",
+    "docs"
+  ],
   "scripts": {
     "check": "tsc --noEmit && biome check src test unsafe",
     "test": "vitest run",

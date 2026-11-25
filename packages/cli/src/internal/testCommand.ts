@@ -1,4 +1,7 @@
+import { createRequire } from "node:module";
+import { join } from "node:path";
 import { Writable } from "node:stream";
+import { fileURLToPath } from "node:url";
 import { type TestReport, testResults } from "@keel/testing";
 import { writeA11yReport } from "@keel/testing/a11y";
 import { type Vitest, startVitest } from "vitest/node";
@@ -13,6 +16,17 @@ import { projectFiles } from "./projectFiles.ts";
 
 const sink = (): Writable => new Writable({ write: (_chunk, _enc, done) => done() });
 const VITEST_CONFIG = /(^|\/)vitest\.config\.[cm]?[jt]s$/;
+/**
+ * The setup that reads the project's `.keel/a11y.json` and `tokens.ts` for each test file (k.a11y Artifacts): the
+ * project's own `@keel/testing`, so the setup and the test's harness are one module, else the one beside this CLI.
+ */
+const artifactsSetup = (root: string): string => {
+  try {
+    return createRequire(join(root, "package.json")).resolve("@keel/testing/setup");
+  } catch {
+    return fileURLToPath(import.meta.resolve("@keel/testing/setup"));
+  }
+};
 
 const EMPTY: TestReport = { diagnostics: [], tests: 0, failed: 0, skipped: 0, errors: 0 };
 
@@ -63,7 +77,10 @@ async function vitestRun(root: string, filters: readonly string[]): Promise<Test
         [...filters],
         // Forks, whatever the project's config says: each test process then starts with the environment set above.
         { root, watch: false, pool: "forks", reporters: [collector], env: { KEEL_TEST: "1", UV_THREADPOOL_SIZE: "1" } },
-        {},
+        // The artifacts setup runs after the project's own setup files (Vite's config merge joins the lists). A
+        // linked `@keel/testing` lies outside the project, where Vite's file rule refuses a setup file; a `keel test`
+        // run serves no file over HTTP, so that rule guards nothing here.
+        { test: { setupFiles: [artifactsSetup(root)] }, server: { fs: { strict: false } } },
         { stdout: sink(), stderr: sink() },
       );
       await vitest?.close();
@@ -82,7 +99,8 @@ async function vitestRun(root: string, filters: readonly string[]): Promise<Test
 
 /**
  * `keel test [paths]`: vitest, programmatically, on `io.cwd` with `KEEL_TEST=1` (k.testing: ctx defaults to sim) and
- * `UV_THREADPOOL_SIZE=1` over any value set (k.drive-law Order);
+ * `UV_THREADPOOL_SIZE=1` over any value set (k.drive-law Order), and `@keel/testing/setup` after the project's setup
+ * files, so a render given no `artifacts` takes the project's (k.a11y Artifacts);
  * vitest's own output is discarded and `@keel/testing` `testResults` (the same walk the repository's
  * KeelReporter uses) turns results into T0001 diagnostics plus a summary (not ok when any
  * test failed); every render check the harness recorded goes to `reports/a11y.json` (`writeA11yReport`). Skipped (the empty run) when `io.files` holds no test file and no vitest config, so an in-memory

@@ -8,6 +8,7 @@ import { serverState } from "@keel/store/internal";
 import { browserFront } from "./internal/browserFront.ts";
 import { documentRoute } from "./internal/documentRoute.ts";
 import { fail } from "./internal/fail.ts";
+import { harnessArtifacts } from "./internal/harnessArtifacts.ts";
 import { memoryHistory } from "./internal/memoryHistory.ts";
 import { openHarness } from "./internal/openHarness.ts";
 import { requestLog } from "./internal/requestLog.ts";
@@ -65,9 +66,12 @@ export async function renderRoute<T extends RouteTable>(
   id: string,
   options: RouteRenderOptions<T>,
 ): Promise<RouteHarness<RouteStateOf<T>, Ctx>> {
+  // The project's artifacts under `keel test` when none are given; E1807 for an unusable `tokens.ts` before anything renders.
+  const artifacts = harnessArtifacts(options.artifacts);
   const given = options.routes;
   // With `app` the page is a built node page: requested from the app and resumed, no router.
-  if (options.app !== undefined) return documentRoute(id, options, options.app);
+  if (options.app !== undefined)
+    return documentRoute(id, artifacts === undefined ? options : { ...options, artifacts }, options.app);
   if (typeof given === "function")
     throw fail("E1722", `renderRoute(${JSON.stringify(id)}): routes as an import needs app; pass the route table`, {
       option: "routes",
@@ -181,7 +185,7 @@ export async function renderRoute<T extends RouteTable>(
       restoreHead();
       window.scrollTo(0, 0);
     },
-    artifacts: options.artifacts,
+    artifacts,
   });
   try {
     await settle(document.body, () => undefined, busy, undefined, watchOf(outer));
