@@ -265,7 +265,7 @@ const ROWS: readonly Row[] = [
   [
     "E1106",
     "s.format in app code",
-    "Format types are the stdlib's: each brings a generator the stdlib tests.",
+    "A library declares format types, the stdlib's among them; app code uses them. Each brings a generator the library tests.",
     "s.format('day', s.string(), ...) -> PlainDate from @keel/std-temporal",
     "k.schema",
   ],

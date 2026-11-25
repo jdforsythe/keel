@@ -26,7 +26,7 @@ Primitives: `string` (`{ min, max }`; with `min` >= 1, a blank value fails rule 
 
 **Frozen.** The `s` namespace, every schema `@keel/schema` makes and its `node`, with every object and array under it, are frozen when made, so in a module an assignment, a `delete` or an `Object.defineProperty` that would change one throws a `TypeError` and the schema stays as made; static reads of a schema (k.privacy-reads) rest on it.
 
-**Rules** (checker, on source). E1104 schema declared outside a `*.schema.ts` file · E1106 `s.format` in app code (format types are stdlib's).
+**Rules** (checker, on source). E1104 schema declared outside a `*.schema.ts` file · E1106 `s.format` in app code, a library's files aside (k.formats Who declares).
 
 **Conformance.**
 - `parse(encode(v))` round-trips for every type but `secret`.
