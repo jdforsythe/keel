@@ -69,7 +69,7 @@
   "@keel/std-postgres": ["std.postgres", "std.postgres-changes"],
   "@keel/std-report": ["std.report"],
   "@keel/std-schedules": ["std.schedules"],
-  "@keel/std-sessions": ["std.monitor", "std.multi", "std.sessions", "std.sessions-served"],
+  "@keel/std-sessions": ["std.monitor", "std.multi", "std.sessions", "std.sessions-redact", "std.sessions-served"],
   "@keel/std-statecharts": ["std.statecharts"],
   "@keel/std-tables": ["std.tables"],
   "@keel/std-temporal": ["std.temporal"],
