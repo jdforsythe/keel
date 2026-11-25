@@ -3,6 +3,7 @@ import { type Argument, type CallExpression, Visitor } from "oxc-parser";
 import type { Diagnostic } from "../types/Diagnostic.ts";
 import type { SourceFile } from "../types/SourceFile.ts";
 import type { Checked } from "./Checked.ts";
+import type { RegisterLibraries } from "./RegisterLibraries.ts";
 import { diagAt } from "./diagAt.ts";
 import type { ReadFn } from "./functionRead/ReadFn.ts";
 import { exportedFunction } from "./functionRead/exportedFunction.ts";
@@ -18,14 +19,6 @@ const MODULE_DIR = /^modules\/([^/]+)\//;
 
 /** A name: where its diagnostic points, the literal value (none when it is not a string literal), and what names it. */
 type Call = { readonly at: number; readonly name: string | undefined; readonly by: string };
-
-/** What `registerNames` knows of the app's libraries (k.library In an app): their export specifiers and files. */
-export type RegisterLibraries = {
-  /** Each library specifier to the view path of the source its `exports` give (`projectLibraries`). */
-  readonly entries: ReadonlyMap<string, string>;
-  /** Whether a view path is a library's file. */
-  readonly isLibrary: (path: string) => boolean;
-};
 
 /** The literal string of an argument, or undefined. */
 const literal = (a: Argument | undefined): string | undefined =>

@@ -3,12 +3,10 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { clipMessage } from "@keel/schema/internal";
 import { type Expression, type NewExpression, Visitor, parseSync } from "oxc-parser";
+import type { BundledCopy } from "./BundledCopy.ts";
 
 /** A first argument that is an absolute URL (`<scheme>:`): it names no file of the package. */
 const ABSOLUTE = /^[A-Za-z][A-Za-z0-9+.-]*:/;
-
-/** What a server build copies beside `server.mjs`: `from` (absolute) to `rel`, its path under the build folder. */
-export type BundledCopy = { readonly from: string; readonly rel: string };
 
 /** The package file as a message shows it: its path from its last `node_modules/` folder. */
 function shown(file: string): string {
