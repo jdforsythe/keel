@@ -28,6 +28,12 @@ const SLOW = 120_000;
  * that, so a runner ten times slower (scale 0.1) still has twice the work's time.
  */
 const BASE_CASE_BOUND = 3 * 12 * 6_000;
+/**
+ * What the open-object case bounds: two bases built and each changed entry built and checked, six binary runs,
+ * about 3 s a run here beside other work. The bound is 60 s a run, so a runner ten times slower (scale 0.1) still has
+ * 6 s a run.
+ */
+const OPEN_CASE_BOUND = 2 * 3 * 60_000;
 
 const dirs: string[] = [];
 afterAll(() => {
@@ -53,7 +59,7 @@ test(
     expect(e1562("s.object({})", optional)).toHaveLength(1);
     expect(e1562("s.object({}, { closed: true })", optional)).toEqual([]);
   },
-  SLOW,
+  OPEN_CASE_BOUND,
 );
 
 test(
