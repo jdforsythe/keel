@@ -1,8 +1,9 @@
 import { stdConfig } from "@keel/compiler/std/stdConfig";
 import { type Ctx, type CtxEvent, observe, seedOf } from "@keel/ctx";
-import { effect, scope } from "@keel/reactive";
+import { type Computed, effect, scope } from "@keel/reactive";
 import { type Id, type JsonValue, type KeelError, type Result, err } from "@keel/schema";
-import { stores } from "@keel/store";
+import { type Store, stores } from "@keel/store";
+import { givenPii } from "@keel/store/internal";
 import type { RecordOptions } from "../RecordOptions.ts";
 import type { Session } from "../Session.schema.ts";
 import type { SessionEvent } from "../SessionEvent.ts";
@@ -59,9 +60,20 @@ export function recording(ctx: Ctx, options: RecordOptions): Live {
   let uploaded = false;
   let done: Session | undefined;
 
+  // Each store's state as it holds it, read once per snapshot: what a `.pii()`-marked open object keeps undeclared is
+  // remembered for the error scrub, though the recorded state (as its schema encodes it) holds none of it.
+  const held = new WeakMap<Store<unknown>, Computed<unknown>>();
+  const heldOf = (st: Store<unknown>): unknown => {
+    let c = held.get(st);
+    if (c === undefined) {
+      c = st.select((v) => v);
+      held.set(st, c);
+    }
+    return c.get();
+  };
   const snapshot = (): JsonObject => {
     const out: Record<string, JsonValue> = {};
-    for (const [id, st] of stores()) out[id] = redaction.state(id, st.schema, jsonOf(st.snapshot().state));
+    for (const [id, st] of stores()) out[id] = redaction.state(id, st.schema, st.snapshot().state, heldOf(st));
     return out;
   };
 
@@ -82,7 +94,8 @@ export function recording(ctx: Ctx, options: RecordOptions): Live {
         if (e.id <= last) continue;
         seen.set(id, e.id);
         const schema = st.payloads.get(e.name);
-        const payload = redaction.tx(e.name, schema, jsonOf(e.payload, schema));
+        for (const v of givenPii.get(e) ?? []) redaction.remember(v);
+        const payload = redaction.tx(e.name, schema, e.payload);
         if (base === undefined) continue;
         append({ at: ctx.clock.now(), kind: "tx", store: id, name: e.name, payload });
       }

@@ -81,7 +81,8 @@ export function startRealm(
   };
 
   const onRequest = (m: unknown): void => {
-    const r = wire.req.parse(m);
+    // The body is bytes beside the message (not plain data): the rest is parsed without it.
+    const r = wire.req.parse(Object.fromEntries(["t", "rid", "method", "url", "headers"].map((k) => [k, field(m, k)])));
     if (!r.ok) return;
     touch();
     const { rid, method, url } = r.value;

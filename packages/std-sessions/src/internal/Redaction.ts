@@ -5,8 +5,10 @@ import type { Route } from "./Route.ts";
 
 /** The redaction a recorder applies (std.sessions Redaction): one function per subject. */
 export type Redaction = {
-  tx(name: string, schema: Schema<unknown, boolean> | undefined, payload: JsonValue): JsonValue;
-  state(id: string, schema: Schema<unknown, boolean>, value: JsonValue): JsonValue;
+  /** The payload as recorded: `payload` (as held) as its schema encodes it, redacted. */
+  tx(name: string, schema: Schema<unknown, boolean> | undefined, payload: unknown): JsonValue;
+  /** The state as recorded: `value` as its schema encodes it, redacted; `held` is the state as the store holds it. */
+  state(id: string, schema: Schema<unknown, boolean>, value: unknown, held?: unknown): JsonValue;
   nav(event: Extract<CtxEvent, { kind: "nav" }>): { readonly route: Route; readonly href: string };
   fire(event: Extract<SessionEvent, { kind: "fire" }>): Extract<SessionEvent, { kind: "fire" }>;
   error(error: KeelError<string, JsonValue>): KeelError<string, JsonValue>;

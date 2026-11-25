@@ -1,5 +1,5 @@
 import { type Computed, type Scope, batch, computed, owner, signal } from "@keel/reactive";
-import { type Result, type Schema, type SchemaError, err, ok, s } from "@keel/schema";
+import { type Result, type Schema, type SchemaError, err, ok, piiPaths, piiValues, s } from "@keel/schema";
 import type { Bound } from "./internal/Bound.ts";
 import type { Concurrent } from "./internal/Concurrent.ts";
 import { LOG_LIMIT } from "./internal/LOG_LIMIT.ts";
@@ -12,6 +12,7 @@ import { coreKey } from "./internal/coreKey.ts";
 import { counter } from "./internal/counter.ts";
 import { declaredSources } from "./internal/declaredSources.ts";
 import { freeze } from "./internal/freeze.ts";
+import { givenPii } from "./internal/givenPii.ts";
 import { holdsSecret } from "./internal/holdsSecret.ts";
 import { keySchema } from "./internal/keySchema.ts";
 import { keyWindow } from "./internal/keyWindow.ts";
@@ -23,6 +24,7 @@ import { registries } from "./internal/registries.ts";
 import { registryOf } from "./internal/registryOf.ts";
 import { registryPulse } from "./internal/registryPulse.ts";
 import { secretGuard } from "./internal/secretGuard.ts";
+import { snapshotKeys } from "./internal/snapshotKeys.ts";
 import { storePayloads } from "./internal/storePayloads.ts";
 import { storeReads } from "./internal/storeReads.ts";
 import { trim } from "./internal/trim.ts";
@@ -194,7 +196,9 @@ export function store<T extends object>(
         ...(concurrent ? { base: seen.value } : {}),
         ...(key.value === undefined ? {} : { key: key.value }),
       };
-      rows.push({ entry: freeze(entry), apply: bound.value.apply });
+      const frozen = freeze(entry);
+      if (bound.value.given !== undefined) givenPii.set(frozen, bound.value.given);
+      rows.push({ entry: frozen, apply: bound.value.apply });
       const kept = trim(base, rows, limit);
       base = kept.base;
       if (key.value !== undefined) keys.add({ name: t.name, key: key.value });
@@ -286,9 +290,7 @@ export function store<T extends object>(
       // Without `keys`, the log entries' keys, taken before any fold.
       const pairs = s.object({ keys: s.array(s.object({ name: s.string(), key: keySchema })).optional() }).parse(snap);
       if (!pairs.ok) return pairs;
-      const restoredKeys =
-        pairs.value.keys ??
-        parsed.value.log.flatMap((e) => (e.key === undefined ? [] : [{ name: e.name, key: e.key }]));
+      const restoredKeys = snapshotKeys({ keys: pairs.value.keys, log: parsed.value.log });
       const state = copy(schema, parsed.value.state);
       if (!state.ok) return state;
       const restored = freeze(state.value);
@@ -344,11 +346,16 @@ export function store<T extends object>(
           throw new Error(
             `store ${id}: transaction ${name}: concurrent ${String(concurrent)} is not 'reject' or 'rebase'`,
           );
+        const marked = piiPaths(payload).length > 0;
         const bind = (raw: unknown): Result<Bound<T>, SchemaError> => {
           const p = copy(payload, raw);
           if (!p.ok) return p;
           const value = freeze(p.value);
-          return ok({ payload: value, apply: (st: T) => fn(st, value) });
+          return ok({
+            payload: value,
+            apply: (st: T) => fn(st, value),
+            ...(marked ? { given: piiValues(payload, raw) } : {}),
+          });
         };
         payloads.set(name, payload);
         binders.set(name, bind);

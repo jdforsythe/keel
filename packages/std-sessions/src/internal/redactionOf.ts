@@ -1,4 +1,4 @@
-import { type JsonValue, type KeelError, type Schema, piiPaths, s } from "@keel/schema";
+import { type JsonValue, type KeelError, type Schema, piiPaths, piiValues, s } from "@keel/schema";
 import { redact } from "../redact.ts";
 import type { JsonObject } from "./JsonObject.ts";
 import type { Redaction } from "./Redaction.ts";
@@ -66,21 +66,31 @@ export function redactionOf(entries: readonly string[], seed: number): Redaction
   };
   const under = (key: string, prefix: string): string[] =>
     (paths.get(key) ?? []).filter((p) => p.startsWith(prefix)).map((p) => p.slice(prefix.length));
-  const apply = (schema: Schema<unknown, boolean>, value: JsonValue, salt: string, at: readonly string[]) =>
-    redact(schema, value, { paths: [...at, ...piiPaths(schema).map((m) => m.path)], seed, salt, found });
+  /**
+   * `held` as `schema` encodes it, redacted. Every non-empty string and number under a mark in `held` is remembered
+   * first, a marked open object's undeclared keys and what is under them among them: the encoded value no longer
+   * holds those, and a later error may.
+   */
+  const apply = (
+    schema: Schema<unknown, boolean>,
+    held: unknown,
+    salt: string,
+    at: readonly string[],
+    value: JsonValue = jsonOf(held, schema),
+  ) => {
+    for (const v of piiValues(schema, held)) found(v);
+    return redact(schema, value, { paths: [...at, ...piiPaths(schema).map((m) => m.path)], seed, salt, found });
+  };
 
   return {
     tx: (name, schema, payload) => apply(schema ?? json, payload, `tx:${name}`, paths.get(`tx:${name}`) ?? []),
-    state: (id, schema, value) => apply(schema, value, `store:${id}`, paths.get(`store:${id}`) ?? []),
+    state: (id, schema, value, held = value) =>
+      apply(schema, held, `store:${id}`, paths.get(`store:${id}`) ?? [], jsonOf(value, schema)),
     nav(event) {
       const r = event.route;
       const key = `route:${r.id}`;
-      const params = objectOf(
-        apply(r.schemas.params ?? json, jsonOf(r.params, r.schemas.params), key, under(key, "params.")),
-      );
-      const search = objectOf(
-        apply(r.schemas.search ?? json, jsonOf(r.search, r.schemas.search), key, under(key, "search.")),
-      );
+      const params = objectOf(apply(r.schemas.params ?? json, r.params, key, under(key, "params.")));
+      const search = objectOf(apply(r.schemas.search ?? json, r.search, key, under(key, "search.")));
       // The href is always rebuilt from the redacted values, so an `s.secret` param or search never stays in it.
       return { route: { id: r.id, params, search }, href: hrefOf(r.path, params, search) };
     },

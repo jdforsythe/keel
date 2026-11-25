@@ -30,7 +30,8 @@ const under = (pattern: readonly (string | null)[], at: readonly string[]): bool
 /**
  * Redact an encoded value of `schema` (std.sessions): each value at one of `paths` becomes its field schema's generated
  * value, and the keys of a `.pii()`-marked `s.record` become `x0`, `x1`, ... in entry order (distinct, still a record) (seeded by `seed`, `salt` and the path), so the result still parses; every `s.secret` field becomes a generated
- * inner value. Under an `s.json()` field a matched value is masked (`x` repeated, 0, false, null). With `strings`, every
+ * inner value; an object's undeclared keys, and all under them, are dropped. Under an `s.json()` field a matched value
+ * is masked (`x` repeated, 0, false, null). With `strings`, every
  * `s.string()` value, and every string under `s.json()`, not under an `except` path is written as `x` repeated. Pure.
  */
 export function redact(schema: Schema<unknown, boolean>, value: JsonValue, options: Options): JsonValue {
@@ -79,11 +80,12 @@ export function redact(schema: Schema<unknown, boolean>, value: JsonValue, optio
             )
           : v;
       case "object":
+        // An undeclared key, and everything under it, is dropped: a recording holds what the schema encodes.
         return isObject(v)
           ? Object.fromEntries(
-              Object.entries(v).map(([k, x]) => {
-                const f = node.fields[k];
-                return [k, f === undefined ? x : walk(f, x, [...at, k], true, marked)];
+              Object.entries(v).flatMap(([k, x]) => {
+                const f = Object.hasOwn(node.fields, k) ? node.fields[k] : undefined;
+                return f === undefined ? [] : [[k, walk(f, x, [...at, k], true, marked)]];
               }),
             )
           : v;
