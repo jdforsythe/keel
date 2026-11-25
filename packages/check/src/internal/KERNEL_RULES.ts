@@ -14,6 +14,7 @@ import { identityMountMissing } from "../rules/identityMountMissing.ts";
 import { loaderInServerFile } from "../rules/loaderInServerFile.ts";
 import { lowContrast } from "../rules/lowContrast.ts";
 import { missingLook } from "../rules/missingLook.ts";
+import { negativeTypeTestHome } from "../rules/negativeTypeTestHome.ts";
 import { noAmbientCapability } from "../rules/noAmbientCapability.ts";
 import { noAmbientLocale } from "../rules/noAmbientLocale.ts";
 import { noCodeFromString } from "../rules/noCodeFromString.ts";
@@ -48,6 +49,7 @@ import { slotSignature } from "../rules/slotSignature.ts";
 import { stylesheetImport } from "../rules/stylesheetImport.ts";
 import { txWhileBuilding } from "../rules/txWhileBuilding.ts";
 import { unsafeJustified } from "../rules/unsafeJustified.ts";
+import { unsafeReasonWords } from "../rules/unsafeReasonWords.ts";
 import type { RuleDef } from "../types/RuleDef.ts";
 
 /**
@@ -77,7 +79,9 @@ export const KERNEL_RULES: readonly RuleDef[] = [
   noDomQueryInTest,
   oneExport,
   unsafeJustified,
+  unsafeReasonWords,
   noUnsafeSyntax,
+  negativeTypeTestHome,
   noAmbientLocale,
   noNodeGlobal,
   noInlineStyle,

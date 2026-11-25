@@ -1294,6 +1294,20 @@ const ROWS: readonly Row[] = [
     "__dirname -> import.meta.dirname (outside a browser file); else move the code to a *.server.ts file",
     "k.host",
   ],
+  [
+    "E1760",
+    "unsafe justification string of fewer than 8 words",
+    "The reason argues the escape holds: the invariant that makes it safe and what keeps it true. Review judges it.",
+    "unsafe('ids are minted by asId and never parsed from input', () => x as Id)",
+    "k.unsafe",
+  ],
+  [
+    "E1761",
+    "a *.test-d.ts(x) file outside test/ or conformance/, an import of one, or an unsafe() call in one",
+    "A negative type test is type-checked, never run; under test/ it stays out of dist and of the unsafe count.",
+    "modules/m/a.test-d.ts -> modules/m/test/a.test-d.ts; drop the import or the unsafe() wrapper",
+    "k.unsafe",
+  ],
   ["E1801", "raw value where a token is required", "", 'p="12px" -> p="3" (nearest token)', "k.ui"],
   [
     "E1802",
