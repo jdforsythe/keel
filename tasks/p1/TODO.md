@@ -25,14 +25,16 @@ The `unsafe` count measures escapes from the type system in code that runs. Nega
 ## In, by workstream
 
 ### Gate and tooling health (first: every other lane trips over these)
-- [ ] `running` backlog 1102: `@keel/check` fails Stryker's initial test run; a mutation run that hangs past its bound; a type cache written beside an app (`lane-m1102`)
+- [x] `done` backlog 1102: check's mutation run gets past its initial test run; no test writes a type cache beside an app
+- [ ] `next` backlog 1105: a bound on `mutate.mjs --stop`
 - [ ] `running` backlog 1040, 1103, 0991: the whole root test reliable under load, `canary.mjs` under load, a scaffolded project builds on first run (`lane-gate`)
-- [ ] `next` check's 13 mutation chunks on the main line after 1102
+- [ ] `next` check's 13 mutation chunks on the main line, when the machine is quiet
 
 ### W1 Freeze
-- [ ] `running` RFC 0163, the library format: RFC, ADR and spec made true against the tree, build order written (`lane-lib`)
-- [ ] `blocked` (the line above) RFC 0163 built, slice by slice
-- [ ] `blocked` (RFC 0163) k.parity's second part: kind gates, lint S0013, conformance for clauses 5 and 6
+- [x] `done` RFC 0163, the library format: RFC, ADR and spec made true against the tree; the build order is the RFC's last section
+- [ ] `running` slice 1, the library kind (`lane-lib`)
+- [ ] `blocked` (slice 1) slices 2a and 2b side by side, then 3, then 4 (the stdlib on the format) beside 4b (the app data seam, k.server-deps)
+- [ ] `blocked` (slices 4 and 4b) k.parity's second part: kind gates, lint S0013, conformance for clauses 5 and 6
 - [ ] `blocked` (k.parity) every kernel section `conformance-covered`, then the `frozen` flip
 - [ ] `next` backlog 1100: the largest sections split so the map plus any one section fits principle 8; the section cap returns to 3,100
 - [x] `done` RFC and ADR status lines say what is built
@@ -52,7 +54,8 @@ The triage is `tasks/p1/weaknesses.md`: 102 lines to fix now in 17 lanes (A1), 1
 ### W3 Evidence and coverage
 - [x] `done` the survey (`tasks/p1/evidence-survey.md`)
 - [ ] `running` a11y evidence: the item key per project, the four criteria at `none`, routes with no evidence outside household (`lane-a11y`)
-- [ ] `running` household: a test that renders each route and evidence for its 135 exports (`lane-household`)
+- [x] `done` household: every export has evidence; every page route rendered with its a11y checks
+- [ ] `next` backlog 1106, 1107: a generated `s.id` with a shape a server mints; a found input gives its value
 - [ ] `running` RFC 0229: `unsafe` counts runtime escapes; negative type tests have their own home and count; six uses removed (`lane-unsafe`)
 - [ ] `blocked` (survey) tier 1 packages to target, one lane per package
 - [ ] `blocked` (tier 1) tier 2, then tier 3
