@@ -1,4 +1,4 @@
-// Structure lint. S0001/S0002/S0004/S0005 delegate to @keel/check (E1752/E1757/E1754), and E1760 and E1761 pass through; S0014 (an `unsafe(` call in `packages/*` whose lifted range holds no E1757 finding, k.unsafe), S0003, S0006, S0012 (a stdlib file names a kernel `internal` entry `deps.json` does not list, k.parity) live here; S0009 (a std package's runtime entry reaches a CLI-time package) is std-entries.mjs. Usage: node tooling/structure-lint.mjs [--root dir] [--format=..] [--quiet] [--limit N]
+// Structure lint. S0001/S0002/S0004/S0005 delegate to @keel/check (E1752/E1757/E1754), and E1760 and E1761 pass through; S0014 (an `unsafe(` call in `packages/*` whose lifted range holds no E1757 finding, k.unsafe), S0003, S0006, S0012 (a stdlib file names a kernel `internal` entry `deps.json` does not list, k.parity) live here; S0015 (a fast-check run with no seed, in the scanned files and every app's and example's test files, but `packages/*/conformance/`, which the conformance-writer owns) is unseeded-properties.mjs; S0009 (a std package's runtime entry reaches a CLI-time package) is std-entries.mjs. Usage: node tooling/structure-lint.mjs [--root dir] [--format=..] [--quiet] [--limit N]
 import fs from "node:fs";
 import path from "node:path";
 import { Visitor } from "oxc-parser";
@@ -9,12 +9,15 @@ import { noUnsafeSyntax } from "../packages/check/src/rules/noUnsafeSyntax.ts";
 import { parseArgs, run } from "./output.ts";
 import { CODE_EXT, rel, scrub, walk } from "./scan.mjs";
 import { stdEntryDiags } from "./std-entries.mjs";
+import { unseededProperties } from "./unseeded-properties.mjs";
 
 const args = parseArgs();
 const root = path.resolve(args.values.get("root") ?? path.join(import.meta.dirname, ".."));
 const deps = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, "deps.json"), "utf8"));
 const order = deps.order;
 
+const TEST_FILE = /\.test\.[cm]?[jt]sx?$/;
+const CONFORMANCE = /^packages\/[^/]+\/conformance\//;
 const CLOCK = /\bDate\.now\b|\bnew Date\(|\bMath\.random\b|\bperformance\.now\b/;
 
 /** Collect scan targets. */
@@ -34,6 +37,17 @@ function targets() {
   const set = new Set();
   for (const d of dirs) for (const f of walk(d, skip)) if (CODE_EXT.test(f)) set.add(f);
   return [...set].sort();
+}
+
+/** Every app's and example's test files (S0015 only). */
+function appTests() {
+  const out = [];
+  for (const top of ["apps", "examples"]) {
+    const dir = path.join(root, top);
+    if (!fs.existsSync(dir)) continue;
+    for (const f of walk(dir)) if (TEST_FILE.test(f)) out.push(f);
+  }
+  return out.sort();
 }
 
 const diags = [];
@@ -99,6 +113,15 @@ for (const file of files) {
       if (m) add("S0006", file, i + 1, m.index + 1, `nondeterministic ${m[0]} in tests; inject a clock/seed`);
     });
   }
+}
+
+// S0015: a fast-check run with no seed (unseeded-properties.mjs).
+for (const file of [...files, ...appTests()]) {
+  const r = rel(root, file);
+  if (CONFORMANCE.test(r)) continue;
+  const src = fs.readFileSync(file, "utf8");
+  if (!src.includes("fast-check")) continue;
+  for (const d of unseededProperties(src, file)) add("S0015", file, d.line, d.col, d.message);
 }
 
 /**
