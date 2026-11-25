@@ -1,6 +1,7 @@
 import { compile, isSourcePath, pathCollisions, projectDirs, serverOnlyCalls, stdArtifact } from "@keel/compiler";
 import { identityDiags } from "@keel/compiler/hosting/identityDiags";
 import { importDeps } from "@keel/compiler/std/importDeps";
+import { librarySources } from "@keel/compiler/std/librarySources";
 import type { Input } from "../types/Input.ts";
 import type { Io } from "../types/Io.ts";
 import type { OutRecord } from "../types/OutRecord.ts";
@@ -14,6 +15,7 @@ import { deployBuildWrites } from "./deployBuildWrites.ts";
 import { hostingDiags } from "./hostingDiags.ts";
 import { inWorkspace } from "./inWorkspace.ts";
 import { isError } from "./isError.ts";
+import { libraryManifestFiles } from "./libraryManifestFiles.ts";
 import { loadShells } from "./loadShells.ts";
 import { makeDiag } from "./makeDiag.ts";
 import { projectFiles } from "./projectFiles.ts";
@@ -59,7 +61,8 @@ export async function buildCommand(io: Io, input: Input = {}, refresh = false): 
   );
   const topology = projectTopology(project);
   const loaded = await importDeps(io.cwd, files);
-  const r = compile(files, topology === undefined ? {} : { topology });
+  // The artifacts derive from the app's sources and its libraries' files (k.library In an app), as the plugin's do.
+  const r = compile([...files, ...librarySources(io.cwd)], topology === undefined ? {} : { topology });
   const std = stdArtifact(files);
   const paths = [
     ...identityDiags(project, io.cwd, true),
@@ -78,7 +81,9 @@ export async function buildCommand(io: Io, input: Input = {}, refresh = false): 
       : hostingDiags(topology, io.env ?? {}, project.find((f) => f.path === "topology.ts")?.source)),
   ];
   const failed = diags.some(isError);
-  const deploy = failed ? [] : deployBuildWrites(project, !inWorkspace(io), policy, targets.shells);
+  // The libraries' manifests join the tree: their `env` names reach `deploy/compose.yaml` (k.server-deps Environment).
+  const deployTree = [...project, ...libraryManifestFiles(io.cwd, project)];
+  const deploy = failed ? [] : deployBuildWrites(deployTree, !inWorkspace(io), policy, targets.shells);
   const writes: Write[] = failed
     ? []
     : [

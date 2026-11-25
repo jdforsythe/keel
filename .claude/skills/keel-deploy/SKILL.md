@@ -1,6 +1,6 @@
 ---
 name: keel-deploy
-description: "Build and deploy Keel deployables: keel build, server.mjs, PORT/KEEL_SECRET/KEEL_ORIGIN/KEEL_PEER_<NAME>/KEEL_ALLOW_ORIGINS, keel dev, servedBy, static client hosting, keel codemod place, native shells and keel build --target; E1560, E1565, E1566, E1573, E1574, E1575, E1578, E1587, E1588, E1589, E1590, E1591, E1592, W1012"
+description: "Build and deploy Keel deployables: keel build, server.mjs, PORT/KEEL_SECRET/KEEL_ORIGIN/KEEL_PEER_<NAME>/KEEL_ALLOW_ORIGINS, keel dev, servedBy, static client hosting, keel codemod place, native shells and keel build --target; E1014, E1167, E1560, E1565, E1566, E1573, E1574, E1575, E1578, E1587, E1588, E1589, E1590, E1591, E1592, W1012"
 ---
 
 # Build and deploy
@@ -42,7 +42,8 @@ export default topology({
 - `KEEL_ORIGIN`, the public origin (optional).
 - `KEEL_PEER_<NAME>`, an http(s) URL per other `node` deployable (`my-api` is `KEEL_PEER_MY_API`). Use `https`: a captured `x-keel-user` header replays its one request until it expires (60 s).
 - `KEEL_DATABASE_URL`, for `storage: 'sqlite'` or `'postgres'` (needs `@keel/std-db` in `dependencies`: E1572).
-- `KEEL_POSTGRES_URL` when a served module lists `@keel/std-postgres` in `deps` (compose requires it). `KEEL_APP_DIR` defaults to the folder of `server.mjs`.
+- Each name in the `env` of a served module's manifest or of a library it lists (`KEEL_POSTGRES_URL` for `@keel/std-postgres`); compose requires it. A name outside `[A-Z][A-Z0-9_]*`, a key above or a `KEEL_PEER_` name is E1167. `KEEL_APP_DIR` defaults to the folder of `server.mjs`.
+- Files a bundled package reads through `new URL('<path>', import.meta.url)` are copied beside `server.mjs`; a missing one, a path leaving the file's folder or a computed name fails `keel build` with E1014.
 - `KEEL_FORMAT=json` logs json.
 A bad value is one E1560 naming the key, never the value, and exit 1. An uncaught throw or rejection logs E1577, drains up to 10 s and exits 1: run it under a supervisor. `keel dev` serves every deployable on one origin. `KEEL_DEV_POLL=1` makes `keel dev` poll for file changes (`usePolling`, `interval: 100`, over the project's `server.watch`): set it in a container, on a network file system, or where file events are dropped; unset, empty or `0` leaves the watcher to `vite.config.ts`; any other value is one E1560 naming the key, exit 1.
 

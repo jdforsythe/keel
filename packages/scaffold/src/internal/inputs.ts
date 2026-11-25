@@ -8,6 +8,7 @@ export const inputs = {
     workspace: s.boolean().optional(),
   }),
   module: s.object({ id: s.string() }),
+  library: s.object({ name: s.string(), version: s.string().optional(), exists: s.boolean().optional() }),
   route: s.object({
     id: s.string(),
     path: s.string(),

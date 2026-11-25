@@ -26,6 +26,7 @@ describe("k.ctx sim determinism", () => {
       fc.property(fc.integer({ min: 0, max: 2 ** 31 - 1 }), (seed) => {
         expect(sample(seed, 10)).toEqual(sample(seed, 10));
       }),
+      { seed: 1337 },
     );
   });
 
@@ -44,6 +45,7 @@ describe("k.ctx sim determinism", () => {
           expect(f).toBeLessThan(1);
         }
       }),
+      { seed: 1337 },
     );
   });
 

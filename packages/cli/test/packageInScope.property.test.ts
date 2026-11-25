@@ -7,7 +7,10 @@ const name = fc.stringMatching(/^[a-z][a-z0-9-]{0,8}$/);
 
 describe("packageInScope", () => {
   it("the empty scope holds every package", () => {
-    fc.assert(fc.property(name, (pkg) => packageInScope(pkg, "")));
+    fc.assert(
+      fc.property(name, (pkg) => packageInScope(pkg, "")),
+      { seed: 1337 },
+    );
   });
   it("any prefix of the package directory, and any path inside it, holds it", () => {
     fc.assert(
@@ -16,6 +19,7 @@ describe("packageInScope", () => {
         expect(packageInScope(pkg, dir.slice(0, Math.min(n, dir.length)))).toBe(true);
         expect(packageInScope(pkg, `${dir}src/${rest}`)).toBe(true);
       }),
+      { seed: 1337 },
     );
   });
   it("an app scope, or another package's directory, holds none", () => {

@@ -15,7 +15,7 @@ Outside a request (runners, jobs) use `commitStores(ctx, factory, fn)` from `@ke
 
 ## App data
 
-App data (k.data) goes in Postgres through `@keel/std-postgres`. `export const kitchenDb = database('kitchen.db')` (`modules/kitchen/kitchenDb.server.ts`) reads `modules/kitchen/migrations/*.sql` (`KEEL_APP_DIR`, else cwd) at its first call. A handler calls `kitchenDb(ctx).query(sql(Recipe)`select ... where id = ${id}`)`: a row schema per statement, each `${value}` a parameter. `one` of no row is `keel.notFound`; `run(sql(NoRows)...)` counts; `transaction(fn)` and each lone call are `serializable`, rerun 3 times, then `keel.conflict`: put a write and the read it uses in one `transaction`. `{ allow: 'write skew' | 'lost updates', reason: '<literal>' }` opts down (E2459, R2451); sim never shows its race. Migrations: `NNNN-<kebab>.sql`, forward only. `KEEL_POSTGRES_URL` is `postgres:` or `pglite:<folder>`; unset under `keel dev`, `.keel-dev/postgres`. Tests await `ready()` (`@keel/std-postgres/testing`) in `setupFiles`. Other stores: `register('notes.mongo', impls)`; names are literal `<module>.<lowerCamel>`, one file each (E1607, E2458). SQL `now()` is W2456.
+App data (k.data) goes in Postgres through `@keel/std-postgres`. `export const kitchenDb = database('kitchen.db')` (`modules/kitchen/kitchenDb.server.ts`) reads `modules/kitchen/migrations/*.sql` (`KEEL_APP_DIR`, else cwd) at its first call. A handler calls `kitchenDb(ctx).query(sql(Recipe)`select ... where id = ${id}`)`: a row schema per statement, each `${value}` a parameter. `one` of no row is `keel.notFound`; `run(sql(NoRows)...)` counts; `transaction(fn)` and each lone call are `serializable`, rerun 3 times, then `keel.conflict`: put a write and the read it uses in one `transaction`. `{ allow: 'write skew' | 'lost updates', reason: '<literal>' }` opts down (E2459, R2451); sim never shows its race. Migrations: `NNNN-<kebab>.sql`, forward only. `KEEL_POSTGRES_URL` is `postgres:` or `pglite:<folder>`; unset under `keel dev`, `.keel-dev/postgres`. Tests await `ready()` (`@keel/std-postgres/testing`) in `setupFiles`. Other stores: `register('notes.mongo', impls)`; names are literal `<module>.<lowerCamel>`, one file each (E1607, E2458). A library export `store(name)` that calls `register(name, ...)` takes the name at the app's call: `store('notes.main')` (E1607 at the argument). SQL `now()` is W2456.
 
 ## Concurrent writes
 
@@ -103,6 +103,8 @@ import { todoChannel } from './todos.schema.ts'
 const todoEvents = channelRoute(api, todoChannel, { id: 'api.todoEvents', stores: todoStores, member: () => true })
 export const routes = manifest(api, { 'api.todoEvents': { loader: todoEvents.loader }, 'api.addTodo': { action: postTodo } })
 ```
+
+Caps, in the module's `std['@keel/std-channels']` (`keel docs std.channels-limits`): `perCaller` 8 per signed-in user, else per caller, per module, `maxStreams` 1,000 per module, and `perAnonymous` 64 for the anonymous streams (no user, no caller cookie) of every module in the process together; an open past one gets `{ kind: 'closed', reason: 'full' }` and `subscribe` backs off.
 
 A client view store changes only through a transaction. `live` runs in a scope, and its `hydrate` is listed in the component's `uses` (E1301):
 

@@ -19,6 +19,10 @@
     "./tools": {
       "types": "./src/tools/index.ts",
       "default": "./src/tools/index.ts"
+    },
+    "./module": {
+      "types": "./module.ts",
+      "default": "./module.ts"
     }
   },
   "publishConfig": {
@@ -38,6 +42,10 @@
       "./tools": {
         "types": "./dist/src/tools/index.d.ts",
         "default": "./dist/src/tools/index.js"
+      },
+      "./module": {
+        "types": "./dist/module.d.ts",
+        "default": "./dist/module.js"
       }
     }
   },
@@ -46,7 +54,7 @@
   },
   "files": ["dist", "docs"],
   "scripts": {
-    "check": "tsc --noEmit && biome check src test",
+    "check": "tsc --noEmit && biome check src test module.ts",
     "test": "vitest run",
     "coverage": "node ../../tooling/coverage.mjs",
     "build": "tsc -p tsconfig.build.json",

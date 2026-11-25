@@ -37,7 +37,7 @@ const recipes = await kitchenDb(ctx).query(sql(Recipe)`select id, title from rec
 if (!recipes.ok) return recipes
 ```
 
-The module lists `@keel/std-postgres` in `deps` and `kitchen.db` in `capabilities`. `keel build` copies `modules/kitchen/migrations/` into `dist/<name>/`, and `server.mjs` sets `KEEL_APP_DIR` to its folder; `deploy/compose.yaml` requires `KEEL_POSTGRES_URL` from the environment. Its tests await `ready()` in a vitest setup file; each sim ctx starts with migrated, empty tables.
+The module lists `@keel/std-postgres` in `deps` and `kitchen.db` in `capabilities`. `keel build` copies `modules/kitchen/migrations/` into `dist/<name>/`, and `server.mjs` sets `KEEL_APP_DIR` to its folder; the package's manifest (`module.ts`, `env: ['KEEL_POSTGRES_URL']`) makes `deploy/compose.yaml` require `KEEL_POSTGRES_URL` from the environment (k.server-deps Environment), and `keel build` copies the files PGlite reads beside `server.mjs` (k.server-deps Files a bundled package reads). Its tests await `ready()` in a vitest setup file; each sim ctx starts with migrated, empty tables.
 
 ## A list that follows its writes
 

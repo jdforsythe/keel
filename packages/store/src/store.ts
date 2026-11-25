@@ -1,5 +1,5 @@
 import { type Computed, type Scope, batch, computed, owner, signal } from "@keel/reactive";
-import { type Result, type Schema, type SchemaError, err, ok, s } from "@keel/schema";
+import { type Result, type Schema, type SchemaError, err, ok, piiPaths, piiValues, s } from "@keel/schema";
 import type { Bound } from "./internal/Bound.ts";
 import type { Concurrent } from "./internal/Concurrent.ts";
 import { LOG_LIMIT } from "./internal/LOG_LIMIT.ts";
@@ -12,6 +12,7 @@ import { coreKey } from "./internal/coreKey.ts";
 import { counter } from "./internal/counter.ts";
 import { declaredSources } from "./internal/declaredSources.ts";
 import { freeze } from "./internal/freeze.ts";
+import { givenPiiOf } from "./internal/givenPiiOf.ts";
 import { holdsSecret } from "./internal/holdsSecret.ts";
 import { keySchema } from "./internal/keySchema.ts";
 import { keyWindow } from "./internal/keyWindow.ts";
@@ -23,6 +24,7 @@ import { registries } from "./internal/registries.ts";
 import { registryOf } from "./internal/registryOf.ts";
 import { registryPulse } from "./internal/registryPulse.ts";
 import { secretGuard } from "./internal/secretGuard.ts";
+import { statePiiOf } from "./internal/statePiiOf.ts";
 import { storePayloads } from "./internal/storePayloads.ts";
 import { storeReads } from "./internal/storeReads.ts";
 import { trim } from "./internal/trim.ts";
@@ -31,6 +33,7 @@ import { unpersisted } from "./internal/unpersisted.ts";
 import { violated } from "./internal/violated.ts";
 import { waitingSnapshot } from "./internal/waitingSnapshot.ts";
 import { withoutMeta } from "./internal/withoutMeta.ts";
+import { snapshotKeys } from "./snapshotKeys.ts";
 import type { LogEntry } from "./types/LogEntry.ts";
 import type { Snapshot } from "./types/Snapshot.ts";
 import type { Store } from "./types/Store.ts";
@@ -71,6 +74,17 @@ export function store<T extends object>(
   if (!Number.isInteger(keyLimit) || keyLimit < 1)
     throw new Error(`store ${id}: keyLimit ${keyLimit} is not a positive integer`);
   const start = copy(schema, initial);
+  // `givenPii(store)`: the marked values of the state as last given, before a codec copy drops undeclared keys.
+  const stateMarked = piiPaths(schema).length > 0;
+  let statePii: readonly string[] = stateMarked && start.ok ? piiValues(schema, initial) : [];
+  // The same of the base `undo` replays from, so an undo to it gives its values back.
+  let basePii = statePii;
+  const piiOf = (v: unknown): readonly string[] => (stateMarked ? piiValues(schema, v) : []);
+  /** `basePii` after `trim` folded the oldest of `before` into the base, leaving `after`. */
+  const folded = (before: readonly Row<T>[], after: readonly Row<T>[]): void => {
+    const n = before.length - after.length;
+    if (n > 0) basePii = before[n - 1]?.pii ?? basePii;
+  };
   if (!start.ok) throw new Error(`store ${id}: initial state invalid: ${start.error.message}`);
   let base = freeze(start.value);
   let root = signal(base);
@@ -142,6 +156,8 @@ export function store<T extends object>(
     if (rows.length === 0) return false;
     const kept = rows.slice(0, -1);
     seq++;
+    // The state undo returns to is the one the entry before made: its values as given then.
+    statePii = kept.at(-1)?.pii ?? basePii;
     commit(
       kept.reduce((st, r) => freeze(r.apply(st)), base),
       kept,
@@ -194,9 +210,14 @@ export function store<T extends object>(
         ...(concurrent ? { base: seen.value } : {}),
         ...(key.value === undefined ? {} : { key: key.value }),
       };
-      rows.push({ entry: freeze(entry), apply: bound.value.apply });
+      const frozen = freeze(entry);
+      if (bound.value.given !== undefined) givenPiiOf.set(frozen, bound.value.given);
+      const pii = piiOf(next);
+      rows.push({ entry: frozen, apply: bound.value.apply, ...(stateMarked ? { pii } : {}) });
       const kept = trim(base, rows, limit);
+      folded(rows, kept.rows);
       base = kept.base;
+      statePii = pii;
       if (key.value !== undefined) keys.add({ name: t.name, key: key.value });
       commit(next, kept.rows);
       return ok(next);
@@ -286,19 +307,28 @@ export function store<T extends object>(
       // Without `keys`, the log entries' keys, taken before any fold.
       const pairs = s.object({ keys: s.array(s.object({ name: s.string(), key: keySchema })).optional() }).parse(snap);
       if (!pairs.ok) return pairs;
-      const restoredKeys =
-        pairs.value.keys ??
-        parsed.value.log.flatMap((e) => (e.key === undefined ? [] : [{ name: e.name, key: e.key }]));
+      const restoredKeys = snapshotKeys({ keys: pairs.value.keys, log: parsed.value.log });
       const state = copy(schema, parsed.value.state);
       if (!state.ok) return state;
       const restored = freeze(state.value);
+      // Every state the snapshot gives (its state and its `initial`): an undo may return to the base, and the snapshot's
+      // own entries are not judged one by one.
+      const initialGiven = s.object({ initial: schema }).parse(snap);
+      const given = stateMarked
+        ? [...new Set([...piiOf(parsed.value.state), ...(initialGiven.ok ? piiOf(initialGiven.value.initial) : [])])]
+        : [];
       // A log this code cannot replay (an undeclared transaction, a refused payload) folds into `state` (k.persist).
       const log = s.object({ log: codec }).parse(snap);
       let next: Row<T>[] | undefined = log.ok ? [] : undefined;
       for (const e of log.ok ? log.value.log : []) {
         const bound = binders.get(e.name)?.(e.payload);
         if (bound === undefined || !bound.ok) next = undefined;
-        else next?.push({ entry: freeze({ ...e, payload: bound.value.payload }), apply: bound.value.apply });
+        else
+          next?.push({
+            entry: freeze({ ...e, payload: bound.value.payload }),
+            apply: bound.value.apply,
+            ...(stateMarked ? { pii: given } : {}),
+          });
       }
       let kept: { base: T; rows: Row<T>[] } = { base: restored, rows: [] };
       if (next !== undefined) {
@@ -311,6 +341,8 @@ export function store<T extends object>(
       seq = head.value.head ?? last;
       base = kept.base;
       keys.reset(restoredKeys);
+      basePii = given;
+      statePii = given;
       commit(restored, kept.rows);
       return ok(restored);
     },
@@ -344,11 +376,16 @@ export function store<T extends object>(
           throw new Error(
             `store ${id}: transaction ${name}: concurrent ${String(concurrent)} is not 'reject' or 'rebase'`,
           );
+        const marked = piiPaths(payload).length > 0;
         const bind = (raw: unknown): Result<Bound<T>, SchemaError> => {
           const p = copy(payload, raw);
           if (!p.ok) return p;
           const value = freeze(p.value);
-          return ok({ payload: value, apply: (st: T) => fn(st, value) });
+          return ok({
+            payload: value,
+            apply: (st: T) => fn(st, value),
+            ...(marked ? { given: piiValues(payload, raw) } : {}),
+          });
         };
         payloads.set(name, payload);
         binders.set(name, bind);
@@ -369,6 +406,7 @@ export function store<T extends object>(
   };
   // signal() above already threw E1203 outside a scope, so an owner exists here.
   registry.set(id, self);
+  statePiiOf.set(self, () => statePii);
   storePayloads.set(self, payloads);
   owner()?.onDispose(() => {
     if (registry.get(id) !== self) return;

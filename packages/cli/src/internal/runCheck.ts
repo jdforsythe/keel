@@ -5,6 +5,8 @@ import { importDeps } from "@keel/compiler/std/importDeps";
 import type { SourceFile } from "../types/SourceFile.ts";
 import type { CheckDiagnostic } from "./CheckDiagnostic.ts";
 import type { Diag } from "./Diag.ts";
+import { checkInputs } from "./checkInputs.ts";
+import { checkTokens } from "./checkTokens.ts";
 import { projectTopology } from "./projectTopology.ts";
 import { relPath } from "./relPath.ts";
 
@@ -17,24 +19,40 @@ import { relPath } from "./relPath.ts";
  * `base` is the parsed `surface.json` of `keel check --base` (k.compat E1562). The type pass keeps its results in the
  * project's `node_modules/.cache/keel` when the project has `node_modules` (k.check-cache), so a `keel check` after a
  * `keel build` (whose check runs here too) over the same files reuses the build's; a reused result is the one a run
- * with the folder deleted gives.
+ * with the folder deleted gives. Each project's `tokens.ts` is evaluated first (`checkTokens`, k.a11y-static Tokens): its
+ * tokens reach the rules that judge them (E1804, E1809, E1801 over `base` and looks), and one that gives none is E1807.
+ * The files of the libraries `project`'s manifests reach join `project` and, with `libraries`, the checked files
+ * (`checkInputs`, k.library In an app). `reach` holds the manifests whose `deps` name the libraries read and imported
+ * (default `project`; a library's own folder gives its own manifest, k.library-pack Own folder).
  */
 export async function runCheck(
   cwd: string,
   files: readonly SourceFile[],
   project: readonly SourceFile[] = files,
   base?: unknown,
+  libraries = false,
+  reach: readonly SourceFile[] = project,
 ): Promise<Diag[]> {
-  const loaded = await importDeps(cwd, project);
+  const { all, checked } = checkInputs(cwd, files, project, libraries, reach);
+  const loaded = await importDeps(cwd, reach);
   const topology = projectTopology(project);
   const options = topology === undefined ? {} : { topology };
   const modules = join(cwd, "node_modules");
   const cache = existsSync(modules) ? { typeCache: join(modules, ".cache", "keel") } : {};
+  const tokens = await checkTokens(cwd, project);
   const found: readonly CheckDiagnostic[] = [
     ...loaded,
+    ...tokens.diags,
     ...check(
-      files.map((f) => ({ path: f.path, source: f.source })),
-      { root: cwd, ...options, ...cache, project, ...(base === undefined ? {} : { base }) },
+      checked.map((f) => ({ path: f.path, source: f.source })),
+      {
+        root: cwd,
+        ...options,
+        ...cache,
+        project: all,
+        ...(Object.keys(tokens.projectArtifacts).length === 0 ? {} : { projectArtifacts: tokens.projectArtifacts }),
+        ...(base === undefined ? {} : { base }),
+      },
     ).diagnostics,
   ];
   return found.map((d) => ({

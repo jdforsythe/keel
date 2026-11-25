@@ -1,15 +1,16 @@
 // A property or simulation case's time scales with its runs, and a rendered page's run costs tens of milliseconds on
 // a slow machine, so vitest's flat default timeout cannot hold one. keelConfig adds this transform for test files: a
 // test (`it` or `test`, `.only` and `.concurrent` too) that declares no options and whose callback calls `properties`
-// or `simulate` imported from `@keel/testing` is given `{ timeout }` of PER_RUN_MS for each run its calls name (a
-// call's literal `runs`, else the default 100), never under the configured test timeout. A call inside a helper the
+// or `simulate` imported from `@keel/testing`, or fast-check's `assert` (`fc.assert` through its default or namespace
+// import, or `assert` imported by name), is given `{ timeout }` of PER_RUN_MS for each run its calls name (a call's
+// literal `runs`, or `numRuns` for `assert`, else the default 100), never under the configured test timeout. A call inside a helper the
 // test calls is not seen; such a test declares its own time. The watchdog reads each test's timeout, so a hang is
 // still bounded from it.
 import type { Plugin } from "vite";
 
 /** The time one generated run may take: 100 runs are 30 s. */
 export const PER_RUN_MS = 300;
-/** Runs `properties` and `simulate` make when the call names none (k.testing Properties, k.sim). */
+/** Runs `properties`, `simulate` and fast-check's `assert` make when the call names none (k.testing Properties, k.sim). */
 const DEFAULT_RUNS = 100;
 const TIMED = new Set(["properties", "simulate"]);
 const TEST_NAMES = new Set(["it", "test"]);
@@ -66,14 +67,40 @@ function isTestCallee(callee: unknown): boolean {
   return TEST_NAMES.has(name(callee.object) ?? "") && TEST_MODIFIERS.has(name(callee.property) ?? "");
 }
 
-/** A call's literal `runs` option, else the default. */
-function runsOf(call: Node): number {
+/** fast-check's names in the file: the objects its default or namespace import binds, and `assert` imported by name. */
+function fastCheckNames(program: Node): { objects: Set<string>; asserts: Set<string> } {
+  const objects = new Set<string>();
+  const asserts = new Set<string>();
+  for (const s of children(program)) {
+    if (s.type !== "ImportDeclaration" || !isNode(s.source) || s.source.value !== "fast-check") continue;
+    if (!Array.isArray(s.specifiers)) continue;
+    for (const sp of s.specifiers) {
+      if (!isNode(sp)) continue;
+      const local = name(sp.local);
+      if (local === undefined) continue;
+      if (sp.type === "ImportDefaultSpecifier" || sp.type === "ImportNamespaceSpecifier") objects.add(local);
+      if (sp.type === "ImportSpecifier" && name(sp.imported) === "assert") asserts.add(local);
+    }
+  }
+  return { objects, asserts };
+}
+
+/** Whether a callee is fast-check's `assert`: `fc.assert` on a fast-check object, or a by-name import of it. */
+function isFastCheckAssert(callee: unknown, fc: { objects: Set<string>; asserts: Set<string> }): boolean {
+  const own = name(callee);
+  if (own !== undefined) return fc.asserts.has(own);
+  if (!isNode(callee) || callee.type !== "MemberExpression" || callee.computed === true) return false;
+  return fc.objects.has(name(callee.object) ?? "") && name(callee.property) === "assert";
+}
+
+/** A call's literal `key` option (`runs`, or fast-check's `numRuns`), else the default. */
+function runsOf(call: Node, key = "runs"): number {
   const args = Array.isArray(call.arguments) ? call.arguments : [];
   const options: unknown = args[1];
   if (!isNode(options) || options.type !== "ObjectExpression" || !Array.isArray(options.properties))
     return DEFAULT_RUNS;
   for (const p of options.properties) {
-    if (!isNode(p) || p.type !== "Property" || name(p.key) !== "runs" || !isNode(p.value)) continue;
+    if (!isNode(p) || p.type !== "Property" || name(p.key) !== key || !isNode(p.value)) continue;
     const v = p.value.value;
     return typeof v === "number" && Number.isInteger(v) && v > 0 ? v : DEFAULT_RUNS;
   }
@@ -81,15 +108,17 @@ function runsOf(call: Node): number {
 }
 
 /**
- * `code` with `{ timeout }` declared on each test that runs `properties` or `simulate` and declares no options, or
+ * `code` with `{ timeout }` declared on each test that runs `properties`, `simulate` or fast-check's `assert` and
+ * declares no options, or
  * undefined when no test needs one. `parse` gives an ESTree program with UTF-16 `start` and `end` offsets.
  */
 export function propertyTimes(code: string, parse: (code: string) => unknown, testTimeout: number): string | undefined {
-  if (!code.includes("@keel/testing")) return undefined;
+  if (!code.includes("@keel/testing") && !code.includes("fast-check")) return undefined;
   const program = parse(code);
   if (!isNode(program)) return undefined;
   const timed = timedNames(program);
-  if (timed.size === 0) return undefined;
+  const fc = fastCheckNames(program);
+  if (timed.size === 0 && fc.objects.size === 0 && fc.asserts.size === 0) return undefined;
   const inserts: { at: number; text: string }[] = [];
   walk(program, (n) => {
     if (n.type !== "CallExpression" || !isTestCallee(n.callee) || !Array.isArray(n.arguments)) return;
@@ -100,7 +129,9 @@ export function propertyTimes(code: string, parse: (code: string) => unknown, te
     if (at === undefined) return;
     let runs = 0;
     walk(fn, (c) => {
-      if (c.type === "CallExpression" && timed.has(name(c.callee) ?? "")) runs += runsOf(c);
+      if (c.type !== "CallExpression") return;
+      if (timed.has(name(c.callee) ?? "")) runs += runsOf(c);
+      else if (isFastCheckAssert(c.callee, fc)) runs += runsOf(c, "numRuns");
     });
     if (runs === 0) return;
     inserts.push({ at: at.start, text: `{ timeout: ${Math.max(testTimeout, runs * PER_RUN_MS)} }, ` });

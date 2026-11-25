@@ -41,6 +41,8 @@ Rules:
 - [ ] 1103 `canary.mjs` fails six steps under load; evidence bundle not written
 - [ ] 1003 the CI smokes are not part of the local pre-push gate
 - [ ] 1105 `mutate.mjs --stop` waits without a bound; a run blocked in `open()` holds the lock
+- [ ] 1115 the gate's slow run does not reach CI's slowness (8.5 times)
+- [ ] 1119 the shard runner throws on the first dry run after a clean
 
 ### Lane 02 conformance-files · testing, scaffold, check, std-schedules, runtime-dom, compiler · `rfc:` conformance commits only · M
 - [ ] 1098 `sim-stalls` real 100 ms timer against a 300 ms budget is load-sensitive
@@ -101,10 +103,10 @@ Rules:
 - [x] 0895 `handle.path` `/assets` shadows built assets and E1579 allows it
 
 ### Lane 09 pii-and-data · std-sessions, schema, std-channels, store, docs (THREAT-MODEL) · RFC (k.schema 0980, std.channels 0973) · M
-- [ ] 0977 `redact` skips an open object's undeclared keys, so personal data stays recorded
-- [ ] 0980 a `Secret` in a `Map`, `Set` or symbol key under an undeclared key parses; decided: refuse non-JSON values there
-- [ ] 0973 one cookieless client opens 64 streams per module; decided: a process-wide anonymous count
-- [ ] 0748 THREAT-MODEL does not name `keys` in `#k-state`; `openHub` re-derives keys
+- [x] 0977 `redact` skips an open object's undeclared keys, so personal data stays recorded
+- [x] 0980 a `Secret` in a `Map`, `Set` or symbol key under an undeclared key parses; decided: refuse non-JSON values there
+- [x] 0973 one cookieless client opens 64 streams per module; decided: a process-wide anonymous count
+- [x] 0748 THREAT-MODEL does not name `keys` in `#k-state`; `openHub` re-derives keys
 
 ### Lane 10 offline-and-live-data · std-offline, std-live, apps/golden-1 · RFC (std.offline, 0800) · M
 - [ ] 0800 two tabs overwrite each other's stored outbox and lose queued writes; decided: per-tab keys
@@ -147,6 +149,7 @@ Rules:
 - [ ] 0979 some std sections have no row in the spec map or the std table
 - [ ] 0855 E1759's clause for a project with no `topology.ts` would report Node tooling
 - [ ] 1014 `keel check` reads every `.js` and `.mjs`; decided: k.check names app code as modules, root config and tests
+- [ ] 1120 no spec sentence states what `keel test`'s summary counts
 
 ### Lane 16 spec-size · tooling, spec · RFC (principle 8 bound, the section splits) · M
 - [ ] 0981 k.module is over its 6,000-character limit and the budgets gate passes
@@ -167,6 +170,8 @@ Rules:
 - [ ] 1110 a statechart guard's payload is typed as every event's fields (RFC)
 - [ ] 1111 `keel check` runs out of heap at 100,000 host elements
 - [ ] 1114 colour tokens used with no `tokens.ts` are an error nowhere
+- [ ] 1116 an app author's unseeded property passes `keel check` (RFC, E1731)
+- [ ] 1118 a bundled file above its reader's folder is refused (PGlite contrib)
 
 ### Owned by a P1 workstream or in flight
 - [ ] 0034 the freeze review and status flips (W1)
@@ -218,6 +223,8 @@ Rules:
 - [ ] 0335 no budget measures an app's client entry; add golden-2's
 - [ ] 0845 `@keel/check` grew to its budget; a consolidation pass over the rules
 - [ ] 1113 the held walk re-walks the import graph; share one graph
+- [ ] 1117 no time budget: parse can slide and nothing fails
+- [ ] 1121 E1607's trace has its own walker beside `functionRead/`
 
 ### Lane 22 check-rules · check, std-i18n, std-text, std-tokens · RFC where a rule's spec line changes · M
 - [ ] 0315 E1509 treats every file as one route table; group by deployable

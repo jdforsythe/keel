@@ -1,5 +1,5 @@
-// The minimal examples under examples/: for each one `keel check`, `keel test` and `keel build` in its folder, then one
-// assertion on the built output that proves the feature the example shows. Usage:
+// The minimal examples under examples/: for each one `keel check`, `keel test` and `keel build` (a library's
+// `keel pack --check`) in its folder, then one assertion on the output that proves the feature the example shows. Usage:
 // node tooling/smoke/examples.mjs [name ...]. One line per step, then the trailer; a missing proof is a failed step.
 // Every server it starts is stopped in a `finally`; nothing is written outside the examples' own build folders.
 import { execFile, spawn } from "node:child_process";
@@ -558,6 +558,41 @@ const proofs = {
       await server.stop();
     }
   },
+  /** The library's packed ledger holds its one `Host` element and the four exports of its `src/` files. */
+  async "library-charts"(dir) {
+    const ledger = JSON.parse(readFileSync(join(dir, ".keel", "ledger.json"), "utf8"));
+    const names = (ledger.exports ?? []).map((e) => e.name).sort();
+    return [
+      ledger.hostElements === 1 && ledger.unsafe === 0 && names.includes("BarChart"),
+      `hostElements ${ledger.hostElements}, unsafe ${ledger.unsafe}, exports ${names.join(",")}`,
+    ];
+  },
+  /** The built page holds the library's `Host` element empty; in Chromium, under the policy, the library's code draws 3 bars. */
+  async "library-app"(dir) {
+    const folder = join(dir, "dist", "web");
+    const policy = readFileSync(join(folder, "csp.txt"), "utf8").trim();
+    const html = readFileSync(join(folder, "index.html"), "utf8");
+    const served = /<div [^>]*id="app\.rain\.chart"[^>]*><\/div>/.test(html);
+    const server = await serveFiles(folder, { "content-security-policy": policy });
+    const browser = await chromium.launch();
+    try {
+      const page = await browser.newPage();
+      const errors = [];
+      page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
+      page.on("pageerror", (e) => errors.push(String(e)));
+      await page.goto(`${server.base}/`);
+      const rects = page.locator('[id="app.rain.chart"] svg rect');
+      await rects.nth(2).waitFor({ timeout: 15_000 });
+      const drawn = await rects.count();
+      return [
+        served && drawn === 3 && errors.length === 0,
+        `served empty ${served}, ${drawn} bars, ${errors.length} errors`,
+      ];
+    } finally {
+      await browser.close();
+      await server.stop();
+    }
+  },
   /** The Tauri files register the shell's id; the web build as a plain client host shows the page and calls no Keel server. */
   "native-tauri": (dir) =>
     shellPage(dir, ["tauri", "tauri.conf.json"], '"schemes": ["dev.keel.nativetauri"]', "One page in a Tauri shell"),
@@ -606,10 +641,12 @@ async function shellPage(dir, file, needle, heading) {
 const { step, finish } = recorder();
 for (const name of names) {
   const dir = join(root, "examples", name);
+  // A library (k.library-pack) is checked, tested and judged by `keel pack --check`; an app is built.
+  const library = JSON.parse(readFileSync(join(dir, "package.json"), "utf8")).keel === "library";
   const runs = [
     ["check", ["check"]],
     ["test", ["test"]],
-    ["build", ["build"]],
+    library ? ["pack --check", ["pack", "--check"]] : ["build", ["build"]],
   ];
   let built = true;
   for (const [label, args] of runs) {

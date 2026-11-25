@@ -43,6 +43,8 @@ export default function TodoList(props: Infer<typeof Props>) {
 
 **Commands.** `keel check` · `keel test` · `keel build` · `keel dev` · `keel review origin/main..HEAD` · `keel scaffold project|module|route|component|store|service <name>` · `keel codemod rename|move|place`: prefer them to hand edits.
 
+**Libraries.** A module lists a library in `deps` by its scoped name (`'@acme/charts'`); `keel check` checks its files as the app's. To share components, `keel scaffold library @acme/charts` writes one; in its folder `keel check` and `keel test`, then `keel pack` writes `.keel/ledger.json` (commit it); `pnpm publish` runs `keel pack --check`. Its element ids build on the `id` prop (E1161). See `keel docs k.library-pack`.
+
 **Skills.** Examples put several exports in one block; in an app each is a file.
 - keel-client: components, pages, forms, action redirects (`ok(href)`), widgets, tables, text.
 - keel-server: loaders, actions, server stores, guards, bearer, identity, API routes, services.

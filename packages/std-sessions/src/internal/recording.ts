@@ -2,7 +2,7 @@ import { stdConfig } from "@keel/compiler/std/stdConfig";
 import { type Ctx, type CtxEvent, observe, seedOf } from "@keel/ctx";
 import { effect, scope } from "@keel/reactive";
 import { type Id, type JsonValue, type KeelError, type Result, err } from "@keel/schema";
-import { stores } from "@keel/store";
+import { givenPii, stores } from "@keel/store";
 import type { RecordOptions } from "../RecordOptions.ts";
 import type { Session } from "../Session.schema.ts";
 import type { SessionEvent } from "../SessionEvent.ts";
@@ -61,7 +61,12 @@ export function recording(ctx: Ctx, options: RecordOptions): Live {
 
   const snapshot = (): JsonObject => {
     const out: Record<string, JsonValue> = {};
-    for (const [id, st] of stores()) out[id] = redaction.state(id, st.schema, jsonOf(st.snapshot().state));
+    for (const [id, st] of stores()) {
+      // The marked values of the state as last given (`initial`, a restore, a commit), which the snapshot, a codec
+      // copy, no longer holds where an open object leaves them undeclared: later error text drops them.
+      for (const v of givenPii(st)) redaction.remember(v);
+      out[id] = redaction.state(id, st.schema, st.snapshot().state);
+    }
     return out;
   };
 
@@ -78,11 +83,13 @@ export function recording(ctx: Ctx, options: RecordOptions): Live {
   const pull = (): void => {
     for (const [id, st] of stores()) {
       const last = seen.get(id) ?? Number.NEGATIVE_INFINITY;
+      if (st.log().some((e) => e.id > last)) for (const v of givenPii(st)) redaction.remember(v);
       for (const e of st.log()) {
         if (e.id <= last) continue;
         seen.set(id, e.id);
         const schema = st.payloads.get(e.name);
-        const payload = redaction.tx(e.name, schema, jsonOf(e.payload, schema));
+        for (const v of givenPii(e)) redaction.remember(v);
+        const payload = redaction.tx(e.name, schema, e.payload);
         if (base === undefined) continue;
         append({ at: ctx.clock.now(), kind: "tx", store: id, name: e.name, payload });
       }
@@ -231,6 +238,10 @@ export function recording(ctx: Ctx, options: RecordOptions): Live {
       const error: Raw = { code: event.error.code, message: event.error.message, data: jsonOf(event.error.data) };
       pushError(error);
       if (base === undefined) return;
+      // Each store's state as last given, read now: a `restore` or an undo since the last snapshot made no log entry.
+      own.run(() => {
+        for (const [, st] of stores()) for (const v of givenPii(st)) redaction.remember(v);
+      });
       const route = current?.id ?? base.route.id;
       const kept = event.at !== undefined && !prior.complete;
       append({ at, kind: "error", route, error: kept ? redaction.blind(error) : redaction.error(error) });

@@ -1,15 +1,14 @@
 import { createHash } from "node:crypto";
+import type { LedgerFileSchema } from "@keel/check";
 import type { Infer } from "@keel/schema";
 import type { SourceFile } from "../types/SourceFile.ts";
 import type { JustifiedEntry } from "./JustifiedEntry.ts";
-import type { LedgerFileSchema } from "./LedgerFileSchema.ts";
-import type { MutationClaimSchema } from "./MutationClaimSchema.ts";
 import { isRecord } from "./isRecord.ts";
 import { justifiedKey } from "./justifiedKey.ts";
 import { mutantOriginal } from "./mutantOriginal.ts";
 
-type Claim = Infer<typeof MutationClaimSchema>;
 type Mutation = NonNullable<Infer<typeof LedgerFileSchema>["mutation"]>;
+type Claim = Mutation["claims"][number];
 
 const REPORT = /^packages\/([^/]+)\/reports\/mutation\/mutation\.json$/;
 const DETECTED = new Set(["Killed", "Timeout"]);

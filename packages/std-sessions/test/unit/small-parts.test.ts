@@ -187,13 +187,14 @@ describe("mask, jsonOf, utf8Length, seeded", () => {
     expect(mask(["a"])).toBeNull();
   });
 
-  test("jsonOf: encoded by the schema when it fits, else the value when it is JSON, else null", () => {
+  test("jsonOf: encoded by the schema when given (null when it does not encode), else the value when it is plain data, else null", () => {
     const Pay = s.object({ pin: s.secret(s.string()), n: s.int() });
     const parsed = Pay.parse({ pin: "1234", n: 1 });
     if (!parsed.ok) throw new Error("the fixture parses");
     expect(jsonOf(parsed.value, Pay)).toEqual(Pay.encode(parsed.value));
     expect(jsonOf({ a: [1, "b", null] })).toEqual({ a: [1, "b", null] });
-    expect(jsonOf({ a: 1 }, s.string())).toEqual({ a: 1 });
+    expect(jsonOf({ a: 1 }, s.string())).toBeNull();
+    expect(jsonOf({ a: 1, extra: "x" }, s.object({ a: s.int() }))).toEqual({ a: 1 });
     expect(jsonOf(undefined)).toBeNull();
     expect(jsonOf(() => 1)).toBeNull();
     expect(jsonOf({ big: 1n })).toBeNull();

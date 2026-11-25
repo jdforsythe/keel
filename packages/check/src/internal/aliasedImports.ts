@@ -18,16 +18,22 @@ const LIBRARY = /^(?:packages|node_modules|\.keel)\//;
  * E1013 (k.bundle Aliases): a specifier other than relative or `#` (E1576's) that resolves, as the type check
  * resolves it (bundler resolution, `exports`, `node_modules` upward, symlinks followed, no `tsconfig.json`), to a file
  * under its own project's `modules/`. Reported at the opening quote; the fix writes the relative specifier, keeping
- * the quote and the `?query`. `dirs` are the project dirs, deepest first.
+ * the quote and the `?query`. `dirs` are the project dirs, deepest first. A library file (`isLibrary`, k.library) is
+ * judged though it lies under `node_modules/`.
  */
-export function aliasedImports(checked: readonly Checked[], root: string, dirs: readonly string[]): Diagnostic[] {
+export function aliasedImports(
+  checked: readonly Checked[],
+  root: string,
+  dirs: readonly string[],
+  isLibrary: (path: string) => boolean = () => false,
+): Diagnostic[] {
   const options = tsCompilerOptions();
   const cache = ts.createModuleResolutionCache(root, (s) => s, options);
   if (!fs.existsSync(root)) return [];
   const real = fs.realpathSync(root);
   const out: Diagnostic[] = [];
   for (const { file, parsed } of checked) {
-    if (LIBRARY.test(file.path)) continue;
+    if (LIBRARY.test(file.path) && !isLibrary(file.path)) continue;
     const dir = dirs.find((d) => file.path.startsWith(d)) ?? "";
     for (const lit of specifierLiterals(parsed.program)) {
       if (lit.spec.startsWith(".") || lit.spec.startsWith("#") || lit.spec.startsWith("/")) continue;

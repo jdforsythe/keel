@@ -3,14 +3,14 @@ import type { ModuleInfo } from "./ModuleInfo.ts";
 import { joinPath } from "./joinPath.ts";
 import { moduleOf } from "./moduleOf.ts";
 
-const STD = /^(@keel\/std-[^/]+)(?:\/(.+))?$/;
+const PACKAGE = /^(@[^/]+\/[^/]+)(?:\/(.+))?$/;
 const EXT = /\.[cm]?[jt]sx?$/;
 
 /**
  * The module and export name an import specifier reaches, and whether it is that module's contract (k.contract:
- * `modules/<id>/<id>.contract.ts`, a stdlib package's `./contract`). Relative specifiers resolve against the importing
- * file's folder and name the exporting file (`../catalog/Item.ts` -> `catalog`, `Item`); stdlib specifiers are
- * `@keel/std-x/<File>` (`name` is `null` for the bare package). `null` when no discovered module owns it.
+ * `modules/<id>/<id>.contract.ts`, a library's `./contract`). Relative specifiers resolve against the importing
+ * file's folder and name the exporting file (`../catalog/Item.ts` -> `catalog`, `Item`); a library's specifiers are
+ * `@scope/name/<File>` (`name` is `null` for the bare package). `null` when no discovered module owns it.
  */
 export function resolveImport(
   from: string,
@@ -25,7 +25,7 @@ export function resolveImport(
     const contract = path.replace(EXT, "") === `${module.root}${module.key}.contract`;
     return { module, name: stemOf(path), contract };
   }
-  const std = STD.exec(spec);
+  const std = PACKAGE.exec(spec);
   const key = std?.[1];
   const module = key === undefined ? undefined : byKey.get(key);
   if (module === undefined) return null;

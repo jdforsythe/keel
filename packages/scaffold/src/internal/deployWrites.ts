@@ -2,6 +2,7 @@ import type { Origins } from "@keel/compiler";
 import { deployFiles } from "../deployFiles.ts";
 import type { DeployShells } from "../types/DeployShells.ts";
 import type { Writes } from "./Writes.ts";
+import { deployEnv } from "./deployEnv.ts";
 import { readManifest } from "./readManifest.ts";
 import { topologyOf } from "./topologyOf.ts";
 
@@ -26,7 +27,9 @@ function fieldOf(text: string | undefined, key: string): string | undefined {
  * Writes that bring the generated deploy files of `files` in line with its `topology.ts`: path -> text, or null for
  * a deploy file no deployable needs. The CI workflow is kept when the tree has one; `deploy/` files when `always`,
  * when the tree has `turbo.json` (a project outside the Keel monorepo) or when it already holds a `deploy/` file.
- * A deployable's CI job runs on its modules and those they dep on, transitively (`modules/<id>/module.ts` `deps`).
+ * A deployable's CI job runs on its modules and those they dep on, transitively (`modules/<id>/module.ts` `deps`); a
+ * `node` one is passed the `env` names its modules and their libraries need (`deployEnv`, k.server-deps Environment),
+ * a library's manifest read at `node_modules/<name>/module.ts` of `files`.
  * `policy` gives the content security policy of a `client` document for a deployable's declared
  * origins (k.origins). Shell files come from the targets in `shells`
  * (k.shell Files): a file of a shell folder that the target gives no deployable declaring that shell is removed, and
@@ -50,7 +53,7 @@ export function deployWrites(
     Object.entries(topology).map(([n, d]) => {
       const reach = new Set(d.modules);
       for (const m of reach) for (const x of deps(m)) reach.add(x);
-      return [n, { ...d, modules: [...reach] }];
+      return [n, { ...d, modules: [...reach], env: deployEnv(files, d.modules) }];
     }),
   );
   const pkg = files.get("package.json");

@@ -70,6 +70,23 @@ function uncaught(e: unknown, cwd: string): TestDiag {
   return { kind: "diag", code: "T0001", message };
 }
 
+/** A fast-check failure's first line, and its lines that replay and show it: seed and path, the shrunk counterexample, the error. */
+const PROPERTY = /^Property failed after /;
+const PROPERTY_LINE = /^(?:\{ seed: |Counterexample: |Shrunk \d|Got error: )/;
+/** The longest line a failure's detail keeps (a counterexample can be a whole generated page). */
+const DETAIL = 512;
+
+/**
+ * The failure's own lines the message could not hold: its first line when the clipped message cut it, and for a
+ * fast-check failure its seed and path, counterexample, shrink count and error line, each clipped to DETAIL.
+ */
+function detail(message: string, shown: string, said: string): string[] {
+  const lines = strip(message).split("\n");
+  const out = shown.includes(said) ? [] : [said];
+  if (PROPERTY.test(lines[0] ?? "")) out.push(...lines.filter((l) => PROPERTY_LINE.test(l)));
+  return out.map((l) => clipMessage(l, DETAIL));
+}
+
 /** Changed lines of a vitest diff only (never two dumps), at most 8. */
 function compactDiff(d: string | undefined): string | undefined {
   if (d === undefined || d === "") return undefined;
@@ -87,8 +104,9 @@ function compactDiff(d: string | undefined): string | undefined {
  * test at its first app frame (`path:line:col` relative to `cwd`), the message `suite > test: first line`, and
  * a harness failure carrying an E17xx `code` (E1704 `properties` and `simulate`, E1708-E1710 `explore`) as that code
  * at the test file's own frame, the message `first line (suite > test)`; each with
- * a `fix` carrying the compact diff and up to four more app frames; a file that failed outside any test gets
- * one T0001 at line 1; each error outside any test's result (vitest's unhandled errors, or one `keel test` held
+ * a `fix` carrying the failure's first line when the message cut it, a fast-check failure's seed and path,
+ * counterexample, shrink count and error line, the compact diff and up to four more app frames; a file that failed outside any test gets
+ * one T0001 at line 1 and counts as one test, failed (so `failed` never exceeds `tests`); each error outside any test's result (vitest's unhandled errors, or one `keel test` held
  * around the run) one T0001 `uncaught: <code> <first line>` at its first app frame, else at 1:1 of its
  * `VITEST_TEST_PATH`, else unlocated. Pure; shared by the cli and the repository's vitest reporter.
  */
@@ -119,19 +137,23 @@ export function testResults(files: readonly unknown[], errors: readonly unknown[
         );
         const top = fs[0];
         const more = fs.slice(1).map((f) => `at ${relative(cwd, f.file)}:${f.line}:${f.col}`);
-        const fix = [compactDiff(str(e.diff)), ...more].filter((x): x is string => x !== undefined).join("\n");
-        const said = firstLine(str(e.message) ?? "test failed");
+        const whole = str(e.message) ?? "test failed";
+        const said = firstLine(whole);
+        const message = clip89(
+          coded === undefined
+            ? `${name.join(" > ")}: ${said}`
+            : `${said.replace(/^E17\d\d\s+/, "")} (${name.join(" > ")})`,
+        );
+        const fix = [...detail(whole, message, said.replace(/^E17\d\d\s+/, "")), compactDiff(str(e.diff)), ...more]
+          .filter((x): x is string => x !== undefined)
+          .join("\n");
         diagnostics.push({
           kind: "diag",
           code: coded ?? "T0001",
           path: relative(cwd, top?.file ?? file),
           line: top?.line ?? 1,
           col: top?.col ?? 1,
-          message: clip89(
-            coded === undefined
-              ? `${name.join(" > ")}: ${said}`
-              : `${said.replace(/^E17\d\d\s+/, "")} (${name.join(" > ")})`,
-          ),
+          message,
           ...(fix === "" ? {} : { fix }),
         });
       } else if (state === "skip" || state === "todo" || node.mode === "skip" || node.mode === "todo") skipped++;
@@ -145,6 +167,8 @@ export function testResults(files: readonly unknown[], errors: readonly unknown[
     for (const t of Array.isArray(f.tasks) ? f.tasks : []) walk(t, path, []);
     const result = isRec(f.result) ? f.result : {};
     if (result.state === "fail" && failed === before) {
+      // A file that failed outside any test (it did not load, or holds no test) is one failed test, counted in both.
+      tests++;
       failed++;
       const first: unknown = Array.isArray(result.errors) ? result.errors[0] : undefined;
       const message = firstLine((isRec(first) ? str(first.message) : undefined) ?? "file failed to run");

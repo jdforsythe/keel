@@ -15,7 +15,9 @@ import type { ModuleInfo } from "./ModuleInfo.ts";
 import { addEntryFix } from "./addEntryFix.ts";
 import { depsCycles } from "./depsCycles.ts";
 import { discoverModules } from "./discoverModules.ts";
+import { envNames } from "./envNames.ts";
 import { guardEdges } from "./guardEdges.ts";
+import { libraryManifests } from "./libraryManifests.ts";
 import { moduleDiag } from "./moduleDiag.ts";
 import { moduleOf } from "./moduleOf.ts";
 import { prefixFix } from "./prefixFix.ts";
@@ -135,17 +137,25 @@ function access({ file, module, facts, layouts }: Scanned, man: Manifest, p: Pro
 }
 
 /**
- * The k.module project pass (E1151-E1158) over every parsed code file: discover manifests (`modules/<id>/module.ts`
- * and stdlib `node_modules/@keel/std-x/module.ts`), map each non-test file to its module by folder, read the
- * manifests statically, then check deps cycles, the public surface, `std` config (E1158), id prefixes (contract keys
- * among them), and cross-module access from imports and `ctx` capability uses. Files outside every module are not
- * checked. Deterministic: files are visited in path order and the caller sorts the result.
+ * The k.module project pass (E1151-E1158, E1165), the k.library manifest rules (E1163, E1166) and E1167 (k.server-deps) over every parsed
+ * code file: discover manifests (`modules/<id>/module.ts` and a library's `node_modules/<name>/module.ts`, its
+ * `package.json` read from `files`), map each non-test file to its module by folder, read the manifests statically,
+ * then check deps cycles, the public surface, `std` config (E1158), id prefixes (contract keys among them), and
+ * cross-module access from imports and `ctx` capability uses. Files outside every module are not checked. E1107
+ * (`clientStores`, over `projectOf`) reads `viewed`: the files where rules read them, each module's folder there
+ * (a library's at `modules/<id>/`, k.library In an app). Deterministic: files are visited in path order and the caller
+ * sorts the result.
  */
 export function moduleChecks(
   checked: readonly Checked[],
+  files: readonly SourceFile[],
   projectOf: (path: string) => readonly SourceFile[] = () => checked.map((c) => c.file),
+  viewed: { readonly checked: readonly Checked[]; readonly root: (m: ModuleInfo) => string } = {
+    checked,
+    root: (m) => m.root,
+  },
 ): Diagnostic[] {
-  const modules = discoverModules(checked);
+  const modules = discoverModules(checked, files);
   if (modules.length === 0) return [];
   const byKey = new Map(modules.map((m) => [m.key, m]));
   const scanned: Scanned[] = [];
@@ -167,7 +177,13 @@ export function moduleChecks(
   const project: Project = { modules, byKey };
   const out: Diagnostic[] = [
     ...depsCycles(modules, byKey, guardEdges(scanned, { modules, byKey })),
-    ...clientStores(checked, modules, projectOf),
+    ...clientStores(
+      viewed.checked,
+      modules.map((m) => (viewed.root(m) === m.root ? m : { ...m, root: viewed.root(m) })),
+      projectOf,
+    ),
+    ...libraryManifests(modules, byKey),
+    ...envNames(modules),
   ];
   for (const m of modules) {
     out.push(...publicMissing(m, stems.get(m) ?? new Set()));

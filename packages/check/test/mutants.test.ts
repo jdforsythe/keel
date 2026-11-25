@@ -1836,6 +1836,24 @@ describe("small helpers", () => {
     );
   });
 
+  it("lineCol answers alike for sources asked in turn, many lines each (its line index is per source)", () => {
+    const text = fc.stringOf(fc.constantFrom("a", "\n", "\r", " "), { maxLength: 60 });
+    const naive = (s: string, at: number): { line: number; col: number } => {
+      const upto = s.slice(0, Math.max(0, Math.min(at, s.length)));
+      return { line: upto.split("\n").length, col: upto.length - (upto.lastIndexOf("\n") + 1) + 1 };
+    };
+    fc.assert(
+      fc.property(
+        fc.array(fc.tuple(fc.boolean(), fc.integer({ min: -2, max: 70 })), { maxLength: 12 }),
+        text,
+        text,
+        (asks, a, b) => {
+          for (const [first, at] of asks) expect(lineCol(first ? a : b, at)).toEqual(naive(first ? a : b, at));
+        },
+      ),
+    );
+  });
+
   it("clip joins lines, trims, and cuts with an ellipsis exactly at the limit", () => {
     expect(clipMessage("abc", 3)).toBe("abc");
     expect(clipMessage("abcd", 3)).toBe("...");

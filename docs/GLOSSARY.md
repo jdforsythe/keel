@@ -5,6 +5,7 @@ Canonical names. Changing one requires an RFC.
 - **kernel**: the provisionally frozen core: schema, reactive, store, runtime-dom, compiler, router, forms, ui, check, scaffold, testing, server (thin), services (thin), cli, ctx.
 - **stdlib**: modules built on kernel extension points, versioned separately, frozen individually; packages `@keel/std-<x>`, after the kernel in dependency order (no kernel package imports one).
 - **module**: a vertical slice (schemas, routes, components, handlers) with a manifest declaring its public surface.
+- **library**: a package marked `"keel": "library"` that ships its source and a module manifest, which an app checks and compiles as its own code; the stdlib packages are libraries (k.library).
 - **contract**: `modules/<id>/<id>.contract.ts`, the client-safe file declaring each route of a module once (pages, layouts, API entries); `routes.ts` binds views and handlers to it, and links, clients and the module's public routes derive from it (k.contract).
 - **route table**: the routes one deployable serves, `routeTable(...)` over its modules' manifests; a manifest is the route table of its one module (k.routes).
 - **deployable**: a composition of modules declared in `topology.ts` that builds to one artifact.
@@ -48,4 +49,4 @@ Canonical names. Changing one requires an RFC.
 - **type cache**: the results of `keel check`'s type pass kept across processes in `node_modules/.cache/keel/` (or `check()`'s `typeCache` folder), each entry keyed by content and used only when every file system question it recorded gets the same answer; it changes the time a run takes, never its output (k.check-cache).
 
 subject: spec/ packages/*/package.json
-verified: 5548044331e7dc4ebccbe43c4e7dc7989514e7f6
+verified: f8043b86a1ef3b706789e4a8dafb234167ef80bb
