@@ -1,8 +1,9 @@
-import { owner, scope } from "@keel/reactive";
+import { owner } from "@keel/reactive";
 import type { Contract } from "@keel/router/contract";
 import { s, secretPath } from "@keel/schema";
 import { type Endpoint, service } from "@keel/services";
 import { store, transaction } from "@keel/store";
+import { detached } from "../unsafe/detached.ts";
 import { raise } from "../unsafe/raise.ts";
 import type { Outbox } from "./Outbox.type.ts";
 import { OutboxEntry } from "./OutboxEntry.schema.ts";
@@ -86,7 +87,7 @@ export function outbox<const C extends Contract>(
   });
   if (sc) make();
   // Declared outside a scope (module level): the store lives as long as the module, as a module-level `store` does.
-  const cfg = (): Config => c ?? scope(() => undefined, { detached: true }).run(make);
+  const cfg = (): Config => c ?? detached(make);
   const st = () => cfg().store;
   const o: Outbox<Writes<C>> = {
     id,

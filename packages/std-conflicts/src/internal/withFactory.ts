@@ -1,5 +1,4 @@
-import { owner, scope } from "@keel/reactive";
-import { isolate } from "@keel/store";
+import { isolated } from "../../unsafe/isolated.ts";
 import { raise } from "../../unsafe/raise.ts";
 import type { StoresFactory } from "../StoresFactory.ts";
 import type { Made } from "./Made.ts";
@@ -12,16 +11,10 @@ import { isTransaction } from "./isTransaction.ts";
  */
 export function withFactory<R>(factory: StoresFactory, use: (made: Made) => R): R {
   const out: R[] = [];
-  const sc = scope(
-    () => {
-      const own = owner();
-      if (own !== undefined) isolate(own);
-      const values = Object.values(factory());
-      out.push(use({ stores: values.filter(isStore), txs: values.filter(isTransaction) }));
-    },
-    { detached: true },
-  );
-  sc.dispose();
+  isolated(() => {
+    const values = Object.values(factory());
+    out.push(use({ stores: values.filter(isStore), txs: values.filter(isTransaction) }));
+  });
   const [r] = out;
   if (r === undefined) return raise("std.conflicts: the stores factory produced nothing");
   return r;
