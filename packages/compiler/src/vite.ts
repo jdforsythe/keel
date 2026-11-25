@@ -53,6 +53,7 @@ import { unmappedModule } from "./internal/unmappedModule.ts";
 import { urlLiterals } from "./internal/urlLiterals.ts";
 import { writeArtifact } from "./internal/writeArtifact.ts";
 import { writeStatic } from "./internal/writeStatic.ts";
+import { allLibraries } from "./std/allLibraries.ts";
 import { appLibraries } from "./std/appLibraries.ts";
 import { clientStdData } from "./std/clientStdData.ts";
 import { importDeps } from "./std/importDeps.ts";
@@ -944,7 +945,7 @@ export default function (): {
             }
             // The files bundled package files read beside themselves (k.server-deps); a problem fails the build, which
             // then leaves no `dist/<name>/` (E1014).
-            const read = bundledFiles(chunkModules(bundled));
+            const read = bundledFiles(chunkModules(bundled), allLibraries(at));
             if (read.problems.length > 0) {
               fs.rmSync(path.join(at, out), { recursive: true, force: true });
               throw evaluationFailed(read.problems);

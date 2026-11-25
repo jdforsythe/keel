@@ -78,3 +78,59 @@ it("two package files naming one path for different files is one E1014; for one 
     problems: [],
   });
 });
+
+/** A library's folder at `at` (under `root`): `src/store.js` reading `data.bin` beside it, holding `bytes`. */
+function libraryAt(at: string, bytes: string): string {
+  fs.mkdirSync(path.join(at, "src"), { recursive: true });
+  fs.writeFileSync(path.join(at, "src", "store.js"), url("'data.bin'"));
+  fs.writeFileSync(path.join(at, "src", "data.bin"), bytes);
+  return path.join(at, "src", "store.js");
+}
+
+it("a library's file is read wherever its real folder is: installed, linked through node_modules, or inside the project", () => {
+  fc.assert(
+    fc.property(fc.constantFrom("installed" as const, "linked" as const, "project" as const), (where) => {
+      const app = fs.mkdtempSync(path.join(root, "app-"));
+      const real =
+        where === "installed"
+          ? path.join(app, "node_modules", "@acme", "store")
+          : where === "linked"
+            ? fs.mkdtempSync(path.join(root, "workspace-"))
+            : path.join(app, "libs", "store");
+      const file = libraryAt(real, "D");
+      if (where === "linked") {
+        fs.mkdirSync(path.join(app, "node_modules", "@acme"), { recursive: true });
+        fs.symlinkSync(real, path.join(app, "node_modules", "@acme", "store"));
+      }
+      const libraries = [{ name: "@acme/store", dir: real }];
+      expect(bundledFiles([file], libraries)).toEqual({
+        copies: [{ from: path.join(real, "src", "data.bin"), rel: "data.bin" }],
+        problems: [],
+      });
+      fs.rmSync(path.join(real, "src", "data.bin"));
+      expect(bundledFiles([file], libraries).problems).toEqual([
+        "E1014 node_modules/@acme/store/src/store.js reads data.bin, which is missing",
+      ]);
+      if (where !== "installed") expect(bundledFiles([file]).problems).toEqual([]);
+    }),
+    { seed: 1337, numRuns: 6 },
+  );
+});
+
+it("two libraries shipping a file of one name with other bytes is one E1014; with equal bytes, one copy", () => {
+  const a = fs.mkdtempSync(path.join(root, "a-"));
+  const b = fs.mkdtempSync(path.join(root, "b-"));
+  const libraries = [
+    { name: "@acme/a", dir: a },
+    { name: "@acme/b", dir: b },
+  ];
+  const ids = [libraryAt(a, "1"), libraryAt(b, "2")];
+  expect(bundledFiles(ids, libraries)).toEqual({
+    copies: [{ from: path.join(a, "src", "data.bin"), rel: "data.bin" }],
+    problems: [
+      "E1014 node_modules/@acme/b/src/store.js reads data.bin, as node_modules/@acme/a/src/store.js reads another file",
+    ],
+  });
+  fs.writeFileSync(path.join(b, "src", "data.bin"), "1");
+  expect(bundledFiles(ids, libraries).problems).toEqual([]);
+});
