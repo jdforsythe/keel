@@ -22,21 +22,12 @@ What must be true before the accessibility audit and the penetration test start,
 | # | Item | State | What shows it |
 | --- | --- | --- | --- |
 | P1 | `SECURITY.md` | partial | It exists and sends reports to GitHub's private vulnerability reporting, which is turned off on the repository today (the API answers `{"enabled":false}`). Turn it on, or give the address R10 names. |
-| P2 | `docs/THREAT-MODEL.md` current | partial | See below. |
+| P2 | `docs/THREAT-MODEL.md` current | done | It states what Keel answers for and what it does not, seven trust boundaries, the assets, and each protection as one statement with its spec section, its enforcing diagnostic or refusal and its stated limits, including the check security rules (E1015, E1016, E1107, E1570 and E1571), the identity mount rules (E1579, E1593), libraries and `./tools`, and both storage batteries. Its section 7 lists what holds in code and no section states. |
 | P3 | Each claim in `docs/reviews/pen-test-scope.md` (C1 to C26) still matches the threat model and its spec section at the commit named at kickoff | open | Re-read the claims table against the threat model on that day. |
 
-### What the threat model lacks
+### What the threat model leaves to the scope
 
-Read against RFC 0230 to 0236 (`docs/rfc/`):
-
-- **RFC 0230, scrub views and event caps.** Present: the decoded views, the 65,536-byte scope cap, the lost-listener mark, the slashes taken into a path mark and the 1,048,576-byte event cap are all stated.
-- **RFC 0231, check security rules.** Absent. Nothing states E1016 (a type reference directive or a foreign `ImportMeta` declaration, so `import.meta.env` is typed by Keel alone), E1015 (a relative import resolving outside the project), E1107 judging on client reach and refusing a state schema it cannot read, E1108 consulting only `@keel/std-*` formats, the stated limit of E1570 and E1571 (a URL they cannot read is not reported, and the policy blocks it at run time), or the scaffold refusing a file with more than one hard link. These are what make `keel check` a security boundary, and the threat model says the gate only through the bundle rule.
-- **RFC 0232, router and identity hardening.** Absent. The Identity section names E1580 and not E1593 (an `identityMount` call outside `identity.ts`'s default export is an error) or E1579 refusing a mount path at or under `/assets`.
-- **RFC 0233 and RFC 0234, a11y items per page and static contrast.** Accessibility, not threat model text; `docs/A11Y-TARGET.md` covers contrast from tokens.
-- **RFC 0235, ledger integrity.** Absent, and it belongs in a threat model only where an auditor relies on the bundle: the evidence bundle is described as signed and free of app values, and not as resting on a recorded test run. A tester checking `keel evidence` would read k.evidence and k.ledger-items for that.
-- **RFC 0236, personal data and plain data.** Present: plain data at parse, undeclared keys unrecorded in sessions, and the process-wide anonymous stream count with the signed-in exception.
-
-Beyond those RFCs, the document is titled "Threat model (seed)" and ends "Grows per package." Under Durable storage it names `@keel/std-db` and not `@keel/std-postgres`, the app data battery that the stand-in apps' Postgres data goes through. A tester reads the title and the last line as a draft; both go before the document is sent.
+The pen test scope's claims table (C1 to C26) predates the rewritten threat model and cites its old section names; P3 re-reads it against the new document. Evidence-bundle integrity resting on a recorded test run (k.ledger-items) is not a threat model claim; a tester checking `keel evidence` reads k.evidence and k.ledger-items.
 
 ## Accessibility audit
 
