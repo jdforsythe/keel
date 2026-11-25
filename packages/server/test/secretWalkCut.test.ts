@@ -16,9 +16,13 @@ import { requestSecrets } from "../src/internal/requestSecrets.ts";
 // set itself stays small.
 const huge = (): number[] => Array.from({ length: 1_000_000 }, () => 0);
 const Huge = s.secret(s.array(s.int()));
+// Each value a parse reads is judged, copied, frozen and read for the scope's set: about 0.25 us here, so 5 us a value
+// bounds the work with a margin of twenty. A parse of `huge()` reads 1,000,001 values.
+const VALUE_MS = 0.005;
+const PARSE_MS = 1_000_001 * VALUE_MS;
 
 describe("a secret whose read is cut", () => {
-  it("puts the scope's set past its cap", () => {
+  it("puts the scope's set past its cap", { timeout: 2 * PARSE_MS }, () => {
     noteRequestSecrets();
     const set = new Set<string>();
     requestSecrets.run(set, () => Huge.parse(huge()));
@@ -28,7 +32,7 @@ describe("a secret whose read is cut", () => {
     expect(pastCap.has(small)).toBe(false);
   });
 
-  it("an action that makes one and throws logs its message as one mark", async () => {
+  it("an action that makes one and throws logs its message as one mark", { timeout: PARSE_MS }, async () => {
     const lines: string[] = [];
     const c = contract("app", { "app.a": { path: "/a" } });
     const routes = manifest(c, {
