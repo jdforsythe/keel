@@ -332,14 +332,14 @@ describe("k.api output", () => {
 
   it("An API action returning a value its entry's `output` refuses does not compile", () => {
     const c = contract("api", { "api.add": { method: "POST", path: "/api/notes", body: Add, output: N } });
-    // compile-time half: ../unsafe/conformanceNegativeTypes.ts
+    // compile-time half: ./negative-types.test-d.ts
     const bad = () => Reflect.apply(action, undefined, [c, "api.add", {}, async () => ok({ n: "x" })]);
     expect(typeof bad).toBe("function");
   });
 
   it("An API loader returning a value that fails the entry's `output` is a compile error, and at runtime (an unchecked caller) E1554 with nothing saved", async () => {
     const c = contract("api", { "api.notes": { method: "GET", path: "/api/notes", output: Notes } });
-    // compile-time half: ../unsafe/conformanceNegativeTypes.ts
+    // compile-time half: ./negative-types.test-d.ts
     const typed = () => Reflect.apply(loader, undefined, [c, "api.notes", {}, async () => ok({ items: "x" })]);
     expect(typeof typed).toBe("function");
     await fc.assert(

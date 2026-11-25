@@ -347,6 +347,7 @@ describe("ledger command", () => {
       version: 1,
       unsafe: 1,
       hostElements: 0,
+      negativeTypes: 0,
       rungs: { example: 2, probabilistic: 1, exhaustive: 0, proven: 0, monitored: 0 },
       mutation: {
         packages: {

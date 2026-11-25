@@ -389,6 +389,7 @@ const NO_FIX = [
   "E1581", // k.mount Rules: Fix none; moving the module or hosting the deployable is the author's choice
   "E1582", // k.mount Rules: Fix none; the subpath is the author's
   "E1584", // k.mount Rules: Fix none; the links entry is the author's
+  "E1593", // k.mount Rules: Fix none; moving a mount is the author's call
   "E1592", // k.user Rules: Fix none; serving the module with servedBy or moving it is the author's choice
   "E1586", // k.topology Rules: no fix; the package, not the app, is wrong
   "E1587", // k.topology Rules: no fix; which package export holds the stylesheet is the author's choice
@@ -407,6 +408,8 @@ const NO_FIX = [
   "E1754", // the justification must be written by the author
   "E1755", // a budget breach has no source edit
   "E1758", // the locale or time zone is an argument the caller holds
+  "E1760", // k.unsafe Rules: none carries a fix; the reason is the author's to write
+  "E1761", // k.unsafe Rules: none carries a fix; where the negative type test lives is the author's choice
   "E1801", // a look name that no `look` declares has no nearest token; the author names the look or declares it
   "E1802", // the missing prop value is the author's choice
   "E1607", // which registered name to keep is the author's choice

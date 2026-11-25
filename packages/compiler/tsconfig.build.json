@@ -8,6 +8,6 @@
     "outDir": "dist",
     "rootDir": "."
   },
-  "include": ["src", "unsafe"],
-  "exclude": ["src/testing", "unsafe/runCommonJs.ts"]
+  "include": ["src"],
+  "exclude": ["src/testing"]
 }

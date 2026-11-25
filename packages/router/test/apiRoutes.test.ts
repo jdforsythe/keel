@@ -105,7 +105,7 @@ describe("E1508 for a guard without redirect", () => {
     const get = loader(c, "t.a", {}, async () => ok({}));
     expect(
       failure(() =>
-        // The type errors are in unsafe/negativeTypes.ts; called untyped here.
+        // The type errors are in negativeTypes.test-d.ts; called untyped here.
         Reflect.apply(manifest, undefined, [
           c,
           { "t.l": { component: view }, "t.p": { component: view, guard: bare }, "t.a": { loader: get } },
@@ -146,7 +146,7 @@ describe("calling an API entry", () => {
   const routes = full({ read: { guard: bare } });
 
   it("href refuses an API id (type and E1501); matchHref skips the API path for a page beside it", () => {
-    // The type error is in unsafe/negativeTypes.ts; called untyped here.
+    // The type error is in negativeTypes.test-d.ts; called untyped here.
     expect(failure(() => Reflect.apply(api.href, api, ["t.read"]))).toBe(
       'E1501 href("t.read"): no page of this contract has this id',
     );

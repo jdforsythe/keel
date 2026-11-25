@@ -18,7 +18,7 @@ export function renderMarkdown(report) {
     "",
     "## Ledger totals",
     "",
-    `${ledger.items} items (${ledger.clauses.total} clauses, ${ledger.exports.total} exports, ${ledger.a11y.total} route and WCAG items), ${ledger.verified} verified (above \`none\`), ${ledger.unsafe} unsafe, ${mutation.stale} stale mutation claims. Items holding any evidence at each rung: ${RUNGS.filter(
+    `${ledger.items} items (${ledger.clauses.total} clauses, ${ledger.exports.total} exports, ${ledger.a11y.total} route and WCAG items), ${ledger.verified} verified (above \`none\`), ${ledger.unsafe} unsafe, ${ledger.negativeTypes ?? 0} negative type expectations, ${mutation.stale} stale mutation claims. Items holding any evidence at each rung: ${RUNGS.filter(
       (r) => r !== "none",
     )
       .map((r) => `${ledger.evidenceByRung[r] ?? 0} ${r}`)

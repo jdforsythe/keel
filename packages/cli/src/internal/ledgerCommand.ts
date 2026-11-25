@@ -84,7 +84,7 @@ const rungCounts = (items: readonly LedgerItem[]): Record<string, number> => {
 };
 
 /**
- * The ledger file: unsafe count, host element count, rungs, mutation, exports (`{ pkg, name, file, rung }`), clauses (`{ item, rung }`) and
+ * The ledger file: unsafe count, host element count, negative type test expectations, rungs, mutation, exports (`{ pkg, name, file, rung }`), clauses (`{ item, rung }`) and
  * the a11y claims (`{ item, rung }`).
  */
 const ledgerFile = (
@@ -92,6 +92,7 @@ const ledgerFile = (
   byItem: ReadonlyMap<string, LedgerItem>,
   unsafe: number,
   hostElements: number,
+  negativeTypes: number,
   rungs: Readonly<Record<string, number>>,
   mutation: Mutation,
   a11y: readonly A11yClaim[],
@@ -106,7 +107,7 @@ const ledgerFile = (
   }
   const mut = mutation.claims.length > 0 || Object.keys(mutation.packages).length > 0 ? { mutation } : {};
   const claims = a11y.map((c) => ({ item: c.item, rung: c.rung }));
-  return `${JSON.stringify({ version: 1, unsafe, hostElements, rungs, ...mut, exports, clauses, a11y: claims }, null, 2)}\n`;
+  return `${JSON.stringify({ version: 1, unsafe, hostElements, negativeTypes, rungs, ...mut, exports, clauses, a11y: claims }, null, 2)}\n`;
 };
 
 /**
@@ -124,7 +125,8 @@ const ledgerFile = (
  * file counts above 0 that no item holds, E1713 per package whose fresh score is below its threshold (a package
  * with claims and none fresh has no score and fails too) or whose threshold is below the committed one. `--scope <prefix>` keeps the items whose key starts with it; the unsafe count
  * is then the matching apps' (`golden-1:`), compared with zero, and the host element count theirs plus a root
- * `modules/**` file's whose path starts with it. The summary counts the items on each rung and the
+ * `modules/**` file's whose path starts with it. `negativeTypes` (written, never compared) is then the matching apps'
+ * plus each negative type test's whose path starts with it. The summary counts the items on each rung and the
  * stale claims, each when above 0.
  */
 export function ledgerCommand(input: Input, io: Io, a11yMap: A11yCriteriaMap = new Map()): Outcome {
@@ -152,6 +154,12 @@ export function ledgerCommand(input: Input, io: Io, a11yMap: A11yCriteriaMap = n
       ? built.hostElements
       : apps.reduce((n, a) => n + (built.appHosts[a] ?? 0), 0) +
         Object.entries(built.rootHosts).reduce((n, [path, k]) => n + (path.startsWith(scope) ? k : 0), 0);
+  // Written for the scope, never compared: the apps it selects by key, and the files whose path starts with it.
+  const negativeTypes =
+    scope === ""
+      ? built.negativeTypes
+      : apps.reduce((n, a) => n + (built.appNegativeTypes[a] ?? 0), 0) +
+        Object.entries(built.negativeTypeFiles).reduce((n, [path, k]) => n + (path.startsWith(scope) ? k : 0), 0);
   const { justified, diags: misshapen } = justifiedFiles(files);
   const { mutation, fresh, reports, unmatched } = mutationClaims(files, committed?.mutation, justified);
   const unjustified = Object.entries(unmatched).flatMap(([pkg, indexes]) => {
@@ -196,10 +204,11 @@ export function ledgerCommand(input: Input, io: Io, a11yMap: A11yCriteriaMap = n
     verified: records.filter((r) => r.rung !== "none").length + claims.filter((c) => c.rung !== "none").length,
     unsafe,
     warnings: notes.length,
-    // Host element, rung, stale and kept counts (a11y items kept for want of a project's report) only when above 0, so a trailer stays one short line.
+    // Host element, negative type, rung, stale and kept counts (a11y items kept for want of a project's report) only when above 0, so a trailer stays one short line.
     ...Object.fromEntries(
       Object.entries({
         hostElements,
+        negativeTypes,
         ...shown,
         stale: stale.length,
         keptNoReport: claims.filter((c) => c.kept === true).length,
@@ -225,7 +234,7 @@ export function ledgerCommand(input: Input, io: Io, a11yMap: A11yCriteriaMap = n
           fresh: fresh.has(c.file),
         })),
     ];
-    const content = ledgerFile(all, byItem, built.unsafe, built.hostElements, rungs, mutation, a11y);
+    const content = ledgerFile(all, byItem, built.unsafe, built.hostElements, negativeTypes, rungs, mutation, a11y);
     return {
       records: [...notes, ...(input.write === undefined ? out : []), summary("ledger", notes, counts)],
       writes: input.write === undefined ? [] : [{ path: input.write, content, readonly: false }],

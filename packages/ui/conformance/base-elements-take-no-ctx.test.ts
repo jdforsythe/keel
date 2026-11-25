@@ -22,7 +22,7 @@ describe("k.ui: base elements and Part take no ctx", () => {
   });
 
   it("passing a ctx as a second argument to a base element does not compile", () => {
-    // compile-time half: ../unsafe/conformanceNegativeTypes.ts
+    // compile-time half: ./negative-types.test-d.ts
     const bad = () => Reflect.apply(Box, undefined, [{ as: "main" }, {}]);
     expect(typeof bad).toBe("function");
   });

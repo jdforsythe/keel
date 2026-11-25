@@ -1,4 +1,4 @@
-import { currentTestBound } from "../../unsafe/currentTestBound.ts";
+import { currentTestBound } from "./currentTestBound.ts";
 import { fail } from "./fail.ts";
 
 /** The budget when neither `budget` nor a test's timeout gives one, in ms from the `simulate` call (k.drive Stalls). */

@@ -24,6 +24,7 @@ import { codedError } from "./codedError.ts";
 import { compileRoutes } from "./compileRoutes.ts";
 import { defaultError } from "./defaultError.ts";
 import { encodeHref } from "./encodeHref.ts";
+import { fallbackTitle } from "./fallbackTitle.ts";
 import { fieldsError } from "./fieldsError.ts";
 import { formHandle } from "./formHandle.ts";
 import { guardLoop } from "./guardLoop.ts";
@@ -148,8 +149,8 @@ export function createRouterWith<T extends RouteTable>(
   let keys = 0;
   let anchor: Node | null = null;
   let resetRoot: (() => void) | null = null;
-  // The document's title when the router starts (a `client` deployable's `index.html` title): k.head's fallback.
-  const fallbackTitle = typeof document === "undefined" ? "" : document.title;
+  // k.head's fallback, read once as the router starts: a served document's `#k-state` `title`, else `index.html`'s.
+  const fallback = fallbackTitle();
 
   const makeView = (m: Match, results: readonly Outcome[], failure: Failure | null): View => {
     const chain = m.route?.chain ?? [];
@@ -210,7 +211,7 @@ export function createRouterWith<T extends RouteTable>(
       pending.set(false);
     });
     prev?.scope.dispose();
-    writeHead(next.head, fallbackTitle);
+    writeHead(next.head, fallback);
     const reset = resetRoot;
     resetRoot = null;
     reset?.();

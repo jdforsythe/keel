@@ -4,7 +4,7 @@ import * as ops from "@keel/runtime-dom/ops";
 import * as schema from "@keel/schema";
 import * as store from "@keel/store";
 import { transformSync } from "esbuild";
-import { runCommonJs } from "../../unsafe/runCommonJs.ts";
+import { runCommonJs } from "./runCommonJs.ts";
 
 const MODULES: ReadonlyMap<string, unknown> = new Map<string, unknown>([
   ["@keel/reactive", reactive],

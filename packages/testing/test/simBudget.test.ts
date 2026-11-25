@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { budgetDeadline } from "../src/internal/budgetDeadline.ts";
 
 const bound = vi.hoisted((): { value: { timeout: number; startedAt: number } | undefined } => ({ value: undefined }));
-vi.mock("../unsafe/currentTestBound.ts", () => ({ currentTestBound: () => bound.value }));
+vi.mock("../src/internal/currentTestBound.ts", () => ({ currentTestBound: () => bound.value }));
 
 const empty = { seed: 1, schedule: { net: [], storage: [], offline: [], plans: {} } };
 

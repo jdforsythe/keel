@@ -1,7 +1,7 @@
 // Spec: k.formats, Conformance "For each of `Instant`, `PlainDate`, `TimeZone` and `Duration` (std.temporal), `Email` and `Slug` (std.text) and every value `v` its `gen` produces, `formatLiteral(F, v)` returns `v`; `formatLiteral(Instant, '1970-01-01T00:00:00.000Z')` returns `'1970-01-01T00:00:00.000Z'`."
 // Spec: k.formats, Conformance "`formatLiteral(PlainDate, '2023-02-29')` throws a `TypeError` whose message contains `temporal.PlainDate` and `format`; `formatLiteral(PlainDate, '2024-02-29')` returns `'2024-02-29'`."
 // Spec: k.formats, Conformance "A file `const a: Instant = formatLiteral(Instant, '1970-01-01T00:00:00.000Z')` has no type error, as does `const d: PlainDate = formatLiteral(PlainDate, '2024-02-29')`; `formatLiteral(Instant, t)` with `t: string`, `const p: PlainDate = formatLiteral(Instant, '1970-01-01T00:00:00.000Z')` and `formatLiteral(s.string(), 'x')` are each a type error."
-// Seed 1337. The three negative type cases are in packages/std-text/unsafe/conformanceNegativeTypes.ts (checked by tsc, never
+// Seed 1337. The three negative type cases are in packages/std-text/conformance/negative-types.test-d.ts (checked by tsc, never
 // run); their run-time half is the property below, which calls `formatLiteral` with text the type system would refuse.
 import { type Schema, formatLiteral, s } from "@keel/schema";
 import { gen } from "@keel/schema/gen";
@@ -132,5 +132,5 @@ describe("k.formats Literals: the types", () => {
   });
 
   // The three negative cases (a `string`-typed `text`, a brand of another format, `s.string()`) are type errors only: tsc checks
-  // them in unsafe/conformanceNegativeTypes.ts and the spec gives no run-time behaviour for them, so none is asserted here.
+  // them in negative-types.test-d.ts and the spec gives no run-time behaviour for them, so none is asserted here.
 });

@@ -39,7 +39,7 @@ describe("action overloads", () => {
   });
 
   it("an API action's fn returning a link does not fit the entry's output; a page action's returning data does not either", () => {
-    // Type-only: unsafe/negativeTypes.ts holds both refusals.
+    // Type-only: negativeTypes.test-d.ts holds both refusals.
     expect(true).toBe(true);
   });
 
@@ -81,7 +81,7 @@ describe("binding an action to the other kind (E1515)", () => {
   });
 
   it("an action for a page bound at an API entry does not compile and throws", () => {
-    // The type error is in unsafe/negativeTypes.ts; called untyped here.
+    // The type error is in negativeTypes.test-d.ts; called untyped here.
     const bad = () =>
       Reflect.apply(manifest, undefined, [
         c,

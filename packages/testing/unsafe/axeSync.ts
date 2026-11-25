@@ -55,7 +55,7 @@ export function axeSync(
   exclude: readonly Element[] = [],
 ): AxeOutcome {
   return unsafe(
-    "render() fails synchronously and axe.run resolves on setTimeout: replays axe-core 4.14.0 runRules via untyped internals",
+    "axe-core is pinned to 4.14.0 in package.json, whose internals have the Internals shape declared above; the a11y tests run every rule through them",
     () => {
       const a = axe as unknown as Internals;
       const context = new a._thisWillBeDeletedDoNotUse.base.Context(

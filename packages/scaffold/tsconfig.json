@@ -4,5 +4,5 @@
     "allowImportingTsExtensions": true,
     "noEmit": true
   },
-  "include": ["src", "test", "unsafe", "conformance"]
+  "include": ["src", "test", "conformance"]
 }

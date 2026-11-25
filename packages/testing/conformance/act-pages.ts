@@ -1,15 +1,15 @@
 // The page module of the k.opening act suite (not a test file). Seed for every property: 1337.
 // The mount is declared with `links: ['/verify']` (k.links Conformance fixture); `ac.about` is a page at `/about`.
 // Routes: `ac.home` (`/`: a Link to `mount.href('/login/github')`, a Link to `/auto`, a text field, a valid Form whose action answers
-// `ok(mount.href('/login/github'))`), `ac.auto` (`/auto`: its render calls `navigate(mount.href('/login/github'))`).
+// `ok(mount.href('/login/github'))`), `ac.auto` (`/auto`: its render calls `navigate(mount.href('/login/github'))`), `ac.private` (`/private`: a guard that denies every reader and redirects to `ac.auto`).
 import { compile } from "@keel/compiler";
 import { evaluate } from "@keel/compiler/testing";
 import * as forms from "@keel/forms";
 import * as router from "@keel/router";
-import { action, identityMount, manifest } from "@keel/router";
+import { action, guard, identityMount, manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
 import type { RouteProps } from "@keel/router";
-import { ok, s } from "@keel/schema";
+import { err, ok, s } from "@keel/schema";
 import * as schema from "@keel/schema";
 import * as ui from "@keel/ui";
 import * as aria from "@keel/ui/aria";
@@ -70,11 +70,13 @@ function page(name: string, source: string): (props: RouteProps) => Node {
 }
 
 const Empty = s.object({});
+const Denied = s.error("keel.denied", s.object({}));
 const ac = contract("ac", {
   "ac.home": { path: "/" },
   "ac.auto": { path: "/auto" },
   "ac.act": { path: "/act" },
   "ac.about": { path: "/about" },
+  "ac.private": { path: "/private" },
 });
 
 const act = action(ac, "ac.act", { input: Empty }, async () => ok(mount.href("/login/github")));
@@ -105,7 +107,12 @@ export const routes = manifest(ac, {
   "ac.auto": { component: autoPage },
   "ac.act": { component: () => document.createElement("main"), POST: act },
   "ac.about": { component: () => document.createElement("main") },
+  "ac.private": {
+    component: () => document.createElement("main"),
+    guard: guard({ redirect: "ac.auto" }, async () => err(Denied.make({}))),
+  },
 });
 
 export const HOME_HREF = ac.href("ac.home");
 export const AUTO_HREF = ac.href("ac.auto");
+export const PRIVATE_HREF = ac.href("ac.private");

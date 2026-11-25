@@ -19,6 +19,7 @@ const tree = {
     { item: "k.one#1", rung: "example" },
   ],
   unsafe: 2,
+  negativeTypes: 0,
   rungs: { example: 2, probabilistic: 1, exhaustive: 0, proven: 0, monitored: 0 },
 };
 const treeWithA11y = { ...tree, records: [...tree.records, { item: "a11y:.:r#1.1.1", rung: "example" }] };
@@ -71,6 +72,16 @@ describe("compareLedger", () => {
     ]);
   });
 
+  it("finds a changed negativeTypes count in either direction, a missing one as zero", () => {
+    expect(messages({ ...file, negativeTypes: 3 }, { ...tree, negativeTypes: 2 })).toEqual([
+      "negativeTypes is 3 in the ledger file, 2 in the tree",
+    ]);
+    expect(messages({ ...file, negativeTypes: 1 }, { ...tree, negativeTypes: 2 })).toEqual([
+      "negativeTypes is 1 in the ledger file, 2 in the tree",
+    ]);
+    expect(messages(file, { ...tree, negativeTypes: 0 })).toEqual([]);
+  });
+
   it("treats a missing unsafe count as zero", () => {
     expect(messages({ ...file, unsafe: undefined }, { ...tree, unsafe: 0 })).toEqual([]);
   });
@@ -99,6 +110,7 @@ describe("parseFresh", () => {
     expect(parseFresh(text)).toEqual({
       records: [{ item: "k.one#1", rung: "example" }],
       unsafe: 4,
+      negativeTypes: 0,
       rungs: { example: 1, probabilistic: 0, exhaustive: 0, proven: 0, monitored: 0 },
     });
   });

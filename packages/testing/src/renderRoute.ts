@@ -202,9 +202,21 @@ export async function renderRoute<T extends RouteTable>(
       return harness.fire(id, event);
     },
     route: () => router.route.get(),
+    // The router's refusal (E1501, k.router) is the handle's: it rejects once the page has settled. A rejection after
+    // that has no caller left and stays unhandled, so it still surfaces.
     navigate: async (href) => {
-      void router.navigate(href);
-      await harness.settle();
+      const refused: unknown[] = [];
+      let waited = false;
+      void router.navigate(href).catch((error: unknown) => {
+        if (waited) throw error;
+        refused.push(error);
+      });
+      try {
+        await harness.settle();
+      } finally {
+        waited = true;
+      }
+      if (refused.length > 0) throw refused[0];
     },
     location: () => ({ entries: history.length(), scrollY: window.scrollY }),
     documents: () => [...documents],

@@ -207,6 +207,7 @@ export function ledgerPart(ledger, statuses) {
     items: all.length,
     verified: all.filter((i) => i.rung !== "none").length,
     unsafe: ledger.unsafe ?? 0,
+    negativeTypes: ledger.negativeTypes ?? 0,
     evidenceByRung: { ...ledger.rungs },
     clauses: { ...tally(clauses), sections },
     exports: { ...tally(exportsList), packages: Object.fromEntries([...pkgs].map(([p, l]) => [p, tally(l)])) },
