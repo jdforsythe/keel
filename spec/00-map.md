@@ -104,7 +104,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.parity | Stdlib parity | proposed | seams |
 | k.review | Review of escapes | conformance-covered | ranges |
 | k.escapes | Escape codes | conformance-covered | R codes |
-| k.unsafe | Unsafe, type tests | proposed | count |
+| k.unsafe | Unsafe, type tests | conformance-covered | count |
 
 ## Stdlib
 Sections: `spec/std/README.md`.
