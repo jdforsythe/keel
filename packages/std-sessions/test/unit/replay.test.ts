@@ -86,6 +86,8 @@ describe("replay: what it reproduces", () => {
     expect(recorded.events.map((e) => e.at)).toEqual([10, 10, 10, 10]);
   });
 
+  // What the case bounds: 520 events recorded and the 520 replayed, about 0.4 ms an event here beside other work. The
+  // bound is 10 ms an event, so a runner ten times slower (scale 0.1) still has 1 ms an event.
   test("more than 500 events are all replayed and observed", async () => {
     const { session } = await play(
       1337,
@@ -96,7 +98,7 @@ describe("replay: what it reproduces", () => {
     const result = await replay(session, { routes: routes() });
     expect(result.observed).toHaveLength(260);
     expect(result.reproduced).toBe(true);
-  });
+  }, 2 * 520 * 10);
 
   test("the base state is the session's: a store it names starts there, and the replay puts the store back after", async () => {
     const { session } = await play(1337, [add]);
