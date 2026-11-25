@@ -65,6 +65,33 @@ export function crashDiags(
 }
 
 /**
+ * The T0001 lines vitest's own verdict adds. A run ended as `interrupted` names each file it left unfinished, at the
+ * file, with the test it was in. A run ended as `failed` or `interrupted` with no failure of its own (`failing` false)
+ * and no unfinished file is one line without location: `no test ran` when it ran none. `passed`: nothing.
+ */
+export function endDiags(
+  reason: string,
+  failing: boolean,
+  unfinished: readonly Unfinished[],
+  tests: number,
+  cwd: string,
+): Diag[] {
+  if (reason === "passed") return [];
+  const why = `vitest ended the run as ${reason}`;
+  if (reason === "interrupted" && unfinished.length > 0)
+    return unfinished.map((u) => ({
+      kind: "diag",
+      code: "T0001",
+      path: path.relative(cwd, u.file).split(path.sep).join("/"),
+      line: 1,
+      col: 1,
+      message: clip(`${u.test ?? "collecting the file"}: ${why}`),
+    }));
+  if (failing) return [];
+  return [{ kind: "diag", code: "T0001", message: `${tests === 0 ? "no test ran" : "no test failed"}: ${why}` }];
+}
+
+/**
  * The first test of `m` with no result: the one its worker was in when it died, when the worker died before vitest
  * heard that test start.
  */
@@ -100,7 +127,7 @@ export class KeelReporter implements Reporter {
     if (this.open.has(t.module.moduleId)) this.open.set(t.module.moduleId, undefined);
   }
 
-  onTestRunEnd(_modules: readonly unknown[], errors: readonly unknown[]): void {
+  onTestRunEnd(_modules: readonly unknown[], errors: readonly unknown[], reason = "passed"): void {
     // Without the instance there is no task tree to read: report that as an error, never as an empty green run.
     const started = this.run !== undefined;
     const crashes = errors.filter(isCrash).length;
@@ -115,10 +142,15 @@ export class KeelReporter implements Reporter {
       test: test ?? firstUnfinished(modules.find((m) => m.moduleId === file)),
     }));
     const crashed = crashDiags(crashes, unfinished, workerExits(), process.cwd());
-    const diags: Diag[] = [...r.diagnostics.map((d) => ({ ...d })), ...crashed];
     // Each file a dead worker left unfinished had a test (or its collection) failed by that death.
-    const failed = r.failed + (crashes > 0 ? Math.max(unfinished.length, crashed.length) : 0);
-    const bad = failed > 0 || r.errors > 0 || crashes > 0;
+    const failedSoFar = r.failed + (crashes > 0 ? Math.max(unfinished.length, crashed.length) : 0);
+    // Vitest's own verdict counts too: a run it ended as failed or interrupted with no failure above is named here.
+    // A crash already named the files its worker left unfinished.
+    const left = crashes > 0 ? [] : unfinished;
+    const ended = endDiags(reason, failedSoFar > 0 || r.errors > 0 || crashes > 0, left, r.tests, process.cwd());
+    const diags: Diag[] = [...r.diagnostics.map((d) => ({ ...d })), ...crashed, ...ended];
+    const failed = failedSoFar + ended.filter((d) => d.path !== undefined).length;
+    const bad = failed > 0 || r.errors > 0 || crashes > 0 || ended.length > 0;
     const summary: Summary = {
       kind: "summary",
       ok: !bad,

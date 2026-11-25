@@ -40,6 +40,7 @@ Rules:
 - [ ] 0868 the browser resume smoke crashed once, cause unknown
 - [ ] 1103 `canary.mjs` fails six steps under load; evidence bundle not written
 - [ ] 1003 the CI smokes are not part of the local pre-push gate
+- [ ] 1105 `mutate.mjs --stop` waits without a bound; a run blocked in `open()` holds the lock
 
 ### Lane 02 conformance-files · testing, scaffold, check, std-schedules, runtime-dom, compiler · `rfc:` conformance commits only · M
 - [ ] 1098 `sim-stalls` real 100 ms timer against a 300 ms budget is load-sensitive
@@ -64,7 +65,7 @@ Rules:
 - [ ] 1073 household `keel test` ended once in a Node crash trailer
 
 ### Lane 05 first-run · scaffold, compiler, cli, every package's publish config · RFC (k.cli, 1012) · L
-- [ ] 0991 the scaffold omits `esbuild`, so a new project's `keel build` fails
+- [x] 0991 the scaffold omits `esbuild`, so a new project's `keel build` fails
 - [ ] 1005 packages export `src/*.ts` while `files` is `dist`; published packages break
 - [ ] 0414 a scaffolded project has no `node` deployable, so `route --api` is E1511
 - [ ] 0677 a scaffolded module is placed in no deployable; the API route misfits writes
@@ -158,13 +159,17 @@ Rules:
 - [ ] 1088 CI's `shell-ios` failed twice at action 3 of the outbox session drive
 - [ ] 1060 a tap on the `Done: Bread` label makes no `change` on the iOS Simulator
 
+### Lane 33 found-by-household · schema, testing · no RFC unless k.testing must name the value · S
+- [ ] 1106 a generated `s.id` has no shape a server mints; `properties` breaks on it
+- [ ] 1107 `find().text` of an input is always empty
+
 ### Owned by a P1 workstream or in flight
 - [ ] 0034 the freeze review and status flips (W1)
 - [ ] 0413 `docs/freeze-review.md` "Tested, not stated" list unchecked against the suites (W1)
 - [ ] 0605 `styles` reserved on every component (W1); decided: keep it reserved, give E1823 the k.aria file scope and `unsafe/` exemption, the fix renames the prop
 - [ ] 0836 golden-3 has never been built (W1 step 4, the audit target)
 - [ ] 0963 the active task to the start of P1
-- [ ] 1102 the 2026-11-24 mutation pass stopped unfinished · in flight
+- [x] 1102 the 2026-11-24 mutation pass stopped unfinished
 - [ ] 0953 a build-time check that a server bundle reaches no CLI-time package · in flight (RFC 0163)
 - [ ] 0998 k.host-element names k.library before that section exists · in flight (RFC 0163)
 
@@ -298,6 +303,7 @@ Rules:
 - [ ] 1035 walkthrough findings L7-5 and L7-7 to L7-9 are open
 - [ ] 1095 three household scenarios pass `law: false`; give each run its own server
 - [ ] 1074 `list_writes` keeps every write key; decided: retention by age on a workflow
+- [ ] 1108 nine things the skills did not tell an agent testing household
 
 ### Owned by a P1 workstream
 - [ ] 0220 SVG system diagrams (W6 step 1)
