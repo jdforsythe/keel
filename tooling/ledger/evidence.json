@@ -1,5 +1,5 @@
 {
-  "commit": "daf932b7c9d34d40c4f168935e78ba4d7d8dc444",
+  "commit": "3e5a779650339cd552d9200e30f635b4bcb64ee1",
   "coverage": {
     "packages": {
       "apps/evenly": {
@@ -1178,7 +1178,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-25T19:49:58.624Z",
+  "generatedAt": "2026-11-25T22:58:06.605Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -1412,10 +1412,10 @@
     },
     "clauses": {
       "byRung": {
-        "example": 1162,
+        "example": 1174,
         "exhaustive": 6,
         "monitored": 0,
-        "none": 6,
+        "none": 2,
         "probabilistic": 253,
         "proven": 44
       },
@@ -1864,16 +1864,16 @@
         },
         "k.leave": {
           "byRung": {
-            "example": 14,
+            "example": 19,
             "exhaustive": 0,
             "monitored": 0,
             "none": 0,
             "probabilistic": 0,
             "proven": 0
           },
-          "status": "conformance-covered",
-          "total": 14,
-          "verified": 14
+          "status": "implemented",
+          "total": 19,
+          "verified": 19
         },
         "k.ledger": {
           "byRung": {
@@ -1955,16 +1955,16 @@
         },
         "k.module": {
           "byRung": {
-            "example": 22,
+            "example": 23,
             "exhaustive": 0,
             "monitored": 0,
             "none": 0,
             "probabilistic": 0,
             "proven": 0
           },
-          "status": "conformance-covered",
-          "total": 22,
-          "verified": 22
+          "status": "implemented",
+          "total": 23,
+          "verified": 23
         },
         "k.mount": {
           "byRung": {
@@ -2137,16 +2137,16 @@
         },
         "k.reactive": {
           "byRung": {
-            "example": 11,
+            "example": 12,
             "exhaustive": 0,
             "monitored": 0,
             "none": 0,
             "probabilistic": 9,
             "proven": 0
           },
-          "status": "conformance-covered",
-          "total": 20,
-          "verified": 20
+          "status": "implemented",
+          "total": 21,
+          "verified": 21
         },
         "k.requests": {
           "byRung": {
@@ -2813,29 +2813,29 @@
         },
         "std.postgres": {
           "byRung": {
-            "example": 15,
+            "example": 16,
             "exhaustive": 0,
             "monitored": 0,
-            "none": 1,
+            "none": 0,
             "probabilistic": 4,
             "proven": 0
           },
           "status": "conformance-covered",
           "total": 20,
-          "verified": 19
+          "verified": 20
         },
         "std.postgres-changes": {
           "byRung": {
-            "example": 3,
+            "example": 6,
             "exhaustive": 0,
             "monitored": 0,
-            "none": 3,
+            "none": 0,
             "probabilistic": 0,
             "proven": 0
           },
           "status": "conformance-covered",
           "total": 6,
-          "verified": 3
+          "verified": 6
         },
         "std.report": {
           "byRung": {
@@ -3008,23 +3008,23 @@
         },
         "std.workflows": {
           "byRung": {
-            "example": 8,
+            "example": 9,
             "exhaustive": 0,
             "monitored": 0,
             "none": 0,
             "probabilistic": 0,
             "proven": 0
           },
-          "status": "conformance-covered",
-          "total": 8,
-          "verified": 8
+          "status": "implemented",
+          "total": 9,
+          "verified": 9
         }
       },
-      "total": 1471,
-      "verified": 1465
+      "total": 1479,
+      "verified": 1477
     },
     "evidenceByRung": {
-      "example": 2603,
+      "example": 2615,
       "exhaustive": 21,
       "monitored": 8,
       "probabilistic": 458,
@@ -3596,10 +3596,10 @@
       "total": 641,
       "verified": 588
     },
-    "items": 2792,
+    "items": 2800,
     "negativeTypes": 90,
-    "unsafe": 14,
-    "verified": 2733
+    "unsafe": 33,
+    "verified": 2745
   },
   "mutation": {
     "packages": {
@@ -4164,21 +4164,21 @@
         "unitFiles": 8
       },
       "packages/check": {
-        "conformanceCases": 1288,
-        "conformanceFiles": 162,
+        "conformanceCases": 1318,
+        "conformanceFiles": 165,
         "exploreFiles": 0,
         "fails": 0,
         "otherCases": 0,
         "otherFiles": 0,
-        "propertyCalls": 397,
+        "propertyCalls": 399,
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 563,
-        "unitFiles": 85
+        "unitCases": 585,
+        "unitFiles": 90
       },
       "packages/cli": {
-        "conformanceCases": 1026,
+        "conformanceCases": 1025,
         "conformanceFiles": 230,
         "exploreFiles": 1,
         "fails": 0,
@@ -4682,8 +4682,8 @@
         "unitFiles": 8
       },
       "packages/std-workflows": {
-        "conformanceCases": 27,
-        "conformanceFiles": 10,
+        "conformanceCases": 30,
+        "conformanceFiles": 11,
         "exploreFiles": 0,
         "fails": 0,
         "otherCases": 0,
@@ -4739,18 +4739,18 @@
       }
     },
     "totals": {
-      "conformanceCases": 6868,
-      "conformanceFiles": 1513,
+      "conformanceCases": 6900,
+      "conformanceFiles": 1517,
       "exploreFiles": 21,
       "fails": 3,
       "otherCases": 0,
       "otherFiles": 0,
-      "propertyCalls": 3038,
+      "propertyCalls": 3040,
       "proveFiles": 24,
       "simulateFiles": 31,
       "skipTodo": 6,
-      "unitCases": 7059,
-      "unitFiles": 1151
+      "unitCases": 7081,
+      "unitFiles": 1156
     }
   },
   "tool": {
