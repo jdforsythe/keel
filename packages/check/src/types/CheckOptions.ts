@@ -13,7 +13,8 @@ import type { SourceFile } from "./SourceFile.ts";
  * `base`: the parsed `surface.json` of the deployed code (`keel check --base`, k.compat); without it, no E1562.
  * `typeCache`: a folder the type pass keeps its results in across processes (k.check-cache), each used only when every
  * file system question the pass asked gets the same answer again (file bytes by hash, existence, real paths, listings);
- * results are the same with or without it.
+ * results are the same with or without it. `own`: the library whose own folder `root` is (k.library-pack Own folder);
+ * its formats and rules apply as in an app whose manifest lists it.
  */
 export type CheckOptions = {
   readonly root?: string;
@@ -25,4 +26,5 @@ export type CheckOptions = {
   readonly types?: boolean;
   readonly base?: unknown;
   readonly typeCache?: string;
+  readonly own?: string;
 };

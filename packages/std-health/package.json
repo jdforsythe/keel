@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "keel": "library",
   "exports": {
     ".": {
       "keel": "./src/index.ts",
@@ -10,7 +11,6 @@
       "default": "./src/index.ts"
     },
     "./module": {
-      "keel": "./module.ts",
       "types": "./module.ts",
       "default": "./module.ts"
     },
@@ -28,11 +28,6 @@
       "keel": "./src/Health.schema.ts",
       "types": "./src/Health.schema.ts",
       "default": "./src/Health.schema.ts"
-    },
-    "./*": {
-      "keel": "./src/*.ts",
-      "types": "./src/*.ts",
-      "default": "./src/*.ts"
     }
   },
   "publishConfig": {
@@ -43,7 +38,6 @@
         "default": "./dist/src/index.js"
       },
       "./module": {
-        "keel": "./module.ts",
         "types": "./dist/module.d.ts",
         "default": "./dist/module.js"
       },
@@ -61,17 +55,12 @@
         "keel": "./src/Health.schema.ts",
         "types": "./dist/src/Health.schema.d.ts",
         "default": "./dist/src/Health.schema.js"
-      },
-      "./*": {
-        "keel": "./src/*.ts",
-        "types": "./dist/src/*.d.ts",
-        "default": "./dist/src/*.js"
       }
     }
   },
   "files": ["module.ts", "src", "dist", ".keel/ledger.json", "docs", "README.md"],
   "scripts": {
-    "check": "tsc --noEmit && biome check src test module.ts",
+    "check": "tsc --noEmit && biome check src test module.ts && keel check",
     "test": "vitest run",
     "coverage": "node ../../tooling/coverage.mjs",
     "build": "tsc -p tsconfig.build.json",

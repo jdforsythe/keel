@@ -7,7 +7,7 @@ import { tokensOf } from "./internal/tokensOf.server.ts";
 /** What the capability's factory gives: a factory sees the seed only, so the clock comes from the accessor. */
 type Maker = { make(now: () => number): Tokens };
 
-const access = register<Maker>("tokens", {
+const access = register<Maker>("tokens.opaque", {
   real: () => ({ make: (now) => tokensOf(realEngine(), now) }),
   shell: () => ({ make: (now) => tokensOf(realEngine(), now) }),
   sim: ({ seed }) => {

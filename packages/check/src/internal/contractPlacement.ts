@@ -24,21 +24,33 @@ function moduleOf(path: string): { readonly dir: string; readonly id: string } |
  * export not named `<id>`, an API id whose name after the module is not one lowerCamel segment, and a module's
  * `routes.ts` binding a contract imported from another module's contract file, and `contract` reached other than by a
  * direct call of its import (`contractEscapes`: an alias, a value use, a re-export, a dynamic import), which no
- * contract reader follows. A package's `./contract` lies under `node_modules/`, outside app code.
+ * contract reader follows. A library's file (`libraries`: its view folder to its `./contract` file's view path, `""`
+ * when it declares none) holds its module's contract in the file its `./contract` export names alone, the expected
+ * path written package-relative (`src/health.contract.ts`).
  */
-export function contractPlacement(files: readonly Checked[]): Diagnostic[] {
+export function contractPlacement(
+  files: readonly Checked[],
+  libraries: ReadonlyMap<string, string> = new Map(),
+): Diagnostic[] {
   const out: Diagnostic[] = [];
   for (const { file, parsed } of files) {
     if (!isAppPath(file.path)) continue;
     const mod = moduleOf(file.path);
+    const lib = mod === null ? undefined : libraries.get(`${mod.dir}modules/${mod.id}/`);
     const own = CONTRACT.exec(file.path);
-    const home = own !== null && own[1] === own[2];
-    const where = `${mod?.dir ?? ""}modules/${mod?.id ?? "<id>"}/${mod?.id ?? "<id>"}.contract.ts`;
+    const home = lib === undefined ? own !== null && own[1] === own[2] : lib !== "" && file.path === lib;
+    const libHome =
+      lib === undefined || mod === null
+        ? undefined
+        : lib === ""
+          ? "the file a ./contract export names"
+          : lib.slice(`${mod.dir}modules/${mod.id}/`.length);
+    const where = libHome ?? `${mod?.dir ?? ""}modules/${mod?.id ?? "<id>"}/${mod?.id ?? "<id>"}.contract.ts`;
     for (const n of contractEscapes(parsed.program))
       out.push(diagAt(file, n, "E1513", `call contract() directly by its import, in ${where}`, SEE));
     contractCalls(file, parsed.program).forEach((c, i) => {
       const id = mod?.id ?? c.id ?? "<id>";
-      const expected = `${mod?.dir ?? ""}modules/${id}/${id}.contract.ts`;
+      const expected = libHome ?? `${mod?.dir ?? ""}modules/${id}/${id}.contract.ts`;
       const at = (n: number, message: string): void => {
         out.push(diagAt(file, n, "E1513", message, SEE));
       };

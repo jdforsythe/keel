@@ -1,8 +1,8 @@
 // Seed 1337. `mint`'s `ttl` at and around both bounds and off the integers; the digest's `exp` equals `expiresAt`.
 import { createCtx } from "@keel/ctx";
-import { tokens } from "@keel/std-tokens/server";
 import fc from "fast-check";
 import { expect, test } from "vitest";
+import { tokens } from "../src/server/index.server.ts";
 import { simEngine } from "../src/server/internal/simEngine.server.ts";
 import { tokensOf } from "../src/server/internal/tokensOf.server.ts";
 import { revealed } from "./revealed.server.ts";

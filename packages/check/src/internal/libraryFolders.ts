@@ -43,6 +43,7 @@ export function libraryFolders(files: readonly SourceFile[]): LibraryView {
   const ids = new Map<string, string>();
   const packages: SourceFile[] = [];
   const entries = new Map<string, string>();
+  const contracts = new Map<string, string>();
   const byPath = new Map(files.map((f) => [f.path, f]));
   for (const f of files) {
     const m = PACKAGE.exec(f.path);
@@ -66,6 +67,7 @@ export function libraryFolders(files: readonly SourceFile[]): LibraryView {
       if (key.startsWith(".") && !key.includes("*") && /^(?:src|unsafe)\//.test(rel))
         entries.set(`${name}${key.slice(1)}`, `${under}${rel}`);
     }
+    contracts.set(under, entries.get(`${name}/contract`) ?? "");
   }
   const toView = new Map<string, string>();
   const toReal = new Map<string, string>();
@@ -88,5 +90,6 @@ export function libraryFolders(files: readonly SourceFile[]): LibraryView {
     folder: (p) => folders.get(p),
     packages,
     entries,
+    contracts,
   };
 }

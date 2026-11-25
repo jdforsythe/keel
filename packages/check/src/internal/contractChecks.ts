@@ -18,12 +18,14 @@ import { prefixCollisions } from "./prefixCollisions.ts";
  * E1503 and E1504 from each module contract's literal, E1502 per contract and per deployable's table, E1509 per
  * deployable's table, E1506 for a binding's `layout` of another module per deployable's table. A project's topology
  * is `topology` for the root when given, else the static parse of its `topology.ts` among `project`; with none, its
- * modules form one table.
+ * modules form one table. `libraries` maps a library's view folder to its `./contract` file's view path
+ * (`LibraryView` `contracts`): a library's `contract()` belongs there.
  */
 export function contractChecks(
   files: readonly Checked[],
   project: readonly SourceFile[],
   topology: Topology | undefined,
+  libraries: ReadonlyMap<string, string> = new Map(),
 ): Diagnostic[] {
   const contracts = moduleContracts(files);
   const topologyOf = (dir: string): Topology | undefined => {
@@ -39,7 +41,7 @@ export function contractChecks(
       .map((m) => m.prefix),
   );
   return [
-    ...contractPlacement(files),
+    ...contractPlacement(files, libraries),
     ...contractImports(files),
     ...contractFields(
       contracts,

@@ -1,16 +1,16 @@
 # std.health: Health route
 status: conformance-covered
 
-**Extension point.** Module manifest (k.module). `@keel/std-health` is a stdlib module: its manifest sits at the package root, `module.ts`, and its files are imported as `@keel/std-health/<File>`.
+**Extension point.** Module manifest (k.module). `@keel/std-health` is a library (k.library): its manifest sits at the package root, `module.ts`, and its entries are `.`, `./Health`, `./routes`, `./contract` and `./module`.
 ```ts
 export default module({ id: 'health', deps: [], capabilities: ['clock'],
   public: { exports: ['Health', 'routes'] } })
 ```
-Files: `src/Health.ts`, `src/routes.ts` (public), `src/health.contract.ts` (the `./contract` export), `src/loadHealth.server.ts`, `src/HealthView.ts` (private).
+Files: `src/Health.schema.ts`, `src/routes.ts` (public), `src/health.contract.ts` (the `./contract` export), `src/loadHealth.server.ts`, `src/HealthView.ts` (private).
 
 **API.**
 - `Health` is `s.object({ status: s.literal('ok'), at: s.number() }, { closed: true })`.
-- `health` (`./contract`) is `contract('health', { 'health.status': { path: '/health' } })`; `routes` is `manifest(health, { 'health.status': { component: HealthView, loader: loadHealth } })`. `loadHealth` returns `ok({ status: 'ok', at: ctx.clock.now() })`. `HealthView` renders `data` as a `main` with id `health.status` and the text `ok`.
+- `health` (`./contract`) is `contract('health', { 'health.status': { path: '/health' } })`; `routes` is `manifest(health, { 'health.status': { component: HealthView, loader: loadHealth } })`. `loadHealth` returns `ok({ status: 'ok', at: ctx.clock.now() })`. `HealthView`, the route's component, renders `data` as a `main` with the literal id `health.status` (k.library Ids) and the text `ok`.
 - An app module opts in with `deps: ['@keel/std-health']`. It may import `Health`, `routes` and the `./contract` export `health`, and it may link to `health.status` with `health.href('health.status')`. A deployable serves the route when its route table (k.routes) includes `routes`.
 
 **Rules.** None of its own. The k.module rules (E1151-E1156) apply to it and to every module that uses it.

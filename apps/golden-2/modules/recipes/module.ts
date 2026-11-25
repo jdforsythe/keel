@@ -15,7 +15,7 @@ export default module({
     "@keel/std-tables",
     "@keel/std-timings",
   ],
-  capabilities: ["geo", "net", "storage"],
+  capabilities: ["geo.position", "net", "storage"],
   public: {
     exports: ["RecipeParams", "RecipeSearch"],
   },

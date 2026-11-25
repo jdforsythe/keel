@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { appManifest } from "../internal/appManifest.ts";
@@ -16,6 +17,14 @@ const MANIFEST = /(?:^|\/)modules\/([^/]+)\/module\.[cm]?[jt]s$/;
 const STD = /^@keel\/std-/;
 const NAME = /^@keel\/std-[a-z0-9-]+$/;
 const SCOPED = /^@[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._-]*$/;
+/** The text of `file`, or "" when it cannot be read. */
+function readText(file: string): string {
+  try {
+    return fs.readFileSync(file, "utf8");
+  } catch {
+    return "";
+  }
+}
 const clip = (x: string): string => (x.length > 28 ? `${x.slice(0, 25)}...` : x);
 /** Entry files imported in this process; only successes are kept, so a failure is retried on the next call. */
 const loaded = new Set<string>();
@@ -58,7 +67,11 @@ function toolsTarget(pkg: string): string | undefined {
 async function load(dir: string, dep: string): Promise<string | { readonly tools: string } | undefined> {
   if (STD.test(dep) && !NAME.test(dep)) return "not @keel/std-[a-z0-9-]+";
   if (!SCOPED.test(dep)) return "not a scoped package name";
-  const pkg = packageDir(dir, dep);
+  return loadAt(packageDir(dir, dep), dep);
+}
+
+/** `load` for the package folder `pkg` already found (undefined: not found). */
+async function loadAt(pkg: string | undefined, dep: string): Promise<string | { readonly tools: string } | undefined> {
   if (pkg === undefined) return "not found";
   const kind = libraryKind(readJson(path.join(pkg, "package.json")), dep);
   if (kind === undefined) return "not a library";
@@ -90,10 +103,21 @@ async function load(dir: string, dep: string): Promise<string | { readonly tools
  * not imported. A loaded file is not imported again in this process; a failure is retried on the next call. A package
  * that threw, or changed after it loaded, stays as Node's module cache holds it until the process restarts. While a
  * package's file is imported, `stdImporting` names it. Manifests that are not literal are skipped (`keel check` reads
- * them as opaque).
+ * them as opaque). `own` names the library whose own folder `root` is (k.library-pack Own folder): its own `./tools`
+ * is imported first, as for an app whose manifest lists it, and one that does not import is that E1159 at
+ * `package.json`'s `"./tools"` key.
  */
-export async function importDeps(root: string, files: readonly SourceFile[]): Promise<Diagnostic[]> {
+export async function importDeps(root: string, files: readonly SourceFile[], own?: string): Promise<Diagnostic[]> {
   const out: Diagnostic[] = [];
+  if (own !== undefined) {
+    const why = await loadAt(root, own);
+    if (typeof why === "object") {
+      const source = readText(path.join(root, "package.json"));
+      const key = source.indexOf('"./tools"');
+      const message = `${clip(own)} ./tools ${clip(why.tools)} does not import; build it`;
+      out.push({ code: "E1159", path: "package.json", ...lineCol(source, Math.max(key, 0)), message, see: "k.module" });
+    }
+  }
   const report = async (dir: string, dep: string, at: string, source: string, start: number, by: string) => {
     const why = await load(dir, dep);
     if (why === undefined) return;

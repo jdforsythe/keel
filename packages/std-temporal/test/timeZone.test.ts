@@ -25,7 +25,7 @@ test("the pinned list holds 597 names, 344 Zone names plus UTC for gen, without 
 test("every pinned name is accepted by Intl.DateTimeFormat on this host", () => {
   const refused = pinned.filter((n) => {
     try {
-      new Intl.DateTimeFormat("en-US", { timeZone: n });
+      new Intl.DateTimeFormat(undefined, { timeZone: n });
       return false;
     } catch {
       return true;

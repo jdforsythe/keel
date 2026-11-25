@@ -31,7 +31,8 @@ import { summary } from "./summary.ts";
  * Run over every code file, it checks the files of the app's libraries too (`runCheck`, k.library In an app).
  * In a library's own folder (`ownLibrary`) it reads the folder as an app holds the library installed (`asInstalled`):
  * every k.library rule holds and E1162 does not; the libraries its manifest lists are read and imported as an app's
- * are, and each diagnostic is located at the folder's own path (k.library-pack Own folder).
+ * are, its own `./tools` is imported as an app that lists it imports it, and each diagnostic is located at the folder's
+ * own path (k.library-pack Own folder).
  */
 export async function checkCommand(input: Input, given: Io): Promise<OutRecord[]> {
   // A library's own folder is read as an app holds the library installed (k.library-pack Own folder).
@@ -50,7 +51,7 @@ export async function checkCommand(input: Input, given: Io): Promise<OutRecord[]
   // In a library's own folder, the libraries its manifest lists are found and imported from it.
   const manifest = view === undefined ? undefined : project.find((f) => f.path === view.to("module.ts"));
   const reach = manifest === undefined ? project : [{ path: "modules/library/module.ts", source: manifest.source }];
-  const checked = await runCheck(io.cwd, files, project, base.value, whole, reach);
+  const checked = await runCheck(io.cwd, files, project, base.value, whole, reach, own?.name);
   const topology = projectTopology(project);
   const policy = await shellPolicy(io.cwd, project);
   const loaded = await loadShells(io.cwd, project, policy);

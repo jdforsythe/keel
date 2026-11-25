@@ -41,7 +41,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.defaults | Queued defaults | conformance-covered | submit |
 | k.place | Placed props | conformance-covered | calls |
 | k.router | Routes | conformance-covered | params |
-| k.contract | Module contract | conformance-covered | entries |
+| k.contract | Module contract | implemented | entries |
 | k.routes | Route table | conformance-covered | union |
 | k.guards | Guards | conformance-covered | deny |
 | k.prefix | Path prefix | conformance-covered | enums |

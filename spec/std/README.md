@@ -29,7 +29,7 @@ S8 adds std.db, std.workflows, std.shells and std.tokens.
 | std.messages | Message sets | conformance-covered | check rule registry: message sets, one file per locale |
 | std.copy | Literal copy | conformance-covered | `@keel/std-messages`: where E2406 reads copy and the shapes it follows |
 | std.brands | Id brand case | conformance-covered | check rule registry: E2101 with fix |
-| std.geo | Geolocation | conformance-covered | capability registry: `geo`, seeded sim |
+| std.geo | Geolocation | implemented | capability registry: `geo.position`, seeded sim |
 | std.health | Health route | conformance-covered | module manifest: route and public export via `deps` |
 | std.timings | Timings | conformance-covered | inspector hooks: `timings.recent` section |
 | std.report | Tally report | conformance-covered | formatter registry: `report.tally`; `keel report` |
@@ -57,4 +57,4 @@ S8 adds std.db, std.workflows, std.shells and std.tokens.
 | std.shells | Shell drivers | conformance-covered | storage and net drivers for Capacitor and Tauri shells |
 | std.capacitor | Capacitor shell target | conformance-covered | shell target: Android and iOS files, tools, build, CI jobs |
 | std.tauri | Tauri shell target | conformance-covered | shell target: desktop files, tools, build, CI job |
-| std.tokens | Opaque tokens | conformance-covered | capability, schema type and check rule registries: `mint` with a ttl, `check`, `idOf`, `Digested`, E2201-E2203 |
+| std.tokens | Opaque tokens | implemented | capability, schema type and check rule registries: `mint` with a ttl, `check`, `idOf`, `Digested`, E2201-E2203 |

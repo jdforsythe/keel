@@ -26,6 +26,7 @@ import { isSqlPath } from "./internal/isSqlPath.ts";
 import { libraryFolders } from "./internal/libraryFolders.ts";
 import { libraryIds } from "./internal/libraryIds.ts";
 import { libraryImports } from "./internal/libraryImports.ts";
+import { libraryPages } from "./internal/libraryPages.ts";
 import { libraryLedgers } from "./internal/modules/libraryLedgers.ts";
 import { moduleChecks } from "./internal/modules/moduleChecks.ts";
 import { normalize } from "./internal/normalize.ts";
@@ -206,7 +207,7 @@ export function check(given: readonly SourceFile[], options: CheckOptions = {}):
 
   // The `@keel/*` packages this call's app manifests reach: a std package's formats apply only among them, and so do
   // the rules of one `importDeps` imported first, whatever an earlier call in this process loaded (k.check-cache).
-  const scope = stdInScope(all, opts.root ?? process.cwd());
+  const scope = stdInScope(all, opts.root ?? process.cwd(), opts.own);
   const skip = new Map([...reported].map(([p, codes]) => [libs.real(p), codes]));
   const typed =
     opts.types === false
@@ -251,10 +252,15 @@ export function check(given: readonly SourceFile[], options: CheckOptions = {}):
     ...libraryLedgers(realChecked, realAll, opts.root ?? process.cwd()),
     ...aliasedImports(realChecked, path.resolve(opts.root ?? process.cwd()), dirs, isLibrary),
     ...outsideImports(checked, path.resolve(opts.root ?? process.cwd()), dirs),
-    ...libraryIds(realChecked, isLibrary, new Map([...libs.entries].map(([spec, at]) => [spec, libs.real(at)]))),
+    ...libraryIds(
+      realChecked,
+      isLibrary,
+      new Map([...libs.entries].map(([spec, at]) => [spec, libs.real(at)])),
+      libraryPages(realChecked, realAll, libs),
+    ),
     ...libraryImports(realChecked, libs.folder),
     ...guardRedirectLoops(checked),
-    ...contractChecks(checked, all, opts.topology),
+    ...contractChecks(checked, all, opts.topology, libs.contracts),
     ...ruleCodeDeclarations(checked),
     ...budgetBreaches(opts.budgets ?? []),
     // E1005 derives each artifact from the files that wrote it: the app's sources and its libraries' at `modules/<id>/<f>`.
