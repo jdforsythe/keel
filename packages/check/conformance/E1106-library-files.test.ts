@@ -75,8 +75,13 @@ describe("E1106 and a library's files", () => {
   it("E1106: `s.format` in `src/Even.schema.ts` of a workspace-linked library the app lists reports no E1106", () => {
     const dir = freshDir("keel-e1106");
     try {
-      const lib = project([{ path: `${ROOT}/src/Even.schema.ts`, source: EVEN }]).filter((f) => f.path.startsWith(ROOT));
-      writeTree(join(dir, "libs", "units"), lib.map((f) => ({ path: f.path.slice(`${ROOT}/`.length), source: f.source })));
+      const lib = project([{ path: `${ROOT}/src/Even.schema.ts`, source: EVEN }]).filter((f) =>
+        f.path.startsWith(ROOT),
+      );
+      writeTree(
+        join(dir, "libs", "units"),
+        lib.map((f) => ({ path: f.path.slice(`${ROOT}/`.length), source: f.source })),
+      );
       mkdirSync(dirname(join(dir, ROOT)), { recursive: true });
       linkAt(dir, ROOT, join(dir, "libs", "units"));
       const files = project([{ path: `${ROOT}/src/Even.schema.ts`, source: EVEN }]);
