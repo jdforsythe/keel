@@ -3,7 +3,7 @@
 Status: accepted (ADR-0253), by the orchestrator on 2026-11-25, to be confirmed by the operator. Amends k.boundary (Ambient types, Following, Rules, Conformance), k.bundle (Types, one bullet), k.leave (E1107), k.privacy-reads (Readers, Held), k.schema (Frozen), k.formats (Literals, E1108's message), k.origins (Rules), k.security (E1571's message), k.scaffold (Links, Rules) and k.shell (Files, one reference). From fix lane 07 of the weakness triage (`tasks/p1/weaknesses.md`).
 
 ## Decisions
-- D1: E1014 (new): a `/// <reference …/>` directive in project code, or a declaration of the global `ImportMeta` or `ImportMetaEnv` in a loaded file other than TypeScript's lib, `@types/node` and `@keel/compiler/client`. `import.meta.env` is typed by Keel's declaration alone.
+- D1: E1016 (new): a `/// <reference …/>` directive in project code, or a declaration of the global `ImportMeta` or `ImportMetaEnv` in a loaded file other than TypeScript's lib, `@types/node` and `@keel/compiler/client`. `import.meta.env` is typed by Keel's declaration alone.
 - D2: E1107 judges on k.boundary Reach, which it now shares. It also reports a state schema it cannot read, a `stores()` call in client-reachable code, and `store`/`stores` used other than as a call.
 - D3: one way to follow a specifier (k.boundary Following): k.bundle Aliases' resolution, for Reach and for k.origins. A template `import()` with a relative head is expanded as Vite expands it. E1015 (new): a relative specifier in non-test project code that resolves outside the project root.
 - D4: the schema read follows a literal binding only while it is *held*: every reference to it in the checked files is one the read takes. Every schema `@keel/schema` makes, and `s`, are frozen, so a schema value needs no such rule.
@@ -30,13 +30,13 @@ Status: accepted (ADR-0253), by the orchestrator on 2026-11-25, to be confirmed 
 - **0994.** k.origins Rules already says "on each deployable listing the module that holds the file or a file importing it, directly or not", with no word limiting it to relative imports, and `declaredFor` breaks that sentence. Expected: `declaredFor` builds its importer edges with the resolver k.boundary Following names, the one `keel check` uses for E1013 (k.bundle Aliases): a relative specifier, the project's own name with `exports`, a workspace link or a `node_modules` symlink whose real path is a project file. The query is stripped, value imports and re-exports count, and so does a literal or relative-template `import()`. `Image src="https://a.example/x.png"` in `lib/pic.tsx`, imported by `a` as `../../lib/pic.tsx` and by `b` as `p/lib/pic.tsx`, with only `a`'s deployable declaring it, is one E1570. The k.origins bullet added here pins it. The new sentence that points Importing at Following only names the resolver; the behaviour was already required.
 - **0995.** No behaviour change for symbolic links. `linkEscapes` gains a unit file and a property test (`packages/cli/test/linkEscapes.test.ts`) with these cases: a sibling whose name has the root as a prefix (`proj`, `proj-evil`), a link to an ancestor of the root, a chain of links, a dangling intermediate folder, a link that resolves back inside, a root reached through a link (macOS `/tmp`), and a root that is not a real path, for which it returns true for everything. Assert that `applyWrites` and `shellTargets` each pass a real path (k.scaffold Links: "judged against the real path of the project root"). The hard-link refusal is a spec change, under Links below.
 
-### Ambient types (0884): E1014
+### Ambient types (0884): E1016
 The triage decided this one: forbid the reference, and type `import.meta.env` through Keel's declaration. `@keel/compiler/client` already declares the five keys (k.bundle Types). A reference adds a second declaration of the same globals. The rule therefore looks at the globals, wherever they come from:
 - **The directive.** `/// <reference types|path|lib|no-default-lib …/>` in a project code file (E1576's files: outside `packages/`, `node_modules/`, `.keel/`), tests included. At the directive: `type reference in project code; import.meta.env and import types are Keel's` (75 units). The fix deletes the line. One way: TypeScript's `types` belong to Keel's type pass, not to the app.
-- **The declaration.** After the type pass has built its program, the checker asks for the declarations of the global symbols `ImportMeta` and `ImportMetaEnv`. Every declaration in a file other than TypeScript's lib files, `@types/node` and `@keel/compiler/client` is E1014, once per declaring file. When that file is a project file, the finding sits at its first such declaration. When it is a package file, the finding sits at the first import, in path order then position, of a project file through which the program loads it. This catches `import 'vite/client'`, `import type {} from 'vite/client'`, a project `declare global`, and a package whose types augment `ImportMeta`. Message: `<file> declares import.meta types; they are Keel's and Node's only`, 60 units without `<file>`, with `<file>` cut from its front. No fix.
+- **The declaration.** After the type pass has built its program, the checker asks for the declarations of the global symbols `ImportMeta` and `ImportMetaEnv`. Every declaration in a file other than TypeScript's lib files, `@types/node` and `@keel/compiler/client` is E1016, once per declaring file. When that file is a project file, the finding sits at its first such declaration. When it is a package file, the finding sits at the first import, in path order then position, of a project file through which the program loads it. This catches `import 'vite/client'`, `import type {} from 'vite/client'`, a project `declare global`, and a package whose types augment `ImportMeta`. Message: `<file> declares import.meta types; they are Keel's and Node's only`, 60 units without `<file>`, with `<file>` cut from its front. No fix.
 - **Not reported.** `vitest` and `vite`'s main types declare neither global (checked against vite 8.3.6 and vitest 4.1.12), so a test file importing them, or `@keel/testing`, is clean. A file under `packages/` (`@keel/std-money`'s `/// <reference lib="es2023.intl" />`) is outside E1576's files.
-- **Soundness boundary.** After E1014, `import.meta` carries TypeScript's lib, Node's members (`url`, `dirname`, `filename`, `resolve`, `main`) and Keel's `env`. `import.meta.glob` and `import.meta.hot` are type errors (E1751). Node's members type-check in browser code: that comes from `@types/node`, which k.check Pipeline loads, and this RFC does not change it.
-- `keel explain E1014`: `E1014 a type reference, or an import.meta declaration not Keel's` / `A browser build's import.meta.env holds BASE_URL, MODE, DEV, PROD and SSR (k.boundary Environment); @keel/compiler/client types exactly those. Another declaration (vite/client, a declare global) types keys the build never holds.` / `delete the reference; read config through clientStd`.
+- **Soundness boundary.** After E1016, `import.meta` carries TypeScript's lib, Node's members (`url`, `dirname`, `filename`, `resolve`, `main`) and Keel's `env`. `import.meta.glob` and `import.meta.hot` are type errors (E1751). Node's members type-check in browser code: that comes from `@types/node`, which k.check Pipeline loads, and this RFC does not change it.
+- `keel explain E1016`: `E1016 a type reference, or an import.meta declaration not Keel's` / `A browser build's import.meta.env holds BASE_URL, MODE, DEV, PROD and SSR (k.boundary Environment); @keel/compiler/client types exactly those. Another declaration (vite/client, a declare global) types keys the build never holds.` / `delete the reference; read config through clientStd`.
 
 ### Following (0994's resolver for Reach; files outside the project): E1015
 - Reach followed relative specifiers only. Now it follows every specifier that k.bundle Aliases resolves to a project file. A file reached by the project's own name or a workspace link is in reach, as it is in the bundle. A specifier resolving under `node_modules/` or outside the project is a package's: it is not followed, and E1007 holds at build.
@@ -84,8 +84,8 @@ k.scaffold Links states what `linkEscapes` judges. It adds one refusal: an exist
 
 ## Spec diff
 Applied in this commit. Each amended section reads `implemented` until its conformance and build land: k.boundary, k.bundle, k.leave, k.privacy-reads, k.schema, k.formats, k.origins, k.security and k.scaffold, as in the map. k.shell changes one phrase to a reference and stays `conformance-covered`.
-- k.boundary: **Ambient types** (E1014), **Following** (E1015), Reach now covers E1107, Rules gains E1014 and E1015, and four Conformance bullets are added.
-- k.bundle: the Types sentence on references points at E1014. Its bullet on `import.meta.env.VITE_X` now reads one E1014 and the same E1751, because the behaviour changed.
+- k.boundary: **Ambient types** (E1016), **Following** (E1015), Reach now covers E1107, Rules gains E1016 and E1015, and four Conformance bullets are added.
+- k.bundle: the Types sentence on references points at E1016. Its bullet on `import.meta.env.VITE_X` now reads one E1016 and the same E1751, because the behaviour changed.
 - k.leave: the E1107 sentence in Snapshots moves to a paragraph of its own, **E1107**, and three bullets are added.
 - k.privacy-reads: schemaHolds says "a literal binding that is not held (Held)", **Held** is added, and two bullets.
 - k.schema: **Frozen**, and one bullet.
@@ -97,25 +97,25 @@ Applied in this commit. Each amended section reads `implemented` until its confo
 
 ## Conformance diff
 Written by the `conformance-writer` from the spec text.
-- `packages/check/conformance/boundary-E1014-ambient.test.ts`: k.boundary bullets 9 and 10.
+- `packages/check/conformance/boundary-E1016-ambient.test.ts`: k.boundary bullets 9 and 10.
 - `packages/check/conformance/boundary-E1015-outside.test.ts`: k.boundary bullet 11.
 - `packages/check/conformance/boundary-following.test.ts`: k.boundary bullet 12.
-- `packages/check/conformance/bundle-types.test.ts`: the changed k.bundle bullet. Its REF cases now also expect one E1014.
+- `packages/check/conformance/bundle-types.test.ts`: the changed k.bundle bullet. Its REF cases now also expect one E1016.
 - `packages/check/conformance/leave-E1107-reach.test.ts`: k.leave bullets 11 to 13.
 - `packages/check/conformance/privacy-reads-held.test.ts`: k.privacy-reads bullets 5 and 6.
 - `packages/schema/conformance/schema-frozen.test.ts`: the k.schema bullet.
 - `packages/check/conformance/formats-E1108-owner.test.ts`: the k.formats bullet.
 - `packages/check/conformance/origins-following.test.ts`: the k.origins bullet.
 - `packages/cli/conformance/scaffold-links.test.ts`: the k.scaffold bullet.
-- `fixtures-by-code.ts` and `fix-diffs.test.ts`: fixtures for E1014 (with its fix) and E1015.
-- Existing cases: `packages/cli/conformance/boundary-env.test.ts`, `build-production-mode.test.ts` and `bundle-support.ts` type `import.meta.env` with `/// <reference types="vite/client" />`, and E1014 now stops their `keel check` and `keel build`. They read keys through `Reflect.get(import.meta.env, …)` and `Object.keys`, which Keel's declaration types, so the writer drops `REF`. The test for E1571's message quotes the new text.
+- `fixtures-by-code.ts` and `fix-diffs.test.ts`: fixtures for E1016 (with its fix) and E1015.
+- Existing cases: `packages/cli/conformance/boundary-env.test.ts`, `build-production-mode.test.ts` and `bundle-support.ts` type `import.meta.env` with `/// <reference types="vite/client" />`, and E1016 now stops their `keel check` and `keel build`. They read keys through `Reflect.get(import.meta.env, …)` and `Object.keys`, which Keel's declaration types, so the writer drops `REF`. The test for E1571's message quotes the new text.
 
 ## Migration
 None. No app is released. The build fixes any app or fixture the new errors report.
 
 ## Token impact
 - Spec: k.boundary grows by about 945 tokens to about 2,685, k.leave by about 610 to about 2,010, k.privacy-reads by about 605 to about 1,680, k.schema by about 145, k.formats by about 290, k.origins by about 175, and k.scaffold by about 270 to about 2,555. k.bundle and k.shell stay level. k.check is unchanged. Every section stays under 3,110.
-- `keel explain`: two catalog entries (E1014, E1015), each under budget.
+- `keel explain`: two catalog entries (E1016, E1015), each under budget.
 - `@keel/check`: one Held walk replaces `mutatedBinding`, one global-declaration query sits on the existing program, and the reach is shared rather than duplicated. Measure the size in the build against the `@keel/check` budget.
 
 ## Build plan
@@ -127,7 +127,7 @@ None. No app is released. The build fixes any app or fixture the new errors repo
 - `packages/check/src/internal/modules/moduleChecks.ts`: `clientPii` moves onto `isClientReachable`, with callee following and the three new E1107 findings.
 - `packages/compiler/src/internal/clientReach.ts` and `packages/compiler/src/hosting/declaredFor.ts`: one resolver (k.bundle Aliases') and template `import()`.
 - A new rule for E1015.
-- `packages/check/src/internal/typeCheck.ts`: E1014, the directive scan plus the global-declaration query.
+- `packages/check/src/internal/typeCheck.ts`: E1016, the directive scan plus the global-declaration query.
 - `judgeFormat.ts`: scope by owner.
 - `foreignUrlFetch.ts`: the message.
 - `packages/cli/src/internal/linkEscapes.ts`: `nlink`, plus its unit and property tests.
@@ -135,7 +135,7 @@ None. No app is released. The build fixes any app or fixture the new errors repo
 - Docs: the `keel` and `keel-compliance` skills' code lists, the `@keel/check` README, a changeset, and `tasks/BACKLOG.md` (0975, 0884, 0880, 0994, 1101, 1099, 0995).
 
 ## For the operator
-1. **E1014 also covers an `import.meta` declaration, not only the directive.** Recommended: yes. Otherwise `import 'vite/client'` does what the reference did.
+1. **E1016 also covers an `import.meta` declaration, not only the directive.** Recommended: yes. Otherwise `import 'vite/client'` does what the reference did.
 2. **E1015 refuses a relative import that leaves the project.** Recommended: yes. Check cannot read the target, and nothing in the tree does this today.
 3. **E1107 reports a `stores()` call in client-reachable code, and any store schema it cannot read.** Recommended: yes. Both are silent passes today.
 4. **Schemas are frozen at run time.** Recommended: yes. It makes the static read sound for schema values, and no package mutates a node.

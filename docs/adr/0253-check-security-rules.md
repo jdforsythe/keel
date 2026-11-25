@@ -14,7 +14,7 @@
 The principle: a wrong program must not pass the gate, and a rule must not report what is not there.
 
 **Decision.**
-- E1014: a `/// <reference …/>` in project code (fix: delete it), or a declaration of the global `ImportMeta`/`ImportMetaEnv` in any loaded file other than TypeScript's lib, `@types/node` and `@keel/compiler/client`.
+- E1016: a `/// <reference …/>` in project code (fix: delete it), or a declaration of the global `ImportMeta`/`ImportMetaEnv` in any loaded file other than TypeScript's lib, `@types/node` and `@keel/compiler/client`.
 - k.boundary Following: Reach, and k.origins' importers, follow every specifier k.bundle Aliases resolves to a project file. A relative-headed template `import()` expands as Vite expands it. E1015: a relative specifier in non-test project code that resolves outside the project root.
 - E1107 judges on the shared Reach, finds `store` through aliases, namespaces and re-exports, and also reports an unreadable state schema, a `stores()` call, and `store`/`stores` used other than as a call.
 - The schema read follows a literal binding only while every reference to it in the checked files is one the read takes (k.privacy-reads Held). `@keel/schema` freezes `s` and every schema and node it makes.
