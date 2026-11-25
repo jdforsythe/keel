@@ -1,5 +1,5 @@
 # k.origins: Declared third-party origins
-status: implemented
+status: conformance-covered
 
 **Purpose.** A deployable names, with a reason, each other origin its documents load from.
 

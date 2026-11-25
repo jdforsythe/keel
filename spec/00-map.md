@@ -28,13 +28,13 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | id | section | status | one line |
 |-|-|-|-|
 | k.schema | Schemas | implemented | codecs |
-| k.formats | Format types | implemented | brands |
+| k.formats | Format types | conformance-covered | brands |
 | k.reactive | Reactivity | conformance-covered | signals |
 | k.store | Store, transactions | conformance-covered | log |
 | k.component | Components | conformance-covered | props |
 | k.compiler | Compiler, artifacts | conformance-covered | JSX |
 | k.boundary | Server boundary | implemented | stubs |
-| k.bundle | Browser bundles | implemented | workers |
+| k.bundle | Browser bundles | conformance-covered | workers |
 | k.runtime | DOM runtime, islands | conformance-covered | nodes |
 | k.resume | Documents, resume | conformance-covered | regions |
 | k.claim | Claim order | conformance-covered | eager |
@@ -56,7 +56,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.host | Host reads | conformance-covered | zone |
 | k.cli | CLI, MCP, LSP | conformance-covered | flags |
 | k.docs | Installed docs | conformance-covered | read |
-| k.scaffold | Scaffold, codemods | implemented | edits |
+| k.scaffold | Scaffold, codemods | conformance-covered | edits |
 | k.scaffold-shell | Shell scaffold | conformance-covered | shells |
 | k.scaffold-service | Service scaffold | conformance-covered | clients |
 | k.testing | Harness, properties | conformance-covered | fire |
@@ -95,11 +95,11 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.roles | Part roles | conformance-covered | grid |
 | k.host-element | Host elements | conformance-covered | charts |
 | k.host-code | Host code | conformance-covered | d3 |
-| k.security | Headers, CSP | implemented | CSP |
-| k.origins | Declared origins | implemented | CSP |
+| k.security | Headers, CSP | conformance-covered | CSP |
+| k.origins | Declared origins | conformance-covered | CSP |
 | k.privacy | Secrets, personal data | conformance-covered | secrets |
 | k.reveal | Revealed values | conformance-covered | E1112 |
-| k.privacy-reads | Static privacy reads | implemented | readers |
+| k.privacy-reads | Static privacy reads | conformance-covered | readers |
 | k.evidence | Evidence bundle | conformance-covered | bundle |
 | k.parity | Stdlib parity | proposed | seams |
 | k.review | Review of escapes | conformance-covered | ranges |

@@ -1,5 +1,5 @@
 # k.security: Response headers, CSP and the caller cookie
-status: implemented
+status: conformance-covered
 
 **Headers.** Every `createApp` response (documents, JSON, event streams, assets, redirects, errors) carries `X-Content-Type-Options: nosniff`, `Referrer-Policy: same-origin`, `Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Resource-Policy: same-origin`, `X-Frame-Options: DENY` and `Permissions-Policy: camera=(), microphone=(), payment=(), usb=()`; on https (the cookie's rule below) also `Strict-Transport-Security: max-age=63072000`.
 
