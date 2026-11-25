@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.privacy, Sinks "Cost: a scope counts the UTF-8 bytes of its distinct values, secret and `.pii()` together (a lone surrogate 3 bytes; an NFC or NFD form that differs counts as a value). Past 65,536 bytes, or once one `Secret` has more than 1,000,000 values to read, its set takes no more values and every text of the scope is past the cap. Below it, the matcher is built in steps linear in the bytes of the set it is built for, built again only when the set has grown, and each text is read in steps linear in its length, each of its three views once; a text over 2,000,000 characters is not read (k.serverlog)."
+// Spec: k.privacy, Sinks "Cost: a scope counts the UTF-8 bytes of its distinct values, secret and `.pii()` together (a lone surrogate 3 bytes; an NFC or NFD form that differs counts as a value). Past 65,536 bytes, or once one `Secret` has more than 1,000,000 values to read (its value and each value, key, array and object inside it counted), its set takes no more values and every text of the scope is past the cap. Below it, the matcher is built in steps linear in the bytes of the set it is built for, built again only when the set has grown, and each text is read in steps linear in its length, each of its readings once; a text over 2,000,000 characters is not read (k.serverlog)."
 // Spec: k.privacy, Sinks "Server log (k.server): in a `diag` record's message and `frames` and the `req` record's path, each of `piiValues` (k.schema) of the request's decoded action input, its loaders' and actions' outputs and its factories' store states becomes `[pii]`. Each string, number and key but a declared field name (not a boolean) in a `Secret` made or revealed while the request runs (`bearer` too) becomes `[secret]`. A runner's `run` is scoped alike. Past the cap (Cost), a message after its prefix (`loader <id> threw: `), each frame and the path are one mark, `[secret]` if the scope holds a secret, else `[pii]`; a message with no prefix is one mark whole. Each request and runner `run` takes the `onSecret` slot of `@keel/schema/internal` for the server's listener as it begins; each text of a scope during which a package cleared or replaced it is one mark as past the cap, `[secret]`, since its set may lack a secret."
 // Spec: k.privacy, Conformance "An action whose input holds 8,192 distinct 8-character ASCII secret strings (65,536 bytes) and throws `bad ` and one of them logs a message ending `bad [secret]`; with 8,193 it logs `action <id> threw: [secret]` and the `req` path `[secret]`; so do 4,096 and 4,097 distinct strings of 8 letters from U+0430 to U+0438 (16 bytes each)."
 // Seed: 1337.
@@ -180,17 +180,28 @@ for (const mode of modes) {
 }
 
 describe("k.privacy Cost: once one `Secret` has more than 1,000,000 values to read", () => {
+  // The value and each value, key, array and object inside it are counted: an array of n strings is n + 1 values.
   const same = (n: number): string[] => new Array<string>(n).fill("abcdefgh");
   const run = (n: number) =>
     serve("production", { input: {}, mint: () => reveal(made(s.secret(s.array(s.string())).parse(same(n))))[0] ?? "" });
+  const nested = (n: number) =>
+    serve("production", {
+      input: {},
+      mint: () => reveal(made(s.secret(s.array(s.array(s.string()))).parse([same(n)])))[0]?.[0] ?? "",
+    });
 
-  it("A `Secret` of 1,000,000 values (one distinct string) is read: the message ends `bad [secret]`.", async () => {
-    expect((await run(1_000_000)).log.messages[0]?.endsWith("bad [secret]")).toBe(true);
+  it("A `Secret` of 1,000,000 values (the array and 999,999 strings, one distinct string) is read: the message ends `bad [secret]`.", async () => {
+    expect((await run(999_999)).log.messages[0]?.endsWith("bad [secret]")).toBe(true);
   }, 60_000);
 
-  it("A `Secret` of 1,000,001 values (one distinct string) is past the cap: `action <id> threw: [secret]` and the `req` path `[secret]`.", async () => {
-    const out = await run(1_000_001);
+  it("A `Secret` of 1,000,001 values (the array and 1,000,000 strings, one distinct string) is past the cap: `action <id> threw: [secret]` and the `req` path `[secret]`.", async () => {
+    const out = await run(1_000_000);
     expect(out.log.messages).toEqual([PAST]);
     expect(out.log.path).toBe("[secret]");
+  }, 60_000);
+
+  it("A `Secret` counts each array inside it: an array of an array of 999,998 strings (1,000,000 values) is read, and of 999,999 (1,000,001) is past the cap.", async () => {
+    expect((await nested(999_998)).log.messages[0]?.endsWith("bad [secret]")).toBe(true);
+    expect((await nested(999_999)).log.messages).toEqual([PAST]);
   }, 60_000);
 });

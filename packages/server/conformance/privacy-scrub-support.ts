@@ -128,7 +128,7 @@ export const ENCODINGS: ReadonlyArray<readonly [string, (v: string) => string]> 
   ["HTML named entities", htmlNamed],
   ["HTML decimal entities", htmlDecimal],
   ["HTML hex entities", htmlHex],
-  ["encodeURIComponent of its JSON.stringify", (v) => encodeURIComponent(JSON.stringify(v))],
+  ["encodeURIComponent of its JSON.stringify less the quotes", (v) => encodeURIComponent(jsonInner(v))],
   ["hex lower case", (v) => hexOf(utf8(v))],
   ["hex upper case", (v) => hexOf(utf8(v)).toUpperCase()],
   ["base64 padded", (v) => b64Of(utf8(v))],

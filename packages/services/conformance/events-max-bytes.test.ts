@@ -15,23 +15,31 @@ const enc = new TextEncoder();
 
 interface Served {
   readonly cancelled: () => boolean;
+  readonly pulls: () => number;
   readonly response: Response;
 }
-/** A 2xx event stream of `body`, cut into chunks of the given sizes (the rest in one more chunk). */
-function served(body: string, sizes: readonly number[] = []): Served {
+/**
+ * A 2xx event stream of `body`, cut into chunks of the given sizes (the rest in one more chunk). With `open`, the source never
+ * ends after its bytes (its pull then waits for ever), so only a cancel by the reader can stop the read; without it, it closes.
+ */
+function served(body: string, sizes: readonly number[] = [], open = false): Served {
   const bytes = enc.encode(body);
   let at = 0;
   let cancelled = false;
+  let pulls = 0;
   const response = new Response(
     new ReadableStream<Uint8Array>({
       pull(ctl) {
+        pulls += 1;
         if (at >= bytes.length) {
+          if (open) return new Promise<void>(() => undefined);
           ctl.close();
-          return;
+          return undefined;
         }
         const take = sizes.length > 0 ? (sizes[(at + bytes.length) % sizes.length] ?? bytes.length) : bytes.length;
         ctl.enqueue(bytes.slice(at, at + take));
         at += take;
+        return undefined;
       },
       cancel() {
         cancelled = true;
@@ -39,18 +47,18 @@ function served(body: string, sizes: readonly number[] = []): Served {
     }),
     { status: 200, headers: { "content-type": "text/event-stream" } },
   );
-  return { cancelled: () => cancelled, response };
+  return { cancelled: () => cancelled, pulls: () => pulls, response };
 }
-async function read(maxBytes: number, body: string, sizes?: readonly number[]) {
+async function read(maxBytes: number, body: string, sizes?: readonly number[], open = false) {
   const ctx = createCtx({ mode: "sim", seed: SEED });
-  const stream = served(body, sizes);
+  const stream = served(body, sizes, open);
   ctx.net.route("http://b.keel.invalid/watch", () => stream.response);
   const got: Array<{ ok: true; value: unknown } | { ok: false; code: string; data: unknown }> = [];
   for await (const r of service({ contract: c, maxBytes }).watch({}, ctx)) {
     if (r.ok) got.push({ ok: true, value: r.value });
     else got.push({ ok: false, code: r.error.code, data: Reflect.get(r.error, "data") });
   }
-  return { got, cancelled: stream.cancelled() };
+  return { got, cancelled: stream.cancelled(), pulls: stream.pulls() };
 }
 const one = 'data: {"ok":true,"value":1}\n\n';
 const event = (value: string): string => `data: {"ok":true,"value":"${value}"}\n\n`;
@@ -76,7 +84,7 @@ describe("k.services: one event is at most `maxBytes`", () => {
   it("The same body with `s` of 35 `a` yields `ok(1)` and then one `api.decode` with issues `[{ path: [], rule: 'max' }]`, then ends with the body cancelled.", async () => {
     await fc.assert(
       fc.asyncProperty(sizesArb, async (sizes) => {
-        const { got, cancelled } = await read(64, one + event("a".repeat(35)), sizes);
+        const { got, cancelled } = await read(64, one + event("a".repeat(35)), sizes, true);
         expect(got).toHaveLength(2);
         expect(got[0]).toEqual({ ok: true, value: 1 });
         expect(got[1]).toMatchObject({ ok: false, code: "api.decode", data: maxIssue });
@@ -89,7 +97,7 @@ describe("k.services: one event is at most `maxBytes`", () => {
   it('One served `data: {"ok":true,"value":1}`, two line feeds, then 17 lines `: x`, each with its line feed, and no blank line yields `ok(1)` and then that `api.decode`.', async () => {
     await fc.assert(
       fc.asyncProperty(sizesArb, async (sizes) => {
-        const { got, cancelled } = await read(64, one + ": x\n".repeat(17), sizes);
+        const { got, cancelled } = await read(64, one + ": x\n".repeat(17), sizes, true);
         expect(got).toHaveLength(2);
         expect(got[0]).toEqual({ ok: true, value: 1 });
         expect(got[1]).toMatchObject({ ok: false, code: "api.decode", data: maxIssue });
@@ -114,7 +122,7 @@ describe("k.services: one event is at most `maxBytes`", () => {
       fc.asyncProperty(fc.integer({ min: 40, max: 600 }), sizesArb, async (max, sizes) => {
         const fits = await read(max, event("a".repeat(max - 30)), sizes);
         expect(fits.got).toEqual([{ ok: true, value: "a".repeat(max - 30) }]);
-        const over = await read(max, event("a".repeat(max - 29)), sizes);
+        const over = await read(max, event("a".repeat(max - 29)), sizes, true);
         expect(over.got).toHaveLength(1);
         expect(over.got[0]).toMatchObject({ ok: false, code: "api.decode", data: maxIssue });
         expect(over.cancelled).toBe(true);
@@ -151,5 +159,15 @@ describe("k.services: one event is at most `maxBytes`", () => {
     expect((await read(64, fits)).got).toEqual([{ ok: true, value: "é".repeat(17) }]);
     const over = await read(64, event("é".repeat(18)));
     expect(over.got[0]).toMatchObject({ ok: false, code: "api.decode" });
+  });
+
+  it("Once a block passes `maxBytes` before its blank line comes, the body is cancelled: a source of a long unfinished block, in 8-byte chunks, is cancelled and is not read on to its end.", async () => {
+    const body = `data: ${"a".repeat(4000)}`;
+    const { got, cancelled, pulls } = await read(64, body, [8], true);
+    expect(got).toHaveLength(1);
+    expect(got[0]).toMatchObject({ ok: false, code: "api.decode", data: maxIssue });
+    expect(cancelled).toBe(true);
+    // 4,006 bytes are 501 chunks; the cap passes in the 9th, and a stream may read one chunk ahead of its reader.
+    expect(pulls).toBeLessThan(20);
   });
 });

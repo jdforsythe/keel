@@ -1,13 +1,12 @@
 // @vitest-environment happy-dom
 // Spec: k.privacy, Sinks "Copies: a value is marked wherever one of its forms stands in the text or in one of the text's two decoded views (Views). Its forms: the value as given, and its NFC and its NFD where they differ; from 8 bytes of UTF-8, the hex of those bytes; and base64 of them (Base64). A value with a lone surrogate has no hex or base64 form. Letter case folds one code unit at a time, in hex and base64 too, so a near copy may be over-marked. A form under 3 units is marked only as a whole token: no letter, digit, mark or `_` beside it in the view it was found in. Copies that overlap in the text are one mark over all of them, `[secret]` if any is a secret's."
-// Spec: k.privacy, Sinks "Views: the decoded view of a text reads it once from the start, writing for each escape what it stands for and any other unit as is: a run of `%` and two hex digits (either case) as bytes, each well-formed UTF-8 sequence among them as its code point and any other byte as its three characters; `+` as a space; `\u` and four hex digits as that unit; `\"`, `\\`, `\/`, `\b`, `\f`, `\n`, `\r` and `\t` as their characters; `&amp;`, `&lt;`, `&gt;`, `&quot;` and `&apos;`, `&#` with 1 to 7 decimal digits and `;`, and `&#x` or `&#X` with 1 to 6 hex digits and `;`, as their character, a numeric one only for a code point up to U+10FFFF that is no surrogate. The text is read as is, as its decoded view, and as the decoded view of that view. A copy found in a view marks the text it was decoded from, from the first character of the escape its first unit came from to the last character of the escape its last unit came from. So a copy under one or two escapings of these kinds, nested in any order, is found: URL-encoded by any encoder that writes `%` escapes, form-encoded, JSON-escaped with or without `\u` or `\/`, HTML-safe JSON, HTML entities, JSON in a URL."
+// Spec: k.privacy, Sinks "Views: the decoded view of a text reads it once from the start, writing for each escape what it stands for and any other unit as is: a run of `%` and two hex digits (either case) as bytes, each well-formed UTF-8 sequence among them as its code point and any other byte as its three characters; `+` as a space, or in the second decoded view as `+`; `\u` and four hex digits as that unit; `\"`, `\\`, `\/`, `\b`, `\f`, `\n`, `\r` and `\t` as their characters; `&amp;`, `&lt;`, `&gt;`, `&quot;` and `&apos;`, `&#` with 1 to 7 decimal digits and `;`, and `&#x` or `&#X` with 1 to 6 hex digits and `;`, as their character, a numeric one only for a code point up to U+10FFFF that is no surrogate. The text is read as is, as each of its two decoded views, as each of the two decoded views of each of those, and as a view of each family of escapes alone, any other unit as is: the `%` escapes with `+` (as a space, and as `+`), the backslash escapes, the entities. A copy found in a view marks the text it was decoded from, from the first character of the escape its first unit came from to the last character of the escape its last unit came from. So a copy under one or two escapings of these kinds, nested in any order, is found: URL-encoded by any encoder that writes `%` escapes, form-encoded, JSON-escaped with or without `\u` or `\/`, HTML-safe JSON, HTML entities, JSON in a URL; a `+` of the value is found whether an escaping wrote it as `%2B` or left it as is (`encodeURI`, JSON, HTML entities); and a value holding an escape of one family is found under one escaping of another that leaves it as is (`JSON.stringify` of `a"b%41`, `encodeURI` of `x&amp;y z`)."
 // Spec: k.privacy, Sinks "Base64: in the standard and the URL-safe alphabet. A value under 8 bytes is matched as its own padded encoding, whole. A value of 8 bytes or more is matched at each of the three byte alignments, alone or inside any longer encoding, as the characters whose six bits all come from its bytes; the mark takes in the character before and the character after that hold some of its bits, at that alignment, and the `=` padding after them. So a base64url JWT payload whose JSON holds the value as is holds a copy."
-// Spec: k.privacy, Conformance "For every generated secret of 8 or more UTF-8 bytes with no lone surrogate, each encoding E of it below, and texts p and q of 0 to 20 ASCII letters, digits and spaces that hold no form of it, an action that reveals it and throws an `Error` whose message is p, E, q logs a `diag` whose message ends with a head of p, then `[secret]`, then a tail of q. E is: the value; its NFC; its NFD; `encodeURIComponent` of it, once and twice; `encodeURI` of it; it form-encoded (`URLSearchParams`); `encodeURIComponent` of it with `!`, `'`, `(`, `)` and `*` as `%21`, `%27`, `%28`, `%29` and `%2A`; its `JSON.stringify` less the quotes, as is, with `\u` and four lowercase hex digits for each non-ASCII unit, with `\/` for each `/`, and with `<`, `>`, `&` and `'` as `<`, `>`, `&` and `'`; that first JSON escaping applied twice; it with `&`, `<`, `>`, `"` and `'` as `&amp;`, `&lt;`, `&gt;`, `&quot;` and `&#39;`; it with each code point as `&#<decimal>;`, and as `&#x<hex>;`; `encodeURIComponent` of its `JSON.stringify`; the hex of its UTF-8, in lower and in upper case; its base64 and base64url, padded and unpadded."
-// Spec: k.privacy, Conformance "For every generated secret of 8 to 40 UTF-8 bytes with no lone surrogate and byte strings a and b of 0 to 5 bytes each, an action that reveals it and throws an `Error` whose message is the base64 or base64url, padded or unpadded, of a, its bytes and b logs a `diag` whose message ends with a head of that encoding's characters before index ⌊4·|a|/3⌋, then `[secret]`, then a tail of its characters after index ⌈4·(|a|+n)/3⌉ − 1 (n the secret's byte count) that starts with no `=`."
+// Spec: k.privacy, Conformance "For every generated secret of 8 or more UTF-8 bytes with no lone surrogate, each encoding E of it below, and texts p and q of 0 to 20 ASCII letters, digits and spaces that hold no form of it, an action that reveals it and throws an `Error` whose message is p, E, q logs a `diag` whose message ends with a prefix of p, then `[secret]`, then a suffix of q. E is: the value; its NFC; its NFD; `encodeURIComponent` of it, once and twice; `encodeURI` of it; it form-encoded (`URLSearchParams`); `encodeURIComponent` of it with `!`, `'`, `(`, `)` and `*` as `%21`, `%27`, `%28`, `%29` and `%2A`; its `JSON.stringify` less the quotes, as is, with `\u` and four lowercase hex digits for each non-ASCII unit, with `\/` for each `/`, and with `<`, `>`, `&` and `'` as `\u003c`, `\u003e`, `\u0026` and `\u0027`; that first JSON escaping applied twice; it with `&`, `<`, `>`, `"` and `'` as `&amp;`, `&lt;`, `&gt;`, `&quot;` and `&#39;`; it with each code point as `&#<decimal>;`, and as `&#x<hex>;`; `encodeURIComponent` of its `JSON.stringify` less the quotes; the hex of its UTF-8, in lower and in upper case; its base64 and base64url, padded and unpadded."
+// Spec: k.privacy, Conformance "For every generated secret of 8 to 40 UTF-8 bytes with no lone surrogate and byte strings a and b of 0 to 5 bytes each, an action that reveals it and throws an `Error` whose message is the base64 or base64url, padded or unpadded, of a, its bytes and b logs a `diag` whose message ends with a prefix of that encoding's characters before index ⌊4·|a|/3⌋, then `[secret]`, then a suffix of its characters after index ⌈4·(|a|+n)/3⌉ − 1 (n the secret's byte count) that starts with no `=`."
 // Seed: 1337.
 // An action reveals a generated secret and throws a message holding one of its forms between texts p and q; the logged `diag` message is read after the server's own prefix.
-// A secret generated with `+` is left out of an encoding that writes `+` as is and also escapes some other character of it (`encodeURI`, JSON, HTML named entities): Views reads `+` as a space, so that text has no copy of the secret in either view. The spec's "for every generated secret" and Views disagree there; see the report.
-// The HTML-safe JSON encoding is asserted as `<`, `>`, `&` and `'` (the spec line prints each character as itself, which would be plain JSON).
+// A secret holding `+` is generated for every encoding: Views reads `+` as a space and, in the second decoded view, as `+`, so a `+` written as is or as `%2B` is found.
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import {
@@ -42,15 +41,6 @@ const secret = (min: number, max: number): fc.Arbitrary<string> =>
     .filter((v) => utf8(v).length >= min && utf8(v).length <= max);
 const text = fc.stringMatching(/^[A-Za-z0-9 ]{0,20}$/);
 
-const PLUS_AS_IS = new Set([
-  "encodeURI",
-  "JSON as is",
-  "JSON with \\u",
-  "JSON with \\/",
-  "HTML-safe JSON",
-  "JSON twice",
-  "HTML named entities",
-]);
 const holdsAForm = (t: string, v: string): boolean => {
   const low = t.toLowerCase();
   return ENCODINGS.some(([, f]) => low.includes(f(v).toLowerCase()));
@@ -70,7 +60,6 @@ for (const mode of modes) {
             const entry = ENCODINGS[which];
             if (entry === undefined) throw new Error("fixture: no encoding");
             const [name, encode] = entry;
-            fc.pre(!(PLUS_AS_IS.has(name) && v.includes("+")));
             fc.pre(!holdsAForm(p, v) && !holdsAForm(q, v));
             const e = encode(v);
             const out = await t.run(v, `${p}${e}${q}`);
@@ -88,7 +77,7 @@ for (const mode of modes) {
       const t = await thrower(mode);
       await fc.assert(
         fc.asyncProperty(
-          secret(8, 60).filter((v) => !v.includes("+")),
+          secret(8, 60),
           text,
           text,
           fc.integer({ min: 0, max: ESCAPERS.length - 1 }),
@@ -143,7 +132,6 @@ for (const mode of modes) {
             const entry = ENCODINGS[which];
             if (entry === undefined) throw new Error("fixture: no encoding");
             const [name, encode] = entry;
-            fc.pre(!(PLUS_AS_IS.has(name) && v.includes("+")));
             fc.pre(!holdsAForm(left, v) && !holdsAForm(right, v));
             const p = left === "" ? "" : `${left} `;
             const q = right === "" ? "" : ` ${right}`;
@@ -157,7 +145,7 @@ for (const mode of modes) {
       );
     });
 
-    it("For every generated secret of 8 to 40 UTF-8 bytes with no lone surrogate and byte strings a and b of 0 to 5 bytes each, an action that reveals it and throws an `Error` whose message is the base64 or base64url, padded or unpadded, of a, its bytes and b logs a `diag` whose message ends with a head of that encoding's characters before index ⌊4·|a|/3⌋, then `[secret]`, then a tail of its characters after index ⌈4·(|a|+n)/3⌉ − 1 (n the secret's byte count) that starts with no `=`.", async () => {
+    it("For every generated secret of 8 to 40 UTF-8 bytes with no lone surrogate and byte strings a and b of 0 to 5 bytes each, an action that reveals it and throws an `Error` whose message is the base64 or base64url, padded or unpadded, of a, its bytes and b logs a `diag` whose message ends with a prefix of that encoding's characters before index ⌊4·|a|/3⌋, then `[secret]`, then a suffix of its characters after index ⌈4·(|a|+n)/3⌉ − 1 (n the secret's byte count) that starts with no `=`.", async () => {
       const t = await thrower(mode);
       await fc.assert(
         fc.asyncProperty(
@@ -233,6 +221,143 @@ for (const mode of modes) {
           expect(rest.toLowerCase()).not.toContain(h);
         }),
         { seed: SEED, numRuns: 80 },
+      );
+    });
+  });
+}
+
+// ---- Views, as an attacker reads them: values that hold `+` and escape-looking text of every family ----
+const VIEWS_SINGLE =
+  "The text is read as is, as each of its two decoded views, as each of the two decoded views of each of those, and as a view of each family of escapes alone, any other unit as is: the `%` escapes with `+` (as a space, and as `+`), the backslash escapes, the entities.";
+const ESCAPE_LOOKING = [
+  "%41",
+  "%2B",
+  "%2b",
+  "%",
+  "%4",
+  "&amp;",
+  "&lt;",
+  "&#39;",
+  "&#x41;",
+  "&",
+  "&#",
+  "\\n",
+  "\\u0041",
+  "\\\\",
+  "\\",
+  "+",
+  "a+b",
+  '"',
+  "A",
+  "x",
+  "k9",
+  " ",
+];
+// The stated limit: a value holding an escape of one family under two escapings of which one leaves that escape as is (JSON, then URL). A value holding a `%` escape or an entity under these two-escaping encodings is that limit (privacy-scrub-limits.test.ts), not a case here.
+const TWO_ESCAPINGS = new Set(["JSON twice", "encodeURIComponent of its JSON.stringify less the quotes"]);
+const holdsLeftAsIs = (v: string): boolean =>
+  /%[0-9a-fA-F]{2}|&(?:amp|lt|gt|quot|apos|#[0-9]{1,7}|#[xX][0-9a-fA-F]{1,6});/.test(v);
+/** A value of 8 or more bytes built from `+`, escape-looking atoms of every family and plain letters. */
+const escapeValue: fc.Arbitrary<string> = fc
+  .array(fc.constantFrom(...ESCAPE_LOOKING), { minLength: 3, maxLength: 7 })
+  .map((a) => a.join(""))
+  .filter((v) => utf8(v).length >= 8);
+const escapeFragment = fc.constantFrom(
+  "%41",
+  "%2B",
+  "+",
+  "&amp;",
+  "&#39;",
+  "&#x41;",
+  "\\n",
+  "\\u0041",
+  "\\\\",
+  "%",
+  "&",
+  "\\",
+);
+const escapeAround = fc.array(escapeFragment, { minLength: 0, maxLength: 5 }).map((a) => a.join(" "));
+
+for (const mode of modes) {
+  describe(`k.privacy Views, as an attacker reads them, in ${mode}`, () => {
+    it(`${VIEWS_SINGLE} A value holding \`+\` or an escape of any family is marked under every single encoding of the bullet.`, async () => {
+      const t = await thrower(mode);
+      await fc.assert(
+        fc.asyncProperty(
+          escapeValue,
+          text,
+          text,
+          fc.integer({ min: 0, max: ENCODINGS.length - 1 }),
+          async (v, p, q, which) => {
+            const entry = ENCODINGS[which];
+            if (entry === undefined) throw new Error("fixture: no encoding");
+            const [name, encode] = entry;
+            fc.pre(!holdsAForm(p, v) && !holdsAForm(q, v));
+            fc.pre(!(TWO_ESCAPINGS.has(name) && holdsLeftAsIs(v)));
+            const out = await t.run(v, `${p}${encode(v)}${q}`);
+            expect(out.messages).toHaveLength(1);
+            const message = out.messages[0] ?? "";
+            expect(
+              holdsHeadMarkTail(message, p, q),
+              `${name} of ${JSON.stringify(v)}: ${JSON.stringify(message)}`,
+            ).toBe(true);
+          },
+        ),
+        { seed: SEED, numRuns: 200 },
+      );
+    });
+
+    it('A value holding an escape of one family is found under one escaping of another that leaves it as is: `JSON.stringify` of `a"b%41` and `encodeURI` of `x&amp;y z`.', async () => {
+      const t = await thrower(mode);
+      const a = await t.run('a"b%41', `x ${JSON.stringify('a"b%41').slice(1, -1)} y`);
+      expect(afterPrefix(a.messages[0] ?? "")).toBe("x [secret] y");
+      const b = await t.run("x&amp;y z", `x ${encodeURI("x&amp;y z")} y`);
+      expect(afterPrefix(b.messages[0] ?? "")).toBe("x [secret] y");
+    });
+
+    it("A `+` of the value is found whether an escaping wrote it as `%2B` or left it as is (`encodeURI`, JSON, HTML entities).", async () => {
+      const t = await thrower(mode);
+      const v = "a+b c&d<e";
+      const texts = [
+        encodeURIComponent(v),
+        encodeURI(v),
+        JSON.stringify(v).slice(1, -1),
+        v.replace(/[&<]/g, (c) => (c === "&" ? "&amp;" : "&lt;")),
+        v.replace(/\+/g, "%2B"),
+        new URLSearchParams({ k: v }).toString().slice(2),
+      ];
+      for (const e of texts) {
+        const out = await t.run(v, `x ${e} y`);
+        expect(afterPrefix(out.messages[0] ?? ""), e).toBe("x [secret] y");
+      }
+    });
+
+    it("A copy is marked at every offset in a surrounding text that itself holds escapes (`%41`, `%2B`, `+`, `&amp;`, `\\n`, `\\u0041`, a lone `%`, `&` or backslash), for a value that holds escapes and `+`.", async () => {
+      const t = await thrower(mode);
+      await fc.assert(
+        fc.asyncProperty(
+          escapeValue,
+          escapeAround,
+          escapeAround,
+          fc.integer({ min: 0, max: ENCODINGS.length - 1 }),
+          async (v, left, right, which) => {
+            const entry = ENCODINGS[which];
+            if (entry === undefined) throw new Error("fixture: no encoding");
+            const [name, encode] = entry;
+            fc.pre(!holdsAForm(left, v) && !holdsAForm(right, v));
+            fc.pre(!(TWO_ESCAPINGS.has(name) && holdsLeftAsIs(v)));
+            const p = left === "" ? "" : `${left} `;
+            const q = right === "" ? "" : ` ${right}`;
+            const out = await t.run(v, `${p}${encode(v)}${q}`);
+            expect(out.messages).toHaveLength(1);
+            const message = out.messages[0] ?? "";
+            expect(
+              holdsHeadMarkTail(message, p, q),
+              `${name} of ${JSON.stringify(v)}: ${JSON.stringify(message)}`,
+            ).toBe(true);
+          },
+        ),
+        { seed: SEED, numRuns: 150 },
       );
     });
   });

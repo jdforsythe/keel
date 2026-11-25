@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-// Spec: k.privacy, Sinks "Limits, not marked: a copy under three or more escapings; an escape the views do not read (`\x41`, octal, `\U`, `%u`, another named HTML entity, a numeric one without its `;`); a copy part NFC and part NFD, and compatibility forms (NFKC, NFKD, full-width letters); hex of a value under 8 bytes; base64 of a value under 8 bytes inside a longer encoding; hex or base64 of a text in which the value is itself escaped (base64 of JSON that writes it with `\"`, `\\` or `\u`); base64 with line breaks; hex of UTF-16 and any other encoding, a hash, compression or encryption; a copy cut short, split by other text or with a character changed; a value revealed outside every scope."
+// Spec: k.privacy, Sinks "Limits, not marked: a copy under three or more escapings; an escape the views do not read (`\x41`, octal, `\U`, `%u`, another named HTML entity, a numeric one without its `;`); a copy part NFC and part NFD, and compatibility forms (NFKC, NFKD, full-width letters); hex of a value under 8 bytes; base64 of a value under 8 bytes inside a longer encoding, unless its own padded encoding stands whole there; a value holding an escape of one family under two escapings of which one leaves that escape as is (`a"b%41` JSON-escaped, then URL-encoded); hex or base64 of a text in which the value is itself escaped (base64 of JSON that writes it with `\"`, `\\` or `\u`); base64 with line breaks; hex of UTF-16 and any other encoding, a hash, compression or encryption; a copy cut short, split by other text or with a character changed; a value revealed outside every scope."
 // Spec: k.privacy, Conformance "A revealed secret `a b/c?d&e` thrown as `encodeURIComponent` applied three times logs as thrown."
 // Seed: 1337.
 // The stated limit is asserted as the spec states it: three escapings are not read, so the thrown text is logged as thrown. One and two escapings of the same secret are marked, which shows the limit is the third.
@@ -47,6 +47,17 @@ for (const mode of modes) {
         const out = await t.run("a b/c?d&e", `x ${times("a b/c?d&e", n)} y`);
         expect(afterPrefix(out.messages[0] ?? "")).toBe("x [secret] y");
       }
+    });
+
+    it("Limits, not marked: a value holding an escape of one family under two escapings of which one leaves that escape as is (`a\"b%41` JSON-escaped, then URL-encoded) logs as thrown; if the scrub comes to find it, the spec's limit is out of date.", async () => {
+      const t = await thrower(mode);
+      const v = 'a"b%41';
+      const json = JSON.stringify(v).slice(1, -1);
+      expect(json).toBe('a\\"b%41');
+      const thrown = encodeURIComponent(json);
+      expect(thrown).toBe("a%5C%22b%2541");
+      const out = await t.run(v, `x ${thrown} y`);
+      expect(afterPrefix(out.messages[0] ?? "")).toBe(`x ${thrown} y`);
     });
 
     for (const [what, v, thrown] of UNREAD)
