@@ -22,7 +22,7 @@ export type LibraryShape = {
   readonly id?: string;
   readonly deps?: string[];
   /** Added to the `exports` of `package.json`, beside `"."`. */
-  readonly exports?: Record<string, string>;
+  readonly exports?: Record<string, string | Record<string, string>>;
   /** Extra files, relative to the package folder. */
   readonly files?: Tree;
   readonly keel?: string | null;
@@ -319,10 +319,12 @@ export const pack = (dir: string, check = false): Run => keel(dir, check ? ["pac
 export const stepsNamed = (message: unknown): string[] =>
   ["check", "test", "ledger", "kind"].filter((s) => new RegExp(`\\b${s}\\b`).test(str(message)));
 
-/** Whether `run` holds exactly one E1164 and its message names `step` and no other of `check`, `test`, `ledger`, `kind`. */
+/** Whether `run` holds exactly one E1164 whose message begins with `step` and a colon, and names no other of `check`, `test`, `ledger`, `kind`. */
 export const namesOnly = (run: Run, step: string): boolean => {
   const found = run.records.filter((r) => r.kind === "diag" && r.code === "E1164");
-  return found.length === 1 && stepsNamed(found[0]?.message).join() === step;
+  return (
+    found.length === 1 && str(found[0]?.message).startsWith(`${step}:`) && stepsNamed(found[0]?.message).join() === step
+  );
 };
 
 /** `src/index.ts` and `src/Example.tsx` of a scaffolded library written again: `head` the imports, `body` the expression `Example` returns. */
@@ -334,15 +336,26 @@ export function writeExample(lib: string, body: string, head = ""): void {
   );
 }
 
-/** A `src/Example.tsx` rendering one `Text` and `n` `Host` elements (none when `n` is 0). */
+/** `unsafe/raw.ts`, a file `keel check` reads clean: one export named as its file, one counted `unsafe(...)` call with a reason of eight words or more. */
+export const CLEAN_UNSAFE =
+  'declare function unsafe<T>(why: string, fn: () => T): T;\nexport const raw = unsafe("fixture call counted by the ledger and held by this test", () => 1);\n';
+
+/** A `src/Example.tsx` rendering one `Text` and `n` labelled `Host` elements (none when `n` is 0): a library `keel check` reads clean (its schema in a `*.schema.ts` file, its code a `hostCode`, a `Box` for the wrapper). */
 export function exampleWithHost(lib: string, n: number): void {
   const host = (i: number): string =>
     `<Host id={\`\${props.id}.c${i}\`} role="img" label="L" input={In} value={{ n: 1 }} code={() => import('./chart.ts').then((m) => m.chart)} />`;
-  writeFileSync(join(lib, "src/chart.ts"), "export const chart = undefined\n");
+  writeFileSync(
+    join(lib, "src/In.schema.ts"),
+    "import { s } from '@keel/schema'\nexport const In = s.object({ n: s.number() })\n",
+  );
+  writeFileSync(
+    join(lib, "src/chart.ts"),
+    "import { hostCode } from '@keel/ui'\nexport const chart = hostCode<{ n: number }>({ mount: () => undefined })\n",
+  );
   writeFileSync(join(lib, "src/index.ts"), "export { default as Example } from './Example.tsx'\n");
   writeFileSync(
     join(lib, "src/Example.tsx"),
-    `import { s } from '@keel/schema'\nimport { Host, Text } from '@keel/ui'\nconst In = s.object({ n: s.number() })\nexport default function Example(props: { id: string }) {\n  return (\n    <div>\n      <Text id={\`\${props.id}.text\`}>x</Text>\n      {${Array.from({ length: n }, (_, i) => host(i)).join("")}}\n    </div>\n  )\n}\n`,
+    `import { s } from '@keel/schema'\nimport { Box, Host, Text } from '@keel/ui'\nimport { In } from './In.schema.ts'\nexport const Props = s.object({ id: s.string() })\nexport default function Example(props: { id: string }) {\n  return (\n    <Box id={\`\${props.id}.box\`}>\n      <Text id={\`\${props.id}.text\`}>Example</Text>\n${Array.from({ length: n }, (_, i) => `      ${host(i)}\n`).join("")}    </Box>\n  )\n}\n`,
   );
 }
 
@@ -364,14 +377,29 @@ export function packTarball(
   ignoreScripts = false,
 ): { status: number | null; output: string; tgz: string | undefined } {
   const out = mkdtempSync(join(realpathSync(tmpdir()), "keel-tarball-"));
-  const r = spawnSync("pnpm", ["pack", "--pack-destination", out, ...(ignoreScripts ? ["--ignore-scripts"] : [])], {
-    cwd: lib,
-    encoding: "utf8",
-    env: childEnv(),
-    timeout: 600_000,
-  });
+  const r = spawnSync(
+    "pnpm",
+    ["pack", "--pack-destination", out, ...(ignoreScripts ? ["--config.ignore-scripts=true"] : [])],
+    {
+      cwd: lib,
+      encoding: "utf8",
+      env: childEnv(),
+      timeout: 600_000,
+    },
+  );
   const tgz = readdirSync(out).find((n) => n.endsWith(".tgz"));
   return { status: r.status, output: `${r.stdout}${r.stderr}`, tgz: tgz === undefined ? undefined : join(out, tgz) };
+}
+
+/** A copy of the tarball `tgz` (in a new folder) whose file `rel` is `edit` of its text: the files unpacked, one rewritten, packed again under the same top folder. */
+export function editTarball(tgz: string, rel: string, edit: (text: string) => string): string {
+  const work = mkdtempSync(join(realpathSync(tmpdir()), "keel-tarball-edit-"));
+  spawnSync("tar", ["-xzf", tgz, "-C", work], { encoding: "utf8" });
+  const file = join(work, "package", rel);
+  writeFileSync(file, edit(readFileSync(file, "utf8")));
+  const out = join(mkdtempSync(join(realpathSync(tmpdir()), "keel-tarball-")), "edited.tgz");
+  spawnSync("tar", ["-czf", out, "-C", work, "package"], { encoding: "utf8" });
+  return out;
 }
 
 /** The paths a tarball holds. */
