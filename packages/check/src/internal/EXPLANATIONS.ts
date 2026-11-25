@@ -361,6 +361,13 @@ const ROWS: readonly Row[] = [
     "k.module",
   ],
   [
+    "E1161",
+    "an element in a library file whose id is missing or a literal",
+    "A library's element ids are built from its component's id prop (<id>.<part>): a literal id repeats in every place the component renders, and a derived one holds the installer's path.",
+    "build the id from the component's id prop: id={`${props.id}.part`}",
+    "k.library",
+  ],
+  [
     "E1163",
     "a library's manifest deps entry does not begin with @, or a library file reaches outside its package",
     "A library reaches only its own files and other libraries; an entry without @ names a module of the app, which a library cannot know.",

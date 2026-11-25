@@ -23,6 +23,9 @@ import { guardRedirectLoops } from "./internal/guardRedirectLoops.ts";
 import { indexHtmlDiag } from "./internal/indexHtmlDiag.ts";
 import { isCodePath } from "./internal/isCodePath.ts";
 import { isSqlPath } from "./internal/isSqlPath.ts";
+import { libraryFolders } from "./internal/libraryFolders.ts";
+import { libraryIds } from "./internal/libraryIds.ts";
+import { libraryImports } from "./internal/libraryImports.ts";
 import { moduleChecks } from "./internal/modules/moduleChecks.ts";
 import { normalize } from "./internal/normalize.ts";
 import { parseFile } from "./internal/parseFile.ts";
@@ -100,8 +103,23 @@ function expectedHashes(files: readonly SourceFile[], opts: CheckOptions): Reado
  * against the hashes the compiler derives from each artifact's project, W1005, E1454, E1607, E1550, E1508, E1511, E1566, E1586, E1587, W1012, E1580-E1582, E1584, E1589, E1592, E1753, E1755, the k.module pass
  * E1151-E1158, E1013, the contract passes (E1155, E1502-E1504, E1509, E1513, E1514), and the k.compat pass E1562, E1563,
  * W1564, W1568 over `.keel/surface.json`), (4) dedupe and sort. Static only: no app code is evaluated (rendered a11y is `keel test`, rfc:0023). Pure and deterministic for equal inputs.
+ *
+ * A library's files among the files (k.library In an app, `libraryFolders`) are read by every step at
+ * `modules/<id>/<f>` but the type pass, the k.module pass and E1013, which read them where they lie; each diagnostic in
+ * one is located at `node_modules/<name>/<f>` with no fix. E1161 and E1163's import half judge them there.
  */
-export function check(files: readonly SourceFile[], opts: CheckOptions = {}): CheckResult {
+export function check(given: readonly SourceFile[], options: CheckOptions = {}): CheckResult {
+  const realAll = options.project === undefined ? given : [...given, ...options.project];
+  const libs = libraryFolders(realAll);
+  const isLibrary = (p: string): boolean => libs.folder(p) !== undefined;
+  const viewed = (f: SourceFile): SourceFile => {
+    const v = libs.view(f.path);
+    return v === f.path ? f : { path: v, source: f.source };
+  };
+  const files = given.map(viewed);
+  const opts: CheckOptions =
+    options.project === undefined ? options : { ...options, project: options.project.map(viewed) };
+  const realCode = given.filter((f) => isCodePath(f.path));
   const code = files.filter((f) => isCodePath(f.path));
   // One compile per project, with its paths and topology, so a workspace root sees what the app sees (rfc:0059).
   const all = opts.project === undefined ? files : [...files, ...opts.project];
@@ -174,8 +192,11 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
   // The `@keel/*` packages this call's app manifests reach: a std package's formats apply only among them, and so do
   // the rules of one `importDeps` imported first, whatever an earlier call in this process loaded (k.check-cache).
   const scope = stdInScope(all, opts.root ?? process.cwd());
+  const skip = new Map([...reported].map(([p, codes]) => [libs.real(p), codes]));
   const typed =
-    opts.types === false ? undefined : typeCheck(code, opts.root ?? process.cwd(), reported, scope, opts.typeCache);
+    opts.types === false
+      ? undefined
+      : typeCheck(realCode, opts.root ?? process.cwd(), skip, scope, opts.typeCache, isLibrary, libs.packages);
   // One diagnostic per fault: where the compiler reports E1403 at an expression, E1406 does not.
   const e1403 = new Set(out.filter((d) => d.code === "E1403").map((d) => `${d.path}:${d.line}:${d.col}`));
   if (typed !== undefined)
@@ -189,26 +210,44 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
     checked.push({ file, parsed });
     const artifacts = artifactsOf.get(file.path) ?? { ...opts.artifacts };
     const project = projectOf.get(file.path) ?? [file];
-    const dates = typed?.dates.get(file.path) ?? (typed === undefined ? undefined : new Set<number>());
+    const dates = typed?.dates.get(libs.real(file.path)) ?? (typed === undefined ? undefined : new Set<number>());
     const input = { file, ast: parsed.program, artifacts, project };
     out.push(...runRules(registered, dates === undefined ? input : { ...input, dates }));
   }
   for (const file of files) if (isSqlPath(file.path)) out.push(...runSqlRules(registered, file));
+  // The `.keel/` artifacts and the surface derive from the app's own files, not a library's (k.library In an app).
+  const mine = (f: SourceFile): boolean => !isLibrary(libs.real(f.path));
+  const own = files.filter(mine);
+  const ownOpts: CheckOptions = opts.project === undefined ? opts : { ...opts, project: opts.project.filter(mine) };
+  // The passes that read a library's files where they lie.
+  const realChecked = checked.map((c) => ({
+    file: { path: libs.real(c.file.path), source: c.file.source },
+    parsed: c.parsed,
+  }));
   out.push(
     ...duplicateErrorCodes(checked),
     ...registerNames(checked, dirs),
     ...chainStoreIds(checked, dirs, all),
-    ...moduleChecks(checked, all),
-    ...aliasedImports(checked, path.resolve(opts.root ?? process.cwd()), dirs),
+    ...moduleChecks(realChecked, realAll),
+    ...aliasedImports(realChecked, path.resolve(opts.root ?? process.cwd()), dirs, isLibrary),
+    ...libraryIds(realChecked, isLibrary),
+    ...libraryImports(realChecked, libs.folder),
     ...guardRedirectLoops(checked),
     ...contractChecks(checked, all, opts.topology),
     ...ruleCodeDeclarations(checked),
     ...budgetBreaches(opts.budgets ?? []),
-    ...generatedEdits(files, expectedHashes(files, opts), opts.project ?? files),
-    ...compatChecks(files, opts.project ?? files, (dir) => compatTopology(dir, all, opts), opts.base),
+    ...generatedEdits(own, expectedHashes(own, ownOpts), ownOpts.project ?? own),
+    ...compatChecks(own, ownOpts.project ?? own, (dir) => compatTopology(dir, all, opts), opts.base),
   );
 
+  // A diagnostic in a library file is located where the file lies and carries no fix (k.library In an app).
+  const located = out.map((d): Diagnostic => {
+    const at = libs.real(d.path);
+    if (!isLibrary(at)) return d;
+    const { kind, code, line, col, message, see } = d;
+    return { kind, code, path: at, line, col, message, ...(see === undefined ? {} : { see }) };
+  });
   // A lifted range (k.check, App code) reports none of its nine codes.
-  const diagnostics = normalize(dropLifted(out, code));
+  const diagnostics = normalize(dropLifted(located, realCode));
   return { diagnostics, summary: summarize(diagnostics) };
 }

@@ -52,11 +52,14 @@ import { unmappedModule } from "./internal/unmappedModule.ts";
 import { urlLiterals } from "./internal/urlLiterals.ts";
 import { writeArtifact } from "./internal/writeArtifact.ts";
 import { writeStatic } from "./internal/writeStatic.ts";
+import { appLibraries } from "./std/appLibraries.ts";
 import { clientStdData } from "./std/clientStdData.ts";
 import { importDeps } from "./std/importDeps.ts";
+import { libraryRel } from "./std/libraryRel.ts";
 import { stdRoutes } from "./std/stdRoutes.ts";
 import { stdArtifact } from "./stdArtifact.ts";
 import type { Artifacts } from "./types/Artifacts.ts";
+import type { Library } from "./types/Library.ts";
 import type { Output } from "./types/Output.ts";
 import type { RouteEntry } from "./types/RouteEntry.ts";
 import type { Topology } from "./types/Topology.ts";
@@ -222,11 +225,17 @@ type WorkerPlugin = {
   buildEnd: (this: Ctx, error?: Error) => void;
 };
 /** What `config` returns: the locked `envPrefix`, the worker bundles' plugin (Vite adds the project's), and a deployable build's own settings. */
-type Config = { envPrefix: string; define?: Record<string, string>; worker: { plugins: () => WorkerPlugin[] } } & (
-  | BuildConfig
-  | ClientConfig
-  | Record<never, never>
-);
+/** The `keel` export condition first, then Vite's defaults (k.library Kind): a library's entry resolves to its source. */
+const CLIENT_CONDITIONS = ["keel", "module", "browser", "development|production"];
+const SERVER_CONDITIONS = ["keel", "module", "node", "development|production"];
+type Config = {
+  envPrefix: string;
+  define?: Record<string, string>;
+  worker: { plugins: () => WorkerPlugin[] };
+  resolve: { conditions: string[] };
+  ssr: { resolve: { conditions: string[] }; noExternal: string[] };
+  optimizeDeps: { exclude: string[] };
+} & (BuildConfig | ClientConfig | Record<never, never>);
 /** What the plugin reads of the project's config before Vite resolves it. */
 type UserConfig = { root?: string; envPrefix?: unknown; define?: unknown };
 
@@ -286,6 +295,10 @@ export default function (): {
   watchChange: (id: string, change: { event: "create" | "update" | "delete" }) => void;
 } {
   let root = process.cwd();
+  /** The app's libraries (`appLibraries`), compiled as its own files; read again when a manifest changes. */
+  let libraries: Library[] = [];
+  /** The paths library files are compiled at (`libraryRel`): the app's CSS holds their styles, `.keel/` does not. */
+  const fromLibrary = new Set<string>();
   /** Whether `configResolved` set `root`; until then no artifact is written. */
   let resolved = false;
   let command: "build" | "serve" | undefined;
@@ -436,7 +449,14 @@ export default function (): {
   const relOf = (id: string): string | null => {
     if (id.startsWith("\0") || id.startsWith("/@keel/") || id === CSS_ID) return null;
     const file = id.split("?")[0] ?? id;
-    if (!CODE.test(file) || file.includes("/node_modules/") || file.endsWith(".d.ts")) return null;
+    if (!CODE.test(file) || file.endsWith(".d.ts")) return null;
+    // A library's file, wherever it lies, is compiled as the app's (k.library In an app).
+    const lib = path.isAbsolute(file) ? libraryRel(libraries, file) : undefined;
+    if (lib !== undefined) {
+      fromLibrary.add(lib);
+      return lib;
+    }
+    if (file.includes("/node_modules/")) return null;
     // only app code under the root: linked workspace packages resolve to real paths outside it
     const rel = path.relative(root, file);
     if (rel.startsWith("..") || path.isAbsolute(rel)) return null;
@@ -697,8 +717,8 @@ export default function (): {
   };
 
   const flush = (): { id: string; file: string }[] => {
-    // Only app sources feed the artifacts, by the rule `keel build` and `keel check` share.
-    const keys = [...modules.keys()].filter(isSourcePath).sort();
+    // Only app sources feed the artifacts, by the rule `keel build` and `keel check` share; a library's files do not.
+    const keys = [...modules.keys()].filter((k) => isSourcePath(k) && !fromLibrary.has(k)).sort();
     const parts: Artifacts[] = [];
     for (const k of keys) {
       const e = modules.get(k);
@@ -714,7 +734,10 @@ export default function (): {
       writeArtifact(root, name, text);
       written.set(name, text);
     }
-    const usages = canonicalJson(artifacts["styles.json"]);
+    // The CSS holds the libraries' styles too (`refresh`).
+    const all =
+      fromLibrary.size === 0 ? artifacts : mergeArtifacts([...modules.values()].map((e) => e.artifacts)).artifacts;
+    const usages = canonicalJson(all["styles.json"]);
     if (usages !== usageKeys) {
       usageKeys = usages;
       stale = true;
@@ -813,9 +836,15 @@ export default function (): {
       const file = path.join(path.resolve(user.root ?? process.cwd()), "topology.ts");
       projectEnv = user.envPrefix !== undefined || user.define !== undefined;
       ssrBuild = env.isSsrBuild === true;
-      // A build is the production one whatever `vite.config.ts` sets `process.env.NODE_ENV` to (k.deploy Build).
+      libraries = appLibraries(path.resolve(user.root ?? process.cwd()));
+      const names = libraries.map((l) => l.name);
+      // A build is the production one whatever `vite.config.ts` sets `process.env.NODE_ENV` to (k.deploy Build). A
+      // library resolves with the `keel` condition on every surface and is never pre-bundled or left to Node.
       const own = {
         envPrefix: NO_ENV,
+        resolve: { conditions: CLIENT_CONDITIONS },
+        ssr: { resolve: { conditions: SERVER_CONDITIONS }, noExternal: names },
+        optimizeDeps: { exclude: names },
         ...(env.command === "build"
           ? { define: { "import.meta.env.DEV": "false", "import.meta.env.PROD": "true" } }
           : {}),
@@ -938,6 +967,9 @@ export default function (): {
     },
     configureServer(s) {
       server = s;
+      // A linked library's real folder may sit outside Vite's served roots.
+      const allow = s.config?.server.fs.allow;
+      for (const l of libraries) if (allow !== undefined && !allow.includes(l.dir)) allow.push(l.dir);
       s.middlewares.use(inspect);
       hasNode = Object.values(topology ?? {}).some((d) => d.adapter === "node" || d.adapter === "static");
       if (hasNode) {
@@ -963,6 +995,12 @@ export default function (): {
       if (w !== undefined) warn = (m) => w.call(this, m);
       readTopology();
       for (const rel of listSources(root)) compileModule(rel, fs.readFileSync(path.join(root, rel), "utf8"));
+      libraries = appLibraries(root);
+      for (const lib of libraries)
+        for (const f of lib.files) {
+          const rel = relOf(f);
+          if (rel !== null) compileModule(rel, fs.readFileSync(f, "utf8"));
+        }
       const bad = await stdProblems();
       if (bad.length > 0 && command === "build" && !clientBuild) throw new Error(bad.join("\n"));
       for (const b of bad) warn(`keel: ${b}`);
@@ -1166,6 +1204,7 @@ export default function (): {
       }
       if (rel !== null && change.event === "delete" && modules.delete(rel)) flush();
       else if (rel !== null && MANIFEST.test(rel) && exists(rel)) {
+        libraries = appLibraries(root);
         compileModule(rel, fs.readFileSync(path.join(root, rel), "utf8"));
         // New deps load before std.json is rewritten; problems go where dev's other ones do.
         void stdProblems()

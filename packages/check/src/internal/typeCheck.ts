@@ -74,7 +74,13 @@ const byPath = ([a]: readonly [string, unknown], [b]: readonly [string, unknown]
   a < b ? -1 : a > b ? 1 : 0;
 
 /** The key's hash (k.check-cache Key). */
-function keyOf(code: readonly SourceFile[], base: string, skip: ReadonlyMap<string, ReadonlySet<string>>): string {
+function keyOf(
+  code: readonly SourceFile[],
+  base: string,
+  skip: ReadonlyMap<string, ReadonlySet<string>>,
+  library: readonly string[],
+  packages: readonly SourceFile[],
+): string {
   const own = ownCode();
   const dropped = [...skip].map(([p, s]): [string, string[]] => [p, [...s].sort()]).sort(byPath);
   return createHash("sha256")
@@ -90,6 +96,8 @@ function keyOf(code: readonly SourceFile[], base: string, skip: ReadonlyMap<stri
         ts.sys.useCaseSensitiveFileNames,
         code.map((f) => [f.path, f.source]),
         dropped,
+        library,
+        packages.map((f) => [f.path, f.source]),
       ]),
     )
     .digest("hex");
@@ -123,7 +131,9 @@ function remember(key: string, entry: TypeEntry): void {
  *
  * Every file system question the program asks goes through a recording host (k.check-cache Probes). A pass is kept by
  * key in this process and, with `cacheDir`, on disk (`typeCache`); a kept pass is used only when every recorded
- * question gets the same answer again. Parsed disk files are reused while their text is the same.
+ * question gets the same answer again. Parsed disk files are reused while their text is the same. A library's files
+ * (`isLibrary`, k.library) are app code to the pass, and their `package.json` files (`packages`) are read from memory
+ * like the code, so an import of a library resolves through its `exports`; both are part of the key.
  */
 export function typeCheck(
   files: readonly SourceFile[],
@@ -131,11 +141,14 @@ export function typeCheck(
   skip: ReadonlyMap<string, ReadonlySet<string>>,
   scope: ReadonlySet<string>,
   cacheDir?: string,
+  isLibrary: (path: string) => boolean = () => false,
+  packages: readonly SourceFile[] = [],
 ): Typed {
   const code = files.filter((f) => CODE.test(f.path) && !f.path.endsWith(".d.ts"));
   if (code.length === 0) return { diagnostics: [], dates: new Map() };
   const base = norm(path.resolve(root));
-  const key = keyOf(code, base, skip);
+  const library = code.filter((f) => isLibrary(f.path)).map((f) => f.path);
+  const key = keyOf(code, base, skip, library, packages);
   const held = memo.get(key);
   if (held !== undefined && probesHold(held.probes)) return resolve(held, code, scope);
   const kept = cacheDir === undefined ? undefined : typeCache(cacheDir, key);
@@ -144,7 +157,7 @@ export function typeCheck(
     remember(key, loaded);
     return resolve(loaded, code, scope);
   }
-  const { entry, whole } = pass(code, base, skip, key);
+  const { entry, whole } = pass(code, base, skip, key, new Set(library), packages);
   if (whole) {
     remember(key, entry);
     kept?.save(entry);
@@ -158,8 +171,11 @@ function pass(
   base: string,
   skip: ReadonlyMap<string, ReadonlySet<string>>,
   key: string,
+  library: ReadonlySet<string>,
+  packages: readonly SourceFile[],
 ): { entry: TypeEntry; whole: boolean } {
   const byName = new Map<string, SourceFile>();
+  const held = new Map(packages.map((f) => [`${base}/${f.path}`, f.source]));
   const views = new Map<string, Annotated>();
   for (const f of code) {
     byName.set(`${base}/${f.path}`, f);
@@ -173,9 +189,12 @@ function pass(
   host.getCurrentDirectory = () => base;
   host.getEnvironmentVariable = () => undefined;
   host.writeFile = () => undefined;
-  host.fileExists = (fileName) => byName.has(norm(fileName)) || norm(fileName) === jsxName || rec.fileExists(fileName);
+  host.fileExists = (fileName) =>
+    byName.has(norm(fileName)) || held.has(norm(fileName)) || norm(fileName) === jsxName || rec.fileExists(fileName);
   // In-memory files may sit in folders that are not on disk; module resolution asks for those folders first.
-  const dirs = new Set([...byName.keys()].flatMap((n) => n.split("/").map((_, i, p) => p.slice(0, i).join("/"))));
+  const dirs = new Set(
+    [...byName.keys(), ...held.keys()].flatMap((n) => n.split("/").map((_, i, p) => p.slice(0, i).join("/"))),
+  );
   host.directoryExists = (d) => dirs.has(norm(d).replace(/\/$/, "")) || rec.directoryExists(d);
   // `sys.realpath` missing leaves the host without one too (`createCompilerHost`): no lookup is asked.
   if (rec.realpath !== undefined) host.realpath = rec.realpath;
@@ -185,7 +204,7 @@ function pass(
   host.readFile = (fileName) => {
     const n = norm(fileName);
     if (n === jsxName) return JSX_DTS;
-    return views.get(n)?.text ?? rec.read(fileName);
+    return views.get(n)?.text ?? held.get(n) ?? rec.read(fileName);
   };
   const typeRef = (name: string): string | undefined =>
     ts.resolveTypeReferenceDirective(name, `${base}/__probe__.ts`, FROM_ROOT, host).resolvedTypeReferenceDirective
@@ -268,7 +287,7 @@ function pass(
         pkg: f.pkg,
       });
     dates.set(file.path, new Set(dateReads(sf, checker, program).map(view.original)));
-    if (file.path.endsWith("x") && isAppPath(file.path))
+    if (file.path.endsWith("x") && (isAppPath(file.path) || library.has(file.path)))
       for (const t of textNodes(sf, checker))
         push("E1406", t.at, "JSX child renders nothing; call the prop", "k.place", t.fix);
   }
