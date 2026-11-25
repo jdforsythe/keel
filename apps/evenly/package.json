@@ -1,0 +1,38 @@
+{
+  "name": "evenly",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "keel build",
+    "check": "tsc --noEmit && biome check modules && keel check",
+    "dev": "keel dev",
+    "test": "keel test"
+  },
+  "dependencies": {
+    "@keel/compiler": "workspace:*",
+    "@keel/ctx": "workspace:*",
+    "@keel/forms": "workspace:*",
+    "@keel/reactive": "workspace:*",
+    "@keel/router": "workspace:*",
+    "@keel/runtime-dom": "workspace:*",
+    "@keel/schema": "workspace:*",
+    "@keel/server": "workspace:*",
+    "@keel/std-brands": "workspace:*",
+    "@keel/std-headless": "workspace:*",
+    "@keel/std-i18n": "workspace:*",
+    "@keel/std-money": "workspace:*",
+    "@keel/std-text": "workspace:*",
+    "@keel/store": "workspace:*",
+    "@keel/ui": "workspace:*"
+  },
+  "devDependencies": {
+    "@keel/cli": "workspace:*",
+    "@keel/testing": "workspace:*",
+    "@keel/tooling": "workspace:*",
+    "@types/node": "^22",
+    "fast-check": "^3",
+    "vite": "^8.3.6",
+    "z3-solver": "5.3.3"
+  }
+}
