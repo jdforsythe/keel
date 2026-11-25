@@ -2,7 +2,7 @@ import type { Ctx } from "@keel/ctx";
 import type { Schema } from "@keel/schema";
 import type { Job } from "@keel/std-jobs";
 import type { WorkflowStores } from "./WorkflowStores.ts";
-import type { FlowInput } from "./internal/FlowInput.ts";
+import type { FlowInput } from "./internal/FlowInput.schema.ts";
 import type { Scan } from "./internal/Scan.ts";
 import type { planKey } from "./internal/planKey.ts";
 

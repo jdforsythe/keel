@@ -1,5 +1,5 @@
 import type { Instance } from "../Instance.ts";
-import type { FlowInput } from "./FlowInput.ts";
+import type { FlowInput } from "./FlowInput.schema.ts";
 import type { LooseStores } from "./LooseStores.ts";
 
 /** The instance a job's input names, while it is still at that `entered` and `test` holds for its state; else undefined. */

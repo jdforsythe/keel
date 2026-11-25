@@ -4,7 +4,7 @@ import { commitStores } from "@keel/server";
 import { type Job, job } from "@keel/std-jobs";
 import { tx } from "@keel/store";
 import type { StepSpec } from "../StepSpec.ts";
-import { FlowInput } from "./FlowInput.ts";
+import { FlowInput } from "./FlowInput.schema.ts";
 import type { LooseStores } from "./LooseStores.ts";
 import type { Model } from "./Model.ts";
 import { rowOf } from "./rowOf.ts";
@@ -43,7 +43,7 @@ export function stepJob<S extends string, D>(
         const r = rowOf(S, input, here);
         if (r === undefined) return ok(undefined);
         if (r.attempt >= max) return failed(S, step.failed, input.id, "workflows.attempts");
-        tx(S.attempt, input);
+        void tx(S.attempt, input);
         return ok({ data: r.data, last: r.attempt + 1 >= max });
       });
       if (!first.ok) return first;

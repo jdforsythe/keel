@@ -1,7 +1,7 @@
 import { inspector } from "@keel/compiler/inspect/inspector";
 import type { KeyValueStorage } from "@keel/ctx";
-import { JobsQueue } from "../JobsQueue.ts";
-import type { State } from "./State.ts";
+import { JobsQueue } from "../JobsQueue.schema.ts";
+import type { State } from "./State.schema.ts";
 
 const snaps = new WeakMap<KeyValueStorage, JobsQueue>();
 

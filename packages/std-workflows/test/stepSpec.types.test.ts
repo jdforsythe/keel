@@ -4,7 +4,7 @@
 import { createCtx } from "@keel/ctx";
 import { type Infer, type KeelError, type Result, ok, s } from "@keel/schema";
 import { expect, expectTypeOf, test } from "vitest";
-import type { StepSpec } from "../src/index.ts";
+import type { StepSpec } from "../src/index.server.ts";
 
 const Events = {
   put: s.object({ putBack: s.boolean() }),

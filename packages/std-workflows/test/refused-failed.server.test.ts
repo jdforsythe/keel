@@ -10,8 +10,8 @@ import { chart } from "@keel/std-statecharts";
 import { tx } from "@keel/store";
 import fc from "fast-check";
 import { expect, test } from "vitest";
-import { type Data, close, nextId, pass, settle, sim } from "../conformance/fixtures.ts";
-import { flows, workflow } from "../src/index.ts";
+import { flows, workflow } from "../src/index.server.ts";
+import { type Data, close, nextId, pass, settle, sim } from "./support.server.ts";
 
 const Codes = ["api.nope", "workflows.attempts", "schema.invalid"] as const;
 type Code = (typeof Codes)[number];
@@ -60,11 +60,11 @@ async function runOne(f: ReturnType<typeof flow>) {
   });
   const id = ctx.random.id("Flow");
   const data: Data = { n: 1, freed: 0, code: "needle-4711" };
-  await commitStores(ctx, f.wf.stores, (S) => {
-    tx(S.start, { id, data });
-    tx(S.events.begin, { id, payload: {} });
+  void (await commitStores(ctx, f.wf.stores, (S) => {
+    void tx(S.start, { id, data });
+    void tx(S.events.begin, { id, payload: {} });
     return ok(null);
-  });
+  }));
   await settle();
   await pass(ctx, 120_000);
   const r = await commitStores(ctx, f.wf.stores, (S) => ok(structuredClone(S.store.get("instances")[id])));

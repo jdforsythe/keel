@@ -1,5 +1,5 @@
 import { type RuleDef, defineRule } from "@keel/check";
-import { runnersEdits, runnersFindings } from "@keel/std-jobs/tools/internal";
+import { runnersEdits, runnersFindings } from "@keel/std-jobs/tools";
 
 /**
  * E2553 (std.schedules, k.check registry): a module with `schedules.server.ts` whose literal `runners` lacks

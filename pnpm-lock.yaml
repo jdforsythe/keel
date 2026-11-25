@@ -105,6 +105,9 @@ importers:
       '@keel/std-money':
         specifier: workspace:*
         version: link:../../packages/std-money
+      '@keel/std-statecharts':
+        specifier: workspace:*
+        version: link:../../packages/std-statecharts
       '@keel/std-text':
         specifier: workspace:*
         version: link:../../packages/std-text
@@ -305,6 +308,9 @@ importers:
       '@keel/std-sessions':
         specifier: workspace:*
         version: link:../../packages/std-sessions
+      '@keel/std-statecharts':
+        specifier: workspace:*
+        version: link:../../packages/std-statecharts
       '@keel/std-tables':
         specifier: workspace:*
         version: link:../../packages/std-tables
@@ -2027,9 +2033,16 @@ importers:
 
   packages/std-jobs:
     dependencies:
+      oxc-parser:
+        specifier: ^0.157.0
+        version: 0.157.0
+    devDependencies:
       '@keel/check':
         specifier: workspace:*
         version: link:../check
+      '@keel/cli':
+        specifier: workspace:*
+        version: link:../cli
       '@keel/compiler':
         specifier: workspace:*
         version: link:../compiler
@@ -2042,10 +2055,6 @@ importers:
       '@keel/server':
         specifier: workspace:*
         version: link:../server
-      oxc-parser:
-        specifier: ^0.157.0
-        version: 0.157.0
-    devDependencies:
       '@keel/testing':
         specifier: workspace:*
         version: link:../testing
@@ -2296,9 +2305,16 @@ importers:
 
   packages/std-schedules:
     dependencies:
+      oxc-parser:
+        specifier: ^0.157.0
+        version: 0.157.0
+    devDependencies:
       '@keel/check':
         specifier: workspace:*
         version: link:../check
+      '@keel/cli':
+        specifier: workspace:*
+        version: link:../cli
       '@keel/compiler':
         specifier: workspace:*
         version: link:../compiler
@@ -2317,10 +2333,6 @@ importers:
       '@keel/std-temporal':
         specifier: workspace:*
         version: link:../std-temporal
-      oxc-parser:
-        specifier: ^0.157.0
-        version: 0.157.0
-    devDependencies:
       '@keel/testing':
         specifier: workspace:*
         version: link:../testing
@@ -2402,10 +2414,16 @@ importers:
         version: 3.23.2
 
   packages/std-statecharts:
-    dependencies:
+    devDependencies:
       '@keel/check':
         specifier: workspace:*
         version: link:../check
+      '@keel/cli':
+        specifier: workspace:*
+        version: link:../cli
+      '@keel/compiler':
+        specifier: workspace:*
+        version: link:../compiler
       '@keel/reactive':
         specifier: workspace:*
         version: link:../reactive
@@ -2415,7 +2433,6 @@ importers:
       '@keel/store':
         specifier: workspace:*
         version: link:../store
-    devDependencies:
       '@keel/testing':
         specifier: workspace:*
         version: link:../testing
@@ -2672,9 +2689,16 @@ importers:
 
   packages/std-workflows:
     dependencies:
+      oxc-parser:
+        specifier: ^0.157.0
+        version: 0.157.0
+    devDependencies:
       '@keel/check':
         specifier: workspace:*
         version: link:../check
+      '@keel/cli':
+        specifier: workspace:*
+        version: link:../cli
       '@keel/compiler':
         specifier: workspace:*
         version: link:../compiler
@@ -2696,10 +2720,6 @@ importers:
       '@keel/store':
         specifier: workspace:*
         version: link:../store
-      oxc-parser:
-        specifier: ^0.157.0
-        version: 0.157.0
-    devDependencies:
       '@keel/testing':
         specifier: workspace:*
         version: link:../testing

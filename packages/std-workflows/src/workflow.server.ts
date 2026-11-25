@@ -1,21 +1,22 @@
 import type { Schema } from "@keel/schema";
 import type { Job } from "@keel/std-jobs";
 import type { StateSpec } from "@keel/std-statecharts";
-import { asEvents } from "@keel/std-statecharts/internal";
+import { asEvents } from "../unsafe/asEvents.ts";
 import { looseChart } from "../unsafe/looseChart.ts";
+import { refuse } from "../unsafe/refuse.ts";
 import type { StepSpec } from "./StepSpec.ts";
 import type { WaitSpec } from "./WaitSpec.ts";
 import type { Workflow } from "./Workflow.type.ts";
 import type { WorkflowSpec } from "./WorkflowSpec.ts";
-import type { FlowInput } from "./internal/FlowInput.ts";
+import type { FlowInput } from "./internal/FlowInput.schema.ts";
 import type { Model } from "./internal/Model.ts";
-import { compileStores } from "./internal/compileStores.ts";
+import { compileStores } from "./internal/compileStores.server.ts";
 import { entryOf } from "./internal/entryOf.ts";
-import { forgetJob } from "./internal/forgetJob.ts";
+import { forgetJob } from "./internal/forgetJob.server.ts";
 import { planKey } from "./internal/planKey.ts";
-import { scanOf } from "./internal/scanOf.ts";
-import { stepJob } from "./internal/stepJob.ts";
-import { wakeJob } from "./internal/wakeJob.ts";
+import { scanOf } from "./internal/scanOf.server.ts";
+import { stepJob } from "./internal/stepJob.server.ts";
+import { wakeJob } from "./internal/wakeJob.server.ts";
 
 /**
  * Declare a workflow (std.workflows) in a `*.server.ts` file: the chart run per instance in the one store `id`, its
@@ -39,7 +40,7 @@ export function workflow<
     const on = states[state]?.on;
     for (const e of events)
       if (on === undefined || finals.has(state) || !Object.hasOwn(on, e))
-        throw new Error(`E2352 workflow ${id}: ${part} ${state} needs a non-final state whose on has ${e}`);
+        refuse(`E2352 workflow ${id}: ${part} ${state} needs a non-final state whose on has ${e}`);
   };
   const steps = new Map<string, StepSpec<D, Readonly<Record<string, Schema<unknown>>>>>();
   const waits = new Map<string, WaitSpec<string>>();
@@ -56,10 +57,10 @@ export function workflow<
       own("wait", state, [wait.event]);
       waits.set(state, wait);
     }
-  if (first === undefined) throw new Error(`E2352 workflow ${id}: the chart has no states`);
+  if (first === undefined) refuse(`E2352 workflow ${id}: the chart has no states`);
   for (const e of Object.keys(chart.events))
     if (e === "start" || e === "attempt" || e === "forget")
-      throw new Error(`E2355 workflow ${id}: chart event ${e} takes the name of a workflow transaction; rename it`);
+      refuse(`E2355 workflow ${id}: chart event ${e} takes the name of a workflow transaction; rename it`);
   const events = new Map<string, Schema<unknown>>();
   for (const [e, t] of Object.entries(chart.events)) events.set(e, t.schema);
   const open = compileStores(

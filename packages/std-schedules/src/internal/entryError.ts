@@ -1,14 +1,8 @@
+import { attempt } from "@keel/schema";
 import { TimeZone } from "@keel/std-temporal";
 import { parseCron } from "./parseCron.ts";
 
-const hostLacks = (zone: string): boolean => {
-  try {
-    new Intl.DateTimeFormat("en-US", { timeZone: zone });
-    return false;
-  } catch {
-    return true;
-  }
-};
+const hostLacks = (zone: string): boolean => !attempt(() => new Intl.DateTimeFormat("en-US", { timeZone: zone })).ok;
 
 /**
  * Why a schedule entry's `cron` or `zone` does not parse (E2551, naming the field), or undefined. A `zone` must be a

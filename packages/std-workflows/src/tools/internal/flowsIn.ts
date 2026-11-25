@@ -1,7 +1,8 @@
-import { callsOf, propOf } from "@keel/std-jobs/tools/internal";
 import type { Ast } from "./Ast.ts";
 import type { Flow } from "./Flow.ts";
+import { callsOf } from "./callsOf.ts";
 import { importsOf } from "./importsOf.ts";
+import { propOf } from "./propOf.ts";
 import { resolvePath } from "./resolvePath.ts";
 
 /** The `workflow` calls of the file at `path` whose options are a literal naming a `chart`. */
