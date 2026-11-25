@@ -70,7 +70,7 @@ const use = (id: string, from: string, name: string): Files[number] =>
 const NO_TYPES: Options = { types: false };
 
 /** An installed library `@acme/charts` of `id` listing `deps` (k.library): its `package.json`, root `module.ts` and ledger file, under `node_modules/`. */
-const library = (id: string, deps: string[]): Files[number][] => [
+const library = (id: string, deps: string[], ledger = true): Files[number][] => [
   f(
     "node_modules/@acme/charts/package.json",
     '{"name":"@acme/charts","version":"1.0.0","type":"module","keel":"library","exports":{".":{"keel":"./src/index.ts","default":"./index.js"}}}',
@@ -79,10 +79,14 @@ const library = (id: string, deps: string[]): Files[number][] => [
     "node_modules/@acme/charts/module.ts",
     `import { module } from '@keel/compiler'\nexport default module({ id: '${id}', deps: [${deps.map((d) => `'${d}'`).join(", ")}], capabilities: [], public: { exports: [] } })\n`,
   ),
-  f(
-    "node_modules/@acme/charts/.keel/ledger.json",
-    '{"version":1,"unsafe":0,"hostElements":0,"rungs":{},"mutation":{},"exports":[],"clauses":[],"a11y":[]}\n',
-  ),
+  ...(ledger
+    ? [
+        f(
+          "node_modules/@acme/charts/.keel/ledger.json",
+          '{"version":1,"unsafe":0,"hostElements":0,"rungs":{},"mutation":{},"exports":[],"clauses":[],"a11y":[]}\n',
+        ),
+      ]
+    : []),
 ];
 
 const IMPORT = "import { serverState } from '@keel/store/internal'\nexport const x = serverState\n";
@@ -400,6 +404,12 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
     opts: NO_TYPES,
     bad: [mod("shop", ["@acme/charts"], []), mod("charts", [], []), ...library("charts", [])],
     clean: [mod("shop", ["@acme/charts"], []), mod("charts", [], []), ...library("graphs", [])],
+  },
+  // E1162 (rfc:0163): an installed library listed in `deps` ships no `.keel/ledger.json`, at the entry; the clean counterpart ships one.
+  E1162: {
+    opts: NO_TYPES,
+    bad: [mod("shop", ["@acme/charts"], []), ...library("charts", [], false)],
+    clean: [mod("shop", ["@acme/charts"], []), ...library("charts", [])],
   },
   E1154: { bad: [mod("a", [], ["Ghost"])], clean: [mod("a", [], ["Ghost"]), exp("a", "Ghost")] },
   E1155: {
