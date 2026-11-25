@@ -17,6 +17,7 @@
     "k.parity",
     "k.review",
     "k.security",
+    "k.server-deps",
     "k.shell",
     "k.topology"
   ],

@@ -11,7 +11,7 @@
 - Library elements take non-literal ids from an `id` prop (E1161). A library reaches only itself and other libraries (E1163), and its `id` is unique in the app (E1166).
 - The library ships its own ledger file. The app recounts `unsafe` and `hostElements`, compares them for an installed library (E1162), shows the library's items without counting them, and records `libraries` in its ledger.
 - `keel pack` is the publish gate (E1164); `keel scaffold library` writes a library that passes it.
-- The stdlib packages are libraries, read by kind; four named closed sets remain (k.parity).
+- The stdlib packages are libraries, read by kind; three named closed sets remain (k.parity). App data stays a seam: what the kernel gives `@keel/std-postgres` by name, any package gets through a manifest's `env`, the build's copy of files a bundled package reads, and registration through a library (k.server-deps).
 
 **Alternatives.**
 - Built JS with a signed claim: the app would trust it, and it could not match the app's tokens.

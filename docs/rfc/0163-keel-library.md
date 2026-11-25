@@ -10,8 +10,9 @@ Status: accepted (ADR-0185), confirmed by the operator on 2026-11-25; not yet bu
 - D5: library elements take explicit, non-literal ids built from the component's `id` prop (E1161).
 - D6: a library ships its own ledger file, `.keel/ledger.json` (k.ledger File), and no other manifest. The app counts `unsafe` and `hostElements` over the library's files, compares them with the shipped file for an installed library (E1162), shows the library's items under `evidence: 'library <version>'` and leaves them out of the app's rungs. The ledger file gains `libraries`.
 - D7: `keel pack` is the library's gate (check, test, ledger write; E1164). `keel scaffold library @scope/name` writes one that passes it.
-- D8: the stdlib packages are libraries in this format, so the kernel reads each by its kind and never by its name (RFC 0169, k.parity). Four named closed sets remain: shells, topology storage, the app data battery and the CLI command slots.
+- D8: the stdlib packages are libraries in this format, so the kernel reads each by its kind and never by its name (RFC 0169, k.parity). Three named closed sets remain: shells, topology storage and the CLI command slots.
 - D9: a library reaches only itself and other libraries (E1163), and its `id` is unique in the app (E1166).
+- D10: app data stays a seam (D43). What the kernel gives `@keel/std-postgres` by name today, any package gets by the same means (k.server-deps): a manifest's `env` names the variables `deploy/compose.yaml` passes; the server build copies the files a bundled package reads beside itself through `new URL(<literal>, import.meta.url)`; and a file importing a library export that calls `register` counts as registering a capability under `keel dev`.
 
 ## Problem
 These are the facts as the tree stands.
@@ -82,7 +83,7 @@ The chart's elements take ids `${props.id}.chart`, `${props.id}.data` and `${pro
 - k.library-pack (new, proposed, owner `@keel/cli`): Package, Own folder, Pack, Scaffold, Rules (E1164), Conformance.
 - Map: rows `k.library | Libraries | proposed | packages` and `k.library-pack | Library publishing | proposed | pack`; the E115x owner cell names both.
 - Glossary: **library**.
-- k.parity Exceptions: the app data battery, `@keel/std-postgres`, as a fourth named closed set (RFC 0169 amended to match).
+- k.server-deps (new, proposed, owner `@keel/cli`): Environment (`env` in a manifest), Files a bundled package reads, Registration through a library, Rules (E1167, E1014), Conformance. Map row `k.server-deps | Server dependencies | proposed | env`; the E100x and E115x owner cells name it. k.deploy's compose bullet and k.data Dev then hold by these means, with `@keel/std-postgres`'s manifest declaring `env: ['KEEL_POSTGRES_URL']`; their text drops the package name at the build, and k.deploy's existing `@keel/std-postgres` bullet keeps its wording.
 - These sections are full or conformance-covered, so k.library states their changes and the build updates their text where it has room: k.module (an `@` entry names a library; E1159 reads "a package entry that resolves to no library"; E1158 and Std config read "library" for "`@keel/std-*`"), k.check App code and E1757 (no `node_modules/` exclusion for library files), k.ledger File (`libraries`), k.scaffold (`library`), k.cli (`pack`), k.security E1576 (k.parity Rules). Their existing Conformance bullets keep their wording unless the behaviour changes, which only k.security's `node_modules/@keel/std-x/a.ts` case does (slice 5, under RFC 0169).
 
 E1161 to E1164 were held for this RFC and are still free in the code table; E1166 is the next free code in k.module's block.
@@ -94,7 +95,7 @@ The `conformance-writer` turns the Conformance lists of k.library and k.library-
 None: nothing is released.
 
 ## Token impact
-k.library about 2,480 tokens and k.library-pack about 1,090, of 3,110 each. The map grows two rows (`spec.map` re-based from 1,545 to 1,580) and the packed docs map two entries (`docs.map` re-based from 1,590 to 1,610). The glossary gains one term; k.parity one line.
+k.library about 2,480 tokens and k.library-pack about 1,090, of 3,110 each. The map grows two rows (`spec.map` re-based from 1,545 to 1,600, with k.server-deps) and the packed docs map two entries (`docs.map` re-based from 1,590 to 1,620). k.server-deps about 1,010 tokens, one more map row. The glossary gains one term.
 
 ## Build order
 Clause numbers are 1-based Conformance bullets. Every slice leaves the main line green and mergeable; until slice 4 ends, a `@keel/std-*` package passes as a library by its name, so no stdlib package changes before its turn.
@@ -128,13 +129,19 @@ Clause numbers are 1-based Conformance bullets. Every slice leaves the main line
 - Clauses: none new; k.library's clauses hold over the stdlib.
 - Conformance: none owed; the golden apps' `keel check` is the proof.
 
-**Slice 5: k.parity's second part (M).** Depends on slice 4. This is RFC 0169 Build B.
+**Slice 4b: the app data seam (M).** Depends on slice 2a (library source is read). Runs beside slices 3 and 4.
+- Delivers: `env` in `ModuleSchema` and E1167; the deploy files reading `env` over each deployable's modules and their libraries, in place of the `@keel/std-postgres` name in `packages/scaffold/src/deployFiles.ts`; the server build copying the files bundled package files read beside themselves (E1014), in place of `copyPgliteFiles` and `pgliteDist` in `packages/compiler/src/vite.ts`; `registersCapability` following an import into a library, in place of its `@keel/std-postgres` pattern; `@keel/std-postgres` gaining `module.ts` with `env: ['KEEL_POSTGRES_URL']` and a `./module` export if slice 4 has not reached it. Under the app's reading, std-postgres's `register(name, ...)` would be E1607; k.server-deps moves that check to the app's call of the export, at the argument.
+- Packages: `@keel/compiler`, `@keel/scaffold`, `@keel/cli`, `@keel/std-postgres` (manifest only).
+- Clauses: k.server-deps 1 to 5.
+- Conformance: `packages/cli/conformance/server-deps-env.test.ts` (1, 2); `packages/cli/conformance/server-deps-files.test.ts` (3); `packages/cli/conformance/server-deps-register.test.ts` (4); `packages/check/conformance/server-deps-e1607.test.ts` (5). Fixture packages only; no std package imported.
+
+**Slice 5: k.parity's second part (M).** Depends on slices 4 and 4b. This is RFC 0169 Build B.
 - Delivers: the name gates of RFC 0169 items 3 to 8 and 11 become kind gates; E1207's four stdlib sites move to `unsafe/`; `tooling/deps.json` `names` and S0013; E1576's shell allowance over library files (k.security's `node_modules/@keel/std-x/a.ts` bullet changes under `rfc:0169`); the k.module, k.reactive and k.schema text of RFC 0169's Spec diff.
 - Packages: `@keel/check`, `@keel/compiler`, `@keel/cli`, `@keel/scaffold`, the four stdlib packages with detached scopes, `tooling/structure-lint.mjs`.
 - Clauses: k.parity 5 and 6, after which k.parity can be marked covered.
 - Conformance: `tooling/test/structure-lint.test.mjs` (5, 6, by the build lane); `packages/check/conformance/parity-e1576-library.test.ts` (the E1576 allowance).
 
-Parallel lanes: 2a beside 2b; slice 4's groups beside each other once the pilot merges. Slices 1, 3 and 5 are each one lane.
+Parallel lanes: 2a beside 2b; 4b beside 3 and 4; slice 4's groups beside each other once the pilot merges. Slices 1, 3 and 5 are each one lane.
 
 ## For the operator
 1. **Libraries must be scoped** (`@scope/name`) so a `deps` entry tells a package from a module by its first character. I recommend it: one rule, read without a lookup, free to every npm user.
