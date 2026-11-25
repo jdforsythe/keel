@@ -36,7 +36,6 @@ type Scanned = {
   readonly layouts: readonly Entry[];
 };
 
-
 type Project = {
   readonly modules: readonly ModuleInfo[];
   readonly byKey: ReadonlyMap<string, ModuleInfo>;

@@ -20,7 +20,8 @@ function moreSpecifiers(checked: Checked): SpecifierLiteral[] {
     ImportExpression: (n) => {
       const x = n.source;
       const head = x.type === "TemplateLiteral" && x.expressions.length > 0 ? x.quasis[0]?.value.cooked : undefined;
-      if (typeof head === "string") out.push({ spec: head.slice(0, head.lastIndexOf("/") + 1), start: x.start, end: x.end });
+      if (typeof head === "string")
+        out.push({ spec: head.slice(0, head.lastIndexOf("/") + 1), start: x.start, end: x.end });
     },
     NewExpression: (n) => {
       const [first, second] = n.arguments;
