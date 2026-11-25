@@ -154,6 +154,7 @@ describe("k.unsafe Ledger: no item evidence", () => {
   const header = `// Spec: k.fx, Conformance "${CLAUSE}"\n`;
   const rung = (files: Readonly<Record<string, string>>): unknown => {
     const dir = project("ledger-negtypes-rung", { [SPEC]: specText, ...files });
+    // Replaced at step 4 of rfc:0235: the item is `k.fx#<key>` (itemOf in ledger-items-support.ts), not `k.fx#1`.
     return ledgerRecord(keel(dir, ["ledger"]), "k.fx#1")?.rung;
   };
 

@@ -1,9 +1,7 @@
 // k.library-pack, Pack: "`test`: `test: <f> of <n> tests failed; nothing packed` (`1 test`), counted as `keel test` counts them, a test file that fails to load one failed test; or `test: the run did not pass; nothing packed` when none failed and the run still failed (an error outside any test, such as an unhandled rejection); nowhere, after the test's diagnostics."
 // The real `keel` binary runs `keel test` over temp projects (OS tmpdir). Seed 1337 (the property over mixes of files).
-// MISSING SENTENCE: k.test-run and k.testing state no summary count for `keel test`; the one sentence that states how
-// `keel test` counts a file that fails to load is the one above (from k.library-pack). What it gives: a file that fails
-// to load is one failed test, so `failed` never exceeds `tests`. Not stated, so not asserted: `keel test` over no test
-// files (`ok 0 tests`), over a file holding no test, and whether a skipped test counts in `tests`.
+// k.test-run Summary states the counts: a file that fails to load is one failed test, so `failed` never exceeds `tests`, and a skipped test counts in `tests` and `skipped`;
+// test-run-summary.test.ts asserts its clause and the summary against the run report. This file asserts the part the k.library-pack sentence above states.
 // ASSUMPTION: a file that fails to load adds one to `tests` as well as one to `failed` (the `<f> of <n>` of the sentence, with `f <= n`).
 import fc from "fast-check";
 import { afterAll, describe, expect, it } from "vitest";

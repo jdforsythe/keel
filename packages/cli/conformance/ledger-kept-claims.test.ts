@@ -1,5 +1,6 @@
-// Spec: k.ledger, Conformance "In a project whose `.keel/routes.json` lists page route `r` (`path: '/r'`) and which has no `reports/a11y.json`, `keel ledger --write tooling/ledger/ledger.json` run in the project over a `tooling/ledger/ledger.json` whose `a11y` holds `a11y:.:r#1.4.3` at `example` writes `a11y:.:r#1.4.3` at `example`, its summary `counts` hold `keptNoReport: 1` and its compact trailer ends `, 1 keptNoReport`; over one whose `a11y` lacks `a11y:.:r#1.4.3` it writes it at `none` and the `counts` hold no `keptNoReport`."
-// Spec: k.ledger, Conformance "The same project with a `reports/a11y.json` holding one failed run of `r` whose `violations` hold a rule mapped to 1.4.3: `keel ledger --write` over the ledger holding `a11y:.:r#1.4.3` at `example` writes it at `none` and its `counts` hold no `keptNoReport`, and `keel ledger --diff` against that ledger reports E1706; with that run passed and its `violations` empty, `--write` writes it at `example`."
+// A committed a11y rung kept with no `reports/a11y.json` (`keptNoReport`) is replaced at step 5 of rfc:0235 by the first case below under its Pending marker; the case after it stands.
+// Spec: k.ledger, clause "In a project whose `.keel/routes.json` lists page route `r` (`path: '/r'`) and which has no `reports/a11y.json`, `keel ledger --write tooling/ledger/ledger.json` run in the project over a `tooling/ledger/ledger.json` whose `a11y` holds `a11y:.:r#1.4.3` at `example` writes `a11y:.:r#1.4.3` at `none` and reports one W1733 at `reports/a11y.json`, and `keel ledger --diff` against that ledger reports E1706 for it."
+// Spec: k.ledger, clause "The same project with a `reports/a11y.json` holding one failed run of `r` whose `violations` hold a rule mapped to 1.4.3: `keel ledger --write` over the ledger holding `a11y:.:r#1.4.3` at `example` writes it at `none`, and `keel ledger --diff` against that ledger reports E1706; with that run passed and its `violations` empty, `--write` writes it at `example`."
 // Spec: k.ledger, clause "Over a ledger whose `a11y` also holds `a11y:.:gone#1.4.3` and `a11y:r#1.4.3` at `example`, with `gone` not in `.keel/routes.json`, `keel ledger --write` writes neither item, with and without `reports/a11y.json`."
 // Spec: k.ledger, clause "From a committed claim for `packages/a/src/a.ts` whose `sha` the file no longer hashes to, and a report on disk whose `files` hold `src/a.ts` with the tree's source and only `Ignored` mutants, `keel ledger --write` stores no claim for `packages/a/src/a.ts` and `keel ledger --diff` reports no W1714; with one `Killed` mutant in place of the `Ignored` one it stores a claim for it whose `sha` is the file's, and `--diff` reports no W1714."
 // Seed: 1337 (no property: fixed projects, the real `keel` binary over temp projects in the OS tmpdir).
@@ -73,6 +74,19 @@ const compactLine = (dir: string, args: readonly string[]): string => {
 };
 
 describe("k.ledger: kept a11y claims and the unscored mutation file", () => {
+  // Pending (rfc:0235 step 5): skipped until the build lands; the builder un-skips by changing `it.skip` to `it`, and removes the case after it, which asserts `keptNoReport`.
+  it.skip("in a project with page route `r` and no `reports/a11y.json`, `--write` over a ledger holding `a11y:.:r#1.4.3` at `example` writes it at `none`, reports one W1733 at `reports/a11y.json`, holds no `keptNoReport` in `counts`, and `--diff` reports E1706 for it", () => {
+    const dir = project("ledger-no-report", { ".keel/routes.json": ROUTES });
+    commit(dir, [{ item: ITEM, rung: "example" }]);
+    const written = keel(dir, ["ledger", "--write", COMMITTED]);
+    expect(rungOf(dir, ITEM)).toBe("none");
+    expect(diags(written, "W1733")).toEqual([expect.objectContaining({ path: "reports/a11y.json" })]);
+    expect(countsOf(written)).not.toHaveProperty("keptNoReport");
+    commit(dir, [{ item: ITEM, rung: "example" }]);
+    expect(diags(keel(dir, ["ledger", "--diff"]), "E1706").length).toBeGreaterThan(0);
+  }, 60_000);
+
+  // Replaced at step 5 of rfc:0235 by the case above: a rung no run produced is `none`, and `keptNoReport` is gone.
   it("with no `reports/a11y.json`, `a11y:.:r#1.4.3` stays at `example`, `counts` hold `keptNoReport: 1` and the compact trailer ends `, 1 keptNoReport`; over a ledger lacking it, it is `none` with no `keptNoReport`", () => {
     const dir = project("ledger-kept", { ".keel/routes.json": ROUTES });
     commit(dir, [{ item: ITEM, rung: "example" }]);

@@ -47,6 +47,7 @@ describe("k.ledger: a `conformance-covered` section with an uncited clause (E170
     expect(found).toHaveLength(1);
     expect(found[0]).toMatchObject({ code: "E1707", path: SPEC, line: CLAUSE_2_LINE });
     expect(String(found[0]?.message)).toContain("k.fx");
+    // Replaced at step 4 of rfc:0235: the message names the clause `k.fx#2` (k.ledger-items Clause key), not `clause 2`.
     expect(String(found[0]?.message)).toContain("clause 2");
     expect(summaryOf(diff)).toMatchObject({ ok: false });
   }, 60_000);

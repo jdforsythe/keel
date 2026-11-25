@@ -181,6 +181,23 @@ it("explores ${name}", () => {
     expectOrder(keys);
   }, 120_000);
 
+  // Pending (rfc:0235 step 5): skipped until the build lands; the builder un-skips by changing `it.skip` to `it`, and removes the case after it, which asserts `keptNoReport`.
+  it.skip("a committed a11y item with no `reports/a11y.json` is written at `none` and `counts` never holds `keptNoReport`", () => {
+    const routes = `${JSON.stringify({ data: { r: { path: "/r" } }, hash: "fnv1a:00000000" })}\n`;
+    const keys = withProject("counts-no-kept", { ".keel/routes.json": routes }, (dir) => {
+      expect(keel(dir, ["ledger", "--write", COMMITTED]).status).toBe(0);
+      const led: unknown = JSON.parse(readFileSync(join(dir, COMMITTED), "utf8"));
+      const base = typeof led === "object" && led !== null ? led : {};
+      writeFiles(dir, {
+        [COMMITTED]: `${JSON.stringify({ ...base, a11y: [{ item: "a11y:.:r#1.4.3", rung: "example" }] }, null, 2)}\n`,
+      });
+      return countsKeys(keel(dir, ["ledger", "--write", COMMITTED]));
+    });
+    expect(keys).not.toContain("keptNoReport");
+    expectOrder(keys);
+  }, 120_000);
+
+  // Replaced at step 5 of rfc:0235 by the case above: `keptNoReport` is gone from `counts`.
   it("then `keptNoReport` when above 0, last", () => {
     const routes = `${JSON.stringify({ data: { r: { path: "/r" } }, hash: "fnv1a:00000000" })}\n`;
     const keys = withProject("counts-kept", { ".keel/routes.json": routes }, (dir) => {
