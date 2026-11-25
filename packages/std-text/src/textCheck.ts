@@ -12,9 +12,8 @@ const VISIBLE = /[^\p{White_Space}\p{Default_Ignorable_Code_Point}\p{Cf}\p{M}\u2
  * `min` to `max` graphemes. Throws unless `min` and `max` are integers with `0 <= min <= max` and `1 <= max <= 10000`.
  */
 export function textCheck(min: number, max: number, newline: boolean): (v: string) => boolean {
-  if (!Number.isInteger(min) || !Number.isInteger(max) || min < 0 || min > max || max < 1 || max > 10000) {
-    return boundFault(`text bounds must be integers with 0 <= min <= max and 1 <= max <= 10000, got ${min}..${max}`);
-  }
+  if (!Number.isInteger(min) || !Number.isInteger(max) || min < 0 || min > max || max < 1 || max > 10000)
+    boundFault(`text bounds must be integers with 0 <= min <= max and 1 <= max <= 10000, got ${min}..${max}`);
   const forbidden = newline ? PARA : LINE;
   return (v) => {
     if (v.normalize("NFC") !== v || forbidden.test(v) || (v !== "" && !VISIBLE.test(v))) return false;
