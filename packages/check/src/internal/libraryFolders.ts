@@ -17,6 +17,22 @@ function parse(source: string): unknown {
   }
 }
 
+/** The conditions Node matches for an `import` (k.library: an entry with no `keel` is read at its other target). */
+const NODE = new Set(["node", "import", "default"]);
+
+/**
+ * The file an `exports` entry's `target` names: the target itself when a string, else its `keel` condition, else the
+ * first condition Node matches for an import, in the order written, read the same way.
+ */
+function entryTarget(target: unknown): string | undefined {
+  if (typeof target === "string") return target;
+  if (typeof target !== "object" || target === null || Array.isArray(target)) return undefined;
+  const keel: unknown = Reflect.get(target, "keel");
+  if (typeof keel === "string") return keel;
+  for (const [cond, next] of Object.entries(target)) if (NODE.has(cond)) return entryTarget(next);
+  return undefined;
+}
+
 /**
  * The library files among `files` and the paths rules read them at (`LibraryView`). A library is a
  * `<p>node_modules/<name>/package.json` that `libraryKind` reads as `library`, `<p>` holding no `node_modules/`, beside a
@@ -41,10 +57,14 @@ export function libraryFolders(files: readonly SourceFile[]): LibraryView {
     ids.set(`${prefix}node_modules/${name}/`, under);
     packages.push(f);
     const exports = Reflect.get(Object(parse(f.source)), "exports");
-    for (const [key, target] of Object.entries(typeof exports === "object" && exports !== null ? exports : {})) {
-      const keel = typeof target === "object" && target !== null ? Reflect.get(target, "keel") : undefined;
-      const rel = typeof keel === "string" ? keel.replace(/^\.\//, "") : "";
-      if (key.startsWith(".") && /^(?:src|unsafe)\//.test(rel)) entries.set(`${name}${key.slice(1)}`, `${under}${rel}`);
+    const sugar =
+      typeof exports === "string" ||
+      (typeof exports === "object" && exports !== null && !Object.keys(exports).some((k) => k.startsWith(".")));
+    const map = sugar ? { ".": exports } : exports;
+    for (const [key, target] of Object.entries(typeof map === "object" && map !== null ? map : {})) {
+      const rel = (entryTarget(target) ?? "").replace(/^\.\//, "");
+      if (key.startsWith(".") && !key.includes("*") && /^(?:src|unsafe)\//.test(rel))
+        entries.set(`${name}${key.slice(1)}`, `${under}${rel}`);
     }
   }
   const toView = new Map<string, string>();

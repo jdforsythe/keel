@@ -1,5 +1,6 @@
 import type { Ctx } from "@keel/ctx";
 import type { KeelError, Result, Schema } from "@keel/schema";
+import { refuse } from "../unsafe/refuse.ts";
 import type { Job } from "./Job.type.ts";
 
 /**
@@ -16,6 +17,6 @@ export function job<I>(
     ["attempts", attempts],
     ["timeoutMs", timeoutMs],
   ] as const)
-    if (!Number.isSafeInteger(n) || n <= 0) throw new Error(`E2505 job ${name} ${String(n)} is not a positive integer`);
+    if (!Number.isSafeInteger(n) || n <= 0) refuse(`E2505 job ${name} ${String(n)} is not a positive integer`);
   return { input: opts.input, attempts, timeoutMs, fn };
 }

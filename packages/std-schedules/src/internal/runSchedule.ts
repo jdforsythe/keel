@@ -1,10 +1,10 @@
 import type { Ctx } from "@keel/ctx";
-import { s } from "@keel/schema";
+import { attempt } from "@keel/schema";
 import type { JobTable, Queue } from "@keel/std-jobs";
+import { refuse } from "../../unsafe/refuse.ts";
+import { Marks } from "./Marks.schema.ts";
 import type { Planned } from "./Planned.ts";
 import { seek } from "./seek.ts";
-
-const Marks = s.record(s.number());
 
 /**
  * A schedule's runner (std.schedules Run, Restart). At start, an entry whose mark is older than its latest fire time
@@ -23,11 +23,11 @@ export async function runSchedule(
   const key = `std.schedules.${module}`;
   const raw = await ctx.storage.get(key);
   const read = Marks.parse(raw === null ? {} : JSON.parse(raw));
-  if (!read.ok) throw new Error(`std.schedules: ${key} does not hold schedule marks`);
+  if (!read.ok) refuse(`std.schedules: ${key} does not hold schedule marks`);
   const marks = read.value;
   const fire = async (p: Planned, t: number): Promise<void> => {
     const r = await queue.enqueue(ctx, p.job, p.input, { key: `${p.id}@${t}` });
-    if (!r.ok) throw new Error(`std.schedules: enqueue ${p.job} failed: ${r.error.code}`);
+    if (!r.ok) refuse(`std.schedules: enqueue ${p.job} failed: ${r.error.code}`);
     marks[p.id] = t;
     await ctx.storage.set(key, JSON.stringify(marks));
   };
@@ -45,13 +45,12 @@ export async function runSchedule(
   }
   while (!signal.aborted) {
     const t = Math.min(...[...next.values()].map((x) => x ?? Number.POSITIVE_INFINITY));
-    try {
-      await (t < Number.POSITIVE_INFINITY
+    const waited = await attempt(() =>
+      t < Number.POSITIVE_INFINITY
         ? ctx.clock.after(Math.max(0, t - ctx.clock.now()), signal)
-        : new Promise((_, reject) => signal.addEventListener("abort", reject, { once: true })));
-    } catch {
-      return;
-    }
+        : new Promise((_, reject) => signal.addEventListener("abort", reject, { once: true })),
+    );
+    if (!waited.ok) return;
     if (ctx.clock.now() < t) continue;
     for (const [p, at] of next)
       if (at === t) {

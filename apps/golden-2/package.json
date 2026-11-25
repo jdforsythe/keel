@@ -30,6 +30,7 @@
     "@keel/std-postgres": "workspace:*",
     "@keel/std-report": "workspace:*",
     "@keel/std-sessions": "workspace:*",
+    "@keel/std-statecharts": "workspace:*",
     "@keel/std-tables": "workspace:*",
     "@keel/std-temporal": "workspace:*",
     "@keel/std-text": "workspace:*",
