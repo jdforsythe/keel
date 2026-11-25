@@ -1,10 +1,10 @@
 // @vitest-environment happy-dom
-// Spec: k.opening, clause "The link's GET answered 302 to `/auto`, a page whose render calls `navigate(mount.href('/login/github'))`, records `https://provider.example/a` in `documents()` again; a second delivery of the link then sends nothing, and after a second `Link` to the mount, a third sends one GET."
+// Spec: k.opening, clause "The link's GET answered 302 to `/auto`, a page whose render calls `navigate(mount.href('/login/github'))`, records `https://provider.example/a` in `documents()` a second time (two entries in all); a second delivery of the link then sends nothing, and after a second `Link` to the mount, a third sends one GET."
 // Spec: k.opening, clause "With no opening first, `renderRoute` of `/auto` with no `fire` records `https://provider.example/a` in `documents()`; the link then sends one GET."
 // Spec: k.opening, clause "With no opening first, a `fire` `click` on a `Link` to `/auto` records `https://provider.example/a` in `documents()`; the link then sends one GET."
 // Spec: k.opening, clause "With no opening first, a `fire` `submit` of a valid `Form` whose action answers `ok(mount.href('/login/github'))` records `https://provider.example/a` in `documents()`; the link then sends one GET."
 // Spec: k.opening, clause "An opening at 0 ms (sim clock), then a second at 300000 ms with a `ctx.storage` whose `set` now fails, its `commit` still working: the link at 599999 ms sends one GET; delivered first at 600000 ms instead, it sends nothing."
-// Spec: k.opening, clause "The link's GET answered 302 to `/private`, a page whose guard redirects every reader to `/auto`, records `https://provider.example/a` in `documents()` again; a second delivery of the link then sends nothing."
+// Spec: k.opening, clause "The link's GET answered 302 to `/private`, a page whose guard redirects every reader to `/auto`, records `https://provider.example/a` in `documents()` a second time (two entries in all); a second delivery of the link then sends nothing."
 // Spec: k.opening, clause "With no opening first, over any sequence of `fire` `keydown` `a`, `navigate('/private')` and deliveries of the link, each answered 302 to `/private`, a `navigate` records an opening unless a delivery was taken since the last act, and a delivery sends one GET exactly when an opening is pending, taking it."
 // Seed 1337 (fc.assert below; the sim ctx's seed is 1337). Fixture: act-pages.ts (its own routes; the start request is a GET of /api/auth/login/github).
 // ASSUMED: `/private` is `ac.private` of act-pages.ts, a page whose guard denies every reader and redirects to `ac.auto`; the property's model is return-acts-sequence.test.ts's with `navigate('/private')` for `navigate('/auto')`, each delivery answered 302 to `/private`.
@@ -34,7 +34,7 @@ async function opening(h: { fire(id: string, e: TestEvent): Promise<unknown> | u
 }
 
 describe("k.opening: a page a return link lands on admits no link", () => {
-  it("the link's GET answered 302 to /auto, a page whose render calls navigate(mount.href('/login/github')), records the provider URL in documents() again; a second delivery sends nothing, and after a second Link to the mount, a third sends one GET", async () => {
+  it("the link's GET answered 302 to /auto, a page whose render calls navigate(mount.href('/login/github')), records the provider URL in documents() a second time (two entries in all); a second delivery sends nothing, and after a second Link to the mount, a third sends one GET", async () => {
     expect(mount.href("/login/github")).toBe(START);
     const { handle, sent } = await openShellOver(routes, "ac.home", (s, i) =>
       s.url === CB_PATH ? redirect(302, "/auto") : base(s, i),
@@ -121,7 +121,7 @@ describe("k.opening: the older pending opening stays when the set fails", () => 
 });
 
 describe("k.opening: a guard's redirect to a page that navigates to the mount on render", () => {
-  it("The link's GET answered 302 to `/private`, a page whose guard redirects every reader to `/auto`, records `https://provider.example/a` in `documents()` again; a second delivery of the link then sends nothing.", async () => {
+  it("The link's GET answered 302 to `/private`, a page whose guard redirects every reader to `/auto`, records `https://provider.example/a` in `documents()` a second time (two entries in all); a second delivery of the link then sends nothing.", async () => {
     const { handle, sent } = await openShellOver(routes, "ac.home", (s, i) =>
       s.url === CB_PATH ? redirect(302, "/private") : base(s, i),
     );

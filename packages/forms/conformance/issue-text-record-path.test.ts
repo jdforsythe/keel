@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 // Spec: k.forms, Validation "Its `path` is the key `errors()` uses: the issue's path segments joined by `.`, a record key and an array index as the input holds them, so a record key a person typed reaches `issueText`, and one holding `.` reads as more segments."
-// Spec: k.forms, Conformance "With `form(s.object({ tags: s.record(s.string({ max: 3 })) }), { issueText })`, for every record key `k` that `parse` accepts, a submit of `{ tags: { [k]: 'long' } }` calls `issueText` with an issue whose `rule` is `max`, `max` 3 and `path` `tags.` followed by `k`, and `errors()` holds that path; without `issueText` its message holds neither `k` nor `long`."
+// Spec: k.forms, Conformance "With `form(s.object({ tags: s.record(s.string({ max: 3 })) }), { issueText })`, for every record key `k` that `parse` accepts, a submit of `{ tags: { [k]: 'long' } }` calls `issueText` with an issue whose `rule` is `max`, `max` 3 and `path` `tags.` followed by `k`, and `errors()` holds that path; without `issueText` its message is one text for every such `k` and every value longer than 3 characters, so it holds neither the key nor the value."
 // Seed 1337 (fc.assert below). Fixture: a `Form` over a memory-history router as fixtures.ts builds one, the record's value given as `initial` (the clause's "a submit of { tags: { [k]: 'long' } }"), no bound input.
-// ASSUMPTIONS: `initial` carries the submitted values (no input is bound, so a submit sends the form's values()); `issue.path` is the string joined by `.`; the English-text half is asserted by comparison (the message is the same for every key and every too-long value), because a substring test of `k` fails for any `k` the English words contain (`a` in `characters`): the spec's "holds neither `k` nor `long`" read for every `k` is unsatisfiable by that test, so distinctive keys carry the substring check.
+// ASSUMPTIONS: `initial` carries the submitted values (no input is bound, so a submit sends the form's values()); `issue.path` is the string joined by `.`; the English-text half is asserted by plain equality of the message across keys and values.
 import { createCtx } from "@keel/ctx";
 import { form } from "@keel/forms";
 import { Form, action, createRouter, manifest } from "@keel/router";
@@ -89,32 +89,17 @@ describe("k.forms: issueText's path holds record keys as the input gave them", (
     );
   });
 
-  test("without issueText the message holds neither k nor long: it is the same for every key and every value over the bound", async () => {
+  test("without issueText its message is one text for every such k and every value longer than 3 characters, so it holds neither the key nor the value", async () => {
     const base = await submitWith("zz", "long");
     const baseMessage = base.errors["tags.zz"];
     expect(typeof baseMessage).toBe("string");
     await fc.assert(
-      fc.asyncProperty(keys.filter(accepted), fc.stringMatching(/^[a-z]{4,9}$/), async (k, value) => {
+      fc.asyncProperty(keys.filter(accepted), fc.string({ minLength: 4, maxLength: 12 }), async (k, value) => {
         const { errors } = await submitWith(k, value);
+        expect(Object.keys(errors)).toContain(`tags.${k}`);
         expect(errors[`tags.${k}`]).toBe(baseMessage);
       }),
-      { seed: SEED, numRuns: 25 },
-    );
-  });
-
-  test("without issueText, for a distinctive key and value, the message holds neither of them", async () => {
-    await fc.assert(
-      fc.asyncProperty(
-        fc.stringMatching(/^[QXZ9_]{5,9}$/).filter(accepted),
-        fc.stringMatching(/^[QXZ9_]{4,9}$/),
-        async (k, value) => {
-          const { errors } = await submitWith(k, value);
-          const message = String(errors[`tags.${k}`]);
-          expect(message).not.toContain(k);
-          expect(message).not.toContain(value);
-        },
-      ),
-      { seed: SEED, numRuns: 20 },
+      { seed: SEED, numRuns: 40 },
     );
   });
 });
