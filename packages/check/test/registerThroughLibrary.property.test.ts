@@ -147,3 +147,75 @@ test("a spread argument, a type position and a re-export are no value use; a spr
     `modules/a/d.server.ts:${at(spread, "...args")} store of a name that is not a string literal: name it 'a.<lowerCamel>'`,
   ]);
 });
+
+// The forms a name reaches a call through: each followed one judges `'a.<tail>'` clean and `'<tail>'` at the argument.
+const FOLLOW: [string, Files][] = [
+  [
+    "import * as ns from './re1.ts'\nconst { store: s } = ns\nexport const d = s(ARG)\n",
+    [
+      { path: "modules/a/re1.ts", source: "export { store } from './re2.ts'\n" },
+      { path: "modules/a/re2.ts", source: "export { store } from '@acme/store'\n" },
+    ],
+  ],
+  ["export const d = (async () => (await import('@acme/store')).store(ARG))()\n", []],
+  ["export const d = async () => {\n  const { store } = await import('@acme/store')\n  return store(ARG)\n}\n", []],
+  [
+    "import { store } from './re.ts'\nexport const d = store(ARG)\n",
+    [{ path: "modules/a/re.ts", source: "export * from '@acme/store'\n" }],
+  ],
+  [
+    "import { s3 } from './r3.ts'\nexport const d = s3(ARG)\n",
+    [
+      { path: "modules/a/r1.ts", source: "export { store as s1 } from '@acme/store'\n" },
+      { path: "modules/a/r2.ts", source: "export { s1 as s2 } from './r1.ts'\n" },
+      { path: "modules/a/r3.ts", source: "export { s2 as s3 } from './r2.ts'\n" },
+    ],
+  ],
+  ["import lib = require('@acme/store')\nexport const d = lib.store(ARG)\n", []],
+];
+
+test("each followed form judges the name at the call (property over the name)", () => {
+  fc.assert(
+    fc.property(fc.stringMatching(/^[a-z][a-zA-Z0-9]{0,6}$/), fc.constantFrom(...FOLLOW), (tail, [src, extra]) => {
+      const file = (arg: string) => [...extra, { path: "modules/a/d.server.ts", source: src.replace("ARG", arg) }];
+      expect(e1607(project(ONE, file(`'a.${tail}'`))), src).toEqual([]);
+      const bad = src.replace("ARG", `'${tail}'`);
+      // The message names the export by the local an import binds, or by its key when read off a namespace.
+      const by = src.includes("s3(") ? "s3" : "store";
+      expect(e1607(project(ONE, file(`'${tail}'`))), src).toEqual([
+        `modules/a/d.server.ts:${at(bad, `'${tail}'`)} ${by} of "${tail}": name it 'a.<lowerCamel>'`,
+      ]);
+    }),
+    { seed: 1337, numRuns: 30 },
+  );
+});
+
+test("each other use is one E1607 at the use: dynamic imports, namespace rest, computed and enum keys, a class static, Object.assign", () => {
+  const shapes: [string, string, string][] = [
+    ["export const p = import('@acme/store')\n", "import(", "import()"],
+    ["export const p = import('@acme/store').then((m) => m.store('a.main'))\n", "import(", "import()"],
+    ["const spec = '@acme/store'\nexport const p = import(spec)\n", "import(spec", "import()"],
+    ["import * as ns from '@acme/store'\nconst { ...all } = ns\nexport const p = all\n", "...all", "ns"],
+    ["import * as ns from '@acme/store'\nenum K { S = 'store' }\nexport const p = ns[K.S]\n", "ns[", "ns"],
+    ["import * as ns from '@acme/store'\nexport const p = Object.assign({}, ns)\n", "ns)", "ns"],
+    ["import { store } from '@acme/store'\nexport class C {\n  static f = store\n}\n", "store\n}", "store"],
+    [
+      "import * as ns from '@acme/store'\ndeclare const other: () => void\nconst { store: s = other } = ns\nexport const p = s\n",
+      "store: s",
+      "store",
+    ],
+  ];
+  for (const [source, needle, who] of shapes) {
+    expect(e1607(project(ONE, [{ path: "modules/a/d.server.ts", source }])), source).toEqual([
+      `modules/a/d.server.ts:${at(source, needle)} ${who} used as a value: the name it registers cannot be read here`,
+    ]);
+  }
+});
+
+test("a library exporting an object holding its registering function is one E1607 at that use, in the library file", () => {
+  const store = `${ONE}export default { store }\n`;
+  const found = e1607(project(store, []));
+  expect(found).toEqual([
+    `node_modules/@acme/store/src/store.ts:${at(store, "store }")} store used as a value: the name it registers cannot be read here`,
+  ]);
+});

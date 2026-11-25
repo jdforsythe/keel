@@ -2,9 +2,11 @@ import { type Argument, type CallExpression, type Program, Visitor } from "oxc-p
 import type { SourceFile } from "../types/SourceFile.ts";
 import type { Checked } from "./Checked.ts";
 import type { FileOf } from "./functionRead/FileOf.ts";
+import { READ_DEPTH } from "./functionRead/READ_DEPTH.ts";
 import type { ReadFn } from "./functionRead/ReadFn.ts";
 import { exportedFunction } from "./functionRead/exportedFunction.ts";
 import { localFunction } from "./functionRead/localFunction.ts";
+import { parseFile } from "./parseFile.ts";
 
 /** A use of a library export whose `register` name is its parameter: a call (judged by `arg`) or a use as a value. */
 type Use =
@@ -68,75 +70,229 @@ function exportedLocals(program: Program): Set<string> {
   return out;
 }
 
+/** The export names of `file`, `export *` followed through the files `fileOf` finds, at most `READ_DEPTH` deep. */
+function exportNamesIn(file: SourceFile, fileOf: FileOf, hops = 0): string[] {
+  if (hops > READ_DEPTH) return [];
+  const out: string[] = [];
+  for (const st of parseFile(file).program.body) {
+    if (st.type === "ExportDefaultDeclaration") out.push("default");
+    if (st.type === "ExportAllDeclaration" && st.exported === null) {
+      const next = fileOf(file, st.source.value);
+      if (next !== undefined) out.push(...exportNamesIn(next, fileOf, hops + 1));
+    }
+    if (st.type !== "ExportNamedDeclaration") continue;
+    for (const sp of st.specifiers) out.push(sp.exported.type === "Identifier" ? sp.exported.name : sp.exported.value);
+    const d = st.declaration;
+    if (d?.type === "FunctionDeclaration" && d.id !== null && d.id !== undefined) out.push(d.id.name);
+    if (d?.type === "VariableDeclaration")
+      for (const v of d.declarations) if (v.id.type === "Identifier") out.push(v.id.name);
+  }
+  return out;
+}
+
+/** `(x)` read through. */
+function bare(n: unknown): unknown {
+  let x = n;
+  while (isNode(x) && x.type === "ParenthesizedExpression") x = field(x, "expression");
+  return x;
+}
+
+/** The literal specifier of `import('<spec>')` (a string or a template without an expression), else undefined. */
+function importSpec(n: Node): string | undefined {
+  const src = field(n, "source");
+  if (!isNode(src)) return undefined;
+  const v = field(src, "value");
+  if (src.type === "Literal" && typeof v === "string") return v;
+  const quasis = field(src, "quasis");
+  const exprs = field(src, "expressions");
+  if (src.type !== "TemplateLiteral" || !Array.isArray(exprs) || exprs.length > 0 || !Array.isArray(quasis))
+    return undefined;
+  const cooked: unknown = Reflect.get(Object(Reflect.get(Object(quasis[0]), "value")), "cooked");
+  return typeof cooked === "string" ? cooked : undefined;
+}
+
 /**
  * The uses in `checked` of a library export whose `register` name is its parameter (`params`, by `fnKey`; k.server-deps
- * Registration through a library), followed as the function read follows them: an import of it by name or as the
- * default (from the library or through a project file that re-exports it), a `const` alias of such a name in the file,
- * and a static member of a namespace import. A call of one is a `call`; a re-export by `export { x }` or `export
- * default x` of the imported name is followed where it is imported. Any other use is a `value` at the use: an alias that
- * is exported or not a plain `const`, an argument, an element or property value, a member such as `.call`, `.apply` or
- * `.bind`, a computed member of a namespace import, and the namespace itself as a value, when its library has such an
- * export (`libraryOf` gives the folder of a library's file). A name in a type position is no use.
+ * Registration through a library), followed as the function read follows them (at most `READ_DEPTH` files deep): an
+ * import of it by name or as the default, from the library or through project files that re-export it (`export { x }`,
+ * renamed, `export *`, `export default x`); its own declaration in the file; a `const` alias of such a name; a static
+ * member of a namespace (`import * as`, `import x = require(...)`, or a directly awaited `import('<spec>')`); and a
+ * `const` destructuring of such a namespace by plain keys. A call of one is a `call`. Any other use is a `value` at the
+ * use: an argument, an element or property value, a member of it (`.call`, `.apply`, `.bind`), a `let` or exported
+ * alias, a computed member or rest of a namespace whose exports hold one, the namespace as a value, and an `import()`
+ * that is not such a member call or destructuring (a non-literal `import(x)` among them). A name in a type position is
+ * no use.
  */
-export function libraryUses(
-  checked: Checked,
-  fileOf: FileOf,
-  params: ReadonlyMap<string, number>,
-  libraryOf: (path: string) => string | undefined,
-): Use[] {
+export function libraryUses(checked: Checked, fileOf: FileOf, params: ReadonlyMap<string, number>): Use[] {
   const program = checked.parsed.program;
   const held = new Map<string, Held>();
-  const spaces = new Map<string, { readonly entry: SourceFile; readonly registers: boolean }>();
-  const folders = new Set([...params.keys()].map((k) => libraryOf(k.slice(0, k.lastIndexOf(":")))));
+  const followed = new Set<string>();
+  const spaces = new Map<string, SourceFile>();
+  const spaceFn = (entry: SourceFile, prop: string): Held | undefined => {
+    const fn = exportedFunction(prop, entry, fileOf);
+    const index = fn === undefined ? undefined : params.get(fnKey(fn.file.path, fn.fn));
+    return index === undefined ? undefined : { name: prop, index };
+  };
+  const registersCache = new Map<string, boolean>();
+  const registers = (entry: SourceFile): boolean => {
+    const known = registersCache.get(entry.path);
+    if (known !== undefined) return known;
+    const hit = exportNamesIn(entry, fileOf).some((n) => spaceFn(entry, n) !== undefined);
+    registersCache.set(entry.path, hit);
+    return hit;
+  };
+  const hold = (local: string, h: Held): void => {
+    held.set(local, h);
+    followed.add(local);
+  };
   for (const st of program.body) {
+    const d = st.type === "ExportNamedDeclaration" ? st.declaration : st;
+    if (
+      d?.type === "FunctionDeclaration" &&
+      d.id !== null &&
+      d.id !== undefined &&
+      params.has(fnKey(checked.file.path, d))
+    )
+      hold(d.id.name, { name: d.id.name, index: params.get(fnKey(checked.file.path, d)) ?? 0 });
+    if (d?.type === "VariableDeclaration")
+      for (const v of d.declarations) {
+        const init = bare(v.init);
+        const id = nameOf(v.id);
+        if (!isNode(init) || id === undefined) continue;
+        const index = params.get(`${checked.file.path}:${init.start}`);
+        if (index !== undefined && (init.type === "ArrowFunctionExpression" || init.type === "FunctionExpression"))
+          hold(id, { name: id, index });
+      }
+    if (st.type === "TSImportEqualsDeclaration" && st.moduleReference.type === "TSExternalModuleReference") {
+      const entry = fileOf(checked.file, st.moduleReference.expression.value);
+      if (entry !== undefined) spaces.set(st.id.name, entry);
+    }
     if (st.type !== "ImportDeclaration" || st.importKind === "type") continue;
     for (const sp of st.specifiers) {
       if (sp.type === "ImportNamespaceSpecifier") {
         const entry = fileOf(checked.file, st.source.value);
-        if (entry !== undefined) spaces.set(sp.local.name, { entry, registers: folders.has(libraryOf(entry.path)) });
+        if (entry !== undefined) spaces.set(sp.local.name, entry);
         continue;
       }
       if (sp.type === "ImportSpecifier" && sp.importKind === "type") continue;
       const found = localFunction(sp.local.name, checked.file, fileOf);
       const index = found === undefined ? undefined : params.get(fnKey(found.file.path, found.fn));
-      if (index !== undefined) held.set(sp.local.name, { name: sp.local.name, index });
+      if (index !== undefined) hold(sp.local.name, { name: sp.local.name, index });
     }
   }
-  if (held.size === 0 && ![...spaces.values()].some((s) => s.registers)) return [];
+  for (const [local, entry] of [...spaces]) if (!registers(entry)) spaces.delete(local);
+  if (held.size === 0 && spaces.size === 0 && !checked.file.source.includes("import(")) return [];
   const exported = exportedLocals(program);
-  const imported = new Set(held.keys());
-  // `const alias = name`, to a fixed point: an alias of an alias stands for the same export.
+  /** The namespace a destructuring's `init` reads: a namespace import, or a directly awaited literal `import()`. */
+  const spaceOf = (init: unknown): SourceFile | undefined => {
+    const x = bare(init);
+    const named = nameOf(x);
+    if (named !== undefined) return spaces.get(named);
+    const arg = isNode(x) && x.type === "AwaitExpression" ? bare(field(x, "argument")) : undefined;
+    const spec = isNode(arg) && arg.type === "ImportExpression" ? importSpec(arg) : undefined;
+    const entry = spec === undefined ? undefined : fileOf(checked.file, spec);
+    return entry !== undefined && registers(entry) ? entry : undefined;
+  };
+  // `const alias = name` and `const { key: local } = namespace`, to a fixed point.
   for (let grew = true; grew; ) {
     grew = false;
     new Visitor({
       VariableDeclaration: (d) => {
         if (d.kind !== "const") return;
         for (const v of d.declarations) {
-          const from = nameOf(v.init);
           const to = nameOf(v.id);
+          const from = nameOf(v.init);
           const h = from === undefined ? undefined : held.get(from);
-          if (h === undefined || to === undefined || held.has(to) || exported.has(to)) continue;
-          held.set(to, h);
-          grew = true;
+          if (h !== undefined && to !== undefined && !held.has(to) && !exported.has(to)) {
+            held.set(to, h);
+            grew = true;
+          }
+          const entry = v.id.type === "ObjectPattern" ? spaceOf(v.init) : undefined;
+          if (entry === undefined || v.id.type !== "ObjectPattern") continue;
+          for (const p of v.id.properties) {
+            const key = p.type === "Property" && !p.computed ? nameOf(p.key) : undefined;
+            const local = p.type === "Property" ? nameOf(p.value) : undefined;
+            const fn = key === undefined ? undefined : spaceFn(entry, key);
+            if (fn === undefined || local === undefined || held.has(local) || exported.has(local)) continue;
+            held.set(local, fn);
+            grew = true;
+          }
         }
       },
     }).visit(program);
   }
   const out: Use[] = [];
-  const spaceFn = (entry: SourceFile, prop: string): Held | undefined => {
-    const fn = exportedFunction(prop, entry, fileOf);
-    const index = fn === undefined ? undefined : params.get(fnKey(fn.file.path, fn.fn));
-    return index === undefined ? undefined : { name: prop, index };
+  const value = (at: number, name: string): void => void out.push({ kind: "value", at, name });
+  /** A destructuring of namespace `entry`: each property that holds a registering export and is not followed. */
+  const pattern = (pat: unknown, entry: SourceFile, name: string): void => {
+    const props = field(isNode(pat) ? pat : undefined, "properties");
+    for (const p of Array.isArray(props) ? props : []) {
+      if (!isNode(p)) continue;
+      if (p.type === "RestElement" || field(p, "computed") === true) {
+        value(p.start, name);
+        continue;
+      }
+      const key = nameOf(field(p, "key"));
+      const fn = key === undefined ? undefined : spaceFn(entry, key);
+      const local = held.get(nameOf(field(p, "value")) ?? "");
+      if (fn !== undefined && (local?.name !== fn.name || local.index !== fn.index)) value(p.start, fn.name);
+    }
+  };
+  /** A namespace read at `node` (parent `parent`, ancestors `up`): a followed member call, a destructuring, or a value. */
+  const spaceUse = (
+    node: Node,
+    parent: Node,
+    key: string,
+    up: readonly Node[],
+    entry: SourceFile,
+    name: string,
+  ): void => {
+    if (parent.type === "VariableDeclarator" && key === "init" && isNode(field(parent, "id"))) {
+      const id = field(parent, "id");
+      if (isNode(id) && id.type === "ObjectPattern") return pattern(id, entry, name);
+    }
+    const prop =
+      parent.type === "MemberExpression" && key === "object" && field(parent, "computed") !== true
+        ? nameOf(field(parent, "property"))
+        : undefined;
+    if (prop === undefined) return value(node.start, name);
+    const fn = spaceFn(entry, prop);
+    if (fn === undefined) return;
+    const call = up[up.length - 2];
+    if (call !== undefined && isCall(call) && call.callee.start === parent.start && call.callee.end === parent.end)
+      return void out.push({ kind: "call", call, name: prop, arg: call.arguments[fn.index] });
+    value(parent.start, prop);
   };
   walk(program.body, (n, parent, key, up) => {
+    if (parent === undefined || up.some((a) => TYPES.has(a.type))) return;
+    if (n.type === "ImportExpression") {
+      const spec = importSpec(n);
+      if (spec === undefined) return value(n.start, "import()");
+      const entry = fileOf(checked.file, spec);
+      if (entry === undefined || !registers(entry)) return;
+      // `(await import('<spec>'))`: the awaited, parenthesized expression stands where a namespace name would.
+      let at = up.length - 1;
+      if (up[at]?.type !== "AwaitExpression") return value(n.start, "import()");
+      let node = up[at];
+      at -= 1;
+      while (up[at]?.type === "ParenthesizedExpression") {
+        node = up[at];
+        at -= 1;
+      }
+      const host = up[at];
+      if (node === undefined || host === undefined) return value(n.start, "import()");
+      const hostKey = host.type === "MemberExpression" ? "object" : host.type === "VariableDeclarator" ? "init" : "";
+      if (field(host, hostKey) !== node) return value(n.start, "import()");
+      return spaceUse(node, host, hostKey, up.slice(0, at + 1), entry, "import()");
+    }
     const name = nameOf(n);
-    if (name === undefined || parent === undefined) return;
+    if (name === undefined) return;
     const h = held.get(name);
     const space = spaces.get(name);
     if (h === undefined && space === undefined) return;
-    if (up.some((a) => TYPES.has(a.type))) return;
     const t = parent.type;
     if (t === "ImportSpecifier" || t === "ImportDefaultSpecifier" || t === "ImportNamespaceSpecifier") return;
+    if (t === "TSImportEqualsDeclaration") return;
     if (
       (t === "MemberExpression" && key === "property" && field(parent, "computed") !== true) ||
       (t === "Property" && key === "key" && field(parent, "computed") !== true)
@@ -149,25 +305,15 @@ export function libraryUses(
     )
       return;
     if (h !== undefined) {
+      if (t === "Property" && key === "value" && up.some((a) => a.type === "ObjectPattern")) return;
       if ((t === "ExportSpecifier" && key === "local") || (t === "ExportDefaultDeclaration" && key === "declaration"))
-        return void (imported.has(name) ? undefined : out.push({ kind: "value", at: n.start, name: h.name }));
+        return void (followed.has(name) ? undefined : value(n.start, h.name));
       if (t === "VariableDeclarator" && key === "init" && held.get(nameOf(field(parent, "id")) ?? "") === h) return;
       if (t === "CallExpression" && key === "callee" && isCall(parent))
         return void out.push({ kind: "call", call: parent, name: h.name, arg: parent.arguments[h.index] });
-      return void out.push({ kind: "value", at: n.start, name: h.name });
+      return value(n.start, h.name);
     }
-    if (space === undefined || !space.registers) return;
-    const prop =
-      t === "MemberExpression" && key === "object" && field(parent, "computed") !== true
-        ? nameOf(field(parent, "property"))
-        : undefined;
-    if (prop === undefined) return void out.push({ kind: "value", at: n.start, name });
-    const fn = spaceFn(space.entry, prop);
-    if (fn === undefined) return;
-    const call = up[up.length - 2];
-    if (call !== undefined && isCall(call) && call.callee.start === parent.start && call.callee.end === parent.end)
-      return void out.push({ kind: "call", call, name: prop, arg: call.arguments[fn.index] });
-    out.push({ kind: "value", at: parent.start, name: prop });
+    if (space !== undefined) spaceUse(n, parent, key, up, space, name);
   });
   return out;
 }

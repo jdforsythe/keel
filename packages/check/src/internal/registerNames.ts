@@ -120,12 +120,6 @@ function deferred(
   return { calls, params };
 }
 
-/** The library folder (`modules/<id>/`, as rules read a library's files) of a library file's view path, else none. */
-const libraryFolder =
-  (libs: RegisterLibraries) =>
-  (path: string): string | undefined =>
-    libs.isLibrary(path) ? /^(.*?modules\/[^/]+\/)/.exec(path)?.[1] : undefined;
-
 /**
  * E1607 (k.data, k.server-deps Registration through a library): a `register` of `@keel/ctx` in a file under
  * `modules/<id>/` whose name is not a string literal `<id>.<name>`, `<name>` one lowerCamel segment; or a name another
@@ -158,7 +152,7 @@ export function registerNames(
       .filter((c) => !later.calls.has(c))
       .map((c) => ({ at: c.start, name: literal(c.arguments[0]), by: "register" }));
     if (later.params.size > 0)
-      for (const use of libraryUses(checked, fileOf, later.params, libraryFolder(libs))) {
+      for (const use of libraryUses(checked, fileOf, later.params)) {
         if (use.kind === "value") {
           const message = `${clipMessage(use.name, 20)} used as a value: the name it registers cannot be read here`;
           out.push(diagAt(file, use.at, "E1607", message, "k.server-deps"));
