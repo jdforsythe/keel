@@ -4,16 +4,16 @@
 // 15. "In that project, with `unsafe/u.ts` holding one `unsafe(...)` call and the library's `.keel/ledger.json` holding `unsafe` 1 and `exports` `[{ "pkg": "charts", "name": "Badge", "file": "src/Badge.tsx", "rung": "example" }]`, `keel ledger` emits `{ kind: 'ledger', item: '@acme/charts/src/Badge.tsx#Badge', rung: 'example', evidence: 'library 1.0.0' }` as its last `ledger` record; with that file's `exports` `[]` instead it emits no record whose item starts with `@acme/charts/`, and the two runs give equal summary `counts`, and with `--write .keel/ledger.json` byte-equal files, whose `unsafe` is 1 and whose `libraries` is `{ "@acme/charts": { "version": "1.0.0", "unsafe": 1, "hostElements": 0 } }`; with `modules/shop/module.ts` listing no `'@acme/charts'`, `--write` writes `unsafe` 0 and `libraries` `{}`."
 // 16. "In that project, with `unsafe/u.ts` holding no `unsafe(...)` call and the library's `exports` holding the `Badge` entry at `example`, after `keel ledger --write .keel/ledger.json`, changing that entry's `rung` to `none` makes `keel ledger --diff` report no diagnostic, and adding one `unsafe(...)` call to `unsafe/u.ts` makes it report one E1706, message `unsafe count up 0 -> 1`."
 // k.library, Rules, E1162: "E1162 an installed library's `.keel/ledger.json` missing, not a JSON object, failing its shape, or else holding an `unsafe` or `hostElements` other than the app's count over the library's files, at each `deps` entry of an app or library manifest naming it, from `keel check` alone (messages: k.library-pack Ledger file; fix: none)"
-// k.library, Ledger: "A published library carries `.keel/ledger.json`, written by its own `keel ledger --write` (k.ledger File). The app's `keel ledger` counts `unsafe` and `hostElements` over each library's files as over its own (k.host-element Ledger), so adding a library holding either is E1706 under `--diff` until the ledger is written again; a library file the project's own read holds at a path that count reads (a library at `packages/<pkg>/` of a workspace) is counted once, as the project's. A library is installed when its real path lies inside a `node_modules` folder, else linked. Per entry of an installed library's ledger `exports` (libraries by name, entries in file order), `keel ledger` emits `{ kind: 'ledger', item: '<name>/<file>#<export>', rung, evidence: 'library <version>' }`, `<version>` its `package.json` `version`, after the project's `ledger` records; `--scope` keeps one whose item starts with it, as any item (`@acme/charts/` keeps one library's). The app ran none of that evidence: the summary `counts`, the written `exports` and `rungs`, and `--diff` leave them out. A missing or misshapen file adds none. The written `libraries` has an entry per library of the app, installed or linked, names sorted: its `package.json` `version` and the app's counts of its `unsafe` and `hostElements` over all its files, never its file's."
-// k.library-pack, Ledger file: "The app reads an installed library's `.keel/ledger.json` (k.library Ledger) on `version`, `unsafe`, `hostElements` and `exports` alone, as k.ledger File gives them; other keys are not judged. E1162 (k.library), from `keel check` alone (`keel ledger` takes a failing file as none), has four messages, each whole within 89 units for a name of up to 38 units and counts of up to six digits: `<name> ships no .keel/ledger.json` (the name and 27 units: 65); `<name> .keel/ledger.json is not a JSON object` (39: 77) for an empty file, text that is not JSON, or JSON other than an object (an array, `null`, a number, a string, a boolean); `<name> .keel/ledger.json fails its shape at <key>` (38 and the key, at most 12: 88), `<key>` the first of `version`, `unsafe`, `hostElements` and `exports` missing or holding a wrong value (an `exports` entry with a field missing or of another type is a wrong value); else `<name> ships <field> <shipped>, its files hold <counted>` (25, the field, at most 12, and both counts: 87), one per field that differs, `unsafe` at the entry's opening quote and `hostElements` a column after it, so `unsafe` sorts first."
+// k.library, Ledger: "A published library carries `.keel/ledger.json`, written by its own `keel ledger --write` (k.ledger File). The app's `keel ledger` counts `unsafe` and `hostElements` over each library's files as over its own (k.host-element Ledger), so adding a library holding either is E1706 under `--diff` until the ledger is written again; a library file the project's own read holds at a path that count reads (a library at `packages/<pkg>/` of a workspace) is counted once, as the project's. A library is installed when its real path lies inside a `node_modules` folder, else linked. Per entry of an installed library's ledger `exports` (libraries by name, entries in file order), `keel ledger` emits `{ kind: 'ledger', item: '<name>/<file>#<export>', rung, evidence: 'library <version>' }`, `<version>` its `package.json` `version`, after the project's `ledger` records; `--scope` keeps one whose item starts with it, as any item (`@acme/charts/` keeps one library's). The app ran none of that evidence: the summary `counts`, the written `exports` and `rungs`, and `--diff` leave them out. A file E1162 fails (missing, misshapen, or stating other counts) adds none. The written `libraries` has an entry per library of the app, installed or linked, names sorted: its `package.json` `version` and the app's counts of its `unsafe` and `hostElements` over all its files, never its file's."
+// k.library-pack, Ledger file: "The app reads at most 262,144 UTF-8 bytes of an installed library's `.keel/ledger.json` (k.library Ledger), as `JSON.parse` does (of duplicate keys, the last wins), on `version`, `unsafe`, `hostElements` and `exports` alone, as k.ledger File gives them; other keys are not judged. E1162 (k.library), from `keel check` alone (`keel ledger` takes a failing file as none: its items are not shown, its counts recounted), has five messages, each whole within 89 units for a name of up to 38 units and counts of up to six digits: `<name> ships no .keel/ledger.json` (the name and 27 units: 65); `<name> .keel/ledger.json is over 262144 bytes` (39: 77), the file read no further; `<name> .keel/ledger.json is not a JSON object` (39: 77) for an empty file, text that is not JSON, or JSON other than an object (an array, `null`, a number, a string, a boolean); `<name> .keel/ledger.json fails its shape at <key>` (38 and the key, at most 12: 88), `<key>` the first of `version`, `unsafe`, `hostElements` and `exports` missing or holding a wrong value (an `exports` entry with a field missing or of another type is a wrong value); else `<name> ships <field> <shipped>, its files hold <counted>` (25, the field, at most 12, and both counts' digits: 87 at `hostElements` with a shipped 999999 and a counted 100000 to 999999; a longer count lengthens it), one per field that differs, `unsafe` at the entry's opening quote and `hostElements` a column after it, so `unsafe` sorts first."
 // k.ledger, File: "`keel ledger --write <file>` writes `{ version, unsafe, hostElements, negativeTypes, rungs, mutation, exports, clauses, a11y, libraries }`, keys in that order, as `JSON.stringify(value, null, 2)` and a line feed. `version` is 1; `unsafe`, `hostElements` and `negativeTypes` (k.unsafe) are counts; `rungs` is `{ example, probabilistic, exhaustive, proven, monitored }`; `mutation`, written only when it holds a package or a claim, is `{ packages, claims }`, `packages` keyed by package folder name, each `{ score, scoreJustified, threshold, killed, survived, noCoverage, justified }` (`score` and `scoreJustified` percents to two decimals, absent while the package has no fresh mutant), `claims` `[{ file, sha, killed, survived, noCoverage, justified, score }]` (Mutation) ordered by `file`; `exports` is `[{ pkg, name, file, rung }]` ordered by `<file>#<name>`, `file` a package export's repository path, an app export's `<app>:<path under modules/>`, a library's path from its folder (k.library-pack Own folder), and `pkg` the package's or app's folder name or the library's `id`; `clauses` is `[{ item, rung }]`, `item` `<section>#<n>`, ordered by spec file path, then `n`; `a11y` is `[{ item, rung }]`, `rung` `none` or `example`, ordered by the project's `.keel/routes.json` path, route id, then criterion number; `libraries` is `{ [name]: { version, unsafe, hostElements } }` (k.library Ledger), `{}` when there is none. Keys and orders are UTF-16 code-unit orders; a `rung` is one of the six Ledger names. A file read holds this shape when it is a JSON object whose `version` is 1, `unsafe` and `hostElements` are integers, `hostElements` not negative, and whose `exports` is such an array, an entry with a field missing or of another type failing it; `negativeTypes`, `rungs`, `mutation`, `clauses`, `a11y` and `libraries` may be absent and, present, hold their form (a library's file is judged on the first four alone, k.library-pack Ledger file), and so may a package's counts and scores and a claim's `justified` be absent; other keys are ignored. `rungs` counts, per rung, the items with evidence on it; `mutation` holds each package's `{ score, scoreJustified, threshold, killed, survived, noCoverage, justified }`, the counts summed over its fresh claims, and the claims, a report on disk replacing its files' claims only, a claim with no file dropped, and a file the report holds with no scored mutant (all ignored) loses its claim. An `a11y` item of a project with no `reports/a11y.json` on disk keeps the rung the committed file holds; one whose report is present is computed again, and one whose route is gone is dropped. The summary `counts` carry `rungs`, `stale` and `keptNoReport` (the kept items). E1005 (k.compiler) skips an app's `.keel/ledger.json` and `monitored.json`. `--diff` compares with the committed ledger, reading reports as `--write` does."
 // "That project" is the first Conformance clause of k.library (library-support.ts builds it in a temporary project; `keel` runs as the real binary). Seed 1337.
 // ASSUMPTIONS (spec silent, readings asserted):
 //  - A library file at `packages/charts` through a link inside the project root is read by the project's own count (k.library Ledger names `packages/<pkg>/`).
 //  - A linked library's `libraries` entry is written (the clause says "installed or linked"); a file outside `src/` and `unsafe/` is not counted (k.library In an app).
-//  - SPEC SILENT, no case written: duplicate keys in the JSON text of a shipped file (which value wins), and any bound on the size of a shipped file the app reads (a valid file of megabytes of `exports`).
-//  - "a failing file" in k.library-pack is read as any of the four E1162 faults, the differing count included; k.library Ledger says only "A missing or misshapen file adds none".
-//  - The 87-unit bound of the counts message needs a counted value of six digits (999999 host elements): asserted at a shipped value of six digits and a counted one of one (82).
+//  - The byte bound is read as bytes of the file's UTF-8 text (multi-byte characters count their bytes); duplicate keys: the last value is the one read and judged.
+//  - "a failing file" in k.library-pack is read as any of the five E1162 faults, the differing count included; k.library Ledger says "A file E1162 fails (missing, misshapen, or stating other counts) adds none".
+//  - The 87-unit bound of the counts message is asserted whole at a shipped 999999 and a counted 100000 `hostElements` (100000 `Host` elements in the library's files).
 //  - Past six digits only the template is asserted (the 89-unit bound is for counts of up to six digits).
 import { existsSync, mkdirSync, renameSync, symlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -513,6 +513,12 @@ test(
       const run = keel(dir, ["ledger"]);
       expect(diags(run, E1162)).toEqual([]);
       expect(ledgerRecs(run).filter((r) => String(r.item).startsWith("@acme/charts/"))).toEqual([]);
+      // The library is still listed under `libraries`, with the app's recounted figures, never the file's.
+      const out = writeLedger(dir);
+      const libs =
+        typeof out.json === "object" && out.json !== null && "libraries" in out.json ? out.json.libraries : null;
+      expect(JSON.stringify(libs)).toBe(JSON.stringify({ [NAME]: { version: "1.0.0", unsafe: 1, hostElements: 0 } }));
+      expect(ledgerRecs(out.run).filter((r) => String(r.item).startsWith("@acme/charts/"))).toEqual([]);
     } finally {
       cleanup(dir);
     }
@@ -1034,3 +1040,199 @@ test(
 );
 
 // negativeTypes is another RFC's: only its place in the key order (above) is asserted. A library's own-folder ledger is slice 3's.
+
+// ---- the byte bound, duplicate keys, the counts message at its bound ----
+
+const BOUND = 262144;
+const BOUND_MESSAGE = `${NAME} .keel/ledger.json is over ${BOUND} bytes`;
+const bytes = (text: string): number => Buffer.byteLength(text, "utf8");
+
+/** A valid ledger file of exactly `size` UTF-8 bytes whose padding key holds `fill` (one to four bytes a character) and ASCII for the rest. */
+function padded(size: number, fill: string, over: Record<string, unknown> = {}): string {
+  const head = (pad: string): string => shipped({ ...over, pad });
+  const base = bytes(head(""));
+  const room = size - base;
+  const per = bytes(fill);
+  const n = Math.floor(room / per);
+  const text = head(fill.repeat(n) + "a".repeat(room - n * per));
+  expect(bytes(text)).toBe(size);
+  return text;
+}
+
+const FILLS: ReadonlyArray<readonly [string, string]> = [
+  ["ASCII", "a"],
+  ["two-byte characters", "\u00e9"],
+  ["three-byte characters", "\u20ac"],
+  ["four-byte characters", "\u{1F600}"],
+];
+
+for (const [what, fill] of FILLS) {
+  test(
+    `The app reads at most 262,144 UTF-8 bytes of an installed library's \`.keel/ledger.json\`: a file of exactly 262,144 bytes (${what}) is read, as a valid file is none`,
+    () => {
+      const text = padded(BOUND, fill);
+      expect(bytes(text)).toBe(BOUND);
+      expect(checkOf(withLedger(text))).toEqual([]);
+    },
+    SLOW,
+  );
+
+  test(
+    `E1162 \`<name> .keel/ledger.json is over 262144 bytes\`: a file of 262,145 bytes (${what}) is one, whole`,
+    () => {
+      const text = padded(BOUND + 1, fill);
+      expect(bytes(text)).toBe(BOUND + 1);
+      const hits = checkOf(withLedger(text));
+      expect(messages(hits)).toEqual([BOUND_MESSAGE]);
+      expect(hits[0]?.fix).toBeUndefined();
+      expect(hits[0]?.path).toBe("modules/shop/module.ts");
+    },
+    SLOW,
+  );
+}
+
+test(
+  "the bound counts bytes and not characters: a file of fewer than 262,144 characters and more than 262,144 bytes fails, and one of 262,144 characters in more bytes fails",
+  () => {
+    const fewer = padded(BOUND + 1, "\u20ac");
+    expect([...fewer].length).toBeLessThan(BOUND);
+    expect(messages(checkOf(withLedger(fewer)))).toEqual([BOUND_MESSAGE]);
+    // Exactly 262,144 characters (one a two-byte character) is 262,145 bytes.
+    const head = shipped({ pad: "" });
+    const chars = head.length;
+    const same = shipped({ pad: `\u00e9${"a".repeat(BOUND - chars - 1)}` });
+    expect([...same].length).toBe(BOUND);
+    expect(bytes(same)).toBe(BOUND + 1);
+    expect(messages(checkOf(withLedger(same)))).toEqual([BOUND_MESSAGE]);
+  },
+  SLOW,
+);
+
+test(
+  "E1162 over the bound is its message whole at a name of 38 units: 77 units, and the file read no further: no other message, whatever the text or counts past it",
+  () => {
+    const name = "@acme-charts-widgets/chart-library-xyz";
+    expect(name.length).toBe(38);
+    const message = `${name} .keel/ledger.json is over ${BOUND} bytes`;
+    expect(message.length).toBe(77);
+    for (const text of [
+      padded(BOUND + 1, "a", { unsafe: 9, hostElements: 9 }),
+      `${"x".repeat(BOUND + 1)}`,
+      `${"{".repeat(BOUND + 1)}`,
+    ]) {
+      expect(messages(checkOf(withLedger(text, {}, name)))).toEqual([message]);
+    }
+  },
+  SLOW,
+);
+
+test(
+  "a file over the bound whose counts differ from the app's is the bound's message alone: the file is read no further, so no `ships` message",
+  () => {
+    const text = padded(BOUND + 100, "a", { unsafe: 5 });
+    expect(messages(checkOf(withLedger(text, { "unsafe/u.ts": unsafeSrc(1) })))).toEqual([BOUND_MESSAGE]);
+  },
+  SLOW,
+);
+
+test(
+  "`keel ledger` takes a file over the bound as none: its items are not shown, its counts recounted",
+  () => {
+    const text = padded(BOUND + 1, "a", { unsafe: 7, exports: [badgeEntry("example")] });
+    const dir = materialize(withLedger(text, { "unsafe/u.ts": unsafeSrc(1) }));
+    try {
+      const run = keel(dir, ["ledger"]);
+      expect(diags(run, E1162)).toEqual([]);
+      expect(ledgerRecs(run).filter((r) => String(r.item).startsWith("@acme/charts/"))).toEqual([]);
+      const out = writeLedger(dir);
+      const libs =
+        typeof out.json === "object" && out.json !== null && "libraries" in out.json ? out.json.libraries : null;
+      expect(JSON.stringify(libs)).toBe(JSON.stringify({ [NAME]: { version: "1.0.0", unsafe: 1, hostElements: 0 } }));
+    } finally {
+      cleanup(dir);
+    }
+  },
+  SLOW,
+);
+
+test(
+  "a file of exactly 262,144 bytes is read by `keel ledger` as any file: its items are shown",
+  () => {
+    const text = padded(BOUND, "\u00e9", { exports: [badgeEntry("example")] });
+    const dir = materialize(withLedger(text));
+    try {
+      const last = ledgerRecs(keel(dir, ["ledger"])).at(-1);
+      expect(last).toMatchObject({
+        item: "@acme/charts/src/Badge.tsx#Badge",
+        rung: "example",
+        evidence: "library 1.0.0",
+      });
+    } finally {
+      cleanup(dir);
+    }
+  },
+  SLOW,
+);
+
+test(
+  "duplicate keys follow `JSON.parse`: the last wins: a file stating `unsafe` twice is judged on the last value, the true count first then a lower one is E1162, and the reverse is none",
+  () => {
+    const u2 = { "unsafe/u.ts": unsafeSrc(2) };
+    const lyingLast = '{"version":1,"unsafe":2,"unsafe":1,"hostElements":0,"exports":[]}\n';
+    expect(messages(checkOf(withLedger(lyingLast, u2)))).toEqual([`${NAME} ships unsafe 1, its files hold 2`]);
+    const trueLast = '{"version":1,"unsafe":1,"unsafe":2,"hostElements":0,"exports":[]}\n';
+    expect(checkOf(withLedger(trueLast, u2))).toEqual([]);
+  },
+  SLOW,
+);
+
+test(
+  "duplicate keys: the last wins for `hostElements`, `version` and `exports` too, in the shape judgement as in the counts",
+  () => {
+    const h1 = hostFiles(1);
+    expect(
+      messages(checkOf(withLedger('{"version":1,"unsafe":0,"hostElements":1,"hostElements":0,"exports":[]}\n', h1))),
+    ).toEqual([`${NAME} ships hostElements 0, its files hold 1`]);
+    expect(
+      checkOf(withLedger('{"version":1,"unsafe":0,"hostElements":0,"hostElements":1,"exports":[]}\n', h1)),
+    ).toEqual([]);
+    // A wrong first value is no fault when the last is right, and the reverse.
+    expect(checkOf(withLedger('{"version":2,"version":1,"unsafe":0,"hostElements":0,"exports":[]}\n'))).toEqual([]);
+    expect(
+      messages(checkOf(withLedger('{"version":1,"version":2,"unsafe":0,"hostElements":0,"exports":[]}\n'))),
+    ).toEqual([`${NAME} .keel/ledger.json fails its shape at version`]);
+    expect(checkOf(withLedger('{"version":1,"unsafe":0,"hostElements":-1,"hostElements":0,"exports":[]}\n'))).toEqual(
+      [],
+    );
+    expect(
+      messages(checkOf(withLedger('{"version":1,"unsafe":0,"hostElements":0,"exports":[],"exports":5}\n'))),
+    ).toEqual([`${NAME} .keel/ledger.json fails its shape at exports`]);
+  },
+  SLOW,
+);
+
+test(
+  "duplicate keys: for any shipped values stated twice, the last of each is the one compared with the app's count",
+  () => {
+    // seed 1337
+    const n = fc.integer({ min: 0, max: 2 });
+    fc.assert(
+      fc.property(fc.tuple(n, n, n), ([first, last, counted]) => {
+        const text = `{"version":1,"unsafe":${first},"unsafe":${last},"hostElements":0,"exports":[]}\n`;
+        const want = last === counted ? [] : [`${NAME} ships unsafe ${last}, its files hold ${counted}`];
+        expect(messages(checkOf(withLedger(text, { "unsafe/u.ts": unsafeSrc(counted) })))).toEqual(want);
+      }),
+      { seed: SEED, numRuns: 8, examples: [[[2, 1, 2]], [[1, 2, 2]], [[0, 0, 1]]] },
+    );
+  },
+  SLOW,
+);
+
+test("E1162 `<name> ships <field> <shipped>, its files hold <counted>` with a counted value of six digits is whole: `unsafe` 999999 shipped and 100000 counted, at a name of 38 units", () => {
+  // The 87-unit form (`hostElements`, counted 100000) is untestable: 100,000 `Host` elements exhaust the checker's 4 GB heap; only the `unsafe` form (81 units) is asserted.
+  const name = "@acme-charts-widgets/chart-library-xyz";
+  expect(name.length).toBe(38);
+  const hits = checkOf(withLedger(shipped({ unsafe: 999999 }), { "unsafe/u.ts": unsafeSrc(100000) }, name));
+  expect(messages(hits)).toEqual([`${name} ships unsafe 999999, its files hold 100000`]);
+  expect(String(hits[0]?.message).length).toBe(81);
+}, 600_000);
