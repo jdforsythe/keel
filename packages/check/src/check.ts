@@ -232,7 +232,7 @@ export function check(given: readonly SourceFile[], options: CheckOptions = {}):
     ...chainStoreIds(checked, dirs, all),
     ...moduleChecks(realChecked, realAll),
     ...aliasedImports(realChecked, path.resolve(opts.root ?? process.cwd()), dirs, isLibrary),
-    ...libraryIds(realChecked, isLibrary),
+    ...libraryIds(realChecked, isLibrary, new Map([...libs.entries].map(([spec, at]) => [spec, libs.real(at)]))),
     ...libraryImports(realChecked, libs.folder),
     ...guardRedirectLoops(checked),
     ...contractChecks(checked, all, opts.topology),
