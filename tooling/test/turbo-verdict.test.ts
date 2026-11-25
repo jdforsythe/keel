@@ -81,7 +81,7 @@ describe("taskFailures", () => {
   it("names every failed test's file and line per task in the verdict", () => {
     expect(failVerdict("test", v, f)).toBe(
       "turbo test failed: @keel/cli#test packages/cli/conformance/a.test.ts:12, packages/cli/test/b.test.ts:3, " +
-        "packages/cli/test/b.test.ts:9; @keel/std-postgres#test exit 137, no test named",
+        "packages/cli/test/b.test.ts:9; @keel/std-postgres#test exit 137: Error: listen EADDRINUSE 127.0.0.1:5432",
     );
   });
 });
