@@ -105,3 +105,14 @@ Lanes 1 to 4 can start at once. At the end of slice 4 the `@keel/std-*` name pas
 Order within the stdlib: `std-statecharts` before `std-workflows` (and `std-headless`, done, already lists it as a peer); `std-i18n` before `std-messages`, `std-money`, `std-tables`, `std-temporal`, `std-text`; `std-temporal` and `std-jobs` before `std-schedules`; `std-channels` before `std-live`; `std-sessions` before `std-conflicts`. A package can move before the one it imports, since a library's `deps` may list an unmarked `@keel/std-*` package; the order only keeps a lane from fixing findings that its dependency's lane is also fixing.
 
 Shells: `std-capacitor` and `std-tauri` stay a closed exception (k.parity: they import `@keel/router/internal`, and generated entries name them); they take the format with E1576's shell allowance in slice 5, not here.
+
+## Lane 1 (jobs) notes
+
+- `@keel/std-jobs`: done (own-folder `keel check` 20 to 0, `keel pack` and `--check` ok). The `jobs.queue` inspector registers from `./tools` by a side-effect import of `internal/snapshot.ts`; a package's unused `./module` export is removed (k.library-pack E1164: its `keel` target is no file under `src/` or `unsafe/`; `module.ts` ships through `files`).
+- Declaration throws, a `try`/`catch` and a `.catch()` are fixed by `unsafe/refuse.ts` (a `never`-returning `refuse(message)` holding the throw) and `attempt`; the pattern repeats in each package.
+- E1576 on `@keel/std-jobs/tools/internal` and `@keel/std-statecharts/tools/internal` is fixed by exporting the helpers from those packages' `./tools` entries (jobs: `callsOf`, `editOf`, `keyFindings`, `lineCol`, `moduleFile`, `propOf`, `runnersEdits`, `runnersFindings`; statecharts: `chartCalls`, `literalShape`, `unwrap`) and removing the `internal` entries; `asEvents` is copied into std-workflows' `unsafe/` instead of exported.
+- Open, for a decision, each at its site:
+  - E1151 and E1154 together: an import of `@keel/std-jobs/tools` reports E1151 until `tools` is in the dependency's `public.exports`, and listing `tools` there reports E1154 (no such export). Sites: std-workflows `src/tools/` (9), std-schedules `src/tools/` (3). A subpath export of a library has no way to be public.
+  - E1551 (`commitStores` outside `*.server.ts`) and E1107 (`compileStores.ts:42`) in std-workflows. Renaming the five internal files and `workflow.ts` to `*.server.ts` clears both and gives E1004 at `src/index.ts` (`export { workflow }` reaches a server-only file): `workflow` needs a `./server` entry, as std-channels and std-postgres have, which moves every app import.
+  - E1107 `std-statecharts/src/chart.ts:80` (the chart's store holds `spec.data`, a parameter) and E1207 `chart.ts:92` (slice 5): both show in every app's `keel check` while std-statecharts is a library.
+
