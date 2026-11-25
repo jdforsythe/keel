@@ -92,7 +92,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.module | Module manifest | conformance-covered | surface |
 | k.library | Libraries | proposed | packages |
 | k.library-pack | Library publishing | proposed | pack |
-| k.server-deps | Server dependencies | proposed | env |
+| k.server-deps | Server dependencies | implemented | env |
 | k.a11y | Accessibility | conformance-covered | WCAG |
 | k.a11y-static | Static contrast | implemented | E1804 |
 | k.aria | Widget parts | conformance-covered | roles |

@@ -1,6 +1,6 @@
 # RFC 0163: a Keel library: a package kind checked again by the app
 
-Status: accepted (ADR-0185), confirmed by the operator on 2026-11-25; slices 1 (the library kind), 2a (the app compiles and checks a library's files) and 2b (the ledger over libraries) built, slices 3 to 5 not yet. The library format is built before the public release and before the second part of k.parity (RFC 0169 Build B, which needs the library kind). Sections k.library and k.library-pack hold the contract. This is W15 step 4 of `tasks/p1/PLAN.md` and D49 of `tasks/0963-to-p1/PLAN.md`.
+Status: accepted (ADR-0185), confirmed by the operator on 2026-11-25; slices 1 (the library kind), 2a (the app compiles and checks a library's files), 2b (the ledger over libraries) and 4b (the app data seam) built, slices 3, 4 and 5 not yet. The library format is built before the public release and before the second part of k.parity (RFC 0169 Build B, which needs the library kind). Sections k.library and k.library-pack hold the contract. This is W15 step 4 of `tasks/p1/PLAN.md` and D49 of `tasks/0963-to-p1/PLAN.md`.
 
 ## Decisions
 - D1: a library is a package whose `package.json` has `"keel": "library"` and a scoped name. Its root `module.ts` is a k.module manifest, unchanged: `public.exports` is its surface, `id` its prefix. A second manifest shape would be a second way (principle 1).
@@ -13,6 +13,8 @@ Status: accepted (ADR-0185), confirmed by the operator on 2026-11-25; slices 1 (
 - D8: the stdlib packages are libraries in this format, so the kernel reads each by its kind and never by its name (RFC 0169, k.parity). Three named closed sets remain: shells, topology storage and the CLI command slots.
 - D9: a library reaches only itself and other libraries (E1163), and its `id` is unique in the app (E1166).
 - D10: app data stays a seam (D43). What the kernel gives `@keel/std-postgres` by name today, any package gets by the same means (k.server-deps): a manifest's `env` names the variables `deploy/compose.yaml` passes; the server build copies the files a bundled package reads beside itself through `new URL(<literal>, import.meta.url)`; and a file importing a library export that calls `register` counts as registering a capability under `keel dev`.
+- D11: what the server build cannot read fails it (RFC 0231's principle). In a bundled package file, a `new URL(<a>, import.meta.url)` whose `<a>` is not a literal path inside that file's folder is E1014, one code with four messages (missing, outside, two files under one path, not a literal); a path leaving the folder is refused even inside the package, since the bundle resolves it against `server.mjs` and `dist/<name>/` could not hold it there. An absolute URL, the folder itself and a `new URL` on another base are left alone.
+- D12: a library's `register(name)` with `name` a parameter of the exported function is judged at each call of that export, by the argument for that parameter, with k.data's E1607 rule and its duplicate half; a call with no argument is E1607 at the call; any other non-literal name in a library is E1607 there. A use of the export other than a call is not read.
 
 ## Problem
 These are the facts as the tree stands.
@@ -96,7 +98,7 @@ The `conformance-writer` turns the Conformance lists of k.library and k.library-
 None: nothing is released.
 
 ## Token impact
-k.library about 2,480 tokens and k.library-pack about 1,090, of 3,110 each. The map grows two rows (`spec.map` re-based from 1,545 to 1,600, with k.server-deps) and the packed docs map two entries (`docs.map` re-based from 1,590 to 1,620). k.server-deps about 1,010 tokens, one more map row. The glossary gains one term.
+k.library about 2,480 tokens and k.library-pack about 1,090, of 3,110 each. The map grows two rows (`spec.map` re-based from 1,545 to 1,600, with k.server-deps) and the packed docs map two entries (`docs.map` re-based from 1,590 to 1,620). k.server-deps about 1,890 tokens after the build made E1167, E1014, the file forms and the call-site E1607 exact, one more map row. The glossary gains one term.
 
 ## Build order
 Clause numbers are 1-based Conformance bullets. Every slice leaves the main line green and mergeable; until slice 4 ends, a `@keel/std-*` package passes as a library by its name, so no stdlib package changes before its turn.
