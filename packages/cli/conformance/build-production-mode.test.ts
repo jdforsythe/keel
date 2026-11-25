@@ -28,7 +28,7 @@ const files = (): Record<string, string> => ({
     "import { topology } from '@keel/server'\nexport default topology({ web: { modules: ['c'], adapter: 'client' } })\n",
   "modules/c/module.ts": manifestSrc("c"),
   "modules/c/Page.tsx":
-    "/// <reference types=\"vite/client\" />\nimport { Box, Text } from '@keel/ui'\nexport default function Page() {\n  console.log('keel-always-marker-41c9')\n  if (import.meta.env.DEV) console.log('keel-dev-only-marker-7f3a')\n  return (\n    <Box as=\"main\">\n      <Text>home</Text>\n    </Box>\n  )\n}\n",
+    "import { Box, Text } from '@keel/ui'\nexport default function Page() {\n  console.log('keel-always-marker-41c9')\n  if (import.meta.env.DEV) console.log('keel-dev-only-marker-7f3a')\n  return (\n    <Box as=\"main\">\n      <Text>home</Text>\n    </Box>\n  )\n}\n",
   "modules/c/routes.ts":
     "import { manifest } from '@keel/router'\nimport { c } from './c.contract.ts'\nimport Page from './Page.tsx'\nexport const routes = manifest(c, { 'c.page': { component: Page } })\n",
   "modules/c/c.contract.ts":

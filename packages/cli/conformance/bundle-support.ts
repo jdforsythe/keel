@@ -10,10 +10,9 @@ export const ALIVE = "K_BALIVE_0c7e3a9d5b1f4682a7d3";
 export const PAGE = nodeTree("node")["modules/a/Page.tsx"] ?? "";
 export const ROUTES = nodeTree("node")["modules/a/routes.ts"] ?? "";
 
-/** `Page.tsx` with `imports` first and `stmt` run at its top level. */
-export const REF = '/// <reference types="vite/client" />\n';
+/** `Page.tsx` with `imports` first and `stmt` run at its top level. No type reference: `import.meta.env` is typed by Keel's declaration alone (k.boundary Ambient types). */
 export const page = (imports: string, stmt: string): string =>
-  `${REF}${imports}\n${PAGE}\nReflect.set(globalThis, 'extra', ${stmt})\n`;
+  `${imports}\n${PAGE}\nReflect.set(globalThis, 'extra', ${stmt})\n`;
 
 export const STEPS = /server code in browser build: ([a-z -]+): (.+)$/;
 export const reasonOf = (line: string): string => STEPS.exec(line)?.[1] ?? "";
