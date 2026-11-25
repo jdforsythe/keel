@@ -84,7 +84,7 @@ describe("k.testing: the harness passes a component a ctx", () => {
   });
 
   it("the old `(props, slots?, ctx?)` test component does not compile where a `TestComponent` is expected", () => {
-    // compile-time half: ../unsafe/conformanceNegativeTypes.ts
+    // compile-time half: ./negative-types.test-d.ts
     const old = () =>
       Reflect.apply(render, undefined, [
         Object.assign((_p: Record<string, never>, _s?: undefined, _c?: Ctx): Node => document.createElement("p"), {

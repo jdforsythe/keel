@@ -9,7 +9,7 @@ type Loose<D> = {
 /** A chart's `next` and `taken`, called with an event name from its `events` and that event's parsed payload. */
 export function looseChart<D>(chart: { readonly next: unknown; readonly taken: unknown }): Loose<D> {
   return unsafe(
-    "the event is a key of chart.events and the payload parsed by that event's schema inside s.object({ id, payload })",
+    "compileStores calls these only from the transaction of event e, a key of chart.events, with a payload e's schema parsed inside s.object({ id, payload })",
     () => ({ next: chart.next, taken: chart.taken }) as Loose<D>,
   );
 }

@@ -1,7 +1,11 @@
-// Structure lint. S0001/S0002/S0004/S0005 delegate to @keel/check (E1752/E1757/E1754); S0003, S0006, S0012 (a stdlib file names a kernel `internal` entry `deps.json` does not list, k.parity) live here; S0009 (a std package's runtime entry reaches a CLI-time package) is std-entries.mjs. Usage: node tooling/structure-lint.mjs [--root dir] [--format=..] [--quiet] [--limit N]
+// Structure lint. S0001/S0002/S0004/S0005 delegate to @keel/check (E1752/E1757/E1754), and E1760 and E1761 pass through; S0014 (an `unsafe(` call in `packages/*` whose lifted range holds no E1757 finding, k.unsafe), S0003, S0006, S0012 (a stdlib file names a kernel `internal` entry `deps.json` does not list, k.parity) live here; S0009 (a std package's runtime entry reaches a CLI-time package) is std-entries.mjs. Usage: node tooling/structure-lint.mjs [--root dir] [--format=..] [--quiet] [--limit N]
 import fs from "node:fs";
 import path from "node:path";
+import { Visitor } from "oxc-parser";
 import { check } from "../packages/check/src/index.ts";
+import { liftedRanges } from "../packages/check/src/internal/liftedRanges.ts";
+import { parseFile } from "../packages/check/src/internal/parseFile.ts";
+import { noUnsafeSyntax } from "../packages/check/src/rules/noUnsafeSyntax.ts";
 import { parseArgs, run } from "./output.ts";
 import { CODE_EXT, rel, scrub, walk } from "./scan.mjs";
 import { stdEntryDiags } from "./std-entries.mjs";
@@ -97,17 +101,50 @@ for (const file of files) {
   }
 }
 
-// S0001/S0002/S0004/S0005: one implementation, @keel/check. The S-code stays in the message as an alias.
+/**
+ * S0014 (k.unsafe): in a package only E1757 of the lifted codes is enforced, so `unsafe/` holds type-system escapes.
+ * An `unsafe(` call whose lifted range holds no finding E1757 makes (or that has no range) escapes nothing checked.
+ */
+function s0014(file) {
+  const parsed = parseFile(file);
+  if (!parsed.ok) return;
+  const starts = [0];
+  for (let i = 0; i < file.source.length; i++) if (file.source[i] === "\n") starts.push(i + 1);
+  const escapes = noUnsafeSyntax
+    .check({ file, ast: parsed.program, artifacts: {}, project: [file] })
+    .map((f) => (starts[f.line - 1] ?? 0) + f.col - 1);
+  const ranges = liftedRanges(file);
+  new Visitor({
+    CallExpression: (n) => {
+      if (n.callee.type !== "Identifier" || n.callee.name !== "unsafe") return;
+      const range = ranges.find(([a, b]) => a >= n.start && b <= n.end);
+      if (range !== undefined && escapes.some((at) => at >= range[0] && at < range[1])) return;
+      const line = starts.findLastIndex((st) => st <= n.start);
+      add(
+        "S0014",
+        path.join(root, file.path),
+        line + 1,
+        n.start - (starts[line] ?? 0) + 1,
+        "unsafe() call holds no cast, !, any or ts-suppression; make it ordinary code in src/",
+      );
+    },
+  }).visit(parsed.program);
+}
+
+// S0001/S0002/S0004/S0005: one implementation, @keel/check. The S-code stays in the message as an alias. E1760 and
+// E1761 (k.unsafe) keep their own codes.
 const ALIAS = { E1757: "S0004", E1754: "S0005" };
+const PASS = new Set(["E1756", "E1760", "E1761"]);
 const SRC = /^packages\/[^/]+\/src\//;
 const sources = files.map((f) => ({ path: rel(root, f), source: fs.readFileSync(f, "utf8") }));
+for (const f of sources) if (f.path.startsWith("packages/")) s0014(f);
 const result = check(sources, { types: false, root });
 for (const d of result.diagnostics) {
   const { fix: _fix, see: _see, ...rest } = d;
   const ok = (c) => d.code === c;
   let alias = ALIAS[d.code];
   if (ok("E1752") && SRC.test(d.path ?? "")) alias = d.message.startsWith("file ") ? "S0002" : "S0001";
-  if (ok("E1756") || alias) diags.push({ ...rest, message: alias ? `${alias} ${d.message}` : d.message });
+  if (PASS.has(d.code) || alias) diags.push({ ...rest, message: alias ? `${alias} ${d.message}` : d.message });
 }
 
 diags.push(...(await stdEntryDiags(root)).diags);

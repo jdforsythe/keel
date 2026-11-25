@@ -949,7 +949,12 @@ describe("E1757 noUnsafeSyntax", () => {
       block("suppress last line no newline", E("src/a.ts", "export const a = 1\n// @ts-ignore")),
       block("comment before code same line", E("src/a.ts", "/* @ts-ignore */ export const a = 1\n")),
       block("other comment ok", E("src/a.ts", "// @ts-ignored\n// ts-ignore\nexport const a = 1\n")),
-      block("suppress word boundary", E("src/a.ts", "// see @ts-ignore-ish\nexport const a = 1\n")),
+      block(
+        "quoted directive ok",
+        E("src/a.ts", "// see @ts-ignore here\n/* the `@ts-expect-error` form */\nexport const a = 1\n"),
+      ),
+      block("suppress word boundary", E("src/a.ts", "// @ts-ignore-ish\nexport const a = 1\n")),
+      block("suppress jsdoc line", E("src/a.ts", "/**\n * @ts-nocheck\n */\nexport const a = 1\n")),
       block(
         "mixed sorted",
         E(
@@ -1063,12 +1068,23 @@ describe("E1757 noUnsafeSyntax", () => {
       + export const a = 1
       # other comment ok
 
+      # quoted directive ok
+
       # suppress word boundary
       1:1 ts suppression comment outside unsafe/; use a guard or move it to unsafe/
       --- a/src/a.ts
       +++ b/src/a.ts
       @@ -1,2 +1 @@
-      -// see @ts-ignore-ish
+      -// @ts-ignore-ish
+       export const a = 1
+      # suppress jsdoc line
+      1:1 ts suppression comment outside unsafe/; use a guard or move it to unsafe/
+      --- a/src/a.ts
+      +++ b/src/a.ts
+      @@ -1,4 +1 @@
+      -/**
+      - * @ts-nocheck
+      - */
        export const a = 1
       # mixed sorted
       1:22 any outside unsafe/; use a guard or move it to unsafe/

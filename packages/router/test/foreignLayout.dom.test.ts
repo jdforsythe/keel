@@ -129,7 +129,7 @@ describe("a layout of another module", () => {
       "ap.inner": { component: view, layout: "a.layout" },
       "ap.page": { component: view, layout: "apx.shell" },
     });
-    // The refusals (a typo within the own prefix, an own page as layout) are in unsafe/negativeTypes.ts; the
+    // The refusals (a typo within the own prefix, an own page as layout) are in negativeTypes.test-d.ts; the
     // run-time checks are in `manifest checks what it sees` above.
   });
 });

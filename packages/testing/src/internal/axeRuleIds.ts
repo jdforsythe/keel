@@ -1,6 +1,6 @@
-import { axeRuleList } from "../../unsafe/axeRuleList.ts";
 import { DOCUMENT_RULES } from "./DOCUMENT_RULES.ts";
 import { WCAG_TAGS } from "./WCAG_TAGS.ts";
+import { axeRuleList } from "./axeRuleList.ts";
 
 const memo = new Map<boolean, ReadonlySet<string>>();
 /**

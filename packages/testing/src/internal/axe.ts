@@ -1,7 +1,7 @@
 import { axeSync } from "../../unsafe/axeSync.ts";
-import { currentTestMeta } from "../../unsafe/currentTestMeta.ts";
 import type { Violation } from "./Violation.ts";
 import { axeRuleIds } from "./axeRuleIds.ts";
+import { currentTestMeta } from "./currentTestMeta.ts";
 import { fail } from "./fail.ts";
 import { pageRoots } from "./pageRoots.ts";
 import { uaHidden } from "./uaHidden.ts";

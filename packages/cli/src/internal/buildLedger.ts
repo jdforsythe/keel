@@ -5,8 +5,10 @@ import type { LedgerItem } from "./LedgerItem.ts";
 import { TEST_FILE } from "./TEST_FILE.ts";
 import type { TestRef } from "./TestRef.ts";
 import { citesClause } from "./citesClause.ts";
+import { countExpectations } from "./countExpectations.ts";
 import { countHosts } from "./countHosts.ts";
 import { headerCodes } from "./headerCodes.ts";
+import { isNegativeTypeTest } from "./isNegativeTypeTest.ts";
 import { makeDiag } from "./makeDiag.ts";
 import { monitoredEvidence } from "./monitoredEvidence.ts";
 import { rangeCodes } from "./rangeCodes.ts";
@@ -66,7 +68,8 @@ const evidenceFor = (refs: readonly TestRef[], name: string, file: string): Ledg
  * Export items also get `monitored` evidence from `.keel/monitored.json` (`monitoredEvidence`; E1711 when it fails its
  * shape). Also the `unsafe(...)` calls in `packages/<pkg>/{src,unsafe}`, in a root `modules/**` (an app's own folder)
  * and, per app, in `apps/<app>/**`, and the host elements (`countHosts`) in those files and, per file, in a root
- * `modules/**`. `z3` is the Z3
+ * `modules/**`; and the expectations of the negative type tests (`countExpectations`) of `packages/<pkg>/**`, per app in
+ * `apps/<app>/**` and in a root `test/**` or `modules/**`, also per file (k.unsafe). `z3` is the Z3
  * version a `prove` call's `proven` evidence names (default: the installed `z3-solver`'s, `z3Version`).
  */
 export function buildLedger(
@@ -79,6 +82,9 @@ export function buildLedger(
   hostElements: number;
   appHosts: Record<string, number>;
   rootHosts: Record<string, number>;
+  negativeTypes: number;
+  appNegativeTypes: Record<string, number>;
+  negativeTypeFiles: Record<string, number>;
   diags: Diag[];
 } {
   const code = files.filter((f) => CODE_FILE.test(f.path));
@@ -91,7 +97,18 @@ export function buildLedger(
   let hostElements = 0;
   const appHosts: Record<string, number> = {};
   const rootHosts: Record<string, number> = {};
+  let negativeTypes = 0;
+  const appNegativeTypes: Record<string, number> = {};
+  const negativeTypeFiles: Record<string, number> = {};
   for (const f of code) {
+    const app = APP.exec(f.path)?.[1];
+    const counted = f.path.startsWith("packages/") || app !== undefined || /^(?:test|modules)\//.test(f.path);
+    const expected = counted && isNegativeTypeTest(f.path) ? countExpectations(f.path, f.source) : 0;
+    if (expected > 0) {
+      negativeTypes += expected;
+      negativeTypeFiles[f.path] = expected;
+      if (app !== undefined) appNegativeTypes[app] = (appNegativeTypes[app] ?? 0) + expected;
+    }
     const p = PKG.exec(f.path);
     const a = APP.exec(f.path);
     if (p?.[1] !== undefined && (p[2] === "test" || p[2] === "conformance")) add(`packages/${p[1]}`, f);
@@ -183,5 +200,16 @@ export function buildLedger(
     const evidence = held ? citing.flatMap((h) => h.tests.map((t) => ({ ev: t.ev, path: t.path }))) : [];
     items.push({ item: `${id}#${n}`, evidence });
   }
-  return { items, unsafe, appUnsafe, hostElements, appHosts, rootHosts, diags };
+  return {
+    items,
+    unsafe,
+    appUnsafe,
+    hostElements,
+    appHosts,
+    rootHosts,
+    negativeTypes,
+    appNegativeTypes,
+    negativeTypeFiles,
+    diags,
+  };
 }

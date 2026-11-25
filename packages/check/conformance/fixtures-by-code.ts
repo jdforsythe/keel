@@ -1308,7 +1308,17 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
   E1754: {
     opts: NO_TYPES,
     bad: [f("src/x.ts", `export const x = ${UNSAFE}(() => 1)\n`)],
-    clean: [f("src/x.ts", `export const x = ${UNSAFE}('reason', () => 1)\n`)],
+    clean: [f("src/x.ts", `export const x = ${UNSAFE}('the value is a literal that no caller can change', () => 1)\n`)],
+  },
+  E1760: {
+    opts: NO_TYPES,
+    bad: [f("src/x.ts", `export const x = ${UNSAFE}('too short', () => 1)\n`)],
+    clean: [f("src/x.ts", `export const x = ${UNSAFE}('one two three four five six seven eight', () => 1)\n`)],
+  },
+  E1761: {
+    opts: NO_TYPES,
+    bad: [f("modules/m/a.test-d.ts", 'const n: string = "a"\nvoid n\n')],
+    clean: [f("modules/m/test/a.test-d.ts", 'const n: string = "a"\nvoid n\n')],
   },
   E1755: {
     bad: [],

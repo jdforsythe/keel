@@ -2,7 +2,7 @@
 // Spec: k.contract Rules "E1502, E1503, E1504 (k.router) ... read the contract."
 // Spec: RFC 0157 Conformance diff: "An API GET entry with `query: s.object({ q: s.string() })` (required) is no E1504; a page entry whose `search` requires a field is E1504." Seed 1337.
 // ASSUMPTION: which of `contract` and `manifest` throws E1502-E1504 is not stated; each case builds both.
-// Compile-time half of each "does not compile" claim: ../unsafe/conformanceNegativeTypes.ts; the calls here are untyped.
+// Compile-time half of each "does not compile" claim: ./negative-types.test-d.ts; the calls here are untyped.
 import { manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";

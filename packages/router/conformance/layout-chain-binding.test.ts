@@ -3,7 +3,7 @@
 // Spec: k.routes, Conformance "A page bound with `layout: 'a.inner'`, `a.inner` with `layout: 'a.outer'`, renders inside `a.inner`'s component, inside `a.outer`'s."
 // Spec: k.routes, Conformance "A `layout` naming a page id does not compile and `manifest` throws E1506; two layouts naming each other make `manifest` throw E1506 naming both."
 // Seed 1337 (no random input: fixed chains).
-// Compile-time half of each "does not compile" claim: ../unsafe/conformanceNegativeTypes.ts; the calls here are untyped.
+// Compile-time half of each "does not compile" claim: ./negative-types.test-d.ts; the calls here are untyped.
 import { type RouteProps, manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
 import { describe, expect, it } from "vitest";

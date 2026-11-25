@@ -408,6 +408,8 @@ const NO_FIX = [
   "E1754", // the justification must be written by the author
   "E1755", // a budget breach has no source edit
   "E1758", // the locale or time zone is an argument the caller holds
+  "E1760", // k.unsafe Rules: none carries a fix; the reason is the author's to write
+  "E1761", // k.unsafe Rules: none carries a fix; where the negative type test lives is the author's choice
   "E1801", // a look name that no `look` declares has no nearest token; the author names the look or declares it
   "E1802", // the missing prop value is the author's choice
   "E1607", // which registered name to keep is the author's choice

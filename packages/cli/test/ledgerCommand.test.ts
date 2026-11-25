@@ -189,6 +189,7 @@ describe("ledgerCommand: the plain ledger", () => {
       version: 1,
       unsafe: 1,
       hostElements: 0,
+      negativeTypes: 0,
       rungs: { example: 1, probabilistic: 1, exhaustive: 0, proven: 0, monitored: 0 },
       exports: [
         { pkg: "a", name: "bar", file: "packages/a/src/bar.ts", rung: "none" },
@@ -438,6 +439,36 @@ describe("ledgerCommand --diff", () => {
     ]);
     expect(diags(call({ diff: true, scope: "g:" }, [...files, committed({ unsafe: 9 })]).records)).toEqual([]);
     expect(diags(call({ diff: true }, files).records)).toEqual([]);
+  });
+
+  test("negativeTypes: the described expectations of negative type tests, by app key or path prefix under --scope, never compared", () => {
+    const D = `// @ts-${"expect-error"}`;
+    const two = `${D} a number is no string\nexport const a: string = 1\n${D} b is no string\nexport const b: string = 2\n`;
+    const files = [
+      ...base,
+      file("packages/b/test/n.test-d.ts", two),
+      file("packages/b/src/n.test-d.ts", two),
+      file("apps/h/test/n.test-d.ts", two),
+      file(
+        "apps/g/modules/x/test/n.test-d.tsx",
+        `${D} one\nexport const c: string = 1\n${D}\nexport const d: string = 1\n`,
+      ),
+      file("modules/r/test/n.test-d.ts", two),
+      file("lib/test/n.test-d.ts", two),
+    ];
+    const count = (scope?: string) => {
+      const t = trailer(call(scope === undefined ? {} : { scope }, files).records);
+      return t?.kind === "summary" ? t.counts : undefined;
+    };
+    expect(count()).toMatchObject({ negativeTypes: 7 });
+    expect(count("h:")).toMatchObject({ negativeTypes: 2 });
+    expect(count("g:")).toMatchObject({ negativeTypes: 1 });
+    expect(count("apps/g/")).toMatchObject({ negativeTypes: 1 });
+    expect(count("modules/r/")).toMatchObject({ negativeTypes: 2 });
+    expect(diags(call({ diff: true }, [...files, committed({ negativeTypes: 50 })]).records)).toEqual([]);
+    const written = JSON.parse(call({ write: LEDGER }, files).writes[0]?.content ?? "{}");
+    expect(Object.keys(written).slice(0, 4)).toEqual(["version", "unsafe", "hostElements", "negativeTypes"]);
+    expect(written).toMatchObject({ negativeTypes: 7 });
   });
 
   test("host elements: counted in packages' src, apps and a root modules/ folder, by binding; E1706 on a rise without --scope", () => {

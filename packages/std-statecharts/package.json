@@ -15,6 +15,10 @@
     "./tools/internal": {
       "types": "./src/tools/internal/index.ts",
       "default": "./src/tools/internal/index.ts"
+    },
+    "./internal": {
+      "types": "./src/internal/index.ts",
+      "default": "./src/internal/index.ts"
     }
   },
   "publishConfig": {
@@ -30,6 +34,10 @@
       "./tools/internal": {
         "types": "./dist/src/tools/internal/index.d.ts",
         "default": "./dist/src/tools/internal/index.js"
+      },
+      "./internal": {
+        "types": "./dist/src/internal/index.d.ts",
+        "default": "./dist/src/internal/index.js"
       }
     }
   },

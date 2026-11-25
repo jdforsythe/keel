@@ -1,6 +1,6 @@
 // Spec: std.contracts, std-offline "`outbox(id, contract, opts)` (std.offline) sends the contract's API write entries; `send`'s third argument is an entry's name after the module (`'editTodo'` for `api.editTodo`), and a GET, `events` or page id does not compile."
 // Spec: std.contracts, Conformance "`send(ctx, o, 'board', ...)` for a GET entry `api.board` of the outbox's contract does not compile."
-// Seed 1337 (no random input). The compile halves are in ../unsafe/conformanceNegativeTypes.ts; here the same calls are untyped, inside a function that is never called; the runtime half sends through an unbound sim ctx.
+// Seed 1337 (no random input). The compile halves are in ./negative-types.test-d.ts; here the same calls are untyped, inside a function that is never called; the runtime half sends through an unbound sim ctx.
 import { createCtx } from "@keel/ctx";
 import { contract } from "@keel/router/contract";
 import { s } from "@keel/schema";
