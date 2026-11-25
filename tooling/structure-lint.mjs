@@ -1,4 +1,4 @@
-// Structure lint. S0001/S0002/S0004/S0005 delegate to @keel/check (E1752/E1757/E1754), and E1760 and E1761 pass through; S0014 (an `unsafe(` call in `packages/*` whose lifted range holds no E1757 finding, k.unsafe), S0003, S0006, S0012 (a stdlib file names a kernel `internal` entry `deps.json` does not list, k.parity) live here; S0015 (a fast-check run with no seed, in the scanned files and every app's and example's test files, but `packages/*/conformance/`, which the conformance-writer owns) is unseeded-properties.mjs; S0009 (a std package's runtime entry reaches a CLI-time package) is std-entries.mjs. Usage: node tooling/structure-lint.mjs [--root dir] [--format=..] [--quiet] [--limit N]
+// Structure lint. S0001/S0002/S0004/S0005 delegate to @keel/check (E1752/E1757/E1754), and E1760 and E1761 pass through; S0014 (an `unsafe(` call in `packages/*` whose lifted range holds no E1757 finding, k.unsafe), S0003, S0006, S0012 (a stdlib file names a kernel `internal` entry `deps.json` does not list, k.parity) live here; S0015 (a fast-check run with no seed, in the scanned files, conformance included, and every app's and example's test files) is unseeded-properties.mjs; S0009 (a std package's runtime entry reaches a CLI-time package) is std-entries.mjs. Usage: node tooling/structure-lint.mjs [--root dir] [--format=..] [--quiet] [--limit N]
 import fs from "node:fs";
 import path from "node:path";
 import { Visitor } from "oxc-parser";
@@ -17,7 +17,6 @@ const deps = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, "deps.jso
 const order = deps.order;
 
 const TEST_FILE = /\.test\.[cm]?[jt]sx?$/;
-const CONFORMANCE = /^packages\/[^/]+\/conformance\//;
 const CLOCK = /\bDate\.now\b|\bnew Date\(|\bMath\.random\b|\bperformance\.now\b/;
 
 /** Collect scan targets. */
@@ -117,8 +116,6 @@ for (const file of files) {
 
 // S0015: a fast-check run with no seed (unseeded-properties.mjs).
 for (const file of [...files, ...appTests()]) {
-  const r = rel(root, file);
-  if (CONFORMANCE.test(r)) continue;
   const src = fs.readFileSync(file, "utf8");
   if (!src.includes("fast-check")) continue;
   for (const d of unseededProperties(src, file)) add("S0015", file, d.line, d.col, d.message);
