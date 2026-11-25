@@ -26,9 +26,11 @@ const PG17 = process.env.KEEL_TEST_POSTGRES_URL ?? "";
 const RUN = randomBytes(4).toString("hex");
 let counter = 0;
 
+// `ready()` loads the PGlite engine (its WebAssembly and initdb): about 1.5 s here, over 10 s on a slow runner, so the
+// hook states 60 s, the bound the apps give a PGlite folder's first open.
 beforeAll(async () => {
   await ready();
-});
+}, 60_000);
 
 const tpl = (parts: string[]): TemplateStringsArray => Object.assign([...parts], { raw: [...parts] });
 const name = (text: string) => fragment(tpl([text]));
