@@ -22,6 +22,12 @@ import {
 
 /** Property runs spawn several `keel build` and `keel check` processes each. */
 const SLOW = 120_000;
+/**
+ * What the `--base` case bounds: three property runs of about twelve binary runs each (a build of the deployed base,
+ * a build, five or six `keel check`s), about 0.25 s a run here (9 s in all). The bound is 6 s a binary run, 24 times
+ * that, so a runner ten times slower (scale 0.1) still has twice the work's time.
+ */
+const BASE_CASE_BOUND = 3 * 12 * 6_000;
 
 const dirs: string[] = [];
 afterAll(() => {
@@ -87,7 +93,7 @@ test(
       { seed: SEED, numRuns: 3 },
     );
   },
-  SLOW,
+  BASE_CASE_BOUND,
 );
 
 const OTHER_SCHEMA =
