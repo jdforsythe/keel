@@ -249,13 +249,19 @@ export function libraryUses(checked: Checked, fileOf: FileOf, params: ReadonlyMa
   ): void => {
     if (parent.type === "VariableDeclarator" && key === "init" && isNode(field(parent, "id"))) {
       const id = field(parent, "id");
-      if (isNode(id) && id.type === "ObjectPattern") return pattern(id, entry, name);
+      if (isNode(id) && id.type === "ObjectPattern") {
+        pattern(id, entry, name);
+        return;
+      }
     }
     const prop =
       parent.type === "MemberExpression" && key === "object" && field(parent, "computed") !== true
         ? nameOf(field(parent, "property"))
         : undefined;
-    if (prop === undefined) return value(node.start, name);
+    if (prop === undefined) {
+      value(node.start, name);
+      return;
+    }
     const fn = spaceFn(entry, prop);
     if (fn === undefined) return;
     const call = up[up.length - 2];
