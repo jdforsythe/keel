@@ -83,13 +83,13 @@ Rules:
 - [ ] 1001 an event stream has no cap on one event's size, server or client
 
 ### Lane 07 check-security-rules · check, cli · RFC (k.boundary, 0884) · M
-- [ ] 0975 E1111 misses aliases, destructured `assign`, reassigned `let`, cross-file changes
-- [ ] 0884 `/// <reference types="vite/client" />` passes; decided: forbid it, type `import.meta.env` through a Keel declaration
-- [ ] 0880 E1107 keeps its own client reach instead of the shared one
-- [ ] 0994 `declaredFor` follows relative imports only, so an alias skips E1570
-- [ ] 1101 E1108 can accept in an editor what a fresh `keel check` refuses
-- [ ] 1099 E1571's message reads two ways; reword within 89 units
-- [ ] 0995 `linkEscapes`, behind E1357 and E1585, has no unit or property test
+- [x] 0975 E1111 misses aliases, destructured `assign`, reassigned `let`, cross-file changes
+- [x] 0884 `/// <reference types="vite/client" />` passes; decided: forbid it, type `import.meta.env` through a Keel declaration
+- [x] 0880 E1107 keeps its own client reach instead of the shared one
+- [x] 0994 `declaredFor` follows relative imports only, so an alias skips E1570
+- [x] 1101 E1108 can accept in an editor what a fresh `keel check` refuses
+- [x] 1099 E1571's message reads two ways; reword within 89 units
+- [x] 0995 `linkEscapes`, behind E1357 and E1585, has no unit or property test
 
 ### Lane 08 router-identity · router, check (E1584, E1580), compiler (E1579) · RFC (k.opening, 0969) · M
 - [ ] 0968 an admitted return link re-arms the gate through app code
