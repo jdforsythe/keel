@@ -109,7 +109,14 @@ export async function serveTwo(a: Cfg, b: Cfg): Promise<TwoModules> {
   });
   return {
     mint: async () => {
-      const res = await app.fetch(new Request(`${BASE}/api/none`, { method: "POST", body: "{}" }));
+      const res = await app.fetch(
+        new Request(`${BASE}${pathOf("a")}`, {
+          method: "POST",
+          body: JSON.stringify({ message: { text: "x" } }),
+          headers: { accept: "application/json", "content-type": "application/json", "x-keel": "1", origin: BASE },
+        }),
+      );
+      if (res.status !== 200) throw new Error(`mint answered ${res.status}`);
       return (res.headers.get("set-cookie") ?? "").split(";")[0] ?? "";
     },
     open: async (m, cookie) => {

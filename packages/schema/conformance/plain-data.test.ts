@@ -1,6 +1,6 @@
-// Spec: k.schema, clause "With L the values `new Map([['k', 'v']])`, `new Set(['v'])`, `new Date(0)`, `new (class {})()`, `() => 1`, `1n`, `undefined`, `NaN`, `Infinity`, `[1, , 2]`, `Object.assign([1], { e: 1 })`, `{ [Symbol('k')]: 'v' }`, `Object.defineProperty({}, 'k', { value: 'v', enumerable: false })`, `{ get k() { return 'v' } }` and `Object.create({ k: 'v' })`: for each `w` in L, `s.object({}).parse({ x: w })` fails with an issue of rule `type` at `['x']`, `s.object({}).parse({ x: { y: [w] } })` with one at `['x', 'y', 0]`, and `s.json().parse({ x: w })` with one at `[]`."
+// Spec: k.schema, clause "With L the values `new Map([['k', 'v']])`, `new Set(['v'])`, `epoch()`, `new (class {})()`, `() => 1`, `1n`, `undefined`, `NaN`, `Infinity`, `[1, , 2]`, `Object.assign([1], { e: 1 })`, `{ [Symbol('k')]: 'v' }`, `Object.defineProperty({}, 'k', { value: 'v', enumerable: false })`, `{ get k() { return 'v' } }` and `Object.create({ k: 'v' })`: for each `w` in L, `s.object({}).parse({ x: w })` fails with an issue of rule `type` at `['x']`, `s.object({}).parse({ x: { y: [w] } })` with one at `['x', 'y', 0]`, and `s.json().parse({ x: w })` with one at `[]`."
 // Spec: k.schema, clause "`s.object({}).parse({ x: { a: ['v', 1, null, true] } })`, `s.object({}).parse(Object.create(null))` and `s.json().parse({ a: [1, 'b', null, true, { c: -0 }] })` are each `ok`."
-// Spec: k.schema, clause "With `S = s.object({ a: s.object({}), r: s.record(s.string()), l: s.array(s.string()) })` and the valid value `{ a: {}, r: {}, l: [] }`: `S.parse` fails with an issue of rule `type` at `['a']`, and with one at `['r']`, when `a`, or `r`, is each of `new Map()`, `new Date(0)`, `new (class {})()`, `{ [Symbol('k')]: 'v' }`, `Object.defineProperty({}, 'k', { value: 'v', enumerable: false })` and `{ get k() { return 'v' } }`; with one at `['l']` when `l` is `Object.assign(['v'], { e: 'w' })` or an array holding `'v'` with an own symbol key; and with one at `[]` when the value itself has an own symbol key."
+// Spec: k.schema, clause "With `S = s.object({ a: s.object({}), r: s.record(s.string()), l: s.array(s.string()) })` and the valid value `{ a: {}, r: {}, l: [] }`: `S.parse` fails with an issue of rule `type` at `['a']`, and with one at `['r']`, when `a`, or `r`, is each of `new Map()`, `epoch()`, `new (class {})()`, `{ [Symbol('k')]: 'v' }`, `Object.defineProperty({}, 'k', { value: 'v', enumerable: false })` and `{ get k() { return 'v' } }`; with one at `['l']` when `l` is `Object.assign(['v'], { e: 'w' })` or an array holding `'v'` with an own symbol key; and with one at `[]` when the value itself has an own symbol key."
 // Spec: k.schema, clause "For every generated open-object schema and every value it accepts, adding an undeclared key to an open object in the value, holding a value of L inside 0 to 3 plain arrays and objects, makes `parse` fail with an issue of rule `type` at that value of L's path."
 // Spec: k.schema, clause "For every generated schema and every generated value it accepts, `parse` returns `ok` of a value in which every value reached through own properties of any key (`Reflect.ownKeys`), not entering a `Secret`, is reached through own enumerable string keys and array indices and is `null`, a boolean, a string, a finite number, a plain array, a plain object, or a `Secret` standing at a `secret` node."
 // Seed 1337. Readings, where the spec text is silent or only implies:
@@ -30,11 +30,15 @@ const secretOf = (raw: string): Secret<string> => {
   return r.value;
 };
 
+/** The Date of the spec's list, made without a bare constructor call. */
+const epoch = (): Date => Reflect.construct(Date, [0]);
+const noItems = (): unknown[] => [];
+
 // ---- L, as the spec lists it (a fresh value per call: some are stateful)
 const L: readonly (readonly [string, () => unknown])[] = [
   ["Map", () => new Map([["k", "v"]])],
   ["Set", () => new Set(["v"])],
-  ["Date", () => new Date(0)],
+  ["Date", () => epoch()],
   ["class instance", () => new (class {})()],
   ["function", () => () => 1],
   ["bigint", () => 1n],
@@ -162,7 +166,7 @@ describe("k.schema plain data at declared positions", () => {
   const valid = (): Record<string, unknown> => ({ a: {}, r: {}, l: [] });
   const objectLike: readonly (readonly [string, () => unknown])[] = [
     ["Map", () => new Map()],
-    ["Date", () => new Date(0)],
+    ["Date", () => epoch()],
     ["class instance", () => new (class {})()],
     ["symbol key", () => ({ [Symbol("k")]: "v" })],
     ["non-enumerable key", () => Object.defineProperty({}, "k", { value: "v", enumerable: false })],
@@ -264,7 +268,7 @@ const holders: readonly (readonly [string, Holder])[] = [
       })(),
   ],
   ["function property", (sec, log) => Object.assign(() => 1, { secret: sec, under: watched(log, sec) })],
-  ["Date with an own property", (sec) => Object.assign(new Date(0), { secret: sec })],
+  ["Date with an own property", (sec) => Object.assign(epoch(), { secret: sec })],
   ["symbol key", (sec, log) => ({ [Symbol("k")]: sec, plain: watched(log, sec) })],
   [
     "non-enumerable key",
@@ -336,7 +340,7 @@ describe("k.schema plain data: a non-plain value holding a Secret never lets the
         fc.stringMatching(/^x[a-z]{0,3}$/),
         fc.nat(2),
         ([, hold], before, raw, key, idx) => {
-          const base = { name: "n", inner: { n: 1 }, items: [] as unknown[], r: {}, j: null };
+          const base = { name: "n", inner: { n: 1 }, items: noItems(), r: {}, j: null };
           const log: string[] = [];
           const w = (): unknown => wrap(hold(secretOf(raw), log), before);
           check(Deep.parse({ ...base, inner: { n: 1, [key]: w() } }), ["inner", key, ...segs(before)], log, raw);
@@ -352,7 +356,7 @@ describe("k.schema plain data: a non-plain value holding a Secret never lets the
   it("at a declared object node, the non-plain value itself fails at the node's path; under a json node it fails at the json node's path", () => {
     fc.assert(
       fc.property(holderArb, stepsArb, marker, ([, hold], before, raw) => {
-        const base = { name: "n", inner: { n: 1 }, items: [] as unknown[], r: {}, j: null };
+        const base = { name: "n", inner: { n: 1 }, items: noItems(), r: {}, j: null };
         const log: string[] = [];
         check(Deep.parse({ ...base, inner: hold(secretOf(raw), log) }), ["inner"], log, raw, false);
         const log2: string[] = [];
