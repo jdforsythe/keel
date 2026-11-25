@@ -166,6 +166,7 @@ Rules:
 - [ ] 1109 `renderRoute` with `app` records any string as a document, never E1501
 - [ ] 1110 a statechart guard's payload is typed as every event's fields (RFC)
 - [ ] 1111 `keel check` runs out of heap at 100,000 host elements
+- [ ] 1114 colour tokens used with no `tokens.ts` are an error nowhere
 
 ### Owned by a P1 workstream or in flight
 - [ ] 0034 the freeze review and status flips (W1)

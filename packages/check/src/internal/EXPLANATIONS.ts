@@ -1368,8 +1368,8 @@ const ROWS: readonly Row[] = [
   ["E1803", "style attribute", "", 'style={{ padding: 8 }} -> p="2"', "k.ui"],
   [
     "E1804",
-    "text below its contrast threshold, against its own or its nearest ancestor's bg",
-    "4.5:1, or 3:1 when large (fontSize >= 24px, or >= 18.66px at weight >= 700), in light and dark.",
+    "text below its contrast threshold, with fg and bg as the text inherits them",
+    "4.5:1, or 3:1 when large (fontSize >= 24px, or >= 18.66px at weight >= 700), in light and dark; tokens from tokens.ts.",
     "pick token colors that pass in light and dark",
     "k.a11y",
   ],

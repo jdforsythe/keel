@@ -11,7 +11,6 @@ import type { LedgerItem } from "./LedgerItem.ts";
 import type { LibraryLedger } from "./LibraryLedger.ts";
 import type { Outcome } from "./Outcome.ts";
 import { a11yClaims } from "./a11yClaims.ts";
-import { a11yFindings } from "./a11yFindings.ts";
 import { buildLedger } from "./buildLedger.ts";
 import { coverageGaps } from "./coverageGaps.ts";
 import { justifiedFiles } from "./justifiedFiles.ts";
@@ -149,9 +148,15 @@ const ledgerFile = (
  * is then the matching apps' (`golden-1:`), compared with zero, and the host element count theirs plus a root
  * `modules/**` file's whose path starts with it. `negativeTypes` (written, never compared) is then the matching apps'
  * plus each negative type test's whose path starts with it. The summary counts the items on each rung and the
- * stale claims, each when above 0.
+ * stale claims, each when above 0. `findings` are the static a11y codes of the project (`a11yFindings`, which the
+ * caller awaits: it evaluates each project's `tokens.ts`).
  */
-export function ledgerCommand(input: Input, io: Io, a11yMap: A11yCriteriaMap = new Map()): Outcome {
+export function ledgerCommand(
+  input: Input,
+  io: Io,
+  a11yMap: A11yCriteriaMap = new Map(),
+  findings: readonly { code: string; path: string }[] = [],
+): Outcome {
   const files = projectFiles(io);
   const built = buildLedger(files);
   const libs = libraryLedgers(io.cwd, files);
@@ -170,7 +175,7 @@ export function ledgerCommand(input: Input, io: Io, a11yMap: A11yCriteriaMap = n
       c.rung === "example" || c.rung === "none" ? [[c.item, c.rung] as const] : [],
     ),
   );
-  const a11y = a11yMap.size === 0 ? [] : a11yClaims(files, a11yMap, a11yFindings(io.cwd, files), keptRungs);
+  const a11y = a11yMap.size === 0 ? [] : a11yClaims(files, a11yMap, findings, keptRungs);
   const records = all.filter((r) => r.item.startsWith(scope));
   const claims = a11y.filter((c) => c.item.startsWith(scope));
   const apps = Object.keys(built.appUnsafe).filter((a) => `${a}:`.startsWith(scope) || scope.startsWith(`${a}:`));

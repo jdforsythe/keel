@@ -175,7 +175,8 @@ export function check(files: readonly SourceFile[], opts: CheckOptions = {}): Ch
       out.push({ kind: "diag", ...d, path });
       reported.set(path, (reported.get(path) ?? new Set()).add(d.code));
     }
-    for (const f of group) artifactsOf.set(f.path, { ...compiled.artifacts, ...opts.artifacts });
+    const own = opts.projectArtifacts?.[dir];
+    for (const f of group) artifactsOf.set(f.path, { ...compiled.artifacts, ...own, ...opts.artifacts });
   }
 
   // The `@keel/*` packages this call's app manifests reach: a std package's formats apply only among them, and so do

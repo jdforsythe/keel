@@ -3,10 +3,10 @@
     "check.injected10": 600,
     "test.failing3": 400,
     "spec.section": 3100,
-    "spec.map": 1620,
+    "spec.map": 1640,
     "explain": 300,
     "mcp.tools-list": 2050,
-    "docs.map": 1630,
+    "docs.map": 1650,
     "docs.section": 3100,
     "docs.skill": 3600,
     "docs.for": 400,
@@ -14,7 +14,7 @@
   },
   "size": {
     "@keel/check": {
-      "max": "80kb",
+      "max": "80.5kb",
       "platform": "node"
     },
     "@keel/check/explain": {
@@ -22,7 +22,7 @@
       "platform": "node"
     },
     "@keel/cli": {
-      "max": "33kb",
+      "max": "33.5kb",
       "platform": "node"
     },
     "@keel/cli/docs": {
