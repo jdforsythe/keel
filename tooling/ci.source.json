@@ -156,7 +156,7 @@
         },
         {
           "name": "a11y reports for the ledger from every app, example and library whose routes it carries (keel test writes reports/a11y.json)",
-          "run": "pnpm --workspace-concurrency=1 --filter golden-1 --filter golden-2 --filter household --filter inspector --filter sessions --filter \"./examples/*\" --filter \"./libraries/*\" exec keel test"
+          "run": "pnpm --workspace-concurrency=1 --filter golden-1 --filter golden-2 --filter household --filter inspector --filter sessions --filter evenly --filter \"./examples/*\" --filter \"./libraries/*\" exec keel test"
         },
         {
           "run": "pnpm ledger --diff"
@@ -652,7 +652,7 @@
         },
         {
           "name": "a11y reports for the ledger from every app, example and library whose routes it carries (keel test writes reports/a11y.json)",
-          "run": "pnpm --workspace-concurrency=1 --filter golden-1 --filter golden-2 --filter household --filter inspector --filter sessions --filter \"./examples/*\" --filter \"./libraries/*\" exec keel test"
+          "run": "pnpm --workspace-concurrency=1 --filter golden-1 --filter golden-2 --filter household --filter inspector --filter sessions --filter evenly --filter \"./examples/*\" --filter \"./libraries/*\" exec keel test"
         },
         {
           "run": "pnpm ledger --diff"

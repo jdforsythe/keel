@@ -435,6 +435,7 @@ async function runStep(step, { env, ctx, log, deadline }) {
           `if [ -d ${snapshot} ]; then mkdir -p .turbo && rm -rf .turbo/cache && ${copyTree} ${snapshot} .turbo/cache; fi`,
         )
       : { status: "ok" };
+  if (kind === "download") return { status: "ok" };
   if (kind === "artifact") {
     if (step.with?.["if-no-files-found"] !== "error") return { status: "ok" };
     return sh(

@@ -120,7 +120,7 @@ jobs:
       - name: "put each project's run reports where the ledger reads them (reports/tests/*.json, paths kept)"
         run: "set -e\nfor t in test-reports/test-reports-*/test-reports.tar; do tar -xf \"$t\"; done"
       - name: "a11y reports for the ledger from every app, example and library whose routes it carries (keel test writes reports/a11y.json)"
-        run: "pnpm --workspace-concurrency=1 --filter golden-1 --filter golden-2 --filter household --filter inspector --filter sessions --filter \"./examples/*\" --filter \"./libraries/*\" exec keel test"
+        run: "pnpm --workspace-concurrency=1 --filter golden-1 --filter golden-2 --filter household --filter inspector --filter sessions --filter evenly --filter \"./examples/*\" --filter \"./libraries/*\" exec keel test"
       - run: pnpm ledger --diff
       - name: "the committed ledger matches the tree and the runs: every rung, WCAG items and rung counts included"
         run: node tooling/ledger-fresh.mjs --runs
@@ -517,7 +517,7 @@ jobs:
       - name: "put each project's run reports where the ledger reads them (reports/tests/*.json, paths kept)"
         run: "set -e\nfor t in test-reports/test-reports-*/test-reports.tar; do tar -xf \"$t\"; done"
       - name: "a11y reports for the ledger from every app, example and library whose routes it carries (keel test writes reports/a11y.json)"
-        run: "pnpm --workspace-concurrency=1 --filter golden-1 --filter golden-2 --filter household --filter inspector --filter sessions --filter \"./examples/*\" --filter \"./libraries/*\" exec keel test"
+        run: "pnpm --workspace-concurrency=1 --filter golden-1 --filter golden-2 --filter household --filter inspector --filter sessions --filter evenly --filter \"./examples/*\" --filter \"./libraries/*\" exec keel test"
       - run: pnpm ledger --diff
       - if: "always()"
         uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
