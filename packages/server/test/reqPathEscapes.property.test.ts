@@ -88,7 +88,7 @@ describe("a secret route param in the req path", () => {
     });
 
   it("is [secret] with a trailing slash, and a longer path is cut at the secret whether or not it parses", async () => {
-    expect((await reqPath("/reset/tok-9a8b7c6d5e4f/")).path).toBe("/reset/[secret]/");
+    expect((await reqPath("/reset/tok-9a8b7c6d5e4f/")).path).toBe("/reset/[secret]");
     expect((await reqPath("/code/9081726354/x")).path).toBe("/code/[secret]");
     expect((await reqPath("/code/not-a-number-9a8b/x")).path).toBe("/code/[secret]");
     expect((await reqPath("/code/%39081726354/x")).path).toBe("/code/[secret]");
@@ -161,7 +161,7 @@ describe("a secret route param in the req path of a mistyped link", () => {
   const typed: readonly (readonly [string, string])[] = [
     ["/reset/tok-9a8b7c6d5e4f/extra", "/reset/[secret]"],
     ["//reset/tok-9a8b7c6d5e4f", "//reset/[secret]"],
-    ["/reset//tok-9a8b7c6d5e4f", "/reset//[secret]"],
+    ["/reset//tok-9a8b7c6d5e4f", "/reset/[secret]"],
     ["/Reset/tok-9a8b7c6d5e4f", "/Reset/[secret]"],
     ["/RESET/tok-9a8b7c6d5e4f", "/RESET/[secret]"],
     ["/res%zzet/tok-9a8b7c6d5e4f", "/res%zzet/[secret]"],

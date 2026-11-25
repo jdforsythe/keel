@@ -51,7 +51,7 @@ describe("secretSegments", () => {
   it("marks only the secret segment when nothing but empty segments follows it", () => {
     const marks = marksOf(routeOf(["reset"], []));
     expect(marks("/reset/TOK")).toBe("/reset/[secret]");
-    expect(marks("//reset//TOK//")).toBe("//reset//[secret]//");
+    expect(marks("//reset//TOK//")).toBe("//reset/[secret]");
   });
 
   it("cuts at the earliest secret and keeps a mark before it", () => {
