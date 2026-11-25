@@ -1,0 +1,8 @@
+{
+  "about": "SHA-256 of lowercase strings that never appear in a tracked file. `words` match one alphabetic word of a line; `emails` match a whole address. Read by tooling/hygiene.mjs (H0005).",
+  "words": [
+    "73ecb4b9d82c620a68d517119881d21eaaf808307da44ea47836893e551f9d51",
+    "33dd34e2738ded73951431497058cd7dfe64227fcd771dbd862b194865643cf5"
+  ],
+  "emails": ["6c225adb433ed114d4ec4e10db5d42389bfe555738a46a92dd7374a1b20d5470"]
+}
