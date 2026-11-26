@@ -70,7 +70,7 @@ const scoped = fc
 test(
   "In that project, `check()` reports no diagnostic",
   () => {
-    expect(check(project(), NO_TYPES).diagnostics).toEqual([]);
+    expect(check(project(), { ...NO_TYPES, artifacts: { tokens: { space: { 2: "8px" } } } }).diagnostics).toEqual([]);
   },
   CHECK_CASE_BOUND,
 );
