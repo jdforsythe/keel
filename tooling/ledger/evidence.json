@@ -1,5 +1,5 @@
 {
-  "commit": "fac6bd53066ad4822e87a7437bdd2326166acc28",
+  "commit": "588d4dd0c6b8ff88f0e66640b9632e9eb95ce3d3",
   "coverage": {
     "packages": {
       "apps/evenly": {
@@ -1178,7 +1178,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-26T21:26:12.850Z",
+  "generatedAt": "2026-11-26T22:53:22.788Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -1412,10 +1412,10 @@
     },
     "clauses": {
       "byRung": {
-        "example": 1181,
+        "example": 1185,
         "exhaustive": 6,
         "monitored": 0,
-        "none": 6,
+        "none": 2,
         "probabilistic": 253,
         "proven": 44
       },
@@ -2813,29 +2813,29 @@
         },
         "std.postgres": {
           "byRung": {
-            "example": 15,
+            "example": 16,
             "exhaustive": 0,
             "monitored": 0,
-            "none": 1,
+            "none": 0,
             "probabilistic": 4,
             "proven": 0
           },
           "status": "conformance-covered",
           "total": 20,
-          "verified": 19
+          "verified": 20
         },
         "std.postgres-changes": {
           "byRung": {
-            "example": 3,
+            "example": 6,
             "exhaustive": 0,
             "monitored": 0,
-            "none": 3,
+            "none": 0,
             "probabilistic": 0,
             "proven": 0
           },
           "status": "conformance-covered",
           "total": 6,
-          "verified": 3
+          "verified": 6
         },
         "std.report": {
           "byRung": {
@@ -3021,10 +3021,10 @@
         }
       },
       "total": 1490,
-      "verified": 1484
+      "verified": 1488
     },
     "evidenceByRung": {
-      "example": 2622,
+      "example": 2626,
       "exhaustive": 21,
       "monitored": 8,
       "probabilistic": 458,
@@ -3599,7 +3599,7 @@
     "items": 2811,
     "negativeTypes": 90,
     "unsafe": 33,
-    "verified": 2752
+    "verified": 2756
   },
   "mutation": {
     "packages": {
