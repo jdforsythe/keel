@@ -1,6 +1,6 @@
 ---
 name: keel-podcast
-description: Write a two-voice podcast episode script about Keel from its goals and its state on the day; use when asked for a podcast, an audio explainer or an interview-style walkthrough of Keel.
+description: Write a two-voice podcast episode script about Keel from its goals and its state on the day, or an updates episode on what changed since the last one; use when asked for a podcast, an audio explainer or an interview-style walkthrough of Keel.
 ---
 # Keel podcast episode
 
@@ -15,6 +15,17 @@ This skill turns the project's goals and its current state into one spoken episo
 | Output file | `docs/podcast/<slug>.md`, a slug that names the angle; list `docs/podcast/` first and never reuse a name |
 
 Do not read earlier episodes under `docs/podcast/` before writing. Each episode is written from the sources, so it is not a rewrite of the last one; list the folder only to avoid a name collision.
+
+## Updates episode
+
+When asked for an updates episode, the scope is what changed after the newest script under `docs/podcast/` and what that script left out. These rules replace the matching ones in the rest of this skill; everything else holds.
+
+- Read the newest script first, whole (this is the one exception to the rule above), and take its date from `git log -1 --format=%cI -- <file>`. Repeat nothing from it beyond a recap of two to four exchanges in the cold open. Where it stated a gap, a disagreement between two files or a promise, the update says what became of each.
+- Sources: the active task's `PLAN.md` checkpoints and decisions dated after that script, read in order; `tasks/p1/TODO.md`, `tasks/p1/personas.md`, `tasks/p1/end-user-review.md` and `tasks/FUTURE.md`; and each RFC written since, read on the lane branch that holds it when it is not merged. The plan is the record of what happened; when `tasks/p1/TODO.md` lags it, the plan wins and the report says so.
+- States: "merged" means on the main line. Work on a lane branch is "built in a lane, not merged", and its review state is said with it. An accepted RFC with nothing built is "designed". A reserved RFC number is "reserved, not written". Only merged work may be called built and proven.
+- The coverage checklist becomes: what the last episode's open items became; the gate and CI; each idea or decision made since and what it became; each review that found holes, two to four told as stories with the reproduction and the fix; the end-user findings by state (merged, in a lane, open); a quick-fire round; the honest state sorted by the four states above, and what is left before public.
+- Target length: 45 to 60 minutes, 6,750 to 9,000 words. Output file: `docs/podcast/keel-updates-<yyyy-mm>.md`, with a letter suffix when the month already has one.
+- The gap list is kept the same way.
 
 ## The cast
 
