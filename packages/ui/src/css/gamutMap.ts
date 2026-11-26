@@ -22,8 +22,8 @@ const deltaEOK = (a: Rgb, b: Rgb): number => {
 
 /**
  * A linear sRGB color mapped into the sRGB gamut by CSS Color 4's gamut mapping: in OKLCH, a binary search on chroma
- * at the color's lightness and hue, keeping the clipped color once it is within the just noticeable difference (JND
- * 0.02, epsilon 0.0001). A color already in the gamut is returned as given.
+ * at the color's lightness and hue, keeping the clipped color once its distance from the search point is under the JND
+ * (0.02, epsilon 0.0001). A color already in the gamut is returned as given.
  */
 export function gamutMap(color: Rgb): Rgb {
   if (inGamut(color)) return color;

@@ -16,16 +16,28 @@ const fallback = (tokens: unknown): readonly Combo[] =>
     layers: [],
   }));
 
-/** The tokens judged in a library's own folder: its schemes, and its shipped `contrast` and `print` in place of the root's. */
+/**
+ * The tokens judged in a library's own folder: its schemes, and its shipped `contrast` and `print` themes over the root's
+ * theme of that `when` (the shipped values winning), or as that theme when the root has none.
+ */
 function own(
   t: Tokens,
   schemes: readonly ("light" | "dark")[] | undefined,
   themes: Readonly<Record<string, Theme>> | undefined,
 ): Tokens {
   if (schemes === undefined && themes === undefined) return t;
-  const whens = new Set(Object.values(themes ?? {}).map((x) => x.when));
-  const kept = Object.entries(t.themes ?? {}).filter(([, x]) => !whens.has(x.when ?? "choice"));
-  const merged = { ...Object.fromEntries(kept), ...(themes ?? {}) };
+  const merged: Record<string, Theme> = { ...(t.themes ?? {}) };
+  for (const [key, shipped] of Object.entries(themes ?? {})) {
+    const root = Object.entries(merged).find(([, x]) => x.when === shipped.when);
+    const name = root?.[0] ?? key;
+    const base: Theme = root?.[1] ?? {};
+    merged[name] = {
+      ...base,
+      ...shipped,
+      color: { ...(base.color ?? {}), ...(shipped.color ?? {}) },
+      overlay: { ...(base.overlay ?? {}), ...(shipped.overlay ?? {}) },
+    };
+  }
   return {
     ...t,
     ...(schemes === undefined ? {} : { schemes }),

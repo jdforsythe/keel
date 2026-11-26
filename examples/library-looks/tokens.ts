@@ -11,4 +11,5 @@ export const tokens = defineTokens({
   fontSize: { ...brandTokens.fontSize, ...acmeTokens.fontSize },
   border: { ...brandTokens.border, ...acmeTokens.border },
   look: { ...brandTokens.look, ...acmeTokens.look },
+  themes: { hc: { when: "contrast", color: { ...acmeTokens.themes.contrast.color, error: "#8B1414" } } },
 });
