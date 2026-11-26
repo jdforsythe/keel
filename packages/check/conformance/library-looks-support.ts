@@ -37,12 +37,13 @@ export const exportsOf = (tokens: unknown): Record<string, unknown> => ({
   ".": { keel: "./src/index.ts", default: "./index.js" },
   ...(tokens === undefined ? {} : { "./tokens": tokens }),
 });
+const packageOf = (exports: Record<string, unknown>): string =>
+  JSON.stringify({ name: "@acme/ui", version: "1.0.0", type: "module", keel: "library", exports }, null, 2);
+/** The library's `package.json` with the `./tokens` entry `tokens` (the fixture's own when omitted). */
 export const packageJson = (tokens: unknown = { keel: "./src/acmeTokens.ts", default: "./index.js" }): string =>
-  JSON.stringify(
-    { name: "@acme/ui", version: "1.0.0", type: "module", keel: "library", exports: exportsOf(tokens) },
-    null,
-    2,
-  );
+  packageOf(exportsOf(tokens));
+/** The library's `package.json` with no `./tokens` entry in `exports`. */
+export const packageJsonNoTokens = (): string => packageOf(exportsOf(undefined));
 
 /** The library's files under `node_modules/@acme/ui/`, `over` replacing files by path and `drop` removing them. */
 export function acme(over: Files = [], drop: string[] = []): Files {

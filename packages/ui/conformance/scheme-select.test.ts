@@ -37,6 +37,25 @@ const change = (el: HTMLElement, value: string): void => {
   el.dispatchEvent(new Event("change", { bubbles: true }));
 };
 
+/** Records each string written to `document.cookie` and forwards it: happy-dom keeps a `Max-Age=0` cookie within the same millisecond, so an expired cookie is shown by what the product writes. */
+function logCookieWrites(): { writes: string[]; stop: () => void } {
+  let owner: object | null = Object.getPrototypeOf(document);
+  while (owner !== null && Object.getOwnPropertyDescriptor(owner, "cookie") === undefined)
+    owner = Object.getPrototypeOf(owner);
+  const descriptor = owner === null ? undefined : Object.getOwnPropertyDescriptor(owner, "cookie");
+  const writes: string[] = [];
+  Object.defineProperty(document, "cookie", {
+    configurable: true,
+    get: () => descriptor?.get?.call(document) ?? "",
+    set: (v: string) => {
+      writes.push(v);
+      descriptor?.set?.call(document, v);
+    },
+  });
+  return { writes, stop: () => void Reflect.deleteProperty(document, "cookie") };
+}
+const EXPIRED = "keel-scheme=; Path=/; Max-Age=0; SameSite=Lax";
+
 describe("k.schemes: SchemeSelect", () => {
   test("`<SchemeSelect id=\"scheme\" label=\"Scheme\" labels={{ system: 'System', light: 'Light', dark: 'Dark' }} />` renders a `select` with options of values `system`, `light`, `dark` and texts `System`, `Light`, `Dark`, value `system`", () => {
     const { host, off } = render(select);
@@ -114,14 +133,21 @@ describe("k.schemes: SchemeSelect", () => {
 describe("k.schemes: picking", () => {
   test("after `fire('scheme', { type: 'change', value: 'dark' })`, `document.documentElement` has `data-k-scheme=\"dark\"` and `document.cookie` holds `keel-scheme=dark`; after `fire('scheme', { type: 'change', value: 'system' })`, it has no `data-k-scheme` and `document.cookie` holds no `keel-scheme`", async () => {
     const { host, off } = render(select);
-    change(byId(host, "scheme"), "dark");
-    await flush();
-    expect(root.getAttribute("data-k-scheme")).toBe("dark");
-    expect(document.cookie).toContain("keel-scheme=dark");
-    change(byId(host, "scheme"), "system");
-    await flush();
-    expect(root.hasAttribute("data-k-scheme")).toBe(false);
-    expect(document.cookie).not.toContain("keel-scheme");
+    const log = logCookieWrites();
+    try {
+      change(byId(host, "scheme"), "dark");
+      await flush();
+      expect(root.getAttribute("data-k-scheme")).toBe("dark");
+      expect(document.cookie).toContain("keel-scheme=dark");
+      expect(log.writes.at(-1)).toContain("keel-scheme=dark");
+      change(byId(host, "scheme"), "system");
+      await flush();
+      expect(root.hasAttribute("data-k-scheme")).toBe(false);
+      // The product's write that leaves `document.cookie` holding no `keel-scheme`: an empty value, expired.
+      expect(log.writes.at(-1)).toBe(EXPIRED);
+    } finally {
+      log.stop();
+    }
     off();
   });
 
@@ -131,17 +157,23 @@ describe("k.schemes: picking", () => {
         fc.array(fc.constantFrom("system", "light", "dark"), { minLength: 1, maxLength: 6 }),
         async (picks) => {
           const { host, off } = render(select);
-          for (const p of picks) {
-            change(byId(host, "scheme"), p);
-            await flush();
-          }
-          const last = picks[picks.length - 1];
-          if (last === "system") {
-            expect(root.hasAttribute("data-k-scheme")).toBe(false);
-            expect(document.cookie).not.toContain("keel-scheme");
-          } else {
-            expect(root.getAttribute("data-k-scheme")).toBe(last);
-            expect(document.cookie).toContain(`keel-scheme=${last}`);
+          const log = logCookieWrites();
+          try {
+            for (const p of picks) {
+              change(byId(host, "scheme"), p);
+              await flush();
+            }
+            const last = picks[picks.length - 1];
+            if (last === "system") {
+              expect(root.hasAttribute("data-k-scheme")).toBe(false);
+              expect(log.writes.at(-1)).toBe(EXPIRED);
+            } else {
+              expect(root.getAttribute("data-k-scheme")).toBe(last);
+              expect(log.writes.at(-1)).toContain(`keel-scheme=${last}`);
+              expect(document.cookie).toContain(`keel-scheme=${last}`);
+            }
+          } finally {
+            log.stop();
           }
           off();
           cleanup();

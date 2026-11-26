@@ -1,4 +1,6 @@
 // Spec: k.schemes, clause "`keel build` of a `static` deployable, and of a `client` deployable, with both schemes whose page renders a `SchemeSelect` writes an `index.html` whose head holds a `<script src=\"/assets/keel-scheme-` before its first `<link rel=\"stylesheet\"`, naming a file of at most 300 bytes; without the `SchemeSelect`, no `keel-scheme` script."
+// Spec: k.schemes, clause "A `client` or `static` deployable whose modules render a `SchemeSelect` holds in each document's head, before its first stylesheet link, `<script src=\"/assets/keel-scheme-<hash>.js\"></script>`: a classic script of at most 300 bytes that sets the attribute from the cookie before the body is parsed."
+// Spec: k.schemes, clause "A `client` deployable builds to `dist/<name>/` with or without `servedBy` (k.hosting Artifact), its one document `index.html`."
 // Seed: 1337 (no generated input: four spawned builds, a select and a plain fixture per adapter, shared by the cases).
 // Needs a real browser: that the script sets the attribute before the body is parsed, and that no flash shows, are end-to-end cases; here the script's text is read for the cookie name and the attribute it writes, and its bytes counted. "An app with one scheme holds no scheme script" is not asserted: a `SchemeSelect` over one scheme is E1814, which fails the check before a build (packages/check/conformance/schemes-contrast.test.ts).
 // ASSUMPTIONS: the fixture is staticTree's project (static-support.ts) whose `Page` also renders a `SchemeSelect` and whose root `tokens.ts` gives both schemes; the `client` fixture is the same project with the deployable `site` given adapter `client` (alone, no `servedBy`), its `index.html` read the same way as the `static` one's.
@@ -74,7 +76,10 @@ for (const adapter of ADAPTERS) {
     () => {
       const dir = selectDir(adapter);
       built(dir);
-      for (const doc of ["index.html", "about/index.html"]) {
+      // A `static` deployable writes a document per route; a `client` deployable has one document, `index.html` (k.schemes First paint).
+      const docs = adapter === "static" ? ["index.html", "about/index.html"] : ["index.html"];
+      if (adapter === "client") expect(existsSync(site(dir, "about/index.html"))).toBe(false);
+      for (const doc of docs) {
         const html = readFileSync(site(dir, doc), "utf8");
         const tag = /<script[^>]*keel-scheme[^>]*>/.exec(head(html))?.[0] ?? "";
         expect(tag, doc).not.toBe("");

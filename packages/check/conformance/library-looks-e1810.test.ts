@@ -4,6 +4,7 @@
 // Spec: k.looks, clause "In the fixed project, a `color` key `'acme.acent': '#000000'` is one E1813 with message `color \"acme.acent\": @acme/ui ships no such token`, and a key `'zed.x': '#000000'` is one E1813 with message `color \"zed.x\": no library the app lists has id zed`."
 // Spec: k.looks, clause "In the fixed project with the `look` spread removed, `keel check` reports one E1810 with message `@acme/ui needs look \"acme.badge\"; spread acmeTokens.look`."
 // Spec: k.looks, clause "In the fixture with no `tokens.ts`, `keel check` reports one E1810 at the `'@acme/ui'` entry, with no fix."
+// Spec: k.looks, clause "E1810 to E1814 judge the tokens k.a11y-static Tokens gives the project, the evaluated `tokens` export of its `tokens.ts`, and read the file's text only for positions and the fix; a project whose `tokens.ts` gives no tokens (E1807, or `check()` given the file and no tokens artifact) has none of them judged but E1811 and E1812, which read the library's own files and no tokens, and one with no `tokens.ts` has no tokens, one scheme (`light`) and no dotted names."
 // Spec: k.looks, clause "E1810 a listed library's needed name the app's tokens lack (Message; fix: Fix)"
 // Spec: k.looks, clause "E1813 a name with a `.` in the app's tokens that no listed library ships, or a fixture key overriding a default (In an app, Own folder; fix: none)" (the app half; the fixture half is library-looks-own-folder.test.ts).
 // Seed: 1337 (fc.assert below). The CSS half of the third clause (`keel build`) is asserted over `compileStyles` of the composed tokens; the build itself is an end-to-end case.
@@ -16,17 +17,21 @@ import { expect, test } from "vitest";
 import { CHECK_CASE_BOUND } from "./check-time.ts";
 import {
   BRAND_ONLY,
+  ROOT,
   SEED,
+  SHIPPED,
   acme,
   app,
   applyFix,
   atText,
+  badgeSource,
   codesOf,
   composed,
   diagnosticsOf,
   fixedTokens,
   formatted,
   positionOf,
+  shippedSource,
   sourceOf,
 } from "./library-looks-support.ts";
 
@@ -50,7 +55,7 @@ test(
 );
 
 test(
-  "a project given `tokens.ts` and no tokens artifact has none of E1810 to E1814 judged",
+  "a project whose `tokens.ts` gives no tokens (`check()` given the file and no tokens artifact) has none of E1810, E1813 and E1814 judged",
   () => {
     const cases = [
       app(BRAND_ONLY),
@@ -60,8 +65,22 @@ test(
     ];
     for (const files of cases) {
       const codes = diagnosticsOf(files).map((d) => d.code);
-      for (const code of ["E1810", "E1811", "E1812", "E1813", "E1814"]) expect(codes).not.toContain(code);
+      for (const code of ["E1810", "E1813", "E1814"]) expect(codes).not.toContain(code);
     }
+  },
+  CHECK_CASE_BOUND,
+);
+
+test(
+  "E1811 and E1812 are judged with `tokens.ts` and no tokens artifact: they read the library's own files and no tokens",
+  () => {
+    const e1811 = diagnosticsOf(app(fixedTokens(), [{ path: `${ROOT}/src/Badge.tsx`, source: badgeSource(' p="2"') }]));
+    expect(e1811.filter((d) => d.code === "E1811").map((d) => d.message)).toEqual(['p="2" is not in acmeTokens']);
+    const spread = shippedSource("...other, 'acme.accent': '#0B5CAD', 'acme.ink': '#FFFFFF'");
+    const e1812 = diagnosticsOf(app(fixedTokens(), [{ path: SHIPPED, source: spread }]));
+    expect(e1812.filter((d) => d.code === "E1812").map((d) => d.message)).toEqual([
+      "acmeTokens.ts holds a spread; it is one defineTokens literal",
+    ]);
   },
   CHECK_CASE_BOUND,
 );

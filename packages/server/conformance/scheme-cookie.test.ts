@@ -54,9 +54,11 @@ const request = async (app: Awaited<ReturnType<typeof build>>, cookie: string | 
 const serve = async (body: string | undefined, cookie: string | undefined): Promise<Document> =>
   request(await build(artifactsWith(body)), cookie);
 const attr = (doc: Document): string | null => doc.documentElement.getAttribute("data-k-scheme");
+/** The value of the option the served HTML marks `selected` (happy-dom's parsed `select.value` follows its own index, so the attribute the product wrote is read). */
 const selected = (doc: Document): string | null => {
-  const el = doc.getElementById("scheme");
-  return el instanceof HTMLSelectElement ? el.value : null;
+  const marked = Array.from(doc.querySelectorAll("#scheme option")).filter((o) => o.hasAttribute("selected"));
+  const only = marked.length === 1 ? marked[0] : undefined;
+  return only?.getAttribute("value") ?? null;
 };
 
 describe("k.schemes: a node document's first paint", () => {

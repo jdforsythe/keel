@@ -27,6 +27,7 @@ import {
   diagnosticsOf,
   fixedTokens,
   packageJson,
+  packageJsonNoTokens,
   positionOf,
   shippedSource,
   sourceOf,
@@ -63,7 +64,7 @@ test(
     const files = app(
       FIXED,
       [
-        { path: PACKAGE_JSON, source: packageJson(undefined) },
+        { path: PACKAGE_JSON, source: packageJsonNoTokens() },
         { path: `${ROOT}/src/Badge.tsx`, source: badge },
       ],
       [SHIPPED],
@@ -121,7 +122,7 @@ test(
         app(
           FIXED,
           [
-            { path: PACKAGE_JSON, source: packageJson(undefined) },
+            { path: PACKAGE_JSON, source: packageJsonNoTokens() },
             { path: `${ROOT}/src/Badge.tsx`, source: badge(props) },
           ],
           [SHIPPED],
@@ -296,7 +297,7 @@ test("a shipped file in form is no E1812, and a library listing no `./tokens` en
   expect(codesOf(app(FIXED), "E1812", composed())).toEqual([]);
   expect(
     codesOf(
-      app(FIXED, [{ path: PACKAGE_JSON, source: packageJson(undefined) }], [SHIPPED]),
+      app(FIXED, [{ path: PACKAGE_JSON, source: packageJsonNoTokens() }], [SHIPPED]),
       "E1812",
       composed({}, false),
     ),
@@ -323,7 +324,10 @@ test(
   'In the library\'s own folder with root `tokens.ts` composing the shipped object as the fix writes it, `keel check` reports one E1804 at the `\'acme.badge\'` key of `src/acmeTokens.ts` with message `look.acme.badge: fg "acme.ink" on bg "acme.accent" is 4.42:1 in light, needs 4.5:1` when `acme.accent` is `#787878`, and none when it is `#0B5CAD`',
   () => {
     const bad = own(OWN_TOKENS, accent("#787878"));
-    const d = codesOf(bad, "E1804", composed({ "acme.accent": "#787878" }));
+    // The badge's `Text` takes the same pair from its look and is judged as well (k.a11y-static Values, Judged): one more E1804, at `src/Badge.tsx`.
+    const all = codesOf(bad, "E1804", composed({ "acme.accent": "#787878" }));
+    expect(all.map((x) => x.path).sort()).toEqual(["src/Badge.tsx", "src/acmeTokens.ts"]);
+    const d = all.filter((x) => x.path === "src/acmeTokens.ts");
     expect(d).toHaveLength(1);
     expect(d[0]?.message).toBe('look.acme.badge: fg "acme.ink" on bg "acme.accent" is 4.42:1 in light, needs 4.5:1');
     expect(d[0]?.path).toBe("src/acmeTokens.ts");
@@ -346,7 +350,9 @@ test(
         fc.pre(Math.abs(ratio - 4.5) > 0.05);
         const hex = `#${n.toString(16).padStart(2, "0").repeat(3)}`;
         const d = codesOf(own(OWN_TOKENS, accent(hex)), "E1804", composed({ "acme.accent": hex }));
-        expect(d.length).toBe(ratio < 4.5 ? 1 : 0);
+        const atKey = d.filter((x) => x.path === "src/acmeTokens.ts");
+        expect(atKey.length).toBe(ratio < 4.5 ? 1 : 0);
+        expect(d.length - atKey.length).toBe(ratio < 4.5 ? 1 : 0); // the badge's `Text`, judged as well (k.a11y-static Values)
       }),
       { seed: SEED, numRuns: 6 },
     );

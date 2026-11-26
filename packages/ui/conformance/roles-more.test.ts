@@ -257,6 +257,8 @@ describe("k.roles: toolbar, menubar, menuitemradio, menuitem", () => {
           for (const key of keys) {
             const ev = keydown(byId(host, `t.b${model}`), key);
             expect(ev.defaultPrevented).toBe(true);
+            const before = model;
+            const focusedBefore = document.activeElement;
             model =
               key === "ArrowRight"
                 ? (model + 1) % n
@@ -270,7 +272,9 @@ describe("k.roles: toolbar, menubar, menuitemradio, menuitem", () => {
               (b) => b.getAttribute("tabindex") === "0",
             );
             expect(stops.map((b) => b.id)).toEqual([`t.b${model}`]);
-            expect(document.activeElement?.id).toBe(`t.b${model}`);
+            // Focus moves only when an item's `focus` turns from false to true: a key that leaves `active` as it was moves none (k.aria Part `focus`).
+            if (model !== before) expect(document.activeElement?.id).toBe(`t.b${model}`);
+            else expect(document.activeElement).toBe(focusedBefore);
           }
           off();
         },

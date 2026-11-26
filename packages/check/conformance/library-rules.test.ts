@@ -829,7 +829,9 @@ const ONE_FILE = Object.entries(CODE_FIXTURES).flatMap(([code, fx]) => {
     : [{ code, source: only.source, base: only.path.split("/").at(-1) ?? "x.ts", opts: optsOf(fx) }];
 });
 /** Rules only a library has (k.library Rules): reported in a library file, never in an app's. */
-const LIBRARY_ONLY = new Set(["E1161", "E1162", "E1163", "E1166"]);
+const LIBRARY_ONLY = new Set(["E1161", "E1162", "E1163", "E1166", "E1811"]);
+/** A library file's token name its shipped tokens lack is E1811 "in place of E1801" (k.looks Needs): an app's E1801 is missing from the library's codes when an E1811 stands for it. */
+const replacedBy1811 = (code: string, inLib: readonly string[]): boolean => code === "E1801" && inLib.includes("E1811");
 /** `keel check` runs every rule but E1106 (k.formats Who declares) over a library's files (k.library In an app): E1106 is left out of the comparison. */
 const NOT_OVER_LIBRARY = new Set(["E1106"]);
 
@@ -847,7 +849,7 @@ test(
       inApplication.codes = inApplication.codes.filter((c) => !NOT_OVER_LIBRARY.has(c));
       if (inApplication.codes.length > 0) reportedInApp++;
       const extra = inLib.codes.filter((c) => !inApplication.codes.includes(c) && !LIBRARY_ONLY.has(c));
-      const missing = inApplication.codes.filter((c) => !inLib.codes.includes(c));
+      const missing = inApplication.codes.filter((c) => !inLib.codes.includes(c) && !replacedBy1811(c, inLib.codes));
       if (extra.length > 0 || missing.length > 0 || inLib.fixes > 0)
         differs.push(`${code}: library [${inLib.codes}] app [${inApplication.codes}] fixes ${inLib.fixes}`);
     }
