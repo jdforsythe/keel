@@ -60,7 +60,10 @@ const isLp = (s: string): boolean => isLength(s) || numberAt(s)?.unit === "%";
 class Reader {
   at = 0;
   names = 0;
-  constructor(readonly s: string) {}
+  readonly s: string;
+  constructor(s: string) {
+    this.s = s;
+  }
   peek(text: string): boolean {
     return this.s.startsWith(text, this.at);
   }
