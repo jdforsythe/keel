@@ -1,5 +1,5 @@
 # std.tokens: Opaque tokens
-status: implemented
+status: conformance-covered
 
 **Purpose.** Opaque tokens an app mints and checks: API keys, invite links, one-time links. A fast hash is sound because every stored digest comes from `mint`, which draws 256 random bits. No password is hashed here: sign-in is the identity source's (k.user).
 

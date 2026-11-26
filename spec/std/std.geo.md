@@ -1,5 +1,5 @@
 # std.geo: Geolocation
-status: implemented
+status: conformance-covered
 
 **Extension point.** Capability registry (k.ctx `register`). `@keel/std-geo` registers capability `geo.position` (k.data E1607: `<id>.<name>`) with real, shell and sim implementations and exports its accessor `geo`. Modules that use it list `geo.position` in `capabilities` (k.module).
 

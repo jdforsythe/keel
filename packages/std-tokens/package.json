@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "keel": "library",
   "exports": {
     ".": {
       "keel": "./src/index.ts",
@@ -44,7 +45,7 @@
   },
   "files": ["module.ts", "src", "dist", ".keel/ledger.json", "docs", "README.md"],
   "scripts": {
-    "check": "tsc --noEmit && biome check src test",
+    "check": "tsc --noEmit && biome check src test && keel check",
     "test": "vitest run",
     "coverage": "node ../../tooling/coverage.mjs",
     "build": "tsc -p tsconfig.build.json",
