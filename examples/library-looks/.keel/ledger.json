@@ -37,6 +37,12 @@
     },
     {
       "pkg": "acme",
+      "name": "Toolbar",
+      "file": "src/Toolbar.tsx",
+      "rung": "none"
+    },
+    {
+      "pkg": "acme",
       "name": "acmeTokens",
       "file": "src/acmeTokens.ts",
       "rung": "none"
