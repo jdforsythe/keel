@@ -31,7 +31,9 @@ const HORIZON = 600_000;
  * when `KEEL_TEST` is `1`, k.drive-law) each run that passed is run again after the last run, in run order, within
  * the same budget, and the traces compared; a failing run is replayed twice before it is reported; traces that differ
  * are E1729. A failing run is shrunk and thrown as E1704 with the seed and run on the first line and the shrunk
- * `SimRun` as JSON on the next; `{ replay }` runs one `SimRun` once. Success resolves `{ seed, runs, checked }`.
+ * `SimRun` as JSON on the next; a budget spent while it is shrunk ends the shrinking, and the smallest failing run found
+ * so far is thrown with its own error, labelled `shrunk until the budget ran out`, and not replayed; `{ replay }` runs
+ * one `SimRun` once. Success resolves `{ seed, runs, checked }`.
  */
 export async function simulate(scenario: Scenario, options: SimulateOptions = {}): Promise<SimulateResult> {
   const seed = seedFrom(options.seed);
@@ -40,6 +42,11 @@ export async function simulate(scenario: Scenario, options: SimulateOptions = {}
   const deadline = budgetDeadline(options.budget);
   /** Set once the budget is spent: the run is not shrunk or replayed (k.drive Stalls). */
   let spent = false;
+  /**
+   * Set once a run has failed with an error of its own: the runs after it are fast-check's shrink candidates. A
+   * candidate the budget stops is no smaller failure, so the failure found before it is the one thrown.
+   */
+  let failing = false;
   const kept = [...stores().values()].map((st) => [st, st.snapshot({ meta: true })] as const);
   const restore = (): void => {
     for (const [st, snap] of kept) st.restore(snap);
@@ -94,9 +101,13 @@ export async function simulate(scenario: Scenario, options: SimulateOptions = {}
     const first = await attempt(simRun, law);
     if (isBudget(first.error)) {
       spent = true;
+      if (failing) return;
       throw first.error;
     }
-    if (first.error !== undefined) throw first.error;
+    if (first.error !== undefined) {
+      failing = true;
+      throw first.error;
+    }
     passed.push({ simRun, trace: first.trace });
   };
   /**
@@ -116,8 +127,8 @@ export async function simulate(scenario: Scenario, options: SimulateOptions = {}
     return checked;
   };
   const failed = async (reason: unknown, run: number, label: string, simRun: SimRun | undefined): Promise<Error> => {
-    // A failing run is replayed twice, its traces compared, unless it stalled (k.drive Law check).
-    if (simRun !== undefined && codeOf(reason) !== "E1727" && codeOf(reason) !== "E1728") {
+    // A failing run is replayed twice, its traces compared, unless it stalled or the budget is spent (k.drive Law check).
+    if (simRun !== undefined && !spent && codeOf(reason) !== "E1727" && codeOf(reason) !== "E1728") {
       const one = await attempt(simRun, true);
       const two = await attempt(simRun, true);
       const differ = compared(one.trace, two.trace);
@@ -159,7 +170,10 @@ export async function simulate(scenario: Scenario, options: SimulateOptions = {}
       }),
       { seed, numRuns: runs },
     );
-    if (out.failed) throw await failed(out.errorInstance, out.numRuns, "shrunk", out.counterexample?.[0]);
+    if (out.failed) {
+      const label = failing && spent ? "shrunk until the budget ran out" : "shrunk";
+      throw await failed(out.errorInstance, out.numRuns, label, out.counterexample?.[0]);
+    }
     return { seed, runs, checked: await checkLaw() };
   } finally {
     restore();
