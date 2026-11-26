@@ -3,6 +3,7 @@
 import { spawnSync } from "node:child_process";
 import { readFileSync, readdirSync, realpathSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { fixedTime } from "@keel/tooling/test-time";
 import { afterAll, describe, expect, it } from "vitest";
 import { run } from "../src/index.ts";
 import { linkedProject } from "./support/linkedProject.ts";
@@ -43,16 +44,20 @@ describe.each(APPS)("apps/%s .keel artifacts", (name) => {
   });
 
   // A whole `keel test` of a golden app takes about 17 s alone: 480 s is 48 s at scale 0.1, under three times that.
-  it("`keel test` leaves the committed `.keel/` files as they are", () => {
-    const before = artifacts(app);
-    const r = spawnSync(process.execPath, [BIN, "test"], { cwd: app, encoding: "utf8" });
-    // A failed child says how it ended and its last lines, on one line (the reporter prints a message's first line).
-    const out = `${r.stdout}\n${r.stderr}`
-      .split("\n")
-      .filter((l) => l.trim() !== "")
-      .join(" | ");
-    const end = `child exit ${r.status} signal ${r.signal}: ${out.length > 440 ? `...${out.slice(-440)}` : out}`;
-    expect(r.status, end).toBe(0);
-    expect(artifacts(app)).toEqual(before);
-  }, 480_000);
+  it(
+    "`keel test` leaves the committed `.keel/` files as they are",
+    () => {
+      const before = artifacts(app);
+      const r = spawnSync(process.execPath, [BIN, "test"], { cwd: app, encoding: "utf8" });
+      // A failed child says how it ended and its last lines, on one line (the reporter prints a message's first line).
+      const out = `${r.stdout}\n${r.stderr}`
+        .split("\n")
+        .filter((l) => l.trim() !== "")
+        .join(" | ");
+      const end = `child exit ${r.status} signal ${r.signal}: ${out.length > 440 ? `...${out.slice(-440)}` : out}`;
+      expect(r.status, end).toBe(0);
+      expect(artifacts(app)).toEqual(before);
+    },
+    fixedTime(480_000),
+  );
 });

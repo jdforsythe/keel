@@ -3,6 +3,7 @@
 import { chmodSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { fixedTime } from "@keel/tooling/test-time";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { applyWrites } from "../src/internal/applyWrites.ts";
 import { readProject } from "../src/internal/readProject.ts";
@@ -56,7 +57,7 @@ beforeAll(async () => {
   put("apps/b/src/uiTypes.ts", UI_TYPES);
   put("apps/b/src/B.tsx", B);
   for (const app of ["apps/a", "apps/b"]) expect((await run(["build"], io(join(root, app)))).code).toBe(0);
-}, 60_000);
+}, fixedTime(60_000));
 
 afterAll(() => rmSync(root, { recursive: true, force: true }));
 
