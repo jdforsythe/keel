@@ -15,7 +15,7 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.compiler | 22 | **conformance-covered** | none |
 | k.component | 17 | **conformance-covered** | none |
 | k.runtime | 13 | **conformance-covered** | none |
-| k.ui | 27 | **conformance-covered** | none |
+| k.ui | 28 | **conformance-covered** | none |
 | k.router | 20 | **conformance-covered** | none |
 | k.prefix | 8 | **conformance-covered** | none |
 | k.head | 11 | **conformance-covered** | none |
@@ -55,7 +55,7 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.privacy | 15 | **conformance-covered** | none |
 | k.privacy-reads | 6 | **conformance-covered** | none |
 | k.evidence | 10 | **conformance-covered** | none |
-| k.aria | 10 | **conformance-covered** | none |
+| k.aria | 13 | **conformance-covered** | none |
 | k.guards | 11 | **conformance-covered** | none |
 | k.persist | 16 | **conformance-covered** | none |
 | k.data | 10 | **conformance-covered** | none |
@@ -114,14 +114,17 @@ Each section's clauses are the bullets under its **Conformance** paragraph. Ever
 | k.mount-scope | 1 | **conformance-covered** | none |
 | k.origins | 12 | **conformance-covered** | none |
 | k.parity | 6 | proposed | clauses 5 and 6: no test; S0013, the kind gates, is not built |
-| k.roles | 8 | **conformance-covered** | none |
+| k.roles | 14 | **conformance-covered** | none |
+| k.looks | 15 | proposed | none |
+| k.schemes | 13 | proposed | none; the first paint and the system preference are owed to an end-to-end runner |
+| k.values | 5 | proposed | none; the Chromium clause runs in tooling/smoke/brand.mjs |
 | k.routes | 10 | **conformance-covered** | none |
 | std.capacitor | 11 | **conformance-covered** | `UNTESTABLE` toolchain lookups and capability file shape |
 | std.contracts | 7 | **conformance-covered** | none |
 | std.lists | 6 | **conformance-covered** | none |
 | std.tauri | 10 | **conformance-covered** | `UNTESTABLE` toolchain lookups and capability file shape |
 | k.unsafe | 9 | **conformance-covered** | none |
-| k.a11y-static | 8 | **conformance-covered** | none |
+| k.a11y-static | 10 | **conformance-covered** | none |
 | std.channels-limits | 4 | **conformance-covered** | none |
 | std.sessions-redact | 1 | **conformance-covered** | none |
 | k.ledger-items | 14 | implemented | not yet covered by conformance |
@@ -178,4 +181,4 @@ Golden apps: `apps/golden-1` and `apps/golden-2` have converged evals (`evals/re
 No section is `frozen`. The kernel is provisionally frozen: a kernel change goes through an RFC with an ADR, a conformance update and a migration note, and the `frozen` flip waits until the stdlib stages have exercised the kernel (`tasks/0034-freeze/PLAN.md`). 7 of 122 sections are not `conformance-covered`: k.parity (clauses 5 and 6 at `none`) and k.library are `proposed`; k.test-run, k.ledger, k.ledger-items, k.library-pack and k.server-deps are `implemented`.
 
 subject: spec/ packages/*/conformance/
-verified: dafeef17304d379284298d23bf204426e76122c5
+verified: e9fc92e26772816eb68ea6f538a771381efc460d
