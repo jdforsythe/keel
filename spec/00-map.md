@@ -9,7 +9,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | E100x | k.compiler, k.boundary, k.bundle, k.head, k.server-deps | E105x | k.cli, k.evidence, k.docs, k.review |
 | E110x | k.schema, k.formats, k.privacy, k.reveal, k.leave, k.privacy-reads | E115x | k.module, k.library, k.library-pack, k.server-deps |
 | E120x | k.reactive | E125x | k.runtime, k.resume, k.claim |
-| E130x | k.store | E135x | k.scaffold, k.scaffold-shell, k.scaffold-service |
+| E130x | k.store | E135x | k.scaffold, k.scaffold-shell, k.scaffold-service, k.create |
 | E140x | k.component, k.place | E145x | k.errors |
 | E150x | k.router, k.contract, k.guards, k.prefix, k.api | E155x | k.server, k.topology, k.deploy, k.shell, k.compat, k.hosting, k.security, k.origins, k.leave, k.user, k.mount |
 | E160x | k.ctx, k.sim, k.persist, k.data | E165x | k.services |
@@ -59,6 +59,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.scaffold | Scaffold, codemods | conformance-covered | edits |
 | k.scaffold-shell | Shell scaffold | conformance-covered | shells |
 | k.scaffold-service | Service scaffold | conformance-covered | clients |
+| k.create | Create a project | proposed | create |
 | k.testing | Harness, properties | conformance-covered | fire |
 | k.test-run | Test end, results | implemented | dispose |
 | k.requests | Requests sent | conformance-covered | sent |
