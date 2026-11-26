@@ -1,7 +1,7 @@
-// Spec: k.looks, clause "With `border: { 'acme.edge': '1px solid var(--k-color-acme-accent)' }` shipped and composed, the CSS declares `--k-color-acme-accent` and a `border=\"acme.edge\"` element's rule names that property."
+// Spec: k.looks, clause "With `border: { 'acme.edge': '1px solid var(--k-color-acme-accent)' }` shipped and composed, the CSS declares `--k-color-acme-accent` and `--k-border-acme-edge:1px solid var(--k-color-acme-accent)`, and a `border=\"acme.edge\"` element's rule is `border:var(--k-border-acme-edge)`."
 // k.looks, Names "A name's custom property is `--k-<group>-<id>-<name>` when `<id>` and `<name>` are alphanumeric (`--k-color-acme-accent`), so a `border` value can name it."
 // Seed: 1337 (fc.assert below).
-// ASSUMPTIONS: "a `border=\"acme.edge\"` element's rule names that property" is read as: the rule of the usage's class either names `--k-color-acme-accent` itself or names the custom property of the `border` token (`--k-border-acme-edge`), whose declaration in the CSS names `--k-color-acme-accent`; the spec fixes the color property's name and not the border's.
+// ASSUMPTIONS: the declaration and the rule are read after `norm` (whitespace around `:`, `;`, `{`, `}`, `,` and parentheses removed); a class rule is the declarations between its braces.
 // A dotted name outside the alphanumeric form (an `_` or `-` in `<id>` or `<name>`) keeps the hashed form (RFC 0243 Problem); the spec states no hashed shape, so only that it is not the plain form is asserted.
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
@@ -13,18 +13,16 @@ const build = (color: Record<string, unknown>, border: Record<string, string>) =
   compileWith({ color, border }, [{ props: { border: "acme.edge" } }]);
 
 describe("k.looks: a library's custom property names", () => {
-  test("with `border: { 'acme.edge': '1px solid var(--k-color-acme-accent)' }` shipped and composed, the CSS declares `--k-color-acme-accent` and a `border=\"acme.edge\"` element's rule names that property", () => {
+  test("with `border: { 'acme.edge': '1px solid var(--k-color-acme-accent)' }` shipped and composed, the CSS declares `--k-color-acme-accent` and `--k-border-acme-edge:1px solid var(--k-color-acme-accent)`, and a `border=\"acme.edge\"` element's rule is `border:var(--k-border-acme-edge)`", () => {
     const { classes, css } = build({ "acme.accent": "#0B5CAD", fg: "#111111", bg: "#ffffff" }, { "acme.edge": EDGE });
     const out = norm(css);
     expect(out).toContain("--k-color-acme-accent:#0B5CAD");
     const used = classes[0] ?? [];
     expect(used.length).toBeGreaterThan(0);
     for (const c of used) expect(countRules(css, c)).toBe(1);
+    expect(out).toContain(`--k-border-acme-edge:${EDGE}`);
     const rules = used.map((c) => new RegExp(`\\.${cssEscape(c)}\\{([^}]*)\\}`).exec(out)?.[1] ?? "").join(";");
-    const direct = rules.includes("--k-color-acme-accent");
-    const viaBorder =
-      rules.includes("var(--k-border-acme-edge") && /--k-border-acme-edge:[^;}]*--k-color-acme-accent/.test(out);
-    expect(direct || viaBorder).toBe(true);
+    expect(rules).toBe("border:var(--k-border-acme-edge)");
   });
 
   test("any alphanumeric `<id>` and `<name>` give `--k-color-<id>-<name>`, declared once with the token's value", () => {

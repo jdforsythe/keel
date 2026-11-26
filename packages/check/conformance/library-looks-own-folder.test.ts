@@ -2,18 +2,19 @@
 // Spec: k.looks, clause "`src/acmeTokens.ts` given a spread `...other` in `color` is one E1812 at the spread with message `acmeTokens.ts holds a spread; it is one defineTokens literal`; a `color` key `'accent'` is one E1812 with message `acmeTokens names color \"accent\" without acme.`; a `\"./tokens\"` `keel` target `./src/tokens.ts` is one E1812 at `exports`."
 // Spec: k.looks, clause "In the library's own folder with root `tokens.ts` composing the shipped object as the fix writes it, `keel check` reports one E1804 at the `'acme.badge'` key of `src/acmeTokens.ts` with message `look.acme.badge: fg \"acme.ink\" on bg \"acme.accent\" is 4.42:1 in light, needs 4.5:1` when `acme.accent` is `#787878`, and none when it is `#0B5CAD`."
 // Spec: k.looks, clause "In that own folder, a fixture key `'acme.accent': '#000000'` after the spread is one E1813 with message `color \"acme.accent\": the fixture overrides acme's default`, and `keel pack` then reports it and one E1164 naming `check`."
-// k.looks, Rules: "E1811 a library file's token name its shipped tokens lack" (messages `<prop>="<value>" is not in <id>Tokens`, `breakpoint "<key>" is not in <id>Tokens`, `look="<value>" is not in <id>Tokens`; with no `./tokens` entry each ends `: <name> ships no ./tokens entry`; fix: none) and "E1812 a `./tokens` entry whose `keel` target is not `./src/<id>Tokens.ts`, at `exports`, or a shipped tokens file out of form, at the first node out of form" (each message of the Rules paragraph is a case below; fix: none).
+// Spec: k.looks, clause "E1811 a library file's token name its shipped tokens lack (`<prop>=\"<value>\" is not in <id>Tokens`, `breakpoint \"<key>\" is not in <id>Tokens`, `look=\"<value>\" is not in <id>Tokens`; with no `./tokens` entry each ends `: <name> ships no ./tokens entry` in place of ` is not in <id>Tokens`; `<value>` clipped at 20 units as k.check Diagnostics clips a message (its first 17 units and `...`); fix: none)"
+// Spec: k.looks, clause "E1812 a `./tokens` entry whose `keel` target is not `./src/<id>Tokens.ts`, at `exports` (`./tokens keel target is not ./src/<id>Tokens.ts`), or a shipped tokens file out of form, at the first node out of form (`<id>Tokens.ts holds <what>; it is one defineTokens literal`, `<what>` one of `another import`, `another statement`, `a spread`, `a computed value`; `<id>Tokens names <group> \"<token>\" without <id>.`; `<id>Tokens holds base`; `<id>Tokens holds schemes`; `look \"<look>\" names <group> \"<token>\", not in <id>Tokens`; `<id>Tokens fails TokenSchema at <path>`; fix: none)"
+// Spec: k.looks, clause "E1813 a name with a `.` in the app's tokens that no listed library ships, or a fixture key overriding a default (In an app, Own folder; fix: none)" (the fixture half; the app half is library-looks-e1810.test.ts).
 // Seed: 1337 (fc.assert below). The pack half of the last clause (`keel pack` reports it and one E1164 naming `check`) is packages/cli/conformance/library-looks-pack.test.ts.
-// ASSUMPTIONS: see library-looks-support.ts. The own folder is the library's files at the root of the files `check()` is given (k.library-pack Own folder), its root `tokens.ts` importing `./src/acmeTokens.ts`. A shipped-file diagnostic is at the file's own path (`node_modules/@acme/ui/src/acmeTokens.ts` in an app, `src/acmeTokens.ts` in the own folder). `<value>` of E1811 is asserted unclipped, under 20 units.
+// ASSUMPTIONS: see library-looks-support.ts. The own folder is the library's files at the root of the files `check()` is given (k.library-pack Own folder), its root `tokens.ts` importing `./src/acmeTokens.ts`. A shipped-file diagnostic is at the file's own path (`node_modules/@acme/ui/src/acmeTokens.ts` in an app, `src/acmeTokens.ts` in the own folder). ``<value>` of E1811 is clipped as k.check Diagnostics clips a message: at 20 units or fewer it is whole, over 20 its first 17 units and `...`. E1810 to E1814 are judged over the tokens artifact the root `tokens.ts` evaluates to (`composed`).
 // AMBIGUOUS: "a spread" is `...other` in a group, `holds schemes` is asserted for `schemes: ['light']`, though an array is also no string or object literal ("a computed value"): the spec does not say which message wins, and the reading asserted is that a key the file may not hold is named first.
-import { check } from "@keel/check";
+import { brandTokens } from "@keel/ui/brand";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { CHECK_CASE_BOUND } from "./check-time.ts";
 import { manifestFile } from "./module-support.ts";
 import {
   type Files,
-  NO_TYPES,
   PACKAGE_JSON,
   ROOT,
   SEED,
@@ -22,6 +23,8 @@ import {
   atText,
   badgeSource,
   codesOf,
+  composed,
+  diagnosticsOf,
   fixedTokens,
   packageJson,
   positionOf,
@@ -31,20 +34,24 @@ import {
 
 const FIXED = fixedTokens();
 const e1811 = (props: string, over: Files = [], drop: string[] = []) =>
-  codesOf(app(FIXED, [{ path: `${ROOT}/src/Badge.tsx`, source: badgeSource(props) }, ...over], drop), "E1811");
+  codesOf(
+    app(FIXED, [{ path: `${ROOT}/src/Badge.tsx`, source: badgeSource(props) }, ...over], drop),
+    "E1811",
+    composed(),
+  );
 
 // ---- E1811
 test(
   'In the fixed project, `p="2"` on the badge\'s `Text` is one E1811 at the literal with message `p="2" is not in acmeTokens`',
   () => {
     const files = app(FIXED, [{ path: `${ROOT}/src/Badge.tsx`, source: badgeSource(' p="2"') }]);
-    const d = codesOf(files, "E1811");
+    const d = codesOf(files, "E1811", composed());
     expect(d).toHaveLength(1);
     expect(d[0]?.message).toBe('p="2" is not in acmeTokens');
     expect(d[0]?.path).toBe(`${ROOT}/src/Badge.tsx`);
     expect(atText(sourceOf(files, `${ROOT}/src/Badge.tsx`), '"2"', d[0]?.line ?? 0, d[0]?.col ?? 0)).toBe(true);
     expect(d[0]?.fix).toBeUndefined();
-    expect(check(files, NO_TYPES).diagnostics.filter((x) => x.code === "E1801")).toEqual([]);
+    expect(diagnosticsOf(files, composed()).filter((x) => x.code === "E1801")).toEqual([]);
   },
   CHECK_CASE_BOUND,
 );
@@ -61,7 +68,7 @@ test(
       ],
       [SHIPPED],
     );
-    const d = codesOf(files, "E1811");
+    const d = codesOf(files, "E1811", composed({}, false));
     expect(d).toHaveLength(1);
     expect(d[0]?.message).toBe('p="2": @acme/ui ships no ./tokens entry');
     expect(d[0]?.fix).toBeUndefined();
@@ -94,6 +101,7 @@ test(
         { path: `${ROOT}/src/Badge.tsx`, source: badgeSource().replace('look="acme.badge"', 'look="nope"') },
       ]),
       "E1811",
+      composed(),
     );
     expect(badLook.map((x) => x.message)).toEqual(['look="nope" is not in acmeTokens']);
     expect(e1811(' states={{ hover: { bg: "zzz" } }}').map((x) => x.message)).toEqual([
@@ -119,6 +127,7 @@ test(
           [SHIPPED],
         ),
         "E1811",
+        composed({}, false),
       ).map((x) => x.message);
     expect(msgs(' look="x"')).toEqual(['look="x": @acme/ui ships no ./tokens entry']);
     expect(msgs(' fg={{ md: "x" }}')).toContain('breakpoint "md": @acme/ui ships no ./tokens entry');
@@ -126,9 +135,29 @@ test(
   CHECK_CASE_BOUND,
 );
 
+test(
+  "a `<value>` over 20 units is clipped to its first 17 units and `...` in an E1811 message, and one of 20 or fewer is whole",
+  () => {
+    const long = fc.stringMatching(/^[a-z0-9]{21,40}$/);
+    const short = fc.stringMatching(/^[a-z0-9]{1,20}$/);
+    fc.assert(
+      fc.property(long, short, (big, small) => {
+        expect(e1811(` p="${big}"`).map((x) => x.message)).toEqual([`p="${big.slice(0, 17)}..." is not in acmeTokens`]);
+        expect(e1811(` p="${small}"`).map((x) => x.message)).toEqual([`p="${small}" is not in acmeTokens`]);
+      }),
+      { seed: SEED, numRuns: 10 },
+    );
+    const twenty = "abcdefghijklmnopqrst";
+    const twentyOne = `${twenty}u`;
+    expect(e1811(` p="${twenty}"`).map((x) => x.message)).toEqual([`p="${twenty}" is not in acmeTokens`]);
+    expect(e1811(` p="${twentyOne}"`).map((x) => x.message)).toEqual(['p="abcdefghijklmnopq..." is not in acmeTokens']);
+  },
+  CHECK_CASE_BOUND,
+);
+
 // ---- E1812
 const shippedWith = (source: string, files: Files = []) =>
-  codesOf(app(FIXED, [{ path: SHIPPED, source }, ...files]), "E1812");
+  codesOf(app(FIXED, [{ path: SHIPPED, source }, ...files]), "E1812", composed());
 const FILE_ERRORS: { name: string; source: string; message: string | RegExp; at: string }[] = [
   {
     name: "a spread",
@@ -190,7 +219,7 @@ for (const c of FILE_ERRORS) {
     `a shipped file holding ${c.name} is one E1812 at the first node out of form${typeof c.message === "string" ? ` with message \`${c.message}\`` : ""}, with no fix`,
     () => {
       const files = app(FIXED, [{ path: SHIPPED, source: c.source }]);
-      const d = codesOf(files, "E1812");
+      const d = codesOf(files, "E1812", composed());
       expect(d).toHaveLength(1);
       if (typeof c.message === "string") expect(d[0]?.message).toBe(c.message);
       else expect(d[0]?.message).toMatch(c.message);
@@ -201,6 +230,33 @@ for (const c of FILE_ERRORS) {
     CHECK_CASE_BOUND,
   );
 }
+
+test(
+  "a top-level `base` or `schemes` key in a shipped object is one E1812 `acmeTokens holds base` or `acmeTokens holds schemes`, whatever its value",
+  () => {
+    const values = fc.constantFrom(
+      "{}",
+      "'x'",
+      "1",
+      "['light']",
+      "['light', 'dark']",
+      "{ page: { bg: 'acme.accent' } }",
+      "other",
+    );
+    fc.assert(
+      fc.property(fc.constantFrom("base", "schemes"), values, (key, value) => {
+        const source = `import { defineTokens } from '@keel/ui'\nexport const acmeTokens = defineTokens({ ${key}: ${value}, color: { 'acme.accent': '#0B5CAD', 'acme.ink': '#FFFFFF' } })\n`;
+        const d = shippedWith(source);
+        expect(d.map((x) => x.message)).toEqual([`acmeTokens holds ${key}`]);
+        expect(d[0]?.path).toBe(SHIPPED);
+        expect(atText(source, `${key}:`, d[0]?.line ?? 0, d[0]?.col ?? 0)).toBe(true);
+        expect(d[0]?.fix).toBeUndefined();
+      }),
+      { seed: SEED, numRuns: 24 },
+    );
+  },
+  CHECK_CASE_BOUND,
+);
 
 test(
   "`src/acmeTokens.ts` given a spread `...other` in `color` is one E1812 at the spread with message `acmeTokens.ts holds a spread; it is one defineTokens literal`, wherever in the group it stands",
@@ -226,7 +282,7 @@ test(
   () => {
     const json = packageJson({ keel: "./src/tokens.ts", default: "./index.js" });
     const files = app(FIXED, [{ path: PACKAGE_JSON, source: json }]);
-    const d = codesOf(files, "E1812");
+    const d = codesOf(files, "E1812", composed());
     expect(d).toHaveLength(1);
     expect(d[0]?.message).toBe("./tokens keel target is not ./src/acmeTokens.ts");
     expect(d[0]?.path).toBe(PACKAGE_JSON);
@@ -237,8 +293,14 @@ test(
 );
 
 test("a shipped file in form is no E1812, and a library listing no `./tokens` entry has none", () => {
-  expect(codesOf(app(FIXED), "E1812")).toEqual([]);
-  expect(codesOf(app(FIXED, [{ path: PACKAGE_JSON, source: packageJson(undefined) }], [SHIPPED]), "E1812")).toEqual([]);
+  expect(codesOf(app(FIXED), "E1812", composed())).toEqual([]);
+  expect(
+    codesOf(
+      app(FIXED, [{ path: PACKAGE_JSON, source: packageJson(undefined) }], [SHIPPED]),
+      "E1812",
+      composed({}, false),
+    ),
+  ).toEqual([]);
 });
 
 // ---- own folder
@@ -261,12 +323,12 @@ test(
   'In the library\'s own folder with root `tokens.ts` composing the shipped object as the fix writes it, `keel check` reports one E1804 at the `\'acme.badge\'` key of `src/acmeTokens.ts` with message `look.acme.badge: fg "acme.ink" on bg "acme.accent" is 4.42:1 in light, needs 4.5:1` when `acme.accent` is `#787878`, and none when it is `#0B5CAD`',
   () => {
     const bad = own(OWN_TOKENS, accent("#787878"));
-    const d = codesOf(bad, "E1804");
+    const d = codesOf(bad, "E1804", composed({ "acme.accent": "#787878" }));
     expect(d).toHaveLength(1);
     expect(d[0]?.message).toBe('look.acme.badge: fg "acme.ink" on bg "acme.accent" is 4.42:1 in light, needs 4.5:1');
     expect(d[0]?.path).toBe("src/acmeTokens.ts");
     expect(atText(sourceOf(bad, "src/acmeTokens.ts"), "'acme.badge'", d[0]?.line ?? 0, d[0]?.col ?? 0)).toBe(true);
-    expect(codesOf(own(OWN_TOKENS, accent("#0B5CAD")), "E1804")).toEqual([]);
+    expect(codesOf(own(OWN_TOKENS, accent("#0B5CAD")), "E1804", composed())).toEqual([]);
   },
   CHECK_CASE_BOUND,
 );
@@ -283,7 +345,7 @@ test(
         const ratio = 1.05 / (lum(n) + 0.05);
         fc.pre(Math.abs(ratio - 4.5) > 0.05);
         const hex = `#${n.toString(16).padStart(2, "0").repeat(3)}`;
-        const d = codesOf(own(OWN_TOKENS, accent(hex)), "E1804");
+        const d = codesOf(own(OWN_TOKENS, accent(hex)), "E1804", composed({ "acme.accent": hex }));
         expect(d.length).toBe(ratio < 4.5 ? 1 : 0);
       }),
       { seed: SEED, numRuns: 6 },
@@ -297,12 +359,12 @@ test(
   () => {
     const tokens = OWN_TOKENS.replace("...acmeTokens.color }", "...acmeTokens.color, 'acme.accent': '#000000' }");
     const files = own(tokens);
-    const d = codesOf(files, "E1813");
+    const d = codesOf(files, "E1813", composed({ "acme.accent": "#000000" }));
     expect(d).toHaveLength(1);
     expect(d[0]?.message).toBe('color "acme.accent": the fixture overrides acme\'s default');
     expect(d[0]?.path).toBe("tokens.ts");
     expect(d[0]?.fix).toBeUndefined();
-    expect(codesOf(own(), "E1813")).toEqual([]);
+    expect(codesOf(own(), "E1813", composed())).toEqual([]);
   },
   CHECK_CASE_BOUND,
 );
@@ -311,8 +373,8 @@ test(
   "in the own folder a root `tokens.ts` that omits the shipped object is E1810 and the composed one is none",
   () => {
     const brandOnly = `import { brandTokens } from "@keel/ui/brand";\nexport const tokens = brandTokens;\n`;
-    expect(codesOf(own(brandOnly), "E1810").length).toBe(1);
-    expect(codesOf(own(), "E1810")).toEqual([]);
+    expect(codesOf(own(brandOnly), "E1810", brandTokens).length).toBe(1);
+    expect(codesOf(own(), "E1810", composed())).toEqual([]);
   },
   CHECK_CASE_BOUND,
 );
@@ -322,8 +384,8 @@ test(
   () => {
     const bad = own();
     const files = bad.map((f) => (f.path === "src/Badge.tsx" ? { ...f, source: badgeSource(' p="2"') } : f));
-    expect(codesOf(files, "E1811").map((d) => d.message)).toEqual(['p="2" is not in acmeTokens']);
-    expect(codesOf(bad, "E1811")).toEqual([]);
+    expect(codesOf(files, "E1811", composed()).map((d) => d.message)).toEqual(['p="2" is not in acmeTokens']);
+    expect(codesOf(bad, "E1811", composed())).toEqual([]);
   },
   CHECK_CASE_BOUND,
 );

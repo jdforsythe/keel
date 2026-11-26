@@ -1,25 +1,39 @@
 // @vitest-environment happy-dom
-// Spec: k.schemes, clause "In an app with both schemes, a `node` document requested with `Cookie: keel-scheme=dark` has `<html` with `data-k-scheme=\"dark\"` and its `SchemeSelect` value `dark`; with `keel-scheme=blue`, or with no cookie, it has no `data-k-scheme`."
-// k.schemes, First paint: "In an app with both schemes, a `node` deployable's document writes `data-k-scheme=\"<value>\"` on `<html>` when the request's `keel-scheme` cookie is `light` or `dark`, and none for any other value."
+// Spec: k.schemes, clause "A `createApp` whose `artifacts` folder holds `schemes.json` `{ \"schemes\": [\"light\", \"dark\"] }` answers a document request sent with `Cookie: keel-scheme=dark` with `<html` carrying `data-k-scheme=\"dark\"` and its `SchemeSelect` value `dark`; with `keel-scheme=blue`, with no cookie, with `{ \"schemes\": [\"light\"] }` or with no `schemes.json`, the document has no `data-k-scheme`."
+// k.schemes First paint: `keel build` and `keel dev` write `schemes.json` into a node deployable's artifacts folder; that write is an end-to-end case of the build, and `createApp` reading it is asserted here.
 // Seed: 1337 (fc.assert below).
-// ASSUMPTIONS (spec names no way to hand `createApp` the app's tokens): `createApp({ ..., tokens })` takes the app's tokens object, as the compiler's `projectTokens` carries them (RFC 0243 Build plan); an app with one scheme is `createApp` given `brandTokens`.
-// Needs a real browser: that the first paint shows the chosen scheme without a flash, and the system preference, are end-to-end cases; here the served document text is read.
+// ASSUMPTIONS: the app's schemes reach `createApp` as `schemes.json` in the folder `artifacts` names, as the raw object `{ "schemes": [...] }` (no `data`/`hash` envelope: the spec prints the bare form); `routes.json` is not needed. "Read once" is asserted by rewriting the file after the app is built: the document still follows the file as it was read.
+// Needs a real browser: that the first paint shows the chosen scheme without a flash, and the system preference, are end-to-end cases (RFC 0244's runner); here the served document text is read.
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
 import { createApp, topology } from "@keel/server";
-import { SchemeSelect, defineTokens } from "@keel/ui";
-import { brandTokens } from "@keel/ui/brand";
+import { SchemeSelect } from "@keel/ui";
 import fc from "fast-check";
-import { describe, expect, test } from "vitest";
+import { afterAll, describe, expect, test } from "vitest";
 
 const SEED = 1337;
-const both = () =>
-  defineTokens({ ...brandTokens, color: { ...brandTokens.color, mine: { light: "#111111", dark: "#eeeeee" } } });
+const dirs: string[] = [];
+afterAll(() => {
+  for (const d of dirs) rmSync(d, { recursive: true, force: true });
+});
+/** A fresh `artifacts` folder holding `schemes.json` as `body` (none when undefined). */
+const artifactsWith = (body: string | undefined): string => {
+  const dir = mkdtempSync(join(tmpdir(), "keel-schemes-"));
+  dirs.push(dir);
+  mkdirSync(dir, { recursive: true });
+  if (body !== undefined) writeFileSync(join(dir, "schemes.json"), body);
+  return dir;
+};
+const schemesJson = (schemes: readonly string[]): string => JSON.stringify({ schemes });
+const BOTH = schemesJson(["light", "dark"]);
 
-const serve = async (tokens: ReturnType<typeof defineTokens>, cookie: string | undefined): Promise<Document> => {
+const build = async (artifacts: string) => {
   const c = contract("app", { "app.home": { path: "/" } });
-  const app = await createApp({
+  return createApp({
     topology: topology({ web: { modules: ["app"], adapter: "node" } }),
     routes: manifest(c, {
       "app.home": {
@@ -29,12 +43,16 @@ const serve = async (tokens: ReturnType<typeof defineTokens>, cookie: string | u
     }),
     ctx: createCtx({ mode: "sim", seed: SEED }),
     mode: "dev",
-    tokens,
+    artifacts,
   });
+};
+const request = async (app: Awaited<ReturnType<typeof build>>, cookie: string | undefined): Promise<Document> => {
   const headers = cookie === undefined ? {} : { cookie };
   const res = await app.fetch(new Request("http://localhost/", { headers }));
   return new DOMParser().parseFromString(await res.text(), "text/html");
 };
+const serve = async (body: string | undefined, cookie: string | undefined): Promise<Document> =>
+  request(await build(artifactsWith(body)), cookie);
 const attr = (doc: Document): string | null => doc.documentElement.getAttribute("data-k-scheme");
 const selected = (doc: Document): string | null => {
   const el = doc.getElementById("scheme");
@@ -43,14 +61,14 @@ const selected = (doc: Document): string | null => {
 
 describe("k.schemes: a node document's first paint", () => {
   test('In an app with both schemes, a `node` document requested with `Cookie: keel-scheme=dark` has `<html` with `data-k-scheme="dark"` and its `SchemeSelect` value `dark`', async () => {
-    const doc = await serve(both(), "keel-scheme=dark");
+    const doc = await serve(BOTH, "keel-scheme=dark");
     expect(attr(doc)).toBe("dark");
     expect(selected(doc)).toBe("dark");
   });
 
   test("with `keel-scheme=blue`, or with no cookie, it has no `data-k-scheme`", async () => {
     for (const cookie of ["keel-scheme=blue", undefined]) {
-      const doc = await serve(both(), cookie);
+      const doc = await serve(BOTH, cookie);
       expect(attr(doc)).toBeNull();
       expect(selected(doc)).toBe("system");
     }
@@ -65,7 +83,7 @@ describe("k.schemes: a node document's first paint", () => {
         ),
         fc.constantFrom("a=1; ", "", "z=2; "),
         async (value, other) => {
-          const doc = await serve(both(), `${other}keel-scheme=${value}`);
+          const doc = await serve(BOTH, `${other}keel-scheme=${value}`);
           expect(attr(doc)).toBe(value === "light" || value === "dark" ? value : null);
         },
       ),
@@ -73,7 +91,18 @@ describe("k.schemes: a node document's first paint", () => {
     );
   });
 
-  test("in an app with one scheme (`brandTokens`) no cookie value writes `data-k-scheme`", async () => {
-    for (const value of ["light", "dark"]) expect(attr(await serve(brandTokens, `keel-scheme=${value}`))).toBeNull();
+  test('with `{ "schemes": ["light"] }` or with no `schemes.json`, the document has no `data-k-scheme`, whatever the cookie', async () => {
+    for (const body of [schemesJson(["light"]), undefined])
+      for (const value of ["light", "dark"]) {
+        const doc = await serve(body, `keel-scheme=${value}`);
+        expect(attr(doc)).toBeNull();
+      }
+  });
+
+  test("`createApp` reads `schemes.json` once from `artifacts`: a file rewritten after the app is built does not change its documents", async () => {
+    const dir = artifactsWith(BOTH);
+    const app = await build(dir);
+    writeFileSync(join(dir, "schemes.json"), schemesJson(["light"]));
+    expect(attr(await request(app, "keel-scheme=dark"))).toBe("dark");
   });
 });

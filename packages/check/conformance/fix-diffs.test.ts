@@ -1,12 +1,12 @@
 // Seed 1337 (fast-check seed, recorded in each fc.assert below)
 // RFC 0222: E1108 (a `@keel/std-*` package added to `deps`) and E1589 (`servedBy` added, one `node` deployable) carry a fix.
-// Spec: k.check, clause "Every fix a diagnostic carries applies to its fixture with `git apply`, and re-checking reports no diagnostic of that code. Fixtures of E1003, E1005 (bytes only), E1151, E1152, E1154-E1156, E1401, E1403 (`&&`, `?:` with `If` imported), E1405, E1451, E1452 (`try`), E1601, E1652, E1653, E1757 (`!`, `any`, suppression), E1805, and E1808 carry one; RFC 0035 lists why the others cannot."
+// Spec: k.check, clause "Every fix a diagnostic carries applies to its fixture with `git apply`, and re-checking reports no diagnostic of that code. Fixtures of E1003, E1005 (bytes only), E1151, E1152, E1154-E1156, E1401, E1403 (`&&`, `?:` with `If` imported), E1405, E1451, E1452 (`try`), E1601, E1652, E1653, E1757 (`!`, `any`, suppression), E1805, E1808 and E1810 carry one; RFC 0035 lists why the others cannot."
 // RFC 0157 / 0162: E1157 is retired (no fixture); E1154-E1156 keep theirs; E1407, E1510 and E1515 each carry one (k.component, k.contract); E1513 and E1514 carry none. k.check's sentence still names E1157 and omits these: see the report.
 // RFC 0219: E1730 carries one (k.guards Test files); its exact result is asserted in testing-E1730-identity-mount.test.ts.
 // RFC 0231: E1016 carries one (k.boundary Ambient types; its fix deletes the reference line); E1015 carries none.
 // RFC 0225: E1013 carries one (k.bundle Aliases); its exact diff is asserted in bundle-E1013-aliased-import.test.ts.
 // RFC 0204: E1165 carries one (its fix removes the `deps` entry).
-// RFC 0243: E1810 carries one (k.looks Fix; its exact result is asserted in library-looks-e1810.test.ts); E1811, E1812, E1813 and E1814 carry none.
+// RFC 0243: E1810 carries one (k.looks Fix; its exact result is asserted in library-looks-e1810.test.ts; the re-check is given the tokens the patched `tokens.ts` evaluates to, k.looks In an app); E1811, E1812, E1813 and E1814 carry none.
 // Invariant (not a sentence of k.module now): no fix edits a file under `node_modules/`.
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -59,7 +59,7 @@ const manifest = (id: string, deps: string[], exports: string[]): Files[number] 
 const fixtureOf = (code: string) => {
   const fx = CODE_FIXTURES[code];
   if (fx === undefined) throw new Error(`no fixture for ${code}`);
-  return { files: fx.bad, opts: fx.badOpts ?? fx.opts ?? {} };
+  return { files: fx.bad, opts: fx.badOpts ?? fx.opts ?? {}, after: fx.fixedOpts };
 };
 
 /** Sorted-key JSON, the canonical form of a `.keel/*.json` file (k.compiler Artifacts). */
@@ -96,6 +96,8 @@ interface FixedCase {
   code: string;
   files: Files;
   opts: Options;
+  /** Options for the re-check of the patched files, when the fix changes what an artifact evaluates to (E1810: the tokens `tokens.ts` gives). */
+  after?: Options | undefined;
 }
 
 const FIXED: FixedCase[] = [
@@ -312,7 +314,7 @@ for (const c of FIXED) {
       expect(fix.startsWith("--- a/")).toBe(true);
       const patched = applyFix(c.files, fix);
       expect(patched).not.toEqual(c.files);
-      expect(check(patched, c.opts).diagnostics.map((d) => d.code)).not.toContain(c.code);
+      expect(check(patched, c.after ?? c.opts).diagnostics.map((d) => d.code)).not.toContain(c.code);
     },
     CHECK_CASE_BOUND,
   );
@@ -465,12 +467,14 @@ interface Bad {
   code: string;
   files: Files;
   opts: Options;
+  after?: Options | undefined;
 }
 const BAD: Bad[] = [
   ...Object.entries(CODE_FIXTURES).map(([code, fx]) => ({
     code,
     files: fx.bad,
     opts: fx.badOpts ?? fx.opts ?? {},
+    after: fx.fixedOpts,
   })),
   ...FIXTURES.map((x) => ({
     code: x.code,
@@ -491,7 +495,7 @@ test(
             if (line.startsWith("--- a/") || line.startsWith("+++ b/")) expect(line).not.toContain("node_modules/");
           }
           const patched = applyFix(bad.files, d.fix);
-          const after = check(patched, bad.opts).diagnostics;
+          const after = check(patched, bad.after ?? bad.opts).diagnostics;
           expect(after.filter((x) => x.code === d.code).length).toBeLessThan(
             before.filter((x) => x.code === d.code).length,
           );

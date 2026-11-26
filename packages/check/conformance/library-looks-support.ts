@@ -1,15 +1,18 @@
 // Shared fixtures for the k.looks and k.schemes check conformance (not a test file). Public API only. Seed 1337.
 // The k.looks Conformance fixture: `modules/shop/module.ts` lists `'@acme/ui'`, `node_modules/@acme/ui/` holds the k.library fixture's files with
 // `id: 'acme'`, a `./tokens` entry, `src/acmeTokens.ts` and `src/Badge.tsx`.
-// ASSUMPTIONS (spec silent): `check()` reads the app's `tokens.ts` and the shipped `src/<id>Tokens.ts` from the files it is given, as text (k.looks Shipped
-// tokens: "`keel check` reads it as text and never runs it"); no `artifacts.tokens` is passed for E1810, E1811, E1812 and E1813, since the fix is applied to the text and the
-// next `keel check` must read the patched text. "At <name>" is a position on that name's line from its first column to its last. A diagnostic's `message`, `path`, `line`, `col` and `fix` are
-// those of `Diagnostic`.
+// k.looks In an app: E1810 to E1814 judge the evaluated `tokens` export of the project's `tokens.ts` (k.a11y-static Tokens), which `check()` is given as
+// `artifacts: { tokens }`, and read the file's text only for positions and the fix. A case that expects a diagnostic gives both the file and the artifact the file evaluates to
+// (`composed`, `brandTokens`); the next check after a fix is given the artifact of the fixed file. A shipped `src/<id>Tokens.ts` is read as text (k.looks Shipped tokens).
+// "At <name>" is a position on that name's line from its first column to its last. A diagnostic's `message`, `path`, `line`, `col` and `fix` are those of `Diagnostic`.
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { check } from "@keel/check";
+import { repoRoot } from "@keel/tooling/repo-root";
+import { defineTokens } from "@keel/ui";
+import { brandTokens } from "@keel/ui/brand";
 import { manifestFile } from "./module-support.ts";
 import type { Files } from "./support.ts";
 
@@ -78,8 +81,21 @@ const FIXED_HEAD = `import { defineTokens } from "@keel/ui";\nimport { brandToke
 export const fixedTokens = (colorTail = "", lookSpread = "...acmeTokens.look"): string =>
   `${FIXED_HEAD}\nexport const tokens = defineTokens({\n  ...brandTokens,\n  color: { ...brandTokens.color, ...acmeTokens.color${colorTail} },\n  look: { ...brandTokens.look${lookSpread === "" ? "" : `, ${lookSpread}`} },\n});\n`;
 
-export const codesOf = (files: Files, code: string) =>
-  check(files, NO_TYPES).diagnostics.filter((d) => d.code === code);
+export type Tokens = ReturnType<typeof defineTokens>;
+/** The evaluated `tokens` export of `fixedTokens(...)`'s file: `brandTokens` with the shipped object's `color` and `look` composed, `color` then overriding by name. */
+export function composed(color: Record<string, string> = {}, look = true): Tokens {
+  return defineTokens({
+    ...brandTokens,
+    color: { ...brandTokens.color, "acme.accent": "#0B5CAD", "acme.ink": "#FFFFFF", ...color },
+    look: { ...brandTokens.look, ...(look ? { "acme.badge": { bg: "acme.accent", fg: "acme.ink" } } : {}) },
+  });
+}
+/** `check()`'s options for a project whose `tokens.ts` evaluates to `tokens` (none: a project with no tokens artifact). */
+export const optsFor = (tokens?: Tokens) =>
+  tokens === undefined ? NO_TYPES : ({ types: false, artifacts: { tokens } } as const);
+export const diagnosticsOf = (files: Files, tokens?: Tokens) => check(files, optsFor(tokens)).diagnostics;
+export const codesOf = (files: Files, code: string, tokens?: Tokens) =>
+  diagnosticsOf(files, tokens).filter((d) => d.code === code);
 export const sourceOf = (files: Files, path: string): string => files.find((f) => f.path === path)?.source ?? "";
 
 /** The 1-based line and column of the first `needle` in `source`. */
@@ -112,10 +128,11 @@ export function applyFix(files: Files, fix: string): Files {
   }
 }
 
-/** Source with whitespace, trailing commas and quote style removed: the form two writings of one object literal share. */
-export const squash = (source: string): string =>
-  source
-    .replace(/'/g, '"')
-    .replace(/\s+/g, "")
-    .replace(/,([}\])])/g, "$1")
-    .replace(/;/g, "");
+/** `source` as `biome format` writes it under the repo's configuration: a fix's layout is not judged (k.looks Fix). */
+export function formatted(source: string, name = "tokens.ts"): string {
+  return execFileSync("pnpm", ["exec", "biome", "format", `--stdin-file-path=${name}`], {
+    cwd: repoRoot(import.meta.dirname),
+    input: source,
+    encoding: "utf8",
+  });
+}

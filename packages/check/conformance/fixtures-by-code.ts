@@ -13,7 +13,9 @@ import {
   SHIPPED as ACME_SHIPPED,
   app as acmeApp,
   badgeSource,
+  composed,
   fixedTokens,
+  optsFor,
   shippedSource,
 } from "./library-looks-support.ts";
 import type { Files } from "./support.ts";
@@ -25,6 +27,8 @@ export interface CodeFixture {
   opts?: Options;
   badOpts?: Options;
   cleanOpts?: Options;
+  /** Options for the re-check of the bad files a fix patched, when the fix changes what an artifact evaluates to. */
+  fixedOpts?: Options;
   bad: Files;
   clean: Files;
 }
@@ -1653,19 +1657,21 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
   },
   // E1810 (rfc:0243): the `@acme/ui` the app lists ships tokens its `tokens.ts` does not compose; its fix writes the import and the spreads, and the clean counterpart is the file the fix writes.
   E1810: {
-    opts: NO_TYPES,
+    badOpts: optsFor(brandTokens),
+    fixedOpts: optsFor(composed()),
+    cleanOpts: optsFor(composed()),
     bad: acmeApp(BRAND_ONLY),
     clean: acmeApp(fixedTokens()),
   },
   // E1811 (rfc:0243): a library file's `p="2"` its shipped tokens lack; the clean counterpart names a shipped token.
   E1811: {
-    opts: NO_TYPES,
+    opts: optsFor(composed()),
     bad: acmeApp(fixedTokens(), [f(`${ACME_ROOT}/src/Badge.tsx`, badgeSource(' p="2"'))]),
     clean: acmeApp(fixedTokens(), [f(`${ACME_ROOT}/src/Badge.tsx`, badgeSource(' fg="acme.ink"'))]),
   },
   // E1812 (rfc:0243): a spread in the shipped tokens file, at the spread; the clean counterpart is the literal.
   E1812: {
-    opts: NO_TYPES,
+    opts: optsFor(composed()),
     bad: acmeApp(fixedTokens(), [
       f(ACME_SHIPPED, shippedSource("...other, 'acme.accent': '#0B5CAD', 'acme.ink': '#FFFFFF'")),
     ]),
@@ -1673,7 +1679,8 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
   },
   // E1813 (rfc:0243): an override key `'zed.x'` no listed library ships; the clean counterpart overrides a shipped token.
   E1813: {
-    opts: NO_TYPES,
+    badOpts: optsFor(composed({ "zed.x": "#000000" })),
+    cleanOpts: optsFor(composed({ "acme.accent": "#b8420d" })),
     bad: acmeApp(fixedTokens(", 'zed.x': '#000000'")),
     clean: acmeApp(fixedTokens(", 'acme.accent': '#b8420d'")),
   },
