@@ -6,6 +6,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
+import { fixedTime } from "@keel/tooling/test-time";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 const BIN = new URL("../src/bin.ts", import.meta.url).pathname;
@@ -71,8 +72,12 @@ describe("binary start", () => {
     60_000,
   );
 
-  it("loads typescript and the checker for check", async () => {
-    const loaded = await loadedBy(["check"], "check");
-    expect(heavy(loaded)).toEqual(expect.arrayContaining(["/node_modules/typescript/", "/packages/check/src/"]));
-  }, 60_000);
+  it(
+    "loads typescript and the checker for check",
+    async () => {
+      const loaded = await loadedBy(["check"], "check");
+      expect(heavy(loaded)).toEqual(expect.arrayContaining(["/node_modules/typescript/", "/packages/check/src/"]));
+    },
+    fixedTime(60_000),
+  );
 });

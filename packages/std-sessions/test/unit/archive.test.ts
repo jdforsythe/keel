@@ -3,6 +3,7 @@
 // Seed 1337
 import { scope } from "@keel/reactive";
 import { type Store, isolate, tx } from "@keel/store";
+import { fixedTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 import { Archive } from "../../src/Archive.schema.ts";
@@ -245,7 +246,7 @@ describe("addSession", () => {
       expect(kept(st.archive)).toEqual([fp(2), fp(3), fp(4)]);
       put(st, 5, fp(5), 3 * mib);
       expect(kept(st.archive)).toEqual([fp(5)]);
-      put(st, 6, fp(6), 900_000);
+      put(st, 6, fp(6), fixedTime(900_000));
       expect(kept(st.archive)).toEqual([fp(5), fp(6)]);
     });
   });

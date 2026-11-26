@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { s } from "@keel/schema";
+import { fixedTime } from "@keel/tooling/test-time";
 import { afterEach, describe, expect, it } from "vitest";
 
 const app = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -61,7 +62,7 @@ function brandFindings(root: string) {
 const lowercase = (source: string): string => source.replace('s.id("Recipe")', 's.id("recipe")');
 
 /** Each case runs the `keel check` binary on a copy of the module, which takes seconds on a busy machine. */
-describe("id brand case in the kitchen module", { timeout: 60_000 }, () => {
+describe("id brand case in the kitchen module", { timeout: fixedTime(60_000) }, () => {
   it("reports a lowercase recipe brand at its line, with the fix that restores Recipe", () => {
     const found = brandFindings(kitchenCopy(lowercase, true));
     expect(found.map((d) => [d.path, d.line, d.message])).toEqual([

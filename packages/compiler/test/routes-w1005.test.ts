@@ -4,6 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { artifactHashes, compile, stdArtifact } from "@keel/compiler";
 import keel from "@keel/compiler/vite";
+import { fixedTime } from "@keel/tooling/test-time";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { canonicalJson } from "../src/internal/canonicalJson.ts";
 import { hashOf } from "../src/internal/hashOf.ts";
@@ -48,20 +49,24 @@ describe("vite plugin build: a differing routes.json", () => {
   });
   afterEach(() => fs.rmSync(root, { recursive: true, force: true }));
 
-  it("warns W1005 once at build and rewrites it", { timeout: 30000 }, async () => {
+  it("warns W1005 once at build and rewrites it", { timeout: fixedTime(30000) }, async () => {
     const data = { r: { path: "/forged" } };
     prior(`${canonicalJson({ data, hash: hashOf(data) })}\n`);
     expect(await build("build")).toEqual([WARNING]);
     expect(fs.readFileSync(file(), "utf8")).toBe(genuine);
   });
 
-  it("is silent when routes.json is absent, genuine, or the server is not building", { timeout: 30000 }, async () => {
-    expect(await build("build")).toEqual([]);
-    expect(fs.readFileSync(file(), "utf8")).toBe(genuine);
-    expect(await build("build")).toEqual([]);
-    fs.chmodSync(file(), 0o644);
-    prior("forged\n");
-    expect(await build("serve")).toEqual([]);
-    expect(fs.readFileSync(file(), "utf8")).toBe(genuine);
-  });
+  it(
+    "is silent when routes.json is absent, genuine, or the server is not building",
+    { timeout: fixedTime(30000) },
+    async () => {
+      expect(await build("build")).toEqual([]);
+      expect(fs.readFileSync(file(), "utf8")).toBe(genuine);
+      expect(await build("build")).toEqual([]);
+      fs.chmodSync(file(), 0o644);
+      prior("forged\n");
+      expect(await build("serve")).toEqual([]);
+      expect(fs.readFileSync(file(), "utf8")).toBe(genuine);
+    },
+  );
 });

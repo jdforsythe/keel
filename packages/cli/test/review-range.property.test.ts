@@ -5,6 +5,7 @@ import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { fixedTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
 import { afterAll, describe, expect, test } from "vitest";
 import { rangeEscapes } from "../src/review/rangeEscapes.ts";
@@ -138,43 +139,47 @@ describe("range codes", () => {
 });
 
 describe("baseline", () => {
-  test("an entry added to the baseline in the head commit never lowers the loudness of that commit's findings", async () => {
-    const tree = fc.record({
-      base: fc.array(fc.tuple(fc.constantFrom(...FILES), fc.constantFrom(...LINES)), { maxLength: 4 }),
-      head: fc.array(fc.tuple(fc.constantFrom(...FILES), fc.constantFrom(...LINES)), { minLength: 1, maxLength: 4 }),
-      pick: fc.array(fc.boolean(), { minLength: 8, maxLength: 8 }),
-    });
-    const text = (rows: readonly (readonly [string, string])[]): Record<string, string> => {
-      const out: Record<string, string> = {};
-      for (const [f, l] of rows) out[f] = `${out[f] ?? ""}${l}`;
-      return out;
-    };
-    await fc.assert(
-      fc.asyncProperty(tree, async ({ base, head, pick }) => {
-        const first = repo([{ ...PROJECT, ...text(base) }, text([...base, ...head])]);
-        const range = `${first.shas[0]}..${first.shas[1]}`;
-        const plain = await review(first.dir, [range]);
-        const chosen = plain.filter((f, i) => pick[i % pick.length] === true && f.code !== "R1105");
-        const entries = chosen.map((f) => ({
-          id: f.id,
-          code: f.code,
-          path: f.path,
-          reason: "accepted in the head commit",
-        }));
-        const second = repo([
-          { ...PROJECT, ...text(base) },
-          { ...text([...base, ...head]), "keel-review.json": `${JSON.stringify({ v: 1, accepted: entries })}\n` },
-        ]);
-        const withEntry = await review(second.dir, [`${second.shas[0]}..${second.shas[1]}`]);
-        for (const f of plain) {
-          const same = withEntry.find((g) => g.id === f.id);
-          expect(same?.loud, `${f.code} ${f.path}`).toBe(f.loud);
-        }
-        expect(withEntry.some((g) => g.code === "R1105" && g.loud === "fail")).toBe(true);
-      }),
-      { seed: SEED, numRuns: 8 },
-    );
-  }, 120_000);
+  test(
+    "an entry added to the baseline in the head commit never lowers the loudness of that commit's findings",
+    async () => {
+      const tree = fc.record({
+        base: fc.array(fc.tuple(fc.constantFrom(...FILES), fc.constantFrom(...LINES)), { maxLength: 4 }),
+        head: fc.array(fc.tuple(fc.constantFrom(...FILES), fc.constantFrom(...LINES)), { minLength: 1, maxLength: 4 }),
+        pick: fc.array(fc.boolean(), { minLength: 8, maxLength: 8 }),
+      });
+      const text = (rows: readonly (readonly [string, string])[]): Record<string, string> => {
+        const out: Record<string, string> = {};
+        for (const [f, l] of rows) out[f] = `${out[f] ?? ""}${l}`;
+        return out;
+      };
+      await fc.assert(
+        fc.asyncProperty(tree, async ({ base, head, pick }) => {
+          const first = repo([{ ...PROJECT, ...text(base) }, text([...base, ...head])]);
+          const range = `${first.shas[0]}..${first.shas[1]}`;
+          const plain = await review(first.dir, [range]);
+          const chosen = plain.filter((f, i) => pick[i % pick.length] === true && f.code !== "R1105");
+          const entries = chosen.map((f) => ({
+            id: f.id,
+            code: f.code,
+            path: f.path,
+            reason: "accepted in the head commit",
+          }));
+          const second = repo([
+            { ...PROJECT, ...text(base) },
+            { ...text([...base, ...head]), "keel-review.json": `${JSON.stringify({ v: 1, accepted: entries })}\n` },
+          ]);
+          const withEntry = await review(second.dir, [`${second.shas[0]}..${second.shas[1]}`]);
+          for (const f of plain) {
+            const same = withEntry.find((g) => g.id === f.id);
+            expect(same?.loud, `${f.code} ${f.path}`).toBe(f.loud);
+          }
+          expect(withEntry.some((g) => g.code === "R1105" && g.loud === "fail")).toBe(true);
+        }),
+        { seed: SEED, numRuns: 8 },
+      );
+    },
+    fixedTime(120_000),
+  );
 
   test("--accept writes the entry the next review of the tree reads as accepted", async () => {
     const r = repo([{ ...PROJECT, "modules/m/c.test.ts": "export const n = 1 as number;\n" }]);
