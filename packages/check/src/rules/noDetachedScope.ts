@@ -1,6 +1,7 @@
 import { globalRefs } from "@keel/compiler/internal";
 import { Visitor } from "oxc-parser";
 import type { Argument } from "oxc-parser";
+import { KERNEL_FOLDERS } from "../internal/KERNEL_FOLDERS.ts";
 import { findingAt } from "../internal/findingAt.ts";
 import { isAppPath } from "../internal/isAppPath.ts";
 import { keyName } from "../internal/keyName.ts";
@@ -8,8 +9,11 @@ import { localNames } from "../internal/modules/localNames.ts";
 import type { Finding } from "../types/Finding.ts";
 import type { RuleDef } from "../types/RuleDef.ts";
 
-/** Kernel and stdlib packages create detached scopes; only code outside `packages/` is app code. */
-const LIBRARY = /(?:^|\/)packages\//;
+/** Whether `path` lies in a kernel package's own folder, `packages/<p>/`, the one place a scope may detach. */
+function inKernel(path: string): boolean {
+  const m = /(?:^|\/)packages\/([^/]+)\//.exec(path);
+  return m?.[1] !== undefined && KERNEL_FOLDERS.has(m[1]);
+}
 
 /** Whether the options argument can create a detached scope: not a literal, or a `detached` other than `false`. */
 function mayDetach(opts: Argument): boolean {
@@ -28,14 +32,15 @@ function mayDetach(opts: Argument): boolean {
  * second argument that may make the scope detached: an object literal whose `detached` is anything but the literal
  * `false`, or one with a spread or computed key, or any non-literal (identifier, call, conditional). `scope(fn)` and
  * `scope(fn, { onError })` are clean. `scope` counts only where it binds the import (a local of the same name
- * shadows it). Kernel and stdlib code under `packages/` is not checked. No fix: nesting the scope is the author's.
+ * shadows it). Judged in every project file, `unsafe(` ranges and libraries included, but a kernel package's own
+ * (`packages/<p>/`, `<p>` a kernel folder). No fix: nesting the scope, or a module root, is the author's.
  */
 export const noDetachedScope: RuleDef = {
   code: "E1207",
-  message: () => "scope({ detached }) is for kernel and stdlib code; app scopes nest in their owner",
+  message: () => "scope({ detached }) is for kernel code; nest the scope, or make a module root",
   see: "k.reactive",
   check: ({ file, ast }) => {
-    if (!isAppPath(file.path) || LIBRARY.test(file.path)) return [];
+    if (!isAppPath(file.path) || inKernel(file.path)) return [];
     const scopes = localNames(ast, "scope", "@keel/reactive");
     const namespaces = new Set<string>();
     for (const st of ast.body) {

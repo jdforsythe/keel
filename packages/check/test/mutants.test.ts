@@ -352,7 +352,7 @@ describe("E1451 noThrow", () => {
     ].join("\n");
     expect(out).toMatchInlineSnapshot(`
       "# in function
-      2:14 throw in app code; return err(...) for expected failures
+      2:14 throw in app code; return err(...) when expected, defect(...) when a bug
       --- a/src/a.ts
       +++ b/src/a.ts
       @@ -1,4 +1,5 @@
@@ -363,7 +363,7 @@ describe("E1451 noThrow", () => {
          return n
        }
       # arrow
-      2:3 throw in app code; return err(...) for expected failures
+      2:3 throw in app code; return err(...) when expected, defect(...) when a bug
       --- a/src/a.ts
       +++ b/src/a.ts
       @@ -1,3 +1,4 @@
@@ -373,7 +373,7 @@ describe("E1451 noThrow", () => {
       +  return err(n)
        }
       # function expr
-      2:3 throw in app code; return err(...) for expected failures
+      2:3 throw in app code; return err(...) when expected, defect(...) when a bug
       --- a/src/a.ts
       +++ b/src/a.ts
       @@ -1,3 +1,4 @@
@@ -383,7 +383,7 @@ describe("E1451 noThrow", () => {
       +  return err(n)
        }
       # with err import
-      3:3 throw in app code; return err(...) for expected failures
+      3:3 throw in app code; return err(...) when expected, defect(...) when a bug
       --- a/src/a.ts
       +++ b/src/a.ts
       @@ -1,4 +1,4 @@
@@ -393,11 +393,11 @@ describe("E1451 noThrow", () => {
       +  return err(n)
        }
       # top level has no fix
-      1:1 throw in app code; return err(...) for expected failures
+      1:1 throw in app code; return err(...) when expected, defect(...) when a bug
       # after a function, top level
-      2:1 throw in app code; return err(...) for expected failures
+      2:1 throw in app code; return err(...) when expected, defect(...) when a bug
       # nested
-      3:5 throw in app code; return err(...) for expected failures
+      3:5 throw in app code; return err(...) when expected, defect(...) when a bug
       --- a/src/a.ts
       +++ b/src/a.ts
       @@ -1,6 +1,7 @@
@@ -409,7 +409,7 @@ describe("E1451 noThrow", () => {
          }
          throw g
        }
-      5:3 throw in app code; return err(...) for expected failures
+      5:3 throw in app code; return err(...) when expected, defect(...) when a bug
       --- a/src/a.ts
       +++ b/src/a.ts
       @@ -1,6 +1,7 @@
@@ -426,7 +426,7 @@ describe("E1451 noThrow", () => {
       # config exempt
 
       # unsafe dir read
-      1:1 throw in app code; return err(...) for expected failures"
+      1:1 throw in app code; return err(...) when expected, defect(...) when a bug"
     `);
   });
 });

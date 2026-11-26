@@ -272,7 +272,7 @@ export function check(given: readonly SourceFile[], options: CheckOptions = {}):
       const { kind, code, line, col, message, see } = d;
       return { kind, code, path: at, line, col, message, ...(see === undefined ? {} : { see }) };
     });
-  // A lifted range (k.check, App code) reports none of its nine codes.
+  // A lifted range (k.check, App code) reports none of its eight codes.
   const diagnostics = normalize(dropLifted(located, realCode));
   return { diagnostics, summary: summarize(diagnostics) };
 }

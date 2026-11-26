@@ -6,10 +6,13 @@ import { num } from "../internal/num.ts";
 import type { Finding } from "../types/Finding.ts";
 import type { RuleDef } from "../types/RuleDef.ts";
 
-/** E1451 (k.errors): `throw` in app code. Fix (inside a function): `return err(<value>)`. */
+/**
+ * E1451 (k.errors): `throw` in app code, `unsafe(` ranges included; a bug is raised with `defect`. Fix (inside a
+ * function): `return err(<value>)`.
+ */
 export const noThrow: RuleDef = {
   code: "E1451",
-  message: "throw in app code; return err(...) for expected failures",
+  message: "throw in app code; return err(...) when expected, defect(...) when a bug",
   see: "k.errors",
   check: ({ file, ast }) => {
     if (!isAppPath(file.path)) return [];

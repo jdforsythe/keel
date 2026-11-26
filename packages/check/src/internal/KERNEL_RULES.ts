@@ -1,6 +1,7 @@
 import { blankLabel } from "../rules/blankLabel.ts";
 import { bodyOnGetEndpoint } from "../rules/bodyOnGetEndpoint.ts";
 import { componentCtxSignature } from "../rules/componentCtxSignature.ts";
+import { defectCode } from "../rules/defectCode.ts";
 import { dynamicImport } from "../rules/dynamicImport.ts";
 import { fieldInForm } from "../rules/fieldInForm.ts";
 import { foreignUrlAttr } from "../rules/foreignUrlAttr.ts";
@@ -75,6 +76,7 @@ export const KERNEL_RULES: readonly RuleDef[] = [
   sameAppBaseService,
   noThrow,
   noTryCatch,
+  defectCode,
   noAmbientCapability,
   noCodeFromString,
   dynamicImport,

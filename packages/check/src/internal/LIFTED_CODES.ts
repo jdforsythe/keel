@@ -1,8 +1,6 @@
 /** The kernel codes a lifted range does not report (k.check, App code). */
 export const LIFTED_CODES: ReadonlySet<string> = new Set([
   "E1252",
-  "E1451",
-  "E1452",
   "E1601",
   "E1603",
   "E1651",

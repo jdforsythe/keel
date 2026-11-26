@@ -3,7 +3,6 @@ import fs from "node:fs";
 import path from "node:path";
 import { Visitor } from "oxc-parser";
 import { check } from "../packages/check/src/index.ts";
-import { LIBRARY_LIFTED_CODES } from "../packages/check/src/internal/LIBRARY_LIFTED_CODES.ts";
 import { LIFTED_CODES } from "../packages/check/src/internal/LIFTED_CODES.ts";
 import { liftedRanges } from "../packages/check/src/internal/liftedRanges.ts";
 import { parseFile } from "../packages/check/src/internal/parseFile.ts";
@@ -222,10 +221,6 @@ function s0014(file) {
     // The app's reading of the file, its `unsafe/` segments renamed so no lifted range drops a finding.
     const seen = { path: file.path.replace(/(^|\/)unsafe\//g, "$1lifted/"), source: file.source };
     for (const d of check([seen], { types: false }).diagnostics) if (LIFTED_CODES.has(d.code)) escapes.push(at(d));
-    // E1207 reads a file under `packages/` as kernel code; the app reads a library's file as a module's.
-    const asModule = { path: seen.path.replace(/^packages\/[^/]+\//, "modules/lib/"), source: file.source };
-    for (const d of check([asModule], { types: false }).diagnostics)
-      if (LIBRARY_LIFTED_CODES.has(d.code)) escapes.push(at(d));
   }
   const ranges = liftedRanges(file);
   new Visitor({

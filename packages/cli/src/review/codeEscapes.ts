@@ -1,4 +1,4 @@
-import { type Expression, type ObjectExpression, type PropertyKey, Visitor, parseSync } from "oxc-parser";
+import { type Expression, type ObjectExpression, type Program, type PropertyKey, Visitor, parseSync } from "oxc-parser";
 import { isExpectation } from "../internal/isExpectation.ts";
 import { isNegativeTypeTest } from "../internal/isNegativeTypeTest.ts";
 import type { Danger } from "./Danger.ts";
@@ -94,6 +94,39 @@ const isProcessEnv = (e: Expression): boolean =>
     ? e.property.type === "Literal" && e.property.value === "env"
     : e.property.type === "Identifier" && e.property.name === "env");
 
+/** `x.ok`, `x` a name or member (R1013). */
+const isOk = (e: Expression): boolean =>
+  e.type === "MemberExpression" &&
+  !e.computed &&
+  e.property.type === "Identifier" &&
+  e.property.name === "ok" &&
+  (e.object.type === "Identifier" || e.object.type === "MemberExpression");
+
+/** `!x.ok` or `x.ok === false` (R1013). */
+const isNotOk = (e: Expression): boolean =>
+  (e.type === "UnaryExpression" && e.operator === "!" && isOk(e.argument)) ||
+  (e.type === "BinaryExpression" &&
+    e.operator === "===" &&
+    isOk(e.left) &&
+    e.right.type === "Literal" &&
+    e.right.value === false);
+
+/** The names a file calls `defect` of `@keel/schema` by: imported names, and namespaces whose `.defect` it is. */
+function defectNames(program: Program): { names: Set<string>; spaces: Set<string> } {
+  const names = new Set<string>();
+  const spaces = new Set<string>();
+  for (const st of program.body) {
+    if (st.type !== "ImportDeclaration" || st.source.value !== "@keel/schema") continue;
+    for (const sp of st.specifiers) {
+      if (sp.type === "ImportNamespaceSpecifier") spaces.add(sp.local.name);
+      if (sp.type !== "ImportSpecifier") continue;
+      const imported = sp.imported.type === "Identifier" ? sp.imported.name : sp.imported.value;
+      if (imported === "defect") names.add(sp.local.name);
+    }
+  }
+  return { names, spaces };
+}
+
 /** A function returning 1-based line and column for a UTF-16 offset of `source`. */
 function locator(source: string): (at: number) => { line: number; col: number } {
   const starts = [0];
@@ -129,6 +162,18 @@ export function codeEscapes(path: string, source: string, kind: FileKind): Raw[]
   let folded = -1;
   const envs = new Set<number>();
   let unsafeCalls = 0;
+  const defects = defectNames(parsed.program);
+  /** Spans where a `Result` is err (R1013): an `if`'s branch or a conditional's operand. */
+  const errSpans: { start: number; end: number }[] = [];
+  const isDefectCall = (c: Expression): boolean =>
+    c.type === "Identifier"
+      ? defects.names.has(c.name)
+      : c.type === "MemberExpression" &&
+        !c.computed &&
+        c.object.type === "Identifier" &&
+        defects.spaces.has(c.object.name) &&
+        c.property.type === "Identifier" &&
+        c.property.name === "defect";
 
   const specifier = (start: number, end: number, spec: string): void => {
     if (PRIVATE_KEEL.test(spec) || (spec.startsWith(".") && INTO_KEEL.test(spec))) add("R1055", start, end);
@@ -164,9 +209,17 @@ export function codeEscapes(path: string, source: string, kind: FileKind): Raw[]
     TemplateLiteral: (n) => fold(n),
     BinaryExpression: (n) => fold(n),
     TaggedTemplateExpression: (n) => fold(n),
+    IfStatement: (n) => {
+      if (isNotOk(n.test)) errSpans.push(n.consequent);
+      else if (isOk(n.test) && n.alternate !== null) errSpans.push(n.alternate);
+    },
+    ConditionalExpression: (n) => {
+      if (isOk(n.test)) errSpans.push(n.alternate);
+    },
     CallExpression: (n) => {
       fold(n);
       const c = n.callee;
+      if (isDefectCall(c) && errSpans.some((s) => n.start >= s.start && n.end <= s.end)) add("R1013", n.start, n.end);
       const a0 = n.arguments[0];
       const arg = a0 === undefined || a0.type === "SpreadElement" ? undefined : a0;
       for (const a of n.arguments) if (a.type !== "SpreadElement") evalRef(a);

@@ -462,9 +462,9 @@ const ROWS: readonly Row[] = [
   ["E1206", "scope.run on a disposed scope", "", "create nodes only while the scope is live", "k.reactive"],
   [
     "E1207",
-    "detached scope or non-literal scope options in app code",
-    "A detached scope has no parent: it escapes uses and the request store registry, and outlives the route.",
-    "create the scope inside the component, or use owner()?.run(fn)",
+    "detached scope or non-literal scope options outside a kernel package, libraries and unsafe() included",
+    "A detached scope escapes uses and the request store registry. Module-level state lives in a module root.",
+    "scope(fn, { detached: true }) -> nest it, or make it where owner() is undefined and run(fn) later",
     "k.reactive",
   ],
   [
@@ -640,15 +640,15 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1451",
-    "throw in app code",
-    "Expected failures are Result values; bugs reach the nearest Boundary.",
-    "throw new Error('x') -> return err(Locked.make({ id }))",
+    "throw in app code, unsafe() ranges included",
+    "Expected failures are Result values; a bug is defect(message, code?), which reaches the nearest Boundary.",
+    "throw new Error('x') -> return err(Locked.make({ id })), or defect('x') for a bug",
     "k.errors",
   ],
   [
     "E1452",
-    "try/catch or .catch() in app code",
-    "attempt(fn) is the only sanctioned catch.",
+    "try/catch or .catch() in app code, unsafe() ranges included",
+    "attempt(fn, expect?) is the only sanctioned catch; try/finally without catch is cleanup.",
     "try { a() } catch { b() } -> const r = attempt(a); if (!r.ok) b()",
     "k.errors",
   ],
@@ -664,6 +664,13 @@ const ROWS: readonly Row[] = [
     "two s.error declarations with the same code",
     "",
     "'orders.locked' twice -> 'orders.closed' on one",
+    "k.errors",
+  ],
+  [
+    "E1455",
+    "defect code that is not a string literal of E and four digits",
+    "The code is a stable name keel docs --for finds; a variable or E1.5 is none.",
+    "defect('x', code) -> defect('x', 'E2801')",
     "k.errors",
   ],
   [
@@ -1528,6 +1535,13 @@ const ROWS: readonly Row[] = [
     "High opt-in. Read where the value goes.",
     "pass the Secret on, reveal only at the sink",
     "k.escapes, k.reveal",
+  ],
+  [
+    "R1013",
+    "a defect raised where a Result is err: an expected failure made a crash",
+    "Medium. Some are right (a broken invariant); read whether a caller should handle it.",
+    "if (!r.ok) return defect('x') -> return r, or a Result the caller handles",
+    "k.escapes, k.errors",
   ],
   [
     "R1014",

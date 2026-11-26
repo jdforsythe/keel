@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { check } from "../src/index.ts";
 
-const MSG = "scope({ detached }) is for kernel and stdlib code; app scopes nest in their owner";
+const MSG = "scope({ detached }) is for kernel code; nest the scope, or make a module root";
 const IMP = "import { scope } from '@keel/reactive'\n";
 const out = (source: string, path = "modules/app/job.ts"): string[] =>
   check([{ path, source }], { types: false })
@@ -52,9 +52,9 @@ describe("E1207 detached scope in app code", () => {
     expect(out(`import * as r from '@keel/reactive'\nexport const f = (r: X) => r.scope(() => 1, opts)\n`)).toEqual([]);
   });
 
-  it("stays quiet in kernel and stdlib packages, and tests", () => {
+  it("stays quiet in kernel packages and tests, and fires in a stdlib package", () => {
     const src = body("scope(() => 1, { detached: true, onError })");
-    expect(out(src, "packages/std-sessions/src/internal/recording.ts")).toEqual([]);
+    expect(out(src, "packages/std-sessions/src/internal/recording.ts")).toHaveLength(1);
     expect(out(src, "packages/reactive/src/scope.ts")).toEqual([]);
     expect(out(src, "modules/app/job.test.ts")).toEqual([]);
     expect(out(src)).toHaveLength(1);
