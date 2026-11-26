@@ -1,5 +1,5 @@
 // The library's packed ledger holds its one `Host` element, no `unsafe` and the exports of its `src/` files; the chart
-// it draws in a browser is proved by library-app's built page.
+// it draws in a browser is proved by library-app's built page (test/home.e2e.ts there).
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { expect, it } from "vitest";
