@@ -106,7 +106,7 @@ Titles restored: every map title becomes the section's own. The 36 main-line row
 - Keep the code ranges table: its blocks span areas (E155x names eleven sections in three areas), so it cannot sit under one area, and `--for <block>` gives the taken codes exactly.
 
 ## Spec diff
-- k.docs: opening sentence; Packed files (`map.json` areas, `glossary.json`); new Areas and Titles paragraphs; Forms (`<area>`, `--for <block>`, `--for <name>`); records `docs.area`, `docs.entry` with `holds` (an empty `holds` prints no `: `), `docs.code`, `docs.term`, `docs.hit`; a key matches a glossary term and a code span ignoring case; a key that matches nothing prints only the trailing `summary` record; E1052 covers an unknown area; The Keel repo (area maps, `pnpm spec`); Budgets (the three levels and the sum); Conformance (three bullets reworded, seven added). Status `implemented` until the new clauses are covered.
+- k.docs: opening sentence; Packed files (`map.json` areas, `glossary.json`); new Areas and Titles paragraphs; Forms (`<area>`, `--for <block>`, `--for <name>`); records `docs.area`, `docs.entry` with `holds` (an empty `holds` prints no `: `), `docs.code`, `docs.term`, `docs.hit`; a key matches a glossary term and a code span ignoring case; a key that matches nothing prints only the trailing `summary` record; the block clause's second section cites E1501, a code of `E15xx` outside `E155x`; E1052 covers an unknown area; The Keel repo (area maps, `pnpm spec`); Budgets (the three levels and the sum); Conformance (three bullets reworded, seven added). Status `implemented` until the new clauses are covered.
 - The map: the k.docs row's status. The rest of the map, the area files and the std index are the builder's (Migration).
 - Glossary: `area`.
 
