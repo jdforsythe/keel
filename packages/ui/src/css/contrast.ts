@@ -1,21 +1,29 @@
-const HEX = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+import { colorSyntax } from "../internal/colorSyntax.ts";
+import { colorLinear } from "./colorLinear.ts";
+import { gamutMap } from "./gamutMap.ts";
 
-const luminance = (hex: string): number => {
-  if (!HEX.test(hex)) throw new RangeError(`contrast needs #rgb or #rrggbb, got ${JSON.stringify(hex).slice(0, 40)}`);
-  const h = hex.length === 4 ? hex.replace(/[0-9a-fA-F]/g, "$&$&") : hex;
-  const [r, g, b] = [1, 3, 5].map((i) => {
-    const c = Number.parseInt(h.slice(i, i + 2), 16) / 255;
-    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-  });
-  return 0.2126 * (r ?? 0) + 0.7152 * (g ?? 0) + 0.0722 * (b ?? 0);
+type Rgb = readonly [number, number, number];
+
+const luminance = ([r, g, b]: Rgb): number => Math.min(1, Math.max(0, 0.2126 * r + 0.7152 * g + 0.0722 * b));
+const ratio = (a: number, b: number): number => (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+
+const linear = (color: string): Rgb => {
+  const c = colorSyntax(color);
+  if (c === null || c.alpha !== null)
+    throw new RangeError(`contrast needs an opaque k.values color, got ${JSON.stringify(color).slice(0, 40)}`);
+  return colorLinear(c);
 };
 
 /**
- * WCAG 2 contrast ratio of two `#rgb`/`#rrggbb` colors, 1..21, symmetric. E1804 requires >= 4.5
- * (>= 3 at fontSize >= 24px). Throws RangeError for any other color syntax.
+ * WCAG 2 contrast ratio of two opaque colors in any k.values form, 1..21, symmetric (k.values Contrast): each color's
+ * luminance computed exactly from its form; when either is outside the sRGB gamut, the pair is judged as given and
+ * again after CSS Color 4's gamut mapping, and the lower ratio is returned. E1804 requires >= 4.5 (>= 3 at a large
+ * size). Throws RangeError for any other value, a color with alpha among them.
  */
 export function contrast(fg: string, bg: string): number {
-  const a = luminance(fg);
-  const b = luminance(bg);
-  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+  const a = linear(fg);
+  const b = linear(bg);
+  const given = ratio(luminance(a), luminance(b));
+  const mapped = ratio(luminance(gamutMap(a)), luminance(gamutMap(b)));
+  return Math.min(given, mapped);
 }

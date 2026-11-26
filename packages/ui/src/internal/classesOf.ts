@@ -29,7 +29,7 @@ function collect(src: Readonly<Record<string, unknown>>, state: PartState | unde
 }
 
 /**
- * The atomic classes for an element's style props, then its `states`, then the classes the compiler lowered its
+ * The atomic classes for an element's style props, then its `states`, its `media` class (`k-media-screen`), then the classes the compiler lowered its
  * static style props to (k.compiler: `class: "k-p-2 ..."`, the props themselves dropped). That lowered `class` is in no
  * element's type (rfc:0043), and only atomic `k-` classes are kept from it, so it is no way around tokens. Reads
  * signals (tracked).
@@ -43,6 +43,8 @@ export function classesOf(props: Readonly<Record<string, unknown>>): string[] {
       const nested = st[s.key];
       if (isRecord(nested) && !isReadable(nested)) collect(nested, s.key, out);
     }
+  const media = props.media;
+  if (media === "screen" || media === "print") out.push(`k-media-${media}`);
   const lowered = props.class;
   if (typeof lowered === "string")
     for (const c of lowered.split(/\s+/)) if (ATOMIC.test(c) && !out.includes(c)) out.push(c);

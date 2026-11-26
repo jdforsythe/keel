@@ -1,10 +1,10 @@
 import type { Tokens } from "../types/Tokens.ts";
+import { colorSyntax } from "./colorSyntax.ts";
 import { varName } from "./varName.ts";
 
 /** The matchers the grammar reads with, built on first use so that importing this file runs no code (k.values). */
 type Matchers = {
   readonly number: RegExp;
-  readonly color: RegExp;
   readonly word: RegExp;
   readonly units: ReadonlySet<string>;
 };
@@ -14,7 +14,6 @@ const matchers = (): Matchers => {
   const viewport = ["vw", "vh", "vi", "vb", "vmin", "vmax"].flatMap((u) => [u, `s${u}`, `l${u}`, `d${u}`]);
   built = {
     number: /^\d+(?:\.\d+)?/,
-    color: /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/,
     word: /^[A-Za-z_][A-Za-z0-9_-]*$/,
     units: new Set([
       ...["px", "cm", "mm", "q", "in", "pt", "pc"],
@@ -179,18 +178,33 @@ const whole = (s: string, read: (r: Reader) => void): boolean => {
 const isMath = (s: string): boolean => whole(s, (r) => r.math(1));
 const isEnv = (s: string): boolean => whole(s, (r) => r.env(1));
 
+/** An opaque `<color>` in one of k.values' six forms, and an `<alpha>`: one with alpha. */
+const isColor = (s: string): boolean => colorSyntax(s)?.alpha === null;
+const isAlpha = (s: string): boolean => {
+  const c = colorSyntax(s);
+  return c !== null && c.alpha !== null;
+};
+
 /** A `<paint>`: a `<color>`, a `<ref>` to a color token the tokens hold, or `currentColor`. */
 const isPaint = (s: string, refs: ReadonlySet<string>): boolean => {
-  if (s === "currentColor" || matchers().color.test(s)) return true;
+  if (s === "currentColor" || isColor(s)) return true;
   return s.startsWith("var(") && s.endsWith(")") && refs.has(s.slice(4, -1));
 };
 
-/** One shadow: `inset`, two to four lengths (the first two and the fourth may carry `-`), an optional paint. */
+/** The words of a value whose last part may be a function form holding spaces (`rgb(0 0 0 / 0.2)`), that part whole. */
+function wordsWithPaint(s: string): string[] {
+  if (!s.endsWith(")")) return s.split(" ");
+  const open = s.lastIndexOf(" ", s.indexOf("(")) + 1;
+  const head = s.slice(0, open).trimEnd();
+  return [...(head === "" ? [] : head.split(" ")), s.slice(open)];
+}
+
+/** One shadow: `inset`, two to four lengths (the first two and the fourth may carry `-`), an optional paint or alpha. */
 function isShadow(s: string, refs: ReadonlySet<string>): boolean {
-  const words = s.split(" ");
+  const words = wordsWithPaint(s);
   if (words[0] === "inset") words.shift();
   const last = words.at(-1);
-  if (last !== undefined && isPaint(last, refs)) words.pop();
+  if (last !== undefined && (isPaint(last, refs) || isAlpha(last))) words.pop();
   if (words.length < 2 || words.length > 4) return false;
   return words.every((w, i) => (i === 2 ? isLength(w) : isLength(w.startsWith("-") ? w.slice(1) : w)));
 }
@@ -248,7 +262,7 @@ function holds(group: string, v: string, refs: ReadonlySet<string>): boolean {
   const n = numberAt(v);
   switch (group) {
     case "color":
-      return matchers().color.test(v);
+      return isColor(v);
     case "space":
       return v === "auto" || isLp(v) || isEnv(v) || isMath(v);
     case "size":
@@ -268,7 +282,7 @@ function holds(group: string, v: string, refs: ReadonlySet<string>): boolean {
     }
     case "border": {
       if (v === "0" || v === "none") return true;
-      const [width = "", style = "", paint = "", ...rest] = v.split(" ");
+      const [width = "", style = "", paint = "", ...rest] = wordsWithPaint(v);
       return (
         rest.length === 0 &&
         (["thin", "medium", "thick"].includes(width) || isLength(width)) &&
@@ -285,23 +299,86 @@ function holds(group: string, v: string, refs: ReadonlySet<string>): boolean {
   }
 }
 
+/** The groups a theme may hold (k.themes Themes), and the conditions that turn one on. */
+const THEME_GROUPS = ["color", "overlay", "space", "size", "radius", "font", "fontSize", "weight", "shadow", "border"];
+const WHEN = ["choice", "contrast", "print"];
+const THEME_NAME = /^[a-z][A-Za-z0-9]{0,23}$/;
+const RESERVED = ["default", "system", "light", "dark"];
+
+const entries = (v: unknown): [string, unknown][] =>
+  typeof v === "object" && v !== null && !Array.isArray(v) ? Object.entries(v) : [];
+
+/**
+ * A color or overlay value, or a `{ light, dark }` pair of them: the paths of the values `ok` refuses, `[...at]` for a
+ * string and `[...at, scheme]` for one value of a pair. A pair where `pairs` is false is refused at `at`.
+ */
+function valuePaths(at: string[], v: unknown, ok: (s: string) => boolean, pairs: boolean): string[][] {
+  if (typeof v === "string") return ok(v) ? [] : [at];
+  if (!pairs) return [at];
+  return ["light", "dark"].filter((scheme) => !ok(String(Reflect.get(Object(v), scheme)))).map((s) => [...at, s]);
+}
+
+/** The refused paths of one theme (k.themes Themes): its name, `when`, held names and each value's form. */
+function themePaths(tokens: Tokens, name: string, theme: unknown, refs: ReadonlySet<string>): string[][] {
+  const at = ["themes", name];
+  const out: string[][] = [];
+  if (!THEME_NAME.test(name) || RESERVED.includes(name)) out.push(at);
+  const when = Reflect.get(Object(theme), "when");
+  if (when !== undefined && !WHEN.includes(String(when))) out.push([...at, "when"]);
+  const print = when === "print";
+  for (const [group, values] of entries(theme)) {
+    if (group === "when" || !THEME_GROUPS.includes(group)) continue;
+    const held = new Set(entries(Reflect.get(tokens, group)).map(([n]) => n));
+    for (const [token, v] of entries(values)) {
+      const path = [...at, group, token];
+      if (!held.has(token)) out.push(path);
+      else if (group === "color") out.push(...valuePaths(path, v, isColor, !print));
+      else if (group === "overlay") out.push(...valuePaths(path, v, isAlpha, !print));
+      else if (typeof v !== "string" || !holds(group, v, refs)) out.push(path);
+    }
+  }
+  return out;
+}
+
+/** The refused paths of the overlays (k.values Overlays): an `<alpha>` value or pair, and an `over` of held colors. */
+function overlayPaths(tokens: Tokens): string[][] {
+  const colors = new Set(Object.keys(tokens.color ?? {}));
+  const out: string[][] = [];
+  for (const [name, o] of Object.entries(tokens.overlay ?? {})) {
+    out.push(...valuePaths(["overlay", name, "value"], o.value, isAlpha, true));
+    const over = o.over;
+    if (over.length < 1 || over.length > 8 || new Set(over).size !== over.length || !over.every((c) => colors.has(c)))
+      out.push(["overlay", name, "over"]);
+  }
+  return out;
+}
+
 /**
  * The paths of every token value not in its group's form (k.values): `[group, name]`, or `[group, name, scheme]` for
- * one value of a color pair. A `<ref>` names the custom property of a color token these tokens hold.
+ * one value of a color pair; an overlay's `[overlay, name, value]` (then the scheme) or `[overlay, name, over]`; a
+ * theme's under `[themes, theme]`, which is itself refused for a bad name and `[themes]` for more than 8 `choice`
+ * themes or a second `contrast` or `print` (k.themes Themes). A `<ref>` names the custom property of a color token
+ * these tokens hold.
  */
 export function valueForms(tokens: Tokens): string[][] {
   const refs = new Set(Object.keys(tokens.color ?? {}).map((n) => varName("color", n)));
   const out: string[][] = [];
   for (const [group, values] of Object.entries(tokens)) {
-    if (group === "base" || group === "look" || group === "schemes") continue;
+    if (["base", "look", "schemes", "overlay", "themes"].includes(group)) continue;
     if (typeof values !== "object" || values === null) continue;
     for (const [name, v] of Object.entries(values)) {
       if (typeof v === "string") {
-        if (!holds(group, v, refs)) out.push([group, name]);
+        // `print` is the responsive key for the printed page (k.aria Print), so no breakpoint takes the name.
+        if (!holds(group, v, refs) || (group === "breakpoint" && name === "print")) out.push([group, name]);
       } else if (group === "color" && typeof v === "object" && v !== null)
         for (const scheme of ["light", "dark"])
           if (!holds("color", String(Reflect.get(v, scheme)), refs)) out.push([group, name, scheme]);
     }
   }
+  out.push(...overlayPaths(tokens));
+  const themes = Object.entries(tokens.themes ?? {});
+  for (const [name, theme] of themes) out.push(...themePaths(tokens, name, theme, refs));
+  const count = (w: string): number => themes.filter(([, t]) => (t.when ?? "choice") === w).length;
+  if (count("choice") > 8 || count("contrast") > 1 || count("print") > 1) out.push(["themes"]);
   return out;
 }

@@ -24,4 +24,7 @@ export const styleProps: readonly StyleProp[] = [
   "justify",
   "wrap",
   "textAlign",
+  "breakBefore",
+  "breakAfter",
+  "breakInside",
 ];

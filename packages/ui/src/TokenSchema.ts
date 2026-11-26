@@ -59,9 +59,30 @@ const set = styleSet.optional();
 /** The three scheme lists `schemes` may be (k.schemes). */
 const SCHEMES = ["light", "dark", "light,dark"];
 
+const colors = s.record(s.union([s.string(), pair])).optional();
+const theme = s.object(
+  {
+    when: s.enum(["choice", "contrast", "print"]).optional(),
+    color: colors,
+    overlay: colors,
+    space: scale,
+    size: scale,
+    radius: scale,
+    font: scale,
+    fontSize: scale,
+    weight: scale,
+    shadow: scale,
+    border: scale,
+  },
+  { closed: true },
+);
+
 const shape = s.object(
   {
-    color: s.record(s.union([s.string(), pair])).optional(),
+    color: colors,
+    overlay: s
+      .record(s.object({ value: s.union([s.string(), pair]), over: s.array(s.string()) }, { closed: true }))
+      .optional(),
     space: scale,
     size: scale,
     radius: scale,
@@ -90,6 +111,7 @@ const shape = s.object(
       .optional(),
     look: s.record(styleSet).optional(),
     schemes: s.array(s.string()).optional(),
+    themes: s.record(theme).optional(),
   },
   { closed: true },
 );
@@ -98,7 +120,7 @@ const shape = s.object(
  * Validates `tokens.ts` (E1807): only the closed groups (an unknown group fails with rule `unknown-key`),
  * token values each in its group's form (k.values; rule `format` at the value's path), colors a value or a closed
  * `{ light, dark }` pair, `base` the closed role sets and
- * `focus`, `look` named style sets, `schemes` one of `["light"]`, `["dark"]`, `["light", "dark"]` (rule `format`), and a `base.focus` color at 3:1 or more against `base.page`'s `bg` in each scheme
+ * `focus`, `look` named style sets, overlays and `themes` as k.values Overlays and k.themes Themes give them, `schemes` one of `["light"]`, `["dark"]`, `["light", "dark"]` (rule `format`), and a `base.focus` color at 3:1 or more against `base.page`'s `bg` in each screen combination
  * (rule `format` at `base.focus`).
  */
 export const TokenSchema: Schema<Tokens> = {

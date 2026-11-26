@@ -50,7 +50,16 @@ const STYLE_PROPS: readonly string[] = [
   "justify",
   "wrap",
   "textAlign",
+  "breakBefore",
+  "breakAfter",
+  "breakInside",
 ];
+
+/** Attributes a base element writes as literals that are usages of their own (k.aria Scheme and Print): `media` on any, `scheme` on a `Box`. */
+const OWN_USAGE: Readonly<Record<string, readonly string[]>> = {
+  media: ["screen", "print"],
+  scheme: ["light", "dark"],
+};
 const STATES: readonly State[] = [
   "selected",
   "checked",
@@ -298,7 +307,31 @@ export function collectStyles(
     return u === undefined ? [] : [u];
   });
   for (const look of [...named].sort()) usages.push({ props: {}, look });
+  usages.push(...ownUsages(a, base, ui));
   return { usages, rewrites, edits, diagnostics };
+}
+
+/** One usage per distinct literal `media` on a base element and `scheme` on a `Box`, in that order (k.aria Scheme and Print). */
+function ownUsages(a: Analysis, base: ReadonlySet<string>, ui: ReadonlyMap<string, string>): StyleUsage[] {
+  const seen = new Map<string, StyleUsage>();
+  for (const j of a.jsx) {
+    if (j.type !== "JSXElement") continue;
+    const n = j.openingElement.name;
+    if (n.type !== "JSXIdentifier" || !base.has(n.name)) continue;
+    for (const at of j.openingElement.attributes) {
+      if (at.type === "JSXSpreadAttribute") continue;
+      const name = attrNameOf(at.name);
+      const allowed = OWN_USAGE[name];
+      if (allowed === undefined || (name === "scheme" && ui.get(n.name) !== "Box")) continue;
+      const sv = staticValueOf(at.value);
+      if (sv !== undefined && !sv.bare && allowed.includes(sv.text))
+        seen.set(`${name}:${sv.text}`, { props: { [name]: sv.text } });
+    }
+  }
+  return [...seen.keys()].sort().flatMap((k) => {
+    const u = seen.get(k);
+    return u === undefined ? [] : [u];
+  });
 }
 
 function element(
