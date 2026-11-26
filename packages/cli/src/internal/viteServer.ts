@@ -7,6 +7,19 @@ import { devPoll } from "./devPoll.ts";
 import { isRecord } from "./isRecord.ts";
 
 const field = (v: unknown, key: string): unknown => (isRecord(v) ? v[key] : undefined);
+const ANSI = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, "g");
+
+/** Replaces the `info`, `warn`, `warnOnce` and `error` of Vite's `logger` with ones that write `msg` with no ANSI. */
+const plainLogger = (logger: unknown): void => {
+  if (!isRecord(logger)) return;
+  for (const name of ["info", "warn", "warnOnce", "error"]) {
+    const write = logger[name];
+    if (typeof write !== "function") continue;
+    Reflect.set(logger, name, (msg: unknown, ...rest: unknown[]): unknown =>
+      write.call(logger, typeof msg === "string" ? msg.replace(ANSI, "") : msg, ...rest),
+    );
+  }
+};
 
 /** `name` of `owner` as a function called on `owner`; throws when the project's Vite lacks it. */
 const method = (owner: unknown, name: string): ((...args: unknown[]) => unknown) => {
@@ -37,10 +50,11 @@ const polls = (): boolean => !["", "0", "false"].includes((process.env.CHOKIDAR_
  * `server.watch` `{ usePolling: true, interval: 100 }` when `KEEL_DEV_POLL` is `1` (merged over the project's own
  * `server.watch`; unset, empty or `0` passes none). Any other value throws. This
  * evaluates the project's `vite.config.ts` and its plugins' `config` hooks once; nothing listens yet. What
- * `createServer` returns is checked at runtime against the shape `keel dev` uses. Throws when `vite` cannot be
- * resolved or does not fit.
+ * `createServer` returns is checked at runtime against the shape `keel dev` uses. With `plain`, its logger writes no ANSI
+ * (docs/OUTPUT.md: compact and json carry no color, whatever `CI` makes Vite's colors think). Throws when `vite` cannot
+ * be resolved or does not fit.
  */
-export async function viteServer(cwd: string, port: number | undefined): Promise<DevServer> {
+export async function viteServer(cwd: string, port: number | undefined, plain = false): Promise<DevServer> {
   const mod: unknown = await import(pathToFileURL(projectVite(cwd)).href);
   const create = method(mod, "createServer");
   const version = field(mod, "version");
@@ -55,6 +69,7 @@ export async function viteServer(cwd: string, port: number | undefined): Promise
     },
   });
   const config = field(server, "config");
+  if (plain) plainLogger(field(config, "logger"));
   const info = method(field(config, "logger"), "info");
   const listen = method(server, "listen");
   const close = method(server, "close");

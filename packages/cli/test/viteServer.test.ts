@@ -1,18 +1,20 @@
 // viteServer: the inline config `keel dev` hands the project's Vite. A stand-in `vite` in a temp project answers
-// `createServer` with its argument as `config.server.port`, which `viteServer` hands back unread.
+// `createServer` with its argument as `config.server.port`, which `viteServer` hands back unread, and a logger whose
+// lines it keeps in `written`.
 import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { isRecord } from "../src/internal/isRecord.ts";
 import { viteServer } from "../src/internal/viteServer.ts";
 
 const VITE = `export const version = "0.0.0";
-export const createServer = (inline) => ({
-  config: { server: { port: inline }, logger: { info() {} } },
-  listen() {},
-  close() {},
-  printUrls() {},
-});
+export const written = [];
+export const createServer = (inline) => {
+  const config = { server: { port: inline }, logger: { info(msg) { written.push(msg); } } };
+  return { config, listen() {}, close() {}, printUrls() { config.logger.info("  \\u001b[32m➜\\u001b[39m  Local: http://127.0.0.1:5999/"); } };
+};
 `;
 
 let project = "";
@@ -51,6 +53,19 @@ describe("viteServer", () => {
     vi.unstubAllEnvs();
     vi.stubEnv("KEEL_DEV_POLL", undefined);
     expect(await inline()).toEqual({ root: project, server: { strictPort: true } });
+  });
+
+  it("writes Vite's lines with no ANSI when plain, and as Vite colored them when not", async () => {
+    vi.stubEnv("KEEL_DEV_POLL", "");
+    const mod: unknown = await import(pathToFileURL(join(project, "node_modules", "vite", "index.js")).href);
+    const written = isRecord(mod) && Array.isArray(mod.written) ? mod.written : [];
+    (await viteServer(project, undefined, true)).printUrls();
+    (await viteServer(project, undefined)).printUrls();
+    const esc = String.fromCharCode(27);
+    expect(written).toEqual([
+      "  ➜  Local: http://127.0.0.1:5999/",
+      `  ${esc}[32m➜${esc}[39m  Local: http://127.0.0.1:5999/`,
+    ]);
   });
 
   it("throws for any other value, naming the key and not the value", async () => {
