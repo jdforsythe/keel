@@ -17,12 +17,14 @@ function isLibrary(dir: string): boolean {
   }
 }
 
-/** `serve({ page, props })` (k.e2e Libraries): E1736 outside a library's own folder. */
+/** `serve({ page, props })` (k.e2e Libraries): E1736 outside a library's own folder; in one, not served (see below). */
 export async function libraryPage(dir: string, options: ServeOptions): Promise<Served> {
   if (!isLibrary(dir))
     throw e2eError("E1736", "serve({ page }) runs in a library's own folder; an app serves its own routes", {
       dir,
       page: options.page?.name ?? "",
     });
-  throw e2eError("E1736", "serve({ page }) is not built yet", { dir });
+  // A library's own folder holds no app runtime (`@keel/server`, `@keel/router`) to build a page with: the one-route
+  // build k.e2e Libraries states is not made here, and the call says so rather than serving something else.
+  throw new Error(`serve({ page }) in ${dir}: a library page is not served by this version of @keel/testing/e2e`);
 }
