@@ -3,10 +3,11 @@
 // `x-keel` header); the same app with `identity.ts` (its `client` deployable `servedBy` a `node` one) holds it.
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
+import { fixedTime } from "@keel/tooling/test-time";
 import { afterAll, beforeAll, expect, test } from "vitest";
 import { type Tree, cleanup, keel, materialize } from "../conformance/compat-support.ts";
 
-const SLOW = 300_000;
+const SLOW = fixedTime(300_000);
 
 /** A `client` deployable `web` over module `w`, one guarded page; with `identity`, also `identity.ts`, `identity.server.ts` and a `node` deployable `api` serving it. */
 function tree(identity: boolean): Tree {

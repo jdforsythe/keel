@@ -1,3 +1,4 @@
+import { fixedTime } from "@keel/tooling/test-time";
 // The vitest task readers: the worker global read as `unknown` and narrowed field by field; axe's rule list checked.
 import { afterAll, describe, expect, it } from "vitest";
 import { axeRuleList } from "../src/internal/axeRuleList.ts";
@@ -14,13 +15,17 @@ describe("currentTask readers", () => {
     expect(outside).toBeUndefined();
   });
 
-  it("read the running test's meta, timeout and start", () => {
-    const meta = currentTestMeta();
-    expect(meta).toBeTypeOf("object");
-    const bound = currentTestBound();
-    expect(bound?.timeout).toBeGreaterThan(0);
-    expect(bound?.startedAt).toBeTypeOf("number");
-  }, 7_000);
+  it(
+    "read the running test's meta, timeout and start",
+    () => {
+      const meta = currentTestMeta();
+      expect(meta).toBeTypeOf("object");
+      const bound = currentTestBound();
+      expect(bound?.timeout).toBeGreaterThan(0);
+      expect(bound?.startedAt).toBeTypeOf("number");
+    },
+    fixedTime(7_000),
+  );
 
   it("onTestEnd registers on the running test", () => {
     onTestEnd(() => ended.push("test"));

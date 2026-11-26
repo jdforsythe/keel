@@ -69,7 +69,7 @@ describe("binary start", () => {
       expect(loaded.some((u) => u.endsWith("/packages/cli/src/bin.ts"))).toBe(true);
       expect(heavy(loaded)).toEqual([]);
     },
-    60_000,
+    fixedTime(60_000),
   );
 
   it(

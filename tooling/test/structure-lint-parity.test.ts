@@ -6,7 +6,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { testTime } from "../test-time.ts";
+import { fixedTime, testTime } from "../test-time.ts";
 
 const lint = path.join(import.meta.dirname, "..", "structure-lint.mjs");
 const made: string[] = [];
@@ -32,7 +32,7 @@ function s0012(file: string, source: string): { code: string; path: string }[] {
 }
 
 // Each case runs structure-lint over a throwaway root, a process of its own: about 0.6 s here, so 20 s.
-describe("rfc:0169 conformance: S0012 with deps.json as shipped", { timeout: 20_000 }, () => {
+describe("rfc:0169 conformance: S0012 with deps.json as shipped", { timeout: fixedTime(20_000) }, () => {
   it("rfc:0169 conformance: `import { mountRequests } from '@keel/router/internal'` in `packages/std-tauri/src/a.ts` passes", () => {
     expect(
       s0012(
