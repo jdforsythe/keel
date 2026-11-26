@@ -229,6 +229,9 @@ jobs:
       - name: "household end to end: sign-in, guards, the outbox offline, conflicts, the weekly run, resume of the setup page"
         working-directory: apps/household
         run: node ../../packages/cli/src/bin.ts test --e2e
+      - name: "inspector end to end: served as a node deployable under its own policy, reading golden-1 under keel dev on its server"
+        working-directory: apps/inspector
+        run: node ../../packages/cli/src/bin.ts test --e2e
       - name: "examples: check, test and build in each, then its end-to-end files where it has them"
         run: "set -e\nfor d in examples/*/; do\n  (cd \"$d\" && node ../../packages/cli/src/bin.ts check && node ../../packages/cli/src/bin.ts test && if grep -q '\"keel\": \"library\"' package.json; then node ../../packages/cli/src/bin.ts pack --check; else node ../../packages/cli/src/bin.ts build; fi && if ls test/*.e2e.ts >/dev/null 2>&1; then node ../../packages/cli/src/bin.ts test --e2e; fi)\ndone"
       - name: "e2e run reports: each project's reports/tests/e2e.json, paths kept, for the ledger"
