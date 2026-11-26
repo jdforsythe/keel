@@ -305,9 +305,13 @@ test("engine.tx throwing: a serialization failure reruns, a lost connection is u
       data: { constraint: "t_fk", kind: "foreign" },
     }),
   );
-  const other = scripted(() => none, { txThrows: () => pgError("22012") });
+  const actionable = scripted(() => none, { txThrows: () => pgError("22012") });
+  expect(await makeDatabase("t.db", actionable.backend).transaction(async () => ok("done"))).toEqual(
+    err({ code: "postgres.database", message: "The database refused the statement", data: { sqlstate: "22012" } }),
+  );
+  const other = scripted(() => none, { txThrows: () => pgError("42P01") });
   await expect(makeDatabase("t.db", other.backend).transaction(async () => ok("done"))).rejects.toThrow(
-    "std.postgres: the database answered SQLSTATE 22012",
+    "E2461 std.postgres: the database answered SQLSTATE 42P01",
   );
 });
 
