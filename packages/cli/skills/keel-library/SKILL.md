@@ -5,7 +5,7 @@ description: "Write a Keel library: scaffold, pack, peers, ids, colour and token
 
 # Writing a Keel library
 
-Exact rules: `keel docs k.library` (how an app reads a library), `k.library-pack` (package, pack, scaffold), `k.host-element`, `k.host-code`, `k.aria`. Components, host elements and tests follow keel-client and keel-testing.
+Exact rules: `keel docs libraries` lists them: `keel docs k.library` (how an app reads a library), `k.library-pack` (package, pack, scaffold), `k.host-element`, `k.host-code`, `k.aria`. Components, host elements and tests follow keel-client and keel-testing.
 
 **Scaffold.** `keel scaffold library @acme/charts` writes the folder `charts/` in the working directory (E1351 when it exists). It holds `package.json` (`"keel": "library"`), `module.ts` (module id `charts`, the base in lowerCamel), `src/index.ts`, `src/Example.tsx`, `test/Example.test.ts`, `tokens.ts`, `tsconfig.json`, `tsconfig.build.json`, `vitest.config.ts` and `README.md`. `tokens.ts` is the library's own check fixture and never ships: an app checks the library against its own. `keel scaffold` takes no `--help`; read `keel docs k.library-pack`.
 

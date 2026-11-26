@@ -5,7 +5,7 @@ description: "Keel server state: loaders and actions over server stores, guards 
 
 # Server state and API
 
-A `node` deployable owns the data; `client` ones call it. Signatures: `keel docs k.server`, `k.store`, `k.guards`, `k.contract`, `k.api`, `k.services`, `k.openapi`, `k.user`, `k.mount`. `keel docs --for <code>` finds a code's section; `keel explain <code>` explains it.
+A `node` deployable owns the data; `client` ones call it. Signatures: `keel docs server` lists them: `k.server`, `k.store`, `k.guards`, `k.contract`, `k.api`, `k.services`, `k.openapi`, `k.user`, `k.mount`. `keel docs --for <code>` finds a code; `keel explain <code>` explains it.
 
 ## Loaders, actions, stores
 

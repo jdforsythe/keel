@@ -5,7 +5,7 @@ description: "Build Keel pages: components, routes, forms, widgets, data tables,
 
 # Pages, forms, widgets, tables and text
 
-Signatures: `keel docs <id>` for `k.component` `k.router` `k.contract` `k.forms` `k.head` `k.ui` `k.a11y` `std.headless` `std.options` `std.tables` `std.messages` `std.i18n`.
+Signatures: `keel docs client` and `keel docs ui` list them; `keel docs <id>` for `k.component` `k.router` `k.contract` `k.forms` `k.head` `k.ui` `k.a11y` `std.headless` `std.options` `std.tables` `std.messages` `std.i18n`.
 
 **Components.** One default export per file, named as the file, with `export const Props = s.object(...)`. Props are getters: never destructure (E1401). Branch with `<If when fallback>` and `<Match on>` with `<Case tag>`; repeat with `<For each key>`, whose child is `(item) => ...`. Children of `If` and `Form` are written inline; `{a && <b/>}` and `.map()` over elements are E1403, a `{() => ...}` child E1403 or E1406. A component's own state is `signal(initial)` (`@keel/reactive`): read `open.get()`, write `open.set(v)`; a signal is not callable. A top-level `const x = props.y` read in JSX is E1405. Give what a test addresses `id="area.name"` (E1404). Style props take token names `tokens.ts` declares (`p="2"`; E1801). `gap` spaces a flex element only: give `direction` at or below its smallest breakpoint (`direction="column" gap="2"`; E1809). A component reaching an effect takes `(props, ctx: Ctx)`, never optional, defaulted, destructured or followed by a parameter (E1407); one that reaches none is `(props)`. A view store starts from loader data by being created in the component with it as `initial` (`keel docs k.store`, View stores); `tx` runs in a handler, and one in a component body is E1304.
 

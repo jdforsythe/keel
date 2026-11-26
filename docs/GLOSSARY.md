@@ -20,6 +20,7 @@ Canonical names. Changing one requires an RFC.
 - **rung**: proven, exhaustive, probabilistic, example, monitored.
 - **conformance suite**: the executable, implementation-independent form of a spec section.
 - **spec status**: proposed -> implemented -> conformance-covered -> frozen.
+- **area**: a named group of spec sections, one row of the spec map with an area map of its own (`spec/areas/<area>.md`, `keel docs <area>`); each section is in exactly one (k.docs).
 - **extension point**: schema type registry, check rule registry, capability registry, module manifest, inspector hooks (`inspector({ id, schema, read })`: a named, schema-typed section of the inspect document), output formatter registry.
 - **unsafe**: the only named path around a guarantee; requires a justification string; counted in the ledger.
 - **part**: `Part` from `@keel/ui/aria`, the element stdlib widgets build on; a base element whose `role` fixes its tag and ARIA props.

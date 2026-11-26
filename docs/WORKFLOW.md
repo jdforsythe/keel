@@ -10,7 +10,7 @@
 
 **Parallelism.** Each lane works in its own worktree under `.worktrees/` on its own branch (`lane-<id>`), and `HANDOFF.md` lists the open ones. Lanes that touch one package are stacked, the later on the earlier. A lane's agents commit in the lane, never push, and stage by explicit path; the orchestrator does the same on the main line (never `git add -A`).
 
-**Context discipline.** Checkpoint `PLAN.md` after each step. Subagents for exploration. `pnpm spec` for retrieval. Never read `.generated/` or build output.
+**Context discipline.** Checkpoint `PLAN.md` after each step. Subagents for exploration. `pnpm spec` lists the areas, `pnpm spec <area>` an area, `pnpm spec <id>` a section, `pnpm spec --for <code, name or term>` finds one. Never read `.generated/` or build output.
 
 **Gates.** A brief tells its agent to run the package's own `check` (typecheck and lint, conformance included), not only the one test file it touched. The root `pnpm check` does not run the ledger diff; the orchestrator runs `pnpm ledger --diff` with the root gates, because CI's `check` job does. `pnpm gate` runs CI's jobs from `tooling/ci.source.json` on this machine for one commit before a push (`docs/GATE.md`).
 
