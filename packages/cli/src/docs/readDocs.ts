@@ -108,7 +108,9 @@ export function readDocs(list: readonly SourceFile[]): InstalledDocs {
     files,
     cliVersion: versionAt(CLI),
     areas: repo ? repoAreas(files) : areas(files.get(`${CLI}/docs/map.json`)),
-    terms: repo ? glossaryTerms(files.get("docs/GLOSSARY.md") ?? "", known) : terms(files.get(`${CLI}/docs/glossary.json`)),
+    terms: repo
+      ? glossaryTerms(files.get("docs/GLOSSARY.md") ?? "", known)
+      : terms(files.get(`${CLI}/docs/glossary.json`)),
     installed,
     skills,
   };
