@@ -1,6 +1,6 @@
 # RFC 0246: k.docs: areas, a two-level map and lookups by code, name and term
 
-Status: accepted (ADR-0272), accepted by the orchestrator on 2026-11-26, to be confirmed by the operator. Amends k.docs (opening, Packed files, Areas, Titles, Forms, records, The Keel repo, Budgets, Conformance), the glossary (`area`), the map row of k.docs. From backlog 1100, 0807 and 1043 (`tasks/p1/weaknesses.md` Lane 16) and the app trials' `keel docs` finding.
+Status: implemented (ADR-0272), accepted by the orchestrator on 2026-11-26, to be confirmed by the operator. Amends k.docs (opening, Packed files, Areas, Titles, Forms, records, The Keel repo, Budgets, Conformance), the glossary (`area`), the map row of k.docs. From backlog 1100, 0807 and 1043 (`tasks/p1/weaknesses.md` Lane 16) and the app trials' `keel docs` finding.
 
 ## Decisions
 - D1: three levels. The map (`spec/00-map.md`) lists areas; an area map (`spec/areas/<area>.md`) lists its sections with what each holds; a section is one file. Fourteen areas (table below).
