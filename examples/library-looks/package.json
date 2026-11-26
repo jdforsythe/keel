@@ -1,0 +1,48 @@
+{
+  "name": "@example/library-looks",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "keel": "library",
+  "exports": {
+    ".": {
+      "keel": "./src/index.ts",
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    },
+    "./tokens": {
+      "keel": "./src/acmeTokens.ts",
+      "types": "./dist/src/acmeTokens.d.ts",
+      "default": "./dist/src/acmeTokens.js"
+    }
+  },
+  "files": ["module.ts", "src", "dist", ".keel/ledger.json", "README.md"],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "check": "keel check",
+    "test": "keel test",
+    "prepack": "tsc -p tsconfig.build.json && keel pack --check"
+  },
+  "peerDependencies": {
+    "@keel/compiler": "workspace:*",
+    "@keel/reactive": "workspace:*",
+    "@keel/runtime-dom": "workspace:*",
+    "@keel/schema": "workspace:*",
+    "@keel/ui": "workspace:*"
+  },
+  "devDependencies": {
+    "@keel/cli": "workspace:*",
+    "@keel/compiler": "workspace:*",
+    "@keel/reactive": "workspace:*",
+    "@keel/runtime-dom": "workspace:*",
+    "@keel/schema": "workspace:*",
+    "@keel/testing": "workspace:*",
+    "@keel/ui": "workspace:*",
+    "@types/node": "^22",
+    "fast-check": "^3",
+    "happy-dom": "^21.0.4",
+    "typescript": "^5.6",
+    "vite": "^8.3.6",
+    "vitest": "^4.1.12"
+  }
+}

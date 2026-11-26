@@ -1,1 +1,1 @@
-{"data":{"usages":[{"props":{"direction":"column"}},{"props":{"gap":"2"}},{"props":{"p":"4"}}]},"hash":"fnv1a:619707a0"}
+{"data":{"usages":[{"look":"acme.badge","props":{}},{"look":"acme.card","props":{}},{"look":"acme.knob","props":{}},{"look":"acme.switch","props":{}},{"props":{"align":"center"}},{"props":{"direction":"column"}},{"props":{"direction":"row"}},{"props":{"fg":"acme.text"}},{"props":{"gap":"2"}},{"props":{"p":"4"}}]},"hash":"fnv1a:5d4aed38"}
