@@ -312,7 +312,7 @@ The builder disputed seven points in the first fixtures. One was a spec sentence
 - an item id is not of a form E1705 admits (`<id>.<key>` under a listed id, or a template id's head).
 
 ## Migration
-Each smoke becomes `*.e2e.ts` files in the project it tests, and CI's `built-smokes` job becomes `keel test --e2e` in each of them. `built.mjs`'s helpers then have no caller and are removed. `tooling/test-time.ts` stays for the repo's own tests.
+Each smoke becomes `*.e2e.ts` files in the project it tests, and CI's `built-smokes` job becomes `keel test --e2e` in each of them. `built.mjs` stays as the shell smokes' helper. `tooling/test-time.ts` stays for the repo's own tests.
 
 | smoke | becomes | needs that the API lacks |
 | --- | --- | --- |
@@ -331,6 +331,27 @@ Each smoke becomes `*.e2e.ts` files in the project it tests, and CI's `built-smo
 | `resume.mjs` | `apps/golden-2/test/resume.e2e.ts`: `hold`, typing, `scroll`, `resume()`'s claim check, `requests()` for one POST, `viewport`, locale paths, `warning` problems; household's `/setup` steps in `apps/household/test/resume.e2e.ts` | none |
 | `shell.mjs`, `shell-drive.mjs`, `shell-launch.mjs` | stay in `tooling/smoke/` | a native-shell driver (Tauri WebDriver, macOS accessibility, XCUITest), app launch and kill, the shell's store files |
 | `shellReplay.mjs`, `webdriver.mjs` | stay, as the shell smokes' helpers | as above |
+
+### Where each assertion went
+Every assertion of each deleted smoke, the file that now makes it and the test (`it`) that holds it.
+
+| old smoke | assertion | file | test |
+| --- | --- | --- | --- |
+| `persist.mjs` | a list made, found after a reload; a todo added, found after a reload; toggle and undo, each answered 200 and kept after a reload; the board row holds both; no page or console error | `apps/golden-1/test/persist.e2e.ts` | a list and a todo survive reloads, a toggle and its undo reach the api, and the board row holds them |
+| `restart.mjs` | five writes answered 200; the stored board equal before and after a SIGKILL and restart; the GET equal; log ids rising by one to `head`; the next write `head + 1` and the only new entry | `apps/golden-1/test/restart.e2e.ts` | the board stored before a SIGKILL is the board after the restart, and the next write applies |
+| `workflow.mjs` | the planted step running, a SIGKILL inside it, the instance ending `kept`; `api.removal.attempt` twice, `api.removal.restored` once and absent mid-run; `api.showList` once; board log ids contiguous to `head`; the list shown once | `apps/golden-1/test/workflow.e2e.ts` | the SQLite case |
+| `workflow-postgres.mjs` | the same on Postgres 17 (`KEEL_TEST_POSTGRES_URL`, a clear failure when unset) | `apps/golden-1/test/workflow.e2e.ts` | the Postgres case |
+| `csp.mjs` | the client's `csp.txt` with its origins and not the host's, `script-src 'self'`, no nonce; the api's document and client-path policy equal to it; a JSON route's `default-src 'none'; frame-ancestors 'none'`; the example's policy, a 64-character nonce equal to the module script's, declared origins only, a new nonce per document | `apps/golden-1/test/csp.e2e.ts`, `examples/third-party-origin/test/csp.e2e.ts` | each file's first case; the example's second case adds the browser's `csp` problem for an undeclared image |
+| `dev-signin.mjs` | the shells, the accounts page, `GET /api/me` 403, sign-up and sign-in 303 with and without the session cookie, the page naming the account, the server-only stubs with no `node:` import, an edit reaching the server | `apps/golden-2/test/dev.e2e.ts` | its one case |
+| `canary.mjs` | every canary absent from the log (json and compact runs), error answers, redirects, URLs, cookies, `dist/`, the data folder and the evidence bundle; `keel evidence --verify` over golden-2 and household; the carried checks (`/api/me`, the database) | `apps/golden-2/test/canary.e2e.ts` | the cases of "canaries in the sinks of the served api", "no canary is in the build artifacts under dist/" and "the evidence bundle holds no canary" |
+| `brand.mjs` | the body's background, font and colour; the focus ring per Tab stop; the responsive row at each viewport | `examples/static-client/test/brand.e2e.ts` | the brand's reset, focus ring and responsive Box hold in Chromium |
+| `inspector.mjs` | a list added in golden-1 reported; the inspector live, with the graph grouped by kind and its counts, the `todos.outbox` store with `outbox.add` in its log, the ids view; no inspector error; no page error on either page | `apps/inspector/test/inspector.e2e.ts` | its one case |
+| `monitor.mjs` | the build with a fresh reader; the two-user board script; one tally merge read at `/sessions/tally` behind the reader guard; `keel session monitor` writing `monitored.json` (`v`, `origin`, `tx`, `from` <= `to`); SIGTERM at the end | `apps/golden-1/test/monitor.e2e.ts` | its one case (`stop('api', { drain: true })`) |
+| `examples.mjs` | per example its proof: the OpenAPI stub's one request (openapi-import), the client-only API's two GETs with no preflight and no cookie reaching it with both cookies preset, its policy text and E1571 without the origin (client-only-api), the peer greeting, the refused forged header and compose's peer (compose-peers), the codemod's tree checking, testing, building, showing the peer count and restoring byte for byte (codemod-place), the empty Host node drawn into (host-component, library-app), the links-in shell build and route, the shell mount sign-in (shell-mount), the native shells' ids and Keel-free web builds, the static client under a plain host | the e2e file in each example | each file's case(s); the per-example check, test and build loop is CI's |
+| `household.mjs` | the start page's stylesheet, the guard to `/signin?next=%2Flist`, sign-up and sign-in to `/list`; the session cookie's flags; setup, the brand serif, the menu through a reload; the API refusing a stranger and a forged origin; receipts, a rejected form keeping its values (scripts on and off); tokens minted and revoked; the pii canary; a kill with a write in flight on PGlite; Postgres 17; the outbox offline, the conflict, sign-out elsewhere; reconnect after a restart; the weekly run | `apps/household/test/access.e2e.ts`, `durable.e2e.ts`, `pii.e2e.ts`, `postgres.e2e.ts`, `outbox.e2e.ts`, `reconnect.e2e.ts`, `restock.e2e.ts` | the case named for each flow |
+| `resume.mjs` | golden-2's pages resumed in place with rows, scroll, typed value, caret and focus kept, island marks equal, no warning or error, one interaction each; the early submit posting once; sign-up and sign-in posting once with a 303; the api restart; the 390px catalog in two locales; household's `/setup` held, typed, resumed and live through a kill and offline | `apps/golden-2/test/resume.e2e.ts`, `apps/household/test/resume.e2e.ts` | the cases listed in each file |
+
+Two checks the smokes made in the page are carried by the conformance instead, as above: the `x-keel` call a stand-in refuses (k.e2e's preflight clause) and the refused connect to an undeclared origin (k.e2e's answered-origins clause, with the example's policy text).
 
 No migration notes: nothing is released.
 
