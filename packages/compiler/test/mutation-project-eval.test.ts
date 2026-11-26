@@ -81,21 +81,25 @@ describe("evaluateProject (mutation)", () => {
     },
   );
 
-  it("reports a token value that breaks out of CSS and falls back to empty CSS", { timeout: fixedTime(30000) }, async () => {
-    const r = await evaluateProject({
-      root,
-      tokensFile: "tokens3.ts",
-      routesFiles: [],
-      usages: [{ props: { p: "1" } }],
-    });
-    expect(r).toEqual({
-      css: "",
-      looks: {},
-      schemes: ["light"],
-      routes: {},
-      problems: ["E1807 token color.fg is not in its group's form"],
-    });
-  });
+  it(
+    "reports a token value that breaks out of CSS and falls back to empty CSS",
+    { timeout: fixedTime(30000) },
+    async () => {
+      const r = await evaluateProject({
+        root,
+        tokensFile: "tokens3.ts",
+        routesFiles: [],
+        usages: [{ props: { p: "1" } }],
+      });
+      expect(r).toEqual({
+        css: "",
+        looks: {},
+        schemes: ["light"],
+        routes: {},
+        problems: ["E1807 token color.fg is not in its group's form"],
+      });
+    },
+  );
 
   it("uses E1807 for errors without a code", { timeout: fixedTime(30000) }, async () => {
     const r = await evaluateProject({
@@ -269,20 +273,24 @@ describe("evaluateProject routes.ts and syntax errors (RFC 0030)", () => {
     },
   );
 
-  it("reports a syntax error in an evaluated module as E1000 at its location", { timeout: fixedTime(30000) }, async () => {
-    write("r/syntax.ts", `export const routes = { routes: { "a": { path: "/a" } };`);
-    write("tsyn.ts", "export const tokens = {;");
-    expect(await routesOnly("r/syntax.ts")).toEqual({
-      css: "",
-      looks: {},
-      schemes: ["light"],
-      routes: {},
-      problems: ["E1000 r/syntax.ts:1:56 syntax error: Expected `,` or `}` but found `;`"],
-    });
-    const t = await evaluateProject({ root, tokensFile: "tsyn.ts", routesFiles: [], usages: [] });
-    expect(t.problems).toHaveLength(1);
-    expect(t.problems[0]).toMatch(/^E1000 tsyn\.ts:1:\d+ syntax error: /);
-  });
+  it(
+    "reports a syntax error in an evaluated module as E1000 at its location",
+    { timeout: fixedTime(30000) },
+    async () => {
+      write("r/syntax.ts", `export const routes = { routes: { "a": { path: "/a" } };`);
+      write("tsyn.ts", "export const tokens = {;");
+      expect(await routesOnly("r/syntax.ts")).toEqual({
+        css: "",
+        looks: {},
+        schemes: ["light"],
+        routes: {},
+        problems: ["E1000 r/syntax.ts:1:56 syntax error: Expected `,` or `}` but found `;`"],
+      });
+      const t = await evaluateProject({ root, tokensFile: "tsyn.ts", routesFiles: [], usages: [] });
+      expect(t.problems).toHaveLength(1);
+      expect(t.problems[0]).toMatch(/^E1000 tsyn\.ts:1:\d+ syntax error: /);
+    },
+  );
 
   it("rethrows a build failure that is not a syntax error unchanged", { timeout: fixedTime(30000) }, async () => {
     write("r/missing.ts", `import { x } from "./nowhere.ts";\nexport const routes = x;`);

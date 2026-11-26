@@ -234,22 +234,26 @@ afterEach(() => {
   document.body.innerHTML = "";
 });
 
-test("every role with generated required props has no axe violations", async () => {
-  document.documentElement.setAttribute("lang", "en");
-  document.head.innerHTML = "<title>Part</title>";
-  const roles = Object.keys(cases).filter((r): r is PartRole => r in cases);
-  await fc.assert(
-    fc.asyncProperty(fc.constantFrom(...roles), gen, async (role, g) => {
-      document.body.innerHTML = '<main><div id="host"></div></main>';
-      const host = document.getElementById("host");
-      if (host === null) throw new Error("no host");
-      const off = mount(() => Part({ id: "w", role: "generic", children: () => cases[role](g) }), host, {
-        ctx: testCtx,
-      });
-      const r = await axe.run(host, config);
-      expect(r.violations.map((v) => `${role}: ${v.id}`)).toEqual([]);
-      off();
-    }),
-    { seed: SEED, numRuns: 120 },
-  );
-}, fixedTime(60_000));
+test(
+  "every role with generated required props has no axe violations",
+  async () => {
+    document.documentElement.setAttribute("lang", "en");
+    document.head.innerHTML = "<title>Part</title>";
+    const roles = Object.keys(cases).filter((r): r is PartRole => r in cases);
+    await fc.assert(
+      fc.asyncProperty(fc.constantFrom(...roles), gen, async (role, g) => {
+        document.body.innerHTML = '<main><div id="host"></div></main>';
+        const host = document.getElementById("host");
+        if (host === null) throw new Error("no host");
+        const off = mount(() => Part({ id: "w", role: "generic", children: () => cases[role](g) }), host, {
+          ctx: testCtx,
+        });
+        const r = await axe.run(host, config);
+        expect(r.violations.map((v) => `${role}: ${v.id}`)).toEqual([]);
+        off();
+      }),
+      { seed: SEED, numRuns: 120 },
+    );
+  },
+  fixedTime(60_000),
+);
