@@ -208,6 +208,41 @@ describe("applyRewrites", () => {
     const source = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, "..", "ci.source.json"), "utf8"));
     expect(downloadPatterns(source)).toContain("test-reports-*");
   });
+  it("a job that downloads the run reports needs every job that uploads one, so none is missing from its ledger", () => {
+    const source = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, "..", "ci.source.json"), "utf8"));
+    const jobs: [string, { needs?: string | string[]; steps: unknown[] }][] = Object.entries(source.jobs);
+    const stepsOf = (name: string): { uses?: string; with?: { name?: string; pattern?: string } }[] =>
+      expandSteps(source, name).filter((s: unknown) => typeof s === "object" && s !== null);
+    const uploads = jobs
+      .filter(([name]) =>
+        stepsOf(name).some(
+          (s) =>
+            s.uses?.startsWith("actions/upload-artifact") === true &&
+            matchesPattern(s.with?.name ?? "", "test-reports-*"),
+        ),
+      )
+      .map(([name]) => name);
+    expect(uploads).toEqual(expect.arrayContaining(["test-shard", "postgres"]));
+    const readers = jobs.filter(([name]) =>
+      stepsOf(name).some(
+        (s) => s.uses?.startsWith("actions/download-artifact") === true && s.with?.pattern === "test-reports-*",
+      ),
+    );
+    expect(readers.map(([name]) => name)).toEqual(expect.arrayContaining(["ledger"]));
+    const direct = (name: string): string[] => {
+      const n = source.jobs[name]?.needs;
+      return n === undefined ? [] : Array.isArray(n) ? n : [n];
+    };
+    const after = (name: string): Set<string> => {
+      const seen = new Set<string>();
+      const walk = (n: string): void => {
+        for (const d of direct(n)) if (!seen.has(d)) seen.add(d), walk(d);
+      };
+      walk(name);
+      return seen;
+    };
+    for (const [name] of readers) expect([...after(name)]).toEqual(expect.arrayContaining(uploads));
+  });
 });
 
 describe("failLines", () => {

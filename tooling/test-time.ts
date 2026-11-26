@@ -1,8 +1,9 @@
 // The one place a test's time bound is scaled. `KEEL_TEST_TIME_SCALE` (a positive number, default 1) multiplies every
 // time bound the repository's tests set: a run that passes here with every bound divided by N passes on a machine N
 // times slower, so `KEEL_TEST_TIME_SCALE=0.1` finds the bounds a runner ten times slower would cut. keelConfig scales
-// vitest's `testTimeout` and `hookTimeout`, the property-time transform's time per run and every timeout a test file
-// passes to `it`, `test`, `describe` or a hook (test-times.ts); the watchdog scales its grace and collection bound.
+// vitest's `testTimeout` and `hookTimeout` and every timeout a test file
+// passes to `it`, `test`, `describe` or a hook (test-times.ts). The watchdog's grace and collection allowance and the property-time
+// transform's time per run are the machine's own work, not a bound a test chose: they are fixed time.
 // A bound a test or smoke sets itself (a wait for a child process, a browser, a server) goes through `testTime`. A
 // time that is an input to the code under test (a lease, a heartbeat, a retry delay the test asserts on) is not a
 // bound and does not scale: it goes through `fixedTime`, which says so. Structure-lint S0016 refuses a hard-coded

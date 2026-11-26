@@ -16,6 +16,10 @@ What a subagent in a lane is told, so a fresh orchestrator can brief one without
 - Commits end with the session's attribution trailers.
 - The report states: commits, what is green with each command's last `ok` or `fail` line, what was not run, conformance disputed or owed, budgets re-based, `ledger-fresh` rows.
 
+## Personas
+
+`tasks/p1/personas.md` lists who Keel is built for. A writer names the personas an RFC touches and answers their questions; a reviewer who tries to break a change works as the persona it exposes most.
+
 ## The orchestrator
 
 - Before a commit on the main line, read `git status --short` and stage files by name: a lane's subagent has once edited a file in the main worktree, and `git add -A` carried it into a handoff commit.

@@ -89,6 +89,24 @@ The triage is `tasks/p1/weaknesses.md`: 102 lines to fix now in 17 lanes (A1), 1
 - [ ] `next` W15: the two worked component examples pass `keel check` and the a11y checks with no rule off and no `unsafe/`
 - [x] `done` a third-party style library built in the format: `libraries/charts`, used by household, packed and installed from its tarball
 
+### W17 The end user's seat (the personas, hands-on from the kit)
+`tasks/p1/personas.md` holds who Keel is for; `tasks/p1/end-user-review.md` holds each review's findings. Two reviews are in (a component library author; a product engineer with a third-party library): both "yes, with pain". In this order:
+- [ ] `next` the install path: `pnpm create keel` (a `create-keel` package), a kit README with the `overrides` recipe until npm; the clean-runner job of W12 uses it
+- [ ] `next` the library trust holes, as RFC 0240's next part: a library's `./tools` (code that runs at check and build) and its `unsafe/` are capabilities an app grants; a library's ledger rungs are verified from its shipped run report or shown as claimed; the scaffolded CI runs `keel ledger --diff`
+- [ ] `next` `@keel/server` answers 500 and keeps running when server-render code rejects (E1577)
+- [ ] `running` token names at `keel check` (RFC 0241, app code); then a library's own folder and a listed library's `src/`, and E1801 with file and line at build
+- [ ] `next` an RFC for a library's look (the plan's D188): a library ships a tokens object the app composes in its own `tokens.ts` as it composes `brandTokens`; needed names declared, namespaced by library id and checked against the app's at `keel check`; nothing applies without the app's import; `Part` roles a component library needs (switch, slider, radio and the rest of the authoring practices)
+- [ ] `next` testing as an app or library developer finds it: `fire` submit with `app`; `simulate` over `createApp` (E1729 with its two entries); `properties(Component)` with an id-shaped id; a probe's property credits its component; `console.log` visible; an own-folder a11y report, evidence and a mutation command for a library
+- [ ] `next` an RFC for end-to-end tests: `keel test --e2e` over the built app in a real browser, from `@keel/testing`; the repo's smokes move onto it
+- [ ] `next` a library's publish story: a Publish paragraph in k.library-pack and keel-library, a scaffolded CI workflow with provenance; `keel scaffold library` writes the agent files and `.gitignore`
+- [ ] `next` the paper cuts of both reviews (the leftover `app` module and E1552, E1005 after each edit, generated form ids, E1052's message, `keel review` on a fresh app, `keel docs` for installed libraries, a no-server app importing `@keel/server`, E1751's cut message, slot and `Part` examples in keel-library)
+- [ ] `next` the remaining reviews, each a role and a kind: a static content site (A1, K1); a designer re-theming an app and a library (A5); a compliance owner reading `keel evidence` (A6); a tester (A7); a service library such as maps with a script from another origin (L3); a plain npm package inside an app (L6); a storefront (K2); a SaaS over services (K4); each also run by Codex as the agent form
+- [ ] `next` an embedded piece (K9): Keel for one corner of an existing site, as a review and then a guide; the first question an enterprise with an existing product asks
+- [ ] `next` a second colour scheme (dark mode): decided inside the look RFC, since it is a question about tokens; no line held it before
+- [ ] `next` measured claims for the pitch: an agent builds the same app in Keel and in the comparison frameworks (W16), and a runtime and bundle size comparison produced by CI (none is planned elsewhere); until both exist the site claims neither
+- [ ] `next` the repository's own numbers agree: the README says 603 clauses and 35 packages against the ledger's 1,479 and 41; the handoff says 78 of 79 kernel sections conformance-covered where the spec status lines read 73 of 83; the `unsafe` count is 33 in the ledger; whether golden-2 already runs on the Postgres battery (its README says so, W14 says next); the two database variables (`KEEL_DATABASE_URL`, `KEEL_POSTGRES_URL`) explained in one place. Counts are generated, not typed, wherever a doc states one
+- [ ] `human` another product ships a global `keel` binary: the bin name before npm
+
 ### W12 Release
 - [x] `done` release hygiene (backlog 0941, 0943, 0944, 0946): `LICENSE`, `UNLICENSED`, every package private, `SECURITY.md`, `CONTRIBUTING.md`, each held by a hygiene check; `hygiene --launch` fails on the security address placeholder until it is set
 - [ ] `blocked` (W6, W7, W9 stable) the docs sweep and reset: final ADRs distilled and checked against the code, numbered RFC, ADR and backlog references gone, a check that fails on one

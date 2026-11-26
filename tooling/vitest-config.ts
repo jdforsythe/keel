@@ -9,7 +9,7 @@
 // most n workers, unless the config sets `maxWorkers` itself; without it, a run sizes itself the same way as one task
 // of `testSlots` from the load when it starts, at most vitest's own default (one fewer than the cores). A test that runs `properties` or `simulate` and declares
 // no options is given a timeout for its runs (property-times.ts). With `KEEL_TEST_TIME_SCALE=<n>` every time bound
-// is multiplied by n: `testTimeout`, `hookTimeout`, the property-time transform's time per run and each timeout a test
+// is multiplied by n: `testTimeout`, `hookTimeout` and each timeout a test
 // file passes to vitest (test-time.ts, test-times.ts). In a Keel project (a `topology.ts` in the working
 // directory) a run outside `keel test` gets what `keel test` gives it: `KEEL_TEST=1` and `@keel/testing/setup`, so a
 // harness render given no `artifacts` takes the project's `.keel/a11y.json` and `tokens.ts` (k.a11y Artifacts).

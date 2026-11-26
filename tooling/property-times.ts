@@ -7,10 +7,13 @@
 // test calls is not seen; such a test declares its own time. The watchdog reads each test's timeout, so a hang is
 // still bounded from it.
 import type { Plugin } from "vite";
-import { testTime } from "./test-time.ts";
+import { fixedTime } from "./test-time.ts";
 
-/** The time one generated run may take: 100 runs are 30 s, scaled by `KEEL_TEST_TIME_SCALE` (test-time.ts). */
-export const PER_RUN_MS = 300;
+/**
+ * The time one generated run may take: 100 runs are 30 s. A run is the machine's own work (CPU, rendering), not a wait
+ * the test chose, so it is fixed time: `KEEL_TEST_TIME_SCALE` (test-time.ts) does not shrink it.
+ */
+export const PER_RUN_MS = fixedTime(300);
 /** Runs `properties`, `simulate` and fast-check's `assert` make when the call names none (k.testing Properties, k.sim). */
 const DEFAULT_RUNS = 100;
 const TIMED = new Set(["properties", "simulate"]);
@@ -94,10 +97,22 @@ function isFastCheckAssert(callee: unknown, fc: { objects: Set<string>; asserts:
   return fc.objects.has(name(callee.object) ?? "") && name(callee.property) === "assert";
 }
 
-/** A call's literal `key` option (`runs`, or fast-check's `numRuns`), else the default. */
-function runsOf(call: Node, key = "runs"): number {
+/** The initializer of a top-level `const <id> = ...` in the file, for an options object the tests share. */
+function topLevelConst(program: Node, id: string): unknown {
+  for (const s of children(program)) {
+    const decl = s.type === "ExportNamedDeclaration" && isNode(s.declaration) ? s.declaration : s;
+    if (decl.type !== "VariableDeclaration" || decl.kind !== "const" || !Array.isArray(decl.declarations)) continue;
+    for (const d of decl.declarations) if (isNode(d) && name(d.id) === id) return d.init;
+  }
+  return undefined;
+}
+
+/** A call's literal `key` option (`runs`, or fast-check's `numRuns`), else the default; the options may be a top-level const object. */
+function runsOf(program: Node, call: Node, key = "runs"): number {
   const args = Array.isArray(call.arguments) ? call.arguments : [];
-  const options: unknown = args[1];
+  const arg: unknown = args[1];
+  const shared = name(arg);
+  const options: unknown = shared === undefined ? arg : topLevelConst(program, shared);
   if (!isNode(options) || options.type !== "ObjectExpression" || !Array.isArray(options.properties))
     return DEFAULT_RUNS;
   for (const p of options.properties) {
@@ -131,11 +146,11 @@ export function propertyTimes(code: string, parse: (code: string) => unknown, te
     let runs = 0;
     walk(fn, (c) => {
       if (c.type !== "CallExpression") return;
-      if (timed.has(name(c.callee) ?? "")) runs += runsOf(c);
-      else if (isFastCheckAssert(c.callee, fc)) runs += runsOf(c, "numRuns");
+      if (timed.has(name(c.callee) ?? "")) runs += runsOf(program, c);
+      else if (isFastCheckAssert(c.callee, fc)) runs += runsOf(program, c, "numRuns");
     });
     if (runs === 0) return;
-    inserts.push({ at: at.start, text: `{ timeout: ${Math.max(testTimeout, testTime(runs * PER_RUN_MS))} }, ` });
+    inserts.push({ at: at.start, text: `{ timeout: ${Math.max(testTimeout, runs * PER_RUN_MS)} }, ` });
   });
   if (inserts.length === 0) return undefined;
   let out = code;

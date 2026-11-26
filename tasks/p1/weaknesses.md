@@ -61,11 +61,11 @@ Rules:
 - [ ] 1112 the ledger counts an unskipped test as passing without a run result
 
 ### Lane 04 store-backed-flakes · std-db, std-postgres, apps/golden-2, apps/household · no RFC · M
-- [ ] 0651 the PGlite vitest worker dies with a V8 fatal error under load
-- [ ] 1039 a vitest worker crashed twice in the std-postgres suite
-- [ ] 1064 std-db `serial-commits` property failed once during a mutation run
-- [ ] 1058 golden-2 `racing-recipes` failed once; find the race or bound it
-- [ ] 1073 household `keel test` ended once in a Node crash trailer
+- [x] 0651 the PGlite vitest worker dies with a V8 fatal error under load
+- [x] 1039 a vitest worker crashed twice in the std-postgres suite
+- [x] 1064 std-db `serial-commits` property failed once during a mutation run
+- [x] 1058 golden-2 `racing-recipes` failed once; find the race or bound it
+- [x] 1073 household `keel test` ended once in a Node crash trailer
 
 ### Lane 05 first-run · scaffold, compiler, cli, every package's publish config · RFC (k.cli, 1012) · L
 - [x] 0991 the scaffold omits `esbuild`, so a new project's `keel build` fails

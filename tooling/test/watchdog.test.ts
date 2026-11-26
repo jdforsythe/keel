@@ -85,6 +85,44 @@ describe("watchdog", () => {
     }
   }, 60_000);
 
+  it("kills a worker whose file import never returns, within the collection allowance and grace", async () => {
+    const child = run("hang-import.fixture.ts", { KEEL_WATCHDOG_COLLECT_MS: "300" });
+    let out = "";
+    child.stdout?.on("data", (b: Buffer) => {
+      out += String(b);
+    });
+    child.stderr?.on("data", (b: Buffer) => {
+      out += String(b);
+    });
+    try {
+      const code = await new Promise<number | null>((resolve) => child.once("exit", (c) => resolve(c)));
+      expect(code).not.toBe(0);
+      expect(out).toMatch(/T0001 hang-import\.fixture\.ts:1:1 watchdog killed after \d+\.\ds \(bound 1\.1s\)/);
+      expect(await within(testTime(10_000), () => child.pid !== undefined && group(child.pid).length === 0)).toBe(true);
+    } finally {
+      killGroup(child.pid);
+    }
+  }, 60_000);
+
+  it("does not kill a slow import at time scale 0.01: the collection allowance and grace are fixed time", async () => {
+    // The import holds the thread 2.5 s. Scaled, the allowance would be 60 s * 0.01 * 2 + 0.5 s = 1.7 s.
+    const child = run("slow-import.fixture.ts", { KEEL_TEST_TIME_SCALE: "0.01" });
+    let out = "";
+    child.stdout?.on("data", (b: Buffer) => {
+      out += String(b);
+    });
+    child.stderr?.on("data", (b: Buffer) => {
+      out += String(b);
+    });
+    try {
+      const code = await new Promise<number | null>((resolve) => child.once("exit", (c) => resolve(c)));
+      expect(out).not.toContain("watchdog killed");
+      expect(code).toBe(0);
+    } finally {
+      killGroup(child.pid);
+    }
+  }, 60_000);
+
   it("kills an orphaned worker once vitest itself is gone", async () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "keel-watchdog-"));
     const ready = path.join(dir, "ready");
