@@ -11,10 +11,9 @@ import { isError } from "./isError.ts";
 import { makeDiag } from "./makeDiag.ts";
 import { projectFiles } from "./projectFiles.ts";
 import { projectTopology } from "./projectTopology.ts";
-import { testTimeScale } from "./testTimeScale.ts";
 import { vitestRun } from "./vitestRun.ts";
 
-/** An e2e test that declares no timeout has 60 s, scaled (k.e2e Time). */
+/** An e2e test that declares no timeout has 60 s, fixed time: it bounds a build's output starting and a browser's work (k.e2e Time). */
 const TIMEOUT = 60_000;
 const GLOBS = ["test/**/*.e2e.ts", "modules/*/test/**/*.e2e.ts"] as const;
 
@@ -70,7 +69,7 @@ export async function e2eCommand(input: Input, io: Io): Promise<OutRecord[]> {
     },
     {
       include: GLOBS,
-      timeout: Math.max(1, Math.round(TIMEOUT * testTimeScale())),
+      timeout: TIMEOUT,
       env: { KEEL_E2E: "1", KEEL_E2E_ENGINE: engine },
     },
   );

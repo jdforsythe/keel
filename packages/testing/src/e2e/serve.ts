@@ -26,12 +26,11 @@ import { spawnProc } from "../internal/e2e/spawnProc.ts";
 import { startProxy } from "../internal/e2e/startProxy.ts";
 import { storedText } from "../internal/e2e/storedText.ts";
 import { testEnd } from "../internal/e2e/testEnd.ts";
-import { timeScale } from "../internal/e2e/timeScale.ts";
 import type { LogRecord } from "../types/LogRecord.ts";
 import type { ServeOptions } from "../types/ServeOptions.ts";
 import type { Served } from "../types/Served.ts";
 
-/** Readiness bound (k.e2e serve): 20 s, scaled. */
+/** Readiness bound (k.e2e serve): 20 s of the machine's own work, fixed time. */
 const READY = 20_000;
 /** Every 100 ms when the storage reports no commits (k.e2e Served `until`). */
 const POLL = 100;
@@ -66,7 +65,6 @@ export async function serve(options: ServeOptions = {}): Promise<Served> {
   const data = mkdtempSync(join(tmpdir(), "keel-e2e-data-"));
   const secret = randomBytes(32).toString("hex");
   const extra = typeof options.env === "function" ? options.env(data) : (options.env ?? {});
-  const scale = timeScale();
   const hosted = project.deployables.filter(
     (d) => d.adapter === "static" || (d.adapter === "client" && d.servedBy === undefined),
   );
@@ -121,7 +119,7 @@ export async function serve(options: ServeOptions = {}): Promise<Served> {
       serverEnv({ d, port, secret, data, nodes, portOf, allow, extra });
     const devAt = nodes[0];
     if (options.dev === true && devAt !== undefined)
-      procs.set(devAt.name, devProc(dir, devAt.name, envOf(devAt), READY * scale));
+      procs.set(devAt.name, devProc(dir, devAt.name, envOf(devAt), READY));
     else
       for (const d of nodes) {
         const file =
@@ -136,7 +134,7 @@ export async function serve(options: ServeOptions = {}): Promise<Served> {
             port: peerPorts.get(d.name) ?? 0,
             args: () => ["--disable-warning=ExperimentalWarning", ...file, join(dir, "dist", d.name, "server.mjs")],
             env: envOf(d),
-            readyMs: READY * scale,
+            readyMs: READY,
             waitListen: true,
           }),
         );
