@@ -408,18 +408,6 @@
     "needs": "fixedTime"
   },
   {
-    "path": "packages/std-postgres/conformance/sim-held.test.ts",
-    "line": 238,
-    "text": "60_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/std-postgres/conformance/unreachable-0175.test.ts",
-    "line": 46,
-    "text": "60_000",
-    "needs": "testTime"
-  },
-  {
     "path": "packages/std-report/conformance/module-deps-loads-tools.test.ts",
     "line": 90,
     "text": "120_000",
