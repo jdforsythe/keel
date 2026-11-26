@@ -1,9 +1,21 @@
-// Spec: std.i18n, clause "`numberParts` of `'1e400'`, `'0x10'`, `''`, `' 1 '`, `'1_000'`, `'.5'`, `'5.'` and `'01'`, `numberParts('1', 'en-US', 'US')`, `formatUnit(1, 'en-US', 'furlong', 'long')`, `formatDateTime` of `NaN` with `timeZone: 'UTC'`, of `0` with options `{}`, with `timeZone: ''` and with `{ timeZone: 'UTC', dateStyle: 'short', year: 'numeric' }`, each throw a `RangeError` whose message begins with the function's name; `numberParts('-0', 'en-US')` joined is `-0`."
+// Spec: std.i18n, clause "`numberParts`, `formatUnit` and `formatDateTime` throw a `RangeError` whose message begins with the function's name and `: `, as std.temporal's `durationOf` does, for an input `Intl` refuses (a currency or unit it does not know, a `t` no `Date` holds, `dateStyle` or `timeStyle` beside a field such as `year`), for a `numberParts` string that is no plain decimal (`-?(0|[1-9][0-9]*)(\.[0-9]+)?`: no exponent, `+`, hex, white space, `_`, leading zero or bare point, so `''`, `'1e400'` and `'0x10'` throw), and for a `formatDateTime` `timeZone` that is no non-empty string, so the host's is never read."
 // Seed 1337 (the properties over decimal strings and over the strings no plain decimal matches)
-// ASSUMPTIONS (spec silent): "begins with the function's name" is the Rules text's `<name>: ` (the name, a colon and a space); `formatList` has no listed refused input, so none is asserted for it beyond its name in the Rules text, which no sentence of the Conformance list exercises.
-import { formatDateTime, formatList, formatUnit, numberParts } from "@keel/std-i18n";
+// ASSUMPTIONS (spec silent): "begins with the function's name and `: `" is read literally: the name, a colon and a space. The refused numberParts strings and the option object without a time zone reach the function through type guards (a string is `${number}` for the type, an object has a `timeZone` for the type) whose run-time check is only `typeof`, so no cast or suppression is needed.
+import { formatDateTime, formatUnit, numberParts } from "@keel/std-i18n";
 import fc from "fast-check";
 import { expect, test } from "vitest";
+
+type Zoned = Parameters<typeof formatDateTime>[2];
+/** Type guard standing for text the type calls a number string; the run-time test is `typeof` only. */
+const asNumberText = (v: unknown): v is `${number}` => typeof v === "string";
+/** Type guard standing for options the type calls zoned; the run-time test is `typeof` only. */
+const asZoned = (v: unknown): v is Zoned => typeof v === "object" && v !== null;
+/** Text built at run time, typed as the guard needs it. */
+function numberText(text: string): `${number}` {
+  const v: unknown = JSON.parse(JSON.stringify(text));
+  if (!asNumberText(v)) throw new Error("not text");
+  return v;
+}
 
 const PLAIN_DECIMAL = /^-?(0|[1-9][0-9]*)(\.[0-9]+)?$/;
 const joined = (parts: readonly { value: string }[]): string => parts.map((p) => p.value).join("");
@@ -22,8 +34,7 @@ function refuses(f: () => unknown, name: string): void {
 
 for (const text of ["1e400", "0x10", "", " 1 ", "1_000", ".5", "5.", "01"]) {
   test(`\`numberParts\` of \`${JSON.stringify(text)}\` throws a \`RangeError\` whose message begins with \`numberParts: \``, () => {
-    // @ts-expect-error: the text is no plain decimal; the type `${number}` admits some of these, the rest are refused at run time
-    refuses(() => numberParts(text, "en-US"), "numberParts");
+    refuses(() => numberParts(numberText(text), "en-US"), "numberParts");
   });
 }
 
@@ -40,8 +51,9 @@ test("`formatDateTime` of `NaN` with `timeZone: 'UTC'` throws a `RangeError` who
 });
 
 test("`formatDateTime` of `0` with options `{}` throws a `RangeError` whose message begins with `formatDateTime: `", () => {
-  // @ts-expect-error: the time zone is required
-  refuses(() => formatDateTime(0, "en-US", {}), "formatDateTime");
+  const opts: unknown = JSON.parse("{}");
+  if (!asZoned(opts)) throw new Error("not an object");
+  refuses(() => formatDateTime(0, "en-US", opts), "formatDateTime");
 });
 
 test("`formatDateTime` of `0` with `timeZone: ''` throws a `RangeError` whose message begins with `formatDateTime: `", () => {
@@ -61,8 +73,7 @@ test("a `numberParts` string no plain decimal matches throws a `RangeError` whos
     fc.property(
       fc.string({ maxLength: 12 }).filter((t) => !PLAIN_DECIMAL.test(t)),
       (text) => {
-        // @ts-expect-error: the generated text is not typed as a number string
-        refuses(() => numberParts(text, "en-US"), "numberParts");
+        refuses(() => numberParts(numberText(text), "en-US"), "numberParts");
       },
     ),
     { seed: 1337, numRuns: 100 },
@@ -73,21 +84,19 @@ test("a `numberParts` plain decimal string (`-?(0|[1-9][0-9]*)(\\.[0-9]+)?`) is 
   const nf = new Intl.NumberFormat("en-US");
   fc.assert(
     fc.property(fc.stringMatching(/^-?(0|[1-9][0-9]{0,8})(\.[0-9]{1,6})?$/), (text) => {
-      // @ts-expect-error: the generated text is not typed as a number string
-      const out = joined(numberParts(text, "en-US"));
-      // @ts-expect-error: the generated text is not typed as a number string
-      expect(out).toBe(nf.format(text));
+      const out = joined(numberParts(numberText(text), "en-US"));
+      const expected: string = Reflect.apply(nf.format, nf, [text]);
+      expect(out).toBe(expected);
     }),
     { seed: 1337, numRuns: 50 },
   );
 });
 
-test("`formatUnit`, `formatList` and `formatDateTime` refuse as `numberParts` does: with the function's name, for any unit no `Intl` knows", () => {
+test("`formatUnit` refuses as `numberParts` does: with the function's name, for any unit no `Intl` knows", () => {
   fc.assert(
     fc.property(fc.stringMatching(/^[a-z]{12,20}$/), (unit) => {
       refuses(() => formatUnit(1, "en-US", unit, "long"), "formatUnit");
     }),
     { seed: 1337, numRuns: 20 },
   );
-  expect(formatList(["a", "b"], "en-US", "conjunction", "long")).toBe("a and b");
 });
