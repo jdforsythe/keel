@@ -1,8 +1,7 @@
-import { TokenSchema } from "@keel/ui";
+import { TokenSchema, tokenGroups as groupOrder } from "@keel/ui";
 import { tokenGroups } from "@keel/ui/css";
 import type { Expression, ObjectExpression, Program } from "oxc-parser";
 import { keyName } from "../keyName.ts";
-import { GROUP_ORDER } from "./GROUP_ORDER.ts";
 import type { Shipped } from "./Shipped.ts";
 
 type Rec = Readonly<Record<string, unknown>>;
@@ -135,7 +134,7 @@ export function readShipped(program: Program, id: string): Shipped {
 /** The groups in k.ui's order, `look` last; any other group after them as written. */
 function ordered(names: ReadonlyMap<string, readonly string[]>): ReadonlyMap<string, readonly string[]> {
   const out = new Map<string, readonly string[]>();
-  for (const g of GROUP_ORDER) {
+  for (const g of [...groupOrder, "look"]) {
     const n = names.get(g);
     if (n !== undefined) out.set(g, n);
   }

@@ -1,3 +1,4 @@
+import { tokenGroups } from "@keel/ui";
 import { type ObjectExpression, Visitor } from "oxc-parser";
 import type { Diagnostic } from "../../types/Diagnostic.ts";
 import type { SourceFile } from "../../types/SourceFile.ts";
@@ -6,7 +7,6 @@ import { keyName } from "../keyName.ts";
 import { moduleDiag } from "../modules/moduleDiag.ts";
 import { parseFile } from "../parseFile.ts";
 import { unifiedDiff } from "../unifiedDiff.ts";
-import { GROUP_ORDER } from "./GROUP_ORDER.ts";
 import type { LookLibrary } from "./LookLibrary.ts";
 import type { Looks } from "./Looks.ts";
 import { e1810Edits } from "./e1810Edits.ts";
@@ -113,7 +113,7 @@ export function looksDiags(
     }
   // E1813: each dotted name of the tokens that no listed library ships.
   const literals = program === undefined ? new Map<string, number>() : stringLiterals(program);
-  for (const group of GROUP_ORDER) {
+  for (const group of [...tokenGroups, "look"]) {
     const g = value[group];
     if (!isRec(g)) continue;
     for (const name of Object.keys(g)) {

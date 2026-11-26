@@ -4,6 +4,7 @@ export { customElement } from "./customElement.ts";
 export { defineTokens } from "./defineTokens.ts";
 export { hostCode } from "./hostCode.ts";
 export { TokenSchema } from "./TokenSchema.ts";
+export { tokenGroups } from "./internal/tokenGroups.ts";
 export { Box } from "./elements/Box.ts";
 export { Button } from "./elements/Button.ts";
 export { Checkbox } from "./elements/Checkbox.ts";

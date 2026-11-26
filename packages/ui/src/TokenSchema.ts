@@ -1,6 +1,7 @@
 import { err, s } from "@keel/schema";
 import type { Schema } from "@keel/schema";
 import { focusProblem } from "./internal/focusProblem.ts";
+import { valueForms } from "./internal/valueForms.ts";
 import type { Tokens } from "./types/Tokens.ts";
 
 const scale = s.record(s.string()).optional();
@@ -38,7 +39,9 @@ const styleSet = s.object(
         {
           selected: stateSet,
           checked: stateSet,
+          pressed: stateSet,
           expanded: stateSet,
+          current: stateSet,
           highlighted: stateSet,
           hover: stateSet,
           focusVisible: stateSet,
@@ -93,7 +96,8 @@ const shape = s.object(
 
 /**
  * Validates `tokens.ts` (E1807): only the closed groups (an unknown group fails with rule `unknown-key`),
- * string token values, colors a string or a closed `{ light, dark }` pair, `base` the closed role sets and
+ * token values each in its group's form (k.values; rule `format` at the value's path), colors a value or a closed
+ * `{ light, dark }` pair, `base` the closed role sets and
  * `focus`, `look` named style sets, `schemes` one of `["light"]`, `["dark"]`, `["light", "dark"]` (rule `format`), and a `base.focus` color at 3:1 or more against `base.page`'s `bg` in each scheme
  * (rule `format` at `base.focus`).
  */
@@ -106,6 +110,11 @@ export const TokenSchema: Schema<Tokens> = {
     if (schemes !== undefined && !SCHEMES.includes(schemes)) {
       const issues = [{ path: ["schemes"], rule: "format" as const }];
       return err({ code: "schema.invalid", message: "format at schemes", data: { issues } });
+    }
+    const refused = valueForms(r.value);
+    if (refused.length > 0) {
+      const issues = refused.map((path) => ({ path, rule: "format" as const }));
+      return err({ code: "schema.invalid", message: `format at ${refused[0]?.join(".") ?? ""}`, data: { issues } });
     }
     if (focusProblem(r.value) === null) return r;
     const issues = [{ path: ["base", "focus"], rule: "format" as const }];

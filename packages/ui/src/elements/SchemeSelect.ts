@@ -1,8 +1,8 @@
+import { reveal } from "@keel/runtime-dom/ops";
 import { appendChildren } from "../internal/appendChildren.ts";
 import { applyIdLang } from "../internal/applyIdLang.ts";
 import { applyStyle } from "../internal/applyStyle.ts";
 import { bound } from "../internal/bound.ts";
-import { labelled } from "../internal/labelled.ts";
 import { listen } from "../internal/listen.ts";
 import { make } from "../internal/make.ts";
 import type { ControlStyles } from "../types/ControlStyles.ts";
@@ -43,6 +43,7 @@ const pick = (doc: Document, v: string): void => {
  * `dark` in that order, worded by `labels`, its value `<html>`'s `data-k-scheme` else `system`. Picking `light` or
  * `dark` sets the attribute and writes `keel-scheme=<value>; Path=/; Max-Age=31536000; SameSite=Lax` (`; Secure` on
  * https); picking `system` removes the attribute and expires the cookie. Bound (`data-k`); role class `k-control`.
+ * Its wrapper, holding the label and the select, renders `hidden` until the runtime mounts or resumes it.
  */
 export function SchemeSelect(
   props: StyleProps &
@@ -79,10 +80,20 @@ export function SchemeSelect(
     });
   const label = props.label;
   const styles = props.styles;
-  if (label !== undefined)
-    return labelled("select", { label, id: props.id, ...(styles === undefined ? {} : { styles }) }, false, control);
+  // The wrapper holds the label and the select, `hidden` until script runs (k.schemes Choice).
   return make("div", (wrap) => {
+    reveal(wrap);
     applyStyle(wrap, styles?.field ?? {});
-    appendChildren(wrap, [control(props.id)]);
+    const kids: Node[] = [];
+    if (label !== undefined)
+      kids.push(
+        make("label", (l) => {
+          l.setAttribute("for", props.id);
+          applyStyle(l, styles?.label ?? {}, "k-label");
+          l.appendChild(l.ownerDocument.createTextNode(label));
+        }),
+      );
+    kids.push(control(props.id));
+    appendChildren(wrap, kids);
   });
 }

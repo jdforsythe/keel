@@ -8,6 +8,7 @@ import { setLeaves } from "../internal/setLeaves.ts";
 import { states } from "../internal/states.ts";
 import { styleProps } from "../internal/styleProps.ts";
 import { tokenGroups } from "../internal/tokenGroups.ts";
+import { valueForms } from "../internal/valueForms.ts";
 import { varName } from "../internal/varName.ts";
 import { vocabulary } from "../internal/vocabulary.ts";
 import type { StyleProp } from "../types/StyleProp.ts";
@@ -32,7 +33,7 @@ const SCROLL = ".k-scroll{overflow-x:auto;min-width:0}";
 
 const fail = (code: string, message: string): Error => Object.assign(new Error(message), { code });
 
-/** Token values are written into declarations; anything that could end one is rejected. */
+/** Token values are written into declarations; `valueForms` admitted each, so this only asserts none ends one. */
 const value = (group: string, name: string, v: string): string => {
   if (/[{};<>]|\/\*/.test(v)) throw fail("E1807", `token ${group}.${name} has a value that breaks out of CSS`);
   return v;
@@ -166,6 +167,8 @@ export function compileStyles(input: { readonly tokens: Tokens; readonly usages:
   css: string;
 } {
   const { tokens } = input;
+  const refused = valueForms(tokens)[0];
+  if (refused !== undefined) throw fail("E1807", `token ${refused.join(".")} is not in its group's form`);
   const problem = focusProblem(tokens);
   if (problem !== null) throw fail("E1807", problem);
   const bps = Object.entries(tokens.breakpoint ?? {});
