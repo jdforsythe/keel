@@ -17,11 +17,13 @@ function encoded(c: ColorSyntax): Rgb {
   return [encode(r), encode(g), encode(b)];
 }
 
-const channel = (v: number): string => (Math.round(Math.min(1, Math.max(0, v)) * 255 * 1e6) / 1e6).toFixed(6);
+/** A blended channel as browsers paint it: rounded to an integer from 0 to 255. */
+const channel = (v: number): string => String(Math.round(Math.min(1, Math.max(0, v)) * 255));
 
 /**
  * The opaque color an `<alpha>` shows over an opaque backdrop (k.values Contrast): `a × c + (1 - a) × b` on each
- * encoded sRGB channel, the overlay and the backdrop each mapped into the sRGB gamut first, as browsers blend. The
+ * encoded sRGB channel, the overlay and the backdrop each mapped into the sRGB gamut first, each channel rounded to an
+ * integer from 0 to 255, as browsers blend and paint. The
  * result is an `rgb()` value `contrast` takes. Throws RangeError when `overlay` is not an `<alpha>` or `backdrop` not an
  * opaque color.
  */

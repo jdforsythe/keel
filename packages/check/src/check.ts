@@ -29,6 +29,7 @@ import { libraryIds } from "./internal/libraryIds.ts";
 import { libraryImports } from "./internal/libraryImports.ts";
 import { looksDiags } from "./internal/looks/looksDiags.ts";
 import { looksOf } from "./internal/looks/looksOf.ts";
+import { ownThemes } from "./internal/looks/ownThemes.ts";
 import { projectLooks } from "./internal/looks/projectLooks.ts";
 import { libraryLedgers } from "./internal/modules/libraryLedgers.ts";
 import { moduleChecks } from "./internal/modules/moduleChecks.ts";
@@ -223,6 +224,7 @@ export function check(given: readonly SourceFile[], options: CheckOptions = {}):
       ].some((v) => typeof v === "object" && v !== null)
         ? ["light", "dark"]
         : undefined,
+      ownThemes: ownThemes(looks),
       lookLibrary: (look) => {
         // A library's look by the `look` group's keys alone (k.a11y-static Library contrast).
         const lib = looks.listed.find((l) => !l.own && l.shipped?.names.get("look")?.includes(look) === true);

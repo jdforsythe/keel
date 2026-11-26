@@ -3,6 +3,7 @@ import { tokenGroups } from "@keel/ui/css";
 import type { Expression, ObjectExpression, Program } from "oxc-parser";
 import { keyName } from "../keyName.ts";
 import type { Shipped } from "./Shipped.ts";
+import { withWhen } from "./withWhen.ts";
 
 type Rec = Readonly<Record<string, unknown>>;
 const isRec = (v: unknown): v is Rec => typeof v === "object" && v !== null && !Array.isArray(v);
@@ -12,11 +13,12 @@ const isRec = (v: unknown): v is Rec => typeof v === "object" && v !== null && !
  * '@keel/ui'` and `export const <id>Tokens = defineTokens({ ... })`, the argument an object literal of identifier or
  * string keys and string or object literal values. The first node out of form, in source order, is the problem: a
  * top-level `base` or `schemes` key before its value is judged, then another import or statement, a spread, a type
- * assertion (`as`, `satisfies`), a computed key or value, a name without `<id>.`; once in form, a look naming a token the object lacks, then `TokenSchema`.
+ * assertion (`as`, `satisfies`), a computed key or value, a name without `<id>.`, a `themes` key other than `contrast` and `print`, a theme holding `when`; once in form, a look naming a token the object lacks, then `TokenSchema`.
  */
 export function readShipped(program: Program, id: string): Shipped {
   const names = new Map<string, string[]>();
   const keys = new Map<string, number>();
+  const themes = new Map<string, ReadonlyMap<string, readonly string[]>>();
   const file = `${id}Tokens.ts`;
   const form = (what: string): string => `${file} holds ${what}; it is one defineTokens literal`;
   let problem: { at: number; message: string } | null = null;
@@ -55,6 +57,33 @@ export function readShipped(program: Program, id: string): Shipped {
     fail(e.start, form("a computed value"));
     return undefined;
   };
+  /** A shipped `themes` literal: only `contrast` and `print`, each with no `when`; the names each holds per group. */
+  const themesOf = (o: ObjectExpression): Rec => {
+    const out: Record<string, unknown> = {};
+    for (const p of o.properties) {
+      if (p.type !== "Property") {
+        fail(p.start, form("a spread"));
+        continue;
+      }
+      const key = keyName(p);
+      if (key === null || p.method || p.shorthand) {
+        fail(p.start, form("a computed value"));
+        continue;
+      }
+      if (key !== "contrast" && key !== "print")
+        fail(p.key.start, `${id}Tokens holds themes "${key}"; only contrast and print`);
+      const theme = leaf(p.value);
+      out[key] = theme;
+      if (!isRec(theme)) continue;
+      const held = new Map<string, readonly string[]>();
+      for (const [g, v] of Object.entries(theme)) {
+        if (g === "when") fail(p.key.start, `${id}Tokens themes "${key}" holds when; a shipped theme has none`);
+        else if (isRec(v)) held.set(g, Object.keys(v));
+      }
+      themes.set(key, held);
+    }
+    return out;
+  };
   const top = (o: ObjectExpression): Rec => {
     const out: Record<string, unknown> = {};
     for (const p of o.properties) {
@@ -72,6 +101,10 @@ export function readShipped(program: Program, id: string): Shipped {
         continue;
       }
       let v = p.value;
+      if (group === "themes" && v.type === "ObjectExpression") {
+        out[group] = themesOf(v);
+        continue;
+      }
       if (v.type === "TSAsExpression" || v.type === "TSSatisfiesExpression") {
         fail(v.start, form("a type assertion"));
         while (v.type === "TSAsExpression" || v.type === "TSSatisfiesExpression") v = v.expression;
@@ -138,13 +171,13 @@ export function readShipped(program: Program, id: string): Shipped {
   else if (problem === null) {
     const missing = lookGap(value, id);
     if (missing !== null) fail(keys.get(`look\u0000${missing.look}`) ?? main.start, missing.message);
-    const parsed = TokenSchema.parse(value);
+    const parsed = TokenSchema.parse(withWhen(value));
     if (!parsed.ok) {
       const path = issuePath(parsed.error.data);
       fail(nodeAt(main, path) ?? main.start, `${id}Tokens fails TokenSchema at ${path.join(".")}`);
     }
   }
-  return { value, names: ordered(names), keys, problem };
+  return { value, names: ordered(names), themes, keys, problem };
 }
 
 /** The groups in k.ui's order, `look` last; any other group after them as written. */

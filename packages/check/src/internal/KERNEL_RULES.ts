@@ -36,6 +36,7 @@ import { noTryCatch } from "../rules/noTryCatch.ts";
 import { noUnsafeSyntax } from "../rules/noUnsafeSyntax.ts";
 import { nodePageWithoutApp } from "../rules/nodePageWithoutApp.ts";
 import { oneExport } from "../rules/oneExport.ts";
+import { overlayBackdrop } from "../rules/overlayBackdrop.ts";
 import { passwordField } from "../rules/passwordField.ts";
 import { pathParamsMatch } from "../rules/pathParamsMatch.ts";
 import { piiInRouteUrl } from "../rules/piiInRouteUrl.ts";
@@ -49,6 +50,7 @@ import { schemaInSchemaFile } from "../rules/schemaInSchemaFile.ts";
 import { schemeSelectOneScheme } from "../rules/schemeSelectOneScheme.ts";
 import { slotSignature } from "../rules/slotSignature.ts";
 import { stylesheetImport } from "../rules/stylesheetImport.ts";
+import { themeSelectChoice } from "../rules/themeSelectChoice.ts";
 import { txWhileBuilding } from "../rules/txWhileBuilding.ts";
 import { unknownToken } from "../rules/unknownToken.ts";
 import { unsafeJustified } from "../rules/unsafeJustified.ts";
@@ -94,6 +96,7 @@ export const KERNEL_RULES: readonly RuleDef[] = [
   componentCtxSignature,
   noEagerElement,
   lowContrast,
+  overlayBackdrop,
   resourceViaMatch,
   noDetachedScope,
   noRuntimeOpImport,
@@ -112,6 +115,7 @@ export const KERNEL_RULES: readonly RuleDef[] = [
   unknownToken,
   libraryTokenName,
   schemeSelectOneScheme,
+  themeSelectChoice,
   blankLabel,
   hostCodeImport,
   stylesheetImport,

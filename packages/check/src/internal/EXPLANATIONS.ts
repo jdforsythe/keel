@@ -1501,10 +1501,24 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1814",
-    "SchemeSelect in an app with one color scheme",
-    "SchemeSelect offers light and dark, so the tokens need both: a { light, dark } pair among the app's own colors, or schemes: ['light', 'dark'] in tokens.ts.",
-    "add schemes: ['light', 'dark'] and dark values, or drop the SchemeSelect",
+    "SchemeSelect, or a Box writing scheme, in an app with one color scheme",
+    "SchemeSelect offers light and dark, and a Box's scheme asks for one, so the tokens need both: a { light, dark } pair among the app's own colors, or schemes: ['light', 'dark'] in tokens.ts.",
+    "add schemes: ['light', 'dark'] and dark values, or drop the SchemeSelect or the scheme",
     "k.schemes",
+  ],
+  [
+    "E1816",
+    "ThemeSelect with no choice theme, or with labels that do not match the themes",
+    "ThemeSelect lists default and each choice theme: a theme with no when, or when: 'choice'. contrast and print themes are no choice. labels holds default and one key per choice theme, no other.",
+    "labels={{ default: 'Keel', forest: 'Forest' }} -> labels={{ default: 'Keel', slate: 'Slate' }}, with themes: { slate: {...} }",
+    "k.schemes",
+  ],
+  [
+    "E1817",
+    "an overlay sits on a backdrop its over does not list, or on another overlay",
+    "An overlay is a color with alpha; its contrast is exact only over the opaque colors it names. A backdrop outside that list has no judged composite.",
+    "overlay: { scrim: { value: '#1a191e99', over: ['card'] } } -> over: ['card', 'text'], or put the overlay on a listed backdrop",
+    "k.a11y-static",
   ],
   [
     "E1815",
