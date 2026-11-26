@@ -271,6 +271,7 @@ Both cases type-check with strict `tsc` against the declarations above. `documen
 - k.cli: the `test` row reads `test [paths] [--e2e]`, harness under sim ctx; `--e2e`, the built app in a browser (k.e2e).
 - k.test-run Run report: without `shard`, `writeTestReport` removes the folder's other files but `e2e.json`. One clause.
 - k.ledger-items Run evidence: what a test file is (`.test.` or `.spec.` before a script extension, or an e2e file). One clause.
+- Made exact while building: a verb's id is refused (E1705) when it is not in `.keel/ids.json`, not `<id>.<key>` under one of its ids or a template id's head the source writes, and not a form field's `<formId>:<path>`; `find` gives `value` as k.testing's does; `focusOrder()` is a page verb; a held page's parked scripts are not waited on; the held-page clause reads the caret with `press('x')` and the input's `value`; the cookie clause's cookie is the caller cookie a form POST mints; the problem clause's handler rejects with `Error('boom')` (app code may not `throw`); an artifact is `<file>-<line>-<n>`, `<file>` less its `.ts`, `<line>` the T0001's; the defaults (10 s a wait, 20 s a start, 60 s a test) are fixed time and only `within` scales (docs/TESTING.md Time scale), so the timeout clause reads 60 s at scale 0.1.
 - Map: rows `k.e2e` and `k.e2e-page`, `k.e2e` added to the E170x block, and eight titles shortened (For the operator 6). `tooling/docs-owners.json`: both sections owned by `@keel/testing`. Glossary: **end-to-end test**.
 
 ## Conformance diff
