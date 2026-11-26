@@ -54,6 +54,7 @@ Applied in this commit; the sentences are quoted under Proposal. Sections at the
 - After the second review: k.library-pages Route components counts every reach of a page from a file of the project outside test code, an import, re-export, `import()`, `require` or `new URL`, each specifier resolved as the bundler resolves it (query stripped, a folder's `index`, `./Page.js` to `Page.ts`, a template with no substitution a literal); a `*` `exports` pattern's files are targets; a page bound to two entries is none; and a library with a computed `import()` or `require`, `createRequire` or `import.meta.glob` has none. Its Conformance adds bullet #3.
 - After the second review: k.module Rules adds E1171, a `module.ts` that is no manifest (deeper than `modules/<id>/module.ts` in an app; under a library's `src/` or `unsafe/`), which no rule's project holds; its Conformance adds a bullet.
 - After the second review: k.module Rules adds E1170, `"keel": "library"` in an app's folder (one holding `topology.ts` or `modules/`): `keel check` reads it as an app and `keel pack` stops with it; k.library-pack Own folder names it, and to stay at 3,100 tokens drops the example `(`conformance/`)` after "no other code file" and the word "record" after "summary".
+- After the second review: k.library In an app writes what E1753 says when two packages register one rule code (`rule code <code> is registered by <a> and <b>`, at the second's `deps` entry, no E1159); its Conformance adds a last bullet.
 - Status: k.library-pages and std.i18n read `implemented`; k.contract, std.geo and std.tokens read `implemented` until their new or changed clauses are covered; the map rows follow. k.library stays `proposed`, k.library-pack `implemented`, std.health `conformance-covered` (its clauses are unchanged).
 
 ## Conformance diff
@@ -70,6 +71,7 @@ By the `conformance-writer`, from the spec text, under `rfc:0239`. Kernel confor
 - After the second review, owed: k.library-pages#3 (each reach of `src/Page.ts` the bullet names is one E1161; a folder `index` binding, a `?v=1` binding and an app test's import are none).
 - After the second review, owed: k.module's E1171 bullet (the last; an app's `modules/a/sub/module.ts`, a library's `src/fmt/module.ts` and `unsafe/module.ts`).
 - After the second review, owed: k.module's E1170 bullet (an app folder's `package.json` `{"name":"@acme/app","keel":"library"}`, with `modules/` and with `topology.ts`, under `keel check` and `keel pack`).
+- After the second review, owed: k.library's last bullet (`@acme/evil` and `@acme/charts` registering `E2991`, either order).
 
 ## Migration
 None: nothing is released.
