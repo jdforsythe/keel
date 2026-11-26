@@ -168,6 +168,7 @@ it("refuses an empty name and a name over 40 characters in the form, and saves n
   await page.fire("setup.form:name", { type: "input", value: "x".repeat(41) });
   await page.fire("setup.save", { type: "click" });
   expect(page.find("setup.form:name").state).toMatchObject({ invalid: true });
+  expect(page.find("setup.form:name").value).toBe("x".repeat(41));
   expect(() => page.find("setup.done")).toThrow();
   expect(page.find("setup.form:name").state).not.toMatchObject({ focused: false, invalid: false });
   page.dispose();

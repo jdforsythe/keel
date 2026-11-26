@@ -11,7 +11,7 @@ import { NoRows, fragment, sql } from "@keel/std-postgres";
 import type { Tx } from "@keel/std-postgres/server";
 import { database } from "@keel/std-postgres/server";
 import { ready } from "@keel/std-postgres/testing";
-import { testTime } from "@keel/tooling/test-time";
+import { fixedTime, testTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
 import { afterEach, beforeAll, expect, test, vi } from "vitest";
 
@@ -34,7 +34,7 @@ const sim = (cap: string, plan: { delay: number; fault: string }[] = []): SimCtx
 // hook states 60 s, the bound the apps give a PGlite folder's first open.
 beforeAll(async () => {
   await ready();
-}, 60_000);
+}, fixedTime(60_000));
 afterEach(() => {
   vi.restoreAllMocks();
 });

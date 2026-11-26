@@ -3,6 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import nodePath from "node:path";
 import { fileURLToPath } from "node:url";
+import { fixedTime } from "@keel/tooling/test-time";
 import { describe, expect, it } from "vitest";
 import { type Files, apply } from "./helpers.ts";
 
@@ -96,20 +97,28 @@ function typecheck(files: Files): { status: number | null; out: string } {
 }
 
 describe("a scaffolded project type-checks against the kernel packages", () => {
-  it("project, module, page routes, API routes by method, components with and without ctx, an href link and a service client", () => {
-    const r = typecheck(scaffolded());
-    expect(r.out.trim()).toBe("");
-    expect(r.status).toBe(0);
-  }, 240_000);
+  it(
+    "project, module, page routes, API routes by method, components with and without ctx, an href link and a service client",
+    () => {
+      const r = typecheck(scaffolded());
+      expect(r.out.trim()).toBe("");
+      expect(r.status).toBe(0);
+    },
+    fixedTime(240_000),
+  );
 
-  it("the check is live: a link to an id the contract lacks, and a binding for another entry, fail", () => {
-    const files = scaffolded();
-    files.set(
-      "modules/shop/link.ts",
-      `import { orders } from "../orders/orders.contract.ts";\nexport const x = orders.href("orders.nope");\n`,
-    );
-    const r = typecheck(files);
-    expect(r.status).not.toBe(0);
-    expect(r.out).toContain("modules/shop/link.ts");
-  }, 240_000);
+  it(
+    "the check is live: a link to an id the contract lacks, and a binding for another entry, fail",
+    () => {
+      const files = scaffolded();
+      files.set(
+        "modules/shop/link.ts",
+        `import { orders } from "../orders/orders.contract.ts";\nexport const x = orders.href("orders.nope");\n`,
+      );
+      const r = typecheck(files);
+      expect(r.status).not.toBe(0);
+      expect(r.out).toContain("modules/shop/link.ts");
+    },
+    fixedTime(240_000),
+  );
 });

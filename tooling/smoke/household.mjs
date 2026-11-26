@@ -27,10 +27,10 @@ import { mkdir, mkdtemp, readFile, readdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { chromium } from "@playwright/test";
-import { fixedTime, testTime } from "../test-time.ts";
+import { fixedTime } from "../test-time.ts";
 import { freePort, keepOutput, recorder, root, wait } from "./built.mjs";
 
-const LIMIT_MS = testTime(300_000);
+const LIMIT_MS = fixedTime(300_000);
 const SECRET = "household-smoke-secret-of-32-bytes-or-more";
 const AUTH_SECRET = "household-smoke-auth-secret-of-32-or-more";
 const PASSWORD = "smoke test passphrase";
@@ -44,7 +44,7 @@ let container;
 /** Run `docker` with `args`; resolves its trimmed stdout, or null when it fails. */
 const docker = (args) =>
   new Promise((resolve) =>
-    execFile("docker", args, { timeout: testTime(60_000) }, (e, out) =>
+    execFile("docker", args, { timeout: fixedTime(60_000) }, (e, out) =>
       resolve(e === null ? String(out).trim() : null),
     ),
   );
@@ -114,7 +114,7 @@ async function killed() {
 }
 
 /** Poll `url` for a 200 page, at most `ms`; false when the server exits first. */
-async function up(url, ms = testTime(20_000)) {
+async function up(url, ms = fixedTime(20_000)) {
   for (const end = Date.now() + ms; Date.now() < end; await wait(100)) {
     if (server.child.exitCode !== null) return false;
     const ok = await fetch(url, { headers: { accept: "text/html" } }).then(
@@ -133,7 +133,7 @@ const byId = (page, id) => page.locator(`[id='${id}']`);
  */
 const settled = async (page) => {
   await page.waitForLoadState("load");
-  await page.waitForLoadState("networkidle", { timeout: testTime(2_500) }).catch(() => undefined);
+  await page.waitForLoadState("networkidle", { timeout: fixedTime(2_500) }).catch(() => undefined);
 };
 const clip = (v) => String(v).slice(0, 200);
 
@@ -211,7 +211,7 @@ async function postgres17() {
   const port = mapped?.split("\n")[0]?.split(":").at(-1);
   if (port === undefined) return null;
   // The image's init runs a server on the socket only; a TCP answer inside the container is the final server.
-  for (const end = Date.now() + testTime(60_000); Date.now() < end; await wait(250)) {
+  for (const end = Date.now() + fixedTime(60_000); Date.now() < end; await wait(250)) {
     if ((await docker(["exec", id, "pg_isready", "-q", "-h", "127.0.0.1", "-U", "postgres"])) !== null)
       return `postgres://postgres:smoke@127.0.0.1:${port}/postgres`;
   }
@@ -233,7 +233,7 @@ async function signInOn(page, email) {
   await byId(page, "members.signinForm:email").fill(email);
   await byId(page, "members.signinForm:password").fill(PASSWORD);
   await Promise.all([
-    page.waitForURL((u) => u.pathname !== "/signin", { timeout: testTime(10_000) }),
+    page.waitForURL((u) => u.pathname !== "/signin", { timeout: fixedTime(10_000) }),
     byId(page, "members.signinSubmit").click(),
   ]);
   await settled(page);
@@ -244,7 +244,7 @@ async function setUp(page, origin, name) {
   await page.goto(`${origin}/setup`);
   await byId(page, "setup.form:name").fill(name);
   await byId(page, "setup.save").click();
-  await byId(page, "setup.done").waitFor({ timeout: testTime(10_000) });
+  await byId(page, "setup.done").waitFor({ timeout: fixedTime(10_000) });
 }
 
 /** Submit a receipt the server rejects and report what the page then shows. */
@@ -308,7 +308,7 @@ try {
   await byId(page, "members.signupForm:email").fill("ada@example.com");
   await byId(page, "members.signupForm:password").fill(PASSWORD);
   await Promise.all([
-    page.waitForURL((u) => u.pathname === "/signin", { timeout: testTime(10_000) }),
+    page.waitForURL((u) => u.pathname === "/signin", { timeout: fixedTime(10_000) }),
     byId(page, "members.signupSubmit").click(),
   ]);
   await signInOn(page, "ada@example.com");
@@ -346,9 +346,9 @@ try {
   for (let i = 0; i < 2; i++) {
     await byId(page, "shopping.staples.trigger").click();
     await byId(page, "shopping.staples.item.milk").click();
-    if (i === 0) await row.waitFor({ timeout: testTime(10_000) });
+    if (i === 0) await row.waitFor({ timeout: fixedTime(10_000) });
   }
-  await row.filter({ hasText: "× 2" }).waitFor({ timeout: testTime(10_000) });
+  await row.filter({ hasText: "× 2" }).waitFor({ timeout: fixedTime(10_000) });
   step(
     "menu adds through the API and raises quantity",
     (await row.textContent()) === "Milk × 2",
@@ -418,7 +418,7 @@ try {
   await page
     .locator("[id^='receipts.total.']")
     .first()
-    .waitFor({ timeout: testTime(10_000) });
+    .waitFor({ timeout: fixedTime(10_000) });
   const totals = await page.locator("[id^='receipts.total.']").allTextContents();
   step("form records a receipt", totals.includes("€3.50"), totals.join(","));
 
@@ -432,9 +432,9 @@ try {
   await page.goto(`${origin}/profile`);
   await settled(page);
   await byId(page, "members.mint").click();
-  await byId(page, "members.minted").waitFor({ timeout: testTime(10_000) });
+  await byId(page, "members.minted").waitFor({ timeout: fixedTime(10_000) });
   const token = ((await byId(page, "members.minted").textContent()) ?? "").trim();
-  await byId(page, "members.token.0").waitFor({ timeout: testTime(10_000) });
+  await byId(page, "members.token.0").waitFor({ timeout: fixedTime(10_000) });
   const bearer = { authorization: `Bearer ${token}` };
   const called = (await itemsAt(origin, bearer)) ?? [];
   step(
@@ -443,7 +443,7 @@ try {
     `${token === "" ? "no token" : "token shown"}, ${called.length} items`,
   );
   await byId(page, "members.revoke.0").click();
-  await byId(page, "members.tokens.none").waitFor({ timeout: testTime(10_000) });
+  await byId(page, "members.tokens.none").waitFor({ timeout: fixedTime(10_000) });
   const refused = await fetch(`${origin}/api/items`, { headers: { accept: "application/json", ...bearer } }).then(
     (r) => r.status,
     () => 0,
@@ -457,7 +457,7 @@ try {
   const masked = `input members.profileForm:phone "${"x".repeat(canary.phone.length)}"`;
   const noted = await byId(page, "app.recording.events")
     .filter({ hasText: masked })
-    .waitFor({ timeout: testTime(10_000) })
+    .waitFor({ timeout: fixedTime(10_000) })
     .then(
       () => byId(page, "app.recording.events").innerText(),
       () => "",
@@ -468,7 +468,7 @@ try {
     clip(noted.split("\n").at(-1) ?? ""),
   );
   await byId(page, "members.save").click();
-  await byId(page, "members.saved").waitFor({ timeout: testTime(10_000) });
+  await byId(page, "members.saved").waitFor({ timeout: fixedTime(10_000) });
   await page.reload();
   await settled(page);
   const typed = await byId(page, "members.profileForm:phone").inputValue();
@@ -486,7 +486,7 @@ try {
   );
   step("no page errors", errors.length === 0, clip(errors.join(" | ")));
   await byId(page, "members.mint").click();
-  await byId(page, "members.minted").waitFor({ timeout: testTime(10_000) });
+  await byId(page, "members.minted").waitFor({ timeout: fixedTime(10_000) });
   const keep = { authorization: `Bearer ${((await byId(page, "members.minted").textContent()) ?? "").trim()}` };
 
   const plain = await browser.newContext({ javaScriptEnabled: false });
@@ -544,7 +544,7 @@ try {
   await byId(grace, "members.signupForm:email").fill("grace@example.com");
   await byId(grace, "members.signupForm:password").fill(PASSWORD);
   await Promise.all([
-    grace.waitForURL((u) => u.pathname === "/signin", { timeout: testTime(10_000) }),
+    grace.waitForURL((u) => u.pathname === "/signin", { timeout: fixedTime(10_000) }),
     byId(grace, "members.signupSubmit").click(),
   ]);
   await signInOn(grace, "grace@example.com");
@@ -562,13 +562,13 @@ try {
     }
     return false;
   };
-  const liveBoth = (await until(page, "Live", testTime(10_000))) && (await until(grace, "Live", testTime(10_000)));
+  const liveBoth = (await until(page, "Live", fixedTime(10_000))) && (await until(grace, "Live", fixedTime(10_000)));
   step("both pages say Live", liveBoth, `${await statusOf(page)} / ${await statusOf(grace)}`);
   const rowIn = (p, name) => p.locator("[id^='shopping.name.']", { hasText: name });
   await byId(page, "shopping.staples.trigger").click();
   await byId(page, "shopping.staples.item.bread").click();
   const seen = await rowIn(grace, "Bread")
-    .waitFor({ timeout: testTime(10_000) })
+    .waitFor({ timeout: fixedTime(10_000) })
     .then(
       () => true,
       () => false,
@@ -579,7 +579,7 @@ try {
   await byId(grace, `shopping.toggle.${breadId}`).click();
   const bought = await byId(page, `shopping.toggle.${breadId}`).filter({ hasText: "Back on the list" });
   await byId(page, "shopping.view.tab.bought").click();
-  const moved = await bought.waitFor({ timeout: testTime(10_000) }).then(
+  const moved = await bought.waitFor({ timeout: fixedTime(10_000) }).then(
     () => true,
     () => false,
   );
@@ -587,7 +587,7 @@ try {
 
   await killed();
   const dropped =
-    (await until(page, "Connecting", testTime(15_000))) && (await until(grace, "Connecting", testTime(15_000)));
+    (await until(page, "Connecting", fixedTime(15_000))) && (await until(grace, "Connecting", fixedTime(15_000)));
   step(
     "both pages say Connecting once the server is gone",
     dropped,
@@ -596,12 +596,12 @@ try {
   server = serve(port, storage, pglite);
   const upAgain = await up(`${origin}/`);
   const recovered =
-    upAgain && (await until(page, "Live", testTime(45_000))) && (await until(grace, "Live", testTime(45_000)));
+    upAgain && (await until(page, "Live", fixedTime(45_000))) && (await until(grace, "Live", fixedTime(45_000)));
   step("both pages say Live again after the restart", recovered, `${await statusOf(page)} / ${await statusOf(grace)}`);
   await byId(page, "shopping.staples.trigger").click();
   await byId(page, "shopping.staples.item.apples").click();
   const reached = await rowIn(grace, "Apples")
-    .waitFor({ timeout: testTime(10_000) })
+    .waitFor({ timeout: fixedTime(10_000) })
     .then(
       () => true,
       () => false,
@@ -610,9 +610,9 @@ try {
   step("after the restart Ada's add reaches Grace's page", reached && stillKept, `shown ${reached}, kept ${stillKept}`);
 
   await graceContext.setOffline(true);
-  const offline = await until(grace, "Offline", testTime(10_000));
+  const offline = await until(grace, "Offline", fixedTime(10_000));
   await graceContext.setOffline(false);
-  const online = await until(grace, "Live", testTime(45_000));
+  const online = await until(grace, "Live", fixedTime(45_000));
   step("Grace's browser offline says Offline, and Live once it is back", offline && online, await statusOf(grace));
 
   // The outbox: a mark Grace makes offline waits on her page and goes once she is back; a mark of an item Ada changed
@@ -626,18 +626,18 @@ try {
   };
   const apples = await itemNamed("Apples");
   await graceContext.setOffline(true);
-  await until(grace, "Offline", testTime(10_000));
+  await until(grace, "Offline", fixedTime(10_000));
   await byId(grace, `shopping.toggle.${apples?.id}`).click();
   const waitingText = await byId(grace, `shopping.waiting.${apples?.id}`)
     .filter({ hasText: "waiting to send" })
-    .waitFor({ timeout: testTime(10_000) })
+    .waitFor({ timeout: fixedTime(10_000) })
     .then(
       () => true,
       () => false,
     );
   const heldBack = (await itemNamed("Apples"))?.bought === false;
   await graceContext.setOffline(false);
-  const sent = await serverHas("Apples", true, testTime(30_000));
+  const sent = await serverHas("Apples", true, fixedTime(30_000));
   step(
     "a mark made offline waits on Grace's page and goes once she is back",
     apples !== undefined && waitingText && heldBack && sent,
@@ -649,10 +649,10 @@ try {
     headers: { ...asJson, ...keep },
     body: JSON.stringify({ name: "Oats" }),
   });
-  await rowIn(grace, "Oats").waitFor({ timeout: testTime(10_000) });
+  await rowIn(grace, "Oats").waitFor({ timeout: fixedTime(10_000) });
   const oats = await itemNamed("Oats");
   await graceContext.setOffline(true);
-  await until(grace, "Offline", testTime(10_000));
+  await until(grace, "Offline", fixedTime(10_000));
   await byId(grace, `shopping.toggle.${oats?.id}`).click();
   await fetch(`${origin}/api/items`, {
     method: "POST",
@@ -663,15 +663,15 @@ try {
   const why = grace.locator("[id^='shopping.outbox.why.']");
   const refusedShown = await why
     .filter({ hasText: "Oats × 2: someone at home changed this item" })
-    .waitFor({ timeout: testTime(30_000) })
+    .waitFor({ timeout: fixedTime(30_000) })
     .then(
       () => true,
       () => false,
     );
   const notYet = (await itemNamed("Oats"))?.bought === false;
   await grace.locator("[id^='shopping.outbox.mine.']").click();
-  const applied = await serverHas("Oats", true, testTime(10_000));
-  const cleared = await why.waitFor({ state: "detached", timeout: testTime(10_000) }).then(
+  const applied = await serverHas("Oats", true, fixedTime(10_000));
+  const cleared = await why.waitFor({ state: "detached", timeout: fixedTime(10_000) }).then(
     () => true,
     () => false,
   );
@@ -684,14 +684,14 @@ try {
   const elsewhere = await graceContext.newPage();
   await elsewhere.goto(`${origin}/list`);
   await Promise.all([
-    elsewhere.waitForURL((u) => u.pathname === "/signin", { timeout: testTime(10_000) }),
+    elsewhere.waitForURL((u) => u.pathname === "/signin", { timeout: fixedTime(10_000) }),
     byId(elsewhere, "app.nav.signOut").click(),
   ]);
   // The next change closes Grace's stream `denied`: her page says Signed out within about a second of Ada's add.
   await byId(page, "shopping.staples.trigger").click();
   const asked = Date.now();
   await byId(page, "shopping.staples.item.rice").click();
-  const out = await until(grace, "Signed out", testTime(2_000));
+  const out = await until(grace, "Signed out", fixedTime(2_000));
   const took = Date.now() - asked;
   // Rice is on the list from the kill above: Ada's add raises it to 2, which Grace's page must not show.
   const leaked = await rowIn(grace, "Rice × 2").count();
@@ -729,9 +729,9 @@ try {
   const before = await lastOf(page);
   step("the setup page says no run yet", before.startsWith("No run yet"), before);
   await byId(page, "shopping.restock.run").click();
-  const running = await showing(page, "Running", testTime(10_000));
+  const running = await showing(page, "Running", fixedTime(10_000));
   let midRun = null;
-  for (const end = Date.now() + testTime(15_000); Date.now() < end && midRun === null; await wait(100)) {
+  for (const end = Date.now() + fixedTime(15_000); Date.now() < end && midRun === null; await wait(100)) {
     const r = await runsAt();
     if (r?.last !== null && r?.last !== undefined && r.last.handled >= 1 && r.last.state === "running") midRun = r;
   }
@@ -745,7 +745,7 @@ try {
   const restarted = await up(`${origin}/`);
   // The run's own time is an input, no bound: a step the killed server held runs again after its 10 s timeout and a
   // second (11 s), and four 2 s waits lie between the five staples (8 s); 60 s is the allowance on top.
-  const done = restarted && (await showing(page, "Done", fixedTime(19_000) + testTime(60_000)));
+  const done = restarted && (await showing(page, "Done", fixedTime(19_000) + fixedTime(60_000)));
   const final = await runsAt();
   step(
     "after the restart the run ends once, done, and the page shows it",

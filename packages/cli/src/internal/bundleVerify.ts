@@ -70,7 +70,8 @@ function signed(message: Buffer, sig: Buffer, key: string): boolean {
 /**
  * `keel evidence --verify <dir> --key <keyId>` (k.evidence Verify). `--key` is required: the manifest must parse,
  * the SHA-256 id of its `key` and its `keyId` must equal `--key`, and its signature must verify with that key;
- * otherwise E1063 and nothing else is trusted.
+ * otherwise E1063 and nothing else is trusted. A signature that does not verify cannot tell a changed manifest from a
+ * changed signature, so its message names both files.
  * Then each listed file is re-hashed, every other file of the directory is unlisted, and each listed file parses with
  * its schema: E1062 naming the file. A bundle that verifies emits one `evidence` record.
  */
@@ -104,7 +105,7 @@ export function bundleVerify(input: Input, io: Io): Outcome {
   if (m.keyId !== input.key)
     return fail([makeDiag("E1063", `manifest keyId ${m.keyId} is not --key ${input.key}`, at("manifest.json"))]);
   if (!signed(bytes, sig, m.key))
-    return fail([makeDiag("E1063", `signature does not verify with key ${m.keyId}`, at("manifest.sig"))]);
+    return fail([makeDiag("E1063", `manifest.json or manifest.sig changed (key ${m.keyId})`, at("manifest.sig"))]);
 
   const diags: Diag[] = [];
   const listed = new Set(m.files.map((f) => f.path));

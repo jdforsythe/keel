@@ -16,7 +16,16 @@ import {
   source,
   unsafeSource,
 } from "./ledger-fixture.ts";
-import { type Run, keel, makeProject, removeFile, removeProject, summaryOf, writeFiles } from "./test-sim-project.ts";
+import {
+  type Run,
+  childOutput,
+  keel,
+  makeProject,
+  removeFile,
+  removeProject,
+  summaryOf,
+  writeFiles,
+} from "./test-sim-project.ts";
 
 const COMMITTED = ".keel/ledger.json";
 let dir = "";
@@ -24,7 +33,8 @@ let dir = "";
 beforeAll(() => {
   dir = makeProject("ledger-diff", { [SOURCE]: source, [EXAMPLE]: exampleTest, [PROPERTY]: propertyTest(SEEDED_100) });
   const written = keel(dir, ["ledger", "--write", COMMITTED]);
-  if (written.status !== 0) throw new Error(`keel ledger --write failed: ${written.stdout}`);
+  if (written.status !== 0)
+    throw new Error(`keel ledger --write failed (status ${String(written.status)}): ${childOutput(written)}`);
 }, 60_000);
 afterAll(() => {
   removeProject(dir);
