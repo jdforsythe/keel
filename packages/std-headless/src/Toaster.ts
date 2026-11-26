@@ -1,6 +1,7 @@
 import type { Ctx } from "@keel/ctx";
 import { computed, owner } from "@keel/reactive";
 import { For } from "@keel/runtime-dom";
+import { attempt } from "@keel/schema";
 import { instance } from "@keel/std-statecharts";
 import { tx } from "@keel/store";
 import { Box } from "@keel/ui";
@@ -68,13 +69,13 @@ export function Toaster(
       if (tone !== "status" || props.duration === undefined) return;
       const run = new AbortController();
       timer = run;
-      ctx.clock.after(Math.max(LEAST, props.duration), run.signal).then(
-        () => {
-          void tx(c.events.expire, {});
-          after();
-        },
-        () => undefined,
-      );
+      const duration = props.duration;
+      const waiting = ctx.clock.after(Math.max(LEAST, duration), run.signal);
+      void attempt(() => waiting).then((waited) => {
+        if (!waited.ok) return;
+        void tx(c.events.expire, {});
+        after();
+      });
     };
     start();
     owner()?.onDispose(() => timer?.abort());

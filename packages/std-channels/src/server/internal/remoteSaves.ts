@@ -1,4 +1,5 @@
 import type { Ctx } from "@keel/ctx";
+import { attempt } from "@keel/schema";
 import type { Hub } from "./Hub.ts";
 import { headOf } from "./headOf.ts";
 
@@ -20,15 +21,15 @@ export function remoteSaves(ctx: Ctx, hub: Hub, keys: readonly string[]): void {
   for (const key of keys) {
     if (!key.startsWith(PREFIX)) continue;
     const store = key.slice(PREFIX.length);
-    read(key).then(
-      (raw) => {
-        const head = headOf(raw);
-        if (head === undefined) return;
-        for (const sink of [...hub.sinks]) sink.saved(store, head, read);
-      },
-      () => {
+    const reading = read(key);
+    void attempt(() => reading).then((got) => {
+      if (!got.ok) {
         for (const lost of [...(watch?.holders ?? [])]) lost();
-      },
-    );
+        return;
+      }
+      const head = headOf(got.value);
+      if (head === undefined) return;
+      for (const sink of [...hub.sinks]) sink.saved(store, head, read);
+    });
   }
 }

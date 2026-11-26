@@ -47,8 +47,18 @@ export async function pgliteEngine(db: PGlite): Promise<Engine> {
   let tail: Promise<unknown> = Promise.resolve();
   /** `work` once every earlier exclusive call has finished, whether it answered or threw. */
   const exclusive = <T>(work: () => Promise<T>): Promise<T> => {
-    const turn = tail.then(work, work);
-    tail = attempt(() => turn);
+    let end = (): void => undefined;
+    const next = new Promise<void>((resolve) => {
+      end = resolve;
+    });
+    const turn = tail.then(async () => {
+      try {
+        return await work();
+      } finally {
+        end();
+      }
+    });
+    tail = next;
     return turn;
   };
   const heldTx = <T>(

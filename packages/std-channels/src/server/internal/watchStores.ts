@@ -34,13 +34,11 @@ export async function watchStores(ctx: Ctx, hub: Hub, lost: () => void): Promise
       holders.clear();
       for (const f of gone) f();
     });
-    made.ready = started.then(
-      (stop) => {
-        made.stop = stop;
-        return true;
-      },
-      () => false,
-    );
+    made.ready = attempt(() => started).then((got) => {
+      if (!got.ok) return false;
+      made.stop = got.value;
+      return true;
+    });
     hub.watch = made;
     watch = made;
   }

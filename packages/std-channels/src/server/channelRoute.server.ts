@@ -165,13 +165,16 @@ export function channelRoute<P, M, S>(
       : (event, isMember) => {
           if (!isMember) return verdict(event, false);
           if (checked !== undefined && ctx.clock.now() - checked < STANDS_MS) return verdict(event, true);
-          return currentUser().then(
-            (now) => {
-              checked = ctx.clock.now();
-              verdict(event, now === user);
-            },
-            () => void verdict(event, false),
-          );
+          return (async (): Promise<void> => {
+            const asked = currentUser();
+            const now = await attempt(() => asked);
+            if (!now.ok) {
+              verdict(event, false);
+              return;
+            }
+            checked = ctx.clock.now();
+            verdict(event, now.value === user);
+          })();
         };
     /** `event` after `member` and, when there is one to judge, the user check; a member check that fails is a denial. */
     const deliver = (event: Event, member: () => Promise<boolean> | boolean): Step => {
@@ -182,10 +185,14 @@ export function channelRoute<P, M, S>(
       const m = asked.value.answer;
       return typeof m === "boolean"
         ? judge(event, m)
-        : m.then(
-            (isMember) => judge(event, isMember),
-            () => void verdict(event, false),
-          );
+        : (async (): Promise<void> => {
+            const isMember = await attempt(() => m);
+            if (!isMember.ok) {
+              verdict(event, false);
+              return;
+            }
+            await judge(event, isMember.value);
+          })();
     };
     const leave = join(ctx, hub, {
       key: instance(keyOf(search)),

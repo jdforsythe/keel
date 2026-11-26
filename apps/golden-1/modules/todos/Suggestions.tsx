@@ -1,7 +1,7 @@
 import type { Ctx } from "@keel/ctx";
 import { type ResourceState, resource } from "@keel/reactive";
 import { Case, For, If, Match } from "@keel/runtime-dom";
-import { type Infer, s } from "@keel/schema";
+import { type Infer, defect, s } from "@keel/schema";
 import type { ApiError } from "@keel/services";
 import { Box, Heading, Text } from "@keel/ui";
 import type { Suggestion } from "../api/Suggestion.schema.ts";
@@ -14,12 +14,12 @@ type State = ResourceState<Suggestion[]>;
 const messageOf = (e: unknown): string => (e instanceof Error ? e.message : "Suggestions failed");
 
 /** `api.status` names the HTTP status; any other ApiError (network, timeout, decode) only that it failed. */
-const failure = (e: ApiError): Error =>
-  new Error(e.code === "api.status" ? `Suggestions failed (${e.data.status})` : "Suggestions failed");
+const failure = (e: ApiError): string =>
+  e.code === "api.status" ? `Suggestions failed (${e.data.status})` : "Suggestions failed";
 
 async function fetchSuggestions(ctx: Ctx): Promise<Suggestion[]> {
   const r = await todosApi.suggestions({}, ctx);
-  return r.ok ? r.value : Promise.reject(failure(r.error));
+  return r.ok ? r.value : defect(failure(r.error));
 }
 
 /** Suggested titles from `GET /api/suggestions` through the typed `api` client, shown by resource state. */

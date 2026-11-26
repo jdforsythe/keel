@@ -14,20 +14,29 @@ const noop = (): void => undefined;
 export function transact<T>(ctx: Ctx, module: string, fn: (st: State) => T): Promise<T> {
   const key = `std.jobs.${module}`;
   const c = chanOf(ctx.storage, key);
+  // `tail` settles, and never rejects, when this transaction ends, however it ends.
+  let end = noop;
+  const next = new Promise<void>((resolve) => {
+    end = resolve;
+  });
   const work = async (): Promise<T> => {
-    for (;;) {
-      const [raw = null] = await ctx.storage.read([key]);
-      const r = State.parse(raw === null ? { q: [], done: [], failed: [] } : JSON.parse(raw));
-      if (!r.ok) defect(`std.jobs: ${key} does not hold a queue`);
-      const out = fn(r.value);
-      const text = JSON.stringify(r.value);
-      if (text === raw || (await ctx.storage.commit([{ key, expect: raw, value: text }]))) {
-        snapshot(ctx.storage, module, r.value, ctx.clock.now());
-        return out;
+    try {
+      for (;;) {
+        const [raw = null] = await ctx.storage.read([key]);
+        const r = State.parse(raw === null ? { q: [], done: [], failed: [] } : JSON.parse(raw));
+        if (!r.ok) defect(`std.jobs: ${key} does not hold a queue`);
+        const out = fn(r.value);
+        const text = JSON.stringify(r.value);
+        if (text === raw || (await ctx.storage.commit([{ key, expect: raw, value: text }]))) {
+          snapshot(ctx.storage, module, r.value, ctx.clock.now());
+          return out;
+        }
       }
+    } finally {
+      end();
     }
   };
   const p = c.tail.then(work);
-  c.tail = p.then(noop, noop);
+  c.tail = next;
   return p;
 }

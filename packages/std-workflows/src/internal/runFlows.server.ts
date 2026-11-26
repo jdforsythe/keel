@@ -1,11 +1,11 @@
 import { type Ctx, observe } from "@keel/ctx";
+import { attempt } from "@keel/schema";
 import type { FlowQueue } from "../FlowQueue.ts";
 import type { Planned } from "./Planned.ts";
 import { counted } from "./counted.ts";
 import { planKey } from "./planKey.ts";
 
 const POLL_MS = 60_000;
-const noop = (): void => undefined;
 
 /**
  * The `flows` runner (std.workflows Run): at start, after each `save` of one of its workflow stores and every 60,000 ms
@@ -49,7 +49,8 @@ export async function runFlows(
       sent = now;
       if (dirty || signal.aborted) continue;
       nap = new AbortController();
-      await ctx.clock.after(POLL_MS, nap.signal).then(noop, noop);
+      const napping = ctx.clock.after(POLL_MS, nap.signal);
+      void (await attempt(() => napping));
     }
   } finally {
     stop();

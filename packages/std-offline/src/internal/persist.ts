@@ -15,22 +15,20 @@ export async function persist(ctx: Ctx, c: Config): Promise<void> {
   const { held, kept } = flowOf(c, ctx);
   const entries = [...c.store.get("entries").filter((e) => held.has(e.key)), ...kept];
   const set = ctx.storage.set(`keel.outbox.${c.id}`, JSON.stringify({ entries }));
-  set.then(
-    () => void (gone && attempt(() => persist(ctx, c))),
-    () => undefined,
-  );
+  void attempt(() => set).then((written) => {
+    if (written.ok && gone) void attempt(() => persist(ctx, c));
+  });
   return Promise.race([
     set,
     new Promise<void>((_, late) => {
-      Promise.resolve()
-        .then(() => ctx.clock.after(10_000, stop.signal))
-        .then(
-          () => {
-            gone = true;
-            late();
-          },
-          () => undefined,
-        );
+      void attempt(async () => {
+        await Promise.resolve();
+        await ctx.clock.after(10_000, stop.signal);
+      }).then((waited) => {
+        if (!waited.ok) return;
+        gone = true;
+        late();
+      });
     }),
   ]).finally(() => stop.abort());
 }

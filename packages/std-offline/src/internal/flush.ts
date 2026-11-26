@@ -111,11 +111,10 @@ async function loop(ctx: Ctx, c: Config): Promise<void> {
       if (out?.state === "queued") {
         if (!(await put(e.key, "queued", {}))) break;
         if (ctx.net.online() && !f.ended) {
-          f.timer = new AbortController();
-          ctx.clock.after(f.delay, f.timer.signal).then(
-            () => loop(ctx, c),
-            () => undefined,
-          );
+          const timer = new AbortController();
+          f.timer = timer;
+          const waiting = ctx.clock.after(f.delay, timer.signal);
+          void attempt(() => waiting).then((waited) => (waited.ok ? loop(ctx, c) : undefined));
         }
         f.delay = Math.min(f.delay * 2, 60_000);
         break;

@@ -1,5 +1,5 @@
 import type { Ctx } from "@keel/ctx";
-import { attempt } from "@keel/schema";
+import { attempt, defect } from "@keel/schema";
 import { identity } from "@keel/server";
 import { NoRows, sql } from "@keel/std-postgres";
 import mount from "./identity.ts";
@@ -22,7 +22,7 @@ if (!settings.ok) {
 /** The library, or a rejection that `createApp` answers 500 `keel.unexpected`. */
 async function library(ctx: Ctx) {
   const auth = await authOf(ctx);
-  return auth.ok ? auth.value : Promise.reject(new Error(auth.error.code));
+  return auth.ok ? auth.value : defect(auth.error.code);
 }
 
 /**
@@ -45,13 +45,13 @@ async function remember(path: string, res: Response, ctx: Ctx): Promise<Response
   if (path !== `${mount.path}/sign-in/email` || !res.ok) return res;
   const json = await attempt(() => res.clone().json());
   const signed = SignedInUser.parse(json.ok ? json.value : null);
-  if (!signed.ok) return Promise.reject(new Error("sign-in answer without a user"));
+  if (!signed.ok) return defect("sign-in answer without a user");
   const { id, email } = signed.value.user;
   const saved = await accountsDb(ctx).run(
     sql(NoRows)`insert into profiles (user_id, email) values (${id}, ${email})
                 on conflict (user_id) do update set email = excluded.email`,
   );
-  return saved.ok ? res : Promise.reject(new Error(saved.error.code));
+  return saved.ok ? res : defect(saved.error.code);
 }
 
 /** A post a page's `<Form>` made natively, as opposed to a JSON call to the library's API. */
