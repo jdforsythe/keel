@@ -1,5 +1,5 @@
-// Seed 1337 (no generated input: fixed fixtures). k.module E1170: an app's folder (one holding `modules/` or
-// `topology.ts`) whose `package.json` says `"keel": "library"` is no library's own folder: `keel check` reports E1170
+// Seed 1337 (no generated input: fixed fixtures). k.module E1170: an app's folder (one holding a `modules/<id>/module.ts`
+// or `topology.ts`) whose `package.json` says `"keel": "library"` is no library's own folder: `keel check` reports E1170
 // at the key and checks the folder as the app it is, and `keel pack` stops with that E1170 alone.
 import { afterAll, expect, test } from "vitest";
 import { type Rec, type Tree, cleanup, keel, materialize } from "../conformance/compat-support.ts";
@@ -61,6 +61,21 @@ test(
     const run = keel(app({ "package.json": PKG }), ["pack"]);
     expect(codes(run.records)).toEqual(["E1170 package.json"]);
     expect(run.status).toBe(1);
+  },
+  SLOW,
+);
+
+test(
+  "a library's own folder holding a modules/ folder with no manifest stays the library's",
+  () => {
+    const dir = materialize({
+      "package.json": JSON.stringify({ name: "@acme/units", version: "1.0.0", type: "module", keel: "library" }),
+      "module.ts":
+        "import { module } from '@keel/compiler'\nexport default module({ id: 'units', deps: [], capabilities: [], public: { exports: [] } })\n",
+      "modules/shop/x.ts": "export const x = 1\n",
+    });
+    made.push(dir);
+    expect(codes(keel(dir, ["check"]).records)).not.toContain("E1170 package.json");
   },
   SLOW,
 );
