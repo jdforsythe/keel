@@ -9,6 +9,7 @@ import type { Deployable } from "../internal/e2e/Deployable.ts";
 import type { Proc } from "../internal/e2e/Proc.ts";
 import type { ProxyServer } from "../internal/e2e/ProxyServer.ts";
 import type { StaticHost } from "../internal/e2e/StaticHost.ts";
+import type { StoreReader } from "../internal/e2e/StoreReader.ts";
 import type { StoreSource } from "../internal/e2e/StoreSource.ts";
 import { answerEntries } from "../internal/e2e/answerEntries.ts";
 import { boundMs } from "../internal/e2e/boundMs.ts";
@@ -19,12 +20,12 @@ import { freePort } from "../internal/e2e/freePort.ts";
 import { hostStatic } from "../internal/e2e/hostStatic.ts";
 import { libraryPage } from "../internal/e2e/libraryPage.ts";
 import { openContext } from "../internal/e2e/openContext.ts";
+import { openStore } from "../internal/e2e/openStore.ts";
 import { readProject } from "../internal/e2e/readProject.ts";
 import { requireE2e } from "../internal/e2e/requireE2e.ts";
 import { serverEnv } from "../internal/e2e/serverEnv.ts";
 import { spawnProc } from "../internal/e2e/spawnProc.ts";
 import { startProxy } from "../internal/e2e/startProxy.ts";
-import { storedText } from "../internal/e2e/storedText.ts";
 import { testEnd } from "../internal/e2e/testEnd.ts";
 import type { LogRecord } from "../types/LogRecord.ts";
 import type { ServeOptions } from "../types/ServeOptions.ts";
@@ -185,14 +186,22 @@ export async function serve(options: ServeOptions = {}): Promise<Served> {
     if (d.storage === "sqlite") return { kind: "sqlite", file: join(data, `${d.name}.sqlite`) };
     return { kind: "file", file: join(data, `${d.name}.localstorage`) };
   };
-  const state = async <T>(store: Store<T>): Promise<T> => {
-    const text = await storedText(sourceOf(store), `keel.store.${store.id}`);
+  const readWith = async <T>(reader: StoreReader, store: Store<T>): Promise<T> => {
+    const text = await reader.get(`keel.store.${store.id}`);
     if (text === undefined) return store.snapshot().state;
     const held: unknown = JSON.parse(text);
     const value = typeof held === "object" && held !== null ? Reflect.get(held, "state") : undefined;
     const r = store.check(value);
     if (!r.ok) throw e2eError("E1736", `state ${store.id}: the stored value does not parse: ${r.error.message}`, {});
     return r.value;
+  };
+  const state = async <T>(store: Store<T>): Promise<T> => {
+    const reader = await openStore(sourceOf(store));
+    try {
+      return await readWith(reader, store);
+    } finally {
+      await reader.close();
+    }
   };
 
   const served: Served = {
@@ -228,12 +237,37 @@ export async function serve(options: ServeOptions = {}): Promise<Served> {
       mark();
       const ms = boundMs(wait);
       const end = performance.now() + ms;
-      for (;;) {
-        const value = await state(store);
-        if (test(value)) return value;
-        const left = end - performance.now();
-        if (left <= 0) break;
-        await new Promise((done) => setTimeout(done, Math.min(POLL, left)));
+      const reader = await openStore(sourceOf(store));
+      // A commit the storage reports wakes the next read; a storage reporting none is read every 100 ms.
+      let wake: (() => void) | undefined;
+      let committed = false;
+      const unwatch = await reader.watch?.(() => {
+        committed = true;
+        wake?.();
+      });
+      try {
+        for (;;) {
+          const value = await readWith(reader, store);
+          if (test(value)) return value;
+          const left = end - performance.now();
+          if (left <= 0) break;
+          if (committed) {
+            committed = false;
+            continue;
+          }
+          await new Promise<void>((done) => {
+            const timer = setTimeout(done, unwatch === undefined ? Math.min(POLL, left) : left);
+            wake = () => {
+              clearTimeout(timer);
+              committed = false;
+              done();
+            };
+          });
+          wake = undefined;
+        }
+      } finally {
+        unwatch?.();
+        await reader.close();
       }
       failing = new Map(marks);
       throw e2eError("E1735", `until ${store.id}: no commit made the test true after ${(ms / 1000).toFixed(1)}s`, {
