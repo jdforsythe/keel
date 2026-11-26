@@ -27,10 +27,10 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 ## Kernel
 | id | section | status | one line |
 |-|-|-|-|
-| k.schema | Schemas | conformance-covered | codecs |
+| k.schema | Schemas | implemented | codecs |
 | k.formats | Format types | conformance-covered | brands |
 | k.reactive | Reactivity | implemented | signals |
-| k.store | Store, transactions | conformance-covered | log |
+| k.store | Store, transactions | implemented | log |
 | k.component | Components | conformance-covered | props |
 | k.compiler | Compiler, artifacts | conformance-covered | JSX |
 | k.boundary | Server boundary | conformance-covered | stubs |
@@ -109,7 +109,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.parity | Stdlib parity | proposed | seams |
 | k.review | Review of escapes | conformance-covered | ranges |
 | k.escapes | Escape codes | implemented | R codes |
-| k.unsafe | Unsafe, type tests | conformance-covered | count |
+| k.unsafe | Unsafe, type tests | implemented | count |
 
 ## Stdlib
 Sections: `spec/std/README.md`.

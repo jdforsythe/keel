@@ -1,5 +1,5 @@
 # k.schema: Schemas
-status: conformance-covered
+status: implemented
 
 **API.**
 ```ts
@@ -22,6 +22,7 @@ Primitives: `string` (`{ min, max }`; with `min` >= 1, a blank value fails rule 
 - So a value `parse` accepts is plain data but for the `Secret` at each `secret` node (k.privacy), and every value in it, outside each `Secret`, is reached by a walk of own enumerable string keys and array items, as `JSON.stringify`, `encode`, `piiValues`, the server log's value set (k.privacy), sessions' `redact` (std.sessions) and `#k-state` (k.leave) walk it; nothing in it is out of their reach.
 - Limits: a Proxy is judged by what its traps answer while `parse` reads it (its own keys and property descriptors; under an undeclared key or a `json` node no `get`), and one whose trap throws, or a revoked one, fails rule `type` at `[]`; `parse` of a schema with no `secret` node returns the value it was given, so a change to that value after `parse` returns is not judged.
 
+**Guard.** `isSchema(x)` (`@keel/schema`) is true only of a schema `s` built, a key guard on `Symbol.for('keel.schema')` (k.unsafe Type predicates).
 **SchemaError** is the KeelError `schema.invalid` (k.errors): with `data: { issues: { path: (string | number)[], rule: Rule }[] }`. `Rule` is closed: `type` · `finite` · `int` · `min` · `max` · `literal` · `enum` · `required` · `optional-null` (null given to an optional, non-nullable key) · `nullable-absent` (key absent for a nullable, non-optional key) · `discriminant` · `unknown-key` (an undeclared key of a closed object) · `secret-missing` (the marker where a secret is required) · `format` (a format type's `check` refused the value). Parse never throws; `encode` of an invalid value throws (unexpected). Re-registering a name with a different schema throws.
 
 **Frozen.** The `s` namespace, every schema `@keel/schema` makes and its `node`, with every object and array under it, are frozen when made, so in a module an assignment, a `delete` or an `Object.defineProperty` that would change one throws a `TypeError` and the schema stays as made; static reads of a schema (k.privacy-reads) rest on it.
@@ -50,3 +51,4 @@ Primitives: `string` (`{ min, max }`; with `min` >= 1, a blank value fails rule 
 - With `S = s.object({ a: s.object({}), r: s.record(s.string()), l: s.array(s.string()) })` and the valid value `{ a: {}, r: {}, l: [] }`: `S.parse` fails with an issue of rule `type` at `['a']`, and with one at `['r']`, when `a`, or `r`, is each of `new Map()`, `new Date(0)`, `new (class {})()`, `{ [Symbol('k')]: 'v' }`, `Object.defineProperty({}, 'k', { value: 'v', enumerable: false })` and `{ get k() { return 'v' } }`; with one at `['l']` when `l` is `Object.assign(['v'], { e: 'w' })` or an array holding `'v'` with an own symbol key; and with one at `[]` when the value itself has an own symbol key.
 - For every generated open-object schema and every value it accepts, adding an undeclared key to an open object in the value, holding a value of L inside 0 to 3 plain arrays and objects, makes `parse` fail with an issue of rule `type` at that value of L's path.
 - For every generated schema and every generated value it accepts, `parse` returns `ok` of a value in which every value reached through own properties of any key (`Reflect.ownKeys`), not entering a `Secret`, is reached through own enumerable string keys and array indices and is `null`, a boolean, a string, a finite number, a plain array, a plain object, or a `Secret` standing at a `secret` node.
+- `isSchema(s.string())` and `isSchema(s.object({ a: s.int() }))` are true; `isSchema({ parse: () => ok(1) })` and `isSchema(null)` are false.

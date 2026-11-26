@@ -1,16 +1,25 @@
 # RFC 0242: k.errors and k.reactive: `defect`, `attempt`'s `expect`, module roots; no `unsafe` throws, catches or detached scopes
 
-Status: implemented (ADR-0264), accepted by the orchestrator on 2026-11-26, for the operator to confirm. Under the plan's D191 and D192. Amends k.errors (Split, API, a Defects paragraph, Rules E1451 and E1455, six clauses), k.reactive (API, Rules E1207, a Module roots paragraph, clauses #13 and #21 rewritten, two clauses), k.check (App code: E1451, E1452 and E1207 are lifted nowhere; one clause rewritten), k.escapes (R1013, one clause), k.parity (By kind) and k.unsafe (Unsafe). New glossary terms: **defect**, **module root**.
+Status: implemented (ADR-0264) for D1 to D8; D9 to D16 accepted by the orchestrator on 2026-11-26 after review, not built; for the operator to confirm. Under the plan's D191 and D192. Amends k.errors (Split, API, Defects, Rules E1451, E1452, E1455, nine clauses), k.reactive (API, Rules E1203, E1207, E1208, Module roots, Static, clauses #13 and #21 rewritten, #22 to #25), k.check (App code's lifted set), k.escapes (R1013, R1015), k.parity (By kind), k.unsafe (Unsafe, One path, Type predicates, E1762), k.store (Guards), k.schema (Guard), std.postgres (Errors, E2461), std.postgres-changes (`follow`). No new section: `keel docs`' map is at its budget, so each new rule sits in the section that owns its code. New glossary terms: **defect**, **module root**, **key guard**.
 
 ## Decisions
 - D1: `defect(message: string, code?: DefectCode): never` and `isDefect(x: unknown, code?: string): x is Defect`, in `@keel/schema` beside `ok`, `err` and `attempt`. A defect is an `Error` named `Defect`, its message `<code> <message>` when a code is given, its `code` a non-enumerable own property. `DefectCode` is `` `E${number}` ``; E1455 holds a given code to a literal `E` and four digits.
 - D2: `attempt(fn, expect?)`. Without `expect`, as today. With it, a thrown or rejected value that is no defect goes to `expect`; a `KeelError` it returns is the `err`, `undefined` throws or rejects with the very value. A defect is never handed to `expect`.
 - D3: `try`/`finally` without `catch` is ordinary code (E1452 already reads it so; k.errors now says it): the cleanup-then-rethrow sites use it.
 - D4: an `unsafe(` range no longer lifts E1451 or E1452, in an app or a library: a throw is a defect, a catch is `attempt`. E1451's message names `defect`.
-- D5: a module root is a scope made while no scope runs. k.reactive states the semantics the runtime and the compiler's module scope already have, and names it the owner of state a library keeps for its module's life, entered later with `run`.
+- D5: state a library keeps for its module's life lives in a module root, entered later with `run`; what a module root is, D11 says.
 - D6: E1207 is lifted nowhere and judged in every file but a kernel package's own (`packages/<p>/`, `<p>` one of the fifteen kernel folders): no stdlib package or library detaches a scope.
 - D7: R1013 (`keel review`, medium): a `defect` call on a `Result`'s `err` branch, for a person to judge whether the failure was expected.
 - D8: the code is optional. A section that names a code for a throw passes it; a throw no section codes takes none. Giving every stdlib throw a code is a later sweep, not this RFC.
+
+- D9 (review): a type predicate or assertion whose claimed type holds a call or construct signature with a parameter or a non-`void` return, or a type parameter of the predicate, is E1762 outside an `unsafe(` call: it is a cast nothing counts. A key guard (a mark the module set) is none. `keel review` lists every other predicate (R1015). The kernel exports key guards `isStore`, `isTransaction` and `isSchema`.
+- D10 (review): E1452 also refuses a `return`, `break` or `continue` that leaves a `finally` block, everywhere, kernel included (structure-lint): a catch by another name, so the catch code.
+- D11 (review): the owner stays synchronous; Keel keeps none across `await`, since a browser has no async context to keep it in. A module root is only the scope the compiler runs a module's top-level statement in. `scope(fn)` made while no scope runs and no module root is being made is E1208, a defect at run time; check reports the shape it can see (a `scope` or primitive call after an `await`).
+- D12 (review): a failure a caller could meaningfully handle is a value, also when it reaches the code as a platform's throw; a defect is a bug or corrupted state. std.postgres gives `postgres.database { sqlstate }` for classes `22`, `40` (but the reruns), `53`, `54`, `55`, `57` (but `57P01` to `57P03`, `keel.unreachable`) and `P0`; any other SQLSTATE is the defect E2461. A `follow` that cannot listen reports `lost`.
+- D13 (review): R1013 is defined by flow, as TypeScript narrows `.ok`, not by a list of shapes.
+- D14 (review): the defect mark is an own key `Symbol.for('keel.defect')`, so a second copy of `@keel/schema` knows it; a defect that crosses a clone, a worker or JSON arrives as a plain value. `attempt`'s `expect` never sees a value wrapping a defect through `cause` or `errors`.
+- D15 (review): E1451, E1452, E1455 and E1207 find their callee by its symbol in the type pass (aliases, literal computed members, `call`, `apply`, `bind`, `Reflect.apply`); any other value use of the function is the code at that use. E1451 adds `Promise.reject`; E1452 adds `.then(f, g)`, `Promise.allSettled` and `Promise.any`.
+- D16 (review): no new section (`keel docs`' map is at 1,689 of 1,690 tokens and a section adds 7): the key and wrappers go in k.errors, callee resolution in k.unsafe One path (the one path around a check), E1762 in k.unsafe.
 
 ## Problem
 The `unsafe` count is 33 on the main line (d829b060) and 41 in `lane-std-formats` (466b3d5a). It was 13 when only the kernel was held to the rules. RFC 0163 put the stdlib on the library format, so each package is read as app code in every app that lists it. The mover lanes met the rules by wrapping, and three wrappers account for 19 of the main line's 33 and 26 of the lane's 41.
@@ -94,33 +103,47 @@ No catch, no rethrow: the throw goes on unchanged after the `finally`. This repl
 
 ### Module roots (k.reactive)
 ```ts
-import { owner, scope } from '@keel/reactive'
-import { s } from '@keel/schema'
-import { store, transaction } from '@keel/store'
+import { type Scope, owner } from '@keel/reactive'
+import { defect, s } from '@keel/schema'
+import { type Store, type Transaction, store, transaction } from '@keel/store'
 
 const Queue = s.object({ items: s.array(s.string()) })
+type Q = { readonly st: Store<s.infer<typeof Queue>>; readonly push: Transaction<s.infer<typeof Queue>, string> }
 
-export function queue(id: string) {
-  const make = () => {
+export function queue(id: string): () => Q {
+  // At a module's top level the compiler runs this call in a module root, so `owner()` is that root.
+  const at: Scope = owner() ?? defect('queue() outside a scope or a module top level', 'E1203')
+  const make = (): Q => {
     const st = store(Queue, { items: [] }, { id })
     return { st, push: transaction(st, `${id}.push`, s.string(), (q, x) => ({ items: [...q.items, x] })) }
   }
-  // Declared at module level: no owner runs, so this scope is a root that lives as long as the module.
-  const root = owner() === undefined ? scope(() => undefined) : undefined
-  let made = root === undefined ? make() : undefined
-  return () => (made ??= root === undefined ? make() : root.run(make))
+  let made: Q | undefined
+  return () => (made ??= at.run(make))
 }
 ```
-Made where `owner()` is undefined, `scope(fn)` is a root; `run` on it later, from a component or a request, makes the store the root's and not the caller's, and it lands in the module registry. A recorder that must outlive the component calling `record` does the same from a root its package makes at top level: `recorders.run(() => scope(fn, { onError }))`, which its `stop()` disposes. `isolated` (std-conflicts) needs no root at all: `scope(() => { isolate(owner()); body() })` nested in whatever runs, then `dispose()`, gives the factory a registry of its own; std-conflicts' entry is server code with no `uses` above it.
+A maker finds an owner where it is called: at a module's top level the compiler's module root, in a component or request that scope. It captures it, and makes its state with that scope's `run` on first use, from whatever runs then. Called with no owner, as after an `await`, it raises E1203. `chart` makes its store at once in the owner it finds. A recorder that must outlive the component calling `record` uses a root its package's top level holds (`const recorders = owner()` there, the compiler's module root): `recorders.run(() => scope(fn, { onError }))`, which its `stop()` disposes. `isolated` (std-conflicts) nests: `scope(() => { isolate(owner()); body() })`, then `dispose()`; its entry is server code with no `uses` above it.
 
-What a source can do with this that it could not: nothing new. `run` on a root made at module level reaches the module registry and no `uses` chain; so does a top-level `store` written in any app file today, which any request may `tx`. E1207 still keeps a scope made under an owner nested in it: the request registry and `uses` are escaped only by state declared at module level, which is module state by its declaration.
+Why not an async context: the server has `AsyncLocalStorage` (`packages/server/src/internal/requestSecrets.ts`, std-postgres' `pgliteEngine.server.ts`), the browser has nothing that survives an `await` without patching `Promise`, and an owner that survives `await` on one side only would make one component behave two ways. RFC 0245's `task` is the owner of async work: its `work` runs with its scope as owner until its first `await`, and code after that uses the scope's `run`, as here.
+
+What is refused: a root anywhere but a module's top level. At run time `scope(fn)` with no owner outside a module root is E1208 (`detached`, kernel and test code only, stays the one other root); `store`, `signal` and the rest with no owner stay E1203, both now defects. At check, E1208 and E1203 at a call that follows an `await` in the same function, not inside a `run` callback: the common shape, reported before it runs. What `run` on a module root reaches is module state, as a top-level `store` is, and only top-level code holds a module root.
 
 ### Rules
 - E1451's message: `throw in app code; return err(...) when expected, defect(...) when a bug`; its fix stays `return err(`.
 - E1455: a `defect` call (any alias or `<ns>.defect` of `@keel/schema`) whose second argument is not a string literal `E` and four digits, at the argument, no fix. TypeScript's `` `E${number}` `` lets `E1.5` and a variable through; the code is a stable name `keel docs --for` finds.
 - k.check App code: the lifted set loses E1451 and E1452, and a library's file loses its E1207 exception.
 - E1207: judged in every project file but a kernel package's own, `packages/<p>/` for the fifteen kernel folders. `noDetachedScope`'s `packages/` test becomes that list.
-- R1013 in `keel review`: a `defect` call in a `Result`'s `err` branch (`if (!x.ok)`, `x.ok === false`, the `else` of `if (x.ok)`, the third operand of `x.ok ? a : b`). This is the abuse check can name and not judge: turning an expected failure into an exception. Some are right (std-db turns `attempt`'s `keel.unexpected` from opening SQLite into E2153), so a person or the `keel-escapes` skill reads each. What `keel check` still refuses: a bare `throw`, any `catch` but `attempt`, a non-literal code; what review still sees: every `unsafe(` (R1001) and every defect on an `err` branch.
+- R1013 in `keel review`: a `defect` call reachable only where a `Result` is known not ok, read as TypeScript narrows `.ok` over any name, member or call (`if (!x.ok)`, `x.ok || defect()`, `!x.ok && defect()`, `x.ok !== true`, the statements after `if (x.ok) return`, `if (!g().ok)`). This is the abuse check can name and not judge: turning an expected failure into an exception. Some are right (std-db turns `attempt`'s `keel.unexpected` from opening SQLite into E2153), so a person or the `keel-escapes` skill reads each. What `keel check` still refuses: a bare `throw` or `Promise.reject`, any catch but `attempt` (`.then(f, g)`, `allSettled`, `any` and control leaving a `finally` among them), a non-literal code; what review still sees: every `unsafe(` (R1001), every defect on an `err` path (R1013), every type predicate (R1015).
+
+### Closing the review's holes
+1. **A predicate is a cast nothing counts.** `testing/src/internal/axeSync.ts`' `isInternals(x): x is Internals` checks that members exist and are functions and then trusts their signatures. In general whether a body establishes its type cannot be decided. k.unsafe now decides the shape it can, E1762: a claimed type holding a call or construct signature with a parameter or a non-`void` return, or a type parameter of the predicate, since no run-time test proves either. A key guard (`WeakSet.has` of a set the file does not export, or an own `Symbol.for` key) is none, and the kernel gives the guards a library needs: `isStore`, `isTransaction` (`@keel/store`), `isSchema` (`@keel/schema`). Every other predicate is R1015 in review. `axeSync` goes back into `unsafe/`.
+2. **`finally` can drop a defect.** `try { return defect('bug') } finally { return 7 }` returns 7. E1452 refuses `return`, `break` and `continue` that leave a `finally`, in app code, libraries and every package (structure-lint).
+3. **A module root after `await`.** `owner()` is undefined after an `await`, so the first design let a request make a root. Module roots are now the compiler's only; E1208 refuses any other, at run time and, for the visible shape, at check (above).
+4. **std-postgres errors are values.** `postgres.database { sqlstate }` for the classes a caller can act on, `keel.unreachable` for lost connections, the defect E2461 for the rest (the app's own SQL wrong, class `42`; the store, `XX`). A caller retries on `57014` or `55P03` and branches on `22001` with types; `40001` and `40P01` stay reruns, then `keel.conflict`; `23xxx` stays `postgres.constraint`. `follow` reports `lost` for a connection that will not listen. std.db keeps defects: its contract (k.persist storage) rejects, and every caller (the store layer, `commitStores`, std-offline's recovery) handles each rejection alike.
+5. **R1013 by flow,** as D13.
+6. **Wrappers and copies.** `attempt`'s `expect` never sees a value wrapping a defect (`cause`, `errors`, 8 steps); the catches that would make one a value are E1452; the mark is a registered symbol, so a second copy of `@keel/schema` knows it; a clone, a worker message or JSON carries no defect, and the receiver raises its own (std.multi's worker protocol sends message and code, and re-raises). Tests assert with `isDefect`, never `objectContaining({ name: 'Defect' })`.
+7. **Callees by symbol,** as D15, stated once in k.unsafe One path for E1451, E1452, E1455 and E1207. With RFC 0245: E1456 there judges whether a promise floats and counts `.then(f, g)` and `.catch(g)` as handling it; E1452 here judges whether a catch is allowed, and refuses both in app code. So `void p.catch(g)` in app code is one E1452 and one E1456, and in kernel code neither. RFC 0245's text needs no change; its `std-channels/src/subscribe.ts` rewrite, which makes `scope(() => undefined)` "a root where none runs", must take the caller's scope instead (E1208 otherwise).
+
+**Audit of the other migrated packages** against D12: std-schedules `runSchedule.ts:29` makes an `enqueue` err (`keel.conflict`, `keel.unreachable`) a defect, logged by the runner as `keel.unexpected` and rerun. That is an expected transient, a value; k.topology's `Runner.run` returns `Promise<void>`, so the fix is a runner that may resolve a `Result` whose `err` is logged by its code and rerun, a k.topology change for its own RFC; until then the defect stands, listed. Every other converted throw (std-channels, std-conflicts, std-headless, std-jobs, std-live, std-offline, std-schedules' declaration checks and stored marks, std-statecharts, std-workflows) is a declaration the spec refuses, a misuse or a stored value that fails its shape: a defect.
 
 ### Personas
 - F1 (kernel maintainer): `defect`, `isDefect` and `attempt`'s second argument are additions to `@keel/schema`; nothing an app passed `keel check` with breaks but an `unsafe(` range holding a `throw` or `catch`, of which no app or example holds one. Kernel packages keep their own throws (not held to E1451).
@@ -165,6 +188,13 @@ By the `conformance-writer`, from the spec text only, under `rfc:0242`.
 - `packages/check/conformance/`: the cases quoting k.reactive#13 (`packages/std-x/src/a.ts` now fires) and #21 (`node_modules/@acme/charts/unsafe/detached.ts` now one E1207) follow the new text.
 - `packages/cli/conformance/`: R1013's fixture and clean twin in the k.escapes table test, and k.escapes#10's five forms.
 
+After review, from the new text:
+- `packages/schema/conformance/defect-key.test.ts`: k.errors#22 and #23 (wrappers skip `expect`; a second copy, a clone and a worker message). `packages/check/conformance/finally-exit.test.ts`: k.errors#21 (E1452). `packages/check/conformance/callees-by-symbol.test.ts`: k.unsafe#12. The existing defect cases that assert `objectContaining({ name: 'Defect' })` use `isDefect`.
+- `packages/reactive/conformance/module-roots.test.ts`: k.reactive#22 to #24 as rewritten (a compiled module's `owner()`, E1208 and E1203 as defects); `packages/check/conformance/reactive-after-await.test.ts`: k.reactive#25.
+- `packages/check/conformance/unsafe-type-predicates.test.ts`: k.unsafe#10 and #11 (E1762, its lift). `packages/cli/conformance/`: k.escapes' R1013 clause as rewritten (eight reported forms, three clean) and R1015's.
+- `packages/store/conformance/guards.test.ts`: k.store's last clause; `packages/schema/conformance/is-schema.test.ts`: k.schema's last clause.
+- `packages/std-postgres/conformance/`: std.postgres' two last clauses (`postgres.database` per SQLSTATE on Postgres 17 and PGlite; E2461 for `42P01`) and std.postgres-changes' last (a `follow` that cannot listen gets one `lost`).
+
 ## Migration
 Nothing is released; no migration notes. The sites, by package (the builder):
 - `@keel/schema`: `src/defect.ts`, `src/isDefect.ts`, `src/Defect.ts` (type), `src/DefectCode.ts` (type); `attempt.ts` gains the `expect` overload (a defect rethrown before `expect`); `index.ts` exports them. `toUnexpected` unchanged.
@@ -175,27 +205,38 @@ Nothing is released; no migration notes. The sites, by package (the builder):
 - lane-std-sessions (when merged): `caught.ts`, `Thrown.ts` to `attempt(run, expect)`; `raise.ts` to `defect` and `try`/`finally`; `detached.ts` to a root at the recorder module's top level, `recorders.run(() => scope(fn, { onError }))`.
 - Each `unsafe/` folder left with only `unsafe.ts` goes, with the `check` script and `tsconfig.json` entries; the `keel`, `keel-library`, `keel-package-dev` and `keel-escapes` skills, the `@keel/schema` and `@keel/check` READMEs, a changeset.
 
+After review, the builder:
+- `@keel/schema`: the defect mark becomes the own key `Symbol.for('keel.defect')` (no `WeakSet`); `attempt` looks through `cause` and `errors` (8 steps) before `expect`; `isSchema` as a key guard set where schemas are made.
+- `@keel/store`: `isStore`, `isTransaction`, key guards set by `store` and `transaction`.
+- `@keel/reactive`: `moduleRoot` in `./internal`; `scope` without owner outside a module root and without `detached` raises the E1208 defect; E1203 raised as a defect (`fail` makes defects for E1203 and E1208).
+- `@keel/compiler`: `moduleScope` runs every top-level declaration whose initializer holds a call, and every top-level expression statement holding one, in `moduleRoot`, not only the four reactive callees.
+- `@keel/check`: E1452's `finally` exit (`noTryCatch.ts` or a `finallyExit.ts` under E1452); E1762 in the type pass (`unprovablePredicate.ts`, lifted in ranges); E1208 and E1203 after `await`; E1451's `Promise.reject`; E1452's `.then(f, g)`, `allSettled`, `any`; E1451, E1452, E1455 and E1207 resolved by symbol with the value-use finding; EXPLANATIONS.
+- `@keel/cli`: R1013 by flow; R1015. `tooling/structure-lint.mjs`: E1452's `finally` exit and E1762 over every package's `src/` (E1762 through `check()`'s type pass on each package's tsconfig).
+- `packages/testing`: `axeSync`'s predicate back into `unsafe/`; `documentRoute.ts` `isStateOf` into `unsafe/` unless it parses with the matched route's schemas.
+- std-channels: `storesIn` with `isStore`; `holds` into `unsafe/`. std-conflicts: `isStore`, `isTransaction` from `@keel/store`. std-offline: `isWrite` with `isSchema` on `output` and each present `params`, `query`, `body`; `outbox` captures `owner()` (E1203 without one) and makes its store by `run` on first use. std-statecharts: `chart` makes its store in the owner it finds, E1203 without. std-postgres: `classify` gives `postgres.database { sqlstate }` and `keel.unreachable` per class, E2461 for the rest; `listenChanges` reports `lost` instead of its two defects. Package tests that declare a maker at a test file's top level run under the compiler (`keelConfig`) or in a `detached` scope.
+
 ### The count
 | | main (d829b060) | lane-std-formats (466b3d5a) | after |
 |-|-|-|-|
-| kernel casts: ctx `asId`, `narrowAccessor`; forms `asSchemaValue`; runtime-dom `narrow`; store `sourcesFor`; testing `axeSync`, `evalOnHeap` | 7 | 7 | 7 |
+| kernel casts: ctx `asId`, `narrowAccessor`; forms `asSchemaValue`; runtime-dom `narrow`; store `sourcesFor`; testing `axeSync` (back from its predicate), `evalOnHeap` | 7 | 7 | 7 |
 | stdlib casts: std-messages `asEntry`; std-offline `asResult`; std-statecharts `asEvents`, `loosen`; std-tables `asQuerySchema`; std-workflows `asEvents`, `looseChart` | 7 | 7 | 7 |
-| defects: std-channels `fault`; std-conflicts, std-db, std-offline, std-postgres `raise`; std-headless `keyFault`; std-jobs, std-schedules, std-statecharts, std-workflows `refuse`; std-live `outsideScope` | 11 | 11 | 0 |
-| defects in the lane: std-i18n `refuse`; std-messages `badSet`, `refused`; std-money `noDecimalForm`; std-tables `tableFault`; std-temporal `notDuration`; std-text `boundFault` | 0 | 7 | 0 |
-| catches: std-db `settle`, `settleNow`; std-postgres `settle`; std-offline `afterRejection`, `recovering` | 5 | 5 | 0 |
-| detached scopes: std-conflicts `isolated`; std-offline, std-statecharts `detached` | 3 | 3 | 0 |
-| a DOM read: std-tables `focusLost` (E1252, not in scope here) | 0 | 1 | 1 |
-| **total** | **33** | **41** | **14, or 15 with the lane** |
+| defects, catches, detached scopes (rows of the first count) | 19 | 26 | 0 |
+| a DOM read: std-tables `focusLost` | 0 | 1 | 1 |
+| **total, the three patterns** | **33** | **41** | **14, or 15 with the lane** |
+| predicates E1762 reports that no key guard can replace, by reading: testing `documentRoute.ts` `isStateOf<T>`, std-channels `channelRoute.server.ts` `holds<E>` (a type parameter each) | (uncounted) | (uncounted) | +2 |
+| the kernel's other 100 or so predicates, read by E1762's first run | (uncounted) | (uncounted) | the builder records each |
 
-`Settled.ts` (both) holds no call and goes with `settle`. lane-std-sessions adds 8 calls; this removes 3 (`caught`, `raise`, `detached`) and leaves 5 platform reads (`currentValues`, `hasDocument`, `loadGroup.server`, `platformFetch`, `wallClock`), each an E1252, E1601, R1053 or global-`fetch` escape outside these patterns.
+So the honest count is 14 for the three patterns, as the first design said; with E1762 it is at least 16 on the main line (17 with the lane), plus whatever E1762's first run finds among the kernel's predicates, each a cast the count never held. std-conflicts' `isStore` and `isTransaction`, std-channels' `storesIn` and std-offline's `isWrite` take the kernel's key guards and stay out of it. `Settled.ts` (both) holds no call and goes with `settle`. lane-std-sessions adds 8 calls; this removes 3 (`caught`, `raise`, `detached`), leaves 5 platform reads, and its `userRealm.ts` `isTable` is E1762 unless it checks its contracts with `isSchema`.
 
-What stays `unsafe` and why: the 14 casts are type-system escapes over values the code built itself (k.unsafe's own case), and `focusLost` and the five std-sessions reads are platform reads the ctx has no capability for. None is a throw, a catch or a detached scope. Irreducible among the three patterns: none.
+What stays `unsafe` and why: casts over values the code built itself (k.unsafe's own case), predicates whose claim no run-time test proves, and platform reads the ctx has no capability for. None is a throw, a catch or a detached scope.
 
 ## Token impact
-k.errors 1,545 to about 2,740; k.reactive 1,479 to about 1,910; k.check 3,100 to about 3,085 (the removed lifts pay for the rewritten clause); k.escapes 1,587 to about 1,705; k.parity +22; k.unsafe +14. All under 3,100; the map is unchanged. `@keel/schema` gains two small functions; `@keel/check` gains one rule; budgets are re-based by the builder only if they overrun. `keel explain` gains E1455 under 120 tokens.
+After review: k.errors about 3,096 (trimmed to fit, no clause changed); k.reactive about 2,360; k.unsafe about 2,565; k.escapes about 1,850; k.store about 2,260; k.schema about 3,030; std.postgres about 3,075 (its error classes written as one list to fit); std.postgres-changes about 820; no new section; the spec map at about 1,634 of 1,660 and `keel docs`' map unchanged in rows. k.errors 1,545 to about 2,740; k.reactive 1,479 to about 1,910; k.check 3,100 to about 3,085 (the removed lifts pay for the rewritten clause); k.escapes 1,587 to about 1,705; k.parity +22; k.unsafe +14. All under 3,100; the map is unchanged. `@keel/schema` gains two small functions; `@keel/check` gains one rule; budgets are re-based by the builder only if they overrun. `keel explain` gains E1455 under 120 tokens.
 
 ## For the operator
 1. **An `unsafe(` range no longer lifts `throw` or `catch`, in apps too.** Recommended: `defect` and `attempt(fn, expect)` cover every site in the tree, and a lift left in place is a second way to throw. Reverse by keeping E1451 and E1452 lifted in app code only.
 2. **No library or stdlib package may detach a scope (E1207 everywhere but the kernel).** Recommended: every stdlib site is a module root or a nested scope, and a library that detaches under an owner escapes the request registry from inside the request. Reverse by keeping RFC 0238's library-range lift.
 3. **The defect code is optional (D8).** Recommended now, with a backlog line that gives every stdlib throw a code in its section.
 4. **Kernel packages keep their own throws.** They are not held to E1451; converting their 148 throwing files to `defect` would make `isDefect` hold of kernel errors too. Recommended as a later sweep, not a requirement here.
+5. **E1762 will raise the count.** Recommended: a predicate that claims a signature is a cast, and the count should say so; the kernel's key guards keep the stdlib's own out of it. Reverse by leaving predicates to review alone (R1015).
+6. **std.db keeps defects behind k.persist's rejecting storage contract.** Recommended for now; a `Result`-returning storage contract is a kernel change for its own RFC, with std-schedules' runner `Result` beside it.

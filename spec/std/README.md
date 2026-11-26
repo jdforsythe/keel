@@ -51,8 +51,8 @@ S8 adds std.db, std.workflows, std.shells and std.tokens.
 | std.lists | List primitives | conformance-covered | `listChart`, `stableRows` for app components |
 | std.tables | Data tables | conformance-covered | columns from a schema, query in the URL, `applyQuery`, E2851-E2853 |
 | std.db | SQLite and Postgres storage | conformance-covered | storage drivers (k.persist) and check rule registry: E2151-E2153 |
-| std.postgres | Postgres app data | conformance-covered | capability and check rule registries: `database`, `sql` with a result schema, `serializable` transactions, migrations, PGlite under sim, E2451-E2459 |
-| std.postgres-changes | Postgres changes | conformance-covered | std-postgres: `changed` and `follow` over `pg_notify`, E2460 |
+| std.postgres | Postgres app data | implemented | capability and check rule registries: `database`, `sql` with a result schema, `serializable` transactions, migrations, PGlite under sim, E2451-E2459 |
+| std.postgres-changes | Postgres changes | implemented | std-postgres: `changed` and `follow` over `pg_notify`, E2460 |
 | std.workflows | Workflows | implemented | module manifest, inspector hook, check rule registry: chart instances over jobs, E2351-E2355 |
 | std.shells | Shell drivers | conformance-covered | storage and net drivers for Capacitor and Tauri shells |
 | std.capacitor | Capacitor shell target | conformance-covered | shell target: Android and iOS files, tools, build, CI jobs |
