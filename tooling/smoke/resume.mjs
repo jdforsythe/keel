@@ -29,7 +29,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { chromium } from "@playwright/test";
-import { testTime } from "../test-time.ts";
+import { fixedTime, testTime } from "../test-time.ts";
 import { buildIn, copyApp, field, freePort, get, keepOutput, recorder, root, stop, wait } from "./built.mjs";
 
 const SECRET = "golden-2-smoke-secret-of-32-bytes-or-more";
@@ -440,7 +440,9 @@ async function liveForm(browser, step, run, h) {
     up && (await says("Live", testTime(45_000))),
     await textOf(page, live),
   );
-  const ended = await runUntil(h.base, h.cookie, (r) => r.state !== "running", testTime(60_000));
+  // The run's own time is an input, no bound: a step the killed server held runs again after its 10 s timeout and a
+  // second (11 s), and four 2 s waits lie between the five staples (8 s); 60 s is the allowance on top.
+  const ended = await runUntil(h.base, h.cookie, (r) => r.state !== "running", fixedTime(19_000) + testTime(60_000));
   const caught = await textUntil(page, last, (t) => t.startsWith("Done: 5 of 5"), testTime(10_000));
   step(
     `${label} shows the run done after the restart (std.live)`,
