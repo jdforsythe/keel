@@ -1,10 +1,9 @@
 // @vitest-environment happy-dom
-// Spec: k.schemes, clause "With `choice` themes `slate` and `forest`, `<ThemeSelect id=\"theme\" label=\"Theme\" labels={{ default: 'Keel', slate: 'Slate', forest: 'Forest' }} />` renders a `select` with option values `default`, `slate`, `forest`, value `default` and no axe violations; after `fire('theme', { type: 'change', value: 'slate' })` `<html>` has `data-k-theme=\"slate\"` and `document.cookie` holds `keel-theme=slate`, and after `value: 'default'` neither."
-// Spec: k.schemes, clause "Under a sim ctx with a theme `slate`, `appearance(ctx).set({ theme: 'slate' })` returns `true`, then `appearance(ctx).theme()` is `slate`, `<html>` has `data-k-theme=\"slate\"` and a computed reading `theme()` has run again; `set({ theme: 'nope' })` returns `false` and changes neither."
+// Spec: k.schemes, clause "`render` with `artifacts: { tokens }` holding `choice` themes `slate` and `forest`, of `<ThemeSelect id=\"theme\" label=\"Theme\" labels={{ default: 'Keel', slate: 'Slate' }} />` gives a `select` with option values `default`, `slate`, `forest`, texts `Keel`, `Slate`, `forest`, value `default` and no axe violations; after `fire('theme', { type: 'change', value: 'slate' })` `<html>` has `data-k-theme=\"slate\"` and `document.cookie` holds `keel-theme=slate`, and after `value: 'default'` neither."
+// Spec: k.schemes, clause "With `ctx` a sim ctx given to a `render` whose tokens hold a theme `slate`, `appearance(ctx).set({ theme: 'slate' })` is `true`, then `theme()` is `slate`, `<html>` has `data-k-theme=\"slate\"` and a computed reading `theme()` has run again; `set({ theme: 'nope' })` is `false` and changes neither; so is `set({ theme: 'slate' })` on a sim ctx given to no render."
 // Seed: 1337 (fc.assert below). No `test.skip`: the cases are plain tests and fail until RFC 0249 is built.
-// ASSUMPTIONS: `ThemeSelect`'s options come from its `labels` keys in the order given (`default` first), the app's `choice` themes in `themes` order, which E1816 holds equal (packages/check/conformance/theme-select-e1816.test.ts); the control has no other source of theme names in this file. The picks go through `fire`'s path: `value` set on the `select`, a bubbling `change` dispatched (scheme-select.test.ts). The cookie written by a pick is `keel-theme=<name>; Path=/; Max-Age=31536000; SameSite=Lax`, "likewise" with SchemeSelect, and `default` writes `keel-theme=; Path=/; Max-Age=0; SameSite=Lax`, read through the write log (logCookieWrites).
-// AMBIGUOUS (k.schemes Choice): "`set({ scheme?, theme? })` ... returns `false` with no change for a theme no option names": the spec does not say how a sim ctx learns the app's themes. The reading asserted: the options of the `ThemeSelect` rendered in the harness document name them (`default`, `slate`), and no `ThemeSelect` rendered means no option names any theme.
-// `appearance(ctx)` is read as `appearance(ctx).theme()` inside a computed, which the reactive layer reruns when the pick changes (k.schemes: "reactive `scheme()` ... and `theme()`").
+// The harness `render` (roles-support.ts) is given `artifacts: { tokens }` and, where a case reads the ctx, the ctx: `ThemeSelect`'s options come from the tokens (`default`, then each `choice` theme in `themes` order; the text from `labels` under the name, else the name), and a sim ctx knows the themes of the render it is given to. The picks go through `fire`'s path: `value` set on the `select`, a bubbling `change` dispatched (scheme-select.test.ts). The cookie a pick writes is `keel-theme=<name>; Path=/; Max-Age=31536000; SameSite=Lax`, "likewise" with SchemeSelect, and `default` writes `keel-theme=; Path=/; Max-Age=0; SameSite=Lax`, read through the write log (logCookieWrites).
+// `appearance(ctx).theme()` is read inside a computed, which the reactive layer reruns when the pick changes (k.schemes: "reactive `scheme()` ... and `theme()`"). "No document" for a ctx given to no render is read as: `set` returns `false` and `<html>` is untouched.
 // Needs a real browser: the first paint and the system preference are packages/server/conformance/theme-cookie.test.ts and end-to-end cases.
 import { createCtx } from "@keel/ctx";
 import { mount } from "@keel/runtime-dom";
@@ -12,13 +11,18 @@ import { ThemeSelect, appearance } from "@keel/ui";
 import axe from "axe-core";
 import fc from "fast-check";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { withGroups } from "./base-support.ts";
 import { SEED, byId, cleanup, computed, flush, logCookieWrites, render } from "./roles-support.ts";
 
-const LABELS = { default: "Keel", slate: "Slate", forest: "Forest" } as const;
+const themed = (names: readonly string[]) =>
+  withGroups({ themes: Object.fromEntries(names.map((n) => [n, { color: { fg: "#222222" } }])) });
+const tokens = () => themed(["slate", "forest"]);
+const LABELS = { default: "Keel", slate: "Slate" } as const;
 const select = () => ThemeSelect({ id: "theme", label: "Theme", labels: LABELS });
 const root = document.documentElement;
 const reset = (): void => {
   root.removeAttribute("data-k-theme");
+  root.removeAttribute("data-k-scheme");
   document.cookie = "keel-theme=; Path=/; Max-Age=0";
 };
 beforeEach(reset);
@@ -32,14 +36,16 @@ const change = (el: HTMLElement, value: string): void => {
   el.dispatchEvent(new Event("change", { bubbles: true }));
 };
 const EXPIRED = "keel-theme=; Path=/; Max-Age=0; SameSite=Lax";
+const given = () => ({ artifacts: { tokens: tokens() } });
 
 describe("k.schemes: ThemeSelect", () => {
-  test("With `choice` themes `slate` and `forest`, `<ThemeSelect id=\"theme\" label=\"Theme\" labels={{ default: 'Keel', slate: 'Slate', forest: 'Forest' }} />` renders a `select` with option values `default`, `slate`, `forest` and value `default`", () => {
-    const { host, off } = render(select);
+  test("`render` with `artifacts: { tokens }` holding `choice` themes `slate` and `forest`, of `<ThemeSelect id=\"theme\" label=\"Theme\" labels={{ default: 'Keel', slate: 'Slate' }} />` gives a `select` with option values `default`, `slate`, `forest`, texts `Keel`, `Slate`, `forest`, value `default`", () => {
+    const { host, off } = render(select, given());
     const el = byId(host, "theme");
     expect(el.tagName).toBe("SELECT");
-    expect(Array.from(el.querySelectorAll("option"), (o) => o.value)).toEqual(["default", "slate", "forest"]);
-    expect(Array.from(el.querySelectorAll("option"), (o) => o.textContent)).toEqual(["Keel", "Slate", "Forest"]);
+    const options = Array.from(el.querySelectorAll("option"));
+    expect(options.map((o) => o.value)).toEqual(["default", "slate", "forest"]);
+    expect(options.map((o) => o.textContent)).toEqual(["Keel", "Slate", "forest"]);
     expect(el instanceof HTMLSelectElement && el.value).toBe("default");
     expect(el.classList.contains("k-control")).toBe(true);
     off();
@@ -52,7 +58,7 @@ describe("k.schemes: ThemeSelect", () => {
       ["nope", "default"],
     ] as const) {
       root.setAttribute("data-k-theme", attr);
-      const { host, off } = render(select);
+      const { host, off } = render(select, given());
       const el = byId(host, "theme");
       expect(el instanceof HTMLSelectElement && el.value).toBe(want);
       off();
@@ -60,17 +66,26 @@ describe("k.schemes: ThemeSelect", () => {
     }
   });
 
-  test("the options are `default` then the themes `labels` names in order, with the words `labels` gives, whatever the names", () => {
+  test("the options are `default` then the `choice` themes of the tokens in `themes` order, each text `labels` under its name else the name, whatever the themes", () => {
     fc.assert(
       fc.property(
         fc.uniqueArray(fc.stringMatching(/^[a-z][a-z0-9]{0,8}$/), { minLength: 1, maxLength: 5 }),
-        (names) => {
+        fc.boolean(),
+        (names, labelled) => {
           fc.pre(!names.some((n) => ["default", "system", "light", "dark"].includes(n)));
-          const labels = Object.fromEntries([["default", "Keel"], ...names.map((n) => [n, n.toUpperCase()])]);
-          const { host, off } = render(() => ThemeSelect({ id: "theme", label: "Theme", labels }));
+          const labels = Object.fromEntries([
+            ["default", "Keel"],
+            ...(labelled ? names.map((n) => [n, n.toUpperCase()]) : []),
+          ]);
+          const { host, off } = render(() => ThemeSelect({ id: "theme", label: "Theme", labels }), {
+            artifacts: { tokens: themed(names) },
+          });
           const options = Array.from(byId(host, "theme").querySelectorAll("option"));
           expect(options.map((o) => o.value)).toEqual(["default", ...names]);
-          expect(options.map((o) => o.textContent)).toEqual(["Keel", ...names.map((n) => n.toUpperCase())]);
+          expect(options.map((o) => o.textContent)).toEqual([
+            "Keel",
+            ...names.map((n) => (labelled ? n.toUpperCase() : n)),
+          ]);
           off();
           cleanup();
         },
@@ -85,7 +100,8 @@ describe("k.schemes: ThemeSelect", () => {
     document.body.innerHTML = '<main><div id="host"></div></main>';
     const container = document.getElementById("host");
     if (container === null) throw new Error("no host");
-    const off = mount(select, container, { ctx: createCtx({ mode: "sim", seed: SEED }) });
+    const options = { ctx: createCtx({ mode: "sim", seed: SEED }), artifacts: { tokens: tokens() } };
+    const off = mount(select, container, options);
     expect(container.querySelector("select")).not.toBeNull();
     const r = await axe.run(container, {
       runOnly: { type: "tag", values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa", "best-practice"] },
@@ -97,7 +113,7 @@ describe("k.schemes: ThemeSelect", () => {
   });
 
   test("after `fire('theme', { type: 'change', value: 'slate' })` `<html>` has `data-k-theme=\"slate\"` and `document.cookie` holds `keel-theme=slate`, and after `value: 'default'` neither", async () => {
-    const { host, off } = render(select);
+    const { host, off } = render(select, given());
     const log = logCookieWrites();
     try {
       change(byId(host, "theme"), "slate");
@@ -120,7 +136,7 @@ describe("k.schemes: ThemeSelect", () => {
       fc.asyncProperty(
         fc.array(fc.constantFrom("default", "slate", "forest"), { minLength: 1, maxLength: 6 }),
         async (picks) => {
-          const { host, off } = render(select);
+          const { host, off } = render(select, given());
           const log = logCookieWrites();
           try {
             for (const p of picks) {
@@ -151,11 +167,9 @@ describe("k.schemes: ThemeSelect", () => {
 describe("k.schemes: appearance(ctx)", () => {
   const ctx = () => createCtx({ mode: "sim", seed: SEED });
 
-  test("Under a sim ctx with a theme `slate`, `appearance(ctx).set({ theme: 'slate' })` returns `true`, then `appearance(ctx).theme()` is `slate`, `<html>` has `data-k-theme=\"slate\"` and a computed reading `theme()` has run again; `set({ theme: 'nope' })` returns `false` and changes neither", async () => {
-    const { off } = render(() =>
-      ThemeSelect({ id: "theme", label: "Theme", labels: { default: "Keel", slate: "Slate" } }),
-    );
+  test("With `ctx` a sim ctx given to a `render` whose tokens hold a theme `slate`, `appearance(ctx).set({ theme: 'slate' })` is `true`, then `theme()` is `slate`, `<html>` has `data-k-theme=\"slate\"` and a computed reading `theme()` has run again; `set({ theme: 'nope' })` is `false` and changes neither", async () => {
     const c = ctx();
+    const { off } = render(select, { artifacts: { tokens: tokens() }, ctx: c });
     const a = appearance(c);
     let runs = 0;
     const seen = computed(() => {
@@ -179,11 +193,18 @@ describe("k.schemes: appearance(ctx)", () => {
     off();
   });
 
-  test("`set({ scheme })` writes `data-k-scheme` as a pick does, `scheme()` reads `system`, `light` or `dark`, and `set({ theme: 'default' })` removes `data-k-theme`", async () => {
-    const { off } = render(() =>
-      ThemeSelect({ id: "theme", label: "Theme", labels: { default: "Keel", slate: "Slate" } }),
-    );
+  test("`set({ theme: 'slate' })` on a sim ctx given to no render is `false` and changes nothing: the ctx knows no theme and has no document", async () => {
     const a = appearance(ctx());
+    expect(a.set({ theme: "slate" })).toBe(false);
+    await flush();
+    expect(root.hasAttribute("data-k-theme")).toBe(false);
+    expect(a.theme()).toBe("default");
+  });
+
+  test("`set({ scheme })` writes `data-k-scheme` as a pick does, `scheme()` reads `system`, `light` or `dark`, and `set({ theme: 'default' })` removes `data-k-theme`", async () => {
+    const c = ctx();
+    const { off } = render(select, { artifacts: { tokens: tokens() }, ctx: c });
+    const a = appearance(c);
     expect(a.scheme()).toBe("system");
     expect(a.set({ scheme: "dark", theme: "slate" })).toBe(true);
     await flush();
@@ -197,17 +218,15 @@ describe("k.schemes: appearance(ctx)", () => {
     await flush();
     expect(root.hasAttribute("data-k-scheme")).toBe(false);
     off();
-    root.removeAttribute("data-k-scheme");
   });
 
   test("a theme no option names returns `false` with no change, whatever the name", () => {
-    const { off } = render(() =>
-      ThemeSelect({ id: "theme", label: "Theme", labels: { default: "Keel", slate: "Slate" } }),
-    );
+    const c = ctx();
+    const { off } = render(select, { artifacts: { tokens: tokens() }, ctx: c });
     fc.assert(
       fc.property(fc.stringMatching(/^[a-z][a-z0-9]{0,10}$/), (name) => {
-        fc.pre(name !== "slate" && name !== "default");
-        expect(appearance(ctx()).set({ theme: name })).toBe(false);
+        fc.pre(name !== "slate" && name !== "forest" && name !== "default");
+        expect(appearance(c).set({ theme: name })).toBe(false);
         expect(root.hasAttribute("data-k-theme")).toBe(false);
       }),
       { seed: SEED, numRuns: 25 },

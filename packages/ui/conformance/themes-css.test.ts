@@ -1,8 +1,8 @@
 // Spec: k.schemes, clause "With the first case's tokens and `themes: { slate: { color: { fg: '#222222' } } }`, the CSS opens with `@layer keel.tokens,keel.theme,keel.contrast,keel.print;`, the first case's blocks sit in `@layer keel.tokens`, and `@layer keel.theme` holds `:root[data-k-theme=\"slate\"]` declaring `--k-color-fg:#222222`; with `slate`'s `fg` `{ light: '#222222', dark: '#dddddd' }`, it also holds `:root[data-k-theme=\"slate\"]:not([data-k-scheme=\"light\"])` declaring `--k-color-fg:#dddddd` under `@media screen and (prefers-color-scheme: dark)`."
 // Spec: k.schemes, clause "`themes: { hc: { when: 'contrast', color: { fg: '#000000' } } }` puts `:root` declaring `--k-color-fg:#000000` under `@media (prefers-contrast: more)` in `@layer keel.contrast`, and `themes: { paper: { when: 'print', color: { bg: '#ffffff' } } }` puts `:root` declaring `color-scheme:light`, `print-color-adjust:exact` and `--k-color-bg:#ffffff` under `@media print` in `@layer keel.print`; in each, every rule declaring `--k-color-fg:#eeeeee` is under an `@media` whose query starts `screen`, and no `data-k-theme` is written."
-// Spec: k.aria, clause "With color tokens `fg` `{ light: '#111111', dark: '#eeeeee' }` and `bg` `{ light: '#ffffff', dark: '#111111' }`, `<Box id=\"side\" scheme=\"dark\">` renders `data-k-scheme=\"dark\"` on its element in server and client output and the CSS holds `:root [data-k-scheme=\"dark\"]` declaring `color-scheme:dark` and `--k-color-fg:#eeeeee` under `@media screen`; with no `scheme` written, the CSS holds no ` [data-k-scheme=`; with `brandTokens`, `<Box scheme=\"dark\">` is one E1814 at the attribute with message `scheme=\"dark\" needs schemes light and dark; the tokens have light only`."
+// Spec: k.aria, clause "With color tokens `fg` `{ light: '#111111', dark: '#eeeeee' }` and `bg` `{ light: '#ffffff', dark: '#111111' }`, `<Box id=\"side\" scheme=\"dark\">` renders `data-k-scheme=\"dark\"` on its element in server and client output and the CSS holds `:root [data-k-scheme=\"dark\"]` declaring `color-scheme:dark` and `--k-color-fg:#eeeeee` under `@media screen`; with no `scheme` written, the CSS holds no ` [data-k-scheme=`; `compileStyles({ tokens, usages: [{ props: { scheme: 'dark' } }] })` gives `classes` `[[]]` and CSS holding `:root [data-k-scheme=\"light\"]` and `:root [data-k-scheme=\"dark\"]` under `@media screen`; with `brandTokens`, `<Box scheme=\"dark\">` is one E1814 at the attribute with message `scheme=\"dark\" needs schemes light and dark; the tokens have light only`."
 // Seed: 1337 (fc.assert below). No `test.skip`: the cases are plain tests and fail until RFC 0249 is built.
-// ASSUMPTIONS: tokens are written through `compileWith` (base-support.ts), which passes plain data to `defineTokens`, so `themes` type-checks before `Tokens` names it. A block is read in the whitespace-normal form of fixtures.ts `norm` (`@media screen and (prefers-color-scheme: dark)` reads `@media screen and(prefers-color-scheme:dark)`). A layer is read with `layerBody` (base-support.ts), a rule's enclosing blocks with `enclosing`. An element that writes `scheme` reaches `compileStyles` as a usage `{ props: { scheme: "dark" } }` (k.aria Scheme: "a literal read at build"; the spec names no usage shape).
+// ASSUMPTIONS: tokens are written through `compileWith` (base-support.ts), which passes plain data to `defineTokens`, so `themes` type-checks before `Tokens` names it. A block is read in the whitespace-normal form of fixtures.ts `norm` (`@media screen and (prefers-color-scheme: dark)` reads `@media screen and(prefers-color-scheme:dark)`). A layer is read with `layerBody` (base-support.ts), a rule's enclosing blocks with `enclosing`. An element that writes `scheme` reaches `compileStyles` as a usage `{ props: { scheme: "dark" } }` (k.aria Scheme: `compileStyles` takes each such element as that usage, whose `classes` entry is `[]`).
 // k.aria Scheme, the E1814 half (`brandTokens` with one scheme) is packages/check/conformance/scheme-subtree-e1814.test.ts. "In server and client output" is read from the node `Box` builds (its outerHTML, the server HTML as scheme-select.test.ts reads it) and from the mounted element.
 // Needs a real browser: that the layers order as written, that `getComputedStyle` shows the theme's value under an emulated dark or contrast preference, and that print drops every dark value are end-to-end cases (RFC 0244's runner).
 import { Box } from "@keel/ui";
@@ -159,6 +159,38 @@ describe("k.aria: Scheme", () => {
     expect(rule).toContain("--k-color-fg:#eeeeee");
     expect(ruleBody(screen, ':root [data-k-scheme="light"]') ?? "").toContain("--k-color-fg:#111111");
     expect(ruleBody(withoutMedia(out), ':root [data-k-scheme="dark"]')).toBeNull();
+  });
+
+  test('`compileStyles({ tokens, usages: [{ props: { scheme: \'dark\' } }] })` gives `classes` `[[]]` and CSS holding `:root [data-k-scheme="light"]` and `:root [data-k-scheme="dark"]` under `@media screen`', () => {
+    const { classes, css: out } = compileWith({ color }, usages);
+    expect(classes).toEqual([[]]);
+    const screen = mediaBlocks(out, "screen").join("");
+    expect(ruleBody(screen, ':root [data-k-scheme="light"]') ?? "").toContain("color-scheme:light");
+    expect(ruleBody(screen, ':root [data-k-scheme="dark"]') ?? "").toContain("color-scheme:dark");
+  });
+
+  test('any element writing `scheme` turns on the subtree blocks in every layer but `print`: `:root [data-k-scheme="dark"]` at the top level and under `contrast`, `:root[data-k-theme="slate"] [data-k-scheme="dark"]` in the `choice` theme `slate`, none in `keel.print`', () => {
+    const out = css(
+      {
+        slate: { color: { fg: "#222222" } },
+        hc: { when: "contrast", color: { fg: "#000000" } },
+        paper: { when: "print", color: { bg: "#ffffff" } },
+      },
+      usages,
+    );
+    const at = (layer: string): string => layerBody(out, layer) ?? "";
+    expect(at("keel.tokens")).toContain(':root [data-k-scheme="dark"]');
+    expect(at("keel.theme")).toContain(':root[data-k-theme="slate"] [data-k-scheme="dark"]');
+    expect(at("keel.contrast")).toContain(':root [data-k-scheme="dark"]');
+    expect(at("keel.print")).not.toContain("data-k-scheme");
+    for (const layer of ["keel.tokens", "keel.theme", "keel.contrast"]) {
+      for (const stack of enclosing(at(layer), ' [data-k-scheme="dark"]{')) {
+        expect(
+          stack.some((p) => p.startsWith("@media screen")),
+          layer,
+        ).toBe(true);
+      }
+    }
   });
 
   test("with no `scheme` written, the CSS holds no ` [data-k-scheme=`", () => {

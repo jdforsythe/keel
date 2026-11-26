@@ -1,11 +1,11 @@
-// Spec: k.a11y-static, clause "With color tokens `text` `{ light: '#1a191e', dark: '#F3F3F3' }` and `surface` `{ light: '#F9F9F9', dark: '#141317' }` and `themes: { slate: { color: { surface: { light: '#F4F7FB', dark: '#10151C' } } }, hc: { when: 'contrast' }, paper: { when: 'print', color: { text: '#000000' } } }`, `combinations(tokens)` names, in order, `light`, `light+hc`, `light+slate`, `light+slate+hc`, `dark`, `dark+hc`, `dark+slate`, `dark+slate+hc`, `print`, `print+hc`, `print+slate`, `print+slate+hc`, and in `print+slate` `text` is `#000000` and `surface` `#F4F7FB`, in `dark+slate` `#F3F3F3` and `#10151C`."
+// Spec: k.a11y-static, clause "With color tokens `text` `{ light: '#1a191e', dark: '#F3F3F3' }` and `surface` `{ light: '#F9F9F9', dark: '#141317' }` and `themes: { slate: { color: { surface: { light: '#F4F7FB', dark: '#10151C' } } }, hc: { when: 'contrast' }, paper: { when: 'print', color: { text: '#000000' } } }`, `combinations(tokens)` names, in order, `light`, `light+hc`, `light+slate`, `light+slate+hc`, `dark`, `dark+hc`, `dark+slate`, `dark+slate+hc`, `print`, `print+hc`, `print+slate`, `print+slate+hc`, and in `print+slate` `text` is `#000000` and `surface` `#F4F7FB`, in `dark+slate` `#F3F3F3` and `#10151C`; with nine `choice` themes it throws E1807."
 // Spec: k.a11y-static, clause "With color tokens `low` `#B91C1C` and `bg` `#ffffff` and `themes: { hc: { when: 'contrast' } }`, `<Text fg=\"low\" bg=\"bg\">x</Text>` is one E1804 with message `fg \"low\" on bg \"bg\" is 6.47:1 in light+hc, needs 7:1`; with `hc` holding `low: '#9B1C1C'` it is none."
 // Spec: k.a11y-static, clause "With color tokens `ink` `#ffffff` and `bg` `#1a191e` and `themes: { paper: { when: 'print', color: { bg: '#ffffff' } } }`, `<Text fg=\"ink\" bg=\"bg\">x</Text>` is one E1804 whose message ends `in print, needs 4.5:1`; inside `<Box media=\"screen\">` it is none."
 // Spec: k.a11y-static, clause "With color tokens `card` `#FFFFFF`, `surface` `#F9F9F9` and `on` `#FFFFFF` and `overlay: { scrim: { value: 'rgb(26 25 30 / 0.6)', over: ['surface', 'card'] } }`, `<Text fg=\"on\" bg=\"scrim\">x</Text>` in a component's outermost element is no E1804 (4.73:1 and 4.58:1), and with `themes: { hc: { when: 'contrast' } }` one with message `fg \"on\" on bg \"scrim\" over \"surface\" is 4.73:1 in light+hc, needs 7:1`; `<Box bg=\"text\"><Text fg=\"on\" bg=\"scrim\">x</Text></Box>` with a color token `text` is one E1817 with message `bg \"scrim\" sits on \"text\", not in its over`."
 // Spec: k.a11y-static, clause "With color tokens `fg` `{ light: '#111111', dark: '#787878' }` and `bg` `'#ffffff'`, `<Box scheme=\"light\"><Text fg=\"fg\" bg=\"bg\">x</Text></Box>` is no E1804 and `<Box scheme=\"dark\">` around it one, ending `in dark, needs 4.5:1`."
 // Seed: 1337 (fc.assert below). No `test.skip`: the cases are plain tests and fail until RFC 0249 is built.
 // ASSUMPTIONS: tokens are written through `looseTokens` (support.ts), plain data given to `defineTokens`, so `themes` and `overlay` type-check before `Tokens` names them, and reach `check()` as `artifacts: { tokens }`. `combinations(tokens)` returns `{ name, tokens }[]`, read here with `Reflect.get`. A `<Text>` in a component's outermost element is judged against the `bg` it writes. Ratios are recomputed from the formulas (support.ts `ratioOf`, `blend`); the composite's channels round to integers as browsers do, so a ratio is compared to the clause's number at one decimal and the message to the recomputed one.
-// AMBIGUOUS (k.a11y-static Combinations): the refusal one past each limit (9 `choice` themes, a second `contrast`, a second `print`) is k.values Themes' (E1807 from `defineTokens`); the spec does not say `combinations` itself throws, so the case asserts the schema, and that a set within the limits gives at most 54. "Judged in that scheme's combinations and the printing ones" for an element under `Box scheme`: the case asserts the message names a combination of that scheme or `print`.
+// The refusal one past each limit (9 `choice` themes, a second `contrast`, a second `print`) is k.values Themes' (E1807 from `defineTokens`) and `combinations(tokens)` throws E1807 for it likewise (the clause's last words); a set within the limits gives at most 54. "Judged in that scheme's combinations and the printing ones" for an element under `Box scheme`: the case asserts the message names a combination of that scheme or `print`.
 // Needs a real browser: nothing here.
 import { check } from "@keel/check";
 import { combinations } from "@keel/ui/css";
@@ -13,6 +13,7 @@ import { TokenSchema } from "@keel/ui";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
 import { CHECK_CASE_BOUND } from "./check-time.ts";
+import { atText } from "./library-looks-support.ts";
 import { SEED, blend, looseTokens, one, ratioOf } from "./support.ts";
 
 const read = (v: unknown, ...path: string[]): unknown =>
@@ -160,6 +161,25 @@ describe("k.a11y-static: combinations(tokens)", () => {
     expect(TokenSchema.parse(within(9, 0, 0)).ok).toBe(false);
     expect(TokenSchema.parse(within(0, 2, 0)).ok).toBe(false);
     expect(TokenSchema.parse(within(0, 0, 2)).ok).toBe(false);
+  });
+
+  test("with nine `choice` themes it throws E1807, as `defineTokens` does for tokens `TokenSchema` refuses, and so for a second `contrast` or `print` theme", () => {
+    const plain = (themes: Record<string, unknown>): Parameters<typeof combinations>[0] =>
+      JSON.parse(JSON.stringify({ color: { x: "#111111" }, themes }));
+    const codeOf = (f: () => unknown): unknown => {
+      try {
+        f();
+        return null;
+      } catch (e) {
+        return e instanceof Error && "code" in e ? e.code : null;
+      }
+    };
+    const nine = Object.fromEntries(letters(9).map((n) => [n, {}]));
+    expect(codeOf(() => combinations(plain(nine)))).toBe("E1807");
+    expect(codeOf(() => looseTokens({ color: { x: "#111111" }, themes: nine }))).toBe("E1807");
+    expect(codeOf(() => combinations(plain({ a: { when: "contrast" }, b: { when: "contrast" } })))).toBe("E1807");
+    expect(codeOf(() => combinations(plain({ a: { when: "print" }, b: { when: "print" } })))).toBe("E1807");
+    expect(codeOf(() => combinations(plain(Object.fromEntries(letters(8).map((n) => [n, {}])))))).toBeNull();
   });
 });
 
@@ -311,6 +331,9 @@ describe("k.a11y-static: overlays", () => {
       expect(d).toHaveLength(1);
       expect(d[0]?.message).toBe('bg "scrim" sits on "text", not in its over');
       expect(d[0]?.fix).toBeUndefined();
+      const src = `import { Box, Text } from '@keel/ui'\nexport default function C() { return <Box bg="text">${OVER_TEXT}</Box> }\n`;
+      expect(atText(src, '"scrim"', d[0]?.line ?? 0, d[0]?.col ?? 0)).toBe(true);
+      expect(d[0]?.col).toBe((src.split("\n")[1]?.indexOf('bg="scrim"') ?? -2) + 4);
     },
     CHECK_CASE_BOUND,
   );

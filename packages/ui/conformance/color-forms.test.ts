@@ -1,5 +1,5 @@
 // Spec: k.values, clause "`TokenSchema` accepts as a color each of `rgb(184 66 13)`, `hsl(19deg 87% 39%)`, `oklab(0.54 0.12 0.1)`, `oklch(54% 0.16 40)` and `color(display-p3 0.67 0.29 0.1)`, and refuses with rule `format` each of `rgb(184, 66, 13)`, `rgb(300 0 0)`, `oklch(54% 0.16 40 / 0.5)`, `white`, `oklch(none 0 0)` and `rgb(from #000 r g b)`."
-// Spec: k.values, clause "`shadow: { a: '0 1px 2px rgb(0 0 0 / 0.2)' }` and `overlay: { scrim: { value: '#1a191e99', over: ['card'] } }` with a color token `card` are accepted; `overlay: { scrim: { value: '#1a191e', over: ['card'] } }`, one with `over: []`, and one with `over: ['nope']` are each refused with rule `format`."
+// Spec: k.values, clause "`shadow: { a: '0 1px 2px rgb(0 0 0 / 0.2)' }` and `overlay: { scrim: { value: '#1a191e99', over: ['card'] } }` with a color token `card` are accepted; `overlay: { scrim: { value: '#1a191e', over: ['card'] } }`, one with `over: []`, and one with `over: ['nope']` are each refused with rule `format`, the last at `overlay.scrim.over`."
 // Spec: k.values, clause "With color tokens `a` `oklch(0.72 0.14 45)` and `b` `#141317`, `<Text fg=\"a\" bg=\"b\">x</Text>` reports no E1804, and with `a` `color(display-p3 0 0 1)` and `b` `#000000` it reports one whose message holds `2.44:1`, the ratio after mapping to sRGB, which is below the 2.59:1 of the color as given."
 // Seed: 1337 (fc.assert below). No `test.skip`: the cases are plain tests and fail until RFC 0249 is built.
 // Expected luminances and ratios are recomputed in the test from the formulas k.values Contrast states (fixtures.ts `colorLinear`, `colorLuminance`, `colorRatio`: WCAG linearisation, CSS Color 4 `hslToRgb`, the Oklab matrices, the display-p3 transfer function and matrix), never written as numbers; the one stated number is the clause's own, 2.44 and 2.59.
@@ -145,9 +145,14 @@ describe("k.values: the six opaque forms", () => {
       refusedAt({ color, overlay: { scrim: { value: "#1a191e", over: ["card"] } } }, ["overlay", "scrim", "value"]),
     ).toBe(true);
     expect(refusedUnder({ color, overlay: { scrim: { value: "#1a191e99", over: [] } } }, "overlay.scrim")).toBe(true);
-    expect(refusedUnder({ color, overlay: { scrim: { value: "#1a191e99", over: ["nope"] } } }, "overlay.scrim")).toBe(
-      true,
-    );
+    expect(
+      refusedAt({ color, overlay: { scrim: { value: "#1a191e99", over: ["nope"] } } }, ["overlay", "scrim", "over"]),
+    ).toBe(true);
+    const overlay = {
+      scrim: { value: "#1a191e99", over: ["card", "other"] },
+      other: { value: "#00000099", over: ["card"] },
+    };
+    expect(refusedAt({ color, overlay }, ["overlay", "scrim", "over"])).toBe(true);
     for (const o of [
       { value: "#1a191e", over: ["card"] },
       { value: "#1a191e99", over: [] },

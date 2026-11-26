@@ -1,9 +1,9 @@
 // Spec: k.values, clause "In the k.looks fixture with `acmeTokens` also holding `themes: { contrast: { color: { 'acme.accent': '#08427D' } } }` and the app's `tokens.ts` adding `themes: { hc: { when: 'contrast', color: {} } }`, `keel check` reports one E1810 with message `@acme/ui needs themes.hc color \"acme.accent\"; spread acmeTokens.themes.contrast.color`; after its fix, none, and the CSS's `keel.contrast` layer declares `--k-color-acme-accent:#08427D`; a shipped `themes: { slate: {} }` is one E1812 with message `acmeTokens holds themes \"slate\"; only contrast and print`."
-// Spec: k.looks, clause "In an app, an E1804 at an element of a library file, or at a library look, is reported in `tokens.ts`: at the opening quote of the app's key for its `fg` when the app writes one, else for its `bg`, else at the spread `...<id>Tokens.color`, else line 1, column 1; once per pair and combination (k.a11y-static); message `<fg> on <bg> is <ratio>:1 in <combination>, needs <need>:1; override in tokens.ts`."
+// Spec: k.looks, clause "In an app, an E1804 at an element of a library file, or at a library look, is reported in `tokens.ts`: at the opening quote of the app's key for its `fg` when the app writes one, else for its `bg`, else at the spread `...<id>Tokens.color`, else line 1, column 1, the app's key being the one in the latest layer on in that combination (k.a11y-static Combinations) that writes it, in the order `print`, `contrast`, `choice`, top level; once per pair and combination, so with no `themes` once per pair and scheme; message `<fg> on <bg> is <ratio>:1 in <combination>, needs <need>:1; override in tokens.ts`."
 // Seed: 1337 (fc.assert below). No `test.skip`: the cases are plain tests and fail until RFC 0249 is built.
 // ASSUMPTIONS: see library-looks-support.ts (the k.looks fixture, tokens given to `check()` as `artifacts: { tokens }` beside the `tokens.ts` text; a fix applies with `git apply` as applyFix does). The shipped object is the fixture's with a `themes` key appended in the source text. The CSS half of the clause (`keel build`'s `keel.contrast` layer) is read over `compileStyles` of the fixed project's tokens, as library-looks-e1810.test.ts reads it. "After its fix, none" is read as no E1810 for the fixed file's tokens.
 // The k.looks clause above is the Library contrast paragraph, quoted whole: it has no Conformance bullet of its own (the existing `in dark` case, library-looks-e1810.test.ts and schemes-own-folder.test.ts, holds `<combination>` = `dark`), so it is quoted whole and asserted for combinations with a theme on: the message `acme.ink on acme.accent is <ratio>:1 in <combination>, needs <need>:1; override in tokens.ts`, once per pair and combination, at the key of the latest layer on that writes the failing `fg`, else `bg`.
-// AMBIGUOUS (k.looks Library contrast with RFC 0249's settled rule): in `light+slate`, the failing `fg` `acme.ink` is written by no layer of the app and `bg` `acme.accent` by `slate`'s: the case asserts the finding at `slate`'s `acme.accent` key.
+// In `light+slate` the failing `fg` `acme.ink` is written by no layer of the app and `bg` `acme.accent` by `slate`'s: the finding is at `slate`'s `acme.accent` key; in the combinations with `hc` on, at `hc`'s (the latest layer on, order `print`, `contrast`, `choice`, top level).
 import { compileStyles } from "@keel/ui/css";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
@@ -169,6 +169,40 @@ describe("k.looks: Library contrast per combination", () => {
       expect(d.map((x) => x.message)).toEqual([
         `acme.ink on acme.accent is ${ratioOf("#FFFFFF", mid)}:1 in light+hc, needs 7:1; override in tokens.ts`,
       ]);
+    },
+    CHECK_CASE_BOUND,
+  );
+
+  test(
+    "the key reported is the one in the latest layer on in that combination that writes it, in the order `print`, `contrast`, `choice`, top level, once per pair and combination",
+    () => {
+      const hcColor = '...acmeTokens.themes.contrast.color, "acme.accent": "#3D8BD9"';
+      const themes = `slate: { color: { "acme.accent": "#3D8BD9" } },\n    hc: { when: "contrast", color: { ${hcColor} } }`;
+      const text = appSource(themes);
+      const files = app(text, [{ path: SHIPPED, source: shipped("contrast: { color: { 'acme.ink': '#FFFFFF' } }") }]);
+      const tokens = looseTokens({
+        ...composed(),
+        themes: {
+          slate: { color: { "acme.accent": "#3D8BD9" } },
+          hc: { when: "contrast", color: { "acme.ink": "#FFFFFF", "acme.accent": "#3D8BD9" } },
+        },
+      });
+      const d = diagnosticsOf(files, tokens).filter((x) => x.code === "E1804");
+      const combo = (x: { message: string }): string => /in ([a-z+]+),/.exec(x.message)?.[1] ?? "";
+      expect(d.map(combo).sort()).toEqual(["light+hc", "light+slate", "light+slate+hc"]);
+      const src = sourceOf(files, "tokens.ts");
+      const slateAt = src.indexOf('"acme.accent"', src.indexOf("slate:"));
+      const hcAt = src.indexOf('"acme.accent"', src.indexOf("hc:"));
+      const keyOf = (name: string) => {
+        const x = d.find((y) => combo(y) === name);
+        return { line: x?.line ?? 0, col: x?.col ?? 0 };
+      };
+      const at = (from: number) =>
+        atText(src, '"acme.accent"', keyOf("light+slate").line, keyOf("light+slate").col, from);
+      expect(at(slateAt)).toBe(true);
+      for (const name of ["light+hc", "light+slate+hc"]) {
+        expect(atText(src, '"acme.accent"', keyOf(name).line, keyOf(name).col, hcAt), name).toBe(true);
+      }
     },
     CHECK_CASE_BOUND,
   );

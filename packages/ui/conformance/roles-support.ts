@@ -16,9 +16,13 @@ export const host = (): HTMLElement => {
   hosts.push(h);
   return h;
 };
-export const render = (make: () => Node): { host: HTMLElement; off: () => void } => {
+export const render = (
+  make: () => Node,
+  given: { artifacts?: { tokens: unknown }; ctx?: ReturnType<typeof createCtx> } = {},
+): { host: HTMLElement; off: () => void } => {
   const h = host();
-  return { host: h, off: mount(make, h, { ctx: createCtx({ mode: "sim", seed: 1337 }) }) };
+  const options = { ctx: given.ctx ?? createCtx({ mode: "sim", seed: 1337 }), artifacts: given.artifacts };
+  return { host: h, off: mount(make, h, options) };
 };
 export const byId = (root: ParentNode, id: string): HTMLElement => {
   const el = root.querySelector(`[id="${id}"]`);
