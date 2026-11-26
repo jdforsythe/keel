@@ -1,6 +1,6 @@
 // Spec: k.docs, clause "`keel docs` emits a `docs.area` per `map.json` area in map order, then a `docs.entry` per skill, and no section's `docs.entry`; `keel docs keel-client` prints `skills/keel-client/SKILL.md` byte for byte."
 // Spec: k.docs, clause "A skill whose `description` is `Build pages; E1401, E19xx` is listed with `title` `Build pages`."
-// Spec: k.docs, sentence "an entry whose `holds` is `\"\"` prints no `: `."
+// The Forms paragraph also says: an entry whose `holds` is `""` prints no `: `. Not a Conformance bullet, so no citation; the case below holds it under the skill clause.
 // Seed 1337 (map order property). Red: `docs` is absent (E1051).
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";

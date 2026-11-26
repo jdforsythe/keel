@@ -1,8 +1,7 @@
 // Spec: k.docs, clause "With installed sections `k.x` citing E1551 and E1553 and `k.y` citing E1551 and E1501, `keel docs --for E155x` emits `docs.code` E1551 with `ids` `[\"k.x\",\"k.y\"]`, then E1553 with `[\"k.x\"]`, and nothing for E1501, exit 0; `--for E15xx` adds E1501."
 // Spec: k.docs, clause "With `k.x` holding `` `renderRoute(id)` `` and `` `t.renderRoute` ``, `k.y` holding `` `renderRoute` `` once and `k.z` holding only `` `renderRouter` ``, `keel docs --for renderRoute` emits `docs.hit` for `k.x` with `count` 2, then `k.y` with 1, and none for `k.z`; a name in plain text outside backticks counts no span."
 // Spec: k.docs, clause "With `glossary.json` term `identity mount`, `keel docs --for \"Identity Mount\"` emits that `docs.term` first, then its hits; `keel docs --for nothing-here` prints no record, exit 0."
-// Spec: k.docs, sentence "A key matches a glossary term and a code span ignoring case."
-// Spec: k.docs, sentence "A key that matches nothing prints only the trailing `summary` record, exit 0."
+// The Forms paragraph also says: a key matches a glossary term and a code span ignoring case; a key matching nothing prints only the trailing `summary` record, exit 0. Not Conformance bullets, so no citation; the cases below under the identity mount clause hold them.
 // Seed 1337 (the block, ranking and cut properties). Red: `docs` is absent (E1051), then `--for` takes codes only.
 // ASSUMED: a section "cites" a code when its `index.json` `codes` lists it (k.docs Packed files); the fixtures list each cited code there.
 import fc from "fast-check";
