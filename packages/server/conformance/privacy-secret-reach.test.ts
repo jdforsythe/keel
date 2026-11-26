@@ -1,3 +1,4 @@
+import { fixedTime } from "@keel/tooling/test-time";
 import fs from "node:fs";
 import path from "node:path";
 // @vitest-environment happy-dom
@@ -270,55 +271,59 @@ describe("k.privacy secret reach", () => {
     );
   });
 
-  it("Of two overlapping requests each marks only its own: each line marks its own value and holds the other's as written.", async () => {
-    await fc.assert(
-      fc.asyncProperty(
-        fc.tuple(fc.stringMatching(/^a[a-z0-9]{9,14}$/), fc.stringMatching(/^b[a-z0-9]{9,14}$/)),
-        async ([alpha, bravo]) => {
-          const ctx = createCtx({ mode: "sim", seed: SEED });
-          const own = new Map([
-            ["alpha", { value: alpha, other: bravo, first: 10, second: 40 }],
-            ["bravo", { value: bravo, other: alpha, first: 20, second: 10 }],
-          ]);
-          const act = action(appContract, "app.a", { input: s.object({ who: s.string() }) }, async (input) => {
-            const mine = own.get(input.who);
-            if (mine === undefined) return ok(null);
-            await ctx.clock.after(mine.first);
-            const minted = made(s.secret(s.string()).parse(mine.value));
-            await ctx.clock.after(mine.second);
-            throw new Error(`${input.who}: ${reveal(minted)} then ${mine.other}`);
-          });
-          const routes = manifest(appContract, { "app.a": { component: view, POST: act } });
-          const lines: string[] = [];
-          const app = await createAppLoose({
-            topology: topology({ web: { modules: ["app"], adapter: "node" } }),
-            routes,
-            ctx,
-            mode: "production",
-            log: { format: "json", write: (l: string) => void lines.push(l) },
-          });
-          const both = Promise.all([
-            app.fetch(post("/a", { who: "alpha" }, json)),
-            app.fetch(post("/a", { who: "bravo" }, json)),
-          ]);
-          await flush();
-          for (let i = 0; i < 6; i++) {
-            ctx.clock.advance(10);
+  it(
+    "Of two overlapping requests each marks only its own: each line marks its own value and holds the other's as written.",
+    async () => {
+      await fc.assert(
+        fc.asyncProperty(
+          fc.tuple(fc.stringMatching(/^a[a-z0-9]{9,14}$/), fc.stringMatching(/^b[a-z0-9]{9,14}$/)),
+          async ([alpha, bravo]) => {
+            const ctx = createCtx({ mode: "sim", seed: SEED });
+            const own = new Map([
+              ["alpha", { value: alpha, other: bravo, first: 10, second: 40 }],
+              ["bravo", { value: bravo, other: alpha, first: 20, second: 10 }],
+            ]);
+            const act = action(appContract, "app.a", { input: s.object({ who: s.string() }) }, async (input) => {
+              const mine = own.get(input.who);
+              if (mine === undefined) return ok(null);
+              await ctx.clock.after(mine.first);
+              const minted = made(s.secret(s.string()).parse(mine.value));
+              await ctx.clock.after(mine.second);
+              throw new Error(`${input.who}: ${reveal(minted)} then ${mine.other}`);
+            });
+            const routes = manifest(appContract, { "app.a": { component: view, POST: act } });
+            const lines: string[] = [];
+            const app = await createAppLoose({
+              topology: topology({ web: { modules: ["app"], adapter: "node" } }),
+              routes,
+              ctx,
+              mode: "production",
+              log: { format: "json", write: (l: string) => void lines.push(l) },
+            });
+            const both = Promise.all([
+              app.fetch(post("/a", { who: "alpha" }, json)),
+              app.fetch(post("/a", { who: "bravo" }, json)),
+            ]);
             await flush();
-          }
-          for (const res of await both) await res.text();
-          const diags = diagsOf(lines);
-          expect(diags.some((l) => l.includes(`alpha: [secret] then ${bravo}`))).toBe(true);
-          expect(diags.some((l) => l.includes(`bravo: [secret] then ${alpha}`))).toBe(true);
-          for (const l of diags) {
-            if (l.includes("alpha:")) expect(l).not.toContain(`alpha: ${alpha}`);
-            if (l.includes("bravo:")) expect(l).not.toContain(`bravo: ${bravo}`);
-          }
-        },
-      ),
-      { seed: SEED, numRuns: 5 },
-    );
-  }, 60_000);
+            for (let i = 0; i < 6; i++) {
+              ctx.clock.advance(10);
+              await flush();
+            }
+            for (const res of await both) await res.text();
+            const diags = diagsOf(lines);
+            expect(diags.some((l) => l.includes(`alpha: [secret] then ${bravo}`))).toBe(true);
+            expect(diags.some((l) => l.includes(`bravo: [secret] then ${alpha}`))).toBe(true);
+            for (const l of diags) {
+              if (l.includes("alpha:")) expect(l).not.toContain(`alpha: ${alpha}`);
+              if (l.includes("bravo:")) expect(l).not.toContain(`bravo: ${bravo}`);
+            }
+          },
+        ),
+        { seed: SEED, numRuns: 5 },
+      );
+    },
+    fixedTime(60_000),
+  );
 
   it("One made at startup is marked when revealed: a `Secret` parsed at module scope and thrown revealed by an action logs `startup [secret]` and no line holds the value.", async () => {
     const act = action(appContract, "app.a", { input: Nothing }, async () => {
@@ -421,45 +426,49 @@ describe("k.privacy secret reach", () => {
     await app.close?.();
   });
 
-  it("Of overlapping requests that reveal the same module `Secret`, each marks it; a third that never reveals it and throws the value as a literal string logs it as is.", async () => {
-    const ctx = createCtx({ mode: "sim", seed: SEED });
-    const timing = new Map([
-      ["alpha", { first: 10, second: 40, reveals: true }],
-      ["bravo", { first: 20, second: 10, reveals: true }],
-      ["charlie", { first: 15, second: 30, reveals: false }],
-    ]);
-    const act = action(appContract, "app.a", { input: s.object({ who: s.string() }) }, async (input) => {
-      const mine = timing.get(input.who);
-      if (mine === undefined) return ok(null);
-      await ctx.clock.after(mine.first);
-      const shown = mine.reveals ? reveal(MOD_OVERLAP) : "overlap-6e1b9f";
-      await ctx.clock.after(mine.second);
-      throw new Error(`${input.who}: ${shown}`);
-    });
-    const routes = manifest(appContract, { "app.a": { component: view, POST: act } });
-    const lines: string[] = [];
-    const app = await createAppLoose({
-      topology: topology({ web: { modules: ["app"], adapter: "node" } }),
-      routes,
-      ctx,
-      mode: "production",
-      log: { format: "json", write: (l: string) => void lines.push(l) },
-    });
-    const all = Promise.all(["alpha", "bravo", "charlie"].map((who) => app.fetch(post("/a", { who }, json))));
-    await flush();
-    for (let i = 0; i < 6; i++) {
-      ctx.clock.advance(10);
+  it(
+    "Of overlapping requests that reveal the same module `Secret`, each marks it; a third that never reveals it and throws the value as a literal string logs it as is.",
+    async () => {
+      const ctx = createCtx({ mode: "sim", seed: SEED });
+      const timing = new Map([
+        ["alpha", { first: 10, second: 40, reveals: true }],
+        ["bravo", { first: 20, second: 10, reveals: true }],
+        ["charlie", { first: 15, second: 30, reveals: false }],
+      ]);
+      const act = action(appContract, "app.a", { input: s.object({ who: s.string() }) }, async (input) => {
+        const mine = timing.get(input.who);
+        if (mine === undefined) return ok(null);
+        await ctx.clock.after(mine.first);
+        const shown = mine.reveals ? reveal(MOD_OVERLAP) : "overlap-6e1b9f";
+        await ctx.clock.after(mine.second);
+        throw new Error(`${input.who}: ${shown}`);
+      });
+      const routes = manifest(appContract, { "app.a": { component: view, POST: act } });
+      const lines: string[] = [];
+      const app = await createAppLoose({
+        topology: topology({ web: { modules: ["app"], adapter: "node" } }),
+        routes,
+        ctx,
+        mode: "production",
+        log: { format: "json", write: (l: string) => void lines.push(l) },
+      });
+      const all = Promise.all(["alpha", "bravo", "charlie"].map((who) => app.fetch(post("/a", { who }, json))));
       await flush();
-    }
-    for (const res of await all) await res.text();
-    const diags = diagsOf(lines);
-    expect(diags.some((l) => l.includes("alpha: [secret]"))).toBe(true);
-    expect(diags.some((l) => l.includes("bravo: [secret]"))).toBe(true);
-    expect(diags.some((l) => l.includes("charlie: overlap-6e1b9f"))).toBe(true);
-    for (const l of diags) {
-      if (l.includes("alpha:") || l.includes("bravo:")) expect(l).not.toContain("overlap-6e1b9f");
-    }
-  }, 60_000);
+      for (let i = 0; i < 6; i++) {
+        ctx.clock.advance(10);
+        await flush();
+      }
+      for (const res of await all) await res.text();
+      const diags = diagsOf(lines);
+      expect(diags.some((l) => l.includes("alpha: [secret]"))).toBe(true);
+      expect(diags.some((l) => l.includes("bravo: [secret]"))).toBe(true);
+      expect(diags.some((l) => l.includes("charlie: overlap-6e1b9f"))).toBe(true);
+      for (const l of diags) {
+        if (l.includes("alpha:") || l.includes("bravo:")) expect(l).not.toContain("overlap-6e1b9f");
+      }
+    },
+    fixedTime(60_000),
+  );
 
   it("One made in a runner is marked: a runner that parses a `Secret` and rejects with its revealed value logs the `runner rejected, rerun in 1000 ms: ` line holding `runner [secret]` and no line holds the value.", async () => {
     const ctx = createCtx({ mode: "sim", seed: SEED });
@@ -537,17 +546,21 @@ describe("k.privacy secret reach", () => {
   };
 
   for (const mode of modes) {
-    it(`Past 65,536 bytes of a scope's distinct values (a secret's), the \`diag\` message and each frame are one mark \`[secret]\` and no line holds the value, in ${mode}.`, async () => {
-      const t = await boot(mode, { act: keysAction, artifacts });
-      await (await t.app.fetch(sendKeys(2000))).text();
-      const diags = diagsOf(t.lines);
-      expect(diags).toHaveLength(1);
-      for (const line of diags) {
-        expect(fieldOf(line, "message")).toBe("action app.a threw: [secret]");
-        expect(framesOf(line)).toEqual(["[secret]", "[secret]"]);
-      }
-      for (const line of t.lines) expect(line).not.toContain("@@@@");
-    }, 60_000);
+    it(
+      `Past 65,536 bytes of a scope's distinct values (a secret's), the \`diag\` message and each frame are one mark \`[secret]\` and no line holds the value, in ${mode}.`,
+      async () => {
+        const t = await boot(mode, { act: keysAction, artifacts });
+        await (await t.app.fetch(sendKeys(2000))).text();
+        const diags = diagsOf(t.lines);
+        expect(diags).toHaveLength(1);
+        for (const line of diags) {
+          expect(fieldOf(line, "message")).toBe("action app.a threw: [secret]");
+          expect(framesOf(line)).toEqual(["[secret]", "[secret]"]);
+        }
+        for (const line of t.lines) expect(line).not.toContain("@@@@");
+      },
+      fixedTime(60_000),
+    );
 
     it(`Under 65,536 bytes of a scope's distinct values (a secret's), the \`diag\` message is \`refused [secret]\` and the frames keep their file paths, in ${mode}.`, async () => {
       const t = await boot(mode, { act: keysAction, artifacts });
@@ -594,29 +607,37 @@ describe("k.privacy secret reach", () => {
     });
 
   for (const mode of modes) {
-    it(`Past 65,536 bytes of a scope's personal-data values, with a secret that adds no value, the \`diag\` message and each frame are one mark \`[secret]\` and no line holds the values, in ${mode}.`, async () => {
-      const t = await boot(mode, { act: withFlagAction, artifacts });
-      await (await t.app.fetch(sendNotes({ flag: true, notes: manyKeys(2000) }))).text();
-      const diags = diagsOf(t.lines);
-      expect(diags).toHaveLength(1);
-      for (const line of diags) {
-        expect(fieldOf(line, "message")).toBe("action app.a threw: [secret]");
-        expect(framesOf(line)).toEqual(["[secret]", "[secret]"]);
-      }
-      for (const line of t.lines) expect(line).not.toContain("@@@@");
-    }, 60_000);
+    it(
+      `Past 65,536 bytes of a scope's personal-data values, with a secret that adds no value, the \`diag\` message and each frame are one mark \`[secret]\` and no line holds the values, in ${mode}.`,
+      async () => {
+        const t = await boot(mode, { act: withFlagAction, artifacts });
+        await (await t.app.fetch(sendNotes({ flag: true, notes: manyKeys(2000) }))).text();
+        const diags = diagsOf(t.lines);
+        expect(diags).toHaveLength(1);
+        for (const line of diags) {
+          expect(fieldOf(line, "message")).toBe("action app.a threw: [secret]");
+          expect(framesOf(line)).toEqual(["[secret]", "[secret]"]);
+        }
+        for (const line of t.lines) expect(line).not.toContain("@@@@");
+      },
+      fixedTime(60_000),
+    );
 
-    it(`Past 65,536 bytes of a scope's personal-data values, with no secret in the request, the \`diag\` message and each frame are one mark \`[pii]\` and no line holds the values, in ${mode}.`, async () => {
-      const t = await boot(mode, { act: notesOnlyAction, artifacts });
-      await (await t.app.fetch(sendNotes({ notes: manyKeys(2000) }))).text();
-      const diags = diagsOf(t.lines);
-      expect(diags).toHaveLength(1);
-      for (const line of diags) {
-        expect(fieldOf(line, "message")).toBe("action app.a threw: [pii]");
-        expect(framesOf(line)).toEqual(["[pii]", "[pii]"]);
-      }
-      for (const line of t.lines) expect(line).not.toContain("@@@@");
-    }, 60_000);
+    it(
+      `Past 65,536 bytes of a scope's personal-data values, with no secret in the request, the \`diag\` message and each frame are one mark \`[pii]\` and no line holds the values, in ${mode}.`,
+      async () => {
+        const t = await boot(mode, { act: notesOnlyAction, artifacts });
+        await (await t.app.fetch(sendNotes({ notes: manyKeys(2000) }))).text();
+        const diags = diagsOf(t.lines);
+        expect(diags).toHaveLength(1);
+        for (const line of diags) {
+          expect(fieldOf(line, "message")).toBe("action app.a threw: [pii]");
+          expect(framesOf(line)).toEqual(["[pii]", "[pii]"]);
+        }
+        for (const line of t.lines) expect(line).not.toContain("@@@@");
+      },
+      fixedTime(60_000),
+    );
   }
 
   const bodyOf = (body: unknown): Request =>
@@ -672,65 +693,81 @@ describe("k.privacy secret reach", () => {
     });
 
   for (const mode of modes) {
-    it(`Past 65,536 bytes (8,193 distinct 8-character secret strings) a loader's throw on a document GET logs one \`diag\` \`loader app.a threw: [secret]\` with each frame \`[secret]\`, in ${mode}${mode === "dev" ? "; the response body holds `[secret]` and not `refused ${FIRST}`" : ""}.`, async () => {
-      const t = await boot(mode, { loader: countedLoader(8_193), artifacts });
-      const body = await (await t.app.fetch(get("/a"))).text();
-      const diags = diagsOf(t.lines);
-      expect(diags).toHaveLength(1);
-      for (const line of diags) {
-        expect(fieldOf(line, "message")).toBe("loader app.a threw: [secret]");
-        expect(framesOf(line)).toEqual(["[secret]", "[secret]"]);
-      }
-      for (const line of t.lines) expect(line).not.toContain(`refused ${FIRST}`);
-      if (mode === "dev") {
-        expect(body).toContain("[secret]");
-        expect(body).not.toContain(`refused ${FIRST}`);
-      }
-    }, 60_000);
+    it(
+      `Past 65,536 bytes (8,193 distinct 8-character secret strings) a loader's throw on a document GET logs one \`diag\` \`loader app.a threw: [secret]\` with each frame \`[secret]\`, in ${mode}${mode === "dev" ? "; the response body holds `[secret]` and not `refused ${FIRST}`" : ""}.`,
+      async () => {
+        const t = await boot(mode, { loader: countedLoader(8_193), artifacts });
+        const body = await (await t.app.fetch(get("/a"))).text();
+        const diags = diagsOf(t.lines);
+        expect(diags).toHaveLength(1);
+        for (const line of diags) {
+          expect(fieldOf(line, "message")).toBe("loader app.a threw: [secret]");
+          expect(framesOf(line)).toEqual(["[secret]", "[secret]"]);
+        }
+        for (const line of t.lines) expect(line).not.toContain(`refused ${FIRST}`);
+        if (mode === "dev") {
+          expect(body).toContain("[secret]");
+          expect(body).not.toContain(`refused ${FIRST}`);
+        }
+      },
+      fixedTime(60_000),
+    );
 
-    it(`At 65,536 bytes (8,192 distinct 8-character secret strings) a loader's throw on a document GET logs a message starting \`loader app.a threw: \` and holding \`refused [secret]\`, in ${mode}.`, async () => {
-      const t = await boot(mode, { loader: countedLoader(8_192), artifacts });
-      await (await t.app.fetch(get("/a"))).text();
-      const diags = diagsOf(t.lines);
-      expect(diags).toHaveLength(1);
-      for (const line of diags) {
-        expect(String(fieldOf(line, "message")).startsWith("loader app.a threw: ")).toBe(true);
-        expect(String(fieldOf(line, "message"))).toContain("refused [secret]");
-      }
-    }, 60_000);
+    it(
+      `At 65,536 bytes (8,192 distinct 8-character secret strings) a loader's throw on a document GET logs a message starting \`loader app.a threw: \` and holding \`refused [secret]\`, in ${mode}.`,
+      async () => {
+        const t = await boot(mode, { loader: countedLoader(8_192), artifacts });
+        await (await t.app.fetch(get("/a"))).text();
+        const diags = diagsOf(t.lines);
+        expect(diags).toHaveLength(1);
+        for (const line of diags) {
+          expect(String(fieldOf(line, "message")).startsWith("loader app.a threw: ")).toBe(true);
+          expect(String(fieldOf(line, "message"))).toContain("refused [secret]");
+        }
+      },
+      fixedTime(60_000),
+    );
 
-    it(`Past 65,536 bytes (8,193 distinct 8-character secret strings) a live loader's throw on an event-stream GET logs one \`diag\` \`loader app.live threw: [secret]\` with each frame \`[secret]\`, in ${mode}${mode === "dev" ? "; the last `data:` line holds `[secret]` and not `refused ${FIRST}`" : ""}.`, async () => {
-      const t = await boot(mode, { live: countedLive(8_193), artifacts });
-      const text = (
-        await readChunks(await t.app.fetch(new Request("http://localhost/api/live", { headers: sse })), 16)
-      ).join("");
-      const diags = diagsOf(t.lines);
-      expect(diags).toHaveLength(1);
-      for (const line of diags) {
-        expect(fieldOf(line, "message")).toBe("loader app.live threw: [secret]");
-        expect(framesOf(line)).toEqual(["[secret]", "[secret]"]);
-      }
-      for (const line of t.lines) expect(line).not.toContain(`refused ${FIRST}`);
-      if (mode === "dev") {
-        const last =
-          text
-            .split("\n")
-            .filter((l) => l.startsWith("data:"))
-            .pop() ?? "";
-        expect(last).toContain("[secret]");
-        expect(last).not.toContain(`refused ${FIRST}`);
-      }
-    }, 60_000);
+    it(
+      `Past 65,536 bytes (8,193 distinct 8-character secret strings) a live loader's throw on an event-stream GET logs one \`diag\` \`loader app.live threw: [secret]\` with each frame \`[secret]\`, in ${mode}${mode === "dev" ? "; the last `data:` line holds `[secret]` and not `refused ${FIRST}`" : ""}.`,
+      async () => {
+        const t = await boot(mode, { live: countedLive(8_193), artifacts });
+        const text = (
+          await readChunks(await t.app.fetch(new Request("http://localhost/api/live", { headers: sse })), 16)
+        ).join("");
+        const diags = diagsOf(t.lines);
+        expect(diags).toHaveLength(1);
+        for (const line of diags) {
+          expect(fieldOf(line, "message")).toBe("loader app.live threw: [secret]");
+          expect(framesOf(line)).toEqual(["[secret]", "[secret]"]);
+        }
+        for (const line of t.lines) expect(line).not.toContain(`refused ${FIRST}`);
+        if (mode === "dev") {
+          const last =
+            text
+              .split("\n")
+              .filter((l) => l.startsWith("data:"))
+              .pop() ?? "";
+          expect(last).toContain("[secret]");
+          expect(last).not.toContain(`refused ${FIRST}`);
+        }
+      },
+      fixedTime(60_000),
+    );
 
-    it(`At 65,536 bytes (8,192 distinct 8-character secret strings) a live loader's throw on an event-stream GET logs a message starting \`loader app.live threw: \` and holding \`refused [secret]\`, in ${mode}.`, async () => {
-      const t = await boot(mode, { live: countedLive(8_192), artifacts });
-      await readChunks(await t.app.fetch(new Request("http://localhost/api/live", { headers: sse })), 16);
-      const diags = diagsOf(t.lines);
-      expect(diags).toHaveLength(1);
-      for (const line of diags) {
-        expect(String(fieldOf(line, "message")).startsWith("loader app.live threw: ")).toBe(true);
-        expect(String(fieldOf(line, "message"))).toContain("refused [secret]");
-      }
-    }, 60_000);
+    it(
+      `At 65,536 bytes (8,192 distinct 8-character secret strings) a live loader's throw on an event-stream GET logs a message starting \`loader app.live threw: \` and holding \`refused [secret]\`, in ${mode}.`,
+      async () => {
+        const t = await boot(mode, { live: countedLive(8_192), artifacts });
+        await readChunks(await t.app.fetch(new Request("http://localhost/api/live", { headers: sse })), 16);
+        const diags = diagsOf(t.lines);
+        expect(diags).toHaveLength(1);
+        for (const line of diags) {
+          expect(String(fieldOf(line, "message")).startsWith("loader app.live threw: ")).toBe(true);
+          expect(String(fieldOf(line, "message"))).toContain("refused [secret]");
+        }
+      },
+      fixedTime(60_000),
+    );
   }
 });

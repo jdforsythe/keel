@@ -6,6 +6,7 @@
 // Input schemas are generated objects of string fields (some nested), some nodes marked
 // `.pii(class)`; the action throws an Error whose message holds every input value. Marked values are lowercase letters,
 // unmarked ones digits, so no unmarked text can hide or mimic a marked value.
+import { fixedTime } from "@keel/tooling/test-time";
 import { createCtx } from "@keel/ctx";
 import { action, manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
@@ -65,45 +66,49 @@ const words = fc.array(fc.stringMatching(/^[a-z]{12,20}$/), { minLength: 8, maxL
 
 describe("k.privacy server log", () => {
   for (const mode of ["dev", "production"] as const) {
-    it(`an action throwing an Error whose message holds a marked input value logs a diag record holding [pii] and not the value, in ${mode}`, async () => {
-      await fc.assert(
-        fc.asyncProperty(inputArb, words, async (spec, pool) => {
-          const all = leaves(spec, "", false);
-          const value = (l: Leaf, i: number): string => (l.marked ? (pool[i % pool.length] ?? "") : `${i}0123456789`);
-          const fields = Object.fromEntries(all.map((l, i) => [l.key, value(l, i)]));
-          const secrets = all.flatMap((l, i) => (l.marked ? [value(l, i)] : []));
-          const message = `cannot save ${Object.values(fields).join(" ")}`;
-          const ordersContract = contract("orders", {
-            "orders.show": { path: "/orders/:kind", params: Params },
-          });
-          const save = action(ordersContract, "orders.show", { input: objectOf(spec) }, () =>
-            Promise.reject(new Error(message)),
-          );
-          const routes = manifest(ordersContract, {
-            "orders.show": { component: () => document.createElement("main"), POST: save },
-          });
-          const lines: string[] = [];
-          const app = await createApp({
-            topology: topology({ web: { modules: ["orders"], adapter: "node" } }),
-            routes,
-            ctx: createCtx({ mode: "sim", seed: SEED }),
-            mode,
-            log: { format: "json", write: (l: string) => void lines.push(l) },
-          });
-          await app.fetch(post("/orders/open", fields, { accept: "application/json" }));
-          const diags = lines.filter((l) => {
-            const rec: unknown = JSON.parse(l);
-            return typeof rec === "object" && rec !== null && Reflect.get(rec, "kind") === "diag";
-          });
-          expect(diags.length).toBeGreaterThan(0);
-          for (const line of diags) {
-            expect(line).toContain("[pii]");
-            for (const secret of secrets) expect(line).not.toContain(secret);
-          }
-        }),
-        { seed: SEED, numRuns: 100 },
-      );
-    }, 120_000);
+    it(
+      `an action throwing an Error whose message holds a marked input value logs a diag record holding [pii] and not the value, in ${mode}`,
+      async () => {
+        await fc.assert(
+          fc.asyncProperty(inputArb, words, async (spec, pool) => {
+            const all = leaves(spec, "", false);
+            const value = (l: Leaf, i: number): string => (l.marked ? (pool[i % pool.length] ?? "") : `${i}0123456789`);
+            const fields = Object.fromEntries(all.map((l, i) => [l.key, value(l, i)]));
+            const secrets = all.flatMap((l, i) => (l.marked ? [value(l, i)] : []));
+            const message = `cannot save ${Object.values(fields).join(" ")}`;
+            const ordersContract = contract("orders", {
+              "orders.show": { path: "/orders/:kind", params: Params },
+            });
+            const save = action(ordersContract, "orders.show", { input: objectOf(spec) }, () =>
+              Promise.reject(new Error(message)),
+            );
+            const routes = manifest(ordersContract, {
+              "orders.show": { component: () => document.createElement("main"), POST: save },
+            });
+            const lines: string[] = [];
+            const app = await createApp({
+              topology: topology({ web: { modules: ["orders"], adapter: "node" } }),
+              routes,
+              ctx: createCtx({ mode: "sim", seed: SEED }),
+              mode,
+              log: { format: "json", write: (l: string) => void lines.push(l) },
+            });
+            await app.fetch(post("/orders/open", fields, { accept: "application/json" }));
+            const diags = lines.filter((l) => {
+              const rec: unknown = JSON.parse(l);
+              return typeof rec === "object" && rec !== null && Reflect.get(rec, "kind") === "diag";
+            });
+            expect(diags.length).toBeGreaterThan(0);
+            for (const line of diags) {
+              expect(line).toContain("[pii]");
+              for (const secret of secrets) expect(line).not.toContain(secret);
+            }
+          }),
+          { seed: SEED, numRuns: 100 },
+        );
+      },
+      fixedTime(120_000),
+    );
   }
 
   const TOKEN = "tok-7f3a9c";

@@ -5,6 +5,7 @@
 // Spec: k.leave, clause "A promise made at module load whose `.then` writes a module store, resolved by a loader, commits the write with no E1256."
 // Seed: 1337 (the property below). Real createApp over the module store `rm.board` of resume-modstore.ts.
 // The timer in the action and the promise registered at module load are the fixtures the clauses name.
+import { fixedTime } from "@keel/tooling/test-time";
 import { action, loader, manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
@@ -118,24 +119,28 @@ describe("k.leave Module stores: restore, undo and undoWhere on a module store t
     },
   );
 
-  it("property: for any pre-request writes and any guarded operation, the module store's state, head and log are unchanged and the level fails", async () => {
-    await fc.assert(
-      fc.asyncProperty(
-        fc.array(fc.stringMatching(/^[a-z]{1,6}$/), { minLength: 1, maxLength: 4 }),
-        fc.constantFrom<Op>("restore", "undo", "undoWhere"),
-        async (writes, which) => {
-          board.restore(PRISTINE);
-          for (const rows of writes) void tx(setRows, { rows });
-          const before = board.snapshot();
-          op = which;
-          const doc = await serveRoutes(routes, MODULES, "/op", { mode: "production" });
-          expect(doc.status).toBe(500);
-          expect(board.snapshot()).toEqual(before);
-        },
-      ),
-      { seed: SEED, numRuns: 12 },
-    );
-  }, 120_000);
+  it(
+    "property: for any pre-request writes and any guarded operation, the module store's state, head and log are unchanged and the level fails",
+    async () => {
+      await fc.assert(
+        fc.asyncProperty(
+          fc.array(fc.stringMatching(/^[a-z]{1,6}$/), { minLength: 1, maxLength: 4 }),
+          fc.constantFrom<Op>("restore", "undo", "undoWhere"),
+          async (writes, which) => {
+            board.restore(PRISTINE);
+            for (const rows of writes) void tx(setRows, { rows });
+            const before = board.snapshot();
+            op = which;
+            const doc = await serveRoutes(routes, MODULES, "/op", { mode: "production" });
+            expect(doc.status).toBe(500);
+            expect(board.snapshot()).toEqual(before);
+          },
+        ),
+        { seed: SEED, numRuns: 12 },
+      );
+    },
+    fixedTime(120_000),
+  );
 
   it("negative: a loader undoing and restoring a store it created in the request is not refused", async () => {
     const log: Lines = { lines: [] };
