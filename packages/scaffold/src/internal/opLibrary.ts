@@ -1,5 +1,7 @@
 import type { Result } from "@keel/schema";
+import { libraryE2eTs } from "../templates/libraryE2eTs.ts";
 import { libraryExampleTsx } from "../templates/libraryExampleTsx.ts";
+import { libraryGitignore } from "../templates/libraryGitignore.ts";
 import { libraryIndexTs } from "../templates/libraryIndexTs.ts";
 import { libraryModuleTs } from "../templates/libraryModuleTs.ts";
 import { libraryPackageJson } from "../templates/libraryPackageJson.ts";
@@ -23,8 +25,8 @@ const NAME = /^@[a-z0-9][a-z0-9-]*\/([a-z][a-z0-9]*(?:-[a-z0-9]+)*)$/;
 
 /**
  * `scaffold library <name>` (k.library-pack Scaffold): folder `<base>/` holding a library that passes `keel check` and
- * `keel test` as written: `package.json`, `module.ts` (`id` the base in lowerCamel), `src/index.ts`, `src/Example.tsx`,
- * `test/Example.test.ts`, `tokens.ts` as `project` writes it, `tsconfig.json`, `tsconfig.build.json`,
+ * `keel test` as written: `.gitignore`, `package.json`, `module.ts` (`id` the base in lowerCamel), `src/index.ts`, `src/Example.tsx`,
+ * `test/Example.test.ts`, `test/Example.e2e.ts`, `tokens.ts` as `project` writes it, `tsconfig.json`, `tsconfig.build.json`,
  * `vitest.config.ts` and `README.md`. `version` is the scaffolding `@keel/cli`'s, the `@keel/*` entries' range.
  * A name of another form is E1352; a tree already holding `<base>/`, or `exists` (the caller found the folder on disk), E1351.
  */
@@ -40,11 +42,13 @@ export function opLibrary(input: unknown, files: ReadonlyMap<string, string>): R
     return fail("E1351", `${dir}package.json`, `${base}/ already exists; scaffold the library elsewhere`);
   const id = camelJoin(base.split("-"));
   const writes: Writes = new Map([
+    [".gitignore", libraryGitignore()],
     ["package.json", libraryPackageJson(name, version)],
     ["module.ts", libraryModuleTs(id)],
     ["src/index.ts", libraryIndexTs()],
     ["src/Example.tsx", libraryExampleTsx()],
     ["test/Example.test.ts", libraryTestTs()],
+    ["test/Example.e2e.ts", libraryE2eTs()],
     ["tokens.ts", tokensTs()],
     ["tsconfig.json", libraryTsconfigJson()],
     ["tsconfig.build.json", libraryTsconfigBuildJson()],

@@ -867,12 +867,18 @@ importers:
       '@keel/reactive':
         specifier: workspace:*
         version: link:../../packages/reactive
+      '@keel/router':
+        specifier: workspace:*
+        version: link:../../packages/router
       '@keel/runtime-dom':
         specifier: workspace:*
         version: link:../../packages/runtime-dom
       '@keel/schema':
         specifier: workspace:*
         version: link:../../packages/schema
+      '@keel/server':
+        specifier: workspace:*
+        version: link:../../packages/server
       '@keel/testing':
         specifier: workspace:*
         version: link:../../packages/testing
@@ -885,6 +891,9 @@ importers:
       happy-dom:
         specifier: ^21.0.4
         version: 21.0.4
+      playwright-core:
+        specifier: 1.65.0
+        version: 1.65.0
       typescript:
         specifier: ^5.6
         version: 5.9.3
@@ -1306,12 +1315,18 @@ importers:
       '@keel/reactive':
         specifier: workspace:*
         version: link:../../packages/reactive
+      '@keel/router':
+        specifier: workspace:*
+        version: link:../../packages/router
       '@keel/runtime-dom':
         specifier: workspace:*
         version: link:../../packages/runtime-dom
       '@keel/schema':
         specifier: workspace:*
         version: link:../../packages/schema
+      '@keel/server':
+        specifier: workspace:*
+        version: link:../../packages/server
       '@keel/testing':
         specifier: workspace:*
         version: link:../../packages/testing
@@ -1327,6 +1342,9 @@ importers:
       happy-dom:
         specifier: ^21.0.4
         version: 21.0.4
+      playwright-core:
+        specifier: 1.65.0
+        version: 1.65.0
       typescript:
         specifier: ^5.6
         version: 5.9.3
