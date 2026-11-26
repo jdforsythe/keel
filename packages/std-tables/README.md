@@ -23,5 +23,6 @@ None. The rules are thrown at the call, so the package registers no check rule.
 
 ## Unsafe
 
-count: 1
+count: 2
 - `unsafe/asQuerySchema.ts`: the search schema built column by column is typed as the query its columns describe.
+- `unsafe/tableFault.ts`: E2851, E2852 and E2853, the faults std.tables specifies as throws, a throw in a library's code.

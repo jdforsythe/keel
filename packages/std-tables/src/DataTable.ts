@@ -3,7 +3,6 @@ import { For, If } from "@keel/runtime-dom";
 import { formatNumber } from "@keel/std-i18n";
 import { Box, type Child, Link } from "@keel/ui";
 import { Part, type PartStyle } from "@keel/ui/aria";
-import { focusLost } from "../unsafe/focusLost.ts";
 import { tableFault } from "../unsafe/tableFault.ts";
 import type { DataTableProps } from "./DataTableProps.ts";
 import type { Field } from "./Field.ts";
@@ -278,10 +277,13 @@ export function DataTable<T extends object, S extends Field<T>, F extends Field<
     const v = view.get();
     if ((was === "next" && v.page >= v.pages) || (was === "previous" && v.page <= 1)) {
       was = "";
+      // Read in a microtask after the render, through the document holding `status`: focus fell to no element or
+      // the body when the removed link held it, and anything else means the person moved it on.
       queueMicrotask(() => {
-        const lost = focusLost();
         const s = made.status;
-        if (lost && s instanceof HTMLElement && s.isConnected) s.focus();
+        if (!(s instanceof HTMLElement) || !s.isConnected) return;
+        const a = s.ownerDocument.activeElement;
+        if (a === null || a === s.ownerDocument.body) s.focus();
       });
     }
   });
