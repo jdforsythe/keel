@@ -30,6 +30,7 @@ The `unsafe` count measures escapes from the type system in code that runs. Nega
 - [x] `done` backlog 0991: a scaffolded project builds on first run
 - [ ] `next` the gate equals CI: `pnpm gate` runs CI's jobs from `tooling/ci.source.json` and every test time bound goes through one scale (done); the whole gate has failed three times on time bounds at one tenth scale, four bounds and one smoke left (`tasks/0963-to-p1/PLAN.md`, checkpoint 104); then CI green on the pushed head
 - [ ] `next` backlog 1040 (the concurrency cap), 1103, 1115, 1119
+- [ ] `next` a slow-machine job in `pnpm gate`: the test shards in a Linux container with CPUs constrained to CI's runner or less, since three CI failures in a row (charts' property timeout, the watchdog's hook bound, household's simulation budget) passed on this machine and failed on a 4-core runner
 - [ ] `next` check's 13 mutation chunks on the main line, when the machine is quiet
 
 ### W1 Freeze
