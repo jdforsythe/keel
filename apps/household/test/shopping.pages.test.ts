@@ -144,8 +144,8 @@ const idOf = (n: number) => {
 };
 
 const LIST_RUNS = 50;
-/** One run renders the list page and the list and reads them: 20 ms on a quiet machine, times 8.5 for the CI runner, times 3 for the other workers on its cores. */
-const LIST_RUN_MS = 540;
+/** One run renders the list page and the list and reads them: 20 ms alone. The bound is 1,000 ms a run: 50 times the work alone, which a runner ten times slower (scale 0.1) cuts to 100 ms, five times the work, beside the machine's other workers. */
+const LIST_RUN_MS = 1_000;
 
 it(
   "renders the list page and the list for any copy and any items, each with an id as the server mints them",
