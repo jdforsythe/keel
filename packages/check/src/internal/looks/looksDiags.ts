@@ -53,7 +53,8 @@ export function looksDiags(
     } catch {
       continue;
     }
-    for (const [key, what] of entryProblems(parsed, importedSubpaths(files, lib.name)))
+    const exists = (rel: string): boolean => byPath.has(`${lib.folder}${rel}`);
+    for (const [key, what] of entryProblems(parsed, exists, importedSubpaths(files, lib.name)))
       for (const { path, entry } of looks.entries.get(lib.name) ?? []) {
         const file = byPath.get(path);
         const message = key === undefined ? `${lib.name} ${what}` : `${lib.name} exports "${key}" ${what}`;
