@@ -6,7 +6,7 @@
 // name. The folders conformance files make with no teardown (the conformance-writer's to fix) are named in
 // `leftByConformance` below by what the package's conformance files make, so they are removed with the run's folder
 // and never fail it.
-import { type Dirent, mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
+import { type Dirent, lstatSync, mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -44,8 +44,45 @@ function leftByConformance(cwd: string): Set<string> {
 /** The prefix of a folder name `mkdtemp` made: the name without its six random characters. */
 const prefixOf = (name: string): string => name.slice(0, -6);
 
+/** A run root's name: `keel-run-` and the six characters `mkdtemp` adds. */
+const RUN_ROOT = /^keel-run-[A-Za-z0-9]{6}$/;
+/** A root untouched for this long belongs to a run that was killed: a live run writes into its root. */
+export const STALE_MS = 24 * 60 * 60 * 1000;
+/** At most this many stale roots are removed at the start of one run, so the sweep is bounded. */
+export const SWEEP_LIMIT = 50;
+
+/**
+ * Removes the run roots in `outer` that nothing has touched for `STALE_MS`: what a run killed half way (Ctrl-C, the
+ * watchdog) left behind. A root a concurrent run is using is newer than that, and only real folders (never a link)
+ * with a run root's name are removed. Returns how many it removed.
+ */
+export function sweepStaleRoots(outer: string, now: number = Date.now()): number {
+  let names: string[];
+  try {
+    names = readdirSync(outer);
+  } catch {
+    return 0;
+  }
+  let removed = 0;
+  for (const name of names) {
+    if (removed >= SWEEP_LIMIT) break;
+    if (!RUN_ROOT.test(name)) continue;
+    const at = join(outer, name);
+    try {
+      const st = lstatSync(at);
+      if (!st.isDirectory() || now - st.mtimeMs < STALE_MS) continue;
+      rmSync(at, { recursive: true, force: true, maxRetries: 3 });
+      removed += 1;
+    } catch {
+      // gone already, or not ours to remove: leave it
+    }
+  }
+  return removed;
+}
+
 export default function setup(): () => void {
   const outer = tmpdir();
+  sweepStaleRoots(outer);
   const root = mkdtempSync(join(outer, "keel-run-"));
   const before = process.env.TMPDIR;
   process.env.TMPDIR = root;
@@ -54,7 +91,8 @@ export default function setup(): () => void {
     else process.env.TMPDIR = before;
     const left = readdirSync(root);
     const allowed = leftByConformance(process.cwd());
-    rmSync(root, { recursive: true, force: true });
+    // Every worker has ended by now (vitest tears global setup down last), so no process of the run still writes here.
+    rmSync(root, { recursive: true, force: true, maxRetries: 3 });
     const named = new Map<string, number>();
     for (const name of left) {
       if (name === NODE_COMPILE_CACHE) continue;

@@ -4,7 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import setup from "../test-tmp-global.ts";
+import setup, { STALE_MS, SWEEP_LIMIT, sweepStaleRoots } from "../test-tmp-global.ts";
 import { removeTempDirs, tempDir } from "../test-tmp.ts";
 
 afterEach(() => {
@@ -65,5 +65,59 @@ describe("the run's temp root", () => {
     ]);
     expect(process.exitCode).toBe(1);
     expect(fs.existsSync(r.root)).toBe(false);
+  });
+});
+
+describe("the sweep of stale run roots", () => {
+  const age = (dir: string, ms: number): void => {
+    const then = new Date(Date.now() - ms);
+    fs.utimesSync(dir, then, then);
+  };
+
+  it("removes run roots untouched for a day and keeps a newer one, other folders and files", () => {
+    const outer = tempDir("keel-sweep-outer-");
+    const stale = fs.mkdtempSync(path.join(outer, "keel-run-"));
+    const live = fs.mkdtempSync(path.join(outer, "keel-run-"));
+    const other = fs.mkdtempSync(path.join(outer, "keel-other-"));
+    const file = path.join(outer, "keel-run-abcdef");
+    fs.writeFileSync(file, "x");
+    fs.writeFileSync(path.join(stale, "f"), "x");
+    for (const dir of [stale, other, file]) age(dir, STALE_MS + 60_000);
+    age(live, STALE_MS - 60_000);
+    expect(sweepStaleRoots(outer)).toBe(1);
+    expect(fs.existsSync(stale)).toBe(false);
+    expect(fs.existsSync(live)).toBe(true);
+    expect(fs.existsSync(other)).toBe(true);
+    expect(fs.existsSync(file)).toBe(true);
+  });
+
+  it("does not follow a link named like a run root", () => {
+    const outer = tempDir("keel-sweep-outer-");
+    const target = tempDir("keel-sweep-target-");
+    const link = path.join(outer, "keel-run-link12");
+    fs.symlinkSync(target, link);
+    expect(sweepStaleRoots(outer, Date.now() + 2 * STALE_MS)).toBe(0);
+    expect(fs.existsSync(target)).toBe(true);
+  });
+
+  it("removes at most SWEEP_LIMIT roots in one run and a missing folder is not an error", () => {
+    const outer = tempDir("keel-sweep-outer-");
+    for (let i = 0; i < SWEEP_LIMIT + 3; i++) age(fs.mkdtempSync(path.join(outer, "keel-run-")), STALE_MS + 60_000);
+    expect(sweepStaleRoots(outer)).toBe(SWEEP_LIMIT);
+    expect(fs.readdirSync(outer)).toHaveLength(3);
+    expect(sweepStaleRoots(path.join(outer, "missing"))).toBe(0);
+  });
+
+  it("runs at the start of a run, so a killed run's root is gone after the next run begins", () => {
+    const outer = tempDir("keel-sweep-outer-");
+    const stale = fs.mkdtempSync(path.join(outer, "keel-run-"));
+    age(stale, STALE_MS + 60_000);
+    const before = process.env.TMPDIR;
+    process.env.TMPDIR = outer;
+    const teardown = setup();
+    teardown();
+    if (before === undefined) Reflect.deleteProperty(process.env, "TMPDIR");
+    else process.env.TMPDIR = before;
+    expect(fs.existsSync(stale)).toBe(false);
   });
 });
