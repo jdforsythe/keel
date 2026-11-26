@@ -86,7 +86,7 @@ const shape = s.object(
       )
       .optional(),
     look: s.record(styleSet).optional(),
-    schemes: s.array(s.enum(["light", "dark"])).optional(),
+    schemes: s.array(s.string()).optional(),
   },
   { closed: true },
 );

@@ -40,6 +40,7 @@ import { libraryRegisters } from "./internal/libraryRegisters.ts";
 import { listSources } from "./internal/listSources.ts";
 import { mergeArtifacts } from "./internal/mergeArtifacts.ts";
 import { noDeployable } from "./internal/noDeployable.ts";
+import { offersScheme } from "./internal/offersScheme.ts";
 import { packageRoot } from "./internal/packageRoot.ts";
 import { pageMiddleware } from "./internal/pageMiddleware.ts";
 import { parseTopology } from "./internal/parseTopology.ts";
@@ -142,10 +143,6 @@ const SQLITE_CODE = 'export const { DatabaseSync } = process.getBuiltinModule("n
 const CSS_ID = "/__keel.css";
 /** Files whose change can alter the CSS or `routes.json` beyond one module's own usages. */
 const PROJECT_FILE = /(?:^|\/)(?:tokens|topology|routes)\.ts$|\.schema\.ts$/;
-/** A module that imports `SchemeSelect` from `@keel/ui` (k.schemes First paint). */
-const SCHEME_SELECT = /import\s*\{[^}]*\bSchemeSelect\b[^}]*\}\s*from\s*["']@keel\/ui["']/;
-/** Whether a schemes list holds both `light` and `dark`. */
-const bothSchemes = (list: readonly string[]): boolean => list.includes("light") && list.includes("dark");
 /** The `.html` files under `dir`, relative to it. */
 const htmlUnder = (dir: string): string[] =>
   fs
@@ -344,9 +341,8 @@ export default function (): {
   let css = "";
   /** The tokens' `look` sets, once evaluated: `compile` lowers a `look` to their classes. */
   let looks: Readonly<Record<string, unknown>> | undefined;
-  // The tokens' color schemes, and whether a client module renders a `SchemeSelect` (k.schemes First paint).
+  // The tokens' color schemes (k.schemes First paint).
   let schemes: readonly string[] = ["light"];
-  let rendersScheme = false;
   let looksKey = "";
   let stale = true;
   let usageKeys = "";
@@ -972,7 +968,7 @@ export default function (): {
                 fs.existsSync(std) ? std : undefined,
               );
               if (failed.length > 0) throw evaluationFailed(failed);
-              if (bothSchemes(schemes) && rendersScheme)
+              if (await offersScheme(at, top[name]?.modules ?? []))
                 addSchemeScript(path.join(at, out), htmlUnder(path.join(at, out)));
               return;
             }
@@ -992,13 +988,15 @@ export default function (): {
             });
             const every = Object.fromEntries(Object.entries(top).map(([n, d]) => [n, asNode(d)]));
             const all = projectManifests(every, listSources(at), at);
-            const table = await evaluateProject({ root: at, tokensFile: undefined, routesFiles: all, usages: [] });
+            // The tokens too, for the schemes the server's first paint reads (k.schemes First paint).
+            const tokensFile = fs.existsSync(path.join(at, "tokens.ts")) ? "tokens.ts" : undefined;
+            const table = await evaluateProject({ root: at, tokensFile, routesFiles: all, usages: [] });
             if (table.problems.length > 0) throw evaluationFailed(table.problems);
             copyMigrations(at, path.join(at, out), top[name]?.modules ?? []);
             fs.writeFileSync(path.join(at, out, "routes.json"), artifactText(table.routes));
             if (fs.existsSync(path.join(at, ".keel", "std.json")))
               fs.copyFileSync(path.join(at, ".keel", "std.json"), path.join(at, out, "std.json"));
-            fs.writeFileSync(path.join(at, out, "schemes.json"), `${JSON.stringify({ schemes })}\n`);
+            fs.writeFileSync(path.join(at, out, "schemes.json"), `${JSON.stringify({ schemes: table.schemes })}\n`);
             for (const c of Object.keys(top).filter((n) => top[n]?.adapter === "client" && top[n]?.servedBy === name))
               hostClient(path.join(at, "dist", c), path.join(at, out), c);
           },
@@ -1229,15 +1227,15 @@ export default function (): {
       // keeps serving (k.compiler Build-time evaluation).
       if (command === "build" && problems.length > 0) throw evaluationFailed(problems);
     },
-    closeBundle() {
+    async closeBundle() {
       // A `client` document loads the first-paint scheme script when it offers the choice (k.schemes First paint).
       const index = path.join(root, "dist", hosting ?? "", "index.html");
+      const modules = hosting === undefined ? [] : (topology?.[hosting]?.modules ?? []);
       if (
         hosting !== undefined &&
         shellOf() === undefined &&
-        bothSchemes(schemes) &&
-        rendersScheme &&
-        fs.existsSync(index)
+        fs.existsSync(index) &&
+        (await offersScheme(root, modules))
       )
         addSchemeScript(path.dirname(index), ["index.html"]);
       const mark = path.join(root, "dist", hosting ?? "", "keel-mark.svg");
@@ -1247,7 +1245,6 @@ export default function (): {
     },
     transform(this: unknown, code, id, options) {
       if (options?.ssr === false) note(code, id);
-      if (options?.ssr !== true && relOf(id) !== null && SCHEME_SELECT.test(code)) rendersScheme = true;
       // A `node` deployable's server bundle: a package file's `../` read inside its package reads its copy.
       const lifted =
         liftedLibraries !== undefined && command === "build" && options?.ssr === true

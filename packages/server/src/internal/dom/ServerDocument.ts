@@ -15,9 +15,12 @@ const CONTROLS = new Set(["button", "fieldset"]);
 /** The server `document` (`nodeType` 9): a node factory. It holds no tree of its own, so lookups (by id or selector) find nothing; a selector outside the supported subset still throws. */
 export class ServerDocument extends ServerNode {
   override nodeType = 9;
+  /** `<html>`, detached: it holds the attributes a render reads, such as the request's `data-k-scheme` (k.schemes). */
+  readonly documentElement: ServerElement;
 
   constructor() {
     super(null);
+    this.documentElement = new ServerElement(this, "html");
   }
 
   protected override host(): ServerDocument {
