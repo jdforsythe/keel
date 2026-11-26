@@ -37,15 +37,16 @@ export const draft = (title: string, minutes: number, amount = 1250, currency = 
 
 /**
  * A client sim ctx whose net sends every `/api/*` request to a fresh `api` deployable; `sent` records `METHOD /path`
- * of each request and `app` lets a test seed the box through the api itself.
+ * of each request, `app` lets a test seed the box through the api itself and `server` is the api's own sim ctx.
  */
 export async function simApi(seed = 1) {
-  const app = await apiApp(apiCtx());
+  const server = apiCtx();
+  const app = await apiApp(server);
   const ctx = createCtx({ mode: "sim", seed });
   const sent: string[] = [];
   ctx.net.route(new URL("/api/*", location.href).href, (req) => {
     sent.push(`${req.method} ${new URL(req.url).pathname}`);
     return app.fetch(req);
   });
-  return { ctx, sent, app };
+  return { ctx, sent, app, server };
 }
