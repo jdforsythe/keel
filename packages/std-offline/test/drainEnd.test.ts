@@ -7,6 +7,7 @@ import { s } from "@keel/schema";
 import { expect, test } from "vitest";
 import { Write, drain, outbox, send } from "../src/index.ts";
 import { field } from "../src/internal/field.ts";
+import { root } from "./support.ts";
 
 const Api = contract("app", {
   "app.add": { method: "POST", path: "/add", body: s.object({ t: s.string(), write: Write }), output: s.object({}) },
@@ -27,8 +28,8 @@ test("a post held across the end of drain's scope that then fails arms no retry;
       held.fail = () => no(new TypeError("network"));
     });
   });
-  const o = outbox("drainend.outbox", Api);
-  const sc = scope(() => void drain(ctx, o, { owner: "a" }));
+  const o = root(() => outbox("drainend.outbox", Api));
+  const sc = scope(() => void drain(ctx, o, { owner: "a" }), { detached: true });
   await settle();
   const sent = send(ctx, o, "add", { body: { t: "x" } }, { base: 0, owner: "a" });
   await settle();

@@ -26,7 +26,7 @@ const started: Recorder[] = [];
 /** `record` called from inside a component's scope, which is then disposed, as a bound component's unmount does. */
 function fromComponent(ctx: Ctx, upload?: URL): Recorder {
   const out: Recorder[] = [];
-  const component = scope(() => void out.push(record(ctx, upload === undefined ? {} : { upload })));
+  const component = scope(() => void out.push(record(ctx, upload === undefined ? {} : { upload })), { detached: true });
   component.dispose();
   const [rec] = out;
   if (rec === undefined) throw new Error("record returned nothing");
@@ -36,11 +36,14 @@ function fromComponent(ctx: Ctx, upload?: URL): Recorder {
 
 const counter = (() => {
   const made: { add?: () => void } = {};
-  scope(() => {
-    const st = store(s.object({ n: s.int() }), { n: 0 }, { id: "lifetime" });
-    const inc = transaction(st, "lifetime.inc", s.object({}), (v) => ({ n: v.n + 1 }));
-    made.add = () => void tx(inc, {});
-  });
+  scope(
+    () => {
+      const st = store(s.object({ n: s.int() }), { n: 0 }, { id: "lifetime" });
+      const inc = transaction(st, "lifetime.inc", s.object({}), (v) => ({ n: v.n + 1 }));
+      made.add = () => void tx(inc, {});
+    },
+    { detached: true },
+  );
   return () => made.add?.();
 })();
 

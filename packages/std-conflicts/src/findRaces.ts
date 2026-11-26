@@ -1,4 +1,5 @@
-import { attempt } from "@keel/schema";
+import { owner } from "@keel/reactive";
+import { attempt, defect } from "@keel/schema";
 import { type SessionGroup, replayGroup } from "@keel/std-sessions/group";
 import type { FindRacesOptions } from "./FindRacesOptions.ts";
 import type { FindRacesResult } from "./FindRacesResult.ts";
@@ -12,6 +13,8 @@ import { withFactory } from "./internal/withFactory.ts";
  * that a factory in `stores` declares (by id), stores in id order. Returns the replay and the races found.
  */
 export async function findRaces(group: SessionGroup, options: FindRacesOptions): Promise<FindRacesResult> {
+  // The scope the caller runs in, kept for after the replay's `await`, when no owner runs: the factories' stores nest in it.
+  const at = owner() ?? defect("findRaces() outside a scope or a module top level", "E1203");
   const replay = await replayGroup(group, { user: options.user, serve: options.serve });
   const races: Race[] = [];
   const unchecked: Unchecked[] = [];
@@ -20,10 +23,12 @@ export async function findRaces(group: SessionGroup, options: FindRacesOptions):
     for (const factory of options.stores) {
       // The store's own `restore` validates the stored value; one it refuses is not examined (null: `withFactory`
       // throws on undefined).
-      const found = withFactory(factory, (made) => {
-        const st = made.stores.find((x) => x.id === id);
-        return st?.restore(parsed).ok === true ? checkStore(st, made.txs, st.snapshot({ meta: true })) : null;
-      });
+      const found = at.run(() =>
+        withFactory(factory, (made) => {
+          const st = made.stores.find((x) => x.id === id);
+          return st?.restore(parsed).ok === true ? checkStore(st, made.txs, st.snapshot({ meta: true })) : null;
+        }),
+      );
       if (found === null) continue;
       races.push(...found.races);
       unchecked.push(...found.unchecked);

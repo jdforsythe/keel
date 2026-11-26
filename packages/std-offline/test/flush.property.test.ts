@@ -54,10 +54,13 @@ async function run(script: readonly Step[]): Promise<{ added: string[]; applied:
     });
   });
   const held: { o?: ReturnType<typeof outbox<typeof Api>> } = {};
-  const sc = scope(() => {
-    held.o = outbox(`prop${++n}.outbox`, Api);
-    if (held.o !== undefined) void drain(ctx, held.o, { owner: OWNER });
-  });
+  const sc = scope(
+    () => {
+      held.o = outbox(`prop${++n}.outbox`, Api);
+      if (held.o !== undefined) void drain(ctx, held.o, { owner: OWNER });
+    },
+    { detached: true },
+  );
   const o = held.o;
   if (o === undefined) throw new Error("no outbox");
   let sent = 0;

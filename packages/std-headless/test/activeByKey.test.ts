@@ -14,7 +14,7 @@ import { page, simCtx } from "./support.ts";
 const opts = (...keys: string[]): readonly Option[] => keys.map((key) => ({ key, text: key.toUpperCase() }));
 const held = (start: readonly Option[]): Signal<readonly Option[]> => {
   const made: Signal<readonly Option[]>[] = [];
-  scope(() => void made.push(signal(start)));
+  scope(() => void made.push(signal(start)), { detached: true });
   const [s] = made;
   if (s === undefined) throw new Error("no signal");
   return s;

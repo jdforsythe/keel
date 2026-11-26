@@ -12,7 +12,7 @@ import { page, shown, simCtx } from "./support.ts";
 
 const held = (): Signal<readonly ToastItem[]> => {
   const made: Signal<readonly ToastItem[]>[] = [];
-  scope(() => void made.push(signal<readonly ToastItem[]>([])));
+  scope(() => void made.push(signal<readonly ToastItem[]>([])), { detached: true });
   const [s] = made;
   if (s === undefined) throw new Error("no signal");
   return s;
@@ -34,7 +34,10 @@ test("a 64-character Toaster id shows toast after toast, past the tenth and the 
 });
 
 test("an invalid instance key names the character class `[\\w.-]` in its message", () => {
-  scope(() => {
-    expect(() => instance(openChart, "a b")).toThrow("[\\w.-]{1,64}");
-  });
+  scope(
+    () => {
+      expect(() => instance(openChart, "a b")).toThrow("[\\w.-]{1,64}");
+    },
+    { detached: true },
+  );
 });

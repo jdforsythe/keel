@@ -4,6 +4,7 @@
 // without it; the TLS cases also need that server to have `ssl` on.
 import { createServer } from "node:net";
 import { setTimeout as sleep } from "node:timers/promises";
+import { isDefect } from "@keel/schema";
 import type { PgPool } from "@keel/std-db/postgres";
 import { postgres } from "@keel/std-db/postgres";
 import { fixedTime, testTime } from "@keel/tooling/test-time";
@@ -235,7 +236,9 @@ describe.skipIf(SERVER === "")("postgres driver on a real server", () => {
     await watch.query("select pg_terminate_backend($1)", [pid]);
     const r = await c.result;
     expect(r.ok).toBe(false);
-    expect(r.ok ? "" : String(r.error)).toMatch(/^Defect: std\.db postgres: commit failed \(57P01\)$/);
+    const failure: unknown = r.ok ? undefined : r.error;
+    expect(isDefect(failure)).toBe(true);
+    expect(failure instanceof Error ? failure.message : "").toMatch(/^std\.db postgres: commit failed \(57P01\)$/);
     await holder.query("rollback");
     expect(await s.get("lost")).toBeNull();
     expect(await s.commit([{ key: "lost", expect: null, value: "next" }])).toBe(true);
@@ -290,7 +293,8 @@ describe.skipIf(SERVER === "")("postgres driver on a real server", () => {
       (x: unknown) => x,
     );
     const text = String(e);
-    expect(text).toMatch(/^Defect: E2153 KEEL_DATABASE_URL/);
+    expect(isDefect(e, "E2153")).toBe(true);
+    expect(text).toMatch(/E2153 KEEL_DATABASE_URL/);
     for (const part of ["wrongsecretword", u.username, u.port, u.pathname.slice(1)]) expect(text).not.toContain(part);
   });
 });
@@ -350,7 +354,8 @@ test(
         () => null,
         (x: unknown) => x,
       );
-      expect(String(e)).toMatch(/^Defect: E2153 KEEL_DATABASE_URL/);
+      expect(isDefect(e, "E2153")).toBe(true);
+      expect(String(e)).toMatch(/E2153 KEEL_DATABASE_URL/);
     } finally {
       for (const s of sockets) s.destroy();
       await new Promise<void>((resolve) => silent.close(() => resolve()));

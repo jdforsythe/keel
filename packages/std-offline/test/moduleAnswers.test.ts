@@ -39,9 +39,12 @@ async function sendOne(answer: string) {
     return make === undefined ? json(500, {}) : make();
   });
   const held: { o?: ReturnType<typeof outbox<typeof Api>> } = {};
-  const sc = scope(() => {
-    held.o = outbox(`answers${++n}.outbox`, Api);
-  });
+  const sc = scope(
+    () => {
+      held.o = outbox(`answers${++n}.outbox`, Api);
+    },
+    { detached: true },
+  );
   const o = held.o;
   if (o === undefined) throw new Error("no outbox");
   const r = await send(ctx, o, "edit", { body: { t: "x" } }, { base: 0, owner: "u1" });

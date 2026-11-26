@@ -3,6 +3,7 @@ import type { Ctx } from "@keel/ctx";
 import { action, loader } from "@keel/router";
 import type { Contract } from "@keel/router/contract";
 import { type KeelError, attempt, defect, err, ok } from "@keel/schema";
+import { holds } from "../../unsafe/holds.ts";
 import type { Channel } from "../Channel.type.ts";
 import type { ChannelEntries } from "../ChannelEntries.type.ts";
 import type { ChannelEvent } from "../ChannelEvent.ts";
@@ -57,16 +58,6 @@ function differing(c: Contract, id: string, want: Want, nothing: boolean): strin
   return nothing && !takesNothing(Reflect.get(entry, "output")) ? [...out, "output"] : out;
 }
 
-/** The serving module's contract when its entry at `id` holds the channel's own members (`differing`). */
-function holds<E extends object>(
-  c: Contract,
-  id: string,
-  want: Want,
-  nothing: boolean,
-): c is Contract<string, Readonly<Record<string, E>>> {
-  return differing(c, id, want, nothing).length === 0;
-}
-
 /** `c` read as holding the channel's entry at `id`; E1515 naming the members that differ when it does not. */
 function holding<E extends object>(
   c: Contract,
@@ -74,8 +65,8 @@ function holding<E extends object>(
   want: Want,
   nothing = false,
 ): Contract<string, Readonly<Record<string, E>>> {
-  if (holds<E>(c, id, want, nothing)) return c;
   const members = differing(c, id, want, nothing).join(", ");
+  if (members.length === 0) return holds<E>(c);
   return defect(`channelRoute: ${c.module} entry ${id} is not its channel's, at ${members}`, "E1515");
 }
 

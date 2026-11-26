@@ -1,4 +1,4 @@
-import { owner, scope } from "@keel/reactive";
+import { owner } from "@keel/reactive";
 import type { Contract } from "@keel/router/contract";
 import { defect, s, secretPath } from "@keel/schema";
 import { type Endpoint, service } from "@keel/services";
@@ -18,9 +18,9 @@ import { isWrite } from "./internal/isWrite.ts";
  * Declare an outbox (std.offline) over the API write entries of `contract` (k.contract), sent through
  * `service({ contract })` with an undeclared 400 or 409 read as JSON: the client store `id` with state `{ entries }`,
  * changed only by `<id>.add`, `<id>.settle` and `<id>.resolve`. A GET, `events` or page entry is not sent. Inside a
- * scope the store is created now and the outbox stops flushing when that scope is disposed; outside one (a
- * module-level declaration) it is created on first use and lives as long as the module; each ctx that uses it reaches
- * only the entries it added or loaded. `limit` (100) and `maxBytes` (262,144 bytes of encoded entries) bound it.
+ * scope or at a module's top level the store is created now in that scope, and the outbox stops flushing when the
+ * scope is disposed; with no scope (after an `await`) it is E1203. Each ctx that uses it reaches only the
+ * entries it added or loaded. `limit` (100) and `maxBytes` (262,144 bytes of encoded entries) bound it.
  * Throws E2651 (an Error with `code`) when a write entry's body holds an `s.secret`: entries are stored in the browser.
  */
 export function outbox<const C extends Contract>(
@@ -78,14 +78,13 @@ export function outbox<const C extends Contract>(
     };
     return c;
   };
-  const sc = owner();
-  sc?.onDispose(() => {
+  // At a module's top level `owner()` is the compiler's module root; the store is made in it now.
+  const at = owner() ?? defect("outbox() outside a scope or a module top level", "E1203");
+  at.onDispose(() => {
     if (c) c.live = false;
   });
-  if (sc) make();
-  // Declared outside a scope (module level): the root lives as long as the module, and the store made on first use is its.
-  const root = sc === undefined ? scope(() => undefined) : undefined;
-  const cfg = (): Config => c ?? (root === undefined ? make() : root.run(make));
+  const made = at.run(make);
+  const cfg = (): Config => made;
   const st = () => cfg().store;
   const o: Outbox<Writes<C>> = {
     id,

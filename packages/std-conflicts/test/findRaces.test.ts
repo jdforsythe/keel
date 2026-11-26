@@ -3,7 +3,7 @@
 import { type StoresFactory, findRaces } from "@keel/std-conflicts";
 import type { SessionGroup } from "@keel/std-sessions/group";
 import { describe, expect, test, vi } from "vitest";
-import { boardStores, snapshotAfter, tallyStores } from "./helpers.ts";
+import { boardStores, root, snapshotAfter, tallyStores } from "./helpers.ts";
 
 const server = vi.hoisted((): { [store: string]: unknown } => ({}));
 
@@ -14,7 +14,7 @@ vi.mock("@keel/std-sessions/group", () => ({
 const group: SessionGroup = { v: 1, seed: 1337, at: 0, origin: "http://test", server: {}, users: [] };
 const serve = () => ({ fetch: async () => new Response(null, { status: 404 }) });
 const run = (stores: readonly StoresFactory[] = [boardStores()]) =>
-  findRaces(group, { user: "user.ts", serve, stores });
+  root(() => findRaces(group, { user: "user.ts", serve, stores }));
 
 describe("findRaces on stored values that are not snapshots", () => {
   const race = snapshotAfter(boardStores(), [

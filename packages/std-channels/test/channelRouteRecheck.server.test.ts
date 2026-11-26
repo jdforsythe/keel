@@ -25,7 +25,7 @@ async function until(pred: () => boolean): Promise<void> {
   for (let i = 0; i < 2000 && !pred(); i++) await turn();
   if (!pred()) throw new Error("condition not reached");
 }
-const copy = scope(() => undefined).run(() => store(Flag, { on: true }, { id: "t.copy" }));
+const copy = scope(() => undefined, { detached: true }).run(() => store(Flag, { on: true }, { id: "t.copy" }));
 const snap = (on: boolean): string => JSON.stringify({ ...copy.snapshot({ meta: true }), state: { on } });
 
 /** A served channel (room `x` is never a member) whose `ctx.storage.get` can be armed: its next read of `keel.store.t.flag` is `next()`. */

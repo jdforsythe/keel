@@ -156,10 +156,13 @@ describe("under generated schedules", () => {
         const app = await apiApp();
         const a = browser(ctx, app);
         let status = (): LiveStatus => "connecting";
-        const page = scope(() => {
-          status = live(ctx, location.origin, boardChannel, {}, { read: (c) => todosApi.lists({}, c), hydrate });
-          void drain(ctx, boardOutbox, { owner: "" });
-        });
+        const page = scope(
+          () => {
+            status = live(ctx, location.origin, boardChannel, {}, { read: (c) => todosApi.lists({}, c), hydrate });
+            void drain(ctx, boardOutbox, { owner: "" });
+          },
+          { detached: true },
+        );
         open = page;
         const sent = send(ctx, boardOutbox, "toggleTodo", { params: t1, body: {} }, { base: 0, owner: "" }).catch(
           () => null,

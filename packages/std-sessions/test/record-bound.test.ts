@@ -46,7 +46,7 @@ let made: ReturnType<typeof build> | undefined;
 const fixture = (): ReturnType<typeof build> => {
   if (made !== undefined) return made;
   const out: ReturnType<typeof build>[] = [];
-  scope(() => void out.push(build()));
+  scope(() => void out.push(build()), { detached: true });
   const [first] = out;
   if (first === undefined) throw new Error("fixture");
   made = first;

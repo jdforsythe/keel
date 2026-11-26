@@ -33,11 +33,14 @@ test("snapshots() gives a stored snapshot without keys the keys restore gives it
       try {
         const viaHub = (await hub.snapshots()).t?.keys;
         let viaRestore: unknown;
-        scope(() => {
-          const st = store(s.object({ n: s.int() }), { n: 0 }, { id: "t", logLimit: 16 });
-          expect(st.restore(snap).ok).toBe(true);
-          viaRestore = st.snapshot().keys;
-        }).dispose();
+        scope(
+          () => {
+            const st = store(s.object({ n: s.int() }), { n: 0 }, { id: "t", logLimit: 16 });
+            expect(st.restore(snap).ok).toBe(true);
+            viaRestore = st.snapshot().keys;
+          },
+          { detached: true },
+        ).dispose();
         expect(viaHub).toEqual(viaRestore);
         expect(viaHub).toEqual(log.flatMap((e) => ("key" in e ? [{ name: e.name, key: e.key }] : [])));
       } finally {

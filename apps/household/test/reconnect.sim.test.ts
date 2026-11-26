@@ -35,7 +35,7 @@ it("catches up with the server's list after every schedule of drops and offline 
       };
       ctx.net.route("http://localhost/*", toServer);
       ctx.net.route(`${location.origin}/*`, toServer);
-      const page = scope(() => undefined);
+      const page = scope(() => undefined, { detached: true });
       const status = page.run(() =>
         live(
           ctx,

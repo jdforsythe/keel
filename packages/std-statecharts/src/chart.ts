@@ -1,4 +1,4 @@
-import { owner, scope } from "@keel/reactive";
+import { owner } from "@keel/reactive";
 import { type Schema, defect, s } from "@keel/schema";
 import { store, transaction } from "@keel/store";
 import { asEvents } from "../unsafe/asEvents.ts";
@@ -92,7 +92,8 @@ export function chart<
       );
     return { store: st, events: asEvents(table), enabled };
   };
-  // Declared outside a scope (module level): the store lives as long as the module, as a module-level `store` does.
-  const own = owner() === undefined ? scope(() => undefined).run(() => compile(id)) : compile(id);
+  // At a module's top level `owner()` is the compiler's module root, so the store lives as long as the module.
+  const at = owner() ?? defect("chart() outside a scope or a module top level", "E1203");
+  const own = at.run(() => compile(id));
   return { ...own, data: spec.data, states: spec.states, initial: spec.initial, next, taken, [compileKey]: compile };
 }

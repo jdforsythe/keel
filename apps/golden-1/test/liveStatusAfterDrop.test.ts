@@ -54,9 +54,12 @@ test("subscribe's status is connecting, not open, while it waits to reopen after
   open = r;
   const kinds: string[] = [];
   let status = (): string => "";
-  const page = scope(() => {
-    status = subscribe(a.ctx, location.origin, boardChannel, {}, (e) => kinds.push(e.kind)).status;
-  });
+  const page = scope(
+    () => {
+      status = subscribe(a.ctx, location.origin, boardChannel, {}, (e) => kinds.push(e.kind)).status;
+    },
+    { detached: true },
+  );
   open = {
     dispose: () => {
       page.dispose();

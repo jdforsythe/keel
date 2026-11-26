@@ -16,19 +16,22 @@ test("live inside a rendering effect opens its stream after the render and goes 
   const onRejection = (e: unknown): void => void errors.push(e);
   process.on("unhandledRejection", onRejection);
   const got: { status?: () => string; view?: { get(k: "n"): number } } = {};
-  const root = scope(() => {
-    const view = store(s.object({ n: s.int() }), { n: 0 }, { id: "unit.effectView" });
-    const hydrate = transaction(view, "view.hydrate", s.int(), (_st, p) => ({ n: p }));
-    got.view = view;
-    effect(
-      () => {
-        scope(() => {
-          got.status = live(ctx, ORIGIN, ch, {}, { read: async () => ok(7), hydrate });
-        });
-      },
-      { writes: [] },
-    );
-  });
+  const root = scope(
+    () => {
+      const view = store(s.object({ n: s.int() }), { n: 0 }, { id: "unit.effectView" });
+      const hydrate = transaction(view, "view.hydrate", s.int(), (_st, p) => ({ n: p }));
+      got.view = view;
+      effect(
+        () => {
+          scope(() => {
+            got.status = live(ctx, ORIGIN, ch, {}, { read: async () => ok(7), hydrate });
+          });
+        },
+        { writes: [] },
+      );
+    },
+    { detached: true },
+  );
   await settle();
   process.off("unhandledRejection", onRejection);
   expect(errors).toEqual([]);

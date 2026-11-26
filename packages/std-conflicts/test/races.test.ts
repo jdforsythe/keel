@@ -1,8 +1,10 @@
 import { s } from "@keel/schema";
-import { races } from "@keel/std-conflicts";
+import { races as racesOf } from "@keel/std-conflicts";
 import { store, transaction } from "@keel/store";
 import { describe, expect, test } from "vitest";
-import { boardStores, snapshotAfter, tallyStores } from "./helpers.ts";
+import { boardStores, root, snapshotAfter, tallyStores } from "./helpers.ts";
+
+const races: typeof racesOf = (...args) => root(() => racesOf(...args));
 
 const add = (id: string, title: string, base?: number) => ({
   name: "t.add",

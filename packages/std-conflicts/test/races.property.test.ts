@@ -1,10 +1,12 @@
 // Seed 1337
 import { owner, scope } from "@keel/reactive";
-import { races } from "@keel/std-conflicts";
+import { races as racesOf } from "@keel/std-conflicts";
 import { isolate } from "@keel/store";
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { SEED, type Step, boardStores, deepFreeze, snapshotAfter, tallyStores } from "./helpers.ts";
+import { SEED, type Step, boardStores, deepFreeze, root, snapshotAfter, tallyStores } from "./helpers.ts";
+
+const races: typeof racesOf = (...args) => root(() => racesOf(...args));
 
 /** Commuting steps, each from a base at or below the head it lands on. */
 const commuting = fc
@@ -65,15 +67,18 @@ describe("races: properties", () => {
         });
         const snap = deepFreeze(snapshotAfter(boardStores(), steps));
         const text = JSON.stringify(snap);
-        const sc = scope(() => {
-          const live = boardStores()();
-          const before = JSON.stringify(live.board.snapshot({ meta: true }));
-          const a = races(snap, boardStores());
-          const b = races(snap, boardStores());
-          expect(JSON.stringify(b)).toBe(JSON.stringify(a));
-          expect(JSON.stringify(snap)).toBe(text);
-          expect(JSON.stringify(live.board.snapshot({ meta: true }))).toBe(before);
-        });
+        const sc = scope(
+          () => {
+            const live = boardStores()();
+            const before = JSON.stringify(live.board.snapshot({ meta: true }));
+            const a = races(snap, boardStores());
+            const b = races(snap, boardStores());
+            expect(JSON.stringify(b)).toBe(JSON.stringify(a));
+            expect(JSON.stringify(snap)).toBe(text);
+            expect(JSON.stringify(live.board.snapshot({ meta: true }))).toBe(before);
+          },
+          { detached: true },
+        );
         sc.dispose();
       }),
       { seed: SEED, numRuns: 60 },
@@ -82,12 +87,15 @@ describe("races: properties", () => {
 
   test("races runs inside an isolated scope that already holds a store of the same id", () => {
     const snap = snapshotAfter(boardStores(), [{ name: "t.add", payload: { id: "a", title: "x" } }]);
-    const sc = scope(() => {
-      const own = owner();
-      if (own !== undefined) isolate(own);
-      boardStores()();
-      expect(races(snap, boardStores())).toEqual({ races: [], unchecked: [] });
-    });
+    const sc = scope(
+      () => {
+        const own = owner();
+        if (own !== undefined) isolate(own);
+        boardStores()();
+        expect(races(snap, boardStores())).toEqual({ races: [], unchecked: [] });
+      },
+      { detached: true },
+    );
     sc.dispose();
   });
 });

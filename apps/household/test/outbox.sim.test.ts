@@ -87,7 +87,7 @@ it("commits an offline mark once, or keeps it as a conflict when another member 
       if (item === undefined) throw new Error(`no ${name} on the list`);
       const before = await committed(h);
       ctx.net.route(`${location.origin}/*`, toServer(h, jar));
-      const page = scope(() => undefined);
+      const page = scope(() => undefined, { detached: true });
       page.run(() => void drain(ctx, listOutbox, { owner: h.graceId }));
 
       ctx.net.setOnline(false);
@@ -166,7 +166,7 @@ it("holds a queued mark through a sign-out and sends it once the same member sig
           .join("; ");
       const jar = { cookie: cookieOf(signIn) };
       ctx.net.route(`${location.origin}/*`, toServer(h, jar));
-      const page = scope(() => undefined);
+      const page = scope(() => undefined, { detached: true });
       page.run(() => void drain(ctx, listOutbox, { owner: h.graceId }));
       ctx.net.setOnline(false);
       const first = await send(
@@ -209,7 +209,7 @@ it("holds a queued mark through a sign-out and sends it once the same member sig
 
       // She signs in again; the list page she opens drains for her.
       jar.cookie = cookieOf(await h.raw(formPost(mount.href("/sign-in/email"), { email: GRACE, password: PASSWORD })));
-      const again = scope(() => undefined);
+      const again = scope(() => undefined, { detached: true });
       again.run(() => void drain(ctx, listOutbox, { owner: h.graceId }));
       for (let turn = 0; turn < 40 && waiting(); turn++) {
         await stored(h);

@@ -1,8 +1,7 @@
 import { defect } from "@keel/schema";
+import { isStore, isTransaction } from "@keel/store";
 import type { StoresFactory } from "../StoresFactory.ts";
 import type { Made } from "./Made.ts";
-import { isStore } from "./isStore.ts";
-import { isTransaction } from "./isTransaction.ts";
 import { isolated } from "./isolated.ts";
 
 /**

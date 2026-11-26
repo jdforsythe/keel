@@ -55,26 +55,30 @@ export function snapshotAfter(
   steps: readonly Step[],
 ): Snapshot<unknown> {
   const out: Snapshot<unknown>[] = [];
-  const sc = scope(() => {
-    const own = owner();
-    if (own !== undefined) isolate(own);
-    const made = make();
-    let snap: (() => Snapshot<unknown>) | undefined;
-    const txs = new Map<string, Parameters<typeof tx>[0]>();
-    for (const v of Object.values(made)) {
-      if (typeof v !== "object" || v === null) continue;
-      if ("concurrent" in v && "name" in v && "store" in v && typeof v.name === "string" && isTx(v)) txs.set(v.name, v);
-      if ("snapshot" in v && typeof v.snapshot === "function" && isStoreLike(v)) snap = () => v.snapshot();
-    }
-    for (const step of steps) {
-      const t = txs.get(step.name);
-      if (t === undefined) throw new Error(`helpers: no transaction ${step.name}`);
-      const r = tx(t, step.payload, step.base === undefined ? {} : { base: step.base });
-      if (!r.ok) throw new Error(`helpers: ${step.name} was refused`);
-    }
-    if (snap === undefined) throw new Error("helpers: no store");
-    out.push(JSON.parse(JSON.stringify(snap())));
-  });
+  const sc = scope(
+    () => {
+      const own = owner();
+      if (own !== undefined) isolate(own);
+      const made = make();
+      let snap: (() => Snapshot<unknown>) | undefined;
+      const txs = new Map<string, Parameters<typeof tx>[0]>();
+      for (const v of Object.values(made)) {
+        if (typeof v !== "object" || v === null) continue;
+        if ("concurrent" in v && "name" in v && "store" in v && typeof v.name === "string" && isTx(v))
+          txs.set(v.name, v);
+        if ("snapshot" in v && typeof v.snapshot === "function" && isStoreLike(v)) snap = () => v.snapshot();
+      }
+      for (const step of steps) {
+        const t = txs.get(step.name);
+        if (t === undefined) throw new Error(`helpers: no transaction ${step.name}`);
+        const r = tx(t, step.payload, step.base === undefined ? {} : { base: step.base });
+        if (!r.ok) throw new Error(`helpers: ${step.name} was refused`);
+      }
+      if (snap === undefined) throw new Error("helpers: no store");
+      out.push(JSON.parse(JSON.stringify(snap())));
+    },
+    { detached: true },
+  );
   sc.dispose();
   const [first] = out;
   if (first === undefined) throw new Error("helpers: build failed");
@@ -91,4 +95,9 @@ export function deepFreeze<T>(v: T): T {
     Object.freeze(v);
   }
   return v;
+}
+
+/** `make` run in a root of its own that no test disposes: the owner a caller of `races` or `findRaces` has in an app. */
+export function root<T>(make: () => T): T {
+  return scope(() => undefined, { detached: true }).run(make);
 }

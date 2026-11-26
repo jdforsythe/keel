@@ -17,7 +17,7 @@ type Stores = ReturnType<typeof archiveStores>;
 
 /** `fn` over a fresh `archiveStores()` in its own isolated scope, as a request has it. */
 function fresh<T>(fn: (st: Stores) => T): T {
-  const sc = scope(() => undefined);
+  const sc = scope(() => undefined, { detached: true });
   isolate(sc);
   try {
     return sc.run(() => fn(archiveStores()));
