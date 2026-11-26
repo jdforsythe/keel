@@ -17,7 +17,7 @@ const access = register<Maker>("tokens.opaque", {
 });
 const made = new WeakMap<Ctx, Tokens>();
 
-/** The `tokens` capability accessor: one `Tokens` per ctx, reading `ctx.clock`. */
+/** The `tokens.opaque` capability's accessor: one `Tokens` per ctx, reading `ctx.clock`. */
 export function tokens(ctx: Ctx): Tokens {
   const known = made.get(ctx);
   if (known !== undefined) return known;
