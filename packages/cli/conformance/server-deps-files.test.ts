@@ -1,21 +1,23 @@
 // k.server-deps each quoted whole
 // Spec: k.server-deps, clause "In a `node` fixture whose server code imports `node_modules/blob/index.js`, which holds `new URL('./blob.bin', import.meta.url)` and `new URL('other.bin', import.meta.url)` beside files `blob.bin` and `other.bin`, `keel build` writes `dist/<name>/blob.bin` and `dist/<name>/other.bin` equal to them; with `other.bin` deleted, `keel build` fails with one E1014 naming `node_modules/blob/index.js` and `other.bin`."
 // Spec: k.server-deps, clause "In that `node` fixture, `node_modules/blob/lib/deep.js` holding `new URL('deep.bin', import.meta.url)` makes `keel build` write `dist/<name>/deep.bin` from `lib/`, and `new URL('./wasm/x.bin', import.meta.url)` in `index.js` writes `dist/<name>/wasm/x.bin`; `new URL('https://example.com/x', import.meta.url)` and `new URL('.', import.meta.url)` copy nothing and fail nothing; `new URL('../up.bin', import.meta.url)`, `new URL(name, import.meta.url)` and ``new URL(`./${name}.bin`, import.meta.url)`` each make `keel build` fail with one E1014 naming `node_modules/blob/index.js`, and no `dist/<name>/`."
+// Spec: k.server-deps, clause "In that `node` fixture, `node_modules/blob/contrib/ext.js` holding `new URL('../ext.tar.gz', import.meta.url)` beside `node_modules/blob/ext.tar.gz` makes `keel build` write `dist/<name>/ext.tar.gz` equal to it and a `server.mjs` holding the text `./ext.tar.gz` and not `../ext.tar.gz`; `new URL('../../ext.tar.gz', import.meta.url)` there makes it fail with one E1014 `reads ../../ext.tar.gz, outside its package` naming `node_modules/blob/contrib/ext.js`."
 // Spec: k.server-deps, clause "In a `node` fixture whose `modules/a` lists `@acme/store`, a library linked through a workspace (its real folder outside the project) whose `src/store.ts` holds `new URL('./store.bin', import.meta.url)`, `keel build` writes `dist/<name>/store.bin`; with `store.bin` deleted it fails with one E1014 naming `node_modules/@acme/store/src/store.ts`; two libraries each shipping a `data.bin` of other bytes fail it with one E1014."
-// Files a bundled package reads: "A bundled package file is a file a `node` deployable's `server.mjs` bundles that lies under a `node_modules` folder or is a library's (k.library), wherever the library's real folder is: installed, linked through a workspace, or inside the project. A library's file is named at `node_modules/<name>/<f>`. Its `new URL(<a>, import.meta.url)` calls are read; a `new URL` with any other base is not. The bundle resolves `<a>` against `server.mjs`, so:"
+// Files a bundled package reads: "A bundled package file is a file a `node` deployable's `server.mjs` bundles that lies under a `node_modules` folder or is a library's (k.library), wherever the library's real folder is: installed, linked through a workspace, or inside the project. A library's file is named at `node_modules/<name>/<f>`. Its package's folder is a library's real folder, else the folder its package name names under its last `node_modules/` folder (`node_modules/@electric-sql/pglite/`). Its `new URL(<a>, import.meta.url)` calls are read; a `new URL` with any other base is not. The bundle resolves `<a>` against `server.mjs`, so:"
 // - `<a>` a string literal, or a template literal without an expression, naming a path inside that file's folder (`./x.bin`, `x.bin`, `wasm/x.bin`): `keel build` copies the file or folder at that path into `dist/<name>/` at the same path, beside `server.mjs`.
 // - `<a>` naming an absolute URL (it begins `<scheme>:`) or that folder itself (`.`, `./`): left alone.
-// - `<a>` naming a path that leaves that folder (`../x.bin`, `/x.bin`), even inside the package, or `<a>` of any other form: E1014, since `dist/<name>/` could not hold the file where the bundle reads it.
-// - Two bundled package files naming one path for files of different bytes, in one package or in two (two libraries each shipping `data.bin`): E1014; with equal bytes the path is copied once. A file is never renamed or moved, and the bundle is not rewritten.
-// A stated limit: a package whose own layout reads a file above the reading file's folder (`new URL('../x.tar.gz', import.meta.url)`) cannot be served by `keel build`, even though the file is inside the package. All bundled files become `server.mjs`, so the bundle resolves that path against `server.mjs`, above `dist/<name>/`.
-// Rules: "A clipped `<name>` (28 units), `<f>` (40), `<other>` (36), `<export>` or `<id>` (20) ends in `...`, by k.check Diagnostics' clip at that width, and every message is within 89. E1167 an `env` entry that is not a string literal matching `[A-Z][A-Z0-9_]*`, or that is a key `DeployEnv` parses (`PORT`, `KEEL_SECRET`, `KEEL_ORIGIN`, `KEEL_DATABASE_URL`, `KEEL_ALLOW_ORIGINS`) or begins with `KEEL_PEER_`, at the entry: its line and the column of its first character, a string literal's opening quote (an `env` that is no array literal: at its value); messages `env entry is not a string literal` (an entry or an `env` that is no string literal), `env name "<name>" does not match [A-Z][A-Z0-9_]*`, and `env name "<name>" is a key DeployEnv reads` (a `DeployEnv` key, or a name in the pattern beginning with `KEEL_PEER_`); no fix · E1014 `keel build`: a bundled package file's `new URL(<a>, import.meta.url)` whose `<a>` is of no form Files a bundled package reads copies or leaves alone, names a missing path, or names a path another bundled package file names for a file of other bytes; located at the package file (a library's at `node_modules/<name>/<f>`, any other by its path from its last `node_modules/` folder); messages `reads <f>, which is missing`, `reads <f>, outside its own folder`, `reads <f>, as <other> reads another file`, `reads new URL(x, import.meta.url) with x no string literal`, `<f>` the first argument as written, a leading `./` kept, `<other>` the other package file as located; the build fails and writes no `dist/<name>/`."
+// - `<a>` such a literal naming a path above that folder and inside its package's folder (`../x.tar.gz` from `contrib/`): `keel build` copies it into `dist/<name>/` at the path `<a>` names, normalized, with its leading `../` segments removed (`x.tar.gz`), and the bundled call's `<a>` reads `./` and that path.
+// - `<a>` naming a path outside its package's folder (`/x.bin`, or `../x.bin` from a file directly in it), or `<a>` of any other form: E1014, since `dist/<name>/` could not hold the file where the bundle reads it.
+// - Two bundled package files whose copies land on one path for files of different bytes, in one package or in two (two libraries each shipping `data.bin`): E1014; with equal bytes the path is copied once. A file keeps its name, and no other text of the bundle is rewritten.
+// A stated limit: `keel build` cannot serve a package that reads a file outside its own folder, nor two reads whose copies land on one path with other bytes (`../x.bin` from `a/b/`, naming `a/x.bin`, and `./x.bin` from the package's folder). All bundled files become `server.mjs`, so each copy's path is resolved against `server.mjs`, inside `dist/<name>/`.
+// Rules: "A clipped E1167 `<name>` (28 units), E1607 `<name>` (30), `<f>` (40), `<other>` (36), `<export>` or `<id>` (20) ends in `...`, by k.check Diagnostics' clip at that width, and every message is within 89. E1167 an `env` entry that is not a string literal matching `[A-Z][A-Z0-9_]*`, or that is a key `DeployEnv` parses (`PORT`, `KEEL_SECRET`, `KEEL_ORIGIN`, `KEEL_DATABASE_URL`, `KEEL_ALLOW_ORIGINS`) or begins with `KEEL_PEER_`, at the entry: its line and the column of its first character, a string literal's opening quote (an `env` that is no array literal: at its value); messages `env entry is not a string literal` (an entry or an `env` that is no string literal), `env name "<name>" does not match [A-Z][A-Z0-9_]*`, and `env name "<name>" is a key DeployEnv reads` (a `DeployEnv` key, or a name in the pattern beginning with `KEEL_PEER_`); no fix · E1014 `keel build`: a bundled package file's `new URL(<a>, import.meta.url)` whose `<a>` is of no form Files a bundled package reads copies or leaves alone, names a missing path, or names a path another bundled package file names for a file of other bytes; located at the package file (a library's at `node_modules/<name>/<f>`, any other by its path from its last `node_modules/` folder); messages `reads <f>, which is missing`, `reads <f>, outside its package`, `reads <f>, as <other> reads another file`, `reads new URL(x, import.meta.url) with x no string literal`, `<f>` the first argument as written, a leading `./` kept, `<other>` the other package file as located; the build fails and writes no `dist/<name>/`."
 // Seed: 1337 (the bytes of the files come from `fc.sample` at that seed, binary-safe: each starts with 0x00, 0xff or 0x80; the clip properties draw from it too).
 // Binary runs: 14 `keel build` (the `blob` fixture: the whole build, `../up.bin`, `new URL(name, ...)`, a template with an expression, a group of three more refusals, `other.bin` deleted, two packages naming `dup.bin` of other bytes; the workspace-linked library: the whole build, `store.bin` deleted;
 // the library inside the project: the whole build, `store.bin` deleted; two libraries naming `data.bin` with equal bytes, then with other bytes) and 1 `node dist/api/server.mjs` (the linked library, read through the running server). Every case that reads outputs reads the first build of its project.
 // The fixture imports `blob` and `blob2` (unscoped plain packages, as the clause names `blob`) and the made-up libraries `@acme/store`, `@acme/one` and `@acme/two` (library-support.ts `dataLibrary`, written here for the last two): no stdlib package is named.
 // ASSUMPTIONS (spec silent): the server code is a loader of module `a`; "<name>" is the deployable `api`; `<f>` is the text of `<a>` as written (`other.bin`, `../up.bin`, `/x.bin`), and for `./store.bin` either that or `store.bin` is accepted; `<other>` in "reads <f>, as <other> reads another file" is the other package file's location
 // (`node_modules/<name>/<f>`), the E1014 located at either one of the two; "clipped to 40 / 36 units" is read by k.check's clip rule at that width (a longer value keeps its first 37 / 33 units, one fewer before the first half of a surrogate pair, then `...`).
-// UNTESTABLE: the stated limit's reason ("the bundle resolves that path against `server.mjs`, above `dist/<name>/`"); its effect, E1014 for `../root.bin` though the file is inside the package, is asserted in the group case of clause 6.
+// UNTESTABLE: "A file keeps its name, and no other text of the bundle is rewritten" (the rest of a bundle's text is the bundler's); the stated limit's second half (two reads landing on one path with other bytes) is the two-package case of clause 6.
 // "copy nothing" is asserted as: no entry of the package folder (`package.json`, `index.js`, `lib/`) and no `example.com` appears in `dist/api/`. A literal `new URL(x, <other base>)` is asserted as read-not: the build succeeds though `x` names a file that exists nowhere.
 import { existsSync, mkdirSync, readdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -298,7 +300,7 @@ describe(`k.server-deps 6: ${CLAUSE_6}`, () => {
     "`new URL('../up.bin', import.meta.url)` makes `keel build` fail with one E1014 naming `node_modules/blob/index.js`, and no `dist/<name>/`",
     () => {
       const r = attempt(dir, { [`${PKG}/index.js`]: indexJs("new URL('../up.bin', import.meta.url)") });
-      only(r, "node_modules/blob/index.js", "reads ../up.bin, outside its own folder");
+      only(r, "node_modules/blob/index.js", "reads ../up.bin, outside its package");
     },
     SLOW,
   );
@@ -326,20 +328,18 @@ describe(`k.server-deps 6: ${CLAUSE_6}`, () => {
   );
 
   test(
-    "a path that leaves the file's folder even inside the package (`../root.bin` in `lib/deep.js`) and an absolute one (`/x.bin`) are each one E1014 at the file naming it, and a path that is missing is one, its `<f>` clipped to 40 units",
+    "a path outside the package (`/x.bin`) is one E1014 at the file naming it, and a path that is missing is one, its `<f>` clipped to 40 units",
     () => {
       const long = fc.sample(fc.stringMatching(/^[a-z]{44,60}$/), { seed: SEED, numRuns: 1 })[0] ?? "x".repeat(50);
       const gone = `${long}.bin`;
       const r = attempt(dir, {
-        [`${PKG}/lib/deep.js`]: deepJs("new URL('../root.bin', import.meta.url)"),
         [`${PKG}/index.js`]: indexJs(`new URL('/x.bin', import.meta.url), new URL('${gone}', import.meta.url)`),
       });
       expect(r.status, r.out).toBe(1);
       expect(r.dist).toBe(false);
       const byMessage = new Map(r.found.map((f) => [f.message, f.path]));
-      expect(r.found).toHaveLength(3);
-      expect(byMessage.get("reads ../root.bin, outside its own folder")).toBe("node_modules/blob/lib/deep.js");
-      expect(byMessage.get("reads /x.bin, outside its own folder")).toBe("node_modules/blob/index.js");
+      expect(r.found).toHaveLength(2);
+      expect(byMessage.get("reads /x.bin, outside its package")).toBe("node_modules/blob/index.js");
       expect(byMessage.get(`reads ${clipTo(gone, 40)}, which is missing`)).toBe("node_modules/blob/index.js");
       for (const f of r.found) expect(f.message.length).toBeLessThanOrEqual(89);
     },
@@ -518,6 +518,57 @@ describe(`k.server-deps 9, two libraries: ${CLAUSE_9}`, () => {
       const tail = clipTo(other, 36).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       expect(r.found[0]?.message).toMatch(new RegExp(`^reads (\\./)?data\\.bin, as ${tail} reads another file$`));
       expect((r.found[0]?.message ?? "").length).toBeLessThanOrEqual(89);
+    },
+    SLOW,
+  );
+});
+
+// ---- clause 11: a `../` read inside the package is copied and rewritten; one outside it is E1014 ----
+const CLAUSE_11 =
+  "In that `node` fixture, `node_modules/blob/contrib/ext.js` holding `new URL('../ext.tar.gz', import.meta.url)` beside `node_modules/blob/ext.tar.gz` makes `keel build` write `dist/<name>/ext.tar.gz` equal to it and a `server.mjs` holding the text `./ext.tar.gz` and not `../ext.tar.gz`; `new URL('../../ext.tar.gz', import.meta.url)` there makes it fail with one E1014 `reads ../../ext.tar.gz, outside its package` naming `node_modules/blob/contrib/ext.js`";
+const EXT = Uint8Array.from([
+  0x1f,
+  0x8b,
+  ...(fc.sample(fc.uint8Array({ minLength: 4, maxLength: 48 }), { seed: SEED, numRuns: 1 })[0] ?? []),
+]);
+const extJs = (arg: string): string => `import { readFileSync } from 'node:fs'
+export const ext = () => readFileSync(new URL('${arg}', import.meta.url)).length
+`;
+const withExt = (arg: string): Tree => ({
+  [`${PKG}/contrib/ext.js`]: extJs(arg),
+  [`${PKG}/index.js`]: `import { ext } from './contrib/ext.js'\n${indexJs("ext()")}`,
+});
+
+describe(`k.server-deps 11: ${CLAUSE_11}`, () => {
+  let dir11 = "";
+  let build11: ReturnType<typeof built> = { status: null, out: "" };
+  beforeAll(() => {
+    dir11 = materialize({ ...fixture(), ...withExt("../ext.tar.gz") });
+    writeBytes(dir11, { ...BYTES(), [`${PKG}/ext.tar.gz`]: EXT });
+    build11 = built(dir11);
+  }, SLOW);
+  afterAll(() => cleanup(dir11));
+
+  test("`new URL('../ext.tar.gz', import.meta.url)` in `contrib/ext.js` beside `ext.tar.gz` in the package's folder: `keel build` exits 0", () => {
+    expect(build11.status, build11.out).toBe(0);
+  });
+
+  test("`keel build` writes `dist/<name>/ext.tar.gz` equal to `node_modules/blob/ext.tar.gz`, at the path with its leading `../` removed", () => {
+    expect(same(bytesAt(dir11, "dist/api/ext.tar.gz"), EXT)).toBe(true);
+    expect(existsSync(join(dir11, "dist/api/contrib"))).toBe(false);
+  });
+
+  test("the `server.mjs` holds the text `./ext.tar.gz` and not `../ext.tar.gz`", () => {
+    const text = textAt(dir11, "dist/api/server.mjs");
+    expect(text).toContain("./ext.tar.gz");
+    expect(text).not.toContain("../ext.tar.gz");
+  });
+
+  test(
+    "`new URL('../../ext.tar.gz', import.meta.url)` in `contrib/ext.js` makes `keel build` fail with one E1014 `reads ../../ext.tar.gz, outside its package` naming `node_modules/blob/contrib/ext.js`, and no `dist/<name>/`",
+    () => {
+      const r = attempt(dir11, withExt("../../ext.tar.gz"));
+      only(r, "node_modules/blob/contrib/ext.js", "reads ../../ext.tar.gz, outside its package");
     },
     SLOW,
   );

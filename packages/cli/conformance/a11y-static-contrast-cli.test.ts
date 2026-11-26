@@ -2,7 +2,7 @@
 // Spec: k.a11y-static, clause "With `brandTokens`, `keel check` reports no E1804 for `<Box bg=\"card\"><Text fg={tone}>x</Text></Box>`, `<Box bg={tone}><Text fg=\"divider\">x</Text></Box>`, `<Box bg=\"card\"><Text {...rest}>x</Text></Box>`, `<Box bg=\"card\"><Panel><Text fg=\"divider\">x</Text></Panel></Box>` with `Panel` an app component, or `<Box bg=\"card\"><Text fg=\"divider\" hidden>x</Text></Box>`, and one for `<Box bg=\"card\"><If when={on}><Text fg=\"divider\">x</Text></If></Box>` and for `<Box bg=\"card\"><Text {...rest} fg=\"divider\" bg=\"card\">x</Text></Box>`."
 // Spec: k.a11y-static, clause "With color tokens `low` `#787878` and `bg` `#ffffff` and `fontSize` `big` `24px`, `<Box bg=\"bg\" fontSize=\"big\"><Text fg=\"low\">x</Text></Box>` reports no E1804 and `<Box bg=\"bg\"><Text fg=\"low\" fontSize={size}>x</Text></Box>` reports none, while `<Box bg=\"bg\"><Text fg=\"low\">x</Text></Box>` reports one."
 // Spec: k.a11y-static, clause "With color tokens named by 20 `a`s (`#ffffff`) and 20 `b`s (`#ffffff`), `<Text fg=\"<a>\" bg=\"<b>\">x</Text>` reports E1804 with the message `fg \"<a>\" on bg \"<b>\" is 1.00:1 in light, needs 4.5:1` (86 units); with names of 30 characters each the message is 89 units, the first 86 of the whole message and `...`."
-// Spec: k.a11y-static, clause "`keel check` in a project whose `tokens.ts` exports no `tokens`, throws, or exports `tokens` with `color: { fg: 5 }`, reports one E1807 at `tokens.ts` line 1, column 1, no E1804, and exits 1; in a project with no `tokens.ts` it reports neither for `<Box bg=\"bg\"><Text fg=\"low\">x</Text></Box>`."
+// Spec: k.a11y-static, clause "`keel check` in a project whose `tokens.ts` exports no `tokens`, throws, or exports `tokens` with `color: { fg: 5 }`, reports one E1807 at `tokens.ts` line 1, column 1, no E1804, and exits 1; in a project with no `tokens.ts` it reports neither for `<Box bg=\"bg\"><Text fg=\"low\">x</Text></Box>`, and two E1801, at `\"bg\"` and at `\"low\"`, and exits 1."
 // Spec: k.a11y-static, clause "In a project with `node_modules`, after a `keel check` that reports no E1804 for `<Box bg=\"bg\"><Text fg=\"low\">x</Text></Box>` with `low` `#111111`, changing `low` in `tokens.ts` to `#787878` makes the next `keel check` report one E1804, the same stdout as a run with `node_modules/.cache/keel` deleted."
 // Spec: k.a11y-static, clause "`keel build` in a project where `keel check` reports only one E1802, only one E1804, or only one E1820 exits 1, prints that diagnostic and writes no `.keel/` folder and no `dist/` folder."
 // Spec: k.a11y-static, clause "`keel check`, `keel build`, MCP `check` and `keel lsp`'s published diagnostics report the same static E1804 for one project; after a passing `renderRoute` test of page `m.r` given `artifacts: {}` whose module holds that E1804, `keel ledger` gives `a11y:.:m.r#1.4.3` rung `none`."
@@ -19,7 +19,7 @@
 // Seed: 1337 (fixed projects; the message-length pairs are drawn with `fc.sample` at seed 1337; the law over ratios is in the check package's a11y-contrast-inherited.test.ts).
 // The real `keel` binary (`keel check --format=json`) over temp projects, as a11y-project-support.ts. The project's `tokens.ts` is read by the binary itself (k.a11y Artifacts names the project's `tokens.ts` as the default for a render; the Contrast text states static E1804 with no other input), so no tokens are handed in.
 // Assumed: a diagnostic record is `{ kind: "diag", code, path, line, col, message }`, `path` relative to the project, `line` 1-based at the `<Text` element.
-// Spec silent (reported, not asserted): the message of E1804; whether `keel build` refuses an E1804 (k.a11y names no refusal); the static result when `tokens.ts` is absent. The absent case asserts no E1804 and no throw (render checks it, and a render with no `tokens.ts` skips E1804).
+// Spec silent (reported, not asserted): the message of E1804; whether `keel build` refuses an E1804 (k.a11y names no refusal). With no `tokens.ts` the case asserts no E1804 and no throw (k.a11y-static Tokens: nothing is judged for contrast; each token a use names is E1801).
 // 4.4:1 is `#787878` on `#ffffff` (4.41:1); `#111111` passes; 3:1 is `#949494` on white (2.95:1).
 import { spawnSync } from "node:child_process";
 import { existsSync, rmSync } from "node:fs";
@@ -494,10 +494,16 @@ describe("k.a11y-static: a broken `tokens.ts` is E1807 at 1:1 and nothing is jud
     }
   });
 
-  it('in a project with no `tokens.ts` it reports neither E1807 nor E1804 for `<Box bg="bg"><Text fg="low">x</Text></Box>`', () => {
-    // the first suite's `noTokens` project holds that Box and Text as `Fails.tsx`
+  it('in a project with no `tokens.ts` it reports neither E1807 nor E1804 for `<Box bg="bg"><Text fg="low">x</Text></Box>`, and two E1801, at `"bg"` and at `"low"`, and exits 1', () => {
     const none = keel(project("a11y-static-none", { [COMP[0]]: COMP[1] }), ["check"]);
     expect(none.records.filter((r) => r.kind === "diag" && (r.code === "E1807" || r.code === "E1804"))).toEqual([]);
+    const names = none.records.filter((r) => r.kind === "diag" && r.code === "E1801");
+    // the layout of `unit` is stated, not computed: line 4 holds `    <Box bg="bg">` (the literal's quote at column 13), line 5 `      <Text fg="low">x</Text>` (column 16)
+    expect(names.map((r) => [r.path, r.line, r.col])).toEqual([
+      [COMP[0], 4, 13],
+      [COMP[0], 5, 16],
+    ]);
+    expect(none.status).toBe(1);
   });
 });
 

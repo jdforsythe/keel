@@ -73,6 +73,7 @@ export function project(sh: ProjectShape = {}): Tree {
   const page = sh.page ?? true;
   return {
     ...base(),
+    "tokens.ts": TOKENS,
     "topology.ts": `import { topology } from '@keel/server'\nexport default topology({ ${sh.adapter === "static" ? "site" : "api"}: { modules: ${JSON.stringify(sh.modules ?? ["shop"]).replaceAll('"', "'")}, adapter: '${sh.adapter ?? "node"}' } })\n`,
     "modules/shop/module.ts": manifestSrc("shop").replace(
       "deps: []",
