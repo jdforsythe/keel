@@ -40,6 +40,15 @@ export const CASES: readonly Case[] = [
   },
   { code: "R1012", range: false, base: {}, head: { "modules/m/a.server.ts": "export const t = reveal(token);\n" } },
   {
+    code: "R1013",
+    range: false,
+    base: {},
+    head: {
+      "modules/m/r.ts":
+        'import { defect } from "@keel/schema";\ndeclare const r: { ok: boolean; value: number };\nexport const v = r.ok ? r.value : defect("x");\n',
+    },
+  },
+  {
     code: "R1014",
     range: false,
     base: {},

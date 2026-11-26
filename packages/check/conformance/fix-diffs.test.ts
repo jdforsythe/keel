@@ -387,6 +387,7 @@ const NO_FIX = [
   "E1404", // which id to rename is the author's choice
   "E1453", // how to handle the Result is the author's choice
   "E1454", // which code to rename is the author's choice
+  "E1455", // k.errors Rules: no fix; the code is a stable name the author writes
   "E1501", // the target route id is unknown to the checker
   "E1502", // which path to change is the author's choice
   "E1503", // the params field is the author's to write

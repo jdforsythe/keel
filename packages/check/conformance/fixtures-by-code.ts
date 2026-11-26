@@ -674,6 +674,20 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       f("src/b.schema.ts", `${SCHEMA}export const b = s.error('orders.closed', s.object({}))\n`),
     ],
   },
+  E1455: {
+    bad: [
+      f(
+        "src/f.ts",
+        "import { defect } from '@keel/schema'\nexport function f(): never {\n  return defect('x', 'E28')\n}\n",
+      ),
+    ],
+    clean: [
+      f(
+        "src/f.ts",
+        "import { defect } from '@keel/schema'\nexport function f(): never {\n  return defect('x', 'E2801')\n}\n",
+      ),
+    ],
+  },
   E1501: {
     bad: [
       f(

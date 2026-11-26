@@ -1,4 +1,4 @@
-// Spec: k.reactive, clause "E1207 fires on `scope(fn, { detached: true })` and on `scope(fn, opts)` in app code, not on `scope(fn, { onError })` or in a kernel or stdlib package."
+// Spec: k.reactive, clause "E1207 fires on `scope(fn, { detached: true })` and on `scope(fn, opts)` in app code and in `packages/std-x/src/a.ts`, not on `scope(fn, { onError })` or in `packages/reactive/src/a.ts`."
 // Seed 1337
 // E1207 has no fix; the no-fix list in fix-diffs.test.ts records it.
 import { check } from "@keel/check";
@@ -48,17 +48,55 @@ test("E1207 fires on `scope` through an aliased import with `detached: true`", (
   expect(e1207(files)).toHaveLength(1);
 });
 
-test("E1207 does not fire on `detached: true` in a kernel package source path", () => {
-  const call = "scope(() => {}, { detached: true })";
-  expect(e1207([f("packages/reactive/src/x.ts", src(call))])).toHaveLength(0);
-  expect(e1207([f("packages/runtime-dom/src/x.ts", src(call))])).toHaveLength(0);
+const KERNEL = [
+  "schema",
+  "reactive",
+  "store",
+  "runtime-dom",
+  "compiler",
+  "router",
+  "forms",
+  "ui",
+  "check",
+  "scaffold",
+  "testing",
+  "server",
+  "services",
+  "cli",
+  "ctx",
+];
+
+test("E1207 does not fire on `detached: true` or `scope(fn, opts)` in `packages/reactive/src/a.ts`", () => {
+  const pre = "declare const opts: { detached: boolean }\n";
+  expect(e1207([f("packages/reactive/src/a.ts", src("scope(() => {}, { detached: true })"))])).toHaveLength(0);
+  expect(e1207([f("packages/reactive/src/a.ts", src("scope(() => {}, opts)", pre))])).toHaveLength(0);
 });
 
-test("E1207 does not fire on `scope(fn, opts)` in a stdlib package path", () => {
-  const call = "scope(() => {}, opts)";
+test("E1207 fires on `scope(fn, { detached: true })` and on `scope(fn, opts)` in `packages/std-x/src/a.ts`", () => {
   const pre = "declare const opts: { detached: boolean }\n";
-  expect(e1207([f("packages/std-sessions/src/x.ts", src(call, pre))])).toHaveLength(0);
-  expect(e1207([f("node_modules/@keel/std-auth/Work.ts", src(call, pre))])).toHaveLength(0);
+  const a = e1207([f("packages/std-x/src/a.ts", src("scope(() => {}, { detached: true })"))]);
+  expect(a).toHaveLength(1);
+  expect(a[0]?.fix).toBeUndefined();
+  expect(e1207([f("packages/std-x/src/a.ts", src("scope(() => {}, opts)", pre))])).toHaveLength(1);
+  expect(e1207([f("packages/std-x/src/a.ts", src("scope(() => {}, { onError: () => {} })"))])).toHaveLength(0);
+});
+
+// Seed 1337
+test("Property: E1207 is not judged in `packages/<p>/` for each of the fifteen kernel folders and is judged in any other package folder", () => {
+  const other = fc.constantFrom("std-x", "std-sessions", "std-db", "acme", "keel", "reactive-extra", "schemas");
+  fc.assert(
+    fc.property(
+      fc.constantFrom(...KERNEL),
+      other,
+      fc.constantFrom("src/a.ts", "src/deep/b.ts", "unsafe/c.ts"),
+      (kernel, foreign, file) => {
+        const call = "scope(() => {}, { detached: true })";
+        expect(e1207([f(`packages/${kernel}/${file}`, src(call))])).toHaveLength(0);
+        expect(e1207([f(`packages/${foreign}/${file}`, src(call))])).toHaveLength(1);
+      },
+    ),
+    { seed: SEED, numRuns: 60 },
+  );
 });
 
 // Seed 1337
