@@ -235,7 +235,7 @@ describe.skipIf(SERVER === "")("postgres driver on a real server", () => {
     await watch.query("select pg_terminate_backend($1)", [pid]);
     const r = await c.result;
     expect(r.ok).toBe(false);
-    expect(r.ok ? "" : String(r.error)).toMatch(/^Error: std\.db postgres: commit failed \(57P01\)$/);
+    expect(r.ok ? "" : String(r.error)).toMatch(/^Defect: std\.db postgres: commit failed \(57P01\)$/);
     await holder.query("rollback");
     expect(await s.get("lost")).toBeNull();
     expect(await s.commit([{ key: "lost", expect: null, value: "next" }])).toBe(true);
