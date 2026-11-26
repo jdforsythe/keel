@@ -1,6 +1,6 @@
 # RFC 0243: a library ships its look; color schemes; the Part roles a component library needs
 
-Status: accepted (ADR-0265), accepted by the orchestrator on 2026-11-26, to be confirmed by the operator. Adds k.looks and k.schemes; amends k.roles (Roles, Attributes, Keys, Conformance), k.ui (Tokens, Base elements), the map, the glossary. From the L1 end-user review (`tasks/p1/end-user-review.md`), D187 (c) and D188.
+Status: implemented (ADR-0265), accepted by the orchestrator on 2026-11-26, to be confirmed by the operator. Adds k.looks and k.schemes; amends k.roles (Roles, Attributes, Keys, Conformance), k.ui (Tokens, Base elements), the map, the glossary. From the L1 end-user review (`tasks/p1/end-user-review.md`), D187 (c) and D188.
 
 Personas: L1 the component library author, L2 the visual library author, A5 the designer; app kinds K1 to K9 alike, since every app renders a library's components the same way.
 

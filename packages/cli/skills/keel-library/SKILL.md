@@ -1,6 +1,6 @@
 ---
 name: keel-library
-description: "Write a Keel library: scaffold, pack, peers, ids, colour, a chart's text alternative; E1161, E1162, E1164, E1166"
+description: "Write a Keel library: scaffold, pack, peers, ids, colour and tokens, a chart's text alternative; E1161, E1162, E1164, E1166, E1810, E1811, E1812, E1813"
 ---
 
 # Writing a Keel library
@@ -13,7 +13,7 @@ Exact rules: `keel docs k.library` (how an app reads a library), `k.library-pack
 
 **Ids.** Every base element and `Part` builds its `id` on the component's `id` prop, `` id={`${props.id}.chart`} ``; a literal, a concatenation or none is E1161. `properties(Component)` generates the `id` prop like any other, from its schema (`s.string()` allows `"`).
 
-**Colour.** A library names no token: it cannot know the app's `tokens.ts`. Draw marks in `currentColor`, which a `Host` takes from `fg`. Take an optional `styles` prop holding a `PartStyle` (`@keel/ui/aria`) per part, and spread each onto its element; the app fills it from its tokens, `styles={{ chart: { fg: 'accent' } }}`.
+**Colour.** A library's look: `src/<id>Tokens.ts` holds `export const <id>Tokens = defineTokens({...})` and its import, one literal read as text (E1812), every name `<id>.<name>` (`look: { 'acme.badge': { bg: 'acme.accent', fg: 'acme.ink' } }`), colors a value or `{ light, dark }`, no `base` or `schemes`; `package.json` exports it as `"./tokens"`, `keel` `./src/<id>Tokens.ts`. Its files write only those names (E1811). The root `tokens.ts` spreads `brandTokens` and `<id>Tokens` group by group, overriding nothing (E1813), so checks judge the defaults; an app spreads it alike (E1810's fix). With no `./tokens`, write no token name: draw in `currentColor` (a `Host` takes `fg`) and take `styles`, a `PartStyle` (`@keel/ui/aria`) per part.
 
 **A chart a person cannot see.** The drawing is a `Host role="img"` with `label`, and `describedBy` naming a visible summary `Text`. The values sit in a `Part role="table"` with `hidden`, opened by a `Part role="button"` with `expanded` and `controls` (the disclosure pattern). Every word is a prop the app fills from its message set. `Part` types its children as a thunk, so it takes `children={() => ...}`; text between its tags fails `tsc` (TS2322).
 

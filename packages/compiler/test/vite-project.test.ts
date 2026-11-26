@@ -102,6 +102,7 @@ describe("@keel/compiler/vite project inputs", () => {
       "deps.json",
       "ids.json",
       "routes.json",
+      "schemes.json",
       "std.json",
       "styles.json",
     ]);

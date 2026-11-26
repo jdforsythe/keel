@@ -11,6 +11,8 @@ import { unifiedDiff } from "./unifiedDiff.ts";
 const GENERATED = /(?:^|\/)\.keel\/([^/]+\.json)$/;
 /** `.keel/` files k.ledger reads that the compiler never writes: an app's committed ledger and production tallies. */
 const LEDGER_FILES = new Set(["ledger.json", "monitored.json"]);
+/** `.keel/` files written from the evaluated tokens at each build and dev refresh, never hashed: `schemes.json` (k.schemes). */
+const EVALUATED = new Set(["schemes.json"]);
 
 function parse(text: string): { ok: true; value: unknown } | { ok: false } {
   try {
@@ -22,7 +24,7 @@ function parse(text: string): { ok: true; value: unknown } | { ok: false } {
 
 /**
  * E1005 and W1005 (k.compiler) for each `<dir>/.keel/<name>.json` among the checked files, except the ledger's own
- * `ledger.json` and `monitored.json` (k.ledger).
+ * `ledger.json` and `monitored.json` (k.ledger) and `schemes.json`, which the tokens' evaluation writes (k.schemes).
  * `expected` maps a project dir (`artifactDir`) to the hashes the compiler derives from that project's sources:
  * a string, or `null` when only evaluating the contracts and bindings derives it. The file must be one the compiler writes (a name
  * in `expected`), else E1005 (not among the compiled artifacts); then `{ data, hash }` in canonical JSON plus a
@@ -41,7 +43,7 @@ export function generatedEdits(
   const out: Diagnostic[] = [];
   for (const file of files) {
     const name = GENERATED.exec(file.path)?.[1];
-    if (name === undefined || LEDGER_FILES.has(name)) continue;
+    if (name === undefined || LEDGER_FILES.has(name) || EVALUATED.has(name)) continue;
     const project = expected.get(artifactDir(file.path) ?? "");
     const hashes = project?.hashes ?? {};
     const parsed = parse(file.source);
