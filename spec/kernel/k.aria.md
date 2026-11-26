@@ -62,4 +62,4 @@ status: implemented
 - An app file importing `Part` from `@keel/ui/aria` reports no diagnostic, and its `styles` are collected as a stdlib component's.
 - With `brandTokens`, a `button` `Part` with `pressed` from a signal and `states={{ pressed: { bg: 'accent' } }}` has the `accent` rule under `[aria-pressed="true"]` in the CSS file, and setting the signal true changes only its `aria-pressed` attribute.
 - With `brandTokens`, `states={{ disabled: { fg: 'textSecondary' } }}` puts its rule under both `:disabled` and `[aria-disabled="true"]`, so a `menuitemradio` with `disabled` true matches it; `states={{ current: { weight: 'bold' } }}` matches a `gridcell` with `current: 'date'` and not one with `current` false.
-- `states={{ pressed: { bg: 'accent' } }}` on a base element `Button` is a type error.
+- `states={{ pressed: { bg: 'accent' } }}` on a base element `Button` is a type error, asserted by `tsc --noEmit` over `conformance/`, which the package's `check` script runs (`vitest run` does not type-check).
