@@ -468,24 +468,6 @@
     "needs": "fixedTime"
   },
   {
-    "path": "packages/testing/conformance/compiler-keel-dir-tamper.test.ts",
-    "line": 70,
-    "text": "30_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/testing/conformance/compiler-keel-dir-tamper.test.ts",
-    "line": 97,
-    "text": "30_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/testing/conformance/property-test-timeout-0194.test.ts",
-    "line": 117,
-    "text": "240_000",
-    "needs": "testTime"
-  },
-  {
     "path": "packages/testing/conformance/prove-counter.test.ts",
     "line": 15,
     "text": "120_000",
@@ -564,93 +546,9 @@
     "needs": "fixedTime"
   },
   {
-    "path": "packages/testing/conformance/resource-keel-result-0068.test.ts",
-    "line": 239,
-    "text": "120_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/testing/conformance/rule-E1701.test.ts",
-    "line": 56,
-    "text": "30_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/testing/conformance/rule-E1701.test.ts",
-    "line": 62,
-    "text": "30_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/testing/conformance/sim-law.property.test.ts",
-    "line": 237,
-    "text": "120_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/testing/conformance/sim-law.property.test.ts",
-    "line": 267,
-    "text": "60_000",
-    "needs": "testTime"
-  },
-  {
     "path": "packages/testing/conformance/sim-tracked.test.ts",
     "line": 44,
     "text": "300",
     "needs": "fixedTime"
-  },
-  {
-    "path": "packages/testing/conformance/test-run-t0001-clip.test.ts",
-    "line": 45,
-    "text": "30_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/testing/conformance/test-run-t0001-clip.test.ts",
-    "line": 49,
-    "text": "30_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/testing/conformance/test-run-t0001-clip.test.ts",
-    "line": 64,
-    "text": "30_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/testing/conformance/test-run-t0001-clip.test.ts",
-    "line": 68,
-    "text": "30_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/testing/conformance/ui-e1804-contrast.test.ts",
-    "line": 20,
-    "text": "30_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/testing/conformance/ui-e1804-contrast.test.ts",
-    "line": 29,
-    "text": "30_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/testing/conformance/ui-e1804-contrast.test.ts",
-    "line": 36,
-    "text": "30_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/testing/conformance/ui-e1804-contrast.test.ts",
-    "line": 45,
-    "text": "30_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/testing/conformance/ui-e1804-contrast.test.ts",
-    "line": 63,
-    "text": "30_000",
-    "needs": "testTime"
   }
 ]
