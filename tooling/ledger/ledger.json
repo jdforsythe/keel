@@ -4,7 +4,7 @@
   "hostElements": 4,
   "negativeTypes": 90,
   "rungs": {
-    "example": 2620,
+    "example": 2622,
     "probabilistic": 458,
     "exhaustive": 21,
     "proven": 83,
@@ -4928,7 +4928,7 @@
       "rung": "example"
     },
     {
-      "item": "k.docs#79a4a37d",
+      "item": "k.docs#49d50c63",
       "rung": "example"
     },
     {
@@ -4940,11 +4940,35 @@
       "rung": "example"
     },
     {
-      "item": "k.docs#74fe695b",
+      "item": "k.docs#22aba3b7",
       "rung": "example"
     },
     {
-      "item": "k.docs#0998d75c",
+      "item": "k.docs#914e0cf3",
+      "rung": "example"
+    },
+    {
+      "item": "k.docs#7763b1d9",
+      "rung": "example"
+    },
+    {
+      "item": "k.docs#47f25003",
+      "rung": "example"
+    },
+    {
+      "item": "k.docs#0903d149",
+      "rung": "example"
+    },
+    {
+      "item": "k.docs#ce5f28d6",
+      "rung": "example"
+    },
+    {
+      "item": "k.docs#7b50575a",
+      "rung": "example"
+    },
+    {
+      "item": "k.docs#eade7048",
       "rung": "example"
     },
     {
@@ -4964,7 +4988,7 @@
       "rung": "example"
     },
     {
-      "item": "k.docs#dadf93de",
+      "item": "k.docs#73d0364d",
       "rung": "example"
     },
     {
@@ -9085,7 +9109,7 @@
     },
     {
       "item": "std.postgres-changes#a44eb7e2",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "std.postgres-changes#ed4713d1",
@@ -9093,11 +9117,11 @@
     },
     {
       "item": "std.postgres-changes#27bc5b97",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "std.postgres-changes#8c4f17df",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "std.postgres#d8b8ac91",
@@ -9153,7 +9177,7 @@
     },
     {
       "item": "std.postgres#b2bd0473",
-      "rung": "example"
+      "rung": "none"
     },
     {
       "item": "std.postgres#5b456064",
