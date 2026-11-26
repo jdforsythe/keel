@@ -58,13 +58,15 @@ function parseEntry(text: string): TypeEntry | undefined {
     typeof v.key !== "string" ||
     !Array.isArray(v.probes) ||
     !Array.isArray(v.items) ||
-    !isDates(v.dates)
+    !isDates(v.dates) ||
+    !isDates(v.schemeSelects)
   )
     return undefined;
   const probes = v.probes.filter(isProbe);
   const items = v.items.filter((i): i is Diagnostic | FormatSite => isDiagnostic(i) || isSite(i));
   if (probes.length !== v.probes.length || items.length !== v.items.length) return undefined;
-  return { key: v.key, probes, items, dates: new Map(v.dates.map(([p, ns]) => [p, new Set(ns)])) };
+  const sets = (list: [string, number[]][]) => new Map(list.map(([p, ns]) => [p, new Set(ns)]));
+  return { key: v.key, probes, items, dates: sets(v.dates), schemeSelects: sets(v.schemeSelects) };
 }
 
 /**
@@ -87,12 +89,14 @@ export function typeCache(dir: string, name: string) {
     save(entry: TypeEntry): void {
       try {
         const dates = [...entry.dates].map(([p, s]) => [p, [...s]]);
+        const schemeSelects = [...entry.schemeSelects].map(([p, s]) => [p, [...s]]);
         const text = JSON.stringify({
           format: CACHE_FORMAT,
           key: entry.key,
           probes: entry.probes,
           items: entry.items,
           dates,
+          schemeSelects,
         });
         if (Buffer.byteLength(text) > MAX_BYTES) return;
         fs.mkdirSync(dir, { recursive: true });

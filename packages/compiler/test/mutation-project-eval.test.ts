@@ -32,13 +32,14 @@ afterEach(() => {
 const binding = (id: string, entries: string, bound: string): string =>
   `import { action, guard, loader, manifest } from "@keel/router";\nimport { contract } from "@keel/router/contract";\nimport { ok, s } from "@keel/schema";\nconst c = contract("${id}", { ${entries} });\nconst V = () => null;\nexport const routes = manifest(c, { ${bound} });\n`;
 const ROOT_VARS =
-  ":root{--k-color-fg:#111;--k-color-bg:#fff;--k-space-1:4px;--k-space-2:8px}\n@layer keel.base{\n[hidden]{display:none!important}\ntable{overflow-wrap:break-word}\nth{text-align:inherit}\n.k-scroll{overflow-x:auto;min-width:0}\nbody{overflow-wrap:anywhere}\n.k-summary ul{list-style:none;margin:0;padding:0}\n}\n";
+  ":root{color-scheme:light;--k-color-fg:#111;--k-color-bg:#fff;--k-space-1:4px;--k-space-2:8px}\n@layer keel.base{\n[hidden]{display:none!important}\ntable{overflow-wrap:break-word}\nth{text-align:inherit}\n.k-scroll{overflow-x:auto;min-width:0}\nbody{overflow-wrap:anywhere}\n.k-summary ul{list-style:none;margin:0;padding:0}\n}\n";
 
 describe("evaluateProject (mutation)", () => {
   it("returns an empty result without inputs", async () => {
     expect(await evaluateProject({ root, tokensFile: undefined, routesFiles: [], usages: [] })).toEqual({
       css: "",
       looks: {},
+      schemes: ["light"],
       routes: {},
       problems: [],
     });
@@ -54,6 +55,7 @@ describe("evaluateProject (mutation)", () => {
     expect(r).toEqual({
       css: `${ROOT_VARS}.k-p-1{padding:var(--k-space-1)}\n.k-bg-bg{background-color:var(--k-color-bg)}\n@media (min-width: 768px){\n.k-md-hover-p-2:hover{padding:var(--k-space-2)}\n}\n`,
       looks: {},
+      schemes: ["light"],
       routes: {},
       problems: [],
     });
@@ -72,6 +74,7 @@ describe("evaluateProject (mutation)", () => {
       expect(r).toEqual({
         css: `${ROOT_VARS}.k-p-1{padding:var(--k-space-1)}\n`,
         looks: {},
+        schemes: ["light"],
         routes: {},
         problems: ['E1801 p="9" is not a space token'],
       });
@@ -91,8 +94,9 @@ describe("evaluateProject (mutation)", () => {
       expect(r).toEqual({
         css: "",
         looks: {},
+        schemes: ["light"],
         routes: {},
-        problems: ["E1807 token color.fg has a value that breaks out of CSS"],
+        problems: ["E1807 token color.fg is not in its group's form"],
       });
     },
   );
@@ -219,6 +223,7 @@ describe("evaluateProject routes.ts and syntax errors (RFC 0030)", () => {
     expect(await routesOnly("r/none.ts")).toEqual({
       css: "",
       looks: {},
+      schemes: ["light"],
       routes: {},
       problems: ["E1006 r/none.ts exports no routes"],
     });
@@ -277,6 +282,7 @@ describe("evaluateProject routes.ts and syntax errors (RFC 0030)", () => {
       expect(await routesOnly("r/syntax.ts")).toEqual({
         css: "",
         looks: {},
+        schemes: ["light"],
         routes: {},
         problems: ["E1000 r/syntax.ts:1:56 syntax error: Expected `,` or `}` but found `;`"],
       });

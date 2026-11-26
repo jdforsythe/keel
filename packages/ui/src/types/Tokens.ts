@@ -22,4 +22,6 @@ export type Tokens = {
   readonly base?: { readonly [R in BaseRole]?: StyleSet } & { readonly focus?: string };
   /** Named style sets an element takes as `look="<name>"`. */
   readonly look?: Readonly<Record<string, StyleSet>>;
+  /** The app's color schemes (k.schemes): `["light"]`, `["dark"]` or `["light", "dark"]`; any other list is E1807. */
+  readonly schemes?: readonly string[];
 };

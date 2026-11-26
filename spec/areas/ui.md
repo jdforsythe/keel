@@ -2,6 +2,9 @@
 | id | holds |
 |-|-|
 | k.ui | design tokens, base elements, style props, scroll regions and standard slots |
+| k.values | token value forms by group: characters, numbers, lengths, colors, the stylesheet |
+| k.schemes | light and dark schemes, `SchemeSelect`, the first paint's pick, E1814 |
+| k.looks | library looks: `<id>.<name>` tokens a library ships, needs, E1810 to E1813 |
 | k.a11y | accessibility: required props, contrast, order and focus, render checks, E1802 |
 | k.a11y-static | static contrast checks on token values at check and build |
 | k.aria | `Part` element for widgets, roles, behavior and part styles |
