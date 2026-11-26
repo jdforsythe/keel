@@ -162,7 +162,7 @@ export default function AppearancePanel(props: Infer<typeof Props>) {
 }
 ```
 
-`ThemeSelect` lists `default` and each `choice` theme, so `hc` and `paper` never appear in it: they follow the system's contrast setting and the printer. Its `labels` keys are judged against the tokens (E1816), since the type of `@keel/ui`'s `ThemeSelect` cannot know an app's theme names.
+`ThemeSelect` lists `default` and each `choice` theme `appearance(ctx)` knows, the app's own from its tokens, so `hc` and `paper` never appear in it: they follow the system's contrast setting and the printer. Each option's text, which a screen reader announces as its name, is its `labels` string, else the theme name; the select's own name is `label`. Its `labels` keys are judged against the tokens (E1816), since the type of `@keel/ui`'s `ThemeSelect` cannot know an app's theme names. An app with message sets and locales passes loader text, as any visible string: `labels={{ default: props.data.text.themeKeel, slate: props.data.text.themeSlate }}`.
 
 App code reads and sets the pick through one capability:
 
@@ -177,7 +177,16 @@ export function toggleScheme(ctx: Ctx): boolean {
 }
 ```
 
-`scheme()` and `theme()` are reactive reads, so a chart in a `Host` element that draws with token values reruns when the pick changes. `set` writes the attribute and the cookie exactly as a pick in the control does, and returns `false` for a theme name no option holds. On a server the reads give the request's cookies, so `SchemeSelect` and `ThemeSelect` render their value into the first paint. Under a sim ctx the capability writes the harness document, so a test asserts a theme switch with `fire` or with `set`.
+`scheme()` and `theme()` are reactive reads, so a chart in a `Host` element that draws with token values reruns when the pick changes. `set` writes the attribute and the cookie exactly as a pick in the control does, and returns `false` for a theme name no option holds. On a server the reads give the request's cookies, so `SchemeSelect` and `ThemeSelect` render their value into the first paint. Under a sim ctx the capability reads and writes the document of the harness render given that ctx and knows the themes of that render's tokens, so a test asserts a switch with no server:
+
+```ts
+const ctx = createCtx({ mode: "sim", seed: 1 });
+render(AppearancePanel, { props: { id: "settings" }, ctx, artifacts: { tokens } });
+expect(appearance(ctx).set({ theme: "slate" })).toBe(true);
+expect(appearance(ctx).theme()).toBe("slate");
+```
+
+Under `keel test` a render given no `artifacts` takes the project's `tokens.ts` (k.a11y Artifacts), so `artifacts` is needed only outside it.
 
 First paint: `schemes.json` gains `themes` (the `choice` names); a `node` document writes `data-k-theme` from `keel-theme`; the 300-byte head script ships in a `static` or `client` deployable with both schemes or a `choice` theme, and sets both attributes, `data-k-theme` only to a value shaped as a theme name. An A1 static site with one scheme and only a `print` theme carries no script and no cookie.
 
@@ -379,7 +388,7 @@ Three files:
 
 ```
 W1072 design/palette.tokens.json:29:5 hero: gradient has no Keel group; skipped
-W1072 design/palette.tokens.json:21:7 type.heading lineHeight: dropped
+W1072 design/palette.tokens.json:23:9 type.heading lineHeight: dropped
 ok tokens import 14 tokens, 1 looks, 0 themes
 ```
 
@@ -480,7 +489,24 @@ Applied in this commit, status `proposed` for new text.
 - Map: k.cli reads `implemented`. No row added; no title changed.
 - Glossary: **theme**, **combination**, **overlay**.
 
-- Settled for the builder: in a combination with a theme on, k.looks Library contrast reports at the key of the latest layer on that writes the failing `fg` (else `bg`), so the finding sits where the value that fails is written.
+- k.testing: no clause changes; one sentence of its a11y paragraph is shortened, as `lane-r-look` shortens it, so the section is back under 3,100 tokens.
+
+### Settled from the conformance-writer's questions
+Seven points the first text left open, each now one sentence in the section named, with the reason:
+1. k.schemes Choice: "`ThemeSelect` is the same control for a theme: options `default` then each `choice` theme `appearance(ctx)` knows, in `themes` order, each option's text (its announced name) the string `labels` holds under its name, else the name (with locales, loader text, std.messages)". Why: one list of theme names for the control and for `set`, from the tokens, so a library's settings panel (L1) shows the app's themes; the words are plain strings, so an app with locales (A5) passes message text, and a screen reader hears the words, never a token name.
+2. k.schemes Choice: "It knows the `choice` themes of its deployable's tokens or, under a sim ctx, of the harness render given that ctx (k.testing, k.a11y Artifacts), whose document it uses; with no such render it knows none and has no document." Why: A7 already gives a render its tokens (or `keel test` does), so testing `set` needs no server and no new option.
+3. k.aria Scheme: "`compileStyles` (`@keel/ui/css`) takes each such element as a usage `{ props: { scheme: '<value>' } }`, whose `classes` entry is `[]`; any one turns on k.schemes CSS's subtree blocks, per scheme and in every layer but `print`". Why: the usage shape every other style prop uses, and the attribute selector of k.schemes CSS, so no class is added for a scheme.
+4. k.looks Library contrast: "the app's key being the one in the latest layer on in that combination (k.a11y-static Combinations) that writes it, in the order `print`, `contrast`, `choice`, top level; once per pair and combination, so with no `themes` once per pair and scheme". Why: the finding sits where the value that fails is written, which is where a designer (A5) or a library's user (L1) changes it, and with no themes it is `lane-r-look`'s rule exactly.
+5. k.cli Tokens: "It prints each W1072 in the file given that holds the token, at the 1-based line and column of the opening quote of the token's `"$value"` key, or for a dropped field of that field's key inside it". Why: an editor jumps to the exact value in the design file (A5); a dropped `lineHeight` points at `lineHeight`.
+6. k.values Overlays: "An `over` naming anything but a color token the same tokens hold (an overlay among them) fails `TokenSchema` at `overlay.<name>.over`, so `keel check` reports E1807 at `tokens.ts` line 1, column 1 (k.a11y-static Tokens) and judges no element; a backdrop an element's chain finds that `over` does not hold is E1817, from `keel check` only, at the opening quote of the overlay's literal (k.a11y-static Overlays), and the render check composites over the painted backdrop and reports no E1817." Why: a list that names nothing real is a token error like any other; a backdrop is a fact of the markup, found statically, and at render the painted pixels are judged as they are.
+7. k.a11y-static Combinations: "for tokens `TokenSchema` refuses (9 `choice` themes, a second `contrast` or `print`, k.values Themes) it throws E1807 as `defineTokens` does, so it never lists more than 54." Why: `combinations` is public to libraries and tests (L1, A7) and takes a typed `Tokens`, which a caller can build without `defineTokens`; throwing as `compileStyles` does keeps the bound true for every caller.
+
+### k.values on `lane-r-look`'s grammar
+When this lane is rebased on `lane-r-look`, its k.values keeps that lane's opening paragraph and its Characters, Numbers and lengths, What check judges and Stylesheet paragraphs whole, and its conformance #1 to #9. This RFC's k.values then changes exactly these sentences, and its Forms paragraph and its `So url(...)` sentence are dropped:
+- Colors: "`<color>` is `#` and 3 or 6 hex digits;" is replaced by this lane's six-form list, with `<ab>` written as "an `<n>`, or `-` and an `<n>`, from -0.5 to 0.5" (that grammar's `<n>` has no sign) and `<h>` an `<n>`, bare or followed by `deg`. "A `<color>` holds no alpha." is replaced by this lane's `<alpha>` sentence with its last clause ("So no named color, ...") kept. The `<ref>` and `<paint>` sentences stay.
+- The table: this lane's `overlay` row is added after `color`; in `shadow`, "then an optional ` <paint>`" becomes "then an optional ` <paint>` or ` <alpha>`".
+- The refusal sentence: "(with `light` or `dark` after it for a pair)" becomes "(with `value` or `over` after it for an overlay, then `light` or `dark` for a pair; under `themes.<theme>.` in a theme)".
+- Added after Stylesheet, as this lane writes them: the Overlays, Contrast, Themes and Library themes paragraphs; and this lane's conformance #6 to #10 after that lane's #9, as #10 to #14; this lane's #1 to #5 give way to that lane's #1 to #9, which hold them.
 
 ### RFC 0243's clauses that change, for its builder and conformance-writer
 - k.schemes CSS: the dark blocks are `@media screen and (prefers-color-scheme: dark){...}` and `@media screen{:root[data-k-scheme="dark"]{...}}`. Conformance #1 now names both media queries; `packages/ui/conformance/schemes-css.test.ts` is re-quoted.
@@ -500,18 +526,22 @@ By the `conformance-writer`, from the spec text.
 - `packages/ui/conformance/print-props.test.ts`: k.aria #14 (its E1807 half in `packages/check`); `packages/check/conformance/scheme-subtree-e1814.test.ts`: k.aria #15's E1814 half.
 - `packages/cli/conformance/tokens-import.test.ts`: k.cli #21 to #24. `packages/cli/conformance/tokens-set.test.ts`: #25.
 - `fixtures-by-code.ts`: E1816, E1817, E1071, W1072, and E1814's `scheme` message.
-- Owed as end-to-end cases for RFC 0244's runner:
-  - The CSS compiled from the `tokens.ts` above parses in Chromium with `cssRules.length` equal to the rules emitted (k.values #5 with themes, overlays and every color form).
-  - With `data-k-theme="slate"` and an emulated dark preference, `getComputedStyle(document.body).backgroundColor` is `#10151C`; with `prefers-contrast: more` emulated, `textSecondary` resolves to `hc`'s value; with `emulateMedia({ media: 'print' })` and `data-k-scheme="dark"`, `paper`'s values apply and no dark value does.
-  - `media="screen"` elements are absent from a printed PDF's text, and `breakBefore="page"` starts a new PDF page.
-  - A `node` page with `keel-theme=slate` and a `static` page with the same cookie paint `slate` from the first frame.
-  - Under forced colors (Chromium's `--force-high-contrast`), no rule of Keel's CSS carries `forced-color-adjust`, and the focus outline shows.
+- Re-quoted or changed for the seven settled points (Spec diff): `theme-select.test.ts` renders through `@keel/testing` `render` with `artifacts: { tokens }` and a `ctx` (no bare `mount` on a separate ctx), takes the options from the tokens, not the `labels` keys, asserts the fallback text `forest` for a theme `labels` lacks and the no-render `false`, and drops its AMBIGUOUS line; `theme-select-e1816.test.ts` is unchanged; `themes-css.test.ts` and `scheme-subtree-e1814.test.ts` quote k.aria #15's `compileStyles` case, whose usage shape they already assume; `library-themes.test.ts` quotes the new Library contrast sentence, its `slate` case unchanged; `tokens-import.test.ts` puts a dropped field's W1072 at the field's key (`"lineHeight"`), not the token's `"$value"`; `color-forms.test.ts` asserts `overlay.scrim.over` as the path of k.values #7's `over: ['nope']`; `combinations.test.ts` asserts that `combinations` throws E1807 for nine `choice` themes and drops its AMBIGUOUS line.
+- Owed as eight end-to-end cases for RFC 0244's runner:
+  1. The CSS compiled from the `tokens.ts` above parses in Chromium with `cssRules.length` equal to the rules emitted (k.values #5 with themes, overlays and every color form).
+  2. With `data-k-theme="slate"` and an emulated dark preference, `getComputedStyle(document.body).backgroundColor` is `#10151C`.
+  3. With `prefers-contrast: more` emulated, `textSecondary` resolves to `hc`'s value.
+  4. With `emulateMedia({ media: 'print' })` and `data-k-scheme="dark"`, `paper`'s values apply and no dark value does.
+  5. `media="screen"` elements are absent from a printed PDF's text.
+  6. `breakBefore="page"` starts a new page of a printed PDF.
+  7. A `node` page with `keel-theme=slate` and a `static` page with the same cookie paint `slate` from the first frame.
+  8. Under forced colors (Chromium's `--force-high-contrast`), no rule of Keel's CSS carries `forced-color-adjust`, and the focus outline shows.
 
 ## Migration
 None. No in-tree app writes `themes`, an overlay, a print key or a non-hex color. Apps with both schemes get `screen` on their dark blocks, which changes only what prints.
 
 ## Token impact
-- Spec: k.schemes 1,827 to 3,099 of 3,100; k.values 815 to about 2,290; k.a11y-static 2,108 to 3,089; k.aria 1,775 to about 2,300; k.cli 1,493 to about 2,900; k.ui 2,965 to 3,002; k.looks 3,080 to 3,098. No section limit moves. `spec.map` stays 1,644 of 1,660 (one status shorter) and the `keel docs` map 1,689 of 1,690.
+- Spec: k.schemes 1,827 to 3,098 of 3,100; k.values 815 to 2,424; k.a11y-static 2,108 to 3,099; k.aria 1,775 to 2,437; k.cli 1,493 to 2,947; k.ui 2,965 to 3,002; k.looks 3,080 to 3,091; k.testing 3,102 to 3,097. Each fits by trimming sentences that restate what another sentence or section says. No section limit moves. `spec.map` stays 1,644 of 1,660 (one status shorter) and the `keel docs` map 1,689 of 1,690.
 - `keel explain`: four entries (E1816, E1817, E1071, W1072), each under 300 tokens.
 - `@keel/ui`: `ThemeSelect`, `appearance`, the six color parsers and the gamut mapping. The parsers and the mapping live in `@keel/ui/css` (check and testing only), so the client entry gains `ThemeSelect` and `appearance` only. `@keel/ui` is already over its 6 kB budget on this lane; the build re-bases it and says by how much.
 
