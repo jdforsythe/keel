@@ -50,6 +50,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.looks | Looks | proposed | names |
 | k.schemes | Schemes | proposed | dark |
 | k.values | Values | proposed | forms |
+| k.entries | Entries | proposed | keel |
 | k.ctx | Capabilities | conformance-covered | clock |
 | k.owner | Ctx owner | conformance-covered | dispose |
 | k.errors | Results, boundaries | conformance-covered | Result |
@@ -65,8 +66,8 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.testing | Test harness | implemented | fire |
 | k.test-run | Test end, results | implemented | dispose |
 | k.requests | Requests sent | conformance-covered | sent |
-| k.model | Store exploration | conformance-covered | traces |
-| k.prove | Proving invariants | conformance-covered | Z3 |
+| k.model | Exploration | conformance-covered | traces |
+| k.prove | Invariants | conformance-covered | Z3 |
 | k.sim | Simulation | conformance-covered | faults |
 | k.drive | Sim clock drive | conformance-covered | idle |
 | k.drive-law | Replays agree | conformance-covered | replays |
@@ -95,7 +96,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.openapi | OpenAPI import | conformance-covered | clients |
 | k.module | Module manifest | implemented | surface |
 | k.library | Libraries | proposed | packages |
-| k.library-pack | Library publishing | implemented | pack |
+| k.library-pack | Publishing | implemented | pack |
 | k.server-deps | Server deps | implemented | env |
 | k.a11y | Accessibility | conformance-covered | WCAG |
 | k.a11y-static | Static contrast | conformance-covered | E1804 |
@@ -110,7 +111,7 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.privacy-reads | Privacy reads | conformance-covered | readers |
 | k.evidence | Evidence bundle | conformance-covered | bundle |
 | k.parity | Stdlib parity | proposed | seams |
-| k.review | Review of escapes | conformance-covered | ranges |
+| k.review | Escape review | conformance-covered | ranges |
 | k.escapes | Escape codes | conformance-covered | R codes |
 | k.unsafe | Unsafe, type tests | conformance-covered | count |
 

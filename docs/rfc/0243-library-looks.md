@@ -20,7 +20,21 @@ Personas: L1 the component library author, L2 the visual library author, A5 the 
 - D13 (review): one `states` list, with selectors, in k.aria. `pressed` and `current` are new; `disabled` also matches `[aria-disabled="true"]`; `checked` covers `switch` and `menuitemradio`.
 - D14 (review): every `client` and `static` deployable in an app with both schemes gets the scheme script (152 bytes as built), since a text match cannot see every `SchemeSelect`. E1814 judges by the type pass, in app and library files. With no script, `SchemeSelect` stays `hidden` and the system preference applies.
 - D15 (review): the shipped literal takes no `as const` or `satisfies` (E1812 `a type assertion`); `defineTokens` already keeps the literal types. E1810's fix moves no comment.
-- Codes: E1810 to E1815. ADR-0265.
+- D16 (second review): k.values is a grammar where a tokenizer reads exactly the tokens the form names. Only named ASCII appears outside quotes. Quoted strings hold no backslash, control character (U+0000 to U+001F, U+007F to U+009F) or lone surrogate. Literal numbers carry no sign, except a shadow's offsets and spread.
+- D17 (second review): the grammar is widened so design systems fit:
+  - Math functions: `calc`, `min`, `max`, `clamp`, nesting at most four deep and at most 32 names, with type rules on `*` and `/`.
+  - `env(safe-area-inset-*)`, and every unit current browsers ship.
+  - Quoted families with commas; `currentColor` in `border` and `shadow`.
+  - What takes no effect is refused: negative literals where the property drops them, `none` and `%` widths, CSS-wide keywords, unquoted families that are not identifiers. A `space` token holding `auto` is E1801 on padding and `gap`.
+  - Contrast takes a `fontSize` at its smallest (a `clamp()` at its first argument), else as normal text.
+  - The Chromium cases are generated from the grammar and assert the computed value, not only that the rule is present.
+- D18 (second review): k.entries holds a library's `exports` to one positive shape: an object of objects, `keel` first, a string naming a file under `src/` or `unsafe/`. Arrays, strings, `null`, a nested or non-string `keel`, and a `*` key that matches an imported subpath are each E1815. It is judged from text before anything is evaluated or bundled.
+- D19 (second review): a library's shipped tokens file is never evaluated. `tokens.ts`'s evaluation takes `<name>/tokens` as a module made from the literal's data. The cost: a shipped file cannot compute values, which E1812 already forbids, plus one oxc parse per library at check.
+- D20 (second review): library contrast moves to k.a11y-static Library contrast; a look is found by the `look` group's keys alone; one finding per pair and scheme.
+- D21 (second review): E1810's fix inserts after the last import statement's line, or after a comment that begins on that line and ends later.
+- D22 (second review): in a roving group a disabled `button` or `switch` with `tabIndex` writes `aria-disabled` and stays focusable; arrows follow the group's computed `direction`.
+- D23 (second review): no part of the value forms ships in a client bundle; a test greps the client JavaScript.
+- Codes: E1810 to E1815 (E1815 widened). ADR-0265.
 
 ## Problem
 - A library cannot ship a look. The keel-library skill says "a library names no token": it draws in `currentColor` and takes a `styles` prop the app fills. In the L1 run a library wrote `radius="full"`. Its own check, test and pack passed, and so did the app's check. The app's `keel build` then failed with an E1801 that named no file. RFC 0241 moves E1801 into `keel check` for app code and reads a library's files against the app's tokens. That still leaves the library with no way to say which names it needs, or to give them default values.
@@ -253,6 +267,7 @@ ARIA's authoring practices, pattern by pattern, against k.aria and k.roles:
 Applied in this commit.
 - k.looks (new, `proposed`): Names, Shipped tokens, Needs, In an app, Fix, Own folder, Rules (E1810 to E1813), Conformance #1 to #11.
 - k.schemes (new, `proposed`): Schemes, CSS, Choice, First paint, Checks, Rules (E1814), Conformance #1 to #10.
+- From the second review: k.values is rewritten (Characters, Numbers and lengths, Colors, the table, What check judges, Stylesheet; Conformance #1 to #9). k.entries is new (`proposed`): Shape, Rules (E1815), Conformance #1 to #3, moved from k.looks Entries and widened. k.looks: Shipped tokens' no-evaluation sentence; Entries and Library contrast become pointers; Fix's comment sentence; Conformance #12 (E1815) and #13 (library contrast) move to k.entries #1 and k.a11y-static #11, so the `as const` case is now #12, the comment case #13 (re-worded), and #14 is new. k.a11y-static (to `implemented`): Library contrast, Conformance #11. k.roles: Keys' arrows by direction and disabled roving items; Conformance #15. Map: a k.entries row; `Invariants`, `Publishing`, `Escape review` and `Exploration` are shorter titles for the same sections.
 - From the review: k.values (new, `proposed`) holds Forms, Stylesheet and Conformance #1 to #5. k.looks: Shipped tokens refuses `as` and `satisfies`; Entries (E1815) and Library contrast are new; Fix keeps comments; Rules gains E1815 and E1812's `a type assertion`; Conformance #12 to #15. k.schemes: own-folder schemes come from the shipped pairs; First paint ships the script with both schemes; `SchemeSelect` is `hidden` until script; E1814 is judged by symbol; #9 is re-worded (the script with both schemes, none with one); Conformance #11 to #13. k.aria (to `implemented`): Part styles holds the one `states` table; Conformance #11 to #13. Map: a k.values row, and four shorter titles (`Privacy reads`, `Test harness`, `Storage`, `Request leaves`) that point at the same sections, so the `keel docs` map stays within 1,690.
 - Settled for the conformance-writer: E1810 to E1814 judge the evaluated tokens and read `tokens.ts`'s text only for positions and the fix; no tokens, no judgement. E1813 sits at the opening quote. A shipped `base` or `schemes` key gets its own E1812 message. The fix's layout is the formatter's (`biome format`). Clipping at 20 units keeps 17 units and `...`. k.looks #11 names the border's own property. The server reads `schemes.json` from its artifacts folder, beside `routes.json` and `std.json`. k.schemes #9 covers `client` deployables too. k.check's list of fixtures that carry a fix gains E1810; the code block's comment padding is trimmed so k.check stays within 3,100.
 - Settled by the builder: a project with `tokens.ts` and no tokens still has E1811 and E1812 judged, since they read the library's own files and no tokens (k.looks In an app). A `client` deployable builds to `dist/<name>/` with or without `servedBy`, its one document `index.html` (k.schemes First paint).
@@ -266,6 +281,14 @@ Applied in this commit.
 
 ## Conformance diff
 By the `conformance-writer`, from the spec text.
+- From the second review:
+  - `token-values.test.ts` covers k.values #1 to #6, re-quoted; #2 changed (`-2rem` is refused now) and #5 and #6 are new.
+  - `token-values.browser.test.ts` covers #7 and #8, with cases generated from the grammar.
+  - `packages/cli/conformance/client-bundle-values.test.ts` covers #9.
+  - `packages/check/conformance/library-entries-e1815.test.ts` moves to k.entries #1 to #3; the evaluation cases use an `evil.js` that writes a marker file.
+  - k.looks is renumbered: `as const` is #12, the comment case #13 (re-quoted for the block comment), and #14 (an import in the shipped file is not run) is new.
+  - `packages/check/conformance/library-contrast.test.ts` covers k.a11y-static #11.
+  - `packages/ui/conformance/roles-more.test.ts` gains k.roles #15.
 - From the review: `packages/ui/conformance/token-values.test.ts` covers k.values #1 to #3 and #5, #5 as a strict structural read of the emitted CSS (the harness holds no CSS parser and no Chromium case); `packages/check/conformance/token-values-e1812.test.ts` covers #4. `packages/check/conformance/library-entries-e1815.test.ts` covers k.looks #12 and #13 to #15, and `packages/cli/conformance/library-entries-e1815-cli.test.ts` the `evil.js` half of #12 (a marker file under a temp folder, absent after `keel check`). `packages/ui/conformance/part-states.test.ts` covers k.aria #11 to #13. `packages/check/conformance/schemes-own-folder.test.ts` covers k.schemes #11 and #12. `packages/ui/conformance/scheme-select.test.ts` gains #13, and `scheme-static-script.test.ts` is re-quoted for #9. `fixtures-by-code.ts` gains E1815.
 - `packages/check/conformance/library-looks-e1810.test.ts`: k.looks #1 to #6 (E1810 message, fix and its applied text, override CSS, E1813, the spread message, no `tokens.ts`), over the k.library fixture's file maps.
 - `packages/check/conformance/library-looks-own-folder.test.ts`: k.looks #7 to #10 (E1811, E1812, E1804 at the shipped key, E1813 in the fixture and `keel pack`'s E1164); the pack half may sit in `packages/cli/conformance/`.
@@ -283,6 +306,8 @@ By the `conformance-writer`, from the spec text.
   - Real Space and Enter on a focused `switch` and on a `button` with `pressed` each call `onClick` once.
   - With a real keyboard, each new role's keys as k.roles Keys gives them (`toolbar` and `menubar` arrows, Home and End, submenu open and close, `menuitemradio` checking), under `dir="rtl"` as well, where ArrowLeft and ArrowRight swap, and in a toolbar nested in a toolbar.
   - A `static` host serving `csp.txt` as its `Content-Security-Policy` header runs the scheme script and no other script.
+  - Under `dir="rtl"`, ArrowLeft moves to the next `toolbar` item; a disabled item with `aria-disabled` is reached by the arrows and announced as dimmed by a screen reader.
+  - Each generated k.values case is also run in Firefox and Safari, where the runner has them.
   - The wrong-scheme flash, measured on a live `node` server and on a real static host: no frame in the scheme the cookie does not name.
 
 ## Migration
@@ -302,6 +327,16 @@ None. No in-tree app, example or library writes a color pair or a dotted name, a
 - `@keel/compiler` `projectTokens`: carry `schemes` and the build's "renders `SchemeSelect`" flag to the server and the head.
 - Docs: the keel-library skill's Colour paragraph (a library ships `<id>Tokens`; a card, a badge and a switch as above), the keel-client skill's Base and looks paragraph (`schemes`, `SchemeSelect`), `docs/BRAND.md` section 6 (`brandTokens` names are the app's own), `@keel/ui` and `@keel/check` READMEs, a changeset.
 - A proof: a minimal library under `examples/` or `libraries/` shipping `<id>Tokens`, installed into one example app with two overrides (personas L1, A5).
+
+## Fit with RFC 0249 and RFC 0251
+- RFC 0249 (`lane-r-themes`) widens `<color>` to its six opaque forms and adds alpha in `shadow` and `overlay`. k.values here keeps `<color>` at hex and states "A `<color>` holds no alpha"; 0249 replaces that sentence and keeps the Characters, Numbers and Stylesheet paragraphs, which bind its color functions too (no escapes, no sign on a channel, generated Chromium cases).
+- RFC 0251 (`lane-r-boundary`) makes `resolve(specifier, from, surface)` the one resolver. k.entries is the precondition it keeps true: with each entry an object with `keel` first and a file under `src/` or `unsafe/`, the `client` and `server` condition sets both answer the `keel` target, and E1815 is one of the shapes its E1174 refuses, with the clearer message. 0251's follow-on (a), `tokens.ts` read as data, is the general form of D19.
+
+## Build plan from the second review
+- `@keel/ui`: `valueForms.ts` becomes a tokenizer and a grammar per group: the math nesting and name bounds, `env()`, the unit list, the font rules and the signs. Its patterns are built inside functions with no top-level `RegExp` calls, and it is imported only by `TokenSchema` and `compileStyles`. A build check asserts the client chunk holds none of its strings. The `states` table moves to `@keel/ui/css`.
+- `@keel/check`: E1815 over the whole `exports` shape, including `*` keys matched against the specifiers the project imports, judged before `checkTokens`. Library contrast is located by the `look` keys and deduplicated per pair and scheme. The fix's insertion point follows comments. A `p`, `px`, `py` or `gap` naming an `auto` space token is E1801. Font sizes for contrast are taken at their smallest.
+- `@keel/cli`, `@keel/compiler` `projectTokens`: an esbuild plugin answers `<name>/tokens` (and `./src/<id>Tokens.ts` in the own folder) with a module generated from the literal oxc reads. E1812 and E1815 are judged first, and nothing is evaluated while either stands.
+- `@keel/ui/aria` `Part`: a `button` or `switch` with `tabIndex` writes `aria-disabled` and drops `onClick` while disabled.
 
 ## Build plan from the review
 - `@keel/ui`: a form parser per group in `TokenSchema` (`internal/valueForms.ts`), replacing `compileStyles`' deny-list `value` check, which then only asserts. `PartState` and `states.ts` gain `pressed` and `current`, and `disabled` gains `[aria-disabled="true"]`. `SchemeSelect` renders `hidden`, and runtime-dom clears it at mount and resume. One group order: `GROUP_ORDER` in `@keel/check` is replaced by `tokenGroups` from `@keel/ui`.
