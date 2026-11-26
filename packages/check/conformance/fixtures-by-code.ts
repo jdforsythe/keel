@@ -20,7 +20,7 @@ import {
   packageJson,
   shippedSource,
 } from "./library-looks-support.ts";
-import type { Files } from "./support.ts";
+import { type Files, looseTokens } from "./support.ts";
 
 type Options = NonNullable<Parameters<typeof check>[1]>;
 
@@ -1711,6 +1711,10 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
         "C.tsx",
         "import { SchemeSelect } from '@keel/ui'\nexport default function C() { return <SchemeSelect id=\"scheme\" label=\"Scheme\" labels={{ system: 'System', light: 'Light', dark: 'Dark' }} /> }\n",
       ),
+      f(
+        "D.tsx",
+        'import { Box } from \'@keel/ui\'\nexport default function D() { return <Box id="side" scheme="dark" /> }\n',
+      ),
       f("tokens.ts", BRAND_ONLY),
     ],
     clean: [
@@ -1719,8 +1723,61 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
         "import { SchemeSelect } from '@keel/ui'\nexport default function C() { return <SchemeSelect id=\"scheme\" label=\"Scheme\" labels={{ system: 'System', light: 'Light', dark: 'Dark' }} /> }\n",
       ),
       f(
+        "D.tsx",
+        'import { Box } from \'@keel/ui\'\nexport default function D() { return <Box id="side" scheme="dark" /> }\n',
+      ),
+      f(
         "tokens.ts",
         'import { defineTokens } from "@keel/ui";\nimport { brandTokens } from "@keel/ui/brand";\nexport const tokens = defineTokens({ ...brandTokens, color: { ...brandTokens.color, mine: { light: "#111111", dark: "#eeeeee" } } });\n',
+      ),
+    ],
+  },
+  // E1816 (rfc:0249): a `ThemeSelect` where the tokens have no `choice` theme; the clean counterpart's tokens hold `slate` and its labels name it.
+  E1816: {
+    badOpts: { types: false, artifacts: { tokens: brandTokens } },
+    cleanOpts: {
+      types: false,
+      artifacts: { tokens: looseTokens({ ...brandTokens, themes: { slate: { color: { surface: "#F4F7FB" } } } }) },
+    },
+    bad: [
+      f(
+        "C.tsx",
+        "import { ThemeSelect } from '@keel/ui'\nexport default function C() { return <ThemeSelect id=\"theme\" label=\"Theme\" labels={{ default: 'Keel' }} /> }\n",
+      ),
+      f("tokens.ts", BRAND_ONLY),
+    ],
+    clean: [
+      f(
+        "C.tsx",
+        "import { ThemeSelect } from '@keel/ui'\nexport default function C() { return <ThemeSelect id=\"theme\" label=\"Theme\" labels={{ default: 'Keel', slate: 'Slate' }} /> }\n",
+      ),
+      f(
+        "tokens.ts",
+        'import { defineTokens } from "@keel/ui";\nimport { brandTokens } from "@keel/ui/brand";\nexport const tokens = defineTokens({ ...brandTokens, themes: { slate: { color: { surface: "#F4F7FB" } } } });\n',
+      ),
+    ],
+  },
+  // E1817 (rfc:0249): a `bg` overlay on a parent `bg` its `over` does not list; the clean counterpart sits it on `card`, which it lists.
+  E1817: {
+    opts: {
+      types: false,
+      artifacts: {
+        tokens: looseTokens({
+          color: { card: "#FFFFFF", text: "#1a191e", on: "#FFFFFF" },
+          overlay: { scrim: { value: "rgb(0 0 0 / 0.9)", over: ["card"] } },
+        }),
+      },
+    },
+    bad: [
+      f(
+        "C.tsx",
+        'import { Box, Text } from \'@keel/ui\'\nexport default function C() { return <Box bg="text"><Text fg="on" bg="scrim">x</Text></Box> }\n',
+      ),
+    ],
+    clean: [
+      f(
+        "C.tsx",
+        'import { Box, Text } from \'@keel/ui\'\nexport default function C() { return <Box bg="card"><Text fg="on" bg="scrim">x</Text></Box> }\n',
       ),
     ],
   },
