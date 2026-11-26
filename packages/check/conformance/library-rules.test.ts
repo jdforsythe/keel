@@ -1,6 +1,6 @@
 // k.library the clauses on `check()` reading a library's files, each quoted whole (the project of the first clause: `modules/shop/module.ts` lists `'@acme/charts'`, `node_modules/@acme/charts/` holds the library, `modules/shop/Page.tsx` renders `<Badge id="shop.badge" />`)
 // Spec: k.library, clause "In that project, `<box />` in `src/Badge.tsx` is one E1805 in the app's `keel check`, at `node_modules/@acme/charts/src/Badge.tsx`, with no `fix`."
-// Spec: k.library, clause "In that project, `<Box p=\"2\" />`, `<Box id=\"box\" />`, `<Box id={`box`} />` and `Box({ p: '2' })` in `src/Badge.tsx` are each one E1161; `<Box id={`${props.id}.box`} />` and `<Box id={partId('box')} />`, `partId` the closure ``(k) => `${props.id}.${k}` ``, are not; with `partId` `(k) => k`, it is one E1161."
+// Spec: k.library, clause "In that project, `<Box />`, `<Box id=\"box\" />`, `<Box id={`box`} />` and `Box({})` in `src/Badge.tsx` are each one E1161; `<Box id={`${props.id}.box`} />` and `<Box id={partId('box')} />`, `partId` the closure ``(k) => `${props.id}.${k}` ``, are not; with `partId` `(k) => k`, it is one E1161."
 // Spec: k.library, clause "In that project, a cast `x as string` in `src/Badge.tsx` is one E1757 at `node_modules/@acme/charts/src/Badge.tsx`, and an import of `@keel/store/internal` there is one E1576."
 // Spec: k.library, clause "In that project, `import x from '../../outside.ts'` in `src/Badge.tsx` is one E1163 at the specifier."
 // Rules: "E1161 an element in a library file whose `id` Ids does not accept (fix: none)"
@@ -52,7 +52,7 @@ function project(extra: Files = [], name = NAME, id = "charts"): Files {
     { path: `${root}/index.js`, source: "export {}\n" },
     manifestFile({ id, deps: [], exports: ["Badge"] }, root),
     { path: `${root}/src/index.ts`, source: "export { default as Badge } from './Badge.tsx'\n" },
-    { path: `${root}/src/Badge.tsx`, source: badge('<Box id={`${props.id}.box`} p="2" />') },
+    { path: `${root}/src/Badge.tsx`, source: badge("<Box id={`${props.id}.box`} />") },
     { path: `${root}/.keel/ledger.json`, source: LEDGER },
   ];
   const own = new Set(extra.map((x) => x.path));
@@ -114,10 +114,10 @@ test(
 );
 
 const E1161_BAD: ReadonlyArray<readonly [string, string]> = [
-  ['<Box p="2" />', badge('<Box p="2" />')],
+  ["<Box />", badge("<Box />")],
   ['<Box id="box" />', badge('<Box id="box" />')],
   ["<Box id={`box`} />", badge("<Box id={`box`} />")],
-  ["Box({ p: '2' })", badge("Box({ p: '2' })")],
+  ["Box({})", badge("Box({})")],
 ];
 for (const [what, source] of E1161_BAD) {
   test(

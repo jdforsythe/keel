@@ -36,7 +36,7 @@ const PLAIN = (root: string): Tree => ({
   [`${root}/index.d.ts`]: "export const tag: string\n",
 });
 const BADGE_USING =
-  "import { Box, Text } from '@keel/ui'\nimport { tag } from 'plainpkg'\nexport default function Badge(props: { id: string }) {\n  return (\n    <Box id={`${props.id}.box`} p=\"2\">\n      <Text id={`${props.id}.text`}>{tag}</Text>\n    </Box>\n  )\n}\n";
+  "import { Box, Text } from '@keel/ui'\nimport { tag } from 'plainpkg'\nexport default function Badge(props: { id: string }) {\n  return (\n    <Box id={`${props.id}.box`}>\n      <Text id={`${props.id}.text`}>{tag}</Text>\n    </Box>\n  )\n}\n";
 const libPkg = (dependencies: Record<string, string> | undefined): string =>
   JSON.stringify({
     name: NAME,

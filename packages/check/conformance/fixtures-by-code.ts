@@ -431,7 +431,7 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       ...library("charts", []),
       f(
         "node_modules/@acme/charts/src/Badge.tsx",
-        `${UI}export default function Badge(props: { id: string }) { return <Box p="2" /> }\n`,
+        `${UI}export default function Badge(props: { id: string }) { return <Box /> }\n`,
       ),
     ],
     clean: [
@@ -439,7 +439,7 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       ...library("charts", []),
       f(
         "node_modules/@acme/charts/src/Badge.tsx",
-        `${UI}export default function Badge(props: { id: string }) { return <Box id={\`\${props.id}.box\`} p="2" /> }\n`,
+        `${UI}export default function Badge(props: { id: string }) { return <Box id={\`\${props.id}.box\`} /> }\n`,
       ),
     ],
   },
