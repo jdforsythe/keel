@@ -4,7 +4,18 @@ import fs from "node:fs";
 import path from "node:path";
 import type { check } from "@keel/check";
 import { repoRoot } from "@keel/tooling/repo-root";
+import { defineTokens } from "@keel/ui";
+import { brandTokens } from "@keel/ui/brand";
 import { BASE, sharedRoot } from "./E1013-support.ts";
+import {
+  BRAND_ONLY,
+  ROOT as ACME_ROOT,
+  SHIPPED as ACME_SHIPPED,
+  app as acmeApp,
+  badgeSource,
+  fixedTokens,
+  shippedSource,
+} from "./library-looks-support.ts";
 import type { Files } from "./support.ts";
 
 type Options = NonNullable<Parameters<typeof check>[1]>;
@@ -1637,6 +1648,62 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
       f(
         "modules/notes/mongoNotes.server.ts",
         "import { register } from '@keel/ctx'\nconst impl = () => ({})\nexport const mongoNotes = register('notes.mongo', { real: impl, shell: impl, sim: impl })\n",
+      ),
+    ],
+  },
+  // E1810 (rfc:0243): the `@acme/ui` the app lists ships tokens its `tokens.ts` does not compose; its fix writes the import and the spreads, and the clean counterpart is the file the fix writes.
+  E1810: {
+    opts: NO_TYPES,
+    bad: acmeApp(BRAND_ONLY),
+    clean: acmeApp(fixedTokens()),
+  },
+  // E1811 (rfc:0243): a library file's `p="2"` its shipped tokens lack; the clean counterpart names a shipped token.
+  E1811: {
+    opts: NO_TYPES,
+    bad: acmeApp(fixedTokens(), [f(`${ACME_ROOT}/src/Badge.tsx`, badgeSource(' p="2"'))]),
+    clean: acmeApp(fixedTokens(), [f(`${ACME_ROOT}/src/Badge.tsx`, badgeSource(' fg="acme.ink"'))]),
+  },
+  // E1812 (rfc:0243): a spread in the shipped tokens file, at the spread; the clean counterpart is the literal.
+  E1812: {
+    opts: NO_TYPES,
+    bad: acmeApp(fixedTokens(), [
+      f(ACME_SHIPPED, shippedSource("...other, 'acme.accent': '#0B5CAD', 'acme.ink': '#FFFFFF'")),
+    ]),
+    clean: acmeApp(fixedTokens()),
+  },
+  // E1813 (rfc:0243): an override key `'zed.x'` no listed library ships; the clean counterpart overrides a shipped token.
+  E1813: {
+    opts: NO_TYPES,
+    bad: acmeApp(fixedTokens(", 'zed.x': '#000000'")),
+    clean: acmeApp(fixedTokens(", 'acme.accent': '#b8420d'")),
+  },
+  // E1814 (rfc:0243): a `SchemeSelect` where the tokens have light only; the clean counterpart's tokens hold a color pair of their own.
+  E1814: {
+    opts: { types: false, artifacts: { tokens: brandTokens } },
+    cleanOpts: {
+      types: false,
+      artifacts: {
+        tokens: defineTokens({
+          ...brandTokens,
+          color: { ...brandTokens.color, mine: { light: "#111111", dark: "#eeeeee" } },
+        }),
+      },
+    },
+    bad: [
+      f(
+        "C.tsx",
+        "import { SchemeSelect } from '@keel/ui'\nexport default function C() { return <SchemeSelect id=\"scheme\" label=\"Scheme\" labels={{ system: 'System', light: 'Light', dark: 'Dark' }} /> }\n",
+      ),
+      f("tokens.ts", BRAND_ONLY),
+    ],
+    clean: [
+      f(
+        "C.tsx",
+        "import { SchemeSelect } from '@keel/ui'\nexport default function C() { return <SchemeSelect id=\"scheme\" label=\"Scheme\" labels={{ system: 'System', light: 'Light', dark: 'Dark' }} /> }\n",
+      ),
+      f(
+        "tokens.ts",
+        'import { defineTokens } from "@keel/ui";\nimport { brandTokens } from "@keel/ui/brand";\nexport const tokens = defineTokens({ ...brandTokens, color: { ...brandTokens.color, mine: { light: "#111111", dark: "#eeeeee" } } });\n',
       ),
     ],
   },

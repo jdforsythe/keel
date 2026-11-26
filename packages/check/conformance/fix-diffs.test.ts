@@ -6,6 +6,7 @@
 // RFC 0231: E1016 carries one (k.boundary Ambient types; its fix deletes the reference line); E1015 carries none.
 // RFC 0225: E1013 carries one (k.bundle Aliases); its exact diff is asserted in bundle-E1013-aliased-import.test.ts.
 // RFC 0204: E1165 carries one (its fix removes the `deps` entry).
+// RFC 0243: E1810 carries one (k.looks Fix; its exact result is asserted in library-looks-e1810.test.ts); E1811, E1812, E1813 and E1814 carry none.
 // Invariant (not a sentence of k.module now): no fix edits a file under `node_modules/`.
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -122,6 +123,7 @@ const FIXED: FixedCase[] = [
   { name: "E1152", code: "E1152", ...fixtureOf("E1152") },
   { name: "E1154", code: "E1154", ...fixtureOf("E1154") },
   { name: "E1165 (remove the deps entry)", code: "E1165", ...fixtureOf("E1165") },
+  { name: "E1810 (import acmeTokens and spread its groups)", code: "E1810", ...fixtureOf("E1810") },
   {
     name: "E1589 (add servedBy: 'api' to the client deployable beside one node deployable)",
     code: "E1589",
@@ -332,6 +334,7 @@ const FIX = [
   "E1152",
   "E1154",
   "E1165",
+  "E1810",
   "E1155",
   "E1156",
   "E1401",
@@ -433,6 +436,10 @@ const NO_FIX = [
   "E1607", // which registered name to keep is the author's choice
   "E1803", // the replacement token is the author's choice
   "E1804", // which token pair to use is a design choice
+  "E1811", // which shipped token the file means is the library author's choice
+  "E1812", // the shipped file is rewritten by the library author
+  "E1813", // whether the key is a typo or an override to delete is the designer's choice
+  "E1814", // whether to declare a second scheme or drop the control is the author's choice
   "E1823", // which literal to write is the author's choice
   "E1824", // the code prop is rewritten to the literal form by the author, who names the file and export
   "E1825", // moving the stylesheet import to the code file is a design change
