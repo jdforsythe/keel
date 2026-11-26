@@ -18,8 +18,8 @@ Durable storage drivers for `node` deployables: SQLite on `node:sqlite` and Post
   - A key or value holding U+0000 or a lone surrogate rejects and stores nothing; JSON text holds neither.
   - No error, diagnostic or log line holds a value, a key, the URL or any part of it. A failed call names the driver, the operation and the database's own error code.
   - Values are stored as `ctx.storage` receives them, `.pii` included. SQLite overwrites freed pages; Postgres keeps dead row versions until vacuum. Encryption at rest is the volume's or the host's.
-- **Dependencies:** `@keel/ctx` (types), `@keel/check` (tools only), `pg`; `node:sqlite` from Node.
-- **Rungs:** conformance (examples and properties, seed 1337) for k.persist's storage clauses on both drivers, serial commits from two connections, two processes on one SQLite file (409 for the stale save), SIGKILL and restart, layouts and E2152, E2153 naming only `KEEL_DATABASE_URL`, E2151 and secure delete; a property that generated `set`, `commit` and `read` sequences agree with a model map on both drivers. Postgres runs on PGlite in-process, or on the server `KEEL_TEST_POSTGRES_URL` names, where `test/postgres-server.test.ts` also covers lock waits across connections, lock order, read committed visibility, the pool cap of 10, TLS modes, the connect timeout and a connection lost mid-commit; files then run one after another.
+- **Dependencies:** `@keel/ctx` (types), `@keel/schema` (`attempt`), `@keel/check` (tools only), `pg`; `node:sqlite` from Node.
+- **Rungs:** conformance (examples and properties, seed 1337) for k.persist's storage clauses on both drivers, serial commits from two connections, two processes on one SQLite file (409 for the stale save), SIGKILL and restart, layouts and E2152, E2153 naming only `KEEL_DATABASE_URL`, E2151 and secure delete; a property that generated `set`, `commit` and `read` sequences agree with a model map on both drivers. Postgres runs on PGlite in-process, or on the server `KEEL_TEST_POSTGRES_URL` names, where `test/postgres-server.server.test.ts` also covers lock waits across connections, lock order, read committed visibility, the pool cap of 10, TLS modes, the connect timeout and a connection lost mid-commit; files then run one after another.
 
 ## Extension points
 
@@ -27,4 +27,6 @@ Uses the **storage drivers** (k.persist: `createCtx({ mode: 'real', drivers: { s
 
 ## Unsafe
 
-count: 0
+count: 3
+- `unsafe/raise.ts`: the rejections std.db specifies (E1606, E2152, E2153, text it cannot store, a call after `close()`, a failed call naming its driver and operation) and a caught driver error passed on unchanged.
+- `unsafe/settle.ts`, `unsafe/settleNow.ts`: the catches that read the driver's error object (pg's `code`, node:sqlite's `errcode`, std.db's own E2152 and E2153), for promises and for node:sqlite's synchronous calls.

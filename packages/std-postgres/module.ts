@@ -8,7 +8,7 @@ import { module } from "@keel/compiler";
 export default module({
   id: "postgres",
   deps: [],
-  capabilities: [],
+  capabilities: ["clock"],
   public: { exports: ["database", "fragment", "NoRows", "sql"] },
   env: ["KEEL_POSTGRES_URL"],
 });

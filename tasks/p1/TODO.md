@@ -28,14 +28,14 @@ The `unsafe` count measures escapes from the type system in code that runs. Nega
 - [x] `done` backlog 1102: check's mutation run gets past its initial test run; no test writes a type cache beside an app
 - [ ] `next` backlog 1105: a bound on `mutate.mjs --stop`
 - [x] `done` backlog 0991: a scaffolded project builds on first run
-- [ ] `running` the gate equals CI: the whole test as CI's six shards from trees with no build output (done); every test time bound through one scale, the suites swept at one tenth (`lane-slowci`, built; its conformance bounds being routed through the helpers); then CI green on the pushed head
+- [ ] `next` the gate equals CI: `pnpm gate` runs CI's jobs from `tooling/ci.source.json` and every test time bound goes through one scale (done); the whole gate has failed three times on time bounds at one tenth scale, four bounds and one smoke left (`tasks/0963-to-p1/PLAN.md`, checkpoint 104); then CI green on the pushed head
 - [ ] `next` backlog 1040 (the concurrency cap), 1103, 1115, 1119
 - [ ] `next` check's 13 mutation chunks on the main line, when the machine is quiet
 
 ### W1 Freeze
 - [x] `done` RFC 0163, the library format: RFC, ADR and spec made true against the tree; the build order is the RFC's last section
 - [x] `done` slices 1, 2a, 2b, 3 (`keel pack`, `keel scaffold library`, two examples) and 4b (the app data seam, k.server-deps), on the main line
-- [ ] `next` slice 4: the stdlib on the format, std-headless as the pilot, then the other 25 in groups
+- [ ] `running` slice 4: the stdlib on the format: 11 of 26 on the main line (headless, statecharts, jobs, workflows, schedules, channels, live, offline, conflicts, postgres, db); twelve in `lane-std-formats` with RFC 0239; std-sessions in `lane-std-sessions` with RFC 0240; the two shells in slice 5
 - [ ] `blocked` (slice 4) k.parity's second part: kind gates, lint S0013, conformance for clauses 5 and 6
 - [ ] `blocked` (k.parity) every kernel section `conformance-covered`, then the `frozen` flip
 - [ ] `next` backlog 1100: the largest sections split so the map plus any one section fits principle 8 (the section cap is back at 3,100)
@@ -50,7 +50,7 @@ The triage is `tasks/p1/weaknesses.md`: 102 lines to fix now in 17 lanes (A1), 1
 - [x] `done` lane 07 check-security-rules: RFC 0231
 - [x] `done` lane 08 router-identity: RFC 0232
 - [x] `done` lane 09 pii-and-data: RFC 0236
-- [ ] `running` lane 03 ledger-integrity: RFC 0235, its spec, header migration and skipped conformance on the main line; the builder's steps 2, 4, 5 and 6 next
+- [ ] `running` lane 03 ledger-integrity: RFC 0235 steps 1 to 5 on the main line (the ledger rests on run reports; items keyed by text); step 6 next
 - [ ] `next` lanes 02, 04, 05 and 10 to 17 and 33, in the triage's order, as lanes free up
 - [ ] `blocked` (A1) the A2 lanes 18 to 32
 - [ ] `blocked` (fix lanes) a red-team pass, by Claude and by Codex, that files no new high or medium line
@@ -69,11 +69,11 @@ The triage is `tasks/p1/weaknesses.md`: 102 lines to fix now in 17 lanes (A1), 1
 - [ ] `next` coverage measured again on the current head and published by CI from a clean checkout
 
 ### W5 Agent docs, W7 the walkthrough app, golden-3, W16 head to head (the apps that prove it)
-- [ ] `next` `keel docs <topic>` reading the docs shipped in the packages; `AGENTS.md`; the app-work skills checked against the tree
+- [ ] `running` the app-work skills: 47 findings from three builds placed (`tasks/p1/w5-dispositions.md`), a `keel-library` skill; `keel docs <topic>` reading the docs shipped in the packages is next, with its output size (the golden-3 trial spends a quarter of its turns there)
 - [x] `done` the walkthrough app's design (`tasks/p1/walkthrough-design.md`): Evenly, a group trip's shared costs, fourteen layers from a page with no server to native shells
-- [ ] `running` Evenly layers 1 to 3 (`lane-evenly`)
+- [x] `done` Evenly layers 1 to 3, on the main line
 - [ ] `blocked` (spike A: a browser data capability `place` can move to the server) layer 4 on; layer 6 after library slice 4; layer 13 after the session-to-test fixes; chapter evals after the agent docs
-- [ ] `blocked` (agent docs) golden-3 built by an agent run of its eval with Claude, then with Codex; every finding filed
+- [ ] `running` golden-3 built by an agent run of its eval: three Claude trials, none converged (`tasks/p1/app-trials.md`: the kit's exports fixed; the next blocker's fix is in `lane-std-formats`); Codex built the Recipe box through the head to head harness (28 of 28) and has no golden-3 path yet
 - [ ] `blocked` (golden-3) the `public-docs` eval converging with Claude and with Codex
 - [ ] `blocked` (walkthrough) head to head: the harness and three pairs against the comparison list, each result dated and versioned
 
@@ -87,7 +87,25 @@ The triage is `tasks/p1/weaknesses.md`: 102 lines to fix now in 17 lanes (A1), 1
 ### W13 the module contract, W14 app data, W15 custom components
 - [ ] `next` W14: golden-2 moved onto the Postgres battery
 - [ ] `next` W15: the two worked component examples pass `keel check` and the a11y checks with no rule off and no `unsafe/`
-- [ ] `blocked` (RFC 0163) a third-party style library built in the format as an example
+- [x] `done` a third-party style library built in the format: `libraries/charts`, used by household, packed and installed from its tarball
+
+### W17 The end user's seat (the personas, hands-on from the kit)
+`tasks/p1/personas.md` holds who Keel is for; `tasks/p1/end-user-review.md` holds each review's findings. Two reviews are in (a component library author; a product engineer with a third-party library): both "yes, with pain". In this order:
+- [ ] `next` the install path: `pnpm create keel` (a `create-keel` package), a kit README with the `overrides` recipe until npm; the clean-runner job of W12 uses it
+- [ ] `next` the library trust holes, as RFC 0240's next part: a library's `./tools` (code that runs at check and build) and its `unsafe/` are capabilities an app grants; a library's ledger rungs are verified from its shipped run report or shown as claimed; the scaffolded CI runs `keel ledger --diff`
+- [ ] `next` `@keel/server` answers 500 and keeps running when server-render code rejects (E1577)
+- [ ] `running` token names at `keel check` (RFC 0241, app code); then a library's own folder and a listed library's `src/`, and E1801 with file and line at build
+- [ ] `next` an RFC for a library's look (the plan's D188): a library ships a tokens object the app composes in its own `tokens.ts` as it composes `brandTokens`; needed names declared, namespaced by library id and checked against the app's at `keel check`; nothing applies without the app's import; `Part` roles a component library needs (switch, slider, radio and the rest of the authoring practices)
+- [ ] `next` testing as an app or library developer finds it: `fire` submit with `app`; `simulate` over `createApp` (E1729 with its two entries); `properties(Component)` with an id-shaped id; a probe's property credits its component; `console.log` visible; an own-folder a11y report, evidence and a mutation command for a library
+- [ ] `next` an RFC for end-to-end tests: `keel test --e2e` over the built app in a real browser, from `@keel/testing`; the repo's smokes move onto it
+- [ ] `next` a library's publish story: a Publish paragraph in k.library-pack and keel-library, a scaffolded CI workflow with provenance; `keel scaffold library` writes the agent files and `.gitignore`
+- [ ] `next` the paper cuts of both reviews (the leftover `app` module and E1552, E1005 after each edit, generated form ids, E1052's message, `keel review` on a fresh app, `keel docs` for installed libraries, a no-server app importing `@keel/server`, E1751's cut message, slot and `Part` examples in keel-library)
+- [ ] `next` the remaining reviews, each a role and a kind: a static content site (A1, K1); a designer re-theming an app and a library (A5); a compliance owner reading `keel evidence` (A6); a tester (A7); a service library such as maps with a script from another origin (L3); a plain npm package inside an app (L6); a storefront (K2); a SaaS over services (K4); each also run by Codex as the agent form
+- [ ] `next` an embedded piece (K9): Keel for one corner of an existing site, as a review and then a guide; the first question an enterprise with an existing product asks
+- [ ] `next` a second colour scheme (dark mode): decided inside the look RFC, since it is a question about tokens; no line held it before
+- [ ] `next` measured claims for the pitch: an agent builds the same app in Keel and in the comparison frameworks (W16), and a runtime and bundle size comparison produced by CI (none is planned elsewhere); until both exist the site claims neither
+- [ ] `next` the repository's own numbers agree: the README says 603 clauses and 35 packages against the ledger's 1,479 and 41; the handoff says 78 of 79 kernel sections conformance-covered where the spec status lines read 73 of 83; the `unsafe` count is 33 in the ledger; whether golden-2 already runs on the Postgres battery (its README says so, W14 says next); the two database variables (`KEEL_DATABASE_URL`, `KEEL_POSTGRES_URL`) explained in one place. Counts are generated, not typed, wherever a doc states one
+- [ ] `human` another product ships a global `keel` binary: the bin name before npm
 
 ### W12 Release
 - [x] `done` release hygiene (backlog 0941, 0943, 0944, 0946): `LICENSE`, `UNLICENSED`, every package private, `SECURITY.md`, `CONTRIBUTING.md`, each held by a hygiene check; `hygiene --launch` fails on the security address placeholder until it is set

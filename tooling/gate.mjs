@@ -15,18 +15,22 @@ import {
   actionOf,
   applyRewrites,
   badWith,
+  downloadPatterns,
   expandSteps,
   expr,
   exprEnv,
   failLines,
   instances,
   nodeMajor,
+  keepNodeModules,
+  matchesPattern,
   planJobs,
   resultPath,
   runsAfterFailure,
   stepName,
   verdict,
   versionCheck,
+  workspaceGlobs,
 } from "./gate-plan.mjs";
 
 const FORBIDDEN_PORTS = new Set([5173, 5214, 5432, 8080]);
@@ -203,12 +207,18 @@ function runScript(script, { cwd, env, log, deadline }) {
 
 const rootDir = verify;
 const snapshot = path.join(out, "turbo-cache");
+/** The artifacts a job uploads that a later job downloads, by name. */
+const artifacts = path.join(out, "artifacts");
+const wanted = downloadPatterns(source);
 // A copy-on-write clone of the cache folder (APFS).
 const copyTree = "cp -cR";
-/** A runner's fresh checkout: the commit, no untracked or ignored file but node_modules, no tool cache in them. */
+/** A runner's fresh checkout: the commit, no untracked or ignored file but the installed node_modules, no tool cache in them. */
+const KEEP = keepNodeModules(workspaceGlobs(fs.readFileSync(path.join(verify, "pnpm-workspace.yaml"), "utf8")))
+  .map((p) => `-e '${p}'`)
+  .join(" ");
 const RESET = [
   `git reset -q --hard ${sha}`,
-  "git clean -ffdxq -e node_modules",
+  `git clean -ffdxq ${KEEP}`,
   "rm -rf node_modules/.vite node_modules/.cache */*/node_modules/.vite */*/node_modules/.cache",
 ].join("\n");
 
@@ -435,15 +445,33 @@ async function runStep(step, { env, ctx, log, deadline }) {
           `if [ -d ${snapshot} ]; then mkdir -p .turbo && rm -rf .turbo/cache && ${copyTree} ${snapshot} .turbo/cache; fi`,
         )
       : { status: "ok" };
-  if (kind === "download") return { status: "ok" };
-  if (kind === "artifact") {
-    if (step.with?.["if-no-files-found"] !== "error") return { status: "ok" };
+  // Artifacts a later job downloads live under the run's folder: each job starts from a fresh tree, as on a runner.
+  if (kind === "download") {
+    const dest = JSON.stringify(p === "" ? "." : p);
+    const pattern = String(step.with?.pattern ?? "");
+    const names = fs.existsSync(artifacts) ? fs.readdirSync(artifacts).filter((n) => matchesPattern(n, pattern)) : [];
     return sh(
-      p
-        .split("\n")
-        .map((f) => `test -e ${JSON.stringify(f)}`)
-        .join("\n"),
+      names
+        .map(
+          (n) =>
+            `mkdir -p ${dest}/${JSON.stringify(n)} && cp -R ${JSON.stringify(path.join(artifacts, n))}/. ${dest}/${JSON.stringify(n)}`,
+        )
+        .join("\n") || "true",
     );
+  }
+  if (kind === "artifact") {
+    const files = p.split("\n").filter((f) => f !== "");
+    const check = step.with?.["if-no-files-found"] === "error" ? files.map((f) => `test -e ${JSON.stringify(f)}`) : [];
+    const name = expr(String(step.with?.name ?? ""), ctx);
+    const keep = name !== "" && wanted.some((w) => matchesPattern(name, w));
+    const copy = keep
+      ? [
+          `rm -rf ${JSON.stringify(path.join(artifacts, name))}`,
+          `mkdir -p ${JSON.stringify(path.join(artifacts, name))}`,
+          ...files.map((f) => `cp -R ${JSON.stringify(f)} ${JSON.stringify(path.join(artifacts, name))}/`),
+        ]
+      : [];
+    return check.length + copy.length === 0 ? { status: "ok" } : sh([...check, ...copy].join("\n"));
   }
   if (kind === "java") {
     const major = String(step.with?.["java-version"] ?? "");

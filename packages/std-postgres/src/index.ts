@@ -7,6 +7,6 @@ export type { Query } from "./Query.ts";
 export type { ResultError } from "./ResultError.ts";
 export type { StatementError } from "./StatementError.ts";
 export type { Unreachable } from "./Unreachable.ts";
-export { NoRows } from "./NoRows.ts";
+export { NoRows } from "./NoRows.schema.ts";
 export { fragment } from "./fragment.ts";
 export { sql } from "./sql.ts";

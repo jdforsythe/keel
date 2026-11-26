@@ -6,19 +6,19 @@
   "runner": "claude",
   "docs": "public",
   "converged": false,
-  "iterations": 3,
+  "iterations": 1,
   "tokens": {
-    "input": 13225988,
-    "output": 96252
+    "input": 14861961,
+    "output": 85842
   },
-  "costUsd": 3.4302882,
+  "costUsd": 3.395712599999999,
   "unsafeCount": 21,
-  "checkTrailer": " ELIFECYCLE  Command failed with exit code 2.",
-  "testTrailer": "ok test 29 tests, 0 failed, 0 skipped",
-  "checkExit": 1,
+  "checkTrailer": "",
+  "testTrailer": "",
+  "checkExit": 0,
   "testExit": 0,
   "probe": "clean",
-  "audit": "clean",
+  "audit": "failed",
   "packed": [
     "@keel/check@0.0.0",
     "@keel/cli@0.0.0",
@@ -62,6 +62,6 @@
     "@keel/testing@0.0.0",
     "@keel/ui@0.0.0"
   ],
-  "durationMs": 889899,
-  "startedAt": "2026-11-25T17:03:04.191Z"
+  "durationMs": 733460,
+  "startedAt": "2026-11-25T22:20:43.484Z"
 }

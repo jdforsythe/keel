@@ -227,7 +227,7 @@ Closes: findings a.1, a.9 (`std.multi`), b (`k.guards`, `std.tokens`, `std.sched
 
 ### 2. Scenario tests
 
-Placement follows what the repo does today: a scenario that belongs to one package's fault lives in that package's `test/` (as `packages/std-db/test/postgres-server.test.ts` takes `KEEL_TEST_POSTGRES_URL`); a scenario that needs a whole app's modules lives in that app's `test/` (`apps/golden-1/test/outbox.sim.test.ts` is the model, driven by `simulate`, `explore` and `prove` from `@keel/testing`); a scenario that needs a built server and a kill is a script in `tooling/smoke/`, run in the `built-smokes` or `postgres` CI job. No new package is needed.
+Placement follows what the repo does today: a scenario that belongs to one package's fault lives in that package's `test/` (as `packages/std-db/test/postgres-server.server.test.ts` takes `KEEL_TEST_POSTGRES_URL`); a scenario that needs a whole app's modules lives in that app's `test/` (`apps/golden-1/test/outbox.sim.test.ts` is the model, driven by `simulate`, `explore` and `prove` from `@keel/testing`); a scenario that needs a built server and a kill is a script in `tooling/smoke/`, run in the `built-smokes` or `postgres` CI job. No new package is needed.
 
 | scenario | home and why | drives | size |
 |-|-|-|-|

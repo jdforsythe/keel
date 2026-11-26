@@ -8,7 +8,8 @@ import { stdRoutes } from "../src/std/stdRoutes.ts";
 
 // Real packages dir via a workspace link, so this also holds in Stryker's sandbox copy.
 const packages = path.dirname(fs.realpathSync(path.join(import.meta.dirname, "..", "node_modules", "@keel", "schema")));
-const STD = ["channels", "health", "jobs", "schedules", "sessions", "workflows"];
+// Packages that publish a `dist` manifest. A library (k.library) ships its source and its root `module.ts` instead.
+const STD = ["health", "sessions"];
 let root = "";
 
 const write = (rel: string, text: string): void => {

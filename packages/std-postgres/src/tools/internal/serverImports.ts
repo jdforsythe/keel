@@ -13,7 +13,7 @@ function literal(src: object): unknown {
   return Reflect.get(Object(Reflect.get(Object(src.quasis[0]), "value")), "cooked");
 }
 
-/** Push the offset of each `import("@keel/std-postgres/server")` under `node`, at any depth. */
+/** Push the offset of each dynamic import of `@keel/std-postgres/server` under `node`, at any depth. */
 function dynamic(node: unknown, out: number[], seen: WeakSet<object>): void {
   if (!isNode(node) || seen.has(node)) return;
   seen.add(node);

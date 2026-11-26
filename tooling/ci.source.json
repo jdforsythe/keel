@@ -128,7 +128,7 @@
     },
     "ledger": {
       "if": "github.event_name != 'schedule'",
-      "needs": "test-shard",
+      "needs": ["test-shard", "postgres"],
       "runs-on": "ubuntu-latest",
       "timeout-minutes": 30,
       "steps": [
@@ -143,7 +143,7 @@
           }
         },
         {
-          "name": "every test-shard's run reports",
+          "name": "every test-shard's run reports and the postgres job's",
           "uses": "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0",
           "with": {
             "pattern": "test-reports-*",
@@ -151,8 +151,8 @@
           }
         },
         {
-          "name": "put each project's run reports where the ledger reads them (reports/tests/*.json, paths kept)",
-          "run": "set -e\nfor t in test-reports/test-reports-*/test-reports.tar; do tar -xf \"$t\"; done"
+          "name": "put each project's run reports where the ledger reads them (reports/tests/*.json, paths kept): the shards', then std-postgres' run on Postgres 17 over its shard run",
+          "run": "set -e\nfor t in test-reports/test-reports-[0-9]*/test-reports.tar test-reports/test-reports-postgres/test-reports.tar; do tar -xf \"$t\"; done"
         },
         {
           "name": "a11y reports for the ledger from every app, example and library whose routes it carries (keel test writes reports/a11y.json)",
@@ -197,7 +197,7 @@
         {
           "name": "std-db files that take KEEL_TEST_POSTGRES_URL, one at a time on one database",
           "working-directory": "packages/std-db",
-          "run": "set -e\nfor f in conformance/driver-contract.test.ts conformance/serial-commits.test.ts conformance/layout-e2152.test.ts conformance/e2153-no-value.test.ts conformance/postgres-watch.test.ts test/model.test.ts test/racing-writes.test.ts; do pnpm exec vitest run \"$f\"; done"
+          "run": "set -e\nfor f in conformance/driver-contract.test.ts conformance/serial-commits.test.ts conformance/layout-e2152.test.ts conformance/e2153-no-value.test.ts conformance/postgres-watch.test.ts test/model.server.test.ts test/racing-writes.server.test.ts; do pnpm exec vitest run \"$f\"; done"
         },
         {
           "name": "std-db Postgres driver cases, TLS ones included, on the ssl server",
@@ -205,12 +205,25 @@
           "env": {
             "KEEL_TEST_POSTGRES_URL": "postgres://postgres:keel-ci-throwaway@127.0.0.1:5433/postgres"
           },
-          "run": "pnpm exec vitest run test/postgres-server.test.ts"
+          "run": "pnpm exec vitest run test/postgres-server.server.test.ts"
         },
         {
           "name": "std-postgres on Postgres 17, its files one at a time on one database",
           "working-directory": "packages/std-postgres",
           "run": "pnpm exec vitest run"
+        },
+        {
+          "name": "run reports: std-postgres' whole run on Postgres 17, path kept, for the ledger (its clauses that need a server)",
+          "run": "tar -cf test-reports.tar packages/std-postgres/reports/tests"
+        },
+        {
+          "uses": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2",
+          "with": {
+            "name": "test-reports-postgres",
+            "path": "test-reports.tar",
+            "if-no-files-found": "error",
+            "retention-days": 7
+          }
         },
         {
           "name": "golden-2 on Postgres 17: two users add one recipe title at once",
@@ -623,7 +636,7 @@
     },
     "mutate-pr": {
       "if": "github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'mutate')",
-      "needs": "test",
+      "needs": ["test", "postgres"],
       "runs-on": "ubuntu-latest",
       "steps": [
         "$setup",
@@ -639,7 +652,7 @@
           "run": "node tooling/mutate-changed.mjs"
         },
         {
-          "name": "every test-shard's run reports",
+          "name": "every test-shard's run reports and the postgres job's",
           "uses": "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0",
           "with": {
             "pattern": "test-reports-*",
@@ -647,8 +660,8 @@
           }
         },
         {
-          "name": "put each project's run reports where the ledger reads them (reports/tests/*.json, paths kept)",
-          "run": "set -e\nfor t in test-reports/test-reports-*/test-reports.tar; do tar -xf \"$t\"; done"
+          "name": "put each project's run reports where the ledger reads them (reports/tests/*.json, paths kept): the shards', then std-postgres' run on Postgres 17 over its shard run",
+          "run": "set -e\nfor t in test-reports/test-reports-[0-9]*/test-reports.tar test-reports/test-reports-postgres/test-reports.tar; do tar -xf \"$t\"; done"
         },
         {
           "name": "a11y reports for the ledger from every app, example and library whose routes it carries (keel test writes reports/a11y.json)",

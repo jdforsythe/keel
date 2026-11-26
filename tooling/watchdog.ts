@@ -2,17 +2,19 @@
 // vitest's own timeout is a timer on the test's thread, so a synchronous loop never lets it fire. This file starts
 // one watchdog thread per process (watchdog-thread.mjs) and writes a heartbeat into shared memory at each phase:
 // collecting a file, its hooks, each test. The thread kills the process when a phase runs past
-// `allowed * 2 + grace` (grace 30 s), or when the worker's parent is gone. Real clocks are used on purpose: this
-// is the one place in the test setup that must bound wall-clock time. A worker also kills its own descendants on
-// every way it can end (exit, SIGTERM, SIGINT, SIGHUP; a parent that vanishes closes the worker's channel, which
-// ends it through exit), so a child a test started never outlives the worker.
+// `allowed * 2 + grace` (grace 30 s), or when the worker's parent is gone. A test's `allowed` is its own stated
+// bound, which `KEEL_TEST_TIME_SCALE` scales; the grace and the collection allowance are the machine's own work
+// (worker start, importing a file, its hooks between tests) and are fixed time the scale never shrinks. Real clocks
+// are used on purpose: this is the one place in the test setup that must bound wall-clock time. A worker also kills
+// its own descendants on every way it can end (exit, SIGTERM, SIGINT, SIGHUP; a parent that vanishes closes the
+// worker's channel, which ends it through exit), so a child a test started never outlives the worker.
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Worker, isMainThread } from "node:worker_threads";
 import { type RunnerTestSuite, afterAll, afterEach, beforeAll, beforeEach, expect, inject } from "vitest";
 import { getHooks } from "vitest/suite";
-import { testTime } from "./test-time.ts";
+import { fixedTime } from "./test-time.ts";
 
 declare module "vitest" {
   interface ProvidedContext {
@@ -28,19 +30,23 @@ const ALLOWED = 2;
 const LEN = 3;
 const LABEL_BYTES = 1024;
 const KEY = Symbol.for("keel.watchdog");
-/**
- * Import of a cold file (TypeScript, the compiler) under a loaded machine takes tens of seconds; nothing else bounds
- * it. Scaled by `KEEL_TEST_TIME_SCALE` (test-time.ts), as the grace is.
- */
-const COLLECT_MS = testTime(60_000);
-
-// A path, not a URL: under a DOM test environment the global `URL` is the DOM's, which `Worker` refuses.
-const THREAD = path.join(path.dirname(fileURLToPath(import.meta.url)), "watchdog-thread.mjs");
 
 const envMs = (name: string, fallback: number): number => {
   const n = Number(process.env[name]);
   return Number.isInteger(n) && n > 0 ? n : fallback;
 };
+
+/**
+ * Import of a cold file (TypeScript, the compiler, a wasm database) under a loaded machine takes tens of seconds;
+ * nothing else bounds it. It is the machine's own work, not a wait a test chose, so it is fixed time: the scale
+ * (test-time.ts) does not shrink it, nor the grace. `KEEL_WATCHDOG_COLLECT_MS` and `KEEL_WATCHDOG_GRACE_MS` set them
+ * for the watchdog's own tests.
+ */
+const COLLECT_MS = envMs("KEEL_WATCHDOG_COLLECT_MS", fixedTime(60_000));
+const GRACE_MS = envMs("KEEL_WATCHDOG_GRACE_MS", fixedTime(30_000));
+
+// A path, not a URL: under a DOM test environment the global `URL` is the DOM's, which `Worker` refuses.
+const THREAD = path.join(path.dirname(fileURLToPath(import.meta.url)), "watchdog-thread.mjs");
 
 function isBeat(v: unknown): v is Beat {
   return (
@@ -72,7 +78,7 @@ function heartbeat(): Beat {
       base,
       ppid: process.ppid,
       tick: envMs("KEEL_WATCHDOG_TICK_MS", 1000),
-      grace: envMs("KEEL_WATCHDOG_GRACE_MS", testTime(30_000)),
+      grace: GRACE_MS,
     },
     execArgv: [],
     stdout: false,

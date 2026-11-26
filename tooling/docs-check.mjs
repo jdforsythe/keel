@@ -1,4 +1,4 @@
-// Keeps the eight published skills (packages/cli/skills/<name>/SKILL.md) true. Usage: node tooling/docs-check.mjs
+// Keeps the nine published skills (packages/cli/skills/<name>/SKILL.md) true. Usage: node tooling/docs-check.mjs
 // [--write]; `--write` replaces .claude/skills/<name>/ with a copy of each published skill and checks nothing.
 //
 // D0006 a fenced ts or tsx block does not type-check; D0007 more than two `ts fragment` blocks in a skill; D0008 an
@@ -52,6 +52,7 @@ export const TARGETS = {
   "keel-deploy": 2200,
   "keel-compliance": 1750,
   "keel-escapes": 1700,
+  "keel-library": 1200,
 };
 export const MAX_FRAGMENTS = 2;
 

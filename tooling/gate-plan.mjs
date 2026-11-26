@@ -28,15 +28,7 @@ export const JOBS = {
       { from: "127.0.0.1:5433/", to: "127.0.0.1:{port:pg-ssl}/" },
     ],
   },
-  ledger: {
-    run: true,
-    rewrites: [
-      {
-        from: 'for t in test-reports/test-reports-*/test-reports.tar; do tar -xf "$t"; done',
-        to: "echo the run reports are the ones the test-shard jobs of this gate wrote in this tree",
-      },
-    ],
-  },
+  ledger: { run: true },
   "built-smokes": { run: true },
   build: { run: true },
   budgets: { run: true },
@@ -292,3 +284,44 @@ export function verdict(jobs, allowSkip = new Set()) {
 
 /** The result file of a gated commit, under the main worktree's `.keel-gate/`. */
 export const resultPath = (main, sha) => path.join(main, ".keel-gate", `${sha}.json`);
+
+/** The workspace globs of a `pnpm-workspace.yaml`'s `packages:` list. */
+export function workspaceGlobs(yaml) {
+  const globs = [];
+  let inList = false;
+  for (const line of yaml.split("\n")) {
+    if (/^packages:\s*$/.test(line)) inList = true;
+    else if (inList) {
+      const m = /^\s+-\s+['"]?([^'"\s]+)['"]?\s*$/.exec(line);
+      if (m === null) break;
+      globs.push(m[1]);
+    }
+  }
+  return globs;
+}
+
+/**
+ * The `git clean -e` patterns that keep the installed `node_modules` of the root and of each workspace package and
+ * nothing deeper: a `node_modules` a test wrote under a fixture folder is untracked and goes, as it does on a runner.
+ */
+export function keepNodeModules(globs) {
+  return ["/node_modules", ...globs.map((g) => `/${g}/node_modules`)];
+}
+
+/** Whether `name` matches an `actions/download-artifact` `pattern` (`*` is any run of characters). */
+export function matchesPattern(name, pattern) {
+  const re = pattern
+    .split("*")
+    .map((part) => part.replace(/[.+?^${}()|[\]\\]/g, "\\$&"))
+    .join(".*");
+  return new RegExp(`^${re}$`).test(name);
+}
+
+/** The `pattern` of every `actions/download-artifact` step of the source's jobs: the artifacts a later job reads. */
+export function downloadPatterns(source) {
+  return Object.values(source.jobs ?? {})
+    .flatMap((job) => (Array.isArray(job.steps) ? job.steps : []))
+    .filter((step) => typeof step === "object" && step !== null && actionOf(step.uses ?? "") === "download")
+    .map((step) => String(step.with?.pattern ?? ""))
+    .filter((pattern) => pattern !== "");
+}

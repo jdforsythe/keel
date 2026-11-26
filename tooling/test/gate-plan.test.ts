@@ -6,10 +6,13 @@ import {
   JOBS,
   applyRewrites,
   badWith,
+  downloadPatterns,
   expandSteps,
   expr,
   failLines,
   instances,
+  keepNodeModules,
+  matchesPattern,
   nodeMajor,
   planJobs,
   resultPath,
@@ -17,6 +20,7 @@ import {
   stepName,
   verdict,
   versionCheck,
+  workspaceGlobs,
 } from "../gate-plan.mjs";
 
 const setup = [
@@ -191,14 +195,53 @@ describe("applyRewrites", () => {
     expect(text).not.toContain("--name pg-tls");
     expect(text).not.toContain("docker exec pg-tls");
   });
-  it("turns the ledger job's artifact unpacking into a no-op and keeps its other steps", () => {
+  it("runs the ledger job's own steps, its artifact unpacking included", () => {
     const source = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, "..", "ci.source.json"), "utf8"));
-    const steps = expandSteps(source, "ledger");
-    const out = applyRewrites(source.jobs.ledger, steps, JOBS.ledger.rewrites, {});
-    const text = JSON.stringify(out);
-    expect(text).not.toContain("tar -xf");
-    expect(text).toContain("node tooling/ledger-fresh.mjs --runs");
-    expect(out.steps.length).toBe(steps.length);
+    expect(JOBS.ledger).toEqual({ run: true });
+    expect(JSON.stringify(expandSteps(source, "ledger"))).toContain("tar -xf");
+  });
+  it("matches an artifact name against a download pattern and lists the source's patterns", () => {
+    expect(matchesPattern("test-reports-3", "test-reports-*")).toBe(true);
+    expect(matchesPattern("test-reports", "test-reports-*")).toBe(false);
+    expect(matchesPattern("a.b", "a.b")).toBe(true);
+    expect(matchesPattern("axb", "a.b")).toBe(false);
+    const source = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, "..", "ci.source.json"), "utf8"));
+    expect(downloadPatterns(source)).toContain("test-reports-*");
+  });
+  it("a job that downloads the run reports needs every job that uploads one, so none is missing from its ledger", () => {
+    const source = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, "..", "ci.source.json"), "utf8"));
+    const jobs: [string, { needs?: string | string[]; steps: unknown[] }][] = Object.entries(source.jobs);
+    const stepsOf = (name: string): { uses?: string; with?: { name?: string; pattern?: string } }[] =>
+      expandSteps(source, name).filter((s: unknown) => typeof s === "object" && s !== null);
+    const uploads = jobs
+      .filter(([name]) =>
+        stepsOf(name).some(
+          (s) =>
+            s.uses?.startsWith("actions/upload-artifact") === true &&
+            matchesPattern(s.with?.name ?? "", "test-reports-*"),
+        ),
+      )
+      .map(([name]) => name);
+    expect(uploads).toEqual(expect.arrayContaining(["test-shard", "postgres"]));
+    const readers = jobs.filter(([name]) =>
+      stepsOf(name).some(
+        (s) => s.uses?.startsWith("actions/download-artifact") === true && s.with?.pattern === "test-reports-*",
+      ),
+    );
+    expect(readers.map(([name]) => name)).toEqual(expect.arrayContaining(["ledger"]));
+    const direct = (name: string): string[] => {
+      const n = source.jobs[name]?.needs;
+      return n === undefined ? [] : Array.isArray(n) ? n : [n];
+    };
+    const after = (name: string): Set<string> => {
+      const seen = new Set<string>();
+      const walk = (n: string): void => {
+        for (const d of direct(n)) if (!seen.has(d)) seen.add(d), walk(d);
+      };
+      walk(name);
+      return seen;
+    };
+    for (const [name] of readers) expect([...after(name)]).toEqual(expect.arrayContaining(uploads));
   });
 });
 
@@ -272,5 +315,17 @@ describe("verdict, stepName and resultPath", () => {
   });
   it("puts the result file under the main worktree's .keel-gate", () => {
     expect(resultPath("/repo", "abc123")).toBe(path.join("/repo", ".keel-gate", "abc123.json"));
+  });
+  it("keeps the node_modules of the root and each workspace package, not one under a fixture", () => {
+    const yaml = "packages:\n  - 'packages/*'\n  - 'apps/*'\n  - 'tooling'\n\nallowBuilds:\n  esbuild: false\n";
+    expect(workspaceGlobs(yaml)).toEqual(["packages/*", "apps/*", "tooling"]);
+    expect(keepNodeModules(workspaceGlobs(yaml))).toEqual([
+      "/node_modules",
+      "/packages/*/node_modules",
+      "/apps/*/node_modules",
+      "/tooling/node_modules",
+    ]);
+    const real = fs.readFileSync(path.join(import.meta.dirname, "..", "..", "pnpm-workspace.yaml"), "utf8");
+    expect(workspaceGlobs(real)).toContain("packages/*");
   });
 });

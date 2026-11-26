@@ -100,6 +100,27 @@ async function selftest(t0: number): Promise<void> {
   must(audit(clean, project, repoRoot).length === 0, "audit flagged a transcript that reads only the project");
   const hits = audit(dirty, project, repoRoot);
   must(hits.length >= 5, `audit found ${hits.length} of 5 forbidden reads`);
+  const spill = join(
+    home,
+    ".claude",
+    "projects",
+    `/private${project}`.replace(/[^A-Za-z0-9]/g, "-"),
+    "1a70ea21-c110-4453-b69b-eab28863eed4",
+    "tool-results",
+    "x.txt",
+  );
+  const spilled = [
+    call("Bash", { command: `wc -c ${spill}; sed -n 1,20p ${spill}` }),
+    call("Read", { file_path: spill }),
+    call("Bash", {
+      command: `grep -n x ${join(home, ".claude", "projects")}/*/1a70ea21-c110-4453-b69b-eab28863eed4/tool-results/b3k.txt`,
+    }),
+  ].join("\n");
+  must(audit(spilled, project, repoRoot).length === 0, "audit flagged a read of the agent's own spilled tool result");
+  must(
+    audit(call("Read", { file_path: join(home, ".claude", "CLAUDE.md") }), project, repoRoot).length === 1,
+    "audit let a read of ~/.claude/CLAUDE.md through",
+  );
   must(
     hits.every((h) => h.code === "V0009"),
     "audit code is not V0009",

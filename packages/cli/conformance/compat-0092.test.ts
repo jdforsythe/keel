@@ -24,10 +24,12 @@ import {
 const SLOW = 120_000;
 /**
  * What the `--base` case bounds: three property runs of about twelve binary runs each (a build of the deployed base,
- * a build, five or six `keel check`s), about 0.25 s a run here (9 s in all). The bound is 6 s a binary run, 24 times
- * that, so a runner ten times slower (scale 0.1) still has twice the work's time.
+ * a build, five or six `keel check`s), 36 binary runs, 10.2 s alone here, 0.28 s a run. The allowance is 13 s a binary
+ * run: 0.28 s times 10 (a runner ten times slower) times 3 (the suite runs files in parallel) times 1.5 (margin),
+ * 12.7 s rounded up, so at scale 0.1 each run has 1.3 s.
  */
-const BASE_CASE_BOUND = 3 * 12 * 6_000;
+const BINARY_RUN = 13_000;
+const BASE_CASE_BOUND = 3 * 12 * BINARY_RUN;
 /**
  * What the open-object case bounds: two bases built and each changed entry built and checked, six binary runs,
  * about 3 s a run here beside other work. The bound is 60 s a run, so a runner ten times slower (scale 0.1) still has

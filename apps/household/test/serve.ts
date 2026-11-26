@@ -112,9 +112,9 @@ export async function served(
  * The time bound of a test that signs members up and in: `hashes` password hashes at the sign-in library's own scrypt
  * cost (a sign-up, a sign-in and a submitted sign-in form are one each: `served` makes two, `household` four), about
  * 45 ms each here, and `pages` list or member pages rendered and driven, about 100 ms each here, each twenty times
- * over, beside vitest's 5 s for the rest of the test.
+ * over, beside the 20 s default of this app's page tests (vitest.config.ts) for the rest of the test.
  */
-export const boundFor = (hashes: number, pages: number): number => 5_000 + 20 * (45 * hashes + 100 * pages);
+export const boundFor = (hashes: number, pages: number): number => 20_000 + 20 * (45 * hashes + 100 * pages);
 
 /** A JSON request as a services client sends it. */
 export const asJson = (method: string, path: string, body?: unknown, headers: Record<string, string> = {}): Request =>

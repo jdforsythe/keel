@@ -2,7 +2,7 @@ import type { Conn } from "./Conn.ts";
 import type { Held } from "./Held.ts";
 import type { Level } from "./Level.ts";
 import type { Raw } from "./Raw.ts";
-import type { TypeCache } from "./TypeCache.ts";
+import type { TypeCache } from "./TypeCache.server.ts";
 
 /**
  * A Postgres engine (`pg` or PGlite). `statement` runs one statement as its own `serializable` transaction. `tx` runs `fn` on one
