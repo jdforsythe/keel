@@ -1,11 +1,11 @@
 import path from "node:path";
 import { artifactHashes, compile, parseTopology, projectDirs, routeLiterals } from "@keel/compiler";
 import type { Topology } from "@keel/compiler";
-import { hashOf } from "@keel/compiler/internal";
 import { foreignRoutesDiags } from "@keel/compiler/hosting/foreignRoutesDiags";
 import { mountDiags } from "@keel/compiler/hosting/mountDiags";
 import { servedByEdit } from "@keel/compiler/hosting/servedByEdit";
 import { topologyReadProblems } from "@keel/compiler/hosting/topologyReadProblems";
+import { hashOf } from "@keel/compiler/internal";
 import type { Checked } from "./internal/Checked.ts";
 import type { Expected } from "./internal/Expected.ts";
 import { aliasedImports } from "./internal/aliasedImports.ts";
@@ -28,7 +28,6 @@ import { libraryFolders } from "./internal/libraryFolders.ts";
 import { libraryIds } from "./internal/libraryIds.ts";
 import { libraryImports } from "./internal/libraryImports.ts";
 import { looksDiags } from "./internal/looks/looksDiags.ts";
-import { schemesIn } from "./internal/schemesIn.ts";
 import { looksOf } from "./internal/looks/looksOf.ts";
 import { projectLooks } from "./internal/looks/projectLooks.ts";
 import { libraryLedgers } from "./internal/modules/libraryLedgers.ts";
@@ -46,6 +45,7 @@ import { ruleInScope } from "./internal/ruleInScope.ts";
 import { ruleOwners } from "./internal/ruleOwners.ts";
 import { runRules } from "./internal/runRules.ts";
 import { runSqlRules } from "./internal/runSqlRules.ts";
+import { schemesIn } from "./internal/schemesIn.ts";
 import { stdInScope } from "./internal/stdInScope.ts";
 import { stylesDiags } from "./internal/stylesDiags.ts";
 import { summarize } from "./internal/summarize.ts";
@@ -104,7 +104,8 @@ function expectedHashes(files: readonly SourceFile[], opts: CheckOptions): Reado
     const tokens: unknown = opts.artifacts?.tokens ?? opts.projectArtifacts?.[dir]?.tokens;
     const hasTokens = project.some((f) => f.path === `${dir}tokens.ts`);
     const schemes = tokens !== undefined ? schemesIn(tokens) : hasTokens ? undefined : ["light"];
-    const hashes = schemes === undefined ? compiled : { ...compiled, "schemes.json": hashOf({ schemes: [...schemes] }) };
+    const hashes =
+      schemes === undefined ? compiled : { ...compiled, "schemes.json": hashOf({ schemes: [...schemes] }) };
     // Packages a route manifest spreads resolve from the project's own directory, as its imports do.
     const literal = { ...options, root: path.join(opts.root ?? process.cwd(), dir) };
     out.set(dir, hashes["routes.json"] === null ? { hashes, routes: routeLiterals(sources, literal) } : { hashes });
