@@ -9,9 +9,9 @@ import { DatabaseSync } from "node:sqlite";
 import { pathToFileURL } from "node:url";
 import { PGlite } from "@electric-sql/pglite";
 import type { KeyValueStorage } from "@keel/ctx";
-import { postgres } from "@keel/std-db/postgres";
-import { sqlite } from "@keel/std-db/sqlite";
 import pg from "pg";
+import { postgres } from "../src/postgres/index.server.ts";
+import { sqlite } from "../src/sqlite/index.server.ts";
 
 /** The engine's two WebAssembly modules, compiled once for the file's every PGlite instead of for each one. */
 let modules: { pgliteWasmModule: WebAssembly.Module; initdbWasmModule: WebAssembly.Module } | undefined;

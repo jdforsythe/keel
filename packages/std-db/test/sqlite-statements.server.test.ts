@@ -2,8 +2,8 @@
 // `DatabaseSync` that records them.
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { sqlite } from "@keel/std-db/sqlite";
 import { afterEach, expect, test, vi } from "vitest";
+import { sqlite } from "../src/sqlite/index.server.ts";
 import { removeDir, tempDir } from "./support.server.ts";
 
 const seen = vi.hoisted(() => {
