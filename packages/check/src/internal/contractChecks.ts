@@ -3,6 +3,7 @@ import type { Topology } from "@keel/compiler";
 import type { Diagnostic } from "../types/Diagnostic.ts";
 import type { SourceFile } from "../types/SourceFile.ts";
 import type { Checked } from "./Checked.ts";
+import type { LibraryContract } from "./LibraryView.ts";
 import { contractFields } from "./contractFields.ts";
 import { contractImports } from "./contractImports.ts";
 import { contractPlacement } from "./contractPlacement.ts";
@@ -25,7 +26,7 @@ export function contractChecks(
   files: readonly Checked[],
   project: readonly SourceFile[],
   topology: Topology | undefined,
-  libraries: ReadonlyMap<string, string> = new Map(),
+  libraries: ReadonlyMap<string, LibraryContract> = new Map(),
 ): Diagnostic[] {
   const contracts = moduleContracts(files);
   const topologyOf = (dir: string): Topology | undefined => {

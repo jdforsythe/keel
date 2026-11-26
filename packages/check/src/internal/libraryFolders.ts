@@ -1,10 +1,12 @@
 import { libraryKind } from "@keel/compiler/std/libraryKind";
 import type { SourceFile } from "../types/SourceFile.ts";
-import type { LibraryView } from "./LibraryView.ts";
+import type { LibraryContract, LibraryView } from "./LibraryView.ts";
 import { readManifest } from "./modules/readManifest.ts";
 import { parseFile } from "./parseFile.ts";
 
 const PACKAGE = /^((?:(?!node_modules\/).)*?)node_modules\/(@[^/]+\/[^/]+)\/package\.json$/;
+/** A library's contract file: a `*.contract.ts` source under `src/` (k.contract). */
+const CONTRACT_FILE = /^src\/(?:[^/]+\/)*[^/]+\.contract\.ts$/;
 const FILE = /^((?:(?!node_modules\/).)*?)node_modules\/(@[^/]+\/[^/]+)\/((?:src|unsafe)\/.+)$/;
 
 /** The parsed JSON of `source`; undefined when it does not parse. */
@@ -43,7 +45,8 @@ export function libraryFolders(files: readonly SourceFile[]): LibraryView {
   const ids = new Map<string, string>();
   const packages: SourceFile[] = [];
   const entries = new Map<string, string>();
-  const contracts = new Map<string, string>();
+  const contracts = new Map<string, LibraryContract>();
+  const manifests: SourceFile[] = [];
   const byPath = new Map(files.map((f) => [f.path, f]));
   for (const f of files) {
     const m = PACKAGE.exec(f.path);
@@ -67,7 +70,11 @@ export function libraryFolders(files: readonly SourceFile[]): LibraryView {
       if (key.startsWith(".") && !key.includes("*") && /^(?:src|unsafe)\//.test(rel))
         entries.set(`${name}${key.slice(1)}`, `${under}${rel}`);
     }
-    contracts.set(under, entries.get(`${name}/contract`) ?? "");
+    const declared = typeof map === "object" && map !== null ? Reflect.get(map, "./contract") : undefined;
+    const target = declared === undefined ? undefined : (entryTarget(declared) ?? "").replace(/^\.\//, "");
+    const file = target !== undefined && CONTRACT_FILE.test(target) ? `${under}${target}` : undefined;
+    contracts.set(under, { target, file });
+    if (!byPath.has(`${under}module.ts`)) manifests.push({ path: `${under}module.ts`, source: manifest.source });
   }
   const toView = new Map<string, string>();
   const toReal = new Map<string, string>();
@@ -91,5 +98,6 @@ export function libraryFolders(files: readonly SourceFile[]): LibraryView {
     packages,
     entries,
     contracts,
+    manifests,
   };
 }
