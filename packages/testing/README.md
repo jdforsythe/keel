@@ -15,4 +15,4 @@ None.
 
 ## Unsafe
 
-count: 2 (`unsafe/axeSync.ts`: axe-core's rule run without its timers, through internals its types omit; `unsafe/evalOnHeap.ts`: z3-solver's Emscripten module, which it types `any`, as the heap members a query needs). The vitest task (`timeout`, `meta`, `onFinished`) and axe's rule list are read as `unknown` and narrowed.
+count: 1 (`unsafe/evalOnHeap.ts`: z3-solver's Emscripten module, which it types `any`, as the heap members a query needs). The vitest task (`timeout`, `meta`, `onFinished`), axe's rule list and the axe-core internals the synchronous rule run calls (`src/internal/axeSync.ts`, a type guard over each member it uses) are read as `unknown` and narrowed.

@@ -36,7 +36,7 @@ export default function TodoList(props: Infer<typeof Props>) {
 ```
 
 **Rules.**
-- Failures are values: return `err(...)`, never `throw` (E1451); wrap throwing code in `attempt`, never `try` (E1452); never drop a `Result` (E1453).
+- Failures are values: `err(...)`, never `throw` (E1451), bugs `defect(...)`; catch with `attempt(fn, expect?)` (E1452); never drop a `Result` (E1453).
 - No `Date`, `Math.random`, `crypto.randomUUID`, `fetch`, `setTimeout` or `localStorage` (E1601): use `ctx.clock`, `ctx.random.id('Todo')`, `ctx.storage`, a `service` for HTTP (E1651). An `import()` is W1608, a load `simulate` does not wait for: use a static import.
 - No `any`, casts, `!` or `@ts-ignore` outside `unsafe(reason, fn)` (E1757), whose reason, 8 words or more, says why the escape holds (E1760). A claim that a call must not compile is a negative type test: `test/<name>.test-d.ts`, each `// @ts-expect-error <what must not compile>` one claim, imported by nothing (E1761); no `@keel/*` import with an `internal` segment (E1576). Import a `modules/` file by a relative path (E1013); code outside the project is a workspace package, never a relative path out of it (E1015).
 - A format value written in source (a store's initial value, a fixture) is `formatLiteral(Instant, '1970-01-01T00:00:00.000Z')` (`@keel/schema`), E1108 when it does not parse.

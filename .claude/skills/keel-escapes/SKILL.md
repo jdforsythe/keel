@@ -1,13 +1,13 @@
 ---
 name: keel-escapes
-description: "Read keel review output and make the calls a rule cannot: is there a Keel seam, does the reason hold, was a test or configuration bent to pass; never approves a change or edits keel-review.json; R1001, R1010, R1011, R1012, R1014, R1050, R1051, R1052, R1053, R1055, R1056, R1057, R1058, R1059, R1060, R1061, R1100, R1101, R1102, R1103, R1104, R1105, R1107, R1108, R1150, R1151, R2451"
+description: "Read keel review output and make the calls a rule cannot: is there a Keel seam, does the reason hold, was a test or configuration bent to pass; never approves a change or edits keel-review.json; R1001, R1010, R1011, R1012, R1013, R1014, R1050, R1051, R1052, R1053, R1055, R1056, R1057, R1058, R1059, R1060, R1061, R1100, R1101, R1102, R1103, R1104, R1105, R1107, R1108, R1150, R1151, R2451"
 ---
 
 # Reading keel review
 
 `keel review` lists each escape in a project: a place where code opts out of a protection by its sanctioned name (an opt-in) or goes around one (a workaround). The command decides where an escape is, what it reaches and whether it is new. You decide what a rule cannot: whether a Keel seam replaces it, whether its reason holds, and whether something was changed so a check would pass. See `keel docs k.review` and `keel docs k.escapes`.
 
-You never approve a change, never say it is safe to merge, and never accept a finding. Acceptance is a person's.
+Acceptance is a person's (Never, below).
 
 ## Run it
 
@@ -39,6 +39,7 @@ Read the code at `path:line` and the diff around it. Then answer four questions,
 | R1010 | a declared origin | drop an origin no page loads from; `connect` and `frame` reach user data |
 | R1011 | `createApp({ allow })`, `KEEL_ALLOW_ORIGINS` | list only origins the team runs (`keel docs k.hosting`) |
 | R1012 | `reveal` | pass the `Secret` on and reveal at the sink (`keel docs k.reveal`) |
+| R1013 | a `defect` where a `Result` is `err` | a failure a caller handles stays an `err`; a defect is a bug |
 | R1014 | an identity `handle` | an auth library mounted there; no credential code of the app's own (`keel docs k.user`) |
 | R1050, R1051 | a cast, `any`, `!`, a suppression or lint-off comment | a type guard, `unknown`, a check; fix what the lint reported |
 | R1052 | a directive assembled from strings | delete it and fix what it was hiding |
@@ -56,7 +57,7 @@ Read the code at `path:line` and the diff around it. Then answer four questions,
 | R1108 | fewer `.pii(`, `s.secret(` or `guard(` calls | keep the mark or the guard (`keel docs k.privacy`) |
 | R1150 | a file the review cannot parse | correct the syntax; nothing in the file was read |
 | R1151 | a baseline entry with no finding | a person removes it |
-| R2451 | a transaction's `allow` (std.postgres) | drop it to keep `serializable`; does the reason say why the anomaly cannot happen or does no harm here? |
+| R2451 | a transaction's `allow` (std.postgres) | drop it to keep `serializable`; does the reason say why the anomaly is harmless here? |
 
 ## Write the report
 
