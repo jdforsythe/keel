@@ -238,7 +238,8 @@ async function startApp(opts: AppOptions): Promise<ServerApp> {
     days: top[name]?.caller?.days,
     origins: top[name]?.origins,
     framed: new Set(),
-    schemes,
+    schemes: schemes.both,
+    themes: schemes.themes,
   };
   const peers = opts.peers ?? {};
   const forwards = await peerPaths(opts.artifacts, top, Object.keys(peers));

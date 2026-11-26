@@ -54,6 +54,7 @@ export function entryCode(
   identity = false,
   served = false,
   deployable?: string,
+  themes: readonly string[] = [],
 ): string {
   const native = shell === undefined ? undefined : SHELLS[shell.kind];
   const given = shell?.origin;
@@ -101,7 +102,8 @@ export function entryCode(
     `const router = createRouter(${table}, { ctx, history: browserHistory(), mode${identity ? ", mount: __keelIdentity.path" : ""} });`,
     `const el = document.getElementById("app");`,
     `if (el === null) throw new Error("keel: index.html has no #app element");`,
-    "mount(router.App, el, { ctx, mode });",
+    // The `choice` themes ride with the mount so `appearance(ctx)` knows them (k.schemes Choice); none, no bytes.
+    `mount(router.App, el, { ctx, mode${themes.length === 0 ? "" : `, artifacts: { themes: ${JSON.stringify(themes)} }`} });`,
     'if (mode === "dev") {',
     '  let last = "";',
     "  const report = () => {",

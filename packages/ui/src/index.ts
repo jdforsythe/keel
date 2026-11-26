@@ -1,6 +1,7 @@
 // re-exports only (one export per file lives in src/<Export>.ts)
 export { contrastTable } from "./contrastTable.ts";
 export { customElement } from "./customElement.ts";
+export { appearance } from "./appearance.ts";
 export { defineTokens } from "./defineTokens.ts";
 export { hostCode } from "./hostCode.ts";
 export { TokenSchema } from "./TokenSchema.ts";
@@ -15,9 +16,11 @@ export { Image } from "./elements/Image.ts";
 export { Input } from "./elements/Input.ts";
 export { Link } from "./elements/Link.ts";
 export { SchemeSelect } from "./elements/SchemeSelect.ts";
+export { ThemeSelect } from "./elements/ThemeSelect.ts";
 export { Select } from "./elements/Select.ts";
 export { Text } from "./elements/Text.ts";
 export { TextArea } from "./elements/TextArea.ts";
+export type { Appearance } from "./types/Appearance.ts";
 export type { Autofill } from "./types/Autofill.ts";
 export type { Child } from "./types/Child.ts";
 export type { BaseRole } from "./types/BaseRole.ts";

@@ -59,6 +59,7 @@ function entrySource(
     "let css = '';",
     "let looks = {};",
     "let schemes = ['light'];",
+    "let themes = [];",
     "const message = (e) => (e && typeof e === 'object' && 'message' in e ? String(e.message) : String(e));",
     "const coded = (e) => e && typeof e === 'object' && 'code' in e && /^E[0-9]{4}$/.test(String(e.code));",
     // A diagnostic-shaped error keeps its code; any other throw from the compiler call is an internal failure.
@@ -75,6 +76,8 @@ function entrySource(
       "else if (tokens !== undefined) {",
       "  if (tokens.look !== null && typeof tokens.look === 'object') looks = tokens.look;",
       "  try { schemes = [...schemesOf(tokens)]; } catch (e) { report(e); }",
+      // The `choice` themes, in `themes` order (k.themes), for the first paint and `appearance(ctx)`.
+      "  if (tokens.themes !== null && typeof tokens.themes === 'object') themes = Object.entries(tokens.themes).filter(([, t]) => t !== null && typeof t === 'object' && (t.when === undefined || t.when === 'choice')).map(([n]) => n);",
       "  try { css = compileStyles({ tokens, usages }).css; }",
       "  catch { try { css = compileStyles({ tokens, usages: usages.filter(fits) }).css; } catch (e) { report(e); } }",
       "}",
@@ -99,7 +102,7 @@ function entrySource(
     );
   lines.push(
     `const routes = Object.assign({}, ${routesFiles.map(([f, c]) => `await manifest(${q(f)}, () => import(${spec(f)}), ${c === undefined ? "undefined, undefined" : `${q(c)}, () => import(${spec(c)})`})`).join(", ")});`,
-    "export default JSON.stringify({ css, looks, schemes, problems: [...new Set(problems)], internal: [...new Set(internal)], routes });",
+    "export default JSON.stringify({ css, looks, schemes, themes, problems: [...new Set(problems)], internal: [...new Set(internal)], routes });",
   );
   return lines.join("\n");
 }
@@ -125,12 +128,13 @@ export async function evaluateProject(input: {
   css: string;
   looks: Readonly<Record<string, unknown>>;
   schemes: readonly string[];
+  themes: readonly string[];
   routes: Record<string, RouteEntry>;
   problems: string[];
 }> {
   const { root } = input;
   if (input.tokensFile === undefined && input.routesFiles.length === 0)
-    return { css: "", looks: {}, schemes: ["light"], routes: {}, problems: [] };
+    return { css: "", looks: {}, schemes: ["light"], themes: [], routes: {}, problems: [] };
   // The tokens module is imported dynamically (so its throw is catchable), which esbuild treats as optional.
   if (input.tokensFile !== undefined && !fs.existsSync(path.join(root, input.tokensFile)))
     throw new Error(`keel: Could not resolve "./${input.tokensFile}" (tokens file)`);
@@ -200,7 +204,7 @@ export async function evaluateProject(input: {
     throw e;
   });
   if (result === undefined)
-    return { css: "", looks: {}, schemes: ["light"], routes: {}, problems: [...new Set(syntax)] };
+    return { css: "", looks: {}, schemes: ["light"], themes: [], routes: {}, problems: [...new Set(syntax)] };
   const text = result.outputFiles[0]?.text ?? "";
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "keel-evaluate-"));
   const file = path.join(dir, "evaluate.mjs");
@@ -229,5 +233,13 @@ export async function evaluateProject(input: {
   }
   const looks = isRecord(json.looks) ? json.looks : {};
   const schemes = Array.isArray(json.schemes) ? json.schemes.filter((x) => x === "light" || x === "dark") : ["light"];
-  return { css: json.css, looks, schemes, routes, problems: json.problems.filter((p) => typeof p === "string") };
+  const themes = Array.isArray(json.themes) ? json.themes.filter((x) => typeof x === "string") : [];
+  return {
+    css: json.css,
+    looks,
+    schemes,
+    themes,
+    routes,
+    problems: json.problems.filter((p) => typeof p === "string"),
+  };
 }

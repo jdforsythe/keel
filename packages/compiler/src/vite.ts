@@ -29,6 +29,7 @@ import { devMiddleware } from "./internal/devMiddleware.ts";
 import { entryCode } from "./internal/entryCode.ts";
 import { evaluateProject } from "./internal/evaluateProject.ts";
 import { exportNames } from "./internal/exportNames.ts";
+import { firstPaint } from "./internal/firstPaint.ts";
 import { hostClient } from "./internal/hostClient.ts";
 import { indexHtml } from "./internal/indexHtml.ts";
 import { inspectMiddleware } from "./internal/inspectMiddleware.ts";
@@ -343,6 +344,7 @@ export default function (): {
   let looks: Readonly<Record<string, unknown>> | undefined;
   // The tokens' color schemes (k.schemes First paint).
   let schemes: readonly string[] = ["light"];
+  let themes: readonly string[] = [];
   let schemesRead = false;
   let looksKey = "";
   let stale = true;
@@ -772,7 +774,7 @@ export default function (): {
     const texts: [string, string][] = NAMES.map((n) => [n, artifactText(artifacts[n])]);
     texts.push(["std.json", artifactText(stdArtifact(manifests()).data)]);
     // Written once the tokens are evaluated, so a run that compiles no CSS leaves the file as it is.
-    if (schemesRead) texts.push(["schemes.json", artifactText({ schemes: [...schemes] })]);
+    if (schemesRead) texts.push(["schemes.json", artifactText({ schemes: [...schemes], themes: [...themes] })]);
     for (const [name, text] of writes ? texts : []) {
       if (written.get(name) === text) continue;
       writeArtifact(root, name, text);
@@ -859,6 +861,7 @@ export default function (): {
     css = r.css;
     looks = r.looks;
     schemes = r.schemes;
+    themes = r.themes;
     schemesRead = true;
     looksKey = canonicalJson(r.looks);
     routes = r.routes;
@@ -998,7 +1001,10 @@ export default function (): {
             fs.writeFileSync(path.join(at, out, "routes.json"), artifactText(table.routes));
             if (fs.existsSync(path.join(at, ".keel", "std.json")))
               fs.copyFileSync(path.join(at, ".keel", "std.json"), path.join(at, out, "std.json"));
-            fs.writeFileSync(path.join(at, out, "schemes.json"), `${JSON.stringify({ schemes: table.schemes })}\n`);
+            fs.writeFileSync(
+              path.join(at, out, "schemes.json"),
+              `${JSON.stringify({ schemes: table.schemes, themes: table.themes })}\n`,
+            );
             for (const c of Object.keys(top).filter((n) => top[n]?.adapter === "client" && top[n]?.servedBy === name))
               hostClient(path.join(at, "dist", c), path.join(at, out), c);
           },
@@ -1144,6 +1150,7 @@ export default function (): {
           exists("identity.ts"),
           served,
           d.name,
+          (await firstPaint(root)).themes,
         )
       );
     },

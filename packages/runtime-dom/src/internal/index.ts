@@ -7,3 +7,5 @@ export { servedForm } from "./servedForm.ts";
 export { harnessed } from "./harnessed.ts";
 export type { HostEntry } from "./HostEntry.ts";
 export { hosts } from "./hosts.ts";
+export { rendered } from "./rendered.ts";
+export { renderCtx } from "./renderCtx.ts";
