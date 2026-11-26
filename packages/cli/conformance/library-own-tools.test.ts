@@ -1,4 +1,4 @@
-// Spec: k.library-pack, clause "In the own folder of `@keel/std-ownfix` (`id: 'ownfix'`), its `./tools` importing `src/Code.schema.ts`, which registers `s.format('ownfix.Code', s.string(), { check: (v) => v.startsWith('c'), gen })`, `keel check` reports one E1108 for `formatLiteral(Code, 'dog')` in `src/B.ts` (`does not parse as ownfix.Code (format)`) and none for `formatLiteral(Code, 'cat')` in `src/A.ts`; with no `./tools`, each is E1108 `is not one registered format`; a rule `E2999` its `./tools` registers reports there; `\"./tools\": \"./dist/tools.js\"`, no such file, is one E1159 at `package.json`."
+// Spec: k.library-pack, clause "In the own folder of `@keel/std-ownfix` (`id: 'ownfix'`), its `./tools` importing `src/Code.schema.ts`, which registers `s.format('ownfix.Code', s.string(), { check: (v) => v.startsWith('c'), gen })`, by `s.register('ownfix.Code', Code)`, `keel check` reports one E1108 for `formatLiteral(Code, 'dog')` in `src/B.ts` (`does not parse as ownfix.Code (format)`) and none for `formatLiteral(Code, 'cat')` in `src/A.ts`; with no `./tools`, each is E1108 `is not one registered format`; a rule `E2999` its `./tools` registers reports there; `\"./tools\": \"./dist/tools.js\"`, no such file, is one E1159 at `package.json`."
 // Seed: 1337 (no generated input). Binary runs: 4 `keel check` runs over four folders (with `./tools`, without, with a rule, with a missing target), each run once and shared by its cases.
 // ASSUMPTIONS (spec silent): `./tools` is `"./tools": "./tools.ts"`, a root file that imports `./src/Code.schema.ts` (Node strips the types); `gen` is `{ from: s.string(), map: (v) => `c${v}` }`;
 // a diagnostic's `path` is package-relative in an own folder ("each diagnostic at the folder's own path"); E1159 is judged by its code, path `package.json` and the message naming `./tools` and its target
@@ -8,7 +8,7 @@ import { SLOW, cleanup, diags, keel, manifestOf, materialize, toolsRule, type Tr
 
 const NAME = "@keel/std-ownfix";
 const CODE_SCHEMA =
-  "import { s } from '@keel/schema'\nexport const Code = s.format('ownfix.Code', s.string(), { check: (v) => v.startsWith('c'), gen: { from: s.string(), map: (v) => `c${v}` } })\n";
+  "import { s } from '@keel/schema'\nexport const Code = s.format('ownfix.Code', s.string(), { check: (v) => v.startsWith('c'), gen: { from: s.string(), map: (v) => `c${v}` } })\ns.register('ownfix.Code', Code)\n";
 const A_SRC =
   "import { formatLiteral } from '@keel/schema'\nimport { Code } from './Code.schema.ts'\nexport const a = formatLiteral(Code, 'cat')\n";
 const B_SRC =
