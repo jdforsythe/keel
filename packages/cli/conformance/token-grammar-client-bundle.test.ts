@@ -1,5 +1,5 @@
 // Spec: k.values, clause "`keel build`'s client JavaScript for a project with `brandTokens`, one scheme and no library holds none of the strings `safe-area-inset`, `cqmin`, `revert-layer` and `[aria-pressed=\"true\"]`."
-// Spec: k.values, clause "**Stylesheet.** Each value a form admits gives a declaration the browser keeps and computes to a value other than the property's initial one, unless it is written as that value (`0`, `normal`). No part of the value forms ships in a client bundle: they run in `keel check`, `keel build`, `keel dev` and `defineTokens` under Node."
+// Spec text (k.values): "**Stylesheet.** Each value a form admits gives a declaration the browser keeps and computes to a value other than the property's initial one, unless it is written as that value (`0`, `normal`). No part of the value forms ships in a client bundle: they run in `keel check`, `keel build`, `keel dev` and `defineTokens` under Node."
 // Seed: 1337 (no generated input: one spawned `keel build` per adapter).
 // The real binary builds staticTree's project (static-support.ts) with `brandTokens` (one scheme) as its `tokens.ts` and no library, once for a `static` and once for a `client` deployable; every `.js` file under `dist/site/assets/` is the client JavaScript.
 // The case is not vacuous: the build exits 0 and the client JavaScript is not empty.

@@ -1,6 +1,6 @@
 // Spec: k.schemes, clause "With color tokens `fg` `{ light: '#111111', dark: '#787878' }` and `bg` `'#ffffff'`, `<Text fg=\"fg\" bg=\"bg\">x</Text>` is one E1804 with message `fg \"fg\" on bg \"bg\" is 4.42:1 in dark, needs 4.5:1`; with `schemes: ['light']` it is none."
 // Spec: k.schemes, clause "With `tokens.ts` exporting `brandTokens`, a page rendering a `SchemeSelect` is one E1814 at the element with message `SchemeSelect needs schemes light and dark; the tokens have light only`."
-// Spec: k.schemes, clause "E1814 `SchemeSelect` with one scheme (message `SchemeSelect needs schemes light and dark; the tokens have <scheme> only`; fix: none)"
+// Rules (k.schemes): "E1814 `SchemeSelect` with one scheme (message `SchemeSelect needs schemes light and dark; the tokens have <scheme> only`; fix: none)"
 // Seed: 1337 (fc.assert below).
 // ASSUMPTIONS (k.looks In an app: E1814 judges the evaluated tokens, `tokens.ts` text only for positions): tokens reach `check()` as `artifacts: { tokens }` (as a11y-contrast-inherited.test.ts passes them); for E1814 the project also holds `tokens.ts` as source text, the file the clause names, and the artifact is what that file evaluates to. "At the element" is a position on the `<SchemeSelect` line from its `<` to the end of its name.
 import { check } from "@keel/check";

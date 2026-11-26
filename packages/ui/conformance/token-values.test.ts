@@ -3,12 +3,12 @@
 // Spec: k.values, clause "`border: { a: '1px solid var(--k-color-text)' }` is accepted with a color token `text` and refused with rule `format` at `border.a` without one."
 // Spec: k.values, clause "In Chromium, the cases are generated from the forms (each unit; each keyword; each math function at two, three and four arguments; nesting at four and at five; 32 and 33 names; a family list at one and eight; inside and outside a string, each of `\"`, `'`, `\`, each control character and a lone surrogate): every case `TokenSchema` accepts, set on an element through the property its group's props write, reads back from `style` as a non-empty value and gives a computed value other than the initial one unless written as it, and every generated case the forms do not produce is refused."
 // Spec: k.values, clause "In Chromium, the CSS file compiled from `brandTokens` and from tokens holding one generated case per form, every group used by a style prop, parses as a `CSSStyleSheet` (`replaceSync`) with `cssRules.length` equal to the number of rules the compiler emitted, each rule holding every declaration it was emitted with."
-// Spec: k.values, clause "**Stylesheet.** Each value a form admits gives a declaration the browser keeps and computes to a value other than the property's initial one, unless it is written as that value (`0`, `normal`). No part of the value forms ships in a client bundle: they run in `keel check`, `keel build`, `keel dev` and `defineTokens` under Node."
-// Spec: k.values, clause "A refused value fails `TokenSchema` with rule `format` at `<group>.<name>` (with `light` or `dark` after it for a pair): `tokens.ts` is E1807 and a library's shipped object is E1812 `<id>Tokens fails TokenSchema at <path>` (k.looks). Refused, and why: `url(...)` and `image-set(...)` reach outside the stylesheet; a `var(...)` of anything but a held color token can hold anything; `!important` and the CSS-wide keywords change the cascade, not the value; a negative literal is dropped by `padding`, `gap`, `border-radius`, `font-size`, widths, blurs, durations and media queries; `none` and `%` for a width that `w`, `h` and `border` ignore. A `space` token whose value is `auto` is in no group of `p`, `px`, `py` and `gap`, which ignore it (E1801 at the use, k.a11y-static Token names)."
+// Spec text (k.values): "**Stylesheet.** Each value a form admits gives a declaration the browser keeps and computes to a value other than the property's initial one, unless it is written as that value (`0`, `normal`). No part of the value forms ships in a client bundle: they run in `keel check`, `keel build`, `keel dev` and `defineTokens` under Node."
+// Spec text (k.values): "A refused value fails `TokenSchema` with rule `format` at `<group>.<name>` (with `light` or `dark` after it for a pair): `tokens.ts` is E1807 and a library's shipped object is E1812 `<id>Tokens fails TokenSchema at <path>` (k.looks). Refused, and why: `url(...)` and `image-set(...)` reach outside the stylesheet; a `var(...)` of anything but a held color token can hold anything; `!important` and the CSS-wide keywords change the cascade, not the value; a negative literal is dropped by `padding`, `gap`, `border-radius`, `font-size`, widths, blurs, durations and media queries; `none` and `%` for a width that `w`, `h` and `border` ignore. A `space` token whose value is `auto` is in no group of `p`, `px`, `py` and `gap`, which ignore it (E1801 at the use, k.a11y-static Token names)."
 // Seed: 1337 (fc.assert below). The shipped-object half (E1812) is packages/check/conformance/token-values-e1812.test.ts; the `auto` space token and the `clamp()` contrast cases are packages/check/conformance/token-values-check.test.ts; the client-bundle clause is packages/cli/conformance/token-grammar-client-bundle.test.ts.
 // The Chromium clauses: this repo's conformance harness has no browser in the ui package (the smokes under tooling/smoke run Chromium), so the generated cases run against the tokenizer: TokenSchema's verdict on each generated case, and a strict CSS tokenizer written below (a browser's: strings end before a newline, a bracket closes, a block closes, a declaration is `name:value`) over what `compileStyles` emits, asserting every accepted value is kept whole in a well-formed rule.
 // Owed to RFC 0244's runner: the in-browser assertions (a value set on an element reads back from `style` non-empty and computes to other than the initial value; `CSSStyleSheet.replaceSync` keeps `cssRules.length` rules each holding every declaration).
-// ASSUMPTIONS: a name counts words and function names as well as numbers and lengths; the 32/33 boundary is asserted on a font list of words, and on lengths at 31 and 33, since the spec does not say whether `calc` is a name. A brackets-nested value counts `calc(`, `min(`, `max(`, `clamp(`, `env(` and a bare `(` each as one bracket.
+// ASSUMPTIONS: a name counts words, not function names (k.values Numbers and lengths: a function name is not one of them, the names inside it are); the 32/33 boundary is asserted on a font list of words, on lengths at 31 and 33, and on lengths at 32 and 33 with a function name present. A brackets-nested value counts `calc(`, `min(`, `max(`, `clamp(`, `env(` and a bare `(` each as one bracket.
 // The "rule" a refusal reports is `format` at the path `[group, name]` (`[group, name, "light" | "dark"]` for a pair), read from `error.data.issues` as k.schema gives it.
 import { TokenSchema, defineTokens } from "@keel/ui";
 import { brandTokens } from "@keel/ui/brand";
@@ -515,6 +515,20 @@ describe("k.values: forms refuse what they do not produce", () => {
     expect(verdict("space", lengths(31))).toBe(true);
     expect(verdict("space", lengths(33))).toBe(false);
     expect(verdict("space", lengths(80))).toBe(false);
+  });
+
+  test("a function name (`calc`, `min`, `max`, `clamp`, `env`, `var`) is not one of the 32 names a value holds at most, the names inside it are: 32 accepted and 33 refused with a function name present", () => {
+    const sum = (n: number): string => Array.from({ length: n }, () => "1px").join(" + ");
+    for (const fn of ["calc", "min", "max", "clamp"]) {
+      const args = (n: number): string => (fn === "calc" ? sum(n) : [sum(n - 2), "1px", "1px"].join(", "));
+      const wrap = (n: number): string =>
+        `${fn}(${fn === "min" || fn === "max" ? [sum(n - 1), "1px"].join(", ") : args(n)})`;
+      expect(verdict("space", wrap(32)), `${fn} 32`).toBe(true);
+      expect(verdict("space", wrap(33)), `${fn} 33`).toBe(false);
+    }
+    const withEnv = (n: number): string => `calc(${sum(n - 1)} + env(safe-area-inset-top))`;
+    expect(verdict("space", withEnv(32)), "env 32").toBe(true);
+    expect(verdict("space", withEnv(33)), "env 33").toBe(false);
   });
 
   test("brackets nest at most four deep: four nested `calc` are accepted and five refused, whatever mix of `calc`, `min`, `max`, `clamp` and a bracketed sum holds them", () => {
