@@ -64,11 +64,17 @@ test("formatUnit, formatList, formatDateTime and pluralCategories are the Intl c
   expect(pluralCategories("ja-JP")).toEqual(["other"]);
 });
 
+function isDecimal(s: string): s is `${number}` {
+  return /^-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/.test(s);
+}
+
 test("numberParts takes every plain decimal string and refuses one with anything appended or prepended", () => {
   const decimal = fc.stringMatching(/^-?(?:0|[1-9][0-9]{0,30})(?:\.[0-9]{1,20})?$/);
   const junk = fc.constantFrom("e", "e5", " ", "_", "x", "+", ".", "0x");
   fc.assert(
     fc.property(decimal, junk, fc.boolean(), (d, j, before) => {
+      expect(isDecimal(d)).toBe(true);
+      if (!isDecimal(d)) return;
       expect(
         numberParts(d, "en-US")
           .map((p) => p.value)

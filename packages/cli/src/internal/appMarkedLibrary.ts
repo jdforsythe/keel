@@ -23,7 +23,7 @@ export function appMarkedLibrary(cwd: string): Diag | undefined {
   if (!isRecord(pkg) || pkg.keel !== "library") return undefined;
   return makeDiag("E1170", `an app's folder is no library's own folder; drop "keel": "library"`, {
     path: "package.json",
-    ...(jsonFieldAt(text, "keel") ?? { line: 1, col: 1 }),
+    ...(jsonFieldAt(text, "keel", "key") ?? { line: 1, col: 1 }),
     see: "k.module",
   });
 }

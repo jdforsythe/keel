@@ -35,6 +35,7 @@ test(
     expect(codes(marked.records).sort()).toEqual([...codes(plain.records), "E1170 package.json"].sort());
     const e1170 = marked.records.find((r) => r.code === "E1170");
     expect(e1170?.line).toBe(1);
+    expect(e1170?.col).toBe(PKG.indexOf('"keel"') + 1);
     expect(e1170?.message).toBe(`an app's folder is no library's own folder; drop "keel": "library"`);
     expect(marked.status).toBe(1);
   },
