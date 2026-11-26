@@ -47,6 +47,7 @@ test("plainDateOf and formatInstant throw RangeError naming the zone the host re
   const z = TimeZone.parse(REFUSED);
   expect(i.ok && z.ok).toBe(true);
   if (!(i.ok && z.ok)) return;
-  expect(() => plainDateOf(i.value, z.value)).toThrow(new RangeError(`Invalid time zone specified: ${REFUSED}`));
+  expect(() => plainDateOf(i.value, z.value)).toThrow(RangeError);
+  expect(() => plainDateOf(i.value, z.value)).toThrow(`Invalid time zone specified: ${REFUSED}`);
   expect(() => formatInstant(i.value, "en-US", z.value, "short")).toThrow(RangeError);
 });
