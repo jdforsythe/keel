@@ -12,7 +12,9 @@
 - No verb sleeps. A page is quiet when nothing it sent is unanswered (event streams aside), the DOM has not changed for a frame and no navigation is under way. Every wait is bounded at 10 s by default and scaled by `KEEL_TEST_TIME_SCALE`. A `fixed` part is unscaled.
 - When a test fails, one T0001 is printed with the code (E1735 for a wait that ran out), then the server's records from the failing verb, then a screenshot and a trace under `reports/e2e/`. A browser problem the test did not read with `problems()` is E1738.
 - Ledger: e2e files are test files the ledger reads. A passing e2e test gives `example` evidence to what it references. There is no new rung or item kind. The run report is `reports/tests/e2e.json`, beside `run.json`, and neither run removes the other's.
-- A library's folder serves one component as a page with `serve({ page, props })`.
+- A library's folder serves one component as a page with `serve({ page: 'src/Card.ts', props })`. The tool writes a one-route host project under `.keel/e2e-host/` that resolves the library's own `node_modules`, and `keel scaffold library` adds `@keel/compiler`, `@keel/router`, `@keel/server`, `@keel/testing` and `playwright-core` to `devDependencies`.
+- A migration loses no assertion. To carry what the smokes checked, the page gains `title()`, padding and the `body` (no id) in `style`, `warning` problems and the island check in `resume()`; `Served` gains `log(store)` (ids and names, no payload), `open`'s write-only `cookies`, and `stop`'s `drain`.
+- `apps/inspector` reads the inspect document on its server, for loopback targets only. A cross-origin call from the browser to an origin computed at run time is what Keel's policy refuses, and the old smoke passed only because its file server sent no policy.
 - E1734 a missing browser, E1735 a wait that ran out, E1736 a misplaced call, E1737 a deployable that did not start, E1738 an unread browser problem.
 
 **Alternatives.**
