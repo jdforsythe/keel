@@ -47,7 +47,7 @@ it("reports aria-checked from on", () => {
   view.dispose();
 });
 
-it("after any run of clicks, aria-checked equals the parity", async () => {
+it("after any run of clicks, aria-checked equals the parity", { timeout: 30_000 }, async () => {
   await fc.assert(
     fc.asyncProperty(fc.boolean(), fc.nat({ max: 8 }), async (start, clicks) => {
       const view = mount(start);

@@ -6,8 +6,9 @@ import { build } from "esbuild";
 import type { TokensResult } from "./TokensResult.ts";
 
 // Resolved from the project root, which a project with `tokens.ts` depends on (its `defineTokens` or `brandTokens`).
+const UI_CSS = "@keel/ui/css";
 const ENTRY = `import { TokenSchema } from "@keel/ui";
-import { schemesOf } from "@keel/ui/css";
+import { schemesOf } from ${JSON.stringify(UI_CSS)};
 const message = (e) => (e && typeof e === "object" && "message" in e ? String(e.message) : String(e));
 let result;
 try {
