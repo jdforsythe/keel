@@ -5,7 +5,7 @@
 // folder and did not remove it. A run therefore never leaves anything in the machine's temp folder, and a leak has a
 // name. The folders conformance files make with no teardown (the conformance-writer's to fix) are named in
 // `leftByConformance` below by what the package's conformance files make, so they are removed with the run's folder
-// and never fail it.
+// and never fail it (an entry whose name starts with such a prefix counts).
 import { type Dirent, lstatSync, mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -96,8 +96,10 @@ export default function setup(): () => void {
     const named = new Map<string, number>();
     for (const name of left) {
       if (name === NODE_COMPILE_CACHE) continue;
+      // An entry whose name starts with a prefix a conformance file makes is that file's: it may name a sibling of the
+      // folder it made (`<folder>-base.json`) that its own cleanup does not remove.
+      if ([...allowed].some((p) => name.startsWith(p))) continue;
       const prefix = prefixOf(name);
-      if (allowed.has(prefix)) continue;
       named.set(prefix, (named.get(prefix) ?? 0) + 1);
     }
     for (const [prefix, n] of named) {

@@ -13,8 +13,11 @@ const fixtures = path.join(import.meta.dirname, "..", "fixtures", "watchdog");
 const vitest = path.join(root, "node_modules", "vitest", "vitest.mjs");
 // testTimeout and hookTimeout 200 ms (the fixture config): allowed 200 + 2 * 200, bound 600 * 2 + 500 = 1.7 s. The
 // fixture's times are the watchdog's input, so the child vitest runs them unscaled; this file's own waits scale.
+// A killed child run leaves its own temp root and vitest's spool behind: they go in a folder of this file's.
+const childTmp = tempDir("keel-watchdog-tmp-");
 const env = {
   ...process.env,
+  TMPDIR: childTmp,
   KEEL_WATCHDOG_GRACE_MS: "500",
   KEEL_WATCHDOG_TICK_MS: "100",
   KEEL_AGENT: "1",
