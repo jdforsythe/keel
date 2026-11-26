@@ -14,6 +14,7 @@ import { applyEdits } from "./internal/applyEdits.ts";
 import { artifactDir } from "./internal/artifactDir.ts";
 import { budgetBreaches } from "./internal/budgetBreaches.ts";
 import { chainStoreIds } from "./internal/chainStoreIds.ts";
+import { choiceThemes } from "./internal/choiceThemes.ts";
 import { compatChecks } from "./internal/compat/compatChecks.ts";
 import { contractChecks } from "./internal/contractChecks.ts";
 import { depsRuleOwners } from "./internal/depsRuleOwners.ts";
@@ -101,12 +102,14 @@ function expectedHashes(files: readonly SourceFile[], opts: CheckOptions): Reado
     const topology = topologyOf(dir, project, opts);
     const options = topology === undefined ? {} : { topology };
     const compiled = artifactHashes(sources, options);
-    // `schemes.json` (k.schemes) is derived from the evaluated tokens: with no `tokens.ts`, one scheme.
+    // `schemes.json` (k.schemes) is derived from the evaluated tokens: with no `tokens.ts`, one scheme and no themes.
     const tokens: unknown = opts.artifacts?.tokens ?? opts.projectArtifacts?.[dir]?.tokens;
     const hasTokens = project.some((f) => f.path === `${dir}tokens.ts`);
     const schemes = tokens !== undefined ? schemesIn(tokens) : hasTokens ? undefined : ["light"];
     const hashes =
-      schemes === undefined ? compiled : { ...compiled, "schemes.json": hashOf({ schemes: [...schemes] }) };
+      schemes === undefined
+        ? compiled
+        : { ...compiled, "schemes.json": hashOf({ schemes: [...schemes], themes: choiceThemes(tokens) }) };
     // Packages a route manifest spreads resolve from the project's own directory, as its imports do.
     const literal = { ...options, root: path.join(opts.root ?? process.cwd(), dir) };
     out.set(dir, hashes["routes.json"] === null ? { hashes, routes: routeLiterals(sources, literal) } : { hashes });
