@@ -43,6 +43,8 @@ The `unsafe` count measures escapes from the type system in code that runs. Nega
 - [x] `done` RFC and ADR status lines say what is built
 - [ ] `next` RFC 0191's last part: the `Box as="nav"` conformance case (backlog 0580)
 
+- [ ] `running` the `unsafe` count comes down (the plan's D192): 33 on the main line and 39 in `lane-std-formats`, most of it one throw wrapper per stdlib package and the detached scopes; RFC 0242 gives a library a sanctioned defect signal and module-level ownership so those stop being escapes; then the casts a type guard or a typed schema builder removes (`testing/unsafe/axeSync.ts`, `std-messages/unsafe/asEntry.ts`, `std-tables/unsafe/asQuerySchema.ts`); the target is below the 13 the kernel alone had
+
 ### W2 Weakness clearance
 The triage is `tasks/p1/weaknesses.md`: 102 lines to fix now in 17 lanes (A1), 105 after them in 15 lanes (A2), 24 for the docs sweep, 7 moved to `tasks/FUTURE.md`, 52 closed as done or overtaken, 2 that need a person.
 - [x] `done` the backlog triaged with decisions, in fix lanes
@@ -106,6 +108,13 @@ The triage is `tasks/p1/weaknesses.md`: 102 lines to fix now in 17 lanes (A1), 1
 - [ ] `next` a second colour scheme (dark mode): decided inside the look RFC, since it is a question about tokens; no line held it before
 - [ ] `next` measured claims for the pitch: an agent builds the same app in Keel and in the comparison frameworks (W16), and a runtime and bundle size comparison produced by CI (none is planned elsewhere); until both exist the site claims neither
 - [ ] `next` the repository's own numbers agree: the README says 603 clauses and 35 packages against the ledger's 1,479 and 41; the handoff says 78 of 79 kernel sections conformance-covered where the spec status lines read 73 of 83; the `unsafe` count is 33 in the ledger; whether golden-2 already runs on the Postgres battery (its README says so, W14 says next); the two database variables (`KEEL_DATABASE_URL`, `KEEL_POSTGRES_URL`) explained in one place. Counts are generated, not typed, wherever a doc states one
+- [ ] `next` colour forms a designer expects: k.values allows `#rgb` and `#rrggbb` only; widen to every opaque form contrast can judge exactly (`rgb()`, `hsl()`, `oklch()`), and decide what a colour with alpha is (an overlay token whose backdrop is stated, so contrast is still judged)
+- [ ] `next` session recordings redesigned (RFC 0248, the plan's D199): a write-only ingest that needs a short-lived signed upload grant; a configured sink the server never reads back; no list route, reader guard or viewer registration; `keel session` works from the storage or a local folder; the nightly job reads the storage directly
+- [ ] `next` themes (RFC 0249, the plan's D200): named themes beside light and dark, each a partial token set with a condition; print against screen; contrast per theme; every opaque colour form; `keel tokens import` from a design tokens file with modes as themes; a guide from a Figma file to a styled app
+- [ ] `next` motion (RFC 0252, the plan's D203): transitions and easings as tokens and style props; named keyframes with enter and exit; page and shared-element transitions through the router; scroll-driven animation; reduced motion by construction and checked; a scope-owned way for code to animate
+- [ ] `blocked` (RFC 0249) design mode in `keel dev` (RFC 0253, the plan's D205): token values edited live across the app or scoped to a page or component, contrast judged as they change, themes created and switched, the result exported as a patch to `tokens.ts` for a pull request
+- [ ] `next` `keel check` refreshes its derived `.keel/` files before judging, so an edit needs no build in between; a stale committed artifact is an error only in CI's frozen mode
+- [ ] `blocked` (freeze) a browser tool over the queryable runtime (RFC 0250): one extension for Chrome and Firefox with stores, the dependency graph, scopes and tasks, the a11y tree, tokens and contrast, the session recorder, and a server panel
 - [ ] `human` another product ships a global `keel` binary: the bin name before npm
 
 ### W12 Release

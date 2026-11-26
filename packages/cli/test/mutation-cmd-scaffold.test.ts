@@ -1,3 +1,4 @@
+import { fixedTime } from "@keel/tooling/test-time";
 // Mutation-killing tests for `keel scaffold` / `keel codemod`: exact records, labels, refusals and dry-run diffs.
 import { beforeAll, describe, expect, it } from "vitest";
 import { runEngine } from "../src/internal/runEngine.ts";
@@ -59,7 +60,7 @@ beforeAll(async () => {
         "import OrderCard from '../orders/OrderCard.tsx'\nexport default function CatalogRow() {\n  return OrderCard\n}\n",
     },
   ]);
-}, 60_000);
+}, fixedTime(60_000));
 
 describe("scaffold command routing", () => {
   it("no operation is an empty ok run with its own name", async () => {

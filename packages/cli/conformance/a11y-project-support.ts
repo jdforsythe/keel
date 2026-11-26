@@ -4,7 +4,7 @@
 import { existsSync, readFileSync, readdirSync, symlinkSync } from "node:fs";
 import { join } from "node:path";
 import { collect } from "./ledger-fixture-kinds.ts";
-import { type CliRecord, type Run, keel, makeProject, root } from "./test-sim-project.ts";
+import { type CliRecord, type Run, childOutput, keel, makeProject, root } from "./test-sim-project.ts";
 
 /** The fixture test's environment line is joined from two parts so vitest does not read it as the support file's own. */
 export const ENV = ["// @vitest", "environment happy-dom"].join("-");
@@ -53,7 +53,8 @@ const ctx = () => createCtx({ mode: "sim", seed: 1337 });
 /** `keel build` must succeed; `keel test` is returned, its status is the caller's to judge. */
 export function buildAndTest(dir: string): Run {
   const built = keel(dir, ["build"]);
-  if (built.status !== 0) throw new Error(`keel build failed in ${dir}: ${built.stdout}`);
+  if (built.status !== 0)
+    throw new Error(`keel build failed in ${dir} (status ${String(built.status)}): ${childOutput(built)}`);
   return keel(dir, ["test"]);
 }
 

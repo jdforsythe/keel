@@ -47,7 +47,7 @@ export function materialize(files: Map<string, string>): string {
 }
 
 export type CliRecord = { kind: string; [key: string]: unknown };
-export type CliResult = { status: number | null; records: CliRecord[] };
+export type CliResult = { status: number | null; records: CliRecord[]; stdout?: string; stderr?: string };
 
 function isRecord(v: unknown): v is CliRecord {
   return typeof v === "object" && v !== null && "kind" in v && typeof v.kind === "string";
@@ -74,7 +74,7 @@ export function keel(dir: string, args: string[]): CliResult {
       // non-JSON line: ignored
     }
   }
-  return { status: r.status, records };
+  return { status: r.status, records, stdout: r.stdout, stderr: r.stderr };
 }
 
 export function readTree(dir: string): Map<string, string> {
@@ -93,4 +93,15 @@ export function readTree(dir: string): Map<string, string> {
 
 export function cleanup(dir: string): void {
   rmSync(dir, { recursive: true, force: true });
+}
+
+/** A failed child's diagnostics on one line: the non-empty lines of stdout and of stderr, each joined with ` | ` and cut to its last 440 characters, the two joined with ` | `. */
+export function childOutput(r: { stdout?: string; stderr?: string }): string {
+  const tail = (s: string | undefined): string =>
+    (s ?? "")
+      .split("\n")
+      .filter((l) => l.trim() !== "")
+      .join(" | ")
+      .slice(-440);
+  return `${tail(r.stdout)} | ${tail(r.stderr)}`;
 }

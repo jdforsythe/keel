@@ -6,6 +6,7 @@ import { loader, manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
 import { ok, s } from "@keel/schema";
 import { renderRoute } from "@keel/testing";
+import { fixedTime } from "@keel/tooling/test-time";
 import { describe, expect, it } from "vitest";
 
 const turn = (): Promise<void> =>
@@ -32,10 +33,14 @@ const routes = manifest(c, {
 });
 
 describe("settle beside a pending sim clock deadline", () => {
-  it("waits out a loader of 3,000 macrotask turns while a deadline nothing awaits is pending", async () => {
-    const ctx = createCtx({ mode: "sim", seed: 1337 });
-    const t = await renderRoute("clk.slow", { routes, ctx });
-    expect(t.route()).toMatchObject({ id: "clk.slow", pending: false });
-    t.dispose();
-  }, 20_000);
+  it(
+    "waits out a loader of 3,000 macrotask turns while a deadline nothing awaits is pending",
+    async () => {
+      const ctx = createCtx({ mode: "sim", seed: 1337 });
+      const t = await renderRoute("clk.slow", { routes, ctx });
+      expect(t.route()).toMatchObject({ id: "clk.slow", pending: false });
+      t.dispose();
+    },
+    fixedTime(20_000),
+  );
 });

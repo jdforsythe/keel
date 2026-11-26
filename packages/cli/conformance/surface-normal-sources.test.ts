@@ -9,7 +9,7 @@ import { rmSync } from "node:fs";
 import { join } from "node:path";
 import fc from "fast-check";
 import { afterAll, beforeAll, expect, test } from "vitest";
-import { cleanup, keel } from "./compat-support.ts";
+import { childOutput, cleanup, keel } from "./compat-support.ts";
 import {
   SLOW,
   SUBJECT,
@@ -69,7 +69,8 @@ test(
       write(dir, { [SUBJECT]: e.apply(SUBJECT_TEXT) });
       const checked = keel(dir, ["check"]);
       expect(stale(checked), `E1005 after: ${e.name}`).toEqual([]);
-      expect(keel(dir, ["build"]).status, `build after: ${e.name}`).toBe(0);
+      const built = keel(dir, ["build"]);
+      expect(built.status, `build after: ${e.name}: ${childOutput(built)}`).toBe(0);
       expect(surfaceText(dir) === recorded, `surface.json bytes after: ${e.name}`).toBe(true);
       restore();
     }

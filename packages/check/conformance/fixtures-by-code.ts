@@ -410,7 +410,7 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
   },
   // E1161 (rfc:0163): a base element in a library file whose `id` is missing; the clean counterpart builds it from the component's `id` prop.
   E1161: {
-    opts: NO_TYPES,
+    opts: { types: false, artifacts: { tokens: { space: { 2: "8px" } } } },
     bad: [
       mod("shop", ["@acme/charts"], []),
       ...library("charts", []),
@@ -1473,7 +1473,7 @@ export const CODE_FIXTURES: Readonly<Record<string, CodeFixture>> = {
     clean: [f("C.tsx", `${UI}export default function C() { return <Button look="primary">Save</Button> }\n`)],
   },
   E1809: {
-    opts: NO_TYPES,
+    opts: { types: false, artifacts: { tokens: { space: { 2: "8px" } } } },
     bad: [f("C.tsx", `${UI}export default function C() { return <Box gap="2"><Text>a</Text><Text>b</Text></Box> }\n`)],
     clean: [
       f(

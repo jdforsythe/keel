@@ -2,6 +2,7 @@
 // minted row; `expired` exactly when `now >= expiresAt`; the clock is read only after a match.
 import { type Secret, reveal, s } from "@keel/schema";
 import { Digested } from "@keel/std-tokens";
+import { fixedTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
 import { expect, test } from "vitest";
 import { simEngine } from "../src/server/internal/simEngine.ts";
@@ -73,7 +74,7 @@ test("the clock is read only after a match", () => {
   const { c, m, row, find } = minted(() => {
     reads++;
     return 0;
-  }, 60000);
+  }, fixedTime(60000));
   reads = 0;
   const text = reveal(m.token);
   const wrong = `${text.slice(0, -1)}${text.endsWith("0") ? "1" : "0"}`;

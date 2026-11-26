@@ -8,6 +8,7 @@ import { createCtx } from "@keel/ctx";
 import { ok, s } from "@keel/schema";
 import { sql } from "@keel/std-postgres";
 import { database } from "@keel/std-postgres/server";
+import { fixedTime } from "@keel/tooling/test-time";
 import fc from "fast-check";
 import { afterEach, expect, test } from "vitest";
 import { foundMigrations } from "../src/server/internal/foundMigrations.server.ts";
@@ -72,15 +73,19 @@ const closedPort = (): Promise<number> =>
     });
   });
 
-test("a refused connection is keel.unreachable for run, one and transaction too, and a later call tries again", async () => {
-  put("KEEL_POSTGRES_URL", `postgres://u:pw@127.0.0.1:${await closedPort()}/db`);
-  const db = database("t.refused", { migrations: { "./migrations/0001-a.sql": "create table refused_a (n int)" } });
-  const ctx = createCtx({ mode: "real", seed: SEED });
-  const One = s.object({ c: s.number() });
-  for (const r of [
-    await db(ctx).one(sql(One)`select 1::int as c`),
-    await db(ctx).transaction(async () => ok(1)),
-    await db(ctx).query(sql(One)`select 1::int as c`),
-  ])
-    expect(r.ok ? null : r.error.code).toBe("keel.unreachable");
-}, 60_000);
+test(
+  "a refused connection is keel.unreachable for run, one and transaction too, and a later call tries again",
+  async () => {
+    put("KEEL_POSTGRES_URL", `postgres://u:pw@127.0.0.1:${await closedPort()}/db`);
+    const db = database("t.refused", { migrations: { "./migrations/0001-a.sql": "create table refused_a (n int)" } });
+    const ctx = createCtx({ mode: "real", seed: SEED });
+    const One = s.object({ c: s.number() });
+    for (const r of [
+      await db(ctx).one(sql(One)`select 1::int as c`),
+      await db(ctx).transaction(async () => ok(1)),
+      await db(ctx).query(sql(One)`select 1::int as c`),
+    ])
+      expect(r.ok ? null : r.error.code).toBe("keel.unreachable");
+  },
+  fixedTime(60_000),
+);

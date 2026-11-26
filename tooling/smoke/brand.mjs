@@ -13,10 +13,10 @@ import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { extname, join, normalize } from "node:path";
 import { chromium } from "@playwright/test";
-import { testTime } from "../test-time.ts";
+import { fixedTime } from "../test-time.ts";
 import { buildIn, copyApp, freePort, recorder, root } from "./built.mjs";
 
-const LIMIT_MS = testTime(240_000);
+const LIMIT_MS = fixedTime(240_000);
 const { step, finish } = recorder();
 let tmp;
 let server;
@@ -30,13 +30,13 @@ const stopAll = async () => {
 };
 const limit = setTimeout(async () => {
   step("time limit", false, `${LIMIT_MS / 1000}s`);
-  await Promise.race([stopAll(), new Promise((r) => setTimeout(r, testTime(5000)))]);
+  await Promise.race([stopAll(), new Promise((r) => setTimeout(r, fixedTime(5000)))]);
   finish("brand");
   process.exit(1);
 }, LIMIT_MS);
 for (const signal of ["SIGINT", "SIGTERM"]) {
   process.on(signal, async () => {
-    await Promise.race([stopAll(), new Promise((r) => setTimeout(r, testTime(5000)))]);
+    await Promise.race([stopAll(), new Promise((r) => setTimeout(r, fixedTime(5000)))]);
     process.exit(130);
   });
 }
@@ -123,7 +123,7 @@ try {
     page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
     page.on("pageerror", (e) => errors.push(String(e)));
     await page.goto(`${base}/`);
-    await page.locator('[id="app.home.row"]').waitFor({ timeout: testTime(15_000) });
+    await page.locator('[id="app.home.row"]').waitFor({ timeout: fixedTime(15_000) });
 
     const width = await page.evaluate(() => document.documentElement.scrollWidth);
     step("320px: no sideways scroll with a 200-character string", width <= 320, `scrollWidth ${width}`);
