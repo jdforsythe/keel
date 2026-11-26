@@ -3,8 +3,8 @@
 // S0013 (kernel code naming `@keel/std-`) is built later with another RFC and is not written here.
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterAll, describe, expect, it } from "vitest";
 import { fixedTime, testTime } from "../test-time.ts";
 
@@ -16,7 +16,7 @@ afterAll(() => {
 
 /** Runs structure-lint over a throwaway root holding one file; returns its S0012 diagnostics. */
 function s0012(file: string, source: string): { code: string; path: string }[] {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "keel-parity-"));
+  const root = tempDir("keel-parity-");
   made.push(root);
   fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
   fs.writeFileSync(path.join(root, file), source);

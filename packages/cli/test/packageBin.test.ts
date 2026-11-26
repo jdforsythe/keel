@@ -1,12 +1,12 @@
 // packageBin and toolCommand: a tool's executable by its real path, also under a `node_modules` that is a link.
-import { mkdirSync, mkdtempSync, realpathSync, symlinkSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync, realpathSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { describe, expect, it } from "vitest";
 import { packageBin } from "../src/internal/packageBin.ts";
 import { toolCommand } from "../src/internal/toolCommand.ts";
 
-const tmp = (): string => realpathSync(mkdtempSync(join(tmpdir(), "keel-bin-")));
+const tmp = (): string => realpathSync(tempDir("keel-bin-"));
 const install = (modules: string, pkg: string, bin: unknown, file: string): void => {
   const dir = join(modules, pkg);
   mkdirSync(join(dir, "bin"), { recursive: true });

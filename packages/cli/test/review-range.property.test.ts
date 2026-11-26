@@ -2,10 +2,10 @@
 // from changes, and the property that a baseline entry added in the head commit never lowers the loudness of that
 // commit's findings. Each case builds a small repository in the OS temp directory; nothing reaches a network. Seed 1337.
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import fc from "fast-check";
 import { afterAll, describe, expect, test } from "vitest";
 import { rangeEscapes } from "../src/review/rangeEscapes.ts";
@@ -28,7 +28,7 @@ const git = (cwd: string, ...args: string[]): string => {
 };
 type Tree = Readonly<Record<string, string | null>>;
 function repo(commits: readonly Tree[]): { dir: string; shas: string[] } {
-  const dir = mkdtempSync(join(tmpdir(), "keel-review-unit-"));
+  const dir = tempDir("keel-review-unit-");
   dirs.push(dir);
   git(dir, "init", "-q", "-b", "main");
   const shas: string[] = [];

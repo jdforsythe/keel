@@ -1,14 +1,14 @@
 // `keel test` on real (temporary) projects: filters, KEEL_TEST and exitCode restoration, error vs failure.
-import { mkdirSync, mkdtempSync, realpathSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync, realpathSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { describe, expect, it } from "vitest";
 import { run } from "../src/index.ts";
 
 const CONFIG = 'export default { test: { globals: true, include: ["*.test.mjs"] } };\n';
 const project = (tests: Record<string, string>): { cwd: string; files: { path: string; source: string }[] } => {
-  const cwd = realpathSync(mkdtempSync(join(tmpdir(), "keel-mut-test-")));
+  const cwd = realpathSync(tempDir("keel-mut-test-"));
   mkdirSync(cwd, { recursive: true });
   const all = { "vitest.config.mjs": CONFIG, ...tests };
   for (const [name, source] of Object.entries(all)) writeFileSync(join(cwd, name), source);

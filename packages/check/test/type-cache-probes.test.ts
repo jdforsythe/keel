@@ -1,18 +1,9 @@
 // Each question the type pass's recording host asks (k.check-cache Probes): the answer recorded is the answer
 // `askDisk` gives again, the same while the disk is the same, and another after the change that question watches.
 // No modification time is read: a rewrite with the old time is seen by its bytes.
-import {
-  mkdirSync,
-  mkdtempSync,
-  realpathSync,
-  rmSync,
-  symlinkSync,
-  unlinkSync,
-  utimesSync,
-  writeFileSync,
-} from "node:fs";
-import { tmpdir } from "node:os";
+import { mkdirSync, realpathSync, rmSync, symlinkSync, unlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { Probe } from "../src/internal/Probe.ts";
 import { askDisk } from "../src/internal/askDisk.ts";
@@ -23,7 +14,7 @@ import { probesHold } from "../src/internal/probesHold.ts";
 const OLD = 1_700_000_000;
 let root = "";
 beforeEach(() => {
-  root = realpathSync(mkdtempSync(join(tmpdir(), "keel-probes-")));
+  root = realpathSync(tempDir("keel-probes-"));
 });
 afterEach(() => rmSync(root, { recursive: true, force: true }));
 

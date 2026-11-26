@@ -6,6 +6,7 @@ import http from "node:http";
 import type { AddressInfo } from "node:net";
 import path from "node:path";
 import keel from "@keel/compiler/vite";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { inspectMiddleware } from "../src/internal/inspectMiddleware.ts";
 
@@ -57,7 +58,7 @@ const appOf = (sections: Record<string, unknown>, seen: string[] = []): App => (
 const PAGE = { graph: { nodes: [{ id: 1 }], edges: [] }, stores: { "todos.board": { state: {}, log: [] } } };
 
 beforeEach(() => {
-  root = fs.mkdtempSync(path.join(import.meta.dirname, ".tmp-inspect-apps-"));
+  root = tempDir(".tmp-inspect-apps-", import.meta.dirname);
 });
 afterEach(async () => {
   const s = server;

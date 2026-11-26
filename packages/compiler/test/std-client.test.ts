@@ -1,7 +1,6 @@
 // Backlog 0189 (rfc:0069): the browser binds std config. bindClientStd reads `#k-state`'s `std`; the resume entry calls
 // it before `resume`; a `client` deployable's entry embeds std.json's data. Seed 1337 (fast-check, in each fc.assert).
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { bindClientStd } from "@keel/compiler/std/bindClientStd";
 import { clientStd } from "@keel/compiler/std/clientStd";
@@ -10,6 +9,7 @@ import { stdConfig } from "@keel/compiler/std/stdConfig";
 import keel from "@keel/compiler/vite";
 import { createCtx } from "@keel/ctx";
 import { s } from "@keel/schema";
+import { tempDir } from "@keel/tooling/test-tmp";
 import fc from "fast-check";
 import { parseSync } from "oxc-parser";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -114,7 +114,7 @@ describe("vite plugin client entry (rfc:0069)", () => {
   let root = "";
   const saved = process.env.KEEL_DEPLOYABLE;
   beforeEach(() => {
-    root = fs.mkdtempSync(path.join(os.tmpdir(), "keel-std-client-"));
+    root = tempDir("keel-std-client-");
     Reflect.deleteProperty(process.env, "KEEL_DEPLOYABLE");
   });
   afterEach(() => {

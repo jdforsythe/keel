@@ -1,6 +1,6 @@
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, describe, expect, it } from "vitest";
 import { builtPath, checkPackage, deriveExports, fixPackage, readPackages, shipped } from "../publish-exports.mjs";
 
@@ -11,7 +11,7 @@ afterEach(() => {
 
 /** A repo with one package `p`: its manifest and the files it holds. */
 function repo(manifest: Record<string, unknown>, files: string[]): string {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "publish-exports-"));
+  const root = tempDir("publish-exports-");
   scratch.push(root);
   const put = (rel: string, text: string) => {
     fs.mkdirSync(path.dirname(path.join(root, rel)), { recursive: true });

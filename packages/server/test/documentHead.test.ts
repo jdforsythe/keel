@@ -2,12 +2,12 @@
 // The document head (k.head Server): `<title>` the deployable name, the build's entry CSS (in dev the deployable's
 // `/@keel/styles.css?d=<name>`) and its `keel-mark.svg` icon, every value escaped; a `keel.notFound` default alert has an `h1`. Property seed 1337.
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { createCtx } from "@keel/ctx";
 import { loader, manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
 import { err, s } from "@keel/schema";
+import { tempDir } from "@keel/tooling/test-tmp";
 import fc from "fast-check";
 import { afterEach, describe, expect, it } from "vitest";
 import { createApp, topology } from "../src/index.ts";
@@ -20,7 +20,7 @@ afterEach(() => {
   for (const d of made.splice(0)) fs.rmSync(d, { recursive: true, force: true });
 });
 const dir = (files: Record<string, string>): string => {
-  const d = fs.mkdtempSync(path.join(os.tmpdir(), "keel-head-"));
+  const d = tempDir("keel-head-");
   made.push(d);
   for (const [rel, text] of Object.entries(files)) {
     fs.mkdirSync(path.dirname(path.join(d, rel)), { recursive: true });

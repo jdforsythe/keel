@@ -2,11 +2,11 @@
 // at startup unless NODE_ENV (trimmed, any case) is `development` or `test`; unset counts as production. Otherwise
 // island documents would script the Vite-only `/@keel/entry.ts`. Dev mode and test runs serve the dev entry as before.
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { createCtx } from "@keel/ctx";
 import { manifest } from "@keel/router";
 import { contract } from "@keel/router/contract";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createApp, topology } from "../src/index.ts";
 import { nodeEnv } from "../src/internal/nodeEnv.ts";
@@ -41,7 +41,7 @@ const app = (o: { mode?: "dev" | "production"; assets?: string }) =>
     ...o,
   });
 const built = (): string => {
-  const d = fs.mkdtempSync(path.join(os.tmpdir(), "keel-prod-assets-"));
+  const d = tempDir("keel-prod-assets-");
   made.push(d);
   fs.mkdirSync(path.join(d, ".vite"), { recursive: true });
   fs.mkdirSync(path.join(d, "assets"), { recursive: true });

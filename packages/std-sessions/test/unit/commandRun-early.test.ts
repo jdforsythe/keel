@@ -3,9 +3,9 @@
 // deployable serves the session's route. With `projectOf` and `servingModules`, which decide those.
 // Seed 1337 (no random inputs)
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import type { Io } from "@keel/cli";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterAll, describe, expect, test } from "vitest";
 import { commandRun } from "../../src/internal/commandRun.ts";
 import { projectOf } from "../../src/internal/projectOf.ts";
@@ -47,7 +47,7 @@ const failed = (op: string, ...records: unknown[]) => ({
 });
 const F = "sessions/a.json";
 
-const dir = fs.mkdtempSync(path.join(os.tmpdir(), "keel-command-run-"));
+const dir = tempDir("keel-command-run-");
 afterAll(() => fs.rmSync(dir, { recursive: true, force: true }));
 
 describe("commandRun: reading the session file", () => {

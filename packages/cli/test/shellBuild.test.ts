@@ -1,18 +1,9 @@
 // The disk half of `keel build --target`, generic over the shell target: a temp project and a fake `npx` on PATH stand in
 // for Vite; a stub `ShellTarget` records what its `build` is given. Covers the Vite build's environment, the shell
 // files copied beside `www/`, the artifacts, a failing tool's trimmed output and E1049.
-import {
-  chmodSync,
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  realpathSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
-import { tmpdir } from "node:os";
+import { chmodSync, existsSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { shellBuild } from "../src/shell/shellBuild.ts";
 import type { ShellBuild } from "../src/types/ShellBuild.ts";
@@ -77,7 +68,7 @@ failed to build app: failed to build app
 const made: string[] = [];
 /** A project with the fake `npx` and PATH pointing at it. */
 function project(files: Record<string, string> = {}): string {
-  const root = realpathSync(mkdtempSync(join(tmpdir(), "keel-shell-build-")));
+  const root = realpathSync(tempDir("keel-shell-build-"));
   made.push(root);
   for (const [rel, content] of Object.entries({ "bin/npx": NPX, ...files })) {
     mkdirSync(dirname(join(root, rel)), { recursive: true });

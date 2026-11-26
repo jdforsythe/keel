@@ -1,19 +1,10 @@
 // Mutation-killing tests for src/bin.ts: the binary is run as a child process with controlled argv, stdin and cwd.
 import { spawn } from "node:child_process";
-import {
-  chmodSync,
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  realpathSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import net from "node:net";
-import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, describe, expect, it } from "vitest";
 
 const BIN = new URL("../src/bin.ts", import.meta.url).pathname;
@@ -21,7 +12,7 @@ const BIN = new URL("../src/bin.ts", import.meta.url).pathname;
 type Out = { code: number | null; stdout: string; stderr: string };
 const made: string[] = [];
 const tmp = (): string => {
-  const d = realpathSync(mkdtempSync(join(tmpdir(), "keel-mut-bin-")));
+  const d = realpathSync(tempDir("keel-mut-bin-"));
   made.push(d);
   return d;
 };

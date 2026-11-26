@@ -1,11 +1,11 @@
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterAll, describe, expect, it } from "vitest";
 import { buildReport, checkedParts, dirtyInputs, feedsReport } from "../evidence.mjs";
 
-const root = fs.mkdtempSync(path.join(os.tmpdir(), "keel-evidence-dirty-"));
+const root = tempDir("keel-evidence-dirty-");
 afterAll(() => fs.rmSync(root, { recursive: true, force: true }));
 
 const git = (...args: string[]) => {
@@ -84,7 +84,7 @@ describe("dirtyInputs", () => {
   });
 
   it("is empty outside a git checkout", () => {
-    const bare = fs.mkdtempSync(path.join(os.tmpdir(), "keel-evidence-nogit-"));
+    const bare = tempDir("keel-evidence-nogit-");
     try {
       expect(dirtyInputs(bare)).toEqual([]);
     } finally {

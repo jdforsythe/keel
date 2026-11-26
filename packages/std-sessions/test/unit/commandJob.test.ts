@@ -5,8 +5,8 @@
 // themselves, which the job is made of.
 // Seed 1337 (no random inputs)
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterAll, describe, expect, test } from "vitest";
 import { buggyRoutes, buggySession } from "../../conformance/fixtures.ts";
 import type { CommandJobInput } from "../../src/CommandJobInput.ts";
@@ -17,7 +17,7 @@ import { isInput } from "../../src/internal/isInput.ts";
 import { minimize } from "../../src/minimize.ts";
 import { replay } from "../../src/replay.ts";
 
-const dir = fs.mkdtempSync(path.join(os.tmpdir(), "keel-command-job-"));
+const dir = tempDir("keel-command-job-");
 afterAll(() => fs.rmSync(dir, { recursive: true, force: true }));
 let jobs = 0;
 

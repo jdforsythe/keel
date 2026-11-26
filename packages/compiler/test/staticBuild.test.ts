@@ -3,11 +3,10 @@
 // client entry into `dist/<name>/` and its build entry (exporting `render`) outside `dist/`; a build error with no
 // deployable to serve names the fix.
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, describe, expect, it } from "vitest";
 import { resumeEntry } from "../src/entry/resumeEntry.ts";
-import { indexHtml } from "../src/internal/indexHtml.ts";
 import { noDeployable } from "../src/internal/noDeployable.ts";
 import keel from "../src/vite.ts";
 
@@ -19,7 +18,7 @@ afterEach(() => {
   else process.env.KEEL_DEPLOYABLE = saved;
 });
 const project = (top: string | undefined): string => {
-  const d = fs.mkdtempSync(path.join(os.tmpdir(), "keel-static-"));
+  const d = tempDir("keel-static-");
   made.push(d);
   if (top !== undefined) fs.writeFileSync(path.join(d, "topology.ts"), `export default topology(${top})\n`);
   return d;

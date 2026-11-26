@@ -5,6 +5,7 @@ import path from "node:path";
 import { artifactHashes, compile, stdArtifact } from "@keel/compiler";
 import keel from "@keel/compiler/vite";
 import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { canonicalJson } from "../src/internal/canonicalJson.ts";
 import { hashOf } from "../src/internal/hashOf.ts";
@@ -45,7 +46,7 @@ describe("vite plugin build: a differing routes.json", () => {
     return warnings;
   };
   beforeEach(() => {
-    root = fs.mkdtempSync(path.join(import.meta.dirname, ".tmp-w1005-"));
+    root = tempDir(".tmp-w1005-", import.meta.dirname);
   });
   afterEach(() => fs.rmSync(root, { recursive: true, force: true }));
 

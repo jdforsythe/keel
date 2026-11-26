@@ -1,10 +1,10 @@
 // `scaffold project` + `scaffold module orders` + `scaffold route orders.list --api`, written to a temporary
 // directory and its generated route test run with `keel test` (k.scaffold, k.api): the test passes in that project.
-import { existsSync, mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { existsSync, mkdirSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { repoRoot } from "@keel/tooling/repo-root";
 import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { expect, it } from "vitest";
 import { run } from "../src/index.ts";
 import { runEngine } from "../src/internal/runEngine.ts";
@@ -49,7 +49,7 @@ it(
     files = await step(["scaffold", "module", "orders"], "/work/shop", files);
     files = await step(["scaffold", "route", "orders.list", "--path", "/api/orders", "--api"], "/work/shop", files);
     expect(files.map((f) => f.path)).toContain("modules/orders/list.route.test.ts");
-    const cwd = realpathSync(mkdtempSync(join(tmpdir(), "keel-api-route-")));
+    const cwd = realpathSync(tempDir("keel-api-route-"));
     try {
       for (const f of files) {
         mkdirSync(dirname(join(cwd, f.path)), { recursive: true });

@@ -2,8 +2,8 @@
 // package folder (unseeded-properties.mjs judges the call; this file checks the set it is given).
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
+import { tempDir } from "@keel/tooling/test-tmp";
 import { afterAll, describe, expect, it } from "vitest";
 import { fixedTime, testTime } from "../test-time.ts";
 
@@ -15,7 +15,7 @@ afterAll(() => {
 
 /** Runs structure-lint over a throwaway root holding one file; returns its S0015 diagnostics. */
 function s0015(file: string, source: string): { code: string; path: string; line: number }[] {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "keel-s0015-"));
+  const root = tempDir("keel-s0015-");
   made.push(root);
   fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
   fs.writeFileSync(path.join(root, file), source);

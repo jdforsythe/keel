@@ -4,14 +4,14 @@
 // `serializable` transaction, rerun as `fn` is"; past its third run it is `keel.conflict`, which k.server answers 409. Runs on sim, on PGlite, and on Postgres 17 where
 // `KEEL_TEST_POSTGRES_URL` is set. Seed 1337.
 import { randomBytes } from "node:crypto";
-import { mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { rmSync } from "node:fs";
 import { join } from "node:path";
 import { createCtx } from "@keel/ctx";
 import type { Ctx } from "@keel/ctx";
 import { s } from "@keel/schema";
 import { createApp } from "@keel/server";
 import { fixedTime } from "@keel/tooling/test-time";
+import { tempDir } from "@keel/tooling/test-tmp";
 import fc from "fast-check";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { Box } from "../modules/kitchen/Box.schema.ts";
@@ -44,7 +44,7 @@ const simServer = (plan: Step[] = none(50)): Ctx => {
   return ctx;
 };
 
-const dir = mkdtempSync(join(tmpdir(), "golden-2-race-"));
+const dir = tempDir("golden-2-race-");
 const before = process.env.KEEL_POSTGRES_URL;
 afterAll(() => {
   if (before === undefined) Reflect.deleteProperty(process.env, "KEEL_POSTGRES_URL");
