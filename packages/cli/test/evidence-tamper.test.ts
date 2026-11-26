@@ -139,6 +139,34 @@ describe("evidence tamper", () => {
     });
   }
 
+  // The seeded flip above lands on one byte; which diagnostic that byte earns depends on the manifest's length. Every
+  // bit of every byte of the two signed files is flipped here, so no position can pass verify or go unnamed.
+  for (const name of ["manifest.json", "manifest.sig"]) {
+    test(
+      `every bit of ${name} flipped fails verify naming ${name} and E1063`,
+      () => {
+        const size = readFileSync(join(pristine, name)).length;
+        const b = copy();
+        const file = join(b.dir, name);
+        for (let i = 0; i < size; i++) {
+          for (let bit = 0; bit < 8; bit++) {
+            const bytes = readFileSync(join(pristine, name));
+            bytes[i] = (bytes[i] ?? 0) ^ (1 << bit);
+            writeFileSync(file, bytes);
+            const found = diags(verify(b.cwd));
+            const why = `${name} byte ${i} bit ${bit}`;
+            expect(found.length, why).toBeGreaterThan(0);
+            expect(
+              found.every((d) => d.code === "E1063" && (d.path === `bundle/${name}` || d.message.includes(name))),
+              why,
+            ).toBe(true);
+          }
+        }
+      },
+      SLOW,
+    );
+  }
+
   test("an added file the manifest does not list is E1062 naming it", () => {
     const b = copy();
     writeFileSync(join(b.dir, "extra.txt"), "x");
