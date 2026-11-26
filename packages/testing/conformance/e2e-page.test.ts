@@ -5,34 +5,32 @@
 // Spec: k.e2e-page, clause "`until` with `within: 2000`, `fixed: 5000` under `KEEL_TEST_TIME_SCALE=0.5` waits 6 s before E1735."
 // Spec: k.e2e-page, clause "`settle()` on a page holding an open event stream and nothing else in flight resolves."
 // Spec: k.e2e-page, clause "`findAll('shop.row')` on a page with `shop.row.a`, `shop.row.b` and `shop.rows` returns `shop.row.a` and `shop.row.b`, in document order."
-// Spec: k.e2e-page, clause "`open('/list', { hold: true })`, `fire('a.name', { type: 'input', value: 'Mi' })`, then `resume()` keeps the input's value `Mi`, its caret at 2 and its focus, and resolves; an island whose claim replaces the input makes `resume()` reject E1720."
+// Spec: k.e2e-page, clause "`open('/list', { hold: true })`, `fire('a.name', { type: 'input', value: 'Mi' })`, then `resume()` keeps the input's `value` `Mi`, its caret at 2 (a `press('x')` then makes it `Mix`) and its focus, and resolves; an island whose claim replaces the input makes `resume()` reject E1720."
 // Spec: k.e2e-page, clause "After `offline(true)`, a click on a button whose handler fetches the page's origin leaves its `TypeError` among `problems()` and no entry for it in the server log; after `offline(false)` the same click is answered 200."
-// Spec: k.e2e-page, clause "`cookies()` after a sign-in that sets an `HttpOnly`, `SameSite=Lax` cookie holds its name with `httpOnly: true` and `sameSite: 'Lax'` and no value."
+// Spec: k.e2e-page, clause "`cookies()` after a form POST, the page's first write, which sets the caller cookie `keel-caller` (`HttpOnly`, `SameSite=Lax`; k.user), holds its name with `httpOnly: true` and `sameSite: 'Lax'` and no value."
 // Spec: k.e2e-page, clause "`documents()` of a page whose live update changed its text without a load holds one entry."
 // Spec: k.e2e-page, clause "On a page whose only focusable element is `a.button`, styled `outline: 2px solid` when focused, `press('Tab')` then `style('a.button', ['outline-style', 'outline-width'])` returns `{ 'outline-style': 'solid', 'outline-width': '2px' }`."
+// Spec: k.e2e-page, clause "`title()` of a page whose route's title is `Shopping list` (k.head) returns `Shopping list`, and after `navigate` to another route, that route's title."
+// Spec: k.e2e-page, clause "`style(undefined, ['background-color', 'padding-top'])` on a page whose `body` is styled `background: #f9f9f9; padding-top: 4px` returns `{ 'background-color': 'rgb(249, 249, 249)', 'padding-top': '4px' }`."
+// Spec: k.e2e-page, clause "On a held page whose served input `a.name` holds `Milk`, `fire('a.name', { type: 'focus' })`, `press('Home')`, `press('ArrowRight')` twice, then `resume()` resolves with the caret at 2; an island whose claim drops its `data-k-island` attribute makes `resume()` reject E1720."
 // k.e2e-page Rules E1735 (a wait ran out) and E1705 (an id absent from ids.json) are asserted by the third, fourth and second cases.
 // Seed: 1337 (the one property, the `findAll` prefixes). Method: as e2e-serve.test.ts: a built-app fixture (fixtures/e2e/node-app.ts), `keel test --e2e` once, the report read per case. The cases need Chromium
 // (e2e-support.ts); none skips. The two time cases set `KEEL_TEST_TIME_SCALE` for the child run (1 and 0.5) whatever this run's scale is: their numbers are the clauses' own.
-// ASSUMED: (1) `Found.text` of an input is its value, and focus is read from `a11y('a.name')`'s `state.focused`; the caret is read by a `press('x')` after `resume()`: the value `Mix` means the caret was at 2.
-// (2) "a sign-in that sets" the cookie is read as the first document of the app, which sets the caller cookie (`keel-caller`, `HttpOnly`, `SameSite=Lax`); the fixture has no identity mount.
-// (3) "a live update" is a client store transaction that changes a text with no load; (4) "no command for it" is read as the tab's `requests()` and `documents()` being as before. A browser-side
-// command count is not readable through the public API (UNTESTABLE beyond that); (5) the click handler's failure on a page is an unhandled rejection of `fetch` (the page's `problems()` text holds `TypeError`).
+// ASSUMED: (1) a focus is read from `a11y('a.name')`'s `state.focused`; the caret by a `press('x')` after `resume()`: `Mix` means the caret was at 2 (from `Mi`), `Mixlk` at 2 (from `Milk`).
+// (2) "a live update" is a client store transaction that changes a text with no load; "no command for it" is read as the tab's `requests()` and `documents()` being as before. A browser-side
+// command count is not readable through the public API (UNTESTABLE beyond that). (3) The offline click's `TypeError`: app code may not `fetch` (E1601, E1651), so the page calls its own API through a service and
+// rejects the network failure it gets back as `new TypeError(message)`: the pageerror holds `TypeError`. (4) "an island whose claim replaces the input" is a host element's code replacing it with a copy; "drops its
+// `data-k-island` attribute" is a host element's code removing it from the island's root and nothing else (the spec names no other way an app makes a claim do so).
+// (5) The focus ring of the outline case is the `base.focus` of the fixture's tokens.ts (k.ui Base: a 2px solid outline on `:focus-visible`), the one way app code styles a focus outline.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { type Run, cleanup, keelE2e, outcome, project, suite } from "./e2e-support.ts";
+import { FAILURE, type Run, SUPPORT_BOARD, cleanup, keelE2e, outcome, project, reasons, suite } from "./e2e-support.ts";
 import { PAGES, nodeApp } from "./fixtures/e2e/node-app.ts";
-
-const ID_SHAPE = `const failure = async (p: Promise<unknown>): Promise<{ code: unknown; message: string }> => {
-  const e: unknown = await p.then(() => undefined, (x: unknown) => x)
-  return { code: Reflect.get(Object(e), 'code'), message: String(Reflect.get(Object(e), 'message')) }
-}`;
 
 const IMPORTS = [
   "import fc from 'fast-check'",
-  "import { store } from '@keel/store'",
   "import { serve } from '@keel/testing/e2e'",
-  "import { Board } from '../modules/a/Board.schema.ts'",
-  "const board = store(Board, { lists: [] }, { id: 'a.board' })",
-  ID_SHAPE,
+  "import { board } from './board.ts'",
+  "import { failure } from './failure.ts'",
 ];
 
 const page = suite(IMPORTS, [
@@ -43,7 +41,7 @@ const page = await app.open('/')
 expect((await page.find('a.count')).text).toBe('0')
 await page.fire('a.add', { type: 'click' })
 expect((await page.find('a.count')).text).toBe('1')
-expect((await app.state(board)).lists).toHaveLength(1)`,
+expect((await app.state(board())).lists).toHaveLength(1)`,
   },
   {
     title: "find of an absent id is E1705 and sends the browser nothing",
@@ -72,7 +70,7 @@ expect(e.message).toContain('10.0s')`,
 const page = await app.open('/stream')
 await page.fire('a.stream.open', { type: 'click' })
 await page.settle()
-expect(page.requests().some((r) => String(Reflect.get(r, 'url')).includes('/api/a/ticks'))).toBe(true)`,
+expect(page.requests().some((r) => r.url.includes('/api/a/ticks'))).toBe(true)`,
   },
   {
     title: "findAll returns the ids under the prefix in document order",
@@ -94,10 +92,10 @@ await fc.assert(
 const held = await app.open('/list', { hold: true })
 await held.fire('a.name', { type: 'input', value: 'Mi' })
 await held.resume()
-expect((await held.find('a.name')).text).toBe('Mi')
+expect((await held.find('a.name')).value).toBe('Mi')
 expect((await held.a11y('a.name')).state.focused).toBe(true)
 await held.press('x')
-expect((await held.find('a.name')).text).toBe('Mix')
+expect((await held.find('a.name')).value).toBe('Mix')
 const replaced = await app.open('/replace', { hold: true })
 const e = await failure(replaced.resume())
 expect(e.code).toBe('E1720')`,
@@ -117,10 +115,11 @@ expect(gets().map((r) => (r.kind === 'req' ? r.status : 0))).toEqual([200])
 page.problems()`,
   },
   {
-    title: "cookies holds the caller cookie with its flags and no value",
+    title: "cookies holds the caller cookie of a form POST with its flags and no value",
     body: `const app = await serve()
 const page = await app.open('/')
-const cookie = (await page.cookies()).find((c) => c.name.endsWith('keel-caller'))
+await page.fire('a.add', { type: 'click' })
+const cookie = (await page.cookies()).find((c) => c.name === 'keel-caller')
 expect(cookie?.httpOnly).toBe(true)
 expect(cookie?.sameSite).toBe('Lax')
 expect(Object.keys(cookie ?? {})).not.toContain('value')`,
@@ -140,6 +139,41 @@ const page = await app.open('/focus')
 await page.press('Tab')
 expect(await page.style('a.button', ['outline-style', 'outline-width'])).toEqual({ 'outline-style': 'solid', 'outline-width': '2px' })`,
   },
+  {
+    title: "a caret placed by press on a held page survives resume, a claim dropping data-k-island is E1720",
+    body: `const app = await serve()
+const held = await app.open('/list', { hold: true })
+await held.fire('a.name', { type: 'focus' })
+await held.press('Home')
+await held.press('ArrowRight')
+await held.press('ArrowRight')
+await held.resume()
+await held.press('x')
+expect((await held.find('a.name')).value).toBe('Mixlk')
+const dropped = await app.open('/drop', { hold: true })
+const e = await failure(dropped.resume())
+expect(e.code).toBe('E1720')`,
+  },
+]);
+
+const titled = suite(IMPORTS, [
+  {
+    title: "title is the route title, and the other route title after navigate",
+    body: `const app = await serve()
+const page = await app.open('/shopping')
+expect(await page.title()).toBe('Shopping list')
+await page.navigate('/other')
+expect(await page.title()).toBe('Other list')`,
+  },
+]);
+
+const styled = suite(IMPORTS, [
+  {
+    title: "style of undefined reads the body",
+    body: `const app = await serve()
+const page = await app.open('/status')
+expect(await page.style(undefined, ['background-color', 'padding-top'])).toEqual({ 'background-color': 'rgb(249, 249, 249)', 'padding-top': '4px' })`,
+  },
 ]);
 
 const scaled = suite(IMPORTS, [
@@ -147,9 +181,9 @@ const scaled = suite(IMPORTS, [
     title: "until with within and fixed waits 6 s under scale 0.5",
     body: `const app = await serve()
 const page = await app.open('/status')
-const started = performance.now()
+const started = process.hrtime.bigint()
 const e = await failure(page.until('a.status', { text: 'Live' }, { within: 2000, fixed: 5000 }))
-const waited = performance.now() - started
+const waited = Number((process.hrtime.bigint() - started) / 1_000_000n)
 expect(e.code).toBe('E1735')
 expect(e.message).toContain('after 6.0s')
 expect(waited).toBeGreaterThanOrEqual(5900)
@@ -159,16 +193,30 @@ expect(waited).toBeLessThan(9000)`,
 
 const FILE = "test/page.e2e.ts";
 const SCALED = "test/scaled.e2e.ts";
+const TITLED = "test/titled.e2e.ts";
+const STYLED = "test/styled.e2e.ts";
+let styledDir = "";
+let titledDir = "";
 let dir = "";
 let scaledDir = "";
 const runs = new Map<string, Run>();
 
 beforeAll(() => {
-  const tree = nodeApp(Object.values(PAGES));
+  const tree = {
+    ...nodeApp(Object.values(PAGES)),
+    "test/board.ts": SUPPORT_BOARD,
+    "test/failure.ts": FAILURE,
+  };
   dir = project({ ...tree, [FILE]: page.source });
   scaledDir = project({ ...tree, [SCALED]: scaled.source });
+  titledDir = project({ ...tree, [TITLED]: titled.source });
+  styledDir = project({ ...tree, [STYLED]: styled.source });
   runs.set("page", keelE2e(dir, [], { env: { KEEL_TEST_TIME_SCALE: "1" } }));
   runs.set("scaled", keelE2e(scaledDir, [], { env: { KEEL_TEST_TIME_SCALE: "0.5" } }));
+  // `title()` is a verb of its own project: a case on a verb the handle lacks is a type error (E1751) that fails its build, and no other case with it.
+  runs.set("titled", keelE2e(titledDir, [], { env: { KEEL_TEST_TIME_SCALE: "1" } }));
+  // `style(undefined, names)` likewise: its id parameter is typed `string` until the body form is built.
+  runs.set("styled", keelE2e(styledDir, [], { env: { KEEL_TEST_TIME_SCALE: "1" } }));
 }, 3_000_000);
 afterAll(cleanup);
 
@@ -176,7 +224,7 @@ const ok = (title: string): void => {
   const line = page.lines[title];
   expect(line, "the fixture test exists").toBeDefined();
   const r = runs.get("page");
-  expect(outcome(dir, FILE, line ?? 0), `${r?.stdout ?? ""}\n${r?.stderr ?? ""}`.slice(-3000)).toBe("passed");
+  expect(outcome(dir, FILE, line ?? 0), reasons(r)).toBe("passed");
 };
 
 describe("k.e2e-page verbs and waits", () => {
@@ -195,7 +243,7 @@ describe("k.e2e-page verbs and waits", () => {
   it("`until` with `within: 2000`, `fixed: 5000` under `KEEL_TEST_TIME_SCALE=0.5` waits 6 s before E1735", () => {
     const line = scaled.lines["until with within and fixed waits 6 s under scale 0.5"];
     const r = runs.get("scaled");
-    expect(outcome(scaledDir, SCALED, line ?? 0), `${r?.stdout ?? ""}\n${r?.stderr ?? ""}`.slice(-3000)).toBe("passed");
+    expect(outcome(scaledDir, SCALED, line ?? 0), reasons(r)).toBe("passed");
   });
 
   it("`settle()` on a page holding an open event stream and nothing else in flight resolves", () => {
@@ -206,7 +254,7 @@ describe("k.e2e-page verbs and waits", () => {
     ok("findAll returns the ids under the prefix in document order");
   });
 
-  it("`open('/list', { hold: true })`, `fire('a.name', { type: 'input', value: 'Mi' })`, then `resume()` keeps the input's value `Mi`, its caret at 2 and its focus, and resolves; an island whose claim replaces the input makes `resume()` reject E1720", () => {
+  it("`open('/list', { hold: true })`, `fire('a.name', { type: 'input', value: 'Mi' })`, then `resume()` keeps the input's `value` `Mi`, its caret at 2 (a `press('x')` then makes it `Mix`) and its focus, and resolves; an island whose claim replaces the input makes `resume()` reject E1720", () => {
     ok("a held page keeps value caret and focus over resume, a replacing claim is E1720");
   });
 
@@ -214,8 +262,8 @@ describe("k.e2e-page verbs and waits", () => {
     ok("offline leaves a TypeError in problems and nothing in the server log");
   });
 
-  it("`cookies()` after a sign-in that sets an `HttpOnly`, `SameSite=Lax` cookie holds its name with `httpOnly: true` and `sameSite: 'Lax'` and no value", () => {
-    ok("cookies holds the caller cookie with its flags and no value");
+  it("`cookies()` after a form POST, the page's first write, which sets the caller cookie `keel-caller` (`HttpOnly`, `SameSite=Lax`; k.user), holds its name with `httpOnly: true` and `sameSite: 'Lax'` and no value", () => {
+    ok("cookies holds the caller cookie of a form POST with its flags and no value");
   });
 
   it("`documents()` of a page whose live update changed its text without a load holds one entry", () => {
@@ -224,5 +272,21 @@ describe("k.e2e-page verbs and waits", () => {
 
   it("On a page whose only focusable element is `a.button`, styled `outline: 2px solid` when focused, `press('Tab')` then `style('a.button', ['outline-style', 'outline-width'])` returns `{ 'outline-style': 'solid', 'outline-width': '2px' }`", () => {
     ok("Tab then style gives the outline");
+  });
+
+  it("`title()` of a page whose route's title is `Shopping list` (k.head) returns `Shopping list`, and after `navigate` to another route, that route's title", () => {
+    const line = titled.lines["title is the route title, and the other route title after navigate"];
+    const r = runs.get("titled");
+    expect(outcome(titledDir, TITLED, line ?? 0), reasons(r)).toBe("passed");
+  });
+
+  it("`style(undefined, ['background-color', 'padding-top'])` on a page whose `body` is styled `background: #f9f9f9; padding-top: 4px` returns `{ 'background-color': 'rgb(249, 249, 249)', 'padding-top': '4px' }`", () => {
+    const line = styled.lines["style of undefined reads the body"];
+    const r = runs.get("styled");
+    expect(outcome(styledDir, STYLED, line ?? 0), reasons(r)).toBe("passed");
+  });
+
+  it("On a held page whose served input `a.name` holds `Milk`, `fire('a.name', { type: 'focus' })`, `press('Home')`, `press('ArrowRight')` twice, then `resume()` resolves with the caret at 2; an island whose claim drops its `data-k-island` attribute makes `resume()` reject E1720", () => {
+    ok("a caret placed by press on a held page survives resume, a claim dropping data-k-island is E1720");
   });
 });
