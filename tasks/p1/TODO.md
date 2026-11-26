@@ -55,6 +55,7 @@ The triage is `tasks/p1/weaknesses.md`: 102 lines to fix now in 17 lanes (A1), 1
 - [x] `done` lane 09 pii-and-data: RFC 0236
 - [ ] `running` lane 03 ledger-integrity: RFC 0235 steps 1 to 5 on the main line (the ledger rests on run reports; items keyed by text); step 6 next
 - [ ] `next` lanes 02, 04, 05 and 10 to 17 and 33, in the triage's order, as lanes free up
+- [ ] `next` the kernel held to its own rules: thirteen discarded `Result`s in kernel code (E1453) found when the floating-promise sweep ran over `packages/*/src`; then every app rule run over the kernel's own source as a standing check, each finding fixed or the rule's kernel exemption stated in the spec
 - [ ] `blocked` (A1) the A2 lanes 18 to 32
 - [ ] `blocked` (fix lanes) a red-team pass, by Claude and by Codex, that files no new high or medium line
 
