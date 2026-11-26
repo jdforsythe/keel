@@ -43,6 +43,7 @@ import { ruleOwners } from "./internal/ruleOwners.ts";
 import { runRules } from "./internal/runRules.ts";
 import { runSqlRules } from "./internal/runSqlRules.ts";
 import { stdInScope } from "./internal/stdInScope.ts";
+import { strayManifest } from "./internal/strayManifest.ts";
 import { stylesDiags } from "./internal/stylesDiags.ts";
 import { summarize } from "./internal/summarize.ts";
 import { topologyDiags } from "./internal/topologyDiags.ts";
@@ -116,9 +117,13 @@ function expectedHashes(files: readonly SourceFile[], opts: CheckOptions): Reado
  * one is located at `node_modules/<name>/<f>` with no fix. E1161 and E1163's import half judge them there; E1106 reports
  * in none of them.
  */
-export function check(given: readonly SourceFile[], options: CheckOptions = {}): CheckResult {
-  const realAll = options.project === undefined ? given : [...given, ...options.project];
-  const libs = libraryFolders(realAll);
+export function check(input: readonly SourceFile[], options: CheckOptions = {}): CheckResult {
+  const raw = options.project === undefined ? input : [...input, ...options.project];
+  const libs = libraryFolders(raw);
+  // E1171: a `module.ts` that is no manifest is reported and leaves every later step, so no rule's project holds it.
+  const stray = (f: SourceFile): boolean => strayManifest(f.path, libs.folder(f.path) !== undefined);
+  const given = input.filter((f) => !stray(f));
+  const realAll = raw.filter((f) => !stray(f));
   const isLibrary = (p: string): boolean => libs.folder(p) !== undefined;
   // Each library's folder (`<p>node_modules/<name>/`): where the k.module pass finds it, and its files' view.
   const libraryRoots = new Set(libs.packages.map((f) => f.path.slice(0, -"package.json".length)));
@@ -128,13 +133,23 @@ export function check(given: readonly SourceFile[], options: CheckOptions = {}):
   };
   const files = given.map(viewed);
   const opts: CheckOptions =
-    options.project === undefined ? options : { ...options, project: options.project.map(viewed) };
+    options.project === undefined
+      ? options
+      : { ...options, project: options.project.filter((f) => !stray(f)).map(viewed) };
   const realCode = given.filter((f) => isCodePath(f.path));
   const code = files.filter((f) => isCodePath(f.path));
   // One compile per project, with its paths and topology, so a workspace root sees what the app sees (rfc:0059).
   const all = opts.project === undefined ? files : [...files, ...opts.project];
   const dirs = projectDirs(all);
-  const out: Diagnostic[] = [];
+  const out: Diagnostic[] = input.filter(stray).map((f) => ({
+    kind: "diag",
+    code: "E1171",
+    path: f.path,
+    line: 1,
+    col: 1,
+    message: `${f.path} is no module manifest; a module's is modules/<id>/module.ts, a library's its root module.ts`,
+    see: "k.module",
+  }));
   const reported = new Map<string, Set<string>>();
   const artifactsOf = new Map<string, Readonly<Record<string, unknown>>>();
   // The project a rule sees beside its own file (rfc:0070): one array per project, shared by reference.

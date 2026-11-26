@@ -424,6 +424,13 @@ const ROWS: readonly Row[] = [
     "k.server-deps",
   ],
   [
+    "E1171",
+    "a module.ts that is no manifest: deeper than modules/<id>/module.ts in an app, under src/ or unsafe/ in a library",
+    "Rules find a file's module by the module.ts whose folder holds it; a second one would stand in for the real manifest.",
+    "move the file's contents into modules/<id>/module.ts (the library's root module.ts), or rename the file",
+    "k.module",
+  ],
+  [
     "E1160",
     "createApp({ std }) file missing, not { data, hash }, or hand-edited",
     "The std.json artifact is built from the module manifests; its hash must match its data.",
