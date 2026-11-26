@@ -93,8 +93,7 @@ class Reader {
   env(depth: number): void {
     if (depth > DEPTH) refuse();
     this.expect("env(safe-area-inset-");
-    const side = SIDES.find((x) => this.peek(x));
-    if (side === undefined) return refuse();
+    const side = SIDES.find((x) => this.peek(x)) ?? refuse();
     this.at += side.length;
     this.count();
     if (this.take(", ")) {
@@ -106,8 +105,7 @@ class Reader {
   /** `calc(<sum>)`, `min(...)` and `max(...)` of two to four sums, `clamp(<sum>, <sum>, <sum>)`. */
   math(depth: number): void {
     if (depth > DEPTH) refuse();
-    const f = MATH.find((x) => this.peek(`${x}(`));
-    if (f === undefined) return refuse();
+    const f = MATH.find((x) => this.peek(`${x}(`)) ?? refuse();
     this.at += f.length + 1;
     let args = 1;
     this.sum(depth);
