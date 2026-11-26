@@ -1,5 +1,5 @@
 {
-  "commit": "0ebb5304935724f8f9e99d2f8c543a74c871e3a9",
+  "commit": "8623329ef4ff5dfcff4f78e0d4e2a93db9a573a7",
   "coverage": {
     "packages": {
       "apps/evenly": {
@@ -1178,7 +1178,7 @@
       }
     }
   },
-  "generatedAt": "2026-11-26T18:41:44.097Z",
+  "generatedAt": "2026-11-26T22:10:36.090Z",
   "ledger": {
     "a11y": {
       "byRung": {
@@ -4172,7 +4172,7 @@
         "proveFiles": 0,
         "simulateFiles": 0,
         "skipTodo": 0,
-        "unitCases": 17,
+        "unitCases": 19,
         "unitFiles": 2
       },
       "apps/sessions": {
@@ -4736,8 +4736,8 @@
         "unitFiles": 29
       },
       "packages/testing": {
-        "conformanceCases": 757,
-        "conformanceFiles": 156,
+        "conformanceCases": 766,
+        "conformanceFiles": 157,
         "exploreFiles": 11,
         "fails": 1,
         "otherCases": 0,
@@ -4765,8 +4765,8 @@
       }
     },
     "totals": {
-      "conformanceCases": 6965,
-      "conformanceFiles": 1523,
+      "conformanceCases": 6974,
+      "conformanceFiles": 1524,
       "exploreFiles": 21,
       "fails": 3,
       "otherCases": 0,
@@ -4775,7 +4775,7 @@
       "proveFiles": 24,
       "simulateFiles": 31,
       "skipTodo": 5,
-      "unitCases": 7112,
+      "unitCases": 7114,
       "unitFiles": 1165
     }
   },
