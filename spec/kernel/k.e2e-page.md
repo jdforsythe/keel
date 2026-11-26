@@ -1,5 +1,5 @@
 # k.e2e-page: End-to-end pages
-status: proposed
+status: implemented
 The page a `Served` handle opens (k.e2e): the harness's verbs (k.testing) on a real browser tab, how it waits, and what a failure prints.
 
 **open.** `open(path, { deployable?, scripts?, hold? })` makes a browser context, loads `path` at the deployable's origin and resolves a `Page` once the document's `load` event has fired and the page is quiet (Waits). `scripts: false` opens a context with scripts off. With `hold: true` the document is shown with no script of the app run until `resume()`. A `Page`'s `open(path)` opens another tab in its own context, sharing its cookies and storage.

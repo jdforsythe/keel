@@ -1,6 +1,6 @@
 # RFC 0244: end-to-end tests, `keel test --e2e` over the built app
 
-Status: accepted (ADR-0267), accepted by the orchestrator on 2026-11-26, to be confirmed by the operator. Adds k.e2e and k.e2e-page (proposed). Amends k.cli (the `test` row), k.test-run (Run report, one clause) and k.ledger-items (Run evidence, one clause), the map, `tooling/docs-owners.json` and the glossary (**end-to-end test**). New codes E1734 to E1738. From decision D187 (b) of task 0963 and the A2 end-user review (`tasks/p1/end-user-review.md`).
+Status: implemented (ADR-0267) but k.e2e Libraries (`serve({ page })` in a library's folder), accepted by the orchestrator on 2026-11-26, to be confirmed by the operator. Adds k.e2e and k.e2e-page (implemented). Amends k.cli (the `test` row), k.test-run (Run report, one clause) and k.ledger-items (Run evidence, one clause), the map, `tooling/docs-owners.json` and the glossary (**end-to-end test**). New codes E1734 to E1738. From decision D187 (b) of task 0963 and the A2 end-user review (`tasks/p1/end-user-review.md`).
 
 ## For the operator
 1. **`--e2e` runs the e2e files alone, not every rung.** Recommended. A7 asks for every rung from one command. `keel test` and `keel test --e2e` share one runner, one reporter, one report folder and one ledger, and the scaffolded CI runs both. Folding e2e into plain `keel test` would make every page-test run build the app and need a browser. To reverse, `keel test --all` runs both in order.

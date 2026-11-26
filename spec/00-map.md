@@ -62,8 +62,8 @@ Kernel E1xxx, stdlib E2xxx, tooling E0xxx; review findings R1xxx (k.escapes); ow
 | k.testing | Harness, properties | conformance-covered | fire |
 | k.test-run | Test end, results | implemented | dispose |
 | k.requests | Requests sent | conformance-covered | sent |
-| k.e2e | E2e tests | proposed | serve |
-| k.e2e-page | E2e pages | proposed | page |
+| k.e2e | E2e tests | implemented | serve |
+| k.e2e-page | E2e pages | implemented | page |
 | k.model | Exploration | conformance-covered | traces |
 | k.prove | Proofs | conformance-covered | Z3 |
 | k.sim | Simulation | conformance-covered | faults |
