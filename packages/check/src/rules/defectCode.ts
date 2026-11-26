@@ -12,14 +12,15 @@ const CODE = /^E\d{4}$/;
 /**
  * E1455 (k.errors): a call of `defect` from `@keel/schema` (any alias, or `<namespace>.defect`) whose second argument
  * is not a string literal of `E` and four digits, at that argument. A `defect` the file declares itself, or one
- * shadowing the import, is not this rule's. No fix: the code is a stable name the author writes.
+ * shadowing the import, is not this rule's. No fix: the code is a stable name the author writes. These spellings are
+ * read without the type pass; with it, `calleeUses` finds `defect` by its symbol (k.unsafe One path).
  */
 export const defectCode: RuleDef = {
   code: "E1455",
   message: () => "defect code is not a literal E and four digits",
   see: "k.errors",
-  check: ({ file, ast }) => {
-    if (!isAppPath(file.path)) return [];
+  check: ({ file, ast, types }) => {
+    if (types === true || !isAppPath(file.path)) return [];
     const names = localNames(ast, "defect", "@keel/schema");
     const namespaces = new Set<string>();
     for (const st of ast.body) {

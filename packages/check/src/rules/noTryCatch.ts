@@ -1,5 +1,8 @@
+import { globalRefs } from "@keel/compiler/internal";
 import { type Node, Visitor } from "oxc-parser";
+import { catchMessage } from "../internal/catchMessage.ts";
 import { ensureImport } from "../internal/ensureImport.ts";
+import { finallyExits } from "../internal/finallyExits.ts";
 import { findingAt } from "../internal/findingAt.ts";
 import { isAppPath } from "../internal/isAppPath.ts";
 import { num } from "../internal/num.ts";
@@ -11,15 +14,17 @@ type Span = { start: number; end: number };
 
 const inside = (x: Span, y: Span): boolean => x.start >= y.start && x.end <= y.end;
 
-/** E1452 (k.errors): `try`/`catch` or `.catch()` in app code. Fix (`try`/`catch` in a function): `attempt`. */
+/**
+ * E1452 (k.errors): `try`/`catch` in app code (fix, in a function: `attempt`), and a `return`, `break` or `continue`
+ * leaving the `finally` holding it (no fix). The callee half (`.catch()`, a `.then()` given a second argument,
+ * `Promise.allSettled`, `Promise.any`) is read here by spelling without the type pass, and by symbol in it
+ * (`calleeUses`, k.unsafe One path).
+ */
 export const noTryCatch: RuleDef = {
   code: "E1452",
-  message: (f) =>
-    str(f.data, "kind") === "catch"
-      ? ".catch() in app code; use attempt(fn)"
-      : "try/catch in app code; use attempt(fn)",
+  message: (f) => catchMessage(str(f.data, "kind")),
   see: "k.errors",
-  check: ({ file, ast }) => {
+  check: ({ file, ast, types }) => {
     if (!isAppPath(file.path)) return [];
     const out: Finding[] = [];
     const fns: Span[] = [];
@@ -27,6 +32,8 @@ export const noTryCatch: RuleDef = {
     const returns: Span[] = [];
     const tries: { node: Span; block: Span; handler: Span; body: Span; param: string; finalizer: boolean }[] = [];
     const fn = (n: Node): void => void fns.push({ start: n.start, end: n.end });
+    const g = types === true ? undefined : globalRefs(ast);
+    const promiseAt = (at: number): boolean => g?.sameBinding("Promise", ast.start, at) === true;
     new Visitor({
       FunctionDeclaration: fn,
       FunctionExpression: fn,
@@ -47,10 +54,20 @@ export const noTryCatch: RuleDef = {
       },
       CallExpression: (n) => {
         const c = n.callee;
-        if (c.type === "MemberExpression" && !c.computed && c.property.name === "catch")
-          out.push(findingAt(file, c.property.start, { kind: "catch" }));
+        if (types === true || c.type !== "MemberExpression" || c.computed) return;
+        const name = c.property.name;
+        if (name === "catch" || (name === "then" && n.arguments.length >= 2))
+          out.push(findingAt(file, c.property.start, { kind: name }));
+        else if (
+          (name === "allSettled" || name === "any") &&
+          c.object.type === "Identifier" &&
+          c.object.name === "Promise" &&
+          promiseAt(c.object.start)
+        )
+          out.push(findingAt(file, c.property.start, { kind: name }));
       },
     }).visit(ast);
+    for (const at of finallyExits(ast)) out.push(findingAt(file, at, { kind: "finally" }));
     for (const t of tries) {
       const owner = fns.filter((f) => inside(t.node, f)).sort((a, b) => b.start - a.start)[0];
       const own = (s: Span): boolean => inside(s, t.block) && !fns.some((f) => inside(f, t.block) && inside(s, f));

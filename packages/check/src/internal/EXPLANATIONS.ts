@@ -440,9 +440,9 @@ const ROWS: readonly Row[] = [
   ["E1202", "cycle in the dependency graph", "", "derive one value from the other, not both ways", "k.reactive"],
   [
     "E1203",
-    "reactive primitive created outside a scope",
-    "",
-    "create it in a component or inside scope(() => ...)",
+    "reactive primitive created outside a scope; check reports one called after await in the same function",
+    "The owner is synchronous: after an await no scope runs, so the primitive has no owner.",
+    "await g(); signal(0) -> const c = owner(); await g(); c.run(() => signal(0))",
     "k.reactive",
   ],
   [
@@ -463,8 +463,15 @@ const ROWS: readonly Row[] = [
   [
     "E1207",
     "detached scope or non-literal scope options outside a kernel package, libraries and unsafe() included",
-    "A detached scope escapes uses and the request store registry. Module-level state lives in a module root.",
+    "A detached scope escapes uses and the request store registry. scope is found by symbol; one used as a value is E1207.",
     "scope(fn, { detached: true }) -> nest it, or make it where owner() is undefined and run(fn) later",
+    "k.reactive",
+  ],
+  [
+    "E1208",
+    "scope() with no owner outside a module root; check reports one called after await in the same function",
+    "After an await no scope runs, so the new scope has no parent and escapes its owner's disposal.",
+    "await g(); scope(fn) -> const c = owner(); await g(); c.run(() => scope(fn))",
     "k.reactive",
   ],
   [
@@ -640,15 +647,15 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1451",
-    "throw in app code, unsafe() ranges included",
-    "Expected failures are Result values; a bug is defect(message, code?), which reaches the nearest Boundary.",
+    "throw or Promise.reject in app code, unsafe() ranges included",
+    "Expected failures are Result values; a bug is defect(message, code?). Callees are found by symbol.",
     "throw new Error('x') -> return err(Locked.make({ id })), or defect('x') for a bug",
     "k.errors",
   ],
   [
     "E1452",
-    "try/catch or .catch() in app code, unsafe() ranges included",
-    "attempt(fn, expect?) is the only sanctioned catch; try/finally without catch is cleanup.",
+    "try/catch, .catch(), .then(f, g), Promise.allSettled or any in app code; return, break or continue leaving finally",
+    "attempt(fn, expect?) is the only catch; try/finally without catch is cleanup, and control leaving finally drops its throw.",
     "try { a() } catch { b() } -> const r = attempt(a); if (!r.ok) b()",
     "k.errors",
   ],
@@ -668,8 +675,8 @@ const ROWS: readonly Row[] = [
   ],
   [
     "E1455",
-    "defect code that is not a string literal of E and four digits",
-    "The code is a stable name keel docs --for finds; a variable or E1.5 is none.",
+    "defect code that is not a string literal of E and four digits, or one check cannot read",
+    "The code is a stable name keel docs --for finds. defect is found by symbol; apply of a non-literal array or bind is unread.",
     "defect('x', code) -> defect('x', 'E2801')",
     "k.errors",
   ],
@@ -1413,6 +1420,13 @@ const ROWS: readonly Row[] = [
     "modules/m/a.test-d.ts -> modules/m/test/a.test-d.ts; drop the import or the unsafe() wrapper",
     "k.unsafe",
   ],
+  [
+    "E1762",
+    "type predicate or assertion claiming a call signature or its own type parameter, outside unsafe()",
+    "typeof v === 'function' proves no signature and no value proves a type argument. A key guard (WeakSet.has, own Symbol.for key) is none.",
+    "(x: unknown): x is { run(n: number): string } -> move it into unsafe('...', () => ...)",
+    "k.unsafe",
+  ],
   ["E1801", "raw value where a token is required", "", 'p="12px" -> p="3" (nearest token)', "k.ui"],
   [
     "E1802",
@@ -1542,6 +1556,13 @@ const ROWS: readonly Row[] = [
     "Medium. Some are right (a broken invariant); read whether a caller should handle it.",
     "if (!r.ok) return defect('x') -> return r, or a Result the caller handles",
     "k.escapes, k.errors",
+  ],
+  [
+    "R1015",
+    "a type predicate or assertion outside unsafe(): the type checker takes its claim on trust",
+    "Low. Read whether its body checks every property its type names.",
+    "x is T over a typeof object test -> check each property T names, or move it into unsafe()",
+    "k.escapes, k.unsafe",
   ],
   [
     "R1014",

@@ -230,7 +230,7 @@ export function check(given: readonly SourceFile[], options: CheckOptions = {}):
     const dates = typed?.dates.get(libs.real(file.path)) ?? (typed === undefined ? undefined : new Set<number>());
     const input = { file, ast: parsed.program, artifacts, project };
     // One by one: a file may give more findings than a spread call takes arguments.
-    for (const d of runRules(registered, dates === undefined ? input : { ...input, dates })) out.push(d);
+    for (const d of runRules(registered, dates === undefined ? input : { ...input, dates, types: true })) out.push(d);
   }
   for (const file of files) if (isSqlPath(file.path)) out.push(...runSqlRules(registered, file));
   // The passes that read a library's files where they lie.
@@ -272,7 +272,7 @@ export function check(given: readonly SourceFile[], options: CheckOptions = {}):
       const { kind, code, line, col, message, see } = d;
       return { kind, code, path: at, line, col, message, ...(see === undefined ? {} : { see }) };
     });
-  // A lifted range (k.check, App code) reports none of its eight codes.
+  // A lifted range (k.check, App code) reports none of its codes.
   const diagnostics = normalize(dropLifted(located, realCode));
   return { diagnostics, summary: summarize(diagnostics) };
 }

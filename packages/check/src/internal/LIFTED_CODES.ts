@@ -7,5 +7,6 @@ export const LIFTED_CODES: ReadonlySet<string> = new Set([
   "E1757",
   "E1758",
   "E1759",
+  "E1762",
   "W1608",
 ]);

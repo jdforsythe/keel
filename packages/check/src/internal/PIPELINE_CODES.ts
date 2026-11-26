@@ -4,7 +4,7 @@
  * command produces (build, cli, dev and runtime, scaffold, harness) are not here.
  */
 export const PIPELINE_CODES: readonly string[] = [
-  ...["E1000", "E1001", "E1003", "E1453", "E1501", "E1751", "E1802"],
+  ...["E1000", "E1001", "E1003", "E1203", "E1208", "E1453", "E1501", "E1751", "E1762", "E1802"],
   ...[
     "E1002",
     "E1004",

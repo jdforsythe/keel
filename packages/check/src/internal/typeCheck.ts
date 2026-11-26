@@ -10,9 +10,11 @@ import type { TypeEntry } from "./TypeEntry.ts";
 import type { Typed } from "./Typed.ts";
 import { annotateProps } from "./annotateProps.ts";
 import { applyEdits } from "./applyEdits.ts";
+import { calleeUses } from "./calleeUses.ts";
 import { dateReads } from "./dateReads.ts";
 import { formatLiterals } from "./formatLiterals.ts";
 import { importMetaDeclarations } from "./importMetaDeclarations.ts";
+import { inKernel } from "./inKernel.ts";
 import { isAppPath } from "./isAppPath.ts";
 import { isCodePath } from "./isCodePath.ts";
 import { judgeFormat } from "./judgeFormat.ts";
@@ -29,6 +31,7 @@ import { tsCode } from "./tsCode.ts";
 import { tsCompilerOptions } from "./tsCompilerOptions.ts";
 import { typeCache } from "./typeCache.ts";
 import { unifiedDiff } from "./unifiedDiff.ts";
+import { unprovenPredicates } from "./unprovenPredicates.ts";
 
 /** Fallback global JSX typing when `@keel/runtime-dom/jsx-runtime` does not resolve from `root`. */
 const JSX_DTS = `declare namespace JSX {
@@ -144,8 +147,9 @@ function remember(key: string, entry: TypeEntry): void {
  * added when `@types/node` resolves from `root`, and `@keel/compiler/client` (k.bundle Types) likewise. Errors that
  * encode a Keel rule are reported under that code (`mapTsDiagnostic`); the rest are E1751. Mapped codes the compiler
  * already reported in the same file are dropped (`skip`). Also finds discarded `Result` expression statements (E1453),
- * the `formatLiteral` calls (E1108), the date receivers E1758 reads and the JSX children that render nothing (E1406),
- * which need types. The project's declaration files are in the program too, and its type reference directives are
+ * the `formatLiteral` calls (E1108), the date receivers E1758 reads, the JSX children that render nothing (E1406),
+ * the callees E1451, E1452, E1455, E1207, E1208 and E1203 find by symbol (`calleeUses`) and the type predicates no
+ * check proves (E1762), which need types. The project's declaration files are in the program too, and its type reference directives are
  * not (`unreferenced`): a declaration of the global `ImportMeta` or `ImportMetaEnv` outside TypeScript's lib,
  * `@types/node` and `@keel/compiler/client` is E1016 (`importMetaDeclarations`).
  *
@@ -318,9 +322,15 @@ function pass(
         pkg: f.pkg,
       });
     dates.set(file.path, new Set(dateReads(sf, checker, program).map(view.original)));
-    if (file.path.endsWith("x") && (isAppPath(file.path) || library.has(file.path)))
+    const app = isAppPath(file.path) || library.has(file.path);
+    if (file.path.endsWith("x") && app)
       for (const t of textNodes(sf, checker))
         push("E1406", t.at, "JSX child renders nothing; call the prop", "k.place", t.fix);
+    if (app) {
+      for (const u of calleeUses(sf, checker, program, ownerOf, inKernel(file.path)))
+        push(u.code, u.at, u.message, u.see);
+      for (const p of unprovenPredicates(sf, checker)) push("E1762", p.at, p.message, "k.unsafe");
+    }
   }
   const held = new Map(
     [...byName, ...declNames].map(([name, f]) => [
