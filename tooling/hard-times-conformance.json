@@ -408,12 +408,6 @@
     "needs": "fixedTime"
   },
   {
-    "path": "packages/std-messages/conformance/client-chunks.test.ts",
-    "line": 152,
-    "text": "120_000",
-    "needs": "testTime"
-  },
-  {
     "path": "packages/std-offline/conformance/e2651.test.ts",
     "line": 94,
     "text": "30_000",
