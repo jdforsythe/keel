@@ -101,7 +101,7 @@ export async function buildCommand(io: Io, input: Input = {}, refresh = false): 
       ];
   const artifacts = failed
     ? 0
-    : ARTIFACTS.length + 1 + (topology === undefined ? 0 : deployArtifactCount(project, deploy, targets.paths));
+    : ARTIFACTS.length + 2 + (topology === undefined ? 0 : deployArtifactCount(project, deploy, targets.paths));
   // One trailer, after every step has settled; a step that exits non-zero without a diagnostic still counts one error.
   const done = (all: readonly OutRecord[], code = 0): OutRecord[] => [
     ...all,

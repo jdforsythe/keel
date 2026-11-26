@@ -113,7 +113,12 @@ for (const [what, body] of CASES)
       // A library with no `./tokens` entry writes no token name: each literal is also an E1811 there (k.looks Needs).
       const literals = [...body.matchAll(/\b(?:fg|bg|p)="/g)].length;
       expect(lib.check.filter((c) => c.startsWith("E1811:"))).toHaveLength(literals);
-      expect({ ...lib, check: lib.check.filter((c) => !c.startsWith("E1811:")) }).toEqual(app);
+      // A library file's failing pair is reported in the app's `tokens.ts`, not at the element (k.looks Library contrast).
+      const moved = (c: string): boolean => c.startsWith("E1811:") || c.startsWith("E1804:");
+      expect({ ...lib, check: lib.check.filter((c) => !moved(c)) }).toEqual({
+        ...app,
+        check: app.check.filter((c) => !c.startsWith("E1804:")),
+      });
     },
     SLOW,
   );

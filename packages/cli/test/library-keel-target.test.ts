@@ -7,7 +7,8 @@ import { join } from "node:path";
 import { expect, test } from "vitest";
 import { LIB, SLOW, cleanup, keel, library, materialize, project } from "../conformance/library-support.ts";
 
-const SHIPPED = "import { defineTokens } from '@keel/ui'\nexport const chartsTokens = defineTokens({ space: { 'charts.2': '8px' } })\n";
+const SHIPPED =
+  "import { defineTokens } from '@keel/ui'\nexport const chartsTokens = defineTokens({ space: { 'charts.2': '8px' } })\n";
 const OTHER = "export const chartsTokens = { space: { 'charts.2': '99px' } };\n";
 const BADGE =
   "import { Box } from '@keel/ui'\nexport default function Badge(props: { id: string }) {\n  return <Box id={`${props.id}.box`} p=\"charts.2\" />\n}\n";
