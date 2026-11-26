@@ -115,7 +115,8 @@ const resolveFrom = (from: string, name: string): string | undefined => {
 
 /**
  * Binary only: the files `keel docs` reads (k.docs Resolution), as project-relative paths the engine resolves
- * (`readDocs`). In the Keel repo (`spec/00-map.md` at or above `cwd`): `spec/**.md` and `packages/cli/skills/`.
+ * (`readDocs`). In the Keel repo (`spec/00-map.md` at or above `cwd`): `spec/**.md`, `docs/GLOSSARY.md` and
+ * `packages/cli/skills/`.
  * Otherwise the project root's `package.json`, the running `@keel/cli` as `node_modules/@keel/cli`, and each `@keel/*`
  * package the root's or the cli's `package.json` names, or the root's `node_modules/@keel/` holds, resolved from the
  * root (`node_modules/@keel/<name>`) or else from the cli (`node_modules/@keel/cli/node_modules/@keel/<name>`).
@@ -138,7 +139,13 @@ export function hostDocs(cwd: string, scope: FileScope): SourceFile[] {
         }
         return statSync(join(repo, p)).isDirectory() ? specs(p) : [];
       });
-    return [...specs("spec"), ...skills(join(repo, "packages/cli"), "packages/cli", true), ...agentFiles(cwd)];
+    const glossary = read(join(repo, "docs/GLOSSARY.md"));
+    return [
+      ...specs("spec"),
+      ...(glossary === undefined ? [] : [{ path: "docs/GLOSSARY.md", source: glossary }]),
+      ...skills(join(repo, "packages/cli"), "packages/cli", true),
+      ...agentFiles(cwd),
+    ];
   }
   const root = findUp(cwd, "package.json") ?? cwd;
   const out: SourceFile[] = [...agentFiles(cwd)];
