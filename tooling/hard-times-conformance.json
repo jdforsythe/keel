@@ -408,42 +408,6 @@
     "needs": "fixedTime"
   },
   {
-    "path": "packages/std-statecharts/conformance/rules-e2751-e2755.test.ts",
-    "line": 100,
-    "text": "30_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/std-statecharts/conformance/rules-e2751-e2755.test.ts",
-    "line": 143,
-    "text": "30_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/std-statecharts/conformance/rules-e2751-e2755.test.ts",
-    "line": 165,
-    "text": "30_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/std-statecharts/conformance/rules-e2751-e2755.test.ts",
-    "line": 182,
-    "text": "30_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/std-statecharts/conformance/rules-e2751-e2755.test.ts",
-    "line": 193,
-    "text": "30_000",
-    "needs": "testTime"
-  },
-  {
-    "path": "packages/std-statecharts/conformance/rules-e2751-e2755.test.ts",
-    "line": 204,
-    "text": "30_000",
-    "needs": "testTime"
-  },
-  {
     "path": "packages/std-tauri/conformance/build-target-e1575.test.ts",
     "line": 16,
     "text": "300_000",
